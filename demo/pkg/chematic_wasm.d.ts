@@ -183,6 +183,14 @@ export class MolHandle {
      */
     bond_count(): number;
     /**
+     * Returns `true` if the molecule has no Brenk structural alerts.
+     *
+     * This uses the same conservative core contract as the Rust, Python, and
+     * MCP bindings: an alert-search budget exhaustion is not reported as a
+     * clean pass.
+     */
+    brenk_passes(): boolean;
+    /**
      * Palm (1997) Caco-2 intestinal permeability (logPCaco2).
      * > −5.5 = high permeability.
      */
@@ -741,6 +749,24 @@ export function batch_report_html(smiles_lines: string): string;
 export function boiled_egg_json(smiles: string): string;
 
 /**
+ * Brenk structural-alert identifiers matched by `mol` as a JSON array.
+ *
+ * Returns `[]` when no alerts fire. Identifiers and ordering are identical to
+ * the Rust, Python, and MCP bindings.
+ */
+export function brenk_matches_json(mol: MolHandle): string;
+
+/**
+ * Parse `smiles` and return a complete Brenk report as JSON.
+ *
+ * The stable result shape is `{"passes":boolean,"alerts":string[]}`.
+ * Invalid or oversized SMILES throw the same ordinary JavaScript input error
+ * as `parse_smiles`; this function never converts invalid input into a clean
+ * report.
+ */
+export function brenk_report_json(smiles: string): string;
+
+/**
  * Number of BRICS fragments produced by fragmenting the molecule.
  *
  * Returns 1 if no BRICS-breakable bonds exist (whole molecule is one fragment).
@@ -787,6 +813,11 @@ export function canonical_tautomer(mol: MolHandle): MolHandle;
  * Out-of-range indices are silently ignored (no effect).
  */
 export function canonical_tautomer_with_blocked_atoms_json(mol: MolHandle, blocked_atom_indices_json: string): string;
+
+/**
+ * Return caller coordinates centered and aligned to their principal axes.
+ */
+export function canonicalize_conformer_from_coords_json(mol: MolHandle, coords_json: string, center_json: string | null | undefined, normalize_covar: boolean, ignore_hs: boolean): string;
 
 /**
  * Canonicalize a bounded delimiter-separated SMILES batch.
@@ -913,6 +944,14 @@ export function compare_molecules_batch_json(smiles_batch: string, delimiter: st
  * ```
  */
 export function compare_molecules_json(smiles1: string, smiles2: string): string;
+
+/**
+ * Compute an RDKit-style principal-axis transform from caller coordinates.
+ *
+ * Returns a row-major 4x4 JSON matrix. `center_json`, when supplied, must be
+ * `[x,y,z]`; otherwise the selected-atom centroid is used.
+ */
+export function compute_canonical_transform_from_coords_json(mol: MolHandle, coords_json: string, center_json: string | null | undefined, normalize_covar: boolean, ignore_hs: boolean): string;
 
 /**
  * Generate multiple conformers with RMSD-based pruning.
@@ -1347,6 +1386,11 @@ export function generic_murcko_scaffold(mol: MolHandle): MolHandle;
 export function get_atom_info(mol: MolHandle, idx: number): string;
 
 /**
+ * Measure angle i-j-k in degrees from caller-supplied coordinates.
+ */
+export function get_bond_angle_from_coords_json(mol: MolHandle, coords_json: string, i: number, j: number, k: number): number;
+
+/**
  * Return bond information as a JSON object, looked up by the two bonded atom indices.
  *
  * Useful when you know the atom indices from SMARTS matching or `data-atom-idx` SVG
@@ -1366,6 +1410,15 @@ export function get_bond_between(mol: MolHandle, atom1: number, atom2: number): 
  * `isInRing` (bool), `atomFrom` (u32), `atomTo` (u32).
  */
 export function get_bond_info(mol: MolHandle, idx: number): string;
+
+/**
+ * Measure a bond length from caller-supplied coordinates.
+ *
+ * `coords_json` is `[[x,y,z], ...]` in molecule atom order. Unlike the
+ * legacy SMILES convenience function, this does not generate a new
+ * conformer, so callers can measure an imported or previously edited one.
+ */
+export function get_bond_length_from_coords_json(mol: MolHandle, coords_json: string, i: number, j: number): number;
 
 /**
  * Get bond length in Ångströms between two atoms from a SMILES string.
@@ -1390,6 +1443,11 @@ export function get_bond_length_json(smiles: string, a: number, b: number): numb
  * Drug-likeness rule outcomes are included as boolean fields.
  */
 export function get_descriptors_json(mol: MolHandle): string;
+
+/**
+ * Measure dihedral i-j-k-l in degrees from caller-supplied coordinates.
+ */
+export function get_dihedral_from_coords_json(mol: MolHandle, coords_json: string, i: number, j: number, k: number, l: number): number;
 
 /**
  * Get dihedral angle A—B—C—D in degrees from a SMILES string.
@@ -2781,6 +2839,29 @@ export function semantic_expand_json_with_limits(base_smiles: string, model_json
 export function semantic_model_json(model_json: string): string;
 
 /**
+ * Set angle i-j-k in degrees and return updated coordinate JSON.
+ *
+ * Atoms i and j stay fixed; atom k and its side of the graph rotate
+ * together. If both angle bonds belong to a ring the operation is rejected.
+ */
+export function set_bond_angle_from_coords_json(mol: MolHandle, coords_json: string, i: number, j: number, k: number, angle_deg: number): string;
+
+/**
+ * Set bond length i-j in caller-supplied coordinates and return updated JSON.
+ *
+ * Atom i stays fixed; atom j and its side of the graph move together. Ring
+ * bonds are rejected, following RDKit's `SetBondLength` contract.
+ */
+export function set_bond_length_from_coords_json(mol: MolHandle, coords_json: string, i: number, j: number, length: number): string;
+
+/**
+ * Set dihedral i-j-k-l in degrees and return updated coordinate JSON.
+ *
+ * The central j-k bond must exist and must not belong to a ring.
+ */
+export function set_dihedral_from_coords_json(mol: MolHandle, coords_json: string, i: number, j: number, k: number, l: number, angle_deg: number): string;
+
+/**
  * Set dihedral angle A—B—C—D and return PDB block with modified coordinates.
  * Rotates the D-side subtree around the B—C bond.
  * Returns a JS error if parsing fails or atom indices are invalid.
@@ -3251,11 +3332,14 @@ export interface InitOutput {
     readonly balance_check_json: (a: number, b: number) => [number, number];
     readonly batch_report_html: (a: number, b: number) => [number, number];
     readonly boiled_egg_json: (a: number, b: number) => [number, number];
+    readonly brenk_matches_json: (a: number) => [number, number];
+    readonly brenk_report_json: (a: number, b: number) => [number, number, number, number];
     readonly brics_fragment_count: (a: number) => number;
     readonly brics_fragments_json: (a: number) => [number, number];
     readonly butina_cluster_ecfp4_json: (a: number, b: number, c: number) => [number, number, number, number];
     readonly canonical_tautomer: (a: number) => number;
     readonly canonical_tautomer_with_blocked_atoms_json: (a: number, b: number, c: number) => [number, number];
+    readonly canonicalize_conformer_from_coords_json: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number, number, number];
     readonly canonicalize_smiles_batch_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly cdxml_document_from_json_v1: (a: number, b: number) => [number, number, number, number];
     readonly cdxml_document_json: (a: number, b: number) => [number, number, number, number];
@@ -3269,6 +3353,7 @@ export interface InitOutput {
     readonly cip_unresolved_json: (a: number) => [number, number];
     readonly compare_molecules_batch_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly compare_molecules_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+    readonly compute_canonical_transform_from_coords_json: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number, number, number];
     readonly conformer_ensemble_json: (a: number, b: number, c: number) => [number, number];
     readonly conformerhandle_add_generated_conformer: (a: number) => number;
     readonly conformerhandle_add_minimized_conformer: (a: number) => number;
@@ -3340,10 +3425,13 @@ export interface InitOutput {
     readonly generate_3d_pdb: (a: number) => [number, number];
     readonly generic_murcko_scaffold: (a: number) => number;
     readonly get_atom_info: (a: number, b: number) => [number, number];
+    readonly get_bond_angle_from_coords_json: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number];
     readonly get_bond_between: (a: number, b: number, c: number) => [number, number];
     readonly get_bond_info: (a: number, b: number) => [number, number];
+    readonly get_bond_length_from_coords_json: (a: number, b: number, c: number, d: number, e: number) => [number, number, number];
     readonly get_bond_length_json: (a: number, b: number, c: number, d: number) => number;
     readonly get_descriptors_json: (a: number) => [number, number];
+    readonly get_dihedral_from_coords_json: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number, number];
     readonly get_dihedral_json: (a: number, b: number, c: number, d: number, e: number, f: number) => any;
     readonly get_rdkit_descriptors_json: (a: number) => [number, number];
     readonly getaway_descriptors_json: (a: number) => [number, number];
@@ -3423,11 +3511,13 @@ export interface InitOutput {
     readonly molecule_report_json: (a: number, b: number) => [number, number, number, number];
     readonly molhandle_aromatic_ring_count: (a: number) => number;
     readonly molhandle_assign_cip_json: (a: number) => [number, number];
+    readonly molhandle_atom_count: (a: number) => number;
     readonly molhandle_atom_pseudo_labels_json: (a: number) => [number, number];
     readonly molhandle_bbb_passes: (a: number) => number;
     readonly molhandle_bbb_score: (a: number) => number;
     readonly molhandle_bertz_ct: (a: number) => number;
     readonly molhandle_bond_count: (a: number) => number;
+    readonly molhandle_brenk_passes: (a: number) => number;
     readonly molhandle_caco2_permeability: (a: number) => number;
     readonly molhandle_canonical_smiles: (a: number) => [number, number];
     readonly molhandle_chi0: (a: number) => number;
@@ -3598,6 +3688,9 @@ export interface InitOutput {
     readonly semantic_expand_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly semantic_expand_json_with_limits: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number, number];
     readonly semantic_model_json: (a: number, b: number) => [number, number, number, number];
+    readonly set_bond_angle_from_coords_json: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number, number, number];
+    readonly set_bond_length_from_coords_json: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number, number];
+    readonly set_dihedral_from_coords_json: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number, number, number];
     readonly set_dihedral_json: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number, number, number];
     readonly shape_descriptors_json: (a: number) => [number, number];
     readonly slogp_vsa_json: (a: number) => [number, number];
@@ -3616,6 +3709,7 @@ export interface InitOutput {
     readonly sssr_rings_json: (a: number) => [number, number];
     readonly standardize_smiles: (a: number, b: number) => [number, number];
     readonly standardize_smiles_report_json: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number];
+    readonly start: () => void;
     readonly stereo_parent_json: (a: number) => [number, number];
     readonly stoichiometry_report_json: (a: number, b: number) => [number, number];
     readonly super_parent_json: (a: number, b: number, c: number, d: number, e: bigint) => [number, number];
@@ -3662,8 +3756,6 @@ export interface InitOutput {
     readonly xlogp3_json: (a: number) => [number, number];
     readonly xlogp3_per_atom_json: (a: number) => [number, number];
     readonly xyz_frames_batch_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
-    readonly molhandle_atom_count: (a: number) => number;
-    readonly start: () => void;
     readonly __wbindgen_malloc: (a: number, b: number) => number;
     readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
     readonly __externref_table_alloc: () => number;

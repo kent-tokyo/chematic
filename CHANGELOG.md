@@ -10,6 +10,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-10-13
+
 ### Added
 
 - Added non-breaking RDKit-compatible MMFF optimization diagnostics for Rust

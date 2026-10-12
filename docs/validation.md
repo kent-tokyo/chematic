@@ -1,18 +1,20 @@
 # Validation report
 
-Updated 2026-10-12 for **v1.1.1**. The broad chemistry and speed packet
+Updated 2026-10-13 for **v1.1.2**. The broad chemistry and speed packet
 remains pinned to published v1.0.30; separately named records cover later
 artifacts, the two-platform published v1.0.42/RDKit packet, the published
 v1.0.42 macOS arm64 chemistry baseline, v1.0.40 source, the v1.0.41 source
-candidate, current-main v1.1.0-source records, and focused v1.1.1 artifact
-checks. v1.1.1 release channels and its hosted Linux/macOS/Windows chemistry
-workflow are verified. Every comparison is
+candidate, current-main v1.1.0-source records, focused v1.1.1 artifact checks,
+and bounded v1.1.2 source-candidate 3D records. v1.1.1 release channels and its
+hosted Linux/macOS/Windows chemistry workflow are verified; v1.1.2 package
+claims require post-publication reruns. Every comparison is
 limited to its recorded artifact, comparator, corpus and operation.
 
 ## Current evidence
 
 | Gate | Result and limit | Record |
 |---|---|---|
+| v1.1.2 gradient-rescue source candidate | The opt-in RDKit-compatible MMFF path exposes final gradient diagnostics and retries one lowest-energy candidate only when the initial ensemble has no converged result. On the already-inspected 265-row development set it reached 261/265 within 1 kcal/mol and 263/265 within 2 kcal/mol, with a 1.0179x median RDKit/CheMatic time ratio across three alternating blocks. The threshold was selected on this development set; this is not fresh-holdout, second-host, or published-artifact evidence. | [Development record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-13-a6-mmff-gradient-rescue-development.md) |
 | A6 RDKit 2026.09 bounds source candidate | A wheel built at `7e6a5240` reproduces RDKit 2026.09.1 raw and triangle-smoothed topology bounds within `1e-12` on all 768,664 cells across the frozen 265-row A6 corpus. Equal-count 20-conformer quality is within 1 kcal/mol on 258 rows; seven basin/minimization-tail rows remain. One loaded-host timing is not a speed claim. | [Bounds and conformer record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-12-a6-rdkit-2026-09-bounds-followup.md) |
 | v1.1.1 descriptor follow-up | The published CPython 3.12 wheels reproduce the pinned chemistry counts on Windows amd64, macOS arm64 and macOS x86-64; the Linux x86-64 sdist lane and all xsmarts-autoconf lanes also pass. The public artifact retains the unusual-SMILES residuals (4,069/4,072 HBD and 4,018/4,071 QED). Current main restores the three representation-dependent rows (4,072 HBD and 4,021 QED) and removes eager Python parse preparation; those fixes are source evidence until a later release. | [hosted artifact gate](https://github.com/kent-tokyo/chematic/actions/runs/38184048499) · [candidate speed record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-12-v111-public-vs-lazy-fix.md) · [expected public-wheel counts](https://github.com/kent-tokyo/chematic/blob/main/validation/published-wheel-chemistry-gates-expected-v1.1.1.json) |
 | Indigo workflow source packet | Against Indigo 1.46.0 on one macOS arm64 host, CheMatic matches 15/15 versus 13/15 single-result reaction rows, 39/39 versus 38/39 largest-fragment rows, and ties at 16/16 bounded labelled R-group rows. On the common-correct subsets, all 21 timing blocks favor CheMatic, with median ratios of 10.66x, 1.27x, and 2.60x. This is source-built bounded evidence, not full standardization, reaction-enumeration, or R-group parity. | [Workflow packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-12-indigo-workflows-source.md) |

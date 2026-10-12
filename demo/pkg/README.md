@@ -4,7 +4,7 @@ WebAssembly bindings for [chematic](https://github.com/kent-tokyo/chematic), a p
 
 Published to npm as [`@kent-tokyo/chematic`](https://www.npmjs.com/package/@kent-tokyo/chematic).
 
-The current workspace line is 1.1.1. The binding keeps bounded parsing,
+The current workspace line is 1.1.2. The binding keeps bounded parsing,
 typed failures, and opt-in `embed_pipeline_v2_json`; 3D/MMFF94 behavior remains
 Experimental and is not a claim of full RDKit parity.
 
@@ -18,7 +18,7 @@ npm install @kent-tokyo/chematic
 
 - Parse SMILES strings into molecule handles
 - Molecular descriptors: MW, TPSA, LogP, Fsp3, QED, exact mass, rotatable bonds, HBD/HBA, aromatic ring count, Labute ASA
-- Drug-likeness filters: Lipinski, Veber, Egan, REOS, Ghose
+- Drug-likeness filters: Lipinski, Veber, Egan, REOS, Ghose, PAINS, and Brenk
 - EState indices (Hall & Kier 1991): per-atom values, sum/max/min
 - Gasteiger-Marsili PEOE partial charges: per-heavy-atom charges
 - VSA descriptors: SlogP_VSA (×12), SMR_VSA (×10), PEOE_VSA (×14)
@@ -91,6 +91,7 @@ import init, {
   smr_vsa_json,
   peoe_vsa_json,
   identify_functional_groups,
+  brenk_report_json,
 } from '@kent-tokyo/chematic';
 
 await init();
@@ -112,6 +113,10 @@ console.log(mol.rotatable_bond_count()); // 2 (RDKit Lipinski definition)
 console.log(mol.aromatic_ring_count()); // 1
 console.log(mol.lipinski_passes());     // true
 console.log(mol.canonical_smiles());    // canonical SMILES string
+
+// Brenk alerts, fully local in the browser/Node runtime
+console.log(JSON.parse(brenk_report_json('Oc1ccccc1')));
+// { passes: false, alerts: ['phenol'] }
 
 // BRICS fragmentation
 console.log(brics_fragment_count(mol)); // ≥ 2
