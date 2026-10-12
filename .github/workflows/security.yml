@@ -43,7 +43,7 @@ jobs:
           --runner target/release/examples/parser_security_case
           --json-out parser-security-results.json
       - name: Upload parser-security evidence
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: always()
         with:
           name: parser-security-results
@@ -77,7 +77,7 @@ jobs:
         run: cargo audit --json > audit-results.json
 
       - name: Upload audit results
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: always()
         with:
           name: cargo-audit-results

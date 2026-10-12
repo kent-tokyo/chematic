@@ -130,7 +130,7 @@ jobs:
           gzip -n -9 "$RUNNER_TEMP/rdkit-native-results/delta.jsonl"
           gzip -n -9 "$RUNNER_TEMP/rdkit-native-results/new-legacy.jsonl"
       - name: Upload pinned native output packet
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: rdkit-native-2026-03-6-to-2026-09-1
           path: ${{ runner.temp }}/rdkit-native-results/
