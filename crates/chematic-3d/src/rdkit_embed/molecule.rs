@@ -108,6 +108,14 @@ pub struct RdkitMmffConformer {
     pub energy: f64,
 }
 
+/// One optimized conformer plus diagnostics already computed by BFGS.
+#[derive(Clone, Debug)]
+pub struct RdkitMmffConformerDiagnostics {
+    pub conformer: RdkitMmffConformer,
+    pub iterations: u32,
+    pub final_gradient_test: Option<f64>,
+}
+
 impl From<BoundsInvariant> for RdkitEmbedError {
     fn from(e: BoundsInvariant) -> Self {
         RdkitEmbedError::RdkitException(e.0.to_string())
@@ -337,6 +345,27 @@ pub fn rdkit_embed_multiple_confs_mmff(
     Ok(optimize_mmff_conformers(&field, conformers, max_iters))
 }
 
+/// [`rdkit_embed_multiple_confs_mmff`] with per-conformer convergence
+/// diagnostics. The coordinates, status, and energy are identical to the
+/// compact API; no additional energy or gradient evaluation is performed.
+pub fn rdkit_embed_multiple_confs_mmff_diagnostics(
+    mh: &Molecule,
+    num_confs: usize,
+    o: &RdkitEmbedOptions,
+    max_iters: u32,
+) -> Result<Vec<RdkitMmffConformerDiagnostics>, RdkitEmbedMmffError> {
+    let conformers = rdkit_embed_multiple_confs(mh, num_confs, o)?;
+    let Some(first) = conformers.first() else {
+        return Ok(Vec::new());
+    };
+    let field = chematic_ff::rdkit_mmff::RdkitMmffField::new(mh, first, 100.0, true)
+        .map_err(|error| RdkitEmbedMmffError::ForceField(error.to_string()))?;
+
+    Ok(optimize_mmff_conformers_detailed(
+        &field, conformers, max_iters,
+    ))
+}
+
 /// Generate and optimize an ETKDG ensemble, then spend an additional MMFF94
 /// budget only on the lowest-energy candidates that did not converge.
 ///
@@ -389,6 +418,109 @@ pub fn rdkit_embed_multiple_confs_mmff_rescue(
         retry_candidates,
         true,
     )
+}
+
+/// Generate and optimize an ETKDG ensemble, then retry only high-gradient
+/// candidates when no initial candidate converged.
+///
+/// Unlike the energy-only rescue, this profile uses RDKit's normalized final
+/// BFGS gradient test to avoid spending extra work on candidates that are
+/// already close to a stationary point. Candidate ranking remains
+/// `(energy, candidate index)`, and a retry is retained only if its energy is
+/// finite and no higher than the initial result.
+#[allow(clippy::too_many_arguments)]
+pub fn rdkit_embed_multiple_confs_mmff_gradient_rescue(
+    mh: &Molecule,
+    num_confs: usize,
+    o: &RdkitEmbedOptions,
+    initial_max_iters: u32,
+    retry_max_iters: u32,
+    retry_candidates: usize,
+    minimum_gradient_test: f64,
+) -> Result<Vec<RdkitMmffConformer>, RdkitEmbedMmffError> {
+    if !minimum_gradient_test.is_finite() || minimum_gradient_test < 0.0 {
+        return Err(RdkitEmbedMmffError::ForceField(
+            "minimum gradient test must be finite and non-negative".into(),
+        ));
+    }
+    let conformers = rdkit_embed_multiple_confs(mh, num_confs, o)?;
+    let Some(first) = conformers.first() else {
+        return Ok(Vec::new());
+    };
+    let field = chematic_ff::rdkit_mmff::RdkitMmffField::new(mh, first, 100.0, true)
+        .map_err(|error| RdkitEmbedMmffError::ForceField(error.to_string()))?;
+    let mut detailed = optimize_mmff_conformers_detailed(&field, conformers, initial_max_iters);
+
+    if retry_candidates == 0
+        || retry_max_iters == 0
+        || detailed.iter().any(|result| result.conformer.status == 0)
+    {
+        return Ok(detailed
+            .into_iter()
+            .map(|result| result.conformer)
+            .collect());
+    }
+
+    let mut retry_indices: Vec<usize> = detailed
+        .iter()
+        .enumerate()
+        .filter_map(|(index, result)| {
+            let conformer = &result.conformer;
+            (conformer.status != 0
+                && conformer.energy.is_finite()
+                && result
+                    .final_gradient_test
+                    .is_some_and(|test| test >= minimum_gradient_test))
+            .then_some(index)
+        })
+        .collect();
+    retry_indices.sort_by(|&left, &right| {
+        detailed[left]
+            .conformer
+            .energy
+            .total_cmp(&detailed[right].conformer.energy)
+            .then_with(|| left.cmp(&right))
+    });
+    retry_indices.truncate(retry_candidates);
+
+    #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
+    let retries: Vec<_> = retry_indices
+        .par_iter()
+        .map(|&index| {
+            (
+                index,
+                optimize_mmff_conformer(
+                    &field,
+                    detailed[index].conformer.coords.clone(),
+                    retry_max_iters,
+                ),
+            )
+        })
+        .collect();
+    #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
+    let retries: Vec<_> = retry_indices
+        .iter()
+        .map(|&index| {
+            (
+                index,
+                optimize_mmff_conformer(
+                    &field,
+                    detailed[index].conformer.coords.clone(),
+                    retry_max_iters,
+                ),
+            )
+        })
+        .collect();
+
+    for (index, retry) in retries {
+        if retry.energy.is_finite() && retry.energy <= detailed[index].conformer.energy {
+            detailed[index].conformer = retry;
+        }
+    }
+    Ok(detailed
+        .into_iter()
+        .map(|result| result.conformer)
+        .collect())
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -465,29 +597,52 @@ fn optimize_mmff_conformers(
     conformers: Vec<Vec<[f64; 3]>>,
     max_iters: u32,
 ) -> Vec<RdkitMmffConformer> {
+    optimize_mmff_conformers_detailed(field, conformers, max_iters)
+        .into_iter()
+        .map(|result| result.conformer)
+        .collect()
+}
+
+fn optimize_mmff_conformers_detailed(
+    field: &chematic_ff::rdkit_mmff::RdkitMmffField,
+    conformers: Vec<Vec<[f64; 3]>>,
+    max_iters: u32,
+) -> Vec<RdkitMmffConformerDiagnostics> {
     #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
     let optimized = conformers
         .into_par_iter()
-        .map(|coords| optimize_mmff_conformer(field, coords, max_iters))
+        .map(|coords| optimize_mmff_conformer_detailed(field, coords, max_iters))
         .collect();
     #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
     let optimized = conformers
         .into_iter()
-        .map(|coords| optimize_mmff_conformer(field, coords, max_iters))
+        .map(|coords| optimize_mmff_conformer_detailed(field, coords, max_iters))
         .collect();
     optimized
 }
 
 fn optimize_mmff_conformer(
     field: &chematic_ff::rdkit_mmff::RdkitMmffField,
-    mut coords: Vec<[f64; 3]>,
+    coords: Vec<[f64; 3]>,
     max_iters: u32,
 ) -> RdkitMmffConformer {
-    let (status, energy) = field.optimize(coords.as_flattened_mut(), max_iters);
-    RdkitMmffConformer {
-        coords,
-        status,
-        energy,
+    optimize_mmff_conformer_detailed(field, coords, max_iters).conformer
+}
+
+fn optimize_mmff_conformer_detailed(
+    field: &chematic_ff::rdkit_mmff::RdkitMmffField,
+    mut coords: Vec<[f64; 3]>,
+    max_iters: u32,
+) -> RdkitMmffConformerDiagnostics {
+    let result = field.optimize_detailed(coords.as_flattened_mut(), max_iters);
+    RdkitMmffConformerDiagnostics {
+        conformer: RdkitMmffConformer {
+            coords,
+            status: result.status,
+            energy: result.energy,
+        },
+        iterations: result.iterations,
+        final_gradient_test: result.final_gradient_test,
     }
 }
 

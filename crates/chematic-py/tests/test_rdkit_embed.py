@@ -130,6 +130,18 @@ def test_rdkit_embed_multiple_confs_mmff_matches_individual_optimizer():
     assert optimized[0][2] == coords
 
 
+def test_rdkit_embed_multiple_confs_mmff_diagnostics_preserve_results():
+    mol = chematic.from_smiles("CCCO").add_hydrogens()
+    compact = mol.rdkit_embed_multiple_confs_mmff(4, max_mmff_iters=2)
+    detailed = mol.rdkit_embed_multiple_confs_mmff_diagnostics(4, max_mmff_iters=2)
+    assert len(compact) == len(detailed)
+    for compact_row, detailed_row in zip(compact, detailed):
+        status, energy, iterations, gradient_test, coords = detailed_row
+        assert compact_row == (status, energy, coords)
+        assert iterations == 2
+        assert gradient_test is not None and gradient_test >= 0.0
+
+
 def test_rdkit_embed_multiple_confs_mmff_adaptive_retry_is_deterministic():
     mol = chematic.from_smiles("CCCO").add_hydrogens()
     initial = mol.rdkit_embed_multiple_confs_mmff(4, max_mmff_iters=1)
@@ -164,6 +176,26 @@ def test_rdkit_embed_multiple_confs_mmff_rescue_skips_converged_ensemble():
     )
     assert any(status == 0 for status, _, _ in initial)
     assert rescued == initial
+
+
+def test_rdkit_embed_multiple_confs_mmff_gradient_rescue_is_bounded():
+    mol = chematic.from_smiles("CCCO").add_hydrogens()
+    initial = mol.rdkit_embed_multiple_confs_mmff(4, max_mmff_iters=1)
+    rescued = mol.rdkit_embed_multiple_confs_mmff_gradient_rescue(
+        4,
+        max_mmff_iters=1,
+        retry_mmff_iters=200,
+        retry_candidates=1,
+        minimum_gradient_test=0.0,
+    )
+    assert sum(status == 0 for status, _, _ in rescued) == 1
+    assert sum(a[2] != b[2] for a, b in zip(rescued, initial)) == 1
+    assert all(a[1] <= b[1] for a, b in zip(rescued, initial))
+
+    with pytest.raises(ValueError, match="minimum_gradient_test"):
+        mol.rdkit_embed_multiple_confs_mmff_gradient_rescue(
+            1, minimum_gradient_test=float("nan")
+        )
 
 
 def test_rdkit_bounds_matrix_matches_rdkit():

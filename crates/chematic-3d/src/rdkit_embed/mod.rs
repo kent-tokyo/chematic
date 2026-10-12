@@ -29,7 +29,8 @@ pub use dg::{BoundsMatrix, ChiralSet, triangle_smooth_bounds};
 pub use embed::{EmbedArgs, EmbedError, EmbedParams, embed_initial_points, embed_points};
 pub use molecule::{
     RdkitEmbedError, RdkitEmbedMmffError, RdkitEmbedOptions, RdkitMmffConformer,
-    rdkit_bounds_matrix, rdkit_embed_initial_molecule, rdkit_embed_molecule,
-    rdkit_embed_multiple_confs, rdkit_embed_multiple_confs_mmff,
-    rdkit_embed_multiple_confs_mmff_adaptive, rdkit_embed_multiple_confs_mmff_rescue,
+    RdkitMmffConformerDiagnostics, rdkit_bounds_matrix, rdkit_embed_initial_molecule,
+    rdkit_embed_molecule, rdkit_embed_multiple_confs, rdkit_embed_multiple_confs_mmff,
+    rdkit_embed_multiple_confs_mmff_adaptive, rdkit_embed_multiple_confs_mmff_diagnostics,
+    rdkit_embed_multiple_confs_mmff_gradient_rescue, rdkit_embed_multiple_confs_mmff_rescue,
 };

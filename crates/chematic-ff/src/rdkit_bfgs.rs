@@ -99,6 +99,22 @@ pub(crate) struct BfgsCachedOutcome {
     /// only when RDKit restores the previous position while retaining its last
     /// trial-point distance cache.
     pub energy_at_returned_position: Option<f64>,
+    /// Number of completed BFGS iterations.
+    pub iterations: u32,
+    /// RDKit's normalized gradient convergence test at the returned point.
+    ///
+    /// This is unavailable when convergence is detected from a tiny position
+    /// change before RDKit evaluates the gradient at the new point.
+    pub final_gradient_test: Option<f64>,
+}
+
+fn gradient_test(pos: &[f64], energy: f64, grad: &[f64], grad_scale: f64) -> f64 {
+    let term = smax(energy * grad_scale, 1.0);
+    pos.iter()
+        .zip(grad)
+        .fold(0.0_f64, |test, (&coordinate, &component)| {
+            smax(test, component.abs() * smax(coordinate.abs(), 1.0) / term)
+        })
 }
 
 pub(crate) fn bfgs_minimize_detailed_with_cached_energy(
@@ -108,12 +124,16 @@ pub(crate) fn bfgs_minimize_detailed_with_cached_energy(
     func: impl Fn(&[f64]) -> f64,
     grad_fn: impl Fn(&[f64], &mut [f64]) -> f64,
 ) -> BfgsCachedOutcome {
-    let done = |status: i32, stale: Option<Vec<f64>>, energy| BfgsCachedOutcome {
-        outcome: BfgsOutcome {
-            status,
-            stale_distance_point: stale,
-        },
-        energy_at_returned_position: energy,
+    let done = |status: i32, stale: Option<Vec<f64>>, energy, iterations, final_gradient_test| {
+        BfgsCachedOutcome {
+            outcome: BfgsOutcome {
+                status,
+                stale_distance_point: stale,
+            },
+            energy_at_returned_position: energy,
+            iterations,
+            final_gradient_test,
+        }
     };
     const EPS: f64 = 3e-8;
     const TOLX: f64 = 4.0 * EPS;
@@ -126,7 +146,8 @@ pub(crate) fn bfgs_minimize_detailed_with_cached_energy(
     let mut inv_hessian = vec![0.0; dim * dim];
     let mut new_pos = vec![0.0; dim];
     let mut fp = func(pos);
-    grad_fn(pos, &mut grad);
+    let initial_grad_scale = grad_fn(pos, &mut grad);
+    let mut final_gradient_test = Some(gradient_test(pos, fp, &grad, initial_grad_scale));
     let mut sum = 0.0;
     for i in 0..dim {
         inv_hessian[i * dim + i] = 1.0;
@@ -134,12 +155,12 @@ pub(crate) fn bfgs_minimize_detailed_with_cached_energy(
         sum += pos[i] * pos[i];
     }
     let max_step = MAXSTEP * smax(sum.sqrt(), dim as f64);
-    for _iter in 1..=max_its {
+    for iteration in 1..=max_its {
         let (status, func_val, stale) =
             linear_search(pos, fp, &grad, &mut xi, &mut new_pos, &func, max_step);
         if status < 0 {
             // RDKit's CHECK_INVARIANT("bad direction in linearSearch").
-            return done(-1, None, Some(fp));
+            return done(-1, None, Some(fp), iteration - 1, final_gradient_test);
         }
         fp = func_val;
         let mut test = 0.0_f64;
@@ -154,7 +175,7 @@ pub(crate) fn bfgs_minimize_detailed_with_cached_energy(
         }
         if test < TOLX {
             let cached_energy = stale.is_none().then_some(fp);
-            return done(0, stale, cached_energy);
+            return done(0, stale, cached_energy, iteration, None);
         }
         let grad_scale = grad_fn(pos, &mut grad);
         test = 0.0;
@@ -165,8 +186,9 @@ pub(crate) fn bfgs_minimize_detailed_with_cached_energy(
             dgrad[i] = grad[i] - dgrad[i];
         }
         test /= term;
+        final_gradient_test = Some(test);
         if test < grad_tol {
-            return done(0, None, Some(fp));
+            return done(0, None, Some(fp), iteration, final_gradient_test);
         }
         let (mut fac, mut fae, mut sum_dgrad, mut sum_xi) = (0.0, 0.0, 0.0, 0.0);
         for i in 0..dim {
@@ -206,7 +228,7 @@ pub(crate) fn bfgs_minimize_detailed_with_cached_energy(
             xi[i] = p;
         }
     }
-    done(1, None, Some(fp))
+    done(1, None, Some(fp), max_its, final_gradient_test)
 }
 
 /// `BFGSOpt::linearSearch`: (resCode, newVal, last trial point when the
@@ -342,6 +364,8 @@ mod tests {
         let direct = (pos[0] - 1.0).powi(2) + 2.0 * (pos[1] + 0.5).powi(2);
         assert_eq!(cached.outcome.status, 0);
         assert_eq!(cached.energy_at_returned_position, Some(direct));
+        assert!(cached.iterations > 0);
+        assert!(cached.final_gradient_test.is_some_and(|test| test < 1e-4));
     }
 
     /// RDKit's line search gives up below `MOVETOL`, restores the start
@@ -365,6 +389,7 @@ mod tests {
         assert_eq!(out.status, 0);
         assert_eq!(pos, start);
         assert_eq!(cached.energy_at_returned_position, None);
+        assert_eq!(cached.final_gradient_test, None);
         let stale = out.stale_distance_point.expect("trial point");
         assert!(stale[0] < 0.5 && stale[0] > 0.5 - 1e-6);
     }

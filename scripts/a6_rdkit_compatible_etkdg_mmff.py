@@ -33,25 +33,88 @@ def run_chematic(
     retry_candidates: int,
     retry_max_iters: int,
     retry_only_if_none_converged: bool,
+    collect_diagnostics: bool,
+    diagnostic_probe_retry_iters: int,
+    gradient_rescue_threshold: float | None,
 ) -> list[dict[str, object]]:
     rows = []
     for molecule in molecules:
-        conformers = molecule.rdkit_embed_multiple_confs_mmff(
-            count,
-            random_seed=RANDOM_SEED,
-            max_mmff_iters=max_mmff_iters,
-            retry_candidates=retry_candidates,
-            retry_mmff_iters=retry_max_iters,
-            retry_only_if_none_converged=retry_only_if_none_converged,
-        )
-        finite = [(status, energy) for status, energy, _ in conformers if energy == energy]
-        rows.append(
-            {
-                "generated": len(conformers),
-                "converged": sum(status == 0 for status, _ in finite),
-                "best_energy": min((energy for _, energy in finite), default=None),
-            }
-        )
+        diagnostic_retry_probe = None
+        if collect_diagnostics:
+            conformers = molecule.rdkit_embed_multiple_confs_mmff_diagnostics(
+                count,
+                random_seed=RANDOM_SEED,
+                max_mmff_iters=max_mmff_iters,
+            )
+            finite = [
+                (status, energy)
+                for status, energy, _, _, _ in conformers
+                if energy == energy
+            ]
+            candidate_diagnostics = [
+                {
+                    "status": status,
+                    "energy": energy,
+                    "iterations": iterations,
+                    "gradient_test": gradient_test,
+                }
+                for status, energy, iterations, gradient_test, _ in conformers
+            ]
+            if diagnostic_probe_retry_iters and not any(
+                status == 0 for status, energy, _, _, _ in conformers if energy == energy
+            ):
+                candidates = [
+                    (index, row)
+                    for index, row in enumerate(conformers)
+                    if row[0] != 0 and row[1] == row[1] and row[3] is not None
+                ]
+                if candidates:
+                    index, candidate = min(candidates, key=lambda item: (item[1][1], item[0]))
+                    started = time.perf_counter()
+                    retry_status, retry_energy, _ = molecule.rdkit_mmff_optimize(
+                        candidate[4], max_iters=diagnostic_probe_retry_iters
+                    )
+                    diagnostic_retry_probe = {
+                        "candidate_index": index,
+                        "before_energy": candidate[1],
+                        "before_gradient_test": candidate[3],
+                        "retry_status": retry_status,
+                        "retry_energy": retry_energy,
+                        "retry_seconds": time.perf_counter() - started,
+                    }
+        else:
+            if gradient_rescue_threshold is None:
+                conformers = molecule.rdkit_embed_multiple_confs_mmff(
+                    count,
+                    random_seed=RANDOM_SEED,
+                    max_mmff_iters=max_mmff_iters,
+                    retry_candidates=retry_candidates,
+                    retry_mmff_iters=retry_max_iters,
+                    retry_only_if_none_converged=retry_only_if_none_converged,
+                )
+            else:
+                conformers = molecule.rdkit_embed_multiple_confs_mmff_gradient_rescue(
+                    count,
+                    random_seed=RANDOM_SEED,
+                    max_mmff_iters=max_mmff_iters,
+                    retry_candidates=retry_candidates,
+                    retry_mmff_iters=retry_max_iters,
+                    minimum_gradient_test=gradient_rescue_threshold,
+                )
+            finite = [
+                (status, energy) for status, energy, _ in conformers if energy == energy
+            ]
+            candidate_diagnostics = None
+        row = {
+            "generated": len(conformers),
+            "converged": sum(status == 0 for status, _ in finite),
+            "best_energy": min((energy for _, energy in finite), default=None),
+        }
+        if candidate_diagnostics is not None:
+            row["candidate_diagnostics"] = candidate_diagnostics
+        if diagnostic_retry_probe is not None:
+            row["diagnostic_retry_probe"] = diagnostic_retry_probe
+        rows.append(row)
     return rows
 
 
@@ -162,6 +225,18 @@ def main() -> int:
     parser.add_argument("--retry-candidates", type=int, default=0)
     parser.add_argument("--retry-max-iters", type=int, default=2000)
     parser.add_argument("--retry-only-if-none-converged", action="store_true")
+    parser.add_argument("--gradient-rescue-threshold", type=float)
+    parser.add_argument(
+        "--collect-chematic-diagnostics",
+        action="store_true",
+        help="record per-candidate BFGS iterations and final gradient tests",
+    )
+    parser.add_argument(
+        "--diagnostic-probe-retry-iters",
+        type=int,
+        default=0,
+        help="development-only: retry the lowest-energy candidate when none converged",
+    )
     args = parser.parse_args()
     if (
         args.conformers <= 0
@@ -172,6 +247,17 @@ def main() -> int:
         parser.error(
             "conformers/repeats/max MMFF iterations must be positive and retry candidates non-negative"
         )
+    if args.collect_chematic_diagnostics and args.retry_candidates:
+        parser.error("diagnostic collection currently measures the initial MMFF pass only")
+    if args.diagnostic_probe_retry_iters < 0:
+        parser.error("diagnostic probe retry iterations must be non-negative")
+    if args.diagnostic_probe_retry_iters and not args.collect_chematic_diagnostics:
+        parser.error("diagnostic probe retries require --collect-chematic-diagnostics")
+    if args.gradient_rescue_threshold is not None:
+        if args.gradient_rescue_threshold < 0 or not args.retry_candidates:
+            parser.error("gradient rescue requires a non-negative threshold and retry candidates")
+        if args.collect_chematic_diagnostics:
+            parser.error("gradient rescue and diagnostic collection are separate modes")
 
     if args.manifest is None:
         source_rows = load_rows(args.tiers)
@@ -199,6 +285,9 @@ def main() -> int:
             args.retry_candidates,
             args.retry_max_iters,
             args.retry_only_if_none_converged,
+            args.collect_chematic_diagnostics,
+            args.diagnostic_probe_retry_iters,
+            args.gradient_rescue_threshold,
         ),
         "rdkit": lambda: run_rdkit(
             rdkit_molecules, args.conformers, args.max_mmff_iters
@@ -211,6 +300,9 @@ def main() -> int:
         args.retry_candidates,
         args.retry_max_iters,
         args.retry_only_if_none_converged,
+        args.collect_chematic_diagnostics,
+        0,
+        args.gradient_rescue_threshold,
     )
     run_rdkit(
         rdkit_molecules[:2], min(args.conformers, 2), args.max_mmff_iters
@@ -242,6 +334,8 @@ def main() -> int:
         "adaptive_retry_candidates": args.retry_candidates,
         "adaptive_retry_max_iters": args.retry_max_iters,
         "adaptive_retry_only_if_none_converged": args.retry_only_if_none_converged,
+        "diagnostic_probe_retry_iters": args.diagnostic_probe_retry_iters,
+        "gradient_rescue_threshold": args.gradient_rescue_threshold,
         "chematic_etkdg_oracle": "RDKit 2026.09.1 ETKDGv3",
         "repeats": args.repeats,
         "execution_order": execution_order,
