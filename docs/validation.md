@@ -56,8 +56,14 @@ limited to its recorded artifact, comparator, corpus and operation.
   RDKit 2026.09.1, 237/265 rows are within 1 kcal/mol and 216 are at or below
   RDKit's best, but the 9.896 kcal/mol maximum remains open. These results do
   not establish other corpora, public artifacts, or universal superiority.
+  A second source candidate adds deterministic RDKit 2026.03-compatible
+  multi-conformer ETKDG plus shared, parallel MMFF94. Its 20-candidate lane is
+  within 1 kcal/mol on 243/265 rows; a bounded adaptive retry reaches 256/265
+  but is slower. One-repeat baseline timings are unstable and do not establish
+  a speed win.
   [A6 record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-08-issues-769-739.md) ·
   [full-H ranking record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-12-a6-full-h-mmff-vs-rdkit.md) ·
+  [multi-conformer record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-12-a6-multiconformer-etkdg-mmff.md) ·
   [ETKDG record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-09-cosmolkit-parity-2.md).
 
 Earlier source diagnostics and per-release channel checks remain in the

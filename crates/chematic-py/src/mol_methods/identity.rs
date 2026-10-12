@@ -1,5 +1,49 @@
 use super::*;
 
+use chematic_3d::rdkit_embed::{RdkitEmbedError, RdkitEmbedOptions};
+
+type PyRdkitMmffConformer = (i32, f64, Vec<[f64; 3]>);
+
+#[allow(clippy::too_many_arguments)]
+fn rdkit_embed_options(
+    random_seed: i32,
+    max_iterations: u32,
+    use_exp_torsion_angle_prefs: bool,
+    use_basic_knowledge: bool,
+    et_version: u32,
+    use_small_ring_torsions: bool,
+    use_macrocycle_torsions: bool,
+    use_macrocycle_14_config: bool,
+    enforce_chirality: bool,
+    ignore_smoothing_failures: bool,
+) -> PyResult<RdkitEmbedOptions> {
+    if !(1..=2).contains(&et_version) {
+        return Err(PyValueError::new_err(
+            "Only version 1 and 2 of the experimental torsion-angle preferences (ETversion) supported",
+        ));
+    }
+    Ok(RdkitEmbedOptions {
+        random_seed,
+        max_iterations,
+        use_exp_torsion_angle_prefs,
+        use_basic_knowledge,
+        et_version,
+        use_small_ring_torsions,
+        use_macrocycle_torsions,
+        use_macrocycle14config: use_macrocycle_14_config,
+        enforce_chirality,
+        force_trans_amides: true,
+        ignore_smoothing_failures,
+    })
+}
+
+fn map_rdkit_embed_error(error: RdkitEmbedError) -> PyErr {
+    match error {
+        RdkitEmbedError::Failed => pyo3::exceptions::PyRuntimeError::new_err(error.to_string()),
+        _ => PyValueError::new_err(error.to_string()),
+    }
+}
+
 #[pymethods]
 impl Mol {
     // -----------------------------------------------------------------------
@@ -109,13 +153,8 @@ impl Mol {
         enforce_chirality: bool,
         ignore_smoothing_failures: bool,
     ) -> PyResult<Vec<[f64; 3]>> {
-        use chematic_3d::rdkit_embed::{RdkitEmbedError, RdkitEmbedOptions, rdkit_embed_molecule};
-        if !(1..=2).contains(&et_version) {
-            return Err(PyValueError::new_err(
-                "Only version 1 and 2 of the experimental torsion-angle preferences (ETversion) supported",
-            ));
-        }
-        let opts = RdkitEmbedOptions {
+        use chematic_3d::rdkit_embed::rdkit_embed_molecule;
+        let opts = rdkit_embed_options(
             random_seed,
             max_iterations,
             use_exp_torsion_angle_prefs,
@@ -123,17 +162,124 @@ impl Mol {
             et_version,
             use_small_ring_torsions,
             use_macrocycle_torsions,
-            use_macrocycle14config: use_macrocycle_14_config,
+            use_macrocycle_14_config,
             enforce_chirality,
-            force_trans_amides: true,
             ignore_smoothing_failures,
-        };
+        )?;
         let mol = self.inner.clone();
         let res = py.detach(move || rdkit_embed_molecule(&mol, &opts));
-        res.map_err(|e| match e {
-            RdkitEmbedError::Failed => pyo3::exceptions::PyRuntimeError::new_err(e.to_string()),
-            _ => PyValueError::new_err(e.to_string()),
+        res.map_err(map_rdkit_embed_error)
+    }
+
+    /// RDKit 2026.03.1's ``AllChem.EmbedMultipleConfs`` with ETKDGv3
+    /// defaults. Bounds and torsion preferences are shared across attempts.
+    /// Failed attempts are omitted, as in RDKit's returned conformer-id list.
+    #[pyo3(signature = (num_confs, *, random_seed = 42, max_iterations = 0,
+                        use_exp_torsion_angle_prefs = true, use_basic_knowledge = true,
+                        et_version = 2, use_small_ring_torsions = false,
+                        use_macrocycle_torsions = true, use_macrocycle_14_config = true,
+                        enforce_chirality = true, ignore_smoothing_failures = false))]
+    #[allow(clippy::too_many_arguments)]
+    fn rdkit_embed_multiple_confs(
+        &self,
+        py: Python<'_>,
+        num_confs: usize,
+        random_seed: i32,
+        max_iterations: u32,
+        use_exp_torsion_angle_prefs: bool,
+        use_basic_knowledge: bool,
+        et_version: u32,
+        use_small_ring_torsions: bool,
+        use_macrocycle_torsions: bool,
+        use_macrocycle_14_config: bool,
+        enforce_chirality: bool,
+        ignore_smoothing_failures: bool,
+    ) -> PyResult<Vec<Vec<[f64; 3]>>> {
+        use chematic_3d::rdkit_embed::rdkit_embed_multiple_confs;
+        let opts = rdkit_embed_options(
+            random_seed,
+            max_iterations,
+            use_exp_torsion_angle_prefs,
+            use_basic_knowledge,
+            et_version,
+            use_small_ring_torsions,
+            use_macrocycle_torsions,
+            use_macrocycle_14_config,
+            enforce_chirality,
+            ignore_smoothing_failures,
+        )?;
+        let mol = self.inner.clone();
+        py.detach(move || rdkit_embed_multiple_confs(&mol, num_confs, &opts))
+            .map_err(map_rdkit_embed_error)
+    }
+
+    /// Generate a deterministic ETKDG ensemble and optimize all conformers
+    /// with RDKit-compatible MMFF94. Returns ``(status, energy, coords)`` per
+    /// retained conformer in candidate order.
+    #[pyo3(signature = (num_confs, *, random_seed = 42, max_iterations = 0,
+                        max_mmff_iters = 200, retry_mmff_iters = 0,
+                        retry_candidates = 0,
+                        use_exp_torsion_angle_prefs = true,
+                        use_basic_knowledge = true, et_version = 2,
+                        use_small_ring_torsions = false, use_macrocycle_torsions = true,
+                        use_macrocycle_14_config = true, enforce_chirality = true,
+                        ignore_smoothing_failures = false))]
+    #[allow(clippy::too_many_arguments)]
+    fn rdkit_embed_multiple_confs_mmff(
+        &self,
+        py: Python<'_>,
+        num_confs: usize,
+        random_seed: i32,
+        max_iterations: u32,
+        max_mmff_iters: u32,
+        retry_mmff_iters: u32,
+        retry_candidates: usize,
+        use_exp_torsion_angle_prefs: bool,
+        use_basic_knowledge: bool,
+        et_version: u32,
+        use_small_ring_torsions: bool,
+        use_macrocycle_torsions: bool,
+        use_macrocycle_14_config: bool,
+        enforce_chirality: bool,
+        ignore_smoothing_failures: bool,
+    ) -> PyResult<Vec<PyRdkitMmffConformer>> {
+        use chematic_3d::rdkit_embed::{
+            rdkit_embed_multiple_confs_mmff, rdkit_embed_multiple_confs_mmff_adaptive,
+        };
+        let opts = rdkit_embed_options(
+            random_seed,
+            max_iterations,
+            use_exp_torsion_angle_prefs,
+            use_basic_knowledge,
+            et_version,
+            use_small_ring_torsions,
+            use_macrocycle_torsions,
+            use_macrocycle_14_config,
+            enforce_chirality,
+            ignore_smoothing_failures,
+        )?;
+        let mol = self.inner.clone();
+        py.detach(move || {
+            if retry_mmff_iters == 0 || retry_candidates == 0 {
+                rdkit_embed_multiple_confs_mmff(&mol, num_confs, &opts, max_mmff_iters)
+            } else {
+                rdkit_embed_multiple_confs_mmff_adaptive(
+                    &mol,
+                    num_confs,
+                    &opts,
+                    max_mmff_iters,
+                    retry_mmff_iters,
+                    retry_candidates,
+                )
+            }
         })
+        .map(|conformers| {
+            conformers
+                .into_iter()
+                .map(|conformer| (conformer.status, conformer.energy, conformer.coords))
+                .collect()
+        })
+        .map_err(|error| PyValueError::new_err(error.to_string()))
     }
 
     /// RDKit 2026.03.1's ``rdDistGeom.GetMoleculeBoundsMatrix(mol, ...)``

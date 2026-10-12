@@ -12,6 +12,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added deterministic RDKit 2026.03-compatible multi-conformer ETKDG and
+  combined ETKDG/MMFF94 APIs for Rust and Python. Native builds share
+  topology, torsion, and force-field setup across candidates and optimize
+  candidates in parallel; WASM retains deterministic sequential execution.
+  An opt-in adaptive mode gives a bounded extra MMFF budget only to the
+  lowest-energy non-converged candidates and never retains a higher-energy
+  retry.
 - Added RDKit-compatible implicit-hydrogen coordinate materialization and
   full-atom MMFF94 conformer refinement. Python returns both the original-atom
   and explicit-hydrogen coordinate arrays and can deterministically sample

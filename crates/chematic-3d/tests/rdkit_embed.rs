@@ -1,7 +1,10 @@
 //! `rdkit_embed_molecule` against RDKit 2026.03.1:
 //! `AllChem.EmbedMolecule(Chem.AddHs(Chem.MolFromSmiles(s)), randomSeed=42)`.
 
-use chematic_3d::rdkit_embed::{RdkitEmbedError, RdkitEmbedOptions, rdkit_embed_molecule};
+use chematic_3d::rdkit_embed::{
+    RdkitEmbedError, RdkitEmbedOptions, rdkit_embed_molecule, rdkit_embed_multiple_confs,
+    rdkit_embed_multiple_confs_mmff, rdkit_embed_multiple_confs_mmff_adaptive,
+};
 
 #[allow(clippy::approx_constant, clippy::excessive_precision)]
 const CASES: &[(&str, &[[f64; 3]])] = &[
@@ -278,4 +281,94 @@ fn negative_seed_is_refused_and_fragments_are_embedded() {
     let coords = rdkit_embed_molecule(&salt, &RdkitEmbedOptions::default())
         .unwrap_or_else(|e| panic!("salt: {e}"));
     assert_eq!(coords.len(), salt.atom_count());
+}
+
+#[test]
+fn multiple_conformers_match_rdkit_seed_progression() {
+    let mh = chematic_chem::add_hydrogens(&chematic_smiles::parse("CCO").unwrap());
+    let options = RdkitEmbedOptions::default();
+    let conformers = rdkit_embed_multiple_confs(&mh, 3, &options).unwrap();
+    assert_eq!(conformers.len(), 3);
+    assert_eq!(conformers[0], rdkit_embed_molecule(&mh, &options).unwrap());
+
+    let expected_first_atoms = [
+        [
+            -0.9534551842756134,
+            0.04780421609619042,
+            0.04249937663912092,
+        ],
+        [
+            -0.9342602904861799,
+            0.21483484778456338,
+            0.005977242741500658,
+        ],
+        [
+            -0.9113671688590357,
+            0.20093793306845903,
+            0.026167805381685557,
+        ],
+    ];
+    for (conformer, expected) in conformers.iter().zip(expected_first_atoms) {
+        for coordinate in 0..3 {
+            assert!((conformer[0][coordinate] - expected[coordinate]).abs() <= 5.0e-4);
+        }
+    }
+
+    assert!(
+        rdkit_embed_multiple_confs(&mh, 0, &options)
+            .unwrap()
+            .is_empty()
+    );
+}
+
+#[test]
+fn multiple_conformer_mmff_is_deterministic_and_reuses_exact_field() {
+    let mh = chematic_chem::add_hydrogens(&chematic_smiles::parse("CCO").unwrap());
+    let options = RdkitEmbedOptions::default();
+    let embedded = rdkit_embed_multiple_confs(&mh, 3, &options).unwrap();
+    let optimized = rdkit_embed_multiple_confs_mmff(&mh, 3, &options, 200).unwrap();
+    let repeated = rdkit_embed_multiple_confs_mmff(&mh, 3, &options, 200).unwrap();
+    assert_eq!(optimized.len(), 3);
+    for (left, right) in optimized.iter().zip(&repeated) {
+        assert_eq!(left.coords, right.coords);
+        assert_eq!(left.status, right.status);
+        assert_eq!(left.energy, right.energy);
+        assert!(left.energy.is_finite());
+    }
+
+    let field =
+        chematic_ff::rdkit_mmff::RdkitMmffField::new(&mh, &embedded[0], 100.0, true).unwrap();
+    let mut flat: Vec<f64> = embedded[0].iter().flatten().copied().collect();
+    let (status, energy) = field.optimize(&mut flat, 200);
+    assert_eq!(optimized[0].status, status);
+    assert_eq!(optimized[0].energy, energy);
+    assert_eq!(optimized[0].coords.as_flattened(), flat);
+}
+
+#[test]
+fn adaptive_mmff_retries_only_low_energy_nonconverged_candidates() {
+    let mh = chematic_chem::add_hydrogens(&chematic_smiles::parse("CCCO").unwrap());
+    let options = RdkitEmbedOptions::default();
+    let initial = rdkit_embed_multiple_confs_mmff(&mh, 4, &options, 1).unwrap();
+    let adaptive = rdkit_embed_multiple_confs_mmff_adaptive(&mh, 4, &options, 1, 200, 1).unwrap();
+    let repeated = rdkit_embed_multiple_confs_mmff_adaptive(&mh, 4, &options, 1, 200, 1).unwrap();
+
+    assert_eq!(adaptive.len(), initial.len());
+    assert_eq!(adaptive.len(), repeated.len());
+    assert!(initial.iter().all(|conformer| conformer.status != 0));
+    assert_eq!(adaptive.iter().filter(|c| c.status == 0).count(), 1);
+    assert_eq!(
+        adaptive
+            .iter()
+            .zip(&initial)
+            .filter(|(after, before)| after.coords != before.coords)
+            .count(),
+        1
+    );
+    for ((after, before), again) in adaptive.iter().zip(&initial).zip(&repeated) {
+        assert!(after.energy <= before.energy);
+        assert_eq!(after.coords, again.coords);
+        assert_eq!(after.status, again.status);
+        assert_eq!(after.energy, again.energy);
+    }
 }

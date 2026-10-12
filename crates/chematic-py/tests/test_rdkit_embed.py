@@ -81,6 +81,56 @@ def test_rdkit_embed_matches_rdkit_seed_42(smiles):
         assert g == pytest.approx(e, abs=1e-4)
 
 
+def test_rdkit_embed_multiple_confs_matches_rdkit_seed_progression():
+    mol = chematic.from_smiles("CCO").add_hydrogens()
+    conformers = mol.rdkit_embed_multiple_confs(3, random_seed=42)
+    assert len(conformers) == 3
+    assert conformers[0] == mol.rdkit_embed(random_seed=42)
+    expected_first_atoms = [
+        [-0.9534551842756134, 0.04780421609619042, 0.04249937663912092],
+        [-0.9342602904861799, 0.21483484778456338, 0.005977242741500658],
+        [-0.9113671688590357, 0.20093793306845903, 0.026167805381685557],
+    ]
+    for conformer, expected in zip(conformers, expected_first_atoms):
+        assert conformer[0] == pytest.approx(expected, abs=1e-4)
+    assert mol.rdkit_embed_multiple_confs(0) == []
+
+
+def test_rdkit_embed_multiple_confs_mmff_matches_individual_optimizer():
+    mol = chematic.from_smiles("CCO").add_hydrogens()
+    embedded = mol.rdkit_embed_multiple_confs(3, random_seed=42)
+    optimized = mol.rdkit_embed_multiple_confs_mmff(3, random_seed=42)
+    repeated = mol.rdkit_embed_multiple_confs_mmff(3, random_seed=42)
+    assert optimized == repeated
+    assert len(optimized) == 3
+    status, energy, coords = mol.rdkit_mmff_optimize(embedded[0], max_iters=200)
+    assert optimized[0][0] == status
+    assert optimized[0][1] == energy
+    assert optimized[0][2] == coords
+
+
+def test_rdkit_embed_multiple_confs_mmff_adaptive_retry_is_deterministic():
+    mol = chematic.from_smiles("CCCO").add_hydrogens()
+    initial = mol.rdkit_embed_multiple_confs_mmff(4, max_mmff_iters=1)
+    adaptive = mol.rdkit_embed_multiple_confs_mmff(
+        4,
+        max_mmff_iters=1,
+        retry_mmff_iters=200,
+        retry_candidates=1,
+    )
+    repeated = mol.rdkit_embed_multiple_confs_mmff(
+        4,
+        max_mmff_iters=1,
+        retry_mmff_iters=200,
+        retry_candidates=1,
+    )
+    assert adaptive == repeated
+    assert sum(status == 0 for status, _, _ in initial) == 0
+    assert sum(status == 0 for status, _, _ in adaptive) == 1
+    assert sum(a[2] != b[2] for a, b in zip(adaptive, initial)) == 1
+    assert all(a[1] <= b[1] for a, b in zip(adaptive, initial))
+
+
 def test_rdkit_bounds_matrix_matches_rdkit():
     got = chematic.from_smiles("CCO").add_hydrogens().rdkit_bounds_matrix()
     assert len(got) == len(BOUNDS_CCO)

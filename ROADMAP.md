@@ -24,13 +24,14 @@ and reproducible evidence over feature-count parity.
   demonstrates executed code, not chemical correctness or compatibility.
 - 3D, MMFF94, pKa/ADMET screening, IUPAC naming, broad Markush/polymer
   expansion, and rich CDXML editing remain experimental or bounded.
-- The source candidate has deterministic native parallel conformer generation
-  plus full-hydrogen MMFF94 ranking. On the frozen 265-row A6 corpus, equal-count
-  ten-candidate quality is within 1 kcal/mol of RDKit 2026.09.1 on 237 rows
-  (216 at or below RDKit's best), with a favorable median but a 9.90 kcal/mol
-  maximum residual. A two-repeat same-work timing is 1.17x faster. Independent
-  holdout, 21-block timing, memory, second-host, public-artifact, and outlier
-  closure gates remain open.
+- The source candidate now also has a deterministic RDKit 2026.03-compatible
+  multi-conformer ETKDG/MMFF94 path with shared setup and native parallelism.
+  On the frozen 265-row A6 corpus, its equal-count 20-candidate lane is within
+  1 kcal/mol of RDKit 2026.09.1 on 243 rows; an opt-in bounded retry improves
+  this to 256 rows but is slower. One-repeat timings changed winner between two
+  nearby runs, so no stable speed win is claimed. Independent holdout,
+  21-block timing, memory, second-host, public-artifact, and outlier closure
+  gates remain open.
 
 Exact denominators belong in [validation](docs/validation.md) and dated
 [benchmark records](benchmarks/README.md). Unresolved work is tracked in the
@@ -118,6 +119,12 @@ unsupported chemistry never becomes a guessed successful result.
    acceptance target is zero wrong-confident rows, p90 at or below RDKit under
    equal candidate counts, and a bounded maximum on both A6 and an unused
    holdout; median-only superiority is insufficient.
+7. Port and validate the complete RDKit 2026.09 bounds/torsion behavior before
+   exposing a versioned compatibility profile. Partial 1-3-bound changes must
+   not be published as 2026.09 parity.
+8. Evaluate adaptive minimization as a separate quality tier. It must not
+   become the default until its additional work is matched by a favorable
+   paired speed interval or a predeclared quality target that RDKit misses.
 
 **Exit:** no known wrong-confident result remains in the declared domain;
 unresolved cases are observable and typed. A speed claim additionally requires
