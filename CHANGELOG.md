@@ -12,6 +12,15 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added an RDKit 2026.09.1 ETKDG topology-bounds profile with angle-derived
+  1-3 bounds, merged 1-4 intervals, relevant-ring handling, macrocycle amide
+  behavior, forced amide/ester torsions, and the ordinary-bond
+  covalent-radius fallback. The frozen 265-row A6 source lane matches all
+  768,664 raw and triangle-smoothed bound cells within `1e-12`; this is
+  source-candidate evidence, not a published-package parity claim.
+- Added a 776-row RDKit 2026.09.1 boundary fixture and a reproducible bounds
+  matrix comparator. The existing RDKit 2026.03.1 fixture is retained as
+  historical compatibility evidence.
 - Added RDKit-style canonical conformer orientation across Rust, Python, and
   WASM/Node. `compute_canonical_transform` returns a right-handed homogeneous
   transform and `canonicalize_conformer` returns transformed coordinates,
@@ -67,6 +76,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- Updated the A6 equal-work comparator to use the same configurable MMFF94
+  iteration limit for CheMatic and RDKit. With 20 candidates and 200
+  iterations, the source candidate is within 1 kcal/mol on 258/265 rows;
+  seven basin/minimization-tail rows and formal speed gates remain open.
 - Restored lazy aromatic/ring preparation in the Python SMILES constructor.
   Descriptor and ring results still memoize after first use, but parse-only and
   one-property workflows no longer pay for unrelated perception. In a bounded

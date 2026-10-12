@@ -7,10 +7,15 @@ use chematic_smiles::RdkitMolView;
 #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
 use rayon::prelude::*;
 
-use super::bounds::{BoundsInvariant, collect_bonds_and_angles, init_bounds_mat, set_topol_bounds};
+use super::bounds::{
+    BoundsInvariant, ForcedTorsion, collect_bonds_and_angles, init_bounds_mat, set_topol_bounds,
+    set_topol_bounds_with_forced_torsions,
+};
 use super::dg::{BoundsMatrix, ChiralSet, triangle_smooth_bounds};
 use super::embed::{EmbedArgs, EmbedError, EmbedParams, embed_points};
-use super::etk::{CrystalFfDetails, get_experimental_torsions, minimize_with_exp_torsions};
+use super::etk::{
+    CrystalFfDetails, get_experimental_torsions_with_forced, minimize_with_exp_torsions,
+};
 
 /// The `EmbedParameters` fields this port honours. [`Default`] is what
 /// `AllChem.EmbedMolecule(mol, randomSeed=42)` uses (ETKDGv3 settings).
@@ -206,11 +211,11 @@ fn setup_initial_bounds(
     v: &RdkitMolView,
     labels: &[String],
     o: &RdkitEmbedOptions,
-) -> Result<Option<BoundsMatrix>, RdkitEmbedError> {
+) -> Result<Option<(BoundsMatrix, Vec<ForcedTorsion>)>, RdkitEmbedError> {
     let n = v.num_atoms();
     let mut m = BoundsMatrix::new(n);
     init_bounds_mat(&mut m);
-    set_topol_bounds(
+    let forced_torsions = set_topol_bounds_with_forced_torsions(
         v,
         labels,
         &mut m,
@@ -244,7 +249,7 @@ fn setup_initial_bounds(
             }
         }
     }
-    Ok(Some(m))
+    Ok(Some((m, forced_torsions)))
 }
 
 /// `AllChem.EmbedMolecule(mh, randomSeed=..., ...)` on an explicit-hydrogen
@@ -510,17 +515,18 @@ fn prepare_fragment(
     o: &RdkitEmbedOptions,
 ) -> Result<PreparedFragment, RdkitEmbedError> {
     let etk = o.use_exp_torsion_angle_prefs || o.use_basic_knowledge;
-    let Some(bounds) = setup_initial_bounds(&view, &labels, o)? else {
+    let Some((bounds, forced_torsions)) = setup_initial_bounds(&view, &labels, o)? else {
         return Err(RdkitEmbedError::Failed);
     };
     let details = if etk {
-        let mut d = get_experimental_torsions(
+        let mut d = get_experimental_torsions_with_forced(
             &view,
             o.use_exp_torsion_angle_prefs,
             o.use_small_ring_torsions,
             o.use_macrocycle_torsions,
             o.use_basic_knowledge,
             o.et_version,
+            &forced_torsions,
         );
         d.bonds_angles = collect_bonds_and_angles(&view);
         Some(d)
@@ -608,7 +614,7 @@ fn embed_prepared_fragment(
 }
 
 /// `rdDistGeom.GetMoleculeBoundsMatrix(mh, set15bounds, scaleVDW=False,
-/// doTriangleSmoothing, useMacrocycle14config)` (RDKit 2026.03.1) for an
+/// doTriangleSmoothing, useMacrocycle14config)` (RDKit 2026.09.1) for an
 /// explicit-hydrogen molecule from `add_hydrogens`: the N x N matrix with
 /// upper bounds above the diagonal and lower bounds below it. As in RDKit,
 /// a failed triangle smoothing still returns the (partially smoothed)

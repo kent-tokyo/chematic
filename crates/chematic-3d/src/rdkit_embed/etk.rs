@@ -8,7 +8,7 @@ use std::sync::OnceLock;
 use chematic_smarts::QueryMolecule;
 use chematic_smiles::RdkitMolView;
 
-use super::bounds::BondsAndAngles;
+use super::bounds::{BondsAndAngles, ForcedTorsion};
 use super::dg::BoundsMatrix;
 use super::substruct::{Target, substruct_match};
 use super::torsion_prefs::{
@@ -144,6 +144,39 @@ fn bond_ring_counts(view: &RdkitMolView) -> Vec<usize> {
     counts
 }
 
+/// RDKit 2026.09.1 applies forced cis/trans amide and ester configurations
+/// before matching the regular experimental torsion table.
+fn add_forced_torsions(
+    view: &RdkitMolView,
+    details: &mut CrystalFfDetails,
+    done_bonds: &mut [bool],
+    excluded: &[bool],
+    ring_counts: &[usize],
+    forced_torsions: &[ForcedTorsion],
+) {
+    for forced in forced_torsions {
+        let [aid1, aid2, aid3, aid4] = forced.atoms;
+        let central = view
+            .bond_between(aid2, aid3)
+            .expect("forced torsion central bond");
+        if excluded[central] || ring_counts[central] > 3 {
+            done_bonds[central] = true;
+        }
+        if done_bonds[central] {
+            continue;
+        }
+        done_bonds[central] = true;
+        details.exp_torsion_atoms.push([aid1, aid2, aid3, aid4]);
+        let mut signs = [1; 6];
+        if forced.cis {
+            signs[0] = -1;
+        }
+        let mut force_constants = [0.0; 6];
+        force_constants[0] = 75.0;
+        details.exp_torsion_angles.push((signs, force_constants));
+    }
+}
+
 fn add_experimental_torsions(
     view: &RdkitMolView,
     details: &mut CrystalFfDetails,
@@ -247,6 +280,26 @@ pub fn get_experimental_torsions(
     use_basic_knowledge: bool,
     version: u32,
 ) -> CrystalFfDetails {
+    get_experimental_torsions_with_forced(
+        v,
+        use_exp_torsions,
+        use_small_ring_torsions,
+        use_macrocycle_torsions,
+        use_basic_knowledge,
+        version,
+        &[],
+    )
+}
+
+pub(crate) fn get_experimental_torsions_with_forced(
+    v: &RdkitMolView,
+    use_exp_torsions: bool,
+    use_small_ring_torsions: bool,
+    use_macrocycle_torsions: bool,
+    use_basic_knowledge: bool,
+    version: u32,
+    forced_torsions: &[ForcedTorsion],
+) -> CrystalFfDetails {
     let mut d = CrystalFfDetails {
         bounds_mat_force_scaling: 1.0,
         ..Default::default()
@@ -254,6 +307,16 @@ pub fn get_experimental_torsions(
     let excluded = excluded_fused_ring_bonds(v);
     let ring_counts = bond_ring_counts(v);
     let mut done_bonds = vec![false; v.num_bonds()];
+    if use_basic_knowledge {
+        add_forced_torsions(
+            v,
+            &mut d,
+            &mut done_bonds,
+            &excluded,
+            &ring_counts,
+            forced_torsions,
+        );
+    }
     if use_exp_torsions {
         add_experimental_torsions(
             v,

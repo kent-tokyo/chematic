@@ -13,6 +13,7 @@ limited to its recorded artifact, comparator, corpus and operation.
 
 | Gate | Result and limit | Record |
 |---|---|---|
+| A6 RDKit 2026.09 bounds source candidate | A wheel built at `7e6a5240` reproduces RDKit 2026.09.1 raw and triangle-smoothed topology bounds within `1e-12` on all 768,664 cells across the frozen 265-row A6 corpus. Equal-count 20-conformer quality is within 1 kcal/mol on 258 rows; seven basin/minimization-tail rows remain. One loaded-host timing is not a speed claim. | [Bounds and conformer record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-12-a6-rdkit-2026-09-bounds-followup.md) |
 | v1.1.1 descriptor follow-up | The published CPython 3.12 wheels reproduce the pinned chemistry counts on Windows amd64, macOS arm64 and macOS x86-64; the Linux x86-64 sdist lane and all xsmarts-autoconf lanes also pass. The public artifact retains the unusual-SMILES residuals (4,069/4,072 HBD and 4,018/4,071 QED). Current main restores the three representation-dependent rows (4,072 HBD and 4,021 QED) and removes eager Python parse preparation; those fixes are source evidence until a later release. | [hosted artifact gate](https://github.com/kent-tokyo/chematic/actions/runs/38184048499) · [candidate speed record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-12-v111-public-vs-lazy-fix.md) · [expected public-wheel counts](https://github.com/kent-tokyo/chematic/blob/main/validation/published-wheel-chemistry-gates-expected-v1.1.1.json) |
 | Indigo workflow source packet | Against Indigo 1.46.0 on one macOS arm64 host, CheMatic matches 15/15 versus 13/15 single-result reaction rows, 39/39 versus 38/39 largest-fragment rows, and ties at 16/16 bounded labelled R-group rows. On the common-correct subsets, all 21 timing blocks favor CheMatic, with median ratios of 10.66x, 1.27x, and 2.60x. This is source-built bounded evidence, not full standardization, reaction-enumeration, or R-group parity. | [Workflow packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-12-indigo-workflows-source.md) |
 | Current-main RDKit packet | A wheel built at `44338e16` matches RDKit 2026.09.1 on 10,000/10,000 TPSA, Labute ASA, ring-count and chiral-Morgan rows. Prepared TPSA and Morgan and all four parse-inclusive pipelines have favorable paired intervals on one macOS arm64 host. Prepared Labute ASA and first-use ring count remain deficits. The supplementary 63-operation matrix has 38 full-agreement lanes and 32 favorable intervals. This is source-built evidence, not the published v1.1.0 artifact. | [Current-source packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-11-v1.1.0-main-vs-rdkit-2026.09.1.md) |
@@ -50,8 +51,12 @@ limited to its recorded artifact, comparator, corpus and operation.
 - **3D/MMFF94:** Experimental. The published v1.0.42 macOS arm64 A6 lane and the
   current Linux/macOS/Windows CI gates pass all 265 geometry, stereo, and clash
   checks after stereo-safe re-embedding. Source MMFF typing and same-coordinate
-  per-term energies match the pinned RDKit lanes; seeded ETKDG source results
-  match on the recorded Linux success rows. A newer source candidate adds
+  per-term energies match the pinned RDKit lanes. The current source candidate
+  reproduces RDKit 2026.09.1 raw and triangle-smoothed topology bounds within
+  `1e-12` on all 768,664 frozen A6 cells. Equal-count 20-conformer quality is
+  within 1 kcal/mol on 258/265 rows and at or below RDKit on 168 rows. Seven
+  basin/minimization-tail rows remain; formal timing, holdout, second-host and
+  public-artifact gates are open. The earlier source candidate added
   full-hydrogen MMFF ranking: in equal-count ten-candidate comparison with
   RDKit 2026.09.1, 237/265 rows are within 1 kcal/mol and 216 are at or below
   RDKit's best, but the 9.896 kcal/mol maximum remains open. These results do
@@ -64,6 +69,7 @@ limited to its recorded artifact, comparator, corpus and operation.
   [A6 record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-08-issues-769-739.md) ·
   [full-H ranking record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-12-a6-full-h-mmff-vs-rdkit.md) ·
   [multi-conformer record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-12-a6-multiconformer-etkdg-mmff.md) ·
+  [2026.09 bounds follow-up](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-12-a6-rdkit-2026-09-bounds-followup.md) ·
   [ETKDG record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-09-cosmolkit-parity-2.md).
 
 Earlier source diagnostics and per-release channel checks remain in the

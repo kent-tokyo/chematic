@@ -1,7 +1,7 @@
-//! `DGeomHelpers::setTopolBounds` (RDKit 2026.03 `BoundsMatrixBuilder.cpp`)
+//! `DGeomHelpers::setTopolBounds` (RDKit 2026.09.1 `BoundsMatrixBuilder.cpp`)
 //! on an [`RdkitMolView`], plus `collectBondsAndAngles`.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::f64::consts::PI as M_PI;
 
 use chematic_smiles::RdkitMolView;
@@ -10,7 +10,10 @@ use super::dg::BoundsMatrix;
 use super::stdsort::std_sort;
 
 const DIST12_DELTA: f64 = 0.01;
-const DIST13_TOL: f64 = 0.04;
+// RDKit 2026.09.1 derives 1-3 distance tolerances from an angular range
+// instead of applying a fixed distance-space delta. This keeps the bounds
+// physically consistent when either adjacent bond is itself flexible.
+const ANGLE_DELTA: f64 = 0.035;
 const GEN_DIST_TOL: f64 = 0.06;
 const DIST15_TOL: f64 = 0.08;
 const VDW_SCALE_15: f64 = 0.7;
@@ -47,6 +50,52 @@ struct Path14 {
     bid2: usize,
     bid3: usize,
     ty: Path14Type,
+    forced: bool,
+}
+
+/// A 1-4 amide/ester configuration that RDKit 2026.09.1 also feeds into
+/// ETKDG's basic-knowledge torsion stage.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct ForcedTorsion {
+    pub(crate) atoms: [usize; 4],
+    pub(crate) cis: bool,
+}
+
+#[derive(Clone, Copy)]
+struct Collected14Bounds {
+    lower: f64,
+    upper: f64,
+    aid1: usize,
+    aid4: usize,
+}
+
+fn merge_14_bounds(mut bounds: Vec<Collected14Bounds>) -> Collected14Bounds {
+    debug_assert!(!bounds.is_empty());
+    bounds.sort_by(|left, right| left.lower.total_cmp(&right.lower));
+    let mut current = bounds[0];
+    let mut component_upper = current.upper;
+    let mut result_lower = None;
+    for bound in bounds.iter().copied().skip(1) {
+        if bound.lower <= current.upper {
+            current.lower = bound.lower;
+            current.upper = current.upper.min(bound.upper);
+        } else {
+            result_lower.get_or_insert(current.lower);
+            current.lower = bound.lower;
+            current.upper = if bound.lower <= component_upper {
+                component_upper.min(bound.upper)
+            } else {
+                bound.upper
+            };
+        }
+        component_upper = component_upper.max(bound.upper);
+    }
+    Collected14Bounds {
+        lower: result_lower.unwrap_or(current.lower),
+        upper: current.upper,
+        aid1: bounds[0].aid1,
+        aid4: bounds[0].aid4,
+    }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -163,20 +212,23 @@ fn check_and_set_bounds(
 }
 
 fn compute13_dist(d1: f64, d2: f64, angle: f64) -> f64 {
-    let res = d1 * d1 + d2 * d2 - 2.0 * d1 * d2 * angle.cos();
+    // Match the contraction produced for RDGeom::compute13Dist by the
+    // compilers used for the pinned RDKit wheels. Keeping the subtraction as
+    // one fused operation minimizes last-bit drift between the two kernels.
+    let res = (-2.0 * d1 * d2).mul_add(angle.cos(), d1 * d1 + d2 * d2);
     res.sqrt()
 }
 
 fn compute14_dist_cis(d1: f64, d2: f64, d3: f64, ang12: f64, ang23: f64) -> f64 {
-    let dx = d2 - d3 * ang23.cos() - d1 * ang12.cos();
-    let dy = d3 * ang23.sin() - d1 * ang12.sin();
-    (dx * dx + dy * dy).sqrt()
+    let dx = (-d1).mul_add(ang12.cos(), (-d3).mul_add(ang23.cos(), d2));
+    let dy = (-d1).mul_add(ang12.sin(), d3 * ang23.sin());
+    dx.mul_add(dx, dy * dy).sqrt()
 }
 
 fn compute14_dist_trans(d1: f64, d2: f64, d3: f64, ang12: f64, ang23: f64) -> f64 {
-    let dx = d2 - d3 * ang23.cos() - d1 * ang12.cos();
-    let dy = d3 * ang23.sin() + d1 * ang12.sin();
-    (dx * dx + dy * dy).sqrt()
+    let dx = (-d1).mul_add(ang12.cos(), (-d3).mul_add(ang23.cos(), d2));
+    let dy = d1.mul_add(ang12.sin(), d3 * ang23.sin());
+    dx.mul_add(dx, dy * dy).sqrt()
 }
 
 /// `RDGeom::compute14Dist3D` (rotation about the x axis by `tor`).
@@ -189,7 +241,7 @@ fn compute14_dist_3d(d1: f64, d2: f64, d3: f64, ang12: f64, ang23: f64, tor: f64
     let y = 0.0 * p4[0] + c * p4[1] + (-s) * p4[2] + 0.0;
     let z = 0.0 * p4[0] + s * p4[1] + c * p4[2] + 0.0;
     let d = [x - p1[0], y - p1[1], z - p1[2]];
-    (d[0] * d[0] + d[1] * d[1] + d[2] * d[2]).sqrt()
+    d[0].mul_add(d[0], d[1].mul_add(d[1], d[2] * d[2])).sqrt()
 }
 
 fn pid(a: usize, b: usize, na: usize) -> usize {
@@ -222,17 +274,38 @@ fn set12_bounds(
             None
         };
         if let Some(bl) = rest {
-            let extra = if squish[beg] || squish[end] { 0.2 } else { 0.0 };
+            // RDKit first marks every endpoint of a conjugated bond to a
+            // larger heteroatom in a five-membered ring, then widens only a
+            // bond whose *two* endpoints are marked. Using `||` here widens
+            // the next carbon-carbon bond as well and lets that error spread
+            // through triangle smoothing (notably for thiophene).
+            let extra = if squish[beg] && squish[end] { 0.2 } else { 0.0 };
             acc.bond_lengths[bi] = bl;
             m.set_upper(beg, end, bl + extra + DIST12_DELTA);
             m.set_lower(beg, end, bl - extra - DIST12_DELTA);
         } else {
-            let vw1 = mol.atoms[beg].rvdw;
-            let vw2 = mol.atoms[end].rvdw;
-            let bl = (vw1 + vw2) / 2.0;
+            // RDKit 2026.09 changed its UFF fallback for ordinary covalent
+            // bonds from a broad van-der-Waals interval to covalent radii
+            // with Pauling's bond-order correction. Keep the broad interval
+            // only for bond types outside RDKit's ordinary single..aromatic
+            // range.
+            let unusual_bond_type = b.bond_type < 1 || b.bond_type > 12;
+            let (bl, upper_scale, lower_scale) = if unusual_bond_type {
+                let vw1 = mol.atoms[beg].rvdw;
+                let vw2 = mol.atoms[end].rvdw;
+                ((vw1 + vw2) / 2.0, 1.5, 0.75)
+            } else {
+                let rcov1 =
+                    chematic_smiles::rdkit::rdkit_covalent_radius(mol.atoms[beg].atomic_num);
+                let rcov2 =
+                    chematic_smiles::rdkit::rdkit_covalent_radius(mol.atoms[end].atomic_num);
+                let radii_sum = rcov1 + rcov2;
+                let bl = (-0.1332 * radii_sum).mul_add(order.ln(), radii_sum);
+                (bl, 1.1, 0.9)
+            };
             acc.bond_lengths[bi] = bl;
-            m.set_upper(beg, end, 1.5 * bl);
-            m.set_lower(beg, end, 0.5 * bl);
+            m.set_upper(beg, end, upper_scale * bl);
+            m.set_lower(beg, end, lower_scale * bl);
         }
         acc.visited12[pid(beg, end, na)] = true;
     }
@@ -244,30 +317,38 @@ fn is_larger_sp2_atom(mol: &RdkitMolView, a: usize) -> bool {
         && mol.num_atom_rings(a) > 0
 }
 
+fn scaled_angle_tolerance(mol: &RdkitMolView, atoms: [usize; 3]) -> f64 {
+    atoms.into_iter().fold(ANGLE_DELTA, |tolerance, atom| {
+        if is_larger_sp2_atom(mol, atom) {
+            tolerance * 2.0
+        } else {
+            tolerance
+        }
+    })
+}
+
+fn angle_range(angle: f64, tolerance: f64) -> (f64, f64) {
+    if angle + tolerance >= M_PI {
+        (M_PI - tolerance, M_PI)
+    } else if angle - tolerance <= 0.0 {
+        (0.0, tolerance)
+    } else {
+        (angle - tolerance, angle + tolerance)
+    }
+}
+
 fn set13_helper(
     aid1: usize,
     aid: usize,
     aid3: usize,
     angle: f64,
-    acc: &ComputedData,
     m: &mut BoundsMatrix,
     mol: &RdkitMolView,
 ) -> Result<(), BoundsInvariant> {
-    let bid1 = mol.bond_between(aid1, aid).expect("bond");
-    let bid2 = mol.bond_between(aid, aid3).expect("bond");
-    let mut dl = compute13_dist(acc.bond_lengths[bid1], acc.bond_lengths[bid2], angle);
-    let mut dist_tol = DIST13_TOL;
-    if is_larger_sp2_atom(mol, aid1) {
-        dist_tol *= 2.0;
-    }
-    if is_larger_sp2_atom(mol, aid) {
-        dist_tol *= 2.0;
-    }
-    if is_larger_sp2_atom(mol, aid3) {
-        dist_tol *= 2.0;
-    }
-    let du = dl + dist_tol;
-    dl -= dist_tol;
+    let tolerance = scaled_angle_tolerance(mol, [aid1, aid, aid3]);
+    let (angle_lower, angle_upper) = angle_range(angle, tolerance);
+    let du = compute13_dist(m.upper(aid1, aid), m.upper(aid, aid3), angle_upper);
+    let dl = compute13_dist(m.lower(aid1, aid), m.lower(aid, aid3), angle_lower);
     check_and_set_bounds(aid1, aid3, dl, du, m)
 }
 
@@ -314,7 +395,7 @@ fn set_ring_13_bounds(
             let angle = ring_angle(mol.atoms[aid2].hybridization, ring.len());
             let pair = pid(aid1, aid3, mol.num_atoms());
             if !acc.visited_bound(pair, DistType::D12) {
-                set13_helper(aid1, aid2, aid3, angle, acc, m, mol)?;
+                set13_helper(aid1, aid2, aid3, angle, m, mol)?;
                 acc.visited13[pair] = true;
             }
             acc.bond_angles.set(bid1, bid2, angle);
@@ -398,7 +479,7 @@ fn set_atom_13_bounds(
             let pair = pid(aid1, aid3, mol.num_atoms());
             if !acc.visited_bound(pair, DistType::D12) {
                 if had_ring_angle || degree <= 4 {
-                    set13_helper(aid1, center, aid3, angle, acc, m, mol)?;
+                    set13_helper(aid1, center, aid3, angle, m, mol)?;
                 } else {
                     let dmax = acc.bond_lengths[bid1] + acc.bond_lengths[bid2];
                     check_and_set_bounds(aid1, aid3, 1.0, dmax * 1.2, m)?;
@@ -493,734 +574,55 @@ fn path_atoms(
     )
 }
 
-fn path_geom(
+fn path_angles(
     acc: &ComputedData,
     b1: usize,
     b2: usize,
     b3: usize,
-) -> Result<(f64, f64, f64, f64, f64), BoundsInvariant> {
+) -> Result<(f64, f64), BoundsInvariant> {
     let ba12 = acc.bond_angles.get(b1, b2);
     let ba23 = acc.bond_angles.get(b2, b3);
     if !(ba12 > 0.0) || !(ba23 > 0.0) {
         return Err(BoundsInvariant("bad bond angle"));
     }
-    Ok((
-        acc.bond_lengths[b1],
-        acc.bond_lengths[b2],
-        acc.bond_lengths[b3],
-        ba12,
-        ba23,
-    ))
+    Ok((ba12, ba23))
 }
 
-fn set_in_ring14(
-    cx: &Ctx,
-    b1: usize,
-    b2: usize,
-    b3: usize,
-    acc: &mut ComputedData,
-    m: &mut BoundsMatrix,
-    ring_size: usize,
-) -> Result<(), BoundsInvariant> {
-    let mol = cx.mol;
-    let (aid1, atm2, atm3, aid4) = path_atoms(cx, acc, b1, b2, b3);
-    let ahyb2 = mol.atoms[atm2].hybridization;
-    let ahyb3 = mol.atoms[atm3].hybridization;
-    let p = pid(aid1, aid4, cx.na);
-    if acc.visited_bound(p, DistType::D13) {
-        return Ok(());
-    }
-    if cx.d(aid1, aid4) < 2.9 {
-        return Ok(());
-    }
-    let (bl1, bl2, bl3, ba12, ba23) = path_geom(acc, b1, b2, b3)?;
-    let stype = atom_stereo(mol, b2, aid1, aid4);
-    let mut prefer_cis = false;
-    let mut prefer_trans = false;
-    if ring_size <= 8 && ahyb2 == HYB_SP2 && ahyb3 == HYB_SP2 && stype != STEREO_E {
-        if mol.num_bond_rings(b2) > 1 {
-            if mol.num_bond_rings(b1) == 1 && mol.num_bond_rings(b3) == 1 {
-                for br in &mol.bond_rings {
-                    if br.contains(&b1) {
-                        if br.contains(&b3) {
-                            prefer_cis = true;
-                        }
-                        break;
-                    }
-                }
-            }
-        } else {
-            prefer_cis = true;
-        }
-    } else if stype == STEREO_Z {
-        prefer_cis = true;
-    } else if stype == STEREO_E {
-        prefer_trans = true;
-    }
-    let ty = if prefer_cis {
-        ComputedData::add_path(&mut acc.cis_paths, cx.nb, b1, b2, b3);
-        Path14Type::Cis
-    } else if prefer_trans {
-        ComputedData::add_path(&mut acc.trans_paths, cx.nb, b1, b2, b3);
-        Path14Type::Trans
-    } else {
-        Path14Type::Other
-    };
-    acc.paths14.push(Path14 {
-        bid1: b1,
-        bid2: b2,
-        bid3: b3,
-        ty,
-    });
-    let (dl, du);
-    if prefer_cis {
-        dl = compute14_dist_cis(bl1, bl2, bl3, ba12, ba23) - GEN_DIST_TOL;
-        du = dl + 2.0 * GEN_DIST_TOL;
-    } else if prefer_trans {
-        dl = compute14_dist_trans(bl1, bl2, bl3, ba12, ba23) - GEN_DIST_TOL;
-        du = dl + 2.0 * GEN_DIST_TOL;
-    } else {
-        let mut l = compute14_dist_cis(bl1, bl2, bl3, ba12, ba23);
-        let mut u = compute14_dist_trans(bl1, bl2, bl3, ba12, ba23);
-        if u < l {
-            std::mem::swap(&mut u, &mut l);
-        }
-        if (u - l).abs() < DIST12_DELTA {
-            l -= GEN_DIST_TOL;
-            u += GEN_DIST_TOL;
-        }
-        dl = l;
-        du = u;
-    }
-    acc.visited14[p] = true;
-    check_and_set_bounds(aid1, aid4, dl, du, m)
-}
-
-fn set_two_in_same_ring14(
-    cx: &Ctx,
-    b1: usize,
-    b2: usize,
-    b3: usize,
-    acc: &mut ComputedData,
-    m: &mut BoundsMatrix,
-    macrocycle: bool,
-) -> Result<(), BoundsInvariant> {
-    let mol = cx.mol;
-    let (aid1, atm2, atm3, aid4) = path_atoms(cx, acc, b1, b2, b3);
-    let p = pid(aid1, aid4, cx.na);
-    if acc.visited_bound(p, DistType::D13) {
-        return Ok(());
-    }
-    if cx.d(aid1, aid4) < 2.9 {
-        return Ok(());
-    }
-    if mol.bond_between(aid1, atm3).is_some() || mol.bond_between(aid4, atm2).is_some() {
-        return Ok(());
-    }
-    let (bl1, bl2, bl3, ba12, ba23) = path_geom(acc, b1, b2, b3)?;
-    let (mut dl, mut du);
-    let ty;
-    let amide = |bb1: usize, bb3: usize, a1: usize, a2: usize, a3: usize, a4: usize| {
-        let n = |a: usize| mol.atoms[a].atomic_num;
-        n(a1) != 1
-            && n(a3) == 6
-            && mol.bonds[bb3].bond_type == DOUBLE
-            && (n(a4) == 8 || n(a4) == 7)
-            && mol.bonds[bb1].bond_type == SINGLE
-            && (n(a2) == 8 || n(a2) == 7)
-    };
-    if macrocycle {
-        if amide(b1, b3, aid1, atm2, atm3, aid4) || amide(b3, b1, aid4, atm3, atm2, aid1) {
-            dl = compute14_dist_cis(bl1, bl2, bl3, ba12, ba23);
-            ComputedData::add_path(&mut acc.cis_paths, cx.nb, b1, b2, b3);
-            ty = Path14Type::Cis;
-            du = dl;
-            dl -= GEN_DIST_TOL;
-            du += GEN_DIST_TOL;
-        } else {
-            dl = compute14_dist_cis(bl1, bl2, bl3, ba12, ba23);
-            du = compute14_dist_trans(bl1, bl2, bl3, ba12, ba23);
-            if du < dl {
-                std::mem::swap(&mut du, &mut dl);
-            }
-            if (du - dl).abs() < DIST12_DELTA {
-                dl -= GEN_DIST_TOL;
-                du += GEN_DIST_TOL;
-            }
-            ty = Path14Type::Other;
-        }
-    } else if mol.atoms[atm2].hybridization == HYB_SP2 && mol.atoms[atm3].hybridization == HYB_SP2 {
-        dl = compute14_dist_trans(bl1, bl2, bl3, ba12, ba23);
-        du = dl;
-        dl -= GEN_DIST_TOL;
-        du += GEN_DIST_TOL;
-        ty = Path14Type::Trans;
-        ComputedData::add_path(&mut acc.trans_paths, cx.nb, b1, b2, b3);
-    } else {
-        dl = compute14_dist_cis(bl1, bl2, bl3, ba12, ba23);
-        du = compute14_dist_trans(bl1, bl2, bl3, ba12, ba23);
-        if du < dl {
-            std::mem::swap(&mut du, &mut dl);
-        }
-        if (du - dl).abs() < DIST12_DELTA {
-            dl -= GEN_DIST_TOL;
-            du += GEN_DIST_TOL;
-        }
-        ty = Path14Type::Other;
-    }
-    check_and_set_bounds(aid1, aid4, dl, du, m)?;
-    acc.paths14.push(Path14 {
-        bid1: b1,
-        bid2: b2,
-        bid3: b3,
-        ty,
-    });
-    acc.visited14[p] = true;
-    Ok(())
-}
-
-fn check_h2_nx3h1_ox2(mol: &RdkitMolView, a: usize) -> bool {
-    let at = &mol.atoms[a];
-    (at.atomic_num == 6 && at.total_num_hs_with_neighbors == 2)
-        || (at.atomic_num == 8 && at.total_num_hs_with_neighbors == 0)
-        || (at.atomic_num == 7 && mol.degree(a) == 3 && at.total_num_hs_with_neighbors == 1)
-}
-
-#[allow(dead_code)]
-fn check_nh_ch_ch_nh(mol: &RdkitMolView, a1: usize, a2: usize, a3: usize, a4: usize) -> bool {
-    mol.atoms[a1].atomic_num != 1
-        && mol.atoms[a4].atomic_num != 1
-        && check_h2_nx3h1_ox2(mol, a2)
-        && check_h2_nx3h1_ox2(mol, a3)
-}
-
-fn check_amide_ester14(
-    mol: &RdkitMolView,
-    bnd1: usize,
-    bnd3: usize,
-    a2: usize,
-    a3: usize,
-    a4: usize,
-) -> bool {
-    let n = |a: usize| mol.atoms[a].atomic_num;
-    n(a3) == 6
-        && mol.bonds[bnd3].bond_type == DOUBLE
-        && (n(a4) == 8 || n(a4) == 7)
-        && mol.bonds[bnd1].bond_type == SINGLE
-        && (n(a2) == 8 || (n(a2) == 7 && mol.atoms[a2].total_num_hs_with_neighbors == 1))
-}
-
-fn check_macrocycle_all_in_same_ring_amide_ester14(
-    mol: &RdkitMolView,
-    a1: usize,
-    a2: usize,
-    a3: usize,
-    a4: usize,
-) -> bool {
-    let n = |a: usize| mol.atoms[a].atomic_num;
-    if n(a3) != 6 {
-        return false;
-    }
-    if (n(a2) == 7 || n(a2) == 8) && mol.degree(a2) == 3 && mol.degree(a3) == 3 {
-        for nbr in mol.neighbors(a2) {
-            if nbr != a1 && nbr != a3 {
-                let b = mol.bond_between(a2, nbr).expect("bond");
-                if (n(nbr) != 6 && n(nbr) != 1) || mol.bonds[b].bond_type != SINGLE {
-                    return false;
-                }
-                break;
-            }
-        }
-        for nbr in mol.neighbors(a3) {
-            if nbr != a2 && nbr != a4 {
-                let b = mol.bond_between(a3, nbr).expect("bond");
-                if n(nbr) != 8 || mol.bonds[b].bond_type != DOUBLE {
-                    return false;
-                }
-                break;
-            }
-        }
-        return true;
-    }
-    false
-}
-
-fn is_carbonyl(mol: &RdkitMolView, a: usize) -> bool {
-    if mol.atoms[a].atomic_num == 6 && mol.degree(a) > 2 {
-        for nbr in mol.neighbors(a) {
-            let n = mol.atoms[nbr].atomic_num;
-            if (n == 8 || n == 7)
-                && mol.bonds[mol.bond_between(a, nbr).expect("bond")].bond_type == DOUBLE
-            {
-                return true;
-            }
-        }
-    }
-    false
-}
-
-fn check_amide_ester15(mol: &RdkitMolView, bnd1: usize, bnd3: usize, a2: usize, a3: usize) -> bool {
-    let n2 = mol.atoms[a2].atomic_num;
-    (n2 == 8 || (n2 == 7 && mol.atoms[a2].total_num_hs_with_neighbors == 1))
-        && mol.bonds[bnd1].bond_type == SINGLE
-        && mol.atoms[a3].atomic_num == 6
-        && mol.bonds[bnd3].bond_type == SINGLE
-        && is_carbonyl(mol, a3)
-}
-
-struct Chain14Decision {
-    lower: f64,
-    upper: f64,
-    ty: Path14Type,
-    set_bound: bool,
-}
-
-fn add_typed_path(acc: &mut ComputedData, nb: u64, bonds: [usize; 3], ty: Path14Type) {
-    match ty {
-        Path14Type::Cis => {
-            ComputedData::add_path(&mut acc.cis_paths, nb, bonds[0], bonds[1], bonds[2])
-        }
-        Path14Type::Trans => {
-            ComputedData::add_path(&mut acc.trans_paths, nb, bonds[0], bonds[1], bonds[2])
-        }
-        Path14Type::Other => {}
-    }
-}
-
-fn pinned_chain14(
-    distance: f64,
-    ty: Path14Type,
-    acc: &mut ComputedData,
-    nb: u64,
-    bonds: [usize; 3],
-) -> Chain14Decision {
-    add_typed_path(acc, nb, bonds, ty);
-    Chain14Decision {
-        lower: distance - GEN_DIST_TOL,
-        upper: distance + GEN_DIST_TOL,
-        ty,
-        set_bound: true,
-    }
-}
-
-fn flexible_chain14(geometry: [f64; 5]) -> Chain14Decision {
-    let [bl1, bl2, bl3, ba12, ba23] = geometry;
-    Chain14Decision {
-        lower: compute14_dist_cis(bl1, bl2, bl3, ba12, ba23),
-        upper: compute14_dist_trans(bl1, bl2, bl3, ba12, ba23),
-        ty: Path14Type::Other,
-        set_bound: true,
-    }
-}
-
-#[allow(clippy::too_many_arguments)]
-fn double_bond_chain14(
-    cx: &Ctx,
-    atoms: [usize; 4],
-    bonds: [usize; 3],
-    geometry: [f64; 5],
-    acc: &mut ComputedData,
-) -> Chain14Decision {
-    let [bl1, bl2, bl3, ba12, ba23] = geometry;
-    if cx.mol.bonds[bonds[0]].bond_type == DOUBLE || cx.mol.bonds[bonds[2]].bond_type == DOUBLE {
-        let distance = compute14_dist_cis(bl1, bl2, bl3, ba12, ba23);
-        return pinned_chain14(distance, Path14Type::Cis, acc, cx.nb, bonds);
-    }
-    if cx.mol.bonds[bonds[1]].stereo <= STEREO_ANY {
-        return flexible_chain14(geometry);
-    }
-    let ty = if atom_stereo(cx.mol, bonds[1], atoms[0], atoms[3]) == STEREO_Z {
-        Path14Type::Cis
-    } else {
-        Path14Type::Trans
-    };
-    let distance = match ty {
-        Path14Type::Cis => compute14_dist_cis(bl1, bl2, bl3, ba12, ba23),
-        Path14Type::Trans => compute14_dist_trans(bl1, bl2, bl3, ba12, ba23),
-        Path14Type::Other => unreachable!(),
-    };
-    pinned_chain14(distance, ty, acc, cx.nb, bonds)
-}
-
-fn secondary_amide_h(mol: &RdkitMolView, hydrogen: usize, nitrogen: usize) -> bool {
-    mol.atoms[hydrogen].atomic_num == 1
-        && mol.atoms[nitrogen].atomic_num == 7
-        && mol.degree(nitrogen) == 3
-        && mol.atoms[nitrogen].total_num_hs_with_neighbors == 1
-}
-
-fn pin_chain14_type(
-    geometry: [f64; 5],
-    ty: Path14Type,
-    acc: &mut ComputedData,
-    nb: u64,
-    bonds: [usize; 3],
-) -> Chain14Decision {
-    let [bl1, bl2, bl3, ba12, ba23] = geometry;
-    let distance = match ty {
-        Path14Type::Cis => compute14_dist_cis(bl1, bl2, bl3, ba12, ba23),
-        Path14Type::Trans => compute14_dist_trans(bl1, bl2, bl3, ba12, ba23),
-        Path14Type::Other => compute14_dist_3d(bl1, bl2, bl3, ba12, ba23, M_PI / 2.0),
-    };
-    pinned_chain14(distance, ty, acc, nb, bonds)
-}
-
-fn amide14_chain_decision(
-    cx: &Ctx,
-    atoms: [usize; 4],
-    bonds: [usize; 3],
-    geometry: [f64; 5],
-    acc: &mut ComputedData,
-    force_trans_amides: bool,
-) -> Option<Chain14Decision> {
-    let [aid1, atm2, atm3, aid4] = atoms;
-    if !(check_amide_ester14(cx.mol, bonds[0], bonds[2], atm2, atm3, aid4)
-        || check_amide_ester14(cx.mol, bonds[2], bonds[0], atm3, atm2, aid1))
-    {
-        return None;
-    }
-    if !force_trans_amides {
-        return Some(flexible_chain14(geometry));
-    }
-    let ty = if secondary_amide_h(cx.mol, aid1, atm2) || secondary_amide_h(cx.mol, aid4, atm3) {
-        Path14Type::Trans
-    } else {
-        Path14Type::Cis
-    };
-    Some(pin_chain14_type(geometry, ty, acc, cx.nb, bonds))
-}
-
-#[allow(clippy::too_many_arguments)]
-fn amide15_chain_decision(
-    cx: &Ctx,
-    atoms: [usize; 4],
-    bonds: [usize; 3],
-    geometry: [f64; 5],
-    acc: &mut ComputedData,
-    force_trans_amides: bool,
-    macrocycle: bool,
-) -> Option<Chain14Decision> {
-    let [aid1, atm2, atm3, aid4] = atoms;
-    if !(check_amide_ester15(cx.mol, bonds[0], bonds[2], atm2, atm3)
-        || check_amide_ester15(cx.mol, bonds[2], bonds[0], atm3, atm2))
-    {
-        return None;
-    }
-    if macrocycle
-        && cx.mol.atoms[atm2].atomic_num == 7
-        && cx.mol.degree(atm2) == 3
-        && cx.mol.atoms[aid1].atomic_num == 1
-        && cx.mol.atoms[atm2].total_num_hs_with_neighbors == 1
-    {
-        return Some(Chain14Decision {
-            lower: 0.0,
-            upper: 0.0,
-            ty: Path14Type::Other,
-            set_bound: false,
-        });
-    }
-    if !macrocycle && !force_trans_amides {
-        return Some(flexible_chain14(geometry));
-    }
-    let ty = if !macrocycle
-        && (secondary_amide_h(cx.mol, aid1, atm2) || secondary_amide_h(cx.mol, aid4, atm3))
-    {
-        Path14Type::Cis
-    } else {
-        Path14Type::Trans
-    };
-    Some(pin_chain14_type(geometry, ty, acc, cx.nb, bonds))
-}
-
-#[allow(clippy::too_many_arguments)]
-fn single_bond_chain14(
-    cx: &Ctx,
-    atoms: [usize; 4],
-    bonds: [usize; 3],
-    geometry: [f64; 5],
-    acc: &mut ComputedData,
-    force_trans_amides: bool,
-    macrocycle: bool,
-) -> Chain14Decision {
-    let [aid1, atm2, atm3, aid4] = atoms;
-    let [bl1, bl2, bl3, ba12, ba23] = geometry;
-    let atomic_num = |atom: usize| cx.mol.atoms[atom].atomic_num;
-    if atomic_num(atm2) == 16
-        && atomic_num(atm3) == 16
-        && cx.mol.degree(atm2) == 2
-        && cx.mol.degree(atm3) == 2
-    {
-        let distance = compute14_dist_3d(bl1, bl2, bl3, ba12, ba23, M_PI / 2.0);
-        return pinned_chain14(distance, Path14Type::Other, acc, cx.nb, bonds);
-    }
-    if macrocycle
-        && (check_macrocycle_all_in_same_ring_amide_ester14(cx.mol, aid1, atm2, atm3, aid4)
-            || check_macrocycle_all_in_same_ring_amide_ester14(cx.mol, aid4, atm3, atm2, aid1))
-    {
-        let distance = compute14_dist_trans(bl1, bl2, bl3, ba12, ba23) + 0.1;
-        return pinned_chain14(distance, Path14Type::Trans, acc, cx.nb, bonds);
-    }
-    if !macrocycle
-        && let Some(decision) =
-            amide14_chain_decision(cx, atoms, bonds, geometry, acc, force_trans_amides)
-    {
-        return decision;
-    }
-    if let Some(decision) = amide15_chain_decision(
-        cx,
-        atoms,
-        bonds,
-        geometry,
-        acc,
-        force_trans_amides,
-        macrocycle,
-    ) {
-        return decision;
-    }
-    flexible_chain14(geometry)
-}
-
-#[allow(unused_assignments)]
-/// `_setChain14Bounds` (`macrocycle == false`) and
-/// `_setMacrocycleAllInSameRing14Bounds` (`macrocycle == true`).
-fn set_chain14(
-    cx: &Ctx,
-    b1: usize,
-    b2: usize,
-    b3: usize,
-    acc: &mut ComputedData,
-    m: &mut BoundsMatrix,
-    force_trans_amides: bool,
-    macrocycle: bool,
-) -> Result<(), BoundsInvariant> {
-    let mol = cx.mol;
-    let (aid1, atm2, atm3, aid4) = path_atoms(cx, acc, b1, b2, b3);
-    let p = pid(aid1, aid4, cx.na);
-    if acc.visited_bound(p, DistType::D13) {
-        return Ok(());
-    }
-    let (bl1, bl2, bl3, ba12, ba23) = path_geom(acc, b1, b2, b3)?;
-    let geometry = [bl1, bl2, bl3, ba12, ba23];
-    let bonds = [b1, b2, b3];
-    let mut decision = match mol.bonds[b2].bond_type {
-        DOUBLE => double_bond_chain14(cx, [aid1, atm2, atm3, aid4], bonds, geometry, acc),
-        SINGLE => single_bond_chain14(
-            cx,
-            [aid1, atm2, atm3, aid4],
-            bonds,
-            geometry,
-            acc,
-            force_trans_amides,
-            macrocycle,
-        ),
-        _ => flexible_chain14(geometry),
-    };
-    if decision.set_bound {
-        let (dl, du) = (&mut decision.lower, &mut decision.upper);
-        if (*du - *dl).abs() < DIST12_DELTA {
-            *dl -= GEN_DIST_TOL;
-            *du += GEN_DIST_TOL;
-        }
-        check_and_set_bounds(aid1, aid4, *dl, *du, m)?;
-        acc.paths14.push(Path14 {
-            bid1: b1,
-            bid2: b2,
-            bid3: b3,
-            ty: decision.ty,
-        });
-        acc.visited14[p] = true;
-    }
-    Ok(())
-}
-
-/// `_record14Path`.
-fn record14_path(cx: &Ctx, b1: usize, b2: usize, b3: usize, acc: &mut ComputedData) {
-    let atm2 = acc.bond_adj.get(b1, b2) as usize;
-    let atm3 = acc.bond_adj.get(b2, b3) as usize;
-    let ty = if cx.mol.atoms[atm2].hybridization == HYB_SP2
-        && cx.mol.atoms[atm3].hybridization == HYB_SP2
-    {
-        ComputedData::add_path(&mut acc.cis_paths, cx.nb, b1, b2, b3);
-        Path14Type::Cis
-    } else {
-        Path14Type::Other
-    };
-    acc.paths14.push(Path14 {
-        bid1: b1,
-        bid2: b2,
-        bid3: b3,
-        ty,
-    });
-}
-
-#[allow(clippy::too_many_arguments)]
-fn set_ring_14_bounds(
-    cx: &Ctx,
-    ring: &[usize],
-    acc: &mut ComputedData,
-    m: &mut BoundsMatrix,
-    macro14: bool,
-    force_trans_amides: bool,
-    macrocycle_bonds: &mut HashSet<usize>,
-    ring_bond_pairs: &mut HashSet<u64>,
-    done_paths: &mut HashSet<u64>,
-) -> Result<(), BoundsInvariant> {
-    if ring.len() < 3 {
-        return Ok(());
-    }
-    let mut bid1 = ring[ring.len() - 1];
-    for position in 0..ring.len() {
-        let bid2 = ring[position];
-        let bid3 = ring[(position + 1) % ring.len()];
-        let (b1, b2, b3) = (bid1 as u64, bid2 as u64, bid3 as u64);
-        ring_bond_pairs.extend([b1 * cx.nb + b2, b2 * cx.nb + b1]);
-        done_paths.extend([
-            b1 * cx.nb * cx.nb + b2 * cx.nb + b3,
-            b3 * cx.nb * cx.nb + b2 * cx.nb + b1,
-        ]);
-        if ring.len() > 5 {
-            if macro14 && ring.len() >= MIN_MACROCYCLE_RING_SIZE {
-                set_chain14(cx, bid1, bid2, bid3, acc, m, force_trans_amides, true)?;
-                macrocycle_bonds.insert(bid2);
-            } else {
-                set_in_ring14(cx, bid1, bid2, bid3, acc, m, ring.len())?;
-            }
-        } else {
-            record14_path(cx, bid1, bid2, bid3, acc);
-        }
-        bid1 = bid2;
-    }
-    Ok(())
-}
-
-#[allow(clippy::too_many_arguments)]
-fn set_remaining_14_path(
-    cx: &Ctx,
-    bid1: usize,
-    bid2: usize,
-    bid3: usize,
-    acc: &mut ComputedData,
-    m: &mut BoundsMatrix,
-    macro14: bool,
-    force_trans_amides: bool,
-    macrocycle_bonds: &HashSet<usize>,
-    ring_bond_pairs: &HashSet<u64>,
-) -> Result<(), BoundsInvariant> {
-    let (b1, b2, b3) = (bid1 as u64, bid2 as u64, bid3 as u64);
-    let pairs = [
-        b1 * cx.nb + b2,
-        b2 * cx.nb + b1,
-        b2 * cx.nb + b3,
-        b3 * cx.nb + b2,
-    ];
-    if pairs.iter().any(|pair| ring_bond_pairs.contains(pair)) {
-        set_two_in_same_ring14(
-            cx,
-            bid1,
-            bid2,
-            bid3,
-            acc,
-            m,
-            macro14 && macrocycle_bonds.contains(&bid2),
-        )
-    } else if cx.mol.num_bond_rings(bid1) > 0 && cx.mol.num_bond_rings(bid2) > 0
-        || cx.mol.num_bond_rings(bid2) > 0
-    {
-        set_in_ring14(cx, bid1, bid2, bid3, acc, m, 0)
-    } else {
-        set_chain14(cx, bid1, bid2, bid3, acc, m, force_trans_amides, false)
-    }
-}
-
-fn set14_bounds(
-    cx: &Ctx,
-    acc: &mut ComputedData,
-    m: &mut BoundsMatrix,
-    macro14: bool,
-    force_trans_amides: bool,
-) -> Result<(), BoundsInvariant> {
-    let mol = cx.mol;
-    let nb = cx.nb;
-    let mut bid_is_macrocycle: HashSet<usize> = HashSet::new();
-    let mut ring_bond_pairs: HashSet<u64> = HashSet::new();
-    let mut done_paths: HashSet<u64> = HashSet::new();
-    for bring in &mol.bond_rings {
-        set_ring_14_bounds(
-            cx,
-            bring,
-            acc,
-            m,
-            macro14,
-            force_trans_amides,
-            &mut bid_is_macrocycle,
-            &mut ring_bond_pairs,
-            &mut done_paths,
-        )?;
-    }
-    for bid2 in 0..mol.num_bonds() {
-        let aid2 = mol.bonds[bid2].begin;
-        let aid3 = mol.bonds[bid2].end;
-        for &bid1 in &mol.atom_bonds[aid2] {
-            if bid1 == bid2 {
-                continue;
-            }
-            for &bid3 in &mol.atom_bonds[aid3] {
-                if bid3 == bid2 {
-                    continue;
-                }
-                let (b1, b2, b3) = (bid1 as u64, bid2 as u64, bid3 as u64);
-                let id1 = b1 * nb * nb + b2 * nb + b3;
-                let id2 = b3 * nb * nb + b2 * nb + b1;
-                if done_paths.contains(&id1) || done_paths.contains(&id2) {
-                    continue;
-                }
-                set_remaining_14_path(
-                    cx,
-                    bid1,
-                    bid2,
-                    bid3,
-                    acc,
-                    m,
-                    macro14,
-                    force_trans_amides,
-                    &bid_is_macrocycle,
-                    &ring_bond_pairs,
-                )?;
-            }
-        }
-    }
-    Ok(())
-}
-
+mod bounds_14;
+use bounds_14::set14_bounds;
 fn c15_cis_cis(d1: f64, d2: f64, d3: f64, d4: f64, a12: f64, a23: f64, a34: f64) -> f64 {
-    let dx14 = d2 - d3 * a23.cos() - d1 * a12.cos();
-    let dy14 = d3 * a23.sin() - d1 * a12.sin();
-    let d14 = (dx14 * dx14 + dy14 * dy14).sqrt();
-    let cval = ((d3 - d2 * a23.cos() + d1 * (a12 + a23).cos()) / d14).clamp(-1.0, 1.0);
+    let dx14 = (-d1).mul_add(a12.cos(), (-d3).mul_add(a23.cos(), d2));
+    let dy14 = (-d1).mul_add(a12.sin(), d3 * a23.sin());
+    let d14 = dx14.mul_add(dx14, dy14 * dy14).sqrt();
+    let numerator = d1.mul_add((a12 + a23).cos(), (-d2).mul_add(a23.cos(), d3));
+    let cval = (numerator / d14).clamp(-1.0, 1.0);
     compute13_dist(d14, d4, a34 - cval.acos())
 }
 
 fn c15_cis_trans(d1: f64, d2: f64, d3: f64, d4: f64, a12: f64, a23: f64, a34: f64) -> f64 {
-    let dx14 = d2 - d3 * a23.cos() - d1 * a12.cos();
-    let dy14 = d3 * a23.sin() - d1 * a12.sin();
-    let d14 = (dx14 * dx14 + dy14 * dy14).sqrt();
-    let cval = ((d3 - d2 * a23.cos() + d1 * (a12 + a23).cos()) / d14).clamp(-1.0, 1.0);
+    let dx14 = (-d1).mul_add(a12.cos(), (-d3).mul_add(a23.cos(), d2));
+    let dy14 = (-d1).mul_add(a12.sin(), d3 * a23.sin());
+    let d14 = dx14.mul_add(dx14, dy14 * dy14).sqrt();
+    let numerator = d1.mul_add((a12 + a23).cos(), (-d2).mul_add(a23.cos(), d3));
+    let cval = (numerator / d14).clamp(-1.0, 1.0);
     compute13_dist(d14, d4, a34 + cval.acos())
 }
 
 fn c15_trans_trans(d1: f64, d2: f64, d3: f64, d4: f64, a12: f64, a23: f64, a34: f64) -> f64 {
-    let dx14 = d2 - d3 * a23.cos() - d1 * a12.cos();
-    let dy14 = d3 * a23.sin() + d1 * a12.sin();
-    let d14 = (dx14 * dx14 + dy14 * dy14).sqrt();
-    let cval = ((d3 - d2 * a23.cos() + d1 * (a12 - a23).cos()) / d14).clamp(-1.0, 1.0);
+    let dx14 = (-d1).mul_add(a12.cos(), (-d3).mul_add(a23.cos(), d2));
+    let dy14 = d1.mul_add(a12.sin(), d3 * a23.sin());
+    let d14 = dx14.mul_add(dx14, dy14 * dy14).sqrt();
+    let numerator = d1.mul_add((a12 - a23).cos(), (-d2).mul_add(a23.cos(), d3));
+    let cval = (numerator / d14).clamp(-1.0, 1.0);
     compute13_dist(d14, d4, a34 + cval.acos())
 }
 
 fn c15_trans_cis(d1: f64, d2: f64, d3: f64, d4: f64, a12: f64, a23: f64, a34: f64) -> f64 {
-    let dx14 = d2 - d3 * a23.cos() - d1 * a12.cos();
-    let dy14 = d3 * a23.sin() + d1 * a12.sin();
-    let d14 = (dx14 * dx14 + dy14 * dy14).sqrt();
-    let cval = ((d3 - d2 * a23.cos() + d1 * (a12 - a23).cos()) / d14).clamp(-1.0, 1.0);
+    let dx14 = (-d1).mul_add(a12.cos(), (-d3).mul_add(a23.cos(), d2));
+    let dy14 = d1.mul_add(a12.sin(), d3 * a23.sin());
+    let d14 = dx14.mul_add(dx14, dy14 * dy14).sqrt();
+    let numerator = d1.mul_add((a12 - a23).cos(), (-d2).mul_add(a23.cos(), d3));
+    let cval = (numerator / d14).clamp(-1.0, 1.0);
     compute13_dist(d14, d4, a34 - cval.acos())
 }
 
@@ -1427,14 +829,14 @@ pub fn collect_bonds_and_angles(mol: &RdkitMolView) -> BondsAndAngles {
 
 /// `DGeomHelpers::setTopolBounds(mol, mmat, set15bounds, scaleVDW=false,
 /// useMacrocycle14config, forceTransAmides)` on an initialized matrix.
-pub fn set_topol_bounds(
+pub(crate) fn set_topol_bounds_with_forced_torsions(
     mol: &RdkitMolView,
     uff_labels: &[String],
     m: &mut BoundsMatrix,
     set15: bool,
     use_macrocycle14config: bool,
     force_trans_amides: bool,
-) -> Result<(), BoundsInvariant> {
+) -> Result<Vec<ForcedTorsion>, BoundsInvariant> {
     let na = mol.num_atoms();
     let nb = mol.num_bonds();
     let mut acc = ComputedData::new(na, nb);
@@ -1460,5 +862,183 @@ pub fn set_topol_bounds(
         }
     }
     set_lower_bound_vdw(mol, m, &dmat);
-    Ok(())
+    Ok(acc
+        .paths14
+        .iter()
+        .filter_map(|path| {
+            if !path.forced {
+                return None;
+            }
+            let (aid1, aid2, aid3, aid4) = path_atoms(&cx, &acc, path.bid1, path.bid2, path.bid3);
+            Some(ForcedTorsion {
+                atoms: [aid1, aid2, aid3, aid4],
+                cis: path.ty == Path14Type::Cis,
+            })
+        })
+        .collect())
+}
+
+/// Build RDKit-compatible topology bounds while preserving the historical
+/// public return type. The ETKDG embedding pipeline uses the internal variant
+/// above to retain RDKit 2026.09.1's forced amide/ester torsion metadata.
+pub fn set_topol_bounds(
+    mol: &RdkitMolView,
+    uff_labels: &[String],
+    m: &mut BoundsMatrix,
+    set15: bool,
+    use_macrocycle14config: bool,
+    force_trans_amides: bool,
+) -> Result<(), BoundsInvariant> {
+    set_topol_bounds_with_forced_torsions(
+        mol,
+        uff_labels,
+        m,
+        set15,
+        use_macrocycle14config,
+        force_trans_amides,
+    )
+    .map(|_| ())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn propane_one_three_bounds_match_rdkit_2026_09_1() {
+        let molecule =
+            chematic_chem::add_hydrogens(&chematic_smiles::parse("CCC").expect("valid propane"));
+        let view = chematic_smiles::rdkit_mol_view(&molecule).expect("RDKit view");
+        let labels = chematic_ff::rdkit_uff::rdkit_uff_atom_labels(&molecule);
+        let mut bounds = BoundsMatrix::new(view.num_atoms());
+        init_bounds_mat(&mut bounds);
+        set_topol_bounds(&view, &labels, &mut bounds, true, true, true).expect("bounds build");
+
+        assert!((bounds.lower(0, 2) - 2.425_702_290_291).abs() < 1.0e-12);
+        assert!((bounds.upper(0, 2) - 2.519_525_675_977).abs() < 1.0e-12);
+    }
+
+    #[test]
+    fn butane_one_four_bounds_match_rdkit_2026_09_1() {
+        let molecule =
+            chematic_chem::add_hydrogens(&chematic_smiles::parse("CCCC").expect("valid butane"));
+        let view = chematic_smiles::rdkit_mol_view(&molecule).expect("RDKit view");
+        let labels = chematic_ff::rdkit_uff::rdkit_uff_atom_labels(&molecule);
+        let mut bounds = BoundsMatrix::new(view.num_atoms());
+        init_bounds_mat(&mut bounds);
+        set_topol_bounds(&view, &labels, &mut bounds, true, true, true).expect("bounds build");
+
+        assert!((bounds.lower(0, 3) - 2.408_255_053_938_461).abs() < 1.0e-12);
+        assert!((bounds.upper(0, 3) - 3.875_383_240_895_435_4).abs() < 1.0e-12);
+    }
+
+    #[test]
+    fn thiophene_squish_does_not_widen_adjacent_carbon_bonds() {
+        let molecule = chematic_chem::add_hydrogens(
+            &chematic_smiles::parse("c1ccsc1").expect("valid thiophene"),
+        );
+        let view = chematic_smiles::rdkit_mol_view(&molecule).expect("RDKit view");
+        let labels = chematic_ff::rdkit_uff::rdkit_uff_atom_labels(&molecule);
+        let mut bounds = BoundsMatrix::new(view.num_atoms());
+        init_bounds_mat(&mut bounds);
+        set_topol_bounds(&view, &labels, &mut bounds, true, true, true).expect("bounds build");
+
+        // RDKit 2026.09.1 GetMoleculeBoundsMatrix(ETKDGv3 parameters).
+        assert!((bounds.lower(0, 4) - 1.369_256_405_400_789).abs() < 1.0e-12);
+        assert!((bounds.upper(0, 4) - 1.389_256_405_400_789).abs() < 1.0e-12);
+        assert!((bounds.lower(0, 2) - 2.186_996_595_462_591_4).abs() < 1.0e-12);
+        assert!((bounds.upper(0, 2) - 2.276_098_883_787_998).abs() < 1.0e-12);
+    }
+
+    #[test]
+    fn cubane_uses_the_rdkit_2026_09_relevant_ring_family() {
+        let molecule = chematic_chem::add_hydrogens(
+            &chematic_smiles::parse("C1C2C3C1C4C2C3C4").expect("valid cubane"),
+        );
+        let view = chematic_smiles::rdkit_mol_view(&molecule).expect("RDKit view");
+
+        assert_eq!(view.atom_rings.len(), 7);
+        assert_eq!(view.atom_rings[0], vec![0, 3, 2, 1]);
+        assert_eq!(view.atom_rings[6], vec![3, 4, 7, 6, 2]);
+    }
+
+    #[test]
+    fn macrolactam_exocyclic_oxygen_bounds_match_rdkit_2026_09_1() {
+        let molecule = chematic_chem::add_hydrogens(
+            &chematic_smiles::parse("O=C1CCCCCCCCCCN1").expect("valid macrolactam"),
+        );
+        let view = chematic_smiles::rdkit_mol_view(&molecule).expect("RDKit view");
+        let labels = chematic_ff::rdkit_uff::rdkit_uff_atom_labels(&molecule);
+        let mut bounds = BoundsMatrix::new(view.num_atoms());
+        init_bounds_mat(&mut bounds);
+        set_topol_bounds(&view, &labels, &mut bounds, true, true, true).expect("bounds build");
+
+        assert!((bounds.upper(0, 11) - 3.692_529_513_413).abs() < 1.0e-12);
+        assert!((bounds.lower(0, 10) - 2.275).abs() < 1.0e-12);
+        assert_eq!(bounds.upper(0, 10), MAX_UPPER);
+    }
+
+    #[test]
+    fn acetamide_exports_forced_cn_torsions_for_etkdg_basic_knowledge() {
+        let molecule = chematic_chem::add_hydrogens(
+            &chematic_smiles::parse("CC(=O)NC").expect("valid acetamide"),
+        );
+        let view = chematic_smiles::rdkit_mol_view(&molecule).expect("RDKit view");
+        let labels = chematic_ff::rdkit_uff::rdkit_uff_atom_labels(&molecule);
+        let mut bounds = BoundsMatrix::new(view.num_atoms());
+        init_bounds_mat(&mut bounds);
+        let forced =
+            set_topol_bounds_with_forced_torsions(&view, &labels, &mut bounds, true, true, true)
+                .expect("bounds build");
+
+        assert!(forced.iter().any(|torsion| {
+            let [_, center1, center2, _] = torsion.atoms;
+            !torsion.cis
+                && [
+                    view.atoms[center1].atomic_num,
+                    view.atoms[center2].atomic_num,
+                ]
+                .into_iter()
+                .collect::<HashSet<_>>()
+                    == HashSet::from([6, 7])
+        }));
+    }
+
+    #[test]
+    fn angle_range_stays_inside_zero_to_pi() {
+        assert_eq!(angle_range(0.01, 0.035), (0.0, 0.035));
+        assert_eq!(angle_range(M_PI - 0.01, 0.035), (M_PI - 0.035, M_PI));
+    }
+
+    fn collected(lower: f64, upper: f64) -> Collected14Bounds {
+        Collected14Bounds {
+            lower,
+            upper,
+            aid1: 2,
+            aid4: 7,
+        }
+    }
+
+    #[test]
+    fn overlapping_one_four_bounds_are_intersected() {
+        let merged = merge_14_bounds(vec![collected(1.0, 4.0), collected(2.0, 3.0)]);
+        assert_eq!((merged.lower, merged.upper), (2.0, 3.0));
+        assert_eq!((merged.aid1, merged.aid4), (2, 7));
+    }
+
+    #[test]
+    fn disjoint_one_four_bounds_are_spanned() {
+        let merged = merge_14_bounds(vec![collected(1.0, 2.0), collected(3.0, 4.0)]);
+        assert_eq!((merged.lower, merged.upper), (1.0, 4.0));
+    }
+
+    #[test]
+    fn chained_one_four_bounds_keep_maximal_overlap_components() {
+        let merged = merge_14_bounds(vec![
+            collected(1.0, 5.0),
+            collected(2.0, 3.0),
+            collected(4.0, 6.0),
+        ]);
+        assert_eq!((merged.lower, merged.upper), (2.0, 5.0));
+    }
 }

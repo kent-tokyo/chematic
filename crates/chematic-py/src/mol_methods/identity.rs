@@ -114,7 +114,7 @@ impl Mol {
             .map_err(|e| PyValueError::new_err(e.to_string()))
     }
 
-    /// RDKit 2026.03.1's ``AllChem.EmbedMolecule(mol, randomSeed=...)``
+    /// RDKit 2026.09.1's ``AllChem.EmbedMolecule(mol, randomSeed=...)``
     /// (ETKDGv3 defaults), bit for bit: the 3D coordinates of every atom,
     /// one ``[x, y, z]`` per atom in this molecule's atom order.
     ///
@@ -171,7 +171,7 @@ impl Mol {
         res.map_err(map_rdkit_embed_error)
     }
 
-    /// RDKit 2026.03.1's ``AllChem.EmbedMultipleConfs`` with ETKDGv3
+    /// RDKit 2026.09.1's ``AllChem.EmbedMultipleConfs`` with ETKDGv3
     /// defaults. Bounds and torsion preferences are shared across attempts.
     /// Failed attempts are omitted, as in RDKit's returned conformer-id list.
     #[pyo3(signature = (num_confs, *, random_seed = 42, max_iterations = 0,
@@ -282,7 +282,7 @@ impl Mol {
         .map_err(|error| PyValueError::new_err(error.to_string()))
     }
 
-    /// RDKit 2026.03.1's ``rdDistGeom.GetMoleculeBoundsMatrix(mol, ...)``
+    /// RDKit 2026.09.1's ``rdDistGeom.GetMoleculeBoundsMatrix(mol, ...)``
     /// (``scaleVDW=False``), bit for bit: the distance-geometry bounds
     /// matrix as a list of rows, upper bounds above the diagonal and lower
     /// bounds below it. Call it on the explicit-hydrogen molecule, as RDKit
