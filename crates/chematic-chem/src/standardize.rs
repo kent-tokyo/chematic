@@ -15,6 +15,9 @@ use chematic_core::{
 use crate::{hash::mol_hash, hydrogen::remove_hydrogens, tautomer::canonical_tautomer};
 use chematic_smarts::{MatchConfig, parse_smarts};
 
+mod groups;
+pub use groups::normalize_groups;
+
 /// Salt removal catalog: common salt patterns (counterions and solvates).
 ///
 /// Each pattern is a (name, SMARTS) tuple for organic and inorganic salts.
@@ -790,208 +793,6 @@ fn extract_fragment(mol: &Molecule, component: &[AtomIdx]) -> Molecule {
         result.remove_atom(AtomIdx(idx));
     }
     result
-}
-
-/// Normalize chemical groups (nitro groups, etc.).
-///
-/// Transforms:
-/// - `[N+](=O)[O-]` → `N(=O)=O` (nitro normalization: N charge 0, O- → double bond)
-///
-/// Returns a new molecule with normalized groups.
-pub fn normalize_groups(mol: &Molecule) -> Molecule {
-    let mut builder = MoleculeBuilder::new();
-    let mut remap: HashMap<AtomIdx, AtomIdx> = HashMap::new();
-    let mut nitro_atoms = std::collections::HashSet::new();
-    let mut oxide_atoms = std::collections::HashSet::new();
-    let mut azide_atoms = std::collections::HashSet::new();
-    let mut sulfoxide_atoms = std::collections::HashSet::new();
-
-    // First pass: identify functional groups via per-group detectors.
-    for (idx, atom) in mol.atoms() {
-        if atom.element.atomic_number() == 7 && atom.charge == 1 {
-            detect_nitro(mol, idx, atom, &mut nitro_atoms, &mut oxide_atoms);
-            detect_azide(mol, idx, &mut azide_atoms);
-        }
-        if atom.element.atomic_number() == 16 {
-            detect_sulfoxide(mol, idx, &mut sulfoxide_atoms);
-        }
-    }
-
-    // Second pass: copy atoms with normalized charges
-    for (idx, atom) in mol.atoms() {
-        let mut new_atom = atom.clone();
-
-        if nitro_atoms.contains(&idx) {
-            // Neutralize the N and O in nitro group
-            if atom.element.atomic_number() == 7 || atom.element.atomic_number() == 8 {
-                new_atom.charge = 0;
-            }
-        }
-
-        if azide_atoms.contains(&idx) {
-            // Neutralize all N in azide group [N-][N+]#N -> N=N=N
-            if atom.element.atomic_number() == 7 {
-                new_atom.charge = 0;
-            }
-        }
-
-        // Sulfoxide: keep as is (S=O is already correct form)
-
-        let new_idx = builder.add_atom(new_atom);
-        remap.insert(idx, new_idx);
-    }
-
-    // Third pass: copy bonds, normalizing functional groups
-    for i in 0..mol.bond_count() {
-        let bond = mol.bond(chematic_core::BondIdx(i as u32));
-        let mut new_order = bond.order;
-
-        // Nitro groups: convert single N-O (where O is negative) to double
-        if nitro_atoms.contains(&bond.atom1) && nitro_atoms.contains(&bond.atom2) {
-            let a1_is_n = mol.atom(bond.atom1).element.atomic_number() == 7;
-            let a2_is_o = mol.atom(bond.atom2).element.atomic_number() == 8;
-            let a1_is_o = mol.atom(bond.atom1).element.atomic_number() == 8;
-            let a2_is_n = mol.atom(bond.atom2).element.atomic_number() == 7;
-
-            if (a1_is_n
-                && a2_is_o
-                && bond.order == chematic_core::BondOrder::Single
-                && mol.atom(bond.atom2).charge == -1)
-                || (a1_is_o
-                    && a2_is_n
-                    && bond.order == chematic_core::BondOrder::Single
-                    && mol.atom(bond.atom1).charge == -1)
-            {
-                new_order = chematic_core::BondOrder::Double;
-            }
-        }
-
-        // AZIDE normalization: [N-][N+]#N -> N=N=N (convert single to double)
-        if azide_atoms.contains(&bond.atom1) && azide_atoms.contains(&bond.atom2) {
-            let a1_is_n = mol.atom(bond.atom1).element.atomic_number() == 7;
-            let a2_is_n = mol.atom(bond.atom2).element.atomic_number() == 7;
-
-            if a1_is_n && a2_is_n && bond.order == chematic_core::BondOrder::Single {
-                // Convert single bonds in azide to double
-                new_order = chematic_core::BondOrder::Double;
-            }
-        }
-
-        // N-oxide: keep as single bond (already correct after atom charge normalization)
-        if oxide_atoms.contains(&bond.atom1) || oxide_atoms.contains(&bond.atom2) {
-            // No bond order change needed — already single
-        }
-
-        // Sulfoxide: keep as is (S=O is already correct form)
-
-        if let (Some(&new_a1), Some(&new_a2)) = (remap.get(&bond.atom1), remap.get(&bond.atom2)) {
-            let _ = builder.add_bond(new_a1, new_a2, new_order);
-        }
-    }
-
-    // Every atom above is copied 1:1 in original index order (never
-    // filtered), so `remap` is the identity and bond indices are assigned in
-    // the same relative order too -- `copy_stereo_from`/
-    // `copy_bond_directions_from`'s verbatim-clone semantics are exactly
-    // valid here. Without this, any stereocenter/declared-E-Z-bond
-    // surviving nitro/azide/sulfoxide normalization silently lost its
-    // `stereo_neighbor_order`/`bond_directions` entry -- issue #399's root
-    // cause, the same defect class #392 fixed in `remove_hydrogens`.
-    builder.copy_stereo_from(mol);
-    builder.copy_bond_directions_from(mol);
-    builder.copy_stereo_groups_from(mol);
-    builder.build()
-}
-
-// ---------------------------------------------------------------------------
-// Functional group detectors for normalize_groups
-// ---------------------------------------------------------------------------
-
-/// Mark nitro [N+](=O)[O-] and aromatic N-oxide atoms.
-fn detect_nitro(
-    mol: &Molecule,
-    idx: AtomIdx,
-    atom: &chematic_core::Atom,
-    nitro_atoms: &mut std::collections::HashSet<AtomIdx>,
-    oxide_atoms: &mut std::collections::HashSet<AtomIdx>,
-) {
-    let o_nbrs: Vec<_> = mol
-        .neighbors(idx)
-        .filter(|(n, _)| mol.atom(*n).element.atomic_number() == 8)
-        .collect();
-
-    if o_nbrs.len() == 2 {
-        let mut has_double_o = false;
-        let mut has_single_neg_o = false;
-        for (o_idx, bid) in &o_nbrs {
-            let o = mol.atom(*o_idx);
-            let b = mol.bond(*bid);
-            if b.order == chematic_core::BondOrder::Double && o.charge == 0 {
-                has_double_o = true;
-            }
-            if b.order == chematic_core::BondOrder::Single && o.charge == -1 {
-                has_single_neg_o = true;
-                nitro_atoms.insert(*o_idx);
-            }
-        }
-        if has_double_o && has_single_neg_o {
-            nitro_atoms.insert(idx);
-        }
-    } else if let Some((o_idx, bid)) = o_nbrs.first() {
-        let o = mol.atom(*o_idx);
-        let b = mol.bond(*bid);
-        if atom.aromatic && b.order == chematic_core::BondOrder::Single && o.charge == -1 {
-            nitro_atoms.insert(idx);
-            oxide_atoms.insert(*o_idx);
-        }
-    }
-}
-
-/// Mark azide [N-][N+]#N atoms.
-fn detect_azide(
-    mol: &Molecule,
-    idx: AtomIdx,
-    azide_atoms: &mut std::collections::HashSet<AtomIdx>,
-) {
-    let n_nbrs: Vec<_> = mol
-        .neighbors(idx)
-        .filter(|(n, _)| mol.atom(*n).element.atomic_number() == 7)
-        .collect();
-
-    for (n_idx, bid) in &n_nbrs {
-        let n = mol.atom(*n_idx);
-        let b = mol.bond(*bid);
-        if b.order == chematic_core::BondOrder::Triple && n.charge == 0 {
-            for (other_idx, other_bid) in n_nbrs.iter() {
-                if other_idx == n_idx {
-                    continue;
-                }
-                let other = mol.atom(*other_idx);
-                let other_b = mol.bond(*other_bid);
-                if other_b.order == chematic_core::BondOrder::Single && other.charge == -1 {
-                    azide_atoms.insert(idx);
-                    azide_atoms.insert(*n_idx);
-                    azide_atoms.insert(*other_idx);
-                }
-            }
-        }
-    }
-}
-
-/// Mark sulfoxide S=O atoms.
-fn detect_sulfoxide(
-    mol: &Molecule,
-    idx: AtomIdx,
-    sulfoxide_atoms: &mut std::collections::HashSet<AtomIdx>,
-) {
-    for (o_idx, bid) in mol.neighbors(idx) {
-        if mol.atom(o_idx).element.atomic_number() == 8
-            && mol.bond(bid).order == chematic_core::BondOrder::Double
-        {
-            sulfoxide_atoms.insert(idx);
-            sulfoxide_atoms.insert(o_idx);
-        }
-    }
 }
 
 /// Detect if a molecule contains a zwitterion (internal salt).
@@ -2603,19 +2404,33 @@ mod tests {
         let mol = parse("C[S](=O)C").unwrap();
         let result = normalize_groups(&mol);
 
-        // Sulfoxide structure should remain (S=O is already correct form)
-        let mut has_s_double_o = false;
+        let mut has_charge_separated_s_o = false;
         for (_, bond) in result.bonds() {
             let a1 = result.atom(bond.atom1);
             let a2 = result.atom(bond.atom2);
-            if ((a1.element.atomic_number() == 16 && a2.element.atomic_number() == 8)
-                || (a1.element.atomic_number() == 8 && a2.element.atomic_number() == 16))
-                && bond.order == chematic_core::BondOrder::Double
-            {
-                has_s_double_o = true;
-            }
+            has_charge_separated_s_o |= a1.element.atomic_number() == 16
+                && a1.charge == 1
+                && a2.element.atomic_number() == 8
+                && a2.charge == -1
+                && bond.order == chematic_core::BondOrder::Single
+                || a2.element.atomic_number() == 16
+                    && a2.charge == 1
+                    && a1.element.atomic_number() == 8
+                    && a1.charge == -1
+                    && bond.order == chematic_core::BondOrder::Single;
         }
-        assert!(has_s_double_o, "sulfoxide should have S=O double bond");
+        assert!(
+            has_charge_separated_s_o,
+            "sulfoxide should normalize to [S+]-[O-]"
+        );
+
+        // Sulfones are four-coordinate and must not be rewritten by the
+        // three-coordinate sulfoxide rule.
+        let sulfone = parse("CS(=O)(=O)C").unwrap();
+        assert_eq!(
+            chematic_smiles::canonical_smiles(&normalize_groups(&sulfone)),
+            chematic_smiles::canonical_smiles(&sulfone)
+        );
     }
 
     // ── RDKit PR #9051: StereoGroup cleanup for non-chiral atoms ────────────

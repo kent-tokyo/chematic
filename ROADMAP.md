@@ -112,6 +112,12 @@ or reports a typed loss/refusal. See the detailed
    and typed-refusal strata; never reduce a row to an unordered substituent
    set. Add a second host and exact public-wheel rerun before promoting the
    source-candidate speed results.
+6. Keep parse-inclusive and prepared workflow lanes separate. The source
+   candidate now has reusable `PreparedRGroupCore` APIs and a deterministic
+   stress slice for Normalize, Reionize, Cleanup, and four Parent operations.
+   Next, freeze independently reviewed expected outputs for the remaining
+   standardization residuals before changing chemistry rules, then rerun the
+   exact public wheel on a second host.
 
 **Exit:** supported rows are deterministic across Rust, Python, and WASM;
 unsupported chemistry never becomes a guessed successful result.

@@ -131,7 +131,8 @@ pub use qed::{qed, qed_with_bundle};
 pub use rdkit_graph::GraphDescriptorError;
 pub use recap::{recap_breakable_bond_count, recap_fragment};
 pub use rgroup::{
-    LabeledRGroupResult, RGroupError, RGroupResult, rgroup_decompose, rgroup_decompose_labeled,
+    LabeledRGroupResult, PreparedRGroupCore, RGroupError, RGroupResult, rgroup_decompose,
+    rgroup_decompose_labeled,
 };
 pub use sa_score::{sa_score, sa_score_with_bundle};
 pub use scaffold::{

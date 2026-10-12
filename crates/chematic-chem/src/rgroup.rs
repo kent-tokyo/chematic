@@ -117,6 +117,41 @@ pub struct LabeledRGroupResult {
 
 const LABELED_MATCH_LIMIT: usize = 1024;
 
+/// Parsed, validated core query for repeated labelled R-group decomposition.
+///
+/// Constructing this object once avoids reparsing the same SMARTS core for
+/// every batch.  The decomposition semantics are identical to
+/// [`rgroup_decompose_labeled`]; the free function is a convenience wrapper
+/// around this prepared form.
+pub struct PreparedRGroupCore {
+    query: QueryMolecule,
+    explicit_labels: HashMap<usize, u16>,
+    auto_labels: HashMap<usize, u16>,
+}
+
+impl PreparedRGroupCore {
+    /// Parse and validate a labelled R-group core.
+    pub fn new(scaffold_smarts: &str) -> Result<Self, RGroupError> {
+        let query =
+            parse_smarts(scaffold_smarts).map_err(|e| RGroupError::InvalidSmarts(e.to_string()))?;
+        let explicit_labels = query_labels(&query)?;
+        let auto_labels = auto_labels(&query, &explicit_labels);
+        Ok(Self {
+            query,
+            explicit_labels,
+            auto_labels,
+        })
+    }
+
+    /// Decompose `mols` using the prepared core.
+    pub fn decompose_labeled(
+        &self,
+        mols: &[&Molecule],
+    ) -> Result<Vec<Option<LabeledRGroupResult>>, RGroupError> {
+        decompose_labeled_prepared(&self.query, &self.explicit_labels, &self.auto_labels, mols)
+    }
+}
+
 struct LabeledCandidate {
     missing_explicit: usize,
     signature: Vec<(u16, String, usize)>,
@@ -237,10 +272,15 @@ pub fn rgroup_decompose_labeled(
     scaffold_smarts: &str,
     mols: &[&Molecule],
 ) -> Result<Vec<Option<LabeledRGroupResult>>, RGroupError> {
-    let query =
-        parse_smarts(scaffold_smarts).map_err(|e| RGroupError::InvalidSmarts(e.to_string()))?;
-    let labels = query_labels(&query)?;
-    let auto_labels = auto_labels(&query, &labels);
+    PreparedRGroupCore::new(scaffold_smarts)?.decompose_labeled(mols)
+}
+
+fn decompose_labeled_prepared(
+    query: &QueryMolecule,
+    labels: &HashMap<usize, u16>,
+    auto_labels: &HashMap<usize, u16>,
+    mols: &[&Molecule],
+) -> Result<Vec<Option<LabeledRGroupResult>>, RGroupError> {
     let cfg = MatchConfig {
         max_matches: Some(LABELED_MATCH_LIMIT),
         // Labelled symmetric sites must retain their alternative embeddings;
@@ -260,7 +300,7 @@ pub fn rgroup_decompose_labeled(
         // parsed it back before matching.  That round trip did not add any
         // information to the result identity, but duplicated canonicalization
         // and graph construction for every input molecule.
-        let matches = find_matches_with_config(&query, input_mol, &cfg);
+        let matches = find_matches_with_config(query, input_mol, &cfg);
         if matches.is_empty() {
             rows.push(None);
             continue;
@@ -279,10 +319,10 @@ pub fn rgroup_decompose_labeled(
             match labeled_candidate(
                 mol_idx,
                 input_mol,
-                &query,
+                query,
                 mapping,
-                &labels,
-                &auto_labels,
+                labels,
+                auto_labels,
                 &canonical_rank,
             ) {
                 Ok(candidate) => candidates.push(candidate),
@@ -748,6 +788,23 @@ mod tests {
         assert!(first.core_smiles.contains("*:2"));
         assert!(first.r_groups[&1].contains("*:1"));
         assert!(first.r_groups[&2].contains("*:2"));
+    }
+
+    #[test]
+    fn prepared_labelled_core_matches_free_function() {
+        let mols = [
+            mol("CCc1cc(O)ccc1"),
+            mol("Oc1ccc(CC)cc1"),
+            mol("Clc1ccc(CC)cc1"),
+        ];
+        let refs: Vec<&Molecule> = mols.iter().collect();
+        let core = "c1cc([*:1])ccc1[*:2]";
+
+        let expected = rgroup_decompose_labeled(core, &refs).unwrap();
+        let prepared = PreparedRGroupCore::new(core).unwrap();
+        let actual = prepared.decompose_labeled(&refs).unwrap();
+
+        assert_eq!(actual, expected);
     }
 
     #[test]

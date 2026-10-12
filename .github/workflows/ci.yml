@@ -305,7 +305,7 @@ jobs:
           .venv/bin/python scripts/a6_platform_gate.py --rows validation/results/a6-source-265-linux.jsonl --scored validation/results/a6-source-265-linux.scored.jsonl --scope source-linux-x86_64 --output validation/results/a6-source-265-linux.gate.json
       - name: Retain HBA source-wheel parity result
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: rdkit-hba-source-wheel-5k
           path: |
@@ -353,7 +353,7 @@ jobs:
           .venv/bin/python scripts/a6_platform_gate.py --rows validation/results/a6-published-265-linux-cp39.jsonl --scored validation/results/a6-published-265-linux-cp39.scored.jsonl --scope published-linux-x86_64-cp39 --reference-rows validation/results/a6-source-265-linux-cp39.jsonl --output validation/results/a6-published-265-linux-cp39.gate.json
       - name: Retain paired Linux A6 outcome
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: a6-paired-linux-cp39
           path: |
@@ -407,7 +407,7 @@ jobs:
           .venv/bin/python scripts/a6_platform_gate.py --rows validation/results/a6-published-265-macos.jsonl --scored validation/results/a6-published-265-macos.scored.jsonl --scope published-macos-arm64-cp313 --reference-rows validation/results/a6-source-265-macos.jsonl --output validation/results/a6-published-265-macos.gate.json
       - name: Retain macOS HBA wheel result
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: rdkit-hba-source-wheel-5k-macos
           path: |
@@ -471,7 +471,7 @@ jobs:
           .venv/Scripts/python scripts/a6_platform_gate.py --rows validation/results/a6-source-265-windows.jsonl --scored validation/results/a6-source-265-windows.scored.jsonl --scope source-windows-x86_64 --output validation/results/a6-source-265-windows.gate.json
       - name: Retain Windows source-wheel results
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: source-wheel-windows
           path: |
@@ -505,7 +505,7 @@ jobs:
           .venv/bin/python scripts/a6_platform_gate.py --rows validation/results/a6-published-265-macos-cp39.jsonl --scored validation/results/a6-published-265-macos-cp39.scored.jsonl --scope published-macos-arm64-cp39 --output validation/results/a6-published-265-macos-cp39.gate.json
       - name: Retain macOS Python 3.9 published A6 outcomes
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: a6-published-macos-cp39
           path: |
@@ -530,15 +530,15 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
           python-version: '3.12'
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           pattern: rdkit-hba-source-wheel-5k*
           path: a6-artifacts
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           pattern: a6-p*
           path: a6-artifacts
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           name: source-wheel-windows
           path: a6-artifacts/source-wheel-windows
@@ -553,7 +553,7 @@ jobs:
           compare source-wheel-windows/a6-source-265-windows rdkit-hba-source-wheel-5k/a6-source-265-linux source-windows-vs-linux
           compare a6-published-macos-cp39/a6-published-265-macos-cp39 a6-paired-linux-cp39/a6-published-265-linux-cp39 published-v1.1.1-macos-vs-linux-cp39
           compare a6-paired-linux-cp39/a6-published-265-linux-cp39 a6-paired-linux-cp39/a6-source-265-linux-cp39 published-v1.1.1-vs-source-linux-cp39
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: always()
         with:
           name: a6-cross-platform

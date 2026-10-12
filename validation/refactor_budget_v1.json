@@ -55,10 +55,6 @@
       "decisions": 12,
       "lines": 166
     },
-    "crates/chematic-chem/src/standardize.rs::normalize_groups#1": {
-      "decisions": 29,
-      "lines": 104
-    },
     "crates/chematic-chem/src/standardize.rs::select_fragment#1": {
       "decisions": 9,
       "lines": 160

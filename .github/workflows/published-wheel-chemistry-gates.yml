@@ -85,7 +85,7 @@ jobs:
             --output "chematic-${{ matrix.label }}/a6-rows.jsonl" \
             --metadata-output "chematic-${{ matrix.label }}/a6-rows.meta.json" \
             --wall-budget-seconds 1200 --package-kind published
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: chematic-outputs-${{ inputs.version }}-${{ matrix.label }}
           path: |
@@ -115,7 +115,7 @@ jobs:
           python scripts/install_pinned_rdkit.py
           python -m pip install --disable-pip-version-check "json5==0.15.0"
           python -c "from rdkit import rdBase; assert rdBase.rdkitVersion == '2026.03.6', rdBase.rdkitVersion"
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           name: chematic-outputs-${{ inputs.version }}-${{ matrix.label }}
           path: chematic-${{ matrix.label }}
@@ -150,7 +150,7 @@ jobs:
           python scripts/a6_platform_gate.py --rows "$rows" --scored "$out/a6-scored.jsonl" \
             --scope "published_pypi_v${{ inputs.version }}_${{ matrix.label }}" "${reference[@]}" \
             --output "$out/a6-gate.json"
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: always()
         with:
           name: published-wheel-chemistry-gates-${{ inputs.version }}-${{ matrix.label }}
@@ -209,7 +209,7 @@ jobs:
         run: |
           mkdir -p autoconf-${{ matrix.label }}
           python scripts/xsmarts_autoconf_lane.py --output "autoconf-${{ matrix.label }}/xsmarts-autoconf.json"
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: always()
         with:
           name: xsmarts-autoconf-${{ inputs.version }}-${{ matrix.label }}
