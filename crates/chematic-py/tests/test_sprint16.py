@@ -227,6 +227,39 @@ def test_set_bond_angle_matches_rdkit_fragment_motion():
     assert butane.get_bond_angle(changed, 0, 1, 2) == pytest.approx(60.0)
 
 
+def test_canonicalize_conformer_matches_rdkit_principal_axis_contract():
+    mol = chematic.from_smiles("CCO")
+    coords = [[1.0, 2.0, 3.0], [3.0, 2.0, 3.0], [3.0, 4.0, 5.0]]
+    matrix = mol.compute_canonical_transform(coords)
+    canonical = mol.canonicalize_conformer(coords)
+
+    assert len(matrix) == 4
+    assert all(len(row) == 4 for row in matrix)
+    assert matrix[3] == pytest.approx([0.0, 0.0, 0.0, 1.0])
+    for axis in range(3):
+        norm = sum(matrix[axis][component] ** 2 for component in range(3))
+        assert norm == pytest.approx(1.0)
+    centroid = [sum(row[axis] for row in canonical) / 3.0 for axis in range(3)]
+    assert centroid == pytest.approx([0.0, 0.0, 0.0], abs=1e-12)
+
+    transformed = []
+    for point in coords:
+        transformed.append([
+            sum(matrix[row][col] * point[col] for col in range(3)) + matrix[row][3]
+            for row in range(3)
+        ])
+    for actual, expected in zip(canonical, transformed):
+        assert actual == pytest.approx(expected, abs=1e-12)
+
+
+def test_canonicalize_conformer_validates_center():
+    mol = chematic.from_smiles("C")
+    with pytest.raises(ValueError, match="center must be finite"):
+        mol.canonicalize_conformer(
+            [[1.0, 2.0, 3.0]], center=(float("nan"), 0.0, 0.0)
+        )
+
+
 def test_conformer_setters_reject_rdkit_invalid_topologies():
     ring = chematic.from_smiles("C1CCCCC1")
     coords = ring.generate_3d()

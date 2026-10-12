@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import {
+  canonicalize_conformer_from_coords_json,
+  compute_canonical_transform_from_coords_json,
   get_bond_angle_from_coords_json,
   get_bond_length_from_coords_json,
   parse_smiles,
@@ -7,6 +9,29 @@ import {
   set_bond_length_from_coords_json,
   set_dihedral_from_coords_json,
 } from "../pkg-node/chematic_wasm.js";
+
+const ethanol = parse_smiles("CCO");
+try {
+  const coords = JSON.stringify([
+    [1, 2, 3],
+    [3, 2, 3],
+    [3, 4, 5],
+  ]);
+  const matrix = JSON.parse(
+    compute_canonical_transform_from_coords_json(ethanol, coords, undefined, false, true),
+  );
+  assert.deepEqual(matrix[3], [0, 0, 0, 1]);
+
+  const canonical = JSON.parse(
+    canonicalize_conformer_from_coords_json(ethanol, coords, undefined, false, true),
+  );
+  for (let axis = 0; axis < 3; axis += 1) {
+    const centroid = canonical.reduce((sum, point) => sum + point[axis], 0) / canonical.length;
+    assert.ok(Math.abs(centroid) < 1e-12);
+  }
+} finally {
+  ethanol.free();
+}
 
 const butane = parse_smiles("CCCC");
 try {
