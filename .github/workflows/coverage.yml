@@ -105,7 +105,7 @@ jobs:
         # Dependabot PRs have read-only permissions and cannot request OIDC.
         # Their measurement and downloadable reports still run above.
         if: steps.changes.outputs.run_coverage == 'true' && github.actor != 'dependabot[bot]'
-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v6
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
           use_oidc: true
           files: target/coverage/lcov.info
