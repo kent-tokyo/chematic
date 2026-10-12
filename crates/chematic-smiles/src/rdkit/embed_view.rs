@@ -241,9 +241,12 @@ fn embedding_ring_info(molecule: &super::mol::Mol) -> Result<EmbeddingRingInfo, 
             )
         })
         .collect();
-    let atom_rings =
+    let mut atom_rings =
         chematic_perception::relevant_cycles_from_graph(molecule.atoms.len(), &ring_input, 10_000)
             .map_err(|error| RdkitSmilesError::Unsupported(error.to_string()))?;
+    for ring in &mut atom_rings {
+        normalize_embedding_ring(ring);
+    }
     let bond_rings = atom_rings
         .iter()
         .map(|ring| {
@@ -257,6 +260,21 @@ fn embedding_ring_info(molecule: &super::mol::Mol) -> Result<EmbeddingRingInfo, 
         })
         .collect();
     Ok((atom_rings, bond_rings))
+}
+
+/// RingDecomposerLib starts each returned cycle at its lowest atom index and
+/// chooses the direction with the lower adjacent index first. ETKDG consumes
+/// the cycle order when it appends flat-ring torsions, so preserving this
+/// otherwise cosmetic ordering avoids input-order-dependent rounding changes
+/// in the force-field minimizer.
+fn normalize_embedding_ring(ring: &mut [usize]) {
+    let Some((start, _)) = ring.iter().enumerate().min_by_key(|(_, atom)| *atom) else {
+        return;
+    };
+    ring.rotate_left(start);
+    if ring.len() > 2 && ring[1] > ring[ring.len() - 1] {
+        ring[1..].reverse();
+    }
 }
 
 /// Number of trailing hydrogen atoms appended by `add_hydrogens` (RDKit
@@ -380,4 +398,20 @@ pub fn rdkit_mol_view(mol: &Molecule) -> Result<RdkitMolView, RdkitSmilesError> 
         bond_rings,
         chematic_bond: order.iter().map(|b| b.0 as usize).collect(),
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::normalize_embedding_ring;
+
+    #[test]
+    fn embedding_ring_order_matches_ring_decomposer_convention() {
+        for (mut ring, expected) in [
+            (vec![13, 12, 18, 17, 15, 14], vec![12, 13, 14, 15, 17, 18]),
+            (vec![6, 21, 20, 9, 8, 7], vec![6, 7, 8, 9, 20, 21]),
+        ] {
+            normalize_embedding_ring(&mut ring);
+            assert_eq!(ring, expected);
+        }
+    }
 }

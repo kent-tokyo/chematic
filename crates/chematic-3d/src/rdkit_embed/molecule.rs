@@ -343,6 +343,53 @@ pub fn rdkit_embed_multiple_confs_mmff_adaptive(
     retry_max_iters: u32,
     retry_candidates: usize,
 ) -> Result<Vec<RdkitMmffConformer>, RdkitEmbedMmffError> {
+    rdkit_embed_multiple_confs_mmff_retry_policy(
+        mh,
+        num_confs,
+        o,
+        initial_max_iters,
+        retry_max_iters,
+        retry_candidates,
+        false,
+    )
+}
+
+/// Generate and optimize an ETKDG ensemble, retrying low-energy candidates
+/// only when the initial pass produced no converged conformer.
+///
+/// This quality-oriented rescue avoids paying the additional MMFF94 budget
+/// for molecules that already have at least one converged candidate. The
+/// retry ordering and replacement rules are otherwise identical to
+/// [`rdkit_embed_multiple_confs_mmff_adaptive`].
+pub fn rdkit_embed_multiple_confs_mmff_rescue(
+    mh: &Molecule,
+    num_confs: usize,
+    o: &RdkitEmbedOptions,
+    initial_max_iters: u32,
+    retry_max_iters: u32,
+    retry_candidates: usize,
+) -> Result<Vec<RdkitMmffConformer>, RdkitEmbedMmffError> {
+    rdkit_embed_multiple_confs_mmff_retry_policy(
+        mh,
+        num_confs,
+        o,
+        initial_max_iters,
+        retry_max_iters,
+        retry_candidates,
+        true,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn rdkit_embed_multiple_confs_mmff_retry_policy(
+    mh: &Molecule,
+    num_confs: usize,
+    o: &RdkitEmbedOptions,
+    initial_max_iters: u32,
+    retry_max_iters: u32,
+    retry_candidates: usize,
+    retry_only_when_none_converged: bool,
+) -> Result<Vec<RdkitMmffConformer>, RdkitEmbedMmffError> {
     let conformers = rdkit_embed_multiple_confs(mh, num_confs, o)?;
     let Some(first) = conformers.first() else {
         return Ok(Vec::new());
@@ -351,7 +398,11 @@ pub fn rdkit_embed_multiple_confs_mmff_adaptive(
         .map_err(|error| RdkitEmbedMmffError::ForceField(error.to_string()))?;
     let mut optimized = optimize_mmff_conformers(&field, conformers, initial_max_iters);
 
-    if retry_candidates == 0 || retry_max_iters == 0 {
+    if retry_candidates == 0
+        || retry_max_iters == 0
+        || (retry_only_when_none_converged
+            && optimized.iter().any(|conformer| conformer.status == 0))
+    {
         return Ok(optimized);
     }
     let mut retry_indices: Vec<usize> = optimized
@@ -418,13 +469,12 @@ fn optimize_mmff_conformers(
 
 fn optimize_mmff_conformer(
     field: &chematic_ff::rdkit_mmff::RdkitMmffField,
-    coords: Vec<[f64; 3]>,
+    mut coords: Vec<[f64; 3]>,
     max_iters: u32,
 ) -> RdkitMmffConformer {
-    let mut flat: Vec<f64> = coords.iter().flatten().copied().collect();
-    let (status, energy) = field.optimize(&mut flat, max_iters);
+    let (status, energy) = field.optimize(coords.as_flattened_mut(), max_iters);
     RdkitMmffConformer {
-        coords: flat.as_chunks::<3>().0.to_vec(),
+        coords,
         status,
         energy,
     }

@@ -7,6 +7,7 @@
 use chematic_3d::rdkit_embed::{
     RdkitEmbedError, RdkitEmbedOptions, rdkit_embed_molecule, rdkit_embed_multiple_confs,
     rdkit_embed_multiple_confs_mmff, rdkit_embed_multiple_confs_mmff_adaptive,
+    rdkit_embed_multiple_confs_mmff_rescue,
 };
 
 #[allow(clippy::approx_constant, clippy::excessive_precision)]
@@ -394,5 +395,20 @@ fn adaptive_mmff_retries_only_low_energy_nonconverged_candidates() {
         assert_eq!(after.coords, again.coords);
         assert_eq!(after.status, again.status);
         assert_eq!(after.energy, again.energy);
+    }
+}
+
+#[test]
+fn rescue_mmff_skips_retry_when_any_candidate_converged() {
+    let mh = chematic_chem::add_hydrogens(&chematic_smiles::parse("CCCO").unwrap());
+    let options = RdkitEmbedOptions::default();
+    let initial = rdkit_embed_multiple_confs_mmff(&mh, 4, &options, 200).unwrap();
+    assert!(initial.iter().any(|conformer| conformer.status == 0));
+    let rescued = rdkit_embed_multiple_confs_mmff_rescue(&mh, 4, &options, 200, 1000, 1).unwrap();
+    assert_eq!(rescued.len(), initial.len());
+    for (after, before) in rescued.iter().zip(initial) {
+        assert_eq!(after.coords, before.coords);
+        assert_eq!(after.status, before.status);
+        assert_eq!(after.energy, before.energy);
     }
 }

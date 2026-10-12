@@ -1,0 +1,60 @@
+{
+  "schema": "a6-conformer-tail-v3-summary/v1",
+  "candidate_commit": "0b7a197db7595e079911b147c96f3eec53a85480",
+  "manifest_commit": "8c817cd946cc78230afdc9b9577fad7fcfa0c0d4",
+  "manifest": "validation/manifests/mmff94_stereo_safe_post_freeze_holdout_v3.json",
+  "manifest_sha256": "a2962ce0f33fc10523cf33e642714772a708d19468814a7bd6bb551026050608",
+  "corpus_sha256": "6512843925baec729267938c2edb4010834aa13b20f81b5a36da5029f2b9f863",
+  "wheel_sha256": "ade612cda0ef976b95b8847caa1488fd83c9338fa517a85fa149718c0de3e04d",
+  "host": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "python": "3.13.6",
+  "chematic": "1.1.1",
+  "rdkit": "2026.09.1",
+  "molecules": 100,
+  "conformers_per_molecule": 20,
+  "max_mmff_iters": 200,
+  "repeats": 3,
+  "profiles": {
+    "performance": {
+      "retry_candidates": 0,
+      "seconds": {
+        "chematic": [27.81781362486072, 30.089049082947895, 29.845294791972265],
+        "rdkit": [28.82206454197876, 29.764498458011076, 30.58805354195647]
+      },
+      "median_seconds": {"chematic": 29.845294791972265, "rdkit": 29.764498458011076},
+      "speedup_rdkit_over_chematic": 0.9972928284165274,
+      "quality": {
+        "compared": 100,
+        "median_delta_kcal_mol": -2.7413626924044365e-10,
+        "p90_delta_kcal_mol": 0.09421537424978865,
+        "max_delta_kcal_mol": 3.521115313872887,
+        "at_or_below_rdkit": 61,
+        "within_1_kcal_mol": 94,
+        "within_2_kcal_mol": 97
+      },
+      "coverage": {"chematic_converged": 887, "rdkit_converged": 891}
+    },
+    "quality_rescue": {
+      "retry_candidates": 1,
+      "retry_max_iters": 200,
+      "retry_only_if_none_converged": true,
+      "seconds": {
+        "chematic": [30.66477358294651, 30.859529916895553, 31.05591187509708],
+        "rdkit": [29.78291687485762, 30.594140000175685, 30.214073207927868]
+      },
+      "median_seconds": {"chematic": 30.859529916895553, "rdkit": 30.214073207927868},
+      "speedup_rdkit_over_chematic": 0.9790840394942536,
+      "quality": {
+        "compared": 100,
+        "median_delta_kcal_mol": -9.206782891624243e-09,
+        "p90_delta_kcal_mol": 0.0004929431828379904,
+        "max_delta_kcal_mol": 3.364902069213329,
+        "at_or_below_rdkit": 73,
+        "within_1_kcal_mol": 95,
+        "within_2_kcal_mol": 99
+      },
+      "coverage": {"chematic_converged": 901, "rdkit_converged": 891}
+    }
+  },
+  "claim": "No simultaneous quality-and-speed superiority claim."
+}
