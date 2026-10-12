@@ -171,6 +171,33 @@ impl Mol {
         res.map_err(map_rdkit_embed_error)
     }
 
+    /// Seeded metric-matrix coordinates before DG/ETKDG minimization,
+    /// matching RDKit 2026.09.1's ``onlyInitialEmbedding=True`` boundary.
+    #[pyo3(signature = (random_seed = 42, max_iterations = 0))]
+    fn rdkit_embed_initial(
+        &self,
+        py: Python<'_>,
+        random_seed: i32,
+        max_iterations: u32,
+    ) -> PyResult<Vec<[f64; 3]>> {
+        use chematic_3d::rdkit_embed::rdkit_embed_initial_molecule;
+        let opts = rdkit_embed_options(
+            random_seed,
+            max_iterations,
+            true,
+            true,
+            2,
+            false,
+            true,
+            true,
+            true,
+            false,
+        )?;
+        let mol = self.inner.clone();
+        py.detach(move || rdkit_embed_initial_molecule(&mol, &opts))
+            .map_err(map_rdkit_embed_error)
+    }
+
     /// RDKit 2026.09.1's ``AllChem.EmbedMultipleConfs`` with ETKDGv3
     /// defaults. Bounds and torsion preferences are shared across attempts.
     /// Failed attempts are omitted, as in RDKit's returned conformer-id list.

@@ -12,7 +12,7 @@ use super::bounds::{
     set_topol_bounds_with_forced_torsions,
 };
 use super::dg::{BoundsMatrix, ChiralSet, triangle_smooth_bounds};
-use super::embed::{EmbedArgs, EmbedError, EmbedParams, embed_points};
+use super::embed::{EmbedArgs, EmbedError, EmbedParams, embed_initial_points, embed_points};
 use super::etk::{
     CrystalFfDetails, get_experimental_torsions_with_forced, minimize_with_exp_torsions,
 };
@@ -261,6 +261,17 @@ pub fn rdkit_embed_molecule(
 ) -> Result<Vec<[f64; 3]>, RdkitEmbedError> {
     validate_options(mh, o)?;
     embed_prepared_fragments(&prepare_fragments(mh, o)?, o, o.random_seed)
+}
+
+/// RDKit 2026.09.1's `onlyInitialEmbedding=True` coordinates: the seeded
+/// metric-matrix embedding before distance-geometry or ETKDG minimization.
+pub fn rdkit_embed_initial_molecule(
+    mh: &Molecule,
+    o: &RdkitEmbedOptions,
+) -> Result<Vec<[f64; 3]>, RdkitEmbedError> {
+    validate_options(mh, o)?;
+    let prepared = prepare_fragments(mh, o)?;
+    embed_prepared_fragments_with(&prepared, o, o.random_seed, true)
 }
 
 /// `AllChem.EmbedMultipleConfs(mh, numConfs=..., params=...)` on an
@@ -602,6 +613,15 @@ fn embed_prepared_fragments(
     o: &RdkitEmbedOptions,
     seed: i32,
 ) -> Result<Vec<[f64; 3]>, RdkitEmbedError> {
+    embed_prepared_fragments_with(prepared, o, seed, false)
+}
+
+fn embed_prepared_fragments_with(
+    prepared: &[PreparedFragment],
+    o: &RdkitEmbedOptions,
+    seed: i32,
+    only_initial_embedding: bool,
+) -> Result<Vec<[f64; 3]>, RdkitEmbedError> {
     let atom_count = prepared
         .iter()
         .flat_map(|fragment| fragment.source_atoms.iter())
@@ -610,7 +630,7 @@ fn embed_prepared_fragments(
         .map_or(0, |atom| atom + 1);
     let mut out = vec![[0.0; 3]; atom_count];
     for fragment in prepared {
-        let xyz = embed_prepared_fragment(fragment, o, seed)?;
+        let xyz = embed_prepared_fragment(fragment, o, seed, only_initial_embedding)?;
         for (local, &source) in fragment.source_atoms.iter().enumerate() {
             out[source] = xyz[local];
         }
@@ -624,6 +644,7 @@ fn embed_prepared_fragment(
     prepared: &PreparedFragment,
     o: &RdkitEmbedOptions,
     seed: i32,
+    only_initial_embedding: bool,
 ) -> Result<Vec<[f64; 3]>, RdkitEmbedError> {
     let etk = prepared.details.is_some();
     let force_tol = EmbedParams::default().optimizer_force_tol;
@@ -657,7 +678,12 @@ fn embed_prepared_fragment(
         enforce_chirality: o.enforce_chirality,
         ..EmbedParams::default()
     };
-    match embed_points(prepared.view.num_atoms(), &args, &params, seed)? {
+    let embedded = if only_initial_embedding {
+        embed_initial_points(prepared.view.num_atoms(), &args, &params, seed)?
+    } else {
+        embed_points(prepared.view.num_atoms(), &args, &params, seed)?
+    };
+    match embedded {
         Some(pos) => Ok(pos.chunks(3).map(|c| [c[0], c[1], c[2]]).collect()),
         None => Err(RdkitEmbedError::Failed),
     }

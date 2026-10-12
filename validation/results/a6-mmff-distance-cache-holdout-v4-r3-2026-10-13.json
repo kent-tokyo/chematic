@@ -1,0 +1,1671 @@
+{
+  "schema": "a6-rdkit-compatible-etkdg-mmff/v1",
+  "created_at": "2026-10-12T20:54:31Z",
+  "host": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "python": "3.13.6",
+  "chematic": "1.1.1",
+  "rdkit": "2026.09.1",
+  "molecules": 100,
+  "manifest": "validation/manifests/mmff94_stereo_safe_post_freeze_holdout_v4.json",
+  "corpus_sha256": "e9e859b2de426470d667d60eb155330a1f2cd6f919d8dba68b620bf68f66c83f",
+  "conformers_per_molecule": 20,
+  "max_mmff_iters": 200,
+  "adaptive_retry_candidates": 1,
+  "adaptive_retry_max_iters": 100,
+  "adaptive_retry_only_if_none_converged": true,
+  "chematic_etkdg_oracle": "RDKit 2026.09.1 ETKDGv3",
+  "repeats": 3,
+  "execution_order": [
+    [
+      "chematic",
+      "rdkit"
+    ],
+    [
+      "rdkit",
+      "chematic"
+    ],
+    [
+      "chematic",
+      "rdkit"
+    ]
+  ],
+  "seconds": {
+    "chematic": [
+      29.11830229102634,
+      29.911803417140618,
+      30.273695167154074
+    ],
+    "rdkit": [
+      29.45131729193963,
+      30.506282791029662,
+      30.026062041986734
+    ]
+  },
+  "median_seconds": {
+    "chematic": 29.911803417140618,
+    "rdkit": 30.026062041986734
+  },
+  "speedup_rdkit_over_chematic": 1.0038198507543226,
+  "quality": {
+    "compared": 100,
+    "failures": [],
+    "median_delta_kcal_mol": -1.284463024830984e-08,
+    "p90_delta_kcal_mol": 0.191515310246146,
+    "max_delta_kcal_mol": 2.813839418527948,
+    "at_or_below_rdkit": 72,
+    "within_1_kcal_mol": 95,
+    "within_2_kcal_mol": 98
+  },
+  "rows": [
+    {
+      "row_index": 0,
+      "id": null,
+      "name": "mmff94_holdout_stereo_000",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 119.48899776163026
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 119.9411805818958
+      },
+      "delta_kcal_mol": -0.45218282026553425
+    },
+    {
+      "row_index": 1,
+      "id": null,
+      "name": "mmff94_holdout_stereo_001",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -30.342547386117644
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -30.30228971888837
+      },
+      "delta_kcal_mol": -0.04025766722927315
+    },
+    {
+      "row_index": 2,
+      "id": null,
+      "name": "mmff94_holdout_stereo_002",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 45.80270916884112
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 48.051526696259835
+      },
+      "delta_kcal_mol": -2.2488175274187157
+    },
+    {
+      "row_index": 3,
+      "id": null,
+      "name": "mmff94_holdout_stereo_003",
+      "chematic": {
+        "generated": 20,
+        "converged": 17,
+        "best_energy": -69.71902533401042
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 19,
+        "best_energy": -69.91054064425657
+      },
+      "delta_kcal_mol": 0.191515310246146
+    },
+    {
+      "row_index": 4,
+      "id": null,
+      "name": "mmff94_holdout_stereo_004",
+      "chematic": {
+        "generated": 18,
+        "converged": 0,
+        "best_energy": 154.41520172812938
+      },
+      "rdkit": {
+        "generated": 18,
+        "converged": 0,
+        "best_energy": 164.54427862294347
+      },
+      "delta_kcal_mol": -10.12907689481409
+    },
+    {
+      "row_index": 5,
+      "id": null,
+      "name": "mmff94_holdout_stereo_005",
+      "chematic": {
+        "generated": 20,
+        "converged": 19,
+        "best_energy": 73.88967764614374
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 18,
+        "best_energy": 73.88967751334133
+      },
+      "delta_kcal_mol": 1.3280241262236814e-07
+    },
+    {
+      "row_index": 6,
+      "id": null,
+      "name": "mmff94_holdout_stereo_006",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 25.53569552946286
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 30.871658607289895
+      },
+      "delta_kcal_mol": -5.335963077827035
+    },
+    {
+      "row_index": 7,
+      "id": null,
+      "name": "mmff94_holdout_stereo_007",
+      "chematic": {
+        "generated": 20,
+        "converged": 5,
+        "best_energy": 60.196494326120984
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 4,
+        "best_energy": 60.19639457516348
+      },
+      "delta_kcal_mol": 9.975095750291985e-05
+    },
+    {
+      "row_index": 8,
+      "id": null,
+      "name": "mmff94_holdout_stereo_008",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 98.59035600894582
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 98.59114001468592
+      },
+      "delta_kcal_mol": -0.0007840057401011791
+    },
+    {
+      "row_index": 9,
+      "id": null,
+      "name": "mmff94_holdout_stereo_009",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 42.43806078442954
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 42.421690682129004
+      },
+      "delta_kcal_mol": 0.016370102300534484
+    },
+    {
+      "row_index": 10,
+      "id": null,
+      "name": "mmff94_holdout_stereo_010",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -55.02425536654805
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -55.01405276056246
+      },
+      "delta_kcal_mol": -0.010202605985590196
+    },
+    {
+      "row_index": 11,
+      "id": null,
+      "name": "mmff94_holdout_stereo_011",
+      "chematic": {
+        "generated": 20,
+        "converged": 3,
+        "best_energy": 0.0025303484051875103
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 5,
+        "best_energy": 0.0025303492655126547
+      },
+      "delta_kcal_mol": -8.603251444583293e-10
+    },
+    {
+      "row_index": 12,
+      "id": null,
+      "name": "mmff94_holdout_stereo_012",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 29.85609661584528
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 29.8560966129849
+      },
+      "delta_kcal_mol": 2.860382153357932e-09
+    },
+    {
+      "row_index": 13,
+      "id": null,
+      "name": "mmff94_holdout_stereo_013",
+      "chematic": {
+        "generated": 20,
+        "converged": 3,
+        "best_energy": 32.17832454918365
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 3,
+        "best_energy": 33.34780728026996
+      },
+      "delta_kcal_mol": -1.1694827310863118
+    },
+    {
+      "row_index": 14,
+      "id": null,
+      "name": "mmff94_holdout_stereo_014",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 87.20625815569237
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 87.21900714283369
+      },
+      "delta_kcal_mol": -0.012748987141321777
+    },
+    {
+      "row_index": 15,
+      "id": null,
+      "name": "mmff94_holdout_stereo_015",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -55.09367722587481
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -56.97395703377646
+      },
+      "delta_kcal_mol": 1.880279807901644
+    },
+    {
+      "row_index": 16,
+      "id": null,
+      "name": "mmff94_holdout_stereo_016",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -8.23741006189926
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -7.578392611661789
+      },
+      "delta_kcal_mol": -0.6590174502374708
+    },
+    {
+      "row_index": 17,
+      "id": null,
+      "name": "mmff94_holdout_stereo_017",
+      "chematic": {
+        "generated": 20,
+        "converged": 7,
+        "best_energy": -135.26900775692982
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 13,
+        "best_energy": -135.26900772125143
+      },
+      "delta_kcal_mol": -3.567839712559362e-08
+    },
+    {
+      "row_index": 18,
+      "id": null,
+      "name": "mmff94_holdout_stereo_018",
+      "chematic": {
+        "generated": 20,
+        "converged": 16,
+        "best_energy": 58.48165539614314
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 15,
+        "best_energy": 58.481655495672065
+      },
+      "delta_kcal_mol": -9.952892554565551e-08
+    },
+    {
+      "row_index": 19,
+      "id": null,
+      "name": "mmff94_holdout_stereo_019",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 147.83325933147327
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 146.70954863004525
+      },
+      "delta_kcal_mol": 1.123710701428024
+    },
+    {
+      "row_index": 20,
+      "id": null,
+      "name": "mmff94_holdout_stereo_020",
+      "chematic": {
+        "generated": 20,
+        "converged": 17,
+        "best_energy": -21.683042671963076
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 17,
+        "best_energy": -21.68304267077196
+      },
+      "delta_kcal_mol": -1.1911147623777651e-09
+    },
+    {
+      "row_index": 21,
+      "id": null,
+      "name": "mmff94_holdout_stereo_021",
+      "chematic": {
+        "generated": 20,
+        "converged": 9,
+        "best_energy": 38.87797930103421
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 7,
+        "best_energy": 38.882649227388285
+      },
+      "delta_kcal_mol": -0.004669926354075926
+    },
+    {
+      "row_index": 22,
+      "id": null,
+      "name": "mmff94_holdout_stereo_022",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 53.710286456868616
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 52.33607650210177
+      },
+      "delta_kcal_mol": 1.3742099547668474
+    },
+    {
+      "row_index": 23,
+      "id": null,
+      "name": "mmff94_holdout_stereo_023",
+      "chematic": {
+        "generated": 20,
+        "converged": 4,
+        "best_energy": 77.0267936332403
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 6,
+        "best_energy": 78.07332652023325
+      },
+      "delta_kcal_mol": -1.0465328869929493
+    },
+    {
+      "row_index": 24,
+      "id": null,
+      "name": "mmff94_holdout_stereo_024",
+      "chematic": {
+        "generated": 20,
+        "converged": 1,
+        "best_energy": 17.11512087223222
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 17.115122529344276
+      },
+      "delta_kcal_mol": -1.6571120546871043e-06
+    },
+    {
+      "row_index": 25,
+      "id": null,
+      "name": "mmff94_holdout_stereo_025",
+      "chematic": {
+        "generated": 19,
+        "converged": 0,
+        "best_energy": 102.42365061069725
+      },
+      "rdkit": {
+        "generated": 19,
+        "converged": 0,
+        "best_energy": 99.6098111921693
+      },
+      "delta_kcal_mol": 2.813839418527948
+    },
+    {
+      "row_index": 26,
+      "id": null,
+      "name": "mmff94_holdout_stereo_026",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 67.10378574324767
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 67.11614539269124
+      },
+      "delta_kcal_mol": -0.012359649443567378
+    },
+    {
+      "row_index": 27,
+      "id": null,
+      "name": "mmff94_holdout_stereo_027",
+      "chematic": {
+        "generated": 20,
+        "converged": 13,
+        "best_energy": -10.766952955976866
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 10,
+        "best_energy": -10.766933254914022
+      },
+      "delta_kcal_mol": -1.9701062843324735e-05
+    },
+    {
+      "row_index": 28,
+      "id": null,
+      "name": "mmff94_holdout_stereo_028",
+      "chematic": {
+        "generated": 20,
+        "converged": 7,
+        "best_energy": 39.606695596998094
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 7,
+        "best_energy": 39.60669600984722
+      },
+      "delta_kcal_mol": -4.128491255528388e-07
+    },
+    {
+      "row_index": 29,
+      "id": null,
+      "name": "mmff94_holdout_stereo_029",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 108.566649223034
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 108.57803228404464
+      },
+      "delta_kcal_mol": -0.011383061010633355
+    },
+    {
+      "row_index": 30,
+      "id": null,
+      "name": "mmff94_holdout_stereo_030",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -11.613273789027843
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -11.215430431424068
+      },
+      "delta_kcal_mol": -0.39784335760377587
+    },
+    {
+      "row_index": 31,
+      "id": null,
+      "name": "mmff94_holdout_stereo_031",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 63.03457338618717
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 63.03457338437695
+      },
+      "delta_kcal_mol": 1.8102213061865768e-09
+    },
+    {
+      "row_index": 32,
+      "id": null,
+      "name": "mmff94_holdout_stereo_032",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 1.610929080307578
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 1.352595411056722
+      },
+      "delta_kcal_mol": 0.258333669250856
+    },
+    {
+      "row_index": 33,
+      "id": null,
+      "name": "mmff94_holdout_stereo_033",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 61.65349202300507
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 61.65349220907342
+      },
+      "delta_kcal_mol": -1.8606834828460705e-07
+    },
+    {
+      "row_index": 34,
+      "id": null,
+      "name": "mmff94_holdout_stereo_034",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 47.864938369979775
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 47.86493838028066
+      },
+      "delta_kcal_mol": -1.0300887254288682e-08
+    },
+    {
+      "row_index": 35,
+      "id": null,
+      "name": "mmff94_holdout_stereo_035",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 179.44560083660028
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 186.12710806107756
+      },
+      "delta_kcal_mol": -6.681507224477286
+    },
+    {
+      "row_index": 36,
+      "id": null,
+      "name": "mmff94_holdout_stereo_036",
+      "chematic": {
+        "generated": 20,
+        "converged": 19,
+        "best_energy": 58.20374227278284
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 17,
+        "best_energy": 58.20374227732437
+      },
+      "delta_kcal_mol": -4.541533371593687e-09
+    },
+    {
+      "row_index": 37,
+      "id": null,
+      "name": "mmff94_holdout_stereo_037",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 128.6791604363078
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 129.1030693537109
+      },
+      "delta_kcal_mol": -0.42390891740311076
+    },
+    {
+      "row_index": 38,
+      "id": null,
+      "name": "mmff94_holdout_stereo_038",
+      "chematic": {
+        "generated": 20,
+        "converged": 11,
+        "best_energy": -1.744388395091196
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 13,
+        "best_energy": -1.7443883959640463
+      },
+      "delta_kcal_mol": 8.728502365329405e-10
+    },
+    {
+      "row_index": 39,
+      "id": null,
+      "name": "mmff94_holdout_stereo_039",
+      "chematic": {
+        "generated": 20,
+        "converged": 13,
+        "best_energy": 127.17448244048447
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 14,
+        "best_energy": 127.17450040805048
+      },
+      "delta_kcal_mol": -1.7967566009247093e-05
+    },
+    {
+      "row_index": 40,
+      "id": null,
+      "name": "mmff94_holdout_stereo_040",
+      "chematic": {
+        "generated": 20,
+        "converged": 19,
+        "best_energy": -10.4371163531741
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -10.437116354238464
+      },
+      "delta_kcal_mol": 1.0643645964591997e-09
+    },
+    {
+      "row_index": 41,
+      "id": null,
+      "name": "mmff94_holdout_stereo_041",
+      "chematic": {
+        "generated": 20,
+        "converged": 3,
+        "best_energy": 9.110136983802612
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 2,
+        "best_energy": 8.26159001605945
+      },
+      "delta_kcal_mol": 0.848546967743161
+    },
+    {
+      "row_index": 42,
+      "id": null,
+      "name": "mmff94_holdout_stereo_042",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 102.522671232758
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 102.53001099263537
+      },
+      "delta_kcal_mol": -0.007339759877368124
+    },
+    {
+      "row_index": 43,
+      "id": null,
+      "name": "mmff94_holdout_stereo_043",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 101.05102913624117
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 101.06910251099893
+      },
+      "delta_kcal_mol": -0.01807337475776194
+    },
+    {
+      "row_index": 44,
+      "id": null,
+      "name": "mmff94_holdout_stereo_044",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 101.01256936827218
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 100.85792270275574
+      },
+      "delta_kcal_mol": 0.15464666551643802
+    },
+    {
+      "row_index": 45,
+      "id": null,
+      "name": "mmff94_holdout_stereo_045",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 49.65173943388717
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 49.76795536969116
+      },
+      "delta_kcal_mol": -0.11621593580398581
+    },
+    {
+      "row_index": 46,
+      "id": null,
+      "name": "mmff94_holdout_stereo_046",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 11.75746870136544
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 11.876137318541321
+      },
+      "delta_kcal_mol": -0.11866861717588151
+    },
+    {
+      "row_index": 47,
+      "id": null,
+      "name": "mmff94_holdout_stereo_047",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 13.068638248623671
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 13.311088002026196
+      },
+      "delta_kcal_mol": -0.24244975340252495
+    },
+    {
+      "row_index": 48,
+      "id": null,
+      "name": "mmff94_holdout_stereo_048",
+      "chematic": {
+        "generated": 20,
+        "converged": 11,
+        "best_energy": -10.36515789642155
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 10,
+        "best_energy": -10.281443217689233
+      },
+      "delta_kcal_mol": -0.08371467873231708
+    },
+    {
+      "row_index": 49,
+      "id": null,
+      "name": "mmff94_holdout_stereo_049",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 49.535643197582544
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 50.73425429953369
+      },
+      "delta_kcal_mol": -1.198611101951144
+    },
+    {
+      "row_index": 50,
+      "id": null,
+      "name": "mmff94_holdout_general_000",
+      "chematic": {
+        "generated": 20,
+        "converged": 12,
+        "best_energy": -4.455984117375538
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 11,
+        "best_energy": -3.6344576687865935
+      },
+      "delta_kcal_mol": -0.8215264485889442
+    },
+    {
+      "row_index": 51,
+      "id": null,
+      "name": "mmff94_holdout_general_001",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 60.14409864715546
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 60.912320733952335
+      },
+      "delta_kcal_mol": -0.7682220867968752
+    },
+    {
+      "row_index": 52,
+      "id": null,
+      "name": "mmff94_holdout_general_002",
+      "chematic": {
+        "generated": 20,
+        "converged": 3,
+        "best_energy": -17.52677277039394
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 5,
+        "best_energy": -17.52804221066068
+      },
+      "delta_kcal_mol": 0.0012694402667392524
+    },
+    {
+      "row_index": 53,
+      "id": null,
+      "name": "mmff94_holdout_general_003",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 93.09627298596209
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 93.09627298596224
+      },
+      "delta_kcal_mol": -1.5631940186722204e-13
+    },
+    {
+      "row_index": 54,
+      "id": null,
+      "name": "mmff94_holdout_general_004",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -90.94002397201803
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -90.94002396075034
+      },
+      "delta_kcal_mol": -1.1267687227700662e-08
+    },
+    {
+      "row_index": 55,
+      "id": null,
+      "name": "mmff94_holdout_general_005",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 53.540906185324005
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 53.540906183595276
+      },
+      "delta_kcal_mol": 1.728729159822251e-09
+    },
+    {
+      "row_index": 56,
+      "id": null,
+      "name": "mmff94_holdout_general_006",
+      "chematic": {
+        "generated": 20,
+        "converged": 18,
+        "best_energy": -19.417667872714386
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 18,
+        "best_energy": -19.417667856387222
+      },
+      "delta_kcal_mol": -1.6327163621099317e-08
+    },
+    {
+      "row_index": 57,
+      "id": null,
+      "name": "mmff94_holdout_general_007",
+      "chematic": {
+        "generated": 20,
+        "converged": 2,
+        "best_energy": 47.28774523266393
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 2,
+        "best_energy": 47.28746599955534
+      },
+      "delta_kcal_mol": 0.00027923310859279127
+    },
+    {
+      "row_index": 58,
+      "id": null,
+      "name": "mmff94_holdout_general_008",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 42.74893786802261
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 42.7546017404151
+      },
+      "delta_kcal_mol": -0.005663872392489111
+    },
+    {
+      "row_index": 59,
+      "id": null,
+      "name": "mmff94_holdout_general_009",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 29.524646006455637
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 29.524646005565636
+      },
+      "delta_kcal_mol": 8.900009618173499e-10
+    },
+    {
+      "row_index": 60,
+      "id": null,
+      "name": "mmff94_holdout_general_010",
+      "chematic": {
+        "generated": 20,
+        "converged": 17,
+        "best_energy": -0.24120540164801696
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 17,
+        "best_energy": -0.23828439804384516
+      },
+      "delta_kcal_mol": -0.0029210036041718013
+    },
+    {
+      "row_index": 61,
+      "id": null,
+      "name": "mmff94_holdout_general_011",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 77.51364531913991
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 77.51364531189175
+      },
+      "delta_kcal_mol": 7.248161182360491e-09
+    },
+    {
+      "row_index": 62,
+      "id": null,
+      "name": "mmff94_holdout_general_012",
+      "chematic": {
+        "generated": 20,
+        "converged": 19,
+        "best_energy": 8.257621397223314
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 18,
+        "best_energy": 8.257621397167917
+      },
+      "delta_kcal_mol": 5.539746439353621e-11
+    },
+    {
+      "row_index": 63,
+      "id": null,
+      "name": "mmff94_holdout_general_013",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 24.408861631323738
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 24.408861630492176
+      },
+      "delta_kcal_mol": 8.315623745147604e-10
+    },
+    {
+      "row_index": 64,
+      "id": null,
+      "name": "mmff94_holdout_general_014",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -15.976827898185022
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -15.976827898179685
+      },
+      "delta_kcal_mol": -5.336175945558352e-12
+    },
+    {
+      "row_index": 65,
+      "id": null,
+      "name": "mmff94_holdout_general_015",
+      "chematic": {
+        "generated": 20,
+        "converged": 18,
+        "best_energy": -7.379896355092173
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 18,
+        "best_energy": -7.379896354412842
+      },
+      "delta_kcal_mol": -6.793312579134181e-10
+    },
+    {
+      "row_index": 66,
+      "id": null,
+      "name": "mmff94_holdout_general_016",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 57.3438624376995
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 57.34386243655014
+      },
+      "delta_kcal_mol": 1.1493597185108229e-09
+    },
+    {
+      "row_index": 67,
+      "id": null,
+      "name": "mmff94_holdout_general_017",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 86.8752037652445
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 86.87520378666677
+      },
+      "delta_kcal_mol": -2.1422266627268982e-08
+    },
+    {
+      "row_index": 68,
+      "id": null,
+      "name": "mmff94_holdout_general_018",
+      "chematic": {
+        "generated": 20,
+        "converged": 14,
+        "best_energy": -104.36898572406068
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 14,
+        "best_energy": -104.36898571157462
+      },
+      "delta_kcal_mol": -1.2486054856708506e-08
+    },
+    {
+      "row_index": 69,
+      "id": null,
+      "name": "mmff94_holdout_general_019",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -7.683574162083772
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -7.683574162250494
+      },
+      "delta_kcal_mol": 1.667217475187499e-10
+    },
+    {
+      "row_index": 70,
+      "id": null,
+      "name": "mmff94_holdout_general_020",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 45.2696243355914
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 45.269624353048485
+      },
+      "delta_kcal_mol": -1.7457082890359743e-08
+    },
+    {
+      "row_index": 71,
+      "id": null,
+      "name": "mmff94_holdout_general_021",
+      "chematic": {
+        "generated": 20,
+        "converged": 6,
+        "best_energy": 12.195129149681534
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 7,
+        "best_energy": 12.19513104350002
+      },
+      "delta_kcal_mol": -1.8938184851435835e-06
+    },
+    {
+      "row_index": 72,
+      "id": null,
+      "name": "mmff94_holdout_general_022",
+      "chematic": {
+        "generated": 20,
+        "converged": 19,
+        "best_energy": 0.7512263181243526
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 19,
+        "best_energy": 0.751226317938527
+      },
+      "delta_kcal_mol": 1.858255771480799e-10
+    },
+    {
+      "row_index": 73,
+      "id": null,
+      "name": "mmff94_holdout_general_023",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 21.098334651963047
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 21.09833465321391
+      },
+      "delta_kcal_mol": -1.250864301027832e-09
+    },
+    {
+      "row_index": 74,
+      "id": null,
+      "name": "mmff94_holdout_general_024",
+      "chematic": {
+        "generated": 20,
+        "converged": 18,
+        "best_energy": 74.10454386692626
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 19,
+        "best_energy": 74.10454386260562
+      },
+      "delta_kcal_mol": 4.320639845900587e-09
+    },
+    {
+      "row_index": 75,
+      "id": null,
+      "name": "mmff94_holdout_general_025",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 66.05408304762874
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 66.06231881143248
+      },
+      "delta_kcal_mol": -0.00823576380373936
+    },
+    {
+      "row_index": 76,
+      "id": null,
+      "name": "mmff94_holdout_general_026",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 111.45357896261002
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 111.58373677184929
+      },
+      "delta_kcal_mol": -0.13015780923926457
+    },
+    {
+      "row_index": 77,
+      "id": null,
+      "name": "mmff94_holdout_general_027",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 101.17892978447352
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 103.31048646629887
+      },
+      "delta_kcal_mol": -2.1315566818253444
+    },
+    {
+      "row_index": 78,
+      "id": null,
+      "name": "mmff94_holdout_general_028",
+      "chematic": {
+        "generated": 20,
+        "converged": 13,
+        "best_energy": 21.667097954601275
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 10,
+        "best_energy": 21.667097955585454
+      },
+      "delta_kcal_mol": -9.841798487286724e-10
+    },
+    {
+      "row_index": 79,
+      "id": null,
+      "name": "mmff94_holdout_general_029",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -128.40481294840833
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -128.40481292296738
+      },
+      "delta_kcal_mol": -2.5440954232180957e-08
+    },
+    {
+      "row_index": 80,
+      "id": null,
+      "name": "mmff94_holdout_general_030",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 57.313124423306604
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 19,
+        "best_energy": 56.329082372025354
+      },
+      "delta_kcal_mol": 0.98404205128125
+    },
+    {
+      "row_index": 81,
+      "id": null,
+      "name": "mmff94_holdout_general_031",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -99.67468131519736
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -99.67468130199416
+      },
+      "delta_kcal_mol": -1.3203205639911175e-08
+    },
+    {
+      "row_index": 82,
+      "id": null,
+      "name": "mmff94_holdout_general_032",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 10.127871321477237
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 9.655813756208136
+      },
+      "delta_kcal_mol": 0.47205756526910037
+    },
+    {
+      "row_index": 83,
+      "id": null,
+      "name": "mmff94_holdout_general_033",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -27.897486169415096
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -27.897486167329873
+      },
+      "delta_kcal_mol": -2.0852226612078084e-09
+    },
+    {
+      "row_index": 84,
+      "id": null,
+      "name": "mmff94_holdout_general_034",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 32.291987232651614
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 32.50717076853662
+      },
+      "delta_kcal_mol": -0.2151835358850036
+    },
+    {
+      "row_index": 85,
+      "id": null,
+      "name": "mmff94_holdout_general_035",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -46.53005947444444
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -46.5300594735037
+      },
+      "delta_kcal_mol": -9.407443712916574e-10
+    },
+    {
+      "row_index": 86,
+      "id": null,
+      "name": "mmff94_holdout_general_036",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 99.89157082177374
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 99.89157079998259
+      },
+      "delta_kcal_mol": 2.1791151993966196e-08
+    },
+    {
+      "row_index": 87,
+      "id": null,
+      "name": "mmff94_holdout_general_037",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -115.37952809863884
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -115.37952802920302
+      },
+      "delta_kcal_mol": -6.943582775420509e-08
+    },
+    {
+      "row_index": 88,
+      "id": null,
+      "name": "mmff94_holdout_general_038",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -20.790974991587312
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -20.790974991055954
+      },
+      "delta_kcal_mol": -5.313580686561181e-10
+    },
+    {
+      "row_index": 89,
+      "id": null,
+      "name": "mmff94_holdout_general_039",
+      "chematic": {
+        "generated": 20,
+        "converged": 18,
+        "best_energy": 69.37278908810718
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 18,
+        "best_energy": 69.37278907969404
+      },
+      "delta_kcal_mol": 8.41313863020332e-09
+    },
+    {
+      "row_index": 90,
+      "id": null,
+      "name": "mmff94_holdout_general_040",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 54.21498953514126
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 54.214989534183985
+      },
+      "delta_kcal_mol": 9.572715953254374e-10
+    },
+    {
+      "row_index": 91,
+      "id": null,
+      "name": "mmff94_holdout_general_041",
+      "chematic": {
+        "generated": 20,
+        "converged": 4,
+        "best_energy": 17.325930110744522
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 4,
+        "best_energy": 17.325930115270204
+      },
+      "delta_kcal_mol": -4.525681163158879e-09
+    },
+    {
+      "row_index": 92,
+      "id": null,
+      "name": "mmff94_holdout_general_042",
+      "chematic": {
+        "generated": 20,
+        "converged": 9,
+        "best_energy": -103.22686981608217
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 11,
+        "best_energy": -103.22686972187867
+      },
+      "delta_kcal_mol": -9.420350011168921e-08
+    },
+    {
+      "row_index": 93,
+      "id": null,
+      "name": "mmff94_holdout_general_043",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 62.7025011676851
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 62.758505474097795
+      },
+      "delta_kcal_mol": -0.056004306412695826
+    },
+    {
+      "row_index": 94,
+      "id": null,
+      "name": "mmff94_holdout_general_044",
+      "chematic": {
+        "generated": 20,
+        "converged": 12,
+        "best_energy": 141.50060221074216
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 12,
+        "best_energy": 141.50060080240615
+      },
+      "delta_kcal_mol": 1.4083360042604909e-06
+    },
+    {
+      "row_index": 95,
+      "id": null,
+      "name": "mmff94_holdout_general_045",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 54.03147052331428
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 53.41179322913748
+      },
+      "delta_kcal_mol": 0.6196772941768032
+    },
+    {
+      "row_index": 96,
+      "id": null,
+      "name": "mmff94_holdout_general_046",
+      "chematic": {
+        "generated": 20,
+        "converged": 9,
+        "best_energy": -2.8060843951658576
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 7,
+        "best_energy": -2.806088367744323
+      },
+      "delta_kcal_mol": 3.9725784652944185e-06
+    },
+    {
+      "row_index": 97,
+      "id": null,
+      "name": "mmff94_holdout_general_047",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 168.71089009565515
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 169.32763427110265
+      },
+      "delta_kcal_mol": -0.6167441754475078
+    },
+    {
+      "row_index": 98,
+      "id": null,
+      "name": "mmff94_holdout_general_048",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 49.87598157353577
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 50.41606217490975
+      },
+      "delta_kcal_mol": -0.5400806013739796
+    },
+    {
+      "row_index": 99,
+      "id": null,
+      "name": "mmff94_holdout_general_049",
+      "chematic": {
+        "generated": 20,
+        "converged": 4,
+        "best_energy": 55.29236873175886
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 4,
+        "best_energy": 53.282849820358265
+      },
+      "delta_kcal_mol": 2.0095189114005976
+    }
+  ],
+  "coverage": {
+    "chematic": {
+      "generated": 1997,
+      "converged": 912
+    },
+    "rdkit": {
+      "generated": 1997,
+      "converged": 913
+    }
+  }
+}

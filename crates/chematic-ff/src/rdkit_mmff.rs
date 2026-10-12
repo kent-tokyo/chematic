@@ -18,6 +18,7 @@
 
 use chematic_core::{AtomIdx, BondOrder, Molecule};
 use rustc_hash::{FxHashMap, FxHashSet};
+use std::cell::RefCell;
 
 use crate::mmff94_minimizer::{MinimizerError, rdkit_prepared_parts};
 use crate::mmff94_numeric::mmff94_charges_rdkit_order;
@@ -111,6 +112,60 @@ pub(crate) fn distance(pos: &[f64], i: usize, j: usize) -> f64 {
         res += t * t;
     }
     res.sqrt()
+}
+
+/// Interatomic distances for the most recently evaluated position in one
+/// minimization. RDKit's `ForceField` shares this cache between an energy
+/// evaluation and the gradient evaluated immediately afterwards.
+struct DistanceCache {
+    n: usize,
+    point: Vec<f64>,
+    values: Vec<f64>,
+    generations: Vec<u32>,
+    generation: u32,
+}
+
+impl DistanceCache {
+    fn new(n: usize) -> Self {
+        Self {
+            n,
+            point: Vec::new(),
+            values: vec![0.0; n * n],
+            generations: vec![0; n * n],
+            generation: 1,
+        }
+    }
+
+    fn prepare(&mut self, pos: &[f64]) {
+        let same_point = self.point.len() == pos.len()
+            && self
+                .point
+                .iter()
+                .zip(pos)
+                .all(|(a, b)| a.to_bits() == b.to_bits());
+        if !same_point {
+            self.point.clear();
+            self.point.extend_from_slice(pos);
+            self.generation = self.generation.wrapping_add(1);
+            if self.generation == 0 {
+                self.generations.fill(0);
+                self.generation = 1;
+            }
+        }
+    }
+
+    fn get(&mut self, pos: &[f64], i: usize, j: usize) -> f64 {
+        let (i, j) = if j < i { (j, i) } else { (i, j) };
+        let index = i * self.n + j;
+        if self.generations[index] != self.generation {
+            let computed = distance(pos, i, j);
+            self.values[index] = computed;
+            self.generations[index] = self.generation;
+            computed
+        } else {
+            self.values[index]
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -449,15 +504,23 @@ impl RdkitMmffField {
     /// its `ForceField::distance` cache taken at `dpos` instead (see
     /// [`crate::rdkit_bfgs::BfgsOutcome::stale_distance_point`]).
     pub fn energy_with_distances(&self, pos: &[f64], dpos: &[f64]) -> f64 {
+        self.energy_with_distance_fn(pos, |i, j| distance(dpos, i, j))
+    }
+
+    fn energy_with_distance_fn(
+        &self,
+        pos: &[f64],
+        mut pair_distance: impl FnMut(usize, usize) -> f64,
+    ) -> f64 {
         let mut res = 0.0;
         if self.terms[0] && !self.bonds.is_empty() {
-            res += self.bond_energy(dpos);
+            res += self.bond_energy(&mut pair_distance);
         }
         if self.terms[1] && !self.angles.is_empty() {
-            res += self.angle_energy(pos, dpos);
+            res += self.angle_energy(pos, &mut pair_distance);
         }
         if self.terms[2] && !self.stretch_bends.is_empty() {
-            res += self.stbn_energy(pos, dpos);
+            res += self.stbn_energy(pos, &mut pair_distance);
         }
         if self.terms[3] && !self.oops.is_empty() {
             res += self.oop_energy(pos);
@@ -466,7 +529,7 @@ impl RdkitMmffField {
             res += self.torsion_energy(pos);
         }
         if (self.terms[5] || self.terms[6]) && !self.nonbonded.is_empty() {
-            res += self.nonbonded_energy(dpos);
+            res += self.nonbonded_energy(&mut pair_distance);
         }
         res
     }
@@ -474,14 +537,23 @@ impl RdkitMmffField {
     /// `ForceField::calcGrad(pos, grad)`: adds every contribution's gradient
     /// to `grad` (unscaled).
     pub fn gradient(&self, pos: &[f64], grad: &mut [f64]) {
+        self.gradient_with_distance_fn(pos, grad, |i, j| distance(pos, i, j));
+    }
+
+    fn gradient_with_distance_fn(
+        &self,
+        pos: &[f64],
+        grad: &mut [f64],
+        mut pair_distance: impl FnMut(usize, usize) -> f64,
+    ) {
         if self.terms[0] {
-            self.bond_grad(pos, grad);
+            self.bond_grad(pos, grad, &mut pair_distance);
         }
         if self.terms[1] {
-            self.angle_grad(pos, grad);
+            self.angle_grad(pos, grad, &mut pair_distance);
         }
         if self.terms[2] {
-            self.stbn_grad(pos, grad);
+            self.stbn_grad(pos, grad, &mut pair_distance);
         }
         if self.terms[3] {
             self.oop_grad(pos, grad);
@@ -490,31 +562,36 @@ impl RdkitMmffField {
             self.torsion_grad(pos, grad);
         }
         if self.terms[5] || self.terms[6] {
-            self.nonbonded_grad(pos, grad);
+            self.nonbonded_grad(pos, grad, &mut pair_distance);
         }
     }
 
     // ─── Bond stretch ────────────────────────────────────────────────────────
 
-    fn bond_energy(&self, dpos: &[f64]) -> f64 {
+    fn bond_energy(&self, pair_distance: &mut impl FnMut(usize, usize) -> f64) -> f64 {
         let c1 = MDYNE_A_TO_KCAL_MOL;
         let cs = -2.0;
         let c3 = 7.0 / 12.0;
         let mut sum = 0.0;
         for &(i, j, r0, kb) in &self.bonds {
-            let dist_term = distance(dpos, i, j) - r0;
+            let dist_term = pair_distance(i, j) - r0;
             let dist_term2 = dist_term * dist_term;
             sum += 0.5 * c1 * kb * dist_term2 * (1.0 + cs * dist_term + c3 * cs * cs * dist_term2);
         }
         sum
     }
 
-    fn bond_grad(&self, pos: &[f64], grad: &mut [f64]) {
+    fn bond_grad(
+        &self,
+        pos: &[f64],
+        grad: &mut [f64],
+        pair_distance: &mut impl FnMut(usize, usize) -> f64,
+    ) {
         let cs = -2.0;
         let c1 = MDYNE_A_TO_KCAL_MOL;
         let c3 = 7.0 / 12.0;
         for &(i, j, r0, kb) in &self.bonds {
-            let dist = distance(pos, i, j);
+            let dist = pair_distance(i, j);
             let dist_term = dist - r0;
             let de_dr = c1
                 * kb
@@ -534,11 +611,15 @@ impl RdkitMmffField {
 
     // ─── Angle bend ──────────────────────────────────────────────────────────
 
-    fn angle_energy(&self, pos: &[f64], dpos: &[f64]) -> f64 {
+    fn angle_energy(
+        &self,
+        pos: &[f64],
+        pair_distance: &mut impl FnMut(usize, usize) -> f64,
+    ) -> f64 {
         let mut res = 0.0;
         for &(i, j, k, theta0, ka, linear) in &self.angles {
-            let dist1 = distance(dpos, i, j);
-            let dist2 = distance(dpos, j, k);
+            let dist1 = pair_distance(i, j);
+            let dist2 = pair_distance(j, k);
             let (p1, p2, p3) = (P3::at(pos, i), P3::at(pos, j), P3::at(pos, k));
             let cos_theta = clip_to_one(p1.sub(p2).dot(p3.sub(p2)) / (dist1 * dist2));
             res += angle_bend_energy(theta0, ka, linear, cos_theta);
@@ -546,9 +627,14 @@ impl RdkitMmffField {
         res
     }
 
-    fn angle_grad(&self, pos: &[f64], grad: &mut [f64]) {
+    fn angle_grad(
+        &self,
+        pos: &[f64],
+        grad: &mut [f64],
+        pair_distance: &mut impl FnMut(usize, usize) -> f64,
+    ) {
         for &(i, j, k, theta0, ka, linear) in &self.angles {
-            let dist = [distance(pos, i, j), distance(pos, j, k)];
+            let dist = [pair_distance(i, j), pair_distance(j, k)];
             let (p1, p2, p3) = (P3::at(pos, i), P3::at(pos, j), P3::at(pos, k));
             let r = [p1.sub(p2).div(dist[0]), p3.sub(p2).div(dist[1])];
             let cos_theta = clip_to_one(r[0].dot(r[1]));
@@ -591,11 +677,11 @@ impl RdkitMmffField {
 
     // ─── Stretch-bend ────────────────────────────────────────────────────────
 
-    fn stbn_energy(&self, pos: &[f64], dpos: &[f64]) -> f64 {
+    fn stbn_energy(&self, pos: &[f64], pair_distance: &mut impl FnMut(usize, usize) -> f64) -> f64 {
         let mut total = 0.0;
         for &(i, j, k, r1, r2, theta0, k1, k2) in &self.stretch_bends {
-            let dist1 = distance(dpos, i, j);
-            let dist2 = distance(dpos, j, k);
+            let dist1 = pair_distance(i, j);
+            let dist2 = pair_distance(j, k);
             let (p1, p2, p3) = (P3::at(pos, i), P3::at(pos, j), P3::at(pos, k));
             let cos_theta = clip_to_one(p1.sub(p2).dot(p3.sub(p2)) / (dist1 * dist2));
             let delta_theta = RAD2DEG * cos_theta.acos() - theta0;
@@ -607,10 +693,15 @@ impl RdkitMmffField {
         total
     }
 
-    fn stbn_grad(&self, pos: &[f64], grad: &mut [f64]) {
+    fn stbn_grad(
+        &self,
+        pos: &[f64],
+        grad: &mut [f64],
+        pair_distance: &mut impl FnMut(usize, usize) -> f64,
+    ) {
         for &(i, j, k, rest1, rest2, theta0, fc1, fc2) in &self.stretch_bends {
-            let dist1 = distance(pos, i, j);
-            let dist2 = distance(pos, j, k);
+            let dist1 = pair_distance(i, j);
+            let dist2 = pair_distance(j, k);
             let (p1, p2, p3) = (P3::at(pos, i), P3::at(pos, j), P3::at(pos, k));
             let p12 = p1.sub(p2).div(dist1);
             let p32 = p3.sub(p2).div(dist2);
@@ -862,10 +953,10 @@ impl RdkitMmffField {
 
     // ─── Non-bonded (van der Waals + electrostatics) ─────────────────────────
 
-    fn nonbonded_energy(&self, dpos: &[f64]) -> f64 {
+    fn nonbonded_energy(&self, pair_distance: &mut impl FnMut(usize, usize) -> f64) -> f64 {
         let mut sum = 0.0;
         for t in &self.nonbonded {
-            let dist = distance(dpos, t.i, t.j);
+            let dist = pair_distance(t.i, t.j);
             if let Some((r_star, well)) = t.vdw {
                 sum += vdw_energy(dist, r_star, well);
             }
@@ -877,14 +968,19 @@ impl RdkitMmffField {
         sum
     }
 
-    fn nonbonded_grad(&self, pos: &[f64], grad: &mut [f64]) {
+    fn nonbonded_grad(
+        &self,
+        pos: &[f64],
+        grad: &mut [f64],
+        pair_distance: &mut impl FnMut(usize, usize) -> f64,
+    ) {
         let vdw1 = 1.07;
         let vdw1m1 = vdw1 - 1.0;
         let vdw2 = 1.12;
         let vdw2m1 = vdw2 - 1.0;
         let vdw2t7 = vdw2 * 7.0;
         for t in &self.nonbonded {
-            let dist = distance(pos, t.i, t.j);
+            let dist = pair_distance(t.i, t.j);
             if dist <= 0.0 {
                 // RDKit returns from the whole gradient here.
                 if let Some((r_star, _)) = t.vdw {
@@ -936,14 +1032,24 @@ impl RdkitMmffField {
 
     // ─── Minimizer ───────────────────────────────────────────────────────────
 
-    /// `ForceFieldsHelper::calcGradient`: zeroes `grad`, fills it, scales it
-    /// by 0.1 (halving further while any component exceeds 10) and returns
-    /// the scale.
-    fn scaled_gradient(&self, pos: &[f64], grad: &mut [f64]) -> f64 {
+    fn cached_energy(&self, pos: &[f64], cache: &RefCell<DistanceCache>) -> f64 {
+        let mut cache = cache.borrow_mut();
+        cache.prepare(pos);
+        self.energy_with_distance_fn(pos, |i, j| cache.get(pos, i, j))
+    }
+
+    fn cached_scaled_gradient(
+        &self,
+        pos: &[f64],
+        grad: &mut [f64],
+        cache: &RefCell<DistanceCache>,
+    ) -> f64 {
         for g in grad.iter_mut() {
             *g = 0.0;
         }
-        self.gradient(pos, grad);
+        let mut cache = cache.borrow_mut();
+        cache.prepare(pos);
+        self.gradient_with_distance_fn(pos, grad, |i, j| cache.get(pos, i, j));
         crate::rdkit_bfgs::scale_gradient(grad)
     }
 
@@ -954,12 +1060,13 @@ impl RdkitMmffField {
         if self.is_empty() {
             return 0;
         }
+        let cache = RefCell::new(DistanceCache::new(self.n));
         crate::rdkit_bfgs::bfgs_minimize(
             pos,
             force_tol,
             max_its,
-            |p| self.energy(p),
-            |p, g| self.scaled_gradient(p, g),
+            |p| self.cached_energy(p, &cache),
+            |p, g| self.cached_scaled_gradient(p, g, &cache),
         )
     }
 
@@ -979,12 +1086,13 @@ impl RdkitMmffField {
         if self.is_empty() {
             return (0, 0.0);
         }
+        let cache = RefCell::new(DistanceCache::new(self.n));
         let cached = crate::rdkit_bfgs::bfgs_minimize_detailed_with_cached_energy(
             pos,
             1e-4,
             max_iters,
-            |p| self.energy(p),
-            |p, g| self.scaled_gradient(p, g),
+            |p| self.cached_energy(p, &cache),
+            |p, g| self.cached_scaled_gradient(p, g, &cache),
         );
         let energy = match &cached.outcome.stale_distance_point {
             Some(d) => self.energy_with_distances(pos, d),
@@ -1229,6 +1337,26 @@ pub(crate) mod tests {
             -11.453744586799015,
             3.66682072353845,
         );
+    }
+
+    #[test]
+    fn distance_cache_matches_public_energy_and_gradient() {
+        let mol = paracetamol();
+        let ff = RdkitMmffField::new(&mol, &COORDS, 100.0, true).unwrap();
+        let pos = COORDS.as_flattened();
+        let cache = RefCell::new(DistanceCache::new(mol.atom_count()));
+        assert_eq!(ff.cached_energy(pos, &cache), ff.energy(pos));
+
+        let mut cached_gradient = vec![0.0; pos.len()];
+        let mut public_gradient = vec![0.0; pos.len()];
+        ff.cached_scaled_gradient(pos, &mut cached_gradient, &cache);
+        ff.gradient(pos, &mut public_gradient);
+        crate::rdkit_bfgs::scale_gradient(&mut public_gradient);
+        assert_eq!(cached_gradient, public_gradient);
+
+        let generation = cache.borrow().generation;
+        ff.cached_energy(pos, &cache);
+        assert_eq!(cache.borrow().generation, generation);
     }
 }
 
