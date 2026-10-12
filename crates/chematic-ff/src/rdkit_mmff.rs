@@ -213,6 +213,26 @@ pub const RDKIT_MMFF_TERMS: [&str; 7] = [
     "ele",
 ];
 
+/// Diagnostics from one RDKit-compatible MMFF94 minimization.
+///
+/// [`RdkitMmffField::optimize`] remains the compact compatibility API. Use
+/// [`RdkitMmffField::optimize_detailed`] when a caller needs a deterministic
+/// convergence signal without evaluating the gradient again.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct RdkitMmffOptimization {
+    /// RDKit status: 0 converged, 1 iteration limit, negative on failure.
+    pub status: i32,
+    /// Energy reported with RDKit's post-minimization distance-cache semantics.
+    pub energy: f64,
+    /// Number of completed BFGS iterations.
+    pub iterations: u32,
+    /// RDKit's normalized gradient convergence test at the returned point.
+    ///
+    /// This is `None` only when RDKit declares convergence from a tiny
+    /// position step before evaluating the gradient at that new point.
+    pub final_gradient_test: Option<f64>,
+}
+
 type BondAdjacency = Vec<Vec<(usize, usize)>>;
 
 fn rdkit_adjacency(mol: &Molecule) -> (Vec<chematic_core::BondIdx>, BondAdjacency) {
@@ -1083,8 +1103,20 @@ impl RdkitMmffField {
     /// RDKit `MMFFOptimizeMolecule(mol, maxIters)` (forceTol 1e-4) on the
     /// flat positions: (status, final energy).
     pub fn optimize(&self, pos: &mut [f64], max_iters: u32) -> (i32, f64) {
+        let result = self.optimize_detailed(pos, max_iters);
+        (result.status, result.energy)
+    }
+
+    /// RDKit-compatible MMFF94 optimization plus the already-computed final
+    /// convergence diagnostic. This does not add an energy or gradient pass.
+    pub fn optimize_detailed(&self, pos: &mut [f64], max_iters: u32) -> RdkitMmffOptimization {
         if self.is_empty() {
-            return (0, 0.0);
+            return RdkitMmffOptimization {
+                status: 0,
+                energy: 0.0,
+                iterations: 0,
+                final_gradient_test: Some(0.0),
+            };
         }
         let cache = RefCell::new(DistanceCache::new(self.n));
         let cached = crate::rdkit_bfgs::bfgs_minimize_detailed_with_cached_energy(
@@ -1100,7 +1132,12 @@ impl RdkitMmffField {
                 .energy_at_returned_position
                 .unwrap_or_else(|| self.energy(pos)),
         };
-        (cached.outcome.status, energy)
+        RdkitMmffOptimization {
+            status: cached.outcome.status,
+            energy,
+            iterations: cached.iterations,
+            final_gradient_test: cached.final_gradient_test,
+        }
     }
 }
 
@@ -1315,6 +1352,13 @@ pub(crate) mod tests {
             "first coordinate {} differs from RDKit {x0}",
             pos[0]
         );
+
+        let mut detailed_pos = COORDS.as_flattened().to_vec();
+        let detailed = ff.optimize_detailed(&mut detailed_pos, 200);
+        assert_eq!(detailed.status, status);
+        assert_eq!(detailed.energy, e);
+        assert_eq!(detailed_pos, pos);
+        assert!(detailed.iterations > 0);
     }
 
     /// RDKit 2026.03.1: `MMFFGetMoleculeForceField(...).CalcEnergy()` and

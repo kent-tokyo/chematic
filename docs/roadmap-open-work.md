@@ -42,7 +42,10 @@ the changelog and validation pages.
   reached 95/100 within 1 kcal/mol and 98/100 within 2 kcal/mol with no
   failures, but CheMatic was faster in only two of three blocks and the median
   advantage was 0.38%. Treat this as a quality improvement and speed tie. v4
-  is now inspected data. Keep atom typing, convergence, stereochemistry,
+  is now inspected data. A separate final-gradient-gated rescue reaches
+  261/265 within 1 kcal/mol on the 265-row development set and was faster in
+  all three alternating blocks (1.0179x median), but that set was used to fix
+  the threshold. Keep atom typing, convergence, stereochemistry,
   clashes, same-coordinate energy, basin diversity, minimization tails, time,
   and memory separate; add 21-block, second-host, peak-memory, and exact
   public-artifact evidence before any broad claim.

@@ -12,6 +12,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added non-breaking RDKit-compatible MMFF optimization diagnostics for Rust
+  and Python. They expose completed BFGS iterations and the final normalized
+  gradient convergence test without another force-field evaluation.
+- Added an opt-in gradient-gated MMFF ensemble rescue. It retries bounded
+  high-gradient candidates only when the initial ensemble has no converged
+  conformer, while preserving existing default and energy-only rescue APIs.
+
 - Added Rust and Python access to RDKit 2026.09.1's
   `onlyInitialEmbedding=True` boundary. It exposes seeded metric-matrix
   coordinates before DG/ETKDG minimization so bounds, random embedding, ETK

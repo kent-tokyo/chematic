@@ -173,6 +173,50 @@ class Mol:
         deterministic candidate order."""
         ...
 
+    def rdkit_embed_multiple_confs_mmff_diagnostics(
+        self,
+        num_confs: int,
+        *,
+        random_seed: int = 42,
+        max_iterations: int = 0,
+        max_mmff_iters: int = 200,
+        use_exp_torsion_angle_prefs: bool = True,
+        use_basic_knowledge: bool = True,
+        et_version: int = 2,
+        use_small_ring_torsions: bool = False,
+        use_macrocycle_torsions: bool = True,
+        use_macrocycle_14_config: bool = True,
+        enforce_chirality: bool = True,
+        ignore_smoothing_failures: bool = False,
+    ) -> list[tuple[int, float, int, float | None, list[list[float]]]]:
+        """Generate and MMFF94-optimize an ETKDG ensemble, returning
+        ``(status, energy, iterations, gradient_test, coords)`` without an
+        extra force-field evaluation."""
+        ...
+
+    def rdkit_embed_multiple_confs_mmff_gradient_rescue(
+        self,
+        num_confs: int,
+        *,
+        random_seed: int = 42,
+        max_iterations: int = 0,
+        max_mmff_iters: int = 200,
+        retry_mmff_iters: int = 100,
+        retry_candidates: int = 1,
+        minimum_gradient_test: float = 0.05,
+        use_exp_torsion_angle_prefs: bool = True,
+        use_basic_knowledge: bool = True,
+        et_version: int = 2,
+        use_small_ring_torsions: bool = False,
+        use_macrocycle_torsions: bool = True,
+        use_macrocycle_14_config: bool = True,
+        enforce_chirality: bool = True,
+        ignore_smoothing_failures: bool = False,
+    ) -> list[tuple[int, float, list[list[float]]]]:
+        """Generate and MMFF94-optimize an ETKDG ensemble, retrying only
+        high-gradient candidates when no initial conformer converged."""
+        ...
+
     def rdkit_bounds_matrix(
         self,
         *,

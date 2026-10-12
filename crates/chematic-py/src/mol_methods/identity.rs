@@ -3,6 +3,7 @@ use super::*;
 use chematic_3d::rdkit_embed::{RdkitEmbedError, RdkitEmbedOptions};
 
 type PyRdkitMmffConformer = (i32, f64, Vec<[f64; 3]>);
+type PyRdkitMmffConformerDiagnostics = (i32, f64, u32, Option<f64>, Vec<[f64; 3]>);
 
 #[allow(clippy::too_many_arguments)]
 fn rdkit_embed_options(
@@ -310,6 +311,136 @@ impl Mol {
                     retry_candidates,
                 )
             }
+        })
+        .map(|conformers| {
+            conformers
+                .into_iter()
+                .map(|conformer| (conformer.status, conformer.energy, conformer.coords))
+                .collect()
+        })
+        .map_err(|error| PyValueError::new_err(error.to_string()))
+    }
+
+    /// Generate and optimize an ETKDG ensemble while returning BFGS
+    /// diagnostics as ``(status, energy, iterations, gradient_test, coords)``.
+    #[pyo3(signature = (num_confs, *, random_seed = 42, max_iterations = 0,
+                        max_mmff_iters = 200,
+                        use_exp_torsion_angle_prefs = true,
+                        use_basic_knowledge = true, et_version = 2,
+                        use_small_ring_torsions = false, use_macrocycle_torsions = true,
+                        use_macrocycle_14_config = true, enforce_chirality = true,
+                        ignore_smoothing_failures = false))]
+    #[allow(clippy::too_many_arguments)]
+    fn rdkit_embed_multiple_confs_mmff_diagnostics(
+        &self,
+        py: Python<'_>,
+        num_confs: usize,
+        random_seed: i32,
+        max_iterations: u32,
+        max_mmff_iters: u32,
+        use_exp_torsion_angle_prefs: bool,
+        use_basic_knowledge: bool,
+        et_version: u32,
+        use_small_ring_torsions: bool,
+        use_macrocycle_torsions: bool,
+        use_macrocycle_14_config: bool,
+        enforce_chirality: bool,
+        ignore_smoothing_failures: bool,
+    ) -> PyResult<Vec<PyRdkitMmffConformerDiagnostics>> {
+        use chematic_3d::rdkit_embed::rdkit_embed_multiple_confs_mmff_diagnostics;
+        let opts = rdkit_embed_options(
+            random_seed,
+            max_iterations,
+            use_exp_torsion_angle_prefs,
+            use_basic_knowledge,
+            et_version,
+            use_small_ring_torsions,
+            use_macrocycle_torsions,
+            use_macrocycle_14_config,
+            enforce_chirality,
+            ignore_smoothing_failures,
+        )?;
+        let mol = self.inner.clone();
+        py.detach(move || {
+            rdkit_embed_multiple_confs_mmff_diagnostics(&mol, num_confs, &opts, max_mmff_iters)
+        })
+        .map(|conformers| {
+            conformers
+                .into_iter()
+                .map(|result| {
+                    let conformer = result.conformer;
+                    (
+                        conformer.status,
+                        conformer.energy,
+                        result.iterations,
+                        result.final_gradient_test,
+                        conformer.coords,
+                    )
+                })
+                .collect()
+        })
+        .map_err(|error| PyValueError::new_err(error.to_string()))
+    }
+
+    /// Generate and MMFF94-optimize an ETKDG ensemble, retrying only
+    /// high-gradient candidates when no initial conformer converged.
+    #[pyo3(signature = (num_confs, *, random_seed = 42, max_iterations = 0,
+                        max_mmff_iters = 200, retry_mmff_iters = 100,
+                        retry_candidates = 1, minimum_gradient_test = 0.05,
+                        use_exp_torsion_angle_prefs = true,
+                        use_basic_knowledge = true, et_version = 2,
+                        use_small_ring_torsions = false, use_macrocycle_torsions = true,
+                        use_macrocycle_14_config = true, enforce_chirality = true,
+                        ignore_smoothing_failures = false))]
+    #[allow(clippy::too_many_arguments)]
+    fn rdkit_embed_multiple_confs_mmff_gradient_rescue(
+        &self,
+        py: Python<'_>,
+        num_confs: usize,
+        random_seed: i32,
+        max_iterations: u32,
+        max_mmff_iters: u32,
+        retry_mmff_iters: u32,
+        retry_candidates: usize,
+        minimum_gradient_test: f64,
+        use_exp_torsion_angle_prefs: bool,
+        use_basic_knowledge: bool,
+        et_version: u32,
+        use_small_ring_torsions: bool,
+        use_macrocycle_torsions: bool,
+        use_macrocycle_14_config: bool,
+        enforce_chirality: bool,
+        ignore_smoothing_failures: bool,
+    ) -> PyResult<Vec<PyRdkitMmffConformer>> {
+        use chematic_3d::rdkit_embed::rdkit_embed_multiple_confs_mmff_gradient_rescue;
+        if !minimum_gradient_test.is_finite() || minimum_gradient_test < 0.0 {
+            return Err(PyValueError::new_err(
+                "minimum_gradient_test must be finite and non-negative",
+            ));
+        }
+        let opts = rdkit_embed_options(
+            random_seed,
+            max_iterations,
+            use_exp_torsion_angle_prefs,
+            use_basic_knowledge,
+            et_version,
+            use_small_ring_torsions,
+            use_macrocycle_torsions,
+            use_macrocycle_14_config,
+            enforce_chirality,
+            ignore_smoothing_failures,
+        )?;
+        let mol = self.inner.clone();
+        py.detach(move || {
+            rdkit_embed_multiple_confs_mmff_gradient_rescue(
+                &mol,
+                num_confs,
+                &opts,
+                max_mmff_iters,
+                retry_mmff_iters,
+                retry_candidates,
+                minimum_gradient_test,
+            )
         })
         .map(|conformers| {
             conformers

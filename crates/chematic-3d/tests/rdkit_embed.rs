@@ -7,7 +7,8 @@
 use chematic_3d::rdkit_embed::{
     RdkitEmbedError, RdkitEmbedOptions, rdkit_embed_initial_molecule, rdkit_embed_molecule,
     rdkit_embed_multiple_confs, rdkit_embed_multiple_confs_mmff,
-    rdkit_embed_multiple_confs_mmff_adaptive, rdkit_embed_multiple_confs_mmff_rescue,
+    rdkit_embed_multiple_confs_mmff_adaptive, rdkit_embed_multiple_confs_mmff_diagnostics,
+    rdkit_embed_multiple_confs_mmff_gradient_rescue, rdkit_embed_multiple_confs_mmff_rescue,
 };
 
 #[allow(clippy::approx_constant, clippy::excessive_precision)]
@@ -411,6 +412,23 @@ fn multiple_conformer_mmff_is_deterministic_and_reuses_exact_field() {
 }
 
 #[test]
+fn multiple_conformer_mmff_diagnostics_preserve_compact_results() {
+    let mh = chematic_chem::add_hydrogens(&chematic_smiles::parse("CCCO").unwrap());
+    let options = RdkitEmbedOptions::default();
+    let compact = rdkit_embed_multiple_confs_mmff(&mh, 4, &options, 2).unwrap();
+    let detailed = rdkit_embed_multiple_confs_mmff_diagnostics(&mh, 4, &options, 2).unwrap();
+
+    assert_eq!(compact.len(), detailed.len());
+    for (compact, detailed) in compact.iter().zip(detailed) {
+        assert_eq!(compact.coords, detailed.conformer.coords);
+        assert_eq!(compact.status, detailed.conformer.status);
+        assert_eq!(compact.energy, detailed.conformer.energy);
+        assert_eq!(detailed.iterations, 2);
+        assert!(detailed.final_gradient_test.is_some_and(f64::is_finite));
+    }
+}
+
+#[test]
 fn adaptive_mmff_retries_only_low_energy_nonconverged_candidates() {
     let mh = chematic_chem::add_hydrogens(&chematic_smiles::parse("CCCO").unwrap());
     let options = RdkitEmbedOptions::default();
@@ -447,6 +465,33 @@ fn rescue_mmff_skips_retry_when_any_candidate_converged() {
     let rescued = rdkit_embed_multiple_confs_mmff_rescue(&mh, 4, &options, 200, 1000, 1).unwrap();
     assert_eq!(rescued.len(), initial.len());
     for (after, before) in rescued.iter().zip(initial) {
+        assert_eq!(after.coords, before.coords);
+        assert_eq!(after.status, before.status);
+        assert_eq!(after.energy, before.energy);
+    }
+}
+
+#[test]
+fn gradient_rescue_retries_only_candidates_above_threshold() {
+    let mh = chematic_chem::add_hydrogens(&chematic_smiles::parse("CCCO").unwrap());
+    let options = RdkitEmbedOptions::default();
+    let initial = rdkit_embed_multiple_confs_mmff(&mh, 4, &options, 1).unwrap();
+    let rescued =
+        rdkit_embed_multiple_confs_mmff_gradient_rescue(&mh, 4, &options, 1, 200, 1, 0.0).unwrap();
+    let skipped =
+        rdkit_embed_multiple_confs_mmff_gradient_rescue(&mh, 4, &options, 1, 200, 1, f64::MAX)
+            .unwrap();
+
+    assert_eq!(rescued.iter().filter(|row| row.status == 0).count(), 1);
+    assert_eq!(
+        rescued
+            .iter()
+            .zip(&initial)
+            .filter(|(after, before)| after.coords != before.coords)
+            .count(),
+        1
+    );
+    for (after, before) in skipped.iter().zip(initial) {
         assert_eq!(after.coords, before.coords);
         assert_eq!(after.status, before.status);
         assert_eq!(after.energy, before.energy);

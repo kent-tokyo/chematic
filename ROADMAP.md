@@ -60,6 +60,12 @@ and reproducible evidence over feature-count parity.
   of three alternating blocks. This is an effective tie, not a robust speed
   win. v4 is now inspected; two-host timing, 21 blocks, memory, and exact
   public artifacts remain open.
+- An opt-in gradient-gated rescue now exposes the optimizer's existing final
+  convergence test without another gradient pass. On the already-inspected
+  265-row development set, the fixed `0.05` threshold and one 100-iteration
+  retry reached 261/265 within 1 kcal/mol and was faster than RDKit in all
+  three alternating blocks (1.0179x median). This remains development evidence:
+  the threshold was selected there, and no fresh holdout was consumed.
 
 Exact denominators belong in [validation](docs/validation.md) and dated
 [benchmark records](benchmarks/README.md). Unresolved work is tracked in the
