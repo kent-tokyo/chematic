@@ -90,9 +90,30 @@ pub fn bfgs_minimize_detailed(
     func: impl Fn(&[f64]) -> f64,
     grad_fn: impl Fn(&[f64], &mut [f64]) -> f64,
 ) -> BfgsOutcome {
-    let done = |status: i32, stale: Option<Vec<f64>>| BfgsOutcome {
-        status,
-        stale_distance_point: stale,
+    bfgs_minimize_detailed_with_cached_energy(pos, grad_tol, max_its, func, grad_fn).outcome
+}
+
+pub(crate) struct BfgsCachedOutcome {
+    pub outcome: BfgsOutcome,
+    /// Energy already evaluated at the returned position. This is unavailable
+    /// only when RDKit restores the previous position while retaining its last
+    /// trial-point distance cache.
+    pub energy_at_returned_position: Option<f64>,
+}
+
+pub(crate) fn bfgs_minimize_detailed_with_cached_energy(
+    pos: &mut [f64],
+    grad_tol: f64,
+    max_its: u32,
+    func: impl Fn(&[f64]) -> f64,
+    grad_fn: impl Fn(&[f64], &mut [f64]) -> f64,
+) -> BfgsCachedOutcome {
+    let done = |status: i32, stale: Option<Vec<f64>>, energy| BfgsCachedOutcome {
+        outcome: BfgsOutcome {
+            status,
+            stale_distance_point: stale,
+        },
+        energy_at_returned_position: energy,
     };
     const EPS: f64 = 3e-8;
     const TOLX: f64 = 4.0 * EPS;
@@ -118,7 +139,7 @@ pub fn bfgs_minimize_detailed(
             linear_search(pos, fp, &grad, &mut xi, &mut new_pos, &func, max_step);
         if status < 0 {
             // RDKit's CHECK_INVARIANT("bad direction in linearSearch").
-            return done(-1, None);
+            return done(-1, None, Some(fp));
         }
         fp = func_val;
         let mut test = 0.0_f64;
@@ -132,7 +153,8 @@ pub fn bfgs_minimize_detailed(
             dgrad[i] = grad[i];
         }
         if test < TOLX {
-            return done(0, stale);
+            let cached_energy = stale.is_none().then_some(fp);
+            return done(0, stale, cached_energy);
         }
         let grad_scale = grad_fn(pos, &mut grad);
         test = 0.0;
@@ -144,7 +166,7 @@ pub fn bfgs_minimize_detailed(
         }
         test /= term;
         if test < grad_tol {
-            return done(0, None);
+            return done(0, None, Some(fp));
         }
         let (mut fac, mut fae, mut sum_dgrad, mut sum_xi) = (0.0, 0.0, 0.0, 0.0);
         for i in 0..dim {
@@ -184,7 +206,7 @@ pub fn bfgs_minimize_detailed(
             xi[i] = p;
         }
     }
-    done(1, None)
+    done(1, None, Some(fp))
 }
 
 /// `BFGSOpt::linearSearch`: (resCode, newVal, last trial point when the
@@ -303,6 +325,25 @@ mod tests {
         assert!((pos[0] - 1.0).abs() < 1e-3 && (pos[1] + 0.5).abs() < 1e-3);
     }
 
+    #[test]
+    fn cached_energy_matches_the_returned_position() {
+        let mut pos = vec![3.0, -2.0];
+        let cached = bfgs_minimize_detailed_with_cached_energy(
+            &mut pos,
+            1e-4,
+            200,
+            |p| (p[0] - 1.0).powi(2) + 2.0 * (p[1] + 0.5).powi(2),
+            |p, g| {
+                g[0] = 2.0 * (p[0] - 1.0);
+                g[1] = 4.0 * (p[1] + 0.5);
+                1.0
+            },
+        );
+        let direct = (pos[0] - 1.0).powi(2) + 2.0 * (pos[1] + 0.5).powi(2);
+        assert_eq!(cached.outcome.status, 0);
+        assert_eq!(cached.energy_at_returned_position, Some(direct));
+    }
+
     /// RDKit's line search gives up below `MOVETOL`, restores the start
     /// point and reports convergence; the last trial point is reported as
     /// the stale distance-cache point.
@@ -310,7 +351,7 @@ mod tests {
     fn line_search_give_up_restores_point() {
         let start = vec![0.5];
         let mut pos = start.clone();
-        let out = bfgs_minimize_detailed(
+        let cached = bfgs_minimize_detailed_with_cached_energy(
             &mut pos,
             1e-4,
             200,
@@ -320,8 +361,10 @@ mod tests {
                 1.0
             },
         );
+        let out = cached.outcome;
         assert_eq!(out.status, 0);
         assert_eq!(pos, start);
+        assert_eq!(cached.energy_at_returned_position, None);
         let stale = out.stale_distance_point.expect("trial point");
         assert!(stale[0] < 0.5 && stale[0] > 0.5 - 1e-6);
     }
