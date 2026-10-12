@@ -174,21 +174,23 @@ def reaction_gate(blocks: int) -> dict[str, Any]:
         if observed["rdkit"][row["id"]] == observed["chematic"][row["id"]]
     ]
 
+    timed_rows = [
+        row for row in exact if row["id"] not in JOINT_INVALID_REACTION_IDS
+    ]
+
     def chematic_values() -> list[list[str]]:
-        return [chematic_one(row) for row in exact]
+        return [chematic_one(row) for row in timed_rows]
 
     def rdkit_values() -> list[list[str]]:
-        return [rdkit_one(row) for row in exact]
+        return [rdkit_one(row) for row in timed_rows]
 
     end_to_end = timed_blocks(chematic_values, rdkit_values, blocks)
     end_to_end.update(
-        rows=len(exact),
-        selection="rows with identical product sets",
+        rows=len(timed_rows),
+        selection="valid rows with identical product sets",
         mode="template lookup/cache plus application; reactant parsing included",
     )
-    prepared_rows = [
-        row for row in exact if row["id"] not in JOINT_INVALID_REACTION_IDS
-    ]
+    prepared_rows = timed_rows
     chematic_preparsed = [
         (row, [chematic.from_smiles(text) for text in row["reactants"]])
         for row in prepared_rows
