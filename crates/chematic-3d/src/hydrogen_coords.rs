@@ -132,6 +132,105 @@ fn bond_length(atomic_number: u32) -> f64 {
         + chematic_chem::rdkit_single_bond_radius(atomic_number as u8)
 }
 
+fn direction_from_three_neighbors(
+    view: &chematic_smiles::RdkitMolView,
+    coords: &Coords3D,
+    parent: usize,
+    neighbors: &[usize],
+) -> Option<Point3> {
+    let parent_pos = coords.points[parent];
+    let v1 = point_away(parent_pos, coords.points[neighbors[0]])?;
+    let v2 = point_away(parent_pos, coords.points[neighbors[1]])?;
+    let v3 = point_away(parent_pos, coords.points[neighbors[2]])?;
+    let mut direction = if v3.dot(&v1.cross(&v2)).abs() < 0.1 {
+        let mut normal = v1.cross(&v2);
+        if norm_sq(normal) < ZERO_TOL_SQ {
+            normal = v1.cross(&v3).scale(-1.0);
+        }
+        if norm_sq(normal) < ZERO_TOL_SQ {
+            normal = v2.cross(&v3);
+        }
+        if norm_sq(normal) < ZERO_TOL_SQ {
+            return None;
+        }
+        if matches!(view.atoms[parent].chiral_tag, 1 | 2) {
+            let volume = normal.sub(&v3).dot(&v1.sub(&v3).cross(&v2.sub(&v3)));
+            if (view.atoms[parent].chiral_tag == 2 && volume < 0.0)
+                || (view.atoms[parent].chiral_tag == 1 && volume > 0.0)
+            {
+                normal = normal.scale(-1.0);
+            }
+        }
+        normal
+    } else {
+        v1.add(&v2).add(&v3)
+    };
+    direction = normalized(direction).unwrap_or(Point3::new(0.0, 0.0, 1.0));
+    Some(direction)
+}
+
+fn initial_hydrogen_direction(
+    view: &chematic_smiles::RdkitMolView,
+    coords: &Coords3D,
+    parent: usize,
+    hydrogen: usize,
+) -> Option<Point3> {
+    let parent_pos = coords.points[parent];
+    let others: Vec<usize> = view
+        .neighbors(parent)
+        .filter(|&neighbor| neighbor != hydrogen && neighbor < hydrogen)
+        .collect();
+    match others.len() + 1 {
+        1 => Some(Point3::new(0.0, 0.0, 1.0)),
+        2 => {
+            let neighbor = others[0];
+            let away = point_away(parent_pos, coords.points[neighbor])?;
+            match view.atoms[parent].hybridization {
+                4 => Some(rotate(
+                    away,
+                    perpendicular(away),
+                    (180.0_f64 - 109.471).to_radians(),
+                )),
+                3 => {
+                    let mut axis = perpendicular(away);
+                    if view.degree(neighbor) > 1 {
+                        let bond = view
+                            .bond_between(parent, neighbor)
+                            .expect("neighbors are bonded");
+                        let bond = &view.bonds[bond];
+                        if (bond.is_aromatic || bond.bond_type == 2 || bond.is_conjugated)
+                            && let Some(next) =
+                                view.neighbors(neighbor).find(|&atom| atom != parent)
+                        {
+                            let along = coords.points[next].sub(&coords.points[neighbor]);
+                            let cross = along.cross(&away);
+                            if norm_sq(cross) >= ZERO_TOL_SQ {
+                                axis = cross.normalize();
+                            }
+                        }
+                    }
+                    Some(rotate(away, axis, 60.0_f64.to_radians()))
+                }
+                _ => Some(away),
+            }
+        }
+        3 => {
+            let v1 = point_away(parent_pos, coords.points[others[0]])?;
+            let v2 = point_away(parent_pos, coords.points[others[1]])?;
+            let mut direction = normalized(v1.add(&v2))?;
+            if view.atoms[parent].hybridization == 4 {
+                let axis = v1.cross(&v2).cross(&direction);
+                if norm_sq(axis) >= ZERO_TOL_SQ {
+                    direction = rotate(direction, axis, (109.471_f64 / 2.0).to_radians());
+                }
+            }
+            Some(direction)
+        }
+        4 => direction_from_three_neighbors(view, coords, parent, &others[..3]),
+        _ => Some(Point3::new(0.0, 0.0, 1.0)),
+    }
+}
+
 /// Return `mol` with all implicit hydrogens made explicit and coordinates
 /// appended for those hydrogens. Original atom indices and coordinates are
 /// unchanged.
@@ -163,110 +262,10 @@ pub fn add_hydrogens_with_coords(
         }
         let parent = active[0];
         let parent_pos = out.points[parent];
-        let mut others: Vec<usize> = view
-            .neighbors(parent)
-            .filter(|&n| n != h && n < h)
-            .collect();
-        let degree = others.len() + 1;
         let length = bond_length(view.atoms[parent].atomic_num);
-
-        let direction = match degree {
-            1 => Point3::new(0.0, 0.0, 1.0),
-            2 => {
-                let n1 = others[0];
-                let Some(away) = point_away(parent_pos, out.points[n1]) else {
-                    out.points[h] = parent_pos;
-                    continue;
-                };
-                match view.atoms[parent].hybridization {
-                    4 => rotate(
-                        away,
-                        perpendicular(away),
-                        (180.0_f64 - 109.471).to_radians(),
-                    ),
-                    3 => {
-                        let mut axis = perpendicular(away);
-                        if view.degree(n1) > 1 {
-                            let bond = view.bond_between(parent, n1).expect("neighbors are bonded");
-                            let b = &view.bonds[bond];
-                            if (b.is_aromatic || b.bond_type == 2 || b.is_conjugated)
-                                && let Some(n2) = view.neighbors(n1).find(|&n| n != parent)
-                            {
-                                let along = out.points[n2].sub(&out.points[n1]);
-                                let cross = along.cross(&away);
-                                if norm_sq(cross) >= ZERO_TOL_SQ {
-                                    axis = cross.normalize();
-                                }
-                            }
-                        }
-                        rotate(away, axis, 60.0_f64.to_radians())
-                    }
-                    _ => away,
-                }
-            }
-            3 => {
-                let Some(v1) = point_away(parent_pos, out.points[others[0]]) else {
-                    out.points[h] = parent_pos;
-                    continue;
-                };
-                let Some(v2) = point_away(parent_pos, out.points[others[1]]) else {
-                    out.points[h] = parent_pos;
-                    continue;
-                };
-                let Some(mut direction) = normalized(v1.add(&v2)) else {
-                    out.points[h] = parent_pos;
-                    continue;
-                };
-                if view.atoms[parent].hybridization == 4 {
-                    let axis = v1.cross(&v2).cross(&direction);
-                    if norm_sq(axis) >= ZERO_TOL_SQ {
-                        direction = rotate(direction, axis, (109.471_f64 / 2.0).to_radians());
-                    }
-                }
-                direction
-            }
-            4 => {
-                others.truncate(3);
-                let Some(v1) = point_away(parent_pos, out.points[others[0]]) else {
-                    out.points[h] = parent_pos;
-                    continue;
-                };
-                let Some(v2) = point_away(parent_pos, out.points[others[1]]) else {
-                    out.points[h] = parent_pos;
-                    continue;
-                };
-                let Some(v3) = point_away(parent_pos, out.points[others[2]]) else {
-                    out.points[h] = parent_pos;
-                    continue;
-                };
-                let mut direction = if v3.dot(&v1.cross(&v2)).abs() < 0.1 {
-                    let mut normal = v1.cross(&v2);
-                    if norm_sq(normal) < ZERO_TOL_SQ {
-                        normal = v1.cross(&v3).scale(-1.0);
-                    }
-                    if norm_sq(normal) < ZERO_TOL_SQ {
-                        normal = v2.cross(&v3);
-                    }
-                    if norm_sq(normal) < ZERO_TOL_SQ {
-                        out.points[h] = parent_pos;
-                        continue;
-                    }
-                    if matches!(view.atoms[parent].chiral_tag, 1 | 2) {
-                        let volume = normal.sub(&v3).dot(&v1.sub(&v3).cross(&v2.sub(&v3)));
-                        if (view.atoms[parent].chiral_tag == 2 && volume < 0.0)
-                            || (view.atoms[parent].chiral_tag == 1 && volume > 0.0)
-                        {
-                            normal = normal.scale(-1.0);
-                        }
-                    }
-                    normal
-                } else {
-                    v1.add(&v2).add(&v3)
-                };
-                direction = normalized(direction).unwrap_or(Point3::new(0.0, 0.0, 1.0));
-                direction
-            }
-            _ => Point3::new(0.0, 0.0, 1.0),
+        let Some(direction) = initial_hydrogen_direction(&view, &out, parent, h) else {
+            out.points[h] = parent_pos;
+            continue;
         };
         out.points[h] = parent_pos.add(&direction.scale(length));
     }
