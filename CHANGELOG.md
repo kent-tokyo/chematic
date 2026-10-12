@@ -12,6 +12,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added a pinned RDKit 2026.03.6 workflow comparison for the 83-row checked
+  reaction gate, 39-row largest-fragment standardization set, and 16-row
+  labelled R-group set. It verifies output before timing, separates
+  parse-inclusive and prepared reaction lanes, and records 31 alternating
+  blocks with paired intervals.
 - Added deterministic RDKit 2026.03-compatible multi-conformer ETKDG and
   combined ETKDG/MMFF94 APIs for Rust and Python. Native builds share
   topology, torsion, and force-field setup across candidates and optimize
@@ -56,6 +61,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- Fixed labelled R-group column alignment on symmetric cores. A prior
+  unordered comparison hid a row where the correct fragments were assigned to
+  the opposite `R1`/`R2` columns. Exact column history remains primary and
+  ECFP4 similarity now resolves previously unseen symmetric ties. Matching no
+  longer serializes and reparses every input molecule.
 - Fixed the RDKit-compatible HBD/QED path depending on whether a charged
   aromatic nitrogen was written in aromatic or Kekule form. Inputs such as
   `[NH+]1=CC=CC=C1` now match RDKit with HBD 0; Rust, Python, and WASM retain
