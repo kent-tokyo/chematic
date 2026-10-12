@@ -146,6 +146,13 @@ fn rgroup_decompose_labeled<'py>(
     let refs: Vec<&chematic_core::Molecule> = mols.iter().map(|m| m.inner.as_ref()).collect();
     let results = chematic_chem::rgroup_decompose_labeled(scaffold_smarts, &refs)
         .map_err(|e| PyValueError::new_err(e.to_string()))?;
+    labeled_rgroup_rows_to_python(results, py)
+}
+
+fn labeled_rgroup_rows_to_python<'py>(
+    results: Vec<Option<chematic_chem::LabeledRGroupResult>>,
+    py: Python<'py>,
+) -> PyResult<Vec<Option<Bound<'py, PyDict>>>> {
     results
         .into_iter()
         .map(|opt| match opt {
@@ -178,6 +185,13 @@ fn rgroup_decompose_columns<'py>(
     let refs: Vec<&chematic_core::Molecule> = mols.iter().map(|m| m.inner.as_ref()).collect();
     let results = chematic_chem::rgroup_decompose_labeled(scaffold_smarts, &refs)
         .map_err(|e| PyValueError::new_err(e.to_string()))?;
+    labeled_rgroup_columns_to_python(results, py)
+}
+
+fn labeled_rgroup_columns_to_python<'py>(
+    results: Vec<Option<chematic_chem::LabeledRGroupResult>>,
+    py: Python<'py>,
+) -> PyResult<Bound<'py, PyDict>> {
     let labels: std::collections::BTreeSet<u16> = results
         .iter()
         .flatten()
@@ -201,6 +215,53 @@ fn rgroup_decompose_columns<'py>(
         columns.set_item(format!("R{label}"), values)?;
     }
     Ok(columns)
+}
+
+/// A parsed R-group core for repeated decomposition of molecule batches.
+///
+/// The prepared form has the same labelled output contract as
+/// :func:`rgroup_decompose_labeled`, while avoiding repeated SMARTS parsing.
+#[pyclass(name = "PreparedRGroupCore")]
+struct PyPreparedRGroupCore {
+    inner: chematic_chem::PreparedRGroupCore,
+}
+
+#[pymethods]
+impl PyPreparedRGroupCore {
+    #[new]
+    fn new(scaffold_smarts: &str) -> PyResult<Self> {
+        let inner = chematic_chem::PreparedRGroupCore::new(scaffold_smarts)
+            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        Ok(Self { inner })
+    }
+
+    /// Return labelled rows parallel to the input molecules.
+    fn decompose_labeled<'py>(
+        &self,
+        mols: Vec<Mol>,
+        py: Python<'py>,
+    ) -> PyResult<Vec<Option<Bound<'py, PyDict>>>> {
+        let refs: Vec<&chematic_core::Molecule> = mols.iter().map(|m| m.inner.as_ref()).collect();
+        let results = self
+            .inner
+            .decompose_labeled(&refs)
+            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        labeled_rgroup_rows_to_python(results, py)
+    }
+
+    /// Return ``Core`` and ``R<n>`` columns parallel to the input molecules.
+    fn decompose_columns<'py>(
+        &self,
+        mols: Vec<Mol>,
+        py: Python<'py>,
+    ) -> PyResult<Bound<'py, PyDict>> {
+        let refs: Vec<&chematic_core::Molecule> = mols.iter().map(|m| m.inner.as_ref()).collect();
+        let results = self
+            .inner
+            .decompose_labeled(&refs)
+            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        labeled_rgroup_columns_to_python(results, py)
+    }
 }
 
 /// Detect activity cliffs in a set of molecules with known activity values.
@@ -1154,6 +1215,7 @@ fn find_mcs_checked(
 // ---------------------------------------------------------------------------
 
 pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_class::<PyPreparedRGroupCore>()?;
     register_pyfunctions!(
         m,
         reaction_smarts_match,

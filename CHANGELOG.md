@@ -12,6 +12,14 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added reusable Rust and Python `PreparedRGroupCore` APIs for repeated
+  labelled R-group decomposition without reparsing the core SMARTS. Existing
+  free functions use the same prepared implementation and retain their output
+  contract.
+- Expanded the pinned RDKit workflow benchmark with prepared R-group timing
+  and seven MolStandardize stages over a deterministic 256-row stress-corpus
+  slice. Parser semantics, operation agreement, parse-inclusive timing, and
+  preparsed timing are reported separately.
 - Added browser/Node Brenk structural-alert APIs. `MolHandle.brenk_passes()`
   and `brenk_matches_json(mol)` mirror the Rust and Python bindings, while
   `brenk_report_json(smiles)` returns a stable `{passes, alerts}` report and
@@ -65,6 +73,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- Normalized neutral three-coordinate sulfoxides from `S=O` to RDKit's
+  charge-separated `[S+]-[O-]` form. Sulfones and other four-coordinate
+  sulfur remain outside that rule.
 - Fixed labelled R-group column alignment on symmetric cores. A prior
   unordered comparison hid a row where the correct fragments were assigned to
   the opposite `R1`/`R2` columns. Exact column history remains primary and
