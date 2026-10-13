@@ -4,6 +4,7 @@ from .chematic import (
     Mol,
     SimilarityIndex,
     PreparedFingerprintIndex,
+    MolecularForceField,
     SdfRecord,
     SdfIter,
     bulk,

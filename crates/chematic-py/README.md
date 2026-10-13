@@ -96,6 +96,12 @@ try:
     print(result["final_validation"]["sound"])
 except chematic.PipelineV2Error as e:
     print(e.diagnostics["stage"], e.diagnostics["cause"])   # structured, not just a message
+
+# Reuse prepared MMFF94 terms across iterative energy/gradient calls
+field = mol.mmff_force_field(coords)
+energy, gradient = field.energy_gradient()
+field.set_position_(0, [coords[0][0] + 0.01, *coords[0][1:]])
+status, optimized_energy = field.minimize_()
 ```
 
 ## Features
@@ -114,6 +120,9 @@ except chematic.PipelineV2Error as e:
 - **SVG / PDF / EPS depiction**: `mol.to_svg()`, `mol.to_pdf()`, `mol.to_eps()`
 - **ChemicalJSON**: `mol.to_cjson(coords=[])`, `chematic.from_cjson(s)` — Avogadro 2 / MolSSI compatible
 - **Opt-in v2 embedding pipeline**: `mol.embed_pipeline_v2(config)` — torsion-knowledge-aware distance geometry, stereo verify/repair, and policy-gated force field (`PipelineV2Config`), returning full per-stage evidence (embed stats, torsion knowledge/optimization reports, stereo before/after, force-field actual policy and fallback, final geometry validation, stage timings) instead of just coordinates; raises `chematic.PipelineV2Error` with structured `.diagnostics` on failure
+- **Reusable MMFF94/UFF objects**: `mol.mmff_force_field(coords)` and
+  `mol.uff_force_field(coords)` retain prepared terms across energy, gradient,
+  coordinate-update, and in-place minimization calls
 
 ## RDKit compatibility
 

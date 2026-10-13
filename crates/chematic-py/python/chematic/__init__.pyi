@@ -65,6 +65,39 @@ class MoleculeBatch:
 
     def hbd_counts(self) -> list[int]: ...
 
+class MolecularForceField:
+    """A prepared MMFF94 or UFF force field with mutable coordinates.
+
+    Construct with :meth:`Mol.mmff_force_field` or
+    :meth:`Mol.uff_force_field`. Reusing this object avoids repeating atom
+    typing and force-field term construction.
+    """
+
+    @property
+    def kind(self) -> str: ...
+
+    @property
+    def num_atoms(self) -> int: ...
+
+    @property
+    def positions(self) -> list[list[float]]: ...
+
+    def set_positions_(self, coords: list[list[float]]) -> MolecularForceField: ...
+
+    def position(self, atom_index: int) -> list[float]: ...
+
+    def set_position_(
+        self, atom_index: int, position: list[float]
+    ) -> MolecularForceField: ...
+
+    def energy(self) -> float: ...
+
+    def gradient(self) -> list[list[float]]: ...
+
+    def energy_gradient(self) -> tuple[float, list[list[float]]]: ...
+
+    def minimize_(self, max_iters: int = 200) -> tuple[int, float]: ...
+
 # ---------------------------------------------------------------------------
 # Mol
 # ---------------------------------------------------------------------------
@@ -1383,6 +1416,25 @@ class Mol:
         ...
 
     # -- Force field analysis ------------------------------------------------
+
+    def mmff_force_field(
+        self,
+        coords: list[list[float]],
+        variant: str = "MMFF94",
+        non_bonded_thresh: float = 100.0,
+        ignore_interfrag_interactions: bool = True,
+    ) -> MolecularForceField:
+        """Build a reusable RDKit-compatible MMFF94 force field."""
+        ...
+
+    def uff_force_field(
+        self,
+        coords: list[list[float]],
+        vdw_thresh: float = 10.0,
+        ignore_interfrag_interactions: bool = True,
+    ) -> MolecularForceField:
+        """Build a reusable RDKit-compatible UFF force field."""
+        ...
 
     def mmff94_total_energy(
         self, coords: list[list[float]], ignore_interfrag_interactions: bool = False

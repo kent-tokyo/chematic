@@ -35,6 +35,7 @@ mod crystal;
 mod ensemble_v2;
 mod errors;
 mod fingerprint_similarity;
+mod force_field;
 mod formats;
 mod lammps;
 mod misc;
@@ -88,6 +89,7 @@ impl Mol {
 #[pymodule]
 fn chematic(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Mol>()?;
+    m.add_class::<force_field::PyMolecularForceField>()?;
     m.add_class::<rwmol::RWMol>()?;
     m.add_class::<pipeline_v2::PyPipelineV2Config>()?;
     m.add(
