@@ -390,8 +390,14 @@ pub(crate) fn encode(mol: &Mol) -> Result<Vec<u8>, String> {
     Ok(writer.0)
 }
 
-pub(crate) fn decode(payload: &[u8]) -> Result<Mol, String> {
-    let mut reader = Reader::new(payload)?;
+struct PickleCounts {
+    atoms: usize,
+    bonds: usize,
+    groups: usize,
+    properties: usize,
+}
+
+fn decode_header(reader: &mut Reader<'_>) -> Result<PickleCounts, String> {
     if reader.take(MAGIC.len())? != MAGIC {
         return Err("invalid chematic molecule pickle header".into());
     }
@@ -401,12 +407,51 @@ pub(crate) fn decode(payload: &[u8]) -> Result<Mol, String> {
             "unsupported chematic molecule pickle version {version} (expected {VERSION})"
         ));
     }
-    let atom_count = reader.bounded_count("atom", MAX_ATOMS)?;
-    let bond_count = reader.bounded_count("bond", MAX_BONDS)?;
-    let group_count = reader.bounded_count("stereo group", MAX_GROUPS)?;
-    let property_count = reader.bounded_count("property", MAX_PROPERTIES)?;
-    let mut builder = MoleculeBuilder::with_capacity(atom_count, bond_count);
+    Ok(PickleCounts {
+        atoms: reader.bounded_count("atom", MAX_ATOMS)?,
+        bonds: reader.bounded_count("bond", MAX_BONDS)?,
+        groups: reader.bounded_count("stereo group", MAX_GROUPS)?,
+        properties: reader.bounded_count("property", MAX_PROPERTIES)?,
+    })
+}
 
+fn decode_stereo_order(reader: &mut Reader<'_>, atom_count: usize) -> Result<Vec<u32>, String> {
+    let neighbor_count = reader.bounded_count("stereo neighbor", atom_count + 1)?;
+    let mut order = Vec::with_capacity(neighbor_count);
+    for _ in 0..neighbor_count {
+        let neighbor = reader.u32()?;
+        if neighbor != STEREO_H_SENTINEL && neighbor as usize >= atom_count {
+            return Err(format!(
+                "stereo neighbor atom index {neighbor} is out of range"
+            ));
+        }
+        order.push(neighbor);
+    }
+    Ok(order)
+}
+
+fn apply_r_group(builder: &mut MoleculeBuilder, atom: AtomIdx, encoded: u16) -> Result<(), String> {
+    match encoded {
+        0 => Ok(()),
+        1 => {
+            builder.set_r_group(atom, RGroupLabel::unnumbered());
+            Ok(())
+        }
+        2..=10_000 => {
+            let label = RGroupLabel::numbered(encoded - 1)
+                .ok_or_else(|| format!("invalid R-group label {encoded}"))?;
+            builder.set_r_group(atom, label);
+            Ok(())
+        }
+        _ => Err(format!("invalid R-group label encoding {encoded}")),
+    }
+}
+
+fn decode_atoms(
+    reader: &mut Reader<'_>,
+    builder: &mut MoleculeBuilder,
+    atom_count: usize,
+) -> Result<(), String> {
     for atom_index in 0..atom_count {
         let atomic_number = reader.u8()?;
         let element = Element::from_atomic_number(atomic_number)
@@ -421,17 +466,7 @@ pub(crate) fn decode(payload: &[u8]) -> Result<Mol, String> {
         let cip_code = cip_from_u8(reader.u8()?)?;
         let tag = reader.u16()?;
         let r_group = reader.u16()?;
-        let neighbor_count = reader.bounded_count("stereo neighbor", atom_count + 1)?;
-        let mut stereo_order = Vec::with_capacity(neighbor_count);
-        for _ in 0..neighbor_count {
-            let neighbor = reader.u32()?;
-            if neighbor != STEREO_H_SENTINEL && neighbor as usize >= atom_count {
-                return Err(format!(
-                    "stereo neighbor atom index {neighbor} is out of range"
-                ));
-            }
-            stereo_order.push(neighbor);
-        }
+        let stereo_order = decode_stereo_order(reader, atom_count)?;
         let idx = builder.add_atom(Atom {
             element,
             isotope,
@@ -447,21 +482,37 @@ pub(crate) fn decode(payload: &[u8]) -> Result<Mol, String> {
         if tag != 0 {
             builder.set_tag(idx, Some(tag));
         }
-        match r_group {
-            0 => {}
-            1 => builder.set_r_group(idx, RGroupLabel::unnumbered()),
-            2..=10_000 => builder.set_r_group(
-                idx,
-                RGroupLabel::numbered(r_group - 1)
-                    .ok_or_else(|| format!("invalid R-group label {r_group}"))?,
-            ),
-            _ => return Err(format!("invalid R-group label encoding {r_group}")),
-        }
+        apply_r_group(builder, idx, r_group)?;
         if !stereo_order.is_empty() {
             builder.set_stereo_neighbor_order(idx, stereo_order);
         }
     }
+    Ok(())
+}
 
+type RingClosure = Option<(u32, u32, Option<bool>)>;
+
+fn decode_ring_closure(reader: &mut Reader<'_>) -> Result<RingClosure, String> {
+    if !reader.bool("ring closure")? {
+        return Ok(None);
+    }
+    let label = reader.u32()?;
+    let occurrence = reader.u32()?;
+    let begins = match reader.u8()? {
+        0 => None,
+        1 => Some(false),
+        2 => Some(true),
+        value => return Err(format!("invalid ring-closure endpoint flag {value}")),
+    };
+    Ok(Some((label, occurrence, begins)))
+}
+
+fn decode_bonds(
+    reader: &mut Reader<'_>,
+    builder: &mut MoleculeBuilder,
+    atom_count: usize,
+    bond_count: usize,
+) -> Result<(), String> {
     for _ in 0..bond_count {
         let atom1 = checked_atom(reader.u32()?, atom_count, "bond endpoint")?;
         let atom2 = checked_atom(reader.u32()?, atom_count, "bond endpoint")?;
@@ -477,20 +528,7 @@ pub(crate) fn decode(payload: &[u8]) -> Result<Mol, String> {
             u32::MAX => None,
             value => Some(checked_atom(value, atom_count, "bond direction anchor")?),
         };
-        let has_ring = reader.bool("ring closure")?;
-        let ring = if has_ring {
-            let label = reader.u32()?;
-            let occurrence = reader.u32()?;
-            let begins = match reader.u8()? {
-                0 => None,
-                1 => Some(false),
-                2 => Some(true),
-                value => return Err(format!("invalid ring-closure endpoint flag {value}")),
-            };
-            Some((label, occurrence, begins))
-        } else {
-            None
-        };
+        let ring = decode_ring_closure(reader)?;
         let bond = builder
             .add_bond(atom1, atom2, order)
             .map_err(|error| format!("invalid bond in pickle: {error}"))?;
@@ -510,41 +548,65 @@ pub(crate) fn decode(payload: &[u8]) -> Result<Mol, String> {
             }
         }
     }
+    Ok(())
+}
 
-    for _ in 0..group_count {
-        let group_kind = reader.u8()?;
-        let group_number = reader.u32()?;
-        let kind = match (group_kind, group_number) {
-            (0, 0) => StereoGroupKind::Absolute,
-            (1, number) if number != 0 => StereoGroupKind::Or(number),
-            (2, number) if number != 0 => StereoGroupKind::And(number),
-            _ => {
-                return Err(format!(
-                    "invalid stereo group kind {group_kind} number {group_number}"
-                ));
-            }
-        };
-        let atom_members = reader.bounded_count("stereo group atom", atom_count)?;
+fn decode_group_kind(reader: &mut Reader<'_>) -> Result<StereoGroupKind, String> {
+    let kind = reader.u8()?;
+    let number = reader.u32()?;
+    match (kind, number) {
+        (0, 0) => Ok(StereoGroupKind::Absolute),
+        (1, number) if number != 0 => Ok(StereoGroupKind::Or(number)),
+        (2, number) if number != 0 => Ok(StereoGroupKind::And(number)),
+        _ => Err(format!("invalid stereo group kind {kind} number {number}")),
+    }
+}
+
+fn decode_stereo_groups(
+    reader: &mut Reader<'_>,
+    builder: &mut MoleculeBuilder,
+    counts: &PickleCounts,
+) -> Result<(), String> {
+    for _ in 0..counts.groups {
+        let kind = decode_group_kind(reader)?;
+        let atom_members = reader.bounded_count("stereo group atom", counts.atoms)?;
         let mut atoms = Vec::with_capacity(atom_members);
         for _ in 0..atom_members {
-            atoms.push(checked_atom(reader.u32()?, atom_count, "stereo group")?);
+            atoms.push(checked_atom(reader.u32()?, counts.atoms, "stereo group")?);
         }
-        let bond_members = reader.bounded_count("stereo group bond", bond_count)?;
+        let bond_members = reader.bounded_count("stereo group bond", counts.bonds)?;
         let mut bonds = Vec::with_capacity(bond_members);
         for _ in 0..bond_members {
-            bonds.push(checked_bond(reader.u32()?, bond_count, "stereo group")?);
+            bonds.push(checked_bond(reader.u32()?, counts.bonds, "stereo group")?);
         }
         builder.add_stereo_group_with_bonds(StereoGroup::new(kind, atoms), bonds);
     }
+    Ok(())
+}
 
-    let mut props = HashMap::with_capacity(property_count);
-    for _ in 0..property_count {
+fn decode_properties(
+    reader: &mut Reader<'_>,
+    count: usize,
+) -> Result<HashMap<String, String>, String> {
+    let mut props = HashMap::with_capacity(count);
+    for _ in 0..count {
         let key = reader.string("property key")?;
         let value = reader.string("property value")?;
         if props.insert(key.clone(), value).is_some() {
             return Err(format!("duplicate property key {key:?}"));
         }
     }
+    Ok(props)
+}
+
+pub(crate) fn decode(payload: &[u8]) -> Result<Mol, String> {
+    let mut reader = Reader::new(payload)?;
+    let counts = decode_header(&mut reader)?;
+    let mut builder = MoleculeBuilder::with_capacity(counts.atoms, counts.bonds);
+    decode_atoms(&mut reader, &mut builder, counts.atoms)?;
+    decode_bonds(&mut reader, &mut builder, counts.atoms, counts.bonds)?;
+    decode_stereo_groups(&mut reader, &mut builder, &counts)?;
+    let props = decode_properties(&mut reader, counts.properties)?;
     reader.finish()?;
     Ok(Mol {
         inner: Arc::new(builder.build()),
