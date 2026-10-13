@@ -4,14 +4,16 @@
 //! delimiter lines.  Data-field sections between `M  END` and `$$$$` are
 //! accepted but ignored.
 
-use chematic_core::{Coords3D, Molecule};
-use chematic_perception::{EzDirectionDiagnostic, StereoDiagnostic};
-
 use crate::error::MolParseError;
 use crate::mol2000::{
     CoordinateDimension, GeometryRank, MolMetadata, Stereo3DDiagnostic, parse_mol, parse_mol_fast,
     read_mol_with_diagnostics,
 };
+use chematic_core::{Coords3D, Molecule};
+use chematic_perception::{EzDirectionDiagnostic, StereoDiagnostic};
+
+mod dataset;
+pub use dataset::{SdfDataset, SdfRecordMetadata};
 
 /// Iterator over molecules in an SDF string.
 ///
@@ -686,9 +688,7 @@ impl<R: std::io::BufRead> Iterator for SdfFileReader<R> {
     }
 }
 
-// ---------------------------------------------------------------------------
 // SdfBatchReader — bounded pull-based batches
-// ---------------------------------------------------------------------------
 
 /// One bounded, input-ordered batch from [`SdfBatchReader`].
 ///
@@ -853,6 +853,8 @@ impl<R: std::io::BufRead> Iterator for SdfBatchReader<R> {
 mod tests {
     use super::*;
 
+    #[path = "dataset_tests.rs"]
+    mod dataset_tests;
     #[path = "reader_limit_tests.rs"]
     mod reader_limit_tests;
 

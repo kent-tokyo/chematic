@@ -12,6 +12,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added Rust and Python `SdfDataset` APIs for indexed, bounded-memory access to
+  seekable SDF files. Opening scans record boundaries and title lines once;
+  records and SD fields are parsed lazily for random access or bounded range
+  reads, while malformed records keep their source index.
 - Added CTfile 2026 V3000 bond enhanced-stereo collections. The reader and
   writer preserve `STEBABS`, `STEBRACn`, and `STEBRELn` bond members, reject
   dangling bond references, and merge atom and bond collection lines that

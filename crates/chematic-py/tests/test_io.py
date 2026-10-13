@@ -120,6 +120,39 @@ def test_iter_sdf_batched_contract(tmp_path):
     assert '"status":"cancelled"' in stream.manifest_json()
 
 
+def test_sdf_dataset_indexes_and_reads_random_records(tmp_path):
+    sdf_path = tmp_path / "test.sdf"
+    sdf_path.write_text(MINIMAL_SDF)
+    dataset = chematic.SdfDataset.open(str(sdf_path))
+
+    assert len(dataset) == 2
+    assert dataset.metadata(0).index == 0
+    assert dataset.metadata(0).byte_offset == 0
+    assert dataset.metadata(0).byte_len > 0
+    assert dataset.metadata(0).title == "aspirin"
+    assert dataset[-1].name == "ethanol"
+    assert dataset.get(0).get("MW") == "180.16"
+    assert [record.name for record in dataset.read_range(1, 99)] == ["ethanol"]
+    assert dataset.raw_record(1).splitlines()[0] == "ethanol"
+
+
+def test_sdf_dataset_reports_bad_indices_and_records(tmp_path):
+    sdf_path = tmp_path / "bad.sdf"
+    sdf_path.write_text(f"{MALFORMED_RECORD}$$$$\n{MOL_A}$$$$\n")
+    dataset = chematic.SdfDataset(str(sdf_path))
+
+    assert len(dataset) == 2
+    with pytest.raises(chematic.ChematicInputError) as exc:
+        dataset[0]
+    assert exc.value.category == "malformed"
+    assert exc.value.format == "sdf"
+    assert dataset[1].name == "mol_a"
+    with pytest.raises(IndexError):
+        dataset[2]
+    with pytest.raises(IndexError):
+        dataset[-3]
+
+
 # ── parse_sdf_with_coords: issue #171 (blank MOL name line) ─────────────────
 
 MOL_A = """mol_a

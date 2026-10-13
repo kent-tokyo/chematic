@@ -113,6 +113,142 @@ fn parse_to_iter(content: &str) -> SdfIter {
     }
 }
 
+fn py_sdf_record(rec: chematic_mol::SdfRecord) -> PySdfRecord {
+    PySdfRecord {
+        mol: Mol {
+            inner: Arc::new(rec.mol),
+            props: Default::default(),
+        },
+        name: rec.meta.name,
+        props: rec.properties,
+        stereo_diagnostics: rec.stereo_diagnostics,
+    }
+}
+
+fn sdf_dataset_error(error: chematic_mol::MolParseError) -> PyErr {
+    match error {
+        chematic_mol::MolParseError::Io(message) => pyo3::exceptions::PyIOError::new_err(message),
+        error @ chematic_mol::MolParseError::ResourceLimit { .. } => crate::errors::input_error(
+            "resource_limit",
+            "sdf_resource_limit",
+            "sdf",
+            error.to_string(),
+        ),
+        error => crate::errors::malformed("sdf", error.to_string()),
+    }
+}
+
+fn dataset_index(index: isize, len: usize) -> PyResult<usize> {
+    let len = isize::try_from(len).unwrap_or(isize::MAX);
+    let normalized = if index < 0 {
+        len.checked_add(index)
+    } else {
+        Some(index)
+    };
+    normalized
+        .filter(|&index| index >= 0 && index < len)
+        .map(|index| index as usize)
+        .ok_or_else(|| pyo3::exceptions::PyIndexError::new_err("SDF record index out of range"))
+}
+
+/// Metadata collected while indexing an SDF file, without parsing the graph.
+#[pyclass(name = "SdfRecordMetadata", frozen)]
+pub struct PySdfRecordMetadata {
+    #[pyo3(get)]
+    index: usize,
+    #[pyo3(get)]
+    byte_offset: u64,
+    #[pyo3(get)]
+    byte_len: usize,
+    #[pyo3(get)]
+    title: String,
+}
+
+impl From<&chematic_mol::SdfRecordMetadata> for PySdfRecordMetadata {
+    fn from(metadata: &chematic_mol::SdfRecordMetadata) -> Self {
+        Self {
+            index: metadata.index,
+            byte_offset: metadata.byte_offset,
+            byte_len: metadata.byte_len,
+            title: metadata.title.clone(),
+        }
+    }
+}
+
+/// Indexed random access to a seekable SDF file.
+///
+/// Construction scans only record boundaries and title lines. Molecular
+/// graphs and SD fields are parsed lazily when a record is requested, so a
+/// large file does not need to be materialized as Python objects.
+#[pyclass(name = "SdfDataset", frozen)]
+pub struct PySdfDataset {
+    inner: chematic_mol::SdfDataset,
+}
+
+#[pymethods]
+impl PySdfDataset {
+    #[new]
+    fn new(path: &str) -> PyResult<Self> {
+        Self::open(path)
+    }
+
+    #[staticmethod]
+    fn open(path: &str) -> PyResult<Self> {
+        chematic_mol::SdfDataset::open(path)
+            .map(|inner| Self { inner })
+            .map_err(sdf_dataset_error)
+    }
+
+    fn __len__(&self) -> usize {
+        self.inner.len()
+    }
+
+    fn __getitem__(&self, index: isize) -> PyResult<PySdfRecord> {
+        self.get(index)
+    }
+
+    /// Parse one record. Negative indices follow normal Python semantics.
+    fn get(&self, index: isize) -> PyResult<PySdfRecord> {
+        let index = dataset_index(index, self.inner.len())?;
+        self.inner
+            .get(index)
+            .map_err(sdf_dataset_error)?
+            .map(py_sdf_record)
+            .ok_or_else(|| pyo3::exceptions::PyIndexError::new_err("SDF record index out of range"))
+    }
+
+    /// Read one raw record without the terminating ``$$$$`` line.
+    fn raw_record(&self, index: isize) -> PyResult<String> {
+        let index = dataset_index(index, self.inner.len())?;
+        self.inner
+            .record_text(index)
+            .map_err(sdf_dataset_error)?
+            .ok_or_else(|| pyo3::exceptions::PyIndexError::new_err("SDF record index out of range"))
+    }
+
+    /// Return byte-range metadata without parsing the molecular graph.
+    fn metadata(&self, index: isize) -> PyResult<PySdfRecordMetadata> {
+        let index = dataset_index(index, self.inner.len())?;
+        self.inner
+            .metadata(index)
+            .map(PySdfRecordMetadata::from)
+            .ok_or_else(|| pyo3::exceptions::PyIndexError::new_err("SDF record index out of range"))
+    }
+
+    /// Parse a half-open record range. The stop endpoint is clamped to
+    /// ``len(dataset)``; malformed records raise ``ChematicInputError``.
+    #[pyo3(signature = (start, stop=None))]
+    fn read_range(&self, start: usize, stop: Option<usize>) -> PyResult<Vec<PySdfRecord>> {
+        let stop = stop.unwrap_or(self.inner.len());
+        self.inner
+            .read_range(start, stop)
+            .map_err(sdf_dataset_error)?
+            .into_iter()
+            .map(|record| record.map(py_sdf_record).map_err(sdf_dataset_error))
+            .collect()
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Public functions
 // ---------------------------------------------------------------------------
@@ -1299,6 +1435,8 @@ impl PyTdtWriter {
 
 pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PySdfRecord>()?;
+    m.add_class::<PySdfRecordMetadata>()?;
+    m.add_class::<PySdfDataset>()?;
     m.add_class::<SdfIter>()?;
     m.add_class::<SdfFileIter>()?;
     m.add_class::<SdfBatchIter>()?;

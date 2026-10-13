@@ -4126,6 +4126,29 @@ class SdfRecord:
 
     def __repr__(self) -> str: ...
 
+class SdfRecordMetadata:
+    """Byte-range metadata collected without parsing the molecular graph."""
+
+    index: int
+    byte_offset: int
+    byte_len: int
+    title: str
+
+class SdfDataset:
+    """Indexed, bounded-memory random access to a seekable SDF file."""
+
+    def __init__(self, path: str) -> None: ...
+
+    @staticmethod
+    def open(path: str) -> SdfDataset: ...
+
+    def __len__(self) -> int: ...
+    def __getitem__(self, index: int) -> SdfRecord: ...
+    def get(self, index: int) -> SdfRecord: ...
+    def raw_record(self, index: int) -> str: ...
+    def metadata(self, index: int) -> SdfRecordMetadata: ...
+    def read_range(self, start: int, stop: Optional[int] = None) -> list[SdfRecord]: ...
+
 class SdfIter:
     """Lazy iterator over SDF records."""
 

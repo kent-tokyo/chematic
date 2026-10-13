@@ -373,9 +373,9 @@ use the record or checked API for source retention.
 
 ### MOL/SDF
 
-- **Rust read**: `parse_mol`, `parse_mol_with_coords`, `read_mol_with_diagnostics`, `parse_mol_v3000*`, `SdfReader`, `SdfFileReader`, `SdfRecordReader`.
+- **Rust read**: `parse_mol`, `parse_mol_with_coords`, `read_mol_with_diagnostics`, `parse_mol_v3000*`, `SdfReader`, `SdfFileReader`, `SdfRecordReader`, `SdfDataset`.
 - **Rust write**: `write_mol`, `write_mol_with_conformer[_checked]`, `write_sdf*`, `write_mol_v3000*`.
-- **Python**: `from_mol_block`, `from_mol_block_with_coords`, `from_mol_block_with_diagnostics`, `parse_sdf_with_coords`, `from_mol_v3000[_with_coords|_with_diagnostics]`, `iter_sdf`, and `iter_sdf_batched`.
+- **Python**: `from_mol_block`, `from_mol_block_with_coords`, `from_mol_block_with_diagnostics`, `parse_sdf_with_coords`, `from_mol_v3000[_with_coords|_with_diagnostics]`, `iter_sdf`, `iter_sdf_batched`, and `SdfDataset`.
 - **WASM**: `mol_from_v3000_block`, `mol_from_sdf_block`, `to_mol_block`, `to_mol_v3000_block`, `roundtrip_mol_v3000_block` (preserves opaque SGROUP metadata and COLLECTION groups), `sdf_to_smiles_json`, `sdf_to_records_json`, `sdf_from_records_json`, `mol_block_stereo_diagnostics_json`, `mol_v3000_stereo_diagnostics_json`, `mol_block_coords_json`.
 - **Streaming**: `SdfFileReader<R: BufRead>` is a true I/O-streaming `Iterator`
   (does not require the whole file in memory up front). `SdfBatchReader<R>` is
@@ -404,6 +404,11 @@ use the record or checked API for source retention.
   `SdfFileReader::with_limits`, `SdfRecordReader::with_limits`, or
   `parse_sdf_with_limits` for an explicit policy. The existing `parse_sdf`,
   `SdfReader`, and `SdfRecordReader::new` use finite defaults.
+- **Indexed access**: `SdfDataset::open` scans delimiter lines once and stores
+  byte ranges plus titles, not parsed molecules. `len`, `metadata`, `get`,
+  `record_text`, and `read_range` then provide bounded-memory random access.
+  Python exposes the same boundary as `SdfDataset`; malformed records retain
+  their index and fail only when requested.
 
 ### PDB
 
