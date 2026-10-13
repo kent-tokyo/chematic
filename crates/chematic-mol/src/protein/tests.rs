@@ -79,3 +79,106 @@ fn invalid_explicit_pdb_element_is_rejected_instead_of_becoming_carbon() {
         Err(ProteinProjectionError::UnknownPdbElement { serial: 1, .. })
     ));
 }
+
+#[test]
+fn residue_table_covers_the_documented_standard_and_modified_names() {
+    let standard = [
+        ("ALA", 'A'),
+        ("ARG", 'R'),
+        ("ASN", 'N'),
+        ("ASP", 'D'),
+        ("CYS", 'C'),
+        ("GLN", 'Q'),
+        ("GLU", 'E'),
+        ("GLY", 'G'),
+        ("HIS", 'H'),
+        ("ILE", 'I'),
+        ("LEU", 'L'),
+        ("LYS", 'K'),
+        ("MET", 'M'),
+        ("PHE", 'F'),
+        ("PRO", 'P'),
+        ("SER", 'S'),
+        ("THR", 'T'),
+        ("TRP", 'W'),
+        ("TYR", 'Y'),
+        ("VAL", 'V'),
+        ("SEC", 'U'),
+        ("PYL", 'O'),
+        ("UNK", 'X'),
+    ];
+    for (name, canonical) in standard {
+        let class = classify_residue(&name.to_ascii_lowercase()).unwrap();
+        assert_eq!(class.canonical, canonical, "{name}");
+        assert!(!class.modified, "{name}");
+    }
+
+    let modified = [
+        ("MSE", 'M'),
+        ("HYP", 'P'),
+        ("SEP", 'S'),
+        ("TPO", 'T'),
+        ("PTR", 'Y'),
+        ("CSO", 'C'),
+        ("CME", 'C'),
+        ("CSD", 'C'),
+        ("CYM", 'C'),
+        ("CYX", 'C'),
+        ("KCX", 'K'),
+        ("MLY", 'K'),
+        ("LYN", 'K'),
+        ("HSD", 'H'),
+        ("HSE", 'H'),
+        ("HSP", 'H'),
+        ("ASH", 'D'),
+        ("GLH", 'E'),
+    ];
+    for (name, canonical) in modified {
+        let class = classify_residue(&format!(" {name} ")).unwrap();
+        assert_eq!(class.canonical, canonical, "{name}");
+        assert!(class.modified, "{name}");
+    }
+    assert!(classify_residue("HOH").is_none());
+}
+
+#[test]
+fn helper_and_error_paths_are_typed_and_descriptive() {
+    assert_eq!(title_case_symbol(" se "), "Se");
+    assert_eq!(title_case_symbol(""), "");
+
+    let inferred =
+        "ATOM      1  N   ALA A   1       0.000   0.000   0.000  1.00 20.00              \n";
+    let projection = project_protein_from_pdb(inferred).unwrap();
+    assert_eq!(
+        projection.chains[0].residues[0].atoms[0].element,
+        Element::N
+    );
+
+    let unknown = project_protein_from_pdb(
+        "ATOM      1  ??  ALA A   1       0.000   0.000   0.000  1.00 20.00              \n",
+    )
+    .unwrap_err();
+    assert!(unknown.to_string().contains("could not resolve element"));
+
+    let pdb_limits = chematic_3d::PdbParseLimits {
+        max_atoms: 0,
+        ..Default::default()
+    };
+    let pdb_error = project_protein_from_pdb_with_limits(PDB, &pdb_limits).unwrap_err();
+    assert!(
+        pdb_error
+            .to_string()
+            .starts_with("PDB protein projection failed:")
+    );
+
+    let mmcif_limits = MmcifParseLimits {
+        max_atoms: 0,
+        ..Default::default()
+    };
+    let mmcif_error = project_protein_from_mmcif_with_limits(MMCIF, &mmcif_limits).unwrap_err();
+    assert!(
+        mmcif_error
+            .to_string()
+            .starts_with("mmCIF protein projection failed:")
+    );
+}
