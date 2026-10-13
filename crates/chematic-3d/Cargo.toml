@@ -18,13 +18,13 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 libm = "0.2"
-chematic-core       = { path = "../chematic-core",       version = "1.1.2" }
-chematic-perception = { path = "../chematic-perception", version = "1.1.2" }
-chematic-ff         = { path = "../chematic-ff",         version = "1.1.2" }
-chematic-chem       = { path = "../chematic-chem",       version = "1.1.2" }
-chematic-fp         = { path = "../chematic-fp",         version = "1.1.2" }
-chematic-smarts     = { path = "../chematic-smarts",     version = "1.1.2" }
-chematic-smiles     = { path = "../chematic-smiles",     version = "1.1.2" }
+chematic-core       = { path = "../chematic-core",       version = "1.1.3" }
+chematic-perception = { path = "../chematic-perception", version = "1.1.3" }
+chematic-ff         = { path = "../chematic-ff",         version = "1.1.3" }
+chematic-chem       = { path = "../chematic-chem",       version = "1.1.3" }
+chematic-fp         = { path = "../chematic-fp",         version = "1.1.3" }
+chematic-smarts     = { path = "../chematic-smarts",     version = "1.1.3" }
+chematic-smiles     = { path = "../chematic-smiles",     version = "1.1.3" }
 # Keep coordinate JSON decoding bit-exact, including stereo boundary geometries.
 serde_json          = { version = "1.0", features = ["float_roundtrip"] }
 

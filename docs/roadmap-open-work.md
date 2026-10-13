@@ -1,6 +1,6 @@
 # Open-work ledger
 
-Updated 2026-10-13 for **v1.1.2**. This file lists unresolved work only.
+Updated 2026-10-13 for **v1.1.3**. This file lists unresolved work only.
 Completed implementation details belong in the
 [CHANGELOG](https://github.com/kent-tokyo/chematic/blob/main/CHANGELOG.md);
 measurements belong in the [validation report](validation.md) and
@@ -13,8 +13,8 @@ corpora remain recurring regression gates. Issues #739, #769, #779, and #785
 are also closed; implementation and verification records remain linked from
 the changelog and validation pages.
 
-- **v1.1.x artifact packet:** the v1.1.2 expectation now includes the 4,072-row
-  HBD/QED stress lane and CI compares A6 with the current v1.1.2 wheel. Run the
+- **v1.1.x artifact packet:** the v1.1.3 expectation includes the 4,072-row
+  exact HBD/QED stress lane and CI compares A6 with the current v1.1.3 wheel. Run the
   full hosted Linux/macOS/Windows published-wheel workflow before replacing
   the current broad v1.0.42 package packet.
 - **Equivalent-work performance:** close prepared-operation deficits without

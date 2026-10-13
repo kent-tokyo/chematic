@@ -262,6 +262,13 @@ export class MolHandle {
      */
     egan_passes(): boolean;
     /**
+     * Seeded ETKDGv3 coordinates using the exact sixth-order torsion
+     * gradient tracked by RDKit issue #8715. At most 512 atoms are accepted.
+     * The result may intentionally differ from `rdkit_embed_json` for
+     * molecules with a non-zero sixth-order experimental torsion term.
+     */
+    etkdg_embed_corrected_json(random_seed: number, max_iterations: number): string;
+    /**
      * Monoisotopic (exact) mass.
      */
     exact_mass(): number;
@@ -1159,6 +1166,15 @@ export function edit_cdxml_document_json_v1(document_json: string, edit_json: st
  * Apply a bounded, stable-ID reaction-document edit and return canonical JSON.
  */
 export function edit_reaction_document_json_v1(document_json: string, edit_json: string): string;
+
+/**
+ * EEM partial charges from caller-supplied 3D coordinates.
+ *
+ * Returns `{"charges":[...]}`. Unlike RDKit 2026.09.1 and earlier (issue
+ * #9688), ionic charges sum to the molecule's formal charge rather than its
+ * negation. Errors are returned as `{"error":"..."}`.
+ */
+export function eem_charges_json(mol: MolHandle, coords_json: string): string;
 
 /**
  * Run `embed_ensemble_v2` on `mol`'s own atom order (never canonicalizes/
@@ -2705,6 +2721,8 @@ export function roundtrip_mol_v3000_block(block: string): string;
  * `reactants_smiles`: pipe-separated SMILES, one per reactant slot in the SMIRKS.
  * Returns a JSON array of arrays: `[["product_smi", …], …]`.
  * Returns a JS error on parse failure or arity mismatch.
+ * Product-template E/Z is resolved after all reactants are assembled, so an
+ * unspecified product double bond does not depend on reactant order.
  */
 export function run_reactants(smirks: string, reactants_smiles: string): string;
 
@@ -3401,6 +3419,7 @@ export interface InitOutput {
     readonly edit_cdxml_document_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly edit_cdxml_document_json_v1: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly edit_reaction_document_json_v1: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+    readonly eem_charges_json: (a: number, b: number, c: number) => [number, number];
     readonly embed_ensemble_v2_json: (a: number, b: number, c: number) => [number, number];
     readonly embed_pipeline_v2_json: (a: number, b: number, c: number) => [number, number];
     readonly enumerate_library_2way: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number, number];
@@ -3535,6 +3554,7 @@ export interface InitOutput {
     readonly molhandle_depict_svg: (a: number) => [number, number];
     readonly molhandle_depict_svg_opts: (a: number, b: number) => [number, number];
     readonly molhandle_egan_passes: (a: number) => number;
+    readonly molhandle_etkdg_embed_corrected_json: (a: number, b: number, c: number) => [number, number, number, number];
     readonly molhandle_exact_mass: (a: number) => number;
     readonly molhandle_formal_charge_sum: (a: number) => number;
     readonly molhandle_formula: (a: number) => [number, number];

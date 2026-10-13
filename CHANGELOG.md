@@ -10,6 +10,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.1.3] - 2026-10-13
+
 ### Added
 
 - Added charge-conserving EEM partial charges across Rust, Python

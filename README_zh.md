@@ -27,11 +27,11 @@ npm install @kent-tokyo/chematic
 
 Python wheel 无需 C/C++ 编译器；各绑定共享同一 Rust 内核。
 
-### v1.1.2 范围
+### v1.1.3 范围
 
-v1.1.2 扩展了有限范围的 RDKit 兼容 3D API，包括 topology bounds、坐标变换、
-确定性的多构象 ETKDG/MMFF94、优化器诊断和可选的 gradient rescue。本版本还增加了
-prepared R-group core 和浏览器 Brenk alert。性能与兼容性结论仅适用于记录中注明的
+v1.1.3 增加了守恒总电荷的 EEM 部分电荷、修正后的可选 ETKDG 扭转梯度、
+OpenSMILES allene 轴手性、Python 分子 pickle、索引式 SDF、V3000 键立体集合，以及
+可复用的 Python MMFF/UFF 力场。性能与兼容性结论仅适用于记录中注明的
 artifact、corpus、option 和 host。详情见[验证报告](docs/validation.md)和
 [CHANGELOG](CHANGELOG.md)。
 

@@ -636,6 +636,33 @@ export class MolHandle {
         return ret !== 0;
     }
     /**
+     * Seeded ETKDGv3 coordinates using the exact sixth-order torsion
+     * gradient tracked by RDKit issue #8715. At most 512 atoms are accepted.
+     * The result may intentionally differ from `rdkit_embed_json` for
+     * molecules with a non-zero sixth-order experimental torsion term.
+     * @param {number} random_seed
+     * @param {number} max_iterations
+     * @returns {string}
+     */
+    etkdg_embed_corrected_json(random_seed, max_iterations) {
+        let deferred2_0;
+        let deferred2_1;
+        try {
+            const ret = wasm.molhandle_etkdg_embed_corrected_json(this.__wbg_ptr, random_seed, max_iterations);
+            var ptr1 = ret[0];
+            var len1 = ret[1];
+            if (ret[3]) {
+                ptr1 = 0; len1 = 0;
+                throw takeFromExternrefTable0(ret[2]);
+            }
+            deferred2_0 = ptr1;
+            deferred2_1 = len1;
+            return getStringFromWasm0(ptr1, len1);
+        } finally {
+            wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+        }
+    }
+    /**
      * Monoisotopic (exact) mass.
      * @returns {number}
      */
@@ -3232,6 +3259,32 @@ export function edit_reaction_document_json_v1(document_json, edit_json) {
         return getStringFromWasm0(ptr3, len3);
     } finally {
         wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
+    }
+}
+
+/**
+ * EEM partial charges from caller-supplied 3D coordinates.
+ *
+ * Returns `{"charges":[...]}`. Unlike RDKit 2026.09.1 and earlier (issue
+ * #9688), ionic charges sum to the molecule's formal charge rather than its
+ * negation. Errors are returned as `{"error":"..."}`.
+ * @param {MolHandle} mol
+ * @param {string} coords_json
+ * @returns {string}
+ */
+export function eem_charges_json(mol, coords_json) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ptr0 = passStringToWasm0(coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.eem_charges_json(mol.__wbg_ptr, ptr0, len0);
+        deferred2_0 = ret[0];
+        deferred2_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
     }
 }
 
@@ -7316,6 +7369,8 @@ export function roundtrip_mol_v3000_block(block) {
  * `reactants_smiles`: pipe-separated SMILES, one per reactant slot in the SMIRKS.
  * Returns a JSON array of arrays: `[["product_smi", …], …]`.
  * Returns a JS error on parse failure or arity mismatch.
+ * Product-template E/Z is resolved after all reactants are assembled, so an
+ * unspecified product double bond does not depend on reactant order.
  * @param {string} smirks
  * @param {string} reactants_smiles
  * @returns {string}
