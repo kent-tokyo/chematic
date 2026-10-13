@@ -88,18 +88,23 @@ pub(crate) fn allene_arms(
 /// Swapping the two terminal blocks preserves axial configuration; swapping
 /// the ligand pair at exactly one end inverts it.
 pub(crate) fn allene_order_is_inverted(original: &[u32], written: &[u32]) -> Option<bool> {
-    if original.len() != 6 || written.len() != 6 {
-        return None;
-    }
+    let original: &[u32; 6] = original.try_into().ok()?;
+    let written: &[u32; 6] = written.try_into().ok()?;
     let mut inverted = false;
-    for written_group in written.chunks_exact(3) {
-        let original_group = original
-            .chunks_exact(3)
-            .find(|group| group[0] == written_group[0])?;
-        if original_group[1..] == written_group[1..] {
+    for written_offset in [0, 3] {
+        let original_offset = if original[0] == written[written_offset] {
+            0
+        } else if original[3] == written[written_offset] {
+            3
+        } else {
+            return None;
+        };
+        let original_ligands = &original[original_offset + 1..original_offset + 3];
+        let written_ligands = &written[written_offset + 1..written_offset + 3];
+        if original_ligands == written_ligands {
             continue;
         }
-        if original_group[1] == written_group[2] && original_group[2] == written_group[1] {
+        if original_ligands[0] == written_ligands[1] && original_ligands[1] == written_ligands[0] {
             inverted = !inverted;
         } else {
             return None;
