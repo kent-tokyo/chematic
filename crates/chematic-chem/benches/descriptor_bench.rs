@@ -8,7 +8,7 @@ use std::hint::black_box;
 
 use chematic_chem::{
     admet_profile, hba_count, hbd_count, logp_crippen, molecular_weight, pka_acid, pka_base,
-    predict_pka, qed, tpsa,
+    predict_pka, qed, rdkit_tpsa, tpsa,
 };
 use chematic_smiles::parse;
 
@@ -56,6 +56,19 @@ fn bench_qed(c: &mut Criterion) {
     });
 }
 
+// Keep the one-shot parse + descriptor path visible. Parsed-molecule
+// benchmarks alone did not catch the v1.1.3 read-inclusive TPSA regression.
+fn bench_parse_tpsa(c: &mut Criterion) {
+    c.bench_function("parse_rdkit_tpsa_10mol", |b| {
+        b.iter(|| {
+            for smiles in BENCH_SMILES {
+                let mol = parse(black_box(smiles)).unwrap();
+                let _ = black_box(rdkit_tpsa(black_box(&mol)));
+            }
+        })
+    });
+}
+
 // ── pKa prediction (SMARTS-based) ────────────────────────────────────────────
 
 fn bench_pka_predict(c: &mut Criterion) {
@@ -98,6 +111,7 @@ criterion_group!(
     benches,
     bench_descriptors,
     bench_qed,
+    bench_parse_tpsa,
     bench_pka_predict,
     bench_pka_scalar,
     bench_admet_profile,

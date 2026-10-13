@@ -220,6 +220,23 @@ mod tests {
     }
 
     #[test]
+    fn labute_asa_uses_rdkit_model_for_dative_aromatic_inputs() {
+        for (smiles, expected) in [
+            (
+                "CC1=C(NC2=NC3<-C(=CC=CC=3)N3C=NC=C23)C(Cl)=CC=C1",
+                132.300_143_293_752_28,
+            ),
+            (
+                "CC(=O)NCCc1c2n(c3<-c1cc(Cl)cc3)CCCc1cccc[c]1-2",
+                152.507_162_477_150_7,
+            ),
+        ] {
+            let got = labute_asa(&mol(smiles));
+            assert!((got - expected).abs() < 1e-10, "{smiles}: {got}");
+        }
+    }
+
+    #[test]
     fn labute_asa_per_atom_excludes_pooled_h_term() {
         // Quaternary carbon (CC(C)(C)C) has an atom with zero implicit H —
         // RDKit still runs the pooled-H pass once for it (see

@@ -602,14 +602,10 @@ fn bond_scale(view: &Molecule, bond: chematic_core::BondIdx) -> f64 {
     // RDKit: aromatic bonds 0.1; otherwise by bond type for types < 4
     // (single 0, double 0.2, triple 0.3), nothing for any other type.
     let b = view.bond(bond);
-    if b.order == BondOrder::Aromatic
-        || (view.atom(b.atom1).aromatic
-            && view.atom(b.atom2).aromatic
-            && b.order != BondOrder::Single
-            && b.order != BondOrder::Double
-            && b.order != BondOrder::Up
-            && b.order != BondOrder::Down)
-    {
+    // Aromaticity belongs to the bond type here. In particular, a dative
+    // bond between two aromatic atoms remains dative in RDKit and must not
+    // receive the 0.1 aromatic overlap adjustment.
+    if b.order == BondOrder::Aromatic {
         return 0.1;
     }
     match b.order {
@@ -1141,8 +1137,12 @@ pub fn topological_distance_matrix(mol: &Molecule) -> Vec<Vec<u32>> {
 }
 
 pub fn labute_asa(mol: &Molecule) -> f64 {
+    chematic_smiles::with_rdkit_model_molecule(mol, labute_asa_model)
+}
+
+fn labute_asa_model(mol: &Molecule) -> f64 {
     if let Some(h) = chematic_smiles::rdkit_hydrogen_suppressed(mol) {
-        return labute_asa(&h);
+        return labute_asa_core(&h, false).2;
     }
     labute_asa_core(mol, false).2
 }

@@ -27,6 +27,7 @@ OPERATIONS = (
     "hba",
     "tpsa",
     "labute_asa",
+    "qed",
     "rdkit_ecfp4",
     "ring_count",
     "has_substructure",
@@ -49,6 +50,8 @@ def evaluate(mol, operation: str):
         return float(mol.tpsa).hex()
     if operation == "labute_asa":
         return float(mol.labute_asa).hex()
+    if operation == "qed":
+        return float(mol.qed).hex()
     if operation == "rdkit_ecfp4":
         return bytes(mol.rdkit_ecfp4()).hex()
     if operation == "ring_count":

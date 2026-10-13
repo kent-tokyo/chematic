@@ -574,6 +574,24 @@ mod tests {
     }
 
     #[test]
+    fn dummy_bracket_hydrogens_match_rdkit_morgan() {
+        // RDKit 2026.03.6 GetMorganGenerator(radius=2, fpSize=2048).
+        // A dummy atom has atomic number and mass zero, but its explicit
+        // bracket H count participates in total degree and total H.
+        for (smiles, raw_id, folded_bit) in [
+            ("*", 2_346_609_317, 677),
+            ("[*H]", 2_342_069_169, 945),
+            ("[*H2]", 2_340_754_421, 1013),
+        ] {
+            let mol = parse(smiles).unwrap();
+            let result = rdkit_morgan_fingerprint(&mol, &RdkitMorganConfig::default()).unwrap();
+            assert_eq!(result.sparse_counts, [(raw_id, 1)].into_iter().collect());
+            assert_eq!(result.fingerprint.popcount(), 1);
+            assert!(result.fingerprint.get(folded_bit));
+        }
+    }
+
+    #[test]
     fn fold_is_plain_modulo_not_xor_fold() {
         // The RDKit real fold convention is `raw_id % fp_size`, NOT BitVec2048::fold's
         // XOR-fold-from-2048 -- verified empirically in the diagnosis RFC (see module

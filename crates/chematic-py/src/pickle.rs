@@ -134,13 +134,18 @@ impl<'a> Reader<'a> {
     }
 }
 
-fn chirality_to_parts(value: Chirality) -> (u8, u8) {
+fn chirality_to_parts(value: Chirality, is_allene: bool) -> (u8, u8) {
+    if is_allene {
+        return match value {
+            Chirality::CounterClockwise => (6, 1),
+            Chirality::Clockwise => (6, 2),
+            _ => (0, 0),
+        };
+    }
     match value {
         Chirality::None => (0, 0),
         Chirality::CounterClockwise => (1, 0),
         Chirality::Clockwise => (2, 0),
-        Chirality::Allene1 => (6, 1),
-        Chirality::Allene2 => (6, 2),
         Chirality::SquarePlanar(SquarePlanarPermutation::SP1) => (3, 1),
         Chirality::SquarePlanar(SquarePlanarPermutation::SP2) => (3, 2),
         Chirality::SquarePlanar(SquarePlanarPermutation::SP3) => (3, 3),
@@ -322,7 +327,7 @@ pub(crate) fn encode(mol: &Mol) -> Result<Vec<u8>, String> {
         writer.u8(atom.charge as u8);
         writer.option_u8(atom.hydrogen_count);
         writer.u8(atom.aromatic as u8);
-        let (kind, value) = chirality_to_parts(atom.chirality);
+        let (kind, value) = chirality_to_parts(atom.chirality, inner.is_allene_stereo(idx));
         writer.u8(kind);
         writer.u8(value);
         writer.u8(atom.wildcard as u8);

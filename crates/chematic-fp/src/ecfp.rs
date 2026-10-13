@@ -143,8 +143,17 @@ pub enum EcfpInvariantMode {
 /// top (verified: `[H]C([H])([H])[H]`'s carbon gets the same invariant as
 /// plain `C`'s — both total 4).
 pub(crate) fn rdkit_total_degree(mol: &Molecule, idx: AtomIdx) -> u16 {
+    let atom = mol.atom(idx);
     let graph_degree = mol.neighbors(idx).count() as u16;
-    let inferred_or_bracket_h = implicit_hcount(mol, idx) as u16;
+    // `implicit_hcount` deliberately returns zero for wildcard atoms because
+    // OpenSMILES defines no *implicit* H rule for `*`. RDKit nevertheless
+    // includes an explicitly written bracket count (`[*H]`, `[*H2]`) in both
+    // total degree and total H, which are the first Morgan invariant inputs.
+    let inferred_or_bracket_h = if atom.wildcard {
+        atom.hydrogen_count.unwrap_or(0)
+    } else {
+        implicit_hcount(mol, idx)
+    } as u16;
     graph_degree + inferred_or_bracket_h
 }
 
@@ -153,11 +162,20 @@ pub(crate) fn rdkit_total_degree(mol: &Molecule, idx: AtomIdx) -> u16 {
 /// (verified: a mixed implicit/explicit-H atom gets the same invariant as
 /// its all-implicit or all-explicit spelling of the same total H count).
 pub(crate) fn rdkit_total_h_count(mol: &Molecule, idx: AtomIdx) -> u8 {
+    let atom = mol.atom(idx);
     let explicit_h = mol
         .neighbors(idx)
-        .filter(|&(nb, _)| mol.atom(nb).element.atomic_number() == 1)
+        .filter(|&(nb, _)| {
+            let neighbor = mol.atom(nb);
+            !neighbor.wildcard && neighbor.element.atomic_number() == 1
+        })
         .count() as u8;
-    implicit_hcount(mol, idx).saturating_add(explicit_h)
+    let inferred_or_bracket_h = if atom.wildcard {
+        atom.hydrogen_count.unwrap_or(0)
+    } else {
+        implicit_hcount(mol, idx)
+    };
+    inferred_or_bracket_h.saturating_add(explicit_h)
 }
 
 /// Exact `deltaMass` for a given `(atomic_number, mass_number)` isotope, via
@@ -290,16 +308,23 @@ pub(crate) fn initial_atom_id(
         // Reads the raw stored tag, not any permutation-corrected form -- same
         // reordering-sensitivity tetrahedral chirality already has here, not a new
         // inconsistency introduced by adding SquarePlanar.
-        let chirality_byte = match mol.atom(idx).chirality {
-            Chirality::None => 0u8,
-            Chirality::CounterClockwise => 1u8,
-            Chirality::Clockwise => 2u8,
-            Chirality::Allene1 => 7u8,
-            Chirality::Allene2 => 8u8,
-            Chirality::SquarePlanar(p) => 3 + p as u8,
-            Chirality::SquarePlanarUnnumbered => 6u8,
-            Chirality::TrigonalBipyramidal(p) => 10u8.wrapping_add(p),
-            Chirality::Octahedral(p) => 40u8.wrapping_add(p),
+        let chirality = mol.atom(idx).chirality;
+        let chirality_byte = if mol.is_allene_stereo(idx) {
+            match chirality {
+                Chirality::CounterClockwise => 7u8,
+                Chirality::Clockwise => 8u8,
+                _ => 0u8,
+            }
+        } else {
+            match chirality {
+                Chirality::None => 0u8,
+                Chirality::CounterClockwise => 1u8,
+                Chirality::Clockwise => 2u8,
+                Chirality::SquarePlanar(p) => 3 + p as u8,
+                Chirality::SquarePlanarUnnumbered => 6u8,
+                Chirality::TrigonalBipyramidal(p) => 10u8.wrapping_add(p),
+                Chirality::Octahedral(p) => 40u8.wrapping_add(p),
+            }
         };
         bytes.push(chirality_byte);
     }

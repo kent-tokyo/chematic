@@ -108,7 +108,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use chematic_core::{AtomIdx, Chirality, CipCode, Element, Molecule, STEREO_H_SENTINEL};
+use chematic_core::{AtomIdx, BondOrder, Chirality, CipCode, Element, Molecule, STEREO_H_SENTINEL};
 
 use crate::CipError;
 use crate::budget::CipBudget;
@@ -131,10 +131,9 @@ pub enum SkipReason {
     Tied,
     /// The underlying digraph or comparator exceeded its budget for this atom.
     BudgetExceeded,
-    /// No representation-stable external oracle is established for this
-    /// stereocenter. No centre is reported this way since phosphorus on an
-    /// unsaturated ring is labelled (see [`label_depends_on_kekule_spelling`]);
-    /// the variant is kept for API stability.
+    /// No chemically stable label is available for this stereocenter. This is
+    /// currently used when one of the four positions is a wildcard/dummy atom:
+    /// a concrete R/S label would assign a priority to an unspecified element.
     OracleUnstable,
     /// The centre carries a tetrahedral stereo tag but has only three explicit
     /// ligands (e.g. a bridgehead amine `[N@@]`, a sulfoxide `[S@](=O)`): its
@@ -260,12 +259,20 @@ fn assign_all(
         // flip that label between the ring's neutral Kekulé spellings, which
         // InChI reads as one molecule, so identity checks treat it as
         // spelling-dependent ([`label_depends_on_kekule_spelling`]).
-        let Some(stereo_order) = mol.stereo_neighbor_order(idx) else {
+        let Some(raw_stereo_order) = mol.stereo_neighbor_order(idx) else {
             result.skipped.push((idx, SkipReason::NotFourSubstituents));
             continue;
         };
+        let stereo_order = rdkit_cip_position_order(mol, idx, raw_stereo_order);
+        if stereo_order
+            .iter()
+            .any(|&position| position != STEREO_H_SENTINEL && mol.atom(AtomIdx(position)).wildcard)
+        {
+            result.skipped.push((idx, SkipReason::OracleUnstable));
+            continue;
+        }
         if stereo_order.len() == 3 {
-            match assign_lone_pair_centre(mol, idx, atom.chirality, stereo_order, budget, kekule) {
+            match assign_lone_pair_centre(mol, idx, atom.chirality, &stereo_order, budget, kekule) {
                 Ok(Some(code)) => result.assignments.push((idx, code)),
                 Ok(None) => result.skipped.push((idx, SkipReason::LonePairCenter)),
                 Err(reason) => result.skipped.push((idx, reason)),
@@ -277,7 +284,7 @@ fn assign_all(
             continue;
         }
 
-        match assign_one(mol, idx, atom.chirality, stereo_order, budget, kekule) {
+        match assign_one(mol, idx, atom.chirality, &stereo_order, budget, kekule) {
             Ok(Some(code)) => result.assignments.push((idx, code)),
             Ok(None) => result.skipped.push((idx, SkipReason::NotFourSubstituents)),
             Err(SkipReason::Tied) => result.skipped.push((idx, SkipReason::Tied)),
@@ -314,16 +321,17 @@ fn apply_rule5_pass(
         }
 
         let atom = mol.atom(idx);
-        let Some(stereo_order) = mol.stereo_neighbor_order(idx) else {
+        let Some(raw_stereo_order) = mol.stereo_neighbor_order(idx) else {
             skipped.push((idx, reason));
             continue;
         };
+        let stereo_order = rdkit_cip_position_order(mol, idx, raw_stereo_order);
         if stereo_order.len() != 4 && stereo_order.len() != 3 {
             skipped.push((idx, reason));
             continue;
         }
 
-        match assign_one_with_rule5(mol, idx, atom.chirality, stereo_order, budget, kekule) {
+        match assign_one_with_rule5(mol, idx, atom.chirality, &stereo_order, budget, kekule) {
             Ok(Some(code)) => assignments.push((idx, code)),
             _ => skipped.push((idx, reason)),
         }
@@ -332,6 +340,37 @@ fn apply_rule5_pass(
     AccurateCipAssignment {
         assignments,
         skipped,
+    }
+}
+
+/// Physical substituent positions used by RDKit's CIP labeler after
+/// organometallic cleanup.  Cleanup can turn one bond at a nominally
+/// five-coordinate tagged carbon into a dative bond.  RDKit excludes that
+/// coordinate bond from the tetrahedral positions while retaining the
+/// original stereo tag and its other four positions.
+fn rdkit_cip_position_order(mol: &Molecule, center: AtomIdx, raw: &[u32]) -> Vec<u32> {
+    if raw.len() <= 4 {
+        return raw.to_vec();
+    }
+    let mut filtered: Vec<u32> = raw
+        .iter()
+        .copied()
+        .filter(|&position| {
+            position == STEREO_H_SENTINEL
+                || mol
+                    .bond_between(center, AtomIdx(position))
+                    .is_none_or(|(_, bond)| bond.order != BondOrder::Dative)
+        })
+        .collect();
+    if filtered.len() == 4 {
+        // The SMILES tag was normalized while the original single bond was
+        // still one of five encountered entries. RDKit's cleanup removes the
+        // new dative ligand and applies the corresponding odd permutation.
+        // Keep that parity correction explicit in the position order.
+        filtered.swap(0, 1);
+        filtered
+    } else {
+        raw.to_vec()
     }
 }
 
