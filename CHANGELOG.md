@@ -157,6 +157,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- Made unspecified product-template E/Z semantics independent of reactant
+  order. A double bond whose product template supplies substituents at both
+  ends without `/` or `\\` now consistently drops carried E/Z after all
+  reactants are assembled, avoiding RDKit issue #9691 across Rust, Python,
+  and WASM.
 - Fixed ETKDG torsion and inversion gradient evaluation stopping after the
   first degenerate term. The degenerate contribution is now skipped while
   later valid terms are retained, matching RDKit's force-field control flow.

@@ -352,6 +352,7 @@ pub(super) fn apply_match_profile(
                 prepared.product_specs.get(pi).map_or(&[], Vec::as_slice),
                 profile == Profile::Rdkit,
             );
+            clear_product_template_unspecified_ez(&mut product, pt, &template_idx_to_new);
             if let Some(stereo) = stereo {
                 let src_to_new: FxHashMap<(usize, AtomIdx), AtomIdx> = product
                     .atom_sources

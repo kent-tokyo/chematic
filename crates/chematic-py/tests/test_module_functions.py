@@ -299,6 +299,31 @@ def test_run_smirks_checked_rdkit_profile_keeps_ez_templates():
     assert report["status"] == "products"
 
 
+def test_unspecified_product_ez_is_reactant_order_invariant():
+    acid = chematic.from_smiles("C/C=C\\C(=O)O")
+    amine = chematic.from_smiles("NC")
+    cases = [
+        (
+            "[C:6][C:1]=[C:2][C:3](=O)[OH].[NH2:4][#6:5]"
+            ">>[C:6][C:1]=[C:2][C:3](=O)[N:4][#6:5]",
+            [acid, amine],
+        ),
+        (
+            "[NH2:4][#6:5].[C:6][C:1]=[C:2][C:3](=O)[OH]"
+            ">>[C:6][C:1]=[C:2][C:3](=O)[N:4][#6:5]",
+            [amine, acid],
+        ),
+    ]
+    products = [chematic.run_smirks(smirks, reactants)[0][0] for smirks, reactants in cases]
+    expected = chematic.from_smiles("CC=CC(=O)NC").smiles
+    assert [product.smiles for product in products] == [expected, expected]
+    assert all(
+        descriptor["descriptor"] not in {"E", "Z"}
+        for product in products
+        for descriptor in product.cip_stereo()
+    )
+
+
 # E/Z stereo transfer & creation in products (issue #50)
 
 def _product_ez(smirks, smis):

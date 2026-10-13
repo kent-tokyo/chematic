@@ -2490,6 +2490,30 @@ fn issue50_geometry_is_deterministic() {
     }
 }
 
+#[test]
+fn rdkit_9691_unspecified_product_ez_is_reactant_order_invariant() {
+    let amine = "NC";
+    for acid in ["C/C=C\\C(=O)O", "C/C=C/C(=O)O"] {
+        let acid_first = product_canon(
+            "[C:6][C:1]=[C:2][C:3](=O)[OH].[NH2:4][#6:5]>>[C:6][C:1]=[C:2][C:3](=O)[N:4][#6:5]",
+            &[acid, amine],
+        );
+        let acid_second = product_canon(
+            "[NH2:4][#6:5].[C:6][C:1]=[C:2][C:3](=O)[OH]>>[C:6][C:1]=[C:2][C:3](=O)[N:4][#6:5]",
+            &[amine, acid],
+        );
+        let single_reactant = product_canon(
+            "[C:6][C:1]=[C:2][C:3](=O)[OH]>>[C:6][C:1]=[C:2][C:3](=O)NC",
+            &[acid],
+        );
+
+        assert_eq!(acid_first, canon("CC=CC(=O)NC"));
+        assert_eq!(acid_second, acid_first);
+        assert_eq!(single_reactant, acid_first);
+        assert_eq!(double_bond_is_e(&acid_first), None);
+    }
+}
+
 // -----------------------------------------------------------------------
 // Reaction-transform performance regression witnesses (see
 // docs/rfcs/reaction_transform_perf.md). Root cause: `chematic-smiles`'s

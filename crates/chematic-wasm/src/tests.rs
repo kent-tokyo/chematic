@@ -419,6 +419,28 @@ fn run_reactants_ez_smiles_is_valid_json() {
 }
 
 #[test]
+fn run_reactants_unspecified_product_ez_is_order_invariant() {
+    let cases = [
+        (
+            "[C:6][C:1]=[C:2][C:3](=O)[OH].[NH2:4][#6:5]>>[C:6][C:1]=[C:2][C:3](=O)[N:4][#6:5]",
+            "C/C=C\\C(=O)O|NC",
+        ),
+        (
+            "[NH2:4][#6:5].[C:6][C:1]=[C:2][C:3](=O)[OH]>>[C:6][C:1]=[C:2][C:3](=O)[N:4][#6:5]",
+            "NC|C/C=C\\C(=O)O",
+        ),
+    ];
+    let expected =
+        chematic_smiles::canonical_smiles(&chematic_smiles::parse("CC=CC(=O)NC").unwrap());
+    for (smirks, reactants) in cases {
+        let json = run_reactants(smirks, reactants).expect("reaction should succeed");
+        let sets: Vec<Vec<String>> = serde_json::from_str(&json).unwrap();
+        assert_eq!(sets[0][0], expected);
+        assert!(!sets[0][0].contains(['/', '\\']));
+    }
+}
+
+#[test]
 fn run_reactants_checked_rdkit_profile_follows_rdkit_reaction_stereo() {
     // RDKit 2026.03.6 gives D-alanine for the reordered L-alanine spelling
     // under this identity template (raw tag copy); the profile reproduces it.
