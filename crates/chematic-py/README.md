@@ -131,6 +131,8 @@ status, optimized_energy = field.minimize_()
 - **Reusable MMFF94/UFF objects**: `mol.mmff_force_field(coords)` and
   `mol.uff_force_field(coords)` retain prepared terms across energy, gradient,
   coordinate-update, and in-place minimization calls
+- **Charge-conserving EEM**: `mol.eem_charges(coords)` uses the published
+  NEEMP model and preserves the formal-charge sum for ions
 
 ## RDKit compatibility
 

@@ -522,6 +522,20 @@ impl Mol {
         chematic_3d::getaway_descriptors(&self.inner, &c3d)
     }
 
+    /// Electronegativity-equalization-method partial charges from 3D coordinates.
+    ///
+    /// This is compatible with RDKit's ``CalcEEMcharges`` parameterization,
+    /// while fixing RDKit issue #9688: for ions the returned charges sum to
+    /// the molecule's formal charge instead of its negation.
+    ///
+    /// The molecule must contain explicit hydrogens when hydrogen charges are
+    /// wanted, and ``coords`` must contain one row per explicit atom.
+    fn eem_charges(&self, coords: Vec<[f64; 3]>) -> PyResult<Vec<f64>> {
+        let c3d = flat_to_coords3d(&coords);
+        chematic_3d::eem_charges(&self.inner, &c3d)
+            .map_err(|error| PyValueError::new_err(error.to_string()))
+    }
+
     /// 3D autocorrelation descriptors.
     ///
     /// ``coords``: ``[[x,y,z], ...]`` list (Å), one per heavy atom.

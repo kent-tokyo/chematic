@@ -12,6 +12,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added charge-conserving EEM partial charges across Rust, Python
+  (`Mol.eem_charges`) and WASM (`eem_charges_json`). The implementation uses
+  the published NEEMP parameterization but solves the charge constraint with
+  an explicit row-major system, so OH⁻ sums to −1 and NH₄⁺ to +1 instead of
+  reproducing the sign reversal in unresolved RDKit issue #9688. Unsupported
+  elements, missing/non-finite coordinates, coincident atoms, oversized
+  systems, failed Kekulization and singular systems return typed errors.
 - Added opt-in ETKDGv3 embedding with the mathematically exact sixth-order
   experimental-torsion gradient across Rust, Python
   (`Mol.etkdg_embed_corrected`) and WASM

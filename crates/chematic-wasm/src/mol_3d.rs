@@ -51,6 +51,32 @@ pub fn getaway_descriptors_json(mol: &MolHandle) -> String {
     format!("[{}]", parts.join(","))
 }
 
+/// EEM partial charges from caller-supplied 3D coordinates.
+///
+/// Returns `{"charges":[...]}`. Unlike RDKit 2026.09.1 and earlier (issue
+/// #9688), ionic charges sum to the molecule's formal charge rather than its
+/// negation. Errors are returned as `{"error":"..."}`.
+#[wasm_bindgen]
+pub fn eem_charges_json(mol: &MolHandle, coords_json: &str) -> String {
+    let coords = match conformer_coords_from_json(mol, coords_json) {
+        Ok(coords) => coords,
+        Err(error) => return format!(r#"{{"error":"{}"}}"#, escape_json_string(&error)),
+    };
+    match chematic_3d::eem_charges(&mol.inner, &coords) {
+        Ok(charges) => match serde_json::to_string(&charges) {
+            Ok(charges) => format!(r#"{{"charges":{charges}}}"#),
+            Err(error) => format!(
+                r#"{{"error":"{}"}}"#,
+                escape_json_string(&error.to_string())
+            ),
+        },
+        Err(error) => format!(
+            r#"{{"error":"{}"}}"#,
+            escape_json_string(&error.to_string())
+        ),
+    }
+}
+
 /// Compute combined WHIM + GETAWAY descriptors (**41** values total) as JSON array.
 ///
 /// Returns WHIM[0..21] (22 values) followed by GETAWAY[0..18] (19 values) = 41 total.

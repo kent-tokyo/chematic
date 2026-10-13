@@ -1131,6 +1131,28 @@ fn gasteiger_charges_json_oxygen_negative() {
 }
 
 #[test]
+fn eem_charges_json_conserves_ionic_formal_charge() {
+    let hydroxide = parse("[O-][H]");
+    let value: serde_json::Value = serde_json::from_str(&eem_charges_json(
+        &hydroxide,
+        "[[0.0,0.0,0.0],[0.97,0.0,0.0]]",
+    ))
+    .unwrap();
+    let charges = value["charges"].as_array().unwrap();
+    let total: f64 = charges.iter().map(|charge| charge.as_f64().unwrap()).sum();
+    assert!((total + 1.0).abs() < 1e-12, "{value}");
+
+    let bad: serde_json::Value =
+        serde_json::from_str(&eem_charges_json(&hydroxide, "[[0.0,0.0,0.0]]")).unwrap();
+    assert!(
+        bad["error"]
+            .as_str()
+            .unwrap()
+            .contains("expected 2 coordinates")
+    );
+}
+
+#[test]
 fn test_mmff94_charges_json_length() {
     // Acetic acid has 4 heavy atoms (2C, 2O)
     let h = parse("CC(=O)O");

@@ -70,6 +70,7 @@ mod tests {
             .add_bond(atoms[2], atoms[3], BondOrder::Single)
             .unwrap();
         builder.set_smiles_ring_closure(early_closure, 2, 0);
+        builder.set_smiles_ring_closure_begins_at_open(early_closure, true);
         builder.set_smiles_ring_closure(late_closure, 9, 0);
         let molecule = builder.build();
 
@@ -77,6 +78,24 @@ mod tests {
         molecule.for_each_bond_in_rdkit_order(|bond| visited.push(bond));
         assert_eq!(visited, vec![chain, early_closure, late_closure]);
         assert_eq!(molecule.rdkit_bond_order(), visited);
+        assert_eq!(molecule.smiles_ring_closure_bond_count(), 2);
+        assert_eq!(molecule.smiles_ring_closure_count(atoms[0]), 1);
+        assert!(molecule.is_smiles_ring_closure(early_closure));
+        assert!(!molecule.is_smiles_ring_closure(chain));
+        assert_eq!(
+            molecule.smiles_ring_closure_begins_at_open(early_closure),
+            Some(true)
+        );
+        assert_eq!(molecule.smiles_ring_closure_begins_at_open(late_closure), None);
+        assert_eq!(
+            molecule.smiles_ring_closure_metadata(early_closure),
+            Some((2, 0, Some(true)))
+        );
+        assert_eq!(
+            molecule.smiles_ring_closure_metadata(late_closure),
+            Some((9, 0, None))
+        );
+        assert_eq!(molecule.smiles_ring_closure_metadata(chain), None);
     }
 
     #[test]

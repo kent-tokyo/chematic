@@ -22,6 +22,11 @@ opinion.
 - 3D descriptors identify their literature or standard source in module
   documentation where applicable. No paper text, figures, datasets, or
   trained artifacts are distributed as implementation material.
+- EEM charges independently implement the published NEEMP constrained linear
+  system and its CCD_gen_DE_RMSD_B3LYP_6311G_NPA parameter set. RDKit
+  2026.09.1 source and runtime behavior are compatibility references; the
+  solver is a separate bounded Rust implementation and deliberately does not
+  reproduce RDKit issues #9688/#2232's ionic charge-sign defect.
 - Core descriptor provenance and tolerance semantics are checked in at
   `validation/cross_binding_contract.json`; the same fixtures are consumed by
   Rust, Python, and Node/WASM contract tests. Standard format support is

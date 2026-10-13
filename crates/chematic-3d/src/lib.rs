@@ -21,6 +21,7 @@ pub mod dg;
 pub mod dg_connectivity_ordered;
 pub mod dg_fft;
 pub mod distance_geometry_v2;
+pub mod eem;
 pub mod ensemble_v2;
 pub mod etkdg;
 pub mod etkdg_knowledge;
@@ -56,6 +57,7 @@ pub use constraints::{
 pub use determine_bonds::{
     DetermineError, MAX_ATOMS as DETERMINE_BONDS_MAX_ATOMS, determine_bonds,
 };
+pub use eem::{EemError, MAX_EEM_ATOMS, eem_charges};
 // Note: ConformerConfig is defined in lib.rs and exported here
 pub use coords::{Coords3D, Point3};
 pub use descriptors_3d::{
