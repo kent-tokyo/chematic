@@ -1,4 +1,5 @@
 use super::*;
+use pyo3::types::PyBytes;
 
 #[pymethods]
 impl Mol {
@@ -47,6 +48,20 @@ impl Mol {
     #[pyo3(name = "ClearProp")]
     fn clear_prop(&mut self, key: &str) {
         self.props.remove(key);
+    }
+
+    /// Pickle support with a versioned, bounded molecule-state payload.
+    ///
+    /// Python's pickle format is unsafe for untrusted data. The chematic
+    /// payload decoder nevertheless validates lengths, indices, enum values,
+    /// UTF-8, and trailing bytes before rebuilding a molecule.
+    fn __reduce__<'py>(&self, py: Python<'py>) -> PyResult<(Py<PyAny>, (Py<PyBytes>,))> {
+        let restore = py
+            .import("chematic")?
+            .getattr("_restore_mol_pickle")?
+            .unbind();
+        let payload = crate::pickle::encode(self).map_err(PyValueError::new_err)?;
+        Ok((restore, (PyBytes::new(py, &payload).unbind(),)))
     }
 
     /// Set an integer property (stored as its string representation).

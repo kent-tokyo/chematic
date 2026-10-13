@@ -46,6 +46,11 @@ fp = mol.ecfp4()
 mol2 = chematic.from_smiles("c1ccccc1")
 sim = chematic.tanimoto(mol.ecfp4(), mol2.ecfp4())
 
+# Mol objects can be cached or sent to worker processes with pickle. Graph
+# chemistry, stereo, R-groups, source metadata, and SD properties survive.
+import pickle
+restored = pickle.loads(pickle.dumps(mol))
+
 # Natural-language property summary (for LLM / MCP agents)
 print(mol.describe())
 
