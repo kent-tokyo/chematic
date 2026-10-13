@@ -435,6 +435,33 @@ impl MolHandle {
         bounded_json_string(&coords)
     }
 
+    /// Seeded ETKDGv3 coordinates using the exact sixth-order torsion
+    /// gradient tracked by RDKit issue #8715. At most 512 atoms are accepted.
+    /// The result may intentionally differ from `rdkit_embed_json` for
+    /// molecules with a non-zero sixth-order experimental torsion term.
+    pub fn etkdg_embed_corrected_json(
+        &self,
+        random_seed: i32,
+        max_iterations: u32,
+    ) -> Result<String, JsValue> {
+        validate_3d_size(self)?;
+        if max_iterations > MAX_ALIGNMENT_ITERATIONS {
+            return Err(js_error(
+                "etkdg_embed_limit",
+                format!("max_iterations must not exceed {MAX_ALIGNMENT_ITERATIONS}"),
+            ));
+        }
+        let options = chematic_3d::rdkit_embed::RdkitEmbedOptions {
+            random_seed,
+            max_iterations,
+            ..Default::default()
+        };
+        let coords =
+            chematic_3d::rdkit_embed::etkdg_embed_molecule_corrected(&self.inner, &options)
+                .map_err(chemistry_error)?;
+        bounded_json_string(&coords)
+    }
+
     /// RDKit distance-geometry bounds matrix JSON. Row and column `i`
     /// refer to zero-based molecule atom `i`; upper bounds are above the
     /// diagonal and lower bounds below it. At most 512 atoms are accepted.
@@ -618,5 +645,19 @@ mod tests {
         assert_eq!(coords.len(), mol.atom_count());
         assert_eq!(bounds.len(), mol.atom_count());
         assert!(bounds.iter().all(|row| row.len() == mol.atom_count()));
+    }
+
+    #[test]
+    fn corrected_etkdg_sixfold_gradient_is_opt_in() {
+        let mol = crate::mol_reactions::add_hydrogens(&molecule("CCN(C)C"));
+        let corrected: Vec<[f64; 3]> =
+            serde_json::from_str(&mol.etkdg_embed_corrected_json(42, 0).unwrap()).unwrap();
+        let repeated: Vec<[f64; 3]> =
+            serde_json::from_str(&mol.etkdg_embed_corrected_json(42, 0).unwrap()).unwrap();
+        let compatible: Vec<[f64; 3]> =
+            serde_json::from_str(&mol.rdkit_embed_json(42, 0).unwrap()).unwrap();
+        assert_eq!(corrected, repeated);
+        assert_ne!(corrected, compatible);
+        assert!(corrected.iter().flatten().all(|value| value.is_finite()));
     }
 }

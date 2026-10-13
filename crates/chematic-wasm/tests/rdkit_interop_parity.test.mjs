@@ -66,6 +66,16 @@ assert.equal(embedded.length, ethanolH.atom_count());
 assert.equal(bounds.length, ethanolH.atom_count());
 assert.ok(bounds.every((row) => row.length === ethanolH.atom_count()));
 
+// Native CheMatic can opt into the mathematically exact sixth-order ETKDG
+// torsion gradient while the pinned RDKit compatibility method stays stable.
+const tertiaryAmineH = wasm.add_hydrogens(wasm.parse_smiles("CCN(C)C"));
+const corrected = JSON.parse(tertiaryAmineH.etkdg_embed_corrected_json(42, 0));
+assert.deepEqual(
+  corrected,
+  JSON.parse(tertiaryAmineH.etkdg_embed_corrected_json(42, 0)),
+);
+assert.notDeepEqual(corrected, JSON.parse(tertiaryAmineH.rdkit_embed_json(42, 0)));
+
 // Every argument-bearing operation rejects malformed or unbounded inputs by
 // throwing a stable JS error, never by panicking or silently coercing values.
 assert.throws(() => mol.rdkit_smarts(true, 999), /rdkit_compatibility_error/);

@@ -5,11 +5,28 @@
 //! versioned corpus-scale A6 comparison lane.
 
 use chematic_3d::rdkit_embed::{
-    RdkitEmbedError, RdkitEmbedOptions, rdkit_embed_initial_molecule, rdkit_embed_molecule,
-    rdkit_embed_multiple_confs, rdkit_embed_multiple_confs_mmff,
-    rdkit_embed_multiple_confs_mmff_adaptive, rdkit_embed_multiple_confs_mmff_diagnostics,
-    rdkit_embed_multiple_confs_mmff_gradient_rescue, rdkit_embed_multiple_confs_mmff_rescue,
+    RdkitEmbedError, RdkitEmbedOptions, etkdg_embed_molecule_corrected,
+    rdkit_embed_initial_molecule, rdkit_embed_molecule, rdkit_embed_multiple_confs,
+    rdkit_embed_multiple_confs_mmff, rdkit_embed_multiple_confs_mmff_adaptive,
+    rdkit_embed_multiple_confs_mmff_diagnostics, rdkit_embed_multiple_confs_mmff_gradient_rescue,
+    rdkit_embed_multiple_confs_mmff_rescue,
 };
+
+#[test]
+fn corrected_etkdg_sixfold_gradient_is_deterministic_and_distinct_from_rdkit() {
+    // The C-C-N-C torsion receives a non-zero sixth-order preference. RDKit
+    // issue #8715 makes the compatibility lane differentiate another Fourier
+    // coefficient with a missing cos(phi) factor.
+    let mh = chematic_chem::add_hydrogens(&chematic_smiles::parse("CCN(C)C").unwrap());
+    let options = RdkitEmbedOptions::default();
+    let corrected = etkdg_embed_molecule_corrected(&mh, &options).unwrap();
+    let repeated = etkdg_embed_molecule_corrected(&mh, &options).unwrap();
+    let compatible = rdkit_embed_molecule(&mh, &options).unwrap();
+
+    assert_eq!(corrected, repeated);
+    assert_ne!(corrected, compatible);
+    assert!(corrected.iter().flatten().all(|value| value.is_finite()));
+}
 
 #[allow(clippy::approx_constant, clippy::excessive_precision)]
 const CASES: &[(&str, &[[f64; 3]])] = &[

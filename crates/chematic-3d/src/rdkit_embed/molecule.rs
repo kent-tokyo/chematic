@@ -15,6 +15,7 @@ use super::dg::{BoundsMatrix, ChiralSet, triangle_smooth_bounds};
 use super::embed::{EmbedArgs, EmbedError, EmbedParams, embed_initial_points, embed_points};
 use super::etk::{
     CrystalFfDetails, get_experimental_torsions_with_forced, minimize_with_exp_torsions,
+    minimize_with_exp_torsions_corrected,
 };
 
 /// The `EmbedParameters` fields this port honours. [`Default`] is what
@@ -271,6 +272,23 @@ pub fn rdkit_embed_molecule(
     embed_prepared_fragments(&prepare_fragments(mh, o)?, o, o.random_seed)
 }
 
+/// ETKDGv3 embedding with the mathematically exact sixth-order experimental
+/// torsion gradient.
+///
+/// Bounds, torsion preferences, seeded initial coordinates, and all other
+/// stages match [`rdkit_embed_molecule`]. The only difference is the fix for
+/// RDKit issue #8715: the sixth Fourier term uses coefficient/sign slot 6 and
+/// the exact derivative of `cos(6 phi)`. Coordinates are therefore not
+/// expected to be bit-identical to RDKit 2026.09.1 when a non-zero sixth-order
+/// term participates.
+pub fn etkdg_embed_molecule_corrected(
+    mh: &Molecule,
+    o: &RdkitEmbedOptions,
+) -> Result<Vec<[f64; 3]>, RdkitEmbedError> {
+    validate_options(mh, o)?;
+    embed_prepared_fragments_with(&prepare_fragments(mh, o)?, o, o.random_seed, false, true)
+}
+
 /// RDKit 2026.09.1's `onlyInitialEmbedding=True` coordinates: the seeded
 /// metric-matrix embedding before distance-geometry or ETKDG minimization.
 pub fn rdkit_embed_initial_molecule(
@@ -279,7 +297,7 @@ pub fn rdkit_embed_initial_molecule(
 ) -> Result<Vec<[f64; 3]>, RdkitEmbedError> {
     validate_options(mh, o)?;
     let prepared = prepare_fragments(mh, o)?;
-    embed_prepared_fragments_with(&prepared, o, o.random_seed, true)
+    embed_prepared_fragments_with(&prepared, o, o.random_seed, true, false)
 }
 
 /// `AllChem.EmbedMultipleConfs(mh, numConfs=..., params=...)` on an
@@ -768,7 +786,7 @@ fn embed_prepared_fragments(
     o: &RdkitEmbedOptions,
     seed: i32,
 ) -> Result<Vec<[f64; 3]>, RdkitEmbedError> {
-    embed_prepared_fragments_with(prepared, o, seed, false)
+    embed_prepared_fragments_with(prepared, o, seed, false, false)
 }
 
 fn embed_prepared_fragments_with(
@@ -776,6 +794,7 @@ fn embed_prepared_fragments_with(
     o: &RdkitEmbedOptions,
     seed: i32,
     only_initial_embedding: bool,
+    corrected_torsion_gradient: bool,
 ) -> Result<Vec<[f64; 3]>, RdkitEmbedError> {
     let atom_count = prepared
         .iter()
@@ -785,7 +804,13 @@ fn embed_prepared_fragments_with(
         .map_or(0, |atom| atom + 1);
     let mut out = vec![[0.0; 3]; atom_count];
     for fragment in prepared {
-        let xyz = embed_prepared_fragment(fragment, o, seed, only_initial_embedding)?;
+        let xyz = embed_prepared_fragment(
+            fragment,
+            o,
+            seed,
+            only_initial_embedding,
+            corrected_torsion_gradient,
+        )?;
         for (local, &source) in fragment.source_atoms.iter().enumerate() {
             out[source] = xyz[local];
         }
@@ -800,13 +825,19 @@ fn embed_prepared_fragment(
     o: &RdkitEmbedOptions,
     seed: i32,
     only_initial_embedding: bool,
+    corrected_torsion_gradient: bool,
 ) -> Result<Vec<[f64; 3]>, RdkitEmbedError> {
     let etk = prepared.details.is_some();
     let force_tol = EmbedParams::default().optimizer_force_tol;
     let etk_stage = |p3: &mut [[f64; 3]]| -> Result<bool, EmbedError> {
         let d = prepared.details.as_ref().expect("ETKDG details");
         let mut flat: Vec<f64> = p3.iter().flatten().copied().collect();
-        let planar = minimize_with_exp_torsions(
+        let minimize = if corrected_torsion_gradient {
+            minimize_with_exp_torsions_corrected
+        } else {
+            minimize_with_exp_torsions
+        };
+        let planar = minimize(
             &mut flat,
             &prepared.bounds,
             d,

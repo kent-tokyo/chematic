@@ -83,6 +83,15 @@ def test_rdkit_embed_matches_rdkit_seed_42(smiles):
     assert got == repeated
 
 
+def test_corrected_etkdg_sixfold_gradient_is_deterministic_and_opt_in():
+    mol = chematic.from_smiles("CCN(C)C").add_hydrogens()
+    corrected = mol.etkdg_embed_corrected(random_seed=42)
+
+    assert corrected == mol.etkdg_embed_corrected(random_seed=42)
+    assert corrected != mol.rdkit_embed(random_seed=42)
+    assert all(value == value for atom in corrected for value in atom)
+
+
 def test_rdkit_initial_metric_embedding_matches_rdkit_2026_09():
     mol = chematic.from_smiles("CCO").add_hydrogens()
     got = mol.rdkit_embed_initial(random_seed=42)

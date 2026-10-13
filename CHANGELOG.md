@@ -12,6 +12,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added opt-in ETKDGv3 embedding with the mathematically exact sixth-order
+  experimental-torsion gradient across Rust, Python
+  (`Mol.etkdg_embed_corrected`) and WASM
+  (`etkdg_embed_corrected_json`). The pinned `rdkit_embed` compatibility lane
+  remains bit-compatible with RDKit 2026.09.1, while the corrected lane uses
+  coefficient/sign slot 6 and the exact derivative of `cos(6*phi)` (ahead of
+  unresolved RDKit issue #8715).
 - Added native OpenSMILES allene/cumulene axial stereo support. `@`/`@@` on
   valid allene centers and explicit `@AL1`/`@AL2` now survive parse,
   canonical write, reparse, atom renumbering, fingerprinting, and Python

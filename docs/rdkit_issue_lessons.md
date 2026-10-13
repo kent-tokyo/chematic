@@ -37,6 +37,18 @@ them during canonical traversal, and treats duplicated virtual hydrogens as
 end-local positions. Tests cover opposite stereoisomers, shorthand syntax,
 atom renumbering, invalid geometry cleanup, and canonical idempotence.
 
+### ETKDG sixth-order torsion gradients (RDKit #8715)
+
+**Issue:** RDKit 2026.09.1 differentiates the sixth Fourier torsion term with
+the fifth coefficient/sign and omits a `cos(phi)` factor. The resulting
+gradient is not the derivative of the energy and can change ETKDG convergence.
+
+**chematic principle:** Compatibility and correctness are separate contracts.
+`rdkit_embed` retains the pinned RDKit expression, while
+`etkdg_embed_corrected` uses the exact derivative. A Cartesian finite-difference
+test exercises a pure sixth-order term and also proves that the compatibility
+lane still reproduces the upstream defect instead of silently changing.
+
 ### E/Z fragment extraction (RDKit #9368)
 
 **Issue:** `MolFragmentToSmiles()` raises a C++ pre-condition violation when the

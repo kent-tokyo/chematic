@@ -172,6 +172,31 @@ impl Mol {
         res.map_err(map_rdkit_embed_error)
     }
 
+    /// Seeded ETKDGv3 coordinates with the corrected sixth-order torsion
+    /// gradient from RDKit issue #8715.
+    ///
+    /// This uses the same bounds, torsion preferences, and initial coordinates
+    /// as :meth:`rdkit_embed`, but differentiates ``cos(6*phi)`` exactly.
+    /// Results may intentionally differ from RDKit 2026.09.1 when a non-zero
+    /// sixth-order experimental torsion term participates.
+    #[pyo3(signature = (random_seed = 42, max_iterations = 0))]
+    fn etkdg_embed_corrected(
+        &self,
+        py: Python<'_>,
+        random_seed: i32,
+        max_iterations: u32,
+    ) -> PyResult<Vec<[f64; 3]>> {
+        use chematic_3d::rdkit_embed::{RdkitEmbedOptions, etkdg_embed_molecule_corrected};
+        let opts = RdkitEmbedOptions {
+            random_seed,
+            max_iterations,
+            ..Default::default()
+        };
+        let mol = self.inner.clone();
+        py.detach(move || etkdg_embed_molecule_corrected(&mol, &opts))
+            .map_err(map_rdkit_embed_error)
+    }
+
     /// Seeded metric-matrix coordinates before DG/ETKDG minimization,
     /// matching RDKit 2026.09.1's ``onlyInitialEmbedding=True`` boundary.
     #[pyo3(signature = (random_seed = 42, max_iterations = 0))]

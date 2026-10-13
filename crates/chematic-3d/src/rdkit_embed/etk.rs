@@ -534,10 +534,27 @@ impl Etk3dField {
         res
     }
 
+    #[cfg(test)]
     pub(crate) fn grad(&self, pos: &[f64], grad: &mut [f64]) {
+        self.grad_with_torsion_mode(pos, grad, TorsionGradientMode::Rdkit2026_09);
+    }
+
+    #[cfg(test)]
+    fn grad_corrected(&self, pos: &[f64], grad: &mut [f64]) {
+        self.grad_with_torsion_mode(pos, grad, TorsionGradientMode::Corrected);
+    }
+
+    fn grad_with_torsion_mode(
+        &self,
+        pos: &[f64],
+        grad: &mut [f64],
+        torsion_mode: TorsionGradientMode,
+    ) {
         for contribution in &self.contribs {
             match contribution {
-                Contrib::Torsions(terms) => torsion_gradients(terms, pos, grad),
+                Contrib::Torsions(terms) => {
+                    torsion_gradients_with_mode(terms, pos, grad, torsion_mode)
+                }
                 Contrib::Inversions(terms) => inversion_gradients(terms, pos, grad),
                 Contrib::Distances(terms) => distance_gradients(terms, pos, grad),
                 Contrib::Angles(terms) => angle_gradients(terms, pos, grad),
@@ -546,6 +563,20 @@ impl Etk3dField {
     }
 
     pub(crate) fn minimize(&self, pos: &mut [f64], max_its: u32, force_tol: f64) -> i32 {
+        self.minimize_with_torsion_mode(pos, max_its, force_tol, TorsionGradientMode::Rdkit2026_09)
+    }
+
+    fn minimize_corrected(&self, pos: &mut [f64], max_its: u32, force_tol: f64) -> i32 {
+        self.minimize_with_torsion_mode(pos, max_its, force_tol, TorsionGradientMode::Corrected)
+    }
+
+    fn minimize_with_torsion_mode(
+        &self,
+        pos: &mut [f64],
+        max_its: u32,
+        force_tol: f64,
+        torsion_mode: TorsionGradientMode,
+    ) -> i32 {
         if self.contribs.is_empty() {
             return 0;
         }
@@ -556,14 +587,32 @@ impl Etk3dField {
             |p| self.energy(p),
             |p, g| {
                 g.fill(0.0);
-                self.grad(p, g);
+                self.grad_with_torsion_mode(p, g, torsion_mode);
                 chematic_ff::rdkit_bfgs::scale_gradient(g)
             },
         )
     }
 }
 
+#[derive(Clone, Copy)]
+enum TorsionGradientMode {
+    /// Preserve RDKit 2026.09.1's incorrect sixth Fourier term exactly.
+    Rdkit2026_09,
+    /// Differentiate the sixth Fourier term in [`torsion_energy_m6`] exactly.
+    Corrected,
+}
+
+#[cfg(test)]
 fn torsion_gradients(terms: &[Torsion], pos: &[f64], grad: &mut [f64]) {
+    torsion_gradients_with_mode(terms, pos, grad, TorsionGradientMode::Rdkit2026_09);
+}
+
+fn torsion_gradients_with_mode(
+    terms: &[Torsion],
+    pos: &[f64],
+    grad: &mut [f64],
+    mode: TorsionGradientMode,
+) {
     for term in terms {
         let [ip, jp, kp, lp] = term.idx.map(|i| pt(pos, i));
         let r = [sub(ip, jp), sub(kp, jp), sub(jp, kp), sub(lp, kp)];
@@ -582,12 +631,18 @@ fn torsion_gradients(terms: &[Torsion], pos: &[f64], grad: &mut [f64]) {
         let c5 = cos_phi * c4;
         let fc = &term.fc;
         let signs = term.signs.map(f64::from);
+        let sixth = match mode {
+            TorsionGradientMode::Rdkit2026_09 => fc[4] * signs[4] * (32.0 * c5 - 32.0 * c3 + 6.0),
+            TorsionGradientMode::Corrected => {
+                fc[5] * signs[5] * (32.0 * c5 - 32.0 * c3 + 6.0 * cos_phi)
+            }
+        };
         let de_dphi = -fc[0] * signs[0] * sin_phi
             - 2.0 * fc[1] * signs[1] * (2.0 * cos_phi * sin_phi)
             - 3.0 * fc[2] * signs[2] * (4.0 * c2 * sin_phi - sin_phi)
             - 4.0 * fc[3] * signs[3] * (8.0 * c3 * sin_phi - 4.0 * cos_phi * sin_phi)
             - 5.0 * fc[4] * signs[4] * (16.0 * c4 * sin_phi - 12.0 * c2 * sin_phi + sin_phi)
-            - 6.0 * fc[4] * signs[4] * (32.0 * c5 * sin_phi - 32.0 * c3 * sin_phi + 6.0 * sin_phi);
+            - 6.0 * sixth * sin_phi;
         let divisor = if is_double_zero(sin_phi) {
             cos_phi
         } else {
@@ -942,12 +997,56 @@ pub(crate) fn minimize_with_exp_torsions(
     force_tol: f64,
     use_basic_knowledge: bool,
 ) -> Option<bool> {
+    minimize_with_exp_torsions_mode(
+        pos3,
+        m,
+        d,
+        force_tol,
+        use_basic_knowledge,
+        TorsionGradientMode::Rdkit2026_09,
+    )
+}
+
+/// ETKDG minimization with the mathematically exact sixth-order torsion
+/// gradient. RDKit issue #8715 tracks the legacy expression retained by
+/// [`minimize_with_exp_torsions`] for compatibility.
+pub(crate) fn minimize_with_exp_torsions_corrected(
+    pos3: &mut [f64],
+    m: &BoundsMatrix,
+    d: &CrystalFfDetails,
+    force_tol: f64,
+    use_basic_knowledge: bool,
+) -> Option<bool> {
+    minimize_with_exp_torsions_mode(
+        pos3,
+        m,
+        d,
+        force_tol,
+        use_basic_knowledge,
+        TorsionGradientMode::Corrected,
+    )
+}
+
+fn minimize_with_exp_torsions_mode(
+    pos3: &mut [f64],
+    m: &BoundsMatrix,
+    d: &CrystalFfDetails,
+    force_tol: f64,
+    use_basic_knowledge: bool,
+    mode: TorsionGradientMode,
+) -> Option<bool> {
     if !use_basic_knowledge {
         unimplemented!("plain ETDG (constructPlain3DForceField) is not ported");
     }
     let field = construct_3d_force_field(m, pos3, d);
-    if field.energy(pos3) > ERROR_TOL && field.minimize(pos3, 300, force_tol) < 0 {
-        return None;
+    if field.energy(pos3) > ERROR_TOL {
+        let status = match mode {
+            TorsionGradientMode::Rdkit2026_09 => field.minimize(pos3, 300, force_tol),
+            TorsionGradientMode::Corrected => field.minimize_corrected(pos3, 300, force_tol),
+        };
+        if status < 0 {
+            return None;
+        }
     }
     let field2 = construct_3d_improper_force_field(m.num_rows(), d);
     let planarity_tolerance = 0.7;
@@ -979,6 +1078,44 @@ mod numerical_contract_tests {
         for axis in 0..3 {
             close(grad.iter().skip(axis).step_by(3).sum(), 0.0, 1e-8);
         }
+    }
+
+    fn max_gradient_error(field: &Etk3dField, pos: &[f64], corrected: bool) -> f64 {
+        let mut grad = vec![0.0; pos.len()];
+        if corrected {
+            field.grad_corrected(pos, &mut grad);
+        } else {
+            field.grad(pos, &mut grad);
+        }
+        grad.iter()
+            .enumerate()
+            .map(|(i, actual)| {
+                let mut plus = pos.to_vec();
+                let mut minus = pos.to_vec();
+                plus[i] += 1e-6;
+                minus[i] -= 1e-6;
+                let numerical = (field.energy(&plus) - field.energy(&minus)) / 2e-6;
+                (actual - numerical).abs()
+            })
+            .fold(0.0, f64::max)
+    }
+
+    #[test]
+    fn corrected_sixfold_torsion_gradient_matches_energy() {
+        let field = Etk3dField {
+            contribs: vec![Contrib::Torsions(vec![Torsion {
+                idx: [0, 1, 2, 3],
+                fc: [0.0, 0.0, 0.0, 0.0, 0.0, 1.0],
+                signs: [1; 6],
+            }])],
+        };
+        let pos = [0.2, 1.1, -0.4, 0.0, 0.0, 0.0, 1.0, 0.1, 0.2, 1.5, -0.7, 1.2];
+
+        assert!(max_gradient_error(&field, &pos, true) < 2e-5);
+        assert!(
+            max_gradient_error(&field, &pos, false) > 1.0,
+            "the RDKit 2026.09 compatibility lane must retain issue #8715"
+        );
     }
 
     #[test]
