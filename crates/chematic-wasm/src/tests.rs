@@ -287,6 +287,22 @@ fn qed_aspirin_range() {
 }
 
 #[test]
+fn qed_matches_rdkit_for_stress_residual_families() {
+    for (smiles, expected) in [
+        ("o1cccccccc1", 0.475_635_834_958_977_16),
+        ("s1cccccccc1", 0.493_136_312_577_307_06),
+        ("[*H]", 0.332_332_381_986_318_76),
+        ("[*H2]", 0.324_634_750_839_503_2),
+    ] {
+        let actual = parse(smiles).qed();
+        assert!(
+            (actual - expected).abs() <= 1e-12,
+            "{smiles}: QED {actual:.16}, expected {expected:.16}"
+        );
+    }
+}
+
+#[test]
 fn exact_mass_aspirin() {
     // Aspirin monoisotopic mass: 180.0423
     let em = parse("CC(=O)Oc1ccccc1C(=O)O").exact_mass();

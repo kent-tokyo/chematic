@@ -157,6 +157,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- Made QED use one RDKit-sanitized graph for all eight component properties,
+  aligned neutral divalent O/S macrocycle aromaticity with RDKit 2026.03.6,
+  and counted explicit hydrogens attached to dummy atoms in RDKit-compatible
+  molecular weight. The unusual-SMILES gate improves from 4,021/4,071 to
+  4,071/4,071 comparable QED rows; RDKit itself refuses the remaining row.
 - Made unspecified product-template E/Z semantics independent of reactant
   order. A double bond whose product template supplies substituents at both
   ends without `/` or `\\` now consistently drops carried E/Z after all

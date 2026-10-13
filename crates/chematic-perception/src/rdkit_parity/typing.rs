@@ -706,11 +706,12 @@ fn verdict_with_typing(
     typing: impl Fn(AtomIdx, &[bool]) -> (ElectronDonorType, bool),
     allow_ranks: bool,
 ) -> Option<(FxHashSet<AtomIdx>, FxHashSet<BondIdx>)> {
-    let typing = ParityTyping::new(mol, typing);
+    let mut typing = ParityTyping::new(mol, typing);
     if !typing.keep.iter().any(|&keep| keep) {
         return Some((FxHashSet::default(), FxHashSet::default()));
     }
     let rings = parity_ring_set(mol, &typing.keep, allow_ranks)?;
+    typing.apply_macrocycle_bridge_rule(mol, &rings);
     let ring_atoms: Vec<&[AtomIdx]> = rings
         .iter()
         .filter(|ring| ring.iter().all(|atom| typing.candidate[atom.0 as usize]))
@@ -773,6 +774,37 @@ impl ParityTyping {
             donor,
             candidate,
             keep,
+        }
+    }
+
+    /// RDKit treats a neutral divalent O/S two-electron donor as an
+    /// aliphatic bridge when the first SSSR ring that contains it is a
+    /// macrocycle (nine atoms or more). This is evaluated after ring
+    /// selection in Aromaticity.cpp, so it cannot be represented by the
+    /// molecule-global donor typing above.
+    fn apply_macrocycle_bridge_rule(&mut self, mol: &Molecule, rings: &[Vec<AtomIdx>]) {
+        let mut seen = vec![false; mol.atom_count()];
+        for ring in rings {
+            for &idx in ring {
+                let i = idx.0 as usize;
+                if seen[i] {
+                    continue;
+                }
+                seen[i] = true;
+                let atom = mol.atom(idx);
+                if ring.len() >= 9
+                    && self.donor[i] == ElectronDonorType::TwoElectron
+                    && matches!(atom.element.atomic_number(), 8 | 16)
+                    && atom.charge == 0
+                    && mol.degree(idx) == 2
+                    && mol.neighbors(idx).all(|(_, bond)| {
+                        !matches!(mol.bond(bond).order, BondOrder::Double | BondOrder::Triple)
+                    })
+                {
+                    self.donor[i] = ElectronDonorType::None;
+                    self.candidate[i] = false;
+                }
+            }
         }
     }
 }

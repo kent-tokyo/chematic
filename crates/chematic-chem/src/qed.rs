@@ -359,15 +359,23 @@ fn qed_aromatic_ring_count(view: &Molecule) -> usize {
 /// The eight QED properties exactly as `rdkit.Chem.QED.properties` defines
 /// them, computed on the RDKit-perceived aromatic view of `mol`.
 fn qed_properties(mol: &Molecule) -> [f64; 8] {
-    chematic_perception::with_rdkit_parity_view(mol, |view| {
-        let view = view.unwrap_or(mol);
+    // QED.py computes every property on the same sanitized MolFromSmiles
+    // molecule.  Using the parity view only for SMARTS-based properties made
+    // the score depend on the input spelling: explicit H atoms, non-canonical
+    // Kekule forms and unusual bracket valences could change MW/LogP/ROTB
+    // while HBA/AROM/ALERTS saw a different graph.  Reconstruct that sanitized
+    // graph once and use it for all eight properties.
+    let parsed = chematic_smiles::rdkit_parsed_molecule(mol);
+    let base = parsed.as_ref().unwrap_or(mol);
+    chematic_perception::with_rdkit_parity_view(base, |view| {
+        let view = view.unwrap_or(base);
         [
-            rdkit_molecular_weight(mol),
-            logp_crippen(mol),
+            rdkit_molecular_weight(base),
+            logp_crippen(base),
             qed_acceptor_count(view) as f64,
-            hbd_count(mol) as f64,
-            rdkit_tpsa(mol),
-            rotatable_bond_count(mol) as f64,
+            hbd_count(base) as f64,
+            rdkit_tpsa(base),
+            rotatable_bond_count(base) as f64,
             qed_aromatic_ring_count(view) as f64,
             structural_alert_count(view) as f64,
         ]
@@ -547,5 +555,55 @@ mod tests {
         let (a, b, c, d, e, f, dmax) = ADS_PARAMS[0];
         let d_val = ads(290.0, a, b, c, d, e, f, dmax);
         assert!(d_val > 0.9 && d_val <= 1.1, "ADS(MW=290)={d_val:.4}");
+    }
+
+    #[test]
+    fn qed_matches_rdkit_for_stress_residual_families() {
+        // RDKit 2026.03.6 QED.qed values. These cover the three root causes
+        // from the 4,072-row stress corpus: sanitized-graph consistency,
+        // macrocyclic O/S aromaticity and hydrogens attached to dummies.
+        let cases = [
+            ("o1cccccccc1", 0.475_635_834_958_977_16),
+            ("s1cccccccc1", 0.493_136_312_577_307_06),
+            ("o1cccccccccccc1", 0.544_566_902_234_719_4),
+            ("s1cccccccccccc1", 0.553_693_526_929_436),
+            ("o1cccccccccccccccc1", 0.592_946_126_450_993),
+            ("s1cccccccccccccccc1", 0.567_510_242_039_765_6),
+            ("[*H]", 0.332_332_381_986_318_76),
+            ("[*H2]", 0.324_634_750_839_503_2),
+            ("[H]OC(=O)C([H])([H])N([H])[H]", 0.421_170_887_937_099_5),
+            ("c1=cc=cc=c1", 0.399_801_185_209_927_6),
+        ];
+        for (smiles, expected) in cases {
+            let actual = qed(&mol(smiles));
+            assert!(
+                (actual - expected).abs() <= 1e-12,
+                "{smiles}: QED {actual:.16}, expected {expected:.16}"
+            );
+        }
+    }
+
+    #[test]
+    fn qed_uses_one_sanitized_graph_for_every_property() {
+        let explicit_h = mol("[H]OC(=O)C([H])([H])N([H])[H]");
+        assert_properties_close(
+            qed_properties(&explicit_h),
+            [75.067, -0.970_3, 3.0, 2.0, 63.32, 1.0, 0.0, 0.0],
+        );
+
+        let macrocycle = mol("o1cccccccc1");
+        assert_properties_close(
+            qed_properties(&macrocycle),
+            [120.151, 2.156_4, 1.0, 0.0, 9.23, 0.0, 0.0, 0.0],
+        );
+    }
+
+    fn assert_properties_close(actual: [f64; 8], expected: [f64; 8]) {
+        for (index, (actual, expected)) in actual.into_iter().zip(expected).enumerate() {
+            assert!(
+                (actual - expected).abs() <= 1e-12,
+                "property {index}: {actual:.16}, expected {expected:.16}"
+            );
+        }
     }
 }

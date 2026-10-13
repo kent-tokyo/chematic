@@ -103,6 +103,14 @@ fn explicit_aromaticity_is_consistent(mol: &Molecule) -> bool {
         return false;
     }
 
+    // RDKit's Aromaticity.cpp deliberately rejects neutral divalent O/S as
+    // a two-electron donor in macrocycles (ring size >= 9).  Such an input is
+    // locally self-consistent, but preserving its lowercase flags here would
+    // bypass that rule before the full aromaticity pass gets a chance to run.
+    if has_aromatic_macrocycle_bridge_donor(mol) {
+        return false;
+    }
+
     let mut any = false;
     for (_, bond) in mol.bonds() {
         if bond.order == BondOrder::Aromatic {
@@ -113,6 +121,37 @@ fn explicit_aromaticity_is_consistent(mol: &Molecule) -> bool {
         }
     }
     any
+}
+
+fn has_aromatic_macrocycle_bridge_donor(mol: &Molecule) -> bool {
+    let candidates: Vec<_> = mol
+        .atoms()
+        .filter_map(|(idx, atom)| {
+            (atom.aromatic
+                && atom.charge == 0
+                && matches!(atom.element.atomic_number(), 8 | 16)
+                && mol.degree(idx) == 2
+                && mol.neighbors(idx).all(|(_, bond)| {
+                    !matches!(mol.bond(bond).order, BondOrder::Double | BondOrder::Triple)
+                }))
+            .then_some(idx)
+        })
+        .collect();
+    if candidates.is_empty() {
+        return false;
+    }
+
+    // Do not seed the public SSSR cache while computing another derived
+    // cache slot. Besides avoiding unnecessary cache traffic for this rare
+    // input class, this keeps perception's dev-dependency cycle from placing
+    // a RingSet with a different crate-instance TypeId into the same slot.
+    let rings = crate::sssr::find_sssr_uncached(mol);
+    candidates.into_iter().any(|idx| {
+        rings
+            .rings()
+            .iter()
+            .any(|ring| ring.len() >= 9 && ring.contains(&idx))
+    })
 }
 
 fn model_from_explicit_aromaticity(mol: &Molecule) -> AromaticityModel {
@@ -174,6 +213,9 @@ fn parity_shortcut(mol: &Molecule) -> ParityShortcut {
             return ParityShortcut::Full;
         }
         let info = ComponentInfo::new(mol);
+        if has_aromatic_macrocycle_bridge_donor(mol) {
+            return ParityShortcut::Full;
+        }
         match preperceived_kind_with(mol, &info) {
             Some(kind) => kind,
             None if unchanged_without_kekulization_with(mol, &info) => ParityShortcut::Identity,
@@ -1049,4 +1091,3 @@ fn apply_aromaticity_rdkit_parity_unseeded(mol: &Molecule) -> Result<Molecule, A
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
-

@@ -483,6 +483,17 @@ assert.ok(Math.abs(aromaticPyridinium.qed() - kekulePyridinium.qed()) <= 1e-12);
 kekulePyridinium.free();
 aromaticPyridinium.free();
 
+for (const [smiles, expected] of [
+  ["o1cccccccc1", 0.47563583495897716],
+  ["s1cccccccc1", 0.49313631257730706],
+  ["[*H]", 0.33233238198631876],
+  ["[*H2]", 0.3246347508395032],
+]) {
+  const mol = wasm.parse_smiles(smiles);
+  assert.ok(Math.abs(mol.qed() - expected) <= 1e-12, smiles);
+  mol.free();
+}
+
 for (const expected of fixture.standardization_contract.fixtures) {
   const actual = JSON.parse(
     wasm.standardize_smiles_report_json(expected.smiles, true, true, true, true),

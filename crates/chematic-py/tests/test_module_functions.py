@@ -82,6 +82,19 @@ def test_hbd_and_qed_are_invariant_to_kekule_aromatic_spelling():
     assert aromatic.qed == pytest.approx(kekule.qed, abs=1e-12)
 
 
+@pytest.mark.parametrize(
+    ("smiles", "expected"),
+    [
+        ("o1cccccccc1", 0.47563583495897716),
+        ("s1cccccccc1", 0.49313631257730706),
+        ("[*H]", 0.33233238198631876),
+        ("[*H2]", 0.3246347508395032),
+    ],
+)
+def test_qed_matches_rdkit_for_stress_residual_families(smiles, expected):
+    assert chematic.from_smiles(smiles).qed == pytest.approx(expected, abs=1e-12)
+
+
 # ---------------------------------------------------------------------------
 # from_inchi / InChI round-trip (C3: InChI parser)
 # ---------------------------------------------------------------------------
