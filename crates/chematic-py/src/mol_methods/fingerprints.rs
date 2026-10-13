@@ -192,8 +192,20 @@ impl Mol {
     /// A separate function from :meth:`path_fp` (chematic's own pre-existing,
     /// non-bit-exact linear-path approximation, itself Rust-side named
     /// ``rdkit_path_fp``); neither affects the other's output.
-    fn rdkit_rdk_fp(&self) -> Vec<u8> {
-        bitvec2048_to_bytes(&chematic_fp::rdkit_rdk_fp(&self.inner))
+    #[pyo3(signature = (ignore_atoms = None))]
+    fn rdkit_rdk_fp(&self, ignore_atoms: Option<Vec<usize>>) -> PyResult<Vec<u8>> {
+        let ignored = ignore_atoms
+            .unwrap_or_default()
+            .into_iter()
+            .map(|index| {
+                u32::try_from(index)
+                    .map(chematic_core::AtomIdx)
+                    .map_err(|_| PyValueError::new_err("ignored atom index exceeds u32 range"))
+            })
+            .collect::<PyResult<Vec<_>>>()?;
+        let fingerprint = chematic_fp::rdkit_rdk_fp_ignoring_atoms(&self.inner, &ignored)
+            .map_err(|error| PyValueError::new_err(error.to_string()))?;
+        Ok(bitvec2048_to_bytes(&fingerprint))
     }
 
     /// ECFP4 with chirality fingerprint as bytes.

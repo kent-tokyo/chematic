@@ -2010,6 +2010,26 @@ fn rdkit_rdk_bitvec_length_256() {
 }
 
 #[test]
+fn rdkit_rdk_ignore_atoms_matches_rdkit_2026_09_1() {
+    let mol = parse("CCO");
+    let bytes = rdkit_rdk_bitvec_ignoring_atoms(&mol, vec![2]).expect("fingerprint");
+    let bits: Vec<_> = bytes
+        .iter()
+        .enumerate()
+        .flat_map(|(byte_index, byte)| {
+            (0..8)
+                .filter(move |bit| byte & (1 << bit) != 0)
+                .map(move |bit| byte_index * 8 + bit)
+        })
+        .collect();
+    assert_eq!(bits, vec![1308, 1772]);
+    assert_eq!(
+        rdkit_rdk_bitvec_ignoring_atoms(&mol, vec![]).expect("fingerprint"),
+        rdkit_rdk_bitvec(&mol)
+    );
+}
+
+#[test]
 fn tanimoto_fcfp6_identical_is_one() {
     let mol = parse("c1ccccc1");
     assert!((tanimoto_fcfp6(&mol, &mol) - 1.0).abs() < 1e-9);

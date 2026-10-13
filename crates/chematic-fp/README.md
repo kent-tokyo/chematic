@@ -17,6 +17,9 @@ Fast molecular fingerprints for similarity search and clustering. ECFP4/6, RDKit
 - **Interpretable RDKit diagnostics**: inspect atom-pair atom codes and encode
   or decode selected topological-torsion paths without reproducing packed-bit
   logic in application code
+- **Masked RDK fingerprints**: exclude every branched path containing selected
+  atoms with `rdkit_rdk_fp_ignoring_atoms`, matching RDKit 2026.09.1's
+  `ignoreAtoms` contract
 - **Chirality-aware**: optional stereo center consideration (R/S, E/Z)
 - **WASM-compatible**: zero C/C++ dependencies
 

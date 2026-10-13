@@ -14,7 +14,7 @@ Quick start::
 
 from __future__ import annotations
 
-from typing import Any, Iterable, Iterator, Literal, Optional, TypedDict, Union
+from typing import Any, Iterable, Iterator, Literal, Optional, Sequence, TypedDict, Union
 
 import numpy as np
 from numpy import ndarray
@@ -973,6 +973,15 @@ class Mol:
         nBits=n_bits)`` (default ``bitFlags``, ``isQuery=False``) for a molecule
         read with :func:`from_smiles`. Raises ``ValueError`` for molecules RDKit
         rejects or the RDKit model does not cover."""
+        ...
+
+    def rdkit_rdk_fp(self, ignore_atoms: Optional[Sequence[int]] = None) -> bytes:
+        """RDKit-compatible RDK fingerprint as 256 packed bytes.
+
+        ``ignore_atoms`` implements RDKit 2026.09.1's fingerprint-generator
+        option: every branched path containing a selected atom is excluded.
+        Invalid indices raise ``ValueError``.
+        """
         ...
 
     def maccs(self) -> bytes:

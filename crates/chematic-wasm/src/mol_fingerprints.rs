@@ -171,6 +171,33 @@ pub fn rdkit_rdk_bitvec(mol: &MolHandle) -> Vec<u8> {
         .collect()
 }
 
+/// RDKit 2026.09.1 RDKFingerprint with `ignoreAtoms`: every branched path
+/// containing one of `ignored_atoms` is excluded. Invalid indices return a JS
+/// error; an empty list is bit-identical to [`rdkit_rdk_bitvec`].
+#[wasm_bindgen]
+pub fn rdkit_rdk_bitvec_ignoring_atoms(
+    mol: &MolHandle,
+    ignored_atoms: Vec<u32>,
+) -> Result<Vec<u8>, JsValue> {
+    let ignored: Vec<_> = ignored_atoms
+        .into_iter()
+        .map(chematic_core::AtomIdx)
+        .collect();
+    let fp = chematic_fp::rdkit_rdk_fp_ignoring_atoms(&mol.inner, &ignored)
+        .map_err(|error| JsValue::from_str(&error.to_string()))?;
+    Ok((0..256usize)
+        .map(|byte_idx| {
+            let mut byte = 0u8;
+            for bit in 0..8usize {
+                if fp.get(byte_idx * 8 + bit) {
+                    byte |= 1 << bit;
+                }
+            }
+            byte
+        })
+        .collect())
+}
+
 // ---------------------------------------------------------------------------
 // Sprint Q: IFG, VSA descriptors, Gasteiger charges, SA Score, Diversity
 // ---------------------------------------------------------------------------

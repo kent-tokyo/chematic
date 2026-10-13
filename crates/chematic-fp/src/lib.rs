@@ -69,7 +69,7 @@ pub use rdkit_atom_pair::{
 pub use rdkit_avalon::{RdkitAvalonError, rdkit_avalon_fp};
 pub use rdkit_layered::rdkit_layered_fp;
 pub use rdkit_pattern::rdkit_pattern_fp;
-pub use rdkit_rdk::rdkit_rdk_fp;
+pub use rdkit_rdk::{RdkitRdkFingerprintError, rdkit_rdk_fp, rdkit_rdk_fp_ignoring_atoms};
 pub use rdkit_torsion::{
     RdkitAtomCodeExplanation, RdkitTorsionDiagnosticError, explain_rdkit_atom_code,
     explain_rdkit_topological_torsion_code, rdkit_atom_code, rdkit_legacy_torsion_counts,

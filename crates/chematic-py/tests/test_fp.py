@@ -309,6 +309,27 @@ def test_rdkit_rdk_fp_deterministic(aspirin):
     assert aspirin.rdkit_rdk_fp() == aspirin.rdkit_rdk_fp()
 
 
+def _on_bits(packed: bytes) -> list[int]:
+    return [
+        byte_index * 8 + bit
+        for byte_index, byte in enumerate(packed)
+        for bit in range(8)
+        if byte & (1 << bit)
+    ]
+
+
+def test_rdkit_rdk_fp_ignore_atoms_matches_rdkit_2026_09_1():
+    mol = chematic.from_smiles("CCO")
+    assert _on_bits(mol.rdkit_rdk_fp(ignore_atoms=[2])) == [1308, 1772]
+    assert _on_bits(mol.rdkit_rdk_fp(ignore_atoms=[1])) == []
+    assert mol.rdkit_rdk_fp(ignore_atoms=[]) == mol.rdkit_rdk_fp()
+
+
+def test_rdkit_rdk_fp_ignore_atoms_rejects_invalid_index():
+    with pytest.raises(ValueError, match="out of range"):
+        chematic.from_smiles("CCO").rdkit_rdk_fp(ignore_atoms=[3])
+
+
 def test_rdkit_rdk_fp_independent_of_native_path_fp(aspirin):
     # Separate opt-in function -- must not be the same bytes as chematic's own
     # pre-existing, non-bit-exact linear-path approximation just because both

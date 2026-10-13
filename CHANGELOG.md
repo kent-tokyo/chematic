@@ -12,6 +12,12 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added RDKit 2026.09.1-compatible atom masking for the RDK branched-path
+  fingerprint across Rust (`rdkit_rdk_fp_ignoring_atoms`), Python
+  (`Mol.rdkit_rdk_fp(ignore_atoms=...)`), and WASM
+  (`rdkit_rdk_bitvec_ignoring_atoms`). Every path containing a masked atom is
+  excluded, invalid indices fail explicitly, and an empty mask preserves the
+  existing fingerprint byte-for-byte.
 - Added interpretable RDKit atom-pair/topological-torsion diagnostics across
   Rust, Python, and WASM. Callers can inspect an atom's packed element,
   branching, and pi-electron fields, encode a selected torsion path, and
