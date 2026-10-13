@@ -1,21 +1,21 @@
 # Validation report
 
-Updated 2026-10-13 for **v1.1.3**. The broad chemistry and speed packet
+Updated 2026-10-14 for **v1.1.3**. The broad chemistry and speed packet
 remains pinned to published v1.0.30; separately named records cover later
 artifacts, the two-platform published v1.0.42/RDKit packet, the published
 v1.0.42 macOS arm64 chemistry baseline, v1.0.40 source, the v1.0.41 source
 candidate, current-main v1.1.0-source records, focused v1.1.1 artifact checks,
-and bounded v1.1.2/v1.1.3 source-candidate records. v1.1.2 release channels and
-its hosted Linux/macOS/Windows chemistry workflow are verified; v1.1.3 package
-claims require post-publication reruns. Every comparison is
-limited to its recorded artifact, comparator, corpus and operation.
+and bounded v1.1.2/v1.1.3 records. v1.1.3 release channels and its hosted
+Linux/macOS/Windows Python chemistry workflow are verified. Every comparison
+is limited to its recorded artifact, comparator, corpus and operation.
 
 ## Current evidence
 
 | Gate | Result and limit | Record |
 |---|---|---|
+| v1.1.3 published Python artifact packet | Exact public PyPI wheels on Linux x86-64, macOS arm64, macOS x86-64 and Windows x86-64 reproduce the pinned reaction, 310k SMARTS, Morgan, descriptor, CIP, hybridization, MMFF94, MOL stereo, BioTransformer and A6 counts. Morgan is bit-identical on 10,000/10,000 exposed rows and 5,000/5,000 ChEMBL rows; A6 is 265/265 independently sound and stereo-clean. Platform outputs are compared on Linux with pinned RDKit 2026.03.6 where an equivalent platform build is unavailable. npm/WASM and crates.io are separate evidence. | [hosted artifact gate](https://github.com/kent-tokyo/chematic/actions/runs/38474540633) · [record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-14-v113-published-artifact-packet.md) · [machine-readable packet](https://github.com/kent-tokyo/chematic/blob/main/validation/results/published-wheel-chemistry-gates-v1.1.3.json) |
 | v1.1.3 evaluation follow-up | The source candidate restores v1.1.2 exhaustive Rust matches; unusual-SMILES MW, Morgan and ring count are 4,072/4,072, and every finite comparable Labute ASA row agrees within `1e-9`. Ten CIP differences are explicitly classified. Prepared QED is 16.1% faster than public v1.1.3; parse-inclusive TPSA/Morgan versus public v1.1.2 cross parity and are recorded as ties. | [follow-up record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-13-v113-evaluation-fixes.md) |
-| v1.1.3 QED source candidate | On the frozen 4,072-row unusual-SMILES corpus, a local source wheel matches RDKit 2026.03.6 on all 4,071 comparable QED rows; RDKit rejects the remaining row. This is source-candidate evidence until the v1.1.3 published-wheel workflow completes. | [QED stress follow-up](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-13-qed-stress-parity.md) |
+| v1.1.3 unusual-input descriptors | The published-wheel packet confirms HBD on 4,072/4,072 rows and QED on all 4,071 comparable rows; RDKit rejects the remaining QED row. The earlier source record remains useful for row-level diagnosis. | [published packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-14-v113-published-artifact-packet.md) · [QED stress follow-up](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-13-qed-stress-parity.md) |
 | v1.1.2 gradient-rescue source candidate | The opt-in RDKit-compatible MMFF path exposes final gradient diagnostics and retries one lowest-energy candidate only when the initial ensemble has no converged result. On the already-inspected 265-row development set it reached 261/265 within 1 kcal/mol and 263/265 within 2 kcal/mol, with a 1.0179x median RDKit/CheMatic time ratio across three alternating blocks. The threshold was selected on this development set; this is not fresh-holdout, second-host, or published-artifact evidence. | [Development record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-13-a6-mmff-gradient-rescue-development.md) |
 | A6 RDKit 2026.09 bounds source candidate | A wheel built at `7e6a5240` reproduces RDKit 2026.09.1 raw and triangle-smoothed topology bounds within `1e-12` on all 768,664 cells across the frozen 265-row A6 corpus. Equal-count 20-conformer quality is within 1 kcal/mol on 258 rows; seven basin/minimization-tail rows remain. One loaded-host timing is not a speed claim. | [Bounds and conformer record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-12-a6-rdkit-2026-09-bounds-followup.md) |
 | v1.1.1 descriptor follow-up | The published CPython 3.12 wheels reproduce the pinned chemistry counts on Windows amd64, macOS arm64 and macOS x86-64; the Linux x86-64 sdist lane and all xsmarts-autoconf lanes also pass. The public artifact retains the unusual-SMILES residuals (4,069/4,072 HBD and 4,018/4,071 QED). Current main restores the three representation-dependent rows (4,072 HBD and 4,021 QED) and removes eager Python parse preparation; those fixes are source evidence until a later release. | [hosted artifact gate](https://github.com/kent-tokyo/chematic/actions/runs/38184048499) · [candidate speed record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-12-v111-public-vs-lazy-fix.md) · [expected public-wheel counts](https://github.com/kent-tokyo/chematic/blob/main/validation/published-wheel-chemistry-gates-expected-v1.1.1.json) |
@@ -34,7 +34,7 @@ limited to its recorded artifact, comparator, corpus and operation.
 | Reactions (P1) | Legacy 57/57 fixtures match. Published v1.0.42 and current source retain the 83-row gate at 80 exact and three jointly invalid. The v1.0.42 follow-up preserves caller-supplied explicit H atoms: full-corpus explicit-H differences fall from 153 to 35, while the remaining cases stay classified and are not counted as parity. | [v1.0.42 follow-up](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-10-v1042-regression-followups.md) |
 | Published v1.0.42 chemistry packet | The hash-pinned macOS arm64 CPython 3.13 wheel retains the 80+3 reaction gate, 310,000/310,000 SMARTS cells, the exposed/ChEMBL CIP, hybridization and MMFF counts, and lossless MOL stereo rows. Its BioTransformer explicit-H lane has 6,486 exact, 153 differing and 165 RDKit-raw-unsanitizable rows; these are the published baseline, not source-candidate results. | [v1.0.42 follow-up](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-10-v1042-regression-followups.md) |
 | MCP Streamable HTTP | Published v1.0.39 added the opt-in, loopback-first 2026-07-28 stateless transport retained here. The official suite produced 82 passes; its other checks require suite fixtures or capabilities the server does not declare. | [HTTP conformance record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-09-issues-769-779.md) |
-| Release channels | v1.1.1 is verified on GitHub Release, npm, PyPI (25 wheels plus one sdist), all 20 crates.io archives, docs.rs and Pages. Availability does not establish chemical accuracy or rerun older comparison packets. | [v1.1.1 verification](https://github.com/kent-tokyo/chematic/blob/main/validation/results/release-channel-verification-v1.1.1.json) |
+| Release channels | v1.1.3 is verified on GitHub Release, npm, PyPI (25 wheels plus one sdist), all 20 crates.io archives, docs.rs and Pages. Availability alone does not establish chemical accuracy; the Python artifact packet above is the matching chemistry record. | [v1.1.3 verification](https://github.com/kent-tokyo/chematic/blob/main/validation/results/release-channel-verification-v1.1.3.json) |
 
 ## Other bounded results
 
@@ -79,7 +79,7 @@ limited to its recorded artifact, comparator, corpus and operation.
 Earlier source diagnostics and per-release channel checks remain in the
 [benchmark index](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/README.md) and
 [versioned validation results](https://github.com/kent-tokyo/chematic/tree/main/validation/results/). They are not promoted
-to v1.1.1 package measurements.
+to a later package claim unless that exact artifact has its own named gate.
 
 ## Reproduce and interpret
 

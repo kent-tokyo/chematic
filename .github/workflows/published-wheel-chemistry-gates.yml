@@ -4,15 +4,16 @@ name: Published wheel chemistry gates
 # opt-in profile, CIP / hybridization / MMFF94 / MOL stereo on the exposed 10k
 # and ChEMBL 5k corpora, the BioTransformer rule corpus, and the 265 A6
 # stereo-safe MMFF94 rows on the independent scorer, #739) on the published
-# PyPI wheels for macOS and Windows, and compares every count with the
-# published Linux numbers in validation/published-wheel-chemistry-gates-expected-v<version>.json.
+# PyPI wheels for Linux, macOS and Windows, and compares every count with the
+# expected manifest in validation/published-wheel-chemistry-gates-expected-v<version>.json.
 # The wheel is downloaded from PyPI as a binary only; a source-build fallback
 # would not be a published-wheel result.
 #
-# Two stages. The macOS and Windows jobs run only chematic's side of every
-# gate (no RDKit: RDKit 2026.03.6 ships no macOS x86-64 wheel) and upload its
-# outputs. A Linux job per platform then compares those outputs with one
-# pinned RDKit 2026.03.6 wheel (SHA-256 checked) and checks the counts.
+# Two stages. Each platform job runs chematic's side of every gate and uploads
+# its outputs. A Linux job per platform then compares those outputs with one
+# pinned RDKit 2026.03.6 wheel (SHA-256 checked) and checks the counts. This
+# split is required because RDKit 2026.03.6 has no macOS x86-64 wheel and no
+# wheel for the CPython 3.9 ABI used by chematic's published Linux wheel.
 
 on:
   workflow_dispatch:
@@ -44,19 +45,29 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # PyPI publishes Linux wheels for CPython 3.9. RDKit 2026.03.6 has
+          # no matching CPython 3.9 wheel, so this job records chematic's
+          # output and the compare job below evaluates it with pinned RDKit
+          # on Linux CPython 3.12.
+          - os: ubuntu-latest
+            label: linux-x86_64-cp39
+            python: "3.9"
           - os: macos-15
             label: macos-arm64-cp312
+            python: "3.12"
           - os: macos-15-intel
             label: macos-x86_64-cp312
+            python: "3.12"
           - os: windows-latest
             label: windows-amd64-cp312
+            python: "3.12"
     steps:
       - name: Keep pinned corpora byte-identical (no CRLF conversion)
         run: git config --global core.autocrlf false
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v6
         with:
-          python-version: "3.12"
+          python-version: ${{ matrix.python }}
       - name: Download and install the published wheel (no RDKit)
         shell: bash
         run: |
@@ -104,7 +115,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        label: [macos-arm64-cp312, macos-x86_64-cp312, windows-amd64-cp312]
+        label: [linux-x86_64-cp39, macos-arm64-cp312, macos-x86_64-cp312, windows-amd64-cp312]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v6
