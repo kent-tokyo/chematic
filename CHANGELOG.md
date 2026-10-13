@@ -12,6 +12,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added Python `Mol` pickle round-tripping with a versioned, bounded binary
+  state. It preserves graph chemistry, tetrahedral and non-tetrahedral stereo,
+  enhanced stereo groups, R-group labels, caller atom tags, SMILES parser
+  provenance, and SD properties while deliberately rebuilding derived caches.
+  Invalid, oversized, truncated, or trailing state is rejected explicitly.
 - Added Rust and Python `SdfDataset` APIs for indexed, bounded-memory access to
   seekable SDF files. Opening scans record boundaries and title lines once;
   records and SD fields are parsed lazily for random access or bounded range

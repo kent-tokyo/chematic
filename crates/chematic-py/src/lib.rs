@@ -41,6 +41,7 @@ mod lammps;
 mod misc;
 mod mol_methods;
 mod nucleic_acid;
+mod pickle;
 mod pipeline_v2;
 mod reactions;
 mod reports;
@@ -114,6 +115,7 @@ fn chematic(m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     // io functions (iter_sdf, iter_sdf_str)
     io::register(m)?;
+    pickle::register(m)?;
 
     // SimilarityIndex class
     index::register(m)?;

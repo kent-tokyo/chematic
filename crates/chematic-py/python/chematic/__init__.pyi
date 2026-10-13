@@ -108,6 +108,10 @@ class Mol:
     Create with :func:`from_smiles`, :func:`from_mol_block`, or :func:`from_inchi`.
     """
 
+    def __reduce__(self) -> tuple[Any, tuple[bytes]]:
+        """Return versioned state for Python pickle round-tripping."""
+        ...
+
     # -- Identity ------------------------------------------------------------
 
     @property

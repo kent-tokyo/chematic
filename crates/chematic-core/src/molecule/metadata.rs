@@ -548,6 +548,24 @@ impl Molecule {
         (k & 2 != 0).then_some(k & 1 != 0)
     }
 
+    /// Return the parser provenance stored for one SMILES ring-closure bond.
+    ///
+    /// This is an internal interchange hook for bindings that must preserve a
+    /// molecule without routing it through a text format. The tuple contains
+    /// `(ring label, label occurrence, begins-at-opening-atom)`. The final
+    /// value is `None` when the parser did not record the endpoint convention.
+    #[doc(hidden)]
+    pub fn smiles_ring_closure_metadata(
+        &self,
+        idx: BondIdx,
+    ) -> Option<(u32, u32, Option<bool>)> {
+        let key = *self.smiles_ring_closure_keys.get(&idx.0)?;
+        let label = (key >> 32) as u32;
+        let occurrence = ((key & 0xFFFF_FFFF) >> 2) as u32;
+        let begins_at_open = (key & 2 != 0).then_some(key & 1 != 0);
+        Some((label, occurrence, begins_at_open))
+    }
+
     /// Bond indices in the order RDKit's SMILES parser creates the bonds:
     /// chain bonds as written, then every ring-closure bond, ordered by ring
     /// label and, for a reused label, by occurrence (RDKit closes rings after
