@@ -1,4 +1,4 @@
-use chematic_core::{AtomIdx, BondOrder, Molecule};
+use chematic_core::{AtomIdx, BondOrder, Chirality, Molecule, STEREO_H_SENTINEL, implicit_hcount};
 
 /// One side of an allene/cumulene axis.
 #[derive(Debug, Clone, Copy)]
@@ -81,6 +81,102 @@ pub(crate) fn allene_arms(
         };
     }
     (lengths[0] == lengths[1]).then_some(arms)
+}
+
+/// Normalize parsed central allene tags into their four virtual terminal
+/// ligands. Component starts are recovered from the completed graph: SMILES
+/// parsing appends each dot-separated component, so its lowest atom index is
+/// the atom that had no preceding neighbour in parse order.
+pub(crate) fn normalize_allene_stereo(molecule: &mut Molecule) {
+    let tagged: Vec<_> = molecule
+        .atoms()
+        .filter_map(|(atom, data)| (data.chirality != Chirality::None).then_some(atom))
+        .collect();
+    if tagged.is_empty() {
+        return;
+    }
+    let fragment_starts = fragment_start_flags(molecule);
+
+    for center in tagged {
+        let stored = molecule.atom(center).chirality;
+        let direct = molecule
+            .stereo_neighbor_order(center)
+            .map(<[u32]>::to_vec)
+            .unwrap_or_else(|| molecule.neighbors(center).map(|(n, _)| n.0).collect());
+        let arms = allene_arms(molecule, center, &direct);
+        if !stored.is_allene() && !(stored.is_tetrahedral() && arms.is_some()) {
+            continue;
+        }
+        let Some(arms) = arms else {
+            // Valid class on incompatible geometry is cleaned; malformed class
+            // numbers are rejected earlier by the token parser.
+            molecule.set_chirality(center, Chirality::None);
+            continue;
+        };
+
+        let normalized = match stored {
+            Chirality::CounterClockwise => Chirality::Allene1,
+            Chirality::Clockwise => Chirality::Allene2,
+            other => other,
+        };
+        let mut virtual_order = Vec::with_capacity(6);
+        for arm in arms {
+            let mut incident: Vec<_> = molecule.neighbors(arm.terminal).collect();
+            incident.sort_by_key(|(_, bond)| bond.0);
+            let parent = (!fragment_starts[arm.terminal.0 as usize])
+                .then(|| incident.first().map(|(atom, _)| *atom))
+                .flatten();
+            let mut local = Vec::with_capacity(3);
+            if let Some(atom) = parent {
+                local.push(atom.0);
+            }
+            if implicit_hcount(molecule, arm.terminal) > 0 {
+                local.push(STEREO_H_SENTINEL);
+            }
+            local.extend(
+                incident
+                    .into_iter()
+                    .filter(|(neighbor, _)| Some(*neighbor) != parent)
+                    .map(|(neighbor, _)| neighbor.0),
+            );
+            local.retain(|&atom| atom != arm.axis_neighbor.0);
+            if local.len() != 2 {
+                virtual_order.clear();
+                break;
+            }
+            virtual_order.push(arm.terminal.0);
+            virtual_order.extend(local);
+        }
+        if virtual_order.len() == 6 {
+            molecule.set_chirality(center, normalized);
+            molecule.set_stereo_neighbor_order(center, virtual_order);
+        } else {
+            molecule.set_chirality(center, Chirality::None);
+        }
+    }
+}
+
+fn fragment_start_flags(molecule: &Molecule) -> Vec<bool> {
+    let mut visited = vec![false; molecule.atom_count()];
+    let mut starts = vec![false; molecule.atom_count()];
+    for raw in 0..molecule.atom_count() {
+        if visited[raw] {
+            continue;
+        }
+        starts[raw] = true;
+        visited[raw] = true;
+        let mut stack = vec![AtomIdx(raw as u32)];
+        while let Some(atom) = stack.pop() {
+            for (neighbor, _) in molecule.neighbors(atom) {
+                let slot = neighbor.0 as usize;
+                if !visited[slot] {
+                    visited[slot] = true;
+                    stack.push(neighbor);
+                }
+            }
+        }
+    }
+    starts
 }
 
 /// Whether two encoded allene terminal orders differ by one terminal-ligand
