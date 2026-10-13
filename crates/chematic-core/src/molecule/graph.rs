@@ -190,23 +190,21 @@ impl Molecule {
                 builder.set_r_group(*new_atom, *label);
             }
         }
-        for group in &self.stereo_groups {
+        for (group_index, group) in self.stereo_groups.iter().enumerate() {
             let atoms = group
                 .atom_indices
                 .iter()
                 .filter_map(|atom| remap.get(atom.0 as usize).and_then(|mapped| *mapped))
                 .collect::<Vec<_>>();
-            let bonds = group
-                .bond_indices
+            let bonds = self.stereo_group_bonds[group_index]
                 .iter()
                 .filter_map(|bond| bond_remap.get(bond.0 as usize).and_then(|mapped| *mapped))
                 .collect::<Vec<_>>();
             if !atoms.is_empty() || !bonds.is_empty() {
-                builder.add_stereo_group(StereoGroup::with_bonds(
-                    group.kind.clone(),
-                    atoms,
+                builder.add_stereo_group_with_bonds(
+                    StereoGroup::new(group.kind.clone(), atoms),
                     bonds,
-                ));
+                );
             }
         }
         (builder.build(), remap)
@@ -350,18 +348,13 @@ impl Molecule {
         builder.copy_stereo_from(self);
         builder.copy_atom_tags_from(self);
         builder.copy_r_groups_from(self);
-        for group in &self.stereo_groups {
-            let bonds = group
-                .bond_indices
+        for (group_index, group) in self.stereo_groups.iter().enumerate() {
+            let bonds = self.stereo_group_bonds[group_index]
                 .iter()
                 .filter_map(|bond| bond_remap.get(bond.0 as usize).and_then(|mapped| *mapped))
                 .collect::<Vec<_>>();
             if !group.atom_indices.is_empty() || !bonds.is_empty() {
-                builder.add_stereo_group(StereoGroup::with_bonds(
-                    group.kind.clone(),
-                    group.atom_indices.clone(),
-                    bonds,
-                ));
+                builder.add_stereo_group_with_bonds(group.clone(), bonds);
             }
         }
         builder.build()

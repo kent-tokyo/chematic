@@ -134,11 +134,10 @@ fn wildcard_and_dative_edits_keep_atom_identity_and_validate_duplicate_edges() {
 #[test]
 fn graph_edits_remap_atom_and_bond_stereo_group_members_together() {
     let mut original = annotated_chain();
-    original.add_stereo_group(StereoGroup::with_bonds(
-        StereoGroupKind::And(4),
-        vec![AtomIdx(4)],
+    original.add_stereo_group_with_bonds(
+        StereoGroup::new(StereoGroupKind::And(4), vec![AtomIdx(4)]),
         vec![BondIdx(1), BondIdx(3)],
-    ));
+    );
 
     let (functional, _) = original.with_atom_removed(AtomIdx(0));
     let mut in_place = original.clone();
@@ -147,7 +146,7 @@ fn graph_edits_remap_atom_and_bond_stereo_group_members_together() {
         assert_eq!(edited.stereo_groups().len(), 1);
         assert_eq!(edited.stereo_groups()[0].atom_indices, vec![AtomIdx(3)]);
         assert_eq!(
-            edited.stereo_groups()[0].bond_indices,
+            edited.stereo_group_bond_indices(0).unwrap(),
             vec![BondIdx(0), BondIdx(2)]
         );
     }
@@ -158,6 +157,9 @@ fn graph_edits_remap_atom_and_bond_stereo_group_members_together() {
     for edited in [&functional, &in_place] {
         assert_eq!(edited.stereo_groups().len(), 1);
         assert_eq!(edited.stereo_groups()[0].atom_indices, vec![AtomIdx(4)]);
-        assert_eq!(edited.stereo_groups()[0].bond_indices, vec![BondIdx(2)]);
+        assert_eq!(
+            edited.stereo_group_bond_indices(0).unwrap(),
+            vec![BondIdx(2)]
+        );
     }
 }

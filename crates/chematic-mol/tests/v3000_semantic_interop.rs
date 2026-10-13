@@ -141,7 +141,7 @@ M  END\n"
     assert_eq!(group.kind, chematic_core::StereoGroupKind::And(1));
     assert_eq!(group.atom_indices, vec![chematic_core::AtomIdx(2)]);
     assert_eq!(
-        group.bond_indices,
+        mol.stereo_group_bond_indices(0).unwrap(),
         vec![chematic_core::BondIdx(1), chematic_core::BondIdx(3)]
     );
 
@@ -150,6 +150,10 @@ M  END\n"
     assert!(rewritten.contains("MDLV30/STEBRAC1 BONDS=(2 2 4)"));
     let (roundtrip, _) = parse_mol_v3000(&rewritten).expect("STEB collection round trip");
     assert_eq!(roundtrip.stereo_groups(), mol.stereo_groups());
+    assert_eq!(
+        roundtrip.stereo_group_bond_indices(0),
+        mol.stereo_group_bond_indices(0)
+    );
 }
 
 #[test]
@@ -188,9 +192,13 @@ M  END\n"
     );
     let (mol, metadata) = parse_mol_v3000(&input).expect("all STEB kinds parse");
     assert_eq!(mol.stereo_groups().len(), 3);
-    assert_eq!(mol.stereo_groups()[0].bond_indices.len(), 1);
-    assert_eq!(mol.stereo_groups()[1].bond_indices.len(), 1);
-    assert_eq!(mol.stereo_groups()[2].bond_indices.len(), 1, "deduplicated");
+    assert_eq!(mol.stereo_group_bond_indices(0).unwrap().len(), 1);
+    assert_eq!(mol.stereo_group_bond_indices(1).unwrap().len(), 1);
+    assert_eq!(
+        mol.stereo_group_bond_indices(2).unwrap().len(),
+        1,
+        "deduplicated"
+    );
 
     let rewritten = write_mol_v3000(&mol, &metadata, &[]);
     assert!(rewritten.contains("MDLV30/STEBABS BONDS=(1 1)"));
@@ -198,6 +206,12 @@ M  END\n"
     assert!(rewritten.contains("MDLV30/STEBRAC3 BONDS=(1 3)"));
     let (roundtrip, _) = parse_mol_v3000(&rewritten).expect("all STEB kinds round trip");
     assert_eq!(roundtrip.stereo_groups(), mol.stereo_groups());
+    for index in 0..mol.stereo_groups().len() {
+        assert_eq!(
+            roundtrip.stereo_group_bond_indices(index),
+            mol.stereo_group_bond_indices(index)
+        );
+    }
 }
 
 #[test]

@@ -421,27 +421,33 @@ pub fn remove_hydrogens(mol: &Molecule) -> Molecule {
             builder.set_tag(new_idx, Some(tag.get()));
         }
     }
-    let stereo_groups: Vec<chematic_core::StereoGroup> = mol
+    let stereo_groups = mol
         .stereo_groups()
         .iter()
-        .filter_map(|g| {
+        .enumerate()
+        .filter_map(|(group_index, g)| {
             let atoms: Vec<AtomIdx> = g
                 .atom_indices
                 .iter()
                 .filter_map(|a| remap.get(a).copied())
                 .collect();
-            let bonds: Vec<chematic_core::BondIdx> = g
-                .bond_indices
+            let bonds: Vec<chematic_core::BondIdx> = mol
+                .stereo_group_bond_indices(group_index)
+                .unwrap_or_default()
                 .iter()
                 .filter_map(|bond| bond_remap.get(bond).copied())
                 .collect();
-            (!atoms.is_empty() || !bonds.is_empty())
-                .then(|| chematic_core::StereoGroup::with_bonds(g.kind.clone(), atoms, bonds))
+            (!atoms.is_empty() || !bonds.is_empty()).then(|| {
+                (
+                    chematic_core::StereoGroup::new(g.kind.clone(), atoms),
+                    bonds,
+                )
+            })
         })
-        .collect();
+        .collect::<Vec<_>>();
     let mut out = builder.build();
     if !stereo_groups.is_empty() {
-        out.set_stereo_groups(stereo_groups);
+        out.set_stereo_groups_with_bonds(stereo_groups);
     }
     transfer_ez_off_removed_hydrogens(mol, &removable, &remap, &bond_remap, &mut out);
     // Each atom that lost H atoms keeps its total H count. Valence inference

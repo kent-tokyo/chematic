@@ -239,13 +239,20 @@ fn append_collections(out: &mut String, mol: &Molecule) {
     let groups = mol
         .stereo_groups()
         .iter()
-        .filter(|group| !group.atom_indices.is_empty() || !group.bond_indices.is_empty())
+        .enumerate()
+        .filter(|(group_index, group)| {
+            !group.atom_indices.is_empty()
+                || !mol
+                    .stereo_group_bond_indices(*group_index)
+                    .unwrap_or_default()
+                    .is_empty()
+        })
         .collect::<Vec<_>>();
     if groups.is_empty() {
         return;
     }
     out.push_str("M  V30 BEGIN COLLECTION\n");
-    for group in groups {
+    for (group_index, group) in groups {
         let atom_key = match &group.kind {
             StereoGroupKind::Absolute => "MDLV30/STEABS".to_string(),
             StereoGroupKind::Or(number) => format!("MDLV30/STEREL{number}"),
@@ -268,8 +275,9 @@ fn append_collections(out: &mut String, mol: &Molecule) {
                 atoms.join(" ")
             ));
         }
-        let bonds = group
-            .bond_indices
+        let bonds = mol
+            .stereo_group_bond_indices(group_index)
+            .unwrap_or_default()
             .iter()
             .map(|bond| (bond.0 + 1).to_string())
             .collect::<Vec<_>>();

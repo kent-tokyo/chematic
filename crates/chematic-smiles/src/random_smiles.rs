@@ -139,14 +139,18 @@ fn apply_permutation(mol: &Molecule, permutation: &[usize]) -> Molecule {
     }
     let mut permuted = builder.build();
     if !mol.stereo_groups().is_empty() {
-        permuted.set_stereo_groups(
+        permuted.set_stereo_groups_with_bonds(
             mol.stereo_groups()
                 .iter()
-                .map(|g| {
-                    StereoGroup::with_bonds(
-                        g.kind.clone(),
-                        g.atom_indices.iter().map(|&a| new_atom(a)).collect(),
-                        g.bond_indices
+                .enumerate()
+                .map(|(group_index, g)| {
+                    (
+                        StereoGroup::new(
+                            g.kind.clone(),
+                            g.atom_indices.iter().map(|&a| new_atom(a)).collect(),
+                        ),
+                        mol.stereo_group_bond_indices(group_index)
+                            .unwrap_or_default()
                             .iter()
                             .filter_map(|bond| bond_map.get(bond).copied())
                             .collect(),

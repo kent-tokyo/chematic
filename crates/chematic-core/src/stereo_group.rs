@@ -10,7 +10,7 @@
 //! - [`StereoGroupKind::And`] — the compound is a mixture of the drawn
 //!   configuration and its full inversion; all members vary together.
 
-use crate::molecule::{AtomIdx, BondIdx};
+use crate::molecule::AtomIdx;
 
 // ---------------------------------------------------------------------------
 // Types
@@ -30,17 +30,16 @@ pub enum StereoGroupKind {
     And(u32),
 }
 
-/// A named collection of stereocenters and stereogenic bonds with a shared
-/// ambiguity classification.
+/// A named collection of stereocenters with a shared ambiguity classification.
 ///
-/// Stored in [`Molecule::stereo_groups`]. The member lists use 0-based core
-/// indices. Bond members cover geometric double bonds and atropisomer axes as
-/// represented by the V3000 `STEB*` collections introduced by CTfile 2026.
+/// Stored in [`Molecule::stereo_groups`]. The `atom_indices` list uses
+/// 0-based core indices. Bond members are exposed separately by
+/// [`Molecule::stereo_group_bond_indices`] so adding CTfile 2026 `STEB*`
+/// support does not change this public struct's construction contract.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StereoGroup {
     pub kind: StereoGroupKind,
     pub atom_indices: Vec<AtomIdx>,
-    pub bond_indices: Vec<BondIdx>,
 }
 
 impl StereoGroup {
@@ -49,33 +48,11 @@ impl StereoGroup {
     /// Duplicate atom indices are silently removed (RDKit PR #9258: duplicate
     /// indices in StereoGroups caused heap-use-after-free during removeHs).
     pub fn new(kind: StereoGroupKind, atom_indices: Vec<AtomIdx>) -> Self {
-        Self::with_bonds(kind, atom_indices, Vec::new())
-    }
-
-    /// Construct a stereo group containing atom and/or bond members.
-    ///
-    /// Duplicate indices are removed independently while preserving the first
-    /// occurrence. At least one member should be present; format parsers reject
-    /// empty groups before calling this constructor.
-    pub fn with_bonds(
-        kind: StereoGroupKind,
-        atom_indices: Vec<AtomIdx>,
-        bond_indices: Vec<BondIdx>,
-    ) -> Self {
         let mut seen = std::collections::HashSet::new();
         let atom_indices: Vec<AtomIdx> = atom_indices
             .into_iter()
             .filter(|idx| seen.insert(*idx))
             .collect();
-        let mut seen = std::collections::HashSet::new();
-        let bond_indices: Vec<BondIdx> = bond_indices
-            .into_iter()
-            .filter(|idx| seen.insert(*idx))
-            .collect();
-        StereoGroup {
-            kind,
-            atom_indices,
-            bond_indices,
-        }
+        StereoGroup { kind, atom_indices }
     }
 }

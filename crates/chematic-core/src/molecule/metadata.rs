@@ -127,16 +127,17 @@ impl Molecule {
         }
 
         let old_groups = std::mem::take(&mut self.stereo_groups);
-        self.stereo_groups = old_groups
+        let old_group_bonds = std::mem::take(&mut self.stereo_group_bonds);
+        let groups = old_groups
             .into_iter()
-            .filter_map(|group| {
+            .zip(old_group_bonds)
+            .filter_map(|(group, group_bonds)| {
                 let atoms = group
                     .atom_indices
                     .into_iter()
                     .filter_map(|atom| remap.get(atom.0 as usize).and_then(|mapped| *mapped))
                     .collect::<Vec<_>>();
-                let bonds = group
-                    .bond_indices
+                let bonds = group_bonds
                     .into_iter()
                     .filter_map(|bond| {
                         bond_remap
@@ -145,9 +146,10 @@ impl Molecule {
                     })
                     .collect::<Vec<_>>();
                 (!atoms.is_empty() || !bonds.is_empty())
-                    .then(|| StereoGroup::with_bonds(group.kind, atoms, bonds))
+                    .then(|| (StereoGroup::new(group.kind, atoms), bonds))
             })
-            .collect();
+            .collect::<Vec<_>>();
+        self.set_stereo_groups_with_bonds(groups);
 
         remap
     }
@@ -229,11 +231,12 @@ impl Molecule {
             self.bond_direction_anchors.insert(new_key, atom);
         }
         let old_groups = std::mem::take(&mut self.stereo_groups);
-        self.stereo_groups = old_groups
+        let old_group_bonds = std::mem::take(&mut self.stereo_group_bonds);
+        let groups = old_groups
             .into_iter()
-            .filter_map(|group| {
-                let bonds = group
-                    .bond_indices
+            .zip(old_group_bonds)
+            .filter_map(|(group, group_bonds)| {
+                let bonds = group_bonds
                     .into_iter()
                     .filter_map(|bond| match (bond.0 as usize).cmp(&removed) {
                         std::cmp::Ordering::Less => Some(bond),
@@ -241,11 +244,11 @@ impl Molecule {
                         std::cmp::Ordering::Greater => Some(BondIdx(bond.0 - 1)),
                     })
                     .collect::<Vec<_>>();
-                (!group.atom_indices.is_empty() || !bonds.is_empty()).then(|| {
-                    StereoGroup::with_bonds(group.kind, group.atom_indices, bonds)
-                })
+                (!group.atom_indices.is_empty() || !bonds.is_empty())
+                    .then(|| (StereoGroup::new(group.kind, group.atom_indices), bonds))
             })
-            .collect();
+            .collect::<Vec<_>>();
+        self.set_stereo_groups_with_bonds(groups);
         // Rebuild adjacency with renumbered bond indices.
         let n = self.atoms.len();
         self.adjacency = vec![vec![]; n];
@@ -402,6 +405,7 @@ impl Molecule {
             adjacency: self.adjacency.clone(),
             r_groups: Default::default(),
             stereo_groups: self.stereo_groups.clone(),
+            stereo_group_bonds: self.stereo_group_bonds.clone(),
             stereo_neighbor_order: self.stereo_neighbor_order.clone(),
             bond_directions: Default::default(),
             bond_direction_anchors: Default::default(),
@@ -439,16 +443,58 @@ impl Molecule {
         &self.stereo_groups
     }
 
+    /// Return the geometric/axial bond members of stereo group `group_index`.
+    ///
+    /// The index refers to the matching entry in [`Self::stereo_groups`].
+    pub fn stereo_group_bond_indices(&self, group_index: usize) -> Option<&[BondIdx]> {
+        self.stereo_group_bonds.get(group_index).map(Vec::as_slice)
+    }
+
     /// Replace the stereo group list in-place.
     pub fn set_stereo_groups(&mut self, groups: Vec<StereoGroup>) {
         self.invalidate_derived();
+        self.stereo_group_bonds = vec![Vec::new(); groups.len()];
         self.stereo_groups = groups;
+    }
+
+    /// Replace enhanced stereo groups together with their bond members.
+    pub fn set_stereo_groups_with_bonds(
+        &mut self,
+        groups: Vec<(StereoGroup, Vec<BondIdx>)>,
+    ) {
+        self.invalidate_derived();
+        self.stereo_groups = groups.iter().map(|(group, _)| group.clone()).collect();
+        self.stereo_group_bonds = groups
+            .into_iter()
+            .map(|(_, bonds)| dedup_bond_indices(bonds))
+            .collect();
+    }
+
+    /// Copy enhanced stereo groups and their atom/bond membership verbatim.
+    pub fn copy_stereo_groups_from(&mut self, source: &Molecule) {
+        self.invalidate_derived();
+        self.stereo_groups.clone_from(&source.stereo_groups);
+        self.stereo_group_bonds
+            .clone_from(&source.stereo_group_bonds);
     }
 
     /// Add a single stereo group in-place.
     pub fn add_stereo_group(&mut self, group: StereoGroup) {
         self.invalidate_derived();
         self.stereo_groups.push(group);
+        self.stereo_group_bonds.push(Vec::new());
+    }
+
+    /// Add one enhanced stereo group with geometric/axial bond members.
+    pub fn add_stereo_group_with_bonds(
+        &mut self,
+        group: StereoGroup,
+        bond_indices: Vec<BondIdx>,
+    ) {
+        self.invalidate_derived();
+        self.stereo_groups.push(group);
+        self.stereo_group_bonds
+            .push(dedup_bond_indices(bond_indices));
     }
 
     /// How many SMILES ring-closure digits were written on atom `idx` (the

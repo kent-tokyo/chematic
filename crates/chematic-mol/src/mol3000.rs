@@ -501,7 +501,7 @@ struct V3000Parser {
     expected_bonds: usize,
     parsed_bonds: usize,
     expected_sgroups: Option<usize>,
-    stereo_groups: Vec<StereoGroup>,
+    stereo_groups: Vec<ParsedStereoGroup>,
     sgroups: Vec<String>,
     typed_sgroup_ids: std::collections::HashSet<u32>,
     bond_properties: Vec<(u32, String)>,
@@ -669,11 +669,14 @@ impl V3000Parser {
             if let Some(existing) = self
                 .stereo_groups
                 .iter_mut()
-                .find(|existing| existing.kind == group.kind)
+                .find(|existing| existing.group.kind == group.group.kind)
             {
-                existing.atom_indices.extend(group.atom_indices);
-                existing.atom_indices.sort_unstable_by_key(|idx| idx.0);
-                existing.atom_indices.dedup();
+                existing.group.atom_indices.extend(group.group.atom_indices);
+                existing
+                    .group
+                    .atom_indices
+                    .sort_unstable_by_key(|idx| idx.0);
+                existing.group.atom_indices.dedup();
                 existing.bond_indices.extend(group.bond_indices);
                 existing.bond_indices.sort_unstable_by_key(|idx| idx.0);
                 existing.bond_indices.dedup();
@@ -831,7 +834,13 @@ fn finish_v3000_report(
     metadata.v3000_bond_properties = parser.bond_properties;
     metadata.v3000_atom_properties = parser.atom_properties;
     if !parser.stereo_groups.is_empty() {
-        mol.set_stereo_groups(parser.stereo_groups);
+        mol.set_stereo_groups_with_bonds(
+            parser
+                .stereo_groups
+                .into_iter()
+                .map(|group| (group.group, group.bond_indices))
+                .collect(),
+        );
     }
     let stereo_diagnostics =
         apply_ctab_local_parity_from_wedges_with_diagnostics(&mut mol, &parser.coords);
@@ -1075,11 +1084,16 @@ pub fn parse_v3000_sgroup_line(line: &str) -> Result<V3000SGroup, MolParseError>
 ///
 /// `STEOR` and `STEAND` are also accepted as legacy input spellings, but the
 /// writer uses the MDL tokens emitted by current RDKit.
+struct ParsedStereoGroup {
+    group: StereoGroup,
+    bond_indices: Vec<BondIdx>,
+}
+
 fn parse_stereo_group_line(
     payload: &str,
     atom_idx_map: &[(u32, AtomIdx)],
     bond_idx_map: &[(u32, BondIdx)],
-) -> Result<Option<StereoGroup>, String> {
+) -> Result<Option<ParsedStereoGroup>, String> {
     // First token is the group kind key.
     let Some(first_tok) = payload.split_whitespace().next() else {
         return Ok(None);
@@ -1151,7 +1165,14 @@ fn parse_stereo_group_line(
         })
         .collect::<Result<Vec<_>, _>>()?;
     if ids.is_empty() {
-        return Err(format!("COLLECTION {member_label} has no member ids"));
+        let member_kind = if member_label == "ATOMS" {
+            "atom"
+        } else {
+            "bond"
+        };
+        return Err(format!(
+            "COLLECTION {member_label} has no {member_kind} ids"
+        ));
     }
 
     let (atom_indices, bond_indices) = if member_label == "ATOMS" {
@@ -1177,11 +1198,15 @@ fn parse_stereo_group_line(
         (Vec::new(), bonds)
     };
 
-    Ok(Some(StereoGroup::with_bonds(
-        kind,
-        atom_indices,
+    let mut seen = std::collections::HashSet::new();
+    let bond_indices = bond_indices
+        .into_iter()
+        .filter(|idx| seen.insert(*idx))
+        .collect();
+    Ok(Some(ParsedStereoGroup {
+        group: StereoGroup::new(kind, atom_indices),
         bond_indices,
-    )))
+    }))
 }
 
 // ---------------------------------------------------------------------------
