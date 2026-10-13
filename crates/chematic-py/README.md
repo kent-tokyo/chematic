@@ -108,6 +108,9 @@ status, optimized_energy = field.minimize_()
 
 - **Zero C/C++ dependencies** — pure Rust, no RDKit or OpenBabel required
 - **SMILES / MOL / SDF / ChemicalJSON** parsing and writing
+- **Indexed SDF datasets** — `SdfDataset` provides cheap record counts,
+  metadata, random access, and bounded range reads without materializing every
+  molecule
 - **190+ descriptor values** (70+ functions; several return vectors): MW,
   LogP, TPSA, QED, Fsp3, SA Score, HBD, `vabc`, `schultz_mti`,
   `gutman_mti`, and `gravitational_index`. RDKit agreement is metric-specific;
@@ -175,6 +178,12 @@ with Chem.SDWriter("out.sdf") as w:
     w.write(mol)
 for m in Chem.SDMolSupplier("out.sdf"):
     print(m.GetProp("ID"))
+
+# Large seekable SDF: index once, parse records only when requested
+from chematic import SdfDataset
+dataset = SdfDataset.open("out.sdf")
+print(len(dataset), dataset.metadata(0).title)
+print(dataset[-1].smiles)
 ```
 
 Unsupported options raise `NotImplementedError` or `TypeError` — they are never silently ignored.
