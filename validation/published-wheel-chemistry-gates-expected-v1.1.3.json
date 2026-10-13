@@ -66,7 +66,6 @@
       "hbd_agree": 4072,
       "qed_comparable": 4071,
       "qed_agree": 4071,
-      "qed_differ": 0,
       "qed_rdkit_error": 1
     },
     "biotransformer_corpus": {
