@@ -822,6 +822,59 @@ mod tests {
         }
     }
 
+    #[test]
+    fn issue_9678_central_allene_tag_round_trips_and_distinguishes_enantiomers() {
+        let first = canonical_smiles(&parse("CC=[C@AL1]=CCC").unwrap());
+        let second = canonical_smiles(&parse("CC=[C@AL2]=CCC").unwrap());
+        assert!(first.contains("@AL"), "axial tag was dropped: {first}");
+        assert!(second.contains("@AL"), "axial tag was dropped: {second}");
+        assert_ne!(first, second, "opposite allene stereoisomers collapsed");
+        for canonical in [first, second] {
+            let reparsed = parse(&canonical).unwrap();
+            assert_eq!(canonical_smiles(&reparsed), canonical);
+        }
+    }
+
+    #[test]
+    fn issue_9678_shorthand_and_atom_renumbering_preserve_allene_stereo() {
+        let explicit = parse("CC=[C@AL1]=CCC").unwrap();
+        let shorthand = parse("CC=[C@]=CCC").unwrap();
+        let expected = canonical_smiles(&explicit);
+        assert_eq!(canonical_smiles(&shorthand), expected);
+
+        let n = explicit.atom_count();
+        for permutation in [
+            (0..n).rev().collect::<Vec<_>>(),
+            vec![2, 0, 5, 3, 1, 4],
+        ] {
+            let mut relabeled = relabel_molecule_preserving_ez(&explicit, &permutation);
+            let mut old_to_new = vec![0u32; n];
+            for (new_idx, &old_idx) in permutation.iter().enumerate() {
+                old_to_new[old_idx] = new_idx as u32;
+            }
+            for old_idx in 0..n {
+                let old = AtomIdx(old_idx as u32);
+                if let Some(order) = explicit.stereo_neighbor_order(old) {
+                    let mapped = order
+                        .iter()
+                        .map(|&id| {
+                            if id == STEREO_H_SENTINEL {
+                                id
+                            } else {
+                                old_to_new[id as usize]
+                            }
+                        })
+                        .collect();
+                    relabeled.set_stereo_neighbor_order(
+                        AtomIdx(old_to_new[old_idx]),
+                        mapped,
+                    );
+                }
+            }
+            assert_eq!(canonical_smiles(&relabeled), expected);
+        }
+    }
+
     /// Pinned golden-value regression for the allene-end-carbon bug this PR
     /// found and fixed: an allene end carbon (sp2, one real double-bond
     /// partner standing in for the 4th tetrahedral-like position) has a

@@ -784,10 +784,9 @@ pub(crate) struct CanonicalWriter<'a> {
     /// token slot is assigned explicitly, then the serialized candidate is
     /// reparsed and accepted only if it preserves rank-keyed E/Z facts.
     direct_ez_orders: Option<HashMap<BondIdx, BondOrder>>,
-    /// Test-only parent edge for the canonical DFS skeleton.  This exposes
-    /// the single write occurrence of each tree edge to the #503 output-slot
-    /// diagnostic without changing production serialization.
-    #[cfg(test)]
+    /// Parent edge for the canonical DFS skeleton. Besides test diagnostics,
+    /// allene parity needs the exact terminal-ligand order that serialization
+    /// will use.
     canonical_tree_parent: Vec<Option<(AtomIdx, BondIdx)>>,
 }
 

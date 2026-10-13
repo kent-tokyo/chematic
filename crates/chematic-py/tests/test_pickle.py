@@ -15,6 +15,7 @@ import chematic
         "F/C=C\\Cl",
         "[13CH3:7][NH2+]C(=O)[O-]",
         "[Pt@SP2](Cl)(Cl)(N)N",
+        "CC=[C@AL1]=CCC",
         "C1CCCCC1",
     ],
 )
@@ -26,6 +27,7 @@ def test_mol_pickle_round_trip_preserves_chemistry(smiles):
     restored = pickle.loads(pickle.dumps(original, protocol=pickle.HIGHEST_PROTOCOL))
 
     assert restored.rdkit_smiles == original.rdkit_smiles
+    assert restored.smiles == original.smiles
     assert restored.formula == original.formula
     assert restored.rdkit_ecfp4() == original.rdkit_ecfp4()
     assert restored.GetPropsAsDict() == original.GetPropsAsDict()

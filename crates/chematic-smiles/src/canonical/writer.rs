@@ -531,8 +531,7 @@ impl<'a> CanonicalWriter<'a> {
             }
 
             if !visited[neighbor.0 as usize] {
-                #[cfg(test)]
-                {
+                if !self.canonical_tree_parent.is_empty() {
                     self.canonical_tree_parent[neighbor.0 as usize] = Some((atom, bidx));
                 }
                 self.dfs_mark(neighbor, Some(bidx), visited, in_stack);
@@ -803,6 +802,25 @@ impl<'a> CanonicalWriter<'a> {
             };
         };
 
+        if stored.is_allene() {
+            let Some(canonical) = self.canonical_allene_virtual_order(atom) else {
+                return Chirality::None;
+            };
+            let Some(inverted) = crate::allene::allene_order_is_inverted(original, &canonical)
+            else {
+                return Chirality::None;
+            };
+            return if inverted {
+                match stored {
+                    Chirality::Allene1 => Chirality::Allene2,
+                    Chirality::Allene2 => Chirality::Allene1,
+                    _ => unreachable!(),
+                }
+            } else {
+                stored
+            };
+        }
+
         let canonical = self.canonical_stereo_neighbor_order(atom, from_atom, original.len());
         if canonical.len() != original.len() {
             return if stored.is_tetrahedral() {
@@ -813,6 +831,52 @@ impl<'a> CanonicalWriter<'a> {
         }
 
         self.remap_stored_chirality(stored, original, &canonical)
+    }
+
+    fn canonical_allene_virtual_order(&self, center: AtomIdx) -> Option<Vec<u32>> {
+        let center_order = self.canonical_local_neighbor_order(center);
+        let arms = crate::allene::allene_arms(self.mol, center, &center_order)?;
+        let mut virtual_order = Vec::with_capacity(6);
+        for arm in arms {
+            let mut local = self.canonical_local_neighbor_order(arm.terminal);
+            local.retain(|&atom| atom != arm.axis_neighbor.0);
+            if local.len() != 2 {
+                return None;
+            }
+            virtual_order.push(arm.terminal.0);
+            virtual_order.extend(local);
+        }
+        Some(virtual_order)
+    }
+
+    /// Neighbor order produced by the already-discovered canonical DFS,
+    /// independent of which atoms happen to have been emitted so far.
+    fn canonical_local_neighbor_order(&self, atom: AtomIdx) -> Vec<u32> {
+        let parent = self.canonical_tree_parent[atom.0 as usize].map(|(parent, _)| parent);
+        let mut order = Vec::with_capacity(self.mol.degree(atom) + 1);
+        if let Some(parent) = parent {
+            order.push(parent.0);
+        }
+        if implicit_hcount(self.mol, atom) > 0 {
+            order.push(STEREO_H_SENTINEL);
+        }
+        for &(_, _, partner, _) in &self.atom_ring_nums[atom.0 as usize] {
+            order.push(partner.0);
+        }
+        let mut children: SmallVec<[AtomIdx; 4]> = self
+            .mol
+            .neighbors(atom)
+            .filter(|(neighbor, bond)| {
+                Some(*neighbor) != parent
+                    && !self.ring_bonds[bond.0 as usize]
+                    && self.canonical_tree_parent[neighbor.0 as usize]
+                        .is_some_and(|(candidate, _)| candidate == atom)
+            })
+            .map(|(neighbor, _)| neighbor)
+            .collect();
+        children.sort_by(|&left, &right| self.canonical_cmp(left, right));
+        order.extend(children.into_iter().map(|child| child.0));
+        order
     }
 
     fn canonical_stereo_neighbor_order(
@@ -856,6 +920,7 @@ impl<'a> CanonicalWriter<'a> {
         let original_arr = <[u32; 4]>::try_from(original).ok();
         let canonical_arr = <[u32; 4]>::try_from(canonical).ok();
         match stored {
+            Chirality::Allene1 | Chirality::Allene2 => Chirality::None,
             Chirality::CounterClockwise | Chirality::Clockwise => {
                 let is_odd = match (original_arr, canonical_arr) {
                     (Some(o), Some(c)) => remap_tetrahedral_parity(o, c).unwrap_or(false),

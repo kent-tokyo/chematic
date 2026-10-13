@@ -346,7 +346,8 @@ impl<'a> Parser<'a> {
             mol.set_stereo_neighbor_order(atom_idx, order);
         }
 
-        let molecule = mol.build();
+        let mut molecule = mol.build();
+        crate::allene::normalize_allene_stereo(&mut molecule);
         // A SMILES graph with no ring-closure token is a forest by
         // construction. Publish that already-known result so the first
         // fingerprint or descriptor call does not need a full bridge DFS to
@@ -996,14 +997,14 @@ impl<'a> Parser<'a> {
             // "missing ']'" a few characters later.
             // RDKit's grammar: a class without a number is permutation 0
             // (kept as "unknown"), an explicit 0 is an error; `@TH1`/`@TH`
-            // are `@`, `@TH2` is `@@`. Allene classes (`@AL`, `@AL1`,
-            // `@AL2`) are read and dropped, as RDKit does.
+            // are `@`, `@TH2` is `@@`. Allene classes are normalized after parsing.
             let number = self.parse_leading_digits_u16();
             let digits = number.unwrap_or(0);
             return match (class, number) {
                 ("TH", None | Some(1)) => Ok(Chirality::CounterClockwise),
                 ("TH", Some(2)) => Ok(Chirality::Clockwise),
-                ("AL", None | Some(1) | Some(2)) => Ok(Chirality::None),
+                ("AL", None | Some(1)) => Ok(Chirality::Allene1),
+                ("AL", Some(2)) => Ok(Chirality::Allene2),
                 ("SP", None) => Ok(Chirality::SquarePlanarUnnumbered),
                 ("SP", Some(1)) => Ok(Chirality::SquarePlanar(SquarePlanarPermutation::SP1)),
                 ("SP", Some(2)) => Ok(Chirality::SquarePlanar(SquarePlanarPermutation::SP2)),
@@ -1103,7 +1104,6 @@ impl<'a> Parser<'a> {
         Some(val)
     }
 }
-
 fn ring_closure_unmatched_error(ring_num: u32, pos: usize) -> SmilesError {
     match u8::try_from(ring_num) {
         Ok(ring_num) => SmilesError::UnmatchedRingClosure { ring_num, pos },

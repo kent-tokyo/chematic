@@ -192,6 +192,18 @@ fn canonical_smiles_benzene() {
 }
 
 #[test]
+fn canonical_smiles_preserves_allene_axial_stereo() {
+    let first = parse("CC=[C@AL1]=CCC").canonical_smiles();
+    let second = parse("CC=[C@AL2]=CCC").canonical_smiles();
+
+    assert!(first.contains("@AL"), "axial tag was lost: {first}");
+    assert!(second.contains("@AL"), "axial tag was lost: {second}");
+    assert_ne!(first, second, "opposite allene configurations collapsed");
+    assert_eq!(parse(&first).canonical_smiles(), first);
+    assert_eq!(parse(&second).canonical_smiles(), second);
+}
+
+#[test]
 fn rdkit_smiles_matches_rdkit() {
     // RDKit 2026.03.1: Chem.MolToSmiles(Chem.MolFromSmiles("OC(=O)[C@@H]1CCCN1"))
     let mol = parse("OC(=O)[C@@H]1CCCN1");

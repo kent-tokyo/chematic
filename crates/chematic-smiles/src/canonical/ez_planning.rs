@@ -22,8 +22,13 @@ impl<'a> CanonicalWriter<'a> {
             #[cfg(test)]
             traversal_bond_preference: None,
             direct_ez_orders: None,
-            #[cfg(test)]
-            canonical_tree_parent: vec![None; n],
+            canonical_tree_parent: if cfg!(test)
+                || mol.atoms().any(|(_, atom)| atom.chirality.is_allene())
+            {
+                vec![None; n]
+            } else {
+                Vec::new()
+            },
         }
     }
 

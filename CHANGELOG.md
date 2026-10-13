@@ -12,6 +12,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added native OpenSMILES allene/cumulene axial stereo support. `@`/`@@` on
+  valid allene centers and explicit `@AL1`/`@AL2` now survive parse,
+  canonical write, reparse, atom renumbering, fingerprinting, and Python
+  pickle round trips; opposite stereoisomers remain distinct. Invalid
+  allene-class geometry is cleaned without panicking. The version-pinned
+  RDKit 2026.03 compatibility writer deliberately retains that oracle's old
+  tag-dropping behavior (ahead of RDKit issue #9678 / PR #9690).
 - Added Python `Mol` pickle round-tripping with a versioned, bounded binary
   state. It preserves graph chemistry, tetrahedral and non-tetrahedral stereo,
   enhanced stereo groups, R-group labels, caller atom tags, SMILES parser

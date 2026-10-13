@@ -55,6 +55,8 @@ fn coordination_chirality_tokens_and_mirror_permutations_are_reversible() {
     assert_eq!(Chirality::None.smiles_token(), "");
     assert_eq!(Chirality::CounterClockwise.smiles_token(), "@");
     assert_eq!(Chirality::Clockwise.smiles_token(), "@@");
+    assert_eq!(Chirality::Allene1.smiles_token(), "@AL1");
+    assert_eq!(Chirality::Allene2.smiles_token(), "@AL2");
     let mut builder = MoleculeBuilder::new();
     let mut carbon = Atom::new(Element::C);
     carbon.hydrogen_count = Some(3);

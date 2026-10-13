@@ -270,6 +270,8 @@ fn vertex_color(
                 Chirality::SquarePlanar(SquarePlanarPermutation::SP2) => 4,
                 Chirality::SquarePlanar(SquarePlanarPermutation::SP3) => 5,
                 Chirality::SquarePlanarUnnumbered => 6,
+                Chirality::Allene1 => 7,
+                Chirality::Allene2 => 8,
                 Chirality::TrigonalBipyramidal(p) => 10 + p,
                 Chirality::Octahedral(p) => 40 + p,
             }

@@ -34,8 +34,9 @@ impl SquarePlanarPermutation {
     }
 }
 
-/// Chirality as specified in OpenSMILES: tetrahedral (`@`/`@@`) or, since this
-/// crate also models coordination complexes, square-planar (`@SP1`/`@SP2`/`@SP3`).
+/// Chirality as specified in OpenSMILES: tetrahedral (`@`/`@@`), allene
+/// (`@AL1`/`@AL2`) or, since this crate also models coordination complexes,
+/// square-planar (`@SP1`/`@SP2`/`@SP3`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub enum Chirality {
     /// No chirality specified.
@@ -45,6 +46,10 @@ pub enum Chirality {
     CounterClockwise,
     /// `@@` — clockwise.
     Clockwise,
+    /// `@AL1` — the first allene/cumulene axial permutation.
+    Allene1,
+    /// `@AL2` — the opposite allene/cumulene axial permutation.
+    Allene2,
     /// `@SP1`/`@SP2`/`@SP3` — square-planar (4-coordinate) stereo.
     SquarePlanar(SquarePlanarPermutation),
     /// `@SP` without a permutation number (RDKit keeps the class, permutation 0).
@@ -65,6 +70,11 @@ impl Chirality {
     /// second non-tetrahedral kind of "not None" chirality exists.
     pub fn is_tetrahedral(&self) -> bool {
         matches!(self, Self::CounterClockwise | Self::Clockwise)
+    }
+
+    /// `true` for the two OpenSMILES allene axial-stereo permutations.
+    pub fn is_allene(&self) -> bool {
+        matches!(self, Self::Allene1 | Self::Allene2)
     }
 
     /// The non-tetrahedral class and permutation number (0: none given),
@@ -111,6 +121,8 @@ impl Chirality {
             Self::None => String::new(),
             Self::CounterClockwise => "@".into(),
             Self::Clockwise => "@@".into(),
+            Self::Allene1 => "@AL1".into(),
+            Self::Allene2 => "@AL2".into(),
             _ => {
                 let (class, perm) = self.nontetrahedral().expect("non-tetrahedral");
                 if perm == 0 {

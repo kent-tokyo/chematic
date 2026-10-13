@@ -24,6 +24,19 @@ than `MolToSmiles(mol)` for certain stereocenters and fused ring systems.
 is tested in `crates/chematic-smiles/tests/canonical_robustness.rs` for all SMILES in
 `validation/rdkit_issues/stereo/canonical_idempotence.smi`.
 
+### Allene axial stereo round trips (RDKit #9678)
+
+**Issue:** RDKit 2026.03.6 drops both shorthand `@`/`@@` and explicit
+`@AL1`/`@AL2` allene stereochemistry during SMILES round trips. Its proposed
+fix was still unmerged when chematic implemented this regression.
+
+**chematic principle:** An axial tag is relative to the two virtual ligand
+positions at each end of the cumulene, not merely to the center atom's two
+direct neighbors. Chematic records those terminal groups explicitly, remaps
+them during canonical traversal, and treats duplicated virtual hydrogens as
+end-local positions. Tests cover opposite stereoisomers, shorthand syntax,
+atom renumbering, invalid geometry cleanup, and canonical idempotence.
+
 ### E/Z fragment extraction (RDKit #9368)
 
 **Issue:** `MolFragmentToSmiles()` raises a C++ pre-condition violation when the

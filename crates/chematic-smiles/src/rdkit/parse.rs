@@ -148,7 +148,6 @@ pub(crate) fn from_chematic_ordered(
         let idx = out.add_bond(b);
         debug_assert_eq!(idx, k);
     }
-
     // Chiral tags relative to RDKit's bond order (`AdjustAtomChiralityFlags`).
     for (aidx, atom) in mol.atoms() {
         let a = aidx.0 as usize;
@@ -156,6 +155,7 @@ pub(crate) fn from_chematic_ordered(
             Chirality::None => continue,
             Chirality::CounterClockwise => ChiralTag::Ccw,
             Chirality::Clockwise => ChiralTag::Cw,
+            Chirality::Allene1 | Chirality::Allene2 => continue, // RDKit 2026.03 #9678
             other => ChiralTag::of_class(other.nontetrahedral().expect("non-tetrahedral").0),
         };
         let text = mol
