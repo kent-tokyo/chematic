@@ -25,13 +25,13 @@ npm install @kent-tokyo/chematic
 
 Python wheels need no C/C++ compiler. All bindings share the Rust core.
 
-### v1.1.2 release boundary
+### v1.1.3 release boundary
 
-v1.1.2 expands the bounded RDKit-compatible 3D surface with topology bounds,
-coordinate transforms, deterministic multi-conformer ETKDG/MMFF94, optimizer
-diagnostics, and an opt-in gradient-gated rescue. It also adds prepared R-group
-cores and browser Brenk alerts. Performance and compatibility claims remain
-limited to their recorded artifacts, corpora, options, and hosts. See
+v1.1.3 adds charge-conserving EEM partial charges, a corrected opt-in ETKDG
+torsion gradient, OpenSMILES allene axial stereo, Python molecule pickling,
+indexed SDF access, V3000 bond stereo collections, and reusable Python MMFF/UFF
+force fields. Performance and compatibility claims remain limited to their
+recorded artifacts, corpora, options, and hosts. See
 [validation](docs/validation.md) and
 [CHANGELOG](CHANGELOG.md).
 
