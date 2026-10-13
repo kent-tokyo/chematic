@@ -12,6 +12,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added a CI naming guard that treats `chematic` and `chematic-draw` as the
+  canonical lowercase product names and rejects an extra leading `s` in
+  current public text and package metadata without rewriting historical
+  evidence or frozen compatibility identifiers.
 - Added RDKit 2026.09.1-compatible atom masking for the RDK branched-path
   fingerprint across Rust (`rdkit_rdk_fp_ignoring_atoms`), Python
   (`Mol.rdkit_rdk_fp(ignore_atoms=...)`), and WASM

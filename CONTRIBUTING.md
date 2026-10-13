@@ -13,6 +13,14 @@ cargo clippy --workspace -- -D warnings
 
 No C compiler, no Python, no external tools required for the core crates.
 
+## Product names
+
+Use the official lowercase names `chematic` and `chematic-draw`. An extra
+leading `s` is a typo. Run `python3 scripts/check_product_names.py` before
+submitting documentation or package-metadata changes; CI enforces the same
+rule. See [`docs/product-naming.md`](docs/product-naming.md) for the scope and
+compatibility exclusions.
+
 ## Documentation build
 
 The documentation site uses a pinned MkDocs environment so local verification
