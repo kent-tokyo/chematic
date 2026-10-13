@@ -190,6 +190,25 @@ impl Molecule {
                 builder.set_r_group(*new_atom, *label);
             }
         }
+        for group in &self.stereo_groups {
+            let atoms = group
+                .atom_indices
+                .iter()
+                .filter_map(|atom| remap.get(atom.0 as usize).and_then(|mapped| *mapped))
+                .collect::<Vec<_>>();
+            let bonds = group
+                .bond_indices
+                .iter()
+                .filter_map(|bond| bond_remap.get(bond.0 as usize).and_then(|mapped| *mapped))
+                .collect::<Vec<_>>();
+            if !atoms.is_empty() || !bonds.is_empty() {
+                builder.add_stereo_group(StereoGroup::with_bonds(
+                    group.kind.clone(),
+                    atoms,
+                    bonds,
+                ));
+            }
+        }
         (builder.build(), remap)
     }
 
@@ -310,6 +329,7 @@ impl Molecule {
     /// the removed one.
     pub fn with_bond_removed(&self, idx: BondIdx) -> Molecule {
         let mut builder = MoleculeBuilder::new();
+        let mut bond_remap = vec![None; self.bond_count()];
         for (_, atom) in self.atoms() {
             builder.add_atom(atom.clone());
         }
@@ -317,19 +337,33 @@ impl Molecule {
             if bidx == idx {
                 continue;
             }
-            if let Ok(new_bidx) = builder.add_bond(bond.atom1, bond.atom2, bond.order)
-                && let Some(direction) = self.bond_direction(bidx)
-            {
-                builder.set_bond_direction(new_bidx, direction);
-                if let Some(anchor) = self.bond_direction_anchor(bidx) {
-                    builder.set_bond_direction_anchor(new_bidx, anchor);
+            if let Ok(new_bidx) = builder.add_bond(bond.atom1, bond.atom2, bond.order) {
+                bond_remap[bidx.0 as usize] = Some(new_bidx);
+                if let Some(direction) = self.bond_direction(bidx) {
+                    builder.set_bond_direction(new_bidx, direction);
+                    if let Some(anchor) = self.bond_direction_anchor(bidx) {
+                        builder.set_bond_direction_anchor(new_bidx, anchor);
+                    }
                 }
             }
         }
         builder.copy_stereo_from(self);
         builder.copy_atom_tags_from(self);
         builder.copy_r_groups_from(self);
+        for group in &self.stereo_groups {
+            let bonds = group
+                .bond_indices
+                .iter()
+                .filter_map(|bond| bond_remap.get(bond.0 as usize).and_then(|mapped| *mapped))
+                .collect::<Vec<_>>();
+            if !group.atom_indices.is_empty() || !bonds.is_empty() {
+                builder.add_stereo_group(StereoGroup::with_bonds(
+                    group.kind.clone(),
+                    group.atom_indices.clone(),
+                    bonds,
+                ));
+            }
+        }
         builder.build()
     }
 }
-

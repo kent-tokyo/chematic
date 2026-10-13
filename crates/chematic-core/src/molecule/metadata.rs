@@ -126,6 +126,29 @@ impl Molecule {
             }
         }
 
+        let old_groups = std::mem::take(&mut self.stereo_groups);
+        self.stereo_groups = old_groups
+            .into_iter()
+            .filter_map(|group| {
+                let atoms = group
+                    .atom_indices
+                    .into_iter()
+                    .filter_map(|atom| remap.get(atom.0 as usize).and_then(|mapped| *mapped))
+                    .collect::<Vec<_>>();
+                let bonds = group
+                    .bond_indices
+                    .into_iter()
+                    .filter_map(|bond| {
+                        bond_remap
+                            .get(bond.0 as usize)
+                            .and_then(|mapped| mapped.map(BondIdx))
+                    })
+                    .collect::<Vec<_>>();
+                (!atoms.is_empty() || !bonds.is_empty())
+                    .then(|| StereoGroup::with_bonds(group.kind, atoms, bonds))
+            })
+            .collect();
+
         remap
     }
 
@@ -205,6 +228,24 @@ impl Molecule {
             };
             self.bond_direction_anchors.insert(new_key, atom);
         }
+        let old_groups = std::mem::take(&mut self.stereo_groups);
+        self.stereo_groups = old_groups
+            .into_iter()
+            .filter_map(|group| {
+                let bonds = group
+                    .bond_indices
+                    .into_iter()
+                    .filter_map(|bond| match (bond.0 as usize).cmp(&removed) {
+                        std::cmp::Ordering::Less => Some(bond),
+                        std::cmp::Ordering::Equal => None,
+                        std::cmp::Ordering::Greater => Some(BondIdx(bond.0 - 1)),
+                    })
+                    .collect::<Vec<_>>();
+                (!group.atom_indices.is_empty() || !bonds.is_empty()).then(|| {
+                    StereoGroup::with_bonds(group.kind, group.atom_indices, bonds)
+                })
+            })
+            .collect();
         // Rebuild adjacency with renumbered bond indices.
         let n = self.atoms.len();
         self.adjacency = vec![vec![]; n];
@@ -580,4 +621,3 @@ impl Molecule {
         self.bond_direction_anchors.remove(&idx.0);
     }
 }
-

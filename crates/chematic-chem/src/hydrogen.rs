@@ -430,7 +430,13 @@ pub fn remove_hydrogens(mol: &Molecule) -> Molecule {
                 .iter()
                 .filter_map(|a| remap.get(a).copied())
                 .collect();
-            (!atoms.is_empty()).then(|| chematic_core::StereoGroup::new(g.kind.clone(), atoms))
+            let bonds: Vec<chematic_core::BondIdx> = g
+                .bond_indices
+                .iter()
+                .filter_map(|bond| bond_remap.get(bond).copied())
+                .collect();
+            (!atoms.is_empty() || !bonds.is_empty())
+                .then(|| chematic_core::StereoGroup::with_bonds(g.kind.clone(), atoms, bonds))
         })
         .collect();
     let mut out = builder.build();

@@ -1069,10 +1069,18 @@ pub fn clean_stereo_groups(mol: &Molecule) -> Molecule {
                 .copied()
                 .filter(|&idx| mol.atom(idx).chirality != Chirality::None)
                 .collect();
-            if chiral_atoms.is_empty() {
+            // Bond members can be double-bond geometry or single-bond
+            // atropisomer axes. This atom-centre cleanup has no basis for
+            // removing either, so preserve every existing bond member.
+            let stereo_bonds = g.bond_indices.clone();
+            if chiral_atoms.is_empty() && stereo_bonds.is_empty() {
                 None
             } else {
-                Some(StereoGroup::new(g.kind.clone(), chiral_atoms))
+                Some(StereoGroup::with_bonds(
+                    g.kind.clone(),
+                    chiral_atoms,
+                    stereo_bonds,
+                ))
             }
         })
         .collect();

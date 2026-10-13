@@ -325,6 +325,7 @@ fn parse_v3000_bond_line(
     line: usize,
     builder: &mut MoleculeBuilder,
     atom_idx_map: &[(u32, AtomIdx)],
+    bond_idx_map: &mut Vec<(u32, BondIdx)>,
     explicitly_unspecified_ez: &mut std::collections::HashSet<BondIdx>,
     bond_properties: &mut Vec<(u32, String)>,
 ) -> Result<(), MolParseError> {
@@ -339,6 +340,18 @@ fn parse_v3000_bond_line(
         });
     }
 
+    let v3k_idx = tokens[0]
+        .parse::<u32>()
+        .map_err(|_| MolParseError::InvalidBondLine {
+            line,
+            detail: format!("cannot parse bond index from '{}'", tokens[0]),
+        })?;
+    if bond_idx_map.iter().any(|&(source, _)| source == v3k_idx) {
+        return Err(MolParseError::InvalidBondLine {
+            line,
+            detail: format!("duplicate V3000 bond index {v3k_idx}"),
+        });
+    }
     let btype_raw = tokens[1]
         .parse::<u8>()
         .map_err(|_| MolParseError::InvalidBondLine {
@@ -393,6 +406,7 @@ fn parse_v3000_bond_line(
             line,
             detail: e.to_string(),
         })?;
+    bond_idx_map.push((v3k_idx, bidx));
     if btype_raw == 2 && parse_kv(kv_tokens, "CFG").as_deref() == Some("2") {
         explicitly_unspecified_ez.insert(bidx);
     }
@@ -480,6 +494,7 @@ struct V3000Parser {
     state: V3000State,
     builder: MoleculeBuilder,
     atom_idx_map: Vec<(u32, AtomIdx)>,
+    bond_idx_map: Vec<(u32, BondIdx)>,
     coords: Vec<(f64, f64)>,
     raw_z: Vec<f64>,
     expected_atoms: usize,
@@ -500,6 +515,7 @@ impl V3000Parser {
             state: V3000State::BeforeCtab,
             builder: MoleculeBuilder::new(),
             atom_idx_map: Vec::new(),
+            bond_idx_map: Vec::new(),
             coords: Vec::new(),
             raw_z: Vec::new(),
             expected_atoms: 0,
@@ -624,6 +640,7 @@ impl V3000Parser {
             line,
             &mut self.builder,
             &self.atom_idx_map,
+            &mut self.bond_idx_map,
             &mut self.unspecified_ez,
             &mut self.bond_properties,
         )?;
@@ -645,10 +662,24 @@ impl V3000Parser {
     fn in_collection(&mut self, tokens: &[&str], line: &LogicalLine) -> Result<(), MolParseError> {
         if is_marker(tokens, "END", "COLLECTION") {
             self.state = V3000State::AfterBondBlock;
-        } else if let Some(group) = parse_stereo_group_line(&line.payload, &self.atom_idx_map)
-            .map_err(|detail| v3k_err(line.line_num, detail))?
+        } else if let Some(group) =
+            parse_stereo_group_line(&line.payload, &self.atom_idx_map, &self.bond_idx_map)
+                .map_err(|detail| v3k_err(line.line_num, detail))?
         {
-            self.stereo_groups.push(group);
+            if let Some(existing) = self
+                .stereo_groups
+                .iter_mut()
+                .find(|existing| existing.kind == group.kind)
+            {
+                existing.atom_indices.extend(group.atom_indices);
+                existing.atom_indices.sort_unstable_by_key(|idx| idx.0);
+                existing.atom_indices.dedup();
+                existing.bond_indices.extend(group.bond_indices);
+                existing.bond_indices.sort_unstable_by_key(|idx| idx.0);
+                existing.bond_indices.dedup();
+            } else {
+                self.stereo_groups.push(group);
+            }
         }
         Ok(())
     }
@@ -1038,20 +1069,26 @@ pub fn parse_v3000_sgroup_line(line: &str) -> Result<V3000SGroup, MolParseError>
 /// - `MDLV30/STEABS ATOMS=(3 1 2 3)` → `StereoGroupKind::Absolute`
 /// - `MDLV30/STEREL1 ATOMS=(1 4)`    → `StereoGroupKind::Or(1)`
 /// - `MDLV30/STERAC2 ATOMS=(1 6)`    → `StereoGroupKind::And(2)`
+/// - `MDLV30/STEBABS BONDS=(1 2)`     → absolute bond stereo
+/// - `MDLV30/STEBREL1 BONDS=(1 4)`    → `StereoGroupKind::Or(1)` bond stereo
+/// - `MDLV30/STEBRAC2 BONDS=(1 6)`    → `StereoGroupKind::And(2)` bond stereo
 ///
 /// `STEOR` and `STEAND` are also accepted as legacy input spellings, but the
 /// writer uses the MDL tokens emitted by current RDKit.
 fn parse_stereo_group_line(
     payload: &str,
     atom_idx_map: &[(u32, AtomIdx)],
+    bond_idx_map: &[(u32, BondIdx)],
 ) -> Result<Option<StereoGroup>, String> {
     // First token is the group kind key.
     let Some(first_tok) = payload.split_whitespace().next() else {
         return Ok(None);
     };
 
-    let kind = if first_tok == "MDLV30/STEABS" {
-        StereoGroupKind::Absolute
+    let (kind, member_label) = if first_tok == "MDLV30/STEABS" {
+        (StereoGroupKind::Absolute, "ATOMS")
+    } else if first_tok == "MDLV30/STEBABS" {
+        (StereoGroupKind::Absolute, "BONDS")
     } else if let Some(n_str) = first_tok
         .strip_prefix("MDLV30/STEREL")
         .or_else(|| first_tok.strip_prefix("MDLV30/STEOR"))
@@ -1059,7 +1096,12 @@ fn parse_stereo_group_line(
         let n: u32 = n_str
             .parse()
             .map_err(|_| "COLLECTION OR group id is not an integer".to_string())?;
-        StereoGroupKind::Or(n)
+        (StereoGroupKind::Or(n), "ATOMS")
+    } else if let Some(n_str) = first_tok.strip_prefix("MDLV30/STEBREL") {
+        let n: u32 = n_str
+            .parse()
+            .map_err(|_| "COLLECTION OR group id is not an integer".to_string())?;
+        (StereoGroupKind::Or(n), "BONDS")
     } else if let Some(n_str) = first_tok
         .strip_prefix("MDLV30/STERAC")
         .or_else(|| first_tok.strip_prefix("MDLV30/STEAND"))
@@ -1067,59 +1109,79 @@ fn parse_stereo_group_line(
         let n: u32 = n_str
             .parse()
             .map_err(|_| "COLLECTION AND group id is not an integer".to_string())?;
-        StereoGroupKind::And(n)
+        (StereoGroupKind::And(n), "ATOMS")
+    } else if let Some(n_str) = first_tok.strip_prefix("MDLV30/STEBRAC") {
+        let n: u32 = n_str
+            .parse()
+            .map_err(|_| "COLLECTION AND group id is not an integer".to_string())?;
+        (StereoGroupKind::And(n), "BONDS")
     } else {
         return Ok(None);
     };
 
-    // Extract the ATOMS=(...) value from the remainder of the payload.
-    let atoms_start = payload
-        .find("ATOMS=(")
-        .ok_or_else(|| "COLLECTION line is missing ATOMS=(...)".to_string())?;
-    let after_paren = &payload[atoms_start + "ATOMS=(".len()..];
+    let marker = format!("{member_label}=(");
+    let members_start = payload
+        .find(&marker)
+        .ok_or_else(|| format!("COLLECTION line is missing {member_label}=(...)"))?;
+    let after_paren = &payload[members_start + marker.len()..];
     let close = after_paren
         .find(')')
-        .ok_or_else(|| "COLLECTION ATOMS value is not closed".to_string())?;
+        .ok_or_else(|| format!("COLLECTION {member_label} value is not closed"))?;
     let inner = &after_paren[..close];
 
-    // First number is the count; the rest are 1-based V3000 atom indices.
+    // First number is the count; the rest are 1-based V3000 member ids.
     let values: Vec<&str> = inner.split_whitespace().collect();
-    let Some((count, atom_ids)) = values.split_first() else {
-        return Err("COLLECTION ATOMS value is empty".to_string());
+    let Some((count, member_ids)) = values.split_first() else {
+        return Err(format!("COLLECTION {member_label} value is empty"));
     };
     let declared: usize = count
         .parse()
-        .map_err(|_| "COLLECTION ATOMS count is not an integer".to_string())?;
-    if atom_ids.len() != declared {
+        .map_err(|_| format!("COLLECTION {member_label} count is not an integer"))?;
+    if member_ids.len() != declared {
         return Err(format!(
-            "COLLECTION ATOMS declares {declared} ids but contains {}",
-            atom_ids.len()
+            "COLLECTION {member_label} declares {declared} ids but contains {}",
+            member_ids.len()
         ));
     }
-    // Collect and deduplicate atom indices.
-    // A malformed V3000 file may list the same atom twice in one group.
-    // Deduplication here mirrors the defensive check in StereoGroup::new()
-    // and makes the intent explicit at the parser level (RDKit PR #9258).
-    let mut seen = std::collections::HashSet::new();
-    let atom_indices: Vec<AtomIdx> = atom_ids
+    let ids = member_ids
         .iter()
         .map(|s| {
-            let v3k: u32 = s
-                .parse()
-                .map_err(|_| "COLLECTION ATOMS contains a non-integer atom id".to_string())?;
-            resolve_atom_idx(v3k, atom_idx_map)
-                .ok_or_else(|| format!("COLLECTION ATOMS references unknown atom id {v3k}"))
+            s.parse::<u32>()
+                .map_err(|_| format!("COLLECTION {member_label} contains a non-integer member id"))
         })
-        .collect::<Result<Vec<_>, _>>()?
-        .into_iter()
-        .filter(|idx| seen.insert(*idx))
-        .collect();
-
-    if atom_indices.is_empty() {
-        return Err("COLLECTION ATOMS has no atom ids".to_string());
+        .collect::<Result<Vec<_>, _>>()?;
+    if ids.is_empty() {
+        return Err(format!("COLLECTION {member_label} has no member ids"));
     }
 
-    Ok(Some(StereoGroup::new(kind, atom_indices)))
+    let (atom_indices, bond_indices) = if member_label == "ATOMS" {
+        let atoms = ids
+            .into_iter()
+            .map(|v3k| {
+                resolve_atom_idx(v3k, atom_idx_map)
+                    .ok_or_else(|| format!("COLLECTION ATOMS references unknown atom id {v3k}"))
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        (atoms, Vec::new())
+    } else {
+        let bonds = ids
+            .into_iter()
+            .map(|v3k| {
+                bond_idx_map
+                    .iter()
+                    .find(|&&(source, _)| source == v3k)
+                    .map(|&(_, idx)| idx)
+                    .ok_or_else(|| format!("COLLECTION BONDS references unknown bond id {v3k}"))
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        (Vec::new(), bonds)
+    };
+
+    Ok(Some(StereoGroup::with_bonds(
+        kind,
+        atom_indices,
+        bond_indices,
+    )))
 }
 
 // ---------------------------------------------------------------------------

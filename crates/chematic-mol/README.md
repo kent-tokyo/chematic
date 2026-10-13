@@ -7,7 +7,9 @@ Pure Rust molecular file format reader/writer — **SDF, MOL V2000/V3000, CML, C
 ### MOL Format Support
 - **V2000 Parser/Writer**: bounded core CTAB support with `parse_mol` / `write_mol`
 - **V2000 with Coords**: 2D coordinates preserved via `parse_mol_with_coords` / `write_mol_with_coords`
-- **V3000 Parser/Writer**: Extended blocks (CTAB, ATOM, BOND, COLLECTION)
+- **V3000 Parser/Writer**: Extended blocks (CTAB, ATOM, BOND, COLLECTION),
+  including CTfile 2026 `STEBABS` / `STEBRACn` / `STEBRELn` bond
+  enhanced-stereo collections and mixed atom/bond groups
 - **Pseudoatoms**: real carbon, `*`, `R`, and `R1..R9999` remain distinct
   through V2000/V3000 and SDF round trips; unsupported labels fail closed
 - **V3000 with Coords** (NEW in v0.1.32): 2D coordinates now recovered via `parse_mol_v3000_with_coords`
@@ -145,7 +147,7 @@ println!("{}", mol_str);  // V2000 format
 | Format | Read | Write | Coords | Notes |
 |--------|------|-------|--------|-------|
 | MOL V2000 | ✅ | ✅ | — | Charged atoms, isotopes, stereo, `*`/`R`/`R1..R9999` |
-| MOL V3000 | ✅ | ✅ | — | Extended atoms, COLLECTION, `*`/`R`/`R1..R9999` |
+| MOL V3000 | ✅ | ✅ | — | Extended atoms, atom/bond enhanced-stereo COLLECTION, `*`/`R`/`R1..R9999` |
 | SDF (multi) | ✅ | ✅ | ✅ | Per-record properties and MOL pseudoatom contract |
 | CML | ✅ | ✅ | ✅ | Y-up convention (documented) |
 | CDXML | ✅ | ✅ | ✅ | Molecular writer, bounded `GenericNickname` pseudoatoms, and loss-preserving document edits; not complete ChemDraw parity |
