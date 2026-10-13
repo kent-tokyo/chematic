@@ -68,6 +68,7 @@ def test_summary_includes_optional_descriptor_stress(tmp_path):
     chemistry = {
         "cip_accurate": {"agree": 1},
         "hybridization": {"agree": 1},
+        "morgan_r2_2048": {"rows": 1, "exact": 1},
         "mmff94": {"compared_rows": 1},
         "mol_writer": {"stereo_rows": 1},
     }
@@ -79,6 +80,7 @@ def test_summary_includes_optional_descriptor_stress(tmp_path):
     summary = MODULE.summarize(tmp_path, ran_corpus=False)
 
     assert summary["descriptor_stress"] == counts
+    assert summary["exposed_10k"]["morgan_r2_2048"] == {"rows": 1, "exact": 1}
     assert "biotransformer_corpus" not in summary
 
 
