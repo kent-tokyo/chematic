@@ -167,8 +167,8 @@ pub enum CipUnresolvedReason {
     Tied,
     /// The digraph/comparator exceeded its size or recursion budget for this atom.
     BudgetExceeded,
-    /// The available phosphorus oracle is representation-unstable; no label is
-    /// emitted until a representation-independent oracle is established.
+    /// No chemically stable label is available. For example, a wildcard/dummy
+    /// ligand does not name an element whose CIP priority could be assigned.
     OracleUnstable,
     /// A stereo-tagged centre with three explicit ligands whose fourth ligand
     /// would be a lone pair (a bridgehead amine, a sulfoxide); lone pairs are

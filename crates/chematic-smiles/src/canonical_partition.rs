@@ -261,7 +261,13 @@ fn vertex_color(
         aromatic: atom.aromatic,
         h_state,
         atom_map,
-        chirality: if canonical_fidelity {
+        chirality: if canonical_fidelity && mol.is_allene_stereo(idx) {
+            match atom.chirality {
+                Chirality::CounterClockwise => 7,
+                Chirality::Clockwise => 8,
+                _ => 0,
+            }
+        } else if canonical_fidelity {
             match atom.chirality {
                 Chirality::None => 0,
                 Chirality::CounterClockwise => 1,
@@ -270,8 +276,6 @@ fn vertex_color(
                 Chirality::SquarePlanar(SquarePlanarPermutation::SP2) => 4,
                 Chirality::SquarePlanar(SquarePlanarPermutation::SP3) => 5,
                 Chirality::SquarePlanarUnnumbered => 6,
-                Chirality::Allene1 => 7,
-                Chirality::Allene2 => 8,
                 Chirality::TrigonalBipyramidal(p) => 10 + p,
                 Chirality::Octahedral(p) => 40 + p,
             }

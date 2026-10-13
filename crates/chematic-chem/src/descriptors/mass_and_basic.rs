@@ -377,6 +377,10 @@ pub fn molecular_weight(mol: &Molecule) -> f64 {
 /// isotope-labelled atoms use RDKit's nuclide masses where present and its
 /// mass-number fallback otherwise.
 pub fn rdkit_molecular_weight(mol: &Molecule) -> f64 {
+    chematic_smiles::with_rdkit_model_molecule(mol, rdkit_molecular_weight_impl)
+}
+
+fn rdkit_molecular_weight_impl(mol: &Molecule) -> f64 {
     let mut mw = 0.0f64;
     for (idx, atom) in mol.atoms() {
         if atom.wildcard {
@@ -386,8 +390,11 @@ pub fn rdkit_molecular_weight(mol: &Molecule) -> f64 {
             continue;
         }
         mw += match atom.isotope {
+            // In SMILES, isotope zero means unspecified. RDKit therefore
+            // uses the element's average atomic weight for `[0CH4]`, just as
+            // it does for `C`, rather than treating zero as a nuclide mass.
+            None | Some(0) => rdkit_avg_mass(atom.element),
             Some(isotope) => rdkit_isotope_mass(atom.element, isotope),
-            None => rdkit_avg_mass(atom.element),
         };
         mw += implicit_hcount(mol, idx) as f64 * 1.008;
     }

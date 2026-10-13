@@ -656,6 +656,21 @@ impl Molecule {
         self.stereo_neighbor_order.get(&idx.0).map(|v| v.as_slice())
     }
 
+    /// Whether `idx` carries OpenSMILES allene/cumulene axial stereo.
+    ///
+    /// Axial `@AL1`/`@AL2` and tetrahedral `@`/`@@` share the same two parity
+    /// values. The parser records an allene's two terminal atoms and four
+    /// virtual ligands as a six-entry stereo order, which makes the class
+    /// unambiguous without adding variants to the public [`crate::Chirality`]
+    /// enum. Keeping the enum's variant set stable preserves exhaustive
+    /// downstream matches across patch releases.
+    pub fn is_allene_stereo(&self, idx: AtomIdx) -> bool {
+        self.atom(idx).chirality.is_tetrahedral()
+            && self
+                .stereo_neighbor_order(idx)
+                .is_some_and(|order| order.len() == 6)
+    }
+
     /// Set the SMILES stereo neighbor order for atom `idx`.
     pub fn set_stereo_neighbor_order(&mut self, idx: AtomIdx, order: Vec<u32>) {
         self.invalidate_derived();

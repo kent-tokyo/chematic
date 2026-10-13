@@ -34,9 +34,11 @@ impl SquarePlanarPermutation {
     }
 }
 
-/// Chirality as specified in OpenSMILES: tetrahedral (`@`/`@@`), allene
-/// (`@AL1`/`@AL2`) or, since this crate also models coordination complexes,
-/// square-planar (`@SP1`/`@SP2`/`@SP3`).
+/// Chirality as specified in OpenSMILES: tetrahedral (`@`/`@@`) or, since this
+/// crate also models coordination complexes, square-planar
+/// (`@SP1`/`@SP2`/`@SP3`). Allene `@AL1`/`@AL2` parity uses the same two
+/// parity values and is distinguished by the molecule's six-entry virtual
+/// terminal order; see [`crate::Molecule::is_allene_stereo`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub enum Chirality {
     /// No chirality specified.
@@ -46,10 +48,6 @@ pub enum Chirality {
     CounterClockwise,
     /// `@@` — clockwise.
     Clockwise,
-    /// `@AL1` — the first allene/cumulene axial permutation.
-    Allene1,
-    /// `@AL2` — the opposite allene/cumulene axial permutation.
-    Allene2,
     /// `@SP1`/`@SP2`/`@SP3` — square-planar (4-coordinate) stereo.
     SquarePlanar(SquarePlanarPermutation),
     /// `@SP` without a permutation number (RDKit keeps the class, permutation 0).
@@ -63,6 +61,18 @@ pub enum Chirality {
 }
 
 impl Chirality {
+    /// Source-compatible spelling for the first allene/cumulene axial
+    /// permutation. Allene geometry is molecular context, not a third atom
+    /// parity state, so this aliases [`Self::CounterClockwise`].
+    #[allow(non_upper_case_globals)]
+    pub const Allene1: Self = Self::CounterClockwise;
+
+    /// Source-compatible spelling for the second allene/cumulene axial
+    /// permutation. Allene geometry is molecular context, not a fourth atom
+    /// parity state, so this aliases [`Self::Clockwise`].
+    #[allow(non_upper_case_globals)]
+    pub const Allene2: Self = Self::Clockwise;
+
     /// `true` only for [`Self::CounterClockwise`]/[`Self::Clockwise`] — the classic
     /// tetrahedral-parity forms every CIP/ECFP/dedup consumer written before
     /// square-planar existed assumes. Consumers that mean "is this a real
@@ -72,9 +82,14 @@ impl Chirality {
         matches!(self, Self::CounterClockwise | Self::Clockwise)
     }
 
-    /// `true` for the two OpenSMILES allene axial-stereo permutations.
+    /// Allene class cannot be determined from atom parity alone. Use
+    /// [`crate::Molecule::is_allene_stereo`] with the owning molecule.
+    #[deprecated(
+        since = "1.1.4",
+        note = "allene class is molecular context; use Molecule::is_allene_stereo"
+    )]
     pub fn is_allene(&self) -> bool {
-        matches!(self, Self::Allene1 | Self::Allene2)
+        false
     }
 
     /// The non-tetrahedral class and permutation number (0: none given),
@@ -121,8 +136,6 @@ impl Chirality {
             Self::None => String::new(),
             Self::CounterClockwise => "@".into(),
             Self::Clockwise => "@@".into(),
-            Self::Allene1 => "@AL1".into(),
-            Self::Allene2 => "@AL2".into(),
             _ => {
                 let (class, perm) = self.nontetrahedral().expect("non-tetrahedral");
                 if perm == 0 {

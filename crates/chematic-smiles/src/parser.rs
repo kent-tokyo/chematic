@@ -331,9 +331,9 @@ impl<'a> Parser<'a> {
                 }
             }
         }
-
         // Store stereo neighbor orders in the molecule builder.
         let records = std::mem::take(&mut self.stereo_records);
+        let tagged_atoms: Vec<AtomIdx> = records.iter().map(|(atom, _)| *atom).collect();
         for (atom_idx, entries) in records {
             let order: Vec<u32> = entries
                 .iter()
@@ -347,7 +347,7 @@ impl<'a> Parser<'a> {
         }
 
         let mut molecule = mol.build();
-        crate::allene::normalize_allene_stereo(&mut molecule);
+        crate::allene::normalize_allene_stereo(&mut molecule, &tagged_atoms);
         // A SMILES graph with no ring-closure token is a forest by
         // construction. Publish that already-known result so the first
         // fingerprint or descriptor call does not need a full bridge DFS to

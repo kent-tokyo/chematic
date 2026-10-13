@@ -18,7 +18,17 @@ the changelog and validation pages.
   full hosted Linux/macOS/Windows published-wheel workflow before replacing
   the current broad v1.0.42 package packet.
 - **Equivalent-work performance:** close prepared-operation deficits without
-  moving work into parsing; add second-host and peak-RSS records.
+  moving work into parsing; add second-host and peak-RSS records. The v1.1.3
+  follow-up restores prepared QED and reduces the reported parse-inclusive
+  TPSA/Morgan regressions to statistical ties on one host; cross-platform
+  artifact evidence remains open.
+- **Compatibility CI:** keep the v1.1.2 downstream exhaustive-`Chirality`
+  compile fixture in every release candidate. Treat public enum variant
+  additions as semver-significant even when the new syntax is additive.
+- **Remaining unusual-input boundaries:** square-planar tags do not receive
+  tetrahedral CIP labels; wildcard ligands return typed `oracle_unstable`;
+  one isotope fixture intentionally follows Sequence Rule 2 before remote
+  Rule 5. Broader Cleanup parity remains an independent workflow task.
 - **File interchange:** expand the initial V3000/MOL2/CML/CDXML semantic gate
   to stratified corpora before broad Open Babel claims.
 - **CDK/Indigo comparison:** the new source workflow packet covers bounded

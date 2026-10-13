@@ -1,6 +1,7 @@
 use chematic_fp::{
-    FpType, Map4Config, PreparedFingerprintIndex, ecfp4, map4, nearest_neighbors, tanimoto_ecfp4,
-    tanimoto_matrix, tanimoto_matrix_parallel,
+    FpType, Map4Config, PreparedFingerprintIndex, RdkitMorganConfig, ecfp4, map4,
+    nearest_neighbors, rdkit_morgan_bitvec, tanimoto_ecfp4, tanimoto_matrix,
+    tanimoto_matrix_parallel,
 };
 use chematic_smiles::parse;
 use criterion::{Criterion, criterion_group, criterion_main};
@@ -25,6 +26,20 @@ fn bench_ecfp4(c: &mut Criterion) {
         b.iter(|| {
             for mol in &mols {
                 let _ = black_box(ecfp4(black_box(mol)));
+            }
+        })
+    });
+}
+
+// Keep the one-shot parse + RDKit-compatible Morgan path visible. The
+// parsed-only ECFP benchmark cannot detect work shifted into SMILES parsing.
+fn bench_parse_rdkit_morgan(c: &mut Criterion) {
+    let config = RdkitMorganConfig::default();
+    c.bench_function("parse_rdkit_morgan_10mol", |b| {
+        b.iter(|| {
+            for smiles in BENCH_SMILES {
+                let mol = parse(black_box(smiles)).unwrap();
+                let _ = black_box(rdkit_morgan_bitvec(black_box(&mol), black_box(&config)));
             }
         })
     });
@@ -90,6 +105,7 @@ fn bench_tanimoto_matrix(c: &mut Criterion) {
 criterion_group!(
     benches,
     bench_ecfp4,
+    bench_parse_rdkit_morgan,
     bench_tanimoto,
     bench_map4,
     bench_prepared_search,

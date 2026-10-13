@@ -23,7 +23,7 @@ impl<'a> CanonicalWriter<'a> {
             traversal_bond_preference: None,
             direct_ez_orders: None,
             canonical_tree_parent: if cfg!(test)
-                || mol.atoms().any(|(_, atom)| atom.chirality.is_allene())
+                || mol.atoms().any(|(idx, _)| mol.is_allene_stereo(idx))
             {
                 vec![None; n]
             } else {

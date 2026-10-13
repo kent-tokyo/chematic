@@ -743,6 +743,12 @@ impl<'a> CanonicalWriter<'a> {
             self.out.push_str(&sym);
 
             match chirality {
+                Chirality::CounterClockwise if self.mol.is_allene_stereo(idx) => {
+                    self.out.push_str("@AL1")
+                }
+                Chirality::Clockwise if self.mol.is_allene_stereo(idx) => {
+                    self.out.push_str("@AL2")
+                }
                 Chirality::CounterClockwise => self.out.push('@'),
                 Chirality::Clockwise => self.out.push_str("@@"),
                 Chirality::None => {}
@@ -802,7 +808,7 @@ impl<'a> CanonicalWriter<'a> {
             };
         };
 
-        if stored.is_allene() {
+        if self.mol.is_allene_stereo(atom) {
             let Some(canonical) = self.canonical_allene_virtual_order(atom) else {
                 return Chirality::None;
             };
@@ -812,8 +818,8 @@ impl<'a> CanonicalWriter<'a> {
             };
             return if inverted {
                 match stored {
-                    Chirality::Allene1 => Chirality::Allene2,
-                    Chirality::Allene2 => Chirality::Allene1,
+                    Chirality::CounterClockwise => Chirality::Clockwise,
+                    Chirality::Clockwise => Chirality::CounterClockwise,
                     _ => unreachable!(),
                 }
             } else {
@@ -920,7 +926,6 @@ impl<'a> CanonicalWriter<'a> {
         let original_arr = <[u32; 4]>::try_from(original).ok();
         let canonical_arr = <[u32; 4]>::try_from(canonical).ok();
         match stored {
-            Chirality::Allene1 | Chirality::Allene2 => Chirality::None,
             Chirality::CounterClockwise | Chirality::Clockwise => {
                 let is_odd = match (original_arr, canonical_arr) {
                     (Some(o), Some(c)) => remap_tetrahedral_parity(o, c).unwrap_or(false),

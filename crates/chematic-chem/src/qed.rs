@@ -365,20 +365,27 @@ fn qed_properties(mol: &Molecule) -> [f64; 8] {
     // Kekule forms and unusual bracket valences could change MW/LogP/ROTB
     // while HBA/AROM/ALERTS saw a different graph.  Reconstruct that sanitized
     // graph once and use it for all eight properties.
-    let parsed = chematic_smiles::rdkit_parsed_molecule(mol);
-    let base = parsed.as_ref().unwrap_or(mol);
-    chematic_perception::with_rdkit_parity_view(base, |view| {
-        let view = view.unwrap_or(base);
-        [
-            rdkit_molecular_weight(base),
-            logp_crippen(base),
-            qed_acceptor_count(view) as f64,
-            hbd_count(base) as f64,
-            rdkit_tpsa(base),
-            rotatable_bond_count(base) as f64,
-            qed_aromatic_ring_count(view) as f64,
-            structural_alert_count(view) as f64,
-        ]
+    // `with_rdkit_model_molecule` keeps the ordinary, already-compatible
+    // graph allocation-free and rebuilds it only for the exceptional inputs
+    // whose explicit-H, valence or aromatic representation differs from
+    // RDKit's sanitized model.  v1.1.3 called `rdkit_parsed_molecule`
+    // unconditionally here, making every QED call pay for a complete graph
+    // reconstruction even though almost all ordinary molecules take the
+    // identity model.
+    chematic_smiles::with_rdkit_model_molecule(mol, |base| {
+        chematic_perception::with_rdkit_parity_view(base, |view| {
+            let view = view.unwrap_or(base);
+            [
+                rdkit_molecular_weight(base),
+                logp_crippen(base),
+                qed_acceptor_count(view) as f64,
+                hbd_count(base) as f64,
+                rdkit_tpsa(base),
+                rotatable_bond_count(base) as f64,
+                qed_aromatic_ring_count(view) as f64,
+                structural_alert_count(view) as f64,
+            ]
+        })
     })
 }
 

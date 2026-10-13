@@ -14,12 +14,14 @@ SPEC.loader.exec_module(MODULE)
 class StubMol:
     tpsa = 12.5
     labute_asa = 27.25
+    qed = 0.625
 
 
 def test_numeric_descriptor_digests_use_exact_float_encoding():
     mol = StubMol()
     assert MODULE.evaluate(mol, "tpsa") == float(12.5).hex()
     assert MODULE.evaluate(mol, "labute_asa") == float(27.25).hex()
+    assert MODULE.evaluate(mol, "qed") == float(0.625).hex()
 
 
 def test_paired_ratio_name_matches_the_calculation_direction():

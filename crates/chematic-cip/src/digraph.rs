@@ -457,7 +457,12 @@ impl<'m> CipDigraph<'m> {
     fn atomic_number_for(&self, kind: CipNodeKind) -> AtomicNumberKey {
         match kind {
             CipNodeKind::Atom { atom_idx } => {
-                AtomicNumberKey::Integral(self.mol.atom(atom_idx).element.atomic_number())
+                let atom = self.mol.atom(atom_idx);
+                AtomicNumberKey::Integral(if atom.wildcard {
+                    0
+                } else {
+                    atom.element.atomic_number()
+                })
             }
             CipNodeKind::MultipleBondDuplicate {
                 source_atom,
@@ -468,12 +473,20 @@ impl<'m> CipDigraph<'m> {
                 .and_then(|ctx| ctx.fractional_atomic_number(source_atom))
                 .map(AtomicNumberKey::Rational)
                 .unwrap_or_else(|| {
-                    AtomicNumberKey::Integral(
-                        self.mol.atom(duplicated_atom).element.atomic_number(),
-                    )
+                    let atom = self.mol.atom(duplicated_atom);
+                    AtomicNumberKey::Integral(if atom.wildcard {
+                        0
+                    } else {
+                        atom.element.atomic_number()
+                    })
                 }),
             CipNodeKind::RingDuplicate { closure_atom, .. } => {
-                AtomicNumberKey::Integral(self.mol.atom(closure_atom).element.atomic_number())
+                let atom = self.mol.atom(closure_atom);
+                AtomicNumberKey::Integral(if atom.wildcard {
+                    0
+                } else {
+                    atom.element.atomic_number()
+                })
             }
             CipNodeKind::ImplicitHydrogen => AtomicNumberKey::Integral(1),
         }
@@ -512,7 +525,12 @@ impl<'m> CipDigraph<'m> {
             CipNodeKind::Atom { atom_idx } => {
                 0u8.hash(&mut hasher);
                 let atom = self.mol.atom(atom_idx);
-                atom.element.atomic_number().hash(&mut hasher);
+                (if atom.wildcard {
+                    0
+                } else {
+                    atom.element.atomic_number()
+                })
+                .hash(&mut hasher);
                 atom.isotope.hash(&mut hasher);
             }
             CipNodeKind::MultipleBondDuplicate {
@@ -522,14 +540,24 @@ impl<'m> CipDigraph<'m> {
             } => {
                 1u8.hash(&mut hasher);
                 let atom = self.mol.atom(duplicated_atom);
-                atom.element.atomic_number().hash(&mut hasher);
+                (if atom.wildcard {
+                    0
+                } else {
+                    atom.element.atomic_number()
+                })
+                .hash(&mut hasher);
                 atom.isotope.hash(&mut hasher);
                 bond_order.hash(&mut hasher);
             }
             CipNodeKind::RingDuplicate { closure_atom, .. } => {
                 2u8.hash(&mut hasher);
                 let atom = self.mol.atom(closure_atom);
-                atom.element.atomic_number().hash(&mut hasher);
+                (if atom.wildcard {
+                    0
+                } else {
+                    atom.element.atomic_number()
+                })
+                .hash(&mut hasher);
                 atom.isotope.hash(&mut hasher);
             }
             CipNodeKind::ImplicitHydrogen => {

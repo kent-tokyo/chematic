@@ -87,26 +87,36 @@ pub(crate) fn allene_arms(
 /// ligands. Component starts are recovered from the completed graph: SMILES
 /// parsing appends each dot-separated component, so its lowest atom index is
 /// the atom that had no preceding neighbour in parse order.
-pub(crate) fn normalize_allene_stereo(molecule: &mut Molecule) {
-    let tagged: Vec<_> = molecule
-        .atoms()
-        .filter_map(|(atom, data)| (data.chirality != Chirality::None).then_some(atom))
+pub(crate) fn normalize_allene_stereo(molecule: &mut Molecule, tagged_atoms: &[AtomIdx]) {
+    // Ordinary tetrahedral stereocentres are common; actual allene/cumulene
+    // centres are not. Select the only possible central geometry before doing
+    // the component walk needed to reconstruct terminal parse order. This
+    // keeps allene support off the hot path for ordinary chiral SMILES.
+    let candidates: Vec<_> = tagged_atoms
+        .iter()
+        .copied()
+        .filter(|&atom| {
+            molecule.atom(atom).chirality.is_tetrahedral()
+                && molecule.degree(atom) == 2
+                && molecule
+                    .neighbors(atom)
+                    .filter(|(_, bond)| molecule.bond(*bond).order == BondOrder::Double)
+                    .count()
+                    == 2
+        })
         .collect();
-    if tagged.is_empty() {
+    if candidates.is_empty() {
         return;
     }
     let fragment_starts = fragment_start_flags(molecule);
 
-    for center in tagged {
+    for center in candidates {
         let stored = molecule.atom(center).chirality;
         let direct = molecule
             .stereo_neighbor_order(center)
             .map(<[u32]>::to_vec)
             .unwrap_or_else(|| molecule.neighbors(center).map(|(n, _)| n.0).collect());
         let arms = allene_arms(molecule, center, &direct);
-        if !stored.is_allene() && !(stored.is_tetrahedral() && arms.is_some()) {
-            continue;
-        }
         let Some(arms) = arms else {
             // Valid class on incompatible geometry is cleaned; malformed class
             // numbers are rejected earlier by the token parser.
@@ -114,11 +124,6 @@ pub(crate) fn normalize_allene_stereo(molecule: &mut Molecule) {
             continue;
         };
 
-        let normalized = match stored {
-            Chirality::CounterClockwise => Chirality::Allene1,
-            Chirality::Clockwise => Chirality::Allene2,
-            other => other,
-        };
         let mut virtual_order = Vec::with_capacity(6);
         for arm in arms {
             let mut incident: Vec<_> = molecule.neighbors(arm.terminal).collect();
@@ -148,7 +153,7 @@ pub(crate) fn normalize_allene_stereo(molecule: &mut Molecule) {
             virtual_order.extend(local);
         }
         if virtual_order.len() == 6 {
-            molecule.set_chirality(center, normalized);
+            molecule.set_chirality(center, stored);
             molecule.set_stereo_neighbor_order(center, virtual_order);
         } else {
             molecule.set_chirality(center, Chirality::None);

@@ -526,7 +526,7 @@ impl<'a> SmilesWriter<'a> {
         // The non-canonical traversal preserves the parse-order atom layout.
         // Canonical serialization performs the full virtual-terminal parity
         // remap; retaining the tag here is safer than dropping axial stereo.
-        if stored.is_allene() {
+        if self.mol.is_allene_stereo(idx) {
             return stored;
         }
         let mut written: Vec<u32> = Vec::with_capacity(original.len());
@@ -565,7 +565,6 @@ impl<'a> SmilesWriter<'a> {
         let original_arr = <[u32; 4]>::try_from(original).ok();
         let written_arr = <[u32; 4]>::try_from(written.as_slice()).ok();
         match stored {
-            Chirality::Allene1 | Chirality::Allene2 => stored,
             Chirality::CounterClockwise | Chirality::Clockwise => {
                 let odd = match (original_arr, written_arr) {
                     (Some(o), Some(w)) => remap_tetrahedral_parity(o, w).unwrap_or(false),
@@ -619,6 +618,12 @@ impl<'a> SmilesWriter<'a> {
             self.out.push_str(&sym);
 
             match chirality {
+                chematic_core::Chirality::CounterClockwise if self.mol.is_allene_stereo(idx) => {
+                    self.out.push_str("@AL1")
+                }
+                chematic_core::Chirality::Clockwise if self.mol.is_allene_stereo(idx) => {
+                    self.out.push_str("@AL2")
+                }
                 chematic_core::Chirality::CounterClockwise => self.out.push('@'),
                 chematic_core::Chirality::Clockwise => self.out.push_str("@@"),
                 chematic_core::Chirality::None => {}

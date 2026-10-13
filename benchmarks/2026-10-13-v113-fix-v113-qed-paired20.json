@@ -1,0 +1,588 @@
+{
+  "schema": "paired-published-python-versions/v1",
+  "artifacts": {
+    "a": {
+      "version": "1.1.3",
+      "python": "/private/tmp/chematic-v113-public-venv/bin/python",
+      "wheel_sha256": "5569b170b037108d13e9af51386173050ac3b4ac4c798bf706d2a522ddd0e17b"
+    },
+    "b": {
+      "version": "1.1.3",
+      "python": "/private/tmp/chematic-v113-fix-venv/bin/python",
+      "wheel_sha256": "01cca77a8a647c83a4d8c28fc6a250d4c28479902a7669a7547c6e8017622a94"
+    }
+  },
+  "corpus": {
+    "sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+    "limit": 1000,
+    "multiplier": 1
+  },
+  "operation": "qed",
+  "mode": "prepared",
+  "protocol": {
+    "blocks": 20,
+    "order": "AB/BA alternating, fresh process per arm",
+    "warmup": "one operation call per arm outside timer",
+    "memory": "whole-process peak RSS"
+  },
+  "paired": {
+    "median_a_over_b": 1.160922856452042,
+    "bootstrap_95pct": [
+      1.1319473754692453,
+      1.1779305518593424
+    ],
+    "bootstrap_samples": 4000,
+    "seed": 0
+  },
+  "output_sha256_sets": {
+    "a": [
+      "49e3646a2946d1706950125f4151e25d4509a6af9299d5d763ff1ec47037a437"
+    ],
+    "b": [
+      "49e3646a2946d1706950125f4151e25d4509a6af9299d5d763ff1ec47037a437"
+    ]
+  },
+  "outputs_equal_across_versions": true,
+  "pairs": [
+    {
+      "block": 0,
+      "order": [
+        "a",
+        "b"
+      ],
+      "a": {
+        "version": "1.1.3",
+        "operation": "qed",
+        "mode": "prepared",
+        "input_count": 1000,
+        "elapsed_ns": 397369625,
+        "output_sha256": "49e3646a2946d1706950125f4151e25d4509a6af9299d5d763ff1ec47037a437",
+        "peak_process_rss_bytes": 38682624,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      },
+      "b": {
+        "version": "1.1.3",
+        "operation": "qed",
+        "mode": "prepared",
+        "input_count": 1000,
+        "elapsed_ns": 335837708,
+        "output_sha256": "49e3646a2946d1706950125f4151e25d4509a6af9299d5d763ff1ec47037a437",
+        "peak_process_rss_bytes": 39485440,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      }
+    },
+    {
+      "block": 1,
+      "order": [
+        "b",
+        "a"
+      ],
+      "b": {
+        "version": "1.1.3",
+        "operation": "qed",
+        "mode": "prepared",
+        "input_count": 1000,
+        "elapsed_ns": 328729833,
+        "output_sha256": "49e3646a2946d1706950125f4151e25d4509a6af9299d5d763ff1ec47037a437",
+        "peak_process_rss_bytes": 39485440,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      },
+      "a": {
+        "version": "1.1.3",
+        "operation": "qed",
+        "mode": "prepared",
+        "input_count": 1000,
+        "elapsed_ns": 380800792,
+        "output_sha256": "49e3646a2946d1706950125f4151e25d4509a6af9299d5d763ff1ec47037a437",
+        "peak_process_rss_bytes": 38666240,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      }
+    },
+    {
+      "block": 2,
+      "order": [
+        "a",
+        "b"
+      ],
+      "a": {
+        "version": "1.1.3",
+        "operation": "qed",
+        "mode": "prepared",
+        "input_count": 1000,
+        "elapsed_ns": 388189125,
+        "output_sha256": "49e3646a2946d1706950125f4151e25d4509a6af9299d5d763ff1ec47037a437",
+        "peak_process_rss_bytes": 38699008,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      },
+      "b": {
+        "version": "1.1.3",
+        "operation": "qed",
+        "mode": "prepared",
+        "input_count": 1000,
+        "elapsed_ns": 330474583,
+        "output_sha256": "49e3646a2946d1706950125f4151e25d4509a6af9299d5d763ff1ec47037a437",
+        "peak_process_rss_bytes": 39550976,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      }
+    },
+    {
+      "block": 3,
+      "order": [
+        "b",
+        "a"
+      ],
+      "b": {
+        "version": "1.1.3",
+        "operation": "qed",
+        "mode": "prepared",
+        "input_count": 1000,
+        "elapsed_ns": 330417958,
+        "output_sha256": "49e3646a2946d1706950125f4151e25d4509a6af9299d5d763ff1ec47037a437",
+        "peak_process_rss_bytes": 39583744,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      },
+      "a": {
+        "version": "1.1.3",
+        "operation": "qed",
+        "mode": "prepared",
+        "input_count": 1000,
+        "elapsed_ns": 366678708,
+        "output_sha256": "49e3646a2946d1706950125f4151e25d4509a6af9299d5d763ff1ec47037a437",
+        "peak_process_rss_bytes": 38633472,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      }
+    },
+    {
+      "block": 4,
+      "order": [
+        "a",
+        "b"
+      ],
+      "a": {
+        "version": "1.1.3",
+        "operation": "qed",
+        "mode": "prepared",
+        "input_count": 1000,
+        "elapsed_ns": 383262250,
+        "output_sha256": "49e3646a2946d1706950125f4151e25d4509a6af9299d5d763ff1ec47037a437",
+        "peak_process_rss_bytes": 38600704,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      },
+      "b": {
+        "version": "1.1.3",
+        "operation": "qed",
+        "mode": "prepared",
+        "input_count": 1000,
+        "elapsed_ns": 338914708,
+        "output_sha256": "49e3646a2946d1706950125f4151e25d4509a6af9299d5d763ff1ec47037a437",
+        "peak_process_rss_bytes": 39567360,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      }
+    },
+    {
+      "block": 5,
+      "order": [
+        "b",
+        "a"
+      ],
+      "b": {
+        "version": "1.1.3",
+        "operation": "qed",
+        "mode": "prepared",
+        "input_count": 1000,
+        "elapsed_ns": 336150000,
+        "output_sha256": "49e3646a2946d1706950125f4151e25d4509a6af9299d5d763ff1ec47037a437",
+        "peak_process_rss_bytes": 39567360,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      },
+      "a": {
+        "version": "1.1.3",
+        "operation": "qed",
+        "mode": "prepared",
+        "input_count": 1000,
+        "elapsed_ns": 395638459,
+        "output_sha256": "49e3646a2946d1706950125f4151e25d4509a6af9299d5d763ff1ec47037a437",
+        "peak_process_rss_bytes": 38879232,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      }
+    },
+    {
+      "block": 6,
+      "order": [
+        "a",
+        "b"
+      ],
+      "a": {
+        "version": "1.1.3",
+        "operation": "qed",
+        "mode": "prepared",
+        "input_count": 1000,
+        "elapsed_ns": 392131708,
+        "output_sha256": "49e3646a2946d1706950125f4151e25d4509a6af9299d5d763ff1ec47037a437",
+        "peak_process_rss_bytes": 38830080,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      },
+      "b": {
+        "version": "1.1.3",
+        "operation": "qed",
+        "mode": "prepared",
+        "input_count": 1000,
+        "elapsed_ns": 340379000,
+        "output_sha256": "49e3646a2946d1706950125f4151e25d4509a6af9299d5d763ff1ec47037a437",
+        "peak_process_rss_bytes": 39665664,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      }
+    },
+    {
+      "block": 7,
+      "order": [
+        "b",
+        "a"
+      ],
+      "b": {
+        "version": "1.1.3",
+        "operation": "qed",
+        "mode": "prepared",
+        "input_count": 1000,
+        "elapsed_ns": 338928708,
+        "output_sha256": "49e3646a2946d1706950125f4151e25d4509a6af9299d5d763ff1ec47037a437",
+        "peak_process_rss_bytes": 39763968,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      },
+      "a": {
+        "version": "1.1.3",
+        "operation": "qed",
+        "mode": "prepared",
+        "input_count": 1000,
+        "elapsed_ns": 399692750,
+        "output_sha256": "49e3646a2946d1706950125f4151e25d4509a6af9299d5d763ff1ec47037a437",
+        "peak_process_rss_bytes": 38780928,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      }
+    },
+    {
+      "block": 8,
+      "order": [
+        "a",
+        "b"
+      ],
+      "a": {
+        "version": "1.1.3",
+        "operation": "qed",
+        "mode": "prepared",
+        "input_count": 1000,
+        "elapsed_ns": 386574042,
+        "output_sha256": "49e3646a2946d1706950125f4151e25d4509a6af9299d5d763ff1ec47037a437",
+        "peak_process_rss_bytes": 38699008,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      },
+      "b": {
+        "version": "1.1.3",
+        "operation": "qed",
+        "mode": "prepared",
+        "input_count": 1000,
+        "elapsed_ns": 344212958,
+        "output_sha256": "49e3646a2946d1706950125f4151e25d4509a6af9299d5d763ff1ec47037a437",
+        "peak_process_rss_bytes": 39600128,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      }
+    },
+    {
+      "block": 9,
+      "order": [
+        "b",
+        "a"
+      ],
+      "b": {
+        "version": "1.1.3",
+        "operation": "qed",
+        "mode": "prepared",
+        "input_count": 1000,
+        "elapsed_ns": 360818167,
+        "output_sha256": "49e3646a2946d1706950125f4151e25d4509a6af9299d5d763ff1ec47037a437",
+        "peak_process_rss_bytes": 39550976,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      },
+      "a": {
+        "version": "1.1.3",
+        "operation": "qed",
+        "mode": "prepared",
+        "input_count": 1000,
+        "elapsed_ns": 408822542,
+        "output_sha256": "49e3646a2946d1706950125f4151e25d4509a6af9299d5d763ff1ec47037a437",
+        "peak_process_rss_bytes": 38780928,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      }
+    },
+    {
+      "block": 10,
+      "order": [
+        "a",
+        "b"
+      ],
+      "a": {
+        "version": "1.1.3",
+        "operation": "qed",
+        "mode": "prepared",
+        "input_count": 1000,
+        "elapsed_ns": 396347958,
+        "output_sha256": "49e3646a2946d1706950125f4151e25d4509a6af9299d5d763ff1ec47037a437",
+        "peak_process_rss_bytes": 38682624,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      },
+      "b": {
+        "version": "1.1.3",
+        "operation": "qed",
+        "mode": "prepared",
+        "input_count": 1000,
+        "elapsed_ns": 337374375,
+        "output_sha256": "49e3646a2946d1706950125f4151e25d4509a6af9299d5d763ff1ec47037a437",
+        "peak_process_rss_bytes": 39600128,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      }
+    },
+    {
+      "block": 11,
+      "order": [
+        "b",
+        "a"
+      ],
+      "b": {
+        "version": "1.1.3",
+        "operation": "qed",
+        "mode": "prepared",
+        "input_count": 1000,
+        "elapsed_ns": 341758666,
+        "output_sha256": "49e3646a2946d1706950125f4151e25d4509a6af9299d5d763ff1ec47037a437",
+        "peak_process_rss_bytes": 39583744,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      },
+      "a": {
+        "version": "1.1.3",
+        "operation": "qed",
+        "mode": "prepared",
+        "input_count": 1000,
+        "elapsed_ns": 389819416,
+        "output_sha256": "49e3646a2946d1706950125f4151e25d4509a6af9299d5d763ff1ec47037a437",
+        "peak_process_rss_bytes": 38764544,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      }
+    },
+    {
+      "block": 12,
+      "order": [
+        "a",
+        "b"
+      ],
+      "a": {
+        "version": "1.1.3",
+        "operation": "qed",
+        "mode": "prepared",
+        "input_count": 1000,
+        "elapsed_ns": 388098042,
+        "output_sha256": "49e3646a2946d1706950125f4151e25d4509a6af9299d5d763ff1ec47037a437",
+        "peak_process_rss_bytes": 38584320,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      },
+      "b": {
+        "version": "1.1.3",
+        "operation": "qed",
+        "mode": "prepared",
+        "input_count": 1000,
+        "elapsed_ns": 333576542,
+        "output_sha256": "49e3646a2946d1706950125f4151e25d4509a6af9299d5d763ff1ec47037a437",
+        "peak_process_rss_bytes": 39501824,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      }
+    },
+    {
+      "block": 13,
+      "order": [
+        "b",
+        "a"
+      ],
+      "b": {
+        "version": "1.1.3",
+        "operation": "qed",
+        "mode": "prepared",
+        "input_count": 1000,
+        "elapsed_ns": 330701500,
+        "output_sha256": "49e3646a2946d1706950125f4151e25d4509a6af9299d5d763ff1ec47037a437",
+        "peak_process_rss_bytes": 39698432,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      },
+      "a": {
+        "version": "1.1.3",
+        "operation": "qed",
+        "mode": "prepared",
+        "input_count": 1000,
+        "elapsed_ns": 418317750,
+        "output_sha256": "49e3646a2946d1706950125f4151e25d4509a6af9299d5d763ff1ec47037a437",
+        "peak_process_rss_bytes": 38862848,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      }
+    },
+    {
+      "block": 14,
+      "order": [
+        "a",
+        "b"
+      ],
+      "a": {
+        "version": "1.1.3",
+        "operation": "qed",
+        "mode": "prepared",
+        "input_count": 1000,
+        "elapsed_ns": 391857417,
+        "output_sha256": "49e3646a2946d1706950125f4151e25d4509a6af9299d5d763ff1ec47037a437",
+        "peak_process_rss_bytes": 38764544,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      },
+      "b": {
+        "version": "1.1.3",
+        "operation": "qed",
+        "mode": "prepared",
+        "input_count": 1000,
+        "elapsed_ns": 332394917,
+        "output_sha256": "49e3646a2946d1706950125f4151e25d4509a6af9299d5d763ff1ec47037a437",
+        "peak_process_rss_bytes": 39682048,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      }
+    },
+    {
+      "block": 15,
+      "order": [
+        "b",
+        "a"
+      ],
+      "b": {
+        "version": "1.1.3",
+        "operation": "qed",
+        "mode": "prepared",
+        "input_count": 1000,
+        "elapsed_ns": 345361416,
+        "output_sha256": "49e3646a2946d1706950125f4151e25d4509a6af9299d5d763ff1ec47037a437",
+        "peak_process_rss_bytes": 39714816,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      },
+      "a": {
+        "version": "1.1.3",
+        "operation": "qed",
+        "mode": "prepared",
+        "input_count": 1000,
+        "elapsed_ns": 385131875,
+        "output_sha256": "49e3646a2946d1706950125f4151e25d4509a6af9299d5d763ff1ec47037a437",
+        "peak_process_rss_bytes": 38633472,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      }
+    },
+    {
+      "block": 16,
+      "order": [
+        "a",
+        "b"
+      ],
+      "a": {
+        "version": "1.1.3",
+        "operation": "qed",
+        "mode": "prepared",
+        "input_count": 1000,
+        "elapsed_ns": 404274958,
+        "output_sha256": "49e3646a2946d1706950125f4151e25d4509a6af9299d5d763ff1ec47037a437",
+        "peak_process_rss_bytes": 38666240,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      },
+      "b": {
+        "version": "1.1.3",
+        "operation": "qed",
+        "mode": "prepared",
+        "input_count": 1000,
+        "elapsed_ns": 1197998417,
+        "output_sha256": "49e3646a2946d1706950125f4151e25d4509a6af9299d5d763ff1ec47037a437",
+        "peak_process_rss_bytes": 39682048,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      }
+    },
+    {
+      "block": 17,
+      "order": [
+        "b",
+        "a"
+      ],
+      "b": {
+        "version": "1.1.3",
+        "operation": "qed",
+        "mode": "prepared",
+        "input_count": 1000,
+        "elapsed_ns": 987996458,
+        "output_sha256": "49e3646a2946d1706950125f4151e25d4509a6af9299d5d763ff1ec47037a437",
+        "peak_process_rss_bytes": 39501824,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      },
+      "a": {
+        "version": "1.1.3",
+        "operation": "qed",
+        "mode": "prepared",
+        "input_count": 1000,
+        "elapsed_ns": 508073833,
+        "output_sha256": "49e3646a2946d1706950125f4151e25d4509a6af9299d5d763ff1ec47037a437",
+        "peak_process_rss_bytes": 38797312,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      }
+    },
+    {
+      "block": 18,
+      "order": [
+        "a",
+        "b"
+      ],
+      "a": {
+        "version": "1.1.3",
+        "operation": "qed",
+        "mode": "prepared",
+        "input_count": 1000,
+        "elapsed_ns": 486921250,
+        "output_sha256": "49e3646a2946d1706950125f4151e25d4509a6af9299d5d763ff1ec47037a437",
+        "peak_process_rss_bytes": 38764544,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      },
+      "b": {
+        "version": "1.1.3",
+        "operation": "qed",
+        "mode": "prepared",
+        "input_count": 1000,
+        "elapsed_ns": 359956958,
+        "output_sha256": "49e3646a2946d1706950125f4151e25d4509a6af9299d5d763ff1ec47037a437",
+        "peak_process_rss_bytes": 39550976,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      }
+    },
+    {
+      "block": 19,
+      "order": [
+        "b",
+        "a"
+      ],
+      "b": {
+        "version": "1.1.3",
+        "operation": "qed",
+        "mode": "prepared",
+        "input_count": 1000,
+        "elapsed_ns": 369743667,
+        "output_sha256": "49e3646a2946d1706950125f4151e25d4509a6af9299d5d763ff1ec47037a437",
+        "peak_process_rss_bytes": 39632896,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      },
+      "a": {
+        "version": "1.1.3",
+        "operation": "qed",
+        "mode": "prepared",
+        "input_count": 1000,
+        "elapsed_ns": 466478083,
+        "output_sha256": "49e3646a2946d1706950125f4151e25d4509a6af9299d5d763ff1ec47037a437",
+        "peak_process_rss_bytes": 38731776,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      }
+    }
+  ]
+}
