@@ -206,6 +206,51 @@ pub(super) fn rdkit_carried_ez(
     apply_carried_ez_changes(product, &dropped, derived);
 }
 
+/// Drop carried E/Z when the product template explicitly provides a
+/// substituent at both ends of a double bond but no direction markers.
+///
+/// This is a property of the complete product template, so it must be applied
+/// once after all reactants have been assembled. Applying it during each
+/// reactant pass makes the result depend on reactant order (RDKit #9691).
+pub(super) fn clear_product_template_unspecified_ez(
+    product: &mut TracedProduct,
+    template: &Molecule,
+    template_idx_to_new: &[Option<AtomIdx>],
+) {
+    let dropped: Vec<BondIdx> = template
+        .bonds()
+        .filter(|(_, bond)| bond.order == BondOrder::Double)
+        .filter(|&(template_bond, bond)| {
+            [bond.atom1, bond.atom2].iter().all(|&end| {
+                template
+                    .neighbors(end)
+                    .any(|(_, neighbour_bond)| neighbour_bond != template_bond)
+            }) && ![bond.atom1, bond.atom2].iter().all(|&end| {
+                template.neighbors(end).any(|(_, neighbour_bond)| {
+                    neighbour_bond != template_bond
+                        && raw_direction(template, neighbour_bond).is_some()
+                })
+            })
+        })
+        .filter_map(|(_, bond)| {
+            let a = template_idx_to_new
+                .get(bond.atom1.0 as usize)
+                .copied()
+                .flatten()?;
+            let b = template_idx_to_new
+                .get(bond.atom2.0 as usize)
+                .copied()
+                .flatten()?;
+            product
+                .molecule
+                .bond_between(a, b)
+                .filter(|(_, product_bond)| product_bond.order == BondOrder::Double)
+                .map(|(product_bond, _)| product_bond)
+        })
+        .collect();
+    apply_carried_ez_changes(product, &dropped, Vec::new());
+}
+
 /// The template double bond between two product atoms, with whether each
 /// template end has another template neighbour and a marked one.
 fn template_double_stereo(

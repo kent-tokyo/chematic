@@ -264,6 +264,8 @@ pub fn remove_hydrogens(mol: &MolHandle) -> MolHandle {
 /// `reactants_smiles`: pipe-separated SMILES, one per reactant slot in the SMIRKS.
 /// Returns a JSON array of arrays: `[["product_smi", …], …]`.
 /// Returns a JS error on parse failure or arity mismatch.
+/// Product-template E/Z is resolved after all reactants are assembled, so an
+/// unspecified product double bond does not depend on reactant order.
 #[wasm_bindgen]
 pub fn run_reactants(smirks: &str, reactants_smiles: &str) -> Result<String, JsValue> {
     if smirks.len() > WASM_MAX_INPUT_BYTES || reactants_smiles.len() > WASM_MAX_INPUT_BYTES {

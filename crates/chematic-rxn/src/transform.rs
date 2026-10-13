@@ -80,6 +80,11 @@ enum ProductSetOutcome {
 /// Unmapped atoms attached to a mapped core atom (substituents) are
 /// automatically carried through to the matching product template.
 /// Use [`run_reactants_strict`] to return only mapped atoms.
+///
+/// Product-template `/` and `\\` bonds define E/Z explicitly. When the
+/// product template instead supplies substituents at both ends of a double
+/// bond without direction markers, carried E/Z is removed once after all
+/// reactants are assembled; the result does not depend on reactant order.
 pub fn run_reactants(
     smirks: &str,
     reactants: &[&Molecule],
