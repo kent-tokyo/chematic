@@ -123,6 +123,7 @@ not whether every chemical result is correct.
 - [Format support](format-capabilities.md)
 - [API reference](api/chematic.md)
 - [Errors and resource limits](error-and-limits.md)
+- [Product naming](product-naming.md)
 - [MCP protocol and transport](mcp-protocol-reference.md)
 - [Benchmark records](https://github.com/kent-tokyo/chematic/tree/main/benchmarks)
 - [GitHub](https://github.com/kent-tokyo/chematic)
