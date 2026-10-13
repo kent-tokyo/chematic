@@ -96,6 +96,13 @@ unchanged.
 Python NumPy arrays and WASM typed arrays are copies, not Rust-memory views.
 Parsers are format-specific; there is no `parse_any(text)` auto-detection.
 
+Protein structure projection follows the same rule: Rust exposes typed
+`ProteinProjection`/`ProteinChain`/`ProteinResidue`/`ProteinAtom` values through
+`project_protein_from_pdb` and `project_protein_from_mmcif`; Python and WASM
+expose the same bounded hierarchy as JSON through `protein_from_pdb_json` and
+`protein_from_mmcif_json`. It is an amino-acid-only view, not a full PDB/mmCIF
+biological-assembly model.
+
 ---
 
 ## Copy-vs-view semantics

@@ -416,7 +416,8 @@ use the record or checked API for source retention.
   this format lives in `chematic-3d`, not `chematic-mol`.
 - **Python**: `from_pdb` (lenient) and `from_pdb_strict` (fixed-column
   validation) for reading; both delegate to `chematic_3d`;
-  `Mol.to_pdb(coords)` for writing.
+  `Mol.to_pdb(coords)` for writing. `protein_from_pdb_json` exposes the shared
+  amino-acid-only model/chain/residue/atom projection.
 - **WASM**: `mol_from_pdb` (lenient), `mol_from_pdb_strict` (fixed-column
   validation), and `pdb_coords_json` for reading. Writing is
   exposed as a method, not a free function:
@@ -425,6 +426,13 @@ use the record or checked API for source retention.
   `chematic_3d::write_pdb` internally — this is real write capability, just
   shaped around an existing conformer handle rather than a
   `write_pdb_json(mol, coords)`-style free function.
+- **Protein projection**: Rust
+  `chematic_mol::project_protein_from_pdb`, Python
+  `protein_from_pdb_json`, and WASM `protein_from_pdb_json` preserve model,
+  chain, residue, atom, coordinate, occupancy, B-factor, alternate-location,
+  and insertion-code fields and expose one-letter sequences. The view is
+  intentionally amino-acid-only: unrecognized residues, water, ligands, ions,
+  and nucleic acids are excluded rather than guessed.
 - **Coordinate units**: Ångström (PDB standard).
 - **Connectivity**: `pdb_to_molecule` perceives bonds from geometry
   (distance-based), unlike most of the other formats in this table, which
@@ -440,8 +448,14 @@ use the record or checked API for source retention.
 ### mmCIF
 
 - **Rust**: `chematic_mol::{parse_mmcif, parse_mmcif_with_limits, write_mmcif, MmcifAtomRecord, MmcifError, MmcifParseLimits, MmcifResult}`.
-- **Python**: `parse_mmcif`, `write_mmcif`.
-- **WASM**: `mol_from_mmcif`, `mmcif_coords_json`, `mmcif_to_json`, `write_mmcif_json`.
+- **Python**: `parse_mmcif`, `write_mmcif`, and
+  `protein_from_mmcif_json`.
+- **WASM**: `mol_from_mmcif`, `mmcif_coords_json`, `mmcif_to_json`,
+  `write_mmcif_json`, and `protein_from_mmcif_json`.
+- **Protein projection**: Rust
+  `chematic_mol::project_protein_from_mmcif` and the Python/WASM JSON
+  functions use the same amino-acid-only hierarchy and residue policy as the
+  PDB projection above. This is not a complete biological-assembly/entity API.
 - **Streaming**: no streaming reader type exists for mmCIF.
 - **Coordinate units**: always orthogonal Ångström (unlike small-molecule CIF's fractional coordinates).
 - **Connectivity**: **no bond table, ever** — this module never infers bonds.

@@ -43,6 +43,7 @@ pub mod opendx;
 pub mod orca;
 pub mod pdbqt;
 pub mod pqr;
+pub mod protein;
 pub mod qcschema;
 pub mod record;
 pub mod rxn;
@@ -166,6 +167,11 @@ pub use pdbqt::{
 pub use pqr::{
     PqrAtomRecord, PqrError, PqrParseLimits, PqrResult, infer_element, parse_pqr,
     parse_pqr_with_limits, write_pqr,
+};
+pub use protein::{
+    ProteinAtom, ProteinChain, ProteinProjection, ProteinProjectionError, ProteinResidue,
+    project_protein_from_mmcif, project_protein_from_mmcif_with_limits, project_protein_from_pdb,
+    project_protein_from_pdb_with_limits,
 };
 pub use qcschema::{
     AtomicInput, AtomicResult, Basis, ChematicMoleculeView, ComputeError, Connectivity, Driver,

@@ -1469,6 +1469,8 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         parse_smi_file,
         write_smi_file,
         parse_mmcif,
+        protein_from_pdb_json,
+        protein_from_mmcif_json,
         write_mmcif,
         parse_pqr,
         write_pqr,

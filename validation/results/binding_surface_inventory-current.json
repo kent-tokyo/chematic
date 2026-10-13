@@ -1,15 +1,15 @@
 {
   "schema_version": 1,
-  "target_version": "1.1.1-source-candidate",
+  "target_version": "post-1.1.3-source-candidate",
   "status": "local-current-candidate",
   "gate": "static_binding_surface_inventory",
   "execution": "python3 scripts/check_binding_surface.py",
   "scope": "Rust source declarations only; this is not semantic parity evidence",
   "results": {
-    "wasm_export_count": 296,
-    "python_pyfunction_count": 171,
-    "python_registered_count": 171,
+    "wasm_export_count": 298,
+    "python_pyfunction_count": 173,
+    "python_registered_count": 173,
     "python_declared_without_registration": [],
-    "surface_sha256": "57413e0fc56d0a338c674d9db4c7730526952164bc636a95b762aca3de92495a"
+    "surface_sha256": "d2c65aa235fc6351ab67637e38c8ad334a2d30980340c09190131b996abc797c"
   }
 }

@@ -146,6 +146,61 @@ pub(super) fn pydict_to_unit_cell(d: &Bound<PyDict>) -> PyResult<chematic_mol::U
     })
 }
 
+fn protein_projection_json_value(
+    projection: &chematic_mol::ProteinProjection,
+) -> serde_json::Value {
+    serde_json::json!({
+        "model_count": projection.model_count(),
+        "chain_count": projection.chain_count(),
+        "residue_count": projection.residue_count(),
+        "atom_count": projection.atom_count(),
+        "chains": projection.chains.iter().map(|chain| serde_json::json!({
+            "model_number": chain.model_number,
+            "id": chain.id,
+            "sequence": chain.sequence(),
+            "residues": chain.residues.iter().map(|residue| serde_json::json!({
+                "name": residue.name,
+                "sequence_number": residue.sequence_number,
+                "insertion_code": residue.insertion_code.map(|value| value.to_string()),
+                "canonical_one_letter_code": residue.canonical_one_letter_code.to_string(),
+                "modified": residue.modified,
+                "atoms": residue.atoms.iter().map(|atom| serde_json::json!({
+                    "serial": atom.serial,
+                    "name": atom.name,
+                    "element": atom.element.symbol(),
+                    "position": atom.position,
+                    "occupancy": atom.occupancy,
+                    "b_iso": atom.b_iso,
+                    "alt_loc": atom.alt_loc.map(|value| value.to_string()),
+                })).collect::<Vec<_>>(),
+            })).collect::<Vec<_>>(),
+        })).collect::<Vec<_>>(),
+    })
+}
+
+/// Project PDB text to an amino-acid-only model/chain/residue hierarchy.
+///
+/// Waters, ligands, ions, and nucleic acids are intentionally excluded. The
+/// result is JSON so the same stable schema can be consumed by Python and
+/// WebAssembly clients.
+#[pyfunction]
+pub(super) fn protein_from_pdb_json(text: &str) -> PyResult<String> {
+    let projection = chematic_mol::project_protein_from_pdb(text)
+        .map_err(|error| PyValueError::new_err(error.to_string()))?;
+    serde_json::to_string(&protein_projection_json_value(&projection))
+        .map_err(|error| PyValueError::new_err(error.to_string()))
+}
+
+/// Project mmCIF text to the same amino-acid-only hierarchy as
+/// :func:`protein_from_pdb_json`.
+#[pyfunction]
+pub(super) fn protein_from_mmcif_json(text: &str) -> PyResult<String> {
+    let projection = chematic_mol::project_protein_from_mmcif(text)
+        .map_err(|error| PyValueError::new_err(error.to_string()))?;
+    serde_json::to_string(&protein_projection_json_value(&projection))
+        .map_err(|error| PyValueError::new_err(error.to_string()))
+}
+
 /// Parse an mmCIF (macromolecular CIF, `_atom_site.*` loop) string.
 ///
 /// Unlike :func:`parse_cif` (small-molecule CIF), this reads the
