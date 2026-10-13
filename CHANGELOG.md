@@ -10,6 +10,31 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+
+- Restored Rust source compatibility with v1.1.2 exhaustive `Chirality`
+  matches. Allene `@AL1`/`@AL2` keeps its molecular-context behavior without
+  adding public enum variants in a patch release, and a downstream-style
+  compile test now guards the contract.
+- Closed the reported unusual-input residuals for RDKit-compatible molecular
+  weight, Morgan R2/2048, ring count, and finite Labute ASA values on the
+  frozen 4,072-row corpus. Wildcard CIP ligands now fail closed with a typed
+  reason instead of receiving a guessed element priority; dative-cleanup
+  tetrahedral positions and direct isotope ordering have dedicated regression
+  tests.
+- Removed unconditional graph reconstruction from QED and full-SSSR work from
+  the ordinary aromatic-macrocycle shortcut. On the recorded source-candidate
+  lane, prepared QED is 16.1% faster than public v1.1.3, while the reported
+  v1.1.2 parse-inclusive TPSA and Morgan regressions are reduced to intervals
+  crossing parity.
+
+### Validation
+
+- Added PR performance gates for parse-inclusive RDKit-compatible TPSA and
+  Morgan, and extended the version-paired Python harness to cover QED.
+- Added a 20-block AB/BA performance record and a machine-readable 4,072-row
+  descriptor/fingerprint/CIP summary for the v1.1.3 follow-up.
+
 ## [1.1.3] - 2026-10-13
 
 ### Added

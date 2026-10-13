@@ -25,6 +25,7 @@ remain separate runs.
 
 | Lane | Recorded result | What it does not show |
 |---|---|---|
+| v1.1.3 unusual-input follow-up | Source candidate `90542885`: MW, Morgan and ring count match 4,072/4,072; every finite comparable Labute ASA value agrees within `1e-9`. CIP has 4,062/4,072 exact rows, with the ten differences classified rather than guessed. | Published artifacts, other corpora, or universal descriptor/CIP parity. |
 | Python output audit | 10,000 chemistry rows, 310,000 SMARTS cells and the original 57 reaction fixtures accounted for; 200 SMARTS cells differ and five CIP rows abstain with typed reasons. | Full SMARTS, CIP or reaction compatibility. |
 | RDKit-compatible HBA | Published v1.0.30 macOS arm64 wheel: 5,000/5,000 exposed ChEMBL rows match RDKit; v1.0.29 matched 3,641/5,000. | Other descriptors or platforms. |
 | Python timing | Of 63 operations, 20 meet exact-output and favorable paired-interval gates in 20 alternating blocks on one host. | A universal speed lead; output-mismatched operations are not wins. |
