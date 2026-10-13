@@ -133,7 +133,7 @@ def test_sdf_dataset_indexes_and_reads_random_records(tmp_path):
     assert dataset[-1].name == "ethanol"
     assert dataset.get(0).get("MW") == "180.16"
     assert [record.name for record in dataset.read_range(1, 99)] == ["ethanol"]
-    assert dataset.raw_record(1).startswith("ethanol\n")
+    assert dataset.raw_record(1).splitlines()[0] == "ethanol"
 
 
 def test_sdf_dataset_reports_bad_indices_and_records(tmp_path):
