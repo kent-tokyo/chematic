@@ -2,6 +2,35 @@
 // In-place mutation methods
 // ---------------------------------------------------------------------------
 
+fn remap_stereo_groups_after_atom_removal(
+    groups: Vec<StereoGroup>,
+    group_bonds: Vec<Vec<BondIdx>>,
+    atom_remap: &[Option<AtomIdx>],
+    bond_remap: &[Option<u32>],
+) -> Vec<(StereoGroup, Vec<BondIdx>)> {
+    groups
+        .into_iter()
+        .zip(group_bonds)
+        .filter_map(|(group, bonds)| {
+            let atoms = group
+                .atom_indices
+                .into_iter()
+                .filter_map(|atom| atom_remap.get(atom.0 as usize).and_then(|mapped| *mapped))
+                .collect::<Vec<_>>();
+            let bonds = bonds
+                .into_iter()
+                .filter_map(|bond| {
+                    bond_remap
+                        .get(bond.0 as usize)
+                        .and_then(|mapped| mapped.map(BondIdx))
+                })
+                .collect::<Vec<_>>();
+            (!atoms.is_empty() || !bonds.is_empty())
+                .then(|| (StereoGroup::new(group.kind, atoms), bonds))
+        })
+        .collect()
+}
+
 impl Molecule {
     /// Append a new atom and return its index.
     pub fn add_atom(&mut self, atom: Atom) -> AtomIdx {
@@ -128,27 +157,12 @@ impl Molecule {
 
         let old_groups = std::mem::take(&mut self.stereo_groups);
         let old_group_bonds = std::mem::take(&mut self.stereo_group_bonds);
-        let groups = old_groups
-            .into_iter()
-            .zip(old_group_bonds)
-            .filter_map(|(group, group_bonds)| {
-                let atoms = group
-                    .atom_indices
-                    .into_iter()
-                    .filter_map(|atom| remap.get(atom.0 as usize).and_then(|mapped| *mapped))
-                    .collect::<Vec<_>>();
-                let bonds = group_bonds
-                    .into_iter()
-                    .filter_map(|bond| {
-                        bond_remap
-                            .get(bond.0 as usize)
-                            .and_then(|mapped| mapped.map(BondIdx))
-                    })
-                    .collect::<Vec<_>>();
-                (!atoms.is_empty() || !bonds.is_empty())
-                    .then(|| (StereoGroup::new(group.kind, atoms), bonds))
-            })
-            .collect::<Vec<_>>();
+        let groups = remap_stereo_groups_after_atom_removal(
+            old_groups,
+            old_group_bonds,
+            &remap,
+            &bond_remap,
+        );
         self.set_stereo_groups_with_bonds(groups);
 
         remap

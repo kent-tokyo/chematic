@@ -1089,50 +1089,56 @@ struct ParsedStereoGroup {
     bond_indices: Vec<BondIdx>,
 }
 
-fn parse_stereo_group_line(
-    payload: &str,
-    atom_idx_map: &[(u32, AtomIdx)],
-    bond_idx_map: &[(u32, BondIdx)],
-) -> Result<Option<ParsedStereoGroup>, String> {
-    // First token is the group kind key.
-    let Some(first_tok) = payload.split_whitespace().next() else {
-        return Ok(None);
-    };
-
-    let (kind, member_label) = if first_tok == "MDLV30/STEABS" {
+fn parse_stereo_group_kind(token: &str) -> Result<Option<(StereoGroupKind, &'static str)>, String> {
+    let parsed = if token == "MDLV30/STEABS" {
         (StereoGroupKind::Absolute, "ATOMS")
-    } else if first_tok == "MDLV30/STEBABS" {
+    } else if token == "MDLV30/STEBABS" {
         (StereoGroupKind::Absolute, "BONDS")
-    } else if let Some(n_str) = first_tok
+    } else if let Some(id) = token
         .strip_prefix("MDLV30/STEREL")
-        .or_else(|| first_tok.strip_prefix("MDLV30/STEOR"))
+        .or_else(|| token.strip_prefix("MDLV30/STEOR"))
     {
-        let n: u32 = n_str
-            .parse()
-            .map_err(|_| "COLLECTION OR group id is not an integer".to_string())?;
-        (StereoGroupKind::Or(n), "ATOMS")
-    } else if let Some(n_str) = first_tok.strip_prefix("MDLV30/STEBREL") {
-        let n: u32 = n_str
-            .parse()
-            .map_err(|_| "COLLECTION OR group id is not an integer".to_string())?;
-        (StereoGroupKind::Or(n), "BONDS")
-    } else if let Some(n_str) = first_tok
+        (
+            StereoGroupKind::Or(
+                id.parse()
+                    .map_err(|_| "COLLECTION OR group id is not an integer".to_string())?,
+            ),
+            "ATOMS",
+        )
+    } else if let Some(id) = token.strip_prefix("MDLV30/STEBREL") {
+        (
+            StereoGroupKind::Or(
+                id.parse()
+                    .map_err(|_| "COLLECTION OR group id is not an integer".to_string())?,
+            ),
+            "BONDS",
+        )
+    } else if let Some(id) = token
         .strip_prefix("MDLV30/STERAC")
-        .or_else(|| first_tok.strip_prefix("MDLV30/STEAND"))
+        .or_else(|| token.strip_prefix("MDLV30/STEAND"))
     {
-        let n: u32 = n_str
-            .parse()
-            .map_err(|_| "COLLECTION AND group id is not an integer".to_string())?;
-        (StereoGroupKind::And(n), "ATOMS")
-    } else if let Some(n_str) = first_tok.strip_prefix("MDLV30/STEBRAC") {
-        let n: u32 = n_str
-            .parse()
-            .map_err(|_| "COLLECTION AND group id is not an integer".to_string())?;
-        (StereoGroupKind::And(n), "BONDS")
+        (
+            StereoGroupKind::And(
+                id.parse()
+                    .map_err(|_| "COLLECTION AND group id is not an integer".to_string())?,
+            ),
+            "ATOMS",
+        )
+    } else if let Some(id) = token.strip_prefix("MDLV30/STEBRAC") {
+        (
+            StereoGroupKind::And(
+                id.parse()
+                    .map_err(|_| "COLLECTION AND group id is not an integer".to_string())?,
+            ),
+            "BONDS",
+        )
     } else {
         return Ok(None);
     };
+    Ok(Some(parsed))
+}
 
+fn parse_collection_member_ids(payload: &str, member_label: &str) -> Result<Vec<u32>, String> {
     let marker = format!("{member_label}=(");
     let members_start = payload
         .find(&marker)
@@ -1141,15 +1147,12 @@ fn parse_stereo_group_line(
     let close = after_paren
         .find(')')
         .ok_or_else(|| format!("COLLECTION {member_label} value is not closed"))?;
-    let inner = &after_paren[..close];
-
-    // First number is the count; the rest are 1-based V3000 member ids.
-    let values: Vec<&str> = inner.split_whitespace().collect();
+    let values = after_paren[..close].split_whitespace().collect::<Vec<_>>();
     let Some((count, member_ids)) = values.split_first() else {
         return Err(format!("COLLECTION {member_label} value is empty"));
     };
-    let declared: usize = count
-        .parse()
+    let declared = count
+        .parse::<usize>()
         .map_err(|_| format!("COLLECTION {member_label} count is not an integer"))?;
     if member_ids.len() != declared {
         return Err(format!(
@@ -1159,8 +1162,8 @@ fn parse_stereo_group_line(
     }
     let ids = member_ids
         .iter()
-        .map(|s| {
-            s.parse::<u32>()
+        .map(|id| {
+            id.parse::<u32>()
                 .map_err(|_| format!("COLLECTION {member_label} contains a non-integer member id"))
         })
         .collect::<Result<Vec<_>, _>>()?;
@@ -1174,6 +1177,23 @@ fn parse_stereo_group_line(
             "COLLECTION {member_label} has no {member_kind} ids"
         ));
     }
+    Ok(ids)
+}
+
+fn parse_stereo_group_line(
+    payload: &str,
+    atom_idx_map: &[(u32, AtomIdx)],
+    bond_idx_map: &[(u32, BondIdx)],
+) -> Result<Option<ParsedStereoGroup>, String> {
+    // First token is the group kind key.
+    let Some(first_tok) = payload.split_whitespace().next() else {
+        return Ok(None);
+    };
+
+    let Some((kind, member_label)) = parse_stereo_group_kind(first_tok)? else {
+        return Ok(None);
+    };
+    let ids = parse_collection_member_ids(payload, member_label)?;
 
     let (atom_indices, bond_indices) = if member_label == "ATOMS" {
         let atoms = ids
