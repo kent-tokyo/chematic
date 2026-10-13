@@ -1381,6 +1381,10 @@ class Mol:
         """
         ...
 
+    def eem_charges(self, coords: list[list[float]]) -> list[float]:
+        """EEM partial charges; ionic charges sum to the molecule formal charge."""
+        ...
+
     def autocorr_3d(self, coords: list[list[float]]) -> list[float]:
         """3D autocorrelation descriptors.
 

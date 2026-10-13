@@ -49,6 +49,11 @@ Pure Rust 3D coordinate generation, geometry optimization, shape analysis — **
   - Asphericity, Eccentricity
   - Normalized PMI (NPR1, NPR2)
 
+### 3D Partial Charges
+- **EEM**: charge-conserving electronegativity equalization with the published
+  NEEMP parameter set. Ionic results sum to the molecular formal charge and
+  invalid or unsupported inputs return typed errors.
+
 ### Stereochemistry
 - **3D Stereoisomer Assignment**: From 3D coordinates to R/S
 - **Chiral Enumeration**: Generate all stereoisomers
@@ -81,6 +86,15 @@ use chematic_3d::generate_and_minimize_dreiding;
 
 let optimized = generate_and_minimize_dreiding(&mol);
 // optimized: 3D coordinates minimized with DREIDING
+```
+
+### Compute EEM charges
+
+```rust
+use chematic_3d::eem_charges;
+
+let charges = eem_charges(&mol_with_explicit_hydrogens, &coords)?;
+assert!((charges.iter().sum::<f64>() - formal_charge).abs() < 1e-12);
 ```
 
 ### Apply constraint satisfaction (NEW)

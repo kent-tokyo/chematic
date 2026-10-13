@@ -49,6 +49,18 @@ gradient is not the derivative of the energy and can change ETKDG convergence.
 test exercises a pure sixth-order term and also proves that the compatibility
 lane still reproduces the upstream defect instead of silently changing.
 
+### EEM charges on ions (RDKit #9688 / #2232)
+
+**Issue:** RDKit's EEM matrix is filled as row-major data but mapped through a
+column-major matrix. The charge-constraint row and column are transposed with
+opposite signs, so OH⁻ sums to +1 and NH₄⁺ sums to −1.
+
+**chematic principle:** Conservation laws are explicit postconditions, not
+incidental numerical behavior. `eem_charges` solves the constrained system in
+an explicitly indexed matrix, corrects only final floating-point residual,
+and tests both signs of ionic charge. Unsupported parameter classes and
+degenerate coordinates return `EemError` instead of zeros or non-finite values.
+
 ### E/Z fragment extraction (RDKit #9368)
 
 **Issue:** `MolFragmentToSmiles()` raises a C++ pre-condition violation when the
