@@ -131,3 +131,66 @@ fn indexing_enforces_record_and_count_limits() {
         })
     ));
 }
+
+#[test]
+fn empty_dataset_and_raw_record_access_are_explicit() {
+    let file = TempSdf::new(b"$$$$\n\r\n$$$$\r\n");
+    let dataset = SdfDataset::open(&file.0).unwrap();
+
+    assert!(dataset.is_empty());
+    assert_eq!(dataset.len(), 0);
+    assert!(dataset.metadata(0).is_none());
+    assert!(dataset.record_text(0).unwrap().is_none());
+    assert!(dataset.read_range(0, 0).unwrap().is_empty());
+}
+
+#[test]
+fn opening_and_indexing_report_io_encoding_and_size_failures() {
+    let missing = std::env::temp_dir().join(format!(
+        "chematic-sdf-dataset-missing-{}-{}.sdf",
+        std::process::id(),
+        NEXT_FILE.fetch_add(1, Ordering::Relaxed)
+    ));
+    assert!(matches!(
+        SdfDataset::open(missing),
+        Err(MolParseError::Io(_))
+    ));
+
+    let invalid_utf8 = TempSdf::new(b"bad\xfftitle\n$$$$\n");
+    let dataset = SdfDataset::open(&invalid_utf8.0).unwrap();
+    assert!(matches!(dataset.record_text(0), Err(MolParseError::Io(_))));
+
+    let text = record("limited", "C");
+    let file = TempSdf::new(text.as_bytes());
+    for (limits, resource) in [
+        (
+            SdfParseLimits {
+                max_input_bytes: text.len() - 1,
+                ..SdfParseLimits::default()
+            },
+            "input bytes",
+        ),
+        (
+            SdfParseLimits {
+                max_record_bytes: text.len() - 1,
+                ..SdfParseLimits::default()
+            },
+            "record bytes",
+        ),
+        (
+            SdfParseLimits {
+                max_line_bytes: 2,
+                ..SdfParseLimits::default()
+            },
+            "line bytes",
+        ),
+    ] {
+        assert!(matches!(
+            SdfDataset::open_with_limits(&file.0, limits),
+            Err(MolParseError::ResourceLimit {
+                resource: actual,
+                ..
+            }) if actual == resource
+        ));
+    }
+}
