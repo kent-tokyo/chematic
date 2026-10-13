@@ -669,6 +669,9 @@ const MAX_REACTANT_ATOMS: usize = 1_000;
 /// descriptors, only reactant molecules whose chiral centres match the template
 /// configuration are accepted (parity-aware comparison, SMILES write-order
 /// independent). Templates without stereo descriptors match both enantiomers.
+/// Product ``/`` and ``\\`` bonds define E/Z explicitly; a product double bond
+/// with substituents at both ends but no direction markers removes carried E/Z
+/// after all reactants are assembled, independent of reactant order.
 ///
 ///     products = chematic.run_smirks("[OH:1]>>[O-:1]", [mol])
 ///     # → [[product_mol], ...]
