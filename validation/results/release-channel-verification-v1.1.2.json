@@ -3,46 +3,52 @@
   "release": {
     "version": "1.1.2",
     "tag": "v1.1.2",
-    "commit": null
+    "commit": "d25a4f6e4c13350ca324a7acab8a9bd0e91ee36e"
   },
-  "checked_at": "2026-10-13T00:00:00Z",
-  "release_ready": false,
+  "checked_at": "2026-10-12T23:51:45Z",
+  "release_ready": true,
   "channels": [
     {
       "id": "github_release",
-      "status": "not_measured",
+      "status": "verified",
       "url": "https://github.com/kent-tokyo/chematic/releases/tag/v1.1.2",
-      "detail": "Pre-publication record: verify the annotated tag target, release state, and metadata asset after publication."
+      "observed_version": "1.1.2",
+      "detail": "Published non-draft release; the annotated tag resolves to commit d25a4f6e4c13350ca324a7acab8a9bd0e91ee36e and the metadata asset has SHA-256 aab76da8415b2161d6b26b17ac84c34ee0a5020f9c7ef6936bd5a15acace361b."
     },
     {
       "id": "npm",
-      "status": "not_measured",
+      "status": "verified",
       "url": "https://www.npmjs.com/package/@kent-tokyo/chematic/v/1.1.2",
-      "detail": "Pre-publication record: verify registry metadata, integrity, and gitHead after publication."
+      "observed_version": "1.1.2",
+      "detail": "Registry metadata reports gitHead d25a4f6e4c13350ca324a7acab8a9bd0e91ee36e, tarball SHA-1 a4fc1d86fe227c10d7c0b1cba95285a4883c77af, and integrity sha512-7dO+DlMbj9fCvOMxpa0BIuWTLSpF65Om6DSC82xXon7pUcOhler41TGR13flIrg7GHNBO6NlfZ1NN96RFE1f+w==."
     },
     {
       "id": "pypi",
-      "status": "not_measured",
+      "status": "verified",
       "url": "https://pypi.org/pypi/chematic/1.1.2/json",
-      "detail": "Pre-publication record: verify the wheel matrix and sdist digest after publication."
+      "observed_version": "1.1.2",
+      "detail": "PyPI JSON exposes 25 wheels across CPython 3.9-3.13 and Linux x86-64/aarch64, macOS x86-64/arm64, and Windows x86-64, plus one sdist; sdist SHA-256 8179d394255edc2cde8a0de318bc94d03f53fb2a5d577fc95635ff5e238c970f."
     },
     {
       "id": "crates_io",
-      "status": "not_measured",
+      "status": "verified",
       "url": "https://crates.io/crates/chematic/1.1.2",
-      "detail": "Pre-publication record: verify all publishable workspace crates and the top-level checksum after publication."
+      "observed_version": "1.1.2",
+      "detail": "All 20 publishable workspace crates return HTTP 200 for version 1.1.2 from crates.io; top-level chematic checksum c58b1aab399b5b1a0e4488c443810072fc27ebf9280af809021c235e21f91a40."
     },
     {
       "id": "docs_rs",
-      "status": "not_measured",
+      "status": "verified",
       "url": "https://docs.rs/chematic/1.1.2/chematic/",
-      "detail": "Pre-publication record: version-pinned rustdoc is unavailable until crates.io publication and docs.rs processing complete."
+      "observed_version": "1.1.2",
+      "detail": "The version-pinned rustdoc endpoint returned HTTP 200 after crates.io publication."
     },
     {
       "id": "site",
-      "status": "not_measured",
+      "status": "verified",
       "url": "https://kent-tokyo.github.io/chematic/",
-      "detail": "Pre-publication record: verify the Pages workflow and displayed version after publication."
+      "observed_version": "1.1.2",
+      "detail": "GitHub Pages deployment run 38321773479 succeeded from commit d25a4f6e4c13350ca324a7acab8a9bd0e91ee36e and the deployed page displays v1.1.2."
     }
   ]
 }
