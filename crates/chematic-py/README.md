@@ -167,6 +167,12 @@ DataStructs.BulkTanimotoSimilarity(fp, [fp])  # [1.0]
 import numpy as np
 arr = DataStructs.ConvertToNumpyArray(fp)  # (2048,) int8 for sklearn / PyTorch
 
+# Explain RDKit atom-pair / topological-torsion codes
+code = mol.rdkit_atom_code(0)
+chematic.explain_rdkit_atom_code(code)  # (symbol, branches, pi_electrons)
+path_code = mol.rdkit_topological_torsion_path_code([0, 1, 2, 3])
+chematic.explain_rdkit_topological_torsion_code(path_code)
+
 # Atom / Bond traversal
 for atom in mol.GetAtoms():
     atom.GetSymbol(), atom.GetAtomicNum(), atom.IsInRing()

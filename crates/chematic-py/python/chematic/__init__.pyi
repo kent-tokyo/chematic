@@ -331,6 +331,20 @@ class Mol:
     def rdkit_legacy_torsion_counts(self) -> dict[int, int]:
         """``rdMolDescriptors.GetTopologicalTorsionFingerprint(m)`` elements."""
         ...
+    def rdkit_atom_code(self, atom_index: int, branch_subtract: int = 0) -> int:
+        """Return the RDKit atom-pair atom code for one atom.
+
+        ``branch_subtract`` is normally 0 for atom-pair diagnostics, 1 for a
+        torsion endpoint, and 2 for an interior path atom.
+        """
+        ...
+    def rdkit_topological_torsion_path_code(self, path: list[int]) -> int:
+        """Pack a one-to-seven-atom path into RDKit's legacy torsion code.
+
+        The path and its reverse return the same code. Invalid indices raise
+        ``ValueError``.
+        """
+        ...
     def rdkit_chemistry_problems(self) -> list[tuple[str, list[int]]]:
         """``Chem.DetectChemistryProblems(Chem.MolFromSmiles(s))`` (sanitized)."""
         ...
@@ -4642,4 +4656,14 @@ def rdkit_reaction_to_smarts(reaction_smarts: str) -> str:
 
 def rdkit_smarts_to_smarts(smarts: str) -> str:
     """``Chem.MolToSmarts(Chem.MolFromSmarts(s))`` (RDKit 2026.03.1)."""
+    ...
+
+def explain_rdkit_atom_code(code: int) -> tuple[str, int, int]:
+    """Decode an RDKit atom code as ``(symbol, branches, pi_electrons)``."""
+    ...
+
+def explain_rdkit_topological_torsion_code(
+    code: int, size: int = 4
+) -> list[tuple[str, int, int]]:
+    """Decode a legacy RDKit torsion code into one tuple per path atom."""
     ...

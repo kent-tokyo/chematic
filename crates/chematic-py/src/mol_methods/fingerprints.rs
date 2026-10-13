@@ -353,6 +353,42 @@ impl Mol {
             .collect()
     }
 
+    /// RDKit atom-pair atom code for one atom.
+    ///
+    /// ``branch_subtract`` is normally 0 for atom-pair diagnostics, 1 for a
+    /// topological-torsion endpoint, and 2 for an interior path atom. Pair it
+    /// with :func:`chematic.explain_rdkit_atom_code` for readable fields.
+    #[pyo3(signature = (atom_index, branch_subtract = 0))]
+    fn rdkit_atom_code(&self, atom_index: usize, branch_subtract: u32) -> PyResult<u32> {
+        let atom_index = u32::try_from(atom_index)
+            .map_err(|_| PyValueError::new_err("atom index exceeds the supported u32 range"))?;
+        chematic_fp::rdkit_atom_code(
+            &self.inner,
+            chematic_core::AtomIdx(atom_index),
+            branch_subtract,
+        )
+        .map_err(|error| PyValueError::new_err(error.to_string()))
+    }
+
+    /// Pack a selected atom path into RDKit's legacy topological-torsion code.
+    ///
+    /// The path and its reverse return the same integer. Paths of one to seven
+    /// atoms are supported; invalid atom indices raise ``ValueError``.
+    fn rdkit_topological_torsion_path_code(&self, path: Vec<usize>) -> PyResult<u64> {
+        let path = path
+            .into_iter()
+            .map(|index| {
+                u32::try_from(index)
+                    .map(chematic_core::AtomIdx)
+                    .map_err(|_| {
+                        PyValueError::new_err("atom index exceeds the supported u32 range")
+                    })
+            })
+            .collect::<PyResult<Vec<_>>>()?;
+        chematic_fp::rdkit_topological_torsion_path_code(&self.inner, &path)
+            .map_err(|error| PyValueError::new_err(error.to_string()))
+    }
+
     /// RDKit's Morgan ``bitInfo`` for ``n_bits``-bit fingerprints of radius
     /// ``radius`` (``rdFingerprintGenerator.GetMorganGenerator(radius=radius,
     /// fpSize=n_bits, includeChirality=include_chirality)`` with

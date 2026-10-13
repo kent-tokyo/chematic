@@ -31,6 +31,7 @@
 //! entries entirely.
 
 use chematic_core::{AtomIdx, BondOrder, Molecule};
+use std::fmt;
 
 use crate::bitvec::BitVec2048;
 use crate::rdkit_morgan_hash::hash_vec;
@@ -53,6 +54,44 @@ const MAX_NUM_PI: u32 = (1 << NUM_PI_BITS) - 1;
 const NUM_BRANCH_BITS: u32 = 3;
 const MAX_NUM_BRANCHES: u32 = (1 << NUM_BRANCH_BITS) - 1;
 pub(crate) const CODE_SIZE: u32 = NUM_TYPE_BITS + NUM_PI_BITS + NUM_BRANCH_BITS;
+
+/// Decoded fields of an RDKit atom-pair/topological-torsion atom code.
+///
+/// `branch_count` is the value encoded in the code. For a topological-torsion
+/// path, use [`explain_rdkit_topological_torsion_code`] to restore the endpoint
+/// and interior path corrections automatically.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct RdkitAtomCodeExplanation {
+    pub symbol: &'static str,
+    pub branch_count: u32,
+    pub pi_electron_count: u32,
+}
+
+/// Input errors returned by the public atom-code diagnostic helpers.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum RdkitTorsionDiagnosticError {
+    AtomIndexOutOfRange { index: usize, atom_count: usize },
+    EmptyPath,
+    PathTooLong { size: usize, maximum: usize },
+}
+
+impl fmt::Display for RdkitTorsionDiagnosticError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::AtomIndexOutOfRange { index, atom_count } => write!(
+                f,
+                "atom index {index} is out of range for a molecule with {atom_count} atoms"
+            ),
+            Self::EmptyPath => f.write_str("topological-torsion path must not be empty"),
+            Self::PathTooLong { size, maximum } => write!(
+                f,
+                "topological-torsion path has {size} atoms; at most {maximum} fit in a u64 code"
+            ),
+        }
+    }
+}
+
+impl std::error::Error for RdkitTorsionDiagnosticError {}
 
 /// Count-simulation thresholds (`AtomPairs.cpp`'s `bounds[4] = {1, 2, 4, 8}`),
 /// used only when `nBitsPerEntry == 4` (the default, and the only mode this
@@ -265,6 +304,120 @@ fn atom_type_index(atomic_num: u8) -> u32 {
         type_idx -= 1;
     }
     type_idx as u32
+}
+
+/// Return RDKit's atom-pair atom code for one atom.
+///
+/// This is the interpretable invariant used by RDKit-compatible atom-pair and
+/// topological-torsion fingerprints. `branch_subtract` is normally `0` for an
+/// atom-pair code, `1` for a torsion endpoint, and `2` for a torsion interior
+/// atom. The function is checked and never panics on a caller-supplied index.
+pub fn rdkit_atom_code(
+    mol: &Molecule,
+    idx: AtomIdx,
+    branch_subtract: u32,
+) -> Result<u32, RdkitTorsionDiagnosticError> {
+    let index = idx.0 as usize;
+    if index >= mol.atom_count() {
+        return Err(RdkitTorsionDiagnosticError::AtomIndexOutOfRange {
+            index,
+            atom_count: mol.atom_count(),
+        });
+    }
+    Ok(atom_code(mol, idx, branch_subtract))
+}
+
+/// Decode an RDKit atom-pair/topological-torsion atom code.
+pub fn explain_rdkit_atom_code(code: u32) -> RdkitAtomCodeExplanation {
+    const SYMBOLS: [&str; 16] = [
+        "B", "C", "N", "O", "F", "Si", "P", "S", "Cl", "As", "Se", "Br", "Sb", "Te", "I", "X",
+    ];
+    let branch_mask = (1u32 << NUM_BRANCH_BITS) - 1;
+    let pi_mask = (1u32 << NUM_PI_BITS) - 1;
+    let type_mask = (1u32 << NUM_TYPE_BITS) - 1;
+    let branch_count = code & branch_mask;
+    let pi_electron_count = (code >> NUM_BRANCH_BITS) & pi_mask;
+    let type_index = ((code >> (NUM_BRANCH_BITS + NUM_PI_BITS)) & type_mask) as usize;
+    RdkitAtomCodeExplanation {
+        symbol: SYMBOLS[type_index],
+        branch_count,
+        pi_electron_count,
+    }
+}
+
+/// Pack one caller-selected path into RDKit's legacy topological-torsion code.
+///
+/// Direction is canonicalized, so a path and its reverse have the same code.
+/// Like RDKit's diagnostic `pyScorePath`, this helper intentionally does not
+/// require adjacent or distinct atom indices: it explains the code-generation
+/// primitive and leaves path enumeration to the fingerprint implementation.
+pub fn rdkit_topological_torsion_path_code(
+    mol: &Molecule,
+    path: &[AtomIdx],
+) -> Result<u64, RdkitTorsionDiagnosticError> {
+    const MAX_PATH_SIZE: usize = u64::BITS as usize / CODE_SIZE as usize;
+    if path.is_empty() {
+        return Err(RdkitTorsionDiagnosticError::EmptyPath);
+    }
+    if path.len() > MAX_PATH_SIZE {
+        return Err(RdkitTorsionDiagnosticError::PathTooLong {
+            size: path.len(),
+            maximum: MAX_PATH_SIZE,
+        });
+    }
+
+    let mut codes = Vec::with_capacity(path.len());
+    for (position, &idx) in path.iter().enumerate() {
+        let branch_subtract = if position == 0 || position + 1 == path.len() {
+            1
+        } else {
+            2
+        };
+        codes.push(rdkit_atom_code(mol, idx, branch_subtract)?);
+    }
+    if codes.iter().rev().cmp(codes.iter()).is_lt() {
+        codes.reverse();
+    }
+
+    Ok(codes
+        .into_iter()
+        .enumerate()
+        .fold(0u64, |packed, (position, code)| {
+            packed | (u64::from(code) << (CODE_SIZE as usize * position))
+        }))
+}
+
+/// Decode a legacy RDKit topological-torsion path code.
+///
+/// The returned branch counts are restored to the original molecular degree:
+/// one is added at each endpoint and two at each interior position.
+pub fn explain_rdkit_topological_torsion_code(
+    mut code: u64,
+    size: usize,
+) -> Result<Vec<RdkitAtomCodeExplanation>, RdkitTorsionDiagnosticError> {
+    const MAX_PATH_SIZE: usize = u64::BITS as usize / CODE_SIZE as usize;
+    if size == 0 {
+        return Err(RdkitTorsionDiagnosticError::EmptyPath);
+    }
+    if size > MAX_PATH_SIZE {
+        return Err(RdkitTorsionDiagnosticError::PathTooLong {
+            size,
+            maximum: MAX_PATH_SIZE,
+        });
+    }
+    let mask = (1u64 << CODE_SIZE) - 1;
+    let mut explanation = Vec::with_capacity(size);
+    for position in 0..size {
+        let mut decoded = explain_rdkit_atom_code((code & mask) as u32);
+        decoded.branch_count += if position == 0 || position + 1 == size {
+            1
+        } else {
+            2
+        };
+        explanation.push(decoded);
+        code >>= CODE_SIZE;
+    }
+    Ok(explanation)
 }
 
 // ---------------------------------------------------------------------------
@@ -618,6 +771,83 @@ mod tests {
     #[test]
     fn atom_type_index_above_table_clamps_to_phantom_slot() {
         assert_eq!(atom_type_index(79), 15); // Au
+    }
+
+    #[test]
+    fn public_atom_code_explanation_matches_reference_fields() {
+        let m = mol("C=CC(=O)O");
+        let expected = [
+            ("C", 1, 1),
+            ("C", 2, 1),
+            ("C", 3, 1),
+            ("O", 1, 1),
+            ("O", 1, 0),
+        ];
+        for (atom, &(symbol, branches, pi)) in expected.iter().enumerate() {
+            let code = rdkit_atom_code(&m, AtomIdx(atom as u32), 0).unwrap();
+            assert_eq!(
+                explain_rdkit_atom_code(code),
+                RdkitAtomCodeExplanation {
+                    symbol,
+                    branch_count: branches,
+                    pi_electron_count: pi,
+                }
+            );
+        }
+    }
+
+    #[test]
+    fn public_path_code_is_direction_independent_and_explainable() {
+        let m = mol("OOOO");
+        let forward = [AtomIdx(0), AtomIdx(1), AtomIdx(2), AtomIdx(3)];
+        let reverse = [AtomIdx(3), AtomIdx(2), AtomIdx(1), AtomIdx(0)];
+        let code = rdkit_topological_torsion_path_code(&m, &forward).unwrap();
+        assert_eq!(
+            code,
+            rdkit_topological_torsion_path_code(&m, &reverse).unwrap()
+        );
+        assert_eq!(
+            explain_rdkit_topological_torsion_code(code, 4).unwrap(),
+            vec![
+                RdkitAtomCodeExplanation {
+                    symbol: "O",
+                    branch_count: 1,
+                    pi_electron_count: 0,
+                },
+                RdkitAtomCodeExplanation {
+                    symbol: "O",
+                    branch_count: 2,
+                    pi_electron_count: 0,
+                },
+                RdkitAtomCodeExplanation {
+                    symbol: "O",
+                    branch_count: 2,
+                    pi_electron_count: 0,
+                },
+                RdkitAtomCodeExplanation {
+                    symbol: "O",
+                    branch_count: 1,
+                    pi_electron_count: 0,
+                },
+            ]
+        );
+    }
+
+    #[test]
+    fn public_diagnostics_reject_invalid_indices_and_sizes() {
+        let m = mol("CC");
+        assert!(matches!(
+            rdkit_atom_code(&m, AtomIdx(2), 0),
+            Err(RdkitTorsionDiagnosticError::AtomIndexOutOfRange { .. })
+        ));
+        assert_eq!(
+            rdkit_topological_torsion_path_code(&m, &[]),
+            Err(RdkitTorsionDiagnosticError::EmptyPath)
+        );
+        assert!(matches!(
+            explain_rdkit_topological_torsion_code(0, 8),
+            Err(RdkitTorsionDiagnosticError::PathTooLong { maximum: 7, .. })
+        ));
     }
 
     #[test]

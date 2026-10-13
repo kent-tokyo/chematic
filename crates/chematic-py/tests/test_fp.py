@@ -145,6 +145,55 @@ def test_rdkit_atom_pair_fp_independent_of_native_atom_pair_fp(aspirin):
     assert aspirin.rdkit_atom_pair_fp() != aspirin.atom_pair_fp()
 
 
+def test_rdkit_atom_code_and_torsion_path_explanations_match_oracle():
+    mol = chematic.from_smiles("C=CC(=O)O")
+    expected = [
+        ("C", 1, 1),
+        ("C", 2, 1),
+        ("C", 3, 1),
+        ("O", 1, 1),
+        ("O", 1, 0),
+    ]
+    for atom_index, fields in enumerate(expected):
+        code = mol.rdkit_atom_code(atom_index)
+        assert chematic.explain_rdkit_atom_code(code) == fields
+
+    path = [0, 1, 2, 4]
+    score = mol.rdkit_topological_torsion_path_code(path)
+    assert chematic.explain_rdkit_topological_torsion_code(score) == [
+        ("C", 1, 1),
+        ("C", 2, 1),
+        ("C", 3, 1),
+        ("O", 1, 0),
+    ]
+    assert score == mol.rdkit_topological_torsion_path_code(path[::-1])
+
+    try:
+        from rdkit import Chem
+        from rdkit.Chem.AtomPairs import Torsions, Utils
+    except ImportError:
+        return
+    rd_mol = Chem.MolFromSmiles("C=CC(=O)O")
+    assert score == Torsions.pyScorePath(rd_mol, path, 4)
+    assert tuple(chematic.explain_rdkit_topological_torsion_code(score)) == (
+        Torsions.ExplainPathScore(score, 4)
+    )
+    for atom_index in range(rd_mol.GetNumAtoms()):
+        assert mol.rdkit_atom_code(atom_index) == Utils.GetAtomCode(
+            rd_mol.GetAtomWithIdx(atom_index)
+        )
+
+
+def test_rdkit_atom_code_diagnostics_reject_invalid_inputs():
+    mol = chematic.from_smiles("CC")
+    with pytest.raises(ValueError, match="out of range"):
+        mol.rdkit_atom_code(2)
+    with pytest.raises(ValueError, match="must not be empty"):
+        mol.rdkit_topological_torsion_path_code([])
+    with pytest.raises(ValueError, match="at most 7"):
+        chematic.explain_rdkit_topological_torsion_code(0, 8)
+
+
 def test_rdkit_atom_pair_fp_matches_rdkit_oracle_on_simple_molecules():
     # Regression pin: these were the molecules used to verify the atom-pair
     # port (shares its atom-invariant scheme with rdkit_torsion_fp, so these
