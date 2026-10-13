@@ -7,8 +7,9 @@ get the same numbers (``.github/workflows/published-wheel-chemistry-gates.yml``)
 
 * 83 reaction fixtures, checked provenance (graph, atom origin, template map)
 * SMARTS opt-in profile on the pinned 310,000-cell archived oracle
-* accurate CIP, hybridization, MMFF94 atom types and MOL-writer stereo on the
-  exposed 10k and ChEMBL 5k corpora
+* accurate CIP, hybridization, RDKit-compatible Morgan radius-2/2048-bit
+  fingerprints, MMFF94 atom types and MOL-writer stereo on the exposed 10k
+  and ChEMBL 5k corpora
 * optionally the BioTransformer rule corpus (974 rules x 400 reactants), when
   ``--rules-dir`` holds the three pinned rule tables (they are not vendored:
   part of them is CC BY-NC-SA)
@@ -157,6 +158,7 @@ def summarize(out_dir: Path, ran_corpus: bool) -> dict:
         s[name] = {
             "cip_accurate": c["cip_accurate"],
             "hybridization": c["hybridization"],
+            "morgan_r2_2048": c["morgan_r2_2048"],
             "mmff94": c["mmff94"],
             "mol_writer": c["mol_writer"],
         }

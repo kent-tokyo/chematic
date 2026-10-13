@@ -25,6 +25,10 @@
         "atoms": 220015,
         "agree": 220015
       },
+      "morgan_r2_2048": {
+        "rows": 10000,
+        "exact": 10000
+      },
       "mmff94": {
         "compared_rows": 9796,
         "heavy": 215565,
@@ -46,6 +50,10 @@
       "hybridization": {
         "atoms": 138655,
         "agree": 138655
+      },
+      "morgan_r2_2048": {
+        "rows": 5000,
+        "exact": 5000
       },
       "mmff94": {
         "compared_rows": 4990,

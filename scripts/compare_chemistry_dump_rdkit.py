@@ -7,6 +7,8 @@ Counts, over the dumped corpus:
   abstentions, and disagreements (rows with ``@``);
 * hybridization: atoms whose RDKit-model hybridization equals
   ``GetHybridization`` (SP/SP2/SP3, anything else as 0);
+* Morgan: RDKit-compatible radius-2/2048-bit fingerprint bytes, including
+  typed refusals rather than silently dropping unsupported rows;
 * MMFF94: heavy and hydrogen atoms typed differently from
   ``MMFFGetMoleculeProperties`` (rows RDKit types);
 * MOL writer: stereo rows whose block RDKit reads back as the input
@@ -20,8 +22,8 @@ import json
 from collections import Counter
 from pathlib import Path
 
-from rdkit import Chem, RDLogger, rdBase
-from rdkit.Chem import AllChem, QED, rdCIPLabeler, rdMolDescriptors
+from rdkit import Chem, DataStructs, RDLogger, rdBase
+from rdkit.Chem import AllChem, QED, rdCIPLabeler, rdFingerprintGenerator, rdMolDescriptors
 
 RDLogger.DisableLog("rdApp.*")
 HYB = {
@@ -29,6 +31,7 @@ HYB = {
     Chem.HybridizationType.SP2: 2,
     Chem.HybridizationType.SP3: 3,
 }
+MORGAN = rdFingerprintGenerator.GetMorganGenerator(radius=2, fpSize=2048)
 
 
 def main() -> int:
@@ -74,6 +77,7 @@ def main() -> int:
         return 0
     cip = Counter()
     hyb = Counter()
+    morgan = Counter()
     mmff = Counter()
     mol = Counter()
     mol_lost: list[str] = []
@@ -103,6 +107,13 @@ def main() -> int:
         for a in m.GetAtoms():
             hyb["atoms"] += 1
             hyb["agree"] += HYB.get(a.GetHybridization(), 0) == r["hybridization"][a.GetIdx()]
+        # RDKit-compatible Morgan radius-2/2048-bit fingerprint.
+        morgan["rows"] += 1
+        if "morgan_r2_2048" not in r:
+            morgan["chematic_refused"] += 1
+        else:
+            want = DataStructs.BitVectToBinaryText(MORGAN.GetFingerprint(m)).hex()
+            morgan["exact" if r["morgan_r2_2048"] == want else "differ"] += 1
         # MMFF94
         mh = Chem.AddHs(m)
         props = AllChem.MMFFGetMoleculeProperties(mh, mmffVariant="MMFF94")
@@ -135,12 +146,15 @@ def main() -> int:
         "chematic": header,
         "cip_accurate": dict(cip),
         "hybridization": dict(hyb),
+        "morgan_r2_2048": dict(morgan),
         "mmff94": dict(mmff),
         "mol_writer": dict(mol),
         "mol_writer_lost": mol_lost,
     }
     args.output.write_text(json.dumps(report, indent=1) + "\n")
-    print(json.dumps({k: report[k] for k in ("cip_accurate", "hybridization", "mmff94", "mol_writer")}))
+    print(json.dumps({k: report[k] for k in (
+        "cip_accurate", "hybridization", "morgan_r2_2048", "mmff94", "mol_writer"
+    )}))
     return 0
 
 
