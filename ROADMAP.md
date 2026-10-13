@@ -100,6 +100,11 @@ block, and has a paired 95% lower bound above 1.0 on two recorded hosts.
 
 ### P0/A4 — Expand semantic file interchange
 
+Completed foundation: CTfile 2026 V3000 `STEBABS`, `STEBRACn`, and `STEBRELn`
+bond enhanced-stereo collections now round-trip with mixed atom/bond group
+membership. Canonical identity across full group inversion remains a separate
+stereo-canonicalization task.
+
 1. Extend the bounded Open Babel comparison beyond the initial V3000, MOL2,
    CML, and CDXML fixtures to stratified corpora.
 2. Compare graph, charge, isotope, bond order, stereo, coordinates, properties,

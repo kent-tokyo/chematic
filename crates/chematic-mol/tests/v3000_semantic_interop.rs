@@ -108,6 +108,113 @@ M  END\n"
 }
 
 #[test]
+fn v3000_bond_stereo_collections_round_trip_and_merge_with_atom_members() {
+    let input = format!(
+        "{HEADER}M  V30 BEGIN CTAB\n\
+M  V30 COUNTS 6 5 0 0 0\n\
+M  V30 BEGIN ATOM\n\
+M  V30 1 C 0 0 0 0\n\
+M  V30 2 C 1 0 0 0\n\
+M  V30 3 C 2 0 0 0\n\
+M  V30 4 C 3 0 0 0\n\
+M  V30 5 C 4 0 0 0\n\
+M  V30 6 C 5 0 0 0\n\
+M  V30 END ATOM\n\
+M  V30 BEGIN BOND\n\
+M  V30 4 1 1 2\n\
+M  V30 7 2 2 3\n\
+M  V30 9 1 3 4\n\
+M  V30 11 2 4 5\n\
+M  V30 15 1 5 6\n\
+M  V30 END BOND\n\
+M  V30 BEGIN COLLECTION\n\
+M  V30 MDLV30/STERAC1 ATOMS=(1 3)\n\
+M  V30 MDLV30/STEBRAC1 BONDS=(2 7 11)\n\
+M  V30 END COLLECTION\n\
+M  V30 END CTAB\n\
+M  END\n"
+    );
+
+    let (mol, metadata) = parse_mol_v3000(&input).expect("STEB collection parse");
+    assert_eq!(mol.stereo_groups().len(), 1);
+    let group = &mol.stereo_groups()[0];
+    assert_eq!(group.kind, chematic_core::StereoGroupKind::And(1));
+    assert_eq!(group.atom_indices, vec![chematic_core::AtomIdx(2)]);
+    assert_eq!(
+        mol.stereo_group_bond_indices(0).unwrap(),
+        vec![chematic_core::BondIdx(1), chematic_core::BondIdx(3)]
+    );
+
+    let rewritten = write_mol_v3000(&mol, &metadata, &[]);
+    assert!(rewritten.contains("MDLV30/STERAC1 ATOMS=(1 3)"));
+    assert!(rewritten.contains("MDLV30/STEBRAC1 BONDS=(2 2 4)"));
+    let (roundtrip, _) = parse_mol_v3000(&rewritten).expect("STEB collection round trip");
+    assert_eq!(roundtrip.stereo_groups(), mol.stereo_groups());
+    assert_eq!(
+        roundtrip.stereo_group_bond_indices(0),
+        mol.stereo_group_bond_indices(0)
+    );
+}
+
+#[test]
+fn known_collection_unknown_bond_is_rejected() {
+    let input = block(false).replace("MDLV30/STEABS ATOMS=(1 1)", "MDLV30/STEBABS BONDS=(1 99)");
+    let error = match parse_mol_v3000(&input) {
+        Err(error) => error,
+        Ok(_) => panic!("unknown bond reference must fail"),
+    };
+    assert!(error.to_string().contains("references unknown bond id 99"));
+}
+
+#[test]
+fn all_ctfile_2026_bond_collection_kinds_round_trip() {
+    let input = format!(
+        "{HEADER}M  V30 BEGIN CTAB\n\
+M  V30 COUNTS 4 3 0 0 0\n\
+M  V30 BEGIN ATOM\n\
+M  V30 1 C 0 0 0 0\n\
+M  V30 2 C 1 0 0 0\n\
+M  V30 3 C 2 0 0 0\n\
+M  V30 4 C 3 0 0 0\n\
+M  V30 END ATOM\n\
+M  V30 BEGIN BOND\n\
+M  V30 1 2 1 2\n\
+M  V30 2 1 2 3\n\
+M  V30 3 2 3 4\n\
+M  V30 END BOND\n\
+M  V30 BEGIN COLLECTION\n\
+M  V30 MDLV30/STEBABS BONDS=(1 1)\n\
+M  V30 MDLV30/STEBREL2 BONDS=(1 2)\n\
+M  V30 MDLV30/STEBRAC3 BONDS=(2 3 3)\n\
+M  V30 END COLLECTION\n\
+M  V30 END CTAB\n\
+M  END\n"
+    );
+    let (mol, metadata) = parse_mol_v3000(&input).expect("all STEB kinds parse");
+    assert_eq!(mol.stereo_groups().len(), 3);
+    assert_eq!(mol.stereo_group_bond_indices(0).unwrap().len(), 1);
+    assert_eq!(mol.stereo_group_bond_indices(1).unwrap().len(), 1);
+    assert_eq!(
+        mol.stereo_group_bond_indices(2).unwrap().len(),
+        1,
+        "deduplicated"
+    );
+
+    let rewritten = write_mol_v3000(&mol, &metadata, &[]);
+    assert!(rewritten.contains("MDLV30/STEBABS BONDS=(1 1)"));
+    assert!(rewritten.contains("MDLV30/STEBREL2 BONDS=(1 2)"));
+    assert!(rewritten.contains("MDLV30/STEBRAC3 BONDS=(1 3)"));
+    let (roundtrip, _) = parse_mol_v3000(&rewritten).expect("all STEB kinds round trip");
+    assert_eq!(roundtrip.stereo_groups(), mol.stereo_groups());
+    for index in 0..mol.stereo_groups().len() {
+        assert_eq!(
+            roundtrip.stereo_group_bond_indices(index),
+            mol.stereo_group_bond_indices(index)
+        );
+    }
+}
+
+#[test]
 fn sgroup_count_must_match_the_counts_record() {
     let input = block(false).replacen("COUNTS 2 1 1 0 0", "COUNTS 2 1 0 0 0", 1);
     let error = match parse_mol_v3000(&input) {

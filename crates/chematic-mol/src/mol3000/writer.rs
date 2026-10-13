@@ -236,27 +236,58 @@ fn append_sgroups(out: &mut String, metadata: &MolMetadata) {
 }
 
 fn append_collections(out: &mut String, mol: &Molecule) {
-    let groups = mol.stereo_groups();
+    let groups = mol
+        .stereo_groups()
+        .iter()
+        .enumerate()
+        .filter(|(group_index, group)| {
+            !group.atom_indices.is_empty()
+                || !mol
+                    .stereo_group_bond_indices(*group_index)
+                    .unwrap_or_default()
+                    .is_empty()
+        })
+        .collect::<Vec<_>>();
     if groups.is_empty() {
         return;
     }
     out.push_str("M  V30 BEGIN COLLECTION\n");
-    for group in groups {
-        let key = match &group.kind {
+    for (group_index, group) in groups {
+        let atom_key = match &group.kind {
             StereoGroupKind::Absolute => "MDLV30/STEABS".to_string(),
             StereoGroupKind::Or(number) => format!("MDLV30/STEREL{number}"),
             StereoGroupKind::And(number) => format!("MDLV30/STERAC{number}"),
+        };
+        let bond_key = match &group.kind {
+            StereoGroupKind::Absolute => "MDLV30/STEBABS".to_string(),
+            StereoGroupKind::Or(number) => format!("MDLV30/STEBREL{number}"),
+            StereoGroupKind::And(number) => format!("MDLV30/STEBRAC{number}"),
         };
         let atoms = group
             .atom_indices
             .iter()
             .map(|atom| (atom.0 + 1).to_string())
             .collect::<Vec<_>>();
-        out.push_str(&format!(
-            "M  V30 {key} ATOMS=({} {})\n",
-            atoms.len(),
-            atoms.join(" ")
-        ));
+        if !atoms.is_empty() {
+            out.push_str(&format!(
+                "M  V30 {atom_key} ATOMS=({} {})\n",
+                atoms.len(),
+                atoms.join(" ")
+            ));
+        }
+        let bonds = mol
+            .stereo_group_bond_indices(group_index)
+            .unwrap_or_default()
+            .iter()
+            .map(|bond| (bond.0 + 1).to_string())
+            .collect::<Vec<_>>();
+        if !bonds.is_empty() {
+            out.push_str(&format!(
+                "M  V30 {bond_key} BONDS=({} {})\n",
+                bonds.len(),
+                bonds.join(" ")
+            ));
+        }
     }
     out.push_str("M  V30 END COLLECTION\n");
 }

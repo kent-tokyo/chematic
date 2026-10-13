@@ -1059,26 +1059,34 @@ pub fn remove_stereo(mol: &Molecule) -> Molecule {
 pub fn clean_stereo_groups(mol: &Molecule) -> Molecule {
     use chematic_core::{Chirality, StereoGroup};
 
-    let cleaned: Vec<StereoGroup> = mol
+    let cleaned = mol
         .stereo_groups()
         .iter()
-        .filter_map(|g| {
+        .enumerate()
+        .filter_map(|(group_index, g)| {
             let chiral_atoms: Vec<AtomIdx> = g
                 .atom_indices
                 .iter()
                 .copied()
                 .filter(|&idx| mol.atom(idx).chirality != Chirality::None)
                 .collect();
-            if chiral_atoms.is_empty() {
+            // Bond members can be double-bond geometry or single-bond
+            // atropisomer axes. This atom-centre cleanup has no basis for
+            // removing either, so preserve every existing bond member.
+            let stereo_bonds = mol
+                .stereo_group_bond_indices(group_index)
+                .unwrap_or_default()
+                .to_vec();
+            if chiral_atoms.is_empty() && stereo_bonds.is_empty() {
                 None
             } else {
-                Some(StereoGroup::new(g.kind.clone(), chiral_atoms))
+                Some((StereoGroup::new(g.kind.clone(), chiral_atoms), stereo_bonds))
             }
         })
         .collect();
 
     let mut out = MoleculeBuilder::from_molecule(mol).build();
-    out.set_stereo_groups(cleaned);
+    out.set_stereo_groups_with_bonds(cleaned);
     out
 }
 

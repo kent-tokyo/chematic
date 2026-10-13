@@ -12,6 +12,12 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added CTfile 2026 V3000 bond enhanced-stereo collections. The reader and
+  writer preserve `STEBABS`, `STEBRACn`, and `STEBRELn` bond members, reject
+  dangling bond references, and merge atom and bond collection lines that
+  share a relative-group kind and number. New `Molecule` bond-member accessors
+  preserve the existing public `StereoGroup` struct and atom-only APIs
+  (inspired by RDKit issue #9705).
 - Added Python `MolecularForceField` objects via `Mol.mmff_force_field()` and
   `Mol.uff_force_field()`. They retain prepared MMFF94/UFF terms and mutable
   coordinates across energy, gradient, and in-place minimization calls,

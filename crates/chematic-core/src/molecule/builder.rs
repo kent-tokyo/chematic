@@ -9,6 +9,7 @@ pub struct MoleculeBuilder {
     adjacency: Vec<Vec<(AtomIdx, BondIdx)>>,
     r_groups: std::collections::HashMap<u32, RGroupLabel>,
     stereo_groups: Vec<StereoGroup>,
+    stereo_group_bonds: Vec<Vec<BondIdx>>,
     stereo_neighbor_order: std::collections::HashMap<u32, Vec<u32>>,
     bond_directions: std::collections::HashMap<u32, BondOrder>,
     bond_direction_anchors: std::collections::HashMap<u32, AtomIdx>,
@@ -33,6 +34,7 @@ impl MoleculeBuilder {
             adjacency: Vec::with_capacity(atom_count),
             r_groups: std::collections::HashMap::new(),
             stereo_groups: Vec::new(),
+            stereo_group_bonds: Vec::new(),
             stereo_neighbor_order: std::collections::HashMap::new(),
             bond_directions: std::collections::HashMap::new(),
             bond_direction_anchors: std::collections::HashMap::new(),
@@ -53,6 +55,7 @@ impl MoleculeBuilder {
             let _ = b.add_bond(bond.atom1, bond.atom2, bond.order);
         }
         b.stereo_groups = mol.stereo_groups.clone();
+        b.stereo_group_bonds = mol.stereo_group_bonds.clone();
         b.r_groups = mol.r_groups.clone();
         b.atom_tags = mol.atom_tags.clone();
         b.stereo_neighbor_order = mol.stereo_neighbor_order.clone();
@@ -119,6 +122,17 @@ impl MoleculeBuilder {
     /// Append a stereo group to this builder.
     pub fn add_stereo_group(&mut self, group: StereoGroup) {
         self.stereo_groups.push(group);
+        self.stereo_group_bonds.push(Vec::new());
+    }
+
+    /// Append an enhanced stereo group with geometric/axial bond members.
+    pub fn add_stereo_group_with_bonds(
+        &mut self,
+        group: StereoGroup,
+        bond_indices: Vec<BondIdx>,
+    ) {
+        self.stereo_groups.push(group);
+        self.stereo_group_bonds.push(dedup_bond_indices(bond_indices));
     }
 
     /// Copy all enhanced stereo groups from `mol` into this builder verbatim.
@@ -128,6 +142,7 @@ impl MoleculeBuilder {
     /// [`Self::copy_bond_directions_from`].
     pub fn copy_stereo_groups_from(&mut self, mol: &Molecule) {
         self.stereo_groups = mol.stereo_groups.clone();
+        self.stereo_group_bonds = mol.stereo_group_bonds.clone();
     }
 
     /// Copy all stereo neighbor order entries from `mol` into this builder.
@@ -260,6 +275,7 @@ impl MoleculeBuilder {
             adjacency: self.adjacency,
             r_groups: self.r_groups,
             stereo_groups: self.stereo_groups,
+            stereo_group_bonds: self.stereo_group_bonds,
             stereo_neighbor_order: self.stereo_neighbor_order,
             bond_directions: self.bond_directions,
             bond_direction_anchors: self.bond_direction_anchors,

@@ -13,6 +13,14 @@ pub struct AtomIdx(pub u32);
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct BondIdx(pub u32);
 
+fn dedup_bond_indices(indices: Vec<BondIdx>) -> Vec<BondIdx> {
+    let mut seen = std::collections::HashSet::new();
+    indices
+        .into_iter()
+        .filter(|idx| seen.insert(*idx))
+        .collect()
+}
+
 /// Error types for molecule construction.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MolError {
@@ -57,6 +65,11 @@ pub struct Molecule {
     r_groups: std::collections::HashMap<u32, RGroupLabel>,
     /// Enhanced stereo groups (ChemDraw V3000 Absolute / Or / And).
     stereo_groups: Vec<StereoGroup>,
+    /// Bond members aligned one-to-one with `stereo_groups`.
+    ///
+    /// Kept outside the public [`StereoGroup`] struct so CTfile 2026 `STEB*`
+    /// support is a non-breaking addition for Rust callers.
+    stereo_group_bonds: Vec<Vec<BondIdx>>,
     /// SMILES-text-order neighbor sequence for chiral atoms.
     ///
     /// Keyed by atom index.  Each value lists the atom indices of neighbors in

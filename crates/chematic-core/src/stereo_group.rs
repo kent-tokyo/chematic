@@ -7,8 +7,8 @@
 //! - [`StereoGroupKind::Or`] — the compound is one of two configurations (or
 //!   a mixture), but it is not known which; all atoms in the same Or-group
 //!   share the same ambiguity.
-//! - [`StereoGroupKind::And`] — the compound is a mixture of configurations;
-//!   each atom may independently be R or S.
+//! - [`StereoGroupKind::And`] — the compound is a mixture of the drawn
+//!   configuration and its full inversion; all members vary together.
 
 use crate::molecule::AtomIdx;
 
@@ -32,9 +32,10 @@ pub enum StereoGroupKind {
 
 /// A named collection of stereocenters with a shared ambiguity classification.
 ///
-/// Stored in [`Molecule::stereo_groups`].  The `atom_indices` list the
-/// 0-based internal `AtomIdx` values of the stereocenters that belong to
-/// this group.
+/// Stored in [`Molecule::stereo_groups`]. The `atom_indices` list uses
+/// 0-based core indices. Bond members are exposed separately by
+/// [`Molecule::stereo_group_bond_indices`] so adding CTfile 2026 `STEB*`
+/// support does not change this public struct's construction contract.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StereoGroup {
     pub kind: StereoGroupKind,

@@ -104,6 +104,7 @@ fn apply_permutation(mol: &Molecule, permutation: &[usize]) -> Molecule {
 
     // Add bonds with remapped indices
     let new_atom = |old: AtomIdx| AtomIdx(old_to_new[old.0 as usize] as u32);
+    let mut bond_map = std::collections::HashMap::new();
     for (old_bidx, bond_entry) in mol.bonds() {
         let new_a = new_atom(bond_entry.atom1);
         let new_b = new_atom(bond_entry.atom2);
@@ -112,6 +113,7 @@ fn apply_permutation(mol: &Molecule, permutation: &[usize]) -> Molecule {
         // Without them the writer emitted the raw tag against the permuted
         // order and could invert a stereocentre.
         if let Ok(new_bidx) = builder.add_bond(new_a, new_b, bond_entry.order) {
+            bond_map.insert(old_bidx, new_bidx);
             if let Some(direction) = mol.bond_direction(old_bidx) {
                 builder.set_bond_direction(new_bidx, direction);
             }
@@ -137,13 +139,21 @@ fn apply_permutation(mol: &Molecule, permutation: &[usize]) -> Molecule {
     }
     let mut permuted = builder.build();
     if !mol.stereo_groups().is_empty() {
-        permuted.set_stereo_groups(
+        permuted.set_stereo_groups_with_bonds(
             mol.stereo_groups()
                 .iter()
-                .map(|g| {
-                    StereoGroup::new(
-                        g.kind.clone(),
-                        g.atom_indices.iter().map(|&a| new_atom(a)).collect(),
+                .enumerate()
+                .map(|(group_index, g)| {
+                    (
+                        StereoGroup::new(
+                            g.kind.clone(),
+                            g.atom_indices.iter().map(|&a| new_atom(a)).collect(),
+                        ),
+                        mol.stereo_group_bond_indices(group_index)
+                            .unwrap_or_default()
+                            .iter()
+                            .filter_map(|bond| bond_map.get(bond).copied())
+                            .collect(),
                     )
                 })
                 .collect(),

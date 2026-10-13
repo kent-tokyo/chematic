@@ -447,7 +447,7 @@ pub(super) fn clear_orphaned_stereo_bonds(mol: Molecule) -> Molecule {
     builder.copy_stereo_from(&mol);
     let mut result = builder.build();
     // Restore enhanced stereo groups (ABS/OR/AND) that copy_stereo_from omits.
-    result.set_stereo_groups(mol.stereo_groups().to_vec());
+    result.copy_stereo_groups_from(&mol);
     result
 }
 

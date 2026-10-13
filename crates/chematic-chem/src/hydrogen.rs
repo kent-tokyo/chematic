@@ -8,8 +8,34 @@ use std::collections::HashMap;
 
 use chematic_core::{
     Atom, AtomIdx, BondIdx, BondOrder, Chirality, Element, Molecule, MoleculeBuilder,
-    STEREO_H_SENTINEL, implicit_hcount,
+    STEREO_H_SENTINEL, StereoGroup, implicit_hcount,
 };
+
+fn remap_stereo_groups(
+    mol: &Molecule,
+    atom_remap: &HashMap<AtomIdx, AtomIdx>,
+    bond_remap: &HashMap<BondIdx, BondIdx>,
+) -> Vec<(StereoGroup, Vec<BondIdx>)> {
+    mol.stereo_groups()
+        .iter()
+        .enumerate()
+        .filter_map(|(group_index, group)| {
+            let atoms = group
+                .atom_indices
+                .iter()
+                .filter_map(|atom| atom_remap.get(atom).copied())
+                .collect::<Vec<_>>();
+            let bonds = mol
+                .stereo_group_bond_indices(group_index)
+                .unwrap_or_default()
+                .iter()
+                .filter_map(|bond| bond_remap.get(bond).copied())
+                .collect::<Vec<_>>();
+            (!atoms.is_empty() || !bonds.is_empty())
+                .then(|| (StereoGroup::new(group.kind.clone(), atoms), bonds))
+        })
+        .collect()
+}
 
 /// The declared stereo neighbor order for `idx` on `mol`, including the
 /// `STEREO_H_SENTINEL` marker for an implicit H if one is declared.
@@ -421,21 +447,10 @@ pub fn remove_hydrogens(mol: &Molecule) -> Molecule {
             builder.set_tag(new_idx, Some(tag.get()));
         }
     }
-    let stereo_groups: Vec<chematic_core::StereoGroup> = mol
-        .stereo_groups()
-        .iter()
-        .filter_map(|g| {
-            let atoms: Vec<AtomIdx> = g
-                .atom_indices
-                .iter()
-                .filter_map(|a| remap.get(a).copied())
-                .collect();
-            (!atoms.is_empty()).then(|| chematic_core::StereoGroup::new(g.kind.clone(), atoms))
-        })
-        .collect();
+    let stereo_groups = remap_stereo_groups(mol, &remap, &bond_remap);
     let mut out = builder.build();
     if !stereo_groups.is_empty() {
-        out.set_stereo_groups(stereo_groups);
+        out.set_stereo_groups_with_bonds(stereo_groups);
     }
     transfer_ez_off_removed_hydrogens(mol, &removable, &remap, &bond_remap, &mut out);
     // Each atom that lost H atoms keeps its total H count. Valence inference
