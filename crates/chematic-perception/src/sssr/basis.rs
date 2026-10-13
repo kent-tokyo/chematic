@@ -240,7 +240,7 @@ pub fn sssr_ring_count(mol: &Molecule) -> usize {
     cycles
 }
 
-fn find_sssr_uncached(mol: &Molecule) -> RingSet {
+pub(crate) fn find_sssr_uncached(mol: &Molecule) -> RingSet {
     let v = mol.atom_count();
     if v == 0 {
         return RingSet::empty();

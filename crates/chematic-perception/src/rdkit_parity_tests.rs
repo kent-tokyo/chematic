@@ -723,4 +723,35 @@ mod tests {
             "stale aromatic=true on an acyclic atom must not survive"
         );
     }
+
+    #[test]
+    fn neutral_oxygen_and_sulfur_are_not_aromatic_macrocycle_donors() {
+        // RDKit Aromaticity.cpp suppresses neutral divalent O/S two-electron
+        // donation when the containing SSSR ring has at least nine atoms.
+        for smiles in ["o1cccccccc1", "s1cccccccc1", "o1cccccccccccc1"] {
+            let mol = chematic_smiles::parse(smiles).expect("valid macrocycle");
+            let perceived = apply_aromaticity_rdkit_parity_experimental(&mol)
+                .expect("macrocycle can be kekulized");
+            assert!(
+                perceived.atoms().all(|(_, atom)| !atom.aromatic),
+                "{smiles} must be non-aromatic in RDKit's model"
+            );
+            assert!(
+                perceived
+                    .bonds()
+                    .all(|(_, bond)| bond.order != BondOrder::Aromatic),
+                "{smiles} must have a Kekule representation"
+            );
+        }
+
+        for smiles in ["o1cccc1", "s1cccc1"] {
+            let mol = chematic_smiles::parse(smiles).expect("valid five-membered ring");
+            let perceived = apply_aromaticity_rdkit_parity_experimental(&mol)
+                .expect("five-membered aromatic ring is supported");
+            assert!(
+                perceived.atoms().all(|(_, atom)| atom.aromatic),
+                "{smiles} must remain aromatic"
+            );
+        }
+    }
 }

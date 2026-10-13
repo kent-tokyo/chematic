@@ -380,6 +380,9 @@ pub fn rdkit_molecular_weight(mol: &Molecule) -> f64 {
     let mut mw = 0.0f64;
     for (idx, atom) in mol.atoms() {
         if atom.wildcard {
+            // RDKit gives a dummy atom zero mass but still includes bracket
+            // hydrogens: [*H] and [*H2] weigh 1.008 and 2.016 Da.
+            mw += f64::from(atom.hydrogen_count.unwrap_or(0)) * 1.008;
             continue;
         }
         mw += match atom.isotope {
