@@ -7,6 +7,8 @@ fixtures in crates/chematic-mol/src/{mmcif,pqr,orca,cube,opendx,lammps_data,
 lammps_dump}.rs (already-verified-valid inputs for each format's grammar),
 kept inline and minimal here per this test suite's existing convention.
 """
+import json
+
 import pytest
 
 import chematic
@@ -61,6 +63,50 @@ def test_mmcif_unknown_element_raises_value_error():
 def test_mmcif_malformed_input_raises_value_error():
     with pytest.raises(ValueError):
         chematic.parse_mmcif("not an mmcif file at all")
+
+
+PROTEIN_PDB_FIXTURE = """\
+ATOM      1  N   ALA A   1       0.000   0.000   0.000  1.00 10.00           N
+HETATM    2 SE   MSE A   2       1.000   0.000   0.000  1.00 11.00          SE
+HETATM    3  O   HOH A   3       2.000   0.000   0.000  1.00 12.00           O
+"""
+
+
+PROTEIN_MMCIF_FIXTURE = """\
+data_protein
+loop_
+_atom_site.group_PDB
+_atom_site.id
+_atom_site.type_symbol
+_atom_site.label_atom_id
+_atom_site.label_comp_id
+_atom_site.auth_asym_id
+_atom_site.auth_seq_id
+_atom_site.Cartn_x
+_atom_site.Cartn_y
+_atom_site.Cartn_z
+ATOM 1 N N ALA A 1 0 0 0
+HETATM 2 Se SE MSE A 2 1 0 0
+HETATM 3 O O HOH A 3 2 0 0
+"""
+
+
+@pytest.mark.parametrize(
+    ("function", "fixture"),
+    [
+        (chematic.protein_from_pdb_json, PROTEIN_PDB_FIXTURE),
+        (chematic.protein_from_mmcif_json, PROTEIN_MMCIF_FIXTURE),
+    ],
+)
+def test_protein_projection_preserves_hierarchy_and_excludes_water(function, fixture):
+    projection = json.loads(function(fixture))
+    assert projection["model_count"] == 1
+    assert projection["chain_count"] == 1
+    assert projection["residue_count"] == 2
+    assert projection["atom_count"] == 2
+    assert projection["chains"][0]["sequence"] == "AM"
+    assert projection["chains"][0]["residues"][1]["modified"] is True
+    assert projection["chains"][0]["residues"][1]["atoms"][0]["element"] == "Se"
 
 
 # ---------------------------------------------------------------------------

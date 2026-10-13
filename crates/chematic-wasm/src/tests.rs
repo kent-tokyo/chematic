@@ -4072,3 +4072,25 @@ fn to_mol_block_lays_out_molecules_without_stereo() {
     let bond = ((coords[0].0 - coords[1].0).powi(2) + (coords[0].1 - coords[1].1).powi(2)).sqrt();
     assert!((bond - 1.5).abs() < 1e-3, "{block}");
 }
+
+#[test]
+fn protein_projection_json_is_consistent_for_pdb_and_mmcif() {
+    let pdb = concat!(
+        "ATOM      1  N   ALA A   1       0.000   0.000   0.000  1.00 10.00           N  \n",
+        "HETATM    2 SE   MSE A   2       1.000   0.000   0.000  1.00 11.00          SE  \n",
+        "HETATM    3  O   HOH A   3       2.000   0.000   0.000  1.00 12.00           O  \n",
+    );
+    let mmcif = "data_p\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_seq_id\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\nATOM 1 N N ALA A 1 0 0 0\nHETATM 2 Se SE MSE A 2 1 0 0\nHETATM 3 O O HOH A 3 2 0 0\n";
+
+    for json in [
+        protein_from_pdb_json(pdb).unwrap(),
+        protein_from_mmcif_json(mmcif).unwrap(),
+    ] {
+        let projection: serde_json::Value = serde_json::from_str(&json).unwrap();
+        assert_eq!(projection["model_count"], 1);
+        assert_eq!(projection["residue_count"], 2);
+        assert_eq!(projection["atom_count"], 2);
+        assert_eq!(projection["chains"][0]["sequence"], "AM");
+        assert_eq!(projection["chains"][0]["residues"][1]["modified"], true);
+    }
+}

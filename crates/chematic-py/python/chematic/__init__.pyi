@@ -2951,6 +2951,15 @@ def from_pdb(pdb_str: str) -> tuple[Mol, list[list[float]]]:
     """
     ...
 
+def protein_from_pdb_json(pdb_str: str) -> str:
+    """Project PDB text into a bounded amino-acid-only hierarchy as JSON.
+
+    The result preserves models, chains, residues, atoms, coordinates,
+    occupancy, B-factors, alternate locations, and insertion codes. Water,
+    ligands, ions, nucleic acids, and unrecognized residues are excluded.
+    """
+    ...
+
 def from_xyz(xyz_str: str) -> tuple[Mol, list[list[float]]]:
     """Parse an XYZ string and return ``(Mol, coords)``.
 
@@ -3028,6 +3037,14 @@ def parse_mmcif(
 
     Raises:
         ValueError: on parse failure.
+    """
+    ...
+
+def protein_from_mmcif_json(text: str) -> str:
+    """Project mmCIF text into a bounded amino-acid-only hierarchy as JSON.
+
+    The schema and residue policy match :func:`protein_from_pdb_json`.
+    This is not a complete biological-assembly or entity representation.
     """
     ...
 

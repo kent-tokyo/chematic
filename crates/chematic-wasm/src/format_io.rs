@@ -827,6 +827,62 @@ pub fn mmcif_to_json(text: &str) -> Result<String, JsValue> {
     to_json_string(&out)
 }
 
+fn protein_projection_to_json(projection: &chematic_mol::ProteinProjection) -> serde_json::Value {
+    serde_json::json!({
+        "model_count": projection.model_count(),
+        "chain_count": projection.chain_count(),
+        "residue_count": projection.residue_count(),
+        "atom_count": projection.atom_count(),
+        "chains": projection.chains.iter().map(|chain| serde_json::json!({
+            "model_number": chain.model_number,
+            "id": chain.id,
+            "sequence": chain.sequence(),
+            "residues": chain.residues.iter().map(|residue| serde_json::json!({
+                "name": residue.name,
+                "sequence_number": residue.sequence_number,
+                "insertion_code": residue.insertion_code.map(|value| value.to_string()),
+                "canonical_one_letter_code": residue.canonical_one_letter_code.to_string(),
+                "modified": residue.modified,
+                "atoms": residue.atoms.iter().map(|atom| serde_json::json!({
+                    "serial": atom.serial,
+                    "name": atom.name,
+                    "element": atom.element.symbol(),
+                    "position": atom.position,
+                    "occupancy": atom.occupancy,
+                    "b_iso": atom.b_iso,
+                    "alt_loc": atom.alt_loc.map(|value| value.to_string()),
+                })).collect::<Vec<_>>(),
+            })).collect::<Vec<_>>(),
+        })).collect::<Vec<_>>(),
+    })
+}
+
+/// Amino-acid-only PDB projection as stable JSON.
+#[wasm_bindgen]
+pub fn protein_from_pdb_json(text: &str) -> Result<String, JsValue> {
+    check_input_len("PDB input", text)?;
+    let limits = chematic_3d::PdbParseLimits {
+        max_input_bytes: WASM_MAX_INPUT_BYTES,
+        max_line_bytes: WASM_MAX_JSON_STRING_BYTES,
+        max_atoms: WASM_MAX_ATOMS,
+        max_models: 1_000,
+    };
+    let projection = chematic_mol::project_protein_from_pdb_with_limits(text, &limits)
+        .map_err(|error| JsValue::from_str(&error.to_string()))?;
+    to_json_string(&protein_projection_to_json(&projection))
+}
+
+/// Amino-acid-only mmCIF projection in the same schema as
+/// [`protein_from_pdb_json`].
+#[wasm_bindgen]
+pub fn protein_from_mmcif_json(text: &str) -> Result<String, JsValue> {
+    check_input_len("mmCIF input", text)?;
+    let projection =
+        chematic_mol::project_protein_from_mmcif_with_limits(text, &wasm_mmcif_limits())
+            .map_err(|error| JsValue::from_str(&error.to_string()))?;
+    to_json_string(&protein_projection_to_json(&projection))
+}
+
 /// Write an mmCIF file from atom records in the JSON shape
 /// [`mmcif_to_json`]'s `"atoms"` array uses (a full record per atom, not
 /// just element+coordinates -- mmCIF has no equivalent of "build from a

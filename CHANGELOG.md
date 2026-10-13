@@ -10,6 +10,15 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Added bounded protein projections for PDB and mmCIF across Rust, Python,
+  and WASM. The projection preserves model, chain, residue, atom, coordinate,
+  occupancy, B-factor, alternate-location, and insertion-code information and
+  exposes canonical one-letter sequences. It includes standard amino acids and
+  a documented set of common modified residues while excluding water, ligands,
+  ions, and nucleic acids instead of silently mixing them into a protein view.
+
 ### Fixed
 
 - Restored Rust source compatibility with v1.1.2 exhaustive `Chirality`
