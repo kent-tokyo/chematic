@@ -10,6 +10,14 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Added Python `MolecularForceField` objects via `Mol.mmff_force_field()` and
+  `Mol.uff_force_field()`. They retain prepared MMFF94/UFF terms and mutable
+  coordinates across energy, gradient, and in-place minimization calls,
+  avoiding repeated atom typing and force-field construction. Existing
+  one-shot APIs are unchanged.
+
 ## [1.1.2] - 2026-10-13
 
 ### Added

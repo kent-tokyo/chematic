@@ -74,6 +74,53 @@ def test_uff_matches_rdkit_with_platform_tolerance(mol):
     assert labels[:5] == ["C_3", "C_R", "O_R", "N_R", "C_R"]
 
 
+@pytest.mark.parametrize("variant", ["MMFF94", "MMFF94s"])
+def test_persistent_mmff_force_field_reuses_prepared_terms(mol, variant):
+    field = mol.mmff_force_field(COORDS, variant)
+    assert isinstance(field, chematic.MolecularForceField)
+    assert field.kind == variant
+    assert field.num_atoms == len(COORDS)
+    assert field.positions == COORDS
+    assert field.energy() == pytest.approx(mol.rdkit_mmff_energy(COORDS, variant), abs=1e-12)
+
+    energy, gradient = field.energy_gradient()
+    assert energy == pytest.approx(field.energy(), abs=1e-12)
+    assert len(gradient) == len(COORDS)
+    assert all(len(point) == 3 and all(math.isfinite(x) for x in point) for point in gradient)
+
+    moved = list(COORDS[0])
+    moved[0] += 0.01
+    assert field.set_position_(0, moved) is field
+    assert field.position(0) == moved
+    changed_energy = field.energy()
+    assert changed_energy != energy
+    assert field.set_positions_(COORDS) is field
+    assert field.energy() == pytest.approx(energy, abs=1e-12)
+
+    status, optimized_energy = field.minimize_()
+    assert status == 0
+    assert optimized_energy < energy
+    assert len(field.positions) == len(COORDS)
+
+
+def test_persistent_uff_force_field_and_input_validation(mol):
+    field = mol.uff_force_field(COORDS)
+    assert field.kind == "UFF"
+    assert field.energy() == pytest.approx(mol.rdkit_uff_energy(COORDS), abs=1e-12)
+    assert len(field.gradient()) == len(COORDS)
+
+    with pytest.raises(IndexError):
+        field.position(len(COORDS))
+    with pytest.raises(ValueError, match="finite"):
+        field.set_position_(0, [math.nan, 0.0, 0.0])
+    with pytest.raises(ValueError, match="expected"):
+        field.set_positions_(COORDS[:-1])
+    with pytest.raises(ValueError, match="non-negative"):
+        mol.uff_force_field(COORDS, vdw_thresh=-1.0)
+    with pytest.raises(ValueError, match="MMFF94"):
+        mol.mmff_force_field(COORDS, variant="MMFF95")
+
+
 def test_uff_missing_params_and_bad_input(mol):
     # RDKit 2026.03.1 UFFHasAllMoleculeParams after AddHs.
     for smi, expected in [("C=[Se]", False), ("[Cu]C", False), ("C[Se]C", True), ("C[Mg]Cl", True)]:

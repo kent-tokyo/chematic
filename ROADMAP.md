@@ -161,20 +161,25 @@ unsupported chemistry never becomes a guessed successful result.
    tuning on v4, freeze another candidate before selecting any new holdout,
    and keep typing, energy, gradient, convergence, stereo, clash, best-of-N
    quality, time, and memory independent.
-6. Promote parallel conformer generation only after the same result is shown
+6. Keep the prepared-force-field lifecycle explicit. Python now retains MMFF94
+   or UFF term construction across energy, gradient, coordinate-update, and
+   minimization calls. Next, add fixed-atom constraints and project the same
+   lifecycle to WASM/Node only after the mutation and error contracts are
+   fixed; do not claim COSMolKit API parity from the initial Python surface.
+7. Promote parallel conformer generation only after the same result is shown
    from exact public artifacts on two hosts, with at least 21 alternating
    blocks, peak memory, and no quality regression. Add macrocycles, metals,
    fullerenes, cages, highly flexible molecules, and failed embeddings to the
    stress lane.
-7. Close the full-hydrogen ranking residuals by separating non-convergence,
+8. Close the full-hydrogen ranking residuals by separating non-convergence,
    insufficient basin diversity, and genuine force-field disagreement. The
    acceptance target is zero wrong-confident rows, p90 at or below RDKit under
    equal candidate counts, and a bounded maximum on both A6 and an unused
    holdout; median-only superiority is insufficient.
-8. Maintain the completed RDKit 2026.09.1 topology-bounds and forced-torsion
+9. Maintain the completed RDKit 2026.09.1 topology-bounds and forced-torsion
    gate. Do not promote the versioned profile until the seven quality-tail
    rows, an unused holdout, two-host timing, memory and public artifacts pass.
-9. Evaluate adaptive minimization as a separate quality tier. It must not
+10. Evaluate adaptive minimization as a separate quality tier. It must not
    become the default until its additional work is matched by a favorable
    paired speed interval or a predeclared quality target that RDKit misses.
 
