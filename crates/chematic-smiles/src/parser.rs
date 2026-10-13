@@ -231,6 +231,9 @@ struct Parser<'a> {
     pending_ring_stereo: HashMap<u32, usize>,
     /// slot id → close_atom, populated when rings close, for final resolution.
     ring_close_partners: smallvec::SmallVec<[Option<AtomIdx>; 8]>,
+    /// First atom of each dot-separated component, needed for OpenSMILES's
+    /// virtual-H ordering at an allene terminal.
+    fragment_starts: Vec<AtomIdx>,
 }
 
 impl<'a> Parser<'a> {
@@ -244,6 +247,7 @@ impl<'a> Parser<'a> {
             next_ring_slot: 0,
             pending_ring_stereo: HashMap::new(),
             ring_close_partners: smallvec::SmallVec::new(),
+            fragment_starts: Vec::new(),
         }
     }
 
@@ -346,7 +350,8 @@ impl<'a> Parser<'a> {
             mol.set_stereo_neighbor_order(atom_idx, order);
         }
 
-        let molecule = mol.build();
+        let mut molecule = mol.build();
+        self.normalize_allene_stereo(&mut molecule)?;
         // A SMILES graph with no ring-closure token is a forest by
         // construction. Publish that already-known result so the first
         // fingerprint or descriptor call does not need a full bridge DFS to
@@ -359,6 +364,79 @@ impl<'a> Parser<'a> {
             );
         }
         Ok(molecule)
+    }
+
+    /// Convert shorthand `@`/`@@` on a valid allene center to `@AL1`/`@AL2`
+    /// and replace the center's two direct-axis neighbors with the four
+    /// virtual terminal ligands that define axial parity in OpenSMILES.
+    fn normalize_allene_stereo(&self, molecule: &mut Molecule) -> Result<(), SmilesError> {
+        for raw in 0..molecule.atom_count() {
+            let center = AtomIdx(raw as u32);
+            let stored = molecule.atom(center).chirality;
+            if stored == Chirality::None {
+                continue;
+            }
+            let direct = molecule
+                .stereo_neighbor_order(center)
+                .map(<[u32]>::to_vec)
+                .unwrap_or_else(|| molecule.neighbors(center).map(|(n, _)| n.0).collect());
+            let arms = crate::allene::allene_arms(molecule, center, &direct);
+            if !stored.is_allene() && !(stored.is_tetrahedral() && arms.is_some()) {
+                continue;
+            }
+            let Some(arms) = arms else {
+                // A syntactically valid chirality class on an atom with the
+                // wrong geometry is cleaned, like an ordinary tetrahedral
+                // tag on a non-stereogenic atom. The class/range parser still
+                // rejects malformed `@AL0`/`@AL3` tokens.
+                molecule.set_chirality(center, Chirality::None);
+                continue;
+            };
+
+            let normalized = match stored {
+                Chirality::CounterClockwise => Chirality::Allene1,
+                Chirality::Clockwise => Chirality::Allene2,
+                other => other,
+            };
+            let mut virtual_order = Vec::with_capacity(6);
+            for arm in arms {
+                let is_start = self.fragment_starts.contains(&arm.terminal);
+                let mut incident: Vec<(AtomIdx, chematic_core::BondIdx)> =
+                    molecule.neighbors(arm.terminal).collect();
+                incident.sort_by_key(|(_, bond)| bond.0);
+                let parent = if is_start {
+                    None
+                } else {
+                    incident.first().map(|(atom, _)| *atom)
+                };
+                let mut local = Vec::with_capacity(3);
+                if let Some(atom) = parent {
+                    local.push(atom.0);
+                }
+                if chematic_core::implicit_hcount(molecule, arm.terminal) > 0 {
+                    local.push(STEREO_H_SENTINEL);
+                }
+                for (neighbor, _) in incident {
+                    if Some(neighbor) != parent {
+                        local.push(neighbor.0);
+                    }
+                }
+                local.retain(|&atom| atom != arm.axis_neighbor.0);
+                if local.len() != 2 {
+                    virtual_order.clear();
+                    break;
+                }
+                virtual_order.push(arm.terminal.0);
+                virtual_order.extend(local);
+            }
+            if virtual_order.len() == 6 {
+                molecule.set_chirality(center, normalized);
+                molecule.set_stereo_neighbor_order(center, virtual_order);
+            } else {
+                molecule.set_chirality(center, Chirality::None);
+            }
+        }
+        Ok(())
     }
 
     // Parse one atom-chain, attaching it to `attach_to` via `attach_bond`.
@@ -384,6 +462,9 @@ impl<'a> Parser<'a> {
         }
 
         let first_idx = mol.add_atom(first_atom.clone());
+        if attach_to.is_none() {
+            self.fragment_starts.push(first_idx);
+        }
 
         // Connect to the preceding atom if requested
         if let Some(prev) = attach_to {
@@ -996,14 +1077,16 @@ impl<'a> Parser<'a> {
             // "missing ']'" a few characters later.
             // RDKit's grammar: a class without a number is permutation 0
             // (kept as "unknown"), an explicit 0 is an error; `@TH1`/`@TH`
-            // are `@`, `@TH2` is `@@`. Allene classes (`@AL`, `@AL1`,
-            // `@AL2`) are read and dropped, as RDKit does.
+            // are `@`, `@TH2` is `@@`. OpenSMILES allene classes are retained;
+            // their virtual terminal-neighbour order is normalized after the
+            // complete graph has been parsed.
             let number = self.parse_leading_digits_u16();
             let digits = number.unwrap_or(0);
             return match (class, number) {
                 ("TH", None | Some(1)) => Ok(Chirality::CounterClockwise),
                 ("TH", Some(2)) => Ok(Chirality::Clockwise),
-                ("AL", None | Some(1) | Some(2)) => Ok(Chirality::None),
+                ("AL", None | Some(1)) => Ok(Chirality::Allene1),
+                ("AL", Some(2)) => Ok(Chirality::Allene2),
                 ("SP", None) => Ok(Chirality::SquarePlanarUnnumbered),
                 ("SP", Some(1)) => Ok(Chirality::SquarePlanar(SquarePlanarPermutation::SP1)),
                 ("SP", Some(2)) => Ok(Chirality::SquarePlanar(SquarePlanarPermutation::SP2)),

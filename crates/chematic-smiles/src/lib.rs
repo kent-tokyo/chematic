@@ -26,6 +26,7 @@
 //! - Single-pass recursive-descent parser; no separate lexer phase.
 //! - WASM-compatible (no filesystem I/O, no threads).
 
+mod allene;
 pub mod batch;
 pub mod canonical;
 mod canonical_automorphism;

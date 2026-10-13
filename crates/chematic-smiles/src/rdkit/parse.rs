@@ -156,6 +156,10 @@ pub(crate) fn from_chematic_ordered(
             Chirality::None => continue,
             Chirality::CounterClockwise => ChiralTag::Ccw,
             Chirality::Clockwise => ChiralTag::Cw,
+            // The pinned RDKit 2026.03 compatibility model intentionally
+            // reproduces #9678 and drops allene tags. Native chematic
+            // parsing/canonical writing preserves them.
+            Chirality::Allene1 | Chirality::Allene2 => continue,
             other => ChiralTag::of_class(other.nontetrahedral().expect("non-tetrahedral").0),
         };
         let text = mol

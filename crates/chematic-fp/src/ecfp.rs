@@ -294,6 +294,8 @@ pub(crate) fn initial_atom_id(
             Chirality::None => 0u8,
             Chirality::CounterClockwise => 1u8,
             Chirality::Clockwise => 2u8,
+            Chirality::Allene1 => 7u8,
+            Chirality::Allene2 => 8u8,
             Chirality::SquarePlanar(p) => 3 + p as u8,
             Chirality::SquarePlanarUnnumbered => 6u8,
             Chirality::TrigonalBipyramidal(p) => 10u8.wrapping_add(p),
@@ -948,6 +950,20 @@ mod tests {
             fp_l.tanimoto(&fp_d) < 1.0,
             "Tanimoto of L/D-alanine must be < 1.0 with use_chirality"
         );
+    }
+
+    #[test]
+    fn ecfp4_distinguishes_allene_enantiomers_with_chirality() {
+        let first = parse("CC=[C@AL1]=CCC").unwrap();
+        let second = parse("CC=[C@AL2]=CCC").unwrap();
+        let config = EcfpConfig {
+            radius: 2,
+            nbits: 2048,
+            use_chirality: true,
+            use_double_fold: false,
+        };
+        assert_ne!(ecfp(&first, &config), ecfp(&second, &config));
+        assert_eq!(ecfp4(&first), ecfp4(&second));
     }
 
     #[test]
