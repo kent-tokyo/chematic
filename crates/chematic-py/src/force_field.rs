@@ -71,8 +71,11 @@ fn flatten_positions(coords: Vec<[f64; 3]>, atom_count: usize) -> PyResult<Vec<f
 }
 
 fn nested_positions(flat: &[f64]) -> Vec<[f64; 3]> {
-    flat.chunks_exact(3)
-        .map(|point| [point[0], point[1], point[2]])
+    (0..flat.len() / 3)
+        .map(|index| {
+            let offset = index * 3;
+            [flat[offset], flat[offset + 1], flat[offset + 2]]
+        })
         .collect()
 }
 
