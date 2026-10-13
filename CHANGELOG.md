@@ -12,6 +12,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added interpretable RDKit atom-pair/topological-torsion diagnostics across
+  Rust, Python, and WASM. Callers can inspect an atom's packed element,
+  branching, and pi-electron fields, encode a selected torsion path, and
+  decode its direction-independent path code without reverse-engineering
+  fingerprint internals. Invalid indices and oversized paths fail explicitly;
+  WASM returns 64-bit path codes as decimal strings to avoid JavaScript number
+  truncation.
 - Added bounded protein projections for PDB and mmCIF across Rust, Python,
   and WASM. The projection preserves model, chain, residue, atom, coordinate,
   occupancy, B-factor, alternate-location, and insertion-code information and

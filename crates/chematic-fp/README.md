@@ -14,6 +14,9 @@ Fast molecular fingerprints for similarity search and clustering. ECFP4/6, RDKit
 - **MAP4**: MinHashed Atom-Pair fingerprint (Minervini 2020) — `map4(mol, config)` / `tanimoto_map4(a, b)`
 - **MHFP / SECFP**: MinHash fingerprint for small molecules — `mhfp(mol, config)`
 - **ERG**: Extended Reduced Graph pharmacophore fingerprint — `erg(mol)`
+- **Interpretable RDKit diagnostics**: inspect atom-pair atom codes and encode
+  or decode selected topological-torsion paths without reproducing packed-bit
+  logic in application code
 - **Chirality-aware**: optional stereo center consideration (R/S, E/Z)
 - **WASM-compatible**: zero C/C++ dependencies
 

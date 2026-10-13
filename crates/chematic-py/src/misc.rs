@@ -414,6 +414,38 @@ fn rdkit_smarts_to_smarts(smarts: &str) -> PyResult<String> {
         .map_err(|e| PyValueError::new_err(e.to_string()))
 }
 
+/// Decode an RDKit atom-pair/topological-torsion atom code as
+/// ``(element_symbol, branch_count, pi_electron_count)``.
+#[pyfunction]
+fn explain_rdkit_atom_code(code: u32) -> (&'static str, u32, u32) {
+    let explanation = chematic_fp::explain_rdkit_atom_code(code);
+    (
+        explanation.symbol,
+        explanation.branch_count,
+        explanation.pi_electron_count,
+    )
+}
+
+/// Decode a legacy RDKit topological-torsion path code.
+///
+/// Returns one ``(element_symbol, branch_count, pi_electron_count)`` tuple per
+/// path position, with endpoint/interior branch corrections restored.
+#[pyfunction]
+#[pyo3(signature = (code, size = 4))]
+fn explain_rdkit_topological_torsion_code(
+    code: u64,
+    size: usize,
+) -> PyResult<Vec<(&'static str, u32, u32)>> {
+    chematic_fp::explain_rdkit_topological_torsion_code(code, size)
+        .map(|entries| {
+            entries
+                .into_iter()
+                .map(|entry| (entry.symbol, entry.branch_count, entry.pi_electron_count))
+                .collect()
+        })
+        .map_err(|error| PyValueError::new_err(error.to_string()))
+}
+
 pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyMoleculeBatch>()?;
     m.add_class::<PySmartsQuery>()?;
@@ -423,6 +455,8 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         rdkit_reaction_to_smarts,
         rdkit_smarts_to_smarts,
         rdkit_detect_chemistry_problems,
+        explain_rdkit_atom_code,
+        explain_rdkit_topological_torsion_code,
         smarts_match,
         smarts_find,
         similarity_map_svg,
