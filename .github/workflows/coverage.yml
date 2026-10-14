@@ -93,7 +93,7 @@ jobs:
             --lcov --output-path target/coverage/lcov.info
           cargo llvm-cov report \
             --ignore-filename-regex "$COVERAGE_IGNORE_REGEX" \
-            --text --summary-only | tee target/coverage/summary.txt
+            | tee target/coverage/summary.txt
           {
             echo '### Rust coverage'
             echo '```text'
@@ -121,7 +121,7 @@ jobs:
         run: >-
           cargo llvm-cov report
           --ignore-filename-regex "$COVERAGE_IGNORE_REGEX"
-          --summary-only --fail-under-lines 96.5
+          --fail-under-lines 96.5
       - name: Upload coverage to Codecov
         # Dependabot PRs have read-only permissions and cannot request OIDC.
         # Their measurement and downloadable reports still run above.
