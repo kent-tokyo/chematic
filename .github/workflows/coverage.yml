@@ -86,6 +86,7 @@ jobs:
             --no-report
       - name: Generate coverage reports
         id: report
+        shell: bash
         if: steps.measure.outcome == 'success'
         run: |
           cargo llvm-cov report \
