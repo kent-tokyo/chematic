@@ -1,0 +1,41 @@
+{
+  "base_revision": "ffe682c32cb4c76de0d309649427202a7d8e956d",
+  "candidate_patch_sha256": "d792f488cf1df94ad57b5c6b500155b47c98722225ca3652a989f08ccf3658bc",
+  "source_files": {
+    "crates/chematic-fp/src/bitvec.rs": {
+      "baseline_sha256": "704b7f4634c5450328c7fc8a1da1f4176fbb86686e50d2b0423124ff4416c2b6",
+      "candidate_sha256": "d68c97114e66d67a175714f22acc942d7a1391b9a32aa6f288835c87bab782c0"
+    },
+    "crates/chematic-fp/src/rdkit_morgan_config.rs": {
+      "baseline_sha256": "b5a5d901756023cd6e3f219ca036186ba3bbc349ca74ebbe4072fc4af3024710",
+      "candidate_sha256": "2c4ed7443e0b10cb419636db261a8f19cfd27ecc107fcf0f534b77e7bde4bbe0"
+    },
+    "crates/chematic-fp/src/rdkit_morgan_ecfp4.rs": {
+      "baseline_sha256": "f8a9a18eb5a391def753ce8302d360225f3b2965d8e33ba0d2643579f50061cc",
+      "candidate_sha256": "a9e2a1701398f791bd5c40abece63842dc2e255bb7bf25f85b66af609338ae3d"
+    },
+    "crates/chematic-fp/src/rdkit_morgan_hash.rs": {
+      "baseline_sha256": "84083c3f8210cf427ccf8f54781ac06b874579bce1e953ba6bbb3eb70f6eeb42",
+      "candidate_sha256": "272f3bf8926ca3cd7004fe3c83dd69562309a8b708b9e266b4e5b7592fd05e9c"
+    },
+    "crates/chematic-py/src/formats.rs": {
+      "baseline_sha256": "4b4d9636494374c7f9a75ef52ff7c6c8ec9b86cf644d569de0a878cb44dd3ff1",
+      "candidate_sha256": "25188315860e123e801b88f65e228d6430d33a93f979940387452b0274fbae1e"
+    },
+    "crates/chematic-py/src/mol_methods.rs": {
+      "baseline_sha256": "d0fb5e0be7f47612536627a97f399dd9c79613fddd8b9644b288f886c9ddbd8d",
+      "candidate_sha256": "31bbe9b6aea582f9b10a97abfde18fc0446db025b25ce018f38ff9b002f503e3"
+    }
+  },
+  "build": {
+    "profile": "release",
+    "opt_level": 3,
+    "lto": true,
+    "codegen_units": 1,
+    "features": [
+      "native-inchi"
+    ],
+    "target_directory": "fresh isolated target, not shared with other tasks",
+    "rustc": "rustc 1.97.0 (2d8144b78 2026-07-07)"
+  }
+}

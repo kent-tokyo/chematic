@@ -235,6 +235,23 @@ fn parity_shortcut(mol: &Molecule) -> ParityShortcut {
         if model_may_disagree && crate::rdkit_cleanup::rdkit_sanitize_cleanup_needed(mol) {
             return ParityShortcut::Full;
         }
+        // The existing complete-preperceived test returns Identity for a
+        // forest with no aromatic flags, and for fully saturated graphs.
+        // Reuse those proofs before building cyclic-component scratch data.
+        // Unusual models retain the full checks and cleanup behavior above.
+        if !model_may_disagree
+            && !mol.atoms().any(|(_, atom)| atom.aromatic)
+            && (mol.bonds().all(|(_, bond)| {
+                matches!(
+                    bond.order,
+                    BondOrder::Single | BondOrder::Up | BondOrder::Down
+                )
+            }) || mol
+                .derived_if_computed::<Vec<bool>>(chematic_core::DerivedSlot::RingBondFlags)
+                .is_some_and(|flags| !flags.iter().any(|&cyclic| cyclic)))
+        {
+            return ParityShortcut::Identity;
+        }
         let info = ComponentInfo::new(mol);
         if has_aromatic_macrocycle_bridge_donor(mol) {
             return ParityShortcut::Full;

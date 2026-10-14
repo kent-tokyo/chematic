@@ -46,11 +46,11 @@ fn is_marker(tokens: &[&str], kw1: &str, kw2: &str) -> bool {
 
 /// A logical V30 line with its 1-based source line number (the first physical
 /// line that makes up this logical line).
-struct LogicalLine {
+struct LogicalLine<'a> {
     /// 1-based line number of the first physical line.
     line_num: usize,
     /// Payload after stripping the `M  V30 ` prefix and joining continuations.
-    payload: String,
+    payload: std::borrow::Cow<'a, str>,
 }
 
 /// Pre-process the raw input lines into logical V30 lines.
@@ -62,28 +62,28 @@ struct LogicalLine {
 /// When a V30 payload ends with a hyphen `-` the hyphen is stripped and the
 /// payload of the next `M  V30 ` line is appended (with a single space
 /// separator so that tokens do not merge).
-fn collect_v30_lines(lines: &[(usize, &str)]) -> Vec<LogicalLine> {
-    let mut result: Vec<LogicalLine> = Vec::new();
+fn collect_v30_lines<'a>(lines: &[(usize, &'a str)]) -> Vec<LogicalLine<'a>> {
+    let mut result = Vec::new();
 
     let mut iter = lines.iter().peekable();
     while let Some(&(lineno, raw)) = iter.next() {
         if let Some(payload) = raw.strip_prefix(V30_PREFIX) {
-            let mut text = payload.to_string();
+            let mut text = std::borrow::Cow::Borrowed(payload);
             let first_line = lineno;
 
             // Handle line continuations: a payload ending with `-` means the
             // next `M  V30 ` line is a continuation.
             while text.ends_with('-') {
                 // Drop the trailing hyphen.
-                text.pop();
+                text.to_mut().pop();
                 // Consume the next V30 line if available.
                 match iter.next() {
                     Some(&(_, cont_raw)) => {
                         if let Some(cont_payload) = cont_raw.strip_prefix(V30_PREFIX) {
                             // Append with a separating space so that tokens
                             // that were split across lines re-join cleanly.
-                            text.push(' ');
-                            text.push_str(cont_payload);
+                            text.to_mut().push(' ');
+                            text.to_mut().push_str(cont_payload);
                         }
                         // If the continuation line is not a V30 line, stop.
                     }
@@ -102,6 +102,50 @@ fn collect_v30_lines(lines: &[(usize, &str)]) -> Vec<LogicalLine> {
     result
 }
 
+/// Source ids are often exactly 1..=len in parser order. Keep that proof
+/// while appending; sparse, permuted, zero and duplicate ids retain the
+/// historical first-match lookup instead of guessing an index.
+struct V3000IndexMap<T> {
+    entries: Vec<(u32, T)>,
+    dense: bool,
+}
+
+impl<T: Copy> V3000IndexMap<T> {
+    fn new() -> Self {
+        Self {
+            entries: Vec::new(),
+            dense: true,
+        }
+    }
+
+    fn push(&mut self, entry: (u32, T)) {
+        self.dense &= entry.0 as usize == self.entries.len() + 1;
+        self.entries.push(entry);
+    }
+
+    fn resolve(&self, source: u32) -> Option<T> {
+        if self.dense {
+            source
+                .checked_sub(1)
+                .and_then(|index| self.entries.get(index as usize))
+                .map(|&(_, value)| value)
+        } else {
+            self.entries
+                .iter()
+                .find(|&&(id, _)| id == source)
+                .map(|&(_, value)| value)
+        }
+    }
+}
+
+impl<T> std::ops::Deref for V3000IndexMap<T> {
+    type Target = [(u32, T)];
+
+    fn deref(&self) -> &Self::Target {
+        &self.entries
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Key=value parsing helper
 // ---------------------------------------------------------------------------
@@ -111,12 +155,12 @@ fn collect_v30_lines(lines: &[(usize, &str)]) -> Vec<LogicalLine> {
 /// Tokens are space-separated. Any token containing `=` is treated as a
 /// key-value pair; tokens without `=` that appear after the required positional
 /// fields are silently ignored.
-fn parse_kv(tokens: &[&str], key: &str) -> Option<String> {
+fn parse_kv<'a>(tokens: &[&'a str], key: &str) -> Option<&'a str> {
     for tok in tokens {
         if let Some(rest) = tok.strip_prefix(key)
             && let Some(val) = rest.strip_prefix('=')
         {
-            return Some(val.to_string());
+            return Some(val);
         }
     }
     None
@@ -247,7 +291,7 @@ fn parse_v3000_atom_line(
     tokens: &[&str],
     line: usize,
     builder: &mut MoleculeBuilder,
-    atom_idx_map: &mut Vec<(u32, AtomIdx)>,
+    atom_idx_map: &mut V3000IndexMap<AtomIdx>,
     coords: &mut Vec<(f64, f64)>,
     raw_z: &mut Vec<f64>,
     atom_properties: &mut Vec<(u32, String)>,
@@ -324,8 +368,8 @@ fn parse_v3000_bond_line(
     tokens: &[&str],
     line: usize,
     builder: &mut MoleculeBuilder,
-    atom_idx_map: &[(u32, AtomIdx)],
-    bond_idx_map: &mut Vec<(u32, BondIdx)>,
+    atom_idx_map: &V3000IndexMap<AtomIdx>,
+    bond_idx_map: &mut V3000IndexMap<BondIdx>,
     explicitly_unspecified_ez: &mut std::collections::HashSet<BondIdx>,
     bond_properties: &mut Vec<(u32, String)>,
 ) -> Result<(), MolParseError> {
@@ -346,7 +390,7 @@ fn parse_v3000_bond_line(
             line,
             detail: format!("cannot parse bond index from '{}'", tokens[0]),
         })?;
-    if bond_idx_map.iter().any(|&(source, _)| source == v3k_idx) {
+    if bond_idx_map.resolve(v3k_idx).is_some() {
         return Err(MolParseError::InvalidBondLine {
             line,
             detail: format!("duplicate V3000 bond index {v3k_idx}"),
@@ -370,13 +414,15 @@ fn parse_v3000_bond_line(
             line,
             detail: format!("cannot parse atom2 index from '{}'", tokens[3]),
         })?;
-    let a1 =
-        resolve_atom_idx(a1_v3k, atom_idx_map).ok_or_else(|| MolParseError::InvalidBondLine {
+    let a1 = atom_idx_map
+        .resolve(a1_v3k)
+        .ok_or_else(|| MolParseError::InvalidBondLine {
             line,
             detail: format!("atom index {a1_v3k} not found in atom block"),
         })?;
-    let a2 =
-        resolve_atom_idx(a2_v3k, atom_idx_map).ok_or_else(|| MolParseError::InvalidBondLine {
+    let a2 = atom_idx_map
+        .resolve(a2_v3k)
+        .ok_or_else(|| MolParseError::InvalidBondLine {
             line,
             detail: format!("atom index {a2_v3k} not found in atom block"),
         })?;
@@ -384,7 +430,7 @@ fn parse_v3000_bond_line(
     let kv_tokens = tokens.get(4..).unwrap_or(&[]);
     let order = match btype_raw {
         0 => BondOrder::Zero,
-        1 => match parse_kv(kv_tokens, "CFG").as_deref() {
+        1 => match parse_kv(kv_tokens, "CFG") {
             Some("1") => BondOrder::Up,
             Some("3") => BondOrder::Down,
             _ => BondOrder::Single,
@@ -407,17 +453,17 @@ fn parse_v3000_bond_line(
             detail: e.to_string(),
         })?;
     bond_idx_map.push((v3k_idx, bidx));
-    if btype_raw == 2 && parse_kv(kv_tokens, "CFG").as_deref() == Some("2") {
+    if btype_raw == 2 && parse_kv(kv_tokens, "CFG") == Some("2") {
         explicitly_unspecified_ez.insert(bidx);
     }
     // Preserve richer V3000 bond attributes without pretending to interpret
-    // them. CFG is represented by BondOrder and is regenerated by the
-    // writer. ENDPTS is the one supported reference-bearing attribute: its
+    // them. Wedge CFG is regenerated from BondOrder; double-bond CFG=2
+    // has no core tag, so retain it explicitly for lossless rewriting. ENDPTS is the one supported reference-bearing attribute: its
     // atom ids must follow the normalized output order when source ids are
     // non-contiguous. ATTACH and future keys remain opaque.
     let opaque_properties = kv_tokens
         .iter()
-        .filter(|token| !token.starts_with("CFG="))
+        .filter(|token| !token.starts_with("CFG=") || (btype_raw == 2 && token.trim() == "CFG=2"))
         .copied()
         .collect::<Vec<_>>()
         .join(" ");
@@ -493,8 +539,8 @@ enum V3000State {
 struct V3000Parser {
     state: V3000State,
     builder: MoleculeBuilder,
-    atom_idx_map: Vec<(u32, AtomIdx)>,
-    bond_idx_map: Vec<(u32, BondIdx)>,
+    atom_idx_map: V3000IndexMap<AtomIdx>,
+    bond_idx_map: V3000IndexMap<BondIdx>,
     coords: Vec<(f64, f64)>,
     raw_z: Vec<f64>,
     expected_atoms: usize,
@@ -514,8 +560,8 @@ impl V3000Parser {
         Self {
             state: V3000State::BeforeCtab,
             builder: MoleculeBuilder::new(),
-            atom_idx_map: Vec::new(),
-            bond_idx_map: Vec::new(),
+            atom_idx_map: V3000IndexMap::new(),
+            bond_idx_map: V3000IndexMap::new(),
             coords: Vec::new(),
             raw_z: Vec::new(),
             expected_atoms: 0,
@@ -697,7 +743,7 @@ impl V3000Parser {
                 &mut self.typed_sgroup_ids,
             )
             .map_err(|detail| v3k_err(line.line_num, detail))?;
-            self.sgroups.push(line.payload.clone());
+            self.sgroups.push(line.payload.to_string());
         }
         Ok(())
     }
@@ -822,6 +868,39 @@ fn v3000_geometry(
     (conformer, rank, diagnostics, square_planar)
 }
 
+/// Apply supported CTfile total-valence overrides after bonds are known.
+/// VAL=0 leaves implicit hydrogen inference alone; -1 and the legacy zero
+/// sentinel 15 suppress hydrogens. Retain the source attribute for rewriting.
+fn apply_v3000_valence_overrides(mol: &mut Molecule, properties: &[(u32, String)]) {
+    for (atom_id, properties) in properties {
+        let value = properties
+            .split_whitespace()
+            .find_map(|token| token.strip_prefix("VAL="))
+            .and_then(|value| value.parse::<i32>().ok());
+        let Some(value) = value.filter(|&value| value != 0) else {
+            continue;
+        };
+        let valence = if value == -1 || value == 15 {
+            0
+        } else {
+            let Ok(value) = u8::try_from(value) else {
+                continue;
+            };
+            value
+        };
+        let atom = AtomIdx(atom_id - 1);
+        // Keep the established V2000 boundary for aromatic/query valences.
+        if mol
+            .neighbors(atom)
+            .any(|(_, bond)| mol.bond(bond).order == BondOrder::Aromatic)
+        {
+            continue;
+        }
+        let drawn = chematic_core::valence::bond_order_sum(mol, atom);
+        mol.set_hydrogen_count(atom, Some(valence.saturating_sub(drawn)));
+    }
+}
+
 fn finish_v3000_report(
     parser: V3000Parser,
     mut metadata: MolMetadata,
@@ -830,6 +909,7 @@ fn finish_v3000_report(
     validate_v3000_terminal(&parser)?;
     let mut mol = parser.builder.build();
     crate::mol2000::flag_aromatic_bond_atoms(&mut mol);
+    apply_v3000_valence_overrides(&mut mol, &parser.atom_properties);
     metadata.v3000_sgroups = parser.sgroups;
     metadata.v3000_bond_properties = parser.bond_properties;
     metadata.v3000_atom_properties = parser.atom_properties;

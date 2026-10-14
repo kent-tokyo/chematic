@@ -419,6 +419,23 @@ pub(crate) fn expand_emissions_small<F>(
     ring_atoms: &[bool],
     bond_invariants: &[u32],
     max_radius: u32,
+    emit: F,
+) -> Option<()>
+where
+    F: FnMut(u32, u32, u32),
+{
+    expand_emissions_small_with_chirality(mol, ring_atoms, bond_invariants, max_radius, None, emit)
+}
+
+/// Compact bond environments with the same stereo hash lifecycle as the
+/// general expansion. E/Z is already encoded in `bond_invariants`; tetrahedral
+/// tags are checked against sorted neighbors until they become distinguishable.
+pub(crate) fn expand_emissions_small_with_chirality<F>(
+    mol: &Molecule,
+    ring_atoms: &[bool],
+    bond_invariants: &[u32],
+    max_radius: u32,
+    chirality: Option<&MorganChirality>,
     mut emit: F,
 ) -> Option<()>
 where
@@ -441,6 +458,7 @@ where
     // transparently spill to the heap with unchanged indexing and ordering.
     let mut next: SmallVec<[u32; 64]> = SmallVec::from_elem(0, n);
     let mut dead: SmallVec<[bool; 64]> = SmallVec::from_elem(false, n);
+    let mut chiral_atoms: SmallVec<[bool; 64]> = SmallVec::from_elem(false, n);
     let mut env: SmallVec<[u128; 64]> = SmallVec::from_elem(0, n);
     let mut next_env: SmallVec<[u128; 64]> = SmallVec::from_elem(0, n);
     let mut seen: SmallVec<[u128; 128]> = SmallVec::new();
@@ -474,8 +492,21 @@ where
             }
             pairs.sort_unstable();
             let mut invar = hash_combine(layer, current[i]);
+            let mut looks_chiral = chirality.is_some_and(|c| c.tagged[i]);
+            let mut previous_neighbor = None;
             for &(bond_inv, nb_inv) in &pairs {
                 invar = hash_combine(invar, hash_pair(bond_inv, nb_inv));
+                if looks_chiral
+                    && !chiral_atoms[i]
+                    && (bond_inv != 1 || previous_neighbor == Some(nb_inv))
+                {
+                    looks_chiral = false;
+                }
+                previous_neighbor = Some(nb_inv);
+            }
+            if looks_chiral && let Some(c) = chirality {
+                chiral_atoms[i] = true;
+                invar = hash_combine(invar, c.code[i]);
             }
             next[i] = invar;
             next_env[i] = bond_env;
@@ -587,6 +618,75 @@ pub fn rdkit_morgan_raw_trace(mol: &Molecule, max_radius: u32) -> Vec<RdkitMorga
 mod tests {
     use super::*;
     use chematic_smiles::parse;
+
+    #[test]
+    fn compact_stereo_emissions_match_general_lifecycle() {
+        let mut inputs = vec![
+            "".to_string(),
+            "[He]".to_string(),
+            "CC".to_string(),
+            "CCC(C)CCC".to_string(),
+            "CC(C)C(C)C".to_string(),
+            "CC(=O)O".to_string(),
+            "C1CCCCC1".to_string(),
+            "C1CC2CCC1C2".to_string(),
+            "C[C@H](F)[C@@H](Cl)Br".to_string(),
+            "C[C@H](O)/C=C/[C@@H](N)C(=O)O".to_string(),
+            "[Na+].CC(=O)[O-]".to_string(),
+        ];
+        inputs.extend(["C".repeat(65), "C".repeat(129), "C".repeat(130)]);
+        for smiles in inputs {
+            let mol = if smiles.is_empty() {
+                chematic_core::MoleculeBuilder::new().build()
+            } else {
+                parse(&smiles).unwrap()
+            };
+            let ring_atoms = chematic_perception::ring_atom_flags(&mol);
+            let bonds: Vec<_> = mol
+                .bonds()
+                .map(|(_, bond)| checked_bond_invariant(bond.order).unwrap())
+                .collect();
+            // Tag every atom, including symmetric and non-single-bond cases.
+            // This exercises delayed distinction and persistent chiral state
+            // independently of the shared stereo-perception preprocessing.
+            let chirality = MorganChirality {
+                tagged: vec![true; mol.atom_count()],
+                code: (0..mol.atom_count()).map(|i| 1 + (i % 3) as u32).collect(),
+            };
+            for radius in 0..=3 {
+                for stereo in [None, Some(&chirality)] {
+                    let mut compact = Vec::new();
+                    let result = expand_emissions_small_with_chirality(
+                        &mol,
+                        &ring_atoms,
+                        &bonds,
+                        radius,
+                        stereo,
+                        |a, r, id| compact.push((a, r, id)),
+                    );
+                    if mol.bond_count() > 128 {
+                        assert_eq!(result, None);
+                        assert!(compact.is_empty());
+                        continue;
+                    }
+                    assert_eq!(result, Some(()));
+                    let mut general = Vec::new();
+                    expand_one_pass_with_chirality_into(
+                        &mol,
+                        &ring_atoms,
+                        &bonds,
+                        radius,
+                        true,
+                        stereo,
+                        |a, r, id| general.push((a, r, id)),
+                    );
+                    compact.sort_unstable();
+                    general.sort_unstable();
+                    assert_eq!(compact, general, "{smiles}, radius={radius}");
+                }
+            }
+        }
+    }
 
     #[test]
     fn hash_combine_matches_boost_formula_by_construction() {

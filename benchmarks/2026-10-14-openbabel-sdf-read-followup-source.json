@@ -1,0 +1,103 @@
+{
+  "schema": "openbabel-sdf-read-followup-source/v1",
+  "base_commit": "ffe682c32cb4c76de0d309649427202a7d8e956d",
+  "prior_packet_source_sha256": "482b2092c623756174ae20ba5232f5cc3e887422bcef5de7141c95e628eacda3",
+  "prior_patch": {
+    "path": "benchmarks/2026-10-14-openbabel-sdf-speed-candidate.patch",
+    "sha256": "ece29045e324a19756f3ee7b96ad6bfbc713a03fa3feb0fbf4e4866c447a9da4"
+  },
+  "followup_patches": {
+    "baseline": {
+      "path": "benchmarks/2026-10-14-openbabel-sdf-read-followup-baseline.patch",
+      "sha256": "01cb335481ed549134176f2d4db87a271c657eeeafc5eadcd030a65c35729ce3"
+    },
+    "candidate": {
+      "path": "benchmarks/2026-10-14-openbabel-sdf-read-followup-candidate.patch",
+      "sha256": "3219e5cb13dc6276e48a21643f23720f32c39ddbad5489725f8a983389cd093e"
+    }
+  },
+  "baseline": "base plus prior Open Babel writer patch, then overlap correctness fix; retains old unconditional neighbor Vec allocations",
+  "candidate": "same corrected baseline with degree/wedge guard before neighbor collection and inline four-neighbor buffer; no other production changes",
+  "artifact_lane": "native isolated source builds; not the full dirty workspace or a released package",
+  "source_files_sha256": {
+    "crates/chematic-perception/src/stereo2d_local.rs": "ec044aa448dde2255953aba7e0cc4aa8e0704c2ac1d8bfb9061de0d84f7edde3",
+    "crates/chematic-mol/src/mol2000/writer.rs": "6aedddb3f805a28ab7634883b1594362079e1feabff9ebd37abe756f5969ed00",
+    "scripts/build_openbabel_sdf_speed_corpus.py": "82810e051082f1dc4e8ebdb314d21d36803bf5ee8d6355b02a229a6d31d0ca0b",
+    "crates/chematic-perception/tests/ctab_overlap_contract.rs": "0687d352111967afa23d05c96a6023fa1144cd66b9cf70e922b4ddf820ca0cbe",
+    "crates/chematic-mol/tests/sdf_overlapping_flat_neighbors.rs": "7fbef36142581ca1dbcf8f49fc759299bb7ea9f319bee17ecf7dfa5973ee3e03",
+    "crates/chematic-mol/tests/fixtures/sdf_overlapping_flat_neighbors_v2000.mol": "9c8ad2baf4bbd6389fe7f3dd890e1a050800e32b7a1dce0ab5912b873742724b",
+    "crates/chematic-mol/examples/openbabel_sdf_throughput.rs": "152d9c204fcb027e178d742c7a51667f19bedb10521dfd61cc5eaa8740a711b7",
+    "scripts/bench_openbabel_sdf_throughput.py": "7dbf070212854b08fd898ccd3e16de3d4ddf5e82835fd6312d1d61119edd8a47",
+    "scripts/tests/test_bench_openbabel_sdf_throughput.py": "cf58573d891c015b745ae0f74dc5bd76713dba4cf91457167c4b8e14403f5cb7",
+    "tools/openbabel_sdf_throughput.cpp": "d6b07968e9a2bb6a2e11ee079e2925672168f991dac34b235fe459fda0fc102e",
+    "validation/cosmolkit_comparison/bench_corpus.py": "6ad2dc64556b8e88e2b246f3c9dd4953b849a1c266fb8055520598b5e7deeb4c"
+  },
+  "frozen_build_source_sha256": {
+    "crates/chematic-perception/src/stereo2d_local.rs": "ec044aa448dde2255953aba7e0cc4aa8e0704c2ac1d8bfb9061de0d84f7edde3",
+    "crates/chematic-mol/src/mol2000/writer.rs": "6aedddb3f805a28ab7634883b1594362079e1feabff9ebd37abe756f5969ed00",
+    "Cargo.toml": "5a398486283707530879d379944ae8c48bdbcfb0c3464d327f160c7d83abfcef",
+    "Cargo.lock": "1c55261a594db832c9a26624588827ebac74906cd67d902d191258818c7bf546",
+    "crates/chematic-core/src/derived_cache.rs": "9d1c1ac8593d95040f86e5e868287bedde128736c1850434ea700d53613ece5e",
+    "crates/chematic-smiles/src/rdkit/mod.rs": "30166bf357376364991a06f4a12dffaa0fa45bcda15867a363417dcaec7f5013"
+  },
+  "baseline_perception_sha256": "081014edbeab1491118a377af8c7f4968f15c5549582f27bac93727376cc6d97",
+  "build": {
+    "rustc": "rustc 1.97.0 (2d8144b78 2026-07-07)\nbinary: rustc\ncommit-hash: 2d8144b7880597b6e6d3dfd63a9a9efae3f533d3\ncommit-date: 2026-07-07\nhost: aarch64-apple-darwin\nrelease: 1.97.0\nLLVM version: 22.1.6",
+    "release": {
+      "opt_level": 3,
+      "lto": true,
+      "codegen_units": 1
+    },
+    "target": "isolated prior Open Babel target, source files replaced with new mtimes; all three builds recompiled perception and linked mol harness"
+  },
+  "openbabel": {
+    "version": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+    "harness_sha256": "9e489bcdebfdda2adb29a0613eb3bd7f17a10f6d554185887366f96a0fc7964e",
+    "libraries": {
+      "/opt/homebrew/opt/open-babel/lib/libopenbabel.8.0.0.dylib": {
+        "real_path": "/opt/homebrew/Cellar/open-babel/3.2.1/lib/libopenbabel.8.0.0.dylib",
+        "sha256": "9c0e023919fca6656f686b3903c10d438c0003a1d07e721a850cff9ff495c93a"
+      },
+      "/opt/homebrew/opt/open-babel/lib/openbabel/3.2.1/mdlformat.so": {
+        "real_path": "/opt/homebrew/Cellar/open-babel/3.2.1/lib/openbabel/3.2.1/mdlformat.so",
+        "sha256": "63afe091d19268a0c6d5514b81ce5b9018c0334d9a0108b0fbfbb920b587999b"
+      }
+    }
+  },
+  "corpora": {
+    "slice0": {
+      "schema": "openbabel-sdf-speed-corpus/v1",
+      "source_path": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+      "source_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+      "source_rows": 1000,
+      "rows_filtered": 0,
+      "rdkit_version": "2026.09.1",
+      "coordinate_generation": "Compute2DCoords(canonOrient=True, clearConfs=True, forceRDKit=True)",
+      "output_sha256": "8e7ad63db96f6fb87b87333ab1f7710a18bc3be5cb4676c15c345c09d4ce718b",
+      "output_bytes": 2419258,
+      "minimum_atoms": 7,
+      "maximum_atoms": 137,
+      "total_atoms": 27435
+    },
+    "slice5000": {
+      "schema": "openbabel-sdf-speed-corpus/v1",
+      "source_path": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+      "source_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+      "source_rows": 1000,
+      "source_offset": 5000,
+      "rows_filtered": 0,
+      "rdkit_version": "2026.09.1",
+      "coordinate_generation": "Compute2DCoords(canonOrient=True, clearConfs=True, forceRDKit=True)",
+      "output_sha256": "38d1d169f40de9fe4c95ec475035658ffcb27a2c84c448e3c619c32aefe8fd60",
+      "output_bytes": 1390916,
+      "minimum_atoms": 4,
+      "maximum_atoms": 58,
+      "total_atoms": 15291
+    }
+  },
+  "retained_corpus5000": {
+    "path": "validation/benchmark_corpora/openbabel-sdf-speed-slice5000-1000-v1.sdf.gz",
+    "sha256_gzip": "2b0cf911baba966ec8221cc6349a98f80db007f6dc84f1756a8fb505d7af7ff2"
+  },
+  "scope": "Both 1000-row slices fixed before new timing; no rows filtered. Existing exposed corpus, not a sealed holdout. Prior slice0 remains included despite Open Babel internal stereo differences."
+}

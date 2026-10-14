@@ -49,17 +49,7 @@ pub(crate) fn stereo_diagnostics_to_py<'py>(
 }
 
 pub(crate) fn bitvec2048_to_bytes(fp: &chematic_fp::bitvec::BitVec2048) -> Vec<u8> {
-    (0..256usize)
-        .map(|byte_idx| {
-            let mut byte = 0u8;
-            for bit in 0..8usize {
-                if fp.get(byte_idx * 8 + bit) {
-                    byte |= 1 << bit;
-                }
-            }
-            byte
-        })
-        .collect()
+    fp.to_le_bytes().to_vec()
 }
 
 pub(crate) fn flat_to_coords3d(coords: &[[f64; 3]]) -> chematic_3d::Coords3D {

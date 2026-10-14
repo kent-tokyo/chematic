@@ -1,0 +1,190 @@
+--- a/crates/chematic-smiles/src/rdkit/mod.rs
++++ b/crates/chematic-smiles/src/rdkit/mod.rs
+@@ -1398,7 +1398,7 @@
+     if IN_RDKIT_MODEL.with(|c| c.get()) {
+         return f(mol);
+     }
+-    mol.derived_scalar(slot, || with_rdkit_model_molecule(mol, f))
++    mol.derived_scalar(slot, || with_rdkit_model_molecule_impl(mol, f, true))
+ }
+ 
+ /// Runs `f` on RDKit's own molecule for `mol` (`Chem.MolFromSmiles(s)`:
+@@ -1409,6 +1409,14 @@
+ /// atoms), and on `mol` itself otherwise. Nested calls run on the molecule
+ /// they are given.
+ pub fn with_rdkit_model_molecule<R>(mol: &Molecule, f: impl FnOnce(&Molecule) -> R) -> R {
++    with_rdkit_model_molecule_impl(mol, f, false)
++}
++
++fn with_rdkit_model_molecule_impl<R>(
++    mol: &Molecule,
++    f: impl FnOnce(&Molecule) -> R,
++    reuse_aromatic_view: bool,
++) -> R {
+     if IN_RDKIT_MODEL.with(|c| c.get()) {
+         return f(mol);
+     }
+@@ -1417,9 +1425,7 @@
+             .atoms()
+             .any(|(_, a)| !a.wildcard && a.element == chematic_core::Element::H);
+     let model = if needed {
+-        rdkit_mol_from_smiles(mol)
+-            .ok()
+-            .and_then(|(m, _)| pdb_read::to_chematic(&m, true).ok())
++        rdkit_model_molecule(mol, reuse_aromatic_view).ok()
+     } else {
+         None
+     };
+@@ -1548,6 +1554,37 @@
+     Some(out)
+ }
+ 
++/// Descriptor/fingerprint callbacks consume a core molecule, which cannot
++/// carry CIP ranks or the port's potential-stereocenter flags. Keep stereo
++/// cleanup for specified tags/directions, but skip flag-only ranking when
++/// there is no specified stereo. Sanitization and hydrogen handling are the
++/// same as in `rdkit_mol_from_smiles`.
++fn rdkit_model_molecule(
++    mol: &Molecule,
++    reuse_aromatic_view: bool,
++) -> Result<Molecule, RdkitSmilesError> {
++    let mut m = parse::from_chematic(mol)?;
++    if has_added_hydrogens(mol) {
++        sanitize::sanitize_keeping_hs(&mut m)?;
++    } else {
++        sanitize::remove_hs_and_sanitize(&mut m)?;
++    }
++    stereo::legacy_stereo_perception_unflagged(&mut m);
++    let view = pdb_read::to_chematic(&m, true)?;
++    if reuse_aromatic_view && !chematic_perception::rdkit_parity_view_is_identity(&view) {
++        // This graph has just been sanitized by the same RDKit model used
++        // by the parity hook. Descriptor callers may reuse it instead of
++        // perceiving and sanitizing it again. Keep the usual descriptor
++        // normalization (including aromatic ring triples) in its consumer.
++        // Identity views need no copy; generic callbacks need no such cache.
++        view.seed_derived(
++            chematic_core::DerivedSlot::RdkitParityAromatic,
++            std::sync::Arc::new(Ok::<_, chematic_perception::AromaticityError>(view.clone())),
++        );
++    }
++    Ok(view)
++}
++
+ fn rdkit_mol_from_smiles(mol: &Molecule) -> Result<(mol::Mol, Vec<u32>), RdkitSmilesError> {
+     let mut m = parse::from_chematic(mol)?;
+     if has_added_hydrogens(mol) {
+@@ -1579,3 +1616,6 @@
+ 
+ #[cfg(test)]
+ mod pdb_contract_tests;
++
++#[cfg(test)]
++mod model_view_contract_tests;
+--- /dev/null
++++ b/crates/chematic-smiles/src/rdkit/model_view_contract_tests.rs
+@@ -0,0 +1,105 @@
++//! Core model views must not depend on unused CIP/potential-center flags.
++use super::*;
++
++fn same_core_view(mol: &Molecule) {
++    let full =
++        rdkit_mol_from_smiles(mol).and_then(|(model, _)| pdb_read::to_chematic(&model, true));
++    let optimized = rdkit_model_molecule(mol, true);
++    match (full, optimized) {
++        (Ok(full), Ok(optimized)) => {
++            assert_eq!(
++                full.atoms().collect::<Vec<_>>(),
++                optimized.atoms().collect::<Vec<_>>()
++            );
++            assert_eq!(
++                full.bonds().collect::<Vec<_>>(),
++                optimized.bonds().collect::<Vec<_>>()
++            );
++            for (idx, _) in full.atoms() {
++                assert_eq!(full.neighbor_slice(idx), optimized.neighbor_slice(idx));
++                assert_eq!(
++                    full.stereo_neighbor_order(idx),
++                    optimized.stereo_neighbor_order(idx)
++                );
++            }
++            for (idx, _) in full.bonds() {
++                assert_eq!(full.bond_direction(idx), optimized.bond_direction(idx));
++            }
++        }
++        (Err(full), Err(optimized)) => assert_eq!(full.to_string(), optimized.to_string()),
++        _ => panic!("model conversion success/error changed"),
++    }
++}
++
++#[test]
++fn core_model_keeps_specified_and_unspecified_stereo() {
++    for smiles in [
++        "CC(F)C(Cl)Br",
++        "N[C@@H](C)C(=O)O",
++        "C[C@](C)(F)Cl",
++        "F/C=C/F",
++        "F/C=C\\F",
++        "FC=CF",
++        "C1/C=C/CCC1",
++        "C1/C=C/CCCCC1",
++        "F[Pt@SP1](Cl)(Br)I",
++        "N[Co@OH1](F)(Cl)(Br)(I)P",
++        "C[C@AL1]=C=CC",
++        "[C@H]1(CCCCC1)C",
++        "C[C@H]1CCCC[C@@H]1C",
++        "[13CH3][C@H](O)C",
++    ] {
++        same_core_view(&crate::parse(smiles).unwrap());
++    }
++}
++
++#[test]
++fn core_model_keeps_hydrogens_cleanup_and_error_boundaries() {
++    for smiles in [
++        "[H]O[H]",
++        "[2H][C@](F)(Cl)Br",
++        "OCl(=O)(=O)=O",
++        "[NH4+]",
++        "C1C[N+]2=CC3=CC=CC=C3O[Cu]24OC5=CC=CC=C5C=[N+]14",
++        "[O]",
++        "[CH2]C",
++        "[Na+].[Cl-]",
++        "c1cccc1",
++        "CO(C)C",
++    ] {
++        same_core_view(&crate::parse_template(smiles).unwrap());
++    }
++    let mut mol = crate::parse("CO").unwrap();
++    let h = mol.add_atom(chematic_core::Atom::new(chematic_core::Element::H));
++    mol.add_bond(
++        chematic_core::AtomIdx(0),
++        h,
++        chematic_core::BondOrder::Single,
++    )
++    .unwrap();
++    same_core_view(&mol);
++}
++
++#[test]
++fn model_callbacks_keep_stereo_after_graph_edits() {
++    let mut mol = crate::parse("[H][C@](F)(Cl)Br").unwrap();
++    same_core_view(&mol);
++    mol.set_element(chematic_core::AtomIdx(2), chematic_core::Element::CL);
++    same_core_view(&mol);
++    mol.set_hydrogen_count(chematic_core::AtomIdx(1), Some(1));
++    same_core_view(&mol);
++}
++
++#[test]
++fn sanitized_view_cache_is_not_inherited_by_clones_or_edits() {
++    let mol = crate::parse("[CH2]C").unwrap();
++    let mut view = rdkit_model_molecule(&mol, true).unwrap();
++    let slot = chematic_core::DerivedSlot::RdkitParityAromatic;
++    type View = Result<Molecule, chematic_perception::AromaticityError>;
++    assert!(view.derived_if_computed::<View>(slot).is_some());
++    assert!(view.clone().derived_if_computed::<View>(slot).is_none());
++    view.set_hydrogen_count(chematic_core::AtomIdx(0), Some(3));
++    assert!(view.derived_if_computed::<View>(slot).is_none());
++    let plain = rdkit_model_molecule(&mol, false).unwrap();
++    assert!(plain.derived_if_computed::<View>(slot).is_none());
++}

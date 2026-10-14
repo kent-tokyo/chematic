@@ -1,0 +1,2458 @@
+{
+  "schema": "openbabel-sdf-throughput/v1",
+  "created_utc": "2026-10-14T06:30:55.735277+00:00",
+  "corpus": {
+    "path": "/private/tmp/chematic-openbabel-stage2-20261014/corpus-slice5000.sdf",
+    "sha256": "38d1d169f40de9fe4c95ec475035658ffcb27a2c84c448e3c619c32aefe8fd60",
+    "bytes": 1390916,
+    "records": 1000
+  },
+  "binaries": {
+    "baseline": {
+      "path": "/private/tmp/chematic-openbabel-stage2-20261014/baseline-sdf",
+      "sha256": "3f7dcc9a52b96e74b343dde9576382fc9ccb42bf0bb8913aa38a7ad2c7307e47"
+    },
+    "candidate": {
+      "path": "/private/tmp/chematic-openbabel-stage2-20261014/candidate-sdf",
+      "sha256": "5d186e784602a9c54dd82b08332f35cdf81f3ae1cd82a2bfafabb94b13009fcf"
+    },
+    "openbabel": {
+      "path": "/private/tmp/chematic-openbabel-speed-20261014/openbabel-sdf",
+      "sha256": "9e489bcdebfdda2adb29a0613eb3bd7f17a10f6d554185887366f96a0fc7964e"
+    }
+  },
+  "source_manifest": {
+    "schema": "openbabel-sdf-read-followup-source/v1",
+    "base_commit": "ffe682c32cb4c76de0d309649427202a7d8e956d",
+    "prior_packet_source_sha256": "482b2092c623756174ae20ba5232f5cc3e887422bcef5de7141c95e628eacda3",
+    "prior_patch": {
+      "path": "benchmarks/2026-10-14-openbabel-sdf-speed-candidate.patch",
+      "sha256": "ece29045e324a19756f3ee7b96ad6bfbc713a03fa3feb0fbf4e4866c447a9da4"
+    },
+    "followup_patches": {
+      "baseline": {
+        "path": "benchmarks/2026-10-14-openbabel-sdf-read-followup-baseline.patch",
+        "sha256": "01cb335481ed549134176f2d4db87a271c657eeeafc5eadcd030a65c35729ce3"
+      },
+      "candidate": {
+        "path": "benchmarks/2026-10-14-openbabel-sdf-read-followup-candidate.patch",
+        "sha256": "3219e5cb13dc6276e48a21643f23720f32c39ddbad5489725f8a983389cd093e"
+      }
+    },
+    "baseline": "base plus prior Open Babel writer patch, then overlap correctness fix; retains old unconditional neighbor Vec allocations",
+    "candidate": "same corrected baseline with degree/wedge guard before neighbor collection and inline four-neighbor buffer; no other production changes",
+    "artifact_lane": "native isolated source builds; not the full dirty workspace or a released package",
+    "source_files_sha256": {
+      "crates/chematic-perception/src/stereo2d_local.rs": "ec044aa448dde2255953aba7e0cc4aa8e0704c2ac1d8bfb9061de0d84f7edde3",
+      "crates/chematic-mol/src/mol2000/writer.rs": "6aedddb3f805a28ab7634883b1594362079e1feabff9ebd37abe756f5969ed00",
+      "scripts/build_openbabel_sdf_speed_corpus.py": "82810e051082f1dc4e8ebdb314d21d36803bf5ee8d6355b02a229a6d31d0ca0b",
+      "crates/chematic-perception/tests/ctab_overlap_contract.rs": "0687d352111967afa23d05c96a6023fa1144cd66b9cf70e922b4ddf820ca0cbe",
+      "crates/chematic-mol/tests/sdf_overlapping_flat_neighbors.rs": "7fbef36142581ca1dbcf8f49fc759299bb7ea9f319bee17ecf7dfa5973ee3e03",
+      "crates/chematic-mol/tests/fixtures/sdf_overlapping_flat_neighbors_v2000.mol": "9c8ad2baf4bbd6389fe7f3dd890e1a050800e32b7a1dce0ab5912b873742724b",
+      "crates/chematic-mol/examples/openbabel_sdf_throughput.rs": "152d9c204fcb027e178d742c7a51667f19bedb10521dfd61cc5eaa8740a711b7",
+      "scripts/bench_openbabel_sdf_throughput.py": "7dbf070212854b08fd898ccd3e16de3d4ddf5e82835fd6312d1d61119edd8a47",
+      "scripts/tests/test_bench_openbabel_sdf_throughput.py": "cf58573d891c015b745ae0f74dc5bd76713dba4cf91457167c4b8e14403f5cb7",
+      "tools/openbabel_sdf_throughput.cpp": "d6b07968e9a2bb6a2e11ee079e2925672168f991dac34b235fe459fda0fc102e",
+      "validation/cosmolkit_comparison/bench_corpus.py": "6ad2dc64556b8e88e2b246f3c9dd4953b849a1c266fb8055520598b5e7deeb4c"
+    },
+    "frozen_build_source_sha256": {
+      "crates/chematic-perception/src/stereo2d_local.rs": "ec044aa448dde2255953aba7e0cc4aa8e0704c2ac1d8bfb9061de0d84f7edde3",
+      "crates/chematic-mol/src/mol2000/writer.rs": "6aedddb3f805a28ab7634883b1594362079e1feabff9ebd37abe756f5969ed00",
+      "Cargo.toml": "5a398486283707530879d379944ae8c48bdbcfb0c3464d327f160c7d83abfcef",
+      "Cargo.lock": "1c55261a594db832c9a26624588827ebac74906cd67d902d191258818c7bf546",
+      "crates/chematic-core/src/derived_cache.rs": "9d1c1ac8593d95040f86e5e868287bedde128736c1850434ea700d53613ece5e",
+      "crates/chematic-smiles/src/rdkit/mod.rs": "30166bf357376364991a06f4a12dffaa0fa45bcda15867a363417dcaec7f5013"
+    },
+    "baseline_perception_sha256": "081014edbeab1491118a377af8c7f4968f15c5549582f27bac93727376cc6d97",
+    "build": {
+      "rustc": "rustc 1.97.0 (2d8144b78 2026-07-07)\nbinary: rustc\ncommit-hash: 2d8144b7880597b6e6d3dfd63a9a9efae3f533d3\ncommit-date: 2026-07-07\nhost: aarch64-apple-darwin\nrelease: 1.97.0\nLLVM version: 22.1.6",
+      "release": {
+        "opt_level": 3,
+        "lto": true,
+        "codegen_units": 1
+      },
+      "target": "isolated prior Open Babel target, source files replaced with new mtimes; all three builds recompiled perception and linked mol harness"
+    },
+    "openbabel": {
+      "version": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+      "harness_sha256": "9e489bcdebfdda2adb29a0613eb3bd7f17a10f6d554185887366f96a0fc7964e",
+      "libraries": {
+        "/opt/homebrew/opt/open-babel/lib/libopenbabel.8.0.0.dylib": {
+          "real_path": "/opt/homebrew/Cellar/open-babel/3.2.1/lib/libopenbabel.8.0.0.dylib",
+          "sha256": "9c0e023919fca6656f686b3903c10d438c0003a1d07e721a850cff9ff495c93a"
+        },
+        "/opt/homebrew/opt/open-babel/lib/openbabel/3.2.1/mdlformat.so": {
+          "real_path": "/opt/homebrew/Cellar/open-babel/3.2.1/lib/openbabel/3.2.1/mdlformat.so",
+          "sha256": "63afe091d19268a0c6d5514b81ce5b9018c0334d9a0108b0fbfbb920b587999b"
+        }
+      }
+    },
+    "corpora": {
+      "slice0": {
+        "schema": "openbabel-sdf-speed-corpus/v1",
+        "source_path": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+        "source_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "source_rows": 1000,
+        "rows_filtered": 0,
+        "rdkit_version": "2026.09.1",
+        "coordinate_generation": "Compute2DCoords(canonOrient=True, clearConfs=True, forceRDKit=True)",
+        "output_sha256": "8e7ad63db96f6fb87b87333ab1f7710a18bc3be5cb4676c15c345c09d4ce718b",
+        "output_bytes": 2419258,
+        "minimum_atoms": 7,
+        "maximum_atoms": 137,
+        "total_atoms": 27435
+      },
+      "slice5000": {
+        "schema": "openbabel-sdf-speed-corpus/v1",
+        "source_path": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+        "source_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "source_rows": 1000,
+        "source_offset": 5000,
+        "rows_filtered": 0,
+        "rdkit_version": "2026.09.1",
+        "coordinate_generation": "Compute2DCoords(canonOrient=True, clearConfs=True, forceRDKit=True)",
+        "output_sha256": "38d1d169f40de9fe4c95ec475035658ffcb27a2c84c448e3c619c32aefe8fd60",
+        "output_bytes": 1390916,
+        "minimum_atoms": 4,
+        "maximum_atoms": 58,
+        "total_atoms": 15291
+      }
+    },
+    "retained_corpus5000": {
+      "path": "validation/benchmark_corpora/openbabel-sdf-speed-slice5000-1000-v1.sdf.gz",
+      "sha256_gzip": "2b0cf911baba966ec8221cc6349a98f80db007f6dc84f1756a8fb505d7af7ff2"
+    },
+    "scope": "Both 1000-row slices fixed before new timing; no rows filtered. Existing exposed corpus, not a sealed holdout. Prior slice0 remains included despite Open Babel internal stereo differences."
+  },
+  "source_manifest_sha256": "0fea6e74ceafb86f2517d8f09de5767f5f50cacb9d9507bfa5ef710bf6ceb994",
+  "host": {
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "python": "3.13.6 (v3.13.6:4e665351082, Aug  6 2025, 11:22:35) [Clang 16.0.0 (clang-1600.0.26.6)]",
+    "cpus": 10
+  },
+  "openbabel_version": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+  "rdkit_observer_version": "2026.09.1",
+  "protocol": {
+    "blocks": 21,
+    "repeats": 5,
+    "modes": [
+      "parse",
+      "write",
+      "roundtrip"
+    ],
+    "order": "rotating three-arm fresh processes, sequential",
+    "timing": "native in-process loop; input loading and warmup excluded",
+    "parse": "borrowed in-memory input, full batch retained; default diagnostic Rust reader",
+    "write": "prepared batch, one untimed write, reusable Rust String / native OB WriteString",
+    "roundtrip": "fresh batch parse plus write inside one timer",
+    "rss": "Darwin whole-process high-water RSS, including input, prepared batch and warmup"
+  },
+  "semantics": {
+    "baseline": {
+      "passed": true,
+      "expected_rows": 1000,
+      "observed_rows": 1000,
+      "record_count_mismatch": false,
+      "mismatch_counts": {
+        "graph": 0,
+        "atoms": 0,
+        "bonds": 0,
+        "coordinates": 0,
+        "name": 0,
+        "properties": 0,
+        "explicit_unknown_stereo": 0
+      },
+      "mismatch_examples": {
+        "graph": [],
+        "atoms": [],
+        "bonds": [],
+        "coordinates": [],
+        "name": [],
+        "properties": [],
+        "explicit_unknown_stereo": []
+      }
+    },
+    "baseline_parse": {
+      "passed": true,
+      "rows": 1000,
+      "mismatches": 0,
+      "examples": []
+    },
+    "candidate": {
+      "passed": true,
+      "expected_rows": 1000,
+      "observed_rows": 1000,
+      "record_count_mismatch": false,
+      "mismatch_counts": {
+        "graph": 0,
+        "atoms": 0,
+        "bonds": 0,
+        "coordinates": 0,
+        "name": 0,
+        "properties": 0,
+        "explicit_unknown_stereo": 0
+      },
+      "mismatch_examples": {
+        "graph": [],
+        "atoms": [],
+        "bonds": [],
+        "coordinates": [],
+        "name": [],
+        "properties": [],
+        "explicit_unknown_stereo": []
+      }
+    },
+    "candidate_parse": {
+      "passed": true,
+      "rows": 1000,
+      "mismatches": 0,
+      "examples": []
+    },
+    "openbabel": {
+      "passed": true,
+      "expected_rows": 1000,
+      "observed_rows": 1000,
+      "record_count_mismatch": false,
+      "mismatch_counts": {
+        "graph": 0,
+        "atoms": 0,
+        "bonds": 0,
+        "coordinates": 0,
+        "name": 0,
+        "properties": 0,
+        "explicit_unknown_stereo": 0
+      },
+      "mismatch_examples": {
+        "graph": [],
+        "atoms": [],
+        "bonds": [],
+        "coordinates": [],
+        "name": [],
+        "properties": [],
+        "explicit_unknown_stereo": []
+      }
+    },
+    "openbabel_parse": {
+      "passed": true,
+      "rows": 1000,
+      "mismatches": 0,
+      "examples": []
+    }
+  },
+  "source_parse_snapshots_equal": true,
+  "snapshot_sha256": {
+    "baseline": "4e326d586393d02463e09a5a657c085deeb4191d34a72ce33efe0c7fb31c7dbe",
+    "candidate": "4e326d586393d02463e09a5a657c085deeb4191d34a72ce33efe0c7fb31c7dbe"
+  },
+  "rewrite_sha256": {
+    "baseline": "4995f90edbde0fa249cc96ec12e5dc7502c4479ab8c267c4ca3700952cc08d0f",
+    "candidate": "4995f90edbde0fa249cc96ec12e5dc7502c4479ab8c267c4ca3700952cc08d0f",
+    "openbabel": "985d76a303a55d20d66c0b6b370a2755a91fb49b10bef776fc48e29900d8a033"
+  },
+  "blocks": [
+    {
+      "order": [
+        "baseline",
+        "candidate",
+        "openbabel"
+      ],
+      "load_average_start": [
+        2.0390625,
+        3.2998046875,
+        3.447265625
+      ],
+      "baseline": {
+        "parse": {
+          "elapsed_ns": 38996209,
+          "engine": "chematic",
+          "mode": "parse",
+          "output_units": 76455,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11763712
+        },
+        "write": {
+          "elapsed_ns": 8320667,
+          "engine": "chematic",
+          "mode": "write",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 8224768
+        },
+        "roundtrip": {
+          "elapsed_ns": 47852500,
+          "engine": "chematic",
+          "mode": "roundtrip",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11747328
+        }
+      },
+      "candidate": {
+        "parse": {
+          "elapsed_ns": 37871083,
+          "engine": "chematic",
+          "mode": "parse",
+          "output_units": 76455,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 12009472
+        },
+        "write": {
+          "elapsed_ns": 8291583,
+          "engine": "chematic",
+          "mode": "write",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 8355840
+        },
+        "roundtrip": {
+          "elapsed_ns": 46833334,
+          "engine": "chematic",
+          "mode": "roundtrip",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11927552
+        }
+      },
+      "openbabel": {
+        "parse": {
+          "engine": "openbabel",
+          "mode": "parse",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 76455,
+          "elapsed_ns": 206502958,
+          "peak_process_rss_bytes": 43515904
+        },
+        "write": {
+          "engine": "openbabel",
+          "mode": "write",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 7661130,
+          "elapsed_ns": 68281792,
+          "peak_process_rss_bytes": 34947072
+        },
+        "roundtrip": {
+          "engine": "openbabel",
+          "mode": "roundtrip",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 7661130,
+          "elapsed_ns": 271338458,
+          "peak_process_rss_bytes": 43352064
+        }
+      }
+    },
+    {
+      "order": [
+        "candidate",
+        "openbabel",
+        "baseline"
+      ],
+      "load_average_start": [
+        1.95556640625,
+        3.26123046875,
+        3.4326171875
+      ],
+      "candidate": {
+        "parse": {
+          "elapsed_ns": 37768334,
+          "engine": "chematic",
+          "mode": "parse",
+          "output_units": 76455,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11862016
+        },
+        "write": {
+          "elapsed_ns": 8207250,
+          "engine": "chematic",
+          "mode": "write",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 8339456
+        },
+        "roundtrip": {
+          "elapsed_ns": 48043000,
+          "engine": "chematic",
+          "mode": "roundtrip",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11927552
+        }
+      },
+      "openbabel": {
+        "parse": {
+          "engine": "openbabel",
+          "mode": "parse",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 76455,
+          "elapsed_ns": 205535875,
+          "peak_process_rss_bytes": 43368448
+        },
+        "write": {
+          "engine": "openbabel",
+          "mode": "write",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 7661130,
+          "elapsed_ns": 70449167,
+          "peak_process_rss_bytes": 34865152
+        },
+        "roundtrip": {
+          "engine": "openbabel",
+          "mode": "roundtrip",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 7661130,
+          "elapsed_ns": 284017917,
+          "peak_process_rss_bytes": 43417600
+        }
+      },
+      "baseline": {
+        "parse": {
+          "elapsed_ns": 39133917,
+          "engine": "chematic",
+          "mode": "parse",
+          "output_units": 76455,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11829248
+        },
+        "write": {
+          "elapsed_ns": 8227042,
+          "engine": "chematic",
+          "mode": "write",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 8323072
+        },
+        "roundtrip": {
+          "elapsed_ns": 47718166,
+          "engine": "chematic",
+          "mode": "roundtrip",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11829248
+        }
+      }
+    },
+    {
+      "order": [
+        "openbabel",
+        "baseline",
+        "candidate"
+      ],
+      "load_average_start": [
+        1.95556640625,
+        3.26123046875,
+        3.4326171875
+      ],
+      "openbabel": {
+        "parse": {
+          "engine": "openbabel",
+          "mode": "parse",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 76455,
+          "elapsed_ns": 204616334,
+          "peak_process_rss_bytes": 43220992
+        },
+        "write": {
+          "engine": "openbabel",
+          "mode": "write",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 7661130,
+          "elapsed_ns": 66412500,
+          "peak_process_rss_bytes": 34930688
+        },
+        "roundtrip": {
+          "engine": "openbabel",
+          "mode": "roundtrip",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 7661130,
+          "elapsed_ns": 277951334,
+          "peak_process_rss_bytes": 43450368
+        }
+      },
+      "baseline": {
+        "parse": {
+          "elapsed_ns": 38660333,
+          "engine": "chematic",
+          "mode": "parse",
+          "output_units": 76455,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11812864
+        },
+        "write": {
+          "elapsed_ns": 8295209,
+          "engine": "chematic",
+          "mode": "write",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 8355840
+        },
+        "roundtrip": {
+          "elapsed_ns": 47973125,
+          "engine": "chematic",
+          "mode": "roundtrip",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11960320
+        }
+      },
+      "candidate": {
+        "parse": {
+          "elapsed_ns": 37901041,
+          "engine": "chematic",
+          "mode": "parse",
+          "output_units": 76455,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11927552
+        },
+        "write": {
+          "elapsed_ns": 8220500,
+          "engine": "chematic",
+          "mode": "write",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 8388608
+        },
+        "roundtrip": {
+          "elapsed_ns": 46856292,
+          "engine": "chematic",
+          "mode": "roundtrip",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11927552
+        }
+      }
+    },
+    {
+      "order": [
+        "baseline",
+        "candidate",
+        "openbabel"
+      ],
+      "load_average_start": [
+        1.95556640625,
+        3.26123046875,
+        3.4326171875
+      ],
+      "baseline": {
+        "parse": {
+          "elapsed_ns": 39053042,
+          "engine": "chematic",
+          "mode": "parse",
+          "output_units": 76455,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11862016
+        },
+        "write": {
+          "elapsed_ns": 8329291,
+          "engine": "chematic",
+          "mode": "write",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 8355840
+        },
+        "roundtrip": {
+          "elapsed_ns": 47531958,
+          "engine": "chematic",
+          "mode": "roundtrip",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11960320
+        }
+      },
+      "candidate": {
+        "parse": {
+          "elapsed_ns": 38008834,
+          "engine": "chematic",
+          "mode": "parse",
+          "output_units": 76455,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11845632
+        },
+        "write": {
+          "elapsed_ns": 8273791,
+          "engine": "chematic",
+          "mode": "write",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 8355840
+        },
+        "roundtrip": {
+          "elapsed_ns": 47895875,
+          "engine": "chematic",
+          "mode": "roundtrip",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 12107776
+        }
+      },
+      "openbabel": {
+        "parse": {
+          "engine": "openbabel",
+          "mode": "parse",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 76455,
+          "elapsed_ns": 206397334,
+          "peak_process_rss_bytes": 43286528
+        },
+        "write": {
+          "engine": "openbabel",
+          "mode": "write",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 7661130,
+          "elapsed_ns": 78144084,
+          "peak_process_rss_bytes": 34963456
+        },
+        "roundtrip": {
+          "engine": "openbabel",
+          "mode": "roundtrip",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 7661130,
+          "elapsed_ns": 275048708,
+          "peak_process_rss_bytes": 43499520
+        }
+      }
+    },
+    {
+      "order": [
+        "candidate",
+        "openbabel",
+        "baseline"
+      ],
+      "load_average_start": [
+        1.958984375,
+        3.240234375,
+        3.423828125
+      ],
+      "candidate": {
+        "parse": {
+          "elapsed_ns": 37720000,
+          "engine": "chematic",
+          "mode": "parse",
+          "output_units": 76455,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 12058624
+        },
+        "write": {
+          "elapsed_ns": 8201584,
+          "engine": "chematic",
+          "mode": "write",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 8421376
+        },
+        "roundtrip": {
+          "elapsed_ns": 46641959,
+          "engine": "chematic",
+          "mode": "roundtrip",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11911168
+        }
+      },
+      "openbabel": {
+        "parse": {
+          "engine": "openbabel",
+          "mode": "parse",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 76455,
+          "elapsed_ns": 206223000,
+          "peak_process_rss_bytes": 43433984
+        },
+        "write": {
+          "engine": "openbabel",
+          "mode": "write",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 7661130,
+          "elapsed_ns": 68009833,
+          "peak_process_rss_bytes": 34930688
+        },
+        "roundtrip": {
+          "engine": "openbabel",
+          "mode": "roundtrip",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 7661130,
+          "elapsed_ns": 276129583,
+          "peak_process_rss_bytes": 43417600
+        }
+      },
+      "baseline": {
+        "parse": {
+          "elapsed_ns": 38827458,
+          "engine": "chematic",
+          "mode": "parse",
+          "output_units": 76455,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11845632
+        },
+        "write": {
+          "elapsed_ns": 8270500,
+          "engine": "chematic",
+          "mode": "write",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 8224768
+        },
+        "roundtrip": {
+          "elapsed_ns": 47408667,
+          "engine": "chematic",
+          "mode": "roundtrip",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 12058624
+        }
+      }
+    },
+    {
+      "order": [
+        "openbabel",
+        "baseline",
+        "candidate"
+      ],
+      "load_average_start": [
+        1.958984375,
+        3.240234375,
+        3.423828125
+      ],
+      "openbabel": {
+        "parse": {
+          "engine": "openbabel",
+          "mode": "parse",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 76455,
+          "elapsed_ns": 205641000,
+          "peak_process_rss_bytes": 43384832
+        },
+        "write": {
+          "engine": "openbabel",
+          "mode": "write",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 7661130,
+          "elapsed_ns": 66608583,
+          "peak_process_rss_bytes": 34947072
+        },
+        "roundtrip": {
+          "engine": "openbabel",
+          "mode": "roundtrip",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 7661130,
+          "elapsed_ns": 276487084,
+          "peak_process_rss_bytes": 43450368
+        }
+      },
+      "baseline": {
+        "parse": {
+          "elapsed_ns": 38955875,
+          "engine": "chematic",
+          "mode": "parse",
+          "output_units": 76455,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11862016
+        },
+        "write": {
+          "elapsed_ns": 8382917,
+          "engine": "chematic",
+          "mode": "write",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 8306688
+        },
+        "roundtrip": {
+          "elapsed_ns": 47886542,
+          "engine": "chematic",
+          "mode": "roundtrip",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 12058624
+        }
+      },
+      "candidate": {
+        "parse": {
+          "elapsed_ns": 38148459,
+          "engine": "chematic",
+          "mode": "parse",
+          "output_units": 76455,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11943936
+        },
+        "write": {
+          "elapsed_ns": 8198584,
+          "engine": "chematic",
+          "mode": "write",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 8372224
+        },
+        "roundtrip": {
+          "elapsed_ns": 47260291,
+          "engine": "chematic",
+          "mode": "roundtrip",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11845632
+        }
+      }
+    },
+    {
+      "order": [
+        "baseline",
+        "candidate",
+        "openbabel"
+      ],
+      "load_average_start": [
+        1.958984375,
+        3.240234375,
+        3.423828125
+      ],
+      "baseline": {
+        "parse": {
+          "elapsed_ns": 38801792,
+          "engine": "chematic",
+          "mode": "parse",
+          "output_units": 76455,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11960320
+        },
+        "write": {
+          "elapsed_ns": 8387750,
+          "engine": "chematic",
+          "mode": "write",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 8257536
+        },
+        "roundtrip": {
+          "elapsed_ns": 47973125,
+          "engine": "chematic",
+          "mode": "roundtrip",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 12075008
+        }
+      },
+      "candidate": {
+        "parse": {
+          "elapsed_ns": 37820167,
+          "engine": "chematic",
+          "mode": "parse",
+          "output_units": 76455,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11927552
+        },
+        "write": {
+          "elapsed_ns": 8124000,
+          "engine": "chematic",
+          "mode": "write",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 8323072
+        },
+        "roundtrip": {
+          "elapsed_ns": 46755125,
+          "engine": "chematic",
+          "mode": "roundtrip",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11943936
+        }
+      },
+      "openbabel": {
+        "parse": {
+          "engine": "openbabel",
+          "mode": "parse",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 76455,
+          "elapsed_ns": 210153000,
+          "peak_process_rss_bytes": 43319296
+        },
+        "write": {
+          "engine": "openbabel",
+          "mode": "write",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 7661130,
+          "elapsed_ns": 66905542,
+          "peak_process_rss_bytes": 34947072
+        },
+        "roundtrip": {
+          "engine": "openbabel",
+          "mode": "roundtrip",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 7661130,
+          "elapsed_ns": 279533833,
+          "peak_process_rss_bytes": 43401216
+        }
+      }
+    },
+    {
+      "order": [
+        "candidate",
+        "openbabel",
+        "baseline"
+      ],
+      "load_average_start": [
+        1.958984375,
+        3.240234375,
+        3.423828125
+      ],
+      "candidate": {
+        "parse": {
+          "elapsed_ns": 38202167,
+          "engine": "chematic",
+          "mode": "parse",
+          "output_units": 76455,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 12009472
+        },
+        "write": {
+          "elapsed_ns": 8164417,
+          "engine": "chematic",
+          "mode": "write",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 8306688
+        },
+        "roundtrip": {
+          "elapsed_ns": 46855459,
+          "engine": "chematic",
+          "mode": "roundtrip",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11960320
+        }
+      },
+      "openbabel": {
+        "parse": {
+          "engine": "openbabel",
+          "mode": "parse",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 76455,
+          "elapsed_ns": 203784083,
+          "peak_process_rss_bytes": 43483136
+        },
+        "write": {
+          "engine": "openbabel",
+          "mode": "write",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 7661130,
+          "elapsed_ns": 68522000,
+          "peak_process_rss_bytes": 34979840
+        },
+        "roundtrip": {
+          "engine": "openbabel",
+          "mode": "roundtrip",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 7661130,
+          "elapsed_ns": 279323167,
+          "peak_process_rss_bytes": 43450368
+        }
+      },
+      "baseline": {
+        "parse": {
+          "elapsed_ns": 39225833,
+          "engine": "chematic",
+          "mode": "parse",
+          "output_units": 76455,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 12009472
+        },
+        "write": {
+          "elapsed_ns": 8391334,
+          "engine": "chematic",
+          "mode": "write",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 8241152
+        },
+        "roundtrip": {
+          "elapsed_ns": 47739500,
+          "engine": "chematic",
+          "mode": "roundtrip",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11780096
+        }
+      }
+    },
+    {
+      "order": [
+        "openbabel",
+        "baseline",
+        "candidate"
+      ],
+      "load_average_start": [
+        1.9619140625,
+        3.21923828125,
+        3.4150390625
+      ],
+      "openbabel": {
+        "parse": {
+          "engine": "openbabel",
+          "mode": "parse",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 76455,
+          "elapsed_ns": 206401291,
+          "peak_process_rss_bytes": 43499520
+        },
+        "write": {
+          "engine": "openbabel",
+          "mode": "write",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 7661130,
+          "elapsed_ns": 69618458,
+          "peak_process_rss_bytes": 34947072
+        },
+        "roundtrip": {
+          "engine": "openbabel",
+          "mode": "roundtrip",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 7661130,
+          "elapsed_ns": 277894500,
+          "peak_process_rss_bytes": 43417600
+        }
+      },
+      "baseline": {
+        "parse": {
+          "elapsed_ns": 38723500,
+          "engine": "chematic",
+          "mode": "parse",
+          "output_units": 76455,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11927552
+        },
+        "write": {
+          "elapsed_ns": 8251625,
+          "engine": "chematic",
+          "mode": "write",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 8486912
+        },
+        "roundtrip": {
+          "elapsed_ns": 47489584,
+          "engine": "chematic",
+          "mode": "roundtrip",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11763712
+        }
+      },
+      "candidate": {
+        "parse": {
+          "elapsed_ns": 37873291,
+          "engine": "chematic",
+          "mode": "parse",
+          "output_units": 76455,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11911168
+        },
+        "write": {
+          "elapsed_ns": 8207209,
+          "engine": "chematic",
+          "mode": "write",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 8372224
+        },
+        "roundtrip": {
+          "elapsed_ns": 46714042,
+          "engine": "chematic",
+          "mode": "roundtrip",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11927552
+        }
+      }
+    },
+    {
+      "order": [
+        "baseline",
+        "candidate",
+        "openbabel"
+      ],
+      "load_average_start": [
+        1.9619140625,
+        3.21923828125,
+        3.4150390625
+      ],
+      "baseline": {
+        "parse": {
+          "elapsed_ns": 39261208,
+          "engine": "chematic",
+          "mode": "parse",
+          "output_units": 76455,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11960320
+        },
+        "write": {
+          "elapsed_ns": 7989458,
+          "engine": "chematic",
+          "mode": "write",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 8241152
+        },
+        "roundtrip": {
+          "elapsed_ns": 47938791,
+          "engine": "chematic",
+          "mode": "roundtrip",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11943936
+        }
+      },
+      "candidate": {
+        "parse": {
+          "elapsed_ns": 37832042,
+          "engine": "chematic",
+          "mode": "parse",
+          "output_units": 76455,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11943936
+        },
+        "write": {
+          "elapsed_ns": 8240958,
+          "engine": "chematic",
+          "mode": "write",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 8323072
+        },
+        "roundtrip": {
+          "elapsed_ns": 47119541,
+          "engine": "chematic",
+          "mode": "roundtrip",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 12009472
+        }
+      },
+      "openbabel": {
+        "parse": {
+          "engine": "openbabel",
+          "mode": "parse",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 76455,
+          "elapsed_ns": 206375416,
+          "peak_process_rss_bytes": 43368448
+        },
+        "write": {
+          "engine": "openbabel",
+          "mode": "write",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 7661130,
+          "elapsed_ns": 66322125,
+          "peak_process_rss_bytes": 34914304
+        },
+        "roundtrip": {
+          "engine": "openbabel",
+          "mode": "roundtrip",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 7661130,
+          "elapsed_ns": 278768583,
+          "peak_process_rss_bytes": 43384832
+        }
+      }
+    },
+    {
+      "order": [
+        "candidate",
+        "openbabel",
+        "baseline"
+      ],
+      "load_average_start": [
+        1.9619140625,
+        3.21923828125,
+        3.4150390625
+      ],
+      "candidate": {
+        "parse": {
+          "elapsed_ns": 38159750,
+          "engine": "chematic",
+          "mode": "parse",
+          "output_units": 76455,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11878400
+        },
+        "write": {
+          "elapsed_ns": 8482917,
+          "engine": "chematic",
+          "mode": "write",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 8339456
+        },
+        "roundtrip": {
+          "elapsed_ns": 47572791,
+          "engine": "chematic",
+          "mode": "roundtrip",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11927552
+        }
+      },
+      "openbabel": {
+        "parse": {
+          "engine": "openbabel",
+          "mode": "parse",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 76455,
+          "elapsed_ns": 205552167,
+          "peak_process_rss_bytes": 43401216
+        },
+        "write": {
+          "engine": "openbabel",
+          "mode": "write",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 7661130,
+          "elapsed_ns": 68366375,
+          "peak_process_rss_bytes": 34914304
+        },
+        "roundtrip": {
+          "engine": "openbabel",
+          "mode": "roundtrip",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 7661130,
+          "elapsed_ns": 285814000,
+          "peak_process_rss_bytes": 43499520
+        }
+      },
+      "baseline": {
+        "parse": {
+          "elapsed_ns": 38757416,
+          "engine": "chematic",
+          "mode": "parse",
+          "output_units": 76455,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11927552
+        },
+        "write": {
+          "elapsed_ns": 8180834,
+          "engine": "chematic",
+          "mode": "write",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 8241152
+        },
+        "roundtrip": {
+          "elapsed_ns": 47394542,
+          "engine": "chematic",
+          "mode": "roundtrip",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11730944
+        }
+      }
+    },
+    {
+      "order": [
+        "openbabel",
+        "baseline",
+        "candidate"
+      ],
+      "load_average_start": [
+        1.884765625,
+        3.18212890625,
+        3.40087890625
+      ],
+      "openbabel": {
+        "parse": {
+          "engine": "openbabel",
+          "mode": "parse",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 76455,
+          "elapsed_ns": 205199375,
+          "peak_process_rss_bytes": 43335680
+        },
+        "write": {
+          "engine": "openbabel",
+          "mode": "write",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 7661130,
+          "elapsed_ns": 67056209,
+          "peak_process_rss_bytes": 34914304
+        },
+        "roundtrip": {
+          "engine": "openbabel",
+          "mode": "roundtrip",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 7661130,
+          "elapsed_ns": 275138250,
+          "peak_process_rss_bytes": 43433984
+        }
+      },
+      "baseline": {
+        "parse": {
+          "elapsed_ns": 38924750,
+          "engine": "chematic",
+          "mode": "parse",
+          "output_units": 76455,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11763712
+        },
+        "write": {
+          "elapsed_ns": 8232542,
+          "engine": "chematic",
+          "mode": "write",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 8241152
+        },
+        "roundtrip": {
+          "elapsed_ns": 47434625,
+          "engine": "chematic",
+          "mode": "roundtrip",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11714560
+        }
+      },
+      "candidate": {
+        "parse": {
+          "elapsed_ns": 38349833,
+          "engine": "chematic",
+          "mode": "parse",
+          "output_units": 76455,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11943936
+        },
+        "write": {
+          "elapsed_ns": 8289125,
+          "engine": "chematic",
+          "mode": "write",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 8404992
+        },
+        "roundtrip": {
+          "elapsed_ns": 46959042,
+          "engine": "chematic",
+          "mode": "roundtrip",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11943936
+        }
+      }
+    },
+    {
+      "order": [
+        "baseline",
+        "candidate",
+        "openbabel"
+      ],
+      "load_average_start": [
+        1.884765625,
+        3.18212890625,
+        3.40087890625
+      ],
+      "baseline": {
+        "parse": {
+          "elapsed_ns": 39548250,
+          "engine": "chematic",
+          "mode": "parse",
+          "output_units": 76455,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11976704
+        },
+        "write": {
+          "elapsed_ns": 8326875,
+          "engine": "chematic",
+          "mode": "write",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 8355840
+        },
+        "roundtrip": {
+          "elapsed_ns": 48279083,
+          "engine": "chematic",
+          "mode": "roundtrip",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11976704
+        }
+      },
+      "candidate": {
+        "parse": {
+          "elapsed_ns": 38329041,
+          "engine": "chematic",
+          "mode": "parse",
+          "output_units": 76455,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11927552
+        },
+        "write": {
+          "elapsed_ns": 8182917,
+          "engine": "chematic",
+          "mode": "write",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 8372224
+        },
+        "roundtrip": {
+          "elapsed_ns": 46785750,
+          "engine": "chematic",
+          "mode": "roundtrip",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11845632
+        }
+      },
+      "openbabel": {
+        "parse": {
+          "engine": "openbabel",
+          "mode": "parse",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 76455,
+          "elapsed_ns": 204857333,
+          "peak_process_rss_bytes": 43368448
+        },
+        "write": {
+          "engine": "openbabel",
+          "mode": "write",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 7661130,
+          "elapsed_ns": 67684416,
+          "peak_process_rss_bytes": 35045376
+        },
+        "roundtrip": {
+          "engine": "openbabel",
+          "mode": "roundtrip",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 7661130,
+          "elapsed_ns": 277049500,
+          "peak_process_rss_bytes": 43450368
+        }
+      }
+    },
+    {
+      "order": [
+        "candidate",
+        "openbabel",
+        "baseline"
+      ],
+      "load_average_start": [
+        1.884765625,
+        3.18212890625,
+        3.40087890625
+      ],
+      "candidate": {
+        "parse": {
+          "elapsed_ns": 38042708,
+          "engine": "chematic",
+          "mode": "parse",
+          "output_units": 76455,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11845632
+        },
+        "write": {
+          "elapsed_ns": 8162250,
+          "engine": "chematic",
+          "mode": "write",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 8339456
+        },
+        "roundtrip": {
+          "elapsed_ns": 47574709,
+          "engine": "chematic",
+          "mode": "roundtrip",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11911168
+        }
+      },
+      "openbabel": {
+        "parse": {
+          "engine": "openbabel",
+          "mode": "parse",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 76455,
+          "elapsed_ns": 204547708,
+          "peak_process_rss_bytes": 43368448
+        },
+        "write": {
+          "engine": "openbabel",
+          "mode": "write",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 7661130,
+          "elapsed_ns": 67695166,
+          "peak_process_rss_bytes": 34947072
+        },
+        "roundtrip": {
+          "engine": "openbabel",
+          "mode": "roundtrip",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 7661130,
+          "elapsed_ns": 283875458,
+          "peak_process_rss_bytes": 43401216
+        }
+      },
+      "baseline": {
+        "parse": {
+          "elapsed_ns": 38967750,
+          "engine": "chematic",
+          "mode": "parse",
+          "output_units": 76455,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11747328
+        },
+        "write": {
+          "elapsed_ns": 8345542,
+          "engine": "chematic",
+          "mode": "write",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 8486912
+        },
+        "roundtrip": {
+          "elapsed_ns": 47780625,
+          "engine": "chematic",
+          "mode": "roundtrip",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11730944
+        }
+      }
+    },
+    {
+      "order": [
+        "openbabel",
+        "baseline",
+        "candidate"
+      ],
+      "load_average_start": [
+        1.884765625,
+        3.18212890625,
+        3.40087890625
+      ],
+      "openbabel": {
+        "parse": {
+          "engine": "openbabel",
+          "mode": "parse",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 76455,
+          "elapsed_ns": 205786584,
+          "peak_process_rss_bytes": 43352064
+        },
+        "write": {
+          "engine": "openbabel",
+          "mode": "write",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 7661130,
+          "elapsed_ns": 68330458,
+          "peak_process_rss_bytes": 34979840
+        },
+        "roundtrip": {
+          "engine": "openbabel",
+          "mode": "roundtrip",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 7661130,
+          "elapsed_ns": 273580541,
+          "peak_process_rss_bytes": 43417600
+        }
+      },
+      "baseline": {
+        "parse": {
+          "elapsed_ns": 38679583,
+          "engine": "chematic",
+          "mode": "parse",
+          "output_units": 76455,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11763712
+        },
+        "write": {
+          "elapsed_ns": 7955375,
+          "engine": "chematic",
+          "mode": "write",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 8257536
+        },
+        "roundtrip": {
+          "elapsed_ns": 47489667,
+          "engine": "chematic",
+          "mode": "roundtrip",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11862016
+        }
+      },
+      "candidate": {
+        "parse": {
+          "elapsed_ns": 37816500,
+          "engine": "chematic",
+          "mode": "parse",
+          "output_units": 76455,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11845632
+        },
+        "write": {
+          "elapsed_ns": 8323792,
+          "engine": "chematic",
+          "mode": "write",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 8355840
+        },
+        "roundtrip": {
+          "elapsed_ns": 46895375,
+          "engine": "chematic",
+          "mode": "roundtrip",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11862016
+        }
+      }
+    },
+    {
+      "order": [
+        "baseline",
+        "candidate",
+        "openbabel"
+      ],
+      "load_average_start": [
+        1.9736328125,
+        3.1787109375,
+        3.3984375
+      ],
+      "baseline": {
+        "parse": {
+          "elapsed_ns": 39969917,
+          "engine": "chematic",
+          "mode": "parse",
+          "output_units": 76455,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11845632
+        },
+        "write": {
+          "elapsed_ns": 8407292,
+          "engine": "chematic",
+          "mode": "write",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 8323072
+        },
+        "roundtrip": {
+          "elapsed_ns": 47910250,
+          "engine": "chematic",
+          "mode": "roundtrip",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11763712
+        }
+      },
+      "candidate": {
+        "parse": {
+          "elapsed_ns": 38732750,
+          "engine": "chematic",
+          "mode": "parse",
+          "output_units": 76455,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11911168
+        },
+        "write": {
+          "elapsed_ns": 8147667,
+          "engine": "chematic",
+          "mode": "write",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 8339456
+        },
+        "roundtrip": {
+          "elapsed_ns": 46842583,
+          "engine": "chematic",
+          "mode": "roundtrip",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11911168
+        }
+      },
+      "openbabel": {
+        "parse": {
+          "engine": "openbabel",
+          "mode": "parse",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 76455,
+          "elapsed_ns": 206523291,
+          "peak_process_rss_bytes": 43417600
+        },
+        "write": {
+          "engine": "openbabel",
+          "mode": "write",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 7661130,
+          "elapsed_ns": 66024667,
+          "peak_process_rss_bytes": 34914304
+        },
+        "roundtrip": {
+          "engine": "openbabel",
+          "mode": "roundtrip",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 7661130,
+          "elapsed_ns": 275133584,
+          "peak_process_rss_bytes": 43515904
+        }
+      }
+    },
+    {
+      "order": [
+        "candidate",
+        "openbabel",
+        "baseline"
+      ],
+      "load_average_start": [
+        1.9736328125,
+        3.1787109375,
+        3.3984375
+      ],
+      "candidate": {
+        "parse": {
+          "elapsed_ns": 37918166,
+          "engine": "chematic",
+          "mode": "parse",
+          "output_units": 76455,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11927552
+        },
+        "write": {
+          "elapsed_ns": 8345416,
+          "engine": "chematic",
+          "mode": "write",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 8323072
+        },
+        "roundtrip": {
+          "elapsed_ns": 47353417,
+          "engine": "chematic",
+          "mode": "roundtrip",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11927552
+        }
+      },
+      "openbabel": {
+        "parse": {
+          "engine": "openbabel",
+          "mode": "parse",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 76455,
+          "elapsed_ns": 203611417,
+          "peak_process_rss_bytes": 43352064
+        },
+        "write": {
+          "engine": "openbabel",
+          "mode": "write",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 7661130,
+          "elapsed_ns": 67992083,
+          "peak_process_rss_bytes": 34897920
+        },
+        "roundtrip": {
+          "engine": "openbabel",
+          "mode": "roundtrip",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 7661130,
+          "elapsed_ns": 274723875,
+          "peak_process_rss_bytes": 43352064
+        }
+      },
+      "baseline": {
+        "parse": {
+          "elapsed_ns": 38843333,
+          "engine": "chematic",
+          "mode": "parse",
+          "output_units": 76455,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11780096
+        },
+        "write": {
+          "elapsed_ns": 8059833,
+          "engine": "chematic",
+          "mode": "write",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 8306688
+        },
+        "roundtrip": {
+          "elapsed_ns": 47566292,
+          "engine": "chematic",
+          "mode": "roundtrip",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11943936
+        }
+      }
+    },
+    {
+      "order": [
+        "openbabel",
+        "baseline",
+        "candidate"
+      ],
+      "load_average_start": [
+        1.9736328125,
+        3.1787109375,
+        3.3984375
+      ],
+      "openbabel": {
+        "parse": {
+          "engine": "openbabel",
+          "mode": "parse",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 76455,
+          "elapsed_ns": 205151125,
+          "peak_process_rss_bytes": 43335680
+        },
+        "write": {
+          "engine": "openbabel",
+          "mode": "write",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 7661130,
+          "elapsed_ns": 66703292,
+          "peak_process_rss_bytes": 34914304
+        },
+        "roundtrip": {
+          "engine": "openbabel",
+          "mode": "roundtrip",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 7661130,
+          "elapsed_ns": 276967541,
+          "peak_process_rss_bytes": 43450368
+        }
+      },
+      "baseline": {
+        "parse": {
+          "elapsed_ns": 39102500,
+          "engine": "chematic",
+          "mode": "parse",
+          "output_units": 76455,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11747328
+        },
+        "write": {
+          "elapsed_ns": 8195542,
+          "engine": "chematic",
+          "mode": "write",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 8192000
+        },
+        "roundtrip": {
+          "elapsed_ns": 47913708,
+          "engine": "chematic",
+          "mode": "roundtrip",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11780096
+        }
+      },
+      "candidate": {
+        "parse": {
+          "elapsed_ns": 38088542,
+          "engine": "chematic",
+          "mode": "parse",
+          "output_units": 76455,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11845632
+        },
+        "write": {
+          "elapsed_ns": 8118333,
+          "engine": "chematic",
+          "mode": "write",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 8437760
+        },
+        "roundtrip": {
+          "elapsed_ns": 46981583,
+          "engine": "chematic",
+          "mode": "roundtrip",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11993088
+        }
+      }
+    },
+    {
+      "order": [
+        "baseline",
+        "candidate",
+        "openbabel"
+      ],
+      "load_average_start": [
+        2.0556640625,
+        3.17529296875,
+        3.39599609375
+      ],
+      "baseline": {
+        "parse": {
+          "elapsed_ns": 38725500,
+          "engine": "chematic",
+          "mode": "parse",
+          "output_units": 76455,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11862016
+        },
+        "write": {
+          "elapsed_ns": 8010958,
+          "engine": "chematic",
+          "mode": "write",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 8241152
+        },
+        "roundtrip": {
+          "elapsed_ns": 47805209,
+          "engine": "chematic",
+          "mode": "roundtrip",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11943936
+        }
+      },
+      "candidate": {
+        "parse": {
+          "elapsed_ns": 37716792,
+          "engine": "chematic",
+          "mode": "parse",
+          "output_units": 76455,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11927552
+        },
+        "write": {
+          "elapsed_ns": 8296250,
+          "engine": "chematic",
+          "mode": "write",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 8355840
+        },
+        "roundtrip": {
+          "elapsed_ns": 46687125,
+          "engine": "chematic",
+          "mode": "roundtrip",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11927552
+        }
+      },
+      "openbabel": {
+        "parse": {
+          "engine": "openbabel",
+          "mode": "parse",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 76455,
+          "elapsed_ns": 204588042,
+          "peak_process_rss_bytes": 43401216
+        },
+        "write": {
+          "engine": "openbabel",
+          "mode": "write",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 7661130,
+          "elapsed_ns": 67386166,
+          "peak_process_rss_bytes": 34881536
+        },
+        "roundtrip": {
+          "engine": "openbabel",
+          "mode": "roundtrip",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 7661130,
+          "elapsed_ns": 279871459,
+          "peak_process_rss_bytes": 43433984
+        }
+      }
+    },
+    {
+      "order": [
+        "candidate",
+        "openbabel",
+        "baseline"
+      ],
+      "load_average_start": [
+        2.0556640625,
+        3.17529296875,
+        3.39599609375
+      ],
+      "candidate": {
+        "parse": {
+          "elapsed_ns": 37991375,
+          "engine": "chematic",
+          "mode": "parse",
+          "output_units": 76455,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11862016
+        },
+        "write": {
+          "elapsed_ns": 8293166,
+          "engine": "chematic",
+          "mode": "write",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 8290304
+        },
+        "roundtrip": {
+          "elapsed_ns": 46956709,
+          "engine": "chematic",
+          "mode": "roundtrip",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11911168
+        }
+      },
+      "openbabel": {
+        "parse": {
+          "engine": "openbabel",
+          "mode": "parse",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 76455,
+          "elapsed_ns": 206443958,
+          "peak_process_rss_bytes": 43401216
+        },
+        "write": {
+          "engine": "openbabel",
+          "mode": "write",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 7661130,
+          "elapsed_ns": 66478042,
+          "peak_process_rss_bytes": 34930688
+        },
+        "roundtrip": {
+          "engine": "openbabel",
+          "mode": "roundtrip",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 7661130,
+          "elapsed_ns": 280632833,
+          "peak_process_rss_bytes": 43253760
+        }
+      },
+      "baseline": {
+        "parse": {
+          "elapsed_ns": 38934583,
+          "engine": "chematic",
+          "mode": "parse",
+          "output_units": 76455,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11976704
+        },
+        "write": {
+          "elapsed_ns": 8282791,
+          "engine": "chematic",
+          "mode": "write",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 8404992
+        },
+        "roundtrip": {
+          "elapsed_ns": 47313917,
+          "engine": "chematic",
+          "mode": "roundtrip",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11976704
+        }
+      }
+    },
+    {
+      "order": [
+        "openbabel",
+        "baseline",
+        "candidate"
+      ],
+      "load_average_start": [
+        2.0556640625,
+        3.17529296875,
+        3.39599609375
+      ],
+      "openbabel": {
+        "parse": {
+          "engine": "openbabel",
+          "mode": "parse",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 76455,
+          "elapsed_ns": 204231250,
+          "peak_process_rss_bytes": 43384832
+        },
+        "write": {
+          "engine": "openbabel",
+          "mode": "write",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 7661130,
+          "elapsed_ns": 68149583,
+          "peak_process_rss_bytes": 34897920
+        },
+        "roundtrip": {
+          "engine": "openbabel",
+          "mode": "roundtrip",
+          "records": 5000,
+          "repeats": 5,
+          "output_units": 7661130,
+          "elapsed_ns": 274310250,
+          "peak_process_rss_bytes": 43302912
+        }
+      },
+      "baseline": {
+        "parse": {
+          "elapsed_ns": 38837584,
+          "engine": "chematic",
+          "mode": "parse",
+          "output_units": 76455,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11698176
+        },
+        "write": {
+          "elapsed_ns": 8345833,
+          "engine": "chematic",
+          "mode": "write",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 8437760
+        },
+        "roundtrip": {
+          "elapsed_ns": 47497375,
+          "engine": "chematic",
+          "mode": "roundtrip",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11796480
+        }
+      },
+      "candidate": {
+        "parse": {
+          "elapsed_ns": 38681375,
+          "engine": "chematic",
+          "mode": "parse",
+          "output_units": 76455,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11960320
+        },
+        "write": {
+          "elapsed_ns": 8213042,
+          "engine": "chematic",
+          "mode": "write",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 8388608
+        },
+        "roundtrip": {
+          "elapsed_ns": 46975083,
+          "engine": "chematic",
+          "mode": "roundtrip",
+          "output_units": 6650835,
+          "records": 5000,
+          "repeats": 5,
+          "peak_process_rss_bytes": 11927552
+        }
+      }
+    }
+  ],
+  "summary": {
+    "parse": {
+      "baseline": {
+        "speedup": {
+          "median": 1.026,
+          "ci95": [
+            1.023,
+            1.027
+          ],
+          "winning_blocks": 21,
+          "blocks": 21
+        },
+        "semantic_prerequisite": true,
+        "strict_speed_win": true
+      },
+      "openbabel": {
+        "speedup": {
+          "median": 5.399,
+          "ci95": [
+            5.377,
+            5.442
+          ],
+          "winning_blocks": 21,
+          "blocks": 21
+        },
+        "semantic_prerequisite": true,
+        "strict_speed_win": true
+      }
+    },
+    "write": {
+      "baseline": {
+        "speedup": {
+          "median": 1.007,
+          "ci95": [
+            0.999,
+            1.016
+          ],
+          "winning_blocks": 14,
+          "blocks": 21
+        },
+        "semantic_prerequisite": true,
+        "strict_speed_win": false
+      },
+      "openbabel": {
+        "speedup": {
+          "median": 8.216,
+          "ci95": [
+            8.122,
+            8.292
+          ],
+          "winning_blocks": 21,
+          "blocks": 21
+        },
+        "semantic_prerequisite": true,
+        "strict_speed_win": true
+      }
+    },
+    "roundtrip": {
+      "baseline": {
+        "speedup": {
+          "median": 1.016,
+          "ci95": [
+            1.01,
+            1.02
+          ],
+          "winning_blocks": 18,
+          "blocks": 21
+        },
+        "semantic_prerequisite": true,
+        "strict_speed_win": false
+      },
+      "openbabel": {
+        "speedup": {
+          "median": 5.916,
+          "ci95": [
+            5.859,
+            5.949
+          ],
+          "winning_blocks": 21,
+          "blocks": 21
+        },
+        "semantic_prerequisite": true,
+        "strict_speed_win": true
+      }
+    }
+  },
+  "complete": true,
+  "retained_artifacts": {
+    "slice5000_baseline_rewrite": {
+      "path": "validation/results/openbabel-sdf-read-followup-slice5000-baseline-rewrite-2026-10-14.sdf.gz",
+      "sha256": "4995f90edbde0fa249cc96ec12e5dc7502c4479ab8c267c4ca3700952cc08d0f",
+      "sha256_gzip": "4ab17eddc3d5aeadfdc8f1e249d25262887b262acd207a397d6f628042845ad0",
+      "bytes": 1330167
+    },
+    "slice5000_baseline_snapshot": {
+      "path": "validation/results/openbabel-sdf-read-followup-slice5000-baseline-snapshot-2026-10-14.json.gz",
+      "sha256": "4e326d586393d02463e09a5a657c085deeb4191d34a72ce33efe0c7fb31c7dbe",
+      "sha256_gzip": "146758923ace06e26b9c15705683ed484152dfff7a30af09f037264eb1917600",
+      "bytes": 4945353
+    },
+    "slice5000_candidate_rewrite": {
+      "path": "validation/results/openbabel-sdf-read-followup-slice5000-candidate-rewrite-2026-10-14.sdf.gz",
+      "sha256": "4995f90edbde0fa249cc96ec12e5dc7502c4479ab8c267c4ca3700952cc08d0f",
+      "sha256_gzip": "4ab17eddc3d5aeadfdc8f1e249d25262887b262acd207a397d6f628042845ad0",
+      "bytes": 1330167
+    },
+    "slice5000_candidate_snapshot": {
+      "path": "validation/results/openbabel-sdf-read-followup-slice5000-candidate-snapshot-2026-10-14.json.gz",
+      "sha256": "4e326d586393d02463e09a5a657c085deeb4191d34a72ce33efe0c7fb31c7dbe",
+      "sha256_gzip": "146758923ace06e26b9c15705683ed484152dfff7a30af09f037264eb1917600",
+      "bytes": 4945353
+    },
+    "slice5000_openbabel_rewrite": {
+      "path": "validation/results/openbabel-sdf-read-followup-slice5000-openbabel-rewrite-2026-10-14.sdf.gz",
+      "sha256": "985d76a303a55d20d66c0b6b370a2755a91fb49b10bef776fc48e29900d8a033",
+      "sha256_gzip": "2c6b211c7540e18708290742dee1ff110826068188ae460a2c2b24e2ae305a2a",
+      "bytes": 1532226
+    },
+    "slice5000_openbabel_smiles": {
+      "path": "validation/results/openbabel-sdf-read-followup-slice5000-openbabel-smiles-2026-10-14.smi.gz",
+      "sha256": "9e4cd19145a9ade61616c390117fcf74699384f73af2f801cfa594247bec156b",
+      "sha256_gzip": "2666233817a8d543e1d75e8bf43213a00deee47f483c6d7e9911b6cb83189365",
+      "bytes": 42422
+    }
+  }
+}

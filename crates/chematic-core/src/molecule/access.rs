@@ -1,4 +1,16 @@
 impl Molecule {
+    /// Read a memoized scalar descriptor. Mutations clear it and clones
+    /// start empty, just like the type-erased derived slots.
+    #[doc(hidden)]
+    #[inline(always)]
+    pub fn derived_scalar(
+        &self,
+        slot: crate::derived_cache::DerivedScalar,
+        compute: impl FnOnce() -> f64,
+    ) -> f64 {
+        self.derived.scalar(slot, compute)
+    }
+
     /// Return the memoized RDKit-compatible ring count.
     ///
     /// This scalar has a dedicated cache instead of a type-erased derived

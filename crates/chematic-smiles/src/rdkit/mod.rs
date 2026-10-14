@@ -1277,48 +1277,6 @@ pub fn rdkit_hydrogen_suppressed_with_map(mol: &Molecule) -> Option<(Molecule, V
     (out.atom_count() == kept.len()).then_some((out, kept))
 }
 
-thread_local! {
-    static IN_RDKIT_MODEL: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
-}
-
-/// Runs `f` on RDKit's own molecule for `mol` (`Chem.MolFromSmiles(s)`:
-/// hydrogen graph atoms removed, RDKit's aromaticity, bond orders, charges
-/// and per-atom hydrogen counts, as [`rdkit_hydrogen_suppressed`] builds it)
-/// when chematic's reading of `mol` may differ from RDKit's
-/// ([`chematic_perception::rdkit_model_may_disagree`], or hydrogen graph
-/// atoms), and on `mol` itself otherwise. Nested calls run on the molecule
-/// they are given.
-pub fn with_rdkit_model_molecule<R>(mol: &Molecule, f: impl FnOnce(&Molecule) -> R) -> R {
-    if IN_RDKIT_MODEL.with(|c| c.get()) {
-        return f(mol);
-    }
-    let needed = chematic_perception::rdkit_model_may_disagree(mol)
-        || mol
-            .atoms()
-            .any(|(_, a)| !a.wildcard && a.element == chematic_core::Element::H);
-    let model = if needed {
-        rdkit_mol_from_smiles(mol)
-            .ok()
-            .and_then(|(m, _)| pdb_read::to_chematic(&m, true).ok())
-    } else {
-        None
-    };
-    match model {
-        Some(m) => {
-            struct Reset;
-            impl Drop for Reset {
-                fn drop(&mut self) {
-                    IN_RDKIT_MODEL.with(|c| c.set(false));
-                }
-            }
-            IN_RDKIT_MODEL.with(|c| c.set(true));
-            let _reset = Reset;
-            f(&m)
-        }
-        None => f(mol),
-    }
-}
-
 /// RDKit's `numPiElectrons` of every atom of `mol` (`Chem.MolFromSmiles`):
 /// 1 for an aromatic atom, 0 for an SP3 atom, otherwise the explicit
 /// valence beyond one per physical bond. `None` where RDKit removes atoms
@@ -1459,3 +1417,11 @@ mod depict_contract_tests;
 
 #[cfg(test)]
 mod pdb_contract_tests;
+
+#[cfg(test)]
+mod model_view_contract_tests;
+
+mod model_view;
+#[cfg(test)]
+use model_view::rdkit_model_molecule;
+pub use model_view::{with_rdkit_model_molecule, with_rdkit_model_scalar};

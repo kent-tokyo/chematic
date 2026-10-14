@@ -1,0 +1,164 @@
+{
+  "schema": "python-morgan-frontier-parity/v1",
+  "corpora": {
+    "baseline": [
+      {
+        "corpus": "rdkit-js-browser-10k-v1.smi",
+        "sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "rows": 10000,
+        "engine": "chematic",
+        "version": "1.1.3"
+      },
+      {
+        "corpus": "stress-v1.smi",
+        "sha256": "879166ab5481cac805ecd2d77f37d628383ec124085b90e2ee1659d55ce76277",
+        "rows": 4072,
+        "engine": "chematic",
+        "version": "1.1.3"
+      }
+    ],
+    "candidate": [
+      {
+        "corpus": "rdkit-js-browser-10k-v1.smi",
+        "sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "rows": 10000,
+        "engine": "chematic",
+        "version": "1.1.3"
+      },
+      {
+        "corpus": "stress-v1.smi",
+        "sha256": "879166ab5481cac805ecd2d77f37d628383ec124085b90e2ee1659d55ce76277",
+        "rows": 4072,
+        "engine": "chematic",
+        "version": "1.1.3"
+      }
+    ],
+    "rdkit": [
+      {
+        "corpus": "rdkit-js-browser-10k-v1.smi",
+        "sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "rows": 10000,
+        "engine": "rdkit",
+        "version": "2026.09.1"
+      },
+      {
+        "corpus": "stress-v1.smi",
+        "sha256": "879166ab5481cac805ecd2d77f37d628383ec124085b90e2ee1659d55ce76277",
+        "rows": 4072,
+        "engine": "rdkit",
+        "version": "2026.09.1"
+      }
+    ]
+  },
+  "dump_sha256": {
+    "baseline": "05d98f143ef09b8b2123ee6d2bd8a3fb96dbe75aca2308f7fb7ba21bd756bfa4",
+    "candidate": "05d98f143ef09b8b2123ee6d2bd8a3fb96dbe75aca2308f7fb7ba21bd756bfa4",
+    "rdkit": "31d705354d827b183f701d1117fd2dee5f757083d2ab871122e0a6919f739e32"
+  },
+  "counts": {
+    "rdkit-js-browser-10k-v1.smi/morgan_r2_chiral0": {
+      "rows": 10000,
+      "candidate_vs_baseline_equal": 10000,
+      "candidate_success": 10000,
+      "oracle_comparable": 10000,
+      "oracle_match": 10000,
+      "oracle_uncomparable": 0,
+      "oracle_mismatch": 0,
+      "candidate_failures": 0,
+      "baseline_regressions": 0
+    },
+    "rdkit-js-browser-10k-v1.smi/morgan_r2_chiral1": {
+      "rows": 10000,
+      "candidate_vs_baseline_equal": 10000,
+      "candidate_success": 10000,
+      "oracle_comparable": 10000,
+      "oracle_match": 10000,
+      "oracle_uncomparable": 0,
+      "oracle_mismatch": 0,
+      "candidate_failures": 0,
+      "baseline_regressions": 0
+    },
+    "rdkit-js-browser-10k-v1.smi/morgan_r3_chiral0": {
+      "rows": 10000,
+      "candidate_vs_baseline_equal": 10000,
+      "candidate_success": 10000,
+      "oracle_comparable": 10000,
+      "oracle_match": 10000,
+      "oracle_uncomparable": 0,
+      "oracle_mismatch": 0,
+      "candidate_failures": 0,
+      "baseline_regressions": 0
+    },
+    "rdkit-js-browser-10k-v1.smi/morgan_r3_chiral1": {
+      "rows": 10000,
+      "candidate_vs_baseline_equal": 10000,
+      "candidate_success": 10000,
+      "oracle_comparable": 10000,
+      "oracle_match": 10000,
+      "oracle_uncomparable": 0,
+      "oracle_mismatch": 0,
+      "candidate_failures": 0,
+      "baseline_regressions": 0
+    },
+    "stress-v1.smi/morgan_r2_chiral0": {
+      "rows": 4072,
+      "candidate_vs_baseline_equal": 4072,
+      "candidate_success": 4072,
+      "oracle_comparable": 4072,
+      "oracle_match": 4072,
+      "oracle_uncomparable": 0,
+      "oracle_mismatch": 0,
+      "candidate_failures": 0,
+      "baseline_regressions": 0
+    },
+    "stress-v1.smi/morgan_r2_chiral1": {
+      "rows": 4072,
+      "candidate_vs_baseline_equal": 4072,
+      "candidate_success": 4072,
+      "oracle_comparable": 4072,
+      "oracle_match": 4072,
+      "oracle_uncomparable": 0,
+      "oracle_mismatch": 0,
+      "candidate_failures": 0,
+      "baseline_regressions": 0
+    },
+    "stress-v1.smi/morgan_r3_chiral0": {
+      "rows": 4072,
+      "candidate_vs_baseline_equal": 4072,
+      "candidate_success": 4072,
+      "oracle_comparable": 4072,
+      "oracle_match": 4072,
+      "oracle_uncomparable": 0,
+      "oracle_mismatch": 0,
+      "candidate_failures": 0,
+      "baseline_regressions": 0
+    },
+    "stress-v1.smi/morgan_r3_chiral1": {
+      "rows": 4072,
+      "candidate_vs_baseline_equal": 4072,
+      "candidate_success": 4072,
+      "oracle_comparable": 4072,
+      "oracle_match": 4072,
+      "oracle_uncomparable": 0,
+      "oracle_mismatch": 0,
+      "candidate_failures": 0,
+      "baseline_regressions": 0
+    }
+  },
+  "oracle_mismatch_input_indices": {},
+  "verification_script_sha256": "48545259dd551c5b8e75d82e2ebc7696181af460bd0a7c9cff1f1bcfecea356d",
+  "raw_outputs": {
+    "candidate": {
+      "path": "validation/results/python-morgan-frontier-candidate-2026-10-14.jsonl.gz",
+      "sha256": "f31912fc8297337b01cbc23462067a95d9628b6f7122ed1395ede76fc3c25cb2"
+    },
+    "rdkit": {
+      "path": "validation/results/python-morgan-frontier-rdkit-2026-10-14.jsonl.gz",
+      "sha256": "5b991ce91f7aeca0256b8135d9ed8b28f3cdf9a613199c452b558a42851ee95d"
+    },
+    "baseline": {
+      "path": "validation/results/python-morgan-frontier-candidate-2026-10-14.jsonl.gz",
+      "sha256": "f31912fc8297337b01cbc23462067a95d9628b6f7122ed1395ede76fc3c25cb2"
+    }
+  }
+}

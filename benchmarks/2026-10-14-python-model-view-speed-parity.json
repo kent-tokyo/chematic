@@ -1,0 +1,153 @@
+{
+  "schema": "python-model-view-speed-parity/v1",
+  "exact": {
+    "descriptors": {
+      "identical_bytes": true,
+      "sha256": "2c82ab4b8743715f742e95c9a3ca1982cb8e3b8ea0f92e9c7d2b5e4a725bba03",
+      "rows": 14072,
+      "source_previous_sha256": "2c82ab4b8743715f742e95c9a3ca1982cb8e3b8ea0f92e9c7d2b5e4a725bba03",
+      "results": 112576,
+      "retained_path": "validation/results/python-scalar-stereo-source-descriptors-2026-10-14.jsonl.gz",
+      "candidate_sha256": "2c82ab4b8743715f742e95c9a3ca1982cb8e3b8ea0f92e9c7d2b5e4a725bba03",
+      "baseline_dump_hash_verified": true
+    },
+    "morgan": {
+      "identical_bytes": true,
+      "sha256": "05d98f143ef09b8b2123ee6d2bd8a3fb96dbe75aca2308f7fb7ba21bd756bfa4",
+      "rows": 14072,
+      "source_previous_sha256": "05d98f143ef09b8b2123ee6d2bd8a3fb96dbe75aca2308f7fb7ba21bd756bfa4",
+      "results": 56288,
+      "retained_path": "validation/results/python-morgan-frontier-candidate-2026-10-14.jsonl.gz",
+      "candidate_sha256": "05d98f143ef09b8b2123ee6d2bd8a3fb96dbe75aca2308f7fb7ba21bd756bfa4",
+      "baseline_dump_hash_verified": true
+    }
+  },
+  "retained_artifacts": {
+    "candidate-build": {
+      "path": "validation/results/python-model-view-speed-candidate-build-2026-10-14.txt.gz",
+      "sha256": "d01a4df943cb4cfe75126aa6afcc3c7330dbbe73b015ca2d8e3004a50b89dea7",
+      "sha256_gzip": "6d856598b0ff25aac138742b7a960cefb2365c39448f4ce70269c657c813d734"
+    },
+    "native-tests": {
+      "path": "validation/results/python-model-view-speed-native-tests-2026-10-14.txt.gz",
+      "sha256": "c3771081ae4f51277183f3b5f8eb95f2dd2e743967ba293763fde737dd98e82a",
+      "sha256_gzip": "e54eca3164d8dd58c976f4793354c74434a8e7d654a760c6dfc78de0b491cb6c"
+    },
+    "clippy": {
+      "path": "validation/results/python-model-view-speed-clippy-2026-10-14.txt.gz",
+      "sha256": "ffe4aed9396e28341ba907139b79dfffbb1c2475bb8600917e295106c0577e6d",
+      "sha256_gzip": "040a31fc2c5c830207e8a0ded2dbe30ac21aa72d1bd73eabaf9fe497f60880ae"
+    },
+    "python-tests": {
+      "path": "validation/results/python-model-view-speed-python-tests-2026-10-14.txt.gz",
+      "sha256": "7d42e1ab31113a5dcd429344559f8bfba27b44baa49ee0889552f88553b24abc",
+      "sha256_gzip": "8c84b8579282d6d09f153e98fc4c1fa2ac885543b8222795e5b766e6b0ee9b52"
+    },
+    "paired20-slice0": {
+      "path": "validation/results/python-model-view-speed-paired20-slice0-2026-10-14.txt.gz",
+      "sha256": "18df527b2979e645854f350c50f2e1aca78db8638e64f79b9ef16281e4c1f8f7",
+      "sha256_gzip": "b3548a8777ef8e129b4d7a746e1f6f0b3199b4ef4eb44bce05cf45d81dbc93b0"
+    },
+    "paired20-slice5000": {
+      "path": "validation/results/python-model-view-speed-paired20-slice5000-2026-10-14.txt.gz",
+      "sha256": "18df527b2979e645854f350c50f2e1aca78db8638e64f79b9ef16281e4c1f8f7",
+      "sha256_gzip": "b3548a8777ef8e129b4d7a746e1f6f0b3199b4ef4eb44bce05cf45d81dbc93b0"
+    },
+    "descriptors-candidate": {
+      "path": "validation/results/python-model-view-speed-descriptors-candidate-2026-10-14.txt.gz",
+      "sha256": "083fafd3ee44040bfc2a8c7777682aa100c9813d69d2a0157238764a28f6baa6",
+      "sha256_gzip": "1bb1da6f57cc487db1c5e5cc89a8e9d87c92cdd536cfc00a51386fe45be67a69"
+    },
+    "morgan-candidate": {
+      "path": "validation/results/python-model-view-speed-morgan-candidate-2026-10-14.txt.gz",
+      "sha256": "083fafd3ee44040bfc2a8c7777682aa100c9813d69d2a0157238764a28f6baa6",
+      "sha256_gzip": "1bb1da6f57cc487db1c5e5cc89a8e9d87c92cdd536cfc00a51386fe45be67a69"
+    },
+    "exploratory-baseline-slice5000": {
+      "path": "validation/results/python-model-view-speed-exploratory-baseline-slice5000-2026-10-14.json.gz",
+      "sha256": "3cce86d7b4a72ecb10d5731ee086a8bcf0b81c73d1299c454c0fe45c14545aee",
+      "sha256_gzip": "c9f7da7a2fa681bbff41b237aad96f0586cbb63ef0ed21fa87d6ed3dcb50e9a3"
+    },
+    "exploratory-candidate-slice5000": {
+      "path": "validation/results/python-model-view-speed-exploratory-candidate-slice5000-2026-10-14.json.gz",
+      "sha256": "11a954c7a8c1543b46669a5ef2e3b66eea509202e13c20c930340b4200e1c8c5",
+      "sha256_gzip": "bd2176680521fd5fbc1a6efbff4d25342e74bb4c0ffc4170a0a94e0fe2dc5de1"
+    },
+    "ring-row-profile": {
+      "path": "validation/results/python-model-view-speed-ring-row-profile-2026-10-14.json.gz",
+      "sha256": "92ef90418c378f3361764b429b63427058688883e27bd10f5f5c449014fea5ce",
+      "sha256_gzip": "2ce6aa3b63fd6645ec6e11b8a2c28830987889e64f562bcb59dac99d0b361ffe"
+    },
+    "tracked-build-check": {
+      "path": "validation/results/python-model-view-speed-tracked-build-check-2026-10-14.json.gz",
+      "sha256": "be8c5251176f357f21c3eec438c6f41c76d04688b7e00f222969ecfa2c77c492",
+      "sha256_gzip": "e5a725a78b77d7d45e0441a6fef5e60788cd5c02f0fec4b5255eea6f57fe6fe7"
+    },
+    "source-check-wrapper": {
+      "path": "validation/results/python-model-view-speed-source-check-wrapper-2026-10-14.py.gz",
+      "sha256": "0c56ed5c16f4fd039fbf4557bd6b82563ef2e501e4b3c63b2b116ab2e1b3a962",
+      "sha256_gzip": "8bd29b2cb6c44eded7b376b019468ef69651b75200bacf1e20d519cfe544a38e"
+    }
+  },
+  "patch_reconstruction": {
+    "passed": true,
+    "frozen_files_checked": 894,
+    "patches_applied": 4,
+    "base_revision": "ffe682c32cb4c76de0d309649427202a7d8e956d"
+  },
+  "validation": {
+    "native": {
+      "passed": 1959,
+      "failed": 0,
+      "ignored": 8
+    },
+    "python": {
+      "passed": 590,
+      "failed": 0
+    },
+    "release_clippy": {
+      "passed": true,
+      "all_targets": true,
+      "warnings_denied": true
+    },
+    "benchmark_gate_tests": {
+      "passed": 5,
+      "failed": 0
+    },
+    "rustfmt": {
+      "passed": true
+    },
+    "diff_whitespace": {
+      "passed": true
+    },
+    "all_paired_summaries_recalculated": true,
+    "source_integrity_passed": true,
+    "benchmark_index": {
+      "passed": true,
+      "indexed_records": 402
+    },
+    "final_artifact_integrity": {
+      "passed": true,
+      "patch_reconstruction_files": 894,
+      "retained_archives": 13,
+      "paired_profiles": 2,
+      "local_packet_links_checked": 7,
+      "workspace_verification": "Historical intermediate snapshot matches its preserved reconstruction; the current root uses the separately measured final candidate."
+    }
+  },
+  "gate_counts": {
+    "first_use": {
+      "eligible": 27,
+      "wins": 14
+    },
+    "repeated_use": {
+      "eligible": 27,
+      "wins": 26
+    },
+    "parse_inclusive": {
+      "eligible": 27,
+      "wins": 27
+    }
+  },
+  "incremental_strict_wins": []
+}

@@ -1,0 +1,27 @@
+{
+  "schema": "python-scalar-reuse-source/v1",
+  "production_source_manifest": {
+    "path": "benchmarks/2026-10-14-python-scalar-stereo-source.json",
+    "sha256": "58873fc545e3d81a983ceea5422ce481c14020e9c6c1a9286c8dd46fd0999788"
+  },
+  "production_code_changed_after_matrix": false,
+  "scripts_sha256": {
+    "scripts/bench_python_scalar_reuse.py": "4842f4d1967223347c3bff4c8475d282f3b05445e9ab848d0f7063bbbfdce48a",
+    "scripts/tests/test_bench_python_scalar_reuse.py": "ad7880ca929be9adc956b6ff5c7fd79b2727ba2df44cb83e796ff250d6c28cc6",
+    "scripts/bench_python_speed_frontier.py": "f6693ba7d2e6216d21229e134a06433b9ad3b949fd652fc0dca809d61f1de248",
+    "validation/cosmolkit_comparison/bench_corpus.py": "6ad2dc64556b8e88e2b246f3c9dd4953b849a1c266fb8055520598b5e7deeb4c"
+  },
+  "protocol_selected_after_short_batch_result": "The original 1000-call batches showed scheduler-scale outliers despite favorable intervals. They remain published unchanged. This additional protocol lengthens every engine to one million actual native float calls per operation, retaining and validating all values. It measures repeated scalar throughput only. It does not replace the original three preparation modes.",
+  "blocks": 20,
+  "slices": [
+    {
+      "offset": 0,
+      "limit": 1000
+    },
+    {
+      "offset": 5000,
+      "limit": 1000
+    }
+  ],
+  "repeats_per_molecule": 1000
+}

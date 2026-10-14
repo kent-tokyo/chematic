@@ -335,7 +335,13 @@ pub(crate) fn reject_known_rdkit_coordination_sanitization_gap(
     }
     for (atom_idx, atom) in mol.atoms() {
         let atomic_number = atom.element.atomic_number();
+        if atomic_number != 26 || atom.charge != 2 {
+            continue;
+        }
         let degree = mol.degree(atom_idx);
+        if degree != 10 {
+            continue;
+        }
         let anionic_carbon_neighbors = mol
             .neighbors(atom_idx)
             .filter(|(neighbor, _)| {
@@ -343,8 +349,7 @@ pub(crate) fn reject_known_rdkit_coordination_sanitization_gap(
                 neighbor_atom.element.atomic_number() == 6 && neighbor_atom.charge < 0
             })
             .count();
-        if atomic_number == 26 && atom.charge == 2 && degree == 10 && anionic_carbon_neighbors >= 2
-        {
+        if anionic_carbon_neighbors >= 2 {
             return Err(RdkitMorganError::UnsupportedCoordinationSanitization {
                 atom_idx,
                 atomic_number,
