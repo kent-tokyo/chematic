@@ -1,0 +1,5 @@
+# RDKit #9458: both starting forms must reach the same O/S resonance pair.
+COC(C)=[N+](C)C oxygen_iminium
+C[O+]=C(C)N(C)C oxygen_oxonium
+CSC(C)=[N+](C)C sulfur_iminium
+C[S+]=C(C)N(C)C sulfur_sulfonium

@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<molecule xmlns="http://www.xml-cml.org/schema">
+  <atomArray>
+    <atom id="carbon" elementType="C"/>
+    <atom id="hydrogen7" elementType="H"/>
+    <atom id="hydrogen3" elementType="H"/>
+  </atomArray>
+  <bondArray>
+    <bond atomRefs2="carbon hydrogen7" order="S"/>
+    <bond atomRefs2="carbon hydrogen3" order="S"/>
+  </bondArray>
+</molecule>

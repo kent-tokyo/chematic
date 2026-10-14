@@ -458,10 +458,23 @@ fn o3a_align(
 // Register
 // ---------------------------------------------------------------------------
 
+/// Enrichment factors from binary activity labels in best-to-worst rank order.
+///
+/// For each fraction f in (0, 1], selects k = ceil(N*f) entries and divides
+/// their active rate by the full library's active rate. Preserves fraction
+/// order and duplicates; f=1 returns 1. Does not sort scores or resolve ties.
+/// Raises ValueError for empty inputs, invalid fractions or no actives.
+#[pyfunction]
+fn enrichment_factors(ranked_actives: Vec<bool>, fractions: Vec<f64>) -> PyResult<Vec<f64>> {
+    chematic_chem::enrichment_factors(&ranked_actives, &fractions)
+        .map_err(|e| PyValueError::new_err(e.to_string()))
+}
+
 pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     register_pyfunctions!(
         m,
         tanimoto,
+        enrichment_factors,
         shape_screen,
         tanimoto_map4,
         butina_cluster,

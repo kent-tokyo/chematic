@@ -1,0 +1,86 @@
+{
+  "schema": "chematic.local-cation-resonance.validation.v1",
+  "date": "2026-10-14",
+  "source_baseline": "ffe682c3",
+  "source_state": "uncommitted source including pre-existing changes",
+  "artifact_lane": "local debug Python extension without native InChI",
+  "extension_sha256": "dc9bd875e24b0e6798ad9e26540d5e51dfd7d2de2ebc429ff693527ee4a9c8e9",
+  "rdkit_version": "2026.09.1",
+  "scope": "local_nos_cation_shift_v1",
+  "cases": [
+    {
+      "input": "COC(C)=[N+](C)C",
+      "chematic_status": "complete_within_scope",
+      "chematic_forms_rdkit_normalized": [
+        "COC(C)=[N+](C)C",
+        "C[O+]=C(C)N(C)C"
+      ],
+      "expected_forms": [
+        "COC(C)=[N+](C)C",
+        "C[O+]=C(C)N(C)C"
+      ],
+      "rdkit_own_forms": [
+        "COC(C)=[N+](C)C",
+        "C[O+]=C(C)N(C)C"
+      ],
+      "formula": "C5H12NO+",
+      "formal_charge": 1,
+      "all_forms_sanitized": true
+    },
+    {
+      "input": "C[O+]=C(C)N(C)C",
+      "chematic_status": "complete_within_scope",
+      "chematic_forms_rdkit_normalized": [
+        "COC(C)=[N+](C)C",
+        "C[O+]=C(C)N(C)C"
+      ],
+      "expected_forms": [
+        "COC(C)=[N+](C)C",
+        "C[O+]=C(C)N(C)C"
+      ],
+      "rdkit_own_forms": [
+        "COC(C)=[N+](C)C",
+        "C[O+]=C(C)N(C)C"
+      ],
+      "formula": "C5H12NO+",
+      "formal_charge": 1,
+      "all_forms_sanitized": true
+    },
+    {
+      "input": "CSC(C)=[N+](C)C",
+      "chematic_status": "complete_within_scope",
+      "chematic_forms_rdkit_normalized": [
+        "CSC(C)=[N+](C)C",
+        "C[S+]=C(C)N(C)C"
+      ],
+      "expected_forms": [
+        "CSC(C)=[N+](C)C",
+        "C[S+]=C(C)N(C)C"
+      ],
+      "rdkit_own_forms": [
+        "CSC(C)=[N+](C)C"
+      ],
+      "formula": "C5H12NS+",
+      "formal_charge": 1,
+      "all_forms_sanitized": true
+    },
+    {
+      "input": "C[S+]=C(C)N(C)C",
+      "chematic_status": "complete_within_scope",
+      "chematic_forms_rdkit_normalized": [
+        "CSC(C)=[N+](C)C",
+        "C[S+]=C(C)N(C)C"
+      ],
+      "expected_forms": [
+        "CSC(C)=[N+](C)C",
+        "C[S+]=C(C)N(C)C"
+      ],
+      "rdkit_own_forms": [
+        "C[S+]=C(C)N(C)C"
+      ],
+      "formula": "C5H12NS+",
+      "formal_charge": 1,
+      "all_forms_sanitized": true
+    }
+  ]
+}

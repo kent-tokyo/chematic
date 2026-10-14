@@ -348,7 +348,7 @@ pub fn convert_with_report_with_limits(
         "formal_charge_interpretation",
         PreservationStatus::Unverified,
         "projection",
-        "Only N.4 implies +1; other atom-type and extension formal-charge rules are not interpreted. Preserving the projected charge is not verification of source chemistry.",
+        "Explicit UNITY charge attributes are projected by source atom ID, with N.4 implying +1 only when no explicit charge exists. Other atom-type and extension rules are not interpreted. Preserving the projected charge is not verification of source chemistry.",
     );
     note(
         "stereochemistry",
@@ -499,7 +499,7 @@ pub fn convert_with_report_with_limits(
             field: "projected_formal_charges",
             status: if verified.is_some() { PreservationStatus::Preserved } else { PreservationStatus::Unverified },
             stage: "candidate_verification",
-            reason: "CJSON formal charges are checked as part of mapped graph verification. This does not validate MOL2 charge interpretation beyond N.4; partial-charge preservation is checked separately.",
+            reason: "CJSON formal charges are checked as part of mapped graph verification. MOL2 projection uses explicit UNITY charge attributes, then N.4 as a fallback; partial-charge preservation is checked separately. Source valence and other charge rules are not verified.",
         });
     }
     if let Some(bond_order) = verified {
