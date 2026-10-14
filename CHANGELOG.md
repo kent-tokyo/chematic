@@ -10,6 +10,14 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+
+- Restored the v1.1.3 exhaustive-match surface of the public `CmlError` and
+  `CifError` enums. Invalid CML hydrogen counts and checked-CIF coordinate-count
+  mismatches keep failing explicitly through existing error variants, while a
+  downstream-style compile test now prevents patch releases from silently
+  adding enum variants.
+
 ## [1.1.4] - 2026-10-14
 
 ### Added

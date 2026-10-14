@@ -180,6 +180,7 @@ jobs:
           - { package: chematic-mol, target: cif_coordinate_contract }
           - { package: chematic-mol, target: cml_hydrogen_contract }
           - { package: chematic-mol, target: mol2_unity_charge }
+          - { package: chematic-mol, target: public_api_compat_v1_1_3 }
           - { package: chematic-smiles, target: rdkit_matrix_limits }
           - { package: chematic-chem, target: rdkit_reference }
           - { package: chematic-chem, target: descriptor_contract }
