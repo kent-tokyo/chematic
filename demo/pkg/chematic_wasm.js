@@ -1093,6 +1093,75 @@ export class MolHandle {
         }
     }
     /**
+     * RDKit `GetAllConformerBestRMS` as a JSON number array in
+     * `(1,0), (2,0), (2,1), ...` order. Atom mappings are computed once for
+     * the entire batch.
+     * @param {string} conformers_json
+     * @param {number} max_matches
+     * @param {boolean} symmetrize
+     * @param {string | null} [weights_json]
+     * @returns {string}
+     */
+    rdkit_all_conformer_best_rms_json(conformers_json, max_matches, symmetrize, weights_json) {
+        let deferred4_0;
+        let deferred4_1;
+        try {
+            const ptr0 = passStringToWasm0(conformers_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            const len0 = WASM_VECTOR_LEN;
+            var ptr1 = isLikeNone(weights_json) ? 0 : passStringToWasm0(weights_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            var len1 = WASM_VECTOR_LEN;
+            const ret = wasm.molhandle_rdkit_all_conformer_best_rms_json(this.__wbg_ptr, ptr0, len0, max_matches, symmetrize, ptr1, len1);
+            var ptr3 = ret[0];
+            var len3 = ret[1];
+            if (ret[3]) {
+                ptr3 = 0; len3 = 0;
+                throw takeFromExternrefTable0(ret[2]);
+            }
+            deferred4_0 = ptr3;
+            deferred4_1 = len3;
+            return getStringFromWasm0(ptr3, len3);
+        } finally {
+            wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
+        }
+    }
+    /**
+     * RDKit 2026.09.1 `GetAllConformerBestRMSToRef` as a JSON number array
+     * in reference-major order. Atom mappings are computed once for the
+     * entire Cartesian product.
+     * @param {MolHandle} reference
+     * @param {string} probe_conformers_json
+     * @param {string} reference_conformers_json
+     * @param {number} max_matches
+     * @param {boolean} symmetrize
+     * @param {string | null} [weights_json]
+     * @returns {string}
+     */
+    rdkit_all_conformer_best_rms_to_reference_json(reference, probe_conformers_json, reference_conformers_json, max_matches, symmetrize, weights_json) {
+        let deferred5_0;
+        let deferred5_1;
+        try {
+            _assertClass(reference, MolHandle);
+            const ptr0 = passStringToWasm0(probe_conformers_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            const len0 = WASM_VECTOR_LEN;
+            const ptr1 = passStringToWasm0(reference_conformers_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            const len1 = WASM_VECTOR_LEN;
+            var ptr2 = isLikeNone(weights_json) ? 0 : passStringToWasm0(weights_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            var len2 = WASM_VECTOR_LEN;
+            const ret = wasm.molhandle_rdkit_all_conformer_best_rms_to_reference_json(this.__wbg_ptr, reference.__wbg_ptr, ptr0, len0, ptr1, len1, max_matches, symmetrize, ptr2, len2);
+            var ptr4 = ret[0];
+            var len4 = ret[1];
+            if (ret[3]) {
+                ptr4 = 0; len4 = 0;
+                throw takeFromExternrefTable0(ret[2]);
+            }
+            deferred5_0 = ptr4;
+            deferred5_1 = len4;
+            return getStringFromWasm0(ptr4, len4);
+        } finally {
+            wasm.__wbindgen_free(deferred5_0, deferred5_1, 1);
+        }
+    }
+    /**
      * RDKit `GetBestAlignmentTransform` as JSON, bounded by `max_matches`.
      * @param {string} probe_coords_json
      * @param {string} reference_coords_json
@@ -3493,6 +3562,53 @@ export function estate_indices_json(mol) {
         return getStringFromWasm0(ret[0], ret[1]);
     } finally {
         wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * Decode an RDKit atom code as stable JSON.
+ *
+ * Returns `{"symbol":"C","branchCount":3,"piElectronCount":1}`.
+ * @param {number} code
+ * @returns {string}
+ */
+export function explain_rdkit_atom_code_json(code) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        const ret = wasm.explain_rdkit_atom_code_json(code);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * Decode a decimal legacy RDKit torsion code as stable JSON.
+ * @param {string} code_decimal
+ * @param {number} size
+ * @returns {string}
+ */
+export function explain_rdkit_topological_torsion_code_json(code_decimal, size) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(code_decimal, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.explain_rdkit_topological_torsion_code_json(ptr0, len0, size);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
     }
 }
 
@@ -6610,6 +6726,59 @@ export function prepare_rdkit_ecfp4(mol) {
 }
 
 /**
+ * Amino-acid-only mmCIF projection in the same schema as
+ * [`protein_from_pdb_json`].
+ * @param {string} text
+ * @returns {string}
+ */
+export function protein_from_mmcif_json(text) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.protein_from_mmcif_json(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * Amino-acid-only PDB projection as stable JSON.
+ * @param {string} text
+ * @returns {string}
+ */
+export function protein_from_pdb_json(text) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.protein_from_pdb_json(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
  * Coordinates (Å) plus molecular charge/multiplicity from a QCSchema
  * `qcschema_molecule` document, in the SAME atom order
  * [`mol_from_qcschema_molecule`] returns topology for. Returns JSON
@@ -6739,6 +6908,25 @@ export function random_smiles_json(smiles, count, seed) {
     } finally {
         wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
     }
+}
+
+/**
+ * RDKit atom-pair atom code for one atom.
+ *
+ * `branch_subtract` is normally 0 for atom-pair diagnostics, 1 for a
+ * torsion endpoint, and 2 for an interior torsion atom.
+ * @param {MolHandle} mol
+ * @param {number} atom_index
+ * @param {number} branch_subtract
+ * @returns {number}
+ */
+export function rdkit_atom_code(mol, atom_index, branch_subtract) {
+    _assertClass(mol, MolHandle);
+    const ret = wasm.rdkit_atom_code(mol.__wbg_ptr, atom_index, branch_subtract);
+    if (ret[2]) {
+        throw takeFromExternrefTable0(ret[1]);
+    }
+    return ret[0] >>> 0;
 }
 
 /**
@@ -7012,6 +7200,58 @@ export function rdkit_rdk_bitvec(mol) {
     var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
     wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
     return v1;
+}
+
+/**
+ * RDKit 2026.09.1 RDKFingerprint with `ignoreAtoms`: every branched path
+ * containing one of `ignored_atoms` is excluded. Invalid indices return a JS
+ * error; an empty list is bit-identical to [`rdkit_rdk_bitvec`].
+ * @param {MolHandle} mol
+ * @param {Uint32Array} ignored_atoms
+ * @returns {Uint8Array}
+ */
+export function rdkit_rdk_bitvec_ignoring_atoms(mol, ignored_atoms) {
+    _assertClass(mol, MolHandle);
+    const ptr0 = passArray32ToWasm0(ignored_atoms, wasm.__wbindgen_malloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.rdkit_rdk_bitvec_ignoring_atoms(mol.__wbg_ptr, ptr0, len0);
+    if (ret[3]) {
+        throw takeFromExternrefTable0(ret[2]);
+    }
+    var v2 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+    wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+    return v2;
+}
+
+/**
+ * Pack a JSON array of atom indices into RDKit's legacy torsion code.
+ *
+ * The decimal string return type avoids losing precision in JavaScript's
+ * `number` type for codes above 2^53.
+ * @param {MolHandle} mol
+ * @param {string} path_json
+ * @returns {string}
+ */
+export function rdkit_topological_torsion_path_code_decimal(mol, path_json) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ptr0 = passStringToWasm0(path_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.rdkit_topological_torsion_path_code_decimal(mol.__wbg_ptr, ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
 }
 
 /**

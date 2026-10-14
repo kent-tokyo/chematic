@@ -10,6 +10,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.1.4] - 2026-10-14
+
 ### Added
 
 - Added bounded local N/O/S cation-resonance enumeration, ranked screening

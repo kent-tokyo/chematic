@@ -12,7 +12,7 @@ WebAssembly, without a chematic backend.</p>
   <a class="chm-btn chm-btn-secondary" href="getting_started/installation/">Install chematic</a>
 </div>
 
-<p class="chm-links-row">Current release: <strong>v1.1.3</strong> · <a href="changelog/">release notes</a></p>
+<p class="chm-links-row">Current release: <strong>v1.1.4</strong> · <a href="changelog/">release notes</a></p>
 
 </div>
 
@@ -80,9 +80,10 @@ Installation: `pip install chematic`, `cargo add chematic`, or
 
 ## Current evidence boundary
 
-v1.1.3 adds charge-conserving EEM partial charges, a corrected opt-in ETKDG
-torsion gradient, allene axial stereo, indexed SDF access, V3000 bond stereo,
-Python molecule pickling, and reusable MMFF/UFF force fields. The latest broad
+v1.1.4 adds bounded cation-resonance and screening-enrichment APIs, checked
+CIF and protein projections, RDKit-compatible molecule/property/conformer and
+fingerprint surfaces, dense NumPy fingerprints, and format correctness fixes.
+The latest broad
 published-package performance packet remains v1.0.42 until v1.1.x artifacts
 are measured. A current-source
 macOS arm64 packet at `44338e16` matches RDKit 2026.09.1 on 10,000/10,000 TPSA,
