@@ -41,8 +41,9 @@ The three same-molecule pair values are bit-identical to RDKit. The four
 cross-molecule values differ by at most `3.3306690738754696e-16`. The focused
 Python regression suite has 3 passing tests; the complete `chematic-smiles`
 and `chematic-wasm` suites have 380 and 391 passing tests respectively, with
-one unrelated ignored test in `chematic-smiles`. Clippy passes for the Rust,
-Python and WASM binding crates.
+one unrelated ignored test in `chematic-smiles`. A release-mode `wasm-pack`
+Node build also passes the JavaScript interoperability test containing both
+new methods. Clippy passes for the Rust, Python and WASM binding crates.
 
 ## Boundary
 
