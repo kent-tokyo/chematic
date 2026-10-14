@@ -1,4 +1,6 @@
 use pyo3::prelude::*;
+use std::collections::HashMap;
+use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 
 /// `(fingerprint bytes, {bit: [(atom_idx, radius), ...]})` for RDKit bitInfo.
@@ -62,7 +64,80 @@ mod io;
 #[derive(Clone)]
 struct Mol {
     inner: Arc<chematic_core::Molecule>,
-    props: std::collections::HashMap<String, String>,
+    props: PropertyStore,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum PropertyType {
+    String,
+    Int,
+    Unsigned,
+    Double,
+    Bool,
+}
+
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+struct PropertyStore {
+    values: HashMap<String, String>,
+    types: HashMap<String, PropertyType>,
+}
+
+impl PropertyStore {
+    fn insert_typed(&mut self, key: String, value: String, property_type: PropertyType) {
+        self.values.insert(key.clone(), value);
+        if property_type == PropertyType::String {
+            self.types.remove(&key);
+        } else {
+            self.types.insert(key, property_type);
+        }
+    }
+
+    fn property_type(&self, key: &str) -> PropertyType {
+        self.types.get(key).copied().unwrap_or(PropertyType::String)
+    }
+
+    fn clear(&mut self, key: &str) {
+        self.values.remove(key);
+        self.types.remove(key);
+    }
+}
+
+impl From<HashMap<String, String>> for PropertyStore {
+    fn from(values: HashMap<String, String>) -> Self {
+        Self {
+            values,
+            types: HashMap::new(),
+        }
+    }
+}
+
+impl FromIterator<(String, String)> for PropertyStore {
+    fn from_iter<T: IntoIterator<Item = (String, String)>>(iter: T) -> Self {
+        Self::from(HashMap::from_iter(iter))
+    }
+}
+
+impl<'a> IntoIterator for &'a PropertyStore {
+    type Item = (&'a String, &'a String);
+    type IntoIter = std::collections::hash_map::Iter<'a, String, String>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.values.iter()
+    }
+}
+
+impl Deref for PropertyStore {
+    type Target = HashMap<String, String>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.values
+    }
+}
+
+impl DerefMut for PropertyStore {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.values
+    }
 }
 
 impl Mol {

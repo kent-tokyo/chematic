@@ -13,7 +13,7 @@ use ndarray::Array1;
 use numpy::{IntoPyArray, PyArray1};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
-use pyo3::types::{PyDict, PyList};
+use pyo3::types::{PyDict, PyList, PyTuple};
 use std::sync::Arc;
 
 type PyUffTerm = (String, Vec<usize>, Vec<f64>);

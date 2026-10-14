@@ -207,7 +207,7 @@ Unsupported options raise `NotImplementedError` or `TypeError` — they are neve
 |------|--------|-------|
 | SMILES I/O | ✅ Supported | `MolFromSmiles` (aromaticity perceived when `sanitize=True`) / `MolToSmiles` |
 | SDF I/O | ✅ Supported | `SDMolSupplier` / `SDWriter` + SD properties |
-| Mol properties | ✅ Supported | `Get`/`Set`/`Has`/`Clear`Prop, typed setters, `GetPropsAsDict` |
+| Mol properties | ✅ Supported | `GetProp(..., default=...)`, `Set`/`Has`/`Clear`Prop, typed getters/setters, `GetPropsAsDict` |
 | Mol / Atom / Bond | ✅ Supported | read-only traversal (`GetAtoms`/`GetBonds`/`GetAtomWithIdx`/…) |
 | RingInfo | ✅ Supported | SSSR-based; `NumRings`/`AtomRings`/`BondRings`/`NumAtomRings`/`NumBondRings` |
 | Substructure | 🟡 Partial | SMARTS via chematic; match **order** may differ from RDKit (use set comparison) |

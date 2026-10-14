@@ -4,7 +4,6 @@
 //! uses) so it can be mutated in place. `GetMol()` snapshots the current
 //! state into an independent, read-only `Mol`.
 
-use std::collections::HashMap;
 use std::sync::Arc;
 
 use pyo3::exceptions::{PyIndexError, PyValueError};
@@ -12,7 +11,7 @@ use pyo3::prelude::*;
 
 use chematic_core::{Atom, AtomIdx, BondOrder, Element, MoleculeBuilder};
 
-use crate::Mol;
+use crate::{Mol, PropertyStore};
 
 fn parse_bond_order(order: &str) -> PyResult<BondOrder> {
     match order {
@@ -30,7 +29,7 @@ fn parse_bond_order(order: &str) -> PyResult<BondOrder> {
 #[pyclass(name = "RWMol")]
 pub struct RWMol {
     inner: chematic_core::Molecule,
-    props: HashMap<String, String>,
+    props: PropertyStore,
 }
 
 #[pymethods]
@@ -48,7 +47,7 @@ impl RWMol {
             },
             None => RWMol {
                 inner: MoleculeBuilder::new().build(),
-                props: HashMap::new(),
+                props: PropertyStore::default(),
             },
         }
     }
