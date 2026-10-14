@@ -418,6 +418,14 @@ class Mol:
     def ClearProp(self, key: str) -> None:
         self._mol.ClearProp(key)
 
+    def GetName(self) -> str:
+        """Return the molecule title, or ``""`` when ``_Name`` is unset."""
+        return self._mol.GetName()
+
+    def SetName(self, name: str) -> None:
+        """Set the molecule title through RDKit's conventional ``_Name`` property."""
+        self._mol.SetName(name)
+
     def SetIntProp(self, key: str, val: int) -> None:
         self._mol.SetIntProp(key, val)
 
@@ -506,6 +514,12 @@ class RWMol:
 
     def GetNumBonds(self) -> int:
         return self._rw.GetNumBonds()
+
+    def GetName(self) -> str:
+        return self._rw.GetName()
+
+    def SetName(self, name: str) -> None:
+        self._rw.SetName(name)
 
     def GetMol(self) -> "Mol":
         """Snapshot the current state into an independent, read-only ``Mol``."""
