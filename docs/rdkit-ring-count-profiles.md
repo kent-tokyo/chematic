@@ -6,7 +6,7 @@ disagree on at least four pinned stress inputs because their default ring
 backends differ.
 
 The machine-readable contract is
-[`validation/rdkit_ring_count_profiles_v1.json`](../validation/rdkit_ring_count_profiles_v1.json).
+[`validation/rdkit_ring_count_profiles_v1.json`](https://github.com/kent-tokyo/chematic/blob/main/validation/rdkit_ring_count_profiles_v1.json).
 It records each input, both oracle values, the current chematic default, and the
 classification `oracle_version_difference`. CI recomputes the chematic value
 from the stored SMILES and rejects accidental drift.
