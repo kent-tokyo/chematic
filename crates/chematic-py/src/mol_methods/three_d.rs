@@ -142,6 +142,12 @@ impl Mol {
         bitvec2048_to_bytes(&chematic_fp::pharmacophore_fp_2d(&self.inner))
     }
 
+    /// Two-dimensional pharmacophore fingerprint as a dense NumPy bit vector.
+    fn pharmacophore_fp_numpy<'py>(&self, py: Python<'py>) -> Bound<'py, PyArray1<u8>> {
+        let packed = self.pharmacophore_fp();
+        packed_fingerprint_to_numpy(py, &packed, 2048)
+    }
+
     /// MHFP (MinHash Fingerprint) — 128 u64 hash values.
     ///
     /// Use :func:`tanimoto_mhfp` for similarity (position-wise, not bitwise).
@@ -655,12 +661,24 @@ impl Mol {
         bitvec2048_to_bytes(&chematic_fp::rdkit_path_fp(&self.inner))
     }
 
+    /// RDKit-style path fingerprint as a dense NumPy bit vector.
+    fn path_fp_numpy<'py>(&self, py: Python<'py>) -> Bound<'py, PyArray1<u8>> {
+        let packed = self.path_fp();
+        packed_fingerprint_to_numpy(py, &packed, 2048)
+    }
+
     /// Topological path fingerprint as bytes (256 bytes = 2048 bits).
     fn topo_path_fp(&self) -> Vec<u8> {
         bitvec2048_to_bytes(&chematic_fp::topo_path(
             &self.inner,
             &chematic_fp::TopoPathConfig::default(),
         ))
+    }
+
+    /// Topological path fingerprint as a dense NumPy bit vector.
+    fn topo_path_fp_numpy<'py>(&self, py: Python<'py>) -> Bound<'py, PyArray1<u8>> {
+        let packed = self.topo_path_fp();
+        packed_fingerprint_to_numpy(py, &packed, 2048)
     }
 
     /// Avalon-style structural fingerprint as bytes (256 bytes = 2048 bits).
@@ -672,6 +690,12 @@ impl Mol {
     /// is the RDKit-identical fingerprint.
     fn avalon_fp(&self) -> Vec<u8> {
         bitvec2048_to_bytes(&chematic_fp::avalon_fp(&self.inner))
+    }
+
+    /// Avalon-style fingerprint as a dense NumPy bit vector.
+    fn avalon_fp_numpy<'py>(&self, py: Python<'py>) -> Bound<'py, PyArray1<u8>> {
+        let packed = self.avalon_fp();
+        packed_fingerprint_to_numpy(py, &packed, 2048)
     }
 
     /// RDKit's Avalon fingerprint as bytes (``n_bits / 8`` bytes, bit ``i`` at
@@ -692,6 +716,22 @@ impl Mol {
             .map_err(|e| PyValueError::new_err(e.to_string()))
     }
 
+    /// RDKit-compatible Avalon fingerprint as a dense NumPy bit vector.
+    #[pyo3(signature = (n_bits = 2048))]
+    fn rdkit_avalon_fp_numpy<'py>(
+        &self,
+        py: Python<'py>,
+        n_bits: usize,
+    ) -> PyResult<Bound<'py, PyArray1<u8>>> {
+        if n_bits == 0 || !n_bits.is_multiple_of(8) {
+            return Err(PyValueError::new_err(
+                "n_bits must be a positive multiple of 8",
+            ));
+        }
+        let packed = self.rdkit_avalon_fp(n_bits)?;
+        Ok(packed_fingerprint_to_numpy(py, &packed, n_bits))
+    }
+
     /// 3D pharmacophore fingerprint as bytes (256 bytes = 2048 bits).
     ///
     /// Requires 3D coordinates. Complements the 2D version from :meth:`pharmacophore_fp`.
@@ -700,6 +740,16 @@ impl Mol {
     fn pharmacophore_fp_3d(&self, coords: Vec<[f64; 3]>) -> Vec<u8> {
         let c3d = flat_to_coords3d(&coords);
         bitvec2048_to_bytes(&chematic_3d::pharmacophore_fp_3d(&self.inner, &c3d))
+    }
+
+    /// Three-dimensional pharmacophore fingerprint as a dense NumPy bit vector.
+    fn pharmacophore_fp_3d_numpy<'py>(
+        &self,
+        py: Python<'py>,
+        coords: Vec<[f64; 3]>,
+    ) -> Bound<'py, PyArray1<u8>> {
+        let packed = self.pharmacophore_fp_3d(coords);
+        packed_fingerprint_to_numpy(py, &packed, 2048)
     }
 
     /// Reaction fingerprint — ``(reactant_fp, product_fp, formed_fp, broken_fp,
@@ -834,11 +884,23 @@ impl Mol {
         bitvec2048_to_bytes(&chematic_fp::fcfp6(&self.inner))
     }
 
+    /// FCFP6 fingerprint as a dense NumPy bit vector.
+    fn fcfp6_numpy<'py>(&self, py: Python<'py>) -> Bound<'py, PyArray1<u8>> {
+        let packed = self.fcfp6();
+        packed_fingerprint_to_numpy(py, &packed, 2048)
+    }
+
     /// Pattern fingerprint as bytes (256 bytes = 2048 bits).
     ///
     /// SMARTS-pattern-based structural fingerprint. Compatible with :func:`tanimoto`.
     fn pattern_fp(&self) -> Vec<u8> {
         bitvec2048_to_bytes(&chematic_fp::pattern_fp(&self.inner))
+    }
+
+    /// Native pattern fingerprint as a dense NumPy bit vector.
+    fn pattern_fp_numpy<'py>(&self, py: Python<'py>) -> Bound<'py, PyArray1<u8>> {
+        let packed = self.pattern_fp();
+        packed_fingerprint_to_numpy(py, &packed, 2048)
     }
 
     /// Randić connectivity index — measures molecular branching.
