@@ -40,7 +40,8 @@
     "refactor_budget": "passed without allowance increases",
     "binding_inventory": "passed",
     "product_names": "passed",
-    "documentation": "mkdocs build --strict passed"
+    "documentation": "mkdocs build --strict passed",
+    "ci_followup": "Rust 1.99 all-target lint: replaced constant chunks_exact(2) with as_chunks::<2>().0; local resonance tests rerun."
   },
   "limits": [
     "Local cation resonance only, rejects stereo/query inputs",
@@ -55,7 +56,7 @@
     "crates/chematic-chem/src/lib.rs": "b4d563e1133cf28f76a6a4725121d6945297fb940aa3dd073b7980e56f17a539",
     "crates/chematic-chem/src/resonance.rs": "1f0143f63170bcf4ed03a9eb36229b31ac9302da36359daa0514bf9b264589d7",
     "crates/chematic-chem/src/screening.rs": "436088c4c2b5222b71d1c30e03e9b0374e10c46da530524ed0691f14733dacfa",
-    "crates/chematic-chem/tests/local_cation_resonance.rs": "ee24c3caedb3833da59aef283b311ba2bf4c2a1f04de4a40e11ed63b02f92de2",
+    "crates/chematic-chem/tests/local_cation_resonance.rs": "9c7a95ade6e6de98363b0f55a15cd9e6a58a8ccc356a5edf381242e6c40c0418",
     "crates/chematic-chem/tests/screening_enrichment.rs": "afdbcfba9e9861abd4a0e9c600ba3718d994dc5498390e34967e76e4e5f691f9",
     "crates/chematic-mol/src/cif.rs": "248e9e10cdbb1004b70dc0628417815473757feb2160eee90ac6582d7660c013",
     "crates/chematic-mol/src/cif/writer.rs": "fd9df48995a11b2e7c0b94e467908f42af575f36dff56605187aa7f540e1f749",

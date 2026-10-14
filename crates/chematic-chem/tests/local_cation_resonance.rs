@@ -46,7 +46,7 @@ fn rdkit_9458_oxygen_and_sulfur_pairs_are_starting_form_independent() {
             .map(|s| s.split_whitespace().next().unwrap())
             .collect();
     assert_eq!(fixtures.len(), 4);
-    for pair in fixtures.chunks_exact(2) {
+    for pair in fixtures.as_chunks::<2>().0 {
         let expected: BTreeSet<_> = pair
             .iter()
             .map(|s| canonical_smiles(&parse(s).unwrap()))
