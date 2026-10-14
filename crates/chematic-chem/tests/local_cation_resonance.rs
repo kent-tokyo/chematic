@@ -196,6 +196,54 @@ fn invalid_limits_and_input_caps_fail_before_enumeration() {
 }
 
 #[test]
+fn rejection_reasons_have_stable_actionable_messages() {
+    let cases = [
+        (
+            Error::InvalidLimit {
+                field: "max_forms",
+                value: 0,
+                maximum: 1024,
+            },
+            "max_forms must be in 1..=1024, got 0",
+        ),
+        (
+            Error::EmptyMolecule,
+            "local resonance requires a non-empty molecule",
+        ),
+        (
+            Error::AtomLimitExceeded {
+                actual: 3,
+                limit: 2,
+            },
+            "local resonance atom count 3 exceeds limit 2",
+        ),
+        (
+            Error::UnsupportedStereo,
+            "local cation resonance does not support stereochemical annotations",
+        ),
+        (
+            Error::QueryAtom { atom: AtomIdx(7) },
+            "local resonance does not support query atom 7",
+        ),
+        (
+            Error::QueryBond { bond: BondIdx(9) },
+            "local resonance does not support query bond 9",
+        ),
+    ];
+    for (error, expected) in cases {
+        assert_eq!(error.to_string(), expected);
+    }
+}
+
+#[test]
+fn triple_bonds_are_counted_without_becoming_resonance_moves() {
+    let report = run("N#CC=[NH2+]");
+    assert_eq!(report.status, Status::CompleteWithinScope);
+    assert_eq!(report.forms.len(), 1);
+    assert_eq!(report.transforms_attempted, 0);
+}
+
+#[test]
 fn stereochemical_and_query_inputs_are_rejected_explicitly() {
     for smiles in ["C/C(SC)=[N+](C)/C", "C[C@H](F)CSC(C)=[N+](C)C"] {
         assert!(matches!(

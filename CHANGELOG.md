@@ -17,6 +17,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   mismatches keep failing explicitly through existing error variants, while a
   downstream-style compile test now prevents patch releases from silently
   adding enum variants.
+- Added a targeted `cargo-semver-checks` pull-request lane pinned to the
+  established v1.1.3 `chematic-mol` contract.
 - Pinned the known RDKit 2026.03.6/2026.09.1 `CalcNumRings` disagreements as a
   versioned machine-readable contract. CI now rejects drift in the current
   bounded default without presenting one oracle version as universal truth.
