@@ -8,6 +8,7 @@
 use super::RdkitSmilesError;
 use super::mol::{BondType, Mol};
 use super::substruct::substruct_matches;
+use chematic_core::Molecule;
 
 const TOLERANCE: f64 = 1.0e-6;
 
@@ -583,7 +584,7 @@ pub(crate) fn best_rms(
 /// RDKit `GetAllConformerBestRMS`: lower-triangular best RMSDs in
 /// `(1,0), (2,0), (2,1), ...` order. Atom matches are computed once and
 /// reused for every conformer pair.
-pub(crate) fn all_conformer_best_rms(
+fn all_conformer_best_rms_internal(
     mol: &Mol,
     conformers: &[Vec<Point>],
     max_matches: usize,
@@ -618,7 +619,7 @@ pub(crate) fn all_conformer_best_rms(
 /// RDKit 2026.09.1 `GetAllConformerBestRMSToRef`: Cartesian best RMSDs in
 /// reference-major order: `(ref0, probe0), (ref0, probe1), ...`.
 /// Atom matches are computed once and reused for every pair.
-pub(crate) fn all_conformer_best_rms_to_ref(
+fn all_conformer_best_rms_to_ref_internal(
     probe_mol: &Mol,
     reference_mol: &Mol,
     probe_conformers: &[Vec<Point>],
@@ -660,6 +661,103 @@ pub(crate) fn calc_rms(
     check_coords(mol, reference, "reference")?;
     let matches = all_matches(mol, max_matches, symmetrize)?;
     Ok(best_rms_internal(probe, reference, &matches, weights, false)?.rmsd)
+}
+
+/// `rdMolAlign.GetAlignmentTransform` / `AlignMol(prb, ref, atomMap,
+/// weights, reflect, maxIters)` for two conformers of `mol`.
+pub fn rdkit_align_mol(
+    mol: &Molecule,
+    probe: &[[f64; 3]],
+    reference: &[[f64; 3]],
+    atom_map: Option<&[(usize, usize)]>,
+    weights: Option<&[f64]>,
+    reflect: bool,
+    max_iterations: u32,
+) -> Result<RdkitAlignment, RdkitSmilesError> {
+    let m = super::rdkit_mol_sanitized(mol)?;
+    align_mol(
+        &m,
+        probe,
+        reference,
+        atom_map,
+        weights,
+        reflect,
+        max_iterations,
+    )
+}
+
+/// `rdMolAlign.GetBestRMS` for two conformers of `mol`.
+pub fn rdkit_best_rms(
+    mol: &Molecule,
+    probe: &[[f64; 3]],
+    reference: &[[f64; 3]],
+    max_matches: usize,
+    symmetrize: bool,
+    weights: Option<&[f64]>,
+) -> Result<RdkitAlignment, RdkitSmilesError> {
+    let m = super::rdkit_mol_sanitized(mol)?;
+    best_rms(&m, probe, reference, max_matches, symmetrize, weights)
+}
+
+/// `rdMolAlign.GetAllConformerBestRMS` in lower-triangle order.
+pub fn rdkit_all_conformer_best_rms(
+    mol: &Molecule,
+    conformers: &[Vec<[f64; 3]>],
+    max_matches: usize,
+    symmetrize: bool,
+    weights: Option<&[f64]>,
+) -> Result<Vec<f64>, RdkitSmilesError> {
+    let m = super::rdkit_mol_sanitized(mol)?;
+    all_conformer_best_rms_internal(&m, conformers, max_matches, symmetrize, weights)
+}
+
+/// RDKit 2026.09.1 `rdMolAlign.GetAllConformerBestRMSToRef` in
+/// reference-major order.
+pub fn rdkit_all_conformer_best_rms_to_ref(
+    probe_mol: &Molecule,
+    reference_mol: &Molecule,
+    probe_conformers: &[Vec<[f64; 3]>],
+    reference_conformers: &[Vec<[f64; 3]>],
+    max_matches: usize,
+    symmetrize: bool,
+    weights: Option<&[f64]>,
+) -> Result<Vec<f64>, RdkitSmilesError> {
+    let probe = super::rdkit_mol_sanitized(probe_mol)?;
+    let reference = super::rdkit_mol_sanitized(reference_mol)?;
+    all_conformer_best_rms_to_ref_internal(
+        &probe,
+        &reference,
+        probe_conformers,
+        reference_conformers,
+        max_matches,
+        symmetrize,
+        weights,
+    )
+}
+
+/// `rdMolAlign.CalcRMS`: smallest in-place RMSD over all atom mappings.
+pub fn rdkit_calc_rms(
+    mol: &Molecule,
+    probe: &[[f64; 3]],
+    reference: &[[f64; 3]],
+    max_matches: usize,
+    symmetrize: bool,
+    weights: Option<&[f64]>,
+) -> Result<f64, RdkitSmilesError> {
+    let m = super::rdkit_mol_sanitized(mol)?;
+    calc_rms(&m, probe, reference, max_matches, symmetrize, weights)
+}
+
+/// `RDNumeric::Alignments::AlignPoints`: sum of squared residuals and the
+/// best-fit transform.
+pub fn rdkit_align_points(
+    reference: &[[f64; 3]],
+    probe: &[[f64; 3]],
+    weights: Option<&[f64]>,
+    reflect: bool,
+    max_iterations: u32,
+) -> Result<(f64, Transform3D), RdkitSmilesError> {
+    align_points(reference, probe, weights, reflect, max_iterations)
 }
 
 #[cfg(test)]
@@ -710,7 +808,7 @@ mod tests {
             vec![[2., -1., 0.], [2., 0., 0.], [1., 0., 0.]],
             vec![[0., 0., 0.], [1., 0., 0.], [1., 2., 0.]],
         ];
-        let batch = all_conformer_best_rms(&mol, &conformers, 100, true, None).unwrap();
+        let batch = all_conformer_best_rms_internal(&mol, &conformers, 100, true, None).unwrap();
         let matches = all_matches(&mol, 100, true).unwrap();
         let expected = [(1, 0), (2, 0), (2, 1)].map(|(probe, reference)| {
             best_rms_internal(
@@ -740,7 +838,7 @@ mod tests {
             vec![[1., 1., 0.], [1., 0., 0.], [0., 0., 0.]],
             vec![[1., 3., 0.], [1., 0., 0.], [0., 0., 0.]],
         ];
-        let batch = all_conformer_best_rms_to_ref(
+        let batch = all_conformer_best_rms_to_ref_internal(
             &probe,
             &reference,
             &probe_conformers,
@@ -769,8 +867,8 @@ mod tests {
     #[test]
     fn conformer_batches_reject_bad_coordinate_counts() {
         let mol = super::super::rdkit_mol_sanitized(&crate::parse("CCO").unwrap()).unwrap();
-        let error =
-            all_conformer_best_rms(&mol, &[vec![[0., 0., 0.]]], 100, true, None).unwrap_err();
+        let error = all_conformer_best_rms_internal(&mol, &[vec![[0., 0., 0.]]], 100, true, None)
+            .unwrap_err();
         assert!(error.to_string().contains("1 positions for 3 atoms"));
     }
 }
