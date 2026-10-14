@@ -260,6 +260,40 @@ def test_sdf_name_in_header_not_sd_field(tmp_path):
     assert "> <Activity>" in raw
 
 
+def test_name_accessors_share_the_rdkit_name_property():
+    for mol in (chematic.from_smiles("CCO"), Chem.MolFromSmiles("CCO")):
+        assert mol.GetName() == ""
+        assert not mol.HasProp("_Name")
+
+        mol.SetName("ethanol")
+        assert mol.GetName() == "ethanol"
+        assert mol.GetProp("_Name") == "ethanol"
+
+        mol.SetProp("_Name", "ethyl alcohol")
+        assert mol.GetName() == "ethyl alcohol"
+
+        mol.ClearProp("_Name")
+        assert mol.GetName() == ""
+        assert not mol.HasProp("_Name")
+
+        mol.SetName("")
+        assert mol.GetName() == ""
+        assert mol.HasProp("_Name")
+
+
+def test_rw_mol_name_accessors_survive_snapshots():
+    source = Chem.MolFromSmiles("CCO")
+    source.SetName("source")
+    editable = RWMol(source)
+    assert editable.GetName() == "source"
+
+    editable.SetName("edited")
+    snapshot = editable.GetMol()
+    assert snapshot.GetName() == "edited"
+    assert snapshot.GetProp("_Name") == "edited"
+    assert source.GetName() == "source"
+
+
 def test_setprops_filters_output(tmp_path):
     mol = Chem.MolFromSmiles("CCO")
     mol.SetProp("ID", "ethanol")

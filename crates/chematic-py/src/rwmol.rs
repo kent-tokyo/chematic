@@ -109,6 +109,18 @@ impl RWMol {
         self.inner.bond_count()
     }
 
+    /// Return the molecule title stored in the conventional ``_Name`` property.
+    /// An unset title is reported as an empty string, matching RDKit 2026.09.1.
+    fn GetName(&self) -> String {
+        self.props.get("_Name").cloned().unwrap_or_default()
+    }
+
+    /// Set the molecule title in the conventional ``_Name`` property.
+    fn SetName(&mut self, name: String) {
+        self.props
+            .insert_typed("_Name".to_string(), name, crate::PropertyType::String);
+    }
+
     /// Snapshot the current state into an independent, read-only `Mol`.
     /// Further edits to this `RWMol` do not affect the returned `Mol`.
     fn GetMol(&self) -> Mol {

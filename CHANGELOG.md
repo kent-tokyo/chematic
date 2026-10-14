@@ -12,6 +12,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added RDKit 2026.09.1-compatible molecule-name accessors. Native and
+  `rdkit_compat` molecules now expose `GetName()` / `SetName()` over the
+  conventional `_Name` property, with an empty string for an unset name;
+  editable `RWMol` snapshots preserve the same title.
 - Added RDKit 2026.09.1-compatible Python property fallbacks. `Mol.GetProp`
   now accepts `autoConvert` and an optional `default` (including an explicit
   `None`) while preserving `KeyError` when no fallback is supplied. Added

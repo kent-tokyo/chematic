@@ -222,6 +222,23 @@ impl Mol {
         self.props.clear(key);
     }
 
+    /// Return the molecule title stored in the conventional ``_Name`` property.
+    ///
+    /// RDKit 2026.09.1 returns an empty string when no name has been set instead
+    /// of raising ``KeyError``.  ``GetName`` and the generic property API share
+    /// the same storage, so updates through either surface remain visible.
+    #[pyo3(name = "GetName")]
+    fn get_name(&self) -> String {
+        self.props.get("_Name").cloned().unwrap_or_default()
+    }
+
+    /// Set the molecule title in the conventional ``_Name`` property.
+    #[pyo3(name = "SetName")]
+    fn set_name(&mut self, name: String) {
+        self.props
+            .insert_typed("_Name".to_string(), name, crate::PropertyType::String);
+    }
+
     /// Pickle support with a versioned, bounded molecule-state payload.
     ///
     /// Python's pickle format is unsafe for untrusted data. The chematic
