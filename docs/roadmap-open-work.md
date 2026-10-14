@@ -1,88 +1,68 @@
 # Open-work ledger
 
-Updated 2026-10-14 for **v1.1.4**. This file lists unresolved work only.
-Completed implementation details belong in the
-[CHANGELOG](https://github.com/kent-tokyo/chematic/blob/main/CHANGELOG.md);
-measurements belong in the [validation report](validation.md) and
-[benchmark index](https://github.com/kent-tokyo/chematic/tree/main/benchmarks).
+Updated 2026-10-15 for **v1.1.4** plus the current **Unreleased** branch.
+This file lists unresolved work only. Completed changes belong in the
+[CHANGELOG](https://github.com/kent-tokyo/chematic/blob/main/CHANGELOG.md); measurements belong in the
+[validation report](validation.md) and [benchmark index](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/README.md).
 
 ## Active follow-up
 
-Issues #734 and #754 are closed. Their reaction, SMARTS, autoconf, and fuzz
-corpora remain recurring regression gates. Issues #739, #769, #779, and #785
-are also closed; implementation and verification records remain linked from
-the changelog and validation pages.
-
-- **v1.1.x artifact packet:** the v1.1.4 expectation retains the 4,072-row
-  exact HBD/QED stress lane. CI continues to compare A6 with the verified v1.1.3 wheel
-  until the exact v1.1.4 PyPI artifact exists. Run the
-  full hosted Linux/macOS/Windows published-wheel workflow before replacing
-  the current broad v1.0.42 package packet.
+- **v1.1.4 artifact packet:** v1.1.4 is published, but a complete checked-in
+  Linux/macOS/Windows Python, npm/WASM, and crates.io chemistry packet is still
+  required before replacing the current v1.1.3 hosted chemistry packet and
+  v1.0.42 broad performance packet.
+- **Rust compatibility:** keep the v1.1.3 downstream compile fixture and
+  `cargo-semver-checks` release lane. Public enum variants and struct fields
+  remain semver-sensitive even when chemistry behavior is additive.
 - **Equivalent-work performance:** close prepared-operation deficits without
-  moving work into parsing; add second-host and peak-RSS records. The v1.1.4
-  follow-up restores prepared QED and reduces the reported parse-inclusive
-  TPSA/Morgan regressions to statistical ties on one host; cross-platform
-  artifact evidence remains open.
-- **Compatibility CI:** keep the v1.1.2 downstream exhaustive-`Chirality`
-  compile fixture in every release candidate. Treat public enum variant
-  additions as semver-significant even when the new syntax is additive.
-- **Remaining unusual-input boundaries:** square-planar tags do not receive
-  tetrahedral CIP labels; wildcard ligands return typed `oracle_unstable`;
-  one isotope fixture intentionally follows Sequence Rule 2 before remote
-  Rule 5. Broader Cleanup parity remains an independent workflow task.
-- **File interchange:** expand the initial V3000/MOL2/CML/CDXML semantic gate
-  to stratified corpora before broad Open Babel claims.
-- **CDK/Indigo comparison:** the new source workflow packet covers bounded
-  reaction, parent-selection, and labelled R-group lanes with full mismatch
-  accounting and 21 alternating timing blocks. Expand beyond 15/39/16 rows,
-  add prepared-object and memory lanes plus a second host, then rerun exact
-  published artifacts. CDK still has only the earlier smoke gate.
-- **R-group contract:** maintain the bounded terminal-wildcard subset across
-  Rust, Python, and WASM; broader multi-core and enumeration behavior remains
-  outside the contract.
-- **A6 residuals:** RDKit 2026.09.1 topology bounds match within `1e-12` across
-  all 768,664 frozen-corpus cells. The conformer-tail candidate fixes a real
-  gradient early-exit bug, aligns relevant-ring traversal, and exposes an
-  optional selective rescue profile. Once-only v3 results are 94/100 within
-  1 kcal/mol at essentially tied but 0.27% slower median time; rescue is
-  95/100 and 2.1% slower. A6 plus holdouts v1/v2/v3 are now development data.
-  A local MMFF distance cache funds a bounded one-candidate/100-iteration retry
-  profile that was faster than RDKit in all three development blocks and
-  improved the within-1-kcal/mol count to 261/265. Candidate `43619387` was
-  frozen before an outcome-blind v4 set was selected and evaluated once. v4
-  reached 95/100 within 1 kcal/mol and 98/100 within 2 kcal/mol with no
-  failures, but CheMatic was faster in only two of three blocks and the median
-  advantage was 0.38%. Treat this as a quality improvement and speed tie. v4
-  is now inspected data. A separate final-gradient-gated rescue reaches
-  261/265 within 1 kcal/mol on the 265-row development set and was faster in
-  all three alternating blocks (1.0179x median), but that set was used to fix
-  the threshold. Keep atom typing, convergence, stereochemistry,
-  clashes, same-coordinate energy, basin diversity, minimization tails, time,
-  and memory separate; add 21-block, second-host, peak-memory, and exact
-  public-artifact evidence before any broad claim.
-- **Independent workflow corpora:** expand beyond the current bounded lanes
-  with multi-reactant reactions, multi-core R-group cases, and real MOL2/CJSON
-  files. Keep refusals and semantic-loss reports in the denominator.
+  moving work into parsing. Separate parse-inclusive, first-use, prepared,
+  startup, and peak-memory results; add a second host before broad claims.
+- **RDKit version contract:** retain the versioned 2026.03.6/2026.09.1 ring
+  disagreements and typed CIP abstentions. Do not present one oracle version
+  as a universal chemical truth.
+- **File interchange:** expand V3000, MOL2, CML, CIF, SDF, and CDXML semantic
+  tests to stratified real-file corpora before broad Open Babel claims.
+- **Reaction and standardization:** keep the 83-row reaction and fuzz gates,
+  then expand multi-reactant, explicit-H, radical, charge, stereo, and
+  rejection strata. Broader Cleanup parity remains open.
+- **R-group:** maintain the terminal-wildcard subset across Rust, Python, and
+  WASM. Multi-core, MCS alignment, tautomer/core enumeration, and non-terminal
+  R-groups remain outside the current contract.
+- **CDK/Indigo comparison:** expand beyond the bounded 15 reaction, 39 parent,
+  and 16 labelled R-group rows; add prepared-object, memory, second-host, and
+  exact-package lanes.
+- **A6 quality:** topology bounds are aligned on the frozen corpus, while
+  minimization and basin-diversity tails remain. The 265-row set and holdouts
+  v1–v4 are development data. A fresh candidate must be frozen before new
+  outcome-blind data are selected.
+- **A6 publication:** add 21 alternating blocks, a second host, peak memory,
+  exact public artifacts, and an unused quality set before claiming a general
+  speed-and-quality win.
+- **Independent workflow corpora:** add multi-reactant reactions, multi-core
+  R-groups, and real MOL2/CJSON/CIF files while retaining refusals and semantic
+  losses in the denominator.
 
-## Evidence refreshes
+Issues #734 and #754 are closed, as are #739, #769, #779, and #785. Their
+fixtures remain regression tests; closed status does not broaden the supported
+domain.
 
-These are recurring gates, not separate feature requests:
+## Recurring evidence refreshes
 
-- **Published chemistry:** rerun the reaction, SMARTS, CIP, fingerprint, and
-  3D gates from exact PyPI/npm/crates.io artifacts on their declared platforms.
-- **Performance:** compare equal outputs and equal work in alternating repeated
+- Rerun chemistry, reaction, SMARTS, CIP, fingerprint, format, and 3D gates
+  from exact registry artifacts on their declared platforms.
+- Compare equal work and equal acceptable outputs in alternating repeated
   blocks; split parsing, perception, prepared reuse, and memory.
-- **New RDKit releases:** pin distributed artifacts and hashes. Keep source,
-  package, and browser lanes separate.
-- **Representation limits:** retain strict/reporting paths for lossy MOL,
-  V3000, CDXML, Markush/polymer, Standard InChI, and canonical identity.
+- Pin new comparator artifacts and hashes. Keep source, package, and browser
+  lanes separate.
+- Retain strict/reporting paths for lossy MOL, V3000, CDXML, Markush/polymer,
+  Standard InChI, and canonical identity.
 
 ## Dependency classes
 
-- **`local-open`:** implementation, regression tests, documentation, and source gates.
-- **`toolchain-open`:** cross-platform wheels, npm/WASM builds, and browser runners.
-- **`external-open`:** new comparator packages, upstream review, and independent adjudication.
-- **`data-sealed`:** one-time evaluation only; inspected rows never become sealed again.
+- **`local-open`:** implementation, regression tests, documentation, source gates.
+- **`toolchain-open`:** cross-platform wheels, npm/WASM builds, browser runners.
+- **`external-open`:** comparator packages, upstream review, adjudication.
+- **`data-sealed`:** one-time evaluation; inspected rows cannot be sealed again.
 - **`historical`:** retained provenance that does not establish current behavior.
 
 ## Accuracy packages
@@ -99,7 +79,7 @@ These are recurring gates, not separate feature requests:
 
 ## Completion rule
 
-For every gate, record the support domain, versions, corpus, options, failure
-policy, and counts for success, failure, refusal, and skipped inputs. A refusal
-is not a match, a local pass is not a published-package result, and registry
+Every gate records support domain, versions, corpus, options, failure policy,
+and counts for success, failure, refusal, unsupported, and skipped inputs. A
+refusal is not a match, a source pass is not a package result, and registry
 availability is not chemistry validation.

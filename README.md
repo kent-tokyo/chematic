@@ -36,6 +36,10 @@ options, and hosts. See
 [validation](docs/validation.md) and
 [CHANGELOG](CHANGELOG.md).
 
+`main` also contains unreleased Rust API compatibility guards, a versioned
+RDKit ring-count contract, and dependency security updates. Do not attribute
+those changes to the published v1.1.4 packages.
+
 ## Use it
 
 ```python

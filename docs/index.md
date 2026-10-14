@@ -80,16 +80,17 @@ Installation: `pip install chematic`, `cargo add chematic`, or
 
 ## Current evidence boundary
 
-v1.1.4 adds bounded cation-resonance and screening-enrichment APIs, checked
-CIF and protein projections, RDKit-compatible molecule/property/conformer and
-fingerprint surfaces, dense NumPy fingerprints, and format correctness fixes.
-The latest broad
-published-package performance packet remains v1.0.42 until v1.1.x artifacts
-are measured. A current-source
-macOS arm64 packet at `44338e16` matches RDKit 2026.09.1 on 10,000/10,000 TPSA,
-Labute ASA, ring-count and chiral-Morgan rows; it is not a published-package
-rerun. The 83-row reaction gate remains 80 exact graph/origin/map rows and
-three inputs invalid in both engines.
+v1.1.4 adds bounded resonance and screening APIs, checked CIF and protein
+projections, expanded RDKit-compatible surfaces, dense NumPy fingerprints,
+and format correctness fixes. The latest complete hosted Python chemistry
+packet is v1.1.3; the broadest published-package RDKit performance packet is
+v1.0.42. Later source measurements are not package results. The 83-row
+reaction gate remains 80 exact graph/origin/map rows and three inputs invalid
+in both engines.
+
+`main` also contains unreleased Rust API compatibility guards, a versioned
+RDKit ring-count contract, and dependency security updates. These changes are
+not part of the published v1.1.4 packages.
 
 Each result applies only to its named artifact, corpus, options, and failure
 policy. Release availability is not accuracy evidence, source results are not
@@ -115,8 +116,8 @@ RDKit remains the better choice for maximum ecosystem coverage, broader 3D
 workflows, or APIs that chematic marks unsupported.
 
 Rust line coverage is measured separately from chemistry validation. The
-processed Linux Codecov lane is currently 96.93%; it shows which code executed,
-not whether every chemical result is correct.
+workflow gate currently reports 96.5056% (153,415/158,970); it shows which code
+executed, not whether every chemical result is correct.
 
 ## Reference
 

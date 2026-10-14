@@ -36,6 +36,9 @@ CIF、MOL2の正確性と速度も改善しています。性能と互換性の�
 artifact・corpus・option・hostの範囲に限ります。詳しくは
 [検証報告](docs/validation.md)と[CHANGELOG](CHANGELOG.md)を参照してください。
 
+`main`には、Rust API互換性の検査、RDKitのバージョン別環数契約、依存関係の
+セキュリティ更新も含まれます。これらは未リリースであり、公開済みv1.1.4には含まれません。
+
 ## 使い方
 
 ```python
