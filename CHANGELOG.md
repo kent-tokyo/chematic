@@ -22,6 +22,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - Pinned the known RDKit 2026.03.6/2026.09.1 `CalcNumRings` disagreements as a
   versioned machine-readable contract. CI now rejects drift in the current
   bounded default without presenting one oracle version as universal truth.
+- Updated the transitive `rustls` dependency to 0.23.46, addressing
+  RUSTSEC-2026-0347, RUSTSEC-2026-0348, and RUSTSEC-2026-0349 in the MCP HTTP
+  client dependency graph.
 
 ## [1.1.4] - 2026-10-14
 
