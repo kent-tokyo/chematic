@@ -24,6 +24,7 @@ jobs:
       id-token: write
     env:
       CARGO_INCREMENTAL: "0"
+      COVERAGE_IGNORE_REGEX: '(/examples/|crates/(chematic-py|chematic-wasm)/|tools/gen_sa_table/|crates/chematic-3d/src/issue256_255_phase2_evaluation.rs)'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -83,24 +84,44 @@ jobs:
             --features chematic-inchi/native-inchi \
             --exclude chematic-py --exclude chematic-wasm --exclude gen-sa-table \
             --no-report
+      - name: Generate coverage reports
+        id: report
+        if: steps.measure.outcome == 'success'
+        run: |
           cargo llvm-cov report \
-            --ignore-filename-regex '(/examples/|crates/(chematic-py|chematic-wasm)/|tools/gen_sa_table/|crates/chematic-3d/src/issue256_255_phase2_evaluation.rs)' \
-            --fail-under-lines 96.5 \
+            --ignore-filename-regex "$COVERAGE_IGNORE_REGEX" \
             --lcov --output-path target/coverage/lcov.info
+          cargo llvm-cov report \
+            --ignore-filename-regex "$COVERAGE_IGNORE_REGEX" \
+            --text --summary-only | tee target/coverage/summary.txt
+          {
+            echo '### Rust coverage'
+            echo '```text'
+            cat target/coverage/summary.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: Generate HTML report
-        if: steps.changes.outputs.run_coverage == 'true'
+        if: steps.report.outcome == 'success'
         run: >-
           cargo llvm-cov report
-          --ignore-filename-regex '(/examples/|crates/(chematic-py|chematic-wasm)/|tools/gen_sa_table/|crates/chematic-3d/src/issue256_255_phase2_evaluation.rs)'
+          --ignore-filename-regex "$COVERAGE_IGNORE_REGEX"
           --html --output-dir target/coverage
       - name: Save coverage reports
-        if: ${{ !cancelled() && steps.changes.outputs.run_coverage == 'true' && steps.measure.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.report.outcome == 'success' }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: rust-unit-coverage
           path: target/coverage
           if-no-files-found: error
           retention-days: 14
+      # Save diagnostics before enforcing the threshold so a regression remains
+      # inspectable. Keep the same scope and minimum coverage as before.
+      - name: Enforce line coverage
+        if: ${{ !cancelled() && steps.report.outcome == 'success' }}
+        run: >-
+          cargo llvm-cov report
+          --ignore-filename-regex "$COVERAGE_IGNORE_REGEX"
+          --summary-only --fail-under-lines 96.5
       - name: Upload coverage to Codecov
         # Dependabot PRs have read-only permissions and cannot request OIDC.
         # Their measurement and downloadable reports still run above.
