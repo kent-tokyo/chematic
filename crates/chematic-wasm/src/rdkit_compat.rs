@@ -68,6 +68,32 @@ fn parse_coords(input: &str, label: &str, atom_count: usize) -> Result<Vec<[f64;
     Ok(coords)
 }
 
+fn parse_conformers(
+    input: &str,
+    label: &str,
+    atom_count: usize,
+) -> Result<Vec<Vec<[f64; 3]>>, JsValue> {
+    let conformers: Vec<Vec<[f64; 3]>> = parse_json(input, label)?;
+    for (index, coords) in conformers.iter().enumerate() {
+        if coords.len() != atom_count {
+            return Err(js_error(
+                "rdkit_coordinate_count",
+                format!(
+                    "{label}[{index}] has {} rows, but the molecule has {atom_count} atoms",
+                    coords.len()
+                ),
+            ));
+        }
+        if coords.iter().flatten().any(|value| !value.is_finite()) {
+            return Err(js_error(
+                "rdkit_non_finite_coordinate",
+                format!("{label}[{index}] contains a non-finite coordinate"),
+            ));
+        }
+    }
+    Ok(conformers)
+}
+
 fn parse_optional_weights(
     input: Option<String>,
     expected_len: usize,
@@ -338,6 +364,71 @@ impl MolHandle {
         )
         .map(|result| result.rmsd)
         .map_err(chemistry_error)
+    }
+
+    /// RDKit `GetAllConformerBestRMS` as a JSON number array in
+    /// `(1,0), (2,0), (2,1), ...` order. Atom mappings are computed once for
+    /// the entire batch.
+    pub fn rdkit_all_conformer_best_rms_json(
+        &self,
+        conformers_json: &str,
+        max_matches: usize,
+        symmetrize: bool,
+        weights_json: Option<String>,
+    ) -> Result<String, JsValue> {
+        validate_3d_size(self)?;
+        validate_max_matches(max_matches)?;
+        let conformers =
+            parse_conformers(conformers_json, "conformers_json", self.inner.atom_count())?;
+        let weights = parse_optional_weights(weights_json, self.inner.atom_count())?;
+        let result = chematic_smiles::rdkit_all_conformer_best_rms(
+            &self.inner,
+            &conformers,
+            max_matches,
+            symmetrize,
+            weights.as_deref(),
+        )
+        .map_err(chemistry_error)?;
+        bounded_json_string(&result)
+    }
+
+    /// RDKit 2026.09.1 `GetAllConformerBestRMSToRef` as a JSON number array
+    /// in reference-major order. Atom mappings are computed once for the
+    /// entire Cartesian product.
+    pub fn rdkit_all_conformer_best_rms_to_reference_json(
+        &self,
+        reference: &MolHandle,
+        probe_conformers_json: &str,
+        reference_conformers_json: &str,
+        max_matches: usize,
+        symmetrize: bool,
+        weights_json: Option<String>,
+    ) -> Result<String, JsValue> {
+        validate_3d_size(self)?;
+        validate_3d_size(reference)?;
+        validate_max_matches(max_matches)?;
+        let probe_conformers = parse_conformers(
+            probe_conformers_json,
+            "probe_conformers_json",
+            self.inner.atom_count(),
+        )?;
+        let reference_conformers = parse_conformers(
+            reference_conformers_json,
+            "reference_conformers_json",
+            reference.inner.atom_count(),
+        )?;
+        let weights = parse_optional_weights(weights_json, self.inner.atom_count())?;
+        let result = chematic_smiles::rdkit_all_conformer_best_rms_to_ref(
+            &self.inner,
+            &reference.inner,
+            &probe_conformers,
+            &reference_conformers,
+            max_matches,
+            symmetrize,
+            weights.as_deref(),
+        )
+        .map_err(chemistry_error)?;
+        bounded_json_string(&result)
     }
 
     /// RDKit `GetBestAlignmentTransform` as JSON, bounded by `max_matches`.
@@ -632,6 +723,40 @@ mod tests {
         let value: serde_json::Value = serde_json::from_str(&json).unwrap();
         assert!(value["rmsd"].as_f64().unwrap() < 1e-12);
         assert_eq!(value["atom_map"].as_array().unwrap().len(), 3);
+    }
+
+    #[test]
+    fn rdkit_conformer_batch_rmsd_preserves_order() {
+        let probe = molecule("CCO");
+        let reference = molecule("OCC");
+        let probes = r#"[
+            [[0,0,0],[1,0,0],[1,1,0]],
+            [[0,0,0],[1,0,0],[1,2,0]]
+        ]"#;
+        let references = r#"[
+            [[1,1,0],[1,0,0],[0,0,0]],
+            [[1,3,0],[1,0,0],[0,0,0]]
+        ]"#;
+        let pairwise: Vec<f64> = serde_json::from_str(
+            &probe
+                .rdkit_all_conformer_best_rms_json(probes, 100, true, None)
+                .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(pairwise.len(), 1);
+        assert!(pairwise[0] > 0.1);
+
+        let to_reference: Vec<f64> = serde_json::from_str(
+            &probe
+                .rdkit_all_conformer_best_rms_to_reference_json(
+                    &reference, probes, references, 100, true, None,
+                )
+                .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(to_reference.len(), 4);
+        assert!(to_reference[0] < 1e-7);
+        assert!(to_reference[2] > 0.1);
     }
 
     #[test]

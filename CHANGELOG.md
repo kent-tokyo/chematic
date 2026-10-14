@@ -12,6 +12,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added RDKit-compatible batch conformer alignment across Rust, Python, and
+  WASM. `rdkit_all_conformer_best_rms` reproduces
+  `GetAllConformerBestRMS`, while the cross-molecule
+  `rdkit_all_conformer_best_rms_to_ref` reproduces RDKit 2026.09.1's new
+  `GetAllConformerBestRMSToRef` ordering and semantics. Both compute atom
+  mappings once per batch instead of repeating substructure enumeration for
+  every conformer pair.
 - Added dense NumPy output for the existing binary fingerprint families,
   including ECFP6, FCFP4, atom-pair, topological-torsion, RDK, Pattern,
   Layered, Avalon, and configurable RDKit-compatible Morgan fingerprints.

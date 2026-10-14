@@ -317,6 +317,26 @@ class Mol:
     ) -> list[list[float]]:
         """``Chem.Get3DDistanceMatrix(m, useAtomWts)`` for ``coords``."""
         ...
+    def rdkit_all_conformer_best_rms(
+        self,
+        conformers: list[list[list[float]]],
+        max_matches: int = 1_000_000,
+        symmetrize_conjugated_terminal_groups: bool = True,
+        weights: list[float] | None = None,
+    ) -> list[float]:
+        """RDKit ``GetAllConformerBestRMS`` in ``(1,0), (2,0), (2,1), ...`` order."""
+        ...
+    def rdkit_all_conformer_best_rms_to_reference(
+        self,
+        reference: Mol,
+        probe_conformers: list[list[list[float]]],
+        reference_conformers: list[list[list[float]]],
+        max_matches: int = 1_000_000,
+        symmetrize_conjugated_terminal_groups: bool = True,
+        weights: list[float] | None = None,
+    ) -> list[float]:
+        """RDKit 2026.09.1 ``GetAllConformerBestRMSToRef`` in reference-major order."""
+        ...
     def rdkit_morgan_sparse_counts(
         self, radius: int = 2, include_chirality: bool = False
     ) -> dict[int, int]:
