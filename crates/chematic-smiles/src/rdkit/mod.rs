@@ -891,6 +891,45 @@ pub fn rdkit_best_rms(
     align::best_rms(&m, probe, reference, max_matches, symmetrize, weights)
 }
 
+/// `rdMolAlign.GetAllConformerBestRMS`: best-fit RMSDs for every lower-triangle
+/// conformer pair in `(1,0), (2,0), (2,1), ...` order. The substructure
+/// mappings are built once and reused for all pairs.
+pub fn rdkit_all_conformer_best_rms(
+    mol: &Molecule,
+    conformers: &[Vec<[f64; 3]>],
+    max_matches: usize,
+    symmetrize: bool,
+    weights: Option<&[f64]>,
+) -> Result<Vec<f64>, RdkitSmilesError> {
+    let m = rdkit_mol_sanitized(mol)?;
+    align::all_conformer_best_rms(&m, conformers, max_matches, symmetrize, weights)
+}
+
+/// RDKit 2026.09.1 `rdMolAlign.GetAllConformerBestRMSToRef`: best-fit RMSDs
+/// for every reference/probe conformer pair in reference-major order. The
+/// cross-molecule substructure mappings are built once and reused.
+pub fn rdkit_all_conformer_best_rms_to_ref(
+    probe_mol: &Molecule,
+    reference_mol: &Molecule,
+    probe_conformers: &[Vec<[f64; 3]>],
+    reference_conformers: &[Vec<[f64; 3]>],
+    max_matches: usize,
+    symmetrize: bool,
+    weights: Option<&[f64]>,
+) -> Result<Vec<f64>, RdkitSmilesError> {
+    let probe = rdkit_mol_sanitized(probe_mol)?;
+    let reference = rdkit_mol_sanitized(reference_mol)?;
+    align::all_conformer_best_rms_to_ref(
+        &probe,
+        &reference,
+        probe_conformers,
+        reference_conformers,
+        max_matches,
+        symmetrize,
+        weights,
+    )
+}
+
 /// `rdMolAlign.CalcRMS(prb, ref, maxMatches=max_matches,
 /// symmetrizeConjugatedTerminalGroups=symmetrize, weights)`: the smallest
 /// RMSD over all matches without moving the probe.

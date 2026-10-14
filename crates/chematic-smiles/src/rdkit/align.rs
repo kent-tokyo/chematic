@@ -1,7 +1,8 @@
 //! RDKit's point and molecule alignment (RDKit 2026.03.1):
 //! `Numerics/Alignment/AlignPoints.cpp` (quaternion fit with Jacobi
 //! diagonalisation), `Geometry/Transform3D` and `GraphMol/MolAlign`
-//! (`AlignMol`, `GetBestRMS`, `CalcRMS`), with RDKit's operation order so
+//! (`AlignMol`, `GetBestRMS`, `GetAllConformerBestRMS`,
+//! `GetAllConformerBestRMSToRef`, `CalcRMS`), with RDKit's operation order so
 //! results agree bit for bit.
 
 use super::RdkitSmilesError;
@@ -425,22 +426,26 @@ fn atom_match(q: &Mol, qa: usize, m: &Mol, ma: usize, ignore_charge: bool) -> bo
         || (a.radicals != 0 && a.radicals != b.radicals))
 }
 
-/// All matches of the probe (as the query) in the reference, as
-/// `getAllMatchesPrbRef` (`uniquify=false`) enumerates them; here both are
-/// the same molecule.
-fn all_matches(
-    mol: &Mol,
+/// All matches of `probe` (as the query) in `reference`, as
+/// `getAllMatchesPrbRef` (`uniquify=false`) enumerates them. RDKit applies
+/// conjugated-terminal-group symmetrization to the probe copy only.
+fn all_matches_between(
+    probe: &Mol,
+    reference: &Mol,
     max_matches: usize,
     symmetrize: bool,
 ) -> Result<Vec<AtomMap>, RdkitSmilesError> {
     let (neutral, either) = if symmetrize {
-        symmetrized_terminal_groups(mol)
+        symmetrized_terminal_groups(probe)
     } else {
-        (vec![false; mol.atoms.len()], vec![false; mol.bonds.len()])
+        (
+            vec![false; probe.atoms.len()],
+            vec![false; probe.bonds.len()],
+        )
     };
-    let vc = |q: usize, t: usize| atom_match(mol, q, mol, t, neutral[q]);
+    let vc = |q: usize, t: usize| atom_match(probe, q, reference, t, neutral[q]);
     let ec = |qb: usize, tb: usize| {
-        let (q, t) = (&mol.bonds[qb], &mol.bonds[tb]);
+        let (q, t) = (&probe.bonds[qb], &reference.bonds[tb]);
         if either[qb] {
             return matches!(t.bt, BondType::Single | BondType::Double);
         }
@@ -449,18 +454,26 @@ fn all_matches(
         }
         if q.bt == BondType::Dative {
             // The direction must match too.
-            return atom_match(mol, q.begin, mol, t.begin, neutral[q.begin])
-                && atom_match(mol, q.end, mol, t.end, neutral[q.end]);
+            return atom_match(probe, q.begin, reference, t.begin, neutral[q.begin])
+                && atom_match(probe, q.end, reference, t.end, neutral[q.end]);
         }
         true
     };
-    let matches = substruct_matches(mol, mol, &vc, &ec, max_matches);
+    let matches = substruct_matches(reference, probe, &vc, &ec, max_matches);
     if matches.is_empty() {
         return Err(RdkitSmilesError::Unsupported(
             "No sub-structure match found between the reference and probe mol".into(),
         ));
     }
     Ok(matches)
+}
+
+fn all_matches(
+    mol: &Mol,
+    max_matches: usize,
+    symmetrize: bool,
+) -> Result<Vec<AtomMap>, RdkitSmilesError> {
+    all_matches_between(mol, mol, max_matches, symmetrize)
 }
 
 /// Result of an RDKit-style alignment.
@@ -567,6 +580,72 @@ pub(crate) fn best_rms(
     best_rms_internal(probe, reference, &matches, weights, true)
 }
 
+/// RDKit `GetAllConformerBestRMS`: lower-triangular best RMSDs in
+/// `(1,0), (2,0), (2,1), ...` order. Atom matches are computed once and
+/// reused for every conformer pair.
+pub(crate) fn all_conformer_best_rms(
+    mol: &Mol,
+    conformers: &[Vec<Point>],
+    max_matches: usize,
+    symmetrize: bool,
+    weights: Option<&[f64]>,
+) -> Result<Vec<f64>, RdkitSmilesError> {
+    for coords in conformers {
+        check_coords(mol, coords, "conformer")?;
+    }
+    if conformers.len() < 2 {
+        return Ok(Vec::new());
+    }
+    let matches = all_matches(mol, max_matches, symmetrize)?;
+    let mut result = Vec::with_capacity(conformers.len() * (conformers.len() - 1) / 2);
+    for probe_id in 1..conformers.len() {
+        for reference_id in 0..probe_id {
+            result.push(
+                best_rms_internal(
+                    &conformers[probe_id],
+                    &conformers[reference_id],
+                    &matches,
+                    weights,
+                    true,
+                )?
+                .rmsd,
+            );
+        }
+    }
+    Ok(result)
+}
+
+/// RDKit 2026.09.1 `GetAllConformerBestRMSToRef`: Cartesian best RMSDs in
+/// reference-major order: `(ref0, probe0), (ref0, probe1), ...`.
+/// Atom matches are computed once and reused for every pair.
+pub(crate) fn all_conformer_best_rms_to_ref(
+    probe_mol: &Mol,
+    reference_mol: &Mol,
+    probe_conformers: &[Vec<Point>],
+    reference_conformers: &[Vec<Point>],
+    max_matches: usize,
+    symmetrize: bool,
+    weights: Option<&[f64]>,
+) -> Result<Vec<f64>, RdkitSmilesError> {
+    for coords in probe_conformers {
+        check_coords(probe_mol, coords, "probe conformer")?;
+    }
+    for coords in reference_conformers {
+        check_coords(reference_mol, coords, "reference conformer")?;
+    }
+    if probe_conformers.is_empty() || reference_conformers.is_empty() {
+        return Ok(Vec::new());
+    }
+    let matches = all_matches_between(probe_mol, reference_mol, max_matches, symmetrize)?;
+    let mut result = Vec::with_capacity(probe_conformers.len() * reference_conformers.len());
+    for reference in reference_conformers {
+        for probe in probe_conformers {
+            result.push(best_rms_internal(probe, reference, &matches, weights, true)?.rmsd);
+        }
+    }
+    Ok(result)
+}
+
 /// `CalcRMS(prbMol, refMol, maxMatches, symmetrizeConjugatedTerminalGroups,
 /// weights)`: the smallest in-place RMSD over all matches.
 pub(crate) fn calc_rms(
@@ -621,6 +700,78 @@ mod tests {
         let best = crate::rdkit_best_rms(&mol, &probe, &reference, 1_000_000, true, None).unwrap();
         assert!(best.rmsd < 1e-6);
         assert_eq!(best.atom_map.len(), 3);
+    }
+
+    #[test]
+    fn all_conformer_best_rms_reuses_matches_and_preserves_rdkit_order() {
+        let mol = super::super::rdkit_mol_sanitized(&crate::parse("CCO").unwrap()).unwrap();
+        let conformers = vec![
+            vec![[0., 0., 0.], [1., 0., 0.], [1., 1., 0.]],
+            vec![[2., -1., 0.], [2., 0., 0.], [1., 0., 0.]],
+            vec![[0., 0., 0.], [1., 0., 0.], [1., 2., 0.]],
+        ];
+        let batch = all_conformer_best_rms(&mol, &conformers, 100, true, None).unwrap();
+        let matches = all_matches(&mol, 100, true).unwrap();
+        let expected = [(1, 0), (2, 0), (2, 1)].map(|(probe, reference)| {
+            best_rms_internal(
+                &conformers[probe],
+                &conformers[reference],
+                &matches,
+                None,
+                true,
+            )
+            .unwrap()
+            .rmsd
+        });
+        assert_eq!(batch, expected);
+        assert!(batch[0] < 1e-7);
+        assert!(batch[1] > 0.1);
+    }
+
+    #[test]
+    fn all_conformer_best_rms_to_ref_is_reference_major() {
+        let probe = super::super::rdkit_mol_sanitized(&crate::parse("CCO").unwrap()).unwrap();
+        let reference = super::super::rdkit_mol_sanitized(&crate::parse("OCC").unwrap()).unwrap();
+        let probe_conformers = vec![
+            vec![[0., 0., 0.], [1., 0., 0.], [1., 1., 0.]],
+            vec![[0., 0., 0.], [1., 0., 0.], [1., 2., 0.]],
+        ];
+        let reference_conformers = vec![
+            vec![[1., 1., 0.], [1., 0., 0.], [0., 0., 0.]],
+            vec![[1., 3., 0.], [1., 0., 0.], [0., 0., 0.]],
+        ];
+        let batch = all_conformer_best_rms_to_ref(
+            &probe,
+            &reference,
+            &probe_conformers,
+            &reference_conformers,
+            100,
+            true,
+            None,
+        )
+        .unwrap();
+        let matches = all_matches_between(&probe, &reference, 100, true).unwrap();
+        let expected: Vec<_> = reference_conformers
+            .iter()
+            .flat_map(|reference_coords| {
+                probe_conformers.iter().map(|probe_coords| {
+                    best_rms_internal(probe_coords, reference_coords, &matches, None, true)
+                        .unwrap()
+                        .rmsd
+                })
+            })
+            .collect();
+        assert_eq!(batch, expected);
+        assert!(batch[0] < 1e-7);
+        assert!(batch[2] > 0.1);
+    }
+
+    #[test]
+    fn conformer_batches_reject_bad_coordinate_counts() {
+        let mol = super::super::rdkit_mol_sanitized(&crate::parse("CCO").unwrap()).unwrap();
+        let error =
+            all_conformer_best_rms(&mol, &[vec![[0., 0., 0.]]], 100, true, None).unwrap_err();
+        assert!(error.to_string().contains("1 positions for 3 atoms"));
     }
 }
 
