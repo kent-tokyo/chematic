@@ -55,6 +55,9 @@ __all__ = [
 import chematic as _ch
 
 
+_MISSING = object()
+
+
 # ---------------------------------------------------------------------------
 # ExplicitBitVect — RDKit-compatible bit vector
 # ---------------------------------------------------------------------------
@@ -395,8 +398,10 @@ class Mol:
 
     # -- SD properties (RDKit-compatible) ------------------------------------
 
-    def GetProp(self, key: str) -> str:
-        return self._mol.GetProp(key)
+    def GetProp(self, key: str, autoConvert: bool = False, default=_MISSING):
+        if default is _MISSING:
+            return self._mol.GetProp(key, autoConvert)
+        return self._mol.GetProp(key, autoConvert, default)
 
     def SetProp(self, key: str, val: str) -> None:
         self._mol.SetProp(key, val)
@@ -416,11 +421,34 @@ class Mol:
     def SetIntProp(self, key: str, val: int) -> None:
         self._mol.SetIntProp(key, val)
 
+    def GetIntProp(self, key: str, default=_MISSING) -> int:
+        if default is _MISSING:
+            return self._mol.GetIntProp(key)
+        return self._mol.GetIntProp(key, default)
+
+    def SetUnsignedProp(self, key: str, val: int) -> None:
+        self._mol.SetUnsignedProp(key, val)
+
+    def GetUnsignedProp(self, key: str, default=_MISSING) -> int:
+        if default is _MISSING:
+            return self._mol.GetUnsignedProp(key)
+        return self._mol.GetUnsignedProp(key, default)
+
     def SetDoubleProp(self, key: str, val: float) -> None:
         self._mol.SetDoubleProp(key, val)
 
+    def GetDoubleProp(self, key: str, default=_MISSING) -> float:
+        if default is _MISSING:
+            return self._mol.GetDoubleProp(key)
+        return self._mol.GetDoubleProp(key, default)
+
     def SetBoolProp(self, key: str, val: bool) -> None:
         self._mol.SetBoolProp(key, val)
+
+    def GetBoolProp(self, key: str, default=_MISSING) -> bool:
+        if default is _MISSING:
+            return self._mol.GetBoolProp(key)
+        return self._mol.GetBoolProp(key, default)
 
     # -- repr ----------------------------------------------------------------
 

@@ -4,10 +4,11 @@
 //! graph state and semantic sidecars, but not derived caches, so a restored
 //! molecule cannot inherit stale computed values.
 
-use crate::Mol;
+use crate::{Mol, PropertyStore, PropertyType};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3::types::PyBytes;
+#[cfg(test)]
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -17,7 +18,8 @@ use chematic_core::{
 };
 
 const MAGIC: &[u8; 8] = b"CHMPKL\0\0";
-const VERSION: u16 = 1;
+const VERSION: u16 = 2;
+const LEGACY_VERSION: u16 = 1;
 const MAX_PAYLOAD: usize = 64 * 1024 * 1024;
 const MAX_ATOMS: usize = 1_000_000;
 const MAX_BONDS: usize = 4_000_000;
@@ -184,6 +186,27 @@ fn cip_to_u8(value: Option<CipCode>) -> u8 {
     }
 }
 
+fn property_type_to_u8(value: PropertyType) -> u8 {
+    match value {
+        PropertyType::String => 0,
+        PropertyType::Int => 1,
+        PropertyType::Unsigned => 2,
+        PropertyType::Double => 3,
+        PropertyType::Bool => 4,
+    }
+}
+
+fn property_type_from_u8(value: u8) -> Result<PropertyType, String> {
+    match value {
+        0 => Ok(PropertyType::String),
+        1 => Ok(PropertyType::Int),
+        2 => Ok(PropertyType::Unsigned),
+        3 => Ok(PropertyType::Double),
+        4 => Ok(PropertyType::Bool),
+        _ => Err(format!("invalid property type {value}")),
+    }
+}
+
 fn cip_from_u8(value: u8) -> Result<Option<CipCode>, String> {
     match value {
         0 => Ok(None),
@@ -306,16 +329,23 @@ fn checked_payload_size(mol: &Mol) -> Result<usize, String> {
                 "property {key:?} exceeds pickle string limit {MAX_STRING}"
             ));
         }
-        add(8 + key.len() + value.len())?;
+        add(9 + key.len() + value.len())?;
     }
     Ok(size)
 }
 
 pub(crate) fn encode(mol: &Mol) -> Result<Vec<u8>, String> {
+    encode_version(mol, VERSION)
+}
+
+fn encode_version(mol: &Mol, version: u16) -> Result<Vec<u8>, String> {
+    if !matches!(version, LEGACY_VERSION | VERSION) {
+        return Err(format!("unsupported pickle version {version}"));
+    }
     let inner = mol.inner.as_ref();
     let mut writer = Writer(Vec::with_capacity(checked_payload_size(mol)?));
     writer.0.extend_from_slice(MAGIC);
-    writer.u16(VERSION);
+    writer.u16(version);
     writer.u32(inner.atom_count() as u32);
     writer.u32(inner.bond_count() as u32);
     writer.u32(inner.stereo_groups().len() as u32);
@@ -392,6 +422,9 @@ pub(crate) fn encode(mol: &Mol) -> Result<Vec<u8>, String> {
     let mut properties: Vec<_> = mol.props.iter().collect();
     properties.sort_unstable_by(|left, right| left.0.cmp(right.0));
     for (key, value) in properties {
+        if version >= 2 {
+            writer.u8(property_type_to_u8(mol.props.property_type(key)));
+        }
         writer.bytes(key.as_bytes());
         writer.bytes(value.as_bytes());
     }
@@ -400,6 +433,7 @@ pub(crate) fn encode(mol: &Mol) -> Result<Vec<u8>, String> {
 }
 
 struct PickleCounts {
+    version: u16,
     atoms: usize,
     bonds: usize,
     groups: usize,
@@ -411,12 +445,13 @@ fn decode_header(reader: &mut Reader<'_>) -> Result<PickleCounts, String> {
         return Err("invalid chematic molecule pickle header".into());
     }
     let version = reader.u16()?;
-    if version != VERSION {
+    if !matches!(version, LEGACY_VERSION | VERSION) {
         return Err(format!(
-            "unsupported chematic molecule pickle version {version} (expected {VERSION})"
+            "unsupported chematic molecule pickle version {version} (expected {LEGACY_VERSION} or {VERSION})"
         ));
     }
     Ok(PickleCounts {
+        version,
         atoms: reader.bounded_count("atom", MAX_ATOMS)?,
         bonds: reader.bounded_count("bond", MAX_BONDS)?,
         groups: reader.bounded_count("stereo group", MAX_GROUPS)?,
@@ -596,14 +631,21 @@ fn decode_stereo_groups(
 fn decode_properties(
     reader: &mut Reader<'_>,
     count: usize,
-) -> Result<HashMap<String, String>, String> {
-    let mut props = HashMap::with_capacity(count);
+    version: u16,
+) -> Result<PropertyStore, String> {
+    let mut props = PropertyStore::default();
     for _ in 0..count {
+        let property_type = if version >= 2 {
+            property_type_from_u8(reader.u8()?)?
+        } else {
+            PropertyType::String
+        };
         let key = reader.string("property key")?;
         let value = reader.string("property value")?;
-        if props.insert(key.clone(), value).is_some() {
+        if props.contains_key(&key) {
             return Err(format!("duplicate property key {key:?}"));
         }
+        props.insert_typed(key, value, property_type);
     }
     Ok(props)
 }
@@ -615,7 +657,7 @@ pub(crate) fn decode(payload: &[u8]) -> Result<Mol, String> {
     decode_atoms(&mut reader, &mut builder, counts.atoms)?;
     decode_bonds(&mut reader, &mut builder, counts.atoms, counts.bonds)?;
     decode_stereo_groups(&mut reader, &mut builder, &counts)?;
-    let props = decode_properties(&mut reader, counts.properties)?;
+    let props = decode_properties(&mut reader, counts.properties, counts.version)?;
     reader.finish()?;
     Ok(Mol {
         inner: Arc::new(builder.build()),
@@ -664,7 +706,8 @@ mod tests {
             props: HashMap::from([
                 ("name".into(), "molecule".into()),
                 ("unicode".into(), "β-lactam".into()),
-            ]),
+            ])
+            .into(),
         }
     }
 
@@ -725,7 +768,26 @@ mod tests {
         trailing.push(0);
         assert!(decode(&trailing).is_err());
         let mut wrong_version = encode(&original).unwrap();
-        wrong_version[MAGIC.len()] = 2;
+        wrong_version[MAGIC.len()] = 3;
         assert!(decode(&wrong_version).is_err());
+
+        let legacy = encode_version(&original, LEGACY_VERSION).unwrap();
+        let legacy_restored = decode(&legacy).unwrap();
+        assert_eq!(legacy_restored.props, original.props);
+    }
+
+    #[test]
+    fn round_trip_preserves_property_types() {
+        let mut original = Mol::bare(MoleculeBuilder::new().build());
+        original
+            .props
+            .insert_typed("double".into(), "42".into(), PropertyType::Double);
+        original
+            .props
+            .insert_typed("bool".into(), "1".into(), PropertyType::Bool);
+
+        let restored = decode(&encode(&original).unwrap()).unwrap();
+        assert_eq!(restored.props.property_type("double"), PropertyType::Double);
+        assert_eq!(restored.props.property_type("bool"), PropertyType::Bool);
     }
 }

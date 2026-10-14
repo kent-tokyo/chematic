@@ -12,6 +12,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added RDKit 2026.09.1-compatible Python property fallbacks. `Mol.GetProp`
+  now accepts `autoConvert` and an optional `default` (including an explicit
+  `None`) while preserving `KeyError` when no fallback is supplied. Added
+  `GetIntProp`, `GetUnsignedProp`, `GetDoubleProp`, and `GetBoolProp` with the
+  same missing-key contract, plus `SetUnsignedProp`, in both the native and
+  `rdkit_compat` molecule APIs. Typed values retain their RDKit-compatible
+  Python type under `autoConvert=True` and across pickle round trips.
 - Added RDKit-compatible batch conformer alignment across Rust, Python, and
   WASM. `rdkit_all_conformer_best_rms` reproduces
   `GetAllConformerBestRMS`, while the cross-molecule
