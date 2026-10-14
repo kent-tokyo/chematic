@@ -27,11 +27,12 @@ npm install @kent-tokyo/chematic
 
 Python wheelはC/C++コンパイラを必要とせず、各バインディングは同じRustコアを使います。
 
-### v1.1.3 の対応範囲
+### v1.1.4 の対応範囲
 
-v1.1.3では、電荷を保存するEEM部分電荷、補正ETKDGねじれ勾配、OpenSMILESの
-allene軸不斉、Pythonの分子pickle、indexed SDF、V3000結合ステレオ集合、再利用可能な
-Python MMFF/UFF force fieldを追加しました。性能と互換性の主張は、記録に明記した
+v1.1.4では、範囲を限定したカチオン共鳴列挙とスクリーニング濃縮指標、検証付きCIF・
+タンパク質projection、RDKit互換の名前・property・配座・fingerprint・原子除外API、
+NumPy形式の密なfingerprintを追加しました。記述子、fingerprint、MOL/V3000、CML、
+CIF、MOL2の正確性と速度も改善しています。性能と互換性の主張は、記録に明記した
 artifact・corpus・option・hostの範囲に限ります。詳しくは
 [検証報告](docs/validation.md)と[CHANGELOG](CHANGELOG.md)を参照してください。
 

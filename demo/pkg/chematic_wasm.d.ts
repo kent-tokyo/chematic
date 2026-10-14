@@ -455,6 +455,18 @@ export class MolHandle {
      */
     rdkit_align_json(probe_coords_json: string, reference_coords_json: string, atom_map_json: string | null | undefined, weights_json: string | null | undefined, reflect: boolean, max_iterations: number): string;
     /**
+     * RDKit `GetAllConformerBestRMS` as a JSON number array in
+     * `(1,0), (2,0), (2,1), ...` order. Atom mappings are computed once for
+     * the entire batch.
+     */
+    rdkit_all_conformer_best_rms_json(conformers_json: string, max_matches: number, symmetrize: boolean, weights_json?: string | null): string;
+    /**
+     * RDKit 2026.09.1 `GetAllConformerBestRMSToRef` as a JSON number array
+     * in reference-major order. Atom mappings are computed once for the
+     * entire Cartesian product.
+     */
+    rdkit_all_conformer_best_rms_to_reference_json(reference: MolHandle, probe_conformers_json: string, reference_conformers_json: string, max_matches: number, symmetrize: boolean, weights_json?: string | null): string;
+    /**
      * RDKit `GetBestAlignmentTransform` as JSON, bounded by `max_matches`.
      */
     rdkit_best_alignment_json(probe_coords_json: string, reference_coords_json: string, max_matches: number, symmetrize: boolean, weights_json?: string | null): string;
@@ -1260,6 +1272,18 @@ export function erg_vec_json(mol: MolHandle): string;
  * Indices match `mol.atoms()` order.  Hydrogen atoms get 0.0.
  */
 export function estate_indices_json(mol: MolHandle): string;
+
+/**
+ * Decode an RDKit atom code as stable JSON.
+ *
+ * Returns `{"symbol":"C","branchCount":3,"piElectronCount":1}`.
+ */
+export function explain_rdkit_atom_code_json(code: number): string;
+
+/**
+ * Decode a decimal legacy RDKit torsion code as stable JSON.
+ */
+export function explain_rdkit_topological_torsion_code_json(code_decimal: string, size: number): string;
 
 /**
  * Extract an extxyz frame's coordinates, cell, per-atom properties and
@@ -2445,6 +2469,17 @@ export function preflight_smiles_json(smiles: string, width: number, height: num
 export function prepare_rdkit_ecfp4(mol: MolHandle): PreparedRdkitEcfp4Handle;
 
 /**
+ * Amino-acid-only mmCIF projection in the same schema as
+ * [`protein_from_pdb_json`].
+ */
+export function protein_from_mmcif_json(text: string): string;
+
+/**
+ * Amino-acid-only PDB projection as stable JSON.
+ */
+export function protein_from_pdb_json(text: string): string;
+
+/**
  * Coordinates (Å) plus molecular charge/multiplicity from a QCSchema
  * `qcschema_molecule` document, in the SAME atom order
  * [`mol_from_qcschema_molecule`] returns topology for. Returns JSON
@@ -2489,6 +2524,14 @@ export function qcschema_validate_atomic_result(json: string): string;
  * ```
  */
 export function random_smiles_json(smiles: string, count: number, seed: bigint): string;
+
+/**
+ * RDKit atom-pair atom code for one atom.
+ *
+ * `branch_subtract` is normally 0 for atom-pair diagnostics, 1 for a
+ * torsion endpoint, and 2 for an interior torsion atom.
+ */
+export function rdkit_atom_code(mol: MolHandle, atom_index: number, branch_subtract: number): number;
 
 /**
  * RDKit-bit-exact ECFP4 (radius=2, 2048 bits, `useChirality=false`, `useBondTypes=true`,
@@ -2589,6 +2632,21 @@ export function rdkit_path_bitvec(mol: MolHandle): Uint8Array;
  * `topo_path_bitvec` operation and the RDKit-compatible path operation.
  */
 export function rdkit_rdk_bitvec(mol: MolHandle): Uint8Array;
+
+/**
+ * RDKit 2026.09.1 RDKFingerprint with `ignoreAtoms`: every branched path
+ * containing one of `ignored_atoms` is excluded. Invalid indices return a JS
+ * error; an empty list is bit-identical to [`rdkit_rdk_bitvec`].
+ */
+export function rdkit_rdk_bitvec_ignoring_atoms(mol: MolHandle, ignored_atoms: Uint32Array): Uint8Array;
+
+/**
+ * Pack a JSON array of atom indices into RDKit's legacy torsion code.
+ *
+ * The decimal string return type avoids losing precision in JavaScript's
+ * `number` type for codes above 2^53.
+ */
+export function rdkit_topological_torsion_path_code_decimal(mol: MolHandle, path_json: string): string;
 
 /**
  * Compute the opt-in RDKit-compatible hashed topological-torsion fingerprint
@@ -3427,6 +3485,8 @@ export interface InitOutput {
     readonly enumerate_tautomers_json: (a: number) => [number, number];
     readonly erg_vec_json: (a: number) => [number, number];
     readonly estate_indices_json: (a: number) => [number, number];
+    readonly explain_rdkit_atom_code_json: (a: number) => [number, number];
+    readonly explain_rdkit_topological_torsion_code_json: (a: number, b: number, c: number) => [number, number, number, number];
     readonly extxyz_frame_json: (a: number, b: number) => [number, number, number, number];
     readonly extxyz_frames_batch_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly fcfp4_bitvec: (a: number) => [number, number];
@@ -3597,6 +3657,8 @@ export interface InitOutput {
     readonly molhandle_qed: (a: number) => number;
     readonly molhandle_randic_index: (a: number) => number;
     readonly molhandle_rdkit_align_json: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number, j: number, k: number) => [number, number, number, number];
+    readonly molhandle_rdkit_all_conformer_best_rms_json: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number, number, number];
+    readonly molhandle_rdkit_all_conformer_best_rms_to_reference_json: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number, j: number) => [number, number, number, number];
     readonly molhandle_rdkit_best_alignment_json: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number) => [number, number, number, number];
     readonly molhandle_rdkit_best_rms: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number) => [number, number, number];
     readonly molhandle_rdkit_bounds_matrix_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
@@ -3657,10 +3719,13 @@ export interface InitOutput {
     readonly preflight_smiles_json: (a: number, b: number, c: number, d: number) => [number, number];
     readonly prepare_rdkit_ecfp4: (a: number) => [number, number, number];
     readonly preparedrdkitecfp4handle_bitvec: (a: number) => [number, number];
+    readonly protein_from_mmcif_json: (a: number, b: number) => [number, number, number, number];
+    readonly protein_from_pdb_json: (a: number, b: number) => [number, number, number, number];
     readonly qcschema_molecule_coords_json: (a: number, b: number) => [number, number, number, number];
     readonly qcschema_validate_atomic_input: (a: number, b: number) => [number, number, number, number];
     readonly qcschema_validate_atomic_result: (a: number, b: number) => [number, number, number, number];
     readonly random_smiles_json: (a: number, b: number, c: number, d: bigint) => [number, number, number, number];
+    readonly rdkit_atom_code: (a: number, b: number, c: number) => [number, number, number];
     readonly rdkit_ecfp4_bitvec: (a: number) => [number, number, number, number];
     readonly rdkit_ecfp4_detail_json: (a: number) => [number, number, number, number];
     readonly rdkit_ecfp_config_bitvec: (a: number, b: number, c: number) => [number, number, number, number];
@@ -3673,6 +3738,8 @@ export interface InitOutput {
     readonly rdkit_nearest_neighbors_json: (a: number, b: number, c: number, d: number, e: number) => [number, number];
     readonly rdkit_path_bitvec: (a: number) => [number, number];
     readonly rdkit_rdk_bitvec: (a: number) => [number, number];
+    readonly rdkit_rdk_bitvec_ignoring_atoms: (a: number, b: number, c: number) => [number, number, number, number];
+    readonly rdkit_topological_torsion_path_code_decimal: (a: number, b: number, c: number) => [number, number, number, number];
     readonly rdkit_torsion_bitvec: (a: number) => [number, number];
     readonly rdkitreadresult_coords_json: (a: number) => [number, number, number, number];
     readonly rdkitreadresult_molecule: (a: number) => number;

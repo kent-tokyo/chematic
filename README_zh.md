@@ -27,12 +27,13 @@ npm install @kent-tokyo/chematic
 
 Python wheel 无需 C/C++ 编译器；各绑定共享同一 Rust 内核。
 
-### v1.1.3 范围
+### v1.1.4 范围
 
-v1.1.3 增加了守恒总电荷的 EEM 部分电荷、修正后的可选 ETKDG 扭转梯度、
-OpenSMILES allene 轴手性、Python 分子 pickle、索引式 SDF、V3000 键立体集合，以及
-可复用的 Python MMFF/UFF 力场。性能与兼容性结论仅适用于记录中注明的
-artifact、corpus、option 和 host。详情见[验证报告](docs/validation.md)和
+v1.1.4 增加了有界阳离子共振枚举、筛选富集指标、带检查的 CIF 与蛋白质投影、
+RDKit 兼容的名称、属性、构象、指纹和原子屏蔽 API，以及 NumPy 密集指纹输出。
+本版本也改进了描述符、指纹、MOL/V3000、CML、CIF 和 MOL2 的正确性与性能。
+性能与兼容性结论仅适用于记录中注明的 artifact、corpus、option 和 host。详情见
+[验证报告](docs/validation.md)和
 [CHANGELOG](CHANGELOG.md)。
 
 ## 使用

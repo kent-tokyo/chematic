@@ -1,13 +1,14 @@
 # Validation report
 
-Updated 2026-10-14 for **v1.1.3**. The broad chemistry and speed packet
+Updated 2026-10-14 for **v1.1.4**. The broad chemistry and speed packet
 remains pinned to published v1.0.30; separately named records cover later
 artifacts, the two-platform published v1.0.42/RDKit packet, the published
 v1.0.42 macOS arm64 chemistry baseline, v1.0.40 source, the v1.0.41 source
 candidate, current-main v1.1.0-source records, focused v1.1.1 artifact checks,
 and bounded v1.1.2/v1.1.3 records. v1.1.3 release channels and its hosted
-Linux/macOS/Windows Python chemistry workflow are verified. Every comparison
-is limited to its recorded artifact, comparator, corpus and operation.
+Linux/macOS/Windows Python chemistry workflow are verified; v1.1.4 package
+claims require post-publication reruns. Every comparison is limited to its
+recorded artifact, comparator, corpus and operation.
 
 ## Current evidence
 
