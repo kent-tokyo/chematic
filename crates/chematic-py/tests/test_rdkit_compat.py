@@ -169,6 +169,14 @@ def test_typed_property_getter_rejects_existing_wrong_type():
         mol.GetIntProp("value", default=0)
 
 
+def test_typed_property_defaults_match_rdkit_none_conversion():
+    mol = Chem.MolFromSmiles("CCO")
+    assert mol.GetBoolProp("missing", default=None) is False
+    for getter in (mol.GetIntProp, mol.GetUnsignedProp, mol.GetDoubleProp):
+        with pytest.raises(TypeError):
+            getter("missing", default=None)
+
+
 @pytest.mark.parametrize(
     "setter,value,expected,expected_type",
     [

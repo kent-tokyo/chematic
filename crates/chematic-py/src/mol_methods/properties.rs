@@ -66,6 +66,41 @@ fn parse_get_prop_options<'py>(
     Ok((auto_convert, default))
 }
 
+fn parse_typed_default<'py>(
+    method: &str,
+    args: &Bound<'py, PyTuple>,
+    kwargs: Option<&Bound<'py, PyDict>>,
+) -> PyResult<Option<Bound<'py, PyAny>>> {
+    if args.len() > 1 {
+        return Err(pyo3::exceptions::PyTypeError::new_err(format!(
+            "{method}() takes at most 2 arguments ({} given)",
+            args.len() + 1
+        )));
+    }
+    let mut default = if args.is_empty() {
+        None
+    } else {
+        Some(args.get_item(0)?)
+    };
+    if let Some(kwargs) = kwargs {
+        for (raw_key, value) in kwargs.iter() {
+            let key = raw_key.extract::<String>()?;
+            if key != "default" {
+                return Err(pyo3::exceptions::PyTypeError::new_err(format!(
+                    "{method}() got an unexpected keyword argument {key:?}"
+                )));
+            }
+            if default.is_some() {
+                return Err(pyo3::exceptions::PyTypeError::new_err(format!(
+                    "{method}() got multiple values for argument 'default'"
+                )));
+            }
+            default = Some(value);
+        }
+    }
+    Ok(default)
+}
+
 fn string_property_to_python(
     py: Python<'_>,
     value: &str,
@@ -209,8 +244,15 @@ impl Mol {
     }
 
     /// Get an integer property, or ``default`` when it is absent.
-    #[pyo3(name = "GetIntProp", signature = (key, default = None))]
-    fn get_int_prop(&self, key: &str, default: Option<i64>) -> PyResult<i64> {
+    #[pyo3(name = "GetIntProp", signature = (key, *args, **kwargs))]
+    #[pyo3(text_signature = "($self, key, default=...)")]
+    fn get_int_prop<'py>(
+        &self,
+        key: &str,
+        args: &Bound<'py, PyTuple>,
+        kwargs: Option<&Bound<'py, PyDict>>,
+    ) -> PyResult<i64> {
+        let default = parse_typed_default("GetIntProp", args, kwargs)?;
         match self.props.get(key) {
             Some(value)
                 if matches!(
@@ -225,7 +267,10 @@ impl Mol {
                     .map_err(|_| property_value_error(key, "an integer", value))
             }
             Some(value) => Err(property_value_error(key, "an integer", value)),
-            None => default.ok_or_else(|| property_key_error(key)),
+            None => match default {
+                Some(default) => default.extract::<i64>(),
+                None => Err(property_key_error(key)),
+            },
         }
     }
 
@@ -237,8 +282,15 @@ impl Mol {
     }
 
     /// Get an unsigned integer property, or ``default`` when it is absent.
-    #[pyo3(name = "GetUnsignedProp", signature = (key, default = None))]
-    fn get_unsigned_prop(&self, key: &str, default: Option<u64>) -> PyResult<u64> {
+    #[pyo3(name = "GetUnsignedProp", signature = (key, *args, **kwargs))]
+    #[pyo3(text_signature = "($self, key, default=...)")]
+    fn get_unsigned_prop<'py>(
+        &self,
+        key: &str,
+        args: &Bound<'py, PyTuple>,
+        kwargs: Option<&Bound<'py, PyDict>>,
+    ) -> PyResult<u64> {
+        let default = parse_typed_default("GetUnsignedProp", args, kwargs)?;
         match self.props.get(key) {
             Some(value)
                 if matches!(
@@ -253,7 +305,10 @@ impl Mol {
                     .map_err(|_| property_value_error(key, "an unsigned integer", value))
             }
             Some(value) => Err(property_value_error(key, "an unsigned integer", value)),
-            None => default.ok_or_else(|| property_key_error(key)),
+            None => match default {
+                Some(default) => default.extract::<u64>(),
+                None => Err(property_key_error(key)),
+            },
         }
     }
 
@@ -265,8 +320,15 @@ impl Mol {
     }
 
     /// Get a floating-point property, or ``default`` when it is absent.
-    #[pyo3(name = "GetDoubleProp", signature = (key, default = None))]
-    fn get_double_prop(&self, key: &str, default: Option<f64>) -> PyResult<f64> {
+    #[pyo3(name = "GetDoubleProp", signature = (key, *args, **kwargs))]
+    #[pyo3(text_signature = "($self, key, default=...)")]
+    fn get_double_prop<'py>(
+        &self,
+        key: &str,
+        args: &Bound<'py, PyTuple>,
+        kwargs: Option<&Bound<'py, PyDict>>,
+    ) -> PyResult<f64> {
+        let default = parse_typed_default("GetDoubleProp", args, kwargs)?;
         match self.props.get(key) {
             Some(value)
                 if matches!(
@@ -279,7 +341,10 @@ impl Mol {
                     .map_err(|_| property_value_error(key, "a float", value))
             }
             Some(value) => Err(property_value_error(key, "a float", value)),
-            None => default.ok_or_else(|| property_key_error(key)),
+            None => match default {
+                Some(default) => default.extract::<f64>(),
+                None => Err(property_key_error(key)),
+            },
         }
     }
 
@@ -294,8 +359,15 @@ impl Mol {
     }
 
     /// Get a boolean property, or ``default`` when it is absent.
-    #[pyo3(name = "GetBoolProp", signature = (key, default = None))]
-    fn get_bool_prop(&self, key: &str, default: Option<bool>) -> PyResult<bool> {
+    #[pyo3(name = "GetBoolProp", signature = (key, *args, **kwargs))]
+    #[pyo3(text_signature = "($self, key, default=...)")]
+    fn get_bool_prop<'py>(
+        &self,
+        key: &str,
+        args: &Bound<'py, PyTuple>,
+        kwargs: Option<&Bound<'py, PyDict>>,
+    ) -> PyResult<bool> {
+        let default = parse_typed_default("GetBoolProp", args, kwargs)?;
         match (
             self.props.get(key).map(String::as_str),
             self.props.property_type(key),
@@ -303,7 +375,11 @@ impl Mol {
             (Some("1"), crate::PropertyType::String | crate::PropertyType::Bool) => Ok(true),
             (Some("0"), crate::PropertyType::String | crate::PropertyType::Bool) => Ok(false),
             (Some(value), _) => Err(property_value_error(key, "a boolean", value)),
-            (None, _) => default.ok_or_else(|| property_key_error(key)),
+            (None, _) => match default {
+                Some(default) if default.is_none() => Ok(false),
+                Some(default) => default.extract::<bool>(),
+                None => Err(property_key_error(key)),
+            },
         }
     }
 
