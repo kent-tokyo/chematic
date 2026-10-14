@@ -1,19 +1,40 @@
 //! SDF (Structure-Data File) reader.
 //!
-//! An SDF file contains one or more MOL V2000 blocks separated by `$$$$`
-//! delimiter lines.  Data-field sections between `M  END` and `$$$$` are
-//! accepted but ignored.
+//! An SDF file contains one or more MOL V2000 or V3000 blocks separated by `$$$$`
+//! delimiter lines. Data-field sections between `M  END` and `$$$$` are
+//! available through the record readers; the molecule-only reader ignores them.
 
 use crate::error::MolParseError;
 use crate::mol2000::{
     CoordinateDimension, GeometryRank, MolMetadata, Stereo3DDiagnostic, parse_mol, parse_mol_fast,
     read_mol_with_diagnostics,
 };
+use crate::mol3000::{parse_mol_v3000, read_mol_v3000_with_diagnostics};
 use chematic_core::{Coords3D, Molecule};
 use chematic_perception::{EzDirectionDiagnostic, StereoDiagnostic};
 
 mod dataset;
 pub use dataset::{SdfDataset, SdfRecordMetadata};
+
+fn is_v3000_record(block: &str) -> bool {
+    block
+        .lines()
+        .nth(3)
+        .is_some_and(|counts| counts.trim_end().ends_with("V3000"))
+}
+
+/// V3000's MOL parser requires `M  END` to be the last physical line;
+/// SDF properties follow that line and belong to the record, not the MOL.
+fn v3000_mol_block(block: &str) -> &str {
+    let mut end = 0;
+    for line in block.split_inclusive('\n') {
+        end += line.len();
+        if line.trim_end_matches(['\r', '\n']) == "M  END" {
+            return &block[..end];
+        }
+    }
+    block
+}
 
 /// Iterator over molecules in an SDF string.
 ///
@@ -130,7 +151,11 @@ impl<'a> Iterator for SdfReader<'a> {
                 }));
             }
             self.current_mol_num += 1;
-            return Some(parse_mol(mol_block));
+            return Some(if is_v3000_record(mol_block) {
+                parse_mol_v3000(v3000_mol_block(mol_block))
+            } else {
+                parse_mol(mol_block)
+            });
         }
     }
 }
@@ -312,7 +337,11 @@ impl<'a> Iterator for SdfRecordReader<'a> {
             self.records_read += 1;
 
             // Parse molecule + 2D coordinates + stereo diagnostics.
-            let report = match read_mol_with_diagnostics(block) {
+            let report = match if is_v3000_record(block) {
+                read_mol_v3000_with_diagnostics(v3000_mol_block(block))
+            } else {
+                read_mol_with_diagnostics(block)
+            } {
                 Ok(report) => report,
                 Err(e) => return Some(Err(e)),
             };
@@ -629,7 +658,11 @@ impl<R: std::io::BufRead> SdfFileReader<R> {
             .unwrap_or("");
         let properties = parse_sd_fields(data_part);
         if !self.diagnostics {
-            let (mol, meta) = parse_mol_fast(block)?;
+            let (mol, meta) = if is_v3000_record(block) {
+                parse_mol_v3000(v3000_mol_block(block))?
+            } else {
+                parse_mol_fast(block)?
+            };
             return Ok(SdfRecord {
                 mol,
                 meta,
@@ -643,7 +676,11 @@ impl<R: std::io::BufRead> SdfFileReader<R> {
                 stereo3d_diagnostics: Vec::new(),
             });
         }
-        let report = read_mol_with_diagnostics(block)?;
+        let report = if is_v3000_record(block) {
+            read_mol_v3000_with_diagnostics(v3000_mol_block(block))?
+        } else {
+            read_mol_with_diagnostics(block)?
+        };
         Ok(SdfRecord {
             mol: report.mol,
             meta: report.metadata,

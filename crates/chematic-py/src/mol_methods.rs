@@ -24,6 +24,7 @@ mod descriptors;
 mod extended;
 mod fingerprints;
 mod identity;
+pub(crate) mod ogb;
 mod properties;
 mod three_d;
 mod transformations;

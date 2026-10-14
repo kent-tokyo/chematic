@@ -23,10 +23,61 @@ pub struct PySdfRecord {
     pub name: String,
     pub props: std::collections::HashMap<String, String>,
     pub stereo_diagnostics: Vec<chematic_perception::StereoDiagnostic>,
+    pub ez_diagnostics: Vec<chematic_perception::EzDirectionDiagnostic>,
+}
+
+impl PySdfRecord {
+    fn ogb_graph(&self, remove_hs: bool) -> PyResult<chematic_smiles::OgbGraphFeatures> {
+        let mut graph =
+            chematic_smiles::ogb_graph_features_with_options(&self.mol.inner, remove_hs)
+                .map_err(|error| pyo3::exceptions::PyValueError::new_err(error.to_string()))?;
+        for diagnostic in &self.ez_diagnostics {
+            if diagnostic.reason
+                != chematic_perception::EzDirectionRejectionReason::ExplicitlyUnspecified
+            {
+                continue;
+            }
+            let index = diagnostic.bond.0 as usize;
+            let bond = self.mol.inner.bond(diagnostic.bond);
+            let Some(&[source, destination]) = graph.edge_index.get(index * 2) else {
+                return Err(pyo3::exceptions::PyValueError::new_err(
+                    "SDF bond indices changed during OGB conversion",
+                ));
+            };
+            if source != i64::from(bond.atom1.0) || destination != i64::from(bond.atom2.0) {
+                return Err(pyo3::exceptions::PyValueError::new_err(
+                    "SDF bond indices changed during OGB conversion",
+                ));
+            }
+            graph.edge_feat[index * 2][1] = 5; // OGB STEREOANY
+            graph.edge_feat[index * 2 + 1][1] = 5;
+        }
+        Ok(graph)
+    }
 }
 
 #[pymethods]
 impl PySdfRecord {
+    /// OGB graph including the SDF record's explicit unknown double-bond stereo.
+    #[pyo3(signature = (remove_hs=true))]
+    fn ogb_graph_features<'py>(
+        &self,
+        py: Python<'py>,
+        remove_hs: bool,
+    ) -> PyResult<Bound<'py, PyDict>> {
+        crate::mol_methods::ogb::numpy_ogb_graph_dict(py, self.ogb_graph(remove_hs)?)
+    }
+
+    /// Benchmark hook: the same graph before NumPy allocation.
+    #[pyo3(signature = (remove_hs=true))]
+    fn _ogb_graph_features_raw<'py>(
+        &self,
+        py: Python<'py>,
+        remove_hs: bool,
+    ) -> PyResult<Bound<'py, PyDict>> {
+        crate::mol_methods::ogb::raw_ogb_graph_dict(py, self.ogb_graph(remove_hs)?)
+    }
+
     /// Canonical SMILES of the molecule.
     #[getter]
     fn smiles(&self) -> String {
@@ -106,6 +157,7 @@ fn parse_to_iter(content: &str) -> SdfIter {
             name: rec.meta.name,
             props: rec.properties,
             stereo_diagnostics: rec.stereo_diagnostics,
+            ez_diagnostics: rec.ez_diagnostics,
         })
         .collect();
     SdfIter {
@@ -122,6 +174,7 @@ fn py_sdf_record(rec: chematic_mol::SdfRecord) -> PySdfRecord {
         name: rec.meta.name,
         props: rec.properties,
         stereo_diagnostics: rec.stereo_diagnostics,
+        ez_diagnostics: rec.ez_diagnostics,
     }
 }
 
@@ -280,6 +333,53 @@ pub fn iter_sdf(path: &str) -> PyResult<SdfFileIter> {
     })
 }
 
+/// Stream SDF records with their source positions and parse errors.
+///
+/// Yields ``(index, record, error)`` for every non-empty record. Exactly one
+/// of ``record`` and ``error`` is non-None. A malformed record does not stop
+/// later records. Opening the file can raise ``IOError``; read errors are
+/// yielded in place and end the stream.
+#[pyfunction]
+#[pyo3(signature = (path, *, max_input_bytes=None, max_record_bytes=None, max_line_bytes=None, max_records=None))]
+pub fn iter_sdf_checked(
+    path: &str,
+    max_input_bytes: Option<usize>,
+    max_record_bytes: Option<usize>,
+    max_line_bytes: Option<usize>,
+    max_records: Option<usize>,
+) -> PyResult<SdfCheckedIter> {
+    let mut limits = chematic_mol::SdfParseLimits::default();
+    for (name, supplied, field) in [
+        (
+            "max_input_bytes",
+            max_input_bytes,
+            &mut limits.max_input_bytes,
+        ),
+        (
+            "max_record_bytes",
+            max_record_bytes,
+            &mut limits.max_record_bytes,
+        ),
+        ("max_line_bytes", max_line_bytes, &mut limits.max_line_bytes),
+        ("max_records", max_records, &mut limits.max_records),
+    ] {
+        if let Some(value) = supplied {
+            if value == 0 {
+                return Err(pyo3::exceptions::PyValueError::new_err(format!(
+                    "{name} must be greater than zero"
+                )));
+            }
+            *field = value;
+        }
+    }
+    let file = std::fs::File::open(path)
+        .map_err(|e| pyo3::exceptions::PyIOError::new_err(format!("{path}: {e}")))?;
+    Ok(SdfCheckedIter {
+        inner: chematic_mol::SdfFileReader::with_limits(std::io::BufReader::new(file), limits),
+        next_index: 0,
+    })
+}
+
 /// Iterate over batches of SDF records from a file (streaming).
 ///
 /// Yields lists of up to ``batch_size`` SDF records.  Suitable for pipelining
@@ -349,6 +449,34 @@ pub struct SdfFileIter {
     inner: chematic_mol::SdfFileReader<std::io::BufReader<std::fs::File>>,
 }
 
+/// Streaming SDF iterator which preserves rejected record positions.
+#[pyclass]
+pub struct SdfCheckedIter {
+    inner: chematic_mol::SdfFileReader<std::io::BufReader<std::fs::File>>,
+    next_index: usize,
+}
+
+type CheckedSdfItem = (usize, Option<PySdfRecord>, Option<String>);
+
+#[pymethods]
+impl SdfCheckedIter {
+    fn __iter__(slf: PyRef<'_, Self>) -> PyRef<'_, Self> {
+        slf
+    }
+
+    fn __next__(&mut self) -> PyResult<Option<CheckedSdfItem>> {
+        let Some(result) = self.inner.next() else {
+            return Ok(None);
+        };
+        let index = self.next_index;
+        self.next_index += 1;
+        match result {
+            Ok(record) => Ok(Some((index, Some(py_sdf_record(record)), None))),
+            Err(error) => Ok(Some((index, None, Some(error.to_string())))),
+        }
+    }
+}
+
 #[pymethods]
 impl SdfFileIter {
     fn __iter__(slf: PyRef<'_, Self>) -> PyRef<'_, Self> {
@@ -368,6 +496,7 @@ impl SdfFileIter {
                         name: rec.meta.name,
                         props: rec.properties,
                         stereo_diagnostics: rec.stereo_diagnostics,
+                        ez_diagnostics: rec.ez_diagnostics,
                     }));
                 }
                 Some(Err(chematic_mol::MolParseError::Io(msg))) => {
@@ -465,6 +594,7 @@ impl SdfBatchIter {
                         name: rec.meta.name,
                         props: rec.properties,
                         stereo_diagnostics: rec.stereo_diagnostics,
+                        ez_diagnostics: rec.ez_diagnostics,
                     });
                 }
                 Some(Err(chematic_mol::MolParseError::Io(msg))) => {
@@ -1439,6 +1569,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PySdfDataset>()?;
     m.add_class::<SdfIter>()?;
     m.add_class::<SdfFileIter>()?;
+    m.add_class::<SdfCheckedIter>()?;
     m.add_class::<SdfBatchIter>()?;
     m.add_class::<XyzBatchIter>()?;
     m.add_class::<SdMolSupplier>()?;
@@ -1448,6 +1579,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyTdtMolSupplier>()?;
     m.add_class::<PyTdtWriter>()?;
     m.add_function(wrap_pyfunction!(iter_sdf, m)?)?;
+    m.add_function(wrap_pyfunction!(iter_sdf_checked, m)?)?;
     m.add_function(wrap_pyfunction!(iter_sdf_str, m)?)?;
     m.add_function(wrap_pyfunction!(iter_sdf_batched, m)?)?;
     m.add_function(wrap_pyfunction!(iter_xyz_batched, m)?)?;
