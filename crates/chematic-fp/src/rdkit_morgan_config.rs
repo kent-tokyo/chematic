@@ -34,7 +34,7 @@ use crate::rdkit_morgan_ecfp4::{
     RdkitMorganError, reject_known_rdkit_coordination_sanitization_gap,
 };
 use crate::rdkit_morgan_hash::{
-    MorganChirality, checked_bond_invariant, expand_emissions_small,
+    MorganChirality, checked_bond_invariant, expand_emissions_small_with_chirality,
     expand_one_pass_with_chirality_into,
 };
 
@@ -177,24 +177,48 @@ fn with_rdkit_morgan_input<R>(
         bond_invariants.push(invariant);
     }
 
-    // `includeChirality`: RDKit reads chiral tags, `_CIPCode` and bond
-    // stereo from its legacy stereo perception (2026.03's default); the
-    // port of it gives them for the molecule as RDKit parses it. Where the
-    // port declines, fall back to chematic's tags and accurate CIP labels.
-    let chirality = if config.include_chirality && !has_stereo_input(mol) {
-        // No atom or bond stereo can contribute. `None` is semantically
-        // identical to all-false tags/all-one codes and avoids two per-call
-        // allocations in the common case.
+    // Stereo preparation depends on the molecule, not radius or fold width.
+    // Keep it on the original molecule; all graph/stereo edits clear the
+    // derived cache. Holding the Arc lets expansion borrow the vectors.
+    let stereo = (config.include_chirality && has_stereo_input(mol)).then(|| {
+        mol.derived(chematic_core::DerivedSlot::RdkitMorganStereo, || {
+            prepare_morgan_stereo(mol, aromatized)
+        })
+    });
+    let chirality = if let Some(stereo) = &stereo {
+        let prepared = stereo.as_ref().as_ref().map_err(Clone::clone)?;
+        for (b, &st) in prepared.bond_stereo.iter().enumerate() {
+            if st != 0 && aromatized.bond(BondIdx(b as u32)).order == BondOrder::Double {
+                bond_invariants[b] = 100 + 10 * 2 + u32::from(st);
+            }
+        }
+        Some(&prepared.chirality)
+    } else {
         None
-    } else if config.include_chirality {
-        match chematic_smiles::rdkit_legacy_stereo(mol) {
-            Ok(stereo) if stereo.atom_tagged.len() == aromatized.atom_count() => {
-                for (b, &st) in stereo.bond_stereo.iter().enumerate() {
-                    if st != 0 && aromatized.bond(BondIdx(b as u32)).order == BondOrder::Double {
-                        bond_invariants[b] = 100 + 10 * 2 + u32::from(st);
-                    }
-                }
-                Some(MorganChirality {
+    };
+
+    Ok(consume(
+        aromatized,
+        &ring_atoms,
+        &bond_invariants,
+        chirality,
+    ))
+}
+
+struct PreparedMorganStereo {
+    chirality: MorganChirality,
+    bond_stereo: Vec<u8>,
+}
+
+fn prepare_morgan_stereo(
+    mol: &Molecule,
+    aromatized: &Molecule,
+) -> Result<PreparedMorganStereo, RdkitMorganError> {
+    // Keep the existing legacy-perception / accurate-CIP fallback boundary.
+    match chematic_smiles::rdkit_legacy_stereo(mol) {
+        Ok(stereo) if stereo.atom_tagged.len() == aromatized.atom_count() => {
+            Ok(PreparedMorganStereo {
+                chirality: MorganChirality {
                     tagged: stereo.atom_tagged,
                     code: stereo
                         .atom_cip
@@ -205,36 +229,31 @@ fn with_rdkit_morgan_input<R>(
                             _ => 1,
                         })
                         .collect(),
-                })
-            }
-            _ => {
-                let assignment = chematic_cip::assign_cip_accurate_experimental(
-                    aromatized,
-                    chematic_cip::CipBudget::default_budget(),
-                )
-                .map_err(|e| RdkitMorganError::InternalInvariantViolation {
-                    reason: format!("CIP assignment failed for chiral Morgan fingerprint: {e}"),
-                })?;
-                let codes = assignment
-                    .assignments
-                    .into_iter()
-                    .filter(|(_, code)| {
-                        matches!(code, chematic_core::CipCode::R | chematic_core::CipCode::S)
-                    })
-                    .collect::<rustc_hash::FxHashMap<AtomIdx, chematic_core::CipCode>>();
-                Some(MorganChirality::from_cip(aromatized, &codes))
-            }
+                },
+                bond_stereo: stereo.bond_stereo,
+            })
         }
-    } else {
-        None
-    };
-
-    Ok(consume(
-        aromatized,
-        &ring_atoms,
-        &bond_invariants,
-        chirality.as_ref(),
-    ))
+        _ => {
+            let assignment = chematic_cip::assign_cip_accurate_experimental(
+                aromatized,
+                chematic_cip::CipBudget::default_budget(),
+            )
+            .map_err(|e| RdkitMorganError::InternalInvariantViolation {
+                reason: format!("CIP assignment failed for chiral Morgan fingerprint: {e}"),
+            })?;
+            let codes = assignment
+                .assignments
+                .into_iter()
+                .filter(|(_, code)| {
+                    matches!(code, chematic_core::CipCode::R | chematic_core::CipCode::S)
+                })
+                .collect::<rustc_hash::FxHashMap<AtomIdx, chematic_core::CipCode>>();
+            Ok(PreparedMorganStereo {
+                chirality: MorganChirality::from_cip(aromatized, &codes),
+                bond_stereo: Vec::new(),
+            })
+        }
+    }
 }
 
 /// RDKit-bit-exact Morgan/ECFP fingerprint at a caller-chosen [`RdkitMorganConfig`] --
@@ -307,19 +326,17 @@ pub fn rdkit_morgan_bitvec(
             let mut set_bit = |_: u32, _: u32, raw_id: u32| {
                 fingerprint.set((raw_id as usize) % fp_size);
             };
-            // `includeChirality` changes the atom hash only when a
-            // tetrahedral tag survives RDKit's stereo perception. E/Z is
-            // already encoded in `bond_invariants`, so the compact u128
-            // environment path remains exact for the common no-tag case.
-            if chirality.is_none_or(|c| !c.tagged.iter().any(|&tagged| tagged))
-                && expand_emissions_small(
-                    molecule,
-                    ring_atoms,
-                    bond_invariants,
-                    config.radius.as_u32(),
-                    &mut set_bit,
-                )
-                .is_some()
+            // Compact environments retain the general path's tetrahedral
+            // hash and suppression rules, including tags resolved after R1.
+            if expand_emissions_small_with_chirality(
+                molecule,
+                ring_atoms,
+                bond_invariants,
+                config.radius.as_u32(),
+                chirality,
+                &mut set_bit,
+            )
+            .is_some()
             {
                 return;
             }
@@ -517,6 +534,13 @@ mod tests {
             "C[C@H](N)C(=O)O",
             "F/C=C\\Cl",
             "[13CH3][C@@H](O)Cl",
+            "C[C@H](F)[C@@H](Cl)Br",
+            "CCC[C@H](F)CCC",
+            "C[C@H]1CCCC[C@@H]1O",
+            "C1[C@H]2CC[C@@H]1C2",
+            "C[C@H](O)/C=C/[C@@H](N)C(=O)O",
+            "[2H][C@](F)(Cl)Br",
+            "C[C@H](N)C(=O)O.[Na+]",
         ] {
             let mol = parse(smi).unwrap();
             for radius in [

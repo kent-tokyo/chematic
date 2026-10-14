@@ -1,0 +1,44 @@
+{
+  "schema": "openbabel-sdf-full10k-corpus-boundary/v1",
+  "status": "corpus_generation_refused",
+  "requested_records": 10000,
+  "source_path": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+  "source_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+  "generator_sha256": "82810e051082f1dc4e8ebdb314d21d36803bf5ee8d6355b02a229a6d31d0ca0b",
+  "rdkit_version": "2026.09.1",
+  "refused_source_row_zero_based": 8341,
+  "source_smiles": "CN(C)C[C-]12C3=C4C5=C1[Fe++]23456789[C-]%10C6=C7C8=C9%10",
+  "rdkit_atom_count": 15,
+  "rdkit_bond_count": 24,
+  "reason": "RDKit emits V3000 for this metal/dative-bond input; the fixed V2000 corpus generator refuses instead of filtering or changing formats.",
+  "exit_code": 1,
+  "corpus_written": false,
+  "benchmark_run": false,
+  "scope": "This is a corpus-generation boundary, not a chematic/Open Babel reader refusal, correctness defect, or timing result. No full-10000-row claim.",
+  "command": [
+    "/private/tmp/chematic-speed-20261014/bin/python",
+    "scripts/build_openbabel_sdf_speed_corpus.py",
+    "--smiles",
+    "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+    "--output",
+    "/private/tmp/chematic-openbabel-stage2-20261014/corpus-10000.sdf",
+    "--manifest",
+    "/private/tmp/chematic-openbabel-stage2-20261014/corpus-10000-source.json",
+    "--limit",
+    "10000",
+    "--offset",
+    "0"
+  ],
+  "retained_artifacts": {
+    "generator-log": {
+      "path": "validation/results/openbabel-sdf-read-followup-full10k-generator-log-2026-10-14.txt.gz",
+      "sha256": "16c27262a05870b88bf28c71b09eecc6d3a467a2c6799d395c903500ef4a4953",
+      "sha256_gzip": "56db6b7d5247a87a4801865c575330981296d94f80fa13d6fce9f54713faefc8"
+    },
+    "row8341-rdkit": {
+      "path": "validation/results/openbabel-sdf-read-followup-full10k-row8341-rdkit-2026-10-14.mol.gz",
+      "sha256": "e2242d6b19999c4a648e60e0d7b177b3e75ee8c37d59fa623f95015b32795c24",
+      "sha256_gzip": "8f97fa343a2a880e2f7d5e3c546b4156c6ef13f89f42a394cef2911e363817ee"
+    }
+  }
+}

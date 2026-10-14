@@ -1,0 +1,164 @@
+{
+  "schema": "python-first-use-followup-source/v1",
+  "base_revision": "ffe682c32cb4c76de0d309649427202a7d8e956d",
+  "baseline": "Exact previous scalar/stereo candidate wheel; same two prior production patches.",
+  "prior_patches": [
+    {
+      "path": "benchmarks/2026-10-14-python-speed-frontier-candidate.patch",
+      "sha256": "d792f488cf1df94ad57b5c6b500155b47c98722225ca3652a989f08ccf3658bc"
+    },
+    {
+      "path": "benchmarks/2026-10-14-python-scalar-stereo-candidate.patch",
+      "sha256": "76aa1855532100fd909e200449c9dab9aa6e20591f9c40c18c95dd2193906e95"
+    }
+  ],
+  "candidate_patch": {
+    "path": "benchmarks/2026-10-14-python-first-use-followup-candidate.patch",
+    "sha256": "eeea502edfea5c52ae92f2e3ddf5824a5b38d339b497fef6da750c0f9e3bff82"
+  },
+  "build_source_sha256": {
+    "Cargo.lock": "1c55261a594db832c9a26624588827ebac74906cd67d902d191258818c7bf546",
+    "Cargo.toml": "5a398486283707530879d379944ae8c48bdbcfb0c3464d327f160c7d83abfcef",
+    "crates/chematic-chem/src/descriptors/tpsa.rs": "7b1ca4d4334c5855f64c040006d5b7342949ea50b8fe840c983ff810f5ed3faa",
+    "crates/chematic-chem/src/topo_descriptors.rs": "50d06115df97aa0ca3d82d5c07220a7f62f0ce7d0779fed6e9de5c1b8af5ed9e",
+    "crates/chematic-core/src/derived_cache.rs": "65af98eb13b20315d8369bf727c63a097ca20a15d801147d5bb06039b77fbcbe",
+    "crates/chematic-core/src/molecule/access.rs": "c56ad90889ccc255094a8c793682fd9507778fa234bb79ac1594138cd0b64c31",
+    "crates/chematic-fp/src/bitvec.rs": "d68c97114e66d67a175714f22acc942d7a1391b9a32aa6f288835c87bab782c0",
+    "crates/chematic-fp/src/rdkit_morgan_config.rs": "b1425af9eeeec038bfcafde51f8c47478a8a886b40bb4d71464087d6a83f9d35",
+    "crates/chematic-fp/src/rdkit_morgan_ecfp4.rs": "a9e2a1701398f791bd5c40abece63842dc2e255bb7bf25f85b66af609338ae3d",
+    "crates/chematic-fp/src/rdkit_morgan_hash.rs": "272f3bf8926ca3cd7004fe3c83dd69562309a8b708b9e266b4e5b7592fd05e9c",
+    "crates/chematic-py/src/formats.rs": "25188315860e123e801b88f65e228d6430d33a93f979940387452b0274fbae1e",
+    "crates/chematic-py/src/mol_methods.rs": "31bbe9b6aea582f9b10a97abfde18fc0446db025b25ce018f38ff9b002f503e3",
+    "crates/chematic-smiles/src/lib.rs": "a1616178717219be4f7738afcd654d980e30cd60b7f4f99709af802ee86d8e23",
+    "crates/chematic-smiles/src/rdkit/mod.rs": "2a7db186b2066892ab0702ef408c05694e66095f4087f00980892a3f54ccf917",
+    "crates/chematic-perception/src/rdkit_model_hook.rs": "fb52f2143402c663e145ba2b57a75daa76dccdadc6caa2382cd560970a9afb80",
+    "crates/chematic-perception/src/rdkit_parity/view.rs": "f703088ad5e8f9dec50c461704c2ead8b2b32b43898a816f87de84ca29302cb9",
+    "crates/chematic-chem/src/descriptors/rings_and_filters.rs": "c9c42c9093864a81fcd3977feed93cc66962e27d849a1e903a298c4a0e8a3be9",
+    "crates/chematic-perception/tests/aromatic_identity_edits.rs": "10ebdfd15c6192af0fa45a214961a68b329a056f82ecb7bc71656610243ff209"
+  },
+  "changed_source_sha256": {
+    "crates/chematic-perception/src/rdkit_model_hook.rs": "fb52f2143402c663e145ba2b57a75daa76dccdadc6caa2382cd560970a9afb80",
+    "crates/chematic-perception/src/rdkit_parity/view.rs": "f703088ad5e8f9dec50c461704c2ead8b2b32b43898a816f87de84ca29302cb9",
+    "crates/chematic-chem/src/descriptors/rings_and_filters.rs": "c9c42c9093864a81fcd3977feed93cc66962e27d849a1e903a298c4a0e8a3be9",
+    "crates/chematic-perception/tests/aromatic_identity_edits.rs": "10ebdfd15c6192af0fa45a214961a68b329a056f82ecb7bc71656610243ff209"
+  },
+  "benchmark_source_sha256": {
+    "scripts/bench_python_speed_frontier.py": "f6693ba7d2e6216d21229e134a06433b9ad3b949fd652fc0dca809d61f1de248",
+    "scripts/tests/test_bench_python_speed_frontier.py": "680dc1c6fc201953a81186b09383283d1c26c7d2766c77747f9bd743b21eb8ba",
+    "scripts/verify_python_descriptor_frontier.py": "5b64211b11bb0bb9a696ff209d33213a455015dde169ed18f2c968852bc82639",
+    "scripts/verify_python_morgan_frontier.py": "48545259dd551c5b8e75d82e2ebc7696181af460bd0a7c9cff1f1bcfecea356d",
+    "validation/cosmolkit_comparison/bench_corpus.py": "6ad2dc64556b8e88e2b246f3c9dd4953b849a1c266fb8055520598b5e7deeb4c"
+  },
+  "wheels": {
+    "baseline": {
+      "path": "/private/tmp/chematic-speed-stage2-20261014/candidate-wheel/chematic-1.1.3-cp313-cp313-macosx_11_0_arm64.whl",
+      "sha256": "b3a7b1a050f6517420a4f3e627a0f19ab407b310914c2848ad2461af87cd1408"
+    },
+    "candidate": {
+      "path": "/private/tmp/chematic-speed-stage3-20261014/final-candidate-wheel/chematic-1.1.3-cp313-cp313-macosx_11_0_arm64.whl",
+      "sha256": "8952cc18021c845ba2c834187b4148f07eb0011685cdf0ff1b2cfad59703630f"
+    }
+  },
+  "build": {
+    "profile": "release",
+    "opt_level": 3,
+    "lto": true,
+    "codegen_units": 1,
+    "features": [
+      "native-inchi"
+    ],
+    "target_directory": "Reused isolated Open Babel target; all changed Rust workspace dependencies recompiled in the new source checkout; exact wheel extension hashes checked by runner.",
+    "rustc": "rustc 1.97.0 (2d8144b78 2026-07-07)"
+  },
+  "timing_slices": [
+    {
+      "offset": 0,
+      "limit": 1000
+    },
+    {
+      "offset": 5000,
+      "limit": 1000
+    }
+  ],
+  "protocol": "Unchanged seven operations, first-use/repeated-use/actual parse-inclusive, 20 rotating fresh-process blocks. No moved work into parsing; no excluded rows or blocks.",
+  "scope": "Isolated native-inchi source wheel on macOS arm64, CPython 3.13.6; excludes concurrent dirty Open Babel, API and 3D changes. Two exposed corpus slices, not sealed holdouts.",
+  "development": "Broad SmallVec scratch conversion was rejected after mixed/negative exploratory results; narrowed proof reuse and rank-two-ring neighbor buffering selected before formal timing.",
+  "comparators": {
+    "rdkit": {
+      "version": "2026.09.1",
+      "module_path": "/private/tmp/chematic-speed-20261014/lib/python3.13/site-packages/rdkit",
+      "native_files_sha256": {
+        "Avalon/pyAvalonTools.so": "c1b28b8d3ff8e481c4c1f15a1e5e0ded91708dba59c7c37481c53d17b56a0f25",
+        "Chem/Draw/rdMolDraw2D.so": "58ba1acdbc0fd1c4d1644e8873279be86c75348dfdf7e37161e2a23c04171f51",
+        "Chem/MolStandardize/rdMolStandardize.so": "d759cc60b5276d8e9705acdf4dbe27ba2d78a3dc1a93144d4a7fb3cbad3f14f3",
+        "Chem/Scaffolds/rdScaffoldNetwork.so": "6871ee42abfc1b833b8ac5deae2731b7718bb15b9587d673d5a94c5ce5676c09",
+        "Chem/rdAbbreviations.so": "1e98c9fb2591dc45e05bff2145ab71c68d23f07c40b394453f00b42f7ab9e86f",
+        "Chem/rdCIPLabeler.so": "25f44e9ccbbdc6819f2923d5d256ee79c9c8db8d1ed258a1dd1fc50f87e6b6f5",
+        "Chem/rdChemDraw.so": "d048cf006f4a271a81c13ac2fb3fdff7ca150535a8dc967564a64af2ebc5c530",
+        "Chem/rdChemReactions.so": "dc99b0b151c7d1df85e4c3627b4ebd36967bb968327e5b907b35e24476c49d12",
+        "Chem/rdChemicalFeatures.so": "a08fc045711c4914a6fb8d85aabd7e5d5ca1192805c4ba6cce660df73a57f127",
+        "Chem/rdCoordGen.so": "48070b5d2fb1542e61d25a64b5db2813be5645f9237704c097ab12d9e2d46837",
+        "Chem/rdDepictor.so": "03b5510f486e595062582e66c65e6ed52af362effa129d31bd5d3f28367391c8",
+        "Chem/rdDeprotect.so": "2bf730f62ea6b4876756f5fd569da7eb8b3f5c8598798dc38d059772a0a84b14",
+        "Chem/rdDetermineBonds.so": "a082e56e7394a83209c721261681e8b3b0db2edcbe0b6c83948c110aa2168af4",
+        "Chem/rdDistGeom.so": "7633dff6759b5bd7d7c778a56e1a1b3bd99926045f10294defca58ef8b5f5105",
+        "Chem/rdEHTTools.so": "e8a4f43ff731fd9ef03e4e122fddf5049220ad15f4cc3e75aa9dd322edafad5c",
+        "Chem/rdEnumerateStereoisomers.so": "9126b41a08a91a31c636c18ce50af855e3eb02894d5a900dafb967d092a9dc7e",
+        "Chem/rdFMCS.so": "e5f7cf228aafd59d024c2c649c9b1e47f3a20ead473a7dbd4cda808ea6cb115d",
+        "Chem/rdFingerprintGenerator.so": "6b7e08916a2ca7cc2b49bd2c1508f2b18e2e0c4f0460c4588d5e736001287240",
+        "Chem/rdForceFieldHelpers.so": "311010a7f55710bada4a95d11d4d6404f2dae33111564c16da0ae5e95c14a9ac",
+        "Chem/rdFreeSASA.so": "e1766271f1b3bf453667a4c91ac4b6f164495f5fe6592ba45a617971303836ad",
+        "Chem/rdGaussianShape.so": "0cf317822b8db2badd6e6af0bcf296a6e68cac45d83b4f0436260c1833fa0776",
+        "Chem/rdGeneralizedSubstruct.so": "34468209c3f56a386f8856c90a67fa4565b80170a53c3aa36221b34fd527b166",
+        "Chem/rdMHFPFingerprint.so": "44460ef3f6e01c0222299cda0c012ddf84c170da2c5e3eca1696d120560de07b",
+        "Chem/rdMIF.so": "f25135b329b787c3020d4b99f649e2f7e79dd7ed660151cb6cb6280c4882575e",
+        "Chem/rdMMPA.so": "c53f6f3ef19328c0a478e8b7421259408efa7cbbcec660e0dc8f220910074c4c",
+        "Chem/rdMolAlign.so": "b8ee284d8b717b36c54221449284a06221f123f4e167cac1464a0505b9c9f415",
+        "Chem/rdMolCatalog.so": "085e5cfa57eaeac177eb683bd5711a732b3a5d06f5a89c24b5d4437074a1327c",
+        "Chem/rdMolChemicalFeatures.so": "c513a39853d39c87507727d961c958054e28380be5bc379fcefddb94d552f524",
+        "Chem/rdMolDescriptors.so": "a5195bcb887428ae05f6b1ac35d70d2dee2026a5f6e827fa1cdd1084cc5575cd",
+        "Chem/rdMolEnumerator.so": "e8c87fa2efd2e3062bd5218a0aa1ecb4a1ce0ccea775bdccff4ec2fc64a0bfce",
+        "Chem/rdMolHash.so": "9b13b9ddc3a4a4d87883dfe4e447d565b6fdd79b517db87b860796de21d03814",
+        "Chem/rdMolInterchange.so": "a4ff69a1f2f8cbbc601de8647d5004f92231c5dc3baa91dbf6cf54db911d10d4",
+        "Chem/rdMolProcessing.so": "5f8953ec94690c25bbe5b60810fafac6dfc86860ea845bab0b901bfc6a4ed64b",
+        "Chem/rdMolTransforms.so": "3f0d7bc26d3cce1cfbbdce608f10d41ec2f8e7174eb462a9141608e62e3c8fd9",
+        "Chem/rdPartialCharges.so": "d49ee37cebb9ead8a21e75c7daa283ad7a25ba24fc70376e3ecc1fa6ea5a8049",
+        "Chem/rdRGroupDecomposition.so": "8197250ecddf824eeba41611fd677837fde2d70af197d77ff55dfc6b21a4bd14",
+        "Chem/rdRascalMCES.so": "16434dd5098bfc3f4cd9e2ae3f412bf10097296f6852e1b40143f2356feae23d",
+        "Chem/rdReducedGraphs.so": "acbc8b0e5c2a5ebde1663683b149c73541e7f261d60c334b26f4815764897981",
+        "Chem/rdSLNParse.so": "d0f7b31d46297b7fcb988f8c6f0bedab98c14aa99f45a25c8f56cbc8168f04f0",
+        "Chem/rdShapeAlign.so": "5ba55c4acfd04f4e088087981e6e847f4867966fad954dce63884505f13eb6fb",
+        "Chem/rdShapeHelpers.so": "5c15cd96164c97273c134cf48825a08114b82a85ece0438ccaf090b101ea7015",
+        "Chem/rdSubstructLibrary.so": "3b6d2eb738d973fad734ecdb9496ee5e83ca5400d02f8e3fd6ee6cfc6ff647d6",
+        "Chem/rdSynthonSpaceSearch.so": "cf348169faf6f5e841fea5355a9651fa1c6494db2f5d973b6c066a68982b6986",
+        "Chem/rdTautomerQuery.so": "1c13498969d6c3b4aaa030171b2b383f282bfa2de67873bd9f70da5d19738865",
+        "Chem/rdchem.so": "2fc3606e02f28a03d9e017cbc4e43923e704a8b7b77600de6e817536b9675a5a",
+        "Chem/rdfiltercatalog.so": "1fe32099a48e661629cc0c8f011badcac687cdcc33f8ed21a9fbde2557c53a95",
+        "Chem/rdfragcatalog.so": "e1257615a591c6767fbcafd8a807d00005b360dcb9583b5c58a7877b1adde483",
+        "Chem/rdinchi.so": "8925c9123eff611edc4953d325998a50bfc73a822c8cfcf56c4e0e775bf044eb",
+        "Chem/rdmolfiles.so": "f40bc81b0c9c7133b71944fc852d29bf0b28062cc7c304272d20aef8249f5873",
+        "Chem/rdmolops.so": "674afb81f4497a109c5072cb38f31313f73b54382378212a08df33a4d0a30752",
+        "Chem/rdqueries.so": "896445a71e5f3ad70da72f236d35cd895dc0d7a886a8190669166d697a4c9f55",
+        "Chem/rdtrajectory.so": "74fe21903a5035dfe06262867c4cc049d9135df7c983658992c3eb51baa34bc1",
+        "DataManip/Metric/rdMetricMatrixCalc.so": "78dc56a86e429fb3db36df4f07f7d74f5f3484c7e7de803646941e2eb9bcf4d5",
+        "DataStructs/cDataStructs.so": "0afbae1ad6cda47e2b3b85bbb47c5996d082d06e95212679abd09842934def18",
+        "DistanceGeometry/DistGeom.so": "3a72549ed8b0ce64ee9f6c166f81acfb16f4877563334723104544f67df94230",
+        "ForceField/rdForceField.so": "fbf7ca88b4370caf286d3b68140b67b146ac1ec136b41175c3f16bc0d040e4b0",
+        "Geometry/rdGeometry.so": "cfcc3cc98479e3eafcf28d89db0489db917c00ef95533966aa4143a811dd1527",
+        "ML/Cluster/Clustering.so": "14eab1e5cd886c479c7e9db04fb28c32b9a837ce9db051ff2768e024c37d4622",
+        "ML/Data/cQuantize.so": "34b1c253817cbade04c8dbb9ca84ca70ce4cc59b0dbea769ae67f57664e34e6b",
+        "ML/InfoTheory/rdInfoTheory.so": "d6bd02e3c4f759aaa42af12c0e4273c5de1055431d7671aa945817d11c5b4870",
+        "Numerics/rdAlignment.so": "e899b357d84dfbf8ea9335215c030070a5643e63b175d81c9af40c14060ea31d",
+        "SimDivFilters/rdSimDivPickers.so": "b3cb1f2537c3c4add3c081f3c4595544b39c1788dbbca094c797fb0801075ecb",
+        "rdBase.so": "2fb1e7377e7441fcc3c9ae813803adb288fdb710b2b0de66aecbfc1f4b5919ff"
+      }
+    },
+    "cosmolkit": {
+      "version": "0.5.0-rc.22",
+      "module_path": "/private/tmp/chematic-speed-20261014/lib/python3.13/site-packages/cosmolkit",
+      "native_files_sha256": {
+        "cosmolkit.abi3.so": "0fc4a42b65552d31e852181a8a4beef693d15d8aa88716bf53e850701936362c"
+      }
+    }
+  }
+}

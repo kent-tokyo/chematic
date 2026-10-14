@@ -1,0 +1,423 @@
+{
+  "schema": "python-scalar-stereo-frontier-parity/v1",
+  "headers": {
+    "baseline": [
+      {
+        "corpus": "rdkit-js-browser-10k-v1.smi",
+        "sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "rows": 10000,
+        "engine": "chematic",
+        "version": "1.1.3"
+      },
+      {
+        "corpus": "stress-v1.smi",
+        "sha256": "879166ab5481cac805ecd2d77f37d628383ec124085b90e2ee1659d55ce76277",
+        "rows": 4072,
+        "engine": "chematic",
+        "version": "1.1.3"
+      }
+    ],
+    "candidate": [
+      {
+        "corpus": "rdkit-js-browser-10k-v1.smi",
+        "sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "rows": 10000,
+        "engine": "chematic",
+        "version": "1.1.3"
+      },
+      {
+        "corpus": "stress-v1.smi",
+        "sha256": "879166ab5481cac805ecd2d77f37d628383ec124085b90e2ee1659d55ce76277",
+        "rows": 4072,
+        "engine": "chematic",
+        "version": "1.1.3"
+      }
+    ],
+    "rdkit": [
+      {
+        "corpus": "rdkit-js-browser-10k-v1.smi",
+        "sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "rows": 10000,
+        "engine": "rdkit",
+        "version": "2026.09.1"
+      },
+      {
+        "corpus": "stress-v1.smi",
+        "sha256": "879166ab5481cac805ecd2d77f37d628383ec124085b90e2ee1659d55ce76277",
+        "rows": 4072,
+        "engine": "rdkit",
+        "version": "2026.09.1"
+      }
+    ]
+  },
+  "dump_sha256": {
+    "baseline": "2c82ab4b8743715f742e95c9a3ca1982cb8e3b8ea0f92e9c7d2b5e4a725bba03",
+    "candidate": "2c82ab4b8743715f742e95c9a3ca1982cb8e3b8ea0f92e9c7d2b5e4a725bba03",
+    "rdkit": "e5671bba79932bb4c6ee8c9b0175989b9ad572586719e5103c6be4471baf69e2"
+  },
+  "descriptor_counts": {
+    "rdkit-js-browser-10k-v1.smi/labute_asa": {
+      "rows": 10000,
+      "candidate_baseline_exact": 10000,
+      "first_repeated_exact": 10000,
+      "candidate_errors": 0,
+      "reference_errors": 0,
+      "nonfinite": 0,
+      "reference_matches": 10000,
+      "reference_mismatches": 0
+    },
+    "rdkit-js-browser-10k-v1.smi/num_rings": {
+      "rows": 10000,
+      "candidate_baseline_exact": 10000,
+      "first_repeated_exact": 10000,
+      "candidate_errors": 0,
+      "reference_errors": 0,
+      "nonfinite": 0,
+      "reference_matches": 10000,
+      "reference_mismatches": 0
+    },
+    "rdkit-js-browser-10k-v1.smi/rdkit_tpsa": {
+      "rows": 10000,
+      "candidate_baseline_exact": 10000,
+      "first_repeated_exact": 10000,
+      "candidate_errors": 0,
+      "reference_errors": 0,
+      "nonfinite": 0,
+      "reference_matches": 10000,
+      "reference_mismatches": 0
+    },
+    "rdkit-js-browser-10k-v1.smi/tpsa": {
+      "rows": 10000,
+      "candidate_baseline_exact": 10000,
+      "first_repeated_exact": 10000,
+      "candidate_errors": 0,
+      "reference_errors": 0,
+      "nonfinite": 0,
+      "reference_matches": 10000,
+      "reference_mismatches": 0
+    },
+    "stress-v1.smi/labute_asa": {
+      "rows": 4072,
+      "candidate_baseline_exact": 4072,
+      "first_repeated_exact": 4072,
+      "candidate_errors": 0,
+      "reference_errors": 0,
+      "nonfinite": 3,
+      "reference_matches": 4069,
+      "reference_mismatches": 0
+    },
+    "stress-v1.smi/num_rings": {
+      "rows": 4072,
+      "candidate_baseline_exact": 4072,
+      "first_repeated_exact": 4072,
+      "candidate_errors": 0,
+      "reference_errors": 0,
+      "nonfinite": 0,
+      "reference_matches": 4068,
+      "reference_mismatches": 4
+    },
+    "stress-v1.smi/rdkit_tpsa": {
+      "rows": 4072,
+      "candidate_baseline_exact": 4072,
+      "first_repeated_exact": 4072,
+      "candidate_errors": 0,
+      "reference_errors": 0,
+      "nonfinite": 0,
+      "reference_matches": 4072,
+      "reference_mismatches": 0
+    },
+    "stress-v1.smi/tpsa": {
+      "rows": 4072,
+      "candidate_baseline_exact": 4072,
+      "first_repeated_exact": 4072,
+      "candidate_errors": 0,
+      "reference_errors": 0,
+      "nonfinite": 0,
+      "reference_matches": 4041,
+      "reference_mismatches": 31
+    }
+  },
+  "reference_mismatch_examples": [
+    {
+      "corpus": "stress-v1.smi",
+      "index": 67,
+      "operation": "tpsa",
+      "candidate": 15.79,
+      "reference": 12.03
+    },
+    {
+      "corpus": "stress-v1.smi",
+      "index": 85,
+      "operation": "tpsa",
+      "candidate": 15.79,
+      "reference": 12.03
+    },
+    {
+      "corpus": "stress-v1.smi",
+      "index": 103,
+      "operation": "tpsa",
+      "candidate": 15.79,
+      "reference": 12.03
+    },
+    {
+      "corpus": "stress-v1.smi",
+      "index": 121,
+      "operation": "tpsa",
+      "candidate": 15.79,
+      "reference": 12.03
+    },
+    {
+      "corpus": "stress-v1.smi",
+      "index": 182,
+      "operation": "tpsa",
+      "candidate": 69.67999999999999,
+      "reference": 69.46
+    },
+    {
+      "corpus": "stress-v1.smi",
+      "index": 352,
+      "operation": "tpsa",
+      "candidate": 51.809999999999995,
+      "reference": 43.14
+    },
+    {
+      "corpus": "stress-v1.smi",
+      "index": 353,
+      "operation": "tpsa",
+      "candidate": 51.809999999999995,
+      "reference": 43.14
+    },
+    {
+      "corpus": "stress-v1.smi",
+      "index": 354,
+      "operation": "tpsa",
+      "candidate": 51.809999999999995,
+      "reference": 43.14
+    },
+    {
+      "corpus": "stress-v1.smi",
+      "index": 355,
+      "operation": "tpsa",
+      "candidate": 72.03999999999999,
+      "reference": 63.37
+    },
+    {
+      "corpus": "stress-v1.smi",
+      "index": 356,
+      "operation": "tpsa",
+      "candidate": 72.03999999999999,
+      "reference": 63.37
+    },
+    {
+      "corpus": "stress-v1.smi",
+      "index": 605,
+      "operation": "num_rings",
+      "candidate": 22,
+      "reference": 70
+    },
+    {
+      "corpus": "stress-v1.smi",
+      "index": 608,
+      "operation": "num_rings",
+      "candidate": 10,
+      "reference": 11
+    },
+    {
+      "corpus": "stress-v1.smi",
+      "index": 876,
+      "operation": "tpsa",
+      "candidate": 4.1,
+      "reference": 3.88
+    },
+    {
+      "corpus": "stress-v1.smi",
+      "index": 1014,
+      "operation": "num_rings",
+      "candidate": 16,
+      "reference": 70
+    },
+    {
+      "corpus": "stress-v1.smi",
+      "index": 1183,
+      "operation": "tpsa",
+      "candidate": 94.61999999999999,
+      "reference": 95.14999999999999
+    },
+    {
+      "corpus": "stress-v1.smi",
+      "index": 1255,
+      "operation": "tpsa",
+      "candidate": 103.79,
+      "reference": 105.47999999999999
+    },
+    {
+      "corpus": "stress-v1.smi",
+      "index": 1927,
+      "operation": "tpsa",
+      "candidate": 121.82000000000001,
+      "reference": 121.29
+    },
+    {
+      "corpus": "stress-v1.smi",
+      "index": 2033,
+      "operation": "tpsa",
+      "candidate": 81.11999999999999,
+      "reference": 81.64999999999999
+    },
+    {
+      "corpus": "stress-v1.smi",
+      "index": 2097,
+      "operation": "tpsa",
+      "candidate": 109.3,
+      "reference": 109.83
+    },
+    {
+      "corpus": "stress-v1.smi",
+      "index": 2123,
+      "operation": "tpsa",
+      "candidate": 34.970000000000006,
+      "reference": 32.260000000000005
+    },
+    {
+      "corpus": "stress-v1.smi",
+      "index": 2223,
+      "operation": "tpsa",
+      "candidate": 55.59,
+      "reference": 53.900000000000006
+    },
+    {
+      "corpus": "stress-v1.smi",
+      "index": 2292,
+      "operation": "tpsa",
+      "candidate": 84.66,
+      "reference": 84.13
+    },
+    {
+      "corpus": "stress-v1.smi",
+      "index": 2633,
+      "operation": "tpsa",
+      "candidate": 93.16,
+      "reference": 89.91999999999999
+    },
+    {
+      "corpus": "stress-v1.smi",
+      "index": 2651,
+      "operation": "tpsa",
+      "candidate": 129.63,
+      "reference": 126.91999999999999
+    },
+    {
+      "corpus": "stress-v1.smi",
+      "index": 2721,
+      "operation": "tpsa",
+      "candidate": 91.35999999999999,
+      "reference": 93.05000000000001
+    },
+    {
+      "corpus": "stress-v1.smi",
+      "index": 2768,
+      "operation": "tpsa",
+      "candidate": 44.620000000000005,
+      "reference": 45.150000000000006
+    },
+    {
+      "corpus": "stress-v1.smi",
+      "index": 3170,
+      "operation": "tpsa",
+      "candidate": 108.28,
+      "reference": 107.31
+    },
+    {
+      "corpus": "stress-v1.smi",
+      "index": 3478,
+      "operation": "tpsa",
+      "candidate": 167.86,
+      "reference": 168.39
+    },
+    {
+      "corpus": "stress-v1.smi",
+      "index": 3520,
+      "operation": "tpsa",
+      "candidate": 70.99000000000001,
+      "reference": 69.78
+    },
+    {
+      "corpus": "stress-v1.smi",
+      "index": 3726,
+      "operation": "tpsa",
+      "candidate": 103.5,
+      "reference": 104.03
+    },
+    {
+      "corpus": "stress-v1.smi",
+      "index": 3774,
+      "operation": "num_rings",
+      "candidate": 13,
+      "reference": 14
+    },
+    {
+      "corpus": "stress-v1.smi",
+      "index": 3821,
+      "operation": "tpsa",
+      "candidate": 28.490000000000002,
+      "reference": 29.020000000000003
+    }
+  ],
+  "morgan": {
+    "prior_packet": "benchmarks/2026-10-14-python-speed-frontier-parity.json",
+    "candidate_dump_sha256": "05d98f143ef09b8b2123ee6d2bd8a3fb96dbe75aca2308f7fb7ba21bd756bfa4",
+    "candidate_previous_dump_byte_identical": true,
+    "exact_rdkit_checks": 56288,
+    "retained_dump": "validation/results/python-morgan-frontier-candidate-2026-10-14.jsonl.gz"
+  },
+  "source_candidate_baseline_equal": true,
+  "first_repeated_exact": true,
+  "retained_artifacts": {
+    "source-descriptors": {
+      "path": "validation/results/python-scalar-stereo-source-descriptors-2026-10-14.jsonl.gz",
+      "sha256_uncompressed": "2c82ab4b8743715f742e95c9a3ca1982cb8e3b8ea0f92e9c7d2b5e4a725bba03",
+      "sha256_gzip": "42f161ba34fc758518d6bd19fd7d6654f8d4d71c9ecc7a315bd792f68861118b"
+    },
+    "rdkit-descriptors": {
+      "path": "validation/results/python-scalar-stereo-rdkit-descriptors-2026-10-14.jsonl.gz",
+      "sha256_uncompressed": "e5671bba79932bb4c6ee8c9b0175989b9ad572586719e5103c6be4471baf69e2",
+      "sha256_gzip": "1bf5da3d45fd39f01187322cc1f216e3bead2d55220b36dabc31535fb44e1873"
+    },
+    "native-tests": {
+      "path": "validation/results/python-scalar-stereo-native-tests-2026-10-14.txt.gz",
+      "sha256_uncompressed": "e2bd96c99c1f2fbd30e28e2e0fba083cbc8d6c61c3346afd034f51b067acf5fa",
+      "sha256_gzip": "6eb42cc7738775f8e8a704b6036fec2e69ddf702ab017ab80b65ec311431d7e1"
+    },
+    "cache-tests": {
+      "path": "validation/results/python-scalar-stereo-cache-tests-2026-10-14.txt.gz",
+      "sha256_uncompressed": "ba4d923c88ead0a15ea95e3de60ee6ba926f1481ec6048bebe5a0de0ee7d07fb",
+      "sha256_gzip": "34d42bc1d928ff920c29d2b9729e5ae9467103669c1215b162e12c0bc2ad3f3e"
+    },
+    "clippy": {
+      "path": "validation/results/python-scalar-stereo-clippy-2026-10-14.txt.gz",
+      "sha256_uncompressed": "78b639105cae424c25e73a95a450d2e8d7ae742316bbbc3565247fc6780ff09b",
+      "sha256_gzip": "6039ac52ecd33dab6a12a21a51554f6c5a234bca2906eda4cb1ff15ff883630c"
+    },
+    "python-tests": {
+      "path": "validation/results/python-scalar-stereo-python-tests-2026-10-14.txt.gz",
+      "sha256_uncompressed": "1960c1e065fdb204af9dbfb073efc256db08acab1c2d8e994f5ff9657585a3f9",
+      "sha256_gzip": "7ac153824ea0e835f18288d394b9a09b18939328e099fdffc638df052a8eb12c"
+    },
+    "wheel-build": {
+      "path": "validation/results/python-scalar-stereo-wheel-build-2026-10-14.txt.gz",
+      "sha256_uncompressed": "d66fbcc575af861fcb64652921d32692d4401c38fd712d0c55057a399cae495e",
+      "sha256_gzip": "983862d1d3757d57b846d0930b2bff2f3f4823646e3be36d8826c81bc2764243"
+    }
+  },
+  "source_descriptor_dump_shared_by_baseline_and_candidate": true,
+  "precision_tools_patch": {
+    "path": "benchmarks/2026-10-14-python-scalar-reuse-tools.patch",
+    "sha256": "44fb0680b1481e46df431614d99add3053d345d9bc7a6deab484c2ef6089c6a5"
+  },
+  "workspace_overlay": {
+    "path": "crates/chematic-smiles/src/rdkit/mod.rs",
+    "observed_workspace_sha256": "449557b924e68ebb3ca52ea80851cf593ebb094aa28d831c3cb4fbb62ac6c45c",
+    "measured_source_sha256": "2a7db186b2066892ab0702ef408c05694e66095f4087f00980892a3f54ccf917",
+    "explanation": "Concurrent distance-matrix allocation-limit work entered the shared module after the isolated snapshot. It is preserved and excluded from this measured source. The scalar helper remains byte-identical. The shared whole module is not the measured artifact."
+  }
+}

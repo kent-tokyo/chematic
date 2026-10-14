@@ -427,7 +427,7 @@ fn write_atom_row(
     for _ in symbol.len()..3 {
         out.push(' ');
     }
-    if coords.is_none() && mass == 0 && charge == 0 {
+    if mass == 0 && charge == 0 {
         out.push_str(" 0  0");
     } else {
         push_right_aligned_i16(out, mass, 2);
@@ -969,8 +969,11 @@ pub fn write_sdf_with_charges(
 /// omitted from the SD block (e.g. `_Name` is written into the MOL header, not
 /// as an SD field).  The record is terminated with `$$$$`.
 ///
+/// With supplied 2D coordinates, unspecified stereogenic double bonds are
+/// marked "either" so the drawing does not invent an E/Z assignment.
+///
 /// **Does not preserve `Chirality::SquarePlanar` stereo** -- see
-/// [`write_mol`]'s doc comment; this delegates to [`write_mol_with_coords`].
+/// [`write_mol`]'s doc comment.
 /// Use [`write_sdf_record_with_conformer_checked`] if `mol` may carry it.
 pub fn write_sdf_record(
     mol: &Molecule,
@@ -996,7 +999,16 @@ pub fn write_sdf_record_into(
     coords: &[(f64, f64)],
     props: &std::collections::HashMap<String, String>,
 ) {
-    write_mol_with_coords_into(out, mol, meta, coords);
+    // Preserve the molecule's unspecified double-bond stereo when coordinates
+    // are supplied. Otherwise an SDF consumer can infer a definite E/Z solely
+    // from the drawing, including azo bonds whose explicit "either" marker
+    // was read without any directional markers in the molecule graph.
+    let either = if !coords.is_empty() && !crate::stereo_depiction::needs_stereo_depiction(mol) {
+        crate::stereo_depiction::undeclared_stereo_double_bonds(mol)
+    } else {
+        Vec::new()
+    };
+    write_v2000_reporting(out, mol, meta, coords, &either);
     append_sd_fields_and_delimiter(out, props);
 }
 

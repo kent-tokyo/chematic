@@ -70,9 +70,23 @@ pub enum DerivedSlot {
     /// Whether chematic's perception may disagree with RDKit's model of the
     /// molecule (`chematic_perception::rdkit_model_may_disagree`).
     RdkitModelGate = 16,
+    /// Prepared RDKit Morgan atom/bond stereochemistry; `chematic-fp`.
+    RdkitMorganStereo = 17,
 }
 
-const SLOT_COUNT: usize = 17;
+const SLOT_COUNT: usize = 18;
+
+/// Scalar descriptor slots owned by `chematic-chem`. Keeping their f64
+/// values inline avoids allocation, reference counting and type erasure
+/// on hot property reads. All bit patterns, including NaNs, are valid.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
+#[doc(hidden)]
+pub enum DerivedScalar {
+    Tpsa = 0,
+    RdkitTpsa = 1,
+    LabuteAsa = 2,
+}
 
 /// Stored values keep `Molecule`'s auto traits: `Send + Sync` for Rayon and
 /// the unwind-safety traits so `Molecule` stays usable across
@@ -83,6 +97,7 @@ type Slot = OnceLock<Arc<Erased>>;
 
 pub(crate) struct DerivedCache {
     slots: [Slot; SLOT_COUNT],
+    scalars: [OnceLock<f64>; 3],
     /// Kept outside the type-erased slots because this descriptor is a very
     /// hot scalar property.  Avoiding `Arc<dyn Any>` and a downcast makes a
     /// prepared ring-count lookup comparable to RDKit's native cache read.
@@ -93,6 +108,7 @@ impl Default for DerivedCache {
     fn default() -> Self {
         Self {
             slots: [const { OnceLock::new() }; SLOT_COUNT],
+            scalars: [const { OnceLock::new() }; 3],
             rdkit_num_rings: AtomicUsize::new(usize::MAX),
         }
     }
@@ -106,6 +122,21 @@ impl Clone for DerivedCache {
 }
 
 impl DerivedCache {
+    #[inline(always)]
+    pub(crate) fn scalar(&self, slot: DerivedScalar, compute: impl FnOnce() -> f64) -> f64 {
+        let cell = &self.scalars[slot as usize];
+        if let Some(value) = cell.get() {
+            *value
+        } else {
+            // Compute outside OnceLock's initialization lock, as for the
+            // other derived slots. Concurrent cold readers may compute the
+            // same deterministic value; no recursive initializer can deadlock.
+            let value = compute();
+            let _ = cell.set(value);
+            value
+        }
+    }
+
     #[inline(always)]
     pub(crate) fn rdkit_num_rings(&self, compute: impl FnOnce() -> usize) -> usize {
         let count = self.rdkit_num_rings.load(Ordering::Relaxed);

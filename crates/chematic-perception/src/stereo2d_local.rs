@@ -136,21 +136,27 @@ fn classify_local_parity_with(
     ctab_atom1_only: bool,
     lone_pair_centres: bool,
 ) -> ParityOutcome {
-    let nbs: Vec<AtomIdx> = mol.neighbors(center).map(|(nb, _)| nb).collect();
-
-    if !(3..=4).contains(&nbs.len()) || !has_wedge_or_hash(mol, center, ctab_atom1_only) {
+    if !(3..=4).contains(&mol.degree(center)) || !has_wedge_or_hash(mol, center, ctab_atom1_only) {
         return ParityOutcome::NotRequested;
     }
+    let nbs: smallvec::SmallVec<[AtomIdx; 4]> = mol.neighbors(center).map(|(nb, _)| nb).collect();
+    let geometry = || {
+        if ctab_atom1_only {
+            reject_overlapping_flat_bonds(mol, coords, center)
+        } else {
+            Ok(())
+        }
+    };
 
     let result = match nbs.len() {
-        4 => tetrahedral_4(mol, coords, center, &nbs),
+        4 => geometry().and_then(|()| tetrahedral_4(mol, coords, center, &nbs)),
         3 if chematic_core::implicit_hcount(mol, center) == 1 => {
-            tetrahedral_3_implicit_h(mol, coords, center, &nbs)
+            geometry().and_then(|()| tetrahedral_3_implicit_h(mol, coords, center, &nbs))
         }
         // A three-coordinate centre with a lone pair in place of the
         // implicit H (a bridgehead `[N@@]`): the same three-bond parity.
         3 if lone_pair_centres && chematic_core::implicit_hcount(mol, center) == 0 => {
-            tetrahedral_3_implicit_h(mol, coords, center, &nbs)
+            geometry().and_then(|()| tetrahedral_3_implicit_h(mol, coords, center, &nbs))
         }
         _ => Err(StereoRejectionReason::UnsupportedCoordination),
     };
@@ -159,6 +165,44 @@ fn classify_local_parity_with(
         Ok((chirality, order)) => ParityOutcome::Assigned(chirality, order),
         Err(reason) => ParityOutcome::Rejected(reason),
     }
+}
+
+/// A CTAB wedge cannot resolve two flat neighbors pointing in nearly the
+/// same direction. Compare unit directions, not endpoint distance, so bond
+/// length and drawing scale do not change this decision. RDKit's pseudo-3D
+/// overlap check uses a squared unit-vector distance below 1e-3.
+fn reject_overlapping_flat_bonds(
+    mol: &Molecule,
+    coords: &[(f64, f64)],
+    center: AtomIdx,
+) -> Result<(), StereoRejectionReason> {
+    let &(cx, cy) = coords
+        .get(center.0 as usize)
+        .ok_or(StereoRejectionReason::MissingCoordinate)?;
+    let mut flat: smallvec::SmallVec<[(f64, f64); 4]> = smallvec::SmallVec::new();
+    for (neighbor, bond_idx) in mol.neighbors(center) {
+        let bond = mol.bond(bond_idx);
+        if bond.atom1 == center && matches!(bond.order, BondOrder::Up | BondOrder::Down) {
+            continue;
+        }
+        let &(x, y) = coords
+            .get(neighbor.0 as usize)
+            .ok_or(StereoRejectionReason::MissingCoordinate)?;
+        let (dx, dy) = (x - cx, y - cy);
+        let length = dx.hypot(dy);
+        if length <= VOLUME_EPS {
+            return Err(StereoRejectionReason::DegenerateGeometry);
+        }
+        let direction = (dx / length, dy / length);
+        if flat.iter().any(|&(x, y)| {
+            let (dx, dy) = (direction.0 - x, direction.1 - y);
+            dx * dx + dy * dy < 1e-3
+        }) {
+            return Err(StereoRejectionReason::DegenerateGeometry);
+        }
+        flat.push(direction);
+    }
+    Ok(())
 }
 
 /// Compute local tetrahedral parity for `center` from wedge bonds and 2D

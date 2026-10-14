@@ -62,6 +62,15 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- Reduced redundant RDKit-compatible descriptor/model preparation, cached
+  scalar and Morgan stereo work, and packed fingerprint conversion overhead.
+  The dated source-wheel comparisons retain first-use, repeated-use and
+  read-inclusive results, including remaining deficits and regressions.
+- Reduced V2000/V3000 input/output allocation and source-id lookup work,
+  preserving sparse/duplicate-id behavior, ambiguous flat-neighbor stereo,
+  V3000 total-valence overrides and explicit unknown double-bond markers.
+  Open Babel speed results remain limited to output-equivalent measured lanes.
+
 - Restored Rust source compatibility with v1.1.2 exhaustive `Chirality`
   matches. Allene `@AL1`/`@AL2` keeps its molecular-context behavior without
   adding public enum variants in a patch release, and a downstream-style
