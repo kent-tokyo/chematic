@@ -16,6 +16,12 @@ impl Mol {
         bitvec2048_to_bytes(&chematic_fp::ecfp6(&self.inner))
     }
 
+    /// ECFP6 fingerprint as a dense NumPy bit vector.
+    fn ecfp6_numpy<'py>(&self, py: Python<'py>) -> Bound<'py, PyArray1<u8>> {
+        let packed = self.ecfp6();
+        packed_fingerprint_to_numpy(py, &packed, 2048)
+    }
+
     /// ECFP fingerprint with bitInfo for RDKit-style ``bitInfo`` maps.
     ///
     /// Returns ``(bytes, {bit: [(atom_idx, radius), ...]})``. The fingerprint
@@ -45,6 +51,12 @@ impl Mol {
     /// FCFP4 (functional-class ECFP4) fingerprint as bytes (256 bytes = 2048 bits, LSB-first).
     fn fcfp4(&self) -> Vec<u8> {
         bitvec2048_to_bytes(&chematic_fp::fcfp4(&self.inner))
+    }
+
+    /// FCFP4 fingerprint as a dense NumPy bit vector.
+    fn fcfp4_numpy<'py>(&self, py: Python<'py>) -> Bound<'py, PyArray1<u8>> {
+        let packed = self.fcfp4();
+        packed_fingerprint_to_numpy(py, &packed, 2048)
     }
 
     /// FCFP fingerprint with bitInfo for RDKit-style ``useFeatures=True, bitInfo`` maps.
@@ -78,9 +90,21 @@ impl Mol {
         bitvec2048_to_bytes(&chematic_fp::atom_pair_fp(&self.inner))
     }
 
+    /// Atom-pair fingerprint as a dense NumPy bit vector.
+    fn atom_pair_fp_numpy<'py>(&self, py: Python<'py>) -> Bound<'py, PyArray1<u8>> {
+        let packed = self.atom_pair_fp();
+        packed_fingerprint_to_numpy(py, &packed, 2048)
+    }
+
     /// Topological torsion fingerprint as bytes (256 bytes = 2048 bits, LSB-first).
     fn torsion_fp(&self) -> Vec<u8> {
         bitvec2048_to_bytes(&chematic_fp::torsion_fp(&self.inner))
+    }
+
+    /// Topological-torsion fingerprint as a dense NumPy bit vector.
+    fn torsion_fp_numpy<'py>(&self, py: Python<'py>) -> Bound<'py, PyArray1<u8>> {
+        let packed = self.torsion_fp();
+        packed_fingerprint_to_numpy(py, &packed, 2048)
     }
 
     /// RDKit-*compatible* (not yet fully bit-exact) Topological Torsion
@@ -101,6 +125,12 @@ impl Mol {
         bitvec2048_to_bytes(&chematic_fp::rdkit_torsion_fp(&self.inner))
     }
 
+    /// RDKit-compatible topological-torsion fingerprint as a dense NumPy bit vector.
+    fn rdkit_torsion_fp_numpy<'py>(&self, py: Python<'py>) -> Bound<'py, PyArray1<u8>> {
+        let packed = self.rdkit_torsion_fp();
+        packed_fingerprint_to_numpy(py, &packed, 2048)
+    }
+
     /// RDKit-*compatible* (not yet fully bit-exact) Atom Pair fingerprint as
     /// bytes (256 bytes = 2048 bits).
     ///
@@ -116,6 +146,12 @@ impl Mol {
     /// Does not support chirality (``includeChirality=True`` is not implemented).
     fn rdkit_atom_pair_fp(&self) -> Vec<u8> {
         bitvec2048_to_bytes(&chematic_fp::rdkit_atom_pair_fp(&self.inner))
+    }
+
+    /// RDKit-compatible atom-pair fingerprint as a dense NumPy bit vector.
+    fn rdkit_atom_pair_fp_numpy<'py>(&self, py: Python<'py>) -> Bound<'py, PyArray1<u8>> {
+        let packed = self.rdkit_atom_pair_fp();
+        packed_fingerprint_to_numpy(py, &packed, 2048)
     }
 
     /// RDKit's hashed atom-pair count fingerprint
@@ -154,6 +190,12 @@ impl Mol {
         bitvec2048_to_bytes(&chematic_fp::rdkit_layered_fp(&self.inner))
     }
 
+    /// RDKit-compatible layered fingerprint as a dense NumPy bit vector.
+    fn rdkit_layered_fp_numpy<'py>(&self, py: Python<'py>) -> Bound<'py, PyArray1<u8>> {
+        let packed = self.rdkit_layered_fp();
+        packed_fingerprint_to_numpy(py, &packed, 2048)
+    }
+
     /// RDKit-*compatible* (not yet fully bit-exact) Pattern fingerprint as
     /// bytes (256 bytes = 2048 bits).
     ///
@@ -172,6 +214,12 @@ impl Mol {
     /// ``tautomericFingerprint=True``.
     fn rdkit_pattern_fp(&self) -> Vec<u8> {
         bitvec2048_to_bytes(&chematic_fp::rdkit_pattern_fp(&self.inner))
+    }
+
+    /// RDKit-compatible pattern fingerprint as a dense NumPy bit vector.
+    fn rdkit_pattern_fp_numpy<'py>(&self, py: Python<'py>) -> Bound<'py, PyArray1<u8>> {
+        let packed = self.rdkit_pattern_fp();
+        packed_fingerprint_to_numpy(py, &packed, 2048)
     }
 
     /// RDKit-compatible "RDKit fingerprint" (``rdkit.Chem.RDKFingerprint``) as
@@ -208,6 +256,17 @@ impl Mol {
         Ok(bitvec2048_to_bytes(&fingerprint))
     }
 
+    /// RDKit-compatible RDK fingerprint as a dense NumPy bit vector.
+    #[pyo3(signature = (ignore_atoms = None))]
+    fn rdkit_rdk_fp_numpy<'py>(
+        &self,
+        py: Python<'py>,
+        ignore_atoms: Option<Vec<usize>>,
+    ) -> PyResult<Bound<'py, PyArray1<u8>>> {
+        let packed = self.rdkit_rdk_fp(ignore_atoms)?;
+        Ok(packed_fingerprint_to_numpy(py, &packed, 2048))
+    }
+
     /// ECFP4 with chirality fingerprint as bytes.
     fn ecfp4_chiral(&self) -> Vec<u8> {
         let config = chematic_fp::EcfpConfig {
@@ -217,6 +276,12 @@ impl Mol {
             use_double_fold: false,
         };
         bitvec2048_to_bytes(&chematic_fp::ecfp(&self.inner, &config))
+    }
+
+    /// Chiral ECFP4 fingerprint as a dense NumPy bit vector.
+    fn ecfp4_chiral_numpy<'py>(&self, py: Python<'py>) -> Bound<'py, PyArray1<u8>> {
+        let packed = self.ecfp4_chiral();
+        packed_fingerprint_to_numpy(py, &packed, 2048)
     }
 
     /// RDKit-bit-exact ECFP4 (radius=2, 2048 bits, ``useChirality=False``,
@@ -239,6 +304,12 @@ impl Mol {
         let fingerprint = chematic_fp::rdkit_morgan_ecfp4_bitvec(&self.inner)
             .map_err(|e| PyValueError::new_err(e.to_string()))?;
         Ok(bitvec2048_to_bytes(&fingerprint))
+    }
+
+    /// RDKit-bit-exact ECFP4 as a dense NumPy bit vector.
+    fn rdkit_ecfp4_numpy<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyArray1<u8>>> {
+        let packed = self.rdkit_ecfp4()?;
+        Ok(packed_fingerprint_to_numpy(py, &packed, 2048))
     }
 
     /// Same fingerprint as :meth:`rdkit_ecfp4`, plus the raw (unfolded) data behind it.
@@ -299,6 +370,20 @@ impl Mol {
         let fingerprint = chematic_fp::rdkit_morgan_bitvec(&self.inner, &config)
             .map_err(|e| PyValueError::new_err(e.to_string()))?;
         Ok(bitvecn_to_bytes(&fingerprint))
+    }
+
+    /// Configurable RDKit-compatible Morgan fingerprint as a dense NumPy bit vector.
+    #[pyo3(signature = (radius = 2, nbits = 2048, include_chirality = false, count_simulation = false))]
+    fn rdkit_ecfp_config_numpy<'py>(
+        &self,
+        py: Python<'py>,
+        radius: u32,
+        nbits: usize,
+        include_chirality: bool,
+        count_simulation: bool,
+    ) -> PyResult<Bound<'py, PyArray1<u8>>> {
+        let packed = self.rdkit_ecfp_config(radius, nbits, include_chirality, count_simulation)?;
+        Ok(packed_fingerprint_to_numpy(py, &packed, nbits))
     }
 
     /// Same fingerprint as :meth:`rdkit_ecfp_config`, plus the raw (unfolded) data --

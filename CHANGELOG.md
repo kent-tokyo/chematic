@@ -12,6 +12,12 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added dense NumPy output for the existing binary fingerprint families,
+  including ECFP6, FCFP4, atom-pair, topological-torsion, RDK, Pattern,
+  Layered, Avalon, and configurable RDKit-compatible Morgan fingerprints.
+  Every method returns a fresh one-dimensional `uint8` array in the same
+  LSB-first bit order as its packed-byte counterpart, closing the Python
+  interoperability gap identified from the COSMolKit v0.5.0 release notes.
 - Added a CI naming guard that treats `chematic` and `chematic-draw` as the
   canonical lowercase product names and rejects an extra leading `s` in
   current public text and package metadata without rewriting historical

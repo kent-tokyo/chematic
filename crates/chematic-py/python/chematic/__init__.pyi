@@ -1017,6 +1017,100 @@ class Mol:
         """ECFP4 fingerprint as a numpy array of shape ``(2048,)``, dtype ``uint8`` (0/1)."""
         ...
 
+    def ecfp6_numpy(self) -> ndarray:
+        """ECFP6 fingerprint as a numpy array of shape ``(2048,)``, dtype ``uint8`` (0/1)."""
+        ...
+
+    def ecfp4_chiral_numpy(self) -> ndarray:
+        """Chiral ECFP4 fingerprint as a numpy bit vector."""
+        ...
+
+    def fcfp4_numpy(self) -> ndarray:
+        """FCFP4 fingerprint as a numpy array of shape ``(2048,)``, dtype ``uint8`` (0/1)."""
+        ...
+
+    def fcfp6_numpy(self) -> ndarray:
+        """FCFP6 fingerprint as a numpy bit vector."""
+        ...
+
+    def atom_pair_fp_numpy(self) -> ndarray:
+        """Atom-pair fingerprint as a numpy array of shape ``(2048,)``, dtype ``uint8``."""
+        ...
+
+    def torsion_fp_numpy(self) -> ndarray:
+        """Topological-torsion fingerprint as a numpy array of shape ``(2048,)``."""
+        ...
+
+    def rdkit_torsion_fp_numpy(self) -> ndarray:
+        """RDKit-compatible topological-torsion fingerprint as a numpy bit vector."""
+        ...
+
+    def rdkit_atom_pair_fp_numpy(self) -> ndarray:
+        """RDKit-compatible atom-pair fingerprint as a numpy bit vector."""
+        ...
+
+    def rdkit_layered_fp_numpy(self) -> ndarray:
+        """RDKit-compatible layered fingerprint as a numpy bit vector."""
+        ...
+
+    def rdkit_pattern_fp_numpy(self) -> ndarray:
+        """RDKit-compatible pattern fingerprint as a numpy bit vector."""
+        ...
+
+    def rdkit_rdk_fp_numpy(
+        self, ignore_atoms: Optional[Sequence[int]] = None
+    ) -> ndarray:
+        """RDKit-compatible RDK fingerprint as a numpy bit vector."""
+        ...
+
+    def rdkit_ecfp4_numpy(self) -> ndarray:
+        """RDKit-bit-exact ECFP4 as a numpy bit vector."""
+        ...
+
+    def rdkit_ecfp_config_numpy(
+        self,
+        radius: int = 2,
+        nbits: int = 2048,
+        include_chirality: bool = False,
+        count_simulation: bool = False,
+    ) -> ndarray:
+        """Configurable RDKit-compatible Morgan fingerprint as a numpy bit vector."""
+        ...
+
+    def path_fp_numpy(self) -> ndarray:
+        """RDKit-style path fingerprint as a numpy bit vector."""
+        ...
+
+    def topo_path_fp_numpy(self) -> ndarray:
+        """Topological path fingerprint as a numpy bit vector."""
+        ...
+
+    def avalon_fp_numpy(self) -> ndarray:
+        """Avalon-style fingerprint as a numpy bit vector."""
+        ...
+
+    def rdkit_avalon_fp_numpy(self, n_bits: int = 2048) -> ndarray:
+        """RDKit-compatible Avalon fingerprint as a numpy bit vector."""
+        ...
+
+    def pattern_fp_numpy(self) -> ndarray:
+        """Native pattern fingerprint as a numpy bit vector."""
+        ...
+
+    def pharmacophore_fp_numpy(self) -> ndarray:
+        """Two-dimensional pharmacophore fingerprint as a numpy bit vector."""
+        ...
+
+    def pharmacophore_fp_3d_numpy(
+        self, coords: Sequence[Sequence[float]]
+    ) -> ndarray:
+        """Three-dimensional pharmacophore fingerprint as a numpy bit vector."""
+        ...
+
+    def erg_numpy(self) -> ndarray:
+        """Extended reduced graph fingerprint as a numpy bit vector."""
+        ...
+
     def maccs_numpy(self) -> ndarray:
         """MACCS 166-bit fingerprint as a numpy array of shape ``(166,)``, dtype ``uint8`` (0/1)."""
         ...

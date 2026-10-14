@@ -48,6 +48,92 @@ def test_ecfp4_numpy(aspirin):
     assert fp.dtype == np.uint8
 
 
+@pytest.mark.parametrize(
+    ("packed_method", "numpy_method", "n_bits"),
+    [
+        ("ecfp6", "ecfp6_numpy", 2048),
+        ("ecfp4_chiral", "ecfp4_chiral_numpy", 2048),
+        ("fcfp4", "fcfp4_numpy", 2048),
+        ("fcfp6", "fcfp6_numpy", 2048),
+        ("atom_pair_fp", "atom_pair_fp_numpy", 2048),
+        ("torsion_fp", "torsion_fp_numpy", 2048),
+        ("rdkit_torsion_fp", "rdkit_torsion_fp_numpy", 2048),
+        ("rdkit_atom_pair_fp", "rdkit_atom_pair_fp_numpy", 2048),
+        ("rdkit_layered_fp", "rdkit_layered_fp_numpy", 2048),
+        ("rdkit_pattern_fp", "rdkit_pattern_fp_numpy", 2048),
+        ("rdkit_rdk_fp", "rdkit_rdk_fp_numpy", 2048),
+        ("rdkit_ecfp4", "rdkit_ecfp4_numpy", 2048),
+        ("path_fp", "path_fp_numpy", 2048),
+        ("topo_path_fp", "topo_path_fp_numpy", 2048),
+        ("avalon_fp", "avalon_fp_numpy", 2048),
+        ("rdkit_avalon_fp", "rdkit_avalon_fp_numpy", 2048),
+        ("pattern_fp", "pattern_fp_numpy", 2048),
+        ("pharmacophore_fp", "pharmacophore_fp_numpy", 2048),
+        ("erg", "erg_numpy", 2048),
+    ],
+)
+def test_binary_fingerprint_numpy_matches_packed_bits(
+    aspirin, packed_method, numpy_method, n_bits
+):
+    import numpy as np
+
+    packed = getattr(aspirin, packed_method)()
+    expected = np.unpackbits(
+        np.frombuffer(packed, dtype=np.uint8), bitorder="little"
+    )[:n_bits]
+    actual = getattr(aspirin, numpy_method)()
+
+    assert actual.shape == (n_bits,)
+    assert actual.dtype == np.uint8
+    np.testing.assert_array_equal(actual, expected)
+
+
+@pytest.mark.parametrize("count_simulation", [False, True])
+def test_configurable_morgan_numpy_matches_packed_bits(aspirin, count_simulation):
+    import numpy as np
+
+    packed = aspirin.rdkit_ecfp_config(
+        radius=2,
+        nbits=512,
+        include_chirality=True,
+        count_simulation=count_simulation,
+    )
+    actual = aspirin.rdkit_ecfp_config_numpy(
+        radius=2,
+        nbits=512,
+        include_chirality=True,
+        count_simulation=count_simulation,
+    )
+    expected = np.unpackbits(
+        np.frombuffer(packed, dtype=np.uint8), bitorder="little"
+    )
+
+    assert actual.shape == (512,)
+    assert actual.dtype == np.uint8
+    np.testing.assert_array_equal(actual, expected)
+
+
+@pytest.mark.parametrize("n_bits", [0, 7, 2049])
+def test_rdkit_avalon_numpy_rejects_non_byte_aligned_widths(aspirin, n_bits):
+    with pytest.raises(ValueError, match="positive multiple of 8"):
+        aspirin.rdkit_avalon_fp_numpy(n_bits)
+
+
+def test_3d_pharmacophore_numpy_matches_packed_bits(aspirin):
+    import numpy as np
+
+    coords = [[float(i), 0.0, 0.0] for i in range(aspirin.rdkit_num_atoms())]
+    packed = aspirin.pharmacophore_fp_3d(coords)
+    actual = aspirin.pharmacophore_fp_3d_numpy(coords)
+    expected = np.unpackbits(
+        np.frombuffer(packed, dtype=np.uint8), bitorder="little"
+    )
+
+    assert actual.shape == (2048,)
+    assert actual.dtype == np.uint8
+    np.testing.assert_array_equal(actual, expected)
+
+
 # ---------------------------------------------------------------------------
 # FCFP4
 # ---------------------------------------------------------------------------

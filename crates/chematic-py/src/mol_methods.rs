@@ -92,6 +92,21 @@ fn bitvecn_to_bytes(fp: &chematic_fp::bitvec::BitVecN) -> Vec<u8> {
         .collect()
 }
 
+/// Expand an LSB-first packed fingerprint into the dense ``uint8`` shape used
+/// by NumPy-based ML code.  Keeping this conversion in one place prevents the
+/// individual fingerprint bindings from drifting on bit order.
+fn packed_fingerprint_to_numpy<'py>(
+    py: Python<'py>,
+    packed: &[u8],
+    n_bits: usize,
+) -> Bound<'py, PyArray1<u8>> {
+    debug_assert!(n_bits <= packed.len() * 8);
+    let bits = (0..n_bits)
+        .map(|bit| (packed[bit / 8] >> (bit % 8)) & 1)
+        .collect::<Vec<_>>();
+    Array1::from_vec(bits).into_pyarray(py)
+}
+
 pyo3::create_exception!(
     chematic,
     StereoLossWarning,

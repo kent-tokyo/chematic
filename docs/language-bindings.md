@@ -109,7 +109,7 @@ biological-assembly model.
 
 | Boundary | Owns a view of Rust memory? | Notes |
 |---|---|---|
-| Python NumPy arrays (`ecfp4_numpy()`, `VolumetricGrid.values`, `VolumetricGrid.values_3d`, ...) | No — fresh copy | `values_3d` reshapes the flat `values` copy to `(nx, ny, nz)`, third axis (`k`) fastest, matching `chematic_mol::VolumetricGrid::checked_index`. |
+| Python NumPy arrays (`ecfp4_numpy()`, the other `*_fp_numpy()` fingerprint methods, `VolumetricGrid.values`, `VolumetricGrid.values_3d`, ...) | No — fresh copy | Fingerprints are one-dimensional `uint8` arrays in the same LSB-first order as their packed-byte methods. `values_3d` reshapes the flat `values` copy to `(nx, ny, nz)`, third axis (`k`) fastest, matching `chematic_mol::VolumetricGrid::checked_index`. |
 | WASM `js_sys::Float64Array`/`Uint32Array` (`cube_values_f64`, `opendx_values_f64`, `lammps_dump_rows_f64`, `lammps_dump_cartesian_positions_f64`, `cube_shape_u32`, `opendx_shape_u32`) | No — fresh copy | Additive alongside the JSON-string functions; neither replaces the other. |
 | WASM JSON strings (`cube_grid_json`, `opendx_grid_json`, `mmcif_to_json`, ...) | No — serialized copy | The oldest/default binding shape in `chematic-wasm`; large numeric arrays here round-trip through a JSON number array, a disclosed perf trade-off versus the typed-array functions above. |
 
