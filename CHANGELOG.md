@@ -10,6 +10,22 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+
+- Restored the v1.1.3 exhaustive-match surface of the public `CmlError` and
+  `CifError` enums. Invalid CML hydrogen counts and checked-CIF coordinate-count
+  mismatches keep failing explicitly through existing error variants, while a
+  downstream-style compile test now prevents patch releases from silently
+  adding enum variants.
+- Added a targeted `cargo-semver-checks` pull-request lane pinned to the
+  established v1.1.3 `chematic-mol` contract.
+- Pinned the known RDKit 2026.03.6/2026.09.1 `CalcNumRings` disagreements as a
+  versioned machine-readable contract. CI now rejects drift in the current
+  bounded default without presenting one oracle version as universal truth.
+- Updated the transitive `rustls` dependency to 0.23.46, addressing
+  RUSTSEC-2026-0347, RUSTSEC-2026-0348, and RUSTSEC-2026-0349 in the MCP HTTP
+  client dependency graph.
+
 ## [1.1.4] - 2026-10-14
 
 ### Added

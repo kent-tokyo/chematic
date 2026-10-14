@@ -80,9 +80,6 @@ pub enum CmlError {
     InvalidAtomRefs2(String),
     /// A `<bond>` element's `order` attribute could not be interpreted.
     InvalidBondOrder(String),
-    /// Invalid total H count, fewer H than explicit neighbors, or a remainder
-    /// exceeding the core's non-node H-count representation (u8).
-    InvalidHydrogenCount(String),
     /// A coordinate attribute parsed as NaN or infinite.
     NonFiniteCoordinate(String),
     /// The input exceeded a configured resource limit.
@@ -103,7 +100,6 @@ impl std::fmt::Display for CmlError {
             CmlError::UnknownAtomRef(s) => write!(f, "unknown atom ref: {s}"),
             CmlError::InvalidAtomRefs2(s) => write!(f, "invalid atomRefs2: {s}"),
             CmlError::InvalidBondOrder(s) => write!(f, "invalid bond order: {s}"),
-            CmlError::InvalidHydrogenCount(s) => write!(f, "invalid CML hydrogenCount: {s}"),
             CmlError::NonFiniteCoordinate(s) => write!(f, "non-finite coordinate: {s}"),
             CmlError::ResourceLimit {
                 resource,
@@ -321,10 +317,9 @@ fn parse_cml_atom(attrs: &HashMap<String, String>) -> Result<CmlAtomData, CmlErr
         hydrogen_count: attrs
             .get("hydrogenCount")
             .map(|value| {
-                value
-                    .trim()
-                    .parse()
-                    .map_err(|_| CmlError::InvalidHydrogenCount(value.clone()))
+                value.trim().parse().map_err(|_| {
+                    CmlError::MalformedXml(format!("invalid CML hydrogenCount: {value}"))
+                })
             })
             .transpose()?,
         x2,
@@ -426,14 +421,14 @@ fn build_cml(
         atom.hydrogen_count = match source.hydrogen_count {
             Some(total) => {
                 let remainder = total.checked_sub(explicit_h[index]).ok_or_else(|| {
-                    CmlError::InvalidHydrogenCount(format!(
-                        "atom {index}: total {total} is smaller than {} explicit H neighbors",
+                    CmlError::MalformedXml(format!(
+                        "invalid CML hydrogenCount for atom {index}: total {total} is smaller than {} explicit H neighbors",
                         explicit_h[index]
                     ))
                 })?;
                 Some(u8::try_from(remainder).map_err(|_| {
-                    CmlError::InvalidHydrogenCount(format!(
-                        "atom {index}: {remainder} non-node hydrogens exceeds 255"
+                    CmlError::MalformedXml(format!(
+                        "invalid CML hydrogenCount for atom {index}: {remainder} non-node hydrogens exceeds 255"
                     ))
                 })?)
             }
