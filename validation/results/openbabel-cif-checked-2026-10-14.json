@@ -1,0 +1,296 @@
+{
+  "issue": "https://github.com/openbabel/openbabel/issues/2818",
+  "source_baseline": "ffe682c32cb4c76de0d309649427202a7d8e956d",
+  "artifact_lane": "local source extension; uncommitted working tree; not a release",
+  "source_sha256": {
+    "crates/chematic-mol/src/cif.rs": "6a04164b1572fc4c3f79a171e18f20a3c7d3a5938c5ff6daa0a294bab3b907ab",
+    "crates/chematic-py/src/formats.rs": "82cfdec9e0d067a7e852505672a49ab2e488551c85075266fb8704400330e790"
+  },
+  "python": "3.13.6",
+  "module_path": "/private/tmp/chematic-rdkit-gap-target/debug/libchematic.dylib",
+  "module_sha256": "d91cf4ed7c62870506cad9b17c99523fd2f282a4c4bb357bc63b02f18543ead5",
+  "fixture_sha256": "bd8445e0ba1419508b812a9813ea14e6a41240305af5e4d195e439e9a68d43cb",
+  "openbabel_version": {
+    "args": [
+      "obabel",
+      "-V"
+    ],
+    "returncode": 0,
+    "stdout": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27\n",
+    "stderr": "",
+    "timed_out": false
+  },
+  "singular_poscar": {
+    "args": [
+      "obabel",
+      "-iPOSCAR",
+      "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/openbabel_issues/poscar/singular-cell.POSCAR",
+      "-ocif"
+    ],
+    "timed_out": true,
+    "timeout_seconds": 10,
+    "stdout": "",
+    "stderr": ""
+  },
+  "singular_poscar_bonding_disabled": {
+    "args": [
+      "obabel",
+      "-iPOSCAR",
+      "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/openbabel_issues/poscar/singular-cell.POSCAR",
+      "-ocif",
+      "-ab"
+    ],
+    "timed_out": true,
+    "timeout_seconds": 10,
+    "stdout": "",
+    "stderr": ""
+  },
+  "invalid_cell_cases_rejected": [
+    {
+      "field": "a",
+      "value": "0.0",
+      "error": "invalid cell parameters: length a must be finite and positive, got 0"
+    },
+    {
+      "field": "a",
+      "value": "-1.0",
+      "error": "invalid cell parameters: length a must be finite and positive, got -1"
+    },
+    {
+      "field": "a",
+      "value": "nan",
+      "error": "invalid cell parameters: length a must be finite and positive, got NaN"
+    },
+    {
+      "field": "a",
+      "value": "inf",
+      "error": "invalid cell parameters: length a must be finite and positive, got inf"
+    },
+    {
+      "field": "a",
+      "value": "-inf",
+      "error": "invalid cell parameters: length a must be finite and positive, got -inf"
+    },
+    {
+      "field": "b",
+      "value": "0.0",
+      "error": "invalid cell parameters: length b must be finite and positive, got 0"
+    },
+    {
+      "field": "b",
+      "value": "-1.0",
+      "error": "invalid cell parameters: length b must be finite and positive, got -1"
+    },
+    {
+      "field": "b",
+      "value": "nan",
+      "error": "invalid cell parameters: length b must be finite and positive, got NaN"
+    },
+    {
+      "field": "b",
+      "value": "inf",
+      "error": "invalid cell parameters: length b must be finite and positive, got inf"
+    },
+    {
+      "field": "b",
+      "value": "-inf",
+      "error": "invalid cell parameters: length b must be finite and positive, got -inf"
+    },
+    {
+      "field": "c",
+      "value": "0.0",
+      "error": "invalid cell parameters: length c must be finite and positive, got 0"
+    },
+    {
+      "field": "c",
+      "value": "-1.0",
+      "error": "invalid cell parameters: length c must be finite and positive, got -1"
+    },
+    {
+      "field": "c",
+      "value": "nan",
+      "error": "invalid cell parameters: length c must be finite and positive, got NaN"
+    },
+    {
+      "field": "c",
+      "value": "inf",
+      "error": "invalid cell parameters: length c must be finite and positive, got inf"
+    },
+    {
+      "field": "c",
+      "value": "-inf",
+      "error": "invalid cell parameters: length c must be finite and positive, got -inf"
+    },
+    {
+      "field": "alpha",
+      "value": "0.0",
+      "error": "invalid cell parameters: angle alpha must be finite and between 0 and 180 degrees, got 0"
+    },
+    {
+      "field": "alpha",
+      "value": "-1.0",
+      "error": "invalid cell parameters: angle alpha must be finite and between 0 and 180 degrees, got -1"
+    },
+    {
+      "field": "alpha",
+      "value": "nan",
+      "error": "invalid cell parameters: angle alpha must be finite and between 0 and 180 degrees, got NaN"
+    },
+    {
+      "field": "alpha",
+      "value": "inf",
+      "error": "invalid cell parameters: angle alpha must be finite and between 0 and 180 degrees, got inf"
+    },
+    {
+      "field": "alpha",
+      "value": "-inf",
+      "error": "invalid cell parameters: angle alpha must be finite and between 0 and 180 degrees, got -inf"
+    },
+    {
+      "field": "alpha",
+      "value": "180.0",
+      "error": "invalid cell parameters: angle alpha must be finite and between 0 and 180 degrees, got 180"
+    },
+    {
+      "field": "alpha",
+      "value": "270.0",
+      "error": "invalid cell parameters: angle alpha must be finite and between 0 and 180 degrees, got 270"
+    },
+    {
+      "field": "beta",
+      "value": "0.0",
+      "error": "invalid cell parameters: angle beta must be finite and between 0 and 180 degrees, got 0"
+    },
+    {
+      "field": "beta",
+      "value": "-1.0",
+      "error": "invalid cell parameters: angle beta must be finite and between 0 and 180 degrees, got -1"
+    },
+    {
+      "field": "beta",
+      "value": "nan",
+      "error": "invalid cell parameters: angle beta must be finite and between 0 and 180 degrees, got NaN"
+    },
+    {
+      "field": "beta",
+      "value": "inf",
+      "error": "invalid cell parameters: angle beta must be finite and between 0 and 180 degrees, got inf"
+    },
+    {
+      "field": "beta",
+      "value": "-inf",
+      "error": "invalid cell parameters: angle beta must be finite and between 0 and 180 degrees, got -inf"
+    },
+    {
+      "field": "beta",
+      "value": "180.0",
+      "error": "invalid cell parameters: angle beta must be finite and between 0 and 180 degrees, got 180"
+    },
+    {
+      "field": "beta",
+      "value": "270.0",
+      "error": "invalid cell parameters: angle beta must be finite and between 0 and 180 degrees, got 270"
+    },
+    {
+      "field": "gamma",
+      "value": "0.0",
+      "error": "invalid cell parameters: angle gamma must be finite and between 0 and 180 degrees, got 0"
+    },
+    {
+      "field": "gamma",
+      "value": "-1.0",
+      "error": "invalid cell parameters: angle gamma must be finite and between 0 and 180 degrees, got -1"
+    },
+    {
+      "field": "gamma",
+      "value": "nan",
+      "error": "invalid cell parameters: angle gamma must be finite and between 0 and 180 degrees, got NaN"
+    },
+    {
+      "field": "gamma",
+      "value": "inf",
+      "error": "invalid cell parameters: angle gamma must be finite and between 0 and 180 degrees, got inf"
+    },
+    {
+      "field": "gamma",
+      "value": "-inf",
+      "error": "invalid cell parameters: angle gamma must be finite and between 0 and 180 degrees, got -inf"
+    },
+    {
+      "field": "gamma",
+      "value": "180.0",
+      "error": "invalid cell parameters: angle gamma must be finite and between 0 and 180 degrees, got 180"
+    },
+    {
+      "field": "gamma",
+      "value": "270.0",
+      "error": "invalid cell parameters: angle gamma must be finite and between 0 and 180 degrees, got 270"
+    }
+  ],
+  "round_trips": [
+    {
+      "cell": null,
+      "max_absolute_coordinate_error": 0.0
+    },
+    {
+      "cell": {
+        "a": 4.0,
+        "b": 6.0,
+        "c": 8.0,
+        "alpha": 90.0,
+        "beta": 90.0,
+        "gamma": 90.0
+      },
+      "max_absolute_coordinate_error": 5.551115123125783e-17
+    },
+    {
+      "cell": {
+        "a": 4.0,
+        "b": 6.0,
+        "c": 8.0,
+        "alpha": 75.0,
+        "beta": 83.0,
+        "gamma": 64.0
+      },
+      "max_absolute_coordinate_error": 5.551115123125783e-17
+    },
+    {
+      "cell": {
+        "a": 1e-06,
+        "b": 2e-06,
+        "c": 3e-06,
+        "alpha": 90.0,
+        "beta": 90.0,
+        "gamma": 90.0
+      },
+      "max_absolute_coordinate_error": 2.220446049250313e-16
+    }
+  ],
+  "valid_cif_openbabel_cross_read": {
+    "args": [
+      "obabel",
+      "-icif",
+      "-oxyz",
+      "-ab"
+    ],
+    "timed_out": true,
+    "timeout_seconds": 10,
+    "stdout": "",
+    "stderr": "",
+    "input_sha256": "b2d244da8883383a75689449b6553438597b4b67a6095b7ce38a2f710a142145"
+  },
+  "valid_cif_openbabel_cross_read_passed": false,
+  "xyz_to_cif_control": {
+    "args": [
+      "obabel",
+      "-ixyz",
+      "-ocif"
+    ],
+    "returncode": 0,
+    "stdout": "# CIF file generated by openbabel 3.2.1, see https://openbabel.org\ndata_I\n_chemical_name_common 'control'\nloop_\n    _atom_site_label\n    _atom_site_type_symbol\n    _atom_site_fract_x\n    _atom_site_fract_y\n    _atom_site_fract_z\n    _atom_site_occupancy\n    Si0      Si       0.00000    0.00000    0.00000    1.000\n",
+    "stderr": "1 molecule converted\n",
+    "timed_out": false
+  },
+  "comparison_conclusion": "Open Babel CIF cross-read unavailable; singular-input timeout does not prove issue-specific failure",
+  "scope": "plain CIF atomic positions; no POSCAR reader; legacy Rust write_cif remains unchecked"
+}

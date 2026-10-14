@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "scope": "Seven scoped RDKit/Open Babel issue contracts; isolated from unrelated dirty work",
+  "base_main": "d02499724a76d90e82983977e739a838a8d79ece",
+  "issues": {
+    "rdkit": [
+      6716,
+      9458,
+      9647,
+      7981
+    ],
+    "openbabel": [
+      2995,
+      2655,
+      2818
+    ]
+  },
+  "validation": {
+    "rust_integration_tests": {
+      "passed": 49,
+      "failed": 0,
+      "ignored": 0,
+      "targets": [
+        "mol2_unity_charge",
+        "cml_hydrogen_contract",
+        "cif_coordinate_contract",
+        "cif_checked_writer",
+        "local_cation_resonance",
+        "screening_enrichment",
+        "rdkit_matrix_limits"
+      ]
+    },
+    "python": {
+      "passed": 149,
+      "failed": 0,
+      "artifact_lane": "locally compiled source extension"
+    },
+    "clippy": "passed: four affected crates, all targets, warnings denied",
+    "format": "cargo fmt --all -- --check passed",
+    "refactor_budget": "passed without allowance increases",
+    "binding_inventory": "passed",
+    "product_names": "passed",
+    "documentation": "mkdocs build --strict passed"
+  },
+  "limits": [
+    "Local cation resonance only, rejects stereo/query inputs",
+    "Dense distance APIs capped at 1024 input/prepared atoms",
+    "Legacy Rust CIF writer remains unchecked",
+    "No POSCAR reader; Open Babel CIF cross-read inconclusive",
+    "Enrichment rejects undefined inputs rather than reproducing RDKit behavior"
+  ],
+  "source_sha256": {
+    ".github/workflows/ci.yml": "5a649e6af5375968816407d9ddbf1d79c82e950f3cbf29cd0bf2768b81947965",
+    "CHANGELOG.md": "53acdb7315e60c2a25db720ea6f9dc8c65d7706c7d2e4d6c2d387a9c19f31546",
+    "crates/chematic-chem/src/lib.rs": "b4d563e1133cf28f76a6a4725121d6945297fb940aa3dd073b7980e56f17a539",
+    "crates/chematic-chem/src/resonance.rs": "1f0143f63170bcf4ed03a9eb36229b31ac9302da36359daa0514bf9b264589d7",
+    "crates/chematic-chem/src/screening.rs": "436088c4c2b5222b71d1c30e03e9b0374e10c46da530524ed0691f14733dacfa",
+    "crates/chematic-chem/tests/local_cation_resonance.rs": "ee24c3caedb3833da59aef283b311ba2bf4c2a1f04de4a40e11ed63b02f92de2",
+    "crates/chematic-chem/tests/screening_enrichment.rs": "afdbcfba9e9861abd4a0e9c600ba3718d994dc5498390e34967e76e4e5f691f9",
+    "crates/chematic-mol/src/cif.rs": "248e9e10cdbb1004b70dc0628417815473757feb2160eee90ac6582d7660c013",
+    "crates/chematic-mol/src/cif/writer.rs": "fd9df48995a11b2e7c0b94e467908f42af575f36dff56605187aa7f540e1f749",
+    "crates/chematic-mol/src/cml.rs": "26f8c04325c2321e283be257254af9ec8b84ec53efc1bb414281f02b67ed889e",
+    "crates/chematic-mol/src/conversion.rs": "654db12e37f1c395974f7181bef41e83fd7df30469ce588389da6555da870e5c",
+    "crates/chematic-mol/src/lib.rs": "3fc6ebeaa8143bef862774a34f16a67a61330e0ff1b46716f881e8e34c391957",
+    "crates/chematic-mol/src/mol2_source.rs": "b4ed944b2761df565c5e68713f0e99970591a8cd3d6c40825d566840a4f0b4c5",
+    "crates/chematic-mol/src/mol2_tripos.rs": "fad1771f7efaf60ede0c97899b733efcd2474b444915bfd8d4d19263f37a6874",
+    "crates/chematic-mol/tests/cif_checked_writer.rs": "a45dd457f0c6cef21e7332334fcd1e0febda6bfad1e6dbcec9b6cccf6674b6bd",
+    "crates/chematic-mol/tests/cif_coordinate_contract.rs": "48018fe1dc723efdaa0aa818c78e05cf15fcff55d08ab6bbacc9ec8f693d0756",
+    "crates/chematic-mol/tests/cml_hydrogen_contract.rs": "bbeab205076e16107e9104f0d945397af73e7adc2952c01a88c66dfc01170d04",
+    "crates/chematic-mol/tests/mol2_unity_charge.rs": "8e1f751bc60fb16de7b1bf6130b26037772db06a45c2e4a522187942d9aeac63",
+    "crates/chematic-py/python/chematic/__init__.pyi": "3eef3783ec5e218bd8c1763a9bf17c9cf04fea6599dedec1dda8ff5caa8f9d2d",
+    "crates/chematic-py/src/formats.rs": "501a20dfc2f72e28627d3fc3f9a49d35e4ac031328809842ad99ecaba1b876bb",
+    "crates/chematic-py/src/formats/cif.rs": "bad15e9a9b02113571dc2e93419d23688c77d14595e90a0a64bdf9744866deb8",
+    "crates/chematic-py/src/mol_methods/transformations.rs": "5155fc240bd8f5a49d3a60198f824c676bff7ac0fec0f20e530d203be0c4aac3",
+    "crates/chematic-py/src/similarity.rs": "44ce74e71ad0901ef27d1721e33477cc5811824890eec2133e976f075eb026d1",
+    "crates/chematic-py/tests/test_cif_checked_writer.py": "53c538603e6cada8ddf95f69b7e7c6dfdf51cd1df4e6e2dad20745a0a4d499ce",
+    "crates/chematic-py/tests/test_cml_hydrogen_contract.py": "36503fe13a9d01193339ef165bfcdc4eb4f6568107e3af3b41513989b22d4c7b",
+    "crates/chematic-py/tests/test_local_cation_resonance.py": "5246bee5d8ed5018c098d417d9340d0c86d3226aab300c4371959657d952302d",
+    "crates/chematic-py/tests/test_rdkit_matrix_limits.py": "160837883ae77348182a8a01fbb6b1f0ddb11f5338694694608401840a0ee1ef",
+    "crates/chematic-py/tests/test_screening_enrichment.py": "8b436ec5b9c625488a70ff136e5e995ee923f22366aac3285d049aadb90b52c3",
+    "crates/chematic-smiles/src/rdkit/matrices.rs": "b1ed561852e9d76195f009019df3f84eeb7b7385a24d8d568c5ee379751a1255",
+    "crates/chematic-smiles/src/rdkit/mod.rs": "b8d1e688d811fce28b659e3a80a0e2ad6c07d66587bddc93507fea924b7b0df4",
+    "crates/chematic-smiles/tests/rdkit_matrix_limits.rs": "e72cd461c19599fd646d3cc2ce0deeed770f3a1eefe75b5774de66b82b489d15",
+    "docs/cif-checked-writer.md": "6c91b7df09ccffbc43f3e68fefa4d4a55c597027ffd30c9a9d8c7519d34cdb0f",
+    "docs/cml-hydrogen-accounting.md": "eea51ed8faf01ced9ec3ffef69a91ffa2c1d0c05712080d871dcd037ec330c74",
+    "docs/local-cation-resonance.md": "20a634d2ecebabaf537e74fe0160568a3c9d50efb0828bff2058a1c3d6f87971",
+    "docs/openbabel-open-issues-2026-10-14.md": "32ac63a42b55014c3d7e79b1c346efa8e58b6825db76f1019c804b195430e639",
+    "docs/rdkit-distance-matrix-limits.md": "1f553532a1dff7135cc4a5970cbd8bdcfe0f8dad3d95a85b2f9ef80123218745",
+    "docs/rdkit-open-issues-2026-10-14.md": "8fae4e0990a7cc56b32be019059800a867cb3393ae2bd00a2101a624c565e198",
+    "docs/screening-enrichment.md": "0150d8f798a9839997c3349de3a3dfd8e1169cb9d2e91a7e9618d4dec65e9a1b",
+    "scripts/validate_openbabel_cif_checked.py": "c3f2a0cbdb4b7671a9d180aa27aabff78be5b51bf2bedf54d87c393c01c79567",
+    "scripts/validate_rdkit_enrichment.py": "77f3a13c6f89146db344ae60f1d34efef4af30f62d4502f49d821dad65f1f843",
+    "validation/openbabel_issues/cif/cartesian-no-cell.xyz": "9e0791c42b803f8e8a49d87e1846e44040d8898ed6599eff0bc88a920a4fb433",
+    "validation/openbabel_issues/cml/explicit-ch2.cml": "eb4c2b8520e1d09bc7606409ed6e3a78604ecdb74e0911991b7404429bb1c3cf",
+    "validation/openbabel_issues/poscar/singular-cell.POSCAR": "bd8445e0ba1419508b812a9813ea14e6a41240305af5e4d195e439e9a68d43cb",
+    "validation/rdkit_issues/formats/ammonium_unity_charge.mol2": "f4f70f6ec4b10848e14f9239135468ed58b062d57784391aa829f38ee43d6181",
+    "validation/rdkit_issues/resonance/local_cation_pairs.smi": "2f172f7d9f784e0327231163a656efc9ce5c0c616e0e3b8c847fe7da44360bfb",
+    "validation/rdkit_issues/screening/enrichment-7981.json": "d89d185936edcf5524f498f3d4eb7788f190743c169362f046b6843c5c66d37e",
+    "validation/results/binding_surface_inventory-current.json": "d443f06c400d8c374ed055b7dc8dd5217959d9c509383f0bcb39a7d74aed4ce5",
+    "validation/results/local-cation-resonance-2026-10-14.json": "d70110d852eaf3dfdb316f71cfc88e98b362654c9dc02ad817ca180412ecea40",
+    "validation/results/openbabel-cif-checked-2026-10-14.json": "880065f15524ee3264a32bebabaab89689c71e46d9e094ce44370eb2b4c8a6e7",
+    "validation/results/openbabel-cml-hydrogen-2026-10-14.json": "ff02f84612b48d2b30cb3e379ca6408b291c09eee7740e358a6b6fa2c7d89cd0",
+    "validation/results/rdkit-enrichment-2026-10-14.json": "1e907cc5785dee3954163cb28923744167394fcd93e1ab3254044c463fc1fa60",
+    "validation/results/rdkit-matrix-limits-2026-10-14.json": "74afbe5151e3280ad5510993bdf6a784819a458a99d1065709daabff0be1776d",
+    "validation/upstream-issue-fixtures-2026-10-14.json": "75832f3631c48a59f44381cb74a4842140b6b7b41929eab552f84df51f5f390e"
+  },
+  "artifact_status": "source integration candidate; not a package publication"
+}

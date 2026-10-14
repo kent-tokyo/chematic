@@ -12,6 +12,12 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added bounded local N/O/S cation-resonance enumeration, ranked screening
+  enrichment factors, and checked CIF atomic-position output to Rust/Python.
+  Added explicit limits for RDKit-compatible dense distance matrices, corrected
+  MOL2 UNITY formal-charge projection and round trips, reconciled CML total
+  hydrogen counts, and corrected CIF Cartesian coordinate labels.
+
 - Added RDKit 2026.09.1-compatible molecule-name accessors. Native and
   `rdkit_compat` molecules now expose `GetName()` / `SetName()` over the
   conventional `_Name` property, with an empty string for an unset name;

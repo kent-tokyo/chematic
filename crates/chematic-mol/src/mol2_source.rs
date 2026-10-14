@@ -40,8 +40,9 @@ pub struct Mol2SourceBondRecord {
 /// No edit API is exposed, so opaque references cannot become stale.
 ///
 /// The graph does not infer formal charge from partial charge. It recognizes
-/// `N.4` as +1; other atom-type/UNITY formal-charge rules and coordinate-derived
-/// stereochemistry are not interpreted. Use the source metadata for such work.
+/// explicit `UNITY_ATOM_ATTR` charge attributes, falling back to +1 for `N.4`
+/// when no explicit charge is present. Other atom-type rules and
+/// coordinate-derived stereochemistry are not interpreted.
 #[derive(Clone)]
 pub struct Mol2SourceRecord {
     source: String,
@@ -69,7 +70,8 @@ impl Mol2SourceRecord {
         &self.bonds
     }
 
-    /// Sections retained as source text without semantic interpretation.
+    /// Sections containing source data beyond the graph projection.
+    /// `UNITY_ATOM_ATTR` is listed only if it contains attributes other than charge.
     pub fn opaque_sections(&self) -> &[String] {
         &self.opaque_sections
     }
@@ -114,7 +116,7 @@ impl Mol2SourceRecord {
             "formal_charges": self.molecule.atoms().map(|(_, atom)| atom.charge).collect::<Vec<_>>(),
             "opaque_sections": self.opaque_sections,
             "graph_projection": {
-                "formal_charge_policy": "N.4_only",
+                "formal_charge_policy": "UNITY_charge_then_N.4",
                 "coordinate_stereo": "not_interpreted",
                 "opaque_sections": "not_interpreted"
             },
@@ -171,12 +173,14 @@ fn strip_atom_type(sym: &str) -> &str {
 /// Parse a Tripos MOL2 string into a `(Molecule, 3D-coordinates)` pair.
 ///
 /// Only the `MOLECULE`, `ATOM`, and `BOND` sections are required; all other
-/// sections (SUBSTRUCTURE, SET, …) are silently ignored.
+/// sections (SUBSTRUCTURE, SET, …) are ignored, except `UNITY_ATOM_ATTR`
+/// formal-charge attributes, which are validated and projected by source ID.
 ///
 /// 3D coordinates are returned as `Vec<(f64, f64, f64)>` aligned with the
 /// molecule's atom indices.
 /// Partial charges are validated but not rounded into formal charges. `N.4`
-/// supplies +1; general formal-charge perception is not performed. Use
+/// supplies +1 when no explicit UNITY charge exists; general formal-charge
+/// perception is not performed. Use
 /// [`parse_mol2_source_record`] to retain charges, atom typing, and source metadata.
 #[allow(clippy::type_complexity)]
 pub fn parse_mol2_source(s: &str) -> Result<(Molecule, Vec<(f64, f64, f64)>), Mol2Error> {
@@ -212,6 +216,35 @@ pub fn parse_mol2_source_record_with_limits(
 /// interpreted. For regenerated graph-only output, use [`write_mol2_source`].
 pub fn write_mol2_source_record(record: &Mol2SourceRecord) -> String {
     record.source.clone()
+}
+
+fn validate_source_sections(
+    all_lines: &[(usize, &str)],
+    retain_source: bool,
+    unity_has_opaque: bool,
+) -> Result<Vec<String>, Mol2Error> {
+    let mut core_sections = HashSet::new();
+    let mut opaque_sections = Vec::new();
+    for &(line, text) in all_lines {
+        if let Some(section) = tripos_section(text) {
+            let section = section.to_ascii_uppercase();
+            if matches!(section.as_str(), "MOLECULE" | "ATOM" | "BOND") {
+                if !core_sections.insert(section.clone()) {
+                    return Err(Mol2Error::InvalidAtomLine {
+                        line,
+                        detail: format!("multiple {section} sections/records are unsupported"),
+                    });
+                }
+            } else if retain_source && (section != "UNITY_ATOM_ATTR" || unity_has_opaque) {
+                opaque_sections.push(section);
+            }
+        }
+    }
+    if !core_sections.contains("MOLECULE") {
+        return Err(Mol2Error::MissingSection("MOLECULE".into()));
+    }
+
+    Ok(opaque_sections)
 }
 
 fn parse_mol2_impl(
@@ -259,27 +292,16 @@ fn parse_mol2_impl(
         .enumerate()
         .map(|(i, l)| (i + 1, l))
         .collect();
+    let (formal_charges, unity_attributes) =
+        crate::mol2_tripos::parse_unity_formal_charges(&all_lines)?;
+    let unity_has_opaque = unity_attributes.iter().any(|group| {
+        group
+            .attributes
+            .iter()
+            .any(|(name, _)| !name.eq_ignore_ascii_case("charge"))
+    });
 
-    let mut core_sections = HashSet::new();
-    let mut opaque_sections = Vec::new();
-    for &(line, text) in &all_lines {
-        if let Some(section) = tripos_section(text) {
-            let section = section.to_ascii_uppercase();
-            if matches!(section.as_str(), "MOLECULE" | "ATOM" | "BOND") {
-                if !core_sections.insert(section.clone()) {
-                    return Err(Mol2Error::InvalidAtomLine {
-                        line,
-                        detail: format!("multiple {section} sections/records are unsupported"),
-                    });
-                }
-            } else if retain_source {
-                opaque_sections.push(section);
-            }
-        }
-    }
-    if !core_sections.contains("MOLECULE") {
-        return Err(Mol2Error::MissingSection("MOLECULE".into()));
-    }
+    let opaque_sections = validate_source_sections(&all_lines, retain_source, unity_has_opaque)?;
 
     // -- ATOM section ----------------------------------------------------------
     let atom_lines = section_lines(&all_lines, "ATOM");
@@ -407,9 +429,10 @@ fn parse_mol2_impl(
         let mut atom = Atom::new(element);
         // An electrostatic partial charge is not a formal charge. The N.4
         // atom type explicitly identifies positively charged nitrogen.
-        if atom_type_raw == "N.4" {
-            atom.charge = 1;
-        }
+        atom.charge = formal_charges
+            .get(&atom_id)
+            .copied()
+            .unwrap_or_else(|| i8::from(atom_type_raw == "N.4"));
 
         let builder_idx = builder.add_atom(atom);
         atom_id_map.insert(atom_id, builder_idx);
@@ -546,6 +569,8 @@ fn parse_mol2_impl(
 /// This graph-only writer does not compute partial charges or preserve source
 /// names/types. It emits `NO_CHARGES`. Use [`write_mol2_source_record`] for an exact
 /// source-preserving round trip, including the original charge method/values.
+/// Nonzero formal charges are emitted as `UNITY_ATOM_ATTR` charge attributes;
+/// `NO_CHARGES` refers to the partial-charge column.
 ///
 /// `coords` must have one entry per atom in `mol`.  Missing entries use
 /// `(0.0, 0.0, 0.0)`.
@@ -597,6 +622,13 @@ pub fn write_mol2_source(mol: &Molecule, coords: &[(f64, f64, f64)]) -> String {
             | BondOrder::QueryDoubleOrAromatic => "un",
         };
         out.push_str(&format!("{bi:>6} {a1:>6} {a2:>6} {btype}\n"));
+    }
+
+    if mol.atoms().any(|(_, atom)| atom.charge != 0) {
+        out.push_str("@<TRIPOS>UNITY_ATOM_ATTR\n");
+        for (idx, atom) in mol.atoms().filter(|(_, atom)| atom.charge != 0) {
+            out.push_str(&format!("{} 1\ncharge {}\n", idx.0 + 1, atom.charge));
+        }
     }
 
     out

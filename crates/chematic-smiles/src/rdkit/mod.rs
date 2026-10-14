@@ -76,7 +76,7 @@ pub use tautomer::RdkitTautomerStatus;
 /// Why [`rdkit_canonical_smiles`] produced no string.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RdkitSmilesError {
-    /// The molecule uses a feature the RDKit port does not model.
+    /// The molecule uses a feature or size outside the RDKit port's supported scope.
     Unsupported(String),
     /// RDKit's sanitization would reject the molecule (valence or
     /// kekulization failure), so `Chem.MolFromSmiles` returns `None`.
@@ -391,42 +391,7 @@ pub fn rdkit_num_atoms(mol: &Molecule) -> Result<usize, RdkitSmilesError> {
     Ok(rdkit_mol_for_writing(mol)?.atoms.len())
 }
 
-/// `Chem.GetDistanceMatrix(m, useBO, useAtomWts)` for
-/// `m = Chem.MolFromSmiles(s)` (RDKit 2026.03.1; the `Chem.AddHs` molecule
-/// when `mol` carries added hydrogens): topological distances by
-/// Floyd-Warshall, `1e8` between fragments; `use_bo` weights bonds by
-/// `1 / bond order` (aromatic `2/3`), `use_atom_wts` sets the diagonal to
-/// `6 / atomic number`. One row per atom in RDKit's atom order.
-pub fn rdkit_distance_matrix(
-    mol: &Molecule,
-    use_bo: bool,
-    use_atom_wts: bool,
-) -> Result<Vec<Vec<f64>>, RdkitSmilesError> {
-    let m = rdkit_mol_for_writing(mol)?;
-    let n = m.atoms.len();
-    let d = matrices::distance_mat(&m, use_bo, use_atom_wts);
-    Ok(d.chunks(n.max(1)).map(<[f64]>::to_vec).take(n).collect())
-}
-
-/// `Chem.Get3DDistanceMatrix(m, useAtomWts=...)` for RDKit's molecule of
-/// `mol` (as in [`rdkit_distance_matrix`]) with the conformer `coords`
-/// (one `[x, y, z]` per atom in RDKit's atom order).
-pub fn rdkit_distance_matrix_3d(
-    mol: &Molecule,
-    coords: &[[f64; 3]],
-    use_atom_wts: bool,
-) -> Result<Vec<Vec<f64>>, RdkitSmilesError> {
-    let m = rdkit_mol_for_writing(mol)?;
-    let n = m.atoms.len();
-    if coords.len() != n {
-        return Err(RdkitSmilesError::Unsupported(format!(
-            "{} coordinates for {n} atoms",
-            coords.len()
-        )));
-    }
-    let d = matrices::distance_mat_3d(&m, coords, use_atom_wts);
-    Ok(d.chunks(n.max(1)).map(<[f64]>::to_vec).take(n).collect())
-}
+pub use matrices::{rdkit_distance_matrix, rdkit_distance_matrix_3d};
 
 /// One problem `MolOps::detectChemistryProblems` reports (see
 /// [`rdkit_detect_chemistry_problems`]).

@@ -1,0 +1,9 @@
+{
+  "issue": "https://github.com/rdkit/rdkit/issues/7981",
+  "input_scores": [0.0, 0.0, 0.0, 0.0, 1.0],
+  "input_actives": [false, false, false, true, true],
+  "ranking_policy_for_original_reproduction": "descending (score, active) tuples, as in the issue",
+  "ranked_actives": [true, true, false, false, false],
+  "fractions": [0.9, 1.0],
+  "expected_enrichment": [1.0, 1.0]
+}

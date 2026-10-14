@@ -1,0 +1,137 @@
+{
+  "schema_version": 1,
+  "records": [
+    {
+      "id": "mol2-unity-charge",
+      "path": "validation/rdkit_issues/formats/ammonium_unity_charge.mol2",
+      "provenance": {
+        "issue": "https://github.com/rdkit/rdkit/issues/6716",
+        "retrieved": "2026-10-14",
+        "transformation": "Small molecular/numeric reproducer re-expressed as a local test fixture; no upstream implementation or bulk dataset."
+      },
+      "license": "MIT OR Apache-2.0",
+      "redistribution": {
+        "status": "allowed",
+        "rationale": "Minimal factual molecular/numeric test inputs serialized for this project under its license."
+      },
+      "minimization": "Only atoms, coordinates or labels needed for the stated regression are retained.",
+      "oracle": {
+        "rdkit": "2026.09.1",
+        "openbabel": "3.2.1",
+        "settings": "See dated issue audit and contract notes; CIF external comparison is inconclusive. Expected corrected contracts are asserted by local Rust/Python tests."
+      },
+      "expected": "Ammonium +1; UNITY attributes override atom-type fallback.",
+      "sha256": "f4f70f6ec4b10848e14f9239135468ed58b062d57784391aa829f38ee43d6181"
+    },
+    {
+      "id": "local-cation-pairs",
+      "path": "validation/rdkit_issues/resonance/local_cation_pairs.smi",
+      "provenance": {
+        "issue": "https://github.com/rdkit/rdkit/issues/9458",
+        "retrieved": "2026-10-14",
+        "transformation": "Small molecular/numeric reproducer re-expressed as a local test fixture; no upstream implementation or bulk dataset."
+      },
+      "license": "MIT OR Apache-2.0",
+      "redistribution": {
+        "status": "allowed",
+        "rationale": "Minimal factual molecular/numeric test inputs serialized for this project under its license."
+      },
+      "minimization": "Only atoms, coordinates or labels needed for the stated regression are retained.",
+      "oracle": {
+        "rdkit": "2026.09.1",
+        "openbabel": "3.2.1",
+        "settings": "See dated issue audit and contract notes; CIF external comparison is inconclusive. Expected corrected contracts are asserted by local Rust/Python tests."
+      },
+      "expected": "Two local resonance forms from either oxygen/sulfur starting form.",
+      "sha256": "2f172f7d9f784e0327231163a656efc9ce5c0c616e0e3b8c847fe7da44360bfb"
+    },
+    {
+      "id": "screening-enrichment",
+      "path": "validation/rdkit_issues/screening/enrichment-7981.json",
+      "provenance": {
+        "issue": "https://github.com/rdkit/rdkit/issues/7981",
+        "retrieved": "2026-10-14",
+        "transformation": "Small molecular/numeric reproducer re-expressed as a local test fixture; no upstream implementation or bulk dataset."
+      },
+      "license": "MIT OR Apache-2.0",
+      "redistribution": {
+        "status": "allowed",
+        "rationale": "Minimal factual molecular/numeric test inputs serialized for this project under its license."
+      },
+      "minimization": "Only atoms, coordinates or labels needed for the stated regression are retained.",
+      "oracle": {
+        "rdkit": "2026.09.1",
+        "openbabel": "3.2.1",
+        "settings": "See dated issue audit and contract notes; CIF external comparison is inconclusive. Expected corrected contracts are asserted by local Rust/Python tests."
+      },
+      "expected": "EF=[1,1] at fractions [0.9,1], tolerance 1e-12.",
+      "sha256": "d89d185936edcf5524f498f3d4eb7788f190743c169362f046b6843c5c66d37e"
+    },
+    {
+      "id": "cif-cartesian",
+      "path": "validation/openbabel_issues/cif/cartesian-no-cell.xyz",
+      "provenance": {
+        "issue": "https://github.com/openbabel/openbabel/issues/2995",
+        "retrieved": "2026-10-14",
+        "transformation": "Small molecular/numeric reproducer re-expressed as a local test fixture; no upstream implementation or bulk dataset."
+      },
+      "license": "MIT OR Apache-2.0",
+      "redistribution": {
+        "status": "allowed",
+        "rationale": "Minimal factual molecular/numeric test inputs serialized for this project under its license."
+      },
+      "minimization": "Only atoms, coordinates or labels needed for the stated regression are retained.",
+      "oracle": {
+        "rdkit": "2026.09.1",
+        "openbabel": "3.2.1",
+        "settings": "See dated issue audit and contract notes; CIF external comparison is inconclusive. Expected corrected contracts are asserted by local Rust/Python tests."
+      },
+      "expected": "Cartesian coordinates retained, tolerance 1e-10 angstrom.",
+      "sha256": "9e0791c42b803f8e8a49d87e1846e44040d8898ed6599eff0bc88a920a4fb433"
+    },
+    {
+      "id": "cml-explicit-h",
+      "path": "validation/openbabel_issues/cml/explicit-ch2.cml",
+      "provenance": {
+        "issue": "https://github.com/openbabel/openbabel/issues/2655",
+        "retrieved": "2026-10-14",
+        "transformation": "Small molecular/numeric reproducer re-expressed as a local test fixture; no upstream implementation or bulk dataset."
+      },
+      "license": "MIT OR Apache-2.0",
+      "redistribution": {
+        "status": "allowed",
+        "rationale": "Minimal factual molecular/numeric test inputs serialized for this project under its license."
+      },
+      "minimization": "Only atoms, coordinates or labels needed for the stated regression are retained.",
+      "oracle": {
+        "rdkit": "2026.09.1",
+        "openbabel": "3.2.1",
+        "settings": "See dated issue audit and contract notes; CIF external comparison is inconclusive. Expected corrected contracts are asserted by local Rust/Python tests."
+      },
+      "expected": "Formula CH2 without invented implicit hydrogens.",
+      "sha256": "eb4c2b8520e1d09bc7606409ed6e3a78604ecdb74e0911991b7404429bb1c3cf"
+    },
+    {
+      "id": "singular-cell",
+      "path": "validation/openbabel_issues/poscar/singular-cell.POSCAR",
+      "provenance": {
+        "issue": "https://github.com/openbabel/openbabel/issues/2818",
+        "retrieved": "2026-10-14",
+        "transformation": "Small molecular/numeric reproducer re-expressed as a local test fixture; no upstream implementation or bulk dataset."
+      },
+      "license": "MIT OR Apache-2.0",
+      "redistribution": {
+        "status": "allowed",
+        "rationale": "Minimal factual molecular/numeric test inputs serialized for this project under its license."
+      },
+      "minimization": "Only atoms, coordinates or labels needed for the stated regression are retained.",
+      "oracle": {
+        "rdkit": "2026.09.1",
+        "openbabel": "3.2.1",
+        "settings": "See dated issue audit and contract notes; CIF external comparison is inconclusive. Expected corrected contracts are asserted by local Rust/Python tests."
+      },
+      "expected": "Zero second cell vector; checked equivalent UnitCell rejected; no POSCAR reader.",
+      "sha256": "bd8445e0ba1419508b812a9813ea14e6a41240305af5e4d195e439e9a68d43cb"
+    }
+  ]
+}
