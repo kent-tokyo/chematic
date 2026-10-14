@@ -1,0 +1,333 @@
+{
+  "schema": "chemistry-speed-corpus-provenance/v1",
+  "id": "chemistry-speed-followups-2026-10-14",
+  "license_scope": "Data/fixture terms only; does not relicense project code. BSD notice is in THIRD_PARTY_NOTICES.md; ChEMBL derivatives retain CC-BY-SA-3.0.",
+  "references": {
+    "chembl": "https://chembl.gitbook.io/chembl-interface-documentation/about#data-licensing",
+    "nci": "https://github.com/rdkit/rdkit/blob/master/Data/NCI/first_5K.smi",
+    "rdkit_license": "https://github.com/rdkit/rdkit/blob/master/license.txt"
+  },
+  "records": [
+    {
+      "id": "openbabel-sdf-speed-1000-v1-sdf",
+      "path": "validation/benchmark_corpora/openbabel-sdf-speed-1000-v1.sdf.gz",
+      "provenance": {
+        "source": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+        "source_manifest": "validation/benchmark_corpora/rdkit-js-browser-candidates-v1.manifest.json",
+        "source_offset": 0,
+        "source_url": "https://chembl.gitbook.io/chembl-interface-documentation/about#data-licensing",
+        "retrieved_or_generated": "2026-10-14",
+        "transformation": "Compute2DCoords(canonOrient=True, clearConfs=True, forceRDKit=True); V2000 SDF with source_index SD property."
+      },
+      "license": "CC-BY-SA-3.0",
+      "redistribution": {
+        "status": "allowed",
+        "rationale": "Fixed transform of existing licensed repository inputs; source data attribution and share-alike terms remain applicable."
+      },
+      "minimization": "The complete predetermined unfiltered slice is required for paired throughput and failure accounting; rows cannot be dropped after observing results. Controlled chains are a separate 64-row scaling input, not diverse chemistry.",
+      "oracle": {
+        "name": "RDKit",
+        "version": "2026.09.1",
+        "settings": "Compute2DCoords(canonOrient=True, clearConfs=True, forceRDKit=True); MolToMolBlock(includeStereo=True, forceV3000=False)"
+      },
+      "expected": {
+        "rows": 1000,
+        "status": "All source rows retained; canonical graph, indexed atom/bond fields and names/properties match reference; finite coordinates.",
+        "coordinate_absolute_tolerance": 0.0001,
+        "coordinate_units": "angstrom"
+      },
+      "sha256": "8e7ad63db96f6fb87b87333ab1f7710a18bc3be5cb4676c15c345c09d4ce718b",
+      "sha256_gzip": "4e5d75d03f7025423c9e0d8fe9afb9ed332cc3130d4424319596c54c33dc9733"
+    },
+    {
+      "id": "openbabel-sdf-speed-slice5000-1000-v1-sdf",
+      "path": "validation/benchmark_corpora/openbabel-sdf-speed-slice5000-1000-v1.sdf.gz",
+      "provenance": {
+        "source": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+        "source_manifest": "validation/benchmark_corpora/rdkit-js-browser-candidates-v1.manifest.json",
+        "source_offset": 5000,
+        "source_url": "https://github.com/rdkit/rdkit/blob/master/Data/NCI/first_5K.smi",
+        "retrieved_or_generated": "2026-10-14",
+        "transformation": "Compute2DCoords(canonOrient=True, clearConfs=True, forceRDKit=True); V2000 SDF with source_index SD property."
+      },
+      "license": "BSD-3-Clause",
+      "redistribution": {
+        "status": "allowed",
+        "rationale": "Fixed transform of existing licensed repository inputs; source data attribution and share-alike terms remain applicable."
+      },
+      "minimization": "The complete predetermined unfiltered slice is required for paired throughput and failure accounting; rows cannot be dropped after observing results. Controlled chains are a separate 64-row scaling input, not diverse chemistry.",
+      "oracle": {
+        "name": "RDKit",
+        "version": "2026.09.1",
+        "settings": "Compute2DCoords(canonOrient=True, clearConfs=True, forceRDKit=True); MolToMolBlock(includeStereo=True, forceV3000=False)"
+      },
+      "expected": {
+        "rows": 1000,
+        "status": "All source rows retained; canonical graph, indexed atom/bond fields and names/properties match reference; finite coordinates.",
+        "coordinate_absolute_tolerance": 0.0001,
+        "coordinate_units": "angstrom"
+      },
+      "sha256": "38d1d169f40de9fe4c95ec475035658ffcb27a2c84c448e3c619c32aefe8fd60",
+      "sha256_gzip": "2b0cf911baba966ec8221cc6349a98f80db007f6dc84f1756a8fb505d7af7ff2"
+    },
+    {
+      "id": "openbabel-v3000-speed-slice0-1000-v1-molblocks",
+      "path": "validation/benchmark_corpora/openbabel-v3000-speed-slice0-1000-v1.molblocks.gz",
+      "provenance": {
+        "source": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+        "source_manifest": "validation/benchmark_corpora/rdkit-js-browser-candidates-v1.manifest.json",
+        "source_offset": 0,
+        "source_url": "https://chembl.gitbook.io/chembl-interface-documentation/about#data-licensing",
+        "retrieved_or_generated": "2026-10-14",
+        "transformation": "Compute2DCoords(canonOrient=True, clearConfs=True, forceRDKit=True); native V3000 MOL blocks without SD properties."
+      },
+      "license": "CC-BY-SA-3.0",
+      "redistribution": {
+        "status": "allowed",
+        "rationale": "Fixed transform of existing licensed repository inputs; source data attribution and share-alike terms remain applicable."
+      },
+      "minimization": "The complete predetermined unfiltered slice is required for paired throughput and failure accounting; rows cannot be dropped after observing results. Controlled chains are a separate 64-row scaling input, not diverse chemistry.",
+      "oracle": {
+        "name": "RDKit",
+        "version": "2026.09.1",
+        "settings": "Compute2DCoords(canonOrient=True, clearConfs=True, forceRDKit=True); MolToMolBlock(includeStereo=True, forceV3000=True)"
+      },
+      "expected": {
+        "rows": 1000,
+        "status": "All source rows retained; canonical graph, indexed atom/bond fields and names/properties match reference; finite coordinates.",
+        "coordinate_absolute_tolerance": 0.0001,
+        "coordinate_units": "angstrom"
+      },
+      "sha256": "6c2eccf9aae975d790e9b036e0ffce71d056b243049e3424681326bceae17a06",
+      "sha256_gzip": "74653d86a0501f5fa890d2e767b6375d5a26f4dbd10a6990f33b57f1dffcaf4c"
+    },
+    {
+      "id": "openbabel-v3000-speed-slice5000-1000-v1-molblocks",
+      "path": "validation/benchmark_corpora/openbabel-v3000-speed-slice5000-1000-v1.molblocks.gz",
+      "provenance": {
+        "source": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+        "source_manifest": "validation/benchmark_corpora/rdkit-js-browser-candidates-v1.manifest.json",
+        "source_offset": 5000,
+        "source_url": "https://github.com/rdkit/rdkit/blob/master/Data/NCI/first_5K.smi",
+        "retrieved_or_generated": "2026-10-14",
+        "transformation": "Compute2DCoords(canonOrient=True, clearConfs=True, forceRDKit=True); native V3000 MOL blocks without SD properties."
+      },
+      "license": "BSD-3-Clause",
+      "redistribution": {
+        "status": "allowed",
+        "rationale": "Fixed transform of existing licensed repository inputs; source data attribution and share-alike terms remain applicable."
+      },
+      "minimization": "The complete predetermined unfiltered slice is required for paired throughput and failure accounting; rows cannot be dropped after observing results. Controlled chains are a separate 64-row scaling input, not diverse chemistry.",
+      "oracle": {
+        "name": "RDKit",
+        "version": "2026.09.1",
+        "settings": "Compute2DCoords(canonOrient=True, clearConfs=True, forceRDKit=True); MolToMolBlock(includeStereo=True, forceV3000=True)"
+      },
+      "expected": {
+        "rows": 1000,
+        "status": "All source rows retained; canonical graph, indexed atom/bond fields and names/properties match reference; finite coordinates.",
+        "coordinate_absolute_tolerance": 0.0001,
+        "coordinate_units": "angstrom"
+      },
+      "sha256": "45924f7db9c4ea10e7ea494cd9aff2d536129b553d1e834fdcdac444e39f3e9e",
+      "sha256_gzip": "061321fd21dac05efe25491e67f00d24d940adb4b3040376f2f3ca5f558e7f87"
+    },
+    {
+      "id": "openbabel-v3000-speed-chains64-v1-molblocks",
+      "path": "validation/benchmark_corpora/openbabel-v3000-speed-chains64-v1.molblocks.gz",
+      "provenance": {
+        "source": "validation/benchmark_corpora/openbabel-v3000-linear-chains-v1.smi",
+        "source_manifest": null,
+        "source_offset": 0,
+        "source_url": null,
+        "retrieved_or_generated": "2026-10-14",
+        "transformation": "Compute2DCoords(canonOrient=True, clearConfs=True, forceRDKit=True); native V3000 MOL blocks without SD properties."
+      },
+      "license": "MIT OR Apache-2.0",
+      "redistribution": {
+        "status": "allowed",
+        "rationale": "Synthetic project input under the project dual license."
+      },
+      "minimization": "The complete predetermined unfiltered slice is required for paired throughput and failure accounting; rows cannot be dropped after observing results. Controlled chains are a separate 64-row scaling input, not diverse chemistry.",
+      "oracle": {
+        "name": "RDKit",
+        "version": "2026.09.1",
+        "settings": "Compute2DCoords(canonOrient=True, clearConfs=True, forceRDKit=True); MolToMolBlock(includeStereo=True, forceV3000=True)"
+      },
+      "expected": {
+        "rows": 64,
+        "status": "All source rows retained; canonical graph, indexed atom/bond fields and names/properties match reference; finite coordinates.",
+        "coordinate_absolute_tolerance": 0.0001,
+        "coordinate_units": "angstrom"
+      },
+      "sha256": "8ea24c94237cfc4076bcbde78019dd37cf4beb254c7a6b820555791da2410186",
+      "sha256_gzip": "3ac1c3b21de31e6a2e08c6f599d8831da8d06ffd92c96983488972ac5ab2fc6d"
+    },
+    {
+      "id": "openbabel-v3000-linear-chains-v1-smi",
+      "path": "validation/benchmark_corpora/openbabel-v3000-linear-chains-v1.smi",
+      "provenance": {
+        "source": "validation/benchmark_corpora/openbabel-v3000-linear-chains-v1.smi",
+        "source_manifest": null,
+        "source_offset": 0,
+        "source_url": null,
+        "retrieved_or_generated": "2026-10-14",
+        "transformation": "Original synthetic linear alkanes 16..1024 atoms by 16."
+      },
+      "license": "MIT OR Apache-2.0",
+      "redistribution": {
+        "status": "allowed",
+        "rationale": "Synthetic project input under the project dual license."
+      },
+      "minimization": "The complete predetermined unfiltered slice is required for paired throughput and failure accounting; rows cannot be dropped after observing results. Controlled chains are a separate 64-row scaling input, not diverse chemistry.",
+      "oracle": {
+        "name": "RDKit",
+        "version": "2026.09.1",
+        "settings": "Generated SMILES; parsed by RDKit 2026.09.1."
+      },
+      "expected": {
+        "rows": 64,
+        "status": "All source rows retained; canonical graph, indexed atom/bond fields and names/properties match reference; finite coordinates.",
+        "coordinate_absolute_tolerance": 0.0001,
+        "coordinate_units": "angstrom"
+      },
+      "sha256": "af7cec29ee785e9702581f2f7eecb3ca44fe61710da1914fe17854d21aea8c9f"
+    },
+    {
+      "id": "sdf-overlapping-flat-neighbors-v2000",
+      "path": "crates/chematic-mol/tests/fixtures/sdf_overlapping_flat_neighbors_v2000.mol",
+      "provenance": {
+        "source": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+        "source_row": 745,
+        "source_smiles": "CCO[C@H]1O[C@@H]2O[C@@]3(C)CCC4[C@H](C)CCC([C@H]1C)[C@]42OO3",
+        "source_url": "https://chembl.gitbook.io/chembl-interface-documentation/about#data-licensing",
+        "retrieved_or_generated": "2026-10-14",
+        "transformation": "Compute2DCoords(canonOrient=True, clearConfs=True, forceRDKit=True); one exact original MOL block retained from the measured slice."
+      },
+      "license": "CC-BY-SA-3.0",
+      "redistribution": {
+        "status": "allowed",
+        "rationale": "Single-record derivative of the existing licensed common corpus; source notices and data terms retained."
+      },
+      "minimization": "One failing record per reported graph/stereo/total-valence behavior, retaining original atom order and coordinates needed to reproduce the measured failure. No SD payload or database identifiers.",
+      "oracle": {
+        "name": "RDKit",
+        "version": "2026.09.1",
+        "settings": "Compute2DCoords(canonOrient=True, clearConfs=True, forceRDKit=True); MolToMolBlock(includeStereo=True, forceV3000=False)"
+      },
+      "expected": {
+        "canonical_isomeric_smiles": "CCO[C@H]1O[C@@H]2O[C@@]3(C)CCC4[C@H](C)CCC([C@H]1C)[C@]42OO3",
+        "status": "Graph retained after parse and rewrite; regression assertions also retain explicit unknown stereo or the original total-valence override."
+      },
+      "sha256": "9c8ad2baf4bbd6389fe7f3dd890e1a050800e32b7a1dce0ab5912b873742724b"
+    },
+    {
+      "id": "v3000-total-valence-sulfur-radical",
+      "path": "crates/chematic-mol/tests/fixtures/v3000_total_valence_sulfur_radical.mol",
+      "provenance": {
+        "source": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+        "source_row": 5374,
+        "source_smiles": "CCCCOC1=CC=C(NC[S](=O)=O)C=N1",
+        "source_url": "https://github.com/rdkit/rdkit/blob/master/Data/NCI/first_5K.smi",
+        "retrieved_or_generated": "2026-10-14",
+        "transformation": "Compute2DCoords(canonOrient=True, clearConfs=True, forceRDKit=True); one exact original MOL block retained from the measured slice."
+      },
+      "license": "BSD-3-Clause",
+      "redistribution": {
+        "status": "allowed",
+        "rationale": "Single-record derivative of the existing licensed common corpus; source notices and data terms retained."
+      },
+      "minimization": "One failing record per reported graph/stereo/total-valence behavior, retaining original atom order and coordinates needed to reproduce the measured failure. No SD payload or database identifiers.",
+      "oracle": {
+        "name": "RDKit",
+        "version": "2026.09.1",
+        "settings": "Compute2DCoords(canonOrient=True, clearConfs=True, forceRDKit=True); MolToMolBlock(includeStereo=True, forceV3000=True)"
+      },
+      "expected": {
+        "canonical_isomeric_smiles": "CCCCOc1ccc(NC[S](=O)=O)cn1",
+        "status": "Graph retained after parse and rewrite; regression assertions also retain explicit unknown stereo or the original total-valence override."
+      },
+      "sha256": "c883031f6c4397170ce187877548b3fe7714f8d3fa45e6df2696f4aebd196d77"
+    },
+    {
+      "id": "v3000-total-valence-iodine-radical",
+      "path": "crates/chematic-mol/tests/fixtures/v3000_total_valence_iodine_radical.mol",
+      "provenance": {
+        "source": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+        "source_row": 5572,
+        "source_smiles": "[I]1C2=C(C=CC=C2)C3=C1C=CC=C3",
+        "source_url": "https://github.com/rdkit/rdkit/blob/master/Data/NCI/first_5K.smi",
+        "retrieved_or_generated": "2026-10-14",
+        "transformation": "Compute2DCoords(canonOrient=True, clearConfs=True, forceRDKit=True); one exact original MOL block retained from the measured slice."
+      },
+      "license": "BSD-3-Clause",
+      "redistribution": {
+        "status": "allowed",
+        "rationale": "Single-record derivative of the existing licensed common corpus; source notices and data terms retained."
+      },
+      "minimization": "One failing record per reported graph/stereo/total-valence behavior, retaining original atom order and coordinates needed to reproduce the measured failure. No SD payload or database identifiers.",
+      "oracle": {
+        "name": "RDKit",
+        "version": "2026.09.1",
+        "settings": "Compute2DCoords(canonOrient=True, clearConfs=True, forceRDKit=True); MolToMolBlock(includeStereo=True, forceV3000=True)"
+      },
+      "expected": {
+        "canonical_isomeric_smiles": "c1ccc2c(c1)[I]c1ccccc1-2",
+        "status": "Graph retained after parse and rewrite; regression assertions also retain explicit unknown stereo or the original total-valence override."
+      },
+      "sha256": "f243a2982e92f9ae5d36da8e5253ded23cd61251ee305622ed338cddaf864114"
+    },
+    {
+      "id": "v3000-unspecified-azo",
+      "path": "crates/chematic-mol/tests/fixtures/v3000_unspecified_azo.mol",
+      "provenance": {
+        "source": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+        "source_row": 766,
+        "source_smiles": "CN(C)N=Nc1ccc2c(c1)C(=O)N(C)Cc1c(C(=O)OC(C)(C)C)ncn1-2",
+        "source_url": "https://chembl.gitbook.io/chembl-interface-documentation/about#data-licensing",
+        "retrieved_or_generated": "2026-10-14",
+        "transformation": "Compute2DCoords(canonOrient=True, clearConfs=True, forceRDKit=True); one exact original MOL block retained from the measured slice."
+      },
+      "license": "CC-BY-SA-3.0",
+      "redistribution": {
+        "status": "allowed",
+        "rationale": "Single-record derivative of the existing licensed common corpus; source notices and data terms retained."
+      },
+      "minimization": "One failing record per reported graph/stereo/total-valence behavior, retaining original atom order and coordinates needed to reproduce the measured failure. No SD payload or database identifiers.",
+      "oracle": {
+        "name": "RDKit",
+        "version": "2026.09.1",
+        "settings": "Compute2DCoords(canonOrient=True, clearConfs=True, forceRDKit=True); MolToMolBlock(includeStereo=True, forceV3000=True)"
+      },
+      "expected": {
+        "canonical_isomeric_smiles": "CN(C)N=Nc1ccc2c(c1)C(=O)N(C)Cc1c(C(=O)OC(C)(C)C)ncn1-2",
+        "status": "Graph retained after parse and rewrite; regression assertions also retain explicit unknown stereo or the original total-valence override."
+      },
+      "sha256": "0036664e1f7b4f7618ea1231bd403e0dfa0cbc077b8e867efca2c815ec772e4a"
+    }
+  ],
+  "derived_evidence_scope": {
+    "paths": [
+      "validation/results/openbabel-sdf-*-2026-10-14.*.gz",
+      "validation/results/openbabel-v3000-*-2026-10-14.*.gz",
+      "validation/results/python-*-2026-10-14.jsonl.gz"
+    ],
+    "provenance": "The dated source/parity/verification records contain exact source input and output hashes. Derived structural outputs retain their corresponding source data terms.",
+    "license": "CC-BY-SA-3.0 AND BSD-3-Clause AND (MIT OR Apache-2.0)"
+  },
+  "synthetic_test_scope": {
+    "paths": [
+      "crates/chematic-chem/tests/descriptor_cache_contract.rs",
+      "crates/chematic-fp/tests/morgan_stereo_cache_contract.rs",
+      "crates/chematic-perception/tests/aromatic_identity_edits.rs",
+      "crates/chematic-perception/tests/ctab_overlap_contract.rs",
+      "crates/chematic-mol/tests/sdf_unspecified_double_stereo.rs",
+      "crates/chematic-mol/tests/v3000_lookup_contract.rs",
+      "crates/chematic-smiles/src/rdkit/model_view_contract_tests.rs"
+    ],
+    "license": "MIT OR Apache-2.0",
+    "provenance": "Original small assertion inputs and constructed graphs under the project license; separately imported MOL cases and the NCI coordination example retain the source terms above.",
+    "minimization": "Smallest graph variants that exercise cache edits, clone isolation, stereo, index mapping or malformed-reference boundaries.",
+    "oracle": "Exact baseline/source behavior with RDKit 2026.09.1 for chemical assertions; no experimental accuracy claim."
+  }
+}

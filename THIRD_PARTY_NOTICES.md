@@ -265,3 +265,20 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ```
+
+## Chemistry speed comparison inputs (2026-10-14)
+
+The fixed input slices and their structural outputs retain the terms of the
+existing common corpus. ChEMBL-derived records are attributed to the ChEMBL
+team at EMBL-EBI and remain under CC BY-SA 3.0:
+https://chembl.gitbook.io/chembl-interface-documentation/about#data-licensing
+
+NCI examples originate from RDKit's distributed `Data/NCI/first_5K.smi`:
+https://github.com/rdkit/rdkit/blob/master/Data/NCI/first_5K.smi
+The RDKit BSD-3-Clause notice reproduced above is retained. The synthetic
+linear-chain profile is original project input under MIT OR Apache-2.0.
+
+Exact paths, source rows, transformations, oracle settings, expected results,
+and normalized payload hashes are recorded in
+`validation/benchmark_corpora/chemistry-speed-followups-v1.manifest.json`.
+These data notices do not change the license of project implementation code.

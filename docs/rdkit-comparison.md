@@ -40,6 +40,12 @@ hashes, failure counts and operation definitions. The [benchmark index](https://
 keeps historical results versioned; an older speed or size figure is not a
 current-package result.
 
+The [2026-10-14 sanitized-model reuse packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-14-python-sanitized-view-reuse.md)
+records the source-wheel descriptor/fingerprint follow-up against RDKit
+2026.09.1 and COSMolKit rc22. Its two fixed slices retain first-use, repeated-use
+and actual parse-inclusive results, with output agreement required for ranking.
+It is separate from the published-package matrix above.
+
 ## Practical differences
 
 - **Implementation and deployment:** CheMatic's Rust core is shared by

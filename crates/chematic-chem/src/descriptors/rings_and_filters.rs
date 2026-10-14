@@ -307,13 +307,13 @@ fn two_cycle_system_rings(
         }
         x
     }
-    let ring_neighbors = |a: AtomIdx| -> Vec<AtomIdx> {
+    let ring_neighbors = |a: AtomIdx| -> smallvec::SmallVec<[AtomIdx; 4]> {
         mol.neighbors(a)
             .filter(|(_, bi)| flags[bi.0 as usize])
             .map(|(nb, _)| nb)
             .collect()
     };
-    let mut branch: Vec<AtomIdx> = Vec::new();
+    let mut branch = smallvec::SmallVec::<[AtomIdx; 2]>::new();
     for (idx, _) in mol.atoms() {
         if find(parent, idx.0) as usize != root {
             continue;
@@ -328,7 +328,7 @@ fn two_cycle_system_rings(
     let &[u, v] = branch.as_slice() else {
         return None;
     };
-    let mut lengths: Vec<usize> = Vec::with_capacity(3);
+    let mut lengths = smallvec::SmallVec::<[usize; 3]>::new();
     for start in ring_neighbors(u) {
         let (mut prev, mut cur, mut len) = (u, start, 1usize);
         while cur != v {
