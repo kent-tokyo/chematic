@@ -891,7 +891,12 @@ impl<'a> CanonicalWriter<'a> {
         from_atom: Option<AtomIdx>,
         capacity: usize,
     ) -> SmallVec<[u32; 4]> {
-        let has_h = implicit_hcount(self.mol, atom) > 0;
+        // MOL stereo perception also uses this sentinel for a sulfur lone pair.
+        let has_h = implicit_hcount(self.mol, atom) > 0
+            || self
+                .mol
+                .stereo_neighbor_order(atom)
+                .is_some_and(|order| order.contains(&STEREO_H_SENTINEL));
         let mut canonical = SmallVec::with_capacity(capacity);
         if let Some(previous) = from_atom {
             canonical.push(previous.0);

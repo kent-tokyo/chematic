@@ -2,9 +2,11 @@
 """Compare CheMatic and Open Babel stereo preservation on identical MOL inputs.
 
 RDKit writes each 2D MOL block and reopens it before either converter runs.
-RDKit then reads both output SMILES and checks semantic identity. Rows whose
-source MOL already changed identity are retained as exclusions, never wins.
+RDKit then reads both output SMILES and checks semantic identity. Rows that
+cannot be written in the requested MOL version or lose identity before either
+converter runs are retained as exclusions, never wins.
 This measures the two CLI MOL-to-SMILES workflows on one declared corpus.
+The optional bounded stress selection covers additional tetrahedral/E/Z cases.
 """
 
 from __future__ import annotations
@@ -87,11 +89,44 @@ def evaluate(expected: Chem.Mol, expected_identity: str, exit_code: int, smiles:
     }
 
 
+def load_stress_cases(path: Path, limit: int) -> list[dict]:
+    """Select the first unique RDKit identities with tetrahedral or E/Z syntax."""
+    seen = set()
+    cases = []
+    for line_number, line in enumerate(path.read_text().splitlines(), start=1):
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        smiles = line.split()[0]
+        if not any(tag in smiles for tag in ("@", "/", "\\")):
+            continue
+        if any(tag in smiles for tag in ("@SP", "@TB", "@OH")):
+            continue
+        mol = Chem.MolFromSmiles(smiles)
+        expected_identity = identity(mol)
+        if expected_identity is None or expected_identity in seen:
+            continue
+        seen.add(expected_identity)
+        cases.append({
+            "line": line_number,
+            "bucket": "stress-first-unique",
+            "smiles": smiles,
+            "identity": expected_identity,
+        })
+        if len(cases) == limit:
+            break
+    return cases
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--cli", type=Path, default=DEFAULT_CLI)
     parser.add_argument("--obabel", type=Path, default=Path(shutil.which("obabel") or "obabel"))
     parser.add_argument("--corpus", type=Path, default=CORPUS)
+    parser.add_argument(
+        "--stress-first-unique",
+        type=int,
+        help="read the first N unique tetrahedral/E/Z identities from an SMI corpus",
+    )
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     cli = args.cli.resolve()
@@ -100,7 +135,13 @@ def main() -> int:
     if not cli.is_file() or not obabel.is_file():
         parser.error("both --cli and --obabel must name executable files")
 
-    cases = load_cases(corpus)
+    if args.stress_first_unique is not None and args.stress_first_unique < 1:
+        parser.error("--stress-first-unique must be positive")
+    cases = (
+        load_stress_cases(corpus, args.stress_first_unique)
+        if args.stress_first_unique is not None
+        else load_cases(corpus)
+    )
     rows = []
     with tempfile.TemporaryDirectory(prefix="chematic-openbabel-stereo-") as directory:
         temporary = Path(directory)
@@ -108,17 +149,28 @@ def main() -> int:
             expected = Chem.MolFromSmiles(case["smiles"])
             assert expected is not None
             for profile, cli_format in FORMATS:
-                source = mol_block(case["smiles"], v3000=profile == "mol_v3000")
-                source_hash = hashlib.sha256(source.encode()).hexdigest()
-                reopened = Chem.MolFromMolBlock(source, sanitize=True, removeHs=False)
                 row = {
                     "case_line": case["line"],
                     "bucket": case["bucket"],
                     "profile": profile,
                     "source_smiles": case["smiles"],
                     "expected_identity": case["identity"],
-                    "source_sha256": source_hash,
                 }
+                try:
+                    source = mol_block(case["smiles"], v3000=profile == "mol_v3000")
+                    reopened = Chem.MolFromMolBlock(source, sanitize=True, removeHs=False)
+                except Exception as exc:
+                    row["source_contract"] = "excluded"
+                    row["source_error"] = f"RDKit writer/reopen failed: {exc}"
+                    rows.append(row)
+                    continue
+                row["source_sha256"] = hashlib.sha256(source.encode()).hexdigest()
+                version = "V3000" if profile == "mol_v3000" else "V2000"
+                if version not in source.splitlines()[3]:
+                    row["source_contract"] = "excluded"
+                    row["source_error"] = f"RDKit writer emitted a different MOL version than {version}"
+                    rows.append(row)
+                    continue
                 if identity(reopened) != case["identity"]:
                     row["source_contract"] = "excluded"
                     row["source_error"] = "RDKit writer/reopen identity mismatch"
