@@ -1,5 +1,7 @@
 use crate::writer::write;
-use chematic_core::{AtomIdx, Molecule, MoleculeBuilder, STEREO_H_SENTINEL, StereoGroup};
+use chematic_core::{
+    AtomIdx, Molecule, MoleculeBuilder, STEREO_H_SENTINEL, STEREO_VACANT_SENTINEL, StereoGroup,
+};
 use std::collections::HashSet;
 
 /// Generate a single random SMILES from a molecule using the given seed.
@@ -127,7 +129,7 @@ fn apply_permutation(mol: &Molecule, permutation: &[usize]) -> Molecule {
             let remapped = order
                 .iter()
                 .map(|&v| {
-                    if v == STEREO_H_SENTINEL {
+                    if matches!(v, STEREO_H_SENTINEL | STEREO_VACANT_SENTINEL) {
                         v
                     } else {
                         old_to_new[v as usize] as u32

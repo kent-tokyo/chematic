@@ -14,10 +14,12 @@ use std::collections::HashMap;
 
 use chematic_core::{
     Atom, AtomIdx, BondOrder, Chirality, Element, MoleculeBuilder, STEREO_H_SENTINEL,
-    SquarePlanarPermutation,
+    STEREO_VACANT_SENTINEL, SquarePlanarPermutation,
 };
 
 use crate::error::SmilesError;
+
+mod stereo;
 
 pub use chematic_core::Molecule;
 
@@ -206,6 +208,7 @@ const MAX_OPEN_RING_LABELS: usize = MAX_ATOMS;
 enum StereoEntry {
     Atom(AtomIdx),
     ImplicitH,
+    Vacant,
     /// Ring opened at the chiral atom; will be resolved to `Atom` when the ring
     /// closes. Keyed by a unique per-occurrence slot id (see `next_ring_slot`),
     /// NOT the raw ring digit -- ring digits are reused within a single SMILES
@@ -340,6 +343,7 @@ impl<'a> Parser<'a> {
                 .map(|e| match e {
                     StereoEntry::Atom(a) => a.0,
                     StereoEntry::ImplicitH => STEREO_H_SENTINEL,
+                    StereoEntry::Vacant => STEREO_VACANT_SENTINEL,
                     StereoEntry::PendingRing(_) => STEREO_H_SENTINEL, // unresolved → skip
                 })
                 .collect();
@@ -347,6 +351,7 @@ impl<'a> Parser<'a> {
         }
 
         let mut molecule = mol.build();
+        stereo::retain_single_vacant_site(&mut molecule, &tagged_atoms);
         crate::allene::normalize_allene_stereo(&mut molecule, &tagged_atoms);
         // A SMILES graph with no ring-closure token is a forest by
         // construction. Publish that already-known result so the first
@@ -540,26 +545,6 @@ impl<'a> Parser<'a> {
 
         let _ = current_from; // suppress unused warning
         Ok(Some(current))
-    }
-
-    /// Start a stereo record for `atom_idx` if `atom` has chirality.
-    fn begin_stereo_if_chiral(
-        atom: &Atom,
-        atom_idx: AtomIdx,
-        from_atom: Option<AtomIdx>,
-        current_stereo: &mut Option<(AtomIdx, Vec<StereoEntry>)>,
-    ) {
-        if atom.chirality == Chirality::None {
-            return;
-        }
-        let mut entries: Vec<StereoEntry> = Vec::new();
-        if let Some(prev) = from_atom {
-            entries.push(StereoEntry::Atom(prev));
-        }
-        if atom.hydrogen_count.is_some_and(|h| h > 0) {
-            entries.push(StereoEntry::ImplicitH);
-        }
-        *current_stereo = Some((atom_idx, entries));
     }
 
     /// Parse a `(...)` branch: consume `(`, parse the inner chain, then `)`.

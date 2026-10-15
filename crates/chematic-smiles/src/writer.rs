@@ -6,8 +6,8 @@
 use std::collections::{HashMap, HashSet};
 
 use chematic_core::{
-    AtomIdx, BondIdx, BondOrder, Chirality, Molecule, STEREO_H_SENTINEL, remap_square_planar_tag,
-    remap_tetrahedral_parity,
+    AtomIdx, BondIdx, BondOrder, Chirality, Molecule, STEREO_H_SENTINEL, STEREO_VACANT_SENTINEL,
+    remap_square_planar_tag, remap_tetrahedral_parity,
 };
 
 /// Write the `H`/`Hn` token for a bracket atom's hydrogen count.
@@ -576,6 +576,9 @@ impl<'a> SmilesWriter<'a> {
         if let Some(prev) = from_atom {
             written.push(prev.0);
         }
+        if original.contains(&STEREO_VACANT_SENTINEL) {
+            written.push(STEREO_VACANT_SENTINEL);
+        }
         if chematic_core::implicit_hcount(self.mol, idx) > 0 {
             written.push(STEREO_H_SENTINEL);
         }
@@ -742,6 +745,46 @@ mod tests {
     use super::*;
 
     #[test]
+    fn vacant_nontetrahedral_centers_match_pinned_rdkit_after_reordering() {
+        // RDKit 2025.09.3 canonical isomeric SMILES of the source structures.
+        // Include root and non-root centers, three geometries, and tags for
+        // which a reordered ligand list needs a different permutation number.
+        for (input, expected) in [
+            ("F[Pt@SP2](Cl)Br", "[F][Pt@SP2]([Cl])[Br]"),
+            ("F[P@TB1](Cl)(Br)I", "F[P@TB1](Cl)(Br)I"),
+            ("[P@TB19](F)(Cl)(Br)I", "F[P@TB16](Cl)(Br)I"),
+            ("I[P@TB20](Br)(Cl)F", "F[P@TB3](Cl)(Br)I"),
+            ("F[S@OH27](Cl)(Br)(I)N", "N[S@OH8](F)(Cl)(Br)I"),
+            ("[S@OH30](F)(Cl)(Br)(I)N", "N[S@OH9](F)(Cl)(Br)I"),
+            ("N[S@OH15](I)(Br)(Cl)F", "N[S@OH12](F)(Cl)(Br)I"),
+        ] {
+            let mol = crate::parse(input).unwrap();
+            assert_eq!(
+                crate::rdkit_canonical_smiles(&mol).unwrap(),
+                expected,
+                "{input}"
+            );
+            for written in [write(&mol), crate::canonical_smiles(&mol)] {
+                let read_back = crate::parse(&written).unwrap();
+                assert_eq!(
+                    crate::rdkit_canonical_smiles(&read_back).unwrap(),
+                    expected,
+                    "{input} -> {written}"
+                );
+            }
+            for seed in 1..=16 {
+                let written = crate::random_smiles(&mol, seed);
+                let read_back = crate::parse(&written).unwrap();
+                assert_eq!(
+                    crate::rdkit_canonical_smiles(&read_back).unwrap(),
+                    expected,
+                    "{input} -> {written} (seed {seed})"
+                );
+            }
+        }
+    }
+
+    #[test]
     fn three_ligand_square_planar_tags_survive_canonical_reordering() {
         // RDKit 2025.09.3 oracle: the canonical traversal starts at Cl and
         // swaps F/Cl relative to the input, while the vacant site stays put.
@@ -787,6 +830,11 @@ mod tests {
             "O[C@@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@H]1O",
             "F[C@]1(Cl)CCC1",
             "C[C@]12CC[C@H]3[C@@H](CC=C4C[C@@H](O)CC[C@]34C)[C@@H]1CC[C@@H]2O",
+            "F[Pt@SP2](Cl)Br",
+            "F[P@TB1](Cl)(Br)I",
+            "[P@TB19](F)(Cl)(Br)I",
+            "F[S@OH27](Cl)(Br)(I)N",
+            "[S@OH30](F)(Cl)(Br)(I)N",
         ] {
             let mol = crate::parse(input).unwrap();
             let want = crate::canonical_smiles(&mol);
@@ -795,7 +843,9 @@ mod tests {
             let mut b = chematic_core::MoleculeBuilder::new();
             for i in (0..n).rev() {
                 let mut atom = mol.atom(AtomIdx(i as u32)).clone();
-                atom.hydrogen_count = None;
+                if atom.chirality.nontetrahedral().is_none() {
+                    atom.hydrogen_count = None;
+                }
                 b.add_atom(atom);
             }
             let new = |i: u32| (n as u32 - 1) - i;
@@ -811,7 +861,13 @@ mod tests {
                 if let Some(order) = mol.stereo_neighbor_order(i) {
                     let order = order
                         .iter()
-                        .map(|&v| if v == STEREO_H_SENTINEL { v } else { new(v) })
+                        .map(|&v| {
+                            if matches!(v, STEREO_H_SENTINEL | STEREO_VACANT_SENTINEL) {
+                                v
+                            } else {
+                                new(v)
+                            }
+                        })
                         .collect();
                     b.set_stereo_neighbor_order(AtomIdx(new(i.0)), order);
                 }
