@@ -1,0 +1,154 @@
+{
+  "schema_version": 1,
+  "status": "local-source-candidate",
+  "issue": "https://github.com/openbabel/openbabel/issues/2822",
+  "base": "cac480fb source snapshot plus preserved earlier RDKit/Open Babel candidates through stereo-group inversion; patch isolates TURBOMOLE geometry I/O",
+  "scope": "standalone nonperiodic and 3D geometry documents; original lattice orientation, atom order, coordinates and frozen flags; no general graph-conversion registration",
+  "runtime": {
+    "python": "3.13.6",
+    "openbabel": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+    "chematic_extension_sha256": "03a47d0e32790274eb8d0726accb78698af520e64dcf2651e6d629be6816ee91"
+  },
+  "source_sha256": {
+    "crates/chematic-mol/src/turbomole.rs": "6bbe76944154d7b46371102d978af42c1bf2c33e29f8d671bff9807470b32e71",
+    "crates/chematic-mol/src/turbomole/reader.rs": "9f39b8faedc1c3a0dc946beea0ab1d52f7eaba550c2ab24d17dccfceb1425087",
+    "crates/chematic-py/src/formats/turbomole.rs": "1c786ad41d78adcdcbb69277cf9703e247898856fb6a11fd406e35f7d9d4839e",
+    "crates/chematic-mol/tests/turbomole_contract.rs": "01fa5db26500c414a808f04273caa873f4610e0e04f84f8f360745e0a0059ea1",
+    "crates/chematic-py/tests/test_turbomole.py": "e3d3ab0e5955c92886ab63c72a7f9557d92f949a84c8bdbd1bd0775f5abaa344",
+    "crates/chematic-py/python/chematic/__init__.pyi": "d637ac94665de713218bb3c115e5311b097203fb24b978a5c498d4734086dd97",
+    "scripts/validate_turbomole_lattice.py": "b69fa539e408ebba4164c69ff0bcc210413eab0c3183c73492136f19352ece0c"
+  },
+  "fixture": {
+    "path": "validation/openbabel_issues/turbomole/lattice.json",
+    "manifest_sha256": "dcb5b547a6042e5173224696ba32cdb6606bc2f1c4bbb0781753a3a1fa66c87e",
+    "id": "synthetic-turbomole-3d-lattice-v1",
+    "provenance": {
+      "source": "original synthetic coordinate document authored for this implementation",
+      "issue": "https://github.com/openbabel/openbabel/issues/2822",
+      "date": "2026-10-15",
+      "specifications": [
+        "https://manual.turbomole.org/v8.0/dft-calculations-for-periodic-systems/how-to-perform-a-calculation/",
+        "https://grimme-lab.github.io/mctc-lib/page/format-tmol.html"
+      ],
+      "transformations": "independent diagonal 9/10/11 bohr cell with one Si at 1/2/3 bohr; not copied from issue attachment"
+    },
+    "license": "MIT OR Apache-2.0",
+    "redistribution": {
+      "status": "allowed",
+      "rationale": "original project-authored minimal geometry"
+    },
+    "minimization": "one atom and three nonzero diagonal lattice values isolate cell loss, coordinate units and fixed-atom state",
+    "oracle": {
+      "name": "independent Python arithmetic from format definitions",
+      "version": "TURBOMOLE 8.0 manual / MCTC docs retrieved 2026-10-15; CODATA 2022 Bohr radius",
+      "settings": "three Cartesian row vectors; 0.529177210544 angstrom per bohr; no bond inference",
+      "diagnostic": "Open Babel 3.2.1 -itmol -ovasp; not used as expected-cell oracle"
+    },
+    "expected": {
+      "elements": [
+        "Si"
+      ],
+      "position_angstrom": [
+        0.529177210544,
+        1.058354421088,
+        1.587531631632
+      ],
+      "lattice_diagonal_angstrom": [
+        4.762594894896,
+        5.29177210544,
+        5.8209493159840004
+      ],
+      "frozen": [
+        true
+      ],
+      "absolute_tolerance_angstrom": 1e-12,
+      "encoding": "UTF-8 LF"
+    },
+    "payload": "oriented-lattice.tmol",
+    "sha256": "657885d9b4b19db17256136d52e93243b59c2d66d83a45aefbf945d87ee6dbc3"
+  },
+  "results": {
+    "comparisons": 864,
+    "coordinate_mismatches": 0,
+    "lattice_mismatches": 0,
+    "fixed_flag_mismatches": 0,
+    "source_text_mismatches": 0,
+    "atom_permutations": 24,
+    "group_orders": 6,
+    "coordinate_modes": [
+      "bohr",
+      "angs",
+      "frac"
+    ],
+    "handedness": [
+      1,
+      -1
+    ],
+    "absolute_tolerance_angstrom": "1E-12",
+    "case_sha256": "4f0f6e0a08e97d27fc2f7232d3d6e52815bf84709311d53ec66a40d766dbf6e7"
+  },
+  "openbabel_reader_diagnostic": {
+    "command": [
+      "obabel",
+      "-itmol",
+      "-ovasp"
+    ],
+    "output_lattice": [
+      [
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0
+      ]
+    ],
+    "expected_lattice_angstrom": [
+      [
+        4.762594894896,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        5.29177210544,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        5.8209493159840004
+      ]
+    ],
+    "positions_angstrom": [
+      0.5291772108,
+      1.0583544216,
+      1.5875316324000002
+    ],
+    "output_sha256": "3f2944ec8f38b6c25119faccd2fcb69d6f6cc7f7de56eac58e9dc4d4730aa558",
+    "stderr": "1 molecule converted",
+    "coordinate_tolerance_angstrom": 2e-09
+  },
+  "openbabel_writer_control": {
+    "command": [
+      "obabel",
+      "-ivasp",
+      "<absolute-POSCAR-path>",
+      "-otmol"
+    ],
+    "periodicity": 3,
+    "retains_lattice": true,
+    "input_sha256": "d29cc2c5fc1eee80df75ed029260600a2644e13d81ada3b96383339f8e1e27a5",
+    "output_sha256": "912e1dbd2b26fcaf781a12acef6827fd7858a257e2dfedddeabb4b70c48518d2",
+    "numeric_tolerance_angstrom": 1e-08,
+    "note": "Writer direction works in this pinned version; only reader-direction cell loss was reproduced."
+  },
+  "limitations": "TURBOMOLE executable was not run; independent arithmetic and documented layout are the expected-geometry oracle. 1D/2D, control files, external file options, unknown groups, charge/spin/isotope/ghost labels are rejected. $coord angs/bohr are explicitly supported MCTC-style extensions. Comments/formatting survive only in source_text; canonical writer emits fresh bohr data. No topology, bond perception, wrapping, cell rotation or POSCAR adapter added."
+}

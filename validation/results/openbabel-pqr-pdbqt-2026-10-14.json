@@ -1,0 +1,153 @@
+{
+  "schema_version": 1,
+  "status": "local-source-candidate",
+  "issue": "https://github.com/openbabel/openbabel/issues/2845",
+  "base": "cac480fb23cd8adeec6e5e9bed1f18677f87b392 + preserved RDKit #9675 candidate; this patch contains only PQR changes",
+  "scope": "rigid record adaptation with caller-supplied types; no docking quality, large protein, pH or flexible-ligand claim",
+  "runtime": {
+    "python": "3.13.6",
+    "openbabel": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+    "chematic_extension_sha256": "b089c9ecc464f9648747e16e78419d7a0fb2b1eeb11eb1602197e3810469ac8f"
+  },
+  "source_sha256": {
+    "crates/chematic-mol/src/pqr_pdbqt.rs": "a0af80ef66546177f5cc344b3d5d81c61d7bdfc34b5ce03c6c8ba5ef7f2793e4",
+    "crates/chematic-py/src/formats/pqr_pdbqt.rs": "6daf8daca64edb69aa3c93ffac7b3b7e0a2377500e2505a9d5452c58df9966e9"
+  },
+  "fixtures": [
+    {
+      "id": "charged-ions",
+      "path": "validation/openbabel_issues/pqr/charged-ions.pqr",
+      "sha256": "13c35094190b8f221e0ff78128e9946429a32315b3c23b4e9b1458088743f315",
+      "provenance": {
+        "source": "independently authored from APBS PQR field documentation",
+        "retrieved": "2026-10-14",
+        "issue": "https://github.com/openbabel/openbabel/issues/2845",
+        "transformations": "none; synthetic source records, no upstream attachment copied"
+      },
+      "license": "MIT OR Apache-2.0",
+      "redistribution": {
+        "status": "allowed",
+        "rationale": "original project-authored fixture"
+      },
+      "minimization": "two separated ions isolate charge retention; five records additionally exercise H, insertion codes, missing chain and noncontiguous serials",
+      "oracle": {
+        "name": "APBS PQR documented fields and independent fixed-column PDBQT decoder",
+        "version": "APBS 3.4.1 docs / AutoDock 4.2.6 manual",
+        "settings": "source-order identity; columns 71-76 charges; no inferred bonds/types"
+      },
+      "expected": {
+        "charges": [
+          2.0,
+          -1.0
+        ],
+        "charge_unit": "elementary charge",
+        "max_absolute_rounding_tolerance": 0.0005,
+        "radius_sidecar_unit": "angstrom"
+      },
+      "chematic": {
+        "output_charges": [
+          2.0,
+          -1.0
+        ],
+        "source_radii": [
+          1.09,
+          1.75
+        ],
+        "radii_omitted": true,
+        "max_charge_rounding_error": 0.0,
+        "max_coordinate_rounding_error_angstrom": 0.0,
+        "atom_types": [
+          "Zn",
+          "Cl"
+        ],
+        "output_sha256": "428fc8bf9168cbf1643f748ea40e463a852adeade9bd3332f7bc207d2c3a8a25"
+      },
+      "openbabel": [
+        {
+          "options": [],
+          "output_charges": [
+            0.0,
+            0.0
+          ],
+          "stderr": "1 molecule converted",
+          "output_sha256": "7ce2bb5c218cf4ec18ec3f3a876ee2cded5a0068059ae8806fda3d290b1219ae"
+        },
+        {
+          "options": [
+            "-xr",
+            "-xh",
+            "-xp",
+            "-xn"
+          ],
+          "output_charges": [
+            0.0,
+            0.0
+          ],
+          "stderr": "1 molecule converted",
+          "output_sha256": "a0c0270ec83d4cc47f42a4aca3fbfff98ba39f03ce0a3d6c503c2dcedc3028b1"
+        }
+      ]
+    },
+    {
+      "id": "charged-records",
+      "path": "validation/openbabel_issues/pqr/charged-records.pqr",
+      "sha256": "d6bc261b7f9365475012a7a09aafe0919eefafa8517814a6d0d9f0798a3ca20a",
+      "provenance": {
+        "source": "independently authored from APBS PQR field documentation",
+        "retrieved": "2026-10-14",
+        "issue": "https://github.com/openbabel/openbabel/issues/2845",
+        "transformations": "none; synthetic source records, no upstream attachment copied"
+      },
+      "license": "MIT OR Apache-2.0",
+      "redistribution": {
+        "status": "allowed",
+        "rationale": "original project-authored fixture"
+      },
+      "minimization": "two separated ions isolate charge retention; five records additionally exercise H, insertion codes, missing chain and noncontiguous serials",
+      "oracle": {
+        "name": "APBS PQR documented fields and independent fixed-column PDBQT decoder",
+        "version": "APBS 3.4.1 docs / AutoDock 4.2.6 manual",
+        "settings": "source-order identity; columns 71-76 charges; no inferred bonds/types"
+      },
+      "expected": {
+        "charges": [
+          -0.41234,
+          0.12345,
+          0.28889,
+          2.0,
+          -1.0
+        ],
+        "charge_unit": "elementary charge",
+        "max_absolute_rounding_tolerance": 0.0005,
+        "radius_sidecar_unit": "angstrom"
+      },
+      "chematic": {
+        "output_charges": [
+          -0.412,
+          0.123,
+          0.289,
+          2.0,
+          -1.0
+        ],
+        "source_radii": [
+          1.5,
+          1.7,
+          1.2,
+          1.09,
+          1.75
+        ],
+        "radii_omitted": true,
+        "max_charge_rounding_error": 0.00045000000000000595,
+        "max_coordinate_rounding_error_angstrom": 0.00012299999999998423,
+        "atom_types": [
+          "N",
+          "C",
+          "HD",
+          "Zn",
+          "Cl"
+        ],
+        "output_sha256": "1cc8dabbca4068f0a20ecdedd86ad2c17cd3e1ff4b3a4dd917b8e5f41b6ae2b7"
+      }
+    }
+  ]
+}

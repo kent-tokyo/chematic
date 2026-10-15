@@ -1,0 +1,2142 @@
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index a6bd9b3..7fa4543 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -178,6 +178,7 @@ jobs:
+           - { package: chematic-chem, target: screening_enrichment }
+           - { package: chematic-chem, target: native_distance_matrix }
+           - { package: chematic-fp, target: fold_density }
++          - { package: chematic-mol, target: cdjson_contract }
+           - { package: chematic-mol, target: cif_checked_writer }
+           - { package: chematic-mol, target: pqr_pdbqt_contract }
+           - { package: chematic-chem, target: renumber_stereo_contract }
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 37a49fb..0c896ab 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -12,6 +12,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
+ 
+ ### Added
+ 
++- Added checked molecular ChemDoodle JSON reading and graph writing in
++  Rust/Python, preserving explicit zero H overrides, element labels, source
++  text and IDs, with strict unsupported-field rejection and aggregate limits.
++
+ - Added target-density fingerprint OR folding in Rust/Python and the RDKit
+   adapter, using corrected density/minimum-width conditions from RDKit #9715
+   with explicit unmet-target reporting and bounded packed input validation.
+diff --git a/crates/chematic-mol/src/cdjson.rs b/crates/chematic-mol/src/cdjson.rs
+new file mode 100644
+index 0000000..d94fcdf
+--- /dev/null
++++ b/crates/chematic-mol/src/cdjson.rs
+@@ -0,0 +1,98 @@
++//! Checked molecular subset of ChemDoodle JSON, motivated by Open Babel #2763.
++//! Coordinates retain drawing units; no scale or orientation is inferred.
++use chematic_core::Molecule;
++
++mod reader;
++mod writer;
++pub use reader::{parse_cdjson, parse_cdjson_with_limits};
++pub use writer::write_cdjson_graph;
++
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++pub struct CdjsonParseLimits {
++    pub max_input_bytes: usize,
++    pub max_molecules: usize,
++    pub max_atoms: usize,
++    pub max_bonds: usize,
++}
++
++impl Default for CdjsonParseLimits {
++    fn default() -> Self {
++        Self {
++            max_input_bytes: 16 * 1024 * 1024,
++            max_molecules: 1024,
++            max_atoms: 65_536,
++            max_bonds: 131_072,
++        }
++    }
++}
++
++#[derive(Clone, Debug, PartialEq, Eq)]
++pub enum CdjsonError {
++    Invalid(String),
++    Unsupported(String),
++    ResourceLimit {
++        resource: &'static str,
++        actual: usize,
++        limit: usize,
++    },
++}
++
++impl std::fmt::Display for CdjsonError {
++    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
++        match self {
++            Self::Invalid(message) => write!(f, "CDJSON invalid: {message}"),
++            Self::Unsupported(message) => write!(f, "CDJSON unsupported: {message}"),
++            Self::ResourceLimit {
++                resource,
++                actual,
++                limit,
++            } => write!(
++                f,
++                "CDJSON resource limit: {actual} {resource} exceeds {limit}"
++            ),
++        }
++    }
++}
++impl std::error::Error for CdjsonError {}
++
++/// Validated molecular projection. IDs remain separate from native atom maps.
++#[derive(Clone)]
++pub struct CdjsonMolecule {
++    pub molecule: Molecule,
++    pub coordinates: Vec<[f64; 3]>,
++    pub id: Option<String>,
++    pub atom_ids: Vec<Option<String>>,
++    pub bond_ids: Vec<Option<String>>,
++}
++
++/// Immutable source record. Same-format preservation returns exact source text.
++#[derive(Clone)]
++pub struct CdjsonDocument {
++    source: String,
++    molecules: Vec<CdjsonMolecule>,
++}
++impl CdjsonDocument {
++    pub fn source_text(&self) -> &str {
++        &self.source
++    }
++    pub fn molecules(&self) -> &[CdjsonMolecule] {
++        &self.molecules
++    }
++}
++
++fn limit(
++    resource: &'static str,
++    actual: usize,
++    requested: usize,
++    hard: usize,
++) -> Result<(), CdjsonError> {
++    let limit = requested.min(hard);
++    if actual > limit {
++        return Err(CdjsonError::ResourceLimit {
++            resource,
++            actual,
++            limit,
++        });
++    }
++    Ok(())
++}
+diff --git a/crates/chematic-mol/src/cdjson/reader.rs b/crates/chematic-mol/src/cdjson/reader.rs
+new file mode 100644
+index 0000000..cd57afa
+--- /dev/null
++++ b/crates/chematic-mol/src/cdjson/reader.rs
+@@ -0,0 +1,224 @@
++use super::{CdjsonDocument, CdjsonError, CdjsonMolecule, CdjsonParseLimits, limit};
++use crate::cjson::{CjsonParseLimits, check_json_limits};
++use crate::cjson_record::UniqueValue;
++use chematic_core::{Atom, AtomIdx, BondOrder, Element, MoleculeBuilder};
++use serde_json::{Map, Value};
++use std::collections::HashSet;
++
++type Object = Map<String, Value>;
++
++fn object<'a>(v: &'a Value, allowed: &[&str]) -> Result<&'a Object, CdjsonError> {
++    let o = v
++        .as_object()
++        .ok_or_else(|| CdjsonError::Invalid("expected object".into()))?;
++    for key in o.keys() {
++        if !allowed.contains(&key.as_str()) {
++            return Err(CdjsonError::Unsupported(format!("field {key}")));
++        }
++    }
++    Ok(o)
++}
++
++fn array<'a>(o: &'a Object, key: &str, required: bool) -> Result<&'a [Value], CdjsonError> {
++    match o.get(key) {
++        None if !required => Ok(&[]),
++        Some(Value::Array(values)) => Ok(values),
++        _ => Err(CdjsonError::Invalid(format!("{key} must be an array"))),
++    }
++}
++
++fn integer(o: &Object, key: &str, default: i64) -> Result<i64, CdjsonError> {
++    match o.get(key) {
++        None => Ok(default),
++        Some(v) => v
++            .as_i64()
++            .ok_or_else(|| CdjsonError::Invalid(format!("{key} must be an integer"))),
++    }
++}
++
++fn coordinate(o: &Object, key: &str, optional: bool) -> Result<f64, CdjsonError> {
++    match o.get(key) {
++        None if optional => Ok(0.),
++        Some(v) => v
++            .as_f64()
++            .filter(|f| f.is_finite())
++            .ok_or_else(|| CdjsonError::Invalid(format!("{key} must be a finite coordinate"))),
++        _ => Err(CdjsonError::Invalid(format!("missing coordinate {key}"))),
++    }
++}
++
++fn id(o: &Object, ids: &mut HashSet<String>) -> Result<Option<String>, CdjsonError> {
++    match o.get("i") {
++        None => Ok(None),
++        Some(Value::String(s)) if !s.is_empty() => {
++            if !ids.insert(s.clone()) {
++                return Err(CdjsonError::Invalid(format!("duplicate ID {s}")));
++            }
++            Ok(Some(s.clone()))
++        }
++        _ => Err(CdjsonError::Invalid("i must be a nonempty string".into())),
++    }
++}
++
++fn parse_atom(o: &Object) -> Result<Atom, CdjsonError> {
++    let label = match o.get("l") {
++        None => "C",
++        Some(Value::String(s)) => s.as_str(),
++        _ => return Err(CdjsonError::Invalid("l must be an element symbol".into())),
++    };
++    let element = Element::from_symbol(label)
++        .ok_or_else(|| CdjsonError::Unsupported(format!("atom label {label}")))?;
++    let mut atom = Atom::new(element);
++    atom.charge = i8::try_from(integer(o, "c", 0)?)
++        .map_err(|_| CdjsonError::Invalid("c outside i8 range".into()))?;
++    let mass = integer(o, "m", -1)?;
++    atom.isotope =
++        if mass == -1 {
++            None
++        } else {
++            Some(u16::try_from(mass).ok().filter(|&m| m > 0).ok_or_else(|| {
++                CdjsonError::Invalid("m must be -1 or a positive u16 mass".into())
++            })?)
++        };
++    let hydrogen = integer(o, "h", -1)?;
++    atom.hydrogen_count = if hydrogen == -1 {
++        None
++    } else {
++        Some(
++            u8::try_from(hydrogen)
++                .map_err(|_| CdjsonError::Invalid("h must be -1 or in [0,255]".into()))?,
++        )
++    };
++    for key in ["r", "p"] {
++        if integer(o, key, 0)? != 0 {
++            return Err(CdjsonError::Unsupported(format!("nonzero {key}")));
++        }
++    }
++    Ok(atom)
++}
++
++fn parse_bonds(
++    bonds: &[Value],
++    count: usize,
++    builder: &mut MoleculeBuilder,
++    ids: &mut HashSet<String>,
++) -> Result<Vec<Option<String>>, CdjsonError> {
++    let mut bond_ids = Vec::new();
++    for bond in bonds {
++        let o = object(bond, &["b", "e", "o", "s", "i"])?;
++        let begin = integer(o, "b", -1)?;
++        let end = integer(o, "e", -1)?;
++        if begin < 0
++            || end < 0
++            || begin as u64 >= count as u64
++            || end as u64 >= count as u64
++            || begin == end
++        {
++            return Err(CdjsonError::Invalid(
++                "bond endpoints must be distinct in-range atom indices".into(),
++            ));
++        }
++        let order = match o.get("o").map(Value::as_f64).unwrap_or(Some(1.)) {
++            Some(1.) => BondOrder::Single,
++            Some(2.) => BondOrder::Double,
++            Some(3.) => BondOrder::Triple,
++            _ => return Err(CdjsonError::Unsupported("bond order outside 1/2/3".into())),
++        };
++        if o.get("s").is_some_and(|v| v.as_str() != Some("none")) {
++            return Err(CdjsonError::Unsupported("bond stereochemistry".into()));
++        }
++        builder
++            .add_bond(AtomIdx(begin as u32), AtomIdx(end as u32), order)
++            .map_err(|e| CdjsonError::Invalid(e.to_string()))?;
++        bond_ids.push(id(o, ids)?);
++    }
++    Ok(bond_ids)
++}
++
++fn parse_molecule(v: &Value, ids: &mut HashSet<String>) -> Result<CdjsonMolecule, CdjsonError> {
++    let o = object(v, &["a", "b", "i"])?;
++    let molecule_id = id(o, ids)?;
++    let mut builder = MoleculeBuilder::new();
++    let mut coordinates = Vec::new();
++    let mut atom_ids = Vec::new();
++    let atoms = array(o, "a", true)?;
++    for value in atoms {
++        let atom = object(value, &["x", "y", "z", "l", "c", "m", "h", "r", "p", "i"])?;
++        builder.add_atom(parse_atom(atom)?);
++        coordinates.push([
++            coordinate(atom, "x", false)?,
++            coordinate(atom, "y", false)?,
++            coordinate(atom, "z", true)?,
++        ]);
++        atom_ids.push(id(atom, ids)?);
++    }
++    let bond_ids = parse_bonds(array(o, "b", false)?, atoms.len(), &mut builder, ids)?;
++    Ok(CdjsonMolecule {
++        molecule: builder.build(),
++        coordinates,
++        id: molecule_id,
++        atom_ids,
++        bond_ids,
++    })
++}
++
++/// Read either one molecular root or a content root; never select only the first.
++pub fn parse_cdjson(input: &str) -> Result<CdjsonDocument, CdjsonError> {
++    parse_cdjson_with_limits(input, &CdjsonParseLimits::default())
++}
++
++pub fn parse_cdjson_with_limits(
++    input: &str,
++    limits: &CdjsonParseLimits,
++) -> Result<CdjsonDocument, CdjsonError> {
++    let hard = CdjsonParseLimits::default();
++    limit(
++        "input bytes",
++        input.len(),
++        limits.max_input_bytes,
++        hard.max_input_bytes,
++    )?;
++    let value: UniqueValue =
++        serde_json::from_str(input).map_err(|e| CdjsonError::Invalid(e.to_string()))?;
++    let value = value.0;
++    let json_limits = CjsonParseLimits {
++        max_json_depth: 32,
++        max_array_items: 131_072,
++        max_string_bytes: 65_536,
++        ..Default::default()
++    };
++    check_json_limits(&value, 0, &json_limits).map_err(|e| CdjsonError::Invalid(e.to_string()))?;
++    let values: &[Value] = if value.get("a").is_some() {
++        std::slice::from_ref(&value)
++    } else {
++        let o = object(&value, &["m", "s"])?;
++        if !array(o, "s", false)?.is_empty() {
++            return Err(CdjsonError::Unsupported("shapes".into()));
++        }
++        array(o, "m", false)?
++    };
++    limit(
++        "molecules",
++        values.len(),
++        limits.max_molecules,
++        hard.max_molecules,
++    )?;
++    let mut atoms = 0usize;
++    let mut bonds = 0usize;
++    for v in values {
++        let o = object(v, &["a", "b", "i"])?;
++        atoms += array(o, "a", true)?.len();
++        bonds += array(o, "b", false)?.len();
++        limit("atoms", atoms, limits.max_atoms, hard.max_atoms)?;
++        limit("bonds", bonds, limits.max_bonds, hard.max_bonds)?;
++    }
++    let mut ids = HashSet::new();
++    let molecules = values
++        .iter()
++        .map(|v| parse_molecule(v, &mut ids))
++        .collect::<Result<_, _>>()?;
++    Ok(CdjsonDocument {
++        source: input.to_owned(),
++        molecules,
++    })
++}
+diff --git a/crates/chematic-mol/src/cdjson/writer.rs b/crates/chematic-mol/src/cdjson/writer.rs
+new file mode 100644
+index 0000000..d98b803
+--- /dev/null
++++ b/crates/chematic-mol/src/cdjson/writer.rs
+@@ -0,0 +1,77 @@
++use super::{CdjsonError, CdjsonParseLimits, limit};
++use chematic_core::{BondOrder, Chirality, Molecule, implicit_hcount};
++use serde_json::{Value, json};
++
++fn atom_values(mol: &Molecule, coordinates: &[[f64; 3]]) -> Result<Vec<Value>, CdjsonError> {
++    let mut atoms = Vec::new();
++    for ((idx, atom), coordinate) in mol.atoms().zip(coordinates) {
++        if atom.element.atomic_number() == 0
++            || atom.aromatic
++            || atom.wildcard
++            || atom.chirality != Chirality::None
++            || atom.atom_map.is_some()
++        {
++            return Err(CdjsonError::Unsupported(
++                "aromatic/query/chiral/mapped atom in graph writer".into(),
++            ));
++        }
++        if coordinate.iter().any(|v| !v.is_finite()) {
++            return Err(CdjsonError::Invalid("nonfinite coordinate".into()));
++        }
++        if atom.isotope == Some(0) {
++            return Err(CdjsonError::Invalid("zero isotope mass".into()));
++        }
++        let mut value = json!({"x":coordinate[0],"y":coordinate[1],"z":coordinate[2],
++            "l":atom.element.symbol(),"c":atom.charge,"h":implicit_hcount(mol, idx)});
++        if let Some(mass) = atom.isotope {
++            value["m"] = json!(mass);
++        }
++        atoms.push(value);
++    }
++    Ok(atoms)
++}
++
++/// Write one molecular graph with explicit inferred/stored H overrides.
++///
++/// Coordinates retain caller drawing units. The writer creates no persistent
++/// IDs and does not export tags or unrelated source metadata. Use the immutable
++/// parsed document's `source_text()` for exact same-format preservation.
++pub fn write_cdjson_graph(mol: &Molecule, coordinates: &[[f64; 3]]) -> Result<String, CdjsonError> {
++    let hard = CdjsonParseLimits::default();
++    limit("atoms", mol.atom_count(), hard.max_atoms, hard.max_atoms)?;
++    limit("bonds", mol.bond_count(), hard.max_bonds, hard.max_bonds)?;
++    if coordinates.len() != mol.atom_count() {
++        return Err(CdjsonError::Invalid(
++            "coordinate count must equal atom count".into(),
++        ));
++    }
++    if !mol.stereo_groups().is_empty() {
++        return Err(CdjsonError::Unsupported("enhanced stereo groups".into()));
++    }
++    let atoms = atom_values(mol, coordinates)?;
++    let mut bonds = Vec::new();
++    for (idx, bond) in mol.bonds() {
++        if bond.atom1 == bond.atom2 {
++            return Err(CdjsonError::Invalid("self bond".into()));
++        }
++        if mol.bond_direction(idx).is_some() {
++            return Err(CdjsonError::Unsupported("directional bond".into()));
++        }
++        let order = match bond.order {
++            BondOrder::Single => 1,
++            BondOrder::Double => 2,
++            BondOrder::Triple => 3,
++            _ => return Err(CdjsonError::Unsupported("bond order outside 1/2/3".into())),
++        };
++        bonds.push(json!({"b":bond.atom1.0,"e":bond.atom2.0,"o":order}));
++    }
++    let output = serde_json::to_string(&json!({"m":[{"a":atoms,"b":bonds}]}))
++        .map_err(|e| CdjsonError::Invalid(e.to_string()))?;
++    limit(
++        "output bytes",
++        output.len(),
++        hard.max_input_bytes,
++        hard.max_input_bytes,
++    )?;
++    Ok(output)
++}
+diff --git a/crates/chematic-mol/src/cjson_record.rs b/crates/chematic-mol/src/cjson_record.rs
+index 7432d31..7ca2881 100644
+--- a/crates/chematic-mol/src/cjson_record.rs
++++ b/crates/chematic-mol/src/cjson_record.rs
+@@ -303,7 +303,7 @@ fn collect_opaque(value: &Value, path: &str, out: &mut Vec<String>) {
+     }
+ }
+ 
+-struct UniqueValue(Value);
++pub(crate) struct UniqueValue(pub(crate) Value);
+ impl<'de> Deserialize<'de> for UniqueValue {
+     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+         deserializer.deserialize_any(UniqueVisitor)
+diff --git a/crates/chematic-mol/src/lib.rs b/crates/chematic-mol/src/lib.rs
+index ee4ff44..03bb7e1 100644
+--- a/crates/chematic-mol/src/lib.rs
++++ b/crates/chematic-mol/src/lib.rs
+@@ -16,6 +16,7 @@
+ //! let written = write_mol(&mol, &meta);
+ //! ```
+ 
++pub mod cdjson;
+ pub mod cdxml;
+ pub mod cdxml_document;
+ pub mod cif;
+@@ -74,6 +75,10 @@ pub use conversion::{
+ };
+ pub use error::MolParseError;
+ // Re-export MolParseError under the alias MolError as specified by the public API.
++pub use cdjson::{
++    CdjsonDocument, CdjsonError, CdjsonMolecule, CdjsonParseLimits, parse_cdjson,
++    parse_cdjson_with_limits, write_cdjson_graph,
++};
+ pub use cdxml::{
+     CdxmlError, CdxmlParseLimits, CdxmlParseOptions, parse_cdxml, parse_cdxml_all,
+     parse_cdxml_all_with_limits, parse_cdxml_all_with_options,
+diff --git a/crates/chematic-mol/tests/cdjson_contract.rs b/crates/chematic-mol/tests/cdjson_contract.rs
+new file mode 100644
+index 0000000..94fbdf1
+--- /dev/null
++++ b/crates/chematic-mol/tests/cdjson_contract.rs
+@@ -0,0 +1,269 @@
++use chematic_core::{AtomIdx, implicit_hcount};
++use chematic_mol::{
++    CdjsonError, CdjsonParseLimits, parse_cdjson, parse_cdjson_with_limits, write_cdjson_graph,
++};
++use serde_json::json;
++
++#[test]
++fn omitted_carbon_label_and_hydrogen_use_native_inference() {
++    let d = parse_cdjson(r#"{"m":[{"a":[{"x":0,"y":0}]}]}"#).unwrap();
++    let mol = &d.molecules()[0].molecule;
++    assert_eq!(mol.atom(AtomIdx(0)).element.atomic_number(), 6);
++    assert_eq!(mol.atom(AtomIdx(0)).hydrogen_count, None);
++    assert_eq!(implicit_hcount(mol, AtomIdx(0)), 4);
++}
++
++#[test]
++fn explicit_zero_hydrogens_are_distinct_from_default_and_minus_one() {
++    for (h, expected) in [(0, 0), (2, 2), (4, 4), (-1, 4)] {
++        let text = json!({"a":[{"x":0,"y":0,"h":h}]}).to_string();
++        let d = parse_cdjson(&text).unwrap();
++        assert_eq!(
++            implicit_hcount(&d.molecules()[0].molecule, AtomIdx(0)),
++            expected
++        );
++    }
++}
++
++#[test]
++fn source_ids_charge_isotope_and_coordinates_are_preserved() {
++    let source = "{\r\n\"m\":[{\"i\":\"m1\",\"a\":[{\"i\":\"a1\",\"l\":\"N\",\"c\":1,\"m\":15,\"h\":4,\"x\":1.2345678901234567,\"y\":-2,\"z\":3}]}]}\r\n";
++    let d = parse_cdjson(source).unwrap();
++    assert_eq!(d.source_text(), source);
++    let m = &d.molecules()[0];
++    assert_eq!(m.id.as_deref(), Some("m1"));
++    assert_eq!(m.atom_ids, [Some("a1".into())]);
++    assert_eq!(m.coordinates[0], [1.2345678901234567, -2., 3.]);
++    let atom = m.molecule.atom(AtomIdx(0));
++    assert_eq!(
++        (atom.charge, atom.isotope, atom.hydrogen_count),
++        (1, Some(15), Some(4))
++    );
++}
++
++#[test]
++fn all_content_molecules_are_returned_and_empty_content_is_valid() {
++    let d = parse_cdjson(r#"{"m":[{"a":[]},{"a":[{"x":0,"y":0,"l":"Cl"}]}],"s":[]}"#).unwrap();
++    assert_eq!(d.molecules().len(), 2);
++    assert_eq!(d.molecules()[0].molecule.atom_count(), 0);
++    assert_eq!(d.molecules()[1].molecule.atom_count(), 1);
++    assert!(parse_cdjson("{}").unwrap().molecules().is_empty());
++}
++
++#[test]
++fn bond_indices_defaults_and_ids_are_checked() {
++    let d = parse_cdjson(
++        r#"{"a":[{"x":0,"y":0},{"x":20,"y":0,"l":"O"}],"b":[{"i":"b7","b":0,"e":1,"s":"none"}]}"#,
++    )
++    .unwrap();
++    let m = &d.molecules()[0];
++    assert_eq!(m.bond_ids, [Some("b7".into())]);
++    assert_eq!(implicit_hcount(&m.molecule, AtomIdx(0)), 3);
++    assert_eq!(implicit_hcount(&m.molecule, AtomIdx(1)), 1);
++    for bond in [
++        json!({"b":0,"e":0}),
++        json!({"b":0,"e":2}),
++        json!({"b":-1,"e":1}),
++        json!({"b":0.0,"e":1}),
++    ] {
++        let input = json!({"a":[{"x":0,"y":0},{"x":1,"y":1}],"b":[bond]}).to_string();
++        assert!(parse_cdjson(&input).is_err());
++    }
++    assert!(
++        parse_cdjson(r#"{"a":[{"x":0,"y":0},{"x":1,"y":1}],"b":[{"b":0,"e":1},{"b":1,"e":0}]}"#)
++            .is_err()
++    );
++}
++
++#[test]
++fn unsupported_chemistry_and_unknown_fields_never_disappear_silently() {
++    for field in [
++        json!({"q":{}}),
++        json!({"s2":{"t":"abs"}}),
++        json!({"r":1}),
++        json!({"p":1}),
++        json!({"custom":7}),
++        json!({"l":"8"}),
++    ] {
++        let mut atom = json!({"x":0,"y":0});
++        atom.as_object_mut()
++            .unwrap()
++            .extend(field.as_object().unwrap().clone());
++        assert!(matches!(
++            parse_cdjson(&json!({"a":[atom]}).to_string()),
++            Err(CdjsonError::Unsupported(_))
++        ));
++    }
++    assert!(parse_cdjson(r#"{"m":[],"s":[{"t":"Line"}]}"#).is_err());
++    for order in [0., 0.5, 1.5, 2.5, 4.] {
++        assert!(
++            parse_cdjson(
++                &json!({"a":[{"x":0,"y":0},{"x":1,"y":1}],"b":[{"b":0,"e":1,"o":order}]})
++                    .to_string()
++            )
++            .is_err()
++        );
++    }
++}
++
++#[test]
++fn malformed_atoms_and_duplicate_decoded_json_keys_are_rejected() {
++    for source in [
++        r#"{"a":[{"x":0,"x":1,"y":0}]}"#,
++        r#"{"a":[{"x":0,"\u0078":1,"y":0}]}"#,
++        r#"{"a":[{"x":0,"y":0,"h":null}]}"#,
++        r#"{"a":[{"x":0}]}"#,
++        r#"{"a":[{"x":1e999,"y":0}]}"#,
++    ] {
++        assert!(parse_cdjson(source).is_err(), "{source}");
++    }
++    for (key, value) in [
++        ("c", json!(128)),
++        ("c", json!(1.0)),
++        ("h", json!(-2)),
++        ("h", json!(256)),
++        ("m", json!(0)),
++        ("m", json!(65536)),
++    ] {
++        let mut atom = json!({"x":0,"y":0});
++        atom[key] = value;
++        assert!(parse_cdjson(&json!({"a":[atom]}).to_string()).is_err());
++    }
++    assert!(parse_cdjson(r#"{"m":[{"i":"same","a":[{"i":"same","x":0,"y":0}]}]}"#).is_err());
++}
++
++#[test]
++fn caller_limits_cover_bytes_and_aggregate_counts() {
++    let input =
++        r#"{"m":[{"a":[{"x":0,"y":0},{"x":1,"y":0}],"b":[{"b":0,"e":1}]},{"a":[{"x":0,"y":0}]}]}"#;
++    for limits in [
++        CdjsonParseLimits {
++            max_input_bytes: input.len() - 1,
++            ..Default::default()
++        },
++        CdjsonParseLimits {
++            max_molecules: 1,
++            ..Default::default()
++        },
++        CdjsonParseLimits {
++            max_atoms: 2,
++            ..Default::default()
++        },
++        CdjsonParseLimits {
++            max_bonds: 0,
++            ..Default::default()
++        },
++    ] {
++        assert!(matches!(
++            parse_cdjson_with_limits(input, &limits),
++            Err(CdjsonError::ResourceLimit { .. })
++        ));
++    }
++    let limits = CdjsonParseLimits {
++        max_input_bytes: input.len(),
++        max_molecules: 2,
++        max_atoms: 3,
++        max_bonds: 1,
++    };
++    assert_eq!(
++        parse_cdjson_with_limits(input, &limits)
++            .unwrap()
++            .molecules()
++            .len(),
++        2
++    );
++}
++
++#[test]
++fn hard_caps_cannot_be_raised_and_are_checked_before_atom_projection() {
++    let source = json!({"a":vec![json!({"x":0,"y":0});65537]}).to_string();
++    let limits = CdjsonParseLimits {
++        max_atoms: usize::MAX,
++        ..Default::default()
++    };
++    assert!(matches!(
++        parse_cdjson_with_limits(&source, &limits),
++        Err(CdjsonError::ResourceLimit {
++            resource: "atoms",
++            actual: 65537,
++            limit: 65536
++        })
++    ));
++    let source = json!({"m":vec![json!({"a":[]});1025]}).to_string();
++    let limits = CdjsonParseLimits {
++        max_molecules: usize::MAX,
++        ..Default::default()
++    };
++    assert!(matches!(
++        parse_cdjson_with_limits(&source, &limits),
++        Err(CdjsonError::ResourceLimit {
++            resource: "molecules",
++            limit: 1024,
++            ..
++        })
++    ));
++}
++
++#[test]
++fn exact_atom_and_molecule_caps_are_accepted() {
++    let source = json!({"a":vec![json!({"x":0,"y":0});65536]}).to_string();
++    let d = parse_cdjson(&source).unwrap();
++    assert_eq!(d.molecules()[0].molecule.atom_count(), 65536);
++    let source = json!({"m":vec![json!({"a":[]});1024]}).to_string();
++    assert_eq!(parse_cdjson(&source).unwrap().molecules().len(), 1024);
++}
++
++#[test]
++fn graph_writer_roundtrips_elements_isotopes_charge_and_hydrogens() {
++    for smiles in [
++        "C",
++        "CC",
++        "C(=O)CO",
++        "[C]",
++        "[CH2]",
++        "[NH4+]",
++        "[Cl-]",
++        "[13CH3]O",
++        "[2H]O[2H]",
++        "C1=CC=CC=C1",
++    ] {
++        let mol = chematic_smiles::parse(smiles).unwrap();
++        let coordinates: Vec<_> = (0..mol.atom_count())
++            .map(|i| [i as f64 * 1.2345678901234567, -2., 3.])
++            .collect();
++        let text = write_cdjson_graph(&mol, &coordinates).unwrap();
++        let d = parse_cdjson(&text).unwrap();
++        let recovered = &d.molecules()[0];
++        assert_eq!(recovered.coordinates, coordinates);
++        for ((idx, a), (_, b)) in mol.atoms().zip(recovered.molecule.atoms()) {
++            assert_eq!(
++                (a.element, a.charge, a.isotope),
++                (b.element, b.charge, b.isotope)
++            );
++            assert_eq!(
++                implicit_hcount(&mol, idx),
++                implicit_hcount(&recovered.molecule, idx)
++            );
++        }
++    }
++}
++
++#[test]
++fn graph_writer_refuses_stereo_aromaticity_maps_and_bad_coordinates() {
++    for smiles in [
++        "c1ccccc1",
++        "N->[Cu+2]",
++        "F/C=C\\F",
++        "[C@H](F)(Cl)Br",
++        "[CH3:7]",
++    ] {
++        let mol = chematic_smiles::parse(smiles).unwrap();
++        assert!(
++            write_cdjson_graph(&mol, &vec![[0.; 3]; mol.atom_count()]).is_err(),
++            "{smiles}"
++        );
++    }
++    let mol = chematic_smiles::parse("C").unwrap();
++    assert!(write_cdjson_graph(&mol, &[]).is_err());
++    assert!(write_cdjson_graph(&mol, &[[f64::NAN, 0., 0.]]).is_err());
++}
+diff --git a/crates/chematic-py/python/chematic/__init__.pyi b/crates/chematic-py/python/chematic/__init__.pyi
+index dea00f4..b90dbf6 100644
+--- a/crates/chematic-py/python/chematic/__init__.pyi
++++ b/crates/chematic-py/python/chematic/__init__.pyi
+@@ -3135,6 +3135,39 @@ def is_valid_smarts(smarts: str) -> bool:
+     """
+     ...
+ 
++class CdjsonMolecule(TypedDict):
++    mol: Mol
++    coordinates: list[list[float]]
++    id: str | None
++    atom_ids: list[str | None]
++    bond_ids: list[str | None]
++
++class CdjsonDocument(TypedDict):
++    source_text: str
++    molecules: list[CdjsonMolecule]
++
++def parse_cdjson(
++    text: str, *, max_input_bytes: int | None = None,
++    max_molecules: int | None = None, max_atoms: int | None = None,
++    max_bonds: int | None = None,
++) -> CdjsonDocument:
++    """Read checked molecular ChemDoodle JSON with exact source text.
++
++    Coordinates retain drawing units. Missing l means carbon, missing h/-1
++    uses native H inference; h=0 is explicit zero. Returns all molecules.
++    Rejects shapes, queries, stereo, radicals, lone pairs and unknown fields.
++    Caller limits can only tighten 16 MiB/1024 molecules/65536 atoms/131072 bonds.
++    """
++    ...
++
++def write_cdjson_graph(mol: Mol, coordinates: list[list[float]]) -> str:
++    """Write one graph with explicit H overrides, element symbols and 3D coordinates.
++
++    Rejects unsupported chemistry. Does not export source IDs or metadata;
++    use parse_cdjson's source_text for exact same-format preservation.
++    """
++    ...
++
+ class FoldDensityResult(TypedDict):
+     fingerprint: bytes
+     bit_width: int
+diff --git a/crates/chematic-py/src/formats.rs b/crates/chematic-py/src/formats.rs
+index cc666a8..a66fc90 100644
+--- a/crates/chematic-py/src/formats.rs
++++ b/crates/chematic-py/src/formats.rs
+@@ -8,6 +8,8 @@ use std::sync::Arc;
+ 
+ mod cif;
+ use cif::*;
++mod cdjson;
++use cdjson::*;
+ mod fhiaims;
+ use fhiaims::*;
+ mod dmol3;
+@@ -1379,6 +1381,8 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
+     register_pyfunctions!(
+         m,
+         from_smiles,
++        parse_cdjson,
++        write_cdjson_graph,
+         canonicalize_smiles_batch_json,
+         from_cxsmiles,
+         from_condensed,
+diff --git a/crates/chematic-py/src/formats/cdjson.rs b/crates/chematic-py/src/formats/cdjson.rs
+new file mode 100644
+index 0000000..323e411
+--- /dev/null
++++ b/crates/chematic-py/src/formats/cdjson.rs
+@@ -0,0 +1,60 @@
++use crate::Mol;
++use pyo3::exceptions::PyValueError;
++use pyo3::prelude::*;
++use pyo3::types::{PyDict, PyList, PyListMethods};
++
++/// Parse a checked molecular ChemDoodle JSON root or content document.
++/// Preserves exact source text and returns every molecule with coordinates/IDs.
++#[pyfunction]
++#[pyo3(signature = (text, *, max_input_bytes=None, max_molecules=None, max_atoms=None, max_bonds=None))]
++pub(super) fn parse_cdjson<'py>(
++    py: Python<'py>,
++    text: &str,
++    max_input_bytes: Option<usize>,
++    max_molecules: Option<usize>,
++    max_atoms: Option<usize>,
++    max_bonds: Option<usize>,
++) -> PyResult<Bound<'py, PyDict>> {
++    let defaults = chematic_mol::CdjsonParseLimits::default();
++    let limits = chematic_mol::CdjsonParseLimits {
++        max_input_bytes: max_input_bytes.unwrap_or(defaults.max_input_bytes),
++        max_molecules: max_molecules.unwrap_or(defaults.max_molecules),
++        max_atoms: max_atoms.unwrap_or(defaults.max_atoms),
++        max_bonds: max_bonds.unwrap_or(defaults.max_bonds),
++    };
++    let document = chematic_mol::parse_cdjson_with_limits(text, &limits)
++        .map_err(|e| PyValueError::new_err(e.to_string()))?;
++    let mut molecules = Vec::new();
++    for item in document.molecules() {
++        let value = PyDict::new(py);
++        value.set_item("mol", Mol::bare(item.molecule.clone()))?;
++        value.set_item("coordinates", &item.coordinates)?;
++        value.set_item("id", &item.id)?;
++        value.set_item("atom_ids", &item.atom_ids)?;
++        value.set_item("bond_ids", &item.bond_ids)?;
++        molecules.push(value);
++    }
++    let out = PyDict::new(py);
++    out.set_item("source_text", document.source_text())?;
++    out.set_item("molecules", molecules)?;
++    Ok(out)
++}
++
++/// Export one non-aromatic, non-stereochemical molecular graph in drawing units.
++#[pyfunction]
++pub(super) fn write_cdjson_graph(mol: &Mol, coordinates: &Bound<'_, PyList>) -> PyResult<String> {
++    let hard = chematic_mol::CdjsonParseLimits::default();
++    if mol.inner.atom_count() > hard.max_atoms || mol.inner.bond_count() > hard.max_bonds {
++        return Err(PyValueError::new_err(
++            "CDJSON graph exceeds atom/bond limit",
++        ));
++    }
++    if coordinates.len() != mol.inner.atom_count() {
++        return Err(PyValueError::new_err(
++            "CDJSON coordinate count must equal atom count",
++        ));
++    }
++    let coordinates = coordinates.extract::<Vec<[f64; 3]>>()?;
++    chematic_mol::write_cdjson_graph(&mol.inner, &coordinates)
++        .map_err(|e| PyValueError::new_err(e.to_string()))
++}
+diff --git a/crates/chematic-py/tests/test_cdjson.py b/crates/chematic-py/tests/test_cdjson.py
+new file mode 100644
+index 0000000..dab1e0f
+--- /dev/null
++++ b/crates/chematic-py/tests/test_cdjson.py
+@@ -0,0 +1,78 @@
++import json
++import pytest
++import chematic
++
++
++def test_default_carbon_and_explicit_zero_hydrogens():
++    expected = {None: "CH4", -1: "CH4", 0: "C", 2: "CH2", 4: "CH4"}
++    for hydrogen, formula in expected.items():
++        atom = dict(x=0, y=0)
++        if hydrogen is not None: atom["h"] = hydrogen
++        record = chematic.parse_cdjson(json.dumps(dict(a=[atom])))
++        assert record["molecules"][0]["mol"].formula == formula
++
++
++def test_all_molecules_ids_coordinates_and_exact_source():
++    text = '{\r\n"m":[{"i":"mol","a":[{"i":"atom","l":"N","c":1,"m":15,"h":4,"x":1.2345678901234567,"y":-2,"z":3}]},{"a":[]}]}\r\n'
++    d = chematic.parse_cdjson(text)
++    assert d["source_text"] == text
++    assert len(d["molecules"]) == 2
++    m = d["molecules"][0]
++    assert m["coordinates"] == [[1.2345678901234567, -2, 3]]
++    assert m["id"] == "mol" and m["atom_ids"] == ["atom"]
++    assert m["mol"].atom_count == 1
++
++
++@pytest.mark.parametrize("field", [{"q": {}}, {"s2": {}}, {"r": 1}, {"p": 1}, {"l": "8"}, {"unknown": 1}])
++def test_unsupported_atom_fields(field):
++    with pytest.raises(ValueError, match="unsupported"):
++        chematic.parse_cdjson(json.dumps(dict(a=[dict(x=0, y=0, **field)])))
++
++
++@pytest.mark.parametrize("text", [
++    '{"a":[{"x":0,"x":1,"y":0}]}', '{"a":[{"x":0,"\\u0078":1,"y":0}]}',
++    '{"a":[{"x":0}]}', '{"m":[],"s":[{"t":"Line"}]}',
++    '{"a":[{"x":0,"y":0,"h":null}]}',
++    '{"a":[{"x":0,"y":0},{"x":1,"y":0}],"b":[{"b":0,"e":2}]}',
++])
++def test_malformed_or_unsupported_documents(text):
++    with pytest.raises(ValueError): chematic.parse_cdjson(text)
++
++
++@pytest.mark.parametrize("kwargs", [dict(max_input_bytes=1), dict(max_atoms=0), dict(max_molecules=0)])
++def test_tighter_limits(kwargs):
++    with pytest.raises(ValueError, match="resource limit"):
++        chematic.parse_cdjson('{"a":[{"x":0,"y":0}]}', **kwargs)
++
++
++@pytest.mark.parametrize("smiles", ["C", "CC", "C(=O)CO", "[C]", "[CH2]", "[NH4+]", "[13CH3]O", "[2H]O[2H]"])
++def test_graph_writer_roundtrips_formula_and_coordinates(smiles):
++    mol = chematic.from_smiles(smiles)
++    coords = [[i*1.2345678901234567, -2, 3] for i in range(mol.atom_count)]
++    text = chematic.write_cdjson_graph(mol, coords)
++    m = chematic.parse_cdjson(text)["molecules"][0]
++    assert m["mol"].formula == mol.formula
++    assert m["coordinates"] == coords
++    assert all(isinstance(a["l"], str) for a in json.loads(text)["m"][0]["a"])
++
++
++@pytest.mark.parametrize("smiles", ["c1ccccc1", "F/C=C\\F", "[C@H](F)(Cl)Br", "[CH3:7]"])
++def test_writer_refuses_unsupported_chemistry(smiles):
++    mol = chematic.from_smiles(smiles)
++    with pytest.raises(ValueError):
++        chematic.write_cdjson_graph(mol, [[0, 0, 0]]*mol.atom_count)
++
++
++def test_writer_checks_coordinates_and_limits_are_unsigned():
++    mol = chematic.from_smiles("C")
++    for coords in [[], [[float("inf"), 0, 0]]]:
++        with pytest.raises(ValueError): chematic.write_cdjson_graph(mol, coords)
++    with pytest.raises(OverflowError): chematic.parse_cdjson("{}", max_atoms=-1)
++
++
++def test_coordinate_length_checked_before_numeric_extraction():
++    mol = chematic.from_smiles("C")
++    with pytest.raises(ValueError, match="coordinate count"):
++        chematic.write_cdjson_graph(mol, [["bad", 0, 0], ["bad", 0, 0]])
++    with pytest.raises(TypeError):
++        chematic.write_cdjson_graph(mol, ((0, 0, 0),))
+diff --git a/docs/chemdoodle-json.md b/docs/chemdoodle-json.md
+new file mode 100644
+index 0000000..ce58aae
+--- /dev/null
++++ b/docs/chemdoodle-json.md
+@@ -0,0 +1,169 @@
++# Checked molecular ChemDoodle JSON
++
++This isolated, unreleased candidate adds a molecular ChemDoodle JSON reader
++and graph writer, motivated by
++[Open Babel #2763](https://github.com/openbabel/openbabel/issues/2763).
++The issue was verified OPEN on 2026-10-15 (updated 2025-01-10T08:55:05Z).
++Its reported Open Babel 3.1.0 behavior loses inferred hydrogen on default
++carbon and can write numeric element labels. Those examples **do not
++reproduce on installed Open Babel 3.2.1**: ordinary methane reads as `C`, and
++the carbonyl/alcohol writer emits oxygen symbols correctly.
++
++Two current gaps were independently measured on Open Babel 3.2.1: explicit
++`h: 0` can be replaced by inferred H, and a multi-molecule CDJSON content
++document is read as its first molecule only. This candidate distinguishes
++omitted/automatic H from explicit zero and returns every molecule.
++It fills a missing chematic format API; it does not claim an upstream fix.
++
++## Python API
++
++```python
++import chematic
++
++ordinary = chematic.parse_cdjson('{"a":[{"x":0,"y":0}]}')
++assert ordinary["molecules"][0]["mol"].formula == "CH4"
++
++zero_h = chematic.parse_cdjson('{"a":[{"x":0,"y":0,"h":0}]}')
++assert zero_h["molecules"][0]["mol"].formula == "C"
++
++mol = chematic.from_smiles("C(=O)CO")
++coordinates = [[0, 0, 0], [20, 0, 0], [-20, 0, 0], [-40, 0, 0]]
++text = chematic.write_cdjson_graph(mol, coordinates)
++assert chematic.parse_cdjson(text)["molecules"][0]["mol"].formula == mol.formula
++```
++
++`parse_cdjson(text, *, max_input_bytes=None, max_molecules=None,
++max_atoms=None, max_bonds=None)` returns:
++
++| Field | Meaning |
++| --- | --- |
++| `source_text` | Exact original UTF-8 source, including whitespace and CRLF |
++| `molecules` | Every molecule in original content order |
++| each `mol` | Native molecular graph |
++| each `coordinates` | One `[x,y,z]` array per original atom; omitted z becomes zero |
++| each `id` | Optional source molecule ID |
++| each `atom_ids`, `bond_ids` | Optional IDs aligned with original atom/bond arrays |
++
++Coordinates remain **unscaled drawing coordinates**. No Angstrom conversion,
++axis reversal, coordinate generation or stereochemistry perception is performed.
++Source IDs are separate from atom-mapping numbers. Nonempty IDs must be unique
++across the content. Exact same-format preservation uses `source_text`; graph
++writing generates a new document without source IDs or unrelated metadata.
++
++`write_cdjson_graph(mol, coordinates)` writes one molecular graph under a
++content `m` array. It emits element symbols, charge, optional isotope mass,
++all three coordinates, ordinary bond orders and explicit native H counts.
++It requires a Python list with one triple per atom. Input graph and coordinate
++counts are checked before Python numeric extraction. Output coordinates use
++round-trip floating-point serialization.
++
++Rust exports `CdjsonDocument`, `CdjsonMolecule`, `CdjsonParseLimits`,
++`CdjsonError`, `parse_cdjson`, `parse_cdjson_with_limits` and
++`write_cdjson_graph` from `chematic_mol`. The immutable document provides
++`molecules()` and `source_text()`; graph projections carry native molecules,
++coordinate arrays and source IDs.
++
++## Supported molecular profile
++
++The profile follows the default-field and molecular-index rules in the
++[official ChemDoodle JSON specification](https://web.chemdoodle.com/docs/chemdoodle-json-format/).
++ChemDoodle JSON (`cdjson`) is distinct from ChemicalJSON (`cjson`).
++
++| Input | Contract |
++| --- | --- |
++| Root | One molecule with `a`, optional `b`/`i`; or content with `m` and optional empty `s` |
++| Atom label `l` | Omitted means C; explicit labels must be recognized case-sensitive element symbols |
++| Coordinates | Finite x/y required; finite z optional, default zero |
++| Charge `c` | Integer, default 0, restricted to native i8 range |
++| Mass `m` | Omitted or -1 means unspecified; positive u16 isotope mass supported |
++| Implicit H override `h` | Omitted/-1 uses native valence inference; 0–255 retains the explicit count, including zero |
++| Radicals/lone pairs `r`/`p` | Omitted or zero accepted; nonzero values rejected |
++| Bonds | Distinct in-range integer endpoints, no duplicate pair; omitted order means 1; orders 1/2/3 supported |
++| Bond stereo `s` | Omitted or `none` accepted |
++| IDs `i` | Optional nonempty strings; retained without interpretation |
++
++Unknown fields, shapes, query objects, enhanced stereo, nonzero radical/lone-pair
++fields, directional/ambiguous bond stereo, aromatic/half/zero bond orders and
++unrecognized labels return explicit errors. The graph writer also rejects
++native aromatic/query/chiral/mapped atoms, enhanced stereo groups, directional
++bonds and self bonds. An explicitly Kekulé graph with ordinary bonds can be
++written. The profile does not assign radical electron counts from an explicit
++H override, sanitize unusual valence, or implement the full ChemDoodle drawing
++model. Unsupported chemistry is not silently omitted.
++
++The existing strict ChemicalJSON duplicate-key reader is reused internally.
++Duplicate object keys are rejected recursively, including escaped equivalents.
++The CJSON public contract is unchanged.
++
++## Limits
++
++| Resource | Hard cap |
++| --- | ---: |
++| Input/output JSON bytes | 16 MiB |
++| Molecules per content document | 1024 |
++| Aggregate atoms | 65536 |
++| Aggregate bonds | 131072 |
++| JSON nesting depth | 32 |
++| Items per JSON array | 131072 |
++| Bytes per decoded JSON string | 65536 |
++
++Caller budgets can only tighten the first four parse limits. Input bytes are
++checked before JSON decoding. Structural JSON checks and aggregate graph
++counts run before molecular projection. Empty content and empty molecular
++arrays are supported. Rust returns typed invalid/unsupported/resource errors;
++Python maps them to `ValueError`, with unsigned conversion errors for negative
++budgets. This bounds input/work; it does not introduce a general fallible
++allocator contract or change other format parsers.
++
++## Validation
++
++- Rust: **765 passed**, comprising 753 existing library tests and 12 new
++  integration tests; zero failures or ignored tests. The new suite covers H
++  default versus zero, IDs, source text, coordinates, bonds, malformed values,
++  unsupported fields, exact atom/molecule caps, first rejected sizes and writer
++  rejection paths.
++- Python: **54 passed**, comprising 31 new tests and 23 existing strict CJSON
++  preservation tests.
++- RDKit **2026.09.1** reference reconstruction: **544 exact molecular cases**
++  and **544 native graph round trips**. Seventeen original synthetic recipes
++  receive 32 atom/bond order, labeling, ID and coordinate variants. Element
++  symbols, charge, isotope, H count, formula, endpoints, IDs and full-precision
++  coordinates are checked separately. No unexpected mismatches occurred.
++- Open Babel **3.2.1**, each input molecule read separately: **448 formula
++  matches and 96 known zero-H differences** on both source reads and native
++  writer cross-reads (1088 individual CLI conversions). The differing recipes
++  are isolated zero-H carbon, isolated zero-H oxygen and bonded zero-H carbon.
++  These differences are recorded explicitly, not counted as parity successes.
++- Open Babel multi-molecule control: the same content containing **544
++  molecules** returns **1** from Open Babel and **544** from chematic.
++- Open Babel writer import: **12 ordinary synthetic SMILES controls** exported
++  with `-ocdjson --gen2D` all import into chematic with their expected formulas.
++
++The original fixtures, per-record provenance/license/minimization, expected
++formulas and normalized payload SHA-256 are in
++`validation/openbabel_issues/cdjson/fixtures.json`. No upstream attachments,
++ChemDoodle code or external molecule corpus are copied. Runtime oracle versions,
++normalized variant packet hash, every known external difference, source-lane
++hashes and checks are saved in
++`validation/results/openbabel-cdjson-2026-10-15.json`.
++The reproducible oracle runner is `scripts/validate_cdjson.py`.
++
++```sh
++cargo test -p chematic-mol --lib --test cdjson_contract --offline --quiet
++cargo clippy -p chematic-mol -p chematic-py --all-targets --offline --no-deps -- -D warnings
++python3 -m pytest crates/chematic-py/tests/test_cdjson.py crates/chematic-py/tests/test_cjson_preservation.py -q
++python3 scripts/validate_cdjson.py
++```
++
++Formatting, binding inventory, refactor budget, product naming, stub syntax and
++strict MkDocs checks also pass. These are local debug-extension source checks,
++without native InChI; package publication, WASM and full ChemDoodle application
++interoperability are outside this candidate.
++
++The isolated source is `/private/tmp/chematic-cdjson`, inherited from
++`/private/tmp/chematic-fold-density`. The incremental patch is
++`validation/openbabel_issues/cdjson-2026-10-15.patch`, applicable to that base.
++Only this document, the patch and evidence are copied to the primary checkout.
++Source changes remain uncommitted and unpushed; the sparse local baseline commit
++is a diff anchor, not an integration commit. Disposable generated site/cache
++files are removed after validation.
+diff --git a/docs/format-capabilities.md b/docs/format-capabilities.md
+index ceb79c4..cbe6c19 100644
+--- a/docs/format-capabilities.md
++++ b/docs/format-capabilities.md
+@@ -67,6 +67,7 @@ exposed in that language. "—" in the WASM columns for CIF means CIF has
+ | ORCA input | Y | Y | Y | Y | Y | Y |
+ | ORCA output | Y | — (no writer exists in Rust) | Y | — | Y | — |
+ | Gaussian Cube | Y | Y | Y (via `VolumetricGrid`) | Y (via `VolumetricGrid`) | Y | Y |
++| ChemDoodle JSON | Y (molecular subset) | Y (graph) | Y | Y (graph) | — | — |
+ | OpenDX | Y | Y (strict + `_lossy`) | Y (via `VolumetricGrid`) | Y (via `VolumetricGrid`, strict + `_lossy`) | Y | Y (strict + `_lossy`) |
+ | LAMMPS data | Y | Y | Y | Y | Y | Y |
+ | LAMMPS dump/trajectory | Y | Y | Y | Y | Y | Y |
+@@ -608,6 +609,18 @@ disambiguate by crate, not by name alone:
+ - **Coordinate units**: Ångström.
+ - **Connectivity**: no bond table is inferred.
+ 
++### ChemDoodle JSON
++
++Rust exposes `parse_cdjson`, `parse_cdjson_with_limits`, `CdjsonDocument` and
++`write_cdjson_graph`. Python exposes `parse_cdjson` and `write_cdjson_graph`.
++The reader returns all molecules, source IDs, exact input text and unscaled
++drawing coordinates. Explicit zero H overrides are retained. Unknown fields,
++shapes, query/stereo/radical/lone-pair content and unsupported bonds are rejected.
++The graph writer emits element symbols and explicit native H counts; source
++IDs and unrelated metadata require same-format source preservation.
++This format is distinct from ChemicalJSON. See the
++[checked profile and external diagnostics](chemdoodle-json.md).
++
+ ### Gaussian Cube
+ 
+ - **Rust**: `chematic_mol::{parse_cube, parse_cube_with_limits, write_cube, CubeError, CubeFileReader, CubeParseLimits}`, plus the shared `VolumetricGrid` type.
+diff --git a/mkdocs.yml b/mkdocs.yml
+index 31caaf5..348257c 100644
+--- a/mkdocs.yml
++++ b/mkdocs.yml
+@@ -87,6 +87,7 @@ nav:
+     - Language Bindings Cross-Reference: language-bindings.md
+     - Error Handling & Limits: error-and-limits.md
+   - Reliability:
++    - ChemDoodle JSON: chemdoodle-json.md
+     - Fingerprint Target Density: fingerprint-target-density.md
+     - Bounded Native Distance Matrices: native-distance-matrix-limits.md
+     - Validation vs RDKit: validation.md
+diff --git a/scripts/validate_cdjson.py b/scripts/validate_cdjson.py
+new file mode 100644
+index 0000000..ce31199
+--- /dev/null
++++ b/scripts/validate_cdjson.py
+@@ -0,0 +1,157 @@
++#!/usr/bin/env python3
++"""Synthetic CDJSON projection/oracle packet for Open Babel #2763."""
++from __future__ import annotations
++import hashlib
++import json
++from pathlib import Path
++import subprocess
++from concurrent.futures import ThreadPoolExecutor
++
++import chematic
++from rdkit import Chem, rdBase
++from rdkit.Chem import rdMolDescriptors
++
++ROOT = Path(__file__).resolve().parents[1]
++FIXTURES = ROOT / "validation/openbabel_issues/cdjson/fixtures.json"
++OUTPUT = ROOT / "validation/results/openbabel-cdjson-2026-10-15.json"
++
++
++def normalized(v):
++    return json.dumps(v, sort_keys=True, separators=(",", ":")).encode()
++
++
++def obabel(input_format, output_format, text, *options):
++    result = subprocess.run(["obabel", f"-i{input_format}", f"-o{output_format}", *options],
++                            input=text, text=True, capture_output=True, timeout=60, check=True)
++    return result.stdout, result.stderr
++
++
++def oracle(molecule):
++    model = Chem.RWMol()
++    for atom in molecule["a"]:
++        a = Chem.Atom(atom.get("l", "C"))
++        a.SetFormalCharge(atom.get("c", 0))
++        if atom.get("m", -1) != -1:
++            a.SetIsotope(atom["m"])
++        if atom.get("h", -1) >= 0:
++            a.SetNoImplicit(True)
++            a.SetNumExplicitHs(atom["h"])
++        model.AddAtom(a)
++    for bond in molecule.get("b", []):
++        model.AddBond(bond["b"], bond["e"], {1: Chem.BondType.SINGLE, 2: Chem.BondType.DOUBLE, 3: Chem.BondType.TRIPLE}[bond.get("o", 1)])
++    Chem.SanitizeMol(model)
++    return model
++
++
++def variants(record):
++    molecule = record["payload"]
++    count = len(molecule["a"])
++    for variant in range(32):
++        order = list(range(count))
++        if variant & 1:
++            order.reverse()
++        shift = (variant // 2) % count
++        order = order[shift:] + order[:shift]
++        mapping = {old: new for new, old in enumerate(order)}
++        atoms = []
++        for index, old in enumerate(order):
++            atom = dict(molecule["a"][old])
++            atom.update(x=variant*.12345678901234567+index*20., y=-index*3.125,
++                        z=(variant % 3)*.9876543210123456, i=f"{record['id']}-{variant}-a{index}")
++            if variant & 2 and atom.get("l", "C") == "C":
++                atom["l"] = "C"
++            atoms.append(atom)
++        bonds = [dict(b, b=mapping[b["b"]], e=mapping[b["e"]], i=f"{record['id']}-{variant}-b{i}")
++                 for i, b in enumerate(molecule.get("b", []))]
++        if variant & 4:
++            bonds.reverse()
++        yield f"{record['id']}-{variant:02d}",dict(a=atoms,b=bonds,i=f"{record['id']}-{variant}"),record
++
++
++def validate_projection(source, projection):
++    mol = projection["mol"]
++    model = oracle(source)
++    assert mol.formula == rdMolDescriptors.CalcMolFormula(model)
++    assert mol.atom_count == model.GetNumAtoms()
++    assert projection["coordinates"] == [[a["x"],a["y"],a.get("z",0)] for a in source["a"]]
++    assert projection["id"] == source.get("i")
++    assert projection["atom_ids"] == [a.get("i") for a in source["a"]]
++    assert projection["bond_ids"] == [b.get("i") for b in source.get("b",[])]
++    written = chematic.write_cdjson_graph(mol,projection["coordinates"])
++    recovered = chematic.parse_cdjson(written)["molecules"][0]
++    assert recovered["mol"].formula == mol.formula
++    assert recovered["coordinates"] == projection["coordinates"]
++    output = json.loads(written)["m"][0]
++    for a,b,reference in zip(source["a"],output["a"],model.GetAtoms()):
++        assert b["l"] == a.get("l","C")
++        assert b["c"] == a.get("c",0)
++        assert b.get("m",-1) == a.get("m",-1)
++        assert b["h"] == reference.GetNumExplicitHs()+reference.GetNumImplicitHs()
++    assert [(b["b"],b["e"],b["o"]) for b in output["b"]] == [(b["b"],b["e"],b.get("o",1)) for b in source.get("b",[])]
++    return output, mol.formula
++
++
++def main():
++    assert rdBase.rdkitVersion == "2026.09.1", rdBase.rdkitVersion
++    version = subprocess.check_output(["obabel","-V"],text=True).strip()
++    assert version.startswith("Open Babel 3.2.1 "),version
++    manifest=json.loads(FIXTURES.read_text())
++    cases=[]
++    for record in manifest["records"]:
++        assert hashlib.sha256(normalized(record["payload"])).hexdigest()==record["sha256"]
++        cases.extend(variants(record))
++    source=json.dumps(dict(m=[m for _,m,_ in cases]))
++    document=chematic.parse_cdjson(source)
++    assert document["source_text"]==source
++    assert len(document["molecules"])==len(cases)
++    packet=hashlib.sha256();written=[];formulas=[]
++    for (identifier,molecule,record),projection in zip(cases,document["molecules"]):
++        output,formula=validate_projection(molecule,projection)
++        assert formula == record["expected"]["formula"], identifier
++        written.append(output);formulas.append(formula)
++        packet.update(normalized([identifier,molecule,output,formula])+b"\n")
++    batch_output,batch_stderr=obabel("cdjson","smi",source)
++    assert len(batch_output.splitlines())==1,(len(batch_output.splitlines()),batch_stderr)
++    def single_read(molecule):
++        return obabel("cdjson","smi",json.dumps(dict(m=[molecule])))
++    with ThreadPoolExecutor(max_workers=4) as pool:
++        source_reads=list(pool.map(single_read,[m for _,m,_ in cases]))
++        written_reads=list(pool.map(single_read,written))
++    diagnostics=[]
++    for lane,reads in [("source_read",source_reads),("native_write_cross_read",written_reads)]:
++        exact=known=0;differences=[]
++        for (identifier,_,record),(text,stderr),expected in zip(cases,reads,formulas):
++            lines=text.splitlines();assert len(lines)==1,(identifier,text,stderr)
++            line=lines[0]
++            smiles=line.split()[0]
++            model=Chem.MolFromSmiles(smiles);assert model is not None,(identifier,smiles)
++            actual=rdMolDescriptors.CalcMolFormula(model)
++            if actual==expected:exact+=1
++            else:
++                assert record["known_openbabel_zero_override_gap"],(identifier,actual,expected)
++                known+=1;differences.append(dict(id=identifier,expected=expected,openbabel_formula=actual,openbabel_smiles=smiles))
++        diagnostics.append(dict(lane=lane,exact_formula_cases=exact,known_zero_override_differences=known,
++                                differences=differences))
++    simple_smiles=[r["smiles"] for r in manifest["writer_controls"]]
++    output,stderr=obabel("smi","cdjson","\n".join(simple_smiles)+"\n","--gen2D")
++    imported=chematic.parse_cdjson(output)
++    assert len(imported["molecules"])==len(simple_smiles),(len(imported["molecules"]),stderr)
++    for smiles,item in zip(simple_smiles,imported["molecules"]):
++        assert item["mol"].formula==rdMolDescriptors.CalcMolFormula(Chem.MolFromSmiles(smiles))
++    result=dict(schema_version=1,issue=dict(number=2763,state="OPEN",verified_date="2026-10-15",updated_at="2025-01-10T08:55:05Z",url="https://github.com/openbabel/openbabel/issues/2763"),
++        scope="Strict molecular ChemDoodle JSON subset, explicit zero H overrides, source/ID preservation and graph writer",
++        oracle=dict(openbabel=version,rdkit=rdBase.rdkitVersion,profile="Explicit source H overrides, RDKit ordinary atom defaults for -1/omitted H, graph reconstruction and formula comparison"),
++        fixtures=dict(path=str(FIXTURES.relative_to(ROOT)),sha256=hashlib.sha256(FIXTURES.read_bytes()).hexdigest()),
++        results=dict(native_rdkit_cases=len(cases),native_roundtrips=len(cases),source_id_coordinate_cases=len(cases),
++                     normalized_packet_sha256=packet.hexdigest(),unexpected_mismatches=0,
++                     openbabel_diagnostics=diagnostics,openbabel_writer_import_controls=len(simple_smiles),
++                     multi_molecule_read_control=dict(input_molecules=len(cases),chematic_molecules=len(document["molecules"]),
++                         openbabel_molecules=len(batch_output.splitlines()),openbabel_stderr=batch_stderr),
++                     reported_default_carbon_bug_reproduced_on_3_2_1=False,
++                     current_zero_h_override_gap_reproduced=True))
++    OUTPUT.write_text(json.dumps(result,indent=2)+"\n")
++    print(json.dumps({k:v for k,v in result["results"].items() if k!="openbabel_diagnostics"},indent=2))
++    for d in diagnostics: print(d["lane"],d["exact_formula_cases"],d["known_zero_override_differences"])
++
++
++if __name__=="__main__":main()
+diff --git a/validation/openbabel_issues/cdjson/fixtures.json b/validation/openbabel_issues/cdjson/fixtures.json
+new file mode 100644
+index 0000000..31df1e3
+--- /dev/null
++++ b/validation/openbabel_issues/cdjson/fixtures.json
+@@ -0,0 +1,767 @@
++{
++  "schema_version": 1,
++  "records": [
++    {
++      "id": "default-carbon",
++      "provenance": "Project-authored minimal synthetic molecular graph; no upstream attachment or source payload copied.",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed: original project recipe",
++      "minimization": "Small graph isolates default element, H override, bond, isotope or charge behavior.",
++      "oracle": "Open Babel 3.2.1 CLI; RDKit 2026.09.1 explicit graph reconstruction, sanitization and CalcMolFormula",
++      "expected": {
++        "formula": "CH4",
++        "coordinate_units": "Unscaled drawing units",
++        "tolerance": 0
++      },
++      "known_openbabel_zero_override_gap": false,
++      "payload": {
++        "a": [
++          {
++            "x": 0,
++            "y": 0
++          }
++        ],
++        "b": []
++      },
++      "sha256": "2976ab367f78dd4b972f2cd8147e8513fbba46b11e484f6281a60ff769f486d4"
++    },
++    {
++      "id": "auto-carbon",
++      "provenance": "Project-authored minimal synthetic molecular graph; no upstream attachment or source payload copied.",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed: original project recipe",
++      "minimization": "Small graph isolates default element, H override, bond, isotope or charge behavior.",
++      "oracle": "Open Babel 3.2.1 CLI; RDKit 2026.09.1 explicit graph reconstruction, sanitization and CalcMolFormula",
++      "expected": {
++        "formula": "CH4",
++        "coordinate_units": "Unscaled drawing units",
++        "tolerance": 0
++      },
++      "known_openbabel_zero_override_gap": false,
++      "payload": {
++        "a": [
++          {
++            "x": 0,
++            "y": 0,
++            "l": "C",
++            "h": -1
++          }
++        ],
++        "b": []
++      },
++      "sha256": "db7e770e5cab3e9108e9f008c7a3912a30fc6a7513b68fab78ca897c4e16bcd0"
++    },
++    {
++      "id": "zero-carbon",
++      "provenance": "Project-authored minimal synthetic molecular graph; no upstream attachment or source payload copied.",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed: original project recipe",
++      "minimization": "Small graph isolates default element, H override, bond, isotope or charge behavior.",
++      "oracle": "Open Babel 3.2.1 CLI; RDKit 2026.09.1 explicit graph reconstruction, sanitization and CalcMolFormula",
++      "expected": {
++        "formula": "C",
++        "coordinate_units": "Unscaled drawing units",
++        "tolerance": 0
++      },
++      "known_openbabel_zero_override_gap": true,
++      "payload": {
++        "a": [
++          {
++            "x": 0,
++            "y": 0,
++            "h": 0
++          }
++        ],
++        "b": []
++      },
++      "sha256": "25814162b2c83e01e15c3b4a12871dbfaff225b4f26ef845016e49f2807a34fb"
++    },
++    {
++      "id": "two-carbon",
++      "provenance": "Project-authored minimal synthetic molecular graph; no upstream attachment or source payload copied.",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed: original project recipe",
++      "minimization": "Small graph isolates default element, H override, bond, isotope or charge behavior.",
++      "oracle": "Open Babel 3.2.1 CLI; RDKit 2026.09.1 explicit graph reconstruction, sanitization and CalcMolFormula",
++      "expected": {
++        "formula": "CH2",
++        "coordinate_units": "Unscaled drawing units",
++        "tolerance": 0
++      },
++      "known_openbabel_zero_override_gap": false,
++      "payload": {
++        "a": [
++          {
++            "x": 0,
++            "y": 0,
++            "h": 2
++          }
++        ],
++        "b": []
++      },
++      "sha256": "d56084dc5265f3e5070290f4734e12b120b26b3db94ff7d39affd9de4d7bc61e"
++    },
++    {
++      "id": "four-carbon",
++      "provenance": "Project-authored minimal synthetic molecular graph; no upstream attachment or source payload copied.",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed: original project recipe",
++      "minimization": "Small graph isolates default element, H override, bond, isotope or charge behavior.",
++      "oracle": "Open Babel 3.2.1 CLI; RDKit 2026.09.1 explicit graph reconstruction, sanitization and CalcMolFormula",
++      "expected": {
++        "formula": "CH4",
++        "coordinate_units": "Unscaled drawing units",
++        "tolerance": 0
++      },
++      "known_openbabel_zero_override_gap": false,
++      "payload": {
++        "a": [
++          {
++            "x": 0,
++            "y": 0,
++            "h": 4
++          }
++        ],
++        "b": []
++      },
++      "sha256": "8d13c95ee79e1ebe848fa5a4af21742de995f76303acae972aafd5371d1dadf7"
++    },
++    {
++      "id": "zero-oxygen",
++      "provenance": "Project-authored minimal synthetic molecular graph; no upstream attachment or source payload copied.",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed: original project recipe",
++      "minimization": "Small graph isolates default element, H override, bond, isotope or charge behavior.",
++      "oracle": "Open Babel 3.2.1 CLI; RDKit 2026.09.1 explicit graph reconstruction, sanitization and CalcMolFormula",
++      "expected": {
++        "formula": "O",
++        "coordinate_units": "Unscaled drawing units",
++        "tolerance": 0
++      },
++      "known_openbabel_zero_override_gap": true,
++      "payload": {
++        "a": [
++          {
++            "x": 0,
++            "y": 0,
++            "l": "O",
++            "h": 0
++          }
++        ],
++        "b": []
++      },
++      "sha256": "c1fc051e993ebc1902e0503e22184e642879bc3d6ab12feca1a206f0ebc387d9"
++    },
++    {
++      "id": "ammonium",
++      "provenance": "Project-authored minimal synthetic molecular graph; no upstream attachment or source payload copied.",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed: original project recipe",
++      "minimization": "Small graph isolates default element, H override, bond, isotope or charge behavior.",
++      "oracle": "Open Babel 3.2.1 CLI; RDKit 2026.09.1 explicit graph reconstruction, sanitization and CalcMolFormula",
++      "expected": {
++        "formula": "H4N+",
++        "coordinate_units": "Unscaled drawing units",
++        "tolerance": 0
++      },
++      "known_openbabel_zero_override_gap": false,
++      "payload": {
++        "a": [
++          {
++            "x": 0,
++            "y": 0,
++            "l": "N",
++            "c": 1,
++            "h": 4
++          }
++        ],
++        "b": []
++      },
++      "sha256": "c3964e46f50657684341049fd4e9383d7b9e569cb640d2c0a17ce7c3dd51dde3"
++    },
++    {
++      "id": "chloride",
++      "provenance": "Project-authored minimal synthetic molecular graph; no upstream attachment or source payload copied.",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed: original project recipe",
++      "minimization": "Small graph isolates default element, H override, bond, isotope or charge behavior.",
++      "oracle": "Open Babel 3.2.1 CLI; RDKit 2026.09.1 explicit graph reconstruction, sanitization and CalcMolFormula",
++      "expected": {
++        "formula": "Cl-",
++        "coordinate_units": "Unscaled drawing units",
++        "tolerance": 0
++      },
++      "known_openbabel_zero_override_gap": false,
++      "payload": {
++        "a": [
++          {
++            "x": 0,
++            "y": 0,
++            "l": "Cl",
++            "c": -1,
++            "h": 0
++          }
++        ],
++        "b": []
++      },
++      "sha256": "462be081c125a89b8327ca1cd21506f2d0873b2fb86d705fb0805251dc262b08"
++    },
++    {
++      "id": "ethane",
++      "provenance": "Project-authored minimal synthetic molecular graph; no upstream attachment or source payload copied.",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed: original project recipe",
++      "minimization": "Small graph isolates default element, H override, bond, isotope or charge behavior.",
++      "oracle": "Open Babel 3.2.1 CLI; RDKit 2026.09.1 explicit graph reconstruction, sanitization and CalcMolFormula",
++      "expected": {
++        "formula": "C2H6",
++        "coordinate_units": "Unscaled drawing units",
++        "tolerance": 0
++      },
++      "known_openbabel_zero_override_gap": false,
++      "payload": {
++        "a": [
++          {
++            "x": 0,
++            "y": 0
++          },
++          {
++            "x": 0,
++            "y": 0
++          }
++        ],
++        "b": [
++          {
++            "b": 0,
++            "e": 1,
++            "o": 1
++          }
++        ]
++      },
++      "sha256": "5463765d4c26d6e1b762c45314fc554b314a0d578cdccab0a24163df2948c6f5"
++    },
++    {
++      "id": "ethene",
++      "provenance": "Project-authored minimal synthetic molecular graph; no upstream attachment or source payload copied.",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed: original project recipe",
++      "minimization": "Small graph isolates default element, H override, bond, isotope or charge behavior.",
++      "oracle": "Open Babel 3.2.1 CLI; RDKit 2026.09.1 explicit graph reconstruction, sanitization and CalcMolFormula",
++      "expected": {
++        "formula": "C2H4",
++        "coordinate_units": "Unscaled drawing units",
++        "tolerance": 0
++      },
++      "known_openbabel_zero_override_gap": false,
++      "payload": {
++        "a": [
++          {
++            "x": 0,
++            "y": 0
++          },
++          {
++            "x": 0,
++            "y": 0
++          }
++        ],
++        "b": [
++          {
++            "b": 0,
++            "e": 1,
++            "o": 2
++          }
++        ]
++      },
++      "sha256": "20c12ab413d8a08f01f340ec98eb530451fb2cce91b048ed841fb493d104f0cd"
++    },
++    {
++      "id": "acetylene",
++      "provenance": "Project-authored minimal synthetic molecular graph; no upstream attachment or source payload copied.",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed: original project recipe",
++      "minimization": "Small graph isolates default element, H override, bond, isotope or charge behavior.",
++      "oracle": "Open Babel 3.2.1 CLI; RDKit 2026.09.1 explicit graph reconstruction, sanitization and CalcMolFormula",
++      "expected": {
++        "formula": "C2H2",
++        "coordinate_units": "Unscaled drawing units",
++        "tolerance": 0
++      },
++      "known_openbabel_zero_override_gap": false,
++      "payload": {
++        "a": [
++          {
++            "x": 0,
++            "y": 0
++          },
++          {
++            "x": 0,
++            "y": 0
++          }
++        ],
++        "b": [
++          {
++            "b": 0,
++            "e": 1,
++            "o": 3
++          }
++        ]
++      },
++      "sha256": "90788ab0d3416b5319c467edff1e60b70c6c2a550c918ff0087dd0a77c274f3e"
++    },
++    {
++      "id": "carbonyl-alcohol",
++      "provenance": "Project-authored minimal synthetic molecular graph; no upstream attachment or source payload copied.",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed: original project recipe",
++      "minimization": "Small graph isolates default element, H override, bond, isotope or charge behavior.",
++      "oracle": "Open Babel 3.2.1 CLI; RDKit 2026.09.1 explicit graph reconstruction, sanitization and CalcMolFormula",
++      "expected": {
++        "formula": "C2H4O2",
++        "coordinate_units": "Unscaled drawing units",
++        "tolerance": 0
++      },
++      "known_openbabel_zero_override_gap": false,
++      "payload": {
++        "a": [
++          {
++            "x": 0,
++            "y": 0
++          },
++          {
++            "x": 0,
++            "y": 0,
++            "l": "O"
++          },
++          {
++            "x": 0,
++            "y": 0
++          },
++          {
++            "x": 0,
++            "y": 0,
++            "l": "O"
++          }
++        ],
++        "b": [
++          {
++            "b": 0,
++            "e": 1,
++            "o": 2
++          },
++          {
++            "b": 0,
++            "e": 2,
++            "o": 1
++          },
++          {
++            "b": 2,
++            "e": 3,
++            "o": 1
++          }
++        ]
++      },
++      "sha256": "f474231ee605738b67a1ef2b2f11cbb3f889cb1bd2bdafaf079ee848d5f45fb4"
++    },
++    {
++      "id": "isotope-methanol",
++      "provenance": "Project-authored minimal synthetic molecular graph; no upstream attachment or source payload copied.",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed: original project recipe",
++      "minimization": "Small graph isolates default element, H override, bond, isotope or charge behavior.",
++      "oracle": "Open Babel 3.2.1 CLI; RDKit 2026.09.1 explicit graph reconstruction, sanitization and CalcMolFormula",
++      "expected": {
++        "formula": "CH4O",
++        "coordinate_units": "Unscaled drawing units",
++        "tolerance": 0
++      },
++      "known_openbabel_zero_override_gap": false,
++      "payload": {
++        "a": [
++          {
++            "x": 0,
++            "y": 0,
++            "m": 13,
++            "h": 3
++          },
++          {
++            "x": 0,
++            "y": 0,
++            "l": "O"
++          }
++        ],
++        "b": [
++          {
++            "b": 0,
++            "e": 1,
++            "o": 1
++          }
++        ]
++      },
++      "sha256": "4bdc25950b999be0a37c9436dfb844291d78b4560260b36272b24f53322d360d"
++    },
++    {
++      "id": "heavy-water",
++      "provenance": "Project-authored minimal synthetic molecular graph; no upstream attachment or source payload copied.",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed: original project recipe",
++      "minimization": "Small graph isolates default element, H override, bond, isotope or charge behavior.",
++      "oracle": "Open Babel 3.2.1 CLI; RDKit 2026.09.1 explicit graph reconstruction, sanitization and CalcMolFormula",
++      "expected": {
++        "formula": "H2O",
++        "coordinate_units": "Unscaled drawing units",
++        "tolerance": 0
++      },
++      "known_openbabel_zero_override_gap": false,
++      "payload": {
++        "a": [
++          {
++            "x": 0,
++            "y": 0,
++            "l": "H",
++            "m": 2,
++            "h": 0
++          },
++          {
++            "x": 0,
++            "y": 0,
++            "l": "O"
++          },
++          {
++            "x": 0,
++            "y": 0,
++            "l": "H",
++            "m": 2,
++            "h": 0
++          }
++        ],
++        "b": [
++          {
++            "b": 0,
++            "e": 1,
++            "o": 1
++          },
++          {
++            "b": 1,
++            "e": 2,
++            "o": 1
++          }
++        ]
++      },
++      "sha256": "c3c30467327e5f847e43d6589ea20d7dbce517fdb0954ecb3261e4b223473712"
++    },
++    {
++      "id": "explicit-methane",
++      "provenance": "Project-authored minimal synthetic molecular graph; no upstream attachment or source payload copied.",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed: original project recipe",
++      "minimization": "Small graph isolates default element, H override, bond, isotope or charge behavior.",
++      "oracle": "Open Babel 3.2.1 CLI; RDKit 2026.09.1 explicit graph reconstruction, sanitization and CalcMolFormula",
++      "expected": {
++        "formula": "CH4",
++        "coordinate_units": "Unscaled drawing units",
++        "tolerance": 0
++      },
++      "known_openbabel_zero_override_gap": false,
++      "payload": {
++        "a": [
++          {
++            "x": 0,
++            "y": 0,
++            "h": 0
++          },
++          {
++            "x": 0,
++            "y": 0,
++            "l": "H",
++            "h": 0
++          },
++          {
++            "x": 0,
++            "y": 0,
++            "l": "H",
++            "h": 0
++          },
++          {
++            "x": 0,
++            "y": 0,
++            "l": "H",
++            "h": 0
++          },
++          {
++            "x": 0,
++            "y": 0,
++            "l": "H",
++            "h": 0
++          }
++        ],
++        "b": [
++          {
++            "b": 0,
++            "e": 1,
++            "o": 1
++          },
++          {
++            "b": 0,
++            "e": 2,
++            "o": 1
++          },
++          {
++            "b": 0,
++            "e": 3,
++            "o": 1
++          },
++          {
++            "b": 0,
++            "e": 4,
++            "o": 1
++          }
++        ]
++      },
++      "sha256": "c11be9851dbb16f99e6ee755a27216fa1e8b550a3b69af565ac01327f4e9ba15"
++    },
++    {
++      "id": "mixed-hydrogens",
++      "provenance": "Project-authored minimal synthetic molecular graph; no upstream attachment or source payload copied.",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed: original project recipe",
++      "minimization": "Small graph isolates default element, H override, bond, isotope or charge behavior.",
++      "oracle": "Open Babel 3.2.1 CLI; RDKit 2026.09.1 explicit graph reconstruction, sanitization and CalcMolFormula",
++      "expected": {
++        "formula": "CH3",
++        "coordinate_units": "Unscaled drawing units",
++        "tolerance": 0
++      },
++      "known_openbabel_zero_override_gap": false,
++      "payload": {
++        "a": [
++          {
++            "x": 0,
++            "y": 0,
++            "h": 2
++          },
++          {
++            "x": 0,
++            "y": 0,
++            "l": "H",
++            "h": 0
++          }
++        ],
++        "b": [
++          {
++            "b": 0,
++            "e": 1,
++            "o": 1
++          }
++        ]
++      },
++      "sha256": "69bf80de48ab7c285733ba42afb3d27ae135f1a586d7b8f5632603f262dfe029"
++    },
++    {
++      "id": "bonded-zero-carbon",
++      "provenance": "Project-authored minimal synthetic molecular graph; no upstream attachment or source payload copied.",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed: original project recipe",
++      "minimization": "Small graph isolates default element, H override, bond, isotope or charge behavior.",
++      "oracle": "Open Babel 3.2.1 CLI; RDKit 2026.09.1 explicit graph reconstruction, sanitization and CalcMolFormula",
++      "expected": {
++        "formula": "C2H3",
++        "coordinate_units": "Unscaled drawing units",
++        "tolerance": 0
++      },
++      "known_openbabel_zero_override_gap": true,
++      "payload": {
++        "a": [
++          {
++            "x": 0,
++            "y": 0,
++            "h": 0
++          },
++          {
++            "x": 0,
++            "y": 0,
++            "h": 3
++          }
++        ],
++        "b": [
++          {
++            "b": 0,
++            "e": 1,
++            "o": 1
++          }
++        ]
++      },
++      "sha256": "3b270794b961a50dd97ca7b3e472a6113c0c370ff9a7f9d1a62bbe575cff7776"
++    }
++  ],
++  "writer_controls": [
++    {
++      "id": "writer-00",
++      "smiles": "C",
++      "provenance": "Original synthetic SMILES control",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed",
++      "minimization": "Small ordinary molecular graph",
++      "oracle": "Open Babel 3.2.1 -ismi -ocdjson --gen2D; RDKit 2026.09.1 CalcMolFormula",
++      "expected": {
++        "tolerance": 0,
++        "units": "Formula element counts and formal charge"
++      },
++      "sha256": "6b23c0d5f35d1b11f9b683f0b0a617355deb11277d91ae091d399c655b87940d"
++    },
++    {
++      "id": "writer-01",
++      "smiles": "CC",
++      "provenance": "Original synthetic SMILES control",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed",
++      "minimization": "Small ordinary molecular graph",
++      "oracle": "Open Babel 3.2.1 -ismi -ocdjson --gen2D; RDKit 2026.09.1 CalcMolFormula",
++      "expected": {
++        "tolerance": 0,
++        "units": "Formula element counts and formal charge"
++      },
++      "sha256": "a56362a10c816abf206d72cb914e2d5ca454eb9c7e744f88b1a1422c379e9942"
++    },
++    {
++      "id": "writer-02",
++      "smiles": "C(=O)CO",
++      "provenance": "Original synthetic SMILES control",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed",
++      "minimization": "Small ordinary molecular graph",
++      "oracle": "Open Babel 3.2.1 -ismi -ocdjson --gen2D; RDKit 2026.09.1 CalcMolFormula",
++      "expected": {
++        "tolerance": 0,
++        "units": "Formula element counts and formal charge"
++      },
++      "sha256": "c2baa6527c1f9996de1b811ba8ce9cdc45f79b1c1af561e09c0af2193b4a5cff"
++    },
++    {
++      "id": "writer-03",
++      "smiles": "CCO",
++      "provenance": "Original synthetic SMILES control",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed",
++      "minimization": "Small ordinary molecular graph",
++      "oracle": "Open Babel 3.2.1 -ismi -ocdjson --gen2D; RDKit 2026.09.1 CalcMolFormula",
++      "expected": {
++        "tolerance": 0,
++        "units": "Formula element counts and formal charge"
++      },
++      "sha256": "ab1de819ede91df490e6441934decfa9041b49f91d6bbadbba4df634ccff57fa"
++    },
++    {
++      "id": "writer-04",
++      "smiles": "COC",
++      "provenance": "Original synthetic SMILES control",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed",
++      "minimization": "Small ordinary molecular graph",
++      "oracle": "Open Babel 3.2.1 -ismi -ocdjson --gen2D; RDKit 2026.09.1 CalcMolFormula",
++      "expected": {
++        "tolerance": 0,
++        "units": "Formula element counts and formal charge"
++      },
++      "sha256": "f04736a51b45f491bec35fb8de6c9921cd01cbd9677275af05d267ab713bad79"
++    },
++    {
++      "id": "writer-05",
++      "smiles": "C=C",
++      "provenance": "Original synthetic SMILES control",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed",
++      "minimization": "Small ordinary molecular graph",
++      "oracle": "Open Babel 3.2.1 -ismi -ocdjson --gen2D; RDKit 2026.09.1 CalcMolFormula",
++      "expected": {
++        "tolerance": 0,
++        "units": "Formula element counts and formal charge"
++      },
++      "sha256": "baeb1d1ab8256c3fc41551dac947d4b92379c4deae0003344bdc7bfbafcd9181"
++    },
++    {
++      "id": "writer-06",
++      "smiles": "C#N",
++      "provenance": "Original synthetic SMILES control",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed",
++      "minimization": "Small ordinary molecular graph",
++      "oracle": "Open Babel 3.2.1 -ismi -ocdjson --gen2D; RDKit 2026.09.1 CalcMolFormula",
++      "expected": {
++        "tolerance": 0,
++        "units": "Formula element counts and formal charge"
++      },
++      "sha256": "2e683ad43b0acced6088da29a1864b5d6459792a6603bd6a39dfc488608aa307"
++    },
++    {
++      "id": "writer-07",
++      "smiles": "CCl",
++      "provenance": "Original synthetic SMILES control",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed",
++      "minimization": "Small ordinary molecular graph",
++      "oracle": "Open Babel 3.2.1 -ismi -ocdjson --gen2D; RDKit 2026.09.1 CalcMolFormula",
++      "expected": {
++        "tolerance": 0,
++        "units": "Formula element counts and formal charge"
++      },
++      "sha256": "6626fa114cb4c6414c3cdc2848c385521e6182c6d4a85731ec01148c5dc3baab"
++    },
++    {
++      "id": "writer-08",
++      "smiles": "CCBr",
++      "provenance": "Original synthetic SMILES control",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed",
++      "minimization": "Small ordinary molecular graph",
++      "oracle": "Open Babel 3.2.1 -ismi -ocdjson --gen2D; RDKit 2026.09.1 CalcMolFormula",
++      "expected": {
++        "tolerance": 0,
++        "units": "Formula element counts and formal charge"
++      },
++      "sha256": "038fe59d5ce46a634e53020d818532bc881aefbaa589e70b4d7da1d58641ae27"
++    },
++    {
++      "id": "writer-09",
++      "smiles": "[NH4+]",
++      "provenance": "Original synthetic SMILES control",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed",
++      "minimization": "Small ordinary molecular graph",
++      "oracle": "Open Babel 3.2.1 -ismi -ocdjson --gen2D; RDKit 2026.09.1 CalcMolFormula",
++      "expected": {
++        "tolerance": 0,
++        "units": "Formula element counts and formal charge"
++      },
++      "sha256": "b262b2b94c0eb249a976db52b98b60512b1acb0bdb0c9a0675d9afbf9bacacfb"
++    },
++    {
++      "id": "writer-10",
++      "smiles": "[Cl-]",
++      "provenance": "Original synthetic SMILES control",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed",
++      "minimization": "Small ordinary molecular graph",
++      "oracle": "Open Babel 3.2.1 -ismi -ocdjson --gen2D; RDKit 2026.09.1 CalcMolFormula",
++      "expected": {
++        "tolerance": 0,
++        "units": "Formula element counts and formal charge"
++      },
++      "sha256": "21c8d33686776387b6a57d02c12edc885afa97a58e90478063570cdaceda8054"
++    },
++    {
++      "id": "writer-11",
++      "smiles": "[13CH3]O",
++      "provenance": "Original synthetic SMILES control",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed",
++      "minimization": "Small ordinary molecular graph",
++      "oracle": "Open Babel 3.2.1 -ismi -ocdjson --gen2D; RDKit 2026.09.1 CalcMolFormula",
++      "expected": {
++        "tolerance": 0,
++        "units": "Formula element counts and formal charge"
++      },
++      "sha256": "84a140a5367cba1fcf095a752ec77dd555685074972639d68b407d3280825679"
++    }
++  ],
++  "variant_recipe": "32 variants per record: reversed/rotated atom order, remapped endpoints, reversed bond order, optional explicit C labels, full-precision translated 3D drawing coordinates and globally unique IDs."
++}
+diff --git a/validation/results/binding_surface_inventory-current.json b/validation/results/binding_surface_inventory-current.json
+index 316b8a0..1501d10 100644
+--- a/validation/results/binding_surface_inventory-current.json
++++ b/validation/results/binding_surface_inventory-current.json
+@@ -7,9 +7,9 @@
+   "scope": "Rust source declarations only; this is not semantic parity evidence",
+   "results": {
+     "wasm_export_count": 303,
+-    "python_pyfunction_count": 198,
+-    "python_registered_count": 198,
++    "python_pyfunction_count": 200,
++    "python_registered_count": 200,
+     "python_declared_without_registration": [],
+-    "surface_sha256": "91d6f9c369d6d6c621d2e5fccd600c3693870a825b8f982e539458c32b8bdf69"
++    "surface_sha256": "bd09c9b00e276f52141dcd6ec5972e628e2bda6b295998ecafed5d4aa48da6b5"
+   }
+ }
