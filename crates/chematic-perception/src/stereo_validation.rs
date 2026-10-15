@@ -161,7 +161,13 @@ fn simple_morgan_ranks(mol: &Molecule) -> Vec<u64> {
 /// Compare substituents from a center, retaining the root and ring-revisit
 /// context. Global atom colours can tie two branches in a fused/bridged ring
 /// even when the branches are distinct from the center's perspective.
-fn substituent_signatures_distinct(mol: &Molecule, center: AtomIdx, starts: &[AtomIdx]) -> bool {
+/// Whether the supplied branches at a prospective stereocenter have distinct
+/// atom-and-bond signatures, including ring revisits.
+pub fn substituent_signatures_distinct(
+    mol: &Molecule,
+    center: AtomIdx,
+    starts: &[AtomIdx],
+) -> bool {
     let signatures: Vec<Vec<(u64, u8)>> = starts
         .iter()
         .map(|&start| {
