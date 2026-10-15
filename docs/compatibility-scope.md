@@ -122,6 +122,14 @@ cross-strand/cyclic linkages, and unknown modification semantics. Protein,
 peptide, carbohydrate, and unrestricted nucleic-acid semantics remain outside
 the v1.0 contract.
 
+## Glycan molecular interchange
+
+Glycan structures can use the generic SMILES and MOL/SDF molecular graph APIs.
+The [crabWURCS interchange check](https://github.com/kent-tokyo/chematic/blob/main/validation/crabwurcs_interchange/README.md)
+exercises that boundary on 938 source SMILES from a pinned upstream checkout.
+WURCS notation, residue and linkage semantics, and glycan extraction from
+PDB/mmCIF are outside the current CheMatic contract.
+
 ## RDKit and Morgan compatibility
 
 `chematic.rdkit_compat` is a selected 2D compatibility layer, not a full RDKit
