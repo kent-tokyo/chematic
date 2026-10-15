@@ -579,7 +579,11 @@ impl<'a> SmilesWriter<'a> {
         if original.contains(&STEREO_VACANT_SENTINEL) {
             written.push(STEREO_VACANT_SENTINEL);
         }
-        if chematic_core::implicit_hcount(self.mol, idx) > 0 {
+        // Three-coordinate sulfoxides use the H sentinel for the stereogenic
+        // lone pair, even though the atom has no implicit hydrogen.
+        if original.contains(&STEREO_H_SENTINEL)
+            || chematic_core::implicit_hcount(self.mol, idx) > 0
+        {
             written.push(STEREO_H_SENTINEL);
         }
         if let Some(rings) = self.atom_ring_nums.get(&idx) {
