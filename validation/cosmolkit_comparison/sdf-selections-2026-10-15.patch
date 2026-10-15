@@ -1,0 +1,1837 @@
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 753acdf..0e8b425 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -223,6 +223,7 @@ jobs:
+           - { package: chematic-mol, target: turbomole_contract }
+           - { package: chematic-mol, target: rdfile_contract }
+           - { package: chematic-mol, target: gzmat_precision }
++          - { package: chematic-mol, target: sdf_selections }
+           - { package: chematic-mol, target: qcschema }
+           - { package: chematic-mol, target: square_planar_mol_io }
+           - { package: chematic-mol, target: stereo2d_ez_reader_integration }
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 3e09395..01d3f92 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -12,6 +12,12 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
+ 
+ ### Added
+ 
++- Added indexed SDF slices, integer selections, strict boolean masks and
++  source-indexed Python batches with keep/raise failure handling. Bounded
++  reads retain duplicate requests and malformed-record positions. SDF graph,
++  record and file readers now dispatch V3000 CTABs to the existing parser
++  while preserving trailing SD fields and V2000 terminator compatibility.
++
+ - Checked Cartesian-to-Z-matrix conversion and Gaussian-style Z-matrix output
+   with explicit reference atoms, charge/spin and 1–17 significant digits
+   (Open Babel #2794). Rust also reconstructs a canonical Cartesian frame;
+diff --git a/crates/chematic-mol/src/lib.rs b/crates/chematic-mol/src/lib.rs
+index 751f943..fc863a0 100644
+--- a/crates/chematic-mol/src/lib.rs
++++ b/crates/chematic-mol/src/lib.rs
+@@ -199,8 +199,8 @@ pub use rxn::{
+ };
+ pub use sdf::{
+     ConformerEnsemble, SdfBatch, SdfBatchProgress, SdfBatchReader, SdfDataset, SdfFileReader,
+-    SdfParseLimits, SdfReader, SdfRecord, SdfRecordMetadata, SdfRecordReader,
+-    parse_sdf_with_limits, read_sdf_conformer_ensembles,
++    SdfIndexedBatch, SdfParseLimits, SdfReader, SdfRecord, SdfRecordMetadata, SdfRecordReader,
++    SdfSelectionError, SdfSelectionLimits, parse_sdf_with_limits, read_sdf_conformer_ensembles,
+ };
+ pub use semantic::{
+     AtomRef, ExpandedSemantic, PolymerEndGroup, PolymerLinkage, PolymerRepeatUnit,
+diff --git a/crates/chematic-mol/src/sdf.rs b/crates/chematic-mol/src/sdf.rs
+index 907ccaa..65ed14d 100644
+--- a/crates/chematic-mol/src/sdf.rs
++++ b/crates/chematic-mol/src/sdf.rs
+@@ -13,7 +13,42 @@ use chematic_core::{Coords3D, Molecule};
+ use chematic_perception::{EzDirectionDiagnostic, StereoDiagnostic};
+ 
+ mod dataset;
++mod fields;
++use fields::parse_sd_fields;
++mod selection;
+ pub use dataset::{SdfDataset, SdfRecordMetadata};
++pub use selection::{SdfIndexedBatch, SdfSelectionError, SdfSelectionLimits};
++
++fn is_v3000_record(block: &str) -> bool {
++    block
++        .lines()
++        .nth(3)
++        .is_some_and(|line| line.trim_end().ends_with("V3000"))
++}
++
++fn sdf_ctab_end(block: &str) -> Option<usize> {
++    let mut end = 0;
++    for (index, line) in block.split_inclusive('\n').enumerate() {
++        end += line.len();
++        if index >= 4 && line.trim_start().starts_with("M  END") {
++            return Some(end);
++        }
++    }
++    None
++}
++fn sdf_ctab(block: &str) -> &str {
++    &block[..sdf_ctab_end(block).unwrap_or(block.len())]
++}
++
++fn read_sdf_mol_with_diagnostics(
++    block: &str,
++) -> Result<crate::mol2000::MolReadReport, MolParseError> {
++    if is_v3000_record(block) {
++        crate::mol3000::read_mol_v3000_with_diagnostics(sdf_ctab(block))
++    } else {
++        read_mol_with_diagnostics(block)
++    }
++}
+ 
+ /// Iterator over molecules in an SDF string.
+ ///
+@@ -130,7 +165,11 @@ impl<'a> Iterator for SdfReader<'a> {
+                 }));
+             }
+             self.current_mol_num += 1;
+-            return Some(parse_mol(mol_block));
++            return Some(if is_v3000_record(mol_block) {
++                crate::mol3000::parse_mol_v3000(sdf_ctab(mol_block))
++            } else {
++                parse_mol(mol_block)
++            });
+         }
+     }
+ }
+@@ -312,16 +351,13 @@ impl<'a> Iterator for SdfRecordReader<'a> {
+             self.records_read += 1;
+ 
+             // Parse molecule + 2D coordinates + stereo diagnostics.
+-            let report = match read_mol_with_diagnostics(block) {
++            let report = match read_sdf_mol_with_diagnostics(block) {
+                 Ok(report) => report,
+                 Err(e) => return Some(Err(e)),
+             };
+ 
+             // Extract data fields from the part after "M  END".
+-            let data_part = block
+-                .find("M  END")
+-                .map(|pos| &block[pos + 6..])
+-                .unwrap_or("");
++            let data_part = sdf_ctab_end(block).map(|pos| &block[pos..]).unwrap_or("");
+             let properties = parse_sd_fields(data_part);
+ 
+             return Some(Ok(SdfRecord {
+@@ -340,54 +376,6 @@ impl<'a> Iterator for SdfRecordReader<'a> {
+     }
+ }
+ 
+-/// Parse SD data fields from the section after `M  END`.
+-///
+-/// Each field starts with `> <FieldName>` on its own line.  The value is
+-/// everything on subsequent lines until a blank line (or end of input).
+-fn parse_sd_fields(data: &str) -> std::collections::HashMap<String, String> {
+-    let mut fields = std::collections::HashMap::new();
+-    let mut current_key: Option<String> = None;
+-    let mut current_value = String::new();
+-
+-    for raw_line in data.lines() {
+-        let line = raw_line.trim_end_matches('\r');
+-
+-        if let Some(key) = parse_sd_field_header(line) {
+-            // Flush previous field.
+-            if let Some(k) = current_key.take() {
+-                fields.insert(k, std::mem::take(&mut current_value));
+-            }
+-            current_key = Some(key);
+-        } else if line.is_empty() {
+-            // Blank line ends the current field's value.
+-            if let Some(k) = current_key.take() {
+-                fields.insert(k, std::mem::take(&mut current_value));
+-            }
+-        } else if current_key.is_some() {
+-            if !current_value.is_empty() {
+-                current_value.push('\n');
+-            }
+-            current_value.push_str(line);
+-        }
+-    }
+-    // Flush trailing field with no blank line.
+-    if let Some(k) = current_key {
+-        fields.insert(k, current_value);
+-    }
+-
+-    fields
+-}
+-
+-/// Parse `> <FieldName>` header lines, returning the field name or `None`.
+-fn parse_sd_field_header(line: &str) -> Option<String> {
+-    // SDF spec: field headers start with "> " and contain the name in `<...>`.
+-    // We accept "> <Name>" and also ">  <Name>" (extra spaces).
+-    let rest = line.strip_prefix('>')?;
+-    let rest = rest.trim();
+-    let inner = rest.strip_prefix('<')?.strip_suffix('>')?;
+-    Some(inner.to_string())
+-}
+-
+ // ---------------------------------------------------------------------------
+ // Conformer ensembles — bundle records sharing the same molecular graph
+ // ---------------------------------------------------------------------------
+@@ -623,13 +611,16 @@ impl<R: std::io::BufRead> SdfFileReader<R> {
+     fn parse_current_block(&self) -> Result<SdfRecord, MolParseError> {
+         let block = std::str::from_utf8(&self.block)
+             .map_err(|error| MolParseError::Io(error.to_string()))?;
+-        let data_part = block
+-            .find("M  END")
+-            .map(|position| &block[position + 6..])
++        let data_part = sdf_ctab_end(block)
++            .map(|position| &block[position..])
+             .unwrap_or("");
+         let properties = parse_sd_fields(data_part);
+         if !self.diagnostics {
+-            let (mol, meta) = parse_mol_fast(block)?;
++            let (mol, meta) = if is_v3000_record(block) {
++                crate::mol3000::parse_mol_v3000(sdf_ctab(block))?
++            } else {
++                parse_mol_fast(block)?
++            };
+             return Ok(SdfRecord {
+                 mol,
+                 meta,
+@@ -643,7 +634,7 @@ impl<R: std::io::BufRead> SdfFileReader<R> {
+                 stereo3d_diagnostics: Vec::new(),
+             });
+         }
+-        let report = read_mol_with_diagnostics(block)?;
++        let report = read_sdf_mol_with_diagnostics(block)?;
+         Ok(SdfRecord {
+             mol: report.mol,
+             meta: report.metadata,
+diff --git a/crates/chematic-mol/src/sdf/fields.rs b/crates/chematic-mol/src/sdf/fields.rs
+new file mode 100644
+index 0000000..0232282
+--- /dev/null
++++ b/crates/chematic-mol/src/sdf/fields.rs
+@@ -0,0 +1,47 @@
++/// Parse SD data fields from the section after `M  END`.
++///
++/// Each field starts with `> <FieldName>` on its own line.  The value is
++/// everything on subsequent lines until a blank line (or end of input).
++pub(super) fn parse_sd_fields(data: &str) -> std::collections::HashMap<String, String> {
++    let mut fields = std::collections::HashMap::new();
++    let mut current_key: Option<String> = None;
++    let mut current_value = String::new();
++
++    for raw_line in data.lines() {
++        let line = raw_line.trim_end_matches('\r');
++
++        if let Some(key) = parse_sd_field_header(line) {
++            // Flush previous field.
++            if let Some(k) = current_key.take() {
++                fields.insert(k, std::mem::take(&mut current_value));
++            }
++            current_key = Some(key);
++        } else if line.is_empty() {
++            // Blank line ends the current field's value.
++            if let Some(k) = current_key.take() {
++                fields.insert(k, std::mem::take(&mut current_value));
++            }
++        } else if current_key.is_some() {
++            if !current_value.is_empty() {
++                current_value.push('\n');
++            }
++            current_value.push_str(line);
++        }
++    }
++    // Flush trailing field with no blank line.
++    if let Some(k) = current_key {
++        fields.insert(k, current_value);
++    }
++
++    fields
++}
++
++/// Parse `> <FieldName>` header lines, returning the field name or `None`.
++fn parse_sd_field_header(line: &str) -> Option<String> {
++    // SDF spec: field headers start with "> " and contain the name in `<...>`.
++    // We accept "> <Name>" and also ">  <Name>" (extra spaces).
++    let rest = line.strip_prefix('>')?;
++    let rest = rest.trim();
++    let inner = rest.strip_prefix('<')?.strip_suffix('>')?;
++    Some(inner.to_string())
++}
+diff --git a/crates/chematic-mol/src/sdf/selection.rs b/crates/chematic-mol/src/sdf/selection.rs
+new file mode 100644
+index 0000000..69a16e2
+--- /dev/null
++++ b/crates/chematic-mol/src/sdf/selection.rs
+@@ -0,0 +1,130 @@
++//! Ordered, bounded selection from an indexed SDF dataset.
++use super::{MolParseError, SdfDataset, SdfRecord};
++
++#[derive(Debug, Clone, Copy)]
++pub struct SdfSelectionLimits {
++    pub max_records: usize,
++    /// Sum of indexed source-record bytes, including duplicate selections.
++    pub max_total_record_bytes: usize,
++}
++impl Default for SdfSelectionLimits {
++    fn default() -> Self {
++        Self {
++            max_records: 10_000,
++            max_total_record_bytes: 64 << 20,
++        }
++    }
++}
++
++#[derive(Debug)]
++pub enum SdfSelectionError {
++    Index {
++        index: usize,
++        len: usize,
++    },
++    ResourceLimit {
++        resource: &'static str,
++        actual: usize,
++        limit: usize,
++    },
++    Read(MolParseError),
++}
++impl core::fmt::Display for SdfSelectionError {
++    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
++        match self {
++            Self::Index { index, len } => {
++                write!(f, "SDF index {index} out of range for {len} records")
++            }
++            Self::ResourceLimit {
++                resource,
++                actual,
++                limit,
++            } => write!(f, "SDF selection {resource} {actual} exceeds {limit}"),
++            Self::Read(error) => error.fmt(f),
++        }
++    }
++}
++impl std::error::Error for SdfSelectionError {}
++
++/// Every requested position is retained; duplicate indices are parsed separately.
++/// Parse failures stay in place. I/O failures abort the operation.
++pub struct SdfIndexedBatch {
++    pub indices: Vec<usize>,
++    pub records: Vec<Result<SdfRecord, MolParseError>>,
++}
++impl SdfIndexedBatch {
++    pub fn len(&self) -> usize {
++        self.records.len()
++    }
++    pub fn is_empty(&self) -> bool {
++        self.records.is_empty()
++    }
++    pub fn valid_mask(&self) -> Vec<bool> {
++        self.records.iter().map(Result::is_ok).collect()
++    }
++}
++impl SdfDataset {
++    /// Select any ordered list of source records with finite default limits.
++    /// All indices and cumulative source bytes are checked before any seek/read.
++    pub fn read_indices(&self, indices: &[usize]) -> Result<SdfIndexedBatch, SdfSelectionError> {
++        self.read_indices_with_limits(indices, &SdfSelectionLimits::default())
++    }
++    pub fn read_indices_with_limits(
++        &self,
++        indices: &[usize],
++        limits: &SdfSelectionLimits,
++    ) -> Result<SdfIndexedBatch, SdfSelectionError> {
++        self.check_selection(indices, limits)?;
++        let records = indices
++            .iter()
++            .map(|&index| match self.get(index) {
++                Ok(Some(record)) => Ok(Ok(record)),
++                Ok(None) => Err(SdfSelectionError::Index {
++                    index,
++                    len: self.len(),
++                }),
++                Err(error @ MolParseError::Io(_)) => Err(SdfSelectionError::Read(error)),
++                Err(error) => Ok(Err(error)),
++            })
++            .collect::<Result<_, _>>()?;
++        Ok(SdfIndexedBatch {
++            indices: indices.to_vec(),
++            records,
++        })
++    }
++    fn check_selection(
++        &self,
++        indices: &[usize],
++        limits: &SdfSelectionLimits,
++    ) -> Result<(), SdfSelectionError> {
++        if indices.len() > limits.max_records {
++            return Err(SdfSelectionError::ResourceLimit {
++                resource: "records",
++                actual: indices.len(),
++                limit: limits.max_records,
++            });
++        }
++        let mut total = 0usize;
++        for &index in indices {
++            let meta = self.metadata(index).ok_or(SdfSelectionError::Index {
++                index,
++                len: self.len(),
++            })?;
++            total = total
++                .checked_add(meta.byte_len)
++                .ok_or(SdfSelectionError::ResourceLimit {
++                    resource: "record bytes",
++                    actual: usize::MAX,
++                    limit: limits.max_total_record_bytes,
++                })?;
++            if total > limits.max_total_record_bytes {
++                return Err(SdfSelectionError::ResourceLimit {
++                    resource: "record bytes",
++                    actual: total,
++                    limit: limits.max_total_record_bytes,
++                });
++            }
++        }
++        Ok(())
++    }
++}
+diff --git a/crates/chematic-mol/tests/sdf_selections.rs b/crates/chematic-mol/tests/sdf_selections.rs
+new file mode 100644
+index 0000000..f17475a
+--- /dev/null
++++ b/crates/chematic-mol/tests/sdf_selections.rs
+@@ -0,0 +1,197 @@
++//! Original MIT OR Apache-2.0 fixtures; provenance and oracle in manifest.json.
++use chematic_mol::{SdfDataset, SdfSelectionError, SdfSelectionLimits};
++use std::path::PathBuf;
++use std::sync::atomic::{AtomicU64, Ordering};
++const INPUT: &str =
++    include_str!("../../../validation/cosmolkit_comparison/sdf_selections/minimal.sdf");
++static NEXT: AtomicU64 = AtomicU64::new(0);
++struct Temp(PathBuf);
++impl Temp {
++    fn new(text: &str) -> Self {
++        let path = std::env::temp_dir().join(format!(
++            "chematic-selected-sdf-{}-{}.sdf",
++            std::process::id(),
++            NEXT.fetch_add(1, Ordering::Relaxed)
++        ));
++        std::fs::write(&path, text).unwrap();
++        Self(path)
++    }
++    fn dataset(&self) -> SdfDataset {
++        SdfDataset::open(&self.0).unwrap()
++    }
++}
++impl Drop for Temp {
++    fn drop(&mut self) {
++        let _ = std::fs::remove_file(&self.0);
++    }
++}
++#[test]
++fn ordered_duplicate_records_and_errors_keep_their_positions() {
++    let f = Temp::new(INPUT);
++    let d = f.dataset();
++    let b = d.read_indices(&[4, 0, 1, 4, 2]).unwrap();
++    assert_eq!(b.indices, [4, 0, 1, 4, 2]);
++    assert_eq!(b.valid_mask(), [true, true, false, true, true]);
++    assert_eq!(b.records[0].as_ref().unwrap().meta.name, "fluorine");
++    assert_eq!(b.records[4].as_ref().unwrap().properties["ID"], "oxygen-id");
++    assert_eq!(
++        b.records[4].as_ref().unwrap().properties["note"],
++        "line1\nline2"
++    );
++    let mut records = b.records;
++    records[0]
++        .as_mut()
++        .unwrap()
++        .properties
++        .insert("ID".into(), "changed".into());
++    assert_eq!(records[3].as_ref().unwrap().properties["ID"], "fluorine-id");
++    assert_eq!(d.get(4).unwrap().unwrap().properties["ID"], "fluorine-id");
++}
++#[test]
++fn empty_selection_and_all_bad_selection() {
++    let f = Temp::new(INPUT);
++    let d = f.dataset();
++    assert!(d.read_indices(&[]).unwrap().is_empty());
++    let b = d.read_indices(&[1, 1]).unwrap();
++    assert_eq!(b.valid_mask(), [false, false]);
++    assert_eq!(b.len(), 2);
++}
++#[test]
++fn index_validation_happens_before_reading_any_record() {
++    let f = Temp::new(INPUT);
++    let d = f.dataset();
++    std::fs::write(&f.0, "").unwrap();
++    assert!(matches!(
++        d.read_indices(&[0, 5]),
++        Err(SdfSelectionError::Index { index: 5, len: 5 })
++    ));
++}
++#[test]
++fn record_and_cumulative_byte_caps_include_duplicate_reads() {
++    let f = Temp::new(INPUT);
++    let d = f.dataset();
++    let bytes = d.metadata(0).unwrap().byte_len;
++    let mut limits = SdfSelectionLimits {
++        max_records: 2,
++        max_total_record_bytes: 2 * bytes,
++    };
++    assert!(d.read_indices_with_limits(&[0, 0], &limits).is_ok());
++    limits.max_total_record_bytes -= 1;
++    assert!(matches!(
++        d.read_indices_with_limits(&[0, 0], &limits),
++        Err(SdfSelectionError::ResourceLimit {
++            resource: "record bytes",
++            ..
++        })
++    ));
++    limits.max_total_record_bytes = usize::MAX;
++    limits.max_records = 1;
++    assert!(matches!(
++        d.read_indices_with_limits(&[0, 0], &limits),
++        Err(SdfSelectionError::ResourceLimit {
++            resource: "records",
++            ..
++        })
++    ));
++}
++#[test]
++fn byte_validation_precedes_reads_and_io_errors_abort() {
++    let f = Temp::new(INPUT);
++    let d = f.dataset();
++    std::fs::write(&f.0, "").unwrap();
++    let limits = SdfSelectionLimits {
++        max_records: 2,
++        max_total_record_bytes: 0,
++    };
++    assert!(matches!(
++        d.read_indices_with_limits(&[0], &limits),
++        Err(SdfSelectionError::ResourceLimit { .. })
++    ));
++    assert!(matches!(
++        d.read_indices(&[0]),
++        Err(SdfSelectionError::Read(chematic_mol::MolParseError::Io(_)))
++    ));
++}
++#[test]
++fn selected_reads_match_scalar_reads_after_crlf_and_unterminated_input() {
++    for text in [
++        INPUT.to_string(),
++        INPUT.replace('\n', "\r\n"),
++        INPUT.trim_end_matches("$$$$\n").to_string(),
++    ] {
++        let f = Temp::new(&text);
++        let d = f.dataset();
++        assert_eq!(d.len(), 5);
++        let b = d.read_indices(&[3, 4, 2, 0]).unwrap();
++        for (index, record) in b.indices.iter().zip(b.records) {
++            let scalar = d.get(*index).unwrap().unwrap();
++            let selected = record.unwrap();
++            assert_eq!(selected.meta.name, scalar.meta.name);
++            assert_eq!(selected.properties, scalar.properties);
++        }
++    }
++}
++#[test]
++fn concurrent_selections_do_not_share_seek_positions() {
++    let f = Temp::new(INPUT);
++    let d = std::sync::Arc::new(f.dataset());
++    let threads: Vec<_> = (0..4)
++        .map(|_| {
++            let d = d.clone();
++            std::thread::spawn(move || {
++                for _ in 0..20 {
++                    let b = d.read_indices(&[4, 0, 3, 2]).unwrap();
++                    assert_eq!(b.records[0].as_ref().unwrap().meta.name, "fluorine");
++                    assert_eq!(b.records[3].as_ref().unwrap().meta.name, "oxygen");
++                }
++            })
++        })
++        .collect();
++    for t in threads {
++        t.join().unwrap();
++    }
++}
++
++#[test]
++fn all_sdf_record_readers_dispatch_mixed_ctab_versions() {
++    let graph: Vec<_> = chematic_mol::SdfReader::new(INPUT).collect();
++    let records: Vec<_> = chematic_mol::SdfRecordReader::new(INPUT).collect();
++    let stream: Vec<_> = chematic_mol::SdfFileReader::new(std::io::Cursor::new(INPUT)).collect();
++    let fast: Vec<_> = chematic_mol::SdfFileReader::fast(std::io::Cursor::new(INPUT)).collect();
++    for valid in [
++        graph.iter().map(Result::is_ok).collect::<Vec<_>>(),
++        records.iter().map(Result::is_ok).collect(),
++        stream.iter().map(Result::is_ok).collect(),
++        fast.iter().map(Result::is_ok).collect(),
++    ] {
++        assert_eq!(valid, [true, false, true, true, true]);
++    }
++    assert_eq!(records[4].as_ref().unwrap().properties["ID"], "fluorine-id");
++}
++
++#[test]
++fn exact_m_end_title_or_comment_is_not_a_ctab_terminator() {
++    for title in ["carbon", "fluorine"] {
++        let text = INPUT.replacen(
++            &format!("{title}\n  chematic synthetic\n\n"),
++            "M  END\n  chematic synthetic\nM  END\n",
++            1,
++        );
++        let f = Temp::new(&text);
++        let d = f.dataset();
++        let index = if title == "carbon" { 0 } else { 4 };
++        let b = d.read_indices(&[index]).unwrap();
++        let record = b.records[0].as_ref().unwrap();
++        assert_eq!(record.meta.name, "M  END");
++        assert_eq!(record.properties["ID"], format!("{title}-id"));
++    }
++}
++
++#[test]
++fn v2000_permissive_terminator_still_keeps_data_fields() {
++    let text = INPUT.replacen("M  END\n", "  M  END trailing\n", 1);
++    let f = Temp::new(&text);
++    let d = f.dataset();
++    let b = d.read_indices(&[0]).unwrap();
++    assert_eq!(b.records[0].as_ref().unwrap().properties["ID"], "carbon-id");
++}
+diff --git a/crates/chematic-py/python/chematic/__init__.pyi b/crates/chematic-py/python/chematic/__init__.pyi
+index 0bdae2a..f356c06 100644
+--- a/crates/chematic-py/python/chematic/__init__.pyi
++++ b/crates/chematic-py/python/chematic/__init__.pyi
+@@ -14,7 +14,7 @@ Quick start::
+ 
+ from __future__ import annotations
+ 
+-from typing import Any, Iterable, Iterator, Literal, Optional, Sequence, TypedDict, Union
++from typing import overload, Any, Iterable, Iterator, Literal, Optional, Sequence, TypedDict, Union
+ 
+ import numpy as np
+ from numpy import ndarray
+@@ -4410,12 +4410,34 @@ class SdfDataset:
+     def open(path: str) -> SdfDataset: ...
+ 
+     def __len__(self) -> int: ...
++    @overload
+     def __getitem__(self, index: int) -> SdfRecord: ...
++    @overload
++    def __getitem__(self, index: Union[slice, list[int], tuple[int, ...], list[bool], tuple[bool, ...]]) -> SdfSelectionBatch: ...
++    def select(self, key: Union[int, slice, list[int], tuple[int, ...], list[bool], tuple[bool, ...]], *, errors: Literal["keep", "raise"] = "keep", max_bytes: int = 67108864) -> SdfSelectionBatch: ...
++    def batches(self, size: int = 1024, *, errors: Literal["keep", "raise"] = "keep", max_bytes: int = 67108864) -> SdfDatasetBatches: ...
+     def get(self, index: int) -> SdfRecord: ...
+     def raw_record(self, index: int) -> str: ...
+     def metadata(self, index: int) -> SdfRecordMetadata: ...
+     def read_range(self, start: int, stop: Optional[int] = None) -> list[SdfRecord]: ...
+ 
++class SdfSelectionBatch:
++    """Source-indexed selected records, with None placeholders for rejected input."""
++    def __len__(self) -> int: ...
++    def __getitem__(self, index: int) -> Optional[SdfRecord]: ...
++    def source_indices(self) -> list[int]: ...
++    def records(self) -> list[Optional[SdfRecord]]: ...
++    def valid_mask(self) -> list[bool]: ...
++    def to_smiles_list(self) -> list[Optional[str]]: ...
++    def errors(self) -> list[dict[str, Any]]: ...
++
++class SdfDatasetBatches:
++    """Pull iterator over bounded SdfSelectionBatch values; len is remaining batches."""
++    def __iter__(self) -> Iterator[SdfSelectionBatch]: ...
++    def __next__(self) -> SdfSelectionBatch: ...
++    def __len__(self) -> int: ...
++    def cancel(self) -> None: ...
++
+ class SdfIter:
+     """Lazy iterator over SDF records."""
+ 
+diff --git a/crates/chematic-py/src/io.rs b/crates/chematic-py/src/io.rs
+index db34d1f..bba6c41 100644
+--- a/crates/chematic-py/src/io.rs
++++ b/crates/chematic-py/src/io.rs
+@@ -5,6 +5,11 @@ use std::sync::Arc;
+ 
+ use crate::Mol;
+ 
++mod dataset;
++mod dataset_batch;
++mod dataset_selector;
++use dataset::PySdfDataset;
++
+ // ---------------------------------------------------------------------------
+ // PySdfRecord — one entry from an SDF file
+ // ---------------------------------------------------------------------------
+@@ -175,80 +180,6 @@ impl From<&chematic_mol::SdfRecordMetadata> for PySdfRecordMetadata {
+     }
+ }
+ 
+-/// Indexed random access to a seekable SDF file.
+-///
+-/// Construction scans only record boundaries and title lines. Molecular
+-/// graphs and SD fields are parsed lazily when a record is requested, so a
+-/// large file does not need to be materialized as Python objects.
+-#[pyclass(name = "SdfDataset", frozen)]
+-pub struct PySdfDataset {
+-    inner: chematic_mol::SdfDataset,
+-}
+-
+-#[pymethods]
+-impl PySdfDataset {
+-    #[new]
+-    fn new(path: &str) -> PyResult<Self> {
+-        Self::open(path)
+-    }
+-
+-    #[staticmethod]
+-    fn open(path: &str) -> PyResult<Self> {
+-        chematic_mol::SdfDataset::open(path)
+-            .map(|inner| Self { inner })
+-            .map_err(sdf_dataset_error)
+-    }
+-
+-    fn __len__(&self) -> usize {
+-        self.inner.len()
+-    }
+-
+-    fn __getitem__(&self, index: isize) -> PyResult<PySdfRecord> {
+-        self.get(index)
+-    }
+-
+-    /// Parse one record. Negative indices follow normal Python semantics.
+-    fn get(&self, index: isize) -> PyResult<PySdfRecord> {
+-        let index = dataset_index(index, self.inner.len())?;
+-        self.inner
+-            .get(index)
+-            .map_err(sdf_dataset_error)?
+-            .map(py_sdf_record)
+-            .ok_or_else(|| pyo3::exceptions::PyIndexError::new_err("SDF record index out of range"))
+-    }
+-
+-    /// Read one raw record without the terminating ``$$$$`` line.
+-    fn raw_record(&self, index: isize) -> PyResult<String> {
+-        let index = dataset_index(index, self.inner.len())?;
+-        self.inner
+-            .record_text(index)
+-            .map_err(sdf_dataset_error)?
+-            .ok_or_else(|| pyo3::exceptions::PyIndexError::new_err("SDF record index out of range"))
+-    }
+-
+-    /// Return byte-range metadata without parsing the molecular graph.
+-    fn metadata(&self, index: isize) -> PyResult<PySdfRecordMetadata> {
+-        let index = dataset_index(index, self.inner.len())?;
+-        self.inner
+-            .metadata(index)
+-            .map(PySdfRecordMetadata::from)
+-            .ok_or_else(|| pyo3::exceptions::PyIndexError::new_err("SDF record index out of range"))
+-    }
+-
+-    /// Parse a half-open record range. The stop endpoint is clamped to
+-    /// ``len(dataset)``; malformed records raise ``ChematicInputError``.
+-    #[pyo3(signature = (start, stop=None))]
+-    fn read_range(&self, start: usize, stop: Option<usize>) -> PyResult<Vec<PySdfRecord>> {
+-        let stop = stop.unwrap_or(self.inner.len());
+-        self.inner
+-            .read_range(start, stop)
+-            .map_err(sdf_dataset_error)?
+-            .into_iter()
+-            .map(|record| record.map(py_sdf_record).map_err(sdf_dataset_error))
+-            .collect()
+-    }
+-}
+-
+ // ---------------------------------------------------------------------------
+ // Public functions
+ // ---------------------------------------------------------------------------
+@@ -1437,6 +1368,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
+     m.add_class::<PySdfRecord>()?;
+     m.add_class::<PySdfRecordMetadata>()?;
+     m.add_class::<PySdfDataset>()?;
++    dataset_batch::register(m)?;
+     m.add_class::<SdfIter>()?;
+     m.add_class::<SdfFileIter>()?;
+     m.add_class::<SdfBatchIter>()?;
+diff --git a/crates/chematic-py/src/io/dataset.rs b/crates/chematic-py/src/io/dataset.rs
+new file mode 100644
+index 0000000..5a5b0d8
+--- /dev/null
++++ b/crates/chematic-py/src/io/dataset.rs
+@@ -0,0 +1,119 @@
++use super::*;
++
++/// Indexed random access to a seekable SDF file.
++///
++/// Construction scans only record boundaries and title lines. Molecular
++/// graphs and SD fields are parsed lazily when a record is requested, so a
++/// large file does not need to be materialized as Python objects.
++#[pyclass(name = "SdfDataset", frozen)]
++pub struct PySdfDataset {
++    inner: Arc<chematic_mol::SdfDataset>,
++}
++
++#[pymethods]
++impl PySdfDataset {
++    #[new]
++    fn new(path: &str) -> PyResult<Self> {
++        Self::open(path)
++    }
++
++    #[staticmethod]
++    fn open(path: &str) -> PyResult<Self> {
++        chematic_mol::SdfDataset::open(path)
++            .map(|inner| Self {
++                inner: Arc::new(inner),
++            })
++            .map_err(sdf_dataset_error)
++    }
++
++    fn __len__(&self) -> usize {
++        self.inner.len()
++    }
++
++    fn __getitem__<'py>(
++        &self,
++        py: Python<'py>,
++        key: &Bound<'py, PyAny>,
++    ) -> PyResult<Bound<'py, PyAny>> {
++        if key.is_instance_of::<pyo3::types::PyInt>()
++            && !key.is_instance_of::<pyo3::types::PyBool>()
++        {
++            let index = super::dataset_selector::scalar_index(key, self.inner.len())?;
++            return Py::new(py, self.get(index as isize)?).map(|v| v.into_bound(py).into_any());
++        }
++        Py::new(py, self.select(py, key, "raise", 64 << 20)?).map(|v| v.into_bound(py).into_any())
++    }
++
++    /// Ordered selection; slices, integer lists/tuples or full-length bool masks.
++    /// Malformed records retain their positions with errors="keep".
++    #[pyo3(signature=(key,*,errors="keep",max_bytes=67108864))]
++    fn select(
++        &self,
++        py: Python<'_>,
++        key: &Bound<'_, PyAny>,
++        errors: &str,
++        #[pyo3(from_py_with=super::dataset_selector::positive_integer)] max_bytes: usize,
++    ) -> PyResult<super::dataset_batch::PySdfSelectionBatch> {
++        let raise = super::dataset_selector::error_policy(errors)?;
++        let indices = super::dataset_selector::indices(key, self.inner.len(), 10_000)?;
++        super::dataset_batch::read_batch(py, &self.inner, &indices, raise, max_bytes)
++    }
++
++    /// Pull source-ordered batches while keeping rejected record positions.
++    /// The iterator owns the indexed file handle and survives this wrapper.
++    #[pyo3(signature=(size=1024,*,errors="keep",max_bytes=67108864))]
++    fn batches(
++        &self,
++        #[pyo3(from_py_with=super::dataset_selector::positive_integer)] size: usize,
++        errors: &str,
++        #[pyo3(from_py_with=super::dataset_selector::positive_integer)] max_bytes: usize,
++    ) -> PyResult<super::dataset_batch::PySdfDatasetBatches> {
++        super::dataset_batch::PySdfDatasetBatches::new(
++            Arc::clone(&self.inner),
++            size,
++            errors,
++            max_bytes,
++        )
++    }
++
++    /// Parse one record. Negative indices follow normal Python semantics.
++    fn get(&self, index: isize) -> PyResult<PySdfRecord> {
++        let index = dataset_index(index, self.inner.len())?;
++        self.inner
++            .get(index)
++            .map_err(sdf_dataset_error)?
++            .map(py_sdf_record)
++            .ok_or_else(|| pyo3::exceptions::PyIndexError::new_err("SDF record index out of range"))
++    }
++
++    /// Read one raw record without the terminating ``$$$$`` line.
++    fn raw_record(&self, index: isize) -> PyResult<String> {
++        let index = dataset_index(index, self.inner.len())?;
++        self.inner
++            .record_text(index)
++            .map_err(sdf_dataset_error)?
++            .ok_or_else(|| pyo3::exceptions::PyIndexError::new_err("SDF record index out of range"))
++    }
++
++    /// Return byte-range metadata without parsing the molecular graph.
++    fn metadata(&self, index: isize) -> PyResult<PySdfRecordMetadata> {
++        let index = dataset_index(index, self.inner.len())?;
++        self.inner
++            .metadata(index)
++            .map(PySdfRecordMetadata::from)
++            .ok_or_else(|| pyo3::exceptions::PyIndexError::new_err("SDF record index out of range"))
++    }
++
++    /// Parse a half-open record range. The stop endpoint is clamped to
++    /// ``len(dataset)``; malformed records raise ``ChematicInputError``.
++    #[pyo3(signature = (start, stop=None))]
++    fn read_range(&self, start: usize, stop: Option<usize>) -> PyResult<Vec<PySdfRecord>> {
++        let stop = stop.unwrap_or(self.inner.len());
++        self.inner
++            .read_range(start, stop)
++            .map_err(sdf_dataset_error)?
++            .into_iter()
++            .map(|record| record.map(py_sdf_record).map_err(sdf_dataset_error))
++            .collect()
++    }
++}
+diff --git a/crates/chematic-py/src/io/dataset_batch.rs b/crates/chematic-py/src/io/dataset_batch.rs
+new file mode 100644
+index 0000000..fcec7ba
+--- /dev/null
++++ b/crates/chematic-py/src/io/dataset_batch.rs
+@@ -0,0 +1,184 @@
++use super::*;
++
++struct Failure {
++    position: usize,
++    index: usize,
++    code: &'static str,
++    message: String,
++}
++
++/// Selected source positions, including placeholders and diagnostics for failures.
++#[pyclass(name = "SdfSelectionBatch", frozen)]
++pub(super) struct PySdfSelectionBatch {
++    indices: Vec<usize>,
++    records: Vec<Option<Py<PySdfRecord>>>,
++    failures: Vec<Failure>,
++}
++#[pymethods]
++impl PySdfSelectionBatch {
++    fn __len__(&self) -> usize {
++        self.records.len()
++    }
++    fn source_indices(&self) -> Vec<usize> {
++        self.indices.clone()
++    }
++    fn valid_mask(&self) -> Vec<bool> {
++        self.records.iter().map(Option::is_some).collect()
++    }
++    fn records(&self, py: Python<'_>) -> Vec<Option<Py<PySdfRecord>>> {
++        self.records
++            .iter()
++            .map(|r| r.as_ref().map(|r| r.clone_ref(py)))
++            .collect()
++    }
++    fn __getitem__(&self, py: Python<'_>, index: isize) -> PyResult<Option<Py<PySdfRecord>>> {
++        let index = dataset_index(index, self.records.len())?;
++        Ok(self.records[index].as_ref().map(|r| r.clone_ref(py)))
++    }
++    fn to_smiles_list(&self, py: Python<'_>) -> Vec<Option<String>> {
++        self.records
++            .iter()
++            .map(|r| r.as_ref().map(|r| r.borrow(py).smiles()))
++            .collect()
++    }
++    fn errors<'py>(&self, py: Python<'py>) -> PyResult<Vec<Bound<'py, PyDict>>> {
++        self.failures
++            .iter()
++            .map(|e| {
++                let d = PyDict::new(py);
++                d.set_item("position", e.position)?;
++                d.set_item("source_index", e.index)?;
++                d.set_item("code", e.code)?;
++                d.set_item("message", &e.message)?;
++                Ok(d)
++            })
++            .collect()
++    }
++}
++
++fn selection_error(error: chematic_mol::SdfSelectionError) -> PyErr {
++    use chematic_mol::SdfSelectionError;
++    match error {
++        SdfSelectionError::Index { .. } => {
++            pyo3::exceptions::PyIndexError::new_err(error.to_string())
++        }
++        SdfSelectionError::ResourceLimit {
++            resource,
++            actual,
++            limit,
++        } => sdf_dataset_error(chematic_mol::MolParseError::ResourceLimit {
++            resource,
++            actual,
++            limit,
++        }),
++        SdfSelectionError::Read(error) => sdf_dataset_error(error),
++    }
++}
++pub(super) fn read_batch(
++    py: Python<'_>,
++    dataset: &chematic_mol::SdfDataset,
++    indices: &[usize],
++    raise: bool,
++    max_bytes: usize,
++) -> PyResult<PySdfSelectionBatch> {
++    let limits = chematic_mol::SdfSelectionLimits {
++        max_records: 10_000,
++        max_total_record_bytes: max_bytes,
++    };
++    let batch = dataset
++        .read_indices_with_limits(indices, &limits)
++        .map_err(selection_error)?;
++    let mut records = Vec::with_capacity(batch.len());
++    let mut failures = Vec::new();
++    for (position, record) in batch.records.into_iter().enumerate() {
++        match record {
++            Ok(record) => records.push(Some(Py::new(py, py_sdf_record(record))?)),
++            Err(error) => {
++                if raise {
++                    return Err(sdf_dataset_error(error));
++                }
++                let code = if matches!(error, chematic_mol::MolParseError::ResourceLimit { .. }) {
++                    "resource_limit"
++                } else {
++                    "malformed"
++                };
++                failures.push(Failure {
++                    position,
++                    index: indices[position],
++                    code,
++                    message: error.to_string(),
++                });
++                records.push(None);
++            }
++        }
++    }
++    Ok(PySdfSelectionBatch {
++        indices: batch.indices,
++        records,
++        failures,
++    })
++}
++
++/// Lazy indexed-file batches; source indices are created only for the next chunk.
++#[pyclass(name = "SdfDatasetBatches")]
++pub(super) struct PySdfDatasetBatches {
++    dataset: Arc<chematic_mol::SdfDataset>,
++    next: usize,
++    size: usize,
++    raise: bool,
++    max_bytes: usize,
++}
++impl PySdfDatasetBatches {
++    pub(super) fn new(
++        dataset: Arc<chematic_mol::SdfDataset>,
++        size: usize,
++        errors: &str,
++        max_bytes: usize,
++    ) -> PyResult<Self> {
++        if size == 0 || size > 10_000 {
++            return Err(pyo3::exceptions::PyValueError::new_err(
++                "size must be 1..=10000",
++            ));
++        }
++        let raise = super::dataset_selector::error_policy(errors)?;
++        Ok(Self {
++            dataset,
++            next: 0,
++            size,
++            raise,
++            max_bytes,
++        })
++    }
++}
++#[pymethods]
++impl PySdfDatasetBatches {
++    fn __iter__(slf: PyRef<'_, Self>) -> PyRef<'_, Self> {
++        slf
++    }
++    fn __len__(&self) -> usize {
++        (self.dataset.len() - self.next).div_ceil(self.size)
++    }
++    fn cancel(&mut self) {
++        self.next = self.dataset.len();
++    }
++    fn __next__(&mut self, py: Python<'_>) -> PyResult<Option<PySdfSelectionBatch>> {
++        if self.next >= self.dataset.len() {
++            return Ok(None);
++        }
++        let end = self.next.saturating_add(self.size).min(self.dataset.len());
++        let indices: Vec<_> = (self.next..end).collect();
++        self.next = end;
++        match read_batch(py, &self.dataset, &indices, self.raise, self.max_bytes) {
++            Ok(batch) => Ok(Some(batch)),
++            Err(error) => {
++                self.cancel();
++                Err(error)
++            }
++        }
++    }
++}
++pub(super) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
++    m.add_class::<PySdfSelectionBatch>()?;
++    m.add_class::<PySdfDatasetBatches>()?;
++    Ok(())
++}
+diff --git a/crates/chematic-py/src/io/dataset_selector.rs b/crates/chematic-py/src/io/dataset_selector.rs
+new file mode 100644
+index 0000000..8991a72
+--- /dev/null
++++ b/crates/chematic-py/src/io/dataset_selector.rs
+@@ -0,0 +1,105 @@
++use pyo3::exceptions::{PyIndexError, PyTypeError, PyValueError};
++use pyo3::prelude::*;
++use pyo3::types::{PyBool, PyInt, PyList, PySlice, PyTuple};
++
++pub(super) fn positive_integer(value: &Bound<'_, PyAny>) -> PyResult<usize> {
++    if value.is_instance_of::<PyBool>() || !value.is_instance_of::<PyInt>() {
++        return Err(PyTypeError::new_err("expected an integer, excluding bool"));
++    }
++    value
++        .extract::<usize>()
++        .ok()
++        .filter(|v| *v > 0)
++        .ok_or_else(|| PyValueError::new_err("expected a positive integer fitting usize"))
++}
++pub(super) fn scalar_index(value: &Bound<'_, PyAny>, len: usize) -> PyResult<usize> {
++    if value.is_instance_of::<PyBool>() || !value.is_instance_of::<PyInt>() {
++        return Err(PyTypeError::new_err(
++            "record index must be an integer, excluding bool",
++        ));
++    }
++    let index = value
++        .extract::<isize>()
++        .map_err(|_| PyIndexError::new_err("SDF record index out of range"))?;
++    super::dataset_index(index, len)
++}
++pub(super) fn error_policy(errors: &str) -> PyResult<bool> {
++    match errors {
++        "keep" => Ok(false),
++        "raise" => Ok(true),
++        _ => Err(PyValueError::new_err("errors must be keep or raise")),
++    }
++}
++fn limit_error(actual: usize, limit: usize) -> PyErr {
++    super::sdf_dataset_error(chematic_mol::MolParseError::ResourceLimit {
++        resource: "selected records",
++        actual,
++        limit,
++    })
++}
++pub(super) fn indices(key: &Bound<'_, PyAny>, len: usize, limit: usize) -> PyResult<Vec<usize>> {
++    if let Ok(slice) = key.cast::<PySlice>() {
++        let len = isize::try_from(len)
++            .map_err(|_| PyIndexError::new_err("dataset too large for Python indexing"))?;
++        let s = slice.indices(len)?;
++        let count = s.slicelength;
++        if count > limit {
++            return Err(limit_error(count, limit));
++        }
++        let mut out = Vec::with_capacity(count);
++        let mut current = s.start;
++        for k in 0..count {
++            out.push(current as usize);
++            if k + 1 < count {
++                current = current
++                    .checked_add(s.step)
++                    .ok_or_else(|| PyIndexError::new_err("slice overflow"))?;
++            }
++        }
++        return Ok(out);
++    }
++    if key.is_instance_of::<PyInt>() && !key.is_instance_of::<PyBool>() {
++        return Ok(vec![scalar_index(key, len)?]);
++    }
++    if !key.is_instance_of::<PyList>() && !key.is_instance_of::<PyTuple>() {
++        return Err(PyTypeError::new_err(
++            "selector must be an int, slice, list or tuple",
++        ));
++    }
++    let count = key.len()?;
++    if count == 0 {
++        return Ok(Vec::new());
++    }
++    if key.get_item(0)?.is_instance_of::<PyBool>() {
++        return mask_indices(key, len, limit);
++    }
++    if count > limit {
++        return Err(limit_error(count, limit));
++    }
++    key.try_iter()?
++        .map(|item| scalar_index(&item?, len))
++        .collect()
++}
++fn mask_indices(key: &Bound<'_, PyAny>, len: usize, limit: usize) -> PyResult<Vec<usize>> {
++    if key.len()? != len {
++        return Err(PyValueError::new_err(
++            "boolean mask length must match dataset",
++        ));
++    }
++    let mut out = Vec::new();
++    for (i, item) in key.try_iter()?.enumerate() {
++        let item = item?;
++        if !item.is_instance_of::<PyBool>() {
++            return Err(PyTypeError::new_err(
++                "boolean masks cannot contain integer indices",
++            ));
++        }
++        if item.extract::<bool>()? {
++            if out.len() >= limit {
++                return Err(limit_error(out.len() + 1, limit));
++            }
++            out.push(i);
++        }
++    }
++    Ok(out)
++}
+diff --git a/crates/chematic-py/tests/test_sdf_selections.py b/crates/chematic-py/tests/test_sdf_selections.py
+new file mode 100644
+index 0000000..7539a86
+--- /dev/null
++++ b/crates/chematic-py/tests/test_sdf_selections.py
+@@ -0,0 +1,106 @@
++"""Original minimal fixtures; see validation/cosmolkit_comparison/sdf_selections."""
++from pathlib import Path
++import gc
++import pytest
++import chematic
++
++FIXTURE=Path(__file__).resolve().parents[3]/'validation/cosmolkit_comparison/sdf_selections/minimal.sdf'
++
++@pytest.fixture
++def dataset(tmp_path):
++    path=tmp_path/'selected.sdf';path.write_bytes(FIXTURE.read_bytes())
++    return chematic.SdfDataset.open(str(path)),path
++
++
++def test_order_duplicates_fields_and_detached_results(dataset):
++    d,_=dataset;b=d[[4,0,4,2]]
++    assert isinstance(b,chematic.SdfSelectionBatch)
++    assert b.source_indices()==[4,0,4,2] and b.valid_mask()==[True]*4
++    assert b.to_smiles_list()==['F','C','F','O']
++    assert b[-1].get('ID')=='oxygen-id' and b[-1].get('note')=='line1\nline2'
++    b[0].mol.SetProp('test','changed');assert not b[2].mol.HasProp('test')
++    indices=b.source_indices();indices[0]=99;assert b.source_indices()[0]==4
++    records=b.records();records.clear();assert len(b)==4
++
++
++@pytest.mark.parametrize('key,indices',[(slice(None,None,-1),[4,3,2,1,0]),(slice(4,0,-2),[4,2]),(slice(-100,100,2),[0,2,4]),(slice(3,1),[]),([-1,-5,-1],[4,0,4]),((2,0),[2,0]),([True,False,True,False,True],[0,2,4]),([],[])])
++def test_python_selection_semantics(dataset,key,indices):
++    d,_=dataset;b=d.select(key)
++    assert b.source_indices()==indices
++    assert b.valid_mask()==[i!=1 for i in indices]
++
++
++def test_keep_raise_policies_and_errors(dataset):
++    d,_=dataset;b=d.select([2,1,0,1])
++    assert b.source_indices()==[2,1,0,1] and b.valid_mask()==[True,False,True,False]
++    assert b.to_smiles_list()==['O',None,'C',None] and b[1] is None
++    errors=b.errors();assert [(e['position'],e['source_index'],e['code']) for e in errors]==[(1,1,'malformed'),(3,1,'malformed')]
++    assert all(e['message'] for e in errors)
++    for operation in [lambda:d.select([2,1],errors='raise'),lambda:d[[2,1]],lambda:d[1]]:
++        with pytest.raises(ValueError):operation()
++    with pytest.raises(ValueError):d.select([],errors='skip')
++
++
++@pytest.mark.parametrize('key',[True,False,0.0,'0',{0},iter([0]),[0,False],[True,0],[True],[-6],[5],[2**100],slice(None,None,0)])
++def test_invalid_selectors(dataset,key):
++    d,_=dataset
++    with pytest.raises((ValueError,TypeError,IndexError,OverflowError)):d[key]
++
++
++def test_indexing_keeps_scalar_api_and_boundaries(dataset):
++    d,_=dataset;assert d[0].name=='carbon' and d[-1].name=='fluorine'
++    assert d.get(-1).name=='fluorine';assert d.metadata(-1).title=='fluorine'
++    assert 'V3000' in d.raw_record(-1)
++    with pytest.raises(IndexError):d[999999999999999999999]
++    assert [r.name for r in d.read_range(2)]==['oxygen','nitrogen','fluorine']
++
++
++def test_batches_survive_wrapper_and_keep_failures(dataset):
++    d,_=dataset;stream=d.batches(size=2);del d;gc.collect()
++    assert len(stream)==3
++    a=next(stream);assert a.source_indices()==[0,1] and a.valid_mask()==[True,False]
++    assert len(stream)==2
++    rest=list(stream);assert [b.source_indices() for b in rest]==[[2,3],[4]]
++    assert len(stream)==0 and list(stream)==[]
++
++
++def test_failure_and_cancellation_fuse_iterator(dataset):
++    d,path=dataset;stream=d.batches(size=2,errors='raise')
++    with pytest.raises(ValueError):next(stream)
++    assert len(stream)==0 and list(stream)==[]
++    stream=d.batches();stream.cancel();assert list(stream)==[]
++    stream=d.batches();path.write_bytes(b'')
++    with pytest.raises(OSError):next(stream)
++    assert list(stream)==[]
++
++
++@pytest.mark.parametrize('size',[True,0,-1,1.2,'2',10001,2**100])
++def test_batch_size_limits(dataset,size):
++    d,_=dataset
++    with pytest.raises((ValueError,TypeError,OverflowError)):d.batches(size=size)
++
++
++@pytest.mark.parametrize('limit',[True,0,-1,'5',1.2,2**100])
++def test_byte_limits_validate_arguments(dataset,limit):
++    d,_=dataset
++    with pytest.raises((ValueError,TypeError,OverflowError)):d.select([],max_bytes=limit)
++    with pytest.raises((ValueError,TypeError,OverflowError)):d.batches(max_bytes=limit)
++
++
++def test_limits_checked_before_io(dataset):
++    d,path=dataset
++    byte_count=d.metadata(0).byte_len
++    assert len(d.select([0,0],max_bytes=2*byte_count))==2
++    with pytest.raises(ValueError):d.select([0,0],max_bytes=2*byte_count-1)
++    path.write_bytes(b'')
++    with pytest.raises(IndexError):d.select([0,5])
++    with pytest.raises(ValueError):d.select([0],max_bytes=1)
++    with pytest.raises(ValueError):d.select([0]*10001)
++    with pytest.raises(OSError):d.select([0])
++
++
++def test_empty_dataset_and_all_invalid(tmp_path):
++    path=tmp_path/'empty.sdf';path.write_text('')
++    d=chematic.SdfDataset(str(path));assert len(d[:])==0 and list(d.batches())==[]
++    path.write_text('broken\n$$$$\n');d=chematic.SdfDataset(str(path));b=d.select([0,0])
++    assert b.valid_mask()==[False,False] and b.to_smiles_list()==[None,None]
+diff --git a/docs/cosmolkit-feature-gaps-2026-10-15.md b/docs/cosmolkit-feature-gaps-2026-10-15.md
+new file mode 100644
+index 0000000..fc8463a
+--- /dev/null
++++ b/docs/cosmolkit-feature-gaps-2026-10-15.md
+@@ -0,0 +1,181 @@
++# Selected COSMolKit feature gaps: indexed SDF workflows
++
++Compared the published **COSMolKit 0.5.0 CPython 3.13 macOS universal wheel**
++with the current isolated chematic source candidate, preserving earlier work
++through GZMAT precision. Public docs and upstream source were inspected at
++`d99c96c8abb21c45698826ef3d3d506d82d2f34a`; that inspected source revision is
++not asserted to be the wheel's build commit.
++
++This is a selected workflow audit, not an exhaustive feature count or a
++claim of overall COSMolKit/RDKit parity. The
++[COSMolKit SDF guide](https://kit.cosmol.org/python/io)
++documents advanced dataset indexing and position-preserving batches; those
++operations were also run using the pinned public wheel.
++
++## Findings and implementation
++
++| Capability | chematic finding | This candidate |
++| --- | --- | --- |
++| Indexed seekable SDF access, titles and byte ranges | Already present in Rust/Python `SdfDataset`; molecular records are parsed lazily. | Reused the existing file index and locked handle. No duplicate index. |
++| Slices, integer lists, boolean-mask dataset selection | Python `__getitem__` accepted only a scalar index. Rust had only scalar and contiguous-range access. | Added checked ordered Rust `read_indices` and Python selection with negative indices, steps and duplicates. |
++| Python indexed-file batches retaining invalid positions | Rust streaming `SdfBatchReader` already retains errors. Existing Python streaming batches skip rejected records, and the dataset had no batch method. | Added `SdfDataset.batches()` and `SdfSelectionBatch`, retaining source indices and failed slots. Existing streaming behavior remains compatible. |
++| Mixed V2000/V3000 indexed reads | A native V3000 parser existed, but SDF graph/record/file readers called only V2000 parsing. | Dispatch the version on the fourth header line; send only the CTAB to the strict V3000 reader and retain SD fields separately. |
++| Pickle, default Layered fingerprints, scalar SDF access | Already implemented. | No replacement or duplicate feature. |
++| General Layered parameter/provenance controls | COSMolKit exposes `LayeredFingerprintParams` and `fingerprint_layered_with_params`; chematic's exact Layered function is a fixed default 2048-bit profile. | Remains a separate gap; not silently equated with the native `layered_fp` family. |
++| Unified complete `BioStructure` hierarchy and mmCIF serialization | COSMolKit has the unified value. chematic has protein projection plus general mmCIF atom/residue records and explicit adapters, which are narrower interfaces. | Remains separate; no full structural-hierarchy equivalence claimed. |
++
++The implementation is original; COSMolKit is used as a behavioral reference,
++not copied source. Existing SD property parsing was moved into `sdf/fields.rs`
++to keep the refactoring budget; no new debt allowance was added.
++
++## Python usage
++
++```python
++import chematic
++
++dataset = chematic.SdfDataset.open("library.sdf")
++record = dataset[-1]                  # existing scalar result: SdfRecord
++selected = dataset[[8, 2, 8]]         # order and duplicate index retained
++reverse = dataset[::-1]              # slice and step semantics
++masked = dataset[[True, False, True]] # mask must match the dataset length
++
++# Explicitly retain rejected inputs; each slot keeps its original source index.
++batch = dataset.select([8, 2, 8], errors="keep")
++print(batch.source_indices())
++print(batch.valid_mask())
++print(batch.to_smiles_list())         # None where parsing failed
++print(batch.errors())                 # position, source_index, code, message
++for record in batch.records():
++    if record is not None:
++        print(record.name, record.get("supplier_id"))
++
++for batch in dataset.batches(size=1024, errors="keep"):
++    indices = batch.source_indices()
++    valid = batch.valid_mask()
++    # Keep indices/valid beside downstream feature values.
++```
++
++The example mask illustrates its shape requirement; it is only valid for a
++three-record dataset. Indexing with a container defaults to raising on any
++malformed record, matching the measured COSMolKit default. `select()` defaults
++to `errors="keep"`. Both `select()` and `batches()` accept `"keep"` or `"raise"`;
++`"skip"` is refused because it loses the positional contract.
++
++`SdfSelectionBatch` is a separate result type rather than an alias for
++COSMolKit's `MoleculeBatch` or chematic's existing valid-only `MoleculeBatch`.
++It retains source indices, `SdfRecord` values, fields and parse diagnostics.
++`len(batch)` includes rejected slots. `batch[i]` and `records()` return
++`None` for a rejected slot; `errors()` contains one entry for each failed
++occurrence, including duplicates. Returned index/mask/error/list containers
++are independent snapshots. Parsed duplicate occurrences are separate records;
++changing a molecule property in one does not change the other or a future read.
++
++Selectors accept Python integers, slices, lists and tuples. Scalar booleans
++and mixed integer/bool selectors are rejected. Boolean masks must have exactly
++one value per source record. NumPy arrays must be explicitly converted with
++`.tolist()`; no generic iterator or implicit ndarray coercion is implemented.
++Python's slice normalization determines clipping, negative steps and empty
++ranges. All indices are normalized and validated before file I/O.
++
++A dataset-batch iterator owns a shared reference to the indexed file and
++survives deletion of the Python dataset wrapper. It creates indices only for
++the next chunk. `len(iterator)` is the remaining planned batch count, including
++malformed records. `cancel()` stops subsequent reads. Exhaustion, cancellation,
++I/O failure or a raised malformed batch leaves the iterator exhausted.
++
++## Rust and limits
++
++`SdfDataset::read_indices(indices)` returns `SdfIndexedBatch`:
++
++- `indices: Vec<usize>` preserves the exact requested ordering and duplicates.
++- `records: Vec<Result<SdfRecord, MolParseError>>` retains a result per request.
++- `len()`, `is_empty()` and `valid_mask()` describe the returned positions.
++
++`read_indices_with_limits(indices, &SdfSelectionLimits)` accepts explicit
++record-count and cumulative source-byte limits. Defaults are **10,000 selected
++positions** and **64 MiB of source-record bytes**, counting duplicates each
++time. All bounds and cumulative sizes are checked before any seek/read.
++An invalid index or exceeded budget returns `SdfSelectionError`; actual I/O
++and UTF-8 read errors abort the operation. Molecular parse errors stay in the
++per-position result vector. The existing scalar and range APIs retain their
++contracts.
++
++Python selected reads retain the 10,000-position cap. Batch size must be
++1–10,000. Both selection and batching expose `max_bytes` (default 64 MiB)
++with strict positive-integer validation. A batch exceeding its byte budget
++fails; it is not silently split or truncated. Source-byte limits constrain
++input work, not exact process RSS or the allocator overhead of parsed objects.
++
++The backing file must remain unchanged while indexed. The file handle uses
++the existing mutex, so concurrent reads do not interfere with each other's
++seek offsets. This is not a filesystem snapshot or a parallel parser.
++
++## CTAB boundary handling
++
++V3000 MOL parsing is strict about its terminator and accepts no trailing SD
++fields. The SDF adapters now identify the CTAB boundary after the three header
++lines/counts line, pass that portion to the V3000 parser, and parse SD fields
++from the remaining record. Literal `M  END` in the title or comment does not
++end the CTAB. V2000's existing permissive terminator recognition is retained.
++
++This dispatch covers `SdfReader`, `SdfRecordReader`, normal/fast
++`SdfFileReader` and the dataset paths that use them. It does not assert new
++parameter parity for every other MOL/SDF convenience function. Existing
++version-specific coordinate and stereo diagnostics are reused.
++
++## Validation and reproduction
++
++Original fixture provenance, redistribution terms, expected values, oracle
++settings and normalized payload hash are in
++`validation/cosmolkit_comparison/sdf_selections/manifest.json`.
++The minimal corpus has four one-atom valid records (including V3000) and one
++malformed record, plus SD fields. It does not reuse a competitor example or
++third-party molecular dataset.
++
++`python scripts/validate_sdf_selections.py` compares the public COSMolKit
++wheel with this extension across LF/CRLF and terminated/unterminated variants.
++It exhausts the chosen slice grid, short integer-list products, all boolean
++masks and all five-record permutations. Python list/slice semantics and the
++explicit fixture expectations provide separate selection controls. The shared
++indexing boundary raises on malformed selected input in both engines; the
++additional chematic `select(errors="keep")` result is checked against the
++explicit slot expectations. Keeping batches are compared directly in both
++engines. Engine-specific exception messages are not required to match.
++
++The run passed **12,828** selection cases: **9,028** successful shared
++indexing results and **3,800** matching malformed-input rejections. It checked
++**22,312** selected positions, **56** keeping batch values and **16** scalar
++metadata/field controls across the four physical-file variants. Order, masks,
++SMILES, fields and input bytes had no mismatches.
++
++Local native validation passed **817 Rust tests** (753 library, 10 new
++selection tests, and 54 coordinate/stereo/semantic-interchange regressions).
++Python passed **68 tests** (41 new selection tests and 27 existing I/O tests).
++Clippy with warnings denied, formatting, strict MkDocs, stub syntax, static
++binding inventory and refactoring budget checks passed. This does not claim
++a full-workspace or hosted CI run.
++
++The evidence is saved as
++`validation/results/cosmolkit-sdf-selections-2026-10-15.json`, with source,
++compiled-extension and COSMolKit package hashes. These are local source
++measurements, not release, speed or general chemical-parity evidence.
++
++```sh
++cargo test -p chematic-mol --lib --test sdf_selections \
++  --test v3000_semantic_interop --test conformer_3d_io \
++  --test stereo_reader_integration --offline --quiet
++cargo clippy -p chematic-mol -p chematic-py --all-targets --offline --no-deps -- -D warnings
++cargo fmt --all -- --check
++python -m pytest crates/chematic-py/tests/test_sdf_selections.py crates/chematic-py/tests/test_io.py -q
++python scripts/validate_sdf_selections.py
++python scripts/check_refactor_budget.py
++python scripts/check_binding_surface.py
++python scripts/check_product_names.py
++mkdocs build --strict
++```
++
++The validator requires COSMolKit 0.5.0 and an extension built from this source.
++The review patch is
++`validation/cosmolkit_comparison/sdf-selections-2026-10-15.patch`.
++It requires the inherited candidate context through GZMAT precision. Main
++integration, feature commit, push and publication are separate steps.
+diff --git a/scripts/validate_sdf_selections.py b/scripts/validate_sdf_selections.py
+new file mode 100644
+index 0000000..1962533
+--- /dev/null
++++ b/scripts/validate_sdf_selections.py
+@@ -0,0 +1,110 @@
++#!/usr/bin/env python3
++"""Independently compare indexed SDF selection against COSMolKit 0.5.0."""
++import argparse
++import hashlib
++from importlib.metadata import version
++import itertools
++import json
++from pathlib import Path
++import sys
++import tempfile
++
++import chematic
++import cosmolkit as ck
++
++ROOT=Path(__file__).resolve().parents[1]
++FIXTURE=ROOT/'validation/cosmolkit_comparison/sdf_selections/minimal.sdf'
++MANIFEST=FIXTURE.with_name('manifest.json')
++
++
++def digest(data):
++    return hashlib.sha256(data).hexdigest()
++
++
++def keys(n):
++    for start,stop,step in itertools.product([None,*range(-8,9)],[None,*range(-8,9)],[-3,-2,-1,1,2,3]):
++        key=slice(start,stop,step)
++        yield key,list(range(n))[key]
++    for count in range(4):
++        for key in itertools.product(range(-n,n),repeat=count):
++            yield list(key),[i%n for i in key]
++    for key in itertools.product([False,True],repeat=n):
++        yield list(key),[i for i,b in enumerate(key) if b]
++    for key in itertools.permutations(range(n)):
++        yield list(key),list(key)
++
++
++def check_selected(native,indices,expected):
++    assert native.source_indices()==indices
++    assert native.valid_mask()==[expected['valid_mask'][i] for i in indices]
++    assert native.to_smiles_list()==[expected['smiles'][i] for i in indices]
++    assert [e['source_index'] for e in native.errors()]==[i for i in indices if not expected['valid_mask'][i]]
++    assert [e['position'] for e in native.errors()]==[k for k,i in enumerate(indices) if not expected['valid_mask'][i]]
++    for record,index in zip(native.records(),indices):
++        if record is not None:
++            assert record.name==expected['titles'][index]
++            assert record.get('ID')==expected['id_fields'][index]
++
++
++def main():
++    p=argparse.ArgumentParser(description=__doc__)
++    p.add_argument('--output',type=Path,default=ROOT/'validation/results/cosmolkit-sdf-selections-2026-10-15.json')
++    args=p.parse_args();assert version('cosmolkit')=='0.5.0'
++    payload=FIXTURE.read_bytes();manifest=json.loads(MANIFEST.read_text());assert digest(payload)==manifest['sha256']
++    expected=manifest['expected'];n=len(expected['smiles'])
++    count=0;successes=0;rejections=0;selected_positions=0;batch_count=0;scalar_count=0
++    checksum=hashlib.sha256()
++    with tempfile.TemporaryDirectory(prefix='chematic-sdf-oracle-') as tmp:
++        for eol in ['LF','CRLF']:
++            for terminated in [True,False]:
++                text=payload.decode()
++                if not terminated:text=text.removesuffix('$$$$\n')
++                if eol=='CRLF':text=text.replace('\n','\r\n')
++                path=Path(tmp)/'records.sdf';path.write_bytes(text.encode());original=path.read_bytes()
++                native=chematic.SdfDataset.open(str(path));oracle=ck.SdfDataset.open(str(path))
++                assert len(native)==len(oracle)==n
++                for i in range(n):
++                    assert native.metadata(i).title==oracle.metadata(i).title()==expected['titles'][i]
++                    if expected['valid_mask'][i]:
++                        assert native[i].get('ID')==oracle[i].data_field('ID')==expected['id_fields'][i]
++                        scalar_count+=1
++                for key,indices in keys(n):
++                    result=native.select(key,errors='keep');check_selected(result,indices,expected)
++                    selected_positions+=len(indices)
++                    valid=all(expected['valid_mask'][i] for i in indices)
++                    if valid:
++                        reference=oracle[key];actual=native[key]
++                        assert actual.valid_mask()==reference.valid_mask()
++                        assert actual.to_smiles_list()==reference.to_smiles_list()
++                        successes+=1
++                    else:
++                        for operation in [lambda:oracle[key],lambda:native[key]]:
++                            try:operation()
++                            except ValueError:pass
++                            else:raise AssertionError('default indexed selection must raise on malformed input')
++                        rejections+=1
++                    checksum.update(json.dumps([eol,terminated,repr(key),indices,result.valid_mask(),result.to_smiles_list()],separators=(',',':')).encode())
++                    count+=1
++                for size in range(1,n+2):
++                    batches=list(native.batches(size=size,errors='keep'))
++                    reference=list(oracle.batches(size=size,errors='keep'))
++                    assert [b.valid_mask() for b in batches]==[b.valid_mask() for b in reference]
++                    assert [b.to_smiles_list() for b in batches]==[b.to_smiles_list() for b in reference]
++                    assert [i for b in batches for i in b.source_indices()]==list(range(n))
++                    batch_count+=len(batches)
++                    for b in batches:check_selected(b,b.source_indices(),expected)
++                assert path.read_bytes()==original
++    paths=['crates/chematic-mol/src/sdf.rs','crates/chematic-mol/src/sdf/selection.rs','crates/chematic-mol/src/sdf/fields.rs','crates/chematic-py/src/io.rs','crates/chematic-py/src/io/dataset.rs','crates/chematic-py/src/io/dataset_selector.rs','crates/chematic-py/src/io/dataset_batch.rs','crates/chematic-py/python/chematic/__init__.pyi','crates/chematic-mol/tests/sdf_selections.rs','crates/chematic-py/tests/test_sdf_selections.py','scripts/validate_sdf_selections.py']
++    ck_files=list(Path(ck.__file__).parent.rglob('*.so'))+[Path(ck.__file__)]
++    report={'schema_version':1,'status':'local-source-candidate','feature':'indexed SDF selection and position-preserving batch processing',
++        'base':'Preserved isolated candidates through GZMAT precision; not integrated into main',
++        'runtime':{'python':sys.version.split()[0],'cosmolkit':version('cosmolkit'),'cosmolkit_package_sha256':{str(f.relative_to(Path(ck.__file__).parent)):digest(f.read_bytes()) for f in ck_files},'cosmolkit_settings':'SdfDataset.open defaults; indexing errors raise; batches errors keep','chematic_extension_sha256':digest(Path(chematic.__file__).resolve().read_bytes())},
++        'source_sha256':{p:digest((ROOT/p).read_bytes()) for p in paths},'fixture':{'path':str(FIXTURE.relative_to(ROOT)),**manifest},
++        'results':{'selection_cases':count,'matched_successful_default_selections':successes,'matched_malformed_default_rejections':rejections,'selected_positions_verified':selected_positions,'batch_values_verified':batch_count,'scalar_metadata_and_field_controls':scalar_count,'variants':4,'selection_order_mismatches':0,'mask_mismatches':0,'smiles_mismatches':0,'field_mismatches':0,'input_mutations':0,'case_sha256':checksum.hexdigest()},
++        'scope':'Python slices, integer lists/tuples, strict boolean masks, duplicate/negative indices; keep/raise failure policy; bounded indexed-file batches; mixed V2000/V3000 dispatch',
++        'limits':{'default_selection_records':10000,'default_total_source_record_bytes':64<<20,'python_batch_size_max':10000,'count_and_bytes_preflight_before_io':True},
++        'limitations':'Uses chematic molecule parsing and native SMILES, not a general COSMolKit/RDKit chemistry parity claim. New SdfSelectionBatch differs from COSMolKit MoleculeBatch. Default indexing raises; select() defaults to keep. Only int/slice/list/tuple selectors; NumPy arrays must be converted to lists. No parallelism/progress UI or generalized MoleculeBatch transforms. Source files must remain unchanged while indexed; I/O/UTF8 failures abort and fuse iteration. Source byte limits bound input work, not exact process RSS. Full BioStructure hierarchy/serialization and broader Layered fingerprint parameter controls remain separate gaps.'}
++    args.output.parent.mkdir(parents=True,exist_ok=True);args.output.write_text(json.dumps(report,indent=2)+'\n');print(json.dumps(report['results']))
++
++
++if __name__=='__main__':main()
+diff --git a/validation/cosmolkit_comparison/sdf_selections/manifest.json b/validation/cosmolkit_comparison/sdf_selections/manifest.json
+new file mode 100644
+index 0000000..1a29549
+--- /dev/null
++++ b/validation/cosmolkit_comparison/sdf_selections/manifest.json
+@@ -0,0 +1,56 @@
++{
++  "id": "sdf-ordered-selection-v1",
++  "provenance": {
++    "source": "Original one-atom V2000/V3000 records and deliberately malformed record authored for chematic",
++    "retrieved": "2026-10-15",
++    "transformations": "LF/CRLF; optional final delimiter; ordered selection, repeated indices, slices and boolean masks"
++  },
++  "license": "MIT OR Apache-2.0",
++  "redistribution": "allowed: original minimal synthetic records",
++  "minimization": "Four valid one-atom records and one malformed slot distinguish positional errors, duplicate reads, both CTAB versions, fields and order",
++  "oracle": {
++    "cosmolkit": "0.5.0 PyPI wheel",
++    "cosmolkit_source_inspected": "d99c96c8abb21c45698826ef3d3d506d82d2f34a",
++    "settings": "SdfDataset.open defaults; __getitem__ container errors raise; batches(size, errors=keep)",
++    "invocation": "python scripts/validate_sdf_selections.py"
++  },
++  "expected": {
++    "source_indices": [
++      0,
++      1,
++      2,
++      3,
++      4
++    ],
++    "valid_mask": [
++      true,
++      false,
++      true,
++      true,
++      true
++    ],
++    "smiles": [
++      "C",
++      null,
++      "O",
++      "N",
++      "F"
++    ],
++    "titles": [
++      "carbon",
++      "broken",
++      "oxygen",
++      "nitrogen",
++      "fluorine"
++    ],
++    "id_fields": [
++      "carbon-id",
++      null,
++      "oxygen-id",
++      "nitrogen-id",
++      "fluorine-id"
++    ],
++    "tolerance": "exact selection order, masks, strings and source indices; parser error messages are engine-specific"
++  },
++  "sha256": "d113dcdb9c4bc8c4665976e3e3d6b64dc532ef197665644d45a6648b2195db8a"
++}
+diff --git a/validation/cosmolkit_comparison/sdf_selections/minimal.sdf b/validation/cosmolkit_comparison/sdf_selections/minimal.sdf
+new file mode 100644
+index 0000000..c2b2b02
+--- /dev/null
++++ b/validation/cosmolkit_comparison/sdf_selections/minimal.sdf
+@@ -0,0 +1,60 @@
++carbon
++  chematic synthetic
++
++  1  0  0  0  0  0  0  0  0  0999 V2000
++    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
++M  END
++>  <ID>
++carbon-id
++
++>  <note>
++line1
++line2
++
++$$$$
++broken
++not a MOL block
++$$$$
++oxygen
++  chematic synthetic
++
++  1  0  0  0  0  0  0  0  0  0999 V2000
++    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0
++M  END
++>  <ID>
++oxygen-id
++
++>  <note>
++line1
++line2
++
++$$$$
++nitrogen
++  chematic synthetic
++
++  1  0  0  0  0  0  0  0  0  0999 V2000
++    0.0000    0.0000    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0
++M  END
++>  <ID>
++nitrogen-id
++
++>  <note>
++line1
++line2
++
++$$$$
++fluorine
++  chematic synthetic
++
++  0  0  0     0  0            999 V3000
++M  V30 BEGIN CTAB
++M  V30 COUNTS 1 0 0 0 0
++M  V30 BEGIN ATOM
++M  V30 1 F 0 0 0 0
++M  V30 END ATOM
++M  V30 END CTAB
++M  END
++>  <ID>
++fluorine-id
++
++$$$$
+diff --git a/validation/results/cosmolkit-sdf-selections-2026-10-15.json b/validation/results/cosmolkit-sdf-selections-2026-10-15.json
+new file mode 100644
+index 0000000..07760eb
+--- /dev/null
++++ b/validation/results/cosmolkit-sdf-selections-2026-10-15.json
+@@ -0,0 +1,109 @@
++{
++  "schema_version": 1,
++  "status": "local-source-candidate",
++  "feature": "indexed SDF selection and position-preserving batch processing",
++  "base": "Preserved isolated candidates through GZMAT precision; not integrated into main",
++  "runtime": {
++    "python": "3.13.6",
++    "cosmolkit": "0.5.0",
++    "cosmolkit_package_sha256": {
++      "cosmolkit.cpython-313-darwin.so": "9a413ff2700f6266fa2192a8687dd073d31e2f9079912374e2c9f48a969177d7",
++      "__init__.py": "31f8df039d6de5edad0a7a7abecaaa94d1f3c13a81869161f096dcb962fe5df1"
++    },
++    "cosmolkit_settings": "SdfDataset.open defaults; indexing errors raise; batches errors keep",
++    "chematic_extension_sha256": "dae0223bf4b67608fb491b856a2dae0e66ec1deedc0f1be3ff489d4ccba3ff15"
++  },
++  "source_sha256": {
++    "crates/chematic-mol/src/sdf.rs": "f9194b37056485394e31a8521db0eef734eb7657df48235e6357f76396d345de",
++    "crates/chematic-mol/src/sdf/selection.rs": "c4829238c42b077da4aaed029c9577c990ecf40370518af16e9d25e56e802497",
++    "crates/chematic-mol/src/sdf/fields.rs": "008f1c2fa6cba37ad1b2c7cf42e56bbc3195a2f9b57e6b40773d4e7635a20ec5",
++    "crates/chematic-py/src/io.rs": "843b1f70093ab5dae25afa3c75535526a4572dc9562ceb821ef40ebdfd7efcc4",
++    "crates/chematic-py/src/io/dataset.rs": "71010a0b260173eb28197934b495f516baed5a7e087bca9bfbfdbe228a7a136e",
++    "crates/chematic-py/src/io/dataset_selector.rs": "d61600fee981f106131ccc8c163542881ecbdfeace35bd33bb5e9f5a2715f145",
++    "crates/chematic-py/src/io/dataset_batch.rs": "96f499872151a8b1a43e0c85e6e5f467863e490afe938eeab9bd3569196aebac",
++    "crates/chematic-py/python/chematic/__init__.pyi": "492f4aec4c7e9deb9ee395120a296978d7c9ffc2ff45c0d6daea52499dcb9d7c",
++    "crates/chematic-mol/tests/sdf_selections.rs": "6ea3a5b92d6c43e17ae25359e424ea00bececdd26d93910403d784303b3b2ac2",
++    "crates/chematic-py/tests/test_sdf_selections.py": "d31abb17eebd48f9e6f20b1253c0df04cbb7b520442d62db2beb30b8a9622e4b",
++    "scripts/validate_sdf_selections.py": "c4baacb7f81794a934d816b7d9db7c29d85023ba67463c2816de659396e57890"
++  },
++  "fixture": {
++    "path": "validation/cosmolkit_comparison/sdf_selections/minimal.sdf",
++    "id": "sdf-ordered-selection-v1",
++    "provenance": {
++      "source": "Original one-atom V2000/V3000 records and deliberately malformed record authored for chematic",
++      "retrieved": "2026-10-15",
++      "transformations": "LF/CRLF; optional final delimiter; ordered selection, repeated indices, slices and boolean masks"
++    },
++    "license": "MIT OR Apache-2.0",
++    "redistribution": "allowed: original minimal synthetic records",
++    "minimization": "Four valid one-atom records and one malformed slot distinguish positional errors, duplicate reads, both CTAB versions, fields and order",
++    "oracle": {
++      "cosmolkit": "0.5.0 PyPI wheel",
++      "cosmolkit_source_inspected": "d99c96c8abb21c45698826ef3d3d506d82d2f34a",
++      "settings": "SdfDataset.open defaults; __getitem__ container errors raise; batches(size, errors=keep)",
++      "invocation": "python scripts/validate_sdf_selections.py"
++    },
++    "expected": {
++      "source_indices": [
++        0,
++        1,
++        2,
++        3,
++        4
++      ],
++      "valid_mask": [
++        true,
++        false,
++        true,
++        true,
++        true
++      ],
++      "smiles": [
++        "C",
++        null,
++        "O",
++        "N",
++        "F"
++      ],
++      "titles": [
++        "carbon",
++        "broken",
++        "oxygen",
++        "nitrogen",
++        "fluorine"
++      ],
++      "id_fields": [
++        "carbon-id",
++        null,
++        "oxygen-id",
++        "nitrogen-id",
++        "fluorine-id"
++      ],
++      "tolerance": "exact selection order, masks, strings and source indices; parser error messages are engine-specific"
++    },
++    "sha256": "d113dcdb9c4bc8c4665976e3e3d6b64dc532ef197665644d45a6648b2195db8a"
++  },
++  "results": {
++    "selection_cases": 12828,
++    "matched_successful_default_selections": 9028,
++    "matched_malformed_default_rejections": 3800,
++    "selected_positions_verified": 22312,
++    "batch_values_verified": 56,
++    "scalar_metadata_and_field_controls": 16,
++    "variants": 4,
++    "selection_order_mismatches": 0,
++    "mask_mismatches": 0,
++    "smiles_mismatches": 0,
++    "field_mismatches": 0,
++    "input_mutations": 0,
++    "case_sha256": "59f71ce9b59881dafe49b74ee2e8a9fd0e77af2cfd0391672ec806e970238604"
++  },
++  "scope": "Python slices, integer lists/tuples, strict boolean masks, duplicate/negative indices; keep/raise failure policy; bounded indexed-file batches; mixed V2000/V3000 dispatch",
++  "limits": {
++    "default_selection_records": 10000,
++    "default_total_source_record_bytes": 67108864,
++    "python_batch_size_max": 10000,
++    "count_and_bytes_preflight_before_io": true
++  },
++  "limitations": "Uses chematic molecule parsing and native SMILES, not a general COSMolKit/RDKit chemistry parity claim. New SdfSelectionBatch differs from COSMolKit MoleculeBatch. Default indexing raises; select() defaults to keep. Only int/slice/list/tuple selectors; NumPy arrays must be converted to lists. No parallelism/progress UI or generalized MoleculeBatch transforms. Source files must remain unchanged while indexed; I/O/UTF8 failures abort and fuse iteration. Source byte limits bound input work, not exact process RSS. Full BioStructure hierarchy/serialization and broader Layered fingerprint parameter controls remain separate gaps."
++}

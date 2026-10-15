@@ -5,6 +5,11 @@ use std::sync::Arc;
 
 use crate::Mol;
 
+mod dataset;
+mod dataset_batch;
+mod dataset_selector;
+use dataset::PySdfDataset;
+
 // ---------------------------------------------------------------------------
 // PySdfRecord — one entry from an SDF file
 // ---------------------------------------------------------------------------
@@ -172,80 +177,6 @@ impl From<&chematic_mol::SdfRecordMetadata> for PySdfRecordMetadata {
             byte_len: metadata.byte_len,
             title: metadata.title.clone(),
         }
-    }
-}
-
-/// Indexed random access to a seekable SDF file.
-///
-/// Construction scans only record boundaries and title lines. Molecular
-/// graphs and SD fields are parsed lazily when a record is requested, so a
-/// large file does not need to be materialized as Python objects.
-#[pyclass(name = "SdfDataset", frozen)]
-pub struct PySdfDataset {
-    inner: chematic_mol::SdfDataset,
-}
-
-#[pymethods]
-impl PySdfDataset {
-    #[new]
-    fn new(path: &str) -> PyResult<Self> {
-        Self::open(path)
-    }
-
-    #[staticmethod]
-    fn open(path: &str) -> PyResult<Self> {
-        chematic_mol::SdfDataset::open(path)
-            .map(|inner| Self { inner })
-            .map_err(sdf_dataset_error)
-    }
-
-    fn __len__(&self) -> usize {
-        self.inner.len()
-    }
-
-    fn __getitem__(&self, index: isize) -> PyResult<PySdfRecord> {
-        self.get(index)
-    }
-
-    /// Parse one record. Negative indices follow normal Python semantics.
-    fn get(&self, index: isize) -> PyResult<PySdfRecord> {
-        let index = dataset_index(index, self.inner.len())?;
-        self.inner
-            .get(index)
-            .map_err(sdf_dataset_error)?
-            .map(py_sdf_record)
-            .ok_or_else(|| pyo3::exceptions::PyIndexError::new_err("SDF record index out of range"))
-    }
-
-    /// Read one raw record without the terminating ``$$$$`` line.
-    fn raw_record(&self, index: isize) -> PyResult<String> {
-        let index = dataset_index(index, self.inner.len())?;
-        self.inner
-            .record_text(index)
-            .map_err(sdf_dataset_error)?
-            .ok_or_else(|| pyo3::exceptions::PyIndexError::new_err("SDF record index out of range"))
-    }
-
-    /// Return byte-range metadata without parsing the molecular graph.
-    fn metadata(&self, index: isize) -> PyResult<PySdfRecordMetadata> {
-        let index = dataset_index(index, self.inner.len())?;
-        self.inner
-            .metadata(index)
-            .map(PySdfRecordMetadata::from)
-            .ok_or_else(|| pyo3::exceptions::PyIndexError::new_err("SDF record index out of range"))
-    }
-
-    /// Parse a half-open record range. The stop endpoint is clamped to
-    /// ``len(dataset)``; malformed records raise ``ChematicInputError``.
-    #[pyo3(signature = (start, stop=None))]
-    fn read_range(&self, start: usize, stop: Option<usize>) -> PyResult<Vec<PySdfRecord>> {
-        let stop = stop.unwrap_or(self.inner.len());
-        self.inner
-            .read_range(start, stop)
-            .map_err(sdf_dataset_error)?
-            .into_iter()
-            .map(|record| record.map(py_sdf_record).map_err(sdf_dataset_error))
-            .collect()
     }
 }
 
@@ -1437,6 +1368,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PySdfRecord>()?;
     m.add_class::<PySdfRecordMetadata>()?;
     m.add_class::<PySdfDataset>()?;
+    dataset_batch::register(m)?;
     m.add_class::<SdfIter>()?;
     m.add_class::<SdfFileIter>()?;
     m.add_class::<SdfBatchIter>()?;

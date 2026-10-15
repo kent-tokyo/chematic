@@ -86,6 +86,8 @@
 //!   not read at all -- this is a scope boundary stated up front, not a
 //!   silent drop of something this module claimed to understand.
 
+pub mod residues;
+
 use chematic_core::{Atom, Element, Molecule, MoleculeBuilder};
 
 use crate::cif::{

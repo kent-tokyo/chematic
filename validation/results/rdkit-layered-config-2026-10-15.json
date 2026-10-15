@@ -1,0 +1,163 @@
+{
+  "schema_version": 1,
+  "status": "local-source-candidate",
+  "reference": "RDKit LayeredFingerprint 2026.09.1; experimental family",
+  "base": "Preserved isolated candidates through indexed SDF selections; no main integration",
+  "runtime": {
+    "python": "3.13.6",
+    "rdkit": "2026.09.1",
+    "settings": "removeHs=False; use indexed explicit-H graphs; all masks constructed as ExplicitBitVect; original molecule properties retained",
+    "chematic_extension_sha256": "9bfbde4fbed8aa850cb23e12b1f80ae164829f7605ba9d74ab4d33f86ed23823"
+  },
+  "source_sha256": {
+    "crates/chematic-fp/src/rdkit_layered.rs": "01959e993240b73a1faca513dfb4da5f5661daf16b9c6a7e3d850c4b0cdc7d0a",
+    "crates/chematic-fp/src/rdkit_layered/features.rs": "bd991ff695a4436f7deb987b630c293a8556f2919fad2cca9fc7c608da78ff17",
+    "crates/chematic-fp/src/rdkit_layered/config.rs": "6a85d8b4035964eeb86554eaa61b955603a09db9409e004342f2507b918ad36d",
+    "crates/chematic-fp/src/rdkit_layered/config/validation.rs": "cdf2196be45239ba209651368bb61e7bb64131ca095aedfab945e7941155dfcb",
+    "crates/chematic-fp/src/rdkit_layered/config/enumeration.rs": "0a4e5fd9b5b02cc9459e627e8b6f0d943d755460a8771528fa235f1d529f4a9e",
+    "crates/chematic-fp/src/rdkit_layered/config/enumeration/linear.rs": "aba4ccd61b52f45190d1225434d5a9d59832511cb9627004efbac463c40c7568",
+    "crates/chematic-py/src/mol_methods/layered_config.rs": "8052dc578d1d5b3ca1de9392eb7f3eae6aecac17a165b6771ea3327cb17fe849",
+    "crates/chematic-py/python/chematic/__init__.pyi": "c5d3cbad593b9e126261e68e7a851010cbc3f287b03a1c1dc08eae0d5e59ecf1",
+    "crates/chematic-fp/tests/rdkit_layered_config.rs": "c3ad82a122b5210446ef2d827ae5f40841051320a7275af07c2dde8012d58f89",
+    "crates/chematic-py/tests/test_layered_config.py": "a4dfa705888628866dda60a2e131fd7f875c058c0dbf974b1bf8af952fcade51",
+    "scripts/validate_layered_config.py": "25202a582008541ba9a8f55a9a72a5de346525a08ed13ba2516a76da9c8dc64a"
+  },
+  "fixture": {
+    "path": "validation/rdkit_issues/fingerprints/layered-config.json",
+    "manifest_sha256": "8f90d640e4ebaaf25cd975cb7c1f4b0d55d8de0a93eedb3b81b4e3431873aea4",
+    "schema_version": 1,
+    "provenance": {
+      "source": "Original minimal SMILES test inputs authored for Layered parameter semantics",
+      "reference": "https://www.rdkit.org/docs/source/rdkit.Chem.rdmolops.html#rdkit.Chem.rdmolops.LayeredFingerprint",
+      "retrieved": "2026-10-15",
+      "transformations": "atom permutations, layer subsets, packed masks, path ranges, repeated roots and seeded counters; empty native graph constructed with RWMol().GetMol() because empty SMILES is rejected"
+    },
+    "license": "MIT OR Apache-2.0",
+    "redistribution": "allowed: original minimal inputs, no third-party corpus or issue attachment",
+    "minimization": "Empty/singleton through small branched and ring examples isolate flags, root multiplicity, ring hashing, H suppression and counter behavior",
+    "oracle": {
+      "engine": "RDKit",
+      "version": "2026.09.1",
+      "source_tag": "Release_2026_09_1",
+      "source_commit": "fece8caa860bdf6c9c82bdb9253f22a0cf87150c",
+      "settings": "SMILES removeHs=False; retain indexed explicit H; LayeredFingerprint with explicit arguments; empty fromAtoms treated as default",
+      "invocation": "python scripts/validate_layered_config.py"
+    },
+    "expected": {
+      "bits": "exact packed LSB-first equality, including odd bit lengths",
+      "atom_counts": "exact u32 additive counters, including wrapping and unchanged trailing entries",
+      "input_graph_and_seed_lists": "unchanged",
+      "tolerance": 0
+    },
+    "cases": [
+      {
+        "id": "0-empty",
+        "smiles": ""
+      },
+      {
+        "id": "1-single",
+        "smiles": "[He]"
+      },
+      {
+        "id": "2-linear",
+        "smiles": "CCO"
+      },
+      {
+        "id": "3-branched",
+        "smiles": "CC(C)O"
+      },
+      {
+        "id": "4-triangle",
+        "smiles": "C1CC1"
+      },
+      {
+        "id": "5-square",
+        "smiles": "C1CCC1"
+      },
+      {
+        "id": "6-phenol",
+        "smiles": "c1ccccc1O"
+      },
+      {
+        "id": "7-pyridine",
+        "smiles": "c1ccncc1"
+      },
+      {
+        "id": "8-naphthalene",
+        "smiles": "c1ccc2ccccc2c1"
+      },
+      {
+        "id": "9-adamantane",
+        "smiles": "C1C2CC3CC1CC(C2)C3"
+      },
+      {
+        "id": "10-isotope-h",
+        "smiles": "[2H]C([2H])([2H])NC=O"
+      },
+      {
+        "id": "11-explicit-h",
+        "smiles": "[H]OC"
+      },
+      {
+        "id": "12-dummy",
+        "smiles": "CC(*)O"
+      },
+      {
+        "id": "13-kekule",
+        "smiles": "C1=CC=CC=C1"
+      },
+      {
+        "id": "14-charged",
+        "smiles": "[Cl+3]([O-])([O-])([O-])O"
+      },
+      {
+        "id": "15-disconnected",
+        "smiles": "CC.O.N"
+      },
+      {
+        "id": "16-alkyne",
+        "smiles": "CC#CO"
+      },
+      {
+        "id": "17-cubane",
+        "smiles": "C12C3C4C1C5C2C3C45"
+      },
+      {
+        "id": "18-spiro",
+        "smiles": "C1CC2(CC1)CCCC2"
+      },
+      {
+        "id": "19-heterofused",
+        "smiles": "c1ccc2[nH]ccc2c1"
+      }
+    ],
+    "sha256": "861a706c8df293f551a5a09a877d933275ca1b0bd66963f2f962b2232b0485cc"
+  },
+  "results": {
+    "cases": 13378,
+    "fixtures": 20,
+    "all_active_layer_subsets": 64,
+    "all_supported_path_ranges": 78,
+    "default_legacy_controls": 110,
+    "seeded_counter_values_verified": 75874,
+    "masked_cases": 2790,
+    "rooted_linear_cases": 2850,
+    "permuted_cases": 360,
+    "bits_mismatches": 0,
+    "counter_mismatches": 0,
+    "input_mutations": 0,
+    "case_sha256": "31db553c719fe8a19884be480d5a571e84c5e48241d92737e8bd398b0d60c418"
+  },
+  "limits": {
+    "atoms": 512,
+    "bonds": 1024,
+    "maximum_path_bonds": 12,
+    "maximum_bits": 65536,
+    "default_visits": 1000000,
+    "maximum_visits": 10000000,
+    "default_selected_paths": 100000,
+    "maximum_selected_paths": 1000000,
+    "linear_frontier_uses_path_cap": true
+  },
+  "limitations": "Checked concrete molecules only: no complex query bonds, dative/zero bonds, loops/parallel edges or index-changing sanitized views. Unrooted branchedPaths=False is explicitly unsupported: the pinned RDKit source passes atom paths as bond indices and isolated CC/CCO probes in this session exited with signal 11. Rooted linear preserves the source range-wide final-step closure convention. No general chemical parity, unrestricted parameter range, performance or release claim. Seed counters are copied, not mutated in place; u32 wrapping and trailing entries are preserved. Search visits and selected_paths are implementation diagnostics, not RDKit API fields."
+}

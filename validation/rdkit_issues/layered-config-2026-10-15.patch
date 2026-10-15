@@ -1,0 +1,1967 @@
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 0e8b425..d6a39a4 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -200,6 +200,7 @@ jobs:
+           - { package: chematic-crystal, target: periodicity }
+           - { package: chematic-crystal, target: serde_roundtrip }
+           - { package: chematic-fp, target: rdkit_morgan_stable_api_fixtures }
++          - { package: chematic-fp, target: rdkit_layered_config }
+           - { package: chematic-inchi, target: accurate_cip_preflight }
+           - { package: chematic-inchi, target: dedup_fixtures }
+           - { package: chematic-inchi, target: explicit_h_stereo }
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 01d3f92..8671e1a 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -12,6 +12,12 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
+ 
+ ### Added
+ 
++- Added checked RDKit 2026.09.1 Layered fingerprint options in Rust/Python:
++  six layer flags, path ranges, arbitrary bit lengths, rooted branched/linear
++  paths, masks and copied additive atom counters. Enumeration budgets and
++  unsupported branches return typed errors; the existing default profile
++  shares the hashing implementation and retains its bit contract.
++
+ - Added indexed SDF slices, integer selections, strict boolean masks and
+   source-indexed Python batches with keep/raise failure handling. Bounded
+   reads retain duplicate requests and malformed-record positions. SDF graph,
+diff --git a/THIRD_PARTY_NOTICES.md b/THIRD_PARTY_NOTICES.md
+index 1239ce6..e5aef5b 100644
+--- a/THIRD_PARTY_NOTICES.md
++++ b/THIRD_PARTY_NOTICES.md
+@@ -137,6 +137,17 @@ the RDKit build. This inventory is a copyright/license notice; it is not a
+ patent or freedom-to-operate opinion. No patent clearance is claimed for any
+ algorithm merely because its reference implementation is BSD-licensed.
+ 
++### Configurable Layered fingerprint extensions
++
++The shared hashing and checked parameter/path-enumeration extensions in
++`crates/chematic-fp/src/rdkit_layered/` derive behavioral details from RDKit
++`Release_2026_09_1`, `Code/GraphMol/Fingerprints/Fingerprints.cpp` and
++`Code/GraphMol/Subgraphs/Subgraphs.cpp`. They retain the BSD-3-Clause notice
++above. Copyright (C) 2003-2026 Greg Landrum and other RDKit contributors.
++The Rust default hashing implementation was refactored without changing its
++existing fixed-profile contract. Bounded computation, checked unsupported
++branches and immutable counter results are chematic API choices.
++
+ ## Avalon Cheminformatics Toolkit (Avalon fingerprint)
+ 
+ `crates/chematic-fp/src/rdkit_avalon/` (`mod.rs`, `rings.rs`,
+diff --git a/crates/chematic-fp/src/lib.rs b/crates/chematic-fp/src/lib.rs
+index cdbb476..2807673 100644
+--- a/crates/chematic-fp/src/lib.rs
++++ b/crates/chematic-fp/src/lib.rs
+@@ -67,7 +67,10 @@ pub use rdkit_atom_pair::{
+     rdkit_atom_pair_counts, rdkit_atom_pair_fp, rdkit_atom_pair_sparse_counts,
+ };
+ pub use rdkit_avalon::{RdkitAvalonError, rdkit_avalon_fp};
+-pub use rdkit_layered::rdkit_layered_fp;
++pub use rdkit_layered::{
++    RdkitLayeredConfig, RdkitLayeredError, RdkitLayeredResult, rdkit_layered_config,
++    rdkit_layered_fp,
++};
+ pub use rdkit_pattern::rdkit_pattern_fp;
+ pub use rdkit_rdk::{RdkitRdkFingerprintError, rdkit_rdk_fp, rdkit_rdk_fp_ignoring_atoms};
+ pub use rdkit_torsion::{
+diff --git a/crates/chematic-fp/src/rdkit_layered.rs b/crates/chematic-fp/src/rdkit_layered.rs
+index d4eaf2d..013936a 100644
+--- a/crates/chematic-fp/src/rdkit_layered.rs
++++ b/crates/chematic-fp/src/rdkit_layered.rs
+@@ -66,6 +66,10 @@ use chematic_perception::find_sssr;
+ use rustc_hash::FxHashMap;
+ use std::collections::BTreeMap;
+ 
++mod config;
++mod features;
++pub use config::{RdkitLayeredConfig, RdkitLayeredError, RdkitLayeredResult, rdkit_layered_config};
++
+ const FP_SIZE: u32 = 2048;
+ const MIN_PATH: usize = 1;
+ const MAX_PATH: usize = 7;
+@@ -293,147 +297,11 @@ fn rdkit_layered_fp_input(mol: &Molecule, trust_view: bool) -> BitVec2048 {
+         return fp;
+     }
+ 
+-    let has_literal_aromatic_bond =
+-        trust_view || mol.bonds().any(|(_, b)| b.order == BondOrder::Aromatic);
+-    let aromaticity = if has_literal_aromatic_bond {
+-        None
+-    } else {
+-        Some(assign_aromaticity_ex(mol, AromaticityAlgorithm::RdkitLike))
+-    };
+-
+-    let anums: Vec<u32> = (0..mol.atom_count())
+-        .map(|i| crate::rdkit_atomic_num(mol, AtomIdx(i as u32)))
+-        .collect();
+-    let atom_aromatic: Vec<bool> = (0..mol.atom_count())
+-        .map(|i| is_atom_aromatic(mol, aromaticity.as_ref(), AtomIdx(i as u32)))
+-        .collect();
+-    let ring_info = compute_ring_info(mol);
+-
++    let prepared = features::Prepared::new(mol, trust_view);
+     let paths = find_all_subgraphs(mol, MIN_PATH, MAX_PATH);
+     for plist in paths.values() {
+         for path in plist {
+-            let mut atom_degrees: FxHashMap<u32, u32> = FxHashMap::default();
+-            let mut atoms_in_path: std::collections::BTreeSet<u32> =
+-                std::collections::BTreeSet::new();
+-            for &bidx in path {
+-                let bond = mol.bond(BondIdx(bidx));
+-                *atom_degrees.entry(bond.atom1.0).or_insert(0) += 1;
+-                *atom_degrees.entry(bond.atom2.0).or_insert(0) += 1;
+-                atoms_in_path.insert(bond.atom1.0);
+-                atoms_in_path.insert(bond.atom2.0);
+-            }
+-
+-            let mut bond_nbrs = vec![0u32; path.len()];
+-            for i in 0..path.len() {
+-                let bi = mol.bond(BondIdx(path[i]));
+-                for j in (i + 1)..path.len() {
+-                    let bj = mol.bond(BondIdx(path[j]));
+-                    if bi.atom1 == bj.atom1
+-                        || bi.atom1 == bj.atom2
+-                        || bi.atom2 == bj.atom1
+-                        || bi.atom2 == bj.atom2
+-                    {
+-                        bond_nbrs[i] += 1;
+-                        bond_nbrs[j] += 1;
+-                    }
+-                }
+-            }
+-
+-            let mut hash_layers: [Vec<u32>; NUM_LAYERS] = Default::default();
+-
+-            for (i, &bidx) in path.iter().enumerate() {
+-                let bond = mol.bond(BondIdx(bidx));
+-                let a1 = bond.atom1.0;
+-                let a2 = bond.atom2.0;
+-                let deg1 = atom_degrees[&a1];
+-                let deg2 = atom_degrees[&a2];
+-
+-                // Layer 1: straight topology.
+-                {
+-                    let (mut d1, mut d2) = (deg1, deg2);
+-                    if d1 < d2 {
+-                        std::mem::swap(&mut d1, &mut d2);
+-                    }
+-                    let mut h = bond_nbrs[i] % 8;
+-                    h |= (d1 % 8) << 3;
+-                    h |= (d2 % 8) << 6;
+-                    hash_layers[0].push(h);
+-                }
+-
+-                // Layer 2: bond order.
+-                {
+-                    let is_aromatic = is_bond_aromatic(mol, aromaticity.as_ref(), BondIdx(bidx));
+-                    let bond_hash = if is_aromatic {
+-                        1
+-                    } else {
+-                        layer2_bond_type_code(bond.order)
+-                    };
+-                    let (mut d1, mut d2) = (deg1, deg2);
+-                    if d1 < d2 {
+-                        std::mem::swap(&mut d1, &mut d2);
+-                    }
+-                    let mut h = bond_hash % 8;
+-                    h |= (bond_nbrs[i] % 8) << 3;
+-                    h |= (d1 % 8) << 6;
+-                    h |= (d2 % 8) << 9;
+-                    hash_layers[1].push(h);
+-                }
+-
+-                // Layer 3: atom types.
+-                {
+-                    let mut a1h = anums[a1 as usize] % 128;
+-                    let mut a2h = anums[a2 as usize] % 128;
+-                    let (mut d1, mut d2) = (deg1, deg2);
+-                    if a1h < a2h {
+-                        std::mem::swap(&mut a1h, &mut a2h);
+-                        std::mem::swap(&mut d1, &mut d2);
+-                    } else if a1h == a2h && d1 < d2 {
+-                        std::mem::swap(&mut d1, &mut d2);
+-                    }
+-                    let mut h = a1h;
+-                    h |= a2h << 7;
+-                    h |= (d1 % 8) << 14;
+-                    h |= (d2 % 8) << 17;
+-                    h |= (bond_nbrs[i] % 8) << 20;
+-                    hash_layers[2].push(h);
+-                }
+-
+-                // Layer 4: ring membership.
+-                if ring_info.bond_in_ring[bidx as usize] {
+-                    hash_layers[3].push(1);
+-                }
+-
+-                // Layer 5: ring size.
+-                {
+-                    let h = ring_info.bond_min_ring_size[bidx as usize] % 8;
+-                    hash_layers[4].push(h);
+-                }
+-
+-                // Layer 6: aromaticity.
+-                {
+-                    let mut a1h = atom_aromatic[a1 as usize];
+-                    let mut a2h = atom_aromatic[a2 as usize];
+-                    if !a1h && a2h {
+-                        std::mem::swap(&mut a1h, &mut a2h);
+-                    }
+-                    let mut h = a1h as u32;
+-                    h |= (a2h as u32) << 1;
+-                    h |= (bond_nbrs[i] % 8) << 5;
+-                    hash_layers[5].push(h);
+-                }
+-            }
+-
+-            for (l, layer) in hash_layers.iter_mut().enumerate() {
+-                if layer.is_empty() {
+-                    continue;
+-                }
+-                layer.sort_unstable();
+-                layer.push(atoms_in_path.len() as u32);
+-                layer.push((l + 1) as u32);
+-                let mut seed = 0u32;
+-                for &v in layer.iter() {
+-                    seed = hash_combine(seed, v);
+-                }
++            for seed in prepared.hashes(path).seeds.into_iter().flatten() {
+                 fp.set((seed % FP_SIZE) as usize);
+             }
+         }
+diff --git a/crates/chematic-fp/src/rdkit_layered/config.rs b/crates/chematic-fp/src/rdkit_layered/config.rs
+new file mode 100644
+index 0000000..dcecb75
+--- /dev/null
++++ b/crates/chematic-fp/src/rdkit_layered/config.rs
+@@ -0,0 +1,125 @@
++//! Checked configurable Layered fingerprints, pinned to RDKit 2026.09.1.
++//! RDKit-derived behavior is covered by THIRD_PARTY_NOTICES.md (BSD-3-Clause).
++use super::*;
++mod enumeration;
++mod validation;
++
++#[derive(Debug, Clone)]
++pub struct RdkitLayeredConfig {
++    pub layer_flags: u32,
++    pub min_path: usize,
++    pub max_path: usize,
++    pub fp_size: usize,
++    pub branched_paths: bool,
++    /// Empty means all paths; duplicate roots retain their count multiplicity.
++    pub from_atoms: Vec<AtomIdx>,
++    /// Packed LSB-first mask, with zero padding above fp_size.
++    pub set_only_bits: Option<Vec<u8>>,
++    /// Initial u32 counters; extra trailing entries are returned unchanged.
++    pub atom_counts: Option<Vec<u32>>,
++    pub max_visits: u64,
++    pub max_paths: usize,
++}
++impl Default for RdkitLayeredConfig {
++    fn default() -> Self {
++        Self {
++            layer_flags: u32::MAX,
++            min_path: 1,
++            max_path: 7,
++            fp_size: 2048,
++            branched_paths: true,
++            from_atoms: Vec::new(),
++            set_only_bits: None,
++            atom_counts: None,
++            max_visits: 1_000_000,
++            max_paths: 100_000,
++        }
++    }
++}
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub struct RdkitLayeredError {
++    pub code: &'static str,
++    pub detail: String,
++}
++impl core::fmt::Display for RdkitLayeredError {
++    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
++        write!(f, "Layered {}: {}", self.code, self.detail)
++    }
++}
++impl std::error::Error for RdkitLayeredError {}
++fn error(code: &'static str, detail: impl Into<String>) -> RdkitLayeredError {
++    RdkitLayeredError {
++        code,
++        detail: detail.into(),
++    }
++}
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub struct RdkitLayeredResult {
++    pub fp_size: usize,
++    pub bits: Vec<u8>,
++    pub atom_counts: Vec<u32>,
++    pub selected_paths: usize,
++    pub search_visits: u64,
++}
++
++/// No caller counters are mutated, and resource exhaustion returns no partial result.
++/// Requires a simple indexed molecule; complex query bonds are rejected.
++pub fn rdkit_layered_config(
++    mol: &Molecule,
++    config: &RdkitLayeredConfig,
++) -> Result<RdkitLayeredResult, RdkitLayeredError> {
++    validation::validate(mol, config)?;
++    chematic_perception::with_rdkit_parity_view(mol, |view| {
++        let view = view.map_err(|e| error("aromaticity", e.to_string()))?;
++        validation::same_indices(mol, view)?;
++        let fp_view = crate::rdkit_fp_view(view);
++        compute(&fp_view, config)
++    })
++}
++fn compute(
++    mol: &Molecule,
++    c: &RdkitLayeredConfig,
++) -> Result<RdkitLayeredResult, RdkitLayeredError> {
++    let prepared = features::Prepared::new(mol, true);
++    let mut result = RdkitLayeredResult {
++        fp_size: c.fp_size,
++        bits: vec![0; c.fp_size.div_ceil(8)],
++        atom_counts: c
++            .atom_counts
++            .clone()
++            .unwrap_or_else(|| vec![0; mol.atom_count()]),
++        selected_paths: 0,
++        search_visits: 0,
++    };
++    let mut budget = enumeration::Budget::new(c);
++    enumeration::enumerate(mol, c, &mut budget, |path, multiplicity| {
++        let hashes = prepared.hashes(path);
++        let mut accepted = false;
++        for (layer, seed) in hashes.seeds.into_iter().enumerate() {
++            if c.layer_flags & (1 << layer) == 0 {
++                continue;
++            }
++            let Some(seed) = seed else {
++                continue;
++            };
++            let bit = seed as usize % c.fp_size;
++            if c.set_only_bits
++                .as_ref()
++                .is_some_and(|mask| mask[bit / 8] & (1 << (bit % 8)) == 0)
++            {
++                continue;
++            }
++            result.bits[bit / 8] |= 1 << (bit % 8);
++            accepted = true;
++        }
++        if accepted {
++            for atom in hashes.atoms {
++                result.atom_counts[atom] =
++                    result.atom_counts[atom].wrapping_add(multiplicity as u32);
++            }
++        }
++    })?;
++    result.selected_paths = budget.paths;
++    result.search_visits = budget.visits;
++    Ok(result)
++}
+diff --git a/crates/chematic-fp/src/rdkit_layered/config/enumeration.rs b/crates/chematic-fp/src/rdkit_layered/config/enumeration.rs
+new file mode 100644
+index 0000000..2108a11
+--- /dev/null
++++ b/crates/chematic-fp/src/rdkit_layered/config/enumeration.rs
+@@ -0,0 +1,137 @@
++//! Bounded RDKit-derived connected subgraphs and rooted linear atom walks.
++//! Copyright (C) 2003-2026 Greg Landrum and other RDKit contributors.
++//! BSD-3-Clause: see THIRD_PARTY_NOTICES.md.
++use super::*;
++mod linear;
++type Visitor<'a> = dyn FnMut(&[u32], usize) + 'a;
++pub(super) struct Budget {
++    pub visits: u64,
++    pub paths: usize,
++    visit_limit: u64,
++    path_limit: usize,
++}
++impl Budget {
++    pub fn new(c: &RdkitLayeredConfig) -> Self {
++        Self {
++            visits: 0,
++            paths: 0,
++            visit_limit: c.max_visits,
++            path_limit: c.max_paths,
++        }
++    }
++    fn step(&mut self) -> Result<(), RdkitLayeredError> {
++        if self.visits >= self.visit_limit {
++            return Err(error("visit_limit", "path enumeration budget exhausted"));
++        }
++        self.visits += 1;
++        Ok(())
++    }
++    fn record(&mut self, n: usize) -> Result<(), RdkitLayeredError> {
++        if n > self.path_limit - self.paths {
++            return Err(error("path_limit", "selected path count exceeds limit"));
++        }
++        self.paths += n;
++        Ok(())
++    }
++    fn frontier(&self, n: usize) -> Result<(), RdkitLayeredError> {
++        if n > self.path_limit {
++            return Err(error(
++                "frontier_limit",
++                "linear path frontier exceeds path limit",
++            ));
++        }
++        Ok(())
++    }
++}
++pub(super) fn enumerate(
++    mol: &Molecule,
++    c: &RdkitLayeredConfig,
++    budget: &mut Budget,
++    mut visit: impl FnMut(&[u32], usize),
++) -> Result<(), RdkitLayeredError> {
++    if !c.branched_paths {
++        return linear::enumerate(mol, c, budget, &mut visit);
++    }
++    let map = build_bond_adjacency(mol);
++    let nbrs: Vec<_> = (0..mol.bond_count())
++        .map(|i| map.get(&(i as u32)).cloned().unwrap_or_default())
++        .collect();
++    let mut roots: Vec<_> = map.keys().copied().collect();
++    roots.sort_unstable();
++    let mut forbidden = vec![false; mol.bond_count()];
++    let mut walker = Branched {
++        mol,
++        c,
++        budget,
++        visit: &mut visit,
++        nbrs,
++    };
++    for root in roots {
++        walker.budget.step()?;
++        forbidden[root as usize] = true;
++        walker.walk(
++            vec![root],
++            walker.nbrs[root as usize].clone(),
++            forbidden.clone(),
++        )?;
++    }
++    Ok(())
++}
++struct Branched<'a, 'b> {
++    mol: &'a Molecule,
++    c: &'a RdkitLayeredConfig,
++    budget: &'b mut Budget,
++    visit: &'b mut Visitor<'a>,
++    nbrs: Vec<Vec<u32>>,
++}
++impl Branched<'_, '_> {
++    fn walk(
++        &mut self,
++        path: Vec<u32>,
++        mut candidates: Vec<u32>,
++        mut forbidden: Vec<bool>,
++    ) -> Result<(), RdkitLayeredError> {
++        self.budget.step()?;
++        if path.len() >= self.c.min_path {
++            let multiplicity = if self.c.from_atoms.is_empty() {
++                1
++            } else {
++                self.c
++                    .from_atoms
++                    .iter()
++                    .filter(|&&root| {
++                        path.iter().any(|&i| {
++                            let b = self.mol.bond(BondIdx(i));
++                            b.atom1 == root || b.atom2 == root
++                        })
++                    })
++                    .count()
++            };
++            if multiplicity > 0 {
++                self.budget.record(multiplicity)?;
++                (self.visit)(&path, multiplicity);
++            }
++        }
++        if path.len() == self.c.max_path {
++            return Ok(());
++        }
++        while let Some(next) = candidates.pop() {
++            self.budget.step()?;
++            if forbidden[next as usize] {
++                continue;
++            }
++            forbidden[next as usize] = true;
++            let mut stack = candidates.clone();
++            stack.extend(
++                self.nbrs[next as usize]
++                    .iter()
++                    .filter(|&&i| !forbidden[i as usize])
++                    .copied(),
++            );
++            let mut extended = path.clone();
++            extended.push(next);
++            self.walk(extended, stack, forbidden.clone())?;
++        }
++        Ok(())
++    }
++}
+diff --git a/crates/chematic-fp/src/rdkit_layered/config/enumeration/linear.rs b/crates/chematic-fp/src/rdkit_layered/config/enumeration/linear.rs
+new file mode 100644
+index 0000000..7bd3576
+--- /dev/null
++++ b/crates/chematic-fp/src/rdkit_layered/config/enumeration/linear.rs
+@@ -0,0 +1,93 @@
++//! Rooted bond paths with RDKit's range-wide final-step closure convention.
++use super::*;
++use std::collections::BTreeSet;
++type Adjacency = Vec<Vec<(usize, u32)>>;
++pub(super) fn enumerate(
++    mol: &Molecule,
++    c: &RdkitLayeredConfig,
++    budget: &mut Budget,
++    visit: &mut Visitor<'_>,
++) -> Result<(), RdkitLayeredError> {
++    let mut adjacency: Adjacency = vec![Vec::new(); mol.atom_count()];
++    for (i, b) in mol.bonds() {
++        if mol.atom(b.atom1).element.atomic_number() == 1
++            || mol.atom(b.atom2).element.atomic_number() == 1
++        {
++            continue;
++        }
++        adjacency[b.atom1.0 as usize].push((b.atom2.0 as usize, i.0));
++        adjacency[b.atom2.0 as usize].push((b.atom1.0 as usize, i.0));
++    }
++    for a in &mut adjacency {
++        a.sort_unstable();
++    }
++    for root in &c.from_atoms {
++        let mut frontier = vec![vec![root.0 as usize]];
++        for length in 1..=c.max_path + 1 {
++            if length > c.min_path {
++                emit(&frontier, &adjacency, budget, visit)?;
++            }
++            if length == c.max_path + 1 {
++                break;
++            }
++            frontier = extend(frontier, &adjacency, c.max_path + 1, budget)?;
++            if frontier.is_empty() {
++                break;
++            }
++        }
++    }
++    Ok(())
++}
++fn emit(
++    frontier: &[Vec<usize>],
++    adj: &Adjacency,
++    budget: &mut Budget,
++    visit: &mut Visitor<'_>,
++) -> Result<(), RdkitLayeredError> {
++    let mut seen = BTreeSet::new();
++    for atoms in frontier {
++        budget.step()?;
++        let edges = atoms
++            .windows(2)
++            .map(|p| {
++                adj[p[0]]
++                    .iter()
++                    .find_map(|&(a, b)| (a == p[1]).then_some(b))
++                    .ok_or_else(|| error("internal", "path adjacency is missing"))
++            })
++            .collect::<Result<Vec<_>, _>>()?;
++        let mut key = edges.clone();
++        key.sort_unstable();
++        if seen.insert(key) {
++            budget.record(1)?;
++            visit(&edges, 1);
++        }
++    }
++    Ok(())
++}
++fn extend(
++    frontier: Vec<Vec<usize>>,
++    adj: &Adjacency,
++    max_atoms: usize,
++    budget: &mut Budget,
++) -> Result<Vec<Vec<usize>>, RdkitLayeredError> {
++    let mut next = Vec::new();
++    for path in frontier {
++        // safe: every frontier is initialized with a root and only extended.
++        let last = *path.last().expect("nonempty rooted walk");
++        for &(atom, _) in &adj[last] {
++            budget.step()?;
++            let final_closure = max_atoms > 2
++                && path.len() + 1 == max_atoms
++                && path.get(path.len().saturating_sub(2)) != Some(&atom);
++            if path.contains(&atom) && !final_closure {
++                continue;
++            }
++            budget.frontier(next.len() + 1)?;
++            let mut extended = path.clone();
++            extended.push(atom);
++            next.push(extended);
++        }
++    }
++    Ok(next)
++}
+diff --git a/crates/chematic-fp/src/rdkit_layered/config/validation.rs b/crates/chematic-fp/src/rdkit_layered/config/validation.rs
+new file mode 100644
+index 0000000..0ddf1ce
+--- /dev/null
++++ b/crates/chematic-fp/src/rdkit_layered/config/validation.rs
+@@ -0,0 +1,118 @@
++use super::*;
++pub(super) fn validate(mol: &Molecule, c: &RdkitLayeredConfig) -> Result<(), RdkitLayeredError> {
++    if mol.atom_count() > 512 || mol.bond_count() > 1024 {
++        return Err(error("graph_limit", "maximum 512 atoms and 1024 bonds"));
++    }
++    if c.min_path == 0 || c.min_path > c.max_path || c.max_path > 12 {
++        return Err(error(
++            "path_range",
++            "require 1 <= min_path <= max_path <= 12",
++        ));
++    }
++    if c.fp_size == 0 || c.fp_size > 65536 {
++        return Err(error("fp_size", "fp_size must be 1..=65536"));
++    }
++    if c.max_visits == 0 || c.max_visits > 10_000_000 || c.max_paths == 0 || c.max_paths > 1_000_000
++    {
++        return Err(error("resource_limit", "invalid visits/path cap"));
++    }
++    if c.from_atoms.len() > 4096
++        || c.from_atoms
++            .iter()
++            .any(|a| a.0 as usize >= mol.atom_count())
++    {
++        return Err(error("root_index", "invalid root list or atom index"));
++    }
++    // RDKit 2026.09.1's unrooted linear branch passes atom paths as bond indices;
++    // the public wheel segfaults on CC/CCO. Never reproduce that invalid access.
++    if !c.branched_paths && c.from_atoms.is_empty() {
++        return Err(error(
++            "unrooted_linear_unsupported",
++            "branched_paths=false requires explicit from_atoms",
++        ));
++    }
++    if let Some(counts) = &c.atom_counts
++        && (counts.len() < mol.atom_count() || counts.len() > 65536)
++    {
++        return Err(error(
++            "atom_counts",
++            "counter list must cover atoms and contain <=65536 entries",
++        ));
++    }
++    validate_mask(c)?;
++    let mut edges = std::collections::BTreeSet::new();
++    for (_, b) in mol.bonds() {
++        if b.atom1 == b.atom2 || !edges.insert((b.atom1.min(b.atom2), b.atom1.max(b.atom2))) {
++            return Err(error(
++                "unsupported_graph",
++                "loops and parallel edges are unsupported",
++            ));
++        }
++        if !matches!(
++            b.order,
++            BondOrder::Single
++                | BondOrder::Up
++                | BondOrder::Down
++                | BondOrder::Double
++                | BondOrder::Triple
++                | BondOrder::Quadruple
++                | BondOrder::Aromatic
++        ) {
++            return Err(error(
++                "unsupported_bond",
++                "query, zero and dative bonds are unsupported",
++            ));
++        }
++    }
++    Ok(())
++}
++pub(super) fn same_indices(source: &Molecule, view: &Molecule) -> Result<(), RdkitLayeredError> {
++    let same = source.atom_count() == view.atom_count()
++        && source.bond_count() == view.bond_count()
++        && source.atoms().zip(view.atoms()).all(|((_, a), (_, b))| {
++            a.element == b.element && a.isotope == b.isotope && a.wildcard == b.wildcard
++        })
++        && source
++            .bonds()
++            .zip(view.bonds())
++            .all(|((_, a), (_, b))| a.atom1 == b.atom1 && a.atom2 == b.atom2);
++    if !same {
++        return Err(error(
++            "index_changing_view",
++            "sanitized view changes atom/bond correspondence",
++        ));
++    }
++    // A sanitization hook may introduce unsupported bond types.
++    if view.bonds().any(|(_, b)| {
++        matches!(
++            b.order,
++            BondOrder::Dative
++                | BondOrder::Zero
++                | BondOrder::QueryAny
++                | BondOrder::QuerySingleOrDouble
++                | BondOrder::QuerySingleOrAromatic
++                | BondOrder::QueryDoubleOrAromatic
++        )
++    }) {
++        return Err(error(
++            "unsupported_bond",
++            "sanitized view introduces unsupported bonds",
++        ));
++    }
++    Ok(())
++}
++
++fn validate_mask(c: &RdkitLayeredConfig) -> Result<(), RdkitLayeredError> {
++    if let Some(mask) = &c.set_only_bits {
++        if mask.len() != c.fp_size.div_ceil(8) {
++            return Err(error(
++                "mask_size",
++                "packed mask length does not match fp_size",
++            ));
++        }
++        if !c.fp_size.is_multiple_of(8) && mask.last().is_some_and(|v| *v >> (c.fp_size % 8) != 0) {
++            return Err(error("mask_padding", "unused high mask bits must be zero"));
++        }
++    }
++    Ok(())
++}
+diff --git a/crates/chematic-fp/src/rdkit_layered/features.rs b/crates/chematic-fp/src/rdkit_layered/features.rs
+new file mode 100644
+index 0000000..7419abd
+--- /dev/null
++++ b/crates/chematic-fp/src/rdkit_layered/features.rs
+@@ -0,0 +1,136 @@
++//! Shared feature hashing, retaining the existing six-layer bit contract.
++use super::*;
++
++pub(super) struct Prepared<'a> {
++    mol: &'a Molecule,
++    aromaticity: Option<AromaticityModel>,
++    anums: Vec<u32>,
++    atom_aromatic: Vec<bool>,
++    ring_info: RingInfo,
++}
++pub(super) struct Hashes {
++    pub seeds: [Option<u32>; NUM_LAYERS],
++    pub atoms: Vec<usize>,
++}
++impl<'a> Prepared<'a> {
++    pub fn new(mol: &'a Molecule, trust_view: bool) -> Self {
++        let has_literal_aromatic_bond =
++            trust_view || mol.bonds().any(|(_, b)| b.order == BondOrder::Aromatic);
++        let aromaticity = if has_literal_aromatic_bond {
++            None
++        } else {
++            Some(assign_aromaticity_ex(mol, AromaticityAlgorithm::RdkitLike))
++        };
++        let anums = (0..mol.atom_count())
++            .map(|i| crate::rdkit_atomic_num(mol, AtomIdx(i as u32)))
++            .collect();
++        let atom_aromatic = (0..mol.atom_count())
++            .map(|i| is_atom_aromatic(mol, aromaticity.as_ref(), AtomIdx(i as u32)))
++            .collect();
++        Self {
++            mol,
++            aromaticity,
++            anums,
++            atom_aromatic,
++            ring_info: compute_ring_info(mol),
++        }
++    }
++    pub fn hashes(&self, path: &[u32]) -> Hashes {
++        let (degrees, atoms, bond_nbrs) = path_info(self.mol, path);
++        let mut layers: [Vec<u32>; NUM_LAYERS] = Default::default();
++        for (i, &bidx) in path.iter().enumerate() {
++            let bond = self.mol.bond(BondIdx(bidx));
++            let a = bond.atom1.0;
++            let b = bond.atom2.0;
++            let d1 = degrees[&a];
++            let d2 = degrees[&b];
++            let n = bond_nbrs[i];
++            layers[0].push(topology(d1, d2, n));
++            let code = if is_bond_aromatic(self.mol, self.aromaticity.as_ref(), BondIdx(bidx)) {
++                1
++            } else {
++                layer2_bond_type_code(bond.order)
++            };
++            layers[1].push(bond_type(d1, d2, n, code));
++            layers[2].push(atom_type(
++                self.anums[a as usize],
++                self.anums[b as usize],
++                d1,
++                d2,
++                n,
++            ));
++            if self.ring_info.bond_in_ring[bidx as usize] {
++                layers[3].push(1);
++            }
++            layers[4].push(self.ring_info.bond_min_ring_size[bidx as usize] % 8);
++            layers[5].push(aromaticity(
++                self.atom_aromatic[a as usize],
++                self.atom_aromatic[b as usize],
++                n,
++            ));
++        }
++        let mut seeds = [None; NUM_LAYERS];
++        for (i, layer) in layers.iter_mut().enumerate() {
++            if layer.is_empty() {
++                continue;
++            }
++            layer.sort_unstable();
++            layer.push(atoms.len() as u32);
++            layer.push((i + 1) as u32);
++            seeds[i] = Some(layer.iter().fold(0, |h, &v| hash_combine(h, v)));
++        }
++        Hashes { seeds, atoms }
++    }
++}
++type PathInfo = (FxHashMap<u32, u32>, Vec<usize>, Vec<u32>);
++fn path_info(mol: &Molecule, path: &[u32]) -> PathInfo {
++    let mut degrees = FxHashMap::default();
++    let mut atoms = std::collections::BTreeSet::new();
++    for &idx in path {
++        let b = mol.bond(BondIdx(idx));
++        *degrees.entry(b.atom1.0).or_insert(0) += 1;
++        *degrees.entry(b.atom2.0).or_insert(0) += 1;
++        atoms.insert(b.atom1.0 as usize);
++        atoms.insert(b.atom2.0 as usize);
++    }
++    let mut nbrs = vec![0; path.len()];
++    for i in 0..path.len() {
++        let a = mol.bond(BondIdx(path[i]));
++        for j in i + 1..path.len() {
++            let b = mol.bond(BondIdx(path[j]));
++            if a.atom1 == b.atom1 || a.atom1 == b.atom2 || a.atom2 == b.atom1 || a.atom2 == b.atom2
++            {
++                nbrs[i] += 1;
++                nbrs[j] += 1;
++            }
++        }
++    }
++    (degrees, atoms.into_iter().collect(), nbrs)
++}
++fn topology(mut a: u32, mut b: u32, n: u32) -> u32 {
++    if a < b {
++        std::mem::swap(&mut a, &mut b);
++    }
++    (n % 8) | ((a % 8) << 3) | ((b % 8) << 6)
++}
++fn bond_type(mut a: u32, mut b: u32, n: u32, code: u32) -> u32 {
++    if a < b {
++        std::mem::swap(&mut a, &mut b);
++    }
++    (code % 8) | ((n % 8) << 3) | ((a % 8) << 6) | ((b % 8) << 9)
++}
++fn atom_type(a: u32, b: u32, mut da: u32, mut db: u32, n: u32) -> u32 {
++    let mut a = a % 128;
++    let mut b = b % 128;
++    if a < b || (a == b && da < db) {
++        std::mem::swap(&mut a, &mut b);
++        std::mem::swap(&mut da, &mut db);
++    }
++    a | (b << 7) | ((da % 8) << 14) | ((db % 8) << 17) | ((n % 8) << 20)
++}
++fn aromaticity(mut a: bool, mut b: bool, n: u32) -> u32 {
++    if !a && b {
++        std::mem::swap(&mut a, &mut b);
++    }
++    (a as u32) | ((b as u32) << 1) | ((n % 8) << 5)
++}
+diff --git a/crates/chematic-fp/tests/rdkit_layered_config.rs b/crates/chematic-fp/tests/rdkit_layered_config.rs
+new file mode 100644
+index 0000000..30849f0
+--- /dev/null
++++ b/crates/chematic-fp/tests/rdkit_layered_config.rs
+@@ -0,0 +1,244 @@
++//! Original minimal tests; manifest: validation/rdkit_issues/fingerprints/layered-config.json.
++use chematic_core::{Atom, AtomIdx, BondOrder, Element, MoleculeBuilder};
++use chematic_fp::{RdkitLayeredConfig as Config, rdkit_layered_config, rdkit_layered_fp};
++fn mol(s: &str) -> chematic_core::Molecule {
++    chematic_smiles::parse(s).unwrap()
++}
++#[test]
++fn defaults_preserve_existing_packed_fingerprints() {
++    for s in [
++        "CCO",
++        "CC(C)O",
++        "C1CC1",
++        "c1ccccc1O",
++        "c1ccc2ccccc2c1",
++        "[2H]C([2H])([2H])NC=O",
++        "C1C2CC3CC1CC(C2)C3",
++    ] {
++        let m = mol(s);
++        let r = rdkit_layered_config(&m, &Config::default()).unwrap();
++        assert_eq!(r.bits, rdkit_layered_fp(&m).to_le_bytes());
++    }
++}
++#[test]
++fn root_multiplicity_and_seeded_counter_contract() {
++    let m = mol("CC(C)O");
++    let mut c = Config {
++        from_atoms: vec![AtomIdx(0)],
++        ..Default::default()
++    };
++    let a = rdkit_layered_config(&m, &c).unwrap();
++    assert_eq!(a.atom_counts, [4, 4, 2, 2]);
++    c.from_atoms.push(AtomIdx(0));
++    c.atom_counts = Some(vec![10, 20, 30, 40, 99]);
++    let b = rdkit_layered_config(&m, &c).unwrap();
++    assert_eq!(b.atom_counts, [18, 28, 34, 44, 99]);
++    assert_eq!(b.bits, a.bits);
++    assert_eq!(c.atom_counts.unwrap(), [10, 20, 30, 40, 99]);
++}
++#[test]
++fn bit_mask_controls_counters_even_after_hash_collisions() {
++    let m = mol("CC(C)O");
++    let mut c = Config {
++        fp_size: 1,
++        ..Default::default()
++    };
++    let r = rdkit_layered_config(&m, &c).unwrap();
++    assert_eq!(r.bits, [1]);
++    assert_eq!(r.atom_counts, [4, 7, 4, 4]);
++    c.set_only_bits = Some(vec![0]);
++    let r = rdkit_layered_config(&m, &c).unwrap();
++    assert_eq!(r.bits, [0]);
++    assert_eq!(r.atom_counts, [0; 4]);
++}
++#[test]
++fn selected_layers_union_and_zero_layers() {
++    let m = mol("c1ccccc1O");
++    let all = rdkit_layered_config(&m, &Config::default()).unwrap();
++    let mut union = vec![0; 256];
++    for layer in 0..6 {
++        let c = Config {
++            layer_flags: 1 << layer,
++            ..Default::default()
++        };
++        let r = rdkit_layered_config(&m, &c).unwrap();
++        for (u, b) in union.iter_mut().zip(r.bits) {
++            *u |= b;
++        }
++    }
++    assert_eq!(union, all.bits);
++    let c = Config {
++        layer_flags: 0,
++        atom_counts: Some(vec![9; 7]),
++        ..Default::default()
++    };
++    let r = rdkit_layered_config(&m, &c).unwrap();
++    assert!(r.bits.iter().all(|b| *b == 0));
++    assert_eq!(r.atom_counts, [9; 7]);
++}
++#[test]
++fn rooted_linear_uses_endpoint_semantics_and_final_range_closures() {
++    let m = mol("CC(C)O");
++    let c = Config {
++        branched_paths: false,
++        from_atoms: vec![AtomIdx(1)],
++        ..Default::default()
++    };
++    let r = rdkit_layered_config(&m, &c).unwrap();
++    assert_eq!(r.atom_counts, [1, 3, 1, 1]);
++    let m = mol("C1CC1");
++    let a = Config {
++        branched_paths: false,
++        from_atoms: vec![AtomIdx(0)],
++        max_path: 3,
++        ..Default::default()
++    };
++    let mut b = a.clone();
++    b.max_path = 7;
++    assert!(
++        rdkit_layered_config(&m, &a).unwrap().selected_paths
++            > rdkit_layered_config(&m, &b).unwrap().selected_paths
++    );
++}
++#[test]
++fn counters_wrap_like_unsigned_rdkit_counters() {
++    let c = Config {
++        atom_counts: Some(vec![u32::MAX; 3]),
++        ..Default::default()
++    };
++    assert_eq!(
++        rdkit_layered_config(&mol("CCO"), &c).unwrap().atom_counts,
++        [1, 2, 1]
++    );
++}
++#[test]
++fn invalid_options_and_known_invalid_upstream_branch_are_checked() {
++    let m = mol("CCO");
++    for c in [
++        Config {
++            fp_size: 0,
++            ..Default::default()
++        },
++        Config {
++            min_path: 0,
++            ..Default::default()
++        },
++        Config {
++            min_path: 3,
++            max_path: 2,
++            ..Default::default()
++        },
++        Config {
++            max_path: 13,
++            ..Default::default()
++        },
++        Config {
++            from_atoms: vec![AtomIdx(3)],
++            ..Default::default()
++        },
++        Config {
++            atom_counts: Some(vec![0; 2]),
++            ..Default::default()
++        },
++        Config {
++            fp_size: 9,
++            set_only_bits: Some(vec![0, 2]),
++            ..Default::default()
++        },
++        Config {
++            set_only_bits: Some(vec![]),
++            ..Default::default()
++        },
++    ] {
++        assert!(rdkit_layered_config(&m, &c).is_err());
++    }
++    let c = Config {
++        branched_paths: false,
++        ..Default::default()
++    };
++    assert_eq!(
++        rdkit_layered_config(&m, &c).unwrap_err().code,
++        "unrooted_linear_unsupported"
++    );
++}
++#[test]
++fn exhausted_budgets_return_no_partial_mutation() {
++    let m = mol("CC(C)O");
++    let mut c = Config {
++        atom_counts: Some(vec![7; 4]),
++        ..Default::default()
++    };
++    let result = rdkit_layered_config(&m, &c).unwrap();
++    c.max_visits = result.search_visits - 1;
++    assert_eq!(
++        rdkit_layered_config(&m, &c).unwrap_err().code,
++        "visit_limit"
++    );
++    assert_eq!(c.atom_counts.as_ref().unwrap(), &[7; 4]);
++    c.max_visits = 1_000_000;
++    c.max_paths = 1;
++    assert_eq!(rdkit_layered_config(&m, &c).unwrap_err().code, "path_limit");
++}
++#[test]
++fn query_zero_and_dative_bonds_are_rejected() {
++    for order in [BondOrder::QueryAny, BondOrder::Zero, BondOrder::Dative] {
++        let mut b = MoleculeBuilder::new();
++        let a = b.add_atom(Atom::new(Element::C));
++        let z = b.add_atom(Atom::new(Element::C));
++        b.add_bond(a, z, order).unwrap();
++        assert_eq!(
++            rdkit_layered_config(&b.build(), &Config::default())
++                .unwrap_err()
++                .code,
++            "unsupported_bond"
++        );
++    }
++}
++#[test]
++fn explicit_hydrogen_roots_keep_original_indices_but_set_no_bits() {
++    let m = mol("[2H]OC");
++    let c = Config {
++        from_atoms: vec![AtomIdx(0)],
++        atom_counts: Some(vec![7, 8, 9]),
++        ..Default::default()
++    };
++    let r = rdkit_layered_config(&m, &c).unwrap();
++    assert!(r.bits.iter().all(|b| *b == 0));
++    assert_eq!(r.atom_counts, [7, 8, 9]);
++}
++
++#[test]
++fn rooted_linear_frontier_and_visit_caps_fail_atomically() {
++    let m = mol("CC(C)O");
++    let mut c = Config {
++        branched_paths: false,
++        from_atoms: vec![AtomIdx(1)],
++        atom_counts: Some(vec![7; 4]),
++        max_paths: 1,
++        ..Default::default()
++    };
++    assert_eq!(
++        rdkit_layered_config(&m, &c).unwrap_err().code,
++        "frontier_limit"
++    );
++    c.max_paths = 100000;
++    c.max_visits = 1;
++    assert_eq!(
++        rdkit_layered_config(&m, &c).unwrap_err().code,
++        "visit_limit"
++    );
++    assert_eq!(c.atom_counts.unwrap(), [7; 4]);
++}
++#[test]
++fn graph_limits_are_checked_before_perception() {
++    let mut b = MoleculeBuilder::new();
++    for _ in 0..513 {
++        b.add_atom(Atom::new(Element::C));
++    }
++    assert_eq!(
++        rdkit_layered_config(&b.build(), &Config::default())
++            .unwrap_err()
++            .code,
++        "graph_limit"
++    );
++}
+diff --git a/crates/chematic-py/python/chematic/__init__.pyi b/crates/chematic-py/python/chematic/__init__.pyi
+index f356c06..0369b63 100644
+--- a/crates/chematic-py/python/chematic/__init__.pyi
++++ b/crates/chematic-py/python/chematic/__init__.pyi
+@@ -1136,6 +1136,14 @@ class Mol:
+         """RDKit-compatible atom-pair fingerprint as a numpy bit vector."""
+         ...
+ 
++    def rdkit_layered_fp(self) -> bytes:
++        """Fixed 2048-bit RDKit-compatible default Layered fingerprint."""
++        ...
++
++    def rdkit_layered_config(self, *, layer_flags: int = 4294967295, min_path: int = 1, max_path: int = 7, nbits: int = 2048, branched_paths: bool = True, from_atoms: Optional[Sequence[int]] = None, set_only_bits: Optional[bytes] = None, atom_counts: Optional[Sequence[int]] = None, max_visits: int = 1000000, max_paths: int = 100000) -> dict[str, Any]:
++        """Packed LSB bits, copied accumulated counters and enumeration statistics."""
++        ...
++
+     def rdkit_layered_fp_numpy(self) -> ndarray:
+         """RDKit-compatible layered fingerprint as a numpy bit vector."""
+         ...
+diff --git a/crates/chematic-py/src/mol_methods.rs b/crates/chematic-py/src/mol_methods.rs
+index 536dddf..abd2286 100644
+--- a/crates/chematic-py/src/mol_methods.rs
++++ b/crates/chematic-py/src/mol_methods.rs
+@@ -24,6 +24,7 @@ mod descriptors;
+ mod extended;
+ mod fingerprints;
+ mod identity;
++mod layered_config;
+ mod properties;
+ mod stereo_groups;
+ mod three_d;
+diff --git a/crates/chematic-py/src/mol_methods/layered_config.rs b/crates/chematic-py/src/mol_methods/layered_config.rs
+new file mode 100644
+index 0000000..e2b2847
+--- /dev/null
++++ b/crates/chematic-py/src/mol_methods/layered_config.rs
+@@ -0,0 +1,115 @@
++use super::*;
++use pyo3::types::{PyBool, PyBytes, PyInt};
++fn integer(value: &Bound<'_, PyAny>) -> PyResult<usize> {
++    if value.is_instance_of::<PyBool>() || !value.is_instance_of::<PyInt>() {
++        return Err(PyValueError::new_err(
++            "expected a nonnegative integer, excluding bool",
++        ));
++    }
++    value
++        .extract()
++        .map_err(|_| PyValueError::new_err("integer is negative or does not fit usize"))
++}
++fn u32_integer(value: &Bound<'_, PyAny>) -> PyResult<u32> {
++    integer(value)?
++        .try_into()
++        .map_err(|_| PyValueError::new_err("integer must fit u32"))
++}
++fn boolean(value: &Bound<'_, PyAny>) -> PyResult<bool> {
++    if !value.is_instance_of::<PyBool>() {
++        return Err(PyValueError::new_err("branched_paths must be bool"));
++    }
++    value.extract()
++}
++fn sequence(value: Option<&Bound<'_, PyAny>>, cap: usize) -> PyResult<Option<Vec<u32>>> {
++    let Some(value) = value else {
++        return Ok(None);
++    };
++    let mut result = Vec::new();
++    for item in value.try_iter()? {
++        if result.len() >= cap {
++            return Err(PyValueError::new_err(
++                "integer sequence exceeds its size limit",
++            ));
++        }
++        result.push(u32_integer(&item?)?);
++    }
++    Ok(Some(result))
++}
++fn mask(value: Option<&Bound<'_, PyAny>>) -> PyResult<Option<Vec<u8>>> {
++    let Some(value) = value else {
++        return Ok(None);
++    };
++    let value = value
++        .cast::<PyBytes>()
++        .map_err(|_| PyValueError::new_err("set_only_bits must be packed bytes"))?;
++    if value.as_bytes().len() > 8192 {
++        return Err(PyValueError::new_err("mask exceeds maximum 8192 bytes"));
++    }
++    Ok(Some(value.as_bytes().to_vec()))
++}
++fn layered_error(e: chematic_fp::RdkitLayeredError) -> PyErr {
++    let category = if matches!(
++        e.code,
++        "visit_limit" | "path_limit" | "frontier_limit" | "resource_limit" | "graph_limit"
++    ) {
++        "resource_limit"
++    } else if matches!(
++        e.code,
++        "unsupported_graph"
++            | "unsupported_bond"
++            | "index_changing_view"
++            | "unrooted_linear_unsupported"
++    ) {
++        "unsupported"
++    } else {
++        "malformed"
++    };
++    crate::errors::input_error(category, e.code, "rdkit_layered_config", e.detail)
++}
++#[pymethods]
++impl Mol {
++    /// Configurable experimental RDKit 2026.09.1 Layered bits and atom counts.
++    /// Counts are copied and incremented (u32 wrapping), never mutated in place.
++    #[pyo3(signature=(*,layer_flags=4294967295,min_path=1,max_path=7,nbits=2048,branched_paths=true,from_atoms=None,set_only_bits=None,atom_counts=None,max_visits=1000000,max_paths=100000))]
++    #[allow(clippy::too_many_arguments)]
++    fn rdkit_layered_config<'py>(
++        &self,
++        py: Python<'py>,
++        #[pyo3(from_py_with=u32_integer)] layer_flags: u32,
++        #[pyo3(from_py_with=integer)] min_path: usize,
++        #[pyo3(from_py_with=integer)] max_path: usize,
++        #[pyo3(from_py_with=integer)] nbits: usize,
++        #[pyo3(from_py_with=boolean)] branched_paths: bool,
++        from_atoms: Option<&Bound<'py, PyAny>>,
++        set_only_bits: Option<&Bound<'py, PyAny>>,
++        atom_counts: Option<&Bound<'py, PyAny>>,
++        #[pyo3(from_py_with=integer)] max_visits: usize,
++        #[pyo3(from_py_with=integer)] max_paths: usize,
++    ) -> PyResult<Bound<'py, PyDict>> {
++        let config = chematic_fp::RdkitLayeredConfig {
++            layer_flags,
++            min_path,
++            max_path,
++            fp_size: nbits,
++            branched_paths,
++            from_atoms: sequence(from_atoms, 4096)?
++                .unwrap_or_default()
++                .into_iter()
++                .map(chematic_core::AtomIdx)
++                .collect(),
++            set_only_bits: mask(set_only_bits)?,
++            atom_counts: sequence(atom_counts, 65536)?,
++            max_visits: max_visits as u64,
++            max_paths,
++        };
++        let r = chematic_fp::rdkit_layered_config(&self.inner, &config).map_err(layered_error)?;
++        let d = PyDict::new(py);
++        d.set_item("bits", PyBytes::new(py, &r.bits))?;
++        d.set_item("nbits", r.fp_size)?;
++        d.set_item("atom_counts", r.atom_counts)?;
++        d.set_item("selected_paths", r.selected_paths)?;
++        d.set_item("search_visits", r.search_visits)?;
++        Ok(d)
++    }
++}
+diff --git a/crates/chematic-py/tests/test_layered_config.py b/crates/chematic-py/tests/test_layered_config.py
+new file mode 100644
+index 0000000..d90fa6f
+--- /dev/null
++++ b/crates/chematic-py/tests/test_layered_config.py
+@@ -0,0 +1,55 @@
++"""Original minimal inputs; pinned RDKit oracle checked separately."""
++import pytest
++import chematic
++
++
++def test_existing_default_and_detached_seed_state():
++    m=chematic.from_smiles('CC(C)O');m.SetIntProp('tag',7)
++    seeds=[10,20,30,40,99];roots=[0,0]
++    out=m.rdkit_layered_config(from_atoms=roots,atom_counts=seeds)
++    assert out['bits']==m.rdkit_layered_config(from_atoms=[0])['bits']
++    assert out['atom_counts']==[18,28,34,44,99]
++    assert seeds==[10,20,30,40,99] and roots==[0,0] and m.GetIntProp('tag')==7
++    assert m.rdkit_layered_config()['bits']==bytes(m.rdkit_layered_fp())
++    assert isinstance(out['bits'],bytes)
++
++
++@pytest.mark.parametrize('field',['layer_flags','min_path','max_path','nbits','max_visits','max_paths'])
++@pytest.mark.parametrize('value',[True,1.0,'1',-1,None,2**100])
++def test_strict_integer_arguments(field,value):
++    with pytest.raises((ValueError,TypeError,OverflowError)):chematic.from_smiles('CCO').rdkit_layered_config(**{field:value})
++
++
++@pytest.mark.parametrize('value',[0,1,'true',None])
++def test_branched_flag_must_be_bool(value):
++    with pytest.raises((ValueError,TypeError)):chematic.from_smiles('CCO').rdkit_layered_config(branched_paths=value)
++
++
++@pytest.mark.parametrize('field',['from_atoms','atom_counts'])
++@pytest.mark.parametrize('value',[[True],[1.0],['0'],[-1],[2**40]])
++def test_sequence_entries_checked(field,value):
++    with pytest.raises((ValueError,TypeError,OverflowError)):chematic.from_smiles('CCO').rdkit_layered_config(**{field:value})
++
++
++@pytest.mark.parametrize('kwargs,code',[({'nbits':0},'fp_size'),({'max_path':13},'path_range'),({'min_path':8,'max_path':7},'path_range'),({'from_atoms':[3]},'root_index'),({'atom_counts':[0]},'atom_counts'),({'set_only_bits':b''},'mask_size'),({'nbits':9,'set_only_bits':bytes([0,2])},'mask_padding'),({'branched_paths':False},'unrooted_linear_unsupported'),({'max_visits':1},'visit_limit'),({'max_paths':1},'path_limit'),({'branched_paths':False,'from_atoms':[1],'max_paths':1},'frontier_limit')])
++def test_typed_failures(kwargs,code):
++    with pytest.raises(chematic.ChematicInputError) as error: chematic.from_smiles('CCO').rdkit_layered_config(**kwargs)
++    assert error.value.code==code and error.value.format=='rdkit_layered_config'
++
++
++def test_masking_counts_padding_and_counter_wrap():
++    m=chematic.from_smiles('CCO')
++    assert m.rdkit_layered_config(nbits=1)['bits']==b'\x01'
++    assert m.rdkit_layered_config(nbits=1,set_only_bits=b'\0')['atom_counts']==[0,0,0]
++    out=m.rdkit_layered_config(atom_counts=[2**32-1]*3)
++    assert out['atom_counts']==[1,2,1]
++    assert len(m.rdkit_layered_config(nbits=9)['bits'])==2
++    with pytest.raises(ValueError):m.rdkit_layered_config(set_only_bits=[0]*256)
++
++
++def test_rooted_linear_and_bounded_iterators():
++    m=chematic.from_smiles('CC(C)O')
++    assert m.rdkit_layered_config(branched_paths=False,from_atoms=[1])['atom_counts']==[1,3,1,1]
++    import itertools
++    with pytest.raises(ValueError):m.rdkit_layered_config(from_atoms=itertools.repeat(0))
++    with pytest.raises(ValueError):m.rdkit_layered_config(atom_counts=itertools.repeat(0))
+diff --git a/docs/rdkit-layered-fingerprint-options.md b/docs/rdkit-layered-fingerprint-options.md
+new file mode 100644
+index 0000000..23c45d6
+--- /dev/null
++++ b/docs/rdkit-layered-fingerprint-options.md
+@@ -0,0 +1,201 @@
++# Configurable RDKit Layered fingerprints
++
++This candidate fills the gap between chematic's existing fixed-default Layered
++fingerprint and the parameter controls exposed by
++[RDKit `LayeredFingerprint`](https://www.rdkit.org/docs/source/rdkit.Chem.rdmolops.html#rdkit.Chem.rdmolops.LayeredFingerprint).
++The reference is **RDKit 2026.09.1**, tag `Release_2026_09_1`, commit
++`fece8caa860bdf6c9c82bdb9253f22a0cf87150c`. RDKit classifies this family as
++experimental, so parameter/result compatibility is version-specific.
++
++The existing `rdkit_layered_fp()` / `Mol.rdkit_layered_fp()` profile remains
++2048 bits with all six active layers and paths of 1–7 bonds. It and the new
++API share the same per-path hashing code. chematic's separate native
++`layered_fp()` / `layered_fp_layers()` family uses a different seven-layer
++scheme and is not interchangeable with these RDKit bit positions.
++
++## API
++
++Rust exports `RdkitLayeredConfig`, `RdkitLayeredResult`,
++`RdkitLayeredError` and `rdkit_layered_config(mol, &config)` from
++`chematic_fp`. The result includes packed LSB-first `bits`, `fp_size`,
++`atom_counts`, `selected_paths` and `search_visits`.
++
++Python exposes `Mol.rdkit_layered_config()` with the corresponding keyword
++arguments and a detached result dictionary:
++
++```python
++import chematic
++
++mol = chematic.from_smiles("CC(C)O")
++initial_counts = [0] * mol.atom_count
++result = mol.rdkit_layered_config(
++    layer_flags=0x25,
++    min_path=1, max_path=5, nbits=1024,
++    from_atoms=[0], atom_counts=initial_counts,
++)
++packed = result["bits"]                 # bytes, LSB-first
++counts = result["atom_counts"]           # a new list
++assert initial_counts == [0] * mol.atom_count
++
++linear = mol.rdkit_layered_config(
++    branched_paths=False, from_atoms=[1],
++)
++```
++
++Python result keys are `bits`, `nbits`, `atom_counts`, `selected_paths`
++and `search_visits`. The bytes use `ceil(nbits/8)` storage with zero unused
++high bits in the last byte. A packed mask uses the same convention and must
++have exactly that length and valid zero padding. A mask is provided as
++`set_only_bits=bytes(...)`; integer lists are not silently interpreted as masks.
++
++| Option | Default | Checked contract |
++| --- | --- | --- |
++| `layer_flags` | `0xffffffff` | u32; six active low bits, unknown high bits ignored as in the reference |
++| `min_path`, `max_path` | 1, 7 | 1 ≤ min ≤ max ≤ 12 bonds |
++| `nbits` / Rust `fp_size` | 2048 | 1–65,536, including odd/non-power-of-two sizes |
++| `branched_paths` | True | False requires an explicit nonempty root list |
++| `from_atoms` | None / empty | stored zero-based atom indices; empty means the ordinary all-subgraphs calculation |
++| `set_only_bits` | None | packed bytes selecting which output bits may be set |
++| `atom_counts` | None | optional initial u32 counters, at least atom_count entries and at most 65,536 |
++| `max_visits` | 1,000,000 | positive, maximum 10,000,000 enumeration visits |
++| `max_paths` | 100,000 | positive, maximum 1,000,000 selected path occurrences; also caps the linear frontier |
++
++Flags select topology (`0x01`), bond order (`0x02`), atom types (`0x04`),
++ring membership (`0x08`), minimum ring size (`0x10`) and aromaticity (`0x20`).
++Counts increase once per accepted path containing an atom, not once per layer,
++new output bit or distinct bit. A collision with an already-set bit still
++contributes a path count. If the mask rejects every selected layer for a path,
++that path does not increase any counter. Flags with no active layers likewise
++leave the initial counts unchanged.
++
++Initial counter lists are copied instead of mutated in place. Values add with
++u32 wrapping, matching the reference's unsigned arithmetic. Extra trailing
++entries remain unchanged. With no initial list, the returned list contains
++one zero-initialized counter per stored atom. An explicitly supplied short or
++empty list is rejected rather than interpreted as an absent output request.
++Python integer arguments/list entries exclude bool, float and text; the
++branched flag must be a bool. Bounded integer iterators are accepted for
++roots/counters and rejected after their size cap.
++
++## Root and path semantics
++
++Branched subgraphs use only bonds whose endpoints are not explicit H atoms.
++A rooted branched subgraph is any connected subgraph containing a requested
++root. Duplicate roots retain their multiplicity: bits are unchanged while
++counters can increase more than once for the same subgraph. The checked API
++retains the caller's stored atom indices, including H slots. Explicit H atoms
++have no eligible bonds and receive no added counts. Comparing with RDKit
++therefore requires the corresponding indexed graph, such as parsing with
++`SmilesParserParams.removeHs=False`.
++
++Rooted linear paths start at the requested atom. They retain RDKit's specific
++range-wide closure convention: revisiting an earlier atom is allowed only in
++the final extension at the requested maximum length, except immediate
++backtracking. Deduplication uses the set of bond indices within each length
++and root. This can make a shorter closed-ring contribution disappear when
++`max_path` increases; it is preserved reference behavior, not replaced with
++an assumed monotonic simple-path definition.
++
++### Unrooted linear refusal
++
++The pinned RDKit C++ unrooted `branchedPaths=False` branch passes atom paths
++to code that treats their indices as bond indices. In isolated subprocess
++probes during this implementation, `CC` and `CCO` both terminated with signal
++11; some ring graphs instead returned numerical fingerprints. The checked
++chematic API rejects this entire combination with
++`unrooted_linear_unsupported`, avoiding a molecule-dependent unsafe branch.
++It does not silently substitute another definition. Supply `from_atoms` when
++requesting linear paths. An all-atoms root list is a rooted calculation with
++its own multiplicities and is not an alias for the unrooted branch.
++
++## Checked graph and resource boundaries
++
++The current profile accepts at most 512 atoms and 1024 bonds. Complex query
++bonds, zero/dative bonds, loops and parallel edges are refused. Ordinary SMILES
++dummy atoms use atomic number zero. The existing RDKit aromaticity view is
++reused, with atom/bond correspondence verified before applying caller indices.
++If sanitization changes that correspondence or introduces an unsupported bond
++type, calculation returns a typed error.
++
++Branched enumeration is bounded connected-subgraph search. Root filtering
++uses the global unique subgraphs and applies root multiplicities; roots do not
++promise reduced search work. Rooted linear enumeration bounds its intermediate
++frontier as well as accepted paths. Budgets cover enumeration, with graph caps
++also bounding preparation; they are not wall-time guarantees. Exhaustion
++returns no partial fingerprint or partially updated caller counters.
++`selected_paths` and `search_visits` are chematic diagnostics, not RDKit API
++return values or cross-engine performance measurements.
++
++Rust errors carry `code` and `detail`. Python calculation errors subclass `ValueError`
++through `ChematicInputError` and expose `category`, `code` and
++`format="rdkit_layered_config"`. Category distinguishes malformed options,
++unsupported branches and resource limits. Invalid Python argument types are caught before core calculation and may
++raise TypeError or plain ValueError without those attributes. No unsupported
++option is rounded or coerced to another profile.
++
++Ring hashing retains the existing SSSR-based implementation. The measured
++ring/bridged/spiro examples below are reference checks, not proof of arbitrary
++ring-perception or chemistry parity. This is not a SMARTS-query fingerprint
++API, an unrestricted RDKit wrapper, or a complete RDKit feature implementation.
++
++## Source and independent validation
++
++Behavioral details derive from the pinned RDKit
++[Fingerprint source](https://github.com/rdkit/rdkit/blob/fece8caa860bdf6c9c82bdb9253f22a0cf87150c/Code/GraphMol/Fingerprints/Fingerprints.cpp)
++and
++[Subgraph source](https://github.com/rdkit/rdkit/blob/fece8caa860bdf6c9c82bdb9253f22a0cf87150c/Code/GraphMol/Subgraphs/Subgraphs.cpp).
++The BSD-3-Clause copyright/license inventory is updated in
++`THIRD_PARTY_NOTICES.md`; source comments retain the applicable notice.
++No RDKit binary is bundled or called by the implementation.
++
++The original minimized corpus is described in
++`validation/rdkit_issues/fingerprints/layered-config.json`, including license,
++provenance, normalized payload hash, exact oracle and settings. It includes
++empty/singleton graphs, branches, rings, fused/bridged/spiro/cage examples,
++aromatic/Kekulé inputs, charges, explicit/isotopic H and dummy atoms. The empty
++native graph is constructed with `RWMol().GetMol()` because empty SMILES input
++is rejected by chematic's parser.
++
++`python scripts/validate_layered_config.py` compares all output bits and
++accumulated counters exactly. It covers every active-layer subset, all 78
++supported path ranges, odd and maximum bit lengths, masks, counter seeds and
++wrapping, repeated/endpoint roots, range-dependent closures and atom
++permutations. The oracle's bits are packed independently. Separate controls
++compare the existing fixed default with the new default and check input graph,
++properties and seed-list nonmutation. Exception/diagnostic statistics are not
++represented as bit/counter parity.
++
++The run passed **13,378** cases across 20 original fixtures, with exact bits
++and **75,874** accumulated counter values. This includes 2,790 masked cases,
++2,850 rooted-linear cases and 360 permuted-atom cases, covering all 64 active
++layer subsets and all 78 supported min/max path ranges. There were no bit,
++counter or input-mutation mismatches. **110** controls preserved the existing
++fixed-profile output.
++
++Rust validation passed **346 existing library + 12 new integration tests**;
++Python passed **64** tests. Clippy with warnings denied, formatting, strict
++MkDocs, stub syntax, static binding inventory and refactoring budget checks
++passed. These are targeted local checks, not a full-workspace hosted CI run.
++
++Evidence is saved to
++`validation/results/rdkit-layered-config-2026-10-15.json`, with source,
++fixture and compiled-extension hashes. It is a local source validation,
++not a release or hosted CI result.
++
++```sh
++cargo test -p chematic-fp --lib --test rdkit_layered_config --offline --quiet
++cargo clippy -p chematic-fp -p chematic-py --all-targets --offline --no-deps -- -D warnings
++cargo fmt --all -- --check
++python -m pytest crates/chematic-py/tests/test_layered_config.py -q
++python scripts/validate_layered_config.py
++python scripts/check_refactor_budget.py
++python scripts/check_binding_surface.py
++python scripts/check_product_names.py
++mkdocs build --strict
++```
++
++The source candidate preserves the previous work through indexed SDF selections.
++Its review patch is `validation/rdkit_issues/layered-config-2026-10-15.patch`;
++applying it requires that inherited context. Main integration, feature commit,
++push and publication remain separate steps. Shared hashing removes one resolved
++refactoring function allowance; no new allowance was added.
+diff --git a/scripts/validate_layered_config.py b/scripts/validate_layered_config.py
+new file mode 100644
+index 0000000..d48f62e
+--- /dev/null
++++ b/scripts/validate_layered_config.py
+@@ -0,0 +1,121 @@
++#!/usr/bin/env python3
++"""Exact Layered bits/counters against pinned RDKit, with independent packing."""
++import argparse
++import hashlib
++import itertools
++import json
++from pathlib import Path
++import random
++import sys
++
++import chematic
++from rdkit import Chem,DataStructs,rdBase,RDLogger
++
++ROOT=Path(__file__).resolve().parents[1]
++FIXTURE=ROOT/'validation/rdkit_issues/fingerprints/layered-config.json'
++
++
++def digest(data):return hashlib.sha256(data).hexdigest()
++
++
++def pack(bits,size):
++    result=bytearray((size+7)//8)
++    for bit in bits:result[bit//8]|=1<<(bit%8)
++    return bytes(result)
++
++
++def mask(size,kind,reference):
++    if kind=='none':return None
++    if kind=='zero':return bytes((size+7)//8)
++    if kind=='all':return pack(range(size),size)
++    if kind=='alternate':return pack(range(0,size,2),size)
++    if kind=='first-hit':return pack(list(reference.GetOnBits())[:1],size)
++    if kind=='last':return pack([size-1],size)
++    raise AssertionError(kind)
++
++
++def orders(n):
++    if n<2:return [list(range(n))]
++    rng=random.Random(9706+n);out=[list(range(n)),list(reversed(range(n)))]
++    target=min(6,2 if n==2 else 6)
++    while len(out)<target:
++        row=list(range(n));rng.shuffle(row)
++        if row not in out:out.append(row)
++    return out
++
++
++def settings(n):
++    # Every active-layer subset; high unknown flags are ignored by the reference.
++    for flags,size in itertools.product([*range(64),0x40,0xffffffff],[1,127,2048]):
++        yield {'layer_flags':flags,'nbits':size}
++    roots=[None,[]]
++    if n:roots += [[0],[n-1],[0,0],[0,n-1]]
++    for root,paths,size in itertools.product(roots,[(1,1),(1,2),(2,3),(1,3),(3,7),(1,12)],[9,256,2048]):
++        yield {'from_atoms':root,'min_path':paths[0],'max_path':paths[1],'nbits':size,'max_visits':10000000}
++        if root:
++            yield {'from_atoms':root,'min_path':paths[0],'max_path':paths[1],'nbits':size,'branched_paths':False,'max_visits':10000000}
++    # Every supported min/max path combination, including range-dependent closure.
++    for lo in range(1,13):
++        for hi in range(lo,13):
++            yield {'min_path':lo,'max_path':hi,'nbits':257,'max_visits':10000000}
++            if n:
++                yield {'min_path':lo,'max_path':hi,'nbits':257,'from_atoms':[0],'branched_paths':False,'max_visits':10000000}
++    for size in (65535,65536):
++        for kind in ('none','all','alternate','first-hit'):
++            yield {'nbits':size,'mask_kind':kind,'atom_counts':[23]*n+[123]}
++    for flags,size,kind in itertools.product([0,1,4,8,0x25,0x3f],[3,9,255,1024],['zero','all','alternate','first-hit','last']):
++        yield {'layer_flags':flags,'nbits':size,'mask_kind':kind,'atom_counts':[2**32-1,7,13][:n]+[3]*max(0,n-3)+[999]}
++
++
++def main():
++    p=argparse.ArgumentParser(description=__doc__)
++    p.add_argument('--output',type=Path,default=ROOT/'validation/results/rdkit-layered-config-2026-10-15.json');args=p.parse_args()
++    assert rdBase.rdkitVersion=='2026.09.1';RDLogger.DisableLog('rdApp.warning')
++    manifest=json.loads(FIXTURE.read_text());assert digest(json.dumps(manifest['cases'],sort_keys=True,separators=(',',':')).encode())==manifest['sha256']
++    checksum=hashlib.sha256();count=0;default_controls=0;counter_values=0;masked=0;linear=0;permuted=0
++    for case in manifest['cases']:
++        native=chematic.from_smiles(case['smiles']) if case['smiles'] else chematic.RWMol().GetMol();params=Chem.SmilesParserParams();params.removeHs=False
++        reference=Chem.MolFromSmiles(case['smiles'],params);assert reference is not None
++        n=reference.GetNumAtoms();assert native.atom_count==n
++        for order in orders(n):
++            m=native.renumber_atoms(order);r=Chem.RenumberAtoms(reference,order) if n else Chem.Mol(reference)
++            assert sorted(tuple(sorted(b[:2])) for b in m.bond_table)==sorted(tuple(sorted((b.GetBeginAtomIdx(),b.GetEndAtomIdx()))) for b in r.GetBonds())
++            original=m.smiles;m.SetIntProp('trial',9706)
++            default=m.rdkit_layered_config();assert default['bits']==bytes(m.rdkit_layered_fp());default_controls+=1
++            options=list(settings(n)) if order==list(range(n)) else [
++                {'layer_flags':flags,'from_atoms':root,'nbits':size,'branched_paths':branch,'mask_kind':kind,'atom_counts':[17]*n+[123]}
++                for flags,root,size,branch,kind in [(0xffffffff,None,2048,True,'none'),(3,[0] if n else None,127,True,'alternate'),(0x25,[n-1] if n else None,9,True,'all'),(8,[0,0] if n else None,256,True,'first-hit')]
++            ]
++            for original_options in options:
++                options=dict(original_options);kind=options.pop('mask_kind','none')
++                size=options.get('nbits',2048);seed=options.get('atom_counts',[0]*n);before_seed=list(seed)
++                kw={'layerFlags':options.get('layer_flags',0xffffffff),'minPath':options.get('min_path',1),'maxPath':options.get('max_path',7),'fpSize':size,'fromAtoms':options.get('from_atoms'),'branchedPaths':options.get('branched_paths',True)}
++                unmasked=Chem.LayeredFingerprint(r,**kw)
++                packed_mask=mask(size,kind,unmasked)
++                if packed_mask is not None:
++                    v=DataStructs.ExplicitBitVect(size)
++                    for bit in range(size):
++                        if packed_mask[bit//8]&(1<<(bit%8)):v.SetBit(bit)
++                    kw['setOnlyBits']=v;options['set_only_bits']=packed_mask;masked+=1
++                expected_counts=list(seed);fp=Chem.LayeredFingerprint(r,atomCounts=expected_counts,**kw)
++                got=m.rdkit_layered_config(**options)
++                expected_bits=pack(fp.GetOnBits(),size)
++                assert got['bits']==expected_bits,(case['id'],order,original_options,'bits')
++                assert got['atom_counts']==expected_counts,(case['id'],order,original_options,'counts',got['atom_counts'],expected_counts)
++                assert seed==before_seed and m.smiles==original and m.GetIntProp('trial')==9706
++                assert got['nbits']==size and len(got['bits'])==(size+7)//8
++                counter_values+=len(expected_counts);linear+=not kw['branchedPaths'];permuted+=order!=list(range(n))
++                checksum.update(json.dumps([case['id'],order,original_options,kind,got['bits'].hex(),got['atom_counts']],sort_keys=True,separators=(',',':')).encode());count+=1
++        print(case['id'],count,flush=True)
++    paths=['crates/chematic-fp/src/rdkit_layered.rs','crates/chematic-fp/src/rdkit_layered/features.rs','crates/chematic-fp/src/rdkit_layered/config.rs','crates/chematic-fp/src/rdkit_layered/config/validation.rs','crates/chematic-fp/src/rdkit_layered/config/enumeration.rs','crates/chematic-fp/src/rdkit_layered/config/enumeration/linear.rs','crates/chematic-py/src/mol_methods/layered_config.rs','crates/chematic-py/python/chematic/__init__.pyi','crates/chematic-fp/tests/rdkit_layered_config.rs','crates/chematic-py/tests/test_layered_config.py','scripts/validate_layered_config.py']
++    report={'schema_version':1,'status':'local-source-candidate','reference':'RDKit LayeredFingerprint 2026.09.1; experimental family',
++        'base':'Preserved isolated candidates through indexed SDF selections; no main integration',
++        'runtime':{'python':sys.version.split()[0],'rdkit':rdBase.rdkitVersion,'settings':'removeHs=False; use indexed explicit-H graphs; all masks constructed as ExplicitBitVect; original molecule properties retained','chematic_extension_sha256':digest(Path(chematic.__file__).resolve().read_bytes())},
++        'source_sha256':{p:digest((ROOT/p).read_bytes()) for p in paths},'fixture':{'path':str(FIXTURE.relative_to(ROOT)),'manifest_sha256':digest(FIXTURE.read_bytes()),**manifest},
++        'results':{'cases':count,'fixtures':len(manifest['cases']),'all_active_layer_subsets':64,'all_supported_path_ranges':78,'default_legacy_controls':default_controls,'seeded_counter_values_verified':counter_values,'masked_cases':masked,'rooted_linear_cases':linear,'permuted_cases':permuted,'bits_mismatches':0,'counter_mismatches':0,'input_mutations':0,'case_sha256':checksum.hexdigest()},
++        'limits':{'atoms':512,'bonds':1024,'maximum_path_bonds':12,'maximum_bits':65536,'default_visits':1000000,'maximum_visits':10000000,'default_selected_paths':100000,'maximum_selected_paths':1000000,'linear_frontier_uses_path_cap':True},
++        'limitations':'Checked concrete molecules only: no complex query bonds, dative/zero bonds, loops/parallel edges or index-changing sanitized views. Unrooted branchedPaths=False is explicitly unsupported: the pinned RDKit source passes atom paths as bond indices and isolated CC/CCO probes in this session exited with signal 11. Rooted linear preserves the source range-wide final-step closure convention. No general chemical parity, unrestricted parameter range, performance or release claim. Seed counters are copied, not mutated in place; u32 wrapping and trailing entries are preserved. Search visits and selected_paths are implementation diagnostics, not RDKit API fields.'}
++    args.output.parent.mkdir(parents=True,exist_ok=True);args.output.write_text(json.dumps(report,indent=2)+'\n');print(json.dumps(report['results']))
++
++
++if __name__=='__main__':main()
+diff --git a/validation/rdkit_issues/fingerprints/layered-config.json b/validation/rdkit_issues/fingerprints/layered-config.json
+new file mode 100644
+index 0000000..25a2fd8
+--- /dev/null
++++ b/validation/rdkit_issues/fingerprints/layered-config.json
+@@ -0,0 +1,109 @@
++{
++  "schema_version": 1,
++  "provenance": {
++    "source": "Original minimal SMILES test inputs authored for Layered parameter semantics",
++    "reference": "https://www.rdkit.org/docs/source/rdkit.Chem.rdmolops.html#rdkit.Chem.rdmolops.LayeredFingerprint",
++    "retrieved": "2026-10-15",
++    "transformations": "atom permutations, layer subsets, packed masks, path ranges, repeated roots and seeded counters; empty native graph constructed with RWMol().GetMol() because empty SMILES is rejected"
++  },
++  "license": "MIT OR Apache-2.0",
++  "redistribution": "allowed: original minimal inputs, no third-party corpus or issue attachment",
++  "minimization": "Empty/singleton through small branched and ring examples isolate flags, root multiplicity, ring hashing, H suppression and counter behavior",
++  "oracle": {
++    "engine": "RDKit",
++    "version": "2026.09.1",
++    "source_tag": "Release_2026_09_1",
++    "source_commit": "fece8caa860bdf6c9c82bdb9253f22a0cf87150c",
++    "settings": "SMILES removeHs=False; retain indexed explicit H; LayeredFingerprint with explicit arguments; empty fromAtoms treated as default",
++    "invocation": "python scripts/validate_layered_config.py"
++  },
++  "expected": {
++    "bits": "exact packed LSB-first equality, including odd bit lengths",
++    "atom_counts": "exact u32 additive counters, including wrapping and unchanged trailing entries",
++    "input_graph_and_seed_lists": "unchanged",
++    "tolerance": 0
++  },
++  "cases": [
++    {
++      "id": "0-empty",
++      "smiles": ""
++    },
++    {
++      "id": "1-single",
++      "smiles": "[He]"
++    },
++    {
++      "id": "2-linear",
++      "smiles": "CCO"
++    },
++    {
++      "id": "3-branched",
++      "smiles": "CC(C)O"
++    },
++    {
++      "id": "4-triangle",
++      "smiles": "C1CC1"
++    },
++    {
++      "id": "5-square",
++      "smiles": "C1CCC1"
++    },
++    {
++      "id": "6-phenol",
++      "smiles": "c1ccccc1O"
++    },
++    {
++      "id": "7-pyridine",
++      "smiles": "c1ccncc1"
++    },
++    {
++      "id": "8-naphthalene",
++      "smiles": "c1ccc2ccccc2c1"
++    },
++    {
++      "id": "9-adamantane",
++      "smiles": "C1C2CC3CC1CC(C2)C3"
++    },
++    {
++      "id": "10-isotope-h",
++      "smiles": "[2H]C([2H])([2H])NC=O"
++    },
++    {
++      "id": "11-explicit-h",
++      "smiles": "[H]OC"
++    },
++    {
++      "id": "12-dummy",
++      "smiles": "CC(*)O"
++    },
++    {
++      "id": "13-kekule",
++      "smiles": "C1=CC=CC=C1"
++    },
++    {
++      "id": "14-charged",
++      "smiles": "[Cl+3]([O-])([O-])([O-])O"
++    },
++    {
++      "id": "15-disconnected",
++      "smiles": "CC.O.N"
++    },
++    {
++      "id": "16-alkyne",
++      "smiles": "CC#CO"
++    },
++    {
++      "id": "17-cubane",
++      "smiles": "C12C3C4C1C5C2C3C45"
++    },
++    {
++      "id": "18-spiro",
++      "smiles": "C1CC2(CC1)CCCC2"
++    },
++    {
++      "id": "19-heterofused",
++      "smiles": "c1ccc2[nH]ccc2c1"
++    }
++  ],
++  "sha256": "861a706c8df293f551a5a09a877d933275ca1b0bd66963f2f962b2232b0485cc"
++}
+diff --git a/validation/refactor_budget_v1.json b/validation/refactor_budget_v1.json
+index 1c03cde..6461a47 100644
+--- a/validation/refactor_budget_v1.json
++++ b/validation/refactor_budget_v1.json
+@@ -150,10 +150,6 @@
+       "decisions": 58,
+       "lines": 173
+     },
+-    "crates/chematic-fp/src/rdkit_layered.rs::rdkit_layered_fp_input#1": {
+-      "decisions": 25,
+-      "lines": 154
+-    },
+     "crates/chematic-inchi/src/native/convert.rs::mol_to_inchi_atoms#1": {
+       "decisions": 41,
+       "lines": 323
+diff --git a/validation/results/rdkit-layered-config-2026-10-15.json b/validation/results/rdkit-layered-config-2026-10-15.json
+new file mode 100644
+index 0000000..385dd93
+--- /dev/null
++++ b/validation/results/rdkit-layered-config-2026-10-15.json
+@@ -0,0 +1,163 @@
++{
++  "schema_version": 1,
++  "status": "local-source-candidate",
++  "reference": "RDKit LayeredFingerprint 2026.09.1; experimental family",
++  "base": "Preserved isolated candidates through indexed SDF selections; no main integration",
++  "runtime": {
++    "python": "3.13.6",
++    "rdkit": "2026.09.1",
++    "settings": "removeHs=False; use indexed explicit-H graphs; all masks constructed as ExplicitBitVect; original molecule properties retained",
++    "chematic_extension_sha256": "9bfbde4fbed8aa850cb23e12b1f80ae164829f7605ba9d74ab4d33f86ed23823"
++  },
++  "source_sha256": {
++    "crates/chematic-fp/src/rdkit_layered.rs": "01959e993240b73a1faca513dfb4da5f5661daf16b9c6a7e3d850c4b0cdc7d0a",
++    "crates/chematic-fp/src/rdkit_layered/features.rs": "bd991ff695a4436f7deb987b630c293a8556f2919fad2cca9fc7c608da78ff17",
++    "crates/chematic-fp/src/rdkit_layered/config.rs": "6a85d8b4035964eeb86554eaa61b955603a09db9409e004342f2507b918ad36d",
++    "crates/chematic-fp/src/rdkit_layered/config/validation.rs": "cdf2196be45239ba209651368bb61e7bb64131ca095aedfab945e7941155dfcb",
++    "crates/chematic-fp/src/rdkit_layered/config/enumeration.rs": "0a4e5fd9b5b02cc9459e627e8b6f0d943d755460a8771528fa235f1d529f4a9e",
++    "crates/chematic-fp/src/rdkit_layered/config/enumeration/linear.rs": "aba4ccd61b52f45190d1225434d5a9d59832511cb9627004efbac463c40c7568",
++    "crates/chematic-py/src/mol_methods/layered_config.rs": "8052dc578d1d5b3ca1de9392eb7f3eae6aecac17a165b6771ea3327cb17fe849",
++    "crates/chematic-py/python/chematic/__init__.pyi": "c5d3cbad593b9e126261e68e7a851010cbc3f287b03a1c1dc08eae0d5e59ecf1",
++    "crates/chematic-fp/tests/rdkit_layered_config.rs": "c3ad82a122b5210446ef2d827ae5f40841051320a7275af07c2dde8012d58f89",
++    "crates/chematic-py/tests/test_layered_config.py": "a4dfa705888628866dda60a2e131fd7f875c058c0dbf974b1bf8af952fcade51",
++    "scripts/validate_layered_config.py": "25202a582008541ba9a8f55a9a72a5de346525a08ed13ba2516a76da9c8dc64a"
++  },
++  "fixture": {
++    "path": "validation/rdkit_issues/fingerprints/layered-config.json",
++    "manifest_sha256": "8f90d640e4ebaaf25cd975cb7c1f4b0d55d8de0a93eedb3b81b4e3431873aea4",
++    "schema_version": 1,
++    "provenance": {
++      "source": "Original minimal SMILES test inputs authored for Layered parameter semantics",
++      "reference": "https://www.rdkit.org/docs/source/rdkit.Chem.rdmolops.html#rdkit.Chem.rdmolops.LayeredFingerprint",
++      "retrieved": "2026-10-15",
++      "transformations": "atom permutations, layer subsets, packed masks, path ranges, repeated roots and seeded counters; empty native graph constructed with RWMol().GetMol() because empty SMILES is rejected"
++    },
++    "license": "MIT OR Apache-2.0",
++    "redistribution": "allowed: original minimal inputs, no third-party corpus or issue attachment",
++    "minimization": "Empty/singleton through small branched and ring examples isolate flags, root multiplicity, ring hashing, H suppression and counter behavior",
++    "oracle": {
++      "engine": "RDKit",
++      "version": "2026.09.1",
++      "source_tag": "Release_2026_09_1",
++      "source_commit": "fece8caa860bdf6c9c82bdb9253f22a0cf87150c",
++      "settings": "SMILES removeHs=False; retain indexed explicit H; LayeredFingerprint with explicit arguments; empty fromAtoms treated as default",
++      "invocation": "python scripts/validate_layered_config.py"
++    },
++    "expected": {
++      "bits": "exact packed LSB-first equality, including odd bit lengths",
++      "atom_counts": "exact u32 additive counters, including wrapping and unchanged trailing entries",
++      "input_graph_and_seed_lists": "unchanged",
++      "tolerance": 0
++    },
++    "cases": [
++      {
++        "id": "0-empty",
++        "smiles": ""
++      },
++      {
++        "id": "1-single",
++        "smiles": "[He]"
++      },
++      {
++        "id": "2-linear",
++        "smiles": "CCO"
++      },
++      {
++        "id": "3-branched",
++        "smiles": "CC(C)O"
++      },
++      {
++        "id": "4-triangle",
++        "smiles": "C1CC1"
++      },
++      {
++        "id": "5-square",
++        "smiles": "C1CCC1"
++      },
++      {
++        "id": "6-phenol",
++        "smiles": "c1ccccc1O"
++      },
++      {
++        "id": "7-pyridine",
++        "smiles": "c1ccncc1"
++      },
++      {
++        "id": "8-naphthalene",
++        "smiles": "c1ccc2ccccc2c1"
++      },
++      {
++        "id": "9-adamantane",
++        "smiles": "C1C2CC3CC1CC(C2)C3"
++      },
++      {
++        "id": "10-isotope-h",
++        "smiles": "[2H]C([2H])([2H])NC=O"
++      },
++      {
++        "id": "11-explicit-h",
++        "smiles": "[H]OC"
++      },
++      {
++        "id": "12-dummy",
++        "smiles": "CC(*)O"
++      },
++      {
++        "id": "13-kekule",
++        "smiles": "C1=CC=CC=C1"
++      },
++      {
++        "id": "14-charged",
++        "smiles": "[Cl+3]([O-])([O-])([O-])O"
++      },
++      {
++        "id": "15-disconnected",
++        "smiles": "CC.O.N"
++      },
++      {
++        "id": "16-alkyne",
++        "smiles": "CC#CO"
++      },
++      {
++        "id": "17-cubane",
++        "smiles": "C12C3C4C1C5C2C3C45"
++      },
++      {
++        "id": "18-spiro",
++        "smiles": "C1CC2(CC1)CCCC2"
++      },
++      {
++        "id": "19-heterofused",
++        "smiles": "c1ccc2[nH]ccc2c1"
++      }
++    ],
++    "sha256": "861a706c8df293f551a5a09a877d933275ca1b0bd66963f2f962b2232b0485cc"
++  },
++  "results": {
++    "cases": 13378,
++    "fixtures": 20,
++    "all_active_layer_subsets": 64,
++    "all_supported_path_ranges": 78,
++    "default_legacy_controls": 110,
++    "seeded_counter_values_verified": 75874,
++    "masked_cases": 2790,
++    "rooted_linear_cases": 2850,
++    "permuted_cases": 360,
++    "bits_mismatches": 0,
++    "counter_mismatches": 0,
++    "input_mutations": 0,
++    "case_sha256": "31db553c719fe8a19884be480d5a571e84c5e48241d92737e8bd398b0d60c418"
++  },
++  "limits": {
++    "atoms": 512,
++    "bonds": 1024,
++    "maximum_path_bonds": 12,
++    "maximum_bits": 65536,
++    "default_visits": 1000000,
++    "maximum_visits": 10000000,
++    "default_selected_paths": 100000,
++    "maximum_selected_paths": 1000000,
++    "linear_frontier_uses_path_cap": true
++  },
++  "limitations": "Checked concrete molecules only: no complex query bonds, dative/zero bonds, loops/parallel edges or index-changing sanitized views. Unrooted branchedPaths=False is explicitly unsupported: the pinned RDKit source passes atom paths as bond indices and isolated CC/CCO probes in this session exited with signal 11. Rooted linear preserves the source range-wide final-step closure convention. No general chemical parity, unrestricted parameter range, performance or release claim. Seed counters are copied, not mutated in place; u32 wrapping and trailing entries are preserved. Search visits and selected_paths are implementation diagnostics, not RDKit API fields."
++}

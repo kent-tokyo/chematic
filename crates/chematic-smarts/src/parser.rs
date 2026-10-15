@@ -38,6 +38,8 @@
 //! Implicit bond between two adjacent atoms = `BondQuery::Any`, which matches a
 //! single or aromatic bond (Daylight/RDKit semantics; `~` is the explicit any-bond).
 
+mod rings;
+
 use std::collections::HashMap;
 use std::fmt;
 
@@ -176,8 +178,13 @@ impl<'a> Parser<'a> {
 
     fn parse(&mut self) -> Result<QueryMolecule, SmartsError> {
         let mut mol = QueryMolecule::new();
-        // open_rings maps ring-closure-number → (atom_idx, Optional<BondQuery>)
-        let mut open_rings: HashMap<u8, (usize, Option<BondQuery>)> = HashMap::new();
+        // open_rings maps ring-closure-number →
+        // (atom_idx, Optional<BondQuery>, lexical adjacency position).
+        //
+        // Keeping the position of the opening ring digit matters for
+        // tetrahedral SMARTS: `@`/`@@` is relative to neighbour encounter
+        // order, and the closing atom may not be parsed until much later.
+        let mut open_rings: HashMap<u8, (usize, Option<BondQuery>, usize)> = HashMap::new();
 
         self.parse_chain(&mut mol, None, None, &mut open_rings)?;
         // `.` separates disconnected components (e.g. RDKit QED alert
@@ -215,7 +222,7 @@ impl<'a> Parser<'a> {
         mol: &mut QueryMolecule,
         attach_to: Option<usize>,
         attach_bond: Option<BondQuery>,
-        open_rings: &mut HashMap<u8, (usize, Option<BondQuery>)>,
+        open_rings: &mut HashMap<u8, (usize, Option<BondQuery>, usize)>,
     ) -> Result<Option<usize>, SmartsError> {
         // Parse the first atom of this chain.
         let (first_atom, first_map) = match self.try_parse_atom()? {
@@ -314,35 +321,6 @@ impl<'a> Parser<'a> {
         }
 
         Ok(Some(current))
-    }
-
-    // -- ring closures -------------------------------------------------------
-
-    /// Handle a ring closure: either close an existing open ring or open a new one.
-    fn handle_ring_closure(
-        &mut self,
-        mol: &mut QueryMolecule,
-        current: usize,
-        ring_num: u8,
-        ring_bond: Option<BondQuery>,
-        open_rings: &mut HashMap<u8, (usize, Option<BondQuery>)>,
-    ) -> Result<(), SmartsError> {
-        if let Some((open_atom, open_bond)) = open_rings.remove(&ring_num) {
-            // Resolve the bond type.
-            let bond = match (open_bond, ring_bond) {
-                (Some(a), Some(b)) if a == b => a,
-                (Some(_), Some(_)) => {
-                    // Conflicting ring bond specifications — use Any as a fallback.
-                    BondQuery::Any
-                }
-                (Some(b), None) | (None, Some(b)) => b,
-                (None, None) => BondQuery::Any,
-            };
-            mol.add_bond(open_atom, current, bond);
-        } else {
-            open_rings.insert(ring_num, (current, ring_bond));
-        }
-        Ok(())
     }
 
     /// Parse a ring closure number (single digit or `%nn`) and an optional

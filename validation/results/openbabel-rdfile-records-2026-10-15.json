@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "status": "local-source-candidate",
+  "issue": "https://github.com/openbabel/openbabel/issues/2681",
+  "base": "cac480fb source snapshot plus preserved previous candidates through correlated stereo-group alternatives; patch isolates RDFile records",
+  "scope": "RDFile v1 records, V2000/V3000 MOL and V2000 RXN, unresolved registry references and ordered ASCII data; canonical checked writing plus explicit SMILES projection",
+  "runtime": {
+    "python": "3.13.6",
+    "indigo": "1.46.0.0-gb36d38f52-aarch64-darwin-appleclang-17000013",
+    "rdkit": "2026.09.1",
+    "openbabel": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+    "chematic_extension_sha256": "ac0d0a3029925caa55be8741d2f41c56070ef965d69e4802b12b569e9cf12a36"
+  },
+  "source_sha256": {
+    "crates/chematic-mol/src/rdfile.rs": "3ba846530e58ea36c97c4c4b3e81ac18aa1ec78a934e680dffe23d33947ba3e2",
+    "crates/chematic-mol/src/rdfile/reader.rs": "a7a940cba278ddb5e88d6332496c66ffa53c4ff7569743f5c4a21307dce4fd9a",
+    "crates/chematic-mol/src/rdfile/writer.rs": "8f08d50bab37b1bfce70cc7cc4ccb3a41ff6240c27b11b67ab0cac954e3f4213",
+    "crates/chematic-py/src/formats/rdfile.rs": "97efdca3559f2fa3f102e52b5b11fe1337022aa4a78679c889c85c90419ac04c",
+    "crates/chematic-mol/tests/rdfile_contract.rs": "5c8cd4b3dc8a4e9890547974f621bffb088b0bd8d68b7a7c60a4f029f00f45c1",
+    "crates/chematic-py/tests/test_rdfile.py": "68d66edfa24ee68510a8701021c65bcdb0f3b4dded6554cc0265602ace990d49",
+    "crates/chematic-py/python/chematic/__init__.pyi": "16554bac9ef601098af43df62d0db4e28cd9b3d7b7139b7200882abad4bd82e0",
+    "scripts/validate_rdfile_records.py": "b0637b25055d53444356de4e24ee01424fc33f109dd3835e955579149a5d64e6"
+  },
+  "fixture": {
+    "path": "validation/openbabel_issues/rdfile/manifest.json",
+    "manifest_sha256": "24692f4f945dffbfce71fb9b571118e97cb2002e683f0f65b125c0e456b2306e",
+    "schema_version": 1,
+    "id": "synthetic-mixed-rdfile-v1",
+    "provenance": {
+      "source": "original molecule/reaction definitions authored for this feature",
+      "date": "2026-10-15",
+      "issue": "https://github.com/openbabel/openbabel/issues/2681",
+      "specification": "https://www.3ds.com/assets/invest/2026-01/biovia_chemistry_2026_ctfile_formats.pdf",
+      "transformations": "chematic source-candidate MOL/RXN writers encode methanol, carbon-13 methanol and atom-mapped methanol oxidation; authored registry-only records, duplicate fields and multiline data; no upstream attachments copied"
+    },
+    "license": "MIT OR Apache-2.0",
+    "redistribution": {
+      "status": "allowed",
+      "rationale": "original project-authored minimal chemistry and text"
+    },
+    "minimization": "three embedded records and two reference-only records isolate type, isotope, map, metadata and reference handling",
+    "oracle": {
+      "name": "Indigo RDF reader/writer and RDKit graph/InChI reference",
+      "version": "Indigo 1.46.0.0-gb36d38f52-aarch64-darwin-appleclang-17000013; RDKit 2026.09.1",
+      "settings": "Indigo skip MOL dates; RDKit retain explicit H and atom maps; duplicate field handling checked against authored vector, not dictionary-based oracle"
+    },
+    "expected": {
+      "records": 5,
+      "kinds": [
+        "molecule",
+        "molecule",
+        "reaction",
+        "molecule",
+        "reaction"
+      ],
+      "projection": [
+        "CO",
+        "[13CH3]O",
+        "[CH3:1][OH:2]>>[CH2:1]=[O:2]",
+        null,
+        null
+      ],
+      "projection_comparison": "drawn molecular InChI per role plus explicit atom-map counters, not lexical SMILES equality",
+      "first_field_names": [
+        "note",
+        "note"
+      ],
+      "first_field_values": [
+        "first",
+        "second\nwith  two spaces\n\nlast"
+      ],
+      "encoding": "UTF-8 LF",
+      "numeric_tolerance": 0
+    },
+    "payload": "mixed-records.rdf",
+    "sha256": "0194c15b4a1e8649d028271f98b48d053e3e526afc3870cdcb7c3c3dc7f832f2"
+  },
+  "results": {
+    "datasets": 48,
+    "native_to_indigo_records": 144,
+    "indigo_to_native_records": 144,
+    "total_cross_read_records": 288,
+    "graph_or_map_mismatches": 0,
+    "metadata_mismatches": 0,
+    "source_text_mismatches": 0,
+    "default_folded_native_roundtrip_datasets": 48,
+    "registry_only_records_retained": 2,
+    "duplicate_field_entries_retained": 2,
+    "case_sha256": "5535c55176f5ae9e868e1b188323d7dd92ba57b6ec03dcdf04fa6b4277c1bbc9",
+    "forward_writer_settings": {
+      "wrap_data": false
+    },
+    "reverse_settings": {
+      "molfile-saving-skip-date": true
+    },
+    "graph_comparison": "RDKit InChI by reaction role plus atom-map element/isotope/charge and mapped-bond counters"
+  },
+  "indigo_folding_diagnostic": {
+    "indigo_joins_column_81_plus": false,
+    "expected_value_sha256": "0ecbdc9e95e760ffb0884f47a646ee9f14ad3e87a2f1f85662f5f86d59bd2e45",
+    "observed_value_sha256": "39af7bdd2b73e89a35db6412d56498c46beba6604b0f2bfb65d6f9103d0821a4",
+    "folded_file_sha256": "a640aafffabfb6ef76e7c3671a85b90e7b381acb77bce33874ebdf2c81c1cd45",
+    "workaround": "write_rdfile(document, wrap_data=False); explicit plain-long-data extension"
+  },
+  "openbabel_diagnostic": {
+    "rdf_registered": false,
+    "explicit_read_exit_code": 1,
+    "stderr": "obabel: cannot read input format!"
+  },
+  "limitations": "No embedded V3000 RXN/agents, nested $DATUM $MFMT, both registry identifiers, continued/long headers, non-ASCII RD metadata, query-schema interpretation or registry resolution. Original source/structure payloads remain available. Default output folds ASCII data with column-81 plus; measured Indigo interoperability uses explicit wrap_data=False and supports plain long data. Duplicate metadata is checked against authored ordered vectors, not Indigo properties, which do not preserve duplicates."
+}

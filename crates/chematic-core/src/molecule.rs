@@ -104,6 +104,8 @@ include!("molecule/access.rs");
 include!("molecule/graph.rs");
 include!("molecule/metadata.rs");
 include!("molecule/cache.rs");
+include!("molecule/renumber.rs");
+include!("molecule/checked_stereo_groups.rs");
 include!("molecule/builder.rs");
 
 #[cfg(test)]

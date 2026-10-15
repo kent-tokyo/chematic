@@ -218,7 +218,13 @@ jobs:
           - { package: chematic-chem, target: metal_disconnect_holdout }
           - { package: chematic-chem, target: local_cation_resonance }
           - { package: chematic-chem, target: screening_enrichment }
+          - { package: chematic-chem, target: native_distance_matrix }
+          - { package: chematic-fp, target: fold_density }
+          - { package: chematic-mol, target: cdjson_contract }
           - { package: chematic-mol, target: cif_checked_writer }
+          - { package: chematic-mol, target: pqr_pdbqt_contract }
+          - { package: chematic-chem, target: renumber_stereo_contract }
+          - { package: chematic-chem, target: stereo_candidate_budget }
           - { package: chematic-mol, target: cif_coordinate_contract }
           - { package: chematic-mol, target: cml_hydrogen_contract }
           - { package: chematic-mol, target: coverage_boundaries }
@@ -242,6 +248,7 @@ jobs:
           - { package: chematic-crystal, target: periodicity }
           - { package: chematic-crystal, target: serde_roundtrip }
           - { package: chematic-fp, target: rdkit_morgan_stable_api_fixtures }
+          - { package: chematic-fp, target: rdkit_layered_config }
           - { package: chematic-inchi, target: accurate_cip_preflight }
           - { package: chematic-inchi, target: dedup_fixtures }
           - { package: chematic-inchi, target: explicit_h_stereo }
@@ -255,11 +262,31 @@ jobs:
           - { package: chematic-mol, target: cross_binding_adversarial }
           - { package: chematic-mol, target: format_binding_parity }
           - { package: chematic-mol, target: mmcif_pqr_integration }
+          - { package: chematic-mol, target: mmcif_residue_contract }
+          - { package: chematic-mol, target: mmcif_pdb_checked }
+          - { package: chematic-core, target: checked_stereo_groups }
+          - { package: chematic-chem, target: stereo_group_inversion }
+          - { package: chematic-chem, target: stereo_group_alternatives }
+          - { package: chematic-chem, target: meso_stereo_group }
+          - { package: chematic-mol, target: gro_contract }
+          - { package: chematic-mol, target: turbomole_contract }
+          - { package: chematic-mol, target: exyz_contract }
+          - { package: chematic-mol, target: fhiaims_contract }
+          - { package: chematic-mol, target: mopac_cartesian_contract }
+          - { package: chematic-mol, target: dmol3_contract }
+          - { package: chematic-mol, target: pdb_selection_contract }
+          - { package: chematic-smiles, target: rdkit_graph_queries }
+          - { package: chematic-smiles, target: rdkit_atom_environment }
+          - { package: chematic-smiles, target: rdkit_path_enumeration }
+          - { package: chematic-mol, target: rdfile_contract }
+          - { package: chematic-mol, target: gzmat_precision }
+          - { package: chematic-mol, target: sdf_selections }
           - { package: chematic-mol, target: qcschema }
           - { package: chematic-mol, target: square_planar_mol_io }
           - { package: chematic-mol, target: stereo2d_ez_reader_integration }
           - { package: chematic-mol, target: stereo_reader_integration }
           - { package: chematic-perception, target: aromaticity_edge_gate }
+          - { package: chematic-smarts, target: merge_query_hydrogens }
           - { package: chematic-smiles, target: canonical_idempotency_corpus }
           - { package: chematic-smiles, target: atom_tag_visit_order }
           - { package: chematic-smiles, target: atom_tag_cache }

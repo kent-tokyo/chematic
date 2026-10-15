@@ -27,6 +27,7 @@ pub mod ecfp;
 mod ecfp_diagnostics;
 pub mod erg;
 pub mod fcfp;
+pub mod fold_density;
 pub mod fps;
 pub mod hdf;
 pub mod layered;
@@ -63,11 +64,18 @@ pub use ecfp::{
     ecfp6, ecfp6_rdkit_environment_experimental, ecfp6_rdkit_invariants, morgan_fp_counts,
     tanimoto_ecfp4,
 };
+pub use fold_density::{
+    FoldDensityError, FoldDensityResult, MAX_FOLD_DENSITY_BITS, fold_packed_to_target_density,
+    fold_to_target_density,
+};
 pub use rdkit_atom_pair::{
     rdkit_atom_pair_counts, rdkit_atom_pair_fp, rdkit_atom_pair_sparse_counts,
 };
 pub use rdkit_avalon::{RdkitAvalonError, rdkit_avalon_fp};
-pub use rdkit_layered::rdkit_layered_fp;
+pub use rdkit_layered::{
+    RdkitLayeredConfig, RdkitLayeredError, RdkitLayeredResult, rdkit_layered_config,
+    rdkit_layered_fp,
+};
 pub use rdkit_pattern::rdkit_pattern_fp;
 pub use rdkit_rdk::{RdkitRdkFingerprintError, rdkit_rdk_fp, rdkit_rdk_fp_ignoring_atoms};
 pub use rdkit_torsion::{

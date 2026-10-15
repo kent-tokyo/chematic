@@ -37,6 +37,7 @@ mod crystal;
 mod ensemble_v2;
 mod errors;
 mod fingerprint_similarity;
+mod fold_density;
 mod force_field;
 mod formats;
 mod lammps;
@@ -198,6 +199,7 @@ fn chematic(m: &Bound<'_, PyModule>) -> PyResult<()> {
     formats::register(m)?;
     reactions::register(m)?;
     similarity::register(m)?;
+    fold_density::register(m)?;
     reports::register(m)?;
     misc::register(m)?;
     nucleic_acid::register(m)?;

@@ -22,8 +22,6 @@ raise explicitly rather than silently changing the fingerprint algorithm.
 
 Known differences vs RDKit:
 
-- ``GetNumAtoms()`` returns heavy-atom count regardless of ``onlyHeavy``.
-  Use ``mol.add_hydrogens()`` before calling if you need H-inclusive counts.
 - ``GetMorganFingerprintAsBitVect`` uses chematic's ECFP algorithm; Morgan
   bit patterns differ from RDKit's due to different hash implementations.
 - ``SanitizeMol`` / ``Kekulize`` are no-ops — chematic sanitizes on parse.
@@ -43,7 +41,7 @@ __all__ = [
     "ExplicitBitVect",
     "MolFromSmiles", "MolToSmiles", "MolFromMolBlock", "MolFromMolFile",
     "MolToMolBlock", "SanitizeMol", "Kekulize", "AddHs", "RemoveHs",
-    "MolFromSmarts",
+    "MolFromSmarts", "RenumberAtoms",
     "CanonSmiles", "AllChem", "rdFingerprintGenerator",
     "MolFromMrvBlock", "MolFromMrvFile", "MolToMrvBlock", "MolToMrvFile",
     "SDMolSupplier", "SDWriter", "SmilesMolSupplier", "SmilesWriter",
@@ -73,6 +71,12 @@ class ExplicitBitVect:
 
     def GetNumBits(self) -> int:
         return self._nbits
+
+    def __len__(self) -> int:
+        return self._nbits
+
+    def GetNumOnBits(self) -> int:
+        return sum(byte.bit_count() for byte in self._bits)
 
     def GetBit(self, i: int) -> bool:
         if i < 0 or i >= self._nbits:
@@ -316,9 +320,8 @@ class Mol:
 
     # -- atom / bond counts --------------------------------------------------
 
-    def GetNumAtoms(self, onlyHeavy: bool = True) -> int:
-        # ponytail: always heavy-atom count; AddHs not tracked in this wrapper
-        return self._mol.heavy_atoms
+    def GetNumAtoms(self, onlyHeavy: bool = False) -> int:
+        return self._mol.heavy_atoms if onlyHeavy else self._mol.atom_count
 
     def GetNumHeavyAtoms(self) -> int:
         return self._mol.heavy_atoms
@@ -690,6 +693,15 @@ def SanitizeMol(mol: Mol) -> None:
 
 def Kekulize(mol: Mol, clearAromaticFlags: bool = False) -> None:
     """No-op: chematic kekulizes on demand internally."""
+
+
+def RenumberAtoms(mol: Mol, newOrder) -> Mol:
+    """Copy with newOrder[new_index] = old_index, preserving stereo and properties.
+
+    Bond indices stay fixed. External coordinate/atom arrays must be reordered
+    separately; this wrapper does not store conformers.
+    """
+    return Mol(mol._mol.renumber_atoms(newOrder))
 
 
 def AddHs(mol: Mol, addCoords: bool = False) -> Mol:
@@ -1316,7 +1328,24 @@ class pyAvalonTools:
 # ---------------------------------------------------------------------------
 
 class DataStructs:
-    """Mirrors ``rdkit.DataStructs``."""
+    """Mirrors selected ``rdkit.DataStructs`` operations."""
+
+    @staticmethod
+    def FoldToTargetDensity(fp, density=0.3, minLength=64):
+        """OR-fold with the corrected RDKit #9715 stopping conditions.
+
+        Supports this adapter's ExplicitBitVect, up to 1048576 bits. The
+        result is a new independent vector, including when no fold is needed.
+        Finite density in [0, 1] and positive minLength are required.
+        """
+        if not isinstance(fp, ExplicitBitVect):
+            raise TypeError("FoldToTargetDensity requires ExplicitBitVect")
+        if fp.GetNumBits() > 1048576:
+            raise ValueError("fold density width exceeds limit 1048576")
+        result = _ch.fold_to_target_density(
+            fp._to_bytes(), density, minLength, bit_width=fp.GetNumBits()
+        )
+        return ExplicitBitVect._from_bytes(result["fingerprint"], result["bit_width"])
 
     @staticmethod
     def TanimotoSimilarity(fp1, fp2) -> float:

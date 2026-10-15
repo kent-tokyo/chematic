@@ -1,0 +1,394 @@
+{
+  "schema_version": 1,
+  "status": "local-source-candidate",
+  "issue": "https://github.com/rdkit/rdkit/issues/9705",
+  "base": "cac480fb source snapshot plus preserved previous candidates through TURBOMOLE; requires checked stereo groups and full group inversion",
+  "scope": "bounded full alternatives of AND/OR tetrahedral and geometric groups, preserving membership and every mask; no distinct compound count, meso reduction or canonicalization",
+  "runtime": {
+    "python": "3.13.6",
+    "rdkit": "2026.09.1",
+    "settings": "legacy stereo; removeHs=False; direct atom/bond inversions with regenerated neighbor directions; native group enumeration is the subject under test",
+    "chematic_extension_sha256": "53c8129723b415689a8d9ee142d20997924fd50fe147871fdb91e27d2552ae28"
+  },
+  "source_sha256": {
+    "crates/chematic-chem/src/stereo_group_alternatives.rs": "1c5fd3a36c66061fe3ddc6bba24f9c8491fcacabf50037ff72ebbd6661f9193b",
+    "crates/chematic-py/src/mol_methods/stereo_groups.rs": "052594afa26a4a5e8150e58690f1dc0c6c53a93a12c5c3b53dc6313ada4642cc",
+    "crates/chematic-chem/tests/stereo_group_alternatives.rs": "512047cce8eaf4e6a59b29cc079d6800b350bc0ed7ce6097b3113bb62f446c22",
+    "crates/chematic-py/tests/test_stereo_group_alternatives.py": "80b1f42d03b06a1f02d939c062362e8c51fc4a64aefc9cef2b07734c02bbcc3a",
+    "crates/chematic-py/python/chematic/__init__.pyi": "b31d8b7313bc51017c4742ae614df71f23fb952d59e81e457b25718b885bc238",
+    "scripts/validate_stereo_group_alternatives.py": "4f82a6797177065ce5f3186caadd38a6f7bdb6352e0f6feb677afbe4845225a2"
+  },
+  "fixture": {
+    "path": "validation/rdkit_issues/stereo/group-alternatives.json",
+    "manifest_sha256": "fbd6ea16bbcdcd15c189c4b05aeaeda6401c6b8a3b746b02b1f81b8312a056d6",
+    "schema_version": 1,
+    "id": "correlated-stereo-group-alternatives-v1",
+    "provenance": {
+      "source": "original minimized synthetic acyclic, conjugated and disconnected stereochemical graphs",
+      "issue": "https://github.com/rdkit/rdkit/issues/9705",
+      "date": "2026-10-15",
+      "transformations": "generated atom/bond indices from independently authored SMILES; source-order group membership; no upstream attachments copied"
+    },
+    "license": "MIT OR Apache-2.0",
+    "redistribution": {
+      "status": "allowed",
+      "rationale": "original project fixtures; no third-party corpus"
+    },
+    "minimization": "six small graphs isolate two mixed groups, shared geometric markers, ABS exclusion, explicit H, symmetry duplicates and three independent group choices",
+    "oracle": {
+      "name": "RDKit direct atom and bond inversion (not group canonicalization or mixed-group enumeration)",
+      "version": "2026.09.1",
+      "settings": "legacy stereo; SmilesParserParams.removeHs=False; selected atom InvertChirality; selected double Bond.SetStereo E/Z swap; clear and regenerate neighbor directions; compare InChI of drawn representatives"
+    },
+    "expected": {
+      "rule": "mask bit k simultaneously flips all atoms and bonds of relative group k; ABS and ungrouped/unspecified atoms fixed; preserve metadata and every mask including duplicates",
+      "coordinate_scope": "no coordinates or 3D feasibility",
+      "comparison_tolerance": 0,
+      "sha256_encoding": "canonical UTF-8 JSON cases with sorted keys and compact separators"
+    },
+    "sha256": "4b85bdcd2244f260c58a8356e560ee241de5eb43fee089b824d04bc82208eaea",
+    "cases": [
+      {
+        "id": "two-correlated-mixed-groups",
+        "smiles": "C/C=C/[C@H](F)C[C@@H](Cl)/C=C/Br",
+        "groups": [
+          [
+            "and",
+            1,
+            [
+              3
+            ],
+            [
+              1
+            ]
+          ],
+          [
+            "or",
+            2,
+            [
+              6
+            ],
+            [
+              8
+            ]
+          ]
+        ]
+      },
+      {
+        "id": "conjugated-independent-bond-groups",
+        "smiles": "C/C=C/C=C/C",
+        "groups": [
+          [
+            "and",
+            1,
+            [],
+            [
+              1
+            ]
+          ],
+          [
+            "or",
+            2,
+            [],
+            [
+              3
+            ]
+          ]
+        ]
+      },
+      {
+        "id": "atom-groups-with-absolute-center",
+        "smiles": "F[C@](Cl)(Br)I.N[C@H](F)[C@@H](Cl)Br",
+        "groups": [
+          [
+            "abs",
+            0,
+            [
+              1
+            ],
+            []
+          ],
+          [
+            "or",
+            2,
+            [
+              6
+            ],
+            []
+          ],
+          [
+            "and",
+            3,
+            [
+              8
+            ],
+            []
+          ]
+        ]
+      },
+      {
+        "id": "explicit-hydrogen-mixed-group",
+        "smiles": "[H][C@](F)(Cl)/C=C/Br",
+        "groups": [
+          [
+            "and",
+            1,
+            [
+              1
+            ],
+            [
+              4
+            ]
+          ]
+        ]
+      },
+      {
+        "id": "symmetric-diol-full-alternative",
+        "smiles": "C[C@H](O)[C@H](O)C",
+        "groups": [
+          [
+            "and",
+            1,
+            [
+              1,
+              3
+            ],
+            []
+          ]
+        ]
+      },
+      {
+        "id": "three-independent-group-components",
+        "smiles": "C/C=C/[C@H](F)Cl.N[C@H](Br)I.C/C=C/Cl",
+        "groups": [
+          [
+            "and",
+            1,
+            [
+              3
+            ],
+            [
+              1
+            ]
+          ],
+          [
+            "or",
+            2,
+            [
+              7
+            ],
+            []
+          ],
+          [
+            "and",
+            3,
+            [],
+            [
+              9
+            ]
+          ]
+        ]
+      }
+    ]
+  },
+  "results": {
+    "comparisons": 1056,
+    "configuration_mismatches": 0,
+    "group_membership_mismatches": 0,
+    "indexed_graph_mismatches": 0,
+    "input_mutations": 0,
+    "restoration_mismatches": 0,
+    "fixtures": 6,
+    "numberings_per_fixture_group_order": 24,
+    "group_orders": "stored and reversed (one when equal)",
+    "case_sha256": "59edd4322814e07ebe4821d0a2cf06d1b37fbf71e9eef302e2d77d9fdf78b914",
+    "references": [
+      {
+        "id": "two-correlated-mixed-groups",
+        "group_order": [
+          0,
+          1
+        ],
+        "representatives": 4,
+        "distinct_drawn_inchi": 4,
+        "mask_inchi": [
+          "InChI=1S/C8H11BrClF/c1-2-3-8(11)6-7(10)4-5-9/h2-5,7-8H,6H2,1H3/b3-2+,5-4+/t7-,8-/m0/s1",
+          "InChI=1S/C8H11BrClF/c1-2-3-8(11)6-7(10)4-5-9/h2-5,7-8H,6H2,1H3/b3-2-,5-4+/t7-,8+/m0/s1",
+          "InChI=1S/C8H11BrClF/c1-2-3-8(11)6-7(10)4-5-9/h2-5,7-8H,6H2,1H3/b3-2+,5-4-/t7-,8+/m1/s1",
+          "InChI=1S/C8H11BrClF/c1-2-3-8(11)6-7(10)4-5-9/h2-5,7-8H,6H2,1H3/b3-2-,5-4-/t7-,8-/m1/s1"
+        ]
+      },
+      {
+        "id": "two-correlated-mixed-groups",
+        "group_order": [
+          1,
+          0
+        ],
+        "representatives": 4,
+        "distinct_drawn_inchi": 4,
+        "mask_inchi": [
+          "InChI=1S/C8H11BrClF/c1-2-3-8(11)6-7(10)4-5-9/h2-5,7-8H,6H2,1H3/b3-2+,5-4+/t7-,8-/m0/s1",
+          "InChI=1S/C8H11BrClF/c1-2-3-8(11)6-7(10)4-5-9/h2-5,7-8H,6H2,1H3/b3-2+,5-4-/t7-,8+/m1/s1",
+          "InChI=1S/C8H11BrClF/c1-2-3-8(11)6-7(10)4-5-9/h2-5,7-8H,6H2,1H3/b3-2-,5-4+/t7-,8+/m0/s1",
+          "InChI=1S/C8H11BrClF/c1-2-3-8(11)6-7(10)4-5-9/h2-5,7-8H,6H2,1H3/b3-2-,5-4-/t7-,8-/m1/s1"
+        ]
+      },
+      {
+        "id": "conjugated-independent-bond-groups",
+        "group_order": [
+          0,
+          1
+        ],
+        "representatives": 4,
+        "distinct_drawn_inchi": 3,
+        "mask_inchi": [
+          "InChI=1S/C6H10/c1-3-5-6-4-2/h3-6H,1-2H3/b5-3+,6-4+",
+          "InChI=1S/C6H10/c1-3-5-6-4-2/h3-6H,1-2H3/b5-3-,6-4+",
+          "InChI=1S/C6H10/c1-3-5-6-4-2/h3-6H,1-2H3/b5-3-,6-4+",
+          "InChI=1S/C6H10/c1-3-5-6-4-2/h3-6H,1-2H3/b5-3-,6-4-"
+        ]
+      },
+      {
+        "id": "conjugated-independent-bond-groups",
+        "group_order": [
+          1,
+          0
+        ],
+        "representatives": 4,
+        "distinct_drawn_inchi": 3,
+        "mask_inchi": [
+          "InChI=1S/C6H10/c1-3-5-6-4-2/h3-6H,1-2H3/b5-3+,6-4+",
+          "InChI=1S/C6H10/c1-3-5-6-4-2/h3-6H,1-2H3/b5-3-,6-4+",
+          "InChI=1S/C6H10/c1-3-5-6-4-2/h3-6H,1-2H3/b5-3-,6-4+",
+          "InChI=1S/C6H10/c1-3-5-6-4-2/h3-6H,1-2H3/b5-3-,6-4-"
+        ]
+      },
+      {
+        "id": "atom-groups-with-absolute-center",
+        "group_order": [
+          0,
+          1,
+          2
+        ],
+        "representatives": 4,
+        "distinct_drawn_inchi": 4,
+        "mask_inchi": [
+          "InChI=1S/C2H4BrClFN.CBrClFI/c3-1(4)2(5)6;2-1(3,4)5/h1-2H,6H2;/t1-,2+;1-/m11/s1",
+          "InChI=1S/C2H4BrClFN.CBrClFI/c3-1(4)2(5)6;2-1(3,4)5/h1-2H,6H2;/t1-,2-;1-/m11/s1",
+          "InChI=1S/C2H4BrClFN.CBrClFI/c3-1(4)2(5)6;2-1(3,4)5/h1-2H,6H2;/t1-,2-;1-/m01/s1",
+          "InChI=1S/C2H4BrClFN.CBrClFI/c3-1(4)2(5)6;2-1(3,4)5/h1-2H,6H2;/t1-,2+;1-/m01/s1"
+        ]
+      },
+      {
+        "id": "atom-groups-with-absolute-center",
+        "group_order": [
+          2,
+          1,
+          0
+        ],
+        "representatives": 4,
+        "distinct_drawn_inchi": 4,
+        "mask_inchi": [
+          "InChI=1S/C2H4BrClFN.CBrClFI/c3-1(4)2(5)6;2-1(3,4)5/h1-2H,6H2;/t1-,2+;1-/m11/s1",
+          "InChI=1S/C2H4BrClFN.CBrClFI/c3-1(4)2(5)6;2-1(3,4)5/h1-2H,6H2;/t1-,2-;1-/m01/s1",
+          "InChI=1S/C2H4BrClFN.CBrClFI/c3-1(4)2(5)6;2-1(3,4)5/h1-2H,6H2;/t1-,2-;1-/m11/s1",
+          "InChI=1S/C2H4BrClFN.CBrClFI/c3-1(4)2(5)6;2-1(3,4)5/h1-2H,6H2;/t1-,2+;1-/m01/s1"
+        ]
+      },
+      {
+        "id": "explicit-hydrogen-mixed-group",
+        "group_order": [
+          0
+        ],
+        "representatives": 2,
+        "distinct_drawn_inchi": 2,
+        "mask_inchi": [
+          "InChI=1S/C3H3BrClF/c4-2-1-3(5)6/h1-3H/b2-1+/t3-/m1/s1",
+          "InChI=1S/C3H3BrClF/c4-2-1-3(5)6/h1-3H/b2-1-/t3-/m0/s1"
+        ]
+      },
+      {
+        "id": "symmetric-diol-full-alternative",
+        "group_order": [
+          0
+        ],
+        "representatives": 2,
+        "distinct_drawn_inchi": 1,
+        "mask_inchi": [
+          "InChI=1S/C4H10O2/c1-3(5)4(2)6/h3-6H,1-2H3/t3-,4+",
+          "InChI=1S/C4H10O2/c1-3(5)4(2)6/h3-6H,1-2H3/t3-,4+"
+        ]
+      },
+      {
+        "id": "three-independent-group-components",
+        "group_order": [
+          0,
+          1,
+          2
+        ],
+        "representatives": 8,
+        "distinct_drawn_inchi": 8,
+        "mask_inchi": [
+          "InChI=1S/C4H6ClF.C3H5Cl.CH3BrIN/c1-2-3-4(5)6;1-2-3-4;2-1(3)4/h2-4H,1H3;2-3H,1H3;1H,4H2/b2*3-2+;/t4-;;1-/m0.1/s1",
+          "InChI=1S/C4H6ClF.C3H5Cl.CH3BrIN/c1-2-3-4(5)6;1-2-3-4;2-1(3)4/h2-4H,1H3;2-3H,1H3;1H,4H2/b3-2-;3-2+;/t4-;;1-/m1.1/s1",
+          "InChI=1S/C4H6ClF.C3H5Cl.CH3BrIN/c1-2-3-4(5)6;1-2-3-4;2-1(3)4/h2-4H,1H3;2-3H,1H3;1H,4H2/b2*3-2+;/t4-;;1-/m0.0/s1",
+          "InChI=1S/C4H6ClF.C3H5Cl.CH3BrIN/c1-2-3-4(5)6;1-2-3-4;2-1(3)4/h2-4H,1H3;2-3H,1H3;1H,4H2/b3-2-;3-2+;/t4-;;1-/m1.0/s1",
+          "InChI=1S/C4H6ClF.C3H5Cl.CH3BrIN/c1-2-3-4(5)6;1-2-3-4;2-1(3)4/h2-4H,1H3;2-3H,1H3;1H,4H2/b3-2+;3-2-;/t4-;;1-/m0.1/s1",
+          "InChI=1S/C4H6ClF.C3H5Cl.CH3BrIN/c1-2-3-4(5)6;1-2-3-4;2-1(3)4/h2-4H,1H3;2-3H,1H3;1H,4H2/b2*3-2-;/t4-;;1-/m1.1/s1",
+          "InChI=1S/C4H6ClF.C3H5Cl.CH3BrIN/c1-2-3-4(5)6;1-2-3-4;2-1(3)4/h2-4H,1H3;2-3H,1H3;1H,4H2/b3-2+;3-2-;/t4-;;1-/m0.0/s1",
+          "InChI=1S/C4H6ClF.C3H5Cl.CH3BrIN/c1-2-3-4(5)6;1-2-3-4;2-1(3)4/h2-4H,1H3;2-3H,1H3;1H,4H2/b2*3-2-;/t4-;;1-/m1.0/s1"
+        ]
+      },
+      {
+        "id": "three-independent-group-components",
+        "group_order": [
+          2,
+          1,
+          0
+        ],
+        "representatives": 8,
+        "distinct_drawn_inchi": 8,
+        "mask_inchi": [
+          "InChI=1S/C4H6ClF.C3H5Cl.CH3BrIN/c1-2-3-4(5)6;1-2-3-4;2-1(3)4/h2-4H,1H3;2-3H,1H3;1H,4H2/b2*3-2+;/t4-;;1-/m0.1/s1",
+          "InChI=1S/C4H6ClF.C3H5Cl.CH3BrIN/c1-2-3-4(5)6;1-2-3-4;2-1(3)4/h2-4H,1H3;2-3H,1H3;1H,4H2/b3-2+;3-2-;/t4-;;1-/m0.1/s1",
+          "InChI=1S/C4H6ClF.C3H5Cl.CH3BrIN/c1-2-3-4(5)6;1-2-3-4;2-1(3)4/h2-4H,1H3;2-3H,1H3;1H,4H2/b2*3-2+;/t4-;;1-/m0.0/s1",
+          "InChI=1S/C4H6ClF.C3H5Cl.CH3BrIN/c1-2-3-4(5)6;1-2-3-4;2-1(3)4/h2-4H,1H3;2-3H,1H3;1H,4H2/b3-2+;3-2-;/t4-;;1-/m0.0/s1",
+          "InChI=1S/C4H6ClF.C3H5Cl.CH3BrIN/c1-2-3-4(5)6;1-2-3-4;2-1(3)4/h2-4H,1H3;2-3H,1H3;1H,4H2/b3-2-;3-2+;/t4-;;1-/m1.1/s1",
+          "InChI=1S/C4H6ClF.C3H5Cl.CH3BrIN/c1-2-3-4(5)6;1-2-3-4;2-1(3)4/h2-4H,1H3;2-3H,1H3;1H,4H2/b2*3-2-;/t4-;;1-/m1.1/s1",
+          "InChI=1S/C4H6ClF.C3H5Cl.CH3BrIN/c1-2-3-4(5)6;1-2-3-4;2-1(3)4/h2-4H,1H3;2-3H,1H3;1H,4H2/b3-2-;3-2+;/t4-;;1-/m1.0/s1",
+          "InChI=1S/C4H6ClF.C3H5Cl.CH3BrIN/c1-2-3-4(5)6;1-2-3-4;2-1(3)4/h2-4H,1H3;2-3H,1H3;1H,4H2/b2*3-2-;/t4-;;1-/m1.0/s1"
+        ]
+      }
+    ]
+  },
+  "upstream_mixed_enumeration_diagnostic": {
+    "products": 4,
+    "distinct_drawn_inchi": 4,
+    "native_expected_inchi": [
+      "InChI=1S/C8H11BrClF/c1-2-3-8(11)6-7(10)4-5-9/h2-5,7-8H,6H2,1H3/b3-2+,5-4+/t7-,8-/m0/s1",
+      "InChI=1S/C8H11BrClF/c1-2-3-8(11)6-7(10)4-5-9/h2-5,7-8H,6H2,1H3/b3-2-,5-4+/t7-,8+/m0/s1",
+      "InChI=1S/C8H11BrClF/c1-2-3-8(11)6-7(10)4-5-9/h2-5,7-8H,6H2,1H3/b3-2+,5-4-/t7-,8+/m1/s1",
+      "InChI=1S/C8H11BrClF/c1-2-3-8(11)6-7(10)4-5-9/h2-5,7-8H,6H2,1H3/b3-2-,5-4-/t7-,8-/m1/s1"
+    ],
+    "rdkit_observed_inchi": [
+      "InChI=1S/C8H11BrClF/c1-2-3-8(11)6-7(10)4-5-9/h2-5,7-8H,6H2,1H3/b3-2+,5-4+/t7-,8-/m1/s1",
+      "InChI=1S/C8H11BrClF/c1-2-3-8(11)6-7(10)4-5-9/h2-5,7-8H,6H2,1H3/b3-2+,5-4+/t7-,8+/m1/s1",
+      "InChI=1S/C8H11BrClF/c1-2-3-8(11)6-7(10)4-5-9/h2-5,7-8H,6H2,1H3/b3-2+,5-4+/t7-,8+/m0/s1",
+      "InChI=1S/C8H11BrClF/c1-2-3-8(11)6-7(10)4-5-9/h2-5,7-8H,6H2,1H3/b3-2+,5-4+/t7-,8-/m0/s1"
+    ],
+    "all_grouped_double_bonds_remain_fixed": true,
+    "sets_differ": true
+  },
+  "upstream_atom_only_control": {
+    "products": 4,
+    "configuration_set_matches": true
+  },
+  "limits": {
+    "max_relative_groups": 6,
+    "max_representatives": 64,
+    "max_atoms": 1024,
+    "max_bonds": 4096,
+    "no_partial_results": true
+  },
+  "limitations": "No undefined stereo assignment, coordinate generation, pure-isomer conversion, group canonicalization, meso reduction, axes, non-tetrahedral members or molecular-identity claim for retained duplicates. Group metadata describes the original record and remains attached to every drawn representative. The same-number mixed grouping rule is the #9705 proposal, not confirmed BIOVIA product interoperability."
+}

@@ -303,7 +303,7 @@ fn collect_opaque(value: &Value, path: &str, out: &mut Vec<String>) {
     }
 }
 
-struct UniqueValue(Value);
+pub(crate) struct UniqueValue(pub(crate) Value);
 impl<'de> Deserialize<'de> for UniqueValue {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         deserializer.deserialize_any(UniqueVisitor)

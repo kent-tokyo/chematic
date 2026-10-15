@@ -1,0 +1,1480 @@
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 9ebfdb8..fb27298 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -218,6 +218,7 @@ jobs:
+           - { package: chematic-core, target: checked_stereo_groups }
+           - { package: chematic-chem, target: stereo_group_inversion }
+           - { package: chematic-mol, target: gro_contract }
++          - { package: chematic-mol, target: turbomole_contract }
+           - { package: chematic-mol, target: qcschema }
+           - { package: chematic-mol, target: square_planar_mol_io }
+           - { package: chematic-mol, target: stereo2d_ez_reader_integration }
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 603bd43..270e3b6 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -12,6 +12,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
+ 
+ ### Added
+ 
++- Added checked standalone TURBOMOLE coordinate reading/writing in Rust/Python,
++  preserving 3D lattice orientation, coordinate units and frozen-atom flags.
++
+ - Added checked full inversion of relative stereo groups in Rust/Python,
+   jointly changing tetrahedral centers and geometric double bonds while keeping
+   unselected configurations and correlated membership. Axes are refused.
+diff --git a/crates/chematic-mol/src/lib.rs b/crates/chematic-mol/src/lib.rs
+index 2875f77..ef8516c 100644
+--- a/crates/chematic-mol/src/lib.rs
++++ b/crates/chematic-mol/src/lib.rs
+@@ -55,6 +55,7 @@ pub mod semantic;
+ pub mod smiles_table;
+ pub mod stereo_depiction;
+ pub mod tdt;
++pub mod turbomole;
+ pub mod volumetric;
+ pub mod xyz;
+ 
+@@ -263,3 +264,8 @@ pub use mmcif_pdb::{MmcifPdbError, MmcifPdbReport, PdbNamespace, write_mmcif_pdb
+ pub use gro::{
+     GroAtomRecord, GroError, GroFrame, GroParseLimits, parse_gro, parse_gro_with_limits,
+ };
++
++pub use turbomole::{
++    TURBOMOLE_BOHR_ANGSTROM, TurbomoleAtom, TurbomoleError, TurbomoleGeometry,
++    TurbomoleParseLimits, parse_turbomole, parse_turbomole_with_limits, write_turbomole,
++};
+diff --git a/crates/chematic-mol/src/turbomole.rs b/crates/chematic-mol/src/turbomole.rs
+new file mode 100644
+index 0000000..ca77ddf
+--- /dev/null
++++ b/crates/chematic-mol/src/turbomole.rs
+@@ -0,0 +1,159 @@
++//! Checked standalone TURBOMOLE coordinate documents (nonperiodic or 3D).
++//!
++//! Independently implemented from TURBOMOLE 8.0 and MCTC format documentation.
++//! No topology, isotope, charge, spin or external-file inference is performed.
++use chematic_core::Element;
++
++mod reader;
++
++pub use reader::{parse_turbomole, parse_turbomole_with_limits};
++
++/// Bohr radius in angstroms, CODATA 2022 (central value).
++pub const TURBOMOLE_BOHR_ANGSTROM: f64 = 0.529_177_210_544;
++
++#[derive(Debug, Clone, Copy)]
++pub struct TurbomoleParseLimits {
++    pub max_input_bytes: usize,
++    pub max_line_len: usize,
++    pub max_atoms: usize,
++}
++impl Default for TurbomoleParseLimits {
++    fn default() -> Self {
++        Self {
++            max_input_bytes: 64 << 20,
++            max_line_len: 1024,
++            max_atoms: 1_000_000,
++        }
++    }
++}
++
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub struct TurbomoleError {
++    /// One-based source line; zero denotes validation of a constructed geometry.
++    pub line: usize,
++    pub detail: String,
++}
++impl core::fmt::Display for TurbomoleError {
++    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
++        write!(f, "TURBOMOLE line {}: {}", self.line, self.detail)
++    }
++}
++impl std::error::Error for TurbomoleError {}
++fn error(line: usize, detail: impl Into<String>) -> TurbomoleError {
++    TurbomoleError {
++        line,
++        detail: detail.into(),
++    }
++}
++
++#[derive(Debug, Clone, PartialEq)]
++pub struct TurbomoleAtom {
++    pub element: Element,
++    pub position_angstrom: [f64; 3],
++    pub frozen: bool,
++}
++
++#[derive(Debug, Clone, PartialEq)]
++pub struct TurbomoleGeometry {
++    pub atoms: Vec<TurbomoleAtom>,
++    /// Three Cartesian row vectors, preserving orientation and handedness.
++    pub lattice_angstrom: Option<[[f64; 3]; 3]>,
++    /// Original input; canonical writing does not reuse potentially stale text.
++    pub source_text: String,
++}
++impl TurbomoleGeometry {
++    pub fn periodicity(&self) -> u8 {
++        if self.lattice_angstrom.is_some() {
++            3
++        } else {
++            0
++        }
++    }
++    /// Validate mutable public data before emitting a coordinate document.
++    pub fn validate(&self) -> Result<(), TurbomoleError> {
++        if self.atoms.is_empty() {
++            return Err(error(0, "at least one atom is required"));
++        }
++        for atom in &self.atoms {
++            if atom.position_angstrom.iter().any(|v| !v.is_finite()) {
++                return Err(error(0, "non-finite coordinate"));
++            }
++        }
++        if let Some(lattice) = &self.lattice_angstrom {
++            validate_lattice(lattice)?;
++        }
++        Ok(())
++    }
++}
++
++/// Require a finite nonsingular 3D cell without changing its basis.
++/// The normalized determinant must exceed 1e-6 in magnitude (Gram > 1e-12).
++fn validate_lattice(m: &[[f64; 3]; 3]) -> Result<(), TurbomoleError> {
++    let mut normalized = [[0.0; 3]; 3];
++    let mut volume_scale = 1.0;
++    for (i, row) in m.iter().enumerate() {
++        let norm = row[0].hypot(row[1]).hypot(row[2]);
++        if !norm.is_finite() || norm <= 0.0 {
++            return Err(error(0, "lattice vector must have finite positive length"));
++        }
++        volume_scale *= norm;
++        for (j, value) in row.iter().enumerate() {
++            normalized[i][j] = value / norm;
++        }
++    }
++    let [a, b, c] = normalized;
++    let det = a[0] * (b[1] * c[2] - b[2] * c[1]) - a[1] * (b[0] * c[2] - b[2] * c[0])
++        + a[2] * (b[0] * c[1] - b[1] * c[0]);
++    let volume = det.abs() * volume_scale;
++    if det.abs() <= 1e-6 || !volume.is_finite() || volume <= 0.0 {
++        return Err(error(
++            0,
++            "singular, near-singular or non-finite lattice volume",
++        ));
++    }
++    Ok(())
++}
++
++fn bohr(value: f64) -> Result<f64, TurbomoleError> {
++    let result = value / TURBOMOLE_BOHR_ANGSTROM;
++    if !result.is_finite() {
++        return Err(error(
++            0,
++            "coordinate or lattice overflows on conversion to bohr",
++        ));
++    }
++    Ok(result)
++}
++
++/// Canonical bohr coordinate document with 17 decimal places in scientific
++/// notation. Preserves atom order, fixed-atom flags and all lattice components.
++/// Coordinates are never wrapped or rotated; no bonds or implicit H are added.
++pub fn write_turbomole(geometry: &TurbomoleGeometry) -> Result<String, TurbomoleError> {
++    geometry.validate()?;
++    let mut out = String::new();
++    if let Some(lattice) = &geometry.lattice_angstrom {
++        out.push_str("$periodic 3\n$lattice\n");
++        for row in lattice {
++            out.push_str(&format!(
++                " {:.17e} {:.17e} {:.17e}\n",
++                bohr(row[0])?,
++                bohr(row[1])?,
++                bohr(row[2])?
++            ));
++        }
++    }
++    out.push_str("$coord\n");
++    for atom in &geometry.atoms {
++        let p = atom.position_angstrom;
++        out.push_str(&format!(
++            " {:.17e} {:.17e} {:.17e} {}{}\n",
++            bohr(p[0])?,
++            bohr(p[1])?,
++            bohr(p[2])?,
++            atom.element.symbol().to_ascii_lowercase(),
++            if atom.frozen { " f" } else { "" }
++        ));
++    }
++    out.push_str("$end\n");
++    Ok(out)
++}
+diff --git a/crates/chematic-mol/src/turbomole/reader.rs b/crates/chematic-mol/src/turbomole/reader.rs
+new file mode 100644
+index 0000000..7e2fa80
+--- /dev/null
++++ b/crates/chematic-mol/src/turbomole/reader.rs
+@@ -0,0 +1,271 @@
++use super::*;
++use crate::UnitCell;
++
++type Rows<'a> = Vec<(usize, &'a str)>;
++struct Group<'a> {
++    name: &'a str,
++    option: &'a str,
++    line: usize,
++    rows: Rows<'a>,
++}
++
++/// Parse one standalone coordinate document. Unknown groups, external files,
++/// duplicate/conflicting cell definitions and unsupported periodicities fail.
++pub fn parse_turbomole(text: &str) -> Result<TurbomoleGeometry, TurbomoleError> {
++    parse_turbomole_with_limits(text, &TurbomoleParseLimits::default())
++}
++
++fn groups<'a>(
++    text: &'a str,
++    limits: &TurbomoleParseLimits,
++) -> Result<Vec<Group<'a>>, TurbomoleError> {
++    if text.len() > limits.max_input_bytes {
++        return Err(error(0, "input byte limit exceeded"));
++    }
++    let mut result: Vec<Group<'a>> = Vec::new();
++    let mut ended = false;
++    for (i, raw) in text.lines().enumerate() {
++        let line = i + 1;
++        if raw.len() > limits.max_line_len {
++            return Err(error(line, "line length limit exceeded"));
++        }
++        let row = raw.split('#').next().unwrap_or("").trim();
++        if row.is_empty() {
++            continue;
++        }
++        if ended {
++            return Err(error(line, "data after $end"));
++        }
++        if row.starts_with('$') {
++            let mut parts = row.split_whitespace();
++            let name = parts.next().unwrap();
++            let option = parts.next().unwrap_or("");
++            if parts.next().is_some() {
++                return Err(error(line, "unsupported data-group options"));
++            }
++            if name == "$end" {
++                if !option.is_empty() {
++                    return Err(error(line, "$end takes no options"));
++                }
++                ended = true;
++                continue;
++            }
++            if !matches!(name, "$coord" | "$periodic" | "$lattice" | "$cell") {
++                return Err(error(line, format!("unsupported data group {name}")));
++            }
++            if result.iter().any(|g| g.name == name) {
++                return Err(error(line, "duplicate data group"));
++            }
++            result.push(Group {
++                name,
++                option,
++                line,
++                rows: Vec::new(),
++            });
++        } else {
++            let group = result
++                .last_mut()
++                .ok_or_else(|| error(line, "data outside a group"))?;
++            if group.name == "$coord" && group.rows.len() >= limits.max_atoms {
++                return Err(error(line, "atom count limit exceeded"));
++            }
++            if group.name != "$coord" && group.rows.len() >= 3 {
++                return Err(error(line, "too many cell or periodicity rows"));
++            }
++            group
++                .rows
++                .try_reserve(1)
++                .map_err(|_| error(line, "allocation failed"))?;
++            group.rows.push((line, row));
++        }
++    }
++    if !ended {
++        return Err(error(0, "missing $end"));
++    }
++    Ok(result)
++}
++
++fn finite(s: &str, line: usize) -> Result<f64, TurbomoleError> {
++    // Fortran D exponents occur in quantum-chemistry coordinate files.
++    let v = s
++        .replace(['D', 'd'], "e")
++        .parse::<f64>()
++        .map_err(|_| error(line, "invalid real number"))?;
++    if !v.is_finite() {
++        return Err(error(line, "non-finite real number"));
++    }
++    Ok(v)
++}
++fn scale(option: &str, line: usize) -> Result<f64, TurbomoleError> {
++    match option {
++        "" | "bohr" => Ok(TURBOMOLE_BOHR_ANGSTROM),
++        "angs" => Ok(1.0),
++        _ => Err(error(line, "unsupported unit or external-file option")),
++    }
++}
++fn real_row(row: &str, line: usize, count: usize) -> Result<Vec<f64>, TurbomoleError> {
++    let fields: Vec<_> = row.split_whitespace().collect();
++    if fields.len() != count {
++        return Err(error(line, "wrong numeric field count"));
++    }
++    fields.iter().map(|s| finite(s, line)).collect()
++}
++fn periodicity(group: Option<&Group<'_>>) -> Result<u8, TurbomoleError> {
++    let Some(g) = group else {
++        return Ok(0);
++    };
++    if !g.rows.is_empty() {
++        return Err(error(g.line, "$periodic value must be on its header"));
++    }
++    match g.option {
++        "0" => Ok(0),
++        "3" => Ok(3),
++        _ => Err(error(
++            g.line,
++            "only nonperiodic (0) and 3D (3) documents are supported",
++        )),
++    }
++}
++fn lattice_rows(g: &Group<'_>) -> Result<[[f64; 3]; 3], TurbomoleError> {
++    let factor = scale(g.option, g.line)?;
++    if g.rows.len() != 3 {
++        return Err(error(g.line, "3D lattice requires three rows"));
++    }
++    let mut m = [[0.0; 3]; 3];
++    for (i, &(line, row)) in g.rows.iter().enumerate() {
++        let values = real_row(row, line, 3)?;
++        for j in 0..3 {
++            m[i][j] = values[j] * factor;
++        }
++    }
++    Ok(m)
++}
++fn cell_rows(g: &Group<'_>) -> Result<[[f64; 3]; 3], TurbomoleError> {
++    let factor = scale(g.option, g.line)?;
++    if g.rows.len() != 1 {
++        return Err(error(g.line, "3D cell requires one row of six values"));
++    }
++    let (line, row) = g.rows[0];
++    let v = real_row(row, line, 6)?;
++    let cell = UnitCell {
++        a: v[0] * factor,
++        b: v[1] * factor,
++        c: v[2] * factor,
++        alpha: v[3],
++        beta: v[4],
++        gamma: v[5],
++    };
++    cell.validate().map_err(|e| error(line, e.to_string()))?;
++    Ok(
++        [(1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0)].map(|(x, y, z)| {
++            let (x, y, z) = cell.frac_to_cart(x, y, z);
++            [x, y, z]
++        }),
++    )
++}
++fn lattice(groups: &[Group<'_>]) -> Result<Option<[[f64; 3]; 3]>, TurbomoleError> {
++    let periodic = periodicity(groups.iter().find(|g| g.name == "$periodic"))?;
++    let l = groups.iter().find(|g| g.name == "$lattice");
++    let c = groups.iter().find(|g| g.name == "$cell");
++    if l.is_some() && c.is_some() {
++        return Err(error(0, "$cell and $lattice conflict"));
++    }
++    if periodic == 0 && (l.is_some() || c.is_some()) {
++        return Err(error(0, "cell requires explicit $periodic 3"));
++    }
++    if periodic == 0 {
++        return Ok(None);
++    }
++    let m = if let Some(g) = l {
++        lattice_rows(g)?
++    } else if let Some(g) = c {
++        cell_rows(g)?
++    } else {
++        return Err(error(0, "$periodic 3 requires $lattice or $cell"));
++    };
++    validate_lattice(&m)?;
++    Ok(Some(m))
++}
++fn atom(row: &str, line: usize) -> Result<TurbomoleAtom, TurbomoleError> {
++    let fields: Vec<_> = row.split_whitespace().collect();
++    if fields.len() != 4 && fields.len() != 5 {
++        return Err(error(line, "atom requires x y z element [f]"));
++    }
++    let frozen = fields.len() == 5;
++    if frozen && fields[4] != "f" {
++        return Err(error(line, "unsupported atom flag"));
++    }
++    let name = fields[3];
++    if !name.is_ascii()
++        || name.is_empty()
++        || name.len() > 2
++        || !name.bytes().all(|b| b.is_ascii_alphabetic())
++    {
++        return Err(error(
++            line,
++            "invalid element (isotopes/ghost atoms are unsupported)",
++        ));
++    }
++    let canonical = format!(
++        "{}{}",
++        name[..1].to_ascii_uppercase(),
++        name[1..].to_ascii_lowercase()
++    );
++    let element = Element::from_symbol(&canonical).ok_or_else(|| error(line, "unknown element"))?;
++    Ok(TurbomoleAtom {
++        element,
++        position_angstrom: [
++            finite(fields[0], line)?,
++            finite(fields[1], line)?,
++            finite(fields[2], line)?,
++        ],
++        frozen,
++    })
++}
++fn converted_position(
++    p: [f64; 3],
++    g: &Group<'_>,
++    lattice: &Option<[[f64; 3]; 3]>,
++) -> Result<[f64; 3], TurbomoleError> {
++    let result = if g.option == "frac" {
++        let m = lattice
++            .as_ref()
++            .ok_or_else(|| error(g.line, "fractional coordinates require a 3D lattice"))?;
++        [0, 1, 2].map(|i| p[0] * m[0][i] + p[1] * m[1][i] + p[2] * m[2][i])
++    } else {
++        let factor = scale(g.option, g.line)?;
++        p.map(|v| v * factor)
++    };
++    if result.iter().any(|v| !v.is_finite()) {
++        return Err(error(g.line, "coordinate conversion overflow"));
++    }
++    Ok(result)
++}
++
++pub fn parse_turbomole_with_limits(
++    text: &str,
++    limits: &TurbomoleParseLimits,
++) -> Result<TurbomoleGeometry, TurbomoleError> {
++    let groups = groups(text, limits)?;
++    let lattice_angstrom = lattice(&groups)?;
++    let g = groups
++        .iter()
++        .find(|g| g.name == "$coord")
++        .ok_or_else(|| error(0, "missing $coord"))?;
++    let mut atoms = Vec::new();
++    atoms
++        .try_reserve(g.rows.len())
++        .map_err(|_| error(0, "allocation failed"))?;
++    for &(line, row) in &g.rows {
++        let mut a = atom(row, line)?;
++        a.position_angstrom = converted_position(a.position_angstrom, g, &lattice_angstrom)?;
++        atoms.push(a);
++    }
++    let geometry = TurbomoleGeometry {
++        atoms,
++        lattice_angstrom,
++        source_text: text.to_owned(),
++    };
++    geometry.validate()?;
++    Ok(geometry)
++}
+diff --git a/crates/chematic-mol/tests/turbomole_contract.rs b/crates/chematic-mol/tests/turbomole_contract.rs
+new file mode 100644
+index 0000000..9811aad
+--- /dev/null
++++ b/crates/chematic-mol/tests/turbomole_contract.rs
+@@ -0,0 +1,207 @@
++//! Synthetic MIT OR Apache-2.0 regression inputs; manifest: validation/openbabel_issues/turbomole/lattice.json.
++use chematic_core::Element;
++use chematic_mol::{
++    TURBOMOLE_BOHR_ANGSTROM as BOHR, TurbomoleParseLimits, parse_turbomole,
++    parse_turbomole_with_limits, write_turbomole,
++};
++
++const PERIODIC: &str = "$periodic 3\n$lattice angs\n 4 1 0\n -1 5 2\n 1 0 -6\n$coord angs\n 1 -2 3 si f\n -4 5 -6 cl\n$end\n";
++fn close(a: f64, b: f64) {
++    assert!((a - b).abs() <= 1e-12 * b.abs().max(1.0), "{a} != {b}");
++}
++fn triple(a: [f64; 3], b: [f64; 3]) {
++    for (a, b) in a.into_iter().zip(b) {
++        close(a, b);
++    }
++}
++
++#[test]
++fn preserves_oriented_left_handed_lattice_and_atom_order() {
++    let g = parse_turbomole(PERIODIC).unwrap();
++    assert_eq!(
++        g.lattice_angstrom.unwrap(),
++        [[4., 1., 0.], [-1., 5., 2.], [1., 0., -6.]]
++    );
++    assert_eq!(g.periodicity(), 3);
++    assert_eq!(g.atoms[0].element, Element::SI);
++    assert!(g.atoms[0].frozen);
++    assert!(!g.atoms[1].frozen);
++    assert_eq!(g.atoms[1].element, Element::CL);
++    assert_eq!(g.atoms[1].position_angstrom, [-4., 5., -6.]);
++    assert_eq!(g.source_text, PERIODIC);
++}
++#[test]
++fn write_read_keeps_all_coordinates_flags_and_lattice_components() {
++    let g = parse_turbomole(PERIODIC).unwrap();
++    let text = write_turbomole(&g).unwrap();
++    assert!(text.starts_with("$periodic 3\n$lattice\n"));
++    let back = parse_turbomole(&text).unwrap();
++    for (a, b) in g.atoms.iter().zip(&back.atoms) {
++        assert_eq!(a.element, b.element);
++        assert_eq!(a.frozen, b.frozen);
++        triple(a.position_angstrom, b.position_angstrom);
++    }
++    for (a, b) in g
++        .lattice_angstrom
++        .unwrap()
++        .into_iter()
++        .zip(back.lattice_angstrom.unwrap())
++    {
++        triple(a, b);
++    }
++}
++#[test]
++fn fractional_uses_rows_without_wrapping_or_basis_rotation() {
++    let text = PERIODIC.replace("$coord angs", "$coord frac");
++    let g = parse_turbomole(&text).unwrap();
++    triple(g.atoms[0].position_angstrom, [9., -9., -22.]);
++    triple(g.atoms[1].position_angstrom, [-27., 21., 46.]);
++}
++#[test]
++fn default_bohr_and_fortran_exponents() {
++    let g = parse_turbomole("$coord\n 1D0 -2d0 3e0 si\n$end\n").unwrap();
++    triple(g.atoms[0].position_angstrom, [BOHR, -2. * BOHR, 3. * BOHR]);
++    assert_eq!(g.periodicity(), 0);
++}
++#[test]
++fn triclinic_cell_reuses_validated_unit_cell_conversion() {
++    let text = "$coord frac\n 0.5 0.25 -0.5 c\n$periodic 3\n$cell angs\n 4 5 6 90 60 90\n$end\n";
++    let g = parse_turbomole(text).unwrap();
++    triple(
++        g.atoms[0].position_angstrom,
++        [0.5, 1.25, -3. * (3.0f64).sqrt() / 2.],
++    );
++}
++#[test]
++fn header_order_and_comment_line_endings_are_independent() {
++    let text = "# synthetic\r\n$coord angs # units\r\n 0 0 0 SI f # fixed\r\n$lattice angs\r\n 1 0 0\r\n 0 2 0\r\n 0 0 3\r\n$periodic 3\r\n$end\r\n# tail\r\n";
++    let g = parse_turbomole(text).unwrap();
++    assert_eq!(g.source_text, text);
++    assert!(g.atoms[0].frozen);
++    assert_eq!(g.periodicity(), 3);
++}
++#[test]
++fn rejects_ambiguous_or_unsupported_documents() {
++    let cases = [
++        "$coord\n0 0 0 c\n",
++        "$coord\n$end",
++        "$end",
++        "$coord frac\n0 0 0 c\n$end",
++        "$coord file=coord\n0 0 0 c\n$end",
++        "$coord\n0 0 0 c\n$end\n$coord\n0 0 0 c\n$end",
++        "$coord\n0 0 0 c\n$coord\n0 0 0 c\n$end",
++        "$coord\n0 0 0 c\n$periodic 2\n$end",
++        "$coord\n0 0 0 c\n$periodic 3\n$end",
++        "$coord\n0 0 0 c\n$eht charge=1\n$end",
++        "$coord\n0 0 0 c x\n$end",
++        "$coord\nNaN 0 0 c\n$end",
++        "$coord\n0 0 0 13c\n$end",
++        "$coord\n0 0 0 xx\n$end",
++        "$coord\n0 0 0 c\n$end stuff",
++        "$coord\n0 0 0 c\n$end\ntrailing",
++        "$coord\n0 0 0 c\n$periodic\n3\n$end",
++        "$coord ang\n0 0 0 c\n$end",
++        "$coord\n0 0 0 c extra f\n$end",
++        "$coord\n0 0 0 🧪\n$end",
++    ];
++    for text in cases {
++        assert!(parse_turbomole(text).is_err(), "accepted {text}");
++    }
++}
++#[test]
++fn refuses_singular_near_singular_and_nonfinite_cells() {
++    for rows in [
++        "1 0 0\n2 0 0\n0 0 1",
++        "1 0 0\n1 1e-8 0\n0 0 1",
++        "inf 0 0\n0 1 0\n0 0 1",
++        "0 0 0\n0 1 0\n0 0 1",
++        "1e300 0 0\n0 1e300 0\n0 0 1e300",
++    ] {
++        let text = format!("$periodic 3\n$lattice angs\n{rows}\n$coord\n0 0 0 c\n$end");
++        assert!(parse_turbomole(&text).is_err(), "{rows}");
++    }
++}
++#[test]
++fn refuses_missing_periodicity_and_conflicting_cell_forms() {
++    assert!(parse_turbomole(&PERIODIC.replace("$periodic 3\n", "")).is_err());
++    assert!(parse_turbomole(&PERIODIC.replace("$periodic 3", "$periodic 0")).is_err());
++    assert!(
++        parse_turbomole(&PERIODIC.replace("$end", "$cell angs\n4 5 6 90 90 90\n$end")).is_err()
++    );
++}
++#[test]
++fn cell_width_angles_and_lengths_are_checked() {
++    for row in [
++        "4 5 6 90 90",
++        "4 5 6 0 90 90",
++        "4 5 6 10 10 170",
++        "-4 5 6 90 90 90",
++    ] {
++        let text = format!("$coord\n0 0 0 c\n$periodic 3\n$cell\n{row}\n$end");
++        assert!(parse_turbomole(&text).is_err());
++    }
++}
++#[test]
++fn input_line_and_atom_limits_are_applied() {
++    let base = TurbomoleParseLimits::default();
++    for limits in [
++        TurbomoleParseLimits {
++            max_input_bytes: 1,
++            ..base
++        },
++        TurbomoleParseLimits {
++            max_line_len: 3,
++            ..base
++        },
++        TurbomoleParseLimits {
++            max_atoms: 1,
++            ..base
++        },
++    ] {
++        assert!(parse_turbomole_with_limits(PERIODIC, &limits).is_err());
++    }
++    assert!(
++        parse_turbomole_with_limits(
++            PERIODIC,
++            &TurbomoleParseLimits {
++                max_atoms: 2,
++                ..base
++            }
++        )
++        .is_ok()
++    );
++}
++#[test]
++fn writer_validates_mutated_geometry_instead_of_replaying_source() {
++    let mut g = parse_turbomole(PERIODIC).unwrap();
++    g.atoms[0].position_angstrom[0] = 8.0;
++    close(
++        parse_turbomole(&write_turbomole(&g).unwrap())
++            .unwrap()
++            .atoms[0]
++            .position_angstrom[0],
++        8.,
++    );
++    g.atoms[0].position_angstrom[0] = f64::NAN;
++    assert!(write_turbomole(&g).is_err());
++    g.atoms.clear();
++    assert!(write_turbomole(&g).is_err());
++}
++#[test]
++fn writer_refuses_unrepresentable_bohr_coordinate() {
++    let mut g = parse_turbomole(PERIODIC).unwrap();
++    g.atoms[0].position_angstrom[0] = f64::MAX;
++    assert!(write_turbomole(&g).is_err());
++}
++#[test]
++fn row_field_counts_and_external_cell_options_are_checked() {
++    for (from, to) in [
++        ("4 1 0", "4 1"),
++        ("4 1 0", "4 1 0 9"),
++        ("$lattice angs", "$lattice file=cell"),
++        ("1 0 -6\n", ""),
++        ("$periodic 3", "$periodic 3 extra"),
++    ] {
++        assert!(parse_turbomole(&PERIODIC.replace(from, to)).is_err());
++    }
++}
+diff --git a/crates/chematic-py/python/chematic/__init__.pyi b/crates/chematic-py/python/chematic/__init__.pyi
+index c3a5182..b367586 100644
+--- a/crates/chematic-py/python/chematic/__init__.pyi
++++ b/crates/chematic-py/python/chematic/__init__.pyi
+@@ -4907,3 +4907,11 @@ def mmcif_to_pdb_checked(text: str, *, namespace: str = "auth", allow_metadata_l
+ def parse_gro(text: str, *, elements: Optional[Sequence[str]] = None, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None) -> dict[str, Any]:
+     """Read one GRO frame, with unresolved or caller-supplied elements and explicit nm units."""
+     ...
++
++def parse_turbomole(text: str, *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None) -> dict[str, Any]:
++    """Read standalone nonperiodic/3D TURBOMOLE geometry in Cartesian angstroms."""
++    ...
++
++def write_turbomole(elements: Sequence[str], positions_angstrom: Sequence[Sequence[float]], *, lattice_angstrom: Optional[Sequence[Sequence[float]]] = None, frozen: Optional[Sequence[bool]] = None) -> str:
++    """Write explicit geometry, 3D row lattice vectors and frozen flags in bohr."""
++    ...
+diff --git a/crates/chematic-py/src/formats.rs b/crates/chematic-py/src/formats.rs
+index 3a41783..7a087a1 100644
+--- a/crates/chematic-py/src/formats.rs
++++ b/crates/chematic-py/src/formats.rs
+@@ -9,6 +9,8 @@ use std::sync::Arc;
+ mod cif;
+ use cif::*;
+ mod gro;
++mod turbomole;
++use turbomole::*;
+ mod interchange;
+ mod materials;
+ mod mmcif_pdb;
+@@ -1426,6 +1428,8 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
+         write_smi_file,
+         parse_mmcif,
+         parse_gro,
++        parse_turbomole,
++        write_turbomole,
+         parse_mmcif_residues,
+         mmcif_to_pdb_checked,
+         protein_from_pdb_json,
+diff --git a/crates/chematic-py/src/formats/turbomole.rs b/crates/chematic-py/src/formats/turbomole.rs
+new file mode 100644
+index 0000000..4b0f68f
+--- /dev/null
++++ b/crates/chematic-py/src/formats/turbomole.rs
+@@ -0,0 +1,90 @@
++use super::*;
++
++/// Read a standalone nonperiodic or 3D TURBOMOLE coordinate document.
++/// Returns explicit elements, Cartesian angstrom coordinates, frozen flags,
++/// row lattice vectors and original text. Unsupported data groups fail.
++#[pyfunction]
++#[pyo3(signature=(text, *, max_input_bytes=None, max_atoms=None, max_line_len=None))]
++pub(super) fn parse_turbomole<'py>(
++    py: Python<'py>,
++    text: &str,
++    max_input_bytes: Option<usize>,
++    max_atoms: Option<usize>,
++    max_line_len: Option<usize>,
++) -> PyResult<Bound<'py, PyDict>> {
++    let mut limits = chematic_mol::TurbomoleParseLimits::default();
++    if let Some(v) = max_input_bytes {
++        limits.max_input_bytes = v;
++    }
++    if let Some(v) = max_atoms {
++        limits.max_atoms = v;
++    }
++    if let Some(v) = max_line_len {
++        limits.max_line_len = v;
++    }
++    let geometry = chematic_mol::parse_turbomole_with_limits(text, &limits)
++        .map_err(|e| PyValueError::new_err(e.to_string()))?;
++    let result = PyDict::new(py);
++    result.set_item("periodicity", geometry.periodicity())?;
++    result.set_item(
++        "elements",
++        geometry
++            .atoms
++            .iter()
++            .map(|a| a.element.symbol())
++            .collect::<Vec<_>>(),
++    )?;
++    result.set_item(
++        "positions_angstrom",
++        geometry
++            .atoms
++            .iter()
++            .map(|a| a.position_angstrom)
++            .collect::<Vec<_>>(),
++    )?;
++    result.set_item(
++        "frozen",
++        geometry.atoms.iter().map(|a| a.frozen).collect::<Vec<_>>(),
++    )?;
++    result.set_item("lattice_angstrom", geometry.lattice_angstrom)?;
++    result.set_item("source_text", geometry.source_text)?;
++    Ok(result)
++}
++
++/// Write explicit geometry in canonical bohr units, including its 3D lattice.
++/// No topology or atom perception; arrays must have exactly matching lengths.
++#[pyfunction]
++#[pyo3(signature=(elements, positions_angstrom, *, lattice_angstrom=None, frozen=None))]
++pub(super) fn write_turbomole(
++    elements: Vec<String>,
++    positions_angstrom: Vec<[f64; 3]>,
++    lattice_angstrom: Option<[[f64; 3]; 3]>,
++    frozen: Option<Vec<bool>>,
++) -> PyResult<String> {
++    if elements.len() != positions_angstrom.len()
++        || frozen.as_ref().is_some_and(|v| v.len() != elements.len())
++    {
++        return Err(PyValueError::new_err(
++            "element, position and frozen-flag counts must match",
++        ));
++    }
++    let mut atoms = Vec::new();
++    for (i, (s, position_angstrom)) in elements.into_iter().zip(positions_angstrom).enumerate() {
++        let element = chematic_core::Element::from_symbol(&s)
++            .filter(|e| e.symbol() == s)
++            .ok_or_else(|| {
++                PyValueError::new_err(format!("invalid canonical element symbol '{s}'"))
++            })?;
++        atoms.push(chematic_mol::TurbomoleAtom {
++            element,
++            position_angstrom,
++            frozen: frozen.as_ref().is_some_and(|v| v[i]),
++        });
++    }
++    let geometry = chematic_mol::TurbomoleGeometry {
++        atoms,
++        lattice_angstrom,
++        source_text: String::new(),
++    };
++    chematic_mol::write_turbomole(&geometry).map_err(|e| PyValueError::new_err(e.to_string()))
++}
+diff --git a/crates/chematic-py/tests/test_turbomole.py b/crates/chematic-py/tests/test_turbomole.py
+new file mode 100644
+index 0000000..8252737
+--- /dev/null
++++ b/crates/chematic-py/tests/test_turbomole.py
+@@ -0,0 +1,81 @@
++"""Synthetic MIT OR Apache-2.0 TURBOMOLE lattice preservation contracts."""
++import itertools
++import math
++import pytest
++import chematic
++
++TEXT = "$periodic 3\n$lattice angs\n4 1 0\n-1 5 2\n1 0 -6\n$coord frac\n0.5 0.25 -0.5 si f\n0 0 0 cl\n$end\n"
++
++def emit(g):
++    return chematic.write_turbomole(g["elements"], g["positions_angstrom"], lattice_angstrom=g["lattice_angstrom"], frozen=g["frozen"])
++
++def test_fractional_coordinate_and_cell_roundtrip():
++    g = chematic.parse_turbomole(TEXT)
++    assert g["elements"] == ["Si", "Cl"]
++    assert g["positions_angstrom"][0] == pytest.approx([1.25, 1.75, 3.5])
++    assert g["frozen"] == [True, False]
++    assert g["periodicity"] == 3
++    assert g["source_text"] == TEXT
++    back = chematic.parse_turbomole(emit(g))
++    assert back["elements"] == g["elements"]
++    assert back["frozen"] == g["frozen"]
++    for key in ("positions_angstrom", "lattice_angstrom"):
++        for a, b in zip(back[key], g[key]):
++            assert a == pytest.approx(b, abs=1e-12)
++
++@pytest.mark.parametrize("order", list(itertools.permutations(range(3))))
++def test_all_group_orders(order):
++    groups = ["$periodic 3\n", "$lattice angs\n2 0 0\n0 3 0\n0 0 4\n", "$coord angs\n1 2 3 c f\n"]
++    g = chematic.parse_turbomole("".join(groups[i] for i in order) + "$end\n")
++    assert g["positions_angstrom"] == [[1.0, 2.0, 3.0]]
++    assert g["periodicity"] == 3
++
++def test_cell_parameter_conversion():
++    text = "$periodic 3\n$cell angs\n4 5 6 90 60 90\n$coord frac\n0.5 0.25 -0.5 c\n$end\n"
++    g = chematic.parse_turbomole(text)
++    assert g["positions_angstrom"][0] == pytest.approx([0.5, 1.25, -1.5*math.sqrt(3)])
++
++@pytest.mark.parametrize("text", [
++    "$coord\n0 0 0 c\n", "$coord\n$end", "$end", "$coord frac\n0 0 0 c\n$end",
++    "$coord file=coord\n0 0 0 c\n$end", "$coord\n0 0 0 c\n$periodic 2\n$end",
++    "$coord\n0 0 0 c\n$periodic 3\n$end", "$coord\n0 0 0 c\n$eht charge=1\n$end",
++    "$coord\n0 0 0 c x\n$end", "$coord\nNaN 0 0 c\n$end", "$coord\n0 0 0 13c\n$end",
++    "$coord\n0 0 0 c\n$end\nextra", "$coord\n0 0 0 🧪\n$end",
++    TEXT.replace("$periodic 3\n", ""), TEXT.replace("1 0 -6", "4 1 0"),
++    TEXT.replace("$end", "$cell angs\n4 5 6 90 90 90\n$end"),
++])
++def test_invalid_document_fails(text):
++    with pytest.raises(ValueError):
++        chematic.parse_turbomole(text)
++
++@pytest.mark.parametrize("kwargs", [{"max_input_bytes": 2}, {"max_atoms": 1}, {"max_line_len": 5}])
++def test_limits(kwargs):
++    with pytest.raises(ValueError):
++        chematic.parse_turbomole(TEXT, **kwargs)
++
++@pytest.mark.parametrize("elements,positions,kwargs", [
++    (["c"], [[0,0,0]], {}), (["13C"], [[0,0,0]], {}),
++    (["C"], [], {}), (["C"], [[0,0,0]], {"frozen": []}),
++    (["C"], [[float("nan"),0,0]], {}), ([], [], {}),
++    (["C"], [[0,0,0]], {"lattice_angstrom": [[0,0,0],[0,1,0],[0,0,1]]}),
++    (["C"], [[float.fromhex("0x1.fffffffffffffp+1023"),0,0]], {}),
++])
++def test_writer_invalid_values(elements, positions, kwargs):
++    with pytest.raises(ValueError):
++        chematic.write_turbomole(elements, positions, **kwargs)
++
++def test_nonperiodic_bohr_no_inferred_hydrogens():
++    g = chematic.parse_turbomole("$coord\n1D0 0 0 n\n$end\n")
++    assert g["positions_angstrom"][0][0] == pytest.approx(0.529177210544, abs=1e-14)
++    assert g["elements"] == ["N"]
++    assert g["lattice_angstrom"] is None
++    assert g["periodicity"] == 0
++
++@pytest.mark.parametrize("coord_unit,cell_unit", [("angs", "bohr"), ("bohr", "angs")])
++def test_coordinate_and_lattice_units_are_independent(coord_unit, cell_unit):
++    text = f"$periodic 3\n$lattice {cell_unit}\n2 0 0\n0 3 0\n0 0 4\n$coord {coord_unit}\n1 2 3 c\n$end\n"
++    g = chematic.parse_turbomole(text)
++    coord_factor = 1.0 if coord_unit == "angs" else 0.529177210544
++    cell_factor = 1.0 if cell_unit == "angs" else 0.529177210544
++    assert g["positions_angstrom"][0] == pytest.approx([coord_factor, 2*coord_factor, 3*coord_factor])
++    assert g["lattice_angstrom"][1][1] == pytest.approx(3*cell_factor)
+diff --git a/docs/turbomole-lattice-preservation.md b/docs/turbomole-lattice-preservation.md
+new file mode 100644
+index 0000000..646547e
+--- /dev/null
++++ b/docs/turbomole-lattice-preservation.md
+@@ -0,0 +1,161 @@
++# TURBOMOLE geometry with preserved 3D lattice
++
++Open Babel [#2822](https://github.com/openbabel/openbabel/issues/2822) reports
++loss of unit-cell information during TURBOMOLE conversion. In the locally
++pinned Open Babel 3.2.1, reading a standalone `$periodic 3` / `$lattice`
++document and writing VASP still produces three zero lattice vectors.
++The reverse writer direction already retains lattice information in that
++version; this candidate does not claim both directions remain broken.
++
++The new Rust/Python APIs read and write standalone TURBOMOLE coordinate
++geometry while retaining the original 3D lattice basis, atom order and
++fixed-atom flags. They do not infer bonds or implicit hydrogen atoms.
++
++```python
++import chematic
++
++geometry = chematic.parse_turbomole(tmol_text)
++assert geometry["periodicity"] == 3
++positions = geometry["positions_angstrom"]
++lattice = geometry["lattice_angstrom"]  # three Cartesian row vectors
++
++output = chematic.write_turbomole(
++    geometry["elements"],
++    positions,
++    lattice_angstrom=lattice,
++    frozen=geometry["frozen"],
++)
++restored = chematic.parse_turbomole(output)
++original_text = geometry["source_text"]
++```
++
++`parse_turbomole` returns a dictionary containing `elements`,
++`positions_angstrom`, `frozen`, `lattice_angstrom`, `periodicity` and
++`source_text`. Nonperiodic input has `lattice_angstrom=None` and periodicity
++zero. Writer element symbols must be canonical, for example `Si` rather
++than `si`; the reader accepts ASCII case variations and the writer emits
++lowercase TURBOMOLE symbols. Each coordinate row has exactly three components.
++Optional frozen flags must have the same length as the atom arrays.
++
++In Rust, `parse_turbomole` / `parse_turbomole_with_limits` return a
++`TurbomoleGeometry` with ordered `TurbomoleAtom` records. Its public fields
++are validated by `write_turbomole`, which returns a `Result` instead of
++replaying a potentially stale original string. `TurbomoleError` includes a
++one-based line where available; zero denotes document-level validation.
++
++## Units and cell semantics
++
++- Default coordinates and lattice lengths are in bohr. `angs` selects
++  angstroms independently for the coordinate and cell/lattice groups.
++  Explicit `bohr` is also accepted. `$coord angs` / `$coord bohr` are
++  MCTC-style extensions, rather than a claim that every TURBOMOLE version
++  accepts those coordinate modifiers.
++- The conversion constant is the CODATA 2022 central value
++  **1 bohr = 0.529177210544 angstrom**. This differs slightly from the
++  older constant used by the pinned Open Babel binary.
++- `$coord frac` uses the three supplied lattice row vectors directly,
++  even if the cell groups occur later in the document. Coordinates outside
++  the first cell are retained without wrapping.
++- `$lattice` requires three rows of three components. Orientation and
++  handedness survive; vectors are never converted to lengths/angles and
++  reconstructed in another orientation.
++- Alternatively, `$cell` accepts one row `a b c alpha beta gamma` for a
++  3D cell. Lengths follow that group's units and angles are in degrees.
++  Conversion reuses chematic's validated `UnitCell` implementation and its
++  conventional crystallographic orientation. `$cell` together with
++  `$lattice` is rejected as conflicting input.
++- The writer emits canonical Cartesian bohr coordinates and a bohr
++  `$lattice`, using scientific notation with 17 decimal places. It preserves
++  the numerical geometry within floating-point conversion/rounding error,
++  rather than preserving the source number spelling or coordinate mode.
++- The `f` atom flag is preserved. No freeze flag means that atom is not fixed.
++
++The primary layout sources are the
++[TURBOMOLE 8.0 periodic input manual](https://manual.turbomole.org/v8.0/dft-calculations-for-periodic-systems/how-to-perform-a-calculation/),
++its [fixed-atom definition](https://manual.turbomole.org/v8.0/calculation-of-vibrational-frequencies-and-vibrational-spectra/vibrational-frequencies-with-fixed-atoms-using-numforce/)
++and the [MCTC format documentation](https://grimme-lab.github.io/mctc-lib/page/format-tmol.html),
++retrieved on 2026-10-15. The Bohr conversion follows
++[NIST CODATA](https://physics.nist.gov/cgi-bin/cuu/Value?bohrrada0).
++The implementation was written independently from these field definitions.
++
++## Checked boundary
++
++Exactly one nonempty coordinate group and a terminating `$end` are required.
++`$periodic` may be omitted for nonperiodic input, or explicitly specify 0 or
++3 on its header. A 3D cell requires explicit `$periodic 3` and exactly one
++cell definition. Recognized groups may appear in any order.
++
++Duplicate groups, unknown groups/options, nonblank data after `$end`,
++external-file references, incomplete rows, unsupported atom flags and
++non-finite/overflowing numbers fail with an error. Fortran `D`/`d` exponents
++are accepted. Comments beginning with `#` and blank lines are accepted.
++Input text including comments and line endings is retained in `source_text`;
++canonical writing emits only the interpreted geometry and fixed-atom flags.
++
++Cell vectors must have finite positive lengths and finite positive absolute
++volume. The magnitude of the normalized determinant must exceed `1e-6`,
++equivalent to a normalized Gram determinant above `1e-12`. Singular and
++numerically near-singular cells fail, including on writing mutated Rust data.
++This is the coordinate-reader boundary; it does not claim that the separate
++crystal computation API accepts every cell above this threshold.
++
++Default parsing limits are 64 MiB input, 1,024 bytes per physical line and
++1,000,000 atom rows. All three can be lowered or raised explicitly through
++Rust `TurbomoleParseLimits` or the Python keyword arguments
++`max_input_bytes`, `max_line_len` and `max_atoms`. Atom-vector reservation is
++fallible and counts are checked while reading rows.
++
++1D/2D periodic documents, complete calculation control files, charge/spin
++settings, isotope/ghost labels and internal-coordinate definitions are
++outside this API and are rejected when encountered. No TURBOMOLE execution,
++new POSCAR adapter, graph-format registry entry, topology perception or
++bond-order assignment is added. This is a geometry API for callers to
++connect explicitly to their existing coordinate/structure workflow.
++
++## Validation and local artifacts
++
++Original synthetic fixtures under MIT OR Apache-2.0 are recorded in
++`validation/openbabel_issues/turbomole/lattice.json` with provenance,
++minimization, expected units, tolerance and payload SHA-256. No upstream
++attachment or coordinate example was copied.
++
++The independent expected-geometry oracle uses Python `Decimal` arithmetic
++at 40-digit precision, rather than the new Rust parser or the lossy Open
++Babel reader. Four atoms (24 permutations), six group orders, three
++coordinate modes and two cell handedness cases produce **864 comparisons**.
++Every case checks input interpretation, atom order, fixed flags, source text,
++all nine lattice components and read/write/read restoration. A separate
++Python decoder inspects the writer's canonical layout directly. Absolute
++coordinate/lattice tolerance is `1e-12` angstrom, with zero mismatches.
++Triclinic cell-parameter conversion, independent group units and malformed
++input are covered by Rust/Python tests.
++
++Open Babel 3.2.1 is used only for the upstream defect diagnostic and the
++separate POSCAR-to-TURBOMOLE writer control. Its VASP reader needs an absolute
++file path; the control uses a task-owned temporary POSCAR file. Different
++Bohr conversion constants require `2e-9` angstrom coordinate tolerance for
++the reader diagnostic and `1e-8` for the writer control. The TURBOMOLE
++executable was not run.
++
++Local checks:
++
++- `chematic-mol`: 753 library tests and 14 new integration contracts passed.
++- Python: 121 tests passed, including the new geometry tests and previous
++  GRO, checked mmCIF-to-PDB and PQR-to-PDBQT regressions.
++- Strict Clippy for `chematic-mol` / `chematic-py`, formatting, product naming,
++  static binding inventory and the refactor budget passed; no allowances added.
++- Strict MkDocs build passed.
++
++Regenerate the independent record with the candidate extension on `PYTHONPATH`:
++
++```sh
++python scripts/validate_turbomole_lattice.py --obabel /path/to/obabel
++```
++
++The result JSON records fixture/source/extension hashes and oracle settings.
++This is a local, uncommitted, unpublished source candidate in
++`/private/tmp/chematic-turbomole`, preserving earlier candidates through
++stereo-group inversion. The portable patch is
++`validation/openbabel_issues/turbomole-lattice-2026-10-15.patch`; it isolates
++this feature from the preceding source snapshot and includes source, bindings,
++tests, fixture, validation, documentation and CI/inventory updates.
+diff --git a/scripts/validate_turbomole_lattice.py b/scripts/validate_turbomole_lattice.py
+new file mode 100644
+index 0000000..5e7ab15
+--- /dev/null
++++ b/scripts/validate_turbomole_lattice.py
+@@ -0,0 +1,140 @@
++#!/usr/bin/env python3
++"""Independent Decimal geometry checks and pinned Open Babel #2822 diagnostic."""
++import argparse
++from decimal import Decimal, localcontext
++import hashlib
++import itertools
++import json
++from pathlib import Path
++import subprocess
++import sys
++import tempfile
++import chematic
++
++ROOT = Path(__file__).resolve().parents[1]
++FIXTURE = ROOT / 'validation/openbabel_issues/turbomole/lattice.json'
++BOHR = Decimal('0.529177210544')
++TOL = Decimal('1e-12')
++
++
++def digest(data):
++    return hashlib.sha256(data).hexdigest()
++
++
++def near(actual, expected):
++    assert abs(Decimal(str(actual)) - expected) <= TOL, (actual, expected)
++
++
++def check_written(text, matrix, positions, elements, flags):
++    """Decode only the fixed canonical writer layout, independently of Rust."""
++    rows = text.splitlines()
++    assert rows[0:2] == ['$periodic 3', '$lattice']
++    for row, expected in zip(rows[2:5], matrix):
++        values = row.split()
++        assert len(values) == 3
++        for value, wanted in zip(values, expected):
++            near(Decimal(value) * BOHR, wanted)
++    assert rows[5] == '$coord'
++    assert len(rows) == 7 + len(elements) and rows[-1] == '$end'
++    for row, expected, element, frozen in zip(rows[6:-1], positions, elements, flags):
++        values = row.split()
++        assert values[3] == element.lower()
++        assert values[4:] == (['f'] if frozen else [])
++        for value, wanted in zip(values[:3], expected):
++            near(Decimal(value) * BOHR, wanted)
++
++
++def generated_cases():
++    elements = ['Si', 'Cl', 'C', 'H']
++    fractions = [[Decimal(x) for x in row] for row in [('.25', '-.5', '1.5'), ('0', '0', '0'), ('-.125', '1.25', '.5'), ('2', '.25', '-.5')]]
++    checked = []
++    for order, group_order, mode, handedness in itertools.product(itertools.permutations(range(4)), itertools.permutations(range(3)), ['bohr', 'angs', 'frac'], [1, -1]):
++        raw_matrix = [[Decimal(x) for x in row] for row in [[4, 1, 0], [-1, 5, 2], [1, 0, handedness * 6]]]
++        factor = Decimal(1) if mode == 'angs' else BOHR
++        matrix = [[v * factor for v in row] for row in raw_matrix]
++        expected = [[sum(fractions[i][j] * matrix[j][k] for j in range(3)) for k in range(3)] for i in order]
++        raw_positions = [fractions[i] if mode == 'frac' else [sum(fractions[i][j] * raw_matrix[j][k] for j in range(3)) for k in range(3)] for i in order]
++        flags = [i % 2 == 0 for i in order]
++        names = [elements[i] for i in order]
++        coord = '$coord' + (' ' + mode if mode != 'bohr' else '') + '\n'
++        coord += ''.join(' '.join(map(str, p)) + ' ' + e.lower() + (' f' if frozen else '') + '\n' for p, e, frozen in zip(raw_positions, names, flags))
++        lattice = '$lattice' + (' angs' if mode == 'angs' else '') + '\n'
++        lattice += ''.join(' '.join(map(str, row)) + '\n' for row in raw_matrix)
++        groups = ['$periodic 3\n', lattice, coord]
++        source = ''.join(groups[i] for i in group_order) + '$end\n'
++        g = chematic.parse_turbomole(source)
++        assert g['source_text'] == source and g['periodicity'] == 3
++        assert g['elements'] == names and g['frozen'] == flags
++        for got, wanted in zip(g['positions_angstrom'], expected):
++            for a, b in zip(got, wanted): near(a, b)
++        for got, wanted in zip(g['lattice_angstrom'], matrix):
++            for a, b in zip(got, wanted): near(a, b)
++        written = chematic.write_turbomole(g['elements'], g['positions_angstrom'], lattice_angstrom=g['lattice_angstrom'], frozen=g['frozen'])
++        check_written(written, matrix, expected, names, flags)
++        back = chematic.parse_turbomole(written)
++        assert back['elements'] == names and back['frozen'] == flags
++        for got, wanted in zip(back['positions_angstrom'], expected):
++            for a, b in zip(got, wanted): near(a, b)
++        for got, wanted in zip(back['lattice_angstrom'], matrix):
++            for a, b in zip(got, wanted): near(a, b)
++        checked.append({'order':order, 'group_order':group_order, 'mode':mode, 'handedness':handedness, 'input_sha256':digest(source.encode()), 'output_sha256':digest(written.encode())})
++    return checked
++
++
++def main():
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument('--obabel', default='/opt/homebrew/bin/obabel')
++    parser.add_argument('--output', type=Path, default=ROOT/'validation/results/openbabel-turbomole-lattice-2026-10-15.json')
++    args = parser.parse_args()
++    version = subprocess.run([args.obabel, '-V'], capture_output=True, text=True, check=True, timeout=10).stdout.strip()
++    if not version.startswith('Open Babel 3.2.1 '): raise RuntimeError(f'expected Open Babel 3.2.1, got {version}')
++    manifest = json.loads(FIXTURE.read_text())
++    payload = FIXTURE.parent / manifest['payload']
++    text = payload.read_text()
++    assert digest(payload.read_bytes()) == manifest['sha256']
++    g = chematic.parse_turbomole(text)
++    assert g['elements'] == manifest['expected']['elements'] and g['frozen'] == manifest['expected']['frozen']
++    for actual, wanted in zip(g['positions_angstrom'][0], manifest['expected']['position_angstrom']):
++        near(actual, Decimal(str(wanted)))
++    for i, wanted in enumerate(manifest['expected']['lattice_diagonal_angstrom']):
++        near(g['lattice_angstrom'][i][i], Decimal(str(wanted)))
++    process = subprocess.run([args.obabel, '-itmol', '-ovasp'], input=text, capture_output=True, text=True, check=True, timeout=15)
++    # POSCAR first line can be empty (unnamed source), so do not strip it.
++    rows = process.stdout.splitlines()
++    babel_lattice = [[float(v) for v in row.split()] for row in rows[2:5]]
++    assert babel_lattice == [[0., 0., 0.]] * 3, 'upstream reader behavior changed; inspect before rebaseline'
++    babel_position = list(map(float, rows[8].split()[:3]))
++    assert all(abs(a-b) < 2e-9 for a,b in zip(babel_position, g['positions_angstrom'][0]))
++    # Writer direction is a separate control: 3.2.1 already emits lattice.
++    poscar = 'synthetic control\n1.0\n4 0 0\n0 5 0\n0 0 6\nSi\n1\nDirect\n.25 .5 .75\n'
++    with tempfile.TemporaryDirectory(prefix='chematic-tmol-control-') as directory:
++        input_path = Path(directory) / 'POSCAR'
++        input_path.write_text(poscar)
++        control = subprocess.run([args.obabel, '-ivasp', str(input_path), '-otmol'], capture_output=True, text=True, check=True, timeout=15)
++    control_g = chematic.parse_turbomole(control.stdout)
++    assert control_g['periodicity'] == 3
++    for row, expected in zip(control_g['lattice_angstrom'], [[4,0,0],[0,5,0],[0,0,6]]):
++        assert all(abs(a-b) < 1e-8 for a,b in zip(row, expected))
++    with localcontext() as context:
++        context.prec = 40
++        checked = generated_cases()
++    paths = ['crates/chematic-mol/src/turbomole.rs', 'crates/chematic-mol/src/turbomole/reader.rs', 'crates/chematic-py/src/formats/turbomole.rs', 'crates/chematic-mol/tests/turbomole_contract.rs', 'crates/chematic-py/tests/test_turbomole.py', 'crates/chematic-py/python/chematic/__init__.pyi', 'scripts/validate_turbomole_lattice.py']
++    record = {
++        'schema_version':1, 'status':'local-source-candidate', 'issue':'https://github.com/openbabel/openbabel/issues/2822',
++        'base':'cac480fb source snapshot plus preserved earlier RDKit/Open Babel candidates through stereo-group inversion; patch isolates TURBOMOLE geometry I/O',
++        'scope':'standalone nonperiodic and 3D geometry documents; original lattice orientation, atom order, coordinates and frozen flags; no general graph-conversion registration',
++        'runtime':{'python':sys.version.split()[0], 'openbabel':version, 'chematic_extension_sha256':digest(Path(chematic.__file__).resolve().read_bytes())},
++        'source_sha256':{p:digest((ROOT/p).read_bytes()) for p in paths},
++        'fixture':{'path':str(FIXTURE.relative_to(ROOT)), 'manifest_sha256':digest(FIXTURE.read_bytes()), **manifest},
++        'results':{'comparisons':len(checked), 'coordinate_mismatches':0, 'lattice_mismatches':0, 'fixed_flag_mismatches':0, 'source_text_mismatches':0, 'atom_permutations':24, 'group_orders':6, 'coordinate_modes':['bohr','angs','frac'], 'handedness':[1,-1], 'absolute_tolerance_angstrom':str(TOL), 'case_sha256':digest(json.dumps(checked,sort_keys=True,separators=(',',':')).encode())},
++        'openbabel_reader_diagnostic':{'command':['obabel','-itmol','-ovasp'], 'output_lattice':babel_lattice, 'expected_lattice_angstrom':g['lattice_angstrom'], 'positions_angstrom':babel_position, 'output_sha256':digest(process.stdout.encode()), 'stderr':process.stderr.strip(), 'coordinate_tolerance_angstrom':2e-9},
++        'openbabel_writer_control':{'command':['obabel','-ivasp','<absolute-POSCAR-path>','-otmol'], 'periodicity':control_g['periodicity'], 'retains_lattice':True, 'input_sha256':digest(poscar.encode()), 'output_sha256':digest(control.stdout.encode()), 'numeric_tolerance_angstrom':1e-8, 'note':'Writer direction works in this pinned version; only reader-direction cell loss was reproduced.'},
++        'limitations':'TURBOMOLE executable was not run; independent arithmetic and documented layout are the expected-geometry oracle. 1D/2D, control files, external file options, unknown groups, charge/spin/isotope/ghost labels are rejected. $coord angs/bohr are explicitly supported MCTC-style extensions. Comments/formatting survive only in source_text; canonical writer emits fresh bohr data. No topology, bond perception, wrapping, cell rotation or POSCAR adapter added.',
++    }
++    args.output.parent.mkdir(parents=True, exist_ok=True)
++    args.output.write_text(json.dumps(record,indent=2)+'\n')
++    print(json.dumps(record['results']))
++
++
++if __name__ == '__main__':
++    main()
+diff --git a/validation/openbabel_issues/turbomole/lattice.json b/validation/openbabel_issues/turbomole/lattice.json
+new file mode 100644
+index 0000000..453ebd3
+--- /dev/null
++++ b/validation/openbabel_issues/turbomole/lattice.json
+@@ -0,0 +1,47 @@
++{
++  "id": "synthetic-turbomole-3d-lattice-v1",
++  "provenance": {
++    "source": "original synthetic coordinate document authored for this implementation",
++    "issue": "https://github.com/openbabel/openbabel/issues/2822",
++    "date": "2026-10-15",
++    "specifications": [
++      "https://manual.turbomole.org/v8.0/dft-calculations-for-periodic-systems/how-to-perform-a-calculation/",
++      "https://grimme-lab.github.io/mctc-lib/page/format-tmol.html"
++    ],
++    "transformations": "independent diagonal 9/10/11 bohr cell with one Si at 1/2/3 bohr; not copied from issue attachment"
++  },
++  "license": "MIT OR Apache-2.0",
++  "redistribution": {
++    "status": "allowed",
++    "rationale": "original project-authored minimal geometry"
++  },
++  "minimization": "one atom and three nonzero diagonal lattice values isolate cell loss, coordinate units and fixed-atom state",
++  "oracle": {
++    "name": "independent Python arithmetic from format definitions",
++    "version": "TURBOMOLE 8.0 manual / MCTC docs retrieved 2026-10-15; CODATA 2022 Bohr radius",
++    "settings": "three Cartesian row vectors; 0.529177210544 angstrom per bohr; no bond inference",
++    "diagnostic": "Open Babel 3.2.1 -itmol -ovasp; not used as expected-cell oracle"
++  },
++  "expected": {
++    "elements": [
++      "Si"
++    ],
++    "position_angstrom": [
++      0.529177210544,
++      1.058354421088,
++      1.587531631632
++    ],
++    "lattice_diagonal_angstrom": [
++      4.762594894896,
++      5.29177210544,
++      5.8209493159840004
++    ],
++    "frozen": [
++      true
++    ],
++    "absolute_tolerance_angstrom": 1e-12,
++    "encoding": "UTF-8 LF"
++  },
++  "payload": "oriented-lattice.tmol",
++  "sha256": "657885d9b4b19db17256136d52e93243b59c2d66d83a45aefbf945d87ee6dbc3"
++}
+diff --git a/validation/openbabel_issues/turbomole/oriented-lattice.tmol b/validation/openbabel_issues/turbomole/oriented-lattice.tmol
+new file mode 100644
+index 0000000..b969593
+--- /dev/null
++++ b/validation/openbabel_issues/turbomole/oriented-lattice.tmol
+@@ -0,0 +1,8 @@
++$periodic 3
++$lattice
++ 9 0 0
++ 0 10 0
++ 0 0 11
++$coord
++ 1 2 3 si f
++$end
+diff --git a/validation/results/binding_surface_inventory-current.json b/validation/results/binding_surface_inventory-current.json
+index ddaeb06..258fd57 100644
+--- a/validation/results/binding_surface_inventory-current.json
++++ b/validation/results/binding_surface_inventory-current.json
+@@ -7,9 +7,9 @@
+   "scope": "Rust source declarations only; this is not semantic parity evidence",
+   "results": {
+     "wasm_export_count": 303,
+-    "python_pyfunction_count": 181,
+-    "python_registered_count": 181,
++    "python_pyfunction_count": 183,
++    "python_registered_count": 183,
+     "python_declared_without_registration": [],
+-    "surface_sha256": "9e98eb9df3fda4791814d879cc8389fc1f2026f346bfa8cc5a13a152069dd396"
++    "surface_sha256": "50f23306bfc2f32fcf86c2a22040ba6d4c86a1a0b3152cb136ddb234ac2dd6a8"
+   }
+ }
+diff --git a/validation/results/openbabel-turbomole-lattice-2026-10-15.json b/validation/results/openbabel-turbomole-lattice-2026-10-15.json
+new file mode 100644
+index 0000000..e70cef6
+--- /dev/null
++++ b/validation/results/openbabel-turbomole-lattice-2026-10-15.json
+@@ -0,0 +1,154 @@
++{
++  "schema_version": 1,
++  "status": "local-source-candidate",
++  "issue": "https://github.com/openbabel/openbabel/issues/2822",
++  "base": "cac480fb source snapshot plus preserved earlier RDKit/Open Babel candidates through stereo-group inversion; patch isolates TURBOMOLE geometry I/O",
++  "scope": "standalone nonperiodic and 3D geometry documents; original lattice orientation, atom order, coordinates and frozen flags; no general graph-conversion registration",
++  "runtime": {
++    "python": "3.13.6",
++    "openbabel": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
++    "chematic_extension_sha256": "03a47d0e32790274eb8d0726accb78698af520e64dcf2651e6d629be6816ee91"
++  },
++  "source_sha256": {
++    "crates/chematic-mol/src/turbomole.rs": "6bbe76944154d7b46371102d978af42c1bf2c33e29f8d671bff9807470b32e71",
++    "crates/chematic-mol/src/turbomole/reader.rs": "9f39b8faedc1c3a0dc946beea0ab1d52f7eaba550c2ab24d17dccfceb1425087",
++    "crates/chematic-py/src/formats/turbomole.rs": "1c786ad41d78adcdcbb69277cf9703e247898856fb6a11fd406e35f7d9d4839e",
++    "crates/chematic-mol/tests/turbomole_contract.rs": "01fa5db26500c414a808f04273caa873f4610e0e04f84f8f360745e0a0059ea1",
++    "crates/chematic-py/tests/test_turbomole.py": "e3d3ab0e5955c92886ab63c72a7f9557d92f949a84c8bdbd1bd0775f5abaa344",
++    "crates/chematic-py/python/chematic/__init__.pyi": "d637ac94665de713218bb3c115e5311b097203fb24b978a5c498d4734086dd97",
++    "scripts/validate_turbomole_lattice.py": "b69fa539e408ebba4164c69ff0bcc210413eab0c3183c73492136f19352ece0c"
++  },
++  "fixture": {
++    "path": "validation/openbabel_issues/turbomole/lattice.json",
++    "manifest_sha256": "dcb5b547a6042e5173224696ba32cdb6606bc2f1c4bbb0781753a3a1fa66c87e",
++    "id": "synthetic-turbomole-3d-lattice-v1",
++    "provenance": {
++      "source": "original synthetic coordinate document authored for this implementation",
++      "issue": "https://github.com/openbabel/openbabel/issues/2822",
++      "date": "2026-10-15",
++      "specifications": [
++        "https://manual.turbomole.org/v8.0/dft-calculations-for-periodic-systems/how-to-perform-a-calculation/",
++        "https://grimme-lab.github.io/mctc-lib/page/format-tmol.html"
++      ],
++      "transformations": "independent diagonal 9/10/11 bohr cell with one Si at 1/2/3 bohr; not copied from issue attachment"
++    },
++    "license": "MIT OR Apache-2.0",
++    "redistribution": {
++      "status": "allowed",
++      "rationale": "original project-authored minimal geometry"
++    },
++    "minimization": "one atom and three nonzero diagonal lattice values isolate cell loss, coordinate units and fixed-atom state",
++    "oracle": {
++      "name": "independent Python arithmetic from format definitions",
++      "version": "TURBOMOLE 8.0 manual / MCTC docs retrieved 2026-10-15; CODATA 2022 Bohr radius",
++      "settings": "three Cartesian row vectors; 0.529177210544 angstrom per bohr; no bond inference",
++      "diagnostic": "Open Babel 3.2.1 -itmol -ovasp; not used as expected-cell oracle"
++    },
++    "expected": {
++      "elements": [
++        "Si"
++      ],
++      "position_angstrom": [
++        0.529177210544,
++        1.058354421088,
++        1.587531631632
++      ],
++      "lattice_diagonal_angstrom": [
++        4.762594894896,
++        5.29177210544,
++        5.8209493159840004
++      ],
++      "frozen": [
++        true
++      ],
++      "absolute_tolerance_angstrom": 1e-12,
++      "encoding": "UTF-8 LF"
++    },
++    "payload": "oriented-lattice.tmol",
++    "sha256": "657885d9b4b19db17256136d52e93243b59c2d66d83a45aefbf945d87ee6dbc3"
++  },
++  "results": {
++    "comparisons": 864,
++    "coordinate_mismatches": 0,
++    "lattice_mismatches": 0,
++    "fixed_flag_mismatches": 0,
++    "source_text_mismatches": 0,
++    "atom_permutations": 24,
++    "group_orders": 6,
++    "coordinate_modes": [
++      "bohr",
++      "angs",
++      "frac"
++    ],
++    "handedness": [
++      1,
++      -1
++    ],
++    "absolute_tolerance_angstrom": "1E-12",
++    "case_sha256": "4f0f6e0a08e97d27fc2f7232d3d6e52815bf84709311d53ec66a40d766dbf6e7"
++  },
++  "openbabel_reader_diagnostic": {
++    "command": [
++      "obabel",
++      "-itmol",
++      "-ovasp"
++    ],
++    "output_lattice": [
++      [
++        0.0,
++        0.0,
++        0.0
++      ],
++      [
++        0.0,
++        0.0,
++        0.0
++      ],
++      [
++        0.0,
++        0.0,
++        0.0
++      ]
++    ],
++    "expected_lattice_angstrom": [
++      [
++        4.762594894896,
++        0.0,
++        0.0
++      ],
++      [
++        0.0,
++        5.29177210544,
++        0.0
++      ],
++      [
++        0.0,
++        0.0,
++        5.8209493159840004
++      ]
++    ],
++    "positions_angstrom": [
++      0.5291772108,
++      1.0583544216,
++      1.5875316324000002
++    ],
++    "output_sha256": "3f2944ec8f38b6c25119faccd2fcb69d6f6cc7f7de56eac58e9dc4d4730aa558",
++    "stderr": "1 molecule converted",
++    "coordinate_tolerance_angstrom": 2e-09
++  },
++  "openbabel_writer_control": {
++    "command": [
++      "obabel",
++      "-ivasp",
++      "<absolute-POSCAR-path>",
++      "-otmol"
++    ],
++    "periodicity": 3,
++    "retains_lattice": true,
++    "input_sha256": "d29cc2c5fc1eee80df75ed029260600a2644e13d81ada3b96383339f8e1e27a5",
++    "output_sha256": "912e1dbd2b26fcaf781a12acef6827fd7858a257e2dfedddeabb4b70c48518d2",
++    "numeric_tolerance_angstrom": 1e-08,
++    "note": "Writer direction works in this pinned version; only reader-direction cell loss was reproduced."
++  },
++  "limitations": "TURBOMOLE executable was not run; independent arithmetic and documented layout are the expected-geometry oracle. 1D/2D, control files, external file options, unknown groups, charge/spin/isotope/ghost labels are rejected. $coord angs/bohr are explicitly supported MCTC-style extensions. Comments/formatting survive only in source_text; canonical writer emits fresh bohr data. No topology, bond perception, wrapping, cell rotation or POSCAR adapter added."
++}

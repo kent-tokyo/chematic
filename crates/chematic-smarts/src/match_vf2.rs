@@ -12,6 +12,9 @@
 //!    target molecule, and that bond must satisfy the query bond's `BondQuery`
 //!    expression.
 
+mod chirality;
+use chirality::{eval_atom_query_candidate, eval_chirality, mapped_chirality_compatible};
+
 use rustc_hash::{FxHashMap, FxHashSet};
 
 use chematic_core::{AtomIdx, BondOrder, Molecule, implicit_hcount};
@@ -432,7 +435,9 @@ fn visit_recursive(
     ctx.visit_budget.set(remaining - 1);
 
     if st.count == query.atoms.len() {
-        visit(&st.q2t);
+        if mapped_chirality_compatible(query, &st.q2t, ctx) {
+            visit(&st.q2t);
+        }
         return;
     }
     let q_next = st.info.plan[st.count];
@@ -759,7 +764,9 @@ fn match_recursive(
 
     // Base case: all query atoms have been mapped.
     if mapping.len() == query.atoms.len() {
-        results.push(mapping.clone());
+        if mapped_chirality_compatible(query, &st.q2t, ctx) {
+            results.push(mapping.clone());
+        }
         return;
     }
 
@@ -1101,6 +1108,12 @@ fn bonds_compatible(
 // ---------------------------------------------------------------------------
 
 fn eval_atom_query(q: &AtomQuery, idx: AtomIdx, ctx: &EvalCtx<'_>) -> bool {
+    if ctx.config.use_chirality {
+        // Exact @/@@ parity needs a complete mapping. Use three-valued logic
+        // here so a chirality primitive under NOT/OR cannot incorrectly prune
+        // a candidate before the final mapped check.
+        return eval_atom_query_candidate(q, idx, ctx).unwrap_or(true);
+    }
     match q {
         AtomQuery::Primitive(p) => eval_atom_primitive(p, idx, ctx),
         AtomQuery::And(a, b) => eval_atom_query(a, idx, ctx) && eval_atom_query(b, idx, ctx),
@@ -1271,30 +1284,6 @@ fn eval_hybridization(idx: AtomIdx, ctx: &EvalCtx<'_>, h: u8) -> bool {
     crate::hybridization::hybridization_from(ctx.mol, lazy, idx) == Some(h)
 }
 
-/// Chirality primitive: ignored when use_chirality is false.
-///
-/// **Limitation**: this is a raw flag comparison. `@`/`@@` in SMILES/SMARTS
-/// encodes chirality *relative to the SMILES atom write order*, not as an
-/// absolute spatial property. Two SMILES strings that represent the same
-/// absolute configuration but are written with neighbors in a different order
-/// will store opposite `Chirality` flags, making the raw comparison incorrect.
-///
-/// For SMARTS queries this is acceptable when the query and target share the same
-/// write-order convention. For SMIRKS reaction templates, use the parity-aware
-/// `smirks_chirality_ok` post-check in `chematic-rxn::transform` instead.
-fn eval_chirality(idx: AtomIdx, ctx: &EvalCtx<'_>, kind: u8) -> bool {
-    if !ctx.config.use_chirality {
-        return true;
-    }
-    use chematic_core::Chirality;
-    let c = ctx.mol.atom(idx).chirality;
-    match kind {
-        1 => c == Chirality::CounterClockwise,
-        2 => c == Chirality::Clockwise,
-        _ => c != Chirality::None,
-    }
-}
-
 // ---------------------------------------------------------------------------
 // Anchored match helpers (for recursive SMARTS)
 // ---------------------------------------------------------------------------
@@ -1342,7 +1331,7 @@ fn has_match_recursive(query: &QueryMolecule, ctx: &EvalCtx<'_>, st: &mut MapSta
 
     // Base case: all query atoms mapped.
     if st.count == query.atoms.len() {
-        return true;
+        return mapped_chirality_compatible(query, &st.q2t, ctx);
     }
 
     // Pick the most constrained unmapped query atom.

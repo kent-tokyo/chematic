@@ -7,9 +7,7 @@
 use std::collections::HashMap;
 
 use crate::atropisomer;
-use chematic_core::{
-    Atom, AtomIdx, BondOrder, Chirality, Molecule, MoleculeBuilder, STEREO_H_SENTINEL,
-};
+use chematic_core::{AtomIdx, BondOrder, Chirality, Molecule, MoleculeBuilder, STEREO_H_SENTINEL};
 
 /// Invert the stereochemistry of a tetrahedral stereocenter.
 ///
@@ -78,38 +76,26 @@ pub fn invert_stereocenter(mol: &Molecule, idx: AtomIdx) -> Molecule {
     builder.build()
 }
 
-/// Enumerate all stereoisomers by assigning R/S to unspecified stereocenters.
+/// Enumerate carbon stereo assignments with explicit relative parity frames.
 ///
-/// Identifies tetrahedral carbon atoms without explicit `@`/`@@` notation and
+/// Identifies saturated carbon candidates without explicit `@`/`@@` notation and
 /// generates all 2^n combinations where n is the number of unspecified centers.
+/// CH2 and identical terminal substituents do not consume the candidate budget.
+/// Graph-symmetric ring candidates remain eligible for pseudoasymmetry.
 /// At most 2^6 = 64 combinations are enumerated; returns empty vector if n > 6.
 ///
-/// Each returned molecule has all stereocenters assigned (using `Chirality::Clockwise`
-/// for R and `Chirality::CounterClockwise` for S). Deduplicates results by
+/// Each candidate receives relative tetrahedral parity in an explicit neighbour
+/// frame; `Clockwise`/`CounterClockwise` are not absolute R/S labels. Deduplicates by
 /// canonical SMILES.
 pub fn enumerate_stereoisomers(mol: &Molecule) -> Vec<Molecule> {
     use chematic_smiles::canonical_smiles;
 
-    // Identify unspecified tetrahedral carbon stereocenters
+    // Retain graph-symmetric ring candidates: assigning the surrounding
+    // centers can make them pseudoasymmetric. Reject only locally provable
+    // duplicates (CH2 and identical terminal ligands).
     let unspecified: Vec<AtomIdx> = mol
         .atoms()
-        .filter(|(idx, atom)| {
-            if atom.element.atomic_number() != 6 || atom.aromatic {
-                return false;
-            }
-            if atom.chirality != Chirality::None {
-                return false;
-            }
-            let degree = mol.neighbors(*idx).count();
-            if degree < 2 {
-                return false;
-            }
-            let total = degree + chematic_core::implicit_hcount(mol, *idx) as usize;
-            total == 4
-                && mol.neighbors(*idx).all(|(_, bidx)| {
-                    !matches!(mol.bond(bidx).order, BondOrder::Double | BondOrder::Triple)
-                })
-        })
+        .filter(|(idx, _)| enumeration_candidate(mol, *idx))
         .map(|(idx, _)| idx)
         .collect();
 
@@ -119,22 +105,7 @@ pub fn enumerate_stereoisomers(mol: &Molecule) -> Vec<Molecule> {
     }
 
     if n == 0 {
-        // Return a copy of the input molecule. A pure passthrough (same atom
-        // count/order, none skipped) -- copy the stereo side channels
-        // verbatim rather than losing already-specified stereocenters'
-        // stereo_neighbor_order (see the main loop below for why this
-        // matters: @/@@ is meaningless without it).
-        let mut builder = MoleculeBuilder::new();
-        for (_, atom) in mol.atoms() {
-            builder.add_atom(atom.clone());
-        }
-        for (_, bond) in mol.bonds() {
-            let _ = builder.add_bond(bond.atom1, bond.atom2, bond.order);
-        }
-        builder.copy_stereo_groups_from(mol);
-        builder.copy_stereo_from(mol);
-        builder.copy_bond_directions_from(mol);
-        return vec![builder.build()];
+        return vec![mol.clone()];
     }
 
     let mut seen = std::collections::HashSet::new();
@@ -155,53 +126,29 @@ pub fn enumerate_stereoisomers(mol: &Molecule) -> Vec<Molecule> {
             })
             .collect();
 
-        let mut builder = MoleculeBuilder::new();
+        // Clone retains the indexed graph, tags, R labels, enhanced groups,
+        // ring-closure metadata and existing stereo frames. Derived caches
+        // start empty; only the selected atoms' declaration and frame change.
+        let mut isomer = mol.clone();
+        // CIP priorities can change through a newly assigned neighbouring
+        // center (Rule 5), even at a fixed center. Recompute derived labels.
         for (idx, atom) in mol.atoms() {
-            let mut a = Atom::new(atom.element);
-            a.charge = atom.charge;
-            a.isotope = atom.isotope;
-            a.aromatic = atom.aromatic;
-            a.atom_map = atom.atom_map;
-            if let Some(&new_chirality) = chirality_overrides.get(&idx) {
-                a.chirality = new_chirality;
-                // Force bracket notation for SMILES output
-                let implicit_h = chematic_core::implicit_hcount(mol, idx);
-                a.hydrogen_count = Some(atom.hydrogen_count.unwrap_or(implicit_h));
-            } else {
-                a.chirality = atom.chirality;
-                a.hydrogen_count = atom.hydrogen_count;
+            if atom.cip_code.is_some() {
+                isomer.set_cip_code(idx, None);
             }
-            builder.add_atom(a);
         }
-        for (_, bond) in mol.bonds() {
-            let _ = builder.add_bond(bond.atom1, bond.atom2, bond.order);
-        }
-
-        // Passthrough rebuild (same atom/bond count/order as `mol`) -- copy
-        // the stereo side channels verbatim so already-specified
-        // stereocenters (not in `chirality_overrides`) keep the
-        // stereo_neighbor_order their `@`/`@@` is defined relative to.
-        builder.copy_stereo_groups_from(mol);
-        builder.copy_stereo_from(mol);
-        builder.copy_bond_directions_from(mol);
-
-        // `mol` never had a stereo_neighbor_order entry for these atoms
-        // (they were achiral there), so copy_stereo_from above didn't set
-        // one -- without it, the freshly-assigned `chirality` above is
-        // uninterpretable (same "chirality set, no reference order" failure
-        // shape Kekule-S0 fixed for apply_kekule). Neighbor order here is an
-        // arbitrary but fixed, well-defined reference frame (bond-insertion
-        // order, implicit H last): `enumerate_stereoisomers` only needs the
-        // 2^n combinations to be distinct and independently interpretable,
-        // not to match any external R/S convention.
-        for &idx in chirality_overrides.keys() {
-            let mut order: Vec<u32> = mol.neighbors(idx).map(|(nb, _)| nb.0).collect();
+        for (&idx, &chirality) in &chirality_overrides {
             let implicit_h = chematic_core::implicit_hcount(mol, idx);
-            order.extend(std::iter::repeat_n(STEREO_H_SENTINEL, implicit_h as usize));
-            builder.set_stereo_neighbor_order(idx, order);
+            isomer.set_chirality(idx, chirality);
+            isomer.set_hydrogen_count(
+                idx,
+                Some(mol.atom(idx).hydrogen_count.unwrap_or(implicit_h)),
+            );
+            let mut frame: Vec<u32> = mol.neighbors(idx).map(|(nb, _)| nb.0).collect();
+            frame.extend(std::iter::repeat_n(STEREO_H_SENTINEL, implicit_h as usize));
+            isomer.set_stereo_neighbor_order(idx, frame);
         }
 
-        let isomer = builder.build();
         let smi = canonical_smiles(&isomer);
         if seen.insert(smi) {
             results.push(isomer);
@@ -209,6 +156,54 @@ pub fn enumerate_stereoisomers(mol: &Molecule) -> Vec<Molecule> {
     }
 
     results
+}
+
+// Local signatures intentionally omit atom maps/tags: those labels cannot
+// make two chemically identical terminal substituents stereogenic.
+fn terminal_ligand(mol: &Molecule, idx: AtomIdx) -> Option<(u8, Option<u16>, i8, bool, u8)> {
+    let a = mol.atom(idx);
+    if a.wildcard || mol.degree(idx) != 1 || a.chirality != Chirality::None {
+        return None;
+    }
+    Some((
+        a.element.atomic_number(),
+        a.isotope,
+        a.charge,
+        a.aromatic,
+        chematic_core::implicit_hcount(mol, idx),
+    ))
+}
+
+fn enumeration_candidate(mol: &Molecule, idx: AtomIdx) -> bool {
+    let a = mol.atom(idx);
+    if a.element.atomic_number() != 6 || a.aromatic || a.wildcard || a.chirality != Chirality::None
+    {
+        return false;
+    }
+    let h = chematic_core::implicit_hcount(mol, idx);
+    let degree = mol.degree(idx);
+    if h > 1 || degree + h as usize != 4 {
+        return false;
+    }
+    let mut leaves = Vec::with_capacity(4);
+    if h == 1 {
+        leaves.push((1, None, 0, false, 0));
+    }
+    for (nb, bond) in mol.neighbors(idx) {
+        if !matches!(
+            mol.bond(bond).order,
+            BondOrder::Single | BondOrder::Up | BondOrder::Down
+        ) {
+            return false;
+        }
+        if let Some(signature) = terminal_ligand(mol, nb) {
+            if leaves.contains(&signature) {
+                return false;
+            }
+            leaves.push(signature);
+        }
+    }
+    true
 }
 
 /// Assign both tetrahedral (R/S) and axial (M/P) stereochemistry in one step.
@@ -235,6 +230,7 @@ pub fn assign_complete_stereochemistry(mol: &Molecule) -> Molecule {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chematic_core::Atom;
     use chematic_core::BondIdx;
     use chematic_perception::find_sssr;
     use chematic_smiles::parse;

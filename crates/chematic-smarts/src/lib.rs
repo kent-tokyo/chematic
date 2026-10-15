@@ -13,6 +13,7 @@ pub mod cx;
 pub(crate) mod hybridization;
 pub mod match_vf2;
 pub mod mcs;
+pub mod merge_hydrogens;
 pub mod parser;
 pub mod perceived;
 pub mod query;
@@ -31,6 +32,7 @@ pub use mcs::{
     AtomCompare, BondCompare, McsConfig, McsOutcome, find_mcs, find_mcs_with_config,
     find_mcs_with_config_checked,
 };
+pub use merge_hydrogens::{QueryHydrogenError, merge_query_hydrogens};
 pub use parser::{SmartsError, parse_smarts};
 pub use perceived::{
     find_match_atom_sets_perceived, find_matches_perceived, has_match_perceived,

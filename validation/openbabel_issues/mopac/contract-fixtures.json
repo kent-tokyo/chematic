@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "records": [
+    {
+      "id": "labels-six-flags-left-handed-cell",
+      "payload": "PM7 XYZ CHARGE=1 MINI\noriginal synthetic\nflag and label contract\n14(site alpha) 1.25D-1 -2 -1.25 -1 2.5 0\nCl() -1.5 1 1.25d-1 2 0.5 T\nTv 4 0 1 1 0 0\nTv -1 0 5 0 2 0\nTv 1 0 0 0 -6 0\n\n",
+      "provenance": "Original synthetic minimal fixture authored 2026-10-15; https://openmopac.net/Manual/cart_coord.html and https://openmopac.net/Manual/Optimization_flags.html consulted for grammar only (2026-10-15); no upstream data/code copied",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "Two atoms cover six flag codes, numeric/symbol identity, empty/nonempty labels, Fortran exponents; three skewed vectors cover orientation",
+      "oracle": "Exact analytic structured values below, tolerance zero; official OpenMOPAC grammar references in provenance. Empty labels and Fortran D/d here are outside the Open Babel 3.2.1 common lane; separately generated flagged canonical-symbol E/e inputs use obabel -imop INPUT -ocjson -ab and -omop -ab -xu.",
+      "expected": {
+        "keywords": "PM7 XYZ CHARGE=1 MINI",
+        "title": "original synthetic",
+        "comment": "flag and label contract",
+        "elements": [
+          "Si",
+          "Cl"
+        ],
+        "positions_angstrom": [
+          [
+            0.125,
+            -1.25,
+            2.5
+          ],
+          [
+            -1.5,
+            0.125,
+            0.5
+          ]
+        ],
+        "labels": [
+          "site alpha",
+          ""
+        ],
+        "optimization_flags": [
+          [
+            "-2",
+            "-1",
+            "0"
+          ],
+          [
+            "1",
+            "2",
+            "T"
+          ]
+        ],
+        "translation_vectors_angstrom": [
+          [
+            4,
+            1,
+            0
+          ],
+          [
+            -1,
+            5,
+            2
+          ],
+          [
+            1,
+            0,
+            -6
+          ]
+        ],
+        "translation_flags": [
+          [
+            "0",
+            "1",
+            "0"
+          ],
+          [
+            "0",
+            "0",
+            "0"
+          ],
+          [
+            "0",
+            "0",
+            "0"
+          ]
+        ],
+        "periodicity": 3,
+        "units": "angstrom",
+        "tolerance": 0
+      },
+      "sha256": "ccda8ba41ed807946bcf5e6519c9a80b867373fe0cb24f0789a95ac72a7c3fa8"
+    }
+  ]
+}

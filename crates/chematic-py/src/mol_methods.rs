@@ -20,11 +20,16 @@ type PyUffTerm = (String, Vec<usize>, Vec<f64>);
 type PyExplicitHydrogenMmffResult = (Vec<[f64; 3]>, Vec<[f64; 3]>, f64, bool, usize, f64);
 
 mod analysis;
+mod atom_environment;
 mod descriptors;
 mod extended;
 mod fingerprints;
+mod graph_queries;
 mod identity;
+mod layered_config;
+mod path_enumeration;
 mod properties;
+mod stereo_groups;
 mod three_d;
 mod transformations;
 

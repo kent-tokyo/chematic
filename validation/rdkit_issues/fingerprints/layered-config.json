@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "provenance": {
+    "source": "Original minimal SMILES test inputs authored for Layered parameter semantics",
+    "reference": "https://www.rdkit.org/docs/source/rdkit.Chem.rdmolops.html#rdkit.Chem.rdmolops.LayeredFingerprint",
+    "retrieved": "2026-10-15",
+    "transformations": "atom permutations, layer subsets, packed masks, path ranges, repeated roots and seeded counters; empty native graph constructed with RWMol().GetMol() because empty SMILES is rejected"
+  },
+  "license": "MIT OR Apache-2.0",
+  "redistribution": "allowed: original minimal inputs, no third-party corpus or issue attachment",
+  "minimization": "Empty/singleton through small branched and ring examples isolate flags, root multiplicity, ring hashing, H suppression and counter behavior",
+  "oracle": {
+    "engine": "RDKit",
+    "version": "2026.09.1",
+    "source_tag": "Release_2026_09_1",
+    "source_commit": "fece8caa860bdf6c9c82bdb9253f22a0cf87150c",
+    "settings": "SMILES removeHs=False; retain indexed explicit H; LayeredFingerprint with explicit arguments; empty fromAtoms treated as default",
+    "invocation": "python scripts/validate_layered_config.py"
+  },
+  "expected": {
+    "bits": "exact packed LSB-first equality, including odd bit lengths",
+    "atom_counts": "exact u32 additive counters, including wrapping and unchanged trailing entries",
+    "input_graph_and_seed_lists": "unchanged",
+    "tolerance": 0
+  },
+  "cases": [
+    {
+      "id": "0-empty",
+      "smiles": ""
+    },
+    {
+      "id": "1-single",
+      "smiles": "[He]"
+    },
+    {
+      "id": "2-linear",
+      "smiles": "CCO"
+    },
+    {
+      "id": "3-branched",
+      "smiles": "CC(C)O"
+    },
+    {
+      "id": "4-triangle",
+      "smiles": "C1CC1"
+    },
+    {
+      "id": "5-square",
+      "smiles": "C1CCC1"
+    },
+    {
+      "id": "6-phenol",
+      "smiles": "c1ccccc1O"
+    },
+    {
+      "id": "7-pyridine",
+      "smiles": "c1ccncc1"
+    },
+    {
+      "id": "8-naphthalene",
+      "smiles": "c1ccc2ccccc2c1"
+    },
+    {
+      "id": "9-adamantane",
+      "smiles": "C1C2CC3CC1CC(C2)C3"
+    },
+    {
+      "id": "10-isotope-h",
+      "smiles": "[2H]C([2H])([2H])NC=O"
+    },
+    {
+      "id": "11-explicit-h",
+      "smiles": "[H]OC"
+    },
+    {
+      "id": "12-dummy",
+      "smiles": "CC(*)O"
+    },
+    {
+      "id": "13-kekule",
+      "smiles": "C1=CC=CC=C1"
+    },
+    {
+      "id": "14-charged",
+      "smiles": "[Cl+3]([O-])([O-])([O-])O"
+    },
+    {
+      "id": "15-disconnected",
+      "smiles": "CC.O.N"
+    },
+    {
+      "id": "16-alkyne",
+      "smiles": "CC#CO"
+    },
+    {
+      "id": "17-cubane",
+      "smiles": "C12C3C4C1C5C2C3C45"
+    },
+    {
+      "id": "18-spiro",
+      "smiles": "C1CC2(CC1)CCCC2"
+    },
+    {
+      "id": "19-heterofused",
+      "smiles": "c1ccc2[nH]ccc2c1"
+    }
+  ],
+  "sha256": "861a706c8df293f551a5a09a877d933275ca1b0bd66963f2f962b2232b0485cc"
+}
