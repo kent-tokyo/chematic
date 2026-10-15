@@ -49,5 +49,5 @@ def test_input_cap_empty_model_and_stubs():
         chematic.from_smiles(".".join(["[H]C"]*513)).rdkit_atom_environment(0,0)
     with pytest.raises(ValueError):chematic.RWMol().GetMol().rdkit_atom_environment(0,0)
     p=Path(__file__).resolve().parents[1]/"python/chematic/__init__.pyi"
-    cls=next(n for n in ast.parse(p.read_text()).body if isinstance(n,ast.ClassDef) and n.name=="Mol")
+    cls=next(n for n in ast.parse(p.read_text(encoding="utf-8")).body if isinstance(n,ast.ClassDef) and n.name=="Mol")
     assert "rdkit_atom_environment" in {n.name for n in cls.body if isinstance(n,ast.FunctionDef)}

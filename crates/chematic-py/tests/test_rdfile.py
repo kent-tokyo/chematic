@@ -4,7 +4,7 @@ import pytest
 import chematic
 
 ROOT=Path(__file__).resolve().parents[3]
-TEXT=(ROOT/'validation/openbabel_issues/rdfile/mixed-records.rdf').read_text()
+TEXT=(ROOT/'validation/openbabel_issues/rdfile/mixed-records.rdf').read_text(encoding="utf-8")
 
 
 def test_mixed_records_metadata_and_projection():

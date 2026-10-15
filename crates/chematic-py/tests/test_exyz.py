@@ -15,7 +15,7 @@ def test_structured_roundtrip_and_source_metadata():
     import json
     from pathlib import Path
     root = Path(__file__).resolve().parents[3]
-    fixture = json.loads((root / "validation/openbabel_issues/exyz/contract-fixtures.json").read_text())["records"][0]
+    fixture = json.loads((root / "validation/openbabel_issues/exyz/contract-fixtures.json").read_text(encoding="utf-8"))["records"][0]
     assert fixture["payload"] == TEXT
     assert fixture["sha256"] == hashlib.sha256(TEXT.encode()).hexdigest()
     g = chematic.parse_exyz(TEXT)
@@ -92,7 +92,7 @@ def test_shipped_type_stubs_declare_public_functions():
     import ast
     from pathlib import Path
     path = Path(__file__).resolve().parents[1] / "python/chematic/__init__.pyi"
-    names = {n.name for n in ast.parse(path.read_text()).body if isinstance(n, ast.FunctionDef)}
+    names = {n.name for n in ast.parse(path.read_text(encoding="utf-8")).body if isinstance(n, ast.FunctionDef)}
     assert {"parse_exyz", "write_exyz"} <= names
 
 def test_tabs_in_header_and_atom_rows_preserve_header():

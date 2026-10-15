@@ -8,7 +8,7 @@ TYPES = ['N', 'C', 'HD', 'Zn', 'Cl']
 
 
 def test_charges_identity_and_sidecar():
-    text = FIXTURE.read_text()
+    text = FIXTURE.read_text(encoding="utf-8")
     parsed = chematic.parse_pqr(text)
     report = chematic.pqr_to_pdbqt(text, TYPES, allow_radius_loss=True)
     rows = [s for s in report['pdbqt'].splitlines() if s.startswith(('ATOM', 'HETATM'))]
@@ -32,13 +32,13 @@ def test_charges_identity_and_sidecar():
 
 def test_default_requires_radius_loss_consent():
     with pytest.raises(ValueError, match='allow_radius_loss'):
-        chematic.pqr_to_pdbqt(FIXTURE.read_text(), TYPES)
+        chematic.pqr_to_pdbqt(FIXTURE.read_text(encoding="utf-8"), TYPES)
 
 
 @pytest.mark.parametrize('types', [[], TYPES[:-1], TYPES + ['C'], ['C'] + TYPES[1:], ['X'] + TYPES[1:]])
 def test_invalid_type_arrays(types):
     with pytest.raises(ValueError):
-        chematic.pqr_to_pdbqt(FIXTURE.read_text(), types, allow_radius_loss=True)
+        chematic.pqr_to_pdbqt(FIXTURE.read_text(encoding="utf-8"), types, allow_radius_loss=True)
 
 
 @pytest.mark.parametrize('text', [

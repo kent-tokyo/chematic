@@ -9,7 +9,7 @@ LONG = ROOT / 'validation/openbabel_issues/mmcif/long-component-name.cif'
 
 
 def changed(column, value):
-    text = FIXTURE.read_text()
+    text = FIXTURE.read_text(encoding="utf-8")
     rows = [s.split() for s in text.splitlines() if s.startswith('HETATM')]
     rows[0][column] = value
     return text.split('HETATM')[0] + '\n'.join(' '.join(r) for r in rows) + '\n#\n'
@@ -20,7 +20,7 @@ def convert(text, **kwargs):
 
 
 def test_auth_names_coordinates_and_source_are_preserved():
-    text = FIXTURE.read_text()
+    text = FIXTURE.read_text(encoding="utf-8")
     result = convert(text)
     lines = result['pdb'].splitlines()
     assert lines[-1] == 'END'
@@ -36,13 +36,13 @@ def test_auth_names_coordinates_and_source_are_preserved():
 
 def test_loss_requires_explicit_argument():
     with pytest.raises(ValueError, match='allow_metadata_loss'):
-        chematic.mmcif_to_pdb_checked(FIXTURE.read_text())
+        chematic.mmcif_to_pdb_checked(FIXTURE.read_text(encoding="utf-8"))
 
 
 @pytest.mark.parametrize('allow', [False, True])
 @pytest.mark.parametrize('namespace', ['auth', 'label'])
 def test_five_character_names_never_truncate(allow, namespace):
-    text = LONG.read_text()
+    text = LONG.read_text(encoding="utf-8")
     # Make both namespaces independently representable except for the name.
     rows = [s.split() for s in text.splitlines() if s.startswith('HETATM')]
     for r in rows: r[8] = r[15]
@@ -66,11 +66,11 @@ def test_unrepresentable_fields_fail(column, value, field):
 
 def test_namespace_selection_has_no_fallback():
     with pytest.raises(ValueError, match='residue number'):
-        convert(FIXTURE.read_text(), namespace='label')
+        convert(FIXTURE.read_text(encoding="utf-8"), namespace='label')
     with pytest.raises(ValueError, match='atom name'):
         convert(changed(18, '?'))
     with pytest.raises(ValueError, match='namespace'):
-        convert(FIXTURE.read_text(), namespace='auto')
+        convert(FIXTURE.read_text(encoding="utf-8"), namespace='auto')
 
 
 def test_projection_collisions_are_errors():
@@ -98,7 +98,7 @@ def test_only_model_one_is_supported():
 
 
 def test_label_namespace_uses_only_label_aliases():
-    text = FIXTURE.read_text()
+    text = FIXTURE.read_text(encoding="utf-8")
     rows = [s.split() for s in text.splitlines() if s.startswith('HETATM')]
     for r in rows:
         r[8] = str(int(r[15]) + 10)

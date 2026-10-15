@@ -509,15 +509,15 @@
     },
     {
       "path": "crates/chematic-py/tests/test_dmol3.py",
-      "sha256": "c9ac1cef4966350e71016c151722edb6f0b2ede11f7555977a42d4b26e4d75fa"
+      "sha256": "a1051716c85c261306390ca8027ad018b5cec38580ccad54fec1635374a6eb67"
     },
     {
       "path": "crates/chematic-py/tests/test_exyz.py",
-      "sha256": "e00037456556977b6c268f2e1b147123af730b931b70e82a6c39d4894242f31f"
+      "sha256": "ed5794a2d624583161ad02c4e5c8148a19a9758f46453707b0151bce06997e8e"
     },
     {
       "path": "crates/chematic-py/tests/test_fhiaims.py",
-      "sha256": "76eb6311cc7d3f51f818fbce0ad95f06f798784cbcb680df4e285d6c71f7820e"
+      "sha256": "58b72c73539afd2aa01770cef56b278b671b1a57b8983b4db17e6a4257f02e06"
     },
     {
       "path": "crates/chematic-py/tests/test_fold_density.py",
@@ -525,7 +525,7 @@
     },
     {
       "path": "crates/chematic-py/tests/test_gro.py",
-      "sha256": "9043cb1d83407117117a1882b1fc30784150589f89911862650420e4460a7a7b"
+      "sha256": "8d8697c850279743798d7a2b0a91cb11619bc32d31da6e5e2dc4709f18aff3c8"
     },
     {
       "path": "crates/chematic-py/tests/test_gzmat_precision.py",
@@ -541,15 +541,15 @@
     },
     {
       "path": "crates/chematic-py/tests/test_mmcif_pdb_checked.py",
-      "sha256": "21c68d3e5dd4aa33cefb7b128ee8eb191cddbc7c050a6d9ae29f5cbd57b9aeab"
+      "sha256": "979bc51320125f2f5299e3f349b8a0a66852cf2350d85ec2435671eae9bb9c5b"
     },
     {
       "path": "crates/chematic-py/tests/test_mmcif_residues.py",
-      "sha256": "dd2326c2f666699573c59ffe7ef7dd69f680af8998ad590a78c82371b4273cf1"
+      "sha256": "95b8c4736bf81c3972a25ba896b5e4aa638d09b9208d96d8b524f671df35cd46"
     },
     {
       "path": "crates/chematic-py/tests/test_mopac_cartesian.py",
-      "sha256": "43aeec6647885361584d41be595ea89d702c0bd749d39ddcfab4e2a61880d915"
+      "sha256": "58d6727a7740017dd00fca41753bdfcbfe3bed4c939a5bd7bd7849055dd89b41"
     },
     {
       "path": "crates/chematic-py/tests/test_native_distance_matrix.py",
@@ -557,11 +557,11 @@
     },
     {
       "path": "crates/chematic-py/tests/test_pdb_selection.py",
-      "sha256": "0561df6f664b2a9077e49e9847863703dc8da170fe58667d36ca56f0fbf63cb9"
+      "sha256": "20d79e8bd6b4ac424315a406e43b167040417a0f8f3375d71f7a3cba0abf2243"
     },
     {
       "path": "crates/chematic-py/tests/test_pqr_pdbqt.py",
-      "sha256": "d71ddaf604f86112ed315786669e14d6b106fbe221fda6fb54bce948eb1f7fe8"
+      "sha256": "84d877ab63894d8a4196e5e301aefae08df67083be634df26fe152481bfaeb56"
     },
     {
       "path": "crates/chematic-py/tests/test_query_hydrogens.py",
@@ -569,19 +569,19 @@
     },
     {
       "path": "crates/chematic-py/tests/test_rdfile.py",
-      "sha256": "68d66edfa24ee68510a8701021c65bcdb0f3b4dded6554cc0265602ace990d49"
+      "sha256": "8f98916ff0587cb21d878bcb339d13ddde34f4fdfee95e814a4a5d6138d3d7fc"
     },
     {
       "path": "crates/chematic-py/tests/test_rdkit_atom_environment.py",
-      "sha256": "9c3a08669e1d58d415f2820abb18226c6a29ac08876038aa257f9c673d4f8dbe"
+      "sha256": "dde338b466949a2786acc98afed519a599dca5a829be4cffd636acb55d0980b4"
     },
     {
       "path": "crates/chematic-py/tests/test_rdkit_graph_queries.py",
-      "sha256": "383271f14d11b4fed6caa22f45cbe9e3e326731d3e4feeb2c2741e071b9bce12"
+      "sha256": "1b83ce702262a51d97487fff94d34c1bc121161bc9831a30e5cd317639207cad"
     },
     {
       "path": "crates/chematic-py/tests/test_rdkit_path_enumeration.py",
-      "sha256": "3465549e8260a2801d184ce9e108c9297672b7d651ba9bb6b4ad65f1963aab90"
+      "sha256": "f18b0f30a5df1005354d3332bd54bd75b125709082d322bdf5963ddf0be3cab0"
     },
     {
       "path": "crates/chematic-py/tests/test_renumber_atoms.py",
@@ -597,7 +597,7 @@
     },
     {
       "path": "crates/chematic-py/tests/test_stereo_group_alternatives.py",
-      "sha256": "80b1f42d03b06a1f02d939c062362e8c51fc4a64aefc9cef2b07734c02bbcc3a"
+      "sha256": "0db87c094682449b808c39daf1331b173645c177cffbf545a962f83978a8932f"
     },
     {
       "path": "crates/chematic-py/tests/test_stereo_group_inversion.py",
@@ -605,7 +605,7 @@
     },
     {
       "path": "crates/chematic-py/tests/test_stereo_groups.py",
-      "sha256": "18371e076693b1064b6a0d1edf0d08f7f5d5c38c5c2a15be30ac0382dd994a1e"
+      "sha256": "4b3e444067cab5b2245197086ef595d182f930674846dbf56c4001c2279a40e5"
     },
     {
       "path": "crates/chematic-py/tests/test_turbomole.py",
@@ -1262,6 +1262,16 @@
     {
       "path": "validation/results/rdkit-stereo-group-inversion-2026-10-15.json",
       "sha256": "d59badbcca9726287c953c9d72d7f3309b61815e2ae30e4693ffe93404dfff9b"
+    }
+  ],
+  "ci_followups": [
+    {
+      "platform": "Windows x86-64 / Python 3.12",
+      "failure": "11 new stub-reader tests used the platform encoding for UTF-8 source",
+      "fix": "Explicit UTF-8 reads in 15 new Python test files",
+      "local_windows_codec_reproduction": true,
+      "related_local_tests_passed": 354,
+      "production_code_changed": false
     }
   ]
 }

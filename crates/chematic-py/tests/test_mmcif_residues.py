@@ -8,15 +8,15 @@ FIXTURE=Path(__file__).resolve().parents[3]/'validation/openbabel_issues/mmcif/b
 
 
 def source_rows():
-    return [s.split() for s in FIXTURE.read_text().splitlines() if s.startswith('HETATM')]
+    return [s.split() for s in FIXTURE.read_text(encoding="utf-8").splitlines() if s.startswith('HETATM')]
 
 
 def render(rows):
-    return FIXTURE.read_text().split('HETATM')[0]+'\n'.join(' '.join(r) for r in rows)+'\n#\n'
+    return FIXTURE.read_text(encoding="utf-8").split('HETATM')[0]+'\n'.join(' '.join(r) for r in rows)+'\n#\n'
 
 
 def test_three_sugars_are_distinct_despite_missing_label_sequence():
-    text=FIXTURE.read_text()
+    text=FIXTURE.read_text(encoding="utf-8")
     d=chematic.parse_mmcif_residues(text)
     assert [r['label_comp_id'] for r in d['residues']]==['NAG','NAG','BMA']
     assert [r['auth_seq_id'] for r in d['residues']]==['1','2','3']
@@ -87,7 +87,7 @@ def test_duplicate_atom_is_an_error():
 
 @pytest.mark.parametrize('kwargs',[{'max_input_bytes':8},{'max_atoms':2},{'max_line_len':8}])
 def test_resource_limits(kwargs):
-    with pytest.raises(ValueError):chematic.parse_mmcif_residues(FIXTURE.read_text(),**kwargs)
+    with pytest.raises(ValueError):chematic.parse_mmcif_residues(FIXTURE.read_text(encoding="utf-8"),**kwargs)
 
 
 @pytest.mark.parametrize('column,value',[(19,'4294967297'),(19,'0'),(15,'12A'),(10,'NaN'),(2,'Unknown')])

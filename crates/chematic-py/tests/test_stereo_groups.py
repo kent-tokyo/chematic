@@ -101,6 +101,6 @@ def test_old_cx_compatibility_api_still_refuses_enhanced_groups():
 
 def test_shipped_stub_parses_and_declares_the_new_surface():
     path=Path(__file__).resolve().parents[1]/'python/chematic/__init__.pyi'
-    tree=ast.parse(path.read_text())
+    tree=ast.parse(path.read_text(encoding="utf-8"))
     mol=next(n for n in tree.body if isinstance(n,ast.ClassDef) and n.name=='Mol')
     assert {'stereo_groups','with_stereo_groups'} <= {n.name for n in mol.body if isinstance(n,ast.FunctionDef)}

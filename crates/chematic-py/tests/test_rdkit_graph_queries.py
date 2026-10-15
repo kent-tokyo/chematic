@@ -66,5 +66,5 @@ def test_preparation_limit_applies_before_h_removal():
 
 def test_stub_methods_are_declared_on_mol():
     p=Path(__file__).resolve().parents[1]/"python/chematic/__init__.pyi"
-    cls=next(n for n in ast.parse(p.read_text()).body if isinstance(n,ast.ClassDef) and n.name=="Mol")
+    cls=next(n for n in ast.parse(p.read_text(encoding="utf-8")).body if isinstance(n,ast.ClassDef) and n.name=="Mol")
     assert {"rdkit_adjacency_matrix","rdkit_shortest_path"}<={n.name for n in cls.body if isinstance(n,ast.FunctionDef)}

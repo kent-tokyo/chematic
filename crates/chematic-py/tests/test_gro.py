@@ -22,7 +22,7 @@ def frame(row=None,box='1 2 3'):
 
 
 def test_two_letter_names_do_not_infer_truncated_elements():
-    text=FIXTURE.read_text()
+    text=FIXTURE.read_text(encoding="utf-8")
     d=chematic.parse_gro(text)
     assert [a['atom_name'] for a in d['atoms']]==['BE','CE','FE']
     assert [a['element'] for a in d['atoms']]==[None]*3
@@ -31,7 +31,7 @@ def test_two_letter_names_do_not_infer_truncated_elements():
 
 
 def test_explicit_elements_are_canonical_and_follow_source_order():
-    d=chematic.parse_gro(FIXTURE.read_text(),elements=['Be','Ce','Fe'])
+    d=chematic.parse_gro(FIXTURE.read_text(encoding="utf-8"),elements=['Be','Ce','Fe'])
     assert [a['element'] for a in d['atoms']]==['Be','Ce','Fe']
     assert d['element_policy']=='caller_supplied'
 
@@ -45,7 +45,7 @@ def test_ca_name_can_be_resolved_explicitly_without_guessing(element):
 @pytest.mark.parametrize('elements',[[],['Be'],['Be','Ce','Fe','C']])
 def test_element_counts_must_match(elements):
     with pytest.raises(ValueError,match='elements were supplied'):
-        chematic.parse_gro(FIXTURE.read_text(),elements=elements)
+        chematic.parse_gro(FIXTURE.read_text(encoding="utf-8"),elements=elements)
 
 
 @pytest.mark.parametrize('symbol',['BE','be','Xx','', 'Fe2+', ' C'])
@@ -112,7 +112,7 @@ def test_partial_velocity_row_and_nonascii_atom_field_fail():
 
 
 def test_stub_syntax_and_function_declaration():
-    tree=ast.parse((ROOT/'crates/chematic-py/python/chematic/__init__.pyi').read_text())
+    tree=ast.parse((ROOT/'crates/chematic-py/python/chematic/__init__.pyi').read_text(encoding="utf-8"))
     assert any(isinstance(n,ast.FunctionDef) and n.name=='parse_gro' for n in tree.body)
 
 

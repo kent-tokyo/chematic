@@ -31,3 +31,7 @@ attempt was interrupted during an existing long CIP oracle and is not counted
 as a complete pass. GitHub CI must pass the protected main checks, all added
 integration targets and binding/coverage jobs before merging. No package
 publication or upstream RDKit/Open Babel change is included.
+
+A Windows source-wheel run exposed platform-default decoding in new stub-reader
+tests. Explicit UTF-8 reads correct that test portability issue; production
+feature code is unchanged. The related local suites pass 354 tests.

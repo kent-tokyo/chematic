@@ -13,7 +13,7 @@ def test_fractional_geometry_and_metadata_roundtrip():
     import hashlib
     import json
     p=Path(__file__).resolve().parents[3]/"validation/openbabel_issues/fhiaims/contract-fixtures.json"
-    fixture=json.loads(p.read_text())["records"][0]
+    fixture=json.loads(p.read_text(encoding="utf-8"))["records"][0]
     assert fixture["payload"]==TEXT
     assert fixture["sha256"]==hashlib.sha256(TEXT.encode()).hexdigest()
     g=chematic.parse_fhiaims(TEXT)
@@ -67,5 +67,5 @@ def test_fortran_exponents_crlf_comments_and_stub_declarations():
     g=chematic.parse_fhiaims("atom\t1D0 0 0 C # original\r\ninitial_charge 0D0\r\n")
     assert g["coordinates"]==[[1,0,0]] and g["initial_charges"]==[0.0]
     p=Path(__file__).resolve().parents[1]/"python/chematic/__init__.pyi"
-    names={n.name for n in ast.parse(p.read_text()).body if isinstance(n,ast.FunctionDef)}
+    names={n.name for n in ast.parse(p.read_text(encoding="utf-8")).body if isinstance(n,ast.FunctionDef)}
     assert {"parse_fhiaims","write_fhiaims"}<=names

@@ -16,7 +16,7 @@ def emit(g):
 
 
 def test_manifest_projection_and_roundtrip():
-    fixture = json.loads((ROOT/'validation/openbabel_issues/dmol3/contract-fixtures.json').read_text())['records'][0]
+    fixture = json.loads((ROOT/'validation/openbabel_issues/dmol3/contract-fixtures.json').read_text(encoding="utf-8"))['records'][0]
     text = fixture['payload']
     assert hashlib.sha256(text.encode()).hexdigest() == fixture['sha256']
     g = chematic.parse_dmol3(text)
@@ -74,5 +74,5 @@ def test_precision_d_exponents_crlf_and_stub():
     assert g['source_text'] == text
     assert g['bohr_angstrom'] == 0.529177210544
     p = Path(__file__).resolve().parents[1]/'python/chematic/__init__.pyi'
-    names = {n.name for n in ast.parse(p.read_text()).body if isinstance(n, ast.FunctionDef)}
+    names = {n.name for n in ast.parse(p.read_text(encoding="utf-8")).body if isinstance(n, ast.FunctionDef)}
     assert {'parse_dmol3', 'write_dmol3'} <= names

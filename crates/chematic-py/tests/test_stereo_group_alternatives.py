@@ -90,5 +90,5 @@ def test_unspecified_centers_are_not_assigned():
 
 def test_type_stub_declares_method_on_mol():
     p=Path(__file__).resolve().parents[1]/"python/chematic/__init__.pyi"
-    tree=ast.parse(p.read_text());mol=next(n for n in tree.body if isinstance(n,ast.ClassDef) and n.name=="Mol")
+    tree=ast.parse(p.read_text(encoding="utf-8"));mol=next(n for n in tree.body if isinstance(n,ast.ClassDef) and n.name=="Mol")
     assert any(isinstance(n,ast.FunctionDef) and n.name=="enumerate_stereo_group_alternatives" for n in mol.body)

@@ -8,7 +8,7 @@ import pytest
 import chematic
 
 FOLDER = Path(__file__).resolve().parents[3]/'validation/openbabel_issues/pdb-selection'
-TEXT = (FOLDER/'rich.pdb').read_text()
+TEXT = (FOLDER/'rich.pdb').read_text(encoding="utf-8")
 
 
 def atom_lines(text):
@@ -16,9 +16,9 @@ def atom_lines(text):
 
 
 def test_manifest_and_ligand_removal_preserve_original_lines():
-    manifest = json.loads((FOLDER/'fixtures.json').read_text())
+    manifest = json.loads((FOLDER/'fixtures.json').read_text(encoding="utf-8"))
     for record in manifest['records']:
-        text = (FOLDER/record['file']).read_text()
+        text = (FOLDER/record['file']).read_text(encoding="utf-8")
         assert hashlib.sha256(text.encode()).hexdigest() == record['sha256']
         r = chematic.select_pdb_atoms(text, [0, 1, 2, 3])
         assert atom_lines(r['pdb']) == atom_lines(text)[:4]
@@ -109,7 +109,7 @@ def test_empty_source_none_vs_empty_and_independent_results():
 
 def test_stub_and_hard_limit():
     p = Path(__file__).resolve().parents[1]/'python/chematic/__init__.pyi'
-    names = {n.name for n in ast.parse(p.read_text()).body if isinstance(n, ast.FunctionDef)}
+    names = {n.name for n in ast.parse(p.read_text(encoding="utf-8")).body if isinstance(n, ast.FunctionDef)}
     assert 'select_pdb_atoms' in names
     with pytest.raises(ValueError):
         chematic.select_pdb_atoms('REMARK'+'a'*1025+'\nEND\n', max_line_len=2**32, allow_metadata_loss=True)
