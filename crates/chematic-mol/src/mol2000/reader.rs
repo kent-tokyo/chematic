@@ -585,6 +585,11 @@ fn geometry_diagnostics(
     let square_planar = conformer.as_ref().map_or_else(Vec::new, |coords| {
         let perceived = perceive_square_planar_from_3d(mol, coords);
         diagnostics.extend(wedge_vs_3d_conflicts(mol, coords));
+        if geometry_rank == GeometryRank::ThreeD
+            && coordinate_dimension != CoordinateDimension::TwoD
+        {
+            perceive_tetrahedral_from_3d(mol, coords);
+        }
         perceived
     });
     (conformer, geometry_rank, diagnostics, square_planar)

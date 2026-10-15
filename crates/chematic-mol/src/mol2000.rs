@@ -262,6 +262,98 @@ fn signed_volume3(p1: Point3, p2: Point3, p3: Point3, p4: Point3) -> f64 {
     a.x * (b.y * c.z - b.z * c.y) - a.y * (b.x * c.z - b.z * c.x) + a.z * (b.x * c.y - b.y * c.x)
 }
 
+/// Infer the local tetrahedral tag from a real conformer's coordinates in
+/// the same neighbor order used by the MOL wedge reader and SMILES writer.
+fn tetrahedral_chirality_from_3d(
+    order: &[u32],
+    center: AtomIdx,
+    conformer: &Coords3D,
+) -> Option<Chirality> {
+    let get = |a: u32| conformer.points.get(a as usize).copied();
+    if order.len() == 4 && order[3] == STEREO_H_SENTINEL {
+        let (Some(p0), Some(p1), Some(p2), Some(pivot)) =
+            (get(order[0]), get(order[1]), get(order[2]), get(center.0))
+        else {
+            return None;
+        };
+        let volume = signed_volume3(p0, p1, p2, pivot);
+        (volume.abs() >= VOLUME_EPS).then_some(if volume < 0.0 {
+            Chirality::Clockwise
+        } else {
+            Chirality::CounterClockwise
+        })
+    } else if order.len() == 4 {
+        let (Some(p0), Some(p1), Some(p2), Some(p3)) =
+            (get(order[0]), get(order[1]), get(order[2]), get(order[3]))
+        else {
+            return None;
+        };
+        let volume = signed_volume3(p1, p2, p3, p0);
+        (volume.abs() >= VOLUME_EPS).then_some(if volume < 0.0 {
+            Chirality::CounterClockwise
+        } else {
+            Chirality::Clockwise
+        })
+    } else {
+        None
+    }
+}
+
+/// Recover unspecified tetrahedral stereo from a genuine 3D CTAB. Keep
+/// explicit wedge/CFG assignments authoritative; geometry is used for their
+/// conflict diagnostics separately.
+pub(crate) fn perceive_tetrahedral_from_3d(mol: &mut Molecule, conformer: &Coords3D) {
+    let ordinary_centers: std::collections::HashSet<_> = chematic_perception::stereo_centers(mol)
+        .into_iter()
+        .map(|(idx, _)| idx)
+        .collect();
+    let candidates: Vec<_> = mol
+        .atoms()
+        .filter(|(_, atom)| atom.chirality == Chirality::None && !atom.aromatic)
+        .filter_map(|(idx, atom)| {
+            let mut order: Vec<u32> = mol.neighbors(idx).map(|(neighbor, _)| neighbor.0).collect();
+            order.sort_unstable();
+            let neighbors: Vec<AtomIdx> = order.iter().map(|&neighbor| AtomIdx(neighbor)).collect();
+            let sulfur_lone_pair = matches!(atom.element, Element::S | Element::SE)
+                && order.len() == 3
+                && chematic_core::implicit_hcount(mol, idx) == 0
+                && chematic_perception::substituent_signatures_distinct(mol, idx, &neighbors)
+                && {
+                    let valence: u8 = mol
+                        .neighbors(idx)
+                        .map(|(_, bond)| mol.bond(bond).order.order_int())
+                        .sum();
+                    (atom.charge == 1 && valence == 3) || (atom.charge == 0 && valence == 4)
+                };
+            if !ordinary_centers.contains(&idx) && !sulfur_lone_pair {
+                return None;
+            }
+            if ordinary_centers.contains(&idx)
+                && mol.neighbors(idx).any(|(_, bond)| {
+                    !matches!(
+                        mol.bond(bond).order,
+                        BondOrder::Single | BondOrder::Up | BondOrder::Down
+                    )
+                })
+            {
+                return None;
+            }
+            if order.len() == 3 {
+                order.push(STEREO_H_SENTINEL);
+            } else if order.len() != 4 {
+                return None;
+            }
+            Some((idx, order))
+        })
+        .collect();
+    for (idx, order) in candidates {
+        if let Some(chirality) = tetrahedral_chirality_from_3d(&order, idx, conformer) {
+            mol.set_stereo_neighbor_order(idx, order);
+            mol.set_chirality(idx, chirality);
+        }
+    }
+}
+
 /// Compare every wedge/hash-perceived tetrahedral parity against the same
 /// atom's real 3D geometry, using the exact sign convention
 /// `chematic_perception::stereo2d_local::local_parity_from_wedges`
@@ -380,8 +472,6 @@ pub(crate) fn wedge_vs_3d_conflicts(
     conformer: &Coords3D,
 ) -> Vec<Stereo3DDiagnostic> {
     let mut out = Vec::new();
-    let get = |a: u32| conformer.points.get(a as usize).copied();
-
     for (idx, atom) in mol.atoms() {
         if !atom.chirality.is_tetrahedral() {
             continue;
@@ -390,35 +480,7 @@ pub(crate) fn wedge_vs_3d_conflicts(
             continue;
         };
 
-        let computed = if order.len() == 4 && order[3] == STEREO_H_SENTINEL {
-            // 3 heavy neighbors + 1 implicit H: pivot = center.
-            match (get(order[0]), get(order[1]), get(order[2]), get(idx.0)) {
-                (Some(p0), Some(p1), Some(p2), Some(center)) => {
-                    let v = signed_volume3(p0, p1, p2, center);
-                    match v {
-                        v if v.abs() < VOLUME_EPS => None,
-                        v if v < 0.0 => Some(Chirality::Clockwise),
-                        _ => Some(Chirality::CounterClockwise),
-                    }
-                }
-                _ => None,
-            }
-        } else if order.len() == 4 {
-            // 4 explicit neighbors: apex = order[0], viewed = order[1..4].
-            match (get(order[0]), get(order[1]), get(order[2]), get(order[3])) {
-                (Some(p0), Some(p1), Some(p2), Some(p3)) => {
-                    let v = signed_volume3(p1, p2, p3, p0);
-                    match v {
-                        v if v.abs() < VOLUME_EPS => None,
-                        v if v < 0.0 => Some(Chirality::CounterClockwise),
-                        _ => Some(Chirality::Clockwise),
-                    }
-                }
-                _ => None,
-            }
-        } else {
-            None
-        };
+        let computed = tetrahedral_chirality_from_3d(order, idx, conformer);
 
         if let Some(computed) = computed
             && computed != atom.chirality

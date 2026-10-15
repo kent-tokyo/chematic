@@ -82,7 +82,7 @@ pub use sssr::{
 };
 pub use stereo_validation::{
     StereoCompleteness, StereoError, StereoErrorKind, stereo_centers, stereo_completeness,
-    validate_stereo,
+    substituent_signatures_distinct, validate_stereo,
 };
 pub use stereo2d::{
     StereoAssignment2D, apply_stereo_from_2d, assign_ez_from_2d, assign_stereo_from_2d,

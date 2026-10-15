@@ -901,6 +901,9 @@ fn v3000_geometry(
     let square_planar = conformer.as_ref().map_or_else(Vec::new, |coords| {
         let perceived = crate::mol2000::perceive_square_planar_from_3d(mol, coords);
         diagnostics.extend(crate::mol2000::wedge_vs_3d_conflicts(mol, coords));
+        if rank == GeometryRank::ThreeD && dimension != CoordinateDimension::TwoD {
+            crate::mol2000::perceive_tetrahedral_from_3d(mol, coords);
+        }
         perceived
     });
     (conformer, rank, diagnostics, square_planar)
