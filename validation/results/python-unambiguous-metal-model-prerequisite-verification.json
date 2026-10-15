@@ -1,0 +1,14 @@
+{
+  "prior_candidate_files_unchanged": {
+    "crates/chematic-perception/src/relevant_cycles.rs": "f90d7415d698e7a8c3c0781f86d9a43a1e169b6f8b5825f91800c9802069d12a",
+    "crates/chematic-perception/src/relevant_cycles_path_tests.rs": "4f6c49278cc25941c657e53c8d481f61dfafb571c157b3956e984e1d0a94f840",
+    "crates/chematic-mol/src/mol3000/writer.rs": "a505cd7bb1e31297f076880d835b06b82709a603221ec9b2771afcb5d2f07ee9",
+    "crates/chematic-mol/src/mol3000/writer_reference.rs": "3fee46bf4be25cb574d6d54f7e3fa6d3f0bfef2ece6123e18a577903d5a8f91e",
+    "crates/chematic-mol/src/mol3000/writer_speed_tests.rs": "d8c75ecf48c5e58aff43aa540d442f85d53be4510862d1bda9b40261c4b49246"
+  },
+  "prior_patches": {
+    "benchmarks/2026-10-14-openbabel-v3000-writer-buffer-candidate.patch": "a9ad3e6d452debe88c838f3344e031b7f84659159a9adeb24502a4f8888605f3",
+    "benchmarks/2026-10-14-python-cycle-root-pruning-candidate.patch": "aeb7694a61cb1c7689e28af1a8f6f60927158da54f85d3ba1e5878f9867e8483"
+  },
+  "baseline_is_fresh_source_build_with_both_prior_unmerged_candidates": true
+}

@@ -1,0 +1,6 @@
+    Checking chematic-chem v1.1.4 (/private/tmp/chematic-openbabel-count-zero-map-source-20261015/crates/chematic-chem)
+    Checking chematic-ff v1.1.4 (/private/tmp/chematic-openbabel-count-zero-map-source-20261015/crates/chematic-ff)
+    Checking chematic-3d v1.1.4 (/private/tmp/chematic-openbabel-count-zero-map-source-20261015/crates/chematic-3d)
+    Checking chematic-depict v1.1.4 (/private/tmp/chematic-openbabel-count-zero-map-source-20261015/crates/chematic-depict)
+    Checking chematic-mol v1.1.4 (/private/tmp/chematic-openbabel-count-zero-map-source-20261015/crates/chematic-mol)
+    Finished `release` profile [optimized] target(s) in 8.94s

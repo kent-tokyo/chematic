@@ -1,0 +1,331 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -11,6 +11,10 @@
+ ## [Unreleased]
+ 
+ ### Performance
++
++- Consume ordinary V3000 payloads directly from validated physical lines,
++  avoiding the logical-line vector until a continuation requires the existing
++  folding path. Preserve diagnostics, Unicode tokens and error precedence.
+ 
+ - Reuse the bridge pass's cached cyclic components in RDKit-compatible ring
+   counts, avoiding a second union-find without changing ring selection or
+diff --git a/crates/chematic-mol/src/mol3000.rs b/crates/chematic-mol/src/mol3000.rs
+--- a/crates/chematic-mol/src/mol3000.rs
++++ b/crates/chematic-mol/src/mol3000.rs
+@@ -965,17 +965,8 @@
+ pub fn read_mol_v3000_with_diagnostics(input: &str) -> Result<MolReadReport, MolParseError> {
+     let lines = validate_v3000_physical_lines(input)?;
+     let (metadata, line2) = v3000_metadata(&lines)?;
+-    let logical_lines = collect_v30_lines(&lines);
+     let mut parser = V3000Parser::new();
+-    // Logical payloads live until the entire parse ends, including owned
+-    // continuation text. Reuse only the token vector's storage; clear every
+-    // row before borrowing that row's exact Unicode-whitespace tokens.
+-    let mut tokens = Vec::new();
+-    for line in &logical_lines {
+-        tokens.clear();
+-        tokens.extend(line.payload.split_whitespace());
+-        parser.consume(line, &tokens)?;
+-    }
++    consume_v3000_lines(&mut parser, &lines)?;
+     finish_v3000_report(parser, metadata, line2)
+ }
+ 
+@@ -1328,3 +1319,9 @@
+ #[cfg(test)]
+ #[path = "mol3000/token_buffer_tests.rs"]
+ mod token_buffer_tests;
++
++include!("mol3000/line_stream.rs");
++
++#[cfg(test)]
++#[path = "mol3000/line_stream_tests.rs"]
++mod line_stream_tests;
+diff --git a/crates/chematic-mol/src/mol3000/line_stream.rs b/crates/chematic-mol/src/mol3000/line_stream.rs
+new file mode 100644
+--- /dev/null
++++ b/crates/chematic-mol/src/mol3000/line_stream.rs
+@@ -0,0 +1,39 @@
++/// Consume ordinary V30 payloads directly from validated physical lines.
++///
++/// Prefix lines before the first continuation need no owned text or logical
++/// line vector. The first continuation and its entire suffix retain the
++/// established folding path, keeping its exact consumption and error rules.
++fn consume_v3000_lines(
++    parser: &mut V3000Parser,
++    lines: &[(usize, &str)],
++) -> Result<(), MolParseError> {
++    let mut tokens = Vec::new();
++    for (index, &(line_num, raw)) in lines.iter().enumerate() {
++        let Some(payload) = raw.strip_prefix(V30_PREFIX) else {
++            continue;
++        };
++        if payload.ends_with('-') {
++            // Owned folded payloads must outlive their borrowed tokens. Keep
++            // the suffix together and reuse one token vector within it.
++            drop(tokens);
++            let logical_lines = collect_v30_lines(&lines[index..]);
++            let mut suffix_tokens = Vec::new();
++            for line in &logical_lines {
++                suffix_tokens.clear();
++                suffix_tokens.extend(line.payload.split_whitespace());
++                parser.consume(line, &suffix_tokens)?;
++            }
++            return Ok(());
++        }
++        tokens.clear();
++        tokens.extend(payload.split_whitespace());
++        parser.consume(
++            &LogicalLine {
++                line_num,
++                payload: std::borrow::Cow::Borrowed(payload),
++            },
++            &tokens,
++        )?;
++    }
++    Ok(())
++}
+diff --git a/crates/chematic-mol/src/mol3000/line_stream_tests.rs b/crates/chematic-mol/src/mol3000/line_stream_tests.rs
+new file mode 100644
+--- /dev/null
++++ b/crates/chematic-mol/src/mol3000/line_stream_tests.rs
+@@ -0,0 +1,236 @@
++//! Direct-line consumption versus the frozen logical-vector reader.
++use super::*;
++
++fn frozen_logical_vector(input: &str) -> Result<MolReadReport, MolParseError> {
++    let lines = validate_v3000_physical_lines(input)?;
++    let (metadata, line2) = v3000_metadata(&lines)?;
++    let logical_lines = collect_v30_lines(&lines);
++    let mut parser = V3000Parser::new();
++    let mut tokens = Vec::new();
++    for line in &logical_lines {
++        tokens.clear();
++        tokens.extend(line.payload.split_whitespace());
++        parser.consume(line, &tokens)?;
++    }
++    finish_v3000_report(parser, metadata, line2)
++}
++
++fn compare(input: &str) -> bool {
++    match (
++        frozen_logical_vector(input),
++        read_mol_v3000_with_diagnostics(input),
++    ) {
++        (Err(old), Err(new)) => {
++            assert_eq!(old.to_string(), new.to_string());
++            false
++        }
++        (Ok(old), Ok(new)) => {
++            assert_eq!(
++                old.mol.atoms().collect::<Vec<_>>(),
++                new.mol.atoms().collect::<Vec<_>>()
++            );
++            assert_eq!(
++                old.mol.bonds().collect::<Vec<_>>(),
++                new.mol.bonds().collect::<Vec<_>>()
++            );
++            assert_eq!(old.mol.stereo_groups(), new.mol.stereo_groups());
++            assert_eq!(
++                old.coords
++                    .iter()
++                    .map(|(x, y)| (x.to_bits(), y.to_bits()))
++                    .collect::<Vec<_>>(),
++                new.coords
++                    .iter()
++                    .map(|(x, y)| (x.to_bits(), y.to_bits()))
++                    .collect::<Vec<_>>()
++            );
++            for (i, _) in old.mol.atoms() {
++                assert_eq!(old.mol.neighbor_slice(i), new.mol.neighbor_slice(i));
++                assert_eq!(
++                    old.mol.stereo_neighbor_order(i),
++                    new.mol.stereo_neighbor_order(i)
++                );
++                assert_eq!(old.mol.r_group_label(i), new.mol.r_group_label(i));
++                assert_eq!(old.mol.atom_tag(i), new.mol.atom_tag(i));
++            }
++            for i in 0..old.mol.stereo_groups().len() {
++                assert_eq!(
++                    old.mol.stereo_group_bond_indices(i),
++                    new.mol.stereo_group_bond_indices(i)
++                );
++            }
++            assert_eq!(
++                format!(
++                    "{:?}:{:?}:{:?}:{:?}:{:?}:{:?}:{:?}:{:?}",
++                    old.metadata,
++                    old.stereo_diagnostics,
++                    old.ez_diagnostics,
++                    old.coordinate_dimension,
++                    old.geometry_rank,
++                    old.stereo3d_diagnostics,
++                    old.square_planar_diagnostics,
++                    old.conformer
++                ),
++                format!(
++                    "{:?}:{:?}:{:?}:{:?}:{:?}:{:?}:{:?}:{:?}",
++                    new.metadata,
++                    new.stereo_diagnostics,
++                    new.ez_diagnostics,
++                    new.coordinate_dimension,
++                    new.geometry_rank,
++                    new.stereo3d_diagnostics,
++                    new.square_planar_diagnostics,
++                    new.conformer
++                )
++            );
++            assert_eq!(
++                write_mol_v3000(&old.mol, &old.metadata, &old.coords),
++                write_mol_v3000(&new.mol, &new.metadata, &new.coords)
++            );
++            true
++        }
++        _ => panic!("direct line consumption changed parse success/error boundary"),
++    }
++}
++
++fn chain(n: usize, space: &str, continuation: bool) -> String {
++    let mut text = format!(
++        "token reuse\n  chematic          2D\nhand-generated regression\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS {n} {} 0 0 0\nM  V30 BEGIN ATOM\n",
++        n - 1
++    );
++    for i in 0..n {
++        let mut row = format!("{} C {} -0.0 0 0", i + 1, i).replace(' ', space);
++        if i == 0 {
++            let props = (0..80)
++                .map(|p| format!("VENDOR{p}=value{p}"))
++                .collect::<Vec<_>>()
++                .join(space);
++            if continuation {
++                row.push_str(" -\nM  V30 ");
++            } else {
++                row.push_str(space);
++            }
++            row.push_str(&props);
++        }
++        text.push_str(&format!("M  V30 {row}\nM  V30 \t\n"));
++    }
++    text.push_str("M  V30 END ATOM\nM  V30 BEGIN BOND\n");
++    for i in 1..n {
++        text.push_str(&format!("M  V30 {} 1 {} {}\n", i, i, i + 1));
++    }
++    text.push_str("M  V30 END BOND\nM  V30 END CTAB\nM  END\n");
++    text
++}
++
++#[test]
++fn long_short_empty_and_continued_rows_keep_full_reports() {
++    for n in [1, 2, 8, 64] {
++        for space in [" ", "\t", "\u{2003}"] {
++            for continuation in [false, true] {
++                assert!(compare(&chain(n, space, continuation)));
++            }
++        }
++    }
++}
++
++#[test]
++fn malformed_physical_and_logical_rows_keep_error_details() {
++    let input = chain(3, " ", false);
++    let lines = input.lines().collect::<Vec<_>>();
++    let mut errors = 0;
++    for i in 0..lines.len() {
++        let mut changed = lines.clone();
++        changed.remove(i);
++        errors += usize::from(!compare(&(changed.join("\n") + "\n")));
++        for replacement in [
++            "",
++            "M V30 1 C 0 0 0 0",
++            "M  V30 ",
++            "M  V30 \u{2003}",
++            "M  V30 1",
++            "M  V30 END CTAB",
++            "M  END",
++        ] {
++            let mut changed = lines.clone();
++            changed[i] = replacement;
++            errors += usize::from(!compare(&(changed.join("\n") + "\n")));
++        }
++    }
++    assert!(errors > 100);
++    for suffix in [
++        "M  END ",
++        "M  V30 trailing -",
++        "M  V30 -\nnot V30",
++        "\n\n",
++        "M  V30 COUNTS 99999999999999999999999999999 0 0",
++    ] {
++        compare(&(input.clone() + suffix));
++    }
++}
++
++#[test]
++fn attributes_and_bad_numbers_keep_first_match_and_line_errors() {
++    let input = chain(3, " ", false);
++    for tail in [
++        "CHG=1 CHG=-1 MASS=13 HCOUNT=2",
++        "RGROUPS=(1 7) SUBST=2 RBCNT=3 UNSAT=1",
++        "RGROUPS=(2 1 2)",
++        "CFG=2 ENDPTS=(2 1 2) ATTACH=ANY",
++        "CHG=invalid MASS=99999 HCOUNT=-1",
++        "",
++    ] {
++        let changed = input.replace("1 C 0 -0.0 0 0", &format!("1 C 0 -0.0 0 0 {tail}"));
++        compare(&changed);
++    }
++    for value in ["nan", "inf", "-inf", "bad", "1e999", "-0", "1e-300"] {
++        compare(&input.replace("1 C 0 -0.0 0 0", &format!("1 C {value} -0.0 0 0")));
++    }
++}
++
++#[test]
++fn continuation_at_every_logical_position_keeps_full_report() {
++    let input = chain(8, " ", false);
++    let physical = input.lines().collect::<Vec<_>>();
++    for (index, &line) in physical.iter().enumerate() {
++        let Some(payload) = line.strip_prefix(V30_PREFIX) else {
++            continue;
++        };
++        for (split, _) in payload.char_indices().filter(|&(_, c)| c == ' ') {
++            let mut lines = physical.iter().map(|s| s.to_string()).collect::<Vec<_>>();
++            lines[index] = format!(
++                "M  V30 {}-\nM  V30 {}",
++                &payload[..split],
++                &payload[split + 1..]
++            );
++            compare(&(lines.join("\n") + "\n"));
++        }
++    }
++}
++
++#[test]
++fn malformed_continuations_and_physical_errors_keep_precedence() {
++    let input = chain(3, " ", false);
++    for suffix in ["-", "--", "---", " -", " -\nM  V30 -", "-\n\n", "-\nM  END"] {
++        for needle in [
++            "BEGIN CTAB",
++            "COUNTS 3 2 0 0 0",
++            "1 C 0 -0.0 0 0",
++            "END ATOM",
++            "END CTAB",
++        ] {
++            compare(&input.replacen(needle, &format!("{needle}{suffix}"), 1));
++        }
++    }
++    let invalid_atom = input.replace("1 C 0 -0.0 0 0", "1 C NaN -0.0 0 0");
++    compare(&invalid_atom.replace("M  V30 END CTAB", "invalid physical line"));
++    compare(&input.replace("M  END", "M  END\nM  END"));
++    for spacing in [
++        "\u{000b}", "\u{000c}", "\u{0085}", "\u{00a0}", "\u{2003}", "\u{2028}", "\u{2029}",
++        "\u{3000}",
++    ] {
++        compare(&chain(3, spacing, false));
++        compare(&chain(3, spacing, true));
++    }
++    compare(&input.replace('\n', "\r\n"));
++    compare(input.trim_end_matches('\n'));
++}

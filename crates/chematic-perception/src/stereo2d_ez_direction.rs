@@ -178,21 +178,13 @@ pub fn apply_ez_directions_from_2d_ex(
         .map(|(bidx, _)| bidx)
         .collect();
 
-    // One-time, non-mutating aromaticity query (see module docs) so a
-    // Kekulized aromatic ring bond -- read with `atom.aromatic == false`
-    // since the reader never auto-perceives aromaticity -- is never treated
-    // as an E/Z candidate.
-    let aromaticity = assign_aromaticity(mol);
-
-    // Phase 1: classify every double bond independently, from raw geometry
-    // and topology alone -- never from another double bond's outcome, so
-    // the result for one bond can't depend on which order this loop visits
-    // bonds in.
-    let mut outcomes: HashMap<BondIdx, EzOutcome> = HashMap::with_capacity(double_bonds.len());
-    for &bidx in &double_bonds {
-        let outcome = classify_double_bond(mol, coords, bidx, explicitly_unspecified, &aromaticity);
-        outcomes.insert(bidx, outcome);
-    }
+    // Classification returns no outcomes when every double bond is already
+    // known to be NotRequested from the existing topology rules.
+    let Some(mut outcomes) =
+        classify_double_bonds(mol, coords, &double_bonds, explicitly_unspecified)
+    else {
+        return Vec::new();
+    };
 
     // Phase 2: a physical substituent bond can be the chosen carrier for TWO
     // different double bonds at once (the ordinary conjugated-diene shape,
@@ -355,6 +347,45 @@ pub fn apply_ez_directions_from_2d_ex(
 // ---------------------------------------------------------------------------
 // Classification
 // ---------------------------------------------------------------------------
+
+#[inline]
+fn classify_double_bonds(
+    mol: &Molecule,
+    coords: &[(f64, f64)],
+    double_bonds: &[BondIdx],
+    explicitly_unspecified: &HashSet<BondIdx>,
+) -> Option<HashMap<BondIdx, EzOutcome>> {
+    // Both tests imply NotRequested regardless of aromaticity or coordinates.
+    // Terminal ends qualify only after preserving the earlier cumulene and
+    // explicit-unspecified diagnostics. Small rings are unconditionally out.
+    if double_bonds.iter().all(|&bidx| {
+        let bond = mol.bond(bidx);
+        let terminal = !explicitly_unspecified.contains(&bidx)
+            && !has_other_double_bond(mol, bond.atom1, bidx)
+            && !has_other_double_bond(mol, bond.atom2, bidx)
+            && [bond.atom1, bond.atom2].into_iter().any(|end| {
+                let other = if end == bond.atom1 {
+                    bond.atom2
+                } else {
+                    bond.atom1
+                };
+                mol.neighbors(end)
+                    .all(|(nb, bi)| nb == other || mol.bond(bi).order == BondOrder::Double)
+            });
+        terminal || in_ring_smaller_than(mol, bidx, 8)
+    }) {
+        return None;
+    }
+    // Any potentially requested bond retains the original complete query,
+    // classification order, diagnostics and carrier-conflict resolution.
+    let aromaticity = assign_aromaticity(mol);
+    let mut outcomes = HashMap::with_capacity(double_bonds.len());
+    for &bidx in double_bonds {
+        let outcome = classify_double_bond(mol, coords, bidx, explicitly_unspecified, &aromaticity);
+        outcomes.insert(bidx, outcome);
+    }
+    Some(outcomes)
+}
 
 /// Per-double-bond classification underlying [`apply_ez_directions_from_2d_ex`].
 enum EzOutcome {
@@ -554,12 +585,17 @@ fn resolve_end(
 /// True when `bond` lies on a ring of fewer than `size` atoms: a path of at
 /// most `size - 2` other bonds joins its endpoints.
 fn in_ring_smaller_than(mol: &Molecule, bond: BondIdx, size: usize) -> bool {
+    const INLINE: usize = 32;
     let (start, goal) = (mol.bond(bond).atom1, mol.bond(bond).atom2);
-    let mut seen = HashSet::from([start]);
-    let mut frontier = vec![start];
+    // The queue is also the complete visited list. Small neighborhoods need
+    // no heap allocation; larger ones keep hashed membership before spilling.
+    let mut queue: smallvec::SmallVec<[AtomIdx; INLINE]> = smallvec::smallvec![start];
+    let mut overflow_seen: Option<HashSet<AtomIdx>> = None;
+    let mut begin = 0;
     for _ in 0..size.saturating_sub(2) {
-        let mut next = Vec::new();
-        for &a in &frontier {
+        let end = queue.len();
+        for i in begin..end {
+            let a = queue[i];
             for (nb, bi) in mol.neighbors(a) {
                 if bi == bond {
                     continue;
@@ -567,12 +603,30 @@ fn in_ring_smaller_than(mol: &Molecule, bond: BondIdx, size: usize) -> bool {
                 if nb == goal {
                     return true;
                 }
-                if seen.insert(nb) {
-                    next.push(nb);
+                let fresh = match &mut overflow_seen {
+                    Some(seen) => seen.insert(nb),
+                    None => {
+                        if queue.contains(&nb) {
+                            false
+                        } else {
+                            if queue.len() == INLINE {
+                                let mut seen: HashSet<_> = queue.iter().copied().collect();
+                                seen.insert(nb);
+                                overflow_seen = Some(seen);
+                            }
+                            true
+                        }
+                    }
+                };
+                if fresh {
+                    queue.push(nb);
                 }
             }
         }
-        frontier = next;
+        begin = end;
+        if begin == queue.len() {
+            break;
+        }
     }
     false
 }
@@ -1094,3 +1148,15 @@ mod tests {
         assert_ne!(up_from(shared, cc), up_from(c2, cd), "Cc=Cd trans");
     }
 }
+
+#[cfg(test)]
+#[path = "stereo2d_ez_empty_tests.rs"]
+mod empty_double_tests;
+
+#[cfg(test)]
+#[path = "stereo2d_ez_inactive_tests.rs"]
+mod inactive_double_tests;
+
+#[cfg(test)]
+#[path = "stereo2d_ez_ring_queue_tests.rs"]
+mod ring_queue_tests;

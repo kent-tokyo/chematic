@@ -1,0 +1,65 @@
+{
+  "id": "v3000-branched-ring-search64-v1",
+  "provenance": {
+    "source": "Original project-authored valid acyclic carbon-tree recipe; no third-party molecular rows",
+    "generated": "2026-10-15",
+    "recipe": "large-neighborhood-plan.json; large_neighborhood.py",
+    "transformation": {
+      "records": 64,
+      "depths": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "variants": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "graph": "One central C=C; each endpoint has two single-bonded identical balanced binary carbon subtrees of the declared depth. Every atom obeys ordinary carbon valence.",
+      "atoms_formula": "2 + 4*(2**depth - 1)",
+      "permutation": "Rotate atom indices by variant*n//8; reverse the rotated order for odd variants. Retain every record, including equivalent permutations.",
+      "coordinates": "x=index/2; y=(index%7)/4; z=0, in angstrom; 2D conformer",
+      "producer": "Pinned existing RDKit 2026.09.1; MolToMolBlock(forceV3000=True); no input filtering."
+    },
+    "producer": {
+      "rdkit": "2026.09.1",
+      "python": "3.13.6"
+    }
+  },
+  "license": "MIT OR Apache-2.0",
+  "redistribution": {
+    "status": "allowed",
+    "rationale": "New synthetic project-authored graphs and recipe under project dual license"
+  },
+  "minimization": "Eight fixed depths cross the 32-visited-atom storage boundary and reach 1022 atoms; eight declared atom permutations check order sensitivity. All 64 records retained. No biological, physical or toolkit-wide representativeness is claimed.",
+  "oracle": {
+    "native_source_version": "1.1.4 plus thirteen accepted source candidates versus frozen ring-queue prototype",
+    "native_binaries_sha256": {
+      "baseline": "95f24cf06fd5385710342025965a60e0a06612448237da64e58be75fb8f8cac5",
+      "candidate": "d9ed4a2f24fa06c7b85caa8db4192cd5f711e4bf88593c160f401b2ccd8b66a3"
+    },
+    "observer": "RDKit 2026.09.1",
+    "settings": "SanitizeMol; canonical isomeric MolToSmiles; strict sanitized MolFromMolBlock(removeHs=False); exact coordinates and names; native snapshot/dump repeats=1 expected=64"
+  },
+  "expected": {
+    "records": 64,
+    "status": "Every source snapshot/rewrite byte-identical; every source canonical and rewritten graph equals generated RDKit graph; names and exact 2D coordinates preserved",
+    "coordinate_units": "angstrom",
+    "absolute_tolerance": 0,
+    "scope": "Separate post-hoc exploratory source-only diagnostic; never Open Babel ranking or replacement of original matrices"
+  },
+  "sha256": "9ce2cbb6d5143cd741035cb9920ce76d67d85c5a8a76f8ae501b0d69216ed6b5",
+  "plan_sha256": "c6585f4859f9e4d65603ca3b57f9763e8e6cf769100c18c060be35566178af03",
+  "recipe_sha256": "8b9e2114b63253196dbec4a3c5148ba9777da432179753048d813aaa84e2bca0"
+}

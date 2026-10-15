@@ -1,0 +1,265 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -9,6 +9,13 @@
+ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+ 
+ ## [Unreleased]
++
++### Performance
++
++- Skip canonical atom ranking during RDKit-compatible organometallic cleanup
++  when every affected donor has one eligible metal bond. Preserve ring/error
++  handling and use the ranked path for ambiguous or parallel bond selection.
++  Measurements and exact-output checks are scoped to the dated benchmark.
+ 
+ ## [1.1.4] - 2026-10-14
+ 
+diff --git a/crates/chematic-smiles/src/rdkit/sanitize.rs b/crates/chematic-smiles/src/rdkit/sanitize.rs
+--- a/crates/chematic-smiles/src/rdkit/sanitize.rs
++++ b/crates/chematic-smiles/src/rdkit/sanitize.rs
+@@ -405,6 +405,21 @@
+     if !had_rings {
+         mol.find_rings()?;
+     }
++    // Keep pre-cleanup ring perception (and its error boundary) unchanged.
++    // Ranking only chooses between metal neighbours; when every affected
++    // donor has at most one eligible metal bond, the choices are fixed.
++    if let Some(changes) = unambiguous_metal_changes(mol)? {
++        if !had_rings {
++            mol.rings = None;
++        }
++        for (donor, bond_index, metal) in changes {
++            let bond = &mut mol.bonds[bond_index];
++            bond.bt = BondType::Dative;
++            bond.begin = donor;
++            bond.end = metal;
++        }
++        return Ok(());
++    }
+     let ranks = rank_mol_atoms(mol);
+     if !had_rings {
+         mol.rings = None;
+@@ -415,6 +430,42 @@
+         metal_bond_cleanup(mol, a, &ranks)?;
+     }
+     Ok(())
++}
++
++type MetalBondChanges = smallvec::SmallVec<[(usize, usize, usize); 8]>;
++
++fn unambiguous_metal_changes(mol: &mut Mol) -> Result<Option<MetalBondChanges>, RdkitSmilesError> {
++    let mut changes = MetalBondChanges::new();
++    for donor in 0..mol.atoms.len() {
++        if !is_hypervalent_non_metal(mol, donor)? || no_dative(mol, donor) {
++            continue;
++        }
++        let mut eligible = None;
++        for &bond_index in &mol.atom_bonds[donor] {
++            let bond = &mol.bonds[bond_index];
++            let metal = bond.other(donor);
++            if bond.bt != BondType::Single || !periodic::is_metal(mol.atoms[metal].anum) {
++                continue;
++            }
++            if eligible.replace((bond_index, metal)).is_some() {
++                // Nothing has been rewritten: the ranked fallback sees the
++                // original graph, even after earlier unambiguous donors.
++                return Ok(None);
++            }
++        }
++        if let Some((bond_index, metal)) = eligible {
++            // The ranked path rewrites `bond_between`, which can select an
++            // earlier parallel bond in an internally constructed graph.
++            if mol.bond_between(donor, metal) != Some(bond_index) {
++                return Ok(None);
++            }
++            changes.push((donor, bond_index, metal));
++        }
++    }
++    // A rewrite touches only its donor and a metal. It cannot alter another
++    // nonmetal donor's valence; ranking/order therefore cannot affect these
++    // unique choices, including when several donors share the same metal.
++    Ok(Some(changes))
+ }
+ 
+ fn metal_bond_cleanup(mol: &mut Mol, a: usize, ranks: &[u32]) -> Result<(), RdkitSmilesError> {
+@@ -659,3 +710,7 @@
+     }
+     Ok(())
+ }
++
++#[cfg(test)]
++#[path = "sanitize_metal_tests.rs"]
++mod metal_cleanup_tests;
+diff --git a/crates/chematic-smiles/src/rdkit/sanitize_metal_tests.rs b/crates/chematic-smiles/src/rdkit/sanitize_metal_tests.rs
+new file mode 100644
+--- /dev/null
++++ b/crates/chematic-smiles/src/rdkit/sanitize_metal_tests.rs
+@@ -0,0 +1,167 @@
++//! Compare cleanup with the frozen rank-based path, including cached state.
++use super::*;
++use crate::rdkit::mol::{Atom as ModelAtom, Bond as ModelBond};
++
++pub(crate) fn ranked_cleanup_reference(mol: &mut Mol) -> Result<(), RdkitSmilesError> {
++    // Only a single bond to a metal needs fixing. Without a metal the scan
++    // below would only refresh property caches (non-strictly, which cannot
++    // fail), and `sanitize_mol` recomputes every one of them next.
++    if !mol.atoms.iter().any(|atom| periodic::is_metal(atom.anum)) {
++        return Ok(());
++    }
++    let mut needs_fixing = false;
++    for a in 0..mol.atoms.len() {
++        if is_hypervalent_non_metal(mol, a)? && !no_dative(mol, a) {
++            for &b in &mol.atom_bonds[a] {
++                let other = mol.bonds[b].other(a);
++                if mol.bonds[b].bt == BondType::Single && periodic::is_metal(mol.atoms[other].anum)
++                {
++                    needs_fixing = true;
++                    break;
++                }
++            }
++        }
++        if needs_fixing {
++            break;
++        }
++    }
++    if !needs_fixing {
++        return Ok(());
++    }
++    mol.update_property_cache(false)?;
++    // `rankMolAtoms` on a molecule without ring information runs
++    // `fastFindRings`; the symmetrized SSSR stands in for it.
++    let had_rings = mol.rings.is_some();
++    if !had_rings {
++        mol.find_rings()?;
++    }
++    let ranks = rank_mol_atoms(mol);
++    if !had_rings {
++        mol.rings = None;
++    }
++    let mut atom_ranks: Vec<(usize, u32)> = ranks.iter().copied().enumerate().collect();
++    atom_ranks.sort_by_key(|&(_, r)| r);
++    for (a, _) in atom_ranks {
++        metal_bond_cleanup(mol, a, &ranks)?;
++    }
++    Ok(())
++}
++
++fn compare_cleanup(input: &Mol) {
++    let mut expected = input.clone();
++    let mut actual = input.clone();
++    let old = ranked_cleanup_reference(&mut expected).map_err(|e| e.to_string());
++    let new = clean_up_organometallics(&mut actual).map_err(|e| e.to_string());
++    assert_eq!(old, new);
++    assert_eq!(format!("{expected:?}"), format!("{actual:?}"));
++    if old.is_ok() {
++        // Subsequent strict sanitization and stereo see identical state too.
++        let old = sanitize_mol(&mut expected).map_err(|e| e.to_string());
++        let new = sanitize_mol(&mut actual).map_err(|e| e.to_string());
++        assert_eq!(old, new);
++        assert_eq!(format!("{expected:?}"), format!("{actual:?}"));
++    }
++}
++
++fn shared_metals(mask: usize, seeded_dative: bool) -> Mol {
++    let mut mol = Mol::default();
++    let cu = mol.add_atom(ModelAtom::new(29));
++    let zn = mol.add_atom(ModelAtom::new(30));
++    for donor in 0..3 {
++        let o = mol.add_atom(ModelAtom::new(8));
++        for _ in 0..2 {
++            let c = mol.add_atom(ModelAtom::new(6));
++            mol.add_bond(ModelBond::new(o, c, BondType::Single));
++        }
++        let choices = (mask >> (donor * 2)) & 3;
++        if choices & 1 != 0 {
++            mol.add_bond(ModelBond::new(o, cu, BondType::Single));
++        }
++        if choices & 2 != 0 {
++            mol.add_bond(ModelBond::new(o, zn, BondType::Single));
++        }
++    }
++    if seeded_dative {
++        let o = mol.add_atom(ModelAtom::new(8));
++        mol.add_bond(ModelBond::new(o, cu, BondType::Dative));
++    }
++    mol
++}
++
++#[test]
++fn unique_and_ambiguous_choices_match_ranked_graph_and_caches() {
++    for mask in 0..64 {
++        for seeded in [false, true] {
++            let mol = shared_metals(mask, seeded);
++            compare_cleanup(&mol);
++            let mut cached = mol.clone();
++            cached.find_rings().unwrap();
++            compare_cleanup(&cached);
++        }
++    }
++}
++
++#[test]
++fn ambiguous_choice_planning_never_partially_rewrites_bonds() {
++    for mask in 0..64 {
++        let mut mol = shared_metals(mask, true);
++        mol.update_property_cache(false).unwrap();
++        let before = format!("{:?}", mol.bonds);
++        let choices = unambiguous_metal_changes(&mut mol).unwrap();
++        assert_eq!(
++            choices.is_some(),
++            (0..3).all(|d| (mask >> (d * 2)) & 3 != 3)
++        );
++        assert_eq!(before, format!("{:?}", mol.bonds));
++    }
++}
++
++#[test]
++fn cleanup_keeps_hydrogens_charges_stereo_and_invalid_input_boundaries() {
++    for smiles in [
++        "[Na+].[Cl-]",
++        "CO(C)[Cu]",
++        "CO([Cu])[Zn]",
++        "CO(C)[Cu]OC(C)C",
++        "[NH3][Cu]",
++        "[NH3+][Cu]",
++        "[O-]([Cu])[Zn]",
++        "[H-][Cu]",
++        "N[Pt@SP1](Cl)(Br)I",
++        "c1ccccc1O([Cu])C",
++        "CO(C)(C)[Cu]",
++        "[2H]O[Cu]",
++        "C1C[N+]2=CC3=CC=CC=C3O[Cu]24OC5=CC=CC=C5C=[N+]14",
++    ] {
++        let core = crate::parse_template(smiles).unwrap();
++        let model = crate::rdkit::parse::from_chematic(&core).unwrap();
++        compare_cleanup(&model);
++    }
++}
++
++#[test]
++fn fixed_unfiltered_ten_thousand_inputs_keep_ranked_cleanup_state() {
++    let corpus = include_str!(concat!(
++        env!("CARGO_MANIFEST_DIR"),
++        "/../../validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi"
++    ));
++    let mut rows = 0;
++    for line in corpus.lines().filter(|line| !line.trim().is_empty()) {
++        let smiles = line.split_whitespace().next().unwrap();
++        let core = crate::parse_template(smiles).unwrap();
++        let model = crate::rdkit::parse::from_chematic(&core).unwrap();
++        compare_cleanup(&model);
++        rows += 1;
++    }
++    assert_eq!(rows, 10000);
++}
++
++#[test]
++fn parallel_bonds_keep_ranked_bond_selection() {
++    for earlier in [BondType::Dative, BondType::Double, BondType::Single] {
++        let mut mol = shared_metals(0, false);
++        mol.add_bond(ModelBond::new(2, 0, earlier));
++        mol.add_bond(ModelBond::new(2, 0, BondType::Single));
++        compare_cleanup(&mol);
++    }
++}

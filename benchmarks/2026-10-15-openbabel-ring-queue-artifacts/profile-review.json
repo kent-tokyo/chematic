@@ -1,0 +1,22 @@
+{
+  "profile-5000.txt": {
+    "process_samples": 3792,
+    "inclusive_counts_overlapping": {
+      "apply_ez_directions_from_2d_ex": 1169,
+      "in_ring_smaller_than": 682,
+      "assign_aromaticity_ex_impl": 371,
+      "parse_rgroup_number": 0
+    },
+    "interpretation": "Sampling includes preparation/destruction; no latency estimate, no additive counts, LTO may hide symbols."
+  },
+  "profile-0.txt": {
+    "process_samples": 3688,
+    "inclusive_counts_overlapping": {
+      "apply_ez_directions_from_2d_ex": 1908,
+      "in_ring_smaller_than": 578,
+      "assign_aromaticity_ex_impl": 1207,
+      "parse_rgroup_number": 0
+    },
+    "interpretation": "Sampling includes preparation/destruction; no latency estimate, no additive counts, LTO may hide symbols."
+  }
+}

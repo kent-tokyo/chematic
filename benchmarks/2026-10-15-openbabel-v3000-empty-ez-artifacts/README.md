@@ -1,0 +1,11 @@
+# Direct V3000 payload evidence
+
+Read `source-manifest.json`, the three `paired21-*.json` original reports, `continued21.json`, `adaptive-selection.json` and any `focused21-*.json` follow-ups. All observations and semantic mismatches remain in their original lane. Strict wins require agreement, CI lower > 1 and 21/21 faster blocks. Source-only continuation/follow-up diagnostics never rank Open Babel.
+
+`candidate-build-source.tar.gz` contains the complete frozen build/input snapshot under `candidate/`, exact fixed inputs under `corpora/` and the two previous source files under `baseline-overrides/`. Reconstruct the baseline by copying the candidate, applying these overrides and removing both added files listed in `source-manifest.json`. `verification.json` verifies every candidate archive hash and every reconstructed baseline hash. The supplied patch was separately applied and compared to the candidate.
+
+`baseline-v3000` and `candidate-v3000` are the exact measured native source executables (macOS arm64). Open Babel's separately pinned native harness, libraries and plugins remain at manifest paths. The archived `tools/openbabel_v3000_throughput.cpp` reproduces the harness against that Open Babel installation. Rebuild source executables with `cargo build --release --locked -p chematic-mol --example openbabel_v3000_throughput`, using the recorded Rust toolchain and release/LTO settings.
+
+Run the archived `scripts/bench_openbabel_v3000_throughput.py` in the pinned RDKit observer environment with `--baseline`, `--candidate`, `--openbabel`, `--corpus`, `--records 1000`, `--blocks 21`, `--repeats 5`, `--source-manifest` and `--output`; use `--records 64` for controlled chains. Darwin `/usr/bin/time -l` requires OS-statistics access. The continuation/source-only driver records its exact original private working paths; adapt those paths if reproducing elsewhere. All three original corpora are unchanged. Exact output streams are gzip-compressed, and `artifact-sha256.json` indexes the packet.
+
+Builds and validation finished before timing. These are version 1.1.4 source candidates. Hashes prove measured artifact identity and source reconstruction; they do not promise bit-identical rebuilt executable files or toolkit-wide speed superiority.

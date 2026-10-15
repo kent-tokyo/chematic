@@ -1,0 +1,29 @@
+{
+  "id": "v3000-zero-z-speed-v2",
+  "path": "validation/benchmark_corpora/v3000-zero-z-speed-v2.recipe.json",
+  "provenance": {
+    "source": "Original synthetic coordinate-lexeme recipe; no third-party or new molecular data.",
+    "retrieved_or_generated": "2026-10-15",
+    "transformation": "All x/y/z lexeme combinations at all listed source lines; also use the deterministic random-f64 recipe for the general-parser fallback."
+  },
+  "license": "MIT OR Apache-2.0",
+  "redistribution": {
+    "status": "allowed",
+    "rationale": "Original project-authored syntax cases and deterministic numeric recipe."
+  },
+  "minimization": "25 lexemes cover positive/negative zero, equivalent alternate spellings, finite extremes, nonfinite values and malformed values. Their Cartesian product checks x/y/z failure precedence. Four source lines check retained error locations.",
+  "oracle": {
+    "name": "Frozen pre-change chematic parse_v3000_coords",
+    "version": "1.1.4 plus seven accepted source candidates",
+    "settings": "Exact tuple float bits or complete typed-error Debug representation; no oracle refresh.",
+    "mol3000_sha256": "1c3a16b4493e511d94c7e39ed099224a24d8f2029743239903ecb8006fe3c040"
+  },
+  "expected": {
+    "coordinate_units": "angstrom",
+    "absolute_tolerance": 0,
+    "status": "All outputs and diagnostics exactly match the original implementation; negative-zero bits preserved.",
+    "cartesian_cases": 62500,
+    "fallback_cases": 10000
+  },
+  "sha256": "e9fd9a19aac729a7920b3e926cd0bfe954fd96c848d69115020877a213ad510d"
+}

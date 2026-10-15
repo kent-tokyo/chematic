@@ -1,0 +1,5112 @@
+{
+  "schema": "python-speed-frontier/v1",
+  "base_revision": "cac480fb23cd8adeec6e5e9bed1f18677f87b392",
+  "created_utc": "2026-10-14T12:54:06.068133+00:00",
+  "load_average_start": [
+    3.396484375,
+    4.75,
+    3.91015625
+  ],
+  "host": {
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "python": "3.13.6 (v3.13.6:4e665351082, Aug  6 2025, 11:22:35) [Clang 16.0.0 (clang-1600.0.26.6)]",
+    "cpus": 10
+  },
+  "wheels": {
+    "baseline": {
+      "path": "/private/tmp/chematic-cycle-speed-20261014/baseline-wheel/chematic-1.1.4-cp313-cp313-macosx_11_0_arm64.whl",
+      "sha256": "367f7f07937978abf0f98c469861e2341db9c222b21cef033e3558debc3669b4"
+    },
+    "candidate": {
+      "path": "/private/tmp/chematic-cycle-speed-20261014/candidate-wheel/chematic-1.1.4-cp313-cp313-macosx_11_0_arm64.whl",
+      "sha256": "f8b125d5631a3bb10c414baa153173d7d59c39dd797347d4dfa3d395f157a90b"
+    }
+  },
+  "corpus": {
+    "path": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+    "sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+    "offset": 0,
+    "limit": 1000
+  },
+  "protocol": {
+    "blocks": 20,
+    "order": "four rotating fresh-process arms, sequential",
+    "timing": "native return objects retained; normalization outside timing",
+    "first_use": "fresh parsed molecules; eager/lazy perception differs",
+    "repeated_use": "one untimed operation on every fresh molecule",
+    "parse_inclusive": "actual parse and operation inside the same timed loop",
+    "memory": "whole-process peak, including imports and all operations"
+  },
+  "blocks": [
+    {
+      "order": [
+        "baseline",
+        "candidate",
+        "rdkit",
+        "cosmolkit"
+      ],
+      "load_average_start": [
+        3.396484375,
+        4.75,
+        3.91015625
+      ],
+      "baseline": {
+        "parse_ns": 3297917,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 2617667,
+            "repeated_use": 36917,
+            "parse_inclusive": 4325959
+          },
+          "labute_asa": {
+            "first_use": 1423667,
+            "repeated_use": 36166,
+            "parse_inclusive": 4531500
+          },
+          "num_rings": {
+            "first_use": 3435708,
+            "repeated_use": 32084,
+            "parse_inclusive": 6234291
+          },
+          "morgan2_2048": {
+            "first_use": 5044708,
+            "repeated_use": 2885417,
+            "parse_inclusive": 8295000
+          },
+          "morgan2_chiral": {
+            "first_use": 12915625,
+            "repeated_use": 3044667,
+            "parse_inclusive": 15802792
+          },
+          "morgan3_2048": {
+            "first_use": 5884083,
+            "repeated_use": 3957667,
+            "parse_inclusive": 9369792
+          },
+          "maccs": {
+            "first_use": 219400042,
+            "repeated_use": 210538958,
+            "parse_inclusive": 222096250
+          }
+        },
+        "peak_process_rss_bytes": 53542912,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/baseline/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "e3d33f6be050e84a55c3b8c62071e28e0f10cbe30823ffaf4f43e61f4f38ece0"
+        },
+        "output_sha256": "43b35f5e0bf9d581c9810a8ad417e500058061374ed226200e9c7432a177096b"
+      },
+      "candidate": {
+        "parse_ns": 3146125,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 1375458,
+            "repeated_use": 35958,
+            "parse_inclusive": 4381375
+          },
+          "labute_asa": {
+            "first_use": 1429042,
+            "repeated_use": 36708,
+            "parse_inclusive": 4553000
+          },
+          "num_rings": {
+            "first_use": 2202417,
+            "repeated_use": 33083,
+            "parse_inclusive": 5189083
+          },
+          "morgan2_2048": {
+            "first_use": 4982541,
+            "repeated_use": 2902417,
+            "parse_inclusive": 8289167
+          },
+          "morgan2_chiral": {
+            "first_use": 12497834,
+            "repeated_use": 3098792,
+            "parse_inclusive": 16261125
+          },
+          "morgan3_2048": {
+            "first_use": 5879291,
+            "repeated_use": 3953084,
+            "parse_inclusive": 9398417
+          },
+          "maccs": {
+            "first_use": 214846208,
+            "repeated_use": 211024042,
+            "parse_inclusive": 224247916
+          }
+        },
+        "peak_process_rss_bytes": 49217536,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/candidate/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "6d1e6d5ac6e2908aaa2864c513d5d5f98d0df9a74d9ed677da8ba832989c3216"
+        },
+        "output_sha256": "43b35f5e0bf9d581c9810a8ad417e500058061374ed226200e9c7432a177096b"
+      },
+      "rdkit": {
+        "parse_ns": 53064125,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 2033833,
+            "repeated_use": 366417,
+            "parse_inclusive": 57142041
+          },
+          "labute_asa": {
+            "first_use": 1044000,
+            "repeated_use": 97583,
+            "parse_inclusive": 56622125
+          },
+          "num_rings": {
+            "first_use": 67500,
+            "repeated_use": 59041,
+            "parse_inclusive": 54514625
+          },
+          "morgan2_2048": {
+            "first_use": 15813125,
+            "repeated_use": 15563417,
+            "parse_inclusive": 70969875
+          },
+          "morgan2_chiral": {
+            "first_use": 15942416,
+            "repeated_use": 15630208,
+            "parse_inclusive": 70673125
+          },
+          "morgan3_2048": {
+            "first_use": 19797542,
+            "repeated_use": 19475958,
+            "parse_inclusive": 74090000
+          },
+          "maccs": {
+            "first_use": 411992875,
+            "repeated_use": 421497291,
+            "parse_inclusive": 477909875
+          }
+        },
+        "peak_process_rss_bytes": 111640576,
+        "version": "2026.09.1",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/rdkit/__init__.py",
+        "extension_sha256": {
+          "rdBase.so": "2fb1e7377e7441fcc3c9ae813803adb288fdb710b2b0de66aecbfc1f4b5919ff"
+        },
+        "output_sha256": "471d99837becc9476610e82304e8e9d4fe991cf6147d65e9b82fd8a26837c595"
+      },
+      "cosmolkit": {
+        "parse_ns": 54845750,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 709209,
+            "repeated_use": 62667,
+            "parse_inclusive": 52828250
+          },
+          "labute_asa": {
+            "first_use": 480166,
+            "repeated_use": 49125,
+            "parse_inclusive": 52364458
+          },
+          "num_rings": {
+            "first_use": 61000,
+            "repeated_use": 33167,
+            "parse_inclusive": 52362625
+          },
+          "morgan2_2048": {
+            "first_use": 10064125,
+            "repeated_use": 9616125,
+            "parse_inclusive": 62046250
+          },
+          "morgan2_chiral": {
+            "first_use": 10761250,
+            "repeated_use": 10516917,
+            "parse_inclusive": 64878500
+          },
+          "morgan3_2048": {
+            "first_use": 13784542,
+            "repeated_use": 13353125,
+            "parse_inclusive": 67372541
+          },
+          "maccs": {
+            "first_use": 480522875,
+            "repeated_use": 482932542,
+            "parse_inclusive": 551146500
+          }
+        },
+        "peak_process_rss_bytes": 111607808,
+        "version": "0.5.0-rc.22",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/cosmolkit/__init__.py",
+        "extension_sha256": {
+          "cosmolkit.abi3.so": "0fc4a42b65552d31e852181a8a4beef693d15d8aa88716bf53e850701936362c"
+        },
+        "output_sha256": "52d3b7273bd8c6ec2a487aaabeb028279e92619cd07164d55046658523139367"
+      }
+    },
+    {
+      "order": [
+        "candidate",
+        "rdkit",
+        "cosmolkit",
+        "baseline"
+      ],
+      "load_average_start": [
+        3.02734375,
+        4.6259765625,
+        3.8759765625
+      ],
+      "candidate": {
+        "parse_ns": 3456458,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 1445916,
+            "repeated_use": 38083,
+            "parse_inclusive": 4685291
+          },
+          "labute_asa": {
+            "first_use": 1533750,
+            "repeated_use": 38375,
+            "parse_inclusive": 4916375
+          },
+          "num_rings": {
+            "first_use": 2369542,
+            "repeated_use": 33917,
+            "parse_inclusive": 5696750
+          },
+          "morgan2_2048": {
+            "first_use": 5464666,
+            "repeated_use": 3648833,
+            "parse_inclusive": 9405292
+          },
+          "morgan2_chiral": {
+            "first_use": 13672166,
+            "repeated_use": 3292125,
+            "parse_inclusive": 17481292
+          },
+          "morgan3_2048": {
+            "first_use": 6577542,
+            "repeated_use": 4421209,
+            "parse_inclusive": 10480166
+          },
+          "maccs": {
+            "first_use": 239263833,
+            "repeated_use": 233026042,
+            "parse_inclusive": 247568208
+          }
+        },
+        "peak_process_rss_bytes": 49053696,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/candidate/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "6d1e6d5ac6e2908aaa2864c513d5d5f98d0df9a74d9ed677da8ba832989c3216"
+        },
+        "output_sha256": "43b35f5e0bf9d581c9810a8ad417e500058061374ed226200e9c7432a177096b"
+      },
+      "rdkit": {
+        "parse_ns": 59311000,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 2168333,
+            "repeated_use": 366625,
+            "parse_inclusive": 58224000
+          },
+          "labute_asa": {
+            "first_use": 1063542,
+            "repeated_use": 94917,
+            "parse_inclusive": 54942250
+          },
+          "num_rings": {
+            "first_use": 61334,
+            "repeated_use": 56417,
+            "parse_inclusive": 54144416
+          },
+          "morgan2_2048": {
+            "first_use": 15482125,
+            "repeated_use": 15618417,
+            "parse_inclusive": 69676000
+          },
+          "morgan2_chiral": {
+            "first_use": 15554417,
+            "repeated_use": 15131416,
+            "parse_inclusive": 70577750
+          },
+          "morgan3_2048": {
+            "first_use": 19984250,
+            "repeated_use": 19675500,
+            "parse_inclusive": 74922083
+          },
+          "maccs": {
+            "first_use": 407539375,
+            "repeated_use": 407457333,
+            "parse_inclusive": 469091375
+          }
+        },
+        "peak_process_rss_bytes": 111689728,
+        "version": "2026.09.1",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/rdkit/__init__.py",
+        "extension_sha256": {
+          "rdBase.so": "2fb1e7377e7441fcc3c9ae813803adb288fdb710b2b0de66aecbfc1f4b5919ff"
+        },
+        "output_sha256": "471d99837becc9476610e82304e8e9d4fe991cf6147d65e9b82fd8a26837c595"
+      },
+      "cosmolkit": {
+        "parse_ns": 53273167,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 693417,
+            "repeated_use": 65750,
+            "parse_inclusive": 52966500
+          },
+          "labute_asa": {
+            "first_use": 502625,
+            "repeated_use": 53541,
+            "parse_inclusive": 52710292
+          },
+          "num_rings": {
+            "first_use": 65834,
+            "repeated_use": 35833,
+            "parse_inclusive": 52204041
+          },
+          "morgan2_2048": {
+            "first_use": 10285292,
+            "repeated_use": 9427292,
+            "parse_inclusive": 62417375
+          },
+          "morgan2_chiral": {
+            "first_use": 10515542,
+            "repeated_use": 9874667,
+            "parse_inclusive": 61864000
+          },
+          "morgan3_2048": {
+            "first_use": 13402292,
+            "repeated_use": 12490458,
+            "parse_inclusive": 64769834
+          },
+          "maccs": {
+            "first_use": 470359292,
+            "repeated_use": 469794666,
+            "parse_inclusive": 530845291
+          }
+        },
+        "peak_process_rss_bytes": 110526464,
+        "version": "0.5.0-rc.22",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/cosmolkit/__init__.py",
+        "extension_sha256": {
+          "cosmolkit.abi3.so": "0fc4a42b65552d31e852181a8a4beef693d15d8aa88716bf53e850701936362c"
+        },
+        "output_sha256": "52d3b7273bd8c6ec2a487aaabeb028279e92619cd07164d55046658523139367"
+      },
+      "baseline": {
+        "parse_ns": 3290500,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 1352125,
+            "repeated_use": 34083,
+            "parse_inclusive": 4385250
+          },
+          "labute_asa": {
+            "first_use": 1453042,
+            "repeated_use": 35000,
+            "parse_inclusive": 4472791
+          },
+          "num_rings": {
+            "first_use": 3193125,
+            "repeated_use": 31375,
+            "parse_inclusive": 6152625
+          },
+          "morgan2_2048": {
+            "first_use": 4989333,
+            "repeated_use": 2898000,
+            "parse_inclusive": 8118417
+          },
+          "morgan2_chiral": {
+            "first_use": 12335125,
+            "repeated_use": 3045458,
+            "parse_inclusive": 15685542
+          },
+          "morgan3_2048": {
+            "first_use": 5996959,
+            "repeated_use": 3971959,
+            "parse_inclusive": 9318042
+          },
+          "maccs": {
+            "first_use": 216441125,
+            "repeated_use": 210083209,
+            "parse_inclusive": 221450541
+          }
+        },
+        "peak_process_rss_bytes": 49004544,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/baseline/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "e3d33f6be050e84a55c3b8c62071e28e0f10cbe30823ffaf4f43e61f4f38ece0"
+        },
+        "output_sha256": "43b35f5e0bf9d581c9810a8ad417e500058061374ed226200e9c7432a177096b"
+      }
+    },
+    {
+      "order": [
+        "rdkit",
+        "cosmolkit",
+        "baseline",
+        "candidate"
+      ],
+      "load_average_start": [
+        2.9423828125,
+        4.55517578125,
+        3.859375
+      ],
+      "rdkit": {
+        "parse_ns": 53008375,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 1984500,
+            "repeated_use": 354834,
+            "parse_inclusive": 56595542
+          },
+          "labute_asa": {
+            "first_use": 1014542,
+            "repeated_use": 106292,
+            "parse_inclusive": 61157042
+          },
+          "num_rings": {
+            "first_use": 67875,
+            "repeated_use": 56625,
+            "parse_inclusive": 56158917
+          },
+          "morgan2_2048": {
+            "first_use": 15715000,
+            "repeated_use": 15477083,
+            "parse_inclusive": 69841333
+          },
+          "morgan2_chiral": {
+            "first_use": 15530125,
+            "repeated_use": 15634208,
+            "parse_inclusive": 71707583
+          },
+          "morgan3_2048": {
+            "first_use": 20092375,
+            "repeated_use": 19575708,
+            "parse_inclusive": 75387333
+          },
+          "maccs": {
+            "first_use": 407663500,
+            "repeated_use": 412965000,
+            "parse_inclusive": 467248958
+          }
+        },
+        "peak_process_rss_bytes": 111820800,
+        "version": "2026.09.1",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/rdkit/__init__.py",
+        "extension_sha256": {
+          "rdBase.so": "2fb1e7377e7441fcc3c9ae813803adb288fdb710b2b0de66aecbfc1f4b5919ff"
+        },
+        "output_sha256": "471d99837becc9476610e82304e8e9d4fe991cf6147d65e9b82fd8a26837c595"
+      },
+      "cosmolkit": {
+        "parse_ns": 57526625,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 750083,
+            "repeated_use": 86000,
+            "parse_inclusive": 53084958
+          },
+          "labute_asa": {
+            "first_use": 519125,
+            "repeated_use": 51917,
+            "parse_inclusive": 52364458
+          },
+          "num_rings": {
+            "first_use": 72625,
+            "repeated_use": 34084,
+            "parse_inclusive": 51778667
+          },
+          "morgan2_2048": {
+            "first_use": 10395416,
+            "repeated_use": 9518792,
+            "parse_inclusive": 62433875
+          },
+          "morgan2_chiral": {
+            "first_use": 10976584,
+            "repeated_use": 9642083,
+            "parse_inclusive": 62209167
+          },
+          "morgan3_2048": {
+            "first_use": 13393917,
+            "repeated_use": 12644417,
+            "parse_inclusive": 66158625
+          },
+          "maccs": {
+            "first_use": 474129500,
+            "repeated_use": 469300958,
+            "parse_inclusive": 529309292
+          }
+        },
+        "peak_process_rss_bytes": 107790336,
+        "version": "0.5.0-rc.22",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/cosmolkit/__init__.py",
+        "extension_sha256": {
+          "cosmolkit.abi3.so": "0fc4a42b65552d31e852181a8a4beef693d15d8aa88716bf53e850701936362c"
+        },
+        "output_sha256": "52d3b7273bd8c6ec2a487aaabeb028279e92619cd07164d55046658523139367"
+      },
+      "baseline": {
+        "parse_ns": 3122958,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 1347625,
+            "repeated_use": 34833,
+            "parse_inclusive": 4333625
+          },
+          "labute_asa": {
+            "first_use": 1417166,
+            "repeated_use": 35417,
+            "parse_inclusive": 4512209
+          },
+          "num_rings": {
+            "first_use": 3202792,
+            "repeated_use": 31209,
+            "parse_inclusive": 6212750
+          },
+          "morgan2_2048": {
+            "first_use": 5012209,
+            "repeated_use": 2894042,
+            "parse_inclusive": 8189334
+          },
+          "morgan2_chiral": {
+            "first_use": 12337375,
+            "repeated_use": 3048500,
+            "parse_inclusive": 15909333
+          },
+          "morgan3_2048": {
+            "first_use": 5870666,
+            "repeated_use": 3957084,
+            "parse_inclusive": 9363042
+          },
+          "maccs": {
+            "first_use": 217001167,
+            "repeated_use": 209289500,
+            "parse_inclusive": 222368000
+          }
+        },
+        "peak_process_rss_bytes": 49037312,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/baseline/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "e3d33f6be050e84a55c3b8c62071e28e0f10cbe30823ffaf4f43e61f4f38ece0"
+        },
+        "output_sha256": "43b35f5e0bf9d581c9810a8ad417e500058061374ed226200e9c7432a177096b"
+      },
+      "candidate": {
+        "parse_ns": 3160584,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 1368917,
+            "repeated_use": 35917,
+            "parse_inclusive": 4372083
+          },
+          "labute_asa": {
+            "first_use": 1445125,
+            "repeated_use": 45084,
+            "parse_inclusive": 4609917
+          },
+          "num_rings": {
+            "first_use": 2224083,
+            "repeated_use": 32292,
+            "parse_inclusive": 5227875
+          },
+          "morgan2_2048": {
+            "first_use": 5027834,
+            "repeated_use": 2904625,
+            "parse_inclusive": 8136250
+          },
+          "morgan2_chiral": {
+            "first_use": 12340792,
+            "repeated_use": 3149000,
+            "parse_inclusive": 16401542
+          },
+          "morgan3_2048": {
+            "first_use": 6191667,
+            "repeated_use": 4043542,
+            "parse_inclusive": 9485292
+          },
+          "maccs": {
+            "first_use": 216176167,
+            "repeated_use": 208732125,
+            "parse_inclusive": 221164625
+          }
+        },
+        "peak_process_rss_bytes": 49020928,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/candidate/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "6d1e6d5ac6e2908aaa2864c513d5d5f98d0df9a74d9ed677da8ba832989c3216"
+        },
+        "output_sha256": "43b35f5e0bf9d581c9810a8ad417e500058061374ed226200e9c7432a177096b"
+      }
+    },
+    {
+      "order": [
+        "cosmolkit",
+        "baseline",
+        "candidate",
+        "rdkit"
+      ],
+      "load_average_start": [
+        2.87060546875,
+        4.4873046875,
+        3.8427734375
+      ],
+      "cosmolkit": {
+        "parse_ns": 53083167,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 683750,
+            "repeated_use": 63583,
+            "parse_inclusive": 52872583
+          },
+          "labute_asa": {
+            "first_use": 501208,
+            "repeated_use": 48417,
+            "parse_inclusive": 52301083
+          },
+          "num_rings": {
+            "first_use": 71209,
+            "repeated_use": 33666,
+            "parse_inclusive": 51792667
+          },
+          "morgan2_2048": {
+            "first_use": 10155125,
+            "repeated_use": 9174792,
+            "parse_inclusive": 61661958
+          },
+          "morgan2_chiral": {
+            "first_use": 10329458,
+            "repeated_use": 9487083,
+            "parse_inclusive": 62029542
+          },
+          "morgan3_2048": {
+            "first_use": 13310542,
+            "repeated_use": 12392500,
+            "parse_inclusive": 65436583
+          },
+          "maccs": {
+            "first_use": 471428916,
+            "repeated_use": 469435500,
+            "parse_inclusive": 523745542
+          }
+        },
+        "peak_process_rss_bytes": 110280704,
+        "version": "0.5.0-rc.22",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/cosmolkit/__init__.py",
+        "extension_sha256": {
+          "cosmolkit.abi3.so": "0fc4a42b65552d31e852181a8a4beef693d15d8aa88716bf53e850701936362c"
+        },
+        "output_sha256": "52d3b7273bd8c6ec2a487aaabeb028279e92619cd07164d55046658523139367"
+      },
+      "baseline": {
+        "parse_ns": 3215083,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 1350458,
+            "repeated_use": 36875,
+            "parse_inclusive": 4426875
+          },
+          "labute_asa": {
+            "first_use": 1421875,
+            "repeated_use": 35375,
+            "parse_inclusive": 4514500
+          },
+          "num_rings": {
+            "first_use": 3290500,
+            "repeated_use": 32375,
+            "parse_inclusive": 6304459
+          },
+          "morgan2_2048": {
+            "first_use": 5013709,
+            "repeated_use": 2898583,
+            "parse_inclusive": 8223750
+          },
+          "morgan2_chiral": {
+            "first_use": 12524291,
+            "repeated_use": 3045292,
+            "parse_inclusive": 15986416
+          },
+          "morgan3_2048": {
+            "first_use": 5881917,
+            "repeated_use": 3996625,
+            "parse_inclusive": 9389292
+          },
+          "maccs": {
+            "first_use": 216256417,
+            "repeated_use": 209574667,
+            "parse_inclusive": 223745333
+          }
+        },
+        "peak_process_rss_bytes": 49070080,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/baseline/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "e3d33f6be050e84a55c3b8c62071e28e0f10cbe30823ffaf4f43e61f4f38ece0"
+        },
+        "output_sha256": "43b35f5e0bf9d581c9810a8ad417e500058061374ed226200e9c7432a177096b"
+      },
+      "candidate": {
+        "parse_ns": 3169375,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 1386792,
+            "repeated_use": 35000,
+            "parse_inclusive": 4366958
+          },
+          "labute_asa": {
+            "first_use": 1538833,
+            "repeated_use": 36084,
+            "parse_inclusive": 4609667
+          },
+          "num_rings": {
+            "first_use": 2197125,
+            "repeated_use": 31791,
+            "parse_inclusive": 5200334
+          },
+          "morgan2_2048": {
+            "first_use": 5038709,
+            "repeated_use": 2917875,
+            "parse_inclusive": 8298584
+          },
+          "morgan2_chiral": {
+            "first_use": 12619500,
+            "repeated_use": 3063708,
+            "parse_inclusive": 15775208
+          },
+          "morgan3_2048": {
+            "first_use": 5902666,
+            "repeated_use": 4003750,
+            "parse_inclusive": 9407708
+          },
+          "maccs": {
+            "first_use": 217154125,
+            "repeated_use": 209707125,
+            "parse_inclusive": 221453166
+          }
+        },
+        "peak_process_rss_bytes": 49119232,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/candidate/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "6d1e6d5ac6e2908aaa2864c513d5d5f98d0df9a74d9ed677da8ba832989c3216"
+        },
+        "output_sha256": "43b35f5e0bf9d581c9810a8ad417e500058061374ed226200e9c7432a177096b"
+      },
+      "rdkit": {
+        "parse_ns": 52942417,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 2018541,
+            "repeated_use": 362375,
+            "parse_inclusive": 57991541
+          },
+          "labute_asa": {
+            "first_use": 1050541,
+            "repeated_use": 98875,
+            "parse_inclusive": 57391625
+          },
+          "num_rings": {
+            "first_use": 68250,
+            "repeated_use": 64583,
+            "parse_inclusive": 56608125
+          },
+          "morgan2_2048": {
+            "first_use": 16393083,
+            "repeated_use": 15997416,
+            "parse_inclusive": 71514000
+          },
+          "morgan2_chiral": {
+            "first_use": 15763542,
+            "repeated_use": 15726458,
+            "parse_inclusive": 73129792
+          },
+          "morgan3_2048": {
+            "first_use": 20616667,
+            "repeated_use": 20415125,
+            "parse_inclusive": 77681750
+          },
+          "maccs": {
+            "first_use": 418974917,
+            "repeated_use": 417195625,
+            "parse_inclusive": 476315084
+          }
+        },
+        "peak_process_rss_bytes": 111788032,
+        "version": "2026.09.1",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/rdkit/__init__.py",
+        "extension_sha256": {
+          "rdBase.so": "2fb1e7377e7441fcc3c9ae813803adb288fdb710b2b0de66aecbfc1f4b5919ff"
+        },
+        "output_sha256": "471d99837becc9476610e82304e8e9d4fe991cf6147d65e9b82fd8a26837c595"
+      }
+    },
+    {
+      "order": [
+        "baseline",
+        "candidate",
+        "rdkit",
+        "cosmolkit"
+      ],
+      "load_average_start": [
+        2.66259765625,
+        4.388671875,
+        3.81494140625
+      ],
+      "baseline": {
+        "parse_ns": 3245583,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 1383708,
+            "repeated_use": 36125,
+            "parse_inclusive": 4423292
+          },
+          "labute_asa": {
+            "first_use": 1467250,
+            "repeated_use": 36750,
+            "parse_inclusive": 4539333
+          },
+          "num_rings": {
+            "first_use": 3298542,
+            "repeated_use": 33000,
+            "parse_inclusive": 6405834
+          },
+          "morgan2_2048": {
+            "first_use": 5130709,
+            "repeated_use": 2984875,
+            "parse_inclusive": 8463084
+          },
+          "morgan2_chiral": {
+            "first_use": 12741583,
+            "repeated_use": 3155541,
+            "parse_inclusive": 16192083
+          },
+          "morgan3_2048": {
+            "first_use": 5971750,
+            "repeated_use": 4059625,
+            "parse_inclusive": 9588125
+          },
+          "maccs": {
+            "first_use": 220619542,
+            "repeated_use": 212838500,
+            "parse_inclusive": 226599875
+          }
+        },
+        "peak_process_rss_bytes": 48889856,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/baseline/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "e3d33f6be050e84a55c3b8c62071e28e0f10cbe30823ffaf4f43e61f4f38ece0"
+        },
+        "output_sha256": "43b35f5e0bf9d581c9810a8ad417e500058061374ed226200e9c7432a177096b"
+      },
+      "candidate": {
+        "parse_ns": 3144625,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 1374500,
+            "repeated_use": 36500,
+            "parse_inclusive": 4574000
+          },
+          "labute_asa": {
+            "first_use": 1517042,
+            "repeated_use": 36125,
+            "parse_inclusive": 4566834
+          },
+          "num_rings": {
+            "first_use": 2321417,
+            "repeated_use": 37791,
+            "parse_inclusive": 5412833
+          },
+          "morgan2_2048": {
+            "first_use": 5276708,
+            "repeated_use": 2978375,
+            "parse_inclusive": 8543792
+          },
+          "morgan2_chiral": {
+            "first_use": 13195833,
+            "repeated_use": 3213792,
+            "parse_inclusive": 17499250
+          },
+          "morgan3_2048": {
+            "first_use": 6225542,
+            "repeated_use": 4170417,
+            "parse_inclusive": 9765875
+          },
+          "maccs": {
+            "first_use": 218969541,
+            "repeated_use": 209158625,
+            "parse_inclusive": 221104541
+          }
+        },
+        "peak_process_rss_bytes": 49135616,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/candidate/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "6d1e6d5ac6e2908aaa2864c513d5d5f98d0df9a74d9ed677da8ba832989c3216"
+        },
+        "output_sha256": "43b35f5e0bf9d581c9810a8ad417e500058061374ed226200e9c7432a177096b"
+      },
+      "rdkit": {
+        "parse_ns": 53138000,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 1951375,
+            "repeated_use": 360375,
+            "parse_inclusive": 55944708
+          },
+          "labute_asa": {
+            "first_use": 1014333,
+            "repeated_use": 95250,
+            "parse_inclusive": 55018292
+          },
+          "num_rings": {
+            "first_use": 64750,
+            "repeated_use": 54958,
+            "parse_inclusive": 55391667
+          },
+          "morgan2_2048": {
+            "first_use": 15721709,
+            "repeated_use": 15541459,
+            "parse_inclusive": 70336041
+          },
+          "morgan2_chiral": {
+            "first_use": 15795166,
+            "repeated_use": 15310917,
+            "parse_inclusive": 70516167
+          },
+          "morgan3_2048": {
+            "first_use": 20210917,
+            "repeated_use": 19828500,
+            "parse_inclusive": 75732833
+          },
+          "maccs": {
+            "first_use": 407595292,
+            "repeated_use": 410596000,
+            "parse_inclusive": 465419167
+          }
+        },
+        "peak_process_rss_bytes": 111886336,
+        "version": "2026.09.1",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/rdkit/__init__.py",
+        "extension_sha256": {
+          "rdBase.so": "2fb1e7377e7441fcc3c9ae813803adb288fdb710b2b0de66aecbfc1f4b5919ff"
+        },
+        "output_sha256": "471d99837becc9476610e82304e8e9d4fe991cf6147d65e9b82fd8a26837c595"
+      },
+      "cosmolkit": {
+        "parse_ns": 52974209,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 709250,
+            "repeated_use": 64250,
+            "parse_inclusive": 52695000
+          },
+          "labute_asa": {
+            "first_use": 532042,
+            "repeated_use": 51917,
+            "parse_inclusive": 53140709
+          },
+          "num_rings": {
+            "first_use": 65833,
+            "repeated_use": 34791,
+            "parse_inclusive": 51916584
+          },
+          "morgan2_2048": {
+            "first_use": 10403333,
+            "repeated_use": 9408833,
+            "parse_inclusive": 61809667
+          },
+          "morgan2_chiral": {
+            "first_use": 10453291,
+            "repeated_use": 9593792,
+            "parse_inclusive": 61790209
+          },
+          "morgan3_2048": {
+            "first_use": 13609250,
+            "repeated_use": 12436458,
+            "parse_inclusive": 64585291
+          },
+          "maccs": {
+            "first_use": 469768625,
+            "repeated_use": 471201250,
+            "parse_inclusive": 523078333
+          }
+        },
+        "peak_process_rss_bytes": 110297088,
+        "version": "0.5.0-rc.22",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/cosmolkit/__init__.py",
+        "extension_sha256": {
+          "cosmolkit.abi3.so": "0fc4a42b65552d31e852181a8a4beef693d15d8aa88716bf53e850701936362c"
+        },
+        "output_sha256": "52d3b7273bd8c6ec2a487aaabeb028279e92619cd07164d55046658523139367"
+      }
+    },
+    {
+      "order": [
+        "candidate",
+        "rdkit",
+        "cosmolkit",
+        "baseline"
+      ],
+      "load_average_start": [
+        2.6337890625,
+        4.32568359375,
+        3.79931640625
+      ],
+      "candidate": {
+        "parse_ns": 3157042,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 1354583,
+            "repeated_use": 34625,
+            "parse_inclusive": 4320875
+          },
+          "labute_asa": {
+            "first_use": 1552500,
+            "repeated_use": 36625,
+            "parse_inclusive": 4823541
+          },
+          "num_rings": {
+            "first_use": 2217292,
+            "repeated_use": 31583,
+            "parse_inclusive": 5252083
+          },
+          "morgan2_2048": {
+            "first_use": 5249042,
+            "repeated_use": 2914792,
+            "parse_inclusive": 8199500
+          },
+          "morgan2_chiral": {
+            "first_use": 12395917,
+            "repeated_use": 3060166,
+            "parse_inclusive": 15830958
+          },
+          "morgan3_2048": {
+            "first_use": 5842083,
+            "repeated_use": 3975625,
+            "parse_inclusive": 9414250
+          },
+          "maccs": {
+            "first_use": 214945125,
+            "repeated_use": 208888958,
+            "parse_inclusive": 221697667
+          }
+        },
+        "peak_process_rss_bytes": 49086464,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/candidate/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "6d1e6d5ac6e2908aaa2864c513d5d5f98d0df9a74d9ed677da8ba832989c3216"
+        },
+        "output_sha256": "43b35f5e0bf9d581c9810a8ad417e500058061374ed226200e9c7432a177096b"
+      },
+      "rdkit": {
+        "parse_ns": 53052500,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 1976917,
+            "repeated_use": 367875,
+            "parse_inclusive": 58315666
+          },
+          "labute_asa": {
+            "first_use": 1027875,
+            "repeated_use": 94334,
+            "parse_inclusive": 55356583
+          },
+          "num_rings": {
+            "first_use": 65500,
+            "repeated_use": 55416,
+            "parse_inclusive": 54045209
+          },
+          "morgan2_2048": {
+            "first_use": 15420875,
+            "repeated_use": 15018208,
+            "parse_inclusive": 69622958
+          },
+          "morgan2_chiral": {
+            "first_use": 15470583,
+            "repeated_use": 15145375,
+            "parse_inclusive": 69328500
+          },
+          "morgan3_2048": {
+            "first_use": 19715833,
+            "repeated_use": 19999042,
+            "parse_inclusive": 75478875
+          },
+          "maccs": {
+            "first_use": 407383125,
+            "repeated_use": 406890875,
+            "parse_inclusive": 465364875
+          }
+        },
+        "peak_process_rss_bytes": 111738880,
+        "version": "2026.09.1",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/rdkit/__init__.py",
+        "extension_sha256": {
+          "rdBase.so": "2fb1e7377e7441fcc3c9ae813803adb288fdb710b2b0de66aecbfc1f4b5919ff"
+        },
+        "output_sha256": "471d99837becc9476610e82304e8e9d4fe991cf6147d65e9b82fd8a26837c595"
+      },
+      "cosmolkit": {
+        "parse_ns": 53437834,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 695125,
+            "repeated_use": 59000,
+            "parse_inclusive": 52259333
+          },
+          "labute_asa": {
+            "first_use": 481666,
+            "repeated_use": 55291,
+            "parse_inclusive": 52237792
+          },
+          "num_rings": {
+            "first_use": 69041,
+            "repeated_use": 33417,
+            "parse_inclusive": 52343625
+          },
+          "morgan2_2048": {
+            "first_use": 10344750,
+            "repeated_use": 9289250,
+            "parse_inclusive": 61526791
+          },
+          "morgan2_chiral": {
+            "first_use": 10299083,
+            "repeated_use": 9533166,
+            "parse_inclusive": 61707583
+          },
+          "morgan3_2048": {
+            "first_use": 13170416,
+            "repeated_use": 12395750,
+            "parse_inclusive": 65973416
+          },
+          "maccs": {
+            "first_use": 467583333,
+            "repeated_use": 477371458,
+            "parse_inclusive": 524178666
+          }
+        },
+        "peak_process_rss_bytes": 108756992,
+        "version": "0.5.0-rc.22",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/cosmolkit/__init__.py",
+        "extension_sha256": {
+          "cosmolkit.abi3.so": "0fc4a42b65552d31e852181a8a4beef693d15d8aa88716bf53e850701936362c"
+        },
+        "output_sha256": "52d3b7273bd8c6ec2a487aaabeb028279e92619cd07164d55046658523139367"
+      },
+      "baseline": {
+        "parse_ns": 3140000,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 1347167,
+            "repeated_use": 36042,
+            "parse_inclusive": 4417250
+          },
+          "labute_asa": {
+            "first_use": 1408958,
+            "repeated_use": 36375,
+            "parse_inclusive": 4527375
+          },
+          "num_rings": {
+            "first_use": 3261375,
+            "repeated_use": 31791,
+            "parse_inclusive": 6241208
+          },
+          "morgan2_2048": {
+            "first_use": 4964958,
+            "repeated_use": 2878125,
+            "parse_inclusive": 8273625
+          },
+          "morgan2_chiral": {
+            "first_use": 12338250,
+            "repeated_use": 3072333,
+            "parse_inclusive": 15824000
+          },
+          "morgan3_2048": {
+            "first_use": 6467416,
+            "repeated_use": 3982958,
+            "parse_inclusive": 9552542
+          },
+          "maccs": {
+            "first_use": 215733583,
+            "repeated_use": 212664417,
+            "parse_inclusive": 228818916
+          }
+        },
+        "peak_process_rss_bytes": 48922624,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/baseline/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "e3d33f6be050e84a55c3b8c62071e28e0f10cbe30823ffaf4f43e61f4f38ece0"
+        },
+        "output_sha256": "43b35f5e0bf9d581c9810a8ad417e500058061374ed226200e9c7432a177096b"
+      }
+    },
+    {
+      "order": [
+        "rdkit",
+        "cosmolkit",
+        "baseline",
+        "candidate"
+      ],
+      "load_average_start": [
+        2.54248046875,
+        4.24853515625,
+        3.77783203125
+      ],
+      "rdkit": {
+        "parse_ns": 55238833,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 2128083,
+            "repeated_use": 363833,
+            "parse_inclusive": 58431250
+          },
+          "labute_asa": {
+            "first_use": 1113792,
+            "repeated_use": 100667,
+            "parse_inclusive": 56620708
+          },
+          "num_rings": {
+            "first_use": 71167,
+            "repeated_use": 65375,
+            "parse_inclusive": 56345625
+          },
+          "morgan2_2048": {
+            "first_use": 16031833,
+            "repeated_use": 15657750,
+            "parse_inclusive": 72687791
+          },
+          "morgan2_chiral": {
+            "first_use": 16066541,
+            "repeated_use": 16002083,
+            "parse_inclusive": 73594208
+          },
+          "morgan3_2048": {
+            "first_use": 20414875,
+            "repeated_use": 20415208,
+            "parse_inclusive": 79233375
+          },
+          "maccs": {
+            "first_use": 424903625,
+            "repeated_use": 408542417,
+            "parse_inclusive": 464866500
+          }
+        },
+        "peak_process_rss_bytes": 111919104,
+        "version": "2026.09.1",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/rdkit/__init__.py",
+        "extension_sha256": {
+          "rdBase.so": "2fb1e7377e7441fcc3c9ae813803adb288fdb710b2b0de66aecbfc1f4b5919ff"
+        },
+        "output_sha256": "471d99837becc9476610e82304e8e9d4fe991cf6147d65e9b82fd8a26837c595"
+      },
+      "cosmolkit": {
+        "parse_ns": 54716084,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 731542,
+            "repeated_use": 65000,
+            "parse_inclusive": 54305750
+          },
+          "labute_asa": {
+            "first_use": 523875,
+            "repeated_use": 58208,
+            "parse_inclusive": 53931208
+          },
+          "num_rings": {
+            "first_use": 80084,
+            "repeated_use": 41917,
+            "parse_inclusive": 57956042
+          },
+          "morgan2_2048": {
+            "first_use": 11302041,
+            "repeated_use": 9788250,
+            "parse_inclusive": 62057041
+          },
+          "morgan2_chiral": {
+            "first_use": 10136875,
+            "repeated_use": 9370833,
+            "parse_inclusive": 62351667
+          },
+          "morgan3_2048": {
+            "first_use": 13061625,
+            "repeated_use": 12681625,
+            "parse_inclusive": 65562625
+          },
+          "maccs": {
+            "first_use": 489933542,
+            "repeated_use": 477547125,
+            "parse_inclusive": 542395167
+          }
+        },
+        "peak_process_rss_bytes": 110460928,
+        "version": "0.5.0-rc.22",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/cosmolkit/__init__.py",
+        "extension_sha256": {
+          "cosmolkit.abi3.so": "0fc4a42b65552d31e852181a8a4beef693d15d8aa88716bf53e850701936362c"
+        },
+        "output_sha256": "52d3b7273bd8c6ec2a487aaabeb028279e92619cd07164d55046658523139367"
+      },
+      "baseline": {
+        "parse_ns": 3223334,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 1415542,
+            "repeated_use": 40667,
+            "parse_inclusive": 4512958
+          },
+          "labute_asa": {
+            "first_use": 1486625,
+            "repeated_use": 37417,
+            "parse_inclusive": 4683875
+          },
+          "num_rings": {
+            "first_use": 3336375,
+            "repeated_use": 32833,
+            "parse_inclusive": 6211834
+          },
+          "morgan2_2048": {
+            "first_use": 5134875,
+            "repeated_use": 3008958,
+            "parse_inclusive": 8264708
+          },
+          "morgan2_chiral": {
+            "first_use": 12557667,
+            "repeated_use": 3101792,
+            "parse_inclusive": 17197792
+          },
+          "morgan3_2048": {
+            "first_use": 6285208,
+            "repeated_use": 4037208,
+            "parse_inclusive": 9445708
+          },
+          "maccs": {
+            "first_use": 216752459,
+            "repeated_use": 213984750,
+            "parse_inclusive": 227205833
+          }
+        },
+        "peak_process_rss_bytes": 49102848,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/baseline/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "e3d33f6be050e84a55c3b8c62071e28e0f10cbe30823ffaf4f43e61f4f38ece0"
+        },
+        "output_sha256": "43b35f5e0bf9d581c9810a8ad417e500058061374ed226200e9c7432a177096b"
+      },
+      "candidate": {
+        "parse_ns": 3225417,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 1403542,
+            "repeated_use": 38667,
+            "parse_inclusive": 4453209
+          },
+          "labute_asa": {
+            "first_use": 1477167,
+            "repeated_use": 38583,
+            "parse_inclusive": 4670167
+          },
+          "num_rings": {
+            "first_use": 2263625,
+            "repeated_use": 40125,
+            "parse_inclusive": 5303834
+          },
+          "morgan2_2048": {
+            "first_use": 5185209,
+            "repeated_use": 2960250,
+            "parse_inclusive": 8443667
+          },
+          "morgan2_chiral": {
+            "first_use": 13162667,
+            "repeated_use": 3162542,
+            "parse_inclusive": 16153542
+          },
+          "morgan3_2048": {
+            "first_use": 6445917,
+            "repeated_use": 4434834,
+            "parse_inclusive": 10184792
+          },
+          "maccs": {
+            "first_use": 230104500,
+            "repeated_use": 208237000,
+            "parse_inclusive": 221489292
+          }
+        },
+        "peak_process_rss_bytes": 49201152,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/candidate/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "6d1e6d5ac6e2908aaa2864c513d5d5f98d0df9a74d9ed677da8ba832989c3216"
+        },
+        "output_sha256": "43b35f5e0bf9d581c9810a8ad417e500058061374ed226200e9c7432a177096b"
+      }
+    },
+    {
+      "order": [
+        "cosmolkit",
+        "baseline",
+        "candidate",
+        "rdkit"
+      ],
+      "load_average_start": [
+        2.4189453125,
+        4.1943359375,
+        3.76123046875
+      ],
+      "cosmolkit": {
+        "parse_ns": 53635833,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 756041,
+            "repeated_use": 80625,
+            "parse_inclusive": 52923541
+          },
+          "labute_asa": {
+            "first_use": 560042,
+            "repeated_use": 51334,
+            "parse_inclusive": 52679541
+          },
+          "num_rings": {
+            "first_use": 74875,
+            "repeated_use": 33458,
+            "parse_inclusive": 53061000
+          },
+          "morgan2_2048": {
+            "first_use": 10950333,
+            "repeated_use": 9607625,
+            "parse_inclusive": 63922208
+          },
+          "morgan2_chiral": {
+            "first_use": 10551708,
+            "repeated_use": 10300500,
+            "parse_inclusive": 65197375
+          },
+          "morgan3_2048": {
+            "first_use": 13592000,
+            "repeated_use": 12960083,
+            "parse_inclusive": 66937250
+          },
+          "maccs": {
+            "first_use": 482480291,
+            "repeated_use": 532414209,
+            "parse_inclusive": 557303166
+          }
+        },
+        "peak_process_rss_bytes": 110264320,
+        "version": "0.5.0-rc.22",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/cosmolkit/__init__.py",
+        "extension_sha256": {
+          "cosmolkit.abi3.so": "0fc4a42b65552d31e852181a8a4beef693d15d8aa88716bf53e850701936362c"
+        },
+        "output_sha256": "52d3b7273bd8c6ec2a487aaabeb028279e92619cd07164d55046658523139367"
+      },
+      "baseline": {
+        "parse_ns": 3271167,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 1438667,
+            "repeated_use": 42709,
+            "parse_inclusive": 4948959
+          },
+          "labute_asa": {
+            "first_use": 1480042,
+            "repeated_use": 36083,
+            "parse_inclusive": 4634834
+          },
+          "num_rings": {
+            "first_use": 3466625,
+            "repeated_use": 36833,
+            "parse_inclusive": 6640250
+          },
+          "morgan2_2048": {
+            "first_use": 5119375,
+            "repeated_use": 3227791,
+            "parse_inclusive": 9187625
+          },
+          "morgan2_chiral": {
+            "first_use": 13384125,
+            "repeated_use": 3484208,
+            "parse_inclusive": 17473875
+          },
+          "morgan3_2048": {
+            "first_use": 6860542,
+            "repeated_use": 4223792,
+            "parse_inclusive": 10529542
+          },
+          "maccs": {
+            "first_use": 230495125,
+            "repeated_use": 219704333,
+            "parse_inclusive": 231588750
+          }
+        },
+        "peak_process_rss_bytes": 48840704,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/baseline/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "e3d33f6be050e84a55c3b8c62071e28e0f10cbe30823ffaf4f43e61f4f38ece0"
+        },
+        "output_sha256": "43b35f5e0bf9d581c9810a8ad417e500058061374ed226200e9c7432a177096b"
+      },
+      "candidate": {
+        "parse_ns": 3146834,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 1358958,
+            "repeated_use": 37292,
+            "parse_inclusive": 4483166
+          },
+          "labute_asa": {
+            "first_use": 1482291,
+            "repeated_use": 36584,
+            "parse_inclusive": 4590458
+          },
+          "num_rings": {
+            "first_use": 2244292,
+            "repeated_use": 32583,
+            "parse_inclusive": 5441208
+          },
+          "morgan2_2048": {
+            "first_use": 5113833,
+            "repeated_use": 3014334,
+            "parse_inclusive": 8647750
+          },
+          "morgan2_chiral": {
+            "first_use": 13887333,
+            "repeated_use": 3455084,
+            "parse_inclusive": 19250459
+          },
+          "morgan3_2048": {
+            "first_use": 6387834,
+            "repeated_use": 4340666,
+            "parse_inclusive": 10486500
+          },
+          "maccs": {
+            "first_use": 241813958,
+            "repeated_use": 232333916,
+            "parse_inclusive": 260934333
+          }
+        },
+        "peak_process_rss_bytes": 49070080,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/candidate/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "6d1e6d5ac6e2908aaa2864c513d5d5f98d0df9a74d9ed677da8ba832989c3216"
+        },
+        "output_sha256": "43b35f5e0bf9d581c9810a8ad417e500058061374ed226200e9c7432a177096b"
+      },
+      "rdkit": {
+        "parse_ns": 116253833,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 3592292,
+            "repeated_use": 960709,
+            "parse_inclusive": 210326791
+          },
+          "labute_asa": {
+            "first_use": 2469625,
+            "repeated_use": 199250,
+            "parse_inclusive": 223961958
+          },
+          "num_rings": {
+            "first_use": 211584,
+            "repeated_use": 180125,
+            "parse_inclusive": 199221917
+          },
+          "morgan2_2048": {
+            "first_use": 72502125,
+            "repeated_use": 56597875,
+            "parse_inclusive": 321292625
+          },
+          "morgan2_chiral": {
+            "first_use": 46556959,
+            "repeated_use": 88061375,
+            "parse_inclusive": 352907875
+          },
+          "morgan3_2048": {
+            "first_use": 82705792,
+            "repeated_use": 50979167,
+            "parse_inclusive": 259665625
+          },
+          "maccs": {
+            "first_use": 1423656958,
+            "repeated_use": 1311959833,
+            "parse_inclusive": 1877026375
+          }
+        },
+        "peak_process_rss_bytes": 111509504,
+        "version": "2026.09.1",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/rdkit/__init__.py",
+        "extension_sha256": {
+          "rdBase.so": "2fb1e7377e7441fcc3c9ae813803adb288fdb710b2b0de66aecbfc1f4b5919ff"
+        },
+        "output_sha256": "471d99837becc9476610e82304e8e9d4fe991cf6147d65e9b82fd8a26837c595"
+      }
+    },
+    {
+      "order": [
+        "baseline",
+        "candidate",
+        "rdkit",
+        "cosmolkit"
+      ],
+      "load_average_start": [
+        4.11376953125,
+        4.4453125,
+        3.85888671875
+      ],
+      "baseline": {
+        "parse_ns": 10874334,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 11699417,
+            "repeated_use": 117084,
+            "parse_inclusive": 12571166
+          },
+          "labute_asa": {
+            "first_use": 4436958,
+            "repeated_use": 183750,
+            "parse_inclusive": 15942875
+          },
+          "num_rings": {
+            "first_use": 7500625,
+            "repeated_use": 120375,
+            "parse_inclusive": 16966583
+          },
+          "morgan2_2048": {
+            "first_use": 11549750,
+            "repeated_use": 6668500,
+            "parse_inclusive": 23812166
+          },
+          "morgan2_chiral": {
+            "first_use": 44520375,
+            "repeated_use": 14902625,
+            "parse_inclusive": 41727625
+          },
+          "morgan3_2048": {
+            "first_use": 15339750,
+            "repeated_use": 9844458,
+            "parse_inclusive": 23309334
+          },
+          "maccs": {
+            "first_use": 492303792,
+            "repeated_use": 686154375,
+            "parse_inclusive": 527865334
+          }
+        },
+        "peak_process_rss_bytes": 49233920,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/baseline/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "e3d33f6be050e84a55c3b8c62071e28e0f10cbe30823ffaf4f43e61f4f38ece0"
+        },
+        "output_sha256": "43b35f5e0bf9d581c9810a8ad417e500058061374ed226200e9c7432a177096b"
+      },
+      "candidate": {
+        "parse_ns": 6309208,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 5547333,
+            "repeated_use": 76625,
+            "parse_inclusive": 9139125
+          },
+          "labute_asa": {
+            "first_use": 2977375,
+            "repeated_use": 78584,
+            "parse_inclusive": 8932042
+          },
+          "num_rings": {
+            "first_use": 5033250,
+            "repeated_use": 72000,
+            "parse_inclusive": 10116625
+          },
+          "morgan2_2048": {
+            "first_use": 9764458,
+            "repeated_use": 6071708,
+            "parse_inclusive": 17773416
+          },
+          "morgan2_chiral": {
+            "first_use": 27458000,
+            "repeated_use": 6636250,
+            "parse_inclusive": 34045584
+          },
+          "morgan3_2048": {
+            "first_use": 11997416,
+            "repeated_use": 7543166,
+            "parse_inclusive": 20776917
+          },
+          "maccs": {
+            "first_use": 820372458,
+            "repeated_use": 392610583,
+            "parse_inclusive": 411588875
+          }
+        },
+        "peak_process_rss_bytes": 49102848,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/candidate/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "6d1e6d5ac6e2908aaa2864c513d5d5f98d0df9a74d9ed677da8ba832989c3216"
+        },
+        "output_sha256": "43b35f5e0bf9d581c9810a8ad417e500058061374ed226200e9c7432a177096b"
+      },
+      "rdkit": {
+        "parse_ns": 93586667,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 3112625,
+            "repeated_use": 513917,
+            "parse_inclusive": 93362750
+          },
+          "labute_asa": {
+            "first_use": 1707625,
+            "repeated_use": 176792,
+            "parse_inclusive": 94316500
+          },
+          "num_rings": {
+            "first_use": 89958,
+            "repeated_use": 83042,
+            "parse_inclusive": 78660750
+          },
+          "morgan2_2048": {
+            "first_use": 22547500,
+            "repeated_use": 21948458,
+            "parse_inclusive": 100830292
+          },
+          "morgan2_chiral": {
+            "first_use": 22020375,
+            "repeated_use": 22278042,
+            "parse_inclusive": 100847166
+          },
+          "morgan3_2048": {
+            "first_use": 28425167,
+            "repeated_use": 32308917,
+            "parse_inclusive": 155223250
+          },
+          "maccs": {
+            "first_use": 695112375,
+            "repeated_use": 585142875,
+            "parse_inclusive": 699588917
+          }
+        },
+        "peak_process_rss_bytes": 112017408,
+        "version": "2026.09.1",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/rdkit/__init__.py",
+        "extension_sha256": {
+          "rdBase.so": "2fb1e7377e7441fcc3c9ae813803adb288fdb710b2b0de66aecbfc1f4b5919ff"
+        },
+        "output_sha256": "471d99837becc9476610e82304e8e9d4fe991cf6147d65e9b82fd8a26837c595"
+      },
+      "cosmolkit": {
+        "parse_ns": 77030584,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 964834,
+            "repeated_use": 102417,
+            "parse_inclusive": 74292791
+          },
+          "labute_asa": {
+            "first_use": 676125,
+            "repeated_use": 89833,
+            "parse_inclusive": 76365250
+          },
+          "num_rings": {
+            "first_use": 118084,
+            "repeated_use": 54000,
+            "parse_inclusive": 74997916
+          },
+          "morgan2_2048": {
+            "first_use": 14327084,
+            "repeated_use": 14143834,
+            "parse_inclusive": 95618500
+          },
+          "morgan2_chiral": {
+            "first_use": 14514625,
+            "repeated_use": 15153750,
+            "parse_inclusive": 102609125
+          },
+          "morgan3_2048": {
+            "first_use": 28469917,
+            "repeated_use": 28141125,
+            "parse_inclusive": 149082625
+          },
+          "maccs": {
+            "first_use": 922710459,
+            "repeated_use": 580541542,
+            "parse_inclusive": 642978375
+          }
+        },
+        "peak_process_rss_bytes": 110706688,
+        "version": "0.5.0-rc.22",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/cosmolkit/__init__.py",
+        "extension_sha256": {
+          "cosmolkit.abi3.so": "0fc4a42b65552d31e852181a8a4beef693d15d8aa88716bf53e850701936362c"
+        },
+        "output_sha256": "52d3b7273bd8c6ec2a487aaabeb028279e92619cd07164d55046658523139367"
+      }
+    },
+    {
+      "order": [
+        "candidate",
+        "rdkit",
+        "cosmolkit",
+        "baseline"
+      ],
+      "load_average_start": [
+        4.20849609375,
+        4.46044921875,
+        3.87841796875
+      ],
+      "candidate": {
+        "parse_ns": 3697417,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 1595792,
+            "repeated_use": 44333,
+            "parse_inclusive": 5030958
+          },
+          "labute_asa": {
+            "first_use": 1672833,
+            "repeated_use": 43333,
+            "parse_inclusive": 5224750
+          },
+          "num_rings": {
+            "first_use": 2617625,
+            "repeated_use": 45292,
+            "parse_inclusive": 6017084
+          },
+          "morgan2_2048": {
+            "first_use": 6038416,
+            "repeated_use": 3414375,
+            "parse_inclusive": 9552542
+          },
+          "morgan2_chiral": {
+            "first_use": 14566417,
+            "repeated_use": 3641166,
+            "parse_inclusive": 18554375
+          },
+          "morgan3_2048": {
+            "first_use": 7004333,
+            "repeated_use": 4658500,
+            "parse_inclusive": 10918791
+          },
+          "maccs": {
+            "first_use": 254531542,
+            "repeated_use": 247765125,
+            "parse_inclusive": 264126625
+          }
+        },
+        "peak_process_rss_bytes": 49119232,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/candidate/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "6d1e6d5ac6e2908aaa2864c513d5d5f98d0df9a74d9ed677da8ba832989c3216"
+        },
+        "output_sha256": "43b35f5e0bf9d581c9810a8ad417e500058061374ed226200e9c7432a177096b"
+      },
+      "rdkit": {
+        "parse_ns": 61724792,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 2380375,
+            "repeated_use": 416875,
+            "parse_inclusive": 69560250
+          },
+          "labute_asa": {
+            "first_use": 1326083,
+            "repeated_use": 124417,
+            "parse_inclusive": 72000166
+          },
+          "num_rings": {
+            "first_use": 76375,
+            "repeated_use": 66542,
+            "parse_inclusive": 66430500
+          },
+          "morgan2_2048": {
+            "first_use": 21092000,
+            "repeated_use": 21846250,
+            "parse_inclusive": 100043750
+          },
+          "morgan2_chiral": {
+            "first_use": 22440209,
+            "repeated_use": 20584584,
+            "parse_inclusive": 92606834
+          },
+          "morgan3_2048": {
+            "first_use": 26680750,
+            "repeated_use": 26365917,
+            "parse_inclusive": 94437958
+          },
+          "maccs": {
+            "first_use": 522381250,
+            "repeated_use": 521726042,
+            "parse_inclusive": 624286958
+          }
+        },
+        "peak_process_rss_bytes": 111738880,
+        "version": "2026.09.1",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/rdkit/__init__.py",
+        "extension_sha256": {
+          "rdBase.so": "2fb1e7377e7441fcc3c9ae813803adb288fdb710b2b0de66aecbfc1f4b5919ff"
+        },
+        "output_sha256": "471d99837becc9476610e82304e8e9d4fe991cf6147d65e9b82fd8a26837c595"
+      },
+      "cosmolkit": {
+        "parse_ns": 75464708,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 892875,
+            "repeated_use": 97375,
+            "parse_inclusive": 77286167
+          },
+          "labute_asa": {
+            "first_use": 718500,
+            "repeated_use": 99084,
+            "parse_inclusive": 93189666
+          },
+          "num_rings": {
+            "first_use": 125584,
+            "repeated_use": 56375,
+            "parse_inclusive": 80399542
+          },
+          "morgan2_2048": {
+            "first_use": 17280375,
+            "repeated_use": 16894083,
+            "parse_inclusive": 110340583
+          },
+          "morgan2_chiral": {
+            "first_use": 15753708,
+            "repeated_use": 16550625,
+            "parse_inclusive": 165355875
+          },
+          "morgan3_2048": {
+            "first_use": 34572292,
+            "repeated_use": 30976917,
+            "parse_inclusive": 156168333
+          },
+          "maccs": {
+            "first_use": 1156872500,
+            "repeated_use": 1142311750,
+            "parse_inclusive": 1221481875
+          }
+        },
+        "peak_process_rss_bytes": 111181824,
+        "version": "0.5.0-rc.22",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/cosmolkit/__init__.py",
+        "extension_sha256": {
+          "cosmolkit.abi3.so": "0fc4a42b65552d31e852181a8a4beef693d15d8aa88716bf53e850701936362c"
+        },
+        "output_sha256": "52d3b7273bd8c6ec2a487aaabeb028279e92619cd07164d55046658523139367"
+      },
+      "baseline": {
+        "parse_ns": 7739500,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 4273708,
+            "repeated_use": 101125,
+            "parse_inclusive": 11214458
+          },
+          "labute_asa": {
+            "first_use": 3535875,
+            "repeated_use": 101000,
+            "parse_inclusive": 11505583
+          },
+          "num_rings": {
+            "first_use": 7428208,
+            "repeated_use": 113958,
+            "parse_inclusive": 15174458
+          },
+          "morgan2_2048": {
+            "first_use": 11530625,
+            "repeated_use": 5986583,
+            "parse_inclusive": 19547208
+          },
+          "morgan2_chiral": {
+            "first_use": 36087584,
+            "repeated_use": 7971500,
+            "parse_inclusive": 41044917
+          },
+          "morgan3_2048": {
+            "first_use": 47234542,
+            "repeated_use": 13758875,
+            "parse_inclusive": 22960666
+          },
+          "maccs": {
+            "first_use": 691402459,
+            "repeated_use": 661956625,
+            "parse_inclusive": 876245250
+          }
+        },
+        "peak_process_rss_bytes": 49004544,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/baseline/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "e3d33f6be050e84a55c3b8c62071e28e0f10cbe30823ffaf4f43e61f4f38ece0"
+        },
+        "output_sha256": "43b35f5e0bf9d581c9810a8ad417e500058061374ed226200e9c7432a177096b"
+      }
+    },
+    {
+      "order": [
+        "rdkit",
+        "cosmolkit",
+        "baseline",
+        "candidate"
+      ],
+      "load_average_start": [
+        5.28857421875,
+        4.669921875,
+        3.9619140625
+      ],
+      "rdkit": {
+        "parse_ns": 135876208,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 4115625,
+            "repeated_use": 826292,
+            "parse_inclusive": 187211375
+          },
+          "labute_asa": {
+            "first_use": 2100583,
+            "repeated_use": 221750,
+            "parse_inclusive": 123062292
+          },
+          "num_rings": {
+            "first_use": 137042,
+            "repeated_use": 154542,
+            "parse_inclusive": 125374208
+          },
+          "morgan2_2048": {
+            "first_use": 32203375,
+            "repeated_use": 32942167,
+            "parse_inclusive": 154255333
+          },
+          "morgan2_chiral": {
+            "first_use": 32583875,
+            "repeated_use": 30169750,
+            "parse_inclusive": 141025000
+          },
+          "morgan3_2048": {
+            "first_use": 40684334,
+            "repeated_use": 40382000,
+            "parse_inclusive": 160921500
+          },
+          "maccs": {
+            "first_use": 808160709,
+            "repeated_use": 800984875,
+            "parse_inclusive": 941257958
+          }
+        },
+        "peak_process_rss_bytes": 112082944,
+        "version": "2026.09.1",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/rdkit/__init__.py",
+        "extension_sha256": {
+          "rdBase.so": "2fb1e7377e7441fcc3c9ae813803adb288fdb710b2b0de66aecbfc1f4b5919ff"
+        },
+        "output_sha256": "471d99837becc9476610e82304e8e9d4fe991cf6147d65e9b82fd8a26837c595"
+      },
+      "cosmolkit": {
+        "parse_ns": 111025208,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 1504542,
+            "repeated_use": 125791,
+            "parse_inclusive": 103874458
+          },
+          "labute_asa": {
+            "first_use": 754666,
+            "repeated_use": 216792,
+            "parse_inclusive": 90380958
+          },
+          "num_rings": {
+            "first_use": 148625,
+            "repeated_use": 75042,
+            "parse_inclusive": 116377083
+          },
+          "morgan2_2048": {
+            "first_use": 99027625,
+            "repeated_use": 54752458,
+            "parse_inclusive": 418184958
+          },
+          "morgan2_chiral": {
+            "first_use": 29738042,
+            "repeated_use": 29369292,
+            "parse_inclusive": 190873750
+          },
+          "morgan3_2048": {
+            "first_use": 36399625,
+            "repeated_use": 36430917,
+            "parse_inclusive": 247955875
+          },
+          "maccs": {
+            "first_use": 1327039000,
+            "repeated_use": 941592250,
+            "parse_inclusive": 1135055333
+          }
+        },
+        "peak_process_rss_bytes": 108691456,
+        "version": "0.5.0-rc.22",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/cosmolkit/__init__.py",
+        "extension_sha256": {
+          "cosmolkit.abi3.so": "0fc4a42b65552d31e852181a8a4beef693d15d8aa88716bf53e850701936362c"
+        },
+        "output_sha256": "52d3b7273bd8c6ec2a487aaabeb028279e92619cd07164d55046658523139367"
+      },
+      "baseline": {
+        "parse_ns": 6050417,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 2652334,
+            "repeated_use": 130083,
+            "parse_inclusive": 8281333
+          },
+          "labute_asa": {
+            "first_use": 2792667,
+            "repeated_use": 72167,
+            "parse_inclusive": 9164334
+          },
+          "num_rings": {
+            "first_use": 6620791,
+            "repeated_use": 80667,
+            "parse_inclusive": 13081583
+          },
+          "morgan2_2048": {
+            "first_use": 9716209,
+            "repeated_use": 6028250,
+            "parse_inclusive": 15760334
+          },
+          "morgan2_chiral": {
+            "first_use": 24157792,
+            "repeated_use": 6097167,
+            "parse_inclusive": 33435333
+          },
+          "morgan3_2048": {
+            "first_use": 13309916,
+            "repeated_use": 8727958,
+            "parse_inclusive": 20538167
+          },
+          "maccs": {
+            "first_use": 446185541,
+            "repeated_use": 431573584,
+            "parse_inclusive": 452479417
+          }
+        },
+        "peak_process_rss_bytes": 48971776,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/baseline/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "e3d33f6be050e84a55c3b8c62071e28e0f10cbe30823ffaf4f43e61f4f38ece0"
+        },
+        "output_sha256": "43b35f5e0bf9d581c9810a8ad417e500058061374ed226200e9c7432a177096b"
+      },
+      "candidate": {
+        "parse_ns": 6484458,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 4957042,
+            "repeated_use": 75667,
+            "parse_inclusive": 8498750
+          },
+          "labute_asa": {
+            "first_use": 2921375,
+            "repeated_use": 94625,
+            "parse_inclusive": 8878875
+          },
+          "num_rings": {
+            "first_use": 4979667,
+            "repeated_use": 77500,
+            "parse_inclusive": 10038000
+          },
+          "morgan2_2048": {
+            "first_use": 11171834,
+            "repeated_use": 5675500,
+            "parse_inclusive": 17070708
+          },
+          "morgan2_chiral": {
+            "first_use": 26448583,
+            "repeated_use": 6774958,
+            "parse_inclusive": 33292000
+          },
+          "morgan3_2048": {
+            "first_use": 13175292,
+            "repeated_use": 7962125,
+            "parse_inclusive": 18781666
+          },
+          "maccs": {
+            "first_use": 443844417,
+            "repeated_use": 360254959,
+            "parse_inclusive": 383873416
+          }
+        },
+        "peak_process_rss_bytes": 49184768,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/candidate/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "6d1e6d5ac6e2908aaa2864c513d5d5f98d0df9a74d9ed677da8ba832989c3216"
+        },
+        "output_sha256": "43b35f5e0bf9d581c9810a8ad417e500058061374ed226200e9c7432a177096b"
+      }
+    },
+    {
+      "order": [
+        "cosmolkit",
+        "baseline",
+        "candidate",
+        "rdkit"
+      ],
+      "load_average_start": [
+        5.3466796875,
+        4.72265625,
+        3.9970703125
+      ],
+      "cosmolkit": {
+        "parse_ns": 95513041,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 981041,
+            "repeated_use": 108500,
+            "parse_inclusive": 91786875
+          },
+          "labute_asa": {
+            "first_use": 1001083,
+            "repeated_use": 105750,
+            "parse_inclusive": 97882292
+          },
+          "num_rings": {
+            "first_use": 112208,
+            "repeated_use": 68875,
+            "parse_inclusive": 93609375
+          },
+          "morgan2_2048": {
+            "first_use": 18234875,
+            "repeated_use": 16246334,
+            "parse_inclusive": 111251083
+          },
+          "morgan2_chiral": {
+            "first_use": 16844750,
+            "repeated_use": 16265584,
+            "parse_inclusive": 109543292
+          },
+          "morgan3_2048": {
+            "first_use": 23025417,
+            "repeated_use": 22724209,
+            "parse_inclusive": 119063625
+          },
+          "maccs": {
+            "first_use": 849290708,
+            "repeated_use": 833100125,
+            "parse_inclusive": 946359750
+          }
+        },
+        "peak_process_rss_bytes": 110985216,
+        "version": "0.5.0-rc.22",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/cosmolkit/__init__.py",
+        "extension_sha256": {
+          "cosmolkit.abi3.so": "0fc4a42b65552d31e852181a8a4beef693d15d8aa88716bf53e850701936362c"
+        },
+        "output_sha256": "52d3b7273bd8c6ec2a487aaabeb028279e92619cd07164d55046658523139367"
+      },
+      "baseline": {
+        "parse_ns": 5465834,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 2390042,
+            "repeated_use": 66208,
+            "parse_inclusive": 7458041
+          },
+          "labute_asa": {
+            "first_use": 2580834,
+            "repeated_use": 76625,
+            "parse_inclusive": 8019375
+          },
+          "num_rings": {
+            "first_use": 5675000,
+            "repeated_use": 88417,
+            "parse_inclusive": 10958541
+          },
+          "morgan2_2048": {
+            "first_use": 9766334,
+            "repeated_use": 5438291,
+            "parse_inclusive": 16732125
+          },
+          "morgan2_chiral": {
+            "first_use": 24089542,
+            "repeated_use": 7735792,
+            "parse_inclusive": 32532375
+          },
+          "morgan3_2048": {
+            "first_use": 11552584,
+            "repeated_use": 8044875,
+            "parse_inclusive": 18490792
+          },
+          "maccs": {
+            "first_use": 471677084,
+            "repeated_use": 377003500,
+            "parse_inclusive": 394670208
+          }
+        },
+        "peak_process_rss_bytes": 48840704,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/baseline/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "e3d33f6be050e84a55c3b8c62071e28e0f10cbe30823ffaf4f43e61f4f38ece0"
+        },
+        "output_sha256": "43b35f5e0bf9d581c9810a8ad417e500058061374ed226200e9c7432a177096b"
+      },
+      "candidate": {
+        "parse_ns": 5358166,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 2337209,
+            "repeated_use": 66500,
+            "parse_inclusive": 7345458
+          },
+          "labute_asa": {
+            "first_use": 2436042,
+            "repeated_use": 66750,
+            "parse_inclusive": 8153500
+          },
+          "num_rings": {
+            "first_use": 3803750,
+            "repeated_use": 57417,
+            "parse_inclusive": 8902833
+          },
+          "morgan2_2048": {
+            "first_use": 9364166,
+            "repeated_use": 5032792,
+            "parse_inclusive": 15698083
+          },
+          "morgan2_chiral": {
+            "first_use": 22640166,
+            "repeated_use": 5969084,
+            "parse_inclusive": 28546625
+          },
+          "morgan3_2048": {
+            "first_use": 10784709,
+            "repeated_use": 6904750,
+            "parse_inclusive": 17016875
+          },
+          "maccs": {
+            "first_use": 377901542,
+            "repeated_use": 393750750,
+            "parse_inclusive": 408475000
+          }
+        },
+        "peak_process_rss_bytes": 49201152,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/candidate/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "6d1e6d5ac6e2908aaa2864c513d5d5f98d0df9a74d9ed677da8ba832989c3216"
+        },
+        "output_sha256": "43b35f5e0bf9d581c9810a8ad417e500058061374ed226200e9c7432a177096b"
+      },
+      "rdkit": {
+        "parse_ns": 95184875,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 3619750,
+            "repeated_use": 632583,
+            "parse_inclusive": 100188209
+          },
+          "labute_asa": {
+            "first_use": 1697917,
+            "repeated_use": 190125,
+            "parse_inclusive": 112789208
+          },
+          "num_rings": {
+            "first_use": 110167,
+            "repeated_use": 94208,
+            "parse_inclusive": 99367875
+          },
+          "morgan2_2048": {
+            "first_use": 26224875,
+            "repeated_use": 27964750,
+            "parse_inclusive": 128306125
+          },
+          "morgan2_chiral": {
+            "first_use": 28331292,
+            "repeated_use": 27782333,
+            "parse_inclusive": 126088583
+          },
+          "morgan3_2048": {
+            "first_use": 34994791,
+            "repeated_use": 34810125,
+            "parse_inclusive": 135665959
+          },
+          "maccs": {
+            "first_use": 730234333,
+            "repeated_use": 718074459,
+            "parse_inclusive": 712648583
+          }
+        },
+        "peak_process_rss_bytes": 111886336,
+        "version": "2026.09.1",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/rdkit/__init__.py",
+        "extension_sha256": {
+          "rdBase.so": "2fb1e7377e7441fcc3c9ae813803adb288fdb710b2b0de66aecbfc1f4b5919ff"
+        },
+        "output_sha256": "471d99837becc9476610e82304e8e9d4fe991cf6147d65e9b82fd8a26837c595"
+      }
+    },
+    {
+      "order": [
+        "baseline",
+        "candidate",
+        "rdkit",
+        "cosmolkit"
+      ],
+      "load_average_start": [
+        5.01904296875,
+        4.6904296875,
+        4.001953125
+      ],
+      "baseline": {
+        "parse_ns": 4377916,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 1907500,
+            "repeated_use": 53167,
+            "parse_inclusive": 6125833
+          },
+          "labute_asa": {
+            "first_use": 2013708,
+            "repeated_use": 52583,
+            "parse_inclusive": 6381917
+          },
+          "num_rings": {
+            "first_use": 4538708,
+            "repeated_use": 56208,
+            "parse_inclusive": 9198834
+          },
+          "morgan2_2048": {
+            "first_use": 7352833,
+            "repeated_use": 4177042,
+            "parse_inclusive": 11672708
+          },
+          "morgan2_chiral": {
+            "first_use": 17613333,
+            "repeated_use": 4390875,
+            "parse_inclusive": 24644458
+          },
+          "morgan3_2048": {
+            "first_use": 8496375,
+            "repeated_use": 5649709,
+            "parse_inclusive": 13159917
+          },
+          "maccs": {
+            "first_use": 303710375,
+            "repeated_use": 282523375,
+            "parse_inclusive": 301324375
+          }
+        },
+        "peak_process_rss_bytes": 48873472,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/baseline/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "e3d33f6be050e84a55c3b8c62071e28e0f10cbe30823ffaf4f43e61f4f38ece0"
+        },
+        "output_sha256": "43b35f5e0bf9d581c9810a8ad417e500058061374ed226200e9c7432a177096b"
+      },
+      "candidate": {
+        "parse_ns": 4127375,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 1764292,
+            "repeated_use": 53459,
+            "parse_inclusive": 6178750
+          },
+          "labute_asa": {
+            "first_use": 2157792,
+            "repeated_use": 52792,
+            "parse_inclusive": 6493625
+          },
+          "num_rings": {
+            "first_use": 3142708,
+            "repeated_use": 47750,
+            "parse_inclusive": 7309334
+          },
+          "morgan2_2048": {
+            "first_use": 6698917,
+            "repeated_use": 4140000,
+            "parse_inclusive": 11429083
+          },
+          "morgan2_chiral": {
+            "first_use": 18160667,
+            "repeated_use": 4107708,
+            "parse_inclusive": 21491709
+          },
+          "morgan3_2048": {
+            "first_use": 8386792,
+            "repeated_use": 5839417,
+            "parse_inclusive": 12434500
+          },
+          "maccs": {
+            "first_use": 293941208,
+            "repeated_use": 288702416,
+            "parse_inclusive": 300295708
+          }
+        },
+        "peak_process_rss_bytes": 49070080,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/candidate/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "6d1e6d5ac6e2908aaa2864c513d5d5f98d0df9a74d9ed677da8ba832989c3216"
+        },
+        "output_sha256": "43b35f5e0bf9d581c9810a8ad417e500058061374ed226200e9c7432a177096b"
+      },
+      "rdkit": {
+        "parse_ns": 68816292,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 2659875,
+            "repeated_use": 499958,
+            "parse_inclusive": 77467917
+          },
+          "labute_asa": {
+            "first_use": 1423750,
+            "repeated_use": 134292,
+            "parse_inclusive": 75507667
+          },
+          "num_rings": {
+            "first_use": 86625,
+            "repeated_use": 77041,
+            "parse_inclusive": 74567292
+          },
+          "morgan2_2048": {
+            "first_use": 21994500,
+            "repeated_use": 21860958,
+            "parse_inclusive": 100443042
+          },
+          "morgan2_chiral": {
+            "first_use": 21997208,
+            "repeated_use": 21706875,
+            "parse_inclusive": 99405542
+          },
+          "morgan3_2048": {
+            "first_use": 27727875,
+            "repeated_use": 27434708,
+            "parse_inclusive": 105843000
+          },
+          "maccs": {
+            "first_use": 741202250,
+            "repeated_use": 1650145750,
+            "parse_inclusive": 1823946333
+          }
+        },
+        "peak_process_rss_bytes": 111820800,
+        "version": "2026.09.1",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/rdkit/__init__.py",
+        "extension_sha256": {
+          "rdBase.so": "2fb1e7377e7441fcc3c9ae813803adb288fdb710b2b0de66aecbfc1f4b5919ff"
+        },
+        "output_sha256": "471d99837becc9476610e82304e8e9d4fe991cf6147d65e9b82fd8a26837c595"
+      },
+      "cosmolkit": {
+        "parse_ns": 187191625,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 2452125,
+            "repeated_use": 166667,
+            "parse_inclusive": 231301917
+          },
+          "labute_asa": {
+            "first_use": 1018250,
+            "repeated_use": 253875,
+            "parse_inclusive": 223188250
+          },
+          "num_rings": {
+            "first_use": 274583,
+            "repeated_use": 99208,
+            "parse_inclusive": 231273583
+          },
+          "morgan2_2048": {
+            "first_use": 35770750,
+            "repeated_use": 35179625,
+            "parse_inclusive": 249162958
+          },
+          "morgan2_chiral": {
+            "first_use": 34025416,
+            "repeated_use": 32872792,
+            "parse_inclusive": 246537375
+          },
+          "morgan3_2048": {
+            "first_use": 39687917,
+            "repeated_use": 41551625,
+            "parse_inclusive": 270221458
+          },
+          "maccs": {
+            "first_use": 1484692458,
+            "repeated_use": 1193288666,
+            "parse_inclusive": 1268088959
+          }
+        },
+        "peak_process_rss_bytes": 111165440,
+        "version": "0.5.0-rc.22",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/cosmolkit/__init__.py",
+        "extension_sha256": {
+          "cosmolkit.abi3.so": "0fc4a42b65552d31e852181a8a4beef693d15d8aa88716bf53e850701936362c"
+        },
+        "output_sha256": "52d3b7273bd8c6ec2a487aaabeb028279e92619cd07164d55046658523139367"
+      }
+    },
+    {
+      "order": [
+        "candidate",
+        "rdkit",
+        "cosmolkit",
+        "baseline"
+      ],
+      "load_average_start": [
+        7.0283203125,
+        5.1640625,
+        4.1865234375
+      ],
+      "candidate": {
+        "parse_ns": 7099875,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 3232750,
+            "repeated_use": 94291,
+            "parse_inclusive": 10629875
+          },
+          "labute_asa": {
+            "first_use": 3405542,
+            "repeated_use": 107667,
+            "parse_inclusive": 11065583
+          },
+          "num_rings": {
+            "first_use": 5050833,
+            "repeated_use": 101250,
+            "parse_inclusive": 12616958
+          },
+          "morgan2_2048": {
+            "first_use": 11671333,
+            "repeated_use": 7101375,
+            "parse_inclusive": 19418417
+          },
+          "morgan2_chiral": {
+            "first_use": 29984875,
+            "repeated_use": 7174666,
+            "parse_inclusive": 37497125
+          },
+          "morgan3_2048": {
+            "first_use": 13556500,
+            "repeated_use": 9772917,
+            "parse_inclusive": 22510000
+          },
+          "maccs": {
+            "first_use": 490047000,
+            "repeated_use": 486149667,
+            "parse_inclusive": 504609416
+          }
+        },
+        "peak_process_rss_bytes": 49463296,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/candidate/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "6d1e6d5ac6e2908aaa2864c513d5d5f98d0df9a74d9ed677da8ba832989c3216"
+        },
+        "output_sha256": "43b35f5e0bf9d581c9810a8ad417e500058061374ed226200e9c7432a177096b"
+      },
+      "rdkit": {
+        "parse_ns": 119296042,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 4052583,
+            "repeated_use": 812167,
+            "parse_inclusive": 128167333
+          },
+          "labute_asa": {
+            "first_use": 2816541,
+            "repeated_use": 224333,
+            "parse_inclusive": 127168458
+          },
+          "num_rings": {
+            "first_use": 131625,
+            "repeated_use": 121750,
+            "parse_inclusive": 127694375
+          },
+          "morgan2_2048": {
+            "first_use": 34570042,
+            "repeated_use": 35533416,
+            "parse_inclusive": 160217709
+          },
+          "morgan2_chiral": {
+            "first_use": 37438375,
+            "repeated_use": 39866458,
+            "parse_inclusive": 161184584
+          },
+          "morgan3_2048": {
+            "first_use": 46690083,
+            "repeated_use": 47085542,
+            "parse_inclusive": 179575375
+          },
+          "maccs": {
+            "first_use": 924074584,
+            "repeated_use": 924613333,
+            "parse_inclusive": 1056792208
+          }
+        },
+        "peak_process_rss_bytes": 112099328,
+        "version": "2026.09.1",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/rdkit/__init__.py",
+        "extension_sha256": {
+          "rdBase.so": "2fb1e7377e7441fcc3c9ae813803adb288fdb710b2b0de66aecbfc1f4b5919ff"
+        },
+        "output_sha256": "471d99837becc9476610e82304e8e9d4fe991cf6147d65e9b82fd8a26837c595"
+      },
+      "cosmolkit": {
+        "parse_ns": 107173333,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 1165583,
+            "repeated_use": 114458,
+            "parse_inclusive": 110114792
+          },
+          "labute_asa": {
+            "first_use": 899833,
+            "repeated_use": 111458,
+            "parse_inclusive": 104906083
+          },
+          "num_rings": {
+            "first_use": 127541,
+            "repeated_use": 78709,
+            "parse_inclusive": 104170959
+          },
+          "morgan2_2048": {
+            "first_use": 18756583,
+            "repeated_use": 18455959,
+            "parse_inclusive": 127434417
+          },
+          "morgan2_chiral": {
+            "first_use": 19099792,
+            "repeated_use": 18666625,
+            "parse_inclusive": 127144583
+          },
+          "morgan3_2048": {
+            "first_use": 26948459,
+            "repeated_use": 24712250,
+            "parse_inclusive": 135085333
+          },
+          "maccs": {
+            "first_use": 946654500,
+            "repeated_use": 955947916,
+            "parse_inclusive": 1042953125
+          }
+        },
+        "peak_process_rss_bytes": 111525888,
+        "version": "0.5.0-rc.22",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/cosmolkit/__init__.py",
+        "extension_sha256": {
+          "cosmolkit.abi3.so": "0fc4a42b65552d31e852181a8a4beef693d15d8aa88716bf53e850701936362c"
+        },
+        "output_sha256": "52d3b7273bd8c6ec2a487aaabeb028279e92619cd07164d55046658523139367"
+      },
+      "baseline": {
+        "parse_ns": 6678166,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 4150625,
+            "repeated_use": 78708,
+            "parse_inclusive": 8484792
+          },
+          "labute_asa": {
+            "first_use": 2820208,
+            "repeated_use": 113666,
+            "parse_inclusive": 8830791
+          },
+          "num_rings": {
+            "first_use": 6457084,
+            "repeated_use": 82917,
+            "parse_inclusive": 12003042
+          },
+          "morgan2_2048": {
+            "first_use": 9789833,
+            "repeated_use": 5660625,
+            "parse_inclusive": 16713375
+          },
+          "morgan2_chiral": {
+            "first_use": 26387792,
+            "repeated_use": 6096208,
+            "parse_inclusive": 34274500
+          },
+          "morgan3_2048": {
+            "first_use": 11650916,
+            "repeated_use": 8107917,
+            "parse_inclusive": 18742917
+          },
+          "maccs": {
+            "first_use": 434912292,
+            "repeated_use": 418372000,
+            "parse_inclusive": 450931750
+          }
+        },
+        "peak_process_rss_bytes": 49004544,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/baseline/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "e3d33f6be050e84a55c3b8c62071e28e0f10cbe30823ffaf4f43e61f4f38ece0"
+        },
+        "output_sha256": "43b35f5e0bf9d581c9810a8ad417e500058061374ed226200e9c7432a177096b"
+      }
+    },
+    {
+      "order": [
+        "rdkit",
+        "cosmolkit",
+        "baseline",
+        "candidate"
+      ],
+      "load_average_start": [
+        6.5810546875,
+        5.1845703125,
+        4.2158203125
+      ],
+      "rdkit": {
+        "parse_ns": 107187667,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 3547208,
+            "repeated_use": 672084,
+            "parse_inclusive": 109577750
+          },
+          "labute_asa": {
+            "first_use": 1935833,
+            "repeated_use": 196209,
+            "parse_inclusive": 107966084
+          },
+          "num_rings": {
+            "first_use": 121209,
+            "repeated_use": 168416,
+            "parse_inclusive": 161842709
+          },
+          "morgan2_2048": {
+            "first_use": 87709375,
+            "repeated_use": 62063334,
+            "parse_inclusive": 375737917
+          },
+          "morgan2_chiral": {
+            "first_use": 57889750,
+            "repeated_use": 51291750,
+            "parse_inclusive": 280412542
+          },
+          "morgan3_2048": {
+            "first_use": 77076875,
+            "repeated_use": 78965667,
+            "parse_inclusive": 376033042
+          },
+          "maccs": {
+            "first_use": 1812016875,
+            "repeated_use": 1558084417,
+            "parse_inclusive": 1892953666
+          }
+        },
+        "peak_process_rss_bytes": 104611840,
+        "version": "2026.09.1",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/rdkit/__init__.py",
+        "extension_sha256": {
+          "rdBase.so": "2fb1e7377e7441fcc3c9ae813803adb288fdb710b2b0de66aecbfc1f4b5919ff"
+        },
+        "output_sha256": "471d99837becc9476610e82304e8e9d4fe991cf6147d65e9b82fd8a26837c595"
+      },
+      "cosmolkit": {
+        "parse_ns": 167393417,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 1404375,
+            "repeated_use": 148792,
+            "parse_inclusive": 205818000
+          },
+          "labute_asa": {
+            "first_use": 1702875,
+            "repeated_use": 131750,
+            "parse_inclusive": 205055250
+          },
+          "num_rings": {
+            "first_use": 321750,
+            "repeated_use": 196750,
+            "parse_inclusive": 207521875
+          },
+          "morgan2_2048": {
+            "first_use": 37246625,
+            "repeated_use": 41330250,
+            "parse_inclusive": 250229666
+          },
+          "morgan2_chiral": {
+            "first_use": 37111208,
+            "repeated_use": 37023792,
+            "parse_inclusive": 251609416
+          },
+          "morgan3_2048": {
+            "first_use": 46930208,
+            "repeated_use": 50705875,
+            "parse_inclusive": 266720916
+          },
+          "maccs": {
+            "first_use": 1939710708,
+            "repeated_use": 4905057584,
+            "parse_inclusive": 4999056250
+          }
+        },
+        "peak_process_rss_bytes": 108969984,
+        "version": "0.5.0-rc.22",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/cosmolkit/__init__.py",
+        "extension_sha256": {
+          "cosmolkit.abi3.so": "0fc4a42b65552d31e852181a8a4beef693d15d8aa88716bf53e850701936362c"
+        },
+        "output_sha256": "52d3b7273bd8c6ec2a487aaabeb028279e92619cd07164d55046658523139367"
+      },
+      "baseline": {
+        "parse_ns": 8499750,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 5626667,
+            "repeated_use": 211750,
+            "parse_inclusive": 106868875
+          },
+          "labute_asa": {
+            "first_use": 4766834,
+            "repeated_use": 255333,
+            "parse_inclusive": 20505959
+          },
+          "num_rings": {
+            "first_use": 10039208,
+            "repeated_use": 293500,
+            "parse_inclusive": 46737917
+          },
+          "morgan2_2048": {
+            "first_use": 62882875,
+            "repeated_use": 43061250,
+            "parse_inclusive": 42883500
+          },
+          "morgan2_chiral": {
+            "first_use": 104547208,
+            "repeated_use": 35738750,
+            "parse_inclusive": 162740750
+          },
+          "morgan3_2048": {
+            "first_use": 34227167,
+            "repeated_use": 39951000,
+            "parse_inclusive": 78351250
+          },
+          "maccs": {
+            "first_use": 1830987375,
+            "repeated_use": 1757708291,
+            "parse_inclusive": 1709774041
+          }
+        },
+        "peak_process_rss_bytes": 48758784,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/baseline/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "e3d33f6be050e84a55c3b8c62071e28e0f10cbe30823ffaf4f43e61f4f38ece0"
+        },
+        "output_sha256": "43b35f5e0bf9d581c9810a8ad417e500058061374ed226200e9c7432a177096b"
+      },
+      "candidate": {
+        "parse_ns": 8808125,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 6011416,
+            "repeated_use": 246750,
+            "parse_inclusive": 43308292
+          },
+          "labute_asa": {
+            "first_use": 4203125,
+            "repeated_use": 128542,
+            "parse_inclusive": 39878583
+          },
+          "num_rings": {
+            "first_use": 7486750,
+            "repeated_use": 327125,
+            "parse_inclusive": 63763333
+          },
+          "morgan2_2048": {
+            "first_use": 29362250,
+            "repeated_use": 9722833,
+            "parse_inclusive": 60979208
+          },
+          "morgan2_chiral": {
+            "first_use": 95226959,
+            "repeated_use": 37535417,
+            "parse_inclusive": 136188834
+          },
+          "morgan3_2048": {
+            "first_use": 70797750,
+            "repeated_use": 19886375,
+            "parse_inclusive": 92253708
+          },
+          "maccs": {
+            "first_use": 1730087875,
+            "repeated_use": 1508122000,
+            "parse_inclusive": 1767298084
+          }
+        },
+        "peak_process_rss_bytes": 49184768,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/candidate/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "6d1e6d5ac6e2908aaa2864c513d5d5f98d0df9a74d9ed677da8ba832989c3216"
+        },
+        "output_sha256": "43b35f5e0bf9d581c9810a8ad417e500058061374ed226200e9c7432a177096b"
+      }
+    },
+    {
+      "order": [
+        "cosmolkit",
+        "baseline",
+        "candidate",
+        "rdkit"
+      ],
+      "load_average_start": [
+        20.1103515625,
+        8.791015625,
+        5.58642578125
+      ],
+      "cosmolkit": {
+        "parse_ns": 384304000,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 2775792,
+            "repeated_use": 157042,
+            "parse_inclusive": 414938583
+          },
+          "labute_asa": {
+            "first_use": 1754792,
+            "repeated_use": 133792,
+            "parse_inclusive": 322655042
+          },
+          "num_rings": {
+            "first_use": 295708,
+            "repeated_use": 99667,
+            "parse_inclusive": 441670333
+          },
+          "morgan2_2048": {
+            "first_use": 85248958,
+            "repeated_use": 42755417,
+            "parse_inclusive": 314216791
+          },
+          "morgan2_chiral": {
+            "first_use": 45782541,
+            "repeated_use": 56292291,
+            "parse_inclusive": 334987375
+          },
+          "morgan3_2048": {
+            "first_use": 100971125,
+            "repeated_use": 67987875,
+            "parse_inclusive": 477286833
+          },
+          "maccs": {
+            "first_use": 2823130000,
+            "repeated_use": 2363414334,
+            "parse_inclusive": 2701229334
+          }
+        },
+        "peak_process_rss_bytes": 104890368,
+        "version": "0.5.0-rc.22",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/cosmolkit/__init__.py",
+        "extension_sha256": {
+          "cosmolkit.abi3.so": "0fc4a42b65552d31e852181a8a4beef693d15d8aa88716bf53e850701936362c"
+        },
+        "output_sha256": "52d3b7273bd8c6ec2a487aaabeb028279e92619cd07164d55046658523139367"
+      },
+      "baseline": {
+        "parse_ns": 9261042,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 5333375,
+            "repeated_use": 105834,
+            "parse_inclusive": 11519083
+          },
+          "labute_asa": {
+            "first_use": 3852916,
+            "repeated_use": 155000,
+            "parse_inclusive": 12730750
+          },
+          "num_rings": {
+            "first_use": 10223208,
+            "repeated_use": 178500,
+            "parse_inclusive": 27403875
+          },
+          "morgan2_2048": {
+            "first_use": 30340875,
+            "repeated_use": 13382709,
+            "parse_inclusive": 41399208
+          },
+          "morgan2_chiral": {
+            "first_use": 50581667,
+            "repeated_use": 14314292,
+            "parse_inclusive": 86642583
+          },
+          "morgan3_2048": {
+            "first_use": 29835542,
+            "repeated_use": 16403000,
+            "parse_inclusive": 38614584
+          },
+          "maccs": {
+            "first_use": 954130375,
+            "repeated_use": 1063572959,
+            "parse_inclusive": 1289014875
+          }
+        },
+        "peak_process_rss_bytes": 48955392,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/baseline/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "e3d33f6be050e84a55c3b8c62071e28e0f10cbe30823ffaf4f43e61f4f38ece0"
+        },
+        "output_sha256": "43b35f5e0bf9d581c9810a8ad417e500058061374ed226200e9c7432a177096b"
+      },
+      "candidate": {
+        "parse_ns": 8715625,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 6320084,
+            "repeated_use": 112292,
+            "parse_inclusive": 11810625
+          },
+          "labute_asa": {
+            "first_use": 4000709,
+            "repeated_use": 119291,
+            "parse_inclusive": 12170292
+          },
+          "num_rings": {
+            "first_use": 6043583,
+            "repeated_use": 205084,
+            "parse_inclusive": 14537875
+          },
+          "morgan2_2048": {
+            "first_use": 13465375,
+            "repeated_use": 15650750,
+            "parse_inclusive": 45029917
+          },
+          "morgan2_chiral": {
+            "first_use": 65137542,
+            "repeated_use": 18683542,
+            "parse_inclusive": 63423000
+          },
+          "morgan3_2048": {
+            "first_use": 29838750,
+            "repeated_use": 17721292,
+            "parse_inclusive": 52186958
+          },
+          "maccs": {
+            "first_use": 880217417,
+            "repeated_use": 869774500,
+            "parse_inclusive": 915939000
+          }
+        },
+        "peak_process_rss_bytes": 49315840,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/candidate/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "6d1e6d5ac6e2908aaa2864c513d5d5f98d0df9a74d9ed677da8ba832989c3216"
+        },
+        "output_sha256": "43b35f5e0bf9d581c9810a8ad417e500058061374ed226200e9c7432a177096b"
+      },
+      "rdkit": {
+        "parse_ns": 251021208,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 10654542,
+            "repeated_use": 1238542,
+            "parse_inclusive": 247281750
+          },
+          "labute_asa": {
+            "first_use": 4101083,
+            "repeated_use": 268417,
+            "parse_inclusive": 248249000
+          },
+          "num_rings": {
+            "first_use": 266250,
+            "repeated_use": 149791,
+            "parse_inclusive": 242568375
+          },
+          "morgan2_2048": {
+            "first_use": 60968834,
+            "repeated_use": 76104958,
+            "parse_inclusive": 336733000
+          },
+          "morgan2_chiral": {
+            "first_use": 59698792,
+            "repeated_use": 65746500,
+            "parse_inclusive": 328048958
+          },
+          "morgan3_2048": {
+            "first_use": 81797125,
+            "repeated_use": 73255500,
+            "parse_inclusive": 361316417
+          },
+          "maccs": {
+            "first_use": 1907788167,
+            "repeated_use": 1978350375,
+            "parse_inclusive": 2208564792
+          }
+        },
+        "peak_process_rss_bytes": 102973440,
+        "version": "2026.09.1",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/rdkit/__init__.py",
+        "extension_sha256": {
+          "rdBase.so": "2fb1e7377e7441fcc3c9ae813803adb288fdb710b2b0de66aecbfc1f4b5919ff"
+        },
+        "output_sha256": "471d99837becc9476610e82304e8e9d4fe991cf6147d65e9b82fd8a26837c595"
+      }
+    },
+    {
+      "order": [
+        "baseline",
+        "candidate",
+        "rdkit",
+        "cosmolkit"
+      ],
+      "load_average_start": [
+        24.5234375,
+        11.74609375,
+        6.86181640625
+      ],
+      "baseline": {
+        "parse_ns": 8749792,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 5558958,
+            "repeated_use": 134750,
+            "parse_inclusive": 11817667
+          },
+          "labute_asa": {
+            "first_use": 3958042,
+            "repeated_use": 131459,
+            "parse_inclusive": 12213166
+          },
+          "num_rings": {
+            "first_use": 8979209,
+            "repeated_use": 163125,
+            "parse_inclusive": 16731417
+          },
+          "morgan2_2048": {
+            "first_use": 14289041,
+            "repeated_use": 8026208,
+            "parse_inclusive": 28602250
+          },
+          "morgan2_chiral": {
+            "first_use": 47826541,
+            "repeated_use": 8284208,
+            "parse_inclusive": 76088625
+          },
+          "morgan3_2048": {
+            "first_use": 19481167,
+            "repeated_use": 11686334,
+            "parse_inclusive": 50390875
+          },
+          "maccs": {
+            "first_use": 940144791,
+            "repeated_use": 870585291,
+            "parse_inclusive": 939358291
+          }
+        },
+        "peak_process_rss_bytes": 49152000,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/baseline/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "e3d33f6be050e84a55c3b8c62071e28e0f10cbe30823ffaf4f43e61f4f38ece0"
+        },
+        "output_sha256": "43b35f5e0bf9d581c9810a8ad417e500058061374ed226200e9c7432a177096b"
+      },
+      "candidate": {
+        "parse_ns": 8594292,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 5800458,
+            "repeated_use": 106042,
+            "parse_inclusive": 11562208
+          },
+          "labute_asa": {
+            "first_use": 3856042,
+            "repeated_use": 118667,
+            "parse_inclusive": 12044666
+          },
+          "num_rings": {
+            "first_use": 5965500,
+            "repeated_use": 98541,
+            "parse_inclusive": 13721667
+          },
+          "morgan2_2048": {
+            "first_use": 13945917,
+            "repeated_use": 8722542,
+            "parse_inclusive": 37329583
+          },
+          "morgan2_chiral": {
+            "first_use": 53550000,
+            "repeated_use": 17583625,
+            "parse_inclusive": 49003500
+          },
+          "morgan3_2048": {
+            "first_use": 21022958,
+            "repeated_use": 17868625,
+            "parse_inclusive": 41826459
+          },
+          "maccs": {
+            "first_use": 953863584,
+            "repeated_use": 990891042,
+            "parse_inclusive": 968033292
+          }
+        },
+        "peak_process_rss_bytes": 49315840,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/candidate/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "6d1e6d5ac6e2908aaa2864c513d5d5f98d0df9a74d9ed677da8ba832989c3216"
+        },
+        "output_sha256": "43b35f5e0bf9d581c9810a8ad417e500058061374ed226200e9c7432a177096b"
+      },
+      "rdkit": {
+        "parse_ns": 217779667,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 7458916,
+            "repeated_use": 7549333,
+            "parse_inclusive": 273927708
+          },
+          "labute_asa": {
+            "first_use": 9536500,
+            "repeated_use": 298208,
+            "parse_inclusive": 389361334
+          },
+          "num_rings": {
+            "first_use": 160292,
+            "repeated_use": 188000,
+            "parse_inclusive": 230266084
+          },
+          "morgan2_2048": {
+            "first_use": 63315875,
+            "repeated_use": 75245583,
+            "parse_inclusive": 417531875
+          },
+          "morgan2_chiral": {
+            "first_use": 76242083,
+            "repeated_use": 78744542,
+            "parse_inclusive": 428989125
+          },
+          "morgan3_2048": {
+            "first_use": 112588375,
+            "repeated_use": 115783458,
+            "parse_inclusive": 471611333
+          },
+          "maccs": {
+            "first_use": 1930482708,
+            "repeated_use": 1718716375,
+            "parse_inclusive": 2096939166
+          }
+        },
+        "peak_process_rss_bytes": 107069440,
+        "version": "2026.09.1",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/rdkit/__init__.py",
+        "extension_sha256": {
+          "rdBase.so": "2fb1e7377e7441fcc3c9ae813803adb288fdb710b2b0de66aecbfc1f4b5919ff"
+        },
+        "output_sha256": "471d99837becc9476610e82304e8e9d4fe991cf6147d65e9b82fd8a26837c595"
+      },
+      "cosmolkit": {
+        "parse_ns": 245542416,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 2433417,
+            "repeated_use": 340416,
+            "parse_inclusive": 278314291
+          },
+          "labute_asa": {
+            "first_use": 1633375,
+            "repeated_use": 275125,
+            "parse_inclusive": 312275250
+          },
+          "num_rings": {
+            "first_use": 326541,
+            "repeated_use": 108042,
+            "parse_inclusive": 415559875
+          },
+          "morgan2_2048": {
+            "first_use": 76387250,
+            "repeated_use": 45551667,
+            "parse_inclusive": 342824792
+          },
+          "morgan2_chiral": {
+            "first_use": 77479292,
+            "repeated_use": 49046750,
+            "parse_inclusive": 379438333
+          },
+          "morgan3_2048": {
+            "first_use": 109829917,
+            "repeated_use": 84094500,
+            "parse_inclusive": 455321959
+          },
+          "maccs": {
+            "first_use": 3071022958,
+            "repeated_use": 2515906250,
+            "parse_inclusive": 2884648458
+          }
+        },
+        "peak_process_rss_bytes": 107102208,
+        "version": "0.5.0-rc.22",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/cosmolkit/__init__.py",
+        "extension_sha256": {
+          "cosmolkit.abi3.so": "0fc4a42b65552d31e852181a8a4beef693d15d8aa88716bf53e850701936362c"
+        },
+        "output_sha256": "52d3b7273bd8c6ec2a487aaabeb028279e92619cd07164d55046658523139367"
+      }
+    },
+    {
+      "order": [
+        "candidate",
+        "rdkit",
+        "cosmolkit",
+        "baseline"
+      ],
+      "load_average_start": [
+        26.720703125,
+        14.0517578125,
+        7.95703125
+      ],
+      "candidate": {
+        "parse_ns": 14585250,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 6069375,
+            "repeated_use": 151084,
+            "parse_inclusive": 11916334
+          },
+          "labute_asa": {
+            "first_use": 4725333,
+            "repeated_use": 117250,
+            "parse_inclusive": 12396625
+          },
+          "num_rings": {
+            "first_use": 6002708,
+            "repeated_use": 202750,
+            "parse_inclusive": 18155542
+          },
+          "morgan2_2048": {
+            "first_use": 18380417,
+            "repeated_use": 8462292,
+            "parse_inclusive": 35921625
+          },
+          "morgan2_chiral": {
+            "first_use": 44600416,
+            "repeated_use": 10073125,
+            "parse_inclusive": 58192292
+          },
+          "morgan3_2048": {
+            "first_use": 23608709,
+            "repeated_use": 18752292,
+            "parse_inclusive": 43116541
+          },
+          "maccs": {
+            "first_use": 967521458,
+            "repeated_use": 979463792,
+            "parse_inclusive": 1122545666
+          }
+        },
+        "peak_process_rss_bytes": 49201152,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/candidate/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "6d1e6d5ac6e2908aaa2864c513d5d5f98d0df9a74d9ed677da8ba832989c3216"
+        },
+        "output_sha256": "43b35f5e0bf9d581c9810a8ad417e500058061374ed226200e9c7432a177096b"
+      },
+      "rdkit": {
+        "parse_ns": 275187416,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 4734458,
+            "repeated_use": 1541750,
+            "parse_inclusive": 257004708
+          },
+          "labute_asa": {
+            "first_use": 9884333,
+            "repeated_use": 319917,
+            "parse_inclusive": 268489458
+          },
+          "num_rings": {
+            "first_use": 227583,
+            "repeated_use": 145167,
+            "parse_inclusive": 226728792
+          },
+          "morgan2_2048": {
+            "first_use": 67217583,
+            "repeated_use": 59398792,
+            "parse_inclusive": 307262208
+          },
+          "morgan2_chiral": {
+            "first_use": 60908541,
+            "repeated_use": 69334916,
+            "parse_inclusive": 313825375
+          },
+          "morgan3_2048": {
+            "first_use": 88797542,
+            "repeated_use": 72502166,
+            "parse_inclusive": 309199792
+          },
+          "maccs": {
+            "first_use": 1919726000,
+            "repeated_use": 1781835417,
+            "parse_inclusive": 1950953750
+          }
+        },
+        "peak_process_rss_bytes": 112001024,
+        "version": "2026.09.1",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/rdkit/__init__.py",
+        "extension_sha256": {
+          "rdBase.so": "2fb1e7377e7441fcc3c9ae813803adb288fdb710b2b0de66aecbfc1f4b5919ff"
+        },
+        "output_sha256": "471d99837becc9476610e82304e8e9d4fe991cf6147d65e9b82fd8a26837c595"
+      },
+      "cosmolkit": {
+        "parse_ns": 185185666,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 5756041,
+            "repeated_use": 263375,
+            "parse_inclusive": 225765625
+          },
+          "labute_asa": {
+            "first_use": 1737250,
+            "repeated_use": 267750,
+            "parse_inclusive": 226689750
+          },
+          "num_rings": {
+            "first_use": 307417,
+            "repeated_use": 140958,
+            "parse_inclusive": 217832042
+          },
+          "morgan2_2048": {
+            "first_use": 33314792,
+            "repeated_use": 41855125,
+            "parse_inclusive": 244203083
+          },
+          "morgan2_chiral": {
+            "first_use": 39130834,
+            "repeated_use": 46797292,
+            "parse_inclusive": 248080625
+          },
+          "morgan3_2048": {
+            "first_use": 48119375,
+            "repeated_use": 55042208,
+            "parse_inclusive": 268150291
+          },
+          "maccs": {
+            "first_use": 1869314209,
+            "repeated_use": 1947522084,
+            "parse_inclusive": 2342557000
+          }
+        },
+        "peak_process_rss_bytes": 111050752,
+        "version": "0.5.0-rc.22",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/cosmolkit/__init__.py",
+        "extension_sha256": {
+          "cosmolkit.abi3.so": "0fc4a42b65552d31e852181a8a4beef693d15d8aa88716bf53e850701936362c"
+        },
+        "output_sha256": "52d3b7273bd8c6ec2a487aaabeb028279e92619cd07164d55046658523139367"
+      },
+      "baseline": {
+        "parse_ns": 8686875,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 5350667,
+            "repeated_use": 110875,
+            "parse_inclusive": 11546125
+          },
+          "labute_asa": {
+            "first_use": 4581542,
+            "repeated_use": 197500,
+            "parse_inclusive": 13051292
+          },
+          "num_rings": {
+            "first_use": 8907542,
+            "repeated_use": 133291,
+            "parse_inclusive": 17117625
+          },
+          "morgan2_2048": {
+            "first_use": 13889292,
+            "repeated_use": 8667291,
+            "parse_inclusive": 37269250
+          },
+          "morgan2_chiral": {
+            "first_use": 46348542,
+            "repeated_use": 11610625,
+            "parse_inclusive": 97717375
+          },
+          "morgan3_2048": {
+            "first_use": 16162000,
+            "repeated_use": 15610625,
+            "parse_inclusive": 30289875
+          },
+          "maccs": {
+            "first_use": 861523666,
+            "repeated_use": 844133625,
+            "parse_inclusive": 874675583
+          }
+        },
+        "peak_process_rss_bytes": 48988160,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/baseline/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "e3d33f6be050e84a55c3b8c62071e28e0f10cbe30823ffaf4f43e61f4f38ece0"
+        },
+        "output_sha256": "43b35f5e0bf9d581c9810a8ad417e500058061374ed226200e9c7432a177096b"
+      }
+    },
+    {
+      "order": [
+        "rdkit",
+        "cosmolkit",
+        "baseline",
+        "candidate"
+      ],
+      "load_average_start": [
+        25.8203125,
+        15.431640625,
+        8.7431640625
+      ],
+      "rdkit": {
+        "parse_ns": 225597917,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 6109833,
+            "repeated_use": 2375500,
+            "parse_inclusive": 221108708
+          },
+          "labute_asa": {
+            "first_use": 4281667,
+            "repeated_use": 310167,
+            "parse_inclusive": 229913000
+          },
+          "num_rings": {
+            "first_use": 254416,
+            "repeated_use": 194417,
+            "parse_inclusive": 210618833
+          },
+          "morgan2_2048": {
+            "first_use": 65864958,
+            "repeated_use": 60407916,
+            "parse_inclusive": 316934042
+          },
+          "morgan2_chiral": {
+            "first_use": 59599208,
+            "repeated_use": 68044125,
+            "parse_inclusive": 313112125
+          },
+          "morgan3_2048": {
+            "first_use": 78116916,
+            "repeated_use": 98566250,
+            "parse_inclusive": 334920458
+          },
+          "maccs": {
+            "first_use": 1612105250,
+            "repeated_use": 1178274708,
+            "parse_inclusive": 1218372041
+          }
+        },
+        "peak_process_rss_bytes": 111951872,
+        "version": "2026.09.1",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/rdkit/__init__.py",
+        "extension_sha256": {
+          "rdBase.so": "2fb1e7377e7441fcc3c9ae813803adb288fdb710b2b0de66aecbfc1f4b5919ff"
+        },
+        "output_sha256": "471d99837becc9476610e82304e8e9d4fe991cf6147d65e9b82fd8a26837c595"
+      },
+      "cosmolkit": {
+        "parse_ns": 138664542,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 1302583,
+            "repeated_use": 127333,
+            "parse_inclusive": 128180625
+          },
+          "labute_asa": {
+            "first_use": 831125,
+            "repeated_use": 126459,
+            "parse_inclusive": 131615917
+          },
+          "num_rings": {
+            "first_use": 134708,
+            "repeated_use": 78458,
+            "parse_inclusive": 121574542
+          },
+          "morgan2_2048": {
+            "first_use": 23054083,
+            "repeated_use": 19738958,
+            "parse_inclusive": 124851875
+          },
+          "morgan2_chiral": {
+            "first_use": 21024750,
+            "repeated_use": 19084000,
+            "parse_inclusive": 120506500
+          },
+          "morgan3_2048": {
+            "first_use": 25029208,
+            "repeated_use": 23682583,
+            "parse_inclusive": 112284417
+          },
+          "maccs": {
+            "first_use": 809860417,
+            "repeated_use": 776470792,
+            "parse_inclusive": 738709250
+          }
+        },
+        "peak_process_rss_bytes": 110329856,
+        "version": "0.5.0-rc.22",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/cosmolkit/__init__.py",
+        "extension_sha256": {
+          "cosmolkit.abi3.so": "0fc4a42b65552d31e852181a8a4beef693d15d8aa88716bf53e850701936362c"
+        },
+        "output_sha256": "52d3b7273bd8c6ec2a487aaabeb028279e92619cd07164d55046658523139367"
+      },
+      "baseline": {
+        "parse_ns": 4049542,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 1767375,
+            "repeated_use": 48208,
+            "parse_inclusive": 5554583
+          },
+          "labute_asa": {
+            "first_use": 1859125,
+            "repeated_use": 45750,
+            "parse_inclusive": 5838958
+          },
+          "num_rings": {
+            "first_use": 4258875,
+            "repeated_use": 43791,
+            "parse_inclusive": 8075375
+          },
+          "morgan2_2048": {
+            "first_use": 6490958,
+            "repeated_use": 3822917,
+            "parse_inclusive": 11495750
+          },
+          "morgan2_chiral": {
+            "first_use": 16352417,
+            "repeated_use": 4017083,
+            "parse_inclusive": 20677209
+          },
+          "morgan3_2048": {
+            "first_use": 7910792,
+            "repeated_use": 5293042,
+            "parse_inclusive": 12228375
+          },
+          "maccs": {
+            "first_use": 320424125,
+            "repeated_use": 334581750,
+            "parse_inclusive": 389880375
+          }
+        },
+        "peak_process_rss_bytes": 48971776,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/baseline/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "e3d33f6be050e84a55c3b8c62071e28e0f10cbe30823ffaf4f43e61f4f38ece0"
+        },
+        "output_sha256": "43b35f5e0bf9d581c9810a8ad417e500058061374ed226200e9c7432a177096b"
+      },
+      "candidate": {
+        "parse_ns": 6199208,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 7310208,
+            "repeated_use": 70541,
+            "parse_inclusive": 8099834
+          },
+          "labute_asa": {
+            "first_use": 2651000,
+            "repeated_use": 72000,
+            "parse_inclusive": 8153625
+          },
+          "num_rings": {
+            "first_use": 4154792,
+            "repeated_use": 67958,
+            "parse_inclusive": 10229167
+          },
+          "morgan2_2048": {
+            "first_use": 10664792,
+            "repeated_use": 5054875,
+            "parse_inclusive": 14407042
+          },
+          "morgan2_chiral": {
+            "first_use": 23000041,
+            "repeated_use": 5371666,
+            "parse_inclusive": 28206875
+          },
+          "morgan3_2048": {
+            "first_use": 10275208,
+            "repeated_use": 6951875,
+            "parse_inclusive": 17595083
+          },
+          "maccs": {
+            "first_use": 422891708,
+            "repeated_use": 394988042,
+            "parse_inclusive": 395905166
+          }
+        },
+        "peak_process_rss_bytes": 49381376,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/candidate/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "6d1e6d5ac6e2908aaa2864c513d5d5f98d0df9a74d9ed677da8ba832989c3216"
+        },
+        "output_sha256": "43b35f5e0bf9d581c9810a8ad417e500058061374ed226200e9c7432a177096b"
+      }
+    },
+    {
+      "order": [
+        "cosmolkit",
+        "baseline",
+        "candidate",
+        "rdkit"
+      ],
+      "load_average_start": [
+        21.31689453125,
+        15.1044921875,
+        8.7822265625
+      ],
+      "cosmolkit": {
+        "parse_ns": 82224000,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 936875,
+            "repeated_use": 96583,
+            "parse_inclusive": 75318041
+          },
+          "labute_asa": {
+            "first_use": 620958,
+            "repeated_use": 77166,
+            "parse_inclusive": 72982625
+          },
+          "num_rings": {
+            "first_use": 96667,
+            "repeated_use": 57500,
+            "parse_inclusive": 73543958
+          },
+          "morgan2_2048": {
+            "first_use": 14154500,
+            "repeated_use": 13472916,
+            "parse_inclusive": 83764834
+          },
+          "morgan2_chiral": {
+            "first_use": 13614542,
+            "repeated_use": 12667417,
+            "parse_inclusive": 82443667
+          },
+          "morgan3_2048": {
+            "first_use": 17601375,
+            "repeated_use": 16608500,
+            "parse_inclusive": 88527625
+          },
+          "maccs": {
+            "first_use": 634674000,
+            "repeated_use": 641009583,
+            "parse_inclusive": 719144458
+          }
+        },
+        "peak_process_rss_bytes": 110313472,
+        "version": "0.5.0-rc.22",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/cosmolkit/__init__.py",
+        "extension_sha256": {
+          "cosmolkit.abi3.so": "0fc4a42b65552d31e852181a8a4beef693d15d8aa88716bf53e850701936362c"
+        },
+        "output_sha256": "52d3b7273bd8c6ec2a487aaabeb028279e92619cd07164d55046658523139367"
+      },
+      "baseline": {
+        "parse_ns": 4063167,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 1771834,
+            "repeated_use": 46500,
+            "parse_inclusive": 5652083
+          },
+          "labute_asa": {
+            "first_use": 2000292,
+            "repeated_use": 46833,
+            "parse_inclusive": 5915083
+          },
+          "num_rings": {
+            "first_use": 4235708,
+            "repeated_use": 41541,
+            "parse_inclusive": 8680333
+          },
+          "morgan2_2048": {
+            "first_use": 6754000,
+            "repeated_use": 4195459,
+            "parse_inclusive": 11621791
+          },
+          "morgan2_chiral": {
+            "first_use": 18226583,
+            "repeated_use": 4404375,
+            "parse_inclusive": 21019167
+          },
+          "morgan3_2048": {
+            "first_use": 8379750,
+            "repeated_use": 5639750,
+            "parse_inclusive": 13149625
+          },
+          "maccs": {
+            "first_use": 291892541,
+            "repeated_use": 282967334,
+            "parse_inclusive": 288686083
+          }
+        },
+        "peak_process_rss_bytes": 48971776,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/baseline/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "e3d33f6be050e84a55c3b8c62071e28e0f10cbe30823ffaf4f43e61f4f38ece0"
+        },
+        "output_sha256": "43b35f5e0bf9d581c9810a8ad417e500058061374ed226200e9c7432a177096b"
+      },
+      "candidate": {
+        "parse_ns": 4102083,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 1782458,
+            "repeated_use": 47542,
+            "parse_inclusive": 5629417
+          },
+          "labute_asa": {
+            "first_use": 1865042,
+            "repeated_use": 47292,
+            "parse_inclusive": 5875041
+          },
+          "num_rings": {
+            "first_use": 2878125,
+            "repeated_use": 41875,
+            "parse_inclusive": 6760833
+          },
+          "morgan2_2048": {
+            "first_use": 6963667,
+            "repeated_use": 3870250,
+            "parse_inclusive": 11353584
+          },
+          "morgan2_chiral": {
+            "first_use": 16647709,
+            "repeated_use": 4010875,
+            "parse_inclusive": 21594291
+          },
+          "morgan3_2048": {
+            "first_use": 8236000,
+            "repeated_use": 5192625,
+            "parse_inclusive": 13371875
+          },
+          "maccs": {
+            "first_use": 292753208,
+            "repeated_use": 285778708,
+            "parse_inclusive": 304915583
+          }
+        },
+        "peak_process_rss_bytes": 49086464,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/candidate/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "6d1e6d5ac6e2908aaa2864c513d5d5f98d0df9a74d9ed677da8ba832989c3216"
+        },
+        "output_sha256": "43b35f5e0bf9d581c9810a8ad417e500058061374ed226200e9c7432a177096b"
+      },
+      "rdkit": {
+        "parse_ns": 68345625,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "tpsa": {
+            "first_use": 2660958,
+            "repeated_use": 512625,
+            "parse_inclusive": 77365458
+          },
+          "labute_asa": {
+            "first_use": 1311250,
+            "repeated_use": 127916,
+            "parse_inclusive": 72099833
+          },
+          "num_rings": {
+            "first_use": 100625,
+            "repeated_use": 78958,
+            "parse_inclusive": 76922292
+          },
+          "morgan2_2048": {
+            "first_use": 20361916,
+            "repeated_use": 18744209,
+            "parse_inclusive": 81553292
+          },
+          "morgan2_chiral": {
+            "first_use": 19615083,
+            "repeated_use": 34607750,
+            "parse_inclusive": 160286250
+          },
+          "morgan3_2048": {
+            "first_use": 46823625,
+            "repeated_use": 50633583,
+            "parse_inclusive": 198701666
+          },
+          "maccs": {
+            "first_use": 622922041,
+            "repeated_use": 449491834,
+            "parse_inclusive": 493270042
+          }
+        },
+        "peak_process_rss_bytes": 111837184,
+        "version": "2026.09.1",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/rdkit/__init__.py",
+        "extension_sha256": {
+          "rdBase.so": "2fb1e7377e7441fcc3c9ae813803adb288fdb710b2b0de66aecbfc1f4b5919ff"
+        },
+        "output_sha256": "471d99837becc9476610e82304e8e9d4fe991cf6147d65e9b82fd8a26837c595"
+      }
+    }
+  ],
+  "agreement": {
+    "tpsa": {
+      "candidate_vs_baseline": {
+        "passed": true,
+        "rows": 1000,
+        "mismatches": 0
+      },
+      "baseline_vs_rdkit": {
+        "passed": true,
+        "rows": 1000,
+        "mismatches": 0
+      },
+      "candidate_vs_rdkit": {
+        "passed": true,
+        "rows": 1000,
+        "mismatches": 0
+      },
+      "cosmolkit_vs_rdkit": {
+        "passed": true,
+        "rows": 1000,
+        "mismatches": 0
+      }
+    },
+    "labute_asa": {
+      "candidate_vs_baseline": {
+        "passed": true,
+        "rows": 1000,
+        "mismatches": 0
+      },
+      "baseline_vs_rdkit": {
+        "passed": true,
+        "rows": 1000,
+        "mismatches": 0
+      },
+      "candidate_vs_rdkit": {
+        "passed": true,
+        "rows": 1000,
+        "mismatches": 0
+      },
+      "cosmolkit_vs_rdkit": {
+        "passed": true,
+        "rows": 1000,
+        "mismatches": 0
+      }
+    },
+    "num_rings": {
+      "candidate_vs_baseline": {
+        "passed": true,
+        "rows": 1000,
+        "mismatches": 0
+      },
+      "baseline_vs_rdkit": {
+        "passed": true,
+        "rows": 1000,
+        "mismatches": 0
+      },
+      "candidate_vs_rdkit": {
+        "passed": true,
+        "rows": 1000,
+        "mismatches": 0
+      },
+      "cosmolkit_vs_rdkit": {
+        "passed": false,
+        "rows": 1000,
+        "mismatches": 6
+      }
+    },
+    "morgan2_2048": {
+      "candidate_vs_baseline": {
+        "passed": true,
+        "rows": 1000,
+        "mismatches": 0
+      },
+      "baseline_vs_rdkit": {
+        "passed": true,
+        "rows": 1000,
+        "mismatches": 0
+      },
+      "candidate_vs_rdkit": {
+        "passed": true,
+        "rows": 1000,
+        "mismatches": 0
+      },
+      "cosmolkit_vs_rdkit": {
+        "passed": true,
+        "rows": 1000,
+        "mismatches": 0
+      }
+    },
+    "morgan2_chiral": {
+      "candidate_vs_baseline": {
+        "passed": true,
+        "rows": 1000,
+        "mismatches": 0
+      },
+      "baseline_vs_rdkit": {
+        "passed": true,
+        "rows": 1000,
+        "mismatches": 0
+      },
+      "candidate_vs_rdkit": {
+        "passed": true,
+        "rows": 1000,
+        "mismatches": 0
+      },
+      "cosmolkit_vs_rdkit": {
+        "passed": true,
+        "rows": 1000,
+        "mismatches": 0
+      }
+    },
+    "morgan3_2048": {
+      "candidate_vs_baseline": {
+        "passed": true,
+        "rows": 1000,
+        "mismatches": 0
+      },
+      "baseline_vs_rdkit": {
+        "passed": true,
+        "rows": 1000,
+        "mismatches": 0
+      },
+      "candidate_vs_rdkit": {
+        "passed": true,
+        "rows": 1000,
+        "mismatches": 0
+      },
+      "cosmolkit_vs_rdkit": {
+        "passed": true,
+        "rows": 1000,
+        "mismatches": 0
+      }
+    },
+    "maccs": {
+      "candidate_vs_baseline": {
+        "passed": true,
+        "rows": 1000,
+        "mismatches": 0
+      },
+      "baseline_vs_rdkit": {
+        "passed": true,
+        "rows": 1000,
+        "mismatches": 0
+      },
+      "candidate_vs_rdkit": {
+        "passed": true,
+        "rows": 1000,
+        "mismatches": 0
+      },
+      "cosmolkit_vs_rdkit": {
+        "passed": true,
+        "rows": 1000,
+        "mismatches": 0
+      }
+    }
+  },
+  "summary": {
+    "tpsa/first_use": {
+      "baseline": {
+        "speedup": {
+          "median": 0.994,
+          "ci95": [
+            0.947,
+            1.041
+          ],
+          "winning_blocks": 9,
+          "blocks": 20
+        },
+        "demonstrated_win": false
+      },
+      "rdkit": {
+        "speedup": {
+          "median": 1.457,
+          "ci95": [
+            1.27,
+            1.496
+          ],
+          "winning_blocks": 15,
+          "blocks": 20
+        },
+        "demonstrated_win": false
+      },
+      "cosmolkit": {
+        "speedup": {
+          "median": 0.503,
+          "ci95": [
+            0.42,
+            0.523
+          ],
+          "winning_blocks": 1,
+          "blocks": 20
+        },
+        "demonstrated_win": false
+      }
+    },
+    "tpsa/repeated_use": {
+      "baseline": {
+        "speedup": {
+          "median": 0.995,
+          "ci95": [
+            0.956,
+            1.053
+          ],
+          "winning_blocks": 9,
+          "blocks": 20
+        },
+        "demonstrated_win": false
+      },
+      "rdkit": {
+        "speedup": {
+          "median": 10.035,
+          "ci95": [
+            9.461,
+            10.704
+          ],
+          "winning_blocks": 20,
+          "blocks": 20
+        },
+        "demonstrated_win": true
+      },
+      "cosmolkit": {
+        "speedup": {
+          "median": 1.743,
+          "ci95": [
+            1.672,
+            1.924
+          ],
+          "winning_blocks": 19,
+          "blocks": 20
+        },
+        "demonstrated_win": false
+      }
+    },
+    "tpsa/parse_inclusive": {
+      "baseline": {
+        "speedup": {
+          "median": 0.998,
+          "ci95": [
+            0.975,
+            1.019
+          ],
+          "winning_blocks": 10,
+          "blocks": 20
+        },
+        "demonstrated_win": false
+      },
+      "rdkit": {
+        "speedup": {
+          "median": 13.388,
+          "ci95": [
+            12.741,
+            17.382
+          ],
+          "winning_blocks": 20,
+          "blocks": 20
+        },
+        "demonstrated_win": true
+      },
+      "cosmolkit": {
+        "speedup": {
+          "median": 12.168,
+          "ci95": [
+            11.931,
+            14.371
+          ],
+          "winning_blocks": 20,
+          "blocks": 20
+        },
+        "demonstrated_win": true
+      }
+    },
+    "labute_asa/first_use": {
+      "baseline": {
+        "speedup": {
+          "median": 0.975,
+          "ci95": [
+            0.952,
+            1.016
+          ],
+          "winning_blocks": 7,
+          "blocks": 20
+        },
+        "demonstrated_win": false
+      },
+      "rdkit": {
+        "speedup": {
+          "median": 0.711,
+          "ci95": [
+            0.688,
+            0.827
+          ],
+          "winning_blocks": 5,
+          "blocks": 20
+        },
+        "demonstrated_win": false
+      },
+      "cosmolkit": {
+        "speedup": {
+          "median": 0.353,
+          "ci95": [
+            0.327,
+            0.391
+          ],
+          "winning_blocks": 0,
+          "blocks": 20
+        },
+        "demonstrated_win": false
+      }
+    },
+    "labute_asa/repeated_use": {
+      "baseline": {
+        "speedup": {
+          "median": 0.995,
+          "ci95": [
+            0.983,
+            1.128
+          ],
+          "winning_blocks": 9,
+          "blocks": 20
+        },
+        "demonstrated_win": false
+      },
+      "rdkit": {
+        "speedup": {
+          "median": 2.592,
+          "ci95": [
+            2.416,
+            2.717
+          ],
+          "winning_blocks": 20,
+          "blocks": 20
+        },
+        "demonstrated_win": true
+      },
+      "cosmolkit": {
+        "speedup": {
+          "median": 1.473,
+          "ci95": [
+            1.34,
+            1.694
+          ],
+          "winning_blocks": 20,
+          "blocks": 20
+        },
+        "demonstrated_win": true
+      }
+    },
+    "labute_asa/parse_inclusive": {
+      "baseline": {
+        "speedup": {
+          "median": 0.995,
+          "ci95": [
+            0.979,
+            1.012
+          ],
+          "winning_blocks": 9,
+          "blocks": 20
+        },
+        "demonstrated_win": false
+      },
+      "rdkit": {
+        "speedup": {
+          "median": 12.443,
+          "ci95": [
+            11.838,
+            13.86
+          ],
+          "winning_blocks": 20,
+          "blocks": 20
+        },
+        "demonstrated_win": true
+      },
+      "cosmolkit": {
+        "speedup": {
+          "median": 11.525,
+          "ci95": [
+            11.088,
+            14.736
+          ],
+          "winning_blocks": 20,
+          "blocks": 20
+        },
+        "demonstrated_win": true
+      }
+    },
+    "num_rings/first_use": {
+      "baseline": {
+        "speedup": {
+          "median": 1.473,
+          "ci95": [
+            1.43,
+            1.495
+          ],
+          "winning_blocks": 20,
+          "blocks": 20
+        },
+        "demonstrated_win": true
+      },
+      "rdkit": {
+        "speedup": {
+          "median": 0.029,
+          "ci95": [
+            0.028,
+            0.031
+          ],
+          "winning_blocks": 0,
+          "blocks": 20
+        },
+        "demonstrated_win": false
+      },
+      "cosmolkit": {
+        "speedup": null,
+        "demonstrated_win": false
+      }
+    },
+    "num_rings/repeated_use": {
+      "baseline": {
+        "speedup": {
+          "median": 0.981,
+          "ci95": [
+            0.885,
+            1.086
+          ],
+          "winning_blocks": 9,
+          "blocks": 20
+        },
+        "demonstrated_win": false
+      },
+      "rdkit": {
+        "speedup": {
+          "median": 1.652,
+          "ci95": [
+            1.462,
+            1.835
+          ],
+          "winning_blocks": 17,
+          "blocks": 20
+        },
+        "demonstrated_win": false
+      },
+      "cosmolkit": {
+        "speedup": null,
+        "demonstrated_win": false
+      }
+    },
+    "num_rings/parse_inclusive": {
+      "baseline": {
+        "speedup": {
+          "median": 1.207,
+          "ci95": [
+            1.177,
+            1.245
+          ],
+          "winning_blocks": 16,
+          "blocks": 20
+        },
+        "demonstrated_win": false
+      },
+      "rdkit": {
+        "speedup": {
+          "median": 10.814,
+          "ci95": [
+            10.262,
+            11.933
+          ],
+          "winning_blocks": 20,
+          "blocks": 20
+        },
+        "demonstrated_win": true
+      },
+      "cosmolkit": {
+        "speedup": null,
+        "demonstrated_win": false
+      }
+    },
+    "morgan2_2048/first_use": {
+      "baseline": {
+        "speedup": {
+          "median": 0.996,
+          "ci95": [
+            0.958,
+            1.034
+          ],
+          "winning_blocks": 9,
+          "blocks": 20
+        },
+        "demonstrated_win": false
+      },
+      "rdkit": {
+        "speedup": {
+          "median": 3.109,
+          "ci95": [
+            2.95,
+            3.388
+          ],
+          "winning_blocks": 20,
+          "blocks": 20
+        },
+        "demonstrated_win": true
+      },
+      "cosmolkit": {
+        "speedup": {
+          "median": 2.026,
+          "ci95": [
+            1.959,
+            2.171
+          ],
+          "winning_blocks": 20,
+          "blocks": 20
+        },
+        "demonstrated_win": true
+      }
+    },
+    "morgan2_2048/repeated_use": {
+      "baseline": {
+        "speedup": {
+          "median": 1.006,
+          "ci95": [
+            0.99,
+            1.066
+          ],
+          "winning_blocks": 11,
+          "blocks": 20
+        },
+        "demonstrated_win": false
+      },
+      "rdkit": {
+        "speedup": {
+          "median": 5.345,
+          "ci95": [
+            5.152,
+            6.094
+          ],
+          "winning_blocks": 20,
+          "blocks": 20
+        },
+        "demonstrated_win": true
+      },
+      "cosmolkit": {
+        "speedup": {
+          "median": 3.292,
+          "ci95": [
+            3.173,
+            4.078
+          ],
+          "winning_blocks": 20,
+          "blocks": 20
+        },
+        "demonstrated_win": true
+      }
+    },
+    "morgan2_2048/parse_inclusive": {
+      "baseline": {
+        "speedup": {
+          "median": 0.996,
+          "ci95": [
+            0.921,
+            1.022
+          ],
+          "winning_blocks": 10,
+          "blocks": 20
+        },
+        "demonstrated_win": false
+      },
+      "rdkit": {
+        "speedup": {
+          "median": 8.558,
+          "ci95": [
+            8.203,
+            8.703
+          ],
+          "winning_blocks": 20,
+          "blocks": 20
+        },
+        "demonstrated_win": true
+      },
+      "cosmolkit": {
+        "speedup": {
+          "median": 7.385,
+          "ci95": [
+            7.032,
+            7.589
+          ],
+          "winning_blocks": 20,
+          "blocks": 20
+        },
+        "demonstrated_win": true
+      }
+    },
+    "morgan2_chiral/first_use": {
+      "baseline": {
+        "speedup": {
+          "median": 0.981,
+          "ci95": [
+            0.934,
+            1.036
+          ],
+          "winning_blocks": 7,
+          "blocks": 20
+        },
+        "demonstrated_win": false
+      },
+      "rdkit": {
+        "speedup": {
+          "median": 1.248,
+          "ci95": [
+            1.204,
+            1.267
+          ],
+          "winning_blocks": 17,
+          "blocks": 20
+        },
+        "demonstrated_win": false
+      },
+      "cosmolkit": {
+        "speedup": {
+          "median": 0.818,
+          "ci95": [
+            0.764,
+            0.883
+          ],
+          "winning_blocks": 4,
+          "blocks": 20
+        },
+        "demonstrated_win": false
+      }
+    },
+    "morgan2_chiral/repeated_use": {
+      "baseline": {
+        "speedup": {
+          "median": 0.982,
+          "ci95": [
+            0.939,
+            1.039
+          ],
+          "winning_blocks": 8,
+          "blocks": 20
+        },
+        "demonstrated_win": false
+      },
+      "rdkit": {
+        "speedup": {
+          "median": 5.004,
+          "ci95": [
+            4.625,
+            5.42
+          ],
+          "winning_blocks": 20,
+          "blocks": 20
+        },
+        "demonstrated_win": true
+      },
+      "cosmolkit": {
+        "speedup": {
+          "median": 3.037,
+          "ci95": [
+            2.972,
+            3.276
+          ],
+          "winning_blocks": 19,
+          "blocks": 20
+        },
+        "demonstrated_win": false
+      }
+    },
+    "morgan2_chiral/parse_inclusive": {
+      "baseline": {
+        "speedup": {
+          "median": 1.009,
+          "ci95": [
+            0.971,
+            1.171
+          ],
+          "winning_blocks": 11,
+          "blocks": 20
+        },
+        "demonstrated_win": false
+      },
+      "rdkit": {
+        "speedup": {
+          "median": 4.486,
+          "ci95": [
+            4.322,
+            5.082
+          ],
+          "winning_blocks": 20,
+          "blocks": 20
+        },
+        "demonstrated_win": true
+      },
+      "cosmolkit": {
+        "speedup": {
+          "median": 3.879,
+          "ci95": [
+            3.666,
+            4.268
+          ],
+          "winning_blocks": 20,
+          "blocks": 20
+        },
+        "demonstrated_win": true
+      }
+    },
+    "morgan3_2048/first_use": {
+      "baseline": {
+        "speedup": {
+          "median": 0.998,
+          "ci95": [
+            0.937,
+            1.015
+          ],
+          "winning_blocks": 9,
+          "blocks": 20
+        },
+        "demonstrated_win": false
+      },
+      "rdkit": {
+        "speedup": {
+          "median": 3.337,
+          "ci95": [
+            3.206,
+            3.627
+          ],
+          "winning_blocks": 20,
+          "blocks": 20
+        },
+        "demonstrated_win": true
+      },
+      "cosmolkit": {
+        "speedup": {
+          "median": 2.22,
+          "ci95": [
+            2.131,
+            2.404
+          ],
+          "winning_blocks": 19,
+          "blocks": 20
+        },
+        "demonstrated_win": false
+      }
+    },
+    "morgan3_2048/repeated_use": {
+      "baseline": {
+        "speedup": {
+          "median": 0.976,
+          "ci95": [
+            0.918,
+            1.044
+          ],
+          "winning_blocks": 8,
+          "blocks": 20
+        },
+        "demonstrated_win": false
+      },
+      "rdkit": {
+        "speedup": {
+          "median": 4.884,
+          "ci95": [
+            4.651,
+            5.085
+          ],
+          "winning_blocks": 20,
+          "blocks": 20
+        },
+        "demonstrated_win": true
+      },
+      "cosmolkit": {
+        "speedup": {
+          "median": 3.163,
+          "ci95": [
+            2.984,
+            3.569
+          ],
+          "winning_blocks": 20,
+          "blocks": 20
+        },
+        "demonstrated_win": true
+      }
+    },
+    "morgan3_2048/parse_inclusive": {
+      "baseline": {
+        "speedup": {
+          "median": 0.992,
+          "ci95": [
+            0.908,
+            1.037
+          ],
+          "winning_blocks": 8,
+          "blocks": 20
+        },
+        "demonstrated_win": false
+      },
+      "rdkit": {
+        "speedup": {
+          "median": 7.975,
+          "ci95": [
+            7.767,
+            8.54
+          ],
+          "winning_blocks": 20,
+          "blocks": 20
+        },
+        "demonstrated_win": true
+      },
+      "cosmolkit": {
+        "speedup": {
+          "median": 6.965,
+          "ci95": [
+            6.41,
+            7.172
+          ],
+          "winning_blocks": 20,
+          "blocks": 20
+        },
+        "demonstrated_win": true
+      }
+    },
+    "maccs/first_use": {
+      "baseline": {
+        "speedup": {
+          "median": 1.0,
+          "ci95": [
+            0.948,
+            1.014
+          ],
+          "winning_blocks": 10,
+          "blocks": 20
+        },
+        "demonstrated_win": false
+      },
+      "rdkit": {
+        "speedup": {
+          "median": 1.924,
+          "ci95": [
+            1.874,
+            2.038
+          ],
+          "winning_blocks": 19,
+          "blocks": 20
+        },
+        "demonstrated_win": false
+      },
+      "cosmolkit": {
+        "speedup": {
+          "median": 2.169,
+          "ci95": [
+            1.981,
+            2.242
+          ],
+          "winning_blocks": 20,
+          "blocks": 20
+        },
+        "demonstrated_win": true
+      }
+    },
+    "maccs/repeated_use": {
+      "baseline": {
+        "speedup": {
+          "median": 0.999,
+          "ci95": [
+            0.952,
+            1.023
+          ],
+          "winning_blocks": 9,
+          "blocks": 20
+        },
+        "demonstrated_win": false
+      },
+      "rdkit": {
+        "speedup": {
+          "median": 1.962,
+          "ci95": [
+            1.821,
+            2.052
+          ],
+          "winning_blocks": 20,
+          "blocks": 20
+        },
+        "demonstrated_win": true
+      },
+      "cosmolkit": {
+        "speedup": {
+          "median": 2.269,
+          "ci95": [
+            2.177,
+            2.416
+          ],
+          "winning_blocks": 20,
+          "blocks": 20
+        },
+        "demonstrated_win": true
+      }
+    },
+    "maccs/parse_inclusive": {
+      "baseline": {
+        "speedup": {
+          "median": 0.997,
+          "ci95": [
+            0.967,
+            1.025
+          ],
+          "winning_blocks": 10,
+          "blocks": 20
+        },
+        "demonstrated_win": false
+      },
+      "rdkit": {
+        "speedup": {
+          "median": 2.109,
+          "ci95": [
+            1.995,
+            2.265
+          ],
+          "winning_blocks": 20,
+          "blocks": 20
+        },
+        "demonstrated_win": true
+      },
+      "cosmolkit": {
+        "speedup": {
+          "median": 2.365,
+          "ci95": [
+            2.231,
+            2.643
+          ],
+          "winning_blocks": 20,
+          "blocks": 20
+        },
+        "demonstrated_win": true
+      }
+    }
+  },
+  "complete": true,
+  "source_manifest": {
+    "schema": "python-cycle-path-reuse-source/v1",
+    "base_revision": "cac480fb23cd8adeec6e5e9bed1f18677f87b392",
+    "base_tree": "7495188103a6ed6635700fd378977e2baabe1e34",
+    "candidate_patch": {
+      "path": "benchmarks/2026-10-14-python-cycle-path-reuse-candidate.patch",
+      "sha256": "3d8f9828f7c4e3ea363a02f4446e7c4c4eb0b63ef5b87d692817a923e8bea10d"
+    },
+    "changed_source_sha256": {
+      "crates/chematic-perception/src/relevant_cycles.rs": "f53099d089a71507e649aa5e86b06fa53dd42561f3fc6d6372a7bd9fa1e55bec",
+      "crates/chematic-perception/src/relevant_cycles_path_tests.rs": "0f0347b7f7c8bf05b1abd46bb9b85f5d862f59c01b118d1c15c59764b2802e95"
+    },
+    "measurement_scripts_sha256": {
+      "scripts/bench_python_speed_frontier.py": "f6693ba7d2e6216d21229e134a06433b9ad3b949fd652fc0dca809d61f1de248",
+      "scripts/verify_python_descriptor_frontier.py": "5b64211b11bb0bb9a696ff209d33213a455015dde169ed18f2c968852bc82639",
+      "scripts/verify_python_morgan_frontier.py": "48545259dd551c5b8e75d82e2ebc7696181af460bd0a7c9cff1f1bcfecea356d",
+      "validation/cosmolkit_comparison/bench_corpus.py": "6ad2dc64556b8e88e2b246f3c9dd4953b849a1c266fb8055520598b5e7deeb4c"
+    },
+    "build_command": "CARGO_TARGET_DIR=/private/tmp/chematic-cycle-speed-target-20261014 maturin build --release --manifest-path crates/chematic-py/Cargo.toml --interpreter python3.13 --out <arm>-wheel",
+    "wheels": {
+      "baseline": {
+        "path": "/private/tmp/chematic-cycle-speed-20261014/baseline-wheel/chematic-1.1.4-cp313-cp313-macosx_11_0_arm64.whl",
+        "sha256": "367f7f07937978abf0f98c469861e2341db9c222b21cef033e3558debc3669b4"
+      },
+      "candidate": {
+        "path": "/private/tmp/chematic-cycle-speed-20261014/candidate-wheel/chematic-1.1.4-cp313-cp313-macosx_11_0_arm64.whl",
+        "sha256": "f8b125d5631a3bb10c414baa153173d7d59c39dd797347d4dfa3d395f157a90b"
+      }
+    },
+    "scope": "source wheels built from main plus the candidate patch; no claim about published artifacts or whole-toolkit superiority",
+    "data": "unchanged fixed corpus and stress corpus; existing manifests and licenses apply; no filtered rows or blocks"
+  },
+  "load_average_end": [
+    15.98193359375,
+    14.28759765625,
+    8.6357421875
+  ]
+}

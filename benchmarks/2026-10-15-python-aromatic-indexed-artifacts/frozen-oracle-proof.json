@@ -1,0 +1,7 @@
+{
+  "complete_immediate_baseline_builder_order_and_finish_bodies": true,
+  "only_rustfmt_whitespace_difference": true,
+  "formatted_sha256": "c20ebba00cb308297e04db6881ec51b25e72a2231925c4c81872d281f76e1f46",
+  "baseline_body_sha256": "567801453d55e38d206a600bb206bcef6a5e1f0588e9d80d0487dc089d9bae76",
+  "uses_new_production_table_or_finish_implementation": false
+}

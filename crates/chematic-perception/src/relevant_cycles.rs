@@ -56,6 +56,28 @@ struct RootSearch {
     preds: Vec<Vec<usize>>,
 }
 
+// The first predecessor of each vertex defines one rooted tree. Two fixed
+// paths meet only at the root exactly when their first branches differ.
+// Cache each path's edge vector once; candidate generation then uses XOR.
+struct FixedTreePaths {
+    words: usize,
+    rows: Vec<usize>,
+    edges: Vec<u64>,
+    branches: Vec<usize>,
+}
+
+impl FixedTreePaths {
+    fn union(&self, a: usize, b: usize) -> Vec<u64> {
+        let a = self.rows[a] * self.words;
+        let b = self.rows[b] * self.words;
+        self.edges[a..a + self.words]
+            .iter()
+            .zip(&self.edges[b..b + self.words])
+            .map(|(left, right)| left ^ right)
+            .collect()
+    }
+}
+
 const UNREACHED: usize = usize::MAX;
 
 struct CycleGraph {
@@ -160,27 +182,59 @@ impl CycleGraph {
         RootSearch { dist, preds }
     }
 
-    fn fixed_path(search: &RootSearch, mut vertex: usize) -> Vec<usize> {
-        let mut path = vec![vertex];
-        while search.dist[vertex] > 0 {
-            vertex = search.preds[vertex][0];
-            path.push(vertex);
+    fn fixed_tree_paths(&self, root: usize, search: &RootSearch) -> FixedTreePaths {
+        let words = self.words();
+        let mut order: Vec<_> = (0..self.adj.len())
+            .filter(|&vertex| search.dist[vertex] != UNREACHED)
+            .collect();
+        order.sort_unstable_by_key(|&vertex| search.dist[vertex]);
+        let mut paths = FixedTreePaths {
+            words,
+            rows: vec![UNREACHED; self.adj.len()],
+            // Allocate bitsets only for reached vertices in the 2-core.
+            // Long acyclic tails and other components need no path rows.
+            edges: vec![0; order.len() * words],
+            branches: vec![UNREACHED; self.adj.len()],
+        };
+        for (row, &vertex) in order.iter().enumerate() {
+            paths.rows[vertex] = row;
         }
-        path
+        for vertex in order {
+            if vertex == root {
+                continue;
+            }
+            let parent = search.preds[vertex][0];
+            paths.branches[vertex] = if parent == root {
+                vertex
+            } else {
+                paths.branches[parent]
+            };
+            let parent_row = paths.rows[parent] * words;
+            let row = paths.rows[vertex] * words;
+            paths.edges.copy_within(parent_row..parent_row + words, row);
+            let edge = self.edge_between(vertex, parent);
+            paths.edges[row + edge / 64] ^= 1 << (edge % 64);
+        }
+        paths
     }
 
-    fn path_edges(&self, path: &[usize], bits: &mut [u64]) {
-        for pair in path.windows(2) {
-            let edge = self.edge_between(pair[0], pair[1]);
-            bits[edge / 64] ^= 1 << (edge % 64);
-        }
+    // A candidate's root is its highest-index vertex, so it must have two
+    // eligible neighbours with smaller indices. Other roots cannot close
+    // a candidate and need neither BFS nor fixed-tree path storage.
+    fn can_close_candidate(&self, root: usize) -> bool {
+        self.adj[root]
+            .iter()
+            .filter(|&&(other, _)| other < root && self.alive[other])
+            .take(2)
+            .count()
+            == 2
     }
 
     fn collect_candidates(&self) -> (Vec<Candidate>, Vec<Option<RootSearch>>) {
         let mut candidates = Vec::new();
         let mut searches: Vec<Option<RootSearch>> = (0..self.adj.len()).map(|_| None).collect();
         for (root, search_slot) in searches.iter_mut().enumerate() {
-            if !self.alive[root] {
+            if !self.alive[root] || !self.can_close_candidate(root) {
                 continue;
             }
             let search = self.search_from(root);
@@ -197,13 +251,16 @@ impl CycleGraph {
         search: &RootSearch,
         candidates: &mut Vec<Candidate>,
     ) {
+        if !self.can_close_candidate(root) {
+            return;
+        }
+        let paths = self.fixed_tree_paths(root, search);
         for y in 0..=root {
             if y == root || !self.alive[y] || search.dist[y] == UNREACHED {
                 continue;
             }
-            let path_y = Self::fixed_path(search, y);
-            self.collect_odd_candidates(root, y, search, &path_y, candidates);
-            self.collect_even_candidates(root, y, search, candidates);
+            self.collect_odd_candidates(root, y, search, &paths, candidates);
+            self.collect_even_candidates(root, y, search, &paths, candidates);
         }
     }
 
@@ -212,20 +269,17 @@ impl CycleGraph {
         root: usize,
         y: usize,
         search: &RootSearch,
-        path_y: &[usize],
+        paths: &FixedTreePaths,
         candidates: &mut Vec<Candidate>,
     ) {
         for &(z, edge) in &self.adj[y] {
             if z >= y || z > root || !self.alive[z] || search.dist[z] != search.dist[y] {
                 continue;
             }
-            let path_z = Self::fixed_path(search, z);
-            if !meet_only_at_root(path_y, &path_z) {
+            if paths.branches[y] == paths.branches[z] {
                 continue;
             }
-            let mut edges = vec![0u64; self.words()];
-            self.path_edges(path_y, &mut edges);
-            self.path_edges(&path_z, &mut edges);
+            let mut edges = paths.union(y, z);
             edges[edge / 64] ^= 1 << (edge % 64);
             candidates.push(Candidate {
                 r: root,
@@ -241,20 +295,17 @@ impl CycleGraph {
         root: usize,
         y: usize,
         search: &RootSearch,
+        paths: &FixedTreePaths,
         candidates: &mut Vec<Candidate>,
     ) {
         let predecessors = &search.preds[y];
         for left in 0..predecessors.len() {
             for right in (left + 1)..predecessors.len() {
                 let (p, q) = (predecessors[left], predecessors[right]);
-                let path_p = Self::fixed_path(search, p);
-                let path_q = Self::fixed_path(search, q);
-                if !meet_only_at_root(&path_p, &path_q) {
+                if paths.branches[p] == paths.branches[q] {
                     continue;
                 }
-                let mut edges = vec![0u64; self.words()];
-                self.path_edges(&path_p, &mut edges);
-                self.path_edges(&path_q, &mut edges);
+                let mut edges = paths.union(p, q);
                 for edge in [self.edge_between(p, y), self.edge_between(q, y)] {
                     edges[edge / 64] ^= 1 << (edge % 64);
                 }
@@ -545,3 +596,7 @@ mod tests {
         );
     }
 }
+
+#[cfg(test)]
+#[path = "relevant_cycles_path_tests.rs"]
+mod path_tests;

@@ -1,0 +1,32 @@
+{
+  "schema": "python-cycle-root-pruning-source/v1",
+  "base_revision": "cac480fb23cd8adeec6e5e9bed1f18677f87b392",
+  "base_tree": "7495188103a6ed6635700fd378977e2baabe1e34",
+  "candidate_patch": {
+    "path": "benchmarks/2026-10-14-python-cycle-root-pruning-candidate.patch",
+    "sha256": "aeb7694a61cb1c7689e28af1a8f6f60927158da54f85d3ba1e5878f9867e8483"
+  },
+  "changed_source_sha256": {
+    "crates/chematic-perception/src/relevant_cycles.rs": "f90d7415d698e7a8c3c0781f86d9a43a1e169b6f8b5825f91800c9802069d12a",
+    "crates/chematic-perception/src/relevant_cycles_path_tests.rs": "4f6c49278cc25941c657e53c8d481f61dfafb571c157b3956e984e1d0a94f840"
+  },
+  "measurement_scripts_sha256": {
+    "scripts/bench_python_speed_frontier.py": "f6693ba7d2e6216d21229e134a06433b9ad3b949fd652fc0dca809d61f1de248",
+    "scripts/verify_python_descriptor_frontier.py": "5b64211b11bb0bb9a696ff209d33213a455015dde169ed18f2c968852bc82639",
+    "scripts/verify_python_morgan_frontier.py": "48545259dd551c5b8e75d82e2ebc7696181af460bd0a7c9cff1f1bcfecea356d",
+    "validation/cosmolkit_comparison/bench_corpus.py": "6ad2dc64556b8e88e2b246f3c9dd4953b849a1c266fb8055520598b5e7deeb4c"
+  },
+  "build_command": "CARGO_TARGET_DIR=/private/tmp/chematic-cycle-speed-target-20261014 maturin build --release --manifest-path crates/chematic-py/Cargo.toml --interpreter python3.13 --out <arm>-wheel",
+  "wheels": {
+    "baseline": {
+      "path": "/private/tmp/chematic-cycle-speed-20261014/baseline-wheel/chematic-1.1.4-cp313-cp313-macosx_11_0_arm64.whl",
+      "sha256": "367f7f07937978abf0f98c469861e2341db9c222b21cef033e3558debc3669b4"
+    },
+    "candidate": {
+      "path": "/private/tmp/chematic-cycle-speed-20261014/root-pruning-wheel/chematic-1.1.4-cp313-cp313-macosx_11_0_arm64.whl",
+      "sha256": "b3e036c90187538e784b2bce9f163e84d91ec5e5ef8a1de98230f6efa31e1f08"
+    }
+  },
+  "scope": "source wheels built from main plus the candidate patch; no claim about published artifacts or whole-toolkit superiority",
+  "data": "unchanged fixed corpus and stress corpus; existing manifests and licenses apply; no filtered rows or blocks"
+}

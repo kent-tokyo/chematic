@@ -1,0 +1,8 @@
+{
+  "reason": "Transient ENOSPC saving native block checkpoint",
+  "saved_blocks": 14,
+  "remaining_blocks": 7,
+  "unavailable_observation": "Attempted block15 finished all timed operations in memory, but checkpoint open failed. Those unpersisted timings were lost and are explicitly unavailable. Resume recollects block15; all fourteen saved original blocks remain unchanged.",
+  "protocol": "Original runner timing_row, observer, eligibility and deterministic bootstrap functions imported unchanged. Source/corpus/library/binary hashes and all semantic/output hashes revalidated before continuing identical rotating order. No performance-selected samples discarded, no pooled candidates.",
+  "checkpoint_recovery": "Own 16MiB temporary reserve is released on ENOSPC; the current computed report remains in memory until saved. No native timer or output semantics changed."
+}

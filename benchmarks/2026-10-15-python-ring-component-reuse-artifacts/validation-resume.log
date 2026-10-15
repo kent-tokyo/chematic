@@ -1,0 +1,6 @@
+candidate-build-retry1 passed
+candidate-install passed
+candidate-descriptors passed
+candidate-morgan passed
+python-tests passed
+ALL VALIDATION PASSED

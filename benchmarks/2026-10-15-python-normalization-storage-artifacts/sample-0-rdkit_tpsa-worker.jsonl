@@ -1,0 +1,2 @@
+{"ready": true, "pid": 18430, "offset": 0, "op": "rdkit_tpsa", "rows": 1000, "version": "1.1.4", "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f"}
+{"complete": true, "evaluations": 1772000, "checksum": "0x1.3b7b1207a9c62p+27", "errors": 0}

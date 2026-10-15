@@ -754,12 +754,14 @@ impl ParityTyping {
         let atom_count = mol.atom_count();
         let cyclic = crate::sssr::ring_bond_flags_shared(mol);
         let mut ring_atom = vec![false; atom_count];
-        let mut components = UnionFind::new(atom_count);
+        // The bridge pass also cached exactly the partition obtained by
+        // unioning all cyclic bonds. Reuse it for component membership;
+        // candidate-only cycle detection below still needs its own forest.
+        let components = crate::sssr::ring_components_shared(mol);
         for (index, bond) in mol.bonds() {
             if cyclic[index.0 as usize] {
                 ring_atom[bond.atom1.0 as usize] = true;
                 ring_atom[bond.atom2.0 as usize] = true;
-                components.union(bond.atom1.0, bond.atom2.0);
             }
         }
         let mut donor = vec![ElectronDonorType::None; atom_count];
@@ -769,7 +771,7 @@ impl ParityTyping {
                 (donor[atom], candidate[atom]) = typing(AtomIdx(atom as u32), cyclic.as_slice());
             }
         }
-        let keep = candidate_component_mask(mol, cyclic.as_slice(), &ring_atom, &candidate, components);
+        let keep = candidate_component_mask(mol, cyclic.as_slice(), &ring_atom, &candidate, &components.label);
         Self {
             donor,
             candidate,
@@ -814,7 +816,7 @@ fn candidate_component_mask(
     cyclic: &[bool],
     ring_atom: &[bool],
     candidate: &[bool],
-    mut components: UnionFind,
+    labels: &[u32],
 ) -> Vec<bool> {
     let mut candidate_components = UnionFind::new(mol.atom_count());
     let mut keep_root = vec![false; mol.atom_count()];
@@ -825,12 +827,12 @@ fn candidate_component_mask(
             && candidate[right]
             && !candidate_components.union(left as u32, right as u32)
         {
-            keep_root[components.find(left as u32) as usize] = true;
+            keep_root[labels[left] as usize] = true;
         }
     }
     (0..mol.atom_count())
         .map(|atom| {
-            ring_atom[atom] && keep_root[components.find(atom as u32) as usize]
+            ring_atom[atom] && keep_root[labels[atom] as usize]
         })
         .collect()
 }
@@ -877,3 +879,7 @@ fn candidate_ring_bonds(mol: &Molecule, rings: &[&[AtomIdx]]) -> Vec<Vec<BondIdx
         })
         .collect()
 }
+
+#[cfg(test)]
+#[path = "component_typing_tests.rs"]
+mod component_typing_tests;

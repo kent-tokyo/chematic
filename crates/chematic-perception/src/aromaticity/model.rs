@@ -258,7 +258,10 @@ fn aromaticity_ring_bonds(
     ring_fusion_aware: bool,
 ) -> FxHashSet<BondIdx> {
     if ring_fusion_aware {
-        rings.iter().flat_map(|ring| ring_bond_set(mol, ring)).collect()
+        rings
+            .iter()
+            .flat_map(|ring| ring_bond_set(mol, ring))
+            .collect()
     } else {
         FxHashSet::default()
     }
@@ -292,7 +295,8 @@ impl AromaticityPassState {
     ) {
         let empty_context = FxHashSet::default();
         for (index, ring) in rings.iter().enumerate() {
-            let Some(electrons) = ring_pi_electrons(mol, ring, &empty_context, algo, all_ring_bonds)
+            let Some(electrons) =
+                ring_pi_electrons(mol, ring, &empty_context, algo, all_ring_bonds)
             else {
                 self.pending.push(index);
                 continue;
@@ -630,7 +634,7 @@ fn finish_molecule_with_flags(
     // returns the wrong value for atoms that reach this function via
     // Kekule-then-perceive instead. This under-counts molecular weight and
     // formula, not just fingerprints/canonical SMILES.
-    let pre_h: Vec<Option<u8>> = mol
+    let mut pre_h: Vec<Option<u8>> = mol
         .atoms()
         .map(|(idx, atom)| {
             if atom.hydrogen_count.is_some() {
@@ -641,7 +645,7 @@ fn finish_molecule_with_flags(
         })
         .collect();
 
-    let mut builder = MoleculeBuilder::new();
+    let mut builder = MoleculeBuilder::with_capacity(mol.atom_count(), mol.bond_count());
     for (idx, atom) in mol.atoms() {
         let mut a = atom.clone();
         a.aromatic = atom_aromatic.contains(&idx);
@@ -683,22 +687,22 @@ fn finish_molecule_with_flags(
     // answer get an explicit H frozen in. Benzene CH and pyridine-type N
     // (heuristic already agrees) are left untouched -- no spurious bracket
     // notation for atoms that didn't need it.
-    let needs_patch: Vec<(chematic_core::AtomIdx, u8)> = normalized
-        .atoms()
-        .filter_map(|(idx, _)| {
-            let pre = pre_h[idx.0 as usize]?;
-            let post = implicit_hcount(&normalized, idx);
-            (pre != post).then_some((idx, pre))
-        })
-        .collect();
-    if needs_patch.is_empty() {
+    // Reuse the pre-normalization storage as an indexed patch map. Clearing
+    // unchanged entries avoids a second allocation and per-atom linear scans.
+    let mut needs_patch = false;
+    for (index, h) in pre_h.iter_mut().enumerate() {
+        *h = h.filter(|&pre| pre != implicit_hcount(&normalized, AtomIdx(index as u32)));
+        needs_patch |= h.is_some();
+    }
+    if !needs_patch {
         return normalized;
     }
 
-    let mut patched = MoleculeBuilder::new();
+    let mut patched =
+        MoleculeBuilder::with_capacity(normalized.atom_count(), normalized.bond_count());
     for (idx, atom) in normalized.atoms() {
         let mut a = atom.clone();
-        if let Some(&(_, h)) = needs_patch.iter().find(|(pidx, _)| *pidx == idx) {
+        if let Some(h) = pre_h[idx.0 as usize] {
             a.hydrogen_count = Some(h);
         }
         patched.add_atom(a);
@@ -712,3 +716,7 @@ fn finish_molecule_with_flags(
     patched.copy_bond_directions_from(&normalized);
     patched.build()
 }
+
+#[cfg(test)]
+#[path = "normalization_storage_tests.rs"]
+mod normalization_storage_tests;

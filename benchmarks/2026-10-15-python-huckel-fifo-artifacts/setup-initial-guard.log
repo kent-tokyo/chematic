@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/private/tmp/chematic-huckel-fifo-setup.py", line 9, in <module>
+    for n,h in index.items():assert hashlib.sha256((d/n).read_bytes()).hexdigest()==h and hashlib.sha256((active/n).read_bytes()).hexdigest()==h,n
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: CHANGELOG.md

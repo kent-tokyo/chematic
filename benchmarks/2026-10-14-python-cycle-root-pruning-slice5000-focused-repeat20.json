@@ -1,0 +1,2456 @@
+{
+  "schema": "python-speed-frontier/v1",
+  "base_revision": "cac480fb23cd8adeec6e5e9bed1f18677f87b392",
+  "created_utc": "2026-10-14T13:14:36.148685+00:00",
+  "load_average_start": [
+    6.32275390625,
+    6.07666015625,
+    6.38232421875
+  ],
+  "host": {
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "python": "3.13.6 (v3.13.6:4e665351082, Aug  6 2025, 11:22:35) [Clang 16.0.0 (clang-1600.0.26.6)]",
+    "cpus": 10
+  },
+  "wheels": {
+    "baseline": {
+      "path": "/private/tmp/chematic-cycle-speed-20261014/baseline-wheel/chematic-1.1.4-cp313-cp313-macosx_11_0_arm64.whl",
+      "sha256": "367f7f07937978abf0f98c469861e2341db9c222b21cef033e3558debc3669b4"
+    },
+    "candidate": {
+      "path": "/private/tmp/chematic-cycle-speed-20261014/root-pruning-wheel/chematic-1.1.4-cp313-cp313-macosx_11_0_arm64.whl",
+      "sha256": "b3e036c90187538e784b2bce9f163e84d91ec5e5ef8a1de98230f6efa31e1f08"
+    }
+  },
+  "corpus": {
+    "path": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+    "sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+    "offset": 5000,
+    "limit": 1000
+  },
+  "protocol": {
+    "blocks": 20,
+    "order": "four rotating fresh-process arms, sequential",
+    "timing": "native return objects retained; normalization outside timing",
+    "first_use": "fresh parsed molecules; eager/lazy perception differs",
+    "repeated_use": "one untimed operation on every fresh molecule",
+    "parse_inclusive": "actual parse and operation inside the same timed loop",
+    "memory": "whole-process peak, including imports and all operations"
+  },
+  "blocks": [
+    {
+      "order": [
+        "baseline",
+        "candidate",
+        "rdkit",
+        "cosmolkit"
+      ],
+      "load_average_start": [
+        6.32275390625,
+        6.07666015625,
+        6.38232421875
+      ],
+      "baseline": {
+        "parse_ns": 3262000,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 2392791,
+            "repeated_use": 141542,
+            "parse_inclusive": 4365208
+          },
+          "morgan2_chiral": {
+            "first_use": 16745333,
+            "repeated_use": 3477042,
+            "parse_inclusive": 18866833
+          }
+        },
+        "peak_process_rss_bytes": 39387136,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/baseline/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "e3d33f6be050e84a55c3b8c62071e28e0f10cbe30823ffaf4f43e61f4f38ece0"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "candidate": {
+        "parse_ns": 3122584,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 2413625,
+            "repeated_use": 103750,
+            "parse_inclusive": 4607667
+          },
+          "morgan2_chiral": {
+            "first_use": 14579542,
+            "repeated_use": 4175625,
+            "parse_inclusive": 18206958
+          }
+        },
+        "peak_process_rss_bytes": 39043072,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/root-pruning/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "6bd6903396fd82df036ede47057b77f6b301644285d3468c80e222efe557f9e7"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "rdkit": {
+        "parse_ns": 55186458,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 149666,
+            "repeated_use": 113292,
+            "parse_inclusive": 53932917
+          },
+          "morgan2_chiral": {
+            "first_use": 18181792,
+            "repeated_use": 18408750,
+            "parse_inclusive": 73088541
+          }
+        },
+        "peak_process_rss_bytes": 88981504,
+        "version": "2026.09.1",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/rdkit/__init__.py",
+        "extension_sha256": {
+          "rdBase.so": "2fb1e7377e7441fcc3c9ae813803adb288fdb710b2b0de66aecbfc1f4b5919ff"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "cosmolkit": {
+        "parse_ns": 63613750,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 125333,
+            "repeated_use": 83708,
+            "parse_inclusive": 58428250
+          },
+          "morgan2_chiral": {
+            "first_use": 11056666,
+            "repeated_use": 10750417,
+            "parse_inclusive": 72553375
+          }
+        },
+        "peak_process_rss_bytes": 83034112,
+        "version": "0.5.0-rc.22",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/cosmolkit/__init__.py",
+        "extension_sha256": {
+          "cosmolkit.abi3.so": "0fc4a42b65552d31e852181a8a4beef693d15d8aa88716bf53e850701936362c"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      }
+    },
+    {
+      "order": [
+        "candidate",
+        "rdkit",
+        "cosmolkit",
+        "baseline"
+      ],
+      "load_average_start": [
+        6.32275390625,
+        6.07666015625,
+        6.38232421875
+      ],
+      "candidate": {
+        "parse_ns": 4032375,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 1524916,
+            "repeated_use": 103375,
+            "parse_inclusive": 4283625
+          },
+          "morgan2_chiral": {
+            "first_use": 13338667,
+            "repeated_use": 4430458,
+            "parse_inclusive": 17308750
+          }
+        },
+        "peak_process_rss_bytes": 39043072,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/root-pruning/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "6bd6903396fd82df036ede47057b77f6b301644285d3468c80e222efe557f9e7"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "rdkit": {
+        "parse_ns": 51946833,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 115125,
+            "repeated_use": 127917,
+            "parse_inclusive": 51500292
+          },
+          "morgan2_chiral": {
+            "first_use": 17933042,
+            "repeated_use": 19129292,
+            "parse_inclusive": 67050083
+          }
+        },
+        "peak_process_rss_bytes": 89096192,
+        "version": "2026.09.1",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/rdkit/__init__.py",
+        "extension_sha256": {
+          "rdBase.so": "2fb1e7377e7441fcc3c9ae813803adb288fdb710b2b0de66aecbfc1f4b5919ff"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "cosmolkit": {
+        "parse_ns": 54178917,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 122541,
+            "repeated_use": 68209,
+            "parse_inclusive": 53431875
+          },
+          "morgan2_chiral": {
+            "first_use": 10773542,
+            "repeated_use": 10384084,
+            "parse_inclusive": 61467292
+          }
+        },
+        "peak_process_rss_bytes": 82968576,
+        "version": "0.5.0-rc.22",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/cosmolkit/__init__.py",
+        "extension_sha256": {
+          "cosmolkit.abi3.so": "0fc4a42b65552d31e852181a8a4beef693d15d8aa88716bf53e850701936362c"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "baseline": {
+        "parse_ns": 2999542,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 1309916,
+            "repeated_use": 79542,
+            "parse_inclusive": 4148375
+          },
+          "morgan2_chiral": {
+            "first_use": 12457542,
+            "repeated_use": 3434083,
+            "parse_inclusive": 15174041
+          }
+        },
+        "peak_process_rss_bytes": 39026688,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/baseline/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "e3d33f6be050e84a55c3b8c62071e28e0f10cbe30823ffaf4f43e61f4f38ece0"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      }
+    },
+    {
+      "order": [
+        "rdkit",
+        "cosmolkit",
+        "baseline",
+        "candidate"
+      ],
+      "load_average_start": [
+        6.296875,
+        6.0751953125,
+        6.3798828125
+      ],
+      "rdkit": {
+        "parse_ns": 45526542,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 124209,
+            "repeated_use": 108000,
+            "parse_inclusive": 46933208
+          },
+          "morgan2_chiral": {
+            "first_use": 16709792,
+            "repeated_use": 16121500,
+            "parse_inclusive": 63622875
+          }
+        },
+        "peak_process_rss_bytes": 88932352,
+        "version": "2026.09.1",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/rdkit/__init__.py",
+        "extension_sha256": {
+          "rdBase.so": "2fb1e7377e7441fcc3c9ae813803adb288fdb710b2b0de66aecbfc1f4b5919ff"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "cosmolkit": {
+        "parse_ns": 52331833,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 133208,
+            "repeated_use": 68834,
+            "parse_inclusive": 49919875
+          },
+          "morgan2_chiral": {
+            "first_use": 10575917,
+            "repeated_use": 10164167,
+            "parse_inclusive": 61269542
+          }
+        },
+        "peak_process_rss_bytes": 82001920,
+        "version": "0.5.0-rc.22",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/cosmolkit/__init__.py",
+        "extension_sha256": {
+          "cosmolkit.abi3.so": "0fc4a42b65552d31e852181a8a4beef693d15d8aa88716bf53e850701936362c"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "baseline": {
+        "parse_ns": 3117750,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 1315917,
+            "repeated_use": 75459,
+            "parse_inclusive": 4250541
+          },
+          "morgan2_chiral": {
+            "first_use": 12702125,
+            "repeated_use": 3435167,
+            "parse_inclusive": 15316167
+          }
+        },
+        "peak_process_rss_bytes": 39124992,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/baseline/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "e3d33f6be050e84a55c3b8c62071e28e0f10cbe30823ffaf4f43e61f4f38ece0"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "candidate": {
+        "parse_ns": 3039917,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 1338792,
+            "repeated_use": 87542,
+            "parse_inclusive": 4438250
+          },
+          "morgan2_chiral": {
+            "first_use": 12802084,
+            "repeated_use": 3682833,
+            "parse_inclusive": 15935708
+          }
+        },
+        "peak_process_rss_bytes": 38813696,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/root-pruning/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "6bd6903396fd82df036ede47057b77f6b301644285d3468c80e222efe557f9e7"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      }
+    },
+    {
+      "order": [
+        "cosmolkit",
+        "baseline",
+        "candidate",
+        "rdkit"
+      ],
+      "load_average_start": [
+        6.296875,
+        6.0751953125,
+        6.3798828125
+      ],
+      "cosmolkit": {
+        "parse_ns": 56637000,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 124250,
+            "repeated_use": 63375,
+            "parse_inclusive": 49925083
+          },
+          "morgan2_chiral": {
+            "first_use": 10486167,
+            "repeated_use": 10150417,
+            "parse_inclusive": 63044667
+          }
+        },
+        "peak_process_rss_bytes": 81854464,
+        "version": "0.5.0-rc.22",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/cosmolkit/__init__.py",
+        "extension_sha256": {
+          "cosmolkit.abi3.so": "0fc4a42b65552d31e852181a8a4beef693d15d8aa88716bf53e850701936362c"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "baseline": {
+        "parse_ns": 3056792,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 1324458,
+            "repeated_use": 63125,
+            "parse_inclusive": 4173250
+          },
+          "morgan2_chiral": {
+            "first_use": 12592917,
+            "repeated_use": 4374875,
+            "parse_inclusive": 17608500
+          }
+        },
+        "peak_process_rss_bytes": 39239680,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/baseline/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "e3d33f6be050e84a55c3b8c62071e28e0f10cbe30823ffaf4f43e61f4f38ece0"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "candidate": {
+        "parse_ns": 10260375,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 1881750,
+            "repeated_use": 120750,
+            "parse_inclusive": 5533459
+          },
+          "morgan2_chiral": {
+            "first_use": 20284375,
+            "repeated_use": 4042500,
+            "parse_inclusive": 29843208
+          }
+        },
+        "peak_process_rss_bytes": 39288832,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/root-pruning/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "6bd6903396fd82df036ede47057b77f6b301644285d3468c80e222efe557f9e7"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "rdkit": {
+        "parse_ns": 75892417,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 139500,
+            "repeated_use": 184292,
+            "parse_inclusive": 80379875
+          },
+          "morgan2_chiral": {
+            "first_use": 22506750,
+            "repeated_use": 24282792,
+            "parse_inclusive": 117647042
+          }
+        },
+        "peak_process_rss_bytes": 89276416,
+        "version": "2026.09.1",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/rdkit/__init__.py",
+        "extension_sha256": {
+          "rdBase.so": "2fb1e7377e7441fcc3c9ae813803adb288fdb710b2b0de66aecbfc1f4b5919ff"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      }
+    },
+    {
+      "order": [
+        "baseline",
+        "candidate",
+        "rdkit",
+        "cosmolkit"
+      ],
+      "load_average_start": [
+        6.296875,
+        6.0751953125,
+        6.3798828125
+      ],
+      "baseline": {
+        "parse_ns": 3461833,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 1502041,
+            "repeated_use": 145042,
+            "parse_inclusive": 6200166
+          },
+          "morgan2_chiral": {
+            "first_use": 16242125,
+            "repeated_use": 4691166,
+            "parse_inclusive": 18416750
+          }
+        },
+        "peak_process_rss_bytes": 38912000,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/baseline/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "e3d33f6be050e84a55c3b8c62071e28e0f10cbe30823ffaf4f43e61f4f38ece0"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "candidate": {
+        "parse_ns": 3560334,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 1499833,
+            "repeated_use": 82000,
+            "parse_inclusive": 4819417
+          },
+          "morgan2_chiral": {
+            "first_use": 14835417,
+            "repeated_use": 4594833,
+            "parse_inclusive": 22753208
+          }
+        },
+        "peak_process_rss_bytes": 39239680,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/root-pruning/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "6bd6903396fd82df036ede47057b77f6b301644285d3468c80e222efe557f9e7"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "rdkit": {
+        "parse_ns": 44754667,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 128500,
+            "repeated_use": 114916,
+            "parse_inclusive": 46047000
+          },
+          "morgan2_chiral": {
+            "first_use": 15009666,
+            "repeated_use": 15043750,
+            "parse_inclusive": 60232792
+          }
+        },
+        "peak_process_rss_bytes": 89047040,
+        "version": "2026.09.1",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/rdkit/__init__.py",
+        "extension_sha256": {
+          "rdBase.so": "2fb1e7377e7441fcc3c9ae813803adb288fdb710b2b0de66aecbfc1f4b5919ff"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "cosmolkit": {
+        "parse_ns": 50700292,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 106709,
+            "repeated_use": 71083,
+            "parse_inclusive": 51438667
+          },
+          "morgan2_chiral": {
+            "first_use": 10558500,
+            "repeated_use": 10237417,
+            "parse_inclusive": 61170125
+          }
+        },
+        "peak_process_rss_bytes": 83247104,
+        "version": "0.5.0-rc.22",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/cosmolkit/__init__.py",
+        "extension_sha256": {
+          "cosmolkit.abi3.so": "0fc4a42b65552d31e852181a8a4beef693d15d8aa88716bf53e850701936362c"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      }
+    },
+    {
+      "order": [
+        "candidate",
+        "rdkit",
+        "cosmolkit",
+        "baseline"
+      ],
+      "load_average_start": [
+        6.35302734375,
+        6.09033203125,
+        6.38330078125
+      ],
+      "candidate": {
+        "parse_ns": 3019250,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 1307083,
+            "repeated_use": 72042,
+            "parse_inclusive": 4176750
+          },
+          "morgan2_chiral": {
+            "first_use": 12615416,
+            "repeated_use": 3406833,
+            "parse_inclusive": 15183000
+          }
+        },
+        "peak_process_rss_bytes": 39141376,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/root-pruning/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "6bd6903396fd82df036ede47057b77f6b301644285d3468c80e222efe557f9e7"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "rdkit": {
+        "parse_ns": 49278459,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 137042,
+            "repeated_use": 121459,
+            "parse_inclusive": 46160458
+          },
+          "morgan2_chiral": {
+            "first_use": 16736125,
+            "repeated_use": 16115708,
+            "parse_inclusive": 64046583
+          }
+        },
+        "peak_process_rss_bytes": 88899584,
+        "version": "2026.09.1",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/rdkit/__init__.py",
+        "extension_sha256": {
+          "rdBase.so": "2fb1e7377e7441fcc3c9ae813803adb288fdb710b2b0de66aecbfc1f4b5919ff"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "cosmolkit": {
+        "parse_ns": 45862417,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 97333,
+            "repeated_use": 73917,
+            "parse_inclusive": 44368708
+          },
+          "morgan2_chiral": {
+            "first_use": 9432416,
+            "repeated_use": 8950459,
+            "parse_inclusive": 53772625
+          }
+        },
+        "peak_process_rss_bytes": 81756160,
+        "version": "0.5.0-rc.22",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/cosmolkit/__init__.py",
+        "extension_sha256": {
+          "cosmolkit.abi3.so": "0fc4a42b65552d31e852181a8a4beef693d15d8aa88716bf53e850701936362c"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "baseline": {
+        "parse_ns": 2645375,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 1112917,
+            "repeated_use": 56208,
+            "parse_inclusive": 3748875
+          },
+          "morgan2_chiral": {
+            "first_use": 11179125,
+            "repeated_use": 3052458,
+            "parse_inclusive": 13509083
+          }
+        },
+        "peak_process_rss_bytes": 39141376,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/baseline/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "e3d33f6be050e84a55c3b8c62071e28e0f10cbe30823ffaf4f43e61f4f38ece0"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      }
+    },
+    {
+      "order": [
+        "rdkit",
+        "cosmolkit",
+        "baseline",
+        "candidate"
+      ],
+      "load_average_start": [
+        6.35302734375,
+        6.09033203125,
+        6.38330078125
+      ],
+      "rdkit": {
+        "parse_ns": 39563167,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 102041,
+            "repeated_use": 95166,
+            "parse_inclusive": 41627167
+          },
+          "morgan2_chiral": {
+            "first_use": 14639625,
+            "repeated_use": 14447958,
+            "parse_inclusive": 57994667
+          }
+        },
+        "peak_process_rss_bytes": 89178112,
+        "version": "2026.09.1",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/rdkit/__init__.py",
+        "extension_sha256": {
+          "rdBase.so": "2fb1e7377e7441fcc3c9ae813803adb288fdb710b2b0de66aecbfc1f4b5919ff"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "cosmolkit": {
+        "parse_ns": 51983166,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 118959,
+            "repeated_use": 70500,
+            "parse_inclusive": 51930583
+          },
+          "morgan2_chiral": {
+            "first_use": 9457792,
+            "repeated_use": 8875875,
+            "parse_inclusive": 54827042
+          }
+        },
+        "peak_process_rss_bytes": 82935808,
+        "version": "0.5.0-rc.22",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/cosmolkit/__init__.py",
+        "extension_sha256": {
+          "cosmolkit.abi3.so": "0fc4a42b65552d31e852181a8a4beef693d15d8aa88716bf53e850701936362c"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "baseline": {
+        "parse_ns": 2610458,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 1130875,
+            "repeated_use": 56625,
+            "parse_inclusive": 3561500
+          },
+          "morgan2_chiral": {
+            "first_use": 10953958,
+            "repeated_use": 3023042,
+            "parse_inclusive": 13279250
+          }
+        },
+        "peak_process_rss_bytes": 39157760,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/baseline/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "e3d33f6be050e84a55c3b8c62071e28e0f10cbe30823ffaf4f43e61f4f38ece0"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "candidate": {
+        "parse_ns": 2697625,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 1111334,
+            "repeated_use": 54833,
+            "parse_inclusive": 3611875
+          },
+          "morgan2_chiral": {
+            "first_use": 11005417,
+            "repeated_use": 2992375,
+            "parse_inclusive": 13360750
+          }
+        },
+        "peak_process_rss_bytes": 39043072,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/root-pruning/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "6bd6903396fd82df036ede47057b77f6b301644285d3468c80e222efe557f9e7"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      }
+    },
+    {
+      "order": [
+        "cosmolkit",
+        "baseline",
+        "candidate",
+        "rdkit"
+      ],
+      "load_average_start": [
+        6.16455078125,
+        6.05517578125,
+        6.369140625
+      ],
+      "cosmolkit": {
+        "parse_ns": 47324958,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 100500,
+            "repeated_use": 59542,
+            "parse_inclusive": 45067625
+          },
+          "morgan2_chiral": {
+            "first_use": 9575750,
+            "repeated_use": 8923208,
+            "parse_inclusive": 53817875
+          }
+        },
+        "peak_process_rss_bytes": 82706432,
+        "version": "0.5.0-rc.22",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/cosmolkit/__init__.py",
+        "extension_sha256": {
+          "cosmolkit.abi3.so": "0fc4a42b65552d31e852181a8a4beef693d15d8aa88716bf53e850701936362c"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "baseline": {
+        "parse_ns": 2734250,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 1535583,
+            "repeated_use": 133291,
+            "parse_inclusive": 4299500
+          },
+          "morgan2_chiral": {
+            "first_use": 12587750,
+            "repeated_use": 3476500,
+            "parse_inclusive": 15673583
+          }
+        },
+        "peak_process_rss_bytes": 39174144,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/baseline/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "e3d33f6be050e84a55c3b8c62071e28e0f10cbe30823ffaf4f43e61f4f38ece0"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "candidate": {
+        "parse_ns": 3436959,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 1415084,
+            "repeated_use": 82334,
+            "parse_inclusive": 4367917
+          },
+          "morgan2_chiral": {
+            "first_use": 12370042,
+            "repeated_use": 3623750,
+            "parse_inclusive": 16315292
+          }
+        },
+        "peak_process_rss_bytes": 38977536,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/root-pruning/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "6bd6903396fd82df036ede47057b77f6b301644285d3468c80e222efe557f9e7"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "rdkit": {
+        "parse_ns": 43560167,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 129292,
+            "repeated_use": 161667,
+            "parse_inclusive": 74757250
+          },
+          "morgan2_chiral": {
+            "first_use": 19391209,
+            "repeated_use": 18686750,
+            "parse_inclusive": 94748292
+          }
+        },
+        "peak_process_rss_bytes": 89096192,
+        "version": "2026.09.1",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/rdkit/__init__.py",
+        "extension_sha256": {
+          "rdBase.so": "2fb1e7377e7441fcc3c9ae813803adb288fdb710b2b0de66aecbfc1f4b5919ff"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      }
+    },
+    {
+      "order": [
+        "baseline",
+        "candidate",
+        "rdkit",
+        "cosmolkit"
+      ],
+      "load_average_start": [
+        6.16455078125,
+        6.05517578125,
+        6.369140625
+      ],
+      "baseline": {
+        "parse_ns": 3488709,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 1654708,
+            "repeated_use": 95417,
+            "parse_inclusive": 5800209
+          },
+          "morgan2_chiral": {
+            "first_use": 14999084,
+            "repeated_use": 3956334,
+            "parse_inclusive": 17856958
+          }
+        },
+        "peak_process_rss_bytes": 39157760,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/baseline/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "e3d33f6be050e84a55c3b8c62071e28e0f10cbe30823ffaf4f43e61f4f38ece0"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "candidate": {
+        "parse_ns": 3520000,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 1465208,
+            "repeated_use": 79500,
+            "parse_inclusive": 4842125
+          },
+          "morgan2_chiral": {
+            "first_use": 15206125,
+            "repeated_use": 4493792,
+            "parse_inclusive": 19885417
+          }
+        },
+        "peak_process_rss_bytes": 39223296,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/root-pruning/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "6bd6903396fd82df036ede47057b77f6b301644285d3468c80e222efe557f9e7"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "rdkit": {
+        "parse_ns": 54122042,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 176250,
+            "repeated_use": 113750,
+            "parse_inclusive": 52177042
+          },
+          "morgan2_chiral": {
+            "first_use": 20205709,
+            "repeated_use": 20756333,
+            "parse_inclusive": 79000291
+          }
+        },
+        "peak_process_rss_bytes": 89161728,
+        "version": "2026.09.1",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/rdkit/__init__.py",
+        "extension_sha256": {
+          "rdBase.so": "2fb1e7377e7441fcc3c9ae813803adb288fdb710b2b0de66aecbfc1f4b5919ff"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "cosmolkit": {
+        "parse_ns": 68809666,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 123542,
+            "repeated_use": 81000,
+            "parse_inclusive": 56843291
+          },
+          "morgan2_chiral": {
+            "first_use": 10983833,
+            "repeated_use": 12844666,
+            "parse_inclusive": 72582583
+          }
+        },
+        "peak_process_rss_bytes": 82952192,
+        "version": "0.5.0-rc.22",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/cosmolkit/__init__.py",
+        "extension_sha256": {
+          "cosmolkit.abi3.so": "0fc4a42b65552d31e852181a8a4beef693d15d8aa88716bf53e850701936362c"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      }
+    },
+    {
+      "order": [
+        "candidate",
+        "rdkit",
+        "cosmolkit",
+        "baseline"
+      ],
+      "load_average_start": [
+        6.16455078125,
+        6.05517578125,
+        6.369140625
+      ],
+      "candidate": {
+        "parse_ns": 3491208,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 1321166,
+            "repeated_use": 63500,
+            "parse_inclusive": 4140250
+          },
+          "morgan2_chiral": {
+            "first_use": 12326750,
+            "repeated_use": 3722292,
+            "parse_inclusive": 16890000
+          }
+        },
+        "peak_process_rss_bytes": 39206912,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/root-pruning/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "6bd6903396fd82df036ede47057b77f6b301644285d3468c80e222efe557f9e7"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "rdkit": {
+        "parse_ns": 45018167,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 116542,
+            "repeated_use": 105167,
+            "parse_inclusive": 43060541
+          },
+          "morgan2_chiral": {
+            "first_use": 14871917,
+            "repeated_use": 14269125,
+            "parse_inclusive": 56181166
+          }
+        },
+        "peak_process_rss_bytes": 89145344,
+        "version": "2026.09.1",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/rdkit/__init__.py",
+        "extension_sha256": {
+          "rdBase.so": "2fb1e7377e7441fcc3c9ae813803adb288fdb710b2b0de66aecbfc1f4b5919ff"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "cosmolkit": {
+        "parse_ns": 46470625,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 96209,
+            "repeated_use": 59292,
+            "parse_inclusive": 44190042
+          },
+          "morgan2_chiral": {
+            "first_use": 9446250,
+            "repeated_use": 9510250,
+            "parse_inclusive": 55172583
+          }
+        },
+        "peak_process_rss_bytes": 83378176,
+        "version": "0.5.0-rc.22",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/cosmolkit/__init__.py",
+        "extension_sha256": {
+          "cosmolkit.abi3.so": "0fc4a42b65552d31e852181a8a4beef693d15d8aa88716bf53e850701936362c"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "baseline": {
+        "parse_ns": 2615958,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 1124458,
+            "repeated_use": 59083,
+            "parse_inclusive": 3658959
+          },
+          "morgan2_chiral": {
+            "first_use": 10967458,
+            "repeated_use": 3059041,
+            "parse_inclusive": 13470333
+          }
+        },
+        "peak_process_rss_bytes": 39108608,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/baseline/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "e3d33f6be050e84a55c3b8c62071e28e0f10cbe30823ffaf4f43e61f4f38ece0"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      }
+    },
+    {
+      "order": [
+        "rdkit",
+        "cosmolkit",
+        "baseline",
+        "candidate"
+      ],
+      "load_average_start": [
+        6.1513671875,
+        6.05419921875,
+        6.36669921875
+      ],
+      "rdkit": {
+        "parse_ns": 40880375,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 107625,
+            "repeated_use": 99625,
+            "parse_inclusive": 41834583
+          },
+          "morgan2_chiral": {
+            "first_use": 14835917,
+            "repeated_use": 14091208,
+            "parse_inclusive": 57323583
+          }
+        },
+        "peak_process_rss_bytes": 88997888,
+        "version": "2026.09.1",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/rdkit/__init__.py",
+        "extension_sha256": {
+          "rdBase.so": "2fb1e7377e7441fcc3c9ae813803adb288fdb710b2b0de66aecbfc1f4b5919ff"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "cosmolkit": {
+        "parse_ns": 46156041,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 88458,
+            "repeated_use": 57042,
+            "parse_inclusive": 44454166
+          },
+          "morgan2_chiral": {
+            "first_use": 9577916,
+            "repeated_use": 8595500,
+            "parse_inclusive": 53816625
+          }
+        },
+        "peak_process_rss_bytes": 83066880,
+        "version": "0.5.0-rc.22",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/cosmolkit/__init__.py",
+        "extension_sha256": {
+          "cosmolkit.abi3.so": "0fc4a42b65552d31e852181a8a4beef693d15d8aa88716bf53e850701936362c"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "baseline": {
+        "parse_ns": 2425916,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 1007000,
+            "repeated_use": 49250,
+            "parse_inclusive": 3258708
+          },
+          "morgan2_chiral": {
+            "first_use": 11262125,
+            "repeated_use": 3032458,
+            "parse_inclusive": 13410875
+          }
+        },
+        "peak_process_rss_bytes": 39108608,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/baseline/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "e3d33f6be050e84a55c3b8c62071e28e0f10cbe30823ffaf4f43e61f4f38ece0"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "candidate": {
+        "parse_ns": 2472875,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 1037541,
+            "repeated_use": 49250,
+            "parse_inclusive": 3341458
+          },
+          "morgan2_chiral": {
+            "first_use": 9903500,
+            "repeated_use": 3111083,
+            "parse_inclusive": 13532042
+          }
+        },
+        "peak_process_rss_bytes": 38993920,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/root-pruning/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "6bd6903396fd82df036ede47057b77f6b301644285d3468c80e222efe557f9e7"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      }
+    },
+    {
+      "order": [
+        "cosmolkit",
+        "baseline",
+        "candidate",
+        "rdkit"
+      ],
+      "load_average_start": [
+        6.1513671875,
+        6.05419921875,
+        6.36669921875
+      ],
+      "cosmolkit": {
+        "parse_ns": 43910042,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 97834,
+            "repeated_use": 50459,
+            "parse_inclusive": 42968792
+          },
+          "morgan2_chiral": {
+            "first_use": 9361041,
+            "repeated_use": 8926000,
+            "parse_inclusive": 52492583
+          }
+        },
+        "peak_process_rss_bytes": 81920000,
+        "version": "0.5.0-rc.22",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/cosmolkit/__init__.py",
+        "extension_sha256": {
+          "cosmolkit.abi3.so": "0fc4a42b65552d31e852181a8a4beef693d15d8aa88716bf53e850701936362c"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "baseline": {
+        "parse_ns": 2368208,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 1030209,
+            "repeated_use": 51958,
+            "parse_inclusive": 3298958
+          },
+          "morgan2_chiral": {
+            "first_use": 9966292,
+            "repeated_use": 2728000,
+            "parse_inclusive": 13381708
+          }
+        },
+        "peak_process_rss_bytes": 39059456,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/baseline/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "e3d33f6be050e84a55c3b8c62071e28e0f10cbe30823ffaf4f43e61f4f38ece0"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "candidate": {
+        "parse_ns": 2439167,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 1028542,
+            "repeated_use": 49208,
+            "parse_inclusive": 3284667
+          },
+          "morgan2_chiral": {
+            "first_use": 11032167,
+            "repeated_use": 3045667,
+            "parse_inclusive": 12931334
+          }
+        },
+        "peak_process_rss_bytes": 38879232,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/root-pruning/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "6bd6903396fd82df036ede47057b77f6b301644285d3468c80e222efe557f9e7"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "rdkit": {
+        "parse_ns": 39131666,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 104167,
+            "repeated_use": 100542,
+            "parse_inclusive": 38008375
+          },
+          "morgan2_chiral": {
+            "first_use": 14629959,
+            "repeated_use": 14706000,
+            "parse_inclusive": 56411417
+          }
+        },
+        "peak_process_rss_bytes": 88981504,
+        "version": "2026.09.1",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/rdkit/__init__.py",
+        "extension_sha256": {
+          "rdBase.so": "2fb1e7377e7441fcc3c9ae813803adb288fdb710b2b0de66aecbfc1f4b5919ff"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      }
+    },
+    {
+      "order": [
+        "baseline",
+        "candidate",
+        "rdkit",
+        "cosmolkit"
+      ],
+      "load_average_start": [
+        5.89892578125,
+        6.00341796875,
+        6.3466796875
+      ],
+      "baseline": {
+        "parse_ns": 2714459,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 1124791,
+            "repeated_use": 55209,
+            "parse_inclusive": 3883625
+          },
+          "morgan2_chiral": {
+            "first_use": 10003709,
+            "repeated_use": 3015375,
+            "parse_inclusive": 12257417
+          }
+        },
+        "peak_process_rss_bytes": 39010304,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/baseline/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "e3d33f6be050e84a55c3b8c62071e28e0f10cbe30823ffaf4f43e61f4f38ece0"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "candidate": {
+        "parse_ns": 2894250,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 1218916,
+            "repeated_use": 67500,
+            "parse_inclusive": 4110375
+          },
+          "morgan2_chiral": {
+            "first_use": 11636875,
+            "repeated_use": 3100750,
+            "parse_inclusive": 13520500
+          }
+        },
+        "peak_process_rss_bytes": 39124992,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/root-pruning/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "6bd6903396fd82df036ede47057b77f6b301644285d3468c80e222efe557f9e7"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "rdkit": {
+        "parse_ns": 39564833,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 111625,
+            "repeated_use": 84334,
+            "parse_inclusive": 39427000
+          },
+          "morgan2_chiral": {
+            "first_use": 14801250,
+            "repeated_use": 13756209,
+            "parse_inclusive": 57292166
+          }
+        },
+        "peak_process_rss_bytes": 88801280,
+        "version": "2026.09.1",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/rdkit/__init__.py",
+        "extension_sha256": {
+          "rdBase.so": "2fb1e7377e7441fcc3c9ae813803adb288fdb710b2b0de66aecbfc1f4b5919ff"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "cosmolkit": {
+        "parse_ns": 47704000,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 110042,
+            "repeated_use": 61541,
+            "parse_inclusive": 45872541
+          },
+          "morgan2_chiral": {
+            "first_use": 9546750,
+            "repeated_use": 9077791,
+            "parse_inclusive": 56411292
+          }
+        },
+        "peak_process_rss_bytes": 82755584,
+        "version": "0.5.0-rc.22",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/cosmolkit/__init__.py",
+        "extension_sha256": {
+          "cosmolkit.abi3.so": "0fc4a42b65552d31e852181a8a4beef693d15d8aa88716bf53e850701936362c"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      }
+    },
+    {
+      "order": [
+        "candidate",
+        "rdkit",
+        "cosmolkit",
+        "baseline"
+      ],
+      "load_average_start": [
+        5.89892578125,
+        6.00341796875,
+        6.3466796875
+      ],
+      "candidate": {
+        "parse_ns": 2471750,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 1061458,
+            "repeated_use": 61541,
+            "parse_inclusive": 3310958
+          },
+          "morgan2_chiral": {
+            "first_use": 9994916,
+            "repeated_use": 2764083,
+            "parse_inclusive": 13021875
+          }
+        },
+        "peak_process_rss_bytes": 38961152,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/root-pruning/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "6bd6903396fd82df036ede47057b77f6b301644285d3468c80e222efe557f9e7"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "rdkit": {
+        "parse_ns": 38347833,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 102250,
+            "repeated_use": 93083,
+            "parse_inclusive": 39368084
+          },
+          "morgan2_chiral": {
+            "first_use": 14936125,
+            "repeated_use": 14061333,
+            "parse_inclusive": 57929292
+          }
+        },
+        "peak_process_rss_bytes": 88948736,
+        "version": "2026.09.1",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/rdkit/__init__.py",
+        "extension_sha256": {
+          "rdBase.so": "2fb1e7377e7441fcc3c9ae813803adb288fdb710b2b0de66aecbfc1f4b5919ff"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "cosmolkit": {
+        "parse_ns": 46505000,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 123958,
+            "repeated_use": 58875,
+            "parse_inclusive": 44924333
+          },
+          "morgan2_chiral": {
+            "first_use": 9521709,
+            "repeated_use": 9028667,
+            "parse_inclusive": 55037375
+          }
+        },
+        "peak_process_rss_bytes": 82952192,
+        "version": "0.5.0-rc.22",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/cosmolkit/__init__.py",
+        "extension_sha256": {
+          "cosmolkit.abi3.so": "0fc4a42b65552d31e852181a8a4beef693d15d8aa88716bf53e850701936362c"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "baseline": {
+        "parse_ns": 2677709,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 1169917,
+            "repeated_use": 75209,
+            "parse_inclusive": 3633042
+          },
+          "morgan2_chiral": {
+            "first_use": 11780208,
+            "repeated_use": 3034208,
+            "parse_inclusive": 13279000
+          }
+        },
+        "peak_process_rss_bytes": 39141376,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/baseline/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "e3d33f6be050e84a55c3b8c62071e28e0f10cbe30823ffaf4f43e61f4f38ece0"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      }
+    },
+    {
+      "order": [
+        "rdkit",
+        "cosmolkit",
+        "baseline",
+        "candidate"
+      ],
+      "load_average_start": [
+        5.89892578125,
+        6.00341796875,
+        6.3466796875
+      ],
+      "rdkit": {
+        "parse_ns": 38966875,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 121250,
+            "repeated_use": 107875,
+            "parse_inclusive": 39796542
+          },
+          "morgan2_chiral": {
+            "first_use": 14800917,
+            "repeated_use": 14443792,
+            "parse_inclusive": 52912667
+          }
+        },
+        "peak_process_rss_bytes": 88948736,
+        "version": "2026.09.1",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/rdkit/__init__.py",
+        "extension_sha256": {
+          "rdBase.so": "2fb1e7377e7441fcc3c9ae813803adb288fdb710b2b0de66aecbfc1f4b5919ff"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "cosmolkit": {
+        "parse_ns": 46930667,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 103083,
+            "repeated_use": 56167,
+            "parse_inclusive": 41670292
+          },
+          "morgan2_chiral": {
+            "first_use": 9455875,
+            "repeated_use": 8862792,
+            "parse_inclusive": 52594542
+          }
+        },
+        "peak_process_rss_bytes": 83230720,
+        "version": "0.5.0-rc.22",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/cosmolkit/__init__.py",
+        "extension_sha256": {
+          "cosmolkit.abi3.so": "0fc4a42b65552d31e852181a8a4beef693d15d8aa88716bf53e850701936362c"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "baseline": {
+        "parse_ns": 2346500,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 1057250,
+            "repeated_use": 63542,
+            "parse_inclusive": 3223083
+          },
+          "morgan2_chiral": {
+            "first_use": 10313042,
+            "repeated_use": 2942167,
+            "parse_inclusive": 13002084
+          }
+        },
+        "peak_process_rss_bytes": 38977536,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/baseline/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "e3d33f6be050e84a55c3b8c62071e28e0f10cbe30823ffaf4f43e61f4f38ece0"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "candidate": {
+        "parse_ns": 2487417,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 1050125,
+            "repeated_use": 72542,
+            "parse_inclusive": 3501209
+          },
+          "morgan2_chiral": {
+            "first_use": 9910542,
+            "repeated_use": 2725542,
+            "parse_inclusive": 12929416
+          }
+        },
+        "peak_process_rss_bytes": 38961152,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/root-pruning/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "6bd6903396fd82df036ede47057b77f6b301644285d3468c80e222efe557f9e7"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      }
+    },
+    {
+      "order": [
+        "cosmolkit",
+        "baseline",
+        "candidate",
+        "rdkit"
+      ],
+      "load_average_start": [
+        5.66650390625,
+        5.953125,
+        6.32666015625
+      ],
+      "cosmolkit": {
+        "parse_ns": 42083292,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 113417,
+            "repeated_use": 56667,
+            "parse_inclusive": 42462000
+          },
+          "morgan2_chiral": {
+            "first_use": 9350000,
+            "repeated_use": 7943375,
+            "parse_inclusive": 50042125
+          }
+        },
+        "peak_process_rss_bytes": 83099648,
+        "version": "0.5.0-rc.22",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/cosmolkit/__init__.py",
+        "extension_sha256": {
+          "cosmolkit.abi3.so": "0fc4a42b65552d31e852181a8a4beef693d15d8aa88716bf53e850701936362c"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "baseline": {
+        "parse_ns": 2332542,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 1003958,
+            "repeated_use": 54459,
+            "parse_inclusive": 3376792
+          },
+          "morgan2_chiral": {
+            "first_use": 9911375,
+            "repeated_use": 2910917,
+            "parse_inclusive": 13381417
+          }
+        },
+        "peak_process_rss_bytes": 39141376,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/baseline/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "e3d33f6be050e84a55c3b8c62071e28e0f10cbe30823ffaf4f43e61f4f38ece0"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "candidate": {
+        "parse_ns": 2494791,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 1004917,
+            "repeated_use": 50916,
+            "parse_inclusive": 3715208
+          },
+          "morgan2_chiral": {
+            "first_use": 10720916,
+            "repeated_use": 3030834,
+            "parse_inclusive": 13416083
+          }
+        },
+        "peak_process_rss_bytes": 39108608,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/root-pruning/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "6bd6903396fd82df036ede47057b77f6b301644285d3468c80e222efe557f9e7"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "rdkit": {
+        "parse_ns": 39417792,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 102084,
+            "repeated_use": 83750,
+            "parse_inclusive": 39638292
+          },
+          "morgan2_chiral": {
+            "first_use": 13467292,
+            "repeated_use": 13774958,
+            "parse_inclusive": 54015208
+          }
+        },
+        "peak_process_rss_bytes": 88866816,
+        "version": "2026.09.1",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/rdkit/__init__.py",
+        "extension_sha256": {
+          "rdBase.so": "2fb1e7377e7441fcc3c9ae813803adb288fdb710b2b0de66aecbfc1f4b5919ff"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      }
+    },
+    {
+      "order": [
+        "baseline",
+        "candidate",
+        "rdkit",
+        "cosmolkit"
+      ],
+      "load_average_start": [
+        5.66650390625,
+        5.953125,
+        6.32666015625
+      ],
+      "baseline": {
+        "parse_ns": 2611750,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 1115458,
+            "repeated_use": 53167,
+            "parse_inclusive": 3353666
+          },
+          "morgan2_chiral": {
+            "first_use": 10090166,
+            "repeated_use": 3015583,
+            "parse_inclusive": 12441917
+          }
+        },
+        "peak_process_rss_bytes": 38912000,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/baseline/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "e3d33f6be050e84a55c3b8c62071e28e0f10cbe30823ffaf4f43e61f4f38ece0"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "candidate": {
+        "parse_ns": 2437167,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 1039500,
+            "repeated_use": 50416,
+            "parse_inclusive": 3307666
+          },
+          "morgan2_chiral": {
+            "first_use": 11008208,
+            "repeated_use": 3011292,
+            "parse_inclusive": 12471750
+          }
+        },
+        "peak_process_rss_bytes": 39043072,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/root-pruning/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "6bd6903396fd82df036ede47057b77f6b301644285d3468c80e222efe557f9e7"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "rdkit": {
+        "parse_ns": 36476416,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 91000,
+            "repeated_use": 84125,
+            "parse_inclusive": 39020083
+          },
+          "morgan2_chiral": {
+            "first_use": 13355791,
+            "repeated_use": 14021459,
+            "parse_inclusive": 51259875
+          }
+        },
+        "peak_process_rss_bytes": 89096192,
+        "version": "2026.09.1",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/rdkit/__init__.py",
+        "extension_sha256": {
+          "rdBase.so": "2fb1e7377e7441fcc3c9ae813803adb288fdb710b2b0de66aecbfc1f4b5919ff"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "cosmolkit": {
+        "parse_ns": 44271084,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 112250,
+            "repeated_use": 54792,
+            "parse_inclusive": 42765667
+          },
+          "morgan2_chiral": {
+            "first_use": 8511959,
+            "repeated_use": 9102583,
+            "parse_inclusive": 48932208
+          }
+        },
+        "peak_process_rss_bytes": 82935808,
+        "version": "0.5.0-rc.22",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/cosmolkit/__init__.py",
+        "extension_sha256": {
+          "cosmolkit.abi3.so": "0fc4a42b65552d31e852181a8a4beef693d15d8aa88716bf53e850701936362c"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      }
+    },
+    {
+      "order": [
+        "candidate",
+        "rdkit",
+        "cosmolkit",
+        "baseline"
+      ],
+      "load_average_start": [
+        5.66650390625,
+        5.953125,
+        6.32666015625
+      ],
+      "candidate": {
+        "parse_ns": 2421416,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 1030875,
+            "repeated_use": 51292,
+            "parse_inclusive": 3320292
+          },
+          "morgan2_chiral": {
+            "first_use": 10103250,
+            "repeated_use": 2743500,
+            "parse_inclusive": 12062416
+          }
+        },
+        "peak_process_rss_bytes": 39059456,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/root-pruning/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "6bd6903396fd82df036ede47057b77f6b301644285d3468c80e222efe557f9e7"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "rdkit": {
+        "parse_ns": 36885625,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 105833,
+            "repeated_use": 92959,
+            "parse_inclusive": 39980583
+          },
+          "morgan2_chiral": {
+            "first_use": 13383708,
+            "repeated_use": 12930833,
+            "parse_inclusive": 52927000
+          }
+        },
+        "peak_process_rss_bytes": 88866816,
+        "version": "2026.09.1",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/rdkit/__init__.py",
+        "extension_sha256": {
+          "rdBase.so": "2fb1e7377e7441fcc3c9ae813803adb288fdb710b2b0de66aecbfc1f4b5919ff"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "cosmolkit": {
+        "parse_ns": 42898875,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 112208,
+            "repeated_use": 64666,
+            "parse_inclusive": 45890291
+          },
+          "morgan2_chiral": {
+            "first_use": 9444417,
+            "repeated_use": 8241125,
+            "parse_inclusive": 51745167
+          }
+        },
+        "peak_process_rss_bytes": 82935808,
+        "version": "0.5.0-rc.22",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/cosmolkit/__init__.py",
+        "extension_sha256": {
+          "cosmolkit.abi3.so": "0fc4a42b65552d31e852181a8a4beef693d15d8aa88716bf53e850701936362c"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "baseline": {
+        "parse_ns": 2370917,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 1026666,
+            "repeated_use": 57125,
+            "parse_inclusive": 3822583
+          },
+          "morgan2_chiral": {
+            "first_use": 10446209,
+            "repeated_use": 2751917,
+            "parse_inclusive": 13058250
+          }
+        },
+        "peak_process_rss_bytes": 38944768,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/baseline/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "e3d33f6be050e84a55c3b8c62071e28e0f10cbe30823ffaf4f43e61f4f38ece0"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      }
+    },
+    {
+      "order": [
+        "rdkit",
+        "cosmolkit",
+        "baseline",
+        "candidate"
+      ],
+      "load_average_start": [
+        5.53271484375,
+        5.92041015625,
+        6.31298828125
+      ],
+      "rdkit": {
+        "parse_ns": 37690583,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 112333,
+            "repeated_use": 95792,
+            "parse_inclusive": 38173459
+          },
+          "morgan2_chiral": {
+            "first_use": 13570208,
+            "repeated_use": 13223709,
+            "parse_inclusive": 52223917
+          }
+        },
+        "peak_process_rss_bytes": 88915968,
+        "version": "2026.09.1",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/rdkit/__init__.py",
+        "extension_sha256": {
+          "rdBase.so": "2fb1e7377e7441fcc3c9ae813803adb288fdb710b2b0de66aecbfc1f4b5919ff"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "cosmolkit": {
+        "parse_ns": 43669834,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 113000,
+            "repeated_use": 57292,
+            "parse_inclusive": 41423541
+          },
+          "morgan2_chiral": {
+            "first_use": 8699292,
+            "repeated_use": 7942417,
+            "parse_inclusive": 49927750
+          }
+        },
+        "peak_process_rss_bytes": 82886656,
+        "version": "0.5.0-rc.22",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/cosmolkit/__init__.py",
+        "extension_sha256": {
+          "cosmolkit.abi3.so": "0fc4a42b65552d31e852181a8a4beef693d15d8aa88716bf53e850701936362c"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "baseline": {
+        "parse_ns": 2358333,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 1015292,
+            "repeated_use": 52709,
+            "parse_inclusive": 3337584
+          },
+          "morgan2_chiral": {
+            "first_use": 10089125,
+            "repeated_use": 2774917,
+            "parse_inclusive": 12456042
+          }
+        },
+        "peak_process_rss_bytes": 39190528,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/baseline/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "e3d33f6be050e84a55c3b8c62071e28e0f10cbe30823ffaf4f43e61f4f38ece0"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "candidate": {
+        "parse_ns": 2451291,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 1009042,
+            "repeated_use": 51250,
+            "parse_inclusive": 3316667
+          },
+          "morgan2_chiral": {
+            "first_use": 9854833,
+            "repeated_use": 2736042,
+            "parse_inclusive": 13214708
+          }
+        },
+        "peak_process_rss_bytes": 39026688,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/root-pruning/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "6bd6903396fd82df036ede47057b77f6b301644285d3468c80e222efe557f9e7"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      }
+    },
+    {
+      "order": [
+        "cosmolkit",
+        "baseline",
+        "candidate",
+        "rdkit"
+      ],
+      "load_average_start": [
+        5.53271484375,
+        5.92041015625,
+        6.31298828125
+      ],
+      "cosmolkit": {
+        "parse_ns": 46043417,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 99125,
+            "repeated_use": 60542,
+            "parse_inclusive": 43315458
+          },
+          "morgan2_chiral": {
+            "first_use": 9428667,
+            "repeated_use": 8027709,
+            "parse_inclusive": 51258125
+          }
+        },
+        "peak_process_rss_bytes": 82690048,
+        "version": "0.5.0-rc.22",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/cosmolkit/__init__.py",
+        "extension_sha256": {
+          "cosmolkit.abi3.so": "0fc4a42b65552d31e852181a8a4beef693d15d8aa88716bf53e850701936362c"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "baseline": {
+        "parse_ns": 2396416,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 1060542,
+            "repeated_use": 47750,
+            "parse_inclusive": 3315791
+          },
+          "morgan2_chiral": {
+            "first_use": 11504166,
+            "repeated_use": 2724833,
+            "parse_inclusive": 11946375
+          }
+        },
+        "peak_process_rss_bytes": 38830080,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/baseline/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "e3d33f6be050e84a55c3b8c62071e28e0f10cbe30823ffaf4f43e61f4f38ece0"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "candidate": {
+        "parse_ns": 2421208,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 1039833,
+            "repeated_use": 49292,
+            "parse_inclusive": 3293666
+          },
+          "morgan2_chiral": {
+            "first_use": 10216875,
+            "repeated_use": 2720833,
+            "parse_inclusive": 12546125
+          }
+        },
+        "peak_process_rss_bytes": 39321600,
+        "version": "1.1.4",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/root-pruning/chematic/__init__.py",
+        "extension_sha256": {
+          "chematic.cpython-313-darwin.so": "6bd6903396fd82df036ede47057b77f6b301644285d3468c80e222efe557f9e7"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      },
+      "rdkit": {
+        "parse_ns": 35801042,
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+        "operations": {
+          "num_rings": {
+            "first_use": 92209,
+            "repeated_use": 86333,
+            "parse_inclusive": 38543333
+          },
+          "morgan2_chiral": {
+            "first_use": 13391917,
+            "repeated_use": 12966833,
+            "parse_inclusive": 52700667
+          }
+        },
+        "peak_process_rss_bytes": 88981504,
+        "version": "2026.09.1",
+        "module_path": "/private/tmp/chematic-cycle-speed-20261014/env/lib/python3.13/site-packages/rdkit/__init__.py",
+        "extension_sha256": {
+          "rdBase.so": "2fb1e7377e7441fcc3c9ae813803adb288fdb710b2b0de66aecbfc1f4b5919ff"
+        },
+        "output_sha256": "09b890f16615656885d4366f308310457cb34d4d5cf4a165343d95c5ec336577"
+      }
+    }
+  ],
+  "agreement": {
+    "num_rings": {
+      "candidate_vs_baseline": {
+        "passed": true,
+        "rows": 1000,
+        "mismatches": 0
+      },
+      "baseline_vs_rdkit": {
+        "passed": true,
+        "rows": 1000,
+        "mismatches": 0
+      },
+      "candidate_vs_rdkit": {
+        "passed": true,
+        "rows": 1000,
+        "mismatches": 0
+      },
+      "cosmolkit_vs_rdkit": {
+        "passed": true,
+        "rows": 1000,
+        "mismatches": 0
+      }
+    },
+    "morgan2_chiral": {
+      "candidate_vs_baseline": {
+        "passed": true,
+        "rows": 1000,
+        "mismatches": 0
+      },
+      "baseline_vs_rdkit": {
+        "passed": true,
+        "rows": 1000,
+        "mismatches": 0
+      },
+      "candidate_vs_rdkit": {
+        "passed": true,
+        "rows": 1000,
+        "mismatches": 0
+      },
+      "cosmolkit_vs_rdkit": {
+        "passed": true,
+        "rows": 1000,
+        "mismatches": 0
+      }
+    }
+  },
+  "summary": {
+    "num_rings/first_use": {
+      "baseline": {
+        "speedup": {
+          "median": 1.0,
+          "ci95": [
+            0.977,
+            1.012
+          ],
+          "winning_blocks": 10,
+          "blocks": 20
+        },
+        "demonstrated_win": false
+      },
+      "rdkit": {
+        "speedup": {
+          "median": 0.092,
+          "ci95": [
+            0.088,
+            0.102
+          ],
+          "winning_blocks": 0,
+          "blocks": 20
+        },
+        "demonstrated_win": false
+      },
+      "cosmolkit": {
+        "speedup": {
+          "median": 0.093,
+          "ci95": [
+            0.077,
+            0.103
+          ],
+          "winning_blocks": 0,
+          "blocks": 20
+        },
+        "demonstrated_win": false
+      }
+    },
+    "num_rings/repeated_use": {
+      "baseline": {
+        "speedup": {
+          "median": 1.031,
+          "ci95": [
+            0.903,
+            1.092
+          ],
+          "winning_blocks": 11,
+          "blocks": 20
+        },
+        "demonstrated_win": false
+      },
+      "rdkit": {
+        "speedup": {
+          "median": 1.651,
+          "ci95": [
+            1.459,
+            1.744
+          ],
+          "winning_blocks": 20,
+          "blocks": 20
+        },
+        "demonstrated_win": true
+      },
+      "cosmolkit": {
+        "speedup": {
+          "median": 0.988,
+          "ci95": [
+            0.837,
+            1.1
+          ],
+          "winning_blocks": 10,
+          "blocks": 20
+        },
+        "demonstrated_win": false
+      }
+    },
+    "num_rings/parse_inclusive": {
+      "baseline": {
+        "speedup": {
+          "median": 0.98,
+          "ci95": [
+            0.946,
+            1.007
+          ],
+          "winning_blocks": 8,
+          "blocks": 20
+        },
+        "demonstrated_win": false
+      },
+      "rdkit": {
+        "speedup": {
+          "median": 11.548,
+          "ci95": [
+            10.914,
+            11.844
+          ],
+          "winning_blocks": 20,
+          "blocks": 20
+        },
+        "demonstrated_win": true
+      },
+      "cosmolkit": {
+        "speedup": {
+          "median": 12.188,
+          "ci95": [
+            11.204,
+            13.005
+          ],
+          "winning_blocks": 20,
+          "blocks": 20
+        },
+        "demonstrated_win": true
+      }
+    },
+    "morgan2_chiral/first_use": {
+      "baseline": {
+        "speedup": {
+          "median": 0.994,
+          "ci95": [
+            0.921,
+            1.037
+          ],
+          "winning_blocks": 9,
+          "blocks": 20
+        },
+        "demonstrated_win": false
+      },
+      "rdkit": {
+        "speedup": {
+          "median": 1.325,
+          "ci95": [
+            1.264,
+            1.337
+          ],
+          "winning_blocks": 20,
+          "blocks": 20
+        },
+        "demonstrated_win": true
+      },
+      "cosmolkit": {
+        "speedup": {
+          "median": 0.823,
+          "ci95": [
+            0.77,
+            0.877
+          ],
+          "winning_blocks": 0,
+          "blocks": 20
+        },
+        "demonstrated_win": false
+      }
+    },
+    "morgan2_chiral/repeated_use": {
+      "baseline": {
+        "speedup": {
+          "median": 0.974,
+          "ci95": [
+            0.914,
+            1.007
+          ],
+          "winning_blocks": 9,
+          "blocks": 20
+        },
+        "demonstrated_win": false
+      },
+      "rdkit": {
+        "speedup": {
+          "median": 4.685,
+          "ci95": [
+            4.483,
+            4.828
+          ],
+          "winning_blocks": 20,
+          "blocks": 20
+        },
+        "demonstrated_win": true
+      },
+      "cosmolkit": {
+        "speedup": {
+          "median": 2.811,
+          "ci95": [
+            2.598,
+            2.941
+          ],
+          "winning_blocks": 20,
+          "blocks": 20
+        },
+        "demonstrated_win": true
+      }
+    },
+    "morgan2_chiral/parse_inclusive": {
+      "baseline": {
+        "speedup": {
+          "median": 0.961,
+          "ci95": [
+            0.902,
+            0.998
+          ],
+          "winning_blocks": 5,
+          "blocks": 20
+        },
+        "demonstrated_win": false
+      },
+      "rdkit": {
+        "speedup": {
+          "median": 4.101,
+          "ci95": [
+            3.983,
+            4.237
+          ],
+          "winning_blocks": 20,
+          "blocks": 20
+        },
+        "demonstrated_win": true
+      },
+      "cosmolkit": {
+        "speedup": {
+          "median": 3.884,
+          "ci95": [
+            3.601,
+            4.064
+          ],
+          "winning_blocks": 20,
+          "blocks": 20
+        },
+        "demonstrated_win": true
+      }
+    }
+  },
+  "complete": true,
+  "source_manifest": {
+    "schema": "python-cycle-root-pruning-source/v1",
+    "base_revision": "cac480fb23cd8adeec6e5e9bed1f18677f87b392",
+    "base_tree": "7495188103a6ed6635700fd378977e2baabe1e34",
+    "candidate_patch": {
+      "path": "benchmarks/2026-10-14-python-cycle-root-pruning-candidate.patch",
+      "sha256": "aeb7694a61cb1c7689e28af1a8f6f60927158da54f85d3ba1e5878f9867e8483"
+    },
+    "changed_source_sha256": {
+      "crates/chematic-perception/src/relevant_cycles.rs": "f90d7415d698e7a8c3c0781f86d9a43a1e169b6f8b5825f91800c9802069d12a",
+      "crates/chematic-perception/src/relevant_cycles_path_tests.rs": "4f6c49278cc25941c657e53c8d481f61dfafb571c157b3956e984e1d0a94f840"
+    },
+    "measurement_scripts_sha256": {
+      "scripts/bench_python_speed_frontier.py": "f6693ba7d2e6216d21229e134a06433b9ad3b949fd652fc0dca809d61f1de248",
+      "scripts/verify_python_descriptor_frontier.py": "5b64211b11bb0bb9a696ff209d33213a455015dde169ed18f2c968852bc82639",
+      "scripts/verify_python_morgan_frontier.py": "48545259dd551c5b8e75d82e2ebc7696181af460bd0a7c9cff1f1bcfecea356d",
+      "validation/cosmolkit_comparison/bench_corpus.py": "6ad2dc64556b8e88e2b246f3c9dd4953b849a1c266fb8055520598b5e7deeb4c"
+    },
+    "build_command": "CARGO_TARGET_DIR=/private/tmp/chematic-cycle-speed-target-20261014 maturin build --release --manifest-path crates/chematic-py/Cargo.toml --interpreter python3.13 --out <arm>-wheel",
+    "wheels": {
+      "baseline": {
+        "path": "/private/tmp/chematic-cycle-speed-20261014/baseline-wheel/chematic-1.1.4-cp313-cp313-macosx_11_0_arm64.whl",
+        "sha256": "367f7f07937978abf0f98c469861e2341db9c222b21cef033e3558debc3669b4"
+      },
+      "candidate": {
+        "path": "/private/tmp/chematic-cycle-speed-20261014/root-pruning-wheel/chematic-1.1.4-cp313-cp313-macosx_11_0_arm64.whl",
+        "sha256": "b3e036c90187538e784b2bce9f163e84d91ec5e5ef8a1de98230f6efa31e1f08"
+      }
+    },
+    "scope": "source wheels built from main plus the candidate patch; no claim about published artifacts or whole-toolkit superiority",
+    "data": "unchanged fixed corpus and stress corpus; existing manifests and licenses apply; no filtered rows or blocks"
+  },
+  "load_average_end": [
+    5.53271484375,
+    5.92041015625,
+    6.31298828125
+  ]
+}

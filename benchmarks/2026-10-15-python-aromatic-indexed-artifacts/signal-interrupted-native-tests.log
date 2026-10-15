@@ -1,0 +1,55 @@
+   Compiling chematic-perception v1.1.4 (/private/tmp/chematic-parity-lazy-source-20261015/crates/chematic-perception)
+   Compiling zmij v1.0.23
+   Compiling serde v1.0.229
+   Compiling serde_derive v1.0.229
+   Compiling crossbeam-utils v0.8.23
+   Compiling syn v2.0.119
+   Compiling crossbeam-deque v0.8.8
+   Compiling serde_json v1.0.151
+   Compiling zerocopy v0.8.56
+   Compiling zerocopy-derive v0.8.56
+   Compiling crossbeam-epoch v0.9.21
+   Compiling autocfg v1.5.1
+   Compiling find-msvc-tools v0.1.14
+   Compiling rayon-core v1.13.0
+   Compiling either v1.18.0
+   Compiling itoa v1.0.18
+   Compiling memchr v2.8.3
+   Compiling shlex v2.0.1
+   Compiling cc v1.6.0
+   Compiling num-traits v0.2.19
+   Compiling libc v0.2.189
+   Compiling cfg-if v1.0.4
+   Compiling half v2.7.1
+   Compiling alloca v0.4.0
+   Compiling regex-syntax v0.8.11
+   Compiling plotters-backend v0.3.7
+   Compiling ciborium-io v0.2.2
+   Compiling clap_lex v1.1.0
+   Compiling anstyle v1.0.14
+   Compiling clap_builder v4.6.7
+   Compiling ciborium-ll v0.2.2
+   Compiling plotters-svg v0.3.7
+   Compiling regex-automata v0.4.18
+   Compiling rayon v1.12.0
+   Compiling itertools v0.13.0
+   Compiling chematic-smiles v1.1.4 (/private/tmp/chematic-parity-lazy-source-20261015/crates/chematic-smiles)
+   Compiling same-file v1.0.6
+   Compiling cast v0.3.0
+   Compiling criterion-plot v0.8.2
+   Compiling walkdir v2.5.0
+   Compiling page_size v0.6.0
+   Compiling plotters v0.3.7
+   Compiling regex v1.13.1
+   Compiling ciborium v0.2.2
+   Compiling clap v4.6.7
+   Compiling tinytemplate v1.2.1
+   Compiling chematic-smarts v1.1.4 (/private/tmp/chematic-parity-lazy-source-20261015/crates/chematic-smarts)
+   Compiling oorandom v11.1.5
+   Compiling anes v0.1.6
+   Compiling criterion v0.8.2
+   Compiling chematic-rxn v1.1.4 (/private/tmp/chematic-parity-lazy-source-20261015/crates/chematic-rxn)
+   Compiling chematic-cip v1.1.4 (/private/tmp/chematic-parity-lazy-source-20261015/crates/chematic-cip)
+   Compiling chematic-fp v1.1.4 (/private/tmp/chematic-parity-lazy-source-20261015/crates/chematic-fp)
+   Compiling chematic-iupac v1.1.4 (/private/tmp/chematic-parity-lazy-source-20261015/crates/chematic-iupac)
+   Compiling chematic-chem v1.1.4 (/private/tmp/chematic-parity-lazy-source-20261015/crates/chematic-chem)

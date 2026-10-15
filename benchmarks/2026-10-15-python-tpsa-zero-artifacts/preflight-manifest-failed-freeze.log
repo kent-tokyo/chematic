@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/private/tmp/chematic-tpsa-zero-20261015/freeze.py", line 5, in <module>
+    assert changed==['CHANGELOG.md','crates/chematic-chem/src/descriptors/tpsa.rs'],changed
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ['CHANGELOG.md', 'crates/chematic-chem/src/descriptors/descriptor_view_tests.rs', 'crates/chematic-chem/src/descriptors/tpsa.rs']

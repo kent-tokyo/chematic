@@ -300,13 +300,12 @@ fn preperceived_kind(mol: &Molecule) -> Option<ParityShortcut> {
 /// [`unchanged_without_kekulization_with`].
 struct ComponentInfo {
     cyclic: std::sync::Arc<Vec<bool>>,
-    /// Component label of every atom with a cyclic bond (`u32::MAX` otherwise).
-    root: Vec<u32>,
+    /// Adjacent root labels (n), cyclic-bond counts (c), atom counts (c).
+    /// Roots use `u32::MAX` for atoms without a cyclic bond.
+    facts: Vec<u32>,
+    atom_count: usize,
     /// Per label: `COMP_*` bits.
     kind: Vec<u8>,
-    /// Per label: cyclic bonds and atoms.
-    edges: Vec<u32>,
-    atoms: Vec<u32>,
     has_aromatic_bond: bool,
     /// Every aromatic bond joins two flagged atoms (and one exists), and no
     /// flagged neutral group-16 atom is hypercoordinate.
@@ -332,10 +331,11 @@ impl ComponentInfo {
         let cyclic = crate::sssr::ring_bond_flags_shared(mol);
         let components = crate::sssr::ring_components_shared(mol);
         let c = components.count as usize;
-        let mut root = vec![u32::MAX; n];
+        let mut facts = vec![0u32; n + 2 * c];
+        let (root, counts) = facts.split_at_mut(n);
+        root.fill(u32::MAX);
+        let (edges, atoms) = counts.split_at_mut(c);
         let mut kind = vec![0u8; c];
-        let mut edges = vec![0u32; c];
-        let mut atoms = vec![0u32; c];
         let mut has_aromatic_bond = false;
         let mut consistent = true;
         let mut non_ring_aromatic_bond = false;
@@ -394,10 +394,9 @@ impl ComponentInfo {
         }
         Self {
             cyclic,
-            root,
+            facts,
+            atom_count: n,
             kind,
-            edges,
-            atoms,
             has_aromatic_bond,
             explicit: has_aromatic_bond && consistent,
             non_ring_aromatic_bond,
@@ -407,7 +406,7 @@ impl ComponentInfo {
 
     /// Labels of the cyclic components (components with a cyclic bond).
     fn roots(&self) -> impl Iterator<Item = usize> + '_ {
-        (0..self.edges.len()).filter(|&c| self.edges[c] > 0)
+        (0..self.kind.len()).filter(|&c| self.facts[self.atom_count + c] > 0)
     }
 }
 
@@ -436,7 +435,7 @@ fn preperceived_kind_with(mol: &Molecule, info: &ComponentInfo) -> Option<Parity
     if needs_candidate_check {
         let n = mol.atom_count();
         let checked = |atom: usize| -> bool {
-            let r = info.root[atom];
+            let r = info.facts[atom];
             r != u32::MAX && {
                 let f = info.kind[r as usize];
                 f & COMP_AROMATIC == 0 && f & COMP_INCIDENT_MULTIPLE != 0
@@ -573,7 +572,7 @@ fn unchanged_without_kekulization_with(mol: &Molecule, info: &ComponentInfo) -> 
     let mut donor: Vec<ElectronDonorType> = vec![ElectronDonorType::None; n];
     for (idx, atom) in mol.atoms() {
         let a = idx.0 as usize;
-        if info.root[a] == u32::MAX {
+        if info.facts[a] == u32::MAX {
             continue;
         }
         if atom.aromatic {
@@ -593,7 +592,7 @@ fn unchanged_without_kekulization_with(mol: &Molecule, info: &ComponentInfo) -> 
         if !cyclic[idx.0 as usize] || !candidate[a] || !candidate[b] {
             continue;
         }
-        let r = info.root[a];
+        let r = info.facts[a];
         if exact(r) && !candidate_uf.union(a as u32, b as u32) {
             has_candidate_cycle[r as usize] = true;
         }
@@ -602,12 +601,12 @@ fn unchanged_without_kekulization_with(mol: &Molecule, info: &ComponentInfo) -> 
         if !exact(r as u32) || !has_candidate_cycle[r] {
             continue;
         }
-        if info.edges[r] != info.atoms[r] {
+        if info.facts[n + r] != info.facts[n + info.kind.len() + r] {
             return false; // a candidate cycle in a fused system: full path
         }
         // A single ring made entirely of candidates.
         let members: Vec<AtomIdx> = (0..n)
-            .filter(|&a| info.root[a] as usize == r)
+            .filter(|&a| info.facts[a] as usize == r)
             .map(|a| AtomIdx(a as u32))
             .collect();
         if apply_huckel(mol, &members, &donor) {
@@ -616,7 +615,7 @@ fn unchanged_without_kekulization_with(mol: &Molecule, info: &ComponentInfo) -> 
     }
     // Remaining components: exact ones contribute nothing (above), so only
     // mixed components can hold a non-explicit candidate cycle edge.
-    for (slot, &root) in candidate.iter_mut().zip(&info.root) {
+    for (slot, &root) in candidate.iter_mut().zip(&info.facts[..n]) {
         if exact(root) {
             *slot = false;
         }
@@ -1112,6 +1111,14 @@ fn apply_aromaticity_rdkit_parity_unseeded(mol: &Molecule) -> Result<Molecule, A
         ParityShortcut::ClearFlags => return Ok(clear_aromatic_flags(mol)),
         ParityShortcut::Full => {}
     }
+    if already_kekulized_in_bond_order(mol) {
+        // With no aromatic flags/bonds, kekulization succeeds with an empty
+        // result and `kekulized_copy` is an exact clone. Perceive on the
+        // original graph to avoid that intermediate copy and reuse its
+        // ring caches. Reordered adjacency retains the rebuilding path.
+        let model = assign_from_kekulized(mol)?;
+        return Ok(crate::aromaticity::build_molecule_from_model(mol, &model));
+    }
     let (kekulized, verdict) = kekulize_for_rdkit_parity_with_verdict(mol)?;
     if kekulized
         .bonds()
@@ -1131,3 +1138,17 @@ fn apply_aromaticity_rdkit_parity_unseeded(mol: &Molecule) -> Result<Molecule, A
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
+
+fn already_kekulized_in_bond_order(mol: &Molecule) -> bool {
+    !mol.atoms().any(|(_, atom)| atom.aromatic)
+        && !mol.bonds().any(|(_, bond)| bond.order == BondOrder::Aromatic)
+        && mol.adjacency_in_bond_order()
+}
+
+#[cfg(test)]
+#[path = "kekule_view_tests.rs"]
+mod kekule_view_tests;
+
+#[cfg(test)]
+#[path = "component_packed_tests.rs"]
+mod component_packed_tests;
