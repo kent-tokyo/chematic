@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "records": [
+    {
+      "id": "raw-bohr-left-handed-cell",
+      "payload": "$cell vectors\n4 1 0\n-1 5 2\n1 0 -6\n$coordinates\nSi .125 -1.25 2.5\nCl -1.5 .125 .5\n$end\n",
+      "sha256": "ea3176518f2b0da2608c7f00b4ce12303b8cbcbfe751c4e14c31ebccdf39c21a",
+      "provenance": "Original synthetic minimal fixture authored 2026-10-15; https://docs.ase-lib.org/_modules/ase/io/dmol.html consulted for public format description only; no upstream implementation/data copied",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "Two unlike elements and three skewed oriented vectors isolate raw Bohr storage and optional periodic cell",
+      "oracle": "Exact analytic raw Bohr values; CODATA 2022 0.529177210544 Angstrom per Bohr; Open Babel 3.2.1 / ASE 3.27.0 comparisons use their own separately pinned conversion constants",
+      "expected": {
+        "elements": [
+          "Si",
+          "Cl"
+        ],
+        "positions_bohr": [
+          [
+            0.125,
+            -1.25,
+            2.5
+          ],
+          [
+            -1.5,
+            0.125,
+            0.5
+          ]
+        ],
+        "cell_bohr": [
+          [
+            4,
+            1,
+            0
+          ],
+          [
+            -1,
+            5,
+            2
+          ],
+          [
+            1,
+            0,
+            -6
+          ]
+        ],
+        "positions_angstrom": [
+          [
+            0.066147151318,
+            -0.66147151318,
+            1.32294302636
+          ],
+          [
+            -0.793765815816,
+            0.066147151318,
+            0.264588605272
+          ]
+        ],
+        "cell_angstrom": [
+          [
+            2.116708842176,
+            0.529177210544,
+            0.0
+          ],
+          [
+            -0.529177210544,
+            2.64588605272,
+            1.058354421088
+          ],
+          [
+            0.529177210544,
+            0.0,
+            -3.175063263264
+          ]
+        ],
+        "bohr_angstrom": 0.529177210544,
+        "periodicity": 3,
+        "units": "authoritative Bohr; Angstrom derived with CODATA 2022",
+        "tolerance": 0
+      }
+    }
+  ]
+}

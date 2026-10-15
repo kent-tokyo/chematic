@@ -1,0 +1,47 @@
+{
+  "id": "synthetic-turbomole-3d-lattice-v1",
+  "provenance": {
+    "source": "original synthetic coordinate document authored for this implementation",
+    "issue": "https://github.com/openbabel/openbabel/issues/2822",
+    "date": "2026-10-15",
+    "specifications": [
+      "https://manual.turbomole.org/v8.0/dft-calculations-for-periodic-systems/how-to-perform-a-calculation/",
+      "https://grimme-lab.github.io/mctc-lib/page/format-tmol.html"
+    ],
+    "transformations": "independent diagonal 9/10/11 bohr cell with one Si at 1/2/3 bohr; not copied from issue attachment"
+  },
+  "license": "MIT OR Apache-2.0",
+  "redistribution": {
+    "status": "allowed",
+    "rationale": "original project-authored minimal geometry"
+  },
+  "minimization": "one atom and three nonzero diagonal lattice values isolate cell loss, coordinate units and fixed-atom state",
+  "oracle": {
+    "name": "independent Python arithmetic from format definitions",
+    "version": "TURBOMOLE 8.0 manual / MCTC docs retrieved 2026-10-15; CODATA 2022 Bohr radius",
+    "settings": "three Cartesian row vectors; 0.529177210544 angstrom per bohr; no bond inference",
+    "diagnostic": "Open Babel 3.2.1 -itmol -ovasp; not used as expected-cell oracle"
+  },
+  "expected": {
+    "elements": [
+      "Si"
+    ],
+    "position_angstrom": [
+      0.529177210544,
+      1.058354421088,
+      1.587531631632
+    ],
+    "lattice_diagonal_angstrom": [
+      4.762594894896,
+      5.29177210544,
+      5.8209493159840004
+    ],
+    "frozen": [
+      true
+    ],
+    "absolute_tolerance_angstrom": 1e-12,
+    "encoding": "UTF-8 LF"
+  },
+  "payload": "oriented-lattice.tmol",
+  "sha256": "657885d9b4b19db17256136d52e93243b59c2d66d83a45aefbf945d87ee6dbc3"
+}

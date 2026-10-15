@@ -38,6 +38,8 @@
 //! Implicit bond between two adjacent atoms = `BondQuery::Any`, which matches a
 //! single or aromatic bond (Daylight/RDKit semantics; `~` is the explicit any-bond).
 
+mod rings;
+
 use std::collections::HashMap;
 use std::fmt;
 
@@ -313,37 +315,6 @@ impl<'a> Parser<'a> {
         }
 
         Ok(Some(current))
-    }
-
-    // -- ring closures -------------------------------------------------------
-
-    /// Handle a ring closure: either close an existing open ring or open a new one.
-    fn handle_ring_closure(
-        &mut self,
-        mol: &mut QueryMolecule,
-        current: usize,
-        ring_num: u8,
-        ring_bond: Option<BondQuery>,
-        open_rings: &mut HashMap<u8, (usize, Option<BondQuery>, usize)>,
-    ) -> Result<(), SmartsError> {
-        if let Some((open_atom, open_bond, open_position)) = open_rings.remove(&ring_num) {
-            let bond = match (open_bond, ring_bond) {
-                (Some(a), Some(b)) if a == b => a,
-                (Some(_), Some(_)) => BondQuery::Any,
-                (Some(b), None) | (None, Some(b)) => b,
-                (None, None) => BondQuery::Any,
-            };
-            mol.add_bond(open_atom, current, bond);
-            // `add_bond` appends; restore the opening endpoint's lexical order.
-            let open_adj = &mut mol.adj[open_atom];
-            let entry = open_adj
-                .pop()
-                .expect("the just-added ring bond has an adjacency entry");
-            open_adj.insert(open_position.min(open_adj.len()), entry);
-        } else {
-            open_rings.insert(ring_num, (current, ring_bond, mol.adj[current].len()));
-        }
-        Ok(())
     }
 
     /// Parse a ring number and its optional, already-consumed bond query.

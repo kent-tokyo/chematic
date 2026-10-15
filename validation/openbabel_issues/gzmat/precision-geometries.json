@@ -1,0 +1,223 @@
+{
+  "schema_version": 1,
+  "provenance": {
+    "source": "Original analytic coordinate examples authored for chematic; no upstream attachment or GPL source copied",
+    "inspiration": "https://github.com/openbabel/openbabel/issues/2794",
+    "retrieved": "2026-10-15",
+    "transformations": "atom permutations; two earlier-reference patterns; proper rotation and translation; no bond inference"
+  },
+  "license": "MIT OR Apache-2.0",
+  "redistribution": "allowed: original minimal synthetic coordinates",
+  "minimization": "one through five atoms isolate absence of variables, precision, planar torsions, handedness, and arbitrary earlier references",
+  "oracle": {
+    "rdkit": "2026.09.1",
+    "settings": "rdMolTransforms distance/angle/dihedral on explicit unbonded conformers",
+    "openbabel": "3.2.1",
+    "invocation": "obabel -igzmat -ocjson -ab; no bonding on read"
+  },
+  "expected": {
+    "significant_digits": [
+      8,
+      12,
+      17
+    ],
+    "computed_scalar_roundtrip_at_17_digits": "exact f64 equality",
+    "geometry_tolerance_angstrom": {
+      "8": 2e-06,
+      "12": 2e-10,
+      "17": 2e-12
+    },
+    "scalar_reference_tolerance": 1e-10,
+    "handedness": "signed tetrahedron volumes preserve sign for abs(volume)>1e-8"
+  },
+  "cases": [
+    {
+      "id": "monatomic",
+      "elements": [
+        "He"
+      ],
+      "positions_angstrom": [
+        [
+          4.0,
+          5.0,
+          6.0
+        ]
+      ]
+    },
+    {
+      "id": "diatomic-precision",
+      "elements": [
+        "H",
+        "F"
+      ],
+      "positions_angstrom": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          1.234567891234567,
+          0.0,
+          0.0
+        ]
+      ]
+    },
+    {
+      "id": "bent-three",
+      "elements": [
+        "O",
+        "H",
+        "H"
+      ],
+      "positions_angstrom": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.957123456789123,
+          0.0,
+          0.0
+        ],
+        [
+          -0.239123456789123,
+          0.927123456789123,
+          0.0
+        ]
+      ]
+    },
+    {
+      "id": "four-signed",
+      "elements": [
+        "C",
+        "N",
+        "O",
+        "F"
+      ],
+      "positions_angstrom": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          1.234567891234567,
+          0.0,
+          0.0
+        ],
+        [
+          1.1,
+          1.33333333333333,
+          0.0
+        ],
+        [
+          0.1,
+          0.3,
+          1.444444444444444
+        ]
+      ]
+    },
+    {
+      "id": "four-mirror",
+      "elements": [
+        "C",
+        "N",
+        "O",
+        "F"
+      ],
+      "positions_angstrom": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          1.234567891234567,
+          0.0,
+          0.0
+        ],
+        [
+          1.1,
+          1.33333333333333,
+          0.0
+        ],
+        [
+          0.1,
+          0.3,
+          -1.444444444444444
+        ]
+      ]
+    },
+    {
+      "id": "planar",
+      "elements": [
+        "C",
+        "N",
+        "O",
+        "F"
+      ],
+      "positions_angstrom": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          1.234567891234567,
+          0.0,
+          0.0
+        ],
+        [
+          1.1,
+          1.33333333333333,
+          0.0
+        ],
+        [
+          0.1,
+          0.3,
+          0.0
+        ]
+      ]
+    },
+    {
+      "id": "five-arbitrary-references",
+      "elements": [
+        "C",
+        "N",
+        "O",
+        "F",
+        "Cl"
+      ],
+      "positions_angstrom": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          1.234567891234567,
+          0.0,
+          0.0
+        ],
+        [
+          1.1,
+          1.33333333333333,
+          0.0
+        ],
+        [
+          0.1,
+          0.3,
+          1.444444444444444
+        ],
+        [
+          1.712345678912345,
+          0.812345678912345,
+          -0.612345678912345
+        ]
+      ]
+    }
+  ],
+  "sha256": "1da9a85caa1049f6412fb0ac204188641311b332b4e78948c39d8987d64e288d"
+}

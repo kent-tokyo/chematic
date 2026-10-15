@@ -1,0 +1,22 @@
+ATOM      1  CA AVAL A 101       0.000   0.000   0.000  0.50 23.45           C  
+ANISOU    1  CA AVAL A 101      100    200    300    -10     20    -30       C  
+ATOM      2  O   VAL A 101       1.200   0.000   0.000  0.50 23.45           O  
+ANISOU    2  O   VAL A 101      100    200    300    -10     20    -30       O  
+TER       3      VAL A 101 
+ATOM      5  CA  LEU B  -2I     10.000   0.000   0.000  0.50 23.45           C  
+ANISOU    5  CA  LEU B  -2I     100    200    300    -10     20    -30       C  
+ATOM      6  O   LEU B  -2I     11.200   0.000   0.000  0.50 23.45           O  
+ANISOU    6  O   LEU B  -2I     100    200    300    -10     20    -30       O  
+TER       7      LEU B  -2I
+HETATM    9  C1  LIG     7      20.000   0.000   0.000  0.50 23.45           C  
+ANISOU    9  C1  LIG     7      100    200    300    -10     20    -30       C  
+HETATM   10  O3  LIG     7      21.200   0.000   0.000  0.50 23.45           O1-
+ANISOU   10  O3  LIG     7      100    200    300    -10     20    -30       O1-
+TER      11      LIG     7 
+CONECT    1    2    2
+CONECT    2    1    1
+CONECT    5    6
+CONECT    6    5
+CONECT    9   10
+CONECT   10    9
+END

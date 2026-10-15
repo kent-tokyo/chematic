@@ -66,6 +66,10 @@ use chematic_perception::find_sssr;
 use rustc_hash::FxHashMap;
 use std::collections::BTreeMap;
 
+mod config;
+mod features;
+pub use config::{RdkitLayeredConfig, RdkitLayeredError, RdkitLayeredResult, rdkit_layered_config};
+
 const FP_SIZE: u32 = 2048;
 const MIN_PATH: usize = 1;
 const MAX_PATH: usize = 7;
@@ -293,147 +297,11 @@ fn rdkit_layered_fp_input(mol: &Molecule, trust_view: bool) -> BitVec2048 {
         return fp;
     }
 
-    let has_literal_aromatic_bond =
-        trust_view || mol.bonds().any(|(_, b)| b.order == BondOrder::Aromatic);
-    let aromaticity = if has_literal_aromatic_bond {
-        None
-    } else {
-        Some(assign_aromaticity_ex(mol, AromaticityAlgorithm::RdkitLike))
-    };
-
-    let anums: Vec<u32> = (0..mol.atom_count())
-        .map(|i| crate::rdkit_atomic_num(mol, AtomIdx(i as u32)))
-        .collect();
-    let atom_aromatic: Vec<bool> = (0..mol.atom_count())
-        .map(|i| is_atom_aromatic(mol, aromaticity.as_ref(), AtomIdx(i as u32)))
-        .collect();
-    let ring_info = compute_ring_info(mol);
-
+    let prepared = features::Prepared::new(mol, trust_view);
     let paths = find_all_subgraphs(mol, MIN_PATH, MAX_PATH);
     for plist in paths.values() {
         for path in plist {
-            let mut atom_degrees: FxHashMap<u32, u32> = FxHashMap::default();
-            let mut atoms_in_path: std::collections::BTreeSet<u32> =
-                std::collections::BTreeSet::new();
-            for &bidx in path {
-                let bond = mol.bond(BondIdx(bidx));
-                *atom_degrees.entry(bond.atom1.0).or_insert(0) += 1;
-                *atom_degrees.entry(bond.atom2.0).or_insert(0) += 1;
-                atoms_in_path.insert(bond.atom1.0);
-                atoms_in_path.insert(bond.atom2.0);
-            }
-
-            let mut bond_nbrs = vec![0u32; path.len()];
-            for i in 0..path.len() {
-                let bi = mol.bond(BondIdx(path[i]));
-                for j in (i + 1)..path.len() {
-                    let bj = mol.bond(BondIdx(path[j]));
-                    if bi.atom1 == bj.atom1
-                        || bi.atom1 == bj.atom2
-                        || bi.atom2 == bj.atom1
-                        || bi.atom2 == bj.atom2
-                    {
-                        bond_nbrs[i] += 1;
-                        bond_nbrs[j] += 1;
-                    }
-                }
-            }
-
-            let mut hash_layers: [Vec<u32>; NUM_LAYERS] = Default::default();
-
-            for (i, &bidx) in path.iter().enumerate() {
-                let bond = mol.bond(BondIdx(bidx));
-                let a1 = bond.atom1.0;
-                let a2 = bond.atom2.0;
-                let deg1 = atom_degrees[&a1];
-                let deg2 = atom_degrees[&a2];
-
-                // Layer 1: straight topology.
-                {
-                    let (mut d1, mut d2) = (deg1, deg2);
-                    if d1 < d2 {
-                        std::mem::swap(&mut d1, &mut d2);
-                    }
-                    let mut h = bond_nbrs[i] % 8;
-                    h |= (d1 % 8) << 3;
-                    h |= (d2 % 8) << 6;
-                    hash_layers[0].push(h);
-                }
-
-                // Layer 2: bond order.
-                {
-                    let is_aromatic = is_bond_aromatic(mol, aromaticity.as_ref(), BondIdx(bidx));
-                    let bond_hash = if is_aromatic {
-                        1
-                    } else {
-                        layer2_bond_type_code(bond.order)
-                    };
-                    let (mut d1, mut d2) = (deg1, deg2);
-                    if d1 < d2 {
-                        std::mem::swap(&mut d1, &mut d2);
-                    }
-                    let mut h = bond_hash % 8;
-                    h |= (bond_nbrs[i] % 8) << 3;
-                    h |= (d1 % 8) << 6;
-                    h |= (d2 % 8) << 9;
-                    hash_layers[1].push(h);
-                }
-
-                // Layer 3: atom types.
-                {
-                    let mut a1h = anums[a1 as usize] % 128;
-                    let mut a2h = anums[a2 as usize] % 128;
-                    let (mut d1, mut d2) = (deg1, deg2);
-                    if a1h < a2h {
-                        std::mem::swap(&mut a1h, &mut a2h);
-                        std::mem::swap(&mut d1, &mut d2);
-                    } else if a1h == a2h && d1 < d2 {
-                        std::mem::swap(&mut d1, &mut d2);
-                    }
-                    let mut h = a1h;
-                    h |= a2h << 7;
-                    h |= (d1 % 8) << 14;
-                    h |= (d2 % 8) << 17;
-                    h |= (bond_nbrs[i] % 8) << 20;
-                    hash_layers[2].push(h);
-                }
-
-                // Layer 4: ring membership.
-                if ring_info.bond_in_ring[bidx as usize] {
-                    hash_layers[3].push(1);
-                }
-
-                // Layer 5: ring size.
-                {
-                    let h = ring_info.bond_min_ring_size[bidx as usize] % 8;
-                    hash_layers[4].push(h);
-                }
-
-                // Layer 6: aromaticity.
-                {
-                    let mut a1h = atom_aromatic[a1 as usize];
-                    let mut a2h = atom_aromatic[a2 as usize];
-                    if !a1h && a2h {
-                        std::mem::swap(&mut a1h, &mut a2h);
-                    }
-                    let mut h = a1h as u32;
-                    h |= (a2h as u32) << 1;
-                    h |= (bond_nbrs[i] % 8) << 5;
-                    hash_layers[5].push(h);
-                }
-            }
-
-            for (l, layer) in hash_layers.iter_mut().enumerate() {
-                if layer.is_empty() {
-                    continue;
-                }
-                layer.sort_unstable();
-                layer.push(atoms_in_path.len() as u32);
-                layer.push((l + 1) as u32);
-                let mut seed = 0u32;
-                for &v in layer.iter() {
-                    seed = hash_combine(seed, v);
-                }
+            for seed in prepared.hashes(path).seeds.into_iter().flatten() {
                 fp.set((seed % FP_SIZE) as usize);
             }
         }

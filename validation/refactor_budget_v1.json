@@ -58,10 +58,6 @@
       "decisions": 9,
       "lines": 160
     },
-    "crates/chematic-chem/src/stereo.rs::enumerate_stereoisomers#1": {
-      "decisions": 16,
-      "lines": 123
-    },
     "crates/chematic-cip/src/assign.rs::assign_one_with_rule5#1": {
       "decisions": 24,
       "lines": 148
@@ -153,10 +149,6 @@
     "crates/chematic-fp/src/rdkit_avalon/rings.rs::perceive_dy_aromaticity#1": {
       "decisions": 58,
       "lines": 173
-    },
-    "crates/chematic-fp/src/rdkit_layered.rs::rdkit_layered_fp_input#1": {
-      "decisions": 25,
-      "lines": 154
     },
     "crates/chematic-inchi/src/native/convert.rs::mol_to_inchi_atoms#1": {
       "decisions": 41,
