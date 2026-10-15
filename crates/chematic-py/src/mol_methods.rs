@@ -27,6 +27,7 @@ mod fingerprints;
 mod graph_queries;
 mod identity;
 mod layered_config;
+pub(crate) mod ogb;
 mod path_enumeration;
 mod properties;
 mod stereo_groups;

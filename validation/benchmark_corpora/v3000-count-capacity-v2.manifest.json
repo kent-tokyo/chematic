@@ -1,0 +1,29 @@
+{
+  "id": "v3000-count-capacity-v2",
+  "path": "validation/benchmark_corpora/v3000-count-capacity-v2.recipe.json",
+  "provenance": {
+    "source": "Original synthetic V3000 count-token and parser-state recipe; no new molecular or third-party data.",
+    "retrieved_or_generated": "2026-10-15",
+    "transformation": "All atom/bond/SGROUP count-lexeme triples for each allocation limit and source line, after the prime COUNTS row; compare original mutation and error precedence; exercise empty, incomplete and block-marker rows separately."
+  },
+  "license": "MIT OR Apache-2.0",
+  "redistribution": {
+    "status": "allowed",
+    "rationale": "Original project-authored syntax and bounded-allocation cases."
+  },
+  "minimization": "15 integer lexemes cover zero, ordinary counts, platform limits, overflow, signs and malformed data. Four row budgets check zero and bounded allocation. A repeated COUNTS prime checks partial mutations and retained error precedence.",
+  "oracle": {
+    "name": "Frozen original V3000Parser::in_ctab",
+    "version": "chematic 1.1.4 plus nine accepted source candidates",
+    "settings": "Exact typed error Debug, state discriminant and all expected count fields; original code is frozen in the test module.",
+    "mol3000_sha256": "9555c460cf091904217a65ba4ad338f8fc2758748eb147a0e22b60b4655b1b8c"
+  },
+  "expected": {
+    "status": "All count/state/error outcomes equal the original method; reserved vector capacities never exceed the logical-row budget; repeated COUNTS retains empty storage.",
+    "absolute_tolerance": 0,
+    "units": "record counts and vector capacity",
+    "cartesian_cases": 27000,
+    "capacity_growth_cases": 1025
+  },
+  "sha256": "274a85b0e84aad2cfcceff345a9d2cad7a9eb5295526344e8d74e0cdf8def57b"
+}

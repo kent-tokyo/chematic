@@ -1,0 +1,11 @@
+{
+  "adopt_source": true,
+  "reason": "Adopt the inline E/Z ring-search queue as the fourteenth unmerged source candidate. ChEMBL parse improves 1.145x [1.136,1.147] and roundtrip 1.108x [1.105,1.118]; NCI parse improves 1.180x [1.174,1.183] and roundtrip 1.149x [1.143,1.156]. All four intended lanes are faster in all 21 blocks. Prepared write remains approximately 1.000x in both slices; it is not a new writer algorithm. All 4963770 independent old/new BFS queries match, including 90005 above the 32-atom inline boundary; all existing 506592 public E/Z comparisons pass. Native snapshots/rewrite bytes match on all 2064 original inputs, 64 continued chains and 64 additional branched records; 1139 Rust tests (one existing ignored), ten runner gates, Clippy, formatting and unchanged refactor budget pass. No initial source-relative CI is wholly below 1, so the saved adaptive policy selects no follow-up. Retain weak negatives: original-chain parse 0.991x [0.984,1.029] and continued parse 0.994x [0.963,1.008], neither a clear regression nor a gain. A separate post-hoc exploratory large-neighborhood plan was saved before generating/timing its 64 valid branched graphs: parse 1.012x [1.010,1.025], 16/21 faster; write 0.992x [0.947,1.011]; roundtrip 1.007x [0.994,1.014]. None is a strict all-block gain and no clear regression is demonstrated; all observations remain without pooling or recursive retesting. Controlled-chain Open Babel ratios are parse 127.521x, write 14.821x, roundtrip 109.917x, all 21 faster with semantic agreement. These unchanged no-double-bond controls are not attributed to the new ring queue. Diverse Open Babel profiles remain unranked for graph/stereo/rewrite differences. All five matrices completed without checkpoint interruption, lost or recollected observations. All thirteen accepted predecessors and rejected experiment evidence are preserved. This is source-version 1.1.4 evidence without complete toolkit-wide superiority, current-main verification, hosted CI, merge or publication.",
+  "merged": false,
+  "published": false,
+  "source_candidate_number": 14,
+  "scope": "native V3000 parse/roundtrip; E/Z BFS storage only",
+  "additional_large_workload": "post-hoc exploratory source-only diagnostic, all outcomes retained",
+  "complete_toolkit_superiority": false,
+  "previous_negatives_preserved": true
+}

@@ -1,0 +1,9 @@
+{
+  "removed_only_completed_owned_target": "/private/tmp/chematic-parity-lazy-target-20261015",
+  "logical_bytes": 756921842,
+  "retained_measured_wheel_sha256": {
+    "baseline": "d770304cff22c772979d713bc787477ecc41cca1fc2282aaaabf65f08b4e5ce0",
+    "candidate": "d23783b09b7c61a95d646ca8bd239f104a58b021a3572d9457222cb70ef274a5"
+  },
+  "before_timing": true
+}

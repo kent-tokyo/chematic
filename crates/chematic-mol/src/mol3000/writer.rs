@@ -1,4 +1,5 @@
 use super::*;
+use std::fmt::Write as _;
 
 // ---------------------------------------------------------------------------
 // Writer
@@ -30,7 +31,7 @@ fn v3000_atom_symbol(mol: &Molecule, idx: AtomIdx, atom: &Atom) -> &'static str 
 
 fn append_v3000_rgroup_property(line: &mut String, mol: &Molecule, idx: AtomIdx) {
     if let Some(number) = mol.r_group_label(idx).and_then(|label| label.number()) {
-        line.push_str(&format!(" RGROUPS=(1 {number})"));
+        write!(line, " RGROUPS=(1 {number})").expect("writing to String cannot fail");
     }
 }
 
@@ -42,12 +43,14 @@ fn append_header(out: &mut String, mol: &Molecule, metadata: &MolMetadata, dimen
     out.push('\n');
     out.push_str("  0  0  0  0  0  0  0  0  0  0999 V3000\n");
     out.push_str("M  V30 BEGIN CTAB\n");
-    out.push_str(&format!(
-        "M  V30 COUNTS {} {} {} 0 0\n",
+    writeln!(
+        out,
+        "M  V30 COUNTS {} {} {} 0 0",
         mol.atom_count(),
         mol.bond_count(),
         metadata.v3000_sgroups.len()
-    ));
+    )
+    .expect("writing to String cannot fail");
 }
 
 fn append_atom_properties(
@@ -58,13 +61,13 @@ fn append_atom_properties(
     atom: &Atom,
 ) {
     if atom.charge != 0 {
-        line.push_str(&format!(" CHG={}", atom.charge));
+        write!(line, " CHG={}", atom.charge).expect("writing to String cannot fail");
     }
     if let Some(isotope) = atom.isotope {
-        line.push_str(&format!(" MASS={isotope}"));
+        write!(line, " MASS={isotope}").expect("writing to String cannot fail");
     }
     if let Some(hydrogens) = atom.hydrogen_count {
-        line.push_str(&format!(" HCOUNT={hydrogens}"));
+        write!(line, " HCOUNT={hydrogens}").expect("writing to String cannot fail");
     }
     append_v3000_rgroup_property(line, mol, idx);
     if let Some((_, properties)) = metadata
@@ -86,17 +89,21 @@ fn append_atoms_2d(
     out.push_str("M  V30 BEGIN ATOM\n");
     for (idx, atom) in mol.atoms() {
         let (x, y) = coords.get(idx.0 as usize).copied().unwrap_or((0.0, 0.0));
-        let mut line = format!(
-            "M  V30 {} {} ",
-            idx.0 + 1,
-            v3000_atom_symbol(mol, idx, atom)
-        );
-        crate::mol2000::push_fixed4(&mut line, x, 0);
-        line.push(' ');
-        crate::mol2000::push_fixed4(&mut line, y, 0);
-        line.push_str(&format!(" 0.0000 {}", atom.atom_map.unwrap_or(0)));
-        append_atom_properties(&mut line, mol, metadata, idx, atom);
-        out.push_str(&line);
+        out.push_str("M  V30 ");
+        crate::mol2000::push_right_aligned_u32(out, idx.0 + 1, 0);
+        out.push(' ');
+        out.push_str(v3000_atom_symbol(mol, idx, atom));
+        out.push(' ');
+        crate::mol2000::push_fixed4(out, x, 0);
+        out.push(' ');
+        crate::mol2000::push_fixed4(out, y, 0);
+        if atom.atom_map.unwrap_or(0) == 0 {
+            out.push_str(" 0.0000 0");
+        } else {
+            write!(out, " 0.0000 {}", atom.atom_map.unwrap_or(0))
+                .expect("writing to String cannot fail");
+        }
+        append_atom_properties(out, mol, metadata, idx, atom);
         out.push('\n');
     }
     out.push_str("M  V30 END ATOM\n");
@@ -110,7 +117,8 @@ fn append_atoms_3d(out: &mut String, mol: &Molecule, metadata: &MolMetadata, con
             .get(idx.0 as usize)
             .copied()
             .unwrap_or(Point3::zero());
-        let mut line = format!(
+        write!(
+            out,
             "M  V30 {} {} {:.4} {:.4} {:.4} {}",
             idx.0 + 1,
             v3000_atom_symbol(mol, idx, atom),
@@ -118,9 +126,9 @@ fn append_atoms_3d(out: &mut String, mol: &Molecule, metadata: &MolMetadata, con
             point.y,
             point.z,
             atom.atom_map.unwrap_or(0)
-        );
-        append_atom_properties(&mut line, mol, metadata, idx, atom);
-        out.push_str(&line);
+        )
+        .expect("writing to String cannot fail");
+        append_atom_properties(out, mol, metadata, idx, atom);
         out.push('\n');
     }
     out.push_str("M  V30 END ATOM\n");
@@ -141,29 +149,32 @@ fn v3000_bond_order(order: BondOrder) -> u8 {
     }
 }
 
-fn bond_properties(metadata: &MolMetadata, bond_id: u32, cfg_written: bool) -> String {
-    metadata
+fn append_bond_properties(
+    out: &mut String,
+    metadata: &MolMetadata,
+    bond_id: u32,
+    cfg_written: bool,
+) {
+    if let Some((_, properties)) = metadata
         .v3000_bond_properties
         .iter()
         .find(|(id, _)| *id == bond_id)
-        .map(|(_, properties)| {
-            if !cfg_written {
-                return format!(" {properties}");
-            }
-            // A depiction may regenerate the explicit unknown marker.
-            // Keep it exactly once while retaining all other properties.
-            let properties = properties
+    {
+        if !cfg_written {
+            out.push(' ');
+            out.push_str(properties);
+        } else {
+            // Match the existing CFG deduplication, including its whitespace
+            // normalization. Append surviving tokens without a temporary Vec.
+            for token in properties
                 .split_whitespace()
                 .filter(|token| !token.starts_with("CFG="))
-                .collect::<Vec<_>>()
-                .join(" ");
-            if properties.is_empty() {
-                String::new()
-            } else {
-                format!(" {properties}")
+            {
+                out.push(' ');
+                out.push_str(token);
             }
-        })
-        .unwrap_or_default()
+        }
+    }
 }
 
 fn append_bonds_2d(
@@ -189,15 +200,19 @@ fn append_bonds_2d(
                     } else {
                         (atom2, atom1)
                     };
-                    let cfg = if wedge.order == BondOrder::Up { 1 } else { 3 };
-                    (start, end, format!(" CFG={cfg}"))
+                    let cfg = if wedge.order == BondOrder::Up {
+                        " CFG=1"
+                    } else {
+                        " CFG=3"
+                    };
+                    (start, end, cfg)
                 }
                 None if depiction.unexpressed_double_bonds.contains(&bond_idx)
                     || depiction.unspecified_double_bonds.contains(&bond_idx) =>
                 {
-                    (atom1, atom2, " CFG=2".to_string())
+                    (atom1, atom2, " CFG=2")
                 }
-                None => (atom1, atom2, String::new()),
+                None => (atom1, atom2, ""),
             },
             None => {
                 let cfg = match bond.order {
@@ -205,15 +220,21 @@ fn append_bonds_2d(
                     BondOrder::Down => " CFG=3",
                     _ => "",
                 };
-                (atom1, atom2, cfg.to_string())
+                (atom1, atom2, cfg)
             }
         };
         let bond_id = bond_idx.0 + 1;
-        out.push_str(&format!(
-            "M  V30 {bond_id} {} {atom1} {atom2}{stereo}{}\n",
-            v3000_bond_order(written),
-            bond_properties(metadata, bond_id, !stereo.is_empty())
-        ));
+        out.push_str("M  V30 ");
+        crate::mol2000::push_right_aligned_u32(out, bond_id, 0);
+        out.push(' ');
+        out.push(char::from(b'0' + v3000_bond_order(written)));
+        out.push(' ');
+        crate::mol2000::push_right_aligned_u32(out, atom1, 0);
+        out.push(' ');
+        crate::mol2000::push_right_aligned_u32(out, atom2, 0);
+        out.push_str(stereo);
+        append_bond_properties(out, metadata, bond_id, !stereo.is_empty());
+        out.push('\n');
     }
     out.push_str("M  V30 END BOND\n");
 }
@@ -227,13 +248,16 @@ fn append_bonds_3d(out: &mut String, mol: &Molecule, metadata: &MolMetadata) {
             .and_then(|orders| orders.get(&bond_idx).copied())
             .unwrap_or(bond.order);
         let bond_id = bond_idx.0 + 1;
-        out.push_str(&format!(
-            "M  V30 {bond_id} {} {} {}{}\n",
+        write!(
+            out,
+            "M  V30 {bond_id} {} {} {}",
             v3000_bond_order(written),
             bond.atom1.0 + 1,
-            bond.atom2.0 + 1,
-            bond_properties(metadata, bond_id, false)
-        ));
+            bond.atom2.0 + 1
+        )
+        .expect("writing to String cannot fail");
+        append_bond_properties(out, metadata, bond_id, false);
+        out.push('\n');
     }
     out.push_str("M  V30 END BOND\n");
 }
@@ -308,6 +332,17 @@ fn append_collections(out: &mut String, mol: &Molecule) {
     out.push_str("M  V30 END COLLECTION\n");
 }
 
+fn writer_buffer(mol: &Molecule, metadata: &MolMetadata) -> String {
+    // Reserve ordinary atom/bond rows once. Large coordinates and opaque
+    // metadata can still grow the buffer; no output or input limit changes.
+    String::with_capacity(
+        256 + metadata.name.len()
+            + metadata.comment.len()
+            + mol.atom_count() * 64
+            + mol.bond_count() * 40,
+    )
+}
+
 fn finish_ctab(out: &mut String, mol: &Molecule, metadata: &MolMetadata) {
     append_sgroups(out, metadata);
     append_collections(out, mol);
@@ -325,7 +360,7 @@ pub fn write_mol_v3000_with_stereo_report(
     metadata: &MolMetadata,
     coords: &[(f64, f64)],
 ) -> (String, crate::MolStereoLoss) {
-    let mut out = String::new();
+    let mut out = writer_buffer(mol, metadata);
     append_header(&mut out, mol, metadata, "  chematic\n");
 
     let depiction = crate::stereo_depiction::needs_stereo_depiction(mol)
@@ -367,7 +402,7 @@ pub fn write_mol_v3000_with_conformer(
     metadata: &MolMetadata,
     conformer: &Coords3D,
 ) -> String {
-    let mut out = String::new();
+    let mut out = writer_buffer(mol, metadata);
     append_header(&mut out, mol, metadata, "  chematic          3D\n");
     append_atoms_3d(&mut out, mol, metadata, conformer);
     append_bonds_3d(&mut out, mol, metadata);
@@ -616,3 +651,11 @@ M  V30 END CTAB\nM  END\n";
         }
     }
 }
+
+#[cfg(test)]
+#[path = "writer_reference.rs"]
+mod reference;
+
+#[cfg(test)]
+#[path = "writer_speed_tests.rs"]
+mod speed_tests;

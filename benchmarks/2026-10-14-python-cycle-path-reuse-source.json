@@ -1,0 +1,32 @@
+{
+  "schema": "python-cycle-path-reuse-source/v1",
+  "base_revision": "cac480fb23cd8adeec6e5e9bed1f18677f87b392",
+  "base_tree": "7495188103a6ed6635700fd378977e2baabe1e34",
+  "candidate_patch": {
+    "path": "benchmarks/2026-10-14-python-cycle-path-reuse-candidate.patch",
+    "sha256": "3d8f9828f7c4e3ea363a02f4446e7c4c4eb0b63ef5b87d692817a923e8bea10d"
+  },
+  "changed_source_sha256": {
+    "crates/chematic-perception/src/relevant_cycles.rs": "f53099d089a71507e649aa5e86b06fa53dd42561f3fc6d6372a7bd9fa1e55bec",
+    "crates/chematic-perception/src/relevant_cycles_path_tests.rs": "0f0347b7f7c8bf05b1abd46bb9b85f5d862f59c01b118d1c15c59764b2802e95"
+  },
+  "measurement_scripts_sha256": {
+    "scripts/bench_python_speed_frontier.py": "f6693ba7d2e6216d21229e134a06433b9ad3b949fd652fc0dca809d61f1de248",
+    "scripts/verify_python_descriptor_frontier.py": "5b64211b11bb0bb9a696ff209d33213a455015dde169ed18f2c968852bc82639",
+    "scripts/verify_python_morgan_frontier.py": "48545259dd551c5b8e75d82e2ebc7696181af460bd0a7c9cff1f1bcfecea356d",
+    "validation/cosmolkit_comparison/bench_corpus.py": "6ad2dc64556b8e88e2b246f3c9dd4953b849a1c266fb8055520598b5e7deeb4c"
+  },
+  "build_command": "CARGO_TARGET_DIR=/private/tmp/chematic-cycle-speed-target-20261014 maturin build --release --manifest-path crates/chematic-py/Cargo.toml --interpreter python3.13 --out <arm>-wheel",
+  "wheels": {
+    "baseline": {
+      "path": "/private/tmp/chematic-cycle-speed-20261014/baseline-wheel/chematic-1.1.4-cp313-cp313-macosx_11_0_arm64.whl",
+      "sha256": "367f7f07937978abf0f98c469861e2341db9c222b21cef033e3558debc3669b4"
+    },
+    "candidate": {
+      "path": "/private/tmp/chematic-cycle-speed-20261014/candidate-wheel/chematic-1.1.4-cp313-cp313-macosx_11_0_arm64.whl",
+      "sha256": "f8b125d5631a3bb10c414baa153173d7d59c39dd797347d4dfa3d395f157a90b"
+    }
+  },
+  "scope": "source wheels built from main plus the candidate patch; no claim about published artifacts or whole-toolkit superiority",
+  "data": "unchanged fixed corpus and stress corpus; existing manifests and licenses apply; no filtered rows or blocks"
+}

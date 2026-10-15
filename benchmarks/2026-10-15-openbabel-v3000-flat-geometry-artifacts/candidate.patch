@@ -1,0 +1,348 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -11,6 +11,10 @@
+ ## [Unreleased]
+ 
+ ### Performance
++
++- Avoid allocating a temporary 3D point array when V3000 coordinates are
++  empty or flat near zero, reusing the existing strict geometry threshold
++  and preserving dimensional diagnostics and non-flat perception.
+ 
+ - Reuse cached cyclic-component labels during RDKit-compatible aromaticity
+   typing, avoiding a redundant union-find while preserving candidate-cycle
+diff --git a/crates/chematic-mol/src/mol2000.rs b/crates/chematic-mol/src/mol2000.rs
+--- a/crates/chematic-mol/src/mol2000.rs
++++ b/crates/chematic-mol/src/mol2000.rs
+@@ -146,14 +146,24 @@
+ /// value, without copying RDKit's number.
+ const SQUARE_PLANAR_TRANS_COS_MAX: f64 = -std::f64::consts::FRAC_1_SQRT_2;
+ 
++/// Resolve the empty/flat prefix without materializing 3D points. The
++/// strict near-zero comparison also preserves the non-finite fallback.
++pub(crate) fn flat_geometry_rank(z: impl Iterator<Item = f64>) -> Option<GeometryRank> {
++    let mut z = z.peekable();
++    if z.peek().is_none() {
++        Some(GeometryRank::Indeterminate)
++    } else if z.all(|value| value.abs() < Z_EPS) {
++        Some(GeometryRank::FlatZero)
++    } else {
++        None
++    }
++}
++
+ /// Classify a point cloud's [`GeometryRank`]. See that type's docs for the
+ /// four cases.
+ pub(crate) fn classify_geometry_rank(points: &[Point3]) -> GeometryRank {
+-    if points.is_empty() {
+-        return GeometryRank::Indeterminate;
+-    }
+-    if points.iter().all(|p| p.z.abs() < Z_EPS) {
+-        return GeometryRank::FlatZero;
++    if let Some(rank) = flat_geometry_rank(points.iter().map(|point| point.z)) {
++        return rank;
+     }
+     if points.len() < 3 {
+         return GeometryRank::Coplanar;
+diff --git a/crates/chematic-mol/src/mol3000.rs b/crates/chematic-mol/src/mol3000.rs
+--- a/crates/chematic-mol/src/mol3000.rs
++++ b/crates/chematic-mol/src/mol3000.rs
+@@ -842,12 +842,19 @@
+     Vec<Stereo3DDiagnostic>,
+     Vec<crate::mol2000::SquarePlanarPerceptionDiagnostic>,
+ ) {
+-    let points = coords
+-        .iter()
+-        .zip(raw_z)
+-        .map(|(&(x, y), &z)| Point3::new(x, y, z))
+-        .collect::<Vec<_>>();
+-    let rank = crate::mol2000::classify_geometry_rank(&points);
++    // `zip` would truncate to the shorter coordinate channel. Test the
++    // same z values first; empty and near-zero clouds never keep points.
++    let flat_rank = crate::mol2000::flat_geometry_rank(raw_z.iter().copied().take(coords.len()));
++    let points = if flat_rank.is_some() {
++        Vec::new()
++    } else {
++        coords
++            .iter()
++            .zip(raw_z)
++            .map(|(&(x, y), &z)| Point3::new(x, y, z))
++            .collect()
++    };
++    let rank = flat_rank.unwrap_or_else(|| crate::mol2000::classify_geometry_rank(&points));
+     let conformer = matches!(rank, GeometryRank::Coplanar | GeometryRank::ThreeD)
+         .then_some(Coords3D { points });
+     let mut diagnostics = match (dimension, rank) {
+@@ -1328,3 +1335,7 @@
+ #[cfg(test)]
+ #[path = "mol3000/token_buffer_tests.rs"]
+ mod token_buffer_tests;
++
++#[cfg(test)]
++#[path = "mol3000/flat_geometry_tests.rs"]
++mod flat_geometry_tests;
+diff --git a/crates/chematic-mol/src/mol3000/flat_geometry_tests.rs b/crates/chematic-mol/src/mol3000/flat_geometry_tests.rs
+new file mode 100644
+--- /dev/null
++++ b/crates/chematic-mol/src/mol3000/flat_geometry_tests.rs
+@@ -0,0 +1,187 @@
++//! Exact differential oracle and recipe provenance: see the flat-geometry
++//! manifest under validation/benchmark_corpora.
++use super::*;
++
++const Z_EPS: f64 = 1e-4;
++const COPLANAR_EPS: f64 = 1e-2;
++const COLLINEAR_EPS: f64 = 1e-6;
++
++fn reference_geometry_rank(points: &[Point3]) -> GeometryRank {
++    if points.is_empty() {
++        return GeometryRank::Indeterminate;
++    }
++    if points.iter().all(|p| p.z.abs() < Z_EPS) {
++        return GeometryRank::FlatZero;
++    }
++    if points.len() < 3 {
++        return GeometryRank::Coplanar;
++    }
++    // Find a non-degenerate plane-defining pair of vectors from point 0.
++    // ponytail: fixing the origin at point 0 makes this O(n) instead of
++    // O(n^3); it misses only the vanishingly rare pathological case where
++    // point 0 is collinear with every other point yet some other, unrelated
++    // triple isn't -- not worth a full O(n^3) search for real molecular
++    // input up to `MAX_ATOMS`.
++    let origin = points[0];
++    let mut normal: Option<Point3> = None;
++    'outer: for (j, pj) in points.iter().enumerate().skip(1) {
++        let v1 = pj.sub(&origin);
++        for pk in points.iter().skip(j + 1) {
++            let v2 = pk.sub(&origin);
++            let n = v1.cross(&v2);
++            if n.norm() > COLLINEAR_EPS {
++                normal = Some(n);
++                break 'outer;
++            }
++        }
++    }
++    let Some(n) = normal else {
++        // Every point is collinear with point 0 -- trivially coplanar.
++        return GeometryRank::Coplanar;
++    };
++    let n = n.normalize();
++    let max_dev = points
++        .iter()
++        .map(|p| p.sub(&origin).dot(&n).abs())
++        .fold(0.0_f64, f64::max);
++    if max_dev < COPLANAR_EPS {
++        GeometryRank::Coplanar
++    } else {
++        GeometryRank::ThreeD
++    }
++}
++
++fn reference_v3000_geometry(
++    mol: &mut Molecule,
++    coords: &[(f64, f64)],
++    raw_z: &[f64],
++    dimension: CoordinateDimension,
++) -> (
++    Option<Coords3D>,
++    GeometryRank,
++    Vec<Stereo3DDiagnostic>,
++    Vec<crate::mol2000::SquarePlanarPerceptionDiagnostic>,
++) {
++    let points = coords
++        .iter()
++        .zip(raw_z)
++        .map(|(&(x, y), &z)| Point3::new(x, y, z))
++        .collect::<Vec<_>>();
++    let rank = reference_geometry_rank(&points);
++    let conformer = matches!(rank, GeometryRank::Coplanar | GeometryRank::ThreeD)
++        .then_some(Coords3D { points });
++    let mut diagnostics = match (dimension, rank) {
++        (CoordinateDimension::TwoD, GeometryRank::Coplanar | GeometryRank::ThreeD) => {
++            vec![Stereo3DDiagnostic::DeclaredTwoDButNonzeroZ { observed: rank }]
++        }
++        (CoordinateDimension::ThreeD, GeometryRank::FlatZero | GeometryRank::Coplanar) => {
++            vec![Stereo3DDiagnostic::DeclaredThreeDButFlat { observed: rank }]
++        }
++        _ => Vec::new(),
++    };
++    let square_planar = conformer.as_ref().map_or_else(Vec::new, |coords| {
++        let perceived = crate::mol2000::perceive_square_planar_from_3d(mol, coords);
++        diagnostics.extend(crate::mol2000::wedge_vs_3d_conflicts(mol, coords));
++        perceived
++    });
++    (conformer, rank, diagnostics, square_planar)
++}
++
++fn z_values() -> Vec<f64> {
++    let recipe: serde_json::Value = serde_json::from_str(include_str!(concat!(
++        env!("CARGO_MANIFEST_DIR"),
++        "/../../validation/benchmark_corpora/flat-geometry-speed-v1.recipe.json"
++    )))
++    .unwrap();
++    recipe["z_f64_bits_hex"]
++        .as_array()
++        .unwrap()
++        .iter()
++        .map(|value| f64::from_bits(u64::from_str_radix(value.as_str().unwrap(), 16).unwrap()))
++        .collect()
++}
++
++fn compare(input: &Molecule, coords: &[(f64, f64)], z: &[f64], dimension: CoordinateDimension) {
++    let mut expected_mol = input.clone();
++    let mut actual_mol = input.clone();
++    let expected = reference_v3000_geometry(&mut expected_mol, coords, z, dimension);
++    let actual = v3000_geometry(&mut actual_mol, coords, z, dimension);
++    assert_eq!(format!("{expected:?}"), format!("{actual:?}"));
++    let bits = |conformer: &Option<Coords3D>| {
++        conformer.as_ref().map(|c| {
++            c.points
++                .iter()
++                .map(|p| [p.x.to_bits(), p.y.to_bits(), p.z.to_bits()])
++                .collect::<Vec<_>>()
++        })
++    };
++    assert_eq!(bits(&expected.0), bits(&actual.0));
++    assert_eq!(
++        expected_mol.atoms().collect::<Vec<_>>(),
++        actual_mol.atoms().collect::<Vec<_>>()
++    );
++    assert_eq!(
++        expected_mol.bonds().collect::<Vec<_>>(),
++        actual_mol.bonds().collect::<Vec<_>>()
++    );
++    let points: Vec<_> = coords
++        .iter()
++        .zip(z)
++        .map(|(&(x, y), &z)| Point3::new(x, y, z))
++        .collect();
++    assert_eq!(
++        reference_geometry_rank(&points),
++        crate::mol2000::classify_geometry_rank(&points)
++    );
++}
++
++#[test]
++fn empty_truncated_threshold_and_nonfinite_channels_match_original() {
++    let empty = MoleculeBuilder::new().build();
++    let values = z_values();
++    for xy_count in 0..=6 {
++        let coords: Vec<_> = (0..xy_count).map(|i| (i as f64, (i % 2) as f64)).collect();
++        for z_count in 0..=6 {
++            for offset in 0..values.len() {
++                let z: Vec<_> = (0..z_count)
++                    .map(|i| values[(i + offset) % values.len()])
++                    .collect();
++                for dimension in [
++                    CoordinateDimension::Unknown,
++                    CoordinateDimension::TwoD,
++                    CoordinateDimension::ThreeD,
++                ] {
++                    compare(&empty, &coords, &z, dimension);
++                }
++            }
++        }
++    }
++}
++
++#[test]
++fn fixed_ten_thousand_graph_annotations_and_geometry_match_original() {
++    let corpus = include_str!(concat!(
++        env!("CARGO_MANIFEST_DIR"),
++        "/../../validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi"
++    ));
++    let values = z_values();
++    let mut rows = 0;
++    for line in corpus.lines().filter(|line| !line.trim().is_empty()) {
++        let mol = chematic_smiles::parse_template(line.split_whitespace().next().unwrap()).unwrap();
++        let coords: Vec<_> = (0..mol.atom_count())
++            .map(|i| (i as f64, (i % 2) as f64))
++            .collect();
++        for value in &values[..10] {
++            let z = vec![*value; mol.atom_count()];
++            for dimension in [
++                CoordinateDimension::Unknown,
++                CoordinateDimension::TwoD,
++                CoordinateDimension::ThreeD,
++            ] {
++                compare(&mol, &coords, &z, dimension);
++            }
++        }
++        rows += 1;
++    }
++    assert_eq!(rows, 10000);
++}
+diff --git a/validation/benchmark_corpora/flat-geometry-speed-v1.recipe.json b/validation/benchmark_corpora/flat-geometry-speed-v1.recipe.json
+new file mode 100644
+--- /dev/null
++++ b/validation/benchmark_corpora/flat-geometry-speed-v1.recipe.json
+@@ -0,0 +1,34 @@
++{
++  "dimensions": [
++    "Unknown",
++    "TwoD",
++    "ThreeD"
++  ],
++  "id": "flat-geometry-prefix-v1",
++  "lengths": [
++    0,
++    1,
++    2,
++    3,
++    4,
++    5,
++    6
++  ],
++  "xy": "point i = (i, i mod 2)",
++  "z_f64_bits_hex": [
++    "0000000000000000",
++    "8000000000000000",
++    "3f1a36e2eb1c432c",
++    "3f1a36e2eb1c432d",
++    "3f1a36e2eb1c432e",
++    "bf1a36e2eb1c432c",
++    "bf1a36e2eb1c432d",
++    "bf1a36e2eb1c432e",
++    "3ff0000000000000",
++    "bff0000000000000",
++    "7ff0000000000000",
++    "fff0000000000000",
++    "7ff8000000000001"
++  ],
++  "z_pattern": "value[(i + offset) mod values.len()]"
++}
+diff --git a/validation/benchmark_corpora/flat-geometry-speed-v1.manifest.json b/validation/benchmark_corpora/flat-geometry-speed-v1.manifest.json
+new file mode 100644
+--- /dev/null
++++ b/validation/benchmark_corpora/flat-geometry-speed-v1.manifest.json
+@@ -0,0 +1,28 @@
++{
++  "id": "flat-geometry-speed-v1",
++  "path": "validation/benchmark_corpora/flat-geometry-speed-v1.recipe.json",
++  "provenance": {
++    "source": "Original deterministic numeric recipe for differential testing, no new molecular records. Molecular comparisons reuse all rows of rdkit-js-browser-10k-v1.smi.",
++    "retrieved_or_generated": "2026-10-15",
++    "transformation": "Cross every listed coordinate-channel length, z offset and declared dimension; compare exact old classifier and V3000 geometry outputs. Also use full-length generated coordinates on every existing corpus molecule."
++  },
++  "license": "MIT OR Apache-2.0",
++  "redistribution": {
++    "status": "allowed",
++    "rationale": "Original project-authored recipe, no third-party numeric data; existing molecular corpus attribution and license remain unchanged."
++  },
++  "minimization": "Lengths 0 through 6 cover empty, truncated, short, collinear and plane-defining inputs; z values cover signed zero, strict threshold neighbors and nonfinite fallback. Full original corpus is retained without filtering.",
++  "oracle": {
++    "name": "Frozen pre-change chematic source candidate",
++    "version": "1.1.4 plus seven previously accepted candidates",
++    "settings": "Exact original classify_geometry_rank and v3000_geometry; source hashes identify the oracle, not current main.",
++    "mol2000_sha256": "c9f4a7f53c618a3515c575d35e70179ee389028029d520adfa7eade68d91c829",
++    "mol3000_sha256": "1c3a16b4493e511d94c7e39ed099224a24d8f2029743239903ecb8006fe3c040"
++  },
++  "expected": {
++    "status": "Exact ranks, diagnostics, optional conformer point bits and graph annotations match frozen original; no tolerance change",
++    "coordinate_units": "angstrom",
++    "absolute_tolerance": 0
++  },
++  "sha256": "f8f09b5b207f8081840d7498f1a7d62a4818e2cd85f12c6733ea0523bd7e735d"
++}

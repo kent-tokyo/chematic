@@ -1,0 +1,34 @@
+block 1/21
+block 2/21
+block 3/21
+block 4/21
+block 5/21
+block 6/21
+block 7/21
+block 8/21
+block 9/21
+block 10/21
+block 11/21
+block 12/21
+block 13/21
+block 14/21
+Traceback (most recent call last):
+  File "/private/tmp/chematic-openbabel-ascii-source-20261015/scripts/bench_openbabel_v3000_throughput.py", line 172, in <module>
+    main()
+    ~~~~^^
+  File "/private/tmp/chematic-openbabel-ascii-source-20261015/scripts/bench_openbabel_v3000_throughput.py", line 153, in main
+    save()
+    ~~~~^^
+  File "/private/tmp/chematic-openbabel-ascii-source-20261015/scripts/bench_openbabel_v3000_throughput.py", line 141, in save
+    temporary.write_text(json.dumps(report, indent=2) + "\n")
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pathlib/_local.py", line 555, in write_text
+    return PathBase.write_text(self, data, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pathlib/_abc.py", line 651, in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pathlib/_local.py", line 537, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+OSError: [Errno 28] No space left on device: '/private/tmp/chematic-openbabel-ascii-20261015/paired21-chains.partial'

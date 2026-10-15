@@ -1,0 +1,22 @@
+{
+  "declared_before_timing": true,
+  "profiles": [
+    "0",
+    "5000",
+    "chains"
+  ],
+  "blocks": 21,
+  "repeats": 5,
+  "modes": [
+    "parse",
+    "write",
+    "roundtrip"
+  ],
+  "source_only_continuation_diagnostic": true,
+  "negative_policy": "One separate all-mode 21-block source-only follow-up per profile when any initial immediate-baseline interval is wholly below 1. Retain all initial and follow-up outcomes; no pooling or recursive retries.",
+  "strict_win": "semantic agreement, confidence lower > 1 and every block faster",
+  "scope": "Fixed exposed development inputs on one host. All records retained; mismatching Open Babel lanes unranked.",
+  "intended_improvement": "V3000 lexing: ASCII whitespace only on ASCII payloads without vertical tab, full Unicode fallback otherwise; all original fixed profiles retained",
+  "baseline_scope": "All eleven accepted unmerged source candidates, including private packed component facts; no rejected experiments",
+  "baseline_reuse": "None: fresh baseline executable before editing and fresh candidate target"
+}

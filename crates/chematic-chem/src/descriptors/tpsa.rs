@@ -185,6 +185,22 @@ pub(crate) fn descriptor_aromaticity(mol: &Molecule) -> DescriptorView<'_> {
     if chematic_perception::rdkit_parity_view_is_identity(mol) {
         return DescriptorView::Same(mol);
     }
+    let shared = chematic_perception::apply_aromaticity_rdkit_parity_shared(mol);
+    if let Ok(view) = shared.as_ref()
+        && view
+            .derived_if_computed::<Vec<bool>>(chematic_core::DerivedSlot::RdkitDativeBonds)
+            .is_some_and(|flags| !flags.iter().any(|&dative| dative))
+        && !view.bonds().any(|(_, bond)| {
+            bond.order == chematic_core::BondOrder::Triple
+                && view.atom(bond.atom1).aromatic
+                && view.atom(bond.atom2).aromatic
+        })
+    {
+        // This read-only view needs no descriptor-specific normalization,
+        // including the no-further-dative marker normally seeded on a copy.
+        // Externally seeded views without that marker keep the copy path.
+        return DescriptorView::Shared(shared);
+    }
     // Memoized on `mol`: TPSA, Crippen LogP/MR, HBA and friends all start from
     // the same perceived copy, and that copy carries its own SSSR cache.
     DescriptorView::Perceived(
@@ -218,6 +234,7 @@ pub(crate) fn descriptor_aromaticity(mol: &Molecule) -> DescriptorView<'_> {
 pub(crate) enum DescriptorView<'a> {
     Same(&'a Molecule),
     Perceived(std::sync::Arc<Molecule>),
+    Shared(std::sync::Arc<Result<Molecule, chematic_perception::AromaticityError>>),
 }
 
 impl std::ops::Deref for DescriptorView<'_> {
@@ -226,6 +243,9 @@ impl std::ops::Deref for DescriptorView<'_> {
         match self {
             DescriptorView::Same(m) => m,
             DescriptorView::Perceived(m) => m,
+            // safe: `Shared` is only constructed after checking `Ok` above;
+            // the immutable Arc result cannot change after that check.
+            DescriptorView::Shared(m) => m.as_ref().as_ref().expect("validated aromatic view"),
         }
     }
 }
@@ -290,6 +310,14 @@ pub fn rdkit_tpsa(mol: &Molecule) -> f64 {
 }
 
 fn rdkit_tpsa_impl(mol: &Molecule) -> f64 {
+    // This default model sums only N/O contributions. With neither element,
+    // the original fold adds only positive zeros, without needing perception.
+    if !mol
+        .atoms()
+        .any(|(_, atom)| matches!(atom.element.atomic_number(), 7 | 8))
+    {
+        return 0.0;
+    }
     let mol_arom = descriptor_aromaticity(mol);
     // RDKit's default excludes S/P. Compute only N/O instead of allocating a
     // full contribution vector and typing atoms whose values are discarded.
@@ -315,3 +343,11 @@ fn rdkit_tpsa_impl(mol: &Molecule) -> f64 {
         acc + contribution
     })
 }
+
+#[cfg(test)]
+#[path = "descriptor_view_tests.rs"]
+mod descriptor_view_tests;
+
+#[cfg(test)]
+#[path = "tpsa_zero_tests.rs"]
+mod tpsa_zero_tests;

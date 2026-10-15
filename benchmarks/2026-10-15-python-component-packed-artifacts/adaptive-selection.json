@@ -1,0 +1,12 @@
+{
+  "5000": {
+    "negative_initial_lanes": {},
+    "operations": [],
+    "policy": "One separate adaptive follow-up of 20 blocks. Retain all three modes and all outcomes. Do not pool or iterate."
+  },
+  "0": {
+    "negative_initial_lanes": {},
+    "operations": [],
+    "policy": "One separate adaptive follow-up of 20 blocks. Retain all three modes and all outcomes. Do not pool or iterate."
+  }
+}

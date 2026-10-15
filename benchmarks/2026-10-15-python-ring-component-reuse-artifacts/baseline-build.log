@@ -1,0 +1,142 @@
+🍹 Building a mixed python/rust project
+🐍 Found CPython 3.13 at /private/tmp/chematic-cycle-speed-20261014/env/bin/python
+🔗 Found pyo3 bindings
+📡 Using build options features from pyproject.toml
+💻 Using `MACOSX_DEPLOYMENT_TARGET=11.0` for aarch64-apple-darwin by default
+   Compiling proc-macro2 v1.0.107
+   Compiling quote v1.0.47
+   Compiling unicode-ident v1.0.24
+   Compiling smallvec v1.16.2
+   Compiling rustc-hash v2.1.3
+   Compiling autocfg v1.5.1
+   Compiling chematic-core v1.1.4 (/private/tmp/chematic-ring-component-source-20261015/crates/chematic-core)
+   Compiling simd-adler32 v0.3.10
+   Compiling arrayvec v0.7.8
+   Compiling libm v0.2.16
+   Compiling crc32fast v1.5.1
+   Compiling adler2 v2.0.1
+   Compiling crossbeam-utils v0.8.23
+   Compiling libc v0.2.189
+   Compiling target-lexicon v0.13.5
+   Compiling log v0.4.34
+   Compiling cfg-if v1.0.4
+   Compiling miniz_oxide v0.9.1
+   Compiling num-traits v0.2.19
+   Compiling crossbeam-epoch v0.9.21
+   Compiling serde_core v1.0.229
+   Compiling bitflags v2.13.1
+   Compiling crossbeam-deque v0.8.8
+   Compiling zmij v1.0.23
+   Compiling float-cmp v0.9.0
+   Compiling memchr v2.8.3
+   Compiling itoa v1.0.18
+   Compiling strict-num v0.1.1
+   Compiling pyo3-build-config v0.29.3
+   Compiling flate2 v1.1.10
+   Compiling syn v3.0.5
+   Compiling chematic-perception v1.1.4 (/private/tmp/chematic-ring-component-source-20261015/crates/chematic-perception)
+   Compiling miniz_oxide v0.8.9
+   Compiling fdeflate v0.3.7
+   Compiling serde_json v1.0.151
+   Compiling rayon-core v1.13.0
+   Compiling arrayref v0.3.9
+   Compiling serde v1.0.229
+   Compiling version_check v0.9.5
+   Compiling slotmap v1.1.1
+   Compiling core_maths v0.1.1
+   Compiling ttf-parser v0.25.1
+   Compiling either v1.18.0
+   Compiling color_quant v1.1.0
+   Compiling weezl v0.1.12
+   Compiling tinyvec_macros v0.1.1
+   Compiling tinyvec v1.13.2
+   Compiling rayon v1.12.0
+   Compiling pyo3-ffi v0.29.3
+   Compiling memmap2 v0.9.11
+   Compiling kurbo v0.11.3
+   Compiling polycool v0.4.0
+   Compiling hashbrown v0.17.1
+   Compiling bytemuck_derive v1.12.0
+   Compiling serde_derive v1.0.229
+   Compiling unicode-bidi-mirroring v0.4.0
+   Compiling unicode-ccc v0.4.0
+   Compiling unicode-script v0.5.8
+   Compiling byteorder-lite v0.1.0
+   Compiling unicode-properties v0.1.4
+   Compiling siphasher v1.0.3
+   Compiling bytemuck v1.25.2
+   Compiling chematic-smarts v1.1.4 (/private/tmp/chematic-ring-component-source-20261015/crates/chematic-smarts)
+   Compiling chematic-smiles v1.1.4 (/private/tmp/chematic-ring-component-source-20261015/crates/chematic-smiles)
+   Compiling font-types v0.11.3
+   Compiling read-fonts v0.39.2
+   Compiling tiny-skia-path v0.11.4
+   Compiling bitflags v1.3.2
+   Compiling equivalent v1.0.2
+   Compiling indexmap v2.14.2
+   Compiling png v0.17.16
+   Compiling rustybuzz v0.20.1
+   Compiling fontdb v0.23.0
+   Compiling svgtypes v0.15.3
+   Compiling chematic-cip v1.1.4 (/private/tmp/chematic-ring-component-source-20261015/crates/chematic-cip)
+   Compiling kurbo v0.13.1
+   Compiling png v0.18.1
+   Compiling simplecss v0.2.2
+   Compiling unicode-bidi v0.3.18
+   Compiling quick-error v2.0.1
+   Compiling base64 v0.22.1
+   Compiling data-url v0.3.2
+   Compiling chematic-rxn v1.1.4 (/private/tmp/chematic-ring-component-source-20261015/crates/chematic-rxn)
+   Compiling pico-args v0.5.0
+   Compiling zune-core v0.4.12
+   Compiling imagesize v0.13.0
+   Compiling roxmltree v0.20.0
+   Compiling zune-core v0.5.3
+   Compiling pxfm v0.1.30
+   Compiling once_cell v1.21.4
+   Compiling unicode-vo v0.1.0
+   Compiling xmlwriter v0.1.0
+   Compiling usvg v0.45.1
+   Compiling write-fonts v0.48.1
+   Compiling chematic-fp v1.1.4 (/private/tmp/chematic-ring-component-source-20261015/crates/chematic-fp)
+   Compiling moxcms v0.8.1
+   Compiling skrifa v0.42.1
+   Compiling zune-jpeg v0.5.15
+error: failed to build archive at `/private/tmp/chematic-openbabel-token-target-20261015/release/deps/libzune_jpeg-fd0441ac8a4755a4.rlib`: No space left on device (os error 28)
+
+error: could not compile `zune-jpeg` (lib) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
+error: failed to write to `/private/tmp/chematic-openbabel-token-target-20261015/release/deps/rmetatyRUrc/full.rmeta`: No space left on device (os error 28)
+
+error: could not compile `skrifa` (lib) due to 1 previous error
+error: failed to write to `/private/tmp/chematic-openbabel-token-target-20261015/release/deps/rmetaqMIPY7/full.rmeta`: No space left on device (os error 28)
+
+error: could not compile `moxcms` (lib) due to 1 previous error
+error: failed to write to `/private/tmp/chematic-openbabel-token-target-20261015/release/deps/rmetaXM7yj8/full.rmeta`: No space left on device (os error 28)
+
+error: could not compile `write-fonts` (lib) due to 1 previous error
+error: failed to write bytecode to /private/tmp/chematic-openbabel-token-target-20261015/release/deps/read_fonts-dddf8ef9c0afa2e9.read_fonts.52a38ca86aba2570-cgu.0.rcgu.bc: No space left on device (os error 28)
+
+error: could not compile `read-fonts` (lib) due to 1 previous error
+rustc-LLVM ERROR: IO failure on output stream: No space left on device
+error: could not compile `chematic-fp` (lib)
+
+Caused by:
+  process didn't exit successfully: `/Users/k_tanabe/.rustup/toolchains/stable-aarch64-apple-darwin/bin/rustc --crate-name chematic_fp --edition=2024 crates/chematic-fp/src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type lib --emit=dep-info,metadata,link -C opt-level=3 -C codegen-units=1 --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("diagnostics"))' -C metadata=cfb199bb0b4ac535 -C extra-filename=-a984e9c82f7567b3 --out-dir /private/tmp/chematic-openbabel-token-target-20261015/release/deps -C strip=debuginfo -L dependency=/private/tmp/chematic-openbabel-token-target-20261015/release/deps --extern chematic_cip=/private/tmp/chematic-openbabel-token-target-20261015/release/deps/libchematic_cip-e2b976945a120706.rmeta --extern chematic_core=/private/tmp/chematic-openbabel-token-target-20261015/release/deps/libchematic_core-b4ae0e1a35863b99.rmeta --extern chematic_perception=/private/tmp/chematic-openbabel-token-target-20261015/release/deps/libchematic_perception-09cafd3823ec95c4.rmeta --extern chematic_rxn=/private/tmp/chematic-openbabel-token-target-20261015/release/deps/libchematic_rxn-2216039865c7f7a4.rmeta --extern chematic_smarts=/private/tmp/chematic-openbabel-token-target-20261015/release/deps/libchematic_smarts-e2cff2eae24fe7f2.rmeta --extern chematic_smiles=/private/tmp/chematic-openbabel-token-target-20261015/release/deps/libchematic_smiles-fb5d96ea0dec866e.rmeta --extern rayon=/private/tmp/chematic-openbabel-token-target-20261015/release/deps/librayon-5dc43f1374bf3937.rmeta --extern rustc_hash=/private/tmp/chematic-openbabel-token-target-20261015/release/deps/librustc_hash-adda7e3f3d176776.rmeta --extern smallvec=/private/tmp/chematic-openbabel-token-target-20261015/release/deps/libsmallvec-2e5f87920895bccc.rmeta -C link-arg=-undefined -C link-arg=dynamic_lookup` (exit status: 101)
+rustc-LLVM ERROR: IO failure on output stream: No space left on device
+error: could not compile `chematic-perception` (lib)
+
+Caused by:
+  process didn't exit successfully: `/Users/k_tanabe/.rustup/toolchains/stable-aarch64-apple-darwin/bin/rustc --crate-name chematic_perception --edition=2024 crates/chematic-perception/src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type lib --emit=dep-info,metadata,link -C opt-level=3 -C codegen-units=1 --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("diagnostics"))' -C metadata=ddd6ac2bf342f269 -C extra-filename=-09cafd3823ec95c4 --out-dir /private/tmp/chematic-openbabel-token-target-20261015/release/deps -C strip=debuginfo -L dependency=/private/tmp/chematic-openbabel-token-target-20261015/release/deps --extern chematic_core=/private/tmp/chematic-openbabel-token-target-20261015/release/deps/libchematic_core-b4ae0e1a35863b99.rmeta --extern rustc_hash=/private/tmp/chematic-openbabel-token-target-20261015/release/deps/librustc_hash-adda7e3f3d176776.rmeta --extern smallvec=/private/tmp/chematic-openbabel-token-target-20261015/release/deps/libsmallvec-2e5f87920895bccc.rmeta -C link-arg=-undefined -C link-arg=dynamic_lookup` (exit status: 101)
+rustc-LLVM ERROR: IO failure on output stream: No space left on device
+error: could not compile `chematic-rxn` (lib)
+
+Caused by:
+  process didn't exit successfully: `/Users/k_tanabe/.rustup/toolchains/stable-aarch64-apple-darwin/bin/rustc --crate-name chematic_rxn --edition=2024 crates/chematic-rxn/src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type lib --emit=dep-info,metadata,link -C opt-level=3 -C codegen-units=1 --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("perf-instrumentation"))' -C metadata=103aba75c04258f7 -C extra-filename=-2216039865c7f7a4 --out-dir /private/tmp/chematic-openbabel-token-target-20261015/release/deps -C strip=debuginfo -L dependency=/private/tmp/chematic-openbabel-token-target-20261015/release/deps --extern chematic_core=/private/tmp/chematic-openbabel-token-target-20261015/release/deps/libchematic_core-b4ae0e1a35863b99.rmeta --extern chematic_perception=/private/tmp/chematic-openbabel-token-target-20261015/release/deps/libchematic_perception-09cafd3823ec95c4.rmeta --extern chematic_smarts=/private/tmp/chematic-openbabel-token-target-20261015/release/deps/libchematic_smarts-e2cff2eae24fe7f2.rmeta --extern chematic_smiles=/private/tmp/chematic-openbabel-token-target-20261015/release/deps/libchematic_smiles-fb5d96ea0dec866e.rmeta --extern rustc_hash=/private/tmp/chematic-openbabel-token-target-20261015/release/deps/librustc_hash-adda7e3f3d176776.rmeta --extern serde=/private/tmp/chematic-openbabel-token-target-20261015/release/deps/libserde-f32b1116e84d704f.rmeta --extern serde_json=/private/tmp/chematic-openbabel-token-target-20261015/release/deps/libserde_json-4867101a102de89a.rmeta -C link-arg=-undefined -C link-arg=dynamic_lookup` (exit status: 101)
+rustc-LLVM ERROR: IO failure on output stream: No space left on device
+error: could not compile `chematic-smiles` (lib)
+
+Caused by:
+  process didn't exit successfully: `/Users/k_tanabe/.rustup/toolchains/stable-aarch64-apple-darwin/bin/rustc --crate-name chematic_smiles --edition=2024 crates/chematic-smiles/src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type lib --emit=dep-info,metadata,link -C opt-level=3 -C codegen-units=1 --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("canonical-search-instrumentation"))' -C metadata=49278d3473d0f4c7 -C extra-filename=-fb5d96ea0dec866e --out-dir /private/tmp/chematic-openbabel-token-target-20261015/release/deps -C strip=debuginfo -L dependency=/private/tmp/chematic-openbabel-token-target-20261015/release/deps --extern chematic_core=/private/tmp/chematic-openbabel-token-target-20261015/release/deps/libchematic_core-b4ae0e1a35863b99.rmeta --extern chematic_perception=/private/tmp/chematic-openbabel-token-target-20261015/release/deps/libchematic_perception-09cafd3823ec95c4.rmeta --extern smallvec=/private/tmp/chematic-openbabel-token-target-20261015/release/deps/libsmallvec-2e5f87920895bccc.rmeta -C link-arg=-undefined -C link-arg=dynamic_lookup` (exit status: 101)
+💥 maturin failed
+  Caused by: Failed to build a native library through cargo
+  Caused by: Cargo build finished with "exit status: 101": `env -u CARGO CARGO_ENCODED_RUSTFLAGS="-C\u{1f}link-arg=-undefined\u{1f}-C\u{1f}link-arg=dynamic_lookup" MACOSX_DEPLOYMENT_TARGET="11.0" PYO3_BUILD_EXTENSION_MODULE="1" PYO3_ENVIRONMENT_SIGNATURE="cpython-3.13-64bit" PYO3_PYTHON="/private/tmp/chematic-cycle-speed-20261014/env/bin/python" PYTHON_SYS_EXECUTABLE="/private/tmp/chematic-cycle-speed-20261014/env/bin/python" "cargo" "rustc" "--profile" "release" "--features" "native-inchi" "--message-format" "json-render-diagnostics" "--manifest-path" "/private/tmp/chematic-ring-component-source-20261015/crates/chematic-py/Cargo.toml" "--lib" "--" "-C" "link-args=-Wl,-install_name,@rpath/chematic.cpython-313-darwin.so"`

@@ -1,0 +1,13 @@
+   Compiling chematic-mol v1.1.4 (/private/tmp/chematic-openbabel-lines-source-20261015/crates/chematic-mol)
+    Finished `release` profile [optimized] target(s) in 1m 05s
+     Running unittests src/lib.rs (/private/tmp/chematic-openbabel-lines-target-20261015/release/deps/chematic_mol-bd457fa3185cdc69)
+
+running 5 tests
+test mol3000::line_stream_tests::attributes_and_bad_numbers_keep_first_match_and_line_errors ... ok
+test mol3000::line_stream_tests::long_short_empty_and_continued_rows_keep_full_reports ... ok
+test mol3000::line_stream_tests::malformed_continuations_and_physical_errors_keep_precedence ... ok
+test mol3000::line_stream_tests::malformed_physical_and_logical_rows_keep_error_details ... ok
+test mol3000::line_stream_tests::continuation_at_every_logical_position_keeps_full_report ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 759 filtered out; finished in 0.01s
+

@@ -110,6 +110,48 @@ field.set_position_(0, [coords[0][0] + 0.01, *coords[0][1:]])
 status, optimized_energy = field.minimize_()
 ```
 
+## Molecular GNN input
+
+`Mol.ogb_graph_features()` returns the OGB categorical graph schema as NumPy
+`int64` arrays. It works with molecules from SMILES, SDF records, and MOL2.
+The keys are `node_feat` `(N, 9)`, `edge_index` `(2, 2E)`, `edge_feat`
+`(2E, 3)`, and `num_nodes`. The edges and their features have the same order,
+with one edge in each direction per bond. PyTorch and PyG are optional:
+
+```python
+import chematic
+
+for source_index, record, error in chematic.iter_sdf_checked("ligands.sdf"):
+    if error is not None:
+        print(f"Rejected SDF record {source_index}: {error}")
+        continue
+    assert record is not None
+    graph = record.ogb_graph_features()
+    # Attach record.name and record.properties() as labels or IDs as needed.
+    # With PyTorch Geometric installed:
+    # import torch
+    # from torch_geometric.data import Data
+    # data = Data(
+    #     x=torch.from_numpy(graph["node_feat"]),
+    #     edge_index=torch.from_numpy(graph["edge_index"]),
+    #     edge_attr=torch.from_numpy(graph["edge_feat"]),
+    #     num_nodes=graph["num_nodes"],
+    # )
+```
+
+The default removes RDKit-removable hydrogen graph atoms, following OGB's
+default SMILES conversion. Pass `remove_hs=False` to retain the atoms already
+present in the molecule; this option does not add hydrogens. Unsupported
+chemistry raises `ValueError`. This export contains categorical graph features,
+not coordinates or SD properties. `iter_sdf_checked` reports a rejected record
+at its source index. Its default reader limits are 1 GiB and 100,000 records;
+pass positive `max_input_bytes` and `max_records` overrides for larger files.
+Use `SdfRecord.ogb_graph_features()` for V2000 or V3000 SDF input: it retains
+explicitly unknown double-bond stereo (V2000 code 3 or V3000 `CFG=2`). The generic
+`Mol.ogb_graph_features()` has no record-level stereo diagnostic to read.
+For a 3D SDF, chirality inferred by RDKit from coordinates can differ from
+the chirality retained in `record.mol` from the CTAB wedge representation.
+
 ## Features
 
 - **Zero C/C++ dependencies** — pure Rust, no RDKit or OpenBabel required

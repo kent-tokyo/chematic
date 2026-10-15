@@ -1,0 +1,9 @@
+Combined writer candidate prepared after completed rounded-trial rejection
+Traceback (most recent call last):
+  File "/private/tmp/chematic-openbabel-count-zero-map-setup.py", line 54, in <module>
+    with (r/'validation-pipeline.log').open('w') as log:subprocess.run(['python3',str(r/'resume-validation.py')],stdout=log,stderr=subprocess.STDOUT,check=True)
+                                                        ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/subprocess.py", line 577, in run
+    raise CalledProcessError(retcode, process.args,
+                             output=stdout, stderr=stderr)
+subprocess.CalledProcessError: Command '['python3', '/private/tmp/chematic-openbabel-count-zero-map-20261015/resume-validation.py']' returned non-zero exit status 1.

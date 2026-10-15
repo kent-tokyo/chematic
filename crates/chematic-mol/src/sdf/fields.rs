@@ -1,6 +1,8 @@
+//! SD data fields following an SDF record's MOL CTAB.
+
 /// Parse SD data fields from the section after `M  END`.
 ///
-/// Each field starts with `> <FieldName>` on its own line.  The value is
+/// Each field starts with `> <FieldName>` on its own line. The value is
 /// everything on subsequent lines until a blank line (or end of input).
 pub(super) fn parse_sd_fields(data: &str) -> std::collections::HashMap<String, String> {
     let mut fields = std::collections::HashMap::new();

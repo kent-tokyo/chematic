@@ -1,0 +1,507 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -11,6 +11,9 @@
+ ## [Unreleased]
+ 
+ ### Performance
++
++- Use dense atom flags and bond orders during aromatic normalization to avoid
++  temporary hash tables, preserving hydrogen counts and stereo metadata.
+ 
+ - Keep E/Z small-ring searches in one inline visited queue for up to 32 atoms;
+   retain hashed membership for larger neighborhoods and the same breadth-first
+diff --git a/crates/chematic-perception/src/aromaticity/model.rs b/crates/chematic-perception/src/aromaticity/model.rs
+--- a/crates/chematic-perception/src/aromaticity/model.rs
++++ b/crates/chematic-perception/src/aromaticity/model.rs
+@@ -537,9 +537,9 @@
+     // doesn't confirm, which is exactly the authoritative variant's job,
+     // not this one's) -- the `|| atom.aromatic` term is what makes this
+     // function promote-only rather than fully authoritative.
+-    let atom_aromatic: FxHashSet<AtomIdx> = mol
++    let atom_aromatic: Vec<bool> = mol
+         .atoms()
+-        .filter_map(|(idx, atom)| (model.is_atom_aromatic(idx) || atom.aromatic).then_some(idx))
++        .map(|(idx, atom)| model.is_atom_aromatic(idx) || atom.aromatic)
+         .collect();
+     finish_molecule_with_flags(mol, &atom_aromatic, &bond_orders)
+ }
+@@ -574,14 +574,14 @@
+     model: &AromaticityModel,
+ ) -> Molecule {
+     let bond_orders = compute_bond_orders(mol, model);
+-    let mut atom_aromatic: FxHashSet<AtomIdx> = mol
++    let mut atom_aromatic: Vec<bool> = mol
+         .atoms()
+-        .filter_map(|(idx, _)| model.is_atom_aromatic(idx).then_some(idx))
++        .map(|(idx, _)| model.is_atom_aromatic(idx))
+         .collect();
+     for (bidx, bond) in mol.bonds() {
+-        if bond_orders[&bidx] == BondOrder::Aromatic {
+-            atom_aromatic.insert(bond.atom1);
+-            atom_aromatic.insert(bond.atom2);
++        if bond_orders[bidx.0 as usize] == BondOrder::Aromatic {
++            atom_aromatic[bond.atom1.0 as usize] = true;
++            atom_aromatic[bond.atom2.0 as usize] = true;
+         }
+     }
+     finish_molecule_with_flags(mol, &atom_aromatic, &bond_orders)
+@@ -594,15 +594,16 @@
+ /// [`build_molecule_from_model_authoritative`] -- this part of the
+ /// computation never differed between the two; only the ATOM flag's
+ /// promote-only-vs-authoritative decision does.
+-fn compute_bond_orders(mol: &Molecule, model: &AromaticityModel) -> FxHashMap<BondIdx, BondOrder> {
++// Molecule atom/bond iterators enumerate dense indices in order. Keep the
++// normalization facts aligned with those indices instead of hashing them twice.
++fn compute_bond_orders(mol: &Molecule, model: &AromaticityModel) -> Vec<BondOrder> {
+     mol.bonds()
+         .map(|(bidx, bond)| {
+-            let order = if model.is_bond_aromatic(bidx) {
++            if model.is_bond_aromatic(bidx) {
+                 BondOrder::Aromatic
+             } else {
+                 bond.order
+-            };
+-            (bidx, order)
++            }
+         })
+         .collect()
+ }
+@@ -615,8 +616,8 @@
+ /// identical either way.
+ fn finish_molecule_with_flags(
+     mol: &Molecule,
+-    atom_aromatic: &FxHashSet<AtomIdx>,
+-    bond_orders: &FxHashMap<BondIdx, BondOrder>,
++    atom_aromatic: &[bool],
++    bond_orders: &[BondOrder],
+ ) -> Molecule {
+     use chematic_core::{MoleculeBuilder, implicit_hcount};
+ 
+@@ -648,12 +649,12 @@
+     let mut builder = MoleculeBuilder::with_capacity(mol.atom_count(), mol.bond_count());
+     for (idx, atom) in mol.atoms() {
+         let mut a = atom.clone();
+-        a.aromatic = atom_aromatic.contains(&idx);
++        a.aromatic = atom_aromatic[idx.0 as usize];
+         builder.add_atom(a);
+     }
+     let mut stash = Vec::new();
+     for (bidx, bond) in mol.bonds() {
+-        let order = bond_orders[&bidx];
++        let order = bond_orders[bidx.0 as usize];
+         if let Ok(new_bidx) = builder.add_bond(bond.atom1, bond.atom2, order)
+             && order == BondOrder::Aromatic
+             && matches!(bond.order, BondOrder::Up | BondOrder::Down)
+@@ -720,3 +721,7 @@
+ #[cfg(test)]
+ #[path = "normalization_storage_tests.rs"]
+ mod normalization_storage_tests;
++
++#[cfg(test)]
++#[path = "indexed_normalization_tests.rs"]
++mod indexed_normalization_tests;
+diff --git a/crates/chematic-perception/src/aromaticity/normalization_storage_tests.rs b/crates/chematic-perception/src/aromaticity/normalization_storage_tests.rs
+--- a/crates/chematic-perception/src/aromaticity/normalization_storage_tests.rs
++++ b/crates/chematic-perception/src/aromaticity/normalization_storage_tests.rs
+@@ -1,6 +1,7 @@
+ //! Storage-only normalization oracle frozen from the immediate baseline.
+ //! All chemical inputs come from the existing licensed and pinned 10k corpus.
+ use super::*;
++use rustc_hash::FxHashMap;
+ 
+ fn reference_finish(
+     mol: &Molecule,
+@@ -149,13 +150,25 @@
+ }
+ 
+ fn compare_normalization(input: &Molecule, model: &AromaticityModel) -> usize {
+-    let orders = compute_bond_orders(input, model);
++    let orders: FxHashMap<BondIdx, BondOrder> = input
++        .bonds()
++        .map(|(idx, bond)| {
++            (
++                idx,
++                if model.is_bond_aromatic(idx) {
++                    BondOrder::Aromatic
++                } else {
++                    bond.order
++                },
++            )
++        })
++        .collect();
+     let flags = input
+         .atoms()
+         .filter_map(|(idx, atom)| (model.is_atom_aromatic(idx) || atom.aromatic).then_some(idx))
+         .collect();
+     let expected = reference_finish(input, &flags, &orders);
+-    let actual = finish_molecule_with_flags(input, &flags, &orders);
++    let actual = build_molecule_from_model(input, model);
+     compare_graph(&expected, &actual);
+     input
+         .atoms()
+diff --git a/crates/chematic-perception/src/aromaticity/indexed_normalization_tests.rs b/crates/chematic-perception/src/aromaticity/indexed_normalization_tests.rs
+new file mode 100644
+--- /dev/null
++++ b/crates/chematic-perception/src/aromaticity/indexed_normalization_tests.rs
+@@ -0,0 +1,360 @@
++//! Complete immediate-baseline normalization oracle; existing pinned corpora only.
++use super::*;
++use rustc_hash::FxHashMap;
++
++mod frozen {
++    use super::*;
++    pub(crate) fn build_molecule_from_model(mol: &Molecule, model: &AromaticityModel) -> Molecule {
++        let bond_orders = compute_bond_orders(mol, model);
++        // Promote-only: an atom ends up aromatic if the model confirms it OR it
++        // was ALREADY aromatic on `mol` to begin with (`atom.aromatic`) --
++        // never demoted. This is NOT the same as "assign from the model's set
++        // alone" (that would be a silent demotion of every atom the model
++        // doesn't confirm, which is exactly the authoritative variant's job,
++        // not this one's) -- the `|| atom.aromatic` term is what makes this
++        // function promote-only rather than fully authoritative.
++        let atom_aromatic: FxHashSet<AtomIdx> = mol
++            .atoms()
++            .filter_map(|(idx, atom)| (model.is_atom_aromatic(idx) || atom.aromatic).then_some(idx))
++            .collect();
++        finish_molecule_with_flags(mol, &atom_aromatic, &bond_orders)
++    }
++
++    /// Authoritative variant of [`build_molecule_from_model`]: the model is
++    /// authoritative in BOTH directions -- promote AND demote -- instead of only
++    /// ever promoting (see docs/rfcs/aromaticity_rdkit_parity_rfc.md section 1b/6). A
++    /// stale parser-set `aromatic: true` the model does not independently
++    /// confirm does not survive.
++    ///
++    /// The one deliberate exception: an atom incident to a bond that ends up
++    /// `Aromatic` in `bond_orders` is always kept aromatic too, even if the
++    /// model itself didn't confirm it. This is not a reintroduction of the
++    /// promote-only bug -- it only ever fires when `bond.order` was itself
++    /// still `Aromatic` going in and the model gave no verdict to demote it
++    /// with. There is no independently-computed Kekule value to fall back to in
++    /// that case, so leaving both the atom and its bond flagged aromatic
++    /// together is the "clean, well-defined fallback state" for that molecule.
++    /// This can never mask a genuine demotion: for every already-Kekulized
++    /// input, `bond.order` is a real Single/Double value and this fallback
++    /// never triggers.
++    ///
++    /// Backs [`apply_aromaticity_authoritative_experimental`] (opt-in, general
++    /// mechanism including the fused-diazine ring-fusion fix -- see
++    /// `assign_aromaticity_authoritative_experimental`) and
++    /// `apply_aromaticity_rdkit_parity_experimental` (already relies on this
++    /// behavior; a no-op distinction for it, since its input molecule is always
++    /// a fresh re-Kekulized clone with every atom's `aromatic` flag reset to
++    /// `false` first -- there is no stale flag to demote).
++    pub(crate) fn build_molecule_from_model_authoritative(
++        mol: &Molecule,
++        model: &AromaticityModel,
++    ) -> Molecule {
++        let bond_orders = compute_bond_orders(mol, model);
++        let mut atom_aromatic: FxHashSet<AtomIdx> = mol
++            .atoms()
++            .filter_map(|(idx, _)| model.is_atom_aromatic(idx).then_some(idx))
++            .collect();
++        for (bidx, bond) in mol.bonds() {
++            if bond_orders[&bidx] == BondOrder::Aromatic {
++                atom_aromatic.insert(bond.atom1);
++                atom_aromatic.insert(bond.atom2);
++            }
++        }
++        finish_molecule_with_flags(mol, &atom_aromatic, &bond_orders)
++    }
++
++    /// The model's per-bond verdict: `Aromatic` when the model confirms it,
++    /// `bond.order` otherwise (either already a genuine Kekule value, or, for a
++    /// caller that never Kekulized an unsupported/gap ring first, still
++    /// `Aromatic`). Shared by both [`build_molecule_from_model`] and
++    /// [`build_molecule_from_model_authoritative`] -- this part of the
++    /// computation never differed between the two; only the ATOM flag's
++    /// promote-only-vs-authoritative decision does.
++    fn compute_bond_orders(
++        mol: &Molecule,
++        model: &AromaticityModel,
++    ) -> FxHashMap<BondIdx, BondOrder> {
++        mol.bonds()
++            .map(|(bidx, bond)| {
++                let order = if model.is_bond_aromatic(bidx) {
++                    BondOrder::Aromatic
++                } else {
++                    bond.order
++                };
++                (bidx, order)
++            })
++            .collect()
++    }
++
++    /// Shared "finish" step for [`build_molecule_from_model`] and
++    /// [`build_molecule_from_model_authoritative`]: given final per-atom
++    /// aromatic flags and per-bond orders already decided (the only place the
++    /// two variants differ), builds the normalized [`Molecule`] -- implicit-H
++    /// preservation, bond-direction stashing, and stereo-metadata copying are
++    /// identical either way.
++    fn finish_molecule_with_flags(
++        mol: &Molecule,
++        atom_aromatic: &FxHashSet<AtomIdx>,
++        bond_orders: &FxHashMap<BondIdx, BondOrder>,
++    ) -> Molecule {
++        use chematic_core::{MoleculeBuilder, implicit_hcount};
++
++        // Implicit-H counts computed BEFORE bond orders are normalized below, for
++        // organic-subset atoms without an explicit bracket H count. Needed because
++        // normalizing every aromatic-model bond to `BondOrder::Aromatic` (below)
++        // discards the Kekule Single/Double pattern that distinguishes a
++        // lone-pair-donating "pyrrole-type" heteroatom (2 ring single bonds pre-
++        // normalization, needs 1 implicit H) from a "pyridine-type" one (1 ring
++        // single + 1 ring double, needs 0) -- post-normalization both look
++        // identical (aromatic, 2 aromatic-order ring bonds, no substituent), so
++        // `implicit_hcount`'s aromatic-path heuristic (correct for SMILES that
++        // was aromatic-written from the start, per OpenSMILES convention: bare
++        // aromatic `n` is pyridine-type, pyrrole-type is always `[nH]`) silently
++        // returns the wrong value for atoms that reach this function via
++        // Kekule-then-perceive instead. This under-counts molecular weight and
++        // formula, not just fingerprints/canonical SMILES.
++        let mut pre_h: Vec<Option<u8>> = mol
++            .atoms()
++            .map(|(idx, atom)| {
++                if atom.hydrogen_count.is_some() {
++                    None // already explicit; nothing to preserve
++                } else {
++                    Some(implicit_hcount(mol, idx))
++                }
++            })
++            .collect();
++
++        let mut builder = MoleculeBuilder::with_capacity(mol.atom_count(), mol.bond_count());
++        for (idx, atom) in mol.atoms() {
++            let mut a = atom.clone();
++            a.aromatic = atom_aromatic.contains(&idx);
++            builder.add_atom(a);
++        }
++        let mut stash = Vec::new();
++        for (bidx, bond) in mol.bonds() {
++            let order = bond_orders[&bidx];
++            if let Ok(new_bidx) = builder.add_bond(bond.atom1, bond.atom2, order)
++                && order == BondOrder::Aromatic
++                && matches!(bond.order, BondOrder::Up | BondOrder::Down)
++            {
++                // Kekule input promoted to Aromatic here loses its E/Z direction
++                // the same way the SMILES parser's aromatic-aromatic coercion
++                // does — stash it so an exocyclic double bond anchored on this
++                // ring bond still round-trips through the canonical writer.
++                stash.push((new_bidx, bond.order, bond.atom1));
++            }
++        }
++        // Atoms/bonds above are re-added in `mol`'s own enumeration order with
++        // none skipped, so indices line up 1:1 — safe to copy side-channel
++        // metadata wholesale. (This rebuild previously dropped stereo_groups and
++        // stereo_neighbor_order silently; closing that here too.)
++        builder.copy_r_groups_from(mol);
++        builder.copy_atom_tags_from(mol);
++        builder.copy_stereo_groups_from(mol);
++        builder.copy_stereo_from(mol);
++        builder.copy_bond_directions_from(mol);
++        // After the wholesale copy, which would otherwise erase them.
++        for (bidx, dir, anchor) in stash {
++            builder.set_bond_direction(bidx, dir);
++            builder.set_bond_direction_anchor(bidx, anchor);
++        }
++        let normalized = builder.build();
++
++        // Compare the pre-normalization implicit H against what the same
++        // (already-tested, unmodified) `implicit_hcount` computes on the
++        // normalized bonds; only atoms where normalization actually changed the
++        // answer get an explicit H frozen in. Benzene CH and pyridine-type N
++        // (heuristic already agrees) are left untouched -- no spurious bracket
++        // notation for atoms that didn't need it.
++        // Reuse the pre-normalization storage as an indexed patch map. Clearing
++        // unchanged entries avoids a second allocation and per-atom linear scans.
++        let mut needs_patch = false;
++        for (index, h) in pre_h.iter_mut().enumerate() {
++            *h = h.filter(|&pre| pre != implicit_hcount(&normalized, AtomIdx(index as u32)));
++            needs_patch |= h.is_some();
++        }
++        if !needs_patch {
++            return normalized;
++        }
++
++        let mut patched =
++            MoleculeBuilder::with_capacity(normalized.atom_count(), normalized.bond_count());
++        for (idx, atom) in normalized.atoms() {
++            let mut a = atom.clone();
++            if let Some(h) = pre_h[idx.0 as usize] {
++                a.hydrogen_count = Some(h);
++            }
++            patched.add_atom(a);
++        }
++        for (_bond_idx, bond) in normalized.bonds() {
++            let _ = patched.add_bond(bond.atom1, bond.atom2, bond.order);
++        }
++        patched.copy_stereo_groups_from(&normalized);
++        patched.copy_stereo_from(&normalized);
++        patched.copy_atom_tags_from(&normalized);
++        patched.copy_bond_directions_from(&normalized);
++        patched.build()
++    }
++}
++
++fn compare_graph(expected: &Molecule, actual: &Molecule) {
++    assert_eq!(actual.atom_count(), expected.atom_count());
++    assert_eq!(actual.bond_count(), expected.bond_count());
++    assert_eq!(actual.stereo_groups(), expected.stereo_groups());
++    assert_eq!(actual.rdkit_bond_order(), expected.rdkit_bond_order());
++    for group in 0..expected.stereo_groups().len() {
++        assert_eq!(
++            actual.stereo_group_bond_indices(group),
++            expected.stereo_group_bond_indices(group)
++        );
++    }
++    for (idx, atom) in expected.atoms() {
++        assert_eq!(actual.atom(idx), atom);
++        assert_eq!(actual.atom_tag(idx), expected.atom_tag(idx));
++        assert_eq!(
++            actual.smiles_ring_closure_count(idx),
++            expected.smiles_ring_closure_count(idx)
++        );
++        assert_eq!(actual.r_group_label(idx), expected.r_group_label(idx));
++        assert_eq!(
++            actual.neighbors(idx).collect::<Vec<_>>(),
++            expected.neighbors(idx).collect::<Vec<_>>()
++        );
++        assert_eq!(
++            actual.stereo_neighbor_order(idx),
++            expected.stereo_neighbor_order(idx)
++        );
++        assert_eq!(
++            chematic_core::implicit_hcount(actual, idx),
++            chematic_core::implicit_hcount(expected, idx)
++        );
++    }
++    for (idx, bond) in expected.bonds() {
++        assert_eq!(actual.bond(idx), bond);
++        assert_eq!(actual.bond_direction(idx), expected.bond_direction(idx));
++        assert_eq!(
++            actual.bond_direction_anchor(idx),
++            expected.bond_direction_anchor(idx)
++        );
++        assert_eq!(
++            actual.smiles_ring_closure_metadata(idx),
++            expected.smiles_ring_closure_metadata(idx)
++        );
++    }
++}
++
++fn compare_both(input: &Molecule, model: &AromaticityModel) {
++    compare_graph(
++        &frozen::build_molecule_from_model(input, model),
++        &build_molecule_from_model(input, model),
++    );
++    compare_graph(
++        &frozen::build_molecule_from_model_authoritative(input, model),
++        &build_molecule_from_model_authoritative(input, model),
++    );
++}
++
++#[test]
++fn indexed_normalization_matches_both_original_builders_on_pinned_corpora() {
++    let corpora = [
++        include_str!(concat!(
++            env!("CARGO_MANIFEST_DIR"),
++            "/../../validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi"
++        )),
++        include_str!(concat!(
++            env!("CARGO_MANIFEST_DIR"),
++            "/../../validation/cosmolkit_comparison/corpora/stress-v1.smi"
++        )),
++    ];
++    let mut rows = 0;
++    let mut comparisons = 0;
++    for corpus in corpora {
++        for line in corpus.lines().filter(|line| !line.trim().is_empty()) {
++            let input =
++                chematic_smiles::parse_template(line.split_whitespace().next().unwrap()).unwrap();
++            let kekulized = chematic_core::kekulize(&input)
++                .map(|k| chematic_core::apply_kekule(&input, &k))
++                .unwrap_or_else(|_| input.clone());
++            for view in [&input, &kekulized] {
++                for algorithm in [
++                    AromaticityAlgorithm::Huckel,
++                    AromaticityAlgorithm::RdkitLike,
++                ] {
++                    compare_both(view, &assign_aromaticity_ex(view, algorithm));
++                    comparisons += 2;
++                }
++            }
++            rows += 1;
++        }
++    }
++    assert_eq!(rows, 14072);
++    assert_eq!(comparisons, 112576);
++}
++
++#[test]
++fn indexed_normalization_preserves_metadata_and_authoritative_fallbacks() {
++    let mut inputs = vec![chematic_core::MoleculeBuilder::new().build()];
++    for smiles in [
++        "C1=CC=CC=C1",
++        "c1ccccc1",
++        "C1=Cc2ccccc2C1",
++        "O=C1NNC(=O)N1",
++        "[C@H](F)(Cl)C1=CC=CC=C1",
++        "C/C=C/C1=CC=CC=C1",
++        "[*:1]C1=CC=CC=C1",
++        "C1=C=CC=CC1",
++        "[O-][Cl](=O)(=O)=O",
++        "CO(C)[Cu]",
++    ] {
++        let mut input = chematic_smiles::parse_template(smiles).unwrap();
++        input.set_tag(AtomIdx(0), Some(23));
++        input.add_stereo_group_with_bonds(
++            chematic_core::StereoGroup::new(
++                chematic_core::StereoGroupKind::Or(9),
++                vec![AtomIdx(0)],
++            ),
++            vec![BondIdx(0)],
++        );
++        if input.atom(AtomIdx(0)).wildcard {
++            input.set_r_group(AtomIdx(0), chematic_core::RGroupLabel::unnumbered());
++        }
++        inputs.push(input.clone());
++        input.set_atom_aromatic(AtomIdx(0), true);
++        inputs.push(input.clone());
++        let first = input.bond(BondIdx(0)).clone();
++        input.remove_bond(BondIdx(0));
++        input
++            .add_bond(first.atom1, first.atom2, first.order)
++            .unwrap();
++        inputs.push(input);
++    }
++    for input in inputs {
++        for (atoms, bonds) in [
++            (FxHashSet::default(), FxHashSet::default()),
++            (
++                FxHashSet::default(),
++                input.bonds().map(|(idx, _)| idx).collect(),
++            ),
++            (
++                input.atoms().map(|(idx, _)| idx).collect(),
++                FxHashSet::default(),
++            ),
++            (
++                input
++                    .atoms()
++                    .filter_map(|(idx, _)| (idx.0 % 2 == 0).then_some(idx))
++                    .collect(),
++                input
++                    .bonds()
++                    .filter_map(|(idx, _)| (idx.0 % 2 == 0).then_some(idx))
++                    .collect(),
++            ),
++            (
++                [AtomIdx(u32::MAX)].into_iter().collect(),
++                [BondIdx(u32::MAX)].into_iter().collect(),
++            ),
++        ] {
++            compare_both(&input, &AromaticityModel::from_atom_bond_sets(atoms, bonds));
++        }
++    }
++}

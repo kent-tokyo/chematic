@@ -1,0 +1,2 @@
+{"ready": true, "pid": 18446, "offset": 0, "op": "labute_asa", "rows": 1000, "version": "1.1.4", "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f"}
+{"complete": true, "evaluations": 1687000, "checksum": "0x1.05766d5fe0a55p+28", "errors": 0}

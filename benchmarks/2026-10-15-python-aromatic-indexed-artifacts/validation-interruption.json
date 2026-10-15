@@ -1,0 +1,9 @@
+{
+  "stage": "native validation compilation",
+  "signal": "SIGTERM 15",
+  "cause": "external signal; exact sender unknown",
+  "no_tests_run_or_results_discarded": true,
+  "no_remaining_own_children": true,
+  "resume": "same source, same required tests, existing Cargo fingerprints",
+  "before_formal_timing": true
+}

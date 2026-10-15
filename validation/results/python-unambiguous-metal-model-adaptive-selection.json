@@ -1,0 +1,9 @@
+[
+  {
+    "offset": 0,
+    "ops": [
+      "labute_asa"
+    ],
+    "reason": "complete-matrix baseline-relative CI wholly below one; one separate adaptive 20-block follow-up, no pooling or recursive retries"
+  }
+]

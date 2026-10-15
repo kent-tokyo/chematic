@@ -1,0 +1,2 @@
+Bounded COUNTS-capacity candidate written
+Constructor compatibility restored; allocation deferred to a single ATOM transition

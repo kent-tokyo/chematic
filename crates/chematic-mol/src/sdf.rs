@@ -1,8 +1,8 @@
 //! SDF (Structure-Data File) reader.
 //!
-//! An SDF file contains one or more MOL V2000 blocks separated by `$$$$`
-//! delimiter lines.  Data-field sections between `M  END` and `$$$$` are
-//! accepted but ignored.
+//! An SDF file contains one or more MOL V2000 or V3000 blocks separated by `$$$$`
+//! delimiter lines. `SdfReader` ignores SD data fields; record readers retain
+//! fields between `M  END` and `$$$$`.
 
 use crate::error::MolParseError;
 use crate::mol2000::{
@@ -13,10 +13,12 @@ use chematic_core::{Coords3D, Molecule};
 use chematic_perception::{EzDirectionDiagnostic, StereoDiagnostic};
 
 mod dataset;
+mod ensemble;
 mod fields;
-use fields::parse_sd_fields;
 mod selection;
 pub use dataset::{SdfDataset, SdfRecordMetadata};
+pub use ensemble::{ConformerEnsemble, read_sdf_conformer_ensembles};
+use fields::parse_sd_fields;
 pub use selection::{SdfIndexedBatch, SdfSelectionError, SdfSelectionLimits};
 
 fn is_v3000_record(block: &str) -> bool {
@@ -26,11 +28,13 @@ fn is_v3000_record(block: &str) -> bool {
         .is_some_and(|line| line.trim_end().ends_with("V3000"))
 }
 
+// Search physical lines after the four-line MOL header. A title, comment or
+// SD value containing "M  END" is not a CTAB terminator.
 fn sdf_ctab_end(block: &str) -> Option<usize> {
     let mut end = 0;
     for (index, line) in block.split_inclusive('\n').enumerate() {
         end += line.len();
-        if index >= 4 && line.trim_start().starts_with("M  END") {
+        if index >= 4 && line.trim_end_matches(['\r', '\n']) == "M  END" {
             return Some(end);
         }
     }
@@ -374,105 +378,6 @@ impl<'a> Iterator for SdfRecordReader<'a> {
             }));
         }
     }
-}
-
-// ---------------------------------------------------------------------------
-// Conformer ensembles — bundle records sharing the same molecular graph
-// ---------------------------------------------------------------------------
-
-/// One group of SDF records that share the same molecular graph (see
-/// [`same_graph_identity`]) and each carry a real 3D conformer.
-///
-/// Records with no 3D conformer (`conformer.is_none()`, i.e. flagged 2D or
-/// flat -- see [`crate::mol2000::MolReadReport::conformer`]) are not part of
-/// any ensemble: this supplier is specifically about bundling repeated 3D
-/// conformers of "the same" molecule (e.g. `EmbedMultipleConfs` +
-/// `MolToMolBlock` per conformer, written as consecutive SDF records).
-pub struct ConformerEnsemble {
-    /// The molecular graph shared by every member (the first record's
-    /// `mol`; every other member's `mol` is checked equal by
-    /// [`same_graph_identity`] and then discarded, not stored again).
-    pub mol: Molecule,
-    /// Metadata from the first record in the group.
-    pub metadata: MolMetadata,
-    /// One conformer per member record, in file order.
-    pub conformers: Vec<Coords3D>,
-}
-
-/// Deliberately simple identity check: same atom count/order, same
-/// per-index `(element, charge, isotope)`, same bond list `(atom1, atom2,
-/// order)` in index order.
-///
-/// This is order-sensitive structural equality, NOT graph isomorphism or
-/// canonical-SMILES equality -- and that is intentional, not a shortcut
-/// taken for lack of time: it is correct for the actual use case this
-/// supplier targets (the same molecule written N times with different
-/// coordinates by the same embedding tool, which never reorders atoms or
-/// bonds between calls -- confirmed against RDKit's own
-/// `EmbedMultipleConfs` + per-conformer `MolToMolBlock`, see this crate's
-/// fixture tests). A more rigorous, reordering-tolerant identity layer is a
-/// separate, parallel workstream in the 3D Breakthrough Program (Agent B);
-/// this one is intentionally not that, and the Coordinator is expected to
-/// reconcile the two later.
-fn same_graph_identity(a: &Molecule, b: &Molecule) -> bool {
-    if a.atom_count() != b.atom_count() || a.bond_count() != b.bond_count() {
-        return false;
-    }
-    for ((_, atom_a), (_, atom_b)) in a.atoms().zip(b.atoms()) {
-        if atom_a.element != atom_b.element
-            || atom_a.charge != atom_b.charge
-            || atom_a.isotope != atom_b.isotope
-        {
-            return false;
-        }
-    }
-    for ((_, bond_a), (_, bond_b)) in a.bonds().zip(b.bonds()) {
-        if bond_a.atom1 != bond_b.atom1
-            || bond_a.atom2 != bond_b.atom2
-            || bond_a.order != bond_b.order
-        {
-            return false;
-        }
-    }
-    true
-}
-
-/// Parse an SDF string and group records that share the same molecular graph
-/// (see [`same_graph_identity`]) and each carry a real 3D conformer into
-/// [`ConformerEnsemble`]s.
-///
-/// Records with no 3D conformer are silently omitted from the result (this
-/// is specifically a *3D conformer* ensemble supplier, not a general SDF
-/// grouping utility). Grouping is order-independent within the file (a
-/// record is compared against every existing group's representative, not
-/// just its immediate predecessor), matching how real multi-conformer SDF
-/// exports are usually -- but not always -- written consecutively.
-///
-/// Stops and returns an error on the first parse failure, same as
-/// [`read_sdf_with_diagnostics`].
-pub fn read_sdf_conformer_ensembles(input: &str) -> Result<Vec<ConformerEnsemble>, MolParseError> {
-    let reports = crate::mol2000::read_sdf_with_diagnostics(input)?;
-    let mut ensembles: Vec<ConformerEnsemble> = Vec::new();
-
-    for report in reports {
-        let Some(conformer) = report.conformer else {
-            continue;
-        };
-        if let Some(existing) = ensembles
-            .iter_mut()
-            .find(|e| same_graph_identity(&e.mol, &report.mol))
-        {
-            existing.conformers.push(conformer);
-        } else {
-            ensembles.push(ConformerEnsemble {
-                mol: report.mol,
-                metadata: report.metadata,
-                conformers: vec![conformer],
-            });
-        }
-    }
-
-    Ok(ensembles)
 }
 
 // ---------------------------------------------------------------------------

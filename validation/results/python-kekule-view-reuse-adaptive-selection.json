@@ -1,0 +1,21 @@
+[
+  {
+    "offset": 0,
+    "ops": [
+      "labute_asa",
+      "maccs",
+      "morgan2_2048",
+      "morgan3_2048",
+      "tpsa"
+    ],
+    "reason": "complete-matrix baseline-relative CI wholly below one; one separate adaptive 20-block follow-up, no pooling or recursive retries"
+  },
+  {
+    "offset": 5000,
+    "ops": [
+      "morgan3_2048",
+      "num_rings"
+    ],
+    "reason": "complete-matrix baseline-relative CI wholly below one; one separate adaptive 20-block follow-up, no pooling or recursive retries"
+  }
+]

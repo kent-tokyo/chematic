@@ -1,0 +1,436 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -11,6 +11,9 @@
+ ## [Unreleased]
+ 
+ ### Performance
++
++- Split ordinary ASCII V3000 payloads with the byte whitespace iterator,
++  retaining Unicode tokenization for non-ASCII text and vertical tabs.
+ 
+ - Combine private aromatic-component root and count buffers into one allocation
+   with the same total number of integer elements, preserving component labels,
+diff --git a/crates/chematic-mol/src/mol3000.rs b/crates/chematic-mol/src/mol3000.rs
+--- a/crates/chematic-mol/src/mol3000.rs
++++ b/crates/chematic-mol/src/mol3000.rs
+@@ -1010,7 +1010,14 @@
+     let mut tokens = Vec::new();
+     for line in &logical_lines {
+         tokens.clear();
+-        tokens.extend(line.payload.split_whitespace());
++        // ASCII splitting has the same token boundaries except for vertical
++        // tab, which Rust excludes from ASCII whitespace. Retain the Unicode
++        // path for that character and for every non-ASCII payload.
++        if line.payload.is_ascii() && !line.payload.contains('\u{b}') {
++            tokens.extend(line.payload.split_ascii_whitespace());
++        } else {
++            tokens.extend(line.payload.split_whitespace());
++        }
+         parser.consume(line, &tokens)?;
+     }
+     finish_v3000_report(parser, metadata, line2)
+@@ -1373,3 +1380,7 @@
+ #[cfg(test)]
+ #[path = "mol3000/count_capacity_tests.rs"]
+ mod count_capacity_tests;
++
++#[cfg(test)]
++#[path = "mol3000/ascii_whitespace_tests.rs"]
++mod ascii_whitespace_tests;
+diff --git a/crates/chematic-mol/src/mol3000/ascii_whitespace_tests.rs b/crates/chematic-mol/src/mol3000/ascii_whitespace_tests.rs
+new file mode 100644
+--- /dev/null
++++ b/crates/chematic-mol/src/mol3000/ascii_whitespace_tests.rs
+@@ -0,0 +1,189 @@
++//! Frozen reader oracle; provenance and recipe in v3000-ascii-whitespace-v1.manifest.json.
++use super::*;
++
++fn reference_read(input: &str) -> Result<MolReadReport, MolParseError> {
++    let lines = validate_v3000_physical_lines(input)?;
++    let (metadata, line2) = v3000_metadata(&lines)?;
++    let logical_lines = collect_v30_lines(&lines);
++    let mut parser = V3000Parser::new();
++    parser.allocation_limit = logical_lines.len();
++    // Logical payloads live until the entire parse ends, including owned
++    // continuation text. Reuse only the token vector's storage; clear every
++    // row before borrowing that row's exact Unicode-whitespace tokens.
++    let mut tokens = Vec::new();
++    for line in &logical_lines {
++        tokens.clear();
++        tokens.extend(line.payload.split_whitespace());
++        parser.consume(line, &tokens)?;
++    }
++    finish_v3000_report(parser, metadata, line2)
++}
++
++fn compare(input: &str) {
++    let expected = reference_read(input);
++    let actual = read_mol_v3000_with_diagnostics(input);
++    match (expected, actual) {
++        (Err(left), Err(right)) => assert_eq!(format!("{left:?}"), format!("{right:?}")),
++        (Ok(left), Ok(right)) => {
++            assert_eq!(left.metadata, right.metadata);
++            assert_eq!(
++                left.mol
++                    .atoms()
++                    .map(|(idx, atom)| format!(
++                        "{idx:?}:{atom:?}:{:?}:{:?}:{:?}:{:?}",
++                        left.mol.stereo_neighbor_order(idx),
++                        left.mol.r_group_label(idx),
++                        left.mol.neighbors(idx).collect::<Vec<_>>(),
++                        left.mol.atom_tag(idx)
++                    ))
++                    .collect::<Vec<_>>(),
++                right
++                    .mol
++                    .atoms()
++                    .map(|(idx, atom)| format!(
++                        "{idx:?}:{atom:?}:{:?}:{:?}:{:?}:{:?}",
++                        right.mol.stereo_neighbor_order(idx),
++                        right.mol.r_group_label(idx),
++                        right.mol.neighbors(idx).collect::<Vec<_>>(),
++                        right.mol.atom_tag(idx)
++                    ))
++                    .collect::<Vec<_>>()
++            );
++            assert_eq!(
++                left.mol
++                    .bonds()
++                    .map(|pair| format!("{pair:?}"))
++                    .collect::<Vec<_>>(),
++                right
++                    .mol
++                    .bonds()
++                    .map(|pair| format!("{pair:?}"))
++                    .collect::<Vec<_>>()
++            );
++            assert_eq!(
++                left.coords
++                    .iter()
++                    .map(|(x, y)| [x.to_bits(), y.to_bits()])
++                    .collect::<Vec<_>>(),
++                right
++                    .coords
++                    .iter()
++                    .map(|(x, y)| [x.to_bits(), y.to_bits()])
++                    .collect::<Vec<_>>()
++            );
++            assert_eq!(
++                format!(
++                    "{:?}:{:?}:{:?}:{:?}:{:?}:{:?}:{:?}:{:?}",
++                    left.stereo_diagnostics,
++                    left.ez_diagnostics,
++                    left.conformer,
++                    left.coordinate_dimension,
++                    left.geometry_rank,
++                    left.stereo3d_diagnostics,
++                    left.square_planar_diagnostics,
++                    left.mol.stereo_groups()
++                ),
++                format!(
++                    "{:?}:{:?}:{:?}:{:?}:{:?}:{:?}:{:?}:{:?}",
++                    right.stereo_diagnostics,
++                    right.ez_diagnostics,
++                    right.conformer,
++                    right.coordinate_dimension,
++                    right.geometry_rank,
++                    right.stereo3d_diagnostics,
++                    right.square_planar_diagnostics,
++                    right.mol.stereo_groups()
++                )
++            );
++            assert_eq!(
++                write_mol_v3000(&left.mol, &left.metadata, &left.coords),
++                write_mol_v3000(&right.mol, &right.metadata, &right.coords)
++            );
++        }
++        _ => panic!("reader result changed"),
++    }
++}
++
++#[test]
++fn ascii_unicode_and_continued_reader_match_original() {
++    let original = include_str!(concat!(
++        env!("CARGO_MANIFEST_DIR"),
++        "/../../benchmarks/fixtures/ethanol.v3000"
++    ));
++    let recipe: serde_json::Value = serde_json::from_str(include_str!(concat!(
++        env!("CARGO_MANIFEST_DIR"),
++        "/../../validation/benchmark_corpora/v3000-ascii-whitespace-v1.recipe.json"
++    )))
++    .unwrap();
++    for codepoint in 0..=0x10ffff {
++        if let Some(character) = char::from_u32(codepoint)
++            && character.is_whitespace()
++        {
++            assert!(
++                recipe["separator_codepoints"]
++                    .as_array()
++                    .unwrap()
++                    .iter()
++                    .any(|v| v.as_u64() == Some(codepoint as u64))
++            );
++        }
++    }
++    let mut cases = 0;
++    let mut documents = vec![original.to_string()];
++    for bad in ["bad", "not-a-float"] {
++        let mut in_atoms = false;
++        let mut changed = false;
++        let mut document = String::new();
++        for line in original.lines() {
++            if line == "M  V30 BEGIN ATOM" {
++                in_atoms = true;
++            }
++            if in_atoms
++                && !changed
++                && line
++                    .strip_prefix(V30_PREFIX)
++                    .is_some_and(|p| p.as_bytes()[0].is_ascii_digit())
++            {
++                let mut fields: Vec<_> = line[V30_PREFIX.len()..].split_whitespace().collect();
++                fields[if bad == "bad" { 0 } else { 2 }] = bad;
++                document.push_str(V30_PREFIX);
++                document.push_str(&fields.join(" "));
++                changed = true;
++            } else {
++                document.push_str(line);
++            }
++            document.push('\n');
++        }
++        assert!(changed);
++        documents.push(document);
++    }
++    for document in documents {
++        for codepoint in recipe["separator_codepoints"].as_array().unwrap() {
++            let separator = char::from_u32(codepoint.as_u64().unwrap() as u32)
++                .unwrap()
++                .to_string();
++            for continued in [false, true] {
++                let mut input = String::new();
++                for line in document.lines() {
++                    if let Some(payload) = line.strip_prefix(V30_PREFIX) {
++                        input.push_str(V30_PREFIX);
++                        if continued && let Some((first, rest)) = payload.split_once(' ') {
++                            input.push_str(first);
++                            input.push_str("-\n");
++                            input.push_str(V30_PREFIX);
++                            input.push_str(&rest.replace(' ', &separator));
++                        } else {
++                            input.push_str(&payload.replace(' ', &separator));
++                        }
++                    } else {
++                        input.push_str(line);
++                    }
++                    input.push('\n');
++                }
++                compare(&input);
++                cases += 1;
++            }
++        }
++    }
++    assert_eq!(cases, recipe["expected_cases"].as_u64().unwrap());
++}
+diff --git a/validation/benchmark_corpora/v3000-ascii-whitespace-v1.recipe.json b/validation/benchmark_corpora/v3000-ascii-whitespace-v1.recipe.json
+new file mode 100644
+--- /dev/null
++++ b/validation/benchmark_corpora/v3000-ascii-whitespace-v1.recipe.json
+@@ -0,0 +1,164 @@
++{
++  "fixture": "benchmarks/fixtures/ethanol.v3000",
++  "separator_codepoints": [
++    0,
++    1,
++    2,
++    3,
++    4,
++    5,
++    6,
++    7,
++    8,
++    9,
++    10,
++    11,
++    12,
++    13,
++    14,
++    15,
++    16,
++    17,
++    18,
++    19,
++    20,
++    21,
++    22,
++    23,
++    24,
++    25,
++    26,
++    27,
++    28,
++    29,
++    30,
++    31,
++    32,
++    33,
++    34,
++    35,
++    36,
++    37,
++    38,
++    39,
++    40,
++    41,
++    42,
++    43,
++    44,
++    45,
++    46,
++    47,
++    48,
++    49,
++    50,
++    51,
++    52,
++    53,
++    54,
++    55,
++    56,
++    57,
++    58,
++    59,
++    60,
++    61,
++    62,
++    63,
++    64,
++    65,
++    66,
++    67,
++    68,
++    69,
++    70,
++    71,
++    72,
++    73,
++    74,
++    75,
++    76,
++    77,
++    78,
++    79,
++    80,
++    81,
++    82,
++    83,
++    84,
++    85,
++    86,
++    87,
++    88,
++    89,
++    90,
++    91,
++    92,
++    93,
++    94,
++    95,
++    96,
++    97,
++    98,
++    99,
++    100,
++    101,
++    102,
++    103,
++    104,
++    105,
++    106,
++    107,
++    108,
++    109,
++    110,
++    111,
++    112,
++    113,
++    114,
++    115,
++    116,
++    117,
++    118,
++    119,
++    120,
++    121,
++    122,
++    123,
++    124,
++    125,
++    126,
++    127,
++    133,
++    160,
++    5760,
++    8192,
++    8193,
++    8194,
++    8195,
++    8196,
++    8197,
++    8198,
++    8199,
++    8200,
++    8201,
++    8202,
++    8232,
++    8233,
++    8239,
++    8287,
++    12288,
++    8203,
++    65279
++  ],
++  "framing": [
++    "direct",
++    "continued"
++  ],
++  "document_variants": [
++    "original",
++    "invalid_atom_index",
++    "invalid_coordinate"
++  ],
++  "expected_cases": 894
++}
+diff --git a/validation/benchmark_corpora/v3000-ascii-whitespace-v1.manifest.json b/validation/benchmark_corpora/v3000-ascii-whitespace-v1.manifest.json
+new file mode 100644
+--- /dev/null
++++ b/validation/benchmark_corpora/v3000-ascii-whitespace-v1.manifest.json
+@@ -0,0 +1,28 @@
++{
++  "id": "v3000-ascii-whitespace-v1",
++  "path": "validation/benchmark_corpora/v3000-ascii-whitespace-v1.recipe.json",
++  "sha256": "75c0b305c719e9c43aac1d245439c9ff026e03e2daa035363e5f4aa82c34876c",
++  "provenance": {
++    "source": "Original token-separator recipe over the existing project ethanol V3000 fixture; no new molecular records or third-party data",
++    "generated": "2026-10-15",
++    "source_path": "benchmarks/fixtures/ethanol.v3000",
++    "source_sha256": "64ac11b3de1c186deae555d54d6a47e7f3c72607ef0a90b0d93f467496bbd3ad",
++    "transformation": "Each separator replaces spaces after the exact V30 prefix. Repeat with continuations and malformed atom index/coordinate fields. Original headers and chemical records remain."
++  },
++  "license": "MIT OR Apache-2.0",
++  "redistribution": {
++    "status": "allowed",
++    "rationale": "Project-authored syntax recipe and existing project fixture"
++  },
++  "minimization": "All ASCII characters, all remaining Unicode whitespace, and two Unicode non-whitespace boundaries; one existing ethanol record suffices for tokenization and typed-error comparisons. Broad chemistry remains in the unchanged 2064-record corpus.",
++  "oracle": {
++    "name": "Frozen original read_mol_v3000_with_diagnostics with split_whitespace",
++    "version": "source 1.1.4 plus eleven accepted source candidates",
++    "mol3000_sha256": "6ef4f438e3f9b442057208e120e6763e66de8315b6c3dcebb44b4184b0f12e79"
++  },
++  "expected": {
++    "cases": 894,
++    "status": "Exact typed errors or full indexed molecular fields, coordinate bits, metadata, geometry/stereo diagnostics and rewrite bytes equal original",
++    "absolute_tolerance": 0
++  }
++}

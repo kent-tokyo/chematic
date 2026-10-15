@@ -1,0 +1,137 @@
+{
+  "source_archive_exact": true,
+  "baseline_reconstruction_exact": true,
+  "candidate_file_count": 10057,
+  "baseline_file_count": 10054,
+  "native_tests": {
+    "passed": 848,
+    "failed": 0,
+    "ignored": 0
+  },
+  "source_parse_and_rewrite_equality": {
+    "0": {
+      "source_parse_snapshots_equal": true,
+      "snapshot_sha256": {
+        "baseline": "e2fce68d8c33616317f46397cf79ee877ef856460a35b84a622ddff1d8eced74",
+        "candidate": "e2fce68d8c33616317f46397cf79ee877ef856460a35b84a622ddff1d8eced74"
+      },
+      "rewrite_sha256": {
+        "baseline": "73a24d6d52f15900af0b221e21310367c01278f93f0de4189be8d3d01c61f254",
+        "candidate": "73a24d6d52f15900af0b221e21310367c01278f93f0de4189be8d3d01c61f254",
+        "openbabel": "baf8443fd3d15a0e500daf8e0a16a6f6369fd84228ca097aeab1134c2af6e47c"
+      }
+    },
+    "5000": {
+      "source_parse_snapshots_equal": true,
+      "snapshot_sha256": {
+        "baseline": "7fa169eebb0d112936fd4e135d08702eb1150faa6791111f52792c51d504d67d",
+        "candidate": "7fa169eebb0d112936fd4e135d08702eb1150faa6791111f52792c51d504d67d"
+      },
+      "rewrite_sha256": {
+        "baseline": "405cf9062ef1fe3697b478cdeaa453425546d233d60b220f73725beee68f7cdc",
+        "candidate": "405cf9062ef1fe3697b478cdeaa453425546d233d60b220f73725beee68f7cdc",
+        "openbabel": "39e78582f8c10afcb1926bf90af9ca4ac41b1d6e2f22d6994779a736dc2d2280"
+      }
+    },
+    "chains": {
+      "source_parse_snapshots_equal": true,
+      "snapshot_sha256": {
+        "baseline": "5add029fe89ad301067f53ee404c87ebb54221733bf4c5280de463eabe5e1550",
+        "candidate": "5add029fe89ad301067f53ee404c87ebb54221733bf4c5280de463eabe5e1550"
+      },
+      "rewrite_sha256": {
+        "baseline": "b67b1fb9cdb4c2e8977a34dd309a13ebc035050ba7e41473114c62f2c7d5ca95",
+        "candidate": "b67b1fb9cdb4c2e8977a34dd309a13ebc035050ba7e41473114c62f2c7d5ca95",
+        "openbabel": "a94abf38b23eee73778fe9d54e775fc4caa4bc5eeb4b3c3632d04dda007d4e00"
+      }
+    }
+  },
+  "continued_input_equivalence": {
+    "all_original_and_continued_source_snapshots_and_rewrites_byte_identical": true,
+    "sha256": {
+      "continued-baseline.snapshot": "5add029fe89ad301067f53ee404c87ebb54221733bf4c5280de463eabe5e1550",
+      "original-candidate.molblocks": "b67b1fb9cdb4c2e8977a34dd309a13ebc035050ba7e41473114c62f2c7d5ca95",
+      "continued-candidate.snapshot": "5add029fe89ad301067f53ee404c87ebb54221733bf4c5280de463eabe5e1550",
+      "original-baseline.molblocks": "b67b1fb9cdb4c2e8977a34dd309a13ebc035050ba7e41473114c62f2c7d5ca95",
+      "continued-candidate.molblocks": "b67b1fb9cdb4c2e8977a34dd309a13ebc035050ba7e41473114c62f2c7d5ca95",
+      "original-baseline.snapshot": "5add029fe89ad301067f53ee404c87ebb54221733bf4c5280de463eabe5e1550",
+      "continued-baseline.molblocks": "b67b1fb9cdb4c2e8977a34dd309a13ebc035050ba7e41473114c62f2c7d5ca95",
+      "original-candidate.snapshot": "5add029fe89ad301067f53ee404c87ebb54221733bf4c5280de463eabe5e1550"
+    },
+    "records": 64
+  },
+  "adaptive_selection": {
+    "policy": "One separate 21-block two-source-arm follow-up per selected profile, all three modes; retain initial results; no pooling or recursive retries.",
+    "profiles": {
+      "0": {
+        "negative_initial_lanes": {
+          "write": {
+            "median": 0.976,
+            "ci95": [
+              0.971,
+              0.983
+            ],
+            "winning_blocks": 2,
+            "blocks": 21
+          }
+        },
+        "corpus": "/private/tmp/chematic-openbabel-v3000-20261014/corpus-0.molblocks",
+        "records": 1000,
+        "gate": {
+          "source_snapshot_sha256": {
+            "baseline": "e2fce68d8c33616317f46397cf79ee877ef856460a35b84a622ddff1d8eced74",
+            "candidate": "e2fce68d8c33616317f46397cf79ee877ef856460a35b84a622ddff1d8eced74"
+          },
+          "byte_identical_rewrites": true,
+          "source_parse_snapshots_equal": true
+        }
+      },
+      "5000": {
+        "negative_initial_lanes": {
+          "write": {
+            "median": 0.98,
+            "ci95": [
+              0.972,
+              0.99
+            ],
+            "winning_blocks": 2,
+            "blocks": 21
+          }
+        },
+        "corpus": "/private/tmp/chematic-openbabel-v3000-20261014/corpus-5000.molblocks",
+        "records": 1000,
+        "gate": {
+          "source_snapshot_sha256": {
+            "baseline": "7fa169eebb0d112936fd4e135d08702eb1150faa6791111f52792c51d504d67d",
+            "candidate": "7fa169eebb0d112936fd4e135d08702eb1150faa6791111f52792c51d504d67d"
+          },
+          "byte_identical_rewrites": true,
+          "source_parse_snapshots_equal": true
+        }
+      },
+      "chains": {
+        "negative_initial_lanes": {
+          "write": {
+            "median": 0.978,
+            "ci95": [
+              0.963,
+              0.992
+            ],
+            "winning_blocks": 4,
+            "blocks": 21
+          }
+        },
+        "corpus": "/private/tmp/chematic-openbabel-v3000-20261014/corpus-chains.molblocks",
+        "records": 64,
+        "gate": {
+          "source_snapshot_sha256": {
+            "baseline": "5add029fe89ad301067f53ee404c87ebb54221733bf4c5280de463eabe5e1550",
+            "candidate": "5add029fe89ad301067f53ee404c87ebb54221733bf4c5280de463eabe5e1550"
+          },
+          "byte_identical_rewrites": true,
+          "source_parse_snapshots_equal": true
+        }
+      }
+    }
+  }
+}

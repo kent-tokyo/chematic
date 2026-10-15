@@ -1,0 +1,10 @@
+0 complete {'parse': {'median': 1.004, 'ci95': [0.995, 1.008], 'winning_blocks': 12, 'blocks': 21}, 'write': {'median': 1.019, 'ci95': [1.012, 1.031], 'winning_blocks': 18, 'blocks': 21}, 'roundtrip': {'median': 0.996, 'ci95': [0.993, 1.003], 'winning_blocks': 9, 'blocks': 21}}
+5000 complete {'parse': {'median': 0.992, 'ci95': [0.936, 1.013], 'winning_blocks': 9, 'blocks': 21}, 'write': {'median': 1.024, 'ci95': [0.94, 1.066], 'winning_blocks': 13, 'blocks': 21}, 'roundtrip': {'median': 1.036, 'ci95': [1.009, 1.042], 'winning_blocks': 15, 'blocks': 21}}
+Traceback (most recent call last):
+  File "/private/tmp/chematic-openbabel-ascii-20261015/run_formal.py", line 10, in <module>
+    with (r/f'paired21-{profile}.log').open('w') as f:subprocess.run(cmd,cwd=s,stdout=f,stderr=subprocess.STDOUT,check=True)
+                                                      ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/subprocess.py", line 577, in run
+    raise CalledProcessError(retcode, process.args,
+                             output=stdout, stderr=stderr)
+subprocess.CalledProcessError: Command '['/private/tmp/chematic-cycle-speed-20261014/env/bin/python', '/private/tmp/chematic-openbabel-ascii-source-20261015/scripts/bench_openbabel_v3000_throughput.py', '--baseline', '/private/tmp/chematic-openbabel-ascii-20261015/baseline-v3000', '--candidate', '/private/tmp/chematic-openbabel-ascii-20261015/candidate-v3000', '--openbabel', '/private/tmp/chematic-openbabel-v3000-20261014/openbabel-v3000', '--corpus', '/private/tmp/chematic-openbabel-v3000-20261014/corpus-chains.molblocks', '--records', '64', '--blocks', '21', '--repeats', '5', '--source-manifest', '/private/tmp/chematic-openbabel-ascii-20261015/source-manifest.json', '--output', '/private/tmp/chematic-openbabel-ascii-20261015/paired21-chains.json']' returned non-zero exit status 1.

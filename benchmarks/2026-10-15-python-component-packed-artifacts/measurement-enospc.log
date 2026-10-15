@@ -1,0 +1,9 @@
+freeze passed
+Traceback (most recent call last):
+  File "/private/tmp/chematic-component-packed-20261015/measure.py", line 11, in <module>
+    with (r/(stage+'.log')).open('w') as f:subprocess.run(['python3',str(r/(stage+'.py'))],stdout=f,stderr=subprocess.STDOUT,check=True)
+                                           ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/subprocess.py", line 577, in run
+    raise CalledProcessError(retcode, process.args,
+                             output=stdout, stderr=stderr)
+subprocess.CalledProcessError: Command '['python3', '/private/tmp/chematic-component-packed-20261015/run-frontiers.py']' returned non-zero exit status 1.

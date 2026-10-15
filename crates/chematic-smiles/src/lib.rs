@@ -60,14 +60,15 @@ pub use error::SmilesError;
 pub use parser::{SmilesParseLimits, parse, parse_template, parse_with_limits};
 pub use random_smiles::{random_smiles, random_smiles_vect};
 pub use rdkit::{
-    InchiOutputAtom, InchiOutputStereo0D, RdkitAlignment, RdkitAtomEnvironment,
+    InchiOutputAtom, InchiOutputStereo0D, OgbGraphFeatures, RdkitAlignment, RdkitAtomEnvironment,
     RdkitAtomEnvironmentLimits, RdkitChemistryProblem, RdkitCleanupEdits, RdkitHashFunction,
     RdkitLegacyStereo, RdkitMol2Molecule, RdkitMolBlock, RdkitMolBlockAtom, RdkitMolBlockBond,
     RdkitMolView, RdkitPathLimits, RdkitPathParams, RdkitPdbMolecule, RdkitSanitizedModel,
     RdkitSmilesError, RdkitSmilesParams, RdkitTautomerEnumeration, RdkitTautomerStatus,
-    RdkitViewAtom, RdkitViewBond, Transform3D, rdkit_2d_coords, rdkit_added_hs_molecule,
-    rdkit_addhs_first_pattern, rdkit_adjacency_matrix, rdkit_align_mol, rdkit_align_points,
-    rdkit_all_conformer_best_rms, rdkit_all_conformer_best_rms_to_ref, rdkit_atom_environment,
+    RdkitViewAtom, RdkitViewBond, Transform3D, ogb_graph_features, ogb_graph_features_with_options,
+    rdkit_2d_coords, rdkit_added_hs_molecule, rdkit_addhs_first_pattern, rdkit_adjacency_matrix,
+    rdkit_align_mol, rdkit_align_points, rdkit_all_conformer_best_rms,
+    rdkit_all_conformer_best_rms_to_ref, rdkit_atom_environment,
     rdkit_atom_environment_with_limits, rdkit_atom_stereocenter_counts, rdkit_best_rms,
     rdkit_calc_rms, rdkit_canonical_smiles, rdkit_canonical_tautomer, rdkit_chiral_centers,
     rdkit_cleanup_edits, rdkit_crippen_contribs, rdkit_crippen_contribs_no_hs,

@@ -1,0 +1,25 @@
+{
+  "initial_profiles": {
+    "0": {
+      "complete": true,
+      "blocks": 21
+    },
+    "5000": {
+      "complete": true,
+      "blocks": 21
+    },
+    "chains": {
+      "complete": true,
+      "blocks": 21
+    }
+  },
+  "continued_blocks": 21,
+  "adaptive_followup_profiles": [
+    "0",
+    "5000"
+  ],
+  "adaptive_blocks_each": 21,
+  "no_pooled_samples": true,
+  "native_collection_interrupted": false,
+  "validation_format_repair": "Initial fmt check failed before compilation. Original failure log retained; only modified files formatted; all unchanged source hashes verified."
+}

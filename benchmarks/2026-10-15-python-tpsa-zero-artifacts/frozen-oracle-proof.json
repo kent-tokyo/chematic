@@ -1,0 +1,6 @@
+{
+  "complete_immediate_baseline_default_tpsa_body": true,
+  "only_function_name_and_rustfmt_difference": true,
+  "formatted_sha256": "7174117a0e6ab5ccf8a35eac9e182b7d23e0c41610e654a3b30fa4aceef37593",
+  "calls_new_guard": false
+}

@@ -1043,6 +1043,19 @@ class Mol:
         """
         ...
 
+    def ogb_graph_features(self, remove_hs: bool = True) -> dict[str, ndarray | int]:
+        """Return an OGB-compatible categorical graph for this molecule.
+
+        ``node_feat`` has shape ``(N, 9)``, ``edge_index`` has shape
+        ``(2, 2E)``, and ``edge_feat`` has shape ``(2E, 3)``. All arrays
+        have dtype ``int64``; ``num_nodes`` is an integer. Edges are
+        emitted in both directions. The default removes hydrogen graph
+        atoms as OGB's ``smiles2graph`` does. Pass ``remove_hs=False`` to
+        retain them. Coordinate-derived 3D stereo from SDF is not included.
+        Unsupported chemistry raises ``ValueError``.
+        """
+        ...
+
     # -- Fingerprints --------------------------------------------------------
 
     def ecfp4(self) -> bytes:
@@ -4455,6 +4468,15 @@ class SdfRecord:
     mol: Mol
     name: str
 
+    def ogb_graph_features(self, remove_hs: bool = True) -> dict[str, ndarray | int]:
+        """OGB graph, retaining V2000 code-3 or V3000 CFG=2 double-bond stereo.
+
+        The output has the same keys, shapes, and dtype as
+        :meth:`Mol.ogb_graph_features`. Coordinate-derived 3D chirality is
+        not included.
+        """
+        ...
+
     @property
     def smiles(self) -> str:
         """Canonical SMILES of the molecule."""
@@ -4532,6 +4554,12 @@ class SdfIter:
     def __next__(self) -> SdfRecord: ...
     def __len__(self) -> int: ...
 
+class SdfCheckedIter:
+    """Stream SDF records with zero-based indices and parse errors."""
+
+    def __iter__(self) -> Iterator[tuple[int, Optional[SdfRecord], Optional[str]]]: ...
+    def __next__(self) -> tuple[int, Optional[SdfRecord], Optional[str]]: ...
+
 def iter_sdf(path: str) -> SdfIter:
     """Lazily iterate over records in an SDF file.
 
@@ -4539,6 +4567,24 @@ def iter_sdf(path: str) -> SdfIter:
 
         for record in chematic.iter_sdf("library.sdf"):
             print(record.name, record.mol.mw)
+    """
+    ...
+
+def iter_sdf_checked(
+    path: str,
+    *,
+    max_input_bytes: Optional[int] = None,
+    max_record_bytes: Optional[int] = None,
+    max_line_bytes: Optional[int] = None,
+    max_records: Optional[int] = None,
+) -> SdfCheckedIter:
+    """Yield ``(index, record, error)`` for every non-empty SDF record.
+
+    Malformed records have ``record=None`` and an error message. Opening
+    failures raise ``IOError``; read errors are yielded and end the stream.
+    Indices are zero-based source record positions.
+    Positive limit overrides can be set for larger inputs; defaults are
+    1 GiB total, 16 MiB per record and line, and 100,000 records.
     """
     ...
 
