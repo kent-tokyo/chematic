@@ -176,14 +176,8 @@ impl<'a> Parser<'a> {
 
     fn parse(&mut self) -> Result<QueryMolecule, SmartsError> {
         let mut mol = QueryMolecule::new();
-        // open_rings maps ring-closure-number →
-        // (atom_idx, Optional<BondQuery>, lexical adjacency position).
-        //
-        // Keeping the position of the opening ring digit matters for
-        // tetrahedral SMARTS: `@`/`@@` is relative to neighbour encounter
-        // order, and the closing atom may not be parsed until much later.
+        // Preserve ring-opening order for tetrahedral `@`/`@@` parity.
         let mut open_rings: HashMap<u8, (usize, Option<BondQuery>, usize)> = HashMap::new();
-
         self.parse_chain(&mut mol, None, None, &mut open_rings)?;
         // `.` separates disconnected components (e.g. RDKit QED alert
         // `F.F.F.F`): each component matches independently, atoms distinct.
@@ -333,22 +327,14 @@ impl<'a> Parser<'a> {
         open_rings: &mut HashMap<u8, (usize, Option<BondQuery>, usize)>,
     ) -> Result<(), SmartsError> {
         if let Some((open_atom, open_bond, open_position)) = open_rings.remove(&ring_num) {
-            // Resolve the bond type.
             let bond = match (open_bond, ring_bond) {
                 (Some(a), Some(b)) if a == b => a,
-                (Some(_), Some(_)) => {
-                    // Conflicting ring bond specifications — use Any as a fallback.
-                    BondQuery::Any
-                }
+                (Some(_), Some(_)) => BondQuery::Any,
                 (Some(b), None) | (None, Some(b)) => b,
                 (None, None) => BondQuery::Any,
             };
             mol.add_bond(open_atom, current, bond);
-            // `add_bond` appends at both endpoints. At the closing endpoint
-            // that is the lexical position of the ring digit. At the opening
-            // endpoint the digit was seen earlier, so move only that adjacency
-            // entry back to the recorded position. Graph semantics do not
-            // change; this preserves the order needed for stereo parity.
+            // `add_bond` appends; restore the opening endpoint's lexical order.
             let open_adj = &mut mol.adj[open_atom];
             let entry = open_adj
                 .pop()
@@ -360,8 +346,7 @@ impl<'a> Parser<'a> {
         Ok(())
     }
 
-    /// Parse a ring closure number (single digit or `%nn`) and an optional
-    /// leading bond query (already consumed before calling this).
+    /// Parse a ring number and its optional, already-consumed bond query.
     fn parse_ring_closure_num(
         &mut self,
         prefix_bond: Option<BondQuery>,
