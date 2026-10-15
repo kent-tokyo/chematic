@@ -1,0 +1,30 @@
+{
+  "rdkit": "2025.09.3",
+  "source_rows": 938,
+  "formats": {
+    "v2000": {
+      "counts": {
+        "records": 938,
+        "source_invalid": 0,
+        "mol_invalid": 0,
+        "connectivity_diff": 0,
+        "stereo_diff": 0,
+        "same": 938
+      },
+      "examples": [],
+      "sha256": "a826b1d3094e071cc3a42b074f3bc52c2c08d5e93cd80d54f1f163abaf285513"
+    },
+    "v3000": {
+      "counts": {
+        "records": 938,
+        "source_invalid": 0,
+        "mol_invalid": 0,
+        "connectivity_diff": 0,
+        "stereo_diff": 0,
+        "same": 938
+      },
+      "examples": [],
+      "sha256": "5a8eeae7ef28ac435470cd938941119484e41ab1c008c35fb05f0f1763e3c0ad"
+    }
+  }
+}

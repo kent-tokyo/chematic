@@ -18,10 +18,13 @@ RDKit.js 10k; the separate stress corpus retains one weaker native canonical
 SMILES round-trip result. This is source-build evidence, not a universal or
 published-package parity claim. The latest
 published-package chemistry and speed comparison packet is pinned to
-**v1.0.30** against RDKit 2026.03.6. A separate v1.1.3 Python artifact packet
-now covers exact public wheels on hosted Linux x86-64, macOS arm64, macOS
-x86-64 and Windows x86-64. It is an output-validation packet, not a replacement
-for the older paired speed record or evidence for npm/WASM and crates.io.
+**v1.0.42** against RDKit 2026.09.1. Earlier dated records cover v1.0.30 and
+v1.0.36 packages plus later source evidence. v1.0.42 release channels and
+the macOS arm64 chemistry/A6 packet are verified; other published platforms
+remain separate runs. A separate v1.1.3 Python artifact packet covers exact
+public wheels on hosted Linux x86-64, macOS arm64, macOS x86-64 and Windows
+x86-64. It is an output-validation packet, not evidence for npm/WASM,
+crates.io, or a replacement for the version-pinned speed record.
 
 | Lane | Recorded result | What it does not show |
 |---|---|---|

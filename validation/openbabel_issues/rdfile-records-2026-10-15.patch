@@ -1,0 +1,1728 @@
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index a37f1f9..d2909fd 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -220,6 +220,7 @@ jobs:
+           - { package: chematic-chem, target: stereo_group_alternatives }
+           - { package: chematic-mol, target: gro_contract }
+           - { package: chematic-mol, target: turbomole_contract }
++          - { package: chematic-mol, target: rdfile_contract }
+           - { package: chematic-mol, target: qcschema }
+           - { package: chematic-mol, target: square_planar_mol_io }
+           - { package: chematic-mol, target: stereo2d_ez_reader_integration }
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index d1fd56b..3d7e0cc 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -12,6 +12,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
+ 
+ ### Added
+ 
++- Added checked RDFile v1 records in Rust/Python, retaining embedded MOL/RXN
++  payloads, registry references and ordered data fields with explicit SMILES projection.
++
+ - Added bounded correlated stereo-group alternatives in Rust/Python, expanding
+   AND/OR groups without separating their atom and geometric-bond members.
+ 
+diff --git a/crates/chematic-mol/src/lib.rs b/crates/chematic-mol/src/lib.rs
+index ef8516c..7afa68a 100644
+--- a/crates/chematic-mol/src/lib.rs
++++ b/crates/chematic-mol/src/lib.rs
+@@ -48,6 +48,7 @@ pub mod pqr;
+ pub mod pqr_pdbqt;
+ pub mod protein;
+ pub mod qcschema;
++pub mod rdfile;
+ pub mod record;
+ pub mod rxn;
+ pub mod sdf;
+@@ -269,3 +270,9 @@ pub use turbomole::{
+     TURBOMOLE_BOHR_ANGSTROM, TurbomoleAtom, TurbomoleError, TurbomoleGeometry,
+     TurbomoleParseLimits, parse_turbomole, parse_turbomole_with_limits, write_turbomole,
+ };
++
++pub use rdfile::{
++    RdfileData, RdfileDocument, RdfileError, RdfileKind, RdfileParseLimits, RdfileRecord,
++    RdfileWriteOptions, parse_rdfile, parse_rdfile_with_limits, write_rdfile,
++    write_rdfile_with_options,
++};
+diff --git a/crates/chematic-mol/src/rdfile.rs b/crates/chematic-mol/src/rdfile.rs
+new file mode 100644
+index 0000000..d31dd27
+--- /dev/null
++++ b/crates/chematic-mol/src/rdfile.rs
+@@ -0,0 +1,117 @@
++//! Typed RDFile v1 records, independently implemented from CTfile 2026 Ch. 11.
++//! Embedded V2000 RXN and V2000/V3000 MOL structures reuse existing parsers.
++use serde::{Deserialize, Serialize};
++mod reader;
++mod writer;
++pub use reader::{parse_rdfile, parse_rdfile_with_limits};
++pub use writer::{write_rdfile, write_rdfile_with_options};
++
++/// Select spec folding or the explicit unwrapped-data interchange profile.
++#[derive(Debug, Clone, Copy)]
++pub struct RdfileWriteOptions {
++    pub wrap_data: bool,
++}
++impl Default for RdfileWriteOptions {
++    fn default() -> Self {
++        Self { wrap_data: true }
++    }
++}
++
++#[derive(Debug, Clone, Copy)]
++pub struct RdfileParseLimits {
++    pub max_input_bytes: usize,
++    pub max_line_len: usize,
++    pub max_records: usize,
++    pub max_fields_per_record: usize,
++    pub max_reaction_components: usize,
++}
++impl Default for RdfileParseLimits {
++    fn default() -> Self {
++        Self {
++            max_input_bytes: 64 << 20,
++            max_line_len: 1 << 20,
++            max_records: 10_000,
++            max_fields_per_record: 1_000,
++            max_reaction_components: 1_000,
++        }
++    }
++}
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub struct RdfileError {
++    /// One-based source line, or zero for document/write validation.
++    pub line: usize,
++    pub detail: String,
++}
++impl core::fmt::Display for RdfileError {
++    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
++        write!(f, "RDFile line {}: {}", self.line, self.detail)
++    }
++}
++impl std::error::Error for RdfileError {}
++fn error(line: usize, detail: impl Into<String>) -> RdfileError {
++    RdfileError {
++        line,
++        detail: detail.into(),
++    }
++}
++#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "snake_case")]
++pub enum RdfileKind {
++    Molecule,
++    Reaction,
++}
++#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++pub struct RdfileData {
++    pub name: String,
++    /// Literal text, including significant spaces, blank lines and duplicates.
++    /// Database field types are unavailable; numbers/references remain strings.
++    pub value: String,
++}
++#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++pub struct RdfileRecord {
++    pub kind: RdfileKind,
++    /// Decimal text, preserving leading zeros; no registry lookup is performed.
++    pub internal_registry: Option<String>,
++    pub external_registry: Option<String>,
++    /// Exact embedded MOL/RXN bytes as UTF-8, or None for reference-only records.
++    pub structure: Option<String>,
++    /// Ordered fields; duplicate names are never collapsed into a map.
++    pub data: Vec<RdfileData>,
++}
++impl RdfileRecord {
++    /// Explicit graph projection. Returns None for unresolved registry references.
++    /// Coordinates and fields remain in this record; they are not in SMILES.
++    pub fn smiles(&self) -> Result<Option<String>, RdfileError> {
++        let Some(block) = &self.structure else {
++            return Ok(None);
++        };
++        let smiles = match self.kind {
++            RdfileKind::Molecule => {
++                let v3000 = block.lines().nth(3).is_some_and(|s| s.contains("V3000"));
++                let parsed = if v3000 {
++                    crate::mol3000::parse_mol_v3000(block)
++                } else {
++                    crate::mol2000::parse_mol(block)
++                };
++                let (mol, _) = parsed.map_err(|e| error(0, e.to_string()))?;
++                chematic_smiles::canonical_smiles(&mol)
++            }
++            RdfileKind::Reaction => {
++                let reaction = crate::parse_rxn_file(block).map_err(|e| error(0, e.to_string()))?;
++                chematic_rxn::write_reaction(&reaction)
++            }
++        };
++        Ok(Some(smiles))
++    }
++}
++#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++pub struct RdfileDocument {
++    pub date_comment: String,
++    pub records: Vec<RdfileRecord>,
++    /// Original complete input. Canonical writing uses current fields instead.
++    #[serde(default)]
++    pub source_text: String,
++}
+diff --git a/crates/chematic-mol/src/rdfile/reader.rs b/crates/chematic-mol/src/rdfile/reader.rs
+new file mode 100644
+index 0000000..ebe3d2a
+--- /dev/null
++++ b/crates/chematic-mol/src/rdfile/reader.rs
+@@ -0,0 +1,314 @@
++use super::*;
++
++struct Cursor<'a> {
++    text: &'a str,
++    offset: usize,
++    line: usize,
++}
++impl<'a> Cursor<'a> {
++    fn peek(&self) -> Option<&'a str> {
++        if self.offset == self.text.len() {
++            return None;
++        }
++        Some(
++            self.text[self.offset..]
++                .split('\n')
++                .next()
++                .unwrap()
++                .trim_end_matches('\r'),
++        )
++    }
++    fn take(&mut self) -> Result<&'a str, RdfileError> {
++        let row = self
++            .peek()
++            .ok_or_else(|| error(self.line, "unexpected end of input"))?;
++        self.offset += self.text[self.offset..]
++            .find('\n')
++            .map_or(self.text.len() - self.offset, |i| i + 1);
++        self.line += 1;
++        Ok(row)
++    }
++}
++fn argument<'a>(row: &'a str, keyword: &str) -> Option<&'a str> {
++    let rest = row.strip_prefix(keyword)?;
++    if rest.is_empty() {
++        Some("")
++    } else if rest.starts_with([' ', '\t']) {
++        Some(rest.trim_start_matches([' ', '\t']))
++    } else {
++        None
++    }
++}
++fn record_start(row: &str) -> bool {
++    ["$MFMT", "$RFMT", "$MIREG", "$MEREG", "$RIREG", "$REREG"]
++        .iter()
++        .any(|k| argument(row, k).is_some())
++}
++fn short_header(row: &str, line: usize) -> Result<(), RdfileError> {
++    if row.len() > 80 || !row.is_ascii() || row.contains(['\r', '\n', '\0']) {
++        return Err(error(
++            line,
++            "identifier/date/field header must be ASCII within 80 columns",
++        ));
++    }
++    Ok(())
++}
++fn identifier(row: &str, line: usize) -> Result<RdfileRecord, RdfileError> {
++    short_header(row, line)?;
++    for (keyword, kind, embedded, internal) in [
++        ("$MFMT", RdfileKind::Molecule, true, false),
++        ("$RFMT", RdfileKind::Reaction, true, false),
++        ("$MIREG", RdfileKind::Molecule, false, true),
++        ("$MEREG", RdfileKind::Molecule, false, false),
++        ("$RIREG", RdfileKind::Reaction, false, true),
++        ("$REREG", RdfileKind::Reaction, false, false),
++    ] {
++        let Some(mut value) = argument(row, keyword) else {
++            continue;
++        };
++        let mut is_internal = internal;
++        let mut registry_present = !embedded;
++        if embedded && !value.is_empty() {
++            registry_present = true;
++            let (i, e) = match kind {
++                RdfileKind::Molecule => ("$MIREG", "$MEREG"),
++                RdfileKind::Reaction => ("$RIREG", "$REREG"),
++            };
++            if let Some(v) = argument(value, i) {
++                is_internal = true;
++                value = v;
++            } else if let Some(v) = argument(value, e) {
++                value = v;
++            } else {
++                return Err(error(line, "unsupported embedded registry identifier"));
++            }
++            if value.contains('$') {
++                return Err(error(
++                    line,
++                    "only one registry identifier per record is supported",
++                ));
++            }
++        }
++        if registry_present
++            && (value.is_empty() || is_internal && !value.bytes().all(|b| b.is_ascii_digit()))
++        {
++            return Err(error(
++                line,
++                "registry reference requires a nonempty external or decimal internal number",
++            ));
++        }
++        let mut record = RdfileRecord {
++            kind,
++            internal_registry: None,
++            external_registry: None,
++            structure: None,
++            data: Vec::new(),
++        };
++        if !value.is_empty() {
++            if is_internal {
++                record.internal_registry = Some(value.to_owned());
++            } else {
++                record.external_registry = Some(value.to_owned());
++            }
++        }
++        return Ok(record);
++    }
++    Err(error(
++        line,
++        "expected a molecule or reaction record identifier",
++    ))
++}
++fn mol_block<'a>(cursor: &mut Cursor<'a>) -> Result<&'a str, RdfileError> {
++    let start = cursor.offset;
++    for _ in 0..4 {
++        cursor.take()?;
++    }
++    loop {
++        let row = cursor.take()?;
++        if row.trim_end() == "M  END" {
++            break;
++        }
++        if row.starts_with('$') {
++            return Err(error(
++                cursor.line - 1,
++                "missing MOL terminator before RDFile keyword",
++            ));
++        }
++    }
++    Ok(&cursor.text[start..cursor.offset])
++}
++fn rxn_block<'a>(
++    cursor: &mut Cursor<'a>,
++    limits: &RdfileParseLimits,
++) -> Result<&'a str, RdfileError> {
++    let start = cursor.offset;
++    if cursor.take()? != "$RXN" {
++        return Err(error(
++            cursor.line - 1,
++            "only embedded RXN V2000 is supported",
++        ));
++    }
++    for _ in 0..3 {
++        cursor.take()?;
++    }
++    let counts = cursor.take()?;
++    let fields: Vec<_> = counts.split_whitespace().collect();
++    if !(fields.len() == 2 || fields.len() == 3 && fields[2] == "0") {
++        return Err(error(
++            cursor.line - 1,
++            "RXN requires exactly reactant and product counts; agents are unsupported",
++        ));
++    }
++    let n = fields[..2]
++        .iter()
++        .try_fold(0usize, |n, s| {
++            s.parse::<usize>().ok().and_then(|v| n.checked_add(v))
++        })
++        .ok_or_else(|| error(cursor.line - 1, "invalid RXN component count"))?;
++    if n > limits.max_reaction_components {
++        return Err(error(cursor.line - 1, "reaction component limit exceeded"));
++    }
++    for _ in 0..n {
++        if cursor.take()? != "$MOL" {
++            return Err(error(cursor.line - 1, "expected RXN $MOL component marker"));
++        }
++        let block = mol_block(cursor)?;
++        if block.lines().nth(3).is_some_and(|s| s.contains("V3000")) {
++            return Err(error(
++                cursor.line - 1,
++                "RXN V2000 components must be V2000 MOL blocks",
++            ));
++        }
++    }
++    Ok(&cursor.text[start..cursor.offset])
++}
++fn datum_line(row: &str, line: usize) -> Result<(&str, bool), RdfileError> {
++    if !row.is_ascii() {
++        return Err(error(line, "data rows must be ASCII"));
++    }
++    // Exact 81-column '+' rows use CTfile folding. Longer plain rows are a
++    // common unwrapped-data extension (including Indigo output), kept verbatim.
++    let join = row.len() == 81 && row.as_bytes()[80] == b'+';
++    Ok((if join { &row[..80] } else { row }, join))
++}
++fn data(cursor: &mut Cursor<'_>) -> Result<RdfileData, RdfileError> {
++    let line = cursor.line;
++    let header = cursor.take()?;
++    short_header(header, line)?;
++    let name = argument(header, "$DTYPE")
++        .filter(|s| !s.is_empty())
++        .ok_or_else(|| error(line, "empty data field name"))?
++        .to_owned();
++    let first = cursor.take()?;
++    let (first, mut join) = datum_line(first, cursor.line - 1)?;
++    let value = argument(first, "$DATUM")
++        .ok_or_else(|| error(cursor.line - 1, "$DTYPE must be followed by $DATUM"))?;
++    if value.starts_with("$MFMT") {
++        return Err(error(
++            cursor.line - 1,
++            "embedded molecules inside $DATUM are unsupported",
++        ));
++    }
++    let mut value = value.to_owned();
++    while let Some(row) = cursor.peek() {
++        if row.starts_with('$') {
++            if join {
++                return Err(error(
++                    cursor.line,
++                    "missing data continuation before keyword",
++                ));
++            }
++            if argument(row, "$DTYPE").is_none() && !record_start(row) {
++                return Err(error(cursor.line, "unsupported keyword in data"));
++            }
++            break;
++        }
++        let (row, next_join) = datum_line(row, cursor.line)?;
++        if !join {
++            value.push('\n');
++        }
++        value.push_str(row);
++        join = next_join;
++        cursor.take()?;
++    }
++    if join {
++        return Err(error(cursor.line, "missing final data continuation"));
++    }
++    Ok(RdfileData { name, value })
++}
++
++pub fn parse_rdfile(text: &str) -> Result<RdfileDocument, RdfileError> {
++    parse_rdfile_with_limits(text, &RdfileParseLimits::default())
++}
++/// Checked in-memory RDFile v1. Source text and embedded blocks retain their
++/// original bytes; ASCII data fields join documented column-81 continuations.
++pub fn parse_rdfile_with_limits(
++    text: &str,
++    limits: &RdfileParseLimits,
++) -> Result<RdfileDocument, RdfileError> {
++    if text.len() > limits.max_input_bytes {
++        return Err(error(0, "input byte limit exceeded"));
++    }
++    if text.contains('\0') {
++        return Err(error(0, "NUL bytes are unsupported"));
++    }
++    for (i, line) in text.lines().enumerate() {
++        if line.len() > limits.max_line_len {
++            return Err(error(i + 1, "physical line length limit exceeded"));
++        }
++    }
++    let mut cursor = Cursor {
++        text,
++        offset: 0,
++        line: 1,
++    };
++    if cursor.take()? != "$RDFILE 1" {
++        return Err(error(1, "expected $RDFILE 1"));
++    }
++    let date = cursor.take()?;
++    short_header(date, 2)?;
++    let date_comment = argument(date, "$DATM")
++        .ok_or_else(|| error(2, "missing $DATM"))?
++        .to_owned();
++    let mut records = Vec::new();
++    while let Some(row) = cursor.peek() {
++        if records.len() >= limits.max_records {
++            return Err(error(cursor.line, "record count limit exceeded"));
++        }
++        let line = cursor.line;
++        let embedded = argument(row, "$MFMT").is_some() || argument(row, "$RFMT").is_some();
++        let mut record = identifier(cursor.take()?, line)?;
++        if embedded {
++            let block = match record.kind {
++                RdfileKind::Molecule => mol_block(&mut cursor)?,
++                RdfileKind::Reaction => rxn_block(&mut cursor, limits)?,
++            };
++            record.structure = Some(block.to_owned());
++            record
++                .smiles()
++                .map_err(|e| error(line, format!("invalid embedded structure: {e}")))?;
++        }
++        while cursor
++            .peek()
++            .is_some_and(|s| argument(s, "$DTYPE").is_some())
++        {
++            if record.data.len() >= limits.max_fields_per_record {
++                return Err(error(cursor.line, "data-field count limit exceeded"));
++            }
++            record
++                .data
++                .try_reserve(1)
++                .map_err(|_| error(cursor.line, "allocation failed"))?;
++            record.data.push(data(&mut cursor)?);
++        }
++        records
++            .try_reserve(1)
++            .map_err(|_| error(line, "allocation failed"))?;
++        records.push(record);
++    }
++    Ok(RdfileDocument {
++        date_comment,
++        records,
++        source_text: text.to_owned(),
++    })
++}
+diff --git a/crates/chematic-mol/src/rdfile/writer.rs b/crates/chematic-mol/src/rdfile/writer.rs
+new file mode 100644
+index 0000000..fee4790
+--- /dev/null
++++ b/crates/chematic-mol/src/rdfile/writer.rs
+@@ -0,0 +1,187 @@
++use super::*;
++
++fn scalar(s: &str, nonempty: bool) -> Result<(), RdfileError> {
++    if !s.is_ascii() || s.contains(['\n', '\r', '\0']) || nonempty && s.is_empty() {
++        return Err(error(
++            0,
++            "header fields must be single-line ASCII with a nonempty identifier",
++        ));
++    }
++    Ok(())
++}
++fn header(out: &mut String, keyword: &str, value: &str) -> Result<(), RdfileError> {
++    scalar(value, false)?;
++    let line = if value.is_empty() {
++        keyword.to_owned()
++    } else {
++        format!("{keyword} {value}")
++    };
++    if line.len() > 80 {
++        return Err(error(0, "header exceeds supported 80-column layout"));
++    }
++    out.push_str(&line);
++    out.push('\n');
++    Ok(())
++}
++fn datum(out: &mut String, value: &str, wrap_data: bool) -> Result<(), RdfileError> {
++    if !value.is_ascii() || value.contains(['\r', '\0']) {
++        return Err(error(0, "data values must be ASCII text with LF newlines"));
++    }
++    for (i, line) in value.split('\n').enumerate() {
++        if i > 0 && line.starts_with('$') {
++            return Err(error(
++                0,
++                "data continuation cannot begin with a reserved '$' keyword",
++            ));
++        }
++        let physical = if i == 0 {
++            format!("$DATUM {line}")
++        } else {
++            line.to_owned()
++        };
++        let mut remaining = physical.as_str();
++        while wrap_data && remaining.len() > 80 {
++            out.push_str(&remaining[..80]);
++            out.push_str("+\n");
++            remaining = &remaining[80..];
++            if remaining.starts_with('$') {
++                return Err(error(
++                    0,
++                    "wrapped data would collide with an RDFile keyword",
++                ));
++            }
++        }
++        out.push_str(remaining);
++        out.push('\n');
++    }
++    Ok(())
++}
++fn output_size(
++    document: &RdfileDocument,
++    limits: &RdfileParseLimits,
++) -> Result<usize, RdfileError> {
++    let mut estimate = 32usize.saturating_add(document.date_comment.len());
++    for record in &document.records {
++        if record.data.len() > limits.max_fields_per_record {
++            return Err(error(0, "data-field count limit exceeded"));
++        }
++        for size in [
++            record.structure.as_ref().map_or(0, String::len),
++            record.internal_registry.as_ref().map_or(0, String::len),
++            record.external_registry.as_ref().map_or(0, String::len),
++            64,
++        ] {
++            estimate = estimate.saturating_add(size);
++        }
++        for field in &record.data {
++            estimate = estimate
++                .saturating_add(field.name.len())
++                .saturating_add(field.value.len())
++                .saturating_add(field.value.len() / 80 * 2)
++                .saturating_add(24);
++        }
++        if estimate > limits.max_input_bytes {
++            return Err(error(0, "output byte limit exceeded"));
++        }
++    }
++    if estimate > limits.max_input_bytes {
++        return Err(error(0, "output byte limit exceeded"));
++    }
++    Ok(estimate)
++}
++
++fn write_record(
++    out: &mut String,
++    record: &RdfileRecord,
++    options: RdfileWriteOptions,
++) -> Result<(), RdfileError> {
++    if record.internal_registry.is_some() && record.external_registry.is_some() {
++        return Err(error(
++            0,
++            "only one registry identifier per record is supported",
++        ));
++    }
++    let (fmt, ireg, ereg) = match record.kind {
++        RdfileKind::Molecule => ("$MFMT", "$MIREG", "$MEREG"),
++        RdfileKind::Reaction => ("$RFMT", "$RIREG", "$REREG"),
++    };
++    let registry = if let Some(value) = &record.internal_registry {
++        scalar(value, true)?;
++        if !value.bytes().all(|b| b.is_ascii_digit()) {
++            return Err(error(0, "internal registry number must be decimal"));
++        }
++        Some((ireg, value))
++    } else if let Some(value) = &record.external_registry {
++        scalar(value, true)?;
++        Some((ereg, value))
++    } else {
++        None
++    };
++    if let Some(block) = &record.structure {
++        let identifier = registry
++            .map(|(k, v)| format!("{k} {v}"))
++            .unwrap_or_default();
++        header(out, fmt, &identifier)?;
++        out.push_str(block);
++        if !block.ends_with('\n') {
++            out.push('\n');
++        }
++    } else if let Some((keyword, value)) = registry {
++        header(out, keyword, value)?;
++    } else {
++        return Err(error(
++            0,
++            "reference-only record requires a registry identifier",
++        ));
++    }
++    for field in &record.data {
++        scalar(&field.name, true)?;
++        header(out, "$DTYPE", &field.name)?;
++        datum(out, &field.value, options.wrap_data)?;
++    }
++    Ok(())
++}
++
++/// Canonical LF RDFile serialization of current records, never stale source
++/// replay. Embedded structure bytes remain intact. Refuses unsupported fields,
++/// delimiter injection, invalid structures and output beyond default limits.
++pub fn write_rdfile(document: &RdfileDocument) -> Result<String, RdfileError> {
++    write_rdfile_with_options(document, RdfileWriteOptions::default())
++}
++/// Explicit unwrapped-data profile for consumers that do not implement '+'
++/// folding. Round parsing still refuses ambiguous keyword/continuation data.
++pub fn write_rdfile_with_options(
++    document: &RdfileDocument,
++    options: RdfileWriteOptions,
++) -> Result<String, RdfileError> {
++    let limits = RdfileParseLimits::default();
++    if document.records.len() > limits.max_records {
++        return Err(error(0, "record count limit exceeded"));
++    }
++    let estimate = output_size(document, &limits)?;
++    let mut out = String::new();
++    out.try_reserve(estimate)
++        .map_err(|_| error(0, "output allocation failed"))?;
++    out.push_str("$RDFILE 1\n");
++    header(&mut out, "$DATM", &document.date_comment)?;
++    for record in &document.records {
++        write_record(&mut out, record, options)?;
++    }
++    // Round parsing catches injected record boundaries and verifies chemistry.
++    let reparsed = parse_rdfile(&out)?;
++    let mut expected = document.records.clone();
++    for record in &mut expected {
++        if let Some(block) = &mut record.structure
++            && !block.ends_with('\n')
++        {
++            block.push('\n');
++        }
++    }
++    if reparsed.date_comment != document.date_comment || reparsed.records != expected {
++        return Err(error(
++            0,
++            "output would change record boundaries, fields or structure payloads",
++        ));
++    }
++    Ok(out)
++}
+diff --git a/crates/chematic-mol/tests/rdfile_contract.rs b/crates/chematic-mol/tests/rdfile_contract.rs
+new file mode 100644
+index 0000000..96e8347
+--- /dev/null
++++ b/crates/chematic-mol/tests/rdfile_contract.rs
+@@ -0,0 +1,250 @@
++//! Original MIT OR Apache-2.0 RDFile fixtures, with manifest in validation/openbabel_issues/rdfile.
++use chematic_mol::{
++    RdfileData, RdfileParseLimits, parse_rdfile, parse_rdfile_with_limits, write_rdfile,
++};
++const FIXTURE: &str = include_str!("../../../validation/openbabel_issues/rdfile/mixed-records.rdf");
++#[test]
++fn mixed_records_keep_order_registry_spelling_and_duplicate_fields() {
++    let d = parse_rdfile(FIXTURE).unwrap();
++    assert_eq!(d.records.len(), 5);
++    assert_eq!(d.records[0].internal_registry.as_deref(), Some("0007"));
++    assert_eq!(d.records[0].data.len(), 2);
++    assert_eq!(d.records[0].data[0].name, d.records[0].data[1].name);
++    assert_eq!(
++        d.records[0].data[1].value,
++        "second\nwith  two spaces\n\nlast"
++    );
++    assert_eq!(d.source_text, FIXTURE);
++}
++#[test]
++fn graph_projection_preserves_reference_positions_and_reaction_roles() {
++    let d = parse_rdfile(FIXTURE).unwrap();
++    let s = d
++        .records
++        .iter()
++        .map(|r| r.smiles().unwrap())
++        .collect::<Vec<_>>();
++    assert!(s[0].is_some());
++    assert!(s[1].as_ref().unwrap().contains("13C"));
++    assert!(s[2].as_ref().unwrap().contains(">>"));
++    assert!(s[3].is_none() && s[4].is_none());
++}
++#[test]
++fn canonical_write_reparse_retains_records_and_raw_structures() {
++    let d = parse_rdfile(FIXTURE).unwrap();
++    let back = parse_rdfile(&write_rdfile(&d).unwrap()).unwrap();
++    assert_eq!(back.records, d.records);
++    assert_eq!(back.date_comment, d.date_comment);
++}
++#[test]
++fn crlf_source_and_structure_bytes_remain_exact() {
++    let text = FIXTURE.replace('\n', "\r\n");
++    let d = parse_rdfile(&text).unwrap();
++    assert_eq!(d.source_text, text);
++    assert!(d.records[0].structure.as_ref().unwrap().contains("\r\n"));
++    assert_eq!(
++        parse_rdfile(&write_rdfile(&d).unwrap()).unwrap().records,
++        d.records
++    );
++}
++#[test]
++fn writing_mutated_fields_does_not_replay_stale_source() {
++    let mut d = parse_rdfile(FIXTURE).unwrap();
++    d.records[0].data[0].value = "updated".into();
++    let text = write_rdfile(&d).unwrap();
++    assert_eq!(
++        parse_rdfile(&text).unwrap().records[0].data[0].value,
++        "updated"
++    );
++    assert_eq!(d.source_text, FIXTURE);
++}
++#[test]
++fn column_81_plus_joins_wrapped_data_without_losing_newlines() {
++    let mut d = parse_rdfile(FIXTURE).unwrap();
++    let value = format!("{}\n  continuation\n", "abc ".repeat(80));
++    d.records[0].data = vec![RdfileData {
++        name: "long".into(),
++        value: value.clone(),
++    }];
++    let text = write_rdfile(&d).unwrap();
++    assert!(text.lines().any(|s| s.len() == 81 && s.ends_with('+')));
++    assert_eq!(parse_rdfile(&text).unwrap().records[0].data[0].value, value);
++}
++#[test]
++fn keyword_shaped_mol_title_is_not_a_record_boundary() {
++    let mut d = parse_rdfile(FIXTURE).unwrap();
++    let block = d.records[0].structure.as_mut().unwrap();
++    *block = format!("$RFMT\n{}", block.split_once('\n').unwrap().1);
++    assert_eq!(
++        parse_rdfile(&write_rdfile(&d).unwrap())
++            .unwrap()
++            .records
++            .len(),
++        5
++    );
++}
++#[test]
++fn registry_only_documents_are_not_resolved_or_discarded() {
++    let text = "$RDFILE 1\n$DATM\n$MIREG 0001\n$MEREG external molecule\n$RIREG 002\n$REREG external reaction\n";
++    let d = parse_rdfile(text).unwrap();
++    assert_eq!(d.records.len(), 4);
++    assert!(d.records.iter().all(|r| r.smiles().unwrap().is_none()));
++    assert_eq!(
++        parse_rdfile(&write_rdfile(&d).unwrap()).unwrap().records,
++        d.records
++    );
++}
++#[test]
++fn empty_library_and_empty_datum_are_valid() {
++    assert!(
++        parse_rdfile("$RDFILE 1\n$DATM\n")
++            .unwrap()
++            .records
++            .is_empty()
++    );
++    let d = parse_rdfile("$RDFILE 1\n$DATM\n$MIREG 1\n$DTYPE empty\n$DATUM\n").unwrap();
++    assert_eq!(d.records[0].data[0].value, "");
++}
++#[test]
++fn malformed_headers_identifiers_and_missing_data_fail() {
++    for text in [
++        "",
++        "$RDFILE 2\n$DATM\n",
++        "$RDFILE 1\n",
++        "$RDFILE 1\nwrong\n",
++        "$RDFILE 1\n$DATM\n\n",
++        "$RDFILE 1\n$DATM\n$MIREG\n",
++        "$RDFILE 1\n$DATM\n$MIREG -1\n",
++        "$RDFILE 1\n$DATM\n$MFMT $MIREG\n",
++        "$RDFILE 1\n$DATM\n$MIREG 1\n$DTYPE field\n",
++        "$RDFILE 1\n$DATM\n$MIREG 1\n$DTYPE\n$DATUM a\n",
++        "$RDFILE 1\n$DATM\n$MIREG 1\n$DATUM orphan\n",
++    ] {
++        assert!(parse_rdfile(text).is_err(), "{text}");
++    }
++}
++#[test]
++fn malformed_embedded_payloads_and_counts_fail() {
++    for text in [
++        FIXTURE.replacen("M  END", "M  BAD", 1),
++        FIXTURE.replacen("$RXN", "$RXN V3000", 1),
++        FIXTURE.replace("$MOL", "$UNKNOWN"),
++        FIXTURE.replace("$MFMT $MIREG 0007", "$MFMT $RIREG 0007"),
++    ] {
++        assert!(parse_rdfile(&text).is_err());
++    }
++}
++#[test]
++fn unsupported_embedded_data_and_keyword_continuations_fail() {
++    for value in ["$MFMT", "x\n$UNKNOWN anything", "x\n$DATUM orphan"] {
++        let text = format!("$RDFILE 1\n$DATM\n$MIREG 1\n$DTYPE x\n$DATUM {value}\n");
++        assert!(parse_rdfile(&text).is_err());
++    }
++    let text = format!(
++        "$RDFILE 1\n$DATM\n$MIREG 1\n$DTYPE x\n{}+\n",
++        "a".repeat(80)
++    );
++    assert!(parse_rdfile(&text).is_err());
++}
++#[test]
++fn writer_refuses_delimiter_injection_and_ambiguous_fields() {
++    let base = parse_rdfile(FIXTURE).unwrap();
++    for value in [
++        "x\n$MFMT",
++        "  lost leading spaces",
++        "unicode 🧪",
++        "carriage\rreturn",
++    ] {
++        let mut d = base.clone();
++        d.records[0].data[0].value = value.into();
++        assert!(write_rdfile(&d).is_err(), "{value}");
++    }
++    let mut d = base.clone();
++    d.records[0].internal_registry = Some("bad".into());
++    assert!(write_rdfile(&d).is_err());
++    let mut d = base;
++    d.records[0].external_registry = Some("second".into());
++    assert!(write_rdfile(&d).is_err());
++}
++#[test]
++fn writer_refuses_structure_boundary_injection() {
++    let mut d = parse_rdfile(FIXTURE).unwrap();
++    d.records[0]
++        .structure
++        .as_mut()
++        .unwrap()
++        .push_str("$MIREG 88\n");
++    assert!(write_rdfile(&d).is_err());
++}
++#[test]
++fn all_reader_resource_limits_apply() {
++    let b = RdfileParseLimits::default();
++    for limits in [
++        RdfileParseLimits {
++            max_input_bytes: 8,
++            ..b
++        },
++        RdfileParseLimits {
++            max_records: 4,
++            ..b
++        },
++        RdfileParseLimits {
++            max_fields_per_record: 1,
++            ..b
++        },
++        RdfileParseLimits {
++            max_line_len: 4,
++            ..b
++        },
++        RdfileParseLimits {
++            max_reaction_components: 1,
++            ..b
++        },
++    ] {
++        assert!(parse_rdfile_with_limits(FIXTURE, &limits).is_err());
++    }
++}
++#[test]
++fn missing_final_lf_is_accepted_and_writer_adds_it() {
++    let d = parse_rdfile(FIXTURE.trim_end_matches('\n')).unwrap();
++    assert!(write_rdfile(&d).unwrap().ends_with('\n'));
++}
++
++#[test]
++fn explicit_unwrapped_profile_preserves_long_plain_data() {
++    let mut d = parse_rdfile(FIXTURE).unwrap();
++    let value = "a".repeat(320);
++    d.records[0].data = vec![RdfileData {
++        name: "long".into(),
++        value: value.clone(),
++    }];
++    let out = chematic_mol::write_rdfile_with_options(
++        &d,
++        chematic_mol::RdfileWriteOptions { wrap_data: false },
++    )
++    .unwrap();
++    assert!(
++        out.lines()
++            .any(|s| s.len() > 81 && s.starts_with("$DATUM "))
++    );
++    assert_eq!(parse_rdfile(&out).unwrap().records[0].data[0].value, value);
++}
++#[test]
++fn writer_record_limit_and_ambiguous_literal_continuation_are_checked() {
++    let mut d = parse_rdfile(FIXTURE).unwrap();
++    let r = d.records[3].clone();
++    d.records = vec![r; 10001];
++    assert!(write_rdfile(&d).is_err());
++    let mut d = parse_rdfile(FIXTURE).unwrap();
++    d.records[0].data = vec![RdfileData {
++        name: "x".into(),
++        value: format!("{}+", "a".repeat(73)),
++    }];
++    assert!(
++        chematic_mol::write_rdfile_with_options(
++            &d,
++            chematic_mol::RdfileWriteOptions { wrap_data: false }
++        )
++        .is_err()
++    );
++}
+diff --git a/crates/chematic-py/python/chematic/__init__.pyi b/crates/chematic-py/python/chematic/__init__.pyi
+index 7c585d4..64ebb61 100644
+--- a/crates/chematic-py/python/chematic/__init__.pyi
++++ b/crates/chematic-py/python/chematic/__init__.pyi
+@@ -4919,3 +4919,15 @@ def parse_turbomole(text: str, *, max_input_bytes: Optional[int] = None, max_ato
+ def write_turbomole(elements: Sequence[str], positions_angstrom: Sequence[Sequence[float]], *, lattice_angstrom: Optional[Sequence[Sequence[float]]] = None, frozen: Optional[Sequence[bool]] = None) -> str:
+     """Write explicit geometry, 3D row lattice vectors and frozen flags in bohr."""
+     ...
++
++def parse_rdfile(text: str, *, max_input_bytes: Optional[int] = None, max_records: Optional[int] = None, max_fields_per_record: Optional[int] = None, max_line_len: Optional[int] = None, max_reaction_components: Optional[int] = None) -> dict[str, Any]:
++    """Read RDFile v1 records with embedded MOL/RXN payloads and ordered data."""
++    ...
++
++def write_rdfile(document: dict[str, Any], *, wrap_data: bool = True) -> str:
++    """Serialize current RDFile records without replaying stale source text."""
++    ...
++
++def rdfile_to_smiles(text: str) -> list[Optional[str]]:
++    """Project records to molecular/reaction SMILES; references remain None."""
++    ...
+diff --git a/crates/chematic-py/src/formats.rs b/crates/chematic-py/src/formats.rs
+index 7a087a1..4a0ecd4 100644
+--- a/crates/chematic-py/src/formats.rs
++++ b/crates/chematic-py/src/formats.rs
+@@ -9,6 +9,8 @@ use std::sync::Arc;
+ mod cif;
+ use cif::*;
+ mod gro;
++mod rdfile;
++use rdfile::*;
+ mod turbomole;
+ use turbomole::*;
+ mod interchange;
+@@ -1428,6 +1430,9 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
+         write_smi_file,
+         parse_mmcif,
+         parse_gro,
++        parse_rdfile,
++        write_rdfile,
++        rdfile_to_smiles,
+         parse_turbomole,
+         write_turbomole,
+         parse_mmcif_residues,
+diff --git a/crates/chematic-py/src/formats/rdfile.rs b/crates/chematic-py/src/formats/rdfile.rs
+new file mode 100644
+index 0000000..e7f8a28
+--- /dev/null
++++ b/crates/chematic-py/src/formats/rdfile.rs
+@@ -0,0 +1,67 @@
++use super::*;
++
++/// Parse bounded RDFile v1 records, retaining raw structures and ordered data.
++#[pyfunction]
++#[pyo3(signature=(text, *, max_input_bytes=None, max_records=None, max_fields_per_record=None, max_line_len=None, max_reaction_components=None))]
++pub(super) fn parse_rdfile<'py>(
++    py: Python<'py>,
++    text: &str,
++    max_input_bytes: Option<usize>,
++    max_records: Option<usize>,
++    max_fields_per_record: Option<usize>,
++    max_line_len: Option<usize>,
++    max_reaction_components: Option<usize>,
++) -> PyResult<Bound<'py, PyAny>> {
++    let mut limits = chematic_mol::RdfileParseLimits::default();
++    if let Some(v) = max_input_bytes {
++        limits.max_input_bytes = v;
++    }
++    if let Some(v) = max_records {
++        limits.max_records = v;
++    }
++    if let Some(v) = max_fields_per_record {
++        limits.max_fields_per_record = v;
++    }
++    if let Some(v) = max_line_len {
++        limits.max_line_len = v;
++    }
++    if let Some(v) = max_reaction_components {
++        limits.max_reaction_components = v;
++    }
++    let document = chematic_mol::parse_rdfile_with_limits(text, &limits)
++        .map_err(|e| PyValueError::new_err(e.to_string()))?;
++    let json =
++        serde_json::to_string(&document).map_err(|e| PyValueError::new_err(e.to_string()))?;
++    py.import("json")?.call_method1("loads", (json,))
++}
++
++/// Write current typed RDFile records; source_text is provenance, never replayed.
++#[pyfunction]
++#[pyo3(signature=(document, *, wrap_data=true))]
++pub(super) fn write_rdfile(document: &Bound<'_, PyDict>, wrap_data: bool) -> PyResult<String> {
++    let json: String = document
++        .py()
++        .import("json")?
++        .call_method1("dumps", (document,))?
++        .extract()?;
++    let document: chematic_mol::RdfileDocument =
++        serde_json::from_str(&json).map_err(|e| PyValueError::new_err(e.to_string()))?;
++    chematic_mol::rdfile::write_rdfile_with_options(
++        &document,
++        chematic_mol::rdfile::RdfileWriteOptions { wrap_data },
++    )
++    .map_err(|e| PyValueError::new_err(e.to_string()))
++}
++
++/// Explicit lossy graph projection in record order. Registry-only records yield
++/// None; fields and coordinates remain available through parse_rdfile instead.
++#[pyfunction]
++pub(super) fn rdfile_to_smiles(text: &str) -> PyResult<Vec<Option<String>>> {
++    let document =
++        chematic_mol::parse_rdfile(text).map_err(|e| PyValueError::new_err(e.to_string()))?;
++    document
++        .records
++        .iter()
++        .map(|r| r.smiles().map_err(|e| PyValueError::new_err(e.to_string())))
++        .collect()
++}
+diff --git a/crates/chematic-py/tests/test_rdfile.py b/crates/chematic-py/tests/test_rdfile.py
+new file mode 100644
+index 0000000..ddfe8d3
+--- /dev/null
++++ b/crates/chematic-py/tests/test_rdfile.py
+@@ -0,0 +1,103 @@
++"""Original MIT OR Apache-2.0 RDFile record, source and boundary contracts."""
++from pathlib import Path
++import pytest
++import chematic
++
++ROOT=Path(__file__).resolve().parents[3]
++TEXT=(ROOT/'validation/openbabel_issues/rdfile/mixed-records.rdf').read_text()
++
++
++def test_mixed_records_metadata_and_projection():
++    d=chematic.parse_rdfile(TEXT)
++    assert [r['kind'] for r in d['records']]==['molecule','molecule','reaction','molecule','reaction']
++    assert d['records'][0]['internal_registry']=='0007'
++    assert d['records'][0]['data']==[{'name':'note','value':'first'},{'name':'note','value':'second\nwith  two spaces\n\nlast'}]
++    smiles=chematic.rdfile_to_smiles(TEXT)
++    assert len(smiles)==5 and smiles[-2:]==[None,None]
++    assert '13C' in smiles[1] and '>>' in smiles[2]
++    assert ':1' in smiles[2] and ':2' in smiles[2]
++    assert d['source_text']==TEXT
++
++
++def test_read_write_read_retains_order_fields_and_structures():
++    d=chematic.parse_rdfile(TEXT);back=chematic.parse_rdfile(chematic.write_rdfile(d))
++    assert back['records']==d['records'] and back['date_comment']==d['date_comment']
++
++
++def test_writer_uses_current_fields_and_preserves_original_sidecar():
++    d=chematic.parse_rdfile(TEXT);d['records'][0]['data'][0]['value']='edited'
++    assert chematic.parse_rdfile(chematic.write_rdfile(d))['records'][0]['data'][0]['value']=='edited'
++    assert d['source_text']==TEXT
++
++
++@pytest.mark.parametrize('n',[0,1,72,73,74,80,81,160,1000])
++def test_long_ascii_data_roundtrip(n):
++    d=chematic.parse_rdfile(TEXT);value='x'*n+'\n  next\n'
++    d['records'][0]['data']=[{'name':'long','value':value}]
++    text=chematic.write_rdfile(d);assert chematic.parse_rdfile(text)['records'][0]['data'][0]['value']==value
++
++
++@pytest.mark.parametrize('suffix',['\n','\r\n',''])
++def test_line_endings(suffix):
++    text=TEXT.replace('\n','\r\n') if suffix=='\r\n' else TEXT.rstrip('\n')+suffix
++    d=chematic.parse_rdfile(text);assert d['source_text']==text
++    assert chematic.parse_rdfile(chematic.write_rdfile(d))['records']==d['records']
++
++
++@pytest.mark.parametrize('kwargs',[{'max_input_bytes':1},{'max_records':4},{'max_fields_per_record':1},{'max_line_len':4},{'max_reaction_components':1}])
++def test_limits(kwargs):
++    with pytest.raises(ValueError):chematic.parse_rdfile(TEXT,**kwargs)
++
++
++@pytest.mark.parametrize('text',['','$RDFILE 2\n$DATM\n','$RDFILE 1\n','$RDFILE 1\nwrong\n','$RDFILE 1\n$DATM\n\n','$RDFILE 1\n$DATM\n$MIREG -1\n',TEXT.replace('M  END','M  BAD',1),TEXT.replace('$RXN','$RXN V3000',1),TEXT.replace('$MOL','$UNKNOWN'),TEXT.replace('$MFMT $MIREG 0007','$MFMT $MIREG')])
++def test_invalid_documents(text):
++    with pytest.raises(ValueError):chematic.parse_rdfile(text)
++
++
++@pytest.mark.parametrize('value',['x\n$MFMT','  leading whitespace','unicode 🧪','x\rbad','$MFMT'])
++def test_writer_rejects_unsupported_data_and_injection(value):
++    d=chematic.parse_rdfile(TEXT);d['records'][0]['data'][0]['value']=value
++    with pytest.raises(ValueError):chematic.write_rdfile(d)
++
++
++def test_writer_refuses_unknown_keys_and_ambiguous_registry():
++    d=chematic.parse_rdfile(TEXT);d['records'][0]['unexpected']='discard me'
++    with pytest.raises(ValueError):chematic.write_rdfile(d)
++    d=chematic.parse_rdfile(TEXT);d['records'][0]['external_registry']='second'
++    with pytest.raises(ValueError):chematic.write_rdfile(d)
++
++
++def test_registry_only_records_keep_slots_without_lookup():
++    text='$RDFILE 1\n$DATM\n$MIREG 1\n$MEREG name\n$RIREG 2\n$REREG rxn\n'
++    assert chematic.rdfile_to_smiles(text)==[None]*4
++    d=chematic.parse_rdfile(text);assert all(r['structure'] is None for r in d['records'])
++
++
++def test_empty_library():
++    assert chematic.rdfile_to_smiles('$RDFILE 1\n$DATM\n')==[]
++
++
++def test_molecule_v3000_embedded_payload():
++    mol=chematic.from_smiles('[NH4+]');block=mol.to_mol_v3000([[0,0]])
++    text='$RDFILE 1\n$DATM\n$MFMT\n'+block
++    d=chematic.parse_rdfile(text)
++    assert d['records'][0]['structure']==block
++    assert chematic.rdfile_to_smiles(text)==['[NH4+]']
++
++
++def test_zero_agent_field_in_rxn_counts_is_supported():
++    d=chematic.parse_rdfile(TEXT);r=d['records'][2];lines=r['structure'].splitlines();lines[4]+='  0';r['structure']='\n'.join(lines)+'\n'
++    assert '>>' in chematic.rdfile_to_smiles(chematic.write_rdfile(d))[2]
++
++
++def test_nonzero_rxn_agents_are_refused():
++    d=chematic.parse_rdfile(TEXT);r=d['records'][2];lines=r['structure'].splitlines();lines[4]+='  1';r['structure']='\n'.join(lines)+'\n'
++    with pytest.raises(ValueError):chematic.write_rdfile(d)
++
++
++def test_unwrapped_interchange_profile_and_plain_long_input():
++    d=chematic.parse_rdfile(TEXT);value='a'*320+'\nnext'
++    d['records'][0]['data']=[{'name':'long','value':value}]
++    text=chematic.write_rdfile(d,wrap_data=False)
++    assert any(len(s)>81 for s in text.splitlines())
++    assert chematic.parse_rdfile(text)['records'][0]['data'][0]['value']==value
+diff --git a/docs/openbabel-open-issues-2026-10-14.md b/docs/openbabel-open-issues-2026-10-14.md
+index 204724d..dcf6467 100644
+--- a/docs/openbabel-open-issues-2026-10-14.md
++++ b/docs/openbabel-open-issues-2026-10-14.md
+@@ -13,6 +13,7 @@ charge work. Existing changes were retained.
+ | [#2818: singular unit cell produces NaN](https://github.com/openbabel/openbabel/issues/2818) | The unchecked plain writer accepted invalid `UnitCell` values. | [Implemented a checked Rust/Python CIF writer](cif-checked-writer.md), shared plain-reader cell validation, finite/count checks and precise float serialization. No POSCAR support; external CIF cross-read remains inconclusive on this host. |
+ | [#2845: PQR charge/radius lost](https://github.com/openbabel/openbabel/issues/2845) | `PqrAtomRecord` already stores charge and radius separately. `to_molecule()` is a graph projection that does not carry those fields. | [Implemented a checked rigid PQR-to-PDBQT adapter](pqr-pdbqt-charge-preservation.md): caller-supplied types, source charges/identity, radius-loss consent and a numeric-rounding sidecar. Open Babel 3.2.1 charge loss reproduced on two synthetic ions. |
+ | [#2817: GRO two-letter element truncation](https://github.com/openbabel/openbabel/issues/2817) | No native GRO reader existed; atom names alone cannot establish element identity. | [Added a typed single-frame reader](gro-element-resolution.md): unresolved or explicit caller elements, preserved names, nm/nm-per-ps fields, variable precision and raw boxes; 720 field/element checks and an Open Babel 3.2.1 diagnostic. |
++| [#2681: RDFile support](https://github.com/openbabel/openbabel/issues/2681) | No RDFile reader existed; native MOL/RXN parsers can supply embedded graph projections. | [Added checked typed RDFile records](rdfile-records.md), registry-only slots, ordered/duplicate data, source preservation and explicit SMILES projection; 288 two-way Indigo cross-read records with an explicit unwrapped-data profile. Default folding interoperability is reported separately. |
+ | [#2821: QCSchema Molecule](https://github.com/openbabel/openbabel/issues/2821) | Native QCSchema types, readers, converters, and tests already exist. | No duplicate implementation; broaden interoperability fixtures separately. |
+ | [#3027: five-character residue names truncated in PDB](https://github.com/openbabel/openbabel/issues/3027) | mmCIF has full residue-name fields; the protein projection is deliberately limited to amino-acid residues. | [Implemented a checked coordinate-block adapter](mmcif-pdb-checked.md): explicit namespace and metadata-loss policy, no truncated identifiers, collision/width checks and original-input sidecar. Model 1 only; no topology or full PDB deposition export. |
+ | [#3028: branched glycan residues merged](https://github.com/openbabel/openbabel/issues/3028) | mmCIF retains per-atom residue fields, but the protein projection excludes glycans. | [Implemented a general atom_site residue reader](mmcif-residue-identity.md) with distinct auth/label identities and strict ambiguity errors; 720 row-order permutations and an Open Babel 3.2.1 control. Glycan connectivity and PDB export remain separate. |
+diff --git a/docs/rdfile-records.md b/docs/rdfile-records.md
+new file mode 100644
+index 0000000..307b6d4
+--- /dev/null
++++ b/docs/rdfile-records.md
+@@ -0,0 +1,168 @@
++# RDFile records with explicit graph projection
++
++Open Babel [#2681](https://github.com/openbabel/openbabel/issues/2681) requests
++RDFile support and batch extraction of molecular/reaction SMILES. The locally
++pinned Open Babel 3.2.1 has no registered RDF/RDFile format and rejects
++`-irdf`. This candidate adds native Rust/Python record reading and checked
++writing, reusing chematic's MOL and RXN parsers.
++
++```python
++from pathlib import Path
++import chematic
++
++text = Path("reactions.rdf").read_text()
++document = chematic.parse_rdfile(text)
++smiles = chematic.rdfile_to_smiles(text)
++for record, value in zip(document["records"], smiles):
++    print(record["kind"], value)  # None denotes an unresolved registry reference
++
++# Edits affect serialized records; original source text remains available.
++document["records"][0]["data"].append({"name": "review", "value": "checked"})
++output = chematic.write_rdfile(document)
++original = document["source_text"]
++```
++
++The typed document contains `date_comment`, ordered `records`, and exact
++`source_text`. Each record has:
++
++- `kind`: `molecule` or `reaction`;
++- optional `internal_registry` or `external_registry`;
++- `structure`: exact embedded MOL/RXN text, or `None` for a registry-only record;
++- `data`: an ordered list of `{name, value}` entries, retaining duplicate names.
++
++Internal registry numbers remain decimal strings so leading zeros survive.
++External registry values remain text; neither is looked up or resolved.
++Data values remain text, including significant internal spaces, blank lines
++and repeated fields. No database schema is available to interpret field types
++or map arbitrary names to reaction conditions.
++
++`rdfile_to_smiles` is an explicit graph projection, not a lossless replacement
++for the RDFile document. It returns one entry per record, preserving reference
++slots as `None`. Coordinates, fields, registry identifiers and source number
++spelling remain in `parse_rdfile` output. Molecular/reaction graph semantics
++follow the existing MOL/RXN parsers; no new bond perception is introduced.
++
++In Rust, `parse_rdfile` / `parse_rdfile_with_limits` return an editable
++`RdfileDocument`. `RdfileRecord::smiles()` returns
++`Result<Option<String>, RdfileError>`. `write_rdfile` uses current records,
++validates serialized output by reparsing, and checks that fields and record
++boundaries survived. It never replays a potentially stale `source_text`.
++`RdfileError` identifies a one-based source line where available, or zero for
++constructed-document validation.
++
++## Format profile
++
++The implementation was written independently from the RDFile chapter of the
++[BIOVIA Chemistry 2026 CTfile specification](https://www.3ds.com/assets/invest/2026-01/biovia_chemistry_2026_ctfile_formats.pdf),
++retrieved on 2026-10-15, and tested against
++[Indigo's RDF reader/writer API](https://lifescience.opensource.epam.com/indigo/api/index.html).
++This API handles chemistry RDFile, rather than Semantic Web RDF.
++
++Supported input includes version 1, embedded molecule/reaction records,
++registry-only records, optional single registry identifiers, ordered data,
++multiline values and column-81 `+` data continuation. MOL payloads can be
++V2000 or V3000; embedded RXN is V2000 with V2000 components. RXN counts may
++include an explicit zero agent count. Embedded blocks are consumed structurally,
++so a keyword-shaped molecule title does not accidentally start another record.
++
++Headers and RD metadata use ASCII. Header arguments fit 80 columns. Data
++folding joins a physical row with a `+` in column 81 to its continuation
++without adding a newline; ordinary continuation rows preserve newlines.
++Plain longer data rows are accepted as an explicit common interchange
++extension, still subject to the physical-line limit. The original file and
++embedded structures retain their complete supplied UTF-8 bytes and line endings.
++
++Unsupported profiles fail explicitly: V3000 RXN, nonzero agent counts,
++V3000 molecules inside a V2000 RXN, nested embedded `$DATUM $MFMT` structures,
++both registry identifiers on one record, continued/long headers and non-ASCII
++RD metadata. Unknown keywords, missing headers/terminators/data, malformed
++counts and ambiguous delimiter injection also fail. Registry-valued data
++remains literal text rather than being resolved.
++
++An empty library and empty datum are supported. Blank lines outside structures
++or data are rejected; trailing blank lines inside a datum remain data.
++Only a missing final LF is normalized when writing a structure block.
++Canonical writing uses LF for new RD headers/data while keeping embedded block
++bytes unchanged, including their original CRLF if present.
++
++## Long-data interoperability
++
++The default writer uses specification folding. Indigo **1.46.0** was measured
++retaining the column-81 `+` as literal text instead of joining the rows.
++Consequently, the default folded output is not claimed to preserve long data
++when read by this pinned Indigo version.
++
++Use the explicit unwrapped profile for this consumer:
++
++```python
++indigo_output = chematic.write_rdfile(document, wrap_data=False)
++```
++
++In Rust, use `write_rdfile_with_options(document,
++RdfileWriteOptions { wrap_data: false })`. This emits plain long data lines
++as the common interchange extension; it does not change the default profile.
++Round-parse validation still rejects any datum whose literal position would
++be confused with a continuation marker or record keyword. No data is silently
++trimmed to make it fit either profile.
++
++## Resource and edit boundaries
++
++Default reading limits are 64 MiB input, 1 MiB per physical line, 10,000 records,
++1,000 fields per record and 1,000 components per reaction. All are configurable
++through Rust `RdfileParseLimits` and corresponding Python keyword arguments.
++The cursor scans the source without collecting an unbounded physical-line
++array. Record/field vector reservation is fallible.
++
++The writer uses default limits, checks record/field counts and a conservative
++serialized-size estimate before reserving its output buffer, then reparses the
++result. It refuses malformed public Rust data, unknown Python document keys,
++missing registry-only identifiers, unsupported text, conflicting registries,
++newlines in headers and changes to record boundaries. A source document's
++untouched original text remains available for exact replay by the caller.
++
++This is an in-memory typed batch API. It adds no CLI format registration,
++streaming file iterator, registry service, query-schema interpretation or
++conversion from arbitrary rich reaction documents into RD fields.
++
++## Validation
++
++The original small fixture and manifest are in
++`validation/openbabel_issues/rdfile/`. Three embedded records cover methanol,
++carbon-13 methanol and atom-mapped oxidation; two unresolved references verify
++slot retention. Duplicate names and multiline data are checked against authored
++ordered vectors, since Indigo's property abstraction does not retain duplicates.
++The manifest records provenance, MIT OR Apache-2.0 licensing, minimization,
++pinned reference settings, expected values and the normalized payload hash.
++
++Indigo is pinned to
++`1.46.0.0-gb36d38f52-aarch64-darwin-appleclang-17000013`, RDKit to **2026.09.1**,
++and Open Babel to **3.2.1**. Forty-eight dataset profiles vary record order,
++LF/CRLF and empty/multiline/long/spaced data. Indigo reads 144 native records
++using `wrap_data=False`; chematic reads 144 Indigo-written records. All
++**288 cross-read records** match graph meaning, atom maps and data, with zero
++mismatches. Reaction comparisons retain component roles; graph checks use
++RDKit InChI plus mapped atom/bond counters, not lexical SMILES equality.
++Forty-eight default-folded native round trips also retain all records/data.
++The separate Indigo folding diagnostic is recorded as an interoperability
++limitation, not counted as a passing default-output cross-read.
++
++Local checks passed 753 Rust library tests, 18 new RDFile contracts and
++80 Python tests across RDFile and previous TURBOMOLE functionality. These cover
++V3000 molecule payloads, structural framing,
++source/CRLF retention, duplicates, empty/reference records, mutations, limits,
++continuation boundaries, malformed input and injection refusal. Strict Clippy,
++formatting, static binding inventory, product naming, the refactor budget and
++strict MkDocs are also checked; no allowances were added.
++
++Regenerate the independent evidence with the candidate extension on `PYTHONPATH`:
++
++```sh
++python scripts/validate_rdfile_records.py --obabel /path/to/obabel
++```
++
++This is a local, uncommitted, unpublished source candidate in
++`/private/tmp/chematic-rdfile`, preserving the previous candidates through
++correlated stereo-group alternatives. The portable feature patch is
++`validation/openbabel_issues/rdfile-records-2026-10-15.patch` and its evidence is
++`validation/results/openbabel-rdfile-records-2026-10-15.json`. The patch includes
++source, bindings, tests, fixtures, documentation and CI/inventory updates.
+diff --git a/scripts/validate_rdfile_records.py b/scripts/validate_rdfile_records.py
+new file mode 100644
+index 0000000..a4924de
+--- /dev/null
++++ b/scripts/validate_rdfile_records.py
+@@ -0,0 +1,114 @@
++#!/usr/bin/env python3
++"""Pinned two-way Indigo RDFile interoperability and exact source-field checks."""
++import argparse
++import hashlib
++import itertools
++import json
++from pathlib import Path
++import subprocess
++import sys
++import tempfile
++import chematic
++from indigo import Indigo
++from rdkit import Chem, rdBase
++
++ROOT=Path(__file__).resolve().parents[1]
++FIXTURE=ROOT/'validation/openbabel_issues/rdfile/manifest.json'
++INDIGO_VERSION='1.46.0.0-gb36d38f52-aarch64-darwin-appleclang-17000013'
++
++
++def digest(data):return hashlib.sha256(data).hexdigest()
++
++
++def mol_key(smiles):
++    params=Chem.SmilesParserParams();params.removeHs=False
++    m=Chem.MolFromSmiles(smiles,params);assert m is not None
++    maps=sorted((a.GetAtomMapNum(),a.GetAtomicNum(),a.GetIsotope(),a.GetFormalCharge()) for a in m.GetAtoms() if a.GetAtomMapNum())
++    mapped_bonds=sorted((min(b.GetBeginAtom().GetAtomMapNum(),b.GetEndAtom().GetAtomMapNum()),max(b.GetBeginAtom().GetAtomMapNum(),b.GetEndAtom().GetAtomMapNum()),str(b.GetBondType())) for b in m.GetBonds() if b.GetBeginAtom().GetAtomMapNum() and b.GetEndAtom().GetAtomMapNum())
++    return Chem.MolToInchi(m),maps,mapped_bonds
++
++
++def key(smiles):
++    if '>' in smiles:
++        parts=smiles.split('>');assert len(parts)==3
++        return [sorted(mol_key(s) for s in part.split('.') if s) for part in parts]
++    return mol_key(smiles)
++
++
++def main():
++    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--obabel',default='/opt/homebrew/bin/obabel');p.add_argument('--output',type=Path,default=ROOT/'validation/results/openbabel-rdfile-records-2026-10-15.json');args=p.parse_args()
++    indigo=Indigo();assert indigo.version()==INDIGO_VERSION,indigo.version()
++    assert rdBase.rdkitVersion=='2026.09.1',rdBase.rdkitVersion
++    indigo.setOption('molfile-saving-skip-date',True)
++    manifest=json.loads(FIXTURE.read_text());payload=FIXTURE.parent/manifest['payload'];text=payload.read_text()
++    assert digest(payload.read_bytes())==manifest['sha256']
++    base=chematic.parse_rdfile(text);assert base['source_text']==text
++    assert [r['kind'] for r in base['records']]==manifest['expected']['kinds']
++    projected=chematic.rdfile_to_smiles(text)
++    assert len(projected)==5 and projected[-2:]==[None,None]
++    assert all(key(a)==key(b) for a,b in zip(projected[:3],manifest['expected']['projection'][:3]))
++    assert [f['name'] for f in base['records'][0]['data']]==manifest['expected']['first_field_names']
++    assert [f['value'] for f in base['records'][0]['data']]==manifest['expected']['first_field_values']
++    values=['','two\n  spaced\n\nlast','long-'+('abc '*70)+'\n  tail\n','internal  whitespace']
++    cases=[];forward=0;reverse=0
++    with tempfile.TemporaryDirectory(prefix='chematic-rdfile-oracle-') as directory:
++        root=Path(directory)
++        for order,ending,value in itertools.product(itertools.permutations(range(3)),['\n','\r\n'],values):
++            doc={'date_comment':'original synthetic cross-read','records':[]}
++            for position,old in enumerate(order):
++                r=json.loads(json.dumps(base['records'][old]));r['data']=[{'name':'note','value':value},{'name':'position','value':str(position)}];doc['records'].append(r)
++            # Explicit unwrapped profile avoids Indigo's unimplemented '+' joining.
++            native=chematic.write_rdfile(doc,wrap_data=False)
++            if ending=='\r\n':native=native.replace('\n','\r\n')
++            path=root/'native.rdf';path.write_bytes(native.encode())
++            raw=chematic.parse_rdfile(native);assert raw['source_text']==native
++            assert all(r['data']==d['data'] for r,d in zip(raw['records'],doc['records']))
++            objects=list(indigo.iterateRDFile(str(path)));assert len(objects)==3
++            native_smiles=chematic.rdfile_to_smiles(native)
++            for position,(obj,s,r) in enumerate(zip(objects,native_smiles,doc['records'])):
++                assert key(obj.smiles())==key(s)==key(manifest['expected']['projection'][order[position]])
++                assert obj.getProperty('note')==value and obj.getProperty('position')==str(position)
++                registry='internal-regno' if r['internal_registry'] is not None else 'external-regno'
++                expected=r['internal_registry'] or r['external_registry'];assert obj.getProperty(registry)==expected
++                forward+=1
++            target=root/'indigo.rdf';saver=indigo.writeFile(str(target));saver.rdfHeader()
++            for position,old in enumerate(order):
++                r=base['records'][old]
++                obj=indigo.loadMolecule(r['structure']) if r['kind']=='molecule' else indigo.loadReaction(r['structure'])
++                obj.setProperty('note',value);obj.setProperty('position',str(position));saver.rdfAppend(obj)
++            saver.close();external=target.read_text();back=chematic.parse_rdfile(external);back_smiles=chematic.rdfile_to_smiles(external)
++            assert len(back['records'])==3
++            for position,(r,s) in enumerate(zip(back['records'],back_smiles)):
++                assert key(s)==key(manifest['expected']['projection'][order[position]])
++                props={f['name']:f['value'] for f in r['data']}
++                assert props['note']==value and props['position']==str(position)
++                reverse+=1
++            # Default spec folding remains reversible inside chematic.
++            folded=chematic.write_rdfile(doc);restored=chematic.parse_rdfile(folded)
++            assert restored['records']==doc['records']
++            cases.append({'order':order,'line_ending':'CRLF' if ending=='\r\n' else 'LF','value_sha256':digest(value.encode()),'native_sha256':digest(native.encode()),'indigo_sha256':digest(external.encode()),'folded_sha256':digest(folded.encode())})
++        # Record the measured long-data difference separately from passing controls.
++        doc={'date_comment':'folding diagnostic','records':[json.loads(json.dumps(base['records'][0]))]}
++        long='a'*160+'\n  middle\n';doc['records'][0]['data']=[{'name':'long','value':long}]
++        folded=chematic.write_rdfile(doc);path=root/'folded.rdf';path.write_text(folded)
++        obj=next(iter(indigo.iterateRDFile(str(path))));observed=obj.getProperty('long')
++        assert observed!=long and '+\n' in observed
++        diagnostic={'indigo_joins_column_81_plus':False,'expected_value_sha256':digest(long.encode()),'observed_value_sha256':digest(observed.encode()),'folded_file_sha256':digest(folded.encode()),'workaround':'write_rdfile(document, wrap_data=False); explicit plain-long-data extension'}
++    version=subprocess.run([args.obabel,'-V'],capture_output=True,text=True,check=True,timeout=10).stdout.strip();assert version.startswith('Open Babel 3.2.1 ')
++    formats=subprocess.run([args.obabel,'-L','formats'],capture_output=True,text=True,check=True,timeout=10).stdout
++    registered=any(line.split(' -- ')[0].strip() in {'rdf','rdfile'} for line in formats.splitlines())
++    assert not registered,'Open Babel RDFile capability changed; inspect before rebaseline'
++    failed=subprocess.run([args.obabel,'-irdf','-osmi'],input=text,capture_output=True,text=True,timeout=10)
++    assert failed.returncode!=0
++    paths=['crates/chematic-mol/src/rdfile.rs','crates/chematic-mol/src/rdfile/reader.rs','crates/chematic-mol/src/rdfile/writer.rs','crates/chematic-py/src/formats/rdfile.rs','crates/chematic-mol/tests/rdfile_contract.rs','crates/chematic-py/tests/test_rdfile.py','crates/chematic-py/python/chematic/__init__.pyi','scripts/validate_rdfile_records.py']
++    record={'schema_version':1,'status':'local-source-candidate','issue':'https://github.com/openbabel/openbabel/issues/2681','base':'cac480fb source snapshot plus preserved previous candidates through correlated stereo-group alternatives; patch isolates RDFile records',
++        'scope':'RDFile v1 records, V2000/V3000 MOL and V2000 RXN, unresolved registry references and ordered ASCII data; canonical checked writing plus explicit SMILES projection',
++        'runtime':{'python':sys.version.split()[0],'indigo':indigo.version(),'rdkit':rdBase.rdkitVersion,'openbabel':version,'chematic_extension_sha256':digest(Path(chematic.__file__).resolve().read_bytes())},
++        'source_sha256':{s:digest((ROOT/s).read_bytes()) for s in paths},'fixture':{'path':str(FIXTURE.relative_to(ROOT)),'manifest_sha256':digest(FIXTURE.read_bytes()),**manifest},
++        'results':{'datasets':len(cases),'native_to_indigo_records':forward,'indigo_to_native_records':reverse,'total_cross_read_records':forward+reverse,'graph_or_map_mismatches':0,'metadata_mismatches':0,'source_text_mismatches':0,'default_folded_native_roundtrip_datasets':len(cases),'registry_only_records_retained':2,'duplicate_field_entries_retained':2,'case_sha256':digest(json.dumps(cases,sort_keys=True,separators=(',',':')).encode()),'forward_writer_settings':{'wrap_data':False},'reverse_settings':{'molfile-saving-skip-date':True},'graph_comparison':'RDKit InChI by reaction role plus atom-map element/isotope/charge and mapped-bond counters'},
++        'indigo_folding_diagnostic':diagnostic,'openbabel_diagnostic':{'rdf_registered':registered,'explicit_read_exit_code':failed.returncode,'stderr':failed.stderr.strip()},
++        'limitations':'No embedded V3000 RXN/agents, nested $DATUM $MFMT, both registry identifiers, continued/long headers, non-ASCII RD metadata, query-schema interpretation or registry resolution. Original source/structure payloads remain available. Default output folds ASCII data with column-81 plus; measured Indigo interoperability uses explicit wrap_data=False and supports plain long data. Duplicate metadata is checked against authored ordered vectors, not Indigo properties, which do not preserve duplicates.'}
++    args.output.parent.mkdir(parents=True,exist_ok=True);args.output.write_text(json.dumps(record,indent=2)+'\n');print(json.dumps(record['results']))
++
++
++if __name__=='__main__':main()
+diff --git a/validation/openbabel_issues/rdfile/manifest.json b/validation/openbabel_issues/rdfile/manifest.json
+new file mode 100644
+index 0000000..f5f9565
+--- /dev/null
++++ b/validation/openbabel_issues/rdfile/manifest.json
+@@ -0,0 +1,52 @@
++{
++  "schema_version": 1,
++  "id": "synthetic-mixed-rdfile-v1",
++  "provenance": {
++    "source": "original molecule/reaction definitions authored for this feature",
++    "date": "2026-10-15",
++    "issue": "https://github.com/openbabel/openbabel/issues/2681",
++    "specification": "https://www.3ds.com/assets/invest/2026-01/biovia_chemistry_2026_ctfile_formats.pdf",
++    "transformations": "chematic source-candidate MOL/RXN writers encode methanol, carbon-13 methanol and atom-mapped methanol oxidation; authored registry-only records, duplicate fields and multiline data; no upstream attachments copied"
++  },
++  "license": "MIT OR Apache-2.0",
++  "redistribution": {
++    "status": "allowed",
++    "rationale": "original project-authored minimal chemistry and text"
++  },
++  "minimization": "three embedded records and two reference-only records isolate type, isotope, map, metadata and reference handling",
++  "oracle": {
++    "name": "Indigo RDF reader/writer and RDKit graph/InChI reference",
++    "version": "Indigo 1.46.0.0-gb36d38f52-aarch64-darwin-appleclang-17000013; RDKit 2026.09.1",
++    "settings": "Indigo skip MOL dates; RDKit retain explicit H and atom maps; duplicate field handling checked against authored vector, not dictionary-based oracle"
++  },
++  "expected": {
++    "records": 5,
++    "kinds": [
++      "molecule",
++      "molecule",
++      "reaction",
++      "molecule",
++      "reaction"
++    ],
++    "projection": [
++      "CO",
++      "[13CH3]O",
++      "[CH3:1][OH:2]>>[CH2:1]=[O:2]",
++      null,
++      null
++    ],
++    "projection_comparison": "drawn molecular InChI per role plus explicit atom-map counters, not lexical SMILES equality",
++    "first_field_names": [
++      "note",
++      "note"
++    ],
++    "first_field_values": [
++      "first",
++      "second\nwith  two spaces\n\nlast"
++    ],
++    "encoding": "UTF-8 LF",
++    "numeric_tolerance": 0
++  },
++  "payload": "mixed-records.rdf",
++  "sha256": "0194c15b4a1e8649d028271f98b48d053e3e526afc3870cdcb7c3c3dc7f832f2"
++}
+diff --git a/validation/openbabel_issues/rdfile/mixed-records.rdf b/validation/openbabel_issues/rdfile/mixed-records.rdf
+new file mode 100644
+index 0000000..81844f6
+--- /dev/null
++++ b/validation/openbabel_issues/rdfile/mixed-records.rdf
+@@ -0,0 +1,59 @@
++$RDFILE 1
++$DATM original synthetic fixture
++$MFMT $MIREG 0007
++
++  chematic
++
++  2  1  0  0  0  0  0  0  0  0999 V2000
++    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0
++    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0
++  1  2  1  0
++M  END
++$DTYPE note
++$DATUM first
++$DTYPE note
++$DATUM second
++with  two spaces
++
++last
++$MFMT $MEREG isotope-one
++
++  chematic
++
++  2  1  0  0  0  0  0  0  0  0999 V2000
++    0.0000   -0.0000    0.0000 C   1  0  0  0  0  0  0  0  0  0  0
++    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0
++  1  2  1  0
++M  END
++$DTYPE category
++$DATUM isotope
++$RFMT $REREG oxidation
++$RXN
++
++     chematic
++
++  1  1
++$MOL
++
++  chematic
++
++  2  1  0  0  0  0  0  0  0  0999 V2000
++    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  1  0
++    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  2  0
++  1  2  1  0
++M  END
++$MOL
++
++  chematic
++
++  2  1  0  0  0  0  0  0  0  0999 V2000
++    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  1  0
++    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  2  0
++  1  2  2  0
++M  END
++$DTYPE yield
++$DATUM 70
++$MIREG 00042
++$DTYPE unresolved
++$DATUM molecule reference
++$REREG external reaction
+diff --git a/validation/results/binding_surface_inventory-current.json b/validation/results/binding_surface_inventory-current.json
+index 258fd57..2e7899f 100644
+--- a/validation/results/binding_surface_inventory-current.json
++++ b/validation/results/binding_surface_inventory-current.json
+@@ -7,9 +7,9 @@
+   "scope": "Rust source declarations only; this is not semantic parity evidence",
+   "results": {
+     "wasm_export_count": 303,
+-    "python_pyfunction_count": 183,
+-    "python_registered_count": 183,
++    "python_pyfunction_count": 186,
++    "python_registered_count": 186,
+     "python_declared_without_registration": [],
+-    "surface_sha256": "50f23306bfc2f32fcf86c2a22040ba6d4c86a1a0b3152cb136ddb234ac2dd6a8"
++    "surface_sha256": "9af8d08e8618440bf65684c21cd302949c007c45ecd5e3b66f9fc7b0498fa570"
+   }
+ }
+diff --git a/validation/results/openbabel-rdfile-records-2026-10-15.json b/validation/results/openbabel-rdfile-records-2026-10-15.json
+new file mode 100644
+index 0000000..ead6c0b
+--- /dev/null
++++ b/validation/results/openbabel-rdfile-records-2026-10-15.json
+@@ -0,0 +1,111 @@
++{
++  "schema_version": 1,
++  "status": "local-source-candidate",
++  "issue": "https://github.com/openbabel/openbabel/issues/2681",
++  "base": "cac480fb source snapshot plus preserved previous candidates through correlated stereo-group alternatives; patch isolates RDFile records",
++  "scope": "RDFile v1 records, V2000/V3000 MOL and V2000 RXN, unresolved registry references and ordered ASCII data; canonical checked writing plus explicit SMILES projection",
++  "runtime": {
++    "python": "3.13.6",
++    "indigo": "1.46.0.0-gb36d38f52-aarch64-darwin-appleclang-17000013",
++    "rdkit": "2026.09.1",
++    "openbabel": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
++    "chematic_extension_sha256": "ac0d0a3029925caa55be8741d2f41c56070ef965d69e4802b12b569e9cf12a36"
++  },
++  "source_sha256": {
++    "crates/chematic-mol/src/rdfile.rs": "3ba846530e58ea36c97c4c4b3e81ac18aa1ec78a934e680dffe23d33947ba3e2",
++    "crates/chematic-mol/src/rdfile/reader.rs": "a7a940cba278ddb5e88d6332496c66ffa53c4ff7569743f5c4a21307dce4fd9a",
++    "crates/chematic-mol/src/rdfile/writer.rs": "8f08d50bab37b1bfce70cc7cc4ccb3a41ff6240c27b11b67ab0cac954e3f4213",
++    "crates/chematic-py/src/formats/rdfile.rs": "97efdca3559f2fa3f102e52b5b11fe1337022aa4a78679c889c85c90419ac04c",
++    "crates/chematic-mol/tests/rdfile_contract.rs": "5c8cd4b3dc8a4e9890547974f621bffb088b0bd8d68b7a7c60a4f029f00f45c1",
++    "crates/chematic-py/tests/test_rdfile.py": "68d66edfa24ee68510a8701021c65bcdb0f3b4dded6554cc0265602ace990d49",
++    "crates/chematic-py/python/chematic/__init__.pyi": "16554bac9ef601098af43df62d0db4e28cd9b3d7b7139b7200882abad4bd82e0",
++    "scripts/validate_rdfile_records.py": "b0637b25055d53444356de4e24ee01424fc33f109dd3835e955579149a5d64e6"
++  },
++  "fixture": {
++    "path": "validation/openbabel_issues/rdfile/manifest.json",
++    "manifest_sha256": "24692f4f945dffbfce71fb9b571118e97cb2002e683f0f65b125c0e456b2306e",
++    "schema_version": 1,
++    "id": "synthetic-mixed-rdfile-v1",
++    "provenance": {
++      "source": "original molecule/reaction definitions authored for this feature",
++      "date": "2026-10-15",
++      "issue": "https://github.com/openbabel/openbabel/issues/2681",
++      "specification": "https://www.3ds.com/assets/invest/2026-01/biovia_chemistry_2026_ctfile_formats.pdf",
++      "transformations": "chematic source-candidate MOL/RXN writers encode methanol, carbon-13 methanol and atom-mapped methanol oxidation; authored registry-only records, duplicate fields and multiline data; no upstream attachments copied"
++    },
++    "license": "MIT OR Apache-2.0",
++    "redistribution": {
++      "status": "allowed",
++      "rationale": "original project-authored minimal chemistry and text"
++    },
++    "minimization": "three embedded records and two reference-only records isolate type, isotope, map, metadata and reference handling",
++    "oracle": {
++      "name": "Indigo RDF reader/writer and RDKit graph/InChI reference",
++      "version": "Indigo 1.46.0.0-gb36d38f52-aarch64-darwin-appleclang-17000013; RDKit 2026.09.1",
++      "settings": "Indigo skip MOL dates; RDKit retain explicit H and atom maps; duplicate field handling checked against authored vector, not dictionary-based oracle"
++    },
++    "expected": {
++      "records": 5,
++      "kinds": [
++        "molecule",
++        "molecule",
++        "reaction",
++        "molecule",
++        "reaction"
++      ],
++      "projection": [
++        "CO",
++        "[13CH3]O",
++        "[CH3:1][OH:2]>>[CH2:1]=[O:2]",
++        null,
++        null
++      ],
++      "projection_comparison": "drawn molecular InChI per role plus explicit atom-map counters, not lexical SMILES equality",
++      "first_field_names": [
++        "note",
++        "note"
++      ],
++      "first_field_values": [
++        "first",
++        "second\nwith  two spaces\n\nlast"
++      ],
++      "encoding": "UTF-8 LF",
++      "numeric_tolerance": 0
++    },
++    "payload": "mixed-records.rdf",
++    "sha256": "0194c15b4a1e8649d028271f98b48d053e3e526afc3870cdcb7c3c3dc7f832f2"
++  },
++  "results": {
++    "datasets": 48,
++    "native_to_indigo_records": 144,
++    "indigo_to_native_records": 144,
++    "total_cross_read_records": 288,
++    "graph_or_map_mismatches": 0,
++    "metadata_mismatches": 0,
++    "source_text_mismatches": 0,
++    "default_folded_native_roundtrip_datasets": 48,
++    "registry_only_records_retained": 2,
++    "duplicate_field_entries_retained": 2,
++    "case_sha256": "5535c55176f5ae9e868e1b188323d7dd92ba57b6ec03dcdf04fa6b4277c1bbc9",
++    "forward_writer_settings": {
++      "wrap_data": false
++    },
++    "reverse_settings": {
++      "molfile-saving-skip-date": true
++    },
++    "graph_comparison": "RDKit InChI by reaction role plus atom-map element/isotope/charge and mapped-bond counters"
++  },
++  "indigo_folding_diagnostic": {
++    "indigo_joins_column_81_plus": false,
++    "expected_value_sha256": "0ecbdc9e95e760ffb0884f47a646ee9f14ad3e87a2f1f85662f5f86d59bd2e45",
++    "observed_value_sha256": "39af7bdd2b73e89a35db6412d56498c46beba6604b0f2bfb65d6f9103d0821a4",
++    "folded_file_sha256": "a640aafffabfb6ef76e7c3671a85b90e7b381acb77bce33874ebdf2c81c1cd45",
++    "workaround": "write_rdfile(document, wrap_data=False); explicit plain-long-data extension"
++  },
++  "openbabel_diagnostic": {
++    "rdf_registered": false,
++    "explicit_read_exit_code": 1,
++    "stderr": "obabel: cannot read input format!"
++  },
++  "limitations": "No embedded V3000 RXN/agents, nested $DATUM $MFMT, both registry identifiers, continued/long headers, non-ASCII RD metadata, query-schema interpretation or registry resolution. Original source/structure payloads remain available. Default output folds ASCII data with column-81 plus; measured Indigo interoperability uses explicit wrap_data=False and supports plain long data. Duplicate metadata is checked against authored ordered vectors, not Indigo properties, which do not preserve duplicates."
++}

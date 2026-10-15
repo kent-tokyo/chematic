@@ -416,7 +416,12 @@ pub fn canonical_smiles_with_atom_order(mol: &Molecule) -> (String, Vec<AtomIdx>
 /// every eligible token slot, reparses each candidate, and selects a semantic
 /// lexicographic minimum. This helper still reparses and requires idempotence
 /// before admitting that narrow, proven path as a deduplication or cache key.
+/// Enhanced stereo groups are refused because ordinary SMILES omits their
+/// membership and relative/mixture semantics.
 pub fn canonical_smiles_stable_key(mol: &Molecule) -> Option<String> {
+    if !mol.stereo_groups().is_empty() {
+        return None;
+    }
     let candidate = canonical_smiles(mol);
     let reparsed = crate::parser::parse(&candidate).ok()?;
     if candidate != canonical_smiles(&reparsed) {

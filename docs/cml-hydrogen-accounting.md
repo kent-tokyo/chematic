@@ -39,7 +39,8 @@ The attribute does not add three or four more hydrogens to those explicit nodes.
 
 Invalid integers, negative counts, totals below the explicit-neighbor count,
 and remainders above the core's u8 capacity return
-`CmlError::InvalidHydrogenCount`. Python exposes these as `ValueError`.
+`CmlError::MalformedXml` with an `invalid CML hydrogenCount` message. Python
+exposes these as `ValueError`.
 The total itself can exceed 255 when explicit nodes account for the excess.
 This is a representation check, not a new valence sanitizer.
 

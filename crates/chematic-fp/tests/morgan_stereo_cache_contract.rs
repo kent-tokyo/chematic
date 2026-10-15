@@ -56,3 +56,23 @@ fn chirality_and_direction_edits_do_not_reuse_old_preparation() {
         rdkit_morgan_bitvec(&alkene.clone(), &config()).unwrap()
     );
 }
+
+#[test]
+fn large_chiral_graphs_keep_detailed_and_compact_fingerprints_equal() {
+    // The compact expansion stores environments in 128-bit bond masks.
+    // More than 128 bonds must take the general expansion with the same stereo.
+    let smiles = format!("N[C@H](F){}O", "C".repeat(130));
+    let mol = chematic_smiles::parse(&smiles).unwrap();
+    assert!(mol.bond_count() > 128);
+    for radius in [
+        RdkitMorganRadius::R1,
+        RdkitMorganRadius::R2,
+        RdkitMorganRadius::R3,
+    ] {
+        let cfg = RdkitMorganConfig { radius, ..config() };
+        let detailed = chematic_fp::rdkit_morgan_fingerprint(&mol, &cfg).unwrap();
+        let compact = rdkit_morgan_bitvec(&mol, &cfg).unwrap();
+        assert_eq!(compact, detailed.fingerprint);
+        assert!(compact.popcount() > 0);
+    }
+}

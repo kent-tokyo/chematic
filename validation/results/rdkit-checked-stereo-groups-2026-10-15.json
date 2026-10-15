@@ -1,0 +1,147 @@
+{
+  "schema_version": 1,
+  "status": "local-source-candidate",
+  "issue": "https://github.com/rdkit/rdkit/issues/9705",
+  "scope": "checked enhanced-group construction and inspection; existing STE/STEB V3000 interchange is reused, not newly implemented",
+  "base": "cac480fb snapshot plus preserved earlier RDKit/Open Babel candidates; this patch adds the checked grouping API",
+  "runtime": {
+    "python": "3.13.6",
+    "rdkit": "2026.09.1",
+    "chematic_extension_sha256": "6daba5b7cfde947bfaa5b1a326e593a35042b566a031fea6f23f871c90aba94a"
+  },
+  "source_sha256": {
+    "crates/chematic-core/src/molecule/checked_stereo_groups.rs": "9fbd00034f8836ecf6285499fefaabc4f5fd59690a700a54ca0e705a69ffeaa0",
+    "crates/chematic-py/src/mol_methods/stereo_groups.rs": "eb5ed82fe7abbb30727be7299ec64313babac3b4a0bebb61bb855761eaac750e",
+    "crates/chematic-py/python/chematic/__init__.pyi": "d962b43315cd272118573532493fb2909cab20e7e786a519659f9325f9350c3a",
+    "crates/chematic-core/tests/checked_stereo_groups.rs": "eb609a860bc87ce00dee1d006e69ab839ec084d3fd019132bd56bba466735ab8",
+    "crates/chematic-py/tests/test_stereo_groups.py": "18371e076693b1064b6a0d1edf0d08f7f5d5c38c5c2a15be30ac0382dd994a1e",
+    "scripts/validate_checked_stereo_groups.py": "9d24b5fe53cd0cdda51493997ea4240104c3cc2c479e4ab3add886c83275cba6"
+  },
+  "fixture": {
+    "path": "validation/rdkit_issues/stereo/checked-groups.json",
+    "sha256": "ff7ad956d1a6a3cf4921034178927c1e2197ea425c2e91a384346ea8e0f4fafd",
+    "source": "Original small-molecule diagnostic cases authored for this project, following the metadata gap discussed in RDKit issue 9705",
+    "date": "2026-10-15",
+    "external_data": "No upstream attachments, structures or BIOVIA example records copied",
+    "license": "MIT OR Apache-2.0",
+    "redistribution": "Allowed: original project fixture",
+    "minimization": "Two six-carbon dienes isolate correlated bond groups; one seven-atom alcohol isolates atom/bond correlation. Explicit stereochemical SMILES set the drawn configuration.",
+    "oracle": {
+      "name": "Source-authored membership and declared configuration; RDKit InChI for drawn geometry only",
+      "version": "RDKit 2026.09.1; BIOVIA CTfile Chemistry 2026 collection token definitions",
+      "settings": "ABS/AND/OR; explicit native graph atom/bond indices; 24 deterministic atom numberings per kind and structure; no enumeration or group canonicalization oracle"
+    }
+  },
+  "results": {
+    "cases": 216,
+    "membership_mismatches": 0,
+    "drawn_configuration_mismatches": 0,
+    "cases_sha256": "ece9246cf05f74291afb30e866777f548838d86e71c803179c1667e65f2711d7",
+    "kinds": [
+      "abs",
+      "and",
+      "or"
+    ],
+    "structures": 3,
+    "numberings_per_kind_structure": 24
+  },
+  "rdkit_reference": {
+    "results": [
+      {
+        "case": "ee-diene",
+        "before": [
+          [
+            "STEREO_AND",
+            [],
+            [
+              1,
+              3
+            ]
+          ]
+        ],
+        "after_V3000": [],
+        "after_CanonicalizeStereoGroups": null,
+        "collection_lines": [
+          "M  V30 MDLV30/STERAC1 ATOMS=(0)"
+        ],
+        "block_sha256": "53535bb91e7ae21793a304d2258443b60165aab4fb838dda70bf951033f9ed86"
+      },
+      {
+        "case": "mixed-alcohol",
+        "before": [
+          [
+            "STEREO_AND",
+            [
+              3
+            ],
+            [
+              1
+            ]
+          ]
+        ],
+        "after_V3000": [
+          [
+            "STEREO_AND",
+            [
+              3
+            ],
+            []
+          ]
+        ],
+        "after_CanonicalizeStereoGroups": [
+          [
+            "STEREO_AND",
+            [
+              3
+            ],
+            []
+          ]
+        ],
+        "collection_lines": [
+          "M  V30 MDLV30/STERAC1 ATOMS=(1 4)"
+        ],
+        "block_sha256": "054338cf6ead68a2a0661fe12bbfb9bbd64c03697c75d860f9e5ec48ec9a2211"
+      }
+    ],
+    "note": "RDKit is an independent drawn-geometry/InChI reference and a defect diagnostic; its lossy enhanced-group output is not the membership oracle"
+  },
+  "limits": "Group structure only; no automatic stereo perception, inversion, isomer enumeration, canonical enhanced-group identity or new CXSMILES syntax. Same-kind same-number STE/STEB correlation reuses the existing chematic reader convention; BIOVIA examples do not explicitly settle mixed namespace correlation. Plain SMILES and other graph projections do not encode these groups.",
+  "verification": {
+    "rust": {
+      "passed": 936,
+      "failed": 0,
+      "ignored": 0,
+      "new_contract_tests": 9,
+      "targets": [
+        "chematic-core --lib --test checked_stereo_groups",
+        "chematic-mol --lib --test v3000_semantic_interop"
+      ]
+    },
+    "python": {
+      "passed": 70,
+      "failed": 0,
+      "new_api_tests": 44,
+      "files": [
+        "test_stereo_groups.py",
+        "test_pickle.py",
+        "test_stereo_candidate_budget.py"
+      ]
+    },
+    "checks": {
+      "clippy_core_mol_py_all_targets_warnings_denied": "passed",
+      "cargo_fmt_and_explicit_include_file_rustfmt": "passed",
+      "refactor_budget": "passed",
+      "product_names": "passed",
+      "binding_surface_inventory": "passed",
+      "mkdocs_strict": "passed"
+    },
+    "environment_note": "An initial Clippy run could not create temporary files because the disk was full. Final run passed after removing only task-owned regenerable test/link outputs. Source and unrelated work were preserved.",
+    "log_sha256": {
+      "core-tests.log": "88de04672f3a6d7eb481dcf363c71e83a4944ec2e118640ef52c69047267c5f3",
+      "mol-tests.log": "de4a02b00290307d7fb66a5fb2830ec67d33ce8d020feed4975c954e8b232696",
+      "python-tests.log": "dd8f3143b84ee3a62c3d426c2b3b6b2b19bcac3ba6ae8bee273c5875a1f907c0",
+      "clippy.log": "3fa7979e2f476d0c9b9cf290442acbdfdcaeea5c466e96d159de2571a7484fb8",
+      "docs.log": "76c63b404452d57c866153fcbd098f3a1a165386c5e1d00c582cdb497922234a"
+    }
+  }
+}

@@ -4,6 +4,61 @@ use chematic_3d::rdkit_embed::{RdkitEmbedError, RdkitEmbedOptions};
 
 type PyRdkitMmffConformer = (i32, f64, Vec<[f64; 3]>);
 type PyRdkitMmffConformerDiagnostics = (i32, f64, u32, Option<f64>, Vec<[f64; 3]>);
+type PyBondLengthConstraint = (usize, usize, f64, f64);
+type PyBondAngleConstraint = (usize, usize, usize, f64, f64);
+type PyTorsionConstraint = (usize, usize, usize, usize, f64, f64);
+
+fn internal_coordinate_constraints(
+    bond_lengths: Option<Vec<PyBondLengthConstraint>>,
+    bond_angles: Option<Vec<PyBondAngleConstraint>>,
+    torsions: Option<Vec<PyTorsionConstraint>>,
+) -> chematic_3d::rdkit_embed::InternalCoordinateConstraints {
+    use chematic_3d::rdkit_embed::{
+        BondAngleConstraint, BondLengthConstraint, InternalCoordinateConstraints,
+        TorsionAngleConstraint,
+    };
+
+    InternalCoordinateConstraints {
+        bond_lengths: bond_lengths
+            .unwrap_or_default()
+            .into_iter()
+            .map(|(atom1, atom2, target, tolerance)| {
+                BondLengthConstraint::around(atom1, atom2, target, tolerance)
+            })
+            .collect(),
+        bond_angles: bond_angles
+            .unwrap_or_default()
+            .into_iter()
+            .map(
+                |(atom1, center, atom2, target_degrees, tolerance_degrees)| {
+                    BondAngleConstraint::around_degrees(
+                        atom1,
+                        center,
+                        atom2,
+                        target_degrees,
+                        tolerance_degrees,
+                    )
+                },
+            )
+            .collect(),
+        torsions: torsions
+            .unwrap_or_default()
+            .into_iter()
+            .map(
+                |(atom1, atom2, atom3, atom4, target_degrees, tolerance_degrees)| {
+                    TorsionAngleConstraint::around_degrees(
+                        atom1,
+                        atom2,
+                        atom3,
+                        atom4,
+                        target_degrees,
+                        tolerance_degrees,
+                    )
+                },
+            )
+            .collect(),
+    }
+}
 
 #[allow(clippy::too_many_arguments)]
 fn rdkit_embed_options(
@@ -502,6 +557,63 @@ impl Mol {
         .map_err(|e| PyValueError::new_err(e.to_string()))
     }
 
+    /// Distance-geometry bounds with custom internal coordinates applied
+    /// before triangle smoothing (a capability requested in RDKit #9343).
+    ///
+    /// ``bond_lengths`` entries are ``(a, b, target_angstrom, tolerance)``;
+    /// ``bond_angles`` entries are ``(a, center, b, target_deg, tolerance_deg)``;
+    /// ``torsions`` entries are ``(a, b, c, d, target_deg, tolerance_deg)``.
+    /// Atom indices use this molecule's zero-based order. Invalid, cross-
+    /// fragment or mutually inconsistent constraints raise ``ValueError``.
+    #[pyo3(signature = (*, bond_lengths = None, bond_angles = None, torsions = None,
+                        set15bounds = true, do_triangle_smoothing = true,
+                        use_macrocycle_14_config = false))]
+    fn rdkit_bounds_matrix_with_constraints(
+        &self,
+        bond_lengths: Option<Vec<PyBondLengthConstraint>>,
+        bond_angles: Option<Vec<PyBondAngleConstraint>>,
+        torsions: Option<Vec<PyTorsionConstraint>>,
+        set15bounds: bool,
+        do_triangle_smoothing: bool,
+        use_macrocycle_14_config: bool,
+    ) -> PyResult<Vec<Vec<f64>>> {
+        let constraints = internal_coordinate_constraints(bond_lengths, bond_angles, torsions);
+        chematic_3d::rdkit_embed::rdkit_bounds_matrix_with_constraints(
+            &self.inner,
+            &constraints,
+            set15bounds,
+            do_triangle_smoothing,
+            use_macrocycle_14_config,
+        )
+        .map_err(map_rdkit_embed_error)
+    }
+
+    /// Seeded ETKDG embedding with internal-coordinate constraints incorporated
+    /// into the bounds matrix before triangle smoothing.
+    #[pyo3(signature = (*, bond_lengths = None, bond_angles = None, torsions = None,
+                        random_seed = 42, max_iterations = 0))]
+    fn rdkit_embed_with_constraints(
+        &self,
+        bond_lengths: Option<Vec<PyBondLengthConstraint>>,
+        bond_angles: Option<Vec<PyBondAngleConstraint>>,
+        torsions: Option<Vec<PyTorsionConstraint>>,
+        random_seed: i32,
+        max_iterations: u32,
+    ) -> PyResult<Vec<[f64; 3]>> {
+        let constraints = internal_coordinate_constraints(bond_lengths, bond_angles, torsions);
+        let options = RdkitEmbedOptions {
+            random_seed,
+            max_iterations,
+            ..Default::default()
+        };
+        chematic_3d::rdkit_embed::rdkit_embed_molecule_with_constraints(
+            &self.inner,
+            &options,
+            &constraints,
+        )
+        .map_err(map_rdkit_embed_error)
+    }
+
     /// 2D coordinates exactly as RDKit 2026.03.1's default depiction gives
     /// them: for a molecule read with :func:`from_smiles` this is
     /// ``[[p.x, p.y] for p in m.GetConformer().GetPositions()]`` after
@@ -775,6 +887,8 @@ impl Mol {
         hydrogen_variant: u64,
     ) -> PyResult<PyExplicitHydrogenMmffResult> {
         let mol = self.inner.clone();
+        // The refinement API performs its own typed validation and keeps a
+        // more specific compatibility error ("atom coordinates").
         let coords = flat_to_coords3d(&coords);
         let result = py.detach(move || {
             chematic_3d::refine_mmff94_with_explicit_hydrogens_variant(

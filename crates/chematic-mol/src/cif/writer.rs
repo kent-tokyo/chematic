@@ -28,10 +28,11 @@ pub fn write_cif_checked(
     cell: Option<&UnitCell>,
 ) -> Result<String, CifError> {
     if coords.len() != mol.atom_count() {
-        return Err(CifError::CoordinateCountMismatch {
-            expected: mol.atom_count(),
-            actual: coords.len(),
-        });
+        return Err(CifError::InvalidCoordinate(format!(
+            "CIF requires {} coordinates, got {}",
+            mol.atom_count(),
+            coords.len()
+        )));
     }
     if let Some(cell) = cell {
         cell.validate()?;

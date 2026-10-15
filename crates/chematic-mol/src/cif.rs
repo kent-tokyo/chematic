@@ -182,8 +182,6 @@ pub enum CifError {
     UnknownElement(String),
     /// A coordinate value is invalid, non-finite, or overflows during conversion.
     InvalidCoordinate(String),
-    /// The coordinate count does not match the molecule's atom count.
-    CoordinateCountMismatch { expected: usize, actual: usize },
     /// The unit cell has invalid lengths, angles, volume or numerical invertibility.
     InvalidCellParameters(String),
     /// The atom site loop uses fractional coordinates but the CIF contains no
@@ -209,9 +207,6 @@ impl core::fmt::Display for CifError {
             }
             Self::UnknownElement(s) => write!(f, "unknown element '{s}' in CIF"),
             Self::InvalidCoordinate(s) => write!(f, "invalid coordinate '{s}' in CIF"),
-            Self::CoordinateCountMismatch { expected, actual } => {
-                write!(f, "CIF requires {expected} coordinates, got {actual}")
-            }
             Self::InvalidCellParameters(s) => write!(f, "invalid cell parameters: {s}"),
             Self::MissingCellParameters => write!(
                 f,

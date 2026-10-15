@@ -1,0 +1,1367 @@
+{
+  "schema_version": 1,
+  "issue": {
+    "number": 2763,
+    "state": "OPEN",
+    "verified_date": "2026-10-15",
+    "updated_at": "2025-01-10T08:55:05Z",
+    "url": "https://github.com/openbabel/openbabel/issues/2763",
+    "snapshot_sha256": "91a83df807d7f66f9d7302a29817b837917ce7a2699edd40ae883eb2dd710ca9"
+  },
+  "scope": "Strict molecular ChemDoodle JSON subset, explicit zero H overrides, source/ID preservation and graph writer",
+  "oracle": {
+    "openbabel": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+    "rdkit": "2026.09.1",
+    "profile": "Explicit source H overrides, RDKit ordinary atom defaults for -1/omitted H, graph reconstruction and formula comparison",
+    "openbabel_executable_sha256": "733b2c925d60b17a5c9d8ce9ec841e918cc20c7634301e23f9008a187d1d9bc5"
+  },
+  "fixtures": {
+    "path": "validation/openbabel_issues/cdjson/fixtures.json",
+    "sha256": "5d38696e925053b52e6dec4c66895464b655cb6e9848790ec40841882d0cb647"
+  },
+  "results": {
+    "native_rdkit_cases": 544,
+    "native_roundtrips": 544,
+    "source_id_coordinate_cases": 544,
+    "normalized_packet_sha256": "66604c7d66f32f8c58933dbd3b0fed6da1e7ce54fca8dbbf04c9265f0e0149da",
+    "unexpected_mismatches": 0,
+    "openbabel_diagnostics": [
+      {
+        "lane": "source_read",
+        "exact_formula_cases": 448,
+        "known_zero_override_differences": 96,
+        "differences": [
+          {
+            "id": "zero-carbon-00",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-01",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-02",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-03",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-04",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-05",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-06",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-07",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-08",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-09",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-10",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-11",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-12",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-13",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-14",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-15",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-16",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-17",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-18",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-19",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-20",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-21",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-22",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-23",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-24",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-25",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-26",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-27",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-28",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-29",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-30",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-31",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-oxygen-00",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-01",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-02",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-03",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-04",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-05",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-06",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-07",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-08",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-09",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-10",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-11",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-12",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-13",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-14",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-15",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-16",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-17",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-18",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-19",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-20",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-21",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-22",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-23",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-24",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-25",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-26",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-27",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-28",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-29",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-30",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-31",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "bonded-zero-carbon-00",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-01",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-02",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-03",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-04",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-05",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-06",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-07",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-08",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-09",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-10",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-11",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-12",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-13",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-14",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-15",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-16",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-17",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-18",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-19",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-20",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-21",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-22",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-23",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-24",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-25",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-26",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-27",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-28",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-29",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-30",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-31",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          }
+        ]
+      },
+      {
+        "lane": "native_write_cross_read",
+        "exact_formula_cases": 448,
+        "known_zero_override_differences": 96,
+        "differences": [
+          {
+            "id": "zero-carbon-00",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-01",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-02",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-03",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-04",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-05",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-06",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-07",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-08",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-09",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-10",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-11",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-12",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-13",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-14",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-15",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-16",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-17",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-18",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-19",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-20",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-21",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-22",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-23",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-24",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-25",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-26",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-27",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-28",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-29",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-30",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-carbon-31",
+            "expected": "C",
+            "openbabel_formula": "CH4",
+            "openbabel_smiles": "C"
+          },
+          {
+            "id": "zero-oxygen-00",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-01",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-02",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-03",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-04",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-05",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-06",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-07",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-08",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-09",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-10",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-11",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-12",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-13",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-14",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-15",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-16",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-17",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-18",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-19",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-20",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-21",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-22",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-23",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-24",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-25",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-26",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-27",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-28",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-29",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-30",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "zero-oxygen-31",
+            "expected": "O",
+            "openbabel_formula": "H2O",
+            "openbabel_smiles": "O"
+          },
+          {
+            "id": "bonded-zero-carbon-00",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-01",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-02",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-03",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-04",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-05",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-06",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-07",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-08",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-09",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-10",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-11",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-12",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-13",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-14",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-15",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-16",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-17",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-18",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-19",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-20",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-21",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-22",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-23",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-24",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-25",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-26",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-27",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-28",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-29",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-30",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          },
+          {
+            "id": "bonded-zero-carbon-31",
+            "expected": "C2H3",
+            "openbabel_formula": "C2H6",
+            "openbabel_smiles": "CC"
+          }
+        ]
+      }
+    ],
+    "openbabel_writer_import_controls": 12,
+    "multi_molecule_read_control": {
+      "input_molecules": 544,
+      "chematic_molecules": 544,
+      "openbabel_molecules": 1,
+      "openbabel_stderr": "1 molecule converted\n"
+    },
+    "reported_default_carbon_bug_reproduced_on_3_2_1": false,
+    "current_zero_h_override_gap_reproduced": true
+  },
+  "baseline": {
+    "path": "/private/tmp/chematic-fold-density",
+    "parse_cdjson_present": false,
+    "write_cdjson_graph_present": false,
+    "verified_by_runtime_import": true
+  },
+  "candidate": {
+    "path": "/private/tmp/chematic-cdjson",
+    "inherited_source": "/private/tmp/chematic-fold-density",
+    "baseline_commit": "60f733f5d10ca8723166483d83352bd0b9f44830",
+    "integrated": false,
+    "committed": false,
+    "pushed": false,
+    "source_artifacts": [
+      {
+        "path": ".github/workflows/ci.yml",
+        "sha256": "4c1a710fecc8b6847bb8e3def2c365c3faeeb89d40ca4ec497bd13b4136a6947",
+        "base_sha256": "96d5a684147d0d89fc6d2167a2b97340761f9879ba0f75daabbff427a381c03c"
+      },
+      {
+        "path": "CHANGELOG.md",
+        "sha256": "61499c5c6b8d823df19a5fa97ba331b9aca3ab09fb177a49d144e4693c2d3ca0",
+        "base_sha256": "01388ad032a25f3c0037200f216351544d8b61acd95c3957b4397be78ea74116"
+      },
+      {
+        "path": "crates/chematic-mol/src/cdjson.rs",
+        "sha256": "5cfb04cab113f224b3d900c1a50361e8ad3bdd8d231d52b54cefa1c797d44588",
+        "base_sha256": null
+      },
+      {
+        "path": "crates/chematic-mol/src/cdjson/reader.rs",
+        "sha256": "1a6416593685257ff2d85b552b303351cec8796bf7d4eeaeb0c80c008b24ff84",
+        "base_sha256": null
+      },
+      {
+        "path": "crates/chematic-mol/src/cdjson/writer.rs",
+        "sha256": "bfd43ccd042343610868edcb47b4894b1578d04eb5057ec2a3ba2c5361b91be8",
+        "base_sha256": null
+      },
+      {
+        "path": "crates/chematic-mol/src/cjson_record.rs",
+        "sha256": "23d561164a2dc9a45b577d37a1f96a0024554febcd4e84b0795370e40f90d5d1",
+        "base_sha256": "d619052dc75187179e8fdc170cb6057edfd89b79aa9ca1e1747194ca90a3fdd8"
+      },
+      {
+        "path": "crates/chematic-mol/src/lib.rs",
+        "sha256": "aa444be4b389566989c954ea4e4aee51a4c125a5211862ecf138b9849f8137d0",
+        "base_sha256": "a405af5de9fc134811e1d86ed6803263b7a2d2e887c76e944466ff97c0d178fb"
+      },
+      {
+        "path": "crates/chematic-mol/tests/cdjson_contract.rs",
+        "sha256": "553f398365aabdfa558aed4120c6918392c4b64e146e8509cecefcfd34be5ea8",
+        "base_sha256": null
+      },
+      {
+        "path": "crates/chematic-py/python/chematic/__init__.pyi",
+        "sha256": "eb408b24c7ed2880a3c11795cb1579edab6ddc9e8829b4bb4a15e070e3105380",
+        "base_sha256": "82a6d598f3ddbd046b5be660a2e64940ea1b876ce0c8c394105e85e3314263ed"
+      },
+      {
+        "path": "crates/chematic-py/src/formats.rs",
+        "sha256": "a5008507db13dd8ec9648b05f6f7f818e16dd8f684ee1b8fbe11486089a5c1e7",
+        "base_sha256": "dcb66749d32b691ff44da5307dc870c6ab4956b097411df14d27612f71c77666"
+      },
+      {
+        "path": "crates/chematic-py/src/formats/cdjson.rs",
+        "sha256": "07f0bcbf320249b9e5b2807cb07a80ba7409097e2b204bbbaf5a0c4fed1ab338",
+        "base_sha256": null
+      },
+      {
+        "path": "crates/chematic-py/tests/test_cdjson.py",
+        "sha256": "e8a26ecbaab336591b0303f5bf5644c4f22c6443f2f43310952c486c30eefbfe",
+        "base_sha256": null
+      },
+      {
+        "path": "docs/chemdoodle-json.md",
+        "sha256": "1e43f436274fa03d635381d3d4a8be309c7b5caad5b6d8380f429eae5d80bcf7",
+        "base_sha256": null
+      },
+      {
+        "path": "docs/format-capabilities.md",
+        "sha256": "43c1332aee3402a2324692015eff4677d8d08f07594792f17765e31e2223c3b5",
+        "base_sha256": "f4ca53e58ad418095fe67397f3d806b98c27923f24b1bc692a50784075e5256d"
+      },
+      {
+        "path": "mkdocs.yml",
+        "sha256": "81be683ec2f48935868b3ec8231cbffcd5652a8b54b5c1e99ef24745b38b1195",
+        "base_sha256": "4a78e2b32b8c0e67ff8ee9af201f0faa568957e670e7eb0c7cf528a573603b2b"
+      },
+      {
+        "path": "scripts/validate_cdjson.py",
+        "sha256": "64f6cefd723b3bde179c2ee4d71052891f9c6267f09dcb088d2a8e5c1681f17c",
+        "base_sha256": null
+      },
+      {
+        "path": "validation/openbabel_issues/cdjson/fixtures.json",
+        "sha256": "5d38696e925053b52e6dec4c66895464b655cb6e9848790ec40841882d0cb647",
+        "base_sha256": null
+      },
+      {
+        "path": "validation/results/binding_surface_inventory-current.json",
+        "sha256": "7c7db0b67a6e257d6dad79e15f2a3913faca47a5d30db72af51217db8f7d8f4c",
+        "base_sha256": "3dc679b634d04016311130e493ae3592bea89f52498e17d3e1b05a2ff8a7aa5a"
+      }
+    ]
+  },
+  "compiled_extension": {
+    "path": "/private/tmp/chematic-cdjson-module/chematic/chematic.so",
+    "sha256": "ed4760964b34880b53d3d41124c2201d9f085da91fbfdb53dbc87e67470fb2f6",
+    "python": "3.13.6",
+    "native_inchi": false
+  },
+  "checks": {
+    "rust": {
+      "library_passed": 753,
+      "integration_passed": 12,
+      "failed": 0,
+      "ignored": 0
+    },
+    "python": {
+      "passed": 54,
+      "new_tests": 31,
+      "existing_cjson_tests": 23,
+      "failed": 0
+    },
+    "clippy": "passed: chematic-mol and chematic-py, all-targets, warnings denied",
+    "rustfmt": "passed",
+    "refactor_budget": {
+      "production_files": 559,
+      "functions": 8443,
+      "file_allowances": 18,
+      "function_allowances": 86
+    },
+    "binding_surface": {
+      "python_freefunctions": 200,
+      "registered": 200,
+      "wasm": 303,
+      "unregistered": 0
+    },
+    "product_names": "passed",
+    "stub_ast": "passed",
+    "mkdocs": "strict passed",
+    "mkdocs_log_sha256": "6793a020f7c2947d41aae5921791f4aee5c265d31777116536ce75bf3639dcf1"
+  },
+  "commands": [
+    "cargo test -p chematic-mol --lib --test cdjson_contract --offline --quiet",
+    "cargo clippy -p chematic-mol -p chematic-py --all-targets --offline --no-deps -- -D warnings",
+    "python3 -m pytest crates/chematic-py/tests/test_cdjson.py crates/chematic-py/tests/test_cjson_preservation.py -q",
+    "python3 scripts/validate_cdjson.py",
+    "python3 scripts/check_refactor_budget.py",
+    "python3 scripts/check_binding_surface.py",
+    "python3 scripts/check_product_names.py",
+    "python3 -m mkdocs build --strict --site-dir /private/tmp/chematic-cdjson-site"
+  ],
+  "patch": {
+    "path": "validation/openbabel_issues/cdjson-2026-10-15.patch",
+    "sha256": "008a950f717d344ab596de2005e7df3e90dba4e213d2caf5a185723583f41706",
+    "bytes": 81920,
+    "forward_check_in_inherited_source": true,
+    "reverse_check_in_candidate": true
+  }
+}

@@ -1,0 +1,1214 @@
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 613fe90..6d0924c 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -225,6 +225,7 @@ jobs:
+           - { package: chematic-mol, target: exyz_contract }
+           - { package: chematic-mol, target: fhiaims_contract }
+           - { package: chematic-mol, target: mopac_cartesian_contract }
++          - { package: chematic-mol, target: dmol3_contract }
+           - { package: chematic-smiles, target: rdkit_graph_queries }
+           - { package: chematic-smiles, target: rdkit_atom_environment }
+           - { package: chematic-smiles, target: rdkit_path_enumeration }
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 7450af4..533b00f 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -12,6 +12,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
+ 
+ ### Added
+ 
++- Added checked DMol3 .incoor reading/writing in Rust/Python, retaining raw
++  Bohr coordinates and oriented 3D cells with explicit Angstrom projections.
++
+ - Added bounded RDKit path enumeration in Rust/Python with ordered atom/bond
+   output, root and hydrogen options, shortest-path selection and final ring
+   closures. Work/storage limits return errors rather than truncated paths.
+diff --git a/crates/chematic-mol/src/dmol3.rs b/crates/chematic-mol/src/dmol3.rs
+new file mode 100644
+index 0000000..f1c1b41
+--- /dev/null
++++ b/crates/chematic-mol/src/dmol3.rs
+@@ -0,0 +1,147 @@
++//! Checked standalone DMol3 .incoor geometry, independently implemented from
++//! the public ASE format description. No Open Babel/ASE implementation copied.
++use chematic_core::Element;
++mod reader;
++pub use reader::{parse_dmol3, parse_dmol3_with_limits};
++
++/// Bohr radius in Angstrom, CODATA 2022 central value. Raw Bohr stays authoritative.
++pub const DMOL3_BOHR_ANGSTROM: f64 = 0.529_177_210_544;
++
++#[derive(Debug, Clone, Copy)]
++pub struct Dmol3ParseLimits {
++    pub max_input_bytes: usize,
++    pub max_line_len: usize,
++    pub max_atoms: usize,
++}
++impl Default for Dmol3ParseLimits {
++    fn default() -> Self {
++        Self {
++            max_input_bytes: 64 << 20,
++            max_line_len: 1024,
++            max_atoms: 1_000_000,
++        }
++    }
++}
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub struct Dmol3Error {
++    pub line: usize,
++    pub detail: String,
++}
++impl core::fmt::Display for Dmol3Error {
++    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
++        write!(f, "DMol3 line {}: {}", self.line, self.detail)
++    }
++}
++impl std::error::Error for Dmol3Error {}
++fn error(line: usize, detail: impl Into<String>) -> Dmol3Error {
++    Dmol3Error {
++        line,
++        detail: detail.into(),
++    }
++}
++
++#[derive(Debug, Clone, PartialEq)]
++pub struct Dmol3Atom {
++    pub element: Element,
++    pub position_bohr: [f64; 3],
++}
++#[derive(Debug, Clone, PartialEq)]
++pub struct Dmol3Geometry {
++    pub atoms: Vec<Dmol3Atom>,
++    /// Three ordered Cartesian row vectors in Bohr; None means nonperiodic.
++    pub cell_bohr: Option<[[f64; 3]; 3]>,
++    pub source_text: String,
++}
++impl Dmol3Geometry {
++    pub fn periodicity(&self) -> u8 {
++        if self.cell_bohr.is_some() { 3 } else { 0 }
++    }
++    pub fn validate(&self) -> Result<(), Dmol3Error> {
++        if self.atoms.is_empty() || self.atoms.len() > Dmol3ParseLimits::default().max_atoms {
++            return Err(error(0, "atom count outside supported limits"));
++        }
++        if self
++            .atoms
++            .iter()
++            .any(|a| a.position_bohr.iter().any(|v| !v.is_finite()))
++        {
++            return Err(error(0, "non-finite coordinate"));
++        }
++        if let Some(cell) = self.cell_bohr {
++            validate_cell(&cell)?;
++        }
++        Ok(())
++    }
++    pub fn positions_angstrom(&self) -> Result<Vec<[f64; 3]>, Dmol3Error> {
++        self.validate()?;
++        let mut out = Vec::new();
++        out.try_reserve_exact(self.atoms.len())
++            .map_err(|e| error(0, format!("coordinate allocation failed: {e}")))?;
++        out.extend(
++            self.atoms
++                .iter()
++                .map(|a| a.position_bohr.map(|v| v * DMOL3_BOHR_ANGSTROM)),
++        );
++        Ok(out)
++    }
++    pub fn cell_angstrom(&self) -> Result<Option<[[f64; 3]; 3]>, Dmol3Error> {
++        self.validate()?;
++        Ok(self
++            .cell_bohr
++            .map(|m| m.map(|r| r.map(|v| v * DMOL3_BOHR_ANGSTROM))))
++    }
++}
++fn validate_cell(m: &[[f64; 3]; 3]) -> Result<(), Dmol3Error> {
++    let mut normalized = [[0.; 3]; 3];
++    let mut scale = 1.;
++    for (i, row) in m.iter().enumerate() {
++        let norm = row[0].hypot(row[1]).hypot(row[2]);
++        if !norm.is_finite() || norm <= 0. {
++            return Err(error(0, "cell vector must have finite positive length"));
++        }
++        scale *= norm;
++        for (j, v) in row.iter().enumerate() {
++            normalized[i][j] = v / norm;
++        }
++    }
++    let [a, b, c] = normalized;
++    let det = a[0] * (b[1] * c[2] - b[2] * c[1]) - a[1] * (b[0] * c[2] - b[2] * c[0])
++        + a[2] * (b[0] * c[1] - b[1] * c[0]);
++    let volume = det.abs() * scale;
++    if det.abs() <= 1e-6 || !volume.is_finite() || volume <= 0. {
++        return Err(error(
++            0,
++            "singular, near-singular or non-finite cell volume",
++        ));
++    }
++    Ok(())
++}
++
++/// Serialize current validated Bohr values, never stale source_text. No wrapping,
++/// rotation, cell normalization, bond perception or electronic-state inference.
++pub fn write_dmol3(g: &Dmol3Geometry) -> Result<String, Dmol3Error> {
++    g.validate()?;
++    let mut out = String::new();
++    if let Some(cell) = g.cell_bohr {
++        out.push_str("$cell vectors\n");
++        for row in cell {
++            write_row(&mut out, row);
++        }
++    }
++    out.push_str("$coordinates\n");
++    for atom in &g.atoms {
++        out.push_str(atom.element.symbol());
++        write_row(&mut out, atom.position_bohr);
++        if out.len() > Dmol3ParseLimits::default().max_input_bytes {
++            return Err(error(0, "serialized byte limit exceeded"));
++        }
++    }
++    out.push_str("$end\n");
++    if out.len() > Dmol3ParseLimits::default().max_input_bytes {
++        return Err(error(0, "serialized byte limit exceeded"));
++    }
++    Ok(out)
++}
++fn write_row(out: &mut String, p: [f64; 3]) {
++    out.push_str(&format!(" {:.17e} {:.17e} {:.17e}\n", p[0], p[1], p[2]));
++}
+diff --git a/crates/chematic-mol/src/dmol3/reader.rs b/crates/chematic-mol/src/dmol3/reader.rs
+new file mode 100644
+index 0000000..131be83
+--- /dev/null
++++ b/crates/chematic-mol/src/dmol3/reader.rs
+@@ -0,0 +1,119 @@
++use super::*;
++
++pub fn parse_dmol3(text: &str) -> Result<Dmol3Geometry, Dmol3Error> {
++    parse_dmol3_with_limits(text, &Dmol3ParseLimits::default())
++}
++/// Strict standalone .incoor: optional three-row cell, coordinates, mandatory
++/// $end. Preambles, output logs, repeated blocks/jobs and unknown fields fail.
++pub fn parse_dmol3_with_limits(
++    text: &str,
++    limits: &Dmol3ParseLimits,
++) -> Result<Dmol3Geometry, Dmol3Error> {
++    check_input_limits(text, limits)?;
++    let hard = Dmol3ParseLimits::default();
++    let mut lines = text.lines().enumerate().filter_map(|(i, line)| {
++        let line = line.trim();
++        (!line.is_empty()).then_some((i + 1, line))
++    });
++    let (mut number, mut line) = lines
++        .next()
++        .ok_or_else(|| error(1, "expected $cell vectors or $coordinates"))?;
++    let cell_bohr = if line == "$cell vectors" {
++        let mut cell = [[0.; 3]; 3];
++        for row in &mut cell {
++            let (n, text) = lines
++                .next()
++                .ok_or_else(|| error(number, "incomplete three-vector cell"))?;
++            *row = values(text, n)?;
++        }
++        (number, line) = lines
++            .next()
++            .ok_or_else(|| error(number, "expected $coordinates after cell"))?;
++        Some(cell)
++    } else {
++        None
++    };
++    if line != "$coordinates" {
++        return Err(error(number, "expected exact $coordinates header"));
++    }
++    let mut atoms = Vec::new();
++    let mut ended = false;
++    for (number, line) in lines {
++        if ended {
++            return Err(error(number, "trailing sections or jobs are unsupported"));
++        }
++        if line == "$end" {
++            ended = true;
++            continue;
++        }
++        if atoms.len() >= limits.max_atoms.min(hard.max_atoms) {
++            return Err(error(number, "atom limit exceeded"));
++        }
++        let f: Vec<_> = line.split_whitespace().collect();
++        if f.len() != 4 {
++            return Err(error(
++                number,
++                "expected canonical element followed by three Bohr coordinates",
++            ));
++        }
++        let element = Element::from_symbol(f[0])
++            .filter(|e| e.symbol() == f[0])
++            .ok_or_else(|| error(number, "invalid canonical element"))?;
++        let position_bohr = [
++            real(f[1], number)?,
++            real(f[2], number)?,
++            real(f[3], number)?,
++        ];
++        atoms
++            .try_reserve(1)
++            .map_err(|e| error(number, format!("atom allocation failed: {e}")))?;
++        atoms.push(Dmol3Atom {
++            element,
++            position_bohr,
++        });
++    }
++    if !ended {
++        return Err(error(0, "missing $end terminator"));
++    }
++    let mut g = Dmol3Geometry {
++        atoms,
++        cell_bohr,
++        source_text: String::new(),
++    };
++    g.validate()?;
++    g.source_text = text.to_string();
++    Ok(g)
++}
++fn check_input_limits(text: &str, limits: &Dmol3ParseLimits) -> Result<(), Dmol3Error> {
++    let hard = Dmol3ParseLimits::default();
++    if text.len() > limits.max_input_bytes.min(hard.max_input_bytes) {
++        return Err(error(0, "input byte limit exceeded"));
++    }
++    for (i, line) in text.lines().enumerate() {
++        if line.len() > limits.max_line_len.min(hard.max_line_len) {
++            return Err(error(i + 1, "line length limit exceeded"));
++        }
++    }
++    Ok(())
++}
++fn values(line: &str, number: usize) -> Result<[f64; 3], Dmol3Error> {
++    let f: Vec<_> = line.split_whitespace().collect();
++    if f.len() != 3 {
++        return Err(error(number, "cell row requires exactly three Bohr values"));
++    }
++    Ok([
++        real(f[0], number)?,
++        real(f[1], number)?,
++        real(f[2], number)?,
++    ])
++}
++fn real(text: &str, line: usize) -> Result<f64, Dmol3Error> {
++    let v = text
++        .replace(['D', 'd'], "e")
++        .parse::<f64>()
++        .map_err(|_| error(line, "invalid real number"))?;
++    if !v.is_finite() {
++        return Err(error(line, "non-finite real number"));
++    }
++    Ok(v)
++}
+diff --git a/crates/chematic-mol/src/lib.rs b/crates/chematic-mol/src/lib.rs
+index e2991f3..3fa99ce 100644
+--- a/crates/chematic-mol/src/lib.rs
++++ b/crates/chematic-mol/src/lib.rs
+@@ -26,6 +26,7 @@ pub mod cjson_record;
+ pub mod cml;
+ pub mod conversion;
+ pub mod cube;
++pub mod dmol3;
+ pub mod error;
+ pub mod exyz;
+ pub mod fhiaims;
+@@ -103,6 +104,10 @@ pub use cml::{
+ pub use cube::{
+     CubeError, CubeFileReader, CubeParseLimits, parse_cube, parse_cube_with_limits, write_cube,
+ };
++pub use dmol3::{
++    DMOL3_BOHR_ANGSTROM, Dmol3Atom, Dmol3Error, Dmol3Geometry, Dmol3ParseLimits, parse_dmol3,
++    parse_dmol3_with_limits, write_dmol3,
++};
+ pub use error::MolParseError as MolError;
+ pub use exyz::{
+     ExyzAtom, ExyzCell, ExyzError, ExyzGeometry, ExyzParseLimits, parse_exyz,
+diff --git a/crates/chematic-mol/tests/dmol3_contract.rs b/crates/chematic-mol/tests/dmol3_contract.rs
+new file mode 100644
+index 0000000..5eed66f
+--- /dev/null
++++ b/crates/chematic-mol/tests/dmol3_contract.rs
+@@ -0,0 +1,156 @@
++//! Original synthetic MIT OR Apache-2.0 fixtures; see the DMol3 manifest.
++use chematic_core::Element;
++use chematic_mol::{
++    DMOL3_BOHR_ANGSTROM, Dmol3Atom, Dmol3ParseLimits, parse_dmol3, parse_dmol3_with_limits,
++    write_dmol3,
++};
++const TEXT: &str = "$cell vectors\n4 1 0\n-1 5 2\n1 0 -6\n$coordinates\nSi .125 -1.25 2.5\nCl -1.5 .125 .5\n$end\n";
++
++#[test]
++fn raw_bohr_basis_orientation_and_projection() {
++    let g = parse_dmol3(TEXT).unwrap();
++    assert_eq!(g.source_text, TEXT);
++    assert_eq!(g.periodicity(), 3);
++    assert_eq!(g.atoms[0].position_bohr, [0.125, -1.25, 2.5]);
++    assert_eq!(
++        g.positions_angstrom().unwrap()[0],
++        [0.125, -1.25, 2.5].map(|v| v * DMOL3_BOHR_ANGSTROM)
++    );
++    assert_eq!(g.cell_bohr.unwrap()[2], [1., 0., -6.]);
++    assert_eq!(
++        g.cell_angstrom().unwrap().unwrap()[2],
++        [1., 0., -6.].map(|v| v * DMOL3_BOHR_ANGSTROM)
++    );
++    let back = parse_dmol3(&write_dmol3(&g).unwrap()).unwrap();
++    assert_eq!(back.atoms, g.atoms);
++    assert_eq!(back.cell_bohr, g.cell_bohr);
++}
++
++#[test]
++fn all_canonical_elements_and_nonperiodic_documents() {
++    let mut g = parse_dmol3("$coordinates\nH 0 0 0\n$end").unwrap();
++    g.atoms = (1..=118)
++        .map(|n| Dmol3Atom {
++            element: Element::from_atomic_number(n).unwrap(),
++            position_bohr: [f64::from(n), 0., 0.],
++        })
++        .collect();
++    assert_eq!(g.periodicity(), 0);
++    assert_eq!(g.cell_angstrom().unwrap(), None);
++    let back = parse_dmol3(&write_dmol3(&g).unwrap()).unwrap();
++    assert_eq!(back.atoms, g.atoms);
++}
++
++#[test]
++fn precision_crlf_blank_lines_and_fortran_exponents() {
++    let text = "\r\n$coordinates\r\n\r\nH -0.0 4.9406564584124654D-324 1.7976931348623157e308\r\n$end\r\n\r\n";
++    let g = parse_dmol3(text).unwrap();
++    assert_eq!(g.source_text, text);
++    let back = parse_dmol3(&write_dmol3(&g).unwrap()).unwrap();
++    for (a, b) in g.atoms[0]
++        .position_bohr
++        .iter()
++        .zip(back.atoms[0].position_bohr)
++    {
++        assert_eq!(a.to_bits(), b.to_bits());
++    }
++    assert!(
++        g.positions_angstrom().unwrap()[0]
++            .iter()
++            .all(|v| v.is_finite())
++    );
++}
++
++#[test]
++fn malformed_unknown_and_multiple_sections_fail() {
++    for text in [
++        "",
++        "$coordinates\n$end",
++        "$coordinates\nC 0 0 0",
++        "$coordinates\nC 0 0 0\n$end\n$end",
++        "preamble\n$coordinates\nC 0 0 0\n$end",
++        "$coordinates angstrom\nC 0 0 0\n$end",
++        "$coordinates\nC 0 0 0 0.5\n$end",
++        "$coordinates\nc 0 0 0\n$end",
++        "$coordinates\nC1 0 0 0\n$end",
++        "$coordinates\n6 0 0 0\n$end",
++        "$coordinates\nC NaN 0 0\n$end",
++        "$coordinates\nC 1e309 0 0\n$end",
++        "$cell vectors\n1 0 0\n0 1 0\n$coordinates\nC 0 0 0\n$end",
++        "$coordinates\nC 0 0 0\n$cell vectors\n$end",
++        "$coordinates\n# comment\nC 0 0 0\n$end",
++    ] {
++        assert!(parse_dmol3(text).is_err(), "{text}");
++    }
++}
++
++#[test]
++fn invalid_and_nearly_dependent_cells_are_refused() {
++    for cell in [
++        "0 0 0\n0 1 0\n0 0 1",
++        "1 0 0\n2 0 0\n0 0 1",
++        "1 0 0\n0 1 0\n1 1 1e-12",
++        "1e308 0 0\n0 1e308 0\n0 0 1e308",
++        "NaN 0 0\n0 1 0\n0 0 1",
++    ] {
++        assert!(
++            parse_dmol3(&format!(
++                "$cell vectors\n{cell}\n$coordinates\nC 0 0 0\n$end"
++            ))
++            .is_err()
++        );
++    }
++}
++
++#[test]
++fn caller_limits_and_physical_lines() {
++    for limits in [
++        Dmol3ParseLimits {
++            max_input_bytes: 2,
++            ..Default::default()
++        },
++        Dmol3ParseLimits {
++            max_atoms: 1,
++            ..Default::default()
++        },
++        Dmol3ParseLimits {
++            max_line_len: 5,
++            ..Default::default()
++        },
++    ] {
++        assert!(parse_dmol3_with_limits(TEXT, &limits).is_err());
++    }
++    assert_eq!(
++        parse_dmol3("$coordinates\n\nC bad 0 0\n$end")
++            .unwrap_err()
++            .line,
++        3
++    );
++    let text = format!("{}$coordinates\nC 0 0 0\n$end", " ".repeat(1025));
++    assert!(
++        parse_dmol3_with_limits(
++            &text,
++            &Dmol3ParseLimits {
++                max_line_len: usize::MAX,
++                ..Default::default()
++            }
++        )
++        .is_err()
++    );
++}
++
++#[test]
++fn writer_and_projections_validate_mutated_data() {
++    let mut g = parse_dmol3(TEXT).unwrap();
++    g.atoms[0].position_bohr[0] = 0.12345678901234566;
++    g.cell_bohr = None;
++    let text = write_dmol3(&g).unwrap();
++    assert_ne!(text, TEXT);
++    let back = parse_dmol3(&text).unwrap();
++    assert_eq!(back.atoms, g.atoms);
++    assert!(back.cell_bohr.is_none());
++    g.atoms[0].position_bohr[0] = f64::NAN;
++    assert!(write_dmol3(&g).is_err());
++    assert!(g.positions_angstrom().is_err());
++    assert!(g.cell_angstrom().is_err());
++}
+diff --git a/crates/chematic-py/python/chematic/__init__.pyi b/crates/chematic-py/python/chematic/__init__.pyi
+index cc15ddb..4805893 100644
+--- a/crates/chematic-py/python/chematic/__init__.pyi
++++ b/crates/chematic-py/python/chematic/__init__.pyi
+@@ -5016,3 +5016,12 @@ def parse_mopac_cartesian(text: str, *, max_input_bytes: Optional[int] = None, m
+ def write_mopac_cartesian(elements: Sequence[str], positions_angstrom: Sequence[Sequence[float]], *, keywords: str = "", title: str = "", comment: str = "", labels: Optional[Sequence[Optional[str]]] = None, optimization_flags: Optional[Sequence[Optional[Sequence[str]]]] = None, translation_vectors_angstrom: Optional[Sequence[Sequence[float]]] = None, translation_flags: Optional[Sequence[Optional[Sequence[str]]]] = None) -> str:
+     """Write current geometry; flags are string codes -2/-1/0/1/2/T, or None per row."""
+     ...
++
++
++def parse_dmol3(text: str, *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None) -> dict[str, Any]:
++    """Read standalone DMol3 .incoor; retain raw Bohr and project to CODATA 2022 Angstrom."""
++    ...
++
++def write_dmol3(elements: Sequence[str], positions_bohr: Sequence[Sequence[float]], *, cell_bohr: Optional[Sequence[Sequence[float]]] = None) -> str:
++    """Write current Bohr values; optional cell is exactly three ordered Cartesian vectors."""
++    ...
+diff --git a/crates/chematic-py/src/formats.rs b/crates/chematic-py/src/formats.rs
+index 667a4ee..7fdf79d 100644
+--- a/crates/chematic-py/src/formats.rs
++++ b/crates/chematic-py/src/formats.rs
+@@ -10,6 +10,8 @@ mod cif;
+ use cif::*;
+ mod fhiaims;
+ use fhiaims::*;
++mod dmol3;
++use dmol3::*;
+ mod mopac;
+ use mopac::*;
+ mod exyz;
+@@ -1445,6 +1447,8 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
+         write_gzmat,
+         parse_fhiaims,
+         write_fhiaims,
++        parse_dmol3,
++        write_dmol3,
+         parse_mopac_cartesian,
+         write_mopac_cartesian,
+         parse_exyz,
+diff --git a/crates/chematic-py/src/formats/dmol3.rs b/crates/chematic-py/src/formats/dmol3.rs
+new file mode 100644
+index 0000000..985f709
+--- /dev/null
++++ b/crates/chematic-py/src/formats/dmol3.rs
+@@ -0,0 +1,84 @@
++use super::*;
++
++fn dmol3_error(e: chematic_mol::Dmol3Error) -> PyErr {
++    PyValueError::new_err(e.to_string())
++}
++
++#[pyfunction]
++#[pyo3(signature=(text, *, max_input_bytes=None, max_atoms=None, max_line_len=None))]
++pub(super) fn parse_dmol3<'py>(
++    py: Python<'py>,
++    text: &str,
++    max_input_bytes: Option<usize>,
++    max_atoms: Option<usize>,
++    max_line_len: Option<usize>,
++) -> PyResult<Bound<'py, PyDict>> {
++    let mut limits = chematic_mol::Dmol3ParseLimits::default();
++    if let Some(v) = max_input_bytes {
++        limits.max_input_bytes = v;
++    }
++    if let Some(v) = max_atoms {
++        limits.max_atoms = v;
++    }
++    if let Some(v) = max_line_len {
++        limits.max_line_len = v;
++    }
++    let g = chematic_mol::parse_dmol3_with_limits(text, &limits).map_err(dmol3_error)?;
++    let out = PyDict::new(py);
++    out.set_item(
++        "elements",
++        g.atoms
++            .iter()
++            .map(|a| a.element.symbol())
++            .collect::<Vec<_>>(),
++    )?;
++    out.set_item(
++        "positions_bohr",
++        g.atoms.iter().map(|a| a.position_bohr).collect::<Vec<_>>(),
++    )?;
++    out.set_item(
++        "positions_angstrom",
++        g.positions_angstrom().map_err(dmol3_error)?,
++    )?;
++    out.set_item("cell_bohr", g.cell_bohr)?;
++    out.set_item("cell_angstrom", g.cell_angstrom().map_err(dmol3_error)?)?;
++    out.set_item("bohr_angstrom", chematic_mol::DMOL3_BOHR_ANGSTROM)?;
++    out.set_item("periodicity", g.periodicity())?;
++    out.set_item("source_text", g.source_text)?;
++    Ok(out)
++}
++
++#[pyfunction]
++#[pyo3(signature=(elements, positions_bohr, *, cell_bohr=None))]
++pub(super) fn write_dmol3(
++    elements: Vec<String>,
++    positions_bohr: Vec<[f64; 3]>,
++    cell_bohr: Option<[[f64; 3]; 3]>,
++) -> PyResult<String> {
++    if elements.len() != positions_bohr.len() {
++        return Err(PyValueError::new_err(
++            "element and coordinate counts must match",
++        ));
++    }
++    let atoms = elements
++        .into_iter()
++        .zip(positions_bohr)
++        .map(|(symbol, position_bohr)| {
++            let element = chematic_core::Element::from_symbol(&symbol)
++                .filter(|e| e.symbol() == symbol)
++                .ok_or_else(|| {
++                    PyValueError::new_err(format!("invalid canonical element '{symbol}'"))
++                })?;
++            Ok(chematic_mol::Dmol3Atom {
++                element,
++                position_bohr,
++            })
++        })
++        .collect::<PyResult<Vec<_>>>()?;
++    chematic_mol::write_dmol3(&chematic_mol::Dmol3Geometry {
++        atoms,
++        cell_bohr,
++        source_text: String::new(),
++    })
++    .map_err(dmol3_error)
++}
+diff --git a/crates/chematic-py/tests/test_dmol3.py b/crates/chematic-py/tests/test_dmol3.py
+new file mode 100644
+index 0000000..2de6c8c
+--- /dev/null
++++ b/crates/chematic-py/tests/test_dmol3.py
+@@ -0,0 +1,78 @@
++"""Original synthetic MIT OR Apache-2.0 DMol3 .incoor contracts."""
++import ast
++import hashlib
++import json
++import math
++from pathlib import Path
++
++import pytest
++import chematic
++
++ROOT = Path(__file__).resolve().parents[3]
++
++
++def emit(g):
++    return chematic.write_dmol3(g['elements'], g['positions_bohr'], cell_bohr=g['cell_bohr'])
++
++
++def test_manifest_projection_and_roundtrip():
++    fixture = json.loads((ROOT/'validation/openbabel_issues/dmol3/contract-fixtures.json').read_text())['records'][0]
++    text = fixture['payload']
++    assert hashlib.sha256(text.encode()).hexdigest() == fixture['sha256']
++    g = chematic.parse_dmol3(text)
++    for key, value in fixture['expected'].items():
++        if key not in ('units', 'tolerance'):
++            assert g[key] == value
++    assert g['source_text'] == text
++    back = chematic.parse_dmol3(emit(g))
++    for key in g.keys()-{'source_text'}:
++        assert back[key] == g[key]
++    g['positions_bohr'][0][0] = 0.12345678901234566
++    g['cell_bohr'] = None
++    back = chematic.parse_dmol3(emit(g))
++    assert back['positions_bohr'] == g['positions_bohr'] and back['periodicity'] == 0
++    assert back['cell_bohr'] is None and back['cell_angstrom'] is None
++
++
++@pytest.mark.parametrize('text', [
++    '', '$coordinates\n$end', '$coordinates\nC 0 0 0',
++    'preamble\n$coordinates\nC 0 0 0\n$end', '$coordinates angstrom\nC 0 0 0\n$end',
++    '$coordinates\nC 0 0 0 0.5\n$end', '$coordinates\nC1 0 0 0\n$end',
++    '$coordinates\n6 0 0 0\n$end', '$coordinates\nc 0 0 0\n$end',
++    '$coordinates\nC NaN 0 0\n$end', '$coordinates\nC 1e309 0 0\n$end',
++    '$coordinates\nC 0 0 0\n$end\n$end', '$coordinates\nC 0 0 0\n$cell vectors\n$end',
++    '$cell vectors\n1 0 0\n0 1 0\n$coordinates\nC 0 0 0\n$end',
++    '$cell vectors\n1 0 0\n0 1 0\n1 1 1e-12\n$coordinates\nC 0 0 0\n$end',
++])
++def test_invalid_reader_input(text):
++    with pytest.raises(ValueError):
++        chematic.parse_dmol3(text)
++
++
++@pytest.mark.parametrize('kwargs', [dict(max_atoms=0), dict(max_line_len=5), dict(max_input_bytes=2)])
++def test_reader_limits(kwargs):
++    with pytest.raises(ValueError):
++        chematic.parse_dmol3('$coordinates\nC 0 0 0\n$end', **kwargs)
++
++
++@pytest.mark.parametrize('elements,positions,kwargs', [
++    ([], [], {}), (['C'], [], {}), (['c'], [[0, 0, 0]], {}),
++    (['C'], [[float('inf'), 0, 0]], {}), (['C'], [[0, 0, 0]], {'cell_bohr': [[1, 0, 0]]}),
++    (['C'], [[0, 0, 0]], {'cell_bohr': [[1, 0, 0], [2, 0, 0], [0, 0, 1]]}),
++])
++def test_invalid_writer_input(elements, positions, kwargs):
++    with pytest.raises(ValueError):
++        chematic.write_dmol3(elements, positions, **kwargs)
++
++
++def test_precision_d_exponents_crlf_and_stub():
++    text = '\r\n$coordinates\r\n\r\nH -0.0 4.9406564584124654D-324 1.7976931348623157e308\r\n$end\r\n'
++    g = chematic.parse_dmol3(text)
++    back = chematic.parse_dmol3(emit(g))
++    assert back['positions_bohr'] == g['positions_bohr']
++    assert math.copysign(1, back['positions_bohr'][0][0]) == -1
++    assert g['source_text'] == text
++    assert g['bohr_angstrom'] == 0.529177210544
++    p = Path(__file__).resolve().parents[1]/'python/chematic/__init__.pyi'
++    names = {n.name for n in ast.parse(p.read_text()).body if isinstance(n, ast.FunctionDef)}
++    assert {'parse_dmol3', 'write_dmol3'} <= names
+diff --git a/docs/format-capabilities.md b/docs/format-capabilities.md
+index 3bb3701..ceb79c4 100644
+--- a/docs/format-capabilities.md
++++ b/docs/format-capabilities.md
+@@ -58,6 +58,7 @@ exposed in that language. "—" in the WASM columns for CIF means CIF has
+ | CIF (small-molecule) | Y | Y | Y | — | — | — |
+ | PQR | Y | Y | Y | Y | Y | Y |
+ | XYZ | Y | Y | Y | — | Y | Y |
++| DMol3 .incoor | Y | Y | Y | Y | — | — |
+ | MOPAC Cartesian | Y | Y | Y | Y | — | — |
+ | FHI-aims geometry.in | Y | Y | Y | Y | — | — |
+ | ORCA-AICCM EXYZ | Y | Y | Y | Y | — | — |
+@@ -769,3 +770,7 @@ MOPAC Cartesian preserves Angstrom coordinates, optional optimization flags,
+ atom labels, three header lines, and zero to three translation vectors. Internal
+ coordinates, atomic units, dummy/sparkle encodings and additional job sections
+ are refused; see [the checked contract](openbabel-mopac-cartesian.md).
++
++DMol3 standalone `.incoor` retains Cartesian Bohr values and an optional 3D
++cell, with explicit CODATA 2022 Angstrom projections. Output logs, extra
++sections and partial periodicity are refused; see [scope](openbabel-dmol3.md).
+diff --git a/docs/openbabel-dmol3.md b/docs/openbabel-dmol3.md
+new file mode 100644
+index 0000000..bb8f127
+--- /dev/null
++++ b/docs/openbabel-dmol3.md
+@@ -0,0 +1,180 @@
++# Checked DMol3 .incoor geometry
++
++The isolated candidate adds standalone DMol3 `.incoor` reading/writing to
++Rust and Python. Open Babel exposes this coordinate grammar through its
++[`dmol` / `outmol` format](https://openbabel.org/docs/FileFormats/DMol3_coordinates_format.html).
++The new API retains raw Cartesian Bohr values, atom order and an optional
++oriented three-vector cell. Angstrom coordinates are a separate projection.
++It does not parse complete `.outmol` calculation logs, `.car` or `.arc` files.
++
++The implementation is independently written from the public
++[ASE format description](https://docs.ase-lib.org/_modules/ase/io/dmol.html)
++and observed format examples generated from original synthetic inputs.
++No Open Babel or ASE implementation code or upstream corpus was copied.
++
++## API
++
++```python
++import chematic
++
++text = chematic.write_dmol3(
++    ["Si", "Cl"],
++    [[0.125, -1.25, 2.5], [-1.5, 0.125, 0.5]],  # Bohr
++    cell_bohr=[[4, 1, 0], [-1, 5, 2], [1, 0, -6]],
++)
++g = chematic.parse_dmol3(text, max_atoms=1000)
++assert g["periodicity"] == 3
++assert g["positions_bohr"][0] == [0.125, -1.25, 2.5]
++assert g["positions_angstrom"][0][0] == 0.125 * 0.529177210544
++```
++
++The dictionary contains `elements`, `positions_bohr`, `cell_bohr`,
++`positions_angstrom`, `cell_angstrom`, `bohr_angstrom`, `periodicity` and
++`source_text`. `cell_bohr=None` and `cell_angstrom=None` mean nonperiodic;
++otherwise they contain exactly three Cartesian row vectors. The writer accepts
++Bohr values explicitly. Element and coordinate counts must agree.
++
++Rust exports `Dmol3Atom`, `Dmol3Geometry`, `Dmol3Error`, `Dmol3ParseLimits`,
++`DMOL3_BOHR_ANGSTROM`, `parse_dmol3`, `parse_dmol3_with_limits` and
++`write_dmol3`. `Dmol3Geometry::positions_angstrom()` and `cell_angstrom()`
++validate current fields before projecting them. The core is pure Rust;
++there is no external chemistry runtime dependency. No WASM or common-format
++converter adapter is added in this increment.
++
++## Grammar and preservation
++
++```text
++$cell vectors
++4 1 0
++-1 5 2
++1 0 -6
++$coordinates
++Si .125 -1.25 2.5
++Cl -1.5 .125 .5
++$end
++```
++
++The optional `$cell vectors` block precedes `$coordinates` and has exactly
++three rows. The coordinate block contains at least one canonical element
++symbol followed by exactly three finite Bohr values. `$end` is required.
++Blank lines and leading/trailing whitespace are accepted; header spelling
++and internal spacing are exact. Both LF and CRLF input are supported.
++
++Raw binary64 Bohr values are authoritative. Writing uses current validated
++fields with 17 fractional digits in scientific notation, canonical element
++symbols, LF and a final newline. It preserves negative zero, subnormal and
++largest-finite coordinates through native read/write. The exact original
++input remains in `source_text`; canonical writing never replays stale text.
++
++Cells retain all components, order, orientation and handedness. Positions
++are not wrapped, rotated or transformed into a standardized cell. Validation
++requires positive finite vector norms, normalized absolute determinant above
++`1e-6`, and finite positive volume. Dependent or nearly dependent vectors and
++overflowing/underflowing cell volumes are refused.
++
++## Units and measured engine differences
++
++The native Angstrom projection multiplies Bohr by **0.529177210544**, the
++central value from [CODATA 2022](https://physics.nist.gov/cuu/pdf/wall_2022.pdf).
++This conversion does not alter raw storage. Normal floating-point rounding
++still applies to the derived Angstrom values.
++
++The pinned engines use different constants:
++
++| Operation | Pinned factor |
++|---|---|
++| chematic Bohr → Angstrom | `0.529177210544` |
++| Open Babel 3.2.1 Bohr → Angstrom | `0.529177249` |
++| Open Babel 3.2.1 Angstrom → Bohr | `1.889725989` |
++| ASE 3.27.0 Bohr → Angstrom | `0.5291772105638411` |
++
++The Open Babel read/write factors are not exact reciprocals. Its raw-Bohr
++roundtrip therefore scales values by their product, approximately
++`1.0000000002228242`, before 14-decimal output rounding. This is reported
++as a known difference; the oracle checks the explicitly pinned factors
++instead of silently changing chematic's units to match that drift.
++
++## Explicit boundaries
++
++The reader refuses output-log preambles, repeated jobs, unknown blocks,
++comments, trailing nonblank data and missing terminators. It also refuses
++extra atom fields, isotope/atom-label spellings, atomic-number identifiers,
++noncanonical symbols, non-finite values, partial periodicity and invalid cells.
++It performs no bond perception, charge/spin inference, optimizer execution or
++validation of DMol3 element parameterization.
++
++Fortran `D/d` exponents are accepted natively. They are outside the common
++Open Babel/ASE lane: in a separate three-dimensional diagnostic, chematic
++reads `1.25D-1` as `0.125` Bohr; Open Babel reads it as `1.25` Bohr before its
++Angstrom conversion; ASE rejects it with `ValueError`.
++
++ASE's `.incoor` interface is restricted to 3D periodic systems. On the isolated
++nonperiodic input, ASE 3.27.0 reading raises `UnboundLocalError`; its writer
++explicitly rejects nonperiodic `Atoms`. These are recorded diagnostics and
++excluded from the ASE common comparison. Nonperiodic documents are checked
++natively and with Open Babel. See also the
++[ASE DMol3 interface](https://docs.ase-lib.org/ase/calculators/dmol.html).
++
++Hard input/output bounds are 64 MiB, 1024 bytes per physical input line and
++one million atoms. Rust limits and Python `max_input_bytes`, `max_line_len`
++and `max_atoms` can tighten these bounds; larger overrides do not raise them.
++Errors identify source lines where local, or line zero for whole-geometry
++validation. Python format/validation failures raise `ValueError`.
++
++## Local validation, 2026-10-15
++
++Oracles: **Open Babel 3.2.1** (`Jul 11 2026 -- 19:21:27`) and **ASE 3.27.0**.
++The corpus contains original synthetic recipes with sixteen seeds,
++nonperiodic/3D cells, `E`/`D` exponents and LF/CRLF. Inputs are authored
++independently of the production writer. Every manifest record carries
++provenance, license, redistribution, minimization, oracle settings, expected
++values and a normalized UTF-8/LF SHA-256.
++
++| Check | Result |
++|---|---|
++| Generated exact native roundtrips | 128 / 128 |
++| Original analytic manifest fixture | 1 / 1 |
++| Open Babel read / write, E-exponent 0D/3D lane | 64 / 64 each |
++| ASE read / write, E-exponent 3D lane | 32 / 32 each |
++| Unexpected mismatches within declared normalization/tolerance | 0 |
++| Max Open Babel read position / cell residual | 0 / `8.881784197001252e-16` Angstrom |
++| Max ASE read position / cell residual | 0 / 0 Angstrom |
++| Max Open Babel write residual after its pinned scale | `5.329070518200751e-15` Bohr |
++| Max ASE raw write residual | `4.884981308350689e-15` Bohr |
++| Max Open Babel raw roundtrip drift | `1.336950106178847e-9` Bohr |
++| Max Open Babel/native Angstrom unit difference, positions | `1.2086171419234404e-7` Angstrom |
++
++Read comparison uses `obabel -idmol INPUT -ocjson -ab`; write comparison
++uses `obabel -idmol INPUT -odmol -ab`. Bond inference is disabled. ASE uses
++`ase.io.read/write(format="dmol-incoor")` with default `bohr=True`.
++Declared tolerances are `2e-12` Angstrom for reads against each engine's own
++factor and `2e-12` Bohr for writes, after the documented Open Babel scale.
++The native structured roundtrip is exact rather than tolerance-based.
++
++Rust validation passed 753 unit tests plus 22 integration tests (775 total).
++The new Rust contracts also roundtrip all 118 canonical elements. Python
++130 tests passed, including MOPAC, FHI-aims and RDKit path regressions.
++Scoped Clippy with warnings denied, formatting, the unchanged refactor
++allowance budget, binding inventory, product naming and strict MkDocs are
++recorded in the evidence. These local results do not establish complete
++DMol3 support, scientific validity, hosted CI or a published release.
++
++## Reproduction and delivery
++
++```sh
++cargo test -p chematic-mol --lib --test dmol3_contract \
++  --test mopac_cartesian_contract --test fhiaims_contract
++python -m pytest crates/chematic-py/tests/test_dmol3.py
++python scripts/validate_dmol3.py --obabel /opt/homebrew/bin/obabel
++```
++
++Build/install the candidate extension before running Python. The oracle
++script checks Open Babel 3.2.1 and ASE 3.27.0 explicitly. Fixtures are in
++`validation/openbabel_issues/dmol3/contract-fixtures.json`; evidence is in
++`validation/results/openbabel-dmol3-2026-10-15.json`.
++
++The source candidate is `/private/tmp/chematic-dmol3`, based on
++`/private/tmp/chematic-paths`. The incremental patch is
++`validation/openbabel_issues/dmol3-2026-10-15.patch`. Only this document,
++patch and evidence are copied to the primary checkout, preserving unrelated
++source work. The feature is uncommitted, unpushed and unpublished.
+diff --git a/mkdocs.yml b/mkdocs.yml
+index 46b854e..04e145b 100644
+--- a/mkdocs.yml
++++ b/mkdocs.yml
+@@ -82,6 +82,7 @@ nav:
+     - ORCA-AICCM EXYZ: openbabel-exyz.md
+     - FHI-aims Geometry: openbabel-fhiaims.md
+     - MOPAC Cartesian: openbabel-mopac-cartesian.md
++    - DMol3 Coordinates: openbabel-dmol3.md
+     - Language Bindings Cross-Reference: language-bindings.md
+     - Error Handling & Limits: error-and-limits.md
+   - Reliability:
+diff --git a/scripts/validate_dmol3.py b/scripts/validate_dmol3.py
+new file mode 100644
+index 0000000..9fd067b
+--- /dev/null
++++ b/scripts/validate_dmol3.py
+@@ -0,0 +1,182 @@
++#!/usr/bin/env python3
++"""Original synthetic DMol3 .incoor against pinned Open Babel and ASE."""
++import argparse
++import hashlib
++import itertools
++import json
++from pathlib import Path
++import platform
++import subprocess
++import tempfile
++
++import ase
++from ase import Atoms
++from ase.io import read, write
++from ase.units import Bohr
++import chematic
++
++ROOT = Path(__file__).resolve().parents[1]
++NATIVE_BOHR = 0.529177210544
++OB_READ_BOHR = 0.529177249
++OB_WRITE_INVERSE_BOHR = 1.889725989
++ASE_BOHR = 0.5291772105638411
++
++
++def digest(data):
++    return hashlib.sha256(data).hexdigest()
++
++
++def flatten(rows):
++    return [v for row in rows for v in row]
++
++
++def err(actual, expected):
++    assert len(actual) == len(expected)
++    return max((abs(a-b) for a, b in zip(actual, expected)), default=0.)
++
++
++def emit(g):
++    return chematic.write_dmol3(g['elements'], g['positions_bohr'], cell_bohr=g['cell_bohr'])
++
++
++def recipe(seed, periodic, fortran, crlf):
++    symbols = ['Si', 'Cl', 'Fe', 'H'][:seed % 4+1]
++    positions = [[seed/7+i/3, -i/5+.125, (-1)**i*(seed+1)/11] for i in range(len(symbols))]
++    cell = [[4+seed/8, 1, 0], [-1, 5, 2], [1, 0, (-1)**seed*6]] if periodic else None
++    expected = dict(elements=symbols, positions_bohr=positions, cell_bohr=cell, periodicity=3 if periodic else 0,
++                    positions_angstrom=[[v*NATIVE_BOHR for v in p] for p in positions],
++                    cell_angstrom=None if cell is None else [[v*NATIVE_BOHR for v in p] for p in cell], bohr_angstrom=NATIVE_BOHR)
++    # Independently authored input; the production writer is not the input oracle.
++    num = lambda v: format(v, '.17e').replace('e', 'D' if fortran else 'e')
++    lines = []
++    if cell is not None:
++        lines = ['$cell vectors', *(' '.join(map(num, row)) for row in cell)]
++    lines += ['$coordinates', *(s+' '+' '.join(map(num, p)) for s, p in zip(symbols, positions)), '$end']
++    text = '\n'.join(lines)+'\n'
++    return expected, text.replace('\n', '\r\n') if crlf else text
++
++
++def native_check(expected, text):
++    g = chematic.parse_dmol3(text)
++    for key, value in expected.items():
++        assert g[key] == value, key
++    assert g['source_text'] == text
++    back = chematic.parse_dmol3(emit(g))
++    for key in g.keys()-{'source_text'}:
++        assert back[key] == g[key], key
++    return g
++
++
++def obabel(executable, path, output):
++    r = subprocess.run([executable, '-idmol', str(path), '-o'+output, '-ab'], capture_output=True, text=True, check=True, timeout=10)
++    assert '1 molecule converted' in r.stderr, r.stderr
++    return r.stdout
++
++
++def main():
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument('--obabel', default='/opt/homebrew/bin/obabel')
++    parser.add_argument('--output', type=Path, default=ROOT/'validation/results/openbabel-dmol3-2026-10-15.json')
++    args = parser.parse_args()
++    version = subprocess.check_output([args.obabel, '-V'], text=True).strip()
++    assert version.split()[2] == '3.2.1' and ase.__version__ == '3.27.0'
++    assert Bohr == ASE_BOHR
++    manifest_path = ROOT/'validation/openbabel_issues/dmol3/contract-fixtures.json'
++    manifest = json.loads(manifest_path.read_text())
++    for fixture in manifest['records']:
++        assert digest(fixture['payload'].encode()) == fixture['sha256']
++        native_check({k: v for k, v in fixture['expected'].items() if k not in ('units', 'tolerance')}, fixture['payload'])
++    maxima = dict(ob_read_position_angstrom=0., ob_read_cell_angstrom=0., ase_read_position_angstrom=0., ase_read_cell_angstrom=0.,
++                  ob_write_scaled_bohr=0., ase_write_raw_bohr=0., ob_raw_roundtrip_drift_bohr=0., ob_native_unit_delta_angstrom=0.)
++    records = []
++    common_count = 0
++    with tempfile.TemporaryDirectory(prefix='chematic-dmol3-oracle-') as directory:
++        path = Path(directory)/'input.incoor'
++        ase_out = Path(directory)/'ase.incoor'
++        for seed, periodic, fortran, crlf in itertools.product(range(16), (False, True), (False, True), (False, True)):
++            expected, text = recipe(seed, periodic, fortran, crlf)
++            g = native_check(expected, text)
++            record = dict(id=f's{seed}-p{int(periodic)}-D{int(fortran)}-crlf{int(crlf)}', seed=seed, periodic=periodic, fortran=fortran, crlf=crlf,
++                          provenance='Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15', license='MIT OR Apache-2.0', redistribution='allowed; project-authored data',
++                          minimization='One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation',
++                          oracle='Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only',
++                          expected=dict(status='exact native structured roundtrip and declared engine-normalized comparison', units='Bohr; explicit per-engine Angstrom projection', tolerance=0 if fortran else 2e-12),
++                          sha256=digest(text.replace('\r\n', '\n').encode()), native_status='pass')
++            if not fortran:
++                path.write_bytes(text.encode())
++                ob = json.loads(obabel(args.obabel, path, 'cjson'))
++                assert ob['atoms']['elements']['number'] == [dict(Si=14, Cl=17, Fe=26, H=1)[s] for s in g['elements']]
++                p = flatten(g['positions_bohr'])
++                e = err(ob['atoms']['coords']['3d'], [v*OB_READ_BOHR for v in p]); assert e <= 2e-12
++                maxima['ob_read_position_angstrom'] = max(maxima['ob_read_position_angstrom'], e)
++                maxima['ob_native_unit_delta_angstrom'] = max(maxima['ob_native_unit_delta_angstrom'], err(ob['atoms']['coords']['3d'], flatten(g['positions_angstrom'])))
++                if periodic:
++                    e = err(ob['unitCell']['cellVectors'], [v*OB_READ_BOHR for v in flatten(g['cell_bohr'])]); assert e <= 2e-12
++                    maxima['ob_read_cell_angstrom'] = max(maxima['ob_read_cell_angstrom'], e)
++                else:
++                    assert 'unitCell' not in ob
++                cell = flatten(g['cell_bohr']) if periodic else [0.]*9
++                raw = p+(cell if periodic else [])
++                if periodic:
++                    a = read(str(path), format='dmol-incoor')
++                    assert a.get_chemical_symbols() == g['elements'] and a.pbc.tolist() == [True]*3
++                    e = err(a.positions.ravel().tolist(), [v*ASE_BOHR for v in p]); assert e <= 2e-12
++                    maxima['ase_read_position_angstrom'] = max(maxima['ase_read_position_angstrom'], e)
++                    e = err(a.cell.array.ravel().tolist(), [v*ASE_BOHR for v in cell]); assert e <= 2e-12
++                    maxima['ase_read_cell_angstrom'] = max(maxima['ase_read_cell_angstrom'], e)
++                    write(str(ase_out), a, format='dmol-incoor')
++                    back = chematic.parse_dmol3(ase_out.read_text())
++                    assert back['elements'] == g['elements'] and back['periodicity'] == g['periodicity']
++                    e = err(flatten(back['positions_bohr'])+flatten(back['cell_bohr']), raw); assert e <= 2e-12
++                    maxima['ase_write_raw_bohr'] = max(maxima['ase_write_raw_bohr'], e)
++                back = chematic.parse_dmol3(obabel(args.obabel, path, 'dmol'))
++                assert back['elements'] == g['elements'] and back['periodicity'] == g['periodicity']
++                actual = flatten(back['positions_bohr'])+(flatten(back['cell_bohr']) if periodic else [])
++                e = err(actual, [v*OB_READ_BOHR*OB_WRITE_INVERSE_BOHR for v in raw]); assert e <= 2e-12
++                maxima['ob_write_scaled_bohr'] = max(maxima['ob_write_scaled_bohr'], e)
++                maxima['ob_raw_roundtrip_drift_bohr'] = max(maxima['ob_raw_roundtrip_drift_bohr'], err(actual, raw))
++                record['openbabel_status'] = 'pass within declared normalization/tolerance'
++                record['ase_status'] = 'pass' if periodic else 'outside scope: pinned ASE .incoor supports 3D periodicity only'
++                common_count += 1
++            records.append(record)
++        text = '$cell vectors\n1 0 0\n0 1 0\n0 0 1\n$coordinates\nC 1.25D-1 0 0\n$end\n'
++        assert chematic.parse_dmol3(text)['positions_bohr'][0][0] == 0.125
++        path.write_text(text)
++        ob_x = json.loads(obabel(args.obabel, path, 'cjson'))['atoms']['coords']['3d'][0]
++        assert ob_x == 1.25*OB_READ_BOHR
++        try:
++            read(str(path), format='dmol-incoor')
++        except ValueError:
++            ase_d = 'rejected'
++        else:
++            raise AssertionError('pinned ASE D-exponent behavior changed')
++        path.write_text('$coordinates\nC 0 0 0\n$end\n')
++        try:
++            read(str(path), format='dmol-incoor')
++        except UnboundLocalError:
++            ase_nonperiodic = 'raises UnboundLocalError without cell'
++        else:
++            raise AssertionError('pinned ASE nonperiodic-reader behavior changed')
++        try:
++            write(str(ase_out), Atoms('C', positions=[[0, 0, 0]], pbc=False), format='dmol-incoor')
++        except ValueError as exc:
++            assert 'PBC must be all true' in str(exc)
++            ase_nonperiodic_write = 'rejects nonperiodic Atoms'
++        else:
++            raise AssertionError('pinned ASE nonperiodic-writer behavior changed')
++    report = dict(schema_version=1, date='2026-10-15', feature='checked standalone DMol3 .incoor input/output',
++                  runtime=dict(python=platform.python_version(), openbabel=version, ase=ase.__version__),
++                  units=dict(native_bohr_angstrom=NATIVE_BOHR, native_codata='2022 central value', openbabel_read_bohr_angstrom=OB_READ_BOHR, openbabel_write_angstrom_bohr=OB_WRITE_INVERSE_BOHR, openbabel_raw_roundtrip_scale=OB_READ_BOHR*OB_WRITE_INVERSE_BOHR, ase_bohr_angstrom=ASE_BOHR),
++                  oracle_settings=dict(openbabel_read='obabel -idmol INPUT -ocjson -ab', openbabel_write='obabel -idmol INPUT -odmol -ab', ase='ase.io.read/write(format="dmol-incoor"), default bohr=True; ASE read/write 3D only', read_tolerance_angstrom=2e-12, write_tolerance_bohr=2e-12, common_scope='canonical elements, E exponent, 0D/3D, LF/CRLF; raw-Bohr comparison adjusts only the explicitly pinned Open Babel read/write scale'),
++                  provenance='Original synthetic MIT OR Apache-2.0 fixtures/recipes; public format description only, no Open Babel/ASE implementation copied',
++                  fixture_manifest_sha256=digest(manifest_path.read_bytes()),
++                  results=dict(native_generated_cases=len(records), native_manifest_cases=len(manifest['records']), openbabel_read_cases=common_count, openbabel_write_cases=common_count, ase_read_cases=common_count//2, ase_write_cases=common_count//2, unexpected_mismatches=0, maximum_absolute_errors=maxima),
++                  diagnostics=dict(fortran_D=dict(native_raw_x_bohr=0.125, openbabel_x_angstrom=ob_x, ase_status=ase_d, input_sha256=digest(text.encode())), ase_nonperiodic_read=ase_nonperiodic, ase_nonperiodic_write=ase_nonperiodic_write), records=records,
++                  scope='Standalone Bohr coordinate documents only; no output logs, electronic-state/charge inference, bond perception, calculation execution, physical validity or whole-library parity claim')
++    args.output.parent.mkdir(parents=True, exist_ok=True)
++    args.output.write_text(json.dumps(report, indent=2)+'\n')
++    print(json.dumps(report['results'], indent=2))
++
++
++if __name__ == '__main__':
++    main()
+diff --git a/validation/openbabel_issues/dmol3/contract-fixtures.json b/validation/openbabel_issues/dmol3/contract-fixtures.json
+new file mode 100644
+index 0000000..f1793ff
+--- /dev/null
++++ b/validation/openbabel_issues/dmol3/contract-fixtures.json
+@@ -0,0 +1,83 @@
++{
++  "schema_version": 1,
++  "records": [
++    {
++      "id": "raw-bohr-left-handed-cell",
++      "payload": "$cell vectors\n4 1 0\n-1 5 2\n1 0 -6\n$coordinates\nSi .125 -1.25 2.5\nCl -1.5 .125 .5\n$end\n",
++      "sha256": "ea3176518f2b0da2608c7f00b4ce12303b8cbcbfe751c4e14c31ebccdf39c21a",
++      "provenance": "Original synthetic minimal fixture authored 2026-10-15; https://docs.ase-lib.org/_modules/ase/io/dmol.html consulted for public format description only; no upstream implementation/data copied",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; project-authored data",
++      "minimization": "Two unlike elements and three skewed oriented vectors isolate raw Bohr storage and optional periodic cell",
++      "oracle": "Exact analytic raw Bohr values; CODATA 2022 0.529177210544 Angstrom per Bohr; Open Babel 3.2.1 / ASE 3.27.0 comparisons use their own separately pinned conversion constants",
++      "expected": {
++        "elements": [
++          "Si",
++          "Cl"
++        ],
++        "positions_bohr": [
++          [
++            0.125,
++            -1.25,
++            2.5
++          ],
++          [
++            -1.5,
++            0.125,
++            0.5
++          ]
++        ],
++        "cell_bohr": [
++          [
++            4,
++            1,
++            0
++          ],
++          [
++            -1,
++            5,
++            2
++          ],
++          [
++            1,
++            0,
++            -6
++          ]
++        ],
++        "positions_angstrom": [
++          [
++            0.066147151318,
++            -0.66147151318,
++            1.32294302636
++          ],
++          [
++            -0.793765815816,
++            0.066147151318,
++            0.264588605272
++          ]
++        ],
++        "cell_angstrom": [
++          [
++            2.116708842176,
++            0.529177210544,
++            0.0
++          ],
++          [
++            -0.529177210544,
++            2.64588605272,
++            1.058354421088
++          ],
++          [
++            0.529177210544,
++            0.0,
++            -3.175063263264
++          ]
++        ],
++        "bohr_angstrom": 0.529177210544,
++        "periodicity": 3,
++        "units": "authoritative Bohr; Angstrom derived with CODATA 2022",
++        "tolerance": 0
++      }
++    }
++  ]
++}
+diff --git a/validation/results/binding_surface_inventory-current.json b/validation/results/binding_surface_inventory-current.json
+index db422ef..cd6b5e3 100644
+--- a/validation/results/binding_surface_inventory-current.json
++++ b/validation/results/binding_surface_inventory-current.json
+@@ -7,9 +7,9 @@
+   "scope": "Rust source declarations only; this is not semantic parity evidence",
+   "results": {
+     "wasm_export_count": 303,
+-    "python_pyfunction_count": 194,
+-    "python_registered_count": 194,
++    "python_pyfunction_count": 196,
++    "python_registered_count": 196,
+     "python_declared_without_registration": [],
+-    "surface_sha256": "2eeaa80012c18220ebaf7a296da6822dd962b6d3b692a2f6da5efb13dd372cd3"
++    "surface_sha256": "fe794db5a85f3cb9f3e03cd76a0ef9600fcd2e1c47b17ce4731d391690a85db9"
+   }
+ }

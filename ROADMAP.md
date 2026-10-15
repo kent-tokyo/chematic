@@ -34,6 +34,14 @@ and reproducible evidence over feature-count parity.
 - The broadest published-package RDKit performance packet is still v1.0.42.
   Source results and older package results are not relabeled as v1.1.4
   evidence.
+- The source candidate adds bounded amino-acid protein projections for PDB and
+  mmCIF across Rust, Python, and WASM. It deliberately excludes waters, ions,
+  nucleic acids, biological assemblies, and inferred missing residues.
+- The source candidate also adds pre-smoothing bond-length, bond-angle, and
+  torsion constraints to the named RDKit-compatible distance-geometry path.
+  Constraints are validated, triangle-smoothed, and fail closed on impossible
+  or cross-fragment inputs. This is not a claim of full RDKit constraint API
+  parity and is not yet published-artifact evidence.
 - Rust line coverage on the processed Linux Codecov lane is 96.93%. Coverage
   demonstrates executed code, not chemical correctness or compatibility.
 - 3D, MMFF94, pKa/ADMET screening, IUPAC naming, broad Markush/polymer

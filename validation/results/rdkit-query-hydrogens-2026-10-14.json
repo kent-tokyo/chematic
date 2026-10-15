@@ -1,0 +1,118 @@
+{
+  "issue": "https://github.com/rdkit/rdkit/issues/9675",
+  "source_baseline": "cac480fb23cd8adeec6e5e9bed1f18677f87b392",
+  "artifact_lane": "uncommitted source extension; not a release",
+  "python": "3.13.6",
+  "rdkit_version": "2026.09.1",
+  "tested_cases": 198,
+  "fixture_provenance": {
+    "id": "query-hydrogens-generated-v1",
+    "retrieved": "2026-10-14",
+    "license": "MIT OR Apache-2.0",
+    "redistribution": "allowed",
+    "rationale": "Project-authored minimal chemical queries and generated neighbour permutations; no upstream implementation or bulk data copied",
+    "minimization": "One amino-acid stereocentre and three ring-order examples",
+    "oracle": "RDKit 2026.09.1, unmerged queries, Chem.AddHs targets, useChirality=True"
+  },
+  "cases_sha256": "dc5c33686b5d4c38465174ba31cf44f3317db74d1288a6531ab5efb2331c2945",
+  "pattern_generation": "24 root-neighbour permutations times both tags, four target spellings; three ring patterns times both configurations",
+  "chematic_mismatches": [],
+  "rdkit_folded_mismatch_count": 102,
+  "rdkit_folded_mismatch_examples": [
+    {
+      "pattern": "[C@]([H])(C)(N)C(=O)O",
+      "target": "C[C@H](N)C(=O)O",
+      "unmerged_explicit_h_reference": false,
+      "chematic_folded": false,
+      "rdkit_folded": true
+    },
+    {
+      "pattern": "[C@]([H])(C)(N)C(=O)O",
+      "target": "C[C@@H](N)C(=O)O",
+      "unmerged_explicit_h_reference": true,
+      "chematic_folded": true,
+      "rdkit_folded": false
+    },
+    {
+      "pattern": "[C@]([H])(C)(N)C(=O)O",
+      "target": "[H][C@@](C)(N)C(=O)O",
+      "unmerged_explicit_h_reference": false,
+      "chematic_folded": false,
+      "rdkit_folded": true
+    },
+    {
+      "pattern": "[C@]([H])(C)(N)C(=O)O",
+      "target": "[H][C@](C)(N)C(=O)O",
+      "unmerged_explicit_h_reference": true,
+      "chematic_folded": true,
+      "rdkit_folded": false
+    },
+    {
+      "pattern": "[C@@]([H])(C)(N)C(=O)O",
+      "target": "C[C@H](N)C(=O)O",
+      "unmerged_explicit_h_reference": true,
+      "chematic_folded": true,
+      "rdkit_folded": false
+    },
+    {
+      "pattern": "[C@@]([H])(C)(N)C(=O)O",
+      "target": "C[C@@H](N)C(=O)O",
+      "unmerged_explicit_h_reference": false,
+      "chematic_folded": false,
+      "rdkit_folded": true
+    },
+    {
+      "pattern": "[C@@]([H])(C)(N)C(=O)O",
+      "target": "[H][C@@](C)(N)C(=O)O",
+      "unmerged_explicit_h_reference": true,
+      "chematic_folded": true,
+      "rdkit_folded": false
+    },
+    {
+      "pattern": "[C@@]([H])(C)(N)C(=O)O",
+      "target": "[H][C@](C)(N)C(=O)O",
+      "unmerged_explicit_h_reference": false,
+      "chematic_folded": false,
+      "rdkit_folded": true
+    },
+    {
+      "pattern": "[C@]([H])(C)(C(=O)O)N",
+      "target": "C[C@H](N)C(=O)O",
+      "unmerged_explicit_h_reference": true,
+      "chematic_folded": true,
+      "rdkit_folded": false
+    },
+    {
+      "pattern": "[C@]([H])(C)(C(=O)O)N",
+      "target": "C[C@@H](N)C(=O)O",
+      "unmerged_explicit_h_reference": false,
+      "chematic_folded": false,
+      "rdkit_folded": true
+    },
+    {
+      "pattern": "[C@]([H])(C)(C(=O)O)N",
+      "target": "[H][C@@](C)(N)C(=O)O",
+      "unmerged_explicit_h_reference": true,
+      "chematic_folded": true,
+      "rdkit_folded": false
+    },
+    {
+      "pattern": "[C@]([H])(C)(C(=O)O)N",
+      "target": "[H][C@](C)(N)C(=O)O",
+      "unmerged_explicit_h_reference": false,
+      "chematic_folded": false,
+      "rdkit_folded": true
+    }
+  ],
+  "module_sha256": "1c6c50bae922aeb87bd1292b17d9d4ce8286ac58993ac8d00f19303aed2739c5",
+  "source_sha256": {
+    "crates/chematic-smarts/src/merge_hydrogens.rs": "d1b2c51412925bef2f543e0a3368125d5e5343c76bf64d0ad93fec56d14e4d7e",
+    "crates/chematic-smarts/src/match_vf2.rs": "6a76270701c2f86efa354e9d291003229335cfe265d36cd37a722291ba3de6a5",
+    "crates/chematic-smarts/src/match_vf2/chirality.rs": "11b9fe9455c02b18b14e590e2aca2d1311b2524c76d6b2e595f5164062267dc6",
+    "crates/chematic-smarts/src/parser.rs": "5e4ef77bf985151a9c831149ce2a54845b7e3124986cd414bcca5d7de6c64556",
+    "crates/chematic-smarts/src/parser/rings.rs": "f3bb9fbbbf3d46f5860a77ca5bdd0a9eb12929ec6827cf44cc27ecf4168df790",
+    "crates/chematic-py/src/misc.rs": "2cb538f8162f51456eed49da115a2f36f1e6dd8c7774bce18912133b4226299f",
+    "scripts/validate_query_hydrogens.py": "90a6b276e61e01550ebc5b79d4db2ae92e145eea2b6bbb9beaf4d57f13bb4b9f"
+  },
+  "scope": "plain unmapped terminal H on single/implicit bonds, complete tetrahedral affected frames; recursive queries rejected"
+}
