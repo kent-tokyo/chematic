@@ -1,0 +1,11 @@
+[package]
+name = "chematic-crabwurcs-interchange"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[dependencies]
+chematic-mol = { path = "../../crates/chematic-mol" }
+chematic-smiles = { path = "../../crates/chematic-smiles" }

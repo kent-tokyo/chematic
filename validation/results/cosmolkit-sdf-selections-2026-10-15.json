@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "status": "local-source-candidate",
+  "feature": "indexed SDF selection and position-preserving batch processing",
+  "base": "Preserved isolated candidates through GZMAT precision; not integrated into main",
+  "runtime": {
+    "python": "3.13.6",
+    "cosmolkit": "0.5.0",
+    "cosmolkit_package_sha256": {
+      "cosmolkit.cpython-313-darwin.so": "9a413ff2700f6266fa2192a8687dd073d31e2f9079912374e2c9f48a969177d7",
+      "__init__.py": "31f8df039d6de5edad0a7a7abecaaa94d1f3c13a81869161f096dcb962fe5df1"
+    },
+    "cosmolkit_settings": "SdfDataset.open defaults; indexing errors raise; batches errors keep",
+    "chematic_extension_sha256": "dae0223bf4b67608fb491b856a2dae0e66ec1deedc0f1be3ff489d4ccba3ff15"
+  },
+  "source_sha256": {
+    "crates/chematic-mol/src/sdf.rs": "f9194b37056485394e31a8521db0eef734eb7657df48235e6357f76396d345de",
+    "crates/chematic-mol/src/sdf/selection.rs": "c4829238c42b077da4aaed029c9577c990ecf40370518af16e9d25e56e802497",
+    "crates/chematic-mol/src/sdf/fields.rs": "008f1c2fa6cba37ad1b2c7cf42e56bbc3195a2f9b57e6b40773d4e7635a20ec5",
+    "crates/chematic-py/src/io.rs": "843b1f70093ab5dae25afa3c75535526a4572dc9562ceb821ef40ebdfd7efcc4",
+    "crates/chematic-py/src/io/dataset.rs": "71010a0b260173eb28197934b495f516baed5a7e087bca9bfbfdbe228a7a136e",
+    "crates/chematic-py/src/io/dataset_selector.rs": "d61600fee981f106131ccc8c163542881ecbdfeace35bd33bb5e9f5a2715f145",
+    "crates/chematic-py/src/io/dataset_batch.rs": "96f499872151a8b1a43e0c85e6e5f467863e490afe938eeab9bd3569196aebac",
+    "crates/chematic-py/python/chematic/__init__.pyi": "492f4aec4c7e9deb9ee395120a296978d7c9ffc2ff45c0d6daea52499dcb9d7c",
+    "crates/chematic-mol/tests/sdf_selections.rs": "6ea3a5b92d6c43e17ae25359e424ea00bececdd26d93910403d784303b3b2ac2",
+    "crates/chematic-py/tests/test_sdf_selections.py": "d31abb17eebd48f9e6f20b1253c0df04cbb7b520442d62db2beb30b8a9622e4b",
+    "scripts/validate_sdf_selections.py": "c4baacb7f81794a934d816b7d9db7c29d85023ba67463c2816de659396e57890"
+  },
+  "fixture": {
+    "path": "validation/cosmolkit_comparison/sdf_selections/minimal.sdf",
+    "id": "sdf-ordered-selection-v1",
+    "provenance": {
+      "source": "Original one-atom V2000/V3000 records and deliberately malformed record authored for chematic",
+      "retrieved": "2026-10-15",
+      "transformations": "LF/CRLF; optional final delimiter; ordered selection, repeated indices, slices and boolean masks"
+    },
+    "license": "MIT OR Apache-2.0",
+    "redistribution": "allowed: original minimal synthetic records",
+    "minimization": "Four valid one-atom records and one malformed slot distinguish positional errors, duplicate reads, both CTAB versions, fields and order",
+    "oracle": {
+      "cosmolkit": "0.5.0 PyPI wheel",
+      "cosmolkit_source_inspected": "d99c96c8abb21c45698826ef3d3d506d82d2f34a",
+      "settings": "SdfDataset.open defaults; __getitem__ container errors raise; batches(size, errors=keep)",
+      "invocation": "python scripts/validate_sdf_selections.py"
+    },
+    "expected": {
+      "source_indices": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "valid_mask": [
+        true,
+        false,
+        true,
+        true,
+        true
+      ],
+      "smiles": [
+        "C",
+        null,
+        "O",
+        "N",
+        "F"
+      ],
+      "titles": [
+        "carbon",
+        "broken",
+        "oxygen",
+        "nitrogen",
+        "fluorine"
+      ],
+      "id_fields": [
+        "carbon-id",
+        null,
+        "oxygen-id",
+        "nitrogen-id",
+        "fluorine-id"
+      ],
+      "tolerance": "exact selection order, masks, strings and source indices; parser error messages are engine-specific"
+    },
+    "sha256": "d113dcdb9c4bc8c4665976e3e3d6b64dc532ef197665644d45a6648b2195db8a"
+  },
+  "results": {
+    "selection_cases": 12828,
+    "matched_successful_default_selections": 9028,
+    "matched_malformed_default_rejections": 3800,
+    "selected_positions_verified": 22312,
+    "batch_values_verified": 56,
+    "scalar_metadata_and_field_controls": 16,
+    "variants": 4,
+    "selection_order_mismatches": 0,
+    "mask_mismatches": 0,
+    "smiles_mismatches": 0,
+    "field_mismatches": 0,
+    "input_mutations": 0,
+    "case_sha256": "59f71ce9b59881dafe49b74ee2e8a9fd0e77af2cfd0391672ec806e970238604"
+  },
+  "scope": "Python slices, integer lists/tuples, strict boolean masks, duplicate/negative indices; keep/raise failure policy; bounded indexed-file batches; mixed V2000/V3000 dispatch",
+  "limits": {
+    "default_selection_records": 10000,
+    "default_total_source_record_bytes": 67108864,
+    "python_batch_size_max": 10000,
+    "count_and_bytes_preflight_before_io": true
+  },
+  "limitations": "Uses chematic molecule parsing and native SMILES, not a general COSMolKit/RDKit chemistry parity claim. New SdfSelectionBatch differs from COSMolKit MoleculeBatch. Default indexing raises; select() defaults to keep. Only int/slice/list/tuple selectors; NumPy arrays must be converted to lists. No parallelism/progress UI or generalized MoleculeBatch transforms. Source files must remain unchanged while indexed; I/O/UTF8 failures abort and fuse iteration. Source byte limits bound input work, not exact process RSS. Full BioStructure hierarchy/serialization and broader Layered fingerprint parameter controls remain separate gaps."
+}

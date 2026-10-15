@@ -1,0 +1,287 @@
+{
+  "schema_version": 1,
+  "status": "local-source-candidate; uncommitted and unpushed",
+  "oracle": {
+    "name": "RDKit",
+    "version": "2026.09.1",
+    "settings": "MolFromSmiles with removeHs=False then RenumberAtoms/RemoveHs, or AddHs then RenumberAtoms; GetAdjacencyMatrix(force=True,emptyVal=0), GetShortestPath"
+  },
+  "fixture_manifest": "validation/rdkit_issues/graph-queries/fixtures.json",
+  "fixture_sha256": "159c4b9415f87b050e453a777a267dd16b9500cc879c1f66a3bbb65951f40901",
+  "results": {
+    "fixtures": 27,
+    "graph_variants": 139,
+    "matrix_calls": 417,
+    "exact_matrix_entries": 30033,
+    "exact_shortest_paths": 9072,
+    "disconnected_paths": 1154,
+    "direction_dependent_tied_paths": 798,
+    "unexpected_mismatches": 0,
+    "normalized_output_sha256": "6d14bc8d8fa7c20cff1473db72955f82f340ddfe427c390853efcb3b9a535ab3"
+  },
+  "records": [
+    {
+      "id": "empty",
+      "status": "passed",
+      "variants": 2
+    },
+    {
+      "id": "one-carbon",
+      "status": "passed",
+      "variants": 4
+    },
+    {
+      "id": "chain",
+      "status": "passed",
+      "variants": 5
+    },
+    {
+      "id": "mixed-orders",
+      "status": "passed",
+      "variants": 6
+    },
+    {
+      "id": "aromatic",
+      "status": "passed",
+      "variants": 6
+    },
+    {
+      "id": "kekule",
+      "status": "passed",
+      "variants": 6
+    },
+    {
+      "id": "fused",
+      "status": "passed",
+      "variants": 6
+    },
+    {
+      "id": "four-cycle",
+      "status": "passed",
+      "variants": 6
+    },
+    {
+      "id": "cubane",
+      "status": "passed",
+      "variants": 6
+    },
+    {
+      "id": "bridged",
+      "status": "passed",
+      "variants": 6
+    },
+    {
+      "id": "fragments",
+      "status": "passed",
+      "variants": 6
+    },
+    {
+      "id": "salt",
+      "status": "passed",
+      "variants": 6
+    },
+    {
+      "id": "dative",
+      "status": "passed",
+      "variants": 5
+    },
+    {
+      "id": "reverse-dative",
+      "status": "passed",
+      "variants": 5
+    },
+    {
+      "id": "two-donors",
+      "status": "passed",
+      "variants": 5
+    },
+    {
+      "id": "chlorine-cleanup",
+      "status": "passed",
+      "variants": 6
+    },
+    {
+      "id": "nitrogen-cleanup",
+      "status": "passed",
+      "variants": 6
+    },
+    {
+      "id": "hydrogen-removal",
+      "status": "passed",
+      "variants": 6
+    },
+    {
+      "id": "isotope-h",
+      "status": "passed",
+      "variants": 5
+    },
+    {
+      "id": "hydride",
+      "status": "passed",
+      "variants": 4
+    },
+    {
+      "id": "hydrogen-gas",
+      "status": "passed",
+      "variants": 4
+    },
+    {
+      "id": "stereocenter",
+      "status": "passed",
+      "variants": 6
+    },
+    {
+      "id": "geometric",
+      "status": "passed",
+      "variants": 6
+    },
+    {
+      "id": "noble-gas",
+      "status": "passed",
+      "variants": 2
+    },
+    {
+      "id": "wildcard",
+      "status": "passed",
+      "variants": 5
+    },
+    {
+      "id": "mapped-h",
+      "status": "passed",
+      "variants": 5
+    },
+    {
+      "id": "quadruple",
+      "status": "passed",
+      "variants": 4
+    }
+  ],
+  "observed_rdkit_nonzero_fill": {
+    "weighted_emptyVal_1_diagonal": 7.748604185489348e-304,
+    "explanation": "Release_2026_09_1 Matrices.cpp fills double storage using memset(emptyVal); nonzero fill is refused by chematic",
+    "cache_probe": "Changing emptyVal without force reuses existing adjacency in this oracle; chematic does not cache graph query outputs"
+  },
+  "scope": [
+    "Rust/Python only",
+    "Sanitized RDKit model atom order",
+    "Input cap 1024 atoms / 16384 bonds",
+    "Nonzero empty_value refused",
+    "Query/zero bonds and unsupported model inputs refused",
+    "No WASM or rdkit_compat facade functions"
+  ],
+  "candidate_path": "/private/tmp/chematic-rdkit-graph",
+  "inherited_source_candidate": "/private/tmp/chematic-exyz",
+  "source_reference": {
+    "tag": "Release_2026_09_1",
+    "git_ls_remote_sha": "fece8caa860bdf6c9c82bdb9253f22a0cf87150c",
+    "path": "Code/GraphMol/Matrices.cpp",
+    "license": "BSD-3-Clause"
+  },
+  "runtime": {
+    "python": "3.13.6 (v3.13.6:4e665351082, Aug  6 2025, 11:22:35) [Clang 16.0.0 (clang-1600.0.26.6)]",
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "machine": "arm64"
+  },
+  "source_artifacts": [
+    {
+      "path": ".github/workflows/ci.yml",
+      "sha256": "b5969a79fc94c27b9a0b70056787c2bc0665cf91ae5307136ddc18fd1972c714"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "sha256": "cd01a4e81a5357732cdcd90ffe20fc2c38a3ab330724a63c286cf891ba7ace33"
+    },
+    {
+      "path": "THIRD_PARTY_NOTICES.md",
+      "sha256": "a380942fd670466c7502d5a3630508deae5644c68e6d5964be819fc697d144cc"
+    },
+    {
+      "path": "crates/chematic-py/python/chematic/__init__.pyi",
+      "sha256": "dc9c475c856b8806f296a04833440e51e930c0684eed69329194f864c8248846"
+    },
+    {
+      "path": "crates/chematic-py/src/mol_methods.rs",
+      "sha256": "6aa803775c9cc018b5c8a1c32bba92fa6b2f04dc52f1fcc3e2fc43e40d4ffacf"
+    },
+    {
+      "path": "crates/chematic-py/src/mol_methods/graph_queries.rs",
+      "sha256": "55e10314cdc9a1cad7e26052c87d3bc220756e22450a6717896677ace163fc73"
+    },
+    {
+      "path": "crates/chematic-py/tests/test_rdkit_graph_queries.py",
+      "sha256": "383271f14d11b4fed6caa22f45cbe9e3e326731d3e4feeb2c2741e071b9bce12"
+    },
+    {
+      "path": "crates/chematic-smiles/src/lib.rs",
+      "sha256": "33095f013a31606e8530eede180941bdd8f9a73b714db13939ac4e1adb36b180"
+    },
+    {
+      "path": "crates/chematic-smiles/src/rdkit/graph_queries.rs",
+      "sha256": "f9f9432928a0aaaf005f93297ed82d1634f656eb17858e62a1bf9b9f20470282"
+    },
+    {
+      "path": "crates/chematic-smiles/src/rdkit/matrices.rs",
+      "sha256": "d874b48d29f7ce9501c41acefbc9e077717c3f196ab9ddf352fde93cfbf20fc0"
+    },
+    {
+      "path": "crates/chematic-smiles/src/rdkit/mod.rs",
+      "sha256": "1c7e39067aac7c0262a9f8ab19ee4cf6cdcc3f43389b75273431deb3d62b5215"
+    },
+    {
+      "path": "crates/chematic-smiles/tests/rdkit_graph_queries.rs",
+      "sha256": "cdc98aadc03e6cf77444bf714f554dd983225b2943e37604aea3b3fb7f890aba"
+    },
+    {
+      "path": "docs/rdkit-graph-queries.md",
+      "sha256": "36d59dc9512a82e0d37c7406af0fc4b2645be551bd6eafab2730d3d7f77fb954"
+    },
+    {
+      "path": "docs/rdkit-migration.md",
+      "sha256": "2a85d08ccafa8c6b2d086c0e3667a7475d53f084187bea001984a8c9c94ca776"
+    },
+    {
+      "path": "mkdocs.yml",
+      "sha256": "0717dd8b0d9186703062cfe1a6ad975521fb1e1a6a1f0f1daeaae3098d58091c"
+    },
+    {
+      "path": "scripts/validate_rdkit_graph_queries.py",
+      "sha256": "6b5c3d123904ac2da02e6ce29788309fdf454d0a90d1669dc49dfa9903036cd3"
+    },
+    {
+      "path": "validation/rdkit_issues/graph-queries/fixtures.json",
+      "sha256": "23000032ce4c4514927aba3f2dc81582c71f3a31a520325b061bf6de6656f29c"
+    }
+  ],
+  "extension": {
+    "path": "/private/tmp/chematic-stereo-target/debug/libchematic.dylib",
+    "sha256": "1c8d4d552bd3abc573b5cdeba7489d6951f36b8d0fe8b6146c61aa6e492d7333"
+  },
+  "validation": {
+    "rust_library_passed": 386,
+    "rust_library_existing_ignored": 1,
+    "rust_graph_query_passed": 8,
+    "rust_matrix_limits_passed": 4,
+    "python_graph_query_passed": 19,
+    "python_matrix_limits_passed": 4,
+    "python_renumber_passed": 28,
+    "python_exyz_passed": 43,
+    "python_total_passed": 94,
+    "clippy": "passed for chematic-smiles and chematic-py, all targets, -D warnings",
+    "fmt": "passed",
+    "mkdocs_strict": "passed",
+    "binding_inventory": {
+      "status": "passed",
+      "python_free_functions": 190,
+      "wasm_exports": 303,
+      "methods_are_outside_static_free_function_inventory": true
+    },
+    "refactor_ratchet": {
+      "status": "passed",
+      "rust_files": 532,
+      "functions": 8306,
+      "file_allowances": 18,
+      "function_allowances": 86
+    },
+    "portable_patch": "forward check against inherited candidate and reverse check against implemented candidate passed"
+  }
+}

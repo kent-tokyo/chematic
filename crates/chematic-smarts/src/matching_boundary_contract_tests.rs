@@ -1,6 +1,6 @@
 use crate::{
     MatchConfig, MatchOutcome, RdkitParityConfig, find_match_atom_sets_rdkit_parity,
-    has_match_rdkit_parity_bounded, parse_smarts,
+    has_match_rdkit_parity_bounded, has_match_with_config, parse_smarts,
 };
 #[test]
 fn parity_matcher_recursive_and_atom_primitives_match_pinned_rdkit() {
@@ -50,6 +50,42 @@ fn parity_matcher_recursive_and_atom_primitives_match_pinned_rdkit() {
         }
     }
     assert!(failures.is_empty(), "{}", failures.join("\n"));
+}
+
+#[test]
+fn recursive_smarts_chirality_uses_mapped_neighbor_parity() {
+    // RDKit #9247: wrapping the same chiral query in `$()` must not invert
+    // ring stereochemistry merely because the recursive matcher uses a
+    // different atom traversal. CheMatic checks the completed mapping's
+    // neighbour permutation instead of comparing raw @/@@ flags.
+    let glucose = chematic_smiles::parse("OC[C@H]1O[C@H](O)[C@H](O)[C@@H](O)[C@@H]1O").unwrap();
+    let direct = parse_smarts("OC[C@H]1OC(O)[C@H](O)[C@@H](O)[C@@H]1O").unwrap();
+    let recursive = parse_smarts("[$(OC[C@H]1OC(O)[C@H](O)[C@@H](O)[C@@H]1O)]").unwrap();
+    let config = MatchConfig {
+        use_chirality: true,
+        ..Default::default()
+    };
+    assert!(has_match_with_config(&direct, &glucose, &config));
+    assert!(has_match_with_config(&recursive, &glucose, &config));
+
+    let trans = chematic_smiles::parse("C1[C@H]2[C@@H](C2)C1").unwrap();
+    let cis = chematic_smiles::parse("C1[C@H]2[C@H](C2)C1").unwrap();
+    let recursive_trans = parse_smarts("[$(C1[C@H]2[C@@H](C2)C1)]").unwrap();
+    assert!(has_match_with_config(&recursive_trans, &trans, &config));
+    assert!(!has_match_with_config(&recursive_trans, &cis, &config));
+
+    let parity_config = RdkitParityConfig {
+        base: config,
+        ..Default::default()
+    };
+    assert_eq!(
+        has_match_rdkit_parity_bounded(&recursive_trans, &trans, &parity_config).unwrap(),
+        MatchOutcome::Found
+    );
+    assert_eq!(
+        has_match_rdkit_parity_bounded(&recursive_trans, &cis, &parity_config).unwrap(),
+        MatchOutcome::NotFound
+    );
 }
 
 #[test]

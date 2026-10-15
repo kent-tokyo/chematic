@@ -1,0 +1,1804 @@
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 4e009cc..a6bd9b3 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -177,6 +177,7 @@ jobs:
+           - { package: chematic-chem, target: local_cation_resonance }
+           - { package: chematic-chem, target: screening_enrichment }
+           - { package: chematic-chem, target: native_distance_matrix }
++          - { package: chematic-fp, target: fold_density }
+           - { package: chematic-mol, target: cif_checked_writer }
+           - { package: chematic-mol, target: pqr_pdbqt_contract }
+           - { package: chematic-chem, target: renumber_stereo_contract }
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 84041a6..37a49fb 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -12,6 +12,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
+ 
+ ### Added
+ 
++- Added target-density fingerprint OR folding in Rust/Python and the RDKit
++  adapter, using corrected density/minimum-width conditions from RDKit #9715
++  with explicit unmet-target reporting and bounded packed input validation.
++
+ - Added fallible, bounded native heavy-atom distance matrices in Rust and
+   routed Python's existing topological_distance_matrix method through them;
+   atom/bond/entry budgets reject oversized requests before matrix allocation.
+diff --git a/crates/chematic-fp/src/fold_density.rs b/crates/chematic-fp/src/fold_density.rs
+new file mode 100644
+index 0000000..8eaba45
+--- /dev/null
++++ b/crates/chematic-fp/src/fold_density.rs
+@@ -0,0 +1,140 @@
++//! OR folding with corrected target-density and minimum-width conditions.
++//! Motivated by RDKit #9715; independent implementation on native bitvectors.
++
++use crate::BitVecN;
++
++/// Maximum accepted width (128 KiB of packed input).
++pub const MAX_FOLD_DENSITY_BITS: usize = 1_048_576;
++
++#[derive(Clone, Debug, PartialEq, Eq)]
++pub enum FoldDensityError {
++    EmptyFingerprint,
++    InvalidDensity,
++    InvalidMinimumLength,
++    ResourceLimit { bits: usize, limit: usize },
++    PackedLength { actual: usize, expected: usize },
++    NonzeroPadding,
++}
++
++impl std::fmt::Display for FoldDensityError {
++    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
++        match self {
++            Self::EmptyFingerprint => write!(f, "fold density requires at least one bit"),
++            Self::InvalidDensity => write!(f, "fold density target must be finite and in [0, 1]"),
++            Self::InvalidMinimumLength => write!(f, "fold density minimum length must be positive"),
++            Self::ResourceLimit { bits, limit } => {
++                write!(f, "fold density width {bits} exceeds limit {limit}")
++            }
++            Self::PackedLength { actual, expected } => {
++                write!(f, "fold density expected {expected} bytes, got {actual}")
++            }
++            Self::NonzeroPadding => write!(f, "fold density unused high padding bits must be zero"),
++        }
++    }
++}
++
++impl std::error::Error for FoldDensityError {}
++
++/// A folded copy. Reaching the minimum width need not reach the target density.
++#[derive(Clone, Debug, PartialEq, Eq)]
++pub struct FoldDensityResult {
++    pub fingerprint: BitVecN,
++    pub original_bits: usize,
++    pub folds: usize,
++    pub target_reached: bool,
++}
++
++impl FoldDensityResult {
++    pub fn density(&self) -> f64 {
++        f64::from(self.fingerprint.popcount()) / self.fingerprint.bit_width() as f64
++    }
++}
++
++fn validate(bits: usize, density: f64, min_length: usize) -> Result<(), FoldDensityError> {
++    if bits == 0 {
++        return Err(FoldDensityError::EmptyFingerprint);
++    }
++    if bits > MAX_FOLD_DENSITY_BITS {
++        return Err(FoldDensityError::ResourceLimit {
++            bits,
++            limit: MAX_FOLD_DENSITY_BITS,
++        });
++    }
++    if !density.is_finite() || !(0.0..=1.0).contains(&density) {
++        return Err(FoldDensityError::InvalidDensity);
++    }
++    if min_length == 0 {
++        return Err(FoldDensityError::InvalidMinimumLength);
++    }
++    Ok(())
++}
++
++/// Fold by two while below the target and the next width is at least the minimum.
++///
++/// Each step has width `floor(old_width / 2)`, with every on bit OR-combined at
++/// `old_index % new_width`. Collisions never cancel. Odd widths are supported.
++/// Equality with either the density target or minimum width is inclusive.
++/// The input is never mutated; a no-op also returns an independent copy.
++/// An input already shorter than `min_length` is returned without folding.
++/// Finite targets in [0, 1] and positive minimum lengths are required.
++/// Input width is capped before copying; at most 20 folds are possible.
++pub fn fold_to_target_density(
++    fp: &BitVecN,
++    density: f64,
++    min_length: usize,
++) -> Result<FoldDensityResult, FoldDensityError> {
++    validate(fp.bit_width(), density, min_length)?;
++    let mut current = fp.clone();
++    let mut folds = 0;
++    while f64::from(current.popcount()) / (current.bit_width() as f64) < density
++        && current.bit_width() / 2 >= min_length
++    {
++        let next_width = current.bit_width() / 2;
++        let mut next = BitVecN::new(next_width);
++        for bit in 0..current.bit_width() {
++            if current.get(bit) {
++                next.set(bit % next_width);
++            }
++        }
++        current = next;
++        folds += 1;
++    }
++    let target_reached = f64::from(current.popcount()) / current.bit_width() as f64 >= density;
++    Ok(FoldDensityResult {
++        fingerprint: current,
++        original_bits: fp.bit_width(),
++        folds,
++        target_reached,
++    })
++}
++
++/// Packed-byte entry point, using LSB-first bits as in [`BitVecN::to_le_bytes`].
++///
++/// Requires exactly `ceil(bit_width / 8)` bytes, with zero high padding bits.
++/// Validation, including the width cap, runs before decoding or copying input.
++pub fn fold_packed_to_target_density(
++    packed: &[u8],
++    bit_width: usize,
++    density: f64,
++    min_length: usize,
++) -> Result<FoldDensityResult, FoldDensityError> {
++    validate(bit_width, density, min_length)?;
++    let expected = bit_width.div_ceil(8);
++    if packed.len() != expected {
++        return Err(FoldDensityError::PackedLength {
++            actual: packed.len(),
++            expected,
++        });
++    }
++    let remainder = bit_width % 8;
++    if remainder != 0 && packed[expected - 1] >> remainder != 0 {
++        return Err(FoldDensityError::NonzeroPadding);
++    }
++    let mut fp = BitVecN::new(bit_width);
++    for bit in 0..bit_width {
++        if packed[bit / 8] & (1 << (bit % 8)) != 0 {
++            fp.set(bit);
++        }
++    }
++    fold_to_target_density(&fp, density, min_length)
++}
+diff --git a/crates/chematic-fp/src/lib.rs b/crates/chematic-fp/src/lib.rs
+index 2807673..89d72a3 100644
+--- a/crates/chematic-fp/src/lib.rs
++++ b/crates/chematic-fp/src/lib.rs
+@@ -27,6 +27,7 @@ pub mod ecfp;
+ mod ecfp_diagnostics;
+ pub mod erg;
+ pub mod fcfp;
++pub mod fold_density;
+ pub mod fps;
+ pub mod hdf;
+ pub mod layered;
+@@ -63,6 +64,10 @@ pub use ecfp::{
+     ecfp6, ecfp6_rdkit_environment_experimental, ecfp6_rdkit_invariants, morgan_fp_counts,
+     tanimoto_ecfp4,
+ };
++pub use fold_density::{
++    FoldDensityError, FoldDensityResult, MAX_FOLD_DENSITY_BITS, fold_packed_to_target_density,
++    fold_to_target_density,
++};
+ pub use rdkit_atom_pair::{
+     rdkit_atom_pair_counts, rdkit_atom_pair_fp, rdkit_atom_pair_sparse_counts,
+ };
+diff --git a/crates/chematic-fp/tests/fold_density.rs b/crates/chematic-fp/tests/fold_density.rs
+new file mode 100644
+index 0000000..1ee5b79
+--- /dev/null
++++ b/crates/chematic-fp/tests/fold_density.rs
+@@ -0,0 +1,163 @@
++use chematic_fp::{
++    BitVecN, FoldDensityError, MAX_FOLD_DENSITY_BITS, fold_packed_to_target_density,
++    fold_to_target_density,
++};
++
++fn fp(width: usize, on: &[usize]) -> BitVecN {
++    let mut fp = BitVecN::new(width);
++    for &bit in on {
++        fp.set(bit);
++    }
++    fp
++}
++
++fn on(fp: &BitVecN) -> Vec<usize> {
++    (0..fp.bit_width()).filter(|&bit| fp.get(bit)).collect()
++}
++
++#[test]
++fn sparse_fingerprints_fold_and_dense_ones_do_not() {
++    let sparse = fp(256, &[0]);
++    let result = fold_to_target_density(&sparse, 0.3, 64).unwrap();
++    assert_eq!(result.fingerprint.bit_width(), 64);
++    assert_eq!(result.folds, 2);
++    assert!(!result.target_reached);
++    assert_eq!(sparse.bit_width(), 256);
++    let dense = fp(256, &(0..256).collect::<Vec<_>>());
++    let result = fold_to_target_density(&dense, 0.3, 64).unwrap();
++    assert_eq!(result.fingerprint, dense);
++    assert_eq!(result.folds, 0);
++    assert!(result.target_reached);
++}
++
++#[test]
++fn equality_at_density_stops_and_equality_at_minimum_allows_one_fold() {
++    let input = fp(128, &(0..16).collect::<Vec<_>>());
++    let result = fold_to_target_density(&input, 0.25, 64).unwrap();
++    assert_eq!(result.fingerprint.bit_width(), 64);
++    assert_eq!(result.density(), 0.25);
++    assert!(result.target_reached);
++    let result = fold_to_target_density(&input, 0.125, 64).unwrap();
++    assert_eq!(result.fingerprint, input);
++    assert_eq!(result.folds, 0);
++}
++
++#[test]
++fn collisions_are_or_not_xor() {
++    let result = fold_to_target_density(&fp(128, &[0, 64]), 1., 64).unwrap();
++    assert_eq!(on(&result.fingerprint), [0]);
++    assert_eq!(result.density(), 1. / 64.);
++}
++
++#[test]
++fn odd_width_tail_bits_use_modulo_and_can_reduce_density() {
++    let result = fold_to_target_density(&fp(5, &[0, 2, 4]), 0.8, 2).unwrap();
++    assert_eq!(result.fingerprint.bit_width(), 2);
++    assert_eq!(on(&result.fingerprint), [0]);
++    assert_eq!(result.density(), 0.5);
++    assert!(!result.target_reached);
++    let result = fold_to_target_density(&fp(65, &[0, 32, 64]), 0.1, 32).unwrap();
++    assert_eq!(on(&result.fingerprint), [0]);
++    assert_eq!(result.fingerprint.bit_width(), 32);
++}
++
++#[test]
++fn zero_bits_reach_minimum_but_zero_target_needs_no_fold() {
++    let result = fold_to_target_density(&fp(128, &[]), 0.3, 1).unwrap();
++    assert_eq!(result.fingerprint.bit_width(), 1);
++    assert_eq!(result.folds, 7);
++    assert!(!result.target_reached);
++    let result = fold_to_target_density(&fp(128, &[]), 0., 1).unwrap();
++    assert_eq!(result.folds, 0);
++    assert!(result.target_reached);
++}
++
++#[test]
++fn input_shorter_than_minimum_and_single_bit_are_valid() {
++    assert_eq!(
++        fold_to_target_density(&fp(8, &[]), 1., 64)
++            .unwrap()
++            .fingerprint
++            .bit_width(),
++        8
++    );
++    assert!(
++        fold_to_target_density(&fp(1, &[0]), 1., 1)
++            .unwrap()
++            .target_reached
++    );
++    assert_eq!(fold_to_target_density(&fp(1, &[]), 1., 1).unwrap().folds, 0);
++}
++
++#[test]
++fn invalid_options_are_typed_errors() {
++    for density in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY, -0.1, 1.1] {
++        assert_eq!(
++            fold_to_target_density(&fp(8, &[]), density, 1),
++            Err(FoldDensityError::InvalidDensity)
++        );
++    }
++    assert_eq!(
++        fold_to_target_density(&fp(8, &[]), 0.3, 0),
++        Err(FoldDensityError::InvalidMinimumLength)
++    );
++}
++
++#[test]
++fn packed_validation_precedes_decode_and_ignores_no_data() {
++    assert_eq!(
++        fold_packed_to_target_density(&[], 0, 0.3, 64),
++        Err(FoldDensityError::EmptyFingerprint)
++    );
++    assert_eq!(
++        fold_packed_to_target_density(&[], usize::MAX, 0.3, 64),
++        Err(FoldDensityError::ResourceLimit {
++            bits: usize::MAX,
++            limit: MAX_FOLD_DENSITY_BITS
++        })
++    );
++    assert_eq!(
++        fold_packed_to_target_density(&[0, 0], 8, 0.3, 64),
++        Err(FoldDensityError::PackedLength {
++            actual: 2,
++            expected: 1
++        })
++    );
++    assert_eq!(
++        fold_packed_to_target_density(&[128], 7, 0.3, 64),
++        Err(FoldDensityError::NonzeroPadding)
++    );
++    assert_eq!(
++        fold_packed_to_target_density(&[0], 9, 0.3, 64),
++        Err(FoldDensityError::PackedLength {
++            actual: 1,
++            expected: 2
++        })
++    );
++}
++
++#[test]
++fn maximum_width_accepts_and_next_bit_rejects() {
++    let input = fp(MAX_FOLD_DENSITY_BITS, &[0]);
++    let result = fold_to_target_density(&input, 1., 1).unwrap();
++    assert_eq!(result.fingerprint.bit_width(), 1);
++    assert_eq!(result.folds, 20);
++    assert!(result.target_reached);
++    assert!(matches!(
++        fold_to_target_density(&BitVecN::new(MAX_FOLD_DENSITY_BITS + 1), 1., 1),
++        Err(FoldDensityError::ResourceLimit { .. })
++    ));
++}
++
++#[test]
++fn packed_and_native_inputs_agree_for_partial_bytes_and_words() {
++    for width in [1, 7, 8, 9, 63, 64, 65, 127, 128, 129, 1000, 2048] {
++        let input = fp(width, &(0..width).step_by(3).collect::<Vec<_>>());
++        for density in [0., 0.3, 0.75, 1.] {
++            let direct = fold_to_target_density(&input, density, 1).unwrap();
++            let packed =
++                fold_packed_to_target_density(&input.to_le_bytes(), width, density, 1).unwrap();
++            assert_eq!(direct, packed);
++        }
++    }
++}
+diff --git a/crates/chematic-py/python/chematic/__init__.pyi b/crates/chematic-py/python/chematic/__init__.pyi
+index 12a53ea..dea00f4 100644
+--- a/crates/chematic-py/python/chematic/__init__.pyi
++++ b/crates/chematic-py/python/chematic/__init__.pyi
+@@ -3135,6 +3135,30 @@ def is_valid_smarts(smarts: str) -> bool:
+     """
+     ...
+ 
++class FoldDensityResult(TypedDict):
++    fingerprint: bytes
++    bit_width: int
++    original_bits: int
++    on_bit_count: int
++    density: float
++    folds: int
++    target_reached: bool
++    stop_reason: Literal["target_reached", "minimum_length"]
++
++def fold_to_target_density(
++    fp: bytes, density: float = 0.3, min_length: int = 64, *,
++    bit_width: int | None = None,
++) -> FoldDensityResult:
++    """OR-fold while below density and the next width is >= min_length.
++
++    Bits are LSB-first; bit_width defaults to len(fp)*8. Requires exactly
++    ceil(bit_width/8) bytes and zero unused high bits. Supports odd widths,
++    capped at 1048576 bits. Density must be finite in [0,1]; min_length > 0.
++    Raises ValueError for invalid inputs. Reports an unmet target explicitly.
++    The input is unchanged. This implements corrected RDKit #9715 semantics.
++    """
++    ...
++
+ def enrichment_factors(ranked_actives: list[bool], fractions: list[float]) -> list[float]:
+     """Return EF for ceil(N*f) entries of an already ranked library, best first.
+ 
+diff --git a/crates/chematic-py/python/chematic/rdkit_compat.py b/crates/chematic-py/python/chematic/rdkit_compat.py
+index d39af37..e2523f0 100644
+--- a/crates/chematic-py/python/chematic/rdkit_compat.py
++++ b/crates/chematic-py/python/chematic/rdkit_compat.py
+@@ -72,6 +72,12 @@ class ExplicitBitVect:
+     def GetNumBits(self) -> int:
+         return self._nbits
+ 
++    def __len__(self) -> int:
++        return self._nbits
++
++    def GetNumOnBits(self) -> int:
++        return sum(byte.bit_count() for byte in self._bits)
++
+     def GetBit(self, i: int) -> bool:
+         if i < 0 or i >= self._nbits:
+             raise IndexError(i)
+@@ -1322,7 +1328,24 @@ class pyAvalonTools:
+ # ---------------------------------------------------------------------------
+ 
+ class DataStructs:
+-    """Mirrors ``rdkit.DataStructs``."""
++    """Mirrors selected ``rdkit.DataStructs`` operations."""
++
++    @staticmethod
++    def FoldToTargetDensity(fp, density=0.3, minLength=64):
++        """OR-fold with the corrected RDKit #9715 stopping conditions.
++
++        Supports this adapter's ExplicitBitVect, up to 1048576 bits. The
++        result is a new independent vector, including when no fold is needed.
++        Finite density in [0, 1] and positive minLength are required.
++        """
++        if not isinstance(fp, ExplicitBitVect):
++            raise TypeError("FoldToTargetDensity requires ExplicitBitVect")
++        if fp.GetNumBits() > 1048576:
++            raise ValueError("fold density width exceeds limit 1048576")
++        result = _ch.fold_to_target_density(
++            fp._to_bytes(), density, minLength, bit_width=fp.GetNumBits()
++        )
++        return ExplicitBitVect._from_bytes(result["fingerprint"], result["bit_width"])
+ 
+     @staticmethod
+     def TanimotoSimilarity(fp1, fp2) -> float:
+diff --git a/crates/chematic-py/src/fold_density.rs b/crates/chematic-py/src/fold_density.rs
+new file mode 100644
+index 0000000..2b6b6a0
+--- /dev/null
++++ b/crates/chematic-py/src/fold_density.rs
+@@ -0,0 +1,51 @@
++//! Packed fingerprint folding with explicit width and termination information.
++use pyo3::exceptions::PyValueError;
++use pyo3::prelude::*;
++use pyo3::types::{PyBytes, PyBytesMethods, PyDict};
++
++/// OR-fold a packed fingerprint until the target density or minimum length.
++/// Returns bytes, width, density, fold count and whether the target was reached.
++#[pyfunction]
++#[pyo3(signature = (fp, density=0.3, min_length=64, *, bit_width=None))]
++fn fold_to_target_density<'py>(
++    py: Python<'py>,
++    fp: &Bound<'py, PyBytes>,
++    density: f64,
++    min_length: usize,
++    bit_width: Option<usize>,
++) -> PyResult<Bound<'py, PyDict>> {
++    let packed = fp.as_bytes();
++    let width = match bit_width {
++        Some(width) => width,
++        None => packed
++            .len()
++            .checked_mul(8)
++            .ok_or_else(|| PyValueError::new_err("fold density bit width overflow"))?,
++    };
++    let result = chematic_fp::fold_packed_to_target_density(packed, width, density, min_length)
++        .map_err(|error| PyValueError::new_err(error.to_string()))?;
++    let out = PyDict::new(py);
++    out.set_item(
++        "fingerprint",
++        PyBytes::new(py, &result.fingerprint.to_le_bytes()),
++    )?;
++    out.set_item("bit_width", result.fingerprint.bit_width())?;
++    out.set_item("original_bits", result.original_bits)?;
++    out.set_item("on_bit_count", result.fingerprint.popcount())?;
++    out.set_item("density", result.density())?;
++    out.set_item("folds", result.folds)?;
++    out.set_item("target_reached", result.target_reached)?;
++    out.set_item(
++        "stop_reason",
++        if result.target_reached {
++            "target_reached"
++        } else {
++            "minimum_length"
++        },
++    )?;
++    Ok(out)
++}
++
++pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
++    register_pyfunctions!(m, fold_to_target_density)
++}
+diff --git a/crates/chematic-py/src/lib.rs b/crates/chematic-py/src/lib.rs
+index 30e65f0..5473785 100644
+--- a/crates/chematic-py/src/lib.rs
++++ b/crates/chematic-py/src/lib.rs
+@@ -37,6 +37,7 @@ mod crystal;
+ mod ensemble_v2;
+ mod errors;
+ mod fingerprint_similarity;
++mod fold_density;
+ mod force_field;
+ mod formats;
+ mod lammps;
+@@ -198,6 +199,7 @@ fn chematic(m: &Bound<'_, PyModule>) -> PyResult<()> {
+     formats::register(m)?;
+     reactions::register(m)?;
+     similarity::register(m)?;
++    fold_density::register(m)?;
+     reports::register(m)?;
+     misc::register(m)?;
+     nucleic_acid::register(m)?;
+diff --git a/crates/chematic-py/tests/test_fold_density.py b/crates/chematic-py/tests/test_fold_density.py
+new file mode 100644
+index 0000000..eda636f
+--- /dev/null
++++ b/crates/chematic-py/tests/test_fold_density.py
+@@ -0,0 +1,107 @@
++import math
++import pytest
++import chematic
++from chematic.rdkit_compat import DataStructs, ExplicitBitVect
++
++
++def packed(width, on):
++    result = bytearray((width + 7) // 8)
++    for bit in on:
++        result[bit // 8] |= 1 << (bit % 8)
++    return bytes(result)
++
++
++def test_sparse_folds_including_equal_minimum():
++    result = chematic.fold_to_target_density(packed(128, range(16)), 0.25, 64)
++    assert result == dict(fingerprint=packed(64, range(16)), bit_width=64,
++        original_bits=128, on_bit_count=16, density=0.25, folds=1,
++        target_reached=True, stop_reason="target_reached")
++
++
++def test_dense_or_equal_density_is_unchanged():
++    for density in [0., 0.5, 1.]:
++        raw = packed(256, range(256))
++        result = chematic.fold_to_target_density(raw, density)
++        assert result["fingerprint"] == raw
++        assert result["folds"] == 0
++
++
++def test_collisions_and_odd_width_padding():
++    result = chematic.fold_to_target_density(packed(65, [0, 32, 64]), 1., 32, bit_width=65)
++    assert result["bit_width"] == 32
++    assert result["on_bit_count"] == 1
++    assert result["fingerprint"] == b"\x01\x00\x00\x00"
++    assert result["stop_reason"] == "minimum_length"
++
++
++def test_zero_bits_and_already_short_input_report_unmet_target():
++    for width, minimum in [(128, 1), (8, 64)]:
++        result = chematic.fold_to_target_density(packed(width, []), 0.3, minimum)
++        assert result["bit_width"] == min(width, minimum)
++        assert not result["target_reached"]
++
++
++@pytest.mark.parametrize("density", [math.nan, math.inf, -math.inf, -.1, 1.1])
++def test_invalid_density(density):
++    with pytest.raises(ValueError, match="finite"):
++        chematic.fold_to_target_density(b"\0", density)
++
++
++@pytest.mark.parametrize("raw,width,message", [
++    (b"", None, "at least one bit"), (b"\0", 0, "at least one bit"),
++    (b"\0\0", 8, "expected 1 bytes"), (b"\0", 9, "expected 2 bytes"),
++    (b"\x80", 7, "padding"), (b"", 1048577, "exceeds limit"),
++])
++def test_invalid_packed_input(raw, width, message):
++    with pytest.raises(ValueError, match=message):
++        chematic.fold_to_target_density(raw, bit_width=width)
++
++
++def test_zero_minimum_and_negative_integer_options():
++    with pytest.raises(ValueError, match="positive"):
++        chematic.fold_to_target_density(b"\0", min_length=0)
++    for kwargs in [dict(min_length=-1), dict(bit_width=-1)]:
++        with pytest.raises(OverflowError):
++            chematic.fold_to_target_density(b"\0", **kwargs)
++
++
++def test_borrowed_bytes_type_and_maximum_width():
++    with pytest.raises(TypeError):
++        chematic.fold_to_target_density([0])
++    result = chematic.fold_to_target_density(bytes(131072), 0., 1)
++    assert result["bit_width"] == 1048576
++    with pytest.raises(ValueError, match="exceeds limit"):
++        chematic.fold_to_target_density(bytes(131073))
++
++
++def test_compat_adapter_folds_without_mutating_input():
++    fp = ExplicitBitVect(128)
++    for bit in range(16):
++        fp.SetBit(bit)
++    result = DataStructs.FoldToTargetDensity(fp, 0.25, 64)
++    assert len(result) == 64
++    assert result.GetNumOnBits() == 16
++    assert result.GetOnBits() == list(range(16))
++    assert len(fp) == 128
++    result.SetBit(63)
++    assert fp.GetNumOnBits() == 16
++
++
++def test_compat_noop_returns_independent_copy_and_checks_type():
++    fp = ExplicitBitVect(8)
++    fp.SetBit(0)
++    result = DataStructs.FoldToTargetDensity(fp, 0., 1)
++    assert result is not fp
++    assert result.ToBitString() == fp.ToBitString()
++    with pytest.raises(TypeError, match="ExplicitBitVect"):
++        DataStructs.FoldToTargetDensity(b"\0")
++
++
++def test_compat_odd_width_and_zero_width():
++    fp = ExplicitBitVect(5)
++    for bit in [0, 2, 4]: fp.SetBit(bit)
++    result = DataStructs.FoldToTargetDensity(fp, 0.8, 2)
++    assert len(result) == 2
++    assert result.GetOnBits() == [0]
++    with pytest.raises(ValueError):
++        DataStructs.FoldToTargetDensity(ExplicitBitVect(0))
+diff --git a/docs/fingerprint-target-density.md b/docs/fingerprint-target-density.md
+new file mode 100644
+index 0000000..25c0230
+--- /dev/null
++++ b/docs/fingerprint-target-density.md
+@@ -0,0 +1,158 @@
++# Fingerprint folding to a target density
++
++This isolated, unreleased candidate implements the correction proposed in
++[RDKit #9715](https://github.com/rdkit/rdkit/issues/9715), verified OPEN on
++2026-10-15 (updated 2026-10-15T08:57:28Z). RDKit 2026.09.1 still folds when
++the fingerprint density is **above** its target, and refuses a next width
++exactly equal to `minLength`. The reported correction is to fold while
++density is **below** the target and the next width is **at least** the minimum.
++chematic had no target-density folding API; this adds one in Rust, Python and
++the Python RDKit adapter.
++
++## Example
++
++```python
++import chematic
++
++# 16 on bits in a 128-bit packed fingerprint: density 0.125.
++raw = b"\xff\xff" + bytes(14)
++result = chematic.fold_to_target_density(raw, density=0.25, min_length=64)
++assert result["bit_width"] == 64
++assert result["fingerprint"] == b"\xff\xff" + bytes(6)
++assert result["density"] == 0.25
++assert result["folds"] == 1
++assert result["target_reached"]
++
++# Molecular fingerprints use the same packed-byte entry point.
++folded = chematic.fold_to_target_density(chematic.from_smiles("CCO").ecfp4())
++```
++
++Python returns a `FoldDensityResult` dictionary:
++
++| Key | Meaning |
++| --- | --- |
++| `fingerprint` | Folded LSB-first packed `bytes` |
++| `bit_width` | Actual final width, including non-byte-aligned widths |
++| `original_bits` | Validated input width |
++| `on_bit_count` | Number of set bits after folding |
++| `density` | `on_bit_count / bit_width` |
++| `folds` | Number of halving steps |
++| `target_reached` | Whether final density is at least the requested target |
++| `stop_reason` | `target_reached` or `minimum_length` |
++
++Rust exports `fold_to_target_density(&BitVecN, density, min_length)` and
++`fold_packed_to_target_density(&[u8], bit_width, density, min_length)` from
++`chematic_fp`. Both return `Result<FoldDensityResult, FoldDensityError>`.
++The result contains the native `BitVecN`, original width, fold count and target
++status; its `density()` method computes the achieved density.
++
++## Folding and validation contract
++
++Every step uses `new_width = floor(old_width / 2)` and sets output bit
++`old_index % new_width` for every input on bit. Colliding bits combine with OR.
++The existing `BitVec2048::fold` retains its published XOR behavior; the new
++operation has a separate entry point.
++
++- Fold only while density is strictly below the target and the next width is
++  at least `min_length`. Equality at the target stops; equality at the minimum
++  allows the fold.
++- Odd widths are supported, including tail bits. With odd widths, collisions
++  can reduce density: bits 0/2/4 at width 5 fold to bit 0 at width 2.
++- All-zero fingerprints can stop at the minimum with an unmet positive target.
++  A target of zero needs no folding. An input already shorter than the minimum
++  is returned at its original width. No operation enlarges a fingerprint.
++- The source is unchanged. Every result, including a no-op, is an independent
++  copy. The returned status discloses whether the target was achieved.
++- The width must be positive and at most **1048576 bits** (128 KiB packed).
++  The cap is checked before input decoding or copying. Each step reduces the
++  width, so at most 20 folds are possible. No unlimited-width option is exposed.
++- `density` must be finite in `[0, 1]`; `min_length` must be positive. A minimum
++  larger than the input is valid and prevents folding.
++- Python takes `bytes`. `bit_width` is keyword-only and defaults to
++  `len(fp) * 8`. Packed input must have exactly `ceil(bit_width / 8)` bytes and
++  zero unused high padding bits. This permits exact widths such as 5 or 65.
++- Rust returns typed errors; Python raises `ValueError` for contract failures,
++  `OverflowError` for negative/out-of-range unsigned integer options, and
++  `TypeError` for non-`bytes` packed input.
++
++The width cap bounds this operation's work and buffer sizes. Existing
++`BitVecN` allocations are used; allocator failure is not converted into a
++new fallible-allocation contract. Fingerprint generation, database-wide
++folding policies, similarity recalibration and WASM bindings are outside this
++candidate. Differently sized packed results require an explicit comparison
++policy before similarity calculation.
++
++## RDKit adapter
++
++```python
++from chematic.rdkit_compat import DataStructs, ExplicitBitVect
++
++fp = ExplicitBitVect(128)
++for bit in range(16):
++    fp.SetBit(bit)
++folded = DataStructs.FoldToTargetDensity(fp, density=0.25, minLength=64)
++assert len(folded) == 64
++assert folded.GetNumOnBits() == 16
++assert len(fp) == 128
++```
++
++The adapter accepts its own `ExplicitBitVect` and returns a new one. It
++delegates to the native operation; `__len__` and `GetNumOnBits` are added to
++the adapter vector. `SparseBitVect` and RDKit-native vector objects are outside
++the adapter contract. Values use corrected #9715 semantics, so they deliberately
++differ from the installed buggy RDKit wrapper. RDKit can return the original
++object when no folding occurs; this adapter always returns an independent copy.
++
++There is an additional upstream primitive boundary: RDKit 2026.09.1
++`FoldFingerprint(fp, 2)` rejects a **2-bit** input with
++`ValueError: invalid fold factor`, for both explicit and sparse vectors.
++Its 3-to-1 fold works. chematic supports both boundaries with modulo-OR
++semantics. The validator records this distinction separately from #9715.
++
++## Evidence
++
++- Rust: **356 passed** — 346 existing library tests and 10 new integration
++  tests, zero failures or ignored tests.
++- Python: **182 passed** — 20 new folding tests and 162 existing adapter tests.
++- Independent modular-set oracle: **20259 exact cases**, including every bit
++  pattern for widths 1–8, six density thresholds, six minimum lengths, plus
++  byte/word/odd/fingerprint boundaries through width 4096.
++- RDKit **2026.09.1** explicit and sparse vector primitives: **40262 complete
++  exact comparisons** and **14744 exact successful fold steps**. Another
++  **256 comparisons** stop at the known 2-to-1 primitive exception; those
++  terminal cases are covered by the independent oracle. Unexpected mismatches:
++  **zero**. The RDKit oracle uses the corrected loop around `FoldFingerprint`,
++  not the installed buggy `FoldToTargetDensity` wrapper.
++- Adapter results match all **20259 cases**, with input immutability checked.
++- Seven of nine original, minimal regression recipes differ from the installed
++  RDKit wrapper, reproducing the reported direction/minimum issues. Two recipes
++  are unchanged controls. Exact maximum width and first rejected width are
++  exercised in Rust/Python boundary tests.
++
++The recipe manifest is `validation/rdkit_issues/fold-density/fixtures.json`.
++Each small fixture records provenance, license, redistribution, minimization,
++pinned oracle, expected units/tolerance and normalized payload SHA-256.
++Generated case IDs and their compact normalized inputs/outputs feed a packet
++SHA-256; the checked-in recipe regenerates that packet without external data.
++`scripts/validate_fold_density.py` saves counts, the installed wrapper's source
++hash, upstream repro results and packet hash in
++`validation/results/rdkit-fold-density-2026-10-15.json`.
++
++```sh
++cargo test -p chematic-fp --lib --test fold_density --offline --quiet
++cargo clippy -p chematic-fp -p chematic-py --all-targets --offline --no-deps -- -D warnings
++python3 -m pytest crates/chematic-py/tests/test_fold_density.py crates/chematic-py/tests/test_rdkit_compat.py -q
++python3 scripts/validate_fold_density.py
++```
++
++Formatting, static binding inventory, refactor budget, Python stub syntax,
++product naming and strict MkDocs checks also pass. These are local source
++checks with a debug Python extension, without native InChI; no publication
++or upstream modification is claimed.
++
++The source candidate is `/private/tmp/chematic-fold-density`, inherited from
++`/private/tmp/chematic-native-matrix`. The incremental patch is
++`validation/rdkit_issues/fold-density-2026-10-15.patch`, applicable to that base.
++Only this document, the patch and validation record are copied to the primary
++checkout. Source changes remain isolated, uncommitted and unpushed. The sparse
++local baseline commit anchors the diff and is not an integration commit.
+diff --git a/mkdocs.yml b/mkdocs.yml
+index 8ab8947..31caaf5 100644
+--- a/mkdocs.yml
++++ b/mkdocs.yml
+@@ -87,6 +87,7 @@ nav:
+     - Language Bindings Cross-Reference: language-bindings.md
+     - Error Handling & Limits: error-and-limits.md
+   - Reliability:
++    - Fingerprint Target Density: fingerprint-target-density.md
+     - Bounded Native Distance Matrices: native-distance-matrix-limits.md
+     - Validation vs RDKit: validation.md
+     - Compatibility Scope: compatibility-scope.md
+diff --git a/scripts/validate_fold_density.py b/scripts/validate_fold_density.py
+new file mode 100644
+index 0000000..9e6a35d
+--- /dev/null
++++ b/scripts/validate_fold_density.py
+@@ -0,0 +1,157 @@
++#!/usr/bin/env python3
++"""Corrected #9715 loop around pinned RDKit OR-fold primitives, plus set oracle."""
++from __future__ import annotations
++
++import hashlib
++import inspect
++import json
++from pathlib import Path
++
++import chematic
++from chematic.rdkit_compat import DataStructs as Adapter, ExplicitBitVect as AdapterBits
++from rdkit import DataStructs, rdBase
++
++ROOT = Path(__file__).resolve().parents[1]
++FIXTURES = ROOT / "validation/rdkit_issues/fold-density/fixtures.json"
++OUTPUT = ROOT / "validation/results/rdkit-fold-density-2026-10-15.json"
++
++
++def normalized(value):
++    return json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
++
++
++def packed(width, on):
++    data = bytearray((width + 7) // 8)
++    for bit in on:
++        data[bit // 8] |= 1 << (bit % 8)
++    return bytes(data)
++
++
++def rdkit_reference(width, on, density, minimum, vector_type):
++    fp = vector_type(width)
++    for bit in on:
++        fp.SetBit(bit)
++    steps = 0
++    # The reported upstream correction is explicit here; the installed
++    # FoldToTargetDensity wrapper still has the bug and is not this oracle.
++    while fp.GetNumOnBits() / fp.GetNumBits() < density and fp.GetNumBits() // 2 >= minimum:
++        old_width, old_on = fp.GetNumBits(), list(fp.GetOnBits())
++        try:
++            fp = DataStructs.FoldFingerprint(fp, 2)
++        except ValueError as error:
++            assert old_width == 2 and str(error) == "invalid fold factor", (old_width, str(error))
++            return None, steps
++        assert fp.GetNumBits() == old_width // 2
++        assert list(fp.GetOnBits()) == sorted({bit % (old_width // 2) for bit in old_on})
++        steps += 1
++    return (fp.GetNumBits(), list(fp.GetOnBits()), steps), steps
++
++
++def set_reference(width, on, density, minimum):
++    bits = set(on)
++    steps = 0
++    while len(bits) / width < density and width // 2 >= minimum:
++        width //= 2
++        bits = {bit % width for bit in bits}
++        steps += 1
++    return width, sorted(bits), steps
++
++
++def cases(manifest):
++    for fixture in manifest["records"]:
++        p = fixture["payload"]
++        yield fixture["id"], p["width"], p["on_bits"], p["density"], p["min_length"]
++    for width in range(1, 9):
++        for mask in range(1 << width):
++            bits = [bit for bit in range(width) if mask & (1 << bit)]
++            for density in [0., .125, .3, .5, .75, 1.]:
++                for minimum in [1, 2, 3, 4, 8, 64]:
++                    yield f"exhaust-{width}-{mask}-{density}-{minimum}", width, bits, density, minimum
++    for width in [9, 31, 63, 64, 65, 127, 128, 129, 255, 256, 257, 511, 512, 1000, 1023, 1024, 2048, 4096]:
++        for spacing in [1, 2, 3, 7, 31, 65, width]:
++            bits = sorted(set(range(0, width, spacing)) | {width - 1})
++            for density in [.3, .5, 1.]:
++                for minimum in [1, 32, 64, width // 2, width + 1]:
++                    yield f"boundary-{width}-{spacing}-{density}-{minimum}", width, bits, density, minimum
++
++
++def check_case(width, on, density, minimum):
++    expected = set_reference(width, on, density, minimum)
++    completed = primitive_steps = boundary_errors = 0
++    for vector_type in [DataStructs.ExplicitBitVect, DataStructs.SparseBitVect]:
++        reference, steps = rdkit_reference(width, on, density, minimum, vector_type)
++        primitive_steps += steps
++        if reference is None:
++            assert expected[0] == 1 and minimum == 1
++            boundary_errors += 1
++        else:
++            assert reference == expected
++            completed += 1
++    result = chematic.fold_to_target_density(packed(width, on), density, minimum, bit_width=width)
++    final_width, final_on, steps = expected
++    assert result["fingerprint"] == packed(final_width, final_on)
++    assert result["bit_width"] == final_width
++    assert result["original_bits"] == width
++    assert result["folds"] == steps
++    assert result["on_bit_count"] == len(final_on)
++    assert result["density"] == len(final_on) / final_width
++    reached = len(final_on) / final_width >= density
++    assert result["target_reached"] == reached
++    assert result["stop_reason"] == ("target_reached" if reached else "minimum_length")
++    adapter = AdapterBits(width)
++    for bit in on:
++        adapter.SetBit(bit)
++    folded = Adapter.FoldToTargetDensity(adapter, density, minimum)
++    assert (len(folded), folded.GetOnBits()) == (final_width, final_on)
++    assert (len(adapter), adapter.GetOnBits()) == (width, on)
++    return result, completed, primitive_steps, boundary_errors
++
++
++def main():
++    assert rdBase.rdkitVersion == "2026.09.1", rdBase.rdkitVersion
++    manifest = json.loads(FIXTURES.read_text())
++    aggregate = hashlib.sha256()
++    count = folds = reached = primitive_cases = primitive_steps = boundary_errors = 0
++    for identifier, width, on, density, minimum in cases(manifest):
++        result, completed, steps, errors = check_case(width, on, density, minimum)
++        primitive_cases += completed
++        primitive_steps += steps
++        boundary_errors += errors
++        aggregate.update(normalized([identifier, width, on, density, minimum,
++                                     result["bit_width"], result["fingerprint"].hex()]) + b"\n")
++        count += 1
++        folds += result["folds"]
++        reached += result["target_reached"]
++    reproductions = []
++    for fixture in manifest["records"]:
++        p = fixture["payload"]
++        assert hashlib.sha256(normalized(p)).hexdigest() == fixture["sha256"]
++        fp = DataStructs.ExplicitBitVect(p["width"])
++        for bit in p["on_bits"]:
++            fp.SetBit(bit)
++        original = DataStructs.FoldToTargetDensity(fp, p["density"], p["min_length"])
++        corrected, _, _, _ = check_case(p["width"], p["on_bits"], p["density"], p["min_length"])
++        expected = fixture["expected"]
++        assert corrected["bit_width"] == expected["width"]
++        assert corrected["fingerprint"] == packed(expected["width"], expected["on_bits"])
++        reproductions.append(dict(id=fixture["id"], input=p, expected=expected,
++            upstream_original=dict(width=original.GetNumBits(), on_bits=list(original.GetOnBits())),
++            differs_from_original=(original.GetNumBits(),list(original.GetOnBits())) != (expected["width"],expected["on_bits"])))
++    result = dict(schema_version=1, issue=dict(number=9715, state="OPEN", verified_date="2026-10-15",
++        updated_at="2026-10-15T08:57:28Z",url="https://github.com/rdkit/rdkit/issues/9715"),
++        oracle=dict(rdkit=rdBase.rdkitVersion, wrapper="Explicit corrected loop around FoldFingerprint(fp,2)",
++            primitives=["ExplicitBitVect", "SparseBitVect"], independent_oracle="Set union of indices modulo floor(width/2)",
++            original_wrapper_sha256=hashlib.sha256(inspect.getsource(DataStructs.FoldToTargetDensity).encode()).hexdigest()),
++        fixtures=dict(path=str(FIXTURES.relative_to(ROOT)),sha256=hashlib.sha256(FIXTURES.read_bytes()).hexdigest()),
++        results=dict(independent_exact_cases=count, rdkit_completed_exact_comparisons=primitive_cases,
++            rdkit_successful_fold_steps=primitive_steps, rdkit_two_to_one_exceptions=boundary_errors,
++            adapter_comparisons=count,
++            fold_steps=folds, targets_reached=reached, unmet_targets=count-reached,mismatches=0,
++            normalized_packet_sha256=aggregate.hexdigest(), bug_reproductions=sum(r["differs_from_original"] for r in reproductions)),
++        reproductions=reproductions)
++    OUTPUT.write_text(json.dumps(result,indent=2)+"\n")
++    print(json.dumps(result["results"],indent=2))
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/validation/rdkit_issues/fold-density/fixtures.json b/validation/rdkit_issues/fold-density/fixtures.json
+new file mode 100644
+index 0000000..9fac235
+--- /dev/null
++++ b/validation/rdkit_issues/fold-density/fixtures.json
+@@ -0,0 +1,809 @@
++{
++  "schema_version": 1,
++  "records": [
++    {
++      "id": "sparse-direction",
++      "provenance": "Project-authored synthetic bit patterns motivated by RDKit #9715; no upstream fixtures copied.",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed: original project fixture",
++      "minimization": "Smallest focused pattern for this stopping condition or collision behavior.",
++      "oracle": "RDKit 2026.09.1 FoldFingerprint with corrected #9715 loop, plus independent modular set union",
++      "expected": {
++        "width": 64,
++        "on_bits": [
++          0
++        ],
++        "units": "bit indices and width",
++        "tolerance": 0
++      },
++      "payload": {
++        "width": 256,
++        "on_bits": [
++          0
++        ],
++        "density": 0.3,
++        "min_length": 64
++      },
++      "sha256": "2c83c9058c369e7963ea5bc59a202efb9cc61ce2e5a2ea991fdc7fe665e1f094"
++    },
++    {
++      "id": "dense-direction",
++      "provenance": "Project-authored synthetic bit patterns motivated by RDKit #9715; no upstream fixtures copied.",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed: original project fixture",
++      "minimization": "Smallest focused pattern for this stopping condition or collision behavior.",
++      "oracle": "RDKit 2026.09.1 FoldFingerprint with corrected #9715 loop, plus independent modular set union",
++      "expected": {
++        "width": 256,
++        "on_bits": [
++          0,
++          1,
++          2,
++          3,
++          4,
++          5,
++          6,
++          7,
++          8,
++          9,
++          10,
++          11,
++          12,
++          13,
++          14,
++          15,
++          16,
++          17,
++          18,
++          19,
++          20,
++          21,
++          22,
++          23,
++          24,
++          25,
++          26,
++          27,
++          28,
++          29,
++          30,
++          31,
++          32,
++          33,
++          34,
++          35,
++          36,
++          37,
++          38,
++          39,
++          40,
++          41,
++          42,
++          43,
++          44,
++          45,
++          46,
++          47,
++          48,
++          49,
++          50,
++          51,
++          52,
++          53,
++          54,
++          55,
++          56,
++          57,
++          58,
++          59,
++          60,
++          61,
++          62,
++          63,
++          64,
++          65,
++          66,
++          67,
++          68,
++          69,
++          70,
++          71,
++          72,
++          73,
++          74,
++          75,
++          76,
++          77,
++          78,
++          79,
++          80,
++          81,
++          82,
++          83,
++          84,
++          85,
++          86,
++          87,
++          88,
++          89,
++          90,
++          91,
++          92,
++          93,
++          94,
++          95,
++          96,
++          97,
++          98,
++          99,
++          100,
++          101,
++          102,
++          103,
++          104,
++          105,
++          106,
++          107,
++          108,
++          109,
++          110,
++          111,
++          112,
++          113,
++          114,
++          115,
++          116,
++          117,
++          118,
++          119,
++          120,
++          121,
++          122,
++          123,
++          124,
++          125,
++          126,
++          127,
++          128,
++          129,
++          130,
++          131,
++          132,
++          133,
++          134,
++          135,
++          136,
++          137,
++          138,
++          139,
++          140,
++          141,
++          142,
++          143,
++          144,
++          145,
++          146,
++          147,
++          148,
++          149,
++          150,
++          151,
++          152,
++          153,
++          154,
++          155,
++          156,
++          157,
++          158,
++          159,
++          160,
++          161,
++          162,
++          163,
++          164,
++          165,
++          166,
++          167,
++          168,
++          169,
++          170,
++          171,
++          172,
++          173,
++          174,
++          175,
++          176,
++          177,
++          178,
++          179,
++          180,
++          181,
++          182,
++          183,
++          184,
++          185,
++          186,
++          187,
++          188,
++          189,
++          190,
++          191,
++          192,
++          193,
++          194,
++          195,
++          196,
++          197,
++          198,
++          199,
++          200,
++          201,
++          202,
++          203,
++          204,
++          205,
++          206,
++          207,
++          208,
++          209,
++          210,
++          211,
++          212,
++          213,
++          214,
++          215,
++          216,
++          217,
++          218,
++          219,
++          220,
++          221,
++          222,
++          223,
++          224,
++          225,
++          226,
++          227,
++          228,
++          229,
++          230,
++          231,
++          232,
++          233,
++          234,
++          235,
++          236,
++          237,
++          238,
++          239,
++          240,
++          241,
++          242,
++          243,
++          244,
++          245,
++          246,
++          247,
++          248,
++          249,
++          250,
++          251,
++          252,
++          253,
++          254,
++          255
++        ],
++        "units": "bit indices and width",
++        "tolerance": 0
++      },
++      "payload": {
++        "width": 256,
++        "on_bits": [
++          0,
++          1,
++          2,
++          3,
++          4,
++          5,
++          6,
++          7,
++          8,
++          9,
++          10,
++          11,
++          12,
++          13,
++          14,
++          15,
++          16,
++          17,
++          18,
++          19,
++          20,
++          21,
++          22,
++          23,
++          24,
++          25,
++          26,
++          27,
++          28,
++          29,
++          30,
++          31,
++          32,
++          33,
++          34,
++          35,
++          36,
++          37,
++          38,
++          39,
++          40,
++          41,
++          42,
++          43,
++          44,
++          45,
++          46,
++          47,
++          48,
++          49,
++          50,
++          51,
++          52,
++          53,
++          54,
++          55,
++          56,
++          57,
++          58,
++          59,
++          60,
++          61,
++          62,
++          63,
++          64,
++          65,
++          66,
++          67,
++          68,
++          69,
++          70,
++          71,
++          72,
++          73,
++          74,
++          75,
++          76,
++          77,
++          78,
++          79,
++          80,
++          81,
++          82,
++          83,
++          84,
++          85,
++          86,
++          87,
++          88,
++          89,
++          90,
++          91,
++          92,
++          93,
++          94,
++          95,
++          96,
++          97,
++          98,
++          99,
++          100,
++          101,
++          102,
++          103,
++          104,
++          105,
++          106,
++          107,
++          108,
++          109,
++          110,
++          111,
++          112,
++          113,
++          114,
++          115,
++          116,
++          117,
++          118,
++          119,
++          120,
++          121,
++          122,
++          123,
++          124,
++          125,
++          126,
++          127,
++          128,
++          129,
++          130,
++          131,
++          132,
++          133,
++          134,
++          135,
++          136,
++          137,
++          138,
++          139,
++          140,
++          141,
++          142,
++          143,
++          144,
++          145,
++          146,
++          147,
++          148,
++          149,
++          150,
++          151,
++          152,
++          153,
++          154,
++          155,
++          156,
++          157,
++          158,
++          159,
++          160,
++          161,
++          162,
++          163,
++          164,
++          165,
++          166,
++          167,
++          168,
++          169,
++          170,
++          171,
++          172,
++          173,
++          174,
++          175,
++          176,
++          177,
++          178,
++          179,
++          180,
++          181,
++          182,
++          183,
++          184,
++          185,
++          186,
++          187,
++          188,
++          189,
++          190,
++          191,
++          192,
++          193,
++          194,
++          195,
++          196,
++          197,
++          198,
++          199,
++          200,
++          201,
++          202,
++          203,
++          204,
++          205,
++          206,
++          207,
++          208,
++          209,
++          210,
++          211,
++          212,
++          213,
++          214,
++          215,
++          216,
++          217,
++          218,
++          219,
++          220,
++          221,
++          222,
++          223,
++          224,
++          225,
++          226,
++          227,
++          228,
++          229,
++          230,
++          231,
++          232,
++          233,
++          234,
++          235,
++          236,
++          237,
++          238,
++          239,
++          240,
++          241,
++          242,
++          243,
++          244,
++          245,
++          246,
++          247,
++          248,
++          249,
++          250,
++          251,
++          252,
++          253,
++          254,
++          255
++        ],
++        "density": 0.3,
++        "min_length": 64
++      },
++      "sha256": "1650c0ca199c630396653c742a6198fb0ab61ae976a31f7567d5a1af0f4b7f5b"
++    },
++    {
++      "id": "inclusive-minimum",
++      "provenance": "Project-authored synthetic bit patterns motivated by RDKit #9715; no upstream fixtures copied.",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed: original project fixture",
++      "minimization": "Smallest focused pattern for this stopping condition or collision behavior.",
++      "oracle": "RDKit 2026.09.1 FoldFingerprint with corrected #9715 loop, plus independent modular set union",
++      "expected": {
++        "width": 64,
++        "on_bits": [
++          0,
++          1,
++          2,
++          3,
++          4,
++          5,
++          6,
++          7,
++          8,
++          9,
++          10,
++          11,
++          12,
++          13,
++          14,
++          15
++        ],
++        "units": "bit indices and width",
++        "tolerance": 0
++      },
++      "payload": {
++        "width": 128,
++        "on_bits": [
++          0,
++          1,
++          2,
++          3,
++          4,
++          5,
++          6,
++          7,
++          8,
++          9,
++          10,
++          11,
++          12,
++          13,
++          14,
++          15
++        ],
++        "density": 0.25,
++        "min_length": 64
++      },
++      "sha256": "0f41ce46f63385009763fcb145f026cb62645308b1be94b59792e95dc16a09fe"
++    },
++    {
++      "id": "equal-density",
++      "provenance": "Project-authored synthetic bit patterns motivated by RDKit #9715; no upstream fixtures copied.",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed: original project fixture",
++      "minimization": "Smallest focused pattern for this stopping condition or collision behavior.",
++      "oracle": "RDKit 2026.09.1 FoldFingerprint with corrected #9715 loop, plus independent modular set union",
++      "expected": {
++        "width": 128,
++        "on_bits": [
++          0,
++          1,
++          2,
++          3,
++          4,
++          5,
++          6,
++          7,
++          8,
++          9,
++          10,
++          11,
++          12,
++          13,
++          14,
++          15
++        ],
++        "units": "bit indices and width",
++        "tolerance": 0
++      },
++      "payload": {
++        "width": 128,
++        "on_bits": [
++          0,
++          1,
++          2,
++          3,
++          4,
++          5,
++          6,
++          7,
++          8,
++          9,
++          10,
++          11,
++          12,
++          13,
++          14,
++          15
++        ],
++        "density": 0.125,
++        "min_length": 64
++      },
++      "sha256": "4ac83e67128a2ac2295bc714aee03bd743c5adcc6b4230d57af4751c1da5e5eb"
++    },
++    {
++      "id": "or-collision",
++      "provenance": "Project-authored synthetic bit patterns motivated by RDKit #9715; no upstream fixtures copied.",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed: original project fixture",
++      "minimization": "Smallest focused pattern for this stopping condition or collision behavior.",
++      "oracle": "RDKit 2026.09.1 FoldFingerprint with corrected #9715 loop, plus independent modular set union",
++      "expected": {
++        "width": 64,
++        "on_bits": [
++          0
++        ],
++        "units": "bit indices and width",
++        "tolerance": 0
++      },
++      "payload": {
++        "width": 128,
++        "on_bits": [
++          0,
++          64
++        ],
++        "density": 1.0,
++        "min_length": 64
++      },
++      "sha256": "e787d08af909a7ea7c7eb1d318dd48b5e84d928491e988675e5da734c5876d7a"
++    },
++    {
++      "id": "odd-width-tail",
++      "provenance": "Project-authored synthetic bit patterns motivated by RDKit #9715; no upstream fixtures copied.",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed: original project fixture",
++      "minimization": "Smallest focused pattern for this stopping condition or collision behavior.",
++      "oracle": "RDKit 2026.09.1 FoldFingerprint with corrected #9715 loop, plus independent modular set union",
++      "expected": {
++        "width": 2,
++        "on_bits": [
++          0
++        ],
++        "units": "bit indices and width",
++        "tolerance": 0
++      },
++      "payload": {
++        "width": 5,
++        "on_bits": [
++          0,
++          2,
++          4
++        ],
++        "density": 0.8,
++        "min_length": 2
++      },
++      "sha256": "39b5543104fdc7a7be6716174050e39ab660a8792883d389cf8a30c77b505229"
++    },
++    {
++      "id": "zero-fingerprint",
++      "provenance": "Project-authored synthetic bit patterns motivated by RDKit #9715; no upstream fixtures copied.",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed: original project fixture",
++      "minimization": "Smallest focused pattern for this stopping condition or collision behavior.",
++      "oracle": "RDKit 2026.09.1 FoldFingerprint with corrected #9715 loop, plus independent modular set union",
++      "expected": {
++        "width": 1,
++        "on_bits": [],
++        "units": "bit indices and width",
++        "tolerance": 0
++      },
++      "payload": {
++        "width": 128,
++        "on_bits": [],
++        "density": 0.3,
++        "min_length": 1
++      },
++      "sha256": "bc8e5c6f28457313cd0f41ae1d98223ba8a40008540c9c85a25978e0a6c63dd4"
++    },
++    {
++      "id": "zero-target",
++      "provenance": "Project-authored synthetic bit patterns motivated by RDKit #9715; no upstream fixtures copied.",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed: original project fixture",
++      "minimization": "Smallest focused pattern for this stopping condition or collision behavior.",
++      "oracle": "RDKit 2026.09.1 FoldFingerprint with corrected #9715 loop, plus independent modular set union",
++      "expected": {
++        "width": 128,
++        "on_bits": [
++          0
++        ],
++        "units": "bit indices and width",
++        "tolerance": 0
++      },
++      "payload": {
++        "width": 128,
++        "on_bits": [
++          0
++        ],
++        "density": 0.0,
++        "min_length": 1
++      },
++      "sha256": "c7e8129fcf04105520246cc85540cb0ab92f72af3828754cadcf3be0b3b0eb2b"
++    },
++    {
++      "id": "already-short",
++      "provenance": "Project-authored synthetic bit patterns motivated by RDKit #9715; no upstream fixtures copied.",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed: original project fixture",
++      "minimization": "Smallest focused pattern for this stopping condition or collision behavior.",
++      "oracle": "RDKit 2026.09.1 FoldFingerprint with corrected #9715 loop, plus independent modular set union",
++      "expected": {
++        "width": 8,
++        "on_bits": [],
++        "units": "bit indices and width",
++        "tolerance": 0
++      },
++      "payload": {
++        "width": 8,
++        "on_bits": [],
++        "density": 0.3,
++        "min_length": 64
++      },
++      "sha256": "3969a21c82a35f8186f89b63da2fd42835e67b0df24dd365048d3088d2f7364b"
++    }
++  ],
++  "generated_cases": {
++    "id": "generated-fold-density-v1",
++    "provenance": "Project-authored exhaustive and boundary pattern recipes in scripts/validate_fold_density.py",
++    "license": "MIT OR Apache-2.0",
++    "redistribution": "allowed: synthetic binary patterns only",
++    "minimization": "All bit patterns up to width 8, then periodic patterns around byte/word/fingerprint widths; no molecule corpus.",
++    "oracle": "RDKit 2026.09.1 ExplicitBitVect and SparseBitVect FoldFingerprint(fp,2), using corrected stopping conditions; independent set oracle",
++    "expected": {
++      "comparison": "Exact output bytes, width, popcount, density, folds and stop status",
++      "tolerance": 0,
++      "units": "dimensionless density and bit counts"
++    },
++    "sha256_rule": "SHA256 of sorted-key compact JSON case records plus LF, accumulated in the validation result"
++  }
++}
+diff --git a/validation/results/binding_surface_inventory-current.json b/validation/results/binding_surface_inventory-current.json
+index 08f8b1d..316b8a0 100644
+--- a/validation/results/binding_surface_inventory-current.json
++++ b/validation/results/binding_surface_inventory-current.json
+@@ -7,9 +7,9 @@
+   "scope": "Rust source declarations only; this is not semantic parity evidence",
+   "results": {
+     "wasm_export_count": 303,
+-    "python_pyfunction_count": 197,
+-    "python_registered_count": 197,
++    "python_pyfunction_count": 198,
++    "python_registered_count": 198,
+     "python_declared_without_registration": [],
+-    "surface_sha256": "e39fd0971ac261b2db70f7abc60db840ecd6d3b0ce1914c1cc99f31429d703fd"
++    "surface_sha256": "91d6f9c369d6d6c621d2e5fccd600c3693870a825b8f982e539458c32b8bdf69"
+   }
+ }

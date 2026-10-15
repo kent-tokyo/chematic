@@ -74,6 +74,15 @@ enumeration at 4,096 isomers, and ETKDG/bounds output at 512 atoms. These are
 the RDKit 2026.03.1 compatibility paths; the existing native browser APIs are
 unchanged.
 
+The unreleased source tree also exposes checked bond-length, bond-angle, and
+torsion constraints before distance-matrix smoothing. Rust uses typed
+`InternalCoordinateConstraints`; Python and WASM accept the same JSON object
+through `rdkit_bounds_matrix_with_constraints` and
+`rdkit_embed_with_constraints`. Invalid indices, cross-fragment constraints,
+and triangle-inconsistent combinations fail explicitly. These APIs are not a
+v1.1.3 package capability until the next exact artifacts are published and
+retested.
+
 ---
 
 ## The three surfaces, in one sentence each

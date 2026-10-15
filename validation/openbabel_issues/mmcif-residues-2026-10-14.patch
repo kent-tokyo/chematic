@@ -1,0 +1,1319 @@
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 7e057dd..9a81263 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -212,6 +212,7 @@ jobs:
+           - { package: chematic-mol, target: cross_binding_adversarial }
+           - { package: chematic-mol, target: format_binding_parity }
+           - { package: chematic-mol, target: mmcif_pqr_integration }
++          - { package: chematic-mol, target: mmcif_residue_contract }
+           - { package: chematic-mol, target: qcschema }
+           - { package: chematic-mol, target: square_planar_mol_io }
+           - { package: chematic-mol, target: stereo2d_ez_reader_integration }
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 5b1911a..5c3a461 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -12,6 +12,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
+ 
+ ### Added
+ 
++- Added general mmCIF residue grouping in Rust/Python, retaining separate
++  auth/label identities, glycans, ligands, water, models and alternate locations.
++  Missing residue identifiers and duplicate atom rows return explicit errors.
++
+ - Added checked atom permutations in Rust and Python (`Mol.renumber_atoms`,
+   `rdkit_compat.RenumberAtoms`) preserving stereo frames, graph metadata and
+   typed molecule properties while rebuilding derived caches. Added the stored
+diff --git a/crates/chematic-mol/src/lib.rs b/crates/chematic-mol/src/lib.rs
+index fda5f3f..df3c46b 100644
+--- a/crates/chematic-mol/src/lib.rs
++++ b/crates/chematic-mol/src/lib.rs
+@@ -250,3 +250,8 @@ pub use mol2_source::{
+ };
+ 
+ pub use pqr_pdbqt::{PqrPdbqtError, PqrPdbqtReport, pqr_to_pdbqt};
++
++pub use mmcif::residues::{
++    MmcifAtomIdentity, MmcifResidue, MmcifResidueDocument, MmcifResidueError, MmcifResidueIdentity,
++    parse_mmcif_residues, parse_mmcif_residues_with_limits,
++};
+diff --git a/crates/chematic-mol/src/mmcif.rs b/crates/chematic-mol/src/mmcif.rs
+index c00685a..aa1207c 100644
+--- a/crates/chematic-mol/src/mmcif.rs
++++ b/crates/chematic-mol/src/mmcif.rs
+@@ -86,6 +86,8 @@
+ //!   not read at all -- this is a scope boundary stated up front, not a
+ //!   silent drop of something this module claimed to understand.
+ 
++pub mod residues;
++
+ use chematic_core::{Atom, Element, Molecule, MoleculeBuilder};
+ 
+ use crate::cif::{
+diff --git a/crates/chematic-mol/src/mmcif/residues.rs b/crates/chematic-mol/src/mmcif/residues.rs
+new file mode 100644
+index 0000000..ab22fd9
+--- /dev/null
++++ b/crates/chematic-mol/src/mmcif/residues.rs
+@@ -0,0 +1,236 @@
++//! General residue grouping from atom_site identity, including non-polymers.
++//! Independent implementation from the wwPDB dictionary; no bond perception.
++use super::*;
++use std::collections::{HashMap, HashSet};
++
++/// Complete stored residue namespace. Both author and label identifiers matter.
++/// Alternate component names at a position form separate residue variants.
++#[derive(Debug, Clone, PartialEq, Eq, Hash)]
++pub struct MmcifResidueIdentity {
++    pub model_num: i32,
++    pub label_asym_id: Option<String>,
++    pub auth_asym_id: Option<String>,
++    pub entity_id: Option<String>,
++    pub label_seq_id: Option<i64>,
++    pub auth_seq_id: Option<String>,
++    pub insertion_code: Option<String>,
++    pub label_comp_id: Option<String>,
++    pub auth_comp_id: Option<String>,
++}
++
++/// One residue variant and zero-based source row indices, in first-seen order.
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub struct MmcifResidue {
++    pub identity: MmcifResidueIdentity,
++    pub atom_indices: Vec<usize>,
++}
++
++/// Full atom-name aliases and alternate-location code, without char truncation.
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub struct MmcifAtomIdentity {
++    pub label_atom_id: Option<String>,
++    pub auth_atom_id: Option<String>,
++    pub alt_id: Option<String>,
++}
++
++/// Residue view over every atom_site record (including water/ligands/glycans).
++/// `parsed` retains the existing numeric/Cartesian record representation;
++/// residue/atom identities here are authoritative for the original aliases.
++#[derive(Debug, Clone, PartialEq)]
++pub struct MmcifResidueDocument {
++    pub parsed: MmcifResult,
++    pub residues: Vec<MmcifResidue>,
++    pub atom_ids: Vec<MmcifAtomIdentity>,
++    pub atom_to_residue: Vec<usize>,
++}
++
++#[derive(Debug, Clone, PartialEq)]
++pub enum MmcifResidueError {
++    Parse(MmcifError),
++    MissingIdentity { atom: usize, field: &'static str },
++    DuplicateAtom { atom: usize, residue: usize },
++    InvalidField { atom: usize, field: &'static str },
++    IncompleteRow { atom: usize },
++}
++impl core::fmt::Display for MmcifResidueError {
++    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
++        match self {
++            Self::Parse(e) => e.fmt(f),
++            Self::MissingIdentity { atom, field } => write!(
++                f,
++                "mmCIF atom {atom} lacks {field}; residue identity cannot be inferred"
++            ),
++            Self::DuplicateAtom { atom, residue } => write!(
++                f,
++                "mmCIF atom {atom} repeats an atom name/alternate location in residue {residue}"
++            ),
++            Self::InvalidField { atom, field } => {
++                write!(f, "mmCIF atom {atom} has an invalid {field}")
++            }
++            Self::IncompleteRow { atom } => write!(f, "mmCIF atom_site row {atom} is incomplete"),
++        }
++    }
++}
++impl std::error::Error for MmcifResidueError {}
++impl From<MmcifError> for MmcifResidueError {
++    fn from(value: MmcifError) -> Self {
++        Self::Parse(value)
++    }
++}
++
++fn value(row: &[String], columns: &MmcifColumns, col: Option<usize>) -> Option<String> {
++    columns
++        .get(row, col)
++        .filter(|s| !is_cif_placeholder(s))
++        .map(str::to_owned)
++}
++
++fn identities(
++    row: &[String],
++    c: &MmcifColumns,
++    atom: usize,
++) -> Result<(MmcifResidueIdentity, MmcifAtomIdentity), MmcifResidueError> {
++    let model = optional_mmcif_int(c.get(row, c.model), "pdbx_PDB_model_num")?.unwrap_or(1);
++    let model_num =
++        i32::try_from(model)
++            .ok()
++            .filter(|m| *m > 0)
++            .ok_or(MmcifResidueError::InvalidField {
++                atom,
++                field: "model number",
++            })?;
++    if let Some(charge) = optional_mmcif_int(c.get(row, c.charge), "pdbx_formal_charge")?
++        && i32::try_from(charge).is_err()
++    {
++        return Err(MmcifResidueError::InvalidField {
++            atom,
++            field: "formal charge",
++        });
++    }
++    let residue = MmcifResidueIdentity {
++        model_num,
++        label_asym_id: value(row, c, c.label_asym_id),
++        auth_asym_id: value(row, c, c.auth_asym_id),
++        entity_id: value(row, c, c.entity_id),
++        label_seq_id: optional_mmcif_int(c.get(row, c.label_seq_id), "label_seq_id")?,
++        auth_seq_id: value(row, c, c.auth_seq_id),
++        insertion_code: value(row, c, c.ins_code),
++        label_comp_id: value(row, c, c.label_comp_id),
++        auth_comp_id: value(row, c, c.auth_comp_id),
++    };
++    let atom_id = MmcifAtomIdentity {
++        label_atom_id: value(row, c, c.label_atom_id),
++        auth_atom_id: value(row, c, c.auth_atom_id),
++        alt_id: value(row, c, c.alt_id),
++    };
++    for (missing, field) in [
++        (
++            residue.label_asym_id.is_none() && residue.auth_asym_id.is_none(),
++            "chain identifier",
++        ),
++        (
++            residue.label_seq_id.is_none() && residue.auth_seq_id.is_none(),
++            "residue sequence identifier",
++        ),
++        (
++            residue.label_comp_id.is_none() && residue.auth_comp_id.is_none(),
++            "component identifier",
++        ),
++        (
++            atom_id.label_atom_id.is_none() && atom_id.auth_atom_id.is_none(),
++            "atom identifier",
++        ),
++    ] {
++        if missing {
++            return Err(MmcifResidueError::MissingIdentity { atom, field });
++        }
++    }
++    Ok((residue, atom_id))
++}
++
++/// Parse atom_site into residues with default mmCIF resource limits.
++/// Missing label_seq_id never means residue zero; auth_seq_id distinguishes
++/// non-polymer residues. Missing both sequence identifiers is an explicit error.
++pub fn parse_mmcif_residues(input: &str) -> Result<MmcifResidueDocument, MmcifResidueError> {
++    parse_mmcif_residues_with_limits(input, &MmcifParseLimits::default())
++}
++
++/// Parse with caller-specified byte, line and atom limits. Identity matches
++/// require every stored namespace field to match; partial aliases are not guessed.
++/// Like the existing numeric atom reader, noninteger auth_seq_id is unsupported.
++pub fn parse_mmcif_residues_with_limits(
++    input: &str,
++    limits: &MmcifParseLimits,
++) -> Result<MmcifResidueDocument, MmcifResidueError> {
++    let tokens = mmcif_tokens(input, limits)?;
++    let (headers, start) =
++        find_loop_by_category(&tokens, "atom_site").ok_or(MmcifError::NoAtomSiteLoop)?;
++    let c = MmcifColumns::from_headers(&headers)?;
++    let (cell, space_group) = scan_cell_and_symmetry(&tokens);
++    let known = c.indices();
++    let unhandled_columns = headers
++        .iter()
++        .enumerate()
++        .filter(|(i, _)| !known.contains(i))
++        .map(|(_, h)| format!("_atom_site.{h}"))
++        .collect();
++    let mut doc = MmcifResidueDocument {
++        parsed: MmcifResult {
++            atoms: Vec::new(),
++            cell,
++            space_group,
++            unhandled_columns,
++        },
++        residues: Vec::new(),
++        atom_ids: Vec::new(),
++        atom_to_residue: Vec::new(),
++    };
++    let mut lookup = HashMap::new();
++    let mut seen = HashSet::new();
++    for row in tokens[start..].chunks(c.width) {
++        if row[0] == "loop_" || row[0].starts_with("data_") || row[0].starts_with('_') {
++            break;
++        }
++        let atom = doc.parsed.atoms.len();
++        if row.len() != c.width {
++            return Err(MmcifResidueError::IncompleteRow { atom });
++        }
++        if atom >= limits.max_atoms {
++            return Err(MmcifError::TooManyAtoms {
++                limit: limits.max_atoms,
++            }
++            .into());
++        }
++        let (residue, atom_id) = identities(row, &c, atom)?;
++        let record = parse_mmcif_atom(row, atom, &c)?;
++        let next = doc.residues.len();
++        let index = *lookup.entry(residue.clone()).or_insert_with(|| {
++            doc.residues.push(MmcifResidue {
++                identity: residue,
++                atom_indices: Vec::new(),
++            });
++            next
++        });
++        // Label atom names are authoritative when supplied; author names are
++        // only the fallback. Different alt IDs stay separate atoms in a residue.
++        let name = atom_id
++            .label_atom_id
++            .as_ref()
++            .or(atom_id.auth_atom_id.as_ref())
++            .cloned();
++        if !seen.insert((index, name, atom_id.alt_id.clone())) {
++            return Err(MmcifResidueError::DuplicateAtom {
++                atom,
++                residue: index,
++            });
++        }
++        doc.residues[index].atom_indices.push(atom);
++        doc.atom_to_residue.push(index);
++        doc.atom_ids.push(atom_id);
++        doc.parsed.atoms.push(record);
++    }
++    if doc.parsed.atoms.is_empty() {
++        return Err(MmcifError::NoAtomSiteLoop.into());
++    }
++    Ok(doc)
++}
+diff --git a/crates/chematic-mol/tests/mmcif_residue_contract.rs b/crates/chematic-mol/tests/mmcif_residue_contract.rs
+new file mode 100644
+index 0000000..9a0876e
+--- /dev/null
++++ b/crates/chematic-mol/tests/mmcif_residue_contract.rs
+@@ -0,0 +1,336 @@
++use chematic_mol::{
++    MmcifError, MmcifParseLimits, MmcifResidueError, parse_mmcif_residues,
++    parse_mmcif_residues_with_limits,
++};
++
++const FIXTURE: &str =
++    include_str!("../../../validation/openbabel_issues/mmcif/branched-residues.cif");
++fn rows() -> Vec<Vec<String>> {
++    FIXTURE
++        .lines()
++        .filter(|s| s.starts_with("HETATM"))
++        .map(|s| s.split_whitespace().map(str::to_owned).collect())
++        .collect()
++}
++fn render(rows: &[Vec<String>]) -> String {
++    let header = FIXTURE.split("HETATM").next().unwrap();
++    format!(
++        "{}{}\n#\n",
++        header,
++        rows.iter()
++            .map(|r| r.join(" "))
++            .collect::<Vec<_>>()
++            .join("\n")
++    )
++}
++
++#[test]
++fn nonpolymer_sequence_placeholders_do_not_merge_three_sugars() {
++    let doc = parse_mmcif_residues(FIXTURE).unwrap();
++    assert_eq!(doc.residues.len(), 3);
++    assert_eq!(doc.atom_to_residue, vec![0, 0, 1, 1, 2, 2]);
++    let names: Vec<_> = doc
++        .residues
++        .iter()
++        .map(|r| r.identity.label_comp_id.as_deref().unwrap())
++        .collect();
++    assert_eq!(names, vec!["NAG", "NAG", "BMA"]);
++    for (i, r) in doc.residues.iter().enumerate() {
++        assert_eq!(
++            r.identity.auth_seq_id.as_deref(),
++            Some((i + 1).to_string().as_str())
++        );
++        assert_eq!(r.identity.label_seq_id, None);
++        assert_eq!(r.atom_indices, vec![i * 2, i * 2 + 1]);
++    }
++    let (mol, coords) = doc.parsed.to_molecule();
++    assert_eq!(mol.atom_count(), 6);
++    assert_eq!(mol.bond_count(), 0);
++    assert_eq!(coords[4], (60.0, 0.0, 0.0));
++}
++
++fn permute(order: &mut [usize], start: usize, visit: &mut impl FnMut(&[usize])) {
++    if start == order.len() {
++        visit(order);
++        return;
++    }
++    for i in start..order.len() {
++        order.swap(start, i);
++        permute(order, start + 1, visit);
++        order.swap(start, i);
++    }
++}
++#[test]
++fn all_720_row_permutations_keep_partition_and_source_mapping() {
++    let original = rows();
++    let mut count = 0;
++    permute(&mut [0, 1, 2, 3, 4, 5], 0, &mut |order| {
++        let reordered: Vec<_> = order.iter().map(|&i| original[i].clone()).collect();
++        let doc = parse_mmcif_residues(&render(&reordered)).unwrap();
++        assert_eq!(doc.residues.len(), 3);
++        for (i, &old) in order.iter().enumerate() {
++            let r = &doc.residues[doc.atom_to_residue[i]];
++            assert_eq!(
++                r.identity.auth_seq_id.as_deref(),
++                Some((old / 2 + 1).to_string().as_str())
++            );
++            assert_eq!(r.atom_indices.len(), 2);
++            assert!(r.atom_indices.contains(&i));
++            assert_eq!(doc.parsed.atoms[i].serial, (old + 1) as i64);
++        }
++        count += 1;
++    });
++    assert_eq!(count, 720);
++}
++
++#[test]
++fn keeps_both_chain_namespaces_when_author_chain_collides() {
++    let mut r = rows();
++    r.truncate(2);
++    r[1][3] = "C1".into();
++    r[1][18] = "C1".into();
++    r[1][6] = "F".into();
++    let doc = parse_mmcif_residues(&render(&r)).unwrap();
++    assert_eq!(doc.residues.len(), 2);
++    assert_eq!(
++        doc.residues[0].identity.auth_asym_id,
++        doc.residues[1].identity.auth_asym_id
++    );
++    assert_ne!(
++        doc.residues[0].identity.label_asym_id,
++        doc.residues[1].identity.label_asym_id
++    );
++}
++
++#[test]
++fn model_entity_insertion_and_components_are_distinct_identity_fields() {
++    for (column, value) in [
++        (19, "2"),
++        (7, "2"),
++        (9, "AB"),
++        (5, "MAN"),
++        (16, "LIG"),
++        (8, "99"),
++    ] {
++        let mut r = rows();
++        r.truncate(2);
++        r[1][3] = "C1".into();
++        r[1][18] = "C1".into();
++        r[1][column] = value.into();
++        assert_eq!(
++            parse_mmcif_residues(&render(&r)).unwrap().residues.len(),
++            2,
++            "column {column}"
++        );
++    }
++}
++
++#[test]
++fn alternate_locations_stay_atoms_of_the_same_residue_and_keep_full_codes() {
++    let mut r = rows();
++    r.truncate(2);
++    r[1][3] = "C1".into();
++    r[1][18] = "C1".into();
++    r[0][4] = "AA".into();
++    r[1][4] = "BB".into();
++    r[0][9] = "AB".into();
++    r[1][9] = "AB".into();
++    let d = parse_mmcif_residues(&render(&r)).unwrap();
++    assert_eq!(d.residues.len(), 1);
++    assert_eq!(d.atom_ids[0].alt_id.as_deref(), Some("AA"));
++    assert_eq!(d.atom_ids[1].alt_id.as_deref(), Some("BB"));
++    assert_eq!(d.residues[0].identity.insertion_code.as_deref(), Some("AB"));
++}
++
++#[test]
++fn duplicate_atom_names_are_not_silently_merged() {
++    let mut r = rows();
++    r.truncate(2);
++    r[1][3] = "C1".into();
++    r[1][18] = "AUTH_DIFFERENT".into();
++    assert!(matches!(
++        parse_mmcif_residues(&render(&r)),
++        Err(MmcifResidueError::DuplicateAtom {
++            atom: 1,
++            residue: 0
++        })
++    ));
++}
++
++#[test]
++fn missing_identity_errors_and_explicit_author_zero_remains_valid() {
++    for (columns, field) in [
++        (&[6, 17][..], "chain identifier"),
++        (&[8, 15][..], "residue sequence identifier"),
++        (&[5, 16][..], "component identifier"),
++        (&[3, 18][..], "atom identifier"),
++    ] {
++        let mut r = rows();
++        r.truncate(1);
++        for &i in columns {
++            r[0][i] = "?".into();
++        }
++        assert_eq!(
++            parse_mmcif_residues(&render(&r)).err(),
++            Some(MmcifResidueError::MissingIdentity { atom: 0, field })
++        );
++    }
++    let mut r = rows();
++    r.truncate(1);
++    r[0][15] = "0".into();
++    assert_eq!(
++        parse_mmcif_residues(&render(&r)).unwrap().residues[0]
++            .identity
++            .auth_seq_id
++            .as_deref(),
++        Some("0")
++    );
++}
++
++#[test]
++fn author_and_label_fallbacks_are_explicit_in_identity() {
++    for cols in [&[3, 5, 6, 8][..], &[15, 16, 17, 18][..]] {
++        let mut r = rows();
++        r.truncate(1);
++        r[0][8] = "17".into();
++        for &i in cols {
++            r[0][i] = ".".into();
++        }
++        let d = parse_mmcif_residues(&render(&r)).unwrap();
++        assert_eq!(d.residues.len(), 1);
++    }
++}
++
++#[test]
++fn leading_zero_author_identifiers_remain_distinct() {
++    let mut r = rows();
++    r.truncate(2);
++    r[1][3] = "C1".into();
++    r[1][18] = "C1".into();
++    r[1][15] = "01".into();
++    assert_eq!(parse_mmcif_residues(&render(&r)).unwrap().residues.len(), 2);
++}
++
++#[test]
++fn long_component_names_and_atom_aliases_are_preserved() {
++    let mut r = rows();
++    r.truncate(1);
++    r[0][5] = "A1AJ1".into();
++    r[0][16] = "AUTHOR_LONG".into();
++    r[0][18] = "NAME_LONG".into();
++    let d = parse_mmcif_residues(&render(&r)).unwrap();
++    assert_eq!(
++        d.residues[0].identity.label_comp_id.as_deref(),
++        Some("A1AJ1")
++    );
++    assert_eq!(
++        d.residues[0].identity.auth_comp_id.as_deref(),
++        Some("AUTHOR_LONG")
++    );
++    assert_eq!(d.atom_ids[0].label_atom_id.as_deref(), Some("C1"));
++    assert_eq!(d.atom_ids[0].auth_atom_id.as_deref(), Some("NAME_LONG"));
++}
++
++#[test]
++fn incomplete_rows_and_empty_loops_are_errors() {
++    let mut r = rows();
++    r.truncate(1);
++    r[0].pop();
++    assert!(matches!(
++        parse_mmcif_residues(&render(&r)),
++        Err(MmcifResidueError::IncompleteRow { atom: 0 })
++    ));
++    assert!(matches!(
++        parse_mmcif_residues("data_empty\n"),
++        Err(MmcifResidueError::Parse(MmcifError::NoAtomSiteLoop))
++    ));
++}
++
++#[test]
++fn limits_apply_before_atom_or_token_growth() {
++    for l in [
++        MmcifParseLimits {
++            max_input_bytes: 8,
++            ..Default::default()
++        },
++        MmcifParseLimits {
++            max_atoms: 2,
++            ..Default::default()
++        },
++        MmcifParseLimits {
++            max_line_len: 8,
++            ..Default::default()
++        },
++    ] {
++        assert!(matches!(
++            parse_mmcif_residues_with_limits(FIXTURE, &l),
++            Err(MmcifResidueError::Parse(_))
++        ));
++    }
++    let exact = MmcifParseLimits {
++        max_input_bytes: FIXTURE.len(),
++        max_atoms: 6,
++        max_line_len: 8192,
++    };
++    assert!(parse_mmcif_residues_with_limits(FIXTURE, &exact).is_ok());
++}
++
++#[test]
++fn model_range_is_checked_instead_of_wrapping() {
++    for v in ["0", "-1", "2147483648", "4294967297"] {
++        let mut r = rows();
++        r.truncate(1);
++        r[0][19] = v.into();
++        assert!(matches!(
++            parse_mmcif_residues(&render(&r)),
++            Err(MmcifResidueError::InvalidField {
++                field: "model number",
++                ..
++            })
++        ));
++    }
++}
++
++#[test]
++fn unsupported_author_strings_and_invalid_numbers_fail_explicitly() {
++    for (column, v) in [(15, "12A"), (10, "NaN"), (2, "NotAnElement")] {
++        let mut r = rows();
++        r.truncate(1);
++        r[0][column] = v.into();
++        assert!(matches!(
++            parse_mmcif_residues(&render(&r)),
++            Err(MmcifResidueError::Parse(_))
++        ));
++    }
++}
++
++#[test]
++fn preserves_cell_space_group_and_reports_unhandled_columns() {
++    let input=FIXTURE.replacen("loop_\n","_cell.length_a 10\n_cell.length_b 11\n_cell.length_c 12\n_cell.angle_alpha 90\n_cell.angle_beta 90\n_cell.angle_gamma 90\n_symmetry.space_group_name_H-M 'P 1'\nloop_\n",1);
++    let d = parse_mmcif_residues(&input).unwrap();
++    assert_eq!(d.parsed.cell.unwrap().a, 10.0);
++    assert_eq!(d.parsed.space_group.as_deref(), Some("P 1"));
++    let input = FIXTURE
++        .replacen(
++            "_atom_site.group_PDB",
++            "_atom_site.custom_tag\n_atom_site.group_PDB",
++            1,
++        )
++        .lines()
++        .map(|s| {
++            if s.starts_with("HETATM") {
++                format!("opaque {s}")
++            } else {
++                s.into()
++            }
++        })
++        .collect::<Vec<_>>()
++        .join("\n");
++    assert_eq!(
++        parse_mmcif_residues(&input)
++            .unwrap()
++            .parsed
++            .unhandled_columns,
++        vec!["_atom_site.custom_tag"]
++    );
++}
+diff --git a/crates/chematic-py/python/chematic/__init__.pyi b/crates/chematic-py/python/chematic/__init__.pyi
+index 375c6a1..cdb5f34 100644
+--- a/crates/chematic-py/python/chematic/__init__.pyi
++++ b/crates/chematic-py/python/chematic/__init__.pyi
+@@ -4886,3 +4886,8 @@ def explain_rdkit_topological_torsion_code(
+ def pqr_to_pdbqt(text: str, atom_types: list[str], *, allow_radius_loss: bool = False) -> dict[str, Any]:
+     """Convert PQR to rigid PDBQT with source charges and a loss sidecar."""
+     ...
++
++
++def parse_mmcif_residues(text: str, *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None) -> dict[str, Any]:
++    """Read all residue variants with complete auth/label identities and source row indices."""
++    ...
+diff --git a/crates/chematic-py/src/formats.rs b/crates/chematic-py/src/formats.rs
+index d8cff5c..ae7448a 100644
+--- a/crates/chematic-py/src/formats.rs
++++ b/crates/chematic-py/src/formats.rs
+@@ -10,6 +10,8 @@ mod cif;
+ use cif::*;
+ mod interchange;
+ mod materials;
++mod mmcif_residues;
++use mmcif_residues::*;
+ mod pqr_pdbqt;
+ use pqr_pdbqt::*;
+ mod xyz;
+@@ -1419,6 +1421,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
+         parse_smi_file,
+         write_smi_file,
+         parse_mmcif,
++        parse_mmcif_residues,
+         protein_from_pdb_json,
+         protein_from_mmcif_json,
+         write_mmcif,
+diff --git a/crates/chematic-py/src/formats/mmcif_residues.rs b/crates/chematic-py/src/formats/mmcif_residues.rs
+new file mode 100644
+index 0000000..31fc35c
+--- /dev/null
++++ b/crates/chematic-py/src/formats/mmcif_residues.rs
+@@ -0,0 +1,81 @@
++use super::*;
++
++fn residue_identity<'py>(
++    py: Python<'py>,
++    id: &chematic_mol::MmcifResidueIdentity,
++) -> PyResult<Bound<'py, PyDict>> {
++    let d = PyDict::new(py);
++    d.set_item("model_num", id.model_num)?;
++    d.set_item("label_asym_id", &id.label_asym_id)?;
++    d.set_item("auth_asym_id", &id.auth_asym_id)?;
++    d.set_item("entity_id", &id.entity_id)?;
++    d.set_item("label_seq_id", id.label_seq_id)?;
++    d.set_item("auth_seq_id", &id.auth_seq_id)?;
++    d.set_item("insertion_code", &id.insertion_code)?;
++    d.set_item("label_comp_id", &id.label_comp_id)?;
++    d.set_item("auth_comp_id", &id.auth_comp_id)?;
++    Ok(d)
++}
++
++/// General residue view including glycans, ligands and water. No bonds or
++/// glycan connectivity are inferred. Identity fields are not truncated.
++#[pyfunction]
++#[pyo3(signature=(text, *, max_input_bytes=None, max_atoms=None, max_line_len=None))]
++pub(super) fn parse_mmcif_residues<'py>(
++    py: Python<'py>,
++    text: &str,
++    max_input_bytes: Option<usize>,
++    max_atoms: Option<usize>,
++    max_line_len: Option<usize>,
++) -> PyResult<Bound<'py, PyDict>> {
++    let mut limits = chematic_mol::MmcifParseLimits::default();
++    if let Some(v) = max_input_bytes {
++        limits.max_input_bytes = v;
++    }
++    if let Some(v) = max_atoms {
++        limits.max_atoms = v;
++    }
++    if let Some(v) = max_line_len {
++        limits.max_line_len = v;
++    }
++    let doc = chematic_mol::parse_mmcif_residues_with_limits(text, &limits)
++        .map_err(|e| PyValueError::new_err(e.to_string()))?;
++    let d = PyDict::new(py);
++    let atoms = doc
++        .parsed
++        .atoms
++        .iter()
++        .zip(&doc.atom_ids)
++        .enumerate()
++        .map(|(i, (a, id))| {
++            let row = materials::mmcif_atom_to_pydict(py, a)?;
++            row.set_item("label_atom_id", &id.label_atom_id)?;
++            row.set_item("auth_atom_id", &id.auth_atom_id)?;
++            row.set_item("alt_loc", &id.alt_id)?;
++            row.set_item(
++                "icode",
++                &doc.residues[doc.atom_to_residue[i]].identity.insertion_code,
++            )?;
++            Ok(row)
++        })
++        .collect::<PyResult<Vec<_>>>()?;
++    let residues = doc
++        .residues
++        .iter()
++        .map(|r| {
++            let group = residue_identity(py, &r.identity)?;
++            group.set_item("atom_indices", &r.atom_indices)?;
++            Ok(group)
++        })
++        .collect::<PyResult<Vec<_>>>()?;
++    d.set_item("atoms", atoms)?;
++    d.set_item("residues", residues)?;
++    d.set_item("atom_to_residue", doc.atom_to_residue)?;
++    match &doc.parsed.cell {
++        Some(cell) => d.set_item("cell", materials::unit_cell_to_pydict(py, cell)?)?,
++        None => d.set_item("cell", py.None())?,
++    }
++    d.set_item("space_group", doc.parsed.space_group)?;
++    d.set_item("unhandled_columns", doc.parsed.unhandled_columns)?;
++    Ok(d)
++}
+diff --git a/crates/chematic-py/tests/test_mmcif_residues.py b/crates/chematic-py/tests/test_mmcif_residues.py
+new file mode 100644
+index 0000000..718607e
+--- /dev/null
++++ b/crates/chematic-py/tests/test_mmcif_residues.py
+@@ -0,0 +1,101 @@
++"""General residue grouping, independent synthetic Open Babel #3028 fixture."""
++from pathlib import Path
++import itertools
++import pytest
++import chematic
++
++FIXTURE=Path(__file__).resolve().parents[3]/'validation/openbabel_issues/mmcif/branched-residues.cif'
++
++
++def source_rows():
++    return [s.split() for s in FIXTURE.read_text().splitlines() if s.startswith('HETATM')]
++
++
++def render(rows):
++    return FIXTURE.read_text().split('HETATM')[0]+'\n'.join(' '.join(r) for r in rows)+'\n#\n'
++
++
++def test_three_sugars_are_distinct_despite_missing_label_sequence():
++    text=FIXTURE.read_text()
++    d=chematic.parse_mmcif_residues(text)
++    assert [r['label_comp_id'] for r in d['residues']]==['NAG','NAG','BMA']
++    assert [r['auth_seq_id'] for r in d['residues']]==['1','2','3']
++    assert [r['label_seq_id'] for r in d['residues']]==[None,None,None]
++    assert d['atom_to_residue']==[0,0,1,1,2,2]
++    assert [r['atom_indices'] for r in d['residues']]==[[0,1],[2,3],[4,5]]
++    assert [a['res_name'] for a in d['atoms']]==['NAG']*4+['BMA']*2
++    # The legacy API keeps its existing per-atom schema and behavior.
++    assert 'residues' not in chematic.parse_mmcif(text)
++
++
++def test_all_720_input_orders_preserve_partition():
++    rows=source_rows()
++    for order in itertools.permutations(range(6)):
++        d=chematic.parse_mmcif_residues(render([rows[i] for i in order]))
++        assert len(d['residues'])==3
++        for i,old in enumerate(order):
++            r=d['residues'][d['atom_to_residue'][i]]
++            assert r['auth_seq_id']==str(old//2+1)
++            assert i in r['atom_indices']
++            assert len(r['atom_indices'])==2
++
++
++@pytest.mark.parametrize('column,value',[(6,'F'),(7,'2'),(8,'99'),(9,'AB'),(19,'2'),(5,'MAN'),(16,'AUTHOR_NAME')])
++def test_complete_namespaces_prevent_collisions(column,value):
++    rows=source_rows()[:2]
++    rows[1][3]=rows[1][18]='C1'
++    rows[1][column]=value
++    d=chematic.parse_mmcif_residues(render(rows))
++    assert len(d['residues'])==2
++
++
++def test_alternate_locations_and_full_insertion_code():
++    rows=source_rows()[:2]
++    rows[1][3]=rows[1][18]='C1'
++    rows[0][4]='AA';rows[1][4]='BB'
++    rows[0][9]=rows[1][9]='AB'
++    d=chematic.parse_mmcif_residues(render(rows))
++    assert len(d['residues'])==1
++    assert [a['alt_loc'] for a in d['atoms']]==['AA','BB']
++    assert [a['icode'] for a in d['atoms']]==['AB','AB']
++    assert d['residues'][0]['insertion_code']=='AB'
++
++
++def test_long_component_and_separate_atom_aliases_are_preserved():
++    rows=source_rows()[:1]
++    rows[0][5]='A1AJ1';rows[0][16]='AUTHOR_LONG';rows[0][18]='NAME_LONG'
++    d=chematic.parse_mmcif_residues(render(rows))
++    assert d['residues'][0]['label_comp_id']=='A1AJ1'
++    assert d['residues'][0]['auth_comp_id']=='AUTHOR_LONG'
++    assert d['atoms'][0]['label_atom_id']=='C1'
++    assert d['atoms'][0]['auth_atom_id']=='NAME_LONG'
++
++
++@pytest.mark.parametrize('columns',[(6,17),(8,15),(5,16),(3,18)])
++def test_missing_identity_fails_instead_of_fabricating_zero(columns):
++    rows=source_rows()[:1]
++    for c in columns:rows[0][c]='?'
++    with pytest.raises(ValueError,match='cannot be inferred'):
++        chematic.parse_mmcif_residues(render(rows))
++
++
++def test_duplicate_atom_is_an_error():
++    rows=source_rows()[:2];rows[1][3]=rows[1][18]='C1'
++    with pytest.raises(ValueError,match='repeats'):
++        chematic.parse_mmcif_residues(render(rows))
++
++
++@pytest.mark.parametrize('kwargs',[{'max_input_bytes':8},{'max_atoms':2},{'max_line_len':8}])
++def test_resource_limits(kwargs):
++    with pytest.raises(ValueError):chematic.parse_mmcif_residues(FIXTURE.read_text(),**kwargs)
++
++
++@pytest.mark.parametrize('column,value',[(19,'4294967297'),(19,'0'),(15,'12A'),(10,'NaN'),(2,'Unknown')])
++def test_invalid_or_unsupported_values_fail_explicitly(column,value):
++    rows=source_rows()[:1];rows[0][column]=value
++    with pytest.raises(ValueError):chematic.parse_mmcif_residues(render(rows))
++
++
++def test_incomplete_row_is_an_error():
++    rows=source_rows()[:1];rows[0].pop()
++    with pytest.raises(ValueError,match='incomplete'):chematic.parse_mmcif_residues(render(rows))
+diff --git a/docs/mmcif-residue-identity.md b/docs/mmcif-residue-identity.md
+new file mode 100644
+index 0000000..f2af10b
+--- /dev/null
++++ b/docs/mmcif-residue-identity.md
+@@ -0,0 +1,129 @@
++# mmCIF residue identity for non-polymers
++
++This local source candidate addresses the residue-grouping workflow in
++[Open Babel #3028](https://github.com/openbabel/openbabel/issues/3028).
++The existing chematic mmCIF reader already retained per-atom charge/position
++and residue fields; its separate protein hierarchy deliberately excludes
++glycans, ligands and water. The new API constructs a general residue view
++without using that amino-acid-only projection.
++
++## Use
++
++```python
++import chematic
++
++with open("structure.cif") as source:
++    document = chematic.parse_mmcif_residues(source.read())
++
++for residue in document["residues"]:
++    print(residue["label_comp_id"], residue["auth_comp_id"],
++          residue["auth_seq_id"], residue["atom_indices"])
++
++# Every atom points back to a residue; indices refer to original atom_site rows.
++for atom_index, residue_index in enumerate(document["atom_to_residue"]):
++    assert atom_index in document["residues"][residue_index]["atom_indices"]
++```
++
++Rust exports `parse_mmcif_residues` and `parse_mmcif_residues_with_limits`,
++returning `Result<MmcifResidueDocument, MmcifResidueError>` from `chematic_mol`.
++The latter takes the existing `MmcifParseLimits` (input bytes, line bytes and
++atom rows). Python exposes the same limits as keyword arguments and returns
++`atoms`, `residues`, `atom_to_residue`, `cell`, `space_group` and
++`unhandled_columns`. Invalid input raises `ValueError`.
++
++## Identity contract
++
++A residue identity includes model number, both label/author chain identifiers,
++entity id, both sequence identifiers, full insertion code and both component
++names. Every stored identity field participates in grouping. The residue list
++uses first appearance order; each `atom_indices` list keeps source row order.
++Rows may be interleaved. No atom row is removed or reordered.
++
++`label_seq_id` identifies polymer sequence positions and is often absent for
++non-polymers. The author's sequence identifier can still distinguish NAG,
++NAG and BMA residues when all three have `label_seq_id='.'`. Absence is never
++replaced by residue zero in the grouping key. A literal author identifier
++`'0'` remains valid and distinct from absence; `'01'` and `'1'` remain distinct.
++
++Both chain namespaces are retained. Two label chains with the same author
++chain and residue number remain separate. Different model numbers, entity
++ids and insertion codes also stay distinct. Different component identities
++at a shared position form separate residue variants, retaining their names.
++Alternate locations with the same component identity stay separate atom rows
++within one residue; their full codes are retained. Partial aliases are not
++reconciled by guessing: rows group only when their complete stored identity
++matches.
++
++The identity definitions follow the wwPDB dictionary for
++[`label_seq_id`](https://mmcif.wwpdb.org/dictionaries/mmcif_pdbx_v50.dic/Items/_atom_site.label_seq_id.html)
++and [`auth_seq_id`](https://mmcif.wwpdb.org/dictionaries/mmcif_pdbx_v50.dic/Items/_atom_site.auth_seq_id.html).
++
++## Strict boundaries
++
++- At least one chain, sequence, component and atom identifier must be present.
++  If both sequence identifiers are missing, the parser refuses to infer a
++  residue boundary. It does not claim support for identities supplied only
++  by branch-scheme categories outside atom_site.
++- A repeated label atom name (or author name when no label is supplied) with
++  the same alternate-location code in one residue is an error. Alternate
++  locations with different codes are accepted.
++- Incomplete atom rows, non-finite numeric values, unknown elements and
++  resource-limit violations fail explicitly. Model numbers must fit positive
++  `i32`; formal charges must fit `i32` before the legacy atom projection.
++- The existing numeric atom reader requires integer `auth_seq_id`. The wwPDB
++  dictionary also permits nonnumeric author identifiers; those remain
++  unsupported and produce an explicit parse error here.
++
++Rust's `parsed: MmcifResult` contains the legacy Cartesian/numeric record
++view. Full residue aliases/insertion strings live in `residues[].identity`;
++full atom aliases/alternate-location strings live in `atom_ids`. Use these
++identity tables rather than the legacy record's collapsed aliases or
++single-character fields. Python's `atoms` rows include both atom aliases and
++full `alt_loc`/`icode` strings alongside the legacy numeric fields.
++
++The legacy `parse_mmcif` API keeps its existing schema and behavior. The new
++view does not infer bonds, glycan connectivity or stereochemistry and does
++not export PDB or provide a lossless mmCIF writer. Calling the legacy writer
++with only `parsed.atoms` retains that writer's documented alias-collapse
++limitations. Long component names survive this reader; PDB's three-column
++name restriction is a separate conversion concern.
++
++## Reproduction and validation
++
++The independent six-row fixture is
++`validation/openbabel_issues/mmcif/branched-residues.cif`. It contains two atom
++names for each of NAG/NAG/BMA, distinct author sequence identifiers 1/2/3,
++missing label sequence ids, and distinct author/label chain names. It is
++synthetic metadata for a grouping test, not a chemically complete glycan.
++No deposited structure or issue attachment was copied. Redistribution is
++allowed under the project's `MIT OR Apache-2.0` terms.
++
++On this host, Open Babel 3.2.1 writes all six PDB rows as NAG in one residue.
++The new reader returns three residues, keeping BMA's two rows as BMA. A
++control that supplies numeric label sequence ids makes Open Babel preserve
++NAG/NAG/BMA, isolating the missing-label-sequence condition.
++
++All 720 permutations of the six input rows preserve the expected residue
++partition, full identity and source-row mapping. This diagnostic is not a
++measurement of real-protein frequency or downstream docking quality.
++The regeneration script records provenance, license, minimization, oracle
++version/settings, hashes, expected values, comparison output and the
++normalized permutation-case hash in
++`validation/results/openbabel-mmcif-residues-2026-10-14.json`.
++
++```sh
++cargo test -p chematic-mol --lib --test mmcif_residue_contract --test mmcif_pqr_integration --offline
++python -m pytest crates/chematic-py/tests/test_mmcif_residues.py crates/chematic-py/tests/test_new_formats.py crates/chematic-py/tests/test_input_errors.py
++python scripts/validate_mmcif_residues.py
++```
++
++Rust passed 772 tests (753 library, 15 new contracts, four existing mmCIF/PQR
++integration tests). Python passed 96 (25 new, 71 existing format/error tests).
++Clippy with warnings denied, formatting, refactor budget, static binding
++inventory, naming and strict MkDocs passed. The Rust integration target is
++registered in the CI matrix.
++
++Implementation is in an isolated source copy retaining the preceding local
++RDKit and PQR candidates. Its portable patch contains only this feature's
++changes relative to that snapshot. It remains uncommitted and unpublished;
++these measurements concern local source and the pinned external engine.
+diff --git a/docs/openbabel-open-issues-2026-10-14.md b/docs/openbabel-open-issues-2026-10-14.md
+index 795b9d3..4102c95 100644
+--- a/docs/openbabel-open-issues-2026-10-14.md
++++ b/docs/openbabel-open-issues-2026-10-14.md
+@@ -14,7 +14,7 @@ charge work. Existing changes were retained.
+ | [#2845: PQR charge/radius lost](https://github.com/openbabel/openbabel/issues/2845) | `PqrAtomRecord` already stores charge and radius separately. `to_molecule()` is a graph projection that does not carry those fields. | [Implemented a checked rigid PQR-to-PDBQT adapter](pqr-pdbqt-charge-preservation.md): caller-supplied types, source charges/identity, radius-loss consent and a numeric-rounding sidecar. Open Babel 3.2.1 charge loss reproduced on two synthetic ions. |
+ | [#2821: QCSchema Molecule](https://github.com/openbabel/openbabel/issues/2821) | Native QCSchema types, readers, converters, and tests already exist. | No duplicate implementation; broaden interoperability fixtures separately. |
+ | [#3027: five-character residue names truncated in PDB](https://github.com/openbabel/openbabel/issues/3027) | mmCIF has full residue-name fields; the protein projection is deliberately limited to amino-acid residues. | A general mmCIF-to-PDB adapter needs an explicit representability/loss policy. Do not treat protein projection as a ligand-preserving converter. |
+-| [#3028: branched glycan residues merged](https://github.com/openbabel/openbabel/issues/3028) | mmCIF retains per-atom residue fields, but the protein projection excludes glycans. | Requires a general residue model and glycan corpus; outside the selected CIF coordinate fix. |
++| [#3028: branched glycan residues merged](https://github.com/openbabel/openbabel/issues/3028) | mmCIF retains per-atom residue fields, but the protein projection excludes glycans. | [Implemented a general atom_site residue reader](mmcif-residue-identity.md) with distinct auth/label identities and strict ambiguity errors; 720 row-order permutations and an Open Babel 3.2.1 control. Glycan connectivity and PDB export remain separate. |
+ 
+ ## Implemented coordinate contract
+ 
+diff --git a/scripts/validate_mmcif_residues.py b/scripts/validate_mmcif_residues.py
+new file mode 100644
+index 0000000..9eb62a2
+--- /dev/null
++++ b/scripts/validate_mmcif_residues.py
+@@ -0,0 +1,90 @@
++#!/usr/bin/env python3
++"""Independent, pinned Open Babel #3028 residue-partition diagnostic."""
++import argparse
++import hashlib
++import itertools
++import json
++from pathlib import Path
++import subprocess
++import sys
++import tempfile
++
++import chematic
++
++ROOT=Path(__file__).resolve().parents[1]
++FIXTURE=ROOT/'validation/openbabel_issues/mmcif/branched-residues.cif'
++
++
++def digest(data):
++    return hashlib.sha256(data).hexdigest()
++
++
++def pdb_records(text):
++    return [s for s in text.splitlines() if s.startswith(('ATOM  ','HETATM'))]
++
++
++def main():
++    parser=argparse.ArgumentParser(description=__doc__)
++    parser.add_argument('--obabel',default='/opt/homebrew/bin/obabel')
++    parser.add_argument('--output',type=Path,default=ROOT/'validation/results/openbabel-mmcif-residues-2026-10-14.json')
++    args=parser.parse_args()
++    version=subprocess.run([args.obabel,'-V'],capture_output=True,text=True,check=True,timeout=10).stdout.strip()
++    if not version.startswith('Open Babel 3.2.1 '):raise RuntimeError(f'expected Open Babel 3.2.1, got {version}')
++    text=FIXTURE.read_text();header=text.split('HETATM')[0]
++    rows=[s.split() for s in text.splitlines() if s.startswith('HETATM')]
++    base=chematic.parse_mmcif_residues(text)
++    expected_names=['NAG','NAG','NAG','NAG','BMA','BMA']
++    assert [a['res_name'] for a in base['atoms']]==expected_names
++    checked=[]
++    for order in itertools.permutations(range(6)):
++        shuffled=header+'\n'.join(' '.join(rows[i]) for i in order)+'\n#\n'
++        doc=chematic.parse_mmcif_residues(shuffled)
++        assert len(doc['residues'])==3
++        for i,old in enumerate(order):
++            r=doc['residues'][doc['atom_to_residue'][i]]
++            assert r['auth_seq_id']==str(old//2+1)
++            assert r['label_seq_id'] is None
++            assert r['label_asym_id']=='E' and r['auth_asym_id']=='A'
++            assert r['label_comp_id']==r['auth_comp_id']==expected_names[old]
++            assert r['atom_indices']==[j for j,v in enumerate(order) if v//2==old//2]
++            assert doc['atoms'][i]['x']==float(rows[old][10])
++        checked.append({'new_to_old':order,'atom_to_residue':doc['atom_to_residue'],'residue_identity':[{'auth_seq_id':r['auth_seq_id'],'label_comp_id':r['label_comp_id'],'atom_indices':r['atom_indices']} for r in doc['residues']]})
++    proc=subprocess.run([args.obabel,'-immcif',str(FIXTURE),'-opdb'],capture_output=True,text=True,check=True,timeout=10)
++    output=pdb_records(proc.stdout)
++    assert len(output)==6
++    names=[r[17:20].strip() for r in output]
++    assert names==['NAG']*6, 'upstream behavior changed; investigate before rebaseline'
++    assert [float(r[30:38]) for r in output]==[20,22,40,42,60,62]
++    control_rows=[r.copy() for r in rows]
++    for r in control_rows:r[8]=r[15]
++    control=header+'\n'.join(' '.join(r) for r in control_rows)+'\n#\n'
++    with tempfile.TemporaryDirectory(prefix='chematic-mmcif-control-') as tmp:
++        path=Path(tmp)/'label-sequence.cif';path.write_text(control)
++        control_run=subprocess.run([args.obabel,'-immcif',str(path),'-opdb'],capture_output=True,text=True,check=True,timeout=10)
++    control_output=pdb_records(control_run.stdout)
++    assert [r[17:20].strip() for r in control_output]==expected_names
++    control_native=chematic.parse_mmcif_residues(control)
++    assert len(control_native['residues'])==3
++    source_paths=['crates/chematic-mol/src/mmcif/residues.rs','crates/chematic-py/src/formats/mmcif_residues.rs']
++    record={
++        'schema_version':1,'status':'local-source-candidate','issue':'https://github.com/openbabel/openbabel/issues/3028',
++        'base':'cac480fb source snapshot plus preserved RDKit #9675/#9629 and Open Babel #2845 candidates; patch isolates this reader',
++        'scope':'atom_site residue partition; no PDB writer, glycan connectivity, bond perception or real-protein frequency claim',
++        'runtime':{'python':sys.version.split()[0],'openbabel':version,'chematic_extension_sha256':digest(Path(chematic.__file__).resolve().read_bytes())},
++        'source_sha256':{s:digest((ROOT/s).read_bytes()) for s in source_paths},
++        'fixture':{'id':'three-synthetic-nonpolymer-residues','path':str(FIXTURE.relative_to(ROOT)),'sha256':digest(text.encode()),
++            'provenance':{'source':'original synthetic atom_site rows from wwPDB identity definitions','retrieved':'2026-10-14','issue':'https://github.com/openbabel/openbabel/issues/3028','transformations':'two atom names per residue; NAG/NAG/BMA with absent label_seq_id and distinct numeric auth_seq_id; no downloaded structure or attachment'},
++            'license':'MIT OR Apache-2.0','redistribution':{'status':'allowed','rationale':'original project fixture'},
++            'minimization':'six rows isolate repeated atom names, repeated component names, missing polymer sequence, two chain namespaces and one renamed component',
++            'oracle':{'name':'source-authored residue identifiers / independent fixed-column PDB decoder','version':'wwPDB PDBx v5 identity definitions; Open Babel 3.2.1 external diagnostic','settings':'all 6! source-row permutations; external conversion defaults'},
++            'expected':{'residue_count':3,'component_names':['NAG','NAG','BMA'],'auth_seq_id':['1','2','3'],'atom_counts':[2,2,2],'coordinate_unit':'angstrom','count_tolerance':0},
++        },
++        'results':{'permutations':len(checked),'partition_mismatches':0,'identity_mismatches':0,'cases_sha256':digest(json.dumps(checked,sort_keys=True,separators=(',',':')).encode()),'native_residues':base['residues']},
++        'openbabel':{'command':['obabel','-immcif','<fixture>','-opdb'],'output_names':names,'output_residue_keys':sorted(set((r[21],r[22:26].strip(),r[17:20].strip()) for r in output)),'renamed_BMA_atoms':2,'stderr':proc.stderr.strip(),'output_sha256':digest(proc.stdout.encode()),'numeric_label_control':{'source_sha256':digest(control.encode()),'output_names':[r[17:20].strip() for r in control_output],'stderr':control_run.stderr.strip(),'output_sha256':digest(control_run.stdout.encode())}},
++        'limits':'new strict grouping rejects absent chain/sequence/component/atom identity, duplicate atoms and incomplete rows; inherited atom reader supports integer auth_seq_id only',
++    }
++    args.output.parent.mkdir(parents=True,exist_ok=True);args.output.write_text(json.dumps(record,indent=2)+'\n')
++    print(json.dumps({'permutations':len(checked),'partition_mismatches':0,'native_residue_count':3,'upstream_residue_count':1,'control_passed':True}))
++
++
++if __name__=='__main__':main()
+diff --git a/validation/openbabel_issues/mmcif/branched-residues.cif b/validation/openbabel_issues/mmcif/branched-residues.cif
+new file mode 100644
+index 0000000..eec39ab
+--- /dev/null
++++ b/validation/openbabel_issues/mmcif/branched-residues.cif
+@@ -0,0 +1,30 @@
++data_synthetic_glycan
++# Original project fixture; MIT OR Apache-2.0
++loop_
++_atom_site.group_PDB
++_atom_site.id
++_atom_site.type_symbol
++_atom_site.label_atom_id
++_atom_site.label_alt_id
++_atom_site.label_comp_id
++_atom_site.label_asym_id
++_atom_site.label_entity_id
++_atom_site.label_seq_id
++_atom_site.pdbx_PDB_ins_code
++_atom_site.Cartn_x
++_atom_site.Cartn_y
++_atom_site.Cartn_z
++_atom_site.occupancy
++_atom_site.B_iso_or_equiv
++_atom_site.auth_seq_id
++_atom_site.auth_comp_id
++_atom_site.auth_asym_id
++_atom_site.auth_atom_id
++_atom_site.pdbx_PDB_model_num
++HETATM 1 C C1 . NAG E 1 . ? 20.0 0.0 0.0 1.0 10.0 1 NAG A C1 1
++HETATM 2 O O6 . NAG E 1 . ? 22.0 0.0 0.0 1.0 10.0 1 NAG A O6 1
++HETATM 3 C C1 . NAG E 1 . ? 40.0 0.0 0.0 1.0 10.0 2 NAG A C1 1
++HETATM 4 O O6 . NAG E 1 . ? 42.0 0.0 0.0 1.0 10.0 2 NAG A O6 1
++HETATM 5 C C1 . BMA E 1 . ? 60.0 0.0 0.0 1.0 10.0 3 BMA A C1 1
++HETATM 6 O O6 . BMA E 1 . ? 62.0 0.0 0.0 1.0 10.0 3 BMA A O6 1
++#
+diff --git a/validation/results/binding_surface_inventory-current.json b/validation/results/binding_surface_inventory-current.json
+index fe45b63..938fdca 100644
+--- a/validation/results/binding_surface_inventory-current.json
++++ b/validation/results/binding_surface_inventory-current.json
+@@ -7,9 +7,9 @@
+   "scope": "Rust source declarations only; this is not semantic parity evidence",
+   "results": {
+     "wasm_export_count": 303,
+-    "python_pyfunction_count": 178,
+-    "python_registered_count": 178,
++    "python_pyfunction_count": 179,
++    "python_registered_count": 179,
+     "python_declared_without_registration": [],
+-    "surface_sha256": "09013440268339db17d5f59b73cd7699e3975499473f8625719a77348e153ff5"
++    "surface_sha256": "661ba9666eeba6a0086cf46a9f26bb460df439c226459c29d50f83ae89e6c61d"
+   }
+ }
+diff --git a/validation/results/openbabel-mmcif-residues-2026-10-14.json b/validation/results/openbabel-mmcif-residues-2026-10-14.json
+new file mode 100644
+index 0000000..92a11a1
+--- /dev/null
++++ b/validation/results/openbabel-mmcif-residues-2026-10-14.json
+@@ -0,0 +1,151 @@
++{
++  "schema_version": 1,
++  "status": "local-source-candidate",
++  "issue": "https://github.com/openbabel/openbabel/issues/3028",
++  "base": "cac480fb source snapshot plus preserved RDKit #9675/#9629 and Open Babel #2845 candidates; patch isolates this reader",
++  "scope": "atom_site residue partition; no PDB writer, glycan connectivity, bond perception or real-protein frequency claim",
++  "runtime": {
++    "python": "3.13.6",
++    "openbabel": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
++    "chematic_extension_sha256": "b6423a3aa2895ef59bc2b11da4389cb6d85c76cefe1956eea379a42df7b1a17d"
++  },
++  "source_sha256": {
++    "crates/chematic-mol/src/mmcif/residues.rs": "21425dc67b0eb80f31b01fd1e73e33a8f2fa242b421905e5d4e20fbdf23df79a",
++    "crates/chematic-py/src/formats/mmcif_residues.rs": "598ee49de11467239cf3a216bbae399130dbe5c3e70e48c43ca202d3af302c32"
++  },
++  "fixture": {
++    "id": "three-synthetic-nonpolymer-residues",
++    "path": "validation/openbabel_issues/mmcif/branched-residues.cif",
++    "sha256": "cc6956e5e27f7cd3cfdf96cd0da876de3acc1962dbd429aa00bafd005f7e5344",
++    "provenance": {
++      "source": "original synthetic atom_site rows from wwPDB identity definitions",
++      "retrieved": "2026-10-14",
++      "issue": "https://github.com/openbabel/openbabel/issues/3028",
++      "transformations": "two atom names per residue; NAG/NAG/BMA with absent label_seq_id and distinct numeric auth_seq_id; no downloaded structure or attachment"
++    },
++    "license": "MIT OR Apache-2.0",
++    "redistribution": {
++      "status": "allowed",
++      "rationale": "original project fixture"
++    },
++    "minimization": "six rows isolate repeated atom names, repeated component names, missing polymer sequence, two chain namespaces and one renamed component",
++    "oracle": {
++      "name": "source-authored residue identifiers / independent fixed-column PDB decoder",
++      "version": "wwPDB PDBx v5 identity definitions; Open Babel 3.2.1 external diagnostic",
++      "settings": "all 6! source-row permutations; external conversion defaults"
++    },
++    "expected": {
++      "residue_count": 3,
++      "component_names": [
++        "NAG",
++        "NAG",
++        "BMA"
++      ],
++      "auth_seq_id": [
++        "1",
++        "2",
++        "3"
++      ],
++      "atom_counts": [
++        2,
++        2,
++        2
++      ],
++      "coordinate_unit": "angstrom",
++      "count_tolerance": 0
++    }
++  },
++  "results": {
++    "permutations": 720,
++    "partition_mismatches": 0,
++    "identity_mismatches": 0,
++    "cases_sha256": "a8d62b3acf0c87ec87030c8cd579a9e14b4e21a8f75c92392930f17ce39f2f8e",
++    "native_residues": [
++      {
++        "model_num": 1,
++        "label_asym_id": "E",
++        "auth_asym_id": "A",
++        "entity_id": "1",
++        "label_seq_id": null,
++        "auth_seq_id": "1",
++        "insertion_code": null,
++        "label_comp_id": "NAG",
++        "auth_comp_id": "NAG",
++        "atom_indices": [
++          0,
++          1
++        ]
++      },
++      {
++        "model_num": 1,
++        "label_asym_id": "E",
++        "auth_asym_id": "A",
++        "entity_id": "1",
++        "label_seq_id": null,
++        "auth_seq_id": "2",
++        "insertion_code": null,
++        "label_comp_id": "NAG",
++        "auth_comp_id": "NAG",
++        "atom_indices": [
++          2,
++          3
++        ]
++      },
++      {
++        "model_num": 1,
++        "label_asym_id": "E",
++        "auth_asym_id": "A",
++        "entity_id": "1",
++        "label_seq_id": null,
++        "auth_seq_id": "3",
++        "insertion_code": null,
++        "label_comp_id": "BMA",
++        "auth_comp_id": "BMA",
++        "atom_indices": [
++          4,
++          5
++        ]
++      }
++    ]
++  },
++  "openbabel": {
++    "command": [
++      "obabel",
++      "-immcif",
++      "<fixture>",
++      "-opdb"
++    ],
++    "output_names": [
++      "NAG",
++      "NAG",
++      "NAG",
++      "NAG",
++      "NAG",
++      "NAG"
++    ],
++    "output_residue_keys": [
++      [
++        "A",
++        "0",
++        "NAG"
++      ]
++    ],
++    "renamed_BMA_atoms": 2,
++    "stderr": "1 molecule converted",
++    "output_sha256": "a6a17b639c65e0c4721ed7e35344edbefa6d2a5f8291ff6bf18887b14fe48380",
++    "numeric_label_control": {
++      "source_sha256": "54fea91a1e07a86ceab32045fdbabb3f063759c3a2ed859f27fc151a7cde1f3e",
++      "output_names": [
++        "NAG",
++        "NAG",
++        "NAG",
++        "NAG",
++        "BMA",
++        "BMA"
++      ],
++      "stderr": "1 molecule converted",
++      "output_sha256": "31e66d35d09d376e12837a62872b75ada2517006cf327801cb7b2d1b8c30c09d"
++    }
++  },
++  "limits": "new strict grouping rejects absent chain/sequence/component/atom identity, duplicate atoms and incomplete rows; inherited atom reader supports integer auth_seq_id only"
++}

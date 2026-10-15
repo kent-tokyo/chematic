@@ -1,0 +1,343 @@
+{
+  "schema_version": 1,
+  "status": "local-source-candidate",
+  "issue": "https://github.com/rdkit/rdkit/issues/9705",
+  "base": "cac480fb source snapshot plus preserved previous candidates through RDFile; requires checked groups, full inversion and correlated alternatives",
+  "scope": "conservative proof-backed promotion of one AND/OR group to ABS; exact group/label-colored formal graph mappings in every other-group assignment, no general canonicalization",
+  "runtime": {
+    "python": "3.13.6",
+    "rdkit": "2026.09.1",
+    "settings": "legacy stereo; retain explicit H; direct atom/bond flips; chirality-aware complete graph mappings with separate group/label checks",
+    "chematic_extension_sha256": "f610073cc0b71f3bea36c64addc93aa30cc42554ac859271db067b14dcfb0523"
+  },
+  "source_sha256": {
+    "crates/chematic-chem/src/meso_stereo_group.rs": "a29c330d51ed174f89209f8ce63770cc6c166773dc1db90053659dfe14248268",
+    "crates/chematic-chem/src/meso_stereo_group/graph.rs": "5683f9bc04ada285488bf86d47c456994fedfa534c4358cadf77aaa39d7f62e0",
+    "crates/chematic-chem/src/meso_stereo_group/search.rs": "89305fd4eaf0bccf9a7d1002083cd75072a362955653bfdcb8f63147b8ad4903",
+    "crates/chematic-py/src/mol_methods/stereo_groups.rs": "b333e0b0e338a45a052c2d2e2e1c988a6361196d6aadf6a6de845d198b46b461",
+    "crates/chematic-chem/tests/meso_stereo_group.rs": "cda7812f2f714815c8f3ba5cad2900b9a3f2cbf3941448460a30242a8270ff45",
+    "crates/chematic-py/tests/test_meso_stereo_group.py": "4e4dffa1616dcac7be25c2141fec426fbc924c115e41d6c8174ca88fba131ffd",
+    "crates/chematic-py/python/chematic/__init__.pyi": "672510a426aa0decd0b232d7b4fdd9bf724b650f2ab2cdda1d73ec79d396e605",
+    "scripts/validate_meso_stereo_groups.py": "9287433917aaba708dc97e148c338c97031dd98061c9979fa9aa5d15f3297fd6"
+  },
+  "fixture": {
+    "path": "validation/rdkit_issues/stereo/meso-group-proof.json",
+    "manifest_sha256": "bc22c0ed7cf0cd54af56ccb8127db0f75643a460b0eaa3707c0eb7f38099e372",
+    "schema_version": 1,
+    "id": "meso-stereo-group-proof-v1",
+    "provenance": {
+      "source": "original minimized atom-only, geometric, mixed and disconnected formal stereochemical graphs",
+      "issue": "https://github.com/rdkit/rdkit/issues/9705",
+      "date": "2026-10-15",
+      "transformations": "synthetic explicit relative groups, isotope/map distinctions and independent groups; simple mixed heptadiene motif follows the public issue proposal; no attachments or proprietary coordinates copied"
+    },
+    "license": "MIT OR Apache-2.0",
+    "redistribution": {
+      "status": "allowed",
+      "rationale": "original project fixtures; no bulk third-party data"
+    },
+    "minimization": "twelve small cases distinguish full-alternative redundancy, center-only flips, true racemates, explicit H, substituted alkene references and source-label constraints",
+    "oracle": {
+      "name": "RDKit direct stereo assignments and complete chirality-aware graph match witnesses",
+      "version": "2026.09.1",
+      "settings": "legacy stereo; removeHs=False; direct atom/bond flips; no mixed-group CanonicalizeStereoGroups as expected truth; GetSubstructMatches(useChirality=True,uniquify=False,maxMatches=200000), plus explicit graph/group/label checks and drawn InChI set comparisons"
+    },
+    "expected": {
+      "rule": "only reduce selected AND/OR if a group/label-preserving tetrahedral/geometric mapping exists in every other-group assignment; exact original drawing/configuration retained",
+      "visit_budget": 1000000,
+      "proof_scope": "formal 64-atom/128-bond graph with explicit tetrahedral/geometric facts; no 3D feasibility or global stereo canonicalization",
+      "numeric_tolerance": 0,
+      "payload_encoding": "sorted-key compact UTF-8 JSON cases"
+    },
+    "sha256": "9bf39ee1c347127e5bd5558e1299e43bf1eac6431fae4f9d5fffcb60ad64088d",
+    "cases": [
+      {
+        "id": "meso-diol",
+        "smiles": "C[C@H](O)[C@H](O)C",
+        "groups": [
+          [
+            "and",
+            1,
+            [
+              1,
+              3
+            ],
+            []
+          ]
+        ],
+        "selected": 0,
+        "expected_reduced": true
+      },
+      {
+        "id": "true-diol-racemate",
+        "smiles": "C[C@H](O)[C@@H](O)C",
+        "groups": [
+          [
+            "and",
+            1,
+            [
+              1,
+              3
+            ],
+            []
+          ]
+        ],
+        "selected": 0,
+        "expected_reduced": false
+      },
+      {
+        "id": "mixed-full-alternative-redundancy",
+        "smiles": "C/C=C/[C@H](C)/C=C\\C",
+        "groups": [
+          [
+            "and",
+            1,
+            [
+              3
+            ],
+            [
+              1,
+              5
+            ]
+          ]
+        ],
+        "selected": 0,
+        "expected_reduced": true
+      },
+      {
+        "id": "center-only-not-redundant",
+        "smiles": "C/C=C/[C@H](C)/C=C\\C",
+        "groups": [
+          [
+            "and",
+            1,
+            [
+              3
+            ],
+            []
+          ]
+        ],
+        "selected": 0,
+        "expected_reduced": false
+      },
+      {
+        "id": "bond-only-redundant",
+        "smiles": "C/C=C/C=C\\C",
+        "groups": [
+          [
+            "and",
+            1,
+            [],
+            [
+              1,
+              3
+            ]
+          ]
+        ],
+        "selected": 0,
+        "expected_reduced": true
+      },
+      {
+        "id": "bond-only-distinct",
+        "smiles": "C/C=C/C=C/C",
+        "groups": [
+          [
+            "and",
+            1,
+            [],
+            [
+              1,
+              3
+            ]
+          ]
+        ],
+        "selected": 0,
+        "expected_reduced": false
+      },
+      {
+        "id": "isotope-breaks-symmetry",
+        "smiles": "[13CH3][C@H](O)[C@H](O)C",
+        "groups": [
+          [
+            "and",
+            1,
+            [
+              1,
+              3
+            ],
+            []
+          ]
+        ],
+        "selected": 0,
+        "expected_reduced": false
+      },
+      {
+        "id": "maps-conservatively-block-reduction",
+        "smiles": "[CH3:11][C@H](O)[C@H](O)[CH3:12]",
+        "groups": [
+          [
+            "and",
+            1,
+            [
+              1,
+              3
+            ],
+            []
+          ]
+        ],
+        "selected": 0,
+        "expected_reduced": false,
+        "note": "Drawn chemical configurations coincide when maps are ignored; the proof preserves source labels."
+      },
+      {
+        "id": "abs-merge-with-other-relative-group",
+        "smiles": "C[C@H](O)[C@H](O)C.N[C@H](F)Cl.[C@H](F)(Cl)Br",
+        "groups": [
+          [
+            "abs",
+            0,
+            [
+              7
+            ],
+            []
+          ],
+          [
+            "and",
+            8,
+            [
+              1,
+              3
+            ],
+            []
+          ],
+          [
+            "or",
+            9,
+            [
+              10
+            ],
+            []
+          ]
+        ],
+        "selected": 1,
+        "expected_reduced": true
+      },
+      {
+        "id": "two-other-relative-contexts",
+        "smiles": "C[C@H](O)[C@H](O)C.N[C@H](F)Cl.[C@H](F)(Cl)Br",
+        "groups": [
+          [
+            "and",
+            1,
+            [
+              1,
+              3
+            ],
+            []
+          ],
+          [
+            "or",
+            2,
+            [
+              7
+            ],
+            []
+          ],
+          [
+            "and",
+            3,
+            [
+              10
+            ],
+            []
+          ]
+        ],
+        "selected": 0,
+        "expected_reduced": true
+      },
+      {
+        "id": "explicit-h-meso",
+        "smiles": "[H][C@](C)(O)[C@@]([H])(O)C",
+        "groups": [
+          [
+            "and",
+            1,
+            [
+              1,
+              4
+            ],
+            []
+          ]
+        ],
+        "selected": 0,
+        "expected_reduced": true
+      },
+      {
+        "id": "four-substituent-alkene-distinct",
+        "smiles": "F/C(Cl)=C(/F)Cl",
+        "groups": [
+          [
+            "and",
+            1,
+            [],
+            [
+              2
+            ]
+          ]
+        ],
+        "selected": 0,
+        "expected_reduced": false
+      }
+    ]
+  },
+  "results": {
+    "cases": 672,
+    "fixtures": 12,
+    "promoted": 384,
+    "retained": 288,
+    "witnesses_verified_by_rdkit": 768,
+    "configuration_context_pairs": 1056,
+    "v3000_roundtrips": 672,
+    "decision_mismatches": 0,
+    "witness_mismatches": 0,
+    "allowed_configuration_set_mismatches": 0,
+    "metadata_mismatches": 0,
+    "input_mutations": 0,
+    "numberings_per_fixture_kind_group_order": 24,
+    "case_sha256": "d9630b2e8d1cbc9e70aec69e0a52b121a68847947e75b009cbe233cdd8db7749"
+  },
+  "rdkit_mixed_canonicalization_diagnostic": {
+    "input_atoms": [
+      3
+    ],
+    "input_bonds": [
+      1,
+      5
+    ],
+    "output_groups": [],
+    "bond_members_dropped": true
+  },
+  "rdkit_atom_only_meso_control": {
+    "output_groups": [
+      {
+        "kind": "STEREO_ABSOLUTE",
+        "atoms": [
+          1,
+          3
+        ],
+        "bonds": []
+      }
+    ],
+    "absolute_only": true
+  },
+  "limits": {
+    "atoms": 64,
+    "bonds": 128,
+    "relative_groups": 6,
+    "family_representatives": 64,
+    "default_candidate_visits": 1000000,
+    "maximum_candidate_visits": 10000000,
+    "budget_unknown_is_error": true
+  },
+  "limitations": "Preserving group identities, atom maps and tags can conservatively retain a chemically redundant group. Retained does not mean a general non-meso classification. Undefined locally tetrahedral sites, wildcard/R groups, non-tetrahedral/allene/axial stereo, query/dative/zero bonds, loops/parallel edges, stashed/conflicting/unaccounted directions fail closed. No 3D feasibility, stereogenicity cleanup, canonical representative, group renumbering, CXSMILES extension or general molecular identity claim. Same-number mixed-group interpretation follows #9705 proposal, not confirmed BIOVIA interoperability."
+}

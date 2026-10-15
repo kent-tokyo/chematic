@@ -70,6 +70,36 @@ fragment boundary is directly adjacent to an E/Z double bond.
 Stereo may be dropped silently when it cannot be preserved through a cut — that is
 acceptable. Verified in `rdkit_9368_ez_fragment_no_panic` test.
 
+### Internal-coordinate constraints before distance smoothing (RDKit #9343)
+
+**Issue:** a workflow may need to constrain selected bond lengths, bond
+angles, or torsions before distance-geometry triangle smoothing rather than
+editing coordinates after embedding.
+
+**chematic principle:** constraints are a checked input contract. The
+unreleased source API converts each local coordinate into distance bounds,
+intersects those bounds with the topology matrix, then smooths the combined
+matrix. Invalid atom indices, cross-fragment constraints, contradictory bounds,
+and triangle-inconsistent systems return typed errors. Torsion signs remain
+mirror-equivalent at the distance-bound stage; a signed dihedral requires a
+later orientation/stereo constraint and is not silently claimed here.
+
+### Recursive SMARTS chirality (RDKit #9247)
+
+**Issue:** wrapping a tetrahedral SMARTS in ``$(...)`` can invert a match when
+the recursive search visits atoms in a different order. A raw comparison of
+``@`` and ``@@`` is not valid because those tags are relative to neighbour
+encounter order.
+
+**chematic principle:** defer the exact stereo decision until a complete
+embedding exists. The matcher maps the SMARTS neighbour order into target atom
+indices, includes the virtual bracket-H slot, and compares permutation parity
+with the target's recorded stereo order. Ring-opening digits keep their lexical
+position even though the corresponding bond is created only when the ring
+closes. This applies to both the native and RDKit-parity matchers; partial
+single-atom chiral queries retain their documented raw-tag fallback because
+they do not identify enough neighbours to reconstruct absolute parity.
+
 ### Atropisomer stereo degradation (RDKit #9338)
 
 **Issue:** `TautomerEnumerator.Canonicalize()` raises on atropisomer-like bond stereo

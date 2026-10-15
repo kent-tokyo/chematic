@@ -1,0 +1,905 @@
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index c7cc03b..4e009cc 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -176,6 +176,7 @@ jobs:
+           - { package: chematic-chem, target: metal_disconnect_holdout }
+           - { package: chematic-chem, target: local_cation_resonance }
+           - { package: chematic-chem, target: screening_enrichment }
++          - { package: chematic-chem, target: native_distance_matrix }
+           - { package: chematic-mol, target: cif_checked_writer }
+           - { package: chematic-mol, target: pqr_pdbqt_contract }
+           - { package: chematic-chem, target: renumber_stereo_contract }
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 2f4cb20..84041a6 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -12,6 +12,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
+ 
+ ### Added
+ 
++- Added fallible, bounded native heavy-atom distance matrices in Rust and
++  routed Python's existing topological_distance_matrix method through them;
++  atom/bond/entry budgets reject oversized requests before matrix allocation.
++
+ - Added checked single-model PDB atom selection in Rust/Python, preserving
+   original atom/residue identity and atom lines while filtering ANISOU/CONECT
+   and retargeting TER records. Unknown-record loss requires explicit consent.
+diff --git a/crates/chematic-chem/src/checked_distance_matrix.rs b/crates/chematic-chem/src/checked_distance_matrix.rs
+new file mode 100644
+index 0000000..980fdef
+--- /dev/null
++++ b/crates/chematic-chem/src/checked_distance_matrix.rs
+@@ -0,0 +1,181 @@
++//! Bounded native heavy-atom graph distances, motivated by RDKit #9647.
++//!
++//! This operates directly on the native graph without sanitizing or removing
++//! atoms. Every atom except hydrogen (including wildcard atoms) is heavy.
++
++use chematic_core::{AtomIdx, Molecule};
++
++/// Hard input cap, checked before traversing the graph or allocating buffers.
++pub const MAX_NATIVE_DISTANCE_ATOMS: usize = 1024;
++/// Hard bond cap, including bonds incident to hydrogen atoms.
++pub const MAX_NATIVE_DISTANCE_BONDS: usize = 16_384;
++/// Hard dense-output cap (4 MiB of u32 payload, excluding row headers).
++pub const MAX_NATIVE_DISTANCE_ENTRIES: usize = 1_048_576;
++
++/// Caller budgets can tighten, but cannot raise, the hard limits.
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++pub struct NativeDistanceMatrixLimits {
++    pub max_atoms: usize,
++    pub max_bonds: usize,
++    pub max_entries: usize,
++}
++
++impl Default for NativeDistanceMatrixLimits {
++    fn default() -> Self {
++        Self {
++            max_atoms: MAX_NATIVE_DISTANCE_ATOMS,
++            max_bonds: MAX_NATIVE_DISTANCE_BONDS,
++            max_entries: MAX_NATIVE_DISTANCE_ENTRIES,
++        }
++    }
++}
++
++#[derive(Clone, Debug, PartialEq, Eq)]
++pub enum NativeDistanceMatrixError {
++    ResourceLimit {
++        resource: &'static str,
++        requested: usize,
++        limit: usize,
++    },
++    DimensionOverflow,
++    Allocation {
++        buffer: &'static str,
++    },
++}
++
++impl std::fmt::Display for NativeDistanceMatrixError {
++    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
++        match self {
++            Self::ResourceLimit {
++                resource,
++                requested,
++                limit,
++            } => write!(
++                f,
++                "native distance matrix resource limit: {requested} {resource} exceeds {limit}"
++            ),
++            Self::DimensionOverflow => write!(f, "native distance matrix dimension overflow"),
++            Self::Allocation { buffer } => {
++                write!(f, "native distance matrix allocation failed: {buffer}")
++            }
++        }
++    }
++}
++
++impl std::error::Error for NativeDistanceMatrixError {}
++
++fn check_limit(
++    resource: &'static str,
++    requested: usize,
++    limit: usize,
++) -> Result<(), NativeDistanceMatrixError> {
++    if requested > limit {
++        return Err(NativeDistanceMatrixError::ResourceLimit {
++            resource,
++            requested,
++            limit,
++        });
++    }
++    Ok(())
++}
++
++fn reserved<T>(count: usize, buffer: &'static str) -> Result<Vec<T>, NativeDistanceMatrixError> {
++    let mut result = Vec::new();
++    result
++        .try_reserve_exact(count)
++        .map_err(|_| NativeDistanceMatrixError::Allocation { buffer })?;
++    Ok(result)
++}
++
++/// Checked version of [`crate::topological_distance_matrix`].
++///
++/// Returns unweighted shortest-path lengths in the induced non-hydrogen
++/// subgraph. Rows follow original atom order with H omitted; disconnected
++/// entries are `u32::MAX`. Empty and hydrogen-only graphs return an empty matrix.
++/// No SMILES provenance, sanitization, coordinates or derived caches are needed.
++pub fn try_topological_distance_matrix(
++    mol: &Molecule,
++) -> Result<Vec<Vec<u32>>, NativeDistanceMatrixError> {
++    try_topological_distance_matrix_with_limits(mol, &NativeDistanceMatrixLimits::default())
++}
++
++/// As [`try_topological_distance_matrix`], with tighter caller budgets.
++///
++/// All input atoms and bonds count towards the preflight caps, even when H
++/// exclusion would make the output smaller. Dense dimensions use checked
++/// multiplication and every native heap buffer uses fallible reservation.
++/// BFS costs O(H * (V + E)); no partial matrix is returned on failure.
++pub fn try_topological_distance_matrix_with_limits(
++    mol: &Molecule,
++    limits: &NativeDistanceMatrixLimits,
++) -> Result<Vec<Vec<u32>>, NativeDistanceMatrixError> {
++    check_limit(
++        "atoms",
++        mol.atom_count(),
++        limits.max_atoms.min(MAX_NATIVE_DISTANCE_ATOMS),
++    )?;
++    check_limit(
++        "bonds",
++        mol.bond_count(),
++        limits.max_bonds.min(MAX_NATIVE_DISTANCE_BONDS),
++    )?;
++    let n = mol
++        .atoms()
++        .filter(|(_, atom)| atom.element.atomic_number() != 1)
++        .count();
++    let entries = n
++        .checked_mul(n)
++        .ok_or(NativeDistanceMatrixError::DimensionOverflow)?;
++    check_limit(
++        "entries",
++        entries,
++        limits.max_entries.min(MAX_NATIVE_DISTANCE_ENTRIES),
++    )?;
++    if n == 0 {
++        return Ok(Vec::new());
++    }
++    let mut positions = reserved(mol.atom_count(), "atom positions")?;
++    positions.resize(mol.atom_count(), usize::MAX);
++    let mut heavy = reserved(n, "heavy atom indices")?;
++    for (idx, atom) in mol.atoms() {
++        if atom.element.atomic_number() != 1 {
++            positions[idx.0 as usize] = heavy.len();
++            heavy.push(idx);
++        }
++    }
++    let mut matrix = reserved(n, "matrix rows")?;
++    let mut queue = reserved(n, "BFS queue")?;
++    for (start_pos, &start) in heavy.iter().enumerate() {
++        let mut row = reserved(n, "distance row")?;
++        row.resize(n, u32::MAX);
++        fill_row(mol, &positions, start, start_pos, &mut row, &mut queue);
++        matrix.push(row);
++    }
++    Ok(matrix)
++}
++
++fn fill_row(
++    mol: &Molecule,
++    positions: &[usize],
++    start: AtomIdx,
++    start_pos: usize,
++    row: &mut [u32],
++    queue: &mut Vec<AtomIdx>,
++) {
++    queue.clear();
++    row[start_pos] = 0;
++    queue.push(start);
++    let mut head = 0;
++    while head < queue.len() {
++        let current = queue[head];
++        head += 1;
++        let next_distance = row[positions[current.0 as usize]] + 1;
++        for (neighbor, _) in mol.neighbors(current) {
++            let pos = positions[neighbor.0 as usize];
++            if pos != usize::MAX && row[pos] == u32::MAX {
++                row[pos] = next_distance;
++                queue.push(neighbor);
++            }
++        }
++    }
++}
+diff --git a/crates/chematic-chem/src/lib.rs b/crates/chematic-chem/src/lib.rs
+index 850a781..a15db26 100644
+--- a/crates/chematic-chem/src/lib.rs
++++ b/crates/chematic-chem/src/lib.rs
+@@ -13,6 +13,7 @@ pub mod atropisomer;
+ pub mod brics;
+ pub mod cache;
+ pub mod canonical;
++pub mod checked_distance_matrix;
+ pub mod cip;
+ pub mod condensed;
+ pub mod descriptors;
+@@ -57,6 +58,11 @@ pub mod vsa;
+ pub mod workflow;
+ pub mod xlogp3;
+ 
++pub use checked_distance_matrix::{
++    MAX_NATIVE_DISTANCE_ATOMS, MAX_NATIVE_DISTANCE_BONDS, MAX_NATIVE_DISTANCE_ENTRIES,
++    NativeDistanceMatrixError, NativeDistanceMatrixLimits, try_topological_distance_matrix,
++    try_topological_distance_matrix_with_limits,
++};
+ pub use cip::{
+     CipAssignment, CipMode, CipModeAssignment, CipModeError, CipUnresolvedReason, EzCompleteness,
+     assign_cip, assign_cip_with_mode, assign_ez_bonds, assign_ez_bonds_with_mode,
+diff --git a/crates/chematic-chem/tests/native_distance_matrix.rs b/crates/chematic-chem/tests/native_distance_matrix.rs
+new file mode 100644
+index 0000000..1eb911f
+--- /dev/null
++++ b/crates/chematic-chem/tests/native_distance_matrix.rs
+@@ -0,0 +1,243 @@
++//! Allocation and native-graph contract for the #9647 sibling API.
++use chematic_chem::{
++    NativeDistanceMatrixError, NativeDistanceMatrixLimits, topological_distance_matrix,
++    try_topological_distance_matrix, try_topological_distance_matrix_with_limits,
++};
++use chematic_core::{Atom, AtomIdx, BondOrder, Element, Molecule, MoleculeBuilder};
++
++fn isolated_atoms(count: usize, element: Element) -> Molecule {
++    let mut builder = MoleculeBuilder::new();
++    for _ in 0..count {
++        builder.add_atom(Atom::new(element));
++    }
++    builder.build()
++}
++
++#[test]
++fn rejects_issue_boundaries_without_provenance_or_dense_allocation() {
++    for n in [1025, 46_341, 65_535, 65_536, 65_537] {
++        let mol = isolated_atoms(n, Element::C);
++        assert_eq!(
++            try_topological_distance_matrix(&mol),
++            Err(NativeDistanceMatrixError::ResourceLimit {
++                resource: "atoms",
++                requested: n,
++                limit: 1024
++            })
++        );
++    }
++}
++
++#[test]
++fn exact_cap_accepts_connected_and_disconnected_graphs() {
++    let mol = isolated_atoms(1024, Element::C);
++    let matrix = try_topological_distance_matrix(&mol).unwrap();
++    assert_eq!(matrix.len(), 1024);
++    for (i, row) in matrix.iter().enumerate() {
++        assert_eq!(row.len(), 1024);
++        for (j, &d) in row.iter().enumerate() {
++            assert_eq!(d, if i == j { 0 } else { u32::MAX });
++        }
++    }
++    let mut builder = MoleculeBuilder::from_molecule(&mol);
++    for i in 1..1024 {
++        builder
++            .add_bond(AtomIdx(i - 1), AtomIdx(i), BondOrder::Single)
++            .unwrap();
++    }
++    let matrix = try_topological_distance_matrix(&builder.build()).unwrap();
++    for (i, row) in matrix.iter().enumerate() {
++        for (j, &d) in row.iter().enumerate() {
++            assert_eq!(d as usize, i.abs_diff(j));
++        }
++    }
++}
++
++#[test]
++fn all_input_hydrogens_count_even_when_output_would_be_empty() {
++    assert_eq!(
++        try_topological_distance_matrix(&isolated_atoms(1024, Element::H)).unwrap(),
++        Vec::<Vec<u32>>::new()
++    );
++    assert!(matches!(
++        try_topological_distance_matrix(&isolated_atoms(1025, Element::H)),
++        Err(NativeDistanceMatrixError::ResourceLimit {
++            resource: "atoms",
++            ..
++        })
++    ));
++}
++
++#[test]
++fn hydrogens_are_excluded_as_endpoints_and_intermediates() {
++    let mol = chematic_smiles::parse("C[H]O.*.[2H].[H][H]").unwrap();
++    let expected = vec![
++        vec![0, u32::MAX, u32::MAX],
++        vec![u32::MAX, 0, u32::MAX],
++        vec![u32::MAX, u32::MAX, 0],
++    ];
++    assert_eq!(try_topological_distance_matrix(&mol).unwrap(), expected);
++    assert_eq!(topological_distance_matrix(&mol), expected);
++}
++
++#[test]
++fn tighter_limits_and_zero_budgets_are_exact() {
++    let mol = chematic_smiles::parse("CCC").unwrap();
++    for (limits, resource, requested, limit) in [
++        (
++            NativeDistanceMatrixLimits {
++                max_atoms: 2,
++                ..Default::default()
++            },
++            "atoms",
++            3,
++            2,
++        ),
++        (
++            NativeDistanceMatrixLimits {
++                max_bonds: 1,
++                ..Default::default()
++            },
++            "bonds",
++            2,
++            1,
++        ),
++        (
++            NativeDistanceMatrixLimits {
++                max_entries: 8,
++                ..Default::default()
++            },
++            "entries",
++            9,
++            8,
++        ),
++    ] {
++        assert_eq!(
++            try_topological_distance_matrix_with_limits(&mol, &limits),
++            Err(NativeDistanceMatrixError::ResourceLimit {
++                resource,
++                requested,
++                limit
++            })
++        );
++    }
++    let exact = NativeDistanceMatrixLimits {
++        max_atoms: 3,
++        max_bonds: 2,
++        max_entries: 9,
++    };
++    assert_eq!(
++        try_topological_distance_matrix_with_limits(&mol, &exact).unwrap(),
++        topological_distance_matrix(&mol)
++    );
++    let zero = NativeDistanceMatrixLimits {
++        max_atoms: 0,
++        max_bonds: 0,
++        max_entries: 0,
++    };
++    assert!(
++        try_topological_distance_matrix_with_limits(&MoleculeBuilder::new().build(), &zero)
++            .unwrap()
++            .is_empty()
++    );
++    assert!(
++        try_topological_distance_matrix_with_limits(&isolated_atoms(1, Element::C), &zero).is_err()
++    );
++}
++
++#[test]
++fn callers_cannot_raise_hard_atom_or_entry_cap() {
++    let limits = NativeDistanceMatrixLimits {
++        max_atoms: usize::MAX,
++        max_bonds: usize::MAX,
++        max_entries: usize::MAX,
++    };
++    assert!(matches!(
++        try_topological_distance_matrix_with_limits(&isolated_atoms(1025, Element::C), &limits),
++        Err(NativeDistanceMatrixError::ResourceLimit { limit: 1024, .. })
++    ));
++}
++
++#[test]
++fn dense_bond_cap_is_checked_including_hydrogens() {
++    let mut builder = MoleculeBuilder::new();
++    for _ in 0..182 {
++        builder.add_atom(Atom::new(Element::H));
++    }
++    for i in 0..182 {
++        for j in i + 1..182 {
++            builder
++                .add_bond(AtomIdx(i), AtomIdx(j), BondOrder::Single)
++                .unwrap();
++        }
++    }
++    let mol = builder.build();
++    assert_eq!(mol.bond_count(), 16_471);
++    let limits = NativeDistanceMatrixLimits {
++        max_bonds: usize::MAX,
++        ..Default::default()
++    };
++    assert!(matches!(
++        try_topological_distance_matrix_with_limits(&mol, &limits),
++        Err(NativeDistanceMatrixError::ResourceLimit {
++            resource: "bonds",
++            requested: 16_471,
++            limit: 16_384
++        })
++    ));
++}
++
++#[test]
++fn exact_bond_cap_is_accepted_and_next_bond_is_rejected() {
++    let mut builder = MoleculeBuilder::new();
++    for _ in 0..182 {
++        builder.add_atom(Atom::new(Element::H));
++    }
++    let edges: Vec<_> = (0..182)
++        .flat_map(|i| (i + 1..182).map(move |j| (i, j)))
++        .collect();
++    for &(i, j) in &edges[..16_384] {
++        builder
++            .add_bond(AtomIdx(i), AtomIdx(j), BondOrder::Single)
++            .unwrap();
++    }
++    let mol = builder.build();
++    assert!(try_topological_distance_matrix(&mol).unwrap().is_empty());
++    let mut builder = MoleculeBuilder::from_molecule(&mol);
++    let (i, j) = edges[16_384];
++    builder
++        .add_bond(AtomIdx(i), AtomIdx(j), BondOrder::Single)
++        .unwrap();
++    assert!(matches!(
++        try_topological_distance_matrix(&builder.build()),
++        Err(NativeDistanceMatrixError::ResourceLimit {
++            resource: "bonds",
++            requested: 16_385,
++            limit: 16_384
++        })
++    ));
++}
++
++#[test]
++fn ordinary_native_graph_results_match_existing_api() {
++    for smiles in [
++        "CCC",
++        "C=CO",
++        "c1ccccc1",
++        "C1CC2CCC1C2",
++        "C.O",
++        "[H]C([H])O",
++        "*CC",
++        "N->[Cu+2]",
++        "[Na+].[Cl-]",
++        "[2H]OC",
++        "F/C=C\\Cl",
++    ] {
++        let mol = chematic_smiles::parse(smiles).unwrap();
++        assert_eq!(
++            try_topological_distance_matrix(&mol).unwrap(),
++            topological_distance_matrix(&mol),
++            "{smiles}"
++        );
++    }
++}
+diff --git a/crates/chematic-py/python/chematic/__init__.pyi b/crates/chematic-py/python/chematic/__init__.pyi
+index 4809a30..12a53ea 100644
+--- a/crates/chematic-py/python/chematic/__init__.pyi
++++ b/crates/chematic-py/python/chematic/__init__.pyi
+@@ -2182,13 +2182,20 @@ class Mol:
+         """
+         ...
+ 
+-    def topological_distance_matrix(self) -> list[list[int]]:
++    def topological_distance_matrix(
++        self, *, max_atoms: int | None = None, max_bonds: int | None = None,
++        max_entries: int | None = None,
++    ) -> list[list[int]]:
+         """Topological (graph) distance matrix for all heavy atoms.
+ 
+         Entry ``[i][j]`` is the shortest path length in bonds between heavy atom
+         ``i`` and heavy atom ``j``. Diagonal entries are 0.  Disconnected atoms
+-        get ``2147483647`` (``u32::MAX``). Row/column order follows atom-insertion
+-        order (same as :meth:`hybridization_per_atom` and other per-atom vectors).
++        get ``4294967295`` (``u32::MAX``). Row/column order follows atom-insertion
++        order with hydrogen omitted; H cannot be an intermediate path vertex.
++        Wildcard atoms are included. Hard caps: 1024 input atoms (including H),
++        16384 input bonds, 1048576 output entries. Keyword budgets may only
++        tighten these caps. Exceeding a cap or failing native allocation raises
++        ValueError. Empty/H-only graphs return []; no RDKit sanitization occurs.
+ 
+         Useful for scaffold graph analysis (ScaffoldGraph-style topology),
+         molecular topology descriptors, and custom fingerprinting.
+diff --git a/crates/chematic-py/src/mol_methods/extended.rs b/crates/chematic-py/src/mol_methods/extended.rs
+index ac633d4..30a57b8 100644
+--- a/crates/chematic-py/src/mol_methods/extended.rs
++++ b/crates/chematic-py/src/mol_methods/extended.rs
+@@ -167,12 +167,26 @@ impl Mol {
+ 
+     /// Topological (graph) distance matrix — N×N shortest-path distances.
+     ///
+-    /// Returns a list of N lists of N integers (atom graph distances).
+-    /// Equivalent to RDKit's ``rdmolops.GetDistanceMatrix(mol)``.
+-    ///
+-    /// Note: O(N²) memory — use with caution on large molecules (>200 atoms).
+-    fn topological_distance_matrix(&self) -> Vec<Vec<u32>> {
+-        chematic_chem::topological_distance_matrix(&self.inner)
++    /// Uses the native non-hydrogen subgraph in original atom order. Disconnected
++    /// entries are ``4294967295``. All input atoms (including H) count towards
++    /// the hard 1024-atom cap; all bonds count towards the 16384-bond cap.
++    /// Keyword budgets can only tighten the hard caps. Limit/allocation failures
++    /// raise ValueError, without returning a partial matrix.
++    #[pyo3(signature = (*, max_atoms=None, max_bonds=None, max_entries=None))]
++    fn topological_distance_matrix(
++        &self,
++        max_atoms: Option<usize>,
++        max_bonds: Option<usize>,
++        max_entries: Option<usize>,
++    ) -> PyResult<Vec<Vec<u32>>> {
++        let defaults = chematic_chem::NativeDistanceMatrixLimits::default();
++        let limits = chematic_chem::NativeDistanceMatrixLimits {
++            max_atoms: max_atoms.unwrap_or(defaults.max_atoms),
++            max_bonds: max_bonds.unwrap_or(defaults.max_bonds),
++            max_entries: max_entries.unwrap_or(defaults.max_entries),
++        };
++        chematic_chem::try_topological_distance_matrix_with_limits(&self.inner, &limits)
++            .map_err(|error| pyo3::exceptions::PyValueError::new_err(error.to_string()))
+     }
+ 
+     // -----------------------------------------------------------------------
+diff --git a/crates/chematic-py/tests/test_native_distance_matrix.py b/crates/chematic-py/tests/test_native_distance_matrix.py
+new file mode 100644
+index 0000000..25aacc4
+--- /dev/null
++++ b/crates/chematic-py/tests/test_native_distance_matrix.py
+@@ -0,0 +1,58 @@
++"""Native heavy-atom matrix boundaries; independent of the RDKit-prepared API."""
++import chematic
++import pytest
++
++
++@pytest.mark.parametrize("n", [1025, 46341, 65535, 65536, 65537])
++def test_issue_boundaries_reject_before_allocating(n):
++    mol = chematic.from_smiles(".".join(["C"] * n))
++    for kwargs in [{}, {"max_atoms": 2**63, "max_entries": 2**63}]:
++        with pytest.raises(ValueError, match=f"{n} atoms exceeds 1024"):
++            mol.topological_distance_matrix(**kwargs)
++
++
++def test_exact_atom_cap_and_longest_path():
++    matrix = chematic.from_smiles("C" * 1024).topological_distance_matrix()
++    assert len(matrix) == 1024
++    assert all(len(row) == 1024 for row in matrix)
++    assert matrix[0][-1] == matrix[-1][0] == 1023
++    assert matrix[512][512] == 0
++
++
++@pytest.mark.parametrize("kwargs, message", [
++    ({"max_atoms": 2}, "3 atoms exceeds 2"),
++    ({"max_bonds": 1}, "2 bonds exceeds 1"),
++    ({"max_entries": 8}, "9 entries exceeds 8"),
++])
++def test_tighter_budgets(kwargs, message):
++    with pytest.raises(ValueError, match=message):
++        chematic.from_smiles("CCC").topological_distance_matrix(**kwargs)
++
++
++def test_exact_budgets_and_native_disconnected_sentinel():
++    assert chematic.from_smiles("CCC").topological_distance_matrix(
++        max_atoms=3, max_bonds=2, max_entries=9) == [[0, 1, 2], [1, 0, 1], [2, 1, 0]]
++    assert chematic.from_smiles("C.O").topological_distance_matrix() == [[0, 4294967295], [4294967295, 0]]
++
++
++def test_explicit_h_input_counts_before_filtering():
++    mol = chematic.from_smiles(".".join(["[H]C"] * 513))
++    with pytest.raises(ValueError, match="1026 atoms exceeds 1024"):
++        mol.topological_distance_matrix()
++
++
++def test_hydrogen_paths_and_wildcards_keep_native_semantics():
++    assert chematic.from_smiles("C[H]O.*").topological_distance_matrix() == [
++        [0, 4294967295, 4294967295], [4294967295, 0, 4294967295], [4294967295, 4294967295, 0]]
++    assert chematic.from_smiles("[2H].[H][H]").topological_distance_matrix() == []
++
++
++@pytest.mark.parametrize("argument", ["max_atoms", "max_bonds", "max_entries"])
++def test_negative_limits_rejected(argument):
++    with pytest.raises(OverflowError):
++        chematic.from_smiles("CC").topological_distance_matrix(**{argument: -1})
++
++
++def test_no_positional_budget_arguments():
++    with pytest.raises(TypeError):
++        chematic.from_smiles("CC").topological_distance_matrix(2)
+diff --git a/docs/native-distance-matrix-limits.md b/docs/native-distance-matrix-limits.md
+new file mode 100644
+index 0000000..158bc06
+--- /dev/null
++++ b/docs/native-distance-matrix-limits.md
+@@ -0,0 +1,149 @@
++# Bounded native heavy-atom distance matrices
++
++This isolated, unreleased candidate extends the allocation boundary motivated by
++[RDKit #9647](https://github.com/rdkit/rdkit/issues/9647) to the native graph API.
++The issue was OPEN when checked on 2026-10-15; its latest update was
++2026-10-10T16:48:18Z. The upstream report describes 32-bit multiplication
++overflow and heap corruption at 65,536 atoms. That C++ crash reproducer was
++not executed here. chematic's safe Rust had a different remaining problem:
++the Python native matrix method called an unbounded, infallibly allocating
++native Rust function.
++
++The earlier [RDKit-compatible matrix guards](rdkit-distance-matrix-limits.md)
++already protected `rdkit_distance_matrix` and `rdkit_distance_matrix_3d`;
++the [adjacency API](rdkit-graph-queries.md) was also bounded. This candidate
++adds a checked native entry point and routes the existing Python
++`Mol.topological_distance_matrix()` through it.
++
++## API
++
++```python
++import chematic
++
++mol = chematic.from_smiles("CCC")
++assert mol.topological_distance_matrix() == [
++    [0, 1, 2], [1, 0, 1], [2, 1, 0]
++]
++assert mol.topological_distance_matrix(
++    max_atoms=3, max_bonds=2, max_entries=9
++) == [[0, 1, 2], [1, 0, 1], [2, 1, 0]]
++
++# Keyword budgets can tighten the hard limits.
++# mol.topological_distance_matrix(max_entries=8) raises ValueError.
++```
++
++Rust exports from `chematic_chem`:
++
++```rust
++use chematic_chem::{
++    NativeDistanceMatrixLimits,
++    try_topological_distance_matrix,
++    try_topological_distance_matrix_with_limits,
++};
++
++let mol = chematic_smiles::parse("CCC")?;
++let distances = try_topological_distance_matrix(&mol)?;
++assert_eq!(distances[0][2], 2);
++let limits = NativeDistanceMatrixLimits {
++    max_atoms: 3,
++    max_bonds: 2,
++    max_entries: 9,
++};
++assert_eq!(try_topological_distance_matrix_with_limits(&mol, &limits)?, distances);
++# Ok::<(), Box<dyn std::error::Error>>(())
++```
++
++Errors use `NativeDistanceMatrixError`, with `ResourceLimit`,
++`DimensionOverflow` and `Allocation` variants. Python maps these to
++`ValueError`; negative or out-of-range Python integers fail unsigned conversion
++with `OverflowError`. Budget arguments are keyword-only. Existing successful
++no-argument calls retain their nested integer-list results.
++
++## Limits and allocation order
++
++| Resource | Hard cap | Counted before exclusion |
++| --- | ---: | --- |
++| Input atoms | 1024 | All atoms, including H and isotope H |
++| Input bonds | 16384 | All bonds, including H bonds |
++| Output entries | 1048576 | Square of non-H atom count |
++
++Caller budgets are intersected with these hard caps; oversized budgets cannot
++raise them. Zero is a valid tighter budget. An empty native graph satisfies
++all zero budgets, while any input atom violates `max_atoms=0`.
++
++Atom and bond counts are checked before graph traversal or buffer creation.
++The heavy count then supplies a checked dimension product, checked against
++the entry budget before allocating. Atom-position mapping, heavy indices,
++outer rows, each distance row and the reusable BFS queue all use
++`try_reserve_exact`. The reserved queue holds at most one entry per heavy atom.
++Every failure returns an error and no partial matrix.
++
++The dense u32 payload is at most **4 MiB**; this excludes row headers, mapping,
++queue, source graph, allocator overhead and Python objects. Runtime is
++O(H × (V + E)), with bounded input atoms and bonds. No sanitization, prepared
++RDKit model, SMILES provenance or derived-cache population is required.
++
++## Native semantics
++
++- Rows/columns follow original atom order with every atomic-number-1 atom
++  omitted, including isotopic H. Wildcard atoms (atomic number zero) remain.
++- Distances count bonds in the induced non-H subgraph. Hydrogen cannot connect
++  two retained atoms. Bond order, aromaticity, dative direction and coordinates
++  do not weight these distances.
++- The diagonal is zero. Disconnected entries are **4294967295 (`u32::MAX`)**.
++  The Python stub previously printed the incorrect decimal 2147483647; its
++  documentation is corrected without changing the value.
++- Empty and H-only native graphs return an empty matrix within input budgets.
++  The SMILES parser itself still rejects an empty string.
++
++This is the existing native heavy-subgraph contract. RDKit's ordinary matrix
++uses a different disconnected sentinel and can retain explicit H. The parity
++oracle therefore explicitly deletes all H vertices without sanitizing and
++normalizes RDKit's disconnected `1e8` to `u32::MAX`.
++
++The legacy infallible Rust `topological_distance_matrix` remains available for
++source compatibility. Native descriptors that call it, other descriptor
++allocations, WASM bindings and parser input budgets are outside this change.
++This candidate does not claim repository-wide dense-allocation protection.
++
++## Validation
++
++- Rust: **957 passed**, comprising 948 existing library tests and nine new
++  integration tests; one pre-existing library test remains ignored.
++- Python: **39 passed**, comprising 16 new tests, four existing RDKit matrix
++  guard tests and 19 graph-query tests.
++- RDKit **2026.09.1**: **1104 exact matrices / 48702 elements**, zero mismatches.
++  The packet exhausts all 1024 simple labeled five-carbon graphs plus 18
++  small boundary recipes and chains/cycles through 32 atoms. It includes
++  disconnected graphs, rings, multiple/aromatic/dative bonds, explicit and
++  isotope H, H bridges, wildcard atoms and stereochemical annotations.
++- Native and Python reject 1025/46341/65535/65536/65537 input atoms before
++  dense allocation, including attempts to raise the cap. Rust also tests exact
++  1024-atom connected/disconnected matrices, exact 16384-bond acceptance,
++  16385-bond rejection and tighter entry limits. Graphs built without SMILES
++  provenance prove the native path needs no prepared model.
++
++Native allocation-failure branches are implemented with fallible reservation;
++allocator failure was not injected. The upstream oversized C++ crash was not
++executed. Small-graph agreement does not establish general descriptor parity.
++
++Synthetic recipes, original licensing, normalization and oracle settings are in
++`validation/rdkit_issues/native-distance/fixtures.json`. Each generated record's
++input and expected-matrix SHA-256 are saved in
++`validation/results/native-distance-matrix-2026-10-15.json`.
++The validator is `scripts/validate_native_distance_matrix.py`.
++
++```sh
++cargo test -p chematic-chem --lib --test native_distance_matrix --offline --quiet
++cargo clippy -p chematic-chem -p chematic-py --all-targets --offline --no-deps -- -D warnings
++python3 -m pytest crates/chematic-py/tests/test_native_distance_matrix.py crates/chematic-py/tests/test_rdkit_matrix_limits.py crates/chematic-py/tests/test_rdkit_graph_queries.py -q
++python3 scripts/validate_native_distance_matrix.py
++```
++
++The candidate is `/private/tmp/chematic-native-matrix`, inherited from
++`/private/tmp/chematic-pdb-selection`. Its incremental patch is
++`validation/rdkit_issues/native-distance-matrix-2026-10-15.patch`, applicable
++to that inherited source. Only documentation, patch and evidence are copied
++back to the primary checkout; source changes remain isolated, uncommitted
++and unpushed. The sparse Git baseline commit is a local comparison anchor,
++not an integration commit.
+diff --git a/mkdocs.yml b/mkdocs.yml
+index a6cebb1..8ab8947 100644
+--- a/mkdocs.yml
++++ b/mkdocs.yml
+@@ -87,6 +87,7 @@ nav:
+     - Language Bindings Cross-Reference: language-bindings.md
+     - Error Handling & Limits: error-and-limits.md
+   - Reliability:
++    - Bounded Native Distance Matrices: native-distance-matrix-limits.md
+     - Validation vs RDKit: validation.md
+     - Compatibility Scope: compatibility-scope.md
+     - Detailed RDKit Comparison: rdkit-comparison.md
+diff --git a/scripts/validate_native_distance_matrix.py b/scripts/validate_native_distance_matrix.py
+new file mode 100644
+index 0000000..c694914
+--- /dev/null
++++ b/scripts/validate_native_distance_matrix.py
+@@ -0,0 +1,98 @@
++#!/usr/bin/env python3
++"""Pinned, independent heavy-subgraph distance oracle for RDKit #9647 scope."""
++from __future__ import annotations
++
++import hashlib
++import itertools
++import json
++import pathlib
++import sys
++
++import chematic
++from rdkit import Chem, rdBase
++
++ROOT = pathlib.Path(__file__).resolve().parents[1]
++FIXTURES = ROOT / "validation/rdkit_issues/native-distance/fixtures.json"
++OUTPUT = ROOT / "validation/results/native-distance-matrix-2026-10-15.json"
++
++
++def digest(value):
++    data = json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
++    return hashlib.sha256(data).hexdigest()
++
++
++def packet():
++    fixture = json.loads(FIXTURES.read_text())
++    for i, smiles in enumerate(fixture["smiles"]):
++        yield f"recipe-{i:02d}", smiles
++    edges = list(itertools.combinations(range(5), 2))
++    for mask in range(1024):
++        model = Chem.RWMol()
++        for _ in range(5):
++            model.AddAtom(Chem.Atom(6))
++        for bit, (a, b) in enumerate(edges):
++            if mask & (1 << bit):
++                model.AddBond(a, b, Chem.BondType.SINGLE)
++        smiles = Chem.MolToSmiles(model, canonical=False)
++        yield f"graph5-{mask:04d}", smiles
++    for size in range(1, 33):
++        yield f"chain-{size:02d}", "C" * size
++        if size > 2:
++            yield f"cycle-{size:02d}", "C1" + "C" * (size - 1) + "1"
++
++
++def oracle(smiles):
++    params = Chem.SmilesParserParams()
++    params.removeHs = False
++    params.sanitize = False
++    mol = Chem.MolFromSmiles(smiles, params)
++    assert mol is not None, smiles
++    model = Chem.RWMol(mol)
++    # Explicit vertex deletion avoids RDKit's isotope/bridging-H removal policy.
++    for atom in reversed(list(mol.GetAtoms())):
++        if atom.GetAtomicNum() == 1:
++            model.RemoveAtom(atom.GetIdx())
++    matrix = Chem.GetDistanceMatrix(model, useBO=False, useAtomWts=False)
++    return [[4294967295 if value >= 1e8 else int(value) for value in row] for row in matrix]
++
++
++def main():
++    assert rdBase.rdkitVersion == "2026.09.1", rdBase.rdkitVersion
++    records = []
++    cells = 0
++    for identifier, smiles in packet():
++        expected = oracle(smiles)
++        actual = chematic.from_smiles(smiles).topological_distance_matrix()
++        assert actual == expected, (identifier, smiles, actual, expected)
++        cells += sum(map(len, actual))
++        records.append(dict(id=identifier, smiles=smiles, payload_sha256=digest(smiles),
++                            expected_sha256=digest(expected), rows=len(actual)))
++    guards = []
++    for n in [1025, 46341, 65535, 65536, 65537]:
++        mol = chematic.from_smiles(".".join(["C"] * n))
++        try:
++            mol.topological_distance_matrix(max_atoms=sys.maxsize)
++        except ValueError as error:
++            assert f"{n} atoms exceeds 1024" in str(error), str(error)
++            guards.append(dict(input_atoms=n, exception=type(error).__name__, message=str(error)))
++        else:
++            raise AssertionError(f"missing cap: {n}")
++    result = dict(
++        schema_version=1, issue=dict(number=9647, state="OPEN", verified_date="2026-10-15",
++            url="https://github.com/rdkit/rdkit/issues/9647", updated_at="2026-10-10T16:48:18Z"),
++        scope="Checked native heavy-subgraph matrix API and existing Python method; no descriptor-wide guard claim",
++        oracle=dict(rdkit=rdBase.rdkitVersion, version_pin="2026.09.1",
++            algorithm="Explicit H-vertex deletion, RDKit unweighted distance matrix, disconnected sentinel normalization"),
++        fixtures=dict(path=str(FIXTURES.relative_to(ROOT)), sha256=hashlib.sha256(FIXTURES.read_bytes()).hexdigest(),
++                      provenance=json.loads(FIXTURES.read_text())),
++        results=dict(exact_matrix_cases=len(records), exact_cells=cells, mismatches=0,
++                     oversized_input_guards=guards, upstream_oversized_crash_executed=False),
++        records=records,
++    )
++    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
++    OUTPUT.write_text(json.dumps(result, indent=2) + "\n")
++    print(json.dumps(result["results"], indent=2))
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/validation/rdkit_issues/native-distance/fixtures.json b/validation/rdkit_issues/native-distance/fixtures.json
+new file mode 100644
+index 0000000..13bab42
+--- /dev/null
++++ b/validation/rdkit_issues/native-distance/fixtures.json
+@@ -0,0 +1,12 @@
++{
++  "schema_version": 1,
++  "provenance": "Project-authored minimal synthetic graph recipes; no upstream attachments or molecule corpus copied.",
++  "license": "MIT OR Apache-2.0",
++  "redistribution": "Permitted under the project dual license.",
++  "minimization": "Exhaust all 1024 simple labeled five-carbon graphs, plus short native-semantic boundary recipes.",
++  "oracle": "RDKit 2026.09.1; SmilesParserParams removeHs=False, sanitize=False; remove every atomic-number-1 vertex explicitly before Chem.GetDistanceMatrix(useBO=False,useAtomWts=False). Normalize disconnected 1e8 to u32::MAX.",
++  "expected_units": "Unweighted heavy-subgraph bond counts, no length units",
++  "tolerance": 0,
++  "five_vertex_graph_masks": [0, 1023],
++  "smiles": ["CCC", "C=CO", "c1ccccc1", "C1CC2CCC1C2", "C.O", "[H]C([H])O", "*CC", "N->[Cu+2]", "[Na+].[Cl-]", "[2H]OC", "F/C=C\\Cl", "C[H]O.*", "[2H].[H][H]", "[H]", "[13CH3]O", "CC(C)(F)Cl", "C1CC1.CC", "[C@H](F)(Cl)Br"]
++}

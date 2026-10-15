@@ -1,0 +1,1335 @@
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 5a94882..8fc26ce 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -214,6 +214,7 @@ jobs:
+           - { package: chematic-mol, target: format_binding_parity }
+           - { package: chematic-mol, target: mmcif_pqr_integration }
+           - { package: chematic-mol, target: mmcif_residue_contract }
++          - { package: chematic-mol, target: mmcif_pdb_checked }
+           - { package: chematic-mol, target: qcschema }
+           - { package: chematic-mol, target: square_planar_mol_io }
+           - { package: chematic-mol, target: stereo2d_ez_reader_integration }
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 8f9bf83..db06233 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -12,6 +12,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
+ 
+ ### Added
+ 
++- Added checked single-model mmCIF-to-PDB coordinate blocks in Rust/Python.
++  Overlong residue names and projected residue collisions fail explicitly;
++  namespace/metadata loss requires consent and numeric rounding is reported.
++
+ - Corrected native carbon-stereoisomer candidate selection so CH2 and
+   identical terminal ligands do not consume the six-site budget; aminoadamantane
+   now yields four assignments. Enumeration retains graph metadata and Python
+diff --git a/crates/chematic-mol/src/lib.rs b/crates/chematic-mol/src/lib.rs
+index df3c46b..b5d9e36 100644
+--- a/crates/chematic-mol/src/lib.rs
++++ b/crates/chematic-mol/src/lib.rs
+@@ -32,6 +32,7 @@ pub mod ket;
+ pub mod lammps_data;
+ pub mod lammps_dump;
+ pub mod mmcif;
++pub mod mmcif_pdb;
+ pub mod mol2000;
+ pub mod mol2_source;
+ pub mod mol2_tripos;
+@@ -255,3 +256,5 @@ pub use mmcif::residues::{
+     MmcifAtomIdentity, MmcifResidue, MmcifResidueDocument, MmcifResidueError, MmcifResidueIdentity,
+     parse_mmcif_residues, parse_mmcif_residues_with_limits,
+ };
++
++pub use mmcif_pdb::{MmcifPdbError, MmcifPdbReport, PdbNamespace, write_mmcif_pdb_checked};
+diff --git a/crates/chematic-mol/src/mmcif_pdb.rs b/crates/chematic-mol/src/mmcif_pdb.rs
+new file mode 100644
+index 0000000..56ea75a
+--- /dev/null
++++ b/crates/chematic-mol/src/mmcif_pdb.rs
+@@ -0,0 +1,341 @@
++//! Checked single-model atom_site to PDB coordinate-record projection.
++//! Independently implemented from wwPDB format 3.3; no topology inference.
++use crate::{MmcifAtomRecord, MmcifResidueDocument, MmcifResidueIdentity};
++use std::collections::{HashMap, HashSet};
++
++#[derive(Debug, Clone, Copy, PartialEq, Eq)]
++pub enum PdbNamespace {
++    Author,
++    Label,
++}
++
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub enum MmcifPdbError {
++    EmptyInput,
++    InvalidDocument,
++    UnsupportedModels,
++    MetadataLossRequiresConsent,
++    InvalidField { atom: usize, field: &'static str },
++    DuplicateSerial { atom: usize, serial: i64 },
++    ResidueCollision { first: usize, second: usize },
++    AtomCollision { first: usize, second: usize },
++}
++impl core::fmt::Display for MmcifPdbError {
++    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
++        match self {
++            Self::EmptyInput => write!(f, "PDB coordinate output requires at least one atom"),
++            Self::InvalidDocument => write!(
++                f,
++                "mmCIF residue document has inconsistent atom/residue references"
++            ),
++            Self::UnsupportedModels => {
++                write!(f, "checked PDB coordinate output supports model 1 only")
++            }
++            Self::MetadataLossRequiresConsent => write!(
++                f,
++                "PDB cannot preserve complete mmCIF identity namespaces; set allow_metadata_loss=true and retain the source sidecar"
++            ),
++            Self::InvalidField { atom, field } => write!(
++                f,
++                "mmCIF atom {atom}: {field} is missing, invalid or cannot fit its PDB field"
++            ),
++            Self::DuplicateSerial { atom, serial } => {
++                write!(f, "mmCIF atom {atom}: duplicate PDB serial {serial}")
++            }
++            Self::ResidueCollision { first, second } => write!(
++                f,
++                "mmCIF residues {first} and {second} collapse to the same PDB residue identifier"
++            ),
++            Self::AtomCollision { first, second } => write!(
++                f,
++                "mmCIF atoms {first} and {second} collapse to the same PDB atom name/alternate location"
++            ),
++        }
++    }
++}
++impl std::error::Error for MmcifPdbError {}
++
++#[derive(Debug, Clone, PartialEq)]
++pub struct MmcifPdbReport {
++    pub pdb: String,
++    /// Stable codes for information absent or rounded in the PDB block.
++    pub losses: Vec<&'static str>,
++    pub max_coordinate_rounding_error: f64,
++    pub max_occupancy_rounding_error: f64,
++    pub max_b_iso_rounding_error: f64,
++}
++
++#[derive(Clone)]
++struct Position {
++    chain: String,
++    seq: i64,
++    icode: char,
++    name: String,
++}
++
++fn text(
++    value: Option<&str>,
++    width: usize,
++    atom: usize,
++    field: &'static str,
++) -> Result<String, MmcifPdbError> {
++    value
++        .filter(|s| !s.is_empty() && s.len() <= width && s.bytes().all(|b| b.is_ascii_graphic()))
++        .map(str::to_owned)
++        .ok_or(MmcifPdbError::InvalidField { atom, field })
++}
++fn character(value: Option<&str>, atom: usize, field: &'static str) -> Result<char, MmcifPdbError> {
++    match value {
++        None => Ok(' '),
++        Some(s) => text(Some(s), 1, atom, field).and_then(|s| {
++            if s.as_bytes()[0].is_ascii_alphanumeric() {
++                Ok(s.as_bytes()[0] as char)
++            } else {
++                Err(MmcifPdbError::InvalidField { atom, field })
++            }
++        }),
++    }
++}
++fn position(
++    id: &MmcifResidueIdentity,
++    namespace: PdbNamespace,
++    atom: usize,
++) -> Result<Position, MmcifPdbError> {
++    let (chain, name, seq) = match namespace {
++        PdbNamespace::Author => (
++            id.auth_asym_id.as_deref(),
++            id.auth_comp_id.as_deref(),
++            id.auth_seq_id
++                .as_ref()
++                .and_then(|s| s.parse::<i64>().ok().filter(|n| n.to_string() == *s)),
++        ),
++        PdbNamespace::Label => (
++            id.label_asym_id.as_deref(),
++            id.label_comp_id.as_deref(),
++            id.label_seq_id,
++        ),
++    };
++    let seq = seq
++        .filter(|v| (-999..=9999).contains(v))
++        .ok_or(MmcifPdbError::InvalidField {
++            atom,
++            field: "residue number",
++        })?;
++    let chain = text(chain, 1, atom, "chain identifier")?;
++    if !chain.as_bytes()[0].is_ascii_alphanumeric() {
++        return Err(MmcifPdbError::InvalidField {
++            atom,
++            field: "chain identifier",
++        });
++    }
++    Ok(Position {
++        chain,
++        name: text(name, 3, atom, "residue name")?,
++        seq,
++        icode: character(id.insertion_code.as_deref(), atom, "insertion code")?,
++    })
++}
++fn number(
++    v: f64,
++    width: usize,
++    precision: usize,
++    atom: usize,
++    field: &'static str,
++) -> Result<(String, f64), MmcifPdbError> {
++    let invalid = || MmcifPdbError::InvalidField { atom, field };
++    if !v.is_finite() {
++        return Err(invalid());
++    }
++    let s = format!("{v:>width$.precision$}");
++    if s.len() != width {
++        return Err(invalid());
++    }
++    let rounded: f64 = s.trim().parse().map_err(|_| invalid())?;
++    Ok((s, (rounded - v).abs()))
++}
++fn row(
++    a: &MmcifAtomRecord,
++    name: &str,
++    alt: char,
++    p: &Position,
++    i: usize,
++) -> Result<(String, [f64; 3]), MmcifPdbError> {
++    if !matches!(a.group_pdb.as_str(), "ATOM" | "HETATM") {
++        return Err(MmcifPdbError::InvalidField {
++            atom: i,
++            field: "record kind",
++        });
++    }
++    if !(1..=99999).contains(&a.serial) {
++        return Err(MmcifPdbError::InvalidField {
++            atom: i,
++            field: "serial",
++        });
++    }
++    let name = if name.len() < 4
++        && a.element.symbol().len() == 1
++        && !name.as_bytes()[0].is_ascii_digit()
++    {
++        format!(" {name:<3}")
++    } else {
++        format!("{name:<4}")
++    };
++    let (x, dx) = number(a.x, 8, 3, i, "x")?;
++    let (y, dy) = number(a.y, 8, 3, i, "y")?;
++    let (z, dz) = number(a.z, 8, 3, i, "z")?;
++    if !(0.0..=1.0).contains(&a.occupancy) {
++        return Err(MmcifPdbError::InvalidField {
++            atom: i,
++            field: "occupancy",
++        });
++    }
++    let (occupancy, do_) = number(a.occupancy, 6, 2, i, "occupancy")?;
++    let (b, db) = number(a.b_iso, 6, 2, i, "B factor")?;
++    let q = a.formal_charge.unwrap_or(0);
++    if !(-9..=9).contains(&q) {
++        return Err(MmcifPdbError::InvalidField {
++            atom: i,
++            field: "formal charge",
++        });
++    }
++    let charge = if q == 0 {
++        "  ".into()
++    } else {
++        format!("{}{}", q.abs(), if q > 0 { '+' } else { '-' })
++    };
++    let out = format!(
++        "{:<6}{:>5} {}{}{:>3} {}{:>4}{}   {}{}{}{}{}          {:>2}{}\n",
++        a.group_pdb,
++        a.serial,
++        name,
++        alt,
++        p.name,
++        p.chain,
++        p.seq,
++        p.icode,
++        x,
++        y,
++        z,
++        occupancy,
++        b,
++        a.element.symbol().to_ascii_uppercase(),
++        charge
++    );
++    Ok((out, [dx.max(dy).max(dz), do_, db]))
++}
++
++fn validate_document(doc: &MmcifResidueDocument) -> Result<(), MmcifPdbError> {
++    let n = doc.parsed.atoms.len();
++    if n == 0 {
++        return Err(MmcifPdbError::EmptyInput);
++    }
++    if n > 99999 {
++        return Err(MmcifPdbError::InvalidField {
++            atom: 99999,
++            field: "atom count",
++        });
++    }
++    if doc.atom_ids.len() != n || doc.atom_to_residue.len() != n {
++        return Err(MmcifPdbError::InvalidDocument);
++    }
++    let mut seen = vec![false; n];
++    for (r, residue) in doc.residues.iter().enumerate() {
++        if residue.atom_indices.is_empty() {
++            return Err(MmcifPdbError::InvalidDocument);
++        }
++        if residue.identity.model_num != 1 {
++            return Err(MmcifPdbError::UnsupportedModels);
++        }
++        for &a in &residue.atom_indices {
++            if a >= n
++                || seen[a]
++                || doc.atom_to_residue[a] != r
++                || doc.parsed.atoms[a].model_num != 1
++            {
++                return Err(MmcifPdbError::InvalidDocument);
++            }
++            seen[a] = true;
++        }
++    }
++    if seen.iter().any(|s| !*s) {
++        return Err(MmcifPdbError::InvalidDocument);
++    }
++    Ok(())
++}
++
++/// Project one model's atom_site records to fixed-width PDB coordinate lines.
++/// Names and identities never truncate or renumber, even after loss consent.
++/// Complete original namespaces live in the input document; retain it as the
++/// sidecar. The block contains ATOM/HETATM and END only (no topology/TER).
++pub fn write_mmcif_pdb_checked(
++    doc: &MmcifResidueDocument,
++    namespace: PdbNamespace,
++    allow_metadata_loss: bool,
++) -> Result<MmcifPdbReport, MmcifPdbError> {
++    validate_document(doc)?;
++    let mut positions = Vec::with_capacity(doc.residues.len());
++    let mut projected = HashMap::new();
++    for (r, residue) in doc.residues.iter().enumerate() {
++        let p = position(&residue.identity, namespace, residue.atom_indices[0])?;
++        let key = (p.chain.clone(), p.seq, p.icode);
++        if let Some(first) = projected.insert(key, r) {
++            return Err(MmcifPdbError::ResidueCollision { first, second: r });
++        }
++        positions.push(p);
++    }
++    let mut serials = HashSet::new();
++    let mut atom_names = HashMap::new();
++    let mut report = MmcifPdbReport {
++        pdb: String::new(),
++        losses: vec!["identity_namespaces"],
++        max_coordinate_rounding_error: 0.0,
++        max_occupancy_rounding_error: 0.0,
++        max_b_iso_rounding_error: 0.0,
++    };
++    for (i, a) in doc.parsed.atoms.iter().enumerate() {
++        if !serials.insert(a.serial) {
++            return Err(MmcifPdbError::DuplicateSerial {
++                atom: i,
++                serial: a.serial,
++            });
++        }
++        let id = &doc.atom_ids[i];
++        let selected = match namespace {
++            PdbNamespace::Author => id.auth_atom_id.as_deref(),
++            PdbNamespace::Label => id.label_atom_id.as_deref(),
++        };
++        let name = text(selected, 4, i, "atom name")?;
++        let alt = character(id.alt_id.as_deref(), i, "alternate location")?;
++        if let Some(first) = atom_names.insert((doc.atom_to_residue[i], name.clone(), alt), i) {
++            return Err(MmcifPdbError::AtomCollision { first, second: i });
++        }
++        let (line, errors) = row(a, &name, alt, &positions[doc.atom_to_residue[i]], i)?;
++        report.pdb.push_str(&line);
++        report.max_coordinate_rounding_error = report.max_coordinate_rounding_error.max(errors[0]);
++        report.max_occupancy_rounding_error = report.max_occupancy_rounding_error.max(errors[1]);
++        report.max_b_iso_rounding_error = report.max_b_iso_rounding_error.max(errors[2]);
++    }
++    if doc.residues.iter().any(|r| r.identity.entity_id.is_some()) {
++        report.losses.push("entity_identifiers");
++    }
++    if doc.parsed.cell.is_some() || doc.parsed.space_group.is_some() {
++        report.losses.push("cell_and_symmetry");
++    }
++    if !doc.parsed.unhandled_columns.is_empty() {
++        report.losses.push("unhandled_atom_site_columns");
++    }
++    if report.max_coordinate_rounding_error > 0.0
++        || report.max_occupancy_rounding_error > 0.0
++        || report.max_b_iso_rounding_error > 0.0
++    {
++        report.losses.push("numeric_rounding");
++    }
++    if doc.parsed.atoms.iter().any(|a| a.formal_charge == Some(0)) {
++        report.losses.push("optional_formal_charge_presence");
++    }
++    if !allow_metadata_loss {
++        return Err(MmcifPdbError::MetadataLossRequiresConsent);
++    }
++    report.pdb.push_str("END\n");
++    Ok(report)
++}
+diff --git a/crates/chematic-mol/tests/mmcif_pdb_checked.rs b/crates/chematic-mol/tests/mmcif_pdb_checked.rs
+new file mode 100644
+index 0000000..5bf9dd6
+--- /dev/null
++++ b/crates/chematic-mol/tests/mmcif_pdb_checked.rs
+@@ -0,0 +1,242 @@
++use chematic_mol::{MmcifPdbError, PdbNamespace, parse_mmcif_residues, write_mmcif_pdb_checked};
++const GLYCAN: &str =
++    include_str!("../../../validation/openbabel_issues/mmcif/branched-residues.cif");
++const LONG: &str =
++    include_str!("../../../validation/openbabel_issues/mmcif/long-component-name.cif");
++
++#[test]
++fn refuses_five_character_names_even_with_metadata_loss_consent() {
++    let d = parse_mmcif_residues(LONG).unwrap();
++    for allow in [false, true] {
++        assert!(matches!(
++            write_mmcif_pdb_checked(&d, PdbNamespace::Author, allow),
++            Err(MmcifPdbError::InvalidField {
++                field: "residue name",
++                ..
++            })
++        ));
++    }
++}
++#[test]
++fn preserves_three_glycan_residues_serials_elements_and_positions() {
++    let d = parse_mmcif_residues(GLYCAN).unwrap();
++    let before = d.clone();
++    let r = write_mmcif_pdb_checked(&d, PdbNamespace::Author, true).unwrap();
++    assert_eq!(d, before);
++    let rows: Vec<_> = r.pdb.lines().filter(|s| s.starts_with("HETATM")).collect();
++    assert_eq!(rows.len(), 6);
++    for (i, (line, atom)) in rows.iter().zip(&d.parsed.atoms).enumerate() {
++        assert_eq!(line.len(), 80);
++        assert_eq!(line[6..11].trim().parse::<i64>().unwrap(), atom.serial);
++        assert_eq!(line[12..16].trim(), atom.atom_name);
++        assert_eq!(line[17..20].trim(), atom.res_name);
++        assert_eq!(line[21..22].trim(), "A");
++        assert_eq!(line[22..26].trim().parse::<usize>().unwrap(), i / 2 + 1);
++        assert_eq!(line[30..38].trim().parse::<f64>().unwrap(), atom.x);
++        assert_eq!(line[76..78].trim(), atom.element.symbol());
++    }
++    assert!(r.losses.contains(&"identity_namespaces"));
++    assert!(r.losses.contains(&"entity_identifiers"));
++}
++#[test]
++fn loss_requires_explicit_consent() {
++    let d = parse_mmcif_residues(GLYCAN).unwrap();
++    assert_eq!(
++        write_mmcif_pdb_checked(&d, PdbNamespace::Author, false).err(),
++        Some(MmcifPdbError::MetadataLossRequiresConsent)
++    );
++}
++#[test]
++fn label_namespace_is_explicit_and_missing_labels_are_not_fabricated() {
++    let mut d = parse_mmcif_residues(GLYCAN).unwrap();
++    assert!(matches!(
++        write_mmcif_pdb_checked(&d, PdbNamespace::Label, true),
++        Err(MmcifPdbError::InvalidField {
++            field: "residue number",
++            ..
++        })
++    ));
++    for (i, r) in d.residues.iter_mut().enumerate() {
++        r.identity.label_seq_id = Some(10 + i as i64);
++    }
++    let r = write_mmcif_pdb_checked(&d, PdbNamespace::Label, true).unwrap();
++    let line = r.pdb.lines().next().unwrap();
++    assert_eq!(&line[21..22], "E");
++    assert_eq!(line[22..26].trim(), "10");
++}
++#[test]
++fn alias_collisions_cannot_merge_residues_or_atoms() {
++    let mut d = parse_mmcif_residues(GLYCAN).unwrap();
++    d.residues[1].identity.auth_seq_id = Some("1".into());
++    assert!(matches!(
++        write_mmcif_pdb_checked(&d, PdbNamespace::Author, true),
++        Err(MmcifPdbError::ResidueCollision {
++            first: 0,
++            second: 1
++        })
++    ));
++    let mut d = parse_mmcif_residues(GLYCAN).unwrap();
++    d.atom_ids[1].auth_atom_id = Some("C1".into());
++    assert!(matches!(
++        write_mmcif_pdb_checked(&d, PdbNamespace::Author, true),
++        Err(MmcifPdbError::AtomCollision {
++            first: 0,
++            second: 1
++        })
++    ));
++}
++#[test]
++fn guards_widths_ascii_and_identifier_normalization() {
++    for (field, value) in [
++        ("residue name", "LONG"),
++        ("chain identifier", "AB"),
++        ("chain identifier", "$"),
++        ("residue number", "10000"),
++        ("residue number", "01"),
++        ("residue number", "+1"),
++        ("insertion code", "AA"),
++        ("insertion code", "*"),
++        ("atom name", "ABCDE"),
++        ("atom name", "C\n"),
++        ("atom name", "原子"),
++        ("alternate location", "AB"),
++    ] {
++        let mut d = parse_mmcif_residues(GLYCAN).unwrap();
++        match field {
++            "residue name" => d.residues[0].identity.auth_comp_id = Some(value.into()),
++            "chain identifier" => d.residues[0].identity.auth_asym_id = Some(value.into()),
++            "residue number" => d.residues[0].identity.auth_seq_id = Some(value.into()),
++            "insertion code" => d.residues[0].identity.insertion_code = Some(value.into()),
++            "atom name" => d.atom_ids[0].auth_atom_id = Some(value.into()),
++            _ => d.atom_ids[0].alt_id = Some(value.into()),
++        }
++        assert_eq!(
++            write_mmcif_pdb_checked(&d, PdbNamespace::Author, true).err(),
++            Some(MmcifPdbError::InvalidField { atom: 0, field })
++        );
++    }
++}
++#[test]
++fn fixed_columns_preserve_altloc_insertion_charge_and_two_letter_element() {
++    let mut d = parse_mmcif_residues(GLYCAN).unwrap();
++    d.atom_ids[0].alt_id = Some("B".into());
++    d.residues[0].identity.insertion_code = Some("A".into());
++    d.parsed.atoms[0].element = chematic_core::Element::ZN;
++    d.parsed.atoms[0].formal_charge = Some(2);
++    let r = write_mmcif_pdb_checked(&d, PdbNamespace::Author, true).unwrap();
++    let line = r.pdb.lines().next().unwrap();
++    assert_eq!(&line[16..17], "B");
++    assert_eq!(&line[26..27], "A");
++    assert_eq!(&line[76..80], "ZN2+");
++    assert_eq!(&line[12..16], "C1  ");
++}
++#[test]
++fn reports_coordinate_occupancy_and_temperature_rounding() {
++    let mut d = parse_mmcif_residues(GLYCAN).unwrap();
++    d.parsed.atoms[0].x = 20.123456;
++    d.parsed.atoms[0].occupancy = 0.6789;
++    d.parsed.atoms[0].b_iso = 12.3456;
++    let r = write_mmcif_pdb_checked(&d, PdbNamespace::Author, true).unwrap();
++    assert!((r.max_coordinate_rounding_error - 0.000456).abs() < 1e-12);
++    assert!((r.max_occupancy_rounding_error - 0.0011).abs() < 1e-12);
++    assert!((r.max_b_iso_rounding_error - 0.0044).abs() < 1e-12);
++    assert!(r.losses.contains(&"numeric_rounding"));
++}
++#[test]
++fn nonfinite_and_rounding_overflow_are_errors() {
++    for (field, value) in [
++        ("x", f64::NAN),
++        ("x", 9999.9996),
++        ("x", -1000.0),
++        ("occupancy", 1.1),
++        ("occupancy", f64::INFINITY),
++        ("B factor", 999.999),
++    ] {
++        let mut d = parse_mmcif_residues(GLYCAN).unwrap();
++        match field {
++            "x" => d.parsed.atoms[0].x = value,
++            "occupancy" => d.parsed.atoms[0].occupancy = value,
++            _ => d.parsed.atoms[0].b_iso = value,
++        }
++        assert_eq!(
++            write_mmcif_pdb_checked(&d, PdbNamespace::Author, true).err(),
++            Some(MmcifPdbError::InvalidField { atom: 0, field })
++        );
++    }
++}
++#[test]
++fn serials_and_formal_charges_are_not_clamped_or_renumbered() {
++    let mut d = parse_mmcif_residues(GLYCAN).unwrap();
++    d.parsed.atoms[1].serial = 1;
++    assert!(matches!(
++        write_mmcif_pdb_checked(&d, PdbNamespace::Author, true),
++        Err(MmcifPdbError::DuplicateSerial { atom: 1, serial: 1 })
++    ));
++    for v in [0, 100000] {
++        let mut d = parse_mmcif_residues(GLYCAN).unwrap();
++        d.parsed.atoms[0].serial = v;
++        assert!(matches!(
++            write_mmcif_pdb_checked(&d, PdbNamespace::Author, true),
++            Err(MmcifPdbError::InvalidField {
++                field: "serial",
++                ..
++            })
++        ));
++    }
++    let mut d = parse_mmcif_residues(GLYCAN).unwrap();
++    d.parsed.atoms[0].formal_charge = Some(10);
++    assert!(matches!(
++        write_mmcif_pdb_checked(&d, PdbNamespace::Author, true),
++        Err(MmcifPdbError::InvalidField {
++            field: "formal charge",
++            ..
++        })
++    ));
++}
++#[test]
++fn source_metadata_omissions_are_reported() {
++    let mut d = parse_mmcif_residues(GLYCAN).unwrap();
++    d.parsed.space_group = Some("P 1".into());
++    d.parsed.unhandled_columns.push("_atom_site.extra".into());
++    d.parsed.atoms[0].formal_charge = Some(0);
++    let r = write_mmcif_pdb_checked(&d, PdbNamespace::Author, true).unwrap();
++    for code in [
++        "cell_and_symmetry",
++        "unhandled_atom_site_columns",
++        "optional_formal_charge_presence",
++    ] {
++        assert!(r.losses.contains(&code));
++    }
++}
++#[test]
++fn inconsistent_public_documents_and_unsupported_models_fail_safely() {
++    let original = parse_mmcif_residues(GLYCAN).unwrap();
++    let mut variants = Vec::new();
++    let mut d = original.clone();
++    d.atom_to_residue.clear();
++    variants.push(d);
++    let mut d = original.clone();
++    d.atom_ids.clear();
++    variants.push(d);
++    let mut d = original.clone();
++    d.residues[0].atom_indices.push(100);
++    variants.push(d);
++    let mut d = original.clone();
++    d.residues[0].atom_indices.push(0);
++    variants.push(d);
++    let mut d = original.clone();
++    d.atom_to_residue[0] = 100;
++    variants.push(d);
++    for d in variants {
++        assert_eq!(
++            write_mmcif_pdb_checked(&d, PdbNamespace::Author, true).err(),
++            Some(MmcifPdbError::InvalidDocument)
++        );
++    }
++    let mut d = original;
++    d.residues[0].identity.model_num = 2;
++    assert_eq!(
++        write_mmcif_pdb_checked(&d, PdbNamespace::Author, true).err(),
++        Some(MmcifPdbError::UnsupportedModels)
++    );
++}
+diff --git a/crates/chematic-py/python/chematic/__init__.pyi b/crates/chematic-py/python/chematic/__init__.pyi
+index ed19a63..d98632b 100644
+--- a/crates/chematic-py/python/chematic/__init__.pyi
++++ b/crates/chematic-py/python/chematic/__init__.pyi
+@@ -4892,3 +4892,8 @@ def pqr_to_pdbqt(text: str, atom_types: list[str], *, allow_radius_loss: bool =
+ def parse_mmcif_residues(text: str, *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None) -> dict[str, Any]:
+     """Read all residue variants with complete auth/label identities and source row indices."""
+     ...
++
++
++def mmcif_to_pdb_checked(text: str, *, namespace: str = "auth", allow_metadata_loss: bool = False) -> dict[str, Any]:
++    """Checked single-model PDB coordinate block with original source sidecar."""
++    ...
+diff --git a/crates/chematic-py/src/formats.rs b/crates/chematic-py/src/formats.rs
+index ae7448a..a587e45 100644
+--- a/crates/chematic-py/src/formats.rs
++++ b/crates/chematic-py/src/formats.rs
+@@ -10,7 +10,9 @@ mod cif;
+ use cif::*;
+ mod interchange;
+ mod materials;
++mod mmcif_pdb;
+ mod mmcif_residues;
++use mmcif_pdb::*;
+ use mmcif_residues::*;
+ mod pqr_pdbqt;
+ use pqr_pdbqt::*;
+@@ -1422,6 +1424,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
+         write_smi_file,
+         parse_mmcif,
+         parse_mmcif_residues,
++        mmcif_to_pdb_checked,
+         protein_from_pdb_json,
+         protein_from_mmcif_json,
+         write_mmcif,
+diff --git a/crates/chematic-py/src/formats/mmcif_pdb.rs b/crates/chematic-py/src/formats/mmcif_pdb.rs
+new file mode 100644
+index 0000000..7cbb88b
+--- /dev/null
++++ b/crates/chematic-py/src/formats/mmcif_pdb.rs
+@@ -0,0 +1,41 @@
++use super::*;
++
++/// Checked single-model PDB coordinates. Long names never truncate. The source
++/// sidecar keeps original atom/residue aliases and precision; no bonds or TER.
++#[pyfunction]
++#[pyo3(signature=(text, *, namespace="auth", allow_metadata_loss=false))]
++pub(super) fn mmcif_to_pdb_checked<'py>(
++    py: Python<'py>,
++    text: &str,
++    namespace: &str,
++    allow_metadata_loss: bool,
++) -> PyResult<Bound<'py, PyDict>> {
++    let naming = match namespace {
++        "auth" => chematic_mol::PdbNamespace::Author,
++        "label" => chematic_mol::PdbNamespace::Label,
++        _ => return Err(PyValueError::new_err("namespace must be 'auth' or 'label'")),
++    };
++    let source = chematic_mol::parse_mmcif_residues(text)
++        .map_err(|e| PyValueError::new_err(e.to_string()))?;
++    let report = chematic_mol::write_mmcif_pdb_checked(&source, naming, allow_metadata_loss)
++        .map_err(|e| PyValueError::new_err(e.to_string()))?;
++    let result = PyDict::new(py);
++    result.set_item("pdb", report.pdb)?;
++    result.set_item("namespace", namespace)?;
++    result.set_item("source_text", text)?;
++    result.set_item("losses", report.losses)?;
++    result.set_item(
++        "source",
++        mmcif_residues::mmcif_residues_to_pydict(py, &source)?,
++    )?;
++    result.set_item(
++        "max_coordinate_rounding_error",
++        report.max_coordinate_rounding_error,
++    )?;
++    result.set_item(
++        "max_occupancy_rounding_error",
++        report.max_occupancy_rounding_error,
++    )?;
++    result.set_item("max_b_iso_rounding_error", report.max_b_iso_rounding_error)?;
++    Ok(result)
++}
+diff --git a/crates/chematic-py/src/formats/mmcif_residues.rs b/crates/chematic-py/src/formats/mmcif_residues.rs
+index 31fc35c..ef262ee 100644
+--- a/crates/chematic-py/src/formats/mmcif_residues.rs
++++ b/crates/chematic-py/src/formats/mmcif_residues.rs
+@@ -40,6 +40,13 @@ pub(super) fn parse_mmcif_residues<'py>(
+     }
+     let doc = chematic_mol::parse_mmcif_residues_with_limits(text, &limits)
+         .map_err(|e| PyValueError::new_err(e.to_string()))?;
++    mmcif_residues_to_pydict(py, &doc)
++}
++
++pub(super) fn mmcif_residues_to_pydict<'py>(
++    py: Python<'py>,
++    doc: &chematic_mol::MmcifResidueDocument,
++) -> PyResult<Bound<'py, PyDict>> {
+     let d = PyDict::new(py);
+     let atoms = doc
+         .parsed
+@@ -70,12 +77,12 @@ pub(super) fn parse_mmcif_residues<'py>(
+         .collect::<PyResult<Vec<_>>>()?;
+     d.set_item("atoms", atoms)?;
+     d.set_item("residues", residues)?;
+-    d.set_item("atom_to_residue", doc.atom_to_residue)?;
++    d.set_item("atom_to_residue", &doc.atom_to_residue)?;
+     match &doc.parsed.cell {
+         Some(cell) => d.set_item("cell", materials::unit_cell_to_pydict(py, cell)?)?,
+         None => d.set_item("cell", py.None())?,
+     }
+-    d.set_item("space_group", doc.parsed.space_group)?;
+-    d.set_item("unhandled_columns", doc.parsed.unhandled_columns)?;
++    d.set_item("space_group", &doc.parsed.space_group)?;
++    d.set_item("unhandled_columns", &doc.parsed.unhandled_columns)?;
+     Ok(d)
+ }
+diff --git a/crates/chematic-py/tests/test_mmcif_pdb_checked.py b/crates/chematic-py/tests/test_mmcif_pdb_checked.py
+new file mode 100644
+index 0000000..debfd00
+--- /dev/null
++++ b/crates/chematic-py/tests/test_mmcif_pdb_checked.py
+@@ -0,0 +1,110 @@
++"""Checked coordinate projection; independently decode PDB fixed columns."""
++from pathlib import Path
++import pytest
++import chematic
++
++ROOT = Path(__file__).resolve().parents[3]
++FIXTURE = ROOT / 'validation/openbabel_issues/mmcif/branched-residues.cif'
++LONG = ROOT / 'validation/openbabel_issues/mmcif/long-component-name.cif'
++
++
++def changed(column, value):
++    text = FIXTURE.read_text()
++    rows = [s.split() for s in text.splitlines() if s.startswith('HETATM')]
++    rows[0][column] = value
++    return text.split('HETATM')[0] + '\n'.join(' '.join(r) for r in rows) + '\n#\n'
++
++
++def convert(text, **kwargs):
++    return chematic.mmcif_to_pdb_checked(text, allow_metadata_loss=True, **kwargs)
++
++
++def test_auth_names_coordinates_and_source_are_preserved():
++    text = FIXTURE.read_text()
++    result = convert(text)
++    lines = result['pdb'].splitlines()
++    assert lines[-1] == 'END'
++    assert all(len(s) == 80 for s in lines[:-1])
++    assert [s[17:20] for s in lines[:-1]] == ['NAG'] * 4 + ['BMA'] * 2
++    assert [int(s[22:26]) for s in lines[:-1]] == [1, 1, 2, 2, 3, 3]
++    assert [float(s[30:38]) for s in lines[:-1]] == [20, 22, 40, 42, 60, 62]
++    assert result['source'] == chematic.parse_mmcif_residues(text)
++    assert result['source_text'] == text
++    assert result['namespace'] == 'auth'
++    assert result['losses'] == ['identity_namespaces', 'entity_identifiers']
++
++
++def test_loss_requires_explicit_argument():
++    with pytest.raises(ValueError, match='allow_metadata_loss'):
++        chematic.mmcif_to_pdb_checked(FIXTURE.read_text())
++
++
++@pytest.mark.parametrize('allow', [False, True])
++@pytest.mark.parametrize('namespace', ['auth', 'label'])
++def test_five_character_names_never_truncate(allow, namespace):
++    text = LONG.read_text()
++    # Make both namespaces independently representable except for the name.
++    rows = [s.split() for s in text.splitlines() if s.startswith('HETATM')]
++    for r in rows: r[8] = r[15]
++    text = text.split('HETATM')[0] + '\n'.join(' '.join(r) for r in rows) + '\n#\n'
++    with pytest.raises(ValueError, match='residue name'):
++        chematic.mmcif_to_pdb_checked(text, namespace=namespace, allow_metadata_loss=allow)
++
++
++@pytest.mark.parametrize('column,value,field', [
++    (16, 'LONG', 'residue name'), (17, 'AB', 'chain identifier'),
++    (15, '10000', 'residue number'), (15, '01', 'residue number'),
++    (15, '+1', 'residue number'), (9, 'AA', 'insertion code'),
++    (18, 'ABCDE', 'atom name'), (4, 'AB', 'alternate location'),
++    (10, '9999.9996', 'x'), (13, '1.1', 'occupancy'),
++    (14, '999.999', 'B factor'), (1, '100000', 'serial'),
++])
++def test_unrepresentable_fields_fail(column, value, field):
++    with pytest.raises(ValueError, match=field):
++        convert(changed(column, value))
++
++
++def test_namespace_selection_has_no_fallback():
++    with pytest.raises(ValueError, match='residue number'):
++        convert(FIXTURE.read_text(), namespace='label')
++    with pytest.raises(ValueError, match='atom name'):
++        convert(changed(18, '?'))
++    with pytest.raises(ValueError, match='namespace'):
++        convert(FIXTURE.read_text(), namespace='auto')
++
++
++def test_projection_collisions_are_errors():
++    # Distinct label components sharing an author residue key cannot merge.
++    with pytest.raises(ValueError, match='same PDB residue identifier'):
++        convert(changed(5, 'MAN'))
++    # Distinct label atom aliases sharing an author atom name cannot merge.
++    with pytest.raises(ValueError, match='same PDB atom name'):
++        convert(changed(18, 'O6'))
++    with pytest.raises(ValueError, match='duplicate PDB serial'):
++        convert(changed(1, '2'))
++
++
++def test_numeric_precision_is_reported():
++    result = convert(changed(10, '20.123456'))
++    assert result['max_coordinate_rounding_error'] == pytest.approx(0.000456)
++    assert 'numeric_rounding' in result['losses']
++    assert result['source']['atoms'][0]['x'] == 20.123456
++    assert float(result['pdb'].splitlines()[0][30:38]) == 20.123
++
++
++def test_only_model_one_is_supported():
++    with pytest.raises(ValueError, match='model 1 only'):
++        convert(changed(19, '2'))
++
++
++def test_label_namespace_uses_only_label_aliases():
++    text = FIXTURE.read_text()
++    rows = [s.split() for s in text.splitlines() if s.startswith('HETATM')]
++    for r in rows:
++        r[8] = str(int(r[15]) + 10)
++        r[3] = 'L' + r[3]
++    text = text.split('HETATM')[0] + '\n'.join(' '.join(r) for r in rows) + '\n#\n'
++    lines = convert(text, namespace='label')['pdb'].splitlines()[:-1]
++    assert [int(s[22:26]) for s in lines] == [11, 11, 12, 12, 13, 13]
++    assert all(s[21] == 'E' for s in lines)
++    assert lines[0][12:16].strip() == 'LC1'
+diff --git a/docs/mmcif-pdb-checked.md b/docs/mmcif-pdb-checked.md
+new file mode 100644
+index 0000000..305bc98
+--- /dev/null
++++ b/docs/mmcif-pdb-checked.md
+@@ -0,0 +1,111 @@
++# Checked mmCIF to PDB coordinate projection
++
++Open Babel [#3027](https://github.com/openbabel/openbabel/issues/3027)
++reports a five-character component identifier being truncated during PDB
++export. PDB format 3.3 provides only three columns for a residue name.
++`A1AJ1` therefore cannot be represented faithfully in that field.
++
++The new Rust `write_mmcif_pdb_checked` and Python `mmcif_to_pdb_checked`
++reject names that do not fit. Metadata-loss consent never permits truncating
++names, inventing missing identifiers, renumbering atoms/residues, or merging
++identities. Use mmCIF when these identifiers must be retained in the output.
++
++```python
++import chematic
++
++result = chematic.mmcif_to_pdb_checked(
++    mmcif_text,
++    namespace="auth",
++    allow_metadata_loss=True,
++)
++pdb_coordinate_block = result["pdb"]
++original_mmcif = result["source_text"]
++source_atom_site = result["source"]
++```
++
++`namespace` must be `auth` or `label`; there is no fallback to the other
++namespace. It selects the chain, residue number, component name, and atom
++name together. Both namespaces remain available in `source`, using exactly
++the schema of `parse_mmcif_residues`. `source_text` contains the complete
++original Python input, including metadata beyond the reader's parsed view.
++Retain that text when saving the coordinate block.
++
++In Rust, pass a borrowed `MmcifResidueDocument` and `PdbNamespace::Author`
++or `PdbNamespace::Label`. The writer does not mutate it. The original mmCIF
++text is not part of that Rust document: callers must retain their input text
++separately if they need unparsed categories or original numeric spelling.
++
++## Representability checks
++
++The writer follows the [wwPDB coordinate field definitions](https://www.wwpdb.org/documentation/file-format-content/format33/sect9.html).
++
++- Model 1 only, at most 99,999 atoms, unique decimal serials from 1 to 99,999.
++- Nonempty ASCII names: residue at most three characters, atom at most four.
++- One alphanumeric chain character; one alphanumeric alternate-location or
++  insertion-code character when present. Absent alternate/insertion codes
++  produce blanks.
++- Decimal residue numbers from -999 through 9999. Author numbers must have
++  canonical integer spelling: `01`, `+1`, and `-0` are rejected.
++- Distinct source residue groups must not collapse to the same output
++  `(chain, residue number, insertion code)`. Distinct source atoms must not
++  collapse to the same residue/name/alternate-location key.
++- Finite coordinates, occupancies, and isotropic B values. Occupancy is in
++  [0, 1]. Decimal rounding must still fit the fixed-width output field.
++- Formal charge must fit the two-character PDB field, from -9 through +9.
++  Element symbols are right-aligned and uppercase.
++
++Output coordinate records have 80 columns. Coordinates use three decimal
++places; occupancy and B values use two. The report gives the maximum absolute
++rounding error for each of these three categories. Numeric precision remains
++in the source sidecar and original text.
++
++PDB cannot carry both identity namespaces or every mmCIF field, so the
++function defaults to rejecting metadata loss. Set `allow_metadata_loss=True`
++explicitly to obtain a representable coordinate block and a sidecar.
++`losses` lists known omissions in the parsed view: `identity_namespaces`,
++`entity_identifiers`, `cell_and_symmetry`, `unhandled_atom_site_columns`,
++`numeric_rounding`, and `optional_formal_charge_presence` as applicable.
++It is not an exhaustive category-by-category comparison of the original text.
++
++## Scope and validation
++
++This is a coordinate block consisting of ATOM/HETATM records and END.
++It does not produce TER, CONECT, CRYST1, ANISOU, SEQRES or other deposition
++records, infer bonds, reorder polymer chains, validate CCD chemistry, or
++support multiple models/hybrid-36 identifiers. It is not a complete PDB
++exporter. It inherits the existing mmCIF reader's tokenizer, default input
++limits, and integer-only author sequence support.
++
++The independent fixture
++`validation/openbabel_issues/mmcif/long-component-name.cif` contains two
++synthetic C/O coordinate records, not a chemical reconstruction of A1AJ1 or a
++copy of an upstream structure. It is original project data under
++MIT OR Apache-2.0. The validation manifest records provenance, minimization,
++fixture/source/module hashes, the wwPDB 3.3 oracle, and Open Babel 3.2.1.
++
++With a numeric label-sequence control, Open Babel 3.2.1 still truncates
++`A1AJ1` to `A1A`; changing only the name to `UNL` preserves it. The checked
++adapter rejects the long name in both namespaces regardless of loss consent.
++A six-row NAG/NAG/BMA fixture passes all 720 input-row permutations with zero
++fixed-column or source-sidecar mismatches. Open Babel also reads the native
++PDB block back with all three residue identities and coordinates retained.
++This checks coordinate interoperability, not inferred connectivity.
++
++Reproduce with the built Python extension on `PYTHONPATH`:
++
++```sh
++python scripts/validate_mmcif_pdb_checked.py --obabel /opt/homebrew/bin/obabel
++cargo test -p chematic-mol --lib --test mmcif_pdb_checked \
++  --test mmcif_residue_contract --test mmcif_pqr_integration --offline --quiet
++python -m pytest crates/chematic-py/tests/test_mmcif_pdb_checked.py \
++  crates/chematic-py/tests/test_mmcif_residues.py \
++  crates/chematic-py/tests/test_new_formats.py \
++  crates/chematic-py/tests/test_input_errors.py -q
++```
++
++Local verification passed 784 Rust tests (12 new checked-writer tests) and
++119 Python tests (23 new API tests). Clippy with warnings denied, formatting,
++refactor budget, product naming, binding inventory, and strict MkDocs passed.
++
++Local candidate only; this does not imply upstream resolution or a published
++chematic package. The patch builds on the previous residue-reader candidate.
+diff --git a/docs/openbabel-open-issues-2026-10-14.md b/docs/openbabel-open-issues-2026-10-14.md
+index 4102c95..500fd9c 100644
+--- a/docs/openbabel-open-issues-2026-10-14.md
++++ b/docs/openbabel-open-issues-2026-10-14.md
+@@ -13,7 +13,7 @@ charge work. Existing changes were retained.
+ | [#2818: singular unit cell produces NaN](https://github.com/openbabel/openbabel/issues/2818) | The unchecked plain writer accepted invalid `UnitCell` values. | [Implemented a checked Rust/Python CIF writer](cif-checked-writer.md), shared plain-reader cell validation, finite/count checks and precise float serialization. No POSCAR support; external CIF cross-read remains inconclusive on this host. |
+ | [#2845: PQR charge/radius lost](https://github.com/openbabel/openbabel/issues/2845) | `PqrAtomRecord` already stores charge and radius separately. `to_molecule()` is a graph projection that does not carry those fields. | [Implemented a checked rigid PQR-to-PDBQT adapter](pqr-pdbqt-charge-preservation.md): caller-supplied types, source charges/identity, radius-loss consent and a numeric-rounding sidecar. Open Babel 3.2.1 charge loss reproduced on two synthetic ions. |
+ | [#2821: QCSchema Molecule](https://github.com/openbabel/openbabel/issues/2821) | Native QCSchema types, readers, converters, and tests already exist. | No duplicate implementation; broaden interoperability fixtures separately. |
+-| [#3027: five-character residue names truncated in PDB](https://github.com/openbabel/openbabel/issues/3027) | mmCIF has full residue-name fields; the protein projection is deliberately limited to amino-acid residues. | A general mmCIF-to-PDB adapter needs an explicit representability/loss policy. Do not treat protein projection as a ligand-preserving converter. |
++| [#3027: five-character residue names truncated in PDB](https://github.com/openbabel/openbabel/issues/3027) | mmCIF has full residue-name fields; the protein projection is deliberately limited to amino-acid residues. | [Implemented a checked coordinate-block adapter](mmcif-pdb-checked.md): explicit namespace and metadata-loss policy, no truncated identifiers, collision/width checks and original-input sidecar. Model 1 only; no topology or full PDB deposition export. |
+ | [#3028: branched glycan residues merged](https://github.com/openbabel/openbabel/issues/3028) | mmCIF retains per-atom residue fields, but the protein projection excludes glycans. | [Implemented a general atom_site residue reader](mmcif-residue-identity.md) with distinct auth/label identities and strict ambiguity errors; 720 row-order permutations and an Open Babel 3.2.1 control. Glycan connectivity and PDB export remain separate. |
+ 
+ ## Implemented coordinate contract
+diff --git a/scripts/validate_mmcif_pdb_checked.py b/scripts/validate_mmcif_pdb_checked.py
+new file mode 100644
+index 0000000..8ebfe25
+--- /dev/null
++++ b/scripts/validate_mmcif_pdb_checked.py
+@@ -0,0 +1,133 @@
++#!/usr/bin/env python3
++"""Pinned Open Babel #3027 diagnostic plus independent PDB field checks."""
++import argparse
++import hashlib
++import itertools
++import json
++from pathlib import Path
++import subprocess
++import sys
++import tempfile
++
++import chematic
++
++ROOT = Path(__file__).resolve().parents[1]
++GLYCAN = ROOT / 'validation/openbabel_issues/mmcif/branched-residues.cif'
++LONG = ROOT / 'validation/openbabel_issues/mmcif/long-component-name.cif'
++
++
++def digest(data):
++    return hashlib.sha256(data).hexdigest()
++
++
++def records(text):
++    return [s for s in text.splitlines() if s.startswith(('ATOM  ', 'HETATM'))]
++
++
++def convert(text, **kwargs):
++    return chematic.mmcif_to_pdb_checked(text, allow_metadata_loss=True, **kwargs)
++
++
++def field_checks(line, source):
++    assert len(line) == 80
++    assert line[:6].strip() == source[0]
++    assert int(line[6:11]) == int(source[1])
++    assert line[12:16].strip() == source[18]
++    assert line[16] == (' ' if source[4] in ('.', '?') else source[4])
++    assert line[17:20].strip() == source[16]
++    assert line[21] == source[17]
++    assert int(line[22:26]) == int(source[15])
++    assert line[26] == (' ' if source[9] in ('.', '?') else source[9])
++    assert [float(line[a:b]) for a, b in ((30, 38), (38, 46), (46, 54))] == [float(v) for v in source[10:13]]
++    assert float(line[54:60]) == float(source[13])
++    assert float(line[60:66]) == float(source[14])
++    assert line[76:78].strip() == source[2].upper()
++
++
++def main():
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument('--obabel', default='/opt/homebrew/bin/obabel')
++    parser.add_argument('--output', type=Path, default=ROOT / 'validation/results/openbabel-mmcif-pdb-2026-10-15.json')
++    args = parser.parse_args()
++    version = subprocess.run([args.obabel, '-V'], capture_output=True, text=True, check=True, timeout=10).stdout.strip()
++    if not version.startswith('Open Babel 3.2.1 '):
++        raise RuntimeError(f'expected Open Babel 3.2.1, got {version}')
++    text = GLYCAN.read_text()
++    header = text.split('HETATM')[0]
++    rows = [s.split() for s in text.splitlines() if s.startswith('HETATM')]
++    checked = []
++    for order in itertools.permutations(range(6)):
++        source = header + '\n'.join(' '.join(rows[i]) for i in order) + '\n#\n'
++        result = convert(source)
++        output = records(result['pdb'])
++        assert len(output) == 6
++        assert result['source_text'] == source
++        assert result['source'] == chematic.parse_mmcif_residues(source)
++        for line, old in zip(output, order):
++            field_checks(line, rows[old])
++        assert len(set((line[21], line[22:26], line[26]) for line in output)) == 3
++        checked.append({'order': order, 'output_sha256': digest(result['pdb'].encode())})
++    long_text = LONG.read_text()
++    # Include a numeric label-sequence control so residue merging (#3028)
++    # cannot explain the independent five-character name truncation (#3027).
++    long_rows = [s.split() for s in long_text.splitlines() if s.startswith('HETATM')]
++    for r in long_rows: r[8] = r[15]
++    long_control = long_text.split('HETATM')[0] + '\n'.join(' '.join(r) for r in long_rows) + '\n#\n'
++    rejection = []
++    for namespace in ('auth', 'label'):
++        for allow in (False, True):
++            try:
++                chematic.mmcif_to_pdb_checked(long_control, namespace=namespace, allow_metadata_loss=allow)
++            except ValueError as error:
++                assert 'residue name' in str(error)
++                rejection.append({'namespace': namespace, 'allow_metadata_loss': allow, 'error': str(error)})
++            else:
++                raise AssertionError('five-character residue unexpectedly accepted')
++    with tempfile.TemporaryDirectory(prefix='chematic-pdb-checked-') as tmp:
++        tmp = Path(tmp)
++        fixture = tmp / 'long.cif'; fixture.write_text(long_control)
++        process = subprocess.run([args.obabel, '-immcif', str(fixture), '-opdb'], capture_output=True, text=True, check=True, timeout=10)
++        output = records(process.stdout)
++        assert len(output) == 2
++        assert [float(s[30:38]) for s in output] == [20, 22]
++        assert [s[17:20].strip() for s in output] == ['A1A', 'A1A'], 'upstream behavior changed; inspect before rebaseline'
++        control = tmp / 'short.cif'; control.write_text(long_control.replace('A1AJ1', 'UNL'))
++        short = subprocess.run([args.obabel, '-immcif', str(control), '-opdb'], capture_output=True, text=True, check=True, timeout=10)
++        assert [s[17:20].strip() for s in records(short.stdout)] == ['UNL', 'UNL']
++        native_short = convert(control.read_text())
++        assert [s[17:20].strip() for s in records(native_short['pdb'])] == ['UNL', 'UNL']
++        pdb = tmp / 'native.pdb'; pdb.write_text(convert(text)['pdb'])
++        cross = subprocess.run([args.obabel, '-ipdb', str(pdb), '-opdb'], capture_output=True, text=True, check=True, timeout=10)
++        cross_rows = records(cross.stdout)
++        assert len(cross_rows) == 6
++        assert [s[17:20].strip() for s in cross_rows] == ['NAG'] * 4 + ['BMA'] * 2
++        assert [int(s[22:26]) for s in cross_rows] == [1, 1, 2, 2, 3, 3]
++        assert [float(s[30:38]) for s in cross_rows] == [20, 22, 40, 42, 60, 62]
++    paths = ['crates/chematic-mol/src/mmcif_pdb.rs', 'crates/chematic-py/src/formats/mmcif_pdb.rs', 'crates/chematic-py/src/formats/mmcif_residues.rs', 'scripts/validate_mmcif_pdb_checked.py']
++    record = {
++        'schema_version': 1, 'status': 'local-source-candidate',
++        'issue': 'https://github.com/openbabel/openbabel/issues/3027',
++        'base': 'cac480fb source snapshot plus previously preserved RDKit/Open Babel candidates; patch isolates this adapter',
++        'scope': 'model-1 ATOM/HETATM coordinate block plus END; no bonds, TER, full deposition export or arbitrary mmCIF round trip',
++        'runtime': {'python': sys.version.split()[0], 'openbabel': version, 'chematic_extension_sha256': digest(Path(chematic.__file__).resolve().read_bytes())},
++        'source_sha256': {s: digest((ROOT / s).read_bytes()) for s in paths},
++        'fixture': {
++            'path': str(LONG.relative_to(ROOT)), 'sha256': digest(long_text.encode()),
++            'provenance': {'source': 'original synthetic atom_site rows derived from the project branched-residues fixture', 'date': '2026-10-15', 'transformations': 'retain first two rows; replace both component namespaces with A1AJ1; numeric-label control assigns source auth_seq_id to label_seq_id', 'external_data': 'no downloaded structure or upstream attachment'},
++            'license': 'MIT OR Apache-2.0', 'redistribution': {'status': 'allowed', 'rationale': 'original project fixture'},
++            'minimization': 'two isolated C/O coordinate records, one residue, five-character component ID; not a chemical model of A1AJ1',
++            'oracle': {'name': 'wwPDB PDB format 3.3 fixed columns / source-authored identifiers', 'version': '3.3', 'url': 'https://www.wwpdb.org/documentation/file-format-content/format33/sect9.html', 'settings': 'no renumbering, no truncation, auth or label selected explicitly'},
++            'expected': {'native': 'InvalidField residue name in both namespaces regardless of metadata consent', 'external_Open_Babel_3_2_1': 'A1AJ1 truncates to A1A; UNL control preserved'},
++        },
++        'results': {'permutations': len(checked), 'field_mismatches': 0, 'source_sidecar_mismatches': 0, 'cases_sha256': digest(json.dumps(checked, sort_keys=True, separators=(',', ':')).encode()), 'rejections': rejection, 'native_short_pdb': native_short['pdb'], 'cross_read_preserved_residues': 3},
++        'permutation_fixture': {'path': str(GLYCAN.relative_to(ROOT)), 'sha256': digest(text.encode()), 'expected': 'six rows, three NAG/NAG/BMA residues; all 720 input orders preserve auth names, residue keys, serials, coordinates and reader sidecar'},
++        'openbabel': {'command': ['obabel', '-immcif', '<numeric-label-long-name-control>', '-opdb'], 'input_sha256': digest(long_control.encode()), 'output_names': [s[17:20].strip() for s in output], 'output_sha256': digest(process.stdout.encode()), 'stderr': process.stderr.strip(), 'short_name_control': {'input_sha256': digest(long_control.replace('A1AJ1', 'UNL').encode()), 'output_sha256': digest(short.stdout.encode()), 'passed': True}, 'native_PDB_cross_read': {'output_sha256': digest(cross.stdout.encode()), 'stderr': cross.stderr.strip(), 'passed': True}},
++        'limitations': 'Inherited integer-only auth_seq_id/tokenizer; missing selected aliases fail. Parsed source sidecar covers the existing atom_site reader only; source_text retains the entire original Python input. losses lists known parsed-view omissions, not an exhaustive mmCIF category diff. Rust callers retain their original input text separately.',
++    }
++    args.output.parent.mkdir(parents=True, exist_ok=True)
++    args.output.write_text(json.dumps(record, indent=2) + '\n')
++    print(json.dumps({'permutations': len(checked), 'field_mismatches': 0, 'upstream_truncation_reproduced': True, 'native_rejections': len(rejection), 'cross_read_preserved_residues': 3}))
++
++
++if __name__ == '__main__':
++    main()
+diff --git a/validation/openbabel_issues/mmcif/long-component-name.cif b/validation/openbabel_issues/mmcif/long-component-name.cif
+new file mode 100644
+index 0000000..096de87
+--- /dev/null
++++ b/validation/openbabel_issues/mmcif/long-component-name.cif
+@@ -0,0 +1,26 @@
++data_long_component
++# Original project fixture; MIT OR Apache-2.0
++loop_
++_atom_site.group_PDB
++_atom_site.id
++_atom_site.type_symbol
++_atom_site.label_atom_id
++_atom_site.label_alt_id
++_atom_site.label_comp_id
++_atom_site.label_asym_id
++_atom_site.label_entity_id
++_atom_site.label_seq_id
++_atom_site.pdbx_PDB_ins_code
++_atom_site.Cartn_x
++_atom_site.Cartn_y
++_atom_site.Cartn_z
++_atom_site.occupancy
++_atom_site.B_iso_or_equiv
++_atom_site.auth_seq_id
++_atom_site.auth_comp_id
++_atom_site.auth_asym_id
++_atom_site.auth_atom_id
++_atom_site.pdbx_PDB_model_num
++HETATM 1 C C1 . A1AJ1 E 1 . ? 20.0 0.0 0.0 1.0 10.0 1 A1AJ1 A C1 1
++HETATM 2 O O6 . A1AJ1 E 1 . ? 22.0 0.0 0.0 1.0 10.0 1 A1AJ1 A O6 1
++#
+diff --git a/validation/results/binding_surface_inventory-current.json b/validation/results/binding_surface_inventory-current.json
+index 938fdca..b55c916 100644
+--- a/validation/results/binding_surface_inventory-current.json
++++ b/validation/results/binding_surface_inventory-current.json
+@@ -7,9 +7,9 @@
+   "scope": "Rust source declarations only; this is not semantic parity evidence",
+   "results": {
+     "wasm_export_count": 303,
+-    "python_pyfunction_count": 179,
+-    "python_registered_count": 179,
++    "python_pyfunction_count": 180,
++    "python_registered_count": 180,
+     "python_declared_without_registration": [],
+-    "surface_sha256": "661ba9666eeba6a0086cf46a9f26bb460df439c226459c29d50f83ae89e6c61d"
++    "surface_sha256": "00d4c4a52a47f22f1f9f8e283f78747c4e0fca5f09eb9e5f4b50990e2d8df109"
+   }
+ }
+diff --git a/validation/results/openbabel-mmcif-pdb-2026-10-15.json b/validation/results/openbabel-mmcif-pdb-2026-10-15.json
+new file mode 100644
+index 0000000..cb6fac4
+--- /dev/null
++++ b/validation/results/openbabel-mmcif-pdb-2026-10-15.json
+@@ -0,0 +1,139 @@
++{
++  "schema_version": 1,
++  "status": "local-source-candidate",
++  "issue": "https://github.com/openbabel/openbabel/issues/3027",
++  "base": "cac480fb source snapshot plus previously preserved RDKit/Open Babel candidates; patch isolates this adapter",
++  "scope": "model-1 ATOM/HETATM coordinate block plus END; no bonds, TER, full deposition export or arbitrary mmCIF round trip",
++  "runtime": {
++    "python": "3.13.6",
++    "openbabel": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
++    "chematic_extension_sha256": "a17ea428ef98ec371fd0a1d0c5a69dca31e78d5725d33a68b59a07d50a2d1d59"
++  },
++  "source_sha256": {
++    "crates/chematic-mol/src/mmcif_pdb.rs": "9350d2ec8eb077ec024419a2116fd52d3146dc4ddea0f7bc660907e407c8942f",
++    "crates/chematic-py/src/formats/mmcif_pdb.rs": "c3560d582ae392e4e115e6d4e23810be3d197df83b29d6cad06890b8cec853cc",
++    "crates/chematic-py/src/formats/mmcif_residues.rs": "0f89eaa46291e5a3a8ced131dcab8847e3660282329a1e088e89ef1840d55098",
++    "scripts/validate_mmcif_pdb_checked.py": "5a650040fb275a12abd3921cf928e1b4b13a3a71d482306cb500fc348779c21f"
++  },
++  "fixture": {
++    "path": "validation/openbabel_issues/mmcif/long-component-name.cif",
++    "sha256": "8900781fe9cb2c2557a6e07c97886ea45a3d7443513c538376d50beddc196108",
++    "provenance": {
++      "source": "original synthetic atom_site rows derived from the project branched-residues fixture",
++      "date": "2026-10-15",
++      "transformations": "retain first two rows; replace both component namespaces with A1AJ1; numeric-label control assigns source auth_seq_id to label_seq_id",
++      "external_data": "no downloaded structure or upstream attachment"
++    },
++    "license": "MIT OR Apache-2.0",
++    "redistribution": {
++      "status": "allowed",
++      "rationale": "original project fixture"
++    },
++    "minimization": "two isolated C/O coordinate records, one residue, five-character component ID; not a chemical model of A1AJ1",
++    "oracle": {
++      "name": "wwPDB PDB format 3.3 fixed columns / source-authored identifiers",
++      "version": "3.3",
++      "url": "https://www.wwpdb.org/documentation/file-format-content/format33/sect9.html",
++      "settings": "no renumbering, no truncation, auth or label selected explicitly"
++    },
++    "expected": {
++      "native": "InvalidField residue name in both namespaces regardless of metadata consent",
++      "external_Open_Babel_3_2_1": "A1AJ1 truncates to A1A; UNL control preserved"
++    }
++  },
++  "results": {
++    "permutations": 720,
++    "field_mismatches": 0,
++    "source_sidecar_mismatches": 0,
++    "cases_sha256": "97837cf724712b69550628d00f0d8703e03cec1296918c794b7d2a61d92be8c4",
++    "rejections": [
++      {
++        "namespace": "auth",
++        "allow_metadata_loss": false,
++        "error": "mmCIF atom 0: residue name is missing, invalid or cannot fit its PDB field"
++      },
++      {
++        "namespace": "auth",
++        "allow_metadata_loss": true,
++        "error": "mmCIF atom 0: residue name is missing, invalid or cannot fit its PDB field"
++      },
++      {
++        "namespace": "label",
++        "allow_metadata_loss": false,
++        "error": "mmCIF atom 0: residue name is missing, invalid or cannot fit its PDB field"
++      },
++      {
++        "namespace": "label",
++        "allow_metadata_loss": true,
++        "error": "mmCIF atom 0: residue name is missing, invalid or cannot fit its PDB field"
++      }
++    ],
++    "native_short_pdb": "HETATM    1  C1  UNL A   1      20.000   0.000   0.000  1.00 10.00           C  \nHETATM    2  O6  UNL A   1      22.000   0.000   0.000  1.00 10.00           O  \nEND\n",
++    "cross_read_preserved_residues": 3
++  },
++  "permutation_fixture": {
++    "path": "validation/openbabel_issues/mmcif/branched-residues.cif",
++    "sha256": "cc6956e5e27f7cd3cfdf96cd0da876de3acc1962dbd429aa00bafd005f7e5344",
++    "expected": "six rows, three NAG/NAG/BMA residues; all 720 input orders preserve auth names, residue keys, serials, coordinates and reader sidecar"
++  },
++  "openbabel": {
++    "command": [
++      "obabel",
++      "-immcif",
++      "<numeric-label-long-name-control>",
++      "-opdb"
++    ],
++    "input_sha256": "0100522cc0b7d2a0acf96739a45e346040ca69f2632498bba45dc1c8cc30a8a3",
++    "output_names": [
++      "A1A",
++      "A1A"
++    ],
++    "output_sha256": "f12deb38e88011c0fe6565e02f4d6ee9a7b7cb5a3f0bd02768db78ab518daa49",
++    "stderr": "1 molecule converted",
++    "short_name_control": {
++      "input_sha256": "6250eb1f04807db8bef50f6071fb399fb27dd835b8ba10e36e3973623191139d",
++      "output_sha256": "cef4f568bc2cd243af9cbe7871089beb928e9e255a5b1df4ae871f5e4958c069",
++      "passed": true
++    },
++    "native_PDB_cross_read": {
++      "output_sha256": "46389fd61048e2e1c9f74f611ef8e2c7391a199e196ab1b8450919cbddc48093",
++      "stderr": "1 molecule converted",
++      "passed": true
++    }
++  },
++  "limitations": "Inherited integer-only auth_seq_id/tokenizer; missing selected aliases fail. Parsed source sidecar covers the existing atom_site reader only; source_text retains the entire original Python input. losses lists known parsed-view omissions, not an exhaustive mmCIF category diff. Rust callers retain their original input text separately.",
++  "verification": {
++    "rust": {
++      "passed": 784,
++      "failed": 0,
++      "ignored": 0,
++      "targets": [
++        "--lib",
++        "mmcif_pdb_checked",
++        "mmcif_residue_contract",
++        "mmcif_pqr_integration"
++      ],
++      "new_contract_tests": 12
++    },
++    "python": {
++      "passed": 119,
++      "failed": 0,
++      "files": [
++        "test_mmcif_pdb_checked.py",
++        "test_mmcif_residues.py",
++        "test_new_formats.py",
++        "test_input_errors.py"
++      ],
++      "new_api_tests": 23
++    },
++    "checks": {
++      "clippy_mol_and_py_all_targets_warnings_denied": "passed",
++      "cargo_fmt": "passed",
++      "refactor_budget": "passed",
++      "product_names": "passed",
++      "binding_surface_inventory": "passed",
++      "mkdocs_strict": "passed"
++    },
++    "environment_note": "Clippy initially could not write dependency files because the disk was full; passed after removing task-owned regenerable test/link/doc outputs. No source or unrelated cache was removed."
++  }
++}

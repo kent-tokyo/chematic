@@ -8,7 +8,7 @@ use crate::EcfpBitInfo;
 use crate::Mol;
 use crate::RdkitBestAlignment;
 use crate::RdkitMorganDetail;
-use crate::formats::{bitvec2048_to_bytes, flat_to_coords3d};
+use crate::formats::{bitvec2048_to_bytes, checked_coords3d, flat_to_coords3d};
 use ndarray::Array1;
 use numpy::{IntoPyArray, PyArray1};
 use pyo3::exceptions::PyValueError;

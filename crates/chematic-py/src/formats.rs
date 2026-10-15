@@ -61,6 +61,27 @@ pub(crate) fn flat_to_coords3d(coords: &[[f64; 3]]) -> chematic_3d::Coords3D {
     }
 }
 
+/// Convert caller-provided coordinates after validating the public Python
+/// boundary.  Most 3D kernels index coordinates by molecule atom index, so a
+/// short vector would otherwise surface as a Rust panic instead of a Python
+/// input error.
+pub(crate) fn checked_coords3d(
+    mol: &chematic_core::Molecule,
+    coords: &[[f64; 3]],
+) -> PyResult<chematic_3d::Coords3D> {
+    if coords.len() != mol.atom_count() {
+        return Err(PyValueError::new_err(format!(
+            "expected {} coordinates, got {}",
+            mol.atom_count(),
+            coords.len()
+        )));
+    }
+    if coords.iter().flatten().any(|value| !value.is_finite()) {
+        return Err(PyValueError::new_err("coordinates must all be finite"));
+    }
+    Ok(flat_to_coords3d(coords))
+}
+
 // ---------------------------------------------------------------------------
 // Helper: convert MoleculeReport to Python dict
 // ---------------------------------------------------------------------------
