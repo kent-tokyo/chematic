@@ -10,6 +10,121 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Added checked molecular ChemDoodle JSON reading and graph writing in
+  Rust/Python, preserving explicit zero H overrides, element labels, source
+  text and IDs, with strict unsupported-field rejection and aggregate limits.
+
+- Added target-density fingerprint OR folding in Rust/Python and the RDKit
+  adapter, using corrected density/minimum-width conditions from RDKit #9715
+  with explicit unmet-target reporting and bounded packed input validation.
+
+- Added fallible, bounded native heavy-atom distance matrices in Rust and
+  routed Python's existing topological_distance_matrix method through them;
+  atom/bond/entry budgets reject oversized requests before matrix allocation.
+
+- Added checked single-model PDB atom selection in Rust/Python, preserving
+  original atom/residue identity and atom lines while filtering ANISOU/CONECT
+  and retargeting TER records. Unknown-record loss requires explicit consent.
+
+- Added checked DMol3 .incoor reading/writing in Rust/Python, retaining raw
+  Bohr coordinates and oriented 3D cells with explicit Angstrom projections.
+
+- Added bounded RDKit path enumeration in Rust/Python with ordered atom/bond
+  output, root and hydrogen options, shortest-path selection and final ring
+  closures. Work/storage limits return errors rather than truncated paths.
+
+- Added checked MOPAC Cartesian reading/writing in Rust/Python, retaining
+  header text, optional optimization flags, atom labels and 0D-3D
+  translation vectors with full floating-point precision.
+
+- Added bounded RDKit atom-radius environments in Rust/Python, returning
+  ordered bond indices and atom distances with hydrogen filtering and exact
+  cyclic enforceSize behavior. Budget exhaustion returns an explicit error.
+
+- Added checked FHI-aims geometry.in reading/writing in Rust/Python, retaining
+  Cartesian/fractional coordinate kind, 0D-3D lattice rows, atom/lattice
+  constraints and optional initial charge/collinear spin values.
+
+- Added checked RDKit-compatible adjacency matrices and shortest atom paths
+  in Rust/Python, including asymmetric dative valence contributions, stable
+  bond-order tie handling and bounded allocation in sanitized atom order.
+
+- Added checked ORCA-AICCM EXYZ reading/writing in Rust/Python, retaining
+  virtual atom flags, oriented lattice rows and nonzero cell offsets with
+  full floating-point precision. ASE ExtXYZ remains a separate format.
+
+- Added checked RDKit 2026.09.1 Layered fingerprint options in Rust/Python:
+  six layer flags, path ranges, arbitrary bit lengths, rooted branched/linear
+  paths, masks and copied additive atom counters. Enumeration budgets and
+  unsupported branches return typed errors; the existing default profile
+  shares the hashing implementation and retains its bit contract.
+
+- Added indexed SDF slices, integer selections, strict boolean masks and
+  source-indexed Python batches with keep/raise failure handling. Bounded
+  reads retain duplicate requests and malformed-record positions. SDF graph,
+  record and file readers now dispatch V3000 CTABs to the existing parser
+  while preserving trailing SD fields and V2000 terminator compatibility.
+
+- Checked Cartesian-to-Z-matrix conversion and Gaussian-style Z-matrix output
+  with explicit reference atoms, charge/spin and 1–17 significant digits
+  (Open Babel #2794). Rust also reconstructs a canonical Cartesian frame;
+  Python exposes conversion and writing. Undefined or rounding-collapsed
+  frames fail instead of receiving arbitrary torsions.
+
+- Added conservative meso stereo-group reduction in Rust/Python, promoting
+  correlated tetrahedral/geometric members to ABS only with bounded exact mapping proofs.
+
+- Added checked RDFile v1 records in Rust/Python, retaining embedded MOL/RXN
+  payloads, registry references and ordered data fields with explicit SMILES projection.
+
+- Added bounded correlated stereo-group alternatives in Rust/Python, expanding
+  AND/OR groups without separating their atom and geometric-bond members.
+
+- Added checked standalone TURBOMOLE coordinate reading/writing in Rust/Python,
+  preserving 3D lattice orientation, coordinate units and frozen-atom flags.
+
+- Added checked full inversion of relative stereo groups in Rust/Python,
+  jointly changing tetrahedral centers and geometric double bonds while keeping
+  unselected configurations and correlated membership. Axes are refused.
+
+- Added a single-frame GRO reader in Rust/Python with explicit element resolution,
+  variable decimal precision, optional velocities, 3/9-value boxes and input limits.
+  Atom names are preserved and never guessed as truncated element symbols.
+
+- Added checked enhanced stereo-group construction in Rust and Python, including
+  mixed atom/bond groups, reference and overlap checks, and detached inspection.
+  Existing V3000 STE/STEB interchange retains correlated membership.
+
+- Added checked single-model mmCIF-to-PDB coordinate blocks in Rust/Python.
+  Overlong residue names and projected residue collisions fail explicitly;
+  namespace/metadata loss requires consent and numeric rounding is reported.
+
+- Corrected native carbon-stereoisomer candidate selection so CH2 and
+  identical terminal ligands do not consume the six-site budget; aminoadamantane
+  now yields four assignments. Enumeration retains graph metadata and Python
+  molecule properties while keeping ring pseudoasymmetric candidates.
+
+- Added general mmCIF residue grouping in Rust/Python, retaining separate
+  auth/label identities, glycans, ligands, water, models and alternate locations.
+  Missing residue identifiers and duplicate atom rows return explicit errors.
+
+- Added checked atom permutations in Rust and Python (`Mol.renumber_atoms`,
+  `rdkit_compat.RenumberAtoms`) preserving stereo frames, graph metadata and
+  typed molecule properties while rebuilding derived caches. Added the stored
+  graph `Mol.atom_count` property. Compatibility
+  `GetNumAtoms()` now includes explicit H unless `onlyHeavy=True` is requested.
+
+- Added checked PQR-to-rigid-PDBQT conversion with caller-supplied AutoDock
+  types, retained source charges/residue identity, explicit radius-loss consent,
+  and a sidecar reporting source values and serialization rounding.
+
+- Added conservative query-hydrogen folding in Rust and
+  `SmartsQuery.merge_hydrogens()` in Python, preserving complete tetrahedral
+  configurations across neighbour order and H representation. Compiled Python
+  queries now accept `use_chirality` in single and batch matching.
+
 ### Performance
 
 - Skip aromatic perception for RDKit-default TPSA when its selected model view

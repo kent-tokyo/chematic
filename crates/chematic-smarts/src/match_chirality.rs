@@ -185,16 +185,25 @@ pub(crate) fn mapped_chirality_primitive_with_map(
         return raw_matches;
     }
 
-    if target_order.contains(&STEREO_H_SENTINEL)
-        && target_order.len() == mapped_order.len() + 1
+    if target_order.len() == mapped_order.len() + 1
         && query_has_positive_h_count(&query.atoms[query_atom].query)
     {
-        let from_position = usize::from(
-            query.adj[query_atom]
-                .first()
-                .is_some_and(|&(_, neighbor)| neighbor < query_atom),
-        );
-        mapped_order.insert(from_position, STEREO_H_SENTINEL);
+        let missing: Vec<_> = target_order
+            .iter()
+            .copied()
+            .filter(|value| !mapped_order.contains(value))
+            .collect();
+        if let [hydrogen] = missing.as_slice()
+            && (*hydrogen == STEREO_H_SENTINEL
+                || mol.atom(AtomIdx(*hydrogen)).element == chematic_core::Element::H)
+        {
+            let from_position = usize::from(
+                query.adj[query_atom]
+                    .first()
+                    .is_some_and(|&(_, neighbor)| neighbor < query_atom),
+            );
+            mapped_order.insert(from_position, *hydrogen);
+        }
     }
 
     let Some(even) = permutation_parity(&mapped_order, target_order) else {
@@ -212,7 +221,11 @@ fn query_has_positive_h_count(query: &AtomQuery) -> bool {
     match query {
         AtomQuery::Primitive(AtomPrimitive::HCount(count)) => *count > 0,
         AtomQuery::And(a, b) => query_has_positive_h_count(a) || query_has_positive_h_count(b),
-        AtomQuery::Primitive(_) | AtomQuery::Or(_, _) | AtomQuery::Not(_) => false,
+        AtomQuery::Not(inner) => matches!(
+            inner.as_ref(),
+            AtomQuery::Primitive(AtomPrimitive::HCount(0))
+        ),
+        AtomQuery::Primitive(_) | AtomQuery::Or(_, _) => false,
     }
 }
 

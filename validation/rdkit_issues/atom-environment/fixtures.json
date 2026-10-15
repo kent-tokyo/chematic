@@ -1,0 +1,426 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "empty",
+      "smiles": "",
+      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "Small structure isolates empty radius/bond-order behavior",
+      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
+      "expected": {
+        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
+        "tolerance": 0
+      },
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "id": "one-carbon",
+      "smiles": "C",
+      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "Small structure isolates one-carbon radius/bond-order behavior",
+      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
+      "expected": {
+        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
+        "tolerance": 0
+      },
+      "sha256": "6b23c0d5f35d1b11f9b683f0b0a617355deb11277d91ae091d399c655b87940d"
+    },
+    {
+      "id": "chain",
+      "smiles": "CCO",
+      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "Small structure isolates chain radius/bond-order behavior",
+      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
+      "expected": {
+        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
+        "tolerance": 0
+      },
+      "sha256": "ab1de819ede91df490e6441934decfa9041b49f91d6bbadbba4df634ccff57fa"
+    },
+    {
+      "id": "mixed-orders",
+      "smiles": "C=CC#N",
+      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "Small structure isolates mixed-orders radius/bond-order behavior",
+      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
+      "expected": {
+        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
+        "tolerance": 0
+      },
+      "sha256": "656b0c52e9f8a3f588907629edcab7822c79d46fe90fa04bf6dcc420417b2366"
+    },
+    {
+      "id": "aromatic",
+      "smiles": "c1ccccc1",
+      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "Small structure isolates aromatic radius/bond-order behavior",
+      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
+      "expected": {
+        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
+        "tolerance": 0
+      },
+      "sha256": "13cad05ca8f49c509e5b7be8c67668484344ebf2b2d12b03b295f14d4b1c32d1"
+    },
+    {
+      "id": "kekule",
+      "smiles": "C1=CC=CC=C1",
+      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "Small structure isolates kekule radius/bond-order behavior",
+      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
+      "expected": {
+        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
+        "tolerance": 0
+      },
+      "sha256": "f597e5816a91b21d072c9b8f39605bc289cab6f9dcaea1bc08e1c8335eb2a8e1"
+    },
+    {
+      "id": "fused",
+      "smiles": "c1ccc2ccccc2c1",
+      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "Small structure isolates fused radius/bond-order behavior",
+      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
+      "expected": {
+        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
+        "tolerance": 0
+      },
+      "sha256": "a896d495b04a450b732a5bf6a5896266647c948af5d97014906f7afe145b9022"
+    },
+    {
+      "id": "four-cycle",
+      "smiles": "C1CCC1",
+      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "Small structure isolates four-cycle radius/bond-order behavior",
+      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
+      "expected": {
+        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
+        "tolerance": 0
+      },
+      "sha256": "20396b751bf2e968cbb57976575ca74b9a42dfce95093715587144ca8fa306f3"
+    },
+    {
+      "id": "cubane",
+      "smiles": "C12C3C4C1C5C2C3C45",
+      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "Small structure isolates cubane radius/bond-order behavior",
+      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
+      "expected": {
+        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
+        "tolerance": 0
+      },
+      "sha256": "eaebf0b7ca8f7b0973f5b5e3466f3e915481af00d09ae29d0814400b48eecca1"
+    },
+    {
+      "id": "bridged",
+      "smiles": "C1CC2CCC1C2",
+      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "Small structure isolates bridged radius/bond-order behavior",
+      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
+      "expected": {
+        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
+        "tolerance": 0
+      },
+      "sha256": "8decb4ecd7f11859f828999b33c19adb45a76028e77179a95905ce023bd312da"
+    },
+    {
+      "id": "fragments",
+      "smiles": "C1CCCCC1.CCO",
+      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "Small structure isolates fragments radius/bond-order behavior",
+      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
+      "expected": {
+        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
+        "tolerance": 0
+      },
+      "sha256": "9e04b0bae4126e77e9f7efe31403e2c2cedca239f25ed03424b49bb3585f9d4b"
+    },
+    {
+      "id": "salt",
+      "smiles": "[Na+].[O-]C(=O)C",
+      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "Small structure isolates salt radius/bond-order behavior",
+      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
+      "expected": {
+        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
+        "tolerance": 0
+      },
+      "sha256": "9903e0dd0dc754f986484ddee53102b08b2f344d4a917d72e547129ea23b02f6"
+    },
+    {
+      "id": "dative",
+      "smiles": "N->[Cu]",
+      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "Small structure isolates dative radius/bond-order behavior",
+      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
+      "expected": {
+        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
+        "tolerance": 0
+      },
+      "sha256": "30a8a6e6eb41b33da46b5cca557e8e49b8e6fb2bf56f6da139ccdb12d92f559c"
+    },
+    {
+      "id": "reverse-dative",
+      "smiles": "[Cu]<-N",
+      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "Small structure isolates reverse-dative radius/bond-order behavior",
+      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
+      "expected": {
+        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
+        "tolerance": 0
+      },
+      "sha256": "d8aadc4fa58d9a3ab29f470b78e516fdda87ec944fca301fbee0bb266f2b8bff"
+    },
+    {
+      "id": "two-donors",
+      "smiles": "[NH3]->[Cu+2]<-[NH3]",
+      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "Small structure isolates two-donors radius/bond-order behavior",
+      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
+      "expected": {
+        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
+        "tolerance": 0
+      },
+      "sha256": "39cd78f656a07bb7f978a5951e06cc8ca2608c41cb7b7acc8ee8b5f6e285c473"
+    },
+    {
+      "id": "chlorine-cleanup",
+      "smiles": "Cl(=O)(=O)(=O)O",
+      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "Small structure isolates chlorine-cleanup radius/bond-order behavior",
+      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
+      "expected": {
+        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
+        "tolerance": 0
+      },
+      "sha256": "bb139ffdc0da3996a03c49df664492e780f8c7d1fdd11b01e89e5e03c69da814"
+    },
+    {
+      "id": "nitrogen-cleanup",
+      "smiles": "O=N(=O)O",
+      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "Small structure isolates nitrogen-cleanup radius/bond-order behavior",
+      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
+      "expected": {
+        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
+        "tolerance": 0
+      },
+      "sha256": "cf63ac710a25d90bd0ffddca35a465fe089f2bbb945dbc356f06869aef4f7544"
+    },
+    {
+      "id": "hydrogen-removal",
+      "smiles": "[H]C([H])([H])[H]",
+      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "Small structure isolates hydrogen-removal radius/bond-order behavior",
+      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
+      "expected": {
+        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
+        "tolerance": 0
+      },
+      "sha256": "bd513a6a68633ef519d77992210d68e444a5fb66a5c41a795b2960b7808c22eb"
+    },
+    {
+      "id": "isotope-h",
+      "smiles": "[2H]OC",
+      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "Small structure isolates isotope-h radius/bond-order behavior",
+      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
+      "expected": {
+        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
+        "tolerance": 0
+      },
+      "sha256": "30ff7372d09a34a925db44222913c2eb0f79a5fccb4ca8c3ab2f3171c6ef6084"
+    },
+    {
+      "id": "hydride",
+      "smiles": "[H-].[Li+]",
+      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "Small structure isolates hydride radius/bond-order behavior",
+      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
+      "expected": {
+        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
+        "tolerance": 0
+      },
+      "sha256": "9827dd774c218223d0ecee98c1869555dd50679cf3ad1c00aa6eef9133a13adf"
+    },
+    {
+      "id": "hydrogen-gas",
+      "smiles": "[H][H]",
+      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "Small structure isolates hydrogen-gas radius/bond-order behavior",
+      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
+      "expected": {
+        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
+        "tolerance": 0
+      },
+      "sha256": "ea7e44a64c7461517e4f9eb140658e1650e4fe580eaa6895de3a748fdaaf72df"
+    },
+    {
+      "id": "stereocenter",
+      "smiles": "[13CH3][C@@H](O)F",
+      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "Small structure isolates stereocenter radius/bond-order behavior",
+      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
+      "expected": {
+        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
+        "tolerance": 0
+      },
+      "sha256": "5827c7a00adbd9908d92406258d43b7e47e5ef27c9d4c1b4425bbc71488549e7"
+    },
+    {
+      "id": "geometric",
+      "smiles": "F/C=C/Cl",
+      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "Small structure isolates geometric radius/bond-order behavior",
+      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
+      "expected": {
+        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
+        "tolerance": 0
+      },
+      "sha256": "7c3da2167850fdb789c5e558010f20ba0ec97c376dcc67e54a355c691764d37b"
+    },
+    {
+      "id": "noble-gas",
+      "smiles": "[He]",
+      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "Small structure isolates noble-gas radius/bond-order behavior",
+      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
+      "expected": {
+        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
+        "tolerance": 0
+      },
+      "sha256": "ea4ebdc667c9206a99c9db38f65d8c85ce987edf93e08fb8d69e94ffe7ad6422"
+    },
+    {
+      "id": "wildcard",
+      "smiles": "*CC",
+      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "Small structure isolates wildcard radius/bond-order behavior",
+      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
+      "expected": {
+        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
+        "tolerance": 0
+      },
+      "sha256": "9a1c4ea50c9f65dab85388edba1a5e36f0fea5df00e1b166adb24f59bfe4f443"
+    },
+    {
+      "id": "mapped-h",
+      "smiles": "[CH3:1][O:2][H:3]",
+      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "Small structure isolates mapped-h radius/bond-order behavior",
+      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
+      "expected": {
+        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
+        "tolerance": 0
+      },
+      "sha256": "483a9ac227b062af88d0559b9b407c9d21210a6abd9f1ba0e2627931badd7537"
+    },
+    {
+      "id": "quadruple",
+      "smiles": "[Mo]$[Mo]",
+      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "Small structure isolates quadruple radius/bond-order behavior",
+      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
+      "expected": {
+        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
+        "tolerance": 0
+      },
+      "sha256": "97423eac648000e7874c7267b38589a97a19f79f88ff65267a8f4db175abaef2"
+    },
+    {
+      "id": "triangle",
+      "smiles": "C1CC1",
+      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "Small structure isolates triangle radius/bond-order behavior",
+      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
+      "expected": {
+        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
+        "tolerance": 0
+      },
+      "sha256": "3b139ddd2a925eb70d94b87995227128eb8d99ad68e3224a9e14cee641e85b07"
+    },
+    {
+      "id": "branched-root",
+      "smiles": "CC(C)C",
+      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "Small structure isolates branched-root radius/bond-order behavior",
+      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
+      "expected": {
+        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
+        "tolerance": 0
+      },
+      "sha256": "a4989e0f473ee4981c8dc330f4867df3b27e9f8185a9c92ad25d1885d924f3b9"
+    },
+    {
+      "id": "two-isotope-h",
+      "smiles": "[2H]C([3H])O",
+      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "Small structure isolates two-isotope-h radius/bond-order behavior",
+      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
+      "expected": {
+        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
+        "tolerance": 0
+      },
+      "sha256": "b01101f71519dacba95a6d6031a485314c85e281f540779693dad23e03ea71e7"
+    }
+  ],
+  "sha256": "1e16d381592cef9ca96f9c9a8c08cffb28ceec9509b7f6e9c349e05153d15c39"
+}

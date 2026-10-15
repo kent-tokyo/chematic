@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "id": "synthetic-mixed-rdfile-v1",
+  "provenance": {
+    "source": "original molecule/reaction definitions authored for this feature",
+    "date": "2026-10-15",
+    "issue": "https://github.com/openbabel/openbabel/issues/2681",
+    "specification": "https://www.3ds.com/assets/invest/2026-01/biovia_chemistry_2026_ctfile_formats.pdf",
+    "transformations": "chematic source-candidate MOL/RXN writers encode methanol, carbon-13 methanol and atom-mapped methanol oxidation; authored registry-only records, duplicate fields and multiline data; no upstream attachments copied"
+  },
+  "license": "MIT OR Apache-2.0",
+  "redistribution": {
+    "status": "allowed",
+    "rationale": "original project-authored minimal chemistry and text"
+  },
+  "minimization": "three embedded records and two reference-only records isolate type, isotope, map, metadata and reference handling",
+  "oracle": {
+    "name": "Indigo RDF reader/writer and RDKit graph/InChI reference",
+    "version": "Indigo 1.46.0.0-gb36d38f52-aarch64-darwin-appleclang-17000013; RDKit 2026.09.1",
+    "settings": "Indigo skip MOL dates; RDKit retain explicit H and atom maps; duplicate field handling checked against authored vector, not dictionary-based oracle"
+  },
+  "expected": {
+    "records": 5,
+    "kinds": [
+      "molecule",
+      "molecule",
+      "reaction",
+      "molecule",
+      "reaction"
+    ],
+    "projection": [
+      "CO",
+      "[13CH3]O",
+      "[CH3:1][OH:2]>>[CH2:1]=[O:2]",
+      null,
+      null
+    ],
+    "projection_comparison": "drawn molecular InChI per role plus explicit atom-map counters, not lexical SMILES equality",
+    "first_field_names": [
+      "note",
+      "note"
+    ],
+    "first_field_values": [
+      "first",
+      "second\nwith  two spaces\n\nlast"
+    ],
+    "encoding": "UTF-8 LF",
+    "numeric_tolerance": 0
+  },
+  "payload": "mixed-records.rdf",
+  "sha256": "0194c15b4a1e8649d028271f98b48d053e3e526afc3870cdcb7c3c3dc7f832f2"
+}

@@ -13,6 +13,7 @@ pub mod atropisomer;
 pub mod brics;
 pub mod cache;
 pub mod canonical;
+pub mod checked_distance_matrix;
 pub mod cip;
 pub mod condensed;
 pub mod descriptors;
@@ -29,6 +30,7 @@ pub mod ifg;
 pub mod isotope_distribution;
 pub mod iupac_stereo;
 pub mod logd;
+pub mod meso_stereo_group;
 pub mod mlp;
 pub mod mmff94_bci;
 pub mod mmp;
@@ -48,12 +50,19 @@ pub mod scaffold;
 pub mod screening;
 pub mod standardize;
 pub mod stereo;
+pub mod stereo_group_alternatives;
+pub mod stereo_group_inversion;
 pub mod tautomer;
 pub mod topo_descriptors;
 pub mod vsa;
 pub mod workflow;
 pub mod xlogp3;
 
+pub use checked_distance_matrix::{
+    MAX_NATIVE_DISTANCE_ATOMS, MAX_NATIVE_DISTANCE_BONDS, MAX_NATIVE_DISTANCE_ENTRIES,
+    NativeDistanceMatrixError, NativeDistanceMatrixLimits, try_topological_distance_matrix,
+    try_topological_distance_matrix_with_limits,
+};
 pub use cip::{
     CipAssignment, CipMode, CipModeAssignment, CipModeError, CipUnresolvedReason, EzCompleteness,
     assign_cip, assign_cip_with_mode, assign_ez_bonds, assign_ez_bonds_with_mode,
@@ -183,3 +192,16 @@ mod descriptor_boundary_contract_tests;
 
 #[cfg(all(test, feature = "serde"))]
 mod interchange_boundary_contract_tests;
+
+pub use stereo_group_inversion::{StereoGroupInversionError, invert_stereo_group};
+
+pub use stereo_group_alternatives::{
+    MAX_STEREO_GROUP_ALTERNATIVE_ATOMS, MAX_STEREO_GROUP_ALTERNATIVE_BONDS,
+    MAX_STEREO_GROUP_ALTERNATIVES, StereoGroupAlternatives, StereoGroupAlternativesError,
+    enumerate_stereo_group_alternatives,
+};
+
+pub use meso_stereo_group::{
+    MAX_MESO_GROUP_ATOMS, MAX_MESO_GROUP_BONDS, MAX_MESO_GROUP_VISITS, MesoStereoGroupError,
+    MesoStereoGroupReduction, MesoStereoWitness, reduce_meso_stereo_group,
+};

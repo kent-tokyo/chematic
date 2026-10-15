@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "provenance": "Project-authored minimal synthetic graph recipes; no upstream attachments or molecule corpus copied.",
+  "license": "MIT OR Apache-2.0",
+  "redistribution": "Permitted under the project dual license.",
+  "minimization": "Exhaust all 1024 simple labeled five-carbon graphs, plus short native-semantic boundary recipes.",
+  "oracle": "RDKit 2026.09.1; SmilesParserParams removeHs=False, sanitize=False; remove every atomic-number-1 vertex explicitly before Chem.GetDistanceMatrix(useBO=False,useAtomWts=False). Normalize disconnected 1e8 to u32::MAX.",
+  "expected_units": "Unweighted heavy-subgraph bond counts, no length units",
+  "tolerance": 0,
+  "five_vertex_graph_masks": [0, 1023],
+  "smiles": ["CCC", "C=CO", "c1ccccc1", "C1CC2CCC1C2", "C.O", "[H]C([H])O", "*CC", "N->[Cu+2]", "[Na+].[Cl-]", "[2H]OC", "F/C=C\\Cl", "C[H]O.*", "[2H].[H][H]", "[H]", "[13CH3]O", "CC(C)(F)Cl", "C1CC1.CC", "[C@H](F)(Cl)Br"]
+}

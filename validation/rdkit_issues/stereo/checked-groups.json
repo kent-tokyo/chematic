@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "provenance": {
+    "source": "Original small-molecule diagnostic cases authored for this project, following the metadata gap discussed in RDKit issue 9705",
+    "date": "2026-10-15",
+    "external_data": "No upstream attachments, structures or BIOVIA example records copied",
+    "license": "MIT OR Apache-2.0",
+    "redistribution": "Allowed: original project fixture",
+    "minimization": "Two six-carbon dienes isolate correlated bond groups; one seven-atom alcohol isolates atom/bond correlation. Explicit stereochemical SMILES set the drawn configuration.",
+    "oracle": {
+      "name": "Source-authored membership and declared configuration; RDKit InChI for drawn geometry only",
+      "version": "RDKit 2026.09.1; BIOVIA CTfile Chemistry 2026 collection token definitions",
+      "settings": "ABS/AND/OR; explicit native graph atom/bond indices; 24 deterministic atom numberings per kind and structure; no enumeration or group canonicalization oracle"
+    }
+  },
+  "cases": [
+    {"id": "ee-diene", "smiles": "C/C=C/C=C/C", "atoms": [], "bonds": [1, 3]},
+    {"id": "zz-diene", "smiles": "C/C=C\\C=C/C", "atoms": [], "bonds": [1, 3]},
+    {"id": "mixed-alcohol", "smiles": "C/C=C/[C@H](O)CC", "atoms": [3], "bonds": [1]}
+  ]
+}
