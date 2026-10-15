@@ -12,6 +12,12 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Add a checked single-molecule HyperChem HIN reader and immutable source
+  records to Rust/Python/WASM. Preserve atom identities, coordinates, partial
+  charges and literal `s/d/t/a` connectivity; aromatic HIN bonds project to MDL
+  type 4, ahead of unresolved Open Babel #3000. Unsupported directives and
+  inconsistent references refuse instead of losing fields silently.
+
 - Added checked molecular ChemDoodle JSON reading and graph writing in
   Rust/Python, preserving explicit zero H overrides, element labels, source
   text and IDs, with strict unsupported-field rejection and aggregate limits.

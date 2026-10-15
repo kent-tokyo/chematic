@@ -20,6 +20,7 @@ const WASM_MAX_SMARTS_MATCHES: usize = 10_000;
 
 mod ensemble_v2;
 mod format_io;
+mod hin;
 mod mol_3d;
 mod mol_depict;
 mod mol_descriptors;
@@ -35,6 +36,7 @@ mod tests;
 
 pub use ensemble_v2::embed_ensemble_v2_json;
 pub use format_io::*;
+pub use hin::*;
 pub use mol_3d::*;
 pub use mol_depict::*;
 pub use mol_descriptors::*;

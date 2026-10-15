@@ -5052,6 +5052,21 @@ def explain_rdkit_topological_torsion_code(
     ...
 
 
+def from_hin(text: str) -> Mol:
+    """Checked HIN graph projection; charges/types/coordinates remain in the source record."""
+    ...
+
+
+def parse_hin_record_json(text: str) -> str:
+    """Inspect a single HIN record as chematic.hin-record.v1 JSON."""
+    ...
+
+
+def roundtrip_hin_record(text: str) -> str:
+    """Validate one bounded HIN record and preserve its exact source text."""
+    ...
+
+
 def pqr_to_pdbqt(text: str, atom_types: list[str], *, allow_radius_loss: bool = False) -> dict[str, Any]:
     """Convert PQR to rigid PDBQT with source charges and a loss sidecar."""
     ...
