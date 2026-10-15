@@ -79,3 +79,14 @@ Open Babel CIF/mmCIF diagnostic. It needs a source-built Python extension and
 Gemmi in the oracle environment. Result hashes identify the downloaded bytes;
 the hermetic CI fixture is independently authored. This validates single CCD
 components, not a bulk dictionary or package release.
+
+## Rooted SMILES stereo
+
+`validate_rooted_stereo.py --cases /tmp/rooted-cases.json` compares original
+constructed bridgehead configurations with RDKit 2026.09.1's accurate CIP
+labeler. Generate cases with
+`cargo run -p chematic-smiles --example rooted_stereo_probe`. Provide the
+source-built Python extension and pinned RDKit on `PYTHONPATH`; optional
+`--wasm-module` adds exact real Node/WASM versus Python checks. The output
+contains a compressed complete packet and a source/runtime-hashed summary.
+See [the checked API scope](../docs/rooted-smiles-stereo.md).

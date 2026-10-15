@@ -14,7 +14,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-No unreleased changes.
+- Add opt-in stereo-checked rooted SMILES in Rust, Python and WASM, with an
+  original-atom correspondence, validated tetrahedral frames and a 256-atom
+  bound. Addresses the implicit-H bridgehead serialization failure class in
+  RDKit #9646 without changing the RDKit-compatibility writer.
 
 ## [1.1.5] - 2026-10-16
 

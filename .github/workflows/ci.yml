@@ -233,6 +233,7 @@ jobs:
           - { package: chematic-mol, target: public_api_compat_v1_1_3 }
           - { package: chematic-mol, target: ccd_contract }
           - { package: chematic-smiles, target: rdkit_matrix_limits }
+          - { package: chematic-smiles, target: rooted_stereo }
           - { package: chematic-smiles, target: rdkit_matrix_3d_checked }
           - { package: chematic-chem, target: rdkit_reference }
           - { package: chematic-chem, target: rdkit_ring_version_contract }

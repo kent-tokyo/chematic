@@ -80,3 +80,13 @@ refuses nonfinite coordinates and genuinely unrepresentable distances, while
 recovering finite norms when intermediate squares overflow or underflow.
 These are locally investigated numeric boundaries; the upstream issue remains
 a report of matrix-allocation safety, and its large-input crash was not run.
+
+## October 16 follow-up: rooted implicit-H bridgeheads
+
+[#9646](https://github.com/rdkit/rdkit/issues/9646) remains open. A reduced
+constructed graph with only the two bridgehead tags reproduces S/R changes
+on RDKit 2026.09.1 when those implicit-H centers are rooted first. Added
+[checked rooted serialization](rooted-smiles-stereo.md) with verified
+four-ligand tetrahedral frames and original atom correspondences in
+Rust/Python/WASM. This is an opt-in native API; compatibility output is
+unchanged, and missing/unsupported stereo data is refused rather than guessed.

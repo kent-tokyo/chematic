@@ -34,6 +34,7 @@ mod mol_reactions;
 mod nucleic_acid;
 mod pipeline_v2;
 mod rdkit_compat;
+mod rooted;
 #[cfg(test)]
 mod tests;
 
