@@ -68,3 +68,12 @@ zero failures or ignored tests. Clippy with warnings denied and formatting
 checks passed for the changed Rust files.
 These are local source checks; no package publication or upstream RDKit change
 is included.
+
+## October 16 follow-up: checked 3D matrix numerics
+
+The allocation guard motivated by [#9647](https://github.com/rdkit/rdkit/issues/9647)
+now has an [opt-in numeric extension](rdkit-checked-3d-distance-matrix.md). It
+refuses nonfinite coordinates and genuinely unrepresentable distances, while
+recovering finite norms when intermediate squares overflow or underflow.
+These are locally investigated numeric boundaries; the upstream issue remains
+a report of matrix-allocation safety, and its large-input crash was not run.

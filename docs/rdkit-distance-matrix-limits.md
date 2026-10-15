@@ -89,3 +89,10 @@ CARGO_INCREMENTAL=0 cargo clippy -p chematic-smiles -p chematic-py --all-targets
 
 Python checks used a local debug extension without native InChI support.
 This is local source validation, not a package publication or upstream change.
+
+## Checked numeric extension (2026-10-16)
+
+The existing APIs above retain their numeric behavior. A separate
+[`rdkit_distance_matrix_3d_checked`](rdkit-checked-3d-distance-matrix.md) now
+adds finite-coordinate/result checks, rejects undefined weighted dummy-atom
+diagonals and uses a scaled norm only at overflow/underflow boundaries.

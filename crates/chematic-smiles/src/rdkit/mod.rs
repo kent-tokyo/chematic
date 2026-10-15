@@ -393,7 +393,9 @@ pub fn rdkit_num_atoms(mol: &Molecule) -> Result<usize, RdkitSmilesError> {
     Ok(rdkit_mol_for_writing(mol)?.atoms.len())
 }
 
-pub use matrices::{rdkit_distance_matrix, rdkit_distance_matrix_3d};
+pub use matrices::{
+    rdkit_distance_matrix, rdkit_distance_matrix_3d, rdkit_distance_matrix_3d_checked,
+};
 
 /// One problem `MolOps::detectChemistryProblems` reports (see
 /// [`rdkit_detect_chemistry_problems`]).

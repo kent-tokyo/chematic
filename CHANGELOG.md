@@ -10,6 +10,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Add an opt-in checked RDKit-model 3D distance matrix to Rust/Python/WASM,
+  extending the #9647 allocation boundary with finite-coordinate/result checks,
+  explicit undefined weighted-dummy diagonals and scaled norms for representable
+  extreme distances. Existing compatibility results remain unchanged.
+
 ### Performance
 
 - Skip aromatic perception for RDKit-default TPSA when its selected model view

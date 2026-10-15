@@ -54,3 +54,11 @@ current issue or benchmark links to them.
   a deletion candidate.
 - Generated packages, build output, and temporary corpora do not belong in this
   directory.
+
+### Checked 3D distance-matrix validation
+
+`validate_checked_3d_matrix.py` compares the source-built checked and legacy
+APIs with installed RDKit on 128 ordinary synthetic coordinate cases and eight
+numeric boundary recipes. It records full matrices, finite/nonfinite categories,
+source/runtime hashes and zero-valued failure counters. It does not execute
+the oversized upstream heap-crash reproducer.

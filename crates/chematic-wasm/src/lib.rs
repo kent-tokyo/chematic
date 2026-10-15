@@ -18,6 +18,7 @@ pub(crate) const WASM_MAX_OUTPUT_BYTES: usize = 16 * 1024 * 1024;
 /// Maximum SMARTS matches returned by WASM APIs.
 const WASM_MAX_SMARTS_MATCHES: usize = 10_000;
 
+mod checked_matrices;
 mod ensemble_v2;
 mod format_io;
 mod mol_3d;

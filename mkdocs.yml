@@ -81,6 +81,7 @@ nav:
     - Format Capability Matrix: format-capabilities.md
     - Language Bindings Cross-Reference: language-bindings.md
     - Error Handling & Limits: error-and-limits.md
+    - Checked 3D Distance Matrices: rdkit-checked-3d-distance-matrix.md
   - Reliability:
     - Validation vs RDKit: validation.md
     - Compatibility Scope: compatibility-scope.md

@@ -1,0 +1,136 @@
+[
+  {
+    "id": "ordinary",
+    "smiles": "CCO",
+    "coords": [
+      [
+        0,
+        0,
+        0
+      ],
+      [
+        3,
+        0,
+        0
+      ],
+      [
+        3,
+        4,
+        0
+      ]
+    ],
+    "weights": false,
+    "expected": "finite"
+  },
+  {
+    "id": "large_representable",
+    "smiles": "CC",
+    "coords": [
+      [
+        0,
+        0,
+        0
+      ],
+      [
+        1e+308,
+        0,
+        0
+      ]
+    ],
+    "weights": false,
+    "expected_distance": 1e+308
+  },
+  {
+    "id": "tiny_representable",
+    "smiles": "CC",
+    "coords": [
+      [
+        0,
+        0,
+        0
+      ],
+      [
+        1e-300,
+        0,
+        0
+      ]
+    ],
+    "weights": false,
+    "expected_distance": 1e-300
+  },
+  {
+    "id": "subnormal_squared",
+    "smiles": "CC",
+    "coords": [
+      [
+        0,
+        0,
+        0
+      ],
+      [
+        1e-160,
+        0,
+        0
+      ]
+    ],
+    "weights": false,
+    "expected_distance": 1e-160
+  },
+  {
+    "id": "unrepresentable",
+    "smiles": "CC",
+    "coords": [
+      [
+        1e+308,
+        0,
+        0
+      ],
+      [
+        -1e+308,
+        0,
+        0
+      ]
+    ],
+    "weights": false,
+    "expected_error": "non-finite 3D distance"
+  },
+  {
+    "id": "nan_singleton",
+    "smiles": "[He]",
+    "coords": [
+      [
+        "NaN",
+        0,
+        0
+      ]
+    ],
+    "weights": false,
+    "expected_error": "non-finite coordinate"
+  },
+  {
+    "id": "infinity_singleton",
+    "smiles": "[He]",
+    "coords": [
+      [
+        "Infinity",
+        0,
+        0
+      ]
+    ],
+    "weights": false,
+    "expected_error": "non-finite coordinate"
+  },
+  {
+    "id": "weighted_dummy",
+    "smiles": "*",
+    "coords": [
+      [
+        0,
+        0,
+        0
+      ]
+    ],
+    "weights": true,
+    "expected_error": "atomic number zero"
+  }
+]
