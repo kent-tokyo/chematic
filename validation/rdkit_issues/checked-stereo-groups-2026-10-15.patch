@@ -1,0 +1,1102 @@
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 8fc26ce..01ceea3 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -215,6 +215,7 @@ jobs:
+           - { package: chematic-mol, target: mmcif_pqr_integration }
+           - { package: chematic-mol, target: mmcif_residue_contract }
+           - { package: chematic-mol, target: mmcif_pdb_checked }
++          - { package: chematic-core, target: checked_stereo_groups }
+           - { package: chematic-mol, target: qcschema }
+           - { package: chematic-mol, target: square_planar_mol_io }
+           - { package: chematic-mol, target: stereo2d_ez_reader_integration }
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index db06233..cc953be 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -12,6 +12,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
+ 
+ ### Added
+ 
++- Added checked enhanced stereo-group construction in Rust and Python, including
++  mixed atom/bond groups, reference and overlap checks, and detached inspection.
++  Existing V3000 STE/STEB interchange retains correlated membership.
++
+ - Added checked single-model mmCIF-to-PDB coordinate blocks in Rust/Python.
+   Overlong residue names and projected residue collisions fail explicitly;
+   namespace/metadata loss requires consent and numeric rounding is reported.
+diff --git a/crates/chematic-core/src/lib.rs b/crates/chematic-core/src/lib.rs
+index 8f03afc..683a235 100644
+--- a/crates/chematic-core/src/lib.rs
++++ b/crates/chematic-core/src/lib.rs
+@@ -40,6 +40,7 @@ pub use kekulization::{
+ };
+ pub use molecule::{
+     AtomIdx, BondIdx, MolError, Molecule, MoleculeBuilder, RenumberError, STEREO_H_SENTINEL,
++    StereoGroupError,
+ };
+ pub use nontetrahedral::NonTetrahedralClass;
+ // `StereoConfiguration`/`CanonicalStereoConfiguration`/`canonicalize_configuration`/
+diff --git a/crates/chematic-core/src/molecule.rs b/crates/chematic-core/src/molecule.rs
+index e91b6da..a35a355 100644
+--- a/crates/chematic-core/src/molecule.rs
++++ b/crates/chematic-core/src/molecule.rs
+@@ -105,6 +105,7 @@ include!("molecule/graph.rs");
+ include!("molecule/metadata.rs");
+ include!("molecule/cache.rs");
+ include!("molecule/renumber.rs");
++include!("molecule/checked_stereo_groups.rs");
+ include!("molecule/builder.rs");
+ 
+ #[cfg(test)]
+diff --git a/crates/chematic-core/src/molecule/checked_stereo_groups.rs b/crates/chematic-core/src/molecule/checked_stereo_groups.rs
+new file mode 100644
+index 0000000..66c0c13
+--- /dev/null
++++ b/crates/chematic-core/src/molecule/checked_stereo_groups.rs
+@@ -0,0 +1,146 @@
++/// Structural errors in an enhanced stereo grouping. Indices are zero-based.
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub enum StereoGroupError {
++    EmptyGroup {
++        group: usize,
++    },
++    InvalidGroupNumber {
++        group: usize,
++    },
++    DuplicateGroup {
++        first: usize,
++        second: usize,
++    },
++    InvalidAtom {
++        group: usize,
++        atom: AtomIdx,
++    },
++    InvalidBond {
++        group: usize,
++        bond: BondIdx,
++    },
++    AtomOverlap {
++        first: usize,
++        second: usize,
++        atom: AtomIdx,
++    },
++    BondOverlap {
++        first: usize,
++        second: usize,
++        bond: BondIdx,
++    },
++}
++impl core::fmt::Display for StereoGroupError {
++    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
++        match self {
++            Self::EmptyGroup { group } => {
++                write!(f, "stereo group {group} has no atom or bond members")
++            }
++            Self::InvalidGroupNumber { group } => write!(
++                f,
++                "stereo group {group} requires a positive AND/OR group number"
++            ),
++            Self::DuplicateGroup { first, second } => write!(
++                f,
++                "stereo groups {first} and {second} repeat the same kind and number"
++            ),
++            Self::InvalidAtom { group, atom } => write!(
++                f,
++                "stereo group {group} references out-of-range atom {}",
++                atom.0
++            ),
++            Self::InvalidBond { group, bond } => write!(
++                f,
++                "stereo group {group} references out-of-range bond {}",
++                bond.0
++            ),
++            Self::AtomOverlap {
++                first,
++                second,
++                atom,
++            } => write!(
++                f,
++                "atom {} belongs to stereo groups {first} and {second}",
++                atom.0
++            ),
++            Self::BondOverlap {
++                first,
++                second,
++                bond,
++            } => write!(
++                f,
++                "bond {} belongs to stereo groups {first} and {second}",
++                bond.0
++            ),
++        }
++    }
++}
++impl std::error::Error for StereoGroupError {}
++
++impl Molecule {
++    /// Replace enhanced atom/bond groups on an independent copy, after validating
++    /// references, positive AND/OR numbers, unique group keys and disjoint
++    /// membership. An empty list clears groups; an empty group is rejected.
++    /// Duplicate members within one group are deduplicated in first-seen order.
++    ///
++    /// This checks metadata structure, not stereogenicity or 3D feasibility.
++    /// It preserves the indexed graph, stored stereo frames and all metadata;
++    /// derived caches start empty. No configuration is inverted or canonicalized.
++    pub fn with_checked_stereo_groups(
++        &self,
++        groups: Vec<(StereoGroup, Vec<BondIdx>)>,
++    ) -> Result<Self, StereoGroupError> {
++        let mut kinds = std::collections::HashMap::new();
++        let mut atoms = std::collections::HashMap::new();
++        let mut bonds = std::collections::HashMap::new();
++        for (i, (group, members)) in groups.iter().enumerate() {
++            if group.atom_indices.is_empty() && members.is_empty() {
++                return Err(StereoGroupError::EmptyGroup { group: i });
++            }
++            if matches!(
++                group.kind,
++                crate::StereoGroupKind::And(0) | crate::StereoGroupKind::Or(0)
++            ) {
++                return Err(StereoGroupError::InvalidGroupNumber { group: i });
++            }
++            if let Some(first) = kinds.insert(group.kind.clone(), i) {
++                return Err(StereoGroupError::DuplicateGroup { first, second: i });
++            }
++            for &atom in &group.atom_indices {
++                if atom.0 as usize >= self.atom_count() {
++                    return Err(StereoGroupError::InvalidAtom { group: i, atom });
++                }
++                if let Some(first) = atoms.insert(atom, i)
++                    && first != i
++                {
++                    return Err(StereoGroupError::AtomOverlap {
++                        first,
++                        second: i,
++                        atom,
++                    });
++                }
++            }
++            for &bond in members {
++                if bond.0 as usize >= self.bond_count() {
++                    return Err(StereoGroupError::InvalidBond { group: i, bond });
++                }
++                if let Some(first) = bonds.insert(bond, i)
++                    && first != i
++                {
++                    return Err(StereoGroupError::BondOverlap {
++                        first,
++                        second: i,
++                        bond,
++                    });
++                }
++            }
++        }
++        let groups = groups
++            .into_iter()
++            .map(|(g, bonds)| (StereoGroup::new(g.kind, g.atom_indices), bonds))
++            .collect();
++        let mut result = self.clone();
++        result.set_stereo_groups_with_bonds(groups);
++        Ok(result)
++    }
++}
+diff --git a/crates/chematic-core/tests/checked_stereo_groups.rs b/crates/chematic-core/tests/checked_stereo_groups.rs
+new file mode 100644
+index 0000000..dd80052
+--- /dev/null
++++ b/crates/chematic-core/tests/checked_stereo_groups.rs
+@@ -0,0 +1,210 @@
++use chematic_core::{
++    Atom, AtomIdx, BondIdx, BondOrder, Chirality, DerivedSlot, Element, Molecule, MoleculeBuilder,
++    RGroupLabel, STEREO_H_SENTINEL, StereoGroup, StereoGroupError, StereoGroupKind,
++};
++
++fn molecule() -> Molecule {
++    let mut builder = MoleculeBuilder::new();
++    for _ in 0..5 {
++        builder.add_atom(Atom::new(Element::C));
++    }
++    for i in 0..4 {
++        builder
++            .add_bond(AtomIdx(i), AtomIdx(i + 1), BondOrder::Single)
++            .unwrap();
++    }
++    builder.set_stereo_neighbor_order(AtomIdx(2), vec![1, 3, STEREO_H_SENTINEL]);
++    builder.set_bond_direction(BondIdx(1), BondOrder::Up);
++    builder.set_bond_direction_anchor(BondIdx(1), AtomIdx(2));
++    builder.set_r_group(AtomIdx(4), RGroupLabel::numbered(3).unwrap());
++    builder.set_tag(AtomIdx(0), Some(37));
++    let mut m = builder.build();
++    m.set_chirality(AtomIdx(2), Chirality::Clockwise);
++    m
++}
++fn group(kind: StereoGroupKind, atoms: &[u32], bonds: &[u32]) -> (StereoGroup, Vec<BondIdx>) {
++    (
++        StereoGroup::new(kind, atoms.iter().map(|&i| AtomIdx(i)).collect()),
++        bonds.iter().map(|&i| BondIdx(i)).collect(),
++    )
++}
++fn error(groups: Vec<(StereoGroup, Vec<BondIdx>)>) -> StereoGroupError {
++    molecule()
++        .with_checked_stereo_groups(groups)
++        .err()
++        .expect("expected structural error")
++}
++#[test]
++fn mixed_bond_only_and_atom_only_groups_preserve_order_and_kind() {
++    let m = molecule();
++    let groups = vec![
++        group(StereoGroupKind::And(7), &[2], &[1]),
++        group(StereoGroupKind::Absolute, &[0], &[]),
++        group(StereoGroupKind::Or(7), &[], &[3]),
++    ];
++    let result = m.with_checked_stereo_groups(groups.clone()).unwrap();
++    for (i, (g, b)) in groups.iter().enumerate() {
++        assert_eq!(&result.stereo_groups()[i], g);
++        assert_eq!(result.stereo_group_bond_indices(i), Some(b.as_slice()));
++    }
++    assert!(m.stereo_groups().is_empty());
++}
++#[test]
++fn checked_copy_retains_metadata_and_has_cold_caches() {
++    let m = molecule();
++    m.derived(DerivedSlot::Sssr, || 19u32);
++    let result = m
++        .with_checked_stereo_groups(vec![group(StereoGroupKind::And(1), &[2], &[1])])
++        .unwrap();
++    assert_eq!(
++        result.atoms().collect::<Vec<_>>(),
++        m.atoms().collect::<Vec<_>>()
++    );
++    assert_eq!(
++        result.bonds().collect::<Vec<_>>(),
++        m.bonds().collect::<Vec<_>>()
++    );
++    for (i, _) in m.atoms() {
++        assert_eq!(
++            result.neighbors(i).collect::<Vec<_>>(),
++            m.neighbors(i).collect::<Vec<_>>()
++        );
++        assert_eq!(result.stereo_neighbor_order(i), m.stereo_neighbor_order(i));
++        assert_eq!(result.atom_tag(i), m.atom_tag(i));
++        assert_eq!(result.r_group_label(i), m.r_group_label(i));
++    }
++    assert_eq!(
++        result.bond_direction(BondIdx(1)),
++        m.bond_direction(BondIdx(1))
++    );
++    assert_eq!(
++        result.bond_direction_anchor(BondIdx(1)),
++        m.bond_direction_anchor(BondIdx(1))
++    );
++    assert!(
++        result
++            .derived_if_computed::<u32>(DerivedSlot::Sssr)
++            .is_none()
++    );
++    assert_eq!(
++        *m.derived_if_computed::<u32>(DerivedSlot::Sssr).unwrap(),
++        19
++    );
++}
++#[test]
++fn duplicates_within_one_group_deduplicate_in_first_seen_order() {
++    let raw = StereoGroup {
++        kind: StereoGroupKind::And(2),
++        atom_indices: vec![AtomIdx(3), AtomIdx(1), AtomIdx(3)],
++    };
++    let result = molecule()
++        .with_checked_stereo_groups(vec![(raw, vec![BondIdx(3), BondIdx(1), BondIdx(3)])])
++        .unwrap();
++    assert_eq!(
++        result.stereo_groups()[0].atom_indices,
++        vec![AtomIdx(3), AtomIdx(1)]
++    );
++    assert_eq!(
++        result.stereo_group_bond_indices(0),
++        Some([BondIdx(3), BondIdx(1)].as_slice())
++    );
++}
++#[test]
++fn rejects_empty_group_but_empty_list_clears_metadata() {
++    assert_eq!(
++        error(vec![group(StereoGroupKind::Absolute, &[], &[])]),
++        StereoGroupError::EmptyGroup { group: 0 }
++    );
++    let m = molecule()
++        .with_checked_stereo_groups(vec![group(StereoGroupKind::And(1), &[2], &[1])])
++        .unwrap();
++    let cleared = m.with_checked_stereo_groups(vec![]).unwrap();
++    assert!(cleared.stereo_groups().is_empty());
++    assert_eq!(m.stereo_groups().len(), 1);
++}
++#[test]
++fn rejects_zero_relative_group_numbers() {
++    for kind in [StereoGroupKind::And(0), StereoGroupKind::Or(0)] {
++        assert_eq!(
++            error(vec![group(kind, &[0], &[])]),
++            StereoGroupError::InvalidGroupNumber { group: 0 }
++        );
++    }
++}
++#[test]
++fn rejects_duplicate_keys_even_when_members_are_disjoint() {
++    for kind in [
++        StereoGroupKind::Absolute,
++        StereoGroupKind::And(2),
++        StereoGroupKind::Or(2),
++    ] {
++        assert_eq!(
++            error(vec![group(kind.clone(), &[0], &[]), group(kind, &[1], &[])]),
++            StereoGroupError::DuplicateGroup {
++                first: 0,
++                second: 1
++            }
++        );
++    }
++}
++#[test]
++fn invalid_indices_fail_without_accessing_graph_memory() {
++    for index in [5, u32::MAX] {
++        assert_eq!(
++            error(vec![group(StereoGroupKind::Absolute, &[index], &[])]),
++            StereoGroupError::InvalidAtom {
++                group: 0,
++                atom: AtomIdx(index)
++            }
++        );
++    }
++    for index in [4, u32::MAX] {
++        assert_eq!(
++            error(vec![group(StereoGroupKind::Absolute, &[], &[index])]),
++            StereoGroupError::InvalidBond {
++                group: 0,
++                bond: BondIdx(index)
++            }
++        );
++    }
++}
++#[test]
++fn shared_atom_or_bond_cannot_have_conflicting_groups() {
++    assert_eq!(
++        error(vec![
++            group(StereoGroupKind::And(1), &[1], &[]),
++            group(StereoGroupKind::Or(1), &[1], &[])
++        ]),
++        StereoGroupError::AtomOverlap {
++            first: 0,
++            second: 1,
++            atom: AtomIdx(1)
++        }
++    );
++    assert_eq!(
++        error(vec![
++            group(StereoGroupKind::And(1), &[], &[1]),
++            group(StereoGroupKind::Absolute, &[], &[1])
++        ]),
++        StereoGroupError::BondOverlap {
++            first: 0,
++            second: 1,
++            bond: BondIdx(1)
++        }
++    );
++}
++#[test]
++fn failed_replacement_leaves_original_groups_untouched() {
++    let m = molecule()
++        .with_checked_stereo_groups(vec![group(StereoGroupKind::And(1), &[1], &[1])])
++        .unwrap();
++    assert!(
++        m.with_checked_stereo_groups(vec![group(StereoGroupKind::Or(1), &[99], &[])])
++            .is_err()
++    );
++    assert_eq!(m.stereo_groups()[0].kind, StereoGroupKind::And(1));
++    assert_eq!(
++        m.stereo_group_bond_indices(0),
++        Some([BondIdx(1)].as_slice())
++    );
++}
+diff --git a/crates/chematic-py/python/chematic/__init__.pyi b/crates/chematic-py/python/chematic/__init__.pyi
+index d98632b..b5146d7 100644
+--- a/crates/chematic-py/python/chematic/__init__.pyi
++++ b/crates/chematic-py/python/chematic/__init__.pyi
+@@ -119,6 +119,10 @@ class Mol:
+         """Copy with new_order[new_index] = old_index, preserving stereo and properties."""
+         ...
+ 
++    @property
++    def stereo_groups(self) -> list[tuple[Literal["abs", "and", "or"], int, list[int], list[int]]]: ...
++    def with_stereo_groups(self, groups: list[tuple[Literal["abs", "and", "or"], int, list[int], list[int]]]) -> Mol: ...
++
+     """A parsed molecule.
+ 
+     Create with :func:`from_smiles`, :func:`from_mol_block`, or :func:`from_inchi`.
+diff --git a/crates/chematic-py/src/mol_methods.rs b/crates/chematic-py/src/mol_methods.rs
+index 66adf56..536dddf 100644
+--- a/crates/chematic-py/src/mol_methods.rs
++++ b/crates/chematic-py/src/mol_methods.rs
+@@ -25,6 +25,7 @@ mod extended;
+ mod fingerprints;
+ mod identity;
+ mod properties;
++mod stereo_groups;
+ mod three_d;
+ mod transformations;
+ 
+diff --git a/crates/chematic-py/src/mol_methods/stereo_groups.rs b/crates/chematic-py/src/mol_methods/stereo_groups.rs
+new file mode 100644
+index 0000000..744e3b5
+--- /dev/null
++++ b/crates/chematic-py/src/mol_methods/stereo_groups.rs
+@@ -0,0 +1,103 @@
++use super::*;
++use chematic_core::{AtomIdx, BondIdx, StereoGroup, StereoGroupKind};
++
++type PyGroupSpec = (String, u32, Vec<u32>, Vec<u32>);
++type PyGroupInput<'py> = (
++    String,
++    Bound<'py, PyAny>,
++    Vec<Bound<'py, PyAny>>,
++    Vec<Bound<'py, PyAny>>,
++);
++
++fn group_integer(value: &Bound<'_, PyAny>) -> PyResult<u32> {
++    if value.is_instance_of::<pyo3::types::PyBool>() {
++        return Err(PyValueError::new_err(
++            "stereo group numbers and indices must be integers, not bool",
++        ));
++    }
++    value.extract::<u32>().map_err(|_| {
++        PyValueError::new_err(
++            "stereo group numbers and indices must be nonnegative 32-bit integers",
++        )
++    })
++}
++fn group_spec(input: PyGroupInput<'_>) -> PyResult<(StereoGroup, Vec<BondIdx>)> {
++    let (kind, number, atoms, bonds) = input;
++    let number = group_integer(&number)?;
++    let kind = match kind.as_str() {
++        "abs" if number == 0 => StereoGroupKind::Absolute,
++        "abs" => {
++            return Err(PyValueError::new_err(
++                "absolute stereo group number must be 0",
++            ));
++        }
++        "and" => StereoGroupKind::And(number),
++        "or" => StereoGroupKind::Or(number),
++        _ => {
++            return Err(PyValueError::new_err(
++                "stereo group kind must be 'abs', 'and' or 'or'",
++            ));
++        }
++    };
++    let atoms = atoms
++        .iter()
++        .map(|v| group_integer(v).map(AtomIdx))
++        .collect::<PyResult<_>>()?;
++    let bonds = bonds
++        .iter()
++        .map(|v| group_integer(v).map(BondIdx))
++        .collect::<PyResult<_>>()?;
++    Ok((StereoGroup::new(kind, atoms), bonds))
++}
++
++#[pymethods]
++impl Mol {
++    /// Enhanced groups as (kind, number, atom_indices, bond_indices) tuples.
++    /// Indices address the stored graph; kind is abs/and/or and ABS number is 0.
++    /// Returned lists are detached copies, including bond-only groups.
++    #[getter]
++    fn stereo_groups(&self) -> Vec<PyGroupSpec> {
++        self.inner
++            .stereo_groups()
++            .iter()
++            .enumerate()
++            .map(|(i, group)| {
++                let (kind, number) = match group.kind {
++                    StereoGroupKind::Absolute => ("abs", 0),
++                    StereoGroupKind::And(n) => ("and", n),
++                    StereoGroupKind::Or(n) => ("or", n),
++                };
++                (
++                    kind.into(),
++                    number,
++                    group.atom_indices.iter().map(|a| a.0).collect(),
++                    self.inner
++                        .stereo_group_bond_indices(i)
++                        .unwrap_or_default()
++                        .iter()
++                        .map(|b| b.0)
++                        .collect(),
++                )
++            })
++            .collect()
++    }
++
++    /// Replace enhanced atom/bond stereo groups on a checked independent copy.
++    /// No configuration is inverted. Existing stereo frames, graph metadata
++    /// and typed molecule properties are retained. This validates grouping
++    /// structure only; use V3000 to retain bond members on interchange.
++    fn with_stereo_groups(&self, groups: Vec<PyGroupInput<'_>>) -> PyResult<Mol> {
++        let groups = groups
++            .into_iter()
++            .map(group_spec)
++            .collect::<PyResult<_>>()?;
++        let inner = self
++            .inner
++            .with_checked_stereo_groups(groups)
++            .map_err(|e| PyValueError::new_err(e.to_string()))?;
++        Ok(Mol {
++            inner: Arc::new(inner),
++            props: self.props.clone(),
++        })
++    }
++}
+diff --git a/crates/chematic-py/tests/test_stereo_groups.py b/crates/chematic-py/tests/test_stereo_groups.py
+new file mode 100644
+index 0000000..7408c9e
+--- /dev/null
++++ b/crates/chematic-py/tests/test_stereo_groups.py
+@@ -0,0 +1,106 @@
++"""Checked atom/bond enhanced groups, including correlated V3000 export."""
++import ast
++import pickle
++from pathlib import Path
++import pytest
++import chematic
++
++
++@pytest.mark.parametrize('kind,number,token', [('abs',0,'ABS'),('and',7,'RAC7'),('or',7,'REL7')])
++@pytest.mark.parametrize('smiles,atoms,bonds', [('C/C=C/C=C/C',[],[1,3]),('C/C=C/[C@H](O)CC',[3],[1])])
++def test_groups_round_trip_without_dropping_bonds(kind,number,token,smiles,atoms,bonds):
++    source=chematic.from_smiles(smiles)
++    coords=source.rdkit_2d_coords()
++    expected=[(kind,number,atoms,bonds)]
++    grouped=source.with_stereo_groups(expected)
++    assert source.stereo_groups==[]
++    assert grouped.stereo_groups==expected
++    assert grouped.atom_table==source.atom_table and grouped.bond_table==source.bond_table
++    block=grouped.to_mol_v3000(coords,strict=True)
++    assert f'MDLV30/STEB{token} BONDS=' in block
++    if atoms:assert f'MDLV30/STE{token} ATOMS=' in block
++    reread=chematic.from_mol_v3000(block)
++    assert reread.stereo_groups==expected
++    assert reread.smiles==source.smiles
++    assert pickle.loads(pickle.dumps(grouped)).stereo_groups==expected
++
++
++def test_inspection_is_a_detached_copy_and_empty_list_clears():
++    source=chematic.from_smiles('C/C=C/[C@H](O)CC').with_stereo_groups([('and',1,[3],[1])])
++    groups=source.stereo_groups
++    groups[0][2].append(0);groups[0][3].clear();groups.clear()
++    assert source.stereo_groups==[('and',1,[3],[1])]
++    assert source.with_stereo_groups([]).stereo_groups==[]
++    assert source.stereo_groups==[('and',1,[3],[1])]
++
++
++def test_typed_properties_are_copied_independently():
++    source=chematic.from_smiles('C/C=C/[C@H](O)CC')
++    source.SetName('source');source.SetIntProp('int',-7)
++    source.SetUnsignedProp('unsigned',9);source.SetDoubleProp('double',1.25)
++    source.SetBoolProp('bool',True);source.SetProp('text','original')
++    out=source.with_stereo_groups([('and',1,[3],[1])])
++    assert out.GetPropsAsDict()==source.GetPropsAsDict()
++    assert out.GetIntProp('int')==-7 and out.GetUnsignedProp('unsigned')==9
++    assert out.GetDoubleProp('double')==1.25 and out.GetBoolProp('bool') is True
++    out.SetName('copy');out.SetIntProp('int',3)
++    assert source.GetName()=='source' and source.GetIntProp('int')==-7
++
++
++@pytest.mark.parametrize('groups,error', [
++    ([('and',0,[],[1])],'positive'),([('or',0,[3],[])],'positive'),
++    ([('abs',1,[3],[])],'must be 0'),([('AND',1,[3],[])],'kind'),
++    ([('and',1,[],[])],'no atom or bond'),
++    ([('and',1,[7],[])],'out-of-range atom'),([('and',1,[],[6])],'out-of-range bond'),
++    ([('and',1,[3],[]),('and',1,[],[1])],'repeat the same'),
++    ([('and',1,[3],[]),('or',1,[3],[])],'belongs to stereo groups'),
++    ([('and',1,[],[1]),('abs',0,[],[1])],'belongs to stereo groups'),
++])
++def test_bad_grouping_fails_atomically(groups,error):
++    source=chematic.from_smiles('C/C=C/[C@H](O)CC').with_stereo_groups([('or',2,[3],[1])])
++    with pytest.raises(ValueError,match=error):source.with_stereo_groups(groups)
++    assert source.stereo_groups==[('or',2,[3],[1])]
++
++
++@pytest.mark.parametrize('value',[-1,2**32,True,False,1.5,'1',None])
++@pytest.mark.parametrize('position',['number','atom','bond'])
++def test_indices_and_numbers_require_unsigned_integers(value,position):
++    kind,number,atoms,bonds='and',1,[3],[1]
++    if position=='number':number=value
++    elif position=='atom':atoms=[value]
++    else:bonds=[value]
++    with pytest.raises(ValueError):
++        chematic.from_smiles('C/C=C/[C@H](O)CC').with_stereo_groups([(kind,number,atoms,bonds)])
++
++
++def test_duplicates_within_a_group_deduplicate_in_first_seen_order():
++    source=chematic.from_smiles('C/C=C/C=C/C')
++    assert source.with_stereo_groups([('and',3,[],[3,1,3])]).stereo_groups==[('and',3,[],[3,1])]
++
++
++def test_memberships_follow_native_atom_permutation_bond_indices_stay_fixed():
++    source=chematic.from_smiles('C/C=C/[C@H](O)CC').with_stereo_groups([('and',1,[3],[1])])
++    order=[3,0,1,2,4,5,6]
++    out=source.renumber_atoms(order)
++    assert out.stereo_groups==[('and',1,[0],[1])]
++    assert source.stereo_groups==[('and',1,[3],[1])]
++
++
++def test_and_or_numbers_have_distinct_namespaces():
++    source=chematic.from_smiles('C/C=C/C=C/C')
++    expected=[('and',1,[],[1]),('or',1,[],[3])]
++    result=source.with_stereo_groups(expected)
++    assert result.stereo_groups==expected
++    assert chematic.from_mol_v3000(result.to_mol_v3000(source.rdkit_2d_coords(),strict=True)).stereo_groups==expected
++
++
++def test_old_cx_compatibility_api_still_refuses_enhanced_groups():
++    source=chematic.from_smiles('C/C=C/C=C/C').with_stereo_groups([('and',1,[],[1,3])])
++    with pytest.raises(ValueError):source.rdkit_cx_smiles()
++
++
++def test_shipped_stub_parses_and_declares_the_new_surface():
++    path=Path(__file__).resolve().parents[1]/'python/chematic/__init__.pyi'
++    tree=ast.parse(path.read_text())
++    mol=next(n for n in tree.body if isinstance(n,ast.ClassDef) and n.name=='Mol')
++    assert {'stereo_groups','with_stereo_groups'} <= {n.name for n in mol.body if isinstance(n,ast.FunctionDef)}
+diff --git a/docs/checked-stereo-groups.md b/docs/checked-stereo-groups.md
+new file mode 100644
+index 0000000..55ab77c
+--- /dev/null
++++ b/docs/checked-stereo-groups.md
+@@ -0,0 +1,132 @@
++# Checked enhanced stereo-group construction
++
++RDKit [#9705](https://github.com/rdkit/rdkit/issues/9705) describes how losing a
++bond member changes the correlation between atom and double-bond
++configurations. A mixed group must retain both kinds of members to represent
++that correlation.
++
++chematic already stores bond members separately from its public `StereoGroup`
++struct and reads/writes V3000 STE/STEB collections. This candidate adds a
++checked construction path in Rust and Python, plus Python inspection. It
++reuses that storage and interchange contract.
++
++```python
++import chematic
++
++mol = chematic.from_smiles("C/C=C/[C@H](O)CC")
++coords = mol.rdkit_2d_coords()
++# (kind, number, atom indices, bond indices), all native indices zero-based
++mixed = mol.with_stereo_groups([("and", 1, [3], [1])])
++assert mixed.stereo_groups == [("and", 1, [3], [1])]
++assert mol.stereo_groups == []
++
++block = mixed.to_mol_v3000(coords, strict=True)
++restored = chematic.from_mol_v3000(block)
++assert restored.stereo_groups == mixed.stereo_groups
++```
++
++The mixed group is written as `STERAC1 ATOMS=(1 4)` and
++`STEBRAC1 BONDS=(1 2)`. The existing reader merges these into one group.
++A bond-only group has an empty atom list and a nonempty bond list; it is never
++serialized as an empty atom collection.
++
++## API contract
++
++`Mol.stereo_groups` returns a detached list of
++`(kind, number, atom_indices, bond_indices)` tuples. Mutating the returned
++lists does not modify the molecule. The index order is the stored native graph
++order, available through `atom_table` and `bond_table`; it is not a promise
++about a different toolkit's atom or bond order.
++
++`Mol.with_stereo_groups(groups)` replaces the full group list on an independent
++copy. Typed molecule properties and names are copied independently. The indexed
++graph, existing stereo declarations/frames, atom tags and other graph metadata
++remain intact. Derived caches start empty. Supplying `[]` clears group metadata
++on the copy without changing the source.
++
++- Kinds are `abs`, `and`, and `or`.
++- ABS uses number 0. AND/OR require a positive 32-bit integer.
++- Atom and bond indices must be nonnegative 32-bit integers within the stored
++  graph's bounds. Python rejects bool, float, text and negative values.
++- A group must have at least one atom or bond member.
++- Each `(kind, number)` key occurs once. AND and OR may use the same number.
++- Each atom or bond belongs to at most one group. Repeated members within a
++  single group are deduplicated in first-seen order.
++- Invalid input raises `ValueError` without changing the source. A structurally
++  malformed Python tuple/list may raise `TypeError` during argument conversion.
++
++In Rust, use:
++
++```rust,ignore
++let grouped = mol.with_checked_stereo_groups(vec![(
++    chematic_core::StereoGroup::new(
++        chematic_core::StereoGroupKind::And(1),
++        vec![chematic_core::AtomIdx(3)],
++    ),
++    vec![chematic_core::BondIdx(1)],
++)])?;
++```
++
++`StereoGroupError` identifies invalid references, empty groups, invalid numbers,
++repeated group keys and overlapping membership. Existing unchecked metadata
++setters retain their signatures and behavior.
++
++## Interchange boundary
++
++[BIOVIA CTfile Chemistry 2026](https://www.3ds.com/assets/invest/2026-01/biovia_chemistry_2026_ctfile_formats.pdf)
++defines separate atom and bond collection tokens for absolute, AND and OR
++stereochemistry. The shared-number interpretation of mixed STE/STEB records
++is the existing chematic convention and the proposal in #9705. The published
++examples use distinct atom/bond group numbers and do not explicitly resolve
++that correlation question. This candidate does not establish interoperability
++of mixed groups with BIOVIA products.
++
++This API validates metadata structure. It does not perceive stereogenicity,
++verify that a selected bond is a valid stereogenic axis/double bond, assign
++new geometry, invert groups, enumerate isomers, canonicalize enhanced stereo
++identity, or perform meso reduction. Atropisomer bond membership can be stored;
++axis configuration is not created or validated by this API.
++
++Plain SMILES gives the drawn representative and does not encode enhanced
++group membership. The existing RDKit-compatible CXSMILES method continues to
++reject enhanced groups. Use the V3000 path above to retain bond members; no
++new CXSMILES group syntax is introduced here.
++
++## Validation and provenance
++
++`validation/rdkit_issues/stereo/checked-groups.json` is original project data
++under MIT OR Apache-2.0: two small dienes and one mixed alcohol, with no copied
++upstream attachment or BIOVIA example structure. It records minimization and
++a pinned RDKit 2026.09.1 diagnostic/geometry oracle.
++
++The validator checks ABS, AND and OR over all three fixtures, each with 24
++deterministic atom numberings: 216 V3000 round trips. Exact memberships and
++collection tokens use source-authored expectations. RDKit InChI checks the
++drawn configuration independently, without treating a drawn representative
++as the identity of an enhanced group.
++
++On RDKit 2026.09.1, the separate diagnostic reproduces loss of bond members
++from bond-only and mixed AND groups during V3000 export/read. Mixed-group
++canonicalization also drops its bond member. Those behaviors are diagnostics,
++not the membership oracle for this implementation.
++
++```sh
++cargo test -p chematic-core --lib --test checked_stereo_groups --offline --quiet
++cargo test -p chematic-mol --lib --test v3000_semantic_interop --offline --quiet
++python -m pytest crates/chematic-py/tests/test_stereo_groups.py \
++  crates/chematic-py/tests/test_pickle.py \
++  crates/chematic-py/tests/test_stereo_candidate_budget.py -q
++python scripts/validate_checked_stereo_groups.py
++```
++
++Tests cover graph metadata and warm/cold caches, detached inspection, atomic
++validation errors, independent typed properties, pickle, permutations, bond-only
++and mixed V3000 groups, and the shipped typing declarations.
++
++Local validation passed 936 Rust tests (including nine new checked-group tests)
++and 70 Python tests (including 44 new API tests), plus 216 reference cases.
++Clippy with warnings denied, explicit include-file formatting, refactor budget,
++binding inventory, product naming, and strict MkDocs also passed.
++
++This is an uncommitted local source candidate built on the previous candidates.
++It is not an upstream RDKit fix or a published chematic package.
+diff --git a/docs/rdkit-open-issues-2026-10-14.md b/docs/rdkit-open-issues-2026-10-14.md
+index 1ecc261..e632ba4 100644
+--- a/docs/rdkit-open-issues-2026-10-14.md
++++ b/docs/rdkit-open-issues-2026-10-14.md
+@@ -17,7 +17,7 @@ Issue state is a snapshot; an open issue can already have a proposed upstream fi
+ | [#9688: EEM charge conservation](https://github.com/rdkit/rdkit/issues/9688) | `eem_charges` and ionic conservation tests already exist. | Keep the regression; no duplicate implementation. |
+ | [#9678: allene stereo](https://github.com/rdkit/rdkit/issues/9678) | Allene stereo round-trip support already exists. | Keep the regression; no duplicate implementation. |
+ | [#9691: reaction-template order and E/Z](https://github.com/rdkit/rdkit/issues/9691) | Product stereo cleanup and an order-invariance regression already exist. | Keep the regression; no duplicate implementation. |
+-| [#9705: V3000 bond stereo collections](https://github.com/rdkit/rdkit/issues/9705) | Bond stereo-group storage and STEB collection support already exist. | Audit coverage before extending it; this pass did not revalidate its complete specification coverage. |
++| [#9705: V3000 bond stereo collections](https://github.com/rdkit/rdkit/issues/9705) | Bond stereo-group storage and STEB collection support already exist. | [Added checked Rust/Python group construction and inspection](checked-stereo-groups.md), including mixed atom/bond membership and 216 V3000/geometry checks. Existing STE/STEB parsing/writing is reused. Canonicalization, meso reduction and CXSMILES extensions are outside this candidate. |
+ | [#9343: internal-coordinate bounds](https://github.com/rdkit/rdkit/issues/9343) | Implementation and Python tests are present as pre-existing uncommitted work. | Preserve that work; not part of this change or its validation claim. |
+ | [#9247: recursive SMARTS stereo](https://github.com/rdkit/rdkit/issues/9247) | Matcher changes and Python tests are present as pre-existing uncommitted work. | Preserve that work; not part of this change or its validation claim. |
+ | [#9524: SA-score smoothing discontinuity](https://github.com/rdkit/rdkit/issues/9524) | chematic uses its own fragment table and score mapping, without the reported logarithmic smoothing function. | Not the same defect. SA-score calibration would need an independent evaluation. |
+diff --git a/scripts/validate_checked_stereo_groups.py b/scripts/validate_checked_stereo_groups.py
+new file mode 100644
+index 0000000..7bec326
+--- /dev/null
++++ b/scripts/validate_checked_stereo_groups.py
+@@ -0,0 +1,98 @@
++#!/usr/bin/env python3
++"""Checked membership and drawn-geometry diagnostics for RDKit issue 9705."""
++import argparse
++import hashlib
++import json
++from pathlib import Path
++import random
++import sys
++import chematic
++from rdkit import Chem, RDLogger, rdBase
++
++ROOT=Path(__file__).resolve().parents[1]
++FIXTURE=ROOT/'validation/rdkit_issues/stereo/checked-groups.json'
++
++
++def digest(data):
++    return hashlib.sha256(data).hexdigest()
++
++
++def groups(mol):
++    return [(g.GetGroupType().name,[a.GetIdx() for a in g.GetAtoms()],[b.GetIdx() for b in g.GetBonds()]) for g in mol.GetStereoGroups()]
++
++
++def inchi(smiles):
++    mol=Chem.MolFromSmiles(smiles)
++    assert mol is not None
++    return Chem.MolToInchi(mol)
++
++
++def orders(n):
++    rng=random.Random(9705)
++    result=[list(range(n)),list(reversed(range(n)))]
++    while len(result)<24:
++        order=list(range(n));rng.shuffle(order)
++        if order not in result:result.append(order)
++    return result
++
++
++def main():
++    parser=argparse.ArgumentParser(description=__doc__)
++    parser.add_argument('--output',type=Path,default=ROOT/'validation/results/rdkit-checked-stereo-groups-2026-10-15.json')
++    args=parser.parse_args()
++    if rdBase.rdkitVersion!='2026.09.1':raise RuntimeError(f'expected RDKit 2026.09.1, got {rdBase.rdkitVersion}')
++    RDLogger.DisableLog('rdApp.warning')
++    fixtures=json.loads(FIXTURE.read_text())
++    checked=[]
++    for case in fixtures['cases']:
++        base=chematic.from_smiles(case['smiles']);coordinates=base.rdkit_2d_coords()
++        expected_inchi=inchi(case['smiles'])
++        assert inchi(base.smiles)==expected_inchi
++        for kind,number,suffix in [('abs',0,'ABS'),('and',1,'RAC1'),('or',1,'REL1')]:
++            original=base.with_stereo_groups([(kind,number,case['atoms'],case['bonds'])])
++            for order in orders(base.atom_count):
++                inverse={old:new for new,old in enumerate(order)}
++                out=original.renumber_atoms(order)
++                expected=[(kind,number,[inverse[a] for a in case['atoms']],case['bonds'])]
++                assert out.stereo_groups==expected
++                block=out.to_mol_v3000([coordinates[old] for old in order],strict=True)
++                atom_ids=' '.join(str(a+1) for a in expected[0][2])
++                bond_ids=' '.join(str(b+1) for b in case['bonds'])
++                assert f'MDLV30/STEB{suffix} BONDS=({len(case["bonds"])} {bond_ids})' in block
++                if case['atoms']:assert f'MDLV30/STE{suffix} ATOMS=({len(case["atoms"])} {atom_ids})' in block
++                reread=chematic.from_mol_v3000(block)
++                assert reread.stereo_groups==expected
++                assert inchi(out.smiles)==inchi(reread.smiles)==expected_inchi
++                checked.append({'case':case['id'],'kind':kind,'order':order,'membership':expected,'drawn_inchi':expected_inchi,'block_sha256':digest(block.encode())})
++    upstream=[]
++    for case in (fixtures['cases'][0],fixtures['cases'][2]):
++        mol=Chem.RWMol(Chem.MolFromSmiles(case['smiles']))
++        mol.SetStereoGroups([Chem.CreateStereoGroup(Chem.StereoGroupType.STEREO_AND,mol,case['atoms'],case['bonds'])])
++        mol=mol.GetMol()
++        before=groups(mol)
++        block=Chem.MolToV3KMolBlock(mol)
++        reread=Chem.MolFromMolBlock(block)
++        assert reread is not None
++        after=groups(reread)
++        assert sum(len(g[2]) for g in before)==len(case['bonds'])
++        assert sum(len(g[2]) for g in after)==0, 'upstream behavior changed; inspect before rebaseline'
++        canonical=groups(Chem.CanonicalizeStereoGroups(mol)) if case['atoms'] else None
++        if canonical is not None:assert sum(len(g[2]) for g in canonical)==0
++        upstream.append({'case':case['id'],'before':before,'after_V3000':after,'after_CanonicalizeStereoGroups':canonical,'collection_lines':[s for s in block.splitlines() if 'MDLV30/' in s],'block_sha256':digest(block.encode())})
++    paths=['crates/chematic-core/src/molecule/checked_stereo_groups.rs','crates/chematic-py/src/mol_methods/stereo_groups.rs','crates/chematic-py/python/chematic/__init__.pyi','crates/chematic-core/tests/checked_stereo_groups.rs','crates/chematic-py/tests/test_stereo_groups.py','scripts/validate_checked_stereo_groups.py']
++    record={
++        'schema_version':1,'status':'local-source-candidate','issue':'https://github.com/rdkit/rdkit/issues/9705',
++        'scope':'checked enhanced-group construction and inspection; existing STE/STEB V3000 interchange is reused, not newly implemented',
++        'base':'cac480fb snapshot plus preserved earlier RDKit/Open Babel candidates; this patch adds the checked grouping API',
++        'runtime':{'python':sys.version.split()[0],'rdkit':rdBase.rdkitVersion,'chematic_extension_sha256':digest(Path(chematic.__file__).resolve().read_bytes())},
++        'source_sha256':{s:digest((ROOT/s).read_bytes()) for s in paths},
++        'fixture':{'path':str(FIXTURE.relative_to(ROOT)),'sha256':digest(FIXTURE.read_bytes()),**fixtures['provenance']},
++        'results':{'cases':len(checked),'membership_mismatches':0,'drawn_configuration_mismatches':0,'cases_sha256':digest(json.dumps(checked,sort_keys=True,separators=(',',':')).encode()),'kinds':['abs','and','or'],'structures':len(fixtures['cases']),'numberings_per_kind_structure':24},
++        'rdkit_reference':{'results':upstream,'note':'RDKit is an independent drawn-geometry/InChI reference and a defect diagnostic; its lossy enhanced-group output is not the membership oracle'},
++        'limits':'Group structure only; no automatic stereo perception, inversion, isomer enumeration, canonical enhanced-group identity or new CXSMILES syntax. Same-kind same-number STE/STEB correlation reuses the existing chematic reader convention; BIOVIA examples do not explicitly settle mixed namespace correlation. Plain SMILES and other graph projections do not encode these groups.',
++    }
++    args.output.parent.mkdir(parents=True,exist_ok=True);args.output.write_text(json.dumps(record,indent=2)+'\n')
++    print(json.dumps(record['results']))
++
++
++if __name__=='__main__':main()
+diff --git a/validation/rdkit_issues/stereo/checked-groups.json b/validation/rdkit_issues/stereo/checked-groups.json
+new file mode 100644
+index 0000000..3b0451f
+--- /dev/null
++++ b/validation/rdkit_issues/stereo/checked-groups.json
+@@ -0,0 +1,21 @@
++{
++  "schema_version": 1,
++  "provenance": {
++    "source": "Original small-molecule diagnostic cases authored for this project, following the metadata gap discussed in RDKit issue 9705",
++    "date": "2026-10-15",
++    "external_data": "No upstream attachments, structures or BIOVIA example records copied",
++    "license": "MIT OR Apache-2.0",
++    "redistribution": "Allowed: original project fixture",
++    "minimization": "Two six-carbon dienes isolate correlated bond groups; one seven-atom alcohol isolates atom/bond correlation. Explicit stereochemical SMILES set the drawn configuration.",
++    "oracle": {
++      "name": "Source-authored membership and declared configuration; RDKit InChI for drawn geometry only",
++      "version": "RDKit 2026.09.1; BIOVIA CTfile Chemistry 2026 collection token definitions",
++      "settings": "ABS/AND/OR; explicit native graph atom/bond indices; 24 deterministic atom numberings per kind and structure; no enumeration or group canonicalization oracle"
++    }
++  },
++  "cases": [
++    {"id": "ee-diene", "smiles": "C/C=C/C=C/C", "atoms": [], "bonds": [1, 3]},
++    {"id": "zz-diene", "smiles": "C/C=C\\C=C/C", "atoms": [], "bonds": [1, 3]},
++    {"id": "mixed-alcohol", "smiles": "C/C=C/[C@H](O)CC", "atoms": [3], "bonds": [1]}
++  ]
++}
+diff --git a/validation/results/rdkit-checked-stereo-groups-2026-10-15.json b/validation/results/rdkit-checked-stereo-groups-2026-10-15.json
+new file mode 100644
+index 0000000..53fc85a
+--- /dev/null
++++ b/validation/results/rdkit-checked-stereo-groups-2026-10-15.json
+@@ -0,0 +1,147 @@
++{
++  "schema_version": 1,
++  "status": "local-source-candidate",
++  "issue": "https://github.com/rdkit/rdkit/issues/9705",
++  "scope": "checked enhanced-group construction and inspection; existing STE/STEB V3000 interchange is reused, not newly implemented",
++  "base": "cac480fb snapshot plus preserved earlier RDKit/Open Babel candidates; this patch adds the checked grouping API",
++  "runtime": {
++    "python": "3.13.6",
++    "rdkit": "2026.09.1",
++    "chematic_extension_sha256": "6daba5b7cfde947bfaa5b1a326e593a35042b566a031fea6f23f871c90aba94a"
++  },
++  "source_sha256": {
++    "crates/chematic-core/src/molecule/checked_stereo_groups.rs": "9fbd00034f8836ecf6285499fefaabc4f5fd59690a700a54ca0e705a69ffeaa0",
++    "crates/chematic-py/src/mol_methods/stereo_groups.rs": "eb5ed82fe7abbb30727be7299ec64313babac3b4a0bebb61bb855761eaac750e",
++    "crates/chematic-py/python/chematic/__init__.pyi": "d962b43315cd272118573532493fb2909cab20e7e786a519659f9325f9350c3a",
++    "crates/chematic-core/tests/checked_stereo_groups.rs": "eb609a860bc87ce00dee1d006e69ab839ec084d3fd019132bd56bba466735ab8",
++    "crates/chematic-py/tests/test_stereo_groups.py": "18371e076693b1064b6a0d1edf0d08f7f5d5c38c5c2a15be30ac0382dd994a1e",
++    "scripts/validate_checked_stereo_groups.py": "9d24b5fe53cd0cdda51493997ea4240104c3cc2c479e4ab3add886c83275cba6"
++  },
++  "fixture": {
++    "path": "validation/rdkit_issues/stereo/checked-groups.json",
++    "sha256": "ff7ad956d1a6a3cf4921034178927c1e2197ea425c2e91a384346ea8e0f4fafd",
++    "source": "Original small-molecule diagnostic cases authored for this project, following the metadata gap discussed in RDKit issue 9705",
++    "date": "2026-10-15",
++    "external_data": "No upstream attachments, structures or BIOVIA example records copied",
++    "license": "MIT OR Apache-2.0",
++    "redistribution": "Allowed: original project fixture",
++    "minimization": "Two six-carbon dienes isolate correlated bond groups; one seven-atom alcohol isolates atom/bond correlation. Explicit stereochemical SMILES set the drawn configuration.",
++    "oracle": {
++      "name": "Source-authored membership and declared configuration; RDKit InChI for drawn geometry only",
++      "version": "RDKit 2026.09.1; BIOVIA CTfile Chemistry 2026 collection token definitions",
++      "settings": "ABS/AND/OR; explicit native graph atom/bond indices; 24 deterministic atom numberings per kind and structure; no enumeration or group canonicalization oracle"
++    }
++  },
++  "results": {
++    "cases": 216,
++    "membership_mismatches": 0,
++    "drawn_configuration_mismatches": 0,
++    "cases_sha256": "ece9246cf05f74291afb30e866777f548838d86e71c803179c1667e65f2711d7",
++    "kinds": [
++      "abs",
++      "and",
++      "or"
++    ],
++    "structures": 3,
++    "numberings_per_kind_structure": 24
++  },
++  "rdkit_reference": {
++    "results": [
++      {
++        "case": "ee-diene",
++        "before": [
++          [
++            "STEREO_AND",
++            [],
++            [
++              1,
++              3
++            ]
++          ]
++        ],
++        "after_V3000": [],
++        "after_CanonicalizeStereoGroups": null,
++        "collection_lines": [
++          "M  V30 MDLV30/STERAC1 ATOMS=(0)"
++        ],
++        "block_sha256": "53535bb91e7ae21793a304d2258443b60165aab4fb838dda70bf951033f9ed86"
++      },
++      {
++        "case": "mixed-alcohol",
++        "before": [
++          [
++            "STEREO_AND",
++            [
++              3
++            ],
++            [
++              1
++            ]
++          ]
++        ],
++        "after_V3000": [
++          [
++            "STEREO_AND",
++            [
++              3
++            ],
++            []
++          ]
++        ],
++        "after_CanonicalizeStereoGroups": [
++          [
++            "STEREO_AND",
++            [
++              3
++            ],
++            []
++          ]
++        ],
++        "collection_lines": [
++          "M  V30 MDLV30/STERAC1 ATOMS=(1 4)"
++        ],
++        "block_sha256": "054338cf6ead68a2a0661fe12bbfb9bbd64c03697c75d860f9e5ec48ec9a2211"
++      }
++    ],
++    "note": "RDKit is an independent drawn-geometry/InChI reference and a defect diagnostic; its lossy enhanced-group output is not the membership oracle"
++  },
++  "limits": "Group structure only; no automatic stereo perception, inversion, isomer enumeration, canonical enhanced-group identity or new CXSMILES syntax. Same-kind same-number STE/STEB correlation reuses the existing chematic reader convention; BIOVIA examples do not explicitly settle mixed namespace correlation. Plain SMILES and other graph projections do not encode these groups.",
++  "verification": {
++    "rust": {
++      "passed": 936,
++      "failed": 0,
++      "ignored": 0,
++      "new_contract_tests": 9,
++      "targets": [
++        "chematic-core --lib --test checked_stereo_groups",
++        "chematic-mol --lib --test v3000_semantic_interop"
++      ]
++    },
++    "python": {
++      "passed": 70,
++      "failed": 0,
++      "new_api_tests": 44,
++      "files": [
++        "test_stereo_groups.py",
++        "test_pickle.py",
++        "test_stereo_candidate_budget.py"
++      ]
++    },
++    "checks": {
++      "clippy_core_mol_py_all_targets_warnings_denied": "passed",
++      "cargo_fmt_and_explicit_include_file_rustfmt": "passed",
++      "refactor_budget": "passed",
++      "product_names": "passed",
++      "binding_surface_inventory": "passed",
++      "mkdocs_strict": "passed"
++    },
++    "environment_note": "An initial Clippy run could not create temporary files because the disk was full. Final run passed after removing only task-owned regenerable test/link outputs. Source and unrelated work were preserved.",
++    "log_sha256": {
++      "core-tests.log": "88de04672f3a6d7eb481dcf363c71e83a4944ec2e118640ef52c69047267c5f3",
++      "mol-tests.log": "de4a02b00290307d7fb66a5fb2830ec67d33ce8d020feed4975c954e8b232696",
++      "python-tests.log": "dd8f3143b84ee3a62c3d426c2b3b6b2b19bcac3ba6ae8bee273c5875a1f907c0",
++      "clippy.log": "3fa7979e2f476d0c9b9cf290442acbdfdcaeea5c466e96d159de2571a7484fb8",
++      "docs.log": "76c63b404452d57c866153fcbd098f3a1a165386c5e1d00c582cdb497922234a"
++    }
++  }
++}

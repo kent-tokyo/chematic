@@ -13,6 +13,13 @@ Pure Rust 3D coordinate generation, geometry optimization, shape analysis — **
   - Ideal bond lengths (van der Waals radii)
   - Ideal valence angles (tetrahedral, trigonal, etc.)
   - Handles rings, chains, fragments independently
+- **Named RDKit-compatible path**: fixed-seed ETKDGv3-style embedding and
+  bounds-matrix APIs with versioned, corpus-scoped comparison evidence
+- **Unreleased source extension**: checked bond-length, bond-angle, and torsion
+  constraints can be applied before triangle smoothing through
+  `rdkit_bounds_matrix_with_constraints` and
+  `rdkit_embed_molecule_with_constraints`. Impossible, cross-fragment, and
+  inconsistent inputs return typed errors instead of guessed coordinates.
 - **Constraint Satisfaction**:
   - Iterative constraint projection (O(n²) per iteration)
   - Bond distance enforcement (±0.05 Å tolerance)
@@ -20,6 +27,8 @@ Pure Rust 3D coordinate generation, geometry optimization, shape analysis — **
   - Convergence in 5–10 iterations
 
 ### Force Field Minimization
+- **MMFF94/MMFF94s**: typed preparation, energy/gradient evaluation, and
+  bounded minimization through the shared force-field crate
 - **DREIDING Force Field**: van der Waals + bond/angle energy terms
   - Lorentz-Berthelot combining rules
   - 1-2 and 1-3 exclusions
@@ -30,7 +39,7 @@ Pure Rust 3D coordinate generation, geometry optimization, shape analysis — **
 ### Molecular Dynamics
 - **Velocity Verlet Integration**: 2nd-order accuracy
 - **Maxwell-Boltzmann Initialization**: Temperature-correct initial velocities
-- **WASM RNG Seeding** (NEW in v0.1.32): Cryptographic randomness in browser
+- **WASM RNG Seeding**: browser-compatible random seeding
   - Previously: fixed seed in WASM → deterministic trajectories ❌
   - Now: js feature enabled → physical randomness ✅
 - **Thermostat Support**: Berendsen, Langevin

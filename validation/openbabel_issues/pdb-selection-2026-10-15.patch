@@ -1,0 +1,1750 @@
+diff --git a/.gitattributes b/.gitattributes
+new file mode 100644
+index 0000000..a435a3c
+--- /dev/null
++++ b/.gitattributes
+@@ -0,0 +1,2 @@
++# These fixed-column PDB fixtures intentionally retain blank trailing fields.
++validation/openbabel_issues/pdb-selection/*.pdb text eol=lf whitespace=-blank-at-eol
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 6d0924c..c7cc03b 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -226,6 +226,7 @@ jobs:
+           - { package: chematic-mol, target: fhiaims_contract }
+           - { package: chematic-mol, target: mopac_cartesian_contract }
+           - { package: chematic-mol, target: dmol3_contract }
++          - { package: chematic-mol, target: pdb_selection_contract }
+           - { package: chematic-smiles, target: rdkit_graph_queries }
+           - { package: chematic-smiles, target: rdkit_atom_environment }
+           - { package: chematic-smiles, target: rdkit_path_enumeration }
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 533b00f..2f4cb20 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -12,6 +12,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
+ 
+ ### Added
+ 
++- Added checked single-model PDB atom selection in Rust/Python, preserving
++  original atom/residue identity and atom lines while filtering ANISOU/CONECT
++  and retargeting TER records. Unknown-record loss requires explicit consent.
++
+ - Added checked DMol3 .incoor reading/writing in Rust/Python, retaining raw
+   Bohr coordinates and oriented 3D cells with explicit Angstrom projections.
+ 
+diff --git a/crates/chematic-mol/src/lib.rs b/crates/chematic-mol/src/lib.rs
+index 3fa99ce..ee4ff44 100644
+--- a/crates/chematic-mol/src/lib.rs
++++ b/crates/chematic-mol/src/lib.rs
+@@ -48,6 +48,7 @@ pub mod mrv;
+ pub mod nucleic_acid;
+ pub mod opendx;
+ pub mod orca;
++pub mod pdb_selection;
+ pub mod pdbqt;
+ pub mod pqr;
+ pub mod pqr_pdbqt;
+@@ -192,6 +193,10 @@ pub use orca::{
+     OrcaTermination, parse_orca_input, parse_orca_input_with_limits, parse_orca_output,
+     parse_orca_output_with_limits, write_orca_input,
+ };
++pub use pdb_selection::{
++    PdbSelectedAtom, PdbSelectionError, PdbSelectionLimits, PdbSelectionLoss, PdbSelectionReport,
++    select_pdb_atoms, select_pdb_atoms_with_limits,
++};
+ pub use pdbqt::{
+     PdbqtError, PdbqtParseLimits, autodock_atom_type, parse_pdbqt, parse_pdbqt_with_limits,
+     write_pdbqt,
+diff --git a/crates/chematic-mol/src/pdb_selection.rs b/crates/chematic-mol/src/pdb_selection.rs
+new file mode 100644
+index 0000000..f4f2f48
+--- /dev/null
++++ b/crates/chematic-mol/src/pdb_selection.rs
+@@ -0,0 +1,146 @@
++//! Identity-preserving single-model PDB coordinate selection (Open Babel #2481).
++//! Independently implemented from wwPDB 3.3; no residue or bond perception.
++use std::collections::HashMap;
++mod reader;
++mod writer;
++
++#[derive(Debug, Clone, Copy)]
++pub struct PdbSelectionLimits {
++    pub max_input_bytes: usize,
++    pub max_line_len: usize,
++    pub max_atoms: usize,
++    pub max_records: usize,
++}
++impl Default for PdbSelectionLimits {
++    fn default() -> Self {
++        Self {
++            max_input_bytes: 64 << 20,
++            max_line_len: 1024,
++            max_atoms: 99_999,
++            max_records: 1_000_000,
++        }
++    }
++}
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub struct PdbSelectionError {
++    pub line: usize,
++    pub detail: String,
++}
++impl core::fmt::Display for PdbSelectionError {
++    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
++        write!(f, "PDB selection line {}: {}", self.line, self.detail)
++    }
++}
++impl std::error::Error for PdbSelectionError {}
++fn error(line: usize, detail: impl Into<String>) -> PdbSelectionError {
++    PdbSelectionError {
++        line,
++        detail: detail.into(),
++    }
++}
++fn reserve<T>(v: &mut Vec<T>, n: usize) -> Result<(), PdbSelectionError> {
++    v.try_reserve(n)
++        .map_err(|e| error(0, format!("selection allocation failed: {e}")))
++}
++
++#[derive(Debug, Clone, PartialEq)]
++pub struct PdbSelectedAtom {
++    pub source_index: usize,
++    pub serial: u32,
++    pub record_type: String,
++    pub atom_name: String,
++    pub alt_loc: char,
++    pub residue_name: String,
++    pub chain_id: char,
++    pub residue_number: i32,
++    pub insertion_code: char,
++    pub position_angstrom: [f64; 3],
++}
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub struct PdbSelectionLoss {
++    pub line: usize,
++    pub record_name: String,
++}
++#[derive(Debug, Clone, PartialEq)]
++pub struct PdbSelectionReport {
++    pub pdb: String,
++    pub source_text: String,
++    pub source_atom_count: usize,
++    pub selected_source_indices: Vec<usize>,
++    pub old_to_new: Vec<Option<usize>>,
++    pub atoms: Vec<PdbSelectedAtom>,
++    pub losses: Vec<PdbSelectionLoss>,
++    pub retargeted_ter_lines: Vec<usize>,
++    pub filtered_conect_lines: Vec<usize>,
++    pub model_num: Option<u32>,
++}
++enum Kind {
++    Atom(usize),
++    Anisou(usize),
++    Ter(u32),
++    Conect(Vec<u32>),
++    Model,
++    EndModel,
++    End,
++}
++struct Row<'a> {
++    line: usize,
++    text: &'a str,
++    kind: Kind,
++}
++struct Document<'a> {
++    rows: Vec<Row<'a>>,
++    atom_lines: Vec<&'a str>,
++    atoms: Vec<chematic_3d::pdb::PdbAtom>,
++    by_serial: HashMap<u32, usize>,
++    losses: Vec<PdbSelectionLoss>,
++    model_num: Option<u32>,
++}
++
++/// Select zero-based source ATOM/HETATM rows. None keeps all, [] keeps none.
++/// Output stays in source order regardless of index-list order; duplicates fail.
++/// Atom/ANISOU line contents and serials are retained without inference. Unknown
++/// records require explicit metadata-loss consent and remain in source_text.
++pub fn select_pdb_atoms(
++    text: &str,
++    indices: Option<&[usize]>,
++    allow_metadata_loss: bool,
++) -> Result<PdbSelectionReport, PdbSelectionError> {
++    select_pdb_atoms_with_limits(
++        text,
++        indices,
++        allow_metadata_loss,
++        &PdbSelectionLimits::default(),
++    )
++}
++pub fn select_pdb_atoms_with_limits(
++    text: &str,
++    indices: Option<&[usize]>,
++    allow_metadata_loss: bool,
++    limits: &PdbSelectionLimits,
++) -> Result<PdbSelectionReport, PdbSelectionError> {
++    if indices.is_some_and(|v| {
++        v.len()
++            > limits
++                .max_atoms
++                .min(PdbSelectionLimits::default().max_atoms)
++    }) {
++        return Err(error(0, "selection count exceeds atom limit"));
++    }
++    let doc = reader::read(text, allow_metadata_loss, limits)?;
++    let mut selected = Vec::new();
++    reserve(&mut selected, doc.atoms.len())?;
++    selected.resize(doc.atoms.len(), indices.is_none());
++    if let Some(indices) = indices {
++        for &i in indices {
++            let entry = selected
++                .get_mut(i)
++                .ok_or_else(|| error(0, format!("atom index {i} outside source atom range")))?;
++            if *entry {
++                return Err(error(0, "duplicate selected atom index"));
++            }
++            *entry = true;
++        }
++    }
++    writer::select(text, &doc, &selected)
++}
+diff --git a/crates/chematic-mol/src/pdb_selection/reader.rs b/crates/chematic-mol/src/pdb_selection/reader.rs
+new file mode 100644
+index 0000000..92c7ec9
+--- /dev/null
++++ b/crates/chematic-mol/src/pdb_selection/reader.rs
+@@ -0,0 +1,333 @@
++use super::*;
++use std::collections::HashSet;
++
++struct State {
++    model: bool,
++    closed: bool,
++    ended: bool,
++    connect: bool,
++    last: Option<usize>,
++    anisou: HashSet<u32>,
++}
++
++pub(super) fn read<'a>(
++    text: &'a str,
++    allow_loss: bool,
++    limits: &PdbSelectionLimits,
++) -> Result<Document<'a>, PdbSelectionError> {
++    check_limits(text, limits)?;
++    let hard = PdbSelectionLimits::default();
++    let atoms = chematic_3d::pdb::parse_pdb_atoms_strict(
++        text,
++        &chematic_3d::pdb::PdbParseLimits {
++            max_input_bytes: limits.max_input_bytes.min(hard.max_input_bytes),
++            max_line_bytes: limits.max_line_len.min(hard.max_line_len),
++            max_atoms: limits.max_atoms.min(hard.max_atoms),
++            max_models: 1,
++        },
++    )
++    .map_err(|e| match e {
++        chematic_3d::pdb::PdbStrictError::Parse(ref p) => error(p.line, e.to_string()),
++        _ => error(0, e.to_string()),
++    })?;
++    let mut doc = Document {
++        rows: Vec::new(),
++        atom_lines: Vec::new(),
++        atoms,
++        by_serial: HashMap::new(),
++        losses: Vec::new(),
++        model_num: None,
++    };
++    let mut state = State {
++        model: false,
++        closed: false,
++        ended: false,
++        connect: false,
++        last: None,
++        anisou: HashSet::new(),
++    };
++    for (i, line) in text.lines().enumerate() {
++        if line.trim().is_empty() {
++            continue;
++        }
++        let number = i + 1;
++        if state.ended {
++            return Err(error(number, "records after END are unsupported"));
++        }
++        let name = line.get(..6).unwrap_or(line).trim_end();
++        let kind = match name {
++            "ATOM" | "HETATM" => Kind::Atom(atom(&mut doc, &mut state, line, number)?),
++            "ANISOU" => Kind::Anisou(anisou(&doc, &mut state, line, number)?),
++            "TER" => Kind::Ter(ter(&doc, &mut state, line, number)?),
++            "CONECT" => {
++                if state.model {
++                    return Err(error(number, "CONECT must follow ENDMDL"));
++                }
++                state.connect = true;
++                Kind::Conect(conect(line, number)?)
++            }
++            "MODEL" => {
++                model(&mut doc, &mut state, line, number)?;
++                Kind::Model
++            }
++            "ENDMDL" => {
++                if !state.model {
++                    return Err(error(number, "unmatched ENDMDL"));
++                }
++                state.model = false;
++                state.closed = true;
++                state.last = None;
++                Kind::EndModel
++            }
++            "END" => {
++                if state.model {
++                    return Err(error(number, "MODEL lacks ENDMDL"));
++                }
++                state.ended = true;
++                Kind::End
++            }
++            _ => {
++                if !allow_loss {
++                    return Err(error(
++                        number,
++                        format!(
++                            "record {name:?} outside coordinate selection contract; metadata-loss consent required"
++                        ),
++                    ));
++                }
++                reserve(&mut doc.losses, 1)?;
++                doc.losses.push(PdbSelectionLoss {
++                    line: number,
++                    record_name: name.to_string(),
++                });
++                continue;
++            }
++        };
++        reserve(&mut doc.rows, 1)?;
++        doc.rows.push(Row {
++            line: number,
++            text: line,
++            kind,
++        });
++    }
++    if state.model {
++        return Err(error(0, "MODEL lacks ENDMDL"));
++    }
++    check_references(&doc)?;
++    Ok(doc)
++}
++
++fn check_limits(text: &str, limits: &PdbSelectionLimits) -> Result<(), PdbSelectionError> {
++    let hard = PdbSelectionLimits::default();
++    if text.len() > limits.max_input_bytes.min(hard.max_input_bytes) {
++        return Err(error(0, "input byte limit exceeded"));
++    }
++    for (i, line) in text.lines().enumerate() {
++        if i >= limits.max_records.min(hard.max_records) {
++            return Err(error(i + 1, "record count limit exceeded"));
++        }
++        if line.len() > limits.max_line_len.min(hard.max_line_len) {
++            return Err(error(i + 1, "line length limit exceeded"));
++        }
++        if line.bytes().any(|b| !(b' '..=b'~').contains(&b)) {
++            return Err(error(
++                i + 1,
++                "PDB records must use printable ASCII and spaces",
++            ));
++        }
++    }
++    Ok(())
++}
++fn serial(line: &str, number: usize) -> Result<u32, PdbSelectionError> {
++    line.get(6..11)
++        .and_then(|s| s.trim().parse::<u32>().ok())
++        .filter(|v| *v > 0 && *v <= 99_999)
++        .ok_or_else(|| error(number, "invalid positive decimal serial"))
++}
++fn coordinate_phase(state: &State, number: usize) -> Result<(), PdbSelectionError> {
++    if state.closed || state.connect {
++        return Err(error(
++            number,
++            "coordinate record outside single-model coordinate block",
++        ));
++    }
++    Ok(())
++}
++fn atom<'a>(
++    doc: &mut Document<'a>,
++    state: &mut State,
++    line: &'a str,
++    number: usize,
++) -> Result<usize, PdbSelectionError> {
++    coordinate_phase(state, number)?;
++    if line.len() > 80 && !line[80..].trim().is_empty() {
++        return Err(error(number, "extra atom fields after column 80"));
++    }
++    if line.get(12..16).is_none_or(|s| s.trim().is_empty())
++        || line.get(17..20).is_none_or(|s| s.trim().is_empty())
++    {
++        return Err(error(number, "atom and residue names are required"));
++    }
++    for (start, end) in [(54, 60), (60, 66)] {
++        if let Some(s) = line.get(start..end) {
++            if !s.trim().is_empty() && !s.trim().parse::<f64>().is_ok_and(f64::is_finite) {
++                return Err(error(number, "invalid occupancy or temperature factor"));
++            }
++        } else if line.get(start..).is_some_and(|s| !s.trim().is_empty()) {
++            return Err(error(
++                number,
++                "incomplete occupancy or temperature factor field",
++            ));
++        }
++    }
++    let serial = serial(line, number)?;
++    let index = doc.atom_lines.len();
++    doc.by_serial
++        .try_reserve(1)
++        .map_err(|e| error(number, format!("serial allocation failed: {e}")))?;
++    if doc.by_serial.insert(serial, index).is_some() {
++        return Err(error(number, "duplicate atom serial"));
++    }
++    reserve(&mut doc.atom_lines, 1)?;
++    doc.atom_lines.push(line);
++    state.last = Some(index);
++    Ok(index)
++}
++fn anisou(
++    doc: &Document<'_>,
++    state: &mut State,
++    line: &str,
++    number: usize,
++) -> Result<usize, PdbSelectionError> {
++    coordinate_phase(state, number)?;
++    let serial = serial(line, number)?;
++    let index = *doc
++        .by_serial
++        .get(&serial)
++        .ok_or_else(|| error(number, "ANISOU must follow its atom record"))?;
++    if line.get(6..27) != doc.atom_lines[index].get(6..27) {
++        return Err(error(number, "ANISOU identity disagrees with atom"));
++    }
++    for start in (28..70).step_by(7) {
++        if line
++            .get(start..start + 7)
++            .and_then(|s| s.trim().parse::<i32>().ok())
++            .is_none()
++        {
++            return Err(error(number, "invalid ANISOU tensor field"));
++        }
++    }
++    if line.len() > 80 && !line[80..].trim().is_empty() {
++        return Err(error(number, "extra ANISOU fields"));
++    }
++    state
++        .anisou
++        .try_reserve(1)
++        .map_err(|e| error(number, format!("ANISOU allocation failed: {e}")))?;
++    if !state.anisou.insert(serial) {
++        return Err(error(number, "duplicate ANISOU record"));
++    }
++    Ok(index)
++}
++fn ter(
++    doc: &Document<'_>,
++    state: &mut State,
++    line: &str,
++    number: usize,
++) -> Result<u32, PdbSelectionError> {
++    coordinate_phase(state, number)?;
++    let serial = serial(line, number)?;
++    let index = state
++        .last
++        .ok_or_else(|| error(number, "TER has no preceding segment"))?;
++    if line.get(17..27).is_none() || line.get(17..27) != doc.atom_lines[index].get(17..27) {
++        return Err(error(number, "TER residue disagrees with preceding atom"));
++    }
++    if doc.atoms[index].serial.checked_add(1) != Some(serial) {
++        return Err(error(
++            number,
++            "TER serial must follow the terminal atom serial",
++        ));
++    }
++    state.last = None;
++    Ok(serial)
++}
++fn model(
++    doc: &mut Document<'_>,
++    state: &mut State,
++    line: &str,
++    number: usize,
++) -> Result<(), PdbSelectionError> {
++    if doc.model_num.is_some() || !doc.atom_lines.is_empty() || state.connect {
++        return Err(error(
++            number,
++            "only one complete explicit model or one implicit model is supported",
++        ));
++    }
++    let id = line
++        .get(10..14)
++        .and_then(|s| s.trim().parse::<u32>().ok())
++        .filter(|v| *v > 0)
++        .ok_or_else(|| error(number, "invalid MODEL number"))?;
++    doc.model_num = Some(id);
++    state.model = true;
++    Ok(())
++}
++fn conect(line: &str, number: usize) -> Result<Vec<u32>, PdbSelectionError> {
++    if line.len() > 31 && !line[31..].trim().is_empty() {
++        return Err(error(
++            number,
++            "legacy CONECT fields beyond four covalent neighbors are unsupported",
++        ));
++    }
++    let mut values = Vec::new();
++    for start in (6..31).step_by(5) {
++        let field = line.get(start..line.len().min(start + 5)).unwrap_or("");
++        if field.trim().is_empty() {
++            continue;
++        }
++        let value = field
++            .trim()
++            .parse::<u32>()
++            .ok()
++            .filter(|v| *v > 0 && *v <= 99_999)
++            .ok_or_else(|| error(number, "invalid CONECT serial"))?;
++        reserve(&mut values, 1)?;
++        values.push(value);
++    }
++    if values.is_empty() {
++        return Err(error(number, "CONECT source is required"));
++    }
++    // Source must occupy its fixed field even if later fields are populated.
++    if serial(line, number)? != values[0] {
++        return Err(error(number, "invalid CONECT source"));
++    }
++    Ok(values)
++}
++fn check_references(doc: &Document<'_>) -> Result<(), PdbSelectionError> {
++    let mut ter_serials = HashSet::new();
++    for row in &doc.rows {
++        if let Kind::Ter(serial) = row.kind {
++            ter_serials
++                .try_reserve(1)
++                .map_err(|e| error(row.line, format!("TER allocation failed: {e}")))?;
++            if doc.by_serial.contains_key(&serial) || !ter_serials.insert(serial) {
++                return Err(error(
++                    row.line,
++                    "TER serial collides with another coordinate record",
++                ));
++            }
++        }
++        if let Kind::Conect(values) = &row.kind {
++            for &serial in values {
++                if !doc.by_serial.contains_key(&serial) {
++                    return Err(error(row.line, "CONECT refers to an unknown atom serial"));
++                }
++            }
++            if values[1..].contains(&values[0]) {
++                return Err(error(row.line, "self CONECT reference"));
++            }
++        }
++    }
++    Ok(())
++}
+diff --git a/crates/chematic-mol/src/pdb_selection/writer.rs b/crates/chematic-mol/src/pdb_selection/writer.rs
+new file mode 100644
+index 0000000..e14b0a9
+--- /dev/null
++++ b/crates/chematic-mol/src/pdb_selection/writer.rs
+@@ -0,0 +1,170 @@
++use super::*;
++use std::collections::HashSet;
++
++pub(super) fn select(
++    text: &str,
++    doc: &Document<'_>,
++    keep: &[bool],
++) -> Result<PdbSelectionReport, PdbSelectionError> {
++    let mut report = PdbSelectionReport {
++        pdb: String::new(),
++        source_text: String::new(),
++        source_atom_count: keep.len(),
++        selected_source_indices: Vec::new(),
++        old_to_new: Vec::new(),
++        atoms: Vec::new(),
++        losses: doc.losses.clone(),
++        retargeted_ter_lines: Vec::new(),
++        filtered_conect_lines: Vec::new(),
++        model_num: doc.model_num,
++    };
++    reserve(&mut report.old_to_new, keep.len())?;
++    report.old_to_new.resize(keep.len(), None);
++    for (i, &selected) in keep.iter().enumerate() {
++        if selected {
++            report.old_to_new[i] = Some(report.atoms.len());
++            reserve(&mut report.atoms, 1)?;
++            report.atoms.push(identity(doc, i));
++            reserve(&mut report.selected_source_indices, 1)?;
++            report.selected_source_indices.push(i);
++        }
++    }
++    let mut last = None;
++    let mut ter_serials = HashSet::new();
++    for row in &doc.rows {
++        match &row.kind {
++            Kind::Atom(i) => {
++                if keep[*i] {
++                    append(&mut report.pdb, row.text)?;
++                    last = Some(*i);
++                }
++            }
++            Kind::Anisou(i) => {
++                if keep[*i] {
++                    append(&mut report.pdb, row.text)?;
++                }
++            }
++            Kind::Ter(_) => {
++                if let Some(i) = last {
++                    write_ter(&mut report, row, doc, i, &mut ter_serials)?;
++                }
++                last = None;
++            }
++            Kind::Conect(values) => write_conect(&mut report, row, values, doc, keep)?,
++            Kind::Model | Kind::EndModel => {
++                if !report.atoms.is_empty() {
++                    append(&mut report.pdb, row.text)?;
++                }
++                last = None;
++            }
++            Kind::End => {}
++        }
++    }
++    append(&mut report.pdb, "END")?;
++    report.source_text = text.to_string();
++    Ok(report)
++}
++fn append(out: &mut String, line: &str) -> Result<(), PdbSelectionError> {
++    let n = out
++        .len()
++        .checked_add(line.len())
++        .and_then(|n| n.checked_add(1))
++        .ok_or_else(|| error(0, "output size overflow"))?;
++    if n > PdbSelectionLimits::default().max_input_bytes {
++        return Err(error(0, "output byte limit exceeded"));
++    }
++    out.try_reserve(line.len() + 1)
++        .map_err(|e| error(0, format!("output allocation failed: {e}")))?;
++    out.push_str(line);
++    out.push('\n');
++    Ok(())
++}
++fn identity(doc: &Document<'_>, i: usize) -> PdbSelectedAtom {
++    let a = &doc.atoms[i];
++    let line = doc.atom_lines[i];
++    PdbSelectedAtom {
++        source_index: i,
++        serial: a.serial,
++        record_type: line[..6].trim_end().into(),
++        atom_name: a.name.clone(),
++        alt_loc: line.as_bytes()[16] as char,
++        residue_name: a.res_name.clone(),
++        chain_id: a.chain_id,
++        residue_number: a.res_seq,
++        insertion_code: line.as_bytes()[26] as char,
++        position_angstrom: [a.x, a.y, a.z],
++    }
++}
++fn write_ter(
++    report: &mut PdbSelectionReport,
++    row: &Row<'_>,
++    doc: &Document<'_>,
++    index: usize,
++    used: &mut HashSet<u32>,
++) -> Result<(), PdbSelectionError> {
++    let atom = doc.atom_lines[index];
++    let serial = doc.atoms[index]
++        .serial
++        .checked_add(1)
++        .filter(|v| *v <= 99_999)
++        .ok_or_else(|| error(row.line, "selected TER serial overflows PDB width"))?;
++    if doc
++        .by_serial
++        .get(&serial)
++        .is_some_and(|&i| report.old_to_new[i].is_some())
++    {
++        return Err(error(
++            row.line,
++            "selected TER serial collides with a retained atom",
++        ));
++    }
++    used.try_reserve(1)
++        .map_err(|e| error(row.line, format!("TER allocation failed: {e}")))?;
++    if !used.insert(serial) {
++        return Err(error(row.line, "selected TER serial collision"));
++    }
++    let original = match row.kind {
++        Kind::Ter(v) => v,
++        _ => return Err(error(row.line, "expected TER record")),
++    };
++    if original == serial && row.text.get(17..27) == atom.get(17..27) {
++        return append(&mut report.pdb, row.text);
++    }
++    let line = format!(
++        "TER   {serial:5}{}{}{}",
++        &row.text[11..17],
++        &atom[17..27],
++        &row.text[27..]
++    );
++    reserve(&mut report.retargeted_ter_lines, 1)?;
++    report.retargeted_ter_lines.push(row.line);
++    append(&mut report.pdb, &line)
++}
++fn write_conect(
++    report: &mut PdbSelectionReport,
++    row: &Row<'_>,
++    values: &[u32],
++    doc: &Document<'_>,
++    keep: &[bool],
++) -> Result<(), PdbSelectionError> {
++    // Reader verified every serial exists; use checked lookup to keep failure explicit.
++    let selected = |serial: &u32| doc.by_serial.get(serial).is_some_and(|&i| keep[i]);
++    let targets: Vec<_> = values[1..]
++        .iter()
++        .filter(|s| selected(s))
++        .copied()
++        .collect();
++    if selected(&values[0]) && targets.len() == values.len() - 1 {
++        return append(&mut report.pdb, row.text);
++    }
++    reserve(&mut report.filtered_conect_lines, 1)?;
++    report.filtered_conect_lines.push(row.line);
++    if !selected(&values[0]) || targets.is_empty() {
++        return Ok(());
++    }
++    let mut line = format!("CONECT{:5}", values[0]);
++    for target in targets {
++        line.push_str(&format!("{target:5}"));
++    }
++    append(&mut report.pdb, &line)
++}
+diff --git a/crates/chematic-mol/tests/pdb_selection_contract.rs b/crates/chematic-mol/tests/pdb_selection_contract.rs
+new file mode 100644
+index 0000000..74c9c66
+--- /dev/null
++++ b/crates/chematic-mol/tests/pdb_selection_contract.rs
+@@ -0,0 +1,207 @@
++//! Original synthetic MIT OR Apache-2.0 fixtures; no upstream structure copied.
++use chematic_mol::{PdbSelectionLimits, select_pdb_atoms, select_pdb_atoms_with_limits};
++const TEXT: &str = include_str!("../../../validation/openbabel_issues/pdb-selection/rich.pdb");
++fn atoms(text: &str) -> Vec<&str> {
++    text.lines()
++        .filter(|s| s.starts_with("ATOM  ") || s.starts_with("HETATM"))
++        .collect()
++}
++
++#[test]
++fn removing_ligand_keeps_protein_identity_and_exact_records() {
++    let r = select_pdb_atoms(TEXT, Some(&[0, 1, 2, 3]), false).unwrap();
++    assert_eq!(atoms(&r.pdb), atoms(TEXT)[..4]);
++    assert_eq!(r.source_text, TEXT);
++    assert_eq!(r.source_atom_count, 6);
++    assert_eq!(
++        r.atoms
++            .iter()
++            .map(|a| a.residue_name.as_str())
++            .collect::<Vec<_>>(),
++        ["VAL", "VAL", "LEU", "LEU"]
++    );
++    assert_eq!(r.atoms[0].atom_name, " CA ");
++    assert_eq!(r.atoms[0].alt_loc, 'A');
++    assert_eq!(r.atoms[2].residue_number, -2);
++    assert_eq!(r.atoms[2].insertion_code, 'I');
++    assert_eq!(
++        r.old_to_new,
++        [Some(0), Some(1), Some(2), Some(3), None, None]
++    );
++    assert!(r.retargeted_ter_lines.is_empty());
++    assert_eq!(r.pdb.lines().filter(|s| s.starts_with("ANISOU")).count(), 4);
++    assert_eq!(r.pdb.lines().filter(|s| s.starts_with("TER")).count(), 2);
++    assert!(
++        !r.pdb
++            .lines()
++            .filter(|s| s.starts_with("CONECT"))
++            .any(|s| s.contains("    9") || s.contains("   10"))
++    );
++}
++
++#[test]
++fn unordered_selection_retains_source_order_and_retargets_ter() {
++    let r = select_pdb_atoms(TEXT, Some(&[4, 2, 0]), false).unwrap();
++    assert_eq!(r.selected_source_indices, [0, 2, 4]);
++    assert_eq!(r.old_to_new, [Some(0), None, Some(1), None, Some(2), None]);
++    assert_eq!(r.retargeted_ter_lines, [5, 10, 15]);
++    assert_eq!(
++        r.pdb
++            .lines()
++            .filter(|s| s.starts_with("TER"))
++            .map(|s| s[6..11].trim())
++            .collect::<Vec<_>>(),
++        ["2", "6", "10"]
++    );
++    assert_eq!(r.pdb.lines().filter(|s| s.starts_with("CONECT")).count(), 0);
++    assert_eq!(r.pdb.lines().filter(|s| s.starts_with("ANISOU")).count(), 3);
++    let again = select_pdb_atoms(&r.pdb, None, false).unwrap();
++    assert_eq!(again.pdb, r.pdb);
++}
++
++#[test]
++fn all_records_and_duplicate_connectivity_multiplicity_are_preserved() {
++    let r = select_pdb_atoms(TEXT, None, false).unwrap();
++    assert_eq!(r.pdb, TEXT);
++    assert!(r.filtered_conect_lines.is_empty());
++    assert!(r.pdb.contains("CONECT    1    2    2"));
++    assert_eq!(r.atoms[5].record_type, "HETATM");
++    assert_eq!(atoms(&r.pdb)[5][78..80], *"1-");
++}
++
++#[test]
++fn partial_conect_target_filter_retains_order_and_multiplicity() {
++    let source = TEXT.replace("END\n", "CONECT    1    2    5    5    9\nEND\n");
++    let r = select_pdb_atoms(&source, Some(&[0, 1, 2]), false).unwrap();
++    assert!(r.pdb.contains("CONECT    1    2    5    5\n"));
++    assert!(!r.pdb.contains("    5    5    9"));
++}
++
++#[test]
++fn explicit_single_model_crlf_and_empty_selection() {
++    let source = format!(
++        "MODEL        7\n{}ENDMDL\nEND\n",
++        TEXT.lines()
++            .filter(|s| !s.starts_with("CONECT") && *s != "END")
++            .collect::<Vec<_>>()
++            .join("\n")
++            + "\n"
++    )
++    .replace('\n', "\r\n");
++    let r = select_pdb_atoms(&source, Some(&[0]), false).unwrap();
++    assert_eq!(r.model_num, Some(7));
++    assert!(r.pdb.starts_with("MODEL        7\n"));
++    assert!(r.pdb.ends_with("ENDMDL\nEND\n"));
++    assert_eq!(r.source_text, source);
++    let r = select_pdb_atoms(&source, Some(&[]), false).unwrap();
++    assert_eq!(r.pdb, "END\n");
++    assert!(r.old_to_new.iter().all(Option::is_none));
++    assert_eq!(select_pdb_atoms("", None, false).unwrap().pdb, "END\n");
++}
++
++#[test]
++fn metadata_loss_requires_consent_and_keeps_source_sidecar() {
++    let source = format!("HEADER    original synthetic\n{TEXT}");
++    assert!(select_pdb_atoms(&source, None, false).is_err());
++    let r = select_pdb_atoms(&source, None, true).unwrap();
++    assert_eq!(r.pdb, TEXT);
++    assert_eq!(r.source_text, source);
++    assert_eq!(r.losses.len(), 1);
++    assert_eq!(r.losses[0].line, 1);
++    assert_eq!(r.losses[0].record_name, "HEADER");
++}
++
++#[test]
++fn invalid_indices_and_reference_fields_fail_before_output() {
++    for selected in [&[0, 0][..], &[6][..]] {
++        assert!(select_pdb_atoms(TEXT, Some(selected), false).is_err());
++    }
++    for source in [
++        TEXT.replace("CONECT    1    2    2", "CONECT    1   99"),
++        TEXT.replace("CONECT    1    2    2", "CONECT    1    1"),
++        TEXT.replace("ANISOU    1  CA AVAL", "ANISOU   99  CA AVAL"),
++        format!("{TEXT}ATOM"),
++        format!("ENDMDL\n{TEXT}"),
++        format!("MODEL        1\n{TEXT}"),
++        TEXT.replace("TER       3", "TER       4"),
++    ] {
++        assert!(select_pdb_atoms(&source, None, false).is_err(), "{source}");
++    }
++    let row = atoms(TEXT)[0];
++    assert!(select_pdb_atoms(&format!("{row}\n{row}\nEND\n"), None, false).is_err());
++}
++
++#[test]
++fn malformed_atom_and_anisou_fields_fail_with_physical_line_numbers() {
++    let mut row = atoms(TEXT)[0].to_string();
++    row.replace_range(30..38, "     NaN");
++    assert_eq!(
++        select_pdb_atoms(&format!("\n{row}\nEND\n"), None, false)
++            .unwrap_err()
++            .line,
++        2
++    );
++    let source = TEXT.replace("    100    200", "    bad    200");
++    assert!(select_pdb_atoms(&source, None, false).is_err());
++    assert!(select_pdb_atoms(&TEXT.replace(" 23.45", "   inf"), None, false).is_err());
++    assert!(select_pdb_atoms(&format!("REMARK λ\n{TEXT}"), None, true).is_err());
++}
++
++#[test]
++fn resource_limits_are_checked_and_cannot_raise_hard_caps() {
++    for limits in [
++        PdbSelectionLimits {
++            max_atoms: 5,
++            ..Default::default()
++        },
++        PdbSelectionLimits {
++            max_input_bytes: 2,
++            ..Default::default()
++        },
++        PdbSelectionLimits {
++            max_line_len: 20,
++            ..Default::default()
++        },
++        PdbSelectionLimits {
++            max_records: 2,
++            ..Default::default()
++        },
++    ] {
++        assert!(select_pdb_atoms_with_limits(TEXT, None, false, &limits).is_err());
++    }
++    assert!(
++        select_pdb_atoms_with_limits(
++            &format!("REMARK{}\nEND\n", "a".repeat(1025)),
++            None,
++            true,
++            &PdbSelectionLimits {
++                max_line_len: usize::MAX,
++                ..Default::default()
++            }
++        )
++        .is_err()
++    );
++}
++
++#[test]
++fn ter_collision_is_an_error_instead_of_renumbering_atoms() {
++    let source = atoms(TEXT);
++    let mut a = source[0].to_string();
++    a.replace_range(6..11, "   10");
++    let mut b = source[1].to_string();
++    b.replace_range(6..11, "   20");
++    let mut c = source[2].to_string();
++    c.replace_range(6..11, "   11");
++    let text = format!(
++        "{a}\n{b}\nTER      21      {}\n{c}\nTER      12      {}\nEND\n",
++        &b[17..27],
++        &c[17..27]
++    );
++    assert!(select_pdb_atoms(&text, None, false).is_ok());
++    assert!(
++        select_pdb_atoms(&text, Some(&[0, 2]), false)
++            .unwrap_err()
++            .detail
++            .contains("collides")
++    );
++}
+diff --git a/crates/chematic-py/python/chematic/__init__.pyi b/crates/chematic-py/python/chematic/__init__.pyi
+index 4805893..4809a30 100644
+--- a/crates/chematic-py/python/chematic/__init__.pyi
++++ b/crates/chematic-py/python/chematic/__init__.pyi
+@@ -5025,3 +5025,8 @@ def parse_dmol3(text: str, *, max_input_bytes: Optional[int] = None, max_atoms:
+ def write_dmol3(elements: Sequence[str], positions_bohr: Sequence[Sequence[float]], *, cell_bohr: Optional[Sequence[Sequence[float]]] = None) -> str:
+     """Write current Bohr values; optional cell is exactly three ordered Cartesian vectors."""
+     ...
++
++
++def select_pdb_atoms(text: str, atom_indices: Optional[Sequence[int]] = None, *, allow_metadata_loss: bool = False, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None, max_records: Optional[int] = None) -> dict[str, Any]:
++    """Select source atom rows without identity perception; None keeps all, [] keeps none."""
++    ...
+diff --git a/crates/chematic-py/src/formats.rs b/crates/chematic-py/src/formats.rs
+index 7fdf79d..cc666a8 100644
+--- a/crates/chematic-py/src/formats.rs
++++ b/crates/chematic-py/src/formats.rs
+@@ -26,6 +26,8 @@ use turbomole::*;
+ mod interchange;
+ mod materials;
+ mod mmcif_pdb;
++mod pdb_selection;
++use pdb_selection::*;
+ mod mmcif_residues;
+ use mmcif_pdb::*;
+ use mmcif_residues::*;
+@@ -1449,6 +1451,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
+         write_fhiaims,
+         parse_dmol3,
+         write_dmol3,
++        select_pdb_atoms,
+         parse_mopac_cartesian,
+         write_mopac_cartesian,
+         parse_exyz,
+diff --git a/crates/chematic-py/src/formats/pdb_selection.rs b/crates/chematic-py/src/formats/pdb_selection.rs
+new file mode 100644
+index 0000000..f6d4860
+--- /dev/null
++++ b/crates/chematic-py/src/formats/pdb_selection.rs
+@@ -0,0 +1,78 @@
++use super::*;
++
++#[pyfunction]
++#[pyo3(signature=(text, atom_indices=None, *, allow_metadata_loss=false, max_input_bytes=None, max_atoms=None, max_line_len=None, max_records=None))]
++#[allow(clippy::too_many_arguments)]
++pub(super) fn select_pdb_atoms<'py>(
++    py: Python<'py>,
++    text: &str,
++    atom_indices: Option<Vec<usize>>,
++    allow_metadata_loss: bool,
++    max_input_bytes: Option<usize>,
++    max_atoms: Option<usize>,
++    max_line_len: Option<usize>,
++    max_records: Option<usize>,
++) -> PyResult<Bound<'py, PyDict>> {
++    let mut limits = chematic_mol::PdbSelectionLimits::default();
++    if let Some(v) = max_input_bytes {
++        limits.max_input_bytes = v;
++    }
++    if let Some(v) = max_atoms {
++        limits.max_atoms = v;
++    }
++    if let Some(v) = max_line_len {
++        limits.max_line_len = v;
++    }
++    if let Some(v) = max_records {
++        limits.max_records = v;
++    }
++    let r = chematic_mol::select_pdb_atoms_with_limits(
++        text,
++        atom_indices.as_deref(),
++        allow_metadata_loss,
++        &limits,
++    )
++    .map_err(|e| PyValueError::new_err(e.to_string()))?;
++    let d = PyDict::new(py);
++    d.set_item("pdb", r.pdb)?;
++    d.set_item("source_text", r.source_text)?;
++    d.set_item("source_atom_count", r.source_atom_count)?;
++    d.set_item("selected_source_indices", r.selected_source_indices)?;
++    d.set_item("old_to_new", r.old_to_new)?;
++    d.set_item("model_num", r.model_num)?;
++    d.set_item("retargeted_ter_lines", r.retargeted_ter_lines)?;
++    d.set_item("filtered_conect_lines", r.filtered_conect_lines)?;
++    d.set_item(
++        "atoms",
++        r.atoms
++            .iter()
++            .map(|a| atom(py, a))
++            .collect::<PyResult<Vec<_>>>()?,
++    )?;
++    let losses = r
++        .losses
++        .iter()
++        .map(|loss| {
++            let d = PyDict::new(py);
++            d.set_item("line", loss.line)?;
++            d.set_item("record_name", &loss.record_name)?;
++            Ok(d)
++        })
++        .collect::<PyResult<Vec<_>>>()?;
++    d.set_item("losses", losses)?;
++    Ok(d)
++}
++fn atom<'py>(py: Python<'py>, a: &chematic_mol::PdbSelectedAtom) -> PyResult<Bound<'py, PyDict>> {
++    let d = PyDict::new(py);
++    d.set_item("source_index", a.source_index)?;
++    d.set_item("serial", a.serial)?;
++    d.set_item("record_type", &a.record_type)?;
++    d.set_item("atom_name", &a.atom_name)?;
++    d.set_item("alt_loc", a.alt_loc.to_string())?;
++    d.set_item("residue_name", &a.residue_name)?;
++    d.set_item("chain_id", a.chain_id.to_string())?;
++    d.set_item("residue_number", a.residue_number)?;
++    d.set_item("insertion_code", a.insertion_code.to_string())?;
++    d.set_item("position_angstrom", a.position_angstrom)?;
++    Ok(d)
++}
+diff --git a/crates/chematic-py/tests/test_pdb_selection.py b/crates/chematic-py/tests/test_pdb_selection.py
+new file mode 100644
+index 0000000..d12222e
+--- /dev/null
++++ b/crates/chematic-py/tests/test_pdb_selection.py
+@@ -0,0 +1,115 @@
++"""Original synthetic MIT OR Apache-2.0 identity-preserving PDB contracts."""
++import ast
++import hashlib
++import json
++from pathlib import Path
++
++import pytest
++import chematic
++
++FOLDER = Path(__file__).resolve().parents[3]/'validation/openbabel_issues/pdb-selection'
++TEXT = (FOLDER/'rich.pdb').read_text()
++
++
++def atom_lines(text):
++    return [s for s in text.splitlines() if s.startswith(('ATOM  ', 'HETATM'))]
++
++
++def test_manifest_and_ligand_removal_preserve_original_lines():
++    manifest = json.loads((FOLDER/'fixtures.json').read_text())
++    for record in manifest['records']:
++        text = (FOLDER/record['file']).read_text()
++        assert hashlib.sha256(text.encode()).hexdigest() == record['sha256']
++        r = chematic.select_pdb_atoms(text, [0, 1, 2, 3])
++        assert atom_lines(r['pdb']) == atom_lines(text)[:4]
++        assert r['old_to_new'] == [0, 1, 2, 3, None, None]
++        assert [a['residue_name'] for a in r['atoms']] == ['VAL', 'VAL', 'LEU', 'LEU']
++        assert r['source_text'] == text and r['source_atom_count'] == 6
++        assert r['retargeted_ter_lines'] == []
++
++
++def test_source_order_anisou_ter_and_map():
++    r = chematic.select_pdb_atoms(TEXT, [4, 2, 0])
++    assert r['selected_source_indices'] == [0, 2, 4]
++    assert r['old_to_new'] == [0, None, 1, None, 2, None]
++    assert r['retargeted_ter_lines'] == [5, 10, 15]
++    assert [s[6:11].strip() for s in r['pdb'].splitlines() if s.startswith('TER')] == ['2', '6', '10']
++    assert len([s for s in r['pdb'].splitlines() if s.startswith('ANISOU')]) == 3
++    assert 'CONECT' not in r['pdb']
++    assert r['atoms'][0]['alt_loc'] == 'A' and r['atoms'][0]['atom_name'] == ' CA '
++    assert r['atoms'][1]['residue_number'] == -2 and r['atoms'][1]['insertion_code'] == 'I'
++    assert r['atoms'][1]['position_angstrom'] == [10, 0, 0]
++    assert chematic.select_pdb_atoms(r['pdb'])['pdb'] == r['pdb']
++
++
++def test_partial_connectivity_retains_duplicate_targets():
++    text = TEXT.replace('END\n', 'CONECT    1    2    5    5    9\nEND\n')
++    r = chematic.select_pdb_atoms(text, [0, 1, 2])
++    assert 'CONECT    1    2    5    5\n' in r['pdb']
++
++
++def test_metadata_loss_is_explicit_and_raw_source_stays_available():
++    text = 'HEADER    original\nSEQRES   original\n'+TEXT
++    with pytest.raises(ValueError, match='consent'):
++        chematic.select_pdb_atoms(text, [0])
++    r = chematic.select_pdb_atoms(text, [0], allow_metadata_loss=True)
++    assert r['losses'] == [{'line': 1, 'record_name': 'HEADER'}, {'line': 2, 'record_name': 'SEQRES'}]
++    assert r['source_text'] == text and 'HEADER' not in r['pdb']
++
++
++@pytest.mark.parametrize('model', [1, 7])
++@pytest.mark.parametrize('crlf', [False, True])
++def test_single_model_and_empty_selection(model, crlf):
++    rows = [s for s in TEXT.splitlines() if not s.startswith('CONECT') and s != 'END']
++    text = f'MODEL     {model:4d}\n'+'\n'.join(rows)+'\nENDMDL\nEND\n'
++    if crlf:
++        text = text.replace('\n', '\r\n')
++    r = chematic.select_pdb_atoms(text, [0])
++    assert r['model_num'] == model and r['pdb'].endswith('ENDMDL\nEND\n')
++    assert r['source_text'] == text
++    assert chematic.select_pdb_atoms(text, [])['pdb'] == 'END\n'
++
++
++@pytest.mark.parametrize('indices', [[0, 0], [6], [-1]])
++def test_invalid_indices(indices):
++    with pytest.raises((ValueError, OverflowError)):
++        chematic.select_pdb_atoms(TEXT, indices)
++
++
++@pytest.mark.parametrize('kwargs', [dict(max_atoms=5), dict(max_input_bytes=2), dict(max_line_len=20), dict(max_records=2)])
++def test_limits(kwargs):
++    with pytest.raises(ValueError):
++        chematic.select_pdb_atoms(TEXT, **kwargs)
++
++
++@pytest.mark.parametrize('text', [
++    'ENDMDL\n'+TEXT, 'MODEL        1\n'+TEXT, TEXT+'ATOM',
++    TEXT.replace('CONECT    1    2    2', 'CONECT    1   99'),
++    TEXT.replace('CONECT    1    2    2', 'CONECT    1    1'),
++    TEXT.replace('TER       3', 'TER       4'),
++    TEXT.replace('    100    200', '    bad    200'),
++    TEXT.replace(' 23.45', '   inf'),
++    'REMARK λ\n'+TEXT,
++])
++def test_malformed_records_fail(text):
++    with pytest.raises(ValueError):
++        chematic.select_pdb_atoms(text)
++
++
++def test_empty_source_none_vs_empty_and_independent_results():
++    assert chematic.select_pdb_atoms('')['pdb'] == 'END\n'
++    assert chematic.select_pdb_atoms(TEXT)['pdb'] == TEXT
++    assert chematic.select_pdb_atoms(TEXT, [])['pdb'] == 'END\n'
++    r = chematic.select_pdb_atoms(TEXT, [0])
++    r['atoms'][0]['residue_name'] = 'changed'
++    r['old_to_new'][0] = 999
++    fresh = chematic.select_pdb_atoms(TEXT, [0])
++    assert fresh['atoms'][0]['residue_name'] == 'VAL' and fresh['old_to_new'][0] == 0
++
++
++def test_stub_and_hard_limit():
++    p = Path(__file__).resolve().parents[1]/'python/chematic/__init__.pyi'
++    names = {n.name for n in ast.parse(p.read_text()).body if isinstance(n, ast.FunctionDef)}
++    assert 'select_pdb_atoms' in names
++    with pytest.raises(ValueError):
++        chematic.select_pdb_atoms('REMARK'+'a'*1025+'\nEND\n', max_line_len=2**32, allow_metadata_loss=True)
+diff --git a/docs/openbabel-open-issues-2026-10-14.md b/docs/openbabel-open-issues-2026-10-14.md
+index 664b725..a105907 100644
+--- a/docs/openbabel-open-issues-2026-10-14.md
++++ b/docs/openbabel-open-issues-2026-10-14.md
+@@ -8,6 +8,7 @@ charge work. Existing changes were retained.
+ 
+ | Open Babel issue | chematic source finding | Decision |
+ | --- | --- | --- |
++| [#2481: deletion changes remaining PDB identity](https://github.com/openbabel/openbabel/issues/2481) | Reproduced on Open Babel 3.2.1 with an original six-atom fixture; existing PDB graph projection has no source-preserving atom selector. | [Added checked PDB coordinate selection](pdb-atom-selection.md), exact atom/ANISOU lines, filtered CONECT, validated TER updates and explicit unknown-record loss consent; this row is a 2026-10-15 follow-up. |
+ | [#2995: CIF Cartesian coordinates labeled as fractional](https://github.com/openbabel/openbabel/issues/2995) | `write_cif(..., None)` had the same labeling defect and produced output that `parse_cif` rejected for missing cell parameters. | Implemented here, with coordinate-family and finite-value reader checks. |
+ | [#2655: explicit CML hydrogens gain implicit hydrogens](https://github.com/openbabel/openbabel/issues/2655) | A follow-up corrected explicit-H inference and total `hydrogenCount` reconciliation in both reader and writer. | [Implemented contract, compatibility and validation](cml-hydrogen-accounting.md): CH2, mixed H representations, isotopes, invalid totals, and a live Open Babel cross-read. |
+ | [#2818: singular unit cell produces NaN](https://github.com/openbabel/openbabel/issues/2818) | The unchecked plain writer accepted invalid `UnitCell` values. | [Implemented a checked Rust/Python CIF writer](cif-checked-writer.md), shared plain-reader cell validation, finite/count checks and precise float serialization. No POSCAR support; external CIF cross-read remains inconclusive on this host. |
+diff --git a/docs/pdb-atom-selection.md b/docs/pdb-atom-selection.md
+new file mode 100644
+index 0000000..4c54b98
+--- /dev/null
++++ b/docs/pdb-atom-selection.md
+@@ -0,0 +1,196 @@
++# PDB atom selection without identity changes
++
++The isolated candidate adds `select_pdb_atoms` in Rust/Python for the workflow
++reported in [Open Babel #2481](https://github.com/openbabel/openbabel/issues/2481):
++removing ligand atoms must not change names or residue identity of retained
++protein atoms. The issue was verified **OPEN** on 2026-10-15. A separate
++original six-atom reproduction also shows this behavior in Open Babel 3.2.1.
++
++The API selects original PDB atom records directly, reusing chematic's existing
++strict coordinate parser. It performs no residue, element, bond or hydrogen
++perception. This is an immutable single-model coordinate-selection operation,
++not an implementation of Open Babel's mutable molecule API.
++
++## API and example
++
++```python
++import chematic
++
++# None selects all and exposes identities in original ATOM/HETATM row order.
++view = chematic.select_pdb_atoms(pdb_text, allow_metadata_loss=True)
++keep = [a["source_index"] for a in view["atoms"] if a["residue_name"] != "LIG"]
++selected = chematic.select_pdb_atoms(
++    pdb_text, keep, allow_metadata_loss=True,
++    max_atoms=99_999, max_input_bytes=64 << 20,
++)
++filtered_pdb = selected["pdb"]
++```
++
++Use `allow_metadata_loss=False` (the default) for a supported coordinate
++block. The example explicitly consents to excluding full-entry metadata such
++as HEADER/SEQRES, which cannot be safely kept stale after arbitrary selection.
++Every excluded record is listed in `losses`, and the entire original text
++remains in `source_text`.
++
++Rust exports `PdbSelectionLimits`, `PdbSelectionError`, `PdbSelectedAtom`,
++`PdbSelectionLoss`, `PdbSelectionReport`, `select_pdb_atoms` and
++`select_pdb_atoms_with_limits`. Indices are `Option<&[usize]>`: `None` keeps
++all source atoms and `Some(&[])` keeps none. Python accepts the corresponding
++`None` or sequence of zero-based indices. Negative/outside/duplicate indices
++are rejected. Input index-list order does not reorder the output.
++
++The report contains:
++
++- `pdb`: selected coordinate block, with LF and one final END.
++- `source_text`, `source_atom_count`, `selected_source_indices`, `old_to_new`:
++  original input and complete row-index mapping; removed rows map to `None`.
++- `atoms`: selected source index, original serial, record type, raw four-column
++  atom name, alternate location, residue name, chain, residue number, insertion
++  code and `position_angstrom`.
++- `model_num`: the optional original explicit model number.
++- `losses`: source line/record name for excluded unsupported records.
++- `retargeted_ter_lines`, `filtered_conect_lines`: original line numbers whose
++  supported associated records were changed or filtered by the selection.
++
++These are source ATOM/HETATM row indices. They do not refer to a sanitized
++RDKit model or to atom serial numbers. No implicit hydrogen removal changes
++the index range. Returned objects are independent of the input and later calls.
++
++## Preserved and updated records
++
++The independently written selection logic follows the
++[wwPDB 3.3 coordinate layout](https://www.wwpdb.org/documentation/file-format-content/format33/sect9.html)
++and [CONECT layout](https://www.wwpdb.org/documentation/file-format-content/format33/sect10.html).
++No Open Babel source or original issue attachment was copied.
++
++| Record | Behavior |
++|---|---|
++| ATOM/HETATM | Retain exact line contents, original serial and source order for selected atoms |
++| ANISOU | Retain exact line contents only when its associated atom remains |
++| TER | Omit empty segments; otherwise follow the last retained atom's residue fields and serial + 1 |
++| CONECT | Retain only selected source/target atoms, preserving target order and duplicate-target multiplicity |
++| MODEL/ENDMDL | Preserve one complete explicit model; omit wrapper for an empty selection |
++| END | Emit one final END; missing source END is accepted |
++| Other nonblank records | Reject by default; with consent, exclude and report their original line/name |
++
++ATOM/HETATM and retained ANISOU line contents are unchanged, including
++coordinate spelling, occupancy, temperature factors, record type, alternate
++location, insertion code, element and charge fields. Only line endings are
++normalized. Unknown fields are not inferred from atom names. Selected atom
++serials are never renumbered.
++
++TER is validated against its source segment endpoint and then updated when
++needed. Its serial is derived from the last retained atom. Collisions with
++retained atoms or other generated TER records are errors; the selector never
++renumbers atoms to hide a collision. Segment boundaries therefore remain
++explicit even when a segment's original last atom is removed.
++
++CONECT supports a source and up to four covalent target fields per line.
++Repeated targets are retained as repeated targets, and reciprocal edges are
++not invented. Original lines are retained if all their referenced atoms remain;
++otherwise targets are filtered and the necessary fixed-width line is emitted.
++References to removed atoms are eliminated before a newly derived TER serial
++could reuse their number. Unknown/self references are errors.
++
++## Validation and boundaries
++
++Inputs are checked before selection for printable ASCII/spaces, finite XYZ,
++positive decimal atom serials, nonempty atom/residue names, integer residue
++numbers and finite optional occupancy/temperature values. Atom serials must
++be unique. ANISOU must follow its referenced atom, agree on the fixed-column
++identity and carry six integer tensor fields. Duplicate ANISOU is refused.
++
++The API accepts either one implicit coordinate model or one complete explicit
++MODEL/ENDMDL pair. Multiple/nested/incomplete models, coordinates after
++ENDMDL/CONECT, data after END, invalid references, hybrid-36 serials and legacy
++CONECT fields beyond the four covalent neighbors are refused. Metadata-loss
++consent does not override errors in supported records.
++
++Hard limits are 64 MiB input/output, 1024 bytes per physical input line,
++99,999 atom rows and 1,000,000 physical records, including blank lines. Rust
++limits and Python keyword arguments can tighten these caps. Empty selections
++produce `END\n`; the report still identifies the original source model.
++
++This exports a coordinate block rather than a complete deposition-ready PDB
++entry. It does not repair chemistry, validate a residue template, regenerate
++SEQRES/LINK/SSBOND/MASTER or preserve those annotations without explicit
++exclusion consent. For long identifiers and richer residue namespaces, retain
++mmCIF and use the existing [residue reader](mmcif-residue-identity.md).
++
++## Open Babel reproduction
++
++The original `basic.pdb` fixture has two incomplete two-atom protein residue
++fragments (VAL A 101, LEU B 152) and a two-atom LIG L 7, without CONECT.
++It is a minimal metadata example, not a complete protein or physical model.
++
++The public-API C++ oracle reads that PDB, snapshots `GetResidue()` identities,
++calls `OBMol.DeleteAtom` in descending original index order, snapshots again
++and writes PDB. The dynamically linked Open Babel reports **3.2.1**.
++
++| Control | Changed retained atom identities |
++|---|---|
++| No deletion, before/after serialization | 0 |
++| Delete original ligand rows 4 and 5 | 4 |
++
++After deletion, Open Babel changes all four retained VAL/LEU residue names
++to UNL, clears their chain IDs, changes their atom names and assigns new
++residue numbers. The unchanged no-deletion control distinguishes the deletion
++trigger from ordinary PDB serialization. The native selector retains the
++original four atom lines exactly. The original issue's linked attachment was
++not fetched; the claim is scoped to this independent synthetic reproduction.
++
++## Measured checks, 2026-10-15
++
++The richer original fixture includes ANISOU, alternate location A, a negative
++residue number, insertion code I, a blank chain, charge text, TER and duplicated
++CONECT targets. Six residue orders, eight within-residue orders, LF/CRLF and
++implicit/explicit model variants produce 192 sources. Atom serials and
++associated references are remapped consistently by the independent recipe.
++All 64 subsets of each six-atom source are checked.
++
++| Check | Result |
++|---|---|
++| Exact subset operations | 12,288 |
++| Exact retained atom / ANISOU lines | 36,864 / 36,864 |
++| Updated TER / filtered CONECT records checked | 9,216 / 55,296 |
++| RDKit nonempty cross-reads / empty checks | 12,096 / 192 |
++| Unexpected mismatches | 0 |
++
++RDKit **2026.09.1** independently reads the outputs with `sanitize=False`,
++`removeHs=False`, `proximityBonding=False`. Atom serial/name, residue/chain,
++alternate location, insertion code, record type and coordinates match exactly.
++Native checks also cover ANISOU contents, connectivity multiplicity, TER
++endpoints, index maps, source immutability and idempotent reselection.
++
++Local Rust validation passed 753 unit tests plus 37 integration tests (790
++total). Python 100 tests passed, including checked mmCIF/PDB, residue and
++DMol3 regressions. Scoped Clippy with warnings denied, formatting, unchanged
++refactor allowances, binding inventory, product naming and strict MkDocs are
++recorded in the report. No hosted CI, publication or complete upstream fix
++is claimed.
++
++## Reproduction and delivery
++
++```sh
++cargo test -p chematic-mol --lib --test pdb_selection_contract \
++  --test mmcif_pdb_checked --test mmcif_residue_contract
++python -m pytest crates/chematic-py/tests/test_pdb_selection.py
++c++ -std=c++17 -O1 \
++  validation/openbabel_issues/pdb-selection/openbabel_delete_probe.cpp \
++  $(pkg-config --cflags --libs openbabel-3) -o /tmp/ob2481-probe
++python scripts/validate_pdb_selection.py --probe /tmp/ob2481-probe
++```
++
++Install the candidate Python extension and pinned RDKit first. The C++ helper
++is an external Open Babel validation oracle, never a chematic dependency.
++The fixture manifest records provenance, MIT OR Apache-2.0 licensing,
++redistribution, minimization, oracle settings and normalized payload hashes.
++The fixture-specific Git attributes preserve LF and allow the intentional
++trailing spaces required by the fixed-column PDB records.
++
++Source candidate: `/private/tmp/chematic-pdb-selection`, inheriting
++`/private/tmp/chematic-dmol3`. Incremental patch:
++`validation/openbabel_issues/pdb-selection-2026-10-15.patch`. Evidence:
++`validation/results/openbabel-pdb-selection-2026-10-15.json`.
++Only this document, patch and report are copied to the primary checkout.
++Unrelated source work is preserved; the feature is uncommitted and unpushed.
+diff --git a/mkdocs.yml b/mkdocs.yml
+index 04e145b..a6cebb1 100644
+--- a/mkdocs.yml
++++ b/mkdocs.yml
+@@ -83,6 +83,7 @@ nav:
+     - FHI-aims Geometry: openbabel-fhiaims.md
+     - MOPAC Cartesian: openbabel-mopac-cartesian.md
+     - DMol3 Coordinates: openbabel-dmol3.md
++    - PDB Atom Selection: pdb-atom-selection.md
+     - Language Bindings Cross-Reference: language-bindings.md
+     - Error Handling & Limits: error-and-limits.md
+   - Reliability:
+diff --git a/scripts/validate_pdb_selection.py b/scripts/validate_pdb_selection.py
+new file mode 100644
+index 0000000..4729cf8
+--- /dev/null
++++ b/scripts/validate_pdb_selection.py
+@@ -0,0 +1,168 @@
++#!/usr/bin/env python3
++"""Original PDB subsets, pinned RDKit cross-read and Open Babel #2481 control."""
++import argparse
++import hashlib
++import itertools
++import json
++from pathlib import Path
++import platform
++import subprocess
++import tempfile
++
++import chematic
++from rdkit import Chem, rdBase, RDLogger
++
++ROOT = Path(__file__).resolve().parents[1]
++FOLDER = ROOT/'validation/openbabel_issues/pdb-selection'
++
++
++def digest(data):
++    return hashlib.sha256(data).hexdigest()
++
++
++def atom_lines(text):
++    return [s for s in text.splitlines() if s.startswith(('ATOM  ', 'HETATM'))]
++
++
++def conect(text):
++    return [tuple(int(s[i:i+5]) for i in range(6, 31, 5) if s[i:i+5].strip()) for s in text.splitlines() if s.startswith('CONECT')]
++
++
++def recipe(original, order, reverse, explicit_model, crlf):
++    rows = original.splitlines()
++    groups = [rows[i:i+5] for i in (0, 5, 10)]
++    mapping = {}
++    coordinates = []
++    for position, index in enumerate(order):
++        pairs = [(groups[index][0], groups[index][1]), (groups[index][2], groups[index][3])]
++        if reverse[index]:
++            pairs.reverse()
++        for j, (atom, anisou) in enumerate(pairs):
++            serial = position*4+j+1
++            mapping[int(atom[6:11])] = serial
++            coordinates.extend([atom[:6]+f'{serial:5d}'+atom[11:], anisou[:6]+f'{serial:5d}'+anisou[11:]])
++        coordinates.append(f'TER   {serial+1:5d}      '+atom[17:27])
++    connections = ['CONECT'+''.join(f'{mapping[v]:5d}' for v in values) for values in conect(original)]
++    if explicit_model:
++        coordinates = ['MODEL        7', *coordinates, 'ENDMDL']
++    text = '\n'.join([*coordinates, *connections, 'END'])+'\n'
++    return text.replace('\n', '\r\n') if crlf else text
++
++
++def rdkit_check(output, expected):
++    mol = Chem.MolFromPDBBlock(output, sanitize=False, removeHs=False, proximityBonding=False)
++    if not expected:
++        assert mol is None or mol.GetNumAtoms() == 0
++        return
++    assert mol is not None and mol.GetNumAtoms() == len(expected)
++    for atom, line in zip(mol.GetAtoms(), expected):
++        info = atom.GetPDBResidueInfo()
++        assert info is not None
++        assert (info.GetSerialNumber(), info.GetName(), info.GetAltLoc(), info.GetResidueName(), info.GetChainId(), info.GetResidueNumber(), info.GetInsertionCode(), info.GetIsHeteroAtom()) == (
++            int(line[6:11]), line[12:16], line[16], line[17:20], line[21], int(line[22:26]), line[26], line.startswith('HETATM'))
++        point = mol.GetConformer().GetAtomPosition(atom.GetIdx())
++        assert [point.x, point.y, point.z] == [float(line[i:i+8]) for i in (30, 38, 46)]
++
++
++def native_check(text, indices):
++    original = atom_lines(text)
++    selected = sorted(indices)
++    expected = [original[i] for i in selected]
++    r = chematic.select_pdb_atoms(text, list(reversed(selected)))
++    assert r['source_text'] == text and r['source_atom_count'] == 6
++    assert r['selected_source_indices'] == selected and r['losses'] == []
++    assert r['old_to_new'] == [selected.index(i) if i in selected else None for i in range(6)]
++    assert atom_lines(r['pdb']) == expected
++    serials = {int(s[6:11]) for s in expected}
++    expected_anisou = [s for s in text.splitlines() if s.startswith('ANISOU') and int(s[6:11]) in serials]
++    assert [s for s in r['pdb'].splitlines() if s.startswith('ANISOU')] == expected_anisou
++    links = []
++    for values in conect(text):
++        if values[0] in serials:
++            targets = [v for v in values[1:] if v in serials]
++            if targets:
++                links.append((values[0], *targets))
++    assert conect(r['pdb']) == links
++    expected_ter = []
++    last = None
++    for line in text.splitlines():
++        if line.startswith(('ATOM  ', 'HETATM')) and int(line[6:11]) in serials:
++            last = line
++        elif line.startswith('TER'):
++            if last is not None:
++                expected_ter.append((int(last[6:11])+1, last[17:27]))
++            last = None
++    assert [(int(s[6:11]), s[17:27]) for s in r['pdb'].splitlines() if s.startswith('TER')] == expected_ter
++    assert chematic.select_pdb_atoms(r['pdb'])['pdb'] == r['pdb']
++    rdkit_check(r['pdb'], expected)
++    return r
++
++
++def main():
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument('--probe', type=Path, default=Path('/private/tmp/chematic-ob2481-delete-probe'))
++    parser.add_argument('--output', type=Path, default=ROOT/'validation/results/openbabel-pdb-selection-2026-10-15.json')
++    args = parser.parse_args()
++    assert rdBase.rdkitVersion == '2026.09.1', rdBase.rdkitVersion
++    RDLogger.DisableLog('rdApp.*')
++    manifest = json.loads((FOLDER/'fixtures.json').read_text())
++    for record in manifest['records']:
++        text = (FOLDER/record['file']).read_text()
++        assert digest(text.encode()) == record['sha256']
++        native_check(text, range(4))
++    checksum = hashlib.sha256()
++    cases = atoms = anisou = ter_updates = filtered = rdkit_nonempty = 0
++    records = []
++    original = (FOLDER/'rich.pdb').read_text()
++    for order, reverse, model, crlf in itertools.product(itertools.permutations(range(3)), itertools.product((False, True), repeat=3), (False, True), (False, True)):
++        text = recipe(original, order, reverse, model, crlf)
++        for mask in range(64):
++            indices = [i for i in range(6) if mask & (1 << i)]
++            r = native_check(text, indices)
++            checksum.update(r['pdb'].encode())
++            cases += 1
++            atoms += len(r['atoms'])
++            anisou += len([s for s in r['pdb'].splitlines() if s.startswith('ANISOU')])
++            ter_updates += len(r['retargeted_ter_lines'])
++            filtered += len(r['filtered_conect_lines'])
++            rdkit_nonempty += bool(indices)
++        records.append(dict(id=f'g{"".join(map(str, order))}-r{"".join(str(int(v)) for v in reverse)}-m{int(model)}-crlf{int(crlf)}',
++                            group_order=order, reversed_atom_pairs=reverse, explicit_model=model, crlf=crlf,
++                            provenance='Original rich.pdb fixture transformed by scripts/validate_pdb_selection.py, authored 2026-10-15',
++                            license='MIT OR Apache-2.0', redistribution='allowed; project-authored data',
++                            minimization='Six atoms cover two residue fragments and one ligand, associated records and identity fields',
++                            oracle='Exact raw-record/selection contract; RDKit 2026.09.1 PDB read with sanitize=False, removeHs=False, proximityBonding=False',
++                            expected=dict(status='all 64 subsets preserve declared atom identity and associated-record contracts', units='Angstrom; source row indices', tolerance=0),
++                            sha256=digest(text.replace('\r\n', '\n').encode()), exact_subsets=64, status='pass'))
++    with tempfile.TemporaryDirectory(prefix='chematic-ob2481-') as directory:
++        target = Path(directory)/'output.pdb'
++        controls = []
++        for deleted in ('', '4,5'):
++            p = subprocess.run([str(args.probe), str(FOLDER/'basic.pdb'), deleted, str(target)], capture_output=True, text=True, check=True, timeout=10)
++            data = json.loads(p.stdout)
++            assert data['version'] == '3.2.1'
++            before = {a['id']: a for a in data['before']}
++            changes = [a['id'] for a in data['after'] if a != before[a['id']]]
++            if not deleted:
++                assert not changes and data['before'] == data['after_write']
++            else:
++                assert changes == [0, 1, 2, 3]
++                assert [a['residue_name'] for a in data['after']] == ['UNL']*4
++                assert [a['chain'] for a in data['after']] == [' ']*4
++                assert data['after'] == data['after_write']
++            controls.append(dict(deleted_source_indices=[] if not deleted else [4, 5], changed_retained_ids=changes, snapshots=data, output_sha256=digest(target.read_bytes())))
++    report = dict(schema_version=1, date='2026-10-15', issue=dict(number=2481, url='https://github.com/openbabel/openbabel/issues/2481', state_verified='OPEN', scope='Original synthetic reproduction of metadata mutation after ligand deletion; original issue attachment not used'),
++                  runtime=dict(python=platform.python_version(), rdkit=rdBase.rdkitVersion, openbabel='3.2.1'),
++                  fixture_manifest_sha256=digest((FOLDER/'fixtures.json').read_bytes()),
++                  oracle_settings=dict(native='All 64 atom subsets; 6 residue orders x 8 within-residue orders x LF/CRLF x implicit/explicit single model; exact atom/ANISOU contents and CONECT multiplicity; TER endpoint/serial; idempotence', rdkit='Chem.MolFromPDBBlock(sanitize=False, removeHs=False, proximityBonding=False), exact identities and coordinates', openbabel='Public OBMol.DeleteAtom in descending original index order; OBAtom.GetResidue before/after deletion and after PDB serialization; no-deletion control'),
++                  provenance='Original synthetic MIT OR Apache-2.0 fixtures, derived only by atom/record order, serial remapping, model wrappers and line endings; no original issue attachment/upstream code copied',
++                  results=dict(source_variants=len(records), exact_subsets=cases, selected_atom_lines=atoms, retained_anisou_lines=anisou, retargeted_ter_records=ter_updates, filtered_conect_records=filtered, rdkit_nonempty_cross_reads=rdkit_nonempty, rdkit_empty_checks=cases-rdkit_nonempty, unexpected_mismatches=0, output_sha256=checksum.hexdigest(), openbabel_no_deletion_changed_atoms=0, openbabel_ligand_deletion_changed_retained_atoms=4),
++                  records=records, openbabel_controls=controls,
++                  scope=['Single-model coordinate selection; no chemical or residue perception', 'No atom renumbering/reordering; TER serials/residue endpoints may update with collision checks', 'Unknown record loss needs explicit consent and original input is retained', 'Open Babel control reproduces one synthetic workflow, not all structures from #2481', 'Not a complete PDB entry validator or upstream fix/publication'])
++    args.output.parent.mkdir(parents=True, exist_ok=True)
++    args.output.write_text(json.dumps(report, indent=2)+'\n')
++    print(json.dumps(report['results'], indent=2))
++
++
++if __name__ == '__main__':
++    main()
+diff --git a/validation/openbabel_issues/pdb-selection/basic.pdb b/validation/openbabel_issues/pdb-selection/basic.pdb
+new file mode 100644
+index 0000000..245122e
+--- /dev/null
++++ b/validation/openbabel_issues/pdb-selection/basic.pdb
+@@ -0,0 +1,7 @@
++ATOM      1   CA VAL A 101       0.000   0.000   0.000  1.00 10.00           C  
++ATOM      2    O VAL A 101       1.200   0.000   0.000  1.00 10.00           O  
++ATOM      3   CA LEU B 152      10.000   0.000   0.000  1.00 10.00           C  
++ATOM      4    O LEU B 152      11.200   0.000   0.000  1.00 10.00           O  
++HETATM    5   C1 LIG L   7      20.000   0.000   0.000  1.00 10.00           C  
++HETATM    6   O3 LIG L   7      21.200   0.000   0.000  1.00 10.00           O  
++END
+diff --git a/validation/openbabel_issues/pdb-selection/fixtures.json b/validation/openbabel_issues/pdb-selection/fixtures.json
+new file mode 100644
+index 0000000..c72f04d
+--- /dev/null
++++ b/validation/openbabel_issues/pdb-selection/fixtures.json
+@@ -0,0 +1,47 @@
++{
++  "schema_version": 1,
++  "records": [
++    {
++      "id": "ob2481-basic",
++      "file": "basic.pdb",
++      "provenance": "Original synthetic six-atom source authored 2026-10-15 from wwPDB 3.3 fixed columns; issue https://github.com/openbabel/openbabel/issues/2481 consulted for workflow only; no original attachment/code copied",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; project-authored data",
++      "minimization": "Two incomplete two-atom residue fragments and a two-atom ligand isolate identity mutation without third-party structure data",
++      "oracle": "Exact retained source atom/ANISOU lines; Open Babel 3.2.1 public OBMol.DeleteAtom and GetResidue API control; RDKit 2026.09.1 PDB read sanitize=False, removeHs=False, proximityBonding=False",
++      "expected": {
++        "status": "retain selected original ATOM/HETATM line contents and aliases; filter associated records",
++        "units": "Angstrom; zero-based source ATOM/HETATM indices",
++        "tolerance": 0,
++        "remove_ligand_keep_indices": [
++          0,
++          1,
++          2,
++          3
++        ]
++      },
++      "sha256": "adb776a9e54a6b278fa783c35bcdcd200a22a7639698f0515d95cee72aae0e09"
++    },
++    {
++      "id": "ob2481-rich",
++      "file": "rich.pdb",
++      "provenance": "Original synthetic six-atom source authored 2026-10-15 from wwPDB 3.3 fixed columns; issue https://github.com/openbabel/openbabel/issues/2481 consulted for workflow only; no original attachment/code copied",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; project-authored data",
++      "minimization": "Two incomplete two-atom residue fragments and a two-atom ligand isolate identity mutation without third-party structure data",
++      "oracle": "Exact retained source atom/ANISOU lines; Open Babel 3.2.1 public OBMol.DeleteAtom and GetResidue API control; RDKit 2026.09.1 PDB read sanitize=False, removeHs=False, proximityBonding=False",
++      "expected": {
++        "status": "retain selected original ATOM/HETATM line contents and aliases; filter associated records",
++        "units": "Angstrom; zero-based source ATOM/HETATM indices",
++        "tolerance": 0,
++        "remove_ligand_keep_indices": [
++          0,
++          1,
++          2,
++          3
++        ]
++      },
++      "sha256": "13112bc8b62290185fd99dd0c09bf893213d6cd18b63ef300287b5c7a7e330b4"
++    }
++  ]
++}
+diff --git a/validation/openbabel_issues/pdb-selection/openbabel_delete_probe.cpp b/validation/openbabel_issues/pdb-selection/openbabel_delete_probe.cpp
+new file mode 100644
+index 0000000..8eb6ec4
+--- /dev/null
++++ b/validation/openbabel_issues/pdb-selection/openbabel_delete_probe.cpp
+@@ -0,0 +1,56 @@
++// Original MIT OR Apache-2.0 validation harness; Open Babel is an external oracle.
++// This file is never linked into chematic. Uses only public Open Babel APIs.
++#include <openbabel/mol.h>
++#include <openbabel/atom.h>
++#include <openbabel/residue.h>
++#include <openbabel/obconversion.h>
++#include <algorithm>
++#include <iomanip>
++#include <iostream>
++#include <sstream>
++#include <string>
++#include <vector>
++
++static std::string snapshot(OpenBabel::OBMol& mol) {
++  std::ostringstream out;
++  out << "[";
++  for (unsigned i = 1; i <= mol.NumAtoms(); ++i) {
++    auto* atom = mol.GetAtom(i);
++    auto* res = atom->GetResidue();
++    if (i > 1) out << ",";
++    out << "{\"id\":" << atom->GetId();
++    if (res) {
++      out << ",\"atom_name\":" << std::quoted(res->GetAtomID(atom))
++          << ",\"residue_name\":" << std::quoted(res->GetName())
++          << ",\"chain\":" << std::quoted(std::string(1, res->GetChain()))
++          << ",\"residue_number\":" << std::quoted(res->GetNumString());
++    }
++    out << "}";
++  }
++  out << "]";
++  return out.str();
++}
++
++int main(int argc, char** argv) {
++  if (argc != 4) return 2;
++  OpenBabel::OBMol mol;
++  OpenBabel::OBConversion conv;
++  if (!conv.SetInAndOutFormats("pdb", "pdb") || !conv.ReadFile(&mol, argv[1])) return 3;
++  auto before = snapshot(mol);
++  std::vector<unsigned> indices;
++  std::istringstream input(argv[2]);
++  std::string token;
++  while (std::getline(input, token, ',')) {
++    unsigned index = std::stoul(token);
++    if (index >= mol.NumAtoms()) return 4;
++    indices.push_back(index);
++  }
++  std::sort(indices.rbegin(), indices.rend());
++  if (std::adjacent_find(indices.begin(), indices.end()) != indices.end()) return 5;
++  for (auto index : indices) if (!mol.DeleteAtom(mol.GetAtom(index+1))) return 6;
++  auto after = snapshot(mol);
++  if (!conv.WriteFile(&mol, argv[3])) return 7;
++  std::cout << "{\"version\":" << std::quoted(OpenBabel::OBReleaseVersion())
++            << ",\"before\":" << before << ",\"after\":" << after
++            << ",\"after_write\":" << snapshot(mol) << "}\n";
++}
+diff --git a/validation/openbabel_issues/pdb-selection/rich.pdb b/validation/openbabel_issues/pdb-selection/rich.pdb
+new file mode 100644
+index 0000000..72ef9fc
+--- /dev/null
++++ b/validation/openbabel_issues/pdb-selection/rich.pdb
+@@ -0,0 +1,22 @@
++ATOM      1  CA AVAL A 101       0.000   0.000   0.000  0.50 23.45           C  
++ANISOU    1  CA AVAL A 101      100    200    300    -10     20    -30       C  
++ATOM      2  O   VAL A 101       1.200   0.000   0.000  0.50 23.45           O  
++ANISOU    2  O   VAL A 101      100    200    300    -10     20    -30       O  
++TER       3      VAL A 101 
++ATOM      5  CA  LEU B  -2I     10.000   0.000   0.000  0.50 23.45           C  
++ANISOU    5  CA  LEU B  -2I     100    200    300    -10     20    -30       C  
++ATOM      6  O   LEU B  -2I     11.200   0.000   0.000  0.50 23.45           O  
++ANISOU    6  O   LEU B  -2I     100    200    300    -10     20    -30       O  
++TER       7      LEU B  -2I
++HETATM    9  C1  LIG     7      20.000   0.000   0.000  0.50 23.45           C  
++ANISOU    9  C1  LIG     7      100    200    300    -10     20    -30       C  
++HETATM   10  O3  LIG     7      21.200   0.000   0.000  0.50 23.45           O1-
++ANISOU   10  O3  LIG     7      100    200    300    -10     20    -30       O1-
++TER      11      LIG     7 
++CONECT    1    2    2
++CONECT    2    1    1
++CONECT    5    6
++CONECT    6    5
++CONECT    9   10
++CONECT   10    9
++END
+diff --git a/validation/results/binding_surface_inventory-current.json b/validation/results/binding_surface_inventory-current.json
+index cd6b5e3..08f8b1d 100644
+--- a/validation/results/binding_surface_inventory-current.json
++++ b/validation/results/binding_surface_inventory-current.json
+@@ -7,9 +7,9 @@
+   "scope": "Rust source declarations only; this is not semantic parity evidence",
+   "results": {
+     "wasm_export_count": 303,
+-    "python_pyfunction_count": 196,
+-    "python_registered_count": 196,
++    "python_pyfunction_count": 197,
++    "python_registered_count": 197,
+     "python_declared_without_registration": [],
+-    "surface_sha256": "fe794db5a85f3cb9f3e03cd76a0ef9600fcd2e1c47b17ce4731d391690a85db9"
++    "surface_sha256": "e39fd0971ac261b2db70f7abc60db840ecd6d3b0ce1914c1cc99f31429d703fd"
+   }
+ }

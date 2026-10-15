@@ -11,6 +11,7 @@ use super::bounds::{
     BoundsInvariant, ForcedTorsion, collect_bonds_and_angles, init_bounds_mat, set_topol_bounds,
     set_topol_bounds_with_forced_torsions,
 };
+use super::constraints::{InternalCoordinateConstraintError, InternalCoordinateConstraints};
 use super::dg::{BoundsMatrix, ChiralSet, triangle_smooth_bounds};
 use super::embed::{EmbedArgs, EmbedError, EmbedParams, embed_initial_points, embed_points};
 use super::etk::{
@@ -129,6 +130,12 @@ impl From<EmbedError> for RdkitEmbedError {
     }
 }
 
+impl From<InternalCoordinateConstraintError> for RdkitEmbedError {
+    fn from(error: InternalCoordinateConstraintError) -> Self {
+        RdkitEmbedError::Unsupported(format!("invalid internal-coordinate constraint: {error}"))
+    }
+}
+
 /// `EmbeddingOps::findChiralSets` (no coordMap, no atropisomers).
 fn find_chiral_sets(v: &RdkitMolView) -> (Vec<ChiralSet>, Vec<ChiralSet>) {
     let mut chiral = Vec::new();
@@ -220,6 +227,7 @@ fn setup_initial_bounds(
     v: &RdkitMolView,
     labels: &[String],
     o: &RdkitEmbedOptions,
+    constraints: Option<&InternalCoordinateConstraints>,
 ) -> Result<Option<(BoundsMatrix, Vec<ForcedTorsion>)>, RdkitEmbedError> {
     let n = v.num_atoms();
     let mut m = BoundsMatrix::new(n);
@@ -232,6 +240,9 @@ fn setup_initial_bounds(
         o.use_macrocycle14config,
         o.force_trans_amides,
     )?;
+    if let Some(constraints) = constraints {
+        constraints.apply(&mut m)?;
+    }
     if !triangle_smooth_bounds(&mut m, 0.0) {
         init_bounds_mat(&mut m);
         set_topol_bounds(
@@ -242,6 +253,9 @@ fn setup_initial_bounds(
             o.use_macrocycle14config,
             o.force_trans_amides,
         )?;
+        if let Some(constraints) = constraints {
+            constraints.apply(&mut m)?;
+        }
         if !triangle_smooth_bounds(&mut m, 0.0) {
             if o.ignore_smoothing_failures {
                 init_bounds_mat(&mut m);
@@ -253,6 +267,9 @@ fn setup_initial_bounds(
                     o.use_macrocycle14config,
                     o.force_trans_amides,
                 )?;
+                if let Some(constraints) = constraints {
+                    constraints.apply(&mut m)?;
+                }
             } else {
                 return Ok(None);
             }
@@ -270,6 +287,23 @@ pub fn rdkit_embed_molecule(
 ) -> Result<Vec<[f64; 3]>, RdkitEmbedError> {
     validate_options(mh, o)?;
     embed_prepared_fragments(&prepare_fragments(mh, o)?, o, o.random_seed)
+}
+
+/// ETKDG embedding with user bond-length, angle and torsion constraints
+/// applied to the distance bounds before triangle smoothing.
+///
+/// This is intentionally separate from [`crate::constraints`], which adjusts
+/// coordinates after placement. The constrained bounds participate in
+/// metrization and an inconsistent set is rejected before embedding.
+pub fn rdkit_embed_molecule_with_constraints(
+    mh: &Molecule,
+    o: &RdkitEmbedOptions,
+    constraints: &InternalCoordinateConstraints,
+) -> Result<Vec<[f64; 3]>, RdkitEmbedError> {
+    validate_options(mh, o)?;
+    constraints.validate(mh)?;
+    let prepared = prepare_fragments_with_constraints(mh, o, Some(constraints))?;
+    embed_prepared_fragments(&prepared, o, o.random_seed)
 }
 
 /// ETKDGv3 embedding with the mathematically exact sixth-order experimental
@@ -716,6 +750,14 @@ fn prepare_fragments(
     mh: &Molecule,
     o: &RdkitEmbedOptions,
 ) -> Result<Vec<PreparedFragment>, RdkitEmbedError> {
+    prepare_fragments_with_constraints(mh, o, None)
+}
+
+fn prepare_fragments_with_constraints(
+    mh: &Molecule,
+    o: &RdkitEmbedOptions,
+    constraints: Option<&InternalCoordinateConstraints>,
+) -> Result<Vec<PreparedFragment>, RdkitEmbedError> {
     let view = chematic_smiles::rdkit_mol_view(mh)
         .map_err(|e| RdkitEmbedError::Unsupported(e.to_string()))?;
     let labels = chematic_ff::rdkit_uff::rdkit_uff_atom_labels(mh);
@@ -726,6 +768,7 @@ fn prepare_fragments(
             view,
             labels,
             o,
+            constraints,
         )?]);
     }
     frags
@@ -737,7 +780,10 @@ fn prepare_fragments(
                 )
             })?;
             let piece_labels: Vec<String> = atoms.iter().map(|&a| labels[a].clone()).collect();
-            prepare_fragment(atoms, piece, piece_labels, o)
+            let local_constraints = constraints
+                .map(|constraints| constraints.remap_fragment(&atoms))
+                .transpose()?;
+            prepare_fragment(atoms, piece, piece_labels, o, local_constraints.as_ref())
         })
         .collect()
 }
@@ -747,9 +793,11 @@ fn prepare_fragment(
     view: RdkitMolView,
     labels: Vec<String>,
     o: &RdkitEmbedOptions,
+    constraints: Option<&InternalCoordinateConstraints>,
 ) -> Result<PreparedFragment, RdkitEmbedError> {
     let etk = o.use_exp_torsion_angle_prefs || o.use_basic_knowledge;
-    let Some((bounds, forced_torsions)) = setup_initial_bounds(&view, &labels, o)? else {
+    let Some((bounds, forced_torsions)) = setup_initial_bounds(&view, &labels, o, constraints)?
+    else {
         return Err(RdkitEmbedError::Failed);
     };
     let details = if etk {
@@ -906,6 +954,40 @@ pub fn rdkit_bounds_matrix(
     }
     let raw = m.raw();
     Ok((0..n).map(|i| raw[i * n..(i + 1) * n].to_vec()).collect())
+}
+
+/// RDKit-compatible distance bounds with custom internal coordinates applied
+/// before optional triangle smoothing.
+pub fn rdkit_bounds_matrix_with_constraints(
+    mh: &Molecule,
+    constraints: &InternalCoordinateConstraints,
+    set15bounds: bool,
+    do_triangle_smoothing: bool,
+    use_macrocycle14config: bool,
+) -> Result<Vec<Vec<f64>>, RdkitEmbedError> {
+    constraints.validate(mh)?;
+    let view = chematic_smiles::rdkit_mol_view(mh)
+        .map_err(|e| RdkitEmbedError::Unsupported(e.to_string()))?;
+    let labels = chematic_ff::rdkit_uff::rdkit_uff_atom_labels(mh);
+    let n = view.num_atoms();
+    let mut matrix = BoundsMatrix::new(n);
+    init_bounds_mat(&mut matrix);
+    set_topol_bounds(
+        &view,
+        &labels,
+        &mut matrix,
+        set15bounds,
+        use_macrocycle14config,
+        true,
+    )?;
+    constraints.apply(&mut matrix)?;
+    if do_triangle_smoothing && !triangle_smooth_bounds(&mut matrix, 0.0) {
+        return Err(InternalCoordinateConstraintError::TriangleSmoothingFailed.into());
+    }
+    let raw = matrix.raw();
+    Ok((0..n)
+        .map(|row| raw[row * n..(row + 1) * n].to_vec())
+        .collect())
 }
 
 #[cfg(test)]

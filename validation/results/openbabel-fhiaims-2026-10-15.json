@@ -1,0 +1,3034 @@
+{
+  "schema_version": 1,
+  "status": "local-source-candidate; uncommitted and unpushed",
+  "contract_fixture_manifest": "validation/openbabel_issues/fhiaims/contract-fixtures.json",
+  "oracles": {
+    "openbabel": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+    "ase": "3.27.0",
+    "numpy": "2.5.4",
+    "FHIaims_manual": "261002"
+  },
+  "results": {
+    "structured_roundtrips": 192,
+    "ase_cases": 128,
+    "openbabel_cartesian_cases": 64,
+    "fractional_or_mixed_cases": 64,
+    "max_openbabel_cell_error_angstrom": 8.881784197001252e-16,
+    "max_openbabel_written_error_angstrom": 4.761904761840796e-06,
+    "initial_density_fields_dropped_by_openbabel": 128,
+    "unexpected_mismatches": 0
+  },
+  "records": [
+    {
+      "id": "s0-d0-cartesian-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "f029e1aafcb5bed3c926f7e0150799aa461ea1483ae5095ee70b8cc6d49158c3",
+      "status": "passed"
+    },
+    {
+      "id": "s0-d0-cartesian-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "f029e1aafcb5bed3c926f7e0150799aa461ea1483ae5095ee70b8cc6d49158c3",
+      "status": "passed"
+    },
+    {
+      "id": "s0-d0-cartesian-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "b391706ade4d961d9ce37f83428a63e679c844e5c4b51bd9854166027a09ce68",
+      "status": "passed"
+    },
+    {
+      "id": "s0-d0-cartesian-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "b391706ade4d961d9ce37f83428a63e679c844e5c4b51bd9854166027a09ce68",
+      "status": "passed"
+    },
+    {
+      "id": "s0-d1-cartesian-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "9ac3dcd9a086337430ee5e37e07cc4cad35e6881cde67ef937bf4e53d2bdcd1a",
+      "status": "passed"
+    },
+    {
+      "id": "s0-d1-cartesian-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "9ac3dcd9a086337430ee5e37e07cc4cad35e6881cde67ef937bf4e53d2bdcd1a",
+      "status": "passed"
+    },
+    {
+      "id": "s0-d1-cartesian-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "9d1e9284c9e151439c2b98bcd4157d71f9529d0e40a6f811690f1ba41a87d40b",
+      "status": "passed"
+    },
+    {
+      "id": "s0-d1-cartesian-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "9d1e9284c9e151439c2b98bcd4157d71f9529d0e40a6f811690f1ba41a87d40b",
+      "status": "passed"
+    },
+    {
+      "id": "s0-d2-cartesian-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "f9edaf1a0d94aa8884d61967e2078787f1878034322c14bc702ae6c4158e5fd9",
+      "status": "passed"
+    },
+    {
+      "id": "s0-d2-cartesian-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "f9edaf1a0d94aa8884d61967e2078787f1878034322c14bc702ae6c4158e5fd9",
+      "status": "passed"
+    },
+    {
+      "id": "s0-d2-cartesian-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "14fed7a51a47f060e3ce647fe67e3f3f1b7fbb3a13ff5e056cdecd5832ca8fa8",
+      "status": "passed"
+    },
+    {
+      "id": "s0-d2-cartesian-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "14fed7a51a47f060e3ce647fe67e3f3f1b7fbb3a13ff5e056cdecd5832ca8fa8",
+      "status": "passed"
+    },
+    {
+      "id": "s0-d3-cartesian-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "cce387fb25ed9bb13f23d29fc7a54f7d187ec9381c01d7227851bf1cb317ceaa",
+      "status": "passed"
+    },
+    {
+      "id": "s0-d3-cartesian-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "cce387fb25ed9bb13f23d29fc7a54f7d187ec9381c01d7227851bf1cb317ceaa",
+      "status": "passed"
+    },
+    {
+      "id": "s0-d3-cartesian-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "fb0103a195008fab610834837d0e9e85270aa5c6709add7000770b784601ed02",
+      "status": "passed"
+    },
+    {
+      "id": "s0-d3-cartesian-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "fb0103a195008fab610834837d0e9e85270aa5c6709add7000770b784601ed02",
+      "status": "passed"
+    },
+    {
+      "id": "s0-d3-fractional-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "9bf56737660ca261022e41584a280e4257717cee0aa65390bca43e38e6ee44ea",
+      "status": "passed"
+    },
+    {
+      "id": "s0-d3-fractional-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "9bf56737660ca261022e41584a280e4257717cee0aa65390bca43e38e6ee44ea",
+      "status": "passed"
+    },
+    {
+      "id": "s0-d3-fractional-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "69399e0156673fb0ebd4ebf3eb034c656eb55c8de643550e1d0e2c72cec7a496",
+      "status": "passed"
+    },
+    {
+      "id": "s0-d3-fractional-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "69399e0156673fb0ebd4ebf3eb034c656eb55c8de643550e1d0e2c72cec7a496",
+      "status": "passed"
+    },
+    {
+      "id": "s0-d3-mixed-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "9bf56737660ca261022e41584a280e4257717cee0aa65390bca43e38e6ee44ea",
+      "status": "passed"
+    },
+    {
+      "id": "s0-d3-mixed-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "9bf56737660ca261022e41584a280e4257717cee0aa65390bca43e38e6ee44ea",
+      "status": "passed"
+    },
+    {
+      "id": "s0-d3-mixed-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "69399e0156673fb0ebd4ebf3eb034c656eb55c8de643550e1d0e2c72cec7a496",
+      "status": "passed"
+    },
+    {
+      "id": "s0-d3-mixed-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "69399e0156673fb0ebd4ebf3eb034c656eb55c8de643550e1d0e2c72cec7a496",
+      "status": "passed"
+    },
+    {
+      "id": "s1-d0-cartesian-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "a4c3dc078aa6013c6d4237b38a007b5aebcd40e9af1d013a37c71d23655137dd",
+      "status": "passed"
+    },
+    {
+      "id": "s1-d0-cartesian-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "a4c3dc078aa6013c6d4237b38a007b5aebcd40e9af1d013a37c71d23655137dd",
+      "status": "passed"
+    },
+    {
+      "id": "s1-d0-cartesian-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "0942c2fac60f87ddff595ccc4bef6573d1519363f92c63bd839b8b5e4c0c50fe",
+      "status": "passed"
+    },
+    {
+      "id": "s1-d0-cartesian-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "0942c2fac60f87ddff595ccc4bef6573d1519363f92c63bd839b8b5e4c0c50fe",
+      "status": "passed"
+    },
+    {
+      "id": "s1-d1-cartesian-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "ba0737a55b77ab24ff65235dfbee0674f960957b6548cba98813b7c34a7f7716",
+      "status": "passed"
+    },
+    {
+      "id": "s1-d1-cartesian-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "ba0737a55b77ab24ff65235dfbee0674f960957b6548cba98813b7c34a7f7716",
+      "status": "passed"
+    },
+    {
+      "id": "s1-d1-cartesian-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "2b7d0f7dc83b77d29ed904a9da3f6f27b6927b2e57204d28e2145bf841a10e7b",
+      "status": "passed"
+    },
+    {
+      "id": "s1-d1-cartesian-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "2b7d0f7dc83b77d29ed904a9da3f6f27b6927b2e57204d28e2145bf841a10e7b",
+      "status": "passed"
+    },
+    {
+      "id": "s1-d2-cartesian-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "3a6d1f7c27913e19740f47b2b53c6131a80b6f8b65046fa67b2ed811636c3e0a",
+      "status": "passed"
+    },
+    {
+      "id": "s1-d2-cartesian-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "3a6d1f7c27913e19740f47b2b53c6131a80b6f8b65046fa67b2ed811636c3e0a",
+      "status": "passed"
+    },
+    {
+      "id": "s1-d2-cartesian-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "bfe900bcf0733dfa4b74f1bf794bb84c185c53d2eb9c5c2fbe736eaa984211b8",
+      "status": "passed"
+    },
+    {
+      "id": "s1-d2-cartesian-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "bfe900bcf0733dfa4b74f1bf794bb84c185c53d2eb9c5c2fbe736eaa984211b8",
+      "status": "passed"
+    },
+    {
+      "id": "s1-d3-cartesian-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "326bd94584024b3a6827a6bc500cb81cac40de24cc4646880249f2f842743065",
+      "status": "passed"
+    },
+    {
+      "id": "s1-d3-cartesian-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "326bd94584024b3a6827a6bc500cb81cac40de24cc4646880249f2f842743065",
+      "status": "passed"
+    },
+    {
+      "id": "s1-d3-cartesian-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "0ff3ccc487929266760c8fcdd45ddd86ad8efbe7956eed9da970391c85d811bd",
+      "status": "passed"
+    },
+    {
+      "id": "s1-d3-cartesian-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "0ff3ccc487929266760c8fcdd45ddd86ad8efbe7956eed9da970391c85d811bd",
+      "status": "passed"
+    },
+    {
+      "id": "s1-d3-fractional-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "8dab79e032efed794db72703e76b7a5b4fdf94df39ab064c462212fa4b9dd651",
+      "status": "passed"
+    },
+    {
+      "id": "s1-d3-fractional-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "8dab79e032efed794db72703e76b7a5b4fdf94df39ab064c462212fa4b9dd651",
+      "status": "passed"
+    },
+    {
+      "id": "s1-d3-fractional-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "9c23ceaa7a23b349fc5d1be4d0ed7cb7229815ac134781397f182295a2ea267e",
+      "status": "passed"
+    },
+    {
+      "id": "s1-d3-fractional-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "9c23ceaa7a23b349fc5d1be4d0ed7cb7229815ac134781397f182295a2ea267e",
+      "status": "passed"
+    },
+    {
+      "id": "s1-d3-mixed-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "71bcddd81b0b15c35b458a5dc5af61f9c6b5f6f811ac8476f0667c36359545e0",
+      "status": "passed"
+    },
+    {
+      "id": "s1-d3-mixed-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "71bcddd81b0b15c35b458a5dc5af61f9c6b5f6f811ac8476f0667c36359545e0",
+      "status": "passed"
+    },
+    {
+      "id": "s1-d3-mixed-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "b5640aacc64e5fcac18df57b31531654083ad46780efee2b520814ba8048c6f3",
+      "status": "passed"
+    },
+    {
+      "id": "s1-d3-mixed-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "b5640aacc64e5fcac18df57b31531654083ad46780efee2b520814ba8048c6f3",
+      "status": "passed"
+    },
+    {
+      "id": "s2-d0-cartesian-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "3b9ad4ba69ee8ad861b036acc19b977c6ddc483989fce4e1f8168a5ecbad6495",
+      "status": "passed"
+    },
+    {
+      "id": "s2-d0-cartesian-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "3b9ad4ba69ee8ad861b036acc19b977c6ddc483989fce4e1f8168a5ecbad6495",
+      "status": "passed"
+    },
+    {
+      "id": "s2-d0-cartesian-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "1d94f8ae1ed8fd1ea9fdeeeb50ee94d78a74ae50795974cc2b87568d10a73139",
+      "status": "passed"
+    },
+    {
+      "id": "s2-d0-cartesian-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "1d94f8ae1ed8fd1ea9fdeeeb50ee94d78a74ae50795974cc2b87568d10a73139",
+      "status": "passed"
+    },
+    {
+      "id": "s2-d1-cartesian-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "1acc5b6e4fa3affbc1275cd25a54a8947c0fb909b4ba81b6748826aa1e6187ee",
+      "status": "passed"
+    },
+    {
+      "id": "s2-d1-cartesian-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "1acc5b6e4fa3affbc1275cd25a54a8947c0fb909b4ba81b6748826aa1e6187ee",
+      "status": "passed"
+    },
+    {
+      "id": "s2-d1-cartesian-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "3f0c5b410a1cb02e6344631c781081c38fb074af43ec4f517df57cdc8714159d",
+      "status": "passed"
+    },
+    {
+      "id": "s2-d1-cartesian-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "3f0c5b410a1cb02e6344631c781081c38fb074af43ec4f517df57cdc8714159d",
+      "status": "passed"
+    },
+    {
+      "id": "s2-d2-cartesian-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "debaa19d4825a88e06fbb3257108043d92ffe71d38bfe0ca3168ecd55b8f0c4f",
+      "status": "passed"
+    },
+    {
+      "id": "s2-d2-cartesian-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "debaa19d4825a88e06fbb3257108043d92ffe71d38bfe0ca3168ecd55b8f0c4f",
+      "status": "passed"
+    },
+    {
+      "id": "s2-d2-cartesian-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "84c7da9d4d566f199a60db00f845d3f8540bcc9c79c153ab10808b45c68cfd65",
+      "status": "passed"
+    },
+    {
+      "id": "s2-d2-cartesian-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "84c7da9d4d566f199a60db00f845d3f8540bcc9c79c153ab10808b45c68cfd65",
+      "status": "passed"
+    },
+    {
+      "id": "s2-d3-cartesian-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "1f5926af10ed2dac7c91a6e39cf54bc0cf483413c3899d41a0066f6612b4f8e7",
+      "status": "passed"
+    },
+    {
+      "id": "s2-d3-cartesian-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "1f5926af10ed2dac7c91a6e39cf54bc0cf483413c3899d41a0066f6612b4f8e7",
+      "status": "passed"
+    },
+    {
+      "id": "s2-d3-cartesian-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "7b9b50585e155ac6f8936faaf0d3e6d3ca0c82db59934df5f21d13990cd65389",
+      "status": "passed"
+    },
+    {
+      "id": "s2-d3-cartesian-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "7b9b50585e155ac6f8936faaf0d3e6d3ca0c82db59934df5f21d13990cd65389",
+      "status": "passed"
+    },
+    {
+      "id": "s2-d3-fractional-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "f4bd9a4b5349abdf39c9baa1f2a5c9f019717bbd48a1071979a937169830969f",
+      "status": "passed"
+    },
+    {
+      "id": "s2-d3-fractional-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "f4bd9a4b5349abdf39c9baa1f2a5c9f019717bbd48a1071979a937169830969f",
+      "status": "passed"
+    },
+    {
+      "id": "s2-d3-fractional-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "ccc51eaf6ada3dda42aee0e869deafd86518a8043bf836a5057465e9c8b8ad45",
+      "status": "passed"
+    },
+    {
+      "id": "s2-d3-fractional-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "ccc51eaf6ada3dda42aee0e869deafd86518a8043bf836a5057465e9c8b8ad45",
+      "status": "passed"
+    },
+    {
+      "id": "s2-d3-mixed-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "cb9fc8b2f59adf5a088acba6eef847b4499676b979b38d2488d4b087635a38d4",
+      "status": "passed"
+    },
+    {
+      "id": "s2-d3-mixed-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "cb9fc8b2f59adf5a088acba6eef847b4499676b979b38d2488d4b087635a38d4",
+      "status": "passed"
+    },
+    {
+      "id": "s2-d3-mixed-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "80e78c294e98b2815a3ff4711ca5cf639a3685a77b15c75045cd3e336cd0e7e8",
+      "status": "passed"
+    },
+    {
+      "id": "s2-d3-mixed-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "80e78c294e98b2815a3ff4711ca5cf639a3685a77b15c75045cd3e336cd0e7e8",
+      "status": "passed"
+    },
+    {
+      "id": "s3-d0-cartesian-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "1e8e55e93c21c44a0c36a7ba909659b32b9a5702dc9cd3b70fba999e1b3b26fb",
+      "status": "passed"
+    },
+    {
+      "id": "s3-d0-cartesian-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "1e8e55e93c21c44a0c36a7ba909659b32b9a5702dc9cd3b70fba999e1b3b26fb",
+      "status": "passed"
+    },
+    {
+      "id": "s3-d0-cartesian-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "9f5060f70b029a1be20a426fad63657bab60fb834c96a62d42793d4a6d31f462",
+      "status": "passed"
+    },
+    {
+      "id": "s3-d0-cartesian-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "9f5060f70b029a1be20a426fad63657bab60fb834c96a62d42793d4a6d31f462",
+      "status": "passed"
+    },
+    {
+      "id": "s3-d1-cartesian-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "15fd0dbd6bd7d1ece1faa6592568325082727b18e2423232628c5387457aa0d5",
+      "status": "passed"
+    },
+    {
+      "id": "s3-d1-cartesian-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "15fd0dbd6bd7d1ece1faa6592568325082727b18e2423232628c5387457aa0d5",
+      "status": "passed"
+    },
+    {
+      "id": "s3-d1-cartesian-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "1d2e6850fcfcf7e161fa3cd2aa86081b2d0cfcf28e65fc68f915c1e30fc0b69b",
+      "status": "passed"
+    },
+    {
+      "id": "s3-d1-cartesian-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "1d2e6850fcfcf7e161fa3cd2aa86081b2d0cfcf28e65fc68f915c1e30fc0b69b",
+      "status": "passed"
+    },
+    {
+      "id": "s3-d2-cartesian-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "8d71592936fe4c9ee35c9398aa7fd80b528f6e66d15764cd94aa65b2657d0046",
+      "status": "passed"
+    },
+    {
+      "id": "s3-d2-cartesian-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "8d71592936fe4c9ee35c9398aa7fd80b528f6e66d15764cd94aa65b2657d0046",
+      "status": "passed"
+    },
+    {
+      "id": "s3-d2-cartesian-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "c5f7bc838c963f1c62fc5b55002af54089dc00b6f5eec48184039832f0f893f9",
+      "status": "passed"
+    },
+    {
+      "id": "s3-d2-cartesian-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "c5f7bc838c963f1c62fc5b55002af54089dc00b6f5eec48184039832f0f893f9",
+      "status": "passed"
+    },
+    {
+      "id": "s3-d3-cartesian-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "fc1afba91b08567cdd1c7e16e6a728f484cec6feb1fb66246dd89f9fcd2e0f05",
+      "status": "passed"
+    },
+    {
+      "id": "s3-d3-cartesian-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "fc1afba91b08567cdd1c7e16e6a728f484cec6feb1fb66246dd89f9fcd2e0f05",
+      "status": "passed"
+    },
+    {
+      "id": "s3-d3-cartesian-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "683279836a14bff5baa1dd7ca3c343cbddf3061646962d673ae574aaeaee946d",
+      "status": "passed"
+    },
+    {
+      "id": "s3-d3-cartesian-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "683279836a14bff5baa1dd7ca3c343cbddf3061646962d673ae574aaeaee946d",
+      "status": "passed"
+    },
+    {
+      "id": "s3-d3-fractional-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "cf3303bb564dbe6f9f0a414f1531bc684ebca6c3da90f09448038eac9de75f35",
+      "status": "passed"
+    },
+    {
+      "id": "s3-d3-fractional-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "cf3303bb564dbe6f9f0a414f1531bc684ebca6c3da90f09448038eac9de75f35",
+      "status": "passed"
+    },
+    {
+      "id": "s3-d3-fractional-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "9354c53a2f12dba641e4c8c2332c8220eaf50b0e5fa1a882d7e100432f03c865",
+      "status": "passed"
+    },
+    {
+      "id": "s3-d3-fractional-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "9354c53a2f12dba641e4c8c2332c8220eaf50b0e5fa1a882d7e100432f03c865",
+      "status": "passed"
+    },
+    {
+      "id": "s3-d3-mixed-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "ac0700b5245e8714551122ddfe84c8ed1b1a6e398340abb247f0ca7d7d771c26",
+      "status": "passed"
+    },
+    {
+      "id": "s3-d3-mixed-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "ac0700b5245e8714551122ddfe84c8ed1b1a6e398340abb247f0ca7d7d771c26",
+      "status": "passed"
+    },
+    {
+      "id": "s3-d3-mixed-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "a855bdf0adb3e98c3ae4b65a228402274b9639b126367a8cdbac7319c6c7e341",
+      "status": "passed"
+    },
+    {
+      "id": "s3-d3-mixed-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "a855bdf0adb3e98c3ae4b65a228402274b9639b126367a8cdbac7319c6c7e341",
+      "status": "passed"
+    },
+    {
+      "id": "s4-d0-cartesian-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "d2162e67d7a272ef57e926710f68614f45b0e82716a6e591e99d2ba791f3ec3c",
+      "status": "passed"
+    },
+    {
+      "id": "s4-d0-cartesian-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "d2162e67d7a272ef57e926710f68614f45b0e82716a6e591e99d2ba791f3ec3c",
+      "status": "passed"
+    },
+    {
+      "id": "s4-d0-cartesian-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "bc916ca5ca78e93dbb0a4cc772d1c6abe43bebe92b7d4dcf77dc0f574289e92b",
+      "status": "passed"
+    },
+    {
+      "id": "s4-d0-cartesian-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "bc916ca5ca78e93dbb0a4cc772d1c6abe43bebe92b7d4dcf77dc0f574289e92b",
+      "status": "passed"
+    },
+    {
+      "id": "s4-d1-cartesian-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "657858f2685f2bc4775e4cd5a887b88a8ad7c89afa18e0d61932d559503ac43d",
+      "status": "passed"
+    },
+    {
+      "id": "s4-d1-cartesian-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "657858f2685f2bc4775e4cd5a887b88a8ad7c89afa18e0d61932d559503ac43d",
+      "status": "passed"
+    },
+    {
+      "id": "s4-d1-cartesian-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "734c5a32d33104f051d8fe0b6489e7f5f190d5eb8f28c4fb468c8b41fe4b56d8",
+      "status": "passed"
+    },
+    {
+      "id": "s4-d1-cartesian-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "734c5a32d33104f051d8fe0b6489e7f5f190d5eb8f28c4fb468c8b41fe4b56d8",
+      "status": "passed"
+    },
+    {
+      "id": "s4-d2-cartesian-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "c1e67dd0a32b06bd300992d65e526f540bec778dd83633a5c7c1dd5ddeec53ed",
+      "status": "passed"
+    },
+    {
+      "id": "s4-d2-cartesian-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "c1e67dd0a32b06bd300992d65e526f540bec778dd83633a5c7c1dd5ddeec53ed",
+      "status": "passed"
+    },
+    {
+      "id": "s4-d2-cartesian-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "d1543281c816eb838656488a436f829abac9c920cb03e10decf80af4c65bde74",
+      "status": "passed"
+    },
+    {
+      "id": "s4-d2-cartesian-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "d1543281c816eb838656488a436f829abac9c920cb03e10decf80af4c65bde74",
+      "status": "passed"
+    },
+    {
+      "id": "s4-d3-cartesian-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "e9eb450183b07ea689afa7fb3d84fbaea9f3d40f8a67643c52d85e200b587ea0",
+      "status": "passed"
+    },
+    {
+      "id": "s4-d3-cartesian-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "e9eb450183b07ea689afa7fb3d84fbaea9f3d40f8a67643c52d85e200b587ea0",
+      "status": "passed"
+    },
+    {
+      "id": "s4-d3-cartesian-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "d9e9c12638d2c39249f5bca6533ffc2a19016d672833cf60462e89dde63a0051",
+      "status": "passed"
+    },
+    {
+      "id": "s4-d3-cartesian-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "d9e9c12638d2c39249f5bca6533ffc2a19016d672833cf60462e89dde63a0051",
+      "status": "passed"
+    },
+    {
+      "id": "s4-d3-fractional-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "fb49982aaac57f0c7a09d0f75ae47da13b7ae1b2021d54e79e3985c721deac36",
+      "status": "passed"
+    },
+    {
+      "id": "s4-d3-fractional-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "fb49982aaac57f0c7a09d0f75ae47da13b7ae1b2021d54e79e3985c721deac36",
+      "status": "passed"
+    },
+    {
+      "id": "s4-d3-fractional-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "18509d6936ba6e50ba00a65ccf082435613b66938b57250c9d538668a3c60bfa",
+      "status": "passed"
+    },
+    {
+      "id": "s4-d3-fractional-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "18509d6936ba6e50ba00a65ccf082435613b66938b57250c9d538668a3c60bfa",
+      "status": "passed"
+    },
+    {
+      "id": "s4-d3-mixed-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "fb49982aaac57f0c7a09d0f75ae47da13b7ae1b2021d54e79e3985c721deac36",
+      "status": "passed"
+    },
+    {
+      "id": "s4-d3-mixed-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "fb49982aaac57f0c7a09d0f75ae47da13b7ae1b2021d54e79e3985c721deac36",
+      "status": "passed"
+    },
+    {
+      "id": "s4-d3-mixed-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "18509d6936ba6e50ba00a65ccf082435613b66938b57250c9d538668a3c60bfa",
+      "status": "passed"
+    },
+    {
+      "id": "s4-d3-mixed-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "18509d6936ba6e50ba00a65ccf082435613b66938b57250c9d538668a3c60bfa",
+      "status": "passed"
+    },
+    {
+      "id": "s5-d0-cartesian-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "eefc70bab9631fb8c95297ce988e13225958a23abdd6bba1f29efb1d6289e60b",
+      "status": "passed"
+    },
+    {
+      "id": "s5-d0-cartesian-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "eefc70bab9631fb8c95297ce988e13225958a23abdd6bba1f29efb1d6289e60b",
+      "status": "passed"
+    },
+    {
+      "id": "s5-d0-cartesian-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "c14585d6cac7999736443c422cbb84c6bac82add560e39f391feb6ac627d1f4f",
+      "status": "passed"
+    },
+    {
+      "id": "s5-d0-cartesian-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "c14585d6cac7999736443c422cbb84c6bac82add560e39f391feb6ac627d1f4f",
+      "status": "passed"
+    },
+    {
+      "id": "s5-d1-cartesian-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "f761677cb9fc36e573699f8e0cbc29cc3b929aa48297b100ab837393d1c7068d",
+      "status": "passed"
+    },
+    {
+      "id": "s5-d1-cartesian-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "f761677cb9fc36e573699f8e0cbc29cc3b929aa48297b100ab837393d1c7068d",
+      "status": "passed"
+    },
+    {
+      "id": "s5-d1-cartesian-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "cd122f1a454957965b743f19e3a53880ae0fcc97ee9c76b06fa24f424d95a154",
+      "status": "passed"
+    },
+    {
+      "id": "s5-d1-cartesian-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "cd122f1a454957965b743f19e3a53880ae0fcc97ee9c76b06fa24f424d95a154",
+      "status": "passed"
+    },
+    {
+      "id": "s5-d2-cartesian-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "3777b4c86fa088904566a0f1e18dc70c25e7842cc184655785fbb7832d56794a",
+      "status": "passed"
+    },
+    {
+      "id": "s5-d2-cartesian-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "3777b4c86fa088904566a0f1e18dc70c25e7842cc184655785fbb7832d56794a",
+      "status": "passed"
+    },
+    {
+      "id": "s5-d2-cartesian-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "838f6fe3b9352b30e59afebae86c17a1445582f8aeeb08a7b597118f89567af7",
+      "status": "passed"
+    },
+    {
+      "id": "s5-d2-cartesian-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "838f6fe3b9352b30e59afebae86c17a1445582f8aeeb08a7b597118f89567af7",
+      "status": "passed"
+    },
+    {
+      "id": "s5-d3-cartesian-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "1012e98b62677b5e2723c956e202491b5496ea76747fea883f17cc4142b9ba6a",
+      "status": "passed"
+    },
+    {
+      "id": "s5-d3-cartesian-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "1012e98b62677b5e2723c956e202491b5496ea76747fea883f17cc4142b9ba6a",
+      "status": "passed"
+    },
+    {
+      "id": "s5-d3-cartesian-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "2c36b79abe2053fb589b6943350723da70e7addf3051c17b4803c5778f3bae0b",
+      "status": "passed"
+    },
+    {
+      "id": "s5-d3-cartesian-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "2c36b79abe2053fb589b6943350723da70e7addf3051c17b4803c5778f3bae0b",
+      "status": "passed"
+    },
+    {
+      "id": "s5-d3-fractional-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "a7ae289afa5a2502862d05c9e8edefab742ae8ac0fbee1d9d9736ad13dc9e870",
+      "status": "passed"
+    },
+    {
+      "id": "s5-d3-fractional-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "a7ae289afa5a2502862d05c9e8edefab742ae8ac0fbee1d9d9736ad13dc9e870",
+      "status": "passed"
+    },
+    {
+      "id": "s5-d3-fractional-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "6b74b7e8cd29ca1bf93d030f88a4380473af34240d8d9270ecf0c7051da75eb4",
+      "status": "passed"
+    },
+    {
+      "id": "s5-d3-fractional-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "6b74b7e8cd29ca1bf93d030f88a4380473af34240d8d9270ecf0c7051da75eb4",
+      "status": "passed"
+    },
+    {
+      "id": "s5-d3-mixed-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "52c5dedb4aa96c9ab3dac1c9d96db610f4d3d0c6c47fc70a5da7f43f54a628fb",
+      "status": "passed"
+    },
+    {
+      "id": "s5-d3-mixed-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "52c5dedb4aa96c9ab3dac1c9d96db610f4d3d0c6c47fc70a5da7f43f54a628fb",
+      "status": "passed"
+    },
+    {
+      "id": "s5-d3-mixed-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "9d89073bfc0709f012263533200593cdcdef60d158aefa05c8cd239d563e1bd1",
+      "status": "passed"
+    },
+    {
+      "id": "s5-d3-mixed-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "9d89073bfc0709f012263533200593cdcdef60d158aefa05c8cd239d563e1bd1",
+      "status": "passed"
+    },
+    {
+      "id": "s6-d0-cartesian-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "30574e2642c71e1dfab25b54ca899a6edab42dc16ae8aa83c3f0e46b49e73c7b",
+      "status": "passed"
+    },
+    {
+      "id": "s6-d0-cartesian-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "30574e2642c71e1dfab25b54ca899a6edab42dc16ae8aa83c3f0e46b49e73c7b",
+      "status": "passed"
+    },
+    {
+      "id": "s6-d0-cartesian-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "d87ddf7481946ffd652cf70a15dd7aa34f1de74a953c2fa757fe86a24b30e9e6",
+      "status": "passed"
+    },
+    {
+      "id": "s6-d0-cartesian-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "d87ddf7481946ffd652cf70a15dd7aa34f1de74a953c2fa757fe86a24b30e9e6",
+      "status": "passed"
+    },
+    {
+      "id": "s6-d1-cartesian-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "8397af9b3f3b4299fa6b992db932dd9461a01df949577aa53cc0497e08125d4e",
+      "status": "passed"
+    },
+    {
+      "id": "s6-d1-cartesian-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "8397af9b3f3b4299fa6b992db932dd9461a01df949577aa53cc0497e08125d4e",
+      "status": "passed"
+    },
+    {
+      "id": "s6-d1-cartesian-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "87446f5fe629287ab7fd6f5fe43f9a0e99630f912bfe6d127d10f0e1900e4ca0",
+      "status": "passed"
+    },
+    {
+      "id": "s6-d1-cartesian-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "87446f5fe629287ab7fd6f5fe43f9a0e99630f912bfe6d127d10f0e1900e4ca0",
+      "status": "passed"
+    },
+    {
+      "id": "s6-d2-cartesian-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "a1d2179f99d96b9b4ee84ab1f4fd247ef31efb3c896d6a77a2ff1134a748f738",
+      "status": "passed"
+    },
+    {
+      "id": "s6-d2-cartesian-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "a1d2179f99d96b9b4ee84ab1f4fd247ef31efb3c896d6a77a2ff1134a748f738",
+      "status": "passed"
+    },
+    {
+      "id": "s6-d2-cartesian-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "5f961af7c9b0d8ac9207d4665dce6a5fecb1072d6a78c45d08988a2de179c4ca",
+      "status": "passed"
+    },
+    {
+      "id": "s6-d2-cartesian-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "5f961af7c9b0d8ac9207d4665dce6a5fecb1072d6a78c45d08988a2de179c4ca",
+      "status": "passed"
+    },
+    {
+      "id": "s6-d3-cartesian-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "267710c368c8a04ea079eec571b9d8a2d634184277da96fb924eca264be5bea3",
+      "status": "passed"
+    },
+    {
+      "id": "s6-d3-cartesian-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "267710c368c8a04ea079eec571b9d8a2d634184277da96fb924eca264be5bea3",
+      "status": "passed"
+    },
+    {
+      "id": "s6-d3-cartesian-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "e7da72c556be12493b444d0ce4cf8f6b96a1f930ba993b639a73f409fb559440",
+      "status": "passed"
+    },
+    {
+      "id": "s6-d3-cartesian-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "e7da72c556be12493b444d0ce4cf8f6b96a1f930ba993b639a73f409fb559440",
+      "status": "passed"
+    },
+    {
+      "id": "s6-d3-fractional-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "dd26db674a571938249edcd825ed3dbb4fc8b9c373ef6d33390f1de7dd964af0",
+      "status": "passed"
+    },
+    {
+      "id": "s6-d3-fractional-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "dd26db674a571938249edcd825ed3dbb4fc8b9c373ef6d33390f1de7dd964af0",
+      "status": "passed"
+    },
+    {
+      "id": "s6-d3-fractional-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "e3ad57f80e24d77d41ae6da84637345ad3868ba4d865c5f80b3422ee126e7892",
+      "status": "passed"
+    },
+    {
+      "id": "s6-d3-fractional-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "e3ad57f80e24d77d41ae6da84637345ad3868ba4d865c5f80b3422ee126e7892",
+      "status": "passed"
+    },
+    {
+      "id": "s6-d3-mixed-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "af950b75016ebe1254b426dfc7e4470e2ef9d0cf823c89cca6dbdff5a4f26cc2",
+      "status": "passed"
+    },
+    {
+      "id": "s6-d3-mixed-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "af950b75016ebe1254b426dfc7e4470e2ef9d0cf823c89cca6dbdff5a4f26cc2",
+      "status": "passed"
+    },
+    {
+      "id": "s6-d3-mixed-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "e9c90ff4d90d095de471a54e42112b1c1d092fc531ad8edaf586750879727127",
+      "status": "passed"
+    },
+    {
+      "id": "s6-d3-mixed-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "e9c90ff4d90d095de471a54e42112b1c1d092fc531ad8edaf586750879727127",
+      "status": "passed"
+    },
+    {
+      "id": "s7-d0-cartesian-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "da4c431d812c7a2441ebee43b90ccb1c2dcdbca30c1910d6f56b786f178e449c",
+      "status": "passed"
+    },
+    {
+      "id": "s7-d0-cartesian-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "da4c431d812c7a2441ebee43b90ccb1c2dcdbca30c1910d6f56b786f178e449c",
+      "status": "passed"
+    },
+    {
+      "id": "s7-d0-cartesian-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "ac311b0713703d70ec46e6af9a2ac27b8a6ff1db2a5ddaeb2ba58fd7bfc588c5",
+      "status": "passed"
+    },
+    {
+      "id": "s7-d0-cartesian-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "ac311b0713703d70ec46e6af9a2ac27b8a6ff1db2a5ddaeb2ba58fd7bfc588c5",
+      "status": "passed"
+    },
+    {
+      "id": "s7-d1-cartesian-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "c7fb5974ffd6b5e750be307e4b8b99c552f1e7f0bd950e55aeb265c278d9a98c",
+      "status": "passed"
+    },
+    {
+      "id": "s7-d1-cartesian-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "c7fb5974ffd6b5e750be307e4b8b99c552f1e7f0bd950e55aeb265c278d9a98c",
+      "status": "passed"
+    },
+    {
+      "id": "s7-d1-cartesian-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "f4ed713e33125a708864168792a1acae2828d38bd55b8dc6261b8034c49480d3",
+      "status": "passed"
+    },
+    {
+      "id": "s7-d1-cartesian-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "f4ed713e33125a708864168792a1acae2828d38bd55b8dc6261b8034c49480d3",
+      "status": "passed"
+    },
+    {
+      "id": "s7-d2-cartesian-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "de363751008efcd09609e8575fa427d02c61c464fc08e15be7ddc917a679976d",
+      "status": "passed"
+    },
+    {
+      "id": "s7-d2-cartesian-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "de363751008efcd09609e8575fa427d02c61c464fc08e15be7ddc917a679976d",
+      "status": "passed"
+    },
+    {
+      "id": "s7-d2-cartesian-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "c7a532f16c3a0a646f9104b7cd3f952adb0cd8cd3e3a08b3cefba7593c80e08f",
+      "status": "passed"
+    },
+    {
+      "id": "s7-d2-cartesian-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "c7a532f16c3a0a646f9104b7cd3f952adb0cd8cd3e3a08b3cefba7593c80e08f",
+      "status": "passed"
+    },
+    {
+      "id": "s7-d3-cartesian-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "1a104a6d5938ec4c8c86d45eb785bc0047161bc497405ba45255375b35ed5333",
+      "status": "passed"
+    },
+    {
+      "id": "s7-d3-cartesian-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "1a104a6d5938ec4c8c86d45eb785bc0047161bc497405ba45255375b35ed5333",
+      "status": "passed"
+    },
+    {
+      "id": "s7-d3-cartesian-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "6c73582cd35118c917563999094f6d7c33bd6670fd71eac0a6f465d82e74cd4a",
+      "status": "passed"
+    },
+    {
+      "id": "s7-d3-cartesian-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "6c73582cd35118c917563999094f6d7c33bd6670fd71eac0a6f465d82e74cd4a",
+      "status": "passed"
+    },
+    {
+      "id": "s7-d3-fractional-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "e107c9143d29a376fe42d8d6aa6a48bdff35e6f66c43034648f360d2d01b7941",
+      "status": "passed"
+    },
+    {
+      "id": "s7-d3-fractional-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "e107c9143d29a376fe42d8d6aa6a48bdff35e6f66c43034648f360d2d01b7941",
+      "status": "passed"
+    },
+    {
+      "id": "s7-d3-fractional-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "db63e1a4c18521ef8033999b3f1386a1d1da0eda5f1b4d800302b2a6ac54e79e",
+      "status": "passed"
+    },
+    {
+      "id": "s7-d3-fractional-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "db63e1a4c18521ef8033999b3f1386a1d1da0eda5f1b4d800302b2a6ac54e79e",
+      "status": "passed"
+    },
+    {
+      "id": "s7-d3-mixed-metadata0-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "abbe40a985a444a61ab84147128858bafa89c0e664a7f927b88e4e985e7832a8",
+      "status": "passed"
+    },
+    {
+      "id": "s7-d3-mixed-metadata0-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "abbe40a985a444a61ab84147128858bafa89c0e664a7f927b88e4e985e7832a8",
+      "status": "passed"
+    },
+    {
+      "id": "s7-d3-mixed-metadata1-crlf0",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "c332a11a16179a6ae17f1f8b6262759ef1b9452933899498083e4a80d14b95f6",
+      "status": "passed"
+    },
+    {
+      "id": "s7-d3-mixed-metadata1-crlf1",
+      "provenance": "Original synthetic recipe() in scripts/validate_fhiaims.py; authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project data",
+      "minimization": "1-4 canonical elements; coordinate frame, dimensionality, metadata and CRLF varied independently",
+      "oracle": "ASE 3.27.0, Open Babel 3.2.1, NumPy 2.5.4 as scoped by this gate",
+      "expected": {
+        "structured_roundtrip": "exact",
+        "Cartesian_tolerance_angstrom": 2e-12,
+        "OpenBabel_output_tolerance_angstrom": 5.00001e-06
+      },
+      "sha256": "c332a11a16179a6ae17f1f8b6262759ef1b9452933899498083e4a80d14b95f6",
+      "status": "passed"
+    }
+  ],
+  "normalized_records_sha256": "10eae088124add181a83c3ee8558ed4dbf8b892a2a265fd5372366e772df581e",
+  "scope": [
+    "Open Babel comparison only for Cartesian 0D/3D geometry",
+    "ASE checks homogeneous input or Cartesian projection for mixed frames; lattice constraints omitted from ASE input",
+    "Partial periodicity and lattice constraints checked by exact internal roundtrip",
+    "Fractional Cartesian projection independently checked with NumPy matrix multiplication",
+    "No FHI-aims calculation executable or control.in validation"
+  ],
+  "observed_openbabel_deltas": {
+    "fractional_input_reported_as_cartesian": [
+      0.5,
+      0.25,
+      -0.5
+    ],
+    "native_and_ase_expected": [
+      1.25,
+      1.75,
+      3.5
+    ],
+    "partial_lattice": "Tested 1D cell is omitted from CJSON",
+    "metadata": "Writer omits atom/lattice constraints and initial charge/moment"
+  },
+  "candidate_path": "/private/tmp/chematic-fhiaims",
+  "inherited_source_candidate": "/private/tmp/chematic-rdkit-graph",
+  "runtime": {
+    "python": "3.13.6 (v3.13.6:4e665351082, Aug  6 2025, 11:22:35) [Clang 16.0.0 (clang-1600.0.26.6)]",
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "machine": "arm64"
+  },
+  "source_artifacts": [
+    {
+      "path": ".github/workflows/ci.yml",
+      "sha256": "750630d68d12d4b2edab6b95e2b43a5d380bbb2dff85b608c2e20fcea9b4ffe2"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "sha256": "3729acd09aa8a7544cc1bae32f6fdc2da4ed7b53b5f5dc72ccf7a3a13f6762a0"
+    },
+    {
+      "path": "crates/chematic-mol/src/fhiaims.rs",
+      "sha256": "3183ea11273c7e1cb6c94f172e1fe3272c88fbf1a1f55a1c88108245db39fd12"
+    },
+    {
+      "path": "crates/chematic-mol/src/fhiaims/reader.rs",
+      "sha256": "3af78b586df153ccf016a27b3f9a1f0d54d67f80d89493dfb4d7d70599a36f10"
+    },
+    {
+      "path": "crates/chematic-mol/src/fhiaims/writer.rs",
+      "sha256": "e34a3a04cd0a908b3aab626a10633311ab72cce71e50853ad13472c7c99961dc"
+    },
+    {
+      "path": "crates/chematic-mol/src/lib.rs",
+      "sha256": "aa95183d26066e2100a53742bc4c145376763fc2707c12869005e19d481df4f6"
+    },
+    {
+      "path": "crates/chematic-mol/tests/fhiaims_contract.rs",
+      "sha256": "431f1706df099746c33a3263dc3c0ceb01864ce95513afef1e3938edb99df254"
+    },
+    {
+      "path": "crates/chematic-py/python/chematic/__init__.pyi",
+      "sha256": "3968b67baa8fa3209c31a71d613a69c9e95eaeacd014614e31abd0b81e7a847e"
+    },
+    {
+      "path": "crates/chematic-py/src/formats.rs",
+      "sha256": "0f1e2f955268039937f91375819646303833c38d23dc995de183ab543f2e09ad"
+    },
+    {
+      "path": "crates/chematic-py/src/formats/fhiaims.rs",
+      "sha256": "d4ccc548228d4c6ced03a57f90ba5cb4f48228aea78d700d9ba234ce991ab4cd"
+    },
+    {
+      "path": "crates/chematic-py/tests/test_fhiaims.py",
+      "sha256": "76eb6311cc7d3f51f818fbce0ad95f06f798784cbcb680df4e285d6c71f7820e"
+    },
+    {
+      "path": "docs/format-capabilities.md",
+      "sha256": "41ec6dc72e5cde71323d8caa1139b37c5e31beaa275dfee696d574c138b73489"
+    },
+    {
+      "path": "docs/openbabel-fhiaims.md",
+      "sha256": "a489d1893f42ab0fd027920363221218539cc576a03169e0b2d51f38878488d5"
+    },
+    {
+      "path": "mkdocs.yml",
+      "sha256": "369c027b5ad14cdf1b5ee29764237a21c374f6336071c17746fb88b8fe18368b"
+    },
+    {
+      "path": "scripts/validate_fhiaims.py",
+      "sha256": "486b6e7a83531a6fc65bb33f2cfbf5b5fb0f1c6320e43d482394bd238cc86680"
+    },
+    {
+      "path": "validation/openbabel_issues/fhiaims/contract-fixtures.json",
+      "sha256": "8bd03467c1fb57828713b0389076bc176e8dc16ea965a9f424b030df942c4c89"
+    },
+    {
+      "path": "validation/results/binding_surface_inventory-current.json",
+      "sha256": "1fbbb11c75aa639dbab635e10a27ffec6792ff7a62eba8641935e4f3334ec809"
+    }
+  ],
+  "extension": {
+    "path": "/private/tmp/chematic-stereo-target/debug/libchematic.dylib",
+    "sha256": "07739d4d5954387254a012956552c007a9efd9d0d719be2f90bd0f08fa18579d"
+  },
+  "validation": {
+    "rust_library_passed": 753,
+    "rust_fhiaims_integration_passed": 8,
+    "rust_exyz_integration_passed": 9,
+    "rust_total_passed": 770,
+    "python_fhiaims_passed": 38,
+    "python_exyz_passed": 43,
+    "python_turbomole_passed": 38,
+    "python_rdkit_graph_queries_passed": 19,
+    "python_total_passed": 138,
+    "clippy": "passed for chematic-mol and chematic-py, all targets, -D warnings",
+    "fmt": "passed",
+    "mkdocs_strict": "passed",
+    "binding_inventory": {
+      "status": "passed",
+      "python_free_functions": 192,
+      "wasm_exports": 303
+    },
+    "refactor_ratchet": {
+      "status": "passed",
+      "rust_files": 536,
+      "functions": 8327,
+      "file_allowances": 18,
+      "function_allowances": 86
+    },
+    "portable_patch": "forward check against inherited candidate and reverse check against implemented candidate passed",
+    "environment": "Initial cargo check stopped for disk exhaustion; task-owned regenerable old test executables and old generated sites removed; scoped tests and builds then passed"
+  }
+}

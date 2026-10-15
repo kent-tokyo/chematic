@@ -1,0 +1,151 @@
+{
+  "schema_version": 1,
+  "status": "local-source-candidate",
+  "issue": "https://github.com/openbabel/openbabel/issues/3028",
+  "base": "cac480fb source snapshot plus preserved RDKit #9675/#9629 and Open Babel #2845 candidates; patch isolates this reader",
+  "scope": "atom_site residue partition; no PDB writer, glycan connectivity, bond perception or real-protein frequency claim",
+  "runtime": {
+    "python": "3.13.6",
+    "openbabel": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+    "chematic_extension_sha256": "b6423a3aa2895ef59bc2b11da4389cb6d85c76cefe1956eea379a42df7b1a17d"
+  },
+  "source_sha256": {
+    "crates/chematic-mol/src/mmcif/residues.rs": "21425dc67b0eb80f31b01fd1e73e33a8f2fa242b421905e5d4e20fbdf23df79a",
+    "crates/chematic-py/src/formats/mmcif_residues.rs": "598ee49de11467239cf3a216bbae399130dbe5c3e70e48c43ca202d3af302c32"
+  },
+  "fixture": {
+    "id": "three-synthetic-nonpolymer-residues",
+    "path": "validation/openbabel_issues/mmcif/branched-residues.cif",
+    "sha256": "cc6956e5e27f7cd3cfdf96cd0da876de3acc1962dbd429aa00bafd005f7e5344",
+    "provenance": {
+      "source": "original synthetic atom_site rows from wwPDB identity definitions",
+      "retrieved": "2026-10-14",
+      "issue": "https://github.com/openbabel/openbabel/issues/3028",
+      "transformations": "two atom names per residue; NAG/NAG/BMA with absent label_seq_id and distinct numeric auth_seq_id; no downloaded structure or attachment"
+    },
+    "license": "MIT OR Apache-2.0",
+    "redistribution": {
+      "status": "allowed",
+      "rationale": "original project fixture"
+    },
+    "minimization": "six rows isolate repeated atom names, repeated component names, missing polymer sequence, two chain namespaces and one renamed component",
+    "oracle": {
+      "name": "source-authored residue identifiers / independent fixed-column PDB decoder",
+      "version": "wwPDB PDBx v5 identity definitions; Open Babel 3.2.1 external diagnostic",
+      "settings": "all 6! source-row permutations; external conversion defaults"
+    },
+    "expected": {
+      "residue_count": 3,
+      "component_names": [
+        "NAG",
+        "NAG",
+        "BMA"
+      ],
+      "auth_seq_id": [
+        "1",
+        "2",
+        "3"
+      ],
+      "atom_counts": [
+        2,
+        2,
+        2
+      ],
+      "coordinate_unit": "angstrom",
+      "count_tolerance": 0
+    }
+  },
+  "results": {
+    "permutations": 720,
+    "partition_mismatches": 0,
+    "identity_mismatches": 0,
+    "cases_sha256": "a8d62b3acf0c87ec87030c8cd579a9e14b4e21a8f75c92392930f17ce39f2f8e",
+    "native_residues": [
+      {
+        "model_num": 1,
+        "label_asym_id": "E",
+        "auth_asym_id": "A",
+        "entity_id": "1",
+        "label_seq_id": null,
+        "auth_seq_id": "1",
+        "insertion_code": null,
+        "label_comp_id": "NAG",
+        "auth_comp_id": "NAG",
+        "atom_indices": [
+          0,
+          1
+        ]
+      },
+      {
+        "model_num": 1,
+        "label_asym_id": "E",
+        "auth_asym_id": "A",
+        "entity_id": "1",
+        "label_seq_id": null,
+        "auth_seq_id": "2",
+        "insertion_code": null,
+        "label_comp_id": "NAG",
+        "auth_comp_id": "NAG",
+        "atom_indices": [
+          2,
+          3
+        ]
+      },
+      {
+        "model_num": 1,
+        "label_asym_id": "E",
+        "auth_asym_id": "A",
+        "entity_id": "1",
+        "label_seq_id": null,
+        "auth_seq_id": "3",
+        "insertion_code": null,
+        "label_comp_id": "BMA",
+        "auth_comp_id": "BMA",
+        "atom_indices": [
+          4,
+          5
+        ]
+      }
+    ]
+  },
+  "openbabel": {
+    "command": [
+      "obabel",
+      "-immcif",
+      "<fixture>",
+      "-opdb"
+    ],
+    "output_names": [
+      "NAG",
+      "NAG",
+      "NAG",
+      "NAG",
+      "NAG",
+      "NAG"
+    ],
+    "output_residue_keys": [
+      [
+        "A",
+        "0",
+        "NAG"
+      ]
+    ],
+    "renamed_BMA_atoms": 2,
+    "stderr": "1 molecule converted",
+    "output_sha256": "a6a17b639c65e0c4721ed7e35344edbefa6d2a5f8291ff6bf18887b14fe48380",
+    "numeric_label_control": {
+      "source_sha256": "54fea91a1e07a86ceab32045fdbabb3f063759c3a2ed859f27fc151a7cde1f3e",
+      "output_names": [
+        "NAG",
+        "NAG",
+        "NAG",
+        "NAG",
+        "BMA",
+        "BMA"
+      ],
+      "stderr": "1 molecule converted",
+      "output_sha256": "31e66d35d09d376e12837a62872b75ada2517006cf327801cb7b2d1b8c30c09d"
+    }
+  },
+  "limits": "new strict grouping rejects absent chain/sequence/component/atom identity, duplicate atoms and incomplete rows; inherited atom reader supports integer auth_seq_id only"
+}

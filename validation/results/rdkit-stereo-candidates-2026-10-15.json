@@ -1,0 +1,552 @@
+{
+  "schema_version": 1,
+  "status": "local-source-candidate",
+  "issue": "https://github.com/rdkit/rdkit/issues/9701",
+  "base": "cac480fb source snapshot plus preserved query-H, PQR, atom-permutation and mmCIF residue candidates; patch isolates native enumeration changes",
+  "baseline": {
+    "aminoadamantane_observed_assignment_count": 0,
+    "stereo_source_sha256": "674d63b96202f03a819ed3a87aa80e86d81b1519322919b7bb3cb135a3b716f1",
+    "cause": "degree-two CH2 sites counted toward six-candidate cap"
+  },
+  "scope": "native saturated-carbon assignments, fixed diagnostic graphs, no 3D feasibility/heteroatom/EZ enumeration or general canonicalization claim; RDKit-compatible enumeration remains separate",
+  "runtime": {
+    "python": "3.13.6",
+    "rdkit": "2026.09.1",
+    "chematic_extension_sha256": "9c5d54617257f90e53d5e3648e5cc3ae38a60aa24db5957f158283b04aad5dd4"
+  },
+  "source_sha256": {
+    "crates/chematic-chem/src/stereo.rs": "716d71a1332f0f23cb244f7f098076c8b61013ce9ae1eb42e2c367d2e325a55d",
+    "crates/chematic-py/src/mol_methods/transformations.rs": "33379eadcf89ff0e893102c0cb18d54788c195d537741b605b2c17a5ebf39a86"
+  },
+  "permutation_recipe": {
+    "identity": true,
+    "reverse": true,
+    "cyclic_shift": 1,
+    "random_orders": 2,
+    "seed": 9701,
+    "deduplicated": true
+  },
+  "results": {
+    "fixtures": 12,
+    "source_numberings": 60,
+    "compared_assignments": 160,
+    "inchi_set_mismatches": 0,
+    "native_roundtrip_failures": 0,
+    "graph_mismatches": 0,
+    "cases_sha256": "a0332c0f5d4d90ab7d921df7dd67625e5739094e5f93fe787ea7629667b42c64"
+  },
+  "fixtures": [
+    {
+      "id": "aminoadamantane",
+      "smiles": "NC12CC3CC(CC(C3)C1)C2",
+      "explicit_h": false,
+      "sha256": "83a0c281379f4c64a68e85e224475a702bff530d93ea74841e4dd8b2231c0f70",
+      "provenance": {
+        "source": "minimal abstract molecular graphs and original source-order permutation recipe",
+        "retrieved": "2026-10-15",
+        "issue": "https://github.com/rdkit/rdkit/issues/9701",
+        "transformations": "issue skeletons plus independently authored H/isotope/terminal-ligand/chain controls; no upstream dataset or source code copied"
+      },
+      "license": "MIT OR Apache-2.0",
+      "redistribution": {
+        "status": "allowed",
+        "rationale": "minimal abstract structures and original test recipe"
+      },
+      "minimization": "one candidate-budget or stereo-preservation condition per small graph",
+      "oracle": {
+        "engine": "RDKit",
+        "version": "2026.09.1",
+        "settings": {
+          "onlyUnassigned": true,
+          "unique": true,
+          "maxIsomers": 1024,
+          "tryEmbedding": false,
+          "reference_legacy_stereo": true,
+          "comparison": "exact InChI set after reading native SMILES under legacy perception"
+        }
+      },
+      "expected": {
+        "assignment_count": 4,
+        "reference_inchi_set": [
+          "InChI=1S/C10H17N/c11-10-4-7-1-8(5-10)3-9(2-7)6-10/h7-9H,1-6,11H2/t7-,8+,9-,10+",
+          "InChI=1S/C10H17N/c11-10-4-7-1-8(5-10)3-9(2-7)6-10/h7-9H,1-6,11H2/t7-,8+,9-,10-",
+          "InChI=1S/C10H17N/c11-10-4-7-1-8(5-10)3-9(2-7)6-10/h7-9H,1-6,11H2/t7-,8-,9-,10+",
+          "InChI=1S/C10H17N/c11-10-4-7-1-8(5-10)3-9(2-7)6-10/h7-9H,1-6,11H2/t7-,8-,9-,10-"
+        ],
+        "count_tolerance": 0
+      },
+      "native_assignment_count": 4,
+      "legacy_reference_count": 4,
+      "modern_reference_count": 5,
+      "source_numberings": 5
+    },
+    {
+      "id": "aminoadamantane-explicit-h",
+      "smiles": "NC12CC3CC(CC(C3)C1)C2",
+      "explicit_h": true,
+      "sha256": "83a0c281379f4c64a68e85e224475a702bff530d93ea74841e4dd8b2231c0f70",
+      "provenance": {
+        "source": "minimal abstract molecular graphs and original source-order permutation recipe",
+        "retrieved": "2026-10-15",
+        "issue": "https://github.com/rdkit/rdkit/issues/9701",
+        "transformations": "issue skeletons plus independently authored H/isotope/terminal-ligand/chain controls; no upstream dataset or source code copied"
+      },
+      "license": "MIT OR Apache-2.0",
+      "redistribution": {
+        "status": "allowed",
+        "rationale": "minimal abstract structures and original test recipe"
+      },
+      "minimization": "one candidate-budget or stereo-preservation condition per small graph",
+      "oracle": {
+        "engine": "RDKit",
+        "version": "2026.09.1",
+        "settings": {
+          "onlyUnassigned": true,
+          "unique": true,
+          "maxIsomers": 1024,
+          "tryEmbedding": false,
+          "reference_legacy_stereo": true,
+          "comparison": "exact InChI set after reading native SMILES under legacy perception"
+        }
+      },
+      "expected": {
+        "assignment_count": 4,
+        "reference_inchi_set": [
+          "InChI=1S/C10H17N/c11-10-4-7-1-8(5-10)3-9(2-7)6-10/h7-9H,1-6,11H2/t7-,8+,9-,10+",
+          "InChI=1S/C10H17N/c11-10-4-7-1-8(5-10)3-9(2-7)6-10/h7-9H,1-6,11H2/t7-,8+,9-,10-",
+          "InChI=1S/C10H17N/c11-10-4-7-1-8(5-10)3-9(2-7)6-10/h7-9H,1-6,11H2/t7-,8-,9-,10+",
+          "InChI=1S/C10H17N/c11-10-4-7-1-8(5-10)3-9(2-7)6-10/h7-9H,1-6,11H2/t7-,8-,9-,10-"
+        ],
+        "count_tolerance": 0
+      },
+      "native_assignment_count": 4,
+      "legacy_reference_count": 4,
+      "modern_reference_count": 5,
+      "source_numberings": 5
+    },
+    {
+      "id": "inositol",
+      "smiles": "OC1C(O)C(O)C(O)C(O)C1O",
+      "explicit_h": false,
+      "sha256": "f171566bb4240db5ff3a3037192b70fd4c4bd46c88550bbfa7ba93365c98d6f2",
+      "provenance": {
+        "source": "minimal abstract molecular graphs and original source-order permutation recipe",
+        "retrieved": "2026-10-15",
+        "issue": "https://github.com/rdkit/rdkit/issues/9701",
+        "transformations": "issue skeletons plus independently authored H/isotope/terminal-ligand/chain controls; no upstream dataset or source code copied"
+      },
+      "license": "MIT OR Apache-2.0",
+      "redistribution": {
+        "status": "allowed",
+        "rationale": "minimal abstract structures and original test recipe"
+      },
+      "minimization": "one candidate-budget or stereo-preservation condition per small graph",
+      "oracle": {
+        "engine": "RDKit",
+        "version": "2026.09.1",
+        "settings": {
+          "onlyUnassigned": true,
+          "unique": true,
+          "maxIsomers": 1024,
+          "tryEmbedding": false,
+          "reference_legacy_stereo": true,
+          "comparison": "exact InChI set after reading native SMILES under legacy perception"
+        }
+      },
+      "expected": {
+        "assignment_count": 9,
+        "reference_inchi_set": [
+          "InChI=1S/C6H12O6/c7-1-2(8)4(10)6(12)5(11)3(1)9/h1-12H/t1-,2+,3-,4+,5-,6+",
+          "InChI=1S/C6H12O6/c7-1-2(8)4(10)6(12)5(11)3(1)9/h1-12H/t1-,2-,3+,4+,5-,6-",
+          "InChI=1S/C6H12O6/c7-1-2(8)4(10)6(12)5(11)3(1)9/h1-12H/t1-,2-,3-,4+,5+,6+",
+          "InChI=1S/C6H12O6/c7-1-2(8)4(10)6(12)5(11)3(1)9/h1-12H/t1-,2-,3-,4+,5-,6+",
+          "InChI=1S/C6H12O6/c7-1-2(8)4(10)6(12)5(11)3(1)9/h1-12H/t1-,2-,3-,4+,5-,6-",
+          "InChI=1S/C6H12O6/c7-1-2(8)4(10)6(12)5(11)3(1)9/h1-12H/t1-,2-,3-,4-,5+,6+/m0/s1",
+          "InChI=1S/C6H12O6/c7-1-2(8)4(10)6(12)5(11)3(1)9/h1-12H/t1-,2-,3-,4-,5+,6+/m1/s1",
+          "InChI=1S/C6H12O6/c7-1-2(8)4(10)6(12)5(11)3(1)9/h1-12H/t1-,2-,3-,4-,5-,6+",
+          "InChI=1S/C6H12O6/c7-1-2(8)4(10)6(12)5(11)3(1)9/h1-12H/t1-,2-,3-,4-,5-,6-"
+        ],
+        "count_tolerance": 0
+      },
+      "native_assignment_count": 9,
+      "legacy_reference_count": 9,
+      "modern_reference_count": 13,
+      "source_numberings": 5
+    },
+    {
+      "id": "long-alkane",
+      "smiles": "CCCCCCCCCCCCCCCC",
+      "explicit_h": false,
+      "sha256": "97784cd0b0b0dcd2a5507a1d21af23d4e489afed4f8e1965a9a37b110cdbb810",
+      "provenance": {
+        "source": "minimal abstract molecular graphs and original source-order permutation recipe",
+        "retrieved": "2026-10-15",
+        "issue": "https://github.com/rdkit/rdkit/issues/9701",
+        "transformations": "issue skeletons plus independently authored H/isotope/terminal-ligand/chain controls; no upstream dataset or source code copied"
+      },
+      "license": "MIT OR Apache-2.0",
+      "redistribution": {
+        "status": "allowed",
+        "rationale": "minimal abstract structures and original test recipe"
+      },
+      "minimization": "one candidate-budget or stereo-preservation condition per small graph",
+      "oracle": {
+        "engine": "RDKit",
+        "version": "2026.09.1",
+        "settings": {
+          "onlyUnassigned": true,
+          "unique": true,
+          "maxIsomers": 1024,
+          "tryEmbedding": false,
+          "reference_legacy_stereo": true,
+          "comparison": "exact InChI set after reading native SMILES under legacy perception"
+        }
+      },
+      "expected": {
+        "assignment_count": 1,
+        "reference_inchi_set": [
+          "InChI=1S/C16H34/c1-3-5-7-9-11-13-15-16-14-12-10-8-6-4-2/h3-16H2,1-2H3"
+        ],
+        "count_tolerance": 0
+      },
+      "native_assignment_count": 1,
+      "legacy_reference_count": 1,
+      "modern_reference_count": 1,
+      "source_numberings": 5
+    },
+    {
+      "id": "long-one-center",
+      "smiles": "CCCCCCCCCCCCCCCC(O)F",
+      "explicit_h": false,
+      "sha256": "3127f1a6d09d8762017bc6ab6b65d5ee96d2217472070d92c9603f1cc0ed1726",
+      "provenance": {
+        "source": "minimal abstract molecular graphs and original source-order permutation recipe",
+        "retrieved": "2026-10-15",
+        "issue": "https://github.com/rdkit/rdkit/issues/9701",
+        "transformations": "issue skeletons plus independently authored H/isotope/terminal-ligand/chain controls; no upstream dataset or source code copied"
+      },
+      "license": "MIT OR Apache-2.0",
+      "redistribution": {
+        "status": "allowed",
+        "rationale": "minimal abstract structures and original test recipe"
+      },
+      "minimization": "one candidate-budget or stereo-preservation condition per small graph",
+      "oracle": {
+        "engine": "RDKit",
+        "version": "2026.09.1",
+        "settings": {
+          "onlyUnassigned": true,
+          "unique": true,
+          "maxIsomers": 1024,
+          "tryEmbedding": false,
+          "reference_legacy_stereo": true,
+          "comparison": "exact InChI set after reading native SMILES under legacy perception"
+        }
+      },
+      "expected": {
+        "assignment_count": 2,
+        "reference_inchi_set": [
+          "InChI=1S/C16H33FO/c1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16(17)18/h16,18H,2-15H2,1H3/t16-/m0/s1",
+          "InChI=1S/C16H33FO/c1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16(17)18/h16,18H,2-15H2,1H3/t16-/m1/s1"
+        ],
+        "count_tolerance": 0
+      },
+      "native_assignment_count": 2,
+      "legacy_reference_count": 2,
+      "modern_reference_count": 2,
+      "source_numberings": 5
+    },
+    {
+      "id": "terminal-halogen-duplicate",
+      "smiles": "FC(F)(Br)Cl",
+      "explicit_h": false,
+      "sha256": "dd13680b62920f2e2761076817c26ad2274be390e3f87b2f32fc7245b539c9c1",
+      "provenance": {
+        "source": "minimal abstract molecular graphs and original source-order permutation recipe",
+        "retrieved": "2026-10-15",
+        "issue": "https://github.com/rdkit/rdkit/issues/9701",
+        "transformations": "issue skeletons plus independently authored H/isotope/terminal-ligand/chain controls; no upstream dataset or source code copied"
+      },
+      "license": "MIT OR Apache-2.0",
+      "redistribution": {
+        "status": "allowed",
+        "rationale": "minimal abstract structures and original test recipe"
+      },
+      "minimization": "one candidate-budget or stereo-preservation condition per small graph",
+      "oracle": {
+        "engine": "RDKit",
+        "version": "2026.09.1",
+        "settings": {
+          "onlyUnassigned": true,
+          "unique": true,
+          "maxIsomers": 1024,
+          "tryEmbedding": false,
+          "reference_legacy_stereo": true,
+          "comparison": "exact InChI set after reading native SMILES under legacy perception"
+        }
+      },
+      "expected": {
+        "assignment_count": 1,
+        "reference_inchi_set": [
+          "InChI=1S/CBrClF2/c2-1(3,4)5"
+        ],
+        "count_tolerance": 0
+      },
+      "native_assignment_count": 1,
+      "legacy_reference_count": 1,
+      "modern_reference_count": 1,
+      "source_numberings": 5
+    },
+    {
+      "id": "terminal-methyl-duplicate",
+      "smiles": "CC(C)(Br)Cl",
+      "explicit_h": false,
+      "sha256": "2e1096a9d342318d8f314d0dd17dff68c2ecda2ca1e56abe92728dbe377cc199",
+      "provenance": {
+        "source": "minimal abstract molecular graphs and original source-order permutation recipe",
+        "retrieved": "2026-10-15",
+        "issue": "https://github.com/rdkit/rdkit/issues/9701",
+        "transformations": "issue skeletons plus independently authored H/isotope/terminal-ligand/chain controls; no upstream dataset or source code copied"
+      },
+      "license": "MIT OR Apache-2.0",
+      "redistribution": {
+        "status": "allowed",
+        "rationale": "minimal abstract structures and original test recipe"
+      },
+      "minimization": "one candidate-budget or stereo-preservation condition per small graph",
+      "oracle": {
+        "engine": "RDKit",
+        "version": "2026.09.1",
+        "settings": {
+          "onlyUnassigned": true,
+          "unique": true,
+          "maxIsomers": 1024,
+          "tryEmbedding": false,
+          "reference_legacy_stereo": true,
+          "comparison": "exact InChI set after reading native SMILES under legacy perception"
+        }
+      },
+      "expected": {
+        "assignment_count": 1,
+        "reference_inchi_set": [
+          "InChI=1S/C3H6BrCl/c1-3(2,4)5/h1-2H3"
+        ],
+        "count_tolerance": 0
+      },
+      "native_assignment_count": 1,
+      "legacy_reference_count": 1,
+      "modern_reference_count": 1,
+      "source_numberings": 5
+    },
+    {
+      "id": "explicit-h-duplicate",
+      "smiles": "[H]C([H])(F)Cl",
+      "explicit_h": false,
+      "sha256": "c92041b53edcc50e3a345b2776cb128a5078db34773f21c9437308e51177f6c0",
+      "provenance": {
+        "source": "minimal abstract molecular graphs and original source-order permutation recipe",
+        "retrieved": "2026-10-15",
+        "issue": "https://github.com/rdkit/rdkit/issues/9701",
+        "transformations": "issue skeletons plus independently authored H/isotope/terminal-ligand/chain controls; no upstream dataset or source code copied"
+      },
+      "license": "MIT OR Apache-2.0",
+      "redistribution": {
+        "status": "allowed",
+        "rationale": "minimal abstract structures and original test recipe"
+      },
+      "minimization": "one candidate-budget or stereo-preservation condition per small graph",
+      "oracle": {
+        "engine": "RDKit",
+        "version": "2026.09.1",
+        "settings": {
+          "onlyUnassigned": true,
+          "unique": true,
+          "maxIsomers": 1024,
+          "tryEmbedding": false,
+          "reference_legacy_stereo": true,
+          "comparison": "exact InChI set after reading native SMILES under legacy perception"
+        }
+      },
+      "expected": {
+        "assignment_count": 1,
+        "reference_inchi_set": [
+          "InChI=1S/CH2ClF/c2-1-3/h1H2"
+        ],
+        "count_tolerance": 0
+      },
+      "native_assignment_count": 1,
+      "legacy_reference_count": 1,
+      "modern_reference_count": 1,
+      "source_numberings": 5
+    },
+    {
+      "id": "isotopic-h",
+      "smiles": "[H]C([2H])(F)Cl",
+      "explicit_h": false,
+      "sha256": "3193052d9e98c40150b8846d923b702365db5c9478d4022b9eb847be895bf64b",
+      "provenance": {
+        "source": "minimal abstract molecular graphs and original source-order permutation recipe",
+        "retrieved": "2026-10-15",
+        "issue": "https://github.com/rdkit/rdkit/issues/9701",
+        "transformations": "issue skeletons plus independently authored H/isotope/terminal-ligand/chain controls; no upstream dataset or source code copied"
+      },
+      "license": "MIT OR Apache-2.0",
+      "redistribution": {
+        "status": "allowed",
+        "rationale": "minimal abstract structures and original test recipe"
+      },
+      "minimization": "one candidate-budget or stereo-preservation condition per small graph",
+      "oracle": {
+        "engine": "RDKit",
+        "version": "2026.09.1",
+        "settings": {
+          "onlyUnassigned": true,
+          "unique": true,
+          "maxIsomers": 1024,
+          "tryEmbedding": false,
+          "reference_legacy_stereo": true,
+          "comparison": "exact InChI set after reading native SMILES under legacy perception"
+        }
+      },
+      "expected": {
+        "assignment_count": 2,
+        "reference_inchi_set": [
+          "InChI=1S/CH2ClF/c2-1-3/h1H2/i1D/t1-/m0/s1",
+          "InChI=1S/CH2ClF/c2-1-3/h1H2/i1D/t1-/m1/s1"
+        ],
+        "count_tolerance": 0
+      },
+      "native_assignment_count": 2,
+      "legacy_reference_count": 2,
+      "modern_reference_count": 2,
+      "source_numberings": 5
+    },
+    {
+      "id": "mixed-isotopic-h",
+      "smiles": "[2H]C(F)Cl",
+      "explicit_h": false,
+      "sha256": "727c5aa66c757b2cb3a52823b04df8348d50cc0ab8be622edcb6040d2ffd7fd2",
+      "provenance": {
+        "source": "minimal abstract molecular graphs and original source-order permutation recipe",
+        "retrieved": "2026-10-15",
+        "issue": "https://github.com/rdkit/rdkit/issues/9701",
+        "transformations": "issue skeletons plus independently authored H/isotope/terminal-ligand/chain controls; no upstream dataset or source code copied"
+      },
+      "license": "MIT OR Apache-2.0",
+      "redistribution": {
+        "status": "allowed",
+        "rationale": "minimal abstract structures and original test recipe"
+      },
+      "minimization": "one candidate-budget or stereo-preservation condition per small graph",
+      "oracle": {
+        "engine": "RDKit",
+        "version": "2026.09.1",
+        "settings": {
+          "onlyUnassigned": true,
+          "unique": true,
+          "maxIsomers": 1024,
+          "tryEmbedding": false,
+          "reference_legacy_stereo": true,
+          "comparison": "exact InChI set after reading native SMILES under legacy perception"
+        }
+      },
+      "expected": {
+        "assignment_count": 2,
+        "reference_inchi_set": [
+          "InChI=1S/CH2ClF/c2-1-3/h1H2/i1D/t1-/m0/s1",
+          "InChI=1S/CH2ClF/c2-1-3/h1H2/i1D/t1-/m1/s1"
+        ],
+        "count_tolerance": 0
+      },
+      "native_assignment_count": 2,
+      "legacy_reference_count": 2,
+      "modern_reference_count": 2,
+      "source_numberings": 5
+    },
+    {
+      "id": "meso-diol",
+      "smiles": "CC(O)C(O)C",
+      "explicit_h": false,
+      "sha256": "edd8567c6d62f21f738ab2edfa48c35a765e8d7c6db2e93b5c4b5b0e6afb353a",
+      "provenance": {
+        "source": "minimal abstract molecular graphs and original source-order permutation recipe",
+        "retrieved": "2026-10-15",
+        "issue": "https://github.com/rdkit/rdkit/issues/9701",
+        "transformations": "issue skeletons plus independently authored H/isotope/terminal-ligand/chain controls; no upstream dataset or source code copied"
+      },
+      "license": "MIT OR Apache-2.0",
+      "redistribution": {
+        "status": "allowed",
+        "rationale": "minimal abstract structures and original test recipe"
+      },
+      "minimization": "one candidate-budget or stereo-preservation condition per small graph",
+      "oracle": {
+        "engine": "RDKit",
+        "version": "2026.09.1",
+        "settings": {
+          "onlyUnassigned": true,
+          "unique": true,
+          "maxIsomers": 1024,
+          "tryEmbedding": false,
+          "reference_legacy_stereo": true,
+          "comparison": "exact InChI set after reading native SMILES under legacy perception"
+        }
+      },
+      "expected": {
+        "assignment_count": 3,
+        "reference_inchi_set": [
+          "InChI=1S/C4H10O2/c1-3(5)4(2)6/h3-6H,1-2H3/t3-,4+",
+          "InChI=1S/C4H10O2/c1-3(5)4(2)6/h3-6H,1-2H3/t3-,4-/m0/s1",
+          "InChI=1S/C4H10O2/c1-3(5)4(2)6/h3-6H,1-2H3/t3-,4-/m1/s1"
+        ],
+        "count_tolerance": 0
+      },
+      "native_assignment_count": 3,
+      "legacy_reference_count": 3,
+      "modern_reference_count": 3,
+      "source_numberings": 5
+    },
+    {
+      "id": "fixed-and-unassigned",
+      "smiles": "N[C@@H](C)C(O)F",
+      "explicit_h": false,
+      "sha256": "15dde25c208c41662e0b7a84e944a10f3ff59c4ea06549fbff3ecf4604471c97",
+      "provenance": {
+        "source": "minimal abstract molecular graphs and original source-order permutation recipe",
+        "retrieved": "2026-10-15",
+        "issue": "https://github.com/rdkit/rdkit/issues/9701",
+        "transformations": "issue skeletons plus independently authored H/isotope/terminal-ligand/chain controls; no upstream dataset or source code copied"
+      },
+      "license": "MIT OR Apache-2.0",
+      "redistribution": {
+        "status": "allowed",
+        "rationale": "minimal abstract structures and original test recipe"
+      },
+      "minimization": "one candidate-budget or stereo-preservation condition per small graph",
+      "oracle": {
+        "engine": "RDKit",
+        "version": "2026.09.1",
+        "settings": {
+          "onlyUnassigned": true,
+          "unique": true,
+          "maxIsomers": 1024,
+          "tryEmbedding": false,
+          "reference_legacy_stereo": true,
+          "comparison": "exact InChI set after reading native SMILES under legacy perception"
+        }
+      },
+      "expected": {
+        "assignment_count": 2,
+        "reference_inchi_set": [
+          "InChI=1S/C3H8FNO/c1-2(5)3(4)6/h2-3,6H,5H2,1H3/t2-,3+/m0/s1",
+          "InChI=1S/C3H8FNO/c1-2(5)3(4)6/h2-3,6H,5H2,1H3/t2-,3-/m0/s1"
+        ],
+        "count_tolerance": 0
+      },
+      "native_assignment_count": 2,
+      "legacy_reference_count": 2,
+      "modern_reference_count": 2,
+      "source_numberings": 5
+    }
+  ]
+}
