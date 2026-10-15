@@ -46,6 +46,85 @@ fn openbabel_0d_atom_parity_preserves_both_enantiomers() {
     }
 }
 
+// Open Babel keeps a leading explicit hydrogen as atom 1, but its 0D parity
+// orders that hydrogen after the other substituents of the tetrahedral center.
+const OPENBABEL_EXPLICIT_H_FIRST_0D: &str = r#"
+ OpenBabel10152619472D
+
+  5  4  0  0  1  0  0  0  0  0999 V2000
+    0.0000    0.0000    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 C   0  0  1  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 F   0  0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 Cl  0  0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 Br  0  0  0  0  0  0  0  0  0  0  0  0
+  1  2  1  0  0  0  0
+  2  3  1  0  0  0  0
+  2  4  1  0  0  0  0
+  2  5  1  0  0  0  0
+M  END
+"#;
+
+#[test]
+fn openbabel_0d_atom_parity_places_explicit_hydrogen_last() {
+    for (block, expected_smiles) in [
+        (
+            OPENBABEL_EXPLICIT_H_FIRST_0D.to_string(),
+            "[H][C@](F)(Cl)Br",
+        ),
+        (
+            OPENBABEL_EXPLICIT_H_FIRST_0D.replace("M  END", "M  ISO  1   1   2\nM  END"),
+            "[2H][C@](F)(Cl)Br",
+        ),
+    ] {
+        let read = read_mol_with_diagnostics(&block).expect("0D V2000 parses");
+        let expected = chematic_smiles::parse(expected_smiles).expect("reference SMILES parses");
+        assert_eq!(
+            chematic_smiles::canonical_smiles(&read.mol),
+            chematic_smiles::canonical_smiles(&expected),
+            "explicit hydrogen in {expected_smiles}"
+        );
+    }
+}
+
+const OPENBABEL_0D_SULFOXIDE: &str = r#"
+ OpenBabel10152619492D
+
+  9  9  0  0  0  0  0  0  0  0999 V2000
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 S   0  0  2  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0
+  1  2  1  0  0  0  0
+  2  3  2  0  0  0  0
+  2  4  1  0  0  0  0
+  4  9  2  0  0  0  0
+  4  5  1  0  0  0  0
+  5  6  2  0  0  0  0
+  6  7  1  0  0  0  0
+  7  8  2  0  0  0  0
+  8  9  1  0  0  0  0
+M  END
+"#;
+
+#[test]
+fn openbabel_0d_atom_parity_preserves_sulfoxide_stereo() {
+    for (parity, expected_smiles) in [(2, "C1=CC=CC=C1[S@@](=O)C"), (1, "C1=CC=CC=C1[S@](=O)C")] {
+        let block =
+            OPENBABEL_0D_SULFOXIDE.replace(" S   0  0  2  0", &format!(" S   0  0  {parity}  0"));
+        let read = read_mol_with_diagnostics(&block).expect("0D sulfoxide parses");
+        assert_eq!(
+            chematic_smiles::canonical_smiles(&read.mol),
+            expected_smiles,
+            "sulfoxide parity {parity}"
+        );
+    }
+}
+
 const OPENBABEL_ALANINE_0D: &str = r#"
  OpenBabel10152614232D
 
@@ -124,6 +203,79 @@ const OPENBABEL_0D_ALKENE: &str = r#"
   3  4  1  6  0  0  0
 M  END
 "#;
+
+const OPENBABEL_0D_CONJUGATED_DIENE: &str = r#"
+ OpenBabel10152619522D
+
+  6  5  0  0  0  0  0  0  0  0999 V2000
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0
+  1  2  1  1  0  0  0
+  2  3  2  0  0  0  0
+  3  4  1  6  0  0  0
+  4  5  2  0  0  0  0
+  5  6  1  1  0  0  0
+M  END
+"#;
+
+#[test]
+fn openbabel_0d_shared_direction_between_double_bonds_is_reversed() {
+    for (middle_marker, expected_smiles) in [(6, "C/C=C/C=C/C"), (1, "C/C=C\\C=C/C")] {
+        let block = OPENBABEL_0D_CONJUGATED_DIENE
+            .replace("  3  4  1  6  0", &format!("  3  4  1  {middle_marker}  0"));
+        let read = read_mol_with_diagnostics(&block).expect("0D diene parses");
+        let expected = chematic_smiles::parse(expected_smiles).expect("reference SMILES parses");
+        assert_eq!(
+            chematic_smiles::canonical_smiles(&read.mol),
+            chematic_smiles::canonical_smiles(&expected),
+            "middle marker {middle_marker}"
+        );
+    }
+}
+
+// Two substituents at C3 and C8 each carry an Open Babel direction marker.
+// Skipping those double-bond ends inverted the final imine's E/Z assignment.
+const OPENBABEL_0D_POLYIMINE: &str = r#"
+ OpenBabel10152620252D
+
+ 11 10  0  0  0  0  0  0  0  0999 V2000
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 S   0  0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 N   0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 N   0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 N   0  0  0  0  0  0  0  0  0  0  0
+  1  2  1  1  0  0  0
+  2  3  2  0  0  0  0
+  3  4  1  1  0  0  0
+  3  5  1  6  0  0  0
+  5  6  1  1  0  0  0
+  6  7  2  0  0  0  0
+  7  8  1  6  0  0  0
+  8  9  1  1  0  0  0
+  8 10  2  0  0  0  0
+ 10 11  1  1  0  0  0
+M  END
+"#;
+
+#[test]
+fn openbabel_0d_multiple_markers_at_one_double_bond_end() {
+    let read = read_mol_with_diagnostics(OPENBABEL_0D_POLYIMINE).expect("0D polyimine parses");
+    let expected = chematic_smiles::parse("C/N=C(\\S)N/N=C/C(C)=N/N").expect("source parses");
+    assert_eq!(
+        chematic_smiles::canonical_smiles(&read.mol),
+        chematic_smiles::canonical_smiles(&expected)
+    );
+}
 
 #[test]
 fn openbabel_0d_alkene_directions_preserve_e_and_z() {

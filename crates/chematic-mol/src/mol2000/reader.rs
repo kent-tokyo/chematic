@@ -156,6 +156,7 @@ struct ParsedAtom {
     coords: (f64, f64),
     z: f64,
     valence: Option<u8>,
+    default_valence: bool,
     parity: u8,
 }
 
@@ -203,9 +204,8 @@ fn parse_atom_line(
         .and_then(parse_unsigned_ascii)
         .and_then(|value| u16::try_from(value).ok())
         .filter(|value| *value != 0);
-    let valence = line
-        .get(48..51)
-        .and_then(parse_unsigned_ascii)
+    let valence_field = line.get(48..51).and_then(parse_unsigned_ascii);
+    let valence = valence_field
         .filter(|value| *value != 0 && *value <= 15)
         .map(|value| if value == 15 { 0 } else { value as u8 });
     let parity = line
@@ -219,6 +219,7 @@ fn parse_atom_line(
         coords,
         z,
         valence,
+        default_valence: valence_field == Some(0),
         parity,
     })
 }
@@ -228,6 +229,7 @@ struct AtomBlock {
     coords: Vec<(f64, f64)>,
     raw_z: Vec<f64>,
     valences: Vec<(AtomIdx, u8)>,
+    default_valences: Vec<AtomIdx>,
     parities: Vec<(AtomIdx, u8)>,
 }
 
@@ -242,6 +244,7 @@ fn parse_atom_block(
         coords: Vec::with_capacity(if include_diagnostics { atom_count } else { 0 }),
         raw_z: Vec::with_capacity(if include_diagnostics { atom_count } else { 0 }),
         valences: Vec::new(),
+        default_valences: Vec::new(),
         parities: Vec::new(),
     };
     for atom_index in 0..atom_count {
@@ -257,6 +260,8 @@ fn parse_atom_block(
         }
         if let Some(valence) = parsed.valence {
             block.valences.push((index, valence));
+        } else if parsed.default_valence {
+            block.default_valences.push(index);
         }
         if let Some(label) = parsed.r_group {
             block.builder.set_r_group(index, label);
@@ -470,7 +475,24 @@ fn parse_property_block(
     Ok(updates)
 }
 
-fn apply_atom_updates(mol: &mut Molecule, valences: Vec<(AtomIdx, u8)>, updates: PropertyUpdates) {
+fn ctfile_default_valence(element: Element, bond_sum: u8) -> Option<u8> {
+    let allowed: &[u8] = match element {
+        Element::NA | Element::K => &[1],
+        Element::SE => &[2, 4, 6],
+        Element::SN => &[2, 4],
+        Element::AS => &[3, 5],
+        Element::SI => &[4],
+        _ => &[],
+    };
+    allowed.iter().copied().find(|&valence| valence >= bond_sum)
+}
+
+fn apply_atom_updates(
+    mol: &mut Molecule,
+    valences: Vec<(AtomIdx, u8)>,
+    default_valences: Vec<AtomIdx>,
+    updates: PropertyUpdates,
+) {
     flag_aromatic_bond_atoms(mol);
     for (atom, charge) in updates.charges {
         mol.set_charge(atom, charge);
@@ -486,6 +508,25 @@ fn apply_atom_updates(mol: &mut Molecule, valences: Vec<(AtomIdx, u8)>, updates:
         if !aromatic && valence >= bonds {
             mol.set_hydrogen_count(atom, Some(valence - bonds));
         }
+    }
+    // A CTfile valence code of zero requests the element's default valence.
+    // These non-organic-subset elements do not receive implicit H from the
+    // SMILES valence model, so materialize the CTfile-inferred count here.
+    for atom in default_valences {
+        if mol.atom(atom).charge != 0 {
+            continue;
+        }
+        let aromatic = mol
+            .neighbors(atom)
+            .any(|(_, bond)| mol.bond(bond).order == BondOrder::Aromatic);
+        if aromatic {
+            continue;
+        }
+        let bonds = chematic_core::valence::bond_order_sum(mol, atom);
+        let Some(valence) = ctfile_default_valence(mol.atom(atom).element, bonds) else {
+            continue;
+        };
+        mol.set_hydrogen_count(atom, Some(valence - bonds));
     }
     for (atom, label) in updates.r_groups {
         mol.set_r_group(atom, label);
@@ -549,8 +590,9 @@ fn geometry_diagnostics(
     (conformer, geometry_rank, diagnostics, square_planar)
 }
 
-/// CTfile parity numbers neighbors by atom-block index, with an implicit H
-/// after every explicit neighbor. Interpret it only for an all-zero coordinate block:
+/// Open Babel's 0D parity numbers non-hydrogen neighbors by atom-block index,
+/// with explicit or implicit hydrogen after them. Interpret it only for an
+/// all-zero coordinate block:
 /// Open Babel labels its 0D output as `2D` in the header, so the header alone
 /// cannot decide this. Existing wedge perception keeps precedence.
 fn apply_0d_atom_parities(mol: &mut Molecule, parities: &[(AtomIdx, u8)]) {
@@ -561,9 +603,15 @@ fn apply_0d_atom_parities(mol: &mut Molecule, parities: &[(AtomIdx, u8)]) {
             continue;
         }
         let mut order: Vec<u32> = mol.neighbors(center).map(|(atom, _)| atom.0).collect();
-        order.sort_unstable();
-        if order.len() == 3 && chematic_core::implicit_hcount(mol, center) == 1 {
-            order.push(STEREO_H_SENTINEL);
+        order.sort_by_key(|&index| (mol.atom(AtomIdx(index)).element == Element::H, index));
+        // Three-neighbor sulfur can use its lone pair as the fourth
+        // tetrahedral direction; its stereo order keeps three entries.
+        if order.len() == 3 {
+            if chematic_core::implicit_hcount(mol, center) == 1 {
+                order.push(STEREO_H_SENTINEL);
+            } else if mol.atom(center).element != Element::S {
+                continue;
+            }
         } else if order.len() != 4 {
             continue;
         }
@@ -611,9 +659,10 @@ fn has_duplicate_terminal_substituents(mol: &Molecule, center: AtomIdx) -> bool 
     false
 }
 
-/// Open Babel's 0D MOL extension marks the substituent's orientation at the
-/// alkene end. SMILES bond directions instead follow the stored bond's atom1
-/// to atom2 order. Reverse a marker when that order starts at the alkene.
+/// Open Babel's 0D MOL extension marks substituent orientation at each end of
+/// a double bond. SMILES directions follow bond atom order. Two markers beside
+/// the same double bond therefore need opposite orientation conversions. A
+/// shared marker in a conjugated system links those conversions together.
 fn apply_0d_alkene_directions(mol: &mut Molecule) {
     if !mol
         .bonds()
@@ -622,6 +671,61 @@ fn apply_0d_alkene_directions(mol: &mut Molecule) {
         return;
     }
     let aromaticity = chematic_perception::assign_aromaticity(mol);
+    let mut links: Vec<Vec<(usize, bool)>> = vec![Vec::new(); mol.bond_count()];
+    for (double_idx, double) in mol.bonds() {
+        if double.order != BondOrder::Double || aromaticity.is_bond_aromatic(double_idx) {
+            continue;
+        }
+        let markers = |atom| {
+            mol.neighbors(atom)
+                .filter_map(|(_, idx)| {
+                    matches!(mol.bond(idx).order, BondOrder::Up | BondOrder::Down).then_some(idx)
+                })
+                .collect::<Vec<_>>()
+        };
+        let left_markers = markers(double.atom1);
+        let right_markers = markers(double.atom2);
+        for &left in &left_markers {
+            for &right in &right_markers {
+                let left_reversed = mol.bond(left).atom1 == double.atom1;
+                let right_reversed = mol.bond(right).atom1 == double.atom2;
+                let opposite = left_reversed ^ right_reversed;
+                links[left.0 as usize].push((right.0 as usize, opposite));
+                links[right.0 as usize].push((left.0 as usize, opposite));
+            }
+        }
+    }
+    let mut graph_flip = vec![None; mol.bond_count()];
+    let mut visited = vec![false; mol.bond_count()];
+    for root in 0..links.len() {
+        if links[root].is_empty() || visited[root] {
+            continue;
+        }
+        let mut stack = vec![root];
+        let mut component = Vec::new();
+        let mut conflict = false;
+        visited[root] = true;
+        graph_flip[root] = Some(false);
+        while let Some(from) = stack.pop() {
+            component.push(from);
+            let from_flip = graph_flip[from].expect("linked marker has an orientation");
+            for &(to, opposite) in &links[from] {
+                let expected = from_flip ^ opposite;
+                if !visited[to] {
+                    visited[to] = true;
+                    graph_flip[to] = Some(expected);
+                    stack.push(to);
+                } else if graph_flip[to] != Some(expected) {
+                    conflict = true;
+                }
+            }
+        }
+        if conflict {
+            for idx in component {
+                graph_flip[idx] = None;
+            }
+        }
+    }
     let flip: Vec<BondIdx> = mol
         .bonds()
         .filter_map(|(idx, bond)| {
@@ -637,7 +741,9 @@ fn apply_0d_alkene_directions(mol: &mut Molecule) {
                             .any(|(substituent, _)| substituent != atom)
                 })
             };
-            (has_alkene(bond.atom1) && !has_alkene(bond.atom2)).then_some(idx)
+            graph_flip[idx.0 as usize]
+                .unwrap_or_else(|| has_alkene(bond.atom1) && !has_alkene(bond.atom2))
+                .then_some(idx)
         })
         .collect();
     for idx in flip {
@@ -697,7 +803,7 @@ fn read_mol_internal(
     let properties = parse_property_block(&mut lines, atom_count)?;
 
     let mut mol = atoms.builder.build();
-    apply_atom_updates(&mut mol, atoms.valences, properties);
+    apply_atom_updates(&mut mol, atoms.valences, atoms.default_valences, properties);
     if !include_diagnostics {
         return Ok(graph_only_report(mol, metadata));
     }
