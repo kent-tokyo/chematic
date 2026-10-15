@@ -3,6 +3,8 @@
 Open Babel version: `Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27` (`obabel -V`).
 CheMatic source: `cac480fb` plus the PDBQT parser change in this branch.
 This is a two-row behavior check, not a general format-accuracy benchmark.
+The exact inputs and captured Open Babel results are in the
+[machine-readable record](2026-10-15-openbabel-pdbqt-fields.json).
 
 | Input ATOM record | CheMatic `parse_pdbqt` | Open Babel `obabel -ipdbqt -ocjson` |
 | --- | --- | --- |
