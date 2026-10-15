@@ -30,6 +30,11 @@ All six cell keys are required in Python. Omitting `cell` writes Cartesian
 `_atom_site_fract_x/y/z`. Output is minimal P1 atomic positions, without bonds,
 occupancies, symmetry operations or other molecular metadata.
 
+For explicit molecular connectivity, the separate
+[`write_cif_with_bonds_checked` API](cif-molecular-bonds.md) adds a checked
+bond-geometry loop. The existing writer and reader contracts above remain
+unchanged.
+
 The checked writer rejects:
 
 - Non-finite or non-positive cell lengths, and non-finite angles or angles

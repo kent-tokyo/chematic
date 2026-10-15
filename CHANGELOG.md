@@ -14,7 +14,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-No unreleased changes.
+- Add Rust/Python `write_cif_with_bonds_checked` for explicit molecular CIF
+  bond geometry (S/D/T/A), with checked Cartesian distances and no periodic
+  bond perception. Related to Open Babel #2726; that upstream report was a
+  CLI option mix-up, not missing Open Babel support.
 
 ## [1.1.5] - 2026-10-16
 

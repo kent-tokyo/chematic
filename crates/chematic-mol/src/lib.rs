@@ -97,8 +97,8 @@ pub use cdxml_document::{
     CdxmlTextStyle, CdxmlTransform, CdxmlValue,
 };
 pub use cif::{
-    CifError, CifParseLimits, CifResult, UnitCell, parse_cif, parse_cif_with_limits, write_cif,
-    write_cif_checked,
+    CifBondWriteError, CifError, CifParseLimits, CifResult, UnitCell, parse_cif,
+    parse_cif_with_limits, write_cif, write_cif_checked, write_cif_with_bonds_checked,
 };
 #[cfg(feature = "crystal")]
 pub use cif::{

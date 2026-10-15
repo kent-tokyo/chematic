@@ -79,3 +79,15 @@ Open Babel CIF/mmCIF diagnostic. It needs a source-built Python extension and
 Gemmi in the oracle environment. Result hashes identify the downloaded bytes;
 the hermetic CI fixture is independently authored. This validates single CCD
 components, not a bulk dictionary or package release.
+
+## Molecular CIF bond geometry
+
+`validate_cif_bonds.py` checks the source Python extension's explicit molecular
+CIF bond output against Gemmi 0.7.5 and records bounded Open Babel CLI probes.
+It uses original fixtures in `validation/openbabel_issues/cif-bonds/`.
+Provide the compiled extension and the oracle environment on `PYTHONPATH`, then
+run `python3 scripts/validate_cif_bonds.py`. Native hermetic tests run with
+`cargo test -p chematic-mol --test cif_bond_writer`; binding regressions are in
+`crates/chematic-py/tests/test_cif_bond_writer.py`. See
+[`docs/cif-molecular-bonds.md`](../docs/cif-molecular-bonds.md) for the projection
+boundary and the distinction between Open Babel's `-ag` and `-xg` options.

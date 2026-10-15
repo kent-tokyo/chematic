@@ -488,11 +488,14 @@ use the record or checked API for source retention.
 
 ### CIF (plain, small-molecule)
 
-- **Rust**: `chematic_mol::{parse_cif, write_cif, CifError, CifResult, UnitCell}`, plus `#[cfg(feature = "crystal")]`-gated periodic-structure variants.
-- **Python**: `parse_cif` — **read only**, no `write_cif` binding exists in `chematic-py`.
+- **Rust**: `chematic_mol::{parse_cif, write_cif, write_cif_checked, write_cif_with_bonds_checked, CifError, CifBondWriteError, CifResult, UnitCell}`, plus `#[cfg(feature = "crystal")]`-gated periodic-structure variants.
+- **Python**: `parse_cif`, `write_cif_checked`, `write_cif_with_bonds_checked`.
 - **WASM**: **none.** Zero WASM exposure — confirmed by grep, not by omission from this table.
 - **Coordinate units**: fractional cell coordinates converted to orthogonal Ångström on read (IUCr convention).
-- **Connectivity**: **no bond table at all** — CIF's `_atom_site` loop carries only positions; this module returns atoms with no bonds.
+- **Connectivity**: the reader returns atoms with no bonds. The opt-in
+  [molecular bond writer](cif-molecular-bonds.md) emits explicit graph edges as
+  `_geom_bond_*` rows, including Cartesian distances and S/D/T/A bond types.
+  It does not infer connectivity, wrap periodic images or read that bond table.
 - **Round-trip**: symmetry expansion is **not** performed on the plain (non-`crystal`-feature) path — only atoms literally listed in `_atom_site_*` are returned (effectively P1 treatment). See `docs/crystal_scope.md` for the `crystal`-feature periodic-structure variants.
 - **Lossy operations**: symmetry-operation information is not applied/round-tripped on the plain path.
 - **Parse limits**: `CifParseLimits { max_input_bytes, max_line_bytes,

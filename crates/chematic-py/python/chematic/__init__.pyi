@@ -3369,6 +3369,21 @@ def write_cif_checked(
     """
     ...
 
+def write_cif_with_bonds_checked(
+    mol: Mol,
+    coords: list[list[float]],
+    cell: Optional[dict[str, float]] = None,
+) -> str:
+    """Write checked CIF positions and explicit S/D/T/A molecular bonds.
+
+    Distances use Cartesian Å without periodic wrapping or bond perception.
+    Rejects invalid inputs, unsupported bond orders and zero/non-finite bond
+    distances. Projects positions and connectivity only: charge, isotopes,
+    implicit H, stereo annotations and metadata are not serialized.
+    parse_cif still reads positions only. Edgeless graphs have no bond loop.
+    """
+    ...
+
 def parse_mmcif(
     text: str,
     max_input_bytes: Optional[int] = None,

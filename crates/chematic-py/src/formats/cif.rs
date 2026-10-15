@@ -63,19 +63,42 @@ pub(super) fn write_cif_checked(
     coords: Vec<[f64; 3]>,
     cell: Option<&Bound<'_, PyDict>>,
 ) -> PyResult<String> {
-    let cell = cell
-        .map(|d| -> PyResult<chematic_mol::UnitCell> {
-            Ok(chematic_mol::UnitCell {
-                a: dict_get_required(d, "a")?,
-                b: dict_get_required(d, "b")?,
-                c: dict_get_required(d, "c")?,
-                alpha: dict_get_required(d, "alpha")?,
-                beta: dict_get_required(d, "beta")?,
-                gamma: dict_get_required(d, "gamma")?,
-            })
-        })
-        .transpose()?;
+    let cell = cif_cell(cell)?;
     let coords: Vec<_> = coords.into_iter().map(|[x, y, z]| (x, y, z)).collect();
     chematic_mol::write_cif_checked(&mol.inner, &coords, cell.as_ref())
         .map_err(|e| PyValueError::new_err(e.to_string()))
+}
+
+/// Write checked CIF positions and explicit S/D/T/A molecular bonds.
+///
+/// Distances use the supplied Cartesian Å frame, without periodic wrapping.
+/// This projects positions and connectivity only; molecular metadata, charge,
+/// isotopes, implicit H and stereo annotations are not serialized.
+/// Raises ValueError for invalid coordinates/cells, unsupported bond orders,
+/// or zero/non-finite bond distances. parse_cif still reads positions only.
+#[pyfunction]
+#[pyo3(signature = (mol, coords, cell=None))]
+pub(super) fn write_cif_with_bonds_checked(
+    mol: &Mol,
+    coords: Vec<[f64; 3]>,
+    cell: Option<&Bound<'_, PyDict>>,
+) -> PyResult<String> {
+    let cell = cif_cell(cell)?;
+    let coords: Vec<_> = coords.into_iter().map(|[x, y, z]| (x, y, z)).collect();
+    chematic_mol::write_cif_with_bonds_checked(&mol.inner, &coords, cell.as_ref())
+        .map_err(|e| PyValueError::new_err(e.to_string()))
+}
+
+fn cif_cell(cell: Option<&Bound<'_, PyDict>>) -> PyResult<Option<chematic_mol::UnitCell>> {
+    cell.map(|d| -> PyResult<chematic_mol::UnitCell> {
+        Ok(chematic_mol::UnitCell {
+            a: dict_get_required(d, "a")?,
+            b: dict_get_required(d, "b")?,
+            c: dict_get_required(d, "c")?,
+            alpha: dict_get_required(d, "alpha")?,
+            beta: dict_get_required(d, "beta")?,
+            gamma: dict_get_required(d, "gamma")?,
+        })
+    })
+    .transpose()
 }
