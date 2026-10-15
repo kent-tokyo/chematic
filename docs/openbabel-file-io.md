@@ -91,7 +91,7 @@ Open Babel internal graph differences remain unranked. Incremental allocation
 optimization has mixed results, and this packet does not establish general
 Open Babel superiority.
 
-A [paired stereo-preservation record](../benchmarks/2026-10-15-openbabel-stereo-paired.md)
+A [paired stereo-preservation record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-15-openbabel-stereo-paired.md)
 uses the same RDKit-written V2000/V3000 file bytes for both CLIs. On 155
 stereo-sensitive corpus rows per profile, CheMatic preserves all RDKit
 source/reopen identities; Open Babel 3.2.1 differs on 12 V2000 and 9 V3000
