@@ -26,6 +26,7 @@ current issue or benchmark links to them.
 | Sealed cohort | `prepare_sealed_accuracy_cohort.py` |
 | V3000 external readers | `v3000_*_gate.py` |
 | Stereo gates | `stereo_torture_suite_gate.py`, `stereo_spelling_invariance_gate.py` |
+| Open Babel 0D MOL stereo source check | `compare_openbabel_0d_stereo.py` compares before and after CLI binaries on identical Open Babel-generated records |
 | A6 source-wheel termination diagnostic | `public_package_3d_chematic.py` runs the fixed 265 rows; `summarize_a6_mmff94_termination.py` accounts for every outcome; `compare_a6_source_published_rows.py` checks same-host success retention without claiming the full quality gate |
 | A6 platform gate (#739) | `pipeline_v2_vs_rdkit_common_scorer` scores one platform's 265 rows; `a6_platform_gate.py` requires 265 successes, all independently sound, stereo-clean and clash-free, and reports whether the coordinates equal another platform's row by row |
 | Cross-binding Node dump | `binding_dump.mjs <mode>` |

@@ -12,6 +12,196 @@ use chematic_core::{Atom, AtomIdx, BondOrder, Chirality, Element, MoleculeBuilde
 use chematic_mol::mol2000::{MolMetadata, write_mol_with_coords};
 use chematic_mol::{parse_mol_v3000_with_coords, read_mol_with_diagnostics, write_mol_v3000};
 
+// Open Babel 3.2.1 writes its 0D tetrahedral stereo in V2000 atom parity.
+// Its own MOL re-reader returns F[C@](Cl)(Br)I for parity 2 and the opposite
+// enantiomer for parity 1. No coordinates or wedge bonds are present.
+const OPENBABEL_0D_PARITY_2: &str = r#"
+ OpenBabel10152614202D
+
+  5  4  0  0  1  0  0  0  0  0999 V2000
+    0.0000    0.0000    0.0000 F   0  0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 C   0  0  2  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 Cl  0  0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 Br  0  0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 I   0  0  0  0  0  0  0  0  0  0  0  0
+  1  2  1  0  0  0  0
+  2  3  1  0  0  0  0
+  2  4  1  0  0  0  0
+  2  5  1  0  0  0  0
+M  END
+"#;
+
+#[test]
+fn openbabel_0d_atom_parity_preserves_both_enantiomers() {
+    for (parity, expected_smiles) in [(2, "F[C@](Cl)(Br)I"), (1, "F[C@@](Cl)(Br)I")] {
+        let block =
+            OPENBABEL_0D_PARITY_2.replace(" C   0  0  2  0", &format!(" C   0  0  {parity}  0"));
+        let read = read_mol_with_diagnostics(&block).expect("0D V2000 parses");
+        let expected = chematic_smiles::parse(expected_smiles).expect("reference SMILES parses");
+        assert_eq!(
+            chematic_smiles::canonical_smiles(&read.mol),
+            chematic_smiles::canonical_smiles(&expected),
+            "atom parity {parity}"
+        );
+    }
+}
+
+const OPENBABEL_ALANINE_0D: &str = r#"
+ OpenBabel10152614232D
+
+  6  5  0  0  1  0  0  0  0  0999 V2000
+    0.0000    0.0000    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 C   0  0  1  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0
+  1  2  1  0  0  0  0
+  2  3  1  0  0  0  0
+  2  4  1  0  0  0  0
+  4  5  2  0  0  0  0
+  4  6  1  0  0  0  0
+M  END
+"#;
+
+#[test]
+fn openbabel_0d_atom_parity_with_implicit_hydrogen() {
+    for (parity, expected_smiles) in [(1, "N[C@@H](C)C(=O)O"), (2, "N[C@H](C)C(=O)O")] {
+        let block =
+            OPENBABEL_ALANINE_0D.replace(" C   0  0  1  0", &format!(" C   0  0  {parity}  0"));
+        let read = read_mol_with_diagnostics(&block).expect("0D V2000 parses");
+        let expected = chematic_smiles::parse(expected_smiles).expect("reference SMILES parses");
+        assert_eq!(
+            chematic_smiles::canonical_smiles(&read.mol),
+            chematic_smiles::canonical_smiles(&expected),
+            "atom parity {parity}"
+        );
+    }
+}
+
+#[test]
+fn atom_parity_is_not_inferred_from_nonzero_coordinates() {
+    let block = OPENBABEL_0D_PARITY_2.replace(
+        "    0.0000    0.0000    0.0000 F  ",
+        "    1.0000    0.0000    0.0000 F  ",
+    );
+    let read = read_mol_with_diagnostics(&block).expect("nonzero-coordinate MOL parses");
+    assert_eq!(read.mol.atom(AtomIdx(1)).chirality, Chirality::None);
+}
+
+#[test]
+fn atom_parity_does_not_invent_chirality_with_duplicate_substituents() {
+    let block = OPENBABEL_0D_PARITY_2.replace(" I   0  0  0  0", " F   0  0  0  0");
+    let read = read_mol_with_diagnostics(&block).expect("parity on achiral atom parses");
+    assert_eq!(read.mol.atom(AtomIdx(1)).chirality, Chirality::None);
+}
+
+#[test]
+fn atom_parity_does_not_override_2d_wedge_geometry() {
+    let original = read_mol_with_diagnostics(RDKIT_L_ALANINE_2D_V2000).expect("2D alanine parses");
+    for parity in [1, 2] {
+        let block =
+            RDKIT_L_ALANINE_2D_V2000.replace(" C   0  0  0  0", &format!(" C   0  0  {parity}  0"));
+        let read = read_mol_with_diagnostics(&block).expect("2D alanine with atom parity parses");
+        assert_eq!(
+            chematic_smiles::canonical_smiles(&read.mol),
+            chematic_smiles::canonical_smiles(&original.mol),
+            "2D wedges take precedence over parity {parity}"
+        );
+    }
+}
+
+const OPENBABEL_0D_ALKENE: &str = r#"
+ OpenBabel10152614252D
+
+  4  3  0  0  0  0  0  0  0  0999 V2000
+    0.0000    0.0000    0.0000 F   0  0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 F   0  0  0  0  0  0  0  0  0  0  0  0
+  1  2  1  1  0  0  0
+  2  3  2  0  0  0  0
+  3  4  1  6  0  0  0
+M  END
+"#;
+
+#[test]
+fn openbabel_0d_alkene_directions_preserve_e_and_z() {
+    for (last_marker, expected_smiles) in [(6, "F/C=C/F"), (1, "F/C=C\\F")] {
+        let block =
+            OPENBABEL_0D_ALKENE.replace("  3  4  1  6", &format!("  3  4  1  {last_marker}"));
+        let read = read_mol_with_diagnostics(&block).expect("0D alkene parses");
+        let expected = chematic_smiles::parse(expected_smiles).expect("reference SMILES parses");
+        assert_eq!(
+            chematic_smiles::canonical_smiles(&read.mol),
+            chematic_smiles::canonical_smiles(&expected),
+            "last marker {last_marker}"
+        );
+    }
+}
+
+const OPENBABEL_0D_BRANCHED_ALKENE: &str = r#"
+ OpenBabel10152614292D
+
+  7  6  0  0  0  0  0  0  0  0999 V2000
+    0.0000    0.0000    0.0000 F   0  0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0
+  1  2  1  1  0  0  0
+  2  3  2  0  0  0  0
+  3  4  1  1  0  0  0
+  3  5  1  6  0  0  0
+  5  6  2  0  0  0  0
+  5  7  1  0  0  0  0
+M  END
+"#;
+
+const OPENBABEL_0D_AROMATIC_ALKENE: &str = r#"
+ OpenBabel10152614292D
+
+  9  9  0  0  0  0  0  0  0  0999 V2000
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 F   0  0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+  1  9  2  0  0  0  0
+  1  2  1  0  0  0  0
+  2  3  2  0  0  0  0
+  3  4  1  1  0  0  0
+  3  7  1  0  0  0  0
+  4  5  2  0  0  0  0
+  5  6  1  1  0  0  0
+  7  8  2  0  0  0  0
+  8  9  1  0  0  0  0
+M  END
+"#;
+
+#[test]
+fn openbabel_0d_alkene_directions_ignore_carbonyl_and_aromatic_doubles() {
+    for (block, smiles) in [
+        (OPENBABEL_0D_BRANCHED_ALKENE, "F/C=C(\\C)C(=O)N"),
+        (OPENBABEL_0D_AROMATIC_ALKENE, "c1cc(/C=C\\F)ccc1"),
+    ] {
+        let read = read_mol_with_diagnostics(block).expect("0D alkene parses");
+        let expected = chematic_smiles::parse(smiles).expect("reference SMILES parses");
+        let aromatic_normalized = chematic_perception::apply_aromaticity(&read.mol);
+        assert_eq!(
+            chematic_smiles::canonical_smiles(&aromatic_normalized),
+            chematic_smiles::canonical_smiles(&expected),
+            "{smiles}"
+        );
+    }
+}
+
 const RDKIT_L_ALANINE_2D_V2000: &str = r#"
      RDKit          2D
 
