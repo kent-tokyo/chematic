@@ -31,7 +31,7 @@
     ]
   },
   "local_checks": {
-    "refactor_budget": "passed: 561 files, 8478 functions, 18/86 allowances",
+    "refactor_budget": "passed: 561 files, 8477 functions, 18/86 allowances",
     "binding_inventory": "passed: Python 200/200, WASM 303",
     "rustfmt": "passed",
     "release_docs": "passed",
@@ -40,11 +40,11 @@
     "workspace_test_attempt": "Interrupted with SIGTERM during the existing CIP permutation oracle; 1642 tests had passed, 5 were ignored. Not a complete workspace pass.",
     "new_integration_target_attempt": "First local attempt exited 101 without diagnostic output; retry uses a separate task-owned build directory. No product failure diagnosis is inferred from the empty log.",
     "python_runtime": {
-      "passed": 1032,
+      "passed": 1034,
       "failed": 0,
-      "suites": 29,
-      "extension_sha256": "e0442949a78c0e8f80abf4aabed0691b0f9a963d8aa7ecbc0328edc5ce0eba4d",
-      "log_sha256": "4f0ff4401ca59328630089f880bdc29758f2d8be3c971440c15ff87ac842aacc",
+      "suites": 30,
+      "extension_sha256": "f2842fcb3fa30e3c9a21140057e7225f455267e6a2bd804ac8faa8a7e7de6376",
+      "log_sha256": "94ae45c2e044c7908db289989efce53a75029a5ed0d1f01a56546461b38b060f",
       "rdkit": "2026.09.1",
       "native_inchi": false
     },

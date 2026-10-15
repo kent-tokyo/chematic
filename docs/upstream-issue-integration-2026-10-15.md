@@ -27,8 +27,8 @@ It records source hashes and current-main preservation separately.
 
 Local formatting, binding inventory, refactor-budget, release-documentation,
 strict MkDocs and staged-diff checks pass. A fresh integrated Python extension
-passes 1032 tests across 27 added suites and two existing adapter/preservation
-suites. All 27 added Rust integration targets also pass (303 tests). The first full-workspace local test
+passes 1034 tests across 27 added suites, two existing adapter/preservation
+suites and the current-main recursive-chirality suite. All 27 added Rust integration targets also pass (303 tests). The first full-workspace local test
 attempt was interrupted during an existing long CIP oracle and is not counted
 as a complete pass. GitHub CI must pass the protected main checks, all added
 integration targets and binding/coverage jobs before merging. No package
