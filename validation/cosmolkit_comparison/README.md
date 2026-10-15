@@ -10,6 +10,14 @@ COSMolKit is an explicit comparison target. This directory holds two harnesses:
 * **Smoke harness** (below): a ten-row public corpus and a common JSONL
   contract for adapter validation.
 
+The focused mixed V2000/V3000 SDF recognition fixture is
+`corpora/mixed-v2000-v3000-v1.sdf`. With RDKit 2025.09.3 and COSMolKit 0.5.0
+installed, run `python check_sdf_v3000_recognition.py` to verify the two
+external readers against fixed title, graph, charge, and SD-field expectations.
+The chematic source reader is covered by `cargo test -p chematic-mol --test
+sdf_v3000_recognition`. This two-record development fixture establishes a
+specific ingestion contract, not general recognition or stereo superiority.
+
 ## Corpus-scale comparison
 
 Install each engine in a Python that also has RDKit (round-trip operations

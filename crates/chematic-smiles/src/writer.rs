@@ -217,6 +217,49 @@ pub(crate) fn square_planar_token(p: chematic_core::SquarePlanarPermutation) -> 
     }
 }
 
+/// Re-express a square-planar tag with one vacant ligand position. RDKit's
+/// three-neighbor SMILES convention puts the vacancy in its own slot; applying
+/// the four-neighbor table to only the three explicit neighbors changes the
+/// configuration. This table is the 18-case RDKit 2025.09.3 permutation oracle
+/// for three distinct ligands, indexed by the written order relative to the
+/// stored order. Refuse missing or duplicate ligand ids.
+pub(crate) fn remap_three_ligand_square_planar(
+    tag: chematic_core::SquarePlanarPermutation,
+    original: [u32; 3],
+    written: [u32; 3],
+) -> Option<chematic_core::SquarePlanarPermutation> {
+    use chematic_core::SquarePlanarPermutation::{SP1, SP2, SP3};
+    if original[0] == original[1] || original[0] == original[2] || original[1] == original[2] {
+        return None;
+    }
+    let mut permutation = [0usize; 3];
+    for (slot, ligand) in written.into_iter().enumerate() {
+        permutation[slot] = original.iter().position(|&id| id == ligand)?;
+    }
+    if permutation[0] == permutation[1]
+        || permutation[0] == permutation[2]
+        || permutation[1] == permutation[2]
+    {
+        return None;
+    }
+    let mapped = match permutation {
+        [0, 1, 2] => [SP1, SP2, SP3],
+        [0, 2, 1] => [SP3, SP2, SP1],
+        [1, 0, 2] => [SP1, SP3, SP2],
+        [1, 2, 0] => [SP3, SP1, SP2],
+        [2, 0, 1] => [SP2, SP3, SP1],
+        [2, 1, 0] => [SP2, SP1, SP3],
+        _ => unreachable!("validated three-element permutation"),
+    };
+    Some(
+        mapped[match tag {
+            SP1 => 0,
+            SP2 => 1,
+            SP3 => 2,
+        }],
+    )
+}
+
 /// A non-tetrahedral tag (other than numbered `@SP`) carried from the
 /// stored ligand order `original` to the written order `written`, with
 /// RDKit's permutation tables; `None` when the orders do not hold the same
@@ -580,7 +623,15 @@ impl<'a> SmilesWriter<'a> {
                 (Some(o), Some(w)) => remap_square_planar_tag(tag, o, w)
                     .map(Chirality::SquarePlanar)
                     .unwrap_or(Chirality::None),
-                _ => Chirality::None,
+                _ => match (
+                    <[u32; 3]>::try_from(original).ok(),
+                    <[u32; 3]>::try_from(written.as_slice()).ok(),
+                ) {
+                    (Some(o), Some(w)) => remap_three_ligand_square_planar(tag, o, w)
+                        .map(Chirality::SquarePlanar)
+                        .unwrap_or(Chirality::None),
+                    _ => Chirality::None,
+                },
             },
             Chirality::None => Chirality::None,
             other => remap_nontetrahedral(other, original, &written),
@@ -689,6 +740,41 @@ fn permutation_is_odd(original: &[u32], written: &[u32]) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn three_ligand_square_planar_tags_survive_canonical_reordering() {
+        // RDKit 2025.09.3 oracle: the canonical traversal starts at Cl and
+        // swaps F/Cl relative to the input, while the vacant site stays put.
+        for (input, expected) in [
+            ("F[Pt@SP1](Cl)Br", "Cl[Pt@SP1](F)Br"),
+            ("F[Pt@SP2](Cl)Br", "Cl[Pt@SP3](F)Br"),
+            ("F[Pt@SP3](Cl)Br", "Cl[Pt@SP2](F)Br"),
+        ] {
+            let output = crate::canonical_smiles(&crate::parse(input).unwrap());
+            assert_eq!(output, expected);
+            assert_eq!(
+                crate::canonical_smiles(&crate::parse(&output).unwrap()),
+                output
+            );
+        }
+    }
+
+    #[test]
+    fn three_ligand_square_planar_remap_requires_same_distinct_ligands() {
+        use chematic_core::SquarePlanarPermutation::SP1;
+        assert_eq!(
+            remap_three_ligand_square_planar(SP1, [1, 2, 3], [2, 1, 3]),
+            Some(SP1)
+        );
+        assert_eq!(
+            remap_three_ligand_square_planar(SP1, [1, 2, 3], [1, 2, 4]),
+            None
+        );
+        assert_eq!(
+            remap_three_ligand_square_planar(SP1, [1, 2, 3], [1, 1, 3]),
+            None
+        );
+    }
 
     /// `write` re-expresses a stored `@`/`@@` for the order it emits: a
     /// molecule whose recorded neighbour order differs from the DFS order

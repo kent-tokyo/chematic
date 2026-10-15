@@ -1,41 +1,56 @@
 //! SDF (Structure-Data File) reader.
 //!
 //! An SDF file contains one or more MOL V2000 or V3000 blocks separated by `$$$$`
-//! delimiter lines. Data-field sections between `M  END` and `$$$$` are
-//! available through the record readers; the molecule-only reader ignores them.
+//! delimiter lines. `SdfReader` ignores SD data fields; record readers retain
+//! fields between `M  END` and `$$$$`.
 
 use crate::error::MolParseError;
 use crate::mol2000::{
     CoordinateDimension, GeometryRank, MolMetadata, Stereo3DDiagnostic, parse_mol, parse_mol_fast,
     read_mol_with_diagnostics,
 };
-use crate::mol3000::{parse_mol_v3000, read_mol_v3000_with_diagnostics};
 use chematic_core::{Coords3D, Molecule};
 use chematic_perception::{EzDirectionDiagnostic, StereoDiagnostic};
 
 mod dataset;
+mod fields;
 pub use dataset::{SdfDataset, SdfRecordMetadata};
 mod ensemble;
 pub use ensemble::{ConformerEnsemble, read_sdf_conformer_ensembles};
+use fields::parse_sd_fields;
 
 fn is_v3000_record(block: &str) -> bool {
     block
         .lines()
         .nth(3)
-        .is_some_and(|counts| counts.trim_end().ends_with("V3000"))
+        .is_some_and(|line| line.trim_end().ends_with("V3000"))
 }
 
-/// V3000's MOL parser requires `M  END` to be the last physical line;
-/// SDF properties follow that line and belong to the record, not the MOL.
-fn v3000_mol_block(block: &str) -> &str {
+// Search physical lines after the four-line MOL header. A title, comment or
+// SD value containing "M  END" is not a CTAB terminator.
+fn sdf_ctab_end(block: &str) -> Option<usize> {
     let mut end = 0;
-    for line in block.split_inclusive('\n') {
+    for (index, line) in block.split_inclusive('\n').enumerate() {
         end += line.len();
-        if line.trim_end_matches(['\r', '\n']) == "M  END" {
-            return &block[..end];
+        if index >= 4 && line.trim_end_matches(['\r', '\n']) == "M  END" {
+            return Some(end);
         }
     }
-    block
+    None
+}
+
+fn sdf_ctab(block: &str) -> &str {
+    &block[..sdf_ctab_end(block).unwrap_or(block.len())]
+}
+
+fn read_sdf_mol_with_diagnostics(
+    block: &str,
+) -> Result<crate::mol2000::MolReadReport, MolParseError> {
+    if is_v3000_record(block) {
+        crate::mol3000::read_mol_v3000_with_diagnostics(sdf_ctab(block))
+    } else {
+        read_mol_with_diagnostics(block)
+    }
 }
 
 /// Iterator over molecules in an SDF string.
@@ -154,7 +169,7 @@ impl<'a> Iterator for SdfReader<'a> {
             }
             self.current_mol_num += 1;
             return Some(if is_v3000_record(mol_block) {
-                parse_mol_v3000(v3000_mol_block(mol_block))
+                crate::mol3000::parse_mol_v3000(sdf_ctab(mol_block))
             } else {
                 parse_mol(mol_block)
             });
@@ -339,20 +354,13 @@ impl<'a> Iterator for SdfRecordReader<'a> {
             self.records_read += 1;
 
             // Parse molecule + 2D coordinates + stereo diagnostics.
-            let report = match if is_v3000_record(block) {
-                read_mol_v3000_with_diagnostics(v3000_mol_block(block))
-            } else {
-                read_mol_with_diagnostics(block)
-            } {
+            let report = match read_sdf_mol_with_diagnostics(block) {
                 Ok(report) => report,
                 Err(e) => return Some(Err(e)),
             };
 
             // Extract data fields from the part after "M  END".
-            let data_part = block
-                .find("M  END")
-                .map(|pos| &block[pos + 6..])
-                .unwrap_or("");
+            let data_part = sdf_ctab_end(block).map(|pos| &block[pos..]).unwrap_or("");
             let properties = parse_sd_fields(data_part);
 
             return Some(Ok(SdfRecord {
@@ -369,54 +377,6 @@ impl<'a> Iterator for SdfRecordReader<'a> {
             }));
         }
     }
-}
-
-/// Parse SD data fields from the section after `M  END`.
-///
-/// Each field starts with `> <FieldName>` on its own line.  The value is
-/// everything on subsequent lines until a blank line (or end of input).
-fn parse_sd_fields(data: &str) -> std::collections::HashMap<String, String> {
-    let mut fields = std::collections::HashMap::new();
-    let mut current_key: Option<String> = None;
-    let mut current_value = String::new();
-
-    for raw_line in data.lines() {
-        let line = raw_line.trim_end_matches('\r');
-
-        if let Some(key) = parse_sd_field_header(line) {
-            // Flush previous field.
-            if let Some(k) = current_key.take() {
-                fields.insert(k, std::mem::take(&mut current_value));
-            }
-            current_key = Some(key);
-        } else if line.is_empty() {
-            // Blank line ends the current field's value.
-            if let Some(k) = current_key.take() {
-                fields.insert(k, std::mem::take(&mut current_value));
-            }
-        } else if current_key.is_some() {
-            if !current_value.is_empty() {
-                current_value.push('\n');
-            }
-            current_value.push_str(line);
-        }
-    }
-    // Flush trailing field with no blank line.
-    if let Some(k) = current_key {
-        fields.insert(k, current_value);
-    }
-
-    fields
-}
-
-/// Parse `> <FieldName>` header lines, returning the field name or `None`.
-fn parse_sd_field_header(line: &str) -> Option<String> {
-    // SDF spec: field headers start with "> " and contain the name in `<...>`.
-    // We accept "> <Name>" and also ">  <Name>" (extra spaces).
-    let rest = line.strip_prefix('>')?;
-    let rest = rest.trim();
-    let inner = rest.strip_prefix('<')?.strip_suffix('>')?;
-    Some(inner.to_string())
 }
 
 // ---------------------------------------------------------------------------
@@ -555,14 +515,13 @@ impl<R: std::io::BufRead> SdfFileReader<R> {
     fn parse_current_block(&self) -> Result<SdfRecord, MolParseError> {
         let block = std::str::from_utf8(&self.block)
             .map_err(|error| MolParseError::Io(error.to_string()))?;
-        let data_part = block
-            .find("M  END")
-            .map(|position| &block[position + 6..])
+        let data_part = sdf_ctab_end(block)
+            .map(|position| &block[position..])
             .unwrap_or("");
         let properties = parse_sd_fields(data_part);
         if !self.diagnostics {
             let (mol, meta) = if is_v3000_record(block) {
-                parse_mol_v3000(v3000_mol_block(block))?
+                crate::mol3000::parse_mol_v3000(sdf_ctab(block))?
             } else {
                 parse_mol_fast(block)?
             };
@@ -579,11 +538,7 @@ impl<R: std::io::BufRead> SdfFileReader<R> {
                 stereo3d_diagnostics: Vec::new(),
             });
         }
-        let report = if is_v3000_record(block) {
-            read_mol_v3000_with_diagnostics(v3000_mol_block(block))?
-        } else {
-            read_mol_with_diagnostics(block)?
-        };
+        let report = read_sdf_mol_with_diagnostics(block)?;
         Ok(SdfRecord {
             mol: report.mol,
             meta: report.metadata,

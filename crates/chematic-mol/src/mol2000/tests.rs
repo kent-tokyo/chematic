@@ -844,6 +844,44 @@ fn test_read_sdf_with_diagnostics_blank_name_crlf() {
 }
 
 #[test]
+fn ctfile_default_valence_retains_nonorganic_hydrogens() {
+    let atom_line = "    0.0000    0.0000    0.0000 Na  0  0  0  0  0  0  0  0  0  0  0  0";
+    for (symbol, valence_code, expected_h) in [("Na", 0, 1), ("K", 0, 1), ("Na", 15, 0)] {
+        let mut line = atom_line.to_string();
+        line.replace_range(31..34, &format!("{symbol:<3}"));
+        line.replace_range(48..51, &format!("{valence_code:>3}"));
+        let block =
+            format!("\n OpenBabel 0D\n\n  1  0  0  0  0  0  0  0  0  0999 V2000\n{line}\nM  END\n");
+        let read = read_mol_with_diagnostics(&block).expect("isolated atom parses");
+        assert_eq!(read.mol.atom(AtomIdx(0)).hydrogen_count, Some(expected_h));
+    }
+
+    let carbon = "    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0";
+    for (symbol, bond_order, valence_code, expected_h) in [
+        ("Se", 1, 0, 1),
+        ("Sn", 1, 0, 1),
+        ("As", 2, 0, 1),
+        ("Si", 2, 0, 2),
+        ("Se", 3, 0, 1),
+        ("Sn", 3, 0, 1),
+        ("Se", 1, 1, 0),
+    ] {
+        let mut line = atom_line.to_string();
+        line.replace_range(31..34, &format!("{symbol:<3}"));
+        line.replace_range(48..51, &format!("{valence_code:>3}"));
+        let block = format!(
+            "\n OpenBabel 0D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n{carbon}\n{line}\n  1  2  {bond_order}  0  0  0  0\nM  END\n"
+        );
+        let read = read_mol_with_diagnostics(&block).expect("bonded atom parses");
+        assert_eq!(
+            read.mol.atom(AtomIdx(1)).hydrogen_count,
+            Some(expected_h),
+            "{symbol} with bond order {bond_order}"
+        );
+    }
+}
+
+#[test]
 fn test_parse_sdf_with_coords_blank_name_middle_record() {
     // parse_sdf_with_coords is a thin wrapper over read_sdf_with_diagnostics;
     // confirm the fix reaches it too.
