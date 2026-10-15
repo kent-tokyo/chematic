@@ -249,15 +249,14 @@ fn pdbqt_lines<'a>(s: &'a str, limits: &PdbqtParseLimits) -> Result<Vec<&'a str>
     Ok(lines)
 }
 
-fn pdbqt_element_symbol(line: &str) -> &str {
-    match line.get(77..79).map(str::trim).unwrap_or("").trim() {
+fn pdbqt_element_symbol(atom_type: &str) -> &str {
+    match atom_type {
         "A" => "C",
         "NA" => "N",
         "OA" | "OS" => "O",
         "SA" => "S",
         "HD" => "H",
-        other if !other.is_empty() => other,
-        _ => line.get(76..78).map(str::trim).unwrap_or("C").trim(),
+        other => other,
     }
 }
 
@@ -289,7 +288,31 @@ fn parse_pdbqt_atom(line: &str, number: usize) -> Result<ParsedPdbqtAtom, PdbqtE
             detail: "line too short (need at least 54 chars for coordinates)".into(),
         });
     }
-    let symbol = pdbqt_element_symbol(line);
+    // The charge can be wider than its usual column width (for example,
+    // +0.1234). Split the trailing fields so it cannot hide the second
+    // character of an atom type such as Cl or silently lose precision.
+    let mut trailing_fields = line.get(66..).unwrap_or("").split_ascii_whitespace();
+    let (raw_charge, atom_type) = match (trailing_fields.next(), trailing_fields.next()) {
+        (Some(charge), Some(atom_type)) => (charge, atom_type),
+        (Some(charge), None) => {
+            let detail = if charge.parse::<f64>().is_ok() {
+                "missing AutoDock atom type"
+            } else {
+                "missing partial charge"
+            };
+            return Err(PdbqtError::InvalidAtomLine {
+                line: number,
+                detail: detail.into(),
+            });
+        }
+        (None, _) => {
+            return Err(PdbqtError::InvalidAtomLine {
+                line: number,
+                detail: "missing partial charge and AutoDock atom type".into(),
+            });
+        }
+    };
+    let symbol = pdbqt_element_symbol(atom_type);
     let element = Element::from_symbol(symbol).ok_or_else(|| PdbqtError::UnknownElement {
         symbol: symbol.to_owned(),
         line: number,
@@ -309,11 +332,6 @@ fn parse_pdbqt_atom(line: &str, number: usize) -> Result<ParsedPdbqtAtom, PdbqtE
         number,
         "z coordinate",
     )?;
-    let raw_charge = line
-        .get(66..76)
-        .or_else(|| line.get(71..76))
-        .map(str::trim)
-        .unwrap_or("0.0");
     let charge = raw_charge
         .parse::<f64>()
         .map_err(|_| PdbqtError::InvalidCharge {
@@ -400,6 +418,44 @@ mod tests {
         assert!((coords2[0].0 - 1.0).abs() < 0.01);
         assert!((coords2[1].1 - 5.0).abs() < 0.01);
         assert!((charges2[2] - (-0.3)).abs() < 0.01);
+    }
+
+    #[test]
+    fn widened_charge_preserves_precision_and_two_letter_atom_type() {
+        let mol = parse("[Cl]").unwrap();
+        let text = write_pdbqt(&mol, &[(1.0, 2.0, 3.0)], &[0.123], "CL");
+        let atom_line = text.lines().find(|line| line.starts_with("ATOM")).unwrap();
+        let widened = atom_line.replacen("0.123 Cl", "0.1234 Cl", 1);
+        assert_ne!(widened, atom_line);
+
+        let (read, _coords, charges) = parse_pdbqt(&widened).unwrap();
+        assert_eq!(
+            read.atom(AtomIdx(0)).element,
+            Element::from_symbol("Cl").unwrap()
+        );
+        assert_eq!(charges, vec![0.1234]);
+    }
+
+    #[test]
+    fn missing_charge_or_atom_type_is_rejected() {
+        let mol = parse("[Cl]").unwrap();
+        let text = write_pdbqt(&mol, &[(1.0, 2.0, 3.0)], &[0.123], "CL");
+        let atom_line = text.lines().find(|line| line.starts_with("ATOM")).unwrap();
+
+        for truncated in [&atom_line[..66], &atom_line[..76]] {
+            assert!(
+                matches!(
+                    parse_pdbqt(truncated),
+                    Err(PdbqtError::InvalidAtomLine { .. })
+                ),
+                "accepted a PDBQT atom without both required fields: {truncated:?}"
+            );
+        }
+        let missing_charge = format!("{}           Cl", &atom_line[..66]);
+        assert!(matches!(
+            parse_pdbqt(&missing_charge),
+            Err(PdbqtError::InvalidAtomLine { detail, .. }) if detail.contains("charge")
+        ));
     }
 
     #[test]
