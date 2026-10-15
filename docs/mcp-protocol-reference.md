@@ -292,11 +292,9 @@ not pass fall into two groups:
 ## Available tools
 
 The server currently exposes 20 tools. Nineteen run locally; only
-`name_to_smiles` calls PubChem. The maintained
-[tool inventory](mcp/tool-inventory.md) records each tool's purpose,
-determinism, completeness, cost, limits, and chemistry caveats. The runtime
-registry in `crates/chematic-mcp/src/tools.rs` remains authoritative if the
-manual inventory and implementation disagree.
+`name_to_smiles` calls PubChem. The runtime registry in
+[`crates/chematic-mcp/src/tools.rs`](https://github.com/kent-tokyo/chematic/blob/main/crates/chematic-mcp/src/tools.rs)
+is the authoritative inventory of the available tools and their schemas.
 
 ## Example call
 
