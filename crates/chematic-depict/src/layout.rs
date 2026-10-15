@@ -23,6 +23,10 @@ use rustc_hash::{FxHashMap as HashMap, FxHashSet as HashSet};
 
 use chematic_core::{AtomIdx, BondIdx, Molecule};
 
+#[cfg(test)]
+mod issue_912_tests;
+mod sp_linear;
+
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
@@ -1993,15 +1997,9 @@ fn dfs_zigzag(
             .collect();
 
         if unplaced.len() == 1 {
-            // Ordinary chain continuation: apply this atom's sign, flip it for
-            // the next step -- this is the alternation the pre-fix code missed.
-            stack.push((
-                unplaced[0],
-                atom,
-                dir + back + sign * deflection,
-                -sign,
-                0.0,
-            ));
+            let next_dir =
+                sp_linear::continuation_direction(mol, atom, dir, back, sign, deflection);
+            stack.push((unplaced[0], atom, next_dir, -sign, 0.0));
         } else if unplaced.len() <= 2 {
             // A real branch (0 or 2 unplaced neighbors): the two children
             // 60° (30° where `narrow` marks the atom) either side of the

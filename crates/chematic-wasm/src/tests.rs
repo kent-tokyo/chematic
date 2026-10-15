@@ -1481,6 +1481,27 @@ fn depict_data_json_pyridine_nitrogen_has_label() {
     );
 }
 
+#[test]
+fn depict_data_json_keeps_degree_two_sp_centers_linear() {
+    for (smiles, centers) in [
+        ("O=C=O", &[(0, 1, 2)][..]),
+        ("CC#N", &[(0, 1, 2)]),
+        ("CC#CC", &[(0, 1, 2), (1, 2, 3)]),
+        ("C=C=C", &[(0, 1, 2)]),
+        ("CC=[C@AL1]=CCC", &[(1, 2, 3)]),
+        ("CC=[C@AL2]=CCC", &[(1, 2, 3)]),
+    ] {
+        let mol = parse(smiles);
+        let (points, _) = depiction_points(&depict_data_json(&mol));
+        for &(a, center, b) in centers {
+            let (u, c, v) = (points[a], points[center], points[b]);
+            let cross = (u.0 - c.0) * (v.1 - c.1) - (u.1 - c.1) * (v.0 - c.0);
+            let dot = (u.0 - c.0) * (v.0 - c.0) + (u.1 - c.1) * (v.1 - c.1);
+            assert!(cross.abs() < 1e-3 && dot < 0.0, "{smiles}: {points:?}");
+        }
+    }
+}
+
 // CPK colors
 #[test]
 fn cpk_color_nitrogen_is_blue() {
