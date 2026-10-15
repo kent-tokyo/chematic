@@ -150,13 +150,13 @@ def main() -> int:
         comparable = [row for row in profile_rows if row["source_contract"] == "comparable"]
         outcomes = Counter(
             (
-                "both_correct"
+                "both_match_source"
                 if row["chematic"]["semantic_equal"] and row["openbabel"]["semantic_equal"]
-                else "chematic_only_correct"
+                else "chematic_only_matches_source"
                 if row["chematic"]["semantic_equal"]
-                else "openbabel_only_correct"
+                else "openbabel_only_matches_source"
                 if row["openbabel"]["semantic_equal"]
-                else "both_incorrect"
+                else "neither_matches_source"
             )
             for row in comparable
         )
@@ -164,16 +164,16 @@ def main() -> int:
             "source_exclusions": len(profile_rows) - len(comparable),
             "comparable": len(comparable),
             "distinct_source_identities": len({row["expected_identity"] for row in comparable}),
-            "both_correct": outcomes["both_correct"],
-            "chematic_only_correct": outcomes["chematic_only_correct"],
-            "distinct_chematic_only_correct_identities": len({
+            "both_match_source": outcomes["both_match_source"],
+            "chematic_only_matches_source": outcomes["chematic_only_matches_source"],
+            "distinct_chematic_only_matching_identities": len({
                 row["expected_identity"]
                 for row in comparable
                 if row["chematic"]["semantic_equal"]
                 and not row["openbabel"]["semantic_equal"]
             }),
-            "openbabel_only_correct": outcomes["openbabel_only_correct"],
-            "both_incorrect": outcomes["both_incorrect"],
+            "openbabel_only_matches_source": outcomes["openbabel_only_matches_source"],
+            "neither_matches_source": outcomes["neither_matches_source"],
         }
 
     result = {
