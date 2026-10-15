@@ -211,6 +211,7 @@ jobs:
           - { package: chematic-mol, target: format_binding_parity }
           - { package: chematic-mol, target: mmcif_pqr_integration }
           - { package: chematic-mol, target: qcschema }
+          - { package: chematic-mol, target: sdf_v3000_recognition }
           - { package: chematic-mol, target: square_planar_mol_io }
           - { package: chematic-mol, target: stereo2d_ez_reader_integration }
           - { package: chematic-mol, target: stereo_reader_integration }

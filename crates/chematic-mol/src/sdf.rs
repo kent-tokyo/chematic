@@ -1,8 +1,8 @@
 //! SDF (Structure-Data File) reader.
 //!
-//! An SDF file contains one or more MOL V2000 blocks separated by `$$$$`
-//! delimiter lines.  Data-field sections between `M  END` and `$$$$` are
-//! accepted but ignored.
+//! An SDF file contains one or more MOL V2000 or V3000 blocks separated by `$$$$`
+//! delimiter lines. `SdfReader` ignores SD data fields; record readers retain
+//! fields between `M  END` and `$$$$`.
 
 use crate::error::MolParseError;
 use crate::mol2000::{
@@ -14,6 +14,40 @@ use chematic_perception::{EzDirectionDiagnostic, StereoDiagnostic};
 
 mod dataset;
 pub use dataset::{SdfDataset, SdfRecordMetadata};
+
+fn is_v3000_record(block: &str) -> bool {
+    block
+        .lines()
+        .nth(3)
+        .is_some_and(|line| line.trim_end().ends_with("V3000"))
+}
+
+// Search physical lines after the four-line MOL header. A title, comment or
+// SD value containing "M  END" is not a CTAB terminator.
+fn sdf_ctab_end(block: &str) -> Option<usize> {
+    let mut end = 0;
+    for (index, line) in block.split_inclusive('\n').enumerate() {
+        end += line.len();
+        if index >= 4 && line.trim_end_matches(['\r', '\n']) == "M  END" {
+            return Some(end);
+        }
+    }
+    None
+}
+
+fn sdf_ctab(block: &str) -> &str {
+    &block[..sdf_ctab_end(block).unwrap_or(block.len())]
+}
+
+fn read_sdf_mol_with_diagnostics(
+    block: &str,
+) -> Result<crate::mol2000::MolReadReport, MolParseError> {
+    if is_v3000_record(block) {
+        crate::mol3000::read_mol_v3000_with_diagnostics(sdf_ctab(block))
+    } else {
+        read_mol_with_diagnostics(block)
+    }
+}
 
 /// Iterator over molecules in an SDF string.
 ///
@@ -130,7 +164,11 @@ impl<'a> Iterator for SdfReader<'a> {
                 }));
             }
             self.current_mol_num += 1;
-            return Some(parse_mol(mol_block));
+            return Some(if is_v3000_record(mol_block) {
+                crate::mol3000::parse_mol_v3000(sdf_ctab(mol_block))
+            } else {
+                parse_mol(mol_block)
+            });
         }
     }
 }
@@ -312,16 +350,13 @@ impl<'a> Iterator for SdfRecordReader<'a> {
             self.records_read += 1;
 
             // Parse molecule + 2D coordinates + stereo diagnostics.
-            let report = match read_mol_with_diagnostics(block) {
+            let report = match read_sdf_mol_with_diagnostics(block) {
                 Ok(report) => report,
                 Err(e) => return Some(Err(e)),
             };
 
             // Extract data fields from the part after "M  END".
-            let data_part = block
-                .find("M  END")
-                .map(|pos| &block[pos + 6..])
-                .unwrap_or("");
+            let data_part = sdf_ctab_end(block).map(|pos| &block[pos..]).unwrap_or("");
             let properties = parse_sd_fields(data_part);
 
             return Some(Ok(SdfRecord {
@@ -460,13 +495,12 @@ fn same_graph_identity(a: &Molecule, b: &Molecule) -> bool {
 /// just its immediate predecessor), matching how real multi-conformer SDF
 /// exports are usually -- but not always -- written consecutively.
 ///
-/// Stops and returns an error on the first parse failure, same as
-/// [`read_sdf_with_diagnostics`].
+/// Stops and returns an error on the first parse failure.
 pub fn read_sdf_conformer_ensembles(input: &str) -> Result<Vec<ConformerEnsemble>, MolParseError> {
-    let reports = crate::mol2000::read_sdf_with_diagnostics(input)?;
     let mut ensembles: Vec<ConformerEnsemble> = Vec::new();
 
-    for report in reports {
+    for report in SdfRecordReader::new(input) {
+        let report = report?;
         let Some(conformer) = report.conformer else {
             continue;
         };
@@ -478,7 +512,7 @@ pub fn read_sdf_conformer_ensembles(input: &str) -> Result<Vec<ConformerEnsemble
         } else {
             ensembles.push(ConformerEnsemble {
                 mol: report.mol,
-                metadata: report.metadata,
+                metadata: report.meta,
                 conformers: vec![conformer],
             });
         }
@@ -623,13 +657,16 @@ impl<R: std::io::BufRead> SdfFileReader<R> {
     fn parse_current_block(&self) -> Result<SdfRecord, MolParseError> {
         let block = std::str::from_utf8(&self.block)
             .map_err(|error| MolParseError::Io(error.to_string()))?;
-        let data_part = block
-            .find("M  END")
-            .map(|position| &block[position + 6..])
+        let data_part = sdf_ctab_end(block)
+            .map(|position| &block[position..])
             .unwrap_or("");
         let properties = parse_sd_fields(data_part);
         if !self.diagnostics {
-            let (mol, meta) = parse_mol_fast(block)?;
+            let (mol, meta) = if is_v3000_record(block) {
+                crate::mol3000::parse_mol_v3000(sdf_ctab(block))?
+            } else {
+                parse_mol_fast(block)?
+            };
             return Ok(SdfRecord {
                 mol,
                 meta,
@@ -643,7 +680,7 @@ impl<R: std::io::BufRead> SdfFileReader<R> {
                 stereo3d_diagnostics: Vec::new(),
             });
         }
-        let report = read_mol_with_diagnostics(block)?;
+        let report = read_sdf_mol_with_diagnostics(block)?;
         Ok(SdfRecord {
             mol: report.mol,
             meta: report.metadata,
