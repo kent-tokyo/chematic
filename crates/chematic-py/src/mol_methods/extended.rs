@@ -112,7 +112,7 @@ impl Mol {
         py: Python<'py>,
         coords: Vec<[f64; 3]>,
     ) -> PyResult<Bound<'py, PyDict>> {
-        let c3d = flat_to_coords3d(&coords);
+        let c3d = checked_coords3d(&self.inner, &coords)?;
         let sd = chematic_3d::sasa_descriptor(&self.inner, &c3d);
         let d = PyDict::new(py);
         d.set_item("total", sd.total)?;
@@ -210,10 +210,10 @@ impl Mol {
     ///
     ///     coords = mol.generate_3d()
     ///     minimized = mol.minimize_mmff94(coords)
-    fn minimize_mmff94(&self, coords: Vec<[f64; 3]>) -> Vec<Vec<f64>> {
-        let c3d = flat_to_coords3d(&coords);
+    fn minimize_mmff94(&self, coords: Vec<[f64; 3]>) -> PyResult<Vec<Vec<f64>>> {
+        let c3d = checked_coords3d(&self.inner, &coords)?;
         let out = chematic_3d::minimize_mmff94(&self.inner, c3d);
-        out.points.iter().map(|p| vec![p.x, p.y, p.z]).collect()
+        Ok(out.points.iter().map(|p| vec![p.x, p.y, p.z]).collect())
     }
 
     /// Minimize 3D coordinates with the DREIDING force field.
@@ -223,10 +223,10 @@ impl Mol {
     ///
     ///     coords = mol.generate_3d()
     ///     minimized = mol.minimize_dreiding(coords)
-    fn minimize_dreiding(&self, coords: Vec<[f64; 3]>) -> Vec<Vec<f64>> {
-        let c3d = flat_to_coords3d(&coords);
+    fn minimize_dreiding(&self, coords: Vec<[f64; 3]>) -> PyResult<Vec<Vec<f64>>> {
+        let c3d = checked_coords3d(&self.inner, &coords)?;
         let out = chematic_3d::minimize_dreiding(&self.inner, c3d);
-        out.points.iter().map(|p| vec![p.x, p.y, p.z]).collect()
+        Ok(out.points.iter().map(|p| vec![p.x, p.y, p.z]).collect())
     }
 
     /// Number of stereocenters with unspecified (unknown) configuration.
@@ -244,9 +244,9 @@ impl Mol {
     ///
     ///     coords = mol.generate_3d()
     ///     vec = mol.whim_getaway(coords)   # len 41
-    fn whim_getaway(&self, coords: Vec<[f64; 3]>) -> Vec<f64> {
-        let c3d = flat_to_coords3d(&coords);
-        chematic_3d::whim_getaway_combined(&self.inner, &c3d)
+    fn whim_getaway(&self, coords: Vec<[f64; 3]>) -> PyResult<Vec<f64>> {
+        let c3d = checked_coords3d(&self.inner, &coords)?;
+        Ok(chematic_3d::whim_getaway_combined(&self.inner, &c3d))
     }
 
     // -----------------------------------------------------------------------
@@ -830,16 +830,16 @@ impl Mol {
         &self,
         py: Python<'py>,
         coords: Vec<[f64; 3]>,
-    ) -> Vec<Bound<'py, PyDict>> {
+    ) -> PyResult<Vec<Bound<'py, PyDict>>> {
         use chematic_core::CipCode;
-        let c3d = flat_to_coords3d(&coords);
+        let c3d = checked_coords3d(&self.inner, &coords)?;
         let assignment = chematic_3d::assign_stereo_from_3d(&self.inner, &c3d);
         assignment
             .assignments
             .iter()
             .map(|(idx, code)| {
                 let d = PyDict::new(py);
-                d.set_item("atom_idx", idx.0 as usize).unwrap();
+                d.set_item("atom_idx", idx.0 as usize)?;
                 let code_str = match code {
                     CipCode::R => "R",
                     CipCode::S => "S",
@@ -848,8 +848,8 @@ impl Mol {
                     CipCode::LowerR => "r",
                     CipCode::LowerS => "s",
                 };
-                d.set_item("code", code_str).unwrap();
-                d
+                d.set_item("code", code_str)?;
+                Ok(d)
             })
             .collect()
     }

@@ -9,15 +9,15 @@ const TEXT: &str = "2\n title  %VIRTUAL %PBC \nSi 0.12345678901234567 -2 3\nCl -
 
 #[test]
 fn complete_geometry_preserves_basis_offset_flags_and_text() {
-    let g = parse_exyz(TEXT).unwrap();
+    let g = diagnostic(parse_exyz(TEXT)).unwrap();
     assert_eq!(g.header, " title  %VIRTUAL %PBC ");
     assert_eq!(g.source_text, TEXT);
     assert_eq!(g.atoms[0].element, Element::SI);
     assert!(!g.atoms[0].virtual_atom);
     assert!(g.atoms[1].virtual_atom);
     assert_eq!(g.cell.as_ref().unwrap().offset_angstrom, [0.5, -1.0, 2.0]);
-    let out = write_exyz(&g).unwrap();
-    let back = parse_exyz(&out).unwrap();
+    let out = diagnostic(write_exyz(&g)).unwrap();
+    let back = diagnostic(parse_exyz(&out)).unwrap();
     assert_eq!(back.header, g.header);
     assert_eq!(back.atoms, g.atoms);
     assert_eq!(back.cell, g.cell);
@@ -25,11 +25,11 @@ fn complete_geometry_preserves_basis_offset_flags_and_text() {
 
 #[test]
 fn writer_uses_structured_data_after_edits() {
-    let mut g = parse_exyz(TEXT).unwrap();
+    let mut g = diagnostic(parse_exyz(TEXT)).unwrap();
     g.atoms[0].position_angstrom[0] = -0.125;
     g.atoms[1].virtual_atom = false;
     g.cell.as_mut().unwrap().offset_angstrom = [1.0, 2.0, 3.0];
-    let back = parse_exyz(&write_exyz(&g).unwrap()).unwrap();
+    let back = diagnostic(parse_exyz(&diagnostic(write_exyz(&g)).unwrap())).unwrap();
     assert_eq!(g.atoms, back.atoms);
     assert_eq!(g.cell, back.cell);
 }
@@ -51,7 +51,7 @@ fn all_elements_and_finite_extremes_roundtrip_exactly() {
         cell: None,
         source_text: String::new(),
     };
-    let back = parse_exyz(&write_exyz(&g).unwrap()).unwrap();
+    let back = diagnostic(parse_exyz(&diagnostic(write_exyz(&g)).unwrap())).unwrap();
     assert_eq!(g.atoms, back.atoms);
     assert_eq!(
         g.atoms[0].position_angstrom[0].to_bits(),
@@ -62,7 +62,7 @@ fn all_elements_and_finite_extremes_roundtrip_exactly() {
 #[test]
 fn plain_xyz_subset_crlf_and_final_newline_are_supported() {
     for text in ["1\n\nC 0 0 0", "1\r\nplain title\r\nC 0 0 0\r\n\r\n"] {
-        let g = parse_exyz(text).unwrap();
+        let g = diagnostic(parse_exyz(text)).unwrap();
         assert!(g.cell.is_none());
         assert!(!g.atoms[0].virtual_atom);
     }
@@ -77,7 +77,7 @@ fn count_preflight_and_caller_limits_fail_before_allocation() {
         "0\n\n",
         "2\n\nC 0 0 0\n",
     ] {
-        assert!(parse_exyz(text).is_err(), "{text:?}");
+        assert!(diagnostic(parse_exyz(text)).is_err(), "{text:?}");
     }
     for limits in [
         ExyzParseLimits {
@@ -93,7 +93,7 @@ fn count_preflight_and_caller_limits_fail_before_allocation() {
             ..Default::default()
         },
     ] {
-        assert!(parse_exyz_with_limits(TEXT, &limits).is_err());
+        assert!(diagnostic(parse_exyz_with_limits(TEXT, &limits)).is_err());
     }
 }
 
@@ -116,7 +116,7 @@ fn unsupported_headers_and_atom_fields_fail() {
         "1\n\nC 0 0 0 1\n",
         "1\n\nC 0 0 0\nextra\n",
     ] {
-        assert!(parse_exyz(text).is_err(), "{text:?}");
+        assert!(diagnostic(parse_exyz(text)).is_err(), "{text:?}");
     }
 }
 
@@ -134,16 +134,22 @@ fn strict_cell_block_rejects_incomplete_reordered_or_unflagged_data() {
         TEXT.replace("Vector3 1 0 -6", "Vector3 4 1 1e-12"),
         TEXT.replace("Offset 0.5 -1 2", "Offset NaN -1 2"),
     ] {
-        assert!(parse_exyz(&text).is_err(), "{text:?}");
+        assert!(diagnostic(parse_exyz(&text)).is_err(), "{text:?}");
     }
 }
 
 #[test]
 fn errors_identify_rejected_source_line() {
-    assert_eq!(parse_exyz("1\n%NO\nC 0 0 0").unwrap_err().line, 2);
-    assert_eq!(parse_exyz("1\n\nC 0 NaN 0").unwrap_err().line, 3);
     assert_eq!(
-        parse_exyz(&TEXT.replace("Vector2", "bad"))
+        diagnostic(parse_exyz("1\n%NO\nC 0 0 0")).unwrap_err().line,
+        2
+    );
+    assert_eq!(
+        diagnostic(parse_exyz("1\n\nC 0 NaN 0")).unwrap_err().line,
+        3
+    );
+    assert_eq!(
+        diagnostic(parse_exyz(&TEXT.replace("Vector2", "bad")))
             .unwrap_err()
             .line,
         7
@@ -153,7 +159,7 @@ fn errors_identify_rejected_source_line() {
 #[test]
 fn mutable_invalid_geometry_cannot_be_written() {
     for change in 0..7 {
-        let mut g = parse_exyz(TEXT).unwrap();
+        let mut g = diagnostic(parse_exyz(TEXT)).unwrap();
         match change {
             0 => g.atoms.clear(),
             1 => g.atoms[0].position_angstrom[0] = f64::INFINITY,
@@ -163,6 +169,10 @@ fn mutable_invalid_geometry_cannot_be_written() {
             5 => g.cell.as_mut().unwrap().offset_angstrom[0] = f64::NAN,
             _ => g.cell.as_mut().unwrap().lattice_angstrom[0] = [0.0; 3],
         }
-        assert!(write_exyz(&g).is_err());
+        assert!(diagnostic(write_exyz(&g)).is_err());
     }
 }
+
+#[path = "support/upstream_diagnostics.rs"]
+mod upstream_diagnostics;
+use upstream_diagnostics::diagnostic;

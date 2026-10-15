@@ -16,7 +16,7 @@ fn defaults_preserve_existing_packed_fingerprints() {
         "C1C2CC3CC1CC(C2)C3",
     ] {
         let m = mol(s);
-        let r = rdkit_layered_config(&m, &Config::default()).unwrap();
+        let r = diagnostic(rdkit_layered_config(&m, &Config::default())).unwrap();
         assert_eq!(r.bits, rdkit_layered_fp(&m).to_le_bytes());
     }
 }
@@ -27,11 +27,11 @@ fn root_multiplicity_and_seeded_counter_contract() {
         from_atoms: vec![AtomIdx(0)],
         ..Default::default()
     };
-    let a = rdkit_layered_config(&m, &c).unwrap();
+    let a = diagnostic(rdkit_layered_config(&m, &c)).unwrap();
     assert_eq!(a.atom_counts, [4, 4, 2, 2]);
     c.from_atoms.push(AtomIdx(0));
     c.atom_counts = Some(vec![10, 20, 30, 40, 99]);
-    let b = rdkit_layered_config(&m, &c).unwrap();
+    let b = diagnostic(rdkit_layered_config(&m, &c)).unwrap();
     assert_eq!(b.atom_counts, [18, 28, 34, 44, 99]);
     assert_eq!(b.bits, a.bits);
     assert_eq!(c.atom_counts.unwrap(), [10, 20, 30, 40, 99]);
@@ -43,25 +43,25 @@ fn bit_mask_controls_counters_even_after_hash_collisions() {
         fp_size: 1,
         ..Default::default()
     };
-    let r = rdkit_layered_config(&m, &c).unwrap();
+    let r = diagnostic(rdkit_layered_config(&m, &c)).unwrap();
     assert_eq!(r.bits, [1]);
     assert_eq!(r.atom_counts, [4, 7, 4, 4]);
     c.set_only_bits = Some(vec![0]);
-    let r = rdkit_layered_config(&m, &c).unwrap();
+    let r = diagnostic(rdkit_layered_config(&m, &c)).unwrap();
     assert_eq!(r.bits, [0]);
     assert_eq!(r.atom_counts, [0; 4]);
 }
 #[test]
 fn selected_layers_union_and_zero_layers() {
     let m = mol("c1ccccc1O");
-    let all = rdkit_layered_config(&m, &Config::default()).unwrap();
+    let all = diagnostic(rdkit_layered_config(&m, &Config::default())).unwrap();
     let mut union = vec![0; 256];
     for layer in 0..6 {
         let c = Config {
             layer_flags: 1 << layer,
             ..Default::default()
         };
-        let r = rdkit_layered_config(&m, &c).unwrap();
+        let r = diagnostic(rdkit_layered_config(&m, &c)).unwrap();
         for (u, b) in union.iter_mut().zip(r.bits) {
             *u |= b;
         }
@@ -72,7 +72,7 @@ fn selected_layers_union_and_zero_layers() {
         atom_counts: Some(vec![9; 7]),
         ..Default::default()
     };
-    let r = rdkit_layered_config(&m, &c).unwrap();
+    let r = diagnostic(rdkit_layered_config(&m, &c)).unwrap();
     assert!(r.bits.iter().all(|b| *b == 0));
     assert_eq!(r.atom_counts, [9; 7]);
 }
@@ -84,7 +84,7 @@ fn rooted_linear_uses_endpoint_semantics_and_final_range_closures() {
         from_atoms: vec![AtomIdx(1)],
         ..Default::default()
     };
-    let r = rdkit_layered_config(&m, &c).unwrap();
+    let r = diagnostic(rdkit_layered_config(&m, &c)).unwrap();
     assert_eq!(r.atom_counts, [1, 3, 1, 1]);
     let m = mol("C1CC1");
     let a = Config {
@@ -96,8 +96,12 @@ fn rooted_linear_uses_endpoint_semantics_and_final_range_closures() {
     let mut b = a.clone();
     b.max_path = 7;
     assert!(
-        rdkit_layered_config(&m, &a).unwrap().selected_paths
-            > rdkit_layered_config(&m, &b).unwrap().selected_paths
+        diagnostic(rdkit_layered_config(&m, &a))
+            .unwrap()
+            .selected_paths
+            > diagnostic(rdkit_layered_config(&m, &b))
+                .unwrap()
+                .selected_paths
     );
 }
 #[test]
@@ -107,7 +111,9 @@ fn counters_wrap_like_unsigned_rdkit_counters() {
         ..Default::default()
     };
     assert_eq!(
-        rdkit_layered_config(&mol("CCO"), &c).unwrap().atom_counts,
+        diagnostic(rdkit_layered_config(&mol("CCO"), &c))
+            .unwrap()
+            .atom_counts,
         [1, 2, 1]
     );
 }
@@ -150,14 +156,14 @@ fn invalid_options_and_known_invalid_upstream_branch_are_checked() {
             ..Default::default()
         },
     ] {
-        assert!(rdkit_layered_config(&m, &c).is_err());
+        assert!(diagnostic(rdkit_layered_config(&m, &c)).is_err());
     }
     let c = Config {
         branched_paths: false,
         ..Default::default()
     };
     assert_eq!(
-        rdkit_layered_config(&m, &c).unwrap_err().code,
+        diagnostic(rdkit_layered_config(&m, &c)).unwrap_err().code,
         "unrooted_linear_unsupported"
     );
 }
@@ -168,16 +174,19 @@ fn exhausted_budgets_return_no_partial_mutation() {
         atom_counts: Some(vec![7; 4]),
         ..Default::default()
     };
-    let result = rdkit_layered_config(&m, &c).unwrap();
+    let result = diagnostic(rdkit_layered_config(&m, &c)).unwrap();
     c.max_visits = result.search_visits - 1;
     assert_eq!(
-        rdkit_layered_config(&m, &c).unwrap_err().code,
+        diagnostic(rdkit_layered_config(&m, &c)).unwrap_err().code,
         "visit_limit"
     );
     assert_eq!(c.atom_counts.as_ref().unwrap(), &[7; 4]);
     c.max_visits = 1_000_000;
     c.max_paths = 1;
-    assert_eq!(rdkit_layered_config(&m, &c).unwrap_err().code, "path_limit");
+    assert_eq!(
+        diagnostic(rdkit_layered_config(&m, &c)).unwrap_err().code,
+        "path_limit"
+    );
 }
 #[test]
 fn query_zero_and_dative_bonds_are_rejected() {
@@ -187,7 +196,7 @@ fn query_zero_and_dative_bonds_are_rejected() {
         let z = b.add_atom(Atom::new(Element::C));
         b.add_bond(a, z, order).unwrap();
         assert_eq!(
-            rdkit_layered_config(&b.build(), &Config::default())
+            diagnostic(rdkit_layered_config(&b.build(), &Config::default()))
                 .unwrap_err()
                 .code,
             "unsupported_bond"
@@ -202,7 +211,7 @@ fn explicit_hydrogen_roots_keep_original_indices_but_set_no_bits() {
         atom_counts: Some(vec![7, 8, 9]),
         ..Default::default()
     };
-    let r = rdkit_layered_config(&m, &c).unwrap();
+    let r = diagnostic(rdkit_layered_config(&m, &c)).unwrap();
     assert!(r.bits.iter().all(|b| *b == 0));
     assert_eq!(r.atom_counts, [7, 8, 9]);
 }
@@ -218,13 +227,13 @@ fn rooted_linear_frontier_and_visit_caps_fail_atomically() {
         ..Default::default()
     };
     assert_eq!(
-        rdkit_layered_config(&m, &c).unwrap_err().code,
+        diagnostic(rdkit_layered_config(&m, &c)).unwrap_err().code,
         "frontier_limit"
     );
     c.max_paths = 100000;
     c.max_visits = 1;
     assert_eq!(
-        rdkit_layered_config(&m, &c).unwrap_err().code,
+        diagnostic(rdkit_layered_config(&m, &c)).unwrap_err().code,
         "visit_limit"
     );
     assert_eq!(c.atom_counts.unwrap(), [7; 4]);
@@ -236,9 +245,13 @@ fn graph_limits_are_checked_before_perception() {
         b.add_atom(Atom::new(Element::C));
     }
     assert_eq!(
-        rdkit_layered_config(&b.build(), &Config::default())
+        diagnostic(rdkit_layered_config(&b.build(), &Config::default()))
             .unwrap_err()
             .code,
         "graph_limit"
     );
 }
+
+#[path = "support/upstream_diagnostics.rs"]
+mod upstream_diagnostics;
+use upstream_diagnostics::diagnostic;

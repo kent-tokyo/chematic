@@ -18,7 +18,7 @@ fn rejects_issue_boundaries_without_provenance_or_dense_allocation() {
     for n in [1025, 46_341, 65_535, 65_536, 65_537] {
         let mol = isolated_atoms(n, Element::C);
         assert_eq!(
-            try_topological_distance_matrix(&mol),
+            diagnostic(try_topological_distance_matrix(&mol)),
             Err(NativeDistanceMatrixError::ResourceLimit {
                 resource: "atoms",
                 requested: n,
@@ -31,7 +31,7 @@ fn rejects_issue_boundaries_without_provenance_or_dense_allocation() {
 #[test]
 fn exact_cap_accepts_connected_and_disconnected_graphs() {
     let mol = isolated_atoms(1024, Element::C);
-    let matrix = try_topological_distance_matrix(&mol).unwrap();
+    let matrix = diagnostic(try_topological_distance_matrix(&mol)).unwrap();
     assert_eq!(matrix.len(), 1024);
     for (i, row) in matrix.iter().enumerate() {
         assert_eq!(row.len(), 1024);
@@ -45,7 +45,7 @@ fn exact_cap_accepts_connected_and_disconnected_graphs() {
             .add_bond(AtomIdx(i - 1), AtomIdx(i), BondOrder::Single)
             .unwrap();
     }
-    let matrix = try_topological_distance_matrix(&builder.build()).unwrap();
+    let matrix = diagnostic(try_topological_distance_matrix(&builder.build())).unwrap();
     for (i, row) in matrix.iter().enumerate() {
         for (j, &d) in row.iter().enumerate() {
             assert_eq!(d as usize, i.abs_diff(j));
@@ -56,11 +56,18 @@ fn exact_cap_accepts_connected_and_disconnected_graphs() {
 #[test]
 fn all_input_hydrogens_count_even_when_output_would_be_empty() {
     assert_eq!(
-        try_topological_distance_matrix(&isolated_atoms(1024, Element::H)).unwrap(),
+        diagnostic(try_topological_distance_matrix(&isolated_atoms(
+            1024,
+            Element::H
+        )))
+        .unwrap(),
         Vec::<Vec<u32>>::new()
     );
     assert!(matches!(
-        try_topological_distance_matrix(&isolated_atoms(1025, Element::H)),
+        diagnostic(try_topological_distance_matrix(&isolated_atoms(
+            1025,
+            Element::H
+        ))),
         Err(NativeDistanceMatrixError::ResourceLimit {
             resource: "atoms",
             ..
@@ -76,7 +83,10 @@ fn hydrogens_are_excluded_as_endpoints_and_intermediates() {
         vec![u32::MAX, 0, u32::MAX],
         vec![u32::MAX, u32::MAX, 0],
     ];
-    assert_eq!(try_topological_distance_matrix(&mol).unwrap(), expected);
+    assert_eq!(
+        diagnostic(try_topological_distance_matrix(&mol)).unwrap(),
+        expected
+    );
     assert_eq!(topological_distance_matrix(&mol), expected);
 }
 
@@ -113,7 +123,7 @@ fn tighter_limits_and_zero_budgets_are_exact() {
         ),
     ] {
         assert_eq!(
-            try_topological_distance_matrix_with_limits(&mol, &limits),
+            diagnostic(try_topological_distance_matrix_with_limits(&mol, &limits)),
             Err(NativeDistanceMatrixError::ResourceLimit {
                 resource,
                 requested,
@@ -127,7 +137,7 @@ fn tighter_limits_and_zero_budgets_are_exact() {
         max_entries: 9,
     };
     assert_eq!(
-        try_topological_distance_matrix_with_limits(&mol, &exact).unwrap(),
+        diagnostic(try_topological_distance_matrix_with_limits(&mol, &exact)).unwrap(),
         topological_distance_matrix(&mol)
     );
     let zero = NativeDistanceMatrixLimits {
@@ -136,12 +146,19 @@ fn tighter_limits_and_zero_budgets_are_exact() {
         max_entries: 0,
     };
     assert!(
-        try_topological_distance_matrix_with_limits(&MoleculeBuilder::new().build(), &zero)
-            .unwrap()
-            .is_empty()
+        diagnostic(try_topological_distance_matrix_with_limits(
+            &MoleculeBuilder::new().build(),
+            &zero
+        ))
+        .unwrap()
+        .is_empty()
     );
     assert!(
-        try_topological_distance_matrix_with_limits(&isolated_atoms(1, Element::C), &zero).is_err()
+        diagnostic(try_topological_distance_matrix_with_limits(
+            &isolated_atoms(1, Element::C),
+            &zero
+        ))
+        .is_err()
     );
 }
 
@@ -153,7 +170,10 @@ fn callers_cannot_raise_hard_atom_or_entry_cap() {
         max_entries: usize::MAX,
     };
     assert!(matches!(
-        try_topological_distance_matrix_with_limits(&isolated_atoms(1025, Element::C), &limits),
+        diagnostic(try_topological_distance_matrix_with_limits(
+            &isolated_atoms(1025, Element::C),
+            &limits
+        )),
         Err(NativeDistanceMatrixError::ResourceLimit { limit: 1024, .. })
     ));
 }
@@ -178,7 +198,7 @@ fn dense_bond_cap_is_checked_including_hydrogens() {
         ..Default::default()
     };
     assert!(matches!(
-        try_topological_distance_matrix_with_limits(&mol, &limits),
+        diagnostic(try_topological_distance_matrix_with_limits(&mol, &limits)),
         Err(NativeDistanceMatrixError::ResourceLimit {
             resource: "bonds",
             requested: 16_471,
@@ -202,14 +222,18 @@ fn exact_bond_cap_is_accepted_and_next_bond_is_rejected() {
             .unwrap();
     }
     let mol = builder.build();
-    assert!(try_topological_distance_matrix(&mol).unwrap().is_empty());
+    assert!(
+        diagnostic(try_topological_distance_matrix(&mol))
+            .unwrap()
+            .is_empty()
+    );
     let mut builder = MoleculeBuilder::from_molecule(&mol);
     let (i, j) = edges[16_384];
     builder
         .add_bond(AtomIdx(i), AtomIdx(j), BondOrder::Single)
         .unwrap();
     assert!(matches!(
-        try_topological_distance_matrix(&builder.build()),
+        diagnostic(try_topological_distance_matrix(&builder.build())),
         Err(NativeDistanceMatrixError::ResourceLimit {
             resource: "bonds",
             requested: 16_385,
@@ -235,9 +259,13 @@ fn ordinary_native_graph_results_match_existing_api() {
     ] {
         let mol = chematic_smiles::parse(smiles).unwrap();
         assert_eq!(
-            try_topological_distance_matrix(&mol).unwrap(),
+            diagnostic(try_topological_distance_matrix(&mol)).unwrap(),
             topological_distance_matrix(&mol),
             "{smiles}"
         );
     }
 }
+
+#[path = "support/upstream_diagnostics.rs"]
+mod upstream_diagnostics;
+use upstream_diagnostics::diagnostic;

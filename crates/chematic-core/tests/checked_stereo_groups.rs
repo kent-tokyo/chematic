@@ -29,10 +29,12 @@ fn group(kind: StereoGroupKind, atoms: &[u32], bonds: &[u32]) -> (StereoGroup, V
     )
 }
 fn error(groups: Vec<(StereoGroup, Vec<BondIdx>)>) -> StereoGroupError {
-    molecule()
+    let error = molecule()
         .with_checked_stereo_groups(groups)
         .err()
-        .expect("expected structural error")
+        .expect("expected structural error");
+    assert!(error.to_string().contains("group"));
+    error
 }
 #[test]
 fn mixed_bond_only_and_atom_only_groups_preserve_order_and_kind() {

@@ -7,7 +7,7 @@ const TYPES: &[&str] = &["N", "C", "HD", "Zn", "Cl"];
 fn charges_coords_and_identity_survive_in_source_order() {
     let source = parse_pqr(FIXTURE).unwrap();
     let before = source.clone();
-    let report = pqr_to_pdbqt(&source, TYPES, true).unwrap();
+    let report = diagnostic(pqr_to_pdbqt(&source, TYPES, true)).unwrap();
     assert_eq!(source, before);
     let (mol, coords, charges) = parse_pdbqt(&report.pdbqt).unwrap();
     assert_eq!(mol.atom_count(), 5);
@@ -42,7 +42,7 @@ fn charges_coords_and_identity_survive_in_source_order() {
 #[test]
 fn sidecar_reports_original_values_and_measured_rounding() {
     let source = parse_pqr(FIXTURE).unwrap();
-    let report = pqr_to_pdbqt(&source, TYPES, true).unwrap();
+    let report = diagnostic(pqr_to_pdbqt(&source, TYPES, true)).unwrap();
     assert!(report.radii_omitted);
     assert_eq!(
         report.source_charges,
@@ -62,7 +62,7 @@ fn sidecar_reports_original_values_and_measured_rounding() {
 #[test]
 fn radius_loss_requires_explicit_consent() {
     assert_eq!(
-        pqr_to_pdbqt(&parse_pqr(FIXTURE).unwrap(), TYPES, false).unwrap_err(),
+        diagnostic(pqr_to_pdbqt(&parse_pqr(FIXTURE).unwrap(), TYPES, false)).unwrap_err(),
         PqrPdbqtError::RadiusLossRequiresConsent
     );
 }
@@ -71,12 +71,12 @@ fn radius_loss_requires_explicit_consent() {
 fn empty_source_and_type_count_are_errors() {
     let mut source = parse_pqr(FIXTURE).unwrap();
     assert!(matches!(
-        pqr_to_pdbqt(&source, &["N"], true),
+        diagnostic(pqr_to_pdbqt(&source, &["N"], true)),
         Err(PqrPdbqtError::AtomTypeCount { .. })
     ));
     source.atoms.clear();
     assert_eq!(
-        pqr_to_pdbqt(&source, &[], true).unwrap_err(),
+        diagnostic(pqr_to_pdbqt(&source, &[], true)).unwrap_err(),
         PqrPdbqtError::EmptyInput
     );
 }
@@ -87,12 +87,12 @@ fn types_must_be_known_and_match_source_elements() {
     for invalid in ["X", "C\n", "HD ", "NAA", "H D", "Na"] {
         let types = [invalid, "C", "HD", "Zn", "Cl"];
         assert!(matches!(
-            pqr_to_pdbqt(&source, &types, true),
+            diagnostic(pqr_to_pdbqt(&source, &types, true)),
             Err(PqrPdbqtError::InvalidAtomType { atom: 0, .. })
         ));
     }
     assert!(matches!(
-        pqr_to_pdbqt(&source, &["C", "C", "HD", "Zn", "Cl"], true),
+        diagnostic(pqr_to_pdbqt(&source, &["C", "C", "HD", "Zn", "Cl"], true)),
         Err(PqrPdbqtError::ElementMismatch { atom: 0, .. })
     ));
 }
@@ -116,7 +116,7 @@ fn rejects_silent_metadata_truncation_and_record_injection() {
             _ => s.atoms[0].group_pdb = value.into(),
         }
         assert_eq!(
-            pqr_to_pdbqt(&s, TYPES, true).unwrap_err(),
+            diagnostic(pqr_to_pdbqt(&s, TYPES, true)).unwrap_err(),
             PqrPdbqtError::InvalidField { atom: 0, field }
         );
     }
@@ -129,7 +129,7 @@ fn serial_and_residue_boundaries_are_checked() {
         let mut s = source.clone();
         s.atoms[0].serial = serial;
         assert!(matches!(
-            pqr_to_pdbqt(&s, TYPES, true),
+            diagnostic(pqr_to_pdbqt(&s, TYPES, true)),
             Err(PqrPdbqtError::InvalidField {
                 field: "serial",
                 ..
@@ -139,7 +139,7 @@ fn serial_and_residue_boundaries_are_checked() {
     let mut duplicate = source.clone();
     duplicate.atoms[1].serial = 7;
     assert!(matches!(
-        pqr_to_pdbqt(&duplicate, TYPES, true),
+        diagnostic(pqr_to_pdbqt(&duplicate, TYPES, true)),
         Err(PqrPdbqtError::InvalidField {
             atom: 1,
             field: "serial"
@@ -149,7 +149,7 @@ fn serial_and_residue_boundaries_are_checked() {
         let mut s = source.clone();
         s.atoms[0].res_seq = seq;
         assert!(matches!(
-            pqr_to_pdbqt(&s, TYPES, true),
+            diagnostic(pqr_to_pdbqt(&s, TYPES, true)),
             Err(PqrPdbqtError::InvalidField {
                 field: "residue number",
                 ..
@@ -161,7 +161,7 @@ fn serial_and_residue_boundaries_are_checked() {
     s.atoms[0].res_seq = -999;
     s.atoms[0].atom_name = "ABCD".into();
     s.atoms[0].icode = None;
-    assert!(pqr_to_pdbqt(&s, TYPES, true).is_ok());
+    assert!(diagnostic(pqr_to_pdbqt(&s, TYPES, true)).is_ok());
 }
 
 #[test]
@@ -182,7 +182,7 @@ fn rejects_numeric_overflow_including_rounding_across_field_edge() {
             s.atoms[0].charge = value;
         }
         assert_eq!(
-            pqr_to_pdbqt(&s, TYPES, true).unwrap_err(),
+            diagnostic(pqr_to_pdbqt(&s, TYPES, true)).unwrap_err(),
             PqrPdbqtError::InvalidField { atom: 0, field }
         );
     }
@@ -202,7 +202,7 @@ fn rejects_directly_constructed_nonfinite_values_and_negative_radii() {
                 _ => s.atoms[0].radius = value,
             }
             assert_eq!(
-                pqr_to_pdbqt(&s, TYPES, true).unwrap_err(),
+                diagnostic(pqr_to_pdbqt(&s, TYPES, true)).unwrap_err(),
                 PqrPdbqtError::InvalidField { atom: 0, field }
             );
         }
@@ -210,7 +210,7 @@ fn rejects_directly_constructed_nonfinite_values_and_negative_radii() {
     let mut s = source;
     s.atoms[0].radius = -1.0;
     assert!(matches!(
-        pqr_to_pdbqt(&s, TYPES, true),
+        diagnostic(pqr_to_pdbqt(&s, TYPES, true)),
         Err(PqrPdbqtError::InvalidField {
             field: "radius",
             ..
@@ -242,7 +242,7 @@ fn all_supported_types_roundtrip_with_matching_element() {
     for (element, types) in groups {
         source.atoms[0].element = chematic_core::Element::from_symbol(element).unwrap();
         for t in *types {
-            let report = pqr_to_pdbqt(&source, &[t], true).unwrap();
+            let report = diagnostic(pqr_to_pdbqt(&source, &[t], true)).unwrap();
             let (mol, _, _) = parse_pdbqt(&report.pdbqt).unwrap();
             assert_eq!(
                 mol.atoms().next().unwrap().1.element,
@@ -251,3 +251,7 @@ fn all_supported_types_roundtrip_with_matching_element() {
         }
     }
 }
+
+#[path = "support/upstream_diagnostics.rs"]
+mod upstream_diagnostics;
+use upstream_diagnostics::diagnostic;

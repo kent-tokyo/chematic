@@ -21,7 +21,7 @@ fn frame(row: &str, box_line: &str) -> String {
 }
 #[test]
 fn names_are_preserved_without_first_letter_element_inference() {
-    let d = parse_gro(FIXTURE).unwrap();
+    let d = diagnostic(parse_gro(FIXTURE)).unwrap();
     assert_eq!(
         d.atoms
             .iter()
@@ -35,7 +35,7 @@ fn names_are_preserved_without_first_letter_element_inference() {
 }
 #[test]
 fn supplied_elements_resolve_two_letter_species_on_independent_copy() {
-    let d = parse_gro(FIXTURE).unwrap();
+    let d = diagnostic(parse_gro(FIXTURE)).unwrap();
     let before = d.clone();
     let resolved = d
         .with_elements(&[Element::BE, Element::CE, Element::FE])
@@ -61,7 +61,7 @@ fn supplied_elements_resolve_two_letter_species_on_independent_copy() {
 }
 #[test]
 fn ca_is_not_silently_assumed_carbon_or_calcium() {
-    let d = parse_gro(&frame(&row("CA", 3, false), "1 1 1")).unwrap();
+    let d = diagnostic(parse_gro(&frame(&row("CA", 3, false), "1 1 1"))).unwrap();
     assert_eq!(d.atoms[0].element, None);
     assert_eq!(
         d.with_elements(&[Element::C]).unwrap().atoms[0].element,
@@ -75,7 +75,7 @@ fn ca_is_not_silently_assumed_carbon_or_calcium() {
 #[test]
 fn positive_decimal_precision_is_inferred_from_adjacent_decimal_points() {
     for precision in 2..=12 {
-        let d = parse_gro(&frame(&row("CA", precision, false), "1 2 3")).unwrap();
+        let d = diagnostic(parse_gro(&frame(&row("CA", precision, false), "1 2 3"))).unwrap();
         assert_eq!(d.atoms[0].position_nm, [-12.25, 0.5, 4.75]);
         assert_eq!(d.atoms[0].velocity_nm_per_ps, None);
         assert_eq!(d.atoms[0].residue_number, 99999);
@@ -85,20 +85,24 @@ fn positive_decimal_precision_is_inferred_from_adjacent_decimal_points() {
 #[test]
 fn optional_velocities_keep_nm_per_ps_without_unit_rescaling() {
     for precision in 2..=8 {
-        let d = parse_gro(&frame(&row("OW", precision, true), "0 0 0")).unwrap();
+        let d = diagnostic(parse_gro(&frame(&row("OW", precision, true), "0 0 0"))).unwrap();
         let velocity = d.atoms[0].velocity_nm_per_ps.unwrap();
         assert_eq!(velocity, [-0.125, 0.25, 0.5]);
     }
 }
 #[test]
 fn nine_box_values_map_to_row_vectors_in_documented_order() {
-    let d = parse_gro(&frame(&row("CA", 3, false), "1 2 3 0 0 0.4 0 0.5 0.6")).unwrap();
+    let d = diagnostic(parse_gro(&frame(
+        &row("CA", 3, false),
+        "1 2 3 0 0 0.4 0 0.5 0.6",
+    )))
+    .unwrap();
     assert_eq!(
         d.box_vectors_nm,
         [[1.0, 0.0, 0.0], [0.4, 2.0, 0.0], [0.5, 0.6, 3.0]]
     );
     assert_eq!(d.box_values_nm.len(), 9);
-    let d = parse_gro(&frame(&row("CA", 3, false), "1 2 3")).unwrap();
+    let d = diagnostic(parse_gro(&frame(&row("CA", 3, false), "1 2 3"))).unwrap();
     assert_eq!(
         d.box_vectors_nm,
         [[1.0, 0.0, 0.0], [0.0, 2.0, 0.0], [0.0, 0.0, 3.0]]
@@ -108,7 +112,7 @@ fn nine_box_values_map_to_row_vectors_in_documented_order() {
 #[test]
 fn zero_box_does_not_invent_a_periodic_cell_and_empty_frame_is_retained() {
     let text = "\n0\n0 0 0\n";
-    let d = parse_gro(text).unwrap();
+    let d = diagnostic(parse_gro(text)).unwrap();
     assert!(d.atoms.is_empty());
     assert_eq!(d.title, "");
     assert_eq!(d.box_vectors_nm, [[0.0; 3]; 3]);
@@ -120,7 +124,7 @@ fn crlf_unicode_title_and_trailing_blank_lines_keep_exact_source() {
         .replace("synthetic", "構造 t= 2.5")
         .replace('\n', "\r\n")
         + "\r\n";
-    let d = parse_gro(&text).unwrap();
+    let d = diagnostic(parse_gro(&text)).unwrap();
     assert_eq!(d.source_text, text);
     assert_eq!(d.title, "構造 t= 2.5");
 }
@@ -131,7 +135,7 @@ fn wrapped_identifiers_are_literal_not_unique_row_keys() {
         row("CA", 3, false),
         row("CA", 3, false)
     );
-    let d = parse_gro(&text).unwrap();
+    let d = diagnostic(parse_gro(&text)).unwrap();
     assert_eq!(d.atoms.len(), 2);
     assert_eq!(d.atoms[0], d.atoms[1]);
 }
@@ -139,7 +143,7 @@ fn wrapped_identifiers_are_literal_not_unique_row_keys() {
 fn additional_frames_and_nonblank_trailing_data_are_rejected() {
     for tail in [FIXTURE, "extra\n"] {
         assert!(matches!(
-            parse_gro(&(FIXTURE.to_owned() + tail)),
+            diagnostic(parse_gro(&(FIXTURE.to_owned() + tail))),
             Err(GroError::TrailingData { .. })
         ));
     }
@@ -155,7 +159,7 @@ fn malformed_short_nonascii_or_name_fields_fail_without_panics() {
         good.replacen("    0", "   -1", 1),
     ];
     for r in variants {
-        assert!(parse_gro(&frame(&r, "1 1 1")).is_err(), "{r}");
+        assert!(diagnostic(parse_gro(&frame(&r, "1 1 1"))).is_err(), "{r}");
     }
 }
 #[test]
@@ -166,10 +170,10 @@ fn malformed_decimal_precision_partial_velocities_and_bad_box_fail() {
         good.replacen("-12.250", "-12e250", 1),
         good.replacen("0.500", "0..00", 1),
     ] {
-        assert!(parse_gro(&frame(&r, "1 1 1")).is_err(), "{r}");
+        assert!(diagnostic(parse_gro(&frame(&r, "1 1 1"))).is_err(), "{r}");
     }
     for b in ["1 2", "1 2 3 4", "NaN 1 1", "1 inf 1", "1e999 1 1"] {
-        assert!(parse_gro(&frame(&row("CA", 3, false), b)).is_err());
+        assert!(diagnostic(parse_gro(&frame(&row("CA", 3, false), b))).is_err());
     }
 }
 #[test]
@@ -182,7 +186,7 @@ fn declared_counts_and_missing_lines_fail_before_large_reservations() {
         "title\n2000000\n0 0 0\n",
         "title\n1\n",
     ] {
-        assert!(parse_gro(text).is_err());
+        assert!(diagnostic(parse_gro(text)).is_err());
     }
 }
 #[test]
@@ -192,7 +196,7 @@ fn input_atom_and_line_limits_are_enforced() {
         ..Default::default()
     };
     assert!(matches!(
-        parse_gro_with_limits(FIXTURE, &limits),
+        diagnostic(parse_gro_with_limits(FIXTURE, &limits)),
         Err(GroError::InputTooLarge { .. })
     ));
     let limits = GroParseLimits {
@@ -200,7 +204,7 @@ fn input_atom_and_line_limits_are_enforced() {
         ..Default::default()
     };
     assert!(matches!(
-        parse_gro_with_limits(FIXTURE, &limits),
+        diagnostic(parse_gro_with_limits(FIXTURE, &limits)),
         Err(GroError::TooManyAtoms { .. })
     ));
     let limits = GroParseLimits {
@@ -208,7 +212,7 @@ fn input_atom_and_line_limits_are_enforced() {
         ..Default::default()
     };
     assert!(matches!(
-        parse_gro_with_limits(FIXTURE, &limits),
+        diagnostic(parse_gro_with_limits(FIXTURE, &limits)),
         Err(GroError::LineTooLong { line: 1, .. })
     ));
 }
@@ -216,6 +220,10 @@ fn input_atom_and_line_limits_are_enforced() {
 #[test]
 fn one_decimal_coordinate_fields_are_supported() {
     let r = format!("{:5}{:<5}{:>5}{:5}  -1.2   0.5   4.8", 1, "ALA", "CA", 1);
-    let d = parse_gro(&frame(&r, "1 1 1")).unwrap();
+    let d = diagnostic(parse_gro(&frame(&r, "1 1 1"))).unwrap();
     assert_eq!(d.atoms[0].position_nm, [-1.2, 0.5, 4.8]);
 }
+
+#[path = "support/upstream_diagnostics.rs"]
+mod upstream_diagnostics;
+use upstream_diagnostics::diagnostic;

@@ -6,6 +6,8 @@ use pyo3::prelude::*;
 use pyo3::types::PyDict;
 use std::sync::Arc;
 
+mod cjson;
+use cjson::*;
 mod cif;
 use cif::*;
 mod cdjson;
@@ -85,6 +87,27 @@ pub(crate) fn flat_to_coords3d(coords: &[[f64; 3]]) -> chematic_3d::Coords3D {
             .map(|c| chematic_3d::Point3::new(c[0], c[1], c[2]))
             .collect(),
     }
+}
+
+/// Convert caller-provided coordinates after validating the public Python
+/// boundary.  Most 3D kernels index coordinates by molecule atom index, so a
+/// short vector would otherwise surface as a Rust panic instead of a Python
+/// input error.
+pub(crate) fn checked_coords3d(
+    mol: &chematic_core::Molecule,
+    coords: &[[f64; 3]],
+) -> PyResult<chematic_3d::Coords3D> {
+    if coords.len() != mol.atom_count() {
+        return Err(PyValueError::new_err(format!(
+            "expected {} coordinates, got {}",
+            mol.atom_count(),
+            coords.len()
+        )));
+    }
+    if coords.iter().flatten().any(|value| !value.is_finite()) {
+        return Err(PyValueError::new_err("coordinates must all be finite"));
+    }
+    Ok(flat_to_coords3d(coords))
 }
 
 // ---------------------------------------------------------------------------
@@ -561,35 +584,6 @@ fn from_mrv_block(mrv_str: &str) -> PyResult<Mol> {
             props: Default::default(),
         })
         .map_err(|e| PyValueError::new_err(e.to_string()))
-}
-
-/// Parse a ChemicalJSON (.cjson) string.
-///
-/// Returns ``(mol, coords)`` where ``coords`` is a list of ``[x, y, z]``
-/// coordinate triples (Å), one per heavy atom.  ``coords`` is empty when
-/// the file has no ``atoms.coords.3d`` field.
-///
-/// ChemicalJSON is the native format of Avogadro 2 and the MolSSI
-/// Open Chemistry toolkit.
-///
-/// Raises ``ValueError`` on parse failure.
-///
-///     mol, coords = chematic.from_cjson(open("mol.cjson").read())
-///     print(mol.smiles)
-///     # Round-trip:
-///     open("out.cjson", "w").write(mol.to_cjson(coords))
-#[pyfunction]
-fn from_cjson(cjson_str: &str) -> PyResult<(Mol, Vec<Vec<f64>>)> {
-    let (mol, coords) =
-        chematic_mol::parse_cjson(cjson_str).map_err(|e| PyValueError::new_err(e.to_string()))?;
-    let py_coords = coords.iter().map(|&(x, y, z)| vec![x, y, z]).collect();
-    Ok((
-        Mol {
-            inner: Arc::new(mol),
-            props: Default::default(),
-        },
-        py_coords,
-    ))
 }
 
 /// Parse a MolJSON string into a ``Mol`` object.

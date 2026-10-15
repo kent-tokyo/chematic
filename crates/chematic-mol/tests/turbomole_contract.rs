@@ -17,7 +17,7 @@ fn triple(a: [f64; 3], b: [f64; 3]) {
 
 #[test]
 fn preserves_oriented_left_handed_lattice_and_atom_order() {
-    let g = parse_turbomole(PERIODIC).unwrap();
+    let g = diagnostic(parse_turbomole(PERIODIC)).unwrap();
     assert_eq!(
         g.lattice_angstrom.unwrap(),
         [[4., 1., 0.], [-1., 5., 2.], [1., 0., -6.]]
@@ -32,10 +32,10 @@ fn preserves_oriented_left_handed_lattice_and_atom_order() {
 }
 #[test]
 fn write_read_keeps_all_coordinates_flags_and_lattice_components() {
-    let g = parse_turbomole(PERIODIC).unwrap();
-    let text = write_turbomole(&g).unwrap();
+    let g = diagnostic(parse_turbomole(PERIODIC)).unwrap();
+    let text = diagnostic(write_turbomole(&g)).unwrap();
     assert!(text.starts_with("$periodic 3\n$lattice\n"));
-    let back = parse_turbomole(&text).unwrap();
+    let back = diagnostic(parse_turbomole(&text)).unwrap();
     for (a, b) in g.atoms.iter().zip(&back.atoms) {
         assert_eq!(a.element, b.element);
         assert_eq!(a.frozen, b.frozen);
@@ -53,20 +53,20 @@ fn write_read_keeps_all_coordinates_flags_and_lattice_components() {
 #[test]
 fn fractional_uses_rows_without_wrapping_or_basis_rotation() {
     let text = PERIODIC.replace("$coord angs", "$coord frac");
-    let g = parse_turbomole(&text).unwrap();
+    let g = diagnostic(parse_turbomole(&text)).unwrap();
     triple(g.atoms[0].position_angstrom, [9., -9., -22.]);
     triple(g.atoms[1].position_angstrom, [-27., 21., 46.]);
 }
 #[test]
 fn default_bohr_and_fortran_exponents() {
-    let g = parse_turbomole("$coord\n 1D0 -2d0 3e0 si\n$end\n").unwrap();
+    let g = diagnostic(parse_turbomole("$coord\n 1D0 -2d0 3e0 si\n$end\n")).unwrap();
     triple(g.atoms[0].position_angstrom, [BOHR, -2. * BOHR, 3. * BOHR]);
     assert_eq!(g.periodicity(), 0);
 }
 #[test]
 fn triclinic_cell_reuses_validated_unit_cell_conversion() {
     let text = "$coord frac\n 0.5 0.25 -0.5 c\n$periodic 3\n$cell angs\n 4 5 6 90 60 90\n$end\n";
-    let g = parse_turbomole(text).unwrap();
+    let g = diagnostic(parse_turbomole(text)).unwrap();
     triple(
         g.atoms[0].position_angstrom,
         [0.5, 1.25, -3. * (3.0f64).sqrt() / 2.],
@@ -75,7 +75,7 @@ fn triclinic_cell_reuses_validated_unit_cell_conversion() {
 #[test]
 fn header_order_and_comment_line_endings_are_independent() {
     let text = "# synthetic\r\n$coord angs # units\r\n 0 0 0 SI f # fixed\r\n$lattice angs\r\n 1 0 0\r\n 0 2 0\r\n 0 0 3\r\n$periodic 3\r\n$end\r\n# tail\r\n";
-    let g = parse_turbomole(text).unwrap();
+    let g = diagnostic(parse_turbomole(text)).unwrap();
     assert_eq!(g.source_text, text);
     assert!(g.atoms[0].frozen);
     assert_eq!(g.periodicity(), 3);
@@ -105,7 +105,10 @@ fn rejects_ambiguous_or_unsupported_documents() {
         "$coord\n0 0 0 🧪\n$end",
     ];
     for text in cases {
-        assert!(parse_turbomole(text).is_err(), "accepted {text}");
+        assert!(
+            diagnostic(parse_turbomole(text)).is_err(),
+            "accepted {text}"
+        );
     }
 }
 #[test]
@@ -118,15 +121,23 @@ fn refuses_singular_near_singular_and_nonfinite_cells() {
         "1e300 0 0\n0 1e300 0\n0 0 1e300",
     ] {
         let text = format!("$periodic 3\n$lattice angs\n{rows}\n$coord\n0 0 0 c\n$end");
-        assert!(parse_turbomole(&text).is_err(), "{rows}");
+        assert!(diagnostic(parse_turbomole(&text)).is_err(), "{rows}");
     }
 }
 #[test]
 fn refuses_missing_periodicity_and_conflicting_cell_forms() {
-    assert!(parse_turbomole(&PERIODIC.replace("$periodic 3\n", "")).is_err());
-    assert!(parse_turbomole(&PERIODIC.replace("$periodic 3", "$periodic 0")).is_err());
+    assert!(diagnostic(parse_turbomole(&PERIODIC.replace("$periodic 3\n", ""))).is_err());
     assert!(
-        parse_turbomole(&PERIODIC.replace("$end", "$cell angs\n4 5 6 90 90 90\n$end")).is_err()
+        diagnostic(parse_turbomole(
+            &PERIODIC.replace("$periodic 3", "$periodic 0")
+        ))
+        .is_err()
+    );
+    assert!(
+        diagnostic(parse_turbomole(
+            &PERIODIC.replace("$end", "$cell angs\n4 5 6 90 90 90\n$end")
+        ))
+        .is_err()
     );
 }
 #[test]
@@ -138,7 +149,7 @@ fn cell_width_angles_and_lengths_are_checked() {
         "-4 5 6 90 90 90",
     ] {
         let text = format!("$coord\n0 0 0 c\n$periodic 3\n$cell\n{row}\n$end");
-        assert!(parse_turbomole(&text).is_err());
+        assert!(diagnostic(parse_turbomole(&text)).is_err());
     }
 }
 #[test]
@@ -158,40 +169,40 @@ fn input_line_and_atom_limits_are_applied() {
             ..base
         },
     ] {
-        assert!(parse_turbomole_with_limits(PERIODIC, &limits).is_err());
+        assert!(diagnostic(parse_turbomole_with_limits(PERIODIC, &limits)).is_err());
     }
     assert!(
-        parse_turbomole_with_limits(
+        diagnostic(parse_turbomole_with_limits(
             PERIODIC,
             &TurbomoleParseLimits {
                 max_atoms: 2,
                 ..base
             }
-        )
+        ))
         .is_ok()
     );
 }
 #[test]
 fn writer_validates_mutated_geometry_instead_of_replaying_source() {
-    let mut g = parse_turbomole(PERIODIC).unwrap();
+    let mut g = diagnostic(parse_turbomole(PERIODIC)).unwrap();
     g.atoms[0].position_angstrom[0] = 8.0;
     close(
-        parse_turbomole(&write_turbomole(&g).unwrap())
+        diagnostic(parse_turbomole(&diagnostic(write_turbomole(&g)).unwrap()))
             .unwrap()
             .atoms[0]
             .position_angstrom[0],
         8.,
     );
     g.atoms[0].position_angstrom[0] = f64::NAN;
-    assert!(write_turbomole(&g).is_err());
+    assert!(diagnostic(write_turbomole(&g)).is_err());
     g.atoms.clear();
-    assert!(write_turbomole(&g).is_err());
+    assert!(diagnostic(write_turbomole(&g)).is_err());
 }
 #[test]
 fn writer_refuses_unrepresentable_bohr_coordinate() {
-    let mut g = parse_turbomole(PERIODIC).unwrap();
+    let mut g = diagnostic(parse_turbomole(PERIODIC)).unwrap();
     g.atoms[0].position_angstrom[0] = f64::MAX;
-    assert!(write_turbomole(&g).is_err());
+    assert!(diagnostic(write_turbomole(&g)).is_err());
 }
 #[test]
 fn row_field_counts_and_external_cell_options_are_checked() {
@@ -202,6 +213,10 @@ fn row_field_counts_and_external_cell_options_are_checked() {
         ("1 0 -6\n", ""),
         ("$periodic 3", "$periodic 3 extra"),
     ] {
-        assert!(parse_turbomole(&PERIODIC.replace(from, to)).is_err());
+        assert!(diagnostic(parse_turbomole(&PERIODIC.replace(from, to))).is_err());
     }
 }
+
+#[path = "support/upstream_diagnostics.rs"]
+mod upstream_diagnostics;
+use upstream_diagnostics::diagnostic;

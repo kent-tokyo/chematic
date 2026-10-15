@@ -514,18 +514,18 @@ impl Mol {
     ///
     /// ``coords``: ``[[x,y,z], ...]`` list (Å), one per heavy atom.
     /// Returns a flat list of floats (shape/symmetry descriptors).
-    fn whim(&self, coords: Vec<[f64; 3]>) -> Vec<f64> {
-        let c3d = flat_to_coords3d(&coords);
-        chematic_3d::whim_descriptors(&self.inner, &c3d)
+    fn whim(&self, coords: Vec<[f64; 3]>) -> PyResult<Vec<f64>> {
+        let c3d = checked_coords3d(&self.inner, &coords)?;
+        Ok(chematic_3d::whim_descriptors(&self.inner, &c3d))
     }
 
     /// GETAWAY 3D descriptors (Consonni et al. 2002).
     ///
     /// ``coords``: ``[[x,y,z], ...]`` list (Å), one per heavy atom.
     /// Returns a flat list of floats.
-    fn getaway(&self, coords: Vec<[f64; 3]>) -> Vec<f64> {
-        let c3d = flat_to_coords3d(&coords);
-        chematic_3d::getaway_descriptors(&self.inner, &c3d)
+    fn getaway(&self, coords: Vec<[f64; 3]>) -> PyResult<Vec<f64>> {
+        let c3d = checked_coords3d(&self.inner, &coords)?;
+        Ok(chematic_3d::getaway_descriptors(&self.inner, &c3d))
     }
 
     /// Electronegativity-equalization-method partial charges from 3D coordinates.
@@ -537,7 +537,7 @@ impl Mol {
     /// The molecule must contain explicit hydrogens when hydrogen charges are
     /// wanted, and ``coords`` must contain one row per explicit atom.
     fn eem_charges(&self, coords: Vec<[f64; 3]>) -> PyResult<Vec<f64>> {
-        let c3d = flat_to_coords3d(&coords);
+        let c3d = checked_coords3d(&self.inner, &coords)?;
         chematic_3d::eem_charges(&self.inner, &c3d)
             .map_err(|error| PyValueError::new_err(error.to_string()))
     }
@@ -545,9 +545,9 @@ impl Mol {
     /// 3D autocorrelation descriptors.
     ///
     /// ``coords``: ``[[x,y,z], ...]`` list (Å), one per heavy atom.
-    fn autocorr_3d(&self, coords: Vec<[f64; 3]>) -> Vec<f64> {
-        let c3d = flat_to_coords3d(&coords);
-        chematic_3d::autocorr_3d(&self.inner, &c3d)
+    fn autocorr_3d(&self, coords: Vec<[f64; 3]>) -> PyResult<Vec<f64>> {
+        let c3d = checked_coords3d(&self.inner, &coords)?;
+        Ok(chematic_3d::autocorr_3d(&self.inner, &c3d))
     }
 
     // -----------------------------------------------------------------------
@@ -557,18 +557,18 @@ impl Mol {
     /// Write this molecule's 3D structure to PDB format.
     ///
     /// ``coords``: ``[[x,y,z], ...]`` list (Å), one per heavy atom.
-    fn to_pdb(&self, coords: Vec<[f64; 3]>) -> String {
-        let c3d = flat_to_coords3d(&coords);
-        chematic_3d::write_pdb(&self.inner, &c3d)
+    fn to_pdb(&self, coords: Vec<[f64; 3]>) -> PyResult<String> {
+        let c3d = checked_coords3d(&self.inner, &coords)?;
+        Ok(chematic_3d::write_pdb(&self.inner, &c3d))
     }
 
     /// Write this molecule's 3D structure to XYZ format.
     ///
     /// ``coords``: ``[[x,y,z], ...]`` list (Å), one per heavy atom.
     #[pyo3(signature = (coords, comment = ""))]
-    fn to_xyz(&self, coords: Vec<[f64; 3]>, comment: &str) -> String {
-        let c3d = flat_to_coords3d(&coords);
-        chematic_3d::write_xyz(&self.inner, &c3d, comment)
+    fn to_xyz(&self, coords: Vec<[f64; 3]>, comment: &str) -> PyResult<String> {
+        let c3d = checked_coords3d(&self.inner, &coords)?;
+        Ok(chematic_3d::write_xyz(&self.inner, &c3d, comment))
     }
 
     // -----------------------------------------------------------------------

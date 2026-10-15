@@ -4,7 +4,7 @@ use chematic_smarts::{
 use chematic_smiles::parse;
 
 fn matches(pattern: &str, target: &str, chirality: bool) -> bool {
-    let query = merge_query_hydrogens(&parse_smarts(pattern).unwrap()).unwrap();
+    let query = diagnostic(merge_query_hydrogens(&parse_smarts(pattern).unwrap())).unwrap();
     !find_matches_with_config(
         &query,
         &parse(target).unwrap(),
@@ -74,10 +74,14 @@ fn isotopic_mapped_charged_and_complex_h_are_retained() {
         "[2H]C", "[H:7]C", "[H+]C", "[#1;D1]C", "[H]~C", "[H]=C", "[H][H]", "[H][H+]", "[H]",
     ] {
         let original = parse_smarts(q).unwrap();
-        assert_eq!(merge_query_hydrogens(&original).unwrap(), original, "{q}");
+        assert_eq!(
+            diagnostic(merge_query_hydrogens(&original)).unwrap(),
+            original,
+            "{q}"
+        );
     }
     assert_eq!(
-        merge_query_hydrogens(&parse_smarts("[#1]C").unwrap())
+        diagnostic(merge_query_hydrogens(&parse_smarts("[#1]C").unwrap()))
             .unwrap()
             .atom_count(),
         1
@@ -88,28 +92,28 @@ fn isotopic_mapped_charged_and_complex_h_are_retained() {
 fn output_is_idempotent_and_input_is_immutable() {
     let input = parse_smarts("[H][C@](C)(N)C(=O)O").unwrap();
     let copy = input.clone();
-    let output = merge_query_hydrogens(&input).unwrap();
+    let output = diagnostic(merge_query_hydrogens(&input)).unwrap();
     assert_eq!(input, copy);
     assert_eq!(output.atom_count(), input.atom_count() - 1);
-    assert_eq!(merge_query_hydrogens(&output).unwrap(), output);
+    assert_eq!(diagnostic(merge_query_hydrogens(&output)).unwrap(), output);
 }
 
 #[test]
 fn unsafe_partial_frames_recursive_queries_and_bad_graphs_fail() {
     for q in ["[C@]([H])(N)C", "[C@]([H])([H])(N)C"] {
         assert!(matches!(
-            merge_query_hydrogens(&parse_smarts(q).unwrap()),
+            diagnostic(merge_query_hydrogens(&parse_smarts(q).unwrap())),
             Err(QueryHydrogenError::UnsupportedStereo { .. })
         ));
     }
     assert_eq!(
-        merge_query_hydrogens(&parse_smarts("[$(C[H])]").unwrap()),
+        diagnostic(merge_query_hydrogens(&parse_smarts("[$(C[H])]").unwrap())),
         Err(QueryHydrogenError::RecursiveQuery)
     );
     let mut q = parse_smarts("C[H]").unwrap();
     q.adj[0][0].1 = 99;
     assert_eq!(
-        merge_query_hydrogens(&q),
+        diagnostic(merge_query_hydrogens(&q)),
         Err(QueryHydrogenError::InvalidGraph)
     );
 }
@@ -146,7 +150,7 @@ fn limits_are_checked_before_cloning_invalid_public_queries() {
         graph.add_atom(AtomQuery::Primitive(AtomPrimitive::Wildcard));
     }
     assert_eq!(
-        merge_query_hydrogens(&graph),
+        diagnostic(merge_query_hydrogens(&graph)),
         Err(QueryHydrogenError::ResourceLimit)
     );
     let mut expr = AtomQuery::Primitive(AtomPrimitive::Wildcard);
@@ -156,7 +160,7 @@ fn limits_are_checked_before_cloning_invalid_public_queries() {
     let mut graph = QueryMolecule::new();
     graph.add_atom(expr);
     assert_eq!(
-        merge_query_hydrogens(&graph),
+        diagnostic(merge_query_hydrogens(&graph)),
         Err(QueryHydrogenError::ResourceLimit)
     );
     let mut graph = parse_smarts("CC").unwrap();
@@ -166,7 +170,7 @@ fn limits_are_checked_before_cloning_invalid_public_queries() {
     }
     graph.bonds[0].query = expr;
     assert_eq!(
-        merge_query_hydrogens(&graph),
+        diagnostic(merge_query_hydrogens(&graph)),
         Err(QueryHydrogenError::ResourceLimit)
     );
 }
@@ -174,10 +178,14 @@ fn limits_are_checked_before_cloning_invalid_public_queries() {
 #[test]
 fn surviving_atom_maps_and_non_h_bond_queries_are_preserved() {
     let input = parse_smarts("[C:9]([H])~[N:2]").unwrap();
-    let output = merge_query_hydrogens(&input).unwrap();
+    let output = diagnostic(merge_query_hydrogens(&input)).unwrap();
     assert_eq!(
         output.atoms.iter().map(|a| a.atom_map).collect::<Vec<_>>(),
         [Some(9), Some(2)]
     );
     assert_eq!(output.bonds[0].query, input.bonds[1].query);
 }
+
+#[path = "support/upstream_diagnostics.rs"]
+mod upstream_diagnostics;
+use upstream_diagnostics::diagnostic;

@@ -22,7 +22,7 @@ fn key(s: &str) -> String {
 fn mixed_group_inverts_center_and_double_bond_together() {
     let m = grouped("C/C=C/[C@H](O)CC", &[3], &[1]);
     let original = canonical_smiles(&m);
-    let out = invert_stereo_group(&m, 0).unwrap();
+    let out = diagnostic(invert_stereo_group(&m, 0)).unwrap();
     assert_eq!(canonical_smiles(&out), key("C/C=C\\[C@@H](O)CC"));
     assert_eq!(out.stereo_groups(), m.stereo_groups());
     assert_eq!(
@@ -40,7 +40,7 @@ fn shared_marker_solver_preserves_unselected_conjugated_bond_geometry() {
     ] {
         let m = grouped("C/C=C/C=C/C", &[], &bonds);
         assert_eq!(
-            canonical_smiles(&invert_stereo_group(&m, 0).unwrap()),
+            canonical_smiles(&diagnostic(invert_stereo_group(&m, 0)).unwrap()),
             key(expected)
         );
     }
@@ -53,7 +53,11 @@ fn two_applications_restore_configuration_for_atom_bond_and_mixed_groups() {
         ("C/C=C/[C@H](O)CC", vec![3], vec![1]),
     ] {
         let m = grouped(s, &a, &b);
-        let twice = invert_stereo_group(&invert_stereo_group(&m, 0).unwrap(), 0).unwrap();
+        let twice = diagnostic(invert_stereo_group(
+            &diagnostic(invert_stereo_group(&m, 0)).unwrap(),
+            0,
+        ))
+        .unwrap();
         assert_eq!(canonical_smiles(&twice), canonical_smiles(&m));
         assert_eq!(twice.stereo_groups(), m.stereo_groups());
     }
@@ -73,7 +77,7 @@ fn unselected_center_and_group_are_preserved() {
             ),
         ])
         .unwrap();
-    let out = invert_stereo_group(&m, 0).unwrap();
+    let out = diagnostic(invert_stereo_group(&m, 0)).unwrap();
     assert_eq!(out.atom(AtomIdx(8)).chirality, m.atom(AtomIdx(8)).chirality);
     assert_eq!(
         out.stereo_neighbor_order(AtomIdx(8)),
@@ -87,7 +91,7 @@ fn metadata_and_reference_frames_survive_while_cip_and_caches_are_cold() {
     m.set_tag(AtomIdx(0), Some(23));
     m.set_cip_code(AtomIdx(3), Some(CipCode::R));
     m.derived(DerivedSlot::Sssr, || 11u32);
-    let out = invert_stereo_group(&m, 0).unwrap();
+    let out = diagnostic(invert_stereo_group(&m, 0)).unwrap();
     assert_eq!(out.atom_tag(AtomIdx(0)), m.atom_tag(AtomIdx(0)));
     for (idx, _) in m.atoms() {
         assert_eq!(out.stereo_neighbor_order(idx), m.stereo_neighbor_order(idx));
@@ -104,21 +108,24 @@ fn metadata_and_reference_frames_survive_while_cip_and_caches_are_cold() {
 fn absolute_and_out_of_range_groups_have_no_relative_alternative() {
     let mut m = grouped("F[C@](Cl)(Br)I", &[1], &[]);
     assert!(matches!(
-        invert_stereo_group(&m, 1),
+        diagnostic(invert_stereo_group(&m, 1)),
         Err(Error::GroupIndex { .. })
     ));
     m.set_stereo_groups(vec![StereoGroup::new(
         StereoGroupKind::Absolute,
         vec![AtomIdx(1)],
     )]);
-    assert_eq!(invert_stereo_group(&m, 0).err(), Some(Error::AbsoluteGroup));
+    assert_eq!(
+        diagnostic(invert_stereo_group(&m, 0)).err(),
+        Some(Error::AbsoluteGroup)
+    );
 }
 #[test]
 fn unspecified_or_non_tetrahedral_atoms_are_refused() {
     for (s, idx) in [("FC(Cl)(Br)I", 1), ("Cl[Pt@SP1](Cl)(N)N", 1)] {
         let m = grouped(s, &[idx], &[]);
         assert_eq!(
-            invert_stereo_group(&m, 0).err(),
+            diagnostic(invert_stereo_group(&m, 0)).err(),
             Some(Error::UnsupportedAtom(AtomIdx(idx)))
         );
     }
@@ -129,7 +136,7 @@ fn incomplete_or_mismatched_tetrahedral_frames_are_refused() {
         let mut m = grouped("F[C@](Cl)(Br)I", &[1], &[]);
         m.set_stereo_neighbor_order(AtomIdx(1), frame);
         assert_eq!(
-            invert_stereo_group(&m, 0).err(),
+            diagnostic(invert_stereo_group(&m, 0)).err(),
             Some(Error::IncompleteFrame(AtomIdx(1)))
         );
     }
@@ -142,7 +149,7 @@ fn unsupported_unspecified_and_small_ring_bonds_are_refused() {
         ("C1/C=C/CCCC1", 1, Error::SmallRingBond(BondIdx(1))),
     ] {
         assert_eq!(
-            invert_stereo_group(&grouped(s, &[], &[b]), 0).err(),
+            diagnostic(invert_stereo_group(&grouped(s, &[], &[b]), 0)).err(),
             Some(expected)
         );
     }
@@ -155,7 +162,7 @@ fn invalid_stored_group_references_fail_before_graph_access() {
         vec![BondIdx(99)],
     )]);
     assert!(matches!(
-        invert_stereo_group(&m, 0),
+        diagnostic(invert_stereo_group(&m, 0)),
         Err(Error::InvalidGroups(_))
     ));
 }
@@ -165,7 +172,7 @@ fn unsupported_stored_directions_fail_atomically() {
     m.set_bond_direction(BondIdx(0), BondOrder::Up);
     let before = m.bonds().map(|(_, b)| b.clone()).collect::<Vec<_>>();
     assert_eq!(
-        invert_stereo_group(&m, 0).err(),
+        diagnostic(invert_stereo_group(&m, 0)).err(),
         Some(Error::UnrepresentableDirections)
     );
     assert_eq!(
@@ -182,7 +189,7 @@ fn or_groups_use_the_same_full_alternative_and_explicit_h_frames_work() {
             vec![],
         )])
         .unwrap();
-    let out = invert_stereo_group(&m, 0).unwrap();
+    let out = diagnostic(invert_stereo_group(&m, 0)).unwrap();
     assert_ne!(out.atom(AtomIdx(1)).chirality, m.atom(AtomIdx(1)).chirality);
     assert_eq!(out.stereo_groups()[0].kind, StereoGroupKind::Or(4));
 }
@@ -190,9 +197,9 @@ fn or_groups_use_the_same_full_alternative_and_explicit_h_frames_work() {
 #[test]
 fn eight_membered_ring_is_not_rejected_as_a_small_ring() {
     let m = grouped("C1/C=C/CCCCC1", &[], &[1]);
-    let out = invert_stereo_group(&m, 0).unwrap();
+    let out = diagnostic(invert_stereo_group(&m, 0)).unwrap();
     assert_eq!(
-        canonical_smiles(&invert_stereo_group(&out, 0).unwrap()),
+        canonical_smiles(&diagnostic(invert_stereo_group(&out, 0)).unwrap()),
         canonical_smiles(&m)
     );
 }
@@ -201,7 +208,7 @@ fn conflicting_markers_are_rejected_without_repairing_input() {
     let mut m = grouped("F/C(Cl)=C(/Br)I", &[], &[2]);
     m.set_bond_order(BondIdx(1), BondOrder::Down);
     assert_eq!(
-        invert_stereo_group(&m, 0).err(),
+        diagnostic(invert_stereo_group(&m, 0)).err(),
         Some(Error::ConflictingDirections)
     );
     assert_eq!(m.bond(BondIdx(1)).order, BondOrder::Down);
@@ -214,11 +221,15 @@ fn legacy_duplicate_atom_membership_is_preserved_and_flipped_once() {
         kind: StereoGroupKind::And(1),
         atom_indices: vec![AtomIdx(1), AtomIdx(1)],
     }]);
-    let out = invert_stereo_group(&m, 0).unwrap();
+    let out = diagnostic(invert_stereo_group(&m, 0)).unwrap();
     assert_eq!(out.stereo_groups(), m.stereo_groups());
     assert_ne!(out.atom(AtomIdx(1)).chirality, m.atom(AtomIdx(1)).chirality);
     assert_eq!(
-        canonical_smiles(&invert_stereo_group(&out, 0).unwrap()),
+        canonical_smiles(&diagnostic(invert_stereo_group(&out, 0)).unwrap()),
         canonical_smiles(&m)
     );
 }
+
+#[path = "support/upstream_diagnostics.rs"]
+mod upstream_diagnostics;
+use upstream_diagnostics::diagnostic;

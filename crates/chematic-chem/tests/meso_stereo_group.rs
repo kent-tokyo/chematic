@@ -23,7 +23,7 @@ fn meso() -> Molecule {
 #[test]
 fn atom_only_meso_group_becomes_absolute_with_a_witness() {
     let m = meso();
-    let r = reduce(&m, 0, 1000000).unwrap();
+    let r = diagnostic(reduce(&m, 0, 1000000)).unwrap();
     assert!(r.reduced);
     assert_eq!(r.checked_pairs, 1);
     assert_eq!(r.witnesses.len(), 1);
@@ -43,7 +43,7 @@ fn atom_only_meso_group_becomes_absolute_with_a_witness() {
 #[test]
 fn mixed_atom_and_bond_group_preserves_its_whole_correlation() {
     let m = grouped("C/C=C/[C@H](C)/C=C\\C", &[3], &[1, 5]);
-    let r = reduce(&m, 0, 1000000).unwrap();
+    let r = diagnostic(reduce(&m, 0, 1000000)).unwrap();
     assert!(r.reduced);
     assert_eq!(
         r.molecule.stereo_group_bond_indices(0).unwrap(),
@@ -58,7 +58,7 @@ fn true_racemate_and_center_only_alternative_are_retained() {
         grouped("C[C@H](O)[C@@H](O)C", &[1, 3], &[]),
         grouped("C/C=C/[C@H](C)/C=C\\C", &[3], &[]),
     ] {
-        let r = reduce(&m, 0, 1000000).unwrap();
+        let r = diagnostic(reduce(&m, 0, 1000000)).unwrap();
         assert!(!r.reduced);
         assert_eq!(r.molecule.stereo_groups(), m.stereo_groups());
         assert!(r.witnesses.is_empty());
@@ -68,7 +68,7 @@ fn true_racemate_and_center_only_alternative_are_retained() {
 fn bond_only_group_reduces_only_when_geometry_maps() {
     for (s, reduced) in [("C/C=C/C=C\\C", true), ("C/C=C/C=C/C", false)] {
         let m = grouped(s, &[], &[1, 3]);
-        assert_eq!(reduce(&m, 0, 1000000).unwrap().reduced, reduced);
+        assert_eq!(diagnostic(reduce(&m, 0, 1000000)).unwrap().reduced, reduced);
     }
 }
 #[test]
@@ -77,7 +77,7 @@ fn or_groups_use_the_same_full_alternative_proof() {
         .unwrap()
         .with_checked_stereo_groups(vec![group(Kind::Or(7), &[1, 3], &[])])
         .unwrap();
-    assert!(reduce(&m, 0, 1000000).unwrap().reduced);
+    assert!(diagnostic(reduce(&m, 0, 1000000)).unwrap().reduced);
 }
 #[test]
 fn existing_absolute_members_are_merged_and_other_groups_remain_relative() {
@@ -89,7 +89,7 @@ fn existing_absolute_members_are_merged_and_other_groups_remain_relative() {
             group(Kind::Or(9), &[10], &[]),
         ])
         .unwrap();
-    let r = reduce(&m, 1, 1000000).unwrap();
+    let r = diagnostic(reduce(&m, 1, 1000000)).unwrap();
     assert!(r.reduced);
     assert_eq!(r.checked_pairs, 2);
     assert_eq!(
@@ -112,12 +112,12 @@ fn every_other_group_context_is_proved_with_one_shared_budget() {
         .unwrap()
         .with_checked_stereo_groups(groups)
         .unwrap();
-    let r = reduce(&m, 0, 1000000).unwrap();
+    let r = diagnostic(reduce(&m, 0, 1000000)).unwrap();
     assert!(r.reduced);
     assert_eq!(r.checked_pairs, 32);
     assert_eq!(r.witnesses.len(), 32);
     assert!(matches!(
-        reduce(&m, 0, r.search_visits - 1),
+        diagnostic(reduce(&m, 0, r.search_visits - 1)),
         Err(Error::BudgetExceeded { .. })
     ));
     assert_eq!(m.stereo_groups().len(), 6);
@@ -129,14 +129,14 @@ fn isotope_map_and_tag_distinctions_are_conservatively_preserved() {
         "[CH3:11][C@H](O)[C@H](O)[CH3:12]",
     ] {
         assert!(
-            !reduce(&grouped(s, &[1, 3], &[]), 0, 1000000)
+            !diagnostic(reduce(&grouped(s, &[1, 3], &[]), 0, 1000000))
                 .unwrap()
                 .reduced
         );
     }
     let mut m = meso();
     m.set_tag(AtomIdx(0), Some(31));
-    let r = reduce(&m, 0, 1000000).unwrap();
+    let r = diagnostic(reduce(&m, 0, 1000000)).unwrap();
     assert!(!r.reduced);
     assert_eq!(r.molecule.atom_tag(AtomIdx(0)), m.atom_tag(AtomIdx(0)));
 }
@@ -145,7 +145,7 @@ fn drawing_graph_frames_and_source_metadata_are_unchanged() {
     let mut m = meso();
     m.set_cip_code(AtomIdx(1), Some(CipCode::S));
     m.derived(DerivedSlot::Sssr, || 77u32);
-    let r = reduce(&m, 0, 1000000).unwrap();
+    let r = diagnostic(reduce(&m, 0, 1000000)).unwrap();
     assert!(r.reduced);
     for (i, a) in m.atoms() {
         assert_eq!(a.chirality, r.molecule.atom(i).chirality);
@@ -172,7 +172,7 @@ fn drawing_graph_frames_and_source_metadata_are_unchanged() {
 #[test]
 fn tiny_budget_is_unknown_and_not_a_negative_or_partial_reduction() {
     assert_eq!(
-        reduce(&meso(), 0, 1).err(),
+        diagnostic(reduce(&meso(), 0, 1)).err(),
         Some(Error::BudgetExceeded {
             visits: 1,
             limit: 1
@@ -180,7 +180,7 @@ fn tiny_budget_is_unknown_and_not_a_negative_or_partial_reduction() {
     );
     for limit in [0, 10000001, u64::MAX] {
         assert_eq!(
-            reduce(&meso(), 0, limit).err(),
+            diagnostic(reduce(&meso(), 0, limit)).err(),
             Some(Error::InvalidVisitLimit)
         );
     }
@@ -188,21 +188,24 @@ fn tiny_budget_is_unknown_and_not_a_negative_or_partial_reduction() {
 #[test]
 fn absolute_and_invalid_indices_are_refused() {
     assert!(matches!(
-        reduce(&meso(), 1, 1000000),
+        diagnostic(reduce(&meso(), 1, 1000000)),
         Err(Error::GroupIndex { .. })
     ));
     let m = parse("C[C@H](O)[C@H](O)C")
         .unwrap()
         .with_checked_stereo_groups(vec![group(Kind::Absolute, &[1, 3], &[])])
         .unwrap();
-    assert_eq!(reduce(&m, 0, 1000000).err(), Some(Error::AbsoluteGroup));
+    assert_eq!(
+        diagnostic(reduce(&m, 0, 1000000)).err(),
+        Some(Error::AbsoluteGroup)
+    );
 }
 #[test]
 fn malformed_stored_references_fail_before_graph_indexing() {
     let mut m = meso();
     m.set_stereo_groups(vec![StereoGroup::new(Kind::And(1), vec![AtomIdx(999)])]);
     assert!(matches!(
-        reduce(&m, 0, 1000000),
+        diagnostic(reduce(&m, 0, 1000000)),
         Err(Error::Alternatives(_))
     ));
 }
@@ -210,12 +213,12 @@ fn malformed_stored_references_fail_before_graph_indexing() {
 fn unassigned_tetrahedral_sites_and_unsupported_global_stereo_fail_closed() {
     let m = grouped("C[C@H](O)[C@H](O)C.FC(Cl)(Br)I", &[1, 3], &[]);
     assert_eq!(
-        reduce(&m, 0, 1000000).err(),
+        diagnostic(reduce(&m, 0, 1000000)).err(),
         Some(Error::UnspecifiedTetrahedralAtom(AtomIdx(7)))
     );
     let m = grouped("C[C@H](O)[C@H](O)C.Cl[Pt@SP1](Cl)(N)N", &[1, 3], &[]);
     assert_eq!(
-        reduce(&m, 0, 1000000).err(),
+        diagnostic(reduce(&m, 0, 1000000)).err(),
         Some(Error::UnsupportedAtom(AtomIdx(7)))
     );
 }
@@ -223,13 +226,13 @@ fn unassigned_tetrahedral_sites_and_unsupported_global_stereo_fail_closed() {
 fn unsupported_bond_semantics_and_direction_stashes_are_refused() {
     let m = grouped("C[C@H](O)[C@H](O)C.C~C", &[1, 3], &[]);
     assert!(matches!(
-        reduce(&m, 0, 1000000),
+        diagnostic(reduce(&m, 0, 1000000)),
         Err(Error::UnsupportedBond(_))
     ));
     let mut m = meso();
     m.set_bond_direction(BondIdx(0), BondOrder::Up);
     assert_eq!(
-        reduce(&m, 0, 1000000).err(),
+        diagnostic(reduce(&m, 0, 1000000)).err(),
         Some(Error::UnsupportedDirections)
     );
 }
@@ -240,7 +243,7 @@ fn unsupported_graph_sizes_fail_before_enumeration() {
         b.add_atom(Atom::new(Element::C));
     }
     assert_eq!(
-        reduce(&b.build(), 0, 1000000).err(),
+        diagnostic(reduce(&b.build(), 0, 1000000)).err(),
         Some(Error::GraphLimit)
     );
     let mut b = MoleculeBuilder::new();
@@ -251,7 +254,7 @@ fn unsupported_graph_sizes_fail_before_enumeration() {
         }
     }
     assert_eq!(
-        reduce(&b.build(), 0, 1000000).err(),
+        diagnostic(reduce(&b.build(), 0, 1000000)).err(),
         Some(Error::GraphLimit)
     );
 }
@@ -266,7 +269,11 @@ fn incomplete_unselected_absolute_frame_is_not_ignored() {
         .unwrap();
     m.set_stereo_neighbor_order(AtomIdx(7), vec![]);
     assert_eq!(
-        reduce(&m, 0, 1000000).err(),
+        diagnostic(reduce(&m, 0, 1000000)).err(),
         Some(Error::IncompleteFrame(AtomIdx(7)))
     );
 }
+
+#[path = "support/upstream_diagnostics.rs"]
+mod upstream_diagnostics;
+use upstream_diagnostics::diagnostic;

@@ -2,7 +2,7 @@
   "schema_version": 1,
   "date": "2026-10-15",
   "scope": "Integrate the previously isolated RDKit/Open Babel/COSMolKit feature candidates; preserve current main compatibility, coverage and dependency changes.",
-  "base_main": "15150957a9cb4c86ffd48c0d969ff16008490602",
+  "base_main": "869ac3a1",
   "candidate_baseline": "cac480fb",
   "candidate_source": "/private/tmp/chematic-cdjson",
   "synthetic_source_commit": "df77e11deb31a3689fbbf9ce3c771174df44a829",
@@ -24,10 +24,14 @@
       ".github/workflows/ci.yml",
       "CHANGELOG.md"
     ],
-    "production_feature_source_matches_validated_candidate": true
+    "production_feature_source_matches_validated_candidate": false,
+    "subsequent_integration_changes": [
+      "Preserve current-main shared SMARTS chirality refactor with candidate hydrogen-slot and ring-opening parity fixes",
+      "Move Python CJSON reader into a dedicated module to retain the refactor limit"
+    ]
   },
   "local_checks": {
-    "refactor_budget": "passed: 559 files, 8443 functions, 18/86 allowances",
+    "refactor_budget": "passed: 561 files, 8478 functions, 18/86 allowances",
     "binding_inventory": "passed: Python 200/200, WASM 303",
     "rustfmt": "passed",
     "release_docs": "passed",
@@ -49,9 +53,10 @@
       "passed": 303,
       "failed": 0,
       "ignored": 0,
-      "log_sha256": "136358c621c1132d75e9b06f626de1dcceb03e18c6426dcdff98f2af34ac41b2",
+      "log_sha256": "3b102c8574a30b9d2e41d3e1ee85fa9c8246ce471f08beda8d87592c9e782b33",
       "isolated_build_directory": true
-    }
+    },
+    "recursive_smarts_unit_tests": "20 passed after main merge"
   },
   "evidence_policy": "Historical candidate records preserve their original source and runtime hashes and isolation status. This integration record does not relabel those runs as tests of a published artifact.",
   "files": [
@@ -65,7 +70,7 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "75be313601953ce3429b607552583a40ec0e17e85bc8f45cb0b53b3b56139396"
+      "sha256": "52c252f3280869764ae2a8419f4f537330b25a3b6dde1f659e7fe759e1549656"
     },
     {
       "path": "THIRD_PARTY_NOTICES.md",
@@ -105,15 +110,15 @@
     },
     {
       "path": "crates/chematic-chem/tests/meso_stereo_group.rs",
-      "sha256": "cda7812f2f714815c8f3ba5cad2900b9a3f2cbf3941448460a30242a8270ff45"
+      "sha256": "6b7188e7623dc6659b6632b25bed78bf65a740f6b6ac3dba084db90b817e00a9"
     },
     {
       "path": "crates/chematic-chem/tests/native_distance_matrix.rs",
-      "sha256": "ff271704c997ef859a19ff7da15c70b4f66b8012bb820bc20becb7aa317afaaf"
+      "sha256": "acefa44e5024017080e4c2bb5417370a8aef78fa2b7c98c54ec44d257bb034e6"
     },
     {
       "path": "crates/chematic-chem/tests/renumber_stereo_contract.rs",
-      "sha256": "986c0dc2b05d832a64d24daab48823ca3ede2969a36787dde05c440db997d5e5"
+      "sha256": "3963a3ee216ff110e6cecd8e33ba896cd171143bb0cc92da6731ad2521bd65bf"
     },
     {
       "path": "crates/chematic-chem/tests/stereo_candidate_budget.rs",
@@ -121,11 +126,11 @@
     },
     {
       "path": "crates/chematic-chem/tests/stereo_group_alternatives.rs",
-      "sha256": "512047cce8eaf4e6a59b29cc079d6800b350bc0ed7ce6097b3113bb62f446c22"
+      "sha256": "8c4f50330449c8c745d99104408a82514decd30630d8e3ce1f1e5d0a6faf1dc6"
     },
     {
       "path": "crates/chematic-chem/tests/stereo_group_inversion.rs",
-      "sha256": "5801d4c4c238cc3bb940294cf355003f5864fba8e44969a92b5ca04f0bc15d41"
+      "sha256": "73b97eee620b9903f0c491578b4cd5bdb9a9222ce32faef7e95d17c8010263c6"
     },
     {
       "path": "crates/chematic-core/src/lib.rs",
@@ -145,7 +150,7 @@
     },
     {
       "path": "crates/chematic-core/tests/checked_stereo_groups.rs",
-      "sha256": "eb609a860bc87ce00dee1d006e69ab839ec084d3fd019132bd56bba466735ab8"
+      "sha256": "ee1a90e0d4a53c194011428c577a30747562b8babf4fbf70204031f9b93e79b5"
     },
     {
       "path": "crates/chematic-fp/src/fold_density.rs",
@@ -181,11 +186,11 @@
     },
     {
       "path": "crates/chematic-fp/tests/fold_density.rs",
-      "sha256": "eb510055e67bc6e525b250e19a792687354008036c921b93751241af7eca1908"
+      "sha256": "663ce5e4792a25ea11cf36e3c8aeb6879aeb13ab599d57285fefd9e08bf3ff84"
     },
     {
       "path": "crates/chematic-fp/tests/rdkit_layered_config.rs",
-      "sha256": "c3ad82a122b5210446ef2d827ae5f40841051320a7275af07c2dde8012d58f89"
+      "sha256": "b465f0674ca6c76e8f0181678dd75466b1e7727c783ea76ed99f6e6c41092086"
     },
     {
       "path": "crates/chematic-mol/src/cdjson.rs",
@@ -325,51 +330,51 @@
     },
     {
       "path": "crates/chematic-mol/tests/cdjson_contract.rs",
-      "sha256": "553f398365aabdfa558aed4120c6918392c4b64e146e8509cecefcfd34be5ea8"
+      "sha256": "35f1d25ba2d3b5114d8e7a75d6fbb6213b6a608c554b4d0ebfab8958076ae788"
     },
     {
       "path": "crates/chematic-mol/tests/dmol3_contract.rs",
-      "sha256": "be3f18bab052d2ca1bb827addc3ac0056ec62ff557913070767e8e28abc5052e"
+      "sha256": "1b4e38be8a9720dd8ae741d8fd470db291b799a872bf206d80e30ecb4f1680d1"
     },
     {
       "path": "crates/chematic-mol/tests/exyz_contract.rs",
-      "sha256": "f1d0beae7d51f6276db309ab30c9ce5f33e940f793d1b5b44d0b5eb9ba930ea1"
+      "sha256": "0fbc4c887e850f206177d64a62521dda9d87fdab086fd4bd16f7498805a55490"
     },
     {
       "path": "crates/chematic-mol/tests/fhiaims_contract.rs",
-      "sha256": "431f1706df099746c33a3263dc3c0ceb01864ce95513afef1e3938edb99df254"
+      "sha256": "3f220fb4c4a5c3cd67b04769a2ec51c377468d9b25051f8555248a292e51c883"
     },
     {
       "path": "crates/chematic-mol/tests/gro_contract.rs",
-      "sha256": "59490e1c3c59fa527d4aa39ffe647dd8ee9767f20dc35cca722541364dba4248"
+      "sha256": "4b3456d34a7ffcba7d07676c35290f4516029dc6d2d47bed5bc28372dcf53560"
     },
     {
       "path": "crates/chematic-mol/tests/gzmat_precision.rs",
-      "sha256": "ce2d717c9caf2241fa08a63551bca75cc837729241e98b389c77e7a5b1368172"
+      "sha256": "0c0daa4148decc0638d732f33ab8ec44c2c04f81503160a5b7a7b9ceebd5fe51"
     },
     {
       "path": "crates/chematic-mol/tests/mmcif_pdb_checked.rs",
-      "sha256": "a53b33e7794b0ec2d265219cd25f8ca1f83ed46ee173fad0fd38a7ae9ddac1c9"
+      "sha256": "67b3c21e2a9dc601d91f2613b7799706dcd7f19274ead471b42f2dae30be36ae"
     },
     {
       "path": "crates/chematic-mol/tests/mmcif_residue_contract.rs",
-      "sha256": "96438d89a8d8d8135cbe3ab59f7e076d46ed49a69d43f41f0b5268eaf17d76d0"
+      "sha256": "1a94403c4c1df69ad0a5e08c4f966986befb1f47bd8b49670a9a1710aaf1a1a0"
     },
     {
       "path": "crates/chematic-mol/tests/mopac_cartesian_contract.rs",
-      "sha256": "4527c138329830cd8529c92fbeaaee258b47115978213ec69d8cfa8ae8dc6a7c"
+      "sha256": "4e5faf2500c784659abca9dc3a87007b6bfa0ed6237148ac90bbc3ea6138930f"
     },
     {
       "path": "crates/chematic-mol/tests/pdb_selection_contract.rs",
-      "sha256": "ea6413e23f59cef72080a0f62d46c1295cd2a03f8a00a90d478987a92bfbfa9e"
+      "sha256": "06a455c532fce7e79303e8d61056d370a3f959bc0b7e79e5e3aad2e226cf7416"
     },
     {
       "path": "crates/chematic-mol/tests/pqr_pdbqt_contract.rs",
-      "sha256": "7689fa4b3d336a10780669aa4edf61a0743cd1d0a37bed96c27eac919faaa818"
+      "sha256": "7f9a8983e22da45e4ee642105c477153594be2e61722fa7d00fde73eb6b6521d"
     },
     {
       "path": "crates/chematic-mol/tests/rdfile_contract.rs",
-      "sha256": "5c8cd4b3dc8a4e9890547974f621bffb088b0bd8d68b7a7c60a4f029f00f45c1"
+      "sha256": "43a75d68b146208277ba2118f2cde6b5893d07514cfb2fda1b78e7634ac8267e"
     },
     {
       "path": "crates/chematic-mol/tests/sdf_selections.rs",
@@ -377,7 +382,7 @@
     },
     {
       "path": "crates/chematic-mol/tests/turbomole_contract.rs",
-      "sha256": "01fa5db26500c414a808f04273caa873f4610e0e04f84f8f360745e0a0059ea1"
+      "sha256": "9c0b5acd976229652bf9fbb2ea8553f42cf1143e7bd20e22637624414fc62cbb"
     },
     {
       "path": "crates/chematic-py/python/chematic/__init__.pyi",
@@ -393,7 +398,7 @@
     },
     {
       "path": "crates/chematic-py/src/formats.rs",
-      "sha256": "a5008507db13dd8ec9648b05f6f7f818e16dd8f684ee1b8fbe11486089a5c1e7"
+      "sha256": "435c199ad5597924981cfa2a3ac2c59535ef211e6389b77bd32decce03b9036f"
     },
     {
       "path": "crates/chematic-py/src/formats/cdjson.rs",
@@ -473,7 +478,7 @@
     },
     {
       "path": "crates/chematic-py/src/mol_methods.rs",
-      "sha256": "375d6a24008075c465b14942e816da9157ebf78f3394d6ae4d40102f72fb3cc2"
+      "sha256": "077148a6a0b2e070a702255554137e4c9bcbdf0c4974fb1ff4be5e680f82030f"
     },
     {
       "path": "crates/chematic-py/src/mol_methods/atom_environment.rs",
@@ -481,7 +486,7 @@
     },
     {
       "path": "crates/chematic-py/src/mol_methods/extended.rs",
-      "sha256": "8cb6eeb198e1cacd1c141c49aef2294e95e6889718176f206738ee94d6629494"
+      "sha256": "46d68daa108ba9ddf760f239ecd869e4c4261679e89b5934351cf98cceeb6ca4"
     },
     {
       "path": "crates/chematic-py/src/mol_methods/graph_queries.rs",
@@ -613,15 +618,11 @@
     },
     {
       "path": "crates/chematic-smarts/src/lib.rs",
-      "sha256": "c8d4c4fd50b85b70a2b54ade569501fec2de481d9837220c35485157a9748414"
+      "sha256": "7985c5637b60fda3e69ae92d83e1b13df800470e82d8da1146e04e4d5fb3d2b8"
     },
     {
       "path": "crates/chematic-smarts/src/match_vf2.rs",
-      "sha256": "6a76270701c2f86efa354e9d291003229335cfe265d36cd37a722291ba3de6a5"
-    },
-    {
-      "path": "crates/chematic-smarts/src/match_vf2/chirality.rs",
-      "sha256": "11b9fe9455c02b18b14e590e2aca2d1311b2524c76d6b2e595f5164062267dc6"
+      "sha256": "ab38b0293eedc97c83c12c806243e212f54df0922dcd3d12fc3924de174f8883"
     },
     {
       "path": "crates/chematic-smarts/src/merge_hydrogens.rs",
@@ -629,7 +630,7 @@
     },
     {
       "path": "crates/chematic-smarts/src/parser.rs",
-      "sha256": "5e4ef77bf985151a9c831149ce2a54845b7e3124986cd414bcca5d7de6c64556"
+      "sha256": "9074b3d5b55e8a9e28ef40058c5c0c5e978d3a92610e4dcfb0ebd9b89b43c14e"
     },
     {
       "path": "crates/chematic-smarts/src/parser/rings.rs",
@@ -637,7 +638,7 @@
     },
     {
       "path": "crates/chematic-smarts/tests/merge_query_hydrogens.rs",
-      "sha256": "00a58028d2ba6eb7fda60fb8189b0831f36c9b663603910e659ed97fba6bde67"
+      "sha256": "e5efb979500cd1fe960587374e1bd620b0c6104a70a47ef87570a2cd49599a4a"
     },
     {
       "path": "crates/chematic-smiles/src/lib.rs",
@@ -785,7 +786,7 @@
     },
     {
       "path": "docs/rdkit-migration.md",
-      "sha256": "ec8074419129de3109d38ba914cae74d2a591d48070837686dafede414d66cac"
+      "sha256": "91ec91b11aa68a68844484d063623b3baab21b28f4a983448629c1885fb2beed"
     },
     {
       "path": "docs/rdkit-open-issues-2026-10-14.md",
@@ -1272,6 +1273,17 @@
       "local_windows_codec_reproduction": true,
       "related_local_tests_passed": 354,
       "production_code_changed": false
+    },
+    {
+      "check": "Rust coverage",
+      "initial_line_coverage": 96.39,
+      "minimum_line_coverage": 96.5,
+      "fix": "Existing rejection fixtures additionally render and verify nonempty public diagnostics; threshold and measurement exclusions unchanged",
+      "status": "awaiting rerun"
     }
+  ],
+  "initial_base_main": "15150957a9cb4c86ffd48c0d969ff16008490602",
+  "removed_duplicate_modules": [
+    "crates/chematic-smarts/src/match_vf2/chirality.rs"
   ]
 }

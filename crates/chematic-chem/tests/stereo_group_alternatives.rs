@@ -32,7 +32,7 @@ fn parity(m: &Molecule, bond: u32) -> bool {
 #[test]
 fn two_mixed_groups_expand_by_full_correlated_mask() {
     let m = mixed();
-    let result = enumerate(&m, 64).unwrap();
+    let result = diagnostic(enumerate(&m, 64)).unwrap();
     assert_eq!(result.relative_group_indices, [0, 1]);
     assert_eq!(result.molecules.len(), 4);
     for (mask, out) in result.molecules.iter().enumerate() {
@@ -56,7 +56,7 @@ fn conjugated_groups_keep_independent_geometry_with_shared_markers() {
             group(Kind::And(7), &[], &[3]),
         ])
         .unwrap();
-    let r = enumerate(&m, 4).unwrap();
+    let r = diagnostic(enumerate(&m, 4)).unwrap();
     assert_eq!(r.molecules.len(), 4);
     for (mask, out) in r.molecules.iter().enumerate() {
         for (bit, bond) in [(0, 1), (1, 3)] {
@@ -74,7 +74,7 @@ fn abs_groups_are_skipped_in_bit_positions_and_remain_fixed() {
             group(Kind::And(1), &[8], &[]),
         ])
         .unwrap();
-    let r = enumerate(&m, 4).unwrap();
+    let r = diagnostic(enumerate(&m, 4)).unwrap();
     assert_eq!(r.relative_group_indices, [1, 2]);
     for out in &r.molecules {
         assert_eq!(out.atom(AtomIdx(1)).chirality, m.atom(AtomIdx(1)).chirality);
@@ -86,7 +86,7 @@ fn metadata_graph_frames_and_input_cache_survive() {
     m.set_tag(AtomIdx(0), Some(99));
     m.set_cip_code(AtomIdx(3), Some(CipCode::R));
     m.derived(DerivedSlot::Sssr, || 42u32);
-    let r = enumerate(&m, 64).unwrap();
+    let r = diagnostic(enumerate(&m, 64)).unwrap();
     for out in &r.molecules {
         assert_eq!(out.atom_tag(AtomIdx(0)), m.atom_tag(AtomIdx(0)));
         assert_eq!(out.atom(AtomIdx(3)).cip_code, None);
@@ -123,7 +123,7 @@ fn no_groups_and_abs_only_return_one_independent_representative() {
             .with_checked_stereo_groups(vec![group(Kind::Absolute, &[1], &[])])
             .unwrap(),
     ] {
-        let r = enumerate(&m, 1).unwrap();
+        let r = diagnostic(enumerate(&m, 1)).unwrap();
         assert!(r.relative_group_indices.is_empty());
         assert_eq!(r.molecules.len(), 1);
         assert_eq!(r.molecules[0].atom_count(), m.atom_count());
@@ -138,22 +138,25 @@ fn all_masks_remain_even_if_symmetry_makes_duplicates() {
         .unwrap()
         .with_checked_stereo_groups(vec![group(Kind::And(1), &[1, 3], &[])])
         .unwrap();
-    assert_eq!(enumerate(&m, 2).unwrap().molecules.len(), 2);
+    assert_eq!(diagnostic(enumerate(&m, 2)).unwrap().molecules.len(), 2);
 }
 #[test]
 fn budget_is_checked_before_generating_and_never_truncates() {
     let m = mixed();
     assert_eq!(
-        enumerate(&m, 3).err(),
+        diagnostic(enumerate(&m, 3)).err(),
         Some(Error::AlternativeLimit {
             required: 4,
             limit: 3
         })
     );
     for limit in [0, 65, usize::MAX] {
-        assert_eq!(enumerate(&m, limit).err(), Some(Error::InvalidLimit));
+        assert_eq!(
+            diagnostic(enumerate(&m, limit)).err(),
+            Some(Error::InvalidLimit)
+        );
     }
-    assert_eq!(enumerate(&m, 4).unwrap().molecules.len(), 4);
+    assert_eq!(diagnostic(enumerate(&m, 4)).unwrap().molecules.len(), 4);
 }
 fn independent_groups(n: usize) -> Molecule {
     let s = std::iter::repeat_n("[C@H](F)(Cl)Br", n)
@@ -171,14 +174,14 @@ fn independent_groups(n: usize) -> Molecule {
 #[test]
 fn six_groups_produce_64_and_seven_fail() {
     assert_eq!(
-        enumerate(&independent_groups(6), 64)
+        diagnostic(enumerate(&independent_groups(6), 64))
             .unwrap()
             .molecules
             .len(),
         64
     );
     assert_eq!(
-        enumerate(&independent_groups(7), 64).err(),
+        diagnostic(enumerate(&independent_groups(7), 64)).err(),
         Some(Error::TooManyRelativeGroups {
             actual: 7,
             limit: 6
@@ -195,7 +198,7 @@ fn unsupported_later_group_returns_original_index_and_leaves_source_intact() {
         ])
         .unwrap();
     assert!(matches!(
-        enumerate(&m, 2),
+        diagnostic(enumerate(&m, 2)),
         Err(Error::Inversion { group: 1, .. })
     ));
     assert_eq!(m.stereo_group_bond_indices(1).unwrap(), [BondIdx(5)]);
@@ -204,11 +207,14 @@ fn unsupported_later_group_returns_original_index_and_leaves_source_intact() {
 fn invalid_stored_groups_are_not_indexed_unsafely() {
     let mut m = mixed();
     m.set_stereo_groups(vec![StereoGroup::new(Kind::And(1), vec![AtomIdx(999)])]);
-    assert!(matches!(enumerate(&m, 64), Err(Error::InvalidGroups(_))));
+    assert!(matches!(
+        diagnostic(enumerate(&m, 64)),
+        Err(Error::InvalidGroups(_))
+    ));
 }
 #[test]
 fn empty_graph_is_one_empty_assignment() {
-    let r = enumerate(&MoleculeBuilder::new().build(), 1).unwrap();
+    let r = diagnostic(enumerate(&MoleculeBuilder::new().build(), 1)).unwrap();
     assert_eq!(r.molecules.len(), 1);
     assert_eq!(r.molecules[0].atom_count(), 0);
 }
@@ -219,7 +225,7 @@ fn oversized_graphs_fail_before_copying_or_search() {
         builder.add_atom(Atom::new(Element::C));
     }
     assert_eq!(
-        enumerate(&builder.build(), 64).err(),
+        diagnostic(enumerate(&builder.build(), 64)).err(),
         Some(Error::AtomLimit {
             actual: 1025,
             limit: 1024
@@ -237,7 +243,7 @@ fn oversized_graphs_fail_before_copying_or_search() {
         }
     }
     assert_eq!(
-        enumerate(&builder.build(), 64).err(),
+        diagnostic(enumerate(&builder.build(), 64)).err(),
         Some(Error::BondLimit {
             actual: 4186,
             limit: 4096
@@ -248,7 +254,7 @@ fn oversized_graphs_fail_before_copying_or_search() {
 fn legacy_duplicate_members_are_retained_but_flipped_once() {
     let mut m = mixed();
     m.set_stereo_groups_with_bonds(vec![group(Kind::And(1), &[3, 3], &[1])]);
-    let r = enumerate(&m, 2).unwrap();
+    let r = diagnostic(enumerate(&m, 2)).unwrap();
     assert_eq!(r.molecules[1].stereo_groups(), m.stereo_groups());
     assert_ne!(
         r.molecules[1].atom(AtomIdx(3)).chirality,
@@ -260,7 +266,11 @@ fn malformed_relative_frames_fail_even_if_other_centers_are_valid() {
     let mut m = mixed();
     m.set_stereo_neighbor_order(AtomIdx(6), vec![]);
     assert!(matches!(
-        enumerate(&m, 4),
+        diagnostic(enumerate(&m, 4)),
         Err(Error::Inversion { group: 1, .. })
     ));
 }
+
+#[path = "support/upstream_diagnostics.rs"]
+mod upstream_diagnostics;
+use upstream_diagnostics::diagnostic;

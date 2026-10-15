@@ -7,7 +7,7 @@ const TEXT: &str = "PM7 XYZ CHARGE=1 MINI\noriginal synthetic\nflag and label co
 
 #[test]
 fn flags_labels_headers_and_vectors_roundtrip() {
-    let g = parse_mopac_cartesian(TEXT).unwrap();
+    let g = diagnostic(parse_mopac_cartesian(TEXT)).unwrap();
     assert_eq!(g.source_text, TEXT);
     assert_eq!(g.keywords, "PM7 XYZ CHARGE=1 MINI");
     assert_eq!(g.title, "original synthetic");
@@ -24,7 +24,10 @@ fn flags_labels_headers_and_vectors_roundtrip() {
     }
     assert_eq!(g.periodicity(), 3);
     assert_eq!(g.translation_vectors[2].position_angstrom, [1., 0., -6.]);
-    let back = parse_mopac_cartesian(&write_mopac_cartesian(&g).unwrap()).unwrap();
+    let back = diagnostic(parse_mopac_cartesian(
+        &diagnostic(write_mopac_cartesian(&g)).unwrap(),
+    ))
+    .unwrap();
     assert_eq!(g.atoms, back.atoms);
     assert_eq!(g.translation_vectors, back.translation_vectors);
 }
@@ -36,14 +39,17 @@ fn mixed_flags_absence_partial_periodicity_and_no_terminator() {
         for row in ["4 1 0", "-1 5 2", "1 0 -6"].iter().take(n) {
             text.push_str(&format!("Tv {row}\n"));
         }
-        let g = parse_mopac_cartesian(&text).unwrap();
+        let g = diagnostic(parse_mopac_cartesian(&text)).unwrap();
         assert_eq!(g.periodicity(), n);
         assert!(g.atoms[0].row.optimization_flags.is_none());
         assert_eq!(
             g.atoms[1].row.optimization_flags.unwrap().map(|f| f.code()),
             ["0", "1", "2"]
         );
-        let back = parse_mopac_cartesian(&write_mopac_cartesian(&g).unwrap()).unwrap();
+        let back = diagnostic(parse_mopac_cartesian(
+            &diagnostic(write_mopac_cartesian(&g)).unwrap(),
+        ))
+        .unwrap();
         assert_eq!(g.atoms, back.atoms);
         assert_eq!(g.translation_vectors, back.translation_vectors);
     }
@@ -52,10 +58,13 @@ fn mixed_flags_absence_partial_periodicity_and_no_terminator() {
 #[test]
 fn precision_and_crlf_are_preserved() {
     let text = "\tPM7 XYZ\r\ntitle \r\ncomment\r\nH -0.0 4.9406564584124654e-324 1.7976931348623157e308\r\n";
-    let g = parse_mopac_cartesian(text).unwrap();
+    let g = diagnostic(parse_mopac_cartesian(text)).unwrap();
     assert_eq!(g.source_text, text);
     assert_eq!(g.title, "title ");
-    let back = parse_mopac_cartesian(&write_mopac_cartesian(&g).unwrap()).unwrap();
+    let back = diagnostic(parse_mopac_cartesian(
+        &diagnostic(write_mopac_cartesian(&g)).unwrap(),
+    ))
+    .unwrap();
     for (a, b) in g.atoms[0]
         .row
         .position_angstrom
@@ -96,21 +105,36 @@ fn unsupported_geometry_cannot_be_silently_reinterpreted() {
         "C 0 0 0\nTv(label) 1 0 0",
     ] {
         assert!(
-            parse_mopac_cartesian(&format!("PM7 XYZ\noriginal\n\n{body}")).is_err(),
+            diagnostic(parse_mopac_cartesian(&format!(
+                "PM7 XYZ\noriginal\n\n{body}"
+            )))
+            .is_err(),
             "{body}"
         );
     }
     for keywords in ["PM7 A0", "a0=1", "PM7 +", "++", "PM7 &"] {
         assert_eq!(
-            parse_mopac_cartesian(&format!("{keywords}\n\n\nC 0 0 0"))
+            diagnostic(parse_mopac_cartesian(&format!("{keywords}\n\n\nC 0 0 0")))
                 .unwrap_err()
                 .line,
             1
         );
     }
-    assert!(parse_mopac_cartesian("PM7\ntitle").is_err());
-    assert!(parse_mopac_cartesian(&format!("\n\n\nC({}) 0 0 0", "a".repeat(39))).is_err());
-    assert!(parse_mopac_cartesian(&format!("\n\n\nC({}) 0 0 0", "a".repeat(38))).is_ok());
+    assert!(diagnostic(parse_mopac_cartesian("PM7\ntitle")).is_err());
+    assert!(
+        diagnostic(parse_mopac_cartesian(&format!(
+            "\n\n\nC({}) 0 0 0",
+            "a".repeat(39)
+        )))
+        .is_err()
+    );
+    assert!(
+        diagnostic(parse_mopac_cartesian(&format!(
+            "\n\n\nC({}) 0 0 0",
+            "a".repeat(38)
+        )))
+        .is_ok()
+    );
 }
 
 #[test]
@@ -124,7 +148,7 @@ fn degenerate_translation_vectors_fail() {
         "Tv 1.79e308 1.79e308 0",
     ] {
         assert!(
-            parse_mopac_cartesian(&format!("\n\n\nC 0 0 0\n{rows}")).is_err(),
+            diagnostic(parse_mopac_cartesian(&format!("\n\n\nC 0 0 0\n{rows}"))).is_err(),
             "{rows}"
         );
     }
@@ -146,10 +170,10 @@ fn limits_and_line_numbers() {
             ..Default::default()
         },
     ] {
-        assert!(parse_mopac_cartesian_with_limits(TEXT, &limits).is_err());
+        assert!(diagnostic(parse_mopac_cartesian_with_limits(TEXT, &limits)).is_err());
     }
     assert_eq!(
-        parse_mopac_cartesian("\n\n\nC 0 0 0\nH bad 0 0")
+        diagnostic(parse_mopac_cartesian("\n\n\nC 0 0 0\nH bad 0 0"))
             .unwrap_err()
             .line,
         5
@@ -158,17 +182,24 @@ fn limits_and_line_numbers() {
 
 #[test]
 fn writer_validates_current_data_instead_of_replaying_source() {
-    let mut g = parse_mopac_cartesian(TEXT).unwrap();
+    let mut g = diagnostic(parse_mopac_cartesian(TEXT)).unwrap();
     g.atoms[0].row.position_angstrom[0] = 0.12345678901234566;
     g.atoms[0].row.optimization_flags = None;
     g.atoms[0].label = None;
     g.keywords = "PM6 XYZ".into();
-    let back = parse_mopac_cartesian(&write_mopac_cartesian(&g).unwrap()).unwrap();
+    let back = diagnostic(parse_mopac_cartesian(
+        &diagnostic(write_mopac_cartesian(&g)).unwrap(),
+    ))
+    .unwrap();
     assert_eq!(back.atoms, g.atoms);
     assert_eq!(back.keywords, g.keywords);
     g.title.push('\n');
-    assert!(write_mopac_cartesian(&g).is_err());
+    assert!(diagnostic(write_mopac_cartesian(&g)).is_err());
     g.title.clear();
     g.atoms[0].row.position_angstrom[1] = f64::NAN;
-    assert!(write_mopac_cartesian(&g).is_err());
+    assert!(diagnostic(write_mopac_cartesian(&g)).is_err());
 }
+
+#[path = "support/upstream_diagnostics.rs"]
+mod upstream_diagnostics;
+use upstream_diagnostics::diagnostic;

@@ -12,9 +12,6 @@
 //!    target molecule, and that bond must satisfy the query bond's `BondQuery`
 //!    expression.
 
-mod chirality;
-use chirality::{eval_atom_query_candidate, eval_chirality, mapped_chirality_compatible};
-
 use rustc_hash::{FxHashMap, FxHashSet};
 
 use chematic_core::{AtomIdx, BondOrder, Molecule, implicit_hcount};
@@ -23,6 +20,8 @@ use chematic_perception::RingSet;
 use chematic_perception::find_sssr;
 
 use crate::query::{AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, QueryMolecule};
+
+pub(crate) use crate::match_chirality::mapped_chirality_primitive_with_map;
 
 // ---------------------------------------------------------------------------
 // Evaluation context (precomputed per `find_matches` call)
@@ -1103,16 +1102,13 @@ fn bonds_compatible(
     true
 }
 
-// ---------------------------------------------------------------------------
-// Atom query evaluation
-// ---------------------------------------------------------------------------
-
 fn eval_atom_query(q: &AtomQuery, idx: AtomIdx, ctx: &EvalCtx<'_>) -> bool {
     if ctx.config.use_chirality {
-        // Exact @/@@ parity needs a complete mapping. Use three-valued logic
-        // here so a chirality primitive under NOT/OR cannot incorrectly prune
-        // a candidate before the final mapped check.
-        return eval_atom_query_candidate(q, idx, ctx).unwrap_or(true);
+        // Defer exact @/@@ parity until the mapping is complete.
+        return crate::match_chirality::candidate_query_result(q, |primitive| {
+            eval_atom_primitive(primitive, idx, ctx)
+        })
+        .unwrap_or(true);
     }
     match q {
         AtomQuery::Primitive(p) => eval_atom_primitive(p, idx, ctx),
@@ -1282,6 +1278,21 @@ fn eval_hybridization(idx: AtomIdx, ctx: &EvalCtx<'_>, h: u8) -> bool {
         .hybridization_lazy
         .get_or_init(|| crate::hybridization::lazy_facts(ctx.mol));
     crate::hybridization::hybridization_from(ctx.mol, lazy, idx) == Some(h)
+}
+
+fn eval_chirality(idx: AtomIdx, ctx: &EvalCtx<'_>, _kind: u8) -> bool {
+    use chematic_core::Chirality;
+    !ctx.config.use_chirality || ctx.mol.atom(idx).chirality != Chirality::None
+}
+
+fn mapped_chirality_compatible(query: &QueryMolecule, mapping: &[u32], ctx: &EvalCtx<'_>) -> bool {
+    crate::match_chirality::mapped_chirality_compatible(
+        query,
+        mapping,
+        ctx.mol,
+        ctx.config.use_chirality,
+        |primitive, target| eval_atom_primitive(primitive, target, ctx),
+    )
 }
 
 // ---------------------------------------------------------------------------

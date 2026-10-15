@@ -36,7 +36,7 @@ fn issue9629_identity_and_reverse_keep_one_stereocenter() {
     assert_eq!(chematic_chem::num_stereocenters(&m), 1);
     let before = canonical_smiles(&m);
     for order in [identity(&m), reverse(&m)] {
-        let out = m.renumber_atoms(&order).unwrap();
+        let out = diagnostic(m.renumber_atoms(&order)).unwrap();
         assert_indexed_graph(&m, &out, &order);
         assert_eq!(chematic_chem::num_stereocenters(&out), 1);
         assert_eq!(chematic_chem::num_unspecified_stereocenters(&out), 1);
@@ -62,7 +62,7 @@ fn all_120_tetrahedral_permutations_preserve_configuration() {
     let before = canonical_smiles(&m);
     let mut count = 0;
     permutations(&mut identity(&m), 0, &mut |order| {
-        let out = m.renumber_atoms(order).unwrap();
+        let out = diagnostic(m.renumber_atoms(order)).unwrap();
         assert_indexed_graph(&m, &out, order);
         assert_eq!(canonical_smiles(&out), before);
         assert_eq!(chematic_chem::num_stereocenters(&out), 1);
@@ -80,7 +80,7 @@ fn explicit_implicit_isotopic_h_and_atom_maps_survive() {
     ] {
         let m = parse(smiles).unwrap();
         let order = reverse(&m);
-        let out = m.renumber_atoms(&order).unwrap();
+        let out = diagnostic(m.renumber_atoms(&order)).unwrap();
         assert_indexed_graph(&m, &out, &order);
         assert_eq!(canonical_smiles(&out), canonical_smiles(&m));
         let inverse: Vec<_> = (0..m.atom_count())
@@ -119,7 +119,7 @@ fn axial_ez_and_coordination_stereo_survive() {
     ] {
         let m = parse(s).unwrap();
         let order = reverse(&m);
-        let out = m.renumber_atoms(&order).unwrap();
+        let out = diagnostic(m.renumber_atoms(&order)).unwrap();
         assert_indexed_graph(&m, &out, &order);
         assert_eq!(canonical_smiles(&out), canonical_smiles(&m), "{s}");
     }
@@ -138,7 +138,7 @@ fn cyclic_numberings_keep_bicyclic_descriptor_counts() {
         let expected = chematic_chem::num_stereocenters(&m);
         for start in 0..n {
             let order: Vec<_> = (0..n).map(|i| AtomIdx(((start + i) % n) as u32)).collect();
-            let out = m.renumber_atoms(&order).unwrap();
+            let out = diagnostic(m.renumber_atoms(&order)).unwrap();
             assert_eq!(
                 chematic_chem::num_stereocenters(&out),
                 expected,
@@ -157,7 +157,7 @@ fn remaps_tags_r_labels_and_enhanced_groups_but_keeps_bond_indices() {
         StereoGroup::new(StereoGroupKind::Or(3), vec![AtomIdx(1)]),
         vec![BondIdx(2)],
     )]);
-    let out = m.renumber_atoms(&reverse(&m)).unwrap();
+    let out = diagnostic(m.renumber_atoms(&reverse(&m))).unwrap();
     assert_eq!(out.atom_tag(AtomIdx(4)).unwrap().get(), 431);
     assert_eq!(out.r_group_label(AtomIdx(0)).unwrap().number(), Some(7));
     assert_eq!(
@@ -173,7 +173,7 @@ fn preserves_direction_anchors_ring_closures_and_dative_orientation() {
     m.set_bond_direction(BondIdx(0), BondOrder::Up);
     m.set_bond_direction_anchor(BondIdx(0), AtomIdx(0));
     let n = m.atom_count();
-    let out = m.renumber_atoms(&reverse(&m)).unwrap();
+    let out = diagnostic(m.renumber_atoms(&reverse(&m))).unwrap();
     assert_eq!(out.bond(BondIdx(0)).atom1, AtomIdx((n - 1) as u32));
     assert_eq!(out.bond(BondIdx(0)).atom2, AtomIdx((n - 2) as u32));
     assert_eq!(out.bond(BondIdx(0)).order, BondOrder::Dative);
@@ -199,7 +199,7 @@ fn derived_caches_start_empty_even_after_identity_permutation() {
         std::sync::Arc::new(vec![42u32]),
     );
     assert_eq!(m.derived_rdkit_num_rings(|| 7), 7);
-    let out = m.renumber_atoms(&identity(&m)).unwrap();
+    let out = diagnostic(m.renumber_atoms(&identity(&m))).unwrap();
     assert!(
         out.derived_if_computed::<Vec<u32>>(DerivedSlot::CanonicalRanks)
             .is_none()
@@ -237,20 +237,18 @@ fn inverse_permutation_restores_indexed_graph_and_frames() {
 fn invalid_orders_are_typed_errors_and_empty_graph_is_valid() {
     let m = parse("CCO").unwrap();
     assert!(matches!(
-        m.renumber_atoms(&[AtomIdx(0)]),
+        diagnostic(m.renumber_atoms(&[AtomIdx(0)])),
         Err(RenumberError::Length {
             expected: 3,
             actual: 1
         })
     ));
     assert_eq!(
-        m.renumber_atoms(&[AtomIdx(0), AtomIdx(1), AtomIdx(3)])
-            .err(),
+        diagnostic(m.renumber_atoms(&[AtomIdx(0), AtomIdx(1), AtomIdx(3)])).err(),
         Some(RenumberError::InvalidAtom(AtomIdx(3)))
     );
     assert_eq!(
-        m.renumber_atoms(&[AtomIdx(0), AtomIdx(1), AtomIdx(0)])
-            .err(),
+        diagnostic(m.renumber_atoms(&[AtomIdx(0), AtomIdx(1), AtomIdx(0)])).err(),
         Some(RenumberError::DuplicateAtom(AtomIdx(0)))
     );
     assert!(MoleculeBuilder::new().build().renumber_atoms(&[]).is_ok());
@@ -286,7 +284,7 @@ fn invalid_caller_metadata_fails_without_panicking() {
     variants.push(v);
     for source in variants {
         assert!(matches!(
-            source.renumber_atoms(&identity(&source)),
+            diagnostic(source.renumber_atoms(&identity(&source))),
             Err(RenumberError::InvalidMetadata { .. })
         ));
     }
@@ -303,7 +301,7 @@ fn builder_stereo_without_recorded_frame_keeps_ordered_adjacency() {
         b.add_bond(AtomIdx(0), n, BondOrder::Single).unwrap();
     }
     let m = b.build();
-    let out = m.renumber_atoms(&reverse(&m)).unwrap();
+    let out = diagnostic(m.renumber_atoms(&reverse(&m))).unwrap();
     assert_eq!(
         out.neighbors(AtomIdx(4))
             .map(|(a, _)| a.0)
@@ -312,3 +310,7 @@ fn builder_stereo_without_recorded_frame_keeps_ordered_adjacency() {
     );
     assert_eq!(canonical_smiles(&out), canonical_smiles(&m));
 }
+
+#[path = "support/upstream_diagnostics.rs"]
+mod upstream_diagnostics;
+use upstream_diagnostics::diagnostic;

@@ -427,42 +427,46 @@ impl Mol {
     ///
     /// ``coords``: ``[[x,y,z], ...]`` (Å), one per heavy atom.
     /// Used to classify shape as rod / disc / sphere in PMI plots.
-    fn pmi(&self, coords: Vec<[f64; 3]>) -> [f64; 3] {
-        let c3d = flat_to_coords3d(&coords);
+    fn pmi(&self, coords: Vec<[f64; 3]>) -> PyResult<[f64; 3]> {
+        let c3d = checked_coords3d(&self.inner, &coords)?;
         let (p1, p2, p3) = chematic_3d::pmi(&self.inner, &c3d);
-        [p1, p2, p3]
+        Ok([p1, p2, p3])
     }
 
     /// Normalised Principal Moments — ``[NPR1, NPR2]``.
     ///
     /// NPR1 = PMI1/PMI3, NPR2 = PMI2/PMI3. Values in [0, 1].
     /// Rod: NPR1≈0, NPR2≈0.5; Sphere: NPR1≈NPR2≈1; Disc: NPR1≈0.5, NPR2≈1.
-    fn npr(&self, coords: Vec<[f64; 3]>) -> [f64; 2] {
-        let c3d = flat_to_coords3d(&coords);
-        [
+    fn npr(&self, coords: Vec<[f64; 3]>) -> PyResult<[f64; 2]> {
+        let c3d = checked_coords3d(&self.inner, &coords)?;
+        Ok([
             chematic_3d::npr1(&self.inner, &c3d),
             chematic_3d::npr2(&self.inner, &c3d),
-        ]
+        ])
     }
 
     /// Asphericity — deviation from a perfect sphere. Range [0, 1].
-    fn asphericity(&self, coords: Vec<[f64; 3]>) -> f64 {
-        chematic_3d::asphericity(&self.inner, &flat_to_coords3d(&coords))
+    fn asphericity(&self, coords: Vec<[f64; 3]>) -> PyResult<f64> {
+        let coords = checked_coords3d(&self.inner, &coords)?;
+        Ok(chematic_3d::asphericity(&self.inner, &coords))
     }
 
     /// Eccentricity — elongation measure. Range [0, 1].
-    fn eccentricity(&self, coords: Vec<[f64; 3]>) -> f64 {
-        chematic_3d::eccentricity(&self.inner, &flat_to_coords3d(&coords))
+    fn eccentricity(&self, coords: Vec<[f64; 3]>) -> PyResult<f64> {
+        let coords = checked_coords3d(&self.inner, &coords)?;
+        Ok(chematic_3d::eccentricity(&self.inner, &coords))
     }
 
     /// Radius of gyration (Å).
-    fn radius_of_gyration(&self, coords: Vec<[f64; 3]>) -> f64 {
-        chematic_3d::radius_of_gyration(&self.inner, &flat_to_coords3d(&coords))
+    fn radius_of_gyration(&self, coords: Vec<[f64; 3]>) -> PyResult<f64> {
+        let coords = checked_coords3d(&self.inner, &coords)?;
+        Ok(chematic_3d::radius_of_gyration(&self.inner, &coords))
     }
 
     /// Plane of Best Fit (PBF) — deviation of atoms from the least-squares plane (Å).
-    fn plane_of_best_fit(&self, coords: Vec<[f64; 3]>) -> f64 {
-        chematic_3d::plane_of_best_fit(&self.inner, &flat_to_coords3d(&coords))
+    fn plane_of_best_fit(&self, coords: Vec<[f64; 3]>) -> PyResult<f64> {
+        let coords = checked_coords3d(&self.inner, &coords)?;
+        Ok(chematic_3d::plane_of_best_fit(&self.inner, &coords))
     }
 
     // ---- Conformer editing tools ----
@@ -737,9 +741,12 @@ impl Mol {
     /// Requires 3D coordinates. Complements the 2D version from :meth:`pharmacophore_fp`.
     ///
     /// ``coords``: ``[[x,y,z], ...]`` (Å), one per heavy atom.
-    fn pharmacophore_fp_3d(&self, coords: Vec<[f64; 3]>) -> Vec<u8> {
-        let c3d = flat_to_coords3d(&coords);
-        bitvec2048_to_bytes(&chematic_3d::pharmacophore_fp_3d(&self.inner, &c3d))
+    fn pharmacophore_fp_3d(&self, coords: Vec<[f64; 3]>) -> PyResult<Vec<u8>> {
+        let c3d = checked_coords3d(&self.inner, &coords)?;
+        Ok(bitvec2048_to_bytes(&chematic_3d::pharmacophore_fp_3d(
+            &self.inner,
+            &c3d,
+        )))
     }
 
     /// Three-dimensional pharmacophore fingerprint as a dense NumPy bit vector.
@@ -747,9 +754,9 @@ impl Mol {
         &self,
         py: Python<'py>,
         coords: Vec<[f64; 3]>,
-    ) -> Bound<'py, PyArray1<u8>> {
-        let packed = self.pharmacophore_fp_3d(coords);
-        packed_fingerprint_to_numpy(py, &packed, 2048)
+    ) -> PyResult<Bound<'py, PyArray1<u8>>> {
+        let packed = self.pharmacophore_fp_3d(coords)?;
+        Ok(packed_fingerprint_to_numpy(py, &packed, 2048))
     }
 
     /// Reaction fingerprint — ``(reactant_fp, product_fp, formed_fp, broken_fp,
@@ -836,9 +843,13 @@ impl Mol {
     ///
     /// ``coords``: ``[[x,y,z], ...]`` (Å), one per heavy atom.
     #[pyo3(signature = (coords, probe_radius = 1.4))]
-    fn sasa_with_probe(&self, coords: Vec<[f64; 3]>, probe_radius: f64) -> f64 {
-        let c3d = flat_to_coords3d(&coords);
-        chematic_3d::calc_mol_sasa_with_probe(&self.inner, &c3d, probe_radius)
+    fn sasa_with_probe(&self, coords: Vec<[f64; 3]>, probe_radius: f64) -> PyResult<f64> {
+        let c3d = checked_coords3d(&self.inner, &coords)?;
+        Ok(chematic_3d::calc_mol_sasa_with_probe(
+            &self.inner,
+            &c3d,
+            probe_radius,
+        ))
     }
 
     /// Per-atom Solvent-Accessible Surface Area (Å²) from explicit 3D coordinates.
@@ -851,9 +862,9 @@ impl Mol {
     ///     per_atom = mol.sasa_per_atom_3d(coords)
     ///     for i, sa in enumerate(per_atom):
     ///         print(f"atom {i}: {sa:.2f} Å²")
-    fn sasa_per_atom_3d(&self, coords: Vec<[f64; 3]>) -> Vec<f64> {
-        let c3d = flat_to_coords3d(&coords);
-        chematic_3d::sasa_per_atom(&self.inner, &c3d, 1.4, 100)
+    fn sasa_per_atom_3d(&self, coords: Vec<[f64; 3]>) -> PyResult<Vec<f64>> {
+        let c3d = checked_coords3d(&self.inner, &coords)?;
+        Ok(chematic_3d::sasa_per_atom(&self.inner, &c3d, 1.4, 100))
     }
 
     /// Per-element SASA breakdown — dict mapping element symbol to SASA (Å²).
@@ -865,7 +876,7 @@ impl Mol {
         coords: Vec<[f64; 3]>,
     ) -> PyResult<Bound<'py, PyDict>> {
         use chematic_core::Element;
-        let c3d = flat_to_coords3d(&coords);
+        let c3d = checked_coords3d(&self.inner, &coords)?;
         let per_elem = chematic_3d::sasa_per_element(&self.inner, &c3d);
         let d = PyDict::new(py);
         for (idx, val) in per_elem.by_element.iter().enumerate() {

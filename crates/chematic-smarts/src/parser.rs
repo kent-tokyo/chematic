@@ -178,14 +178,8 @@ impl<'a> Parser<'a> {
 
     fn parse(&mut self) -> Result<QueryMolecule, SmartsError> {
         let mut mol = QueryMolecule::new();
-        // open_rings maps ring-closure-number →
-        // (atom_idx, Optional<BondQuery>, lexical adjacency position).
-        //
-        // Keeping the position of the opening ring digit matters for
-        // tetrahedral SMARTS: `@`/`@@` is relative to neighbour encounter
-        // order, and the closing atom may not be parsed until much later.
+        // Preserve ring-opening order for tetrahedral `@`/`@@` parity.
         let mut open_rings: HashMap<u8, (usize, Option<BondQuery>, usize)> = HashMap::new();
-
         self.parse_chain(&mut mol, None, None, &mut open_rings)?;
         // `.` separates disconnected components (e.g. RDKit QED alert
         // `F.F.F.F`): each component matches independently, atoms distinct.
@@ -323,8 +317,7 @@ impl<'a> Parser<'a> {
         Ok(Some(current))
     }
 
-    /// Parse a ring closure number (single digit or `%nn`) and an optional
-    /// leading bond query (already consumed before calling this).
+    /// Parse a ring number and its optional, already-consumed bond query.
     fn parse_ring_closure_num(
         &mut self,
         prefix_bond: Option<BondQuery>,

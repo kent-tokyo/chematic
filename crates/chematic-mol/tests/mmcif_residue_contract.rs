@@ -26,7 +26,7 @@ fn render(rows: &[Vec<String>]) -> String {
 
 #[test]
 fn nonpolymer_sequence_placeholders_do_not_merge_three_sugars() {
-    let doc = parse_mmcif_residues(FIXTURE).unwrap();
+    let doc = diagnostic(parse_mmcif_residues(FIXTURE)).unwrap();
     assert_eq!(doc.residues.len(), 3);
     assert_eq!(doc.atom_to_residue, vec![0, 0, 1, 1, 2, 2]);
     let names: Vec<_> = doc
@@ -66,7 +66,7 @@ fn all_720_row_permutations_keep_partition_and_source_mapping() {
     let mut count = 0;
     permute(&mut [0, 1, 2, 3, 4, 5], 0, &mut |order| {
         let reordered: Vec<_> = order.iter().map(|&i| original[i].clone()).collect();
-        let doc = parse_mmcif_residues(&render(&reordered)).unwrap();
+        let doc = diagnostic(parse_mmcif_residues(&render(&reordered))).unwrap();
         assert_eq!(doc.residues.len(), 3);
         for (i, &old) in order.iter().enumerate() {
             let r = &doc.residues[doc.atom_to_residue[i]];
@@ -90,7 +90,7 @@ fn keeps_both_chain_namespaces_when_author_chain_collides() {
     r[1][3] = "C1".into();
     r[1][18] = "C1".into();
     r[1][6] = "F".into();
-    let doc = parse_mmcif_residues(&render(&r)).unwrap();
+    let doc = diagnostic(parse_mmcif_residues(&render(&r))).unwrap();
     assert_eq!(doc.residues.len(), 2);
     assert_eq!(
         doc.residues[0].identity.auth_asym_id,
@@ -118,7 +118,10 @@ fn model_entity_insertion_and_components_are_distinct_identity_fields() {
         r[1][18] = "C1".into();
         r[1][column] = value.into();
         assert_eq!(
-            parse_mmcif_residues(&render(&r)).unwrap().residues.len(),
+            diagnostic(parse_mmcif_residues(&render(&r)))
+                .unwrap()
+                .residues
+                .len(),
             2,
             "column {column}"
         );
@@ -135,7 +138,7 @@ fn alternate_locations_stay_atoms_of_the_same_residue_and_keep_full_codes() {
     r[1][4] = "BB".into();
     r[0][9] = "AB".into();
     r[1][9] = "AB".into();
-    let d = parse_mmcif_residues(&render(&r)).unwrap();
+    let d = diagnostic(parse_mmcif_residues(&render(&r))).unwrap();
     assert_eq!(d.residues.len(), 1);
     assert_eq!(d.atom_ids[0].alt_id.as_deref(), Some("AA"));
     assert_eq!(d.atom_ids[1].alt_id.as_deref(), Some("BB"));
@@ -149,7 +152,7 @@ fn duplicate_atom_names_are_not_silently_merged() {
     r[1][3] = "C1".into();
     r[1][18] = "AUTH_DIFFERENT".into();
     assert!(matches!(
-        parse_mmcif_residues(&render(&r)),
+        diagnostic(parse_mmcif_residues(&render(&r))),
         Err(MmcifResidueError::DuplicateAtom {
             atom: 1,
             residue: 0
@@ -171,7 +174,7 @@ fn missing_identity_errors_and_explicit_author_zero_remains_valid() {
             r[0][i] = "?".into();
         }
         assert_eq!(
-            parse_mmcif_residues(&render(&r)).err(),
+            diagnostic(parse_mmcif_residues(&render(&r))).err(),
             Some(MmcifResidueError::MissingIdentity { atom: 0, field })
         );
     }
@@ -179,7 +182,9 @@ fn missing_identity_errors_and_explicit_author_zero_remains_valid() {
     r.truncate(1);
     r[0][15] = "0".into();
     assert_eq!(
-        parse_mmcif_residues(&render(&r)).unwrap().residues[0]
+        diagnostic(parse_mmcif_residues(&render(&r)))
+            .unwrap()
+            .residues[0]
             .identity
             .auth_seq_id
             .as_deref(),
@@ -196,7 +201,7 @@ fn author_and_label_fallbacks_are_explicit_in_identity() {
         for &i in cols {
             r[0][i] = ".".into();
         }
-        let d = parse_mmcif_residues(&render(&r)).unwrap();
+        let d = diagnostic(parse_mmcif_residues(&render(&r))).unwrap();
         assert_eq!(d.residues.len(), 1);
     }
 }
@@ -208,7 +213,13 @@ fn leading_zero_author_identifiers_remain_distinct() {
     r[1][3] = "C1".into();
     r[1][18] = "C1".into();
     r[1][15] = "01".into();
-    assert_eq!(parse_mmcif_residues(&render(&r)).unwrap().residues.len(), 2);
+    assert_eq!(
+        diagnostic(parse_mmcif_residues(&render(&r)))
+            .unwrap()
+            .residues
+            .len(),
+        2
+    );
 }
 
 #[test]
@@ -218,7 +229,7 @@ fn long_component_names_and_atom_aliases_are_preserved() {
     r[0][5] = "A1AJ1".into();
     r[0][16] = "AUTHOR_LONG".into();
     r[0][18] = "NAME_LONG".into();
-    let d = parse_mmcif_residues(&render(&r)).unwrap();
+    let d = diagnostic(parse_mmcif_residues(&render(&r))).unwrap();
     assert_eq!(
         d.residues[0].identity.label_comp_id.as_deref(),
         Some("A1AJ1")
@@ -237,11 +248,11 @@ fn incomplete_rows_and_empty_loops_are_errors() {
     r.truncate(1);
     r[0].pop();
     assert!(matches!(
-        parse_mmcif_residues(&render(&r)),
+        diagnostic(parse_mmcif_residues(&render(&r))),
         Err(MmcifResidueError::IncompleteRow { atom: 0 })
     ));
     assert!(matches!(
-        parse_mmcif_residues("data_empty\n"),
+        diagnostic(parse_mmcif_residues("data_empty\n")),
         Err(MmcifResidueError::Parse(MmcifError::NoAtomSiteLoop))
     ));
 }
@@ -263,7 +274,7 @@ fn limits_apply_before_atom_or_token_growth() {
         },
     ] {
         assert!(matches!(
-            parse_mmcif_residues_with_limits(FIXTURE, &l),
+            diagnostic(parse_mmcif_residues_with_limits(FIXTURE, &l)),
             Err(MmcifResidueError::Parse(_))
         ));
     }
@@ -272,7 +283,7 @@ fn limits_apply_before_atom_or_token_growth() {
         max_atoms: 6,
         max_line_len: 8192,
     };
-    assert!(parse_mmcif_residues_with_limits(FIXTURE, &exact).is_ok());
+    assert!(diagnostic(parse_mmcif_residues_with_limits(FIXTURE, &exact)).is_ok());
 }
 
 #[test]
@@ -282,7 +293,7 @@ fn model_range_is_checked_instead_of_wrapping() {
         r.truncate(1);
         r[0][19] = v.into();
         assert!(matches!(
-            parse_mmcif_residues(&render(&r)),
+            diagnostic(parse_mmcif_residues(&render(&r))),
             Err(MmcifResidueError::InvalidField {
                 field: "model number",
                 ..
@@ -298,7 +309,7 @@ fn unsupported_author_strings_and_invalid_numbers_fail_explicitly() {
         r.truncate(1);
         r[0][column] = v.into();
         assert!(matches!(
-            parse_mmcif_residues(&render(&r)),
+            diagnostic(parse_mmcif_residues(&render(&r))),
             Err(MmcifResidueError::Parse(_))
         ));
     }
@@ -307,7 +318,7 @@ fn unsupported_author_strings_and_invalid_numbers_fail_explicitly() {
 #[test]
 fn preserves_cell_space_group_and_reports_unhandled_columns() {
     let input=FIXTURE.replacen("loop_\n","_cell.length_a 10\n_cell.length_b 11\n_cell.length_c 12\n_cell.angle_alpha 90\n_cell.angle_beta 90\n_cell.angle_gamma 90\n_symmetry.space_group_name_H-M 'P 1'\nloop_\n",1);
-    let d = parse_mmcif_residues(&input).unwrap();
+    let d = diagnostic(parse_mmcif_residues(&input)).unwrap();
     assert_eq!(d.parsed.cell.unwrap().a, 10.0);
     assert_eq!(d.parsed.space_group.as_deref(), Some("P 1"));
     let input = FIXTURE
@@ -327,10 +338,14 @@ fn preserves_cell_space_group_and_reports_unhandled_columns() {
         .collect::<Vec<_>>()
         .join("\n");
     assert_eq!(
-        parse_mmcif_residues(&input)
+        diagnostic(parse_mmcif_residues(&input))
             .unwrap()
             .parsed
             .unhandled_columns,
         vec!["_atom_site.custom_tag"]
     );
 }
+
+#[path = "support/upstream_diagnostics.rs"]
+mod upstream_diagnostics;
+use upstream_diagnostics::diagnostic;
