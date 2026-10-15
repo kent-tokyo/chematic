@@ -5140,3 +5140,13 @@ def write_dmol3(elements: Sequence[str], positions_bohr: Sequence[Sequence[float
 def select_pdb_atoms(text: str, atom_indices: Optional[Sequence[int]] = None, *, allow_metadata_loss: bool = False, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None, max_records: Optional[int] = None) -> dict[str, Any]:
     """Select source atom rows without identity perception; None keeps all, [] keeps none."""
     ...
+
+
+def parse_ccd_json(text: str, *, max_input_bytes: int | None = None, max_atoms: int | None = None, max_bonds: int | None = None) -> str:
+    """Single-component CCD record with explicit topology and stereo annotations."""
+    ...
+
+
+def from_ccd(text: str, *, allow_stereo_loss: bool = False) -> Mol:
+    """Explicit CCD graph; unassigned R/S and E/Z require loss consent."""
+    ...

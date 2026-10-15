@@ -16,6 +16,12 @@
 //! let written = write_mol(&mol, &meta);
 //! ```
 
+pub mod ccd;
+pub use ccd::{
+    CcdAtom, CcdBond, CcdComponent, CcdError, CcdParseLimits, parse_ccd_component,
+    parse_ccd_component_with_limits,
+};
+
 pub mod cdjson;
 pub mod cdxml;
 pub mod cdxml_document;
