@@ -62,3 +62,11 @@ APIs with installed RDKit on 128 ordinary synthetic coordinate cases and eight
 numeric boundary recipes. It records full matrices, finite/nonfinite categories,
 source/runtime hashes and zero-valued failure counters. It does not execute
 the oversized upstream heap-crash reproducer.
+
+### HIN aromatic-bond validation
+
+`validate_openbabel_hin.py` compares the original synthetic HIN fixture through
+a source-built chematic Python extension and a pinned installed Open Babel
+binary. It records both MDL bond-type lists, source/artifact hashes and raw
+outputs. This checks Open Babel #3000's bounded bond semantics, not general
+chemical equivalence or performance.

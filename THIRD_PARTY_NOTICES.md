@@ -327,3 +327,11 @@ Exact paths, source rows, transformations, oracle settings, expected results,
 and normalized payload hashes are recorded in
 `validation/benchmark_corpora/chemistry-speed-followups-v1.manifest.json`.
 These data notices do not change the license of project implementation code.
+
+## HIN aromatic-bond fixture (2026-10-15)
+
+`validation/openbabel_issues/hin/aromatic-ring.hin` is original synthetic
+project input under MIT OR Apache-2.0. No Open Babel source code or issue
+attachment was copied. The issue and format documentation are referenced
+for the behavior and file syntax; the fixture manifest records provenance,
+expected MDL bond semantics and a SHA-256 digest.

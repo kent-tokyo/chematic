@@ -227,6 +227,7 @@ jobs:
           - { package: chematic-chem, target: stereo_candidate_budget }
           - { package: chematic-mol, target: cif_coordinate_contract }
           - { package: chematic-mol, target: cml_hydrogen_contract }
+          - { package: chematic-mol, target: hin_contract }
           - { package: chematic-mol, target: coverage_boundaries }
           - { package: chematic-mol, target: mol2_unity_charge }
           - { package: chematic-mol, target: public_api_compat_v1_1_3 }
