@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "checked_at_utc": "2026-10-15T15:17:36.443827+00:00",
+  "issue": {
+    "url": "https://github.com/rdkit/rdkit/issues/9647",
+    "state_checked": "open",
+    "relation": "Numeric extension of the existing allocation guard; no new upstream heap-crash claim"
+  },
+  "source_base_commit": "2c3ff6ff71d3b3b6e05f3eafd5cf237698a7e5b9",
+  "source_candidate": true,
+  "published_artifact": false,
+  "source_sha256": {
+    "crates/chematic-smiles/src/rdkit/matrices/checked_3d.rs": "21d5746ad3c1f9e35bce0912001deaa5e50fe6036281f8bcac7f9ad2fcf10ddc",
+    "crates/chematic-smiles/src/rdkit/matrices.rs": "16ecdd50029c017a815828562a14bdfe075131615bcfeceb593dffec48bebc99",
+    "crates/chematic-py/src/mol_methods/transformations.rs": "78a2aa03c8fe28d71a1d7d7cd0d452f7c6633341ee32666054b19df6de90c5dd",
+    "crates/chematic-wasm/src/checked_matrices.rs": "ab2388db99b22985d9df1fa22b3053480119d047d0e20d6bbc0d940c59543ff9"
+  },
+  "extension_sha256": "f0563a499eccec790186702180378670c1beaa4dd05585d05f09df5780dff23c",
+  "rdkit": {
+    "version": "2026.09.1",
+    "rdBase_sha256": "2fb1e7377e7441fcc3c9ae813803adb288fdb710b2b0de66aecbfc1f4b5919ff"
+  },
+  "ordinary_cases": 128,
+  "max_absolute_rdkit_difference": 0.0,
+  "legacy_disagreements": 0,
+  "numeric_edge_cases": 8,
+  "failed_cases": 0,
+  "oversized_rdkit_crash_reproducer_executed": false,
+  "fixture_sha256": "b138d2f8c96ac62126a4bf5a4a1cdf9437bd62706cf57b1036d2a8caf451028f",
+  "packet_sha256": "d5999d8be6f108e001e1be08e429d2b7cb898a39d935b867543f01403c959a38",
+  "local_validation": {
+    "completed_at_utc": "2026-10-15T15:19:21.165112+00:00",
+    "rust": {
+      "passed": 406,
+      "failed": 0,
+      "ignored": 1,
+      "new_contract_tests": 9,
+      "targets": [
+        "chematic-smiles --lib",
+        "rdkit_matrix_3d_checked",
+        "rdkit_matrix_limits"
+      ]
+    },
+    "python": {
+      "passed": 26,
+      "failed": 0,
+      "new_contract_tests": 15,
+      "runtime": "CPython 3.13.6, pytest 9.1.1, source extension"
+    },
+    "node_wasm": {
+      "passed": true,
+      "ordinary_packet_cases": 128,
+      "cross_runtime_exact": true,
+      "wasm_bindgen_version": "0.2.129",
+      "wasm_sha256": "f51518454bafae67a6a3536284e09aa5e427f7ca4bd3d30241cce39119d074f8",
+      "javascript_sha256": "ed6c97c526bca25519dbb29b888fb9fdf58a1458dfb52f70115d65e8bee0ed2f"
+    },
+    "checks": {
+      "clippy_warnings_denied": true,
+      "rustfmt": true,
+      "strict_mkdocs": true,
+      "product_names": true,
+      "release_docs_consistency": true,
+      "binding_inventory": true,
+      "cross_binding_manifest": true,
+      "refactor_budget": true
+    },
+    "logs_sha256": {
+      "rust": "fd1c8795436fbe3a82c629d2aad58d8e1fc0129d72e1b79873ec381577931205",
+      "python": "72abe846ff27df9b97888f340ba7f799c04ade0591cc1b1bb5bfa5d0b0065669",
+      "node_wasm": "7c4037b3d1597734cdbd61853225d6e9f5aaf79712da61134812515568ee3fed",
+      "clippy_tests": "6c5efdd27de2634b64b7c703f6ab71bc8aa83e58c9377a95cf9b624a8f3292f1",
+      "clippy_libraries": "b31550da810bb9274f7d955037e1cf1317644cc629126a4cbcac1c8dd9fee722",
+      "mkdocs": "2d96d2cc7bf10234be3ec3eb69f5cdb4705dcb03440620fbf71276bbd94ba40e"
+    }
+  }
+}

@@ -12,6 +12,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Add an opt-in checked RDKit-model 3D distance matrix to Rust/Python/WASM,
+  extending the #9647 allocation boundary with finite-coordinate/result checks,
+  explicit undefined weighted-dummy diagonals and scaled norms for representable
+  extreme distances. Existing compatibility results remain unchanged.
+
 - Add a checked single-molecule HyperChem HIN reader and immutable source
   records to Rust/Python/WASM. Preserve atom identities, coordinates, partial
   charges and literal `s/d/t/a` connectivity; aromatic HIN bonds project to MDL

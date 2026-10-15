@@ -87,6 +87,7 @@ nav:
     - PDB Atom Selection: pdb-atom-selection.md
     - Language Bindings Cross-Reference: language-bindings.md
     - Error Handling & Limits: error-and-limits.md
+    - Checked 3D Distance Matrices: rdkit-checked-3d-distance-matrix.md
   - Reliability:
     - ChemDoodle JSON: chemdoodle-json.md
     - Fingerprint Target Density: fingerprint-target-density.md

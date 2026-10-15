@@ -401,7 +401,9 @@ pub use atom_environment::{
     rdkit_atom_environment_with_limits,
 };
 pub use graph_queries::{rdkit_adjacency_matrix, rdkit_shortest_path};
-pub use matrices::{rdkit_distance_matrix, rdkit_distance_matrix_3d};
+pub use matrices::{
+    rdkit_distance_matrix, rdkit_distance_matrix_3d, rdkit_distance_matrix_3d_checked,
+};
 pub use path_enumeration::{
     RdkitPathLimits, RdkitPathParams, rdkit_paths_of_length, rdkit_paths_of_length_with_limits,
 };

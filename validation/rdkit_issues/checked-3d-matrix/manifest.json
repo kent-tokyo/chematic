@@ -1,0 +1,9 @@
+{
+  "issue": "https://github.com/rdkit/rdkit/issues/9647",
+  "scope": "Opt-in numeric extension of the existing bounded 3D matrix; not an additional upstream heap-crash claim",
+  "fixture": "cases.json",
+  "sha256": "b138d2f8c96ac62126a4bf5a4a1cdf9437bd62706cf57b1036d2a8caf451028f",
+  "provenance": "Original synthetic coordinates and molecule recipes; no upstream attachment copied",
+  "license": "MIT OR Apache-2.0",
+  "nonfinite_recipe_encoding": "String spelling is converted to float by the Python/native runner; it is not a valid WASM JSON number"
+}
