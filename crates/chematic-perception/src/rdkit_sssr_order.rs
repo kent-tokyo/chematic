@@ -386,17 +386,23 @@ fn smallest_rings_bfs_in(
                     ring.push(parent as usize);
                     parent = parents[parent as usize];
                 }
-                ring.insert(0, curr);
+                let right_len = ring.len();
+                ring.push(curr);
                 parent = parents[curr];
                 while parent != -1 {
                     if ring.contains(&(parent as usize)) {
                         ring.clear();
                         break;
                     }
-                    ring.insert(0, parent as usize);
+                    ring.push(parent as usize);
                     parent = parents[parent as usize];
                 }
                 if ring.len() > 1 {
+                    // Append both parent chains, then restore the exact ring
+                    // order without moving the whole prefix at every step.
+                    ring.reverse();
+                    let left_len = ring.len() - right_len;
+                    ring[left_len..].reverse();
                     if ring.len() <= cur_size {
                         cur_size = ring.len();
                         rings.push(ring);
@@ -1165,3 +1171,7 @@ mod sort_boundary_contract_tests {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "rdkit_sssr_path_tests.rs"]
+mod rdkit_sssr_path_tests;
