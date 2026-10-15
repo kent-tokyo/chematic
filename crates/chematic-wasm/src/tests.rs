@@ -2260,6 +2260,21 @@ fn smarts_match_atoms_with_chirality_chiral_atom_matches_only_with_flag() {
 }
 
 #[test]
+fn recursive_smarts_chirality_uses_mapped_neighbor_parity() {
+    let trans = parse("C1[C@H]2[C@@H](C2)C1");
+    let cis = parse("C1[C@H]2[C@H](C2)C1");
+    let query = "[$(C1[C@H]2[C@@H](C2)C1)]";
+
+    let trans_matches = smarts_match_atoms_with_chirality(query, &trans, true).unwrap();
+    let cis_matches = smarts_match_atoms_with_chirality(query, &cis, true).unwrap();
+    assert!(!trans_matches.contains("[]"));
+    assert!(cis_matches.contains("[]"));
+
+    let ignored = smarts_match_atoms_with_chirality(query, &cis, false).unwrap();
+    assert!(!ignored.contains("[]"));
+}
+
+#[test]
 fn enumerate_stereo_isomers_one_center_gives_two() {
     // C(F)(Cl)Br has one unspecified chiral center → 2 stereoisomers
     let mol = parse("C(F)(Cl)Br");

@@ -1,0 +1,1839 @@
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 98cfc32..753acdf 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -222,6 +222,7 @@ jobs:
+           - { package: chematic-mol, target: gro_contract }
+           - { package: chematic-mol, target: turbomole_contract }
+           - { package: chematic-mol, target: rdfile_contract }
++          - { package: chematic-mol, target: gzmat_precision }
+           - { package: chematic-mol, target: qcschema }
+           - { package: chematic-mol, target: square_planar_mol_io }
+           - { package: chematic-mol, target: stereo2d_ez_reader_integration }
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index cca60ad..3e09395 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -12,6 +12,12 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
+ 
+ ### Added
+ 
++- Checked Cartesian-to-Z-matrix conversion and Gaussian-style Z-matrix output
++  with explicit reference atoms, charge/spin and 1–17 significant digits
++  (Open Babel #2794). Rust also reconstructs a canonical Cartesian frame;
++  Python exposes conversion and writing. Undefined or rounding-collapsed
++  frames fail instead of receiving arbitrary torsions.
++
+ - Added conservative meso stereo-group reduction in Rust/Python, promoting
+   correlated tetrahedral/geometric members to ABS only with bounded exact mapping proofs.
+ 
+diff --git a/crates/chematic-mol/src/gzmat.rs b/crates/chematic-mol/src/gzmat.rs
+new file mode 100644
+index 0000000..e9de7ee
+--- /dev/null
++++ b/crates/chematic-mol/src/gzmat.rs
+@@ -0,0 +1,130 @@
++//! Checked Cartesian-to-Z-matrix conversion and Gaussian-style output.
++//!
++//! Geometry only: references are caller-selected, zero-based, distinct earlier
++//! atoms. They need not be chemically bonded. No topology or electronic-state
++//! perception, dummy atoms, reordering, or arbitrary torsions are introduced.
++use chematic_core::Element;
++
++mod geometry;
++mod writer;
++pub use geometry::zmatrix_to_cartesian;
++pub use writer::{GzmatWriteOptions, write_gzmat};
++
++/// Hard cap keeps conversion and output linear and bounded.
++pub const MAX_ZMATRIX_ATOMS: usize = 100_000;
++/// Minimum sine of a defined angle or reference-plane angle.
++pub const ZMATRIX_MIN_SINE: f64 = 1e-10;
++
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub struct ZMatrixError {
++    /// Zero-based atom row; None denotes a document/options error.
++    pub atom: Option<usize>,
++    pub detail: String,
++}
++impl core::fmt::Display for ZMatrixError {
++    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
++        write!(f, "Z-matrix {:?}: {}", self.atom, self.detail)
++    }
++}
++impl std::error::Error for ZMatrixError {}
++fn error(atom: Option<usize>, detail: impl Into<String>) -> ZMatrixError {
++    ZMatrixError {
++        atom,
++        detail: detail.into(),
++    }
++}
++
++/// One row of internal coordinates; angstrom distance, degree angle/torsion.
++/// The first min(row_index, 3) earlier atoms define these values in order.
++#[derive(Debug, Clone, PartialEq)]
++pub struct ZMatrixRow {
++    pub element: Element,
++    pub references: Vec<usize>,
++    pub values: Vec<f64>,
++}
++
++fn validate_references(row: usize, references: &[usize]) -> Result<(), ZMatrixError> {
++    if references.len() != row.min(3) {
++        return Err(error(Some(row), "expected min(row_index, 3) references"));
++    }
++    for (k, &reference) in references.iter().enumerate() {
++        if reference >= row || references[..k].contains(&reference) {
++            return Err(error(
++                Some(row),
++                "references must be distinct earlier atoms",
++            ));
++        }
++    }
++    Ok(())
++}
++
++/// Validate publicly mutable rows, including ranges and reference structure.
++pub fn validate_zmatrix(rows: &[ZMatrixRow]) -> Result<(), ZMatrixError> {
++    validate_count(rows.len())?;
++    for (i, row) in rows.iter().enumerate() {
++        validate_references(i, &row.references)?;
++        if row.values.len() != row.references.len() {
++            return Err(error(Some(i), "reference and value counts differ"));
++        }
++        validate_values(i, &row.values)?;
++    }
++    Ok(())
++}
++fn validate_count(count: usize) -> Result<(), ZMatrixError> {
++    if count == 0 || count > MAX_ZMATRIX_ATOMS {
++        return Err(error(None, "atom count must be 1..=100000"));
++    }
++    Ok(())
++}
++fn validate_values(i: usize, values: &[f64]) -> Result<(), ZMatrixError> {
++    if values.iter().any(|v| !v.is_finite()) {
++        return Err(error(Some(i), "non-finite internal coordinate"));
++    }
++    if values.first().is_some_and(|v| *v <= 0.0) {
++        return Err(error(Some(i), "distance must be positive"));
++    }
++    if values
++        .get(1)
++        .is_some_and(|v| *v <= 0.0 || *v >= 180.0 || v.to_radians().sin() <= ZMATRIX_MIN_SINE)
++    {
++        return Err(error(Some(i), "angle is linear or near-linear"));
++    }
++    if values.get(2).is_some_and(|v| !(-180.0..=180.0).contains(v)) {
++        return Err(error(Some(i), "torsion must be in [-180,180] degrees"));
++    }
++    Ok(())
++}
++
++/// Convert indexed Cartesian angstrom coordinates without choosing a frame.
++/// Undefined/near-linear planes fail instead of receiving an arbitrary torsion.
++/// At most three references per atom; all work and memory are O(atom count).
++pub fn cartesian_to_zmatrix(
++    elements: &[Element],
++    positions_angstrom: &[[f64; 3]],
++    references: &[Vec<usize>],
++) -> Result<Vec<ZMatrixRow>, ZMatrixError> {
++    validate_count(elements.len())?;
++    if elements.len() != positions_angstrom.len() || elements.len() != references.len() {
++        return Err(error(
++            None,
++            "element, position and reference row counts must match",
++        ));
++    }
++    for (i, p) in positions_angstrom.iter().enumerate() {
++        if p.iter().any(|v| !v.is_finite()) {
++            return Err(error(Some(i), "non-finite Cartesian coordinate"));
++        }
++        validate_references(i, &references[i])?;
++    }
++    let mut rows = Vec::with_capacity(elements.len());
++    for (i, &element) in elements.iter().enumerate() {
++        let values = geometry::internal_values(i, positions_angstrom, &references[i])?;
++        validate_values(i, &values)?;
++        rows.push(ZMatrixRow {
++            element,
++            references: references[i].clone(),
++            values,
++        });
++    }
++    Ok(rows)
++}
+diff --git a/crates/chematic-mol/src/gzmat/geometry.rs b/crates/chematic-mol/src/gzmat/geometry.rs
+new file mode 100644
+index 0000000..3e03a8f
+--- /dev/null
++++ b/crates/chematic-mol/src/gzmat/geometry.rs
+@@ -0,0 +1,118 @@
++use super::{ZMATRIX_MIN_SINE, ZMatrixError, error};
++
++type V = [f64; 3];
++fn sub(a: V, b: V) -> V {
++    [a[0] - b[0], a[1] - b[1], a[2] - b[2]]
++}
++fn scale(a: V, s: f64) -> V {
++    [a[0] * s, a[1] * s, a[2] * s]
++}
++fn dot(a: V, b: V) -> f64 {
++    a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
++}
++fn cross(a: V, b: V) -> V {
++    [
++        a[1] * b[2] - a[2] * b[1],
++        a[2] * b[0] - a[0] * b[2],
++        a[0] * b[1] - a[1] * b[0],
++    ]
++}
++fn norm(v: V) -> f64 {
++    v[0].hypot(v[1]).hypot(v[2])
++}
++fn direction(i: usize, a: V, b: V) -> Result<(V, f64), ZMatrixError> {
++    let delta = sub(a, b);
++    let length = norm(delta);
++    if !length.is_finite() || length <= 0.0 {
++        return Err(error(
++            Some(i),
++            "coincident reference or overflowing distance",
++        ));
++    }
++    // Divide componentwise: computing 1/length first can overflow for tiny values.
++    Ok((
++        [delta[0] / length, delta[1] / length, delta[2] / length],
++        length,
++    ))
++}
++
++pub(super) fn internal_values(i: usize, p: &[V], r: &[usize]) -> Result<Vec<f64>, ZMatrixError> {
++    if r.is_empty() {
++        return Ok(Vec::new());
++    }
++    let (u, distance) = direction(i, p[i], p[r[0]])?;
++    let mut values = vec![distance];
++    if r.len() == 1 {
++        return Ok(values);
++    }
++    let (axis, _) = direction(i, p[r[1]], p[r[0]])?;
++    let sine = norm(cross(u, axis));
++    if sine <= ZMATRIX_MIN_SINE {
++        return Err(error(Some(i), "angle is linear or near-linear"));
++    }
++    values.push(sine.atan2(dot(u, axis)).to_degrees());
++    if r.len() == 2 {
++        return Ok(values);
++    }
++    let (w, _) = direction(i, p[r[2]], p[r[1]])?;
++    if norm(cross(axis, w)) <= ZMATRIX_MIN_SINE {
++        return Err(error(Some(i), "reference plane is linear or near-linear"));
++    }
++    let v0 = sub(u, scale(axis, dot(u, axis)));
++    let v2 = sub(w, scale(axis, dot(w, axis)));
++    values.push(dot(cross(axis, v0), v2).atan2(dot(v0, v2)).to_degrees());
++    Ok(values)
++}
++
++/// Reconstruct a canonical Cartesian frame (angstroms), preserving handedness.
++/// Absolute translation and rotation are not part of an internal-coordinate set.
++pub fn zmatrix_to_cartesian(rows: &[super::ZMatrixRow]) -> Result<Vec<V>, ZMatrixError> {
++    super::validate_zmatrix(rows)?;
++    let mut positions = Vec::with_capacity(rows.len());
++    for (i, row) in rows.iter().enumerate() {
++        let position = place_row(i, row, &positions)?;
++        if position.iter().any(|v| !v.is_finite()) {
++            return Err(error(Some(i), "reconstructed coordinate overflows"));
++        }
++        positions.push(position);
++    }
++    Ok(positions)
++}
++fn place_row(i: usize, row: &super::ZMatrixRow, p: &[V]) -> Result<V, ZMatrixError> {
++    if i == 0 {
++        return Ok([0.0; 3]);
++    }
++    let a = p[row.references[0]];
++    let distance = row.values[0];
++    if i == 1 {
++        return Ok([a[0], a[1], a[2] + distance]);
++    }
++    let b = p[row.references[1]];
++    let (axis, _) = direction(i, b, a)?;
++    let perpendicular = if i == 2 {
++        let basis = if axis[0].abs() < 0.9 {
++            [1.0, 0.0, 0.0]
++        } else {
++            [0.0, 1.0, 0.0]
++        };
++        sub(basis, scale(axis, dot(basis, axis)))
++    } else {
++        let (w, _) = direction(i, p[row.references[2]], b)?;
++        sub(w, scale(axis, dot(w, axis)))
++    };
++    let length = norm(perpendicular);
++    if length <= ZMATRIX_MIN_SINE {
++        return Err(error(Some(i), "reference plane is linear or near-linear"));
++    }
++    let e2 = scale(perpendicular, 1.0 / length);
++    let e3 = cross(axis, e2);
++    let angle = row.values[1].to_radians();
++    let torsion = row.values.get(2).copied().unwrap_or(0.0).to_radians();
++    let mut result = [0.0; 3];
++    for k in 0..3 {
++        let unit =
++            angle.cos() * axis[k] + angle.sin() * (torsion.cos() * e2[k] - torsion.sin() * e3[k]);
++        result[k] = a[k] + distance * unit;
++    }
++    Ok(result)
++}
+diff --git a/crates/chematic-mol/src/gzmat/writer.rs b/crates/chematic-mol/src/gzmat/writer.rs
+new file mode 100644
+index 0000000..88361d6
+--- /dev/null
++++ b/crates/chematic-mol/src/gzmat/writer.rs
+@@ -0,0 +1,132 @@
++use super::{ZMatrixError, ZMatrixRow, error, validate_values, validate_zmatrix};
++
++/// Explicit electronic state, single-line header fields and decimal precision.
++/// The route defaults to a template marker (#); supply calculation keywords
++/// before submitting a job. No method, charge or multiplicity is inferred.
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub struct GzmatWriteOptions {
++    pub charge: i32,
++    pub multiplicity: u32,
++    /// 1..=17 significant decimal digits, in scientific notation.
++    /// 17 preserves the computed f64 internal values on parsing.
++    pub significant_digits: u8,
++    pub title: String,
++    pub route: String,
++}
++impl GzmatWriteOptions {
++    pub fn new(charge: i32, multiplicity: u32) -> Self {
++        Self {
++            charge,
++            multiplicity,
++            significant_digits: 17,
++            title: "chematic internal coordinates".into(),
++            route: "#".into(),
++        }
++    }
++    fn validate(&self) -> Result<(), ZMatrixError> {
++        if !(1..=17).contains(&self.significant_digits) {
++            return Err(error(None, "significant_digits must be 1..=17"));
++        }
++        if self.multiplicity == 0 {
++            return Err(error(None, "multiplicity must be positive"));
++        }
++        for value in [&self.title, &self.route] {
++            if value.trim().is_empty() || value.len() > 1024 || value.chars().any(char::is_control)
++            {
++                return Err(error(
++                    None,
++                    "header fields must be nonempty single lines of at most 1024 bytes",
++                ));
++            }
++        }
++        if !self.route.starts_with('#') {
++            return Err(error(None, "Gaussian route must start with #"));
++        }
++        Ok(())
++    }
++}
++
++fn formatted_values(i: usize, row: &ZMatrixRow, digits: u8) -> Result<Vec<String>, ZMatrixError> {
++    let values: Vec<String> = row
++        .values
++        .iter()
++        .map(|v| {
++            // Normalize negative zero without changing a nonzero signed torsion.
++            let v = if *v == 0.0 { 0.0 } else { *v };
++            format!("{:.*e}", usize::from(digits) - 1, v)
++        })
++        .collect();
++    let rounded: Vec<f64> = values
++        .iter()
++        .map(|s| {
++            s.parse::<f64>()
++                .map_err(|_| error(Some(i), "formatted value is invalid"))
++        })
++        .collect::<Result<_, _>>()?;
++    // A low-precision request must not silently turn a valid angle into 180.
++    validate_values(i, &rounded)?;
++    Ok(values)
++}
++
++fn rounded_values(rows: &[ZMatrixRow], digits: u8) -> Result<Vec<Vec<String>>, ZMatrixError> {
++    let formatted = rows
++        .iter()
++        .enumerate()
++        .map(|(i, row)| formatted_values(i, row, digits))
++        .collect::<Result<Vec<_>, _>>()?;
++    let rounded = rows
++        .iter()
++        .zip(&formatted)
++        .enumerate()
++        .map(|(i, (row, values))| {
++            let values = values
++                .iter()
++                .map(|v| {
++                    v.parse::<f64>()
++                        .map_err(|_| error(Some(i), "formatted value is invalid"))
++                })
++                .collect::<Result<_, _>>()?;
++            Ok(ZMatrixRow {
++                element: row.element,
++                references: row.references.clone(),
++                values,
++            })
++        })
++        .collect::<Result<Vec<_>, ZMatrixError>>()?;
++    // Also check that rounding did not collapse an earlier reference plane.
++    super::zmatrix_to_cartesian(&rounded)?;
++    Ok(formatted)
++}
++
++/// Emit a Gaussian-style Z-matrix with independent r/a/d variables per atom.
++/// Serializes references one-based; does not emit bonds, isotopes or periodicity.
++/// Rounding that destroys a defined coordinate is rejected.
++pub fn write_gzmat(
++    rows: &[ZMatrixRow],
++    options: &GzmatWriteOptions,
++) -> Result<String, ZMatrixError> {
++    options.validate()?;
++    validate_zmatrix(rows)?;
++    let formatted = rounded_values(rows, options.significant_digits)?;
++    let mut output = format!(
++        "{}\n\n{}\n\n{} {}\n",
++        options.route, options.title, options.charge, options.multiplicity
++    );
++    let mut variables = String::new();
++    for (i, row) in rows.iter().enumerate() {
++        let values = &formatted[i];
++        output.push_str(row.element.symbol());
++        for (k, (&reference, value)) in row.references.iter().zip(values).enumerate() {
++            let name = format!("{}{}", ['r', 'a', 'd'][k], i + 1);
++            output.push_str(&format!(" {} {}", reference + 1, name));
++            variables.push_str(&format!("{name}= {value}\n"));
++        }
++        output.push('\n');
++    }
++    if !variables.is_empty() {
++        output.push_str("Variables:\n");
++        output.push_str(&variables);
++    }
++    output.push('\n');
++    Ok(output)
++}
+diff --git a/crates/chematic-mol/src/lib.rs b/crates/chematic-mol/src/lib.rs
+index 7afa68a..751f943 100644
+--- a/crates/chematic-mol/src/lib.rs
++++ b/crates/chematic-mol/src/lib.rs
+@@ -29,6 +29,7 @@ pub mod cube;
+ pub mod error;
+ pub mod gaussian;
+ pub mod gro;
++pub mod gzmat;
+ pub mod ket;
+ pub mod lammps_data;
+ pub mod lammps_dump;
+@@ -104,6 +105,10 @@ pub use gaussian::{
+     GaussianError, GaussianLogResult, GaussianParseLimits, parse_gaussian_log,
+     parse_gaussian_log_with_limits, parse_gjf, parse_gjf_with_limits, write_gjf,
+ };
++pub use gzmat::{
++    GzmatWriteOptions, ZMatrixError, ZMatrixRow, cartesian_to_zmatrix, validate_zmatrix,
++    write_gzmat, zmatrix_to_cartesian,
++};
+ pub use ket::{
+     KetError, KetParseLimits, parse_ket, parse_ket_3d, parse_ket_3d_with_limits,
+     parse_ket_with_limits, write_ket, write_ket_3d,
+diff --git a/crates/chematic-mol/tests/gzmat_precision.rs b/crates/chematic-mol/tests/gzmat_precision.rs
+new file mode 100644
+index 0000000..c384183
+--- /dev/null
++++ b/crates/chematic-mol/tests/gzmat_precision.rs
+@@ -0,0 +1,257 @@
++//! Original minimal analytic geometries; MIT OR Apache-2.0.
++use chematic_core::Element;
++use chematic_mol::{
++    GzmatWriteOptions, ZMatrixRow, cartesian_to_zmatrix, write_gzmat, zmatrix_to_cartesian,
++};
++
++fn tetra() -> Vec<[f64; 3]> {
++    vec![
++        [0.0, 0.0, 0.0],
++        [1.234567891234567, 0.0, 0.0],
++        [1.1, 1.33333333333333, 0.0],
++        [0.1, 0.3, 1.444444444444444],
++    ]
++}
++fn refs(n: usize) -> Vec<Vec<usize>> {
++    (0..n).map(|i| (0..i).rev().take(3).collect()).collect()
++}
++fn rows() -> Vec<ZMatrixRow> {
++    cartesian_to_zmatrix(
++        &[Element::C, Element::N, Element::O, Element::F],
++        &tetra(),
++        &refs(4),
++    )
++    .unwrap()
++}
++fn close(a: f64, b: f64) {
++    assert!((a - b).abs() < 1e-12, "{a} != {b}");
++}
++fn distance(a: [f64; 3], b: [f64; 3]) -> f64 {
++    (a[0] - b[0]).hypot(a[1] - b[1]).hypot(a[2] - b[2])
++}
++fn volume(p: &[[f64; 3]]) -> f64 {
++    let v: Vec<_> = p[1..]
++        .iter()
++        .map(|q| [q[0] - p[0][0], q[1] - p[0][1], q[2] - p[0][2]])
++        .collect();
++    v[0][0] * (v[1][1] * v[2][2] - v[1][2] * v[2][1])
++        - v[0][1] * (v[1][0] * v[2][2] - v[1][2] * v[2][0])
++        + v[0][2] * (v[1][0] * v[2][1] - v[1][1] * v[2][0])
++}
++#[test]
++fn analytic_lengths_angles_and_signed_torsions() {
++    let p = vec![
++        [1.0, 0.0, 0.0],
++        [0.0, 0.0, 0.0],
++        [0.0, 0.0, 1.0],
++        [0.0, 1.0, 1.0],
++    ];
++    let r = cartesian_to_zmatrix(&[Element::C; 4], &p, &refs(4)).unwrap();
++    close(r[1].values[0], 1.0);
++    close(r[2].values[0], 1.0);
++    close(r[2].values[1], 90.0);
++    close(r[3].values[0], 1.0);
++    close(r[3].values[1], 90.0);
++    close(r[3].values[2], 90.0);
++    let mut mirror = p;
++    mirror[3][1] = -1.0;
++    close(
++        cartesian_to_zmatrix(&[Element::C; 4], &mirror, &refs(4)).unwrap()[3].values[2],
++        -90.0,
++    );
++}
++#[test]
++fn reconstruction_preserves_distances_and_handedness_with_nonchain_refs() {
++    let p = tetra();
++    for r in [
++        refs(4),
++        vec![vec![], vec![0], vec![0, 1], vec![0, 2, 1]],
++        vec![vec![], vec![0], vec![1, 0], vec![1, 0, 2]],
++    ] {
++        let internal = cartesian_to_zmatrix(&[Element::C; 4], &p, &r).unwrap();
++        let out = zmatrix_to_cartesian(&internal).unwrap();
++        for i in 0..4 {
++            for j in 0..i {
++                close(distance(p[i], p[j]), distance(out[i], out[j]));
++            }
++        }
++        assert_eq!(
++            volume(&p).is_sign_positive(),
++            volume(&out).is_sign_positive()
++        );
++    }
++}
++#[test]
++fn seventeen_digits_round_trip_every_computed_scalar() {
++    let r = rows();
++    let text = write_gzmat(&r, &GzmatWriteOptions::new(-1, 2)).unwrap();
++    let variables: Vec<_> = text
++        .lines()
++        .filter_map(|line| {
++            line.split_once("= ")
++                .map(|(_, v)| v.parse::<f64>().unwrap())
++        })
++        .collect();
++    assert_eq!(
++        variables,
++        r.iter()
++            .flat_map(|row| row.values.iter().copied())
++            .collect::<Vec<_>>()
++    );
++    assert!(text.contains("-1 2\nC\nN 1 r2\nO 2 r3 1 a3\nF 3 r4 2 a4 1 d4"));
++}
++#[test]
++fn requested_significant_digits_affect_each_value() {
++    let mut o = GzmatWriteOptions::new(0, 1);
++    o.significant_digits = 8;
++    let text = write_gzmat(&rows(), &o).unwrap();
++    assert!(text.contains("r2= 1.2345679e0"));
++    o.significant_digits = 4;
++    assert!(write_gzmat(&rows(), &o).unwrap().contains("r2= 1.235e0"));
++}
++#[test]
++fn monatomic_diatomic_and_tiny_distances() {
++    for length in [1.234567891234567, 1e-200, 1e200] {
++        let r = cartesian_to_zmatrix(&[Element::H; 2], &[[0.0; 3], [0.0, 0.0, length]], &refs(2))
++            .unwrap();
++        assert_eq!(r[1].values[0], length);
++        assert!(write_gzmat(&r, &GzmatWriteOptions::new(0, 1)).is_ok());
++    }
++    let r = cartesian_to_zmatrix(&[Element::HE], &[[123.0, 4.0, 5.0]], &refs(1)).unwrap();
++    assert_eq!(zmatrix_to_cartesian(&r).unwrap(), [[0.0; 3]]);
++    assert!(
++        !write_gzmat(&r, &GzmatWriteOptions::new(0, 1))
++            .unwrap()
++            .contains("Variables:")
++    );
++}
++#[test]
++fn references_are_checked_before_access() {
++    for r in [
++        vec![vec![], vec![1]],
++        vec![vec![], vec![2]],
++        vec![vec![0], vec![0]],
++        vec![vec![], vec![]],
++    ] {
++        assert!(cartesian_to_zmatrix(&[Element::C; 2], &[[0.0; 3], [1.0; 3]], &r).is_err());
++    }
++    let mut r = refs(4);
++    r[3] = vec![2, 1, 1];
++    assert!(cartesian_to_zmatrix(&[Element::C; 4], &tetra(), &r).is_err());
++}
++#[test]
++fn missing_nonfinite_and_overflowing_coordinates_fail() {
++    assert!(cartesian_to_zmatrix(&[], &[], &[]).is_err());
++    assert!(cartesian_to_zmatrix(&[Element::C], &[], &[vec![]]).is_err());
++    for v in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
++        assert!(cartesian_to_zmatrix(&[Element::C], &[[v, 0.0, 0.0]], &refs(1)).is_err());
++    }
++    assert!(
++        cartesian_to_zmatrix(
++            &[Element::C; 2],
++            &[[f64::MAX, 0.0, 0.0], [-f64::MAX, 0.0, 0.0]],
++            &refs(2)
++        )
++        .is_err()
++    );
++}
++#[test]
++fn coincident_and_linear_frames_fail_without_invented_torsions() {
++    assert!(cartesian_to_zmatrix(&[Element::C; 2], &[[0.0; 3]; 2], &refs(2)).is_err());
++    for y in [0.0, 1e-12] {
++        let p = [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [2.0, y, 0.0]];
++        assert!(cartesian_to_zmatrix(&[Element::C; 3], &p, &refs(3)).is_err());
++    }
++    let p = [
++        [0.0, 0.0, 0.0],
++        [1.0, 0.0, 0.0],
++        [1.0, 1.0, 0.0],
++        [2.0, 0.0, 0.0],
++        [0.0, 0.0, 1.0],
++    ];
++    let r = vec![vec![], vec![0], vec![1, 0], vec![2, 1, 0], vec![0, 1, 3]];
++    let e = cartesian_to_zmatrix(&[Element::C; 5], &p, &r).unwrap_err();
++    assert_eq!(e.atom, Some(4));
++    assert!(e.detail.contains("plane"));
++}
++#[test]
++fn options_validate_precision_headers_and_spin() {
++    for digits in [0, 18, 255] {
++        let mut o = GzmatWriteOptions::new(0, 1);
++        o.significant_digits = digits;
++        assert!(write_gzmat(&rows(), &o).is_err());
++    }
++    let mut o = GzmatWriteOptions::new(0, 0);
++    assert!(write_gzmat(&rows(), &o).is_err());
++    o.multiplicity = 1;
++    for title in ["", "x\n0 1", "x\rfoo", "x\0y"] {
++        o.title = title.into();
++        assert!(write_gzmat(&rows(), &o).is_err());
++    }
++    o.title = "valid".into();
++    o.route = "HF".into();
++    assert!(write_gzmat(&rows(), &o).is_err());
++    o.route = "# HF/STO-3G".into();
++    assert!(write_gzmat(&rows(), &o).is_ok());
++}
++#[test]
++fn mutable_rows_fail_closed() {
++    for values in [vec![], vec![0.0], vec![f64::NAN], vec![1.0, 90.0]] {
++        let mut r = rows();
++        r[1].values = values;
++        assert!(write_gzmat(&r, &GzmatWriteOptions::new(0, 1)).is_err());
++    }
++    for angle in [0.0, 180.0, 1e-12, 181.0] {
++        let mut r = rows();
++        r[2].values[1] = angle;
++        assert!(zmatrix_to_cartesian(&r).is_err());
++    }
++    let mut r = rows();
++    r[3].values[2] = 181.0;
++    assert!(write_gzmat(&r, &GzmatWriteOptions::new(0, 1)).is_err());
++}
++#[test]
++fn rounding_must_not_create_a_linear_angle() {
++    let mut r = rows();
++    r[2].values[1] = 179.99999;
++    let mut o = GzmatWriteOptions::new(0, 1);
++    o.significant_digits = 4;
++    assert!(write_gzmat(&r, &o).is_err());
++    o.significant_digits = 17;
++    assert!(write_gzmat(&r, &o).is_ok());
++}
++#[test]
++fn rounding_must_not_collapse_an_earlier_reference_plane() {
++    let p = [
++        [0.0, 0.0, 0.0],
++        [1.0, 0.0, 0.0],
++        [1.0, 1.0, 0.0],
++        [2.0, 1.0, 0.0],
++        [2.0, 0.00001, 0.0],
++        [0.0, 0.0, 1.0],
++    ];
++    let r = vec![
++        vec![],
++        vec![0],
++        vec![1, 0],
++        vec![2, 1, 0],
++        vec![3, 2, 1],
++        vec![0, 1, 4],
++    ];
++    let rows = cartesian_to_zmatrix(&[Element::C; 6], &p, &r).unwrap();
++    let mut o = GzmatWriteOptions::new(0, 1);
++    o.significant_digits = 4;
++    assert!(write_gzmat(&rows, &o).is_err());
++    o.significant_digits = 17;
++    assert!(write_gzmat(&rows, &o).is_ok());
++}
++#[test]
++fn large_atom_count_is_rejected_before_other_shapes() {
++    let e = vec![Element::C; chematic_mol::gzmat::MAX_ZMATRIX_ATOMS + 1];
++    assert!(
++        cartesian_to_zmatrix(&e, &[], &[])
++            .unwrap_err()
++            .detail
++            .contains("count")
++    );
++}
+diff --git a/crates/chematic-py/python/chematic/__init__.pyi b/crates/chematic-py/python/chematic/__init__.pyi
+index a30b225..0bdae2a 100644
+--- a/crates/chematic-py/python/chematic/__init__.pyi
++++ b/crates/chematic-py/python/chematic/__init__.pyi
+@@ -4935,3 +4935,12 @@ def write_rdfile(document: dict[str, Any], *, wrap_data: bool = True) -> str:
+ def rdfile_to_smiles(text: str) -> list[Optional[str]]:
+     """Project records to molecular/reaction SMILES; references remain None."""
+     ...
++
++
++def cartesian_to_zmatrix(elements: Sequence[str], positions_angstrom: Sequence[Sequence[float]], references: Sequence[Sequence[int]]) -> list[dict[str, Any]]:
++    """Caller-referenced rows; zero-based indices, angstrom lengths and degree angles."""
++    ...
++
++def write_gzmat(elements: Sequence[str], positions_angstrom: Sequence[Sequence[float]], references: Sequence[Sequence[int]], *, charge: int, multiplicity: int, significant_digits: int = 17, title: str = "chematic internal coordinates", route: str = "#") -> str:
++    """Gaussian-style geometry template with explicit spin, references and precision."""
++    ...
+diff --git a/crates/chematic-py/src/formats.rs b/crates/chematic-py/src/formats.rs
+index 4a0ecd4..4633307 100644
+--- a/crates/chematic-py/src/formats.rs
++++ b/crates/chematic-py/src/formats.rs
+@@ -9,6 +9,8 @@ use std::sync::Arc;
+ mod cif;
+ use cif::*;
+ mod gro;
++mod gzmat;
++use gzmat::*;
+ mod rdfile;
+ use rdfile::*;
+ mod turbomole;
+@@ -1433,6 +1435,8 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
+         parse_rdfile,
+         write_rdfile,
+         rdfile_to_smiles,
++        cartesian_to_zmatrix,
++        write_gzmat,
+         parse_turbomole,
+         write_turbomole,
+         parse_mmcif_residues,
+diff --git a/crates/chematic-py/src/formats/gzmat.rs b/crates/chematic-py/src/formats/gzmat.rs
+new file mode 100644
+index 0000000..6a1485e
+--- /dev/null
++++ b/crates/chematic-py/src/formats/gzmat.rs
+@@ -0,0 +1,110 @@
++use super::*;
++use pyo3::types::{PyBool, PyInt};
++
++fn index(value: &Bound<'_, PyAny>) -> PyResult<usize> {
++    if value.is_instance_of::<PyBool>() || !value.is_instance_of::<PyInt>() {
++        return Err(PyValueError::new_err(
++            "reference indices must be integers, excluding bool",
++        ));
++    }
++    value
++        .extract::<usize>()
++        .map_err(|_| PyValueError::new_err("reference index must be nonnegative and fit usize"))
++}
++fn strict_u8(value: &Bound<'_, PyAny>) -> PyResult<u8> {
++    index(value)?
++        .try_into()
++        .map_err(|_| PyValueError::new_err("integer must fit u8"))
++}
++fn strict_i32(value: &Bound<'_, PyAny>) -> PyResult<i32> {
++    if value.is_instance_of::<PyBool>() || !value.is_instance_of::<PyInt>() {
++        return Err(PyValueError::new_err(
++            "charge must be an integer, excluding bool",
++        ));
++    }
++    value
++        .extract::<i32>()
++        .map_err(|_| PyValueError::new_err("charge must fit i32"))
++}
++fn strict_u32(value: &Bound<'_, PyAny>) -> PyResult<u32> {
++    index(value)?
++        .try_into()
++        .map_err(|_| PyValueError::new_err("multiplicity must fit u32"))
++}
++fn convert(
++    elements: Vec<String>,
++    positions: Vec<[f64; 3]>,
++    references: &Bound<'_, PyAny>,
++) -> PyResult<Vec<chematic_mol::ZMatrixRow>> {
++    if elements.is_empty() || elements.len() > chematic_mol::gzmat::MAX_ZMATRIX_ATOMS {
++        return Err(PyValueError::new_err("atom count must be 1..=100000"));
++    }
++    let mut refs = Vec::new();
++    for row in references.try_iter()? {
++        if refs.len() >= elements.len() {
++            return Err(PyValueError::new_err("too many reference rows"));
++        }
++        let mut indices = Vec::new();
++        for v in row?.try_iter()? {
++            if indices.len() >= refs.len().min(3) {
++                return Err(PyValueError::new_err("too many references for atom row"));
++            }
++            indices.push(index(&v?)?);
++        }
++        refs.push(indices);
++    }
++    let elements = elements
++        .iter()
++        .map(|s| {
++            chematic_core::Element::from_symbol(s)
++                .filter(|e| e.symbol() == s)
++                .ok_or_else(|| PyValueError::new_err(format!("invalid canonical element '{s}'")))
++        })
++        .collect::<PyResult<Vec<_>>>()?;
++    chematic_mol::cartesian_to_zmatrix(&elements, &positions, &refs)
++        .map_err(|e| PyValueError::new_err(e.to_string()))
++}
++
++/// Convert Cartesian angstroms to caller-referenced internal rows.
++/// Each dict contains element, zero-based references, and values (angstrom, degrees).
++#[pyfunction]
++pub(super) fn cartesian_to_zmatrix<'py>(
++    py: Python<'py>,
++    elements: Vec<String>,
++    positions_angstrom: Vec<[f64; 3]>,
++    references: &Bound<'py, PyAny>,
++) -> PyResult<Vec<Bound<'py, PyDict>>> {
++    convert(elements, positions_angstrom, references)?
++        .iter()
++        .map(|row| {
++            let result = PyDict::new(py);
++            result.set_item("element", row.element.symbol())?;
++            result.set_item("references", &row.references)?;
++            result.set_item("values", &row.values)?;
++            Ok(result)
++        })
++        .collect()
++}
++
++/// Write caller-referenced internal coordinates with 1..17 significant digits.
++/// Explicit charge/spin; no automatic topology, H, isotope or dummy-atom inference.
++#[pyfunction]
++#[pyo3(signature=(elements,positions_angstrom,references,*,charge,multiplicity,significant_digits=17,title="chematic internal coordinates",route="#"))]
++#[allow(clippy::too_many_arguments)]
++pub(super) fn write_gzmat(
++    elements: Vec<String>,
++    positions_angstrom: Vec<[f64; 3]>,
++    references: &Bound<'_, PyAny>,
++    #[pyo3(from_py_with=strict_i32)] charge: i32,
++    #[pyo3(from_py_with=strict_u32)] multiplicity: u32,
++    #[pyo3(from_py_with=strict_u8)] significant_digits: u8,
++    title: &str,
++    route: &str,
++) -> PyResult<String> {
++    let rows = convert(elements, positions_angstrom, references)?;
++    let mut options = chematic_mol::GzmatWriteOptions::new(charge, multiplicity);
++    options.significant_digits = significant_digits;
++    options.title = title.into();
++    options.route = route.into();
++    chematic_mol::write_gzmat(&rows, &options).map_err(|e| PyValueError::new_err(e.to_string()))
++}
+diff --git a/crates/chematic-py/tests/test_gzmat_precision.py b/crates/chematic-py/tests/test_gzmat_precision.py
+new file mode 100644
+index 0000000..bcee4b0
+--- /dev/null
++++ b/crates/chematic-py/tests/test_gzmat_precision.py
+@@ -0,0 +1,76 @@
++"""Original analytic geometry; MIT OR Apache-2.0. No proprietary input."""
++import math
++import pytest
++import chematic
++
++E = ['C','N','O','F']
++P = [[0.,0.,0.],[1.234567891234567,0.,0.],[1.1,1.33333333333333,0.],[0.1,0.3,1.444444444444444]]
++R = [[],[0],[1,0],[2,1,0]]
++
++
++def write(**kwargs):
++    return chematic.write_gzmat(E,P,R,charge=0,multiplicity=1,**kwargs)
++
++
++def test_rows_precision_and_nonmutation():
++    before=repr((E,P,R));rows=chematic.cartesian_to_zmatrix(E,P,R)
++    assert rows[1]=={'element':'N','references':[0],'values':[P[1][0]]}
++    text=write();values=[float(line.split('=')[1]) for line in text.splitlines() if '=' in line]
++    assert values==[v for row in rows for v in row['values']]
++    assert 'r2= 1.2345679e0' in write(significant_digits=8)
++    assert repr((E,P,R))==before
++    rows[1]['references'][0]=99;assert chematic.cartesian_to_zmatrix(E,P,R)[1]['references']==[0]
++
++
++@pytest.mark.parametrize('value',[True,False,1.0,'8',None,-1,0,18,256])
++def test_invalid_precision(value):
++    with pytest.raises((ValueError,TypeError,OverflowError)):write(significant_digits=value)
++
++
++@pytest.mark.parametrize('field',['charge','multiplicity'])
++@pytest.mark.parametrize('value',[True,1.0,'1',None,2**100])
++def test_state_requires_integers(field,value):
++    kw={'charge':0,'multiplicity':1};kw[field]=value
++    with pytest.raises((ValueError,TypeError,OverflowError)):chematic.write_gzmat(E,P,R,**kw)
++
++
++@pytest.mark.parametrize('value',[True,0.0,'0',None,-1,4,2**100])
++def test_bad_references(value):
++    refs=[[],[value],[1,0],[2,1,0]]
++    with pytest.raises((ValueError,TypeError,OverflowError)):chematic.cartesian_to_zmatrix(E,P,refs)
++
++
++@pytest.mark.parametrize('refs',[[[],[0],[1,0],[2,1,1]],[[],[0],[1,0]],R+[[]],[[0],[0],[1,0],[2,1,0]]])
++def test_wrong_reference_shapes(refs):
++    with pytest.raises(ValueError):chematic.cartesian_to_zmatrix(E,P,refs)
++
++
++@pytest.mark.parametrize('symbol',['c','*','X','13C','D',''])
++def test_exact_element_symbols(symbol):
++    with pytest.raises(ValueError):chematic.cartesian_to_zmatrix([symbol],[[0,0,0]],[[]])
++
++
++@pytest.mark.parametrize('v',[math.nan,math.inf,-math.inf])
++def test_nonfinite(v):
++    with pytest.raises(ValueError):chematic.cartesian_to_zmatrix(['He'],[[v,0,0]],[[]])
++
++
++def test_singular_frame_and_output_headers():
++    with pytest.raises(ValueError):chematic.cartesian_to_zmatrix(['C']*3,[[0,0,0],[1,0,0],[2,0,0]],[[],[0],[1,0]])
++    with pytest.raises(ValueError):write(title='name\n0 1')
++    with pytest.raises(ValueError):write(route='HF')
++    assert '# HF/STO-3G' in write(route='# HF/STO-3G')
++    assert '\n-1 2\n' in chematic.write_gzmat(E,P,R,charge=-1,multiplicity=2)
++
++
++def test_reference_iterators_are_bounded():
++    import itertools
++    with pytest.raises(ValueError):chematic.cartesian_to_zmatrix(E,P,itertools.repeat([]))
++    with pytest.raises(ValueError):chematic.cartesian_to_zmatrix(E,P,[[],itertools.repeat(0),[1,0],[2,1,0]])
++
++
++def test_single_atom_and_tiny_bond():
++    text=chematic.write_gzmat(['He'],[[4.,5.,6.]],[[]],charge=0,multiplicity=1)
++    assert 'He\n' in text and 'Variables:' not in text
++    text=chematic.write_gzmat(['H','H'],[[0.,0.,0.],[0.,0.,1e-200]],[[],[0]],charge=0,multiplicity=1)
++    assert float(text.split('r2= ')[1].strip()) == 1e-200
+diff --git a/docs/gzmat-precision.md b/docs/gzmat-precision.md
+new file mode 100644
+index 0000000..83f2ea1
+--- /dev/null
++++ b/docs/gzmat-precision.md
+@@ -0,0 +1,177 @@
++# Gaussian-style Z-matrix precision
++
++This local candidate addresses the geometry-conversion request in
++[Open Babel #2794](https://github.com/openbabel/openbabel/issues/2794).
++It adds a checked Cartesian-to-Z-matrix conversion and an explicitly
++configurable precision writer. Existing Cartesian Gaussian input/output APIs
++remain compatible. This document describes source validation, not a release
++or an upstream issue closure.
++
++## API and units
++
++Rust exports from `chematic_mol`:
++
++- `cartesian_to_zmatrix(elements, positions_angstrom, references)` returns
++  `Vec<ZMatrixRow>`.
++- `zmatrix_to_cartesian(rows)` reconstructs a canonical Cartesian frame.
++- `validate_zmatrix(rows)` checks local row structure, finite values and ranges.
++  Reconstruction additionally checks reference planes.
++- `write_gzmat(rows, &GzmatWriteOptions)` validates and writes the document,
++  including checking reconstruction after requested rounding.
++
++`ZMatrixRow` has an `Element`, zero-based `references: Vec<usize>`, and
++`values: Vec<f64>`. The first row has no references; subsequent rows must
++have exactly `min(row_index, 3)` distinct earlier references. The reference
++sequence defines a distance, angle, then signed torsion. Distances are in
++angstroms and angles in degrees. These geometric references do not imply
++chemical bonds. Atom ordering is retained; no reference search or reordering
++is performed.
++
++Python exposes the same conversion and direct writing from Cartesian arrays:
++
++```python
++import chematic
++
++elements = ["C", "N", "O", "F"]
++positions = [
++    [0.0, 0.0, 0.0],
++    [1.234567891234567, 0.0, 0.0],
++    [1.1, 1.33333333333333, 0.0],
++    [0.1, 0.3, 1.444444444444444],
++]
++references = [[], [0], [1, 0], [2, 1, 0]]
++
++rows = chematic.cartesian_to_zmatrix(elements, positions, references)
++# rows: [{"element": str, "references": list[int], "values": list[float]}, ...]
++text = chematic.write_gzmat(
++    elements, positions, references,
++    charge=0, multiplicity=1, significant_digits=17,
++    title="Explicit internal geometry", route="#",
++)
++```
++
++Python accepts canonical elemental symbols, not isotope names, dummy labels
++or wildcard atoms. Reference indices, charge, multiplicity and precision must
++be integers; booleans are rejected. Reference iterators are consumed with
++row/count bounds. Returned rows are detached dictionaries. Charge and spin
++are supplied by the caller, not inferred; physical electron-count/parity
++compatibility is not checked.
++
++## Precision contract
++
++`GzmatWriteOptions::new(charge, multiplicity)` defaults to 17 significant
++decimal digits, the title `chematic internal coordinates`, and route `#`.
++Precision can be set from 1 through 17. Output uses scientific notation for
++every internal value, including very small distances, and one distinct
++`rN`, `aN` or `dN` variable per coordinate. File references are one-based.
++A one-atom document needs no variable section.
++
++At 17 digits, parsing each serialized scalar as `f64` gives the computed
++internal value exactly. This is a serialization guarantee; conversion between
++Cartesian and internal coordinates still has floating-point error. Internal
++coordinates retain shape and handedness but discard absolute translation and
++rotation. Lower precision can change shape, even when the frame remains valid.
++
++The route is a single-line Gaussian-style header supplied by the caller. The
++`#` default is a template marker; select calculation keywords before running
++an actual job. Route semantics, including any unit-changing keywords, are the
++caller's responsibility. Length values emitted by this API are angstroms.
++Title and route fields are nonempty single lines of at most 1024 bytes;
++control characters and section injection are rejected.
++
++## Checked failures and scope
++
++The converter uses finite vector differences, scaled norms and `atan2` for
++angles and signed torsions. It rejects coincident references, overflowing
++lengths and undefined/near-linear coordinate or reference planes. The minimum
++accepted sine is strictly greater than `1e-10`. It does not insert a dummy
++atom or choose an arbitrary torsion to hide a singularity.
++
++The writer checks public row data again. It reconstructs the rounded rows
++before writing, so rounding that creates a zero/linear angle, collapses a
++later reference plane, or overflows coordinates fails. Nondegenerate planar
++geometries and zero/180-degree torsions are valid. Linear bond angles are
++outside this conservative profile. Work and storage are linear in atom
++count, with a hard cap of 100,000 atoms.
++
++This profile contains elements and geometry, not a molecular graph. It does
++not serialize isotope, topology, atom-map, stereogroup, periodic, ghost-atom
++or dummy-atom metadata. There is no automatic reference selection, general
++Gaussian Z-matrix parser, ORCA internal-input writer or quantum job execution.
++The existing ORCA adapter continues to preserve raw internal-coordinate input.
++
++Syntax and geometric conventions were implemented independently from the
++[Open MOPAC Gaussian Z-matrix specification](https://openmopac.net/Manual/gaussian_z.html)
++and checked against the
++[ORCA 6.1 coordinate definitions](https://www.faccts.de/docs/orca/6.1/manual/contents/essentialelements/coordinates.html).
++No Open Babel GPL implementation or third-party issue attachment was copied.
++
++## Independent validation
++
++The original fixture manifest is
++`validation/openbabel_issues/gzmat/precision-geometries.json`.
++It records provenance, license, minimization, payload hash, pinned oracles,
++settings and tolerances. Seven one- to five-atom fixtures cover signed and
++planar geometries, a mirror pair, and non-chain references.
++
++The validator changes atom order (up to 24 permutations), reference pattern,
++proper rotation/translation and significant digits (8, 12, 17). RDKit
++2026.09.1 independently calculates distances, angles and torsions from the
++input Cartesian conformer. Open Babel 3.2.1 reads the resulting GZMAT with
++bonding disabled, then emits CJSON with double-precision coordinates. The
++validator checks indexed elements, explicit charge/spin, all pair distances,
++and nonzero signed tetrahedron volumes; it does not rely on alignment RMSD
++that could hide a reflection.
++
++Results are recorded in
++`validation/results/openbabel-gzmat-precision-2026-10-15.json`.
++The report pins source/fixture/extension/binary hashes and separates exact
++scalar serialization from Cartesian reconstruction tolerances. Open Babel
++readback is measured; Gaussian and ORCA execution have not been tested.
++
++The run passed **1,242** cases. It independently verified **2,016** nonzero
++signed tetrahedron volumes and exact serialization of **2,668** computed
++scalars at 17 digits. Maximum pairwise-distance errors were `1.185e-7 Å`
++at 8 digits, `1.614e-11 Å` at 12 digits and `8.882e-16 Å` at 17 digits.
++The maximum independent RDKit scalar discrepancy was `2.843e-14`
++(angstroms or degrees according to the value). These measurements apply to
++the seven synthetic fixtures and the stated transforms, not all geometries.
++
++Local Rust validation passed **753 library + 13 new integration tests**;
++Python passed **43 new + 38 existing TURBOMOLE tests**. Clippy with warnings
++denied, formatting, strict documentation, refactoring budget and binding
++inventory checks passed.
++
++An independent synthetic precision probe also reproduces the upstream
++limitation: Open Babel's default output and `-x8` output are identical,
++with `r2` rounded from `1.234567891234567` to `1.2346`. This is a diagnostic
++of the installed 3.2.1 build, not a claim about every future Open Babel version.
++
++## Reproduction
++
++```sh
++cargo test -p chematic-mol --lib --test gzmat_precision --offline --quiet
++cargo clippy -p chematic-mol -p chematic-py --all-targets --offline --no-deps -- -D warnings
++cargo fmt --all -- --check
++python -m pytest crates/chematic-py/tests/test_gzmat_precision.py -q
++python scripts/validate_gzmat_precision.py
++python scripts/check_refactor_budget.py
++python scripts/check_binding_surface.py
++python scripts/check_product_names.py
++mkdocs build --strict
++```
++
++The Python checks require the extension built from this source plus the pinned
++RDKit and NumPy environment. The validator invokes the installed `obabel`
++binary; `--obabel PATH` can select another 3.2.1 binary and records its hash.
++Static binding inventory was updated for the two new Python functions. The
++Rust integration suite is explicitly included in CI, with no new refactoring
++budget allowances.
++
++The candidate preserves the prior isolated source through RDKit meso-group
++reduction. Its review patch is
++`validation/openbabel_issues/gzmat-precision-2026-10-15.patch`, and evidence is
++`validation/results/openbabel-gzmat-precision-2026-10-15.json`. Applying the
++patch requires that inherited source context; it is not a substitute for
++integrating and validating the earlier candidate changes. Main integration,
++commit, push and release are separate steps.
+diff --git a/docs/openbabel-open-issues-2026-10-14.md b/docs/openbabel-open-issues-2026-10-14.md
+index dcf6467..664b725 100644
+--- a/docs/openbabel-open-issues-2026-10-14.md
++++ b/docs/openbabel-open-issues-2026-10-14.md
+@@ -13,6 +13,7 @@ charge work. Existing changes were retained.
+ | [#2818: singular unit cell produces NaN](https://github.com/openbabel/openbabel/issues/2818) | The unchecked plain writer accepted invalid `UnitCell` values. | [Implemented a checked Rust/Python CIF writer](cif-checked-writer.md), shared plain-reader cell validation, finite/count checks and precise float serialization. No POSCAR support; external CIF cross-read remains inconclusive on this host. |
+ | [#2845: PQR charge/radius lost](https://github.com/openbabel/openbabel/issues/2845) | `PqrAtomRecord` already stores charge and radius separately. `to_molecule()` is a graph projection that does not carry those fields. | [Implemented a checked rigid PQR-to-PDBQT adapter](pqr-pdbqt-charge-preservation.md): caller-supplied types, source charges/identity, radius-loss consent and a numeric-rounding sidecar. Open Babel 3.2.1 charge loss reproduced on two synthetic ions. |
+ | [#2817: GRO two-letter element truncation](https://github.com/openbabel/openbabel/issues/2817) | No native GRO reader existed; atom names alone cannot establish element identity. | [Added a typed single-frame reader](gro-element-resolution.md): unresolved or explicit caller elements, preserved names, nm/nm-per-ps fields, variable precision and raw boxes; 720 field/element checks and an Open Babel 3.2.1 diagnostic. |
++| [#2794: GZMAT precision control](https://github.com/openbabel/openbabel/issues/2794) | Existing Gaussian input support uses Cartesian coordinates; no native Cartesian-to-Z-matrix conversion existed. Open Babel 3.2.1 produces identical rounded GZMAT with and without `-x8` on an original synthetic probe. | [Added checked caller-referenced Z-matrix conversion and writing](gzmat-precision.md), explicit 1–17 significant digits, signed torsions, singular/rounding validation and independent RDKit/Open Babel geometry checks. No Gaussian or ORCA job-execution claim. |
+ | [#2681: RDFile support](https://github.com/openbabel/openbabel/issues/2681) | No RDFile reader existed; native MOL/RXN parsers can supply embedded graph projections. | [Added checked typed RDFile records](rdfile-records.md), registry-only slots, ordered/duplicate data, source preservation and explicit SMILES projection; 288 two-way Indigo cross-read records with an explicit unwrapped-data profile. Default folding interoperability is reported separately. |
+ | [#2821: QCSchema Molecule](https://github.com/openbabel/openbabel/issues/2821) | Native QCSchema types, readers, converters, and tests already exist. | No duplicate implementation; broaden interoperability fixtures separately. |
+ | [#3027: five-character residue names truncated in PDB](https://github.com/openbabel/openbabel/issues/3027) | mmCIF has full residue-name fields; the protein projection is deliberately limited to amino-acid residues. | [Implemented a checked coordinate-block adapter](mmcif-pdb-checked.md): explicit namespace and metadata-loss policy, no truncated identifiers, collision/width checks and original-input sidecar. Model 1 only; no topology or full PDB deposition export. |
+diff --git a/scripts/validate_gzmat_precision.py b/scripts/validate_gzmat_precision.py
+new file mode 100644
+index 0000000..20df939
+--- /dev/null
++++ b/scripts/validate_gzmat_precision.py
+@@ -0,0 +1,157 @@
++#!/usr/bin/env python3
++"""Check GZMAT scalar precision and geometry against RDKit and Open Babel."""
++import argparse
++import hashlib
++import itertools
++import json
++from pathlib import Path
++import subprocess
++import sys
++
++import chematic
++import numpy as np
++from rdkit import Chem, rdBase
++from rdkit.Chem import rdMolTransforms as transform
++
++ROOT = Path(__file__).resolve().parents[1]
++FIXTURE = ROOT / 'validation/openbabel_issues/gzmat/precision-geometries.json'
++
++
++def digest(data):
++    return hashlib.sha256(data).hexdigest()
++
++
++def reference(elements, positions, refs):
++    c = Chem.Conformer(len(elements))
++    for i, p in enumerate(positions):
++        c.SetAtomPosition(i, p)
++    result = []
++    for i, r in enumerate(refs):
++        values = []
++        if r:
++            values.append(transform.GetBondLength(c, i, r[0]))
++        if len(r) > 1:
++            values.append(transform.GetAngleDeg(c, i, r[0], r[1]))
++        if len(r) > 2:
++            values.append(transform.GetDihedralDeg(c, i, *r))
++        result.append(values)
++    return result
++
++
++def readback(obabel, text):
++    run = subprocess.run([obabel, '-igzmat', '-ocjson', '-ab'], input=text,
++                         text=True, capture_output=True, timeout=10, check=True)
++    assert '1 molecule converted' in run.stderr, run.stderr
++    doc = json.loads(run.stdout)
++    p = np.array(doc['atoms']['coords']['3d']).reshape(-1, 3)
++    assert np.isfinite(p).all()
++    return doc, p
++
++
++def distance_matrix(p):
++    return np.linalg.norm(p[:, None, :] - p[None, :, :], axis=2)
++
++
++def signed_volume(p):
++    return float(np.linalg.det(p[1:] - p[0]))
++
++
++def scalar_errors(native, expected):
++    errors = []
++    for row, values in zip(native, expected):
++        for k, (actual, want) in enumerate(zip(row['values'], values)):
++            error = abs(actual - want) if k < 2 else abs((actual-want+180) % 360-180)
++            errors.append(error)
++    return errors
++
++
++def main():
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument('--obabel', default='/opt/homebrew/bin/obabel')
++    parser.add_argument('--output', type=Path, default=ROOT/'validation/results/openbabel-gzmat-precision-2026-10-15.json')
++    args = parser.parse_args()
++    assert rdBase.rdkitVersion == '2026.09.1'
++    version = subprocess.check_output([args.obabel, '-V'], text=True).strip()
++    assert version.split()[2] == '3.2.1', version
++    manifest = json.loads(FIXTURE.read_text())
++    assert digest(json.dumps(manifest['cases'], sort_keys=True, separators=(',', ':')).encode()) == manifest['sha256']
++    # A proper rotation and translation must not change internal values/handedness.
++    az, ax = np.deg2rad([43., 27.])
++    rz = np.array([[np.cos(az), -np.sin(az), 0], [np.sin(az), np.cos(az), 0], [0, 0, 1]])
++    rx = np.array([[1, 0, 0], [0, np.cos(ax), -np.sin(ax)], [0, np.sin(ax), np.cos(ax)]])
++    rotation = rz @ rx
++    checked = []
++    max_error = {str(d): 0. for d in (8, 12, 17)}
++    max_scalar_reference_error = 0.
++    volumes_checked = 0
++    exact_values = 0
++    for case in manifest['cases']:
++        elements = case['elements']
++        n = len(elements)
++        orders = list(itertools.islice(itertools.permutations(range(n)), 24))
++        styles = [list([list(range(i-1, max(-1, i-4), -1)) for i in range(n)])]
++        star = [list(range(min(i, 3))) for i in range(n)]
++        if star != styles[0]:
++            styles.append(star)
++        for order in orders:
++            e = [elements[i] for i in order]
++            base = np.array(case['positions_angstrom'])[list(order)]
++            for rotated in (False, True):
++                p = base @ rotation.T + [2.3, -4.1, 1.7] if rotated else base
++                for refs in styles:
++                    before = repr((e, p.tolist(), refs))
++                    native = chematic.cartesian_to_zmatrix(e, p.tolist(), refs)
++                    expected = reference(e, p, refs)
++                    error = max(scalar_errors(native, expected), default=0.)
++                    max_scalar_reference_error = max(max_scalar_reference_error, error)
++                    assert error < 1e-10, (case['id'], order, refs, native, expected)
++                    for digits in (8, 12, 17):
++                        text = chematic.write_gzmat(e, p.tolist(), refs, charge=0, multiplicity=1, significant_digits=digits)
++                        scalars = [float(line.split('=')[1]) for line in text.splitlines() if '=' in line]
++                        flat = [v for row in native for v in row['values']]
++                        assert len(scalars) == len(flat)
++                        if digits == 17:
++                            assert scalars == flat
++                            exact_values += len(scalars)
++                        for value, original in zip(scalars, flat):
++                            assert abs(value-original) <= max(abs(original), 1.) * 5 * 10**(-digits)
++                        doc, q = readback(args.obabel, text)
++                        assert doc['atoms']['elements']['number'] == [Chem.GetPeriodicTable().GetAtomicNumber(s) for s in e]
++                        assert doc['properties']['totalCharge'] == 0 and doc['properties']['totalSpinMultiplicity'] == 1
++                        error = float(np.max(np.abs(distance_matrix(p)-distance_matrix(q))))
++                        max_error[str(digits)] = max(max_error[str(digits)], error)
++                        assert error < manifest['expected']['geometry_tolerance_angstrom'][str(digits)], (case['id'], order, digits, error)
++                        for indices in itertools.combinations(range(n), 4):
++                            vp, vq = signed_volume(p[list(indices)]), signed_volume(q[list(indices)])
++                            if abs(vp) > 1e-8:
++                                assert vp * vq > 0, (case['id'], order, digits, vp, vq)
++                                volumes_checked += 1
++                        assert repr((e, p.tolist(), refs)) == before
++                        checked.append([case['id'], order, rotated, refs, digits, digest(text.encode())])
++    # Independently authored probe reproduces precision-option insensitivity.
++    probe = manifest['cases'][3]
++    xyz = str(len(probe['elements']))+'\noriginal precision probe\n'+''.join(s+' '+ ' '.join(format(v,'.17g') for v in p)+'\n' for s,p in zip(probe['elements'],probe['positions_angstrom']))
++    def upstream(extra):
++        return subprocess.run([args.obabel, '-ixyz', '-ogzmat', *extra], input=xyz, text=True, capture_output=True, check=True).stdout
++    default, requested = upstream([]), upstream(['-x8'])
++    assert default == requested
++    upstream_r2 = float(next(line.split('=')[1] for line in requested.splitlines() if line.startswith('r2=')))
++    assert abs(upstream_r2 - probe['positions_angstrom'][1][0]) > 1e-5
++    paths = ['crates/chematic-mol/src/gzmat.rs', 'crates/chematic-mol/src/gzmat/geometry.rs', 'crates/chematic-mol/src/gzmat/writer.rs', 'crates/chematic-py/src/formats/gzmat.rs', 'crates/chematic-mol/tests/gzmat_precision.rs', 'crates/chematic-py/tests/test_gzmat_precision.py', 'scripts/validate_gzmat_precision.py']
++    result = {'schema_version': 1, 'status': 'local-source-candidate',
++        'issue': 'https://github.com/openbabel/openbabel/issues/2794',
++        'base': 'Preserved source candidates through RDKit meso-group reduction; no main integration',
++        'scope': 'Caller-referenced geometry conversion and Gaussian-style Z-matrix serialization; no general Gaussian job compatibility claim',
++        'runtime': {'python':sys.version.split()[0], 'numpy':np.__version__, 'rdkit':rdBase.rdkitVersion, 'openbabel':version, 'openbabel_sha256':digest(Path(args.obabel).read_bytes()), 'openbabel_readback':'-igzmat -ocjson -ab; preserve indexed elements, disable bonding', 'chematic_extension_sha256':digest(Path(chematic.__file__).resolve().read_bytes())},
++        'source_sha256': {p:digest((ROOT/p).read_bytes()) for p in paths},
++        'fixture': {'path':str(FIXTURE.relative_to(ROOT)), 'manifest_sha256':digest(FIXTURE.read_bytes()), **manifest},
++        'results': {'cases':len(checked), 'fixtures':len(manifest['cases']), 'significant_digits':[8,12,17], 'computed_scalars_roundtrip_exact_at_17_digits':exact_values, 'signed_tetrahedra_verified':volumes_checked, 'max_scalar_reference_error_angstrom_or_degree':max_scalar_reference_error, 'max_pairwise_distance_error_angstrom':max_error, 'geometry_mismatches':0, 'element_mismatches':0, 'handedness_mismatches':0, 'input_mutations':0, 'case_sha256':digest(json.dumps(checked, separators=(',', ':')).encode())},
++        'upstream_diagnostic': {'default_output_equals_x8_output':True, 'requested_r2':upstream_r2, 'source_r2':probe['positions_angstrom'][1][0], 'gzmat_output':requested},
++        'limitations': 'Geometry-only, not topology. No isotope/ghost/dummy/periodic inputs, automatic reference choice, Gaussian input reader, ORCA internal writer, energy or job execution. Charge/spin are explicit, not inferred or checked for physical electron parity. Absolute Cartesian frame is discarded. Near-linear angles and reference planes (sine <=1e-10), coincident references, overflow and rounding-induced invalid frames fail. 17 digits preserves computed f64 scalars; geometry conversion itself is floating point, not bit-exact Cartesian preservation. Open Babel readback is measured; Gaussian/ORCA execution is untested.'}
++    args.output.parent.mkdir(parents=True, exist_ok=True)
++    args.output.write_text(json.dumps(result, indent=2)+'\n')
++    print(json.dumps(result['results']))
++
++
++if __name__ == '__main__':
++    main()
+diff --git a/validation/openbabel_issues/gzmat/precision-geometries.json b/validation/openbabel_issues/gzmat/precision-geometries.json
+new file mode 100644
+index 0000000..b2b2000
+--- /dev/null
++++ b/validation/openbabel_issues/gzmat/precision-geometries.json
+@@ -0,0 +1,223 @@
++{
++  "schema_version": 1,
++  "provenance": {
++    "source": "Original analytic coordinate examples authored for chematic; no upstream attachment or GPL source copied",
++    "inspiration": "https://github.com/openbabel/openbabel/issues/2794",
++    "retrieved": "2026-10-15",
++    "transformations": "atom permutations; two earlier-reference patterns; proper rotation and translation; no bond inference"
++  },
++  "license": "MIT OR Apache-2.0",
++  "redistribution": "allowed: original minimal synthetic coordinates",
++  "minimization": "one through five atoms isolate absence of variables, precision, planar torsions, handedness, and arbitrary earlier references",
++  "oracle": {
++    "rdkit": "2026.09.1",
++    "settings": "rdMolTransforms distance/angle/dihedral on explicit unbonded conformers",
++    "openbabel": "3.2.1",
++    "invocation": "obabel -igzmat -ocjson -ab; no bonding on read"
++  },
++  "expected": {
++    "significant_digits": [
++      8,
++      12,
++      17
++    ],
++    "computed_scalar_roundtrip_at_17_digits": "exact f64 equality",
++    "geometry_tolerance_angstrom": {
++      "8": 2e-06,
++      "12": 2e-10,
++      "17": 2e-12
++    },
++    "scalar_reference_tolerance": 1e-10,
++    "handedness": "signed tetrahedron volumes preserve sign for abs(volume)>1e-8"
++  },
++  "cases": [
++    {
++      "id": "monatomic",
++      "elements": [
++        "He"
++      ],
++      "positions_angstrom": [
++        [
++          4.0,
++          5.0,
++          6.0
++        ]
++      ]
++    },
++    {
++      "id": "diatomic-precision",
++      "elements": [
++        "H",
++        "F"
++      ],
++      "positions_angstrom": [
++        [
++          0.0,
++          0.0,
++          0.0
++        ],
++        [
++          1.234567891234567,
++          0.0,
++          0.0
++        ]
++      ]
++    },
++    {
++      "id": "bent-three",
++      "elements": [
++        "O",
++        "H",
++        "H"
++      ],
++      "positions_angstrom": [
++        [
++          0.0,
++          0.0,
++          0.0
++        ],
++        [
++          0.957123456789123,
++          0.0,
++          0.0
++        ],
++        [
++          -0.239123456789123,
++          0.927123456789123,
++          0.0
++        ]
++      ]
++    },
++    {
++      "id": "four-signed",
++      "elements": [
++        "C",
++        "N",
++        "O",
++        "F"
++      ],
++      "positions_angstrom": [
++        [
++          0.0,
++          0.0,
++          0.0
++        ],
++        [
++          1.234567891234567,
++          0.0,
++          0.0
++        ],
++        [
++          1.1,
++          1.33333333333333,
++          0.0
++        ],
++        [
++          0.1,
++          0.3,
++          1.444444444444444
++        ]
++      ]
++    },
++    {
++      "id": "four-mirror",
++      "elements": [
++        "C",
++        "N",
++        "O",
++        "F"
++      ],
++      "positions_angstrom": [
++        [
++          0.0,
++          0.0,
++          0.0
++        ],
++        [
++          1.234567891234567,
++          0.0,
++          0.0
++        ],
++        [
++          1.1,
++          1.33333333333333,
++          0.0
++        ],
++        [
++          0.1,
++          0.3,
++          -1.444444444444444
++        ]
++      ]
++    },
++    {
++      "id": "planar",
++      "elements": [
++        "C",
++        "N",
++        "O",
++        "F"
++      ],
++      "positions_angstrom": [
++        [
++          0.0,
++          0.0,
++          0.0
++        ],
++        [
++          1.234567891234567,
++          0.0,
++          0.0
++        ],
++        [
++          1.1,
++          1.33333333333333,
++          0.0
++        ],
++        [
++          0.1,
++          0.3,
++          0.0
++        ]
++      ]
++    },
++    {
++      "id": "five-arbitrary-references",
++      "elements": [
++        "C",
++        "N",
++        "O",
++        "F",
++        "Cl"
++      ],
++      "positions_angstrom": [
++        [
++          0.0,
++          0.0,
++          0.0
++        ],
++        [
++          1.234567891234567,
++          0.0,
++          0.0
++        ],
++        [
++          1.1,
++          1.33333333333333,
++          0.0
++        ],
++        [
++          0.1,
++          0.3,
++          1.444444444444444
++        ],
++        [
++          1.712345678912345,
++          0.812345678912345,
++          -0.612345678912345
++        ]
++      ]
++    }
++  ],
++  "sha256": "1da9a85caa1049f6412fb0ac204188641311b332b4e78948c39d8987d64e288d"
++}
+diff --git a/validation/results/binding_surface_inventory-current.json b/validation/results/binding_surface_inventory-current.json
+index 2e7899f..6fc698b 100644
+--- a/validation/results/binding_surface_inventory-current.json
++++ b/validation/results/binding_surface_inventory-current.json
+@@ -7,9 +7,9 @@
+   "scope": "Rust source declarations only; this is not semantic parity evidence",
+   "results": {
+     "wasm_export_count": 303,
+-    "python_pyfunction_count": 186,
+-    "python_registered_count": 186,
++    "python_pyfunction_count": 188,
++    "python_registered_count": 188,
+     "python_declared_without_registration": [],
+-    "surface_sha256": "9af8d08e8618440bf65684c21cd302949c007c45ecd5e3b66f9fc7b0498fa570"
++    "surface_sha256": "2ff99431451349968236cdcc9432de97a90c13fe4f8f52f1a5bb24a1d85e1452"
+   }
+ }
+diff --git a/validation/results/openbabel-gzmat-precision-2026-10-15.json b/validation/results/openbabel-gzmat-precision-2026-10-15.json
+new file mode 100644
+index 0000000..57ac1fd
+--- /dev/null
++++ b/validation/results/openbabel-gzmat-precision-2026-10-15.json
+@@ -0,0 +1,279 @@
++{
++  "schema_version": 1,
++  "status": "local-source-candidate",
++  "issue": "https://github.com/openbabel/openbabel/issues/2794",
++  "base": "Preserved source candidates through RDKit meso-group reduction; no main integration",
++  "scope": "Caller-referenced geometry conversion and Gaussian-style Z-matrix serialization; no general Gaussian job compatibility claim",
++  "runtime": {
++    "python": "3.13.6",
++    "numpy": "2.5.4",
++    "rdkit": "2026.09.1",
++    "openbabel": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
++    "openbabel_sha256": "733b2c925d60b17a5c9d8ce9ec841e918cc20c7634301e23f9008a187d1d9bc5",
++    "openbabel_readback": "-igzmat -ocjson -ab; preserve indexed elements, disable bonding",
++    "chematic_extension_sha256": "e2a23f556410150465a2296864443339fbf596ff3a6df571d7825526f4af9af9"
++  },
++  "source_sha256": {
++    "crates/chematic-mol/src/gzmat.rs": "bddb0e5d72c347a586d488f181ec0578e2e91395a2aaab7b5edf3fe86f8add25",
++    "crates/chematic-mol/src/gzmat/geometry.rs": "febe6b3a6aab208a8eaeb1777df1a1a7cfbb764183a8e1cb5b7ad6011e11af29",
++    "crates/chematic-mol/src/gzmat/writer.rs": "0d87e74523d215840d2e56da99c7b9a922176c9234d7e4957a6dc113b3e18202",
++    "crates/chematic-py/src/formats/gzmat.rs": "c8def5e4e9e07d4ce50e8a5c48b385d1cf694d640018fd8f05dd5b8c7048c7fe",
++    "crates/chematic-mol/tests/gzmat_precision.rs": "ce2d717c9caf2241fa08a63551bca75cc837729241e98b389c77e7a5b1368172",
++    "crates/chematic-py/tests/test_gzmat_precision.py": "4c7733c693b65936e7767d670d7be2dc27ad22c3ee0ce537a66f0d1ad23a7f57",
++    "scripts/validate_gzmat_precision.py": "7ba618820afba1be8b9056f3804c84cfbb48e2ef92413592dfa0e506eb6f8304"
++  },
++  "fixture": {
++    "path": "validation/openbabel_issues/gzmat/precision-geometries.json",
++    "manifest_sha256": "714166ea57b5c7821fdaeffce0efb0519cac0524a9c9e2bca401d2b1eeaefda8",
++    "schema_version": 1,
++    "provenance": {
++      "source": "Original analytic coordinate examples authored for chematic; no upstream attachment or GPL source copied",
++      "inspiration": "https://github.com/openbabel/openbabel/issues/2794",
++      "retrieved": "2026-10-15",
++      "transformations": "atom permutations; two earlier-reference patterns; proper rotation and translation; no bond inference"
++    },
++    "license": "MIT OR Apache-2.0",
++    "redistribution": "allowed: original minimal synthetic coordinates",
++    "minimization": "one through five atoms isolate absence of variables, precision, planar torsions, handedness, and arbitrary earlier references",
++    "oracle": {
++      "rdkit": "2026.09.1",
++      "settings": "rdMolTransforms distance/angle/dihedral on explicit unbonded conformers",
++      "openbabel": "3.2.1",
++      "invocation": "obabel -igzmat -ocjson -ab; no bonding on read"
++    },
++    "expected": {
++      "significant_digits": [
++        8,
++        12,
++        17
++      ],
++      "computed_scalar_roundtrip_at_17_digits": "exact f64 equality",
++      "geometry_tolerance_angstrom": {
++        "8": 2e-06,
++        "12": 2e-10,
++        "17": 2e-12
++      },
++      "scalar_reference_tolerance": 1e-10,
++      "handedness": "signed tetrahedron volumes preserve sign for abs(volume)>1e-8"
++    },
++    "cases": [
++      {
++        "id": "monatomic",
++        "elements": [
++          "He"
++        ],
++        "positions_angstrom": [
++          [
++            4.0,
++            5.0,
++            6.0
++          ]
++        ]
++      },
++      {
++        "id": "diatomic-precision",
++        "elements": [
++          "H",
++          "F"
++        ],
++        "positions_angstrom": [
++          [
++            0.0,
++            0.0,
++            0.0
++          ],
++          [
++            1.234567891234567,
++            0.0,
++            0.0
++          ]
++        ]
++      },
++      {
++        "id": "bent-three",
++        "elements": [
++          "O",
++          "H",
++          "H"
++        ],
++        "positions_angstrom": [
++          [
++            0.0,
++            0.0,
++            0.0
++          ],
++          [
++            0.957123456789123,
++            0.0,
++            0.0
++          ],
++          [
++            -0.239123456789123,
++            0.927123456789123,
++            0.0
++          ]
++        ]
++      },
++      {
++        "id": "four-signed",
++        "elements": [
++          "C",
++          "N",
++          "O",
++          "F"
++        ],
++        "positions_angstrom": [
++          [
++            0.0,
++            0.0,
++            0.0
++          ],
++          [
++            1.234567891234567,
++            0.0,
++            0.0
++          ],
++          [
++            1.1,
++            1.33333333333333,
++            0.0
++          ],
++          [
++            0.1,
++            0.3,
++            1.444444444444444
++          ]
++        ]
++      },
++      {
++        "id": "four-mirror",
++        "elements": [
++          "C",
++          "N",
++          "O",
++          "F"
++        ],
++        "positions_angstrom": [
++          [
++            0.0,
++            0.0,
++            0.0
++          ],
++          [
++            1.234567891234567,
++            0.0,
++            0.0
++          ],
++          [
++            1.1,
++            1.33333333333333,
++            0.0
++          ],
++          [
++            0.1,
++            0.3,
++            -1.444444444444444
++          ]
++        ]
++      },
++      {
++        "id": "planar",
++        "elements": [
++          "C",
++          "N",
++          "O",
++          "F"
++        ],
++        "positions_angstrom": [
++          [
++            0.0,
++            0.0,
++            0.0
++          ],
++          [
++            1.234567891234567,
++            0.0,
++            0.0
++          ],
++          [
++            1.1,
++            1.33333333333333,
++            0.0
++          ],
++          [
++            0.1,
++            0.3,
++            0.0
++          ]
++        ]
++      },
++      {
++        "id": "five-arbitrary-references",
++        "elements": [
++          "C",
++          "N",
++          "O",
++          "F",
++          "Cl"
++        ],
++        "positions_angstrom": [
++          [
++            0.0,
++            0.0,
++            0.0
++          ],
++          [
++            1.234567891234567,
++            0.0,
++            0.0
++          ],
++          [
++            1.1,
++            1.33333333333333,
++            0.0
++          ],
++          [
++            0.1,
++            0.3,
++            1.444444444444444
++          ],
++          [
++            1.712345678912345,
++            0.812345678912345,
++            -0.612345678912345
++          ]
++        ]
++      }
++    ],
++    "sha256": "1da9a85caa1049f6412fb0ac204188641311b332b4e78948c39d8987d64e288d"
++  },
++  "results": {
++    "cases": 1242,
++    "fixtures": 7,
++    "significant_digits": [
++      8,
++      12,
++      17
++    ],
++    "computed_scalars_roundtrip_exact_at_17_digits": 2668,
++    "signed_tetrahedra_verified": 2016,
++    "max_scalar_reference_error_angstrom_or_degree": 2.842170943040401e-14,
++    "max_pairwise_distance_error_angstrom": {
++      "8": 1.1844994274312626e-07,
++      "12": 1.6130208280173974e-11,
++      "17": 8.881784197001252e-16
++    },
++    "geometry_mismatches": 0,
++    "element_mismatches": 0,
++    "handedness_mismatches": 0,
++    "input_mutations": 0,
++    "case_sha256": "733af9e9299ebf372da1194fe885e896dda71e3f37d3cb1a9801c54b517f6c09"
++  },
++  "upstream_diagnostic": {
++    "default_output_equals_x8_output": true,
++    "requested_r2": 1.2346,
++    "source_r2": 1.234567891234567,
++    "gzmat_output": "!Put Keywords Here, check Charge and Multiplicity.\n#\n\n original precision probe\n\n0  1\nC\nN  1  r2\nO  2  r3  1  a3\nF  1  r4  2  a4  3  d4\nVariables:\nr2= 1.2346\nr3= 1.3401\na3=  84.24\nr4= 1.4787\na4=  86.12\nd4= 281.73\n\n"
++  },
++  "limitations": "Geometry-only, not topology. No isotope/ghost/dummy/periodic inputs, automatic reference choice, Gaussian input reader, ORCA internal writer, energy or job execution. Charge/spin are explicit, not inferred or checked for physical electron parity. Absolute Cartesian frame is discarded. Near-linear angles and reference planes (sine <=1e-10), coincident references, overflow and rounding-induced invalid frames fail. 17 digits preserves computed f64 scalars; geometry conversion itself is floating point, not bit-exact Cartesian preservation. Open Babel readback is measured; Gaussian/ORCA execution is untested."
++}

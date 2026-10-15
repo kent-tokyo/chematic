@@ -21,6 +21,8 @@ use chematic_perception::find_sssr;
 
 use crate::query::{AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, QueryMolecule};
 
+pub(crate) use crate::match_chirality::mapped_chirality_primitive_with_map;
+
 // ---------------------------------------------------------------------------
 // Evaluation context (precomputed per `find_matches` call)
 // ---------------------------------------------------------------------------
@@ -432,7 +434,9 @@ fn visit_recursive(
     ctx.visit_budget.set(remaining - 1);
 
     if st.count == query.atoms.len() {
-        visit(&st.q2t);
+        if mapped_chirality_compatible(query, &st.q2t, ctx) {
+            visit(&st.q2t);
+        }
         return;
     }
     let q_next = st.info.plan[st.count];
@@ -759,7 +763,9 @@ fn match_recursive(
 
     // Base case: all query atoms have been mapped.
     if mapping.len() == query.atoms.len() {
-        results.push(mapping.clone());
+        if mapped_chirality_compatible(query, &st.q2t, ctx) {
+            results.push(mapping.clone());
+        }
         return;
     }
 
@@ -1096,11 +1102,14 @@ fn bonds_compatible(
     true
 }
 
-// ---------------------------------------------------------------------------
-// Atom query evaluation
-// ---------------------------------------------------------------------------
-
 fn eval_atom_query(q: &AtomQuery, idx: AtomIdx, ctx: &EvalCtx<'_>) -> bool {
+    if ctx.config.use_chirality {
+        // Defer exact @/@@ parity until the mapping is complete.
+        return crate::match_chirality::candidate_query_result(q, |primitive| {
+            eval_atom_primitive(primitive, idx, ctx)
+        })
+        .unwrap_or(true);
+    }
     match q {
         AtomQuery::Primitive(p) => eval_atom_primitive(p, idx, ctx),
         AtomQuery::And(a, b) => eval_atom_query(a, idx, ctx) && eval_atom_query(b, idx, ctx),
@@ -1271,28 +1280,19 @@ fn eval_hybridization(idx: AtomIdx, ctx: &EvalCtx<'_>, h: u8) -> bool {
     crate::hybridization::hybridization_from(ctx.mol, lazy, idx) == Some(h)
 }
 
-/// Chirality primitive: ignored when use_chirality is false.
-///
-/// **Limitation**: this is a raw flag comparison. `@`/`@@` in SMILES/SMARTS
-/// encodes chirality *relative to the SMILES atom write order*, not as an
-/// absolute spatial property. Two SMILES strings that represent the same
-/// absolute configuration but are written with neighbors in a different order
-/// will store opposite `Chirality` flags, making the raw comparison incorrect.
-///
-/// For SMARTS queries this is acceptable when the query and target share the same
-/// write-order convention. For SMIRKS reaction templates, use the parity-aware
-/// `smirks_chirality_ok` post-check in `chematic-rxn::transform` instead.
-fn eval_chirality(idx: AtomIdx, ctx: &EvalCtx<'_>, kind: u8) -> bool {
-    if !ctx.config.use_chirality {
-        return true;
-    }
+fn eval_chirality(idx: AtomIdx, ctx: &EvalCtx<'_>, _kind: u8) -> bool {
     use chematic_core::Chirality;
-    let c = ctx.mol.atom(idx).chirality;
-    match kind {
-        1 => c == Chirality::CounterClockwise,
-        2 => c == Chirality::Clockwise,
-        _ => c != Chirality::None,
-    }
+    !ctx.config.use_chirality || ctx.mol.atom(idx).chirality != Chirality::None
+}
+
+fn mapped_chirality_compatible(query: &QueryMolecule, mapping: &[u32], ctx: &EvalCtx<'_>) -> bool {
+    crate::match_chirality::mapped_chirality_compatible(
+        query,
+        mapping,
+        ctx.mol,
+        ctx.config.use_chirality,
+        |primitive, target| eval_atom_primitive(primitive, target, ctx),
+    )
 }
 
 // ---------------------------------------------------------------------------
@@ -1342,7 +1342,7 @@ fn has_match_recursive(query: &QueryMolecule, ctx: &EvalCtx<'_>, st: &mut MapSta
 
     // Base case: all query atoms mapped.
     if st.count == query.atoms.len() {
-        return true;
+        return mapped_chirality_compatible(query, &st.q2t, ctx);
     }
 
     // Pick the most constrained unmapped query atom.

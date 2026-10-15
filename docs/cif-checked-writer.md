@@ -39,7 +39,7 @@ The checked writer rejects:
   `1 − cos²α − cos²β − cos²γ + 2 cosα cosβ cosγ` must exceed `1e-12`.
   This is a numerical policy; it can reject extremely flat but mathematically
   nonzero cells. The computed volume must also be finite and positive.
-- Missing or excess coordinate triples (`CoordinateCountMismatch`), non-finite
+- Missing or excess coordinate triples (`InvalidCoordinate`), non-finite
   Cartesian coordinates, and non-finite Cartesian-to-fractional results
   (`InvalidCoordinate`). Invalid cells return `InvalidCellParameters`.
 
