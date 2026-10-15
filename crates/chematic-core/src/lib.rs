@@ -40,7 +40,7 @@ pub use kekulization::{
 };
 pub use molecule::{
     AtomIdx, BondIdx, MolError, Molecule, MoleculeBuilder, RenumberError, STEREO_H_SENTINEL,
-    StereoGroupError,
+    STEREO_VACANT_SENTINEL, StereoGroupError,
 };
 pub use nontetrahedral::NonTetrahedralClass;
 // `StereoConfiguration`/`CanonicalStereoConfiguration`/`canonicalize_configuration`/

@@ -159,8 +159,8 @@ impl Molecule {
                 let new_order: Vec<u32> = order
                     .iter()
                     .filter_map(|&v| {
-                        if v == STEREO_H_SENTINEL {
-                            Some(STEREO_H_SENTINEL)
+                        if matches!(v, STEREO_H_SENTINEL | STEREO_VACANT_SENTINEL) {
+                            Some(v)
                         } else if v as usize == removed {
                             None // neighbor was the removed atom — stereo is now invalid
                         } else {
