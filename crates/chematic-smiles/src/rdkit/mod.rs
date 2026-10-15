@@ -49,6 +49,7 @@ mod molblock;
 mod molblock2d;
 mod molhash;
 mod murcko;
+mod ogb;
 mod parse;
 mod pdb;
 mod pdb_read;
@@ -71,6 +72,7 @@ pub use embed_view::*;
 pub use inchi_read::{InchiOutputAtom, InchiOutputStereo0D, rdkit_molecule_from_inchi_output};
 pub use molblock::{RdkitMolBlock, RdkitMolBlockAtom, RdkitMolBlockBond, rdkit_mol_block};
 pub use molhash::RdkitHashFunction;
+pub use ogb::{OgbGraphFeatures, ogb_graph_features, ogb_graph_features_with_options};
 pub use tautomer::RdkitTautomerStatus;
 
 /// Why [`rdkit_canonical_smiles`] produced no string.
