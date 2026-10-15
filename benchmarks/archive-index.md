@@ -5,6 +5,43 @@ For the short current-results guide and reporting rules, start with
 [`README.md`](README.md). Entries below remain scoped to their stated source or
 package, comparator, corpus, host, runtime and operation.
 
+## Source speed follow-ups on 2026-10-14 and 2026-10-15
+
+These are frozen source-candidate records on fixed development inputs. Read each
+adoption decision: rejected prototypes and negative or mixed observations remain
+part of the record. The timings are not a remeasurement of integrated main or
+evidence of toolkit-wide superiority.
+
+| Source record | Related machine-readable records |
+|---|---|
+| [2026-10-15-python-tpsa-zero.md](2026-10-15-python-tpsa-zero.md) | The linked report includes its complete evidence packet. |
+| [2026-10-15-python-ring-scratch.md](2026-10-15-python-ring-scratch.md) | The linked report includes its complete evidence packet. |
+| [2026-10-15-python-ring-component-reuse.md](2026-10-15-python-ring-component-reuse.md) | The linked report includes its complete evidence packet. |
+| [2026-10-15-python-normalization-storage.md](2026-10-15-python-normalization-storage.md) | The linked report includes its complete evidence packet. |
+| [2026-10-15-python-huckel-fifo.md](2026-10-15-python-huckel-fifo.md) | The linked report includes its complete evidence packet. |
+| [2026-10-15-python-component-packed.md](2026-10-15-python-component-packed.md) | The linked report includes its complete evidence packet. |
+| [2026-10-15-python-basis-roots.md](2026-10-15-python-basis-roots.md) | The linked report includes its complete evidence packet. |
+| [2026-10-15-python-aromatic-indexed.md](2026-10-15-python-aromatic-indexed.md) | The linked report includes its complete evidence packet. |
+| [2026-10-15-python-aromatic-component-reuse.md](2026-10-15-python-aromatic-component-reuse.md) | The linked report includes its complete evidence packet. |
+| [2026-10-15-openbabel-v3000-zero-z6.md](2026-10-15-openbabel-v3000-zero-z6.md) | The linked report includes its complete evidence packet. |
+| [2026-10-15-openbabel-v3000-zero-z.md](2026-10-15-openbabel-v3000-zero-z.md) | The linked report includes its complete evidence packet. |
+| [2026-10-15-openbabel-v3000-parser-token-reuse.md](2026-10-15-openbabel-v3000-parser-token-reuse.md) | [0-paired21](2026-10-15-openbabel-v3000-parser-token-reuse-0-paired21.json) · [5000-paired21](2026-10-15-openbabel-v3000-parser-token-reuse-5000-paired21.json) · [chains-paired21](2026-10-15-openbabel-v3000-parser-token-reuse-chains-paired21.json) · [source](2026-10-15-openbabel-v3000-parser-token-reuse-source.json) · [verification](2026-10-15-openbabel-v3000-parser-token-reuse-verification.json) |
+| [2026-10-15-openbabel-v3000-integer.md](2026-10-15-openbabel-v3000-integer.md) | The linked report includes its complete evidence packet. |
+| [2026-10-15-openbabel-v3000-flat-geometry.md](2026-10-15-openbabel-v3000-flat-geometry.md) | The linked report includes its complete evidence packet. |
+| [2026-10-15-openbabel-v3000-empty-ez.md](2026-10-15-openbabel-v3000-empty-ez.md) | The linked report includes its complete evidence packet. |
+| [2026-10-15-openbabel-v3000-direct-lines.md](2026-10-15-openbabel-v3000-direct-lines.md) | The linked report includes its complete evidence packet. |
+| [2026-10-15-openbabel-v3000-count-zero-map.md](2026-10-15-openbabel-v3000-count-zero-map.md) | The linked report includes its complete evidence packet. |
+| [2026-10-15-openbabel-v3000-count-rounded.md](2026-10-15-openbabel-v3000-count-rounded.md) | The linked report includes its complete evidence packet. |
+| [2026-10-15-openbabel-v3000-count-capacity.md](2026-10-15-openbabel-v3000-count-capacity.md) | The linked report includes its complete evidence packet. |
+| [2026-10-15-openbabel-v3000-ascii.md](2026-10-15-openbabel-v3000-ascii.md) | The linked report includes its complete evidence packet. |
+| [2026-10-15-openbabel-ring-queue.md](2026-10-15-openbabel-ring-queue.md) | The linked report includes its complete evidence packet. |
+| [2026-10-15-openbabel-ez-inactive.md](2026-10-15-openbabel-ez-inactive.md) | The linked report includes its complete evidence packet. |
+| [2026-10-14-python-unambiguous-metal-model.md](2026-10-14-python-unambiguous-metal-model.md) | [focused-asa-slice0-paired20](2026-10-14-python-unambiguous-metal-model-focused-asa-slice0-paired20.json) · [slice0-paired20](2026-10-14-python-unambiguous-metal-model-slice0-paired20.json) · [slice5000-paired20](2026-10-14-python-unambiguous-metal-model-slice5000-paired20.json) · [source](2026-10-14-python-unambiguous-metal-model-source.json) · [verification](2026-10-14-python-unambiguous-metal-model-verification.json) |
+| [2026-10-14-python-kekule-view-reuse.md](2026-10-14-python-kekule-view-reuse.md) | [focused-slice0-paired20](2026-10-14-python-kekule-view-reuse-focused-slice0-paired20.json) · [focused-slice5000-paired20](2026-10-14-python-kekule-view-reuse-focused-slice5000-paired20.json) · [slice0-paired20](2026-10-14-python-kekule-view-reuse-slice0-paired20.json) · [slice5000-paired20](2026-10-14-python-kekule-view-reuse-slice5000-paired20.json) · [source](2026-10-14-python-kekule-view-reuse-source.json) · [verification](2026-10-14-python-kekule-view-reuse-verification.json) |
+| [2026-10-14-python-cycle-root-pruning.md](2026-10-14-python-cycle-root-pruning.md) | [parity](2026-10-14-python-cycle-root-pruning-parity.json) · [slice0-paired20](2026-10-14-python-cycle-root-pruning-slice0-paired20.json) · [slice5000-focused-repeat20](2026-10-14-python-cycle-root-pruning-slice5000-focused-repeat20.json) · [slice5000-paired20](2026-10-14-python-cycle-root-pruning-slice5000-paired20.json) · [source](2026-10-14-python-cycle-root-pruning-source.json) |
+| [2026-10-14-python-cycle-path-reuse.md](2026-10-14-python-cycle-path-reuse.md) | [parity](2026-10-14-python-cycle-path-reuse-parity.json) · [slice0-paired20](2026-10-14-python-cycle-path-reuse-slice0-paired20.json) · [source](2026-10-14-python-cycle-path-reuse-source.json) |
+| [2026-10-14-openbabel-v3000-writer-buffer.md](2026-10-14-openbabel-v3000-writer-buffer.md) | [0-paired21](2026-10-14-openbabel-v3000-writer-buffer-0-paired21.json) · [5000-paired21](2026-10-14-openbabel-v3000-writer-buffer-5000-paired21.json) · [chains-paired21](2026-10-14-openbabel-v3000-writer-buffer-chains-paired21.json) · [parse-repeat21](2026-10-14-openbabel-v3000-writer-buffer-parse-repeat21.json) · [sandbox-attempt](2026-10-14-openbabel-v3000-writer-buffer-sandbox-attempt.json) · [source](2026-10-14-openbabel-v3000-writer-buffer-source.json) · [verification](2026-10-14-openbabel-v3000-writer-buffer-verification.json) |
+
 ## Start here
 
 | Need | Start with |
