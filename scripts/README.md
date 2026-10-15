@@ -55,6 +55,14 @@ current issue or benchmark links to them.
 - Generated packages, build output, and temporary corpora do not belong in this
   directory.
 
+### HIN aromatic-bond validation
+
+`validate_openbabel_hin.py` compares the original synthetic HIN fixture through
+a source-built chematic Python extension and a pinned installed Open Babel
+binary. It records both MDL bond-type lists, source/artifact hashes and raw
+outputs. This checks Open Babel #3000's bounded bond semantics, not general
+chemical equivalence or performance.
+
 ### CCD molecular templates
 
 `validate_ccd.py --download` caches eight official RCSB component files, compares

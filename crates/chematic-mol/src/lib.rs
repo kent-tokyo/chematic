@@ -40,6 +40,7 @@ pub mod fhiaims;
 pub mod gaussian;
 pub mod gro;
 pub mod gzmat;
+pub mod hin;
 pub mod ket;
 pub mod lammps_data;
 pub mod lammps_dump;
@@ -136,6 +137,10 @@ pub use gaussian::{
 pub use gzmat::{
     GzmatWriteOptions, ZMatrixError, ZMatrixRow, cartesian_to_zmatrix, validate_zmatrix,
     write_gzmat, zmatrix_to_cartesian,
+};
+pub use hin::{
+    HinAtom, HinBond, HinError, HinParseLimits, HinRecord, parse_hin_record,
+    parse_hin_record_with_limits, write_hin_record,
 };
 pub use ket::{
     KetError, KetParseLimits, parse_ket, parse_ket_3d, parse_ket_3d_with_limits,

@@ -294,3 +294,23 @@ fn public_diagnostics_explain_refusals_and_cif_table_ambiguities() {
             .contains("mixed singleton/loop")
     );
 }
+
+#[test]
+fn long_repeated_column_names_refuse_before_row_expansion() {
+    let tag = format!("_chem_comp_atom.extra_{}", "x".repeat(20_000));
+    let mut text = format!(
+        "data_A\n_chem_comp.id A\nloop_\n_chem_comp_atom.comp_id\n_chem_comp_atom.atom_id\n_chem_comp_atom.type_symbol\n{tag}\n"
+    );
+    for i in 0..2000 {
+        text.push_str(&format!("A C{i} C v\n"));
+    }
+    assert!(text.len() < 100_000);
+    let error = parse(&text).unwrap_err();
+    assert!(matches!(
+        error,
+        CcdError::ResourceLimit {
+            resource: "expanded loop bytes",
+            ..
+        }
+    ));
+}

@@ -12,6 +12,12 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Add a checked single-molecule HyperChem HIN reader and immutable source
+  records to Rust/Python/WASM. Preserve atom identities, coordinates, partial
+  charges and literal `s/d/t/a` connectivity; aromatic HIN bonds project to MDL
+  type 4, ahead of unresolved Open Babel #3000. Unsupported directives and
+  inconsistent references refuse instead of losing fields silently.
+
 - Read a single wwPDB CCD molecular template in Rust/Python/WASM, including
   explicit atom/bond IDs, formal charges, optional model/ideal coordinates,
   aromatic flags and retained stereo annotations. Graph projection requires

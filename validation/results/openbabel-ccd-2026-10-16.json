@@ -1,20 +1,20 @@
 {
   "schema_version": 1,
-  "checked_at_utc": "2026-10-15T16:03:24.968765+00:00",
+  "checked_at_utc": "2026-10-15T16:23:15.203942+00:00",
   "issue": "https://github.com/openbabel/openbabel/issues/1516",
   "issue_state_checked": "open",
-  "source_base_commit": "b92b89db645d6bc3c49e749ea354c239c9864e28",
+  "source_base_commit": "2a0c8b5dc8379bdb7bef69264536b61b5f0a5db6",
   "source_candidate": true,
   "published_artifact": false,
   "gemmi_version": "0.7.5",
   "openbabel_version": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
   "openbabel_binary_sha256": "733b2c925d60b17a5c9d8ce9ec841e918cc20c7634301e23f9008a187d1d9bc5",
   "gemmi_extension_sha256": "fbcc2fee5b96e911465d7385b2bd5d656dde7747360007e005f2aaec9e914896",
-  "extension_sha256": "7d1c54cc353045c706940c57245a345526e115fa0dc19980b660d50231cbede0",
+  "extension_sha256": "c68ca34210057a9232b209e2bc4e2372a6fc10715de78513efa058fdd642c021",
   "source_sha256": {
     "crates/chematic-mol/src/ccd.rs": "3896cd763d5919bc3231e2979fb477824aaae29e1ff45e461c3301dbfdcee08b",
     "crates/chematic-mol/src/ccd/fields.rs": "fc1af6cfc89a2df395e745ebc5fe5e1660baa1aa148abd0da94053dc86c104dc",
-    "crates/chematic-mol/src/ccd/reader.rs": "27923627fab6c97b9c67d8c2a26d8ac0768cf6f89ab0dd4d7e1b6f23eb29b43e",
+    "crates/chematic-mol/src/ccd/reader.rs": "0856c27c2da4ed36eaacc6046c015d5a7022ac5594b947456e8d606c16d9ffd8",
     "crates/chematic-mol/src/ccd/tokens.rs": "e4f11951381e97698895bb93b8bd555f22c2599a8c2fbb0693617eb4dad5db83",
     "crates/chematic-py/src/formats/ccd.rs": "433abc14254cc1919d74b4b9e153bb34ce19f7215dcc30d42c6cb10acb6d716f",
     "crates/chematic-wasm/src/ccd.rs": "aa4e8c338c05525115cceb276ce0d6da1dd2a3cef8a1ffff85f1b9ca1e7f9213"
@@ -7237,26 +7237,29 @@
     }
   ],
   "local_validation": {
-    "completed_at_utc": "2026-10-15T16:08:10.108223+00:00",
+    "completed_at_utc": "2026-10-15T16:25:51.879757+00:00",
     "rust": {
-      "passed": 781,
+      "passed": 793,
       "failed": 0,
       "ignored": 0,
-      "new_ccd_tests": 11
+      "new_ccd_tests": 12,
+      "integrated_hin_contract_tests": 11
     },
     "python": {
-      "passed": 62,
+      "passed": 79,
       "failed": 0,
-      "new_ccd_tests": 12,
+      "new_ccd_tests": 13,
+      "integrated_hin_tests": 16,
       "runtime": "CPython 3.13.6, pytest 9.1.1, source extension"
     },
     "node_wasm": {
       "passed": true,
       "official_records_compared": 8,
       "all_records_exact": true,
+      "hin_contract_passed": true,
       "wasm_bindgen_version": "0.2.129",
-      "wasm_sha256": "a62298bed22efdc129a6463128be2899f8971a1986d420079dc93bd5fd9228f0",
-      "javascript_sha256": "937a3ed16ae3445955db1a4b3acca682985aad49e1cd7d2eaeb1cf0f4c580b70"
+      "wasm_sha256": "739f322cfa670d53768e2cc1121dc05be1d661cc7a8a1fcef18a446fe6f6f95c",
+      "javascript_sha256": "5a2bf772a058879ac9d7e43f2457c23b66edf4bc18076415327f5ba090554363"
     },
     "checks": {
       "clippy_warnings_denied": true,
@@ -7270,15 +7273,16 @@
       "python_stub_syntax": true
     },
     "logs_sha256": {
-      "rust": "f8b843595910d7f3fc7257e4b01101cee829acbe2b9c6f51105dc5b528d93a0f",
-      "python": "89445943e88ad08b9ce479015766b0ea6c059dc67fb3f76d06e15371f46a023d",
+      "rust": "dee6aace8d440eceddc1ac54f92de6cfb78fe7d4d0e81c1d6f1609132cd12a53",
+      "python": "c06135dd37446a999e0dab92cc5232d8dcf55de0fcecd9e77b86a54079d33f78",
       "wasm": "e0f02a22f5a0ba9c2da45067cf34c17747a2e7ae1c687d9fd299849a62e081dd",
-      "clippy": "5b2c4dbcef1ea7c36d9d05fbc1c88e736331562e932a95e5d1390aa462fe5fc5",
-      "clippy_tests": "32d6ba4fc47f92b6daf81af528c86ff4cae5718352f897d0fcf07b86fc5ab6c6",
-      "mkdocs": "0649752f4f7b1ebca66dd9078f04a250493ef47d17c7595eeb9bf8186d57db9c"
+      "hin_wasm": "0ba5664497fe8029e69b08600c9cda90e6d48c82dfdebbc256aa8c98a45834e8",
+      "clippy": "d54d1b27e89bd2640237247ceff16e4f85f40c073793612ba4b87a7c8848c255",
+      "clippy_tests": "57aeef755b10c94c6f30ecfe98965709b4da4356b80044f9429646732308d3fb",
+      "mkdocs": "753b732343e7a7f707dd25eb9a80cc3e38ecba86dce5c2cedb0a1340215348de"
     },
     "environment_notes": [
-      "A build attempt hit transient shared-disk exhaustion; final builds and validations passed after free space recovered."
+      "Transient shared-disk exhaustion interrupted a build and local push bookkeeping; final validations passed and remote push was verified."
     ]
   }
 }

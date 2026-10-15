@@ -57,7 +57,10 @@ validation, not valence sanitization or stereochemical validation.
 ## Bounds and refusals
 
 The default native/Python limits are 8 MiB input, 500,000 tokens, 10,000 atoms
-and 40,000 bonds. Rust exposes all limits; Python `parse_ccd_json` accepts
+and 40,000 bonds. Expanded atom/bond loop key/value bytes are also capped
+at the smaller of four times the configured input budget and 32 MiB, before
+rows are materialized; long repeated column names cannot amplify that storage
+without bound. Rust exposes all limits; Python `parse_ccd_json` accepts
 `max_input_bytes`, `max_atoms` and `max_bonds` keyword overrides. WASM applies
 its shared 1,000,000-byte input and 16 MiB serialized-output caps as well.
 
@@ -85,8 +88,8 @@ original synthetic data. No Open Babel or Gemmi implementation code was copied.
 Gemmi is an isolated validation dependency, not a product dependency.
 
 ```sh
-cargo test -p chematic-mol --lib --test ccd_contract --test public_api_compat_v1_1_3 --offline --quiet
-python3 -m pytest -q crates/chematic-py/tests/test_ccd.py crates/chematic-py/tests/test_new_formats.py
+cargo test -p chematic-mol --lib --test ccd_contract --test hin_contract --test public_api_compat_v1_1_3 --offline --quiet
+python3 -m pytest -q crates/chematic-py/tests/test_ccd.py crates/chematic-py/tests/test_hin.py crates/chematic-py/tests/test_new_formats.py
 python3 scripts/validate_ccd.py --download
 node crates/chematic-wasm/tests/ccd.test.mjs
 ```
@@ -104,8 +107,8 @@ oracle download directory also verifies all eight official records against
 the committed Python/Gemmi evidence in a real WASM runtime. Source candidates,
 package publication and general Open Babel parity are separate claims.
 
-Local validation on main `b92b89db` plus this change passed **781 Rust tests**
-(11 new CCD tests), **62 Python tests** (12 new), and the real Node/WASM
+Local validation on main `2a0c8b5d` plus this change passed **793 Rust tests**
+(12 new CCD tests, including the integrated HIN contracts), **79 Python tests** (13 new CCD tests, including the integrated HIN tests), and the real Node/WASM
 contracts. Gemmi 0.7.5 matched **4,493 field checks** over eight official
 components (167 atoms, 171 bonds), with zero failed comparisons. All eight
 records also matched exactly across Python and WASM. HEM's unknown Fe charge

@@ -60,3 +60,12 @@ def test_unknown_charge_is_retained_and_projection_refuses_imputation():
     with pytest.raises(ValueError) as error:
         chematic.from_ccd(text, allow_stereo_loss=True)
     assert error.value.code == "ccd_unknown_charge"
+
+
+def test_long_repeated_tags_hit_the_expansion_budget():
+    tag = "_chem_comp_atom.extra_" + "x" * 20_000
+    text = "data_A\n_chem_comp.id A\nloop_\n_chem_comp_atom.comp_id\n_chem_comp_atom.atom_id\n_chem_comp_atom.type_symbol\n" + tag + "\n"
+    text += "".join(f"A C{i} C v\n" for i in range(2000))
+    with pytest.raises(ValueError, match="expanded loop bytes") as error:
+        chematic.parse_ccd_json(text)
+    assert error.value.category == "resource_limit"

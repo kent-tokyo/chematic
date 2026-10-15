@@ -27,6 +27,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source-dir", type=Path, default=Path("/private/tmp/chematic-ccd-sources"))
     parser.add_argument("--download", action="store_true")
+    parser.add_argument("--source-base", default="HEAD", help="Git ref used as the source candidate base")
     parser.add_argument("--obabel", default="/opt/homebrew/bin/obabel")
     parser.add_argument("--output", type=Path, default=ROOT / "validation/results/openbabel-ccd-2026-10-16.json")
     args = parser.parse_args()
@@ -117,7 +118,7 @@ def main():
     sources = ["crates/chematic-mol/src/ccd.rs", *[str(p.relative_to(ROOT)) for p in sorted((ROOT / "crates/chematic-mol/src/ccd").glob("*.rs"))], "crates/chematic-py/src/formats/ccd.rs", "crates/chematic-wasm/src/ccd.rs"]
     report = {"schema_version": 1, "checked_at_utc": datetime.now(timezone.utc).isoformat(),
               "issue": "https://github.com/openbabel/openbabel/issues/1516", "issue_state_checked": "open",
-              "source_base_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
+              "source_base_commit": subprocess.check_output(["git", "rev-parse", args.source_base], cwd=ROOT, text=True).strip(),
               "source_candidate": True, "published_artifact": False, "gemmi_version": gemmi.__version__,
               "openbabel_version": version, "openbabel_binary_sha256": sha(args.obabel),
               "gemmi_extension_sha256": sha(importlib.import_module("gemmi.gemmi_ext").__file__), "extension_sha256": sha(importlib.import_module("chematic.chematic").__file__),

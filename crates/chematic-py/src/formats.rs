@@ -6,6 +6,9 @@ use pyo3::prelude::*;
 use pyo3::types::PyDict;
 use std::sync::Arc;
 
+mod hin;
+use hin::*;
+
 mod ccd;
 use ccd::*;
 
@@ -1404,6 +1407,9 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         from_mol_v3000_with_coords,
         from_mol_v3000_with_diagnostics,
         from_mol2,
+        from_hin,
+        parse_hin_record_json,
+        roundtrip_hin_record,
         parse_cjson_record_json,
         roundtrip_cjson_record,
         parse_mol2_record_json,

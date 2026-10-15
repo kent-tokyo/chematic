@@ -3,6 +3,7 @@ use super::{CcdComponent, CcdError, CcdParseLimits, Row, fields, invalid};
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 
 struct Tables {
+    row_bytes: usize,
     component_id: Option<String>,
     atoms: Vec<Row>,
     bonds: Vec<Row>,
@@ -34,6 +35,7 @@ impl Tables {
         if values.len() / tags.len() > limit.saturating_sub(rows.len()) {
             return Err(CcdError::ResourceLimit { resource, limit });
         }
+        Self::check_storage(&mut self.row_bytes, tags, values, limits)?;
         for chunk in values.chunks_exact(tags.len()) {
             rows.push(
                 tags.iter()
@@ -42,6 +44,32 @@ impl Tables {
                     .collect(),
             );
         }
+        Ok(())
+    }
+    fn check_storage(
+        row_bytes: &mut usize,
+        tags: &[String],
+        values: &[Token<'_>],
+        limits: &CcdParseLimits,
+    ) -> Result<(), CcdError> {
+        let limit = limits.max_input_bytes.saturating_mul(4).min(32 << 20);
+        let keys = tags
+            .iter()
+            .try_fold(0usize, |n, tag| n.checked_add(tag.len()));
+        let added = keys
+            .and_then(|n| n.checked_mul(values.len() / tags.len()))
+            .and_then(|n| {
+                values
+                    .iter()
+                    .try_fold(n, |n, value| n.checked_add(value.value.len()))
+            });
+        *row_bytes = added
+            .and_then(|n| row_bytes.checked_add(n))
+            .filter(|n| *n <= limit)
+            .ok_or(CcdError::ResourceLimit {
+                resource: "expanded loop bytes",
+                limit,
+            })?;
         Ok(())
     }
     fn scalar(
@@ -100,6 +128,7 @@ fn loop_table(
 
 fn read_tables(tokens: &[Token<'_>], limits: &CcdParseLimits) -> Result<Tables, CcdError> {
     let mut tables = Tables {
+        row_bytes: 0,
         component_id: None,
         atoms: Vec::new(),
         bonds: Vec::new(),

@@ -51,3 +51,7 @@ if (process.env.CHEMATIC_CCD_SOURCES) {
 const unknownCharge = text.replace("'O#1' O 0", "'O#1' O ?");
 assert.equal(JSON.parse(wasm.parse_ccd_json(unknownCharge)).atoms[0].charge, null);
 assert.throws(() => wasm.mol_from_ccd(unknownCharge, true));
+
+const longTag = "_chem_comp_atom.extra_" + "x".repeat(20_000);
+const expanded = "data_A\n_chem_comp.id A\nloop_\n_chem_comp_atom.comp_id\n_chem_comp_atom.atom_id\n_chem_comp_atom.type_symbol\n" + longTag + "\n" + Array.from({length: 2000}, (_,i) => `A C${i} C v\n`).join("");
+assert.throws(() => wasm.parse_ccd_json(expanded), /expanded loop bytes/);
