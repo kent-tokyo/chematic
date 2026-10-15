@@ -1,6 +1,10 @@
 use std::io::Cursor;
 
-use chematic_mol::{SdfFileReader, SdfReader, SdfRecordReader, read_sdf_conformer_ensembles};
+use chematic_mol::{
+    SdfFileReader, SdfReader, SdfRecordReader, read_mol_v3000_with_diagnostics,
+    read_sdf_conformer_ensembles,
+};
+use chematic_smiles::rdkit_canonical_smiles;
 
 const MIXED_SDF: &str =
     include_str!("../../../validation/cosmolkit_comparison/corpora/mixed-v2000-v3000-v1.sdf");
@@ -76,4 +80,179 @@ fn v3000_conformers_are_recognized_and_grouped() {
     assert_eq!(groups.len(), 1);
     assert_eq!(groups[0].conformers.len(), 2);
     assert_eq!(groups[0].mol.atom_count(), 2);
+}
+
+#[test]
+fn v3000_tricoordinate_sulfoxide_wedge_retains_stereochemistry() {
+    // RDKit 2025.09.3 MolToMolBlock(forceV3000=True) for
+    // C[S@@+]([O-])c1ccccc1 after Compute2DCoords. Both RDKit and
+    // COSMolKit 0.5.0 read this back with sulfur stereochemistry intact.
+    let block = "sulfoxide\n     RDKit          2D\n\n\
+  0  0  0  0  0  0  0  0  0  0999 V3000\n\
+M  V30 BEGIN CTAB\n\
+M  V30 COUNTS 9 9 0 0 0\n\
+M  V30 BEGIN ATOM\n\
+M  V30 1 C 2.583333 -1.299038 0.000000 0\n\
+M  V30 2 S 1.833333 0.000000 0.000000 0 CHG=1\n\
+M  V30 3 O 2.583333 1.299038 0.000000 0 CHG=-1\n\
+M  V30 4 C 0.333333 -0.000000 0.000000 0\n\
+M  V30 5 C -0.416667 -1.299038 0.000000 0\n\
+M  V30 6 C -1.916667 -1.299038 0.000000 0\n\
+M  V30 7 C -2.666667 0.000000 0.000000 0\n\
+M  V30 8 C -1.916667 1.299038 0.000000 0\n\
+M  V30 9 C -0.416667 1.299038 0.000000 0\n\
+M  V30 END ATOM\n\
+M  V30 BEGIN BOND\n\
+M  V30 1 1 2 1 CFG=3\n\
+M  V30 2 1 2 3\n\
+M  V30 3 1 2 4\n\
+M  V30 4 2 4 5\n\
+M  V30 5 1 5 6\n\
+M  V30 6 2 6 7\n\
+M  V30 7 1 7 8\n\
+M  V30 8 2 8 9\n\
+M  V30 9 1 9 4\n\
+M  V30 END BOND\n\
+M  V30 END CTAB\n\
+M  END\n";
+    let report = read_mol_v3000_with_diagnostics(block).unwrap();
+    assert!(report.stereo_diagnostics.is_empty());
+    assert_eq!(
+        rdkit_canonical_smiles(&report.mol).unwrap(),
+        "C[S@@+]([O-])c1ccccc1"
+    );
+}
+
+#[test]
+fn v3000_incoming_wedge_does_not_conflict_with_centres_own_wedge() {
+    // Two adjacent stereocentres: atom 2 owns the 2->4 wedge and atom 4
+    // owns the 4->5 hash. The 2->4 wedge is incoming at atom 4 and must not
+    // enter its local parity calculation. RDKit 2025.09.3 reads this CTAB
+    // as F[C@H](Cl)[C@@H](Br)I.
+    let block = "adjacent stereocentres\n     RDKit          2D\n\n\
+  0  0  0  0  0  0  0  0  0  0999 V3000\n\
+M  V30 BEGIN CTAB\n\
+M  V30 COUNTS 6 5 0 0 0\n\
+M  V30 BEGIN ATOM\n\
+M  V30 1 F -1.500000 1.299038 0.000000 0\n\
+M  V30 2 C -0.750000 -0.000000 0.000000 0\n\
+M  V30 3 Cl -1.500000 -1.299038 0.000000 0\n\
+M  V30 4 C 0.750000 0.000000 0.000000 0\n\
+M  V30 5 Br 1.500000 -1.299038 0.000000 0\n\
+M  V30 6 I 1.500000 1.299038 0.000000 0\n\
+M  V30 END ATOM\n\
+M  V30 BEGIN BOND\n\
+M  V30 1 1 2 1\n\
+M  V30 2 1 2 3\n\
+M  V30 3 1 2 4 CFG=1\n\
+M  V30 4 1 4 5 CFG=3\n\
+M  V30 5 1 4 6\n\
+M  V30 END BOND\n\
+M  V30 END CTAB\n\
+M  END\n";
+    let report = read_mol_v3000_with_diagnostics(block).unwrap();
+    assert!(report.stereo_diagnostics.is_empty());
+    assert_eq!(
+        rdkit_canonical_smiles(&report.mol).unwrap(),
+        "F[C@H](Cl)[C@@H](Br)I"
+    );
+}
+
+#[test]
+fn v3000_total_valence_excludes_dative_bond_on_donor() {
+    // RDKit 2025.09.3 V3000 output for C[CH](C)->N. VAL=3 means two
+    // covalent C-C bonds plus one H; the dative bond spends no donor valence.
+    let block = "dative donor\n     RDKit          2D\n\n\
+  0  0  0  0  0  0  0  0  0  0999 V3000\n\
+M  V30 BEGIN CTAB\n\
+M  V30 COUNTS 4 3 0 0 0\n\
+M  V30 BEGIN ATOM\n\
+M  V30 1 C -1.299038 -0.750000 0.000000 0\n\
+M  V30 2 C 0.000000 0.000000 0.000000 0 RAD=2 VAL=3\n\
+M  V30 3 C 1.299038 -0.750000 0.000000 0\n\
+M  V30 4 N 0.000000 1.500000 0.000000 0\n\
+M  V30 END ATOM\n\
+M  V30 BEGIN BOND\n\
+M  V30 1 1 1 2\n\
+M  V30 2 1 2 3\n\
+M  V30 3 9 2 4\n\
+M  V30 END BOND\n\
+M  V30 END CTAB\n\
+M  END\n";
+    let report = read_mol_v3000_with_diagnostics(block).unwrap();
+    assert_eq!(
+        report.mol.atom(chematic_core::AtomIdx(1)).hydrogen_count,
+        Some(1)
+    );
+    assert_eq!(rdkit_canonical_smiles(&report.mol).unwrap(), "C[CH](C)->N");
+}
+
+#[test]
+fn v3000_ring_constrained_nitrogen_retains_lone_pair_stereochemistry() {
+    // RDKit 2025.09.3 V3000 blocks: an asymmetric bicyclic bridgehead N and
+    // a substituted aziridine N. Both have three bonds, zero H and a wedge.
+    let cases = [
+        (
+            "bridgehead",
+            "bridgehead\n     RDKit          2D\n\n\
+  0  0  0  0  0  0  0  0  0  0999 V3000\n\
+M  V30 BEGIN CTAB\n\
+M  V30 COUNTS 7 8 0 0 0\n\
+M  V30 BEGIN ATOM\n\
+M  V30 1 C 1.552539 -0.750000 0.000000 0\n\
+M  V30 2 C 1.552539 0.750000 0.000000 0\n\
+M  V30 3 N 0.125954 1.213525 0.000000 0\n\
+M  V30 4 C -1.300631 0.750000 0.000000 0\n\
+M  V30 5 C -1.300631 -0.750000 0.000000 0\n\
+M  V30 6 C 0.125954 -1.213525 0.000000 0\n\
+M  V30 7 C -0.755724 0.000000 0.000000 0\n\
+M  V30 END ATOM\n\
+M  V30 BEGIN BOND\n\
+M  V30 1 1 1 2 CFG=3\n\
+M  V30 2 1 3 2 CFG=3\n\
+M  V30 3 1 3 4\n\
+M  V30 4 1 4 5\n\
+M  V30 5 1 6 5 CFG=3\n\
+M  V30 6 1 6 7\n\
+M  V30 7 1 6 1\n\
+M  V30 8 1 7 3\n\
+M  V30 END BOND\n\
+M  V30 END CTAB\n\
+M  END\n",
+            "C1C[N@]2CC[C@H]1C2",
+        ),
+        (
+            "aziridine",
+            "aziridine\n     RDKit          2D\n\n\
+  0  0  0  0  0  0  0  0  0  0999 V3000\n\
+M  V30 BEGIN CTAB\n\
+M  V30 COUNTS 5 5 0 0 0\n\
+M  V30 BEGIN ATOM\n\
+M  V30 1 C -2.049038 -0.709808 0.000000 0\n\
+M  V30 2 N -0.750000 0.040192 0.000000 0\n\
+M  V30 3 C 0.750000 0.040192 0.000000 0\n\
+M  V30 4 F 2.049038 -0.709808 0.000000 0\n\
+M  V30 5 C 0.000000 1.339230 0.000000 0\n\
+M  V30 END ATOM\n\
+M  V30 BEGIN BOND\n\
+M  V30 1 1 2 1 CFG=1\n\
+M  V30 2 1 2 3\n\
+M  V30 3 1 3 4\n\
+M  V30 4 1 3 5\n\
+M  V30 5 1 5 2\n\
+M  V30 END BOND\n\
+M  V30 END CTAB\n\
+M  END\n",
+            "C[N@@]1CC1F",
+        ),
+    ];
+    for (name, block, expected) in cases {
+        let report = read_mol_v3000_with_diagnostics(block).unwrap();
+        assert!(report.stereo_diagnostics.is_empty(), "{name}");
+        assert_eq!(
+            rdkit_canonical_smiles(&report.mol).unwrap(),
+            expected,
+            "{name}"
+        );
+    }
 }

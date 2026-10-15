@@ -38,7 +38,9 @@
 //! diagnostics and writer behavior remain the responsibility of those reader
 //! crates.
 
-use chematic_core::{AtomIdx, BondOrder, Chirality, Molecule, STEREO_H_SENTINEL};
+use std::collections::VecDeque;
+
+use chematic_core::{AtomIdx, BondOrder, Chirality, Element, Molecule, STEREO_H_SENTINEL};
 
 use crate::stereo2d::{P3, signed_volume, wedge_z};
 
@@ -66,8 +68,8 @@ pub enum StereoRejectionReason {
     DegenerateGeometry,
     /// The atom passed the degree-3-or-4 tetrahedral-candidate gate, but its
     /// coordination cannot represent the supported tetrahedral shapes
-    /// (currently a degree-3 center without exactly one implicit hydrogen,
-    /// e.g. a charged 3-heavy-neighbor center with zero implicit H). An atom
+    /// (for example, a degree-3 center with neither an implicit hydrogen nor
+    /// a supported stereogenic lone pair). An atom
     /// outside that gate entirely (degree other than 3 or 4) is
     /// [`ParityOutcome::NotRequested`] instead, even when it carries its own
     /// wedge/hash bond -- see [`classify_local_parity`]'s doc comment.
@@ -149,15 +151,23 @@ fn classify_local_parity_with(
     };
 
     let result = match nbs.len() {
-        4 => geometry().and_then(|()| tetrahedral_4(mol, coords, center, &nbs)),
-        3 if chematic_core::implicit_hcount(mol, center) == 1 => {
-            geometry().and_then(|()| tetrahedral_3_implicit_h(mol, coords, center, &nbs))
-        }
+        4 => geometry().and_then(|()| tetrahedral_4(mol, coords, center, &nbs, ctab_atom1_only)),
+        3 if chematic_core::implicit_hcount(mol, center) == 1 => geometry()
+            .and_then(|()| tetrahedral_3_implicit_h(mol, coords, center, &nbs, ctab_atom1_only)),
+        // Pyramidal S/Se uses its lone pair as the fourth stereochemical
+        // position. RDKit accepts both [S+](R)([O-])R (valence 3) and
+        // S(=O)(R)R (valence 4) when a wedge defines the centre.
+        3 if is_stereogenic_chalcogen_lone_pair(mol, center) => geometry()
+            .and_then(|()| tetrahedral_3_implicit_h(mol, coords, center, &nbs, ctab_atom1_only)),
+        // A three-membered ring or a three-path bridgehead prevents rapid
+        // inversion of a pyramidal tertiary N. Ordinary tertiary amines do
+        // not acquire a stable stereo tag from a wedge.
+        3 if is_ring_constrained_n_lone_pair(mol, center, &nbs) => geometry()
+            .and_then(|()| tetrahedral_3_implicit_h(mol, coords, center, &nbs, ctab_atom1_only)),
         // A three-coordinate centre with a lone pair in place of the
         // implicit H (a bridgehead `[N@@]`): the same three-bond parity.
-        3 if lone_pair_centres && chematic_core::implicit_hcount(mol, center) == 0 => {
-            geometry().and_then(|()| tetrahedral_3_implicit_h(mol, coords, center, &nbs))
-        }
+        3 if lone_pair_centres && chematic_core::implicit_hcount(mol, center) == 0 => geometry()
+            .and_then(|()| tetrahedral_3_implicit_h(mol, coords, center, &nbs, ctab_atom1_only)),
         _ => Err(StereoRejectionReason::UnsupportedCoordination),
     };
 
@@ -165,6 +175,62 @@ fn classify_local_parity_with(
         Ok((chirality, order)) => ParityOutcome::Assigned(chirality, order),
         Err(reason) => ParityOutcome::Rejected(reason),
     }
+}
+
+fn is_stereogenic_chalcogen_lone_pair(mol: &Molecule, center: AtomIdx) -> bool {
+    let atom = mol.atom(center);
+    if !matches!(atom.element, Element::S | Element::SE)
+        || chematic_core::implicit_hcount(mol, center) != 0
+    {
+        return false;
+    }
+    let valence: u8 = mol
+        .neighbors(center)
+        .map(|(_, bond)| mol.bond(bond).order.order_int())
+        .sum();
+    (atom.charge == 1 && valence == 3) || (atom.charge == 0 && valence == 4)
+}
+
+fn is_ring_constrained_n_lone_pair(mol: &Molecule, center: AtomIdx, nbs: &[AtomIdx]) -> bool {
+    let atom = mol.atom(center);
+    if atom.element != Element::N
+        || atom.charge != 0
+        || atom.aromatic
+        || chematic_core::implicit_hcount(mol, center) != 0
+        || mol.neighbors(center).any(|(_, bond_idx)| {
+            !matches!(
+                mol.bond(bond_idx).order,
+                BondOrder::Single | BondOrder::Up | BondOrder::Down
+            )
+        })
+    {
+        return false;
+    }
+
+    // In an aziridine, two of the three neighbors are directly bonded.
+    if nbs.iter().enumerate().any(|(i, &a)| {
+        nbs[i + 1..]
+            .iter()
+            .any(|&b| mol.neighbors(a).any(|(neighbor, _)| neighbor == b))
+    }) {
+        return true;
+    }
+
+    // A three-path bridgehead has all three neighbors in one connected
+    // component even after removing the N center.
+    let mut seen = vec![false; mol.atom_count()];
+    let mut queue = VecDeque::from([nbs[0]]);
+    seen[nbs[0].0 as usize] = true;
+    while let Some(atom) = queue.pop_front() {
+        for (neighbor, _) in mol.neighbors(atom) {
+            let index = neighbor.0 as usize;
+            if neighbor != center && !seen[index] {
+                seen[index] = true;
+                queue.push_back(neighbor);
+            }
+        }
+    }
+    nbs.iter().all(|nb| seen[nb.0 as usize])
 }
 
 /// A CTAB wedge cannot resolve two flat neighbors pointing in nearly the
@@ -252,12 +318,26 @@ pub fn local_parity_from_wedges_with_lone_pair(
     }
 }
 
-fn point_for(coords: &[(f64, f64)], mol: &Molecule, center: AtomIdx, nb: AtomIdx) -> Option<P3> {
+fn point_for(
+    coords: &[(f64, f64)],
+    mol: &Molecule,
+    center: AtomIdx,
+    nb: AtomIdx,
+    ctab_atom1_only: bool,
+) -> Option<P3> {
     let (x, y) = coords.get(nb.0 as usize).copied()?;
+    let incoming_ctab_wedge = ctab_atom1_only
+        && mol
+            .neighbors(center)
+            .any(|(neighbor, bond_idx)| neighbor == nb && mol.bond(bond_idx).atom1 != center);
     Some(P3 {
         x,
         y,
-        z: wedge_z(mol, center, nb),
+        z: if incoming_ctab_wedge {
+            0.0
+        } else {
+            wedge_z(mol, center, nb)
+        },
     })
 }
 
@@ -345,10 +425,11 @@ fn tetrahedral_4(
     coords: &[(f64, f64)],
     center: AtomIdx,
     nbs: &[AtomIdx],
+    ctab_atom1_only: bool,
 ) -> Result<(Chirality, Vec<u32>), StereoRejectionReason> {
     let pts: Vec<P3> = nbs
         .iter()
-        .map(|&nb| point_for(coords, mol, center, nb))
+        .map(|&nb| point_for(coords, mol, center, nb, ctab_atom1_only))
         .collect::<Option<_>>()
         .ok_or(StereoRejectionReason::MissingCoordinate)?;
 
@@ -395,10 +476,11 @@ fn tetrahedral_3_implicit_h(
     coords: &[(f64, f64)],
     center: AtomIdx,
     nbs: &[AtomIdx],
+    ctab_atom1_only: bool,
 ) -> Result<(Chirality, Vec<u32>), StereoRejectionReason> {
     let pts: Vec<P3> = nbs
         .iter()
-        .map(|&nb| point_for(coords, mol, center, nb))
+        .map(|&nb| point_for(coords, mol, center, nb, ctab_atom1_only))
         .collect::<Option<_>>()
         .ok_or(StereoRejectionReason::MissingCoordinate)?;
     let (cx, cy) = coords
@@ -1150,6 +1232,30 @@ mod tests {
             diagnostics[0].reason,
             StereoRejectionReason::UnsupportedCoordination
         );
+    }
+
+    #[test]
+    fn acyclic_tertiary_nitrogen_wedge_is_not_stable_stereo() {
+        let mut builder = MoleculeBuilder::new();
+        let n = builder.add_atom(Atom::new(Element::N));
+        let c = builder.add_atom(Atom::new(Element::C));
+        let f = builder.add_atom(Atom::new(Element::F));
+        let cl = builder.add_atom(Atom::new(Element::CL));
+        builder.add_bond(n, c, BondOrder::Up).unwrap();
+        builder.add_bond(n, f, BondOrder::Single).unwrap();
+        builder.add_bond(n, cl, BondOrder::Single).unwrap();
+        let mut mol = builder.build();
+        let diagnostics = apply_ctab_local_parity_from_wedges_with_diagnostics(
+            &mut mol,
+            &[(0.0, 0.0), (1.0, 0.0), (-0.5, 1.0), (-0.5, -1.0)],
+        );
+        assert_eq!(diagnostics.len(), 1);
+        assert_eq!(diagnostics[0].atom, n);
+        assert_eq!(
+            diagnostics[0].reason,
+            StereoRejectionReason::UnsupportedCoordination
+        );
+        assert_eq!(mol.atom(n).chirality, Chirality::None);
     }
 
     #[test]

@@ -868,6 +868,21 @@ fn v3000_geometry(
     (conformer, rank, diagnostics, square_planar)
 }
 
+/// Bond order spent at a V3000 atom's total-valence field. A coordinate
+/// bond spends valence at its acceptor, but not its donor.
+fn v3000_valence_bond_order_sum(mol: &Molecule, atom: AtomIdx) -> u8 {
+    mol.neighbors(atom)
+        .map(|(_, bond_idx)| {
+            let bond = mol.bond(bond_idx);
+            if bond.order == BondOrder::Dative && bond.atom1 == atom {
+                0
+            } else {
+                bond.order.order_int()
+            }
+        })
+        .fold(0u8, u8::saturating_add)
+}
+
 /// Apply supported CTfile total-valence overrides after bonds are known.
 /// VAL=0 leaves implicit hydrogen inference alone; -1 and the legacy zero
 /// sentinel 15 suppress hydrogens. Retain the source attribute for rewriting.
@@ -896,7 +911,7 @@ fn apply_v3000_valence_overrides(mol: &mut Molecule, properties: &[(u32, String)
         {
             continue;
         }
-        let drawn = chematic_core::valence::bond_order_sum(mol, atom);
+        let drawn = v3000_valence_bond_order_sum(mol, atom);
         mol.set_hydrogen_count(atom, Some(valence.saturating_sub(drawn)));
     }
 }
