@@ -244,6 +244,12 @@ impl Mol {
         bitvec2048_to_bytes(&chematic_fp::erg(&self.inner).bits)
     }
 
+    /// Extended reduced graph fingerprint as a dense NumPy bit vector.
+    fn erg_numpy<'py>(&self, py: Python<'py>) -> Bound<'py, PyArray1<u8>> {
+        let packed = self.erg();
+        packed_fingerprint_to_numpy(py, &packed, 2048)
+    }
+
     // -----------------------------------------------------------------------
     // Descriptors (extended)
     // -----------------------------------------------------------------------

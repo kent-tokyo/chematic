@@ -2,8 +2,10 @@
 
 CheMatic is not a drop-in RDKit replacement. Choose a declared operation
 profile, preserve unsupported inputs, and compare results on your own data
-before changing a production workflow. The current release is **v1.1.3**;
-the broadest published-package comparison packet is pinned to **v1.0.42**.
+before changing a production workflow. The current release is **v1.1.4**;
+the broadest published chemistry and speed comparison packet is pinned to
+**v1.0.42**. The v1.1.3 hosted-wheel packet is a separate output-validation
+record.
 
 For runnable calls, see the [RDKit cheat sheet](rdkit_cheatsheet.md). For
 operation-level measurement and unsupported states, see the
@@ -22,6 +24,9 @@ operation-level measurement and unsupported states, see the
 | Similarity | `DataStructs.TanimotoSimilarity(a, b)` | `chematic.tanimoto(a, b)` | Use fingerprints from the same declared profile. |
 | 2D depiction | `rdMolDraw2D.MolDraw2DSVG` | `mol._repr_svg_()`; Rust `chematic_depict::depict_svg` | SVG supported; PNG requires the optional feature. |
 | Conformer transforms | `rdMolTransforms.Set*`, `ComputeCanonicalTransform`, `CanonicalizeConformer` | `mol.set_*`, `mol.compute_canonical_transform(...)`, `mol.canonicalize_conformer(...)`; Rust `chematic_3d::mol_transforms` | chematic returns new coordinates instead of mutating a conformer. Degenerate principal-axis frames are not byte-identical across solvers. |
+| Batch conformer RMSD | `rdMolAlign.GetAllConformerBestRMS`, `GetAllConformerBestRMSToRef` | `mol.rdkit_all_conformer_best_rms(...)`, `mol.rdkit_all_conformer_best_rms_to_reference(...)`; Rust and WASM equivalents | RDKit-compatible atom matching and result order. Coordinates remain caller-owned; the batch APIs do not mutate conformers. |
+| Molecule properties | `mol.GetProp(key, autoConvert=False, default=...)`, typed `Get*Prop` | Same names on native `Mol` and `chematic.rdkit_compat.Mol` | Omitting `default` raises `KeyError`; an explicit fallback, including `None`, is returned unchanged. Typed setters preserve `int`, unsigned, `float`, and `bool` identity under `autoConvert=True`, including across pickle round trips. |
+| Molecule name | `mol.GetName()`, `mol.SetName(name)` | Same names on native and `rdkit_compat` `Mol`/`RWMol` | Uses the conventional `_Name` property. An unset name returns an empty string; SDF writers place it in the MOL header rather than an SD data field. |
 | Reactions | `AllChem.ReactionFromSmarts(...).RunReactants(...)` | `chematic.run_smirks(...)` | Bounded template application, not full SMIRKS parity. Reactant templates are SMARTS queries (`X`, `D`, `;`, `,`, `!`, `$()`); product templates follow RDKit's product semantics (query-only features dropped, element changes applied, unspelled charge and H kept from the reactant) and products must pass RDKit's sanitize valence rules. Canonical SMILES spelling differs from RDKit's; compare by InChIKey or re-canonicalize. |
 | Tautomers | `rdMolStandardize.TautomerEnumerator` | `mol.rdkit_canonical_tautomer()`, `mol.rdkit_tautomers()` | Named RDKit 2026.03.1-compatible profile; preserve refusals and compare on your corpus. |
 | MCS | `rdFMCS.FindMCS(mols)` | `chematic.find_mcs(...)` / `find_mcs_checked(...)` | Check timeout separately from no match. |

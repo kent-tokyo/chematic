@@ -93,6 +93,27 @@ const MIN_PATH: usize = 1;
 const MAX_PATH: usize = 7;
 const NUM_BITS_PER_FEATURE: u32 = 2;
 
+/// Invalid input to [`rdkit_rdk_fp_ignoring_atoms`].
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct RdkitRdkFingerprintError {
+    /// Atom index supplied by the caller.
+    pub atom: AtomIdx,
+    /// Number of atoms in the input molecule.
+    pub atom_count: usize,
+}
+
+impl core::fmt::Display for RdkitRdkFingerprintError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(
+            f,
+            "ignored atom index {} is out of range for a molecule with {} atoms",
+            self.atom.0, self.atom_count
+        )
+    }
+}
+
+impl std::error::Error for RdkitRdkFingerprintError {}
+
 fn hash_combine(seed: u32, value: u32) -> u32 {
     seed ^ value
         .wrapping_add(0x9e3779b9)
@@ -390,25 +411,79 @@ pub fn rdkit_rdk_fp(mol: &Molecule) -> BitVec2048 {
 }
 
 fn rdkit_rdk_fp_impl(mol: &Molecule) -> BitVec2048 {
+    rdkit_rdk_fp_impl_ignoring_atoms(mol, &[])
+}
+
+/// Compute RDKit 2026.09.1's RDK fingerprint while excluding every
+/// branched path that contains one of `ignored_atoms`.
+///
+/// This is the `ignoreAtoms` behavior added to
+/// `RDKitFingerprintGenerator` in RDKit 2026.09.1. Atom indices refer to the
+/// caller's molecule. Duplicate indices are harmless; an out-of-range index
+/// is rejected instead of being ignored silently. The empty set produces the
+/// same bits as [`rdkit_rdk_fp`].
+pub fn rdkit_rdk_fp_ignoring_atoms(
+    mol: &Molecule,
+    ignored_atoms: &[AtomIdx],
+) -> Result<BitVec2048, RdkitRdkFingerprintError> {
+    for &atom in ignored_atoms {
+        if atom.0 as usize >= mol.atom_count() {
+            return Err(RdkitRdkFingerprintError {
+                atom,
+                atom_count: mol.atom_count(),
+            });
+        }
+    }
+    if ignored_atoms.is_empty() {
+        return Ok(rdkit_rdk_fp(mol));
+    }
+
+    // `with_rdkit_model_molecule()` removes graph hydrogens when modelling
+    // `Chem.MolFromSmiles`. Keep caller-facing indices meaningful by mapping
+    // every retained atom back to the input before fingerprinting that model.
+    if let Some((model, kept_input_atoms)) =
+        chematic_smiles::rdkit_hydrogen_suppressed_with_map(mol)
+    {
+        let ignored_input: std::collections::HashSet<usize> =
+            ignored_atoms.iter().map(|atom| atom.0 as usize).collect();
+        let mapped: Vec<AtomIdx> = kept_input_atoms
+            .iter()
+            .enumerate()
+            .filter_map(|(model_index, input_index)| {
+                ignored_input
+                    .contains(input_index)
+                    .then_some(AtomIdx(model_index as u32))
+            })
+            .collect();
+        return Ok(rdkit_rdk_fp_impl_ignoring_atoms(&model, &mapped));
+    }
+
+    Ok(chematic_smiles::with_rdkit_model_molecule(mol, |model| {
+        debug_assert_eq!(model.atom_count(), mol.atom_count());
+        rdkit_rdk_fp_impl_ignoring_atoms(model, ignored_atoms)
+    }))
+}
+
+fn rdkit_rdk_fp_impl_ignoring_atoms(mol: &Molecule, ignored_atoms: &[AtomIdx]) -> BitVec2048 {
     // Where chematic's own aromaticity may disagree with RDKit's, read the
     // RDKit-corrected parity view (aromatic flags and bond orders as RDKit
     // sanitizes them) instead of re-perceiving.
     if chematic_perception::rdkit_model_may_disagree(mol)
         && let Ok(view) = chematic_perception::apply_aromaticity_rdkit_parity_shared(mol).as_ref()
     {
-        return rdkit_rdk_fp_input(&crate::rdkit_fp_view(view), true);
+        return rdkit_rdk_fp_input(&crate::rdkit_fp_view(view), true, ignored_atoms);
     }
     // RDKit fingerprints its sanitized graph: perchlorate as
     // `[Cl+3]([O-])3O`, organometallic dative bonds
     // ([`chematic_perception::rdkit_sanitize_cleanup`]).
     if let Some(cleaned) = chematic_perception::rdkit_sanitize_cleanup(mol) {
-        return rdkit_rdk_fp_input(&cleaned, false);
+        return rdkit_rdk_fp_input(&cleaned, false, ignored_atoms);
     }
-    rdkit_rdk_fp_input(mol, false)
+    rdkit_rdk_fp_input(mol, false, ignored_atoms)
 }
 
 /// [`rdkit_rdk_fp`] on the graph RDKit sees.
-fn rdkit_rdk_fp_input(mol: &Molecule, trust_view: bool) -> BitVec2048 {
+fn rdkit_rdk_fp_input(mol: &Molecule, trust_view: bool, ignored_atoms: &[AtomIdx]) -> BitVec2048 {
     let mut fp = BitVec2048::new();
     if mol.atom_count() == 0 {
         return fp;
@@ -436,7 +511,7 @@ fn rdkit_rdk_fp_input(mol: &Molecule, trust_view: bool) -> BitVec2048 {
     // Every connected subgraph of MIN_PATH..=MAX_PATH bonds is hashed as it
     // is discovered; only the set of subgraphs (not their order or count) is
     // observable in the bit vector.
-    let mut walker = SubgraphWalker::new(mol);
+    let mut walker = SubgraphWalker::new(mol, ignored_atoms);
     walker.for_each(MIN_PATH, MAX_PATH, |path, degree, n_atoms| {
         let seed = path_seed_small(path, &ends, &invariants, &bond_types, degree, n_atoms);
         fp.set((seed % FP_SIZE) as usize);
@@ -519,7 +594,7 @@ struct SubgraphWalker {
 }
 
 impl SubgraphWalker {
-    fn new(mol: &Molecule) -> Self {
+    fn new(mol: &Molecule, ignored_atoms: &[AtomIdx]) -> Self {
         let n_bonds = mol.bond_count();
         // Same lists as `build_bond_adjacency`, indexed by bond.
         let mut nbrs: Vec<Vec<u32>> = vec![Vec::new(); n_bonds];
@@ -533,10 +608,22 @@ impl SubgraphWalker {
                 }
             }
         }
+        let mut forbidden = vec![false; n_bonds];
+        if !ignored_atoms.is_empty() {
+            let mut ignored = vec![false; mol.atom_count()];
+            for &atom in ignored_atoms {
+                ignored[atom.0 as usize] = true;
+            }
+            for (bond_index, bond) in mol.bonds() {
+                if ignored[bond.atom1.0 as usize] || ignored[bond.atom2.0 as usize] {
+                    forbidden[bond_index.0 as usize] = true;
+                }
+            }
+        }
         Self {
             nbrs,
             ends: mol.bonds().map(|(_, b)| (b.atom1.0, b.atom2.0)).collect(),
-            forbidden: vec![false; n_bonds],
+            forbidden,
             undo: Vec::new(),
             stacks: vec![Vec::new(); MAX_PATH + 2],
             path: Vec::with_capacity(MAX_PATH + 1),
@@ -721,6 +808,69 @@ mod tests {
     fn single_atom_has_no_bits() {
         let fp = rdkit_rdk_fp(&mol("C"));
         assert_eq!(fp.popcount(), 0);
+    }
+
+    fn on_bits(fp: &BitVec2048) -> Vec<usize> {
+        (0..2048).filter(|&bit| fp.get(bit)).collect()
+    }
+
+    #[test]
+    fn ignore_atoms_matches_rdkit_2026_09_1_oracle() {
+        let cases: &[(&str, &[u32], &[usize])] = &[
+            ("CCO", &[], &[562, 1183, 1308, 1339, 1728, 1772]),
+            ("CCO", &[2], &[1308, 1772]),
+            ("CCO", &[1], &[]),
+            ("CCCO", &[2], &[1308, 1772]),
+            (
+                "c1ccccc1O",
+                &[6],
+                &[
+                    103, 161, 194, 294, 330, 792, 842, 1026, 1287, 1784, 1889, 1907,
+                ],
+            ),
+        ];
+        for &(smiles, ignored, expected) in cases {
+            let molecule = mol(smiles);
+            let ignored: Vec<_> = ignored.iter().copied().map(AtomIdx).collect();
+            let actual = rdkit_rdk_fp_ignoring_atoms(&molecule, &ignored).unwrap();
+            assert_eq!(on_bits(&actual), expected, "{smiles}, ignored={ignored:?}");
+        }
+    }
+
+    #[test]
+    fn empty_ignore_set_preserves_existing_fingerprint() {
+        let molecule = mol("CC(=O)Oc1ccccc1C(=O)O");
+        assert_eq!(
+            rdkit_rdk_fp_ignoring_atoms(&molecule, &[]).unwrap(),
+            rdkit_rdk_fp(&molecule)
+        );
+    }
+
+    #[test]
+    fn ignored_graph_hydrogen_uses_input_atom_indices() {
+        let molecule = mol("[H]O[H]");
+        assert_eq!(
+            rdkit_rdk_fp_ignoring_atoms(&molecule, &[AtomIdx(1)]).unwrap(),
+            BitVec2048::new()
+        );
+        // Ignoring an H which RDKit suppresses does not accidentally mask O.
+        assert_eq!(
+            rdkit_rdk_fp_ignoring_atoms(&molecule, &[AtomIdx(0)]).unwrap(),
+            rdkit_rdk_fp(&molecule)
+        );
+    }
+
+    #[test]
+    fn invalid_ignored_atom_is_rejected() {
+        let molecule = mol("CCO");
+        let error = rdkit_rdk_fp_ignoring_atoms(&molecule, &[AtomIdx(3)]).unwrap_err();
+        assert_eq!(
+            error,
+            RdkitRdkFingerprintError {
+                atom: AtomIdx(3),
+                atom_count: 3,
+            }
+        );
     }
 
     #[test]

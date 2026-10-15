@@ -48,6 +48,92 @@ def test_ecfp4_numpy(aspirin):
     assert fp.dtype == np.uint8
 
 
+@pytest.mark.parametrize(
+    ("packed_method", "numpy_method", "n_bits"),
+    [
+        ("ecfp6", "ecfp6_numpy", 2048),
+        ("ecfp4_chiral", "ecfp4_chiral_numpy", 2048),
+        ("fcfp4", "fcfp4_numpy", 2048),
+        ("fcfp6", "fcfp6_numpy", 2048),
+        ("atom_pair_fp", "atom_pair_fp_numpy", 2048),
+        ("torsion_fp", "torsion_fp_numpy", 2048),
+        ("rdkit_torsion_fp", "rdkit_torsion_fp_numpy", 2048),
+        ("rdkit_atom_pair_fp", "rdkit_atom_pair_fp_numpy", 2048),
+        ("rdkit_layered_fp", "rdkit_layered_fp_numpy", 2048),
+        ("rdkit_pattern_fp", "rdkit_pattern_fp_numpy", 2048),
+        ("rdkit_rdk_fp", "rdkit_rdk_fp_numpy", 2048),
+        ("rdkit_ecfp4", "rdkit_ecfp4_numpy", 2048),
+        ("path_fp", "path_fp_numpy", 2048),
+        ("topo_path_fp", "topo_path_fp_numpy", 2048),
+        ("avalon_fp", "avalon_fp_numpy", 2048),
+        ("rdkit_avalon_fp", "rdkit_avalon_fp_numpy", 2048),
+        ("pattern_fp", "pattern_fp_numpy", 2048),
+        ("pharmacophore_fp", "pharmacophore_fp_numpy", 2048),
+        ("erg", "erg_numpy", 2048),
+    ],
+)
+def test_binary_fingerprint_numpy_matches_packed_bits(
+    aspirin, packed_method, numpy_method, n_bits
+):
+    import numpy as np
+
+    packed = getattr(aspirin, packed_method)()
+    expected = np.unpackbits(
+        np.frombuffer(packed, dtype=np.uint8), bitorder="little"
+    )[:n_bits]
+    actual = getattr(aspirin, numpy_method)()
+
+    assert actual.shape == (n_bits,)
+    assert actual.dtype == np.uint8
+    np.testing.assert_array_equal(actual, expected)
+
+
+@pytest.mark.parametrize("count_simulation", [False, True])
+def test_configurable_morgan_numpy_matches_packed_bits(aspirin, count_simulation):
+    import numpy as np
+
+    packed = aspirin.rdkit_ecfp_config(
+        radius=2,
+        nbits=512,
+        include_chirality=True,
+        count_simulation=count_simulation,
+    )
+    actual = aspirin.rdkit_ecfp_config_numpy(
+        radius=2,
+        nbits=512,
+        include_chirality=True,
+        count_simulation=count_simulation,
+    )
+    expected = np.unpackbits(
+        np.frombuffer(packed, dtype=np.uint8), bitorder="little"
+    )
+
+    assert actual.shape == (512,)
+    assert actual.dtype == np.uint8
+    np.testing.assert_array_equal(actual, expected)
+
+
+@pytest.mark.parametrize("n_bits", [0, 7, 2049])
+def test_rdkit_avalon_numpy_rejects_non_byte_aligned_widths(aspirin, n_bits):
+    with pytest.raises(ValueError, match="positive multiple of 8"):
+        aspirin.rdkit_avalon_fp_numpy(n_bits)
+
+
+def test_3d_pharmacophore_numpy_matches_packed_bits(aspirin):
+    import numpy as np
+
+    coords = [[float(i), 0.0, 0.0] for i in range(aspirin.rdkit_num_atoms())]
+    packed = aspirin.pharmacophore_fp_3d(coords)
+    actual = aspirin.pharmacophore_fp_3d_numpy(coords)
+    expected = np.unpackbits(
+        np.frombuffer(packed, dtype=np.uint8), bitorder="little"
+    )
+
+    assert actual.shape == (2048,)
+    assert actual.dtype == np.uint8
+    np.testing.assert_array_equal(actual, expected)
+
+
 # ---------------------------------------------------------------------------
 # FCFP4
 # ---------------------------------------------------------------------------
@@ -143,6 +229,55 @@ def test_rdkit_atom_pair_fp_independent_of_native_atom_pair_fp(aspirin):
     # Separate opt-in function -- must not be the same bytes as the native
     # (non-RDKit) scheme just because both happen to be 256-byte outputs.
     assert aspirin.rdkit_atom_pair_fp() != aspirin.atom_pair_fp()
+
+
+def test_rdkit_atom_code_and_torsion_path_explanations_match_oracle():
+    mol = chematic.from_smiles("C=CC(=O)O")
+    expected = [
+        ("C", 1, 1),
+        ("C", 2, 1),
+        ("C", 3, 1),
+        ("O", 1, 1),
+        ("O", 1, 0),
+    ]
+    for atom_index, fields in enumerate(expected):
+        code = mol.rdkit_atom_code(atom_index)
+        assert chematic.explain_rdkit_atom_code(code) == fields
+
+    path = [0, 1, 2, 4]
+    score = mol.rdkit_topological_torsion_path_code(path)
+    assert chematic.explain_rdkit_topological_torsion_code(score) == [
+        ("C", 1, 1),
+        ("C", 2, 1),
+        ("C", 3, 1),
+        ("O", 1, 0),
+    ]
+    assert score == mol.rdkit_topological_torsion_path_code(path[::-1])
+
+    try:
+        from rdkit import Chem
+        from rdkit.Chem.AtomPairs import Torsions, Utils
+    except ImportError:
+        return
+    rd_mol = Chem.MolFromSmiles("C=CC(=O)O")
+    assert score == Torsions.pyScorePath(rd_mol, path, 4)
+    assert tuple(chematic.explain_rdkit_topological_torsion_code(score)) == (
+        Torsions.ExplainPathScore(score, 4)
+    )
+    for atom_index in range(rd_mol.GetNumAtoms()):
+        assert mol.rdkit_atom_code(atom_index) == Utils.GetAtomCode(
+            rd_mol.GetAtomWithIdx(atom_index)
+        )
+
+
+def test_rdkit_atom_code_diagnostics_reject_invalid_inputs():
+    mol = chematic.from_smiles("CC")
+    with pytest.raises(ValueError, match="out of range"):
+        mol.rdkit_atom_code(2)
+    with pytest.raises(ValueError, match="must not be empty"):
+        mol.rdkit_topological_torsion_path_code([])
+    with pytest.raises(ValueError, match="at most 7"):
+        chematic.explain_rdkit_topological_torsion_code(0, 8)
 
 
 def test_rdkit_atom_pair_fp_matches_rdkit_oracle_on_simple_molecules():
@@ -258,6 +393,27 @@ def test_rdkit_rdk_fp_different(aspirin, benzene):
 
 def test_rdkit_rdk_fp_deterministic(aspirin):
     assert aspirin.rdkit_rdk_fp() == aspirin.rdkit_rdk_fp()
+
+
+def _on_bits(packed: bytes) -> list[int]:
+    return [
+        byte_index * 8 + bit
+        for byte_index, byte in enumerate(packed)
+        for bit in range(8)
+        if byte & (1 << bit)
+    ]
+
+
+def test_rdkit_rdk_fp_ignore_atoms_matches_rdkit_2026_09_1():
+    mol = chematic.from_smiles("CCO")
+    assert _on_bits(mol.rdkit_rdk_fp(ignore_atoms=[2])) == [1308, 1772]
+    assert _on_bits(mol.rdkit_rdk_fp(ignore_atoms=[1])) == []
+    assert mol.rdkit_rdk_fp(ignore_atoms=[]) == mol.rdkit_rdk_fp()
+
+
+def test_rdkit_rdk_fp_ignore_atoms_rejects_invalid_index():
+    with pytest.raises(ValueError, match="out of range"):
+        chematic.from_smiles("CCO").rdkit_rdk_fp(ignore_atoms=[3])
 
 
 def test_rdkit_rdk_fp_independent_of_native_path_fp(aspirin):

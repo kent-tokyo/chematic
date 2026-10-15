@@ -26,7 +26,6 @@
     "crates/chematic-smarts/src/parser.rs": 2259,
     "crates/chematic-smiles/src/parser.rs": 1805,
     "crates/chematic-smiles/src/rdkit/depict.rs": 2303,
-    "crates/chematic-smiles/src/rdkit/mod.rs": 1565,
     "crates/chematic-smiles/src/rdkit/pdb_read.rs": 1710,
     "crates/chematic-smiles/src/rdkit/rxn_smarts.rs": 1680
   },

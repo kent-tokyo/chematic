@@ -159,17 +159,22 @@ fn rdkit_model_may_disagree_uncached(mol: &Molecule) -> bool {
     }
     // A ring triple bond (`C1=CSC#C1`): RDKit may flag it aromatic while
     // keeping its type, which the parity view does not model.
-    if mol.bonds().any(|(_, b)| b.order == BondOrder::Triple) {
-        let ring = crate::sssr::ring_bond_flags_shared(mol);
-        if mol.bonds().any(|(bi, b)| {
-            b.order == BondOrder::Triple && ring.get(bi.0 as usize).copied().unwrap_or(false)
-        }) {
-            return true;
-        }
+    if has_cyclic_triple_bond(mol) {
+        return true;
     }
     // With no aromatic atoms there is no aromatic component to check.
     // The atom/valence and cyclic-triple checks above still run unchanged.
     has_aromatic_atom && !aromatic_systems_are_huckel(mol)
+}
+
+fn has_cyclic_triple_bond(mol: &Molecule) -> bool {
+    if !mol.bonds().any(|(_, bond)| bond.order == BondOrder::Triple) {
+        return false;
+    }
+    let ring = crate::sssr::ring_bond_flags_shared(mol);
+    mol.bonds().any(|(idx, bond)| {
+        bond.order == BondOrder::Triple && ring.get(idx.0 as usize).copied().unwrap_or(false)
+    })
 }
 
 /// Pi electrons an aromatic atom contributes to its ring system, `None`

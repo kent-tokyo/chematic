@@ -339,6 +339,55 @@ impl Mol {
         .map_err(|e| PyValueError::new_err(e.to_string()))
     }
 
+    /// ``rdMolAlign.GetAllConformerBestRMS`` (RDKit 2026.09.1): best-fit
+    /// RMSDs for every lower-triangle pair of ``conformers``. The returned
+    /// order is ``(1,0), (2,0), (2,1), ...`` and atom mappings are computed
+    /// once for the whole batch.
+    #[pyo3(signature = (conformers, max_matches = 1_000_000, symmetrize_conjugated_terminal_groups = true, weights = None))]
+    fn rdkit_all_conformer_best_rms(
+        &self,
+        conformers: Vec<Vec<[f64; 3]>>,
+        max_matches: usize,
+        symmetrize_conjugated_terminal_groups: bool,
+        weights: Option<Vec<f64>>,
+    ) -> PyResult<Vec<f64>> {
+        chematic_smiles::rdkit_all_conformer_best_rms(
+            &self.inner,
+            &conformers,
+            max_matches,
+            symmetrize_conjugated_terminal_groups,
+            weights.as_deref(),
+        )
+        .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
+    /// RDKit 2026.09.1 ``rdMolAlign.GetAllConformerBestRMSToRef``: best-fit
+    /// RMSDs from every conformer of this probe molecule to every conformer
+    /// of ``reference``. Results are reference-major:
+    /// ``(ref0, probe0), (ref0, probe1), ...``. Atom mappings are computed
+    /// once for the whole Cartesian product.
+    #[pyo3(signature = (reference, probe_conformers, reference_conformers, max_matches = 1_000_000, symmetrize_conjugated_terminal_groups = true, weights = None))]
+    fn rdkit_all_conformer_best_rms_to_reference(
+        &self,
+        reference: &Mol,
+        probe_conformers: Vec<Vec<[f64; 3]>>,
+        reference_conformers: Vec<Vec<[f64; 3]>>,
+        max_matches: usize,
+        symmetrize_conjugated_terminal_groups: bool,
+        weights: Option<Vec<f64>>,
+    ) -> PyResult<Vec<f64>> {
+        chematic_smiles::rdkit_all_conformer_best_rms_to_ref(
+            &self.inner,
+            &reference.inner,
+            &probe_conformers,
+            &reference_conformers,
+            max_matches,
+            symmetrize_conjugated_terminal_groups,
+            weights.as_deref(),
+        )
+        .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
     /// ``rdMolAlign.GetBestAlignmentTransform`` (RDKit 2026.03.1):
     /// ``(rmsd, transform, atom_map)`` of the best fit over all matches,
     /// ``atom_map`` as ``(probe atom, reference atom)`` pairs.

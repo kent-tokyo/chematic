@@ -1,8 +1,8 @@
 //! Fingerprint and similarity-search bindings: ECFP/FCFP/MACCS/MHFP, Tanimoto/Dice, nearest-neighbor search.
 
 use crate::{
-    MolHandle, WASM_MAX_ATOMS, enforce_wasm_input_len, enforce_wasm_molecule_size,
-    parse_smiles_json_array,
+    MolHandle, WASM_MAX_ATOMS, bounded_json_string, enforce_wasm_input_len,
+    enforce_wasm_molecule_size, parse_smiles_json_array,
 };
 use wasm_bindgen::prelude::*;
 
@@ -169,6 +169,33 @@ pub fn rdkit_rdk_bitvec(mol: &MolHandle) -> Vec<u8> {
             byte
         })
         .collect()
+}
+
+/// RDKit 2026.09.1 RDKFingerprint with `ignoreAtoms`: every branched path
+/// containing one of `ignored_atoms` is excluded. Invalid indices return a JS
+/// error; an empty list is bit-identical to [`rdkit_rdk_bitvec`].
+#[wasm_bindgen]
+pub fn rdkit_rdk_bitvec_ignoring_atoms(
+    mol: &MolHandle,
+    ignored_atoms: Vec<u32>,
+) -> Result<Vec<u8>, JsValue> {
+    let ignored: Vec<_> = ignored_atoms
+        .into_iter()
+        .map(chematic_core::AtomIdx)
+        .collect();
+    let fp = chematic_fp::rdkit_rdk_fp_ignoring_atoms(&mol.inner, &ignored)
+        .map_err(|error| JsValue::from_str(&error.to_string()))?;
+    Ok((0..256usize)
+        .map(|byte_idx| {
+            let mut byte = 0u8;
+            for bit in 0..8usize {
+                if fp.get(byte_idx * 8 + bit) {
+                    byte |= 1 << bit;
+                }
+            }
+            byte
+        })
+        .collect())
 }
 
 // ---------------------------------------------------------------------------
@@ -431,6 +458,91 @@ pub fn rdkit_torsion_bitvec(mol: &MolHandle) -> Vec<u8> {
             byte
         })
         .collect()
+}
+
+/// RDKit atom-pair atom code for one atom.
+///
+/// `branch_subtract` is normally 0 for atom-pair diagnostics, 1 for a
+/// torsion endpoint, and 2 for an interior torsion atom.
+#[wasm_bindgen]
+pub fn rdkit_atom_code(
+    mol: &MolHandle,
+    atom_index: usize,
+    branch_subtract: u32,
+) -> Result<u32, JsValue> {
+    let atom_index = u32::try_from(atom_index)
+        .map_err(|_| JsValue::from_str("atom index exceeds the supported u32 range"))?;
+    chematic_fp::rdkit_atom_code(
+        &mol.inner,
+        chematic_core::AtomIdx(atom_index),
+        branch_subtract,
+    )
+    .map_err(|error| JsValue::from_str(&error.to_string()))
+}
+
+/// Decode an RDKit atom code as stable JSON.
+///
+/// Returns `{"symbol":"C","branchCount":3,"piElectronCount":1}`.
+#[wasm_bindgen]
+pub fn explain_rdkit_atom_code_json(code: u32) -> String {
+    let explanation = chematic_fp::explain_rdkit_atom_code(code);
+    serde_json::json!({
+        "symbol": explanation.symbol,
+        "branchCount": explanation.branch_count,
+        "piElectronCount": explanation.pi_electron_count,
+    })
+    .to_string()
+}
+
+/// Pack a JSON array of atom indices into RDKit's legacy torsion code.
+///
+/// The decimal string return type avoids losing precision in JavaScript's
+/// `number` type for codes above 2^53.
+#[wasm_bindgen]
+pub fn rdkit_topological_torsion_path_code_decimal(
+    mol: &MolHandle,
+    path_json: &str,
+) -> Result<String, JsValue> {
+    enforce_wasm_input_len("path_json", path_json)?;
+    let path: Vec<usize> = serde_json::from_str(path_json).map_err(|error| {
+        JsValue::from_str(&format!("path_json must be an array of indices: {error}"))
+    })?;
+    let path = path
+        .into_iter()
+        .map(|index| {
+            u32::try_from(index)
+                .map(chematic_core::AtomIdx)
+                .map_err(|_| JsValue::from_str("atom index exceeds the supported u32 range"))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    chematic_fp::rdkit_topological_torsion_path_code(&mol.inner, &path)
+        .map(|code| code.to_string())
+        .map_err(|error| JsValue::from_str(&error.to_string()))
+}
+
+/// Decode a decimal legacy RDKit torsion code as stable JSON.
+#[wasm_bindgen]
+pub fn explain_rdkit_topological_torsion_code_json(
+    code_decimal: &str,
+    size: usize,
+) -> Result<String, JsValue> {
+    enforce_wasm_input_len("code_decimal", code_decimal)?;
+    let code = code_decimal
+        .parse::<u64>()
+        .map_err(|error| JsValue::from_str(&format!("invalid unsigned decimal code: {error}")))?;
+    let explanation = chematic_fp::explain_rdkit_topological_torsion_code(code, size)
+        .map_err(|error| JsValue::from_str(&error.to_string()))?;
+    let value = explanation
+        .into_iter()
+        .map(|entry| {
+            serde_json::json!({
+                "symbol": entry.symbol,
+                "branchCount": entry.branch_count,
+                "piElectronCount": entry.pi_electron_count,
+            })
+        })
+        .collect::<Vec<_>>();
+    bounded_json_string(&value)
 }
 
 /// Tanimoto similarity between `a` and `b` using FCFP6 (radius-3 pharmacophore) fingerprints.

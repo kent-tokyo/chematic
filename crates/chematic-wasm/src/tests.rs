@@ -56,6 +56,27 @@ fn rdkit_search_precise_json_preserves_fractional_score() {
 }
 
 #[test]
+fn rdkit_atom_code_diagnostics_are_available_without_precision_loss() {
+    let mol = parse("OOOO");
+    let code = rdkit_atom_code(&mol, 0, 0).expect("atom code");
+    let atom: serde_json::Value =
+        serde_json::from_str(&explain_rdkit_atom_code_json(code)).expect("atom-code JSON");
+    assert_eq!(atom["symbol"], "O");
+    assert_eq!(atom["branchCount"], 1);
+    assert_eq!(atom["piElectronCount"], 0);
+
+    let packed =
+        rdkit_topological_torsion_path_code_decimal(&mol, "[0,1,2,3]").expect("torsion code");
+    let explanation: serde_json::Value = serde_json::from_str(
+        &explain_rdkit_topological_torsion_code_json(&packed, 4).expect("torsion explanation"),
+    )
+    .expect("torsion JSON");
+    assert_eq!(explanation[0]["branchCount"], 1);
+    assert_eq!(explanation[1]["branchCount"], 2);
+    assert_eq!(explanation[3]["symbol"], "O");
+}
+
+#[test]
 fn common_format_conversion_uses_shared_aliases_and_preserves_graph() {
     let mol2 = convert_common_format("CCO", "smiles", "mol2").unwrap();
     assert!(mol2.contains("@<TRIPOS>MOLECULE"));
@@ -1986,6 +2007,26 @@ fn rdkit_path_bitvec_length_256() {
 fn rdkit_rdk_bitvec_length_256() {
     let mol = parse("CCCCC");
     assert_eq!(rdkit_rdk_bitvec(&mol).len(), 256);
+}
+
+#[test]
+fn rdkit_rdk_ignore_atoms_matches_rdkit_2026_09_1() {
+    let mol = parse("CCO");
+    let bytes = rdkit_rdk_bitvec_ignoring_atoms(&mol, vec![2]).expect("fingerprint");
+    let bits: Vec<_> = bytes
+        .iter()
+        .enumerate()
+        .flat_map(|(byte_index, byte)| {
+            (0..8)
+                .filter(move |bit| byte & (1 << bit) != 0)
+                .map(move |bit| byte_index * 8 + bit)
+        })
+        .collect();
+    assert_eq!(bits, vec![1308, 1772]);
+    assert_eq!(
+        rdkit_rdk_bitvec_ignoring_atoms(&mol, vec![]).expect("fingerprint"),
+        rdkit_rdk_bitvec(&mol)
+    );
 }
 
 #[test]

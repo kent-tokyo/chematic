@@ -10,7 +10,7 @@ support and refusal boundaries, see [compatibility scope](compatibility-scope.md
 
 ## Current measured boundary
 
-The **v1.1.3 release** retains the named RDKit 2026.03.1-compatible surface
+The **v1.1.4 release** retains the named RDKit 2026.03.1-compatible surface
 and reduces repeated work in selected fingerprint, descriptor, ring, reaction,
 and MMFF94 paths. In the recorded v1.0.41 source comparison, chematic matches RDKit at
 least as often as COSMolKit 0.5.0rc15 on all 161 operations over ChEMBL 5k and
@@ -21,10 +21,14 @@ published-package chemistry and speed comparison packet is pinned to
 **v1.0.42** against RDKit 2026.09.1. Earlier dated records cover v1.0.30 and
 v1.0.36 packages plus later source evidence. v1.0.42 release channels and
 the macOS arm64 chemistry/A6 packet are verified; other published platforms
-remain separate runs.
+remain separate runs. A separate v1.1.3 Python artifact packet covers exact
+public wheels on hosted Linux x86-64, macOS arm64, macOS x86-64 and Windows
+x86-64. It is an output-validation packet, not evidence for npm/WASM,
+crates.io, or a replacement for the version-pinned speed record.
 
 | Lane | Recorded result | What it does not show |
 |---|---|---|
+| [v1.1.3 published Python wheels](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-14-v113-published-artifact-packet.md) | Four exact PyPI wheels reproduce the expected reaction, SMARTS, Morgan, descriptor, CIP, hybridization, MMFF94, MOL stereo, BioTransformer and A6 counts. Morgan is 10,000/10,000 exact on exposed rows and 5,000/5,000 on ChEMBL; A6 is 265/265 independently sound and stereo-clean. | npm/WASM or crates.io chemistry; native per-platform RDKit execution where no matching RDKit wheel exists; universal parity or speed superiority. |
 | v1.1.3 unusual-input follow-up | Source candidate `90542885`: MW, Morgan and ring count match 4,072/4,072; every finite comparable Labute ASA value agrees within `1e-9`. CIP has 4,062/4,072 exact rows, with the ten differences classified rather than guessed. | Published artifacts, other corpora, or universal descriptor/CIP parity. |
 | Python output audit | 10,000 chemistry rows, 310,000 SMARTS cells and the original 57 reaction fixtures accounted for; 200 SMARTS cells differ and five CIP rows abstain with typed reasons. | Full SMARTS, CIP or reaction compatibility. |
 | RDKit-compatible HBA | Published v1.0.30 macOS arm64 wheel: 5,000/5,000 exposed ChEMBL rows match RDKit; v1.0.29 matched 3,641/5,000. | Other descriptors or platforms. |
@@ -39,7 +43,7 @@ hashes, failure counts and operation definitions. The [benchmark index](https://
 keeps historical results versioned; an older speed or size figure is not a
 current-package result.
 
-The [2026-10-14 sanitized-model reuse packet](../benchmarks/2026-10-14-python-sanitized-view-reuse.md)
+The [2026-10-14 sanitized-model reuse packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-14-python-sanitized-view-reuse.md)
 records the source-wheel descriptor/fingerprint follow-up against RDKit
 2026.09.1 and COSMolKit rc22. Its two fixed slices retain first-use, repeated-use
 and actual parse-inclusive results, with output agreement required for ranking.

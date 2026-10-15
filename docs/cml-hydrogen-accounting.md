@@ -39,7 +39,8 @@ The attribute does not add three or four more hydrogens to those explicit nodes.
 
 Invalid integers, negative counts, totals below the explicit-neighbor count,
 and remainders above the core's u8 capacity return
-`CmlError::InvalidHydrogenCount`. Python exposes these as `ValueError`.
+`CmlError::MalformedXml` with an `invalid CML hydrogenCount` message. Python
+exposes these as `ValueError`.
 The total itself can exceed 255 when explicit nodes account for the excess.
 This is a representation check, not a new valence sanitizer.
 
@@ -86,7 +87,7 @@ checked by RDKit **2026.09.1**. Open Babel also read every chematic-generated
 CML output with the expected formula: explicitly writing the correct total
 allows its reader to retain CH2. Version, source-lane and extension/fixture
 hashes are recorded in
-[`openbabel-cml-hydrogen-2026-10-14.json`](../validation/results/openbabel-cml-hydrogen-2026-10-14.json).
+[`openbabel-cml-hydrogen-2026-10-14.json`](https://github.com/kent-tokyo/chematic/blob/main/validation/results/openbabel-cml-hydrogen-2026-10-14.json).
 
 ```sh
 CARGO_INCREMENTAL=0 cargo test -p chematic-mol --offline --quiet

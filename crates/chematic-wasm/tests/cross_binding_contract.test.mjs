@@ -551,6 +551,26 @@ for (const expected of fixture.fingerprint_contract.rdkit_rdk_fixtures) {
   mol.free();
 }
 
+{
+  const mol = wasm.parse_smiles("CCO");
+  const masked = wasm.rdkit_rdk_bitvec_ignoring_atoms(mol, new Uint32Array([2]));
+  assert.deepEqual(
+    Array.from({ length: 2048 }, (_, bit) => (masked[bit >> 3] >> (bit & 7)) & 1 ? bit : null).filter((bit) => bit !== null),
+    [1308, 1772],
+    "RDKit 2026.09.1 ignoreAtoms bits",
+  );
+  assert.deepEqual(
+    wasm.rdkit_rdk_bitvec_ignoring_atoms(mol, new Uint32Array()),
+    wasm.rdkit_rdk_bitvec(mol),
+    "empty ignoreAtoms preserves the fingerprint",
+  );
+  assert.throws(
+    () => wasm.rdkit_rdk_bitvec_ignoring_atoms(mol, new Uint32Array([3])),
+    /out of range/,
+  );
+  mol.free();
+}
+
 for (const expected of fixture.fingerprint_contract.rdkit_path_fixtures) {
   const mol = wasm.parse_smiles(expected.smiles);
   const actual = wasm.rdkit_path_bitvec(mol);

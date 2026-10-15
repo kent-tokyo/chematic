@@ -218,6 +218,35 @@ pub fn write_mol2_source_record(record: &Mol2SourceRecord) -> String {
     record.source.clone()
 }
 
+fn validate_source_sections(
+    all_lines: &[(usize, &str)],
+    retain_source: bool,
+    unity_has_opaque: bool,
+) -> Result<Vec<String>, Mol2Error> {
+    let mut core_sections = HashSet::new();
+    let mut opaque_sections = Vec::new();
+    for &(line, text) in all_lines {
+        if let Some(section) = tripos_section(text) {
+            let section = section.to_ascii_uppercase();
+            if matches!(section.as_str(), "MOLECULE" | "ATOM" | "BOND") {
+                if !core_sections.insert(section.clone()) {
+                    return Err(Mol2Error::InvalidAtomLine {
+                        line,
+                        detail: format!("multiple {section} sections/records are unsupported"),
+                    });
+                }
+            } else if retain_source && (section != "UNITY_ATOM_ATTR" || unity_has_opaque) {
+                opaque_sections.push(section);
+            }
+        }
+    }
+    if !core_sections.contains("MOLECULE") {
+        return Err(Mol2Error::MissingSection("MOLECULE".into()));
+    }
+
+    Ok(opaque_sections)
+}
+
 fn parse_mol2_impl(
     s: &str,
     limits: &Mol2ParseLimits,
@@ -272,26 +301,7 @@ fn parse_mol2_impl(
             .any(|(name, _)| !name.eq_ignore_ascii_case("charge"))
     });
 
-    let mut core_sections = HashSet::new();
-    let mut opaque_sections = Vec::new();
-    for &(line, text) in &all_lines {
-        if let Some(section) = tripos_section(text) {
-            let section = section.to_ascii_uppercase();
-            if matches!(section.as_str(), "MOLECULE" | "ATOM" | "BOND") {
-                if !core_sections.insert(section.clone()) {
-                    return Err(Mol2Error::InvalidAtomLine {
-                        line,
-                        detail: format!("multiple {section} sections/records are unsupported"),
-                    });
-                }
-            } else if retain_source && (section != "UNITY_ATOM_ATTR" || unity_has_opaque) {
-                opaque_sections.push(section);
-            }
-        }
-    }
-    if !core_sections.contains("MOLECULE") {
-        return Err(Mol2Error::MissingSection("MOLECULE".into()));
-    }
+    let opaque_sections = validate_source_sections(&all_lines, retain_source, unity_has_opaque)?;
 
     // -- ATOM section ----------------------------------------------------------
     let atom_lines = section_lines(&all_lines, "ATOM");

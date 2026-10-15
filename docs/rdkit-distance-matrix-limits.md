@@ -78,7 +78,7 @@ The upstream large-input crash reproducer was not executed. The upstream
 failure is attributed to its issue report; the local evidence concerns
 chematic's guards and small-input numeric behavior. The source-lane manifest,
 extension hash, comparisons and guard messages are recorded in
-[`rdkit-matrix-limits-2026-10-14.json`](../validation/results/rdkit-matrix-limits-2026-10-14.json).
+[`rdkit-matrix-limits-2026-10-14.json`](https://github.com/kent-tokyo/chematic/blob/main/validation/results/rdkit-matrix-limits-2026-10-14.json).
 
 ```sh
 CARGO_INCREMENTAL=0 cargo test -p chematic-smiles --lib --offline --quiet

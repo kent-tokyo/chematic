@@ -1,6 +1,6 @@
 # Open-work ledger
 
-Updated 2026-10-13 for **v1.1.3**. This file lists unresolved work only.
+Updated 2026-10-14 for **v1.1.4**. This file lists unresolved work only.
 Completed implementation details belong in the
 [CHANGELOG](https://github.com/kent-tokyo/chematic/blob/main/CHANGELOG.md);
 measurements belong in the [validation report](validation.md) and
@@ -13,12 +13,13 @@ corpora remain recurring regression gates. Issues #739, #769, #779, and #785
 are also closed; implementation and verification records remain linked from
 the changelog and validation pages.
 
-- **v1.1.x artifact packet:** the v1.1.3 expectation includes the 4,072-row
-  exact HBD/QED stress lane and CI compares A6 with the current v1.1.3 wheel. Run the
+- **v1.1.x artifact packet:** the v1.1.4 expectation retains the 4,072-row
+  exact HBD/QED stress lane. CI continues to compare A6 with the verified v1.1.3 wheel
+  until the exact v1.1.4 PyPI artifact exists. Run the
   full hosted Linux/macOS/Windows published-wheel workflow before replacing
   the current broad v1.0.42 package packet.
 - **Equivalent-work performance:** close prepared-operation deficits without
-  moving work into parsing; add second-host and peak-RSS records. The v1.1.3
+  moving work into parsing; add second-host and peak-RSS records. The v1.1.4
   follow-up restores prepared QED and reduces the reported parse-inclusive
   TPSA/Morgan regressions to statistical ties on one host; cross-platform
   artifact evidence remains open.

@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "release": {
+    "version": "1.1.3",
+    "tag": "v1.1.3",
+    "commit": "5f82fb0afddc4a57640c350f78a6e340274a51ae"
+  },
+  "workflow": {
+    "run_id": 38474540633,
+    "url": "https://github.com/kent-tokyo/chematic/actions/runs/38474540633",
+    "head_sha": "f51b7cd82fd69b870cf190243662ca0d7889dfea",
+    "completed_at": "2026-10-13T22:12:47Z",
+    "inputs": {
+      "version": "1.1.3",
+      "biotransformer_corpus": true
+    },
+    "status": "success"
+  },
+  "oracle": {
+    "name": "RDKit",
+    "version": "2026.03.6",
+    "policy": "validation/rdkit-comparator-platform-policy-v1.json"
+  },
+  "expected_manifest": "validation/published-wheel-chemistry-gates-expected-v1.1.3.json",
+  "published_wheels": [
+    {
+      "lane": "linux-x86_64-cp39",
+      "python": "3.9.25",
+      "output_artifact": "chematic-outputs-1.1.3-linux-x86_64-cp39",
+      "gate_artifact": "published-wheel-chemistry-gates-1.1.3-linux-x86_64-cp39",
+      "gate_status": "pass",
+      "filename": "chematic-1.1.3-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "sha256": "1ebeaf3ab2c8bc125d984e999f139e3c7cc195d735efaa71cf8a472c17d809a8"
+    },
+    {
+      "lane": "macos-arm64-cp312",
+      "python": "3.12.10",
+      "output_artifact": "chematic-outputs-1.1.3-macos-arm64-cp312",
+      "gate_artifact": "published-wheel-chemistry-gates-1.1.3-macos-arm64-cp312",
+      "gate_status": "pass",
+      "filename": "chematic-1.1.3-cp312-cp312-macosx_11_0_arm64.whl",
+      "sha256": "4c9ad6d18cc933f4fa42f4761c97c080d7ca14161906a05103c617c8f1818416"
+    },
+    {
+      "lane": "macos-x86_64-cp312",
+      "python": "3.12.10",
+      "output_artifact": "chematic-outputs-1.1.3-macos-x86_64-cp312",
+      "gate_artifact": "published-wheel-chemistry-gates-1.1.3-macos-x86_64-cp312",
+      "gate_status": "pass",
+      "filename": "chematic-1.1.3-cp312-cp312-macosx_10_12_x86_64.whl",
+      "sha256": "bb2a32556d3f942686ffccbbbf5fc010b33cc429c7be01e9e4c57b79d020cad9"
+    },
+    {
+      "lane": "windows-amd64-cp312",
+      "python": "3.12.10",
+      "output_artifact": "chematic-outputs-1.1.3-windows-amd64-cp312",
+      "gate_artifact": "published-wheel-chemistry-gates-1.1.3-windows-amd64-cp312",
+      "gate_status": "pass",
+      "filename": "chematic-1.1.3-cp312-cp312-win_amd64.whl",
+      "sha256": "15664700d9c83065110b14b14174bb014dd572594d54e79d97e01282ae7e06fd"
+    }
+  ],
+  "gates": {
+    "reaction_83": "80 exact graph/origin/map rows; 3 inputs invalid in both engines",
+    "smarts_310k": "310000 exact cells; 0 unexpected",
+    "morgan_r2_2048": "10000/10000 exposed rows and 5000/5000 ChEMBL rows exact",
+    "descriptor_stress": "HBD 4072/4072; QED 4071/4071 comparable rows; 1 RDKit error",
+    "cip_hybridization_mmff_mol": "All counts match the expected manifest, including retained MMFF differences and typed boundaries",
+    "biotransformer": "Every classification count matches the expected manifest",
+    "a6": "265/265 independently sound and stereo-clean; 0 gross clashes"
+  },
+  "autoconf": {
+    "linux_x86_64_cp312_sdist": "pass",
+    "macos_arm64_cp312": "pass",
+    "windows_amd64_cp312": "pass"
+  },
+  "boundary": "This packet validates the exact listed public PyPI wheels. Platform outputs are compared on Linux against the pinned RDKit wheel when a matching RDKit build is unavailable. npm/WASM and crates.io are separate release channels and are not inferred from this Python packet."
+}

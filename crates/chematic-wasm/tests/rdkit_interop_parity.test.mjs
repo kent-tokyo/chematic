@@ -57,6 +57,31 @@ assert.ok(ethanol.rdkit_calc_rms(reference, reference, 100, true) < 1e-12);
 const best = JSON.parse(ethanol.rdkit_best_alignment_json(probe, reference, 100, true));
 assert.equal(best.transform.length, 4);
 assert.equal(best.atom_map.length, 3);
+const conformers = JSON.stringify([
+  [[0, 0, 0], [1, 0, 0], [1, 1, 0]],
+  [[0, 0, 0], [1, 0, 0], [1, 2, 0]],
+]);
+const conformerRmsds = JSON.parse(
+  ethanol.rdkit_all_conformer_best_rms_json(conformers, 100, true),
+);
+assert.equal(conformerRmsds.length, 1);
+assert.ok(conformerRmsds[0] > 0.1);
+const ethanolReordered = wasm.parse_smiles("OCC");
+const referenceConformers = JSON.stringify([
+  [[1, 1, 0], [1, 0, 0], [0, 0, 0]],
+  [[1, 3, 0], [1, 0, 0], [0, 0, 0]],
+]);
+const crossRmsds = JSON.parse(
+  ethanol.rdkit_all_conformer_best_rms_to_reference_json(
+    ethanolReordered,
+    conformers,
+    referenceConformers,
+    100,
+    true,
+  ),
+);
+assert.equal(crossRmsds.length, 4);
+assert.ok(crossRmsds[0] < 1e-7);
 
 // Seeded embedding and bounds are separate from the generic 3D browser API.
 const ethanolH = wasm.add_hydrogens(ethanol);

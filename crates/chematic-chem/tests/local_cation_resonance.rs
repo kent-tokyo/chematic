@@ -46,7 +46,7 @@ fn rdkit_9458_oxygen_and_sulfur_pairs_are_starting_form_independent() {
             .map(|s| s.split_whitespace().next().unwrap())
             .collect();
     assert_eq!(fixtures.len(), 4);
-    for pair in fixtures.chunks_exact(2) {
+    for pair in fixtures.as_chunks::<2>().0 {
         let expected: BTreeSet<_> = pair
             .iter()
             .map(|s| canonical_smiles(&parse(s).unwrap()))
@@ -193,6 +193,54 @@ fn invalid_limits_and_input_caps_fail_before_enumeration() {
         enumerate(&MoleculeBuilder::new().build(), &Limits::default()),
         Err(Error::EmptyMolecule)
     ));
+}
+
+#[test]
+fn rejection_reasons_have_stable_actionable_messages() {
+    let cases = [
+        (
+            Error::InvalidLimit {
+                field: "max_forms",
+                value: 0,
+                maximum: 1024,
+            },
+            "max_forms must be in 1..=1024, got 0",
+        ),
+        (
+            Error::EmptyMolecule,
+            "local resonance requires a non-empty molecule",
+        ),
+        (
+            Error::AtomLimitExceeded {
+                actual: 3,
+                limit: 2,
+            },
+            "local resonance atom count 3 exceeds limit 2",
+        ),
+        (
+            Error::UnsupportedStereo,
+            "local cation resonance does not support stereochemical annotations",
+        ),
+        (
+            Error::QueryAtom { atom: AtomIdx(7) },
+            "local resonance does not support query atom 7",
+        ),
+        (
+            Error::QueryBond { bond: BondIdx(9) },
+            "local resonance does not support query bond 9",
+        ),
+    ];
+    for (error, expected) in cases {
+        assert_eq!(error.to_string(), expected);
+    }
+}
+
+#[test]
+fn triple_bonds_are_counted_without_becoming_resonance_moves() {
+    let report = run("N#CC=[NH2+]");
+    assert_eq!(report.status, Status::CompleteWithinScope);
+    assert_eq!(report.forms.len(), 1);
+    assert_eq!(report.transforms_attempted, 0);
 }
 
 #[test]

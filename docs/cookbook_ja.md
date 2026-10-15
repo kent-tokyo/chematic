@@ -106,6 +106,12 @@ smiles_list = ["CCO", "c1ccccc1", "CC(=O)O"]
 # shape: (N, 2048), dtype: uint8
 X = chematic.bulk.ecfp4(smiles_list)
 
+# 単一分子の各指紋も同じ uint8 配列で取得できる。
+# RDKit 互換メソッドは、対応する packed bytes と同じビットを返す。
+mol = chematic.from_smiles("CC(=O)Oc1ccccc1C(=O)O")
+morgan = mol.rdkit_ecfp4_numpy()
+avalon = mol.rdkit_avalon_fp_numpy()
+
 # scikit-learn で直接使える
 from sklearn.ensemble import RandomForestClassifier
 # clf.fit(X, y)

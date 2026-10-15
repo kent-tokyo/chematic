@@ -790,7 +790,7 @@ impl SdMolSupplier {
                 }
                 let mol = Mol {
                     inner: std::sync::Arc::new(rec.mol),
-                    props,
+                    props: props.into(),
                 };
                 Ok(Some(pyo3::Py::new(py, mol)?.into_any()))
             }
@@ -1059,7 +1059,7 @@ impl PySmilesMolSupplier {
                 }
                 let mol = Mol {
                     inner: Arc::new(rec.mol),
-                    props,
+                    props: props.into(),
                 };
                 Ok(Some(pyo3::Py::new(py, mol)?.into_any()))
             }
@@ -1283,7 +1283,7 @@ impl PyTdtMolSupplier {
                 }
                 let mol = Mol {
                     inner: Arc::new(rec.mol),
-                    props,
+                    props: props.into(),
                 };
                 Ok(Some(pyo3::Py::new(py, mol)?.into_any()))
             }

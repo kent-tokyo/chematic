@@ -2,6 +2,7 @@
 //! 2026.03.1 `Matrices.cpp`).
 
 use super::{RdkitSmilesError, mol::Mol};
+use chematic_core::Molecule;
 
 /// `LOCAL_INF`: the distance of atoms in different fragments.
 const LOCAL_INF: f64 = 1e8;
@@ -120,6 +121,52 @@ pub(crate) fn distance_mat_3d(
         }
     }
     Ok(d)
+}
+
+/// `Chem.GetDistanceMatrix(m, useBO, useAtomWts)` for
+/// `m = Chem.MolFromSmiles(s)` (RDKit 2026.03.1; the `Chem.AddHs` molecule
+/// when `mol` carries added hydrogens): topological distances by
+/// Floyd-Warshall, `1e8` between fragments; `use_bo` weights bonds by
+/// `1 / bond order` (aromatic `2/3`), `use_atom_wts` sets the diagonal to
+/// `6 / atomic number`. One row per atom in RDKit's atom order.
+///
+/// Inputs and prepared models are limited to 1024 atoms (1,048,576 entries).
+/// The input check precedes RDKit-model preparation, including H removal.
+/// Size/overflow/allocation errors return [`RdkitSmilesError::Unsupported`]
+/// rather than attempting an unbounded dense allocation (RDKit #9647).
+pub fn rdkit_distance_matrix(
+    mol: &Molecule,
+    use_bo: bool,
+    use_atom_wts: bool,
+) -> Result<Vec<Vec<f64>>, RdkitSmilesError> {
+    checked_len(mol.atom_count())?;
+    let m = super::rdkit_mol_for_writing(mol)?;
+    let n = m.atoms.len();
+    let d = distance_mat(&m, use_bo, use_atom_wts)?;
+    into_rows(d, n)
+}
+
+/// `Chem.Get3DDistanceMatrix(m, useAtomWts=...)` for RDKit's molecule of
+/// `mol` (as in [`rdkit_distance_matrix`]) with the conformer `coords`
+/// (one `[x, y, z]` per atom in RDKit's atom order).
+/// The same 1024-input/prepared-atom cap and fallible-allocation policy as
+/// [`rdkit_distance_matrix`] apply, before model preparation.
+pub fn rdkit_distance_matrix_3d(
+    mol: &Molecule,
+    coords: &[[f64; 3]],
+    use_atom_wts: bool,
+) -> Result<Vec<Vec<f64>>, RdkitSmilesError> {
+    checked_len(mol.atom_count())?;
+    let m = super::rdkit_mol_for_writing(mol)?;
+    let n = m.atoms.len();
+    if coords.len() != n {
+        return Err(RdkitSmilesError::Unsupported(format!(
+            "{} coordinates for {n} atoms",
+            coords.len()
+        )));
+    }
+    let d = distance_mat_3d(&m, coords, use_atom_wts)?;
+    into_rows(d, n)
 }
 
 #[cfg(test)]

@@ -71,7 +71,8 @@ def main():
         source_baseline=subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
         artifact_lane="local source extension; uncommitted working tree; not a release",
         source_sha256={str(path.relative_to(ROOT)): hashlib.sha256(path.read_bytes()).hexdigest()
-                       for path in [ROOT / "crates/chematic-mol/src/cif.rs", ROOT / "crates/chematic-py/src/formats.rs"]},
+                       for path in [ROOT / "crates/chematic-mol/src/cif.rs", ROOT / "crates/chematic-mol/src/cif/writer.rs",
+                                    ROOT / "crates/chematic-py/src/formats/cif.rs"]},
         python=platform.python_version(), module_path=str(module),
         module_sha256=hashlib.sha256(module.read_bytes()).hexdigest(),
         fixture_sha256=hashlib.sha256(FIXTURE.read_bytes()).hexdigest(),

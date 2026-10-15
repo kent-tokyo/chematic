@@ -121,6 +121,109 @@ def test_getprop_missing_raises():
         mol.GetProp("missing")
 
 
+@pytest.mark.parametrize("auto_convert", [False, True])
+@pytest.mark.parametrize("default", [None, "fallback", 0, 0.0])
+def test_getprop_missing_returns_explicit_default(auto_convert, default):
+    mol = Chem.MolFromSmiles("CCO")
+    assert mol.GetProp("missing", autoConvert=auto_convert, default=default) == default
+
+
+def test_getprop_default_can_be_positional_and_present_value_wins():
+    mol = Chem.MolFromSmiles("CCO")
+    assert mol.GetProp("missing", True, None) is None
+    mol.SetIntProp("rank", 42)
+    assert mol.GetProp("rank", False, "fallback") == "42"
+    assert mol.GetProp("rank", True, "fallback") == 42
+
+
+def test_native_getprop_default_preserves_arbitrary_object_identity():
+    mol = chematic.from_smiles("CCO")
+    fallback = {"reason": "missing"}
+    assert mol.GetProp("missing", default=fallback) is fallback
+    with pytest.raises(KeyError):
+        mol.GetProp("missing")
+
+
+@pytest.mark.parametrize(
+    "setter,getter,value,default",
+    [
+        ("SetIntProp", "GetIntProp", 42, 0),
+        ("SetUnsignedProp", "GetUnsignedProp", 7, 0),
+        ("SetDoubleProp", "GetDoubleProp", 3.14, 0.0),
+        ("SetBoolProp", "GetBoolProp", True, False),
+    ],
+)
+def test_typed_property_getters_and_defaults(setter, getter, value, default):
+    mol = Chem.MolFromSmiles("CCO")
+    assert getattr(mol, getter)("missing", default=default) == default
+    with pytest.raises(KeyError):
+        getattr(mol, getter)("missing")
+    getattr(mol, setter)("value", value)
+    assert getattr(mol, getter)("value", default=default) == value
+
+
+def test_typed_property_getter_rejects_existing_wrong_type():
+    mol = Chem.MolFromSmiles("CCO")
+    mol.SetProp("value", "not-an-int")
+    with pytest.raises(ValueError, match="cannot be converted"):
+        mol.GetIntProp("value", default=0)
+
+
+def test_typed_property_defaults_match_rdkit_none_conversion():
+    mol = Chem.MolFromSmiles("CCO")
+    assert mol.GetBoolProp("missing", default=None) is False
+    for getter in (mol.GetIntProp, mol.GetUnsignedProp, mol.GetDoubleProp):
+        with pytest.raises(TypeError):
+            getter("missing", default=None)
+
+
+@pytest.mark.parametrize(
+    "setter,value,expected,expected_type",
+    [
+        ("SetProp", "42", 42, int),
+        ("SetIntProp", 42, 42, int),
+        ("SetUnsignedProp", 7, 7, int),
+        ("SetDoubleProp", 42.0, 42.0, float),
+        ("SetBoolProp", True, True, bool),
+    ],
+)
+def test_getprop_auto_convert_preserves_typed_setter_value(
+    setter, value, expected, expected_type
+):
+    mol = Chem.MolFromSmiles("CCO")
+    getattr(mol, setter)("value", value)
+    converted = mol.GetProp("value", autoConvert=True)
+    assert converted == expected
+    assert type(converted) is expected_type
+
+
+@pytest.mark.parametrize(
+    "setter,getter,value",
+    [
+        ("SetDoubleProp", "GetIntProp", 3.14),
+        ("SetIntProp", "GetDoubleProp", 42),
+        ("SetBoolProp", "GetIntProp", True),
+        ("SetIntProp", "GetBoolProp", 1),
+    ],
+)
+def test_typed_property_getters_reject_other_stored_types(setter, getter, value):
+    mol = Chem.MolFromSmiles("CCO")
+    getattr(mol, setter)("value", value)
+    with pytest.raises(ValueError, match="cannot be converted"):
+        getattr(mol, getter)("value")
+
+
+def test_string_backed_bool_getter_accepts_only_rdkit_numeric_values():
+    mol = Chem.MolFromSmiles("CCO")
+    mol.SetProp("true", "1")
+    mol.SetProp("false", "0")
+    assert mol.GetBoolProp("true") is True
+    assert mol.GetBoolProp("false") is False
+    mol.SetProp("word", "true")
+    with pytest.raises(ValueError, match="cannot be converted"):
+        mol.GetBoolProp("word")
+
+
 # ---------------------------------------------------------------------------
 # SDWriter + SDMolSupplier roundtrip
 # ---------------------------------------------------------------------------
@@ -155,6 +258,40 @@ def test_sdf_name_in_header_not_sd_field(tmp_path):
     assert "ethanol" in raw              # name in MOL header
     assert "> <_Name>" not in raw        # must not appear as SD field
     assert "> <Activity>" in raw
+
+
+def test_name_accessors_share_the_rdkit_name_property():
+    for mol in (chematic.from_smiles("CCO"), Chem.MolFromSmiles("CCO")):
+        assert mol.GetName() == ""
+        assert not mol.HasProp("_Name")
+
+        mol.SetName("ethanol")
+        assert mol.GetName() == "ethanol"
+        assert mol.GetProp("_Name") == "ethanol"
+
+        mol.SetProp("_Name", "ethyl alcohol")
+        assert mol.GetName() == "ethyl alcohol"
+
+        mol.ClearProp("_Name")
+        assert mol.GetName() == ""
+        assert not mol.HasProp("_Name")
+
+        mol.SetName("")
+        assert mol.GetName() == ""
+        assert mol.HasProp("_Name")
+
+
+def test_rw_mol_name_accessors_survive_snapshots():
+    source = Chem.MolFromSmiles("CCO")
+    source.SetName("source")
+    editable = RWMol(source)
+    assert editable.GetName() == "source"
+
+    editable.SetName("edited")
+    snapshot = editable.GetMol()
+    assert snapshot.GetName() == "edited"
+    assert snapshot.GetProp("_Name") == "edited"
+    assert source.GetName() == "source"
 
 
 def test_setprops_filters_output(tmp_path):

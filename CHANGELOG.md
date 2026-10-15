@@ -10,6 +10,24 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+
+- Restored the v1.1.3 exhaustive-match surface of the public `CmlError` and
+  `CifError` enums. Invalid CML hydrogen counts and checked-CIF coordinate-count
+  mismatches keep failing explicitly through existing error variants, while a
+  downstream-style compile test now prevents patch releases from silently
+  adding enum variants.
+- Added a targeted `cargo-semver-checks` pull-request lane pinned to the
+  established v1.1.3 `chematic-mol` contract.
+- Pinned the known RDKit 2026.03.6/2026.09.1 `CalcNumRings` disagreements as a
+  versioned machine-readable contract. CI now rejects drift in the current
+  bounded default without presenting one oracle version as universal truth.
+- Updated the transitive `rustls` dependency to 0.23.46, addressing
+  RUSTSEC-2026-0347, RUSTSEC-2026-0348, and RUSTSEC-2026-0349 in the MCP HTTP
+  client dependency graph.
+
+## [1.1.4] - 2026-10-14
+
 ### Added
 
 - Added pre-smoothing internal-coordinate constraints for distance geometry,
@@ -18,6 +36,53 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   bounds matrix or generating an ETKDG conformer. Invalid indices, missing
   bonds, cross-fragment constraints, and triangle-inconsistent combinations
   fail explicitly instead of producing guessed coordinates.
+- Added bounded local N/O/S cation-resonance enumeration, ranked screening
+  enrichment factors, and checked CIF atomic-position output to Rust/Python.
+  Added explicit limits for RDKit-compatible dense distance matrices, corrected
+  MOL2 UNITY formal-charge projection and round trips, reconciled CML total
+  hydrogen counts, and corrected CIF Cartesian coordinate labels.
+
+- Added RDKit 2026.09.1-compatible molecule-name accessors. Native and
+  `rdkit_compat` molecules now expose `GetName()` / `SetName()` over the
+  conventional `_Name` property, with an empty string for an unset name;
+  editable `RWMol` snapshots preserve the same title.
+- Added RDKit 2026.09.1-compatible Python property fallbacks. `Mol.GetProp`
+  now accepts `autoConvert` and an optional `default` (including an explicit
+  `None`) while preserving `KeyError` when no fallback is supplied. Added
+  `GetIntProp`, `GetUnsignedProp`, `GetDoubleProp`, and `GetBoolProp` with the
+  same missing-key contract, plus `SetUnsignedProp`, in both the native and
+  `rdkit_compat` molecule APIs. Typed values retain their RDKit-compatible
+  Python type under `autoConvert=True` and across pickle round trips.
+- Added RDKit-compatible batch conformer alignment across Rust, Python, and
+  WASM. `rdkit_all_conformer_best_rms` reproduces
+  `GetAllConformerBestRMS`, while the cross-molecule
+  `rdkit_all_conformer_best_rms_to_ref` reproduces RDKit 2026.09.1's new
+  `GetAllConformerBestRMSToRef` ordering and semantics. Both compute atom
+  mappings once per batch instead of repeating substructure enumeration for
+  every conformer pair.
+- Added dense NumPy output for the existing binary fingerprint families,
+  including ECFP6, FCFP4, atom-pair, topological-torsion, RDK, Pattern,
+  Layered, Avalon, and configurable RDKit-compatible Morgan fingerprints.
+  Every method returns a fresh one-dimensional `uint8` array in the same
+  LSB-first bit order as its packed-byte counterpart, closing the Python
+  interoperability gap identified from the COSMolKit v0.5.0 release notes.
+- Added a CI naming guard that treats `chematic` and `chematic-draw` as the
+  canonical lowercase product names and rejects an extra leading `s` in
+  current public text and package metadata without rewriting historical
+  evidence or frozen compatibility identifiers.
+- Added RDKit 2026.09.1-compatible atom masking for the RDK branched-path
+  fingerprint across Rust (`rdkit_rdk_fp_ignoring_atoms`), Python
+  (`Mol.rdkit_rdk_fp(ignore_atoms=...)`), and WASM
+  (`rdkit_rdk_bitvec_ignoring_atoms`). Every path containing a masked atom is
+  excluded, invalid indices fail explicitly, and an empty mask preserves the
+  existing fingerprint byte-for-byte.
+- Added interpretable RDKit atom-pair/topological-torsion diagnostics across
+  Rust, Python, and WASM. Callers can inspect an atom's packed element,
+  branching, and pi-electron fields, encode a selected torsion path, and
+  decode its direction-independent path code without reverse-engineering
+  fingerprint internals. Invalid indices and oversized paths fail explicitly;
+  WASM returns 64-bit path codes as decimal strings to avoid JavaScript number
+  truncation.
 - Added bounded protein projections for PDB and mmCIF across Rust, Python,
   and WASM. The projection preserves model, chain, residue, atom, coordinate,
   occupancy, B-factor, alternate-location, and insertion-code information and
@@ -41,6 +106,14 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   an index panic.
 - Python `activity_cliffs` now reports mismatched molecule/activity counts as
   `ValueError` instead of leaking the Rust core assertion as a panic.
+- Reduced redundant RDKit-compatible descriptor/model preparation, cached
+  scalar and Morgan stereo work, and packed fingerprint conversion overhead.
+  The dated source-wheel comparisons retain first-use, repeated-use and
+  read-inclusive results, including remaining deficits and regressions.
+- Reduced V2000/V3000 input/output allocation and source-id lookup work,
+  preserving sparse/duplicate-id behavior, ambiguous flat-neighbor stereo,
+  V3000 total-valence overrides and explicit unknown double-bond markers.
+  Open Babel speed results remain limited to output-equivalent measured lanes.
 - Restored Rust source compatibility with v1.1.2 exhaustive `Chirality`
   matches. Allene `@AL1`/`@AL2` keeps its molecular-context behavior without
   adding public enum variants in a patch release, and a downstream-style

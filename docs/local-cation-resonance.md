@@ -101,7 +101,7 @@ An independent RDKit sanitization/canonicalization cross-check validated all
 eight returned forms across the four issue inputs, including expected pairs,
 formula and total charge. The machine-readable result, RDKit version and
 local extension hash are in
-[`local-cation-resonance-2026-10-14.json`](../validation/results/local-cation-resonance-2026-10-14.json).
+[`local-cation-resonance-2026-10-14.json`](https://github.com/kent-tokyo/chematic/blob/main/validation/results/local-cation-resonance-2026-10-14.json).
 This used a local debug Python extension without native InChI support.
 
 ```sh

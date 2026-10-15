@@ -14,7 +14,7 @@ Quick start::
 
 from __future__ import annotations
 
-from typing import Any, Iterable, Iterator, Literal, Optional, TypedDict, Union
+from typing import Any, Iterable, Iterator, Literal, Optional, Sequence, TypedDict, Union
 
 import numpy as np
 from numpy import ndarray
@@ -111,6 +111,44 @@ class Mol:
     def __reduce__(self) -> tuple[Any, tuple[bytes]]:
         """Return versioned state for Python pickle round-tripping."""
         ...
+
+    # -- SD properties ------------------------------------------------------
+
+    def GetProp(
+        self,
+        key: str,
+        autoConvert: bool = False,
+        default: Any = ...,
+    ) -> Any:
+        """Return a property value, or ``default`` when the key is absent.
+
+        Omitting ``default`` preserves the historical ``KeyError`` behavior.
+        An explicitly supplied fallback, including ``None``, is returned
+        unchanged. ``autoConvert=True`` preserves values set through the typed
+        setters and converts integer- and float-shaped string properties,
+        matching RDKit 2026.09.1.
+        """
+        ...
+
+    def SetProp(self, key: str, value: str) -> None: ...
+    def HasProp(self, key: str) -> bool: ...
+    def ClearProp(self, key: str) -> None: ...
+    def GetPropsAsDict(self) -> dict[str, str]: ...
+    def GetPropNames(self) -> list[str]: ...
+    def GetName(self) -> str:
+        """Return the ``_Name`` molecule title, or ``""`` when unset."""
+        ...
+    def SetName(self, name: str) -> None:
+        """Set the molecule title through the conventional ``_Name`` property."""
+        ...
+    def SetIntProp(self, key: str, value: int) -> None: ...
+    def GetIntProp(self, key: str, default: int = ...) -> int: ...
+    def SetUnsignedProp(self, key: str, value: int) -> None: ...
+    def GetUnsignedProp(self, key: str, default: int = ...) -> int: ...
+    def SetDoubleProp(self, key: str, value: float) -> None: ...
+    def GetDoubleProp(self, key: str, default: float = ...) -> float: ...
+    def SetBoolProp(self, key: str, value: bool) -> None: ...
+    def GetBoolProp(self, key: str, default: bool | None = ...) -> bool: ...
 
     # -- Identity ------------------------------------------------------------
 
@@ -317,6 +355,26 @@ class Mol:
     ) -> list[list[float]]:
         """``Chem.Get3DDistanceMatrix(m, useAtomWts)`` for ``coords``."""
         ...
+    def rdkit_all_conformer_best_rms(
+        self,
+        conformers: list[list[list[float]]],
+        max_matches: int = 1_000_000,
+        symmetrize_conjugated_terminal_groups: bool = True,
+        weights: list[float] | None = None,
+    ) -> list[float]:
+        """RDKit ``GetAllConformerBestRMS`` in ``(1,0), (2,0), (2,1), ...`` order."""
+        ...
+    def rdkit_all_conformer_best_rms_to_reference(
+        self,
+        reference: Mol,
+        probe_conformers: list[list[list[float]]],
+        reference_conformers: list[list[list[float]]],
+        max_matches: int = 1_000_000,
+        symmetrize_conjugated_terminal_groups: bool = True,
+        weights: list[float] | None = None,
+    ) -> list[float]:
+        """RDKit 2026.09.1 ``GetAllConformerBestRMSToRef`` in reference-major order."""
+        ...
     def rdkit_morgan_sparse_counts(
         self, radius: int = 2, include_chirality: bool = False
     ) -> dict[int, int]:
@@ -330,6 +388,20 @@ class Mol:
         ...
     def rdkit_legacy_torsion_counts(self) -> dict[int, int]:
         """``rdMolDescriptors.GetTopologicalTorsionFingerprint(m)`` elements."""
+        ...
+    def rdkit_atom_code(self, atom_index: int, branch_subtract: int = 0) -> int:
+        """Return the RDKit atom-pair atom code for one atom.
+
+        ``branch_subtract`` is normally 0 for atom-pair diagnostics, 1 for a
+        torsion endpoint, and 2 for an interior path atom.
+        """
+        ...
+    def rdkit_topological_torsion_path_code(self, path: list[int]) -> int:
+        """Pack a one-to-seven-atom path into RDKit's legacy torsion code.
+
+        The path and its reverse return the same code. Invalid indices raise
+        ``ValueError``.
+        """
         ...
     def rdkit_chemistry_problems(self) -> list[tuple[str, list[int]]]:
         """``Chem.DetectChemistryProblems(Chem.MolFromSmiles(s))`` (sanitized)."""
@@ -961,6 +1033,15 @@ class Mol:
         rejects or the RDKit model does not cover."""
         ...
 
+    def rdkit_rdk_fp(self, ignore_atoms: Optional[Sequence[int]] = None) -> bytes:
+        """RDKit-compatible RDK fingerprint as 256 packed bytes.
+
+        ``ignore_atoms`` implements RDKit 2026.09.1's fingerprint-generator
+        option: every branched path containing a selected atom is excluded.
+        Invalid indices raise ``ValueError``.
+        """
+        ...
+
     def maccs(self) -> bytes:
         """MACCS 166-bit keys as bytes (21 bytes, LSB-first)."""
         ...
@@ -992,6 +1073,100 @@ class Mol:
 
     def ecfp4_numpy(self) -> ndarray:
         """ECFP4 fingerprint as a numpy array of shape ``(2048,)``, dtype ``uint8`` (0/1)."""
+        ...
+
+    def ecfp6_numpy(self) -> ndarray:
+        """ECFP6 fingerprint as a numpy array of shape ``(2048,)``, dtype ``uint8`` (0/1)."""
+        ...
+
+    def ecfp4_chiral_numpy(self) -> ndarray:
+        """Chiral ECFP4 fingerprint as a numpy bit vector."""
+        ...
+
+    def fcfp4_numpy(self) -> ndarray:
+        """FCFP4 fingerprint as a numpy array of shape ``(2048,)``, dtype ``uint8`` (0/1)."""
+        ...
+
+    def fcfp6_numpy(self) -> ndarray:
+        """FCFP6 fingerprint as a numpy bit vector."""
+        ...
+
+    def atom_pair_fp_numpy(self) -> ndarray:
+        """Atom-pair fingerprint as a numpy array of shape ``(2048,)``, dtype ``uint8``."""
+        ...
+
+    def torsion_fp_numpy(self) -> ndarray:
+        """Topological-torsion fingerprint as a numpy array of shape ``(2048,)``."""
+        ...
+
+    def rdkit_torsion_fp_numpy(self) -> ndarray:
+        """RDKit-compatible topological-torsion fingerprint as a numpy bit vector."""
+        ...
+
+    def rdkit_atom_pair_fp_numpy(self) -> ndarray:
+        """RDKit-compatible atom-pair fingerprint as a numpy bit vector."""
+        ...
+
+    def rdkit_layered_fp_numpy(self) -> ndarray:
+        """RDKit-compatible layered fingerprint as a numpy bit vector."""
+        ...
+
+    def rdkit_pattern_fp_numpy(self) -> ndarray:
+        """RDKit-compatible pattern fingerprint as a numpy bit vector."""
+        ...
+
+    def rdkit_rdk_fp_numpy(
+        self, ignore_atoms: Optional[Sequence[int]] = None
+    ) -> ndarray:
+        """RDKit-compatible RDK fingerprint as a numpy bit vector."""
+        ...
+
+    def rdkit_ecfp4_numpy(self) -> ndarray:
+        """RDKit-bit-exact ECFP4 as a numpy bit vector."""
+        ...
+
+    def rdkit_ecfp_config_numpy(
+        self,
+        radius: int = 2,
+        nbits: int = 2048,
+        include_chirality: bool = False,
+        count_simulation: bool = False,
+    ) -> ndarray:
+        """Configurable RDKit-compatible Morgan fingerprint as a numpy bit vector."""
+        ...
+
+    def path_fp_numpy(self) -> ndarray:
+        """RDKit-style path fingerprint as a numpy bit vector."""
+        ...
+
+    def topo_path_fp_numpy(self) -> ndarray:
+        """Topological path fingerprint as a numpy bit vector."""
+        ...
+
+    def avalon_fp_numpy(self) -> ndarray:
+        """Avalon-style fingerprint as a numpy bit vector."""
+        ...
+
+    def rdkit_avalon_fp_numpy(self, n_bits: int = 2048) -> ndarray:
+        """RDKit-compatible Avalon fingerprint as a numpy bit vector."""
+        ...
+
+    def pattern_fp_numpy(self) -> ndarray:
+        """Native pattern fingerprint as a numpy bit vector."""
+        ...
+
+    def pharmacophore_fp_numpy(self) -> ndarray:
+        """Two-dimensional pharmacophore fingerprint as a numpy bit vector."""
+        ...
+
+    def pharmacophore_fp_3d_numpy(
+        self, coords: Sequence[Sequence[float]]
+    ) -> ndarray:
+        """Three-dimensional pharmacophore fingerprint as a numpy bit vector."""
+        ...
+
+    def erg_numpy(self) -> ndarray:
+        """Extended reduced graph fingerprint as a numpy bit vector."""
         ...
 
     def maccs_numpy(self) -> ndarray:
@@ -1128,6 +1303,16 @@ class Mol:
 
     def enumerate_tautomers(self) -> list[Mol]:
         """Return all tautomers as a list of Mol objects."""
+        ...
+
+    def local_cation_resonance(
+        self, max_forms: int = 32, max_transforms: int = 1024, max_atoms: int = 256,
+    ) -> dict:
+        """Enumerate bounded local N/O/S-C-N/O/S cation shifts.
+
+        Returns forms, status, scope and transforms_attempted. Preserves indexed
+        H/isotope placement; rejects stereo/query inputs and invalid limits.
+        """
         ...
 
     def enumerate_stereoisomers(self) -> list[Mol]:
@@ -4669,4 +4854,14 @@ def rdkit_reaction_to_smarts(reaction_smarts: str) -> str:
 
 def rdkit_smarts_to_smarts(smarts: str) -> str:
     """``Chem.MolToSmarts(Chem.MolFromSmarts(s))`` (RDKit 2026.03.1)."""
+    ...
+
+def explain_rdkit_atom_code(code: int) -> tuple[str, int, int]:
+    """Decode an RDKit atom code as ``(symbol, branches, pi_electrons)``."""
+    ...
+
+def explain_rdkit_topological_torsion_code(
+    code: int, size: int = 4
+) -> list[tuple[str, int, int]]:
+    """Decode a legacy RDKit torsion code into one tuple per path atom."""
     ...

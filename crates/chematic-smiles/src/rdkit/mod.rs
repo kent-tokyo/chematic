@@ -391,51 +391,7 @@ pub fn rdkit_num_atoms(mol: &Molecule) -> Result<usize, RdkitSmilesError> {
     Ok(rdkit_mol_for_writing(mol)?.atoms.len())
 }
 
-/// `Chem.GetDistanceMatrix(m, useBO, useAtomWts)` for
-/// `m = Chem.MolFromSmiles(s)` (RDKit 2026.03.1; the `Chem.AddHs` molecule
-/// when `mol` carries added hydrogens): topological distances by
-/// Floyd-Warshall, `1e8` between fragments; `use_bo` weights bonds by
-/// `1 / bond order` (aromatic `2/3`), `use_atom_wts` sets the diagonal to
-/// `6 / atomic number`. One row per atom in RDKit's atom order.
-///
-/// Inputs and prepared models are limited to 1024 atoms (1,048,576 entries).
-/// The input check precedes RDKit-model preparation, including H removal.
-/// Size/overflow/allocation errors return [`RdkitSmilesError::Unsupported`]
-/// rather than attempting an unbounded dense allocation (RDKit #9647).
-pub fn rdkit_distance_matrix(
-    mol: &Molecule,
-    use_bo: bool,
-    use_atom_wts: bool,
-) -> Result<Vec<Vec<f64>>, RdkitSmilesError> {
-    matrices::checked_len(mol.atom_count())?;
-    let m = rdkit_mol_for_writing(mol)?;
-    let n = m.atoms.len();
-    let d = matrices::distance_mat(&m, use_bo, use_atom_wts)?;
-    matrices::into_rows(d, n)
-}
-
-/// `Chem.Get3DDistanceMatrix(m, useAtomWts=...)` for RDKit's molecule of
-/// `mol` (as in [`rdkit_distance_matrix`]) with the conformer `coords`
-/// (one `[x, y, z]` per atom in RDKit's atom order).
-/// The same 1024-input/prepared-atom cap and fallible-allocation policy as
-/// [`rdkit_distance_matrix`] apply, before model preparation.
-pub fn rdkit_distance_matrix_3d(
-    mol: &Molecule,
-    coords: &[[f64; 3]],
-    use_atom_wts: bool,
-) -> Result<Vec<Vec<f64>>, RdkitSmilesError> {
-    matrices::checked_len(mol.atom_count())?;
-    let m = rdkit_mol_for_writing(mol)?;
-    let n = m.atoms.len();
-    if coords.len() != n {
-        return Err(RdkitSmilesError::Unsupported(format!(
-            "{} coordinates for {n} atoms",
-            coords.len()
-        )));
-    }
-    let d = matrices::distance_mat_3d(&m, coords, use_atom_wts)?;
-    matrices::into_rows(d, n)
-}
+pub use matrices::{rdkit_distance_matrix, rdkit_distance_matrix_3d};
 
 /// One problem `MolOps::detectChemistryProblems` reports (see
 /// [`rdkit_detect_chemistry_problems`]).
@@ -842,7 +798,10 @@ pub fn rdkit_mol_block_2d(mol: &Molecule) -> Result<String, RdkitSmilesError> {
 
 /// `Chem.MolFromSmiles(s)` for the SMILES `s` chematic parsed `mol` from,
 /// with the atoms' `_CIPRank` values (empty when RDKit sets none).
-pub use align::{RdkitAlignment, Transform3D};
+pub use align::{
+    RdkitAlignment, Transform3D, rdkit_align_mol, rdkit_align_points, rdkit_all_conformer_best_rms,
+    rdkit_all_conformer_best_rms_to_ref, rdkit_best_rms, rdkit_calc_rms,
+};
 
 /// The sanitized RDKit molecule `Chem.MolFromSmiles` builds for `mol`
 /// (no stereo perception: alignment does not use it).
@@ -854,78 +813,6 @@ fn rdkit_mol_sanitized(mol: &Molecule) -> Result<mol::Mol, RdkitSmilesError> {
         sanitize::remove_hs_and_sanitize(&mut m)?;
     }
     Ok(m)
-}
-
-/// `rdMolAlign.GetAlignmentTransform` / `AlignMol(prb, ref, atomMap,
-/// weights, reflect, maxIters)` for two conformers of `mol` (as
-/// `Chem.MolFromSmiles` numbers its atoms): the RMSD after the best fit of
-/// `probe` onto `reference` and its transform. Without an atom map
-/// (`(probe atom, reference atom)` pairs) the first substructure match is
-/// used, as RDKit does.
-pub fn rdkit_align_mol(
-    mol: &Molecule,
-    probe: &[[f64; 3]],
-    reference: &[[f64; 3]],
-    atom_map: Option<&[(usize, usize)]>,
-    weights: Option<&[f64]>,
-    reflect: bool,
-    max_iterations: u32,
-) -> Result<RdkitAlignment, RdkitSmilesError> {
-    let m = rdkit_mol_sanitized(mol)?;
-    align::align_mol(
-        &m,
-        probe,
-        reference,
-        atom_map,
-        weights,
-        reflect,
-        max_iterations,
-    )
-}
-
-/// `rdMolAlign.GetBestRMS(prb, ref, maxMatches=max_matches,
-/// symmetrizeConjugatedTerminalGroups=symmetrize, weights)` for two
-/// conformers of `mol`: the smallest RMSD over the best fits of every
-/// substructure match (RDKit's enumeration order, `uniquify=False`), with
-/// that fit's transform and match.
-pub fn rdkit_best_rms(
-    mol: &Molecule,
-    probe: &[[f64; 3]],
-    reference: &[[f64; 3]],
-    max_matches: usize,
-    symmetrize: bool,
-    weights: Option<&[f64]>,
-) -> Result<RdkitAlignment, RdkitSmilesError> {
-    let m = rdkit_mol_sanitized(mol)?;
-    align::best_rms(&m, probe, reference, max_matches, symmetrize, weights)
-}
-
-/// `rdMolAlign.CalcRMS(prb, ref, maxMatches=max_matches,
-/// symmetrizeConjugatedTerminalGroups=symmetrize, weights)`: the smallest
-/// RMSD over all matches without moving the probe.
-pub fn rdkit_calc_rms(
-    mol: &Molecule,
-    probe: &[[f64; 3]],
-    reference: &[[f64; 3]],
-    max_matches: usize,
-    symmetrize: bool,
-    weights: Option<&[f64]>,
-) -> Result<f64, RdkitSmilesError> {
-    let m = rdkit_mol_sanitized(mol)?;
-    align::calc_rms(&m, probe, reference, max_matches, symmetrize, weights)
-}
-
-/// `RDNumeric::Alignments::AlignPoints(refPoints, probePoints, weights,
-/// reflect, maxIterations)`: the sum of squared residuals of the best fit
-/// and its transform.
-pub fn rdkit_align_points(
-    reference: &[[f64; 3]],
-    probe: &[[f64; 3]],
-    weights: Option<&[f64]>,
-    reflect: bool,
-    max_iterations: u32,
-) -> Result<(f64, Transform3D), RdkitSmilesError> {
-    align::align_points(reference, probe, weights, reflect, max_iterations)
 }
 
 /// A molecule read by [`rdkit_mol_from_pdb_block`].
@@ -1390,70 +1277,6 @@ pub fn rdkit_hydrogen_suppressed_with_map(mol: &Molecule) -> Option<(Molecule, V
     (out.atom_count() == kept.len()).then_some((out, kept))
 }
 
-thread_local! {
-    static IN_RDKIT_MODEL: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
-}
-
-/// Memoize a scalar RDKit-model calculation on its original molecule.
-/// Nested model calls deliberately bypass this cache: they run on the
-/// supplied graph, while an outer call may first sanitize or remove H.
-#[doc(hidden)]
-#[inline]
-pub fn with_rdkit_model_scalar(
-    mol: &Molecule,
-    slot: chematic_core::derived_cache::DerivedScalar,
-    f: impl FnOnce(&Molecule) -> f64,
-) -> f64 {
-    if IN_RDKIT_MODEL.with(|c| c.get()) {
-        return f(mol);
-    }
-    mol.derived_scalar(slot, || with_rdkit_model_molecule_impl(mol, f, true))
-}
-
-/// Runs `f` on RDKit's own molecule for `mol` (`Chem.MolFromSmiles(s)`:
-/// hydrogen graph atoms removed, RDKit's aromaticity, bond orders, charges
-/// and per-atom hydrogen counts, as [`rdkit_hydrogen_suppressed`] builds it)
-/// when chematic's reading of `mol` may differ from RDKit's
-/// ([`chematic_perception::rdkit_model_may_disagree`], or hydrogen graph
-/// atoms), and on `mol` itself otherwise. Nested calls run on the molecule
-/// they are given.
-pub fn with_rdkit_model_molecule<R>(mol: &Molecule, f: impl FnOnce(&Molecule) -> R) -> R {
-    with_rdkit_model_molecule_impl(mol, f, false)
-}
-
-fn with_rdkit_model_molecule_impl<R>(
-    mol: &Molecule,
-    f: impl FnOnce(&Molecule) -> R,
-    reuse_aromatic_view: bool,
-) -> R {
-    if IN_RDKIT_MODEL.with(|c| c.get()) {
-        return f(mol);
-    }
-    let needed = chematic_perception::rdkit_model_may_disagree(mol)
-        || mol
-            .atoms()
-            .any(|(_, a)| !a.wildcard && a.element == chematic_core::Element::H);
-    let model = if needed {
-        rdkit_model_molecule(mol, reuse_aromatic_view).ok()
-    } else {
-        None
-    };
-    match model {
-        Some(m) => {
-            struct Reset;
-            impl Drop for Reset {
-                fn drop(&mut self) {
-                    IN_RDKIT_MODEL.with(|c| c.set(false));
-                }
-            }
-            IN_RDKIT_MODEL.with(|c| c.set(true));
-            let _reset = Reset;
-            f(&m)
-        }
-        None => f(mol),
-    }
-}
-
 /// RDKit's `numPiElectrons` of every atom of `mol` (`Chem.MolFromSmiles`):
 /// 1 for an aromatic atom, 0 for an SP3 atom, otherwise the explicit
 /// valence beyond one per physical bond. `None` where RDKit removes atoms
@@ -1563,37 +1386,6 @@ pub fn rdkit_model_correct_view(mol: &Molecule, view: &Molecule) -> Option<Molec
     Some(out)
 }
 
-/// Descriptor/fingerprint callbacks consume a core molecule, which cannot
-/// carry CIP ranks or the port's potential-stereocenter flags. Keep stereo
-/// cleanup for specified tags/directions, but skip flag-only ranking when
-/// there is no specified stereo. Sanitization and hydrogen handling are the
-/// same as in `rdkit_mol_from_smiles`.
-fn rdkit_model_molecule(
-    mol: &Molecule,
-    reuse_aromatic_view: bool,
-) -> Result<Molecule, RdkitSmilesError> {
-    let mut m = parse::from_chematic(mol)?;
-    if has_added_hydrogens(mol) {
-        sanitize::sanitize_keeping_hs(&mut m)?;
-    } else {
-        sanitize::remove_hs_and_sanitize(&mut m)?;
-    }
-    stereo::legacy_stereo_perception_unflagged(&mut m);
-    let view = pdb_read::to_chematic(&m, true)?;
-    if reuse_aromatic_view && !chematic_perception::rdkit_parity_view_is_identity(&view) {
-        // This graph has just been sanitized by the same RDKit model used
-        // by the parity hook. Descriptor callers may reuse it instead of
-        // perceiving and sanitizing it again. Keep the usual descriptor
-        // normalization (including aromatic ring triples) in its consumer.
-        // Identity views need no copy; generic callbacks need no such cache.
-        view.seed_derived(
-            chematic_core::DerivedSlot::RdkitParityAromatic,
-            std::sync::Arc::new(Ok::<_, chematic_perception::AromaticityError>(view.clone())),
-        );
-    }
-    Ok(view)
-}
-
 fn rdkit_mol_from_smiles(mol: &Molecule) -> Result<(mol::Mol, Vec<u32>), RdkitSmilesError> {
     let mut m = parse::from_chematic(mol)?;
     if has_added_hydrogens(mol) {
@@ -1628,3 +1420,8 @@ mod pdb_contract_tests;
 
 #[cfg(test)]
 mod model_view_contract_tests;
+
+mod model_view;
+#[cfg(test)]
+use model_view::rdkit_model_molecule;
+pub use model_view::{with_rdkit_model_molecule, with_rdkit_model_scalar};

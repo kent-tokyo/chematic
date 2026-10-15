@@ -16,6 +16,12 @@ impl Mol {
         bitvec2048_to_bytes(&chematic_fp::ecfp6(&self.inner))
     }
 
+    /// ECFP6 fingerprint as a dense NumPy bit vector.
+    fn ecfp6_numpy<'py>(&self, py: Python<'py>) -> Bound<'py, PyArray1<u8>> {
+        let packed = self.ecfp6();
+        packed_fingerprint_to_numpy(py, &packed, 2048)
+    }
+
     /// ECFP fingerprint with bitInfo for RDKit-style ``bitInfo`` maps.
     ///
     /// Returns ``(bytes, {bit: [(atom_idx, radius), ...]})``. The fingerprint
@@ -45,6 +51,12 @@ impl Mol {
     /// FCFP4 (functional-class ECFP4) fingerprint as bytes (256 bytes = 2048 bits, LSB-first).
     fn fcfp4(&self) -> Vec<u8> {
         bitvec2048_to_bytes(&chematic_fp::fcfp4(&self.inner))
+    }
+
+    /// FCFP4 fingerprint as a dense NumPy bit vector.
+    fn fcfp4_numpy<'py>(&self, py: Python<'py>) -> Bound<'py, PyArray1<u8>> {
+        let packed = self.fcfp4();
+        packed_fingerprint_to_numpy(py, &packed, 2048)
     }
 
     /// FCFP fingerprint with bitInfo for RDKit-style ``useFeatures=True, bitInfo`` maps.
@@ -78,9 +90,21 @@ impl Mol {
         bitvec2048_to_bytes(&chematic_fp::atom_pair_fp(&self.inner))
     }
 
+    /// Atom-pair fingerprint as a dense NumPy bit vector.
+    fn atom_pair_fp_numpy<'py>(&self, py: Python<'py>) -> Bound<'py, PyArray1<u8>> {
+        let packed = self.atom_pair_fp();
+        packed_fingerprint_to_numpy(py, &packed, 2048)
+    }
+
     /// Topological torsion fingerprint as bytes (256 bytes = 2048 bits, LSB-first).
     fn torsion_fp(&self) -> Vec<u8> {
         bitvec2048_to_bytes(&chematic_fp::torsion_fp(&self.inner))
+    }
+
+    /// Topological-torsion fingerprint as a dense NumPy bit vector.
+    fn torsion_fp_numpy<'py>(&self, py: Python<'py>) -> Bound<'py, PyArray1<u8>> {
+        let packed = self.torsion_fp();
+        packed_fingerprint_to_numpy(py, &packed, 2048)
     }
 
     /// RDKit-*compatible* (not yet fully bit-exact) Topological Torsion
@@ -101,6 +125,12 @@ impl Mol {
         bitvec2048_to_bytes(&chematic_fp::rdkit_torsion_fp(&self.inner))
     }
 
+    /// RDKit-compatible topological-torsion fingerprint as a dense NumPy bit vector.
+    fn rdkit_torsion_fp_numpy<'py>(&self, py: Python<'py>) -> Bound<'py, PyArray1<u8>> {
+        let packed = self.rdkit_torsion_fp();
+        packed_fingerprint_to_numpy(py, &packed, 2048)
+    }
+
     /// RDKit-*compatible* (not yet fully bit-exact) Atom Pair fingerprint as
     /// bytes (256 bytes = 2048 bits).
     ///
@@ -116,6 +146,12 @@ impl Mol {
     /// Does not support chirality (``includeChirality=True`` is not implemented).
     fn rdkit_atom_pair_fp(&self) -> Vec<u8> {
         bitvec2048_to_bytes(&chematic_fp::rdkit_atom_pair_fp(&self.inner))
+    }
+
+    /// RDKit-compatible atom-pair fingerprint as a dense NumPy bit vector.
+    fn rdkit_atom_pair_fp_numpy<'py>(&self, py: Python<'py>) -> Bound<'py, PyArray1<u8>> {
+        let packed = self.rdkit_atom_pair_fp();
+        packed_fingerprint_to_numpy(py, &packed, 2048)
     }
 
     /// RDKit's hashed atom-pair count fingerprint
@@ -154,6 +190,12 @@ impl Mol {
         bitvec2048_to_bytes(&chematic_fp::rdkit_layered_fp(&self.inner))
     }
 
+    /// RDKit-compatible layered fingerprint as a dense NumPy bit vector.
+    fn rdkit_layered_fp_numpy<'py>(&self, py: Python<'py>) -> Bound<'py, PyArray1<u8>> {
+        let packed = self.rdkit_layered_fp();
+        packed_fingerprint_to_numpy(py, &packed, 2048)
+    }
+
     /// RDKit-*compatible* (not yet fully bit-exact) Pattern fingerprint as
     /// bytes (256 bytes = 2048 bits).
     ///
@@ -174,6 +216,12 @@ impl Mol {
         bitvec2048_to_bytes(&chematic_fp::rdkit_pattern_fp(&self.inner))
     }
 
+    /// RDKit-compatible pattern fingerprint as a dense NumPy bit vector.
+    fn rdkit_pattern_fp_numpy<'py>(&self, py: Python<'py>) -> Bound<'py, PyArray1<u8>> {
+        let packed = self.rdkit_pattern_fp();
+        packed_fingerprint_to_numpy(py, &packed, 2048)
+    }
+
     /// RDKit-compatible "RDKit fingerprint" (``rdkit.Chem.RDKFingerprint``) as
     /// bytes (256 bytes = 2048 bits).
     ///
@@ -192,8 +240,31 @@ impl Mol {
     /// A separate function from :meth:`path_fp` (chematic's own pre-existing,
     /// non-bit-exact linear-path approximation, itself Rust-side named
     /// ``rdkit_path_fp``); neither affects the other's output.
-    fn rdkit_rdk_fp(&self) -> Vec<u8> {
-        bitvec2048_to_bytes(&chematic_fp::rdkit_rdk_fp(&self.inner))
+    #[pyo3(signature = (ignore_atoms = None))]
+    fn rdkit_rdk_fp(&self, ignore_atoms: Option<Vec<usize>>) -> PyResult<Vec<u8>> {
+        let ignored = ignore_atoms
+            .unwrap_or_default()
+            .into_iter()
+            .map(|index| {
+                u32::try_from(index)
+                    .map(chematic_core::AtomIdx)
+                    .map_err(|_| PyValueError::new_err("ignored atom index exceeds u32 range"))
+            })
+            .collect::<PyResult<Vec<_>>>()?;
+        let fingerprint = chematic_fp::rdkit_rdk_fp_ignoring_atoms(&self.inner, &ignored)
+            .map_err(|error| PyValueError::new_err(error.to_string()))?;
+        Ok(bitvec2048_to_bytes(&fingerprint))
+    }
+
+    /// RDKit-compatible RDK fingerprint as a dense NumPy bit vector.
+    #[pyo3(signature = (ignore_atoms = None))]
+    fn rdkit_rdk_fp_numpy<'py>(
+        &self,
+        py: Python<'py>,
+        ignore_atoms: Option<Vec<usize>>,
+    ) -> PyResult<Bound<'py, PyArray1<u8>>> {
+        let packed = self.rdkit_rdk_fp(ignore_atoms)?;
+        Ok(packed_fingerprint_to_numpy(py, &packed, 2048))
     }
 
     /// ECFP4 with chirality fingerprint as bytes.
@@ -205,6 +276,12 @@ impl Mol {
             use_double_fold: false,
         };
         bitvec2048_to_bytes(&chematic_fp::ecfp(&self.inner, &config))
+    }
+
+    /// Chiral ECFP4 fingerprint as a dense NumPy bit vector.
+    fn ecfp4_chiral_numpy<'py>(&self, py: Python<'py>) -> Bound<'py, PyArray1<u8>> {
+        let packed = self.ecfp4_chiral();
+        packed_fingerprint_to_numpy(py, &packed, 2048)
     }
 
     /// RDKit-bit-exact ECFP4 (radius=2, 2048 bits, ``useChirality=False``,
@@ -227,6 +304,12 @@ impl Mol {
         let fingerprint = chematic_fp::rdkit_morgan_ecfp4_bitvec(&self.inner)
             .map_err(|e| PyValueError::new_err(e.to_string()))?;
         Ok(bitvec2048_to_bytes(&fingerprint))
+    }
+
+    /// RDKit-bit-exact ECFP4 as a dense NumPy bit vector.
+    fn rdkit_ecfp4_numpy<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyArray1<u8>>> {
+        let packed = self.rdkit_ecfp4()?;
+        Ok(packed_fingerprint_to_numpy(py, &packed, 2048))
     }
 
     /// Same fingerprint as :meth:`rdkit_ecfp4`, plus the raw (unfolded) data behind it.
@@ -287,6 +370,20 @@ impl Mol {
         let fingerprint = chematic_fp::rdkit_morgan_bitvec(&self.inner, &config)
             .map_err(|e| PyValueError::new_err(e.to_string()))?;
         Ok(bitvecn_to_bytes(&fingerprint))
+    }
+
+    /// Configurable RDKit-compatible Morgan fingerprint as a dense NumPy bit vector.
+    #[pyo3(signature = (radius = 2, nbits = 2048, include_chirality = false, count_simulation = false))]
+    fn rdkit_ecfp_config_numpy<'py>(
+        &self,
+        py: Python<'py>,
+        radius: u32,
+        nbits: usize,
+        include_chirality: bool,
+        count_simulation: bool,
+    ) -> PyResult<Bound<'py, PyArray1<u8>>> {
+        let packed = self.rdkit_ecfp_config(radius, nbits, include_chirality, count_simulation)?;
+        Ok(packed_fingerprint_to_numpy(py, &packed, nbits))
     }
 
     /// Same fingerprint as :meth:`rdkit_ecfp_config`, plus the raw (unfolded) data --
@@ -351,6 +448,42 @@ impl Mol {
         chematic_fp::rdkit_legacy_torsion_counts(&self.inner)
             .into_iter()
             .collect()
+    }
+
+    /// RDKit atom-pair atom code for one atom.
+    ///
+    /// ``branch_subtract`` is normally 0 for atom-pair diagnostics, 1 for a
+    /// topological-torsion endpoint, and 2 for an interior path atom. Pair it
+    /// with :func:`chematic.explain_rdkit_atom_code` for readable fields.
+    #[pyo3(signature = (atom_index, branch_subtract = 0))]
+    fn rdkit_atom_code(&self, atom_index: usize, branch_subtract: u32) -> PyResult<u32> {
+        let atom_index = u32::try_from(atom_index)
+            .map_err(|_| PyValueError::new_err("atom index exceeds the supported u32 range"))?;
+        chematic_fp::rdkit_atom_code(
+            &self.inner,
+            chematic_core::AtomIdx(atom_index),
+            branch_subtract,
+        )
+        .map_err(|error| PyValueError::new_err(error.to_string()))
+    }
+
+    /// Pack a selected atom path into RDKit's legacy topological-torsion code.
+    ///
+    /// The path and its reverse return the same integer. Paths of one to seven
+    /// atoms are supported; invalid atom indices raise ``ValueError``.
+    fn rdkit_topological_torsion_path_code(&self, path: Vec<usize>) -> PyResult<u64> {
+        let path = path
+            .into_iter()
+            .map(|index| {
+                u32::try_from(index)
+                    .map(chematic_core::AtomIdx)
+                    .map_err(|_| {
+                        PyValueError::new_err("atom index exceeds the supported u32 range")
+                    })
+            })
+            .collect::<PyResult<Vec<_>>>()?;
+        chematic_fp::rdkit_topological_torsion_path_code(&self.inner, &path)
+            .map_err(|error| PyValueError::new_err(error.to_string()))
     }
 
     /// RDKit's Morgan ``bitInfo`` for ``n_bits``-bit fingerprints of radius

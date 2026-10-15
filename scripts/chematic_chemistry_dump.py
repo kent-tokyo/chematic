@@ -6,8 +6,9 @@ Published chematic Linux wheels are CPython 3.9 builds and RDKit 2026.03.6
 has no CPython 3.9 wheel, so the published artifact is run here and
 ``compare_chemistry_dump_rdkit.py`` compares the dump with RDKit in another
 interpreter. Per row: accurate CIP labels and abstentions, RDKit-model
-hybridization, MMFF94 numeric types (after ``add_hydrogens``), the V2000 MOL
-block and whether ``to_mol_block(strict=True)`` refuses it.
+hybridization, RDKit-compatible Morgan radius-2/2048-bit fingerprints, MMFF94
+numeric types (after ``add_hydrogens``), the V2000 MOL block and whether
+``to_mol_block(strict=True)`` refuses it.
 Python 3.9 syntax, standard library and chematic only.
 """
 
@@ -40,6 +41,10 @@ def row(smiles, descriptors_only=False):
     except ValueError as exc:
         out["cip_error"] = str(exc)
     out["hybridization"] = list(mol.hybridization_per_atom())
+    try:
+        out["morgan_r2_2048"] = bytes(mol.rdkit_ecfp4()).hex()
+    except Exception as exc:  # noqa: BLE001 - a typed refusal is recorded
+        out["morgan_error"] = str(exc)
     try:
         out["mmff"] = list(mol.add_hydrogens().mmff94_numeric_atom_types())
     except Exception as exc:  # noqa: BLE001 - a typed refusal is recorded

@@ -2,7 +2,7 @@
   "schema": "published-wheel-chemistry-gates-expected/v1",
   "chematic_version": "1.1.3",
   "rdkit": "2026.03.6",
-  "source": "Expected public PyPI v1.1.3 artifact counts. Unchanged gates inherit the successful v1.1.2 multi-platform baseline; descriptor_stress uses the 4,072-row source-candidate QED/HBD result recorded at 3f9b5cd5. Reproduce every count with the published-wheel chemistry workflow before treating it as public-artifact evidence.",
+  "source": "Exact public PyPI v1.1.3 wheel counts reproduced on hosted Linux x86-64, macOS arm64, macOS x86-64, and Windows x86-64 by workflow run 38474540633. Platform outputs are compared with the SHA-pinned RDKit 2026.03.6 Linux wheel; retained mismatches, refusals, and unsupported rows are part of this contract.",
   "gates": {
     "reaction_83": {
       "graph_origin_map_match": 80,
@@ -25,6 +25,10 @@
         "atoms": 220015,
         "agree": 220015
       },
+      "morgan_r2_2048": {
+        "rows": 10000,
+        "exact": 10000
+      },
       "mmff94": {
         "compared_rows": 9796,
         "heavy": 215565,
@@ -46,6 +50,10 @@
       "hybridization": {
         "atoms": 138655,
         "agree": 138655
+      },
+      "morgan_r2_2048": {
+        "rows": 5000,
+        "exact": 5000
       },
       "mmff94": {
         "compared_rows": 4990,

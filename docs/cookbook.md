@@ -106,6 +106,12 @@ smiles_list = ["CCO", "c1ccccc1", "CC(=O)O"]
 # shape: (N, 2048), dtype: uint8
 X = chematic.bulk.ecfp4(smiles_list)
 
+# Individual fingerprints use the same dense uint8 convention. The
+# RDKit-compatible methods preserve the exact bits of their packed-byte peers.
+mol = chematic.from_smiles("CC(=O)Oc1ccccc1C(=O)O")
+morgan = mol.rdkit_ecfp4_numpy()
+avalon = mol.rdkit_avalon_fp_numpy()
+
 # Drop directly into scikit-learn
 from sklearn.ensemble import RandomForestClassifier
 # clf.fit(X, y)
