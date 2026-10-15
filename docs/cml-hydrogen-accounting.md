@@ -1,6 +1,6 @@
 # CML hydrogen accounting
 
-The unreleased source reader/writer now preserves explicit and non-node
+The v1.1.4 reader/writer preserves explicit and non-node
 hydrogens without double counting. The change addresses the failure class in
 [Open Babel #2655](https://github.com/openbabel/openbabel/issues/2655).
 

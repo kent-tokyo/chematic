@@ -27,17 +27,15 @@ npm install @kent-tokyo/chematic
 
 Python wheelはC/C++コンパイラを必要とせず、各バインディングは同じRustコアを使います。
 
-### v1.1.4 の対応範囲
+### v1.1.5 の対応範囲
 
-v1.1.4では、範囲を限定したカチオン共鳴列挙とスクリーニング濃縮指標、検証付きCIF・
-タンパク質projection、RDKit互換の名前・property・配座・fingerprint・原子除外API、
-NumPy形式の密なfingerprintを追加しました。記述子、fingerprint、MOL/V3000、CML、
-CIF、MOL2の正確性と速度も改善しています。性能と互換性の主張は、記録に明記した
-artifact・corpus・option・hostの範囲に限ります。詳しくは
+v1.1.5では、検証付きの分子・材料形式変換、索引指定SDF読み込み、上限付きのグラフ・
+立体化学API、query hydrogenのfolding、立体を考慮するコンパイル済みSMARTS検索、
+Layered fingerprintのオプション、検証付きのRDKit型3D距離行列を追加しました。
+環・芳香族性・TPSA・E/Z・V3000の重複処理も削減し、CML/CIFの公開エラーAPIとの
+互換性を復元したほか、3件のsecurity advisoryに対応して`rustls`を更新しています。
+性能と互換性の主張は、記録に明記したartifact・corpus・option・hostの範囲に限ります。詳しくは
 [検証報告](docs/validation.md)と[CHANGELOG](CHANGELOG.md)を参照してください。
-
-`main`には、Rust API互換性の検査、RDKitのバージョン別環数契約、依存関係の
-セキュリティ更新も含まれます。これらは未リリースであり、公開済みv1.1.4には含まれません。
 
 ## 使い方
 

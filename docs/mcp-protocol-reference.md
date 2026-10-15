@@ -289,75 +289,14 @@ not pass fall into two groups:
 - checks that exercise capabilities this server does not implement or
   advertise (resources, prompts, completion, input-required results).
 
-## Available tools (20)
+## Available tools
 
-### Name resolution (requires internet)
-
-This is the **only** tool of the 20 that makes a network call. The other 19
-are pure local computation — see [Network & privacy](#network-privacy) below.
-
-| Tool | Description |
-|------|-------------|
-| `name_to_smiles` | Convert a chemical name (IUPAC, common, or trade name) to SMILES via PubChem |
-
-### Parsing & basic info
-
-| Tool | Description |
-|------|-------------|
-| `parse_smiles` | Parse SMILES → atom count, bond count, MW |
-| `canonical_smiles` | Canonicalize a SMILES string |
-
-### Molecular properties
-
-| Tool | Description |
-|------|-------------|
-| `calc_properties` | MW, exact mass, LogP, TPSA, HBD, HBA, rotatable bonds, QED |
-| `lipinski_check` | Lipinski Rule-of-Five with per-rule breakdown |
-| `sa_score` | Synthetic accessibility score (1 = easy, 10 = hard; < 6 = synthesizable) |
-
-### Drug-likeness & safety filters
-
-| Tool | Description |
-|------|-------------|
-| `pains_check` | PAINS structural alerts (HTS false-positive filter) |
-| `brenk_check` | Brenk toxicity / instability alerts |
-
-### ADMET / pharmacokinetics
-
-| Tool | Description |
-|------|-------------|
-| `admet_profile` | Full ADMET: BBB, Caco-2, hERG, CYP3A4, AMES, PPB, hepatic clearance |
-| `boiled_egg` | BOILED-Egg method (Daina & Zoete 2016) — GI absorption + BBB zone prediction |
-
-### Similarity & substructure
-
-| Tool | Description |
-|------|-------------|
-| `ecfp4` | ECFP4 fingerprint as 2048-bit hex + popcount |
-| `tanimoto` | Tanimoto similarity (ECFP4) between two molecules |
-| `smarts_match` | SMARTS substructure search — match count + atom maps |
-| `find_mcs` | Maximum common substructure across a list of molecules |
-
-### 3D
-
-| Tool | Description |
-|------|-------------|
-| `generate_3d` | 3D coordinates via rule-based placement + DREIDING minimization (XYZ) |
-
-### Retrosynthesis
-
-| Tool | Description |
-|------|-------------|
-| `retrosynthesis` | One-step BRICS disconnection, all breakable bonds cut individually, ranked by max fragment SA Score |
-
-### Format conversion & LLM integration
-
-| Tool | Description |
-|------|-------------|
-| `smiles_to_moljson` | SMILES → MolJSON (explicit atom/bond JSON representation for LLM consumption) |
-| `moljson_to_smiles` | MolJSON → canonical SMILES |
-| `representation_router` | Route SMILES to the molecular text representation best suited to a given LLM task (MolJSON/CML/InChI/canonical SMILES) |
-| `molecule_context_pack` | Assemble identifiers, properties, drug-likeness, ADMET, and MolJSON into a single LLM/RAG context object (json/markdown/prompt output) |
+The server currently exposes 20 tools. Nineteen run locally; only
+`name_to_smiles` calls PubChem. The maintained
+[tool inventory](mcp/tool-inventory.md) records each tool's purpose,
+determinism, completeness, cost, limits, and chemistry caveats. The runtime
+registry in `crates/chematic-mcp/src/tools.rs` remains authoritative if the
+manual inventory and implementation disagree.
 
 ## Example call
 

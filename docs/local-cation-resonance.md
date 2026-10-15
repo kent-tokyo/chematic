@@ -1,6 +1,6 @@
 # Local cation resonance
 
-The unreleased source API enumerates local cation resonance forms for
+Introduced in v1.1.4, this bounded API enumerates local cation resonance forms for
 `A-C=B+ ↔ A+=C-B`, with non-aromatic N/O/S termini and neutral carbon.
 It implements the oxygen and sulfur examples from
 [RDKit #9458](https://github.com/rdkit/rdkit/issues/9458), independently of

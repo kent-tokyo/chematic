@@ -1,4 +1,4 @@
-# chematic cookbook — 20 common tasks
+# chematic cookbook — common tasks
 
 Each task is copy-paste-ready. Examples use aspirin (`CC(=O)Oc1ccccc1C(=O)O`) as the reference molecule.
 

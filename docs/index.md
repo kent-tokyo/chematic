@@ -12,7 +12,7 @@ WebAssembly, without a chematic backend.</p>
   <a class="chm-btn chm-btn-secondary" href="getting_started/installation/">Install chematic</a>
 </div>
 
-<p class="chm-links-row">Current release: <strong>v1.1.4</strong> · <a href="changelog/">release notes</a></p>
+<p class="chm-links-row">Current release: <strong>v1.1.5</strong> · <a href="changelog/">release notes</a></p>
 
 </div>
 
@@ -80,17 +80,13 @@ Installation: `pip install chematic`, `cargo add chematic`, or
 
 ## Current evidence boundary
 
-v1.1.4 adds bounded resonance and screening APIs, checked CIF and protein
-projections, expanded RDKit-compatible surfaces, dense NumPy fingerprints,
-and format correctness fixes. The latest complete hosted Python chemistry
+v1.1.5 adds checked interchange, indexed SDF selection, bounded graph,
+fingerprint, stereo, and 3D utilities, and selected chemistry hot-path
+optimizations. The latest complete hosted Python chemistry
 packet is v1.1.3; the broadest published-package RDKit performance packet is
 v1.0.42. Later source measurements are not package results. The 83-row
 reaction gate remains 80 exact graph/origin/map rows and three inputs invalid
 in both engines.
-
-`main` also contains unreleased Rust API compatibility guards, a versioned
-RDKit ring-count contract, and dependency security updates. These changes are
-not part of the published v1.1.4 packages.
 
 Each result applies only to its named artifact, corpus, options, and failure
 policy. Release availability is not accuracy evidence, source results are not

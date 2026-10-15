@@ -258,12 +258,12 @@ source-wheel Python tests, five Node/WASM suites, 79 shared report/error cases
 and 33 runner tests. See [the indexed evidence](https://github.com/kent-tokyo/chematic/blob/main/validation/results/cjson-mol2-development-summary-2026-10-11.json).
 
 
-Main integration targets the existing v1.1.0 source and preserves its public
-editable MOL2 record and stereo-aware SMILES writer. The immutable MOL2 profile
-uses `Mol2SourceRecord` / `parse_mol2_source_record` names to avoid changing that
-published contract. The preceding v1.0.20 measurements describe their original
-source candidates; integration checks are recorded separately.
+The original v1.1.0 integration preserved the public editable MOL2 record and
+stereo-aware SMILES writer. The immutable profile uses `Mol2SourceRecord` /
+`parse_mol2_source_record` names to avoid changing that contract. The preceding
+v1.0.20 measurements and v1.1.0 integration checks are historical; they are not
+current-package results.
 
-Current-main integration validation is recorded in
+The original integration validation is recorded in
 `validation/results/main-integration-2026-10-11/summary.json`.
 The earlier v1.0.20 development measurements remain historical evidence.
