@@ -1,100 +1,74 @@
 # Validation report
 
-Updated 2026-10-14 for **v1.1.4**. The broad chemistry and speed packet
-remains pinned to published v1.0.42. Separately named records cover earlier
-and later artifacts, v1.0.40/v1.0.41 source candidates, recorded v1.1.0-source
-results, focused v1.1.1 artifact checks, and bounded v1.1.2/v1.1.3 records.
-v1.1.3 release channels and its hosted Linux/macOS/Windows Python chemistry
-workflow are verified; v1.1.4 package claims require post-publication reruns.
-Every comparison is limited to its recorded artifact, comparator, corpus and
-operation.
+Updated 2026-10-15 for **v1.1.4** plus current **Unreleased** changes.
+Every result is limited to its recorded artifact or source revision,
+comparator, corpus, options, platform, and failure policy.
+
+## Evidence boundary
+
+- v1.1.4 is the current registry release.
+- The latest complete hosted Python chemistry packet is v1.1.3.
+- The broadest published-package RDKit performance packet is v1.0.42.
+- Later source records are useful development evidence, but they are not
+  relabelled as v1.1.4 package results.
+- Typed refusals and abstentions stay in the denominator and are not matches.
 
 ## Current evidence
 
-| Gate | Result and limit | Record |
+| Area | Result and limit | Record |
 |---|---|---|
-| v1.1.3 published Python artifact packet | Exact public PyPI wheels on Linux x86-64, macOS arm64, macOS x86-64 and Windows x86-64 reproduce the pinned reaction, 310k SMARTS, Morgan, descriptor, CIP, hybridization, MMFF94, MOL stereo, BioTransformer and A6 counts. Morgan is bit-identical on 10,000/10,000 exposed rows and 5,000/5,000 ChEMBL rows; A6 is 265/265 independently sound and stereo-clean. Platform outputs are compared on Linux with pinned RDKit 2026.03.6 where an equivalent platform build is unavailable. npm/WASM and crates.io are separate evidence. | [hosted artifact gate](https://github.com/kent-tokyo/chematic/actions/runs/38474540633) · [record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-14-v113-published-artifact-packet.md) · [machine-readable packet](https://github.com/kent-tokyo/chematic/blob/main/validation/results/published-wheel-chemistry-gates-v1.1.3.json) |
-| v1.1.3 evaluation follow-up | The source candidate restores v1.1.2 exhaustive Rust matches; unusual-SMILES MW, Morgan and ring count are 4,072/4,072, and every finite comparable Labute ASA row agrees within `1e-9`. Ten CIP differences are explicitly classified. Prepared QED is 16.1% faster than public v1.1.3; parse-inclusive TPSA/Morgan versus public v1.1.2 cross parity and are recorded as ties. | [follow-up record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-13-v113-evaluation-fixes.md) |
-| v1.1.3 unusual-input descriptors | The published-wheel packet confirms HBD on 4,072/4,072 rows and QED on all 4,071 comparable rows; RDKit rejects the remaining QED row. The earlier source record remains useful for row-level diagnosis. | [published packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-14-v113-published-artifact-packet.md) · [QED stress follow-up](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-13-qed-stress-parity.md) |
-| v1.1.2 gradient-rescue source candidate | The opt-in RDKit-compatible MMFF path exposes final gradient diagnostics and retries one lowest-energy candidate only when the initial ensemble has no converged result. On the already-inspected 265-row development set it reached 261/265 within 1 kcal/mol and 263/265 within 2 kcal/mol, with a 1.0179x median RDKit/CheMatic time ratio across three alternating blocks. The threshold was selected on this development set; this is not fresh-holdout, second-host, or published-artifact evidence. | [Development record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-13-a6-mmff-gradient-rescue-development.md) |
-| A6 RDKit 2026.09 bounds source candidate | A wheel built at `7e6a5240` reproduces RDKit 2026.09.1 raw and triangle-smoothed topology bounds within `1e-12` on all 768,664 cells across the frozen 265-row A6 corpus. Equal-count 20-conformer quality is within 1 kcal/mol on 258 rows; seven basin/minimization-tail rows remain. One loaded-host timing is not a speed claim. | [Bounds and conformer record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-12-a6-rdkit-2026-09-bounds-followup.md) |
-| v1.1.1 descriptor follow-up | The published CPython 3.12 wheels reproduce the pinned chemistry counts on Windows amd64, macOS arm64 and macOS x86-64; the Linux x86-64 sdist lane and all xsmarts-autoconf lanes also pass. The public artifact retains the unusual-SMILES residuals (4,069/4,072 HBD and 4,018/4,071 QED). Later releases include the representation-dependent HBD/QED fixes and lazy Python parse preparation; this row remains the v1.1.1 artifact record. | [hosted artifact gate](https://github.com/kent-tokyo/chematic/actions/runs/38184048499) · [candidate speed record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-12-v111-public-vs-lazy-fix.md) · [expected public-wheel counts](https://github.com/kent-tokyo/chematic/blob/main/validation/published-wheel-chemistry-gates-expected-v1.1.1.json) |
-| Indigo workflow source packet | Against Indigo 1.46.0 on one macOS arm64 host, CheMatic matches 15/15 versus 13/15 single-result reaction rows, 39/39 versus 38/39 largest-fragment rows, and ties at 16/16 bounded labelled R-group rows. On the common-correct subsets, all 21 timing blocks favor CheMatic, with median ratios of 10.66x, 1.27x, and 2.60x. This is source-built bounded evidence, not full standardization, reaction-enumeration, or R-group parity. | [Workflow packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-12-indigo-workflows-source.md) |
-| Recorded v1.1.0-source RDKit packet | A wheel built at `44338e16` matches RDKit 2026.09.1 on 10,000/10,000 TPSA, Labute ASA, ring-count and chiral-Morgan rows. Prepared TPSA and Morgan and all four parse-inclusive pipelines have favorable paired intervals on one macOS arm64 host. Prepared Labute ASA and first-use ring count remain deficits. The supplementary 63-operation matrix has 38 full-agreement lanes and 32 favorable intervals. This is historical source-built evidence, not a current-main or published v1.1.0 artifact result. | [Recorded source packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-11-v1.1.0-main-vs-rdkit-2026.09.1.md) |
-| Rust execution coverage | The processed Linux Codecov lane reports 96.93% line coverage (143,762/148,306) after discovering all integration-test targets. Python and WASM coverage are not included, and execution coverage is not chemical correctness evidence. | [Coverage workflow](https://github.com/kent-tokyo/chematic/actions/workflows/coverage.yml) |
-| Published v1.0.42 / RDKit 2026.09.1 packet | Exact CPython 3.13 wheels on hosted Linux x64 and macOS arm64: TPSA, Labute ASA and chiral Morgan pass the 10k output gates and their parse-inclusive 21-block intervals favor CheMatic on both hosts. Published ring count is 9,994/10,000 and receives no speed ratio. Prepared macOS Labute loses and Morgan crosses parity. npm Labute is asymmetric bundled work and npm chiral Morgan differs on one row, so neither receives a speed claim. | [Published packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-11-v1042-published-rdkit-packet.md) |
-| RDKit/COSMolKit 0.5 source comparison | Against RDKit 2026.03.1, the v1.0.41 source candidate matches RDKit at least as often as COSMolKit 0.5.0rc15 on all 161 operations over ChEMBL 5k and RDKit.js 10k. On the separate 4,072-row unusual-SMILES stress corpus, native canonical-SMILES round trip is 4,048 versus 4,064; the other covered operations are equal or favorable. This is source evidence, not universal parity or a published-package result. | [COSMolKit 0.5 record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-10-cosmolkit-050.md) |
-| RDKit/COSMolKit source comparison and seeded ETKDG | Against RDKit 2026.03.1 on the recorded Linux x86-64 source lane, seeded ETKDG coordinates match on 4,977/4,977 ChEMBL and 9,947/9,947 RDKit.js rows where RDKit succeeds. Other platforms use a 5e-4 Å per-coordinate regression tolerance. The same record covers named writer, reader, MolHash, alignment, stereoisomer and non-tetrahedral stereo surfaces. It is not published-package evidence or universal parity. | [Round 2 record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-09-cosmolkit-parity-2.md) |
-| RDKit 2026.09.1 npm rebaseline | Published RDKit.js 2026.03.6 → 2026.09.1 on exposed 10k: both 9,999/9,999 exact CheMatic 1.0.33 Morgan bits with one typed Fe refusal. Graph-checked CIP: 9,988 exact, five typed abstentions, six pre-existing imine E/Z mismatches and one unproven row in both versions. Published CheMatic WASM SMARTS atom sets: 194 → 195 mismatches among 310,000 cells, with 31 index-unproven cells in each lane; the two RDKit versions differ on 12 `[R2]`/`[R3]` cells. No old/new parse/canonical/Morgan changes. Isolated 20-run browser timing and hashes recorded. Python/nanobind/native 2026.09.1 lanes are unmeasured pending a distributed artifact. | [npm rebaseline](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-04-rdkit-2026-09-1-npm-rebaseline.md) |
-| RDKit Python 2026.03.6 baseline for rebaseline | Published macOS arm64 CPython 3.13 wheels, same exposed 10k: 9,989 CIP exact, five typed abstentions and six imine E/Z mismatches after correcting the cis/trans comparator; 9,999 Morgan exact plus one typed Fe refusal; 200/310,000 SMARTS atom-set differences; all semantic SMILES round-trips pass. Runtime is Boost.Python; seven old-version-only boundary timings recorded. This is **not** a 2026.09.1 Python result. | [Python baseline](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-04-rdkit-2026-09-1-python-baseline.md) |
-| Published-artifact output audit (P0.1) | Python/npm/Rust reran 10,000 chemistry rows, 310,000 SMARTS cells and 57 legacy reactions. Published Python/Rust cover 63 operation outputs; only HBA and its bundle changed from v1.0.29. The audit is complete, **not** strict RDKit parity: 200 SMARTS cells fail, five CIP rows abstain and four npm operations are unexposed. | [Artifact packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-02-v1.0.30-published-artifact-gates.md) · [adoption policy](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1030-published-p0-acceptance-policy.md) |
-| RDKit-compatible HBA | The hash-verified published v1.0.30 macOS arm64 wheel matches RDKit 2026.03.6 on 5,000/5,000 exposed ChEMBL rows; published v1.0.29 matched 3,641/5,000. HBA only. | [Release-channel evidence](https://github.com/kent-tokyo/chematic/blob/main/validation/results/release-channel-verification-v1.0.30.json) |
-| Paired speed (P0.2) | Published Python: 20 operations pass exact-output and paired-interval gates in 20 alternating blocks on one host. Isolated Python and Rust lanes split parse-inclusive, first-use and precomputed calls. Whole-process RSS is not library allocation; changed HBA output is not an equivalent-output speed win. | [Python matrix](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-02-v1.0.30-vs-rdkit-python-63op-paired20.json) · [isolated Python](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1.0.30-isolated-python-time-memory.md) · [Rust](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1029-v1030-published-rust-isolated-time-memory.md) |
-| Published browser Morgan | On Ubuntu 24.04, Chromium, Firefox and WebKit each have 250/250 direct and prepared bit parity and favorable 20-block speed intervals versus official RDKit.js (smallest lower bound 1.63×). A separate Chromium 10k lane has 9,999 exact and one typed Fe refusal. No universal browser or memory claim. | [Three-browser record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1030-published-linux-three-browser-paired20.md) · [M4 Chromium](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1030-rdkitjs-published-chromium-prepared-split20.md) |
-| Reactions (P1) | Legacy 57/57 fixtures match. Published v1.0.42 and current source retain the 83-row gate at 80 exact and three jointly invalid. The v1.0.42 follow-up preserves caller-supplied explicit H atoms: full-corpus explicit-H differences fall from 153 to 35, while the remaining cases stay classified and are not counted as parity. | [v1.0.42 follow-up](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-10-v1042-regression-followups.md) |
-| Published v1.0.42 chemistry packet | The hash-pinned macOS arm64 CPython 3.13 wheel retains the 80+3 reaction gate, 310,000/310,000 SMARTS cells, the exposed/ChEMBL CIP, hybridization and MMFF counts, and lossless MOL stereo rows. Its BioTransformer explicit-H lane has 6,486 exact, 153 differing and 165 RDKit-raw-unsanitizable rows; these are the published baseline, not source-candidate results. | [v1.0.42 follow-up](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-10-v1042-regression-followups.md) |
-| MCP Streamable HTTP | Published v1.0.39 added the opt-in, loopback-first 2026-07-28 stateless transport retained here. The official suite produced 82 passes; its other checks require suite fixtures or capabilities the server does not declare. | [HTTP conformance record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-09-issues-769-779.md) |
-| Release channels | v1.1.3 is verified on GitHub Release, npm, PyPI (25 wheels plus one sdist), all 20 crates.io archives, docs.rs and Pages. Availability alone does not establish chemical accuracy; the Python artifact packet above is the matching chemistry record. | [v1.1.3 verification](https://github.com/kent-tokyo/chematic/blob/main/validation/results/release-channel-verification-v1.1.3.json) |
+| Hosted Python artifacts | Exact v1.1.3 PyPI wheels on Linux x86-64, macOS arm64, macOS x86-64, and Windows x86-64 reproduce the pinned reaction, 310k SMARTS, Morgan, descriptor, CIP, hybridization, MMFF94, MOL stereo, BioTransformer, and A6 counts. npm/WASM and crates.io are separate evidence. | [v1.1.3 packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-14-v113-published-artifact-packet.md) |
+| Unusual-input descriptors | The v1.1.3 package packet confirms HBD on 4,072/4,072 rows and QED on all 4,071 comparable rows; RDKit rejects the remaining QED input. The v1.1.4 release adds further MW, Morgan, ASA, and format fixes, but its full cross-platform artifact packet is still open. | [v1.1.3 packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-14-v113-published-artifact-packet.md) · [QED follow-up](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-13-qed-stress-parity.md) |
+| RDKit performance | Exact v1.0.42 CPython 3.13 wheels on hosted Linux x64 and macOS arm64 pass 10k TPSA, Labute ASA, and chiral-Morgan output gates. Parse-inclusive intervals favor chematic on both hosts; prepared macOS Labute loses and prepared Morgan crosses parity. | [published packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-11-v1042-published-rdkit-packet.md) |
+| Reactions and workflows | The 83-row gate has 80 exact product graph/origin/map rows and three inputs invalid in both engines. The bounded RDKit workflow packet also has 39/39 largest-fragment, 254/254 Normalize after common-input filtering, and 16/16 labelled R-group rows. These are bounded fixtures, not universal parity. | [reaction follow-up](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-10-v1042-regression-followups.md) · [workflow packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-12-rdkit-workflows-expanded-source.md) |
+| Browser Morgan | Published v1.0.30 npm artifacts have 250/250 direct and prepared bit parity in Chromium, Firefox, and WebKit, with favorable 20-block intervals. A separate 10k Chromium lane has 9,999 exact rows and one typed Fe refusal. | [three-browser packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1030-published-linux-three-browser-paired20.md) |
+| COSMolKit comparison | Source comparisons cover 161 operations plus a 4,072-row unusual-SMILES corpus. Seeded ETKDG matches RDKit on 4,977/4,977 ChEMBL and 9,947/9,947 RDKit.js rows where RDKit succeeds. These are source results, not general toolkit superiority. | [0.5 comparison](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-10-cosmolkit-050.md) · [ETKDG packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-09-cosmolkit-parity-2.md) |
+| 3D/MMFF94 | The current source reproduces RDKit 2026.09.1 topology bounds within `1e-12` on 768,664 frozen A6 cells. Equal-count 20-conformer quality is within 1 kcal/mol on 258/265 rows. Remaining tails, unused holdout, two-host timing, memory, and exact-package evidence stay open. | [bounds follow-up](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-12-a6-rdkit-2026-09-bounds-followup.md) |
+| File interchange | Current source records cover bounded V3000/SDF/MOL2/CML/CIF/CDXML semantics and typed loss reporting. Diverse Open Babel parser rows with semantic differences are not ranked for speed. | [V3000 packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-14-openbabel-v3000-speed.md) · [SDF follow-up](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-14-openbabel-sdf-read-followup.md) |
+| Rust execution coverage | The processed Linux Codecov lane reports 96.93% line coverage. Python and WASM coverage are not included. Coverage is not chemistry validation. | [coverage workflow](https://github.com/kent-tokyo/chematic/actions/workflows/coverage.yml) |
 
-## Other bounded results
+## Important bounded contracts
 
-- **A0 core-eight:** frozen candidate `5e9211a6` passed 2,000/2,000
-  development and a one-time 8,000/8,000 sealed holdout on eight declared
-  descriptors after source and overlap checks. The raw sealed rows remain
-  local-only and cannot be reused for tuning. [Commit-safe summary](https://github.com/kent-tokyo/chematic/blob/main/validation/results/a0-core-eight-sealed-acceptance-20260922.json).
-- **CIP:** pinned exposed 10k comparison has 9,995 exact and five typed
-  abstentions (four `oracle_unstable`, one `lone_pair_center`). This is
-  neither a guessed label nor full CIP parity. [Source adjudication](https://github.com/kent-tokyo/chematic/blob/main/validation/results/rdkit-rebaseline-issue634-v1.0.27-candidate-vs-rdkit-2026.03.6-2026-09-28.json).
-- **Morgan:** the published M4 Chromium lane matches on 9,999/9,999
-  supported 10k inputs; one Fe(II) coordination input is a typed refusal.
-  Native ECFP4 is a different profile. [Row-level record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1030-published-chromium-morgan-row-parity.md).
-- **SMARTS source candidate:** An opt-in Python source-wheel gate matches
-  309,982/310,000 RDKit 2026.03.6 match sets; the other 18 are typed
-  unsupported. This does not change the published v1.0.30 baseline of 200
-  differing sets. [Source packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-python-source-smarts-optin-310k.md).
-- **3D/MMFF94:** Experimental. The published v1.0.42 macOS arm64 A6 lane and the
-  current Linux/macOS/Windows CI gates pass all 265 geometry, stereo, and clash
-  checks after stereo-safe re-embedding. Source MMFF typing and same-coordinate
-  per-term energies match the pinned RDKit lanes. The current source candidate
-  reproduces RDKit 2026.09.1 raw and triangle-smoothed topology bounds within
-  `1e-12` on all 768,664 frozen A6 cells. Equal-count 20-conformer quality is
-  within 1 kcal/mol on 258/265 rows and at or below RDKit on 168 rows. Seven
-  basin/minimization-tail rows remain; formal timing, holdout, second-host and
-  public-artifact gates are open. The earlier source candidate added
-  full-hydrogen MMFF ranking: in equal-count ten-candidate comparison with
-  RDKit 2026.09.1, 237/265 rows are within 1 kcal/mol and 216 are at or below
-  RDKit's best, but the 9.896 kcal/mol maximum remains open. These results do
-  not establish other corpora, public artifacts, or universal superiority.
-  A second source candidate adds deterministic RDKit 2026.03-compatible
-  multi-conformer ETKDG plus shared, parallel MMFF94. Its 20-candidate lane is
-  within 1 kcal/mol on 243/265 rows; a bounded adaptive retry reaches 256/265
-  but is slower. One-repeat baseline timings are unstable and do not establish
-  a speed win.
-  [A6 record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-08-issues-769-739.md) ·
-  [full-H ranking record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-12-a6-full-h-mmff-vs-rdkit.md) ·
-  [multi-conformer record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-12-a6-multiconformer-etkdg-mmff.md) ·
-  [2026.09 bounds follow-up](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-12-a6-rdkit-2026-09-bounds-followup.md) ·
-  [ETKDG record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-09-cosmolkit-parity-2.md).
+- **A0 core-eight:** the frozen candidate passed 2,000/2,000 development and
+  one 8,000/8,000 sealed evaluation on eight declared descriptors. The sealed
+  rows cannot be reused for tuning.
+- **CIP:** versioned comparisons include exact labels and typed abstentions.
+  Wildcard, lone-pair, and oracle-sensitive cases are never guessed.
+- **SMARTS:** the current gate contains 310,000 cells. Historical package and
+  later source counts differ; consult the exact dated record before quoting a
+  number.
+- **Canonical identity:** `canonical_smiles()` is not a universal identity
+  key. `canonical_smiles_stable_key()` is fail-closed and bounded.
+- **3D:** typing, energy, gradient, convergence, stereo, clash, conformer
+  quality, time, and memory are independent gates.
 
-Earlier source diagnostics and per-release channel checks remain in the
-[benchmark index](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/README.md) and
-[versioned validation results](https://github.com/kent-tokyo/chematic/tree/main/validation/results/). They are not promoted
-to a later package claim unless that exact artifact has its own named gate.
+## Unreleased safeguards
 
-## Reproduce and interpret
+Changes merged after v1.1.4 restore the v1.1.3 exhaustive-match surface of
+`CmlError` and `CifError`, add `cargo-semver-checks`, pin known RDKit
+2026.03.6/2026.09.1 ring-count disagreements, and update `rustls`. They are
+not evidence about the published v1.1.4 artifacts.
+
+## How to interpret results
+
+A speed win requires equivalent declared work, acceptable equivalent output,
+complete failure accounting, a paired 95% lower bound above 1.0, and recorded
+source/package/host provenance. Parse-inclusive and prepared timings answer
+different questions.
+
+Formal reruns must use each record's exact versions, hashes, corpus, options,
+and runtime. Earlier measurements remain available in the
+[benchmark index](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/README.md), [complete inventory](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/archive-index.md),
+and [versioned results](https://github.com/kent-tokyo/chematic/tree/main/validation/results/).
+
+## Local consistency checks
 
 ```bash
-cargo test --workspace --all-targets --locked
-cargo clippy --workspace --all-targets --locked -- -D warnings
 python3 scripts/check_release_docs_consistency.py
 python3 scripts/check_benchmark_index.py
-python3 scripts/check_v1030_artifact_packet.py
+python3 scripts/check_roadmap_disposition.py
+python3 scripts/check_product_names.py
 ```
 
-Formal reruns must use each record's exact versions, hashes, corpus and
-runtime. Canonical SMILES is not a universal identity key; use the bounded
-`canonical_smiles_stable_key()` when its documented domain applies. Rich
-CDXML, coordination/haptic V3000, broad Markush/polymer expansion and
-Standard InChI outside the optional native feature remain bounded. See the
-[compatibility scope](compatibility-scope.md) and
-[accuracy plan](rdkit-accuracy-plan.md).
+See [compatibility scope](compatibility-scope.md), [benchmark method](benchmark.md),
+and the [accuracy plan](rdkit-accuracy-plan.md) for the support boundary.

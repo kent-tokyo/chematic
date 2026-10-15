@@ -1,71 +1,99 @@
-# Benchmarks
+# Benchmark method
 
-CheMatic benchmarks are specific to the package or source commit, comparator,
-corpus, host and timed operation. A speed result counts only when the stated
-outputs and work are equivalent. [The record index](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/README.md)
-links the raw data and older measurements.
+chematic benchmarks are specific to a package or source revision, comparator,
+corpus, host, runtime, options, and timed operation. A speed result counts only
+when the stated work and outputs are equivalent.
 
-## Current evidence
+The current release is **v1.1.4**. The latest complete hosted Python chemistry
+packet is v1.1.3, while the broadest published-package RDKit performance packet
+is v1.0.42. Later source records are development evidence, not v1.1.4 package
+claims. See the [record index](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/README.md) for current entry points
+and the [complete inventory](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/archive-index.md) for all history.
 
-The current release is **v1.1.4**. A focused current-source follow-up compares
-a wheel built from commit `f2d030fc` with RDKit 2026.09.1 on macOS arm64.
-The latest bounded registry-package packet remains v1.0.42. Source and
-published-package evidence are intentionally separate; neither is a universal
-speed or compatibility claim.
+## Required provenance
 
-| Lane | Result | Boundary |
-|---|---|---|
-| [v1.1.3 evaluation follow-up](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-13-v113-evaluation-fixes.md) | The 4,072-row unusual-input lane is exact for MW, Morgan and ring count, with all finite ASA values within `1e-9`. Prepared QED is 16.1% faster than public v1.1.3 with equal outputs. | Source candidate `90542885`, one macOS arm64 host. Parse-inclusive TPSA/Morgan versus public v1.1.2 cross parity and are ties, not speed wins. |
-| [A6 RDKit 2026.09 bounds follow-up](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-12-a6-rdkit-2026-09-bounds-followup.md) | Raw and triangle-smoothed topology bounds match within `1e-12` for 768,664/768,664 cells. Equal-count 20-conformer quality is within 1 kcal/mol on 258/265 rows. | Source-built wheel, one macOS arm64 host. Seven quality-tail rows remain; the single loaded-host timing is not an accepted speed claim. |
-| [A6 RDKit-compatible multi-conformer ETKDG/MMFF94](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-12-a6-multiconformer-etkdg-mmff.md) | Equal-count 20-candidate quality is within 1 kcal/mol on 243/265 rows; opt-in bounded retry reaches 256/265. | Source candidate, one host, one repeat per run. Baseline timings reverse winner across two nearby runs and retry is slower; no accepted speed win. |
-| [A6 full-H MMFF ranking](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-12-a6-full-h-mmff-vs-rdkit.md) | Equal-count ten-candidate quality has a favorable median, 1.041 kcal/mol p90, and 237/265 rows within 1 kcal/mol of RDKit's best. A two-repeat same-work timing is 1.17x faster. | Source candidate, one macOS arm64 host. Maximum residuals, 21-block timing, holdout, memory, second-host, and exact public artifacts remain open. |
-| [Labute ASA and ring-count source follow-up](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-12-v1.1.0-source-labute-ring-speed.md) | Labute ASA and RDKit-compatible ring count agree on 10,000/10,000 rows. Prepared medians are 1.71x and 1.22x faster than RDKit; their paired 95% interval lower bounds are 1.69x and 1.16x. Parse-inclusive medians are 7.42x and 7.78x. | Source-built v1.1.0 wheel at `f2d030fc`, 41 alternating blocks on one macOS arm64 host. Not yet a published-package or cross-platform result. |
-| [Earlier `main` / RDKit 2026.09.1](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-11-v1.1.0-main-vs-rdkit-2026.09.1.md) | TPSA, Labute ASA, RDKit ring count and chiral Morgan agree on 10,000/10,000 rows. Prepared TPSA and Morgan, plus all four parse-inclusive pipelines, have favorable paired intervals. A supplementary 63-operation matrix has 38 full-agreement lanes and 32 favorable paired intervals. | Historical source-built wheel at `44338e16`; prepared Labute ASA and first-use ring count were slower before this follow-up. |
-| [Published v1.0.42 / RDKit 2026.09.1](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-11-v1042-published-rdkit-packet.md) | Python TPSA, Labute ASA and chiral Morgan have exact/toleranced 10k output gates and favorable parse-inclusive intervals on both hosted runners. | Ring count is 9,994/10,000 and has no speed ratio. macOS prepared Labute loses and prepared Morgan crosses parity. npm Labute is asymmetric work and npm chiral Morgan differs on one row, so neither receives a speed claim. |
-| [Python 63-operation matrix](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-02-v1.0.30-vs-rdkit-python-63op-paired20.json) | 20 operations have exact output agreement and a favorable paired confidence interval against RDKit 2026.03.6 in 20 alternating blocks. | One host and exposed corpus; other operations are not wins. |
-| [Isolated Python](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1.0.30-isolated-python-time-memory.md) and [Rust](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1029-v1030-published-rust-isolated-time-memory.md) | Parse-inclusive, prepared first-use and precomputed lanes use 20 fresh-process blocks. | Process peak RSS is not per-operation allocation. Changed HBA outputs cannot support an equivalent-output v1.0.29/v1.0.30 speed claim. |
-| [Published Node/WASM](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1029-v1030-rdkitjs-node-isolated-paired20.md) | Compatible Morgan is bit-identical on the 250-row speed corpus, with 20 fresh-process paired blocks against official RDKit.js. | Node is not browser evidence. |
-| [Published browser replication](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1030-published-linux-three-browser-paired20.md) | Chromium, Firefox and WebKit on Ubuntu 24.04 each have 250/250 exact direct/prepared Morgan rows and favorable 20-block speed intervals; the smallest lower bound is 1.63×. | Browser, host and operation scoped. A separate Chromium 10k lane has 9,999 exact outputs and one typed Fe refusal. |
+Every record must identify:
 
-The [v1.0.30 artifact audit](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-02-v1.0.30-published-artifact-gates.md)
-accounts for 10,000 chemistry rows, 310,000 SMARTS cells, 57 legacy reactions
-and applicable operation outputs across Python, npm and Rust. It is an output
-audit, **not** a speed or full RDKit-parity result. The
-[adoption policy](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1030-published-p0-acceptance-policy.md)
-retains 200 SMARTS failures, five typed CIP abstentions and four npm API gaps.
+- chematic package hash or source revision;
+- comparator package/build and version;
+- corpus source, filtering, and hash;
+- operation, options, warm-up, repetitions, and timeout;
+- hardware, OS, runtime, thread count, and relevant compiler flags;
+- counts for success, failure, refusal, unsupported, and skipped rows;
+- exact, numeric, or semantic output-equivalence rule;
+- raw paired observations and uncertainty calculation.
 
-## Historical records
+Registry availability, a source build, and a public package are separate facts.
+Do not reuse a result across those boundaries.
 
-- The [v1.0.20 public-package fingerprint/3D record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-23-public-package-fingerprint-3d-v1.0.20.md)
-  reports 9,999 supported exact Morgan rows and one typed refusal. Its
-  quality-equivalent MMFF94 speed ratio was 0.944× (95% lower bound 0.861×):
-  **not** an MMFF94 speed win.
-- The [v1.0.15 WASM-size record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-16-official-rdkit-js-isolated-browser-v1.0.15.md)
-  measured 4,005,280 raw / 1,460,499 gzip bytes versus official RDKit.js
-  7,333,095 / 2,379,975 under one local compression method. These are
-  historical assets, not current package or download sizes.
-- The [v1.0.12 similarity-search record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-11-similarity-search-v1.0.12.md)
-  separates native/native, RDKit-compatible/RDKit and cross-profile overlap.
-  Source A/B and older operation timings remain in the
-  [complete index](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/archive-index.md); they do not establish v1.1.4 package claims.
+## Timed boundaries
 
-## Reproduction and interpretation
+Report these separately when applicable:
 
-Run the checker named in the selected record with **its** pinned packages,
-corpus hash, configuration and host. For repository consistency checks:
+1. cold process or browser startup;
+2. package/WASM initialization;
+3. parse-inclusive pipeline;
+4. first operation after parsing;
+5. prepared or repeated operation;
+6. serialization or host-language conversion;
+7. peak process RSS and, where measurable, library allocation.
+
+Moving perception or caching work into parsing changes the question; it does
+not make the prepared operation a fair replacement for a parse-inclusive one.
+
+## Output gate
+
+Before ranking speed:
+
+- compare every successful output under the declared contract;
+- include comparator errors and chematic refusals in the denominator;
+- reject asymmetric work or hidden skipped rows;
+- classify representation-only differences separately from graph or numeric
+  differences;
+- keep typed refusals visible rather than counting them as matches.
+
+For chemistry with several acceptable answers, define the semantic observer
+before running the benchmark. Canonical-SMILES string equality alone is not a
+general identity test.
+
+## Statistical gate
+
+An equivalent-output speed win requires:
+
+- at least 21 alternating-order blocks for a promoted claim;
+- a win in every block;
+- a paired 95% confidence lower bound above `1.0`;
+- no output or failure-accounting regression;
+- two recorded hosts and exact public artifacts for a broad release claim.
+
+Short exploratory runs may guide development, but their record must say that
+they are exploratory and must not use superiority language.
+
+## 3D and force fields
+
+Separate atom typing, parameter coverage, same-coordinate energy, gradient,
+convergence, stereo, clash, conformer quality, time, and memory. Faster energy
+evaluation is not faster optimization, and a better median cannot hide a
+large quality tail. Inspected corpora are development data and cannot become
+sealed holdouts again.
+
+## File formats and streaming
+
+Compare semantic graph, charge, isotope, bond order, stereo, coordinates,
+properties, and format metadata before throughput. For batch readers, require:
+
+`input = success + refusal + unsupported + invalid + internal_error`
+
+Keep cold start, first record, steady-state throughput, round trip, large-file
+behavior, and peak memory separate.
+
+## Repository checks
 
 ```bash
 python3 scripts/check_benchmark_index.py
-python3 scripts/check_v1030_artifact_packet.py
-python3 scripts/check_published_python_isolated_paired.py
-python3 scripts/check_published_rust_isolated_paired.py
-python3 scripts/check_published_v1042_rdkit_packet.py \
-  benchmarks/2026-10-11-v1042-published-rdkit-python-linux-x64.json
+python3 scripts/check_release_docs_consistency.py
+python3 scripts/check_roadmap_disposition.py
 ```
 
-A new measurement must record artifact/source hashes; corpus and failure
-accounting; hardware, OS and runtime; timed boundary and warm-up; raw paired
-observations, aggregation and uncertainty; and an output-equivalence gate.
-Keep source candidates, published packages, sealed accuracy data, whole-process
-RSS and library allocations distinct. If outputs differ, the interval crosses
-parity or work is asymmetric, report **no equivalent-output speed win**.
+Each dated record contains its own reproduction command and validation script.
+Use that record rather than a moving command copied into an overview page.

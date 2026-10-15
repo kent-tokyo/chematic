@@ -36,6 +36,9 @@ RDKit 兼容的名称、属性、构象、指纹和原子屏蔽 API，以及 Num
 [验证报告](docs/validation.md)和
 [CHANGELOG](CHANGELOG.md)。
 
+`main` 还包含尚未发布的 Rust API 兼容性检查、按 RDKit 版本固定的环计数契约，
+以及依赖安全更新；这些变更不属于已发布的 v1.1.4 软件包。
+
 ## 使用
 
 ```python
