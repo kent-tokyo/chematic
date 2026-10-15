@@ -1244,6 +1244,39 @@ export class MolHandle {
         }
     }
     /**
+     * Distance-geometry bounds with user bond-length, angle and torsion
+     * constraints injected before triangle smoothing.
+     *
+     * `constraintsJson` contains optional camelCase arrays `bondLengths`,
+     * `bondAngles`, and `torsions`; atom indices are zero based. Lengths use
+     * angstrom and angles use degrees.
+     * @param {string} constraints_json
+     * @param {boolean} set15bounds
+     * @param {boolean} do_triangle_smoothing
+     * @param {boolean} use_macrocycle_14_config
+     * @returns {string}
+     */
+    rdkit_bounds_matrix_with_constraints_json(constraints_json, set15bounds, do_triangle_smoothing, use_macrocycle_14_config) {
+        let deferred3_0;
+        let deferred3_1;
+        try {
+            const ptr0 = passStringToWasm0(constraints_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            const len0 = WASM_VECTOR_LEN;
+            const ret = wasm.molhandle_rdkit_bounds_matrix_with_constraints_json(this.__wbg_ptr, ptr0, len0, set15bounds, do_triangle_smoothing, use_macrocycle_14_config);
+            var ptr2 = ret[0];
+            var len2 = ret[1];
+            if (ret[3]) {
+                ptr2 = 0; len2 = 0;
+                throw takeFromExternrefTable0(ret[2]);
+            }
+            deferred3_0 = ptr2;
+            deferred3_1 = len2;
+            return getStringFromWasm0(ptr2, len2);
+        } finally {
+            wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+        }
+    }
+    /**
      * RDKit `CalcRMS`, bounded by `max_matches <= 1_000_000`.
      * @param {string} probe_coords_json
      * @param {string} reference_coords_json
@@ -1311,6 +1344,33 @@ export class MolHandle {
         }
     }
     /**
+     * Checked 3D matrix in prepared RDKit atom order. JSON has one [x,y,z]
+     * row per prepared atom; malformed/nonfinite/unrepresentable input refuses.
+     * @param {string} coords_json
+     * @param {boolean} use_atom_wts
+     * @returns {string}
+     */
+    rdkit_distance_matrix_3d_checked_json(coords_json, use_atom_wts) {
+        let deferred3_0;
+        let deferred3_1;
+        try {
+            const ptr0 = passStringToWasm0(coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            const len0 = WASM_VECTOR_LEN;
+            const ret = wasm.molhandle_rdkit_distance_matrix_3d_checked_json(this.__wbg_ptr, ptr0, len0, use_atom_wts);
+            var ptr2 = ret[0];
+            var len2 = ret[1];
+            if (ret[3]) {
+                ptr2 = 0; len2 = 0;
+                throw takeFromExternrefTable0(ret[2]);
+            }
+            deferred3_0 = ptr2;
+            deferred3_1 = len2;
+            return getStringFromWasm0(ptr2, len2);
+        } finally {
+            wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+        }
+    }
+    /**
      * Seeded RDKit ETKDGv3 coordinates as JSON. Call on an
      * explicit-hydrogen molecule. At most 512 atoms are accepted.
      * @param {number} random_seed
@@ -1333,6 +1393,34 @@ export class MolHandle {
             return getStringFromWasm0(ptr1, len1);
         } finally {
             wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+        }
+    }
+    /**
+     * Seeded ETKDG embedding using constraints injected before triangle
+     * smoothing. Returns one `[x,y,z]` row per atom as JSON.
+     * @param {string} constraints_json
+     * @param {number} random_seed
+     * @param {number} max_iterations
+     * @returns {string}
+     */
+    rdkit_embed_with_constraints_json(constraints_json, random_seed, max_iterations) {
+        let deferred3_0;
+        let deferred3_1;
+        try {
+            const ptr0 = passStringToWasm0(constraints_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            const len0 = WASM_VECTOR_LEN;
+            const ret = wasm.molhandle_rdkit_embed_with_constraints_json(this.__wbg_ptr, ptr0, len0, random_seed, max_iterations);
+            var ptr2 = ret[0];
+            var len2 = ret[1];
+            if (ret[3]) {
+                ptr2 = 0; len2 = 0;
+                throw takeFromExternrefTable0(ret[2]);
+            }
+            deferred3_0 = ptr2;
+            deferred3_1 = len2;
+            return getStringFromWasm0(ptr2, len2);
+        } finally {
+            wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
         }
     }
     /**
@@ -5387,6 +5475,23 @@ export function mol_block_stereo_loss_json(mol) {
 }
 
 /**
+ * Project explicit CCD topology. Unassigned stereo annotations require
+ * explicit loss consent; coordinates remain in parse_ccd_json's record.
+ * @param {string} text
+ * @param {boolean} allow_stereo_loss
+ * @returns {MolHandle}
+ */
+export function mol_from_ccd(text, allow_stereo_loss) {
+    const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.mol_from_ccd(ptr0, len0, allow_stereo_loss);
+    if (ret[2]) {
+        throw takeFromExternrefTable0(ret[1]);
+    }
+    return MolHandle.__wrap(ret[0]);
+}
+
+/**
  * Only the first molecular fragment in the document is returned.
  * Returns a JS error if the document cannot be parsed.
  * @param {string} cdxml
@@ -6277,6 +6382,33 @@ export function pains_matches_json(mol) {
 }
 
 /**
+ * One CCD template including source IDs, charges, explicit bonds, optional
+ * coordinates and unassigned stereo labels. No atom_site bond perception.
+ * @param {string} text
+ * @returns {string}
+ */
+export function parse_ccd_json(text) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.parse_ccd_json(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
  * Inspect strictly validated CJSON with exact source and opaque field paths.
  * @param {string} text
  * @returns {string}
@@ -6346,6 +6478,32 @@ export function parse_cxsmiles_json(s) {
         const ptr0 = passStringToWasm0(s, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.parse_cxsmiles_json(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * Inspect the bounded HIN record, including literal aromatic bonds and charges.
+ * @param {string} text
+ * @returns {string}
+ */
+export function parse_hin_record_json(text) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.parse_hin_record_json(ptr0, len0);
         var ptr2 = ret[0];
         var len2 = ret[1];
         if (ret[3]) {
@@ -7531,6 +7689,32 @@ export function roundtrip_cjson_record(text) {
         const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.roundtrip_cjson_record(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * Validate a single HIN record and retain exact source text and line endings.
+ * @param {string} text
+ * @returns {string}
+ */
+export function roundtrip_hin_record(text) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.roundtrip_hin_record(ptr0, len0);
         var ptr2 = ret[0];
         var len2 = ret[1];
         if (ret[3]) {

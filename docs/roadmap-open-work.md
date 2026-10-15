@@ -1,13 +1,13 @@
 # Open-work ledger
 
-Updated 2026-10-15 for **v1.1.4** plus the current **Unreleased** branch.
+Updated 2026-10-16 for **v1.1.5**.
 This file lists unresolved work only. Completed changes belong in the
 [CHANGELOG](https://github.com/kent-tokyo/chematic/blob/main/CHANGELOG.md); measurements belong in the
 [validation report](validation.md) and [benchmark index](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/README.md).
 
 ## Active follow-up
 
-- **v1.1.4 artifact packet:** v1.1.4 is published, but a complete checked-in
+- **v1.1.5 artifact packet:** after publication, a complete checked-in
   Linux/macOS/Windows Python, npm/WASM, and crates.io chemistry packet is still
   required before replacing the current v1.1.3 hosted chemistry packet and
   v1.0.42 broad performance packet.

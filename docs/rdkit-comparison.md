@@ -1,18 +1,18 @@
 # chematic and RDKit
 
-CheMatic is a local-first Rust chemistry library for Rust, Python and
+chematic is a local-first Rust chemistry library for Rust, Python and
 WebAssembly. RDKit has a broader, more mature chemistry and Python ecosystem;
 it is the better choice when a workflow needs an unsupported API or production
-3D breadth. CheMatic is not a drop-in reimplementation.
+3D breadth. chematic is not a drop-in reimplementation.
 
 For individual API mappings, see [migration](rdkit-migration.md). For actual
 support and refusal boundaries, see [compatibility scope](compatibility-scope.md).
 
 ## Current measured boundary
 
-The **v1.1.4 release** retains the named RDKit 2026.03.1-compatible surface
-and reduces repeated work in selected fingerprint, descriptor, ring, reaction,
-and MMFF94 paths. In the recorded v1.0.41 source comparison, chematic matches RDKit at
+The **v1.1.5 release** retains the named RDKit 2026.03.1-compatible surface,
+adds bounded graph, fingerprint, stereo, and 3D utilities, and reduces repeated
+work in selected ring, descriptor, E/Z, and V3000 paths. In the recorded v1.0.41 source comparison, chematic matches RDKit at
 least as often as COSMolKit 0.5.0rc15 on all 161 operations over ChEMBL 5k and
 RDKit.js 10k; the separate stress corpus retains one weaker native canonical
 SMILES round-trip result. This is source-build evidence, not a universal or
@@ -21,7 +21,7 @@ published-package chemistry and speed comparison packet is pinned to
 **v1.0.42** against RDKit 2026.09.1. A separate v1.1.3 Python artifact packet
 covers exact public wheels on hosted Linux x86-64, macOS arm64, macOS x86-64,
 and Windows x86-64. It is an output-validation packet, not evidence for
-npm/WASM, crates.io, or v1.1.4 package performance.
+npm/WASM, crates.io, or v1.1.5 package performance.
 
 | Lane | Recorded result | What it does not show |
 |---|---|---|
@@ -48,22 +48,22 @@ It is separate from the published-package matrix above.
 
 ## Practical differences
 
-- **Implementation and deployment:** CheMatic's Rust core is shared by
+- **Implementation and deployment:** chematic's Rust core is shared by
   Rust, Python, Node and WASM. RDKit's official JavaScript/WASM package is
   available too, so browser availability alone is not a differentiator.
 - **Profiles:** Native ECFP4 and named RDKit-compatible Morgan are different
   definitions. Aromaticity, CIP and canonical identity also have explicit
   modes or fail-closed limits. Matching names do not imply identical defaults.
 - **3D:** RDKit's ETKDG and force-field workflows remain broader and more
-  mature. CheMatic now exposes a named fixed-seed RDKit-compatible ETKDGv3
+  mature. chematic now exposes a named fixed-seed RDKit-compatible ETKDGv3
   path with the bounded corpus evidence above. That result does not establish
   universal topology, ensemble-quality, platform-bitwise, or full MMFF94
   parity for the general 3D APIs.
-- **Formats:** CheMatic has selected materials and simulation formats in
+- **Formats:** chematic has selected materials and simulation formats in
   addition to common molecule formats. Read/write and binding coverage vary;
   use the [format matrix](format-capabilities.md) rather than assuming every
   format round-trips.
-- **Agent and browser workflows:** CheMatic emphasizes local execution,
+- **Agent and browser workflows:** chematic emphasizes local execution,
   typed errors, and input accounting. Verify cancellation, memory and
   unsupported behavior against the specific binding you deploy.
 

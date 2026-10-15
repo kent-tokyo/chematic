@@ -27,17 +27,16 @@ npm install @kent-tokyo/chematic
 
 Python wheel 无需 C/C++ 编译器；各绑定共享同一 Rust 内核。
 
-### v1.1.4 范围
+### v1.1.5 范围
 
-v1.1.4 增加了有界阳离子共振枚举、筛选富集指标、带检查的 CIF 与蛋白质投影、
-RDKit 兼容的名称、属性、构象、指纹和原子屏蔽 API，以及 NumPy 密集指纹输出。
-本版本也改进了描述符、指纹、MOL/V3000、CML、CIF 和 MOL2 的正确性与性能。
-性能与兼容性结论仅适用于记录中注明的 artifact、corpus、option 和 host。详情见
+v1.1.5 增加了受检的分子与材料格式转换、索引式 SDF 选择、有界图与立体化学工具、
+query hydrogen folding、支持手性的已编译 SMARTS 匹配、Layered 指纹选项，以及
+受检的 RDKit 模型 3D 距离矩阵。本版本还减少了环、芳香性、TPSA、E/Z 与 V3000
+路径中的重复处理，恢复了既有 CML/CIF 公共错误 API，并更新 `rustls` 以处理三个
+security advisory。性能与兼容性结论仅适用于记录中注明的 artifact、corpus、option
+和 host。详情见
 [验证报告](docs/validation.md)和
 [CHANGELOG](CHANGELOG.md)。
-
-`main` 还包含尚未发布的 Rust API 兼容性检查、按 RDKit 版本固定的环计数契约，
-以及依赖安全更新；这些变更不属于已发布的 v1.1.4 软件包。
 
 ## 使用
 

@@ -760,15 +760,14 @@ For the exact per-language function signatures, return-value shapes, and
 RDKit's equivalent APIs, see [`rdkit-migration.md`](rdkit-migration.md).
 
 
-Integration into v1.1.0 keeps its published editable `Mol2Record` and
-`parse_mol2_record`/`write_mol2_record` APIs intact, including UNITY formal-charge
-attributes and editable typed sections. The new immutable `Mol2SourceRecord`
-profile is separate: checked conversion and JSON inspection use its stricter
-validation and N.4-only charge projection. Legacy editable/graph parsing is not
-claimed to enforce this stricter profile. Earlier v1.0.20 evidence remains
-historical and is not relabeled as a v1.1.0 artifact result.
+The immutable `Mol2SourceRecord` profile was integrated during the v1.1.0
+development line without changing the published editable `Mol2Record` and
+`parse_mol2_record`/`write_mol2_record` APIs. Checked conversion and JSON
+inspection use the stricter immutable profile; legacy editable/graph parsing
+does not claim that contract. Earlier v1.0.20 and v1.1.0 integration records
+remain historical and are not current-package evidence.
 
-Current-main integration validation is recorded in
+The original integration validation is recorded in
 `validation/results/main-integration-2026-10-11/summary.json`.
 The earlier v1.0.20 development measurements remain historical evidence.
 

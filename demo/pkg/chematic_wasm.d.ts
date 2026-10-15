@@ -481,6 +481,15 @@ export class MolHandle {
      */
     rdkit_bounds_matrix_json(set15bounds: boolean, do_triangle_smoothing: boolean, use_macrocycle_14_config: boolean): string;
     /**
+     * Distance-geometry bounds with user bond-length, angle and torsion
+     * constraints injected before triangle smoothing.
+     *
+     * `constraintsJson` contains optional camelCase arrays `bondLengths`,
+     * `bondAngles`, and `torsions`; atom indices are zero based. Lengths use
+     * angstrom and angles use degrees.
+     */
+    rdkit_bounds_matrix_with_constraints_json(constraints_json: string, set15bounds: boolean, do_triangle_smoothing: boolean, use_macrocycle_14_config: boolean): string;
+    /**
      * RDKit `CalcRMS`, bounded by `max_matches <= 1_000_000`.
      */
     rdkit_calc_rms(probe_coords_json: string, reference_coords_json: string, max_matches: number, symmetrize: boolean, weights_json?: string | null): number;
@@ -493,10 +502,20 @@ export class MolHandle {
      */
     rdkit_cx_smarts(): string;
     /**
+     * Checked 3D matrix in prepared RDKit atom order. JSON has one [x,y,z]
+     * row per prepared atom; malformed/nonfinite/unrepresentable input refuses.
+     */
+    rdkit_distance_matrix_3d_checked_json(coords_json: string, use_atom_wts: boolean): string;
+    /**
      * Seeded RDKit ETKDGv3 coordinates as JSON. Call on an
      * explicit-hydrogen molecule. At most 512 atoms are accepted.
      */
     rdkit_embed_json(random_seed: number, max_iterations: number): string;
+    /**
+     * Seeded ETKDG embedding using constraints injected before triangle
+     * smoothing. Returns one `[x,y,z]` row per atom as JSON.
+     */
+    rdkit_embed_with_constraints_json(constraints_json: string, random_seed: number, max_iterations: number): string;
     /**
      * RDKit MolHash by case-insensitive function name.
      */
@@ -1980,6 +1999,12 @@ export function mol_block_stereo_diagnostics_json(mol_block: string): string;
 export function mol_block_stereo_loss_json(mol: MolHandle): string;
 
 /**
+ * Project explicit CCD topology. Unassigned stereo annotations require
+ * explicit loss consent; coordinates remain in parse_ccd_json's record.
+ */
+export function mol_from_ccd(text: string, allow_stereo_loss: boolean): MolHandle;
+
+/**
  * Only the first molecular fragment in the document is returned.
  * Returns a JS error if the document cannot be parsed.
  */
@@ -2322,6 +2347,12 @@ export function orca_output_to_json(text: string): string;
 export function pains_matches_json(mol: MolHandle): string;
 
 /**
+ * One CCD template including source IDs, charges, explicit bonds, optional
+ * coordinates and unassigned stereo labels. No atom_site bond perception.
+ */
+export function parse_ccd_json(text: string): string;
+
+/**
  * Inspect strictly validated CJSON with exact source and opaque field paths.
  */
 export function parse_cjson_record_json(text: string): string;
@@ -2341,6 +2372,11 @@ export function parse_cxsmarts_json(s: string): string;
  * Returns error if atom count exceeds 10,000.
  */
 export function parse_cxsmiles_json(s: string): string;
+
+/**
+ * Inspect the bounded HIN record, including literal aromatic bonds and charges.
+ */
+export function parse_hin_record_json(text: string): string;
 
 /**
  * Inspect partial charges, atom types and source retention for MOL2.
@@ -2756,6 +2792,11 @@ export function ring_families_json(mol: MolHandle): string;
  * Validate the local CJSON profile and retain the exact UTF-8 source.
  */
 export function roundtrip_cjson_record(text: string): string;
+
+/**
+ * Validate a single HIN record and retain exact source text and line endings.
+ */
+export function roundtrip_hin_record(text: string): string;
 
 /**
  * Validate one MOL2 record and preserve its exact source, including metadata.
@@ -3561,6 +3602,7 @@ export interface InitOutput {
     readonly mol_block_from_smiles: (a: number, b: number) => [number, number, number, number];
     readonly mol_block_stereo_diagnostics_json: (a: number, b: number) => [number, number, number, number];
     readonly mol_block_stereo_loss_json: (a: number) => [number, number];
+    readonly mol_from_ccd: (a: number, b: number, c: number) => [number, number, number];
     readonly mol_from_cdxml: (a: number, b: number) => [number, number, number];
     readonly mol_from_cjson: (a: number, b: number) => [number, number, number];
     readonly mol_from_cml: (a: number, b: number) => [number, number, number];
@@ -3662,10 +3704,13 @@ export interface InitOutput {
     readonly molhandle_rdkit_best_alignment_json: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number) => [number, number, number, number];
     readonly molhandle_rdkit_best_rms: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number) => [number, number, number];
     readonly molhandle_rdkit_bounds_matrix_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+    readonly molhandle_rdkit_bounds_matrix_with_constraints_json: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number, number];
     readonly molhandle_rdkit_calc_rms: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number) => [number, number, number];
     readonly molhandle_rdkit_chiral_centers_json: (a: number, b: number) => [number, number, number, number];
     readonly molhandle_rdkit_cx_smarts: (a: number) => [number, number, number, number];
+    readonly molhandle_rdkit_distance_matrix_3d_checked_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly molhandle_rdkit_embed_json: (a: number, b: number, c: number) => [number, number, number, number];
+    readonly molhandle_rdkit_embed_with_constraints_json: (a: number, b: number, c: number, d: number, e: number) => [number, number, number, number];
     readonly molhandle_rdkit_mol_hash: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly molhandle_rdkit_morgan_bit_info_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly molhandle_rdkit_murcko_scaffold: (a: number) => [number, number, number, number];
@@ -3700,9 +3745,11 @@ export interface InitOutput {
     readonly orca_input_to_json: (a: number, b: number) => [number, number, number, number];
     readonly orca_output_to_json: (a: number, b: number) => [number, number, number, number];
     readonly pains_matches_json: (a: number) => [number, number];
+    readonly parse_ccd_json: (a: number, b: number) => [number, number, number, number];
     readonly parse_cjson_record_json: (a: number, b: number) => [number, number, number, number];
     readonly parse_cxsmarts_json: (a: number, b: number) => [number, number, number, number];
     readonly parse_cxsmiles_json: (a: number, b: number) => [number, number, number, number];
+    readonly parse_hin_record_json: (a: number, b: number) => [number, number, number, number];
     readonly parse_mol2_record_json: (a: number, b: number) => [number, number, number, number];
     readonly parse_smiles: (a: number, b: number) => [number, number, number];
     readonly pdb_coords_json: (a: number, b: number) => [number, number];
@@ -3759,6 +3806,7 @@ export interface InitOutput {
     readonly rgroup_decompose_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly ring_families_json: (a: number) => [number, number, number, number];
     readonly roundtrip_cjson_record: (a: number, b: number) => [number, number, number, number];
+    readonly roundtrip_hin_record: (a: number, b: number) => [number, number, number, number];
     readonly roundtrip_mol2_record: (a: number, b: number) => [number, number, number, number];
     readonly roundtrip_mol_v3000_block: (a: number, b: number) => [number, number, number, number];
     readonly run_reactants: (a: number, b: number, c: number, d: number) => [number, number, number, number];
