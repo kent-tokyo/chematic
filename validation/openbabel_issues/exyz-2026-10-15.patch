@@ -1,0 +1,1255 @@
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index d6a39a4..7cacda5 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -222,6 +222,7 @@ jobs:
+           - { package: chematic-chem, target: meso_stereo_group }
+           - { package: chematic-mol, target: gro_contract }
+           - { package: chematic-mol, target: turbomole_contract }
++          - { package: chematic-mol, target: exyz_contract }
+           - { package: chematic-mol, target: rdfile_contract }
+           - { package: chematic-mol, target: gzmat_precision }
+           - { package: chematic-mol, target: sdf_selections }
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 8671e1a..7025052 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -12,6 +12,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
+ 
+ ### Added
+ 
++- Added checked ORCA-AICCM EXYZ reading/writing in Rust/Python, retaining
++  virtual atom flags, oriented lattice rows and nonzero cell offsets with
++  full floating-point precision. ASE ExtXYZ remains a separate format.
++
+ - Added checked RDKit 2026.09.1 Layered fingerprint options in Rust/Python:
+   six layer flags, path ranges, arbitrary bit lengths, rooted branched/linear
+   paths, masks and copied additive atom counters. Enumeration budgets and
+diff --git a/crates/chematic-mol/src/exyz.rs b/crates/chematic-mol/src/exyz.rs
+new file mode 100644
+index 0000000..7c28edf
+--- /dev/null
++++ b/crates/chematic-mol/src/exyz.rs
+@@ -0,0 +1,180 @@
++//! ORCA-AICCM EXYZ geometry, distinct from ASE extended XYZ.
++//! Implemented from the public Open Babel format description, without copying
++//! Open Babel source. All coordinates, lattice rows and offsets are in angstroms.
++use chematic_core::Element;
++
++mod reader;
++pub use reader::{parse_exyz, parse_exyz_with_limits};
++
++#[derive(Debug, Clone, Copy)]
++pub struct ExyzParseLimits {
++    pub max_input_bytes: usize,
++    pub max_line_len: usize,
++    pub max_atoms: usize,
++}
++impl Default for ExyzParseLimits {
++    fn default() -> Self {
++        Self {
++            max_input_bytes: 64 << 20,
++            max_line_len: 65_536,
++            max_atoms: 1_000_000,
++        }
++    }
++}
++
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub struct ExyzError {
++    /// One-based source line; zero means validation of constructed geometry.
++    pub line: usize,
++    pub detail: String,
++}
++impl core::fmt::Display for ExyzError {
++    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
++        write!(f, "EXYZ line {}: {}", self.line, self.detail)
++    }
++}
++impl std::error::Error for ExyzError {}
++fn error(line: usize, detail: impl Into<String>) -> ExyzError {
++    ExyzError {
++        line,
++        detail: detail.into(),
++    }
++}
++
++#[derive(Debug, Clone, PartialEq)]
++pub struct ExyzAtom {
++    pub element: Element,
++    pub position_angstrom: [f64; 3],
++    pub virtual_atom: bool,
++}
++
++#[derive(Debug, Clone, PartialEq)]
++pub struct ExyzCell {
++    /// Cartesian row vectors, preserving basis orientation and handedness.
++    pub lattice_angstrom: [[f64; 3]; 3],
++    /// Preserved verbatim as geometry; never added to atom positions.
++    pub offset_angstrom: [f64; 3],
++}
++
++#[derive(Debug, Clone, PartialEq)]
++pub struct ExyzGeometry {
++    /// Complete second line, including exact `%PBC` / `%VIRTUAL` tokens.
++    pub header: String,
++    pub atoms: Vec<ExyzAtom>,
++    pub cell: Option<ExyzCell>,
++    /// Original input; the writer always serializes current structured data.
++    pub source_text: String,
++}
++
++fn header_flags(header: &str) -> Result<(bool, bool), ExyzError> {
++    if header.chars().any(|c| c.is_control() && c != '\t') {
++        return Err(error(
++            2,
++            "header must be one line without control characters",
++        ));
++    }
++    let (mut pbc, mut virtual_enabled) = (false, false);
++    for token in header.split_whitespace() {
++        let flag = match token {
++            "%PBC" => &mut pbc,
++            "%VIRTUAL" => &mut virtual_enabled,
++            _ if token.starts_with('%') => return Err(error(2, "unsupported header directive")),
++            _ if token.starts_with("Lattice=") || token.starts_with("Properties=") => {
++                return Err(error(
++                    2,
++                    "ASE ExtXYZ is a different format; use parse_extxyz",
++                ));
++            }
++            _ => continue,
++        };
++        if *flag {
++            return Err(error(2, "duplicate header directive"));
++        }
++        *flag = true;
++    }
++    Ok((pbc, virtual_enabled))
++}
++
++impl ExyzGeometry {
++    /// Validate public mutable data, including consistency with header flags.
++    pub fn validate(&self) -> Result<(), ExyzError> {
++        let (pbc, virtual_enabled) = header_flags(&self.header)?;
++        let limits = ExyzParseLimits::default();
++        if self.header.len() > limits.max_line_len
++            || self.atoms.is_empty()
++            || self.atoms.len() > limits.max_atoms
++        {
++            return Err(error(0, "header or atom count outside supported limits"));
++        }
++        if pbc != self.cell.is_some() {
++            return Err(error(
++                0,
++                "%PBC must correspond to exactly one complete cell",
++            ));
++        }
++        for atom in &self.atoms {
++            if atom.position_angstrom.iter().any(|v| !v.is_finite()) {
++                return Err(error(0, "non-finite atom coordinate"));
++            }
++            if atom.virtual_atom && !virtual_enabled {
++                return Err(error(0, "VIRTUAL atom requires %VIRTUAL header"));
++            }
++        }
++        if let Some(cell) = &self.cell {
++            validate_cell(cell)?;
++        }
++        Ok(())
++    }
++}
++
++fn validate_cell(cell: &ExyzCell) -> Result<(), ExyzError> {
++    if cell.offset_angstrom.iter().any(|v| !v.is_finite()) {
++        return Err(error(0, "non-finite cell offset"));
++    }
++    let mut rows = cell.lattice_angstrom;
++    for row in &mut rows {
++        let norm = row[0].hypot(row[1]).hypot(row[2]);
++        if !norm.is_finite() || norm <= 0.0 {
++            return Err(error(0, "cell vectors must have finite positive length"));
++        }
++        for v in row {
++            *v /= norm;
++        }
++    }
++    let [a, b, c] = rows;
++    let det = a[0] * (b[1] * c[2] - b[2] * c[1]) - a[1] * (b[0] * c[2] - b[2] * c[0])
++        + a[2] * (b[0] * c[1] - b[1] * c[0]);
++    if det.abs() <= 1e-6 {
++        return Err(error(0, "singular or near-singular 3D lattice"));
++    }
++    Ok(())
++}
++
++/// Write current data with 17 decimal places in scientific notation.
++/// Does not infer bonds, charge, spin, isotopes or implicit hydrogens.
++pub fn write_exyz(geometry: &ExyzGeometry) -> Result<String, ExyzError> {
++    geometry.validate()?;
++    let mut out = format!("{}\n{}\n", geometry.atoms.len(), geometry.header);
++    for atom in &geometry.atoms {
++        let [x, y, z] = atom.position_angstrom;
++        out.push_str(&format!(
++            "{} {x:.17e} {y:.17e} {z:.17e}{}\n",
++            atom.element.symbol(),
++            if atom.virtual_atom { " VIRTUAL" } else { "" }
++        ));
++    }
++    if let Some(cell) = &geometry.cell {
++        out.push('\n');
++        for (label, [x, y, z]) in ["Vector1", "Vector2", "Vector3", "Offset"].iter().zip(
++            cell.lattice_angstrom
++                .iter()
++                .chain(std::iter::once(&cell.offset_angstrom)),
++        ) {
++            out.push_str(&format!("{label} {x:.17e} {y:.17e} {z:.17e}\n"));
++        }
++    }
++    if out.len() > ExyzParseLimits::default().max_input_bytes {
++        return Err(error(0, "serialized document exceeds byte limit"));
++    }
++    Ok(out)
++}
+diff --git a/crates/chematic-mol/src/exyz/reader.rs b/crates/chematic-mol/src/exyz/reader.rs
+new file mode 100644
+index 0000000..47b3d90
+--- /dev/null
++++ b/crates/chematic-mol/src/exyz/reader.rs
+@@ -0,0 +1,125 @@
++use super::*;
++
++/// Parse exactly one document; trailing records or unknown fields are errors.
++pub fn parse_exyz(text: &str) -> Result<ExyzGeometry, ExyzError> {
++    parse_exyz_with_limits(text, &ExyzParseLimits::default())
++}
++
++pub fn parse_exyz_with_limits(
++    text: &str,
++    limits: &ExyzParseLimits,
++) -> Result<ExyzGeometry, ExyzError> {
++    if text.len() > limits.max_input_bytes {
++        return Err(error(0, "input byte limit exceeded"));
++    }
++    for (i, line) in text.lines().enumerate() {
++        if line.len() > limits.max_line_len {
++            return Err(error(i + 1, "line length limit exceeded"));
++        }
++    }
++    let mut lines = text.lines().enumerate();
++    let first = next_line(&mut lines)?;
++    let count: usize = first
++        .1
++        .trim()
++        .parse()
++        .map_err(|_| error(1, "invalid atom count"))?;
++    if count == 0 || count > limits.max_atoms || count > ExyzParseLimits::default().max_atoms {
++        return Err(error(1, "atom count outside supported limits"));
++    }
++    // A valid atom row needs at least eight bytes; reject huge declared counts
++    // before any count-dependent allocation on tiny malformed inputs.
++    if count > text.len() / 8 {
++        return Err(error(1, "declared atom count exceeds input size"));
++    }
++    let header = next_line(&mut lines)?.1.to_string();
++    let (pbc, virtual_enabled) = header_flags(&header)?;
++    let mut atoms = Vec::new();
++    for _ in 0..count {
++        let (line, raw) = next_line(&mut lines)?;
++        atoms.push(parse_atom(raw, line, virtual_enabled)?);
++    }
++    let cell = if pbc {
++        Some(parse_cell(&mut lines)?)
++    } else {
++        None
++    };
++    for (i, line) in lines {
++        if !line.trim().is_empty() {
++            return Err(error(i + 1, "trailing data after single EXYZ document"));
++        }
++    }
++    let geometry = ExyzGeometry {
++        header,
++        atoms,
++        cell,
++        source_text: text.to_string(),
++    };
++    geometry.validate()?;
++    Ok(geometry)
++}
++
++fn next_line<'a>(
++    lines: &mut impl Iterator<Item = (usize, &'a str)>,
++) -> Result<(usize, &'a str), ExyzError> {
++    lines
++        .next()
++        .map(|(i, s)| (i + 1, s))
++        .ok_or_else(|| error(0, "unexpected end of document"))
++}
++
++fn triple(fields: &[&str], line: usize) -> Result<[f64; 3], ExyzError> {
++    let mut result = [0.0; 3];
++    for (out, field) in result.iter_mut().zip(fields) {
++        *out = field
++            .parse::<f64>()
++            .map_err(|_| error(line, "invalid Cartesian number"))?;
++        if !out.is_finite() {
++            return Err(error(line, "non-finite Cartesian number"));
++        }
++    }
++    Ok(result)
++}
++
++fn parse_atom(raw: &str, line: usize, virtual_enabled: bool) -> Result<ExyzAtom, ExyzError> {
++    let fields: Vec<_> = raw.split_whitespace().collect();
++    if fields.len() != 4 && !(fields.len() == 5 && fields[4] == "VIRTUAL" && virtual_enabled) {
++        return Err(error(
++            line,
++            "expected symbol x y z and optional enabled VIRTUAL marker",
++        ));
++    }
++    let element = Element::from_symbol(fields[0])
++        .filter(|e| e.symbol() == fields[0])
++        .ok_or_else(|| error(line, "expected a canonical element symbol"))?;
++    Ok(ExyzAtom {
++        element,
++        position_angstrom: triple(&fields[1..4], line)?,
++        virtual_atom: fields.len() == 5,
++    })
++}
++
++fn parse_cell<'a>(
++    lines: &mut impl Iterator<Item = (usize, &'a str)>,
++) -> Result<ExyzCell, ExyzError> {
++    let (line, separator) = next_line(lines)?;
++    if !separator.trim().is_empty() {
++        return Err(error(line, "expected blank separator before cell"));
++    }
++    let mut rows = [[0.0; 3]; 4];
++    for (label, row) in ["Vector1", "Vector2", "Vector3", "Offset"]
++        .iter()
++        .zip(&mut rows)
++    {
++        let (line, raw) = next_line(lines)?;
++        let fields: Vec<_> = raw.split_whitespace().collect();
++        if fields.len() != 4 || fields[0] != *label {
++            return Err(error(line, format!("expected {label} x y z")));
++        }
++        *row = triple(&fields[1..4], line)?;
++    }
++    Ok(ExyzCell {
++        lattice_angstrom: [rows[0], rows[1], rows[2]],
++        offset_angstrom: rows[3],
++    })
++}
+diff --git a/crates/chematic-mol/src/lib.rs b/crates/chematic-mol/src/lib.rs
+index fc863a0..3f707b9 100644
+--- a/crates/chematic-mol/src/lib.rs
++++ b/crates/chematic-mol/src/lib.rs
+@@ -27,6 +27,7 @@ pub mod cml;
+ pub mod conversion;
+ pub mod cube;
+ pub mod error;
++pub mod exyz;
+ pub mod gaussian;
+ pub mod gro;
+ pub mod gzmat;
+@@ -101,6 +102,10 @@ pub use cube::{
+     CubeError, CubeFileReader, CubeParseLimits, parse_cube, parse_cube_with_limits, write_cube,
+ };
+ pub use error::MolParseError as MolError;
++pub use exyz::{
++    ExyzAtom, ExyzCell, ExyzError, ExyzGeometry, ExyzParseLimits, parse_exyz,
++    parse_exyz_with_limits, write_exyz,
++};
+ pub use gaussian::{
+     GaussianError, GaussianLogResult, GaussianParseLimits, parse_gaussian_log,
+     parse_gaussian_log_with_limits, parse_gjf, parse_gjf_with_limits, write_gjf,
+diff --git a/crates/chematic-mol/tests/exyz_contract.rs b/crates/chematic-mol/tests/exyz_contract.rs
+new file mode 100644
+index 0000000..3c509e5
+--- /dev/null
++++ b/crates/chematic-mol/tests/exyz_contract.rs
+@@ -0,0 +1,168 @@
++//! Original minimal MIT OR Apache-2.0 EXYZ fixtures. Independent oracle recipe
++//! and normalized payload hashes: scripts/exyz_openbabel_gate.py.
++use chematic_core::Element;
++use chematic_mol::{
++    ExyzAtom, ExyzGeometry, ExyzParseLimits, parse_exyz, parse_exyz_with_limits, write_exyz,
++};
++
++const TEXT: &str = "2\n title  %VIRTUAL %PBC \nSi 0.12345678901234567 -2 3\nCl -1 0 2 VIRTUAL\n\nVector1 4 1 0\nVector2 -1 5 2\nVector3 1 0 -6\nOffset 0.5 -1 2\n";
++
++#[test]
++fn complete_geometry_preserves_basis_offset_flags_and_text() {
++    let g = parse_exyz(TEXT).unwrap();
++    assert_eq!(g.header, " title  %VIRTUAL %PBC ");
++    assert_eq!(g.source_text, TEXT);
++    assert_eq!(g.atoms[0].element, Element::SI);
++    assert!(!g.atoms[0].virtual_atom);
++    assert!(g.atoms[1].virtual_atom);
++    assert_eq!(g.cell.as_ref().unwrap().offset_angstrom, [0.5, -1.0, 2.0]);
++    let out = write_exyz(&g).unwrap();
++    let back = parse_exyz(&out).unwrap();
++    assert_eq!(back.header, g.header);
++    assert_eq!(back.atoms, g.atoms);
++    assert_eq!(back.cell, g.cell);
++}
++
++#[test]
++fn writer_uses_structured_data_after_edits() {
++    let mut g = parse_exyz(TEXT).unwrap();
++    g.atoms[0].position_angstrom[0] = -0.125;
++    g.atoms[1].virtual_atom = false;
++    g.cell.as_mut().unwrap().offset_angstrom = [1.0, 2.0, 3.0];
++    let back = parse_exyz(&write_exyz(&g).unwrap()).unwrap();
++    assert_eq!(g.atoms, back.atoms);
++    assert_eq!(g.cell, back.cell);
++}
++
++#[test]
++fn all_elements_and_finite_extremes_roundtrip_exactly() {
++    let mut atoms = Vec::new();
++    for number in 1..=118 {
++        atoms.push(ExyzAtom {
++            element: Element::from_atomic_number(number).unwrap(),
++            position_angstrom: [f64::MIN_POSITIVE, f64::MAX, -f64::from(number)],
++            virtual_atom: number % 2 == 0,
++        });
++    }
++    atoms[0].position_angstrom = [-0.0, f64::from_bits(1), -f64::from_bits(1)];
++    let g = ExyzGeometry {
++        header: "%VIRTUAL".into(),
++        atoms,
++        cell: None,
++        source_text: String::new(),
++    };
++    let back = parse_exyz(&write_exyz(&g).unwrap()).unwrap();
++    assert_eq!(g.atoms, back.atoms);
++    assert_eq!(
++        g.atoms[0].position_angstrom[0].to_bits(),
++        back.atoms[0].position_angstrom[0].to_bits()
++    );
++}
++
++#[test]
++fn plain_xyz_subset_crlf_and_final_newline_are_supported() {
++    for text in ["1\n\nC 0 0 0", "1\r\nplain title\r\nC 0 0 0\r\n\r\n"] {
++        let g = parse_exyz(text).unwrap();
++        assert!(g.cell.is_none());
++        assert!(!g.atoms[0].virtual_atom);
++    }
++}
++
++#[test]
++fn count_preflight_and_caller_limits_fail_before_allocation() {
++    for text in [
++        "18446744073709551615\n\n",
++        "1000000\n\nC 0 0 0\n",
++        "-1\n\n",
++        "0\n\n",
++        "2\n\nC 0 0 0\n",
++    ] {
++        assert!(parse_exyz(text).is_err(), "{text:?}");
++    }
++    for limits in [
++        ExyzParseLimits {
++            max_input_bytes: TEXT.len() - 1,
++            ..Default::default()
++        },
++        ExyzParseLimits {
++            max_atoms: 1,
++            ..Default::default()
++        },
++        ExyzParseLimits {
++            max_line_len: 5,
++            ..Default::default()
++        },
++    ] {
++        assert!(parse_exyz_with_limits(TEXT, &limits).is_err());
++    }
++}
++
++#[test]
++fn unsupported_headers_and_atom_fields_fail() {
++    for text in [
++        "1\n%UNKNOWN\nC 0 0 0\n",
++        "1\n%VIRTUAL %VIRTUAL\nC 0 0 0\n",
++        "1\nProperties=species:S:1:pos:R:3\nC 0 0 0\n",
++        "1\nLattice=\"1 0 0 0 1 0 0 0 1\"\nC 0 0 0\n",
++        "1\n\nC 0 0 0 VIRTUAL\n",
++        "1\n%VIRTUAL\nC 0 0 0 EXTRA\n",
++        "1\n\nc 0 0 0\n",
++        "1\n\n13C 0 0 0\n",
++        "1\n\nX 0 0 0\n",
++        "1\n\nC NaN 0 0\n",
++        "1\n\nC 0 inf 0\n",
++        "1\n\nC 0 0 1e999\n",
++        "1\n\nC 0 0\n",
++        "1\n\nC 0 0 0 1\n",
++        "1\n\nC 0 0 0\nextra\n",
++    ] {
++        assert!(parse_exyz(text).is_err(), "{text:?}");
++    }
++}
++
++#[test]
++fn strict_cell_block_rejects_incomplete_reordered_or_unflagged_data() {
++    for text in [
++        TEXT.replace("%PBC", ""),
++        TEXT.replace("%PBC", "%PBC %PBC"),
++        TEXT.replace("\n\nVector1", "\nVector1"),
++        TEXT.replace("Vector2", "Vector1"),
++        TEXT.replace("Offset 0.5 -1 2\n", ""),
++        TEXT.replace("Offset 0.5 -1 2", "Offset 0.5 -1"),
++        TEXT.replace("Vector1 4 1 0", "Vector1 0 0 0"),
++        TEXT.replace("Vector3 1 0 -6", "Vector3 4 1 0"),
++        TEXT.replace("Vector3 1 0 -6", "Vector3 4 1 1e-12"),
++        TEXT.replace("Offset 0.5 -1 2", "Offset NaN -1 2"),
++    ] {
++        assert!(parse_exyz(&text).is_err(), "{text:?}");
++    }
++}
++
++#[test]
++fn errors_identify_rejected_source_line() {
++    assert_eq!(parse_exyz("1\n%NO\nC 0 0 0").unwrap_err().line, 2);
++    assert_eq!(parse_exyz("1\n\nC 0 NaN 0").unwrap_err().line, 3);
++    assert_eq!(
++        parse_exyz(&TEXT.replace("Vector2", "bad"))
++            .unwrap_err()
++            .line,
++        7
++    );
++}
++
++#[test]
++fn mutable_invalid_geometry_cannot_be_written() {
++    for change in 0..7 {
++        let mut g = parse_exyz(TEXT).unwrap();
++        match change {
++            0 => g.atoms.clear(),
++            1 => g.atoms[0].position_angstrom[0] = f64::INFINITY,
++            2 => g.header = "%PBC".into(),
++            3 => g.cell = None,
++            4 => g.header.push('\n'),
++            5 => g.cell.as_mut().unwrap().offset_angstrom[0] = f64::NAN,
++            _ => g.cell.as_mut().unwrap().lattice_angstrom[0] = [0.0; 3],
++        }
++        assert!(write_exyz(&g).is_err());
++    }
++}
+diff --git a/crates/chematic-py/python/chematic/__init__.pyi b/crates/chematic-py/python/chematic/__init__.pyi
+index 0369b63..ac42e25 100644
+--- a/crates/chematic-py/python/chematic/__init__.pyi
++++ b/crates/chematic-py/python/chematic/__init__.pyi
+@@ -4974,3 +4974,12 @@ def cartesian_to_zmatrix(elements: Sequence[str], positions_angstrom: Sequence[S
+ def write_gzmat(elements: Sequence[str], positions_angstrom: Sequence[Sequence[float]], references: Sequence[Sequence[int]], *, charge: int, multiplicity: int, significant_digits: int = 17, title: str = "chematic internal coordinates", route: str = "#") -> str:
+     """Gaussian-style geometry template with explicit spin, references and precision."""
+     ...
++
++
++def parse_exyz(text: str, *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None) -> dict[str, Any]:
++    """Read ORCA-AICCM EXYZ with explicit virtual flags, lattice and offset."""
++    ...
++
++def write_exyz(elements: Sequence[str], positions_angstrom: Sequence[Sequence[float]], *, header: str = "", lattice_angstrom: Optional[Sequence[Sequence[float]]] = None, offset_angstrom: Optional[Sequence[float]] = None, virtual_atoms: Optional[Sequence[bool]] = None) -> str:
++    """Write EXYZ in angstroms, adding required PBC/virtual header directives."""
++    ...
+diff --git a/crates/chematic-py/src/formats.rs b/crates/chematic-py/src/formats.rs
+index 4633307..d6bd49d 100644
+--- a/crates/chematic-py/src/formats.rs
++++ b/crates/chematic-py/src/formats.rs
+@@ -8,6 +8,8 @@ use std::sync::Arc;
+ 
+ mod cif;
+ use cif::*;
++mod exyz;
++use exyz::*;
+ mod gro;
+ mod gzmat;
+ use gzmat::*;
+@@ -1437,6 +1439,8 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
+         rdfile_to_smiles,
+         cartesian_to_zmatrix,
+         write_gzmat,
++        parse_exyz,
++        write_exyz,
+         parse_turbomole,
+         write_turbomole,
+         parse_mmcif_residues,
+diff --git a/crates/chematic-py/src/formats/exyz.rs b/crates/chematic-py/src/formats/exyz.rs
+new file mode 100644
+index 0000000..867d7bc
+--- /dev/null
++++ b/crates/chematic-py/src/formats/exyz.rs
+@@ -0,0 +1,121 @@
++use super::*;
++
++/// Read one ORCA-AICCM EXYZ document, retaining lattice, offset and virtual flags.
++#[pyfunction]
++#[pyo3(signature=(text, *, max_input_bytes=None, max_atoms=None, max_line_len=None))]
++pub(super) fn parse_exyz<'py>(
++    py: Python<'py>,
++    text: &str,
++    max_input_bytes: Option<usize>,
++    max_atoms: Option<usize>,
++    max_line_len: Option<usize>,
++) -> PyResult<Bound<'py, PyDict>> {
++    let mut limits = chematic_mol::ExyzParseLimits::default();
++    if let Some(v) = max_input_bytes {
++        limits.max_input_bytes = v;
++    }
++    if let Some(v) = max_atoms {
++        limits.max_atoms = v;
++    }
++    if let Some(v) = max_line_len {
++        limits.max_line_len = v;
++    }
++    let g = chematic_mol::parse_exyz_with_limits(text, &limits)
++        .map_err(|e| PyValueError::new_err(e.to_string()))?;
++    let out = PyDict::new(py);
++    out.set_item("header", g.header)?;
++    out.set_item(
++        "elements",
++        g.atoms
++            .iter()
++            .map(|a| a.element.symbol())
++            .collect::<Vec<_>>(),
++    )?;
++    out.set_item(
++        "positions_angstrom",
++        g.atoms
++            .iter()
++            .map(|a| a.position_angstrom)
++            .collect::<Vec<_>>(),
++    )?;
++    out.set_item(
++        "virtual_atoms",
++        g.atoms.iter().map(|a| a.virtual_atom).collect::<Vec<_>>(),
++    )?;
++    out.set_item(
++        "lattice_angstrom",
++        g.cell.as_ref().map(|c| c.lattice_angstrom),
++    )?;
++    out.set_item(
++        "offset_angstrom",
++        g.cell.as_ref().map(|c| c.offset_angstrom),
++    )?;
++    out.set_item("source_text", g.source_text)?;
++    Ok(out)
++}
++
++/// Write explicit EXYZ geometry. Adds required header directives when absent.
++#[pyfunction]
++#[pyo3(signature=(elements, positions_angstrom, *, header="", lattice_angstrom=None, offset_angstrom=None, virtual_atoms=None))]
++pub(super) fn write_exyz(
++    elements: Vec<String>,
++    positions_angstrom: Vec<[f64; 3]>,
++    header: &str,
++    lattice_angstrom: Option<[[f64; 3]; 3]>,
++    offset_angstrom: Option<[f64; 3]>,
++    virtual_atoms: Option<Vec<bool>>,
++) -> PyResult<String> {
++    if elements.len() != positions_angstrom.len()
++        || virtual_atoms
++            .as_ref()
++            .is_some_and(|v| v.len() != elements.len())
++    {
++        return Err(PyValueError::new_err(
++            "element, position and virtual-flag counts must match",
++        ));
++    }
++    if offset_angstrom.is_some() && lattice_angstrom.is_none() {
++        return Err(PyValueError::new_err(
++            "cell offset requires lattice vectors",
++        ));
++    }
++    let mut header = header.to_string();
++    for (enabled, flag) in [
++        (lattice_angstrom.is_some(), "%PBC"),
++        (
++            virtual_atoms.as_ref().is_some_and(|v| v.iter().any(|v| *v)),
++            "%VIRTUAL",
++        ),
++    ] {
++        if enabled && !header.split_whitespace().any(|s| s == flag) {
++            if !header.is_empty() {
++                header.push(' ');
++            }
++            header.push_str(flag);
++        }
++    }
++    let mut atoms = Vec::new();
++    for (i, (symbol, position_angstrom)) in elements.into_iter().zip(positions_angstrom).enumerate()
++    {
++        let element = chematic_core::Element::from_symbol(&symbol)
++            .filter(|e| e.symbol() == symbol)
++            .ok_or_else(|| {
++                PyValueError::new_err(format!("invalid canonical element symbol '{symbol}'"))
++            })?;
++        atoms.push(chematic_mol::ExyzAtom {
++            element,
++            position_angstrom,
++            virtual_atom: virtual_atoms.as_ref().is_some_and(|v| v[i]),
++        });
++    }
++    let g = chematic_mol::ExyzGeometry {
++        header,
++        atoms,
++        cell: lattice_angstrom.map(|lattice_angstrom| chematic_mol::ExyzCell {
++            lattice_angstrom,
++            offset_angstrom: offset_angstrom.unwrap_or([0.0; 3]),
++        }),
++        source_text: String::new(),
++    };
++    chematic_mol::write_exyz(&g).map_err(|e| PyValueError::new_err(e.to_string()))
++}
+diff --git a/crates/chematic-py/tests/test_exyz.py b/crates/chematic-py/tests/test_exyz.py
+new file mode 100644
+index 0000000..1942850
+--- /dev/null
++++ b/crates/chematic-py/tests/test_exyz.py
+@@ -0,0 +1,102 @@
++"""Original MIT OR Apache-2.0 EXYZ contract cases; no third-party data."""
++import itertools
++import math
++import pytest
++import chematic
++
++TEXT = "2\n title  %VIRTUAL %PBC \nSi 0.12345678901234567 -2 3\nCl -1 0 2 VIRTUAL\n\nVector1 4 1 0\nVector2 -1 5 2\nVector3 1 0 -6\nOffset 0.5 -1 2\n"
++
++def emit(g):
++    return chematic.write_exyz(g["elements"], g["positions_angstrom"], header=g["header"],
++        lattice_angstrom=g["lattice_angstrom"], offset_angstrom=g["offset_angstrom"], virtual_atoms=g["virtual_atoms"])
++
++def test_structured_roundtrip_and_source_metadata():
++    import hashlib
++    import json
++    from pathlib import Path
++    root = Path(__file__).resolve().parents[3]
++    fixture = json.loads((root / "validation/openbabel_issues/exyz/contract-fixtures.json").read_text())["records"][0]
++    assert fixture["payload"] == TEXT
++    assert fixture["sha256"] == hashlib.sha256(TEXT.encode()).hexdigest()
++    g = chematic.parse_exyz(TEXT)
++    for key, value in fixture["expected"].items():
++        if key not in {"units", "tolerance"}:
++            assert g[key] == value
++    assert g["source_text"] == TEXT
++    assert g["header"] == " title  %VIRTUAL %PBC "
++    assert g["elements"] == ["Si", "Cl"]
++    assert g["positions_angstrom"] == [[0.12345678901234567,-2,3],[-1,0,2]]
++    assert g["virtual_atoms"] == [False, True]
++    assert g["lattice_angstrom"] == [[4,1,0],[-1,5,2],[1,0,-6]]
++    assert g["offset_angstrom"] == [0.5,-1,2]
++    back = chematic.parse_exyz(emit(g))
++    assert {k:v for k,v in back.items() if k != "source_text"} == {k:v for k,v in g.items() if k != "source_text"}
++    g["positions_angstrom"][0][0] = 0.25
++    assert chematic.parse_exyz(emit(g))["positions_angstrom"][0][0] == 0.25
++
++@pytest.mark.parametrize("periodic,virtual", list(itertools.product([False, True], repeat=2)))
++def test_writer_adds_required_flags(periodic, virtual):
++    out = chematic.write_exyz(["C"], [[1,2,3]], header="sample",
++        lattice_angstrom=[[2,0,0],[0,3,0],[0,0,-4]] if periodic else None, virtual_atoms=[virtual])
++    g = chematic.parse_exyz(out)
++    assert ("%PBC" in g["header"]) == periodic
++    assert ("%VIRTUAL" in g["header"]) == virtual
++    assert g["virtual_atoms"] == [virtual]
++    assert g["offset_angstrom"] == ([0,0,0] if periodic else None)
++
++@pytest.mark.parametrize("values", [[-0.0,5e-324,-5e-324], [1e200,-1e-200,0.12345678901234567]])
++def test_full_double_precision(values):
++    g = chematic.parse_exyz(chematic.write_exyz(["Og"], [values]))
++    assert g["positions_angstrom"][0] == values
++    assert math.copysign(1, g["positions_angstrom"][0][0]) == math.copysign(1, values[0])
++
++@pytest.mark.parametrize("text", [
++    "", "0\n\n", "2\n\nC 0 0 0\n", "99999999999999999999999\n\n",
++    "1\n\nC 0 0 0 VIRTUAL", "1\n%VIRTUAL\nC 0 0 0 EXTRA",
++    "1\nProperties=species:S:1:pos:R:3\nC 0 0 0", "1\n%NO\nC 0 0 0",
++    "1\n%VIRTUAL %VIRTUAL\nC 0 0 0", "1\n\n13C 0 0 0", "1\n\nc 0 0 0",
++    "1\n\nC NaN 0 0", "1\n\nC 1e999 0 0", "1\n\nC 0 0 0\n1\n\nC 0 0 0",
++    TEXT.replace("Offset 0.5 -1 2\n", ""), TEXT.replace("Vector2", "Vector1"),
++    TEXT.replace("Vector3 1 0 -6", "Vector3 4 1 0"), TEXT.replace("\n\nVector1", "\nVector1"),
++    TEXT.replace("%PBC", ""), TEXT.replace("Offset 0.5 -1 2", "Offset inf -1 2"),
++])
++def test_reader_rejects_invalid_data(text):
++    with pytest.raises(ValueError):
++        chematic.parse_exyz(text)
++
++@pytest.mark.parametrize("kwargs", [{"max_atoms":1}, {"max_input_bytes":2}, {"max_line_len":5}])
++def test_limits(kwargs):
++    with pytest.raises(ValueError):
++        chematic.parse_exyz(TEXT, **kwargs)
++
++@pytest.mark.parametrize("elements,positions,kwargs", [
++    ([],[],{}), (["C"],[],{}), (["c"],[[0,0,0]],{}), (["D"],[[0,0,0]],{}),
++    (["C"],[[float("nan"),0,0]],{}), (["C"],[[0,0,0]],{"virtual_atoms":[]}),
++    (["C"],[[0,0,0]],{"offset_angstrom":[1,2,3]}),
++    (["C"],[[0,0,0]],{"header":"bad\nheader"}),
++    (["C"],[[0,0,0]],{"header":"%PBC"}),
++    (["C"],[[0,0,0]],{"lattice_angstrom":[[1,0,0],[0,1,0],[1,1,0]]}),
++])
++def test_writer_rejects_invalid_data(elements,positions,kwargs):
++    with pytest.raises(ValueError):
++        chematic.write_exyz(elements, positions, **kwargs)
++
++def test_plain_xyz_subset_and_separate_ase_api():
++    assert chematic.parse_exyz("1\r\n\r\nH 0 0 0")["elements"] == ["H"]
++    text = '1\nLattice="1 0 0 0 1 0 0 0 1" Properties=species:S:1:pos:R:3\nC 0 0 0\n'
++    with pytest.raises(ValueError, match="ASE ExtXYZ"):
++        chematic.parse_exyz(text)
++    assert chematic.from_extxyz(text)["coords"] == [[0.0,0.0,0.0]]
++
++def test_shipped_type_stubs_declare_public_functions():
++    import ast
++    from pathlib import Path
++    path = Path(__file__).resolve().parents[1] / "python/chematic/__init__.pyi"
++    names = {n.name for n in ast.parse(path.read_text()).body if isinstance(n, ast.FunctionDef)}
++    assert {"parse_exyz", "write_exyz"} <= names
++
++def test_tabs_in_header_and_atom_rows_preserve_header():
++    text = "1\nlabel\t%VIRTUAL\nC\t1\t2\t3\tVIRTUAL\n"
++    g = chematic.parse_exyz(text)
++    assert g["header"] == "label\t%VIRTUAL"
++    assert chematic.parse_exyz(emit(g))["virtual_atoms"] == [True]
+diff --git a/docs/format-capabilities.md b/docs/format-capabilities.md
+index 58bcb51..488ca6f 100644
+--- a/docs/format-capabilities.md
++++ b/docs/format-capabilities.md
+@@ -58,6 +58,7 @@ exposed in that language. "—" in the WASM columns for CIF means CIF has
+ | CIF (small-molecule) | Y | Y | Y | — | — | — |
+ | PQR | Y | Y | Y | Y | Y | Y |
+ | XYZ | Y | Y | Y | — | Y | Y |
++| ORCA-AICCM EXYZ | Y | Y | Y | Y | — | — |
+ | Extended XYZ | Y | Y | Y | Y | Y | Y |
+ | QCSchema | Y | Y | Y | Y | Y | — (validation only, no writer) |
+ | ORCA input | Y | Y | Y | Y | Y | Y |
+@@ -744,3 +745,12 @@ historical and is not relabeled as a v1.1.0 artifact result.
+ Current-main integration validation is recorded in
+ `validation/results/main-integration-2026-10-11/summary.json`.
+ The earlier v1.0.20 development measurements remain historical evidence.
++
++## ORCA-AICCM EXYZ
++
++`parse_exyz` / `write_exyz` preserve explicit atom coordinates, virtual flags,
++three lattice row vectors and the cell offset in angstroms. Single-document
++validation rejects malformed counts, unsupported fields and singular cells.
++No bonds, charge, spin or hydrogens are inferred. This dialect uses `%PBC`
++and `%VIRTUAL`; the existing ASE `parse_extxyz` API uses `Lattice=` and
++`Properties=` instead. See [EXYZ scope and validation](openbabel-exyz.md).
+diff --git a/docs/openbabel-exyz.md b/docs/openbabel-exyz.md
+new file mode 100644
+index 0000000..ed79666
+--- /dev/null
++++ b/docs/openbabel-exyz.md
+@@ -0,0 +1,146 @@
++# ORCA-AICCM EXYZ geometry
++
++This candidate adds an independently implemented EXYZ reader and writer to
++Rust and Python. It follows the [Open Babel EXYZ format description](https://openbabel.org/docs/FileFormats/Extended_XYZ_cartesian_coordinates_format.html)
++(retrieved 2026-10-15). No Open Babel implementation code is incorporated.
++
++The previous candidate already supported ASE ExtXYZ in `xyz/extxyz.rs`.
++ORCA-AICCM EXYZ uses a different grammar: `%PBC`, `%VIRTUAL`, and a separate
++`Vector1`/`Vector2`/`Vector3`/`Offset` block. The existing ASE reader cannot
++represent this complete document. This implementation adds a separate API.
++
++## Python
++
++```python
++import chematic
++
++text = chematic.write_exyz(
++    ["Si", "Cl"],
++    [[0.12345678901234567, -2, 3], [-1, 0, 2]],
++    header="original synthetic example",
++    virtual_atoms=[False, True],
++    lattice_angstrom=[[4, 1, 0], [-1, 5, 2], [1, 0, -6]],
++    offset_angstrom=[0.5, -1, 2],
++)
++geometry = chematic.parse_exyz(text)
++assert geometry["virtual_atoms"] == [False, True]
++assert geometry["offset_angstrom"] == [0.5, -1.0, 2.0]
++```
++
++`parse_exyz` returns `header`, `elements`, `positions_angstrom`,
++`virtual_atoms`, `lattice_angstrom`, `offset_angstrom`, and `source_text`.
++Nonperiodic documents have `None` for both cell fields. The original second
++line is retained, including whitespace and directive order. Original source
++text is a sidecar; writing uses current structured values.
++
++The writer adds `%PBC` for an explicit lattice and `%VIRTUAL` when any atom
++is marked virtual. A supplied `%VIRTUAL` remains present even when all atom
++flags are false. A lattice without an explicit offset gets `[0, 0, 0]`.
++An offset without a lattice is an error. Parallel arrays must match exactly.
++Canonical element symbols are required; isotope aliases and dummy symbols
++are refused. Errors are Python `ValueError` exceptions.
++
++Use `from_extxyz` / `to_extxyz` for the existing Python ASE dialect.
++The new APIs do not add EXYZ to the common format conversion bridge.
++
++## Rust
++
++The crate root exports `ExyzGeometry`, `ExyzAtom`, `ExyzCell`,
++`ExyzParseLimits`, `ExyzError`, `parse_exyz`, `parse_exyz_with_limits`, and
++`write_exyz`. Each atom stores an `Element`, a Cartesian position and its
++virtual flag. The optional cell stores three Cartesian row vectors and an
++offset. All numeric quantities use angstroms.
++
++```rust
++use chematic_mol::{ExyzError, parse_exyz, write_exyz};
++
++fn edit_geometry() -> Result<String, ExyzError> {
++    let text = "1\n%VIRTUAL\nC 1 2 3 VIRTUAL\n";
++    let mut geometry = parse_exyz(text)?;
++    geometry.atoms[0].position_angstrom[0] = 0.125;
++    write_exyz(&geometry)
++}
++```
++
++Public mutable Rust fields are validated before writing, including header
++consistency. `ExyzError` has a detail and one-based source line when a field
++is rejected during parsing. Whole-document consistency errors and errors in
++constructed geometry use line zero.
++
++## Supported boundary
++
++- Exactly one document with a positive, exact atom count. Plain XYZ without
++  EXYZ directives is accepted as a nonperiodic subset. Trailing nonblank
++  data, including another frame, is refused.
++- Optional atom `VIRTUAL` markers require `%VIRTUAL`. Unknown or duplicate
++  percent directives and extra atom columns fail explicitly. ASE `Lattice=`
++  or `Properties=` headers are refused with a dialect-specific error.
++- `%PBC` requires a blank separator followed by exactly four ordered rows:
++  `Vector1`, `Vector2`, `Vector3`, `Offset`. The offset is retained and is
++  never added to atom positions. Rows are not rotated or wrapped.
++- Numeric fields must be finite. Lattice row lengths must be finite and
++  positive, and the absolute determinant of the normalized row matrix must
++  exceed `1e-6`. Both right- and left-handed cells are accepted.
++- Defaults: 64 MiB input, 65,536 bytes per line and 1,000,000 atoms. Python
++  accepts smaller limits through keyword arguments. The atom cap remains
++  a hard maximum. A tiny input with an enormous count fails before any
++  count-dependent allocation. Canonical output must fit 64 MiB.
++- Output uses scientific notation with 17 decimal places to retain finite
++  double precision, including subnormals and negative zero. Source line
++  endings may be LF or CRLF; canonical writing uses LF.
++- This is explicit geometry interchange. Bond perception, isotope metadata,
++  charge, spin, topology, implicit hydrogens, symmetry expansion, trajectories,
++  and WASM/CLI bindings are outside this API.
++
++## Validation
++
++Local candidate validation on 2026-10-15 used Open Babel **3.2.1** and Python
++3.13.6. `scripts/exyz_openbabel_gate.py` pins that oracle version and generates
++192 original documents from 12 small geometry recipes, periodic/nonperiodic
++settings, four virtual-flag styles, and LF/CRLF variants. Every document is
++checked against its original arrays and an exact structured round trip.
++The 96 periodic documents additionally pass through Open Babel CJSON and
++EXYZ output with bonding disabled (`-ab`).
++
++| Check | Result |
++|---|---|
++| Original structured round trips | 192 passed |
++| Periodic Open Babel comparisons | 96 passed |
++| CJSON coordinate maximum error | 0 Å |
++| CJSON lattice maximum error | 8.882e-16 Å |
++| Open Babel EXYZ output maximum error | 4.996e-6 Å |
++| Unexpected mismatches | 0 |
++| Rust library and new integration tests | 753 + 9 passed |
++| Python EXYZ/TURBOMOLE/GZMAT tests | 124 passed |
++
++Open Babel EXYZ output uses five decimal places. The comparison permits
++`5.00001e-6` Å for its rounded output and `2e-12` Å for CJSON lattice values.
++Those tolerances do not weaken chematic's exact internal round-trip check.
++
++The pinned oracle has observed differences, recorded separately from passing
++common geometry checks:
++
++- Its EXYZ writer omits per-atom `VIRTUAL` markers: 132 marked atoms across
++  the generated periodic cases lose their marker. chematic retains them.
++- Its EXYZ reader rejects the tested plain nonperiodic EXYZ document, asking
++  for unit-cell data even though the header has no `%PBC`.
++- Converting that plain XYZ document to EXYZ adds `%PBC` and an identity cell.
++  chematic's writer retains an absent cell.
++
++These measurements establish the stated periodic geometry contract, with
++explicit differences for virtual flags and nonperiodic behavior. They do not
++establish general Open Babel feature parity.
++
++All input geometries are original synthetic project data under
++`MIT OR Apache-2.0`; no external molecule corpus is redistributed. The report
++records per-case provenance, minimization, oracle settings, expected results
++and hashes of normalized LF UTF-8 payloads.
++
++Regenerate with a built candidate Python extension on `PYTHONPATH`:
++
++```sh
++python scripts/exyz_openbabel_gate.py --obabel /path/to/obabel
++```
++
++The standalone candidate and portable patch retain the earlier feature work.
++No primary-checkout source edits or commit/push are part of this delivery.
+diff --git a/mkdocs.yml b/mkdocs.yml
+index 6ae41cf..dad9c31 100644
+--- a/mkdocs.yml
++++ b/mkdocs.yml
+@@ -79,6 +79,7 @@ nav:
+   - Benchmark: benchmark.md
+   - Formats & Bindings:
+     - Format Capability Matrix: format-capabilities.md
++    - ORCA-AICCM EXYZ: openbabel-exyz.md
+     - Language Bindings Cross-Reference: language-bindings.md
+     - Error Handling & Limits: error-and-limits.md
+   - Reliability:
+diff --git a/scripts/exyz_openbabel_gate.py b/scripts/exyz_openbabel_gate.py
+new file mode 100644
+index 0000000..601d980
+--- /dev/null
++++ b/scripts/exyz_openbabel_gate.py
+@@ -0,0 +1,161 @@
++#!/usr/bin/env python3
++"""Validate original EXYZ geometry against pinned Open Babel, without source reuse."""
++import argparse
++import hashlib
++import itertools
++import json
++import math
++from pathlib import Path
++import subprocess
++import tempfile
++
++import chematic
++
++ROOT = Path(__file__).resolve().parents[1]
++
++
++def digest(payload):
++    return hashlib.sha256(payload).hexdigest()
++
++
++def run_obabel(executable, source, output_format):
++    command = [executable, '-iexyz', str(source), '-o' + output_format, '-ab']
++    run = subprocess.run(command, text=True, capture_output=True, check=True, timeout=10)
++    assert '1 molecule converted' in run.stderr, run.stderr
++    return run.stdout
++
++
++def emit(g):
++    return chematic.write_exyz(g['elements'], g['positions_angstrom'], header=g['header'],
++        lattice_angstrom=g['lattice_angstrom'], offset_angstrom=g['offset_angstrom'],
++        virtual_atoms=g['virtual_atoms'])
++
++
++def assert_close(got, want, tolerance):
++    assert len(got) == len(want)
++    errors = [abs(a-b) for a,b in zip(got,want)]
++    assert all(math.isfinite(v) and v <= tolerance for v in errors), (got, want)
++    return max(errors, default=0.0)
++
++
++def flat(rows):
++    return list(itertools.chain.from_iterable(rows))
++
++
++def fixture(seed, periodic, virtual_style, crlf):
++    # Small original geometries; skewed cells include a rotated row basis and
++    # both handednesses. No chemical graph or real compound dataset is used.
++    symbols = ['C','H','N','O','Si','Cl'][:seed % 6 + 1]
++    points = [[math.sin(seed+i) + 0.12345678901234567,
++               -0.75*i + seed/7, (-1)**i * (seed+i)/11] for i in range(len(symbols))]
++    flags = [virtual_style == 2 or (virtual_style == 1 and i % 2 == 0)
++             for i in range(len(symbols))]
++    theta = seed / 9
++    c, s = math.cos(theta), math.sin(theta)
++    rotate = lambda row: [c*row[0]-s*row[1], s*row[0]+c*row[1], row[2]]
++    lattice = [rotate([2+seed/8,0.25,0]), rotate([-0.5,3,0.75]),
++               rotate([0.5,-0.25,(-1)**seed*4])] if periodic else None
++    offset = [seed/3-1, -0.12345678901234567, 1.75] if periodic else None
++    header = f'original synthetic {seed}' + (' %VIRTUAL' if virtual_style == 3 else '')
++    text = chematic.write_exyz(symbols, points, header=header, lattice_angstrom=lattice,
++        offset_angstrom=offset, virtual_atoms=flags)
++    if crlf:
++        text = text.replace('\n','\r\n')
++    expected = {'elements':symbols, 'positions_angstrom':points, 'virtual_atoms':flags,
++                'lattice_angstrom':lattice, 'offset_angstrom':offset}
++    return text, expected
++
++
++def check_geometry(text):
++    g = chematic.parse_exyz(text)
++    back = chematic.parse_exyz(emit(g))
++    for key in g.keys() - {'source_text'}:
++        assert back[key] == g[key], key
++    assert g['source_text'] == text
++    return g
++
++
++def compare_periodic(executable, source, g):
++    doc = json.loads(run_obabel(executable, source, 'cjson'))
++    numbers = dict(zip(['C','H','N','O','Si','Cl'], [6,1,7,8,14,17]))
++    assert doc['atoms']['elements']['number'] == [numbers[s] for s in g['elements']]
++    cjson_error = assert_close(doc['atoms']['coords']['3d'], flat(g['positions_angstrom']), 1e-12)
++    cell_error = assert_close(doc['unitCell']['cellVectors'], flat(g['lattice_angstrom']), 2e-12)
++    output = run_obabel(executable, source, 'exyz')
++    back = chematic.parse_exyz(output)
++    assert back['elements'] == g['elements']
++    rounded_error = assert_close(flat(back['positions_angstrom']), flat(g['positions_angstrom']), 5.00001e-6)
++    rounded_cell = assert_close(flat(back['lattice_angstrom']), flat(g['lattice_angstrom']), 5.00001e-6)
++    rounded_offset = assert_close(back['offset_angstrom'], g['offset_angstrom'], 5.00001e-6)
++    # Open Babel 3.2.1 emits no per-atom VIRTUAL marker for these inputs.
++    assert back['virtual_atoms'] == [False] * len(g['elements'])
++    return cjson_error, cell_error, max(rounded_error, rounded_cell, rounded_offset), sum(g['virtual_atoms'])
++
++
++def main():
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument('--obabel', default='/opt/homebrew/bin/obabel')
++    parser.add_argument('--output', type=Path, default=ROOT/'validation/results/openbabel-exyz-2026-10-15.json')
++    args = parser.parse_args()
++    version = subprocess.check_output([args.obabel,'-V'], text=True).strip()
++    assert version.split()[2] == '3.2.1', version
++    records = []
++    maxima = [0.0, 0.0, 0.0]
++    lost_virtual_atoms = 0
++    with tempfile.TemporaryDirectory(prefix='chematic-exyz-oracle-') as directory:
++        source = Path(directory)/'geometry.exyz'
++        for seed, periodic, virtual_style, crlf in itertools.product(range(12), [False,True], range(4), [False,True]):
++            identifier = f's{seed}-p{int(periodic)}-v{virtual_style}-crlf{int(crlf)}'
++            text, expected = fixture(seed,periodic,virtual_style,crlf)
++            g = check_geometry(text)
++            for key, value in expected.items():
++                assert g[key] == value, (identifier, key)
++            if periodic:
++                source.write_bytes(text.encode())
++                *errors, dropped = compare_periodic(args.obabel, source, g)
++                maxima = [max(a,b) for a,b in zip(maxima, errors)]
++                lost_virtual_atoms += dropped
++            records.append({
++                'id': identifier, 'sha256': digest(text.replace('\r\n','\n').encode()),
++                'provenance': 'Original geometry generated by fixture() in scripts/exyz_openbabel_gate.py; 2026-10-15',
++                'license': 'MIT OR Apache-2.0', 'redistribution': 'allowed; project-authored synthetic data',
++                'minimization': '1-6 atoms; one skewed 3D cell only when periodic; flags and CRLF varied independently',
++                'oracle': 'Open Babel 3.2.1 -iexyz FILE -ocjson/-oexyz -ab' if periodic else 'exact chematic structured roundtrip only',
++                'expected': {'structured_roundtrip': 'exact', 'units': 'angstrom',
++                    'cjson_tolerance': 2e-12 if periodic else None,
++                    'openbabel_write_tolerance': 5.00001e-6 if periodic else None},
++                'status': 'passed',
++            })
++        # Record the two observed Open Babel deltas without declaring parity.
++        plain = '1\nplain\nC 0 0 0\n'
++        source.write_text(plain)
++        run = subprocess.run([args.obabel,'-iexyz',str(source),'-ocjson','-ab'], capture_output=True,text=True,check=True,timeout=10)
++        assert '0 molecules converted' in run.stderr and 'Expecting unitcell' in run.stderr
++        exyz_reader_plain = run.stderr.strip()
++        run = subprocess.run([args.obabel,'-ixyz',str(source),'-oexyz','-ab'], capture_output=True,text=True,check=True,timeout=10)
++        assert '1 molecule converted' in run.stderr
++        synthesized = chematic.parse_exyz(run.stdout)
++        assert synthesized['lattice_angstrom'] == [[1,0,0],[0,1,0],[0,0,1]]
++    payload = json.dumps(records,sort_keys=True,separators=(',',':')).encode()
++    report = {
++        'schema_version':1, 'status':'local-source-candidate; uncommitted and unpushed',
++        'oracle':version, 'scope':'192 original documents; 96 periodic Open Babel cross-reads; nonperiodic exact internal roundtrip',
++        'records':records, 'normalized_records_sha256':digest(payload),
++        'results': {'structured_roundtrips':len(records), 'periodic_openbabel_cases':96,
++            'max_cjson_coordinate_error_angstrom':maxima[0], 'max_cjson_lattice_error_angstrom':maxima[1],
++            'max_openbabel_written_error_angstrom':maxima[2], 'unexpected_mismatches':0,
++            'virtual_atoms_omitted_by_openbabel_writer':lost_virtual_atoms},
++        'observed_openbabel_deltas': {
++            'virtual_markers':'Per-atom markers omitted by Open Babel 3.2.1 EXYZ writer; not part of compatibility claim',
++            'nonperiodic_exyz_reader':exyz_reader_plain,
++            'xyz_to_exyz_writer':'Adds %PBC and identity cell to nonperiodic XYZ input'},
++        'limitations':['Single document only','No chemical bond/charge/spin/isotope inference',
++            'No WASM/CLI/common-conversion bridge bindings','Normalized lattice determinant magnitude must exceed 1e-6'],
++    }
++    args.output.parent.mkdir(parents=True,exist_ok=True)
++    args.output.write_text(json.dumps(report,indent=2)+'\n')
++    print(json.dumps(report['results'],indent=2))
++
++
++if __name__ == '__main__':
++    main()
+diff --git a/validation/openbabel_issues/exyz/contract-fixtures.json b/validation/openbabel_issues/exyz/contract-fixtures.json
+new file mode 100644
+index 0000000..7ba8236
+--- /dev/null
++++ b/validation/openbabel_issues/exyz/contract-fixtures.json
+@@ -0,0 +1,61 @@
++{
++  "schema_version": 1,
++  "records": [
++    {
++      "id": "explicit-offset-virtual-left-handed",
++      "payload": "2\n title  %VIRTUAL %PBC \nSi 0.12345678901234567 -2 3\nCl -1 0 2 VIRTUAL\n\nVector1 4 1 0\nVector2 -1 5 2\nVector3 1 0 -6\nOffset 0.5 -1 2\n",
++      "provenance": "Original synthetic geometry in Rust/Python EXYZ contract tests; authored 2026-10-15",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project data",
++      "minimization": "Two canonical elements, one virtual flag, one skewed left-handed cell and nonzero offset",
++      "oracle": "Manually specified expected arrays in exyz_contract.rs/test_exyz.py; exact finite double roundtrip",
++      "expected": {
++        "elements": [
++          "Si",
++          "Cl"
++        ],
++        "positions_angstrom": [
++          [
++            0.12345678901234566,
++            -2,
++            3
++          ],
++          [
++            -1,
++            0,
++            2
++          ]
++        ],
++        "virtual_atoms": [
++          false,
++          true
++        ],
++        "lattice_angstrom": [
++          [
++            4,
++            1,
++            0
++          ],
++          [
++            -1,
++            5,
++            2
++          ],
++          [
++            1,
++            0,
++            -6
++          ]
++        ],
++        "offset_angstrom": [
++          0.5,
++          -1,
++          2
++        ],
++        "units": "angstrom",
++        "tolerance": 0
++      },
++      "sha256": "5cd28086995a5ecaee1d8cdb40d8acc89b2edaec088ff6a82a020c0876d4fc04"
++    }
++  ]
++}
+diff --git a/validation/results/binding_surface_inventory-current.json b/validation/results/binding_surface_inventory-current.json
+index 6fc698b..1077bd1 100644
+--- a/validation/results/binding_surface_inventory-current.json
++++ b/validation/results/binding_surface_inventory-current.json
+@@ -7,9 +7,9 @@
+   "scope": "Rust source declarations only; this is not semantic parity evidence",
+   "results": {
+     "wasm_export_count": 303,
+-    "python_pyfunction_count": 188,
+-    "python_registered_count": 188,
++    "python_pyfunction_count": 190,
++    "python_registered_count": 190,
+     "python_declared_without_registration": [],
+-    "surface_sha256": "2ff99431451349968236cdcc9432de97a90c13fe4f8f52f1a5bb24a1d85e1452"
++    "surface_sha256": "5399fe77c70e9faf3eaf0825beee7d7899f85ff2d69eebf6511466da95d6d643"
+   }
+ }

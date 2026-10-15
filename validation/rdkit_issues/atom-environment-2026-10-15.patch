@@ -1,0 +1,1311 @@
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 0f91f53..c6b6430 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -225,6 +225,7 @@ jobs:
+           - { package: chematic-mol, target: exyz_contract }
+           - { package: chematic-mol, target: fhiaims_contract }
+           - { package: chematic-smiles, target: rdkit_graph_queries }
++          - { package: chematic-smiles, target: rdkit_atom_environment }
+           - { package: chematic-mol, target: rdfile_contract }
+           - { package: chematic-mol, target: gzmat_precision }
+           - { package: chematic-mol, target: sdf_selections }
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index b2d4914..a828b5a 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -12,6 +12,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
+ 
+ ### Added
+ 
++- Added bounded RDKit atom-radius environments in Rust/Python, returning
++  ordered bond indices and atom distances with hydrogen filtering and exact
++  cyclic enforceSize behavior. Budget exhaustion returns an explicit error.
++
+ - Added checked FHI-aims geometry.in reading/writing in Rust/Python, retaining
+   Cartesian/fractional coordinate kind, 0D-3D lattice rows, atom/lattice
+   constraints and optional initial charge/collinear spin values.
+diff --git a/THIRD_PARTY_NOTICES.md b/THIRD_PARTY_NOTICES.md
+index f1fe529..6b05232 100644
+--- a/THIRD_PARTY_NOTICES.md
++++ b/THIRD_PARTY_NOTICES.md
+@@ -137,6 +137,16 @@ the RDKit build. This inventory is a copyright/license notice; it is not a
+ patent or freedom-to-operate opinion. No patent clearance is claimed for any
+ algorithm merely because its reference implementation is BSD-licensed.
+ 
++### RDKit atom environment extension
++
++`crates/chematic-smiles/src/rdkit/atom_environment.rs` follows
++`findAtomEnvironmentOfRadiusN` in RDKit `Release_2026_09_1`,
++`Code/GraphMol/Subgraphs/Subgraphs.cpp` (commit
++`fece8caa860bdf6c9c82bdb9253f22a0cf87150c`), under the BSD-3-Clause notice
++above. Copyright (C) 2003-2026 Greg Landrum and other RDKit contributors.
++The ordered pending-bond semantics are retained; bounded fallible frontiers
++and independent output maps are chematic API choices.
++
+ ### RDKit graph query extensions
+ 
+ `crates/chematic-smiles/src/rdkit/graph_queries.rs` follows adjacency valence
+diff --git a/crates/chematic-py/python/chematic/__init__.pyi b/crates/chematic-py/python/chematic/__init__.pyi
+index 02b3f83..7d48a9c 100644
+--- a/crates/chematic-py/python/chematic/__init__.pyi
++++ b/crates/chematic-py/python/chematic/__init__.pyi
+@@ -374,6 +374,9 @@ class Mol:
+         """``Chem.MolFragmentToSmiles(m, atomsToUse, bondsToUse, ...)``
+         (RDKit 2026.03.1) in RDKit's atom and bond numbering."""
+         ...
++    def rdkit_atom_environment(self, radius: int, rooted_at_atom: int, *, use_hs: bool = False, enforce_size: bool = True, max_visits: int = 1_000_000, max_frontier: int = 100_000) -> dict[str, Any]:
++        """RDKit ordered bond environment and minimum atom distances in sanitized numbering."""
++        ...
+     def rdkit_adjacency_matrix(
+         self, use_bo: bool = False, *, empty_value: int = 0
+     ) -> list[list[float]]:
+diff --git a/crates/chematic-py/src/mol_methods.rs b/crates/chematic-py/src/mol_methods.rs
+index 90a6128..88fe0af 100644
+--- a/crates/chematic-py/src/mol_methods.rs
++++ b/crates/chematic-py/src/mol_methods.rs
+@@ -20,6 +20,7 @@ type PyUffTerm = (String, Vec<usize>, Vec<f64>);
+ type PyExplicitHydrogenMmffResult = (Vec<[f64; 3]>, Vec<[f64; 3]>, f64, bool, usize, f64);
+ 
+ mod analysis;
++mod atom_environment;
+ mod descriptors;
+ mod extended;
+ mod fingerprints;
+diff --git a/crates/chematic-py/src/mol_methods/atom_environment.rs b/crates/chematic-py/src/mol_methods/atom_environment.rs
+new file mode 100644
+index 0000000..b03a93b
+--- /dev/null
++++ b/crates/chematic-py/src/mol_methods/atom_environment.rs
+@@ -0,0 +1,38 @@
++use super::*;
++
++#[pymethods]
++impl Mol {
++    /// RDKit FindAtomEnvironmentOfRadiusN, returning ordered bond_indices and
++    /// atom_distances in sanitized model numbering. Inputs: <=1024 atoms/16384
++    /// bonds. Budgets fail without returning a truncated result or mutating Mol.
++    #[pyo3(signature=(radius, rooted_at_atom, *, use_hs=false, enforce_size=true, max_visits=1_000_000, max_frontier=100_000))]
++    #[allow(clippy::too_many_arguments)]
++    fn rdkit_atom_environment<'py>(
++        &self,
++        py: Python<'py>,
++        radius: u32,
++        rooted_at_atom: usize,
++        use_hs: bool,
++        enforce_size: bool,
++        max_visits: usize,
++        max_frontier: usize,
++    ) -> PyResult<Bound<'py, PyDict>> {
++        let limits = chematic_smiles::RdkitAtomEnvironmentLimits {
++            max_visits,
++            max_frontier,
++        };
++        let result = chematic_smiles::rdkit_atom_environment_with_limits(
++            &self.inner,
++            radius,
++            rooted_at_atom,
++            use_hs,
++            enforce_size,
++            &limits,
++        )
++        .map_err(|e| PyValueError::new_err(e.to_string()))?;
++        let out = PyDict::new(py);
++        out.set_item("bond_indices", result.bond_indices)?;
++        out.set_item("atom_distances", result.atom_distances)?;
++        Ok(out)
++    }
++}
+diff --git a/crates/chematic-py/tests/test_rdkit_atom_environment.py b/crates/chematic-py/tests/test_rdkit_atom_environment.py
+new file mode 100644
+index 0000000..21ea3ff
+--- /dev/null
++++ b/crates/chematic-py/tests/test_rdkit_atom_environment.py
+@@ -0,0 +1,53 @@
++"""Original minimal atom environments; oracle/fixture hashes in validation."""
++import ast
++from pathlib import Path
++import pytest
++import chematic
++
++@pytest.mark.parametrize("radius,enforce,bonds,distances",[
++    (0,True,[],{0:0}),(1,True,[0],{0:0,1:1}),(2,True,[0,1],{0:0,1:1,2:2}),
++    (3,True,[],{}),(3,False,[0,1],{0:0,1:1,2:2}),(2**32-1,False,[0,1],{0:0,1:1,2:2}),
++])
++def test_chain(radius,enforce,bonds,distances):
++    assert chematic.from_smiles("CCO").rdkit_atom_environment(radius,0,enforce_size=enforce)=={"bond_indices":bonds,"atom_distances":distances}
++
++@pytest.mark.parametrize("radius",[2,3])
++def test_cyclic_pending_duplicates(radius):
++    r=chematic.from_smiles("C1CCC1").rdkit_atom_environment(radius,0)
++    assert r=={"bond_indices":[0,3,1,2],"atom_distances":{0:0,1:1,2:2,3:1}}
++
++def test_h_root_filter_and_added_hs():
++    m=chematic.from_smiles("[2H]C")
++    assert m.rdkit_atom_environment(1,0)["bond_indices"]==[0]
++    assert m.rdkit_atom_environment(1,1)["atom_distances"]=={}
++    assert m.rdkit_atom_environment(1,1,use_hs=True)["bond_indices"]==[0]
++    m=chematic.from_smiles("C").rdkit_add_hydrogens()
++    assert m.rdkit_atom_environment(1,0)["bond_indices"]==[]
++    assert m.rdkit_atom_environment(1,0,use_hs=True)["bond_indices"]==[0,1,2,3]
++
++@pytest.mark.parametrize("kwargs",[{"max_visits":2},{"max_frontier":2},{"max_visits":0}])
++def test_budgets(kwargs):
++    with pytest.raises(ValueError,match="resource limit"):
++        chematic.from_smiles("CC(C)C").rdkit_atom_environment(1,1,**kwargs)
++
++def test_radius_zero_needs_no_frontier_budget():
++    assert chematic.from_smiles("C").rdkit_atom_environment(0,0,max_visits=0,max_frontier=0)=={"bond_indices":[],"atom_distances":{0:0}}
++
++def test_independent_results_and_source_properties():
++    m=chematic.from_smiles("C1CCC1");before=m.smiles;m.SetIntProp("sentinel",9708)
++    r=m.rdkit_atom_environment(2,0);r["bond_indices"].clear();r["atom_distances"][99]=88
++    assert m.rdkit_atom_environment(2,0)["bond_indices"]==[0,3,1,2]
++    assert 99 not in m.rdkit_atom_environment(0,0)["atom_distances"]
++    assert m.smiles==before and m.GetIntProp("sentinel")==9708
++
++@pytest.mark.parametrize("root",[1,99])
++def test_indices_refer_to_h_suppressed_model(root):
++    with pytest.raises(ValueError):chematic.from_smiles("[H]C([H])([H])[H]").rdkit_atom_environment(0,root)
++
++def test_input_cap_empty_model_and_stubs():
++    with pytest.raises(ValueError,match="1026 atoms"):
++        chematic.from_smiles(".".join(["[H]C"]*513)).rdkit_atom_environment(0,0)
++    with pytest.raises(ValueError):chematic.RWMol().GetMol().rdkit_atom_environment(0,0)
++    p=Path(__file__).resolve().parents[1]/"python/chematic/__init__.pyi"
++    cls=next(n for n in ast.parse(p.read_text()).body if isinstance(n,ast.ClassDef) and n.name=="Mol")
++    assert "rdkit_atom_environment" in {n.name for n in cls.body if isinstance(n,ast.FunctionDef)}
+diff --git a/crates/chematic-smiles/src/lib.rs b/crates/chematic-smiles/src/lib.rs
+index 6ef11bc..003c5a6 100644
+--- a/crates/chematic-smiles/src/lib.rs
++++ b/crates/chematic-smiles/src/lib.rs
+@@ -60,13 +60,15 @@ pub use error::SmilesError;
+ pub use parser::{SmilesParseLimits, parse, parse_template, parse_with_limits};
+ pub use random_smiles::{random_smiles, random_smiles_vect};
+ pub use rdkit::{
+-    InchiOutputAtom, InchiOutputStereo0D, RdkitAlignment, RdkitChemistryProblem, RdkitCleanupEdits,
+-    RdkitHashFunction, RdkitLegacyStereo, RdkitMol2Molecule, RdkitMolBlock, RdkitMolBlockAtom,
+-    RdkitMolBlockBond, RdkitMolView, RdkitPdbMolecule, RdkitSanitizedModel, RdkitSmilesError,
+-    RdkitSmilesParams, RdkitTautomerEnumeration, RdkitTautomerStatus, RdkitViewAtom, RdkitViewBond,
+-    Transform3D, rdkit_2d_coords, rdkit_added_hs_molecule, rdkit_addhs_first_pattern,
+-    rdkit_adjacency_matrix, rdkit_align_mol, rdkit_align_points, rdkit_all_conformer_best_rms,
+-    rdkit_all_conformer_best_rms_to_ref, rdkit_atom_stereocenter_counts, rdkit_best_rms,
++    InchiOutputAtom, InchiOutputStereo0D, RdkitAlignment, RdkitAtomEnvironment,
++    RdkitAtomEnvironmentLimits, RdkitChemistryProblem, RdkitCleanupEdits, RdkitHashFunction,
++    RdkitLegacyStereo, RdkitMol2Molecule, RdkitMolBlock, RdkitMolBlockAtom, RdkitMolBlockBond,
++    RdkitMolView, RdkitPdbMolecule, RdkitSanitizedModel, RdkitSmilesError, RdkitSmilesParams,
++    RdkitTautomerEnumeration, RdkitTautomerStatus, RdkitViewAtom, RdkitViewBond, Transform3D,
++    rdkit_2d_coords, rdkit_added_hs_molecule, rdkit_addhs_first_pattern, rdkit_adjacency_matrix,
++    rdkit_align_mol, rdkit_align_points, rdkit_all_conformer_best_rms,
++    rdkit_all_conformer_best_rms_to_ref, rdkit_atom_environment,
++    rdkit_atom_environment_with_limits, rdkit_atom_stereocenter_counts, rdkit_best_rms,
+     rdkit_calc_rms, rdkit_canonical_smiles, rdkit_canonical_tautomer, rdkit_chiral_centers,
+     rdkit_cleanup_edits, rdkit_crippen_contribs, rdkit_crippen_contribs_no_hs,
+     rdkit_crippen_logp_mr, rdkit_cx_smarts, rdkit_cx_smiles, rdkit_detect_chemistry_problems,
+diff --git a/crates/chematic-smiles/src/rdkit/atom_environment.rs b/crates/chematic-smiles/src/rdkit/atom_environment.rs
+new file mode 100644
+index 0000000..32f6025
+--- /dev/null
++++ b/crates/chematic-smiles/src/rdkit/atom_environment.rs
+@@ -0,0 +1,154 @@
++//! Atom environments following RDKit Release_2026_09_1 Subgraphs.cpp.
++//! Copyright (C) 2003-2026 Greg Landrum and other RDKit contributors.
++//! BSD-3-Clause; see THIRD_PARTY_NOTICES.md. The ordered bond frontier, including
++//! duplicate pending bonds, is necessary for upstream enforceSize behavior.
++use super::{RdkitSmilesError, graph_queries, mol::Mol};
++use chematic_core::Molecule;
++use std::collections::BTreeMap;
++
++#[derive(Debug, Clone, Copy)]
++pub struct RdkitAtomEnvironmentLimits {
++    /// Maximum number of popped frontier entries, including duplicates.
++    pub max_visits: usize,
++    /// Maximum pending entries in either one-layer frontier.
++    pub max_frontier: usize,
++}
++impl Default for RdkitAtomEnvironmentLimits {
++    fn default() -> Self {
++        Self {
++            max_visits: 1_000_000,
++            max_frontier: 100_000,
++        }
++    }
++}
++
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub struct RdkitAtomEnvironment {
++    /// Ordered model bond indices, as in FindAtomEnvironmentOfRadiusN.
++    pub bond_indices: Vec<usize>,
++    /// Model atom index -> minimum radius; returned independently of caller maps.
++    pub atom_distances: BTreeMap<usize, u32>,
++}
++
++fn unsupported(detail: impl Into<String>) -> RdkitSmilesError {
++    RdkitSmilesError::Unsupported(detail.into())
++}
++
++/// FindAtomEnvironmentOfRadiusN on the existing sanitized RDKit model.
++/// Graph H removal, atom/bond order and input caps match rdkit_shortest_path.
++/// With use_hs=false only *neighbor* hydrogens are skipped; an H root can still
++/// reach a heavy atom. Radius zero returns no bonds and {root: 0}.
++pub fn rdkit_atom_environment(
++    mol: &Molecule,
++    radius: u32,
++    rooted_at_atom: usize,
++    use_hs: bool,
++    enforce_size: bool,
++) -> Result<RdkitAtomEnvironment, RdkitSmilesError> {
++    rdkit_atom_environment_with_limits(
++        mol,
++        radius,
++        rooted_at_atom,
++        use_hs,
++        enforce_size,
++        &RdkitAtomEnvironmentLimits::default(),
++    )
++}
++
++/// Bounded ordered bond expansion. Exhausting a requested radius returns empty
++/// bonds and map when enforce_size=true, or the accumulated environment otherwise.
++/// Pending duplicate bonds can satisfy a final layer without adding new bonds,
++/// as in upstream cyclic environments. Limits return errors, never partial data.
++pub fn rdkit_atom_environment_with_limits(
++    mol: &Molecule,
++    radius: u32,
++    rooted_at_atom: usize,
++    use_hs: bool,
++    enforce_size: bool,
++    limits: &RdkitAtomEnvironmentLimits,
++) -> Result<RdkitAtomEnvironment, RdkitSmilesError> {
++    let model = graph_queries::prepare(mol)?;
++    if rooted_at_atom >= model.atoms.len() {
++        return Err(unsupported("atom environment root is out of range"));
++    }
++    let mut result = RdkitAtomEnvironment {
++        bond_indices: Vec::new(),
++        atom_distances: BTreeMap::from([(rooted_at_atom, 0)]),
++    };
++    if radius == 0 {
++        return Ok(result);
++    }
++    let mut frontier = Vec::new();
++    let mut next = Vec::new();
++    let mut seen = Vec::new();
++    seen.try_reserve_exact(model.bonds.len())
++        .map_err(|e| unsupported(format!("environment allocation failed: {e}")))?;
++    seen.resize(model.bonds.len(), false);
++    result
++        .bond_indices
++        .try_reserve_exact(model.bonds.len())
++        .map_err(|e| unsupported(format!("environment allocation failed: {e}")))?;
++    append_neighbors(&model, rooted_at_atom, use_hs, &seen, &mut frontier, limits)?;
++    let mut visits = 0;
++    let mut processed = 0;
++    for layer in 0..radius {
++        if frontier.is_empty() {
++            break;
++        }
++        next.clear();
++        for &(start, bond_index) in &frontier {
++            if visits >= limits.max_visits {
++                return Err(unsupported(
++                    "atom environment visit resource limit exceeded",
++                ));
++            }
++            visits += 1;
++            if seen[bond_index] {
++                continue;
++            }
++            seen[bond_index] = true;
++            result.bond_indices.push(bond_index);
++            let other = model.bonds[bond_index].other(start);
++            result
++                .atom_distances
++                .entry(other)
++                .and_modify(|v| *v = (*v).min(layer + 1))
++                .or_insert(layer + 1);
++            if layer < radius - 1 {
++                append_neighbors(&model, other, use_hs, &seen, &mut next, limits)?;
++            }
++        }
++        processed += 1;
++        std::mem::swap(&mut frontier, &mut next);
++    }
++    if processed != radius && enforce_size {
++        result.bond_indices.clear();
++        result.atom_distances.clear();
++    }
++    Ok(result)
++}
++
++fn append_neighbors(
++    model: &Mol,
++    atom: usize,
++    use_hs: bool,
++    seen: &[bool],
++    frontier: &mut Vec<(usize, usize)>,
++    limits: &RdkitAtomEnvironmentLimits,
++) -> Result<(), RdkitSmilesError> {
++    for &bond in &model.atom_bonds[atom] {
++        if seen[bond] || (!use_hs && model.atoms[model.bonds[bond].other(atom)].anum == 1) {
++            continue;
++        }
++        if frontier.len() >= limits.max_frontier {
++            return Err(unsupported(
++                "atom environment frontier resource limit exceeded",
++            ));
++        }
++        frontier
++            .try_reserve(1)
++            .map_err(|e| unsupported(format!("environment allocation failed: {e}")))?;
++        frontier.push((atom, bond));
++    }
++    Ok(())
++}
+diff --git a/crates/chematic-smiles/src/rdkit/graph_queries.rs b/crates/chematic-smiles/src/rdkit/graph_queries.rs
+index 5036665..e9f33f8 100644
+--- a/crates/chematic-smiles/src/rdkit/graph_queries.rs
++++ b/crates/chematic-smiles/src/rdkit/graph_queries.rs
+@@ -10,7 +10,7 @@ fn unsupported(detail: impl Into<String>) -> RdkitSmilesError {
+     RdkitSmilesError::Unsupported(detail.into())
+ }
+ 
+-fn prepare(mol: &Molecule) -> Result<Mol, RdkitSmilesError> {
++pub(super) fn prepare(mol: &Molecule) -> Result<Mol, RdkitSmilesError> {
+     if mol.atom_count() > 1024 || mol.bond_count() > 16_384 {
+         return Err(unsupported(format!(
+             "graph query resource limit: {} atoms / {} bonds; maxima are 1024 / 16384",
+diff --git a/crates/chematic-smiles/src/rdkit/mod.rs b/crates/chematic-smiles/src/rdkit/mod.rs
+index c96ec3d..d33bacd 100644
+--- a/crates/chematic-smiles/src/rdkit/mod.rs
++++ b/crates/chematic-smiles/src/rdkit/mod.rs
+@@ -34,6 +34,7 @@
+ 
+ mod align;
+ mod aromaticity;
++mod atom_environment;
+ mod canon;
+ mod crippen_params;
+ mod depict;
+@@ -392,6 +393,10 @@ pub fn rdkit_num_atoms(mol: &Molecule) -> Result<usize, RdkitSmilesError> {
+     Ok(rdkit_mol_for_writing(mol)?.atoms.len())
+ }
+ 
++pub use atom_environment::{
++    RdkitAtomEnvironment, RdkitAtomEnvironmentLimits, rdkit_atom_environment,
++    rdkit_atom_environment_with_limits,
++};
+ pub use graph_queries::{rdkit_adjacency_matrix, rdkit_shortest_path};
+ pub use matrices::{rdkit_distance_matrix, rdkit_distance_matrix_3d};
+ 
+diff --git a/crates/chematic-smiles/tests/rdkit_atom_environment.rs b/crates/chematic-smiles/tests/rdkit_atom_environment.rs
+new file mode 100644
+index 0000000..2c36e27
+--- /dev/null
++++ b/crates/chematic-smiles/tests/rdkit_atom_environment.rs
+@@ -0,0 +1,183 @@
++//! Original MIT OR Apache-2.0 fixtures; pinned oracle manifest accompanies gate.
++use chematic_core::{Atom, Element, MoleculeBuilder};
++use chematic_smiles::{
++    RdkitAtomEnvironmentLimits, parse, rdkit_atom_environment, rdkit_atom_environment_with_limits,
++};
++use std::collections::BTreeMap;
++
++#[test]
++fn radius_zero_and_linear_exhaustion_have_distinct_maps() {
++    let m = parse("CCO").unwrap();
++    let r = rdkit_atom_environment(&m, 0, 1, false, true).unwrap();
++    assert!(r.bond_indices.is_empty());
++    assert_eq!(r.atom_distances, BTreeMap::from([(1, 0)]));
++    let r = rdkit_atom_environment(&m, 2, 0, false, true).unwrap();
++    assert_eq!(r.bond_indices, [0, 1]);
++    assert_eq!(r.atom_distances, BTreeMap::from([(0, 0), (1, 1), (2, 2)]));
++    let r = rdkit_atom_environment(&m, 3, 0, false, true).unwrap();
++    assert!(r.bond_indices.is_empty() && r.atom_distances.is_empty());
++    let r = rdkit_atom_environment(&m, u32::MAX, 0, false, false).unwrap();
++    assert_eq!(r.bond_indices, [0, 1]);
++    assert_eq!(r.atom_distances.len(), 3);
++}
++
++#[test]
++fn pending_ring_duplicates_preserve_upstream_enforce_size_behavior() {
++    let m = parse("C1CCC1").unwrap();
++    for radius in [2, 3] {
++        let r = rdkit_atom_environment(&m, radius, 0, false, true).unwrap();
++        assert_eq!(r.bond_indices, [0, 3, 1, 2]);
++        assert_eq!(
++            r.atom_distances,
++            BTreeMap::from([(0, 0), (1, 1), (2, 2), (3, 1)])
++        );
++    }
++    assert!(
++        rdkit_atom_environment(&m, 4, 0, false, true)
++            .unwrap()
++            .atom_distances
++            .is_empty()
++    );
++    assert_eq!(
++        rdkit_atom_environment(&m, 2, 3, false, true)
++            .unwrap()
++            .bond_indices,
++        [2, 3, 1, 0]
++    );
++}
++
++#[test]
++fn hydrogen_filter_checks_neighbor_and_not_root_element() {
++    let m = parse("[2H]C").unwrap();
++    assert_eq!(
++        rdkit_atom_environment(&m, 1, 0, false, true)
++            .unwrap()
++            .bond_indices,
++        [0]
++    );
++    assert!(
++        rdkit_atom_environment(&m, 1, 1, false, true)
++            .unwrap()
++            .atom_distances
++            .is_empty()
++    );
++    assert_eq!(
++        rdkit_atom_environment(&m, 1, 1, true, true)
++            .unwrap()
++            .bond_indices,
++        [0]
++    );
++    let m = parse("[H][H]").unwrap();
++    assert!(
++        rdkit_atom_environment(&m, 1, 0, false, true)
++            .unwrap()
++            .bond_indices
++            .is_empty()
++    );
++}
++
++#[test]
++fn dative_and_disconnected_components_follow_graph_semantics() {
++    let m = parse("N->[Cu].O").unwrap();
++    assert_eq!(
++        rdkit_atom_environment(&m, 1, 1, false, true)
++            .unwrap()
++            .bond_indices,
++        [0]
++    );
++    assert!(
++        rdkit_atom_environment(&m, 1, 2, false, true)
++            .unwrap()
++            .atom_distances
++            .is_empty()
++    );
++    assert_eq!(
++        rdkit_atom_environment(&m, 1, 2, false, false)
++            .unwrap()
++            .atom_distances,
++        BTreeMap::from([(2, 0)])
++    );
++}
++
++#[test]
++fn frontier_and_visit_budgets_fail_without_partial_results() {
++    let m = parse("CC(C)C").unwrap();
++    for limits in [
++        RdkitAtomEnvironmentLimits {
++            max_visits: 2,
++            max_frontier: 100,
++        },
++        RdkitAtomEnvironmentLimits {
++            max_visits: 100,
++            max_frontier: 2,
++        },
++    ] {
++        assert!(
++            rdkit_atom_environment_with_limits(&m, 1, 1, false, false, &limits)
++                .unwrap_err()
++                .to_string()
++                .contains("resource limit")
++        );
++    }
++    let limits = RdkitAtomEnvironmentLimits {
++        max_visits: 0,
++        max_frontier: 0,
++    };
++    assert_eq!(
++        rdkit_atom_environment_with_limits(&m, 0, 1, false, true, &limits)
++            .unwrap()
++            .atom_distances,
++        BTreeMap::from([(1, 0)])
++    );
++    // Radius 3 in this ring visits a duplicate frontier entry after four bonds.
++    let m = parse("C1CCC1").unwrap();
++    let limits = RdkitAtomEnvironmentLimits {
++        max_visits: 4,
++        max_frontier: 100,
++    };
++    assert!(rdkit_atom_environment_with_limits(&m, 3, 0, false, true, &limits).is_err());
++}
++
++#[test]
++fn limits_precede_preparation_and_h_removal() {
++    let m = parse(&vec!["[H]C"; 513].join(".")).unwrap();
++    assert!(
++        rdkit_atom_environment(&m, 0, 0, false, true)
++            .unwrap_err()
++            .to_string()
++            .contains("1026 atoms")
++    );
++    let mut b = MoleculeBuilder::new();
++    for _ in 0..65_536 {
++        b.add_atom(Atom::new(Element::C));
++    }
++    assert!(
++        rdkit_atom_environment(&b.build(), 0, 0, false, true)
++            .unwrap_err()
++            .to_string()
++            .contains("resource limit")
++    );
++}
++
++#[test]
++fn exact_atom_cap_and_huge_radius_are_bounded_by_graph_exhaustion() {
++    let m = parse(&"C".repeat(1024)).unwrap();
++    let r = rdkit_atom_environment(&m, u32::MAX, 0, false, false).unwrap();
++    assert_eq!(r.bond_indices, (0..1023).collect::<Vec<_>>());
++    assert_eq!(r.atom_distances[&1023], 1023);
++    assert!(
++        rdkit_atom_environment(&m, u32::MAX, 0, false, true)
++            .unwrap()
++            .atom_distances
++            .is_empty()
++    );
++}
++
++#[test]
++fn invalid_roots_query_bonds_and_empty_molecules_fail_explicitly() {
++    let m = parse("[H]C([H])([H])[H]").unwrap();
++    assert!(rdkit_atom_environment(&m, 0, 1, false, true).is_err());
++    assert!(rdkit_atom_environment(&m, 0, usize::MAX, false, true).is_err());
++    assert!(rdkit_atom_environment(&parse("C~N").unwrap(), 1, 0, true, true).is_err());
++    assert!(rdkit_atom_environment(&MoleculeBuilder::new().build(), 0, 0, false, true).is_err());
++}
+diff --git a/docs/rdkit-atom-environment.md b/docs/rdkit-atom-environment.md
+new file mode 100644
+index 0000000..7291bb0
+--- /dev/null
++++ b/docs/rdkit-atom-environment.md
+@@ -0,0 +1,158 @@
++# RDKit atom-radius environments
++
++This candidate adds Rust `rdkit_atom_environment` and Python
++`Mol.rdkit_atom_environment()`, corresponding to
++[RDKit's FindAtomEnvironmentOfRadiusN](https://www.rdkit.org/docs/source/rdkit.Chem.rdmolops.html#rdkit.Chem.rdmolops.FindAtomEnvironmentOfRadiusN).
++The previous candidate had a private, diagnostics-only atom-ball BFS and
++Morgan expansion traces; neither exposed ordered radius bond environments or
++the complete `useHs`/`enforceSize` contract.
++
++The reference is RDKit **2026.09.1**, tag `Release_2026_09_1`, commit
++`fece8caa860bdf6c9c82bdb9253f22a0cf87150c`, specifically
++`Code/GraphMol/Subgraphs/Subgraphs.cpp::findAtomEnvironmentOfRadiusN`.
++The implementation retains its BSD-3-Clause attribution in
++`THIRD_PARTY_NOTICES.md` and adds no RDKit binary dependency.
++
++## Python
++
++```python
++import chematic
++
++mol = chematic.from_smiles("CCO")
++environment = mol.rdkit_atom_environment(2, 0)
++assert environment == {
++    "bond_indices": [0, 1],
++    "atom_distances": {0: 0, 1: 1, 2: 2},
++}
++assert mol.rdkit_atom_environment(3, 0) == {
++    "bond_indices": [], "atom_distances": {},
++}
++assert mol.rdkit_atom_environment(3, 0, enforce_size=False) == environment
++```
++
++The signature is:
++
++```python
++mol.rdkit_atom_environment(
++    radius, rooted_at_atom, *, use_hs=False, enforce_size=True,
++    max_visits=1_000_000, max_frontier=100_000,
++)
++```
++
++The result contains an ordered `bond_indices` list and an `atom_distances`
++dictionary mapping atom indices to minimum bond-hop radius. Unlike RDKit's
++optional `atomMap` output argument, this API returns an independent dictionary
++and accepts no mutable caller map. Rust uses a `BTreeMap`, so output dictionary
++iteration is ascending by atom index; RDKit dictionary iteration order is not
++part of the compatibility claim. Mapping values and bond-list order are exact.
++
++## Rust
++
++The crate root exports:
++
++- `RdkitAtomEnvironment { bond_indices, atom_distances }`;
++- `RdkitAtomEnvironmentLimits { max_visits, max_frontier }`;
++- `rdkit_atom_environment(mol, radius, rooted_at_atom, use_hs, enforce_size)`;
++- `rdkit_atom_environment_with_limits(..., &limits)`.
++
++Both functions return `Result<RdkitAtomEnvironment, RdkitSmilesError>`.
++The default function uses the same budgets as Python. Invalid roots,
++unsupported model input and exhausted search budgets return explicit errors.
++No partial environment is returned on failure. Python computation errors are
++`ValueError`; unsigned argument extraction can produce a different exception
++for negative/out-of-range integers.
++
++## Exact behavior and boundaries
++
++These functions reuse the existing sanitized RDKit model and its ordered
++neighbor lists. Atom and bond IDs refer to that model, not necessarily the raw
++chematic graph. Graph-H removal and explicit `rdkit_add_hydrogens()` follow
++the same preparation policy as the existing graph-query/distance APIs.
++For `[H]C([H])([H])[H]`, the prepared model contains one carbon atom.
++After `rdkit_add_hydrogens()`, its explicit hydrogen atoms remain available.
++
++Important boundaries covered by the implementation and oracle:
++
++- Radius zero returns an empty bond list and `{root: 0}`.
++- Positive radii expand ordered bond frontiers. Each bond is returned once,
++  in discovery order. Atom distances retain their minimum value.
++- With `use_hs=False`, hydrogen **neighbors** are skipped. A hydrogen root
++  can still reach a heavy neighbor. Thus `[2H]C` rooted at the H includes
++  its bond at radius 1, while the C root excludes the H unless `use_hs=True`.
++  Hydrogen isotope labels do not bypass this neighbor filter.
++- `enforce_size=True` empties both outputs when the requested frontier depth
++  cannot be reached. `False` returns everything accumulated before exhaustion.
++- Pending duplicate bonds are retained in the frontier even though already
++  returned bonds are never emitted twice. This affects the final depth check
++  in cycles. For `C1CCC1`, root 0 gives `[0, 3, 1, 2]` at both radius 2 and
++  radius 3 with size enforcement, while radius 4 empties both outputs. A
++  plain atom-distance ball or deduplicated queue would change this behavior.
++- Bonds are traversed as graph connections, including both directions of
++  dative bonds. This differs from endpoint-weighted adjacency contributions.
++- Out-of-range prepared-model roots fail explicitly. Raw input indices must
++  be remapped when H removal changes numbering: a raw index that remains in
++  range addresses that prepared-model atom, not its former input identity.
++  An empty molecule has no valid root. Query/zero bonds and other unsupported
++  sanitized-model inputs are refused, as in existing named graph APIs.
++
++Input caps are 1024 atoms and 16,384 bonds, checked before model preparation
++or H removal. The visit budget counts every popped frontier entry, including
++duplicates; the frontier budget caps pending entries in each individual layer.
++Frontier and bond-list allocation is fallible. These budgets cover expansion;
++model preparation remains subject to the input caps.
++
++Radius is an unsigned 32-bit value. There is no radius-sized buffer or
++unconditional radius-sized loop: traversal stops when the finite frontier is
++empty or a budget is exceeded. Tests include `UINT32_MAX` on a 1024-atom chain.
++A radius-zero call needs no frontier budget and succeeds with both budgets 0
++for a supported, valid root.
++
++The operation preserves molecule properties and serialization. Results from
++separate calls can be edited independently. This delivery adds native Rust
++and Python methods; it does not extend WASM or the `rdkit_compat` facade.
++
++## Validation
++
++`scripts/validate_rdkit_atom_environment.py` pins RDKit 2026.09.1 and verifies
++the manifest and individual normalized UTF-8 SMILES hashes. Its 30 original
++minimal project structures are recorded with provenance, license,
++redistribution, minimization, oracle settings and expectations in
++`validation/rdkit_issues/atom-environment/fixtures.json`. They are covered by
++`MIT OR Apache-2.0`; no external molecule dataset is redistributed.
++
++The gate includes every model root, both hydrogen and size flags, radii from
++0 through `min(9, n+2)` plus `UINT32_MAX`, H removal/addition, and identity,
++reversed and seeded shuffled atom orders where distinct. It compares against
++an RDKit map seeded with unrelated values to verify the upstream map-clearing
++contract. Adjacency and atom counts first establish the prepared indexed
++graph, and serialization plus a sentinel property must remain unchanged.
++
++| Local check, 2026-10-15 | Result |
++|---|---|
++| Original fixtures / graph variants | 30 / 162 |
++| Exact environment comparisons | 43,236 |
++| Ordered bond IDs compared | 165,177 |
++| Atom distances compared | 176,798 |
++| Radius-zero cases | 4,292 |
++| Cases with changed atom order | 28,656 |
++| Unexpected mismatches | 0 |
++| Rust library + environment/graph/matrix integration tests | 406 passed; 1 pre-existing manual test ignored |
++| Python environment/graph/matrix/renumber/FHI-aims tests | 106 passed |
++
++Additional Rust/Python contracts cover the exact atom cap, H removal after the
++input cap, a graph above 65,535 atoms, invalid roots, query-bond refusal,
++visit/frontier failures, cyclic duplicate visits, detached outputs and zero
++budgets for radius zero. The prepared-model and ordinary distance/graph APIs
++share the existing code rather than a new chemistry interpretation.
++
++```sh
++python scripts/validate_rdkit_atom_environment.py
++cargo test -p chematic-smiles --lib --test rdkit_atom_environment \
++  --test rdkit_graph_queries --test rdkit_matrix_limits
++```
++
++The Python gate requires the built candidate extension and the pinned oracle.
++Measurements describe this local source candidate, not a published package,
++performance comparison, or general RDKit parity. The isolated candidate
++inherits the preceding FHI-aims and graph-query features; its portable patch
++and evidence report are delivered without committing or pushing.
+diff --git a/docs/rdkit-migration.md b/docs/rdkit-migration.md
+index a8b6b42..1213acf 100644
+--- a/docs/rdkit-migration.md
++++ b/docs/rdkit-migration.md
+@@ -19,6 +19,7 @@ operation-level measurement and unsupported states, see the
+ | Match SMARTS | `mol.HasSubstructMatch(q)` | `mol.has_substructure(q)` / `mol.find_matches(q)`; opt-in `mol.find_matches_rdkit_parity(q)` | Native query interpretation has recorded residuals. The opt-in result distinguishes no-match from typed refusal; match atom order can differ. |
+ | Descriptors | `Descriptors.MolWt(m)`, `rdMolDescriptors.CalcTPSA(m)` | `mol.mw`, `mol.tpsa`, `mol.descriptors()` | Choose native or named RDKit-compatible profiles explicitly. |
+ | Fingerprints | `rdFingerprintGenerator.GetMorganGenerator(...)` | `mol.ecfp4()` or named RDKit-compatible Morgan API | Native ECFP and RDKit Morgan bit positions are different profiles. |
++| Atom environments | `Chem.FindAtomEnvironmentOfRadiusN` | `mol.rdkit_atom_environment(radius, rooted_at_atom)` | Ordered model bonds and atom distances; hydrogen/size flags and bounded search. See [scope](rdkit-atom-environment.md). |
+ | Graph queries | `Chem.GetAdjacencyMatrix`, `Chem.GetShortestPath` | `mol.rdkit_adjacency_matrix()`, `mol.rdkit_shortest_path(start, end)` | Sanitized RDKit atom order; adjacency emptyVal=0 only; 1024 atom / 16384 bond input caps. See [graph-query scope](rdkit-graph-queries.md). |
+ | Similarity | `DataStructs.TanimotoSimilarity(a, b)` | `chematic.tanimoto(a, b)` | Use fingerprints from the same declared profile. |
+ | 2D depiction | `rdMolDraw2D.MolDraw2DSVG` | `mol._repr_svg_()`; Rust `chematic_depict::depict_svg` | SVG supported; PNG requires the optional feature. |
+diff --git a/mkdocs.yml b/mkdocs.yml
+index 20c5f32..3d0493f 100644
+--- a/mkdocs.yml
++++ b/mkdocs.yml
+@@ -88,6 +88,7 @@ nav:
+     - Compatibility Scope: compatibility-scope.md
+     - Detailed RDKit Comparison: rdkit-comparison.md
+     - RDKit Graph Queries: rdkit-graph-queries.md
++    - RDKit Atom Environments: rdkit-atom-environment.md
+     - RDKit Accuracy Plan: rdkit-accuracy-plan.md
+     - Canonical E/Z Plan: canonical-ez-plan.md
+     - RDKit Issue Lessons: rdkit_issue_lessons.md
+diff --git a/scripts/validate_rdkit_atom_environment.py b/scripts/validate_rdkit_atom_environment.py
+new file mode 100644
+index 0000000..9d7dd9e
+--- /dev/null
++++ b/scripts/validate_rdkit_atom_environment.py
+@@ -0,0 +1,96 @@
++#!/usr/bin/env python3
++"""Ordered radius bonds and minimum atom distances against pinned RDKit."""
++import argparse
++import hashlib
++import itertools
++import json
++from pathlib import Path
++import random
++
++import chematic
++from rdkit import Chem, rdBase, RDLogger
++
++ROOT=Path(__file__).resolve().parents[1]
++FIXTURE=ROOT/'validation/rdkit_issues/atom-environment/fixtures.json'
++
++
++def digest(data):return hashlib.sha256(data).hexdigest()
++
++
++def orders(n):
++    out=[list(range(n))]
++    for row in (list(reversed(range(n))),random.Random(9708+n).sample(range(n),n)):
++        if row not in out:out.append(row)
++    return out
++
++
++def variant(case,added_hs,order):
++    native=chematic.from_smiles(case['smiles']) if case['smiles'] else chematic.RWMol().GetMol()
++    if added_hs:
++        native=native.rdkit_add_hydrogens();reference=Chem.AddHs(Chem.MolFromSmiles(case['smiles']))
++    else:
++        params=Chem.SmilesParserParams();params.removeHs=False
++        reference=Chem.MolFromSmiles(case['smiles'],params)
++    assert reference is not None and native.atom_count==reference.GetNumAtoms()
++    native=native.renumber_atoms(order)
++    reference=Chem.RenumberAtoms(reference,order) if order else Chem.Mol(reference)
++    if not added_hs:reference=Chem.RemoveHs(reference)
++    return native,reference
++
++
++def main():
++    parser=argparse.ArgumentParser(description=__doc__)
++    parser.add_argument('--output',type=Path,default=ROOT/'validation/results/rdkit-atom-environment-2026-10-15.json')
++    args=parser.parse_args();assert rdBase.rdkitVersion=='2026.09.1'
++    RDLogger.DisableLog('rdApp.*')
++    manifest=json.loads(FIXTURE.read_text())
++    assert manifest['sha256']==digest(json.dumps(manifest['cases'],sort_keys=True,separators=(',',':')).encode())
++    checksum=hashlib.sha256();calls=variants=bonds=distances=empty=radius_zero=hs=permuted=0
++    records=[]
++    for case in manifest['cases']:
++        assert case['sha256']==digest(case['smiles'].encode())
++        checked=0
++        for added_hs in (False,True):
++            base=chematic.from_smiles(case['smiles']) if case['smiles'] else chematic.RWMol().GetMol()
++            if added_hs:base=base.rdkit_add_hydrogens()
++            for order in orders(base.atom_count):
++                native,reference=variant(case,added_hs,order);n=reference.GetNumAtoms()
++                assert native.rdkit_num_atoms()==n
++                assert native.rdkit_adjacency_matrix()==Chem.GetAdjacencyMatrix(reference,force=True).tolist()
++                original=native.smiles;native.SetIntProp('environment_sentinel',9708)
++                for root,radius,use_hs,enforce in itertools.product(range(n),[*range(min(10,n+3)),2**32-1],[False,True],[False,True]):
++                    atom_map={999999:123,root:456}
++                    want=list(Chem.FindAtomEnvironmentOfRadiusN(reference,radius,root,useHs=use_hs,enforceSize=enforce,atomMap=atom_map))
++                    got=native.rdkit_atom_environment(radius,root,use_hs=use_hs,enforce_size=enforce)
++                    assert got['bond_indices']==want,(case['id'],added_hs,order,root,radius,use_hs,enforce,got,want)
++                    assert got['atom_distances']==atom_map,(case['id'],root,radius,got,atom_map)
++                    assert len(want)==len(set(want))
++                    assert all(i<reference.GetNumBonds() for i in want)
++                    checksum.update(json.dumps([want,sorted(atom_map.items())],separators=(',',':')).encode())
++                    calls+=1;checked+=1;bonds+=len(want);distances+=len(atom_map)
++                    empty+=not bool(want);radius_zero+=radius==0;hs+=use_hs
++                    permuted+=order!=list(range(len(order)))
++                assert native.smiles==original and native.GetIntProp('environment_sentinel')==9708
++                variants+=1
++        records.append({'id':case['id'],'status':'passed','comparisons':checked})
++    # Record the surprising cyclic boundary separately from the chemistry corpus.
++    ring=Chem.MolFromSmiles('C1CCC1');ring3={};ring4={}
++    assert list(Chem.FindAtomEnvironmentOfRadiusN(ring,3,0,atomMap=ring3))==[0,3,1,2]
++    assert list(Chem.FindAtomEnvironmentOfRadiusN(ring,4,0,atomMap=ring4))==[] and ring4=={}
++    report={'schema_version':1,'status':'local-source-candidate; uncommitted and unpushed',
++        'oracle':{'name':'RDKit','version':rdBase.rdkitVersion,'settings':'Every root; useHs False/True; enforceSize False/True; radii 0..min(9,n+2) and UINT32_MAX; H removal/addition and three distinct atom orders where available; seeded atomMap'},
++        'fixture_manifest':str(FIXTURE.relative_to(ROOT)),'fixture_sha256':manifest['sha256'],
++        'results':{'fixtures':len(records),'graph_variants':variants,'exact_comparisons':calls,
++            'ordered_bond_ids_compared':bonds,'atom_distances_compared':distances,'empty_bond_results':empty,
++            'radius_zero_cases':radius_zero,'use_hs_true_cases':hs,'permuted_cases':permuted,
++            'unexpected_mismatches':0,'normalized_output_sha256':checksum.hexdigest()},
++        'records':records,'cyclic_boundary':{'C1CCC1_root0_radius3_bonds':[0,3,1,2],'radius3_atom_map':ring3,'radius4_atom_map':ring4,
++            'explanation':'A final pending-duplicate frontier satisfies enforceSize even if no new bond is added'},
++        'scope':['Sanitized RDKit atom and bond indices','Rust/Python only','No caller dictionary mutation; returns a new map',
++            'Input <=1024 atoms/16384 bonds','Default <=1000000 visits/100000 queued entries per frontier',
++            'Query/zero bonds and other unsupported model inputs fail explicitly']}
++    args.output.parent.mkdir(parents=True,exist_ok=True);args.output.write_text(json.dumps(report,indent=2)+'\n')
++    print(json.dumps(report['results'],indent=2))
++
++
++if __name__=='__main__':main()
+diff --git a/validation/rdkit_issues/atom-environment/fixtures.json b/validation/rdkit_issues/atom-environment/fixtures.json
+new file mode 100644
+index 0000000..a26c690
+--- /dev/null
++++ b/validation/rdkit_issues/atom-environment/fixtures.json
+@@ -0,0 +1,426 @@
++{
++  "schema_version": 1,
++  "cases": [
++    {
++      "id": "empty",
++      "smiles": "",
++      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project data",
++      "minimization": "Small structure isolates empty radius/bond-order behavior",
++      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
++      "expected": {
++        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
++    },
++    {
++      "id": "one-carbon",
++      "smiles": "C",
++      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project data",
++      "minimization": "Small structure isolates one-carbon radius/bond-order behavior",
++      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
++      "expected": {
++        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "6b23c0d5f35d1b11f9b683f0b0a617355deb11277d91ae091d399c655b87940d"
++    },
++    {
++      "id": "chain",
++      "smiles": "CCO",
++      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project data",
++      "minimization": "Small structure isolates chain radius/bond-order behavior",
++      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
++      "expected": {
++        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "ab1de819ede91df490e6441934decfa9041b49f91d6bbadbba4df634ccff57fa"
++    },
++    {
++      "id": "mixed-orders",
++      "smiles": "C=CC#N",
++      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project data",
++      "minimization": "Small structure isolates mixed-orders radius/bond-order behavior",
++      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
++      "expected": {
++        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "656b0c52e9f8a3f588907629edcab7822c79d46fe90fa04bf6dcc420417b2366"
++    },
++    {
++      "id": "aromatic",
++      "smiles": "c1ccccc1",
++      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project data",
++      "minimization": "Small structure isolates aromatic radius/bond-order behavior",
++      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
++      "expected": {
++        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "13cad05ca8f49c509e5b7be8c67668484344ebf2b2d12b03b295f14d4b1c32d1"
++    },
++    {
++      "id": "kekule",
++      "smiles": "C1=CC=CC=C1",
++      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project data",
++      "minimization": "Small structure isolates kekule radius/bond-order behavior",
++      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
++      "expected": {
++        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "f597e5816a91b21d072c9b8f39605bc289cab6f9dcaea1bc08e1c8335eb2a8e1"
++    },
++    {
++      "id": "fused",
++      "smiles": "c1ccc2ccccc2c1",
++      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project data",
++      "minimization": "Small structure isolates fused radius/bond-order behavior",
++      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
++      "expected": {
++        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "a896d495b04a450b732a5bf6a5896266647c948af5d97014906f7afe145b9022"
++    },
++    {
++      "id": "four-cycle",
++      "smiles": "C1CCC1",
++      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project data",
++      "minimization": "Small structure isolates four-cycle radius/bond-order behavior",
++      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
++      "expected": {
++        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "20396b751bf2e968cbb57976575ca74b9a42dfce95093715587144ca8fa306f3"
++    },
++    {
++      "id": "cubane",
++      "smiles": "C12C3C4C1C5C2C3C45",
++      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project data",
++      "minimization": "Small structure isolates cubane radius/bond-order behavior",
++      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
++      "expected": {
++        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "eaebf0b7ca8f7b0973f5b5e3466f3e915481af00d09ae29d0814400b48eecca1"
++    },
++    {
++      "id": "bridged",
++      "smiles": "C1CC2CCC1C2",
++      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project data",
++      "minimization": "Small structure isolates bridged radius/bond-order behavior",
++      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
++      "expected": {
++        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "8decb4ecd7f11859f828999b33c19adb45a76028e77179a95905ce023bd312da"
++    },
++    {
++      "id": "fragments",
++      "smiles": "C1CCCCC1.CCO",
++      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project data",
++      "minimization": "Small structure isolates fragments radius/bond-order behavior",
++      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
++      "expected": {
++        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "9e04b0bae4126e77e9f7efe31403e2c2cedca239f25ed03424b49bb3585f9d4b"
++    },
++    {
++      "id": "salt",
++      "smiles": "[Na+].[O-]C(=O)C",
++      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project data",
++      "minimization": "Small structure isolates salt radius/bond-order behavior",
++      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
++      "expected": {
++        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "9903e0dd0dc754f986484ddee53102b08b2f344d4a917d72e547129ea23b02f6"
++    },
++    {
++      "id": "dative",
++      "smiles": "N->[Cu]",
++      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project data",
++      "minimization": "Small structure isolates dative radius/bond-order behavior",
++      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
++      "expected": {
++        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "30a8a6e6eb41b33da46b5cca557e8e49b8e6fb2bf56f6da139ccdb12d92f559c"
++    },
++    {
++      "id": "reverse-dative",
++      "smiles": "[Cu]<-N",
++      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project data",
++      "minimization": "Small structure isolates reverse-dative radius/bond-order behavior",
++      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
++      "expected": {
++        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "d8aadc4fa58d9a3ab29f470b78e516fdda87ec944fca301fbee0bb266f2b8bff"
++    },
++    {
++      "id": "two-donors",
++      "smiles": "[NH3]->[Cu+2]<-[NH3]",
++      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project data",
++      "minimization": "Small structure isolates two-donors radius/bond-order behavior",
++      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
++      "expected": {
++        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "39cd78f656a07bb7f978a5951e06cc8ca2608c41cb7b7acc8ee8b5f6e285c473"
++    },
++    {
++      "id": "chlorine-cleanup",
++      "smiles": "Cl(=O)(=O)(=O)O",
++      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project data",
++      "minimization": "Small structure isolates chlorine-cleanup radius/bond-order behavior",
++      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
++      "expected": {
++        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "bb139ffdc0da3996a03c49df664492e780f8c7d1fdd11b01e89e5e03c69da814"
++    },
++    {
++      "id": "nitrogen-cleanup",
++      "smiles": "O=N(=O)O",
++      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project data",
++      "minimization": "Small structure isolates nitrogen-cleanup radius/bond-order behavior",
++      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
++      "expected": {
++        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "cf63ac710a25d90bd0ffddca35a465fe089f2bbb945dbc356f06869aef4f7544"
++    },
++    {
++      "id": "hydrogen-removal",
++      "smiles": "[H]C([H])([H])[H]",
++      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project data",
++      "minimization": "Small structure isolates hydrogen-removal radius/bond-order behavior",
++      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
++      "expected": {
++        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "bd513a6a68633ef519d77992210d68e444a5fb66a5c41a795b2960b7808c22eb"
++    },
++    {
++      "id": "isotope-h",
++      "smiles": "[2H]OC",
++      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project data",
++      "minimization": "Small structure isolates isotope-h radius/bond-order behavior",
++      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
++      "expected": {
++        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "30ff7372d09a34a925db44222913c2eb0f79a5fccb4ca8c3ab2f3171c6ef6084"
++    },
++    {
++      "id": "hydride",
++      "smiles": "[H-].[Li+]",
++      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project data",
++      "minimization": "Small structure isolates hydride radius/bond-order behavior",
++      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
++      "expected": {
++        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "9827dd774c218223d0ecee98c1869555dd50679cf3ad1c00aa6eef9133a13adf"
++    },
++    {
++      "id": "hydrogen-gas",
++      "smiles": "[H][H]",
++      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project data",
++      "minimization": "Small structure isolates hydrogen-gas radius/bond-order behavior",
++      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
++      "expected": {
++        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "ea7e44a64c7461517e4f9eb140658e1650e4fe580eaa6895de3a748fdaaf72df"
++    },
++    {
++      "id": "stereocenter",
++      "smiles": "[13CH3][C@@H](O)F",
++      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project data",
++      "minimization": "Small structure isolates stereocenter radius/bond-order behavior",
++      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
++      "expected": {
++        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "5827c7a00adbd9908d92406258d43b7e47e5ef27c9d4c1b4425bbc71488549e7"
++    },
++    {
++      "id": "geometric",
++      "smiles": "F/C=C/Cl",
++      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project data",
++      "minimization": "Small structure isolates geometric radius/bond-order behavior",
++      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
++      "expected": {
++        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "7c3da2167850fdb789c5e558010f20ba0ec97c376dcc67e54a355c691764d37b"
++    },
++    {
++      "id": "noble-gas",
++      "smiles": "[He]",
++      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project data",
++      "minimization": "Small structure isolates noble-gas radius/bond-order behavior",
++      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
++      "expected": {
++        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "ea4ebdc667c9206a99c9db38f65d8c85ce987edf93e08fb8d69e94ffe7ad6422"
++    },
++    {
++      "id": "wildcard",
++      "smiles": "*CC",
++      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project data",
++      "minimization": "Small structure isolates wildcard radius/bond-order behavior",
++      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
++      "expected": {
++        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "9a1c4ea50c9f65dab85388edba1a5e36f0fea5df00e1b166adb24f59bfe4f443"
++    },
++    {
++      "id": "mapped-h",
++      "smiles": "[CH3:1][O:2][H:3]",
++      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project data",
++      "minimization": "Small structure isolates mapped-h radius/bond-order behavior",
++      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
++      "expected": {
++        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "483a9ac227b062af88d0559b9b407c9d21210a6abd9f1ba0e2627931badd7537"
++    },
++    {
++      "id": "quadruple",
++      "smiles": "[Mo]$[Mo]",
++      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project data",
++      "minimization": "Small structure isolates quadruple radius/bond-order behavior",
++      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
++      "expected": {
++        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "97423eac648000e7874c7267b38589a97a19f79f88ff65267a8f4db175abaef2"
++    },
++    {
++      "id": "triangle",
++      "smiles": "C1CC1",
++      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project data",
++      "minimization": "Small structure isolates triangle radius/bond-order behavior",
++      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
++      "expected": {
++        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "3b139ddd2a925eb70d94b87995227128eb8d99ad68e3224a9e14cee641e85b07"
++    },
++    {
++      "id": "branched-root",
++      "smiles": "CC(C)C",
++      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project data",
++      "minimization": "Small structure isolates branched-root radius/bond-order behavior",
++      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
++      "expected": {
++        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "a4989e0f473ee4981c8dc330f4867df3b27e9f8185a9c92ad25d1885d924f3b9"
++    },
++    {
++      "id": "two-isotope-h",
++      "smiles": "[2H]C([3H])O",
++      "provenance": "Original minimal project SMILES; reused or added for atom environment contracts, 2026-10-15; no external molecular corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project data",
++      "minimization": "Small structure isolates two-isotope-h radius/bond-order behavior",
++      "oracle": "RDKit 2026.09.1 FindAtomEnvironmentOfRadiusN with every root, useHs/enforceSize flags, model H removal/addition and atom permutations; seeded atomMap cleared by oracle",
++      "expected": {
++        "ordered_bond_indices_and_atom_distances": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "b01101f71519dacba95a6d6031a485314c85e281f540779693dad23e03ea71e7"
++    }
++  ],
++  "sha256": "1e16d381592cef9ca96f9c9a8c08cffb28ceec9509b7f6e9c349e05153d15c39"
++}

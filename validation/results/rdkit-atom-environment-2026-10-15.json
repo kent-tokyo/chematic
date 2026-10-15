@@ -1,0 +1,319 @@
+{
+  "schema_version": 1,
+  "status": "local-source-candidate; uncommitted and unpushed",
+  "oracle": {
+    "name": "RDKit",
+    "version": "2026.09.1",
+    "settings": "Every root; useHs False/True; enforceSize False/True; radii 0..min(9,n+2) and UINT32_MAX; H removal/addition and three distinct atom orders where available; seeded atomMap"
+  },
+  "fixture_manifest": "validation/rdkit_issues/atom-environment/fixtures.json",
+  "fixture_sha256": "1e16d381592cef9ca96f9c9a8c08cffb28ceec9509b7f6e9c349e05153d15c39",
+  "results": {
+    "fixtures": 30,
+    "graph_variants": 162,
+    "exact_comparisons": 43236,
+    "ordered_bond_ids_compared": 165177,
+    "atom_distances_compared": 176798,
+    "empty_bond_results": 17238,
+    "radius_zero_cases": 4292,
+    "use_hs_true_cases": 21618,
+    "permuted_cases": 28656,
+    "unexpected_mismatches": 0,
+    "normalized_output_sha256": "f043cb1436d89c211b999be32554884cf14fab06c2f74911c81084d4842d132d"
+  },
+  "records": [
+    {
+      "id": "empty",
+      "status": "passed",
+      "comparisons": 0
+    },
+    {
+      "id": "one-carbon",
+      "status": "passed",
+      "comparisons": 560
+    },
+    {
+      "id": "chain",
+      "status": "passed",
+      "comparisons": 1440
+    },
+    {
+      "id": "mixed-orders",
+      "status": "passed",
+      "comparisons": 1308
+    },
+    {
+      "id": "aromatic",
+      "status": "passed",
+      "comparisons": 2304
+    },
+    {
+      "id": "kekule",
+      "status": "passed",
+      "comparisons": 2304
+    },
+    {
+      "id": "fused",
+      "status": "passed",
+      "comparisons": 3696
+    },
+    {
+      "id": "four-cycle",
+      "status": "passed",
+      "comparisons": 1968
+    },
+    {
+      "id": "cubane",
+      "status": "passed",
+      "comparisons": 3168
+    },
+    {
+      "id": "bridged",
+      "status": "passed",
+      "comparisons": 3432
+    },
+    {
+      "id": "fragments",
+      "status": "passed",
+      "comparisons": 4752
+    },
+    {
+      "id": "salt",
+      "status": "passed",
+      "comparisons": 1596
+    },
+    {
+      "id": "dative",
+      "status": "passed",
+      "comparisons": 636
+    },
+    {
+      "id": "reverse-dative",
+      "status": "passed",
+      "comparisons": 636
+    },
+    {
+      "id": "two-donors",
+      "status": "passed",
+      "comparisons": 1440
+    },
+    {
+      "id": "chlorine-cleanup",
+      "status": "passed",
+      "comparisons": 1260
+    },
+    {
+      "id": "nitrogen-cleanup",
+      "status": "passed",
+      "comparisons": 924
+    },
+    {
+      "id": "hydrogen-removal",
+      "status": "passed",
+      "comparisons": 600
+    },
+    {
+      "id": "isotope-h",
+      "status": "passed",
+      "comparisons": 972
+    },
+    {
+      "id": "hydride",
+      "status": "passed",
+      "comparisons": 192
+    },
+    {
+      "id": "hydrogen-gas",
+      "status": "passed",
+      "comparisons": 192
+    },
+    {
+      "id": "stereocenter",
+      "status": "passed",
+      "comparisons": 1572
+    },
+    {
+      "id": "geometric",
+      "status": "passed",
+      "comparisons": 1104
+    },
+    {
+      "id": "noble-gas",
+      "status": "passed",
+      "comparisons": 40
+    },
+    {
+      "id": "wildcard",
+      "status": "passed",
+      "comparisons": 1308
+    },
+    {
+      "id": "mapped-h",
+      "status": "passed",
+      "comparisons": 864
+    },
+    {
+      "id": "quadruple",
+      "status": "passed",
+      "comparisons": 192
+    },
+    {
+      "id": "triangle",
+      "status": "passed",
+      "comparisons": 1440
+    },
+    {
+      "id": "branched-root",
+      "status": "passed",
+      "comparisons": 2232
+    },
+    {
+      "id": "two-isotope-h",
+      "status": "passed",
+      "comparisons": 1104
+    }
+  ],
+  "cyclic_boundary": {
+    "C1CCC1_root0_radius3_bonds": [
+      0,
+      3,
+      1,
+      2
+    ],
+    "radius3_atom_map": {
+      "2": 2,
+      "3": 1,
+      "1": 1,
+      "0": 0
+    },
+    "radius4_atom_map": {},
+    "explanation": "A final pending-duplicate frontier satisfies enforceSize even if no new bond is added"
+  },
+  "scope": [
+    "Sanitized RDKit atom and bond indices",
+    "Rust/Python only",
+    "No caller dictionary mutation; returns a new map",
+    "Input <=1024 atoms/16384 bonds",
+    "Default <=1000000 visits/100000 queued entries per frontier",
+    "Query/zero bonds and other unsupported model inputs fail explicitly"
+  ],
+  "candidate_path": "/private/tmp/chematic-atom-environment",
+  "inherited_source_candidate": "/private/tmp/chematic-fhiaims",
+  "source_reference": {
+    "tag": "Release_2026_09_1",
+    "git_ls_remote_sha": "fece8caa860bdf6c9c82bdb9253f22a0cf87150c",
+    "path": "Code/GraphMol/Subgraphs/Subgraphs.cpp",
+    "retrieved_source_sha256": "aa8295ce04042f809d93a29f8f6ca0beca2c656b4f3865270237131119a55597",
+    "license": "BSD-3-Clause"
+  },
+  "runtime": {
+    "python": "3.13.6 (v3.13.6:4e665351082, Aug  6 2025, 11:22:35) [Clang 16.0.0 (clang-1600.0.26.6)]",
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "machine": "arm64"
+  },
+  "source_artifacts": [
+    {
+      "path": ".github/workflows/ci.yml",
+      "sha256": "866814341fd91b385df11e7ae2dee7115ff6304ebea8299c2bec882c2cd6977d"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "sha256": "5148c5ad301cbc22f3b7b8cee455925a664da34b163e09df8d47d012bffda5d5"
+    },
+    {
+      "path": "THIRD_PARTY_NOTICES.md",
+      "sha256": "60c8d3a270d746627fe3fe721549079184c889ce2064602a1f898cc8d5e0109a"
+    },
+    {
+      "path": "crates/chematic-py/python/chematic/__init__.pyi",
+      "sha256": "e4d0bcb44f4ea9deb7f126bb8dd1da6f9ef19b5d15e0199cdc6e74235a2c1ed3"
+    },
+    {
+      "path": "crates/chematic-py/src/mol_methods.rs",
+      "sha256": "dfc060b38efefc26ee00e014505d5ad0f390eecd1214f45cd1b526e6ad9a92ae"
+    },
+    {
+      "path": "crates/chematic-py/src/mol_methods/atom_environment.rs",
+      "sha256": "b603245292ece3c7f6c00503a2b76ad2c1855dc5fdfdd1525cdb5662ef76a4b5"
+    },
+    {
+      "path": "crates/chematic-py/tests/test_rdkit_atom_environment.py",
+      "sha256": "9c3a08669e1d58d415f2820abb18226c6a29ac08876038aa257f9c673d4f8dbe"
+    },
+    {
+      "path": "crates/chematic-smiles/src/lib.rs",
+      "sha256": "01dfb740af83006a621c2c18d1110ea969b3f0bde73bc14afd54e948485732de"
+    },
+    {
+      "path": "crates/chematic-smiles/src/rdkit/atom_environment.rs",
+      "sha256": "e436880cfb369cc35bbab8d084e76a03107fc9f598318c0b58b7dd7e203d5c29"
+    },
+    {
+      "path": "crates/chematic-smiles/src/rdkit/graph_queries.rs",
+      "sha256": "4b71339139ef769ca863d5016a529ebe5031a1fe1fe3d6ee5a0d709c9a1276d1"
+    },
+    {
+      "path": "crates/chematic-smiles/src/rdkit/mod.rs",
+      "sha256": "874a80d21b1e1a941eae15295948cd2b32196ea96e66123600a3d0d79736696e"
+    },
+    {
+      "path": "crates/chematic-smiles/tests/rdkit_atom_environment.rs",
+      "sha256": "d3f05882414def24d37002d679d3b6eea0dfbb6b6f0299863738ec086c9decab"
+    },
+    {
+      "path": "docs/rdkit-atom-environment.md",
+      "sha256": "a0703930c0c1a65ff4351c16c8a3a259fb7f8e03e6832e7578ac220022ea7618"
+    },
+    {
+      "path": "docs/rdkit-migration.md",
+      "sha256": "301f35a2d6bd5bbbc65f48924c5d6573b7f4cc43ad3c3d6ff5683738265d9f53"
+    },
+    {
+      "path": "mkdocs.yml",
+      "sha256": "d19be6bf38d15c03bd9befde27ebc768402c54fcab534f0c713f6a8d127cc31f"
+    },
+    {
+      "path": "scripts/validate_rdkit_atom_environment.py",
+      "sha256": "5bd69337d01eccf93158c7461d4b71d546c09c9c50c8ca22d7393e63d68b829b"
+    },
+    {
+      "path": "validation/rdkit_issues/atom-environment/fixtures.json",
+      "sha256": "1e9711b01bea0657a3aaa53604718fdfda6f58ebf2fb4ccebccbe2fd922a926f"
+    }
+  ],
+  "extension": {
+    "path": "/private/tmp/chematic-stereo-target/debug/libchematic.dylib",
+    "sha256": "be42161c5a4e74449fe148782daa2884fd245bd4bf7dccf0a0e570ccb71683cb"
+  },
+  "validation": {
+    "rust_library_passed": 386,
+    "rust_library_existing_ignored": 1,
+    "rust_atom_environment_passed": 8,
+    "rust_graph_queries_passed": 8,
+    "rust_matrix_limits_passed": 4,
+    "rust_total_passed": 406,
+    "python_atom_environment_passed": 17,
+    "python_graph_queries_passed": 19,
+    "python_matrix_limits_passed": 4,
+    "python_renumber_passed": 28,
+    "python_fhiaims_passed": 38,
+    "python_total_passed": 106,
+    "clippy": "passed for chematic-smiles and chematic-py, all targets, -D warnings",
+    "fmt": "passed",
+    "mkdocs_strict": "passed",
+    "binding_inventory": {
+      "status": "passed",
+      "python_free_functions": 192,
+      "wasm_exports": 303,
+      "new_method_outside_free_function_inventory": true
+    },
+    "refactor_ratchet": {
+      "status": "passed",
+      "rust_files": 538,
+      "functions": 8333,
+      "file_allowances": 18,
+      "function_allowances": 86
+    },
+    "portable_patch": "forward check against inherited candidate and reverse check against implemented candidate passed"
+  }
+}

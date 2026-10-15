@@ -289,6 +289,13 @@ fn activity_cliffs<'py>(
     cliff_delta: f64,
     py: Python<'py>,
 ) -> PyResult<Vec<Bound<'py, PyDict>>> {
+    if mols.len() != activities.len() {
+        return Err(PyValueError::new_err(format!(
+            "mols and activities must have the same length (got {} and {})",
+            mols.len(),
+            activities.len()
+        )));
+    }
     let refs: Vec<&chematic_core::Molecule> = mols.iter().map(|m| m.inner.as_ref()).collect();
     let cliffs = chematic_chem::activity_cliffs(&refs, &activities, sim_threshold, cliff_delta);
     cliffs

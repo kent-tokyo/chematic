@@ -116,7 +116,7 @@ RDKit remains the better choice for maximum ecosystem coverage, broader 3D
 workflows, or APIs that chematic marks unsupported.
 
 Rust line coverage is measured separately from chemistry validation. The
-workflow gate currently reports 96.5056% (153,415/158,970); it shows which code
+processed Linux Codecov lane reports 96.93%; it shows which code
 executed, not whether every chemical result is correct.
 
 ## Reference

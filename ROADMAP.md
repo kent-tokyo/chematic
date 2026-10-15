@@ -26,8 +26,8 @@ contracts and reproducible evidence over feature-count parity.
 - The latest complete hosted Python chemistry packet is v1.1.3. The broadest
   published-package RDKit performance packet remains v1.0.42. Source results
   are not relabelled as package evidence.
-- Rust workflow line coverage is 96.5056% (153,415/158,970). Coverage proves
-  execution, not chemical correctness.
+- The processed Linux Codecov lane reports 96.93% Rust line coverage.
+  Coverage proves execution, not chemical correctness.
 - 3D, MMFF94, pKa/ADMET screening, IUPAC naming, broad Markush/polymer
   expansion, and rich CDXML editing remain experimental or bounded.
 

@@ -1,0 +1,1453 @@
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index de4d1ccf..d93d2e0a 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -215,6 +215,7 @@ jobs:
+           - { package: chematic-mol, target: stereo2d_ez_reader_integration }
+           - { package: chematic-mol, target: stereo_reader_integration }
+           - { package: chematic-perception, target: aromaticity_edge_gate }
++          - { package: chematic-smarts, target: merge_query_hydrogens }
+           - { package: chematic-smiles, target: canonical_idempotency_corpus }
+           - { package: chematic-smiles, target: atom_tag_visit_order }
+           - { package: chematic-smiles, target: atom_tag_cache }
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 9ec182ee..29089237 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -10,6 +10,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
+ 
+ ## [Unreleased]
+ 
++### Added
++
++- Added conservative query-hydrogen folding in Rust and
++  `SmartsQuery.merge_hydrogens()` in Python, preserving complete tetrahedral
++  configurations across neighbour order and H representation. Compiled Python
++  queries now accept `use_chirality` in single and batch matching.
++
+ ## [1.1.4] - 2026-10-14
+ 
+ ### Added
+diff --git a/crates/chematic-py/python/chematic/__init__.pyi b/crates/chematic-py/python/chematic/__init__.pyi
+index 9edde22f..c42a5cee 100644
+--- a/crates/chematic-py/python/chematic/__init__.pyi
++++ b/crates/chematic-py/python/chematic/__init__.pyi
+@@ -41,13 +41,20 @@ class SmartsQuery:
+     @property
+     def source(self) -> str: ...
+ 
+-    def matches(self, mol: Mol) -> bool: ...
++    @property
++    def atom_count(self) -> int: ...
++
++    def merge_hydrogens(self) -> SmartsQuery:
++        """Fold eligible H nodes; source retains original text. Reject ambiguous stereo."""
++        ...
++
++    def matches(self, mol: Mol, use_chirality: bool = False) -> bool: ...
+ 
+-    def matches_many(self, molecules: Iterable[Mol]) -> list[bool]: ...
++    def matches_many(self, molecules: Iterable[Mol], use_chirality: bool = False) -> list[bool]: ...
+ 
+-    def matches_batch(self, batch: MoleculeBatch) -> list[bool]: ...
++    def matches_batch(self, batch: MoleculeBatch, use_chirality: bool = False) -> list[bool]: ...
+ 
+-    def find_matches(self, mol: Mol) -> list[list[int]]: ...
++    def find_matches(self, mol: Mol, use_chirality: bool = False) -> list[list[int]]: ...
+ 
+ def compile_smarts(smarts: str) -> SmartsQuery:
+     """Compile a SMARTS query for repeated matching."""
+diff --git a/crates/chematic-py/src/misc.rs b/crates/chematic-py/src/misc.rs
+index 90f19424..ef8f5cdd 100644
+--- a/crates/chematic-py/src/misc.rs
++++ b/crates/chematic-py/src/misc.rs
+@@ -43,6 +43,7 @@ pub(crate) fn cached_smarts(
+ pub(crate) struct PySmartsQuery {
+     source: String,
+     query: Arc<chematic_smarts::QueryMolecule>,
++    folded: bool,
+ }
+ 
+ /// Molecules retained in Rust for repeated batch operations.
+@@ -99,6 +100,7 @@ impl PySmartsQuery {
+         Ok(Self {
+             source: smarts.to_owned(),
+             query: Arc::new(query),
++            folded: false,
+         })
+     }
+ 
+@@ -107,9 +109,31 @@ impl PySmartsQuery {
+         &self.source
+     }
+ 
++    /// Number of query atoms after any hydrogen folding.
++    #[getter]
++    fn atom_count(&self) -> usize {
++        self.query.atom_count()
++    }
++
++    /// Return a new query with eligible terminal H nodes folded into H counts.
++    /// Keeps source as the original input text. Isotopic, mapped and constrained
++    /// H nodes survive. Recursive queries and ambiguous stereo frames raise
++    /// ValueError. Matching indices refer to the compacted query.
++    fn merge_hydrogens(&self) -> PyResult<Self> {
++        let query = chematic_smarts::merge_query_hydrogens(&self.query)
++            .map_err(|e| PyValueError::new_err(e.to_string()))?;
++        Ok(Self {
++            source: self.source.clone(),
++            query: Arc::new(query),
++            folded: true,
++        })
++    }
++
+     /// Return whether this query has at least one match in ``mol``.
+-    fn matches(&self, mol: &Mol) -> bool {
++    #[pyo3(signature = (mol, use_chirality=false))]
++    fn matches(&self, mol: &Mol, use_chirality: bool) -> bool {
+         let config = chematic_smarts::MatchConfig {
++            use_chirality,
+             max_matches: Some(1),
+             uniquify: false,
+             ..chematic_smarts::MatchConfig::default()
+@@ -118,8 +142,10 @@ impl PySmartsQuery {
+     }
+ 
+     /// Match this query against many molecules with one Python/Rust call.
+-    fn matches_many(&self, molecules: Vec<PyRef<'_, Mol>>) -> Vec<bool> {
++    #[pyo3(signature = (molecules, use_chirality=false))]
++    fn matches_many(&self, molecules: Vec<PyRef<'_, Mol>>, use_chirality: bool) -> Vec<bool> {
+         let config = chematic_smarts::MatchConfig {
++            use_chirality,
+             max_matches: Some(1),
+             uniquify: false,
+             ..chematic_smarts::MatchConfig::default()
+@@ -131,8 +157,10 @@ impl PySmartsQuery {
+     }
+ 
+     /// Match a Rust-retained molecule batch without re-extracting Python objects.
+-    fn matches_batch(&self, batch: &PyMoleculeBatch) -> Vec<bool> {
++    #[pyo3(signature = (batch, use_chirality=false))]
++    fn matches_batch(&self, batch: &PyMoleculeBatch, use_chirality: bool) -> Vec<bool> {
+         let config = chematic_smarts::MatchConfig {
++            use_chirality,
+             max_matches: Some(1),
+             uniquify: false,
+             ..chematic_smarts::MatchConfig::default()
+@@ -145,16 +173,25 @@ impl PySmartsQuery {
+     }
+ 
+     /// Return sorted target-atom indices for every unique match.
+-    fn find_matches(&self, mol: &Mol) -> Vec<Vec<usize>> {
++    #[pyo3(signature = (mol, use_chirality=false))]
++    fn find_matches(&self, mol: &Mol, use_chirality: bool) -> Vec<Vec<usize>> {
+         chematic_smarts::find_match_atom_sets_perceived(
+             &self.query,
+             &mol.inner,
+-            &chematic_smarts::MatchConfig::default(),
++            &chematic_smarts::MatchConfig {
++                use_chirality,
++                ..Default::default()
++            },
+         )
+     }
+ 
+     fn __repr__(&self) -> String {
+-        format!("SmartsQuery({:?})", self.source)
++        let operation = if self.folded {
++            ".merge_hydrogens()"
++        } else {
++            ""
++        };
++        format!("SmartsQuery({:?}){operation}", self.source)
+     }
+ }
+ 
+diff --git a/crates/chematic-py/tests/test_query_hydrogens.py b/crates/chematic-py/tests/test_query_hydrogens.py
+new file mode 100644
+index 00000000..622e3d31
+--- /dev/null
++++ b/crates/chematic-py/tests/test_query_hydrogens.py
+@@ -0,0 +1,55 @@
++"""RDKit #9675: folding query H preserves tetrahedral neighbour parity."""
++import pytest
++import chematic
++
++PATTERNS = [
++    "[H][C@@](C)(N)C(=O)O", "[C@@]([H])(C)(N)C(=O)O",
++    "[C@](C)([H])(N)C(=O)O", "[C@@](C)(N)([H])C(=O)O",
++    "[C@](C)(N)(C(=O)O)[H]", "C[C@]([H])(N)C(=O)O",
++    "C[C@@](N)([H])C(=O)O",
++]
++
++
++@pytest.mark.parametrize("pattern", PATTERNS)
++def test_chirality_survives_h_position_and_query_compaction(pattern):
++    original = chematic.SmartsQuery(pattern)
++    folded = original.merge_hydrogens()
++    assert folded.atom_count == original.atom_count - 1
++    assert folded.source == pattern
++    assert repr(folded).endswith(".merge_hydrogens()")
++    same = chematic.from_smiles("C[C@H](N)C(=O)O")
++    other = chematic.from_smiles("C[C@@H](N)C(=O)O")
++    assert folded.matches(same, use_chirality=True)
++    assert not folded.matches(other, use_chirality=True)
++    assert folded.matches(other)
++    assert bool(folded.find_matches(same, use_chirality=True))
++    assert folded.find_matches(other, use_chirality=True) == []
++    assert folded.matches_many([same, other], use_chirality=True) == [True, False]
++    batch = chematic.MoleculeBatch([same, other])
++    assert folded.matches_batch(batch, use_chirality=True) == [True, False]
++
++
++@pytest.mark.parametrize("pattern", ["[2H]C", "[H:7]C", "[H+]C", "[#1;D1]C", "[H]~C", "[H]=C", "[H][H]", "[H]"])
++def test_h_with_extra_meaning_is_retained(pattern):
++    query = chematic.compile_smarts(pattern)
++    assert query.merge_hydrogens().atom_count == query.atom_count
++
++
++@pytest.mark.parametrize("target", ["[H][C@@](C)(N)C(=O)O", "C[C@]([H])(N)C(=O)O", "[2H][C@@](C)(N)C(=O)O"])
++def test_explicit_target_h_matches_correct_configuration(target):
++    query = chematic.SmartsQuery(PATTERNS[1]).merge_hydrogens()
++    assert query.matches(chematic.from_smiles(target), use_chirality=True)
++
++
++def test_minimum_h_count_and_idempotence():
++    query = chematic.SmartsQuery("C([H])[H]").merge_hydrogens()
++    assert query.atom_count == query.merge_hydrogens().atom_count == 1
++    assert query.matches_many([chematic.from_smiles(s) for s in ["C", "[CH2]", "[CH]", "[C]"]]) == [True, True, False, False]
++
++
++@pytest.mark.parametrize("pattern", ["[C@]([H])(N)C", "[C@]([H])([H])(N)C", "[$(C[H])]"])
++def test_unsupported_folding_fails_explicitly(pattern):
++    query = chematic.SmartsQuery(pattern)
++    with pytest.raises(ValueError):
++        query.merge_hydrogens()
++    assert query.source == pattern
+diff --git a/crates/chematic-smarts/src/lib.rs b/crates/chematic-smarts/src/lib.rs
+index 7d8374fd..54dcf956 100644
+--- a/crates/chematic-smarts/src/lib.rs
++++ b/crates/chematic-smarts/src/lib.rs
+@@ -13,6 +13,7 @@ pub mod cx;
+ pub(crate) mod hybridization;
+ pub mod match_vf2;
+ pub mod mcs;
++pub mod merge_hydrogens;
+ pub mod parser;
+ pub mod perceived;
+ pub mod query;
+@@ -31,6 +32,7 @@ pub use mcs::{
+     AtomCompare, BondCompare, McsConfig, McsOutcome, find_mcs, find_mcs_with_config,
+     find_mcs_with_config_checked,
+ };
++pub use merge_hydrogens::{QueryHydrogenError, merge_query_hydrogens};
+ pub use parser::{SmartsError, parse_smarts};
+ pub use perceived::{
+     find_match_atom_sets_perceived, find_matches_perceived, has_match_perceived,
+diff --git a/crates/chematic-smarts/src/match_vf2.rs b/crates/chematic-smarts/src/match_vf2.rs
+index 554dd5aa..534e4fb9 100644
+--- a/crates/chematic-smarts/src/match_vf2.rs
++++ b/crates/chematic-smarts/src/match_vf2.rs
+@@ -12,6 +12,9 @@
+ //!    target molecule, and that bond must satisfy the query bond's `BondQuery`
+ //!    expression.
+ 
++mod chirality;
++use chirality::{eval_atom_query_candidate, eval_chirality, mapped_chirality_compatible};
++
+ use rustc_hash::{FxHashMap, FxHashSet};
+ 
+ use chematic_core::{AtomIdx, BondOrder, Molecule, implicit_hcount};
+@@ -432,7 +435,9 @@ fn visit_recursive(
+     ctx.visit_budget.set(remaining - 1);
+ 
+     if st.count == query.atoms.len() {
+-        visit(&st.q2t);
++        if mapped_chirality_compatible(query, &st.q2t, ctx) {
++            visit(&st.q2t);
++        }
+         return;
+     }
+     let q_next = st.info.plan[st.count];
+@@ -759,7 +764,9 @@ fn match_recursive(
+ 
+     // Base case: all query atoms have been mapped.
+     if mapping.len() == query.atoms.len() {
+-        results.push(mapping.clone());
++        if mapped_chirality_compatible(query, &st.q2t, ctx) {
++            results.push(mapping.clone());
++        }
+         return;
+     }
+ 
+@@ -1101,6 +1108,12 @@ fn bonds_compatible(
+ // ---------------------------------------------------------------------------
+ 
+ fn eval_atom_query(q: &AtomQuery, idx: AtomIdx, ctx: &EvalCtx<'_>) -> bool {
++    if ctx.config.use_chirality {
++        // Exact @/@@ parity needs a complete mapping. Use three-valued logic
++        // here so a chirality primitive under NOT/OR cannot incorrectly prune
++        // a candidate before the final mapped check.
++        return eval_atom_query_candidate(q, idx, ctx).unwrap_or(true);
++    }
+     match q {
+         AtomQuery::Primitive(p) => eval_atom_primitive(p, idx, ctx),
+         AtomQuery::And(a, b) => eval_atom_query(a, idx, ctx) && eval_atom_query(b, idx, ctx),
+@@ -1271,30 +1284,6 @@ fn eval_hybridization(idx: AtomIdx, ctx: &EvalCtx<'_>, h: u8) -> bool {
+     crate::hybridization::hybridization_from(ctx.mol, lazy, idx) == Some(h)
+ }
+ 
+-/// Chirality primitive: ignored when use_chirality is false.
+-///
+-/// **Limitation**: this is a raw flag comparison. `@`/`@@` in SMILES/SMARTS
+-/// encodes chirality *relative to the SMILES atom write order*, not as an
+-/// absolute spatial property. Two SMILES strings that represent the same
+-/// absolute configuration but are written with neighbors in a different order
+-/// will store opposite `Chirality` flags, making the raw comparison incorrect.
+-///
+-/// For SMARTS queries this is acceptable when the query and target share the same
+-/// write-order convention. For SMIRKS reaction templates, use the parity-aware
+-/// `smirks_chirality_ok` post-check in `chematic-rxn::transform` instead.
+-fn eval_chirality(idx: AtomIdx, ctx: &EvalCtx<'_>, kind: u8) -> bool {
+-    if !ctx.config.use_chirality {
+-        return true;
+-    }
+-    use chematic_core::Chirality;
+-    let c = ctx.mol.atom(idx).chirality;
+-    match kind {
+-        1 => c == Chirality::CounterClockwise,
+-        2 => c == Chirality::Clockwise,
+-        _ => c != Chirality::None,
+-    }
+-}
+-
+ // ---------------------------------------------------------------------------
+ // Anchored match helpers (for recursive SMARTS)
+ // ---------------------------------------------------------------------------
+@@ -1342,7 +1331,7 @@ fn has_match_recursive(query: &QueryMolecule, ctx: &EvalCtx<'_>, st: &mut MapSta
+ 
+     // Base case: all query atoms mapped.
+     if st.count == query.atoms.len() {
+-        return true;
++        return mapped_chirality_compatible(query, &st.q2t, ctx);
+     }
+ 
+     // Pick the most constrained unmapped query atom.
+diff --git a/crates/chematic-smarts/src/match_vf2/chirality.rs b/crates/chematic-smarts/src/match_vf2/chirality.rs
+new file mode 100644
+index 00000000..4659a28b
+--- /dev/null
++++ b/crates/chematic-smarts/src/match_vf2/chirality.rs
+@@ -0,0 +1,230 @@
++//! Tetrahedral query parity after all neighbours have been mapped.
++use super::{
++    AtomIdx, AtomPrimitive, AtomQuery, EvalCtx, Molecule, QueryMolecule, UNMAPPED,
++    eval_atom_primitive,
++};
++use chematic_core::STEREO_H_SENTINEL;
++
++pub(super) fn eval_atom_query_candidate(
++    q: &AtomQuery,
++    idx: AtomIdx,
++    ctx: &EvalCtx<'_>,
++) -> Option<bool> {
++    match q {
++        AtomQuery::Primitive(AtomPrimitive::Chirality(_)) => None,
++        AtomQuery::Primitive(p) => Some(eval_atom_primitive(p, idx, ctx)),
++        AtomQuery::And(a, b) => match (
++            eval_atom_query_candidate(a, idx, ctx),
++            eval_atom_query_candidate(b, idx, ctx),
++        ) {
++            (Some(false), _) | (_, Some(false)) => Some(false),
++            (Some(true), Some(true)) => Some(true),
++            _ => None,
++        },
++        AtomQuery::Or(a, b) => match (
++            eval_atom_query_candidate(a, idx, ctx),
++            eval_atom_query_candidate(b, idx, ctx),
++        ) {
++            (Some(true), _) | (_, Some(true)) => Some(true),
++            (Some(false), Some(false)) => Some(false),
++            _ => None,
++        },
++        AtomQuery::Not(a) => eval_atom_query_candidate(a, idx, ctx).map(|value| !value),
++    }
++}
++
++/// Re-evaluate an atom query after the complete embedding is known, replacing
++/// the coarse chirality pre-filter with neighbour-order-aware tetrahedral
++/// parity. All non-chirality primitives retain their ordinary meaning.
++fn eval_atom_query_mapped(
++    query: &AtomQuery,
++    query_atom: usize,
++    target_atom: AtomIdx,
++    whole_query: &QueryMolecule,
++    mapping: &[u32],
++    ctx: &EvalCtx<'_>,
++) -> bool {
++    match query {
++        AtomQuery::Primitive(AtomPrimitive::Chirality(kind)) => {
++            mapped_chirality_primitive_with_map(
++                *kind,
++                query_atom,
++                target_atom,
++                whole_query,
++                mapping,
++                ctx.mol,
++                ctx.config.use_chirality,
++            )
++        }
++        AtomQuery::Primitive(other) => eval_atom_primitive(other, target_atom, ctx),
++        AtomQuery::And(a, b) => {
++            eval_atom_query_mapped(a, query_atom, target_atom, whole_query, mapping, ctx)
++                && eval_atom_query_mapped(b, query_atom, target_atom, whole_query, mapping, ctx)
++        }
++        AtomQuery::Or(a, b) => {
++            eval_atom_query_mapped(a, query_atom, target_atom, whole_query, mapping, ctx)
++                || eval_atom_query_mapped(b, query_atom, target_atom, whole_query, mapping, ctx)
++        }
++        AtomQuery::Not(inner) => {
++            !eval_atom_query_mapped(inner, query_atom, target_atom, whole_query, mapping, ctx)
++        }
++    }
++}
++
++pub(super) fn mapped_chirality_compatible(
++    query: &QueryMolecule,
++    mapping: &[u32],
++    ctx: &EvalCtx<'_>,
++) -> bool {
++    if !ctx.config.use_chirality {
++        return true;
++    }
++    query.atoms.iter().enumerate().all(|(q, atom)| {
++        mapping
++            .get(q)
++            .copied()
++            .filter(|&target| target != UNMAPPED)
++            .is_some_and(|target| {
++                eval_atom_query_mapped(&atom.query, q, AtomIdx(target), query, mapping, ctx)
++            })
++    })
++}
++
++pub(crate) fn mapped_chirality_primitive_with_map(
++    kind: u8,
++    query_atom: usize,
++    target_atom: AtomIdx,
++    query: &QueryMolecule,
++    mapping: &[u32],
++    mol: &Molecule,
++    use_chirality: bool,
++) -> bool {
++    use chematic_core::Chirality;
++
++    if !use_chirality {
++        return true;
++    }
++    let target_chirality = mol.atom(target_atom).chirality;
++    if target_chirality == Chirality::None {
++        return false;
++    }
++    if !matches!(kind, 1 | 2) {
++        return true;
++    }
++
++    let raw_matches = matches!(
++        (kind, target_chirality),
++        (1, Chirality::CounterClockwise) | (2, Chirality::Clockwise)
++    );
++
++    let Some(target_order) = mol.stereo_neighbor_order(target_atom) else {
++        return raw_matches;
++    };
++
++    let mut mapped_order: Vec<u32> = query.adj[query_atom]
++        .iter()
++        .filter_map(|&(_, neighbor)| {
++            mapping
++                .get(neighbor)
++                .copied()
++                .filter(|&target| target != UNMAPPED)
++        })
++        .collect();
++    if mapped_order.len() != query.adj[query_atom].len() {
++        return raw_matches;
++    }
++
++    // Bracket `H` occupies the slot immediately after the atom from which the
++    // centre was reached (or first for a root atom), matching the SMILES
++    // parser's `stereo_neighbor_order` contract. Only add the virtual slot
++    // when the target has one corresponding implicit or explicit H entry.
++    if target_order.len() == mapped_order.len() + 1
++        && query_has_positive_h_count(&query.atoms[query_atom].query)
++    {
++        let missing: Vec<_> = target_order
++            .iter()
++            .copied()
++            .filter(|value| !mapped_order.contains(value))
++            .collect();
++        if let [hydrogen] = missing.as_slice()
++            && (*hydrogen == STEREO_H_SENTINEL
++                || mol.atom(AtomIdx(*hydrogen)).element == chematic_core::Element::H)
++        {
++            let from_position = usize::from(
++                query.adj[query_atom]
++                    .first()
++                    .is_some_and(|&(_, neighbor)| neighbor < query_atom),
++            );
++            mapped_order.insert(from_position, *hydrogen);
++        }
++    }
++
++    let Some(even) = permutation_parity(&mapped_order, target_order) else {
++        // A partial chiral query such as `[C@H]` does not provide enough
++        // neighbour identity to reconstruct absolute parity. Preserve the
++        // historical raw-tag behavior for that explicitly bounded case.
++        return raw_matches;
++    };
++    let query_chirality = if kind == 1 {
++        Chirality::CounterClockwise
++    } else {
++        Chirality::Clockwise
++    };
++    (query_chirality == target_chirality) == even
++}
++
++fn query_has_positive_h_count(query: &AtomQuery) -> bool {
++    match query {
++        AtomQuery::Primitive(AtomPrimitive::HCount(count)) => *count > 0,
++        AtomQuery::And(a, b) => query_has_positive_h_count(a) || query_has_positive_h_count(b),
++        // An H constraint hidden behind OR does not establish a unique
++        // virtual neighbour for a tetrahedral parity check.
++        AtomQuery::Not(inner) => matches!(
++            inner.as_ref(),
++            AtomQuery::Primitive(AtomPrimitive::HCount(0))
++        ),
++        AtomQuery::Primitive(_) | AtomQuery::Or(_, _) => false,
++    }
++}
++
++/// `Some(true)` for an even permutation, `Some(false)` for an odd one.
++fn permutation_parity(from: &[u32], to: &[u32]) -> Option<bool> {
++    if from.len() != to.len() {
++        return None;
++    }
++    let mut positions = Vec::with_capacity(to.len());
++    for value in to {
++        let position = from.iter().position(|candidate| candidate == value)?;
++        if positions.contains(&position) {
++            return None;
++        }
++        positions.push(position);
++    }
++    let inversions = positions
++        .iter()
++        .enumerate()
++        .map(|(i, value)| {
++            positions[(i + 1)..]
++                .iter()
++                .filter(|next| value > next)
++                .count()
++        })
++        .sum::<usize>();
++    Some(inversions.is_multiple_of(2))
++}
++
++/// Cheap chirality pre-filter used while the mapping is incomplete.
++///
++/// `@`/`@@` is relative to neighbour encounter order, so the exact sense can
++/// only be checked once all query neighbours have been mapped. During search
++/// this therefore requires merely that the target carries a stereo tag;
++/// [`mapped_chirality_compatible`] performs the parity-aware final check.
++pub(super) fn eval_chirality(idx: AtomIdx, ctx: &EvalCtx<'_>, kind: u8) -> bool {
++    if !ctx.config.use_chirality {
++        return true;
++    }
++    use chematic_core::Chirality;
++    let c = ctx.mol.atom(idx).chirality;
++    let _ = kind;
++    c != Chirality::None
++}
+diff --git a/crates/chematic-smarts/src/merge_hydrogens.rs b/crates/chematic-smarts/src/merge_hydrogens.rs
+new file mode 100644
+index 00000000..e83410d5
+--- /dev/null
++++ b/crates/chematic-smarts/src/merge_hydrogens.rs
+@@ -0,0 +1,230 @@
++//! Conservative top-level query-H folding with tetrahedral parity preservation.
++use crate::{AtomPrimitive as A, AtomQuery as Q, BondPrimitive as B, BondQuery, QueryMolecule};
++
++/// A query cannot be folded without exceeding the supported representation.
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub enum QueryHydrogenError {
++    InvalidGraph,
++    ResourceLimit,
++    RecursiveQuery,
++    UnsupportedStereo { atom: usize },
++}
++
++impl core::fmt::Display for QueryHydrogenError {
++    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
++        match self {
++            Self::InvalidGraph => write!(f, "query has inconsistent bonds or adjacency"),
++            Self::ResourceLimit => {
++                write!(f, "query-H folding exceeds its graph or expression limits")
++            }
++            Self::RecursiveQuery => write!(f, "query-H folding does not support recursive SMARTS"),
++            Self::UnsupportedStereo { atom } => write!(
++                f,
++                "query atom {atom} needs one removable H and a complete tetrahedral frame"
++            ),
++        }
++    }
++}
++impl std::error::Error for QueryHydrogenError {}
++
++fn plain_h(q: &Q) -> bool {
++    match q {
++        Q::Primitive(A::AtomicNum(1)) => true,
++        Q::And(a, b) => {
++            matches!(a.as_ref(), Q::Primitive(A::Symbol(s)) if s == "H")
++                && matches!(b.as_ref(), Q::Primitive(A::Aromatic(false)))
++        }
++        _ => false,
++    }
++}
++
++fn definitely_h(q: &Q) -> bool {
++    match q {
++        Q::Primitive(A::Symbol(s)) => s == "H",
++        Q::Primitive(A::AtomicNum(1)) => true,
++        Q::And(a, b) => definitely_h(a) || definitely_h(b),
++        Q::Or(a, b) => definitely_h(a) && definitely_h(b),
++        _ => false,
++    }
++}
++
++fn validate_graph(q: &QueryMolecule) -> Result<(), QueryHydrogenError> {
++    if q.adj.len() != q.atoms.len() {
++        return Err(QueryHydrogenError::InvalidGraph);
++    }
++    let mut occurrences = vec![0usize; q.bonds.len()];
++    for (i, neighbors) in q.adj.iter().enumerate() {
++        for &(bi, other) in neighbors {
++            let b = q.bonds.get(bi).ok_or(QueryHydrogenError::InvalidGraph)?;
++            if other >= q.atoms.len()
++                || i == other
++                || !((b.atom1 == i && b.atom2 == other) || (b.atom2 == i && b.atom1 == other))
++                || neighbors.iter().filter(|&&(idx, _)| idx == bi).count() != 1
++            {
++                return Err(QueryHydrogenError::InvalidGraph);
++            }
++            occurrences[bi] += 1;
++        }
++    }
++    if occurrences.iter().any(|&count| count != 2) {
++        return Err(QueryHydrogenError::InvalidGraph);
++    }
++    Ok(())
++}
++
++fn validate(q: &QueryMolecule) -> Result<(), QueryHydrogenError> {
++    if q.atoms.len() > 1024 || q.bonds.len() > 4096 {
++        return Err(QueryHydrogenError::ResourceLimit);
++    }
++    validate_graph(q)?;
++    let mut count = 0;
++    for (atom_index, atom) in q.atoms.iter().enumerate() {
++        let mut todo = vec![(&atom.query, 0usize)];
++        while let Some((expr, depth)) = todo.pop() {
++            count += 1;
++            if depth > 32 || count > 16384 {
++                return Err(QueryHydrogenError::ResourceLimit);
++            }
++            match expr {
++                Q::Primitive(A::Recursive(_)) => return Err(QueryHydrogenError::RecursiveQuery),
++                Q::Primitive(A::Chirality(kind)) if !matches!(kind, 1 | 2) => {
++                    return Err(QueryHydrogenError::UnsupportedStereo { atom: atom_index });
++                }
++                Q::And(a, b) | Q::Or(a, b) => {
++                    todo.push((a, depth + 1));
++                    todo.push((b, depth + 1));
++                }
++                Q::Not(a) => todo.push((a, depth + 1)),
++                Q::Primitive(_) => {}
++            }
++        }
++    }
++    for bond in &q.bonds {
++        let mut todo = vec![(&bond.query, 0usize)];
++        while let Some((expr, depth)) = todo.pop() {
++            count += 1;
++            if depth > 32 || count > 16384 {
++                return Err(QueryHydrogenError::ResourceLimit);
++            }
++            match expr {
++                BondQuery::And(a, b) | BondQuery::Or(a, b) => {
++                    todo.push((a, depth + 1));
++                    todo.push((b, depth + 1));
++                }
++                BondQuery::Not(a) => todo.push((a, depth + 1)),
++                _ => {}
++            }
++        }
++    }
++    Ok(())
++}
++
++fn has_stereo(q: &Q) -> bool {
++    match q {
++        Q::Primitive(A::Chirality(_)) => true,
++        Q::And(a, b) | Q::Or(a, b) => has_stereo(a) || has_stereo(b),
++        Q::Not(a) => has_stereo(a),
++        _ => false,
++    }
++}
++
++fn flip(q: &mut Q) {
++    match q {
++        Q::Primitive(A::Chirality(kind)) => *kind = if *kind == 1 { 2 } else { 1 },
++        Q::And(a, b) | Q::Or(a, b) => {
++            flip(a);
++            flip(b);
++        }
++        Q::Not(a) => flip(a),
++        _ => {}
++    }
++}
++
++/// Fold plain, unmapped terminal `[H]`/`[#1]` nodes on single/implicit bonds.
++///
++/// Adds a minimum *total* H count (`!H0`, also `!H1` for two H nodes, etc.),
++/// preserving existing predicates and the original graph's adjacency order.
++/// Isotopic, mapped, charged or otherwise constrained H nodes, H-H bonds, and
++/// conditional/non-single bonds are retained. Targets are ordinary chemical
++/// graphs with monovalent H; this is not a bond-query equivalence for malformed
++/// multivalent H targets. Recursive SMARTS are rejected rather than projected.
++///
++/// Affected chiral atoms require one folded H in a four-neighbour frame. Their
++/// `@`/`@@` sense is adjusted for the virtual-H position used by the matcher.
++/// Partial/ambiguous frames are rejected. Input is immutable. Caps: 1024 atoms,
++/// 4096 bonds, 16384 atom-expression nodes, expression depth 32.
++/// Mappings returned for the result refer to its compacted query indices.
++pub fn merge_query_hydrogens(input: &QueryMolecule) -> Result<QueryMolecule, QueryHydrogenError> {
++    validate(input)?;
++    let n = input.atoms.len();
++    let mut removed = vec![false; n];
++    let mut counts = vec![0usize; n];
++    for (h, atom) in input.atoms.iter().enumerate() {
++        if atom.atom_map.is_some() || !plain_h(&atom.query) || input.adj[h].len() != 1 {
++            continue;
++        }
++        let (bi, neighbor) = input.adj[h][0];
++        if definitely_h(&input.atoms[neighbor].query)
++            || !matches!(
++                input.bonds[bi].query,
++                BondQuery::Any | BondQuery::Primitive(B::Single)
++            )
++        {
++            continue;
++        }
++        removed[h] = true;
++        counts[neighbor] += 1;
++    }
++    let mut output = QueryMolecule::new();
++    let mut atom_map = vec![None; n];
++    for (i, atom) in input.atoms.iter().enumerate() {
++        if !removed[i] {
++            atom_map[i] = Some(output.add_atom_with_map(atom.query.clone(), atom.atom_map));
++        }
++    }
++    let mut bond_map = vec![None; input.bonds.len()];
++    for (i, b) in input.bonds.iter().enumerate() {
++        if let (Some(a), Some(c)) = (atom_map[b.atom1], atom_map[b.atom2]) {
++            bond_map[i] = Some(output.bonds.len());
++            output.add_bond(a, c, b.query.clone());
++        }
++    }
++    for i in 0..n {
++        let Some(new_i) = atom_map[i] else {
++            continue;
++        };
++        output.adj[new_i] = input.adj[i]
++            .iter()
++            .filter_map(|&(bi, j)| Some((bond_map[bi]?, atom_map[j]?)))
++            .collect();
++        if counts[i] == 0 {
++            continue;
++        }
++        if counts[i] > 255 {
++            return Err(QueryHydrogenError::ResourceLimit);
++        }
++        if has_stereo(&input.atoms[i].query) {
++            if counts[i] != 1 || input.adj[i].len() != 4 {
++                return Err(QueryHydrogenError::UnsupportedStereo { atom: i });
++            }
++            let old_position = input.adj[i]
++                .iter()
++                .position(|&(_, j)| removed[j])
++                .ok_or(QueryHydrogenError::InvalidGraph)?;
++            let new_position =
++                usize::from(output.adj[new_i].first().is_some_and(|&(_, j)| j < new_i));
++            if old_position.abs_diff(new_position) % 2 == 1 {
++                flip(&mut output.atoms[new_i].query);
++            }
++        }
++        for h in 0..counts[i] {
++            let old = core::mem::replace(&mut output.atoms[new_i].query, Q::Primitive(A::Wildcard));
++            output.atoms[new_i].query = Q::And(
++                Box::new(old),
++                Box::new(Q::Not(Box::new(Q::Primitive(A::HCount(h as u8))))),
++            );
++        }
++    }
++    validate(&output)?;
++    Ok(output)
++}
+diff --git a/crates/chematic-smarts/src/parser.rs b/crates/chematic-smarts/src/parser.rs
+index 09602b9f..6be1c23f 100644
+--- a/crates/chematic-smarts/src/parser.rs
++++ b/crates/chematic-smarts/src/parser.rs
+@@ -38,6 +38,8 @@
+ //! Implicit bond between two adjacent atoms = `BondQuery::Any`, which matches a
+ //! single or aromatic bond (Daylight/RDKit semantics; `~` is the explicit any-bond).
+ 
++mod rings;
++
+ use std::collections::HashMap;
+ use std::fmt;
+ 
+@@ -176,8 +178,13 @@ impl<'a> Parser<'a> {
+ 
+     fn parse(&mut self) -> Result<QueryMolecule, SmartsError> {
+         let mut mol = QueryMolecule::new();
+-        // open_rings maps ring-closure-number → (atom_idx, Optional<BondQuery>)
+-        let mut open_rings: HashMap<u8, (usize, Option<BondQuery>)> = HashMap::new();
++        // open_rings maps ring-closure-number →
++        // (atom_idx, Optional<BondQuery>, lexical adjacency position).
++        //
++        // Keeping the position of the opening ring digit matters for
++        // tetrahedral SMARTS: `@`/`@@` is relative to neighbour encounter
++        // order, and the closing atom may not be parsed until much later.
++        let mut open_rings: HashMap<u8, (usize, Option<BondQuery>, usize)> = HashMap::new();
+ 
+         self.parse_chain(&mut mol, None, None, &mut open_rings)?;
+         // `.` separates disconnected components (e.g. RDKit QED alert
+@@ -215,7 +222,7 @@ impl<'a> Parser<'a> {
+         mol: &mut QueryMolecule,
+         attach_to: Option<usize>,
+         attach_bond: Option<BondQuery>,
+-        open_rings: &mut HashMap<u8, (usize, Option<BondQuery>)>,
++        open_rings: &mut HashMap<u8, (usize, Option<BondQuery>, usize)>,
+     ) -> Result<Option<usize>, SmartsError> {
+         // Parse the first atom of this chain.
+         let (first_atom, first_map) = match self.try_parse_atom()? {
+@@ -316,35 +323,6 @@ impl<'a> Parser<'a> {
+         Ok(Some(current))
+     }
+ 
+-    // -- ring closures -------------------------------------------------------
+-
+-    /// Handle a ring closure: either close an existing open ring or open a new one.
+-    fn handle_ring_closure(
+-        &mut self,
+-        mol: &mut QueryMolecule,
+-        current: usize,
+-        ring_num: u8,
+-        ring_bond: Option<BondQuery>,
+-        open_rings: &mut HashMap<u8, (usize, Option<BondQuery>)>,
+-    ) -> Result<(), SmartsError> {
+-        if let Some((open_atom, open_bond)) = open_rings.remove(&ring_num) {
+-            // Resolve the bond type.
+-            let bond = match (open_bond, ring_bond) {
+-                (Some(a), Some(b)) if a == b => a,
+-                (Some(_), Some(_)) => {
+-                    // Conflicting ring bond specifications — use Any as a fallback.
+-                    BondQuery::Any
+-                }
+-                (Some(b), None) | (None, Some(b)) => b,
+-                (None, None) => BondQuery::Any,
+-            };
+-            mol.add_bond(open_atom, current, bond);
+-        } else {
+-            open_rings.insert(ring_num, (current, ring_bond));
+-        }
+-        Ok(())
+-    }
+-
+     /// Parse a ring closure number (single digit or `%nn`) and an optional
+     /// leading bond query (already consumed before calling this).
+     fn parse_ring_closure_num(
+diff --git a/crates/chematic-smarts/src/parser/rings.rs b/crates/chematic-smarts/src/parser/rings.rs
+new file mode 100644
+index 00000000..6a051ccd
+--- /dev/null
++++ b/crates/chematic-smarts/src/parser/rings.rs
+@@ -0,0 +1,56 @@
++//! Preserve lexical neighbour order while resolving ring closures.
++use super::*;
++
++impl Parser<'_> {
++    // -- ring closures -------------------------------------------------------
++
++    /// Handle a ring closure: either close an existing open ring or open a new one.
++    pub(super) fn handle_ring_closure(
++        &mut self,
++        mol: &mut QueryMolecule,
++        current: usize,
++        ring_num: u8,
++        ring_bond: Option<BondQuery>,
++        open_rings: &mut HashMap<u8, (usize, Option<BondQuery>, usize)>,
++    ) -> Result<(), SmartsError> {
++        if let Some((open_atom, open_bond, open_position)) = open_rings.remove(&ring_num) {
++            // Resolve the bond type.
++            let bond = match (open_bond, ring_bond) {
++                (Some(a), Some(b)) if a == b => a,
++                (Some(_), Some(_)) => {
++                    // Conflicting ring bond specifications — use Any as a fallback.
++                    BondQuery::Any
++                }
++                (Some(b), None) | (None, Some(b)) => b,
++                (None, None) => BondQuery::Any,
++            };
++            mol.add_bond(open_atom, current, bond);
++            // `add_bond` appends at both endpoints. At the closing endpoint
++            // that is the lexical position of the ring digit. At the opening
++            // endpoint the digit was seen earlier, so move only that adjacency
++            // entry back to the recorded position. Graph semantics do not
++            // change; this preserves the order needed for stereo parity.
++            let open_adj = &mut mol.adj[open_atom];
++            // safe: add_bond appended the new adjacency entry.
++            let entry = open_adj
++                .pop()
++                .expect("the just-added ring bond has an adjacency entry");
++            let pending_before = open_rings
++                .values()
++                .filter(|&&(atom, _, position)| atom == open_atom && position < open_position)
++                .count();
++            let position = open_position.saturating_sub(pending_before);
++            open_adj.insert(position.min(open_adj.len()), entry);
++        } else {
++            let pending = open_rings
++                .values()
++                .filter(|&&(atom, _, _)| atom == current)
++                .count();
++            open_rings.insert(
++                ring_num,
++                (current, ring_bond, mol.adj[current].len() + pending),
++            );
++        }
++        Ok(())
++    }
++}
+diff --git a/crates/chematic-smarts/tests/merge_query_hydrogens.rs b/crates/chematic-smarts/tests/merge_query_hydrogens.rs
+new file mode 100644
+index 00000000..602fa782
+--- /dev/null
++++ b/crates/chematic-smarts/tests/merge_query_hydrogens.rs
+@@ -0,0 +1,183 @@
++use chematic_smarts::{
++    MatchConfig, QueryHydrogenError, find_matches_with_config, merge_query_hydrogens, parse_smarts,
++};
++use chematic_smiles::parse;
++
++fn matches(pattern: &str, target: &str, chirality: bool) -> bool {
++    let query = merge_query_hydrogens(&parse_smarts(pattern).unwrap()).unwrap();
++    !find_matches_with_config(
++        &query,
++        &parse(target).unwrap(),
++        &MatchConfig {
++            use_chirality: chirality,
++            ..Default::default()
++        },
++    )
++    .is_empty()
++}
++
++#[test]
++fn issue9675_matches_intended_enantiomer_after_h_folding() {
++    let q = "[C@@]([H])(C)(N)C(=O)O";
++    assert!(matches(q, "C[C@H](N)C(=O)O", true));
++    assert!(!matches(q, "C[C@@H](N)C(=O)O", true));
++    assert!(matches(q, "C[C@@H](N)C(=O)O", false));
++}
++
++#[test]
++fn virtual_h_parity_tracks_every_neighbor_position() {
++    let equivalent = [
++        "[H][C@@](C)(N)C(=O)O",
++        "[C@@]([H])(C)(N)C(=O)O",
++        "[C@](C)([H])(N)C(=O)O",
++        "[C@@](C)(N)([H])C(=O)O",
++        "[C@](C)(N)(C(=O)O)[H]",
++        "C[C@]([H])(N)C(=O)O",
++        "C[C@@](N)([H])C(=O)O",
++    ];
++    for q in equivalent {
++        assert!(matches(q, "C[C@H](N)C(=O)O", true), "{q}");
++        assert!(!matches(q, "C[C@@H](N)C(=O)O", true), "{q}");
++    }
++}
++
++#[test]
++fn explicit_h_targets_keep_same_stereo_result() {
++    for target in [
++        "[H][C@@](C)(N)C(=O)O",
++        "C[C@]([H])(N)C(=O)O",
++        "[2H][C@@](C)(N)C(=O)O",
++    ] {
++        assert!(matches("[C@@]([H])(C)(N)C(=O)O", target, true), "{target}");
++    }
++    assert!(!matches(
++        "[C@@]([H])(C)(N)C(=O)O",
++        "[H][C@](C)(N)C(=O)O",
++        true
++    ));
++}
++
++#[test]
++fn h_count_is_minimum_not_exact() {
++    for target in ["C", "CC", "CCC", "[CH2]", "[CH3]"] {
++        assert!(matches("C([H])[H]", target, false), "{target}");
++    }
++    for target in ["[C]", "[CH]", "C(F)(F)(F)F"] {
++        assert!(!matches("C([H])[H]", target, false), "{target}");
++    }
++    assert!(!matches("[CH0][H]", "C", false));
++}
++
++#[test]
++fn isotopic_mapped_charged_and_complex_h_are_retained() {
++    for q in [
++        "[2H]C", "[H:7]C", "[H+]C", "[#1;D1]C", "[H]~C", "[H]=C", "[H][H]", "[H][H+]", "[H]",
++    ] {
++        let original = parse_smarts(q).unwrap();
++        assert_eq!(merge_query_hydrogens(&original).unwrap(), original, "{q}");
++    }
++    assert_eq!(
++        merge_query_hydrogens(&parse_smarts("[#1]C").unwrap())
++            .unwrap()
++            .atom_count(),
++        1
++    );
++}
++
++#[test]
++fn output_is_idempotent_and_input_is_immutable() {
++    let input = parse_smarts("[H][C@](C)(N)C(=O)O").unwrap();
++    let copy = input.clone();
++    let output = merge_query_hydrogens(&input).unwrap();
++    assert_eq!(input, copy);
++    assert_eq!(output.atom_count(), input.atom_count() - 1);
++    assert_eq!(merge_query_hydrogens(&output).unwrap(), output);
++}
++
++#[test]
++fn unsafe_partial_frames_recursive_queries_and_bad_graphs_fail() {
++    for q in ["[C@]([H])(N)C", "[C@]([H])([H])(N)C"] {
++        assert!(matches!(
++            merge_query_hydrogens(&parse_smarts(q).unwrap()),
++            Err(QueryHydrogenError::UnsupportedStereo { .. })
++        ));
++    }
++    assert_eq!(
++        merge_query_hydrogens(&parse_smarts("[$(C[H])]").unwrap()),
++        Err(QueryHydrogenError::RecursiveQuery)
++    );
++    let mut q = parse_smarts("C[H]").unwrap();
++    q.adj[0][0].1 = 99;
++    assert_eq!(
++        merge_query_hydrogens(&q),
++        Err(QueryHydrogenError::InvalidGraph)
++    );
++}
++
++#[test]
++fn ring_openings_reserve_order_for_both_closure_orders() {
++    for (q, same, opposite) in [
++        (
++            "[C@]12([H])CC(C)CC1NC2",
++            "[C@H]12CC(C)CC1NC2",
++            "[C@@H]12CC(C)CC1NC2",
++        ),
++        (
++            "[C@]12([H])CC(C)CC2NC1",
++            "[C@H]12CC(C)CC2NC1",
++            "[C@@H]12CC(C)CC2NC1",
++        ),
++        (
++            "[C@]1([H])2CC(C)CC1NC2",
++            "[C@@H]12CC(C)CC1NC2",
++            "[C@H]12CC(C)CC1NC2",
++        ),
++    ] {
++        assert!(matches(q, same, true), "{q}");
++        assert!(!matches(q, opposite, true), "{q}");
++    }
++}
++
++#[test]
++fn limits_are_checked_before_cloning_invalid_public_queries() {
++    use chematic_smarts::{AtomPrimitive, AtomQuery, BondQuery, QueryMolecule};
++    let mut graph = QueryMolecule::new();
++    for _ in 0..1025 {
++        graph.add_atom(AtomQuery::Primitive(AtomPrimitive::Wildcard));
++    }
++    assert_eq!(
++        merge_query_hydrogens(&graph),
++        Err(QueryHydrogenError::ResourceLimit)
++    );
++    let mut expr = AtomQuery::Primitive(AtomPrimitive::Wildcard);
++    for _ in 0..33 {
++        expr = AtomQuery::Not(Box::new(expr));
++    }
++    let mut graph = QueryMolecule::new();
++    graph.add_atom(expr);
++    assert_eq!(
++        merge_query_hydrogens(&graph),
++        Err(QueryHydrogenError::ResourceLimit)
++    );
++    let mut graph = parse_smarts("CC").unwrap();
++    let mut expr = BondQuery::Any;
++    for _ in 0..33 {
++        expr = BondQuery::Not(Box::new(expr));
++    }
++    graph.bonds[0].query = expr;
++    assert_eq!(
++        merge_query_hydrogens(&graph),
++        Err(QueryHydrogenError::ResourceLimit)
++    );
++}
++
++#[test]
++fn surviving_atom_maps_and_non_h_bond_queries_are_preserved() {
++    let input = parse_smarts("[C:9]([H])~[N:2]").unwrap();
++    let output = merge_query_hydrogens(&input).unwrap();
++    assert_eq!(
++        output.atoms.iter().map(|a| a.atom_map).collect::<Vec<_>>(),
++        [Some(9), Some(2)]
++    );
++    assert_eq!(output.bonds[0].query, input.bonds[1].query);
++}
+diff --git a/docs/query-hydrogen-folding.md b/docs/query-hydrogen-folding.md
+new file mode 100644
+index 00000000..c5a3e467
+--- /dev/null
++++ b/docs/query-hydrogen-folding.md
+@@ -0,0 +1,89 @@
++# Query hydrogen folding with tetrahedral parity
++
++[RDKit #9675](https://github.com/rdkit/rdkit/issues/9675) is open as checked on
++2026-10-14. RDKit 2026.09.1 reproduces its inversion: the query
++`[C@@]([H])(C)(N)C(=O)O` matches `C[C@H](N)C(=O)O` before H folding when the
++target has explicit H nodes, but its `mergeHs=True` form matches the opposite
++configuration instead.
++
++This local candidate starts from main commit `cac480fb`. It adds a conservative
++native query transformation and mapped-neighbour tetrahedral matching. It is
++not a package publication or a claim of general RDKit `MergeQueryHs` parity.
++
++## Python
++
++```python
++import chematic
++
++original = chematic.SmartsQuery("[C@@]([H])(C)(N)C(=O)O")
++query = original.merge_hydrogens()
++assert query.atom_count == original.atom_count - 1
++assert query.matches(chematic.from_smiles("C[C@H](N)C(=O)O"), use_chirality=True)
++assert not query.matches(chematic.from_smiles("C[C@@H](N)C(=O)O"), use_chirality=True)
++```
++
++The operation returns a new immutable `SmartsQuery`. Its `source` remains the
++original input text, not serialized folded SMARTS; `repr` includes the folding
++operation. `matches`, `matches_many`, `matches_batch`, and `find_matches` accept
++`use_chirality=False` by default to preserve existing behavior. Set it to `True`
++when tetrahedral configuration must constrain the match. These are compiled
++query APIs; no new option is added to molecule string-query convenience APIs.
++
++## Rust and scope
++
++`chematic_smarts::merge_query_hydrogens(&QueryMolecule)` returns
++`Result<QueryMolecule, QueryHydrogenError>`. It folds only plain, unmapped,
++terminal `[H]` or `[#1]` nodes attached by a single or implicit bond.
++For one removed H it adds `!H0` to the neighbour; for two it also adds `!H1`,
++and so on. This is a minimum **total** H count, preserving existing predicates.
++Targets are ordinary chemical graphs with monovalent H; the operation is not
++an equivalence for arbitrary malformed multivalent-H graphs.
++
++Isotopic, mapped, charged or additionally constrained H nodes survive, as do
++H-H bonds and conditional/non-single bonds. Surviving atom-map values and
++non-H bond predicates are preserved. Returned query indices are compacted;
++match mappings refer to those new query indices, while target indices still
++refer to the supplied molecule. The input query is unchanged and successful
++folding is idempotent.
++
++An affected chiral atom must have exactly one folded H and a complete
++four-neighbour tetrahedral frame. Its `@`/`@@` sense is adjusted for the
++virtual-H position. Partial/ambiguous frames and non-tetrahedral chirality
++codes return an error. Recursive SMARTS are rejected by this transformation.
++No H folding is performed inside recursive predicates.
++
++Public graph consistency is checked before cloning. Limits are 1024 atoms,
++4096 bonds, 16384 total atom/bond-expression nodes, and expression depth 32;
++the folded output is checked against the same limits. Python maps folding
++errors to `ValueError`.
++
++The native VF2 path defers exact chirality until a complete mapping is known.
++It compares neighbour permutations rather than raw tags, including the missing
++implicit/explicit H slot. Three-valued candidate checks avoid pruning logical
++NOT/OR expressions prematurely. Query ring openings reserve lexical slots,
++including multiple open rings whose closures arrive in either order. Partial
++unfolded chiral queries and targets without recorded stereo-neighbour order
++retain their previous raw-tag fallback. The parity-preservation checks here use
++SMILES-parsed targets with that order present. This does not
++certify every SMARTS stereo class or the separate RDKit-parity matcher.
++
++## Validation
++
++- All `chematic-smarts` tests passed: 234 passed, 2 existing ignored tests.
++  Ten new folding tests cover the issue, H positions, explicit/isotopic target H,
++  minimum counts, retained constraints/maps, idempotence, invalid inputs/limits,
++  and ring-opening/closure order.
++- Python: 22 new cases and 68 existing module-function cases passed using the
++  locally compiled source extension.
++- `scripts/validate_query_hydrogens.py` generates 48 acyclic patterns from all
++  four-neighbour permutations and both tags, tested on four target spellings,
++  plus six ring cases. All 198 folded chematic results match unmerged RDKit
++  queries against explicit-H targets. RDKit 2026.09.1's folded queries differ
++  from that reference in 102 of these cases. This is a fixed diagnostic set,
++  not an estimate of real-world accuracy.
++- Affected-crate all-target Clippy passed with warnings denied. Refactor budget
++  passed without increasing existing allowances. Dated source/module hashes and
++  oracle examples are in `validation/results/rdkit-query-hydrogens-2026-10-14.json`.
++
++The implementation is in a separate working checkout so the original dirty
++workspace is preserved. The changes are uncommitted and unreleased.
+diff --git a/docs/rdkit-open-issues-2026-10-14.md b/docs/rdkit-open-issues-2026-10-14.md
+index 5b5807a1..0336bdc5 100644
+--- a/docs/rdkit-open-issues-2026-10-14.md
++++ b/docs/rdkit-open-issues-2026-10-14.md
+@@ -7,6 +7,7 @@ Issue state is a snapshot; an open issue can already have a proposed upstream fi
+ 
+ | RDKit issue | Source finding | Decision |
+ | --- | --- | --- |
++| [#9675: query H folding loses/inverts tetrahedral configuration](https://github.com/rdkit/rdkit/issues/9675) | No query-H folding API existed; the main native matcher compared raw chirality tags. | [Local Rust/Python candidate](query-hydrogen-folding.md): conservative H folding, complete-frame parity, lexical ring slots and 198 live RDKit-reference cases; recursive folding is rejected. |
+ | [#7981: enrichment factor returns an empty list](https://github.com/rdkit/rdkit/issues/7981) | No ranked screening enrichment API existed. RDKit 2026.09.1 reproduced the top-90% and full-library defects. | [Implemented native Rust/Python EF](screening-enrichment.md): ceiling cutoffs, full-library endpoints, order/duplicates and explicit undefined-input errors; 3,048 ordinary live-RDKit comparisons. |
+ | [#9647: oversized dense matrix allocation](https://github.com/rdkit/rdkit/issues/9647) | Existing RDKit-compatible distance APIs used unchecked sizes and infallible buffers. | [Implemented allocation boundary](rdkit-distance-matrix-limits.md): checked dimensions, 1024-input/prepared-atom cap, fallible buffers and Python errors; applies to the two named distance APIs. |
+ | [#6716: MOL2 UNITY formal charge](https://github.com/rdkit/rdkit/issues/6716) | The editable reader understood `charge`, but the immutable source projection ignored it; its graph writer also omitted nonzero charges. | Implement the missing projection and graph round trip in this change. |
+diff --git a/scripts/validate_query_hydrogens.py b/scripts/validate_query_hydrogens.py
+new file mode 100644
+index 00000000..41c7422e
+--- /dev/null
++++ b/scripts/validate_query_hydrogens.py
+@@ -0,0 +1,84 @@
++#!/usr/bin/env python3
++"""Compare H-folded native queries to unmerged RDKit queries on explicit-H targets."""
++import argparse
++import hashlib
++import itertools
++import json
++from pathlib import Path
++import platform
++import subprocess
++
++import chematic
++from rdkit import Chem, rdBase
++
++ROOT = Path(__file__).resolve().parents[1]
++
++
++def main():
++    parser = argparse.ArgumentParser()
++    parser.add_argument("--output", type=Path, required=True)
++    args = parser.parse_args()
++    assert rdBase.rdkitVersion == "2026.09.1", rdBase.rdkitVersion
++    targets = ["C[C@H](N)C(=O)O", "C[C@@H](N)C(=O)O",
++               "[H][C@@](C)(N)C(=O)O", "[H][C@](C)(N)C(=O)O"]
++    patterns = []
++    for neighbors in itertools.permutations(["[H]", "C", "N", "C(=O)O"]):
++        for tag in ["@", "@@"]:
++            patterns.append(f"[C{tag}]({neighbors[0]})({neighbors[1]})({neighbors[2]}){neighbors[3]}")
++    cases = [(p, t) for p in patterns for t in targets]
++    for p, target in [
++        ("[C@]12([H])CC(C)CC1NC2", "[C@H]12CC(C)CC1NC2"),
++        ("[C@]12([H])CC(C)CC2NC1", "[C@H]12CC(C)CC2NC1"),
++        ("[C@]1([H])2CC(C)CC1NC2", "[C@@H]12CC(C)CC1NC2"),
++    ]:
++        cases.append((p, target))
++        cases.append((p, target.replace("@@", "TEMP").replace("@", "@@").replace("TEMP", "@")))
++    mismatches, upstream_differences = [], []
++    for pattern, target in cases:
++        rd_target = Chem.AddHs(Chem.MolFromSmiles(target))
++        expected = rd_target.HasSubstructMatch(Chem.MolFromSmarts(pattern), useChirality=True)
++        query = chematic.SmartsQuery(pattern)
++        folded = query.merge_hydrogens()
++        assert folded.atom_count == query.atom_count - 1
++        actual = folded.matches(chematic.from_smiles(target), use_chirality=True)
++        upstream = Chem.MolFromSmiles(target).HasSubstructMatch(
++            Chem.MolFromSmarts(pattern, mergeHs=True), useChirality=True)
++        record = dict(pattern=pattern, target=target, unmerged_explicit_h_reference=expected,
++                      chematic_folded=actual, rdkit_folded=upstream)
++        if actual != expected:
++            mismatches.append(record)
++        if upstream != expected:
++            upstream_differences.append(record)
++    assert not mismatches, mismatches
++    assert upstream_differences
++    paths = ["crates/chematic-smarts/src/merge_hydrogens.rs",
++             "crates/chematic-smarts/src/match_vf2.rs",
++             "crates/chematic-smarts/src/match_vf2/chirality.rs",
++             "crates/chematic-smarts/src/parser.rs",
++             "crates/chematic-smarts/src/parser/rings.rs",
++             "crates/chematic-py/src/misc.rs", "scripts/validate_query_hydrogens.py"]
++    module = Path(chematic.__file__).resolve()
++    report = dict(issue="https://github.com/rdkit/rdkit/issues/9675",
++                  source_baseline=subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
++                  artifact_lane="uncommitted source extension; not a release", python=platform.python_version(),
++                  rdkit_version=rdBase.rdkitVersion, tested_cases=len(cases),
++                  fixture_provenance=dict(id="query-hydrogens-generated-v1", retrieved="2026-10-14",
++                                          license="MIT OR Apache-2.0", redistribution="allowed",
++                                          rationale="Project-authored minimal chemical queries and generated neighbour permutations; no upstream implementation or bulk data copied",
++                                          minimization="One amino-acid stereocentre and three ring-order examples",
++                                          oracle="RDKit 2026.09.1, unmerged queries, Chem.AddHs targets, useChirality=True"),
++                  cases_sha256=hashlib.sha256(json.dumps(cases, separators=(",", ":")).encode()).hexdigest(),
++                  pattern_generation="24 root-neighbour permutations times both tags, four target spellings; three ring patterns times both configurations",
++                  chematic_mismatches=mismatches, rdkit_folded_mismatch_count=len(upstream_differences),
++                  rdkit_folded_mismatch_examples=upstream_differences[:12],
++                  module_sha256=hashlib.sha256(module.read_bytes()).hexdigest(),
++                  source_sha256={p: hashlib.sha256((ROOT/p).read_bytes()).hexdigest() for p in paths},
++                  scope="plain unmapped terminal H on single/implicit bonds, complete tetrahedral affected frames; recursive queries rejected")
++    args.output.parent.mkdir(parents=True, exist_ok=True)
++    args.output.write_text(json.dumps(report, indent=2)+"\n")
++    print(json.dumps(dict(tested_cases=len(cases), chematic_mismatches=len(mismatches),
++                          rdkit_folded_mismatches=len(upstream_differences))))
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/validation/results/rdkit-query-hydrogens-2026-10-14.json b/validation/results/rdkit-query-hydrogens-2026-10-14.json
+new file mode 100644
+index 00000000..14c21fd2
+--- /dev/null
++++ b/validation/results/rdkit-query-hydrogens-2026-10-14.json
+@@ -0,0 +1,118 @@
++{
++  "issue": "https://github.com/rdkit/rdkit/issues/9675",
++  "source_baseline": "cac480fb23cd8adeec6e5e9bed1f18677f87b392",
++  "artifact_lane": "uncommitted source extension; not a release",
++  "python": "3.13.6",
++  "rdkit_version": "2026.09.1",
++  "tested_cases": 198,
++  "fixture_provenance": {
++    "id": "query-hydrogens-generated-v1",
++    "retrieved": "2026-10-14",
++    "license": "MIT OR Apache-2.0",
++    "redistribution": "allowed",
++    "rationale": "Project-authored minimal chemical queries and generated neighbour permutations; no upstream implementation or bulk data copied",
++    "minimization": "One amino-acid stereocentre and three ring-order examples",
++    "oracle": "RDKit 2026.09.1, unmerged queries, Chem.AddHs targets, useChirality=True"
++  },
++  "cases_sha256": "dc5c33686b5d4c38465174ba31cf44f3317db74d1288a6531ab5efb2331c2945",
++  "pattern_generation": "24 root-neighbour permutations times both tags, four target spellings; three ring patterns times both configurations",
++  "chematic_mismatches": [],
++  "rdkit_folded_mismatch_count": 102,
++  "rdkit_folded_mismatch_examples": [
++    {
++      "pattern": "[C@]([H])(C)(N)C(=O)O",
++      "target": "C[C@H](N)C(=O)O",
++      "unmerged_explicit_h_reference": false,
++      "chematic_folded": false,
++      "rdkit_folded": true
++    },
++    {
++      "pattern": "[C@]([H])(C)(N)C(=O)O",
++      "target": "C[C@@H](N)C(=O)O",
++      "unmerged_explicit_h_reference": true,
++      "chematic_folded": true,
++      "rdkit_folded": false
++    },
++    {
++      "pattern": "[C@]([H])(C)(N)C(=O)O",
++      "target": "[H][C@@](C)(N)C(=O)O",
++      "unmerged_explicit_h_reference": false,
++      "chematic_folded": false,
++      "rdkit_folded": true
++    },
++    {
++      "pattern": "[C@]([H])(C)(N)C(=O)O",
++      "target": "[H][C@](C)(N)C(=O)O",
++      "unmerged_explicit_h_reference": true,
++      "chematic_folded": true,
++      "rdkit_folded": false
++    },
++    {
++      "pattern": "[C@@]([H])(C)(N)C(=O)O",
++      "target": "C[C@H](N)C(=O)O",
++      "unmerged_explicit_h_reference": true,
++      "chematic_folded": true,
++      "rdkit_folded": false
++    },
++    {
++      "pattern": "[C@@]([H])(C)(N)C(=O)O",
++      "target": "C[C@@H](N)C(=O)O",
++      "unmerged_explicit_h_reference": false,
++      "chematic_folded": false,
++      "rdkit_folded": true
++    },
++    {
++      "pattern": "[C@@]([H])(C)(N)C(=O)O",
++      "target": "[H][C@@](C)(N)C(=O)O",
++      "unmerged_explicit_h_reference": true,
++      "chematic_folded": true,
++      "rdkit_folded": false
++    },
++    {
++      "pattern": "[C@@]([H])(C)(N)C(=O)O",
++      "target": "[H][C@](C)(N)C(=O)O",
++      "unmerged_explicit_h_reference": false,
++      "chematic_folded": false,
++      "rdkit_folded": true
++    },
++    {
++      "pattern": "[C@]([H])(C)(C(=O)O)N",
++      "target": "C[C@H](N)C(=O)O",
++      "unmerged_explicit_h_reference": true,
++      "chematic_folded": true,
++      "rdkit_folded": false
++    },
++    {
++      "pattern": "[C@]([H])(C)(C(=O)O)N",
++      "target": "C[C@@H](N)C(=O)O",
++      "unmerged_explicit_h_reference": false,
++      "chematic_folded": false,
++      "rdkit_folded": true
++    },
++    {
++      "pattern": "[C@]([H])(C)(C(=O)O)N",
++      "target": "[H][C@@](C)(N)C(=O)O",
++      "unmerged_explicit_h_reference": true,
++      "chematic_folded": true,
++      "rdkit_folded": false
++    },
++    {
++      "pattern": "[C@]([H])(C)(C(=O)O)N",
++      "target": "[H][C@](C)(N)C(=O)O",
++      "unmerged_explicit_h_reference": false,
++      "chematic_folded": false,
++      "rdkit_folded": true
++    }
++  ],
++  "module_sha256": "1c6c50bae922aeb87bd1292b17d9d4ce8286ac58993ac8d00f19303aed2739c5",
++  "source_sha256": {
++    "crates/chematic-smarts/src/merge_hydrogens.rs": "d1b2c51412925bef2f543e0a3368125d5e5343c76bf64d0ad93fec56d14e4d7e",
++    "crates/chematic-smarts/src/match_vf2.rs": "6a76270701c2f86efa354e9d291003229335cfe265d36cd37a722291ba3de6a5",
++    "crates/chematic-smarts/src/match_vf2/chirality.rs": "11b9fe9455c02b18b14e590e2aca2d1311b2524c76d6b2e595f5164062267dc6",
++    "crates/chematic-smarts/src/parser.rs": "5e4ef77bf985151a9c831149ce2a54845b7e3124986cd414bcca5d7de6c64556",
++    "crates/chematic-smarts/src/parser/rings.rs": "f3bb9fbbbf3d46f5860a77ca5bdd0a9eb12929ec6827cf44cc27ecf4168df790",
++    "crates/chematic-py/src/misc.rs": "2cb538f8162f51456eed49da115a2f36f1e6dd8c7774bce18912133b4226299f",
++    "scripts/validate_query_hydrogens.py": "90a6b276e61e01550ebc5b79d4db2ae92e145eea2b6bbb9beaf4d57f13bb4b9f"
++  },
++  "scope": "plain unmapped terminal H on single/implicit bonds, complete tetrahedral affected frames; recursive queries rejected"
++}

@@ -1,0 +1,1406 @@
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 9a81263..5a94882 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -179,6 +179,7 @@ jobs:
+           - { package: chematic-mol, target: cif_checked_writer }
+           - { package: chematic-mol, target: pqr_pdbqt_contract }
+           - { package: chematic-chem, target: renumber_stereo_contract }
++          - { package: chematic-chem, target: stereo_candidate_budget }
+           - { package: chematic-mol, target: cif_coordinate_contract }
+           - { package: chematic-mol, target: cml_hydrogen_contract }
+           - { package: chematic-mol, target: mol2_unity_charge }
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 5c3a461..8f9bf83 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -12,6 +12,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
+ 
+ ### Added
+ 
++- Corrected native carbon-stereoisomer candidate selection so CH2 and
++  identical terminal ligands do not consume the six-site budget; aminoadamantane
++  now yields four assignments. Enumeration retains graph metadata and Python
++  molecule properties while keeping ring pseudoasymmetric candidates.
++
+ - Added general mmCIF residue grouping in Rust/Python, retaining separate
+   auth/label identities, glycans, ligands, water, models and alternate locations.
+   Missing residue identifiers and duplicate atom rows return explicit errors.
+diff --git a/crates/chematic-chem/src/stereo.rs b/crates/chematic-chem/src/stereo.rs
+index 27208f2..9d90f24 100644
+--- a/crates/chematic-chem/src/stereo.rs
++++ b/crates/chematic-chem/src/stereo.rs
+@@ -7,9 +7,7 @@
+ use std::collections::HashMap;
+ 
+ use crate::atropisomer;
+-use chematic_core::{
+-    Atom, AtomIdx, BondOrder, Chirality, Molecule, MoleculeBuilder, STEREO_H_SENTINEL,
+-};
++use chematic_core::{AtomIdx, BondOrder, Chirality, Molecule, MoleculeBuilder, STEREO_H_SENTINEL};
+ 
+ /// Invert the stereochemistry of a tetrahedral stereocenter.
+ ///
+@@ -78,38 +76,26 @@ pub fn invert_stereocenter(mol: &Molecule, idx: AtomIdx) -> Molecule {
+     builder.build()
+ }
+ 
+-/// Enumerate all stereoisomers by assigning R/S to unspecified stereocenters.
++/// Enumerate carbon stereo assignments with explicit relative parity frames.
+ ///
+-/// Identifies tetrahedral carbon atoms without explicit `@`/`@@` notation and
++/// Identifies saturated carbon candidates without explicit `@`/`@@` notation and
+ /// generates all 2^n combinations where n is the number of unspecified centers.
++/// CH2 and identical terminal substituents do not consume the candidate budget.
++/// Graph-symmetric ring candidates remain eligible for pseudoasymmetry.
+ /// At most 2^6 = 64 combinations are enumerated; returns empty vector if n > 6.
+ ///
+-/// Each returned molecule has all stereocenters assigned (using `Chirality::Clockwise`
+-/// for R and `Chirality::CounterClockwise` for S). Deduplicates results by
++/// Each candidate receives relative tetrahedral parity in an explicit neighbour
++/// frame; `Clockwise`/`CounterClockwise` are not absolute R/S labels. Deduplicates by
+ /// canonical SMILES.
+ pub fn enumerate_stereoisomers(mol: &Molecule) -> Vec<Molecule> {
+     use chematic_smiles::canonical_smiles;
+ 
+-    // Identify unspecified tetrahedral carbon stereocenters
++    // Retain graph-symmetric ring candidates: assigning the surrounding
++    // centers can make them pseudoasymmetric. Reject only locally provable
++    // duplicates (CH2 and identical terminal ligands).
+     let unspecified: Vec<AtomIdx> = mol
+         .atoms()
+-        .filter(|(idx, atom)| {
+-            if atom.element.atomic_number() != 6 || atom.aromatic {
+-                return false;
+-            }
+-            if atom.chirality != Chirality::None {
+-                return false;
+-            }
+-            let degree = mol.neighbors(*idx).count();
+-            if degree < 2 {
+-                return false;
+-            }
+-            let total = degree + chematic_core::implicit_hcount(mol, *idx) as usize;
+-            total == 4
+-                && mol.neighbors(*idx).all(|(_, bidx)| {
+-                    !matches!(mol.bond(bidx).order, BondOrder::Double | BondOrder::Triple)
+-                })
+-        })
++        .filter(|(idx, _)| enumeration_candidate(mol, *idx))
+         .map(|(idx, _)| idx)
+         .collect();
+ 
+@@ -119,22 +105,7 @@ pub fn enumerate_stereoisomers(mol: &Molecule) -> Vec<Molecule> {
+     }
+ 
+     if n == 0 {
+-        // Return a copy of the input molecule. A pure passthrough (same atom
+-        // count/order, none skipped) -- copy the stereo side channels
+-        // verbatim rather than losing already-specified stereocenters'
+-        // stereo_neighbor_order (see the main loop below for why this
+-        // matters: @/@@ is meaningless without it).
+-        let mut builder = MoleculeBuilder::new();
+-        for (_, atom) in mol.atoms() {
+-            builder.add_atom(atom.clone());
+-        }
+-        for (_, bond) in mol.bonds() {
+-            let _ = builder.add_bond(bond.atom1, bond.atom2, bond.order);
+-        }
+-        builder.copy_stereo_groups_from(mol);
+-        builder.copy_stereo_from(mol);
+-        builder.copy_bond_directions_from(mol);
+-        return vec![builder.build()];
++        return vec![mol.clone()];
+     }
+ 
+     let mut seen = std::collections::HashSet::new();
+@@ -155,53 +126,29 @@ pub fn enumerate_stereoisomers(mol: &Molecule) -> Vec<Molecule> {
+             })
+             .collect();
+ 
+-        let mut builder = MoleculeBuilder::new();
++        // Clone retains the indexed graph, tags, R labels, enhanced groups,
++        // ring-closure metadata and existing stereo frames. Derived caches
++        // start empty; only the selected atoms' declaration and frame change.
++        let mut isomer = mol.clone();
++        // CIP priorities can change through a newly assigned neighbouring
++        // center (Rule 5), even at a fixed center. Recompute derived labels.
+         for (idx, atom) in mol.atoms() {
+-            let mut a = Atom::new(atom.element);
+-            a.charge = atom.charge;
+-            a.isotope = atom.isotope;
+-            a.aromatic = atom.aromatic;
+-            a.atom_map = atom.atom_map;
+-            if let Some(&new_chirality) = chirality_overrides.get(&idx) {
+-                a.chirality = new_chirality;
+-                // Force bracket notation for SMILES output
+-                let implicit_h = chematic_core::implicit_hcount(mol, idx);
+-                a.hydrogen_count = Some(atom.hydrogen_count.unwrap_or(implicit_h));
+-            } else {
+-                a.chirality = atom.chirality;
+-                a.hydrogen_count = atom.hydrogen_count;
++            if atom.cip_code.is_some() {
++                isomer.set_cip_code(idx, None);
+             }
+-            builder.add_atom(a);
+-        }
+-        for (_, bond) in mol.bonds() {
+-            let _ = builder.add_bond(bond.atom1, bond.atom2, bond.order);
+         }
+-
+-        // Passthrough rebuild (same atom/bond count/order as `mol`) -- copy
+-        // the stereo side channels verbatim so already-specified
+-        // stereocenters (not in `chirality_overrides`) keep the
+-        // stereo_neighbor_order their `@`/`@@` is defined relative to.
+-        builder.copy_stereo_groups_from(mol);
+-        builder.copy_stereo_from(mol);
+-        builder.copy_bond_directions_from(mol);
+-
+-        // `mol` never had a stereo_neighbor_order entry for these atoms
+-        // (they were achiral there), so copy_stereo_from above didn't set
+-        // one -- without it, the freshly-assigned `chirality` above is
+-        // uninterpretable (same "chirality set, no reference order" failure
+-        // shape Kekule-S0 fixed for apply_kekule). Neighbor order here is an
+-        // arbitrary but fixed, well-defined reference frame (bond-insertion
+-        // order, implicit H last): `enumerate_stereoisomers` only needs the
+-        // 2^n combinations to be distinct and independently interpretable,
+-        // not to match any external R/S convention.
+-        for &idx in chirality_overrides.keys() {
+-            let mut order: Vec<u32> = mol.neighbors(idx).map(|(nb, _)| nb.0).collect();
++        for (&idx, &chirality) in &chirality_overrides {
+             let implicit_h = chematic_core::implicit_hcount(mol, idx);
+-            order.extend(std::iter::repeat_n(STEREO_H_SENTINEL, implicit_h as usize));
+-            builder.set_stereo_neighbor_order(idx, order);
++            isomer.set_chirality(idx, chirality);
++            isomer.set_hydrogen_count(
++                idx,
++                Some(mol.atom(idx).hydrogen_count.unwrap_or(implicit_h)),
++            );
++            let mut frame: Vec<u32> = mol.neighbors(idx).map(|(nb, _)| nb.0).collect();
++            frame.extend(std::iter::repeat_n(STEREO_H_SENTINEL, implicit_h as usize));
++            isomer.set_stereo_neighbor_order(idx, frame);
+         }
+ 
+-        let isomer = builder.build();
+         let smi = canonical_smiles(&isomer);
+         if seen.insert(smi) {
+             results.push(isomer);
+@@ -211,6 +158,54 @@ pub fn enumerate_stereoisomers(mol: &Molecule) -> Vec<Molecule> {
+     results
+ }
+ 
++// Local signatures intentionally omit atom maps/tags: those labels cannot
++// make two chemically identical terminal substituents stereogenic.
++fn terminal_ligand(mol: &Molecule, idx: AtomIdx) -> Option<(u8, Option<u16>, i8, bool, u8)> {
++    let a = mol.atom(idx);
++    if a.wildcard || mol.degree(idx) != 1 || a.chirality != Chirality::None {
++        return None;
++    }
++    Some((
++        a.element.atomic_number(),
++        a.isotope,
++        a.charge,
++        a.aromatic,
++        chematic_core::implicit_hcount(mol, idx),
++    ))
++}
++
++fn enumeration_candidate(mol: &Molecule, idx: AtomIdx) -> bool {
++    let a = mol.atom(idx);
++    if a.element.atomic_number() != 6 || a.aromatic || a.wildcard || a.chirality != Chirality::None
++    {
++        return false;
++    }
++    let h = chematic_core::implicit_hcount(mol, idx);
++    let degree = mol.degree(idx);
++    if h > 1 || degree + h as usize != 4 {
++        return false;
++    }
++    let mut leaves = Vec::with_capacity(4);
++    if h == 1 {
++        leaves.push((1, None, 0, false, 0));
++    }
++    for (nb, bond) in mol.neighbors(idx) {
++        if !matches!(
++            mol.bond(bond).order,
++            BondOrder::Single | BondOrder::Up | BondOrder::Down
++        ) {
++            return false;
++        }
++        if let Some(signature) = terminal_ligand(mol, nb) {
++            if leaves.contains(&signature) {
++                return false;
++            }
++            leaves.push(signature);
++        }
++    }
++    true
++}
++
+ /// Assign both tetrahedral (R/S) and axial (M/P) stereochemistry in one step.
+ ///
+ /// This function integrates CIP-based R/S assignment with atropisomer detection
+@@ -235,6 +230,7 @@ pub fn assign_complete_stereochemistry(mol: &Molecule) -> Molecule {
+ #[cfg(test)]
+ mod tests {
+     use super::*;
++    use chematic_core::Atom;
+     use chematic_core::BondIdx;
+     use chematic_perception::find_sssr;
+     use chematic_smiles::parse;
+diff --git a/crates/chematic-chem/tests/stereo_candidate_budget.rs b/crates/chematic-chem/tests/stereo_candidate_budget.rs
+new file mode 100644
+index 0000000..ef02cb1
+--- /dev/null
++++ b/crates/chematic-chem/tests/stereo_candidate_budget.rs
+@@ -0,0 +1,184 @@
++use chematic_chem::{add_hydrogens, enumerate_stereoisomers};
++use chematic_core::{AtomIdx, BondIdx, RGroupLabel, StereoGroup, StereoGroupKind};
++use chematic_smiles::{canonical_smiles, parse};
++use std::collections::HashSet;
++
++fn keys(s: &str) -> HashSet<String> {
++    enumerate_stereoisomers(&parse(s).unwrap())
++        .iter()
++        .map(canonical_smiles)
++        .collect()
++}
++
++#[test]
++fn aminoadamantane_has_four_unique_stereochemical_assignments() {
++    let v = keys("NC12CC3CC(CC(C3)C1)C2");
++    assert_eq!(v.len(), 4);
++    for s in v {
++        assert_eq!(canonical_smiles(&parse(&s).unwrap()), s);
++    }
++}
++#[test]
++fn inositol_keeps_all_nine_stereoisomers() {
++    let v = keys("OC1C(O)C(O)C(O)C(O)C1O");
++    assert_eq!(v.len(), 9);
++    for s in v {
++        assert_eq!(canonical_smiles(&parse(&s).unwrap()), s);
++    }
++}
++#[test]
++fn methylene_rich_alkanes_do_not_consume_the_budget() {
++    for n in [8, 16, 32] {
++        assert_eq!(keys(&"C".repeat(n)).len(), 1);
++    }
++    assert_eq!(keys("CCCCCCCCCCCCCCCC(O)F").len(), 2);
++}
++#[test]
++fn explicit_and_mixed_identical_hydrogens_do_not_consume_the_budget() {
++    let implicit = parse("NC12CC3CC(CC(C3)C1)C2").unwrap();
++    let explicit = add_hydrogens(&implicit);
++    assert_eq!(enumerate_stereoisomers(&explicit).len(), 4);
++    // Two identical explicit H plus a non-node H cannot be stereogenic.
++    let mixed = "[H][CH]([H])C";
++    assert_eq!(keys(mixed).len(), 1);
++}
++#[test]
++fn isotope_distinguished_terminal_hydrogens_remain_stereogenic() {
++    assert_eq!(keys("[H]C([2H])(F)Cl").len(), 2);
++    assert_eq!(keys("[2H]C(F)Cl").len(), 2);
++}
++#[test]
++fn identical_terminal_halogen_and_methyl_groups_are_excluded() {
++    assert_eq!(keys("FC(F)(Br)Cl").len(), 1);
++    assert_eq!(keys("CC(C)(Br)Cl").len(), 1);
++    let repeated = "FC(F)(Br)Cl.".repeat(8) + "C";
++    assert_eq!(keys(&repeated).len(), 1);
++}
++#[test]
++fn atom_maps_and_nonchemical_tags_do_not_make_identical_ligands_different() {
++    let mut m = parse("[H:1]C([H:2])(F)Cl").unwrap();
++    m.set_tag(AtomIdx(0), Some(1));
++    m.set_tag(AtomIdx(2), Some(2));
++    let v = enumerate_stereoisomers(&m);
++    assert_eq!(v.len(), 1);
++    assert_eq!(
++        v[0].atom(AtomIdx(1)).chirality,
++        chematic_core::Chirality::None
++    );
++    assert_eq!(v[0].atom_tag(AtomIdx(0)).unwrap().get(), 1);
++}
++#[test]
++fn seven_real_candidate_centers_still_respect_the_existing_cap() {
++    let s = std::iter::repeat_n("FC(Cl)(Br)I", 7)
++        .collect::<Vec<_>>()
++        .join(".");
++    assert!(keys(&s).is_empty());
++}
++#[test]
++fn six_real_candidate_centers_are_enumerated_completely() {
++    // The distinct atom maps label the disconnected centers for this test,
++    // making all 64 indexed assignments observable in the canonical key.
++    let s = (1..=6)
++        .map(|i| format!("F[CH:{i}](Cl)Br"))
++        .collect::<Vec<_>>()
++        .join(".");
++    assert_eq!(keys(&s).len(), 64);
++}
++#[test]
++fn preserves_full_graph_metadata_in_both_copy_and_assignment_paths() {
++    for s in ["FC(Cl)(Br)I.*.C1CC1", "N[C@@H](C)C(=O)O.*.C1CC1"] {
++        let mut m = parse(s).unwrap();
++        let star = m.atoms().find(|(_, a)| a.wildcard).unwrap().0;
++        m.set_r_group(star, RGroupLabel::numbered(3).unwrap());
++        m.set_tag(AtomIdx(0), Some(71));
++        m.set_stereo_groups_with_bonds(vec![(
++            StereoGroup::new(StereoGroupKind::Or(2), vec![AtomIdx(1)]),
++            vec![BondIdx(0)],
++        )]);
++        let expected = canonical_smiles(&m);
++        for out in enumerate_stereoisomers(&m) {
++            assert_eq!(out.atom_count(), m.atom_count());
++            assert_eq!(out.bond_count(), m.bond_count());
++            assert_eq!(out.atom_tag(AtomIdx(0)).unwrap().get(), 71);
++            assert_eq!(out.r_group_label(star).unwrap().number(), Some(3));
++            assert_eq!(out.stereo_groups(), m.stereo_groups());
++            assert_eq!(
++                out.stereo_group_bond_indices(0),
++                m.stereo_group_bond_indices(0)
++            );
++            for (b, bond) in m.bonds() {
++                assert_eq!(out.bond(b), bond);
++                assert_eq!(
++                    out.smiles_ring_closure_metadata(b),
++                    m.smiles_ring_closure_metadata(b)
++                );
++            }
++            if s.starts_with('N') {
++                assert_eq!(canonical_smiles(&out), expected);
++            }
++        }
++    }
++}
++#[test]
++fn results_do_not_mutate_original_chiral_state() {
++    let m = parse("FC(Cl)(Br)I").unwrap();
++    let before = canonical_smiles(&m);
++    assert_eq!(enumerate_stereoisomers(&m).len(), 2);
++    assert_eq!(canonical_smiles(&m), before);
++    assert_eq!(m.atom(AtomIdx(1)).chirality, chematic_core::Chirality::None);
++}
++#[test]
++fn aromatic_multiple_bonds_and_wildcards_do_not_get_tetrahedral_tags() {
++    for s in [
++        "c1ccccc1",
++        "C=C(F)Cl",
++        "C#CC",
++        "FC(~Cl)(Br)I",
++        "F*(Cl)(Br)I",
++    ] {
++        let m = parse(s).unwrap();
++        for out in enumerate_stereoisomers(&m) {
++            for (i, a) in m.atoms() {
++                if a.aromatic
++                    || a.wildcard
++                    || m.neighbors(i).any(|(_, b)| {
++                        !matches!(
++                            m.bond(b).order,
++                            chematic_core::BondOrder::Single
++                                | chematic_core::BondOrder::Up
++                                | chematic_core::BondOrder::Down
++                        )
++                    })
++                {
++                    assert_eq!(out.atom(i).chirality, a.chirality);
++                }
++            }
++        }
++    }
++}
++
++#[test]
++fn new_assignments_invalidate_derived_cip_annotations_but_copies_keep_them() {
++    let mut source = parse("N[C@@H](C)C(O)F").unwrap();
++    source.set_cip_code(AtomIdx(1), Some(chematic_core::CipCode::R));
++    source.set_cip_code(AtomIdx(3), Some(chematic_core::CipCode::S));
++    let forms = enumerate_stereoisomers(&source);
++    assert_eq!(forms.len(), 2);
++    for form in forms {
++        assert!(form.atoms().all(|(_, atom)| atom.cip_code.is_none()));
++        assert_eq!(
++            form.atom(AtomIdx(1)).chirality,
++            source.atom(AtomIdx(1)).chirality
++        );
++    }
++    assert_eq!(
++        source.atom(AtomIdx(1)).cip_code,
++        Some(chematic_core::CipCode::R)
++    );
++    let mut fixed = parse("N[C@@H](C)C(=O)O").unwrap();
++    fixed.set_cip_code(AtomIdx(1), Some(chematic_core::CipCode::S));
++    assert_eq!(
++        enumerate_stereoisomers(&fixed)[0].atom(AtomIdx(1)).cip_code,
++        Some(chematic_core::CipCode::S)
++    );
++}
+diff --git a/crates/chematic-py/python/chematic/__init__.pyi b/crates/chematic-py/python/chematic/__init__.pyi
+index cdb5f34..ed19a63 100644
+--- a/crates/chematic-py/python/chematic/__init__.pyi
++++ b/crates/chematic-py/python/chematic/__init__.pyi
+@@ -1332,11 +1332,12 @@ class Mol:
+         ...
+ 
+     def enumerate_stereoisomers(self) -> list[Mol]:
+-        """Return all stereoisomers as a list of Mol objects.
++        """Return unique native carbon stereo assignments as Mol objects.
+ 
+-        Returns an empty list when the molecule has more than 6 unspecified
+-        stereocenters (combinatorial explosion guard). Use ``mol.num_stereocenters``
+-        to distinguish this from having no centers.
++        The six-site budget excludes CH2 and identical terminal ligands;
++        symmetric ring candidates remain eligible for pseudoasymmetry.
++        Returns an empty list above that budget. Preserves graph metadata and
++        independently copies molecule properties.
+         """
+         ...
+ 
+diff --git a/crates/chematic-py/src/mol_methods/transformations.rs b/crates/chematic-py/src/mol_methods/transformations.rs
+index 1887f03..e5e8d39 100644
+--- a/crates/chematic-py/src/mol_methods/transformations.rs
++++ b/crates/chematic-py/src/mol_methods/transformations.rs
+@@ -256,15 +256,18 @@ impl Mol {
+         Ok(report)
+     }
+ 
+-    /// Return all stereoisomers as a list of Mol objects.
++    /// Return unique native carbon stereo assignments as Mol objects.
+     ///
+-    /// Returns an empty list when the molecule has more than 6 unspecified
+-    /// stereocenters (combinatorial explosion guard). Use
+-    /// ``mol.num_stereocenters`` to distinguish this from having no centers.
++    /// Returns an empty list when the molecule has more than 6 eligible unspecified
++    /// carbon candidates (combinatorial explosion guard).
++    /// The limit applies after rejecting CH2 and identical terminal ligands.
+     fn enumerate_stereoisomers(&self) -> Vec<Mol> {
+         chematic_chem::enumerate_stereoisomers(&self.inner)
+             .into_iter()
+-            .map(Mol::bare)
++            .map(|inner| Mol {
++                inner: Arc::new(inner),
++                props: self.props.clone(),
++            })
+             .collect()
+     }
+ 
+diff --git a/crates/chematic-py/tests/test_stereo_candidate_budget.py b/crates/chematic-py/tests/test_stereo_candidate_budget.py
+new file mode 100644
+index 0000000..75c1c53
+--- /dev/null
++++ b/crates/chematic-py/tests/test_stereo_candidate_budget.py
+@@ -0,0 +1,79 @@
++"""Native carbon enumeration budget and RDKit #9701 diagnostic contracts."""
++import pytest
++import chematic
++
++
++@pytest.mark.parametrize('smiles,count',[
++    ('NC12CC3CC(CC(C3)C1)C2',4),
++    ('OC1C(O)C(O)C(O)C(O)C1O',9),
++    ('CCCCCCCCCCCCCCCC',1),
++    ('CCCCCCCCCCCCCCCC(O)F',2),
++    ('FC(F)(Br)Cl',1),
++    ('CC(C)(Br)Cl',1),
++    ('[H]C([H])(F)Cl',1),
++    ('[H]C([2H])(F)Cl',2),
++    ('[2H]C(F)Cl',2),
++    ('N[C@@H](C)C(=O)O',1),
++    ('CC(O)C(O)C',3),
++])
++def test_expected_unique_assignments(smiles,count):
++    mol=chematic.from_smiles(smiles)
++    forms=mol.enumerate_stereoisomers()
++    assert len(forms)==count
++    keys={f.smiles for f in forms}
++    assert len(keys)==count
++    assert all(chematic.from_smiles(key).smiles==key for key in keys)
++
++
++def test_explicit_h_aminoadamantane_retains_four_assignments():
++    mol=chematic.from_smiles('NC12CC3CC(CC(C3)C1)C2').add_hydrogens()
++    forms=mol.enumerate_stereoisomers()
++    assert len(forms)==4
++    assert all(f.atom_count==mol.atom_count for f in forms)
++
++
++def test_name_and_typed_properties_are_independent_on_all_forms():
++    mol=chematic.from_smiles('FC(Cl)(Br)I')
++    mol.SetName('source')
++    mol.SetIntProp('integer',-3)
++    mol.SetBoolProp('bool',True)
++    mol.SetDoubleProp('double',1.25)
++    forms=mol.enumerate_stereoisomers()
++    assert len(forms)==2
++    for f in forms:
++        assert f.GetName()=='source'
++        assert f.GetIntProp('integer')==-3
++        assert f.GetBoolProp('bool') is True
++        assert f.GetDoubleProp('double')==1.25
++    forms[0].SetName('changed')
++    forms[0].SetIntProp('integer',9)
++    assert mol.GetName()==forms[1].GetName()=='source'
++    assert mol.GetIntProp('integer')==forms[1].GetIntProp('integer')==-3
++
++
++def test_no_candidate_copy_retains_properties():
++    mol=chematic.from_smiles('CCCCCCCCCCCC')
++    mol.SetName('chain')
++    forms=mol.enumerate_stereoisomers()
++    assert len(forms)==1
++    assert forms[0].GetName()=='chain'
++    assert forms[0].smiles==mol.smiles
++
++
++def test_actual_seven_candidate_limit_still_applies():
++    mol=chematic.from_smiles('.'.join(['FC(Cl)(Br)I']*7))
++    assert mol.enumerate_stereoisomers()==[]
++
++
++def test_six_mapped_candidate_sites_have_64_assignments():
++    smiles='.'.join(f'F[CH:{i}](Cl)Br' for i in range(1,7))
++    assert len(chematic.from_smiles(smiles).enumerate_stereoisomers())==64
++
++
++def test_existing_specified_configuration_is_preserved_with_new_center():
++    mol=chematic.from_smiles('N[C@@H](C)C(O)F')
++    forms=mol.enumerate_stereoisomers()
++    assert len(forms)==2
++    # The stereospecific query covers the fixed source center.
++    query=chematic.compile_smarts('N[C@@H](C)C')
++    assert all(query.matches(f,use_chirality=True) for f in forms)
+diff --git a/docs/native-stereo-candidate-budget.md b/docs/native-stereo-candidate-budget.md
+new file mode 100644
+index 0000000..03877f5
+--- /dev/null
++++ b/docs/native-stereo-candidate-budget.md
+@@ -0,0 +1,123 @@
++# Native carbon-stereo candidate budget
++
++This local source fix uses the aminoadamantane and inositol diagnostics in
++[RDKit #9701](https://github.com/rdkit/rdkit/issues/9701) to improve native
++stereo enumeration. The chematic baseline already canonicalized the two
++reported inositol spellings to the same stable string and enumerated nine
++assignments. It returned an empty list for aminoadamantane because CH2 atoms
++incorrectly consumed its six-candidate budget. This fix removes that failure.
++
++## Use
++
++```python
++import chematic
++
++mol = chematic.from_smiles("NC12CC3CC(CC(C3)C1)C2")
++forms = mol.enumerate_stereoisomers()
++assert len(forms) == 4
++assert len({form.smiles for form in forms}) == 4
++
++inositol = chematic.from_smiles("OC1C(O)C(O)C(O)C(O)C1O")
++assert len(inositol.enumerate_stereoisomers()) == 9
++```
++
++Rust continues to export
++`chematic_chem::enumerate_stereoisomers(&Molecule) -> Vec<Molecule>`.
++Python's existing method keeps its signature. Both retain the existing
++six-candidate/64-combination boundary and return an empty collection above it.
++This limit counts eligible assignment sites, not the `num_stereocenters`
++descriptor: some graph-symmetric sites become distinguishable only after
++neighbouring stereo is assigned.
++
++## Candidate selection and preserved data
++
++Candidates are unassigned, nonaromatic, non-wildcard carbon atoms with four
++single-bond/implicit-H ligand slots. Single-bond directional carriers are
++accepted; multiple, dative, zero-order and query bonds do not qualify.
++
++- Two or more non-node hydrogens rule out a site immediately.
++- Repeated identical terminal substituents also rule it out. A terminal
++  signature compares element, isotope, charge, aromaticity and resolved
++  hydrogen count. Atom maps and nonchemical tags cannot make identical
++  terminal ligands stereogenic.
++- An implicit ordinary H is compared with explicit terminal ordinary H.
++  Deuterium stays distinct, so H/D-dependent tetrahedral assignments survive.
++- Graph-symmetric ring paths are retained. Excluding all graph-tied ligands
++  before assigning the surrounding centers would discard pseudoasymmetric
++  possibilities in the diagnostic rings.
++
++This is conservative local screening, not a complete potential-stereocenter
++classifier. Equivalent larger substituent subgraphs may still consume the
++budget. Canonical SMILES remains the deduplication key, including the input's
++atom-map labels; the candidate change does not make maps chemically stereogenic.
++
++Enumeration now clones the source graph and edits only the selected centers'
++relative parity, hydrogen declaration and recorded neighbour frame. That
++preserves indexed atoms/bonds, atom maps/isotopes, tags, R labels, existing
++stereo frames, enhanced atom/bond groups, directional stashes and ring-closure
++metadata. New assignments invalidate stored CIP annotations, including at
++fixed centers where Rule 5 priorities may change; callers can recalculate
++those labels. Pure copies keep their annotations. Derived caches start empty.
++`Clockwise` and `CounterClockwise` describe parity relative to the recorded
++frame, not absolute R/S labels.
++
++Python also copies the molecule name and typed property store independently
++to every returned form. Editing a form's properties leaves the source and
++other forms intact. The no-candidate path uses the same metadata-preserving
++copy behavior.
++
++The native method enumerates carbon assignments only. It does not enumerate
++unassigned E/Z, heteroatom or coordination stereo, and it does not test 3D
++embeddability. The RDKit-compatible enumeration APIs remain separate. In
++particular, four aminoadamantane assignments here match a `tryEmbedding=False`
++reference; this is not a claim that four independently isolable cage
++stereoisomers exist. No general canonicalization or RDKit-wide fix is claimed.
++
++## Pinned diagnostic evidence
++
++| Diagnostic | Native before | Native after | RDKit legacy | RDKit modern |
++| --- | ---: | ---: | ---: | ---: |
++| Aminoadamantane | 0 | 4 | 4 | 5 |
++| Inositol | 9 | 9 | 9 | 13 |
++
++RDKit 2026.09.1 ran with `onlyUnassigned=True`, `unique=True`,
++`maxIsomers=1024`, `tryEmbedding=False`. The primary reference uses legacy
++stereo perception; the modern counts reproduce the issue's duplicate-count
++symptom on this host. Every native output is independently read by RDKit
++under legacy perception, and its InChI is compared with the complete reference
++set. This verifies membership, not just the total count.
++
++The independent recipe covers 12 structures, including explicit-H
++aminoadamantane, isotope-dependent centers, identical terminal ligands, a long
++methylene-rich chain, a meso control and a specified center next to an
++unassigned one. Identity, reverse, one cyclic shift and two seeded random
++atom permutations give 60 source numberings and 160 compared assignments.
++All InChI sets match, all native SMILES round trips are fixed points, and
++indexed graph sizes/bonds remain unchanged.
++
++The source hash of the original enumerator, module/source hashes, fixture
++provenance, license, minimization, exact oracle settings, expected InChI sets
++and normalized case hash are recorded in
++`validation/results/rdkit-stereo-candidates-2026-10-15.json`.
++The test recipe uses minimal abstract molecular graphs and original project
++code under `MIT OR Apache-2.0`; no third-party corpus, source or attachment
++was copied. The temporary runtime was recreated during validation, with the
++same RDKit version pinned before final results were generated.
++
++```sh
++cargo test -p chematic-chem -p chematic-smiles --lib --test stereo_candidate_budget --offline
++python -m pytest crates/chematic-py/tests/test_stereo_candidate_budget.py crates/chematic-py/tests/test_mol.py crates/chematic-py/tests/test_rdkit_stereoisomers.py
++python scripts/validate_stereo_candidate_budget.py
++```
++
++Rust passed 1,347 tests (948 chemical-library, 386 SMILES-library, 13 new
++contracts), with two pre-existing ignored tests. Python passed 80 (17 new,
++63 existing). Clippy with warnings denied, formatting, static bindings,
++product naming and strict MkDocs passed. The refactor-budget checker passed
++after removing the resolved size exception for the shortened enumerator;
++function allowances decreased from 88 to 87. CI registers the integration
++test explicitly.
++
++The implementation is in an isolated source copy retaining preceding local
++candidates. The portable patch contains only this fix relative to that
++snapshot. It is uncommitted and unpublished; these results concern local source.
+diff --git a/docs/rdkit-open-issues-2026-10-14.md b/docs/rdkit-open-issues-2026-10-14.md
+index 7f82ae5..1ecc261 100644
+--- a/docs/rdkit-open-issues-2026-10-14.md
++++ b/docs/rdkit-open-issues-2026-10-14.md
+@@ -7,6 +7,7 @@ Issue state is a snapshot; an open issue can already have a proposed upstream fi
+ 
+ | RDKit issue | Source finding | Decision |
+ | --- | --- | --- |
++| [#9701: pseudoasymmetric rings and duplicate stereo enumeration](https://github.com/rdkit/rdkit/issues/9701) | Native inositol keys were already stable; aminoadamantane enumeration hit the cap because CH2 atoms were counted. | [Corrected native candidate selection](native-stereo-candidate-budget.md): four aminoadamantane assignments, nine inositols, metadata preservation and 60 InChI-set comparisons with RDKit 2026.09.1. |
+ | [#9629: atom-renumbering changes stereo counts](https://github.com/rdkit/rdkit/issues/9629) | Native baseline counted one center but lacked a public permutation API. | [Added checked atom permutations](atom-renumbering-stereo.md) with remapped stereo metadata and cold caches; 838 RDKit-reference permutations, including the identity-ring regression. |
+ | [#9675: query H folding loses/inverts tetrahedral configuration](https://github.com/rdkit/rdkit/issues/9675) | No query-H folding API existed; the main native matcher compared raw chirality tags. | [Local Rust/Python candidate](query-hydrogen-folding.md): conservative H folding, complete-frame parity, lexical ring slots and 198 live RDKit-reference cases; recursive folding is rejected. |
+ | [#7981: enrichment factor returns an empty list](https://github.com/rdkit/rdkit/issues/7981) | No ranked screening enrichment API existed. RDKit 2026.09.1 reproduced the top-90% and full-library defects. | [Implemented native Rust/Python EF](screening-enrichment.md): ceiling cutoffs, full-library endpoints, order/duplicates and explicit undefined-input errors; 3,048 ordinary live-RDKit comparisons. |
+diff --git a/scripts/validate_stereo_candidate_budget.py b/scripts/validate_stereo_candidate_budget.py
+new file mode 100644
+index 0000000..df77898
+--- /dev/null
++++ b/scripts/validate_stereo_candidate_budget.py
+@@ -0,0 +1,112 @@
++#!/usr/bin/env python3
++"""Pinned RDKit #9701 diagnostic for native carbon stereo assignments."""
++import argparse
++import hashlib
++import json
++from pathlib import Path
++import random
++import sys
++
++import chematic
++from rdkit import Chem,rdBase
++from rdkit.Chem.EnumerateStereoisomers import EnumerateStereoisomers,StereoEnumerationOptions
++
++ROOT=Path(__file__).resolve().parents[1]
++CASES=[
++    ('aminoadamantane','NC12CC3CC(CC(C3)C1)C2',False,4),
++    ('aminoadamantane-explicit-h','NC12CC3CC(CC(C3)C1)C2',True,4),
++    ('inositol','OC1C(O)C(O)C(O)C(O)C1O',False,9),
++    ('long-alkane','CCCCCCCCCCCCCCCC',False,1),
++    ('long-one-center','CCCCCCCCCCCCCCCC(O)F',False,2),
++    ('terminal-halogen-duplicate','FC(F)(Br)Cl',False,1),
++    ('terminal-methyl-duplicate','CC(C)(Br)Cl',False,1),
++    ('explicit-h-duplicate','[H]C([H])(F)Cl',False,1),
++    ('isotopic-h','[H]C([2H])(F)Cl',False,2),
++    ('mixed-isotopic-h','[2H]C(F)Cl',False,2),
++    ('meso-diol','CC(O)C(O)C',False,3),
++    ('fixed-and-unassigned','N[C@@H](C)C(O)F',False,2),
++]
++BASELINE_SOURCE_SHA='674d63b96202f03a819ed3a87aa80e86d81b1519322919b7bb3cb135a3b716f1'
++
++
++def digest(data):return hashlib.sha256(data).hexdigest()
++
++
++def inchi_from_smiles(smiles):
++    mol=Chem.MolFromSmiles(smiles)
++    assert mol is not None,smiles
++    result=Chem.MolToInchi(mol)
++    assert result,result
++    return result
++
++
++def orders(n):
++    result=[list(range(n)),list(reversed(range(n))),list(range(1,n))+[0]]
++    rng=random.Random(9701)
++    for _ in range(2):
++        order=list(range(n));rng.shuffle(order);result.append(order)
++    return list(dict.fromkeys(map(tuple,result)))
++
++
++def evaluate():
++    if rdBase.rdkitVersion!='2026.09.1':raise RuntimeError(f'expected RDKit 2026.09.1, got {rdBase.rdkitVersion}')
++    opts=StereoEnumerationOptions(onlyUnassigned=True,unique=True,maxIsomers=1024,tryEmbedding=False)
++    fixtures=[];runs=[]
++    for identifier,smiles,explicit_h,count in CASES:
++        Chem.SetUseLegacyStereoPerception(True)
++        reference=list(EnumerateStereoisomers(Chem.MolFromSmiles(smiles),options=opts))
++        reference_keys={Chem.MolToInchi(r) for r in reference}
++        assert len(reference)==len(reference_keys)==count,(identifier,len(reference),len(reference_keys))
++        native=chematic.from_smiles(smiles)
++        if explicit_h:native=native.add_hydrogens()
++        for order in orders(native.atom_count):
++            source=native.renumber_atoms(order)
++            forms=source.enumerate_stereoisomers()
++            strings=[f.smiles for f in forms]
++            assert len(forms)==len(set(strings))==count,(identifier,len(forms))
++            keys={inchi_from_smiles(s) for s in strings}
++            assert keys==reference_keys,identifier
++            assert all(chematic.from_smiles(s).smiles==s for s in strings),identifier
++            for form in forms:
++                assert form.atom_count==source.atom_count
++                assert form.bond_table==source.bond_table
++            runs.append({'fixture':identifier,'new_to_old':order,'native_keys':sorted(strings),'inchi_set':sorted(keys)})
++        Chem.SetUseLegacyStereoPerception(False)
++        modern=list(EnumerateStereoisomers(Chem.MolFromSmiles(smiles),options=opts))
++        modern_count=len(modern)
++        if identifier=='aminoadamantane':assert modern_count==5
++        if identifier=='inositol':assert modern_count==13
++        fixtures.append({
++            'id':identifier,'smiles':smiles,'explicit_h':explicit_h,'sha256':digest((smiles+'\n').encode()),
++            'provenance':{'source':'minimal abstract molecular graphs and original source-order permutation recipe','retrieved':'2026-10-15','issue':'https://github.com/rdkit/rdkit/issues/9701','transformations':'issue skeletons plus independently authored H/isotope/terminal-ligand/chain controls; no upstream dataset or source code copied'},
++            'license':'MIT OR Apache-2.0','redistribution':{'status':'allowed','rationale':'minimal abstract structures and original test recipe'},
++            'minimization':'one candidate-budget or stereo-preservation condition per small graph',
++            'oracle':{'engine':'RDKit','version':'2026.09.1','settings':{'onlyUnassigned':True,'unique':True,'maxIsomers':1024,'tryEmbedding':False,'reference_legacy_stereo':True,'comparison':'exact InChI set after reading native SMILES under legacy perception'}},
++            'expected':{'assignment_count':count,'reference_inchi_set':sorted(reference_keys),'count_tolerance':0},
++            'native_assignment_count':count,'legacy_reference_count':len(reference),'modern_reference_count':modern_count,'source_numberings':len(orders(native.atom_count)),
++        })
++    source_files=['crates/chematic-chem/src/stereo.rs','crates/chematic-py/src/mol_methods/transformations.rs']
++    return {
++        'schema_version':1,'status':'local-source-candidate','issue':'https://github.com/rdkit/rdkit/issues/9701',
++        'base':'cac480fb source snapshot plus preserved query-H, PQR, atom-permutation and mmCIF residue candidates; patch isolates native enumeration changes',
++        'baseline':{'aminoadamantane_observed_assignment_count':0,'stereo_source_sha256':BASELINE_SOURCE_SHA,'cause':'degree-two CH2 sites counted toward six-candidate cap'},
++        'scope':'native saturated-carbon assignments, fixed diagnostic graphs, no 3D feasibility/heteroatom/EZ enumeration or general canonicalization claim; RDKit-compatible enumeration remains separate',
++        'runtime':{'python':sys.version.split()[0],'rdkit':rdBase.rdkitVersion,'chematic_extension_sha256':digest(Path(chematic.__file__).resolve().read_bytes())},
++        'source_sha256':{s:digest((ROOT/s).read_bytes()) for s in source_files},
++        'permutation_recipe':{'identity':True,'reverse':True,'cyclic_shift':1,'random_orders':2,'seed':9701,'deduplicated':True},
++        'results':{'fixtures':len(fixtures),'source_numberings':len(runs),'compared_assignments':sum(len(r['native_keys']) for r in runs),'inchi_set_mismatches':0,'native_roundtrip_failures':0,'graph_mismatches':0,'cases_sha256':digest(json.dumps(runs,sort_keys=True,separators=(',',':')).encode())},
++        'fixtures':fixtures,
++    }
++
++
++def main():
++    parser=argparse.ArgumentParser(description=__doc__)
++    parser.add_argument('--output',type=Path,default=ROOT/'validation/results/rdkit-stereo-candidates-2026-10-15.json')
++    args=parser.parse_args();previous=Chem.GetUseLegacyStereoPerception()
++    try:record=evaluate()
++    finally:Chem.SetUseLegacyStereoPerception(previous)
++    args.output.parent.mkdir(parents=True,exist_ok=True);args.output.write_text(json.dumps(record,indent=2)+'\n')
++    print(json.dumps(record['results']))
++
++
++if __name__=='__main__':main()
+diff --git a/validation/refactor_budget_v1.json b/validation/refactor_budget_v1.json
+index c873be5..1c03cde 100644
+--- a/validation/refactor_budget_v1.json
++++ b/validation/refactor_budget_v1.json
+@@ -58,10 +58,6 @@
+       "decisions": 9,
+       "lines": 160
+     },
+-    "crates/chematic-chem/src/stereo.rs::enumerate_stereoisomers#1": {
+-      "decisions": 16,
+-      "lines": 123
+-    },
+     "crates/chematic-cip/src/assign.rs::assign_one_with_rule5#1": {
+       "decisions": 24,
+       "lines": 148
+diff --git a/validation/results/rdkit-stereo-candidates-2026-10-15.json b/validation/results/rdkit-stereo-candidates-2026-10-15.json
+new file mode 100644
+index 0000000..a461053
+--- /dev/null
++++ b/validation/results/rdkit-stereo-candidates-2026-10-15.json
+@@ -0,0 +1,552 @@
++{
++  "schema_version": 1,
++  "status": "local-source-candidate",
++  "issue": "https://github.com/rdkit/rdkit/issues/9701",
++  "base": "cac480fb source snapshot plus preserved query-H, PQR, atom-permutation and mmCIF residue candidates; patch isolates native enumeration changes",
++  "baseline": {
++    "aminoadamantane_observed_assignment_count": 0,
++    "stereo_source_sha256": "674d63b96202f03a819ed3a87aa80e86d81b1519322919b7bb3cb135a3b716f1",
++    "cause": "degree-two CH2 sites counted toward six-candidate cap"
++  },
++  "scope": "native saturated-carbon assignments, fixed diagnostic graphs, no 3D feasibility/heteroatom/EZ enumeration or general canonicalization claim; RDKit-compatible enumeration remains separate",
++  "runtime": {
++    "python": "3.13.6",
++    "rdkit": "2026.09.1",
++    "chematic_extension_sha256": "9c5d54617257f90e53d5e3648e5cc3ae38a60aa24db5957f158283b04aad5dd4"
++  },
++  "source_sha256": {
++    "crates/chematic-chem/src/stereo.rs": "716d71a1332f0f23cb244f7f098076c8b61013ce9ae1eb42e2c367d2e325a55d",
++    "crates/chematic-py/src/mol_methods/transformations.rs": "33379eadcf89ff0e893102c0cb18d54788c195d537741b605b2c17a5ebf39a86"
++  },
++  "permutation_recipe": {
++    "identity": true,
++    "reverse": true,
++    "cyclic_shift": 1,
++    "random_orders": 2,
++    "seed": 9701,
++    "deduplicated": true
++  },
++  "results": {
++    "fixtures": 12,
++    "source_numberings": 60,
++    "compared_assignments": 160,
++    "inchi_set_mismatches": 0,
++    "native_roundtrip_failures": 0,
++    "graph_mismatches": 0,
++    "cases_sha256": "a0332c0f5d4d90ab7d921df7dd67625e5739094e5f93fe787ea7629667b42c64"
++  },
++  "fixtures": [
++    {
++      "id": "aminoadamantane",
++      "smiles": "NC12CC3CC(CC(C3)C1)C2",
++      "explicit_h": false,
++      "sha256": "83a0c281379f4c64a68e85e224475a702bff530d93ea74841e4dd8b2231c0f70",
++      "provenance": {
++        "source": "minimal abstract molecular graphs and original source-order permutation recipe",
++        "retrieved": "2026-10-15",
++        "issue": "https://github.com/rdkit/rdkit/issues/9701",
++        "transformations": "issue skeletons plus independently authored H/isotope/terminal-ligand/chain controls; no upstream dataset or source code copied"
++      },
++      "license": "MIT OR Apache-2.0",
++      "redistribution": {
++        "status": "allowed",
++        "rationale": "minimal abstract structures and original test recipe"
++      },
++      "minimization": "one candidate-budget or stereo-preservation condition per small graph",
++      "oracle": {
++        "engine": "RDKit",
++        "version": "2026.09.1",
++        "settings": {
++          "onlyUnassigned": true,
++          "unique": true,
++          "maxIsomers": 1024,
++          "tryEmbedding": false,
++          "reference_legacy_stereo": true,
++          "comparison": "exact InChI set after reading native SMILES under legacy perception"
++        }
++      },
++      "expected": {
++        "assignment_count": 4,
++        "reference_inchi_set": [
++          "InChI=1S/C10H17N/c11-10-4-7-1-8(5-10)3-9(2-7)6-10/h7-9H,1-6,11H2/t7-,8+,9-,10+",
++          "InChI=1S/C10H17N/c11-10-4-7-1-8(5-10)3-9(2-7)6-10/h7-9H,1-6,11H2/t7-,8+,9-,10-",
++          "InChI=1S/C10H17N/c11-10-4-7-1-8(5-10)3-9(2-7)6-10/h7-9H,1-6,11H2/t7-,8-,9-,10+",
++          "InChI=1S/C10H17N/c11-10-4-7-1-8(5-10)3-9(2-7)6-10/h7-9H,1-6,11H2/t7-,8-,9-,10-"
++        ],
++        "count_tolerance": 0
++      },
++      "native_assignment_count": 4,
++      "legacy_reference_count": 4,
++      "modern_reference_count": 5,
++      "source_numberings": 5
++    },
++    {
++      "id": "aminoadamantane-explicit-h",
++      "smiles": "NC12CC3CC(CC(C3)C1)C2",
++      "explicit_h": true,
++      "sha256": "83a0c281379f4c64a68e85e224475a702bff530d93ea74841e4dd8b2231c0f70",
++      "provenance": {
++        "source": "minimal abstract molecular graphs and original source-order permutation recipe",
++        "retrieved": "2026-10-15",
++        "issue": "https://github.com/rdkit/rdkit/issues/9701",
++        "transformations": "issue skeletons plus independently authored H/isotope/terminal-ligand/chain controls; no upstream dataset or source code copied"
++      },
++      "license": "MIT OR Apache-2.0",
++      "redistribution": {
++        "status": "allowed",
++        "rationale": "minimal abstract structures and original test recipe"
++      },
++      "minimization": "one candidate-budget or stereo-preservation condition per small graph",
++      "oracle": {
++        "engine": "RDKit",
++        "version": "2026.09.1",
++        "settings": {
++          "onlyUnassigned": true,
++          "unique": true,
++          "maxIsomers": 1024,
++          "tryEmbedding": false,
++          "reference_legacy_stereo": true,
++          "comparison": "exact InChI set after reading native SMILES under legacy perception"
++        }
++      },
++      "expected": {
++        "assignment_count": 4,
++        "reference_inchi_set": [
++          "InChI=1S/C10H17N/c11-10-4-7-1-8(5-10)3-9(2-7)6-10/h7-9H,1-6,11H2/t7-,8+,9-,10+",
++          "InChI=1S/C10H17N/c11-10-4-7-1-8(5-10)3-9(2-7)6-10/h7-9H,1-6,11H2/t7-,8+,9-,10-",
++          "InChI=1S/C10H17N/c11-10-4-7-1-8(5-10)3-9(2-7)6-10/h7-9H,1-6,11H2/t7-,8-,9-,10+",
++          "InChI=1S/C10H17N/c11-10-4-7-1-8(5-10)3-9(2-7)6-10/h7-9H,1-6,11H2/t7-,8-,9-,10-"
++        ],
++        "count_tolerance": 0
++      },
++      "native_assignment_count": 4,
++      "legacy_reference_count": 4,
++      "modern_reference_count": 5,
++      "source_numberings": 5
++    },
++    {
++      "id": "inositol",
++      "smiles": "OC1C(O)C(O)C(O)C(O)C1O",
++      "explicit_h": false,
++      "sha256": "f171566bb4240db5ff3a3037192b70fd4c4bd46c88550bbfa7ba93365c98d6f2",
++      "provenance": {
++        "source": "minimal abstract molecular graphs and original source-order permutation recipe",
++        "retrieved": "2026-10-15",
++        "issue": "https://github.com/rdkit/rdkit/issues/9701",
++        "transformations": "issue skeletons plus independently authored H/isotope/terminal-ligand/chain controls; no upstream dataset or source code copied"
++      },
++      "license": "MIT OR Apache-2.0",
++      "redistribution": {
++        "status": "allowed",
++        "rationale": "minimal abstract structures and original test recipe"
++      },
++      "minimization": "one candidate-budget or stereo-preservation condition per small graph",
++      "oracle": {
++        "engine": "RDKit",
++        "version": "2026.09.1",
++        "settings": {
++          "onlyUnassigned": true,
++          "unique": true,
++          "maxIsomers": 1024,
++          "tryEmbedding": false,
++          "reference_legacy_stereo": true,
++          "comparison": "exact InChI set after reading native SMILES under legacy perception"
++        }
++      },
++      "expected": {
++        "assignment_count": 9,
++        "reference_inchi_set": [
++          "InChI=1S/C6H12O6/c7-1-2(8)4(10)6(12)5(11)3(1)9/h1-12H/t1-,2+,3-,4+,5-,6+",
++          "InChI=1S/C6H12O6/c7-1-2(8)4(10)6(12)5(11)3(1)9/h1-12H/t1-,2-,3+,4+,5-,6-",
++          "InChI=1S/C6H12O6/c7-1-2(8)4(10)6(12)5(11)3(1)9/h1-12H/t1-,2-,3-,4+,5+,6+",
++          "InChI=1S/C6H12O6/c7-1-2(8)4(10)6(12)5(11)3(1)9/h1-12H/t1-,2-,3-,4+,5-,6+",
++          "InChI=1S/C6H12O6/c7-1-2(8)4(10)6(12)5(11)3(1)9/h1-12H/t1-,2-,3-,4+,5-,6-",
++          "InChI=1S/C6H12O6/c7-1-2(8)4(10)6(12)5(11)3(1)9/h1-12H/t1-,2-,3-,4-,5+,6+/m0/s1",
++          "InChI=1S/C6H12O6/c7-1-2(8)4(10)6(12)5(11)3(1)9/h1-12H/t1-,2-,3-,4-,5+,6+/m1/s1",
++          "InChI=1S/C6H12O6/c7-1-2(8)4(10)6(12)5(11)3(1)9/h1-12H/t1-,2-,3-,4-,5-,6+",
++          "InChI=1S/C6H12O6/c7-1-2(8)4(10)6(12)5(11)3(1)9/h1-12H/t1-,2-,3-,4-,5-,6-"
++        ],
++        "count_tolerance": 0
++      },
++      "native_assignment_count": 9,
++      "legacy_reference_count": 9,
++      "modern_reference_count": 13,
++      "source_numberings": 5
++    },
++    {
++      "id": "long-alkane",
++      "smiles": "CCCCCCCCCCCCCCCC",
++      "explicit_h": false,
++      "sha256": "97784cd0b0b0dcd2a5507a1d21af23d4e489afed4f8e1965a9a37b110cdbb810",
++      "provenance": {
++        "source": "minimal abstract molecular graphs and original source-order permutation recipe",
++        "retrieved": "2026-10-15",
++        "issue": "https://github.com/rdkit/rdkit/issues/9701",
++        "transformations": "issue skeletons plus independently authored H/isotope/terminal-ligand/chain controls; no upstream dataset or source code copied"
++      },
++      "license": "MIT OR Apache-2.0",
++      "redistribution": {
++        "status": "allowed",
++        "rationale": "minimal abstract structures and original test recipe"
++      },
++      "minimization": "one candidate-budget or stereo-preservation condition per small graph",
++      "oracle": {
++        "engine": "RDKit",
++        "version": "2026.09.1",
++        "settings": {
++          "onlyUnassigned": true,
++          "unique": true,
++          "maxIsomers": 1024,
++          "tryEmbedding": false,
++          "reference_legacy_stereo": true,
++          "comparison": "exact InChI set after reading native SMILES under legacy perception"
++        }
++      },
++      "expected": {
++        "assignment_count": 1,
++        "reference_inchi_set": [
++          "InChI=1S/C16H34/c1-3-5-7-9-11-13-15-16-14-12-10-8-6-4-2/h3-16H2,1-2H3"
++        ],
++        "count_tolerance": 0
++      },
++      "native_assignment_count": 1,
++      "legacy_reference_count": 1,
++      "modern_reference_count": 1,
++      "source_numberings": 5
++    },
++    {
++      "id": "long-one-center",
++      "smiles": "CCCCCCCCCCCCCCCC(O)F",
++      "explicit_h": false,
++      "sha256": "3127f1a6d09d8762017bc6ab6b65d5ee96d2217472070d92c9603f1cc0ed1726",
++      "provenance": {
++        "source": "minimal abstract molecular graphs and original source-order permutation recipe",
++        "retrieved": "2026-10-15",
++        "issue": "https://github.com/rdkit/rdkit/issues/9701",
++        "transformations": "issue skeletons plus independently authored H/isotope/terminal-ligand/chain controls; no upstream dataset or source code copied"
++      },
++      "license": "MIT OR Apache-2.0",
++      "redistribution": {
++        "status": "allowed",
++        "rationale": "minimal abstract structures and original test recipe"
++      },
++      "minimization": "one candidate-budget or stereo-preservation condition per small graph",
++      "oracle": {
++        "engine": "RDKit",
++        "version": "2026.09.1",
++        "settings": {
++          "onlyUnassigned": true,
++          "unique": true,
++          "maxIsomers": 1024,
++          "tryEmbedding": false,
++          "reference_legacy_stereo": true,
++          "comparison": "exact InChI set after reading native SMILES under legacy perception"
++        }
++      },
++      "expected": {
++        "assignment_count": 2,
++        "reference_inchi_set": [
++          "InChI=1S/C16H33FO/c1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16(17)18/h16,18H,2-15H2,1H3/t16-/m0/s1",
++          "InChI=1S/C16H33FO/c1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16(17)18/h16,18H,2-15H2,1H3/t16-/m1/s1"
++        ],
++        "count_tolerance": 0
++      },
++      "native_assignment_count": 2,
++      "legacy_reference_count": 2,
++      "modern_reference_count": 2,
++      "source_numberings": 5
++    },
++    {
++      "id": "terminal-halogen-duplicate",
++      "smiles": "FC(F)(Br)Cl",
++      "explicit_h": false,
++      "sha256": "dd13680b62920f2e2761076817c26ad2274be390e3f87b2f32fc7245b539c9c1",
++      "provenance": {
++        "source": "minimal abstract molecular graphs and original source-order permutation recipe",
++        "retrieved": "2026-10-15",
++        "issue": "https://github.com/rdkit/rdkit/issues/9701",
++        "transformations": "issue skeletons plus independently authored H/isotope/terminal-ligand/chain controls; no upstream dataset or source code copied"
++      },
++      "license": "MIT OR Apache-2.0",
++      "redistribution": {
++        "status": "allowed",
++        "rationale": "minimal abstract structures and original test recipe"
++      },
++      "minimization": "one candidate-budget or stereo-preservation condition per small graph",
++      "oracle": {
++        "engine": "RDKit",
++        "version": "2026.09.1",
++        "settings": {
++          "onlyUnassigned": true,
++          "unique": true,
++          "maxIsomers": 1024,
++          "tryEmbedding": false,
++          "reference_legacy_stereo": true,
++          "comparison": "exact InChI set after reading native SMILES under legacy perception"
++        }
++      },
++      "expected": {
++        "assignment_count": 1,
++        "reference_inchi_set": [
++          "InChI=1S/CBrClF2/c2-1(3,4)5"
++        ],
++        "count_tolerance": 0
++      },
++      "native_assignment_count": 1,
++      "legacy_reference_count": 1,
++      "modern_reference_count": 1,
++      "source_numberings": 5
++    },
++    {
++      "id": "terminal-methyl-duplicate",
++      "smiles": "CC(C)(Br)Cl",
++      "explicit_h": false,
++      "sha256": "2e1096a9d342318d8f314d0dd17dff68c2ecda2ca1e56abe92728dbe377cc199",
++      "provenance": {
++        "source": "minimal abstract molecular graphs and original source-order permutation recipe",
++        "retrieved": "2026-10-15",
++        "issue": "https://github.com/rdkit/rdkit/issues/9701",
++        "transformations": "issue skeletons plus independently authored H/isotope/terminal-ligand/chain controls; no upstream dataset or source code copied"
++      },
++      "license": "MIT OR Apache-2.0",
++      "redistribution": {
++        "status": "allowed",
++        "rationale": "minimal abstract structures and original test recipe"
++      },
++      "minimization": "one candidate-budget or stereo-preservation condition per small graph",
++      "oracle": {
++        "engine": "RDKit",
++        "version": "2026.09.1",
++        "settings": {
++          "onlyUnassigned": true,
++          "unique": true,
++          "maxIsomers": 1024,
++          "tryEmbedding": false,
++          "reference_legacy_stereo": true,
++          "comparison": "exact InChI set after reading native SMILES under legacy perception"
++        }
++      },
++      "expected": {
++        "assignment_count": 1,
++        "reference_inchi_set": [
++          "InChI=1S/C3H6BrCl/c1-3(2,4)5/h1-2H3"
++        ],
++        "count_tolerance": 0
++      },
++      "native_assignment_count": 1,
++      "legacy_reference_count": 1,
++      "modern_reference_count": 1,
++      "source_numberings": 5
++    },
++    {
++      "id": "explicit-h-duplicate",
++      "smiles": "[H]C([H])(F)Cl",
++      "explicit_h": false,
++      "sha256": "c92041b53edcc50e3a345b2776cb128a5078db34773f21c9437308e51177f6c0",
++      "provenance": {
++        "source": "minimal abstract molecular graphs and original source-order permutation recipe",
++        "retrieved": "2026-10-15",
++        "issue": "https://github.com/rdkit/rdkit/issues/9701",
++        "transformations": "issue skeletons plus independently authored H/isotope/terminal-ligand/chain controls; no upstream dataset or source code copied"
++      },
++      "license": "MIT OR Apache-2.0",
++      "redistribution": {
++        "status": "allowed",
++        "rationale": "minimal abstract structures and original test recipe"
++      },
++      "minimization": "one candidate-budget or stereo-preservation condition per small graph",
++      "oracle": {
++        "engine": "RDKit",
++        "version": "2026.09.1",
++        "settings": {
++          "onlyUnassigned": true,
++          "unique": true,
++          "maxIsomers": 1024,
++          "tryEmbedding": false,
++          "reference_legacy_stereo": true,
++          "comparison": "exact InChI set after reading native SMILES under legacy perception"
++        }
++      },
++      "expected": {
++        "assignment_count": 1,
++        "reference_inchi_set": [
++          "InChI=1S/CH2ClF/c2-1-3/h1H2"
++        ],
++        "count_tolerance": 0
++      },
++      "native_assignment_count": 1,
++      "legacy_reference_count": 1,
++      "modern_reference_count": 1,
++      "source_numberings": 5
++    },
++    {
++      "id": "isotopic-h",
++      "smiles": "[H]C([2H])(F)Cl",
++      "explicit_h": false,
++      "sha256": "3193052d9e98c40150b8846d923b702365db5c9478d4022b9eb847be895bf64b",
++      "provenance": {
++        "source": "minimal abstract molecular graphs and original source-order permutation recipe",
++        "retrieved": "2026-10-15",
++        "issue": "https://github.com/rdkit/rdkit/issues/9701",
++        "transformations": "issue skeletons plus independently authored H/isotope/terminal-ligand/chain controls; no upstream dataset or source code copied"
++      },
++      "license": "MIT OR Apache-2.0",
++      "redistribution": {
++        "status": "allowed",
++        "rationale": "minimal abstract structures and original test recipe"
++      },
++      "minimization": "one candidate-budget or stereo-preservation condition per small graph",
++      "oracle": {
++        "engine": "RDKit",
++        "version": "2026.09.1",
++        "settings": {
++          "onlyUnassigned": true,
++          "unique": true,
++          "maxIsomers": 1024,
++          "tryEmbedding": false,
++          "reference_legacy_stereo": true,
++          "comparison": "exact InChI set after reading native SMILES under legacy perception"
++        }
++      },
++      "expected": {
++        "assignment_count": 2,
++        "reference_inchi_set": [
++          "InChI=1S/CH2ClF/c2-1-3/h1H2/i1D/t1-/m0/s1",
++          "InChI=1S/CH2ClF/c2-1-3/h1H2/i1D/t1-/m1/s1"
++        ],
++        "count_tolerance": 0
++      },
++      "native_assignment_count": 2,
++      "legacy_reference_count": 2,
++      "modern_reference_count": 2,
++      "source_numberings": 5
++    },
++    {
++      "id": "mixed-isotopic-h",
++      "smiles": "[2H]C(F)Cl",
++      "explicit_h": false,
++      "sha256": "727c5aa66c757b2cb3a52823b04df8348d50cc0ab8be622edcb6040d2ffd7fd2",
++      "provenance": {
++        "source": "minimal abstract molecular graphs and original source-order permutation recipe",
++        "retrieved": "2026-10-15",
++        "issue": "https://github.com/rdkit/rdkit/issues/9701",
++        "transformations": "issue skeletons plus independently authored H/isotope/terminal-ligand/chain controls; no upstream dataset or source code copied"
++      },
++      "license": "MIT OR Apache-2.0",
++      "redistribution": {
++        "status": "allowed",
++        "rationale": "minimal abstract structures and original test recipe"
++      },
++      "minimization": "one candidate-budget or stereo-preservation condition per small graph",
++      "oracle": {
++        "engine": "RDKit",
++        "version": "2026.09.1",
++        "settings": {
++          "onlyUnassigned": true,
++          "unique": true,
++          "maxIsomers": 1024,
++          "tryEmbedding": false,
++          "reference_legacy_stereo": true,
++          "comparison": "exact InChI set after reading native SMILES under legacy perception"
++        }
++      },
++      "expected": {
++        "assignment_count": 2,
++        "reference_inchi_set": [
++          "InChI=1S/CH2ClF/c2-1-3/h1H2/i1D/t1-/m0/s1",
++          "InChI=1S/CH2ClF/c2-1-3/h1H2/i1D/t1-/m1/s1"
++        ],
++        "count_tolerance": 0
++      },
++      "native_assignment_count": 2,
++      "legacy_reference_count": 2,
++      "modern_reference_count": 2,
++      "source_numberings": 5
++    },
++    {
++      "id": "meso-diol",
++      "smiles": "CC(O)C(O)C",
++      "explicit_h": false,
++      "sha256": "edd8567c6d62f21f738ab2edfa48c35a765e8d7c6db2e93b5c4b5b0e6afb353a",
++      "provenance": {
++        "source": "minimal abstract molecular graphs and original source-order permutation recipe",
++        "retrieved": "2026-10-15",
++        "issue": "https://github.com/rdkit/rdkit/issues/9701",
++        "transformations": "issue skeletons plus independently authored H/isotope/terminal-ligand/chain controls; no upstream dataset or source code copied"
++      },
++      "license": "MIT OR Apache-2.0",
++      "redistribution": {
++        "status": "allowed",
++        "rationale": "minimal abstract structures and original test recipe"
++      },
++      "minimization": "one candidate-budget or stereo-preservation condition per small graph",
++      "oracle": {
++        "engine": "RDKit",
++        "version": "2026.09.1",
++        "settings": {
++          "onlyUnassigned": true,
++          "unique": true,
++          "maxIsomers": 1024,
++          "tryEmbedding": false,
++          "reference_legacy_stereo": true,
++          "comparison": "exact InChI set after reading native SMILES under legacy perception"
++        }
++      },
++      "expected": {
++        "assignment_count": 3,
++        "reference_inchi_set": [
++          "InChI=1S/C4H10O2/c1-3(5)4(2)6/h3-6H,1-2H3/t3-,4+",
++          "InChI=1S/C4H10O2/c1-3(5)4(2)6/h3-6H,1-2H3/t3-,4-/m0/s1",
++          "InChI=1S/C4H10O2/c1-3(5)4(2)6/h3-6H,1-2H3/t3-,4-/m1/s1"
++        ],
++        "count_tolerance": 0
++      },
++      "native_assignment_count": 3,
++      "legacy_reference_count": 3,
++      "modern_reference_count": 3,
++      "source_numberings": 5
++    },
++    {
++      "id": "fixed-and-unassigned",
++      "smiles": "N[C@@H](C)C(O)F",
++      "explicit_h": false,
++      "sha256": "15dde25c208c41662e0b7a84e944a10f3ff59c4ea06549fbff3ecf4604471c97",
++      "provenance": {
++        "source": "minimal abstract molecular graphs and original source-order permutation recipe",
++        "retrieved": "2026-10-15",
++        "issue": "https://github.com/rdkit/rdkit/issues/9701",
++        "transformations": "issue skeletons plus independently authored H/isotope/terminal-ligand/chain controls; no upstream dataset or source code copied"
++      },
++      "license": "MIT OR Apache-2.0",
++      "redistribution": {
++        "status": "allowed",
++        "rationale": "minimal abstract structures and original test recipe"
++      },
++      "minimization": "one candidate-budget or stereo-preservation condition per small graph",
++      "oracle": {
++        "engine": "RDKit",
++        "version": "2026.09.1",
++        "settings": {
++          "onlyUnassigned": true,
++          "unique": true,
++          "maxIsomers": 1024,
++          "tryEmbedding": false,
++          "reference_legacy_stereo": true,
++          "comparison": "exact InChI set after reading native SMILES under legacy perception"
++        }
++      },
++      "expected": {
++        "assignment_count": 2,
++        "reference_inchi_set": [
++          "InChI=1S/C3H8FNO/c1-2(5)3(4)6/h2-3,6H,5H2,1H3/t2-,3+/m0/s1",
++          "InChI=1S/C3H8FNO/c1-2(5)3(4)6/h2-3,6H,5H2,1H3/t2-,3-/m0/s1"
++        ],
++        "count_tolerance": 0
++      },
++      "native_assignment_count": 2,
++      "legacy_reference_count": 2,
++      "modern_reference_count": 2,
++      "source_numberings": 5
++    }
++  ]
++}

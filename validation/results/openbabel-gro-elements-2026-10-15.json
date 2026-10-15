@@ -1,0 +1,160 @@
+{
+  "schema_version": 1,
+  "status": "local-source-candidate",
+  "issue": "https://github.com/openbabel/openbabel/issues/2817",
+  "base": "cac480fb source snapshot plus preserved earlier RDKit/Open Babel candidates; patch isolates GRO reader",
+  "scope": "single-frame GRO record reader and explicit element resolution; no guessed elements, bonds, topology or new graph converter",
+  "runtime": {
+    "python": "3.13.6",
+    "openbabel": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+    "chematic_extension_sha256": "8eda9cd00ee073732eb32ec15433fe07738bbdd17fdf721efe273b3004dc6341"
+  },
+  "source_sha256": {
+    "crates/chematic-mol/src/gro.rs": "fdd394d63f72d1166727fc6def24a7d3e0b2ce162a9d9e62c07a816e64e9d9a4",
+    "crates/chematic-py/src/formats/gro.rs": "adfdfd9fd52ad739a58f22442f86ca0159e927e31d59502a3306f793474e21f3",
+    "crates/chematic-mol/tests/gro_contract.rs": "59490e1c3c59fa527d4aa39ffe647dd8ee9767f20dc35cca722541364dba4248",
+    "crates/chematic-py/tests/test_gro.py": "9043cb1d83407117117a1882b1fc30784150589f89911862650420e4460a7a7b",
+    "crates/chematic-py/python/chematic/__init__.pyi": "e334fcf91e7ebb1994637e02f06d7d8945356bd6236bf8faf468718e786a345a",
+    "scripts/validate_gro_elements.py": "21ddea4834dbb82f59555ec2d63792e86006d4d240c972c3770a5874d799a216"
+  },
+  "fixture": {
+    "id": "synthetic-be-ce-fe-gro-v1",
+    "path": "validation/openbabel_issues/gro/two-letter-elements.gro",
+    "sha256": "63cb9cc31c330dfcb5a7cefb8adb35d29b9c9e34093e8c747c876e5e26950617",
+    "provenance": {
+      "source": "original synthetic fixed-column rows authored from the GROMACS GRO field definition",
+      "date": "2026-10-15",
+      "spec_retrieved": "2026-10-15",
+      "spec_url": "https://manual.gromacs.org/current/reference-manual/file-formats.html#gro",
+      "external_data": "no upstream attachment, coordinates or POSCAR copied",
+      "transformations": "three separated atoms named BE/CE/FE; explicit Be/Ce/Fe caller assignment; generated six-name validation adds ambiguous CA, CL and NA with source-authored C, Cl and Na assignments"
+    },
+    "license": "MIT OR Apache-2.0",
+    "redistribution": {
+      "status": "allowed",
+      "rationale": "original project fixture"
+    },
+    "minimization": "three rows separate first-letter truncation from chemistry; no bonds or molecule reconstruction",
+    "oracle": {
+      "name": "source-authored elements and independent fixed-column decoder",
+      "version": "GROMACS 2026.4 GRO manual; Open Babel 3.2.1 defect/control diagnostic",
+      "url": "https://manual.gromacs.org/current/reference-manual/file-formats.html#gro",
+      "settings": "nm and nm/ps retained; variable precision and 3/9-value box profiles; no atom-name heuristic"
+    },
+    "expected": {
+      "unresolved_elements": [
+        null,
+        null,
+        null
+      ],
+      "explicit_elements": [
+        "Be",
+        "Ce",
+        "Fe"
+      ],
+      "coordinate_unit": "nm",
+      "positions_nm": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0
+        ],
+        [
+          4,
+          0,
+          0
+        ]
+      ],
+      "numeric_tolerance": 0.0,
+      "fixture_encoding": "UTF-8 LF"
+    }
+  },
+  "results": {
+    "permutations": 720,
+    "field_mismatches": 0,
+    "element_mismatches": 0,
+    "source_text_mismatches": 0,
+    "case_sha256": "5380d57d5c19f43053f4479d47a0099241a2a60bceff81b717b93ba769803600",
+    "precisions": [
+      3,
+      5,
+      8
+    ],
+    "velocity_presence": [
+      false,
+      true
+    ],
+    "box_component_counts": [
+      3,
+      9
+    ]
+  },
+  "openbabel": {
+    "command": [
+      "obabel",
+      "-igro",
+      "<fixture>",
+      "-oxyz"
+    ],
+    "output_elements": [
+      "B",
+      "C",
+      "F"
+    ],
+    "output_sha256": "99c055db86d66ddd8313b85b9ed329c9676ecb1087351f4af8fb33effb0dcb8e",
+    "stderr": "1 molecule converted",
+    "explicit_element_XYZ_control": {
+      "input_sha256": "11d5df7e67005529e810d49df346bb3ec84d29df1abd9692c1d8abb15ace9654",
+      "output_sha256": "aa595d705bd63adda285bb9632657d0044a9b6ebf6bd722e8feb48ac28f90dcf",
+      "output_elements": [
+        "Be",
+        "Ce",
+        "Fe"
+      ],
+      "passed": true
+    }
+  },
+  "limits": "One frame only; fixed five-character identifiers, n+5 numeric fields with n>=1, optional same-width n+1-decimal velocities, finite values and default input/atom/line limits. Raw box vectors are preserved without periodicity, invertibility or simulation-cell validation. No topology, charges, isotopes, writer or trajectory API.",
+  "verification": {
+    "rust": {
+      "passed": 772,
+      "failed": 0,
+      "ignored": 0,
+      "new_contract_tests": 15,
+      "targets": [
+        "--lib",
+        "gro_contract",
+        "mmcif_pqr_integration"
+      ]
+    },
+    "python": {
+      "passed": 114,
+      "failed": 0,
+      "new_api_tests": 43,
+      "files": [
+        "test_gro.py",
+        "test_new_formats.py",
+        "test_input_errors.py"
+      ]
+    },
+    "checks": {
+      "clippy_mol_py_all_targets_warnings_denied": "passed",
+      "cargo_fmt": "passed",
+      "refactor_budget": "passed",
+      "binding_surface_inventory": "passed",
+      "product_names": "passed",
+      "mkdocs_strict": "passed"
+    },
+    "log_sha256": {
+      "rust.log": "bea9bf588a73c7299297db9c5e9ca7f28450d387930264d6a62615bcb2a97dee",
+      "python.log": "cfd026f6e36572479c7afcd55190c00b6771c09ec5f8fa0cd2618e3f92f72f5c",
+      "clippy.log": "1cec0b0e93a98995c5e96c702e197fda671aef45b71ef23bc00dfe4e6b35eb7e",
+      "docs.log": "101275cef7fd82ad64f8f3f9145c09bcecf46df6097fe521170fea036ea4f019"
+    }
+  }
+}

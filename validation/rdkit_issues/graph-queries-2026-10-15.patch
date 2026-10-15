@@ -1,0 +1,1238 @@
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 7cacda5..336de2d 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -223,6 +223,7 @@ jobs:
+           - { package: chematic-mol, target: gro_contract }
+           - { package: chematic-mol, target: turbomole_contract }
+           - { package: chematic-mol, target: exyz_contract }
++          - { package: chematic-smiles, target: rdkit_graph_queries }
+           - { package: chematic-mol, target: rdfile_contract }
+           - { package: chematic-mol, target: gzmat_precision }
+           - { package: chematic-mol, target: sdf_selections }
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 7025052..0147e8b 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -12,6 +12,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
+ 
+ ### Added
+ 
++- Added checked RDKit-compatible adjacency matrices and shortest atom paths
++  in Rust/Python, including asymmetric dative valence contributions, stable
++  bond-order tie handling and bounded allocation in sanitized atom order.
++
+ - Added checked ORCA-AICCM EXYZ reading/writing in Rust/Python, retaining
+   virtual atom flags, oriented lattice rows and nonzero cell offsets with
+   full floating-point precision. ASE ExtXYZ remains a separate format.
+diff --git a/THIRD_PARTY_NOTICES.md b/THIRD_PARTY_NOTICES.md
+index e5aef5b..f1fe529 100644
+--- a/THIRD_PARTY_NOTICES.md
++++ b/THIRD_PARTY_NOTICES.md
+@@ -137,6 +137,17 @@ the RDKit build. This inventory is a copyright/license notice; it is not a
+ patent or freedom-to-operate opinion. No patent clearance is claimed for any
+ algorithm merely because its reference implementation is BSD-licensed.
+ 
++### RDKit graph query extensions
++
++`crates/chematic-smiles/src/rdkit/graph_queries.rs` follows adjacency valence
++contributions and shortest-path neighbor ordering from RDKit
++`Release_2026_09_1`, `Code/GraphMol/Matrices.cpp`, under the BSD-3-Clause
++notice above. Copyright (C) 2003-2026 Greg Landrum and other RDKit contributors.
++Upstream Matrices.cpp copyright (C) 2003-2008 Greg Landrum and Rational Discovery LLC.
++The implementation reuses the existing sanitized model and checked matrix
++storage. Input caps, fallible allocation and refusing nonzero `emptyVal`
++are chematic API choices.
++
+ ### Configurable Layered fingerprint extensions
+ 
+ The shared hashing and checked parameter/path-enumeration extensions in
+diff --git a/crates/chematic-py/python/chematic/__init__.pyi b/crates/chematic-py/python/chematic/__init__.pyi
+index ac42e25..65c6421 100644
+--- a/crates/chematic-py/python/chematic/__init__.pyi
++++ b/crates/chematic-py/python/chematic/__init__.pyi
+@@ -374,6 +374,14 @@ class Mol:
+         """``Chem.MolFragmentToSmiles(m, atomsToUse, bondsToUse, ...)``
+         (RDKit 2026.03.1) in RDKit's atom and bond numbering."""
+         ...
++    def rdkit_adjacency_matrix(
++        self, use_bo: bool = False, *, empty_value: int = 0
++    ) -> list[list[float]]:
++        """RDKit GetAdjacencyMatrix with emptyVal=0; weighted dative entries are asymmetric."""
++        ...
++    def rdkit_shortest_path(self, start: int, end: int) -> list[int]:
++        """RDKit GetShortestPath in sanitized atom order; disconnected returns []."""
++        ...
+     def rdkit_distance_matrix(
+         self, use_bo: bool = False, use_atom_wts: bool = False
+     ) -> list[list[float]]:
+diff --git a/crates/chematic-py/src/mol_methods.rs b/crates/chematic-py/src/mol_methods.rs
+index abd2286..90a6128 100644
+--- a/crates/chematic-py/src/mol_methods.rs
++++ b/crates/chematic-py/src/mol_methods.rs
+@@ -23,6 +23,7 @@ mod analysis;
+ mod descriptors;
+ mod extended;
+ mod fingerprints;
++mod graph_queries;
+ mod identity;
+ mod layered_config;
+ mod properties;
+diff --git a/crates/chematic-py/src/mol_methods/graph_queries.rs b/crates/chematic-py/src/mol_methods/graph_queries.rs
+new file mode 100644
+index 0000000..fedd461
+--- /dev/null
++++ b/crates/chematic-py/src/mol_methods/graph_queries.rs
+@@ -0,0 +1,21 @@
++use super::*;
++
++#[pymethods]
++impl Mol {
++    /// RDKit-compatible adjacency in sanitized RDKit atom order.
++    /// Weighted dative entries are asymmetric. Only empty_value=0 is supported.
++    /// Input caps: 1024 atoms / 16384 bonds, before model preparation.
++    #[pyo3(signature = (use_bo = false, *, empty_value = 0))]
++    fn rdkit_adjacency_matrix(&self, use_bo: bool, empty_value: i32) -> PyResult<Vec<Vec<f64>>> {
++        chematic_smiles::rdkit_adjacency_matrix(&self.inner, use_bo, empty_value)
++            .map_err(|e| PyValueError::new_err(e.to_string()))
++    }
++
++    /// Unweighted shortest path, including endpoints in sanitized RDKit order.
++    /// Disconnected endpoints return []; equal/invalid endpoints raise ValueError.
++    /// Ties follow RDKit bond-index neighbor order. Input caps match adjacency.
++    fn rdkit_shortest_path(&self, start: usize, end: usize) -> PyResult<Vec<usize>> {
++        chematic_smiles::rdkit_shortest_path(&self.inner, start, end)
++            .map_err(|e| PyValueError::new_err(e.to_string()))
++    }
++}
+diff --git a/crates/chematic-py/tests/test_rdkit_graph_queries.py b/crates/chematic-py/tests/test_rdkit_graph_queries.py
+new file mode 100644
+index 0000000..90b7a74
+--- /dev/null
++++ b/crates/chematic-py/tests/test_rdkit_graph_queries.py
+@@ -0,0 +1,70 @@
++"""Original minimal graph contracts; independent oracle script pins RDKit."""
++import ast
++from pathlib import Path
++import pytest
++import chematic
++
++@pytest.mark.parametrize("smiles,weighted", [
++    ("N->[Cu]",[[0,0],[1,0]]), ("[Cu]<-N",[[0,1],[0,0]]),
++    ("C=C",[[0,2],[2,0]]), ("C#N",[[0,3],[3,0]]),
++    ("[Mo]$[Mo]",[[0,4],[4,0]]),
++])
++def test_order_and_endpoint_valence(smiles,weighted):
++    m=chematic.from_smiles(smiles)
++    assert m.rdkit_adjacency_matrix(use_bo=True)==weighted
++    assert m.rdkit_adjacency_matrix()==[[0,1],[1,0]]
++    assert m.rdkit_shortest_path(0,1)==[0,1]
++    assert m.rdkit_shortest_path(1,0)==[1,0]
++
++def test_tie_order_direction_and_disconnected_result():
++    m=chematic.from_smiles("C1CCC1.O")
++    assert m.rdkit_shortest_path(1,3)==[1,0,3]
++    assert m.rdkit_shortest_path(3,1)==[3,2,1]
++    assert m.rdkit_shortest_path(0,4)==[]
++    assert m.rdkit_adjacency_matrix()[0][4]==0
++
++def test_h_removal_and_added_h_indices():
++    m=chematic.from_smiles("[H]C([H])([H])[H]")
++    assert m.rdkit_adjacency_matrix()==[[0]]
++    with pytest.raises(ValueError): m.rdkit_shortest_path(0,1)
++    h=m.rdkit_add_hydrogens()
++    a=h.rdkit_adjacency_matrix()
++    assert len(a)==5
++    assert a[0]==[0,1,1,1,1]
++    assert h.rdkit_shortest_path(1,4)==[1,0,4]
++
++@pytest.mark.parametrize("start,end",[(0,0),(0,2),(3,0)])
++def test_invalid_endpoints(start,end):
++    with pytest.raises(ValueError):
++        chematic.from_smiles("CC").rdkit_shortest_path(start,end)
++
++@pytest.mark.parametrize("value",[-1,1,127,255,256])
++def test_nonzero_fill_is_explicitly_unsupported(value):
++    with pytest.raises(ValueError, match="nonzero adjacency empty_value"):
++        chematic.from_smiles("CC.O").rdkit_adjacency_matrix(empty_value=value)
++
++def test_empty_graph_return_shapes():
++    m=chematic.RWMol().GetMol()
++    assert m.rdkit_adjacency_matrix()==[]
++    with pytest.raises(ValueError): m.rdkit_adjacency_matrix(empty_value=1)
++    with pytest.raises(ValueError): m.rdkit_shortest_path(0,1)
++
++def test_returned_arrays_and_source_properties_are_independent():
++    m=chematic.from_smiles("CCO")
++    before=m.smiles
++    m.SetIntProp("sentinel",9707)
++    a=m.rdkit_adjacency_matrix();a[0][1]=500
++    path=m.rdkit_shortest_path(0,2);path.clear()
++    assert m.rdkit_adjacency_matrix()[0][1]==1
++    assert m.rdkit_shortest_path(0,2)==[0,1,2]
++    assert m.smiles==before and m.GetIntProp("sentinel")==9707
++
++def test_preparation_limit_applies_before_h_removal():
++    m=chematic.from_smiles(".".join(["[H]C"]*513))
++    for call in [lambda:m.rdkit_adjacency_matrix(),lambda:m.rdkit_shortest_path(0,1)]:
++        with pytest.raises(ValueError,match="1026 atoms"): call()
++
++def test_stub_methods_are_declared_on_mol():
++    p=Path(__file__).resolve().parents[1]/"python/chematic/__init__.pyi"
++    cls=next(n for n in ast.parse(p.read_text()).body if isinstance(n,ast.ClassDef) and n.name=="Mol")
++    assert {"rdkit_adjacency_matrix","rdkit_shortest_path"}<={n.name for n in cls.body if isinstance(n,ast.FunctionDef)}
+diff --git a/crates/chematic-smiles/src/lib.rs b/crates/chematic-smiles/src/lib.rs
+index b52fedd..6ef11bc 100644
+--- a/crates/chematic-smiles/src/lib.rs
++++ b/crates/chematic-smiles/src/lib.rs
+@@ -65,7 +65,7 @@ pub use rdkit::{
+     RdkitMolBlockBond, RdkitMolView, RdkitPdbMolecule, RdkitSanitizedModel, RdkitSmilesError,
+     RdkitSmilesParams, RdkitTautomerEnumeration, RdkitTautomerStatus, RdkitViewAtom, RdkitViewBond,
+     Transform3D, rdkit_2d_coords, rdkit_added_hs_molecule, rdkit_addhs_first_pattern,
+-    rdkit_align_mol, rdkit_align_points, rdkit_all_conformer_best_rms,
++    rdkit_adjacency_matrix, rdkit_align_mol, rdkit_align_points, rdkit_all_conformer_best_rms,
+     rdkit_all_conformer_best_rms_to_ref, rdkit_atom_stereocenter_counts, rdkit_best_rms,
+     rdkit_calc_rms, rdkit_canonical_smiles, rdkit_canonical_tautomer, rdkit_chiral_centers,
+     rdkit_cleanup_edits, rdkit_crippen_contribs, rdkit_crippen_contribs_no_hs,
+@@ -77,10 +77,10 @@ pub use rdkit::{
+     rdkit_mol_from_pdb_block, rdkit_mol_from_xyz_block, rdkit_mol_hash, rdkit_mol_view,
+     rdkit_molecule_from_inchi_output, rdkit_murcko_scaffold, rdkit_num_atoms,
+     rdkit_num_pi_electrons, rdkit_parsed_molecule, rdkit_pdb_block, rdkit_random_smiles,
+-    rdkit_random_smiles_with, rdkit_reaction_to_smarts, rdkit_sanitized_model, rdkit_smarts,
+-    rdkit_smarts_to_smarts, rdkit_smiles, rdkit_stereoisomer_count, rdkit_stereoisomer_smiles,
+-    rdkit_tautomer_score, register_rdkit_model_hook, with_rdkit_model_molecule,
+-    with_rdkit_model_scalar,
++    rdkit_random_smiles_with, rdkit_reaction_to_smarts, rdkit_sanitized_model, rdkit_shortest_path,
++    rdkit_smarts, rdkit_smarts_to_smarts, rdkit_smiles, rdkit_stereoisomer_count,
++    rdkit_stereoisomer_smiles, rdkit_tautomer_score, register_rdkit_model_hook,
++    with_rdkit_model_molecule, with_rdkit_model_scalar,
+ };
+ pub use smi_file::{
+     SmiFileParseLimits, parse_smi_file, parse_smi_file_with_limits, write_smi_file,
+diff --git a/crates/chematic-smiles/src/rdkit/graph_queries.rs b/crates/chematic-smiles/src/rdkit/graph_queries.rs
+new file mode 100644
+index 0000000..5036665
+--- /dev/null
++++ b/crates/chematic-smiles/src/rdkit/graph_queries.rs
+@@ -0,0 +1,126 @@
++//! Checked graph queries following RDKit Release_2026_09_1 Matrices.cpp.
++//! Upstream copyright (C) 2003-2008 Greg Landrum and Rational Discovery LLC.
++//! Copyright (C) 2003-2026 Greg Landrum and other RDKit contributors.
++//! BSD-3-Clause; see THIRD_PARTY_NOTICES.md. The existing sanitized model
++//! supplies atom indices, bond ordering and endpoint valence contributions.
++use super::{RdkitSmilesError, matrices, mol::Mol};
++use chematic_core::Molecule;
++
++fn unsupported(detail: impl Into<String>) -> RdkitSmilesError {
++    RdkitSmilesError::Unsupported(detail.into())
++}
++
++fn prepare(mol: &Molecule) -> Result<Mol, RdkitSmilesError> {
++    if mol.atom_count() > 1024 || mol.bond_count() > 16_384 {
++        return Err(unsupported(format!(
++            "graph query resource limit: {} atoms / {} bonds; maxima are 1024 / 16384",
++            mol.atom_count(),
++            mol.bond_count()
++        )));
++    }
++    if mol.bonds().any(|(_, b)| b.atom1 == b.atom2) {
++        return Err(unsupported("graph queries do not support self bonds"));
++    }
++    let model = super::rdkit_mol_for_writing(mol)?;
++    matrices::checked_len(model.atoms.len())?;
++    Ok(model)
++}
++
++/// RDKit 2026.09.1 `Chem.GetAdjacencyMatrix(m, useBO, emptyVal=0)`.
++/// Rows use the same sanitized atom order as `rdkit_distance_matrix`,
++/// including graph-H removal (or retained explicitly added H atoms).
++/// Unweighted entries are 1 for each bond. Weighted entries are endpoint
++/// valence contributions: aromatic 1.5, dative donor→acceptor 0 / reverse 1.
++///
++/// Only `empty_value=0` is supported. RDKit's nonzero `emptyVal` uses a byte
++/// fill and can produce NaNs or platform-dependent integer conversions.
++/// Inputs are capped before preparation at 1024 atoms and 16384 bonds;
++/// dense storage uses checked dimensions and fallible allocation.
++pub fn rdkit_adjacency_matrix(
++    mol: &Molecule,
++    use_bo: bool,
++    empty_value: i32,
++) -> Result<Vec<Vec<f64>>, RdkitSmilesError> {
++    if empty_value != 0 {
++        return Err(unsupported(
++            "nonzero adjacency empty_value is unsupported; use 0",
++        ));
++    }
++    let model = prepare(mol)?;
++    let n = model.atoms.len();
++    let mut matrix = matrices::filled(matrices::checked_len(n)?, 0.0)?;
++    for bond in &model.bonds {
++        matrix[bond.begin * n + bond.end] = if use_bo {
++            bond.valence_contrib(bond.begin)
++        } else {
++            1.0
++        };
++        matrix[bond.end * n + bond.begin] = if use_bo {
++            bond.valence_contrib(bond.end)
++        } else {
++            1.0
++        };
++    }
++    matrices::into_rows(matrix, n)
++}
++
++fn indices(capacity: usize) -> Result<Vec<usize>, RdkitSmilesError> {
++    let mut result = Vec::new();
++    result
++        .try_reserve_exact(capacity)
++        .map_err(|e| unsupported(format!("graph query allocation failed: {e}")))?;
++    Ok(result)
++}
++
++/// RDKit 2026.09.1 `Chem.GetShortestPath(m, start, end)`, including both
++/// endpoints. Unweighted, undirected BFS in RDKit's bond-index neighbor order.
++/// Tied paths therefore need not be reversals of the opposite-direction call.
++/// Different fragments return an empty vector; equal or out-of-range endpoints
++/// return `Unsupported` instead of RDKit's invariant/range exceptions.
++/// Endpoints refer to the sanitized RDKit model, after graph-H removal.
++/// The same input caps as `rdkit_adjacency_matrix` apply; BFS uses O(n) storage.
++pub fn rdkit_shortest_path(
++    mol: &Molecule,
++    start: usize,
++    end: usize,
++) -> Result<Vec<usize>, RdkitSmilesError> {
++    let model = prepare(mol)?;
++    let n = model.atoms.len();
++    if start >= n || end >= n || start == end {
++        return Err(unsupported(format!(
++            "shortest path requires distinct atom indices below {n}; got {start}, {end}"
++        )));
++    }
++    let mut parent = indices(n)?;
++    parent.resize(n, usize::MAX);
++    parent[start] = start;
++    let mut queue = indices(n)?;
++    queue.push(start);
++    let mut cursor = 0;
++    while cursor < queue.len() && parent[end] == usize::MAX {
++        let current = queue[cursor];
++        cursor += 1;
++        for &bond in &model.atom_bonds[current] {
++            let neighbor = model.bonds[bond].other(current);
++            if parent[neighbor] == usize::MAX {
++                parent[neighbor] = current;
++                queue.push(neighbor);
++                if neighbor == end {
++                    break;
++                }
++            }
++        }
++    }
++    if parent[end] == usize::MAX {
++        return Ok(Vec::new());
++    }
++    let mut path = indices(n)?;
++    let mut current = end;
++    path.push(current);
++    while current != start {
++        current = parent[current];
++        path.push(current);
++    }
++    path.reverse();
++    Ok(path)
++}
+diff --git a/crates/chematic-smiles/src/rdkit/matrices.rs b/crates/chematic-smiles/src/rdkit/matrices.rs
+index a66eda7..4cc4c1f 100644
+--- a/crates/chematic-smiles/src/rdkit/matrices.rs
++++ b/crates/chematic-smiles/src/rdkit/matrices.rs
+@@ -23,7 +23,7 @@ pub(super) fn checked_len(n: usize) -> Result<usize, RdkitSmilesError> {
+     Ok(entries)
+ }
+ 
+-fn filled(len: usize, value: f64) -> Result<Vec<f64>, RdkitSmilesError> {
++pub(super) fn filled(len: usize, value: f64) -> Result<Vec<f64>, RdkitSmilesError> {
+     let mut values = Vec::new();
+     values.try_reserve_exact(len).map_err(|err| {
+         RdkitSmilesError::Unsupported(format!("distance matrix allocation failed: {err}"))
+diff --git a/crates/chematic-smiles/src/rdkit/mod.rs b/crates/chematic-smiles/src/rdkit/mod.rs
+index 9fc9ec2..c96ec3d 100644
+--- a/crates/chematic-smiles/src/rdkit/mod.rs
++++ b/crates/chematic-smiles/src/rdkit/mod.rs
+@@ -40,6 +40,7 @@ mod depict;
+ mod embed_view;
+ mod enumerate;
+ mod findstereo;
++mod graph_queries;
+ mod inchi_read;
+ mod kekulize;
+ mod matrices;
+@@ -391,6 +392,7 @@ pub fn rdkit_num_atoms(mol: &Molecule) -> Result<usize, RdkitSmilesError> {
+     Ok(rdkit_mol_for_writing(mol)?.atoms.len())
+ }
+ 
++pub use graph_queries::{rdkit_adjacency_matrix, rdkit_shortest_path};
+ pub use matrices::{rdkit_distance_matrix, rdkit_distance_matrix_3d};
+ 
+ /// One problem `MolOps::detectChemistryProblems` reports (see
+diff --git a/crates/chematic-smiles/tests/rdkit_graph_queries.rs b/crates/chematic-smiles/tests/rdkit_graph_queries.rs
+new file mode 100644
+index 0000000..6f5815d
+--- /dev/null
++++ b/crates/chematic-smiles/tests/rdkit_graph_queries.rs
+@@ -0,0 +1,146 @@
++//! Original MIT OR Apache-2.0 graph fixtures; pinned oracle/provenance/hashes
++//! live in validation/rdkit_issues/graph-queries/fixtures.json.
++use chematic_core::{Atom, BondOrder, Element, MoleculeBuilder};
++use chematic_smiles::{RdkitSmilesError, parse, rdkit_adjacency_matrix, rdkit_shortest_path};
++
++#[test]
++fn binary_and_bond_order_matrices_are_distinct() {
++    let m = parse("C=CC#N").unwrap();
++    assert_eq!(
++        rdkit_adjacency_matrix(&m, false, 0).unwrap(),
++        [
++            [0., 1., 0., 0.],
++            [1., 0., 1., 0.],
++            [0., 1., 0., 1.],
++            [0., 0., 1., 0.]
++        ]
++    );
++    assert_eq!(
++        rdkit_adjacency_matrix(&m, true, 0).unwrap(),
++        [
++            [0., 2., 0., 0.],
++            [2., 0., 1., 0.],
++            [0., 1., 0., 3.],
++            [0., 0., 3., 0.]
++        ]
++    );
++}
++
++#[test]
++fn dative_valence_is_asymmetric_while_paths_are_undirected() {
++    let m = parse("N->[Cu]").unwrap();
++    assert_eq!(
++        rdkit_adjacency_matrix(&m, false, 0).unwrap(),
++        [[0., 1.], [1., 0.]]
++    );
++    assert_eq!(
++        rdkit_adjacency_matrix(&m, true, 0).unwrap(),
++        [[0., 0.], [1., 0.]]
++    );
++    assert_eq!(rdkit_shortest_path(&m, 0, 1).unwrap(), [0, 1]);
++    assert_eq!(rdkit_shortest_path(&m, 1, 0).unwrap(), [1, 0]);
++}
++
++#[test]
++fn aromaticity_h_removal_and_empty_graphs_use_existing_model() {
++    let m = parse("C1=CC=CC=C1").unwrap();
++    let a = rdkit_adjacency_matrix(&m, true, 0).unwrap();
++    assert_eq!(a[0][1], 1.5);
++    assert_eq!(a[0][5], 1.5);
++    let m = parse("[H]C([H])([H])[H]").unwrap();
++    assert_eq!(rdkit_adjacency_matrix(&m, true, 0).unwrap(), [[0.]]);
++    assert!(rdkit_shortest_path(&m, 0, 1).is_err());
++    let m = MoleculeBuilder::new().build();
++    assert!(rdkit_adjacency_matrix(&m, false, 0).unwrap().is_empty());
++    assert!(rdkit_shortest_path(&m, 0, 1).is_err());
++}
++
++#[test]
++fn tied_paths_follow_bond_insertion_order_in_both_directions() {
++    let m = parse("C1CCC1").unwrap();
++    assert_eq!(rdkit_shortest_path(&m, 0, 2).unwrap(), [0, 1, 2]);
++    assert_eq!(rdkit_shortest_path(&m, 2, 0).unwrap(), [2, 1, 0]);
++    assert_eq!(rdkit_shortest_path(&m, 1, 3).unwrap(), [1, 0, 3]);
++    assert_eq!(rdkit_shortest_path(&m, 3, 1).unwrap(), [3, 2, 1]);
++}
++
++#[test]
++fn disconnected_is_empty_invalid_or_equal_is_error() {
++    let m = parse("CC.O").unwrap();
++    assert!(rdkit_shortest_path(&m, 0, 2).unwrap().is_empty());
++    for pair in [(0, 0), (3, 0), (0, usize::MAX)] {
++        assert!(matches!(
++            rdkit_shortest_path(&m, pair.0, pair.1),
++            Err(RdkitSmilesError::Unsupported(_))
++        ));
++    }
++    for value in [-1, 1, 127, i32::MAX] {
++        assert!(rdkit_adjacency_matrix(&m, false, value).is_err());
++    }
++}
++
++#[test]
++fn input_limits_precede_preparation_and_hydrogen_removal() {
++    let m = parse(&vec!["[H]C"; 513].join(".")).unwrap();
++    for error in [
++        rdkit_adjacency_matrix(&m, false, 0).unwrap_err(),
++        rdkit_shortest_path(&m, 0, 1).unwrap_err(),
++    ] {
++        assert!(error.to_string().contains("graph query resource limit"));
++        assert!(error.to_string().contains("1026 atoms"));
++    }
++    let mut builder = MoleculeBuilder::new();
++    for _ in 0..65_536 {
++        builder.add_atom(Atom::new(Element::C));
++    }
++    let m = builder.build();
++    assert!(
++        rdkit_adjacency_matrix(&m, false, 0)
++            .unwrap_err()
++            .to_string()
++            .contains("resource limit")
++    );
++    // Dense invalid-valence graph: edge preflight must win over sanitization.
++    let mut builder = MoleculeBuilder::new();
++    let atoms: Vec<_> = (0..182)
++        .map(|_| builder.add_atom(Atom::new(Element::C)))
++        .collect();
++    for i in 0..atoms.len() {
++        for j in i + 1..atoms.len() {
++            builder
++                .add_bond(atoms[i], atoms[j], BondOrder::Single)
++                .unwrap();
++        }
++    }
++    let m = builder.build();
++    let error = rdkit_shortest_path(&m, 0, 1).unwrap_err();
++    assert!(error.to_string().contains("16471 bonds"));
++    assert!(error.to_string().contains("graph query resource limit"));
++}
++
++#[test]
++fn exact_cap_supports_dense_and_linear_queries() {
++    let m = parse(&"C".repeat(1024)).unwrap();
++    let matrix = rdkit_adjacency_matrix(&m, false, 0).unwrap();
++    assert_eq!(matrix.len(), 1024);
++    assert!(matrix.iter().all(|r| r.len() == 1024));
++    assert_eq!(matrix[0][1023], 0.);
++    assert_eq!(
++        rdkit_shortest_path(&m, 0, 1023).unwrap(),
++        (0..1024).collect::<Vec<_>>()
++    );
++}
++
++#[test]
++fn unsupported_bond_types_and_self_bonds_fail_explicitly() {
++    assert!(rdkit_adjacency_matrix(&parse("C~N").unwrap(), true, 0).is_err());
++    let mut b = MoleculeBuilder::new();
++    let a = b.add_atom(Atom::new(Element::C));
++    b.add_bond(a, a, BondOrder::Single).unwrap();
++    assert!(
++        rdkit_shortest_path(&b.build(), 0, 1)
++            .unwrap_err()
++            .to_string()
++            .contains("self bonds")
++    );
++}
+diff --git a/docs/rdkit-graph-queries.md b/docs/rdkit-graph-queries.md
+new file mode 100644
+index 0000000..6aa1fed
+--- /dev/null
++++ b/docs/rdkit-graph-queries.md
+@@ -0,0 +1,148 @@
++# RDKit-compatible graph queries
++
++This source candidate adds two previously absent public operations:
++`rdkit_adjacency_matrix` and `rdkit_shortest_path` in Rust, and methods of the
++same names on Python `Mol`. The earlier candidate provided distance matrices;
++its private layout/path helpers did not expose these operations.
++
++The reference is [RDKit 2026.09.1's graph API](https://www.rdkit.org/docs/source/rdkit.Chem.rdmolops.html)
++and the adjacency/shortest-path routines in
++[`Release_2026_09_1` Matrices.cpp](https://github.com/rdkit/rdkit/blob/fece8caa860bdf6c9c82bdb9253f22a0cf87150c/Code/GraphMol/Matrices.cpp).
++The compatibility implementation retains the existing BSD-3-Clause notice in
++`THIRD_PARTY_NOTICES.md`. No RDKit binary dependency is added.
++
++## Python
++
++```python
++import chematic
++
++mol = chematic.from_smiles("N->[Cu]")
++assert mol.rdkit_adjacency_matrix() == [[0.0, 1.0], [1.0, 0.0]]
++assert mol.rdkit_adjacency_matrix(use_bo=True) == [[0.0, 0.0], [1.0, 0.0]]
++assert mol.rdkit_shortest_path(0, 1) == [0, 1]
++assert mol.rdkit_shortest_path(1, 0) == [1, 0]
++```
++
++Adjacency returns independent `list[list[float]]` rows, including for the
++binary profile. RDKit returns a NumPy array, with integer dtype for its binary
++profile. An empty molecule gives `[]`; callers converting this to NumPy should
++reshape it to `(0, 0)` when that shape is required.
++
++Shortest paths are independent lists including both endpoints. A path counts
++edges rather than bond order and treats dative bonds as undirected. Endpoints
++in different fragments give `[]`. Equal or out-of-range endpoints raise an
++error, matching RDKit's refusal of these calls; error classes/messages are not
++claimed identical. Python extraction also rejects negative/oversized unsigned
++indices. Supported computation/model errors are surfaced as `ValueError`.
++
++## Rust
++
++```rust
++use chematic_smiles::{RdkitSmilesError, parse, rdkit_adjacency_matrix, rdkit_shortest_path};
++
++fn graph_queries() -> Result<(), RdkitSmilesError> {
++    let molecule = parse("CC.O").map_err(|e| RdkitSmilesError::Unsupported(e.to_string()))?;
++    let adjacency = rdkit_adjacency_matrix(&molecule, false, 0)?;
++    assert_eq!(adjacency[0][1], 1.0);
++    assert!(rdkit_shortest_path(&molecule, 0, 2)?.is_empty());
++    Ok(())
++}
++```
++
++Both operations return `Result<_, RdkitSmilesError>`. Size, allocation,
++unsupported-model and invalid-endpoint errors are explicit. The shared dense
++matrix helper uses checked dimensions and fallible storage allocation. The
++shortest-path search uses fallibly reserved linear buffers.
++
++## Atom order and chemistry contract
++
++These methods reuse `rdkit_mol_for_writing`, the sanitized model used by
++`rdkit_distance_matrix`. Thus graph hydrogens removed by RDKit's SMILES
++preparation disappear before indexing results. For example,
++`[H]C([H])([H])[H]` has a one-row result. `rdkit_add_hydrogens()` explicitly
++retains the generated hydrogens, with the same order used by other named
++RDKit profiles. Indices are model indices and may differ from raw chematic
++atom indices. The reader does not silently return a raw-graph matrix instead.
++
++The unweighted adjacency is 1 for any supported bond and 0 otherwise.
++The weighted profile uses each endpoint's valence contribution, including:
++
++| Bond | Forward entry | Reverse entry |
++|---|---|---|
++| Single / double / triple / quadruple | 1 / 2 / 3 / 4 | same |
++| Aromatic-typed bond | 1.5 | 1.5 |
++| Dative donor → acceptor | 0 | 1 |
++
++Shortest paths search neighbors in the model's RDKit bond-index order.
++Different equal-length paths can be chosen when the call direction is
++reversed. For a four-membered ring `C1CCC1`, path `(1, 3)` is `[1, 0, 3]`,
++while path `(3, 1)` is `[3, 2, 1]`. This ordering is checked against the oracle
++after atom permutations as well as for original inputs.
++
++The operations do not mutate the molecule, its properties or a caller-owned
++result from an earlier call. Binary and weighted calls allocate fresh results;
++there is no shared matrix cache and no `force`/`prefix` parameter.
++
++## Bounds and unsupported branches
++
++- At most 1024 input atoms and 16,384 input bonds, checked before model
++  preparation or hydrogen removal. The prepared matrix is also checked
++  against the existing 1,048,576-entry dense cap.
++- Self bonds, zero/query bonds and inputs unsupported by the existing
++  sanitized model fail explicitly. The existing model's restrictions on
++  non-SMILES stereo annotations also apply. These APIs do not add generic
++  query-graph, unsanitized-molecule or arbitrary CTAB support.
++- Adjacency supports `empty_value=0` only. Nonzero values return an explicit
++  error, including on an empty graph. The pinned upstream implementation
++  initializes its double buffer with `memset(emptyVal)`. A measured weighted
++  `emptyVal=1` produces `7.748604185489348e-304` on the diagonal rather than
++  numeric 1; other byte values can yield NaNs. This behavior is not reproduced.
++- RDKit's cache can also retain the previous fill when `emptyVal` changes
++  without `force=True`; the oracle gate forces recalculation for comparison.
++- This delivery exposes native Rust and Python methods. It does not add
++  WASM exports, a NumPy convenience method, or `rdkit_compat` facade functions.
++
++## Validation and regeneration
++
++`scripts/validate_rdkit_graph_queries.py` pins RDKit **2026.09.1** and verifies
++the checked-in manifest hash. It uses 27 original minimal structures under
++`MIT OR Apache-2.0`; no external molecular dataset is redistributed. Each
++fixture records provenance, license, minimization, oracle/settings, expected
++results and a normalized UTF-8 payload hash in
++`validation/rdkit_issues/graph-queries/fixtures.json`.
++
++The gate compares both binary and weighted matrices, repeats binary calls to
++check profile independence, and compares every ordered pair of distinct atoms.
++Identity, reversed and seeded shuffled atom orders are used where distinct.
++It covers explicit-H removal and addition, dative direction, aromatic/Kekulé
++input, cleanup, isotope and map metadata, fragments, salts, bridges, cubane,
++and quadruple bonds. Path lengths are also checked against RDKit distances.
++Molecule serialization and a sentinel property must remain unchanged.
++
++| Local oracle check, 2026-10-15 | Result |
++|---|---|
++| Original fixtures / graph variants | 27 / 139 |
++| Matrix calls / exact entries | 417 / 30,033 |
++| Exact ordered shortest paths | 9,072 |
++| Disconnected paths among those calls | 1,154 |
++| Direction-dependent tied paths | 798 |
++| Unexpected mismatches | 0 |
++
++Rust validation additionally checks the exact 1024-atom boundary, a graph
++exceeding 65,535 atoms, an edge-limit violation before invalid-valence
++sanitization, pre-removal H limits and unsupported branches. The relevant
++library/integration suites pass 398 tests, with one pre-existing manual test
++ignored. Python graph-query tests pass 19 cases; with existing matrix,
++renumbering and EXYZ regressions the scoped Python run passes 94 cases.
++
++```sh
++python scripts/validate_rdkit_graph_queries.py
++cargo test -p chematic-smiles --lib --test rdkit_graph_queries --test rdkit_matrix_limits
++```
++
++The Python command requires the built candidate extension on `PYTHONPATH` and
++the pinned RDKit oracle. Measurements describe this local source candidate;
++they are not published-package evidence, a performance result, or general
++RDKit parity. The candidate inherits the previous EXYZ and Layered feature
++work. Its source is isolated from the primary dirty checkout; a portable patch
++and evidence report are delivered without committing or pushing.
+diff --git a/docs/rdkit-migration.md b/docs/rdkit-migration.md
+index f444994..a8b6b42 100644
+--- a/docs/rdkit-migration.md
++++ b/docs/rdkit-migration.md
+@@ -19,6 +19,7 @@ operation-level measurement and unsupported states, see the
+ | Match SMARTS | `mol.HasSubstructMatch(q)` | `mol.has_substructure(q)` / `mol.find_matches(q)`; opt-in `mol.find_matches_rdkit_parity(q)` | Native query interpretation has recorded residuals. The opt-in result distinguishes no-match from typed refusal; match atom order can differ. |
+ | Descriptors | `Descriptors.MolWt(m)`, `rdMolDescriptors.CalcTPSA(m)` | `mol.mw`, `mol.tpsa`, `mol.descriptors()` | Choose native or named RDKit-compatible profiles explicitly. |
+ | Fingerprints | `rdFingerprintGenerator.GetMorganGenerator(...)` | `mol.ecfp4()` or named RDKit-compatible Morgan API | Native ECFP and RDKit Morgan bit positions are different profiles. |
++| Graph queries | `Chem.GetAdjacencyMatrix`, `Chem.GetShortestPath` | `mol.rdkit_adjacency_matrix()`, `mol.rdkit_shortest_path(start, end)` | Sanitized RDKit atom order; adjacency emptyVal=0 only; 1024 atom / 16384 bond input caps. See [graph-query scope](rdkit-graph-queries.md). |
+ | Similarity | `DataStructs.TanimotoSimilarity(a, b)` | `chematic.tanimoto(a, b)` | Use fingerprints from the same declared profile. |
+ | 2D depiction | `rdMolDraw2D.MolDraw2DSVG` | `mol._repr_svg_()`; Rust `chematic_depict::depict_svg` | SVG supported; PNG requires the optional feature. |
+ | Conformer transforms | `rdMolTransforms.Set*`, `ComputeCanonicalTransform`, `CanonicalizeConformer` | `mol.set_*`, `mol.compute_canonical_transform(...)`, `mol.canonicalize_conformer(...)`; Rust `chematic_3d::mol_transforms` | chematic returns new coordinates instead of mutating a conformer. Degenerate principal-axis frames are not byte-identical across solvers. |
+diff --git a/mkdocs.yml b/mkdocs.yml
+index dad9c31..0597d09 100644
+--- a/mkdocs.yml
++++ b/mkdocs.yml
+@@ -86,6 +86,7 @@ nav:
+     - Validation vs RDKit: validation.md
+     - Compatibility Scope: compatibility-scope.md
+     - Detailed RDKit Comparison: rdkit-comparison.md
++    - RDKit Graph Queries: rdkit-graph-queries.md
+     - RDKit Accuracy Plan: rdkit-accuracy-plan.md
+     - Canonical E/Z Plan: canonical-ez-plan.md
+     - RDKit Issue Lessons: rdkit_issue_lessons.md
+diff --git a/scripts/validate_rdkit_graph_queries.py b/scripts/validate_rdkit_graph_queries.py
+new file mode 100644
+index 0000000..d3e74ed
+--- /dev/null
++++ b/scripts/validate_rdkit_graph_queries.py
+@@ -0,0 +1,136 @@
++#!/usr/bin/env python3
++"""Exact graph matrices and tie-sensitive paths against pinned RDKit."""
++import argparse
++import hashlib
++import json
++from pathlib import Path
++import random
++
++import chematic
++from rdkit import Chem, rdBase, RDLogger
++
++ROOT = Path(__file__).resolve().parents[1]
++FIXTURES = ROOT/'validation/rdkit_issues/graph-queries/fixtures.json'
++
++
++def digest(data):
++    return hashlib.sha256(data).hexdigest()
++
++
++def orders(n):
++    result = [list(range(n))]
++    reverse = list(reversed(range(n)))
++    if reverse not in result:
++        result.append(reverse)
++    shuffled = list(range(n))
++    random.Random(9707+n).shuffle(shuffled)
++    if shuffled not in result:
++        result.append(shuffled)
++    return result
++
++
++def variant(case, added_hs, order):
++    native = chematic.from_smiles(case['smiles']) if case['smiles'] else chematic.RWMol().GetMol()
++    if added_hs:
++        native = native.rdkit_add_hydrogens()
++        reference = Chem.AddHs(Chem.MolFromSmiles(case['smiles']))
++    else:
++        params = Chem.SmilesParserParams()
++        params.removeHs = False
++        reference = Chem.MolFromSmiles(case['smiles'], params)
++    assert reference is not None
++    assert native.atom_count == reference.GetNumAtoms()
++    if order is not None:
++        native = native.renumber_atoms(order)
++        reference = Chem.RenumberAtoms(reference, order) if order else Chem.Mol(reference)
++    if not added_hs:
++        reference = Chem.RemoveHs(reference)
++    return native, reference
++
++
++def compare(native, reference, checksum):
++    n = reference.GetNumAtoms()
++    assert native.rdkit_num_atoms() == n
++    original = native.smiles
++    native.SetIntProp('graph_query_sentinel',9707)
++    entries = 0
++    for use_bo in (False,True,False):
++        want = Chem.GetAdjacencyMatrix(reference,useBO=use_bo,emptyVal=0,force=True).tolist()
++        got = native.rdkit_adjacency_matrix(use_bo=use_bo)
++        assert got == want, (use_bo,got,want)
++        assert len(got) == n and all(len(row)==n for row in got)
++        checksum.update(json.dumps(got,separators=(',',':')).encode())
++        entries += n*n
++    paths = disconnected = tied = 0
++    for start in range(n):
++        for end in range(n):
++            if start == end:
++                continue
++            want = list(Chem.GetShortestPath(reference,start,end))
++            got = native.rdkit_shortest_path(start,end)
++            assert got == want, (start,end,got,want)
++            paths += 1
++            disconnected += not bool(got)
++            if got:
++                opposite = list(Chem.GetShortestPath(reference,end,start))
++                tied += got != list(reversed(opposite))
++                assert len(got)-1 == int(Chem.GetDistanceMatrix(reference)[start,end])
++            checksum.update(json.dumps([start,end,got],separators=(',',':')).encode())
++    assert native.smiles == original
++    assert native.GetIntProp('graph_query_sentinel') == 9707
++    return entries, paths, disconnected, tied
++
++
++def main():
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument('--output',type=Path,default=ROOT/'validation/results/rdkit-graph-queries-2026-10-15.json')
++    args = parser.parse_args()
++    assert rdBase.rdkitVersion == '2026.09.1', rdBase.rdkitVersion
++    RDLogger.DisableLog('rdApp.*')
++    manifest = json.loads(FIXTURES.read_text())
++    assert manifest['sha256'] == digest(json.dumps(manifest['cases'],sort_keys=True,separators=(',',':')).encode())
++    checksum = hashlib.sha256()
++    variants = entries = paths = disconnected = tied = 0
++    records = []
++    for case in manifest['cases']:
++        assert case['sha256'] == digest(case['smiles'].encode())
++        case_variants = 0
++        for added_hs in (False,True):
++            native, reference = variant(case,added_hs,None)
++            for order in orders(native.atom_count):
++                native, reference = variant(case,added_hs,order)
++                result = compare(native,reference,checksum)
++                entries += result[0]; paths += result[1]; disconnected += result[2]; tied += result[3]
++                variants += 1; case_variants += 1
++        records.append({'id':case['id'],'status':'passed','variants':case_variants})
++    # Separate diagnostics: nonzero fills are outside the compatibility profile.
++    probe = Chem.MolFromSmiles('CC.C')
++    byte_fill = float(Chem.GetAdjacencyMatrix(probe,useBO=True,emptyVal=1,force=True)[0,0])
++    assert byte_fill != 1.0 and byte_fill > 0
++    cache_probe = Chem.MolFromSmiles('CC.C')
++    baseline = Chem.GetAdjacencyMatrix(cache_probe,useBO=True,emptyVal=0,force=True)
++    cached = Chem.GetAdjacencyMatrix(cache_probe,useBO=True,emptyVal=1,force=False)
++    assert baseline.tolist() == cached.tolist()
++    report = {
++        'schema_version':1, 'status':'local-source-candidate; uncommitted and unpushed',
++        'oracle':{'name':'RDKit','version':rdBase.rdkitVersion,
++            'settings':'MolFromSmiles with removeHs=False then RenumberAtoms/RemoveHs, or AddHs then RenumberAtoms; GetAdjacencyMatrix(force=True,emptyVal=0), GetShortestPath'},
++        'fixture_manifest':str(FIXTURES.relative_to(ROOT)), 'fixture_sha256':manifest['sha256'],
++        'results':{'fixtures':len(records),'graph_variants':variants,'matrix_calls':3*variants,
++            'exact_matrix_entries':entries,'exact_shortest_paths':paths,
++            'disconnected_paths':disconnected,'direction_dependent_tied_paths':tied,
++            'unexpected_mismatches':0,'normalized_output_sha256':checksum.hexdigest()},
++        'records':records,
++        'observed_rdkit_nonzero_fill':{'weighted_emptyVal_1_diagonal':byte_fill,
++            'explanation':'Release_2026_09_1 Matrices.cpp fills double storage using memset(emptyVal); nonzero fill is refused by chematic',
++            'cache_probe':'Changing emptyVal without force reuses existing adjacency in this oracle; chematic does not cache graph query outputs'},
++        'scope':['Rust/Python only','Sanitized RDKit model atom order','Input cap 1024 atoms / 16384 bonds',
++            'Nonzero empty_value refused','Query/zero bonds and unsupported model inputs refused','No WASM or rdkit_compat facade functions'],
++    }
++    args.output.parent.mkdir(parents=True,exist_ok=True)
++    args.output.write_text(json.dumps(report,indent=2)+'\n')
++    print(json.dumps(report['results'],indent=2))
++
++
++if __name__ == '__main__':
++    main()
+diff --git a/validation/rdkit_issues/graph-queries/fixtures.json b/validation/rdkit_issues/graph-queries/fixtures.json
+new file mode 100644
+index 0000000..536b180
+--- /dev/null
++++ b/validation/rdkit_issues/graph-queries/fixtures.json
+@@ -0,0 +1,384 @@
++{
++  "schema_version": 1,
++  "cases": [
++    {
++      "id": "empty",
++      "smiles": "",
++      "provenance": "Original synthetic minimal SMILES authored for graph-query validation, 2026-10-15; no external corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project representations",
++      "minimization": "Small structure isolates empty graph behavior",
++      "oracle": "RDKit 2026.09.1 GetAdjacencyMatrix(useBO=False/True,emptyVal=0,force=True), GetShortestPath; Chem.MolFromSmiles/RemoveHs/AddHs/RenumberAtoms as in gate script",
++      "expected": {
++        "matrix_and_path": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
++    },
++    {
++      "id": "one-carbon",
++      "smiles": "C",
++      "provenance": "Original synthetic minimal SMILES authored for graph-query validation, 2026-10-15; no external corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project representations",
++      "minimization": "Small structure isolates one-carbon graph behavior",
++      "oracle": "RDKit 2026.09.1 GetAdjacencyMatrix(useBO=False/True,emptyVal=0,force=True), GetShortestPath; Chem.MolFromSmiles/RemoveHs/AddHs/RenumberAtoms as in gate script",
++      "expected": {
++        "matrix_and_path": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "6b23c0d5f35d1b11f9b683f0b0a617355deb11277d91ae091d399c655b87940d"
++    },
++    {
++      "id": "chain",
++      "smiles": "CCO",
++      "provenance": "Original synthetic minimal SMILES authored for graph-query validation, 2026-10-15; no external corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project representations",
++      "minimization": "Small structure isolates chain graph behavior",
++      "oracle": "RDKit 2026.09.1 GetAdjacencyMatrix(useBO=False/True,emptyVal=0,force=True), GetShortestPath; Chem.MolFromSmiles/RemoveHs/AddHs/RenumberAtoms as in gate script",
++      "expected": {
++        "matrix_and_path": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "ab1de819ede91df490e6441934decfa9041b49f91d6bbadbba4df634ccff57fa"
++    },
++    {
++      "id": "mixed-orders",
++      "smiles": "C=CC#N",
++      "provenance": "Original synthetic minimal SMILES authored for graph-query validation, 2026-10-15; no external corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project representations",
++      "minimization": "Small structure isolates mixed-orders graph behavior",
++      "oracle": "RDKit 2026.09.1 GetAdjacencyMatrix(useBO=False/True,emptyVal=0,force=True), GetShortestPath; Chem.MolFromSmiles/RemoveHs/AddHs/RenumberAtoms as in gate script",
++      "expected": {
++        "matrix_and_path": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "656b0c52e9f8a3f588907629edcab7822c79d46fe90fa04bf6dcc420417b2366"
++    },
++    {
++      "id": "aromatic",
++      "smiles": "c1ccccc1",
++      "provenance": "Original synthetic minimal SMILES authored for graph-query validation, 2026-10-15; no external corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project representations",
++      "minimization": "Small structure isolates aromatic graph behavior",
++      "oracle": "RDKit 2026.09.1 GetAdjacencyMatrix(useBO=False/True,emptyVal=0,force=True), GetShortestPath; Chem.MolFromSmiles/RemoveHs/AddHs/RenumberAtoms as in gate script",
++      "expected": {
++        "matrix_and_path": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "13cad05ca8f49c509e5b7be8c67668484344ebf2b2d12b03b295f14d4b1c32d1"
++    },
++    {
++      "id": "kekule",
++      "smiles": "C1=CC=CC=C1",
++      "provenance": "Original synthetic minimal SMILES authored for graph-query validation, 2026-10-15; no external corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project representations",
++      "minimization": "Small structure isolates kekule graph behavior",
++      "oracle": "RDKit 2026.09.1 GetAdjacencyMatrix(useBO=False/True,emptyVal=0,force=True), GetShortestPath; Chem.MolFromSmiles/RemoveHs/AddHs/RenumberAtoms as in gate script",
++      "expected": {
++        "matrix_and_path": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "f597e5816a91b21d072c9b8f39605bc289cab6f9dcaea1bc08e1c8335eb2a8e1"
++    },
++    {
++      "id": "fused",
++      "smiles": "c1ccc2ccccc2c1",
++      "provenance": "Original synthetic minimal SMILES authored for graph-query validation, 2026-10-15; no external corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project representations",
++      "minimization": "Small structure isolates fused graph behavior",
++      "oracle": "RDKit 2026.09.1 GetAdjacencyMatrix(useBO=False/True,emptyVal=0,force=True), GetShortestPath; Chem.MolFromSmiles/RemoveHs/AddHs/RenumberAtoms as in gate script",
++      "expected": {
++        "matrix_and_path": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "a896d495b04a450b732a5bf6a5896266647c948af5d97014906f7afe145b9022"
++    },
++    {
++      "id": "four-cycle",
++      "smiles": "C1CCC1",
++      "provenance": "Original synthetic minimal SMILES authored for graph-query validation, 2026-10-15; no external corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project representations",
++      "minimization": "Small structure isolates four-cycle graph behavior",
++      "oracle": "RDKit 2026.09.1 GetAdjacencyMatrix(useBO=False/True,emptyVal=0,force=True), GetShortestPath; Chem.MolFromSmiles/RemoveHs/AddHs/RenumberAtoms as in gate script",
++      "expected": {
++        "matrix_and_path": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "20396b751bf2e968cbb57976575ca74b9a42dfce95093715587144ca8fa306f3"
++    },
++    {
++      "id": "cubane",
++      "smiles": "C12C3C4C1C5C2C3C45",
++      "provenance": "Original synthetic minimal SMILES authored for graph-query validation, 2026-10-15; no external corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project representations",
++      "minimization": "Small structure isolates cubane graph behavior",
++      "oracle": "RDKit 2026.09.1 GetAdjacencyMatrix(useBO=False/True,emptyVal=0,force=True), GetShortestPath; Chem.MolFromSmiles/RemoveHs/AddHs/RenumberAtoms as in gate script",
++      "expected": {
++        "matrix_and_path": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "eaebf0b7ca8f7b0973f5b5e3466f3e915481af00d09ae29d0814400b48eecca1"
++    },
++    {
++      "id": "bridged",
++      "smiles": "C1CC2CCC1C2",
++      "provenance": "Original synthetic minimal SMILES authored for graph-query validation, 2026-10-15; no external corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project representations",
++      "minimization": "Small structure isolates bridged graph behavior",
++      "oracle": "RDKit 2026.09.1 GetAdjacencyMatrix(useBO=False/True,emptyVal=0,force=True), GetShortestPath; Chem.MolFromSmiles/RemoveHs/AddHs/RenumberAtoms as in gate script",
++      "expected": {
++        "matrix_and_path": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "8decb4ecd7f11859f828999b33c19adb45a76028e77179a95905ce023bd312da"
++    },
++    {
++      "id": "fragments",
++      "smiles": "C1CCCCC1.CCO",
++      "provenance": "Original synthetic minimal SMILES authored for graph-query validation, 2026-10-15; no external corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project representations",
++      "minimization": "Small structure isolates fragments graph behavior",
++      "oracle": "RDKit 2026.09.1 GetAdjacencyMatrix(useBO=False/True,emptyVal=0,force=True), GetShortestPath; Chem.MolFromSmiles/RemoveHs/AddHs/RenumberAtoms as in gate script",
++      "expected": {
++        "matrix_and_path": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "9e04b0bae4126e77e9f7efe31403e2c2cedca239f25ed03424b49bb3585f9d4b"
++    },
++    {
++      "id": "salt",
++      "smiles": "[Na+].[O-]C(=O)C",
++      "provenance": "Original synthetic minimal SMILES authored for graph-query validation, 2026-10-15; no external corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project representations",
++      "minimization": "Small structure isolates salt graph behavior",
++      "oracle": "RDKit 2026.09.1 GetAdjacencyMatrix(useBO=False/True,emptyVal=0,force=True), GetShortestPath; Chem.MolFromSmiles/RemoveHs/AddHs/RenumberAtoms as in gate script",
++      "expected": {
++        "matrix_and_path": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "9903e0dd0dc754f986484ddee53102b08b2f344d4a917d72e547129ea23b02f6"
++    },
++    {
++      "id": "dative",
++      "smiles": "N->[Cu]",
++      "provenance": "Original synthetic minimal SMILES authored for graph-query validation, 2026-10-15; no external corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project representations",
++      "minimization": "Small structure isolates dative graph behavior",
++      "oracle": "RDKit 2026.09.1 GetAdjacencyMatrix(useBO=False/True,emptyVal=0,force=True), GetShortestPath; Chem.MolFromSmiles/RemoveHs/AddHs/RenumberAtoms as in gate script",
++      "expected": {
++        "matrix_and_path": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "30a8a6e6eb41b33da46b5cca557e8e49b8e6fb2bf56f6da139ccdb12d92f559c"
++    },
++    {
++      "id": "reverse-dative",
++      "smiles": "[Cu]<-N",
++      "provenance": "Original synthetic minimal SMILES authored for graph-query validation, 2026-10-15; no external corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project representations",
++      "minimization": "Small structure isolates reverse-dative graph behavior",
++      "oracle": "RDKit 2026.09.1 GetAdjacencyMatrix(useBO=False/True,emptyVal=0,force=True), GetShortestPath; Chem.MolFromSmiles/RemoveHs/AddHs/RenumberAtoms as in gate script",
++      "expected": {
++        "matrix_and_path": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "d8aadc4fa58d9a3ab29f470b78e516fdda87ec944fca301fbee0bb266f2b8bff"
++    },
++    {
++      "id": "two-donors",
++      "smiles": "[NH3]->[Cu+2]<-[NH3]",
++      "provenance": "Original synthetic minimal SMILES authored for graph-query validation, 2026-10-15; no external corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project representations",
++      "minimization": "Small structure isolates two-donors graph behavior",
++      "oracle": "RDKit 2026.09.1 GetAdjacencyMatrix(useBO=False/True,emptyVal=0,force=True), GetShortestPath; Chem.MolFromSmiles/RemoveHs/AddHs/RenumberAtoms as in gate script",
++      "expected": {
++        "matrix_and_path": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "39cd78f656a07bb7f978a5951e06cc8ca2608c41cb7b7acc8ee8b5f6e285c473"
++    },
++    {
++      "id": "chlorine-cleanup",
++      "smiles": "Cl(=O)(=O)(=O)O",
++      "provenance": "Original synthetic minimal SMILES authored for graph-query validation, 2026-10-15; no external corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project representations",
++      "minimization": "Small structure isolates chlorine-cleanup graph behavior",
++      "oracle": "RDKit 2026.09.1 GetAdjacencyMatrix(useBO=False/True,emptyVal=0,force=True), GetShortestPath; Chem.MolFromSmiles/RemoveHs/AddHs/RenumberAtoms as in gate script",
++      "expected": {
++        "matrix_and_path": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "bb139ffdc0da3996a03c49df664492e780f8c7d1fdd11b01e89e5e03c69da814"
++    },
++    {
++      "id": "nitrogen-cleanup",
++      "smiles": "O=N(=O)O",
++      "provenance": "Original synthetic minimal SMILES authored for graph-query validation, 2026-10-15; no external corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project representations",
++      "minimization": "Small structure isolates nitrogen-cleanup graph behavior",
++      "oracle": "RDKit 2026.09.1 GetAdjacencyMatrix(useBO=False/True,emptyVal=0,force=True), GetShortestPath; Chem.MolFromSmiles/RemoveHs/AddHs/RenumberAtoms as in gate script",
++      "expected": {
++        "matrix_and_path": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "cf63ac710a25d90bd0ffddca35a465fe089f2bbb945dbc356f06869aef4f7544"
++    },
++    {
++      "id": "hydrogen-removal",
++      "smiles": "[H]C([H])([H])[H]",
++      "provenance": "Original synthetic minimal SMILES authored for graph-query validation, 2026-10-15; no external corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project representations",
++      "minimization": "Small structure isolates hydrogen-removal graph behavior",
++      "oracle": "RDKit 2026.09.1 GetAdjacencyMatrix(useBO=False/True,emptyVal=0,force=True), GetShortestPath; Chem.MolFromSmiles/RemoveHs/AddHs/RenumberAtoms as in gate script",
++      "expected": {
++        "matrix_and_path": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "bd513a6a68633ef519d77992210d68e444a5fb66a5c41a795b2960b7808c22eb"
++    },
++    {
++      "id": "isotope-h",
++      "smiles": "[2H]OC",
++      "provenance": "Original synthetic minimal SMILES authored for graph-query validation, 2026-10-15; no external corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project representations",
++      "minimization": "Small structure isolates isotope-h graph behavior",
++      "oracle": "RDKit 2026.09.1 GetAdjacencyMatrix(useBO=False/True,emptyVal=0,force=True), GetShortestPath; Chem.MolFromSmiles/RemoveHs/AddHs/RenumberAtoms as in gate script",
++      "expected": {
++        "matrix_and_path": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "30ff7372d09a34a925db44222913c2eb0f79a5fccb4ca8c3ab2f3171c6ef6084"
++    },
++    {
++      "id": "hydride",
++      "smiles": "[H-].[Li+]",
++      "provenance": "Original synthetic minimal SMILES authored for graph-query validation, 2026-10-15; no external corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project representations",
++      "minimization": "Small structure isolates hydride graph behavior",
++      "oracle": "RDKit 2026.09.1 GetAdjacencyMatrix(useBO=False/True,emptyVal=0,force=True), GetShortestPath; Chem.MolFromSmiles/RemoveHs/AddHs/RenumberAtoms as in gate script",
++      "expected": {
++        "matrix_and_path": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "9827dd774c218223d0ecee98c1869555dd50679cf3ad1c00aa6eef9133a13adf"
++    },
++    {
++      "id": "hydrogen-gas",
++      "smiles": "[H][H]",
++      "provenance": "Original synthetic minimal SMILES authored for graph-query validation, 2026-10-15; no external corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project representations",
++      "minimization": "Small structure isolates hydrogen-gas graph behavior",
++      "oracle": "RDKit 2026.09.1 GetAdjacencyMatrix(useBO=False/True,emptyVal=0,force=True), GetShortestPath; Chem.MolFromSmiles/RemoveHs/AddHs/RenumberAtoms as in gate script",
++      "expected": {
++        "matrix_and_path": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "ea7e44a64c7461517e4f9eb140658e1650e4fe580eaa6895de3a748fdaaf72df"
++    },
++    {
++      "id": "stereocenter",
++      "smiles": "[13CH3][C@@H](O)F",
++      "provenance": "Original synthetic minimal SMILES authored for graph-query validation, 2026-10-15; no external corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project representations",
++      "minimization": "Small structure isolates stereocenter graph behavior",
++      "oracle": "RDKit 2026.09.1 GetAdjacencyMatrix(useBO=False/True,emptyVal=0,force=True), GetShortestPath; Chem.MolFromSmiles/RemoveHs/AddHs/RenumberAtoms as in gate script",
++      "expected": {
++        "matrix_and_path": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "5827c7a00adbd9908d92406258d43b7e47e5ef27c9d4c1b4425bbc71488549e7"
++    },
++    {
++      "id": "geometric",
++      "smiles": "F/C=C/Cl",
++      "provenance": "Original synthetic minimal SMILES authored for graph-query validation, 2026-10-15; no external corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project representations",
++      "minimization": "Small structure isolates geometric graph behavior",
++      "oracle": "RDKit 2026.09.1 GetAdjacencyMatrix(useBO=False/True,emptyVal=0,force=True), GetShortestPath; Chem.MolFromSmiles/RemoveHs/AddHs/RenumberAtoms as in gate script",
++      "expected": {
++        "matrix_and_path": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "7c3da2167850fdb789c5e558010f20ba0ec97c376dcc67e54a355c691764d37b"
++    },
++    {
++      "id": "noble-gas",
++      "smiles": "[He]",
++      "provenance": "Original synthetic minimal SMILES authored for graph-query validation, 2026-10-15; no external corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project representations",
++      "minimization": "Small structure isolates noble-gas graph behavior",
++      "oracle": "RDKit 2026.09.1 GetAdjacencyMatrix(useBO=False/True,emptyVal=0,force=True), GetShortestPath; Chem.MolFromSmiles/RemoveHs/AddHs/RenumberAtoms as in gate script",
++      "expected": {
++        "matrix_and_path": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "ea4ebdc667c9206a99c9db38f65d8c85ce987edf93e08fb8d69e94ffe7ad6422"
++    },
++    {
++      "id": "wildcard",
++      "smiles": "*CC",
++      "provenance": "Original synthetic minimal SMILES authored for graph-query validation, 2026-10-15; no external corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project representations",
++      "minimization": "Small structure isolates wildcard graph behavior",
++      "oracle": "RDKit 2026.09.1 GetAdjacencyMatrix(useBO=False/True,emptyVal=0,force=True), GetShortestPath; Chem.MolFromSmiles/RemoveHs/AddHs/RenumberAtoms as in gate script",
++      "expected": {
++        "matrix_and_path": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "9a1c4ea50c9f65dab85388edba1a5e36f0fea5df00e1b166adb24f59bfe4f443"
++    },
++    {
++      "id": "mapped-h",
++      "smiles": "[CH3:1][O:2][H:3]",
++      "provenance": "Original synthetic minimal SMILES authored for graph-query validation, 2026-10-15; no external corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project representations",
++      "minimization": "Small structure isolates mapped-h graph behavior",
++      "oracle": "RDKit 2026.09.1 GetAdjacencyMatrix(useBO=False/True,emptyVal=0,force=True), GetShortestPath; Chem.MolFromSmiles/RemoveHs/AddHs/RenumberAtoms as in gate script",
++      "expected": {
++        "matrix_and_path": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "483a9ac227b062af88d0559b9b407c9d21210a6abd9f1ba0e2627931badd7537"
++    },
++    {
++      "id": "quadruple",
++      "smiles": "[Mo]$[Mo]",
++      "provenance": "Original synthetic minimal SMILES authored for graph-query validation, 2026-10-15; no external corpus",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; original project representations",
++      "minimization": "Small structure isolates quadruple graph behavior",
++      "oracle": "RDKit 2026.09.1 GetAdjacencyMatrix(useBO=False/True,emptyVal=0,force=True), GetShortestPath; Chem.MolFromSmiles/RemoveHs/AddHs/RenumberAtoms as in gate script",
++      "expected": {
++        "matrix_and_path": "exact oracle equality",
++        "tolerance": 0
++      },
++      "sha256": "97423eac648000e7874c7267b38589a97a19f79f88ff65267a8f4db175abaef2"
++    }
++  ],
++  "sha256": "159c4b9415f87b050e453a777a267dd16b9500cc879c1f66a3bbb65951f40901"
++}

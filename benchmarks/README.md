@@ -22,6 +22,10 @@ the [complete inventory](archive-index.md) links every retained record.
 
 ## Recent focused follow-ups
 
+- [PDBQT field preservation](2026-10-15-openbabel-pdbqt-fields.md)
+  ([raw JSON](2026-10-15-openbabel-pdbqt-fields.json)): two bounded Open Babel
+  3.2.1 cases covering an over-width charge and a missing charge; this is not
+  a general PDBQT compatibility claim.
 - [v1.1.3 evaluation fixes](2026-10-13-v113-evaluation-fixes.md): source
   compatibility, unusual-input parity, and ordinary-input timing.
 - [QED stress parity](2026-10-13-qed-stress-parity.md): 4,071 comparable

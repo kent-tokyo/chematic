@@ -116,7 +116,7 @@ package, comparator, corpus, host, runtime and operation.
 | Check WASM artifact size | [`2026-09-09-wasm-size-v1.0.10.md`](2026-09-09-wasm-size-v1.0.10.md) |
 | Find older measurements | [Historical snapshots](#historical-snapshots) |
 
-The current release line is v1.1.0. Older records remain versioned historical
+The current release line is v1.1.3. Older records remain versioned historical
 measurements where their headers say so; a release does not imply that an older
 measurement was rerun or promoted to the current artifact.
 
