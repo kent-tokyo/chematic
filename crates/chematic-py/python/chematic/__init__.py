@@ -22,6 +22,7 @@ from .chematic import (
     run_smirks_checked,
     find_mcs,
     iter_sdf,
+    iter_sdf_checked,
     iter_sdf_batched,
     iter_sdf_str,
     iter_xyz_batched,
