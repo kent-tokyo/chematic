@@ -606,6 +606,143 @@ mod tests {
     }
 
     #[test]
+    fn fragment_constraints_are_remapped_skipped_or_rejected_explicitly() {
+        let constraints = InternalCoordinateConstraints {
+            bond_lengths: vec![BondLengthConstraint::around(2, 4, 1.5, 0.1)],
+            bond_angles: vec![BondAngleConstraint::around_degrees(2, 4, 6, 109.5, 1.0)],
+            torsions: vec![TorsionAngleConstraint::around_degrees(
+                2, 4, 6, 8, 180.0, 2.0,
+            )],
+        };
+        let remapped = constraints.remap_fragment(&[8, 6, 4, 2]).unwrap();
+        assert_eq!(remapped.bond_lengths[0].atom1, 3);
+        assert_eq!(remapped.bond_lengths[0].atom2, 2);
+        assert_eq!(remapped.bond_angles[0].atom1, 3);
+        assert_eq!(remapped.bond_angles[0].center, 2);
+        assert_eq!(remapped.bond_angles[0].atom2, 1);
+        assert_eq!(remapped.torsions[0].atom1, 3);
+        assert_eq!(remapped.torsions[0].atom2, 2);
+        assert_eq!(remapped.torsions[0].atom3, 1);
+        assert_eq!(remapped.torsions[0].atom4, 0);
+
+        let skipped = constraints.remap_fragment(&[10, 11]).unwrap();
+        assert_eq!(skipped, InternalCoordinateConstraints::default());
+
+        for (fragment, kind) in [
+            (vec![2], "bond-length"),
+            (vec![2, 4], "bond-angle"),
+            (vec![2, 4, 6], "torsion"),
+        ] {
+            let error = constraints.remap_fragment(&fragment).unwrap_err();
+            assert_eq!(
+                error,
+                InternalCoordinateConstraintError::CrossFragment { kind }
+            );
+        }
+    }
+
+    #[test]
+    fn validation_rejects_malformed_constraint_values() {
+        let mol = molecule("CCCC");
+        let cases = [
+            InternalCoordinateConstraints {
+                bond_lengths: vec![BondLengthConstraint::around(0, 0, 1.5, 0.1)],
+                ..Default::default()
+            },
+            InternalCoordinateConstraints {
+                bond_lengths: vec![BondLengthConstraint {
+                    atom1: 0,
+                    atom2: 1,
+                    lower: f64::NAN,
+                    upper: 1.6,
+                }],
+                ..Default::default()
+            },
+            InternalCoordinateConstraints {
+                bond_angles: vec![BondAngleConstraint {
+                    atom1: 0,
+                    center: 1,
+                    atom2: 2,
+                    lower: 0.0,
+                    upper: core::f64::consts::PI + 0.1,
+                }],
+                ..Default::default()
+            },
+            InternalCoordinateConstraints {
+                torsions: vec![TorsionAngleConstraint {
+                    atom1: 0,
+                    atom2: 1,
+                    atom3: 2,
+                    atom4: 3,
+                    lower: 0.0,
+                    upper: 2.0 * core::f64::consts::PI + 0.1,
+                }],
+                ..Default::default()
+            },
+        ];
+        assert!(matches!(
+            cases[0].validate(&mol),
+            Err(InternalCoordinateConstraintError::RepeatedAtom { .. })
+        ));
+        assert!(matches!(
+            cases[1].validate(&mol),
+            Err(InternalCoordinateConstraintError::NonFinite { .. })
+        ));
+        assert!(matches!(
+            cases[2].validate(&mol),
+            Err(InternalCoordinateConstraintError::InvalidInterval {
+                kind: "bond-angle",
+                ..
+            })
+        ));
+        assert!(matches!(
+            cases[3].validate(&mol),
+            Err(InternalCoordinateConstraintError::InvalidInterval {
+                kind: "torsion",
+                ..
+            })
+        ));
+    }
+
+    #[test]
+    fn conflicting_pair_constraints_and_error_messages_are_stable() {
+        let constraints = InternalCoordinateConstraints {
+            bond_lengths: vec![
+                BondLengthConstraint::around(0, 1, 1.0, 0.01),
+                BondLengthConstraint::around(1, 0, 2.0, 0.01),
+            ],
+            ..Default::default()
+        };
+        let mut bounds = BoundsMatrix::new(2);
+        assert_eq!(
+            constraints.apply(&mut bounds),
+            Err(InternalCoordinateConstraintError::ConflictingPair { atom1: 0, atom2: 1 })
+        );
+
+        let errors = [
+            InternalCoordinateConstraintError::AtomOutOfRange {
+                atom: 4,
+                atom_count: 2,
+            },
+            InternalCoordinateConstraintError::RepeatedAtom { kind: "torsion" },
+            InternalCoordinateConstraintError::MissingBond { atom1: 0, atom2: 2 },
+            InternalCoordinateConstraintError::NonFinite { kind: "bond-angle" },
+            InternalCoordinateConstraintError::InvalidInterval {
+                kind: "bond-length",
+                lower: 2.0,
+                upper: 1.0,
+            },
+            InternalCoordinateConstraintError::ConflictingPair { atom1: 0, atom2: 1 },
+            InternalCoordinateConstraintError::CrossFragment { kind: "torsion" },
+            InternalCoordinateConstraintError::TriangleSmoothingFailed,
+        ];
+        let messages: Vec<String> = errors.iter().map(ToString::to_string).collect();
+        assert!(messages.iter().all(|message| !message.is_empty()));
+        assert!(messages[0].contains("outside molecule"));
+        assert!(messages[7].contains("distance bounds inconsistent"));
+    }
+
+    #[test]
     fn torsion_intervals_can_cross_the_pi_seam() {
         let mol = molecule("CCCC");
         let constraints = InternalCoordinateConstraints {

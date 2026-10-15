@@ -1,0 +1,1289 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-15",
+  "scope": "Integrate the previously isolated RDKit/Open Babel/COSMolKit feature candidates; preserve current main compatibility, coverage and dependency changes.",
+  "base_main": "869ac3a1",
+  "candidate_baseline": "cac480fb",
+  "candidate_source": "/private/tmp/chematic-cdjson",
+  "synthetic_source_commit": "df77e11deb31a3689fbbf9ce3c771174df44a829",
+  "integration_branch": "codex/upstream-issues-20261015",
+  "main_protection": {
+    "protected": true,
+    "required_checks": [
+      "Test",
+      "Clippy",
+      "Format Check",
+      "Build Check"
+    ],
+    "route": "Pull request with required checks; no force push or bypass"
+  },
+  "source_equivalence": {
+    "prepared_files": 302,
+    "merged_configuration_files": [
+      ".gitattributes",
+      ".github/workflows/ci.yml",
+      "CHANGELOG.md"
+    ],
+    "production_feature_source_matches_validated_candidate": false,
+    "subsequent_integration_changes": [
+      "Preserve current-main shared SMARTS chirality refactor with candidate hydrogen-slot and ring-opening parity fixes",
+      "Move Python CJSON reader into a dedicated module to retain the refactor limit"
+    ]
+  },
+  "local_checks": {
+    "refactor_budget": "passed: 561 files, 8477 functions, 18/86 allowances",
+    "binding_inventory": "passed: Python 200/200, WASM 303",
+    "rustfmt": "passed",
+    "release_docs": "passed",
+    "mkdocs": "strict passed",
+    "git_diff_check": "passed; archived patch context spaces retain narrow attributes",
+    "workspace_test_attempt": "Interrupted with SIGTERM during the existing CIP permutation oracle; 1642 tests had passed, 5 were ignored. Not a complete workspace pass.",
+    "new_integration_target_attempt": "First local attempt exited 101 without diagnostic output; retry uses a separate task-owned build directory. No product failure diagnosis is inferred from the empty log.",
+    "python_runtime": {
+      "passed": 1034,
+      "failed": 0,
+      "suites": 30,
+      "extension_sha256": "f2842fcb3fa30e3c9a21140057e7225f455267e6a2bd804ac8faa8a7e7de6376",
+      "log_sha256": "94ae45c2e044c7908db289989efce53a75029a5ed0d1f01a56546461b38b060f",
+      "rdkit": "2026.09.1",
+      "native_inchi": false
+    },
+    "new_integration_targets": {
+      "targets": 27,
+      "passed": 303,
+      "failed": 0,
+      "ignored": 0,
+      "log_sha256": "3b102c8574a30b9d2e41d3e1ee85fa9c8246ce471f08beda8d87592c9e782b33",
+      "isolated_build_directory": true
+    },
+    "recursive_smarts_unit_tests": "20 passed after main merge"
+  },
+  "evidence_policy": "Historical candidate records preserve their original source and runtime hashes and isolation status. This integration record does not relabel those runs as tests of a published artifact.",
+  "files": [
+    {
+      "path": ".gitattributes",
+      "sha256": "66c0255d5638fed827c79bee2156e4e0f1701df563782025473461d9c0f8741f"
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "sha256": "5c254cbed300f417f1435161704346dab35d044ab5343cdf2d4251fd644b2702"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "sha256": "52c252f3280869764ae2a8419f4f537330b25a3b6dde1f659e7fe759e1549656"
+    },
+    {
+      "path": "THIRD_PARTY_NOTICES.md",
+      "sha256": "bed7aa8c39f795504724ac3194161aa66c86c9f325104eea5479dc584226fa9c"
+    },
+    {
+      "path": "crates/chematic-chem/src/checked_distance_matrix.rs",
+      "sha256": "8f8a061c9440e3fe07e2fb1bc4bac8696ed425adc3cc2f534d011d9cc87d325f"
+    },
+    {
+      "path": "crates/chematic-chem/src/lib.rs",
+      "sha256": "226e462470d0bba48d326cc59376547f576d6959456c0a648c35b5bf557c5def"
+    },
+    {
+      "path": "crates/chematic-chem/src/meso_stereo_group.rs",
+      "sha256": "a29c330d51ed174f89209f8ce63770cc6c166773dc1db90053659dfe14248268"
+    },
+    {
+      "path": "crates/chematic-chem/src/meso_stereo_group/graph.rs",
+      "sha256": "5683f9bc04ada285488bf86d47c456994fedfa534c4358cadf77aaa39d7f62e0"
+    },
+    {
+      "path": "crates/chematic-chem/src/meso_stereo_group/search.rs",
+      "sha256": "89305fd4eaf0bccf9a7d1002083cd75072a362955653bfdcb8f63147b8ad4903"
+    },
+    {
+      "path": "crates/chematic-chem/src/stereo.rs",
+      "sha256": "716d71a1332f0f23cb244f7f098076c8b61013ce9ae1eb42e2c367d2e325a55d"
+    },
+    {
+      "path": "crates/chematic-chem/src/stereo_group_alternatives.rs",
+      "sha256": "1c5fd3a36c66061fe3ddc6bba24f9c8491fcacabf50037ff72ebbd6661f9193b"
+    },
+    {
+      "path": "crates/chematic-chem/src/stereo_group_inversion.rs",
+      "sha256": "0d7a3f672ebb86657208b6c8011fe0e4c6282a71eb4f0f174926a7b49f4c9cf5"
+    },
+    {
+      "path": "crates/chematic-chem/tests/meso_stereo_group.rs",
+      "sha256": "6b7188e7623dc6659b6632b25bed78bf65a740f6b6ac3dba084db90b817e00a9"
+    },
+    {
+      "path": "crates/chematic-chem/tests/native_distance_matrix.rs",
+      "sha256": "acefa44e5024017080e4c2bb5417370a8aef78fa2b7c98c54ec44d257bb034e6"
+    },
+    {
+      "path": "crates/chematic-chem/tests/renumber_stereo_contract.rs",
+      "sha256": "3963a3ee216ff110e6cecd8e33ba896cd171143bb0cc92da6731ad2521bd65bf"
+    },
+    {
+      "path": "crates/chematic-chem/tests/stereo_candidate_budget.rs",
+      "sha256": "22ef702b6f3ffba08ea84fcf67c6ed5f9007ae77492196ecffd923f4fd0e4c8c"
+    },
+    {
+      "path": "crates/chematic-chem/tests/stereo_group_alternatives.rs",
+      "sha256": "8c4f50330449c8c745d99104408a82514decd30630d8e3ce1f1e5d0a6faf1dc6"
+    },
+    {
+      "path": "crates/chematic-chem/tests/stereo_group_inversion.rs",
+      "sha256": "73b97eee620b9903f0c491578b4cd5bdb9a9222ce32faef7e95d17c8010263c6"
+    },
+    {
+      "path": "crates/chematic-core/src/lib.rs",
+      "sha256": "618b26887d158a748675406e7e4c003bed0933ff632fe6f2587b1c92dfab9eb4"
+    },
+    {
+      "path": "crates/chematic-core/src/molecule.rs",
+      "sha256": "eb3a083a549e9d51cfe5a3d92cfb659a29c51f1325620cb60c910551deb3b9b5"
+    },
+    {
+      "path": "crates/chematic-core/src/molecule/checked_stereo_groups.rs",
+      "sha256": "9fbd00034f8836ecf6285499fefaabc4f5fd59690a700a54ca0e705a69ffeaa0"
+    },
+    {
+      "path": "crates/chematic-core/src/molecule/renumber.rs",
+      "sha256": "3f736a6dfc5656e3e40f7a67b401aeefd2056724e12225b22a187ec3d95bc9b8"
+    },
+    {
+      "path": "crates/chematic-core/tests/checked_stereo_groups.rs",
+      "sha256": "ee1a90e0d4a53c194011428c577a30747562b8babf4fbf70204031f9b93e79b5"
+    },
+    {
+      "path": "crates/chematic-fp/src/fold_density.rs",
+      "sha256": "8f028b32c3d69006fd6810a63bc1c3769b29b3b6937cfa91ae7fe4e86ed0707a"
+    },
+    {
+      "path": "crates/chematic-fp/src/lib.rs",
+      "sha256": "2260c9cd0a77357feeb2d6091eda25ec71d87dae3eb8619134d200caf1b2cc90"
+    },
+    {
+      "path": "crates/chematic-fp/src/rdkit_layered.rs",
+      "sha256": "01959e993240b73a1faca513dfb4da5f5661daf16b9c6a7e3d850c4b0cdc7d0a"
+    },
+    {
+      "path": "crates/chematic-fp/src/rdkit_layered/config.rs",
+      "sha256": "6a85d8b4035964eeb86554eaa61b955603a09db9409e004342f2507b918ad36d"
+    },
+    {
+      "path": "crates/chematic-fp/src/rdkit_layered/config/enumeration.rs",
+      "sha256": "0a4e5fd9b5b02cc9459e627e8b6f0d943d755460a8771528fa235f1d529f4a9e"
+    },
+    {
+      "path": "crates/chematic-fp/src/rdkit_layered/config/enumeration/linear.rs",
+      "sha256": "aba4ccd61b52f45190d1225434d5a9d59832511cb9627004efbac463c40c7568"
+    },
+    {
+      "path": "crates/chematic-fp/src/rdkit_layered/config/validation.rs",
+      "sha256": "cdf2196be45239ba209651368bb61e7bb64131ca095aedfab945e7941155dfcb"
+    },
+    {
+      "path": "crates/chematic-fp/src/rdkit_layered/features.rs",
+      "sha256": "bd991ff695a4436f7deb987b630c293a8556f2919fad2cca9fc7c608da78ff17"
+    },
+    {
+      "path": "crates/chematic-fp/tests/fold_density.rs",
+      "sha256": "663ce5e4792a25ea11cf36e3c8aeb6879aeb13ab599d57285fefd9e08bf3ff84"
+    },
+    {
+      "path": "crates/chematic-fp/tests/rdkit_layered_config.rs",
+      "sha256": "b465f0674ca6c76e8f0181678dd75466b1e7727c783ea76ed99f6e6c41092086"
+    },
+    {
+      "path": "crates/chematic-mol/src/cdjson.rs",
+      "sha256": "5cfb04cab113f224b3d900c1a50361e8ad3bdd8d231d52b54cefa1c797d44588"
+    },
+    {
+      "path": "crates/chematic-mol/src/cdjson/reader.rs",
+      "sha256": "1a6416593685257ff2d85b552b303351cec8796bf7d4eeaeb0c80c008b24ff84"
+    },
+    {
+      "path": "crates/chematic-mol/src/cdjson/writer.rs",
+      "sha256": "bfd43ccd042343610868edcb47b4894b1578d04eb5057ec2a3ba2c5361b91be8"
+    },
+    {
+      "path": "crates/chematic-mol/src/cjson_record.rs",
+      "sha256": "23d561164a2dc9a45b577d37a1f96a0024554febcd4e84b0795370e40f90d5d1"
+    },
+    {
+      "path": "crates/chematic-mol/src/dmol3.rs",
+      "sha256": "1b8aeaafc5c8a2906e308b51788f770bcecc9bf69b652ce8841034ff8f5d2b54"
+    },
+    {
+      "path": "crates/chematic-mol/src/dmol3/reader.rs",
+      "sha256": "5015cf16d5705d0a60a77f232ddd2cf66254afb11582e85144bb96b816c30fcf"
+    },
+    {
+      "path": "crates/chematic-mol/src/exyz.rs",
+      "sha256": "d7721d4f11c722cb99394faed2ffde44a174fbfa061c64db0089c165492bd5a8"
+    },
+    {
+      "path": "crates/chematic-mol/src/exyz/reader.rs",
+      "sha256": "e48e3aa2c107c36ab5185e455fd928e726b4d381403b735a702f278b3bdf9586"
+    },
+    {
+      "path": "crates/chematic-mol/src/fhiaims.rs",
+      "sha256": "3183ea11273c7e1cb6c94f172e1fe3272c88fbf1a1f55a1c88108245db39fd12"
+    },
+    {
+      "path": "crates/chematic-mol/src/fhiaims/reader.rs",
+      "sha256": "3af78b586df153ccf016a27b3f9a1f0d54d67f80d89493dfb4d7d70599a36f10"
+    },
+    {
+      "path": "crates/chematic-mol/src/fhiaims/writer.rs",
+      "sha256": "e34a3a04cd0a908b3aab626a10633311ab72cce71e50853ad13472c7c99961dc"
+    },
+    {
+      "path": "crates/chematic-mol/src/gro.rs",
+      "sha256": "fdd394d63f72d1166727fc6def24a7d3e0b2ce162a9d9e62c07a816e64e9d9a4"
+    },
+    {
+      "path": "crates/chematic-mol/src/gzmat.rs",
+      "sha256": "bddb0e5d72c347a586d488f181ec0578e2e91395a2aaab7b5edf3fe86f8add25"
+    },
+    {
+      "path": "crates/chematic-mol/src/gzmat/geometry.rs",
+      "sha256": "febe6b3a6aab208a8eaeb1777df1a1a7cfbb764183a8e1cb5b7ad6011e11af29"
+    },
+    {
+      "path": "crates/chematic-mol/src/gzmat/writer.rs",
+      "sha256": "0d87e74523d215840d2e56da99c7b9a922176c9234d7e4957a6dc113b3e18202"
+    },
+    {
+      "path": "crates/chematic-mol/src/lib.rs",
+      "sha256": "aa444be4b389566989c954ea4e4aee51a4c125a5211862ecf138b9849f8137d0"
+    },
+    {
+      "path": "crates/chematic-mol/src/mmcif.rs",
+      "sha256": "385cf2e1dc452ea72974278d13b1597afcbaa0627d847a582e59416f3ed18ad4"
+    },
+    {
+      "path": "crates/chematic-mol/src/mmcif/residues.rs",
+      "sha256": "21425dc67b0eb80f31b01fd1e73e33a8f2fa242b421905e5d4e20fbdf23df79a"
+    },
+    {
+      "path": "crates/chematic-mol/src/mmcif_pdb.rs",
+      "sha256": "9350d2ec8eb077ec024419a2116fd52d3146dc4ddea0f7bc660907e407c8942f"
+    },
+    {
+      "path": "crates/chematic-mol/src/mopac.rs",
+      "sha256": "5bfd070f8d1ce40daadb55bf85ffae99914aa1abbad0021a0f3a6cd4150ff0bf"
+    },
+    {
+      "path": "crates/chematic-mol/src/mopac/reader.rs",
+      "sha256": "6da8b1f48a476dd95bc7c27c6a061bc2f2f453349213345c694843c763a654d9"
+    },
+    {
+      "path": "crates/chematic-mol/src/mopac/writer.rs",
+      "sha256": "3c86048762b72b632206dc7f7c2c2b35eec040dd089a0f39aff62b9f4a1ac52e"
+    },
+    {
+      "path": "crates/chematic-mol/src/pdb_selection.rs",
+      "sha256": "8bd78e7f854fb32c00ecb2aaf07ce3cc331193dc8cb2e5163237ccc5a376491b"
+    },
+    {
+      "path": "crates/chematic-mol/src/pdb_selection/reader.rs",
+      "sha256": "e30639ae149da4be53711027177c9cf4b4c9e123f129531281b693274dcdad75"
+    },
+    {
+      "path": "crates/chematic-mol/src/pdb_selection/writer.rs",
+      "sha256": "976a8b4ae34882d5febb63163e476583a91fb6dc42e2d2a1f73d73ee524053db"
+    },
+    {
+      "path": "crates/chematic-mol/src/pqr_pdbqt.rs",
+      "sha256": "a0af80ef66546177f5cc344b3d5d81c61d7bdfc34b5ce03c6c8ba5ef7f2793e4"
+    },
+    {
+      "path": "crates/chematic-mol/src/rdfile.rs",
+      "sha256": "3ba846530e58ea36c97c4c4b3e81ac18aa1ec78a934e680dffe23d33947ba3e2"
+    },
+    {
+      "path": "crates/chematic-mol/src/rdfile/reader.rs",
+      "sha256": "a7a940cba278ddb5e88d6332496c66ffa53c4ff7569743f5c4a21307dce4fd9a"
+    },
+    {
+      "path": "crates/chematic-mol/src/rdfile/writer.rs",
+      "sha256": "8f08d50bab37b1bfce70cc7cc4ccb3a41ff6240c27b11b67ab0cac954e3f4213"
+    },
+    {
+      "path": "crates/chematic-mol/src/sdf.rs",
+      "sha256": "f9194b37056485394e31a8521db0eef734eb7657df48235e6357f76396d345de"
+    },
+    {
+      "path": "crates/chematic-mol/src/sdf/fields.rs",
+      "sha256": "008f1c2fa6cba37ad1b2c7cf42e56bbc3195a2f9b57e6b40773d4e7635a20ec5"
+    },
+    {
+      "path": "crates/chematic-mol/src/sdf/selection.rs",
+      "sha256": "c4829238c42b077da4aaed029c9577c990ecf40370518af16e9d25e56e802497"
+    },
+    {
+      "path": "crates/chematic-mol/src/turbomole.rs",
+      "sha256": "6bbe76944154d7b46371102d978af42c1bf2c33e29f8d671bff9807470b32e71"
+    },
+    {
+      "path": "crates/chematic-mol/src/turbomole/reader.rs",
+      "sha256": "9f39b8faedc1c3a0dc946beea0ab1d52f7eaba550c2ab24d17dccfceb1425087"
+    },
+    {
+      "path": "crates/chematic-mol/tests/cdjson_contract.rs",
+      "sha256": "35f1d25ba2d3b5114d8e7a75d6fbb6213b6a608c554b4d0ebfab8958076ae788"
+    },
+    {
+      "path": "crates/chematic-mol/tests/dmol3_contract.rs",
+      "sha256": "1b4e38be8a9720dd8ae741d8fd470db291b799a872bf206d80e30ecb4f1680d1"
+    },
+    {
+      "path": "crates/chematic-mol/tests/exyz_contract.rs",
+      "sha256": "0fbc4c887e850f206177d64a62521dda9d87fdab086fd4bd16f7498805a55490"
+    },
+    {
+      "path": "crates/chematic-mol/tests/fhiaims_contract.rs",
+      "sha256": "3f220fb4c4a5c3cd67b04769a2ec51c377468d9b25051f8555248a292e51c883"
+    },
+    {
+      "path": "crates/chematic-mol/tests/gro_contract.rs",
+      "sha256": "4b3456d34a7ffcba7d07676c35290f4516029dc6d2d47bed5bc28372dcf53560"
+    },
+    {
+      "path": "crates/chematic-mol/tests/gzmat_precision.rs",
+      "sha256": "0c0daa4148decc0638d732f33ab8ec44c2c04f81503160a5b7a7b9ceebd5fe51"
+    },
+    {
+      "path": "crates/chematic-mol/tests/mmcif_pdb_checked.rs",
+      "sha256": "67b3c21e2a9dc601d91f2613b7799706dcd7f19274ead471b42f2dae30be36ae"
+    },
+    {
+      "path": "crates/chematic-mol/tests/mmcif_residue_contract.rs",
+      "sha256": "1a94403c4c1df69ad0a5e08c4f966986befb1f47bd8b49670a9a1710aaf1a1a0"
+    },
+    {
+      "path": "crates/chematic-mol/tests/mopac_cartesian_contract.rs",
+      "sha256": "4e5faf2500c784659abca9dc3a87007b6bfa0ed6237148ac90bbc3ea6138930f"
+    },
+    {
+      "path": "crates/chematic-mol/tests/pdb_selection_contract.rs",
+      "sha256": "06a455c532fce7e79303e8d61056d370a3f959bc0b7e79e5e3aad2e226cf7416"
+    },
+    {
+      "path": "crates/chematic-mol/tests/pqr_pdbqt_contract.rs",
+      "sha256": "7f9a8983e22da45e4ee642105c477153594be2e61722fa7d00fde73eb6b6521d"
+    },
+    {
+      "path": "crates/chematic-mol/tests/rdfile_contract.rs",
+      "sha256": "43a75d68b146208277ba2118f2cde6b5893d07514cfb2fda1b78e7634ac8267e"
+    },
+    {
+      "path": "crates/chematic-mol/tests/sdf_selections.rs",
+      "sha256": "6ea3a5b92d6c43e17ae25359e424ea00bececdd26d93910403d784303b3b2ac2"
+    },
+    {
+      "path": "crates/chematic-mol/tests/turbomole_contract.rs",
+      "sha256": "9c0b5acd976229652bf9fbb2ea8553f42cf1143e7bd20e22637624414fc62cbb"
+    },
+    {
+      "path": "crates/chematic-py/python/chematic/__init__.pyi",
+      "sha256": "eb408b24c7ed2880a3c11795cb1579edab6ddc9e8829b4bb4a15e070e3105380"
+    },
+    {
+      "path": "crates/chematic-py/python/chematic/rdkit_compat.py",
+      "sha256": "8a3b929e1a2059e5b228060d801af7bb9b6463ac8dabec824f7e57dff7850cd5"
+    },
+    {
+      "path": "crates/chematic-py/src/fold_density.rs",
+      "sha256": "893a6c9b2b8bf7a4d2c5773d63ba2b82a39dae4034a59e9290ada4a4dbbcbb2d"
+    },
+    {
+      "path": "crates/chematic-py/src/formats.rs",
+      "sha256": "435c199ad5597924981cfa2a3ac2c59535ef211e6389b77bd32decce03b9036f"
+    },
+    {
+      "path": "crates/chematic-py/src/formats/cdjson.rs",
+      "sha256": "07f0bcbf320249b9e5b2807cb07a80ba7409097e2b204bbbaf5a0c4fed1ab338"
+    },
+    {
+      "path": "crates/chematic-py/src/formats/dmol3.rs",
+      "sha256": "0a8b76069375fe65c1e263167571f291cfb88578e34e7407aeda8a24de86607f"
+    },
+    {
+      "path": "crates/chematic-py/src/formats/exyz.rs",
+      "sha256": "cb94245640fe2bd4dd8d6a90f3d7cc55386df1c4d7659312ae36a43519c5c0b8"
+    },
+    {
+      "path": "crates/chematic-py/src/formats/fhiaims.rs",
+      "sha256": "d4ccc548228d4c6ced03a57f90ba5cb4f48228aea78d700d9ba234ce991ab4cd"
+    },
+    {
+      "path": "crates/chematic-py/src/formats/gro.rs",
+      "sha256": "adfdfd9fd52ad739a58f22442f86ca0159e927e31d59502a3306f793474e21f3"
+    },
+    {
+      "path": "crates/chematic-py/src/formats/gzmat.rs",
+      "sha256": "c8def5e4e9e07d4ce50e8a5c48b385d1cf694d640018fd8f05dd5b8c7048c7fe"
+    },
+    {
+      "path": "crates/chematic-py/src/formats/mmcif_pdb.rs",
+      "sha256": "c3560d582ae392e4e115e6d4e23810be3d197df83b29d6cad06890b8cec853cc"
+    },
+    {
+      "path": "crates/chematic-py/src/formats/mmcif_residues.rs",
+      "sha256": "0f89eaa46291e5a3a8ced131dcab8847e3660282329a1e088e89ef1840d55098"
+    },
+    {
+      "path": "crates/chematic-py/src/formats/mopac.rs",
+      "sha256": "98b8135915565c435dba74f684bd1f996568e099353a972b4547c60cea6e9255"
+    },
+    {
+      "path": "crates/chematic-py/src/formats/pdb_selection.rs",
+      "sha256": "0f3e51c0a2d54697cfacf24001156e698644158a3bd39f1f7e2f6ec5a229d8a7"
+    },
+    {
+      "path": "crates/chematic-py/src/formats/pqr_pdbqt.rs",
+      "sha256": "6daf8daca64edb69aa3c93ffac7b3b7e0a2377500e2505a9d5452c58df9966e9"
+    },
+    {
+      "path": "crates/chematic-py/src/formats/rdfile.rs",
+      "sha256": "97efdca3559f2fa3f102e52b5b11fe1337022aa4a78679c889c85c90419ac04c"
+    },
+    {
+      "path": "crates/chematic-py/src/formats/turbomole.rs",
+      "sha256": "1c786ad41d78adcdcbb69277cf9703e247898856fb6a11fd406e35f7d9d4839e"
+    },
+    {
+      "path": "crates/chematic-py/src/io.rs",
+      "sha256": "843b1f70093ab5dae25afa3c75535526a4572dc9562ceb821ef40ebdfd7efcc4"
+    },
+    {
+      "path": "crates/chematic-py/src/io/dataset.rs",
+      "sha256": "71010a0b260173eb28197934b495f516baed5a7e087bca9bfbfdbe228a7a136e"
+    },
+    {
+      "path": "crates/chematic-py/src/io/dataset_batch.rs",
+      "sha256": "96f499872151a8b1a43e0c85e6e5f467863e490afe938eeab9bd3569196aebac"
+    },
+    {
+      "path": "crates/chematic-py/src/io/dataset_selector.rs",
+      "sha256": "d61600fee981f106131ccc8c163542881ecbdfeace35bd33bb5e9f5a2715f145"
+    },
+    {
+      "path": "crates/chematic-py/src/lib.rs",
+      "sha256": "04e3d5e2832cba7c1d576cb78243c10b32b0bda61ab87a35024779699186842c"
+    },
+    {
+      "path": "crates/chematic-py/src/misc.rs",
+      "sha256": "2cb538f8162f51456eed49da115a2f36f1e6dd8c7774bce18912133b4226299f"
+    },
+    {
+      "path": "crates/chematic-py/src/mol_methods.rs",
+      "sha256": "077148a6a0b2e070a702255554137e4c9bcbdf0c4974fb1ff4be5e680f82030f"
+    },
+    {
+      "path": "crates/chematic-py/src/mol_methods/atom_environment.rs",
+      "sha256": "b603245292ece3c7f6c00503a2b76ad2c1855dc5fdfdd1525cdb5662ef76a4b5"
+    },
+    {
+      "path": "crates/chematic-py/src/mol_methods/extended.rs",
+      "sha256": "46d68daa108ba9ddf760f239ecd869e4c4261679e89b5934351cf98cceeb6ca4"
+    },
+    {
+      "path": "crates/chematic-py/src/mol_methods/graph_queries.rs",
+      "sha256": "55e10314cdc9a1cad7e26052c87d3bc220756e22450a6717896677ace163fc73"
+    },
+    {
+      "path": "crates/chematic-py/src/mol_methods/layered_config.rs",
+      "sha256": "8052dc578d1d5b3ca1de9392eb7f3eae6aecac17a165b6771ea3327cb17fe849"
+    },
+    {
+      "path": "crates/chematic-py/src/mol_methods/path_enumeration.rs",
+      "sha256": "37815a289e80ca00df6df83b682d95fe4497ac3d5740ccbd8b96eda591853fba"
+    },
+    {
+      "path": "crates/chematic-py/src/mol_methods/stereo_groups.rs",
+      "sha256": "b333e0b0e338a45a052c2d2e2e1c988a6361196d6aadf6a6de845d198b46b461"
+    },
+    {
+      "path": "crates/chematic-py/src/mol_methods/transformations.rs",
+      "sha256": "33379eadcf89ff0e893102c0cb18d54788c195d537741b605b2c17a5ebf39a86"
+    },
+    {
+      "path": "crates/chematic-py/tests/test_cdjson.py",
+      "sha256": "e8a26ecbaab336591b0303f5bf5644c4f22c6443f2f43310952c486c30eefbfe"
+    },
+    {
+      "path": "crates/chematic-py/tests/test_dmol3.py",
+      "sha256": "a1051716c85c261306390ca8027ad018b5cec38580ccad54fec1635374a6eb67"
+    },
+    {
+      "path": "crates/chematic-py/tests/test_exyz.py",
+      "sha256": "ed5794a2d624583161ad02c4e5c8148a19a9758f46453707b0151bce06997e8e"
+    },
+    {
+      "path": "crates/chematic-py/tests/test_fhiaims.py",
+      "sha256": "58b72c73539afd2aa01770cef56b278b671b1a57b8983b4db17e6a4257f02e06"
+    },
+    {
+      "path": "crates/chematic-py/tests/test_fold_density.py",
+      "sha256": "a877de5f11218885128bf7afb6e163eb383845379761929dd6765be3edba954b"
+    },
+    {
+      "path": "crates/chematic-py/tests/test_gro.py",
+      "sha256": "8d8697c850279743798d7a2b0a91cb11619bc32d31da6e5e2dc4709f18aff3c8"
+    },
+    {
+      "path": "crates/chematic-py/tests/test_gzmat_precision.py",
+      "sha256": "4c7733c693b65936e7767d670d7be2dc27ad22c3ee0ce537a66f0d1ad23a7f57"
+    },
+    {
+      "path": "crates/chematic-py/tests/test_layered_config.py",
+      "sha256": "a4dfa705888628866dda60a2e131fd7f875c058c0dbf974b1bf8af952fcade51"
+    },
+    {
+      "path": "crates/chematic-py/tests/test_meso_stereo_group.py",
+      "sha256": "4e4dffa1616dcac7be25c2141fec426fbc924c115e41d6c8174ca88fba131ffd"
+    },
+    {
+      "path": "crates/chematic-py/tests/test_mmcif_pdb_checked.py",
+      "sha256": "979bc51320125f2f5299e3f349b8a0a66852cf2350d85ec2435671eae9bb9c5b"
+    },
+    {
+      "path": "crates/chematic-py/tests/test_mmcif_residues.py",
+      "sha256": "95b8c4736bf81c3972a25ba896b5e4aa638d09b9208d96d8b524f671df35cd46"
+    },
+    {
+      "path": "crates/chematic-py/tests/test_mopac_cartesian.py",
+      "sha256": "58d6727a7740017dd00fca41753bdfcbfe3bed4c939a5bd7bd7849055dd89b41"
+    },
+    {
+      "path": "crates/chematic-py/tests/test_native_distance_matrix.py",
+      "sha256": "9a6ae8986e64b20199d9698ec2be314428492efac50dbbef2b62f20e05cc166e"
+    },
+    {
+      "path": "crates/chematic-py/tests/test_pdb_selection.py",
+      "sha256": "20d79e8bd6b4ac424315a406e43b167040417a0f8f3375d71f7a3cba0abf2243"
+    },
+    {
+      "path": "crates/chematic-py/tests/test_pqr_pdbqt.py",
+      "sha256": "84d877ab63894d8a4196e5e301aefae08df67083be634df26fe152481bfaeb56"
+    },
+    {
+      "path": "crates/chematic-py/tests/test_query_hydrogens.py",
+      "sha256": "e4753f065fe644541f34ea1df3d2047b4b83b6a2123f0ace8731f57f30cca88f"
+    },
+    {
+      "path": "crates/chematic-py/tests/test_rdfile.py",
+      "sha256": "8f98916ff0587cb21d878bcb339d13ddde34f4fdfee95e814a4a5d6138d3d7fc"
+    },
+    {
+      "path": "crates/chematic-py/tests/test_rdkit_atom_environment.py",
+      "sha256": "dde338b466949a2786acc98afed519a599dca5a829be4cffd636acb55d0980b4"
+    },
+    {
+      "path": "crates/chematic-py/tests/test_rdkit_graph_queries.py",
+      "sha256": "1b83ce702262a51d97487fff94d34c1bc121161bc9831a30e5cd317639207cad"
+    },
+    {
+      "path": "crates/chematic-py/tests/test_rdkit_path_enumeration.py",
+      "sha256": "f18b0f30a5df1005354d3332bd54bd75b125709082d322bdf5963ddf0be3cab0"
+    },
+    {
+      "path": "crates/chematic-py/tests/test_renumber_atoms.py",
+      "sha256": "f392b0a6593a7f8e9c28faedd3e1928408723c796c0912bd2c09ac7b45094fac"
+    },
+    {
+      "path": "crates/chematic-py/tests/test_sdf_selections.py",
+      "sha256": "d31abb17eebd48f9e6f20b1253c0df04cbb7b520442d62db2beb30b8a9622e4b"
+    },
+    {
+      "path": "crates/chematic-py/tests/test_stereo_candidate_budget.py",
+      "sha256": "048cec1181b037fc747210ac1a39b01139ffedf09040c92ad7a50e008982353b"
+    },
+    {
+      "path": "crates/chematic-py/tests/test_stereo_group_alternatives.py",
+      "sha256": "0db87c094682449b808c39daf1331b173645c177cffbf545a962f83978a8932f"
+    },
+    {
+      "path": "crates/chematic-py/tests/test_stereo_group_inversion.py",
+      "sha256": "a2bd3c66dd87ebc41b34523f7dc8af6dacb32177629e512a843b30500fc125f6"
+    },
+    {
+      "path": "crates/chematic-py/tests/test_stereo_groups.py",
+      "sha256": "4b3e444067cab5b2245197086ef595d182f930674846dbf56c4001c2279a40e5"
+    },
+    {
+      "path": "crates/chematic-py/tests/test_turbomole.py",
+      "sha256": "e3d3ab0e5955c92886ab63c72a7f9557d92f949a84c8bdbd1bd0775f5abaa344"
+    },
+    {
+      "path": "crates/chematic-smarts/src/lib.rs",
+      "sha256": "7985c5637b60fda3e69ae92d83e1b13df800470e82d8da1146e04e4d5fb3d2b8"
+    },
+    {
+      "path": "crates/chematic-smarts/src/match_vf2.rs",
+      "sha256": "ab38b0293eedc97c83c12c806243e212f54df0922dcd3d12fc3924de174f8883"
+    },
+    {
+      "path": "crates/chematic-smarts/src/merge_hydrogens.rs",
+      "sha256": "d1b2c51412925bef2f543e0a3368125d5e5343c76bf64d0ad93fec56d14e4d7e"
+    },
+    {
+      "path": "crates/chematic-smarts/src/parser.rs",
+      "sha256": "9074b3d5b55e8a9e28ef40058c5c0c5e978d3a92610e4dcfb0ebd9b89b43c14e"
+    },
+    {
+      "path": "crates/chematic-smarts/src/parser/rings.rs",
+      "sha256": "f3bb9fbbbf3d46f5860a77ca5bdd0a9eb12929ec6827cf44cc27ecf4168df790"
+    },
+    {
+      "path": "crates/chematic-smarts/tests/merge_query_hydrogens.rs",
+      "sha256": "e5efb979500cd1fe960587374e1bd620b0c6104a70a47ef87570a2cd49599a4a"
+    },
+    {
+      "path": "crates/chematic-smiles/src/lib.rs",
+      "sha256": "f20ba7ec5c6d611a4215b4af800e3c39e81abfeb9e2c5c475b52b50b1eb9866d"
+    },
+    {
+      "path": "crates/chematic-smiles/src/rdkit/atom_environment.rs",
+      "sha256": "e436880cfb369cc35bbab8d084e76a03107fc9f598318c0b58b7dd7e203d5c29"
+    },
+    {
+      "path": "crates/chematic-smiles/src/rdkit/graph_queries.rs",
+      "sha256": "4b71339139ef769ca863d5016a529ebe5031a1fe1fe3d6ee5a0d709c9a1276d1"
+    },
+    {
+      "path": "crates/chematic-smiles/src/rdkit/matrices.rs",
+      "sha256": "d874b48d29f7ce9501c41acefbc9e077717c3f196ab9ddf352fde93cfbf20fc0"
+    },
+    {
+      "path": "crates/chematic-smiles/src/rdkit/mod.rs",
+      "sha256": "c234f4712e31a5b27e8e86da4113c06d4288173af75d95863cb5eb28afbd95ba"
+    },
+    {
+      "path": "crates/chematic-smiles/src/rdkit/path_enumeration.rs",
+      "sha256": "9131108649316bdc2f246433be9812a78913bff00bc18a22fb83b84f7eb58dd0"
+    },
+    {
+      "path": "crates/chematic-smiles/src/rdkit/path_enumeration/search.rs",
+      "sha256": "3b8a22898b4396bd628ff72107f040fe776183ea4777338be51b9fda014b4955"
+    },
+    {
+      "path": "crates/chematic-smiles/tests/rdkit_atom_environment.rs",
+      "sha256": "d3f05882414def24d37002d679d3b6eea0dfbb6b6f0299863738ec086c9decab"
+    },
+    {
+      "path": "crates/chematic-smiles/tests/rdkit_graph_queries.rs",
+      "sha256": "cdc98aadc03e6cf77444bf714f554dd983225b2943e37604aea3b3fb7f890aba"
+    },
+    {
+      "path": "crates/chematic-smiles/tests/rdkit_path_enumeration.rs",
+      "sha256": "cb0f6ba73a96576e67566a93b138430bb4e689aebea98f67fea03045ad94d339"
+    },
+    {
+      "path": "docs/atom-renumbering-stereo.md",
+      "sha256": "b35b1ccdb193458b344c8f8094929ec041fed65932f21c01bff75c30e62c11cf"
+    },
+    {
+      "path": "docs/checked-stereo-groups.md",
+      "sha256": "b895ff153f8429c561bee76089719c824e64ef7a52eb83149fd715ed66947045"
+    },
+    {
+      "path": "docs/chemdoodle-json.md",
+      "sha256": "1e43f436274fa03d635381d3d4a8be309c7b5caad5b6d8380f429eae5d80bcf7"
+    },
+    {
+      "path": "docs/correlated-stereo-group-alternatives.md",
+      "sha256": "75ab1ffd98d75a7cfa2b8f7c6606190ff88b66ee60c88d2a3fff5c0c76d83bed"
+    },
+    {
+      "path": "docs/cosmolkit-feature-gaps-2026-10-15.md",
+      "sha256": "48ff5ad47df9ed6dff15d645353e3cae90555972996adad044dcab208634a930"
+    },
+    {
+      "path": "docs/fingerprint-target-density.md",
+      "sha256": "02b96ff7e74f7d18d77d1122d0ba46a8386f2fb4f4d52b9122c2221253a56a43"
+    },
+    {
+      "path": "docs/format-capabilities.md",
+      "sha256": "43c1332aee3402a2324692015eff4677d8d08f07594792f17765e31e2223c3b5"
+    },
+    {
+      "path": "docs/gro-element-resolution.md",
+      "sha256": "d90374924570f69831cd06386a692b124cf244d977f344e74ed273fe4815f304"
+    },
+    {
+      "path": "docs/gzmat-precision.md",
+      "sha256": "656e27189386f313860405067c14506556f0e06c2830ed0149b5a22d4b83f0fa"
+    },
+    {
+      "path": "docs/meso-stereo-group-reduction.md",
+      "sha256": "4eaf399d0a61f04108f2d0ceb201a373c755afce9ddcb13f439d2ab59d786c35"
+    },
+    {
+      "path": "docs/mmcif-pdb-checked.md",
+      "sha256": "348f0b9b19bbb73ff098af0dc4757a93392ba015fa87c9bf7ff4d9af7b8573f7"
+    },
+    {
+      "path": "docs/mmcif-residue-identity.md",
+      "sha256": "8f8cb22c2fe64f38b408dc32016b163e500cd6c9f0cc200c5ff830ab71eeef12"
+    },
+    {
+      "path": "docs/native-distance-matrix-limits.md",
+      "sha256": "57a6c5bbb60237c3fa0f8282abc362e52d1bf333415e9f6fb989571ddbce89c3"
+    },
+    {
+      "path": "docs/native-stereo-candidate-budget.md",
+      "sha256": "96f5d60d173753eca2e59ec5c61dd4c8084ca823eca11aa2c9206cb4a4e7ba69"
+    },
+    {
+      "path": "docs/openbabel-dmol3.md",
+      "sha256": "e5bce220132a0ed56359e7651977f92869515b30aae6186c6626c34db28808d8"
+    },
+    {
+      "path": "docs/openbabel-exyz.md",
+      "sha256": "39440da59f374e83b8a85b50335fa4120227b2bd5dc58d88a6ea4879bc13ae8a"
+    },
+    {
+      "path": "docs/openbabel-fhiaims.md",
+      "sha256": "a489d1893f42ab0fd027920363221218539cc576a03169e0b2d51f38878488d5"
+    },
+    {
+      "path": "docs/openbabel-mopac-cartesian.md",
+      "sha256": "e4bae6b80a3b21f8eccaee76662d0e7494349851f6405b8e358e96b6e86aa0e9"
+    },
+    {
+      "path": "docs/openbabel-open-issues-2026-10-14.md",
+      "sha256": "19533d6a37d1989847b3c5bf77feefce6ad8548d9eae2e72d20d659f10a14a4a"
+    },
+    {
+      "path": "docs/pdb-atom-selection.md",
+      "sha256": "2df04506de19657ea1cd64026efabdf01ddc0543d4d356fac03ffbff467756f5"
+    },
+    {
+      "path": "docs/pqr-pdbqt-charge-preservation.md",
+      "sha256": "79657fa912d0a6b4b84802cf9cc1e638d8cdd8dfaff4ad7d2366373c67b604f4"
+    },
+    {
+      "path": "docs/query-hydrogen-folding.md",
+      "sha256": "25ffdacaee57a4630476922d2639478d142313ceb9f0f7430ca69b46adb01d8c"
+    },
+    {
+      "path": "docs/rdfile-records.md",
+      "sha256": "c7c826729bfa37296d7d6ea140c1c2b3a2710971c9cefe007f28f452bdbfb859"
+    },
+    {
+      "path": "docs/rdkit-atom-environment.md",
+      "sha256": "a0703930c0c1a65ff4351c16c8a3a259fb7f8e03e6832e7578ac220022ea7618"
+    },
+    {
+      "path": "docs/rdkit-graph-queries.md",
+      "sha256": "36d59dc9512a82e0d37c7406af0fc4b2645be551bd6eafab2730d3d7f77fb954"
+    },
+    {
+      "path": "docs/rdkit-layered-fingerprint-options.md",
+      "sha256": "2c8365107628cdabb07313f3888762b54c8355b305b64e8984a1095c7c3f4d1e"
+    },
+    {
+      "path": "docs/rdkit-migration.md",
+      "sha256": "91ec91b11aa68a68844484d063623b3baab21b28f4a983448629c1885fb2beed"
+    },
+    {
+      "path": "docs/rdkit-open-issues-2026-10-14.md",
+      "sha256": "89b992bcb07aa207c3b3ee58031572ccb31671528d7212e9a27b35e8e0669d24"
+    },
+    {
+      "path": "docs/rdkit-path-enumeration.md",
+      "sha256": "eacbe9a730106ad2c8df33bce3baf9381e3d052d1cd5992e956e5cd6929bad6d"
+    },
+    {
+      "path": "docs/stereo-group-inversion.md",
+      "sha256": "2704d5891ad761f93912c7b63fb6aa28e3ed1e0fecc4dfe2febe7776e832903a"
+    },
+    {
+      "path": "docs/turbomole-lattice-preservation.md",
+      "sha256": "1b6f2d886bf115d2f4c5d2f552b5f5df7393975530c29d39426f250b3ac2d85c"
+    },
+    {
+      "path": "mkdocs.yml",
+      "sha256": "81be683ec2f48935868b3ec8231cbffcd5652a8b54b5c1e99ef24745b38b1195"
+    },
+    {
+      "path": "scripts/exyz_openbabel_gate.py",
+      "sha256": "e24e6d3b62c45982dc101dbd68eb0abf0b525da10cfc98304fcc387f3024e823"
+    },
+    {
+      "path": "scripts/validate_atom_renumbering.py",
+      "sha256": "136917d3f7dfb20e6c574c38a93497458ceaeac6108a1ef906f63279deb26da6"
+    },
+    {
+      "path": "scripts/validate_cdjson.py",
+      "sha256": "64f6cefd723b3bde179c2ee4d71052891f9c6267f09dcb088d2a8e5c1681f17c"
+    },
+    {
+      "path": "scripts/validate_checked_stereo_groups.py",
+      "sha256": "9d24b5fe53cd0cdda51493997ea4240104c3cc2c479e4ab3add886c83275cba6"
+    },
+    {
+      "path": "scripts/validate_dmol3.py",
+      "sha256": "84ec5db93707f30ddd0555f75a8587e02c8e219789973125eac6f2f200a3ccbe"
+    },
+    {
+      "path": "scripts/validate_fhiaims.py",
+      "sha256": "486b6e7a83531a6fc65bb33f2cfbf5b5fb0f1c6320e43d482394bd238cc86680"
+    },
+    {
+      "path": "scripts/validate_fold_density.py",
+      "sha256": "9ba3d012974a0746f5777a9940de4cd1ebd7256dd6b17b3b778e0795c809dd92"
+    },
+    {
+      "path": "scripts/validate_gro_elements.py",
+      "sha256": "21ddea4834dbb82f59555ec2d63792e86006d4d240c972c3770a5874d799a216"
+    },
+    {
+      "path": "scripts/validate_gzmat_precision.py",
+      "sha256": "7ba618820afba1be8b9056f3804c84cfbb48e2ef92413592dfa0e506eb6f8304"
+    },
+    {
+      "path": "scripts/validate_layered_config.py",
+      "sha256": "25202a582008541ba9a8f55a9a72a5de346525a08ed13ba2516a76da9c8dc64a"
+    },
+    {
+      "path": "scripts/validate_meso_stereo_groups.py",
+      "sha256": "9287433917aaba708dc97e148c338c97031dd98061c9979fa9aa5d15f3297fd6"
+    },
+    {
+      "path": "scripts/validate_mmcif_pdb_checked.py",
+      "sha256": "5a650040fb275a12abd3921cf928e1b4b13a3a71d482306cb500fc348779c21f"
+    },
+    {
+      "path": "scripts/validate_mmcif_residues.py",
+      "sha256": "2b5ccf5d22923d57ca5ce775c7db915fec4659d99590f5e4c801997d1784ffd3"
+    },
+    {
+      "path": "scripts/validate_mopac_cartesian.py",
+      "sha256": "8223009360012a9fc683cf9c0868b4e9fd441d479c1a1b6a434f0001fa600f4b"
+    },
+    {
+      "path": "scripts/validate_native_distance_matrix.py",
+      "sha256": "78d30eec014db083443fe7ae1000badc5526ce62637efd3cc2d825bb07b02ddb"
+    },
+    {
+      "path": "scripts/validate_pdb_selection.py",
+      "sha256": "2d7b4ddbff2c8a625f8efac08154d572a649879763810e0ae5ec07d58d78aa72"
+    },
+    {
+      "path": "scripts/validate_pqr_pdbqt.py",
+      "sha256": "188de3dd9816d0088d1ca9193d661ff62967f46d3f4e2f2b80ad247e35afabf6"
+    },
+    {
+      "path": "scripts/validate_query_hydrogens.py",
+      "sha256": "90a6b276e61e01550ebc5b79d4db2ae92e145eea2b6bbb9beaf4d57f13bb4b9f"
+    },
+    {
+      "path": "scripts/validate_rdfile_records.py",
+      "sha256": "b0637b25055d53444356de4e24ee01424fc33f109dd3835e955579149a5d64e6"
+    },
+    {
+      "path": "scripts/validate_rdkit_atom_environment.py",
+      "sha256": "5bd69337d01eccf93158c7461d4b71d546c09c9c50c8ca22d7393e63d68b829b"
+    },
+    {
+      "path": "scripts/validate_rdkit_graph_queries.py",
+      "sha256": "6b5c3d123904ac2da02e6ce29788309fdf454d0a90d1669dc49dfa9903036cd3"
+    },
+    {
+      "path": "scripts/validate_rdkit_paths.py",
+      "sha256": "7f2076faf8a6ec414a3efbc85e336191eb12161f2a2ee97a31b292c4bb2bf347"
+    },
+    {
+      "path": "scripts/validate_sdf_selections.py",
+      "sha256": "c4baacb7f81794a934d816b7d9db7c29d85023ba67463c2816de659396e57890"
+    },
+    {
+      "path": "scripts/validate_stereo_candidate_budget.py",
+      "sha256": "881be00d6f89fbcc80da5ac9ad242e5546122eaf6093b03cd1a7267651db6fe0"
+    },
+    {
+      "path": "scripts/validate_stereo_group_alternatives.py",
+      "sha256": "4f82a6797177065ce5f3186caadd38a6f7bdb6352e0f6feb677afbe4845225a2"
+    },
+    {
+      "path": "scripts/validate_stereo_group_inversion.py",
+      "sha256": "3f874c3a25cdfe5b8139ef7815f5df4ce4026a5ed3645d2c9773c305e60f5171"
+    },
+    {
+      "path": "scripts/validate_turbomole_lattice.py",
+      "sha256": "b69fa539e408ebba4164c69ff0bcc210413eab0c3183c73492136f19352ece0c"
+    },
+    {
+      "path": "validation/cosmolkit_comparison/sdf-selections-2026-10-15.patch",
+      "sha256": "6b8a2fc2803ece0e265c9d7f6cf522abbf1e4a147ca31e8c60dcdd3d0c2e97bc"
+    },
+    {
+      "path": "validation/cosmolkit_comparison/sdf_selections/manifest.json",
+      "sha256": "9f68184798db00a31b6dd34d1529b7746a89195f7339846631f4d6771818e1cb"
+    },
+    {
+      "path": "validation/cosmolkit_comparison/sdf_selections/minimal.sdf",
+      "sha256": "d113dcdb9c4bc8c4665976e3e3d6b64dc532ef197665644d45a6648b2195db8a"
+    },
+    {
+      "path": "validation/openbabel_issues/cdjson-2026-10-15.patch",
+      "sha256": "008a950f717d344ab596de2005e7df3e90dba4e213d2caf5a185723583f41706"
+    },
+    {
+      "path": "validation/openbabel_issues/cdjson/fixtures.json",
+      "sha256": "5d38696e925053b52e6dec4c66895464b655cb6e9848790ec40841882d0cb647"
+    },
+    {
+      "path": "validation/openbabel_issues/dmol3-2026-10-15.patch",
+      "sha256": "89a404f59d940deda1f63b53b80a3e7f8e02a0f1ff887f81ee86b8bda37c3b2b"
+    },
+    {
+      "path": "validation/openbabel_issues/dmol3/contract-fixtures.json",
+      "sha256": "5a73005a223dce305f34a6c16505a06f13d6a221ae8ec4fb663d09e161ea6dfa"
+    },
+    {
+      "path": "validation/openbabel_issues/exyz-2026-10-15.patch",
+      "sha256": "318da93c4a7a9c02f64fe92bcc98006ab455edaf113cfeed64225fa4842ee06d"
+    },
+    {
+      "path": "validation/openbabel_issues/exyz/contract-fixtures.json",
+      "sha256": "d9158f7ea5a97a41e5a2cb41116b13e040996b9a64d1c9ffd1b52aa67f9a7adb"
+    },
+    {
+      "path": "validation/openbabel_issues/fhiaims-2026-10-15.patch",
+      "sha256": "09db799e96f4aa1c87adbb65bc6c62c07677cc9073b9c19281ce91bf8077b193"
+    },
+    {
+      "path": "validation/openbabel_issues/fhiaims/contract-fixtures.json",
+      "sha256": "8bd03467c1fb57828713b0389076bc176e8dc16ea965a9f424b030df942c4c89"
+    },
+    {
+      "path": "validation/openbabel_issues/gro-elements-2026-10-15.patch",
+      "sha256": "2779e4906a3bb7dc2f9002b1be0287ae6f25ef81d085b4302555e70545722a67"
+    },
+    {
+      "path": "validation/openbabel_issues/gro/two-letter-elements.gro",
+      "sha256": "63cb9cc31c330dfcb5a7cefb8adb35d29b9c9e34093e8c747c876e5e26950617"
+    },
+    {
+      "path": "validation/openbabel_issues/gzmat-precision-2026-10-15.patch",
+      "sha256": "aaf4280032c8666bb6852e90a27bda266eb995df4d4570dccadf004b5daafe9f"
+    },
+    {
+      "path": "validation/openbabel_issues/gzmat/precision-geometries.json",
+      "sha256": "714166ea57b5c7821fdaeffce0efb0519cac0524a9c9e2bca401d2b1eeaefda8"
+    },
+    {
+      "path": "validation/openbabel_issues/mmcif-pdb-2026-10-15.patch",
+      "sha256": "d80f8b9ddb971a9ae75f443e83171af1645feecb84ecabe01c2f17b56c6bf1e5"
+    },
+    {
+      "path": "validation/openbabel_issues/mmcif-residues-2026-10-14.patch",
+      "sha256": "79d1851782f3288082bd4525ef2bb4b8155cd8c320849d9c53dd1d357d57d391"
+    },
+    {
+      "path": "validation/openbabel_issues/mmcif/branched-residues.cif",
+      "sha256": "cc6956e5e27f7cd3cfdf96cd0da876de3acc1962dbd429aa00bafd005f7e5344"
+    },
+    {
+      "path": "validation/openbabel_issues/mmcif/long-component-name.cif",
+      "sha256": "8900781fe9cb2c2557a6e07c97886ea45a3d7443513c538376d50beddc196108"
+    },
+    {
+      "path": "validation/openbabel_issues/mopac-cartesian-2026-10-15.patch",
+      "sha256": "9e9937261ae98aaa571afe942afb79e0b1a4b06460dbed71dd29e505cc627fb6"
+    },
+    {
+      "path": "validation/openbabel_issues/mopac/contract-fixtures.json",
+      "sha256": "1a8ea1327c9a54863b56ae477be76b81d27f869fb6464ea6ff90883068235a95"
+    },
+    {
+      "path": "validation/openbabel_issues/pdb-selection-2026-10-15.patch",
+      "sha256": "53fc9729dc07ebdb545c47096ac94762e8c65404cb141fc167151c34c782995f"
+    },
+    {
+      "path": "validation/openbabel_issues/pdb-selection/basic.pdb",
+      "sha256": "adb776a9e54a6b278fa783c35bcdcd200a22a7639698f0515d95cee72aae0e09"
+    },
+    {
+      "path": "validation/openbabel_issues/pdb-selection/fixtures.json",
+      "sha256": "10949bf90ef46df80ac9f9d1fe11ce5541bc10ecf1ab1b43794a6eebb80d25eb"
+    },
+    {
+      "path": "validation/openbabel_issues/pdb-selection/openbabel_delete_probe.cpp",
+      "sha256": "7e31d8bbf9a19ed1cfdc5c28eeacf1df9682361f85a5247672d1dd040511435e"
+    },
+    {
+      "path": "validation/openbabel_issues/pdb-selection/rich.pdb",
+      "sha256": "13112bc8b62290185fd99dd0c09bf893213d6cd18b63ef300287b5c7a7e330b4"
+    },
+    {
+      "path": "validation/openbabel_issues/pqr-pdbqt-2026-10-14.patch",
+      "sha256": "4ce925ed942761e34e56b337d1fb0755eefae2f38582c2fe0a021b5ec90658a6"
+    },
+    {
+      "path": "validation/openbabel_issues/pqr/charged-ions.pqr",
+      "sha256": "13c35094190b8f221e0ff78128e9946429a32315b3c23b4e9b1458088743f315"
+    },
+    {
+      "path": "validation/openbabel_issues/pqr/charged-records.pqr",
+      "sha256": "d6bc261b7f9365475012a7a09aafe0919eefafa8517814a6d0d9f0798a3ca20a"
+    },
+    {
+      "path": "validation/openbabel_issues/rdfile-records-2026-10-15.patch",
+      "sha256": "126d0fbac9c9f82da3c8b544471adf83b0f54841e8e5726314a19b8dc6cba692"
+    },
+    {
+      "path": "validation/openbabel_issues/rdfile/manifest.json",
+      "sha256": "24692f4f945dffbfce71fb9b571118e97cb2002e683f0f65b125c0e456b2306e"
+    },
+    {
+      "path": "validation/openbabel_issues/rdfile/mixed-records.rdf",
+      "sha256": "0194c15b4a1e8649d028271f98b48d053e3e526afc3870cdcb7c3c3dc7f832f2"
+    },
+    {
+      "path": "validation/openbabel_issues/turbomole-lattice-2026-10-15.patch",
+      "sha256": "823eae3963ad80822c4b42c10070c2dcc62a0021f21b5425836fe60c6c88c47f"
+    },
+    {
+      "path": "validation/openbabel_issues/turbomole/lattice.json",
+      "sha256": "dcb5b547a6042e5173224696ba32cdb6606bc2f1c4bbb0781753a3a1fa66c87e"
+    },
+    {
+      "path": "validation/openbabel_issues/turbomole/oriented-lattice.tmol",
+      "sha256": "657885d9b4b19db17256136d52e93243b59c2d66d83a45aefbf945d87ee6dbc3"
+    },
+    {
+      "path": "validation/rdkit_issues/atom-environment-2026-10-15.patch",
+      "sha256": "cc0e0aba49718c29cfeeee15794e6cbf6418a4a2b981d8ee891af7d094191c68"
+    },
+    {
+      "path": "validation/rdkit_issues/atom-environment/fixtures.json",
+      "sha256": "1e9711b01bea0657a3aaa53604718fdfda6f58ebf2fb4ccebccbe2fd922a926f"
+    },
+    {
+      "path": "validation/rdkit_issues/atom-renumbering-2026-10-14.patch",
+      "sha256": "5049d331df3967c0de96d49814d2cab060145b695f1bc847a4b09aa362242077"
+    },
+    {
+      "path": "validation/rdkit_issues/checked-stereo-groups-2026-10-15.patch",
+      "sha256": "652951cd90a397c9a1b9056f75a9838130f51598d20e870fd129d542b4595273"
+    },
+    {
+      "path": "validation/rdkit_issues/fingerprints/layered-config.json",
+      "sha256": "8f90d640e4ebaaf25cd975cb7c1f4b0d55d8de0a93eedb3b81b4e3431873aea4"
+    },
+    {
+      "path": "validation/rdkit_issues/fold-density-2026-10-15.patch",
+      "sha256": "fcf74299b037a39bb814d5b46365b68a7421325dc99b6286e2f38d1c37455b67"
+    },
+    {
+      "path": "validation/rdkit_issues/fold-density/fixtures.json",
+      "sha256": "49ae386ff63801d491407b8354c83974857422c073315b8d72ead45e20f3d524"
+    },
+    {
+      "path": "validation/rdkit_issues/graph-queries-2026-10-15.patch",
+      "sha256": "c74d9b2e39e76421e08d64a06bee9fac3a20294d4a1e3fb255807c169ad463a8"
+    },
+    {
+      "path": "validation/rdkit_issues/graph-queries/fixtures.json",
+      "sha256": "23000032ce4c4514927aba3f2dc81582c71f3a31a520325b061bf6de6656f29c"
+    },
+    {
+      "path": "validation/rdkit_issues/layered-config-2026-10-15.patch",
+      "sha256": "cdfbd2c0e3ac532356d0fd10e517ab5a392f397b1b01f700e3e61f29dd33eefe"
+    },
+    {
+      "path": "validation/rdkit_issues/meso-stereo-groups-2026-10-15.patch",
+      "sha256": "4f6a29c1e95db21ca286107cccff33c2477037554fcb21b5d604bec61616b982"
+    },
+    {
+      "path": "validation/rdkit_issues/native-distance-matrix-2026-10-15.patch",
+      "sha256": "e2630f773ac5b4d52703679b320f79ef01a8bd1357ca666776bd3b63b466202a"
+    },
+    {
+      "path": "validation/rdkit_issues/native-distance/fixtures.json",
+      "sha256": "b961751d9e8ac9fa8c0e375529041cea3d8402431f9bbc7bbacf7c64492ce290"
+    },
+    {
+      "path": "validation/rdkit_issues/path-enumeration-2026-10-15.patch",
+      "sha256": "6b50e2676b4dde86222c5f401ec55aef639465ea1ce9aa97166d38be747ea0ab"
+    },
+    {
+      "path": "validation/rdkit_issues/path-enumeration/fixtures.json",
+      "sha256": "cfe12026b9f525443602f99d2f731c3535411166d35f57aab3a0a55d0b92563f"
+    },
+    {
+      "path": "validation/rdkit_issues/query-hydrogens-2026-10-14.patch",
+      "sha256": "ca6c476e0e01e414d2a4b6e5e54ce91541703bff98abc3f8c6ae8d9c2d664fc4"
+    },
+    {
+      "path": "validation/rdkit_issues/stereo-candidates-2026-10-15.patch",
+      "sha256": "8bc63c1468a0318bcfd7ab8365cf25836a54ce9df0b15573aa23c713627b9c09"
+    },
+    {
+      "path": "validation/rdkit_issues/stereo-group-alternatives-2026-10-15.patch",
+      "sha256": "f017d973d923de3f53895fb6d0ab874ff2c390d113fbcf57f91e236cbb1c4789"
+    },
+    {
+      "path": "validation/rdkit_issues/stereo-group-inversion-2026-10-15.patch",
+      "sha256": "805bd971892e314067f38525f0930f62a2060cbfa65504206fdac5469377155d"
+    },
+    {
+      "path": "validation/rdkit_issues/stereo/checked-groups.json",
+      "sha256": "ff7ad956d1a6a3cf4921034178927c1e2197ea425c2e91a384346ea8e0f4fafd"
+    },
+    {
+      "path": "validation/rdkit_issues/stereo/group-alternatives.json",
+      "sha256": "fbd6ea16bbcdcd15c189c4b05aeaeda6401c6b8a3b746b02b1f81b8312a056d6"
+    },
+    {
+      "path": "validation/rdkit_issues/stereo/group-inversion.json",
+      "sha256": "c31103d47d47c6811e79067aab84413783bea499697bd4c07cbb9482616f708e"
+    },
+    {
+      "path": "validation/rdkit_issues/stereo/meso-group-proof.json",
+      "sha256": "bc22c0ed7cf0cd54af56ccb8127db0f75643a460b0eaa3707c0eb7f38099e372"
+    },
+    {
+      "path": "validation/refactor_budget_v1.json",
+      "sha256": "4f776216d3e4a4d62d69cc9e6748bb45c28f19d0e6de104d7d8f720f2238383e"
+    },
+    {
+      "path": "validation/results/binding_surface_inventory-current.json",
+      "sha256": "7c7db0b67a6e257d6dad79e15f2a3913faca47a5d30db72af51217db8f7d8f4c"
+    },
+    {
+      "path": "validation/results/cosmolkit-sdf-selections-2026-10-15.json",
+      "sha256": "bf4e35e6fcaf68d7ed0cd882a87de4e447420e6c93b642bf6b84ada3c830cc14"
+    },
+    {
+      "path": "validation/results/native-distance-matrix-2026-10-15.json",
+      "sha256": "c755cf60f3cb4197847f631777ba7d0d284e995a9513bced28ed9c6431524b94"
+    },
+    {
+      "path": "validation/results/openbabel-cdjson-2026-10-15.json",
+      "sha256": "1414d1b7cf687c96c69cfd9e3e0a260e6b07e76272688787e35e98d38dbf49c9"
+    },
+    {
+      "path": "validation/results/openbabel-dmol3-2026-10-15.json",
+      "sha256": "86fb9fd3c6681cd7f0f36c9d4f8c214053d312ad58bcbed18070ff7d369be855"
+    },
+    {
+      "path": "validation/results/openbabel-exyz-2026-10-15.json",
+      "sha256": "12a3d8f47b7e77a68f4f5f503027dc12c5936c7024848e8839e5ec0c933a7348"
+    },
+    {
+      "path": "validation/results/openbabel-fhiaims-2026-10-15.json",
+      "sha256": "8ffc8b18cb1ecdc0726f114efacd81a26aa4c762efaf4000e016a11badbf6c9c"
+    },
+    {
+      "path": "validation/results/openbabel-gro-elements-2026-10-15.json",
+      "sha256": "56d6bc5310f5e712ae2e539bdf1d5abd529cd17a402f2d67eef01d2e4e63b8a6"
+    },
+    {
+      "path": "validation/results/openbabel-gzmat-precision-2026-10-15.json",
+      "sha256": "4edc0d674997d61d414792fbf51b55e5e0cb230f75ed0200fa6b3145939380a0"
+    },
+    {
+      "path": "validation/results/openbabel-mmcif-pdb-2026-10-15.json",
+      "sha256": "cde9482e06c77976132ab29867123ff40aba979d96019ce2ae0a6828f377e62b"
+    },
+    {
+      "path": "validation/results/openbabel-mmcif-residues-2026-10-14.json",
+      "sha256": "122c155b3bc9e7a10702daa61983ec5a960ae8787a223529cf5012f2dc0b7ea7"
+    },
+    {
+      "path": "validation/results/openbabel-mopac-cartesian-2026-10-15.json",
+      "sha256": "bcd57d5f67f1c883b932a33a525faeec3d79c05c6a4c506546990d8c854f4603"
+    },
+    {
+      "path": "validation/results/openbabel-pdb-selection-2026-10-15.json",
+      "sha256": "36d1bb453b054d2c5077cc845eff353dc5b2206b5cae74a4862e09cb78068e0d"
+    },
+    {
+      "path": "validation/results/openbabel-pqr-pdbqt-2026-10-14.json",
+      "sha256": "9686c6c7faab8b6591a374a8abe5a5007c90642c6142a17f661b0e378f0416ed"
+    },
+    {
+      "path": "validation/results/openbabel-rdfile-records-2026-10-15.json",
+      "sha256": "9e27e1c79685b191ccf3979c327f1754fd53c69f61eee35074e91c4fe0b2f8e0"
+    },
+    {
+      "path": "validation/results/openbabel-turbomole-lattice-2026-10-15.json",
+      "sha256": "9a30d4b230254d9253e42f4b78c8ebe6b465999101a93354e8b1869a0e26ec05"
+    },
+    {
+      "path": "validation/results/rdkit-atom-environment-2026-10-15.json",
+      "sha256": "966ca7216703f4161b59f8a65341485eb6021a21175e6e49454b667d12dcde22"
+    },
+    {
+      "path": "validation/results/rdkit-atom-renumbering-2026-10-14.json",
+      "sha256": "eb5515f4dc46b947730fc2e8cd9cdc24a01505bf4e08d3fc6816f6cb066ed147"
+    },
+    {
+      "path": "validation/results/rdkit-checked-stereo-groups-2026-10-15.json",
+      "sha256": "e87633faae72eda9453829c86b862b6af12f1e918c84a5d632440da36f4eb2fd"
+    },
+    {
+      "path": "validation/results/rdkit-fold-density-2026-10-15.json",
+      "sha256": "5902e5ef5462d0e8cef766024199aa7867f7868352a26617d8858c8653238855"
+    },
+    {
+      "path": "validation/results/rdkit-graph-queries-2026-10-15.json",
+      "sha256": "55160ffd253754e6ef189b9110538e2a1ddf505b0f7c9f938f7587347a1c60b1"
+    },
+    {
+      "path": "validation/results/rdkit-layered-config-2026-10-15.json",
+      "sha256": "c959e7c36f34f7aea477ea637ce18db0411eee47abf8448cc914df9bf658c8fa"
+    },
+    {
+      "path": "validation/results/rdkit-meso-stereo-groups-2026-10-15.json",
+      "sha256": "08f5b575f6f37ba9bd407f5796bf9c2c806d9ada7a4f907b13a8931d9bd97f0b"
+    },
+    {
+      "path": "validation/results/rdkit-path-enumeration-2026-10-15.json",
+      "sha256": "dd140041585b39f56592c1811ad4b455cfe1743132dcb2a787f48c35e114c414"
+    },
+    {
+      "path": "validation/results/rdkit-query-hydrogens-2026-10-14.json",
+      "sha256": "ee425a27787b84b263745f2e693bd8644ddade1ff8b404ecd334d105eef4f423"
+    },
+    {
+      "path": "validation/results/rdkit-stereo-candidates-2026-10-15.json",
+      "sha256": "dd9ce2cf562e104b43f01e9ba8ae3aa50a36f869acebe1c9fa7b9945e3936ab7"
+    },
+    {
+      "path": "validation/results/rdkit-stereo-group-alternatives-2026-10-15.json",
+      "sha256": "8298e5c2552ae730756b5569f5e2825b093cb28f767968013fa48cb3adc592da"
+    },
+    {
+      "path": "validation/results/rdkit-stereo-group-inversion-2026-10-15.json",
+      "sha256": "d59badbcca9726287c953c9d72d7f3309b61815e2ae30e4693ffe93404dfff9b"
+    }
+  ],
+  "ci_followups": [
+    {
+      "platform": "Windows x86-64 / Python 3.12",
+      "failure": "11 new stub-reader tests used the platform encoding for UTF-8 source",
+      "fix": "Explicit UTF-8 reads in 15 new Python test files",
+      "local_windows_codec_reproduction": true,
+      "related_local_tests_passed": 354,
+      "production_code_changed": false
+    },
+    {
+      "check": "Rust coverage",
+      "initial_line_coverage": 96.39,
+      "minimum_line_coverage": 96.5,
+      "fix": "Existing rejection fixtures additionally render and verify nonempty public diagnostics; threshold and measurement exclusions unchanged",
+      "status": "awaiting rerun"
+    }
+  ],
+  "initial_base_main": "15150957a9cb4c86ffd48c0d969ff16008490602",
+  "removed_duplicate_modules": [
+    "crates/chematic-smarts/src/match_vf2/chirality.rs"
+  ]
+}

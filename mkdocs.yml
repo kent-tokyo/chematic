@@ -79,12 +79,23 @@ nav:
   - Benchmark: benchmark.md
   - Formats & Bindings:
     - Format Capability Matrix: format-capabilities.md
+    - ORCA-AICCM EXYZ: openbabel-exyz.md
+    - FHI-aims Geometry: openbabel-fhiaims.md
+    - MOPAC Cartesian: openbabel-mopac-cartesian.md
+    - DMol3 Coordinates: openbabel-dmol3.md
+    - PDB Atom Selection: pdb-atom-selection.md
     - Language Bindings Cross-Reference: language-bindings.md
     - Error Handling & Limits: error-and-limits.md
   - Reliability:
+    - ChemDoodle JSON: chemdoodle-json.md
+    - Fingerprint Target Density: fingerprint-target-density.md
+    - Bounded Native Distance Matrices: native-distance-matrix-limits.md
     - Validation vs RDKit: validation.md
     - Compatibility Scope: compatibility-scope.md
     - Detailed RDKit Comparison: rdkit-comparison.md
+    - RDKit Graph Queries: rdkit-graph-queries.md
+    - RDKit Atom Environments: rdkit-atom-environment.md
+    - RDKit Path Enumeration: rdkit-path-enumeration.md
     - RDKit Accuracy Plan: rdkit-accuracy-plan.md
     - Canonical E/Z Plan: canonical-ez-plan.md
     - RDKit Issue Lessons: rdkit_issue_lessons.md
