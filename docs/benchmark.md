@@ -7,7 +7,7 @@ links the raw data and older measurements.
 
 ## Current evidence
 
-The current release is **v1.1.3**. A focused current-source follow-up compares
+The current release is **v1.1.3**. A focused recorded-source follow-up compares
 a wheel built from commit `f2d030fc` with RDKit 2026.09.1 on macOS arm64.
 The latest bounded registry-package packet remains v1.0.42. Source and
 published-package evidence are intentionally separate; neither is a universal

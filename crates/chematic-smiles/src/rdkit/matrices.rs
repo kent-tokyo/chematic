@@ -1,17 +1,59 @@
 //! `MolOps::getDistanceMat` and `MolOps::get3DDistanceMat` (RDKit
 //! 2026.03.1 `Matrices.cpp`).
 
-use super::mol::Mol;
+use super::{RdkitSmilesError, mol::Mol};
 
 /// `LOCAL_INF`: the distance of atoms in different fragments.
 const LOCAL_INF: f64 = 1e8;
 
+// Bound both input preparation and quadratic storage. The topological path
+// holds three flat f64 buffers during Floyd-Warshall (24 MiB at this cap).
+const MAX_MATRIX_ENTRIES: usize = 1024 * 1024;
+
+pub(super) fn checked_len(n: usize) -> Result<usize, RdkitSmilesError> {
+    let entries = n.checked_mul(n).ok_or_else(|| {
+        RdkitSmilesError::Unsupported(format!("distance matrix dimensions overflow for {n} atoms"))
+    })?;
+    if entries > MAX_MATRIX_ENTRIES {
+        return Err(RdkitSmilesError::Unsupported(format!(
+            "distance matrix resource limit: {n} atoms require {entries} entries; maximum is {MAX_MATRIX_ENTRIES} entries (1024 atoms)"
+        )));
+    }
+    Ok(entries)
+}
+
+fn filled(len: usize, value: f64) -> Result<Vec<f64>, RdkitSmilesError> {
+    let mut values = Vec::new();
+    values.try_reserve_exact(len).map_err(|err| {
+        RdkitSmilesError::Unsupported(format!("distance matrix allocation failed: {err}"))
+    })?;
+    values.resize(len, value);
+    Ok(values)
+}
+
+pub(super) fn into_rows(flat: Vec<f64>, n: usize) -> Result<Vec<Vec<f64>>, RdkitSmilesError> {
+    let mut rows = Vec::new();
+    rows.try_reserve_exact(n).map_err(|err| {
+        RdkitSmilesError::Unsupported(format!("distance matrix row allocation failed: {err}"))
+    })?;
+    for chunk in flat.chunks(n.max(1)).take(n) {
+        let mut row = filled(chunk.len(), 0.0)?;
+        row.copy_from_slice(chunk);
+        rows.push(row);
+    }
+    Ok(rows)
+}
+
 /// `getDistanceMat(mol, useBO, useAtomWts)`: Floyd-Warshall over bond
 /// weights 1 (`useBO`: `1 / order`, aromatic bonds `2/3`), then with
 /// `useAtomWts` the diagonal set to `6 / atomic number`.
-pub(crate) fn distance_mat(mol: &Mol, use_bo: bool, use_atom_wts: bool) -> Vec<f64> {
+pub(crate) fn distance_mat(
+    mol: &Mol,
+    use_bo: bool,
+    use_atom_wts: bool,
+) -> Result<Vec<f64>, RdkitSmilesError> {
     let n = mol.atoms.len();
-    let mut d = vec![LOCAL_INF; n * n];
+    let mut d = filled(checked_len(n)?, LOCAL_INF)?;
     for i in 0..n {
         d[i * n + i] = 0.0;
     }
@@ -26,19 +68,20 @@ pub(crate) fn distance_mat(mol: &Mol, use_bo: bool, use_atom_wts: bool) -> Vec<f
         d[bond.begin * n + bond.end] = contrib;
         d[bond.end * n + bond.begin] = contrib;
     }
-    floyd_warshall(n, &mut d);
+    floyd_warshall(n, &mut d)?;
     if use_atom_wts {
         for i in 0..n {
             d[i * n + i] = 6.0 / f64::from(mol.atoms[i].anum);
         }
     }
-    d
+    Ok(d)
 }
 
 /// RDKit's `FloydWarshall` (`v1 <= v2` keeps the old distance).
-fn floyd_warshall(n: usize, d: &mut [f64]) {
-    let mut last = d.to_vec();
-    let mut curr = vec![0.0; n * n];
+fn floyd_warshall(n: usize, d: &mut [f64]) -> Result<(), RdkitSmilesError> {
+    let mut last = filled(d.len(), 0.0)?;
+    last.copy_from_slice(d);
+    let mut curr = filled(d.len(), 0.0)?;
     for k in 0..n {
         for i in 0..n {
             let dik = last[i * n + k];
@@ -51,12 +94,17 @@ fn floyd_warshall(n: usize, d: &mut [f64]) {
         std::mem::swap(&mut curr, &mut last);
     }
     d.copy_from_slice(&last);
+    Ok(())
 }
 
 /// `get3DDistanceMat(mol, confId, useAtomWts)` for the conformer `coords`.
-pub(crate) fn distance_mat_3d(mol: &Mol, coords: &[[f64; 3]], use_atom_wts: bool) -> Vec<f64> {
+pub(crate) fn distance_mat_3d(
+    mol: &Mol,
+    coords: &[[f64; 3]],
+    use_atom_wts: bool,
+) -> Result<Vec<f64>, RdkitSmilesError> {
     let n = mol.atoms.len();
-    let mut d = vec![0.0; n * n];
+    let mut d = filled(checked_len(n)?, 0.0)?;
     for i in 0..n {
         d[i * n + i] = if use_atom_wts {
             6.0 / f64::from(mol.atoms[i].anum)
@@ -71,5 +119,39 @@ pub(crate) fn distance_mat_3d(mol: &Mol, coords: &[[f64; 3]], use_atom_wts: bool
             d[j * n + i] = dist;
         }
     }
-    d
+    Ok(d)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn checked_dimensions_cover_the_rdkit_9647_boundary_without_allocating() {
+        assert_eq!(checked_len(0).unwrap(), 0);
+        assert_eq!(checked_len(1024).unwrap(), MAX_MATRIX_ENTRIES);
+        for n in [1025, 46_341, 65_535, 65_536, 65_537] {
+            assert!(
+                checked_len(n)
+                    .unwrap_err()
+                    .to_string()
+                    .contains("resource limit")
+            );
+        }
+        assert!(
+            checked_len(usize::MAX)
+                .unwrap_err()
+                .to_string()
+                .contains("overflow")
+        );
+    }
+
+    #[test]
+    fn nested_rows_handle_empty_and_small_matrices() {
+        assert!(into_rows(Vec::new(), 0).unwrap().is_empty());
+        assert_eq!(
+            into_rows(vec![0., 1., 1., 0.], 2).unwrap(),
+            [[0., 1.], [1., 0.]]
+        );
+    }
 }

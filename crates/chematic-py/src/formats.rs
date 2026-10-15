@@ -47,17 +47,7 @@ pub(crate) fn stereo_diagnostics_to_py<'py>(
 }
 
 pub(crate) fn bitvec2048_to_bytes(fp: &chematic_fp::bitvec::BitVec2048) -> Vec<u8> {
-    (0..256usize)
-        .map(|byte_idx| {
-            let mut byte = 0u8;
-            for bit in 0..8usize {
-                if fp.get(byte_idx * 8 + bit) {
-                    byte |= 1 << bit;
-                }
-            }
-            byte
-        })
-        .collect()
+    fp.to_le_bytes().to_vec()
 }
 
 pub(crate) fn flat_to_coords3d(coords: &[[f64; 3]]) -> chematic_3d::Coords3D {
@@ -67,6 +57,27 @@ pub(crate) fn flat_to_coords3d(coords: &[[f64; 3]]) -> chematic_3d::Coords3D {
             .map(|c| chematic_3d::Point3::new(c[0], c[1], c[2]))
             .collect(),
     }
+}
+
+/// Convert caller-provided coordinates after validating the public Python
+/// boundary.  Most 3D kernels index coordinates by molecule atom index, so a
+/// short vector would otherwise surface as a Rust panic instead of a Python
+/// input error.
+pub(crate) fn checked_coords3d(
+    mol: &chematic_core::Molecule,
+    coords: &[[f64; 3]],
+) -> PyResult<chematic_3d::Coords3D> {
+    if coords.len() != mol.atom_count() {
+        return Err(PyValueError::new_err(format!(
+            "expected {} coordinates, got {}",
+            mol.atom_count(),
+            coords.len()
+        )));
+    }
+    if coords.iter().flatten().any(|value| !value.is_finite()) {
+        return Err(PyValueError::new_err("coordinates must all be finite"));
+    }
+    Ok(flat_to_coords3d(coords))
 }
 
 // ---------------------------------------------------------------------------
@@ -929,6 +940,37 @@ fn parse_cif<'py>(py: Python<'py>, cif_str: &str) -> PyResult<Bound<'py, pyo3::t
     Ok(d)
 }
 
+/// Write a minimal P1 CIF from Cartesian coordinates in Å.
+///
+/// ``cell`` is None or a dict with all six keys: a, b, c, alpha, beta, gamma
+/// (lengths in Å, angles in degrees). Without a cell, writes Cartesian columns.
+/// Raises ValueError for invalid cells, coordinate counts, non-finite values
+/// or conversion overflow. This projects atomic positions only: bonds,
+/// occupancies, symmetry operations and other metadata are not serialized.
+#[pyfunction]
+#[pyo3(signature = (mol, coords, cell=None))]
+fn write_cif_checked(
+    mol: &Mol,
+    coords: Vec<[f64; 3]>,
+    cell: Option<&Bound<'_, PyDict>>,
+) -> PyResult<String> {
+    let cell = cell
+        .map(|d| -> PyResult<chematic_mol::UnitCell> {
+            Ok(chematic_mol::UnitCell {
+                a: dict_get_required(d, "a")?,
+                b: dict_get_required(d, "b")?,
+                c: dict_get_required(d, "c")?,
+                alpha: dict_get_required(d, "alpha")?,
+                beta: dict_get_required(d, "beta")?,
+                gamma: dict_get_required(d, "gamma")?,
+            })
+        })
+        .transpose()?;
+    let coords: Vec<_> = coords.into_iter().map(|[x, y, z]| (x, y, z)).collect();
+    chematic_mol::write_cif_checked(&mol.inner, &coords, cell.as_ref())
+        .map_err(|e| PyValueError::new_err(e.to_string()))
+}
+
 /// Return True if the SMILES can be parsed without error.
 #[pyfunction]
 fn is_valid_smiles(smiles: &str) -> bool {
@@ -1442,6 +1484,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         parse_gaussian_log,
         write_gjf,
         parse_cif,
+        write_cif_checked,
         is_valid_smiles,
         is_valid_smarts,
         from_inchi,

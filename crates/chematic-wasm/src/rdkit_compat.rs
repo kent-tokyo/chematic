@@ -6,7 +6,7 @@
 use std::collections::BTreeMap;
 use std::rc::Rc;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
 use crate::{MolHandle, bounded_json_string, enforce_wasm_input_len, enforce_wasm_molecule_size};
@@ -15,6 +15,98 @@ const MAX_3D_ATOMS: usize = 512;
 const MAX_STEREOISOMERS: usize = 4096;
 const MAX_ALIGNMENT_MATCHES: usize = 1_000_000;
 const MAX_ALIGNMENT_ITERATIONS: u32 = 1_000_000;
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct BondLengthConstraintJson {
+    atom1: usize,
+    atom2: usize,
+    target: f64,
+    tolerance: f64,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct BondAngleConstraintJson {
+    atom1: usize,
+    center: usize,
+    atom2: usize,
+    target_degrees: f64,
+    tolerance_degrees: f64,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct TorsionConstraintJson {
+    atom1: usize,
+    atom2: usize,
+    atom3: usize,
+    atom4: usize,
+    target_degrees: f64,
+    tolerance_degrees: f64,
+}
+
+#[derive(Deserialize, Default)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct InternalCoordinateConstraintsJson {
+    #[serde(default)]
+    bond_lengths: Vec<BondLengthConstraintJson>,
+    #[serde(default)]
+    bond_angles: Vec<BondAngleConstraintJson>,
+    #[serde(default)]
+    torsions: Vec<TorsionConstraintJson>,
+}
+
+fn internal_coordinate_constraints(
+    json: InternalCoordinateConstraintsJson,
+) -> chematic_3d::rdkit_embed::InternalCoordinateConstraints {
+    use chematic_3d::rdkit_embed::{
+        BondAngleConstraint, BondLengthConstraint, InternalCoordinateConstraints,
+        TorsionAngleConstraint,
+    };
+
+    InternalCoordinateConstraints {
+        bond_lengths: json
+            .bond_lengths
+            .into_iter()
+            .map(|constraint| {
+                BondLengthConstraint::around(
+                    constraint.atom1,
+                    constraint.atom2,
+                    constraint.target,
+                    constraint.tolerance,
+                )
+            })
+            .collect(),
+        bond_angles: json
+            .bond_angles
+            .into_iter()
+            .map(|constraint| {
+                BondAngleConstraint::around_degrees(
+                    constraint.atom1,
+                    constraint.center,
+                    constraint.atom2,
+                    constraint.target_degrees,
+                    constraint.tolerance_degrees,
+                )
+            })
+            .collect(),
+        torsions: json
+            .torsions
+            .into_iter()
+            .map(|constraint| {
+                TorsionAngleConstraint::around_degrees(
+                    constraint.atom1,
+                    constraint.atom2,
+                    constraint.atom3,
+                    constraint.atom4,
+                    constraint.target_degrees,
+                    constraint.tolerance_degrees,
+                )
+            })
+            .collect(),
+    }
+}
 
 fn js_error(code: &str, message: impl std::fmt::Display) -> JsValue {
     JsValue::from_str(&format!("{code}: {message}"))
@@ -481,6 +573,66 @@ impl MolHandle {
         .map_err(chemistry_error)?;
         bounded_json_string(&matrix)
     }
+
+    /// Distance-geometry bounds with user bond-length, angle and torsion
+    /// constraints injected before triangle smoothing.
+    ///
+    /// `constraintsJson` contains optional camelCase arrays `bondLengths`,
+    /// `bondAngles`, and `torsions`; atom indices are zero based. Lengths use
+    /// angstrom and angles use degrees.
+    pub fn rdkit_bounds_matrix_with_constraints_json(
+        &self,
+        constraints_json: &str,
+        set15bounds: bool,
+        do_triangle_smoothing: bool,
+        use_macrocycle_14_config: bool,
+    ) -> Result<String, JsValue> {
+        validate_3d_size(self)?;
+        let parsed: InternalCoordinateConstraintsJson =
+            parse_json(constraints_json, "internal-coordinate constraints")?;
+        let constraints = internal_coordinate_constraints(parsed);
+        let matrix = chematic_3d::rdkit_embed::rdkit_bounds_matrix_with_constraints(
+            &self.inner,
+            &constraints,
+            set15bounds,
+            do_triangle_smoothing,
+            use_macrocycle_14_config,
+        )
+        .map_err(chemistry_error)?;
+        bounded_json_string(&matrix)
+    }
+
+    /// Seeded ETKDG embedding using constraints injected before triangle
+    /// smoothing. Returns one `[x,y,z]` row per atom as JSON.
+    pub fn rdkit_embed_with_constraints_json(
+        &self,
+        constraints_json: &str,
+        random_seed: i32,
+        max_iterations: u32,
+    ) -> Result<String, JsValue> {
+        validate_3d_size(self)?;
+        if max_iterations > MAX_ALIGNMENT_ITERATIONS {
+            return Err(js_error(
+                "rdkit_embed_limit",
+                format!("max_iterations must not exceed {MAX_ALIGNMENT_ITERATIONS}"),
+            ));
+        }
+        let parsed: InternalCoordinateConstraintsJson =
+            parse_json(constraints_json, "internal-coordinate constraints")?;
+        let constraints = internal_coordinate_constraints(parsed);
+        let options = chematic_3d::rdkit_embed::RdkitEmbedOptions {
+            random_seed,
+            max_iterations,
+            ..Default::default()
+        };
+        let coords = chematic_3d::rdkit_embed::rdkit_embed_molecule_with_constraints(
+            &self.inner,
+            &options,
+            &constraints,
+        )
+        .map_err(chemistry_error)?;
+        bounded_json_string(&coords)
+    }
 }
 
 /// RDKit-compatible `MolFromPDBBlock` with molecule and coordinates.
@@ -645,6 +797,30 @@ mod tests {
         assert_eq!(coords.len(), mol.atom_count());
         assert_eq!(bounds.len(), mol.atom_count());
         assert!(bounds.iter().all(|row| row.len() == mol.atom_count()));
+    }
+
+    #[test]
+    fn internal_coordinate_constraints_are_available_without_js_runtime() {
+        let mol = molecule("CCCC");
+        let constraints = r#"{
+            "bondLengths":[{"atom1":0,"atom2":1,"target":1.8,"tolerance":0.01}],
+            "bondAngles":[{"atom1":0,"center":1,"atom2":2,"targetDegrees":100.0,"toleranceDegrees":1.0}],
+            "torsions":[{"atom1":0,"atom2":1,"atom3":2,"atom4":3,"targetDegrees":60.0,"toleranceDegrees":2.0}]
+        }"#;
+        let bounds: Vec<Vec<f64>> = serde_json::from_str(
+            &mol.rdkit_bounds_matrix_with_constraints_json(constraints, true, true, false)
+                .unwrap(),
+        )
+        .unwrap();
+        assert!((1.79..=1.81).contains(&bounds[1][0]));
+
+        let coords: Vec<[f64; 3]> = serde_json::from_str(
+            &mol.rdkit_embed_with_constraints_json(constraints, 42, 0)
+                .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(coords.len(), 4);
+        assert!(coords.iter().flatten().all(|value| value.is_finite()));
     }
 
     #[test]

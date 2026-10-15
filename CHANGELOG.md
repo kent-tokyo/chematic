@@ -12,6 +12,12 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added pre-smoothing internal-coordinate constraints for distance geometry,
+  ahead of unresolved RDKit issue #9343. Rust, Python, and WASM callers can
+  constrain bond lengths, valence angles, and torsions while constructing the
+  bounds matrix or generating an ETKDG conformer. Invalid indices, missing
+  bonds, cross-fragment constraints, and triangle-inconsistent combinations
+  fail explicitly instead of producing guessed coordinates.
 - Added bounded protein projections for PDB and mmCIF across Rust, Python,
   and WASM. The projection preserves model, chain, residue, atom, coordinate,
   occupancy, B-factor, alternate-location, and insertion-code information and
@@ -21,6 +27,20 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- SMARTS chirality matching now compares tetrahedral parity after mapping
+  query neighbours, including inside recursive ``$(...)`` expressions. Ring
+  closure digits retain their lexical neighbour position, so wrapping a
+  chiral SMARTS recursively no longer flips cis/trans matches (ahead of
+  unresolved RDKit issue #9247). Python ``has_substructure`` and
+  ``find_matches`` now expose the same opt-in ``use_chirality`` control as the
+  Rust and WASM matchers.
+- Python 3D APIs now reject coordinate-count mismatches and non-finite values
+  with `ValueError` before entering Rust kernels. This covers shape and
+  WHIM/GETAWAY descriptors, SASA, 3D fingerprints, coordinate writers,
+  minimizers, and stereo assignment; short coordinate arrays no longer expose
+  an index panic.
+- Python `activity_cliffs` now reports mismatched molecule/activity counts as
+  `ValueError` instead of leaking the Rust core assertion as a panic.
 - Restored Rust source compatibility with v1.1.2 exhaustive `Chirality`
   matches. Allene `@AL1`/`@AL2` keeps its molecular-context behavior without
   adding public enum variants in a patch release, and a downstream-style

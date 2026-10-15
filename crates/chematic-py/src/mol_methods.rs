@@ -8,7 +8,7 @@ use crate::EcfpBitInfo;
 use crate::Mol;
 use crate::RdkitBestAlignment;
 use crate::RdkitMorganDetail;
-use crate::formats::{bitvec2048_to_bytes, flat_to_coords3d};
+use crate::formats::{bitvec2048_to_bytes, checked_coords3d, flat_to_coords3d};
 use ndarray::Array1;
 use numpy::{IntoPyArray, PyArray1};
 use pyo3::exceptions::PyValueError;
@@ -78,18 +78,7 @@ fn python_rdkit_morgan_config(
 /// generalizes `formats::bitvec2048_to_bytes` to `rdkit_ecfp_config`'s caller-chosen
 /// widths (always a multiple of 8: 128/256/512/1024/2048).
 fn bitvecn_to_bytes(fp: &chematic_fp::bitvec::BitVecN) -> Vec<u8> {
-    let byte_count = fp.bit_width() / 8;
-    (0..byte_count)
-        .map(|byte_idx| {
-            let mut byte = 0u8;
-            for bit in 0..8usize {
-                if fp.get(byte_idx * 8 + bit) {
-                    byte |= 1 << bit;
-                }
-            }
-            byte
-        })
-        .collect()
+    fp.to_le_bytes()
 }
 
 pyo3::create_exception!(

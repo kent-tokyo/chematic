@@ -1,0 +1,279 @@
+{
+  "schema_version": 1,
+  "status": "local-source-candidate",
+  "issue": "https://github.com/openbabel/openbabel/issues/2794",
+  "base": "Preserved source candidates through RDKit meso-group reduction; no main integration",
+  "scope": "Caller-referenced geometry conversion and Gaussian-style Z-matrix serialization; no general Gaussian job compatibility claim",
+  "runtime": {
+    "python": "3.13.6",
+    "numpy": "2.5.4",
+    "rdkit": "2026.09.1",
+    "openbabel": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+    "openbabel_sha256": "733b2c925d60b17a5c9d8ce9ec841e918cc20c7634301e23f9008a187d1d9bc5",
+    "openbabel_readback": "-igzmat -ocjson -ab; preserve indexed elements, disable bonding",
+    "chematic_extension_sha256": "e2a23f556410150465a2296864443339fbf596ff3a6df571d7825526f4af9af9"
+  },
+  "source_sha256": {
+    "crates/chematic-mol/src/gzmat.rs": "bddb0e5d72c347a586d488f181ec0578e2e91395a2aaab7b5edf3fe86f8add25",
+    "crates/chematic-mol/src/gzmat/geometry.rs": "febe6b3a6aab208a8eaeb1777df1a1a7cfbb764183a8e1cb5b7ad6011e11af29",
+    "crates/chematic-mol/src/gzmat/writer.rs": "0d87e74523d215840d2e56da99c7b9a922176c9234d7e4957a6dc113b3e18202",
+    "crates/chematic-py/src/formats/gzmat.rs": "c8def5e4e9e07d4ce50e8a5c48b385d1cf694d640018fd8f05dd5b8c7048c7fe",
+    "crates/chematic-mol/tests/gzmat_precision.rs": "ce2d717c9caf2241fa08a63551bca75cc837729241e98b389c77e7a5b1368172",
+    "crates/chematic-py/tests/test_gzmat_precision.py": "4c7733c693b65936e7767d670d7be2dc27ad22c3ee0ce537a66f0d1ad23a7f57",
+    "scripts/validate_gzmat_precision.py": "7ba618820afba1be8b9056f3804c84cfbb48e2ef92413592dfa0e506eb6f8304"
+  },
+  "fixture": {
+    "path": "validation/openbabel_issues/gzmat/precision-geometries.json",
+    "manifest_sha256": "714166ea57b5c7821fdaeffce0efb0519cac0524a9c9e2bca401d2b1eeaefda8",
+    "schema_version": 1,
+    "provenance": {
+      "source": "Original analytic coordinate examples authored for chematic; no upstream attachment or GPL source copied",
+      "inspiration": "https://github.com/openbabel/openbabel/issues/2794",
+      "retrieved": "2026-10-15",
+      "transformations": "atom permutations; two earlier-reference patterns; proper rotation and translation; no bond inference"
+    },
+    "license": "MIT OR Apache-2.0",
+    "redistribution": "allowed: original minimal synthetic coordinates",
+    "minimization": "one through five atoms isolate absence of variables, precision, planar torsions, handedness, and arbitrary earlier references",
+    "oracle": {
+      "rdkit": "2026.09.1",
+      "settings": "rdMolTransforms distance/angle/dihedral on explicit unbonded conformers",
+      "openbabel": "3.2.1",
+      "invocation": "obabel -igzmat -ocjson -ab; no bonding on read"
+    },
+    "expected": {
+      "significant_digits": [
+        8,
+        12,
+        17
+      ],
+      "computed_scalar_roundtrip_at_17_digits": "exact f64 equality",
+      "geometry_tolerance_angstrom": {
+        "8": 2e-06,
+        "12": 2e-10,
+        "17": 2e-12
+      },
+      "scalar_reference_tolerance": 1e-10,
+      "handedness": "signed tetrahedron volumes preserve sign for abs(volume)>1e-8"
+    },
+    "cases": [
+      {
+        "id": "monatomic",
+        "elements": [
+          "He"
+        ],
+        "positions_angstrom": [
+          [
+            4.0,
+            5.0,
+            6.0
+          ]
+        ]
+      },
+      {
+        "id": "diatomic-precision",
+        "elements": [
+          "H",
+          "F"
+        ],
+        "positions_angstrom": [
+          [
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            1.234567891234567,
+            0.0,
+            0.0
+          ]
+        ]
+      },
+      {
+        "id": "bent-three",
+        "elements": [
+          "O",
+          "H",
+          "H"
+        ],
+        "positions_angstrom": [
+          [
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.957123456789123,
+            0.0,
+            0.0
+          ],
+          [
+            -0.239123456789123,
+            0.927123456789123,
+            0.0
+          ]
+        ]
+      },
+      {
+        "id": "four-signed",
+        "elements": [
+          "C",
+          "N",
+          "O",
+          "F"
+        ],
+        "positions_angstrom": [
+          [
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            1.234567891234567,
+            0.0,
+            0.0
+          ],
+          [
+            1.1,
+            1.33333333333333,
+            0.0
+          ],
+          [
+            0.1,
+            0.3,
+            1.444444444444444
+          ]
+        ]
+      },
+      {
+        "id": "four-mirror",
+        "elements": [
+          "C",
+          "N",
+          "O",
+          "F"
+        ],
+        "positions_angstrom": [
+          [
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            1.234567891234567,
+            0.0,
+            0.0
+          ],
+          [
+            1.1,
+            1.33333333333333,
+            0.0
+          ],
+          [
+            0.1,
+            0.3,
+            -1.444444444444444
+          ]
+        ]
+      },
+      {
+        "id": "planar",
+        "elements": [
+          "C",
+          "N",
+          "O",
+          "F"
+        ],
+        "positions_angstrom": [
+          [
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            1.234567891234567,
+            0.0,
+            0.0
+          ],
+          [
+            1.1,
+            1.33333333333333,
+            0.0
+          ],
+          [
+            0.1,
+            0.3,
+            0.0
+          ]
+        ]
+      },
+      {
+        "id": "five-arbitrary-references",
+        "elements": [
+          "C",
+          "N",
+          "O",
+          "F",
+          "Cl"
+        ],
+        "positions_angstrom": [
+          [
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            1.234567891234567,
+            0.0,
+            0.0
+          ],
+          [
+            1.1,
+            1.33333333333333,
+            0.0
+          ],
+          [
+            0.1,
+            0.3,
+            1.444444444444444
+          ],
+          [
+            1.712345678912345,
+            0.812345678912345,
+            -0.612345678912345
+          ]
+        ]
+      }
+    ],
+    "sha256": "1da9a85caa1049f6412fb0ac204188641311b332b4e78948c39d8987d64e288d"
+  },
+  "results": {
+    "cases": 1242,
+    "fixtures": 7,
+    "significant_digits": [
+      8,
+      12,
+      17
+    ],
+    "computed_scalars_roundtrip_exact_at_17_digits": 2668,
+    "signed_tetrahedra_verified": 2016,
+    "max_scalar_reference_error_angstrom_or_degree": 2.842170943040401e-14,
+    "max_pairwise_distance_error_angstrom": {
+      "8": 1.1844994274312626e-07,
+      "12": 1.6130208280173974e-11,
+      "17": 8.881784197001252e-16
+    },
+    "geometry_mismatches": 0,
+    "element_mismatches": 0,
+    "handedness_mismatches": 0,
+    "input_mutations": 0,
+    "case_sha256": "733af9e9299ebf372da1194fe885e896dda71e3f37d3cb1a9801c54b517f6c09"
+  },
+  "upstream_diagnostic": {
+    "default_output_equals_x8_output": true,
+    "requested_r2": 1.2346,
+    "source_r2": 1.234567891234567,
+    "gzmat_output": "!Put Keywords Here, check Charge and Multiplicity.\n#\n\n original precision probe\n\n0  1\nC\nN  1  r2\nO  2  r3  1  a3\nF  1  r4  2  a4  3  d4\nVariables:\nr2= 1.2346\nr3= 1.3401\na3=  84.24\nr4= 1.4787\na4=  86.12\nd4= 281.73\n\n"
+  },
+  "limitations": "Geometry-only, not topology. No isotope/ghost/dummy/periodic inputs, automatic reference choice, Gaussian input reader, ORCA internal writer, energy or job execution. Charge/spin are explicit, not inferred or checked for physical electron parity. Absolute Cartesian frame is discarded. Near-linear angles and reference planes (sine <=1e-10), coincident references, overflow and rounding-induced invalid frames fail. 17 digits preserves computed f64 scalars; geometry conversion itself is floating point, not bit-exact Cartesian preservation. Open Babel readback is measured; Gaussian/ORCA execution is untested."
+}

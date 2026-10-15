@@ -141,12 +141,28 @@ fn v3000_bond_order(order: BondOrder) -> u8 {
     }
 }
 
-fn bond_properties(metadata: &MolMetadata, bond_id: u32) -> String {
+fn bond_properties(metadata: &MolMetadata, bond_id: u32, cfg_written: bool) -> String {
     metadata
         .v3000_bond_properties
         .iter()
         .find(|(id, _)| *id == bond_id)
-        .map(|(_, properties)| format!(" {properties}"))
+        .map(|(_, properties)| {
+            if !cfg_written {
+                return format!(" {properties}");
+            }
+            // A depiction may regenerate the explicit unknown marker.
+            // Keep it exactly once while retaining all other properties.
+            let properties = properties
+                .split_whitespace()
+                .filter(|token| !token.starts_with("CFG="))
+                .collect::<Vec<_>>()
+                .join(" ");
+            if properties.is_empty() {
+                String::new()
+            } else {
+                format!(" {properties}")
+            }
+        })
         .unwrap_or_default()
 }
 
@@ -196,7 +212,7 @@ fn append_bonds_2d(
         out.push_str(&format!(
             "M  V30 {bond_id} {} {atom1} {atom2}{stereo}{}\n",
             v3000_bond_order(written),
-            bond_properties(metadata, bond_id)
+            bond_properties(metadata, bond_id, !stereo.is_empty())
         ));
     }
     out.push_str("M  V30 END BOND\n");
@@ -216,7 +232,7 @@ fn append_bonds_3d(out: &mut String, mol: &Molecule, metadata: &MolMetadata) {
             v3000_bond_order(written),
             bond.atom1.0 + 1,
             bond.atom2.0 + 1,
-            bond_properties(metadata, bond_id)
+            bond_properties(metadata, bond_id, false)
         ));
     }
     out.push_str("M  V30 END BOND\n");

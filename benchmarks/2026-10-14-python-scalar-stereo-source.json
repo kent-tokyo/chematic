@@ -1,0 +1,73 @@
+{
+  "schema": "python-scalar-stereo-frontier-source/v1",
+  "base_revision": "ffe682c32cb4c76de0d309649427202a7d8e956d",
+  "baseline": "base revision plus prior Python speed-frontier production patch; exactly the previous candidate wheel",
+  "prior_patch": {
+    "path": "benchmarks/2026-10-14-python-speed-frontier-candidate.patch",
+    "sha256": "d792f488cf1df94ad57b5c6b500155b47c98722225ca3652a989f08ccf3658bc"
+  },
+  "candidate": "baseline plus this follow-up patch; isolated source excludes unrelated dirty workspace changes",
+  "followup_patch": {
+    "path": "benchmarks/2026-10-14-python-scalar-stereo-candidate.patch",
+    "sha256": "76aa1855532100fd909e200449c9dab9aa6e20591f9c40c18c95dd2193906e95"
+  },
+  "build_source_sha256": {
+    "Cargo.lock": "1c55261a594db832c9a26624588827ebac74906cd67d902d191258818c7bf546",
+    "Cargo.toml": "5a398486283707530879d379944ae8c48bdbcfb0c3464d327f160c7d83abfcef",
+    "crates/chematic-chem/src/descriptors/tpsa.rs": "7b1ca4d4334c5855f64c040006d5b7342949ea50b8fe840c983ff810f5ed3faa",
+    "crates/chematic-chem/src/topo_descriptors.rs": "50d06115df97aa0ca3d82d5c07220a7f62f0ce7d0779fed6e9de5c1b8af5ed9e",
+    "crates/chematic-core/src/derived_cache.rs": "65af98eb13b20315d8369bf727c63a097ca20a15d801147d5bb06039b77fbcbe",
+    "crates/chematic-core/src/molecule/access.rs": "c56ad90889ccc255094a8c793682fd9507778fa234bb79ac1594138cd0b64c31",
+    "crates/chematic-fp/src/bitvec.rs": "d68c97114e66d67a175714f22acc942d7a1391b9a32aa6f288835c87bab782c0",
+    "crates/chematic-fp/src/rdkit_morgan_config.rs": "b1425af9eeeec038bfcafde51f8c47478a8a886b40bb4d71464087d6a83f9d35",
+    "crates/chematic-fp/src/rdkit_morgan_ecfp4.rs": "a9e2a1701398f791bd5c40abece63842dc2e255bb7bf25f85b66af609338ae3d",
+    "crates/chematic-fp/src/rdkit_morgan_hash.rs": "272f3bf8926ca3cd7004fe3c83dd69562309a8b708b9e266b4e5b7592fd05e9c",
+    "crates/chematic-py/src/formats.rs": "25188315860e123e801b88f65e228d6430d33a93f979940387452b0274fbae1e",
+    "crates/chematic-py/src/mol_methods.rs": "31bbe9b6aea582f9b10a97abfde18fc0446db025b25ce018f38ff9b002f503e3",
+    "crates/chematic-smiles/src/lib.rs": "a1616178717219be4f7738afcd654d980e30cd60b7f4f99709af802ee86d8e23",
+    "crates/chematic-smiles/src/rdkit/mod.rs": "2a7db186b2066892ab0702ef408c05694e66095f4087f00980892a3f54ccf917"
+  },
+  "benchmark_source_sha256": {
+    "scripts/bench_python_speed_frontier.py": "f6693ba7d2e6216d21229e134a06433b9ad3b949fd652fc0dca809d61f1de248",
+    "scripts/tests/test_bench_python_speed_frontier.py": "680dc1c6fc201953a81186b09383283d1c26c7d2766c77747f9bd743b21eb8ba",
+    "scripts/verify_python_descriptor_frontier.py": "5b64211b11bb0bb9a696ff209d33213a455015dde169ed18f2c968852bc82639",
+    "scripts/verify_python_morgan_frontier.py": "48545259dd551c5b8e75d82e2ebc7696181af460bd0a7c9cff1f1bcfecea356d",
+    "validation/cosmolkit_comparison/bench_corpus.py": "6ad2dc64556b8e88e2b246f3c9dd4953b849a1c266fb8055520598b5e7deeb4c"
+  },
+  "regression_tests_sha256": {
+    "crates/chematic-chem/tests/descriptor_cache_contract.rs": "14b62698d2014ddc4d7fd814f0e125a12f9cb8eb86e891d4830598f30c572d64",
+    "crates/chematic-fp/tests/morgan_stereo_cache_contract.rs": "d5362a4841deef5c76ee869fb264a184808fa0cbdbdb0ea7d7dd2807110ca67d"
+  },
+  "wheels": {
+    "baseline": {
+      "path": "/private/tmp/chematic-speed-20261014/final-candidate-wheel/chematic-1.1.3-cp313-cp313-macosx_11_0_arm64.whl",
+      "sha256": "7e77ff905a393315fa4036063e349e44e9691a3596486404fad62ae356890709"
+    },
+    "candidate": {
+      "path": "/private/tmp/chematic-speed-stage2-20261014/candidate-wheel/chematic-1.1.3-cp313-cp313-macosx_11_0_arm64.whl",
+      "sha256": "b3a7b1a050f6517420a4f3e627a0f19ab407b310914c2848ad2461af87cd1408"
+    }
+  },
+  "build": {
+    "profile": "release",
+    "opt_level": 3,
+    "lto": true,
+    "codegen_units": 1,
+    "features": [
+      "native-inchi"
+    ],
+    "target_directory": "/private/tmp/chematic-speed-stage2-target-20261014, fresh isolated target",
+    "rustc": "rustc 1.97.0 (2d8144b78 2026-07-07)"
+  },
+  "timing_slices": [
+    {
+      "offset": 0,
+      "limit": 1000
+    },
+    {
+      "offset": 5000,
+      "limit": 1000
+    }
+  ],
+  "scope": "Both slices are from an exposed existing corpus; the second timing slice is not a sealed holdout. Seven operations, first-use / repeated-use / actual parse-inclusive work. Comparator mismatches suppress speed ranking."
+}

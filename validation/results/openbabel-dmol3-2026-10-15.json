@@ -1,0 +1,2808 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-15",
+  "feature": "checked standalone DMol3 .incoor input/output",
+  "runtime": {
+    "python": "3.13.6",
+    "openbabel": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+    "ase": "3.27.0",
+    "pytest": "9.1.1",
+    "numpy": "2.5.3",
+    "rustc": "rustc 1.97.0 (2d8144b78 2026-07-07)",
+    "cargo": "cargo 1.97.0 (c980f4866 2026-06-30)"
+  },
+  "units": {
+    "native_bohr_angstrom": 0.529177210544,
+    "native_codata": "2022 central value",
+    "openbabel_read_bohr_angstrom": 0.529177249,
+    "openbabel_write_angstrom_bohr": 1.889725989,
+    "openbabel_raw_roundtrip_scale": 1.0000000002228242,
+    "ase_bohr_angstrom": 0.5291772105638411
+  },
+  "oracle_settings": {
+    "openbabel_read": "obabel -idmol INPUT -ocjson -ab",
+    "openbabel_write": "obabel -idmol INPUT -odmol -ab",
+    "ase": "ase.io.read/write(format=\"dmol-incoor\"), default bohr=True; ASE read/write 3D only",
+    "read_tolerance_angstrom": 2e-12,
+    "write_tolerance_bohr": 2e-12,
+    "common_scope": "canonical elements, E exponent, 0D/3D, LF/CRLF; raw-Bohr comparison adjusts only the explicitly pinned Open Babel read/write scale"
+  },
+  "provenance": "Original synthetic MIT OR Apache-2.0 fixtures/recipes; public format description only, no Open Babel/ASE implementation copied",
+  "fixture_manifest_sha256": "5a73005a223dce305f34a6c16505a06f13d6a221ae8ec4fb663d09e161ea6dfa",
+  "results": {
+    "native_generated_cases": 128,
+    "native_manifest_cases": 1,
+    "openbabel_read_cases": 64,
+    "openbabel_write_cases": 64,
+    "ase_read_cases": 32,
+    "ase_write_cases": 32,
+    "unexpected_mismatches": 0,
+    "maximum_absolute_errors": {
+      "ob_read_position_angstrom": 0.0,
+      "ob_read_cell_angstrom": 8.881784197001252e-16,
+      "ase_read_position_angstrom": 0.0,
+      "ase_read_cell_angstrom": 0.0,
+      "ob_write_scaled_bohr": 5.329070518200751e-15,
+      "ase_write_raw_bohr": 4.884981308350689e-15,
+      "ob_raw_roundtrip_drift_bohr": 1.336950106178847e-09,
+      "ob_native_unit_delta_angstrom": 1.2086171419234404e-07
+    }
+  },
+  "diagnostics": {
+    "fortran_D": {
+      "native_raw_x_bohr": 0.125,
+      "openbabel_x_angstrom": 0.66147156125,
+      "ase_status": "rejected",
+      "input_sha256": "54a1321df7d311c6f935debef9423c91c4f4cdab3f51fe61f15fbcae0403f9ff"
+    },
+    "ase_nonperiodic_read": "raises UnboundLocalError without cell",
+    "ase_nonperiodic_write": "rejects nonperiodic Atoms"
+  },
+  "records": [
+    {
+      "id": "s0-p0-D0-crlf0",
+      "seed": 0,
+      "periodic": false,
+      "fortran": false,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "66450c0efcaeed2511ef27163b93fdd3f1f2d5cc305b3cbb0833041ebc064710",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "outside scope: pinned ASE .incoor supports 3D periodicity only"
+    },
+    {
+      "id": "s0-p0-D0-crlf1",
+      "seed": 0,
+      "periodic": false,
+      "fortran": false,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "66450c0efcaeed2511ef27163b93fdd3f1f2d5cc305b3cbb0833041ebc064710",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "outside scope: pinned ASE .incoor supports 3D periodicity only"
+    },
+    {
+      "id": "s0-p0-D1-crlf0",
+      "seed": 0,
+      "periodic": false,
+      "fortran": true,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "819dc5d0a03165d5635702b344267523062633365f5055b2f7111233503e93bd",
+      "native_status": "pass"
+    },
+    {
+      "id": "s0-p0-D1-crlf1",
+      "seed": 0,
+      "periodic": false,
+      "fortran": true,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "819dc5d0a03165d5635702b344267523062633365f5055b2f7111233503e93bd",
+      "native_status": "pass"
+    },
+    {
+      "id": "s0-p1-D0-crlf0",
+      "seed": 0,
+      "periodic": true,
+      "fortran": false,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "f2d23faa4d26e9f21740895757df8116f2bf4976fdd5feb5bb818308100405c9",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "pass"
+    },
+    {
+      "id": "s0-p1-D0-crlf1",
+      "seed": 0,
+      "periodic": true,
+      "fortran": false,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "f2d23faa4d26e9f21740895757df8116f2bf4976fdd5feb5bb818308100405c9",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "pass"
+    },
+    {
+      "id": "s0-p1-D1-crlf0",
+      "seed": 0,
+      "periodic": true,
+      "fortran": true,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "4a843dd97bb1ad0db677f0cb303ea70f79fa60e5abfda82ed6229b78a542d7db",
+      "native_status": "pass"
+    },
+    {
+      "id": "s0-p1-D1-crlf1",
+      "seed": 0,
+      "periodic": true,
+      "fortran": true,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "4a843dd97bb1ad0db677f0cb303ea70f79fa60e5abfda82ed6229b78a542d7db",
+      "native_status": "pass"
+    },
+    {
+      "id": "s1-p0-D0-crlf0",
+      "seed": 1,
+      "periodic": false,
+      "fortran": false,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "dcf2f6c1a526cdd97ba7c760684c5a66bbd59547803d2f9e26ad2478ce2c6306",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "outside scope: pinned ASE .incoor supports 3D periodicity only"
+    },
+    {
+      "id": "s1-p0-D0-crlf1",
+      "seed": 1,
+      "periodic": false,
+      "fortran": false,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "dcf2f6c1a526cdd97ba7c760684c5a66bbd59547803d2f9e26ad2478ce2c6306",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "outside scope: pinned ASE .incoor supports 3D periodicity only"
+    },
+    {
+      "id": "s1-p0-D1-crlf0",
+      "seed": 1,
+      "periodic": false,
+      "fortran": true,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "1c348830fe75d8d6779d8efcc8db6381ff2e84caf63504336c22150f6ddb8c23",
+      "native_status": "pass"
+    },
+    {
+      "id": "s1-p0-D1-crlf1",
+      "seed": 1,
+      "periodic": false,
+      "fortran": true,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "1c348830fe75d8d6779d8efcc8db6381ff2e84caf63504336c22150f6ddb8c23",
+      "native_status": "pass"
+    },
+    {
+      "id": "s1-p1-D0-crlf0",
+      "seed": 1,
+      "periodic": true,
+      "fortran": false,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "844524975c1f032935f98dad8cde5682a18e299e3586b30acb4ed420b3571223",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "pass"
+    },
+    {
+      "id": "s1-p1-D0-crlf1",
+      "seed": 1,
+      "periodic": true,
+      "fortran": false,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "844524975c1f032935f98dad8cde5682a18e299e3586b30acb4ed420b3571223",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "pass"
+    },
+    {
+      "id": "s1-p1-D1-crlf0",
+      "seed": 1,
+      "periodic": true,
+      "fortran": true,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "b03238cd022c70f948b20985129d4e2ae60b74d0604f7fc3286b49cac95e3b99",
+      "native_status": "pass"
+    },
+    {
+      "id": "s1-p1-D1-crlf1",
+      "seed": 1,
+      "periodic": true,
+      "fortran": true,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "b03238cd022c70f948b20985129d4e2ae60b74d0604f7fc3286b49cac95e3b99",
+      "native_status": "pass"
+    },
+    {
+      "id": "s2-p0-D0-crlf0",
+      "seed": 2,
+      "periodic": false,
+      "fortran": false,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "375c8f69f644d87fff3e094ae795e87be5bd4335776814407ae219b301da0080",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "outside scope: pinned ASE .incoor supports 3D periodicity only"
+    },
+    {
+      "id": "s2-p0-D0-crlf1",
+      "seed": 2,
+      "periodic": false,
+      "fortran": false,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "375c8f69f644d87fff3e094ae795e87be5bd4335776814407ae219b301da0080",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "outside scope: pinned ASE .incoor supports 3D periodicity only"
+    },
+    {
+      "id": "s2-p0-D1-crlf0",
+      "seed": 2,
+      "periodic": false,
+      "fortran": true,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "473909ca3c4729e2170a3d9ce50d8c31afd4ef3c292c1163a476df1aacd49783",
+      "native_status": "pass"
+    },
+    {
+      "id": "s2-p0-D1-crlf1",
+      "seed": 2,
+      "periodic": false,
+      "fortran": true,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "473909ca3c4729e2170a3d9ce50d8c31afd4ef3c292c1163a476df1aacd49783",
+      "native_status": "pass"
+    },
+    {
+      "id": "s2-p1-D0-crlf0",
+      "seed": 2,
+      "periodic": true,
+      "fortran": false,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "d1e1d4da5353bf778277e333b22b3a51f03769eb9d162fe640ffbe48b20897bd",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "pass"
+    },
+    {
+      "id": "s2-p1-D0-crlf1",
+      "seed": 2,
+      "periodic": true,
+      "fortran": false,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "d1e1d4da5353bf778277e333b22b3a51f03769eb9d162fe640ffbe48b20897bd",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "pass"
+    },
+    {
+      "id": "s2-p1-D1-crlf0",
+      "seed": 2,
+      "periodic": true,
+      "fortran": true,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "889a49ba8006b3cd0d30b750d2116023f7d97936c4e4642e65b2469a62cac957",
+      "native_status": "pass"
+    },
+    {
+      "id": "s2-p1-D1-crlf1",
+      "seed": 2,
+      "periodic": true,
+      "fortran": true,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "889a49ba8006b3cd0d30b750d2116023f7d97936c4e4642e65b2469a62cac957",
+      "native_status": "pass"
+    },
+    {
+      "id": "s3-p0-D0-crlf0",
+      "seed": 3,
+      "periodic": false,
+      "fortran": false,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "c761aaf08767d2928dc019b25014dccb1bf2a70a3aed2dc9171a3734a9dde61d",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "outside scope: pinned ASE .incoor supports 3D periodicity only"
+    },
+    {
+      "id": "s3-p0-D0-crlf1",
+      "seed": 3,
+      "periodic": false,
+      "fortran": false,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "c761aaf08767d2928dc019b25014dccb1bf2a70a3aed2dc9171a3734a9dde61d",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "outside scope: pinned ASE .incoor supports 3D periodicity only"
+    },
+    {
+      "id": "s3-p0-D1-crlf0",
+      "seed": 3,
+      "periodic": false,
+      "fortran": true,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "02dd59cb24a68a75a7742cfbc7905d10c61e854d176ed58c772bab79524a0c92",
+      "native_status": "pass"
+    },
+    {
+      "id": "s3-p0-D1-crlf1",
+      "seed": 3,
+      "periodic": false,
+      "fortran": true,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "02dd59cb24a68a75a7742cfbc7905d10c61e854d176ed58c772bab79524a0c92",
+      "native_status": "pass"
+    },
+    {
+      "id": "s3-p1-D0-crlf0",
+      "seed": 3,
+      "periodic": true,
+      "fortran": false,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "359bea9c8645c83688c72d45b4a350ee3dc96ec691364eea42d2c5c031db289c",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "pass"
+    },
+    {
+      "id": "s3-p1-D0-crlf1",
+      "seed": 3,
+      "periodic": true,
+      "fortran": false,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "359bea9c8645c83688c72d45b4a350ee3dc96ec691364eea42d2c5c031db289c",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "pass"
+    },
+    {
+      "id": "s3-p1-D1-crlf0",
+      "seed": 3,
+      "periodic": true,
+      "fortran": true,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "026bdd8e7b129bceb34d03728adc4364f236a4e7aebc6f5109403eb4c252391a",
+      "native_status": "pass"
+    },
+    {
+      "id": "s3-p1-D1-crlf1",
+      "seed": 3,
+      "periodic": true,
+      "fortran": true,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "026bdd8e7b129bceb34d03728adc4364f236a4e7aebc6f5109403eb4c252391a",
+      "native_status": "pass"
+    },
+    {
+      "id": "s4-p0-D0-crlf0",
+      "seed": 4,
+      "periodic": false,
+      "fortran": false,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "0298157d0db27a22804c0685844bce66bea9325097259802f8c8e0dafa795b89",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "outside scope: pinned ASE .incoor supports 3D periodicity only"
+    },
+    {
+      "id": "s4-p0-D0-crlf1",
+      "seed": 4,
+      "periodic": false,
+      "fortran": false,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "0298157d0db27a22804c0685844bce66bea9325097259802f8c8e0dafa795b89",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "outside scope: pinned ASE .incoor supports 3D periodicity only"
+    },
+    {
+      "id": "s4-p0-D1-crlf0",
+      "seed": 4,
+      "periodic": false,
+      "fortran": true,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "ac5556afdf9274dcff7d96ee7df279007a38f8ebb15e284671f68a740aa2b398",
+      "native_status": "pass"
+    },
+    {
+      "id": "s4-p0-D1-crlf1",
+      "seed": 4,
+      "periodic": false,
+      "fortran": true,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "ac5556afdf9274dcff7d96ee7df279007a38f8ebb15e284671f68a740aa2b398",
+      "native_status": "pass"
+    },
+    {
+      "id": "s4-p1-D0-crlf0",
+      "seed": 4,
+      "periodic": true,
+      "fortran": false,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "f5a67f91e553202e0586424719744b877c64f95c0e7c8689d7c168e1d94d4a2b",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "pass"
+    },
+    {
+      "id": "s4-p1-D0-crlf1",
+      "seed": 4,
+      "periodic": true,
+      "fortran": false,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "f5a67f91e553202e0586424719744b877c64f95c0e7c8689d7c168e1d94d4a2b",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "pass"
+    },
+    {
+      "id": "s4-p1-D1-crlf0",
+      "seed": 4,
+      "periodic": true,
+      "fortran": true,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "9ca8a3d0b62594bf7bdff859ceb2a61d2a3bd4b3e47b6c6fdb65bed94356bc91",
+      "native_status": "pass"
+    },
+    {
+      "id": "s4-p1-D1-crlf1",
+      "seed": 4,
+      "periodic": true,
+      "fortran": true,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "9ca8a3d0b62594bf7bdff859ceb2a61d2a3bd4b3e47b6c6fdb65bed94356bc91",
+      "native_status": "pass"
+    },
+    {
+      "id": "s5-p0-D0-crlf0",
+      "seed": 5,
+      "periodic": false,
+      "fortran": false,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "da5f32ff469d0ac9af5e02b5e17f475a131c6646340ea4e2c8424d9d4b81b460",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "outside scope: pinned ASE .incoor supports 3D periodicity only"
+    },
+    {
+      "id": "s5-p0-D0-crlf1",
+      "seed": 5,
+      "periodic": false,
+      "fortran": false,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "da5f32ff469d0ac9af5e02b5e17f475a131c6646340ea4e2c8424d9d4b81b460",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "outside scope: pinned ASE .incoor supports 3D periodicity only"
+    },
+    {
+      "id": "s5-p0-D1-crlf0",
+      "seed": 5,
+      "periodic": false,
+      "fortran": true,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "327da471744d7138a812488000db4d77f277fde82b4cdec28a1ea077548898fc",
+      "native_status": "pass"
+    },
+    {
+      "id": "s5-p0-D1-crlf1",
+      "seed": 5,
+      "periodic": false,
+      "fortran": true,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "327da471744d7138a812488000db4d77f277fde82b4cdec28a1ea077548898fc",
+      "native_status": "pass"
+    },
+    {
+      "id": "s5-p1-D0-crlf0",
+      "seed": 5,
+      "periodic": true,
+      "fortran": false,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "01a42900eddbe1ac854da40b086f23cdd623f312b0362fc8972ca86991120527",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "pass"
+    },
+    {
+      "id": "s5-p1-D0-crlf1",
+      "seed": 5,
+      "periodic": true,
+      "fortran": false,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "01a42900eddbe1ac854da40b086f23cdd623f312b0362fc8972ca86991120527",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "pass"
+    },
+    {
+      "id": "s5-p1-D1-crlf0",
+      "seed": 5,
+      "periodic": true,
+      "fortran": true,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "61befb4e1575c097ae4aa450994f05705f88b95ac0b25d6ebc46b0eb21f7fb9e",
+      "native_status": "pass"
+    },
+    {
+      "id": "s5-p1-D1-crlf1",
+      "seed": 5,
+      "periodic": true,
+      "fortran": true,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "61befb4e1575c097ae4aa450994f05705f88b95ac0b25d6ebc46b0eb21f7fb9e",
+      "native_status": "pass"
+    },
+    {
+      "id": "s6-p0-D0-crlf0",
+      "seed": 6,
+      "periodic": false,
+      "fortran": false,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "8c5e30d0e7df46bfad7837b2683d71c023be9f9f3712cf817a152d506aef4371",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "outside scope: pinned ASE .incoor supports 3D periodicity only"
+    },
+    {
+      "id": "s6-p0-D0-crlf1",
+      "seed": 6,
+      "periodic": false,
+      "fortran": false,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "8c5e30d0e7df46bfad7837b2683d71c023be9f9f3712cf817a152d506aef4371",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "outside scope: pinned ASE .incoor supports 3D periodicity only"
+    },
+    {
+      "id": "s6-p0-D1-crlf0",
+      "seed": 6,
+      "periodic": false,
+      "fortran": true,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "78fa2945ecfe98b90f497631c696461d2b69148486675082b8f14efdfff65e2c",
+      "native_status": "pass"
+    },
+    {
+      "id": "s6-p0-D1-crlf1",
+      "seed": 6,
+      "periodic": false,
+      "fortran": true,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "78fa2945ecfe98b90f497631c696461d2b69148486675082b8f14efdfff65e2c",
+      "native_status": "pass"
+    },
+    {
+      "id": "s6-p1-D0-crlf0",
+      "seed": 6,
+      "periodic": true,
+      "fortran": false,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "84fbf14b7444af5b84f50f8daf528fc4dfdda7e1a2277bf408debe20cb957eec",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "pass"
+    },
+    {
+      "id": "s6-p1-D0-crlf1",
+      "seed": 6,
+      "periodic": true,
+      "fortran": false,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "84fbf14b7444af5b84f50f8daf528fc4dfdda7e1a2277bf408debe20cb957eec",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "pass"
+    },
+    {
+      "id": "s6-p1-D1-crlf0",
+      "seed": 6,
+      "periodic": true,
+      "fortran": true,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "892835420aa2a40cdb7ed76cb8d1f473e3fb824ec66efa9064591808b335f18d",
+      "native_status": "pass"
+    },
+    {
+      "id": "s6-p1-D1-crlf1",
+      "seed": 6,
+      "periodic": true,
+      "fortran": true,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "892835420aa2a40cdb7ed76cb8d1f473e3fb824ec66efa9064591808b335f18d",
+      "native_status": "pass"
+    },
+    {
+      "id": "s7-p0-D0-crlf0",
+      "seed": 7,
+      "periodic": false,
+      "fortran": false,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "a808baa8bc2b1183c156334e3f0f6cdf6a721c81df2fcb18d63b31024c09bc55",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "outside scope: pinned ASE .incoor supports 3D periodicity only"
+    },
+    {
+      "id": "s7-p0-D0-crlf1",
+      "seed": 7,
+      "periodic": false,
+      "fortran": false,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "a808baa8bc2b1183c156334e3f0f6cdf6a721c81df2fcb18d63b31024c09bc55",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "outside scope: pinned ASE .incoor supports 3D periodicity only"
+    },
+    {
+      "id": "s7-p0-D1-crlf0",
+      "seed": 7,
+      "periodic": false,
+      "fortran": true,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "b1165d8bb4ee8236604b29fe0fd501a6927c54b7443d412c904527ce35056986",
+      "native_status": "pass"
+    },
+    {
+      "id": "s7-p0-D1-crlf1",
+      "seed": 7,
+      "periodic": false,
+      "fortran": true,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "b1165d8bb4ee8236604b29fe0fd501a6927c54b7443d412c904527ce35056986",
+      "native_status": "pass"
+    },
+    {
+      "id": "s7-p1-D0-crlf0",
+      "seed": 7,
+      "periodic": true,
+      "fortran": false,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "e3449a40860799e92a9b35af7eabcc2b52191a504e71c4dd16237ae9ea8062f2",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "pass"
+    },
+    {
+      "id": "s7-p1-D0-crlf1",
+      "seed": 7,
+      "periodic": true,
+      "fortran": false,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "e3449a40860799e92a9b35af7eabcc2b52191a504e71c4dd16237ae9ea8062f2",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "pass"
+    },
+    {
+      "id": "s7-p1-D1-crlf0",
+      "seed": 7,
+      "periodic": true,
+      "fortran": true,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "69317abf2e2ebde45eebd1518b9d92fbb3bd9010f8ab0020914791d8688245ac",
+      "native_status": "pass"
+    },
+    {
+      "id": "s7-p1-D1-crlf1",
+      "seed": 7,
+      "periodic": true,
+      "fortran": true,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "69317abf2e2ebde45eebd1518b9d92fbb3bd9010f8ab0020914791d8688245ac",
+      "native_status": "pass"
+    },
+    {
+      "id": "s8-p0-D0-crlf0",
+      "seed": 8,
+      "periodic": false,
+      "fortran": false,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "a72c0171b4739d88f679880b9db7388deaaa609e2390a4d49ff83d8402771111",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "outside scope: pinned ASE .incoor supports 3D periodicity only"
+    },
+    {
+      "id": "s8-p0-D0-crlf1",
+      "seed": 8,
+      "periodic": false,
+      "fortran": false,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "a72c0171b4739d88f679880b9db7388deaaa609e2390a4d49ff83d8402771111",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "outside scope: pinned ASE .incoor supports 3D periodicity only"
+    },
+    {
+      "id": "s8-p0-D1-crlf0",
+      "seed": 8,
+      "periodic": false,
+      "fortran": true,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "b1ccf26515238b07a6024cbf43f77ec88e82a0a621130cb986c39c1122fbfb45",
+      "native_status": "pass"
+    },
+    {
+      "id": "s8-p0-D1-crlf1",
+      "seed": 8,
+      "periodic": false,
+      "fortran": true,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "b1ccf26515238b07a6024cbf43f77ec88e82a0a621130cb986c39c1122fbfb45",
+      "native_status": "pass"
+    },
+    {
+      "id": "s8-p1-D0-crlf0",
+      "seed": 8,
+      "periodic": true,
+      "fortran": false,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "3fadb94aa72f5d66d75518fe422e580e82d053137b0905e1b967333cc4a9419f",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "pass"
+    },
+    {
+      "id": "s8-p1-D0-crlf1",
+      "seed": 8,
+      "periodic": true,
+      "fortran": false,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "3fadb94aa72f5d66d75518fe422e580e82d053137b0905e1b967333cc4a9419f",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "pass"
+    },
+    {
+      "id": "s8-p1-D1-crlf0",
+      "seed": 8,
+      "periodic": true,
+      "fortran": true,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "8bfd5448b88012de5a18da57471ed3ea8b8b2fe2f1d0ebd7a480972fd7f0152d",
+      "native_status": "pass"
+    },
+    {
+      "id": "s8-p1-D1-crlf1",
+      "seed": 8,
+      "periodic": true,
+      "fortran": true,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "8bfd5448b88012de5a18da57471ed3ea8b8b2fe2f1d0ebd7a480972fd7f0152d",
+      "native_status": "pass"
+    },
+    {
+      "id": "s9-p0-D0-crlf0",
+      "seed": 9,
+      "periodic": false,
+      "fortran": false,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "03b6c5161a50f083406ee92d0697c2a6cdc265b19676d7db2f81d230fd0dffbb",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "outside scope: pinned ASE .incoor supports 3D periodicity only"
+    },
+    {
+      "id": "s9-p0-D0-crlf1",
+      "seed": 9,
+      "periodic": false,
+      "fortran": false,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "03b6c5161a50f083406ee92d0697c2a6cdc265b19676d7db2f81d230fd0dffbb",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "outside scope: pinned ASE .incoor supports 3D periodicity only"
+    },
+    {
+      "id": "s9-p0-D1-crlf0",
+      "seed": 9,
+      "periodic": false,
+      "fortran": true,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "6edd2fb613dd6969b8dcb28ef88c40ec65a8ba951cd909aaa5bb121951899a11",
+      "native_status": "pass"
+    },
+    {
+      "id": "s9-p0-D1-crlf1",
+      "seed": 9,
+      "periodic": false,
+      "fortran": true,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "6edd2fb613dd6969b8dcb28ef88c40ec65a8ba951cd909aaa5bb121951899a11",
+      "native_status": "pass"
+    },
+    {
+      "id": "s9-p1-D0-crlf0",
+      "seed": 9,
+      "periodic": true,
+      "fortran": false,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "1740e1ea98da59a4ff455167874a9a777e9c2570620fc0e8e765ca648308630c",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "pass"
+    },
+    {
+      "id": "s9-p1-D0-crlf1",
+      "seed": 9,
+      "periodic": true,
+      "fortran": false,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "1740e1ea98da59a4ff455167874a9a777e9c2570620fc0e8e765ca648308630c",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "pass"
+    },
+    {
+      "id": "s9-p1-D1-crlf0",
+      "seed": 9,
+      "periodic": true,
+      "fortran": true,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "ef1d6de92f4804f54c4c18865d124a1b977bf7e18f7d48ac03eafb4db1ab129d",
+      "native_status": "pass"
+    },
+    {
+      "id": "s9-p1-D1-crlf1",
+      "seed": 9,
+      "periodic": true,
+      "fortran": true,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "ef1d6de92f4804f54c4c18865d124a1b977bf7e18f7d48ac03eafb4db1ab129d",
+      "native_status": "pass"
+    },
+    {
+      "id": "s10-p0-D0-crlf0",
+      "seed": 10,
+      "periodic": false,
+      "fortran": false,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "60c8a26bc1e34b996f22f2a261b7f1f29d6c7d8ffa75d0e24d57a57bb52b6449",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "outside scope: pinned ASE .incoor supports 3D periodicity only"
+    },
+    {
+      "id": "s10-p0-D0-crlf1",
+      "seed": 10,
+      "periodic": false,
+      "fortran": false,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "60c8a26bc1e34b996f22f2a261b7f1f29d6c7d8ffa75d0e24d57a57bb52b6449",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "outside scope: pinned ASE .incoor supports 3D periodicity only"
+    },
+    {
+      "id": "s10-p0-D1-crlf0",
+      "seed": 10,
+      "periodic": false,
+      "fortran": true,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "01e07b028870cd588ad6ac26f347ebcf52ba0385a79b0ea0e5c641e056a8ebda",
+      "native_status": "pass"
+    },
+    {
+      "id": "s10-p0-D1-crlf1",
+      "seed": 10,
+      "periodic": false,
+      "fortran": true,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "01e07b028870cd588ad6ac26f347ebcf52ba0385a79b0ea0e5c641e056a8ebda",
+      "native_status": "pass"
+    },
+    {
+      "id": "s10-p1-D0-crlf0",
+      "seed": 10,
+      "periodic": true,
+      "fortran": false,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "24b44036d510f2e02f44e295ce8dbae690c31cf16da223a774290f2496446261",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "pass"
+    },
+    {
+      "id": "s10-p1-D0-crlf1",
+      "seed": 10,
+      "periodic": true,
+      "fortran": false,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "24b44036d510f2e02f44e295ce8dbae690c31cf16da223a774290f2496446261",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "pass"
+    },
+    {
+      "id": "s10-p1-D1-crlf0",
+      "seed": 10,
+      "periodic": true,
+      "fortran": true,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "5a3683dfca30c8214946b1d23473d1be657396e4a3f486a3522a60ac37957660",
+      "native_status": "pass"
+    },
+    {
+      "id": "s10-p1-D1-crlf1",
+      "seed": 10,
+      "periodic": true,
+      "fortran": true,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "5a3683dfca30c8214946b1d23473d1be657396e4a3f486a3522a60ac37957660",
+      "native_status": "pass"
+    },
+    {
+      "id": "s11-p0-D0-crlf0",
+      "seed": 11,
+      "periodic": false,
+      "fortran": false,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "b18deacc6624647424daf3a21234ab6bd2117392766f986e87bcd0ada0b6adf2",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "outside scope: pinned ASE .incoor supports 3D periodicity only"
+    },
+    {
+      "id": "s11-p0-D0-crlf1",
+      "seed": 11,
+      "periodic": false,
+      "fortran": false,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "b18deacc6624647424daf3a21234ab6bd2117392766f986e87bcd0ada0b6adf2",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "outside scope: pinned ASE .incoor supports 3D periodicity only"
+    },
+    {
+      "id": "s11-p0-D1-crlf0",
+      "seed": 11,
+      "periodic": false,
+      "fortran": true,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "fcd81297c824cf221e3cb272ce66fa7b94a9a0ff26fc8f792cb567aa7b3f42da",
+      "native_status": "pass"
+    },
+    {
+      "id": "s11-p0-D1-crlf1",
+      "seed": 11,
+      "periodic": false,
+      "fortran": true,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "fcd81297c824cf221e3cb272ce66fa7b94a9a0ff26fc8f792cb567aa7b3f42da",
+      "native_status": "pass"
+    },
+    {
+      "id": "s11-p1-D0-crlf0",
+      "seed": 11,
+      "periodic": true,
+      "fortran": false,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "20bd7e2f449a936bdc5b9c2a8733c98f75535972f99170377697bd29f3b2f690",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "pass"
+    },
+    {
+      "id": "s11-p1-D0-crlf1",
+      "seed": 11,
+      "periodic": true,
+      "fortran": false,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "20bd7e2f449a936bdc5b9c2a8733c98f75535972f99170377697bd29f3b2f690",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "pass"
+    },
+    {
+      "id": "s11-p1-D1-crlf0",
+      "seed": 11,
+      "periodic": true,
+      "fortran": true,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "863516b7009106ab741d7efcf74a9b3ceb9f96dd2b5643861c30aa3b750303d8",
+      "native_status": "pass"
+    },
+    {
+      "id": "s11-p1-D1-crlf1",
+      "seed": 11,
+      "periodic": true,
+      "fortran": true,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "863516b7009106ab741d7efcf74a9b3ceb9f96dd2b5643861c30aa3b750303d8",
+      "native_status": "pass"
+    },
+    {
+      "id": "s12-p0-D0-crlf0",
+      "seed": 12,
+      "periodic": false,
+      "fortran": false,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "010df3bd3f5cc24b6251163e7eb47dc311cacef7ef94d73f0b1a819989fca49c",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "outside scope: pinned ASE .incoor supports 3D periodicity only"
+    },
+    {
+      "id": "s12-p0-D0-crlf1",
+      "seed": 12,
+      "periodic": false,
+      "fortran": false,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "010df3bd3f5cc24b6251163e7eb47dc311cacef7ef94d73f0b1a819989fca49c",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "outside scope: pinned ASE .incoor supports 3D periodicity only"
+    },
+    {
+      "id": "s12-p0-D1-crlf0",
+      "seed": 12,
+      "periodic": false,
+      "fortran": true,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "ae03e01e147519626f05ceb635b9dcd53fec998943b6041e3d46339fd8056e6f",
+      "native_status": "pass"
+    },
+    {
+      "id": "s12-p0-D1-crlf1",
+      "seed": 12,
+      "periodic": false,
+      "fortran": true,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "ae03e01e147519626f05ceb635b9dcd53fec998943b6041e3d46339fd8056e6f",
+      "native_status": "pass"
+    },
+    {
+      "id": "s12-p1-D0-crlf0",
+      "seed": 12,
+      "periodic": true,
+      "fortran": false,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "001a7ab74d6600e7bc12f806ba95b39a627854c96dea48fa68a89e2d28307fc5",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "pass"
+    },
+    {
+      "id": "s12-p1-D0-crlf1",
+      "seed": 12,
+      "periodic": true,
+      "fortran": false,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "001a7ab74d6600e7bc12f806ba95b39a627854c96dea48fa68a89e2d28307fc5",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "pass"
+    },
+    {
+      "id": "s12-p1-D1-crlf0",
+      "seed": 12,
+      "periodic": true,
+      "fortran": true,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "92b1dff972e38fe25f2e6d6513067388ca13c8bfd6c4400f57a6c02e716b63c0",
+      "native_status": "pass"
+    },
+    {
+      "id": "s12-p1-D1-crlf1",
+      "seed": 12,
+      "periodic": true,
+      "fortran": true,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "92b1dff972e38fe25f2e6d6513067388ca13c8bfd6c4400f57a6c02e716b63c0",
+      "native_status": "pass"
+    },
+    {
+      "id": "s13-p0-D0-crlf0",
+      "seed": 13,
+      "periodic": false,
+      "fortran": false,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "f48226c436b7016c44498680b7039fdcfdf6f2cb84c63dca7b7da11f68e61e8c",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "outside scope: pinned ASE .incoor supports 3D periodicity only"
+    },
+    {
+      "id": "s13-p0-D0-crlf1",
+      "seed": 13,
+      "periodic": false,
+      "fortran": false,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "f48226c436b7016c44498680b7039fdcfdf6f2cb84c63dca7b7da11f68e61e8c",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "outside scope: pinned ASE .incoor supports 3D periodicity only"
+    },
+    {
+      "id": "s13-p0-D1-crlf0",
+      "seed": 13,
+      "periodic": false,
+      "fortran": true,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "47dd32326843c74df4e7cdbab6f1099096c3a9c29dfabcb380b020e3efb805d5",
+      "native_status": "pass"
+    },
+    {
+      "id": "s13-p0-D1-crlf1",
+      "seed": 13,
+      "periodic": false,
+      "fortran": true,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "47dd32326843c74df4e7cdbab6f1099096c3a9c29dfabcb380b020e3efb805d5",
+      "native_status": "pass"
+    },
+    {
+      "id": "s13-p1-D0-crlf0",
+      "seed": 13,
+      "periodic": true,
+      "fortran": false,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "840db0c6cfaa6ddb134ea1c20fd76ecd5e28da3e948bf0386e43417809a41557",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "pass"
+    },
+    {
+      "id": "s13-p1-D0-crlf1",
+      "seed": 13,
+      "periodic": true,
+      "fortran": false,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "840db0c6cfaa6ddb134ea1c20fd76ecd5e28da3e948bf0386e43417809a41557",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "pass"
+    },
+    {
+      "id": "s13-p1-D1-crlf0",
+      "seed": 13,
+      "periodic": true,
+      "fortran": true,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "be35d23f9c8ba4c4a2ac5cf3888510a9757e96cb0a501222ce3e91c130ccbb3f",
+      "native_status": "pass"
+    },
+    {
+      "id": "s13-p1-D1-crlf1",
+      "seed": 13,
+      "periodic": true,
+      "fortran": true,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "be35d23f9c8ba4c4a2ac5cf3888510a9757e96cb0a501222ce3e91c130ccbb3f",
+      "native_status": "pass"
+    },
+    {
+      "id": "s14-p0-D0-crlf0",
+      "seed": 14,
+      "periodic": false,
+      "fortran": false,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "1d5433f35596c2a5987019490935a1f9010eaf6b09155e402cf07a54aed1c640",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "outside scope: pinned ASE .incoor supports 3D periodicity only"
+    },
+    {
+      "id": "s14-p0-D0-crlf1",
+      "seed": 14,
+      "periodic": false,
+      "fortran": false,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "1d5433f35596c2a5987019490935a1f9010eaf6b09155e402cf07a54aed1c640",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "outside scope: pinned ASE .incoor supports 3D periodicity only"
+    },
+    {
+      "id": "s14-p0-D1-crlf0",
+      "seed": 14,
+      "periodic": false,
+      "fortran": true,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "ac1575c37bfa6e7b3f59a62613d3d1fba8adb5fef28fa0720e1c5b8c9e9a841f",
+      "native_status": "pass"
+    },
+    {
+      "id": "s14-p0-D1-crlf1",
+      "seed": 14,
+      "periodic": false,
+      "fortran": true,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "ac1575c37bfa6e7b3f59a62613d3d1fba8adb5fef28fa0720e1c5b8c9e9a841f",
+      "native_status": "pass"
+    },
+    {
+      "id": "s14-p1-D0-crlf0",
+      "seed": 14,
+      "periodic": true,
+      "fortran": false,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "53afccc57277b4b781b9dfb8b63fd372e794c495bc9a94bcfebedb3702234a8b",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "pass"
+    },
+    {
+      "id": "s14-p1-D0-crlf1",
+      "seed": 14,
+      "periodic": true,
+      "fortran": false,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "53afccc57277b4b781b9dfb8b63fd372e794c495bc9a94bcfebedb3702234a8b",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "pass"
+    },
+    {
+      "id": "s14-p1-D1-crlf0",
+      "seed": 14,
+      "periodic": true,
+      "fortran": true,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "1369f9a7db3ff26b9b7f6f95a4f513e304601e0c6238c93589f11c5ede078f7b",
+      "native_status": "pass"
+    },
+    {
+      "id": "s14-p1-D1-crlf1",
+      "seed": 14,
+      "periodic": true,
+      "fortran": true,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "1369f9a7db3ff26b9b7f6f95a4f513e304601e0c6238c93589f11c5ede078f7b",
+      "native_status": "pass"
+    },
+    {
+      "id": "s15-p0-D0-crlf0",
+      "seed": 15,
+      "periodic": false,
+      "fortran": false,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "61f769a9268f9407b010c29d77025954b3af06877866f74ec8894de57f54430b",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "outside scope: pinned ASE .incoor supports 3D periodicity only"
+    },
+    {
+      "id": "s15-p0-D0-crlf1",
+      "seed": 15,
+      "periodic": false,
+      "fortran": false,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "61f769a9268f9407b010c29d77025954b3af06877866f74ec8894de57f54430b",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "outside scope: pinned ASE .incoor supports 3D periodicity only"
+    },
+    {
+      "id": "s15-p0-D1-crlf0",
+      "seed": 15,
+      "periodic": false,
+      "fortran": true,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "f877ac119a614565788c0b8bc559b6bfcf5044891a5bb447d09420b1073f4e8d",
+      "native_status": "pass"
+    },
+    {
+      "id": "s15-p0-D1-crlf1",
+      "seed": 15,
+      "periodic": false,
+      "fortran": true,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "f877ac119a614565788c0b8bc559b6bfcf5044891a5bb447d09420b1073f4e8d",
+      "native_status": "pass"
+    },
+    {
+      "id": "s15-p1-D0-crlf0",
+      "seed": 15,
+      "periodic": true,
+      "fortran": false,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "4971b2e1c8bdcd2a7463eae0882cc7b75a4696e267e797d936d93abff44174ec",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "pass"
+    },
+    {
+      "id": "s15-p1-D0-crlf1",
+      "seed": 15,
+      "periodic": true,
+      "fortran": false,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 2e-12
+      },
+      "sha256": "4971b2e1c8bdcd2a7463eae0882cc7b75a4696e267e797d936d93abff44174ec",
+      "native_status": "pass",
+      "openbabel_status": "pass within declared normalization/tolerance",
+      "ase_status": "pass"
+    },
+    {
+      "id": "s15-p1-D1-crlf0",
+      "seed": 15,
+      "periodic": true,
+      "fortran": true,
+      "crlf": false,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "7d11c7e5dc37e01c3d1bbb741bb7b3fa41d2c93d3178cb3db2fac38644b5e8c7",
+      "native_status": "pass"
+    },
+    {
+      "id": "s15-p1-D1-crlf1",
+      "seed": 15,
+      "periodic": true,
+      "fortran": true,
+      "crlf": true,
+      "provenance": "Original synthetic recipe in scripts/validate_dmol3.py, authored 2026-10-15",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "One to four atoms and optional skewed three-vector cell isolate raw units/precision/orientation",
+      "oracle": "Exact analytic raw Bohr; Open Babel 3.2.1 and ASE 3.27.0 with separately pinned unit constants; common E-exponent lane only",
+      "expected": {
+        "status": "exact native structured roundtrip and declared engine-normalized comparison",
+        "units": "Bohr; explicit per-engine Angstrom projection",
+        "tolerance": 0
+      },
+      "sha256": "7d11c7e5dc37e01c3d1bbb741bb7b3fa41d2c93d3178cb3db2fac38644b5e8c7",
+      "native_status": "pass"
+    }
+  ],
+  "scope": "Standalone Bohr coordinate documents only; no output logs, electronic-state/charge inference, bond perception, calculation execution, physical validity or whole-library parity claim",
+  "implementation": {
+    "candidate": "/private/tmp/chematic-dmol3",
+    "base": "/private/tmp/chematic-paths",
+    "baseline_commit": "ec38f8b80c02b8d4164f72587891eac4bb30e73b",
+    "feature_committed": false,
+    "pushed": false,
+    "primary_source_modified": false,
+    "inherited_file_count": 2306,
+    "inherited_tree_sha256": "54ca275daa52c7c6285342bad83570ec36e4ca0d473ddabcfbbf7d7fa6d61ee6",
+    "source_artifacts": [
+      {
+        "path": ".github/workflows/ci.yml",
+        "sha256": "6f905b28f56fb20a4679f21bda4f90a11da7d2d0ab212b735eea45ff6d69d041",
+        "base_sha256": "29eaa81055a231402622aac2e79bcbedf8f5872ad96e771cd58049926592ed70"
+      },
+      {
+        "path": "CHANGELOG.md",
+        "sha256": "6a3228c8eea39aaca976d9969777785a8521828b63938f06f1145e3cd1185fcf",
+        "base_sha256": "a52148d6694b628b062f0c5e2505047da5e76e9538ec8dfdca808ce38fa74655"
+      },
+      {
+        "path": "crates/chematic-mol/src/dmol3.rs",
+        "sha256": "1b8aeaafc5c8a2906e308b51788f770bcecc9bf69b652ce8841034ff8f5d2b54",
+        "base_sha256": null
+      },
+      {
+        "path": "crates/chematic-mol/src/dmol3/reader.rs",
+        "sha256": "5015cf16d5705d0a60a77f232ddd2cf66254afb11582e85144bb96b816c30fcf",
+        "base_sha256": null
+      },
+      {
+        "path": "crates/chematic-mol/src/lib.rs",
+        "sha256": "cc154e02a87886b2062f61876385cc9947936d1f5566a7e5a45fe380e7076d23",
+        "base_sha256": "c2bc31ef0f5e6b34cc6f24593ebc95fb5ef39343c3a6a61a63475faa06a0dec1"
+      },
+      {
+        "path": "crates/chematic-mol/tests/dmol3_contract.rs",
+        "sha256": "be3f18bab052d2ca1bb827addc3ac0056ec62ff557913070767e8e28abc5052e",
+        "base_sha256": null
+      },
+      {
+        "path": "crates/chematic-py/python/chematic/__init__.pyi",
+        "sha256": "ae789473eceb2f5fa3636d96ae5062f602b730b7d1531ec87e58c6868662b3d5",
+        "base_sha256": "aceea060290879c3098850ebe77d7cf95b138f084085382b3f08f1f9551b75ea"
+      },
+      {
+        "path": "crates/chematic-py/src/formats.rs",
+        "sha256": "5e726c8a09224c71c3aef8e98afa9547ce0dac12640de87b6580ca338174f1ed",
+        "base_sha256": "30e7026115977e08575835b3cb24e3ab998b724832b4f54aa60e1006ef7dd574"
+      },
+      {
+        "path": "crates/chematic-py/src/formats/dmol3.rs",
+        "sha256": "0a8b76069375fe65c1e263167571f291cfb88578e34e7407aeda8a24de86607f",
+        "base_sha256": null
+      },
+      {
+        "path": "crates/chematic-py/tests/test_dmol3.py",
+        "sha256": "c9ac1cef4966350e71016c151722edb6f0b2ede11f7555977a42d4b26e4d75fa",
+        "base_sha256": null
+      },
+      {
+        "path": "docs/format-capabilities.md",
+        "sha256": "f4ca53e58ad418095fe67397f3d806b98c27923f24b1bc692a50784075e5256d",
+        "base_sha256": "20d163e520bfe1a4af7c5d75b0909ff3c6cf389d9fdadfb8a4f0ce90fcd06214"
+      },
+      {
+        "path": "docs/openbabel-dmol3.md",
+        "sha256": "e5bce220132a0ed56359e7651977f92869515b30aae6186c6626c34db28808d8",
+        "base_sha256": null
+      },
+      {
+        "path": "mkdocs.yml",
+        "sha256": "c09d84baad1850a241e3ae785b67c3c18a07e8206e345aa4604bab19237cb8c7",
+        "base_sha256": "44ea83f8311e8e3a557fb79c440671ce292e3f80de61b1feac80038cb5900293"
+      },
+      {
+        "path": "scripts/validate_dmol3.py",
+        "sha256": "84ec5db93707f30ddd0555f75a8587e02c8e219789973125eac6f2f200a3ccbe",
+        "base_sha256": null
+      },
+      {
+        "path": "validation/openbabel_issues/dmol3/contract-fixtures.json",
+        "sha256": "5a73005a223dce305f34a6c16505a06f13d6a221ae8ec4fb663d09e161ea6dfa",
+        "base_sha256": null
+      },
+      {
+        "path": "validation/results/binding_surface_inventory-current.json",
+        "sha256": "7cfd326a103940ae9a522aec7cb2b0f92484be57a6906fa98825c0b653b880e7",
+        "base_sha256": "afab1f39a7c877952728f8a53b57f75fd521810c0cb397dc0b8ade280739699f"
+      }
+    ],
+    "compiled_extension": {
+      "path": "/private/tmp/chematic-dmol3-module/chematic/chematic.so",
+      "sha256": "b7d5a871097bd20d34e8c7e79a3336c47f57d43fb1e15631641705a7fd9f8241",
+      "python_executable": "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+      "import_root": "/private/tmp/chematic-dmol3-module",
+      "oracle_import_root": "/private/tmp/chematic-dmol3-ase",
+      "stable_binary_copy": true
+    }
+  },
+  "validation": {
+    "rust": {
+      "command": "cargo test -p chematic-mol --lib --test dmol3_contract --test mopac_cartesian_contract --test fhiaims_contract --offline --quiet",
+      "unit_passed": 753,
+      "dmol3_integration_passed": 7,
+      "mopac_integration_passed": 7,
+      "fhiaims_integration_passed": 8,
+      "total_passed": 775,
+      "failed": 0,
+      "ignored": 0,
+      "all_118_canonical_elements_roundtripped": true
+    },
+    "python": {
+      "command": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=/private/tmp/chematic-dmol3-module python3 -m pytest -p no:cacheprovider crates/chematic-py/tests/test_dmol3.py crates/chematic-py/tests/test_mopac_cartesian.py crates/chematic-py/tests/test_fhiaims.py crates/chematic-py/tests/test_rdkit_path_enumeration.py -q",
+      "passed": 130,
+      "dmol3_contracts_passed": 26,
+      "failed": 0
+    },
+    "oracle": {
+      "command": "PYTHONPATH=/private/tmp/chematic-dmol3-module:/private/tmp/chematic-dmol3-ase python3 scripts/validate_dmol3.py",
+      "exit_code": 0,
+      "versions_checked": {
+        "openbabel": "3.2.1",
+        "ase": "3.27.0"
+      },
+      "ase_scope": "3D E-exponent input/output only; 0D rejection and D-exponent behavior separately pinned",
+      "openbabel_scope": "0D/3D E-exponent geometry; separately pinned unit-conversion normalization; D-exponent behavior diagnostic"
+    },
+    "clippy": {
+      "command": "cargo clippy -p chematic-mol -p chematic-py --all-targets --offline --no-deps -- -D warnings",
+      "exit_code": 0
+    },
+    "format": {
+      "command": "cargo fmt --all --check",
+      "exit_code": 0
+    },
+    "refactor_budget": {
+      "command": "python3 scripts/check_refactor_budget.py",
+      "exit_code": 0,
+      "production_rust_files": 548,
+      "functions": 8387,
+      "file_allowances": 18,
+      "function_allowances": 86,
+      "allowances_increased": false
+    },
+    "binding_surface": {
+      "command": "python3 scripts/check_binding_surface.py",
+      "exit_code": 0,
+      "python_free_functions": 196,
+      "python_registered_functions": 196,
+      "wasm_exports": 303
+    },
+    "product_names": {
+      "command": "python3 scripts/check_product_names.py",
+      "exit_code": 0
+    },
+    "docs": {
+      "command": "python3 -m mkdocs build --strict --site-dir /private/tmp/chematic-dmol3-site",
+      "exit_code": 0,
+      "log_sha256": "11ecfbeef9f7556183632f0b55fdcc45554922b7d795479abd464ff54d2ce47a"
+    },
+    "patch": {
+      "changed_source_files": 16,
+      "reverse_apply_check": true,
+      "forward_apply_check_in_inherited_base": true,
+      "only_declared_files_changed": true
+    },
+    "hosted_ci_run": false
+  },
+  "delivery": {
+    "primary_checkout": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic",
+    "artifacts": [
+      {
+        "path": "docs/openbabel-dmol3.md",
+        "sha256": "e5bce220132a0ed56359e7651977f92869515b30aae6186c6626c34db28808d8"
+      },
+      {
+        "path": "validation/openbabel_issues/dmol3-2026-10-15.patch",
+        "sha256": "89a404f59d940deda1f63b53b80a3e7f8e02a0f1ff887f81ee86b8bda37c3b2b"
+      }
+    ],
+    "evidence_path": "validation/results/openbabel-dmol3-2026-10-15.json",
+    "scope": "Only documentation, incremental patch and evidence copied; feature source remains in isolated candidate"
+  }
+}

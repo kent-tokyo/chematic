@@ -14,7 +14,7 @@
 
 use rustc_hash::{FxHashMap, FxHashSet};
 
-use chematic_core::{AtomIdx, BondOrder, Molecule, implicit_hcount};
+use chematic_core::{AtomIdx, BondOrder, Molecule, STEREO_H_SENTINEL, implicit_hcount};
 use chematic_perception::RingSet;
 #[cfg(test)]
 use chematic_perception::find_sssr;
@@ -432,7 +432,9 @@ fn visit_recursive(
     ctx.visit_budget.set(remaining - 1);
 
     if st.count == query.atoms.len() {
-        visit(&st.q2t);
+        if mapped_chirality_compatible(query, &st.q2t, ctx) {
+            visit(&st.q2t);
+        }
         return;
     }
     let q_next = st.info.plan[st.count];
@@ -759,7 +761,9 @@ fn match_recursive(
 
     // Base case: all query atoms have been mapped.
     if mapping.len() == query.atoms.len() {
-        results.push(mapping.clone());
+        if mapped_chirality_compatible(query, &st.q2t, ctx) {
+            results.push(mapping.clone());
+        }
         return;
     }
 
@@ -1101,11 +1105,41 @@ fn bonds_compatible(
 // ---------------------------------------------------------------------------
 
 fn eval_atom_query(q: &AtomQuery, idx: AtomIdx, ctx: &EvalCtx<'_>) -> bool {
+    if ctx.config.use_chirality {
+        // Exact @/@@ parity needs a complete mapping. Use three-valued logic
+        // here so a chirality primitive under NOT/OR cannot incorrectly prune
+        // a candidate before the final mapped check.
+        return eval_atom_query_candidate(q, idx, ctx).unwrap_or(true);
+    }
     match q {
         AtomQuery::Primitive(p) => eval_atom_primitive(p, idx, ctx),
         AtomQuery::And(a, b) => eval_atom_query(a, idx, ctx) && eval_atom_query(b, idx, ctx),
         AtomQuery::Or(a, b) => eval_atom_query(a, idx, ctx) || eval_atom_query(b, idx, ctx),
         AtomQuery::Not(a) => !eval_atom_query(a, idx, ctx),
+    }
+}
+
+fn eval_atom_query_candidate(q: &AtomQuery, idx: AtomIdx, ctx: &EvalCtx<'_>) -> Option<bool> {
+    match q {
+        AtomQuery::Primitive(AtomPrimitive::Chirality(_)) => None,
+        AtomQuery::Primitive(p) => Some(eval_atom_primitive(p, idx, ctx)),
+        AtomQuery::And(a, b) => match (
+            eval_atom_query_candidate(a, idx, ctx),
+            eval_atom_query_candidate(b, idx, ctx),
+        ) {
+            (Some(false), _) | (_, Some(false)) => Some(false),
+            (Some(true), Some(true)) => Some(true),
+            _ => None,
+        },
+        AtomQuery::Or(a, b) => match (
+            eval_atom_query_candidate(a, idx, ctx),
+            eval_atom_query_candidate(b, idx, ctx),
+        ) {
+            (Some(true), _) | (_, Some(true)) => Some(true),
+            (Some(false), Some(false)) => Some(false),
+            _ => None,
+        },
+        AtomQuery::Not(a) => eval_atom_query_candidate(a, idx, ctx).map(|value| !value),
     }
 }
 
@@ -1271,28 +1305,183 @@ fn eval_hybridization(idx: AtomIdx, ctx: &EvalCtx<'_>, h: u8) -> bool {
     crate::hybridization::hybridization_from(ctx.mol, lazy, idx) == Some(h)
 }
 
-/// Chirality primitive: ignored when use_chirality is false.
+/// Cheap chirality pre-filter used while the mapping is incomplete.
 ///
-/// **Limitation**: this is a raw flag comparison. `@`/`@@` in SMILES/SMARTS
-/// encodes chirality *relative to the SMILES atom write order*, not as an
-/// absolute spatial property. Two SMILES strings that represent the same
-/// absolute configuration but are written with neighbors in a different order
-/// will store opposite `Chirality` flags, making the raw comparison incorrect.
-///
-/// For SMARTS queries this is acceptable when the query and target share the same
-/// write-order convention. For SMIRKS reaction templates, use the parity-aware
-/// `smirks_chirality_ok` post-check in `chematic-rxn::transform` instead.
+/// `@`/`@@` is relative to neighbour encounter order, so the exact sense can
+/// only be checked once all query neighbours have been mapped. During search
+/// this therefore requires merely that the target carries a stereo tag;
+/// [`mapped_chirality_compatible`] performs the parity-aware final check.
 fn eval_chirality(idx: AtomIdx, ctx: &EvalCtx<'_>, kind: u8) -> bool {
     if !ctx.config.use_chirality {
         return true;
     }
     use chematic_core::Chirality;
     let c = ctx.mol.atom(idx).chirality;
-    match kind {
-        1 => c == Chirality::CounterClockwise,
-        2 => c == Chirality::Clockwise,
-        _ => c != Chirality::None,
+    let _ = kind;
+    c != Chirality::None
+}
+
+/// Re-evaluate an atom query after the complete embedding is known, replacing
+/// the coarse chirality pre-filter with neighbour-order-aware tetrahedral
+/// parity. All non-chirality primitives retain their ordinary meaning.
+fn eval_atom_query_mapped(
+    query: &AtomQuery,
+    query_atom: usize,
+    target_atom: AtomIdx,
+    whole_query: &QueryMolecule,
+    mapping: &[u32],
+    ctx: &EvalCtx<'_>,
+) -> bool {
+    match query {
+        AtomQuery::Primitive(AtomPrimitive::Chirality(kind)) => {
+            mapped_chirality_primitive_with_map(
+                *kind,
+                query_atom,
+                target_atom,
+                whole_query,
+                mapping,
+                ctx.mol,
+                ctx.config.use_chirality,
+            )
+        }
+        AtomQuery::Primitive(other) => eval_atom_primitive(other, target_atom, ctx),
+        AtomQuery::And(a, b) => {
+            eval_atom_query_mapped(a, query_atom, target_atom, whole_query, mapping, ctx)
+                && eval_atom_query_mapped(b, query_atom, target_atom, whole_query, mapping, ctx)
+        }
+        AtomQuery::Or(a, b) => {
+            eval_atom_query_mapped(a, query_atom, target_atom, whole_query, mapping, ctx)
+                || eval_atom_query_mapped(b, query_atom, target_atom, whole_query, mapping, ctx)
+        }
+        AtomQuery::Not(inner) => {
+            !eval_atom_query_mapped(inner, query_atom, target_atom, whole_query, mapping, ctx)
+        }
     }
+}
+
+fn mapped_chirality_compatible(query: &QueryMolecule, mapping: &[u32], ctx: &EvalCtx<'_>) -> bool {
+    if !ctx.config.use_chirality {
+        return true;
+    }
+    query.atoms.iter().enumerate().all(|(q, atom)| {
+        mapping
+            .get(q)
+            .copied()
+            .filter(|&target| target != UNMAPPED)
+            .is_some_and(|target| {
+                eval_atom_query_mapped(&atom.query, q, AtomIdx(target), query, mapping, ctx)
+            })
+    })
+}
+
+pub(crate) fn mapped_chirality_primitive_with_map(
+    kind: u8,
+    query_atom: usize,
+    target_atom: AtomIdx,
+    query: &QueryMolecule,
+    mapping: &[u32],
+    mol: &Molecule,
+    use_chirality: bool,
+) -> bool {
+    use chematic_core::Chirality;
+
+    if !use_chirality {
+        return true;
+    }
+    let target_chirality = mol.atom(target_atom).chirality;
+    if target_chirality == Chirality::None {
+        return false;
+    }
+    if !matches!(kind, 1 | 2) {
+        return true;
+    }
+
+    let raw_matches = matches!(
+        (kind, target_chirality),
+        (1, Chirality::CounterClockwise) | (2, Chirality::Clockwise)
+    );
+
+    let Some(target_order) = mol.stereo_neighbor_order(target_atom) else {
+        return raw_matches;
+    };
+
+    let mut mapped_order: Vec<u32> = query.adj[query_atom]
+        .iter()
+        .filter_map(|&(_, neighbor)| {
+            mapping
+                .get(neighbor)
+                .copied()
+                .filter(|&target| target != UNMAPPED)
+        })
+        .collect();
+    if mapped_order.len() != query.adj[query_atom].len() {
+        return raw_matches;
+    }
+
+    // Bracket `H` occupies the slot immediately after the atom from which the
+    // centre was reached (or first for a root atom), matching the SMILES
+    // parser's `stereo_neighbor_order` contract. Only add the virtual slot
+    // when the target has the corresponding implicit-H entry.
+    if target_order.contains(&STEREO_H_SENTINEL)
+        && target_order.len() == mapped_order.len() + 1
+        && query_has_positive_h_count(&query.atoms[query_atom].query)
+    {
+        let from_position = usize::from(
+            query.adj[query_atom]
+                .first()
+                .is_some_and(|&(_, neighbor)| neighbor < query_atom),
+        );
+        mapped_order.insert(from_position, STEREO_H_SENTINEL);
+    }
+
+    let Some(even) = permutation_parity(&mapped_order, target_order) else {
+        // A partial chiral query such as `[C@H]` does not provide enough
+        // neighbour identity to reconstruct absolute parity. Preserve the
+        // historical raw-tag behavior for that explicitly bounded case.
+        return raw_matches;
+    };
+    let query_chirality = if kind == 1 {
+        Chirality::CounterClockwise
+    } else {
+        Chirality::Clockwise
+    };
+    (query_chirality == target_chirality) == even
+}
+
+fn query_has_positive_h_count(query: &AtomQuery) -> bool {
+    match query {
+        AtomQuery::Primitive(AtomPrimitive::HCount(count)) => *count > 0,
+        AtomQuery::And(a, b) => query_has_positive_h_count(a) || query_has_positive_h_count(b),
+        // An H constraint hidden behind OR/NOT does not establish a unique
+        // virtual neighbour for a tetrahedral parity check.
+        AtomQuery::Primitive(_) | AtomQuery::Or(_, _) | AtomQuery::Not(_) => false,
+    }
+}
+
+/// `Some(true)` for an even permutation, `Some(false)` for an odd one.
+fn permutation_parity(from: &[u32], to: &[u32]) -> Option<bool> {
+    if from.len() != to.len() {
+        return None;
+    }
+    let mut positions = Vec::with_capacity(to.len());
+    for value in to {
+        let position = from.iter().position(|candidate| candidate == value)?;
+        if positions.contains(&position) {
+            return None;
+        }
+        positions.push(position);
+    }
+    let inversions = positions
+        .iter()
+        .enumerate()
+        .map(|(i, value)| {
+            positions[(i + 1)..]
+                .iter()
+                .filter(|next| value > next)
+                .count()
+        })
+        .sum::<usize>();
+    Some(inversions.is_multiple_of(2))
 }
 
 // ---------------------------------------------------------------------------
@@ -1342,7 +1531,7 @@ fn has_match_recursive(query: &QueryMolecule, ctx: &EvalCtx<'_>, st: &mut MapSta
 
     // Base case: all query atoms mapped.
     if st.count == query.atoms.len() {
-        return true;
+        return mapped_chirality_compatible(query, &st.q2t, ctx);
     }
 
     // Pick the most constrained unmapped query atom.

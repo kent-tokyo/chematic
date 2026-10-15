@@ -1,0 +1,22 @@
+@<TRIPOS>MOLECULE
+ammonium
+5 4
+SMALL
+GASTEIGER
+
+@<TRIPOS>ATOM
+  1 N   0.0000  0.0000  0.0000 N.4
+  2 H   1.0268  0.0000  0.0000 H
+  3 H  -0.3422  0.0000 -0.9681 H
+  4 H  -0.3422  0.8384  0.4840 H
+  5 H  -0.3422 -0.8384  0.4840 H
+@<TRIPOS>BOND
+  1 3 1 1
+  2 1 2 1
+  3 1 5 1
+  4 1 4 1
+
+# RDKit #6716: explicit formal charge, not the partial-charge column.
+@<TRIPOS>UNITY_ATOM_ATTR
+1 1
+charge 1

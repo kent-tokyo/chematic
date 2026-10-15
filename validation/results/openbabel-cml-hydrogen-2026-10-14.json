@@ -1,0 +1,70 @@
+{
+  "schema": "chematic.cml-hydrogen.validation.v1",
+  "date": "2026-10-14",
+  "issue": "https://github.com/openbabel/openbabel/issues/2655",
+  "source_baseline": "ffe682c3",
+  "source_state": "uncommitted source including pre-existing changes",
+  "artifact_lane": "local debug Python extension without native InChI",
+  "extension_sha256": "2fd3f8fc26ce4d1a2aa1b94044cc0500c134756abe57976440582eff7dba85a5",
+  "fixture_sha256": "eb4c2b8520e1d09bc7606409ed6e3a78604ecdb74e0911991b7404429bb1c3cf",
+  "openbabel_version": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+  "rdkit_version": "2026.09.1",
+  "cases": [
+    {
+      "input_total_hydrogen_count": null,
+      "expected_formula": "CH2",
+      "chematic_formula": "CH2",
+      "chematic_smiles": "[C]([H])[H]",
+      "openbabel_input_read": {
+        "smiles": "C",
+        "formula": "CH4"
+      },
+      "openbabel_chematic_output_read": {
+        "smiles": "[CH2]",
+        "formula": "CH2"
+      }
+    },
+    {
+      "input_total_hydrogen_count": 2,
+      "expected_formula": "CH2",
+      "chematic_formula": "CH2",
+      "chematic_smiles": "[C]([H])[H]",
+      "openbabel_input_read": {
+        "smiles": "[CH2]",
+        "formula": "CH2"
+      },
+      "openbabel_chematic_output_read": {
+        "smiles": "[CH2]",
+        "formula": "CH2"
+      }
+    },
+    {
+      "input_total_hydrogen_count": 3,
+      "expected_formula": "CH3",
+      "chematic_formula": "CH3",
+      "chematic_smiles": "[CH]([H])[H]",
+      "openbabel_input_read": {
+        "smiles": "[CH3]",
+        "formula": "CH3"
+      },
+      "openbabel_chematic_output_read": {
+        "smiles": "[CH3]",
+        "formula": "CH3"
+      }
+    },
+    {
+      "input_total_hydrogen_count": 4,
+      "expected_formula": "CH4",
+      "chematic_formula": "CH4",
+      "chematic_smiles": "[H]C[H]",
+      "openbabel_input_read": {
+        "smiles": "C",
+        "formula": "CH4"
+      },
+      "openbabel_chematic_output_read": {
+        "smiles": "C",
+        "formula": "CH4"
+      }
+    }
+  ]
+}

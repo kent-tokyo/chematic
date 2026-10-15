@@ -168,7 +168,10 @@ fn section_lines<'a>(lines: &'a [(usize, &'a str)], name: &str) -> Vec<(usize, &
             continue;
         }
         if in_section {
-            if trimmed.starts_with("@<TRIPOS>") {
+            if trimmed
+                .get(..9)
+                .is_some_and(|prefix| prefix.eq_ignore_ascii_case("@<TRIPOS>"))
+            {
                 break;
             }
             // Skip blank lines and comment lines (starting with #).
@@ -185,7 +188,7 @@ fn strip_atom_type(sym: &str) -> &str {
     sym.split('.').next().unwrap_or(sym)
 }
 
-fn parse_unity_formal_charges(
+pub(crate) fn parse_unity_formal_charges(
     lines: &[(usize, &str)],
 ) -> Result<
     (
@@ -194,9 +197,26 @@ fn parse_unity_formal_charges(
     ),
     Mol2Error,
 > {
+    let mut sections = lines
+        .iter()
+        .filter(|(_, text)| text.trim().eq_ignore_ascii_case("@<TRIPOS>UNITY_ATOM_ATTR"));
+    if let Some((line, _)) = sections.nth(1) {
+        return Err(Mol2Error::InvalidAtomLine {
+            line: *line,
+            detail: "multiple UNITY_ATOM_ATTR sections are unsupported".into(),
+        });
+    }
     let rows = section_lines(lines, "UNITY_ATOM_ATTR");
+    if rows.is_empty() {
+        return Ok((std::collections::HashMap::new(), Vec::new()));
+    }
+    let atom_ids = section_lines(lines, "ATOM")
+        .iter()
+        .filter_map(|(_, text)| text.split_whitespace().next()?.parse::<u32>().ok())
+        .collect::<std::collections::HashSet<_>>();
     let mut charges = std::collections::HashMap::new();
     let mut groups = Vec::new();
+    let mut seen_ids = std::collections::HashSet::new();
     let mut cursor = 0usize;
     while cursor < rows.len() {
         let (line_no, header) = rows[cursor];
@@ -219,6 +239,12 @@ fn parse_unity_formal_charges(
                 line: line_no,
                 detail: format!("cannot parse UNITY attribute count from '{}'", fields[1]),
             })?;
+        if !seen_ids.insert(atom_id) {
+            return Err(Mol2Error::InvalidAtomLine {
+                line: line_no,
+                detail: format!("duplicate UNITY attribute group for atom_id {atom_id}"),
+            });
+        }
         cursor += 1;
         if cursor.saturating_add(count) > rows.len() {
             return Err(Mol2Error::InvalidAtomLine {
@@ -230,16 +256,29 @@ fn parse_unity_formal_charges(
         for &(attribute_line, attribute) in &rows[cursor..cursor + count] {
             let mut parts = attribute.split_whitespace();
             let Some(name) = parts.next() else { continue };
-            let Some(value) = parts.next() else { continue };
+            let value = attribute.trim().get(name.len()..).unwrap_or("").trim();
             attributes.push((name.to_string(), value.to_string()));
             if name.eq_ignore_ascii_case("charge") {
+                if atom_id == 0 || !atom_ids.contains(&atom_id) {
+                    return Err(Mol2Error::InvalidAtomLine {
+                        line: attribute_line,
+                        detail: format!(
+                            "UNITY charge atom_id {atom_id} does not reference an existing atom"
+                        ),
+                    });
+                }
                 let charge = value
                     .parse::<i8>()
                     .map_err(|_| Mol2Error::InvalidAtomLine {
                         line: attribute_line,
                         detail: format!("cannot parse formal charge from '{value}'"),
                     })?;
-                charges.insert(atom_id, charge);
+                if charges.insert(atom_id, charge).is_some() {
+                    return Err(Mol2Error::InvalidAtomLine {
+                        line: attribute_line,
+                        detail: format!("duplicate formal charge for atom_id {atom_id}"),
+                    });
+                }
             }
         }
         groups.push(Mol2UnityAtomAttributes {
@@ -450,7 +489,10 @@ fn parse_mol2_atom(
         line: number,
     })?;
     let mut atom = Atom::new(element);
-    atom.charge = formal_charges.get(&atom_id).copied().unwrap_or(0);
+    atom.charge = formal_charges
+        .get(&atom_id)
+        .copied()
+        .unwrap_or_else(|| i8::from(fields[5] == "N.4"));
     atom.aromatic = fields[5]
         .split_once('.')
         .is_some_and(|(_, suffix)| suffix.eq_ignore_ascii_case("ar"));

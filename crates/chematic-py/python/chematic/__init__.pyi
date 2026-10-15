@@ -2890,6 +2890,15 @@ def is_valid_smarts(smarts: str) -> bool:
     """
     ...
 
+def enrichment_factors(ranked_actives: list[bool], fractions: list[float]) -> list[float]:
+    """Return EF for ceil(N*f) entries of an already ranked library, best first.
+
+    Preserves fraction order and duplicates. Fractions must be finite in
+    (0, 1]; f=1 returns 1. Raises ValueError for empty inputs, invalid fractions
+    or no actives. Does not sort scores or resolve score ties.
+    """
+    ...
+
 def tanimoto(a: bytes, b: bytes) -> float:
     """Tanimoto similarity between two fingerprint byte arrays.
 
@@ -3019,6 +3028,24 @@ def to_extxyz(
 
     Raises:
         ValueError: if `coords`' length doesn't match `mol`'s atom count.
+    """
+    ...
+
+def parse_cif(cif_str: str) -> dict:
+    """Read atomic positions as {mol, coords, cell}; no symmetry expansion."""
+    ...
+
+def write_cif_checked(
+    mol: Mol,
+    coords: list[list[float]],
+    cell: Optional[dict[str, float]] = None,
+) -> str:
+    """Write minimal P1 CIF atomic positions from finite Cartesian Å coordinates.
+
+    Requires one coordinate per atom. A cell requires all six keys a, b, c,
+    alpha, beta, gamma. Raises ValueError for invalid or numerically singular
+    cells, non-finite values, coordinate count mismatch or conversion overflow.
+    Bonds, occupancies, symmetry operations and metadata are not serialized.
     """
     ...
 

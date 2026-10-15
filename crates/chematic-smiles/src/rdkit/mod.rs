@@ -76,7 +76,7 @@ pub use tautomer::RdkitTautomerStatus;
 /// Why [`rdkit_canonical_smiles`] produced no string.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RdkitSmilesError {
-    /// The molecule uses a feature the RDKit port does not model.
+    /// The molecule uses a feature or size outside the RDKit port's supported scope.
     Unsupported(String),
     /// RDKit's sanitization would reject the molecule (valence or
     /// kekulization failure), so `Chem.MolFromSmiles` returns `None`.
@@ -397,25 +397,34 @@ pub fn rdkit_num_atoms(mol: &Molecule) -> Result<usize, RdkitSmilesError> {
 /// Floyd-Warshall, `1e8` between fragments; `use_bo` weights bonds by
 /// `1 / bond order` (aromatic `2/3`), `use_atom_wts` sets the diagonal to
 /// `6 / atomic number`. One row per atom in RDKit's atom order.
+///
+/// Inputs and prepared models are limited to 1024 atoms (1,048,576 entries).
+/// The input check precedes RDKit-model preparation, including H removal.
+/// Size/overflow/allocation errors return [`RdkitSmilesError::Unsupported`]
+/// rather than attempting an unbounded dense allocation (RDKit #9647).
 pub fn rdkit_distance_matrix(
     mol: &Molecule,
     use_bo: bool,
     use_atom_wts: bool,
 ) -> Result<Vec<Vec<f64>>, RdkitSmilesError> {
+    matrices::checked_len(mol.atom_count())?;
     let m = rdkit_mol_for_writing(mol)?;
     let n = m.atoms.len();
-    let d = matrices::distance_mat(&m, use_bo, use_atom_wts);
-    Ok(d.chunks(n.max(1)).map(<[f64]>::to_vec).take(n).collect())
+    let d = matrices::distance_mat(&m, use_bo, use_atom_wts)?;
+    matrices::into_rows(d, n)
 }
 
 /// `Chem.Get3DDistanceMatrix(m, useAtomWts=...)` for RDKit's molecule of
 /// `mol` (as in [`rdkit_distance_matrix`]) with the conformer `coords`
 /// (one `[x, y, z]` per atom in RDKit's atom order).
+/// The same 1024-input/prepared-atom cap and fallible-allocation policy as
+/// [`rdkit_distance_matrix`] apply, before model preparation.
 pub fn rdkit_distance_matrix_3d(
     mol: &Molecule,
     coords: &[[f64; 3]],
     use_atom_wts: bool,
 ) -> Result<Vec<Vec<f64>>, RdkitSmilesError> {
+    matrices::checked_len(mol.atom_count())?;
     let m = rdkit_mol_for_writing(mol)?;
     let n = m.atoms.len();
     if coords.len() != n {
@@ -424,8 +433,8 @@ pub fn rdkit_distance_matrix_3d(
             coords.len()
         )));
     }
-    let d = matrices::distance_mat_3d(&m, coords, use_atom_wts);
-    Ok(d.chunks(n.max(1)).map(<[f64]>::to_vec).take(n).collect())
+    let d = matrices::distance_mat_3d(&m, coords, use_atom_wts)?;
+    matrices::into_rows(d, n)
 }
 
 /// One problem `MolOps::detectChemistryProblems` reports (see
@@ -1385,6 +1394,22 @@ thread_local! {
     static IN_RDKIT_MODEL: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
 }
 
+/// Memoize a scalar RDKit-model calculation on its original molecule.
+/// Nested model calls deliberately bypass this cache: they run on the
+/// supplied graph, while an outer call may first sanitize or remove H.
+#[doc(hidden)]
+#[inline]
+pub fn with_rdkit_model_scalar(
+    mol: &Molecule,
+    slot: chematic_core::derived_cache::DerivedScalar,
+    f: impl FnOnce(&Molecule) -> f64,
+) -> f64 {
+    if IN_RDKIT_MODEL.with(|c| c.get()) {
+        return f(mol);
+    }
+    mol.derived_scalar(slot, || with_rdkit_model_molecule_impl(mol, f, true))
+}
+
 /// Runs `f` on RDKit's own molecule for `mol` (`Chem.MolFromSmiles(s)`:
 /// hydrogen graph atoms removed, RDKit's aromaticity, bond orders, charges
 /// and per-atom hydrogen counts, as [`rdkit_hydrogen_suppressed`] builds it)
@@ -1393,6 +1418,14 @@ thread_local! {
 /// atoms), and on `mol` itself otherwise. Nested calls run on the molecule
 /// they are given.
 pub fn with_rdkit_model_molecule<R>(mol: &Molecule, f: impl FnOnce(&Molecule) -> R) -> R {
+    with_rdkit_model_molecule_impl(mol, f, false)
+}
+
+fn with_rdkit_model_molecule_impl<R>(
+    mol: &Molecule,
+    f: impl FnOnce(&Molecule) -> R,
+    reuse_aromatic_view: bool,
+) -> R {
     if IN_RDKIT_MODEL.with(|c| c.get()) {
         return f(mol);
     }
@@ -1401,9 +1434,7 @@ pub fn with_rdkit_model_molecule<R>(mol: &Molecule, f: impl FnOnce(&Molecule) ->
             .atoms()
             .any(|(_, a)| !a.wildcard && a.element == chematic_core::Element::H);
     let model = if needed {
-        rdkit_mol_from_smiles(mol)
-            .ok()
-            .and_then(|(m, _)| pdb_read::to_chematic(&m, true).ok())
+        rdkit_model_molecule(mol, reuse_aromatic_view).ok()
     } else {
         None
     };
@@ -1532,6 +1563,37 @@ pub fn rdkit_model_correct_view(mol: &Molecule, view: &Molecule) -> Option<Molec
     Some(out)
 }
 
+/// Descriptor/fingerprint callbacks consume a core molecule, which cannot
+/// carry CIP ranks or the port's potential-stereocenter flags. Keep stereo
+/// cleanup for specified tags/directions, but skip flag-only ranking when
+/// there is no specified stereo. Sanitization and hydrogen handling are the
+/// same as in `rdkit_mol_from_smiles`.
+fn rdkit_model_molecule(
+    mol: &Molecule,
+    reuse_aromatic_view: bool,
+) -> Result<Molecule, RdkitSmilesError> {
+    let mut m = parse::from_chematic(mol)?;
+    if has_added_hydrogens(mol) {
+        sanitize::sanitize_keeping_hs(&mut m)?;
+    } else {
+        sanitize::remove_hs_and_sanitize(&mut m)?;
+    }
+    stereo::legacy_stereo_perception_unflagged(&mut m);
+    let view = pdb_read::to_chematic(&m, true)?;
+    if reuse_aromatic_view && !chematic_perception::rdkit_parity_view_is_identity(&view) {
+        // This graph has just been sanitized by the same RDKit model used
+        // by the parity hook. Descriptor callers may reuse it instead of
+        // perceiving and sanitizing it again. Keep the usual descriptor
+        // normalization (including aromatic ring triples) in its consumer.
+        // Identity views need no copy; generic callbacks need no such cache.
+        view.seed_derived(
+            chematic_core::DerivedSlot::RdkitParityAromatic,
+            std::sync::Arc::new(Ok::<_, chematic_perception::AromaticityError>(view.clone())),
+        );
+    }
+    Ok(view)
+}
+
 fn rdkit_mol_from_smiles(mol: &Molecule) -> Result<(mol::Mol, Vec<u32>), RdkitSmilesError> {
     let mut m = parse::from_chematic(mol)?;
     if has_added_hydrogens(mol) {
@@ -1563,3 +1625,6 @@ mod depict_contract_tests;
 
 #[cfg(test)]
 mod pdb_contract_tests;
+
+#[cfg(test)]
+mod model_view_contract_tests;

@@ -1,0 +1,297 @@
+{
+  "schema": "chematic.rdkit-matrix-limits.validation.v1",
+  "date": "2026-10-14",
+  "issue": "https://github.com/rdkit/rdkit/issues/9647",
+  "source_baseline": "ffe682c3",
+  "source_state": "uncommitted source including pre-existing changes",
+  "artifact_lane": "local debug Python extension without native InChI",
+  "extension_sha256": "4dd9334453d0896d4aec6441f8afbb6a4983a9425f3450032c6d9e71d92f841e",
+  "rdkit_version": "2026.09.1",
+  "input_and_prepared_atom_cap": 1024,
+  "entries_cap": 1048576,
+  "small_matrix_comparisons": [
+    {
+      "smiles": "C=CO",
+      "add_hydrogens": false,
+      "kind": "topological",
+      "use_bo": false,
+      "use_atom_wts": false,
+      "atoms": 3,
+      "max_absolute_error": 0.0
+    },
+    {
+      "smiles": "C=CO",
+      "add_hydrogens": false,
+      "kind": "topological",
+      "use_bo": false,
+      "use_atom_wts": true,
+      "atoms": 3,
+      "max_absolute_error": 0.0
+    },
+    {
+      "smiles": "C=CO",
+      "add_hydrogens": false,
+      "kind": "topological",
+      "use_bo": true,
+      "use_atom_wts": false,
+      "atoms": 3,
+      "max_absolute_error": 0.0
+    },
+    {
+      "smiles": "C=CO",
+      "add_hydrogens": false,
+      "kind": "topological",
+      "use_bo": true,
+      "use_atom_wts": true,
+      "atoms": 3,
+      "max_absolute_error": 0.0
+    },
+    {
+      "smiles": "C=CO",
+      "add_hydrogens": false,
+      "kind": "cartesian",
+      "use_atom_wts": false,
+      "atoms": 3,
+      "max_absolute_error": 0.0
+    },
+    {
+      "smiles": "C=CO",
+      "add_hydrogens": false,
+      "kind": "cartesian",
+      "use_atom_wts": true,
+      "atoms": 3,
+      "max_absolute_error": 0.0
+    },
+    {
+      "smiles": "C.O",
+      "add_hydrogens": false,
+      "kind": "topological",
+      "use_bo": false,
+      "use_atom_wts": false,
+      "atoms": 2,
+      "max_absolute_error": 0.0
+    },
+    {
+      "smiles": "C.O",
+      "add_hydrogens": false,
+      "kind": "topological",
+      "use_bo": false,
+      "use_atom_wts": true,
+      "atoms": 2,
+      "max_absolute_error": 0.0
+    },
+    {
+      "smiles": "C.O",
+      "add_hydrogens": false,
+      "kind": "topological",
+      "use_bo": true,
+      "use_atom_wts": false,
+      "atoms": 2,
+      "max_absolute_error": 0.0
+    },
+    {
+      "smiles": "C.O",
+      "add_hydrogens": false,
+      "kind": "topological",
+      "use_bo": true,
+      "use_atom_wts": true,
+      "atoms": 2,
+      "max_absolute_error": 0.0
+    },
+    {
+      "smiles": "C.O",
+      "add_hydrogens": false,
+      "kind": "cartesian",
+      "use_atom_wts": false,
+      "atoms": 2,
+      "max_absolute_error": 0.0
+    },
+    {
+      "smiles": "C.O",
+      "add_hydrogens": false,
+      "kind": "cartesian",
+      "use_atom_wts": true,
+      "atoms": 2,
+      "max_absolute_error": 0.0
+    },
+    {
+      "smiles": "c1ccccc1",
+      "add_hydrogens": false,
+      "kind": "topological",
+      "use_bo": false,
+      "use_atom_wts": false,
+      "atoms": 6,
+      "max_absolute_error": 0.0
+    },
+    {
+      "smiles": "c1ccccc1",
+      "add_hydrogens": false,
+      "kind": "topological",
+      "use_bo": false,
+      "use_atom_wts": true,
+      "atoms": 6,
+      "max_absolute_error": 0.0
+    },
+    {
+      "smiles": "c1ccccc1",
+      "add_hydrogens": false,
+      "kind": "topological",
+      "use_bo": true,
+      "use_atom_wts": false,
+      "atoms": 6,
+      "max_absolute_error": 0.0
+    },
+    {
+      "smiles": "c1ccccc1",
+      "add_hydrogens": false,
+      "kind": "topological",
+      "use_bo": true,
+      "use_atom_wts": true,
+      "atoms": 6,
+      "max_absolute_error": 0.0
+    },
+    {
+      "smiles": "c1ccccc1",
+      "add_hydrogens": false,
+      "kind": "cartesian",
+      "use_atom_wts": false,
+      "atoms": 6,
+      "max_absolute_error": 0.0
+    },
+    {
+      "smiles": "c1ccccc1",
+      "add_hydrogens": false,
+      "kind": "cartesian",
+      "use_atom_wts": true,
+      "atoms": 6,
+      "max_absolute_error": 0.0
+    },
+    {
+      "smiles": "[H]C([H])([H])[H]",
+      "add_hydrogens": false,
+      "kind": "topological",
+      "use_bo": false,
+      "use_atom_wts": false,
+      "atoms": 1,
+      "max_absolute_error": 0.0
+    },
+    {
+      "smiles": "[H]C([H])([H])[H]",
+      "add_hydrogens": false,
+      "kind": "topological",
+      "use_bo": false,
+      "use_atom_wts": true,
+      "atoms": 1,
+      "max_absolute_error": 0.0
+    },
+    {
+      "smiles": "[H]C([H])([H])[H]",
+      "add_hydrogens": false,
+      "kind": "topological",
+      "use_bo": true,
+      "use_atom_wts": false,
+      "atoms": 1,
+      "max_absolute_error": 0.0
+    },
+    {
+      "smiles": "[H]C([H])([H])[H]",
+      "add_hydrogens": false,
+      "kind": "topological",
+      "use_bo": true,
+      "use_atom_wts": true,
+      "atoms": 1,
+      "max_absolute_error": 0.0
+    },
+    {
+      "smiles": "[H]C([H])([H])[H]",
+      "add_hydrogens": false,
+      "kind": "cartesian",
+      "use_atom_wts": false,
+      "atoms": 1,
+      "max_absolute_error": 0.0
+    },
+    {
+      "smiles": "[H]C([H])([H])[H]",
+      "add_hydrogens": false,
+      "kind": "cartesian",
+      "use_atom_wts": true,
+      "atoms": 1,
+      "max_absolute_error": 0.0
+    },
+    {
+      "smiles": "CCO",
+      "add_hydrogens": true,
+      "kind": "topological",
+      "use_bo": false,
+      "use_atom_wts": false,
+      "atoms": 9,
+      "max_absolute_error": 0.0
+    },
+    {
+      "smiles": "CCO",
+      "add_hydrogens": true,
+      "kind": "topological",
+      "use_bo": false,
+      "use_atom_wts": true,
+      "atoms": 9,
+      "max_absolute_error": 0.0
+    },
+    {
+      "smiles": "CCO",
+      "add_hydrogens": true,
+      "kind": "topological",
+      "use_bo": true,
+      "use_atom_wts": false,
+      "atoms": 9,
+      "max_absolute_error": 0.0
+    },
+    {
+      "smiles": "CCO",
+      "add_hydrogens": true,
+      "kind": "topological",
+      "use_bo": true,
+      "use_atom_wts": true,
+      "atoms": 9,
+      "max_absolute_error": 0.0
+    },
+    {
+      "smiles": "CCO",
+      "add_hydrogens": true,
+      "kind": "cartesian",
+      "use_atom_wts": false,
+      "atoms": 9,
+      "max_absolute_error": 0.0
+    },
+    {
+      "smiles": "CCO",
+      "add_hydrogens": true,
+      "kind": "cartesian",
+      "use_atom_wts": true,
+      "atoms": 9,
+      "max_absolute_error": 0.0
+    }
+  ],
+  "oversize_guards": [
+    {
+      "native_atoms": 1025,
+      "api": "rdkit_distance_matrix",
+      "error": "RDKit-compatible SMILES: unsupported input: distance matrix resource limit: 1025 atoms require 1050625 entries; maximum is 1048576 entries (1024 atoms)"
+    },
+    {
+      "native_atoms": 1025,
+      "api": "rdkit_distance_matrix_3d",
+      "error": "RDKit-compatible SMILES: unsupported input: distance matrix resource limit: 1025 atoms require 1050625 entries; maximum is 1048576 entries (1024 atoms)"
+    },
+    {
+      "native_atoms": 65536,
+      "api": "rdkit_distance_matrix",
+      "error": "RDKit-compatible SMILES: unsupported input: distance matrix resource limit: 65536 atoms require 4294967296 entries; maximum is 1048576 entries (1024 atoms)"
+    },
+    {
+      "native_atoms": 65536,
+      "api": "rdkit_distance_matrix_3d",
+      "error": "RDKit-compatible SMILES: unsupported input: distance matrix resource limit: 65536 atoms require 4294967296 entries; maximum is 1048576 entries (1024 atoms)"
+    }
+  ],
+  "rdkit_large_crash_reproducer_executed": false
+}

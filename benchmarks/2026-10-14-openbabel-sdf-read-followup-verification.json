@@ -1,0 +1,360 @@
+{
+  "schema": "openbabel-sdf-read-followup-verification/v1",
+  "artifacts": {
+    "slice0_baseline_rewrite": {
+      "path": "validation/results/openbabel-sdf-read-followup-slice0-baseline-rewrite-2026-10-14.sdf.gz",
+      "sha256": "c3a0479d492f48d4ba27acf2a4c0585ea19170e845be38d3bcc4fcceb0717172",
+      "sha256_gzip": "0cece5c249b901e2a06ea94e6bbb6116efd9c5554c4ada0ec07e2ec54a8b1c94",
+      "bytes": 2323327
+    },
+    "slice0_baseline_snapshot": {
+      "path": "validation/results/openbabel-sdf-read-followup-slice0-baseline-snapshot-2026-10-14.json.gz",
+      "sha256": "3a007d14136703bdd1d23198af9e91ea48a7099df72419e8b3daafad3d9e9f7b",
+      "sha256_gzip": "926314c3cc1e7098326aeb395468215dd22a45c59b06317efa9c1e42589421ce",
+      "bytes": 8834832
+    },
+    "slice0_candidate_rewrite": {
+      "path": "validation/results/openbabel-sdf-read-followup-slice0-candidate-rewrite-2026-10-14.sdf.gz",
+      "sha256": "c3a0479d492f48d4ba27acf2a4c0585ea19170e845be38d3bcc4fcceb0717172",
+      "sha256_gzip": "0cece5c249b901e2a06ea94e6bbb6116efd9c5554c4ada0ec07e2ec54a8b1c94",
+      "bytes": 2323327
+    },
+    "slice0_candidate_snapshot": {
+      "path": "validation/results/openbabel-sdf-read-followup-slice0-candidate-snapshot-2026-10-14.json.gz",
+      "sha256": "3a007d14136703bdd1d23198af9e91ea48a7099df72419e8b3daafad3d9e9f7b",
+      "sha256_gzip": "926314c3cc1e7098326aeb395468215dd22a45c59b06317efa9c1e42589421ce",
+      "bytes": 8834832
+    },
+    "slice0_openbabel_rewrite": {
+      "path": "validation/results/openbabel-sdf-read-followup-slice0-openbabel-rewrite-2026-10-14.sdf.gz",
+      "sha256": "855663053196fe98a4257fd50db60a0ae692284170e73764542c74df181901b9",
+      "sha256_gzip": "f7f49b9dd249b22e715de877e51cc116dcac6760c1c202ec75103bd137d738ec",
+      "bytes": 2685614
+    },
+    "slice0_openbabel_smiles": {
+      "path": "validation/results/openbabel-sdf-read-followup-slice0-openbabel-smiles-2026-10-14.smi.gz",
+      "sha256": "ab4f13cc8351cbaaf66bc6c77d5f04f46da4229e539a4603c74ee1066808e79b",
+      "sha256_gzip": "66c2685d5987bbc249f6da51563b1ac37aa3cda73b243fcaa60fc13caa04545f",
+      "bytes": 68579
+    },
+    "slice5000_baseline_rewrite": {
+      "path": "validation/results/openbabel-sdf-read-followup-slice5000-baseline-rewrite-2026-10-14.sdf.gz",
+      "sha256": "4995f90edbde0fa249cc96ec12e5dc7502c4479ab8c267c4ca3700952cc08d0f",
+      "sha256_gzip": "4ab17eddc3d5aeadfdc8f1e249d25262887b262acd207a397d6f628042845ad0",
+      "bytes": 1330167
+    },
+    "slice5000_baseline_snapshot": {
+      "path": "validation/results/openbabel-sdf-read-followup-slice5000-baseline-snapshot-2026-10-14.json.gz",
+      "sha256": "4e326d586393d02463e09a5a657c085deeb4191d34a72ce33efe0c7fb31c7dbe",
+      "sha256_gzip": "146758923ace06e26b9c15705683ed484152dfff7a30af09f037264eb1917600",
+      "bytes": 4945353
+    },
+    "slice5000_candidate_rewrite": {
+      "path": "validation/results/openbabel-sdf-read-followup-slice5000-candidate-rewrite-2026-10-14.sdf.gz",
+      "sha256": "4995f90edbde0fa249cc96ec12e5dc7502c4479ab8c267c4ca3700952cc08d0f",
+      "sha256_gzip": "4ab17eddc3d5aeadfdc8f1e249d25262887b262acd207a397d6f628042845ad0",
+      "bytes": 1330167
+    },
+    "slice5000_candidate_snapshot": {
+      "path": "validation/results/openbabel-sdf-read-followup-slice5000-candidate-snapshot-2026-10-14.json.gz",
+      "sha256": "4e326d586393d02463e09a5a657c085deeb4191d34a72ce33efe0c7fb31c7dbe",
+      "sha256_gzip": "146758923ace06e26b9c15705683ed484152dfff7a30af09f037264eb1917600",
+      "bytes": 4945353
+    },
+    "slice5000_openbabel_rewrite": {
+      "path": "validation/results/openbabel-sdf-read-followup-slice5000-openbabel-rewrite-2026-10-14.sdf.gz",
+      "sha256": "985d76a303a55d20d66c0b6b370a2755a91fb49b10bef776fc48e29900d8a033",
+      "sha256_gzip": "2c6b211c7540e18708290742dee1ff110826068188ae460a2c2b24e2ae305a2a",
+      "bytes": 1532226
+    },
+    "slice5000_openbabel_smiles": {
+      "path": "validation/results/openbabel-sdf-read-followup-slice5000-openbabel-smiles-2026-10-14.smi.gz",
+      "sha256": "9e4cd19145a9ade61616c390117fcf74699384f73af2f801cfa594247bec156b",
+      "sha256_gzip": "2666233817a8d543e1d75e8bf43213a00deee47f483c6d7e9911b6cb83189365",
+      "bytes": 42422
+    },
+    "build": {
+      "path": "validation/results/openbabel-sdf-read-followup-build-2026-10-14.txt.gz",
+      "sha256": "ec26d7053473b4c2ad78e9e1e260068d2902a937cef46c969b71ed15e9837b04",
+      "sha256_gzip": "eee9192d2db28e5a79e998eb2ab8af54d03095d91545bac4cf2e322cb28b3683",
+      "bytes": 1403
+    },
+    "baseline-build": {
+      "path": "validation/results/openbabel-sdf-read-followup-baseline-build-2026-10-14.txt.gz",
+      "sha256": "c481c9f18e595d0aa969cc862466e71802c2a9bb421cdcc19ea28a26d3438dee",
+      "sha256_gzip": "65f684265da44abb4e6f473f0ae6e84d5ac48591274f4df1f0fabd27cc765b83",
+      "bytes": 1403
+    },
+    "final-build": {
+      "path": "validation/results/openbabel-sdf-read-followup-final-build-2026-10-14.txt.gz",
+      "sha256": "1fa2eb8956e1d928a1d687c130662cb0d090f33b9327685d2a4a160742fe04b6",
+      "sha256_gzip": "81f398d5f8e93ab8ce9bb61ffad3fbeb3799a52e12b8fc108447140eb8085e22",
+      "bytes": 1403
+    },
+    "contract-tests": {
+      "path": "validation/results/openbabel-sdf-read-followup-contract-tests-2026-10-14.txt.gz",
+      "sha256": "4c9345cb2bb0b975a2f2b8e012787f474999251f2c0d2ca9cd72c7ff2875ec87",
+      "sha256_gzip": "d459ddcb8e9e9ce2952867cf79ec558d5af5bf1ca3695828380ec525cff9bc5e",
+      "bytes": 3107
+    },
+    "native-tests": {
+      "path": "validation/results/openbabel-sdf-read-followup-native-tests-2026-10-14.txt.gz",
+      "sha256": "0eea443866612a8427286ffeed00c06347e4c25764a25ff0fddb40012fe6e65a",
+      "sha256_gzip": "984b0681a9a34cf7d27f0a47f3fbadef7d6564f1ddcac8a92a3ada81aec23b73",
+      "bytes": 95345
+    },
+    "clippy": {
+      "path": "validation/results/openbabel-sdf-read-followup-clippy-2026-10-14.txt.gz",
+      "sha256": "15da78f7af4cacc522ea846c82cf2449479597a9bd05e78b4a18e8da39e1b55a",
+      "sha256_gzip": "5086c4021db70a36a330aaa5900dc0d110f6d884e5c992c30e3360aa7652ff34",
+      "bytes": 2394
+    },
+    "paired21-slice0": {
+      "path": "validation/results/openbabel-sdf-read-followup-paired21-slice0-2026-10-14.txt.gz",
+      "sha256": "eb2f9c55d43117b179364945a1e784178d524a2479ee23131b586f8e64f718f7",
+      "sha256_gzip": "a0537a44fb6616c1a8d77c063f383d087afec892c10ebf4d9cb130106d7cbddc",
+      "bytes": 243
+    },
+    "paired21-slice5000": {
+      "path": "validation/results/openbabel-sdf-read-followup-paired21-slice5000-2026-10-14.txt.gz",
+      "sha256": "eb2f9c55d43117b179364945a1e784178d524a2479ee23131b586f8e64f718f7",
+      "sha256_gzip": "a0537a44fb6616c1a8d77c063f383d087afec892c10ebf4d9cb130106d7cbddc",
+      "bytes": 243
+    },
+    "overlap_probe_corpus": {
+      "path": "validation/results/openbabel-sdf-read-followup-overlap-18-2026-10-14.sdf.gz",
+      "sha256": "1ffc22d1dee27723d7c93c42c81a2efe6cc8f8c09d2e0446aeb20427ff4a59b3",
+      "sha256_gzip": "984a71d6c96fc7ecf7acdbf034693d6258dad62a493756c0b79d25e94b32bbd2",
+      "bytes": 9078
+    },
+    "overlap_baseline_snapshot": {
+      "path": "validation/results/openbabel-sdf-read-followup-overlap-baseline-2026-10-14.json.gz",
+      "sha256": "15bd60b4939ca9eee300581fd2ccbddd177c037740d268ae8424e1406893283d",
+      "sha256_gzip": "4b5531b368007e7a444e4cf74114a5ab648b00ca86267651a3f27c3b5985f8b5",
+      "bytes": 30542
+    },
+    "overlap_candidate_snapshot": {
+      "path": "validation/results/openbabel-sdf-read-followup-overlap-candidate-2026-10-14.json.gz",
+      "sha256": "15bd60b4939ca9eee300581fd2ccbddd177c037740d268ae8424e1406893283d",
+      "sha256_gzip": "4b5531b368007e7a444e4cf74114a5ab648b00ca86267651a3f27c3b5985f8b5",
+      "bytes": 30542
+    }
+  },
+  "patch_reconstruction": {
+    "baseline": {
+      "passed": true,
+      "source_sha256": {
+        "crates/chematic-perception/src/stereo2d_local.rs": "081014edbeab1491118a377af8c7f4968f15c5549582f27bac93727376cc6d97",
+        "crates/chematic-mol/src/mol2000/writer.rs": "6aedddb3f805a28ab7634883b1594362079e1feabff9ebd37abe756f5969ed00",
+        "scripts/build_openbabel_sdf_speed_corpus.py": "82810e051082f1dc4e8ebdb314d21d36803bf5ee8d6355b02a229a6d31d0ca0b",
+        "crates/chematic-perception/tests/ctab_overlap_contract.rs": "0687d352111967afa23d05c96a6023fa1144cd66b9cf70e922b4ddf820ca0cbe",
+        "crates/chematic-mol/tests/sdf_overlapping_flat_neighbors.rs": "7fbef36142581ca1dbcf8f49fc759299bb7ea9f319bee17ecf7dfa5973ee3e03",
+        "crates/chematic-mol/tests/fixtures/sdf_overlapping_flat_neighbors_v2000.mol": "9c8ad2baf4bbd6389fe7f3dd890e1a050800e32b7a1dce0ab5912b873742724b",
+        "crates/chematic-mol/examples/openbabel_sdf_throughput.rs": "152d9c204fcb027e178d742c7a51667f19bedb10521dfd61cc5eaa8740a711b7",
+        "scripts/bench_openbabel_sdf_throughput.py": "7dbf070212854b08fd898ccd3e16de3d4ddf5e82835fd6312d1d61119edd8a47",
+        "scripts/tests/test_bench_openbabel_sdf_throughput.py": "cf58573d891c015b745ae0f74dc5bd76713dba4cf91457167c4b8e14403f5cb7",
+        "tools/openbabel_sdf_throughput.cpp": "d6b07968e9a2bb6a2e11ee079e2925672168f991dac34b235fe459fda0fc102e",
+        "validation/cosmolkit_comparison/bench_corpus.py": "6ad2dc64556b8e88e2b246f3c9dd4953b849a1c266fb8055520598b5e7deeb4c"
+      },
+      "runner_dependency_patch": {
+        "path": "benchmarks/2026-10-14-openbabel-sdf-read-followup-runner-dependency.patch",
+        "sha256": "d0d422e48a269afed551b47b4c87fc42c518a3855c441de7c14c9c90a6b7f7bc"
+      }
+    },
+    "candidate": {
+      "passed": true,
+      "source_sha256": {
+        "crates/chematic-perception/src/stereo2d_local.rs": "ec044aa448dde2255953aba7e0cc4aa8e0704c2ac1d8bfb9061de0d84f7edde3",
+        "crates/chematic-mol/src/mol2000/writer.rs": "6aedddb3f805a28ab7634883b1594362079e1feabff9ebd37abe756f5969ed00",
+        "scripts/build_openbabel_sdf_speed_corpus.py": "82810e051082f1dc4e8ebdb314d21d36803bf5ee8d6355b02a229a6d31d0ca0b",
+        "crates/chematic-perception/tests/ctab_overlap_contract.rs": "0687d352111967afa23d05c96a6023fa1144cd66b9cf70e922b4ddf820ca0cbe",
+        "crates/chematic-mol/tests/sdf_overlapping_flat_neighbors.rs": "7fbef36142581ca1dbcf8f49fc759299bb7ea9f319bee17ecf7dfa5973ee3e03",
+        "crates/chematic-mol/tests/fixtures/sdf_overlapping_flat_neighbors_v2000.mol": "9c8ad2baf4bbd6389fe7f3dd890e1a050800e32b7a1dce0ab5912b873742724b",
+        "crates/chematic-mol/examples/openbabel_sdf_throughput.rs": "152d9c204fcb027e178d742c7a51667f19bedb10521dfd61cc5eaa8740a711b7",
+        "scripts/bench_openbabel_sdf_throughput.py": "7dbf070212854b08fd898ccd3e16de3d4ddf5e82835fd6312d1d61119edd8a47",
+        "scripts/tests/test_bench_openbabel_sdf_throughput.py": "cf58573d891c015b745ae0f74dc5bd76713dba4cf91457167c4b8e14403f5cb7",
+        "tools/openbabel_sdf_throughput.cpp": "d6b07968e9a2bb6a2e11ee079e2925672168f991dac34b235fe459fda0fc102e",
+        "validation/cosmolkit_comparison/bench_corpus.py": "6ad2dc64556b8e88e2b246f3c9dd4953b849a1c266fb8055520598b5e7deeb4c"
+      },
+      "runner_dependency_patch": {
+        "path": "benchmarks/2026-10-14-openbabel-sdf-read-followup-runner-dependency.patch",
+        "sha256": "d0d422e48a269afed551b47b4c87fc42c518a3855c441de7c14c9c90a6b7f7bc"
+      }
+    }
+  },
+  "checks": {
+    "frozen_tracked_build_files": {
+      "checked": 1098,
+      "changed_from_base": [
+        "crates/chematic-mol/src/mol2000/writer.rs",
+        "crates/chematic-perception/src/stereo2d_local.rs"
+      ],
+      "passed": true
+    },
+    "isolated_rust_tests": {
+      "passed": 1225,
+      "failed": 0,
+      "ignored": 2
+    },
+    "isolated_clippy": {
+      "passed": true,
+      "command": "cargo clippy --release --locked -p chematic-perception -p chematic-mol --all-targets -- -D warnings"
+    },
+    "benchmark_gate_tests": {
+      "passed": 5,
+      "failed": 0,
+      "command": "python3 -m unittest scripts.tests.test_bench_openbabel_sdf_throughput"
+    },
+    "rustfmt": {
+      "passed": true,
+      "edition": "2024",
+      "files": [
+        "crates/chematic-perception/src/stereo2d_local.rs",
+        "crates/chematic-perception/tests/ctab_overlap_contract.rs",
+        "crates/chematic-mol/tests/sdf_overlapping_flat_neighbors.rs"
+      ]
+    },
+    "diff_whitespace": {
+      "passed": true
+    },
+    "benchmark_index": {
+      "passed": true,
+      "indexed_records": 381
+    }
+  },
+  "overlap_probe": {
+    "rdkit_version": "2026.09.1",
+    "cases": [
+      {
+        "angle_degrees": 1,
+        "scale": 0.5,
+        "rotation_radians": 0,
+        "rdkit_tagged": false,
+        "rdkit_graph": "FC(Cl)(Br)I"
+      },
+      {
+        "angle_degrees": 1,
+        "scale": 0.5,
+        "rotation_radians": 0.7,
+        "rdkit_tagged": false,
+        "rdkit_graph": "FC(Cl)(Br)I"
+      },
+      {
+        "angle_degrees": 1,
+        "scale": 0.5,
+        "rotation_radians": 2.5,
+        "rdkit_tagged": false,
+        "rdkit_graph": "FC(Cl)(Br)I"
+      },
+      {
+        "angle_degrees": 1,
+        "scale": 1,
+        "rotation_radians": 0,
+        "rdkit_tagged": false,
+        "rdkit_graph": "FC(Cl)(Br)I"
+      },
+      {
+        "angle_degrees": 1,
+        "scale": 1,
+        "rotation_radians": 0.7,
+        "rdkit_tagged": false,
+        "rdkit_graph": "FC(Cl)(Br)I"
+      },
+      {
+        "angle_degrees": 1,
+        "scale": 1,
+        "rotation_radians": 2.5,
+        "rdkit_tagged": false,
+        "rdkit_graph": "FC(Cl)(Br)I"
+      },
+      {
+        "angle_degrees": 1,
+        "scale": 10,
+        "rotation_radians": 0,
+        "rdkit_tagged": false,
+        "rdkit_graph": "FC(Cl)(Br)I"
+      },
+      {
+        "angle_degrees": 1,
+        "scale": 10,
+        "rotation_radians": 0.7,
+        "rdkit_tagged": false,
+        "rdkit_graph": "FC(Cl)(Br)I"
+      },
+      {
+        "angle_degrees": 1,
+        "scale": 10,
+        "rotation_radians": 2.5,
+        "rdkit_tagged": false,
+        "rdkit_graph": "FC(Cl)(Br)I"
+      },
+      {
+        "angle_degrees": 3,
+        "scale": 0.5,
+        "rotation_radians": 0,
+        "rdkit_tagged": true,
+        "rdkit_graph": "F[C@](Cl)(Br)I"
+      },
+      {
+        "angle_degrees": 3,
+        "scale": 0.5,
+        "rotation_radians": 0.7,
+        "rdkit_tagged": true,
+        "rdkit_graph": "F[C@](Cl)(Br)I"
+      },
+      {
+        "angle_degrees": 3,
+        "scale": 0.5,
+        "rotation_radians": 2.5,
+        "rdkit_tagged": true,
+        "rdkit_graph": "F[C@](Cl)(Br)I"
+      },
+      {
+        "angle_degrees": 3,
+        "scale": 1,
+        "rotation_radians": 0,
+        "rdkit_tagged": true,
+        "rdkit_graph": "F[C@](Cl)(Br)I"
+      },
+      {
+        "angle_degrees": 3,
+        "scale": 1,
+        "rotation_radians": 0.7,
+        "rdkit_tagged": true,
+        "rdkit_graph": "F[C@](Cl)(Br)I"
+      },
+      {
+        "angle_degrees": 3,
+        "scale": 1,
+        "rotation_radians": 2.5,
+        "rdkit_tagged": true,
+        "rdkit_graph": "F[C@](Cl)(Br)I"
+      },
+      {
+        "angle_degrees": 3,
+        "scale": 10,
+        "rotation_radians": 0,
+        "rdkit_tagged": true,
+        "rdkit_graph": "F[C@](Cl)(Br)I"
+      },
+      {
+        "angle_degrees": 3,
+        "scale": 10,
+        "rotation_radians": 0.7,
+        "rdkit_tagged": true,
+        "rdkit_graph": "F[C@](Cl)(Br)I"
+      },
+      {
+        "angle_degrees": 3,
+        "scale": 10,
+        "rotation_radians": 2.5,
+        "rdkit_tagged": true,
+        "rdkit_graph": "F[C@](Cl)(Br)I"
+      }
+    ],
+    "matching_internal_graphs": {
+      "baseline": 18,
+      "candidate": 18
+    }
+  }
+}

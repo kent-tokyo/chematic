@@ -1,0 +1,1332 @@
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 569a374..9ebfdb8 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -216,6 +216,7 @@ jobs:
+           - { package: chematic-mol, target: mmcif_residue_contract }
+           - { package: chematic-mol, target: mmcif_pdb_checked }
+           - { package: chematic-core, target: checked_stereo_groups }
++          - { package: chematic-chem, target: stereo_group_inversion }
+           - { package: chematic-mol, target: gro_contract }
+           - { package: chematic-mol, target: qcschema }
+           - { package: chematic-mol, target: square_planar_mol_io }
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 86588e5..603bd43 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -12,6 +12,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
+ 
+ ### Added
+ 
++- Added checked full inversion of relative stereo groups in Rust/Python,
++  jointly changing tetrahedral centers and geometric double bonds while keeping
++  unselected configurations and correlated membership. Axes are refused.
++
+ - Added a single-frame GRO reader in Rust/Python with explicit element resolution,
+   variable decimal precision, optional velocities, 3/9-value boxes and input limits.
+   Atom names are preserved and never guessed as truncated element symbols.
+diff --git a/crates/chematic-chem/src/lib.rs b/crates/chematic-chem/src/lib.rs
+index 9b893c1..755ecfc 100644
+--- a/crates/chematic-chem/src/lib.rs
++++ b/crates/chematic-chem/src/lib.rs
+@@ -48,6 +48,7 @@ pub mod scaffold;
+ pub mod screening;
+ pub mod standardize;
+ pub mod stereo;
++pub mod stereo_group_inversion;
+ pub mod tautomer;
+ pub mod topo_descriptors;
+ pub mod vsa;
+@@ -183,3 +184,5 @@ mod descriptor_boundary_contract_tests;
+ 
+ #[cfg(all(test, feature = "serde"))]
+ mod interchange_boundary_contract_tests;
++
++pub use stereo_group_inversion::{StereoGroupInversionError, invert_stereo_group};
+diff --git a/crates/chematic-chem/src/stereo_group_inversion.rs b/crates/chematic-chem/src/stereo_group_inversion.rs
+new file mode 100644
+index 0000000..4434a8b
+--- /dev/null
++++ b/crates/chematic-chem/src/stereo_group_inversion.rs
+@@ -0,0 +1,208 @@
++//! Checked full alternative of a relative tetrahedral/geometric stereo group.
++//! Uses the issue #9705 proposal; no canonicalization or axial assignment.
++use chematic_core::ez_markers::{read_ez_facts, write_ez_facts};
++use chematic_core::{
++    AtomIdx, BondIdx, BondOrder, Chirality, Molecule, STEREO_H_SENTINEL, StereoGroupError,
++    StereoGroupKind,
++};
++
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub enum StereoGroupInversionError {
++    GroupIndex { index: usize, groups: usize },
++    AbsoluteGroup,
++    InvalidGroups(StereoGroupError),
++    UnsupportedAtom(AtomIdx),
++    IncompleteFrame(AtomIdx),
++    UnsupportedBond(BondIdx),
++    UnspecifiedBond(BondIdx),
++    SmallRingBond(BondIdx),
++    ConflictingDirections,
++    UnrepresentableDirections,
++}
++impl core::fmt::Display for StereoGroupInversionError {
++    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
++        match self {
++            Self::GroupIndex { index, groups } => {
++                write!(f, "stereo group index {index} is outside {groups} groups")
++            }
++            Self::AbsoluteGroup => {
++                write!(f, "an absolute stereo group has no relative alternative")
++            }
++            Self::InvalidGroups(e) => e.fmt(f),
++            Self::UnsupportedAtom(a) => write!(
++                f,
++                "group atom {} requires specified tetrahedral chirality",
++                a.0
++            ),
++            Self::IncompleteFrame(a) => write!(
++                f,
++                "group atom {} requires a complete four-ligand stereo frame",
++                a.0
++            ),
++            Self::UnsupportedBond(b) => write!(
++                f,
++                "group bond {} requires a supported non-aromatic double bond; axes are unsupported",
++                b.0
++            ),
++            Self::UnspecifiedBond(b) => write!(
++                f,
++                "group bond {} has no fully specified geometric configuration",
++                b.0
++            ),
++            Self::SmallRingBond(b) => write!(
++                f,
++                "group bond {} belongs to a ring smaller than eight atoms",
++                b.0
++            ),
++            Self::ConflictingDirections => write!(
++                f,
++                "conflicting geometric bond directions cannot be inverted safely"
++            ),
++            Self::UnrepresentableDirections => write!(
++                f,
++                "geometric directions cannot be represented without losing configuration"
++            ),
++        }
++    }
++}
++impl std::error::Error for StereoGroupInversionError {}
++
++fn tetrahedral_frame(mol: &Molecule, idx: AtomIdx) -> Result<(), StereoGroupInversionError> {
++    if !matches!(
++        mol.atom(idx).chirality,
++        Chirality::Clockwise | Chirality::CounterClockwise
++    ) {
++        return Err(StereoGroupInversionError::UnsupportedAtom(idx));
++    }
++    let mut expected: Vec<u32> = mol.neighbors(idx).map(|(a, _)| a.0).collect();
++    expected.extend(std::iter::repeat_n(
++        STEREO_H_SENTINEL,
++        chematic_core::implicit_hcount(mol, idx) as usize,
++    ));
++    let mut frame = mol.stereo_neighbor_order(idx).unwrap_or_default().to_vec();
++    expected.sort_unstable();
++    frame.sort_unstable();
++    if expected.len() != 4 || frame != expected {
++        return Err(StereoGroupInversionError::IncompleteFrame(idx));
++    }
++    Ok(())
++}
++fn small_ring(mol: &Molecule, idx: BondIdx) -> bool {
++    let bond = mol.bond(idx);
++    let mut seen = vec![false; mol.atom_count()];
++    seen[bond.atom1.0 as usize] = true;
++    let mut queue = std::collections::VecDeque::from([(bond.atom1, 0)]);
++    while let Some((atom, distance)) = queue.pop_front() {
++        if distance == 6 {
++            continue;
++        }
++        for (next, b) in mol.neighbors(atom) {
++            if b == idx {
++                continue;
++            }
++            if next == bond.atom2 {
++                return true;
++            }
++            if !seen[next.0 as usize] {
++                seen[next.0 as usize] = true;
++                queue.push_back((next, distance + 1));
++            }
++        }
++    }
++    false
++}
++fn invert_bonds(
++    mol: &Molecule,
++    result: &mut Molecule,
++    bonds: &[BondIdx],
++) -> Result<(), StereoGroupInversionError> {
++    if bonds.is_empty() {
++        return Ok(());
++    }
++    let Some((mut facts, false)) = read_ez_facts(mol) else {
++        return Err(StereoGroupInversionError::ConflictingDirections);
++    };
++    for &idx in bonds {
++        let bond = mol.bond(idx);
++        if bond.order != BondOrder::Double
++            || mol.atom(bond.atom1).aromatic && mol.atom(bond.atom2).aromatic
++        {
++            return Err(StereoGroupInversionError::UnsupportedBond(idx));
++        }
++        if small_ring(mol, idx) {
++            return Err(StereoGroupInversionError::SmallRingBond(idx));
++        }
++        let fact = facts
++            .iter_mut()
++            .find(|fact| fact.double == idx)
++            .ok_or(StereoGroupInversionError::UnspecifiedBond(idx))?;
++        fact.ends[0].up = !fact.ends[0].up;
++    }
++    // Preserve every other geometric fact, including bonds sharing a marker.
++    // The existing parity solver performs a joint assignment of all markers.
++    if !write_ez_facts(result, &facts) {
++        return Err(StereoGroupInversionError::UnrepresentableDirections);
++    }
++    Ok(())
++}
++
++/// Return the full drawn alternative of one AND/OR group: flip every declared
++/// tetrahedral member and geometric double-bond member together. Preserve group
++/// membership and all unselected configurations. The indexed graph and stored
++/// frames remain intact; CIP annotations are cleared for recomputation.
++///
++/// Reject ABS, incomplete/unspecified frames, axes/non-tetrahedral atoms, small
++/// ring double bonds and unsupported direction representations. No coordinates
++/// are generated, and neither meso reduction nor canonicalization is performed.
++pub fn invert_stereo_group(
++    mol: &Molecule,
++    index: usize,
++) -> Result<Molecule, StereoGroupInversionError> {
++    let group = mol
++        .stereo_groups()
++        .get(index)
++        .ok_or(StereoGroupInversionError::GroupIndex {
++            index,
++            groups: mol.stereo_groups().len(),
++        })?;
++    if group.kind == StereoGroupKind::Absolute {
++        return Err(StereoGroupInversionError::AbsoluteGroup);
++    }
++    let groups = mol
++        .stereo_groups()
++        .iter()
++        .enumerate()
++        .map(|(i, g)| {
++            (
++                g.clone(),
++                mol.stereo_group_bond_indices(i)
++                    .unwrap_or_default()
++                    .to_vec(),
++            )
++        })
++        .collect();
++    let mut result = mol
++        .with_checked_stereo_groups(groups)
++        .map_err(StereoGroupInversionError::InvalidGroups)?;
++    // Validation normalizes constructor inputs; preserve stored metadata verbatim.
++    result.copy_stereo_groups_from(mol);
++    for &idx in &group.atom_indices {
++        tetrahedral_frame(mol, idx)?;
++    }
++    let bonds = mol.stereo_group_bond_indices(index).unwrap_or_default();
++    invert_bonds(mol, &mut result, bonds)?;
++    for &idx in &group.atom_indices {
++        let inverted = match mol.atom(idx).chirality {
++            Chirality::Clockwise => Chirality::CounterClockwise,
++            _ => Chirality::Clockwise,
++        };
++        result.set_chirality(idx, inverted);
++    }
++    // A changed neighbouring assignment can affect CIP Rule 5 priorities.
++    for (idx, atom) in mol.atoms() {
++        if atom.cip_code.is_some() {
++            result.set_cip_code(idx, None);
++        }
++    }
++    Ok(result)
++}
+diff --git a/crates/chematic-chem/tests/stereo_group_inversion.rs b/crates/chematic-chem/tests/stereo_group_inversion.rs
+new file mode 100644
+index 0000000..2dedbe8
+--- /dev/null
++++ b/crates/chematic-chem/tests/stereo_group_inversion.rs
+@@ -0,0 +1,224 @@
++use chematic_chem::{StereoGroupInversionError as Error, invert_stereo_group};
++use chematic_core::{
++    AtomIdx, BondIdx, BondOrder, CipCode, DerivedSlot, Molecule, StereoGroup, StereoGroupKind,
++};
++use chematic_smiles::{canonical_smiles, parse};
++fn grouped(smiles: &str, atoms: &[u32], bonds: &[u32]) -> Molecule {
++    parse(smiles)
++        .unwrap()
++        .with_checked_stereo_groups(vec![(
++            StereoGroup::new(
++                StereoGroupKind::And(1),
++                atoms.iter().map(|&a| AtomIdx(a)).collect(),
++            ),
++            bonds.iter().map(|&b| BondIdx(b)).collect(),
++        )])
++        .unwrap()
++}
++fn key(s: &str) -> String {
++    canonical_smiles(&parse(s).unwrap())
++}
++#[test]
++fn mixed_group_inverts_center_and_double_bond_together() {
++    let m = grouped("C/C=C/[C@H](O)CC", &[3], &[1]);
++    let original = canonical_smiles(&m);
++    let out = invert_stereo_group(&m, 0).unwrap();
++    assert_eq!(canonical_smiles(&out), key("C/C=C\\[C@@H](O)CC"));
++    assert_eq!(out.stereo_groups(), m.stereo_groups());
++    assert_eq!(
++        out.stereo_group_bond_indices(0),
++        m.stereo_group_bond_indices(0)
++    );
++    assert_eq!(canonical_smiles(&m), original);
++}
++#[test]
++fn shared_marker_solver_preserves_unselected_conjugated_bond_geometry() {
++    for (bonds, expected) in [
++        (vec![1], "C/C=C\\C=C\\C"),
++        (vec![3], "C/C=C/C=C\\C"),
++        (vec![1, 3], "C/C=C\\C=C/C"),
++    ] {
++        let m = grouped("C/C=C/C=C/C", &[], &bonds);
++        assert_eq!(
++            canonical_smiles(&invert_stereo_group(&m, 0).unwrap()),
++            key(expected)
++        );
++    }
++}
++#[test]
++fn two_applications_restore_configuration_for_atom_bond_and_mixed_groups() {
++    for (s, a, b) in [
++        ("N[C@@H](C)C(=O)O", vec![1], vec![]),
++        ("C/C=C/C=C/C", vec![], vec![1, 3]),
++        ("C/C=C/[C@H](O)CC", vec![3], vec![1]),
++    ] {
++        let m = grouped(s, &a, &b);
++        let twice = invert_stereo_group(&invert_stereo_group(&m, 0).unwrap(), 0).unwrap();
++        assert_eq!(canonical_smiles(&twice), canonical_smiles(&m));
++        assert_eq!(twice.stereo_groups(), m.stereo_groups());
++    }
++}
++#[test]
++fn unselected_center_and_group_are_preserved() {
++    let m = parse("C/C=C/[C@H](O)CC.F[C@](Cl)(Br)I").unwrap();
++    let m = m
++        .with_checked_stereo_groups(vec![
++            (
++                StereoGroup::new(StereoGroupKind::And(1), vec![AtomIdx(3)]),
++                vec![BondIdx(1)],
++            ),
++            (
++                StereoGroup::new(StereoGroupKind::Absolute, vec![AtomIdx(8)]),
++                vec![],
++            ),
++        ])
++        .unwrap();
++    let out = invert_stereo_group(&m, 0).unwrap();
++    assert_eq!(out.atom(AtomIdx(8)).chirality, m.atom(AtomIdx(8)).chirality);
++    assert_eq!(
++        out.stereo_neighbor_order(AtomIdx(8)),
++        m.stereo_neighbor_order(AtomIdx(8))
++    );
++    assert_eq!(out.stereo_groups(), m.stereo_groups());
++}
++#[test]
++fn metadata_and_reference_frames_survive_while_cip_and_caches_are_cold() {
++    let mut m = grouped("C/C=C/[C@H](O)CC", &[3], &[1]);
++    m.set_tag(AtomIdx(0), Some(23));
++    m.set_cip_code(AtomIdx(3), Some(CipCode::R));
++    m.derived(DerivedSlot::Sssr, || 11u32);
++    let out = invert_stereo_group(&m, 0).unwrap();
++    assert_eq!(out.atom_tag(AtomIdx(0)), m.atom_tag(AtomIdx(0)));
++    for (idx, _) in m.atoms() {
++        assert_eq!(out.stereo_neighbor_order(idx), m.stereo_neighbor_order(idx));
++    }
++    assert_eq!(out.atom(AtomIdx(3)).cip_code, None);
++    assert_eq!(m.atom(AtomIdx(3)).cip_code, Some(CipCode::R));
++    assert!(out.derived_if_computed::<u32>(DerivedSlot::Sssr).is_none());
++    assert_eq!(
++        *m.derived_if_computed::<u32>(DerivedSlot::Sssr).unwrap(),
++        11
++    );
++}
++#[test]
++fn absolute_and_out_of_range_groups_have_no_relative_alternative() {
++    let mut m = grouped("F[C@](Cl)(Br)I", &[1], &[]);
++    assert!(matches!(
++        invert_stereo_group(&m, 1),
++        Err(Error::GroupIndex { .. })
++    ));
++    m.set_stereo_groups(vec![StereoGroup::new(
++        StereoGroupKind::Absolute,
++        vec![AtomIdx(1)],
++    )]);
++    assert_eq!(invert_stereo_group(&m, 0).err(), Some(Error::AbsoluteGroup));
++}
++#[test]
++fn unspecified_or_non_tetrahedral_atoms_are_refused() {
++    for (s, idx) in [("FC(Cl)(Br)I", 1), ("Cl[Pt@SP1](Cl)(N)N", 1)] {
++        let m = grouped(s, &[idx], &[]);
++        assert_eq!(
++            invert_stereo_group(&m, 0).err(),
++            Some(Error::UnsupportedAtom(AtomIdx(idx)))
++        );
++    }
++}
++#[test]
++fn incomplete_or_mismatched_tetrahedral_frames_are_refused() {
++    for frame in [vec![], vec![0, 2, 3, 99], vec![0, 2, 2, 4]] {
++        let mut m = grouped("F[C@](Cl)(Br)I", &[1], &[]);
++        m.set_stereo_neighbor_order(AtomIdx(1), frame);
++        assert_eq!(
++            invert_stereo_group(&m, 0).err(),
++            Some(Error::IncompleteFrame(AtomIdx(1)))
++        );
++    }
++}
++#[test]
++fn unsupported_unspecified_and_small_ring_bonds_are_refused() {
++    for (s, b, expected) in [
++        ("CC", 0, Error::UnsupportedBond(BondIdx(0))),
++        ("CC=CC", 1, Error::UnspecifiedBond(BondIdx(1))),
++        ("C1/C=C/CCCC1", 1, Error::SmallRingBond(BondIdx(1))),
++    ] {
++        assert_eq!(
++            invert_stereo_group(&grouped(s, &[], &[b]), 0).err(),
++            Some(expected)
++        );
++    }
++}
++#[test]
++fn invalid_stored_group_references_fail_before_graph_access() {
++    let mut m = grouped("F/C=C/Cl", &[], &[1]);
++    m.set_stereo_groups_with_bonds(vec![(
++        StereoGroup::new(StereoGroupKind::And(1), vec![]),
++        vec![BondIdx(99)],
++    )]);
++    assert!(matches!(
++        invert_stereo_group(&m, 0),
++        Err(Error::InvalidGroups(_))
++    ));
++}
++#[test]
++fn unsupported_stored_directions_fail_atomically() {
++    let mut m = grouped("F/C=C/Cl", &[], &[1]);
++    m.set_bond_direction(BondIdx(0), BondOrder::Up);
++    let before = m.bonds().map(|(_, b)| b.clone()).collect::<Vec<_>>();
++    assert_eq!(
++        invert_stereo_group(&m, 0).err(),
++        Some(Error::UnrepresentableDirections)
++    );
++    assert_eq!(
++        m.bonds().map(|(_, b)| b.clone()).collect::<Vec<_>>(),
++        before
++    );
++}
++#[test]
++fn or_groups_use_the_same_full_alternative_and_explicit_h_frames_work() {
++    let m = parse("[H][C@](F)(Cl)Br").unwrap();
++    let m = m
++        .with_checked_stereo_groups(vec![(
++            StereoGroup::new(StereoGroupKind::Or(4), vec![AtomIdx(1)]),
++            vec![],
++        )])
++        .unwrap();
++    let out = invert_stereo_group(&m, 0).unwrap();
++    assert_ne!(out.atom(AtomIdx(1)).chirality, m.atom(AtomIdx(1)).chirality);
++    assert_eq!(out.stereo_groups()[0].kind, StereoGroupKind::Or(4));
++}
++
++#[test]
++fn eight_membered_ring_is_not_rejected_as_a_small_ring() {
++    let m = grouped("C1/C=C/CCCCC1", &[], &[1]);
++    let out = invert_stereo_group(&m, 0).unwrap();
++    assert_eq!(
++        canonical_smiles(&invert_stereo_group(&out, 0).unwrap()),
++        canonical_smiles(&m)
++    );
++}
++#[test]
++fn conflicting_markers_are_rejected_without_repairing_input() {
++    let mut m = grouped("F/C(Cl)=C(/Br)I", &[], &[2]);
++    m.set_bond_order(BondIdx(1), BondOrder::Down);
++    assert_eq!(
++        invert_stereo_group(&m, 0).err(),
++        Some(Error::ConflictingDirections)
++    );
++    assert_eq!(m.bond(BondIdx(1)).order, BondOrder::Down);
++}
++
++#[test]
++fn legacy_duplicate_atom_membership_is_preserved_and_flipped_once() {
++    let mut m = parse("F[C@](Cl)(Br)I").unwrap();
++    m.set_stereo_groups(vec![StereoGroup {
++        kind: StereoGroupKind::And(1),
++        atom_indices: vec![AtomIdx(1), AtomIdx(1)],
++    }]);
++    let out = invert_stereo_group(&m, 0).unwrap();
++    assert_eq!(out.stereo_groups(), m.stereo_groups());
++    assert_ne!(out.atom(AtomIdx(1)).chirality, m.atom(AtomIdx(1)).chirality);
++    assert_eq!(
++        canonical_smiles(&invert_stereo_group(&out, 0).unwrap()),
++        canonical_smiles(&m)
++    );
++}
+diff --git a/crates/chematic-py/python/chematic/__init__.pyi b/crates/chematic-py/python/chematic/__init__.pyi
+index 37ea64f..c3a5182 100644
+--- a/crates/chematic-py/python/chematic/__init__.pyi
++++ b/crates/chematic-py/python/chematic/__init__.pyi
+@@ -122,6 +122,7 @@ class Mol:
+     @property
+     def stereo_groups(self) -> list[tuple[Literal["abs", "and", "or"], int, list[int], list[int]]]: ...
+     def with_stereo_groups(self, groups: list[tuple[Literal["abs", "and", "or"], int, list[int], list[int]]]) -> Mol: ...
++    def invert_stereo_group(self, index: int) -> Mol: ...
+ 
+     """A parsed molecule.
+ 
+diff --git a/crates/chematic-py/src/mol_methods/stereo_groups.rs b/crates/chematic-py/src/mol_methods/stereo_groups.rs
+index 744e3b5..e572799 100644
+--- a/crates/chematic-py/src/mol_methods/stereo_groups.rs
++++ b/crates/chematic-py/src/mol_methods/stereo_groups.rs
+@@ -100,4 +100,16 @@ impl Mol {
+             props: self.props.clone(),
+         })
+     }
++    /// Return the full alternative of an AND/OR tetrahedral/geometric group.
++    /// Group membership and typed properties remain intact. Absolute groups,
++    /// axes, incomplete configurations and unsupported directions are refused.
++    fn invert_stereo_group(&self, index: Bound<'_, PyAny>) -> PyResult<Mol> {
++        let index = group_integer(&index)? as usize;
++        let inner = chematic_chem::invert_stereo_group(&self.inner, index)
++            .map_err(|e| PyValueError::new_err(e.to_string()))?;
++        Ok(Mol {
++            inner: Arc::new(inner),
++            props: self.props.clone(),
++        })
++    }
+ }
+diff --git a/crates/chematic-py/tests/test_stereo_group_inversion.py b/crates/chematic-py/tests/test_stereo_group_inversion.py
+new file mode 100644
+index 0000000..289daa8
+--- /dev/null
++++ b/crates/chematic-py/tests/test_stereo_group_inversion.py
+@@ -0,0 +1,82 @@
++"""Atomic full-group alternatives and shared-marker geometry preservation."""
++import pytest
++import chematic
++
++
++@pytest.mark.parametrize('smiles,atoms,bonds,expected',[
++    ('C/C=C/[C@H](O)CC',[3],[1],r'C/C=C\[C@@H](O)CC'),
++    ('C/C=C/C=C/C',[],[1],r'C/C=C\C=C\C'),
++    ('C/C=C/C=C/C',[],[3],r'C/C=C/C=C\C'),
++    ('C/C=C/C=C/C',[],[1,3],r'C/C=C\C=C/C'),
++    ('N[C@@H](C)C(=O)O',[1],[],'N[C@H](C)C(=O)O'),
++    ('[H][C@](F)(Cl)Br',[1],[],'[H][C@@](F)(Cl)Br'),
++])
++@pytest.mark.parametrize('kind',['and','or'])
++def test_full_alternative_and_double_inversion(smiles,atoms,bonds,expected,kind):
++    source=chematic.from_smiles(smiles).with_stereo_groups([(kind,1,atoms,bonds)])
++    before=source.smiles
++    out=source.invert_stereo_group(0)
++    assert out.smiles==chematic.from_smiles(expected).smiles
++    assert out.stereo_groups==source.stereo_groups
++    assert out.invert_stereo_group(0).smiles==before
++    assert source.smiles==before
++
++
++def test_other_group_center_and_bond_are_unchanged():
++    smiles='C/C=C/[C@H](O)CC.F[C@](Cl)(Br)I'
++    source=chematic.from_smiles(smiles).with_stereo_groups([('and',1,[3],[1]),('abs',0,[8],[])])
++    expected=chematic.from_smiles(r'C/C=C\[C@@H](O)CC.F[C@](Cl)(Br)I')
++    out=source.invert_stereo_group(0)
++    assert out.smiles==expected.smiles
++    assert out.stereo_groups==source.stereo_groups
++
++
++def test_typed_properties_are_copied_independently():
++    source=chematic.from_smiles('C/C=C/[C@H](O)CC').with_stereo_groups([('and',1,[3],[1])])
++    source.SetName('source');source.SetIntProp('int',-7);source.SetDoubleProp('float',1.25)
++    source.SetBoolProp('bool',True);source.SetProp('text','original')
++    out=source.invert_stereo_group(0)
++    assert out.GetName()=='source' and out.GetIntProp('int')==-7
++    assert out.GetDoubleProp('float')==1.25 and out.GetBoolProp('bool') is True
++    assert out.GetProp('text')=='original'
++    out.SetName('copy');out.SetIntProp('int',3)
++    assert source.GetName()=='source' and source.GetIntProp('int')==-7
++
++
++@pytest.mark.parametrize('index',[-1,2**32,True,False,0.5,'0',None,1])
++def test_invalid_indices_fail_atomically(index):
++    source=chematic.from_smiles('F[C@](Cl)(Br)I').with_stereo_groups([('and',1,[1],[])])
++    before=source.smiles
++    with pytest.raises(ValueError):source.invert_stereo_group(index)
++    assert source.smiles==before
++
++
++@pytest.mark.parametrize('smiles,kind,atoms,bonds,error',[
++    ('F[C@](Cl)(Br)I','abs',[1],[],'absolute'),
++    ('FC(Cl)(Br)I','and',[1],[],'specified tetrahedral'),
++    ('Cl[Pt@SP1](Cl)(N)N','and',[1],[],'specified tetrahedral'),
++    ('CC','and',[],[0],'axes are unsupported'),
++    ('CC=CC','and',[],[1],'fully specified'),
++    ('C1/C=C/CCCC1','and',[],[1],'ring smaller'),
++])
++def test_unsupported_configurations_fail_explicitly(smiles,kind,atoms,bonds,error):
++    source=chematic.from_smiles(smiles).with_stereo_groups([(kind,0 if kind=='abs' else 1,atoms,bonds)])
++    before=source.smiles
++    with pytest.raises(ValueError,match=error):source.invert_stereo_group(0)
++    assert source.smiles==before
++
++
++def test_atom_permutations_keep_the_selected_group_meaning():
++    source=chematic.from_smiles('C/C=C/[C@H](O)CC').with_stereo_groups([('and',1,[3],[1])])
++    expected=source.invert_stereo_group(0).smiles
++    for order in [list(range(7)),list(reversed(range(7))),[3,0,1,2,4,5,6]]:
++        out=source.renumber_atoms(order).invert_stereo_group(0)
++        assert out.smiles==expected
++        assert out.stereo_groups==[('and',1,[order.index(3)],[1])]
++
++
++@pytest.mark.parametrize('kind',['and','or'])
++def test_eight_membered_ring_alternative_is_reversible(kind):
++    source=chematic.from_smiles('C1/C=C/CCCCC1').with_stereo_groups([(kind,1,[],[1])])
++    out=source.invert_stereo_group(0)
++    assert out.invert_stereo_group(0).smiles==source.smiles
+diff --git a/docs/rdkit-open-issues-2026-10-14.md b/docs/rdkit-open-issues-2026-10-14.md
+index e632ba4..a7dccb7 100644
+--- a/docs/rdkit-open-issues-2026-10-14.md
++++ b/docs/rdkit-open-issues-2026-10-14.md
+@@ -17,7 +17,7 @@ Issue state is a snapshot; an open issue can already have a proposed upstream fi
+ | [#9688: EEM charge conservation](https://github.com/rdkit/rdkit/issues/9688) | `eem_charges` and ionic conservation tests already exist. | Keep the regression; no duplicate implementation. |
+ | [#9678: allene stereo](https://github.com/rdkit/rdkit/issues/9678) | Allene stereo round-trip support already exists. | Keep the regression; no duplicate implementation. |
+ | [#9691: reaction-template order and E/Z](https://github.com/rdkit/rdkit/issues/9691) | Product stereo cleanup and an order-invariance regression already exist. | Keep the regression; no duplicate implementation. |
+-| [#9705: V3000 bond stereo collections](https://github.com/rdkit/rdkit/issues/9705) | Bond stereo-group storage and STEB collection support already exist. | [Added checked Rust/Python group construction and inspection](checked-stereo-groups.md), including mixed atom/bond membership and 216 V3000/geometry checks. Existing STE/STEB parsing/writing is reused. Canonicalization, meso reduction and CXSMILES extensions are outside this candidate. |
++| [#9705: V3000 bond stereo collections](https://github.com/rdkit/rdkit/issues/9705) | Bond stereo-group storage and STEB collection support already exist. | [Added checked Rust/Python group construction and inspection](checked-stereo-groups.md), including mixed atom/bond membership and 216 V3000/geometry checks. Existing STE/STEB parsing/writing is reused. [Added checked full alternatives](stereo-group-inversion.md) for relative tetrahedral/geometric groups, with 528 RDKit-reference comparisons. Canonicalization, meso reduction and CXSMILES extensions remain outside these candidates. |
+ | [#9343: internal-coordinate bounds](https://github.com/rdkit/rdkit/issues/9343) | Implementation and Python tests are present as pre-existing uncommitted work. | Preserve that work; not part of this change or its validation claim. |
+ | [#9247: recursive SMARTS stereo](https://github.com/rdkit/rdkit/issues/9247) | Matcher changes and Python tests are present as pre-existing uncommitted work. | Preserve that work; not part of this change or its validation claim. |
+ | [#9524: SA-score smoothing discontinuity](https://github.com/rdkit/rdkit/issues/9524) | chematic uses its own fragment table and score mapping, without the reported logarithmic smoothing function. | Not the same defect. SA-score calibration would need an independent evaluation. |
+diff --git a/docs/stereo-group-inversion.md b/docs/stereo-group-inversion.md
+new file mode 100644
+index 0000000..4a6f42f
+--- /dev/null
++++ b/docs/stereo-group-inversion.md
+@@ -0,0 +1,129 @@
++# Full alternatives of relative stereo groups
++
++RDKit [#9705](https://github.com/rdkit/rdkit/issues/9705) proposes treating an
++atom/bond group's alternative as the simultaneous inversion of all of its
++members. Inverting only the tetrahedral center of a mixed group loses the
++intended correlation with its geometric bond members.
++
++This candidate adds Rust `invert_stereo_group` and Python
++`Mol.invert_stereo_group(index)`. It builds on the
++[checked group construction API](checked-stereo-groups.md) and reuses the
++existing joint geometric-direction solver.
++
++```python
++import chematic
++
++source = chematic.from_smiles("C/C=C/[C@H](O)CC")
++source = source.with_stereo_groups([("and", 1, [3], [1])])
++alternative = source.invert_stereo_group(0)
++assert alternative.stereo_groups == source.stereo_groups
++assert alternative.invert_stereo_group(0).smiles == source.smiles
++```
++
++Here both the tetrahedral declaration and the double-bond geometry change.
++The returned `smiles` represents the drawn configuration; it does not encode
++the enhanced group's identity. Membership remains available through
++`stereo_groups` and the existing V3000 interchange path.
++
++## Contract
++
++The group index is zero-based and follows `Mol.stereo_groups` / Rust
++`Molecule::stereo_groups`. Only AND/OR groups have this relative alternative.
++ABS is rejected. The result is an independent molecule; failures leave the
++source unchanged.
++
++- Every selected atom must have a specified tetrahedral tag and a complete
++  four-ligand reference frame matching its graph neighbors and implicit H.
++  Its tag is flipped against that unchanged frame.
++- Every selected bond must be a supported double bond with fully specified
++  relative geometric directions. One reference side is inverted.
++- All geometric facts are solved together, retaining unselected geometry.
++  A conjugated single bond shared by two double bonds may need a different
++  direction token so one double bond can change while the other stays fixed.
++- Group kinds, numbers, membership, atom/bond indices, connectivity, atom tags
++  and stereo reference frames are preserved. Legacy duplicate atom memberships
++  are retained verbatim. Python typed properties and
++  names are copied independently.
++- Derived caches start empty. All atom CIP annotations are cleared, since
++  changing a nearby stereo assignment can change priority calculations.
++  No new CIP labels are assigned by this operation.
++
++In Rust:
++
++```rust,ignore
++let alternative = chematic_chem::invert_stereo_group(&molecule, 0)?;
++```
++
++`StereoGroupInversionError` distinguishes invalid group metadata/index,
++absolute groups, unsupported atom/bond members, incomplete tetrahedral frames,
++unspecified geometry, small-ring constraints, conflicting directions and
++representations the direction solver cannot safely rewrite.
++
++Python raises `ValueError` for those errors, and rejects bool, float, text,
++negative and oversized group indices. The group itself is also validated
++using the previous checked construction contract.
++
++## Scope
++
++The [BIOVIA CTfile Chemistry 2026 definitions](https://www.3ds.com/assets/invest/2026-01/biovia_chemistry_2026_ctfile_formats.pdf)
++describe separate atom and geometric/axial bond collections. The simultaneous
++alternative and shared-number mixed-group convention here follow the #9705
++proposal and existing chematic storage; this is not a verified claim about
++BIOVIA product interoperability.
++
++This operation supports tetrahedral atoms and geometric double bonds. It
++rejects axial/non-double bond members, non-tetrahedral atoms, incomplete or
++unspecified configurations, double bonds in rings smaller than eight atoms,
++and conflicting/unsupported direction representations. Eight-membered rings
++are covered, without a claim of 3D feasibility.
++
++It does not detect stereogenicity, count distinct stereoisomers, generate
++coordinates, canonicalize enhanced groups, perform meso reduction or add
++CXSMILES syntax. A full alternative may be the same compound as the source;
++the symmetric fixture demonstrates that case. Group kinds/membership remain
++unchanged rather than being converted to ABS.
++
++Coordinates belonging to the original drawing are not updated. Regenerate a
++layout reflecting the returned configuration before coordinate-based export;
++do not reuse the original drawing as if it had also been inverted.
++
++## Validation
++
++`validation/rdkit_issues/stereo/group-inversion.json` contains original small
++fixtures under MIT OR Apache-2.0, with provenance and expected invariants. No
++upstream attachments or proprietary structures were copied. The result JSON
++records normalized fixture, source and compiled-extension hashes.
++
++The independent reference is pinned to RDKit 2026.09.1, legacy stereo
++perception and `removeHs=False`. It directly inverts selected atom tags and
++swaps selected bond stereo, then regenerates neighbor directions. It does not
++use RDKit's lossy enhanced-group canonicalizer as the reference. Atom
++attributes and the complete indexed graph are checked before comparing.
++Ring-closure endpoint orientation is normalized as an undirected edge, and
++selected native bonds map to reference bonds by their atom endpoints.
++
++Eleven fixtures cover atom-only, bond-only and mixed groups, shared markers,
++explicit H, an unchanged center, a symmetric full alternative and an
++eight-membered ring. AND/OR and 24 deterministic atom numberings per fixture
++produce 528 comparisons of drawn alternatives, membership, graph identity and
++two-application restoration, with zero mismatches.
++
++RDKit's mixed-group canonicalization bond loss is reproduced separately as an
++upstream diagnostic. InChI validates the drawn configurations, not the identity
++of an enhanced group or the number of its physically distinct alternatives.
++
++```sh
++cargo test -p chematic-chem --lib --test stereo_group_inversion --offline --quiet
++python -m pytest crates/chematic-py/tests/test_stereo_group_inversion.py \
++  crates/chematic-py/tests/test_stereo_groups.py \
++  crates/chematic-py/tests/test_stereo_candidate_budget.py -q
++python scripts/validate_stereo_group_inversion.py
++```
++
++Local validation passed 963 Rust tests, with one pre-existing real-budget VF2
++calibration ignored, and 92 Python tests. This includes 15 new Rust contracts
++and 31 new Python API tests. Clippy with warnings denied, formatting, refactor
++budget, product naming, binding inventory and strict MkDocs also passed.
++
++This is a local source candidate built on the previous checked-group candidate.
++It does not resolve all of RDKit #9705 or constitute package publication.
+diff --git a/scripts/validate_stereo_group_inversion.py b/scripts/validate_stereo_group_inversion.py
+new file mode 100644
+index 0000000..95e1070
+--- /dev/null
++++ b/scripts/validate_stereo_group_inversion.py
+@@ -0,0 +1,113 @@
++#!/usr/bin/env python3
++"""Independent drawn-configuration oracle for relative stereo-group alternatives."""
++import argparse
++import hashlib
++import json
++from pathlib import Path
++import random
++import sys
++import chematic
++from rdkit import Chem, RDLogger, rdBase
++
++ROOT=Path(__file__).resolve().parents[1]
++FIXTURE=ROOT/'validation/rdkit_issues/stereo/group-inversion.json'
++
++
++def digest(data):
++    return hashlib.sha256(data).hexdigest()
++
++
++def parse(smiles):
++    params=Chem.SmilesParserParams();params.removeHs=False
++    mol=Chem.MolFromSmiles(smiles,params)
++    assert mol is not None
++    return mol
++
++
++def inchi(smiles):
++    return Chem.MolToInchi(parse(smiles))
++
++
++def reference(case, native):
++    mol=parse(case['smiles'])
++    for index in case['atoms']:mol.GetAtomWithIdx(index).InvertChirality()
++    for index in case['bonds']:
++        a,b,*_=native.bond_table[index]
++        bond=mol.GetBondBetweenAtoms(a,b)
++        assert bond is not None
++        stereo=bond.GetStereo()
++        assert stereo in (Chem.BondStereo.STEREOE,Chem.BondStereo.STEREOZ)
++        bond.SetStereo(Chem.BondStereo.STEREOZ if stereo==Chem.BondStereo.STEREOE else Chem.BondStereo.STEREOE)
++    for bond in mol.GetBonds():bond.SetBondDir(Chem.BondDir.NONE)
++    Chem.SetDoubleBondNeighborDirections(mol)
++    smiles=Chem.MolToSmiles(mol)
++    expected=Chem.MolToInchi(mol)
++    assert inchi(smiles)==expected, 'RDKit reference SMILES lost its declared configuration'
++    return smiles,expected
++
++
++def orders(n):
++    rng=random.Random(9705)
++    result=[list(range(n)),list(reversed(range(n)))]
++    while len(result)<24:
++        order=list(range(n));rng.shuffle(order)
++        if order not in result:result.append(order)
++    return result
++
++
++def main():
++    parser=argparse.ArgumentParser(description=__doc__)
++    parser.add_argument('--output',type=Path,default=ROOT/'validation/results/rdkit-stereo-group-inversion-2026-10-15.json')
++    args=parser.parse_args()
++    if rdBase.rdkitVersion!='2026.09.1':raise RuntimeError(f'expected RDKit 2026.09.1, got {rdBase.rdkitVersion}')
++    Chem.SetUseLegacyStereoPerception(True);RDLogger.DisableLog('rdApp.warning')
++    fixture=json.loads(FIXTURE.read_text());checked=[];references=[]
++    for case in fixture['cases']:
++        base=chematic.from_smiles(case['smiles']);external=parse(case['smiles'])
++        assert base.atom_count==external.GetNumAtoms()
++        assert [(a[1],a[2],a[3]) for a in base.atom_table]==[(a.GetAtomicNum(),a.GetFormalCharge(),a.GetIsAromatic()) for a in external.GetAtoms()]
++        expected_bonds=[(b.GetBeginAtomIdx(),b.GetEndAtomIdx(),str(b.GetBondType()),b.GetIsAromatic()) for b in external.GetBonds()]
++        normalize=lambda bonds:sorted((min(a,b),max(a,b),kind,aromatic) for a,b,kind,aromatic in bonds)
++        assert normalize(base.bond_table)==normalize(expected_bonds), 'oracle/native indexed graph mismatch'
++        original=inchi(case['smiles']);expected_smiles,expected=reference(case,base)
++        assert inchi(base.smiles)==original
++        references.append({'id':case['id'],'source_inchi':original,'alternative_smiles':expected_smiles,'alternative_inchi':expected,'same_drawn_configuration':expected==original})
++        for kind in ('and','or'):
++            source=base.with_stereo_groups([(kind,1,case['atoms'],case['bonds'])])
++            for order in orders(base.atom_count):
++                inverse={old:new for new,old in enumerate(order)}
++                numbered=source.renumber_atoms(order)
++                before=numbered.smiles
++                out=numbered.invert_stereo_group(0)
++                assert out.stereo_groups==[(kind,1,[inverse[a] for a in case['atoms']],case['bonds'])]
++                assert out.bond_table==numbered.bond_table
++                assert out.atom_table==numbered.atom_table
++                assert out.atom_count==numbered.atom_count
++                assert inchi(out.smiles)==expected
++                assert inchi(out.invert_stereo_group(0).smiles)==original
++                assert numbered.smiles==before
++                checked.append({'id':case['id'],'kind':kind,'order':order,'alternative_inchi':expected,'output_smiles':out.smiles})
++    # Reproduce the upstream mixed canonicalization defect separately; it is
++    # deliberately not the alternative-configuration oracle used above.
++    mol=Chem.RWMol(parse('C/C=C/[C@H](O)CC'))
++    mol.SetStereoGroups([Chem.CreateStereoGroup(Chem.StereoGroupType.STEREO_AND,mol,[3],[1])])
++    canonical=Chem.CanonicalizeStereoGroups(mol.GetMol())
++    after=[{'atoms':[a.GetIdx() for a in g.GetAtoms()],'bonds':[b.GetIdx() for b in g.GetBonds()]} for g in canonical.GetStereoGroups()]
++    assert sum(len(g['bonds']) for g in after)==0, 'upstream behavior changed; inspect before rebaseline'
++    paths=['crates/chematic-chem/src/stereo_group_inversion.rs','crates/chematic-py/src/mol_methods/stereo_groups.rs','crates/chematic-chem/tests/stereo_group_inversion.rs','crates/chematic-py/tests/test_stereo_group_inversion.py','crates/chematic-py/python/chematic/__init__.pyi','scripts/validate_stereo_group_inversion.py']
++    record={
++        'schema_version':1,'status':'local-source-candidate','issue':'https://github.com/rdkit/rdkit/issues/9705',
++        'scope':'one checked full alternative for an AND/OR group containing tetrahedral atoms/geometric double bonds; no group canonicalization or axial inversion',
++        'base':'cac480fb source snapshot plus preserved earlier RDKit/Open Babel candidates; requires checked stereo-group construction candidate',
++        'runtime':{'python':sys.version.split()[0],'rdkit':rdBase.rdkitVersion,'settings':'legacy stereo; retain explicit hydrogen atoms; regenerate double-bond neighbour directions after direct Stereo E/Z swaps','chematic_extension_sha256':digest(Path(chematic.__file__).resolve().read_bytes())},
++        'source_sha256':{s:digest((ROOT/s).read_bytes()) for s in paths},
++        'fixture':{'path':str(FIXTURE.relative_to(ROOT)),'sha256':digest(FIXTURE.read_bytes()),'encoding':'UTF-8 LF',**fixture},
++        'results':{'comparisons':len(checked),'membership_mismatches':0,'drawn_configuration_mismatches':0,'indexed_graph_mismatches':0,'double_inversion_mismatches':0,'numberings_per_kind_fixture':24,'kinds':['and','or'],'fixtures':len(fixture['cases']),'cases_sha256':digest(json.dumps(checked,sort_keys=True,separators=(',',':')).encode()),'references':references},
++        'rdkit_canonicalization_diagnostic':{'input_atoms':[3],'input_bonds':[1],'output_groups':after,'note':'Group bond loss reproduced; direct atom/bond inversion above is the independent drawn-configuration reference'},
++        'limits':'ABS, unsupported/non-tetrahedral/unspecified frames, axial and non-double members, small-ring double bonds, conflicting/unrepresentable direction representations fail atomically. No 3D feasibility or meso reduction; plain SMILES/InChI validate the drawn representative only, not enhanced-group identity. All native atom CIP annotations are cleared after a successful alternative.',
++    }
++    args.output.parent.mkdir(parents=True,exist_ok=True);args.output.write_text(json.dumps(record,indent=2)+'\n')
++    print(json.dumps({k:v for k,v in record['results'].items() if k!='references'}))
++
++
++if __name__=='__main__':main()
+diff --git a/validation/rdkit_issues/stereo/group-inversion.json b/validation/rdkit_issues/stereo/group-inversion.json
+new file mode 100644
+index 0000000..158f26e
+--- /dev/null
++++ b/validation/rdkit_issues/stereo/group-inversion.json
+@@ -0,0 +1,135 @@
++{
++  "id": "relative-group-alternatives-v1",
++  "license": "MIT OR Apache-2.0",
++  "provenance": {
++    "source": "Original small-molecule cases authored for declared tetrahedral/geometric group alternatives",
++    "issue": "https://github.com/rdkit/rdkit/issues/9705",
++    "date": "2026-10-15",
++    "transformations": "Select atom and bond member indices on small acyclic SMILES; no downloaded structures or attachment data",
++    "redistribution": "allowed: original project fixtures",
++    "minimization": "Conjugated dienes isolate shared direction markers; small mixed alcohols isolate atom/bond correlation; explicit H and an unselected center test preservation",
++    "oracle": "RDKit 2026.09.1, legacy perception, removeHs=False; Atom.InvertChirality and Bond.SetStereo E/Z swap with neighbour directions regenerated",
++    "spec_url": "https://www.3ds.com/assets/invest/2026-01/biovia_chemistry_2026_ctfile_formats.pdf",
++    "spec_retrieved": "2026-10-15"
++  },
++  "expected": {
++    "membership_changes": 0,
++    "indexed_graph_changes": 0,
++    "drawn_alternative_inchi_mismatches": 0,
++    "two_applications_restore_configuration": true,
++    "count_tolerance": 0
++  },
++  "cases": [
++    {
++      "id": "mixed-alcohol",
++      "smiles": "C/C=C/[C@H](O)CC",
++      "atoms": [
++        3
++      ],
++      "bonds": [
++        1
++      ]
++    },
++    {
++      "id": "diene-both",
++      "smiles": "C/C=C/C=C/C",
++      "atoms": [],
++      "bonds": [
++        1,
++        3
++      ]
++    },
++    {
++      "id": "diene-first",
++      "smiles": "C/C=C/C=C/C",
++      "atoms": [],
++      "bonds": [
++        1
++      ]
++    },
++    {
++      "id": "diene-second",
++      "smiles": "C/C=C/C=C/C",
++      "atoms": [],
++      "bonds": [
++        3
++      ]
++    },
++    {
++      "id": "alanine-center",
++      "smiles": "N[C@@H](C)C(=O)O",
++      "atoms": [
++        1
++      ],
++      "bonds": []
++    },
++    {
++      "id": "explicit-h",
++      "smiles": "[H][C@](F)(Cl)Br",
++      "atoms": [
++        1
++      ],
++      "bonds": []
++    },
++    {
++      "id": "mixed-two-bonds",
++      "smiles": "F/C=C/[C@H](C)/C=C/Cl",
++      "atoms": [
++        3
++      ],
++      "bonds": [
++        1,
++        5
++      ]
++    },
++    {
++      "id": "mixed-one-bond",
++      "smiles": "F/C=C/[C@H](C)/C=C/Cl",
++      "atoms": [
++        3
++      ],
++      "bonds": [
++        1
++      ]
++    },
++    {
++      "id": "symmetric-full-alternative",
++      "smiles": "C/C=C/[C@H](C)/C=C\\C",
++      "atoms": [
++        3
++      ],
++      "bonds": [
++        1,
++        5
++      ]
++    },
++    {
++      "id": "unselected-center",
++      "smiles": "C/C=C/[C@H](O)CC.F[C@](Cl)(Br)I",
++      "atoms": [
++        3
++      ],
++      "bonds": [
++        1
++      ]
++    },
++    {
++      "id": "eight-membered-ring",
++      "smiles": "C1/C=C/CCCCC1",
++      "atoms": [],
++      "bonds": [
++        1
++      ]
++    }
++  ],
++  "redistribution": {
++    "status": "allowed",
++    "rationale": "original project fixtures"
++  },
++  "minimization": "Conjugated dienes isolate shared direction markers; small mixed alcohols isolate atom/bond correlation; explicit H and an unselected center test preservation",
++  "oracle": {
++    "name": "direct atom/bond alternative and InChI reference",
++    "version": "RDKit 2026.09.1",
++    "settings": "legacy stereo, removeHs=False; Atom.InvertChirality, Bond.SetStereo E/Z swap, SetDoubleBondNeighborDirections; native/reference bonds matched by indexed endpoints"
++  }
++}
+diff --git a/validation/results/rdkit-stereo-group-inversion-2026-10-15.json b/validation/results/rdkit-stereo-group-inversion-2026-10-15.json
+new file mode 100644
+index 0000000..87bd3f1
+--- /dev/null
++++ b/validation/results/rdkit-stereo-group-inversion-2026-10-15.json
+@@ -0,0 +1,308 @@
++{
++  "schema_version": 1,
++  "status": "local-source-candidate",
++  "issue": "https://github.com/rdkit/rdkit/issues/9705",
++  "scope": "one checked full alternative for an AND/OR group containing tetrahedral atoms/geometric double bonds; no group canonicalization or axial inversion",
++  "base": "cac480fb source snapshot plus preserved earlier RDKit/Open Babel candidates; requires checked stereo-group construction candidate",
++  "runtime": {
++    "python": "3.13.6",
++    "rdkit": "2026.09.1",
++    "settings": "legacy stereo; retain explicit hydrogen atoms; regenerate double-bond neighbour directions after direct Stereo E/Z swaps",
++    "chematic_extension_sha256": "dc234d0474c3425b80620cde01e0c249ab1e7b497dd8651551430db56e9ee8c9"
++  },
++  "source_sha256": {
++    "crates/chematic-chem/src/stereo_group_inversion.rs": "0d7a3f672ebb86657208b6c8011fe0e4c6282a71eb4f0f174926a7b49f4c9cf5",
++    "crates/chematic-py/src/mol_methods/stereo_groups.rs": "f18f25af42176f1753536bda866b48e0d87b68d42c69451b8bd5164df2168e03",
++    "crates/chematic-chem/tests/stereo_group_inversion.rs": "5801d4c4c238cc3bb940294cf355003f5864fba8e44969a92b5ca04f0bc15d41",
++    "crates/chematic-py/tests/test_stereo_group_inversion.py": "a2bd3c66dd87ebc41b34523f7dc8af6dacb32177629e512a843b30500fc125f6",
++    "crates/chematic-py/python/chematic/__init__.pyi": "a3d4e8ed932a4544ae84fd2356772f3e6963cc606b90db57f7ec7e17b64d3fad",
++    "scripts/validate_stereo_group_inversion.py": "3f874c3a25cdfe5b8139ef7815f5df4ce4026a5ed3645d2c9773c305e60f5171"
++  },
++  "fixture": {
++    "path": "validation/rdkit_issues/stereo/group-inversion.json",
++    "sha256": "c31103d47d47c6811e79067aab84413783bea499697bd4c07cbb9482616f708e",
++    "encoding": "UTF-8 LF",
++    "id": "relative-group-alternatives-v1",
++    "license": "MIT OR Apache-2.0",
++    "provenance": {
++      "source": "Original small-molecule cases authored for declared tetrahedral/geometric group alternatives",
++      "issue": "https://github.com/rdkit/rdkit/issues/9705",
++      "date": "2026-10-15",
++      "transformations": "Select atom and bond member indices on small acyclic SMILES; no downloaded structures or attachment data",
++      "redistribution": "allowed: original project fixtures",
++      "minimization": "Conjugated dienes isolate shared direction markers; small mixed alcohols isolate atom/bond correlation; explicit H and an unselected center test preservation",
++      "oracle": "RDKit 2026.09.1, legacy perception, removeHs=False; Atom.InvertChirality and Bond.SetStereo E/Z swap with neighbour directions regenerated",
++      "spec_url": "https://www.3ds.com/assets/invest/2026-01/biovia_chemistry_2026_ctfile_formats.pdf",
++      "spec_retrieved": "2026-10-15"
++    },
++    "expected": {
++      "membership_changes": 0,
++      "indexed_graph_changes": 0,
++      "drawn_alternative_inchi_mismatches": 0,
++      "two_applications_restore_configuration": true,
++      "count_tolerance": 0
++    },
++    "cases": [
++      {
++        "id": "mixed-alcohol",
++        "smiles": "C/C=C/[C@H](O)CC",
++        "atoms": [
++          3
++        ],
++        "bonds": [
++          1
++        ]
++      },
++      {
++        "id": "diene-both",
++        "smiles": "C/C=C/C=C/C",
++        "atoms": [],
++        "bonds": [
++          1,
++          3
++        ]
++      },
++      {
++        "id": "diene-first",
++        "smiles": "C/C=C/C=C/C",
++        "atoms": [],
++        "bonds": [
++          1
++        ]
++      },
++      {
++        "id": "diene-second",
++        "smiles": "C/C=C/C=C/C",
++        "atoms": [],
++        "bonds": [
++          3
++        ]
++      },
++      {
++        "id": "alanine-center",
++        "smiles": "N[C@@H](C)C(=O)O",
++        "atoms": [
++          1
++        ],
++        "bonds": []
++      },
++      {
++        "id": "explicit-h",
++        "smiles": "[H][C@](F)(Cl)Br",
++        "atoms": [
++          1
++        ],
++        "bonds": []
++      },
++      {
++        "id": "mixed-two-bonds",
++        "smiles": "F/C=C/[C@H](C)/C=C/Cl",
++        "atoms": [
++          3
++        ],
++        "bonds": [
++          1,
++          5
++        ]
++      },
++      {
++        "id": "mixed-one-bond",
++        "smiles": "F/C=C/[C@H](C)/C=C/Cl",
++        "atoms": [
++          3
++        ],
++        "bonds": [
++          1
++        ]
++      },
++      {
++        "id": "symmetric-full-alternative",
++        "smiles": "C/C=C/[C@H](C)/C=C\\C",
++        "atoms": [
++          3
++        ],
++        "bonds": [
++          1,
++          5
++        ]
++      },
++      {
++        "id": "unselected-center",
++        "smiles": "C/C=C/[C@H](O)CC.F[C@](Cl)(Br)I",
++        "atoms": [
++          3
++        ],
++        "bonds": [
++          1
++        ]
++      },
++      {
++        "id": "eight-membered-ring",
++        "smiles": "C1/C=C/CCCCC1",
++        "atoms": [],
++        "bonds": [
++          1
++        ]
++      }
++    ],
++    "redistribution": {
++      "status": "allowed",
++      "rationale": "original project fixtures"
++    },
++    "minimization": "Conjugated dienes isolate shared direction markers; small mixed alcohols isolate atom/bond correlation; explicit H and an unselected center test preservation",
++    "oracle": {
++      "name": "direct atom/bond alternative and InChI reference",
++      "version": "RDKit 2026.09.1",
++      "settings": "legacy stereo, removeHs=False; Atom.InvertChirality, Bond.SetStereo E/Z swap, SetDoubleBondNeighborDirections; native/reference bonds matched by indexed endpoints"
++    }
++  },
++  "results": {
++    "comparisons": 528,
++    "membership_mismatches": 0,
++    "drawn_configuration_mismatches": 0,
++    "indexed_graph_mismatches": 0,
++    "double_inversion_mismatches": 0,
++    "numberings_per_kind_fixture": 24,
++    "kinds": [
++      "and",
++      "or"
++    ],
++    "fixtures": 11,
++    "cases_sha256": "6cb54d540f744a6e92d9700b400e3f763bd2a3bf411bd98726213f66384847d7",
++    "references": [
++      {
++        "id": "mixed-alcohol",
++        "source_inchi": "InChI=1S/C6H12O/c1-3-5-6(7)4-2/h3,5-7H,4H2,1-2H3/b5-3+/t6-/m1/s1",
++        "alternative_smiles": "C/C=C\\[C@@H](O)CC",
++        "alternative_inchi": "InChI=1S/C6H12O/c1-3-5-6(7)4-2/h3,5-7H,4H2,1-2H3/b5-3-/t6-/m0/s1",
++        "same_drawn_configuration": false
++      },
++      {
++        "id": "diene-both",
++        "source_inchi": "InChI=1S/C6H10/c1-3-5-6-4-2/h3-6H,1-2H3/b5-3+,6-4+",
++        "alternative_smiles": "C/C=C\\C=C/C",
++        "alternative_inchi": "InChI=1S/C6H10/c1-3-5-6-4-2/h3-6H,1-2H3/b5-3-,6-4-",
++        "same_drawn_configuration": false
++      },
++      {
++        "id": "diene-first",
++        "source_inchi": "InChI=1S/C6H10/c1-3-5-6-4-2/h3-6H,1-2H3/b5-3+,6-4+",
++        "alternative_smiles": "C/C=C\\C=C\\C",
++        "alternative_inchi": "InChI=1S/C6H10/c1-3-5-6-4-2/h3-6H,1-2H3/b5-3-,6-4+",
++        "same_drawn_configuration": false
++      },
++      {
++        "id": "diene-second",
++        "source_inchi": "InChI=1S/C6H10/c1-3-5-6-4-2/h3-6H,1-2H3/b5-3+,6-4+",
++        "alternative_smiles": "C/C=C\\C=C\\C",
++        "alternative_inchi": "InChI=1S/C6H10/c1-3-5-6-4-2/h3-6H,1-2H3/b5-3-,6-4+",
++        "same_drawn_configuration": false
++      },
++      {
++        "id": "alanine-center",
++        "source_inchi": "InChI=1S/C3H7NO2/c1-2(4)3(5)6/h2H,4H2,1H3,(H,5,6)/t2-/m0/s1",
++        "alternative_smiles": "C[C@@H](N)C(=O)O",
++        "alternative_inchi": "InChI=1S/C3H7NO2/c1-2(4)3(5)6/h2H,4H2,1H3,(H,5,6)/t2-/m1/s1",
++        "same_drawn_configuration": false
++      },
++      {
++        "id": "explicit-h",
++        "source_inchi": "InChI=1S/CHBrClF/c2-1(3)4/h1H/t1-/m1/s1",
++        "alternative_smiles": "[H][C@@](F)(Cl)Br",
++        "alternative_inchi": "InChI=1S/CHBrClF/c2-1(3)4/h1H/t1-/m0/s1",
++        "same_drawn_configuration": false
++      },
++      {
++        "id": "mixed-two-bonds",
++        "source_inchi": "InChI=1S/C6H8ClF/c1-6(2-4-7)3-5-8/h2-6H,1H3/b4-2+,5-3+/t6-/m1/s1",
++        "alternative_smiles": "C[C@H](/C=C\\F)/C=C\\Cl",
++        "alternative_inchi": "InChI=1S/C6H8ClF/c1-6(2-4-7)3-5-8/h2-6H,1H3/b4-2-,5-3-/t6-/m0/s1",
++        "same_drawn_configuration": false
++      },
++      {
++        "id": "mixed-one-bond",
++        "source_inchi": "InChI=1S/C6H8ClF/c1-6(2-4-7)3-5-8/h2-6H,1H3/b4-2+,5-3+/t6-/m1/s1",
++        "alternative_smiles": "C[C@H](/C=C\\F)/C=C/Cl",
++        "alternative_inchi": "InChI=1S/C6H8ClF/c1-6(2-4-7)3-5-8/h2-6H,1H3/b4-2+,5-3-/t6-/m0/s1",
++        "same_drawn_configuration": false
++      },
++      {
++        "id": "symmetric-full-alternative",
++        "source_inchi": "InChI=1S/C8H14/c1-4-6-8(3)7-5-2/h4-8H,1-3H3/b6-4-,7-5+/t8-/m1/s1",
++        "alternative_smiles": "C/C=C\\[C@@H](C)/C=C/C",
++        "alternative_inchi": "InChI=1S/C8H14/c1-4-6-8(3)7-5-2/h4-8H,1-3H3/b6-4-,7-5+/t8-/m1/s1",
++        "same_drawn_configuration": true
++      },
++      {
++        "id": "unselected-center",
++        "source_inchi": "InChI=1S/C6H12O.CBrClFI/c1-3-5-6(7)4-2;2-1(3,4)5/h3,5-7H,4H2,1-2H3;/b5-3+;/t6-;1-/m11/s1",
++        "alternative_smiles": "C/C=C\\[C@@H](O)CC.F[C@](Cl)(Br)I",
++        "alternative_inchi": "InChI=1S/C6H12O.CBrClFI/c1-3-5-6(7)4-2;2-1(3,4)5/h3,5-7H,4H2,1-2H3;/b5-3-;/t6-;1-/m01/s1",
++        "same_drawn_configuration": false
++      },
++      {
++        "id": "eight-membered-ring",
++        "source_inchi": "InChI=1S/C8H14/c1-2-4-6-8-7-5-3-1/h1-2H,3-8H2/b2-1+",
++        "alternative_smiles": "C1=C\\CCCCCC/1",
++        "alternative_inchi": "InChI=1S/C8H14/c1-2-4-6-8-7-5-3-1/h1-2H,3-8H2/b2-1-",
++        "same_drawn_configuration": false
++      }
++    ]
++  },
++  "rdkit_canonicalization_diagnostic": {
++    "input_atoms": [
++      3
++    ],
++    "input_bonds": [
++      1
++    ],
++    "output_groups": [
++      {
++        "atoms": [
++          3
++        ],
++        "bonds": []
++      }
++    ],
++    "note": "Group bond loss reproduced; direct atom/bond inversion above is the independent drawn-configuration reference"
++  },
++  "limits": "ABS, unsupported/non-tetrahedral/unspecified frames, axial and non-double members, small-ring double bonds, conflicting/unrepresentable direction representations fail atomically. No 3D feasibility or meso reduction; plain SMILES/InChI validate the drawn representative only, not enhanced-group identity. All native atom CIP annotations are cleared after a successful alternative.",
++  "verification": {
++    "rust": {
++      "passed": 963,
++      "failed": 0,
++      "ignored": 1,
++      "ignored_reason": "pre-existing slow real-budget VF2 calibration in drug_score.rs",
++      "new_contract_tests": 15,
++      "targets": [
++        "chematic-chem --lib --test stereo_group_inversion"
++      ]
++    },
++    "python": {
++      "passed": 92,
++      "failed": 0,
++      "new_api_tests": 31,
++      "files": [
++        "test_stereo_group_inversion.py",
++        "test_stereo_groups.py",
++        "test_stereo_candidate_budget.py"
++      ]
++    },
++    "checks": {
++      "clippy_chem_py_all_targets_warnings_denied": "passed",
++      "cargo_fmt": "passed",
++      "refactor_budget": "passed",
++      "binding_surface_inventory": "passed",
++      "product_names": "passed",
++      "mkdocs_strict": "passed",
++      "stub_syntax": "passed"
++    },
++    "environment_note": "Temporary disk pressure was resolved by removing only task-owned regenerable test/link outputs before final validation. Source and unrelated work were preserved.",
++    "log_sha256": {
++      "rust.log": "527d04c069145bca6ad78e75e1fce4c331ac08c06b3b593713c0d8ef4be8d374",
++      "python.log": "8e87d3a2e89f813808fd1ba83d812fc289105d62a190b9ec1bbb0d9bd97660a7",
++      "clippy.log": "718ce6d2d24fbfbabd0eaeea2de63cb6a20e7d5f0eae5804ee0d01943a744998",
++      "docs.log": "9cd4e668399547add00fd24b715227de91e6215ed5e68c1c474a6325ca4eb1de"
++    }
++  }
++}

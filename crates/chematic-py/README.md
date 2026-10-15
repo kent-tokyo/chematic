@@ -1,12 +1,13 @@
 # chematic
 
-Pure-Rust cheminformatics library for Python — SMILES parsing, 190+ descriptor values (71 functions), fingerprints, pKa prediction, ADMET profiling, and template-based retrosynthesis.
+Pure-Rust cheminformatics library for Python — SMILES parsing, descriptors,
+fingerprints, substructure search, formats, reactions, and bounded 3D tools.
 
-The 1.0.27 Python wheel retains the atom-output and source-atom provenance
-APIs, corrected RDKit-compatible HBA profile, and plain-SMILES ring-closure
-writer fix introduced in v1.0.25. The new caller-managed atom tags are a Rust
-API; they are not exposed as a Python feature in this release. Compatibility
-and performance claims remain operation- and corpus-scoped.
+The current published line is 1.1.3. It includes molecule pickling, indexed
+SDF access, V3000 bond-stereo collections, and reusable Python MMFF94/UFF
+force fields. Compatibility and performance claims remain operation-,
+artifact-, and corpus-scoped; see the validation and migration guides before
+replacing a production RDKit workflow.
 
 ## Installation
 

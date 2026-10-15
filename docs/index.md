@@ -84,11 +84,16 @@ v1.1.3 adds charge-conserving EEM partial charges, a corrected opt-in ETKDG
 torsion gradient, allene axial stereo, indexed SDF access, V3000 bond stereo,
 Python molecule pickling, and reusable MMFF/UFF force fields. The latest broad
 published-package performance packet remains v1.0.42 until v1.1.x artifacts
-are measured. A current-source
-macOS arm64 packet at `44338e16` matches RDKit 2026.09.1 on 10,000/10,000 TPSA,
+are measured. A recorded source snapshot at `44338e16` matches RDKit 2026.09.1
+on 10,000/10,000 TPSA,
 Labute ASA, ring-count and chiral-Morgan rows; it is not a published-package
 rerun. The 83-row reaction gate remains 80 exact graph/origin/map rows and
 three inputs invalid in both engines.
+
+The current development tree also contains unreleased bounded protein
+projections and pre-smoothing internal-coordinate constraints for the named
+RDKit-compatible distance-geometry path. These source APIs are not part of the
+v1.1.3 package claim until exact release artifacts are built and rechecked.
 
 Each result applies only to its named artifact, corpus, options, and failure
 policy. Release availability is not accuracy evidence, source results are not

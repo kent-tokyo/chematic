@@ -16,6 +16,13 @@
 //! `<bond>`: `atomRefs2` (two atom ids separated by a space), `order`
 //!           ("1" / "2" / "3" / "A" / "S" / "D" / "T")
 //!
+//! `hydrogenCount` is the total attached H count, including explicit H atom
+//! neighbors (Murray-Rust & Rzepa, DOI 10.1021/ci990052b, Table 4). The reader
+//! subtracts those neighbors before storing the core's non-node H count.
+//! When the attribute is absent, explicit H neighbors suppress further
+//! valence-based H inference (Open Babel #2655). The writer always emits the
+//! total count, including zero, so partial explicit-H graphs round-trip.
+//!
 //! # Limitations
 //!
 //! - 3D coordinates (x3/y3/z3) are parsed but not returned (only 2D x2/y2).
@@ -26,7 +33,7 @@
 
 use std::collections::HashMap;
 
-use chematic_core::{Atom, BondOrder, Element, Molecule, MoleculeBuilder};
+use chematic_core::{Atom, BondOrder, Element, Molecule, MoleculeBuilder, implicit_hcount};
 
 /// Resource limits for the lightweight CML parser.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -73,6 +80,9 @@ pub enum CmlError {
     InvalidAtomRefs2(String),
     /// A `<bond>` element's `order` attribute could not be interpreted.
     InvalidBondOrder(String),
+    /// Invalid total H count, fewer H than explicit neighbors, or a remainder
+    /// exceeding the core's non-node H-count representation (u8).
+    InvalidHydrogenCount(String),
     /// A coordinate attribute parsed as NaN or infinite.
     NonFiniteCoordinate(String),
     /// The input exceeded a configured resource limit.
@@ -93,6 +103,7 @@ impl std::fmt::Display for CmlError {
             CmlError::UnknownAtomRef(s) => write!(f, "unknown atom ref: {s}"),
             CmlError::InvalidAtomRefs2(s) => write!(f, "invalid atomRefs2: {s}"),
             CmlError::InvalidBondOrder(s) => write!(f, "invalid bond order: {s}"),
+            CmlError::InvalidHydrogenCount(s) => write!(f, "invalid CML hydrogenCount: {s}"),
             CmlError::NonFiniteCoordinate(s) => write!(f, "non-finite coordinate: {s}"),
             CmlError::ResourceLimit {
                 resource,
@@ -227,7 +238,7 @@ struct CmlAtomData {
     element: Element,
     charge: i8,
     isotope: Option<u16>,
-    hydrogen_count: Option<u8>,
+    hydrogen_count: Option<usize>,
     x2: f64,
     y2: f64,
     aromatic: bool,
@@ -309,7 +320,13 @@ fn parse_cml_atom(attrs: &HashMap<String, String>) -> Result<CmlAtomData, CmlErr
             .filter(|&value| value > 0),
         hydrogen_count: attrs
             .get("hydrogenCount")
-            .and_then(|value| value.trim().parse().ok()),
+            .map(|value| {
+                value
+                    .trim()
+                    .parse()
+                    .map_err(|_| CmlError::InvalidHydrogenCount(value.clone()))
+            })
+            .transpose()?,
         x2,
         y2,
         aromatic: false,
@@ -385,6 +402,16 @@ fn build_cml(
     mut atoms: Vec<CmlAtomData>,
     bonds: Vec<CmlBondData>,
 ) -> Result<(Molecule, Vec<(f64, f64)>), CmlError> {
+    // Include H isotopes: they are still Element::H graph nodes.
+    let mut explicit_h = vec![0usize; atoms.len()];
+    for bond in &bonds {
+        if atoms[bond.a1].element == Element::H {
+            explicit_h[bond.a2] += 1;
+        }
+        if atoms[bond.a2].element == Element::H {
+            explicit_h[bond.a1] += 1;
+        }
+    }
     for bond in bonds.iter().filter(|bond| bond.aromatic) {
         atoms[bond.a1].aromatic = true;
         atoms[bond.a2].aromatic = true;
@@ -392,11 +419,27 @@ fn build_cml(
     let mut builder = MoleculeBuilder::new();
     let mut indices = Vec::with_capacity(atoms.len());
     let mut coords = Vec::with_capacity(atoms.len());
-    for source in atoms {
+    for (index, source) in atoms.into_iter().enumerate() {
         let mut atom = Atom::new(source.element);
         atom.charge = source.charge;
         atom.isotope = source.isotope;
-        atom.hydrogen_count = source.hydrogen_count;
+        atom.hydrogen_count = match source.hydrogen_count {
+            Some(total) => {
+                let remainder = total.checked_sub(explicit_h[index]).ok_or_else(|| {
+                    CmlError::InvalidHydrogenCount(format!(
+                        "atom {index}: total {total} is smaller than {} explicit H neighbors",
+                        explicit_h[index]
+                    ))
+                })?;
+                Some(u8::try_from(remainder).map_err(|_| {
+                    CmlError::InvalidHydrogenCount(format!(
+                        "atom {index}: {remainder} non-node hydrogens exceeds 255"
+                    ))
+                })?)
+            }
+            None if explicit_h[index] > 0 => Some(0),
+            None => None,
+        };
         atom.aromatic = source.aromatic;
         indices.push(builder.add_atom(atom));
         coords.push((source.x2, source.y2));
@@ -695,6 +738,8 @@ fn is_element_tag(line: &str, name: &str) -> bool {
 ///
 /// `coords` — optional slice of `(x, y)` pairs in atom-insertion order.
 /// If `None`, no coordinate attributes are written.
+/// Every atom receives a total `hydrogenCount`, combining non-node H with
+/// explicit H neighbors, so the reader never adds or drops H through inference.
 pub fn write_cml(mol: &Molecule, coords: Option<&[(f64, f64)]>) -> String {
     let mut out = String::from(
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
@@ -719,9 +764,12 @@ pub fn write_cml(mol: &Molecule, coords: Option<&[(f64, f64)]>) -> String {
         if let Some(iso) = atom.isotope {
             parts.push(format!("isotopeNumber=\"{iso}\""));
         }
-        if let Some(h) = atom.hydrogen_count {
-            parts.push(format!("hydrogenCount=\"{h}\""));
-        }
+        let h = usize::from(implicit_hcount(mol, idx))
+            + mol
+                .neighbors(idx)
+                .filter(|(neighbor, _)| mol.atom(*neighbor).element == Element::H)
+                .count();
+        parts.push(format!("hydrogenCount=\"{h}\""));
         out.push_str(&format!("    <atom {}/>\n", parts.join(" ")));
     }
 

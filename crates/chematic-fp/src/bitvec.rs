@@ -252,6 +252,17 @@ impl BitVecN {
         self.bits
     }
 
+    /// Pack bits into little-endian bytes, with bit `i` at `i / 8`, LSB first.
+    /// The final byte is zero-padded when the bit width is not a multiple of 8.
+    pub fn to_le_bytes(&self) -> Vec<u8> {
+        let mut bytes = Vec::with_capacity(self.bits.div_ceil(8));
+        for word in &self.words {
+            bytes.extend_from_slice(&word.to_le_bytes());
+        }
+        bytes.truncate(self.bits.div_ceil(8));
+        bytes
+    }
+
     /// Set bit `bit` to 1.
     ///
     /// # Panics
@@ -498,6 +509,27 @@ mod tests {
             bv.set(size - 1);
             assert_eq!(bv.popcount(), 2);
             assert_eq!(bv.bit_width(), size);
+        }
+    }
+
+    #[test]
+    fn bitvecn_le_bytes_match_bit_positions_including_partial_words() {
+        for size in [1, 7, 8, 9, 63, 64, 65, 127, 128, 256, 512, 1024, 2048] {
+            let mut bits = BitVecN::new(size);
+            for bit in 0..size {
+                if bit % 7 == 0 || bit == size - 1 {
+                    bits.set(bit);
+                }
+            }
+            let packed = bits.to_le_bytes();
+            assert_eq!(packed.len(), size.div_ceil(8));
+            for bit in 0..packed.len() * 8 {
+                assert_eq!(
+                    (packed[bit / 8] >> (bit % 8)) & 1 != 0,
+                    bit < size && bits.get(bit),
+                    "size={size}, bit={bit}",
+                );
+            }
         }
     }
 }

@@ -1,0 +1,639 @@
+diff --git a/crates/chematic-mol/src/mol2000/writer.rs b/crates/chematic-mol/src/mol2000/writer.rs
+index 1bb1c8c5..dd12792c 100644
+--- a/crates/chematic-mol/src/mol2000/writer.rs
++++ b/crates/chematic-mol/src/mol2000/writer.rs
+@@ -427,7 +427,7 @@ fn write_atom_row(
+     for _ in symbol.len()..3 {
+         out.push(' ');
+     }
+-    if coords.is_none() && mass == 0 && charge == 0 {
++    if mass == 0 && charge == 0 {
+         out.push_str(" 0  0");
+     } else {
+         push_right_aligned_i16(out, mass, 2);
+@@ -969,8 +969,11 @@ pub fn write_sdf_with_charges(
+ /// omitted from the SD block (e.g. `_Name` is written into the MOL header, not
+ /// as an SD field).  The record is terminated with `$$$$`.
+ ///
++/// With supplied 2D coordinates, unspecified stereogenic double bonds are
++/// marked "either" so the drawing does not invent an E/Z assignment.
++///
+ /// **Does not preserve `Chirality::SquarePlanar` stereo** -- see
+-/// [`write_mol`]'s doc comment; this delegates to [`write_mol_with_coords`].
++/// [`write_mol`]'s doc comment.
+ /// Use [`write_sdf_record_with_conformer_checked`] if `mol` may carry it.
+ pub fn write_sdf_record(
+     mol: &Molecule,
+@@ -996,7 +999,16 @@ pub fn write_sdf_record_into(
+     coords: &[(f64, f64)],
+     props: &std::collections::HashMap<String, String>,
+ ) {
+-    write_mol_with_coords_into(out, mol, meta, coords);
++    // Preserve the molecule's unspecified double-bond stereo when coordinates
++    // are supplied. Otherwise an SDF consumer can infer a definite E/Z solely
++    // from the drawing, including azo bonds whose explicit "either" marker
++    // was read without any directional markers in the molecule graph.
++    let either = if !coords.is_empty() && !crate::stereo_depiction::needs_stereo_depiction(mol) {
++        crate::stereo_depiction::undeclared_stereo_double_bonds(mol)
++    } else {
++        Vec::new()
++    };
++    write_v2000_reporting(out, mol, meta, coords, &either);
+     append_sd_fields_and_delimiter(out, props);
+ }
+ 
+diff --git a/crates/chematic-mol/examples/openbabel_sdf_throughput.rs b/crates/chematic-mol/examples/openbabel_sdf_throughput.rs
+new file mode 100644
+index 00000000..d54759af
+--- /dev/null
++++ b/crates/chematic-mol/examples/openbabel_sdf_throughput.rs
+@@ -0,0 +1,88 @@
++//! In-process SDF read/write throughput and exact source-regression snapshots.
++use std::{collections::BTreeMap, error::Error, fs, hint::black_box, io::Write, time::Instant};
++
++use chematic_mol::{SdfFileReader, SdfRecord, mol2000::write_sdf_record_into};
++use serde_json::json;
++
++fn read(input: &str, expected: usize) -> Result<Vec<SdfRecord>, Box<dyn Error>> {
++    let records = SdfFileReader::new(std::io::Cursor::new(input.as_bytes()))
++        .collect::<Result<Vec<_>, _>>()?;
++    if records.len() != expected {
++        return Err(format!("expected {expected} records, got {}", records.len()).into());
++    }
++    Ok(records)
++}
++
++fn write(records: &[SdfRecord], output: &mut String) -> usize {
++    let mut bytes = 0;
++    for record in records {
++        write_sdf_record_into(
++            output,
++            &record.mol,
++            &record.meta,
++            &record.coords,
++            &record.properties,
++        );
++        bytes += black_box(output.len());
++    }
++    bytes
++}
++
++fn main() -> Result<(), Box<dyn Error>> {
++    let args: Vec<_> = std::env::args().collect();
++    if args.len() != 5 {
++        return Err("usage: openbabel_sdf_throughput PATH MODE REPEATS EXPECTED_RECORDS".into());
++    }
++    let input = fs::read_to_string(&args[1])?;
++    let mode = &args[2];
++    let repeats: usize = args[3].parse()?;
++    let expected: usize = args[4].parse()?;
++    if repeats == 0 || expected == 0 {
++        return Err("positive repetitions and record count required".into());
++    }
++    let prepared = read(&input, expected)?;
++    let mut buffer = String::new();
++    if mode == "snapshot" {
++        let snapshot: Vec<_> = prepared.iter().map(|r| json!({
++            "canonical_smiles": chematic_smiles::rdkit_canonical_smiles(&r.mol).expect("supported corpus molecule"),
++            "atoms": r.mol.atoms().map(|(i,a)| format!("{i:?}:{a:?}:{:?}", r.mol.stereo_neighbor_order(i))).collect::<Vec<_>>(),
++            "bonds": r.mol.bonds().map(|(i,b)| format!("{i:?}:{b:?}")).collect::<Vec<_>>(),
++            "coords_bits": r.coords.iter().map(|(x,y)| [x.to_bits(), y.to_bits()]).collect::<Vec<_>>(),
++            "metadata": format!("{:?}", r.meta),
++            "properties": r.properties.iter().collect::<BTreeMap<_,_>>(),
++            "stereo": format!("{:?}:{:?}:{:?}:{:?}:{:?}", r.stereo_diagnostics, r.ez_diagnostics,
++                r.coordinate_dimension, r.geometry_rank, r.stereo3d_diagnostics),
++        })).collect();
++        println!("{}", serde_json::to_string(&snapshot)?);
++        return Ok(());
++    }
++    if mode == "dump" {
++        let mut stdout = std::io::stdout().lock();
++        for r in &prepared {
++            write_sdf_record_into(&mut buffer, &r.mol, &r.meta, &r.coords, &r.properties);
++            stdout.write_all(buffer.as_bytes())?;
++        }
++        return Ok(());
++    }
++    // Warm disjoint results; prepared write inputs stay unchanged.
++    write(&prepared, &mut buffer);
++    let mut units = 0usize;
++    let started = Instant::now();
++    for _ in 0..repeats {
++        match mode.as_str() {
++            "parse" => {
++                let records = black_box(read(black_box(&input), expected)?);
++                units += records.iter().map(|r| r.mol.atom_count()).sum::<usize>();
++            }
++            "write" => units += write(&prepared, &mut buffer),
++            "roundtrip" => units += write(&read(black_box(&input), expected)?, &mut buffer),
++            _ => return Err(format!("unknown mode {mode}").into()),
++        }
++    }
++    println!(
++        "{}",
++        json!({"engine":"chematic", "mode":mode, "records":expected * repeats,
++        "repeats":repeats, "output_units":units, "elapsed_ns":started.elapsed().as_nanos()})
++    );
++    Ok(())
++}
+diff --git a/crates/chematic-mol/tests/sdf_unspecified_double_stereo.rs b/crates/chematic-mol/tests/sdf_unspecified_double_stereo.rs
+new file mode 100644
+index 00000000..9bbb9f80
+--- /dev/null
++++ b/crates/chematic-mol/tests/sdf_unspecified_double_stereo.rs
+@@ -0,0 +1,35 @@
++use chematic_mol::{MolMetadata, parse_mol_with_coords, write_sdf_record};
++
++#[test]
++fn sdf_with_supplied_coordinates_does_not_invent_unspecified_azo_stereo() {
++    let molecule = chematic_smiles::parse("CN=NC").unwrap();
++    let coords = [(-1.0, 1.0), (0.0, 0.0), (1.0, 0.0), (2.0, -1.0)];
++    let text = write_sdf_record(
++        &molecule,
++        &MolMetadata::default(),
++        &coords,
++        &Default::default(),
++    );
++    assert!(text.contains("  2  3  2  3\n"), "{text}");
++    let (_, _, observed_coords) = parse_mol_with_coords(&text).unwrap();
++    assert_eq!(observed_coords, coords);
++}
++
++#[test]
++fn sdf_keeps_declared_double_bond_stereo_and_supplied_coordinates() {
++    let molecule = chematic_smiles::parse("C/C=C/C").unwrap();
++    let coords = [(-1.0, 1.0), (0.0, 0.0), (1.0, 0.0), (2.0, -1.0)];
++    let text = write_sdf_record(
++        &molecule,
++        &MolMetadata::default(),
++        &coords,
++        &Default::default(),
++    );
++    assert!(!text.contains("  2  3  2  3\n"), "{text}");
++    let (parsed, _, observed_coords) = parse_mol_with_coords(&text).unwrap();
++    assert_eq!(observed_coords, coords);
++    assert_eq!(
++        chematic_chem::assign_ez_bonds(&parsed),
++        chematic_chem::assign_ez_bonds(&molecule)
++    );
++}
+diff --git a/tools/openbabel_sdf_throughput.cpp b/tools/openbabel_sdf_throughput.cpp
+new file mode 100644
+index 00000000..ff5ec26b
+--- /dev/null
++++ b/tools/openbabel_sdf_throughput.cpp
+@@ -0,0 +1,103 @@
++#include <openbabel/mol.h>
++#include <openbabel/obconversion.h>
++
++#include <chrono>
++#include <fstream>
++#include <iostream>
++#include <memory>
++#include <sstream>
++#include <stdexcept>
++#include <string>
++#include <vector>
++
++using Molecules = std::vector<std::unique_ptr<OpenBabel::OBMol>>;
++
++// Match Rust's borrowed Cursor: constructing an input stream does not copy
++// the entire SDF buffer on every parse. Only the get area is exposed.
++class InputBuffer : public std::streambuf {
++ public:
++  explicit InputBuffer(const std::string& input) {
++    auto first = const_cast<char*>(input.data());
++    setg(first, first, first + input.size());
++  }
++};
++
++Molecules read_records(const std::string& input, std::size_t expected) {
++  InputBuffer buffer(input);
++  std::istream stream(&buffer);
++  OpenBabel::OBConversion conversion(&stream, nullptr);
++  if (!conversion.SetInFormat("sdf")) throw std::runtime_error("SDF reader unavailable");
++  Molecules molecules;
++  molecules.reserve(expected);
++  while (true) {
++    auto molecule = std::make_unique<OpenBabel::OBMol>();
++    if (!conversion.Read(molecule.get())) break;
++    molecules.push_back(std::move(molecule));
++  }
++  if (molecules.size() != expected) throw std::runtime_error("SDF record count differs");
++  return molecules;
++}
++
++std::size_t write_records(const Molecules& molecules, OpenBabel::OBConversion& writer) {
++  std::size_t bytes = 0;
++  for (const auto& molecule : molecules) {
++    const auto text = writer.WriteString(molecule.get(), false);
++    if (text.empty()) throw std::runtime_error("SDF write failed");
++    bytes += text.size();
++  }
++  return bytes;
++}
++
++int main(int argc, char** argv) {
++  try {
++    if (argc != 5) throw std::runtime_error("usage: PATH MODE REPEATS EXPECTED_RECORDS");
++    std::ifstream file(argv[1], std::ios::binary | std::ios::ate);
++    if (!file) throw std::runtime_error("input unavailable");
++    const auto size = file.tellg();
++    if (size < 0) throw std::runtime_error("input length unavailable");
++    std::string input(static_cast<std::size_t>(size), '\0');
++    file.seekg(0);
++    if (!file.read(input.data(), input.size())) throw std::runtime_error("input read failed");
++    const std::string mode(argv[2]);
++    const auto repeats = std::stoull(argv[3]);
++    const auto expected = std::stoull(argv[4]);
++    if (repeats == 0 || expected == 0) throw std::runtime_error("positive counts required");
++    auto prepared = read_records(input, expected);
++    if (mode == "smiles") {
++      OpenBabel::OBConversion observer;
++      if (!observer.SetOutFormat("can")) throw std::runtime_error("canonical SMILES unavailable");
++      for (const auto& molecule : prepared) std::cout << observer.WriteString(molecule.get(), false);
++      return 0;
++    }
++    OpenBabel::OBConversion writer;
++    if (!writer.SetOutFormat("sdf")) throw std::runtime_error("SDF writer unavailable");
++    write_records(prepared, writer);
++    if (mode == "dump") {
++      for (const auto& molecule : prepared) std::cout << writer.WriteString(molecule.get(), false);
++      return 0;
++    }
++    std::size_t units = 0;
++    const auto started = std::chrono::steady_clock::now();
++    for (std::uint64_t iteration = 0; iteration < repeats; ++iteration) {
++      if (mode == "parse") {
++        const auto molecules = read_records(input, expected);
++        for (const auto& molecule : molecules) units += molecule->NumAtoms();
++      } else if (mode == "write") {
++        units += write_records(prepared, writer);
++      } else if (mode == "roundtrip") {
++        units += write_records(read_records(input, expected), writer);
++      } else {
++        throw std::runtime_error("unknown mode");
++      }
++    }
++    const auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(
++        std::chrono::steady_clock::now() - started).count();
++    std::cout << "{\"engine\":\"openbabel\",\"mode\":\"" << mode
++              << "\",\"records\":" << expected * repeats << ",\"repeats\":" << repeats
++              << ",\"output_units\":" << units << ",\"elapsed_ns\":" << elapsed << "}\n";
++    return 0;
++  } catch (const std::exception& error) {
++    std::cerr << error.what() << '\n';
++    return 2;
++  }
++}
+diff --git a/scripts/bench_openbabel_sdf_throughput.py b/scripts/bench_openbabel_sdf_throughput.py
+new file mode 100644
+index 00000000..42594b3c
+--- /dev/null
++++ b/scripts/bench_openbabel_sdf_throughput.py
+@@ -0,0 +1,215 @@
++#!/usr/bin/env python3
++"""Three-arm SDF batch throughput with semantic prerequisites and raw blocks.
++
++Input buffers are preloaded; executable startup and file loading are outside
++native timers. Parsers retain the whole batch. RSS is whole-process peak,
++including loading, preparation and warmup, not a streaming-memory guarantee.
++"""
++from __future__ import annotations
++
++import argparse
++from datetime import datetime, timezone
++import hashlib
++import io
++import json
++import math
++import os
++from pathlib import Path
++import platform
++import re
++import subprocess
++import sys
++
++ROOT = Path(__file__).resolve().parents[1]
++sys.path.insert(0, str(ROOT / "validation/cosmolkit_comparison"))
++from bench_corpus import paired_median_ratio_ci  # noqa: E402
++
++MODES = ("parse", "write", "roundtrip")
++FIELDS = ("graph", "atoms", "bonds", "coordinates", "name", "properties", "explicit_unknown_stereo")
++
++
++def sha(data: bytes) -> str:
++    return hashlib.sha256(data).hexdigest()
++
++
++def observe(payload: bytes) -> list[dict]:
++    from rdkit import Chem, RDLogger
++    RDLogger.DisableLog("rdApp.*")
++    rows = []
++    for molecule in Chem.ForwardSDMolSupplier(io.BytesIO(payload), sanitize=True, removeHs=False, strictParsing=True):
++        if molecule is None:
++            raise ValueError("SDF observer rejected a row; no filtering allowed")
++        unknown = sorted(tuple(sorted((b.GetBeginAtomIdx(), b.GetEndAtomIdx())))
++                         for b in molecule.GetBonds() if b.GetStereo() == Chem.BondStereo.STEREOANY)
++        rows.append({
++            "graph": Chem.MolToSmiles(molecule),
++            "atoms": [(a.GetAtomicNum(), a.GetIsotope(), a.GetFormalCharge(), a.GetNumRadicalElectrons(),
++                       a.GetTotalNumHs()) for a in molecule.GetAtoms()],
++            "bonds": sorted((min(b.GetBeginAtomIdx(), b.GetEndAtomIdx()), max(b.GetBeginAtomIdx(), b.GetEndAtomIdx()),
++                             b.GetBondTypeAsDouble()) for b in molecule.GetBonds()),
++            "coordinates": [list(p) for p in molecule.GetConformer().GetPositions()],
++            "name": molecule.GetProp("_Name") if molecule.HasProp("_Name") else "",
++            "properties": molecule.GetPropsAsDict(includePrivate=False, includeComputed=False, autoConvertStrings=False),
++            "explicit_unknown_stereo": unknown,
++        })
++    return rows
++
++
++def semantic_check(reference: list[dict], output: list[dict]) -> dict:
++    mismatches = {key: [] for key in FIELDS}
++    if len(reference) != len(output):
++        return {"passed": False, "expected_rows": len(reference), "observed_rows": len(output),
++                "record_count_mismatch": True}
++    for index, (a, b) in enumerate(zip(reference, output, strict=True)):
++        for field in FIELDS:
++            if field == "coordinates":
++                passed = len(a[field]) == len(b[field]) and all(
++                    len(pa) == len(pb) == 3 and all(
++                        math.isfinite(x) and math.isfinite(y) and abs(x - y) <= 1e-4
++                        for x, y in zip(pa, pb))
++                    for pa, pb in zip(a[field], b[field]))
++            elif field == "explicit_unknown_stereo":
++                # Marking additional unspecified bonds "either" is a safe
++                # normalization; every explicit input marker must survive.
++                passed = set(a[field]).issubset(set(b[field]))
++            else:
++                passed = a[field] == b[field]
++            if not passed:
++                mismatches[field].append(index)
++    return {"passed": not any(mismatches.values()), "expected_rows": len(reference),
++            "observed_rows": len(output), "record_count_mismatch": False,
++            "mismatch_counts": {key: len(values) for key, values in mismatches.items()},
++            "mismatch_examples": {key: values[:8] for key, values in mismatches.items()}}
++
++
++def timing_row(binary: Path, corpus: Path, mode: str, repeats: int, records: int) -> dict:
++    process = subprocess.run(["/usr/bin/time", "-l", str(binary), str(corpus), mode, str(repeats), str(records)],
++                             check=True, capture_output=True, timeout=180)
++    row = json.loads(process.stdout)
++    value = row.get("elapsed_ns")
++    if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
++        raise ValueError("invalid native timing")
++    if row.get("records") != repeats * records or row.get("repeats") != repeats or row.get("mode") != mode:
++        raise ValueError("native workload accounting differs")
++    match = re.search(rb"(\d+)\s+maximum resident set size", process.stderr)
++    if match is None:
++        raise ValueError("Darwin peak RSS unavailable")
++    row["peak_process_rss_bytes"] = int(match.group(1))
++    return row
++
++
++def eligible(semantics: dict, snapshots_equal: bool, mode: str, competitor: str) -> bool:
++    if mode == "parse":
++        return ((competitor != "baseline" or snapshots_equal)
++                and semantics["candidate_parse"]["passed"] and semantics[competitor + "_parse"]["passed"])
++    return semantics["candidate"]["passed"] and semantics[competitor]["passed"]
++
++
++def main():
++    from rdkit import Chem
++
++    parser = argparse.ArgumentParser(description=__doc__)
++    for name in ("baseline", "candidate", "openbabel", "corpus", "output", "source_manifest"):
++        parser.add_argument("--" + name.replace("_", "-"), type=Path, required=True)
++    parser.add_argument("--records", type=int, default=1000)
++    parser.add_argument("--blocks", type=int, default=21)
++    parser.add_argument("--repeats", type=int, default=5)
++    args = parser.parse_args()
++    if platform.system() != "Darwin" or args.blocks < 21 or args.repeats < 1 or args.records < 1:
++        parser.error("Darwin, at least 21 blocks and positive workload sizes required")
++    binaries = {name: getattr(args, name) for name in ("baseline", "candidate", "openbabel")}
++    source_payload = args.source_manifest.read_bytes()
++    source_manifest = json.loads(source_payload)
++
++    def check_source_files():
++        for path, expected in source_manifest["source_files_sha256"].items():
++            if sha((ROOT / path).read_bytes()) != expected:
++                raise ValueError(f"source differs from manifest: {path}")
++
++    check_source_files()
++    payload = args.corpus.read_bytes()
++    reference = observe(payload)
++    if len(reference) != args.records:
++        raise ValueError("source record count differs")
++    artifact_dir = args.output.with_suffix(".artifacts")
++    artifact_dir.mkdir(parents=True, exist_ok=True)
++    semantics = {}
++    snapshots = {}
++    rewrite_hashes = {}
++    for name, binary in binaries.items():
++        data = subprocess.run([str(binary), str(args.corpus), "dump", "1", str(args.records)],
++                              check=True, capture_output=True, timeout=180).stdout
++        (artifact_dir / (name + ".sdf")).write_bytes(data)
++        rewrite_hashes[name] = sha(data)
++        semantics[name] = semantic_check(reference, observe(data))
++        if name != "openbabel":
++            snapshot = subprocess.run([str(binary), str(args.corpus), "snapshot", "1", str(args.records)],
++                                      check=True, capture_output=True, timeout=180).stdout
++            snapshots[name] = snapshot
++            rows = json.loads(snapshot)
++            canonical = [Chem.MolToSmiles(Chem.MolFromSmiles(row["canonical_smiles"])) for row in rows]
++        else:
++            smiles = subprocess.run([str(binary), str(args.corpus), "smiles", "1", str(args.records)],
++                                    check=True, capture_output=True, timeout=180).stdout.decode().splitlines()
++            canonical = [Chem.MolToSmiles(Chem.MolFromSmiles(row.split()[0])) for row in smiles]
++        bad = [i for i, (a, b) in enumerate(zip(reference, canonical, strict=True)) if a["graph"] != b]
++        semantics[name + "_parse"] = {"passed": not bad, "rows": len(canonical), "mismatches": len(bad), "examples": bad[:8]}
++    snapshots_equal = snapshots["baseline"] == snapshots["candidate"]
++    report = {
++        "schema": "openbabel-sdf-throughput/v1", "created_utc": datetime.now(timezone.utc).isoformat(),
++        "corpus": {"path": str(args.corpus), "sha256": sha(payload), "bytes": len(payload), "records": args.records},
++        "binaries": {name: {"path": str(path), "sha256": sha(path.read_bytes())} for name, path in binaries.items()},
++        "source_manifest": source_manifest, "source_manifest_sha256": sha(source_payload),
++        "host": {"platform": platform.platform(), "python": sys.version, "cpus": os.cpu_count()},
++        "openbabel_version": subprocess.run(["obabel", "-V"], check=True, capture_output=True, text=True).stdout.strip(),
++        "rdkit_observer_version": Chem.rdBase.rdkitVersion,
++        "protocol": {"blocks": args.blocks, "repeats": args.repeats, "modes": MODES,
++                     "order": "rotating three-arm fresh processes, sequential",
++                     "timing": "native in-process loop; input loading and warmup excluded",
++                     "parse": "borrowed in-memory input, full batch retained; default diagnostic Rust reader",
++                     "write": "prepared batch, one untimed write, reusable Rust String / native OB WriteString",
++                     "roundtrip": "fresh batch parse plus write inside one timer",
++                     "rss": "Darwin whole-process high-water RSS, including input, prepared batch and warmup"},
++        "semantics": semantics, "source_parse_snapshots_equal": snapshots_equal,
++        "snapshot_sha256": {name: sha(data) for name, data in snapshots.items()}, "rewrite_sha256": rewrite_hashes,
++        "blocks": [], "summary": {}, "complete": False,
++    }
++
++    def save():
++        temporary = args.output.with_suffix(".partial")
++        temporary.write_text(json.dumps(report, indent=2) + "\n")
++        temporary.replace(args.output)
++
++    save()
++    names = list(binaries)
++    for block in range(args.blocks):
++        order = names[block % 3:] + names[:block % 3]
++        values = {"order": order, "load_average_start": list(os.getloadavg())}
++        for name in order:
++            values[name] = {mode: timing_row(binaries[name], args.corpus, mode, args.repeats, args.records) for mode in MODES}
++        report["blocks"].append(values)
++        save()
++        print(f"block {block + 1}/{args.blocks}", flush=True)
++    for mode in MODES:
++        report["summary"][mode] = {}
++        for index, name in enumerate(("baseline", "openbabel")):
++            allowed = eligible(semantics, snapshots_equal, mode, name)
++            speed = paired_median_ratio_ci(
++                [row[name][mode]["elapsed_ns"] for row in report["blocks"]],
++                [row["candidate"][mode]["elapsed_ns"] for row in report["blocks"]], seed=index) if allowed else None
++            report["summary"][mode][name] = {"speedup": speed, "semantic_prerequisite": allowed,
++                "strict_speed_win": bool(speed and speed["ci95"][0] > 1 and speed["winning_blocks"] == args.blocks)}
++    if sha(args.corpus.read_bytes()) != report["corpus"]["sha256"]:
++        raise ValueError("corpus changed during measurement")
++    for name, binary in binaries.items():
++        if sha(binary.read_bytes()) != report["binaries"][name]["sha256"]:
++            raise ValueError("binary changed during measurement")
++    if sha(args.source_manifest.read_bytes()) != sha(source_payload):
++        raise ValueError("source manifest changed during measurement")
++    check_source_files()
++    report["complete"] = True
++    save()
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/scripts/build_openbabel_sdf_speed_corpus.py b/scripts/build_openbabel_sdf_speed_corpus.py
+new file mode 100644
+index 00000000..6b33b008
+--- /dev/null
++++ b/scripts/build_openbabel_sdf_speed_corpus.py
+@@ -0,0 +1,52 @@
++#!/usr/bin/env python3
++"""Build the fixed, unfiltered SDF throughput corpus from a SMILES prefix."""
++import argparse
++import hashlib
++import json
++from pathlib import Path
++
++
++def main():
++    from rdkit import Chem
++    from rdkit.Chem import rdDepictor
++
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument("--smiles", type=Path, required=True)
++    parser.add_argument("--output", type=Path, required=True)
++    parser.add_argument("--manifest", type=Path, required=True)
++    parser.add_argument("--limit", type=int, default=1000)
++    args = parser.parse_args()
++    if args.limit <= 0:
++        parser.error("positive limit required")
++    data = args.smiles.read_bytes()
++    rows = [line.split()[0] for line in data.decode().splitlines() if line.strip()][:args.limit]
++    if len(rows) != args.limit:
++        raise ValueError("source shorter than requested limit")
++    blocks = []
++    atom_counts = []
++    for index, smiles in enumerate(rows):
++        molecule = Chem.MolFromSmiles(smiles)
++        if molecule is None:
++            raise ValueError(f"source row {index} did not parse; no row filtering allowed")
++        molecule.SetProp("_Name", f"frontier-{index:06}")
++        rdDepictor.Compute2DCoords(molecule, canonOrient=True, clearConfs=True, forceRDKit=True)
++        block = Chem.MolToMolBlock(molecule, includeStereo=True, forceV3000=False)
++        if "V2000" not in block.splitlines()[3]:
++            raise ValueError(f"source row {index} does not fit V2000")
++        blocks.append(block + f"> <source_index>\n{index}\n\n$$$$\n")
++        atom_counts.append(molecule.GetNumAtoms())
++    payload = "".join(blocks).encode()
++    args.output.write_bytes(payload)
++    args.manifest.write_text(json.dumps({
++        "schema": "openbabel-sdf-speed-corpus/v1", "source_path": str(args.smiles),
++        "source_sha256": hashlib.sha256(data).hexdigest(), "source_rows": len(rows),
++        "rows_filtered": 0, "rdkit_version": Chem.rdBase.rdkitVersion,
++        "coordinate_generation": "Compute2DCoords(canonOrient=True, clearConfs=True, forceRDKit=True)",
++        "output_sha256": hashlib.sha256(payload).hexdigest(), "output_bytes": len(payload),
++        "minimum_atoms": min(atom_counts), "maximum_atoms": max(atom_counts),
++        "total_atoms": sum(atom_counts),
++    }, indent=2) + "\n")
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/scripts/tests/test_bench_openbabel_sdf_throughput.py b/scripts/tests/test_bench_openbabel_sdf_throughput.py
+new file mode 100644
+index 00000000..d4c9809a
+--- /dev/null
++++ b/scripts/tests/test_bench_openbabel_sdf_throughput.py
+@@ -0,0 +1,66 @@
++import copy
++import importlib.util
++import json
++from pathlib import Path
++from types import SimpleNamespace
++import unittest
++from unittest.mock import patch
++
++SPEC = importlib.util.spec_from_file_location(
++    "sdf_throughput", Path(__file__).parents[1] / "bench_openbabel_sdf_throughput.py")
++bench = importlib.util.module_from_spec(SPEC)
++SPEC.loader.exec_module(bench)
++
++
++class SdfThroughputGateTests(unittest.TestCase):
++    def row(self):
++        return {"graph": "CN=NC", "atoms": [6, 7, 7, 6], "bonds": [(1, 2, 2)],
++                "coordinates": [[0.0, 0.0, 0.0]], "name": "molecule",
++                "properties": {"source_index": "0"}, "explicit_unknown_stereo": [(1, 2)]}
++
++    def test_wrong_stereo_missing_properties_and_nonfinite_coordinates_fail(self):
++        reference = [self.row()]
++        for field, value in (("graph", "C/N=N/C"), ("properties", {}),
++                             ("coordinates", [[float("nan"), 0.0, 0.0]]),
++                             ("coordinates", [[0.0, 0.0]]),
++                             ("explicit_unknown_stereo", [])):
++            output = copy.deepcopy(reference)
++            output[0][field] = value
++            self.assertFalse(bench.semantic_check(reference, output)["passed"])
++        self.assertFalse(bench.semantic_check(reference, [])["passed"])
++
++    def test_extra_either_marker_is_normalization_but_source_markers_must_survive(self):
++        reference = [self.row()]
++        output = copy.deepcopy(reference)
++        output[0]["explicit_unknown_stereo"].append((2, 3))
++        self.assertTrue(bench.semantic_check(reference, output)["passed"])
++
++    def test_baseline_writer_defect_cannot_count_as_an_equivalent_write_win(self):
++        semantics = {name: {"passed": True} for name in
++                     ("candidate", "openbabel", "candidate_parse", "baseline_parse")}
++        semantics["baseline"] = {"passed": False}
++        self.assertTrue(bench.eligible(semantics, True, "parse", "baseline"))
++        self.assertFalse(bench.eligible(semantics, True, "write", "baseline"))
++        self.assertFalse(bench.eligible(semantics, True, "roundtrip", "baseline"))
++        self.assertTrue(bench.eligible(semantics, True, "write", "openbabel"))
++
++    def test_wrong_workload_and_nonpositive_native_time_are_rejected(self):
++        good = {"elapsed_ns": 123, "records": 10, "repeats": 2, "mode": "parse"}
++        for changes in ({"records": 9}, {"elapsed_ns": 0}, {"elapsed_ns": True}, {"elapsed_ns": float("nan")}):
++            output = SimpleNamespace(stdout=json.dumps(good | changes).encode(),
++                                     stderr=b"100 maximum resident set size\n")
++            with patch.object(bench.subprocess, "run", return_value=output):
++                with self.assertRaises(ValueError):
++                    bench.timing_row(Path("binary"), Path("input"), "parse", 2, 5)
++
++    def test_roundtrip_agreement_does_not_hide_a_parser_stereo_difference(self):
++        semantics = {name: {"passed": True} for name in
++                     ("candidate", "openbabel", "baseline", "candidate_parse", "baseline_parse", "openbabel_parse")}
++        semantics["candidate_parse"]["passed"] = False
++        self.assertFalse(bench.eligible(semantics, True, "parse", "openbabel"))
++        self.assertFalse(bench.eligible(semantics, True, "parse", "baseline"))
++        self.assertTrue(bench.eligible(semantics, True, "roundtrip", "openbabel"))
++
++
++if __name__ == "__main__":
++    unittest.main()

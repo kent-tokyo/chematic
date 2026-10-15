@@ -177,6 +177,48 @@ impl Mol {
             .collect()
     }
 
+    /// Enumerate local N/O/S-C-N/O/S cation resonance (RDKit #9458).
+    ///
+    /// Returns ``forms`` (Mol objects), ``status``, ``scope``, and
+    /// ``transforms_attempted``. Indexed symmetry-equivalent placements are
+    /// retained. This is not general resonance or tautomer enumeration.
+    /// Stereo/query inputs and invalid limits raise ValueError; stereo is
+    /// never silently removed. Atom indices, isotopes and H placement survive.
+    #[pyo3(signature = (max_forms=32, max_transforms=1024, max_atoms=256))]
+    fn local_cation_resonance<'py>(
+        &self,
+        py: Python<'py>,
+        max_forms: usize,
+        max_transforms: usize,
+        max_atoms: usize,
+    ) -> PyResult<Bound<'py, PyDict>> {
+        use chematic_chem::LocalResonanceStatus;
+        let result = chematic_chem::enumerate_local_cation_resonance(
+            &self.inner,
+            &chematic_chem::LocalResonanceLimits {
+                max_forms,
+                max_transforms,
+                max_atoms,
+            },
+        )
+        .map_err(|err| PyValueError::new_err(err.to_string()))?;
+        let status = match result.status {
+            LocalResonanceStatus::CompleteWithinScope => "complete_within_scope",
+            LocalResonanceStatus::FormLimitReached => "form_limit_reached",
+            LocalResonanceStatus::TransformLimitReached => "transform_limit_reached",
+        };
+        let forms = PyList::empty(py);
+        for form in result.forms {
+            forms.append(Mol::bare(form))?;
+        }
+        let report = PyDict::new(py);
+        report.set_item("forms", forms)?;
+        report.set_item("status", status)?;
+        report.set_item("scope", "local_nos_cation_shift_v1")?;
+        report.set_item("transforms_attempted", result.transforms_attempted)?;
+        Ok(report)
+    }
+
     /// Return all stereoisomers as a list of Mol objects.
     ///
     /// Returns an empty list when the molecule has more than 6 unspecified
@@ -446,6 +488,8 @@ impl Mol {
     /// for ``m = Chem.MolFromSmiles(s)`` (``Chem.AddHs(m)`` for a molecule
     /// from :meth:`add_hydrogens`): rows in RDKit's atom order, ``1e8``
     /// between fragments.
+    /// Inputs/prepared models above 1024 atoms raise ValueError before dense
+    /// allocation; the input limit is checked before hydrogen removal.
     #[pyo3(signature = (use_bo = false, use_atom_wts = false))]
     fn rdkit_distance_matrix(&self, use_bo: bool, use_atom_wts: bool) -> PyResult<Vec<Vec<f64>>> {
         chematic_smiles::rdkit_distance_matrix(&self.inner, use_bo, use_atom_wts)
@@ -456,6 +500,8 @@ impl Mol {
     /// with the conformer ``coords`` (one ``[x, y, z]`` per atom of RDKit's
     /// molecule; for an :meth:`add_hydrogens` molecule its atom order, which
     /// is ``AddHs``'s).
+    /// Inputs/prepared models above 1024 atoms raise ValueError before model
+    /// preparation or dense allocation, including explicitly added H atoms.
     #[pyo3(signature = (coords, use_atom_wts = false))]
     fn rdkit_distance_matrix_3d(
         &self,

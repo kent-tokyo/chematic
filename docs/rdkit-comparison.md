@@ -18,8 +18,8 @@ RDKit.js 10k; the separate stress corpus retains one weaker native canonical
 SMILES round-trip result. This is source-build evidence, not a universal or
 published-package parity claim. The latest
 published-package chemistry and speed comparison packet is pinned to
-**v1.0.30** against RDKit 2026.03.6. Later dated records cover v1.0.36
-and v1.0.42 packages plus later source evidence. v1.0.42 release channels and
+**v1.0.42** against RDKit 2026.09.1. Earlier dated records cover v1.0.30 and
+v1.0.36 packages plus later source evidence. v1.0.42 release channels and
 the macOS arm64 chemistry/A6 packet are verified; other published platforms
 remain separate runs.
 
@@ -38,6 +38,12 @@ The [validation report](validation.md) links the exact artifacts, corpus
 hashes, failure counts and operation definitions. The [benchmark index](https://github.com/kent-tokyo/chematic/tree/main/benchmarks)
 keeps historical results versioned; an older speed or size figure is not a
 current-package result.
+
+The [2026-10-14 sanitized-model reuse packet](../benchmarks/2026-10-14-python-sanitized-view-reuse.md)
+records the source-wheel descriptor/fingerprint follow-up against RDKit
+2026.09.1 and COSMolKit rc22. Its two fixed slices retain first-use, repeated-use
+and actual parse-inclusive results, with output agreement required for ranking.
+It is separate from the published-package matrix above.
 
 ## Practical differences
 

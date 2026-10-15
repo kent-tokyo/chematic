@@ -1,0 +1,126 @@
+{
+  "schema": "python-first-use-followup-parity/v1",
+  "exact": {
+    "descriptors": {
+      "identical_bytes": true,
+      "sha256": "2c82ab4b8743715f742e95c9a3ca1982cb8e3b8ea0f92e9c7d2b5e4a725bba03",
+      "rows": 14072,
+      "source_previous_sha256": "2c82ab4b8743715f742e95c9a3ca1982cb8e3b8ea0f92e9c7d2b5e4a725bba03",
+      "results": 112576,
+      "retained_path": "validation/results/python-scalar-stereo-source-descriptors-2026-10-14.jsonl.gz"
+    },
+    "morgan": {
+      "identical_bytes": true,
+      "sha256": "05d98f143ef09b8b2123ee6d2bd8a3fb96dbe75aca2308f7fb7ba21bd756bfa4",
+      "rows": 14072,
+      "source_previous_sha256": "05d98f143ef09b8b2123ee6d2bd8a3fb96dbe75aca2308f7fb7ba21bd756bfa4",
+      "results": 56288,
+      "retained_path": "validation/results/python-morgan-frontier-candidate-2026-10-14.jsonl.gz"
+    }
+  },
+  "retained_artifacts": {
+    "development-broad-patch": {
+      "path": "validation/results/python-first-use-followup-development-broad-patch-2026-10-14.patch.gz",
+      "sha256": "859d735f2037a08db0a7bf438ba8cdb187891aff8b7f7c5633939baf87cb82fc",
+      "sha256_gzip": "6629116902f446f65c7d47973dbda3765de818ab4b51dff78bb85dc31fd700fb"
+    },
+    "development-broad-results": {
+      "path": "validation/results/python-first-use-followup-development-broad-results-2026-10-14.json.gz",
+      "sha256": "6f9e6814b70e0911a2658fcd74f2b0339f4db1fed86f0278e80a3c1e989f5050",
+      "sha256_gzip": "11e0e9ec213860874acb62f766bd07a2529bc603677ac470b99600204d5b62e1"
+    },
+    "development-narrow-results": {
+      "path": "validation/results/python-first-use-followup-development-narrow-results-2026-10-14.json.gz",
+      "sha256": "0c498cee9f87340500c6a451ab17da3810f0f181fc4c0ce963bcaae159054bbd",
+      "sha256_gzip": "0d2aabb31dedb056e5af7fe009a400e62c2a0dc6ed5c31332b2af97006d67605"
+    },
+    "asa-row-profile": {
+      "path": "validation/results/python-first-use-followup-asa-row-profile-2026-10-14.json.gz",
+      "sha256": "941ec4fdbba6253902170a57e436d53df967d5d05ce738d0ddd06baae88fb810",
+      "sha256_gzip": "e6a7508e2de34061809ce664f325514b74245e38f7e78da338a1dc8083484450"
+    },
+    "wheel-build": {
+      "path": "validation/results/python-first-use-followup-wheel-build-2026-10-14.txt.gz",
+      "sha256": "1ce24049771ec4ed5edddcf99a5b97976ef93b7ccfe7dba98501ac8f359922ab",
+      "sha256_gzip": "3bfce2374072fc5e4aec250764223014e632fa54d3a9bc171baf4c337a8332af"
+    },
+    "rust-tests": {
+      "path": "validation/results/python-first-use-followup-rust-tests-2026-10-14.txt.gz",
+      "sha256": "a39e93c2189799387b7a17c6a2f2bbeb69fbf89ae0e32e7bd494b67719ac5190",
+      "sha256_gzip": "a89c4ed7210844b66d9b9da0903797a666e06f7039ca98f907eba467b920f846"
+    },
+    "clippy": {
+      "path": "validation/results/python-first-use-followup-clippy-2026-10-14.txt.gz",
+      "sha256": "ae6ef72bf5c935d64c929a03ef5d636335a46f789ab353b8b056cab7c299cc81",
+      "sha256_gzip": "bdb67b92df05cdd3ac2278c107dad31f62121be88eae0c62f1c30f8821749058"
+    },
+    "python-tests": {
+      "path": "validation/results/python-first-use-followup-python-tests-2026-10-14.txt.gz",
+      "sha256": "8c6f88da7632fe8a7991192580f186a36061f6fdfed9020c9ea1ee3384ba8200",
+      "sha256_gzip": "9ea7b4c08b61c2953b4ab8a9d2b35ef8735c064b06f9c8d9ce3ad27a5e2d84ee"
+    },
+    "source-check-wrapper": {
+      "path": "validation/results/python-first-use-followup-source-check-wrapper-2026-10-14.py.gz",
+      "sha256": "cacb407c939ad04bd8f6733e16d1b78e1f9c691d99bd5636b178a5d69d20fc7e",
+      "sha256_gzip": "fb63fb9a32501459cc43f6615a55dbbe51e8a7ed7dcb0a56ee0e8f28c28b105f"
+    },
+    "slice0-measurement": {
+      "path": "validation/results/python-first-use-followup-slice0-measurement-2026-10-14.txt.gz",
+      "sha256": "18df527b2979e645854f350c50f2e1aca78db8638e64f79b9ef16281e4c1f8f7",
+      "sha256_gzip": "b3548a8777ef8e129b4d7a746e1f6f0b3199b4ef4eb44bce05cf45d81dbc93b0"
+    },
+    "slice5000-measurement": {
+      "path": "validation/results/python-first-use-followup-slice5000-measurement-2026-10-14.txt.gz",
+      "sha256": "18df527b2979e645854f350c50f2e1aca78db8638e64f79b9ef16281e4c1f8f7",
+      "sha256_gzip": "b3548a8777ef8e129b4d7a746e1f6f0b3199b4ef4eb44bce05cf45d81dbc93b0"
+    }
+  },
+  "reconstruction": {
+    "passed": true,
+    "changed_files": 4,
+    "candidate_patch_sha256": "eeea502edfea5c52ae92f2e3ddf5824a5b38d339b497fef6da750c0f9e3bff82"
+  },
+  "validation": {
+    "rust": {
+      "passed": 2371,
+      "failed": 0,
+      "ignored": 10
+    },
+    "python": {
+      "passed": 577,
+      "failed": 0
+    },
+    "release_clippy": {
+      "passed": true,
+      "crates": [
+        "chematic-perception",
+        "chematic-chem"
+      ],
+      "all_targets": true,
+      "warnings_denied": true
+    },
+    "benchmark_gate_tests": {
+      "passed": 5,
+      "failed": 0
+    },
+    "formatting_passed": true,
+    "diff_whitespace_passed": true,
+    "benchmark_index": {
+      "passed": true,
+      "records": 386
+    }
+  },
+  "source_manifest_sha256": "14f4bcc2d480b9c19312e37c0a39d35c128e9c8196325cc88f147bd816532da0",
+  "raw_summary_recalculation_passed": true,
+  "counts": {
+    "parse_inclusive": {
+      "eligible": 27,
+      "strict_wins": 27
+    },
+    "incremental": {
+      "eligible": 42,
+      "strict_wins": 1
+    }
+  },
+  "retained_artifact_integrity_passed": true
+}

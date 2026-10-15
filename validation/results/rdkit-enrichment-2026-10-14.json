@@ -1,0 +1,150 @@
+{
+  "issue": "https://github.com/rdkit/rdkit/issues/7981",
+  "artifact_lane": "local source extension; uncommitted working tree; not a release",
+  "source_baseline": "ffe682c32cb4c76de0d309649427202a7d8e956d",
+  "python": "3.13.6",
+  "rdkit_version": "2026.09.1",
+  "rdkit_calc_enrichment_sha256": "842bdfc65daf3ac81d17f76abca2b6478320f5ffc78d7b5891faa6439f673e55",
+  "module_path": "/private/tmp/chematic-rdkit-gap-target/debug/libchematic.dylib",
+  "module_sha256": "ca65f233cdb5800d2b631d557105d4690e7afeb16d9d68f5461b6aaf4ba359d4",
+  "source_sha256": {
+    "crates/chematic-chem/src/screening.rs": "436088c4c2b5222b71d1c30e03e9b0374e10c46da530524ed0691f14733dacfa",
+    "crates/chematic-py/src/similarity.rs": "44ce74e71ad0901ef27d1721e33477cc5811824890eec2133e976f075eb026d1"
+  },
+  "fixture_sha256": "d89d185936edcf5524f498f3d4eb7788f190743c169362f046b6843c5c66d37e",
+  "ordinary_single_cutoff_comparisons": 3048,
+  "max_absolute_error": 2.220446049250313e-16,
+  "boundary_comparisons": [
+    {
+      "ranked_actives": [
+        true,
+        true,
+        false,
+        false,
+        false
+      ],
+      "fractions": [
+        0.9
+      ],
+      "chematic": [
+        1.0
+      ],
+      "count_reference": [
+        1.0
+      ],
+      "rdkit": []
+    },
+    {
+      "ranked_actives": [
+        true,
+        true,
+        false,
+        false,
+        false
+      ],
+      "fractions": [
+        1.0
+      ],
+      "chematic": [
+        1.0
+      ],
+      "count_reference": [
+        1.0
+      ],
+      "rdkit": []
+    },
+    {
+      "ranked_actives": [
+        true
+      ],
+      "fractions": [
+        1.0
+      ],
+      "chematic": [
+        1.0
+      ],
+      "count_reference": [
+        1.0
+      ],
+      "rdkit": []
+    },
+    {
+      "ranked_actives": [
+        true,
+        false,
+        true,
+        false,
+        false
+      ],
+      "fractions": [
+        1.0,
+        0.2,
+        0.01,
+        0.2,
+        0.5,
+        0.9
+      ],
+      "chematic": [
+        1.0,
+        2.5,
+        2.5,
+        2.5,
+        1.6666666666666665,
+        1.0
+      ],
+      "count_reference": [
+        1.0,
+        2.5,
+        2.5,
+        2.5,
+        1.6666666666666667,
+        1.0
+      ],
+      "rdkit": []
+    }
+  ],
+  "undefined_input_rejections": [
+    {
+      "ranked_actives": [],
+      "fractions": [
+        "1.0"
+      ],
+      "error": "screening ranking is empty"
+    },
+    {
+      "ranked_actives": [
+        true
+      ],
+      "fractions": [],
+      "error": "screening fraction list is empty"
+    },
+    {
+      "ranked_actives": [
+        false
+      ],
+      "fractions": [
+        "1.0"
+      ],
+      "error": "enrichment factor is undefined for a ranking with no actives"
+    },
+    {
+      "ranked_actives": [
+        true
+      ],
+      "fractions": [
+        "0.0"
+      ],
+      "error": "fraction at index 0 must be finite and in (0, 1], got 0"
+    },
+    {
+      "ranked_actives": [
+        true
+      ],
+      "fractions": [
+        "nan"
+      ],
+      "error": "fraction at index 0 must be finite and in (0, 1], got NaN"
+    }
+  ],
+  "scope": "ranked binary labels; ceil(N*f); no sorting, ties, weights, ROC, RIE or BEDROC"
+}

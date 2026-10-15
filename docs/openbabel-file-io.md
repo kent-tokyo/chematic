@@ -73,6 +73,35 @@ all 21 blocks in all 12 lanes, with median paired speedups from 2.59x to 6.38x
 and a weakest paired 95% lower bound of 2.56x. See the
 [bounded same-process record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-10-openbabel-file-io-same-process-v1.0.42.md).
 
+The [1,000-row SDF throughput packet](../benchmarks/2026-10-14-openbabel-sdf-speed.md)
+extends the input beyond tiny fixtures. It compares native V2000 2D SDF batch
+read, prepared rewrite and read-plus-rewrite loops, with 21 rotating blocks
+and whole-process peak RSS. Both final rewrite outputs preserve every declared
+field on the unfiltered corpus. Separate graph observations expose internal
+parse-stereo differences, so parser timings are retained without a semantic
+speed-win claim. This remains source-built, single-host evidence; other formats,
+streaming memory, cold startup and published artifacts need their own gates.
+
+The [SDF reader follow-up](../benchmarks/2026-10-14-openbabel-sdf-read-followup.md)
+corrects ambiguous overlapping-neighbor stereo and checks a second unfiltered
+1,000-record slice. Candidate internal graphs and rewrites agree on both slices.
+On the additional slice, native parse, write and roundtrip beat Open Babel 3.2.1
+by 5.40x, 8.22x and 5.92x, respectively, in every one of 21 blocks. The original
+Open Babel internal graph differences remain unranked. Incremental allocation
+optimization has mixed results, and this packet does not establish general
+Open Babel superiority.
+
+The [V3000 native block packet](../benchmarks/2026-10-14-openbabel-v3000-speed.md)
+extends the comparison to individual MOL APIs, with collection framing outside
+the timer. Candidate reads and rewrites agree on two unfiltered 1,000-row slices;
+reading improves 1.055x and 1.087x over the corrected baseline in 21/21 blocks.
+Open Babel's diverse-slice graph and rewrite failures leave all six comparator
+lanes unranked. A separate controlled profile of 64 linear alkanes (16–1024 atoms)
+passes all output gates and beats Open Babel 3.2.1 by 86.675x for parsing, 2.522x
+for writing and 49.318x for roundtrip in 21/21 blocks. This controlled source
+result does not establish general superiority; incremental writing results are
+mixed, including a 0.9% regression on the additional diverse slice.
+
 ## Loss-aware MOL2 API
 
 `parse_mol2_record` and `write_mol2_record` preserve Tripos atom types, partial

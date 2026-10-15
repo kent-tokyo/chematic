@@ -279,6 +279,44 @@ def test_conformer_tools_reject_bad_coordinate_shape_and_indices():
         mol.get_bond_length([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0]], 0, 2)
 
 
+def test_3d_coordinate_consumers_reject_bad_coordinate_count():
+    """Public 3D APIs must report invalid input instead of panicking in Rust."""
+    mol = chematic.from_smiles("CC")
+    short = [[0.0, 0.0, 0.0]]
+    calls = [
+        lambda: mol.pmi(short),
+        lambda: mol.npr(short),
+        lambda: mol.asphericity(short),
+        lambda: mol.eccentricity(short),
+        lambda: mol.radius_of_gyration(short),
+        lambda: mol.plane_of_best_fit(short),
+        lambda: mol.whim(short),
+        lambda: mol.getaway(short),
+        lambda: mol.whim_getaway(short),
+        lambda: mol.autocorr_3d(short),
+        lambda: mol.pharmacophore_fp_3d(short),
+        lambda: mol.sasa_descriptor(short),
+        lambda: mol.sasa_with_probe(short),
+        lambda: mol.sasa_per_atom_3d(short),
+        lambda: mol.sasa_per_element(short),
+        lambda: mol.minimize_mmff94(short),
+        lambda: mol.minimize_dreiding(short),
+        lambda: mol.stereo_from_coords(short),
+        lambda: mol.to_pdb(short),
+        lambda: mol.to_xyz(short),
+    ]
+    for call in calls:
+        with pytest.raises(ValueError, match="expected 2 coordinates, got 1"):
+            call()
+
+
+def test_3d_coordinate_consumers_reject_non_finite_values():
+    mol = chematic.from_smiles("CC")
+    coords = [[0.0, 0.0, 0.0], [float("nan"), 0.0, 0.0]]
+    with pytest.raises(ValueError, match="coordinates must all be finite"):
+        mol.pmi(coords)
+
+
 def test_generate_3d_etkdg_atom_count():
     """ETKDG should produce one coord per heavy atom."""
     m = chematic.from_smiles("c1ccccc1")

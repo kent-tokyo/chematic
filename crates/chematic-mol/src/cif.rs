@@ -54,6 +54,49 @@ pub struct UnitCell {
 }
 
 impl UnitCell {
+    /// Validate lengths, angles and numerical invertibility of the cell.
+    ///
+    /// Lengths must be finite and positive; angles must lie strictly between
+    /// 0 and 180 degrees. The dimensionless Gram determinant must exceed
+    /// `1e-12`, and the volume must be finite and positive. Near-singular cells
+    /// below this numerical threshold are rejected as well as singular cells.
+    pub fn validate(&self) -> Result<(), CifError> {
+        for (name, value) in [("a", self.a), ("b", self.b), ("c", self.c)] {
+            if !value.is_finite() || value <= 0.0 {
+                return Err(CifError::InvalidCellParameters(format!(
+                    "length {name} must be finite and positive, got {value}"
+                )));
+            }
+        }
+        for (name, value) in [
+            ("alpha", self.alpha),
+            ("beta", self.beta),
+            ("gamma", self.gamma),
+        ] {
+            if !value.is_finite() || value <= 0.0 || value >= 180.0 {
+                return Err(CifError::InvalidCellParameters(format!(
+                    "angle {name} must be finite and between 0 and 180 degrees, got {value}"
+                )));
+            }
+        }
+        let ca = self.alpha.to_radians().cos();
+        let cb = self.beta.to_radians().cos();
+        let cg = self.gamma.to_radians().cos();
+        let determinant = 1.0 - ca * ca - cb * cb - cg * cg + 2.0 * ca * cb * cg;
+        if determinant <= 1e-12 {
+            return Err(CifError::InvalidCellParameters(format!(
+                "cell is singular or numerically near-singular (Gram determinant {determinant})"
+            )));
+        }
+        let volume = self.volume();
+        if !volume.is_finite() || volume <= 0.0 {
+            return Err(CifError::InvalidCellParameters(format!(
+                "unit cell volume must be finite and positive, got {volume}"
+            )));
+        }
+        Ok(())
+    }
+
     /// Volume in Å³.
     pub fn volume(&self) -> f64 {
         let (ca, cb, cg) = (
@@ -128,7 +171,7 @@ impl Default for CifParseLimits {
 // Error type
 // ---------------------------------------------------------------------------
 
-/// Errors that can occur when parsing CIF files.
+/// Errors that can occur when parsing or writing CIF files.
 #[derive(Debug, Clone, PartialEq)]
 pub enum CifError {
     /// No `_atom_site_*` loop with coordinates was found.
@@ -137,10 +180,11 @@ pub enum CifError {
     MissingCoordinateColumns,
     /// An element symbol or label could not be resolved.
     UnknownElement(String),
-    /// A coordinate value could not be parsed as a float.
+    /// A coordinate value is invalid, non-finite, or overflows during conversion.
     InvalidCoordinate(String),
-    /// The unit cell has degenerate angles (e.g. γ = 0° or 180°) that make
-    /// the fractional → Cartesian transformation undefined.
+    /// The coordinate count does not match the molecule's atom count.
+    CoordinateCountMismatch { expected: usize, actual: usize },
+    /// The unit cell has invalid lengths, angles, volume or numerical invertibility.
     InvalidCellParameters(String),
     /// The atom site loop uses fractional coordinates but the CIF contains no
     /// `_cell_length_*` / `_cell_angle_*` parameters to convert them.
@@ -158,10 +202,16 @@ impl core::fmt::Display for CifError {
         match self {
             Self::NoAtomSiteLoop => write!(f, "no _atom_site_* loop found in CIF"),
             Self::MissingCoordinateColumns => {
-                write!(f, "atom_site loop missing fract_x/y/z columns")
+                write!(
+                    f,
+                    "atom_site loop requires a complete fract_x/y/z or Cartn_x/y/z set"
+                )
             }
             Self::UnknownElement(s) => write!(f, "unknown element '{s}' in CIF"),
             Self::InvalidCoordinate(s) => write!(f, "invalid coordinate '{s}' in CIF"),
+            Self::CoordinateCountMismatch { expected, actual } => {
+                write!(f, "CIF requires {expected} coordinates, got {actual}")
+            }
             Self::InvalidCellParameters(s) => write!(f, "invalid cell parameters: {s}"),
             Self::MissingCellParameters => write!(
                 f,
@@ -339,13 +389,21 @@ struct AtomSiteColumns {
 impl AtomSiteColumns {
     fn from_headers(headers: &[String]) -> Result<Self, CifError> {
         let col = |name: &str| headers.iter().position(|header| header == name);
-        let cartesian = col("_atom_site_fract_x").is_none();
-        let coordinates = (
-            col("_atom_site_fract_x").or_else(|| col("_atom_site_cartn_x")),
-            col("_atom_site_fract_y").or_else(|| col("_atom_site_cartn_y")),
-            col("_atom_site_fract_z").or_else(|| col("_atom_site_cartn_z")),
-        );
-        let (Some(x), Some(y), Some(z)) = coordinates else {
+        // All three components must describe the same coordinate system.
+        // Prefer a complete fractional set; a stray fractional column must
+        // not override a complete Cartesian set or be mixed into it.
+        let complete = |prefix: &str| {
+            Some((
+                col(&format!("_atom_site_{prefix}_x"))?,
+                col(&format!("_atom_site_{prefix}_y"))?,
+                col(&format!("_atom_site_{prefix}_z"))?,
+            ))
+        };
+        let (x, y, z, cartesian) = if let Some((x, y, z)) = complete("fract") {
+            (x, y, z, false)
+        } else if let Some((x, y, z)) = complete("cartn") {
+            (x, y, z, true)
+        } else {
             return Err(CifError::MissingCoordinateColumns);
         };
         Ok(Self {
@@ -379,26 +437,16 @@ impl AtomSiteColumns {
 fn parse_cif_number(token: &str) -> Result<f64, CifError> {
     strip_esd(token)
         .parse::<f64>()
-        .map_err(|_| CifError::InvalidCoordinate(token.to_owned()))
+        .ok()
+        .filter(|value| value.is_finite())
+        .ok_or_else(|| CifError::InvalidCoordinate(token.to_owned()))
 }
 
 fn validate_fractional_cell(cell: &UnitCell, has_cell: bool) -> Result<(), CifError> {
     if !has_cell {
         return Err(CifError::MissingCellParameters);
     }
-    if cell.gamma.to_radians().sin().abs() < 1e-10 {
-        return Err(CifError::InvalidCellParameters(format!(
-            "_cell_angle_gamma = {} makes sin(γ) ≈ 0, transformation undefined",
-            cell.gamma
-        )));
-    }
-    let volume = cell.volume();
-    if !volume.is_finite() || volume <= 0.0 {
-        return Err(CifError::InvalidCellParameters(format!(
-            "unit cell volume is non-positive ({volume:.6} Å³); check _cell_angle_* values"
-        )));
-    }
-    Ok(())
+    cell.validate()
 }
 
 fn validate_plain_cif_input(input: &str, limits: &CifParseLimits) -> Result<Vec<String>, CifError> {
@@ -469,6 +517,11 @@ fn parse_plain_cif_rows(
         } else {
             cell.frac_to_cart(values.0, values.1, values.2)
         };
+        if !coord.0.is_finite() || !coord.1.is_finite() || !coord.2.is_finite() {
+            return Err(CifError::InvalidCoordinate(
+                "fractional-to-Cartesian conversion produced a non-finite value".into(),
+            ));
+        }
         builder.add_atom(Atom::new(columns.element(row)?));
         coords.push(coord);
     }
@@ -508,51 +561,116 @@ pub fn parse_cif_with_limits(input: &str, limits: &CifParseLimits) -> Result<Cif
 
 /// Write a minimal CIF file (P1, no symmetry operators).
 ///
-/// When `cell` is `None`, fractional coordinates are written as-is
-/// (the coordinates are treated as already orthogonal with a=b=c=1).
+/// Input coordinates are Cartesian Å. With a cell, they are converted to
+/// fractional coordinates. Without a cell, they are emitted unchanged under
+/// `_atom_site_Cartn_x/y/z`, without inventing a unit cell (Open Babel #2995).
+///
+/// This legacy writer pads missing coordinates with zero and does not validate
+/// the cell or numbers. Prefer [`write_cif_checked`] for caller-supplied input.
 pub fn write_cif(mol: &Molecule, coords: &[(f64, f64, f64)], cell: Option<&UnitCell>) -> String {
+    write_cif_impl(mol, coords, cell, false)
+}
+
+/// Write a minimal P1 CIF after validating the cell and coordinates.
+///
+/// Requires exactly one finite Cartesian coordinate per atom. Rejects invalid
+/// or numerically near-singular cells (see [`UnitCell::validate`]) and non-finite
+/// results of the Cartesian-to-fractional conversion (Open Babel #2818).
+/// Uses round-trip float formatting so a small valid cell is not rounded to
+/// zero by the legacy writer's fixed decimal precision. No bonds, symmetry
+/// expansion, occupancies or molecular metadata are serialized.
+pub fn write_cif_checked(
+    mol: &Molecule,
+    coords: &[(f64, f64, f64)],
+    cell: Option<&UnitCell>,
+) -> Result<String, CifError> {
+    if coords.len() != mol.atom_count() {
+        return Err(CifError::CoordinateCountMismatch {
+            expected: mol.atom_count(),
+            actual: coords.len(),
+        });
+    }
+    if let Some(cell) = cell {
+        cell.validate()?;
+    }
+    for (i, &(x, y, z)) in coords.iter().enumerate() {
+        if !x.is_finite() || !y.is_finite() || !z.is_finite() {
+            return Err(CifError::InvalidCoordinate(format!(
+                "atom {} has a non-finite Cartesian coordinate",
+                i + 1
+            )));
+        }
+        let (fx, fy, fz) = cell.map_or((x, y, z), |cell| cart_to_frac(cell, x, y, z));
+        if !fx.is_finite() || !fy.is_finite() || !fz.is_finite() {
+            return Err(CifError::InvalidCoordinate(format!(
+                "atom {} overflows during Cartesian-to-fractional conversion",
+                i + 1
+            )));
+        }
+    }
+    Ok(write_cif_impl(mol, coords, cell, true))
+}
+
+fn write_cif_impl(
+    mol: &Molecule,
+    coords: &[(f64, f64, f64)],
+    cell: Option<&UnitCell>,
+    round_trip: bool,
+) -> String {
     let mut out = String::from("data_chematic\n\n");
 
     if let Some(c) = cell {
-        out.push_str(&format!(
-            "_cell_length_a   {:.4}\n\
+        let cell_text = if round_trip {
+            format!(
+                "_cell_length_a   {}\n_cell_length_b   {}\n_cell_length_c   {}\n\
+                 _cell_angle_alpha  {}\n_cell_angle_beta   {}\n_cell_angle_gamma  {}\n\n\
+                 _symmetry_space_group_name_H-M  'P 1'\n\n",
+                c.a, c.b, c.c, c.alpha, c.beta, c.gamma
+            )
+        } else {
+            format!(
+                "_cell_length_a   {:.4}\n\
              _cell_length_b   {:.4}\n\
              _cell_length_c   {:.4}\n\
              _cell_angle_alpha  {:.3}\n\
              _cell_angle_beta   {:.3}\n\
              _cell_angle_gamma  {:.3}\n\n\
              _symmetry_space_group_name_H-M  'P 1'\n\n",
-            c.a, c.b, c.c, c.alpha, c.beta, c.gamma
-        ));
+                c.a, c.b, c.c, c.alpha, c.beta, c.gamma
+            )
+        };
+        out.push_str(&cell_text);
     }
 
     out.push_str(
         "loop_\n\
          _atom_site_label\n\
-         _atom_site_type_symbol\n\
-         _atom_site_fract_x\n\
-         _atom_site_fract_y\n\
-         _atom_site_fract_z\n",
+         _atom_site_type_symbol\n",
     );
-
-    let fallback_cell = UnitCell::default();
-    let cell_ref = cell.unwrap_or(&fallback_cell);
+    let family = if cell.is_some() { "fract" } else { "Cartn" };
+    out.push_str(&format!(
+        "_atom_site_{family}_x\n_atom_site_{family}_y\n_atom_site_{family}_z\n"
+    ));
 
     for i in 0..mol.atom_count() {
         let idx = AtomIdx(i as u32);
         let sym = mol.atom(idx).element.symbol();
         let (x, y, z) = coords.get(i).copied().unwrap_or((0.0, 0.0, 0.0));
-        let (fx, fy, fz) = cart_to_frac(cell_ref, x, y, z);
-        out.push_str(&format!(
-            "{sym}{} {sym}  {fx:.5}  {fy:.5}  {fz:.5}\n",
-            i + 1
-        ));
+        let (fx, fy, fz) = cell.map_or((x, y, z), |cell| cart_to_frac(cell, x, y, z));
+        if round_trip {
+            out.push_str(&format!("{sym}{} {sym}  {fx}  {fy}  {fz}\n", i + 1));
+        } else {
+            out.push_str(&format!(
+                "{sym}{} {sym}  {fx:.5}  {fy:.5}  {fz:.5}\n",
+                i + 1
+            ));
+        }
     }
     out
 }
 
 fn cart_to_frac(cell: &UnitCell, x: f64, y: f64, z: f64) -> (f64, f64, f64) {
-    // Exact inverse for orthogonal cells; approximate for triclinic.
+    // Inverse of UnitCell::frac_to_cart, including triclinic cells.
     let sg = cell.gamma.to_radians().sin();
     let cg = cell.gamma.to_radians().cos();
     let cb = cell.beta.to_radians().cos();

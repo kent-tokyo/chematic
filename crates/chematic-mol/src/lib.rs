@@ -75,6 +75,7 @@ pub use cdxml_document::{
 };
 pub use cif::{
     CifError, CifParseLimits, CifResult, UnitCell, parse_cif, parse_cif_with_limits, write_cif,
+    write_cif_checked,
 };
 #[cfg(feature = "crystal")]
 pub use cif::{

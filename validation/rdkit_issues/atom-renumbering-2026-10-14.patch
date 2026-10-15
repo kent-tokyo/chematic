@@ -1,0 +1,1871 @@
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 7b2e005..7e057dd 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -178,6 +178,7 @@ jobs:
+           - { package: chematic-chem, target: screening_enrichment }
+           - { package: chematic-mol, target: cif_checked_writer }
+           - { package: chematic-mol, target: pqr_pdbqt_contract }
++          - { package: chematic-chem, target: renumber_stereo_contract }
+           - { package: chematic-mol, target: cif_coordinate_contract }
+           - { package: chematic-mol, target: cml_hydrogen_contract }
+           - { package: chematic-mol, target: mol2_unity_charge }
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index d865600..5b1911a 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -12,6 +12,12 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
+ 
+ ### Added
+ 
++- Added checked atom permutations in Rust and Python (`Mol.renumber_atoms`,
++  `rdkit_compat.RenumberAtoms`) preserving stereo frames, graph metadata and
++  typed molecule properties while rebuilding derived caches. Added the stored
++  graph `Mol.atom_count` property. Compatibility
++  `GetNumAtoms()` now includes explicit H unless `onlyHeavy=True` is requested.
++
+ - Added checked PQR-to-rigid-PDBQT conversion with caller-supplied AutoDock
+   types, retained source charges/residue identity, explicit radius-loss consent,
+   and a sidecar reporting source values and serialization rounding.
+diff --git a/crates/chematic-chem/tests/renumber_stereo_contract.rs b/crates/chematic-chem/tests/renumber_stereo_contract.rs
+new file mode 100644
+index 0000000..150ec2a
+--- /dev/null
++++ b/crates/chematic-chem/tests/renumber_stereo_contract.rs
+@@ -0,0 +1,314 @@
++use chematic_core::{
++    Atom, AtomIdx, BondIdx, BondOrder, Element, Molecule, MoleculeBuilder, RGroupLabel,
++    RenumberError, STEREO_H_SENTINEL, StereoGroup, StereoGroupKind,
++};
++use chematic_smiles::{canonical_smiles, parse};
++
++fn identity(m: &Molecule) -> Vec<AtomIdx> {
++    (0..m.atom_count()).map(|i| AtomIdx(i as u32)).collect()
++}
++fn reverse(m: &Molecule) -> Vec<AtomIdx> {
++    identity(m).into_iter().rev().collect()
++}
++fn assert_indexed_graph(source: &Molecule, output: &Molecule, order: &[AtomIdx]) {
++    let mut inverse = vec![AtomIdx(0); order.len()];
++    for (new, &old) in order.iter().enumerate() {
++        inverse[old.0 as usize] = AtomIdx(new as u32);
++        assert_eq!(output.atom(AtomIdx(new as u32)), source.atom(old));
++    }
++    assert_eq!(output.bond_count(), source.bond_count());
++    for (idx, bond) in source.bonds() {
++        let b = output.bond(idx);
++        assert_eq!(
++            (b.atom1, b.atom2, b.order),
++            (
++                inverse[bond.atom1.0 as usize],
++                inverse[bond.atom2.0 as usize],
++                bond.order
++            )
++        );
++    }
++}
++
++#[test]
++fn issue9629_identity_and_reverse_keep_one_stereocenter() {
++    let m = parse("C1CCN2CCCC2C1").unwrap();
++    assert_eq!(chematic_chem::num_stereocenters(&m), 1);
++    let before = canonical_smiles(&m);
++    for order in [identity(&m), reverse(&m)] {
++        let out = m.renumber_atoms(&order).unwrap();
++        assert_indexed_graph(&m, &out, &order);
++        assert_eq!(chematic_chem::num_stereocenters(&out), 1);
++        assert_eq!(chematic_chem::num_unspecified_stereocenters(&out), 1);
++        assert_eq!(canonical_smiles(&out), before);
++    }
++}
++
++fn permutations(order: &mut [AtomIdx], start: usize, visit: &mut impl FnMut(&[AtomIdx])) {
++    if start == order.len() {
++        visit(order);
++        return;
++    }
++    for i in start..order.len() {
++        order.swap(start, i);
++        permutations(order, start + 1, visit);
++        order.swap(start, i);
++    }
++}
++
++#[test]
++fn all_120_tetrahedral_permutations_preserve_configuration() {
++    let m = parse("F[C@](Cl)(Br)I").unwrap();
++    let before = canonical_smiles(&m);
++    let mut count = 0;
++    permutations(&mut identity(&m), 0, &mut |order| {
++        let out = m.renumber_atoms(order).unwrap();
++        assert_indexed_graph(&m, &out, order);
++        assert_eq!(canonical_smiles(&out), before);
++        assert_eq!(chematic_chem::num_stereocenters(&out), 1);
++        count += 1;
++    });
++    assert_eq!(count, 120);
++}
++
++#[test]
++fn explicit_implicit_isotopic_h_and_atom_maps_survive() {
++    for smiles in [
++        "N[C@@H:7](C)C(=O)O",
++        "[H][C@:9](F)(Cl)Br",
++        "[2H][C@](F)(Cl)Br",
++    ] {
++        let m = parse(smiles).unwrap();
++        let order = reverse(&m);
++        let out = m.renumber_atoms(&order).unwrap();
++        assert_indexed_graph(&m, &out, &order);
++        assert_eq!(canonical_smiles(&out), canonical_smiles(&m));
++        let inverse: Vec<_> = (0..m.atom_count())
++            .map(|i| (m.atom_count() - 1 - i) as u32)
++            .collect();
++        for (a, _) in m.atoms() {
++            if let Some(frame) = m.stereo_neighbor_order(a) {
++                let expected: Vec<_> = frame
++                    .iter()
++                    .map(|&n| {
++                        if n == STEREO_H_SENTINEL {
++                            n
++                        } else {
++                            inverse[n as usize]
++                        }
++                    })
++                    .collect();
++                assert_eq!(
++                    out.stereo_neighbor_order(AtomIdx(inverse[a.0 as usize])),
++                    Some(expected.as_slice())
++                );
++            }
++        }
++    }
++}
++
++#[test]
++fn axial_ez_and_coordination_stereo_survive() {
++    for s in [
++        "F/C=C/Cl",
++        "F/C=C\\Cl",
++        "CC=[C@AL1]=C(C)F",
++        "Cl[Pt@SP1](Cl)(N)N",
++        "F[P@TB1](Cl)(Br)(I)N",
++        "F[Co@OH1](Cl)(Br)(I)(N)O",
++    ] {
++        let m = parse(s).unwrap();
++        let order = reverse(&m);
++        let out = m.renumber_atoms(&order).unwrap();
++        assert_indexed_graph(&m, &out, &order);
++        assert_eq!(canonical_smiles(&out), canonical_smiles(&m), "{s}");
++    }
++}
++
++#[test]
++fn cyclic_numberings_keep_bicyclic_descriptor_counts() {
++    for s in [
++        "C1CCN2CCCC2C1",
++        "C1CCN2CCC2C1",
++        "C1CN2CCC1CC2",
++        "C1CC2CCC1N2",
++    ] {
++        let m = parse(s).unwrap();
++        let n = m.atom_count();
++        let expected = chematic_chem::num_stereocenters(&m);
++        for start in 0..n {
++            let order: Vec<_> = (0..n).map(|i| AtomIdx(((start + i) % n) as u32)).collect();
++            let out = m.renumber_atoms(&order).unwrap();
++            assert_eq!(
++                chematic_chem::num_stereocenters(&out),
++                expected,
++                "{s} {start}"
++            );
++        }
++    }
++}
++
++#[test]
++fn remaps_tags_r_labels_and_enhanced_groups_but_keeps_bond_indices() {
++    let mut m = parse("F[C@](Cl)(Br)I.*").unwrap();
++    m.set_tag(AtomIdx(1), Some(431));
++    m.set_r_group(AtomIdx(5), RGroupLabel::numbered(7).unwrap());
++    m.set_stereo_groups_with_bonds(vec![(
++        StereoGroup::new(StereoGroupKind::Or(3), vec![AtomIdx(1)]),
++        vec![BondIdx(2)],
++    )]);
++    let out = m.renumber_atoms(&reverse(&m)).unwrap();
++    assert_eq!(out.atom_tag(AtomIdx(4)).unwrap().get(), 431);
++    assert_eq!(out.r_group_label(AtomIdx(0)).unwrap().number(), Some(7));
++    assert_eq!(
++        out.stereo_groups()[0],
++        StereoGroup::new(StereoGroupKind::Or(3), vec![AtomIdx(4)])
++    );
++    assert_eq!(out.stereo_group_bond_indices(0), Some(&[BondIdx(2)][..]));
++}
++
++#[test]
++fn preserves_direction_anchors_ring_closures_and_dative_orientation() {
++    let mut m = parse("N->[Cu].C1CC1").unwrap();
++    m.set_bond_direction(BondIdx(0), BondOrder::Up);
++    m.set_bond_direction_anchor(BondIdx(0), AtomIdx(0));
++    let n = m.atom_count();
++    let out = m.renumber_atoms(&reverse(&m)).unwrap();
++    assert_eq!(out.bond(BondIdx(0)).atom1, AtomIdx((n - 1) as u32));
++    assert_eq!(out.bond(BondIdx(0)).atom2, AtomIdx((n - 2) as u32));
++    assert_eq!(out.bond(BondIdx(0)).order, BondOrder::Dative);
++    assert_eq!(out.bond_direction(BondIdx(0)), Some(BondOrder::Up));
++    assert_eq!(
++        out.bond_direction_anchor(BondIdx(0)),
++        Some(AtomIdx((n - 1) as u32))
++    );
++    for (b, _) in m.bonds() {
++        assert_eq!(
++            out.smiles_ring_closure_metadata(b),
++            m.smiles_ring_closure_metadata(b)
++        );
++    }
++}
++
++#[test]
++fn derived_caches_start_empty_even_after_identity_permutation() {
++    use chematic_core::derived_cache::DerivedSlot;
++    let m = parse("C1CC1").unwrap();
++    m.seed_derived(
++        DerivedSlot::CanonicalRanks,
++        std::sync::Arc::new(vec![42u32]),
++    );
++    assert_eq!(m.derived_rdkit_num_rings(|| 7), 7);
++    let out = m.renumber_atoms(&identity(&m)).unwrap();
++    assert!(
++        out.derived_if_computed::<Vec<u32>>(DerivedSlot::CanonicalRanks)
++            .is_none()
++    );
++    assert_eq!(out.derived_rdkit_num_rings(|| 1), 1);
++    assert_eq!(m.derived_rdkit_num_rings(|| 99), 7);
++    assert_eq!(
++        *m.derived_if_computed::<Vec<u32>>(DerivedSlot::CanonicalRanks)
++            .unwrap(),
++        vec![42]
++    );
++}
++
++#[test]
++fn inverse_permutation_restores_indexed_graph_and_frames() {
++    let m = parse("N[C@@H](C)C(=O)O.F/C=C/Cl").unwrap();
++    let n = m.atom_count();
++    let order: Vec<_> = (0..n).map(|i| AtomIdx(((i + 3) % n) as u32)).collect();
++    let mut inv = vec![AtomIdx(0); n];
++    for (new, old) in order.iter().enumerate() {
++        inv[old.0 as usize] = AtomIdx(new as u32);
++    }
++    let out = m
++        .renumber_atoms(&order)
++        .unwrap()
++        .renumber_atoms(&inv)
++        .unwrap();
++    assert_indexed_graph(&m, &out, &identity(&m));
++    for (a, _) in m.atoms() {
++        assert_eq!(out.stereo_neighbor_order(a), m.stereo_neighbor_order(a));
++    }
++}
++
++#[test]
++fn invalid_orders_are_typed_errors_and_empty_graph_is_valid() {
++    let m = parse("CCO").unwrap();
++    assert!(matches!(
++        m.renumber_atoms(&[AtomIdx(0)]),
++        Err(RenumberError::Length {
++            expected: 3,
++            actual: 1
++        })
++    ));
++    assert_eq!(
++        m.renumber_atoms(&[AtomIdx(0), AtomIdx(1), AtomIdx(3)])
++            .err(),
++        Some(RenumberError::InvalidAtom(AtomIdx(3)))
++    );
++    assert_eq!(
++        m.renumber_atoms(&[AtomIdx(0), AtomIdx(1), AtomIdx(0)])
++            .err(),
++        Some(RenumberError::DuplicateAtom(AtomIdx(0)))
++    );
++    assert!(MoleculeBuilder::new().build().renumber_atoms(&[]).is_ok());
++}
++
++#[test]
++fn invalid_caller_metadata_fails_without_panicking() {
++    let m = parse("CC").unwrap();
++    let mut variants = Vec::new();
++    let mut v = m.clone();
++    v.set_stereo_neighbor_order(AtomIdx(0), vec![99]);
++    variants.push(v);
++    let mut v = m.clone();
++    v.set_stereo_neighbor_order(AtomIdx(99), vec![0]);
++    variants.push(v);
++    let mut v = m.clone();
++    v.add_stereo_group(StereoGroup::new(
++        StereoGroupKind::Absolute,
++        vec![AtomIdx(99)],
++    ));
++    variants.push(v);
++    let mut v = m.clone();
++    v.set_bond_direction(BondIdx(99), BondOrder::Up);
++    variants.push(v);
++    let mut v = m.clone();
++    v.set_bond_direction_anchor(BondIdx(0), AtomIdx(99));
++    variants.push(v);
++    let mut v = m.clone();
++    v.add_stereo_group_with_bonds(
++        StereoGroup::new(StereoGroupKind::Absolute, vec![]),
++        vec![BondIdx(99)],
++    );
++    variants.push(v);
++    for source in variants {
++        assert!(matches!(
++            source.renumber_atoms(&identity(&source)),
++            Err(RenumberError::InvalidMetadata { .. })
++        ));
++    }
++}
++
++#[test]
++fn builder_stereo_without_recorded_frame_keeps_ordered_adjacency() {
++    let mut b = MoleculeBuilder::new();
++    let mut atom = Atom::new(Element::C);
++    atom.chirality = chematic_core::Chirality::Clockwise;
++    b.add_atom(atom);
++    for e in [Element::F, Element::CL, Element::BR, Element::I] {
++        let n = b.add_atom(Atom::new(e));
++        b.add_bond(AtomIdx(0), n, BondOrder::Single).unwrap();
++    }
++    let m = b.build();
++    let out = m.renumber_atoms(&reverse(&m)).unwrap();
++    assert_eq!(
++        out.neighbors(AtomIdx(4))
++            .map(|(a, _)| a.0)
++            .collect::<Vec<_>>(),
++        vec![3, 2, 1, 0]
++    );
++    assert_eq!(canonical_smiles(&out), canonical_smiles(&m));
++}
+diff --git a/crates/chematic-core/src/lib.rs b/crates/chematic-core/src/lib.rs
+index f95de14..8f03afc 100644
+--- a/crates/chematic-core/src/lib.rs
++++ b/crates/chematic-core/src/lib.rs
+@@ -38,7 +38,9 @@ pub use extension::{ExtensionError, ExtensionRegistry, ExtensionValue, MoleculeE
+ pub use kekulization::{
+     KekuleError, KekuleResult, apply_kekule, atom_must_be_matched, kekulize, kekulize_with,
+ };
+-pub use molecule::{AtomIdx, BondIdx, MolError, Molecule, MoleculeBuilder, STEREO_H_SENTINEL};
++pub use molecule::{
++    AtomIdx, BondIdx, MolError, Molecule, MoleculeBuilder, RenumberError, STEREO_H_SENTINEL,
++};
+ pub use nontetrahedral::NonTetrahedralClass;
+ // `StereoConfiguration`/`CanonicalStereoConfiguration`/`canonicalize_configuration`/
+ // `equivalent_under_rotation` are deliberately `pub(crate)`, not re-exported
+diff --git a/crates/chematic-core/src/molecule.rs b/crates/chematic-core/src/molecule.rs
+index e71b73c..e91b6da 100644
+--- a/crates/chematic-core/src/molecule.rs
++++ b/crates/chematic-core/src/molecule.rs
+@@ -104,6 +104,7 @@ include!("molecule/access.rs");
+ include!("molecule/graph.rs");
+ include!("molecule/metadata.rs");
+ include!("molecule/cache.rs");
++include!("molecule/renumber.rs");
+ include!("molecule/builder.rs");
+ 
+ #[cfg(test)]
+diff --git a/crates/chematic-core/src/molecule/renumber.rs b/crates/chematic-core/src/molecule/renumber.rs
+new file mode 100644
+index 0000000..65c61e9
+--- /dev/null
++++ b/crates/chematic-core/src/molecule/renumber.rs
+@@ -0,0 +1,158 @@
++/// Invalid atom permutation or an invalid reference in caller-set metadata.
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub enum RenumberError {
++    Length { expected: usize, actual: usize },
++    InvalidAtom(AtomIdx),
++    DuplicateAtom(AtomIdx),
++    InvalidMetadata { field: &'static str, index: u32 },
++}
++
++impl core::fmt::Display for RenumberError {
++    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
++        match self {
++            Self::Length { expected, actual } => {
++                write!(f, "atom order needs {expected} indices, got {actual}")
++            }
++            Self::InvalidAtom(idx) => write!(f, "atom order index {} is out of range", idx.0),
++            Self::DuplicateAtom(idx) => write!(f, "atom order repeats index {}", idx.0),
++            Self::InvalidMetadata { field, index } => {
++                write!(f, "invalid {field} reference {index}")
++            }
++        }
++    }
++}
++impl std::error::Error for RenumberError {}
++
++fn mapped_atom(
++    inverse: &[AtomIdx],
++    old: u32,
++    field: &'static str,
++) -> Result<AtomIdx, RenumberError> {
++    inverse
++        .get(old as usize)
++        .copied()
++        .ok_or(RenumberError::InvalidMetadata { field, index: old })
++}
++
++impl Molecule {
++    /// Copy with `new_order[new_index] = old_index`, a full atom permutation.
++    ///
++    /// Bond indices and each atom's ordered neighbour slots remain unchanged.
++    /// Atom references in stereo frames, groups and direction anchors are
++    /// remapped, so chirality tags retain their meaning without parity flips.
++    /// Atom data, tags, R labels and bond metadata survive; all derived caches
++    /// start empty. No perception/sanitization is performed. Coordinates and
++    /// external per-atom arrays must be reordered separately by the caller.
++    pub fn renumber_atoms(&self, new_order: &[AtomIdx]) -> Result<Self, RenumberError> {
++        let n = self.atoms.len();
++        if new_order.len() != n {
++            return Err(RenumberError::Length {
++                expected: n,
++                actual: new_order.len(),
++            });
++        }
++        let mut inverse = vec![AtomIdx(STEREO_H_SENTINEL); n];
++        for (new, &old) in new_order.iter().enumerate() {
++            let slot = inverse
++                .get_mut(old.0 as usize)
++                .ok_or(RenumberError::InvalidAtom(old))?;
++            if slot.0 != STEREO_H_SENTINEL {
++                return Err(RenumberError::DuplicateAtom(old));
++            }
++            *slot = AtomIdx(new as u32);
++        }
++        // Molecule::clone deliberately clears every derived perception cache.
++        let mut output = self.clone();
++        output.atoms = new_order
++            .iter()
++            .map(|old| self.atoms[old.0 as usize].clone())
++            .collect();
++        if !self.atom_tags.is_empty() {
++            output.atom_tags = new_order
++                .iter()
++                .map(|old| self.atom_tags.get(old.0 as usize).copied().flatten())
++                .collect();
++        }
++        output.adjacency = new_order
++            .iter()
++            .map(|old| {
++                self.adjacency[old.0 as usize]
++                    .iter()
++                    .map(|(nb, bond)| Ok((mapped_atom(&inverse, nb.0, "adjacency")?, *bond)))
++                    .collect::<Result<Vec<_>, RenumberError>>()
++            })
++            .collect::<Result<Vec<_>, _>>()?;
++        for bond in &mut output.bonds {
++            bond.atom1 = mapped_atom(&inverse, bond.atom1.0, "bond endpoint")?;
++            bond.atom2 = mapped_atom(&inverse, bond.atom2.0, "bond endpoint")?;
++        }
++        output.remap_renumber_metadata(&inverse)?;
++        Ok(output)
++    }
++
++    fn remap_renumber_metadata(&mut self, inverse: &[AtomIdx]) -> Result<(), RenumberError> {
++        self.validate_renumber_bond_metadata()?;
++        self.r_groups = std::mem::take(&mut self.r_groups)
++            .into_iter()
++            .map(|(old, label)| Ok((mapped_atom(inverse, old, "R group")?.0, label)))
++            .collect::<Result<_, RenumberError>>()?;
++        for group in &mut self.stereo_groups {
++            for idx in &mut group.atom_indices {
++                *idx = mapped_atom(inverse, idx.0, "stereo group")?;
++            }
++        }
++        self.stereo_neighbor_order = std::mem::take(&mut self.stereo_neighbor_order)
++            .into_iter()
++            .map(|(old, frame)| {
++                let center = mapped_atom(inverse, old, "stereo center")?;
++                let frame = frame
++                    .into_iter()
++                    .map(|nb| {
++                        if nb == STEREO_H_SENTINEL {
++                            Ok(nb)
++                        } else {
++                            mapped_atom(inverse, nb, "stereo neighbour").map(|a| a.0)
++                        }
++                    })
++                    .collect::<Result<_, _>>()?;
++                Ok((center.0, frame))
++            })
++            .collect::<Result<_, RenumberError>>()?;
++        for anchor in self.bond_direction_anchors.values_mut() {
++            *anchor = mapped_atom(inverse, anchor.0, "direction anchor")?;
++        }
++        Ok(())
++    }
++
++    fn validate_renumber_bond_metadata(&self) -> Result<(), RenumberError> {
++        for (field, indices) in [
++            (
++                "stereo group bond",
++                self.stereo_group_bonds
++                    .iter()
++                    .flatten()
++                    .map(|b| b.0)
++                    .collect::<Vec<_>>(),
++            ),
++            (
++                "bond direction",
++                self.bond_directions.keys().copied().collect(),
++            ),
++            (
++                "direction anchor bond",
++                self.bond_direction_anchors.keys().copied().collect(),
++            ),
++            (
++                "ring closure bond",
++                self.smiles_ring_closure_keys.keys().copied().collect(),
++            ),
++        ] {
++            for index in indices {
++                if index as usize >= self.bonds.len() {
++                    return Err(RenumberError::InvalidMetadata { field, index });
++                }
++            }
++        }
++        Ok(())
++    }
++}
+diff --git a/crates/chematic-py/python/chematic/__init__.pyi b/crates/chematic-py/python/chematic/__init__.pyi
+index a3b4662..375c6a1 100644
+--- a/crates/chematic-py/python/chematic/__init__.pyi
++++ b/crates/chematic-py/python/chematic/__init__.pyi
+@@ -110,6 +110,15 @@ class MolecularForceField:
+ # ---------------------------------------------------------------------------
+ 
+ class Mol:
++    @property
++    def atom_count(self) -> int:
++        """Number of stored graph atoms, including explicit hydrogens."""
++        ...
++
++    def renumber_atoms(self, new_order: Sequence[int]) -> Mol:
++        """Copy with new_order[new_index] = old_index, preserving stereo and properties."""
++        ...
++
+     """A parsed molecule.
+ 
+     Create with :func:`from_smiles`, :func:`from_mol_block`, or :func:`from_inchi`.
+diff --git a/crates/chematic-py/python/chematic/rdkit_compat.py b/crates/chematic-py/python/chematic/rdkit_compat.py
+index 6a330ea..d39af37 100644
+--- a/crates/chematic-py/python/chematic/rdkit_compat.py
++++ b/crates/chematic-py/python/chematic/rdkit_compat.py
+@@ -22,8 +22,6 @@ raise explicitly rather than silently changing the fingerprint algorithm.
+ 
+ Known differences vs RDKit:
+ 
+-- ``GetNumAtoms()`` returns heavy-atom count regardless of ``onlyHeavy``.
+-  Use ``mol.add_hydrogens()`` before calling if you need H-inclusive counts.
+ - ``GetMorganFingerprintAsBitVect`` uses chematic's ECFP algorithm; Morgan
+   bit patterns differ from RDKit's due to different hash implementations.
+ - ``SanitizeMol`` / ``Kekulize`` are no-ops — chematic sanitizes on parse.
+@@ -43,7 +41,7 @@ __all__ = [
+     "ExplicitBitVect",
+     "MolFromSmiles", "MolToSmiles", "MolFromMolBlock", "MolFromMolFile",
+     "MolToMolBlock", "SanitizeMol", "Kekulize", "AddHs", "RemoveHs",
+-    "MolFromSmarts",
++    "MolFromSmarts", "RenumberAtoms",
+     "CanonSmiles", "AllChem", "rdFingerprintGenerator",
+     "MolFromMrvBlock", "MolFromMrvFile", "MolToMrvBlock", "MolToMrvFile",
+     "SDMolSupplier", "SDWriter", "SmilesMolSupplier", "SmilesWriter",
+@@ -316,9 +314,8 @@ class Mol:
+ 
+     # -- atom / bond counts --------------------------------------------------
+ 
+-    def GetNumAtoms(self, onlyHeavy: bool = True) -> int:
+-        # ponytail: always heavy-atom count; AddHs not tracked in this wrapper
+-        return self._mol.heavy_atoms
++    def GetNumAtoms(self, onlyHeavy: bool = False) -> int:
++        return self._mol.heavy_atoms if onlyHeavy else self._mol.atom_count
+ 
+     def GetNumHeavyAtoms(self) -> int:
+         return self._mol.heavy_atoms
+@@ -692,6 +689,15 @@ def Kekulize(mol: Mol, clearAromaticFlags: bool = False) -> None:
+     """No-op: chematic kekulizes on demand internally."""
+ 
+ 
++def RenumberAtoms(mol: Mol, newOrder) -> Mol:
++    """Copy with newOrder[new_index] = old_index, preserving stereo and properties.
++
++    Bond indices stay fixed. External coordinate/atom arrays must be reordered
++    separately; this wrapper does not store conformers.
++    """
++    return Mol(mol._mol.renumber_atoms(newOrder))
++
++
+ def AddHs(mol: Mol, addCoords: bool = False) -> Mol:
+     """Return a new ``Mol`` with explicit hydrogens added."""
+     return Mol(mol._mol.add_hydrogens())
+diff --git a/crates/chematic-py/src/mol_methods/transformations.rs b/crates/chematic-py/src/mol_methods/transformations.rs
+index b4b06a4..1887f03 100644
+--- a/crates/chematic-py/src/mol_methods/transformations.rs
++++ b/crates/chematic-py/src/mol_methods/transformations.rs
+@@ -2,6 +2,43 @@ use super::*;
+ 
+ #[pymethods]
+ impl Mol {
++    /// Number of stored graph atoms, including every explicit hydrogen.
++    #[getter]
++    fn atom_count(&self) -> usize {
++        self.inner.atom_count()
++    }
++
++    /// Return a copy with new_order[new_index] = old_index. Preserve all graph
++    /// stereo metadata and typed molecule properties; recompute derived caches.
++    fn renumber_atoms(&self, new_order: Vec<Bound<'_, PyAny>>) -> PyResult<Mol> {
++        let order = new_order
++            .iter()
++            .map(|index| {
++                if index.is_instance_of::<pyo3::types::PyBool>() {
++                    return Err(PyValueError::new_err(
++                        "atom order indices must be integers, not bool",
++                    ));
++                }
++                index
++                    .extract::<u32>()
++                    .map(chematic_core::AtomIdx)
++                    .map_err(|_| {
++                        PyValueError::new_err(
++                            "atom order indices must be nonnegative 32-bit integers",
++                        )
++                    })
++            })
++            .collect::<PyResult<Vec<_>>>()?;
++        let molecule = self
++            .inner
++            .renumber_atoms(&order)
++            .map_err(|e| PyValueError::new_err(e.to_string()))?;
++        Ok(Mol {
++            inner: Arc::new(molecule),
++            props: self.props.clone(),
++        })
++    }
++
+     // -----------------------------------------------------------------------
+     // Transformations
+     // -----------------------------------------------------------------------
+diff --git a/crates/chematic-py/tests/test_renumber_atoms.py b/crates/chematic-py/tests/test_renumber_atoms.py
+new file mode 100644
+index 0000000..c482244
+--- /dev/null
++++ b/crates/chematic-py/tests/test_renumber_atoms.py
+@@ -0,0 +1,102 @@
++"""Atom permutation contracts, including RDKit issue #9629."""
++import itertools
++import pytest
++import chematic
++from chematic import rdkit_compat as Chem
++from chematic.rdkit_compat import rdMolDescriptors as D
++
++
++@pytest.mark.parametrize('smiles', ['C1CCN2CCCC2C1','C1CCN2CCC2C1','C1CN2CCC1CC2','C1CC2CCC1N2'])
++def test_bicyclic_counts_are_stable_with_warm_and_cold_caches(smiles):
++    mol=Chem.MolFromSmiles(smiles)
++    before=D.CalcNumAtomStereoCenters(mol)
++    n=mol.GetNumAtoms()
++    mol.GetRingInfo().AtomRings()
++    mol.GetAtoms()
++    mol.GetBonds()
++    for order in [list(range(n)),list(reversed(range(n))),list(range(1,n))+[0]]:
++        out=Chem.RenumberAtoms(mol,order)
++        assert D.CalcNumAtomStereoCenters(out)==before
++        assert Chem.MolToSmiles(out)==Chem.MolToSmiles(mol)
++        assert out._atom_cache is None
++        assert out._ring_info_cache is None
++    if smiles=='C1CCN2CCCC2C1':
++        assert before==1
++
++
++def test_all_tetrahedral_permutations_keep_configuration_and_indexed_atoms():
++    mol=chematic.from_smiles('F[C@](Cl)(Br)I')
++    rows=mol.atom_table
++    for order in itertools.permutations(range(5)):
++        out=mol.renumber_atoms(order)
++        assert out.smiles==mol.smiles
++        assert out.num_stereocenters==1
++        # Atom table's final degree/ring fields are graph-derived; each follows
++        # the same source atom after a permutation.
++        assert out.atom_table==[rows[i] for i in order]
++
++
++@pytest.mark.parametrize('smiles', [
++    'N[C@@H:7](C)C(=O)O','[H][C@](F)(Cl)Br','[2H][C@](F)(Cl)Br',
++    'F/C=C/Cl','F/C=C\\Cl','CC=[C@AL1]=C(C)F',
++    'Cl[Pt@SP1](Cl)(N)N','F[P@TB1](Cl)(Br)(I)N','F[Co@OH1](Cl)(Br)(I)(N)O',
++])
++def test_stereo_classes_and_isotopes_survive_reverse(smiles):
++    mol=chematic.from_smiles(smiles)
++    out=mol.renumber_atoms(list(reversed(range(mol.atom_count))))
++    assert out.smiles==mol.smiles
++    assert out.atom_count==mol.atom_count
++    assert out.exact_mass==pytest.approx(mol.exact_mass)
++
++
++def test_typed_properties_and_name_are_copied_independently():
++    source=Chem.MolFromSmiles('N[C@@H](C)C(=O)O')
++    source.SetName('source')
++    source.SetIntProp('integer',-7)
++    source.SetUnsignedProp('unsigned',9)
++    source.SetDoubleProp('double',1.25)
++    source.SetBoolProp('bool',True)
++    source.SetProp('string','unchanged')
++    out=Chem.RenumberAtoms(source,list(reversed(range(source.GetNumAtoms()))))
++    assert out.GetName()=='source'
++    assert out.GetIntProp('integer')==-7
++    assert out.GetUnsignedProp('unsigned')==9
++    assert out.GetDoubleProp('double')==1.25
++    assert out.GetBoolProp('bool') is True
++    assert out.GetProp('string')=='unchanged'
++    out.SetName('copy')
++    out.SetIntProp('integer',3)
++    assert source.GetName()=='source'
++    assert source.GetIntProp('integer')==-7
++
++
++def test_get_num_atoms_accounts_for_explicit_h_in_permutations():
++    explicit=Chem.MolFromSmiles('[H][C@](F)(Cl)Br')
++    assert explicit.GetNumAtoms()==5
++    assert explicit.GetNumAtoms(onlyHeavy=True)==4
++    assert Chem.RenumberAtoms(explicit,list(range(5))).GetNumAtoms()==5
++    mol=Chem.AddHs(Chem.MolFromSmiles('CO'))
++    assert mol.GetNumAtoms()==6
++    assert mol.GetNumAtoms(onlyHeavy=True)==2
++    assert Chem.RenumberAtoms(mol,list(reversed(range(mol.GetNumAtoms())))).GetNumAtoms()==6
++
++
++@pytest.mark.parametrize('order', [[],[0],[0,1],[0,1,1],[0,1,3],[-1,1,2],[0,1,2**32],[False,1,2],[0,1,1.5],[0,1,'2']])
++def test_invalid_permutations_raise_value_error(order):
++    with pytest.raises(ValueError):
++        chematic.from_smiles('CCO').renumber_atoms(order)
++
++
++def test_empty_graph_accepts_empty_permutation():
++    mol=Chem.RWMol().GetMol()
++    assert Chem.RenumberAtoms(mol,[]).GetNumAtoms()==0
++
++
++def test_bond_indices_and_endpoint_direction_remain_fixed():
++    mol=chematic.from_smiles('N->[Cu].F/C=C/Cl')
++    order=list(reversed(range(mol.atom_count)))
++    inverse={old:new for new,old in enumerate(order)}
++    out=mol.renumber_atoms(order)
++    for before,after in zip(mol.bond_table,out.bond_table):
++        assert after[:2]==(inverse[before[0]],inverse[before[1]])
++        assert after[2:]==before[2:]
+diff --git a/docs/atom-renumbering-stereo.md b/docs/atom-renumbering-stereo.md
+new file mode 100644
+index 0000000..cc19715
+--- /dev/null
++++ b/docs/atom-renumbering-stereo.md
+@@ -0,0 +1,115 @@
++# Atom permutations with preserved stereo
++
++This local candidate adds the missing atom-permutation workflow to chematic,
++using [RDKit #9629](https://github.com/rdkit/rdkit/issues/9629) as a ring/stereo
++invariance diagnostic. The native baseline already counted one stereocenter
++for `C1CCN2CCCC2C1`; it had no public atom-renumbering API. This addition makes
++that count stable through both identity and nontrivial atom permutations.
++
++## Use
++
++```python
++import chematic
++from chematic import rdkit_compat as Chem
++from chematic.rdkit_compat import rdMolDescriptors
++
++mol = Chem.MolFromSmiles("C1CCN2CCCC2C1")
++order = list(reversed(range(mol.GetNumAtoms())))
++copy = Chem.RenumberAtoms(mol, order)
++assert rdMolDescriptors.CalcNumAtomStereoCenters(mol) == 1
++assert rdMolDescriptors.CalcNumAtomStereoCenters(copy) == 1
++
++native = chematic.from_smiles("[H][C@](F)(Cl)Br")
++assert native.atom_count == 5
++copy = native.renumber_atoms(list(reversed(range(native.atom_count))))
++assert copy.smiles == native.smiles
++```
++
++Rust provides `Molecule::renumber_atoms(&[AtomIdx]) -> Result<Molecule,
++RenumberError>`, with `RenumberError` re-exported by `chematic_core`.
++The order convention is `new_order[new_index] = old_index`, matching
++[RDKit's RenumberAtoms documentation](https://www.rdkit.org/docs/source/rdkit.Chem.rdmolops.html#rdkit.Chem.rdmolops.RenumberAtoms).
++
++Python's native `Mol.atom_count` reports the number of stored graph atoms,
++including every explicit H. The separate `rdkit_num_atoms()` descriptor
++operates on the RDKit-prepared view, which can remove ordinary explicit H;
++use the stored count to build atom permutations. The compatibility wrapper
++now makes `GetNumAtoms()` return the stored count by default, with
++`GetNumAtoms(onlyHeavy=True)` available for the heavy-atom count.
++
++## Preserved meaning
++
++- Atom fields, isotope/H counts, atom maps, nonchemical tags and R labels
++  follow their source atoms.
++- Bond indices, bond orders, endpoint orientation and each atom's ordered
++  adjacency slots stay fixed relative to their original graph entities.
++  Dative donor/acceptor orientation is preserved.
++- Remap atom references in tetrahedral/axial/coordination stereo frames,
++  enhanced stereo groups and aromatic direction anchors. Preserve the virtual
++  implicit-H sentinel and each frame's ordering. Because neighbour slots are
++  unchanged, the atom chirality tag retains its meaning without a parity flip.
++- Retain enhanced bond-group membership, directional-bond stashes and SMILES
++  ring-closure metadata; their bond indices do not change.
++- Start every derived cache empty, even for the identity permutation.
++  Recompute ring and descriptor data from the copied graph. The source graph
++  and its already-computed caches stay intact.
++- Python copies molecule properties with their types and name, independently
++  of the source property store. The compatibility wrapper also starts with
++  empty atom/bond/ring wrapper caches.
++
++The permutation must include every source atom exactly once. Wrong length,
++duplicates and out-of-range atom indices return typed Rust errors or Python
++`ValueError`. Python also rejects bool, noninteger, negative and oversized
++indices. Invalid references in caller-set stereo/bond metadata return a typed
++error rather than indexing out of bounds. An empty graph accepts an empty order.
++
++This operation changes indices without sanitizing or assigning new chemistry.
++The core graph does not own conformers or file-record arrays. Reorder external
++coordinates, PQR rows and other per-atom arrays separately using the same
++new-to-old order. Custom property payloads are copied verbatim; any atom
++indices encoded inside those payloads remain the caller's responsibility.
++
++## Evidence
++
++With RDKit 2026.09.1 and legacy stereo perception enabled, the issue example
++has count 1 after parsing, count 2 after identity `RenumberAtoms`, and count 1
++when `GetSSSR` is called on a separately renumbered reference before counting.
++The chematic copy remains at 1.
++
++The independent validation recipe covers 15 small structures: bicyclic amines,
++both tetrahedral configurations, explicit/implicit/isotopic H, atom maps,
++E/Z, allene, square-planar, trigonal-bipyramidal and octahedral stereo. It uses
++all permutations for at most five atoms; larger graphs use identity, reverse,
++cyclic shifts and 16 seeded random shuffles, with duplicates removed.
++
++Across 838 permutations, every native count matched both the original RDKit
++count and the reference with recalculated SSSR. Every output retained the
++indexed atom table and gave the original isomeric structure when read back by
++RDKit. The unrepaired RDKit path changed counts in 51 of these permutations.
++These are fixed diagnostic inputs, not an estimate of real-world error rates
++or a claim about all RDKit stereoperception.
++
++The fixture recipe, provenance, license, minimization, exact oracle settings,
++source/module hashes, per-structure results and normalized case hash are in
++`validation/results/rdkit-atom-renumbering-2026-10-14.json`. No upstream
++corpus, source code or attachment was copied.
++
++```sh
++cargo test -p chematic-core -p chematic-chem -p chematic-smiles -p chematic-smarts --lib --offline
++cargo test -p chematic-chem --test renumber_stereo_contract --offline
++python -m pytest crates/chematic-py/tests/test_renumber_atoms.py crates/chematic-py/tests/test_rdkit_compat.py
++python scripts/validate_atom_renumbering.py
++```
++
++Rust passed 1,721 tests (1,709 library plus 12 new contracts), with two
++pre-existing ignored tests. Python passed 190 tests (28 new, 162 existing
++compatibility tests). The 838-case comparison uses RDKit 2026.09.1 with
++`removeHs=False` and temporarily scoped legacy stereo perception; it restores
++the process setting afterward. Clippy with warnings denied, formatting,
++refactor budget, binding inventory, naming and strict documentation checks
++also passed. The integration target is registered in the CI matrix.
++
++Implementation is in an isolated source copy preserving the preceding query-H
++and PQR candidates. This feature's portable patch contains only atom-numbering
++changes relative to that snapshot. It is uncommitted and unpublished; these
++measurements concern local source.
+diff --git a/docs/rdkit-open-issues-2026-10-14.md b/docs/rdkit-open-issues-2026-10-14.md
+index 0336bdc..7f82ae5 100644
+--- a/docs/rdkit-open-issues-2026-10-14.md
++++ b/docs/rdkit-open-issues-2026-10-14.md
+@@ -7,6 +7,7 @@ Issue state is a snapshot; an open issue can already have a proposed upstream fi
+ 
+ | RDKit issue | Source finding | Decision |
+ | --- | --- | --- |
++| [#9629: atom-renumbering changes stereo counts](https://github.com/rdkit/rdkit/issues/9629) | Native baseline counted one center but lacked a public permutation API. | [Added checked atom permutations](atom-renumbering-stereo.md) with remapped stereo metadata and cold caches; 838 RDKit-reference permutations, including the identity-ring regression. |
+ | [#9675: query H folding loses/inverts tetrahedral configuration](https://github.com/rdkit/rdkit/issues/9675) | No query-H folding API existed; the main native matcher compared raw chirality tags. | [Local Rust/Python candidate](query-hydrogen-folding.md): conservative H folding, complete-frame parity, lexical ring slots and 198 live RDKit-reference cases; recursive folding is rejected. |
+ | [#7981: enrichment factor returns an empty list](https://github.com/rdkit/rdkit/issues/7981) | No ranked screening enrichment API existed. RDKit 2026.09.1 reproduced the top-90% and full-library defects. | [Implemented native Rust/Python EF](screening-enrichment.md): ceiling cutoffs, full-library endpoints, order/duplicates and explicit undefined-input errors; 3,048 ordinary live-RDKit comparisons. |
+ | [#9647: oversized dense matrix allocation](https://github.com/rdkit/rdkit/issues/9647) | Existing RDKit-compatible distance APIs used unchecked sizes and infallible buffers. | [Implemented allocation boundary](rdkit-distance-matrix-limits.md): checked dimensions, 1024-input/prepared-atom cap, fallible buffers and Python errors; applies to the two named distance APIs. |
+diff --git a/scripts/validate_atom_renumbering.py b/scripts/validate_atom_renumbering.py
+new file mode 100644
+index 0000000..25c5b97
+--- /dev/null
++++ b/scripts/validate_atom_renumbering.py
+@@ -0,0 +1,134 @@
++#!/usr/bin/env python3
++"""Pinned, same-graph atom permutations and RDKit #9629 reproduction."""
++import argparse
++import hashlib
++import itertools
++import json
++from pathlib import Path
++import random
++import sys
++
++import chematic
++from chematic import rdkit_compat as Compat
++from rdkit import Chem, rdBase
++from rdkit.Chem import rdMolDescriptors as D
++
++ROOT = Path(__file__).resolve().parents[1]
++CASES = [
++    ('bicyclic-issue9629', 'C1CCN2CCCC2C1'),
++    ('bicyclic-small', 'C1CCN2CCC2C1'),
++    ('bridged-amine', 'C1CN2CCC1CC2'),
++    ('bridged-amine-small', 'C1CC2CCC1N2'),
++    ('tetrahedral-cw', 'F[C@](Cl)(Br)I'),
++    ('tetrahedral-ccw', 'F[C@@](Cl)(Br)I'),
++    ('mapped-implicit-h', 'N[C@@H:7](C)C(=O)O'),
++    ('explicit-h', '[H][C@](F)(Cl)Br'),
++    ('deuterium', '[2H][C@](F)(Cl)Br'),
++    ('alkene-e', 'F/C=C/Cl'),
++    ('alkene-z', 'F/C=C\\Cl'),
++    ('axial-allene', 'CC=[C@AL1]=C(C)F'),
++    ('square-planar', 'Cl[Pt@SP1](Cl)(N)N'),
++    ('trigonal-bipyramidal', 'F[P@TB1](Cl)(Br)(I)N'),
++    ('octahedral', 'F[Co@OH1](Cl)(Br)(I)(N)O'),
++]
++
++
++def digest(data):
++    return hashlib.sha256(data).hexdigest()
++
++
++def orders(n):
++    if n <= 5:
++        return list(itertools.permutations(range(n)))
++    result = [tuple(range(n)), tuple(reversed(range(n)))]
++    result += [tuple(range(i,n)) + tuple(range(i)) for i in range(1,n)]
++    rng = random.Random(9629)
++    for _ in range(16):
++        order = list(range(n))
++        rng.shuffle(order)
++        result.append(tuple(order))
++    return list(dict.fromkeys(result))
++
++
++def evaluate():
++    if rdBase.rdkitVersion != '2026.09.1':
++        raise RuntimeError(f'expected RDKit 2026.09.1, got {rdBase.rdkitVersion}')
++    params = Chem.SmilesParserParams()
++    params.removeHs = False
++    fixtures, executed = [], []
++    for identifier, smiles in CASES:
++        rd_source = Chem.MolFromSmiles(smiles, params)
++        assert rd_source is not None
++        reference_count = D.CalcNumAtomStereoCenters(rd_source)
++        expected_smiles = Chem.MolToSmiles(rd_source, isomericSmiles=True)
++        source = chematic.from_smiles(smiles)
++        original_rows = source.atom_table
++        assert source.atom_count == rd_source.GetNumAtoms()
++        assert source.num_stereocenters == reference_count
++        permutations = orders(source.atom_count)
++        upstream_drift = 0
++        identity_record = None
++        for order in permutations:
++            raw = Chem.RenumberAtoms(rd_source, order)
++            raw_count = D.CalcNumAtomStereoCenters(raw)
++            repaired = Chem.RenumberAtoms(rd_source, order)
++            Chem.GetSSSR(repaired)
++            repaired_count = D.CalcNumAtomStereoCenters(repaired)
++            out = source.renumber_atoms(order)
++            assert out.num_stereocenters == repaired_count == reference_count, (identifier,order)
++            assert out.atom_table == [original_rows[i] for i in order], (identifier,order)
++            crossread = Chem.MolFromSmiles(out.smiles, params)
++            assert crossread is not None
++            assert Chem.MolToSmiles(crossread,isomericSmiles=True) == expected_smiles, (identifier,order,out.smiles)
++            upstream_drift += raw_count != reference_count
++            result = {'fixture':identifier, 'new_to_old':list(order), 'reference_count':reference_count, 'rdkit_unrepaired_count':raw_count, 'rdkit_sssr_repaired_count':repaired_count, 'chematic_count':out.num_stereocenters, 'stereo_crossread_equal':True}
++            executed.append(result)
++            if order == tuple(range(source.atom_count)):
++                identity_record = result
++        assert identity_record is not None
++        if identifier == 'bicyclic-issue9629':
++            assert identity_record['rdkit_unrepaired_count'] == 2
++            assert identity_record['chematic_count'] == identity_record['rdkit_sssr_repaired_count'] == 1
++        fixtures.append({
++            'id':identifier, 'smiles':smiles, 'sha256':digest((smiles+'\n').encode()),
++            'provenance':{'source':'minimal abstract molecular graphs and independently written permutation recipe', 'issue':'https://github.com/rdkit/rdkit/issues/9629', 'retrieved':'2026-10-14', 'transformations':'one minimal issue graph; synthetic ring, atom-map, isotope and stereo controls; no upstream dataset or source code copied'},
++            'license':'MIT OR Apache-2.0',
++            'redistribution':{'status':'allowed','rationale':'minimal abstract structures and original project test recipe'},
++            'minimization':'small graphs isolate ring-dependent stereo counts or one stereo representation at a time',
++            'oracle':{'engine':'RDKit','version':'2026.09.1','settings':{'legacy_stereo':True,'removeHs':False,'count_reference':'original MolFromSmiles and RenumberAtoms followed by GetSSSR','configuration_reference':'RDKit isomeric canonical SMILES after cross-read'}},
++            'expected':{'stereocenter_count':reference_count,'atom_count':source.atom_count,'configuration':'same isomeric canonical structure','count_tolerance':0},
++            'permutations':len(permutations),'rdkit_unrepaired_count_drifts':upstream_drift,
++            'native_count_mismatches':0,'native_configuration_mismatches':0,
++            'identity':identity_record,
++        })
++    module=Path(chematic.chematic.__file__).resolve()
++    source_paths=['crates/chematic-core/src/molecule/renumber.rs','crates/chematic-py/src/mol_methods/transformations.rs','crates/chematic-py/python/chematic/rdkit_compat.py']
++    return {
++        'schema_version':1,'status':'local-source-candidate',
++        'base':'cac480fb23cd8adeec6e5e9bed1f18677f87b392 source snapshot plus preserved RDKit #9675 and Open Babel #2845 candidates; patch isolates this feature',
++        'scope':'15 diagnostic structures; no broad stereoperception or docking claim; external coordinate arrays are caller-owned',
++        'runtime':{'python':sys.version.split()[0],'rdkit':rdBase.rdkitVersion,'chematic_extension_sha256':digest(module.read_bytes())},
++        'permutation_recipe':{'small_n':'all permutations when n<=5','larger_n':'identity, reverse, every cyclic shift, 16 seeded random shuffles, deduplicated','seed':9629},
++        'source_sha256':{s:digest((ROOT/s).read_bytes()) for s in source_paths},
++        'results':{'fixtures':len(fixtures),'permutations':len(executed),'native_count_mismatches':0,'native_configuration_mismatches':0,'rdkit_unrepaired_count_drifts':sum(f['rdkit_unrepaired_count_drifts'] for f in fixtures),'cases_sha256':digest(json.dumps(executed,sort_keys=True,separators=(',',':')).encode())},
++        'fixtures':fixtures,
++    }
++
++
++def main():
++    parser=argparse.ArgumentParser(description=__doc__)
++    parser.add_argument('--output',type=Path,default=ROOT/'validation/results/rdkit-atom-renumbering-2026-10-14.json')
++    args=parser.parse_args()
++    previous=Chem.GetUseLegacyStereoPerception()
++    try:
++        Chem.SetUseLegacyStereoPerception(True)
++        record=evaluate()
++    finally:
++        Chem.SetUseLegacyStereoPerception(previous)
++    args.output.parent.mkdir(parents=True,exist_ok=True)
++    args.output.write_text(json.dumps(record,indent=2)+'\n')
++    print(json.dumps(record['results']))
++
++
++if __name__=='__main__':
++    main()
+diff --git a/validation/results/rdkit-atom-renumbering-2026-10-14.json b/validation/results/rdkit-atom-renumbering-2026-10-14.json
+new file mode 100644
+index 0000000..ecde0ef
+--- /dev/null
++++ b/validation/results/rdkit-atom-renumbering-2026-10-14.json
+@@ -0,0 +1,826 @@
++{
++  "schema_version": 1,
++  "status": "local-source-candidate",
++  "base": "cac480fb23cd8adeec6e5e9bed1f18677f87b392 source snapshot plus preserved RDKit #9675 and Open Babel #2845 candidates; patch isolates this feature",
++  "scope": "15 diagnostic structures; no broad stereoperception or docking claim; external coordinate arrays are caller-owned",
++  "runtime": {
++    "python": "3.13.6",
++    "rdkit": "2026.09.1",
++    "chematic_extension_sha256": "055e07584274f620ed4c83b986709800887288c6fdb9adf3e0c702d67516fc64"
++  },
++  "permutation_recipe": {
++    "small_n": "all permutations when n<=5",
++    "larger_n": "identity, reverse, every cyclic shift, 16 seeded random shuffles, deduplicated",
++    "seed": 9629
++  },
++  "source_sha256": {
++    "crates/chematic-core/src/molecule/renumber.rs": "3f736a6dfc5656e3e40f7a67b401aeefd2056724e12225b22a187ec3d95bc9b8",
++    "crates/chematic-py/src/mol_methods/transformations.rs": "a656f045d555c67a45fd193c649b2042ea8096575545e1e4b50c289d07259ab9",
++    "crates/chematic-py/python/chematic/rdkit_compat.py": "2b23effd6fbe347570e8866df367e4ee867ef80c313e9c851d50415149d38a3e"
++  },
++  "results": {
++    "fixtures": 15,
++    "permutations": 838,
++    "native_count_mismatches": 0,
++    "native_configuration_mismatches": 0,
++    "rdkit_unrepaired_count_drifts": 51,
++    "cases_sha256": "c2df76f7312cf6699ba21d29d4e1b12e5f5d5ac5208ca7d5aec8d73adfb57e28"
++  },
++  "fixtures": [
++    {
++      "id": "bicyclic-issue9629",
++      "smiles": "C1CCN2CCCC2C1",
++      "sha256": "16a1c0633073cb35a7ad59f1b65d364ec6824c52ec920429544d0c63b52cfdd0",
++      "provenance": {
++        "source": "minimal abstract molecular graphs and independently written permutation recipe",
++        "issue": "https://github.com/rdkit/rdkit/issues/9629",
++        "retrieved": "2026-10-14",
++        "transformations": "one minimal issue graph; synthetic ring, atom-map, isotope and stereo controls; no upstream dataset or source code copied"
++      },
++      "license": "MIT OR Apache-2.0",
++      "redistribution": {
++        "status": "allowed",
++        "rationale": "minimal abstract structures and original project test recipe"
++      },
++      "minimization": "small graphs isolate ring-dependent stereo counts or one stereo representation at a time",
++      "oracle": {
++        "engine": "RDKit",
++        "version": "2026.09.1",
++        "settings": {
++          "legacy_stereo": true,
++          "removeHs": false,
++          "count_reference": "original MolFromSmiles and RenumberAtoms followed by GetSSSR",
++          "configuration_reference": "RDKit isomeric canonical SMILES after cross-read"
++        }
++      },
++      "expected": {
++        "stereocenter_count": 1,
++        "atom_count": 9,
++        "configuration": "same isomeric canonical structure",
++        "count_tolerance": 0
++      },
++      "permutations": 26,
++      "rdkit_unrepaired_count_drifts": 26,
++      "native_count_mismatches": 0,
++      "native_configuration_mismatches": 0,
++      "identity": {
++        "fixture": "bicyclic-issue9629",
++        "new_to_old": [
++          0,
++          1,
++          2,
++          3,
++          4,
++          5,
++          6,
++          7,
++          8
++        ],
++        "reference_count": 1,
++        "rdkit_unrepaired_count": 2,
++        "rdkit_sssr_repaired_count": 1,
++        "chematic_count": 1,
++        "stereo_crossread_equal": true
++      }
++    },
++    {
++      "id": "bicyclic-small",
++      "smiles": "C1CCN2CCC2C1",
++      "sha256": "640707d5abf3c5c64194d08eceaa0d2d351b4507e5a0b74b405268da4b876a23",
++      "provenance": {
++        "source": "minimal abstract molecular graphs and independently written permutation recipe",
++        "issue": "https://github.com/rdkit/rdkit/issues/9629",
++        "retrieved": "2026-10-14",
++        "transformations": "one minimal issue graph; synthetic ring, atom-map, isotope and stereo controls; no upstream dataset or source code copied"
++      },
++      "license": "MIT OR Apache-2.0",
++      "redistribution": {
++        "status": "allowed",
++        "rationale": "minimal abstract structures and original project test recipe"
++      },
++      "minimization": "small graphs isolate ring-dependent stereo counts or one stereo representation at a time",
++      "oracle": {
++        "engine": "RDKit",
++        "version": "2026.09.1",
++        "settings": {
++          "legacy_stereo": true,
++          "removeHs": false,
++          "count_reference": "original MolFromSmiles and RenumberAtoms followed by GetSSSR",
++          "configuration_reference": "RDKit isomeric canonical SMILES after cross-read"
++        }
++      },
++      "expected": {
++        "stereocenter_count": 1,
++        "atom_count": 8,
++        "configuration": "same isomeric canonical structure",
++        "count_tolerance": 0
++      },
++      "permutations": 25,
++      "rdkit_unrepaired_count_drifts": 25,
++      "native_count_mismatches": 0,
++      "native_configuration_mismatches": 0,
++      "identity": {
++        "fixture": "bicyclic-small",
++        "new_to_old": [
++          0,
++          1,
++          2,
++          3,
++          4,
++          5,
++          6,
++          7
++        ],
++        "reference_count": 1,
++        "rdkit_unrepaired_count": 2,
++        "rdkit_sssr_repaired_count": 1,
++        "chematic_count": 1,
++        "stereo_crossread_equal": true
++      }
++    },
++    {
++      "id": "bridged-amine",
++      "smiles": "C1CN2CCC1CC2",
++      "sha256": "2d8454f9b2121b0ab5684e3b83c13f277ff29bb7acfc7854b2468d833f2a6c99",
++      "provenance": {
++        "source": "minimal abstract molecular graphs and independently written permutation recipe",
++        "issue": "https://github.com/rdkit/rdkit/issues/9629",
++        "retrieved": "2026-10-14",
++        "transformations": "one minimal issue graph; synthetic ring, atom-map, isotope and stereo controls; no upstream dataset or source code copied"
++      },
++      "license": "MIT OR Apache-2.0",
++      "redistribution": {
++        "status": "allowed",
++        "rationale": "minimal abstract structures and original project test recipe"
++      },
++      "minimization": "small graphs isolate ring-dependent stereo counts or one stereo representation at a time",
++      "oracle": {
++        "engine": "RDKit",
++        "version": "2026.09.1",
++        "settings": {
++          "legacy_stereo": true,
++          "removeHs": false,
++          "count_reference": "original MolFromSmiles and RenumberAtoms followed by GetSSSR",
++          "configuration_reference": "RDKit isomeric canonical SMILES after cross-read"
++        }
++      },
++      "expected": {
++        "stereocenter_count": 0,
++        "atom_count": 8,
++        "configuration": "same isomeric canonical structure",
++        "count_tolerance": 0
++      },
++      "permutations": 25,
++      "rdkit_unrepaired_count_drifts": 0,
++      "native_count_mismatches": 0,
++      "native_configuration_mismatches": 0,
++      "identity": {
++        "fixture": "bridged-amine",
++        "new_to_old": [
++          0,
++          1,
++          2,
++          3,
++          4,
++          5,
++          6,
++          7
++        ],
++        "reference_count": 0,
++        "rdkit_unrepaired_count": 0,
++        "rdkit_sssr_repaired_count": 0,
++        "chematic_count": 0,
++        "stereo_crossread_equal": true
++      }
++    },
++    {
++      "id": "bridged-amine-small",
++      "smiles": "C1CC2CCC1N2",
++      "sha256": "36b58273866340b9f9d85a8744390d2518939cb406f1370d3e61f80ffc8b7bb4",
++      "provenance": {
++        "source": "minimal abstract molecular graphs and independently written permutation recipe",
++        "issue": "https://github.com/rdkit/rdkit/issues/9629",
++        "retrieved": "2026-10-14",
++        "transformations": "one minimal issue graph; synthetic ring, atom-map, isotope and stereo controls; no upstream dataset or source code copied"
++      },
++      "license": "MIT OR Apache-2.0",
++      "redistribution": {
++        "status": "allowed",
++        "rationale": "minimal abstract structures and original project test recipe"
++      },
++      "minimization": "small graphs isolate ring-dependent stereo counts or one stereo representation at a time",
++      "oracle": {
++        "engine": "RDKit",
++        "version": "2026.09.1",
++        "settings": {
++          "legacy_stereo": true,
++          "removeHs": false,
++          "count_reference": "original MolFromSmiles and RenumberAtoms followed by GetSSSR",
++          "configuration_reference": "RDKit isomeric canonical SMILES after cross-read"
++        }
++      },
++      "expected": {
++        "stereocenter_count": 0,
++        "atom_count": 7,
++        "configuration": "same isomeric canonical structure",
++        "count_tolerance": 0
++      },
++      "permutations": 24,
++      "rdkit_unrepaired_count_drifts": 0,
++      "native_count_mismatches": 0,
++      "native_configuration_mismatches": 0,
++      "identity": {
++        "fixture": "bridged-amine-small",
++        "new_to_old": [
++          0,
++          1,
++          2,
++          3,
++          4,
++          5,
++          6
++        ],
++        "reference_count": 0,
++        "rdkit_unrepaired_count": 0,
++        "rdkit_sssr_repaired_count": 0,
++        "chematic_count": 0,
++        "stereo_crossread_equal": true
++      }
++    },
++    {
++      "id": "tetrahedral-cw",
++      "smiles": "F[C@](Cl)(Br)I",
++      "sha256": "5f7af95cce925629990a075a5a13f961c6a7c0fe556b249e4eedba8d69644309",
++      "provenance": {
++        "source": "minimal abstract molecular graphs and independently written permutation recipe",
++        "issue": "https://github.com/rdkit/rdkit/issues/9629",
++        "retrieved": "2026-10-14",
++        "transformations": "one minimal issue graph; synthetic ring, atom-map, isotope and stereo controls; no upstream dataset or source code copied"
++      },
++      "license": "MIT OR Apache-2.0",
++      "redistribution": {
++        "status": "allowed",
++        "rationale": "minimal abstract structures and original project test recipe"
++      },
++      "minimization": "small graphs isolate ring-dependent stereo counts or one stereo representation at a time",
++      "oracle": {
++        "engine": "RDKit",
++        "version": "2026.09.1",
++        "settings": {
++          "legacy_stereo": true,
++          "removeHs": false,
++          "count_reference": "original MolFromSmiles and RenumberAtoms followed by GetSSSR",
++          "configuration_reference": "RDKit isomeric canonical SMILES after cross-read"
++        }
++      },
++      "expected": {
++        "stereocenter_count": 1,
++        "atom_count": 5,
++        "configuration": "same isomeric canonical structure",
++        "count_tolerance": 0
++      },
++      "permutations": 120,
++      "rdkit_unrepaired_count_drifts": 0,
++      "native_count_mismatches": 0,
++      "native_configuration_mismatches": 0,
++      "identity": {
++        "fixture": "tetrahedral-cw",
++        "new_to_old": [
++          0,
++          1,
++          2,
++          3,
++          4
++        ],
++        "reference_count": 1,
++        "rdkit_unrepaired_count": 1,
++        "rdkit_sssr_repaired_count": 1,
++        "chematic_count": 1,
++        "stereo_crossread_equal": true
++      }
++    },
++    {
++      "id": "tetrahedral-ccw",
++      "smiles": "F[C@@](Cl)(Br)I",
++      "sha256": "0b177e6c5fa8511ceed7a610ea369ca9f24c63abb43d9dcf1ed3cf6c5a4c3a27",
++      "provenance": {
++        "source": "minimal abstract molecular graphs and independently written permutation recipe",
++        "issue": "https://github.com/rdkit/rdkit/issues/9629",
++        "retrieved": "2026-10-14",
++        "transformations": "one minimal issue graph; synthetic ring, atom-map, isotope and stereo controls; no upstream dataset or source code copied"
++      },
++      "license": "MIT OR Apache-2.0",
++      "redistribution": {
++        "status": "allowed",
++        "rationale": "minimal abstract structures and original project test recipe"
++      },
++      "minimization": "small graphs isolate ring-dependent stereo counts or one stereo representation at a time",
++      "oracle": {
++        "engine": "RDKit",
++        "version": "2026.09.1",
++        "settings": {
++          "legacy_stereo": true,
++          "removeHs": false,
++          "count_reference": "original MolFromSmiles and RenumberAtoms followed by GetSSSR",
++          "configuration_reference": "RDKit isomeric canonical SMILES after cross-read"
++        }
++      },
++      "expected": {
++        "stereocenter_count": 1,
++        "atom_count": 5,
++        "configuration": "same isomeric canonical structure",
++        "count_tolerance": 0
++      },
++      "permutations": 120,
++      "rdkit_unrepaired_count_drifts": 0,
++      "native_count_mismatches": 0,
++      "native_configuration_mismatches": 0,
++      "identity": {
++        "fixture": "tetrahedral-ccw",
++        "new_to_old": [
++          0,
++          1,
++          2,
++          3,
++          4
++        ],
++        "reference_count": 1,
++        "rdkit_unrepaired_count": 1,
++        "rdkit_sssr_repaired_count": 1,
++        "chematic_count": 1,
++        "stereo_crossread_equal": true
++      }
++    },
++    {
++      "id": "mapped-implicit-h",
++      "smiles": "N[C@@H:7](C)C(=O)O",
++      "sha256": "f08a076844fd104c5b20549658e9f6190139807705980f14c69d6eb12570e963",
++      "provenance": {
++        "source": "minimal abstract molecular graphs and independently written permutation recipe",
++        "issue": "https://github.com/rdkit/rdkit/issues/9629",
++        "retrieved": "2026-10-14",
++        "transformations": "one minimal issue graph; synthetic ring, atom-map, isotope and stereo controls; no upstream dataset or source code copied"
++      },
++      "license": "MIT OR Apache-2.0",
++      "redistribution": {
++        "status": "allowed",
++        "rationale": "minimal abstract structures and original project test recipe"
++      },
++      "minimization": "small graphs isolate ring-dependent stereo counts or one stereo representation at a time",
++      "oracle": {
++        "engine": "RDKit",
++        "version": "2026.09.1",
++        "settings": {
++          "legacy_stereo": true,
++          "removeHs": false,
++          "count_reference": "original MolFromSmiles and RenumberAtoms followed by GetSSSR",
++          "configuration_reference": "RDKit isomeric canonical SMILES after cross-read"
++        }
++      },
++      "expected": {
++        "stereocenter_count": 1,
++        "atom_count": 6,
++        "configuration": "same isomeric canonical structure",
++        "count_tolerance": 0
++      },
++      "permutations": 22,
++      "rdkit_unrepaired_count_drifts": 0,
++      "native_count_mismatches": 0,
++      "native_configuration_mismatches": 0,
++      "identity": {
++        "fixture": "mapped-implicit-h",
++        "new_to_old": [
++          0,
++          1,
++          2,
++          3,
++          4,
++          5
++        ],
++        "reference_count": 1,
++        "rdkit_unrepaired_count": 1,
++        "rdkit_sssr_repaired_count": 1,
++        "chematic_count": 1,
++        "stereo_crossread_equal": true
++      }
++    },
++    {
++      "id": "explicit-h",
++      "smiles": "[H][C@](F)(Cl)Br",
++      "sha256": "5185c6160bf22d8e239d26b73a9836573d34b4de5bd2fad2d6525779cbfaca98",
++      "provenance": {
++        "source": "minimal abstract molecular graphs and independently written permutation recipe",
++        "issue": "https://github.com/rdkit/rdkit/issues/9629",
++        "retrieved": "2026-10-14",
++        "transformations": "one minimal issue graph; synthetic ring, atom-map, isotope and stereo controls; no upstream dataset or source code copied"
++      },
++      "license": "MIT OR Apache-2.0",
++      "redistribution": {
++        "status": "allowed",
++        "rationale": "minimal abstract structures and original project test recipe"
++      },
++      "minimization": "small graphs isolate ring-dependent stereo counts or one stereo representation at a time",
++      "oracle": {
++        "engine": "RDKit",
++        "version": "2026.09.1",
++        "settings": {
++          "legacy_stereo": true,
++          "removeHs": false,
++          "count_reference": "original MolFromSmiles and RenumberAtoms followed by GetSSSR",
++          "configuration_reference": "RDKit isomeric canonical SMILES after cross-read"
++        }
++      },
++      "expected": {
++        "stereocenter_count": 1,
++        "atom_count": 5,
++        "configuration": "same isomeric canonical structure",
++        "count_tolerance": 0
++      },
++      "permutations": 120,
++      "rdkit_unrepaired_count_drifts": 0,
++      "native_count_mismatches": 0,
++      "native_configuration_mismatches": 0,
++      "identity": {
++        "fixture": "explicit-h",
++        "new_to_old": [
++          0,
++          1,
++          2,
++          3,
++          4
++        ],
++        "reference_count": 1,
++        "rdkit_unrepaired_count": 1,
++        "rdkit_sssr_repaired_count": 1,
++        "chematic_count": 1,
++        "stereo_crossread_equal": true
++      }
++    },
++    {
++      "id": "deuterium",
++      "smiles": "[2H][C@](F)(Cl)Br",
++      "sha256": "b1a8d1be0bd5a99883ea6006a2934d9af17ddb0085d750bba668de2405c80869",
++      "provenance": {
++        "source": "minimal abstract molecular graphs and independently written permutation recipe",
++        "issue": "https://github.com/rdkit/rdkit/issues/9629",
++        "retrieved": "2026-10-14",
++        "transformations": "one minimal issue graph; synthetic ring, atom-map, isotope and stereo controls; no upstream dataset or source code copied"
++      },
++      "license": "MIT OR Apache-2.0",
++      "redistribution": {
++        "status": "allowed",
++        "rationale": "minimal abstract structures and original project test recipe"
++      },
++      "minimization": "small graphs isolate ring-dependent stereo counts or one stereo representation at a time",
++      "oracle": {
++        "engine": "RDKit",
++        "version": "2026.09.1",
++        "settings": {
++          "legacy_stereo": true,
++          "removeHs": false,
++          "count_reference": "original MolFromSmiles and RenumberAtoms followed by GetSSSR",
++          "configuration_reference": "RDKit isomeric canonical SMILES after cross-read"
++        }
++      },
++      "expected": {
++        "stereocenter_count": 1,
++        "atom_count": 5,
++        "configuration": "same isomeric canonical structure",
++        "count_tolerance": 0
++      },
++      "permutations": 120,
++      "rdkit_unrepaired_count_drifts": 0,
++      "native_count_mismatches": 0,
++      "native_configuration_mismatches": 0,
++      "identity": {
++        "fixture": "deuterium",
++        "new_to_old": [
++          0,
++          1,
++          2,
++          3,
++          4
++        ],
++        "reference_count": 1,
++        "rdkit_unrepaired_count": 1,
++        "rdkit_sssr_repaired_count": 1,
++        "chematic_count": 1,
++        "stereo_crossread_equal": true
++      }
++    },
++    {
++      "id": "alkene-e",
++      "smiles": "F/C=C/Cl",
++      "sha256": "1dcbffb5affa5e1aba7786516504d348aceb4092af7361c7aef1b6e47193ae9c",
++      "provenance": {
++        "source": "minimal abstract molecular graphs and independently written permutation recipe",
++        "issue": "https://github.com/rdkit/rdkit/issues/9629",
++        "retrieved": "2026-10-14",
++        "transformations": "one minimal issue graph; synthetic ring, atom-map, isotope and stereo controls; no upstream dataset or source code copied"
++      },
++      "license": "MIT OR Apache-2.0",
++      "redistribution": {
++        "status": "allowed",
++        "rationale": "minimal abstract structures and original project test recipe"
++      },
++      "minimization": "small graphs isolate ring-dependent stereo counts or one stereo representation at a time",
++      "oracle": {
++        "engine": "RDKit",
++        "version": "2026.09.1",
++        "settings": {
++          "legacy_stereo": true,
++          "removeHs": false,
++          "count_reference": "original MolFromSmiles and RenumberAtoms followed by GetSSSR",
++          "configuration_reference": "RDKit isomeric canonical SMILES after cross-read"
++        }
++      },
++      "expected": {
++        "stereocenter_count": 0,
++        "atom_count": 4,
++        "configuration": "same isomeric canonical structure",
++        "count_tolerance": 0
++      },
++      "permutations": 24,
++      "rdkit_unrepaired_count_drifts": 0,
++      "native_count_mismatches": 0,
++      "native_configuration_mismatches": 0,
++      "identity": {
++        "fixture": "alkene-e",
++        "new_to_old": [
++          0,
++          1,
++          2,
++          3
++        ],
++        "reference_count": 0,
++        "rdkit_unrepaired_count": 0,
++        "rdkit_sssr_repaired_count": 0,
++        "chematic_count": 0,
++        "stereo_crossread_equal": true
++      }
++    },
++    {
++      "id": "alkene-z",
++      "smiles": "F/C=C\\Cl",
++      "sha256": "34522f0cbb0cee9c50a5bb45e035624ab19e4f0040a1d86d8ba9e10880af7d1e",
++      "provenance": {
++        "source": "minimal abstract molecular graphs and independently written permutation recipe",
++        "issue": "https://github.com/rdkit/rdkit/issues/9629",
++        "retrieved": "2026-10-14",
++        "transformations": "one minimal issue graph; synthetic ring, atom-map, isotope and stereo controls; no upstream dataset or source code copied"
++      },
++      "license": "MIT OR Apache-2.0",
++      "redistribution": {
++        "status": "allowed",
++        "rationale": "minimal abstract structures and original project test recipe"
++      },
++      "minimization": "small graphs isolate ring-dependent stereo counts or one stereo representation at a time",
++      "oracle": {
++        "engine": "RDKit",
++        "version": "2026.09.1",
++        "settings": {
++          "legacy_stereo": true,
++          "removeHs": false,
++          "count_reference": "original MolFromSmiles and RenumberAtoms followed by GetSSSR",
++          "configuration_reference": "RDKit isomeric canonical SMILES after cross-read"
++        }
++      },
++      "expected": {
++        "stereocenter_count": 0,
++        "atom_count": 4,
++        "configuration": "same isomeric canonical structure",
++        "count_tolerance": 0
++      },
++      "permutations": 24,
++      "rdkit_unrepaired_count_drifts": 0,
++      "native_count_mismatches": 0,
++      "native_configuration_mismatches": 0,
++      "identity": {
++        "fixture": "alkene-z",
++        "new_to_old": [
++          0,
++          1,
++          2,
++          3
++        ],
++        "reference_count": 0,
++        "rdkit_unrepaired_count": 0,
++        "rdkit_sssr_repaired_count": 0,
++        "chematic_count": 0,
++        "stereo_crossread_equal": true
++      }
++    },
++    {
++      "id": "axial-allene",
++      "smiles": "CC=[C@AL1]=C(C)F",
++      "sha256": "d0f04ec67a23d5420ac21ec26282196c42575bd6097cabbd0027a6df3239356f",
++      "provenance": {
++        "source": "minimal abstract molecular graphs and independently written permutation recipe",
++        "issue": "https://github.com/rdkit/rdkit/issues/9629",
++        "retrieved": "2026-10-14",
++        "transformations": "one minimal issue graph; synthetic ring, atom-map, isotope and stereo controls; no upstream dataset or source code copied"
++      },
++      "license": "MIT OR Apache-2.0",
++      "redistribution": {
++        "status": "allowed",
++        "rationale": "minimal abstract structures and original project test recipe"
++      },
++      "minimization": "small graphs isolate ring-dependent stereo counts or one stereo representation at a time",
++      "oracle": {
++        "engine": "RDKit",
++        "version": "2026.09.1",
++        "settings": {
++          "legacy_stereo": true,
++          "removeHs": false,
++          "count_reference": "original MolFromSmiles and RenumberAtoms followed by GetSSSR",
++          "configuration_reference": "RDKit isomeric canonical SMILES after cross-read"
++        }
++      },
++      "expected": {
++        "stereocenter_count": 0,
++        "atom_count": 6,
++        "configuration": "same isomeric canonical structure",
++        "count_tolerance": 0
++      },
++      "permutations": 22,
++      "rdkit_unrepaired_count_drifts": 0,
++      "native_count_mismatches": 0,
++      "native_configuration_mismatches": 0,
++      "identity": {
++        "fixture": "axial-allene",
++        "new_to_old": [
++          0,
++          1,
++          2,
++          3,
++          4,
++          5
++        ],
++        "reference_count": 0,
++        "rdkit_unrepaired_count": 0,
++        "rdkit_sssr_repaired_count": 0,
++        "chematic_count": 0,
++        "stereo_crossread_equal": true
++      }
++    },
++    {
++      "id": "square-planar",
++      "smiles": "Cl[Pt@SP1](Cl)(N)N",
++      "sha256": "7baa52119a3441481fb256956d6b50a06984bccad7047d11947c43ea16c4129c",
++      "provenance": {
++        "source": "minimal abstract molecular graphs and independently written permutation recipe",
++        "issue": "https://github.com/rdkit/rdkit/issues/9629",
++        "retrieved": "2026-10-14",
++        "transformations": "one minimal issue graph; synthetic ring, atom-map, isotope and stereo controls; no upstream dataset or source code copied"
++      },
++      "license": "MIT OR Apache-2.0",
++      "redistribution": {
++        "status": "allowed",
++        "rationale": "minimal abstract structures and original project test recipe"
++      },
++      "minimization": "small graphs isolate ring-dependent stereo counts or one stereo representation at a time",
++      "oracle": {
++        "engine": "RDKit",
++        "version": "2026.09.1",
++        "settings": {
++          "legacy_stereo": true,
++          "removeHs": false,
++          "count_reference": "original MolFromSmiles and RenumberAtoms followed by GetSSSR",
++          "configuration_reference": "RDKit isomeric canonical SMILES after cross-read"
++        }
++      },
++      "expected": {
++        "stereocenter_count": 0,
++        "atom_count": 5,
++        "configuration": "same isomeric canonical structure",
++        "count_tolerance": 0
++      },
++      "permutations": 120,
++      "rdkit_unrepaired_count_drifts": 0,
++      "native_count_mismatches": 0,
++      "native_configuration_mismatches": 0,
++      "identity": {
++        "fixture": "square-planar",
++        "new_to_old": [
++          0,
++          1,
++          2,
++          3,
++          4
++        ],
++        "reference_count": 0,
++        "rdkit_unrepaired_count": 0,
++        "rdkit_sssr_repaired_count": 0,
++        "chematic_count": 0,
++        "stereo_crossread_equal": true
++      }
++    },
++    {
++      "id": "trigonal-bipyramidal",
++      "smiles": "F[P@TB1](Cl)(Br)(I)N",
++      "sha256": "9558de71081ade22bc9819f8ef3ab2fc72ba5311e8e9135f0d34b78ceb925713",
++      "provenance": {
++        "source": "minimal abstract molecular graphs and independently written permutation recipe",
++        "issue": "https://github.com/rdkit/rdkit/issues/9629",
++        "retrieved": "2026-10-14",
++        "transformations": "one minimal issue graph; synthetic ring, atom-map, isotope and stereo controls; no upstream dataset or source code copied"
++      },
++      "license": "MIT OR Apache-2.0",
++      "redistribution": {
++        "status": "allowed",
++        "rationale": "minimal abstract structures and original project test recipe"
++      },
++      "minimization": "small graphs isolate ring-dependent stereo counts or one stereo representation at a time",
++      "oracle": {
++        "engine": "RDKit",
++        "version": "2026.09.1",
++        "settings": {
++          "legacy_stereo": true,
++          "removeHs": false,
++          "count_reference": "original MolFromSmiles and RenumberAtoms followed by GetSSSR",
++          "configuration_reference": "RDKit isomeric canonical SMILES after cross-read"
++        }
++      },
++      "expected": {
++        "stereocenter_count": 0,
++        "atom_count": 6,
++        "configuration": "same isomeric canonical structure",
++        "count_tolerance": 0
++      },
++      "permutations": 22,
++      "rdkit_unrepaired_count_drifts": 0,
++      "native_count_mismatches": 0,
++      "native_configuration_mismatches": 0,
++      "identity": {
++        "fixture": "trigonal-bipyramidal",
++        "new_to_old": [
++          0,
++          1,
++          2,
++          3,
++          4,
++          5
++        ],
++        "reference_count": 0,
++        "rdkit_unrepaired_count": 0,
++        "rdkit_sssr_repaired_count": 0,
++        "chematic_count": 0,
++        "stereo_crossread_equal": true
++      }
++    },
++    {
++      "id": "octahedral",
++      "smiles": "F[Co@OH1](Cl)(Br)(I)(N)O",
++      "sha256": "2f60ade216630c656f9cc9482f47c07103a25b1c205586aabfe5623079017193",
++      "provenance": {
++        "source": "minimal abstract molecular graphs and independently written permutation recipe",
++        "issue": "https://github.com/rdkit/rdkit/issues/9629",
++        "retrieved": "2026-10-14",
++        "transformations": "one minimal issue graph; synthetic ring, atom-map, isotope and stereo controls; no upstream dataset or source code copied"
++      },
++      "license": "MIT OR Apache-2.0",
++      "redistribution": {
++        "status": "allowed",
++        "rationale": "minimal abstract structures and original project test recipe"
++      },
++      "minimization": "small graphs isolate ring-dependent stereo counts or one stereo representation at a time",
++      "oracle": {
++        "engine": "RDKit",
++        "version": "2026.09.1",
++        "settings": {
++          "legacy_stereo": true,
++          "removeHs": false,
++          "count_reference": "original MolFromSmiles and RenumberAtoms followed by GetSSSR",
++          "configuration_reference": "RDKit isomeric canonical SMILES after cross-read"
++        }
++      },
++      "expected": {
++        "stereocenter_count": 0,
++        "atom_count": 7,
++        "configuration": "same isomeric canonical structure",
++        "count_tolerance": 0
++      },
++      "permutations": 24,
++      "rdkit_unrepaired_count_drifts": 0,
++      "native_count_mismatches": 0,
++      "native_configuration_mismatches": 0,
++      "identity": {
++        "fixture": "octahedral",
++        "new_to_old": [
++          0,
++          1,
++          2,
++          3,
++          4,
++          5,
++          6
++        ],
++        "reference_count": 0,
++        "rdkit_unrepaired_count": 0,
++        "rdkit_sssr_repaired_count": 0,
++        "chematic_count": 0,
++        "stereo_crossread_equal": true
++      }
++    }
++  ]
++}

@@ -1,0 +1,276 @@
+{
+  "schema": "python-sanitized-view-reuse-parity/v1",
+  "exact": {
+    "descriptors": {
+      "identical_bytes": true,
+      "sha256": "2c82ab4b8743715f742e95c9a3ca1982cb8e3b8ea0f92e9c7d2b5e4a725bba03",
+      "rows": 14072,
+      "source_previous_sha256": "2c82ab4b8743715f742e95c9a3ca1982cb8e3b8ea0f92e9c7d2b5e4a725bba03",
+      "results": 112576,
+      "retained_path": "validation/results/python-scalar-stereo-source-descriptors-2026-10-14.jsonl.gz",
+      "candidate_sha256": "2c82ab4b8743715f742e95c9a3ca1982cb8e3b8ea0f92e9c7d2b5e4a725bba03",
+      "baseline_dump_hash_verified": true
+    },
+    "morgan": {
+      "identical_bytes": true,
+      "sha256": "05d98f143ef09b8b2123ee6d2bd8a3fb96dbe75aca2308f7fb7ba21bd756bfa4",
+      "rows": 14072,
+      "source_previous_sha256": "05d98f143ef09b8b2123ee6d2bd8a3fb96dbe75aca2308f7fb7ba21bd756bfa4",
+      "results": 56288,
+      "retained_path": "validation/results/python-morgan-frontier-candidate-2026-10-14.jsonl.gz",
+      "candidate_sha256": "05d98f143ef09b8b2123ee6d2bd8a3fb96dbe75aca2308f7fb7ba21bd756bfa4",
+      "baseline_dump_hash_verified": true
+    }
+  },
+  "retained_artifacts": {
+    "candidate-build": {
+      "path": "validation/results/python-sanitized-view-reuse-candidate-build-2026-10-14.txt.gz",
+      "sha256": "c3a29610e1a12657ced2eb4cea9fbcf7bfd61d8fade9214bf8af02a8106e3bbc",
+      "sha256_gzip": "850ff10a5c603c3a0dd4cf271c65fda3aa44bdaf91f44e242fdd0b3c4aa33535"
+    },
+    "native-tests": {
+      "path": "validation/results/python-sanitized-view-reuse-native-tests-2026-10-14.txt.gz",
+      "sha256": "9baa79079588fa47a9f52a774ae862b117bb799970665519e331585394cb1201",
+      "sha256_gzip": "687d409e3b189e2c16869769598cc77fc8c8d9f0f1148e6bd90f460481621008"
+    },
+    "clippy": {
+      "path": "validation/results/python-sanitized-view-reuse-clippy-2026-10-14.txt.gz",
+      "sha256": "51364f795b15e5195b01483fd4a2ff309894e70435e7d9c11db6af7ef225ac60",
+      "sha256_gzip": "6eb7b5a17e19fcf041fd651464ce4b7f3eea9741ca23ee92861a3e4000c5932b"
+    },
+    "python-tests": {
+      "path": "validation/results/python-sanitized-view-reuse-python-tests-2026-10-14.txt.gz",
+      "sha256": "b47b046e8aee6850eed04326981d38a84df0eeedfd1d9a0be8601611086d0d4e",
+      "sha256_gzip": "928317b226facf64f21f33be9de9080aa641fc0c34676cb0fa0ce2e1575015f9"
+    },
+    "paired20-slice0": {
+      "path": "validation/results/python-sanitized-view-reuse-paired20-slice0-2026-10-14.txt.gz",
+      "sha256": "18df527b2979e645854f350c50f2e1aca78db8638e64f79b9ef16281e4c1f8f7",
+      "sha256_gzip": "b3548a8777ef8e129b4d7a746e1f6f0b3199b4ef4eb44bce05cf45d81dbc93b0"
+    },
+    "paired20-slice5000": {
+      "path": "validation/results/python-sanitized-view-reuse-paired20-slice5000-2026-10-14.txt.gz",
+      "sha256": "18df527b2979e645854f350c50f2e1aca78db8638e64f79b9ef16281e4c1f8f7",
+      "sha256_gzip": "b3548a8777ef8e129b4d7a746e1f6f0b3199b4ef4eb44bce05cf45d81dbc93b0"
+    },
+    "descriptors-candidate": {
+      "path": "validation/results/python-sanitized-view-reuse-descriptors-candidate-2026-10-14.txt.gz",
+      "sha256": "083fafd3ee44040bfc2a8c7777682aa100c9813d69d2a0157238764a28f6baa6",
+      "sha256_gzip": "1bb1da6f57cc487db1c5e5cc89a8e9d87c92cdd536cfc00a51386fe45be67a69"
+    },
+    "morgan-candidate": {
+      "path": "validation/results/python-sanitized-view-reuse-morgan-candidate-2026-10-14.txt.gz",
+      "sha256": "083fafd3ee44040bfc2a8c7777682aa100c9813d69d2a0157238764a28f6baa6",
+      "sha256_gzip": "1bb1da6f57cc487db1c5e5cc89a8e9d87c92cdd536cfc00a51386fe45be67a69"
+    },
+    "exploratory": {
+      "path": "validation/results/python-sanitized-view-reuse-exploratory-2026-10-14.json.gz",
+      "sha256": "4beb6d25f909bd522bdf4e4aae35aee48ca837d4374221ad73b2de27a4b852d2",
+      "sha256_gzip": "23a6282d03316289c80fa23a673448206885e460a1278b47fd1a6326a2070915"
+    },
+    "tracked-build-check": {
+      "path": "validation/results/python-sanitized-view-reuse-tracked-build-check-2026-10-14.json.gz",
+      "sha256": "be8c5251176f357f21c3eec438c6f41c76d04688b7e00f222969ecfa2c77c492",
+      "sha256_gzip": "e5a725a78b77d7d45e0441a6fef5e60788cd5c02f0fec4b5255eea6f57fe6fe7"
+    },
+    "source-check-wrapper": {
+      "path": "validation/results/python-sanitized-view-reuse-source-check-wrapper-2026-10-14.py.gz",
+      "sha256": "a542f8d14fb14cba8c37a635ff93edcdc98c4142214c34e935d5463892507f3c",
+      "sha256_gzip": "063b4a178ad8cdf05d41c41c4d26057eda274dff5eab735d236559e95b6c26f3"
+    }
+  },
+  "patch_reconstruction": {
+    "passed": true,
+    "frozen_files_checked": 894,
+    "patches_applied": 4,
+    "method": "Verified base + three prerequisites + intermediate patch; reversed intermediate patch and applied final alternative; all frozen files match."
+  },
+  "validation": {
+    "native": {
+      "passed": 508,
+      "failed": 0,
+      "ignored": 1
+    },
+    "python": {
+      "passed": 590,
+      "failed": 0
+    },
+    "release_clippy": {
+      "passed": true,
+      "all_targets": true,
+      "warnings_denied": true
+    },
+    "benchmark_gate_tests": {
+      "passed": 5,
+      "failed": 0
+    },
+    "rustfmt": {
+      "passed": true
+    },
+    "diff_whitespace": {
+      "passed": true
+    },
+    "all_paired_summaries_recalculated": true,
+    "source_integrity_passed": true,
+    "benchmark_index": {
+      "passed": true,
+      "indexed_records": 402
+    },
+    "final_artifact_integrity": {
+      "passed": true,
+      "patch_reconstruction_files": 894,
+      "retained_archives": 11,
+      "paired_profiles": 2,
+      "local_packet_links_checked": 8,
+      "workspace_verification": "Current root files and frozen build match the final candidate."
+    }
+  },
+  "gate_counts": {
+    "first_use": {
+      "eligible": 27,
+      "wins": 14
+    },
+    "repeated_use": {
+      "eligible": 27,
+      "wins": 26
+    },
+    "parse_inclusive": {
+      "eligible": 27,
+      "wins": 27
+    }
+  },
+  "incremental_strict_wins": [
+    {
+      "slice": 0,
+      "lane": "tpsa/first_use",
+      "speedup": {
+        "median": 1.032,
+        "ci95": [
+          1.028,
+          1.044
+        ],
+        "winning_blocks": 20,
+        "blocks": 20
+      }
+    },
+    {
+      "slice": 5000,
+      "lane": "tpsa/first_use",
+      "speedup": {
+        "median": 1.068,
+        "ci95": [
+          1.057,
+          1.077
+        ],
+        "winning_blocks": 20,
+        "blocks": 20
+      }
+    },
+    {
+      "slice": 5000,
+      "lane": "tpsa/parse_inclusive",
+      "speedup": {
+        "median": 1.045,
+        "ci95": [
+          1.035,
+          1.051
+        ],
+        "winning_blocks": 20,
+        "blocks": 20
+      }
+    },
+    {
+      "slice": 5000,
+      "lane": "labute_asa/first_use",
+      "speedup": {
+        "median": 1.065,
+        "ci95": [
+          1.059,
+          1.07
+        ],
+        "winning_blocks": 20,
+        "blocks": 20
+      }
+    },
+    {
+      "slice": 5000,
+      "lane": "labute_asa/parse_inclusive",
+      "speedup": {
+        "median": 1.047,
+        "ci95": [
+          1.042,
+          1.055
+        ],
+        "winning_blocks": 20,
+        "blocks": 20
+      }
+    }
+  ],
+  "incremental_regressions_with_ci_below_one": [
+    {
+      "slice": 0,
+      "lane": "tpsa/repeated_use",
+      "speedup": {
+        "median": 0.986,
+        "ci95": [
+          0.973,
+          0.997
+        ],
+        "winning_blocks": 5,
+        "blocks": 20
+      }
+    },
+    {
+      "slice": 0,
+      "lane": "morgan2_chiral/repeated_use",
+      "speedup": {
+        "median": 0.993,
+        "ci95": [
+          0.99,
+          0.995
+        ],
+        "winning_blocks": 3,
+        "blocks": 20
+      }
+    },
+    {
+      "slice": 0,
+      "lane": "morgan3_2048/parse_inclusive",
+      "speedup": {
+        "median": 0.994,
+        "ci95": [
+          0.989,
+          0.999
+        ],
+        "winning_blocks": 5,
+        "blocks": 20
+      }
+    },
+    {
+      "slice": 5000,
+      "lane": "morgan2_chiral/first_use",
+      "speedup": {
+        "median": 0.994,
+        "ci95": [
+          0.981,
+          0.999
+        ],
+        "winning_blocks": 5,
+        "blocks": 20
+      }
+    },
+    {
+      "slice": 5000,
+      "lane": "morgan2_chiral/repeated_use",
+      "speedup": {
+        "median": 0.99,
+        "ci95": [
+          0.985,
+          0.993
+        ],
+        "winning_blocks": 1,
+        "blocks": 20
+      }
+    }
+  ]
+}

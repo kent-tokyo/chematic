@@ -1,0 +1,826 @@
+{
+  "schema_version": 1,
+  "status": "local-source-candidate",
+  "base": "cac480fb23cd8adeec6e5e9bed1f18677f87b392 source snapshot plus preserved RDKit #9675 and Open Babel #2845 candidates; patch isolates this feature",
+  "scope": "15 diagnostic structures; no broad stereoperception or docking claim; external coordinate arrays are caller-owned",
+  "runtime": {
+    "python": "3.13.6",
+    "rdkit": "2026.09.1",
+    "chematic_extension_sha256": "055e07584274f620ed4c83b986709800887288c6fdb9adf3e0c702d67516fc64"
+  },
+  "permutation_recipe": {
+    "small_n": "all permutations when n<=5",
+    "larger_n": "identity, reverse, every cyclic shift, 16 seeded random shuffles, deduplicated",
+    "seed": 9629
+  },
+  "source_sha256": {
+    "crates/chematic-core/src/molecule/renumber.rs": "3f736a6dfc5656e3e40f7a67b401aeefd2056724e12225b22a187ec3d95bc9b8",
+    "crates/chematic-py/src/mol_methods/transformations.rs": "a656f045d555c67a45fd193c649b2042ea8096575545e1e4b50c289d07259ab9",
+    "crates/chematic-py/python/chematic/rdkit_compat.py": "2b23effd6fbe347570e8866df367e4ee867ef80c313e9c851d50415149d38a3e"
+  },
+  "results": {
+    "fixtures": 15,
+    "permutations": 838,
+    "native_count_mismatches": 0,
+    "native_configuration_mismatches": 0,
+    "rdkit_unrepaired_count_drifts": 51,
+    "cases_sha256": "c2df76f7312cf6699ba21d29d4e1b12e5f5d5ac5208ca7d5aec8d73adfb57e28"
+  },
+  "fixtures": [
+    {
+      "id": "bicyclic-issue9629",
+      "smiles": "C1CCN2CCCC2C1",
+      "sha256": "16a1c0633073cb35a7ad59f1b65d364ec6824c52ec920429544d0c63b52cfdd0",
+      "provenance": {
+        "source": "minimal abstract molecular graphs and independently written permutation recipe",
+        "issue": "https://github.com/rdkit/rdkit/issues/9629",
+        "retrieved": "2026-10-14",
+        "transformations": "one minimal issue graph; synthetic ring, atom-map, isotope and stereo controls; no upstream dataset or source code copied"
+      },
+      "license": "MIT OR Apache-2.0",
+      "redistribution": {
+        "status": "allowed",
+        "rationale": "minimal abstract structures and original project test recipe"
+      },
+      "minimization": "small graphs isolate ring-dependent stereo counts or one stereo representation at a time",
+      "oracle": {
+        "engine": "RDKit",
+        "version": "2026.09.1",
+        "settings": {
+          "legacy_stereo": true,
+          "removeHs": false,
+          "count_reference": "original MolFromSmiles and RenumberAtoms followed by GetSSSR",
+          "configuration_reference": "RDKit isomeric canonical SMILES after cross-read"
+        }
+      },
+      "expected": {
+        "stereocenter_count": 1,
+        "atom_count": 9,
+        "configuration": "same isomeric canonical structure",
+        "count_tolerance": 0
+      },
+      "permutations": 26,
+      "rdkit_unrepaired_count_drifts": 26,
+      "native_count_mismatches": 0,
+      "native_configuration_mismatches": 0,
+      "identity": {
+        "fixture": "bicyclic-issue9629",
+        "new_to_old": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "reference_count": 1,
+        "rdkit_unrepaired_count": 2,
+        "rdkit_sssr_repaired_count": 1,
+        "chematic_count": 1,
+        "stereo_crossread_equal": true
+      }
+    },
+    {
+      "id": "bicyclic-small",
+      "smiles": "C1CCN2CCC2C1",
+      "sha256": "640707d5abf3c5c64194d08eceaa0d2d351b4507e5a0b74b405268da4b876a23",
+      "provenance": {
+        "source": "minimal abstract molecular graphs and independently written permutation recipe",
+        "issue": "https://github.com/rdkit/rdkit/issues/9629",
+        "retrieved": "2026-10-14",
+        "transformations": "one minimal issue graph; synthetic ring, atom-map, isotope and stereo controls; no upstream dataset or source code copied"
+      },
+      "license": "MIT OR Apache-2.0",
+      "redistribution": {
+        "status": "allowed",
+        "rationale": "minimal abstract structures and original project test recipe"
+      },
+      "minimization": "small graphs isolate ring-dependent stereo counts or one stereo representation at a time",
+      "oracle": {
+        "engine": "RDKit",
+        "version": "2026.09.1",
+        "settings": {
+          "legacy_stereo": true,
+          "removeHs": false,
+          "count_reference": "original MolFromSmiles and RenumberAtoms followed by GetSSSR",
+          "configuration_reference": "RDKit isomeric canonical SMILES after cross-read"
+        }
+      },
+      "expected": {
+        "stereocenter_count": 1,
+        "atom_count": 8,
+        "configuration": "same isomeric canonical structure",
+        "count_tolerance": 0
+      },
+      "permutations": 25,
+      "rdkit_unrepaired_count_drifts": 25,
+      "native_count_mismatches": 0,
+      "native_configuration_mismatches": 0,
+      "identity": {
+        "fixture": "bicyclic-small",
+        "new_to_old": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "reference_count": 1,
+        "rdkit_unrepaired_count": 2,
+        "rdkit_sssr_repaired_count": 1,
+        "chematic_count": 1,
+        "stereo_crossread_equal": true
+      }
+    },
+    {
+      "id": "bridged-amine",
+      "smiles": "C1CN2CCC1CC2",
+      "sha256": "2d8454f9b2121b0ab5684e3b83c13f277ff29bb7acfc7854b2468d833f2a6c99",
+      "provenance": {
+        "source": "minimal abstract molecular graphs and independently written permutation recipe",
+        "issue": "https://github.com/rdkit/rdkit/issues/9629",
+        "retrieved": "2026-10-14",
+        "transformations": "one minimal issue graph; synthetic ring, atom-map, isotope and stereo controls; no upstream dataset or source code copied"
+      },
+      "license": "MIT OR Apache-2.0",
+      "redistribution": {
+        "status": "allowed",
+        "rationale": "minimal abstract structures and original project test recipe"
+      },
+      "minimization": "small graphs isolate ring-dependent stereo counts or one stereo representation at a time",
+      "oracle": {
+        "engine": "RDKit",
+        "version": "2026.09.1",
+        "settings": {
+          "legacy_stereo": true,
+          "removeHs": false,
+          "count_reference": "original MolFromSmiles and RenumberAtoms followed by GetSSSR",
+          "configuration_reference": "RDKit isomeric canonical SMILES after cross-read"
+        }
+      },
+      "expected": {
+        "stereocenter_count": 0,
+        "atom_count": 8,
+        "configuration": "same isomeric canonical structure",
+        "count_tolerance": 0
+      },
+      "permutations": 25,
+      "rdkit_unrepaired_count_drifts": 0,
+      "native_count_mismatches": 0,
+      "native_configuration_mismatches": 0,
+      "identity": {
+        "fixture": "bridged-amine",
+        "new_to_old": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "reference_count": 0,
+        "rdkit_unrepaired_count": 0,
+        "rdkit_sssr_repaired_count": 0,
+        "chematic_count": 0,
+        "stereo_crossread_equal": true
+      }
+    },
+    {
+      "id": "bridged-amine-small",
+      "smiles": "C1CC2CCC1N2",
+      "sha256": "36b58273866340b9f9d85a8744390d2518939cb406f1370d3e61f80ffc8b7bb4",
+      "provenance": {
+        "source": "minimal abstract molecular graphs and independently written permutation recipe",
+        "issue": "https://github.com/rdkit/rdkit/issues/9629",
+        "retrieved": "2026-10-14",
+        "transformations": "one minimal issue graph; synthetic ring, atom-map, isotope and stereo controls; no upstream dataset or source code copied"
+      },
+      "license": "MIT OR Apache-2.0",
+      "redistribution": {
+        "status": "allowed",
+        "rationale": "minimal abstract structures and original project test recipe"
+      },
+      "minimization": "small graphs isolate ring-dependent stereo counts or one stereo representation at a time",
+      "oracle": {
+        "engine": "RDKit",
+        "version": "2026.09.1",
+        "settings": {
+          "legacy_stereo": true,
+          "removeHs": false,
+          "count_reference": "original MolFromSmiles and RenumberAtoms followed by GetSSSR",
+          "configuration_reference": "RDKit isomeric canonical SMILES after cross-read"
+        }
+      },
+      "expected": {
+        "stereocenter_count": 0,
+        "atom_count": 7,
+        "configuration": "same isomeric canonical structure",
+        "count_tolerance": 0
+      },
+      "permutations": 24,
+      "rdkit_unrepaired_count_drifts": 0,
+      "native_count_mismatches": 0,
+      "native_configuration_mismatches": 0,
+      "identity": {
+        "fixture": "bridged-amine-small",
+        "new_to_old": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "reference_count": 0,
+        "rdkit_unrepaired_count": 0,
+        "rdkit_sssr_repaired_count": 0,
+        "chematic_count": 0,
+        "stereo_crossread_equal": true
+      }
+    },
+    {
+      "id": "tetrahedral-cw",
+      "smiles": "F[C@](Cl)(Br)I",
+      "sha256": "5f7af95cce925629990a075a5a13f961c6a7c0fe556b249e4eedba8d69644309",
+      "provenance": {
+        "source": "minimal abstract molecular graphs and independently written permutation recipe",
+        "issue": "https://github.com/rdkit/rdkit/issues/9629",
+        "retrieved": "2026-10-14",
+        "transformations": "one minimal issue graph; synthetic ring, atom-map, isotope and stereo controls; no upstream dataset or source code copied"
+      },
+      "license": "MIT OR Apache-2.0",
+      "redistribution": {
+        "status": "allowed",
+        "rationale": "minimal abstract structures and original project test recipe"
+      },
+      "minimization": "small graphs isolate ring-dependent stereo counts or one stereo representation at a time",
+      "oracle": {
+        "engine": "RDKit",
+        "version": "2026.09.1",
+        "settings": {
+          "legacy_stereo": true,
+          "removeHs": false,
+          "count_reference": "original MolFromSmiles and RenumberAtoms followed by GetSSSR",
+          "configuration_reference": "RDKit isomeric canonical SMILES after cross-read"
+        }
+      },
+      "expected": {
+        "stereocenter_count": 1,
+        "atom_count": 5,
+        "configuration": "same isomeric canonical structure",
+        "count_tolerance": 0
+      },
+      "permutations": 120,
+      "rdkit_unrepaired_count_drifts": 0,
+      "native_count_mismatches": 0,
+      "native_configuration_mismatches": 0,
+      "identity": {
+        "fixture": "tetrahedral-cw",
+        "new_to_old": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "reference_count": 1,
+        "rdkit_unrepaired_count": 1,
+        "rdkit_sssr_repaired_count": 1,
+        "chematic_count": 1,
+        "stereo_crossread_equal": true
+      }
+    },
+    {
+      "id": "tetrahedral-ccw",
+      "smiles": "F[C@@](Cl)(Br)I",
+      "sha256": "0b177e6c5fa8511ceed7a610ea369ca9f24c63abb43d9dcf1ed3cf6c5a4c3a27",
+      "provenance": {
+        "source": "minimal abstract molecular graphs and independently written permutation recipe",
+        "issue": "https://github.com/rdkit/rdkit/issues/9629",
+        "retrieved": "2026-10-14",
+        "transformations": "one minimal issue graph; synthetic ring, atom-map, isotope and stereo controls; no upstream dataset or source code copied"
+      },
+      "license": "MIT OR Apache-2.0",
+      "redistribution": {
+        "status": "allowed",
+        "rationale": "minimal abstract structures and original project test recipe"
+      },
+      "minimization": "small graphs isolate ring-dependent stereo counts or one stereo representation at a time",
+      "oracle": {
+        "engine": "RDKit",
+        "version": "2026.09.1",
+        "settings": {
+          "legacy_stereo": true,
+          "removeHs": false,
+          "count_reference": "original MolFromSmiles and RenumberAtoms followed by GetSSSR",
+          "configuration_reference": "RDKit isomeric canonical SMILES after cross-read"
+        }
+      },
+      "expected": {
+        "stereocenter_count": 1,
+        "atom_count": 5,
+        "configuration": "same isomeric canonical structure",
+        "count_tolerance": 0
+      },
+      "permutations": 120,
+      "rdkit_unrepaired_count_drifts": 0,
+      "native_count_mismatches": 0,
+      "native_configuration_mismatches": 0,
+      "identity": {
+        "fixture": "tetrahedral-ccw",
+        "new_to_old": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "reference_count": 1,
+        "rdkit_unrepaired_count": 1,
+        "rdkit_sssr_repaired_count": 1,
+        "chematic_count": 1,
+        "stereo_crossread_equal": true
+      }
+    },
+    {
+      "id": "mapped-implicit-h",
+      "smiles": "N[C@@H:7](C)C(=O)O",
+      "sha256": "f08a076844fd104c5b20549658e9f6190139807705980f14c69d6eb12570e963",
+      "provenance": {
+        "source": "minimal abstract molecular graphs and independently written permutation recipe",
+        "issue": "https://github.com/rdkit/rdkit/issues/9629",
+        "retrieved": "2026-10-14",
+        "transformations": "one minimal issue graph; synthetic ring, atom-map, isotope and stereo controls; no upstream dataset or source code copied"
+      },
+      "license": "MIT OR Apache-2.0",
+      "redistribution": {
+        "status": "allowed",
+        "rationale": "minimal abstract structures and original project test recipe"
+      },
+      "minimization": "small graphs isolate ring-dependent stereo counts or one stereo representation at a time",
+      "oracle": {
+        "engine": "RDKit",
+        "version": "2026.09.1",
+        "settings": {
+          "legacy_stereo": true,
+          "removeHs": false,
+          "count_reference": "original MolFromSmiles and RenumberAtoms followed by GetSSSR",
+          "configuration_reference": "RDKit isomeric canonical SMILES after cross-read"
+        }
+      },
+      "expected": {
+        "stereocenter_count": 1,
+        "atom_count": 6,
+        "configuration": "same isomeric canonical structure",
+        "count_tolerance": 0
+      },
+      "permutations": 22,
+      "rdkit_unrepaired_count_drifts": 0,
+      "native_count_mismatches": 0,
+      "native_configuration_mismatches": 0,
+      "identity": {
+        "fixture": "mapped-implicit-h",
+        "new_to_old": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "reference_count": 1,
+        "rdkit_unrepaired_count": 1,
+        "rdkit_sssr_repaired_count": 1,
+        "chematic_count": 1,
+        "stereo_crossread_equal": true
+      }
+    },
+    {
+      "id": "explicit-h",
+      "smiles": "[H][C@](F)(Cl)Br",
+      "sha256": "5185c6160bf22d8e239d26b73a9836573d34b4de5bd2fad2d6525779cbfaca98",
+      "provenance": {
+        "source": "minimal abstract molecular graphs and independently written permutation recipe",
+        "issue": "https://github.com/rdkit/rdkit/issues/9629",
+        "retrieved": "2026-10-14",
+        "transformations": "one minimal issue graph; synthetic ring, atom-map, isotope and stereo controls; no upstream dataset or source code copied"
+      },
+      "license": "MIT OR Apache-2.0",
+      "redistribution": {
+        "status": "allowed",
+        "rationale": "minimal abstract structures and original project test recipe"
+      },
+      "minimization": "small graphs isolate ring-dependent stereo counts or one stereo representation at a time",
+      "oracle": {
+        "engine": "RDKit",
+        "version": "2026.09.1",
+        "settings": {
+          "legacy_stereo": true,
+          "removeHs": false,
+          "count_reference": "original MolFromSmiles and RenumberAtoms followed by GetSSSR",
+          "configuration_reference": "RDKit isomeric canonical SMILES after cross-read"
+        }
+      },
+      "expected": {
+        "stereocenter_count": 1,
+        "atom_count": 5,
+        "configuration": "same isomeric canonical structure",
+        "count_tolerance": 0
+      },
+      "permutations": 120,
+      "rdkit_unrepaired_count_drifts": 0,
+      "native_count_mismatches": 0,
+      "native_configuration_mismatches": 0,
+      "identity": {
+        "fixture": "explicit-h",
+        "new_to_old": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "reference_count": 1,
+        "rdkit_unrepaired_count": 1,
+        "rdkit_sssr_repaired_count": 1,
+        "chematic_count": 1,
+        "stereo_crossread_equal": true
+      }
+    },
+    {
+      "id": "deuterium",
+      "smiles": "[2H][C@](F)(Cl)Br",
+      "sha256": "b1a8d1be0bd5a99883ea6006a2934d9af17ddb0085d750bba668de2405c80869",
+      "provenance": {
+        "source": "minimal abstract molecular graphs and independently written permutation recipe",
+        "issue": "https://github.com/rdkit/rdkit/issues/9629",
+        "retrieved": "2026-10-14",
+        "transformations": "one minimal issue graph; synthetic ring, atom-map, isotope and stereo controls; no upstream dataset or source code copied"
+      },
+      "license": "MIT OR Apache-2.0",
+      "redistribution": {
+        "status": "allowed",
+        "rationale": "minimal abstract structures and original project test recipe"
+      },
+      "minimization": "small graphs isolate ring-dependent stereo counts or one stereo representation at a time",
+      "oracle": {
+        "engine": "RDKit",
+        "version": "2026.09.1",
+        "settings": {
+          "legacy_stereo": true,
+          "removeHs": false,
+          "count_reference": "original MolFromSmiles and RenumberAtoms followed by GetSSSR",
+          "configuration_reference": "RDKit isomeric canonical SMILES after cross-read"
+        }
+      },
+      "expected": {
+        "stereocenter_count": 1,
+        "atom_count": 5,
+        "configuration": "same isomeric canonical structure",
+        "count_tolerance": 0
+      },
+      "permutations": 120,
+      "rdkit_unrepaired_count_drifts": 0,
+      "native_count_mismatches": 0,
+      "native_configuration_mismatches": 0,
+      "identity": {
+        "fixture": "deuterium",
+        "new_to_old": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "reference_count": 1,
+        "rdkit_unrepaired_count": 1,
+        "rdkit_sssr_repaired_count": 1,
+        "chematic_count": 1,
+        "stereo_crossread_equal": true
+      }
+    },
+    {
+      "id": "alkene-e",
+      "smiles": "F/C=C/Cl",
+      "sha256": "1dcbffb5affa5e1aba7786516504d348aceb4092af7361c7aef1b6e47193ae9c",
+      "provenance": {
+        "source": "minimal abstract molecular graphs and independently written permutation recipe",
+        "issue": "https://github.com/rdkit/rdkit/issues/9629",
+        "retrieved": "2026-10-14",
+        "transformations": "one minimal issue graph; synthetic ring, atom-map, isotope and stereo controls; no upstream dataset or source code copied"
+      },
+      "license": "MIT OR Apache-2.0",
+      "redistribution": {
+        "status": "allowed",
+        "rationale": "minimal abstract structures and original project test recipe"
+      },
+      "minimization": "small graphs isolate ring-dependent stereo counts or one stereo representation at a time",
+      "oracle": {
+        "engine": "RDKit",
+        "version": "2026.09.1",
+        "settings": {
+          "legacy_stereo": true,
+          "removeHs": false,
+          "count_reference": "original MolFromSmiles and RenumberAtoms followed by GetSSSR",
+          "configuration_reference": "RDKit isomeric canonical SMILES after cross-read"
+        }
+      },
+      "expected": {
+        "stereocenter_count": 0,
+        "atom_count": 4,
+        "configuration": "same isomeric canonical structure",
+        "count_tolerance": 0
+      },
+      "permutations": 24,
+      "rdkit_unrepaired_count_drifts": 0,
+      "native_count_mismatches": 0,
+      "native_configuration_mismatches": 0,
+      "identity": {
+        "fixture": "alkene-e",
+        "new_to_old": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reference_count": 0,
+        "rdkit_unrepaired_count": 0,
+        "rdkit_sssr_repaired_count": 0,
+        "chematic_count": 0,
+        "stereo_crossread_equal": true
+      }
+    },
+    {
+      "id": "alkene-z",
+      "smiles": "F/C=C\\Cl",
+      "sha256": "34522f0cbb0cee9c50a5bb45e035624ab19e4f0040a1d86d8ba9e10880af7d1e",
+      "provenance": {
+        "source": "minimal abstract molecular graphs and independently written permutation recipe",
+        "issue": "https://github.com/rdkit/rdkit/issues/9629",
+        "retrieved": "2026-10-14",
+        "transformations": "one minimal issue graph; synthetic ring, atom-map, isotope and stereo controls; no upstream dataset or source code copied"
+      },
+      "license": "MIT OR Apache-2.0",
+      "redistribution": {
+        "status": "allowed",
+        "rationale": "minimal abstract structures and original project test recipe"
+      },
+      "minimization": "small graphs isolate ring-dependent stereo counts or one stereo representation at a time",
+      "oracle": {
+        "engine": "RDKit",
+        "version": "2026.09.1",
+        "settings": {
+          "legacy_stereo": true,
+          "removeHs": false,
+          "count_reference": "original MolFromSmiles and RenumberAtoms followed by GetSSSR",
+          "configuration_reference": "RDKit isomeric canonical SMILES after cross-read"
+        }
+      },
+      "expected": {
+        "stereocenter_count": 0,
+        "atom_count": 4,
+        "configuration": "same isomeric canonical structure",
+        "count_tolerance": 0
+      },
+      "permutations": 24,
+      "rdkit_unrepaired_count_drifts": 0,
+      "native_count_mismatches": 0,
+      "native_configuration_mismatches": 0,
+      "identity": {
+        "fixture": "alkene-z",
+        "new_to_old": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reference_count": 0,
+        "rdkit_unrepaired_count": 0,
+        "rdkit_sssr_repaired_count": 0,
+        "chematic_count": 0,
+        "stereo_crossread_equal": true
+      }
+    },
+    {
+      "id": "axial-allene",
+      "smiles": "CC=[C@AL1]=C(C)F",
+      "sha256": "d0f04ec67a23d5420ac21ec26282196c42575bd6097cabbd0027a6df3239356f",
+      "provenance": {
+        "source": "minimal abstract molecular graphs and independently written permutation recipe",
+        "issue": "https://github.com/rdkit/rdkit/issues/9629",
+        "retrieved": "2026-10-14",
+        "transformations": "one minimal issue graph; synthetic ring, atom-map, isotope and stereo controls; no upstream dataset or source code copied"
+      },
+      "license": "MIT OR Apache-2.0",
+      "redistribution": {
+        "status": "allowed",
+        "rationale": "minimal abstract structures and original project test recipe"
+      },
+      "minimization": "small graphs isolate ring-dependent stereo counts or one stereo representation at a time",
+      "oracle": {
+        "engine": "RDKit",
+        "version": "2026.09.1",
+        "settings": {
+          "legacy_stereo": true,
+          "removeHs": false,
+          "count_reference": "original MolFromSmiles and RenumberAtoms followed by GetSSSR",
+          "configuration_reference": "RDKit isomeric canonical SMILES after cross-read"
+        }
+      },
+      "expected": {
+        "stereocenter_count": 0,
+        "atom_count": 6,
+        "configuration": "same isomeric canonical structure",
+        "count_tolerance": 0
+      },
+      "permutations": 22,
+      "rdkit_unrepaired_count_drifts": 0,
+      "native_count_mismatches": 0,
+      "native_configuration_mismatches": 0,
+      "identity": {
+        "fixture": "axial-allene",
+        "new_to_old": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "reference_count": 0,
+        "rdkit_unrepaired_count": 0,
+        "rdkit_sssr_repaired_count": 0,
+        "chematic_count": 0,
+        "stereo_crossread_equal": true
+      }
+    },
+    {
+      "id": "square-planar",
+      "smiles": "Cl[Pt@SP1](Cl)(N)N",
+      "sha256": "7baa52119a3441481fb256956d6b50a06984bccad7047d11947c43ea16c4129c",
+      "provenance": {
+        "source": "minimal abstract molecular graphs and independently written permutation recipe",
+        "issue": "https://github.com/rdkit/rdkit/issues/9629",
+        "retrieved": "2026-10-14",
+        "transformations": "one minimal issue graph; synthetic ring, atom-map, isotope and stereo controls; no upstream dataset or source code copied"
+      },
+      "license": "MIT OR Apache-2.0",
+      "redistribution": {
+        "status": "allowed",
+        "rationale": "minimal abstract structures and original project test recipe"
+      },
+      "minimization": "small graphs isolate ring-dependent stereo counts or one stereo representation at a time",
+      "oracle": {
+        "engine": "RDKit",
+        "version": "2026.09.1",
+        "settings": {
+          "legacy_stereo": true,
+          "removeHs": false,
+          "count_reference": "original MolFromSmiles and RenumberAtoms followed by GetSSSR",
+          "configuration_reference": "RDKit isomeric canonical SMILES after cross-read"
+        }
+      },
+      "expected": {
+        "stereocenter_count": 0,
+        "atom_count": 5,
+        "configuration": "same isomeric canonical structure",
+        "count_tolerance": 0
+      },
+      "permutations": 120,
+      "rdkit_unrepaired_count_drifts": 0,
+      "native_count_mismatches": 0,
+      "native_configuration_mismatches": 0,
+      "identity": {
+        "fixture": "square-planar",
+        "new_to_old": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "reference_count": 0,
+        "rdkit_unrepaired_count": 0,
+        "rdkit_sssr_repaired_count": 0,
+        "chematic_count": 0,
+        "stereo_crossread_equal": true
+      }
+    },
+    {
+      "id": "trigonal-bipyramidal",
+      "smiles": "F[P@TB1](Cl)(Br)(I)N",
+      "sha256": "9558de71081ade22bc9819f8ef3ab2fc72ba5311e8e9135f0d34b78ceb925713",
+      "provenance": {
+        "source": "minimal abstract molecular graphs and independently written permutation recipe",
+        "issue": "https://github.com/rdkit/rdkit/issues/9629",
+        "retrieved": "2026-10-14",
+        "transformations": "one minimal issue graph; synthetic ring, atom-map, isotope and stereo controls; no upstream dataset or source code copied"
+      },
+      "license": "MIT OR Apache-2.0",
+      "redistribution": {
+        "status": "allowed",
+        "rationale": "minimal abstract structures and original project test recipe"
+      },
+      "minimization": "small graphs isolate ring-dependent stereo counts or one stereo representation at a time",
+      "oracle": {
+        "engine": "RDKit",
+        "version": "2026.09.1",
+        "settings": {
+          "legacy_stereo": true,
+          "removeHs": false,
+          "count_reference": "original MolFromSmiles and RenumberAtoms followed by GetSSSR",
+          "configuration_reference": "RDKit isomeric canonical SMILES after cross-read"
+        }
+      },
+      "expected": {
+        "stereocenter_count": 0,
+        "atom_count": 6,
+        "configuration": "same isomeric canonical structure",
+        "count_tolerance": 0
+      },
+      "permutations": 22,
+      "rdkit_unrepaired_count_drifts": 0,
+      "native_count_mismatches": 0,
+      "native_configuration_mismatches": 0,
+      "identity": {
+        "fixture": "trigonal-bipyramidal",
+        "new_to_old": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "reference_count": 0,
+        "rdkit_unrepaired_count": 0,
+        "rdkit_sssr_repaired_count": 0,
+        "chematic_count": 0,
+        "stereo_crossread_equal": true
+      }
+    },
+    {
+      "id": "octahedral",
+      "smiles": "F[Co@OH1](Cl)(Br)(I)(N)O",
+      "sha256": "2f60ade216630c656f9cc9482f47c07103a25b1c205586aabfe5623079017193",
+      "provenance": {
+        "source": "minimal abstract molecular graphs and independently written permutation recipe",
+        "issue": "https://github.com/rdkit/rdkit/issues/9629",
+        "retrieved": "2026-10-14",
+        "transformations": "one minimal issue graph; synthetic ring, atom-map, isotope and stereo controls; no upstream dataset or source code copied"
+      },
+      "license": "MIT OR Apache-2.0",
+      "redistribution": {
+        "status": "allowed",
+        "rationale": "minimal abstract structures and original project test recipe"
+      },
+      "minimization": "small graphs isolate ring-dependent stereo counts or one stereo representation at a time",
+      "oracle": {
+        "engine": "RDKit",
+        "version": "2026.09.1",
+        "settings": {
+          "legacy_stereo": true,
+          "removeHs": false,
+          "count_reference": "original MolFromSmiles and RenumberAtoms followed by GetSSSR",
+          "configuration_reference": "RDKit isomeric canonical SMILES after cross-read"
+        }
+      },
+      "expected": {
+        "stereocenter_count": 0,
+        "atom_count": 7,
+        "configuration": "same isomeric canonical structure",
+        "count_tolerance": 0
+      },
+      "permutations": 24,
+      "rdkit_unrepaired_count_drifts": 0,
+      "native_count_mismatches": 0,
+      "native_configuration_mismatches": 0,
+      "identity": {
+        "fixture": "octahedral",
+        "new_to_old": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "reference_count": 0,
+        "rdkit_unrepaired_count": 0,
+        "rdkit_sssr_repaired_count": 0,
+        "chematic_count": 0,
+        "stereo_crossread_equal": true
+      }
+    }
+  ]
+}

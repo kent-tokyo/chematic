@@ -1,6 +1,6 @@
 # Compatibility scope
 
-This is the v1.0 compatibility boundary and public contract.
+This is the 1.x compatibility boundary and public contract.
 “Compatible” means the operation is implemented and covered by its stated
 contract; it does not mean that chematic is a drop-in reimplementation of
 RDKit or ChemDraw.
@@ -9,12 +9,11 @@ The issue-specific matrix for rich RXN, CDXML presentation, Markush/polymer,
 and nucleic-acid boundaries is maintained in
 [`docs/issue-473-rich-document-boundary.md`](issue-473-rich-document-boundary.md).
 
-## v1.0 release contract
+## 1.x release contract
 
-The following boundaries are intentional release decisions, not unfinished
-claims to be inferred as complete. v1.0 may ship with these limits when the
-documented supported paths, typed failures, and regression gates remain
-stable:
+The following boundaries are intentional 1.x release decisions, not unfinished
+claims to be inferred as complete. Patch and minor releases retain these limits
+unless a narrower section explicitly records a compatible extension:
 
 - CDXML remains loss-preserving document-level bounded editing, not a complete arbitrary
   nested-object editor/writer; complex polymer/Markush expansion remains

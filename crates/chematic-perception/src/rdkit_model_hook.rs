@@ -54,6 +54,7 @@ pub fn rdkit_model_may_disagree(mol: &Molecule) -> bool {
 
 fn rdkit_model_may_disagree_uncached(mol: &Molecule) -> bool {
     let n = mol.atom_count();
+    let mut has_aromatic_atom = false;
     for i in 0..n {
         let idx = AtomIdx(i as u32);
         let atom = mol.atom(idx);
@@ -84,6 +85,7 @@ fn rdkit_model_may_disagree_uncached(mol: &Molecule) -> bool {
         let bracket = atom.hydrogen_count.is_some();
         let hs = u32::from(atom.hydrogen_count.unwrap_or(0));
         if atom.aromatic {
+            has_aromatic_atom = true;
             if aromatic_bonds < 2 {
                 return true;
             }
@@ -165,7 +167,9 @@ fn rdkit_model_may_disagree_uncached(mol: &Molecule) -> bool {
             return true;
         }
     }
-    !aromatic_systems_are_huckel(mol)
+    // With no aromatic atoms there is no aromatic component to check.
+    // The atom/valence and cyclic-triple checks above still run unchanged.
+    has_aromatic_atom && !aromatic_systems_are_huckel(mol)
 }
 
 /// Pi electrons an aromatic atom contributes to its ring system, `None`

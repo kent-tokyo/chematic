@@ -1,0 +1,72 @@
+{
+  "schema": "openbabel-sdf-throughput-source/v1",
+  "base_commit": "ffe682c32cb4c76de0d309649427202a7d8e956d",
+  "artifact_lane": "isolated source-built Rust candidate vs locally installed Homebrew Open Babel C++ library",
+  "candidate_patch": {
+    "path": "benchmarks/2026-10-14-openbabel-sdf-speed-candidate.patch",
+    "sha256": "ece29045e324a19756f3ee7b96ad6bfbc713a03fa3feb0fbf4e4866c447a9da4"
+  },
+  "source_files_sha256": {
+    "crates/chematic-mol/src/mol2000/reader.rs": "c27bc3768059947c34617df1fe1f60fc2c33c42cfcd44d787feefd0cb9abb924",
+    "crates/chematic-mol/src/mol2000/writer.rs": "6aedddb3f805a28ab7634883b1594362079e1feabff9ebd37abe756f5969ed00",
+    "crates/chematic-mol/examples/openbabel_sdf_throughput.rs": "152d9c204fcb027e178d742c7a51667f19bedb10521dfd61cc5eaa8740a711b7",
+    "crates/chematic-mol/tests/sdf_unspecified_double_stereo.rs": "c5b1a8409bd6730104be305af72fcc55bbda4af8ec911ed41b883fd854c4f418",
+    "tools/openbabel_sdf_throughput.cpp": "d6b07968e9a2bb6a2e11ee079e2925672168f991dac34b235fe459fda0fc102e",
+    "scripts/bench_openbabel_sdf_throughput.py": "7dbf070212854b08fd898ccd3e16de3d4ddf5e82835fd6312d1d61119edd8a47",
+    "scripts/build_openbabel_sdf_speed_corpus.py": "9897a17f139395f5e557361968a9ef8b2ad633474eab78818b861cf8da376e05",
+    "scripts/tests/test_bench_openbabel_sdf_throughput.py": "cf58573d891c015b745ae0f74dc5bd76713dba4cf91457167c4b8e14403f5cb7",
+    "Cargo.toml": "5a398486283707530879d379944ae8c48bdbcfb0c3464d327f160c7d83abfcef",
+    "Cargo.lock": "1c55261a594db832c9a26624588827ebac74906cd67d902d191258818c7bf546",
+    "validation/cosmolkit_comparison/bench_corpus.py": "6ad2dc64556b8e88e2b246f3c9dd4953b849a1c266fb8055520598b5e7deeb4c"
+  },
+  "baseline": "git archive base_commit plus identical Rust example harness only",
+  "candidate": "git archive base_commit plus only the production MOL2000 writer, identical Rust example harness, and regression tests from this patch; unrelated dirty files excluded",
+  "rustc": "rustc 1.97.0 (2d8144b78 2026-07-07)\nbinary: rustc\ncommit-hash: 2d8144b7880597b6e6d3dfd63a9a9efae3f533d3\ncommit-date: 2026-07-07\nhost: aarch64-apple-darwin\nrelease: 1.97.0\nLLVM version: 22.1.6",
+  "cargo": "cargo 1.97.0 (c980f4866 2026-06-30)",
+  "cxx": "Apple clang version 21.0.0 (clang-2100.3.34.2)\nTarget: arm64-apple-darwin27.0.0\nThread model: posix\nInstalledDir: /Library/Developer/CommandLineTools/usr/bin",
+  "rust_build": "cargo build --release --locked --manifest-path /private/tmp/chematic-openbabel-speed-source-20261014/Cargo.toml -p chematic-mol --example openbabel_sdf_throughput; CARGO_TARGET_DIR=/private/tmp/chematic-openbabel-speed-target-20261014",
+  "rust_release": {
+    "opt_level": 3,
+    "lto": true,
+    "codegen_units": 1
+  },
+  "cpp_build": "c++ -std=c++17 -O3 $(pkg-config --cflags openbabel-3) tools/openbabel_sdf_throughput.cpp $(pkg-config --libs openbabel-3) -o /private/tmp/chematic-openbabel-speed-20261014/openbabel-sdf",
+  "openbabel_version": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+  "pkg_config_version": "3.2.1",
+  "linked_libraries": {
+    "/opt/homebrew/opt/open-babel/lib/libopenbabel.8.0.0.dylib": {
+      "real_path": "/opt/homebrew/Cellar/open-babel/3.2.1/lib/libopenbabel.8.0.0.dylib",
+      "sha256": "9c0e023919fca6656f686b3903c10d438c0003a1d07e721a850cff9ff495c93a"
+    },
+    "/opt/homebrew/opt/open-babel/lib/openbabel/3.2.1/mdlformat.so": {
+      "real_path": "/opt/homebrew/Cellar/open-babel/3.2.1/lib/openbabel/3.2.1/mdlformat.so",
+      "sha256": "63afe091d19268a0c6d5514b81ce5b9018c0334d9a0108b0fbfbb920b587999b"
+    }
+  },
+  "host": {
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "machine": "arm64",
+    "logical_cpus": 10,
+    "hardware_model": "unavailable: sysctl denied by sandbox"
+  },
+  "corpus_generation": {
+    "schema": "openbabel-sdf-speed-corpus/v1",
+    "source_path": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+    "source_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+    "source_rows": 1000,
+    "rows_filtered": 0,
+    "rdkit_version": "2026.09.1",
+    "coordinate_generation": "Compute2DCoords(canonOrient=True, clearConfs=True, forceRDKit=True)",
+    "output_sha256": "8e7ad63db96f6fb87b87333ab1f7710a18bc3be5cb4676c15c345c09d4ce718b",
+    "output_bytes": 2419258,
+    "minimum_atoms": 7,
+    "maximum_atoms": 137,
+    "total_atoms": 27435
+  },
+  "retained_corpus": {
+    "path": "validation/benchmark_corpora/openbabel-sdf-speed-1000-v1.sdf.gz",
+    "sha256_gzip": "4e5d75d03f7025423c9e0d8fe9afb9ed332cc3130d4424319596c54c33dc9733"
+  },
+  "measurement_privilege": "Darwin /usr/bin/time -l requires read-only sysctl access outside the filesystem sandbox; binaries and inputs unchanged",
+  "rejected_optimization": "Fixed-decimal coordinate parsing and property token allocation changes were removed after 21 development blocks: baseline/candidate parse median ratio 1.010, paired 95% CI [0.997, 1.013], 14/21 faster, exact parse snapshots equal. No confirmed parser speed improvement."
+}

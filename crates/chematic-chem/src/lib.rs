@@ -41,9 +41,11 @@ pub mod qed;
 mod rdkit_graph;
 mod rdkit_isotope_mass_table;
 pub mod recap;
+pub mod resonance;
 pub mod rgroup;
 pub mod sa_score;
 pub mod scaffold;
+pub mod screening;
 pub mod standardize;
 pub mod stereo;
 pub mod tautomer;
@@ -80,6 +82,7 @@ pub use descriptors::{
 pub use iupac_stereo::iupac_name_stereo;
 #[cfg(feature = "serde")]
 pub use nmr::{NmrDiagnostic, NmrLimits, NmrPeak, NmrSpectrum, NmrValidation, validate_nmr_json};
+pub use screening::{ScreeningError, enrichment_factors};
 
 pub use abbreviations::{abbreviations, expand_abbreviation};
 pub use activity_cliff::{ActivityCliff, activity_cliffs};
@@ -130,6 +133,10 @@ pub use pka::{PkaSite, PkaSiteType, pka_acid, pka_base, pka_both, predict_pka};
 pub use qed::{qed, qed_with_bundle};
 pub use rdkit_graph::GraphDescriptorError;
 pub use recap::{recap_breakable_bond_count, recap_fragment};
+pub use resonance::{
+    LocalResonanceError, LocalResonanceLimits, LocalResonanceReport, LocalResonanceStatus,
+    enumerate_local_cation_resonance,
+};
 pub use rgroup::{
     LabeledRGroupResult, PreparedRGroupCore, RGroupError, RGroupResult, rgroup_decompose,
     rgroup_decompose_labeled,

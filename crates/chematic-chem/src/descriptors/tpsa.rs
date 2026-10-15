@@ -23,7 +23,7 @@ fn tpsa_environment(mol: &Molecule, idx: AtomIdx, hydrogens: u8) -> TpsaEnvironm
         charge: mol.atom(idx).charge,
         ..TpsaEnvironment::default()
     };
-    let mut heavy_neighbors = Vec::new();
+    let mut heavy_neighbors = smallvec::SmallVec::<[AtomIdx; 4]>::new();
     for (neighbor, bond_idx) in mol.neighbors(idx) {
         if mol.atom(neighbor).element.atomic_number() == 1 {
             continue;
@@ -69,11 +69,7 @@ fn tpsa_nitrogen(environment: TpsaEnvironment) -> f64 {
         };
     }
     if bond_key == (3, 0, 0, 3, 0, 0, 0) {
-        return if e.in_three_membered_ring {
-            3.01
-        } else {
-            3.24
-        };
+        return if e.in_three_membered_ring { 3.01 } else { 3.24 };
     }
     let key = (
         e.neighbors,
@@ -278,13 +274,19 @@ fn tpsa_contributions(mol: &Molecule) -> Vec<f64> {
 /// `Descriptors.TPSA(mol)` excludes S and P; results will differ for molecules
 /// containing these elements.
 pub fn tpsa(mol: &Molecule) -> f64 {
-    tpsa_contributions(mol).into_iter().sum()
+    mol.derived_scalar(chematic_core::derived_cache::DerivedScalar::Tpsa, || {
+        tpsa_contributions(mol).into_iter().sum::<f64>()
+    })
 }
 
 /// RDKit-default TPSA: `rdMolDescriptors.CalcTPSA(mol)` / `Descriptors.TPSA(mol)`
 /// with `includeSandP=False`, i.e. the N and O contributions of [`tpsa`] only.
 pub fn rdkit_tpsa(mol: &Molecule) -> f64 {
-    chematic_smiles::with_rdkit_model_molecule(mol, rdkit_tpsa_impl)
+    chematic_smiles::with_rdkit_model_scalar(
+        mol,
+        chematic_core::derived_cache::DerivedScalar::RdkitTpsa,
+        rdkit_tpsa_impl,
+    )
 }
 
 fn rdkit_tpsa_impl(mol: &Molecule) -> f64 {
