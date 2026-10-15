@@ -1,0 +1,6 @@
+{
+  "adopt_source": false,
+  "reason": "Reject the ASCII-tokenization prototype for ordinary-read acceleration. Source-relative parse medians are 1.004x [0.995,1.008] for slice0, 0.992x [0.936,1.013] for slice5000, and 0.995x [0.983,1.043] for controlled chains; no ordinary parse improvement is established. The separate continuation diagnostic improves parse 1.024x [1.016,1.031] (20/21), but this small non-strict diagnostic gain does not justify the added branch/scans for the main intended workload. Writer movement is not attributed to a new algorithm because writer code is unchanged. All original/adaptive outcomes, 872 native tests, ten runner gates and 894 frozen-reader cases pass and remain archived. No initial CI selects a negative follow-up. The chain collection interruption, lost unpersisted block15, all fourteen unchanged original saved blocks, timestamp-only Open Babel revalidation difference and exact resumption are disclosed. No production source is delivered. The next independent candidate targets direct integer output; no measurements are pooled.",
+  "merged": false,
+  "published": false
+}

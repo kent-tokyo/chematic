@@ -1,0 +1,98 @@
+{
+  "adopt_source": true,
+  "reason": "Adopt as a small unmerged source optimization: exact outputs and all scoped gates pass; NCI first-use TPSA is 1.019x [1.007, 1.030], 17/20 blocks faster, and parse-inclusive TPSA is 1.013x [1.004, 1.022], 15/20. Neither satisfies the all-block strict criterion. Labute ASA improvement is unproved. Five initial offset-0 Morgan negative lanes select one separate follow-up; none has a wholly-below-1 interval there. Initial negatives remain visible and the follow-up does not prove absence of regression. No claim of toolkit-wide or main/release superiority.",
+  "primary_initial_effect": {
+    "first_use": {
+      "speedup": {
+        "median": 1.019,
+        "ci95": [
+          1.007,
+          1.03
+        ],
+        "winning_blocks": 17,
+        "blocks": 20
+      },
+      "demonstrated_win": false
+    },
+    "parse_inclusive": {
+      "speedup": {
+        "median": 1.013,
+        "ci95": [
+          1.004,
+          1.022
+        ],
+        "winning_blocks": 15,
+        "blocks": 20
+      },
+      "demonstrated_win": false
+    }
+  },
+  "initial_negative_selection": {
+    "5000": {
+      "negative_initial_lanes": {},
+      "operations": [],
+      "policy": "One separate adaptive follow-up of 20 blocks. Retain all three modes and all outcomes. Do not pool or iterate."
+    },
+    "0": {
+      "negative_initial_lanes": {
+        "morgan2_2048/first_use": {
+          "median": 0.987,
+          "ci95": [
+            0.973,
+            0.999
+          ],
+          "winning_blocks": 5,
+          "blocks": 20
+        },
+        "morgan2_2048/repeated_use": {
+          "median": 0.992,
+          "ci95": [
+            0.98,
+            0.998
+          ],
+          "winning_blocks": 5,
+          "blocks": 20
+        },
+        "morgan2_chiral/repeated_use": {
+          "median": 0.993,
+          "ci95": [
+            0.968,
+            0.998
+          ],
+          "winning_blocks": 5,
+          "blocks": 20
+        },
+        "morgan2_chiral/parse_inclusive": {
+          "median": 0.975,
+          "ci95": [
+            0.942,
+            0.997
+          ],
+          "winning_blocks": 5,
+          "blocks": 20
+        },
+        "morgan3_2048/repeated_use": {
+          "median": 0.986,
+          "ci95": [
+            0.967,
+            0.999
+          ],
+          "winning_blocks": 6,
+          "blocks": 20
+        }
+      },
+      "operations": [
+        "morgan2_2048",
+        "morgan2_chiral",
+        "morgan3_2048"
+      ],
+      "policy": "One separate adaptive follow-up of 20 blocks. Retain all three modes and all outcomes. Do not pool or iterate."
+    }
+  },
+  "followup_wholly_negative_lanes": {},
+  "followups_pooled_or_used_as_replacement": false,
+  "fully_exceeds_rdkit_and_cosmolkit": false,
+  "labute_asa_improvement_established": false,
+  "previous_candidate_negatives_resolved": false,
+  "merged_or_published": false
+}

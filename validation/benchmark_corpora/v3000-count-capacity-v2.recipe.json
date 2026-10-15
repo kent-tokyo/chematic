@@ -1,0 +1,67 @@
+{
+  "allocation_limits": [
+    0,
+    1,
+    5,
+    64
+  ],
+  "capacity_oracle": {
+    "counts_inclusive": [
+      0,
+      1024
+    ],
+    "reference": "Push count zero XY tuples into an initially empty Vec and compare its capacity; synthetic storage-only values",
+    "row_budget": "2 * count + 7"
+  },
+  "cartesian": "All atom/bond/SGROUP count-lexeme triples for each allocation limit and source line, after the prime COUNTS row; compare original mutation and error precedence",
+  "count_lexemes": [
+    "0",
+    "1",
+    "2",
+    "7",
+    "9",
+    "11",
+    "64",
+    "1024",
+    "4294967295",
+    "18446744073709551615",
+    "18446744073709551616",
+    "-1",
+    "+1",
+    "",
+    "bad"
+  ],
+  "id": "v3000-count-capacity-v2",
+  "markers": [
+    [],
+    [
+      "COUNTS"
+    ],
+    [
+      "COUNTS",
+      "1",
+      "2"
+    ],
+    [
+      "BEGIN",
+      "ATOM"
+    ],
+    [
+      "END",
+      "CTAB"
+    ],
+    [
+      "OTHER"
+    ]
+  ],
+  "prime": [
+    "COUNTS",
+    "7",
+    "9",
+    "11"
+  ],
+  "source_lines": [
+    1,
+    42
+  ]
+}

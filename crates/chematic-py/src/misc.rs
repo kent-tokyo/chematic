@@ -43,6 +43,7 @@ pub(crate) fn cached_smarts(
 pub(crate) struct PySmartsQuery {
     source: String,
     query: Arc<chematic_smarts::QueryMolecule>,
+    folded: bool,
 }
 
 /// Molecules retained in Rust for repeated batch operations.
@@ -99,6 +100,7 @@ impl PySmartsQuery {
         Ok(Self {
             source: smarts.to_owned(),
             query: Arc::new(query),
+            folded: false,
         })
     }
 
@@ -107,9 +109,31 @@ impl PySmartsQuery {
         &self.source
     }
 
+    /// Number of query atoms after any hydrogen folding.
+    #[getter]
+    fn atom_count(&self) -> usize {
+        self.query.atom_count()
+    }
+
+    /// Return a new query with eligible terminal H nodes folded into H counts.
+    /// Keeps source as the original input text. Isotopic, mapped and constrained
+    /// H nodes survive. Recursive queries and ambiguous stereo frames raise
+    /// ValueError. Matching indices refer to the compacted query.
+    fn merge_hydrogens(&self) -> PyResult<Self> {
+        let query = chematic_smarts::merge_query_hydrogens(&self.query)
+            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        Ok(Self {
+            source: self.source.clone(),
+            query: Arc::new(query),
+            folded: true,
+        })
+    }
+
     /// Return whether this query has at least one match in ``mol``.
-    fn matches(&self, mol: &Mol) -> bool {
+    #[pyo3(signature = (mol, use_chirality=false))]
+    fn matches(&self, mol: &Mol, use_chirality: bool) -> bool {
         let config = chematic_smarts::MatchConfig {
+            use_chirality,
             max_matches: Some(1),
             uniquify: false,
             ..chematic_smarts::MatchConfig::default()
@@ -118,8 +142,10 @@ impl PySmartsQuery {
     }
 
     /// Match this query against many molecules with one Python/Rust call.
-    fn matches_many(&self, molecules: Vec<PyRef<'_, Mol>>) -> Vec<bool> {
+    #[pyo3(signature = (molecules, use_chirality=false))]
+    fn matches_many(&self, molecules: Vec<PyRef<'_, Mol>>, use_chirality: bool) -> Vec<bool> {
         let config = chematic_smarts::MatchConfig {
+            use_chirality,
             max_matches: Some(1),
             uniquify: false,
             ..chematic_smarts::MatchConfig::default()
@@ -131,8 +157,10 @@ impl PySmartsQuery {
     }
 
     /// Match a Rust-retained molecule batch without re-extracting Python objects.
-    fn matches_batch(&self, batch: &PyMoleculeBatch) -> Vec<bool> {
+    #[pyo3(signature = (batch, use_chirality=false))]
+    fn matches_batch(&self, batch: &PyMoleculeBatch, use_chirality: bool) -> Vec<bool> {
         let config = chematic_smarts::MatchConfig {
+            use_chirality,
             max_matches: Some(1),
             uniquify: false,
             ..chematic_smarts::MatchConfig::default()
@@ -145,16 +173,25 @@ impl PySmartsQuery {
     }
 
     /// Return sorted target-atom indices for every unique match.
-    fn find_matches(&self, mol: &Mol) -> Vec<Vec<usize>> {
+    #[pyo3(signature = (mol, use_chirality=false))]
+    fn find_matches(&self, mol: &Mol, use_chirality: bool) -> Vec<Vec<usize>> {
         chematic_smarts::find_match_atom_sets_perceived(
             &self.query,
             &mol.inner,
-            &chematic_smarts::MatchConfig::default(),
+            &chematic_smarts::MatchConfig {
+                use_chirality,
+                ..Default::default()
+            },
         )
     }
 
     fn __repr__(&self) -> String {
-        format!("SmartsQuery({:?})", self.source)
+        let operation = if self.folded {
+            ".merge_hydrogens()"
+        } else {
+            ""
+        };
+        format!("SmartsQuery({:?}){operation}", self.source)
     }
 }
 

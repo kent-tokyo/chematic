@@ -49,6 +49,9 @@ impl std::error::Error for MolError {}
 /// No external graph library is used; all graph traversal is domain-aware.
 /// Sentinel used in `stereo_neighbor_order` to represent the implicit H in a bracket atom.
 pub const STEREO_H_SENTINEL: u32 = u32::MAX;
+/// Unoccupied coordination site in a partial non-tetrahedral SMILES center.
+/// Distinct from an implicit H: both may occur in the same ligand order.
+pub const STEREO_VACANT_SENTINEL: u32 = u32::MAX - 1;
 
 #[derive(Clone)]
 pub struct Molecule {
@@ -74,8 +77,9 @@ pub struct Molecule {
     ///
     /// Keyed by atom index.  Each value lists the atom indices of neighbors in
     /// the order they appeared in the SMILES string (including ring-closure
-    /// partners), with [`STEREO_H_SENTINEL`] (`u32::MAX`) standing in for the
-    /// implicit bracket H.  Populated by the SMILES parser; absent for atoms
+    /// partners). [`STEREO_H_SENTINEL`] stands for a bracket H, and
+    /// [`STEREO_VACANT_SENTINEL`] for one unoccupied non-tetrahedral site.
+    /// Populated by the SMILES parser; absent for atoms
     /// not parsed from SMILES or without recorded stereo.
     stereo_neighbor_order: std::collections::HashMap<u32, Vec<u32>>,
     /// Directional (`/`, `\`) bond marker, stashed for bonds whose `order` was
@@ -104,6 +108,8 @@ include!("molecule/access.rs");
 include!("molecule/graph.rs");
 include!("molecule/metadata.rs");
 include!("molecule/cache.rs");
+include!("molecule/renumber.rs");
+include!("molecule/checked_stereo_groups.rs");
 include!("molecule/builder.rs");
 
 #[cfg(test)]

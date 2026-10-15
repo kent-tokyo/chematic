@@ -1,0 +1,71 @@
+{
+  "adopt_source": true,
+  "reason": "Adopt the combined bounded rounded-capacity reservation and zero atom-map writer shortcut as the tenth unmerged source candidate. NCI parse 1.057x [1.050,1.067], write 1.096x [1.082,1.105] and roundtrip 1.064x [1.057,1.068] against the original nine-candidate baseline all win 21/21 blocks. Every original and continuation source-relative CI lower is above 1; no profile selects a regression follow-up. This does not make every source-relative lane a strict win: original-slice write/roundtrip, chain parse and continuation parse/roundtrip have fewer than 21 faster blocks. All 2,064 original snapshots/rewrites and 64 continuation variants agree exactly, with 848 native tests and 10 runner gates passing. Controlled chains beat pinned native Open Babel by 126.171x parse, 6.709x write and 89.918x roundtrip, each with semantic agreement and all21 faster. Diverse Open Babel profiles remain unranked for graph/stereo/rewrite differences. The two preceding capacity-only trials are rejected, separately archived and never pooled. This incremental source comparison does not resolve older unrelated Python/native negatives or establish toolkit-wide superiority, current main, hosted CI or publication.",
+  "baseline_accepted_candidates": 9,
+  "accepted_candidates": 10,
+  "merged": false,
+  "published": false,
+  "toolkit_wide_superiority": false,
+  "intended_nci_strict_lanes": {
+    "parse": {
+      "baseline": {
+        "speedup": {
+          "median": 1.057,
+          "ci95": [
+            1.05,
+            1.067
+          ],
+          "winning_blocks": 21,
+          "blocks": 21
+        },
+        "semantic_prerequisite": true,
+        "strict_speed_win": true
+      },
+      "openbabel": {
+        "speedup": null,
+        "semantic_prerequisite": false,
+        "strict_speed_win": false
+      }
+    },
+    "write": {
+      "baseline": {
+        "speedup": {
+          "median": 1.096,
+          "ci95": [
+            1.082,
+            1.105
+          ],
+          "winning_blocks": 21,
+          "blocks": 21
+        },
+        "semantic_prerequisite": true,
+        "strict_speed_win": true
+      },
+      "openbabel": {
+        "speedup": null,
+        "semantic_prerequisite": false,
+        "strict_speed_win": false
+      }
+    },
+    "roundtrip": {
+      "baseline": {
+        "speedup": {
+          "median": 1.064,
+          "ci95": [
+            1.057,
+            1.068
+          ],
+          "winning_blocks": 21,
+          "blocks": 21
+        },
+        "semantic_prerequisite": true,
+        "strict_speed_win": true
+      },
+      "openbabel": {
+        "speedup": null,
+        "semantic_prerequisite": false,
+        "strict_speed_win": false
+      }
+    }
+  }
+}

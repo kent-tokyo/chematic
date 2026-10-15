@@ -1,8 +1,8 @@
 //! SDF (Structure-Data File) reader.
 //!
-//! An SDF file contains one or more MOL V2000 blocks separated by `$$$$`
-//! delimiter lines.  Data-field sections between `M  END` and `$$$$` are
-//! accepted but ignored.
+//! An SDF file contains one or more MOL V2000 or V3000 blocks separated by `$$$$`
+//! delimiter lines. `SdfReader` ignores SD data fields; record readers retain
+//! fields between `M  END` and `$$$$`.
 
 use crate::error::MolParseError;
 use crate::mol2000::{
@@ -13,7 +13,47 @@ use chematic_core::{Coords3D, Molecule};
 use chematic_perception::{EzDirectionDiagnostic, StereoDiagnostic};
 
 mod dataset;
+mod ensemble;
+mod fields;
+mod selection;
 pub use dataset::{SdfDataset, SdfRecordMetadata};
+pub use ensemble::{ConformerEnsemble, read_sdf_conformer_ensembles};
+use fields::parse_sd_fields;
+pub use selection::{SdfIndexedBatch, SdfSelectionError, SdfSelectionLimits};
+
+fn is_v3000_record(block: &str) -> bool {
+    block
+        .lines()
+        .nth(3)
+        .is_some_and(|line| line.trim_end().ends_with("V3000"))
+}
+
+// Search physical lines after the four-line MOL header. V2000 readers accept
+// leading whitespace and trailing text on the terminator, while excluding the
+// title/comment header and later SD values from consideration.
+fn sdf_ctab_end(block: &str) -> Option<usize> {
+    let mut end = 0;
+    for (index, line) in block.split_inclusive('\n').enumerate() {
+        end += line.len();
+        if index >= 4 && line.trim_start().starts_with("M  END") {
+            return Some(end);
+        }
+    }
+    None
+}
+fn sdf_ctab(block: &str) -> &str {
+    &block[..sdf_ctab_end(block).unwrap_or(block.len())]
+}
+
+fn read_sdf_mol_with_diagnostics(
+    block: &str,
+) -> Result<crate::mol2000::MolReadReport, MolParseError> {
+    if is_v3000_record(block) {
+        crate::mol3000::read_mol_v3000_with_diagnostics(sdf_ctab(block))
+    } else {
+        read_mol_with_diagnostics(block)
+    }
+}
 
 /// Iterator over molecules in an SDF string.
 ///
@@ -130,7 +170,11 @@ impl<'a> Iterator for SdfReader<'a> {
                 }));
             }
             self.current_mol_num += 1;
-            return Some(parse_mol(mol_block));
+            return Some(if is_v3000_record(mol_block) {
+                crate::mol3000::parse_mol_v3000(sdf_ctab(mol_block))
+            } else {
+                parse_mol(mol_block)
+            });
         }
     }
 }
@@ -312,16 +356,13 @@ impl<'a> Iterator for SdfRecordReader<'a> {
             self.records_read += 1;
 
             // Parse molecule + 2D coordinates + stereo diagnostics.
-            let report = match read_mol_with_diagnostics(block) {
+            let report = match read_sdf_mol_with_diagnostics(block) {
                 Ok(report) => report,
                 Err(e) => return Some(Err(e)),
             };
 
             // Extract data fields from the part after "M  END".
-            let data_part = block
-                .find("M  END")
-                .map(|pos| &block[pos + 6..])
-                .unwrap_or("");
+            let data_part = sdf_ctab_end(block).map(|pos| &block[pos..]).unwrap_or("");
             let properties = parse_sd_fields(data_part);
 
             return Some(Ok(SdfRecord {
@@ -338,153 +379,6 @@ impl<'a> Iterator for SdfRecordReader<'a> {
             }));
         }
     }
-}
-
-/// Parse SD data fields from the section after `M  END`.
-///
-/// Each field starts with `> <FieldName>` on its own line.  The value is
-/// everything on subsequent lines until a blank line (or end of input).
-fn parse_sd_fields(data: &str) -> std::collections::HashMap<String, String> {
-    let mut fields = std::collections::HashMap::new();
-    let mut current_key: Option<String> = None;
-    let mut current_value = String::new();
-
-    for raw_line in data.lines() {
-        let line = raw_line.trim_end_matches('\r');
-
-        if let Some(key) = parse_sd_field_header(line) {
-            // Flush previous field.
-            if let Some(k) = current_key.take() {
-                fields.insert(k, std::mem::take(&mut current_value));
-            }
-            current_key = Some(key);
-        } else if line.is_empty() {
-            // Blank line ends the current field's value.
-            if let Some(k) = current_key.take() {
-                fields.insert(k, std::mem::take(&mut current_value));
-            }
-        } else if current_key.is_some() {
-            if !current_value.is_empty() {
-                current_value.push('\n');
-            }
-            current_value.push_str(line);
-        }
-    }
-    // Flush trailing field with no blank line.
-    if let Some(k) = current_key {
-        fields.insert(k, current_value);
-    }
-
-    fields
-}
-
-/// Parse `> <FieldName>` header lines, returning the field name or `None`.
-fn parse_sd_field_header(line: &str) -> Option<String> {
-    // SDF spec: field headers start with "> " and contain the name in `<...>`.
-    // We accept "> <Name>" and also ">  <Name>" (extra spaces).
-    let rest = line.strip_prefix('>')?;
-    let rest = rest.trim();
-    let inner = rest.strip_prefix('<')?.strip_suffix('>')?;
-    Some(inner.to_string())
-}
-
-// ---------------------------------------------------------------------------
-// Conformer ensembles — bundle records sharing the same molecular graph
-// ---------------------------------------------------------------------------
-
-/// One group of SDF records that share the same molecular graph (see
-/// [`same_graph_identity`]) and each carry a real 3D conformer.
-///
-/// Records with no 3D conformer (`conformer.is_none()`, i.e. flagged 2D or
-/// flat -- see [`crate::mol2000::MolReadReport::conformer`]) are not part of
-/// any ensemble: this supplier is specifically about bundling repeated 3D
-/// conformers of "the same" molecule (e.g. `EmbedMultipleConfs` +
-/// `MolToMolBlock` per conformer, written as consecutive SDF records).
-pub struct ConformerEnsemble {
-    /// The molecular graph shared by every member (the first record's
-    /// `mol`; every other member's `mol` is checked equal by
-    /// [`same_graph_identity`] and then discarded, not stored again).
-    pub mol: Molecule,
-    /// Metadata from the first record in the group.
-    pub metadata: MolMetadata,
-    /// One conformer per member record, in file order.
-    pub conformers: Vec<Coords3D>,
-}
-
-/// Deliberately simple identity check: same atom count/order, same
-/// per-index `(element, charge, isotope)`, same bond list `(atom1, atom2,
-/// order)` in index order.
-///
-/// This is order-sensitive structural equality, NOT graph isomorphism or
-/// canonical-SMILES equality -- and that is intentional, not a shortcut
-/// taken for lack of time: it is correct for the actual use case this
-/// supplier targets (the same molecule written N times with different
-/// coordinates by the same embedding tool, which never reorders atoms or
-/// bonds between calls -- confirmed against RDKit's own
-/// `EmbedMultipleConfs` + per-conformer `MolToMolBlock`, see this crate's
-/// fixture tests). A more rigorous, reordering-tolerant identity layer is a
-/// separate, parallel workstream in the 3D Breakthrough Program (Agent B);
-/// this one is intentionally not that, and the Coordinator is expected to
-/// reconcile the two later.
-fn same_graph_identity(a: &Molecule, b: &Molecule) -> bool {
-    if a.atom_count() != b.atom_count() || a.bond_count() != b.bond_count() {
-        return false;
-    }
-    for ((_, atom_a), (_, atom_b)) in a.atoms().zip(b.atoms()) {
-        if atom_a.element != atom_b.element
-            || atom_a.charge != atom_b.charge
-            || atom_a.isotope != atom_b.isotope
-        {
-            return false;
-        }
-    }
-    for ((_, bond_a), (_, bond_b)) in a.bonds().zip(b.bonds()) {
-        if bond_a.atom1 != bond_b.atom1
-            || bond_a.atom2 != bond_b.atom2
-            || bond_a.order != bond_b.order
-        {
-            return false;
-        }
-    }
-    true
-}
-
-/// Parse an SDF string and group records that share the same molecular graph
-/// (see [`same_graph_identity`]) and each carry a real 3D conformer into
-/// [`ConformerEnsemble`]s.
-///
-/// Records with no 3D conformer are silently omitted from the result (this
-/// is specifically a *3D conformer* ensemble supplier, not a general SDF
-/// grouping utility). Grouping is order-independent within the file (a
-/// record is compared against every existing group's representative, not
-/// just its immediate predecessor), matching how real multi-conformer SDF
-/// exports are usually -- but not always -- written consecutively.
-///
-/// Stops and returns an error on the first parse failure, same as
-/// [`read_sdf_with_diagnostics`].
-pub fn read_sdf_conformer_ensembles(input: &str) -> Result<Vec<ConformerEnsemble>, MolParseError> {
-    let reports = crate::mol2000::read_sdf_with_diagnostics(input)?;
-    let mut ensembles: Vec<ConformerEnsemble> = Vec::new();
-
-    for report in reports {
-        let Some(conformer) = report.conformer else {
-            continue;
-        };
-        if let Some(existing) = ensembles
-            .iter_mut()
-            .find(|e| same_graph_identity(&e.mol, &report.mol))
-        {
-            existing.conformers.push(conformer);
-        } else {
-            ensembles.push(ConformerEnsemble {
-                mol: report.mol,
-                metadata: report.metadata,
-                conformers: vec![conformer],
-            });
-        }
-    }
-
-    Ok(ensembles)
 }
 
 // ---------------------------------------------------------------------------
@@ -623,13 +517,16 @@ impl<R: std::io::BufRead> SdfFileReader<R> {
     fn parse_current_block(&self) -> Result<SdfRecord, MolParseError> {
         let block = std::str::from_utf8(&self.block)
             .map_err(|error| MolParseError::Io(error.to_string()))?;
-        let data_part = block
-            .find("M  END")
-            .map(|position| &block[position + 6..])
+        let data_part = sdf_ctab_end(block)
+            .map(|position| &block[position..])
             .unwrap_or("");
         let properties = parse_sd_fields(data_part);
         if !self.diagnostics {
-            let (mol, meta) = parse_mol_fast(block)?;
+            let (mol, meta) = if is_v3000_record(block) {
+                crate::mol3000::parse_mol_v3000(sdf_ctab(block))?
+            } else {
+                parse_mol_fast(block)?
+            };
             return Ok(SdfRecord {
                 mol,
                 meta,
@@ -643,7 +540,7 @@ impl<R: std::io::BufRead> SdfFileReader<R> {
                 stereo3d_diagnostics: Vec::new(),
             });
         }
-        let report = read_mol_with_diagnostics(block)?;
+        let report = read_sdf_mol_with_diagnostics(block)?;
         Ok(SdfRecord {
             mol: report.mol,
             meta: report.metadata,

@@ -78,13 +78,27 @@ nav:
   - Cookbook (日本語): cookbook_ja.md
   - Benchmark: benchmark.md
   - Formats & Bindings:
+    - CCD Molecular Templates: ccd-components.md
     - Format Capability Matrix: format-capabilities.md
+    - HIN Aromatic Bond Preservation: openbabel-hin-aromatic-bonds.md
+    - ORCA-AICCM EXYZ: openbabel-exyz.md
+    - FHI-aims Geometry: openbabel-fhiaims.md
+    - MOPAC Cartesian: openbabel-mopac-cartesian.md
+    - DMol3 Coordinates: openbabel-dmol3.md
+    - PDB Atom Selection: pdb-atom-selection.md
     - Language Bindings Cross-Reference: language-bindings.md
     - Error Handling & Limits: error-and-limits.md
+    - Checked 3D Distance Matrices: rdkit-checked-3d-distance-matrix.md
   - Reliability:
+    - ChemDoodle JSON: chemdoodle-json.md
+    - Fingerprint Target Density: fingerprint-target-density.md
+    - Bounded Native Distance Matrices: native-distance-matrix-limits.md
     - Validation vs RDKit: validation.md
     - Compatibility Scope: compatibility-scope.md
     - Detailed RDKit Comparison: rdkit-comparison.md
+    - RDKit Graph Queries: rdkit-graph-queries.md
+    - RDKit Atom Environments: rdkit-atom-environment.md
+    - RDKit Path Enumeration: rdkit-path-enumeration.md
     - RDKit Accuracy Plan: rdkit-accuracy-plan.md
     - Canonical E/Z Plan: canonical-ez-plan.md
     - RDKit Issue Lessons: rdkit_issue_lessons.md

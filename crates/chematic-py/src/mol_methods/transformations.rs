@@ -2,6 +2,43 @@ use super::*;
 
 #[pymethods]
 impl Mol {
+    /// Number of stored graph atoms, including every explicit hydrogen.
+    #[getter]
+    fn atom_count(&self) -> usize {
+        self.inner.atom_count()
+    }
+
+    /// Return a copy with new_order[new_index] = old_index. Preserve all graph
+    /// stereo metadata and typed molecule properties; recompute derived caches.
+    fn renumber_atoms(&self, new_order: Vec<Bound<'_, PyAny>>) -> PyResult<Mol> {
+        let order = new_order
+            .iter()
+            .map(|index| {
+                if index.is_instance_of::<pyo3::types::PyBool>() {
+                    return Err(PyValueError::new_err(
+                        "atom order indices must be integers, not bool",
+                    ));
+                }
+                index
+                    .extract::<u32>()
+                    .map(chematic_core::AtomIdx)
+                    .map_err(|_| {
+                        PyValueError::new_err(
+                            "atom order indices must be nonnegative 32-bit integers",
+                        )
+                    })
+            })
+            .collect::<PyResult<Vec<_>>>()?;
+        let molecule = self
+            .inner
+            .renumber_atoms(&order)
+            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        Ok(Mol {
+            inner: Arc::new(molecule),
+            props: self.props.clone(),
+        })
+    }
+
     // -----------------------------------------------------------------------
     // Transformations
     // -----------------------------------------------------------------------
@@ -219,15 +256,18 @@ impl Mol {
         Ok(report)
     }
 
-    /// Return all stereoisomers as a list of Mol objects.
+    /// Return unique native carbon stereo assignments as Mol objects.
     ///
-    /// Returns an empty list when the molecule has more than 6 unspecified
-    /// stereocenters (combinatorial explosion guard). Use
-    /// ``mol.num_stereocenters`` to distinguish this from having no centers.
+    /// Returns an empty list when the molecule has more than 6 eligible unspecified
+    /// carbon candidates (combinatorial explosion guard).
+    /// The limit applies after rejecting CH2 and identical terminal ligands.
     fn enumerate_stereoisomers(&self) -> Vec<Mol> {
         chematic_chem::enumerate_stereoisomers(&self.inner)
             .into_iter()
-            .map(Mol::bare)
+            .map(|inner| Mol {
+                inner: Arc::new(inner),
+                props: self.props.clone(),
+            })
             .collect()
     }
 
@@ -558,6 +598,19 @@ impl Mol {
         use_atom_wts: bool,
     ) -> PyResult<Vec<Vec<f64>>> {
         chematic_smiles::rdkit_distance_matrix_3d(&self.inner, &coords, use_atom_wts)
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
+    /// Checked 3D matrix: finite coordinates and results, bounded dimensions,
+    /// scaled fallback for representable extreme distances. Prepared atom order
+    /// is the same as rdkit_distance_matrix_3d; legacy behavior is unchanged.
+    #[pyo3(signature = (coords, use_atom_wts = false))]
+    fn rdkit_distance_matrix_3d_checked(
+        &self,
+        coords: Vec<[f64; 3]>,
+        use_atom_wts: bool,
+    ) -> PyResult<Vec<Vec<f64>>> {
+        chematic_smiles::rdkit_distance_matrix_3d_checked(&self.inner, &coords, use_atom_wts)
             .map_err(|e| PyValueError::new_err(e.to_string()))
     }
 

@@ -467,3 +467,43 @@ These files are raw data or detailed follow-ups linked from the concise index.
 - [`2026-10-14-python-speed-frontier-paired20.json`](2026-10-14-python-speed-frontier-paired20.json)
 - [`2026-10-14-python-speed-frontier-parity.json`](2026-10-14-python-speed-frontier-parity.json)
 - [`2026-10-14-python-speed-frontier-source.json`](2026-10-14-python-speed-frontier-source.json)
+
+## Source follow-ups added on 2026-10-14 and 2026-10-15
+
+These are frozen source-candidate records on fixed development inputs. Read
+each record's adoption decision and evidence boundary; they do not establish
+integrated-main or toolkit-wide superiority.
+
+- [Open Babel V3000 stereo](2026-10-15-openbabel-v3000-stereo.md) ([raw JSON](2026-10-15-openbabel-v3000-stereo.json))
+- [Open Babel 0D stereo](2026-10-15-openbabel-0d-stereo.md) ([raw JSON](2026-10-15-openbabel-0d-stereo.json))
+- [Open Babel 0D stress](2026-10-15-openbabel-0d-stress.md) ([raw JSON](2026-10-15-openbabel-0d-stress.json))
+- [Square-planar SMILES round trip](2026-10-15-square-planar-smiles-roundtrip.md)
+- [V3000 SDF recognition](2026-10-15-sdf-v3000-recognition.md)
+- [Open Babel paired stereo](2026-10-15-openbabel-stereo-paired.md) ([raw JSON](2026-10-15-openbabel-stereo-paired.json))
+- [TPSA zero-contribution guard](2026-10-15-python-tpsa-zero.md)
+- [Ring scratch reuse](2026-10-15-python-ring-scratch.md)
+- [Ring component reuse](2026-10-15-python-ring-component-reuse.md)
+- [Normalization storage](2026-10-15-python-normalization-storage.md)
+- [Huckel FIFO](2026-10-15-python-huckel-fifo.md)
+- [Packed components](2026-10-15-python-component-packed.md)
+- [Basis roots](2026-10-15-python-basis-roots.md)
+- [Indexed aromaticity](2026-10-15-python-aromatic-indexed.md)
+- [Aromatic component reuse](2026-10-15-python-aromatic-component-reuse.md)
+- [V3000 zero-Z6](2026-10-15-openbabel-v3000-zero-z6.md)
+- [V3000 zero-Z](2026-10-15-openbabel-v3000-zero-z.md)
+- [V3000 parser token reuse](2026-10-15-openbabel-v3000-parser-token-reuse.md) ([slice 0](2026-10-15-openbabel-v3000-parser-token-reuse-0-paired21.json), [slice 5000](2026-10-15-openbabel-v3000-parser-token-reuse-5000-paired21.json), [chains](2026-10-15-openbabel-v3000-parser-token-reuse-chains-paired21.json), [source](2026-10-15-openbabel-v3000-parser-token-reuse-source.json), [verification](2026-10-15-openbabel-v3000-parser-token-reuse-verification.json))
+- [V3000 integer parsing](2026-10-15-openbabel-v3000-integer.md)
+- [V3000 flat geometry](2026-10-15-openbabel-v3000-flat-geometry.md)
+- [V3000 empty E/Z](2026-10-15-openbabel-v3000-empty-ez.md)
+- [V3000 direct lines](2026-10-15-openbabel-v3000-direct-lines.md)
+- [V3000 zero atom maps](2026-10-15-openbabel-v3000-count-zero-map.md)
+- [V3000 rounded counts](2026-10-15-openbabel-v3000-count-rounded.md)
+- [V3000 count capacity](2026-10-15-openbabel-v3000-count-capacity.md)
+- [V3000 ASCII parsing](2026-10-15-openbabel-v3000-ascii.md)
+- [Open Babel ring queue](2026-10-15-openbabel-ring-queue.md)
+- [Open Babel inactive E/Z](2026-10-15-openbabel-ez-inactive.md)
+- [Unambiguous metal model](2026-10-14-python-unambiguous-metal-model.md) ([ASA](2026-10-14-python-unambiguous-metal-model-focused-asa-slice0-paired20.json), [slice 0](2026-10-14-python-unambiguous-metal-model-slice0-paired20.json), [slice 5000](2026-10-14-python-unambiguous-metal-model-slice5000-paired20.json), [source](2026-10-14-python-unambiguous-metal-model-source.json), [verification](2026-10-14-python-unambiguous-metal-model-verification.json))
+- [Kekule view reuse](2026-10-14-python-kekule-view-reuse.md) ([focused 0](2026-10-14-python-kekule-view-reuse-focused-slice0-paired20.json), [focused 5000](2026-10-14-python-kekule-view-reuse-focused-slice5000-paired20.json), [slice 0](2026-10-14-python-kekule-view-reuse-slice0-paired20.json), [slice 5000](2026-10-14-python-kekule-view-reuse-slice5000-paired20.json), [source](2026-10-14-python-kekule-view-reuse-source.json), [verification](2026-10-14-python-kekule-view-reuse-verification.json))
+- [Cycle-root pruning](2026-10-14-python-cycle-root-pruning.md) ([parity](2026-10-14-python-cycle-root-pruning-parity.json), [slice 0](2026-10-14-python-cycle-root-pruning-slice0-paired20.json), [focused 5000](2026-10-14-python-cycle-root-pruning-slice5000-focused-repeat20.json), [slice 5000](2026-10-14-python-cycle-root-pruning-slice5000-paired20.json), [source](2026-10-14-python-cycle-root-pruning-source.json))
+- [Cycle-path reuse](2026-10-14-python-cycle-path-reuse.md) ([parity](2026-10-14-python-cycle-path-reuse-parity.json), [slice 0](2026-10-14-python-cycle-path-reuse-slice0-paired20.json), [source](2026-10-14-python-cycle-path-reuse-source.json))
+- [V3000 writer buffer](2026-10-14-openbabel-v3000-writer-buffer.md) ([slice 0](2026-10-14-openbabel-v3000-writer-buffer-0-paired21.json), [slice 5000](2026-10-14-openbabel-v3000-writer-buffer-5000-paired21.json), [chains](2026-10-14-openbabel-v3000-writer-buffer-chains-paired21.json), [repeat](2026-10-14-openbabel-v3000-writer-buffer-parse-repeat21.json), [sandbox](2026-10-14-openbabel-v3000-writer-buffer-sandbox-attempt.json), [source](2026-10-14-openbabel-v3000-writer-buffer-source.json), [verification](2026-10-14-openbabel-v3000-writer-buffer-verification.json))

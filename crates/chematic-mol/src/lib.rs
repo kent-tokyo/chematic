@@ -16,6 +16,13 @@
 //! let written = write_mol(&mol, &meta);
 //! ```
 
+pub mod ccd;
+pub use ccd::{
+    CcdAtom, CcdBond, CcdComponent, CcdError, CcdParseLimits, parse_ccd_component,
+    parse_ccd_component_with_limits,
+};
+
+pub mod cdjson;
 pub mod cdxml;
 pub mod cdxml_document;
 pub mod cif;
@@ -26,25 +33,36 @@ pub mod cjson_record;
 pub mod cml;
 pub mod conversion;
 pub mod cube;
+pub mod dmol3;
 pub mod error;
+pub mod exyz;
+pub mod fhiaims;
 pub mod gaussian;
+pub mod gro;
+pub mod gzmat;
+pub mod hin;
 pub mod ket;
 pub mod lammps_data;
 pub mod lammps_dump;
 pub mod mmcif;
+pub mod mmcif_pdb;
 pub mod mol2000;
 pub mod mol2_source;
 pub mod mol2_tripos;
 pub mod mol3000;
 pub mod moljson;
+pub mod mopac;
 pub mod mrv;
 pub mod nucleic_acid;
 pub mod opendx;
 pub mod orca;
+pub mod pdb_selection;
 pub mod pdbqt;
 pub mod pqr;
+pub mod pqr_pdbqt;
 pub mod protein;
 pub mod qcschema;
+pub mod rdfile;
 pub mod record;
 pub mod rxn;
 pub mod sdf;
@@ -52,6 +70,7 @@ pub mod semantic;
 pub mod smiles_table;
 pub mod stereo_depiction;
 pub mod tdt;
+pub mod turbomole;
 pub mod volumetric;
 pub mod xyz;
 
@@ -63,6 +82,10 @@ pub use conversion::{
 };
 pub use error::MolParseError;
 // Re-export MolParseError under the alias MolError as specified by the public API.
+pub use cdjson::{
+    CdjsonDocument, CdjsonError, CdjsonMolecule, CdjsonParseLimits, parse_cdjson,
+    parse_cdjson_with_limits, write_cdjson_graph,
+};
 pub use cdxml::{
     CdxmlError, CdxmlParseLimits, CdxmlParseOptions, parse_cdxml, parse_cdxml_all,
     parse_cdxml_all_with_limits, parse_cdxml_all_with_options,
@@ -94,10 +117,30 @@ pub use cml::{
 pub use cube::{
     CubeError, CubeFileReader, CubeParseLimits, parse_cube, parse_cube_with_limits, write_cube,
 };
+pub use dmol3::{
+    DMOL3_BOHR_ANGSTROM, Dmol3Atom, Dmol3Error, Dmol3Geometry, Dmol3ParseLimits, parse_dmol3,
+    parse_dmol3_with_limits, write_dmol3,
+};
 pub use error::MolParseError as MolError;
+pub use exyz::{
+    ExyzAtom, ExyzCell, ExyzError, ExyzGeometry, ExyzParseLimits, parse_exyz,
+    parse_exyz_with_limits, write_exyz,
+};
+pub use fhiaims::{
+    FhiaimsAtom, FhiaimsCoordinates, FhiaimsError, FhiaimsGeometry, FhiaimsLatticeVector,
+    FhiaimsParseLimits, parse_fhiaims, parse_fhiaims_with_limits, write_fhiaims,
+};
 pub use gaussian::{
     GaussianError, GaussianLogResult, GaussianParseLimits, parse_gaussian_log,
     parse_gaussian_log_with_limits, parse_gjf, parse_gjf_with_limits, write_gjf,
+};
+pub use gzmat::{
+    GzmatWriteOptions, ZMatrixError, ZMatrixRow, cartesian_to_zmatrix, validate_zmatrix,
+    write_gzmat, zmatrix_to_cartesian,
+};
+pub use hin::{
+    HinAtom, HinBond, HinError, HinParseLimits, HinRecord, parse_hin_record,
+    parse_hin_record_with_limits, write_hin_record,
 };
 pub use ket::{
     KetError, KetParseLimits, parse_ket, parse_ket_3d, parse_ket_3d_with_limits,
@@ -142,6 +185,11 @@ pub use mol3000::{
 pub use moljson::{
     MolJsonError, MolJsonParseLimits, parse_moljson, parse_moljson_with_limits, write_moljson,
 };
+pub use mopac::{
+    MopacAtom, MopacCartesianGeometry, MopacCartesianRow, MopacError, MopacOptimizationFlag,
+    MopacParseLimits, parse_mopac_cartesian, parse_mopac_cartesian_with_limits,
+    write_mopac_cartesian,
+};
 pub use mrv::{
     MrvError, MrvParseLimits, MrvWriteOptions, parse_mrv, parse_mrv_with_limits, write_mrv,
 };
@@ -160,6 +208,10 @@ pub use orca::{
     OrcaInputParseLimits, OrcaOptConvergence, OrcaOutput, OrcaOutputError, OrcaOutputParseLimits,
     OrcaTermination, parse_orca_input, parse_orca_input_with_limits, parse_orca_output,
     parse_orca_output_with_limits, write_orca_input,
+};
+pub use pdb_selection::{
+    PdbSelectedAtom, PdbSelectionError, PdbSelectionLimits, PdbSelectionLoss, PdbSelectionReport,
+    select_pdb_atoms, select_pdb_atoms_with_limits,
 };
 pub use pdbqt::{
     PdbqtError, PdbqtParseLimits, autodock_atom_type, parse_pdbqt, parse_pdbqt_with_limits,
@@ -189,8 +241,8 @@ pub use rxn::{
 };
 pub use sdf::{
     ConformerEnsemble, SdfBatch, SdfBatchProgress, SdfBatchReader, SdfDataset, SdfFileReader,
-    SdfParseLimits, SdfReader, SdfRecord, SdfRecordMetadata, SdfRecordReader,
-    parse_sdf_with_limits, read_sdf_conformer_ensembles,
+    SdfIndexedBatch, SdfParseLimits, SdfReader, SdfRecord, SdfRecordMetadata, SdfRecordReader,
+    SdfSelectionError, SdfSelectionLimits, parse_sdf_with_limits, read_sdf_conformer_ensembles,
 };
 pub use semantic::{
     AtomRef, ExpandedSemantic, PolymerEndGroup, PolymerLinkage, PolymerRepeatUnit,
@@ -246,4 +298,28 @@ mod format_bridge_boundary_contract_tests;
 pub use mol2_source::{
     Mol2SourceAtomRecord, Mol2SourceBondRecord, Mol2SourceRecord, parse_mol2_source_record,
     parse_mol2_source_record_with_limits, write_mol2_source_record,
+};
+
+pub use pqr_pdbqt::{PqrPdbqtError, PqrPdbqtReport, pqr_to_pdbqt};
+
+pub use mmcif::residues::{
+    MmcifAtomIdentity, MmcifResidue, MmcifResidueDocument, MmcifResidueError, MmcifResidueIdentity,
+    parse_mmcif_residues, parse_mmcif_residues_with_limits,
+};
+
+pub use mmcif_pdb::{MmcifPdbError, MmcifPdbReport, PdbNamespace, write_mmcif_pdb_checked};
+
+pub use gro::{
+    GroAtomRecord, GroError, GroFrame, GroParseLimits, parse_gro, parse_gro_with_limits,
+};
+
+pub use turbomole::{
+    TURBOMOLE_BOHR_ANGSTROM, TurbomoleAtom, TurbomoleError, TurbomoleGeometry,
+    TurbomoleParseLimits, parse_turbomole, parse_turbomole_with_limits, write_turbomole,
+};
+
+pub use rdfile::{
+    RdfileData, RdfileDocument, RdfileError, RdfileKind, RdfileParseLimits, RdfileRecord,
+    RdfileWriteOptions, parse_rdfile, parse_rdfile_with_limits, write_rdfile,
+    write_rdfile_with_options,
 };

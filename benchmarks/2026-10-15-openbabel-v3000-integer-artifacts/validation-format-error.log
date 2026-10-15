@@ -1,0 +1,13 @@
+optimize passed
+format-new passed
+Traceback (most recent call last):
+  File "/private/tmp/chematic-openbabel-integer-20261015/validate.py", line 10, in <module>
+    call('format',['cargo','fmt','--all','--check'])
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/chematic-openbabel-integer-20261015/validate.py", line 5, in call
+    with (r/(name+'.log')).open('w') as out:subprocess.run(cmd,cwd=s,env=env,stdout=out,stderr=subprocess.STDOUT,check=True)
+                                            ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/subprocess.py", line 577, in run
+    raise CalledProcessError(retcode, process.args,
+                             output=stdout, stderr=stderr)
+subprocess.CalledProcessError: Command '['cargo', 'fmt', '--all', '--check']' returned non-zero exit status 1.

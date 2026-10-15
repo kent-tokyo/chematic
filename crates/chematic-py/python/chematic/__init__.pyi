@@ -14,7 +14,7 @@ Quick start::
 
 from __future__ import annotations
 
-from typing import Any, Iterable, Iterator, Literal, Optional, Sequence, TypedDict, Union
+from typing import overload, Any, Iterable, Iterator, Literal, Optional, Sequence, TypedDict, Union
 
 import numpy as np
 from numpy import ndarray
@@ -41,13 +41,20 @@ class SmartsQuery:
     @property
     def source(self) -> str: ...
 
-    def matches(self, mol: Mol) -> bool: ...
+    @property
+    def atom_count(self) -> int: ...
 
-    def matches_many(self, molecules: Iterable[Mol]) -> list[bool]: ...
+    def merge_hydrogens(self) -> SmartsQuery:
+        """Fold eligible H nodes; source retains original text. Reject ambiguous stereo."""
+        ...
 
-    def matches_batch(self, batch: MoleculeBatch) -> list[bool]: ...
+    def matches(self, mol: Mol, use_chirality: bool = False) -> bool: ...
 
-    def find_matches(self, mol: Mol) -> list[list[int]]: ...
+    def matches_many(self, molecules: Iterable[Mol], use_chirality: bool = False) -> list[bool]: ...
+
+    def matches_batch(self, batch: MoleculeBatch, use_chirality: bool = False) -> list[bool]: ...
+
+    def find_matches(self, mol: Mol, use_chirality: bool = False) -> list[list[int]]: ...
 
 def compile_smarts(smarts: str) -> SmartsQuery:
     """Compile a SMARTS query for repeated matching."""
@@ -103,6 +110,28 @@ class MolecularForceField:
 # ---------------------------------------------------------------------------
 
 class Mol:
+    @property
+    def atom_count(self) -> int:
+        """Number of stored graph atoms, including explicit hydrogens."""
+        ...
+
+    def renumber_atoms(self, new_order: Sequence[int]) -> Mol:
+        """Copy with new_order[new_index] = old_index, preserving stereo and properties."""
+        ...
+
+    @property
+    def stereo_groups(self) -> list[tuple[Literal["abs", "and", "or"], int, list[int], list[int]]]: ...
+    def with_stereo_groups(self, groups: list[tuple[Literal["abs", "and", "or"], int, list[int], list[int]]]) -> Mol: ...
+    def invert_stereo_group(self, index: int) -> Mol: ...
+
+    def reduce_meso_stereo_group(self, index: int, *, max_visits: int = 1000000) -> dict[str, Any]:
+        """Promote to ABS only with complete stereo-preserving mapping proofs."""
+        ...
+
+    def enumerate_stereo_group_alternatives(self, max_alternatives: int = 64) -> tuple[list[int], list[Mol]]:
+        """Expand full AND/OR alternatives in inversion-mask order; retain groups."""
+        ...
+
     """A parsed molecule.
 
     Create with :func:`from_smiles`, :func:`from_mol_block`, or :func:`from_inchi`.
@@ -345,6 +374,21 @@ class Mol:
         """``Chem.MolFragmentToSmiles(m, atomsToUse, bondsToUse, ...)``
         (RDKit 2026.03.1) in RDKit's atom and bond numbering."""
         ...
+    def rdkit_paths_of_length(self, length: int, *, use_bonds: bool = True, use_hs: bool = False, rooted_at_atom: Optional[int] = None, only_shortest_paths: bool = False, max_visits: int = 1_000_000, max_frontier: int = 100_000, max_results: int = 100_000, max_path_indices: int = 1_000_000) -> list[list[int]]:
+        """Ordered RDKit paths in sanitized atom/bond numbering; budget exhaustion raises ValueError."""
+        ...
+
+    def rdkit_atom_environment(self, radius: int, rooted_at_atom: int, *, use_hs: bool = False, enforce_size: bool = True, max_visits: int = 1_000_000, max_frontier: int = 100_000) -> dict[str, Any]:
+        """RDKit ordered bond environment and minimum atom distances in sanitized numbering."""
+        ...
+    def rdkit_adjacency_matrix(
+        self, use_bo: bool = False, *, empty_value: int = 0
+    ) -> list[list[float]]:
+        """RDKit GetAdjacencyMatrix with emptyVal=0; weighted dative entries are asymmetric."""
+        ...
+    def rdkit_shortest_path(self, start: int, end: int) -> list[int]:
+        """RDKit GetShortestPath in sanitized atom order; disconnected returns []."""
+        ...
     def rdkit_distance_matrix(
         self, use_bo: bool = False, use_atom_wts: bool = False
     ) -> list[list[float]]:
@@ -354,6 +398,11 @@ class Mol:
         self, coords: list[list[float]], use_atom_wts: bool = False
     ) -> list[list[float]]:
         """``Chem.Get3DDistanceMatrix(m, useAtomWts)`` for ``coords``."""
+        ...
+    def rdkit_distance_matrix_3d_checked(
+        self, coords: list[list[float]], use_atom_wts: bool = False
+    ) -> list[list[float]]:
+        """Bounded finite 3D matrix with a scaled norm fallback for extreme distances."""
         ...
     def rdkit_all_conformer_best_rms(
         self,
@@ -999,6 +1048,19 @@ class Mol:
         """
         ...
 
+    def ogb_graph_features(self, remove_hs: bool = True) -> dict[str, ndarray | int]:
+        """Return an OGB-compatible categorical graph for this molecule.
+
+        ``node_feat`` has shape ``(N, 9)``, ``edge_index`` has shape
+        ``(2, 2E)``, and ``edge_feat`` has shape ``(2E, 3)``. All arrays
+        have dtype ``int64``; ``num_nodes`` is an integer. Edges are
+        emitted in both directions. The default removes hydrogen graph
+        atoms as OGB's ``smiles2graph`` does. Pass ``remove_hs=False`` to
+        retain them. Coordinate-derived 3D stereo from SDF is not included.
+        Unsupported chemistry raises ``ValueError``.
+        """
+        ...
+
     # -- Fingerprints --------------------------------------------------------
 
     def ecfp4(self) -> bytes:
@@ -1105,6 +1167,14 @@ class Mol:
 
     def rdkit_atom_pair_fp_numpy(self) -> ndarray:
         """RDKit-compatible atom-pair fingerprint as a numpy bit vector."""
+        ...
+
+    def rdkit_layered_fp(self) -> bytes:
+        """Fixed 2048-bit RDKit-compatible default Layered fingerprint."""
+        ...
+
+    def rdkit_layered_config(self, *, layer_flags: int = 4294967295, min_path: int = 1, max_path: int = 7, nbits: int = 2048, branched_paths: bool = True, from_atoms: Optional[Sequence[int]] = None, set_only_bits: Optional[bytes] = None, atom_counts: Optional[Sequence[int]] = None, max_visits: int = 1000000, max_paths: int = 100000) -> dict[str, Any]:
+        """Packed LSB bits, copied accumulated counters and enumeration statistics."""
         ...
 
     def rdkit_layered_fp_numpy(self) -> ndarray:
@@ -1316,11 +1386,12 @@ class Mol:
         ...
 
     def enumerate_stereoisomers(self) -> list[Mol]:
-        """Return all stereoisomers as a list of Mol objects.
+        """Return unique native carbon stereo assignments as Mol objects.
 
-        Returns an empty list when the molecule has more than 6 unspecified
-        stereocenters (combinatorial explosion guard). Use ``mol.num_stereocenters``
-        to distinguish this from having no centers.
+        The six-site budget excludes CH2 and identical terminal ligands;
+        symmetric ring candidates remain eligible for pseudoasymmetry.
+        Returns an empty list above that budget. Preserves graph metadata and
+        independently copies molecule properties.
         """
         ...
 
@@ -2129,13 +2200,20 @@ class Mol:
         """
         ...
 
-    def topological_distance_matrix(self) -> list[list[int]]:
+    def topological_distance_matrix(
+        self, *, max_atoms: int | None = None, max_bonds: int | None = None,
+        max_entries: int | None = None,
+    ) -> list[list[int]]:
         """Topological (graph) distance matrix for all heavy atoms.
 
         Entry ``[i][j]`` is the shortest path length in bonds between heavy atom
         ``i`` and heavy atom ``j``. Diagonal entries are 0.  Disconnected atoms
-        get ``2147483647`` (``u32::MAX``). Row/column order follows atom-insertion
-        order (same as :meth:`hybridization_per_atom` and other per-atom vectors).
+        get ``4294967295`` (``u32::MAX``). Row/column order follows atom-insertion
+        order with hydrogen omitted; H cannot be an intermediate path vertex.
+        Wildcard atoms are included. Hard caps: 1024 input atoms (including H),
+        16384 input bonds, 1048576 output entries. Keyword budgets may only
+        tighten these caps. Exceeding a cap or failing native allocation raises
+        ValueError. Empty/H-only graphs return []; no RDKit sanitization occurs.
 
         Useful for scaffold graph analysis (ScaffoldGraph-style topology),
         molecular topology descriptors, and custom fingerprinting.
@@ -3072,6 +3150,63 @@ def is_valid_smarts(smarts: str) -> bool:
         chematic.is_valid_smarts("c1ccccc1")  # True
         chematic.is_valid_smarts("[invalid")  # False
         chematic.is_valid_smarts("[#6]-[#7]") # True
+    """
+    ...
+
+class CdjsonMolecule(TypedDict):
+    mol: Mol
+    coordinates: list[list[float]]
+    id: str | None
+    atom_ids: list[str | None]
+    bond_ids: list[str | None]
+
+class CdjsonDocument(TypedDict):
+    source_text: str
+    molecules: list[CdjsonMolecule]
+
+def parse_cdjson(
+    text: str, *, max_input_bytes: int | None = None,
+    max_molecules: int | None = None, max_atoms: int | None = None,
+    max_bonds: int | None = None,
+) -> CdjsonDocument:
+    """Read checked molecular ChemDoodle JSON with exact source text.
+
+    Coordinates retain drawing units. Missing l means carbon, missing h/-1
+    uses native H inference; h=0 is explicit zero. Returns all molecules.
+    Rejects shapes, queries, stereo, radicals, lone pairs and unknown fields.
+    Caller limits can only tighten 16 MiB/1024 molecules/65536 atoms/131072 bonds.
+    """
+    ...
+
+def write_cdjson_graph(mol: Mol, coordinates: list[list[float]]) -> str:
+    """Write one graph with explicit H overrides, element symbols and 3D coordinates.
+
+    Rejects unsupported chemistry. Does not export source IDs or metadata;
+    use parse_cdjson's source_text for exact same-format preservation.
+    """
+    ...
+
+class FoldDensityResult(TypedDict):
+    fingerprint: bytes
+    bit_width: int
+    original_bits: int
+    on_bit_count: int
+    density: float
+    folds: int
+    target_reached: bool
+    stop_reason: Literal["target_reached", "minimum_length"]
+
+def fold_to_target_density(
+    fp: bytes, density: float = 0.3, min_length: int = 64, *,
+    bit_width: int | None = None,
+) -> FoldDensityResult:
+    """OR-fold while below density and the next width is >= min_length.
+
+    Bits are LSB-first; bit_width defaults to len(fp)*8. Requires exactly
+    ceil(bit_width/8) bytes and zero unused high bits. Supports odd widths,
+    capped at 1048576 bits. Density must be finite in [0,1]; min_length > 0.
+    Raises ValueError for invalid inputs. Reports an unmet target explicitly.
+    The input is unchanged. This implements corrected RDKit #9715 semantics.
     """
     ...
 
@@ -4338,6 +4473,15 @@ class SdfRecord:
     mol: Mol
     name: str
 
+    def ogb_graph_features(self, remove_hs: bool = True) -> dict[str, ndarray | int]:
+        """OGB graph, retaining V2000 code-3 or V3000 CFG=2 double-bond stereo.
+
+        The output has the same keys, shapes, and dtype as
+        :meth:`Mol.ogb_graph_features`. Coordinate-derived 3D chirality is
+        not included.
+        """
+        ...
+
     @property
     def smiles(self) -> str:
         """Canonical SMILES of the molecule."""
@@ -4380,11 +4524,33 @@ class SdfDataset:
     def open(path: str) -> SdfDataset: ...
 
     def __len__(self) -> int: ...
+    @overload
     def __getitem__(self, index: int) -> SdfRecord: ...
+    @overload
+    def __getitem__(self, index: Union[slice, list[int], tuple[int, ...], list[bool], tuple[bool, ...]]) -> SdfSelectionBatch: ...
+    def select(self, key: Union[int, slice, list[int], tuple[int, ...], list[bool], tuple[bool, ...]], *, errors: Literal["keep", "raise"] = "keep", max_bytes: int = 67108864) -> SdfSelectionBatch: ...
+    def batches(self, size: int = 1024, *, errors: Literal["keep", "raise"] = "keep", max_bytes: int = 67108864) -> SdfDatasetBatches: ...
     def get(self, index: int) -> SdfRecord: ...
     def raw_record(self, index: int) -> str: ...
     def metadata(self, index: int) -> SdfRecordMetadata: ...
     def read_range(self, start: int, stop: Optional[int] = None) -> list[SdfRecord]: ...
+
+class SdfSelectionBatch:
+    """Source-indexed selected records, with None placeholders for rejected input."""
+    def __len__(self) -> int: ...
+    def __getitem__(self, index: int) -> Optional[SdfRecord]: ...
+    def source_indices(self) -> list[int]: ...
+    def records(self) -> list[Optional[SdfRecord]]: ...
+    def valid_mask(self) -> list[bool]: ...
+    def to_smiles_list(self) -> list[Optional[str]]: ...
+    def errors(self) -> list[dict[str, Any]]: ...
+
+class SdfDatasetBatches:
+    """Pull iterator over bounded SdfSelectionBatch values; len is remaining batches."""
+    def __iter__(self) -> Iterator[SdfSelectionBatch]: ...
+    def __next__(self) -> SdfSelectionBatch: ...
+    def __len__(self) -> int: ...
+    def cancel(self) -> None: ...
 
 class SdfIter:
     """Lazy iterator over SDF records."""
@@ -4393,6 +4559,12 @@ class SdfIter:
     def __next__(self) -> SdfRecord: ...
     def __len__(self) -> int: ...
 
+class SdfCheckedIter:
+    """Stream SDF records with zero-based indices and parse errors."""
+
+    def __iter__(self) -> Iterator[tuple[int, Optional[SdfRecord], Optional[str]]]: ...
+    def __next__(self) -> tuple[int, Optional[SdfRecord], Optional[str]]: ...
+
 def iter_sdf(path: str) -> SdfIter:
     """Lazily iterate over records in an SDF file.
 
@@ -4400,6 +4572,24 @@ def iter_sdf(path: str) -> SdfIter:
 
         for record in chematic.iter_sdf("library.sdf"):
             print(record.name, record.mol.mw)
+    """
+    ...
+
+def iter_sdf_checked(
+    path: str,
+    *,
+    max_input_bytes: Optional[int] = None,
+    max_record_bytes: Optional[int] = None,
+    max_line_bytes: Optional[int] = None,
+    max_records: Optional[int] = None,
+) -> SdfCheckedIter:
+    """Yield ``(index, record, error)`` for every non-empty SDF record.
+
+    Malformed records have ``record=None`` and an error message. Opening
+    failures raise ``IOError``; read errors are yielded and end the stream.
+    Indices are zero-based source record positions.
+    Positive limit overrides can be set for larger inputs; defaults are
+    1 GiB total, 16 MiB per record and line, and 100,000 records.
     """
     ...
 
@@ -4864,4 +5054,119 @@ def explain_rdkit_topological_torsion_code(
     code: int, size: int = 4
 ) -> list[tuple[str, int, int]]:
     """Decode a legacy RDKit torsion code into one tuple per path atom."""
+    ...
+
+
+def from_hin(text: str) -> Mol:
+    """Checked HIN graph projection; charges/types/coordinates remain in the source record."""
+    ...
+
+
+def parse_hin_record_json(text: str) -> str:
+    """Inspect a single HIN record as chematic.hin-record.v1 JSON."""
+    ...
+
+
+def roundtrip_hin_record(text: str) -> str:
+    """Validate one bounded HIN record and preserve its exact source text."""
+    ...
+
+
+def pqr_to_pdbqt(text: str, atom_types: list[str], *, allow_radius_loss: bool = False) -> dict[str, Any]:
+    """Convert PQR to rigid PDBQT with source charges and a loss sidecar."""
+    ...
+
+
+def parse_mmcif_residues(text: str, *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None) -> dict[str, Any]:
+    """Read all residue variants with complete auth/label identities and source row indices."""
+    ...
+
+
+def mmcif_to_pdb_checked(text: str, *, namespace: str = "auth", allow_metadata_loss: bool = False) -> dict[str, Any]:
+    """Checked single-model PDB coordinate block with original source sidecar."""
+    ...
+
+
+def parse_gro(text: str, *, elements: Optional[Sequence[str]] = None, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None) -> dict[str, Any]:
+    """Read one GRO frame, with unresolved or caller-supplied elements and explicit nm units."""
+    ...
+
+def parse_turbomole(text: str, *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None) -> dict[str, Any]:
+    """Read standalone nonperiodic/3D TURBOMOLE geometry in Cartesian angstroms."""
+    ...
+
+def write_turbomole(elements: Sequence[str], positions_angstrom: Sequence[Sequence[float]], *, lattice_angstrom: Optional[Sequence[Sequence[float]]] = None, frozen: Optional[Sequence[bool]] = None) -> str:
+    """Write explicit geometry, 3D row lattice vectors and frozen flags in bohr."""
+    ...
+
+def parse_rdfile(text: str, *, max_input_bytes: Optional[int] = None, max_records: Optional[int] = None, max_fields_per_record: Optional[int] = None, max_line_len: Optional[int] = None, max_reaction_components: Optional[int] = None) -> dict[str, Any]:
+    """Read RDFile v1 records with embedded MOL/RXN payloads and ordered data."""
+    ...
+
+def write_rdfile(document: dict[str, Any], *, wrap_data: bool = True) -> str:
+    """Serialize current RDFile records without replaying stale source text."""
+    ...
+
+def rdfile_to_smiles(text: str) -> list[Optional[str]]:
+    """Project records to molecular/reaction SMILES; references remain None."""
+    ...
+
+
+def cartesian_to_zmatrix(elements: Sequence[str], positions_angstrom: Sequence[Sequence[float]], references: Sequence[Sequence[int]]) -> list[dict[str, Any]]:
+    """Caller-referenced rows; zero-based indices, angstrom lengths and degree angles."""
+    ...
+
+def write_gzmat(elements: Sequence[str], positions_angstrom: Sequence[Sequence[float]], references: Sequence[Sequence[int]], *, charge: int, multiplicity: int, significant_digits: int = 17, title: str = "chematic internal coordinates", route: str = "#") -> str:
+    """Gaussian-style geometry template with explicit spin, references and precision."""
+    ...
+
+
+def parse_exyz(text: str, *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None) -> dict[str, Any]:
+    """Read ORCA-AICCM EXYZ with explicit virtual flags, lattice and offset."""
+    ...
+
+def write_exyz(elements: Sequence[str], positions_angstrom: Sequence[Sequence[float]], *, header: str = "", lattice_angstrom: Optional[Sequence[Sequence[float]]] = None, offset_angstrom: Optional[Sequence[float]] = None, virtual_atoms: Optional[Sequence[bool]] = None) -> str:
+    """Write EXYZ in angstroms, adding required PBC/virtual header directives."""
+    ...
+
+
+def parse_fhiaims(text: str, *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None) -> dict[str, Any]:
+    """Read geometry.in with coordinate kind, 0D-3D lattice and initial-density metadata."""
+    ...
+
+def write_fhiaims(elements: Sequence[str], coordinates: Sequence[Sequence[float]], *, coordinate_kinds: Optional[Sequence[str]] = None, lattice_angstrom: Optional[Sequence[Sequence[float]]] = None, constraints: Optional[Sequence[Sequence[bool]]] = None, initial_charges: Optional[Sequence[Optional[float]]] = None, initial_moments: Optional[Sequence[Optional[float]]] = None, lattice_constraints: Optional[Sequence[Sequence[bool]]] = None) -> str:
+    """Write current explicit geometry without discarding fractional kinds or metadata."""
+    ...
+
+
+def parse_mopac_cartesian(text: str, *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None) -> dict[str, Any]:
+    """Read checked MOPAC Cartesian angstrom geometry, retaining labels and optional flags."""
+    ...
+
+def write_mopac_cartesian(elements: Sequence[str], positions_angstrom: Sequence[Sequence[float]], *, keywords: str = "", title: str = "", comment: str = "", labels: Optional[Sequence[Optional[str]]] = None, optimization_flags: Optional[Sequence[Optional[Sequence[str]]]] = None, translation_vectors_angstrom: Optional[Sequence[Sequence[float]]] = None, translation_flags: Optional[Sequence[Optional[Sequence[str]]]] = None) -> str:
+    """Write current geometry; flags are string codes -2/-1/0/1/2/T, or None per row."""
+    ...
+
+
+def parse_dmol3(text: str, *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None) -> dict[str, Any]:
+    """Read standalone DMol3 .incoor; retain raw Bohr and project to CODATA 2022 Angstrom."""
+    ...
+
+def write_dmol3(elements: Sequence[str], positions_bohr: Sequence[Sequence[float]], *, cell_bohr: Optional[Sequence[Sequence[float]]] = None) -> str:
+    """Write current Bohr values; optional cell is exactly three ordered Cartesian vectors."""
+    ...
+
+
+def select_pdb_atoms(text: str, atom_indices: Optional[Sequence[int]] = None, *, allow_metadata_loss: bool = False, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None, max_records: Optional[int] = None) -> dict[str, Any]:
+    """Select source atom rows without identity perception; None keeps all, [] keeps none."""
+    ...
+
+
+def parse_ccd_json(text: str, *, max_input_bytes: int | None = None, max_atoms: int | None = None, max_bonds: int | None = None) -> str:
+    """Single-component CCD record with explicit topology and stereo annotations."""
+    ...
+
+
+def from_ccd(text: str, *, allow_stereo_loss: bool = False) -> Mol:
+    """Explicit CCD graph; unassigned R/S and E/Z require loss consent."""
     ...

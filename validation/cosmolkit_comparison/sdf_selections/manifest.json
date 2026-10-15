@@ -1,0 +1,56 @@
+{
+  "id": "sdf-ordered-selection-v1",
+  "provenance": {
+    "source": "Original one-atom V2000/V3000 records and deliberately malformed record authored for chematic",
+    "retrieved": "2026-10-15",
+    "transformations": "LF/CRLF; optional final delimiter; ordered selection, repeated indices, slices and boolean masks"
+  },
+  "license": "MIT OR Apache-2.0",
+  "redistribution": "allowed: original minimal synthetic records",
+  "minimization": "Four valid one-atom records and one malformed slot distinguish positional errors, duplicate reads, both CTAB versions, fields and order",
+  "oracle": {
+    "cosmolkit": "0.5.0 PyPI wheel",
+    "cosmolkit_source_inspected": "d99c96c8abb21c45698826ef3d3d506d82d2f34a",
+    "settings": "SdfDataset.open defaults; __getitem__ container errors raise; batches(size, errors=keep)",
+    "invocation": "python scripts/validate_sdf_selections.py"
+  },
+  "expected": {
+    "source_indices": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "valid_mask": [
+      true,
+      false,
+      true,
+      true,
+      true
+    ],
+    "smiles": [
+      "C",
+      null,
+      "O",
+      "N",
+      "F"
+    ],
+    "titles": [
+      "carbon",
+      "broken",
+      "oxygen",
+      "nitrogen",
+      "fluorine"
+    ],
+    "id_fields": [
+      "carbon-id",
+      null,
+      "oxygen-id",
+      "nitrogen-id",
+      "fluorine-id"
+    ],
+    "tolerance": "exact selection order, masks, strings and source indices; parser error messages are engine-specific"
+  },
+  "sha256": "d113dcdb9c4bc8c4665976e3e3d6b64dc532ef197665644d45a6648b2195db8a"
+}

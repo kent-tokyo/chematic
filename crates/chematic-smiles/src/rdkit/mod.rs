@@ -34,12 +34,14 @@
 
 mod align;
 mod aromaticity;
+mod atom_environment;
 mod canon;
 mod crippen_params;
 mod depict;
 mod embed_view;
 mod enumerate;
 mod findstereo;
+mod graph_queries;
 mod inchi_read;
 mod kekulize;
 mod matrices;
@@ -49,7 +51,9 @@ mod molblock;
 mod molblock2d;
 mod molhash;
 mod murcko;
+mod ogb;
 mod parse;
+mod path_enumeration;
 mod pdb;
 mod pdb_read;
 mod periodic;
@@ -71,6 +75,7 @@ pub use embed_view::*;
 pub use inchi_read::{InchiOutputAtom, InchiOutputStereo0D, rdkit_molecule_from_inchi_output};
 pub use molblock::{RdkitMolBlock, RdkitMolBlockAtom, RdkitMolBlockBond, rdkit_mol_block};
 pub use molhash::RdkitHashFunction;
+pub use ogb::{OgbGraphFeatures, ogb_graph_features, ogb_graph_features_with_options};
 pub use tautomer::RdkitTautomerStatus;
 
 /// Why [`rdkit_canonical_smiles`] produced no string.
@@ -391,7 +396,17 @@ pub fn rdkit_num_atoms(mol: &Molecule) -> Result<usize, RdkitSmilesError> {
     Ok(rdkit_mol_for_writing(mol)?.atoms.len())
 }
 
-pub use matrices::{rdkit_distance_matrix, rdkit_distance_matrix_3d};
+pub use atom_environment::{
+    RdkitAtomEnvironment, RdkitAtomEnvironmentLimits, rdkit_atom_environment,
+    rdkit_atom_environment_with_limits,
+};
+pub use graph_queries::{rdkit_adjacency_matrix, rdkit_shortest_path};
+pub use matrices::{
+    rdkit_distance_matrix, rdkit_distance_matrix_3d, rdkit_distance_matrix_3d_checked,
+};
+pub use path_enumeration::{
+    RdkitPathLimits, RdkitPathParams, rdkit_paths_of_length, rdkit_paths_of_length_with_limits,
+};
 
 /// One problem `MolOps::detectChemistryProblems` reports (see
 /// [`rdkit_detect_chemistry_problems`]).

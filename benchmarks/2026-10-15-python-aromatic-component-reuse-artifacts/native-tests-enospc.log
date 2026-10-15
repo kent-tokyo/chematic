@@ -1,0 +1,63 @@
+   Compiling serde_core v1.0.229
+   Compiling syn v3.0.5
+   Compiling chematic-core v1.1.4 (/private/tmp/chematic-aromatic-components-source-20261015/crates/chematic-core)
+   Compiling smallvec v1.16.2
+   Compiling serde v1.0.229
+   Compiling rustc-hash v2.1.3
+   Compiling chematic-perception v1.1.4 (/private/tmp/chematic-aromatic-components-source-20261015/crates/chematic-perception)
+   Compiling serde_derive v1.0.229
+   Compiling crossbeam-utils v0.8.23
+   Compiling syn v2.0.119
+   Compiling serde_json v1.0.151
+   Compiling zerocopy v0.8.56
+   Compiling zerocopy-derive v0.8.56
+   Compiling crossbeam-epoch v0.9.21
+   Compiling zmij v1.0.23
+   Compiling memchr v2.8.3
+   Compiling itoa v1.0.18
+   Compiling either v1.18.0
+   Compiling num-traits v0.2.19
+   Compiling crossbeam-deque v0.8.8
+   Compiling half v2.7.1
+   Compiling rayon-core v1.13.0
+   Compiling alloca v0.4.0
+   Compiling anstyle v1.0.14
+   Compiling clap_lex v1.1.0
+   Compiling plotters-backend v0.3.7
+   Compiling regex-syntax v0.8.11
+   Compiling ciborium-io v0.2.2
+   Compiling ciborium-ll v0.2.2
+   Compiling regex-automata v0.4.18
+   Compiling plotters-svg v0.3.7
+   Compiling clap_builder v4.6.7
+   Compiling rayon v1.12.0
+   Compiling itertools v0.13.0
+   Compiling chematic-smiles v1.1.4 (/private/tmp/chematic-aromatic-components-source-20261015/crates/chematic-smiles)
+   Compiling cast v0.3.0
+   Compiling same-file v1.0.6
+   Compiling walkdir v2.5.0
+   Compiling criterion-plot v0.8.2
+   Compiling page_size v0.6.0
+   Compiling plotters v0.3.7
+   Compiling clap v4.6.7
+   Compiling regex v1.13.1
+   Compiling ciborium v0.2.2
+   Compiling tinytemplate v1.2.1
+   Compiling chematic-smarts v1.1.4 (/private/tmp/chematic-aromatic-components-source-20261015/crates/chematic-smarts)
+   Compiling oorandom v11.1.5
+   Compiling anes v0.1.6
+   Compiling criterion v0.8.2
+   Compiling chematic-rxn v1.1.4 (/private/tmp/chematic-aromatic-components-source-20261015/crates/chematic-rxn)
+   Compiling chematic-cip v1.1.4 (/private/tmp/chematic-aromatic-components-source-20261015/crates/chematic-cip)
+   Compiling chematic-fp v1.1.4 (/private/tmp/chematic-aromatic-components-source-20261015/crates/chematic-fp)
+   Compiling chematic-iupac v1.1.4 (/private/tmp/chematic-aromatic-components-source-20261015/crates/chematic-iupac)
+   Compiling chematic-chem v1.1.4 (/private/tmp/chematic-aromatic-components-source-20261015/crates/chematic-chem)
+error: linking with `cc` failed: exit status: 1
+  |
+  = note:  "cc" "<1 object files omitted>" "<sysroot>/lib/rustlib/aarch64-apple-darwin/lib/libcompiler_builtins-*.rlib" "-lSystem" "-lc" "-lm" "-arch" "arm64" "-mmacosx-version-min=11.0.0" "-L" "/private/tmp/chematic-aromatic-components-target-20261015/release/build/alloca-a514b9330216af1e/out" "-o" "/private/tmp/chematic-aromatic-components-target-20261015/release/deps/chematic_chem-0a1ee803211a9fb4" "-Wl,-dead_strip" "-nodefaultlibs" "-undefined" "dynamic_lookup"
+  = note: some arguments are omitted. use `--verbose` to show all linker arguments
+  = note: ld: write() failed, errno=28 (No space left on device) for '/private/tmp/chematic-aromatic-components-target-20261015/release/deps/chematic_chem-0a1ee803211a9fb4'
+          clang: error: linker command failed with exit code 1 (use -v to see invocation)
+          
+
+error: could not compile `chematic-chem` (lib test) due to 1 previous error

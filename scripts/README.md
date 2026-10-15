@@ -29,6 +29,8 @@ current issue or benchmark links to them.
 | Sealed cohort | `prepare_sealed_accuracy_cohort.py` |
 | V3000 external readers | `v3000_*_gate.py` |
 | Stereo gates | `stereo_torture_suite_gate.py`, `stereo_spelling_invariance_gate.py` |
+| Open Babel 0D MOL stereo source check | `compare_openbabel_0d_stereo.py` compares before and after CLI binaries on identical Open Babel-generated records; accepts JSONL or `.smi` corpora and records generation failures and source-gate exclusions |
+| Paired Open Babel stereo preservation | `compare_openbabel_stereo_formats.py` runs CheMatic and Open Babel on the same RDKit-written V2000/V3000 inputs and retains every semantic outcome. |
 | A6 source-wheel termination diagnostic | `public_package_3d_chematic.py` runs the fixed 265 rows; `summarize_a6_mmff94_termination.py` accounts for every outcome; `compare_a6_source_published_rows.py` checks same-host success retention without claiming the full quality gate |
 | A6 platform gate (#739) | `pipeline_v2_vs_rdkit_common_scorer` scores one platform's 265 rows; `a6_platform_gate.py` requires 265 successes, all independently sound, stereo-clean and clash-free, and reports whether the coordinates equal another platform's row by row |
 | Cross-binding Node dump | `binding_dump.mjs <mode>` |
@@ -52,3 +54,28 @@ current issue or benchmark links to them.
   a deletion candidate.
 - Generated packages, build output, and temporary corpora do not belong in this
   directory.
+
+### Checked 3D distance-matrix validation
+
+`validate_checked_3d_matrix.py` compares the source-built checked and legacy
+APIs with installed RDKit on 128 ordinary synthetic coordinate cases and eight
+numeric boundary recipes. It records full matrices, finite/nonfinite categories,
+source/runtime hashes and zero-valued failure counters. It does not execute
+the oversized upstream heap-crash reproducer.
+
+### HIN aromatic-bond validation
+
+`validate_openbabel_hin.py` compares the original synthetic HIN fixture through
+a source-built chematic Python extension and a pinned installed Open Babel
+binary. It records both MDL bond-type lists, source/artifact hashes and raw
+outputs. This checks Open Babel #3000's bounded bond semantics, not general
+chemical equivalence or performance.
+
+### CCD molecular templates
+
+`validate_ccd.py --download` caches eight official RCSB component files, compares
+CCD atom/bond/coordinate fields against pinned Gemmi 0.7.5, and records the local
+Open Babel CIF/mmCIF diagnostic. It needs a source-built Python extension and
+Gemmi in the oracle environment. Result hashes identify the downloaded bytes;
+the hermetic CI fixture is independently authored. This validates single CCD
+components, not a bulk dictionary or package release.

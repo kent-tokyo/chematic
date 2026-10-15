@@ -1,0 +1,9 @@
+{
+  "removed_completed_owned_target": "/private/tmp/chematic-openbabel-ez-gate-target-20261015",
+  "logical_bytes": 444672343,
+  "retained_measured_binaries_sha256": {
+    "baseline": "2525c191019081d021ebbaaf5dfa7cce07b577a5a92edb785b871719e3df148d",
+    "candidate": "95f24cf06fd5385710342025965a60e0a06612448237da64e58be75fb8f8cac5"
+  },
+  "after_validation_before_timing": true
+}

@@ -167,52 +167,31 @@ fn simple_ring_system_count(mol: &Molecule) -> Option<RingCountDecision> {
         return None;
     }
     let flags = chematic_perception::ring_bond_flags_shared(mol);
-    let n = mol.atom_count();
-    let mut parent: Vec<u32> = (0..n as u32).collect();
-    fn find(parent: &mut [u32], mut x: u32) -> u32 {
-        while parent[x as usize] != x {
-            let p = parent[parent[x as usize] as usize];
-            parent[x as usize] = p;
-            x = p;
-        }
-        x
-    }
-    let mut ring_bonds = 0usize;
+    // The bridge pass that produced `flags` also labels the cyclic
+    // components. Reuse those labels instead of rebuilding a union-find.
+    let components = chematic_perception::sssr::ring_components_shared(mol);
+    let labels = &components.label;
+    let mut balance = vec![0i32; components.count as usize];
+    let mut on_ring = vec![false; mol.atom_count()];
+    let mut roots = Vec::new();
     for (bi, bond) in mol.bonds() {
         if !flags[bi.0 as usize] {
             continue;
         }
-        ring_bonds += 1;
-        let (a, b) = (
-            find(&mut parent, bond.atom1.0),
-            find(&mut parent, bond.atom2.0),
-        );
-        if a != b {
-            parent[a as usize] = b;
+        let r = labels[bond.atom1.0 as usize] as usize;
+        // Before counting atoms, a zero balance means this is the first
+        // cyclic bond in the component. Non-ring singleton labels are never
+        // added, so they cannot be mistaken for a simple cycle below.
+        if balance[r] == 0 {
+            roots.push(r);
         }
+        balance[r] -= 1;
+        on_ring[bond.atom1.0 as usize] = true;
+        on_ring[bond.atom2.0 as usize] = true;
     }
-    if ring_bonds == 0 {
-        return Some(RingCountDecision::Count(0));
-    }
-    // Per system: ring atoms minus ring bonds (0 for a simple cycle).
-    let mut balance = vec![0i32; n];
-    let mut on_ring = vec![false; n];
-    for (bi, bond) in mol.bonds() {
-        if flags[bi.0 as usize] {
-            on_ring[bond.atom1.0 as usize] = true;
-            on_ring[bond.atom2.0 as usize] = true;
-            let r = find(&mut parent, bond.atom1.0);
-            balance[r as usize] -= 1;
-        }
-    }
-    let mut roots = Vec::new();
     for (a, &is_on_ring) in on_ring.iter().enumerate() {
         if is_on_ring {
-            let r = find(&mut parent, a as u32) as usize;
-            balance[r] += 1;
-            if r == a {
-                roots.push(a);
-            }
+            balance[labels[a] as usize] += 1;
         }
     }
     let mut rings = 0usize;
@@ -220,9 +199,9 @@ fn simple_ring_system_count(mol: &Molecule) -> Option<RingCountDecision> {
     for &r in &roots {
         match balance[r] {
             0 => rings += 1,
-            -1 => rings += two_cycle_system_rings(mol, &flags, &mut parent, r)?,
+            -1 => rings += two_cycle_system_rings(mol, &flags, labels, r)?,
             _ => {
-                let (count, has_macrocycle) = system_rings_rdkit(mol, &flags, &mut parent, r)?;
+                let (count, has_macrocycle) = system_rings_rdkit(mol, &flags, labels, r)?;
                 // RingDecomposerLib differs from the legacy symmetrized SSSR
                 // in the exposed corpus only for large, symmetric ring
                 // families. Keep the fast legacy result for compact cages
@@ -250,17 +229,9 @@ fn simple_ring_system_count(mol: &Molecule) -> Option<RingCountDecision> {
 fn system_rings_rdkit(
     mol: &Molecule,
     flags: &[bool],
-    parent: &mut [u32],
+    labels: &[u32],
     root: usize,
 ) -> Option<(usize, bool)> {
-    fn find(parent: &mut [u32], mut x: u32) -> u32 {
-        while parent[x as usize] != x {
-            let p = parent[parent[x as usize] as usize];
-            parent[x as usize] = p;
-            x = p;
-        }
-        x
-    }
     let mut local = vec![u32::MAX; mol.atom_count()];
     let mut k = 0usize;
     let mut bonds = Vec::new();
@@ -269,7 +240,7 @@ fn system_rings_rdkit(
             continue;
         }
         let bond = mol.bond(bi);
-        if find(parent, bond.atom1.0) as usize != root {
+        if labels[bond.atom1.0 as usize] as usize != root {
             continue;
         }
         let mut id = |a: AtomIdx| {
@@ -296,17 +267,9 @@ fn system_rings_rdkit(
 fn two_cycle_system_rings(
     mol: &Molecule,
     flags: &[bool],
-    parent: &mut [u32],
+    labels: &[u32],
     root: usize,
 ) -> Option<usize> {
-    fn find(parent: &mut [u32], mut x: u32) -> u32 {
-        while parent[x as usize] != x {
-            let p = parent[parent[x as usize] as usize];
-            parent[x as usize] = p;
-            x = p;
-        }
-        x
-    }
     let ring_neighbors = |a: AtomIdx| -> smallvec::SmallVec<[AtomIdx; 4]> {
         mol.neighbors(a)
             .filter(|(_, bi)| flags[bi.0 as usize])
@@ -315,7 +278,7 @@ fn two_cycle_system_rings(
     };
     let mut branch = smallvec::SmallVec::<[AtomIdx; 2]>::new();
     for (idx, _) in mol.atoms() {
-        if find(parent, idx.0) as usize != root {
+        if labels[idx.0 as usize] as usize != root {
             continue;
         }
         match ring_neighbors(idx).len() {
@@ -1046,3 +1009,7 @@ pub fn implicit_hcount_per_atom(mol: &Molecule) -> Vec<u8> {
 pub fn tpsa_per_atom(mol: &Molecule) -> Vec<f64> {
     tpsa_contributions(mol)
 }
+
+#[cfg(test)]
+#[path = "ring_component_count_tests.rs"]
+mod ring_component_count_tests;

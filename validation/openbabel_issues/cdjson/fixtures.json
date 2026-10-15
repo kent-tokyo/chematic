@@ -1,0 +1,767 @@
+{
+  "schema_version": 1,
+  "records": [
+    {
+      "id": "default-carbon",
+      "provenance": "Project-authored minimal synthetic molecular graph; no upstream attachment or source payload copied.",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed: original project recipe",
+      "minimization": "Small graph isolates default element, H override, bond, isotope or charge behavior.",
+      "oracle": "Open Babel 3.2.1 CLI; RDKit 2026.09.1 explicit graph reconstruction, sanitization and CalcMolFormula",
+      "expected": {
+        "formula": "CH4",
+        "coordinate_units": "Unscaled drawing units",
+        "tolerance": 0
+      },
+      "known_openbabel_zero_override_gap": false,
+      "payload": {
+        "a": [
+          {
+            "x": 0,
+            "y": 0
+          }
+        ],
+        "b": []
+      },
+      "sha256": "2976ab367f78dd4b972f2cd8147e8513fbba46b11e484f6281a60ff769f486d4"
+    },
+    {
+      "id": "auto-carbon",
+      "provenance": "Project-authored minimal synthetic molecular graph; no upstream attachment or source payload copied.",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed: original project recipe",
+      "minimization": "Small graph isolates default element, H override, bond, isotope or charge behavior.",
+      "oracle": "Open Babel 3.2.1 CLI; RDKit 2026.09.1 explicit graph reconstruction, sanitization and CalcMolFormula",
+      "expected": {
+        "formula": "CH4",
+        "coordinate_units": "Unscaled drawing units",
+        "tolerance": 0
+      },
+      "known_openbabel_zero_override_gap": false,
+      "payload": {
+        "a": [
+          {
+            "x": 0,
+            "y": 0,
+            "l": "C",
+            "h": -1
+          }
+        ],
+        "b": []
+      },
+      "sha256": "db7e770e5cab3e9108e9f008c7a3912a30fc6a7513b68fab78ca897c4e16bcd0"
+    },
+    {
+      "id": "zero-carbon",
+      "provenance": "Project-authored minimal synthetic molecular graph; no upstream attachment or source payload copied.",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed: original project recipe",
+      "minimization": "Small graph isolates default element, H override, bond, isotope or charge behavior.",
+      "oracle": "Open Babel 3.2.1 CLI; RDKit 2026.09.1 explicit graph reconstruction, sanitization and CalcMolFormula",
+      "expected": {
+        "formula": "C",
+        "coordinate_units": "Unscaled drawing units",
+        "tolerance": 0
+      },
+      "known_openbabel_zero_override_gap": true,
+      "payload": {
+        "a": [
+          {
+            "x": 0,
+            "y": 0,
+            "h": 0
+          }
+        ],
+        "b": []
+      },
+      "sha256": "25814162b2c83e01e15c3b4a12871dbfaff225b4f26ef845016e49f2807a34fb"
+    },
+    {
+      "id": "two-carbon",
+      "provenance": "Project-authored minimal synthetic molecular graph; no upstream attachment or source payload copied.",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed: original project recipe",
+      "minimization": "Small graph isolates default element, H override, bond, isotope or charge behavior.",
+      "oracle": "Open Babel 3.2.1 CLI; RDKit 2026.09.1 explicit graph reconstruction, sanitization and CalcMolFormula",
+      "expected": {
+        "formula": "CH2",
+        "coordinate_units": "Unscaled drawing units",
+        "tolerance": 0
+      },
+      "known_openbabel_zero_override_gap": false,
+      "payload": {
+        "a": [
+          {
+            "x": 0,
+            "y": 0,
+            "h": 2
+          }
+        ],
+        "b": []
+      },
+      "sha256": "d56084dc5265f3e5070290f4734e12b120b26b3db94ff7d39affd9de4d7bc61e"
+    },
+    {
+      "id": "four-carbon",
+      "provenance": "Project-authored minimal synthetic molecular graph; no upstream attachment or source payload copied.",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed: original project recipe",
+      "minimization": "Small graph isolates default element, H override, bond, isotope or charge behavior.",
+      "oracle": "Open Babel 3.2.1 CLI; RDKit 2026.09.1 explicit graph reconstruction, sanitization and CalcMolFormula",
+      "expected": {
+        "formula": "CH4",
+        "coordinate_units": "Unscaled drawing units",
+        "tolerance": 0
+      },
+      "known_openbabel_zero_override_gap": false,
+      "payload": {
+        "a": [
+          {
+            "x": 0,
+            "y": 0,
+            "h": 4
+          }
+        ],
+        "b": []
+      },
+      "sha256": "8d13c95ee79e1ebe848fa5a4af21742de995f76303acae972aafd5371d1dadf7"
+    },
+    {
+      "id": "zero-oxygen",
+      "provenance": "Project-authored minimal synthetic molecular graph; no upstream attachment or source payload copied.",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed: original project recipe",
+      "minimization": "Small graph isolates default element, H override, bond, isotope or charge behavior.",
+      "oracle": "Open Babel 3.2.1 CLI; RDKit 2026.09.1 explicit graph reconstruction, sanitization and CalcMolFormula",
+      "expected": {
+        "formula": "O",
+        "coordinate_units": "Unscaled drawing units",
+        "tolerance": 0
+      },
+      "known_openbabel_zero_override_gap": true,
+      "payload": {
+        "a": [
+          {
+            "x": 0,
+            "y": 0,
+            "l": "O",
+            "h": 0
+          }
+        ],
+        "b": []
+      },
+      "sha256": "c1fc051e993ebc1902e0503e22184e642879bc3d6ab12feca1a206f0ebc387d9"
+    },
+    {
+      "id": "ammonium",
+      "provenance": "Project-authored minimal synthetic molecular graph; no upstream attachment or source payload copied.",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed: original project recipe",
+      "minimization": "Small graph isolates default element, H override, bond, isotope or charge behavior.",
+      "oracle": "Open Babel 3.2.1 CLI; RDKit 2026.09.1 explicit graph reconstruction, sanitization and CalcMolFormula",
+      "expected": {
+        "formula": "H4N+",
+        "coordinate_units": "Unscaled drawing units",
+        "tolerance": 0
+      },
+      "known_openbabel_zero_override_gap": false,
+      "payload": {
+        "a": [
+          {
+            "x": 0,
+            "y": 0,
+            "l": "N",
+            "c": 1,
+            "h": 4
+          }
+        ],
+        "b": []
+      },
+      "sha256": "c3964e46f50657684341049fd4e9383d7b9e569cb640d2c0a17ce7c3dd51dde3"
+    },
+    {
+      "id": "chloride",
+      "provenance": "Project-authored minimal synthetic molecular graph; no upstream attachment or source payload copied.",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed: original project recipe",
+      "minimization": "Small graph isolates default element, H override, bond, isotope or charge behavior.",
+      "oracle": "Open Babel 3.2.1 CLI; RDKit 2026.09.1 explicit graph reconstruction, sanitization and CalcMolFormula",
+      "expected": {
+        "formula": "Cl-",
+        "coordinate_units": "Unscaled drawing units",
+        "tolerance": 0
+      },
+      "known_openbabel_zero_override_gap": false,
+      "payload": {
+        "a": [
+          {
+            "x": 0,
+            "y": 0,
+            "l": "Cl",
+            "c": -1,
+            "h": 0
+          }
+        ],
+        "b": []
+      },
+      "sha256": "462be081c125a89b8327ca1cd21506f2d0873b2fb86d705fb0805251dc262b08"
+    },
+    {
+      "id": "ethane",
+      "provenance": "Project-authored minimal synthetic molecular graph; no upstream attachment or source payload copied.",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed: original project recipe",
+      "minimization": "Small graph isolates default element, H override, bond, isotope or charge behavior.",
+      "oracle": "Open Babel 3.2.1 CLI; RDKit 2026.09.1 explicit graph reconstruction, sanitization and CalcMolFormula",
+      "expected": {
+        "formula": "C2H6",
+        "coordinate_units": "Unscaled drawing units",
+        "tolerance": 0
+      },
+      "known_openbabel_zero_override_gap": false,
+      "payload": {
+        "a": [
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 0,
+            "y": 0
+          }
+        ],
+        "b": [
+          {
+            "b": 0,
+            "e": 1,
+            "o": 1
+          }
+        ]
+      },
+      "sha256": "5463765d4c26d6e1b762c45314fc554b314a0d578cdccab0a24163df2948c6f5"
+    },
+    {
+      "id": "ethene",
+      "provenance": "Project-authored minimal synthetic molecular graph; no upstream attachment or source payload copied.",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed: original project recipe",
+      "minimization": "Small graph isolates default element, H override, bond, isotope or charge behavior.",
+      "oracle": "Open Babel 3.2.1 CLI; RDKit 2026.09.1 explicit graph reconstruction, sanitization and CalcMolFormula",
+      "expected": {
+        "formula": "C2H4",
+        "coordinate_units": "Unscaled drawing units",
+        "tolerance": 0
+      },
+      "known_openbabel_zero_override_gap": false,
+      "payload": {
+        "a": [
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 0,
+            "y": 0
+          }
+        ],
+        "b": [
+          {
+            "b": 0,
+            "e": 1,
+            "o": 2
+          }
+        ]
+      },
+      "sha256": "20c12ab413d8a08f01f340ec98eb530451fb2cce91b048ed841fb493d104f0cd"
+    },
+    {
+      "id": "acetylene",
+      "provenance": "Project-authored minimal synthetic molecular graph; no upstream attachment or source payload copied.",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed: original project recipe",
+      "minimization": "Small graph isolates default element, H override, bond, isotope or charge behavior.",
+      "oracle": "Open Babel 3.2.1 CLI; RDKit 2026.09.1 explicit graph reconstruction, sanitization and CalcMolFormula",
+      "expected": {
+        "formula": "C2H2",
+        "coordinate_units": "Unscaled drawing units",
+        "tolerance": 0
+      },
+      "known_openbabel_zero_override_gap": false,
+      "payload": {
+        "a": [
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 0,
+            "y": 0
+          }
+        ],
+        "b": [
+          {
+            "b": 0,
+            "e": 1,
+            "o": 3
+          }
+        ]
+      },
+      "sha256": "90788ab0d3416b5319c467edff1e60b70c6c2a550c918ff0087dd0a77c274f3e"
+    },
+    {
+      "id": "carbonyl-alcohol",
+      "provenance": "Project-authored minimal synthetic molecular graph; no upstream attachment or source payload copied.",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed: original project recipe",
+      "minimization": "Small graph isolates default element, H override, bond, isotope or charge behavior.",
+      "oracle": "Open Babel 3.2.1 CLI; RDKit 2026.09.1 explicit graph reconstruction, sanitization and CalcMolFormula",
+      "expected": {
+        "formula": "C2H4O2",
+        "coordinate_units": "Unscaled drawing units",
+        "tolerance": 0
+      },
+      "known_openbabel_zero_override_gap": false,
+      "payload": {
+        "a": [
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 0,
+            "y": 0,
+            "l": "O"
+          },
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 0,
+            "y": 0,
+            "l": "O"
+          }
+        ],
+        "b": [
+          {
+            "b": 0,
+            "e": 1,
+            "o": 2
+          },
+          {
+            "b": 0,
+            "e": 2,
+            "o": 1
+          },
+          {
+            "b": 2,
+            "e": 3,
+            "o": 1
+          }
+        ]
+      },
+      "sha256": "f474231ee605738b67a1ef2b2f11cbb3f889cb1bd2bdafaf079ee848d5f45fb4"
+    },
+    {
+      "id": "isotope-methanol",
+      "provenance": "Project-authored minimal synthetic molecular graph; no upstream attachment or source payload copied.",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed: original project recipe",
+      "minimization": "Small graph isolates default element, H override, bond, isotope or charge behavior.",
+      "oracle": "Open Babel 3.2.1 CLI; RDKit 2026.09.1 explicit graph reconstruction, sanitization and CalcMolFormula",
+      "expected": {
+        "formula": "CH4O",
+        "coordinate_units": "Unscaled drawing units",
+        "tolerance": 0
+      },
+      "known_openbabel_zero_override_gap": false,
+      "payload": {
+        "a": [
+          {
+            "x": 0,
+            "y": 0,
+            "m": 13,
+            "h": 3
+          },
+          {
+            "x": 0,
+            "y": 0,
+            "l": "O"
+          }
+        ],
+        "b": [
+          {
+            "b": 0,
+            "e": 1,
+            "o": 1
+          }
+        ]
+      },
+      "sha256": "4bdc25950b999be0a37c9436dfb844291d78b4560260b36272b24f53322d360d"
+    },
+    {
+      "id": "heavy-water",
+      "provenance": "Project-authored minimal synthetic molecular graph; no upstream attachment or source payload copied.",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed: original project recipe",
+      "minimization": "Small graph isolates default element, H override, bond, isotope or charge behavior.",
+      "oracle": "Open Babel 3.2.1 CLI; RDKit 2026.09.1 explicit graph reconstruction, sanitization and CalcMolFormula",
+      "expected": {
+        "formula": "H2O",
+        "coordinate_units": "Unscaled drawing units",
+        "tolerance": 0
+      },
+      "known_openbabel_zero_override_gap": false,
+      "payload": {
+        "a": [
+          {
+            "x": 0,
+            "y": 0,
+            "l": "H",
+            "m": 2,
+            "h": 0
+          },
+          {
+            "x": 0,
+            "y": 0,
+            "l": "O"
+          },
+          {
+            "x": 0,
+            "y": 0,
+            "l": "H",
+            "m": 2,
+            "h": 0
+          }
+        ],
+        "b": [
+          {
+            "b": 0,
+            "e": 1,
+            "o": 1
+          },
+          {
+            "b": 1,
+            "e": 2,
+            "o": 1
+          }
+        ]
+      },
+      "sha256": "c3c30467327e5f847e43d6589ea20d7dbce517fdb0954ecb3261e4b223473712"
+    },
+    {
+      "id": "explicit-methane",
+      "provenance": "Project-authored minimal synthetic molecular graph; no upstream attachment or source payload copied.",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed: original project recipe",
+      "minimization": "Small graph isolates default element, H override, bond, isotope or charge behavior.",
+      "oracle": "Open Babel 3.2.1 CLI; RDKit 2026.09.1 explicit graph reconstruction, sanitization and CalcMolFormula",
+      "expected": {
+        "formula": "CH4",
+        "coordinate_units": "Unscaled drawing units",
+        "tolerance": 0
+      },
+      "known_openbabel_zero_override_gap": false,
+      "payload": {
+        "a": [
+          {
+            "x": 0,
+            "y": 0,
+            "h": 0
+          },
+          {
+            "x": 0,
+            "y": 0,
+            "l": "H",
+            "h": 0
+          },
+          {
+            "x": 0,
+            "y": 0,
+            "l": "H",
+            "h": 0
+          },
+          {
+            "x": 0,
+            "y": 0,
+            "l": "H",
+            "h": 0
+          },
+          {
+            "x": 0,
+            "y": 0,
+            "l": "H",
+            "h": 0
+          }
+        ],
+        "b": [
+          {
+            "b": 0,
+            "e": 1,
+            "o": 1
+          },
+          {
+            "b": 0,
+            "e": 2,
+            "o": 1
+          },
+          {
+            "b": 0,
+            "e": 3,
+            "o": 1
+          },
+          {
+            "b": 0,
+            "e": 4,
+            "o": 1
+          }
+        ]
+      },
+      "sha256": "c11be9851dbb16f99e6ee755a27216fa1e8b550a3b69af565ac01327f4e9ba15"
+    },
+    {
+      "id": "mixed-hydrogens",
+      "provenance": "Project-authored minimal synthetic molecular graph; no upstream attachment or source payload copied.",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed: original project recipe",
+      "minimization": "Small graph isolates default element, H override, bond, isotope or charge behavior.",
+      "oracle": "Open Babel 3.2.1 CLI; RDKit 2026.09.1 explicit graph reconstruction, sanitization and CalcMolFormula",
+      "expected": {
+        "formula": "CH3",
+        "coordinate_units": "Unscaled drawing units",
+        "tolerance": 0
+      },
+      "known_openbabel_zero_override_gap": false,
+      "payload": {
+        "a": [
+          {
+            "x": 0,
+            "y": 0,
+            "h": 2
+          },
+          {
+            "x": 0,
+            "y": 0,
+            "l": "H",
+            "h": 0
+          }
+        ],
+        "b": [
+          {
+            "b": 0,
+            "e": 1,
+            "o": 1
+          }
+        ]
+      },
+      "sha256": "69bf80de48ab7c285733ba42afb3d27ae135f1a586d7b8f5632603f262dfe029"
+    },
+    {
+      "id": "bonded-zero-carbon",
+      "provenance": "Project-authored minimal synthetic molecular graph; no upstream attachment or source payload copied.",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed: original project recipe",
+      "minimization": "Small graph isolates default element, H override, bond, isotope or charge behavior.",
+      "oracle": "Open Babel 3.2.1 CLI; RDKit 2026.09.1 explicit graph reconstruction, sanitization and CalcMolFormula",
+      "expected": {
+        "formula": "C2H3",
+        "coordinate_units": "Unscaled drawing units",
+        "tolerance": 0
+      },
+      "known_openbabel_zero_override_gap": true,
+      "payload": {
+        "a": [
+          {
+            "x": 0,
+            "y": 0,
+            "h": 0
+          },
+          {
+            "x": 0,
+            "y": 0,
+            "h": 3
+          }
+        ],
+        "b": [
+          {
+            "b": 0,
+            "e": 1,
+            "o": 1
+          }
+        ]
+      },
+      "sha256": "3b270794b961a50dd97ca7b3e472a6113c0c370ff9a7f9d1a62bbe575cff7776"
+    }
+  ],
+  "writer_controls": [
+    {
+      "id": "writer-00",
+      "smiles": "C",
+      "provenance": "Original synthetic SMILES control",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed",
+      "minimization": "Small ordinary molecular graph",
+      "oracle": "Open Babel 3.2.1 -ismi -ocdjson --gen2D; RDKit 2026.09.1 CalcMolFormula",
+      "expected": {
+        "tolerance": 0,
+        "units": "Formula element counts and formal charge"
+      },
+      "sha256": "6b23c0d5f35d1b11f9b683f0b0a617355deb11277d91ae091d399c655b87940d"
+    },
+    {
+      "id": "writer-01",
+      "smiles": "CC",
+      "provenance": "Original synthetic SMILES control",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed",
+      "minimization": "Small ordinary molecular graph",
+      "oracle": "Open Babel 3.2.1 -ismi -ocdjson --gen2D; RDKit 2026.09.1 CalcMolFormula",
+      "expected": {
+        "tolerance": 0,
+        "units": "Formula element counts and formal charge"
+      },
+      "sha256": "a56362a10c816abf206d72cb914e2d5ca454eb9c7e744f88b1a1422c379e9942"
+    },
+    {
+      "id": "writer-02",
+      "smiles": "C(=O)CO",
+      "provenance": "Original synthetic SMILES control",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed",
+      "minimization": "Small ordinary molecular graph",
+      "oracle": "Open Babel 3.2.1 -ismi -ocdjson --gen2D; RDKit 2026.09.1 CalcMolFormula",
+      "expected": {
+        "tolerance": 0,
+        "units": "Formula element counts and formal charge"
+      },
+      "sha256": "c2baa6527c1f9996de1b811ba8ce9cdc45f79b1c1af561e09c0af2193b4a5cff"
+    },
+    {
+      "id": "writer-03",
+      "smiles": "CCO",
+      "provenance": "Original synthetic SMILES control",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed",
+      "minimization": "Small ordinary molecular graph",
+      "oracle": "Open Babel 3.2.1 -ismi -ocdjson --gen2D; RDKit 2026.09.1 CalcMolFormula",
+      "expected": {
+        "tolerance": 0,
+        "units": "Formula element counts and formal charge"
+      },
+      "sha256": "ab1de819ede91df490e6441934decfa9041b49f91d6bbadbba4df634ccff57fa"
+    },
+    {
+      "id": "writer-04",
+      "smiles": "COC",
+      "provenance": "Original synthetic SMILES control",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed",
+      "minimization": "Small ordinary molecular graph",
+      "oracle": "Open Babel 3.2.1 -ismi -ocdjson --gen2D; RDKit 2026.09.1 CalcMolFormula",
+      "expected": {
+        "tolerance": 0,
+        "units": "Formula element counts and formal charge"
+      },
+      "sha256": "f04736a51b45f491bec35fb8de6c9921cd01cbd9677275af05d267ab713bad79"
+    },
+    {
+      "id": "writer-05",
+      "smiles": "C=C",
+      "provenance": "Original synthetic SMILES control",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed",
+      "minimization": "Small ordinary molecular graph",
+      "oracle": "Open Babel 3.2.1 -ismi -ocdjson --gen2D; RDKit 2026.09.1 CalcMolFormula",
+      "expected": {
+        "tolerance": 0,
+        "units": "Formula element counts and formal charge"
+      },
+      "sha256": "baeb1d1ab8256c3fc41551dac947d4b92379c4deae0003344bdc7bfbafcd9181"
+    },
+    {
+      "id": "writer-06",
+      "smiles": "C#N",
+      "provenance": "Original synthetic SMILES control",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed",
+      "minimization": "Small ordinary molecular graph",
+      "oracle": "Open Babel 3.2.1 -ismi -ocdjson --gen2D; RDKit 2026.09.1 CalcMolFormula",
+      "expected": {
+        "tolerance": 0,
+        "units": "Formula element counts and formal charge"
+      },
+      "sha256": "2e683ad43b0acced6088da29a1864b5d6459792a6603bd6a39dfc488608aa307"
+    },
+    {
+      "id": "writer-07",
+      "smiles": "CCl",
+      "provenance": "Original synthetic SMILES control",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed",
+      "minimization": "Small ordinary molecular graph",
+      "oracle": "Open Babel 3.2.1 -ismi -ocdjson --gen2D; RDKit 2026.09.1 CalcMolFormula",
+      "expected": {
+        "tolerance": 0,
+        "units": "Formula element counts and formal charge"
+      },
+      "sha256": "6626fa114cb4c6414c3cdc2848c385521e6182c6d4a85731ec01148c5dc3baab"
+    },
+    {
+      "id": "writer-08",
+      "smiles": "CCBr",
+      "provenance": "Original synthetic SMILES control",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed",
+      "minimization": "Small ordinary molecular graph",
+      "oracle": "Open Babel 3.2.1 -ismi -ocdjson --gen2D; RDKit 2026.09.1 CalcMolFormula",
+      "expected": {
+        "tolerance": 0,
+        "units": "Formula element counts and formal charge"
+      },
+      "sha256": "038fe59d5ce46a634e53020d818532bc881aefbaa589e70b4d7da1d58641ae27"
+    },
+    {
+      "id": "writer-09",
+      "smiles": "[NH4+]",
+      "provenance": "Original synthetic SMILES control",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed",
+      "minimization": "Small ordinary molecular graph",
+      "oracle": "Open Babel 3.2.1 -ismi -ocdjson --gen2D; RDKit 2026.09.1 CalcMolFormula",
+      "expected": {
+        "tolerance": 0,
+        "units": "Formula element counts and formal charge"
+      },
+      "sha256": "b262b2b94c0eb249a976db52b98b60512b1acb0bdb0c9a0675d9afbf9bacacfb"
+    },
+    {
+      "id": "writer-10",
+      "smiles": "[Cl-]",
+      "provenance": "Original synthetic SMILES control",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed",
+      "minimization": "Small ordinary molecular graph",
+      "oracle": "Open Babel 3.2.1 -ismi -ocdjson --gen2D; RDKit 2026.09.1 CalcMolFormula",
+      "expected": {
+        "tolerance": 0,
+        "units": "Formula element counts and formal charge"
+      },
+      "sha256": "21c8d33686776387b6a57d02c12edc885afa97a58e90478063570cdaceda8054"
+    },
+    {
+      "id": "writer-11",
+      "smiles": "[13CH3]O",
+      "provenance": "Original synthetic SMILES control",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed",
+      "minimization": "Small ordinary molecular graph",
+      "oracle": "Open Babel 3.2.1 -ismi -ocdjson --gen2D; RDKit 2026.09.1 CalcMolFormula",
+      "expected": {
+        "tolerance": 0,
+        "units": "Formula element counts and formal charge"
+      },
+      "sha256": "84a140a5367cba1fcf095a752ec77dd555685074972639d68b407d3280825679"
+    }
+  ],
+  "variant_recipe": "32 variants per record: reversed/rotated atom order, remapped endpoints, reversed bond order, optional explicit C labels, full-precision translated 3D drawing coordinates and globally unique IDs."
+}

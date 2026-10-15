@@ -52,22 +52,33 @@ exposed in that language. "—" in the WASM columns for CIF means CIF has
 |---|---|---|---|---|---|---|
 | SMILES | Y | Y | Y | Y (`Mol.smiles` property) | Y | Y |
 | SMARTS | Y | — (matching, not writing) | validation only | — | Y (match) | — |
+| HIN (bounded profile) | Y | exact source only | Y | exact source only | inspection JSON | exact source only |
 | MOL/SDF | Y | Y | Y | Y (`Mol.to_mol_block()`/`.to_mol_block_2d()`) | Y | Y |
 | PDB | Y | Y | Y | Y (`Mol.to_pdb(coords)`) | Y | Y (`ConformerHandle.get_conformer_pdb(idx)`) |
 | mmCIF | Y | Y | Y | Y | Y | Y |
 | CIF (small-molecule) | Y | Y | Y | — | — | — |
 | PQR | Y | Y | Y | Y | Y | Y |
 | XYZ | Y | Y | Y | — | Y | Y |
+| DMol3 .incoor | Y | Y | Y | Y | — | — |
+| MOPAC Cartesian | Y | Y | Y | Y | — | — |
+| FHI-aims geometry.in | Y | Y | Y | Y | — | — |
+| ORCA-AICCM EXYZ | Y | Y | Y | Y | — | — |
 | Extended XYZ | Y | Y | Y | Y | Y | Y |
 | QCSchema | Y | Y | Y | Y | Y | — (validation only, no writer) |
 | ORCA input | Y | Y | Y | Y | Y | Y |
 | ORCA output | Y | — (no writer exists in Rust) | Y | — | Y | — |
 | Gaussian Cube | Y | Y | Y (via `VolumetricGrid`) | Y (via `VolumetricGrid`) | Y | Y |
+| ChemDoodle JSON | Y (molecular subset) | Y (graph) | Y | Y (graph) | — | — |
 | OpenDX | Y | Y (strict + `_lossy`) | Y (via `VolumetricGrid`) | Y (via `VolumetricGrid`, strict + `_lossy`) | Y | Y (strict + `_lossy`) |
 | LAMMPS data | Y | Y | Y | Y | Y | Y |
 | LAMMPS dump/trajectory | Y | Y | Y | Y | Y | Y |
 
 Notes on the cells above that need qualification:
+
+- **HIN**: one checked `mol`/`atom`/`endmol` record, reciprocal `s/d/t/a`
+  connectivity, typed source metadata and exact-source retention. No edited
+  graph writer or generic conversion-bridge route is added. See the
+  [HIN contract and Open Babel #3000 reproduction](openbabel-hin-aromatic-bonds.md).
 
 - **SMILES Python write / MOL-SDF Python write**: exposed as `Mol` object
   methods/properties (`Mol.smiles`, `Mol.to_mol_block()`/
@@ -608,6 +619,18 @@ disambiguate by crate, not by name alone:
 - **Coordinate units**: Ångström.
 - **Connectivity**: no bond table is inferred.
 
+### ChemDoodle JSON
+
+Rust exposes `parse_cdjson`, `parse_cdjson_with_limits`, `CdjsonDocument` and
+`write_cdjson_graph`. Python exposes `parse_cdjson` and `write_cdjson_graph`.
+The reader returns all molecules, source IDs, exact input text and unscaled
+drawing coordinates. Explicit zero H overrides are retained. Unknown fields,
+shapes, query/stereo/radical/lone-pair content and unsupported bonds are rejected.
+The graph writer emits element symbols and explicit native H counts; source
+IDs and unrelated metadata require same-format source preservation.
+This format is distinct from ChemicalJSON. See the
+[checked profile and external diagnostics](chemdoodle-json.md).
+
 ### Gaussian Cube
 
 - **Rust**: `chematic_mol::{parse_cube, parse_cube_with_limits, write_cube, CubeError, CubeFileReader, CubeParseLimits}`, plus the shared `VolumetricGrid` type.
@@ -748,3 +771,29 @@ historical and is not relabeled as a v1.1.0 artifact result.
 Current-main integration validation is recorded in
 `validation/results/main-integration-2026-10-11/summary.json`.
 The earlier v1.0.20 development measurements remain historical evidence.
+
+## ORCA-AICCM EXYZ
+
+`parse_exyz` / `write_exyz` preserve explicit atom coordinates, virtual flags,
+three lattice row vectors and the cell offset in angstroms. Single-document
+validation rejects malformed counts, unsupported fields and singular cells.
+No bonds, charge, spin or hydrogens are inferred. This dialect uses `%PBC`
+and `%VIRTUAL`; the existing ASE `parse_extxyz` API uses `Lattice=` and
+`Properties=` instead. See [EXYZ scope and validation](openbabel-exyz.md).
+
+## FHI-aims geometry.in
+
+`parse_fhiaims` / `write_fhiaims` retain coordinate kind, ordered lattice
+vectors, Cartesian component constraints and optional starting-density charge
+and spin moment. Cartesian geometry supports zero to three periodic directions;
+fractional coordinates require three independent vectors. Custom species and
+unsupported directives fail explicitly. See [scope and validation](openbabel-fhiaims.md).
+
+MOPAC Cartesian preserves Angstrom coordinates, optional optimization flags,
+atom labels, three header lines, and zero to three translation vectors. Internal
+coordinates, atomic units, dummy/sparkle encodings and additional job sections
+are refused; see [the checked contract](openbabel-mopac-cartesian.md).
+
+DMol3 standalone `.incoor` retains Cartesian Bohr values and an optional 3D
+cell, with explicit CODATA 2022 Angstrom projections. Output logs, extra
+sections and partial periodicity are refused; see [scope](openbabel-dmol3.md).

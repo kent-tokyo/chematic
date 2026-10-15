@@ -1,0 +1,11 @@
+{
+  "adopt_source": false,
+  "reason": "Reject for adoption: a lexical audit found all 27,435 / 15,291 / 33,280 z tokens in the three fixed profiles are 0.000000. Neither fast spelling in this trial occurs in its measured parse inputs. Thus the trial does not test the intended bypass; initial original-profile parse intervals also include 1. The pre-implementation input inspection was insufficient. All planned results, inputs, code and logs remain archived, without substitution or pooling. The separate next revision includes the actual six-decimal spelling.",
+  "fast_spellings": [
+    "0",
+    "0.0000"
+  ],
+  "all_fixed_inputs_use": "0.000000",
+  "adopted_production_files": [],
+  "merged_or_published": false
+}

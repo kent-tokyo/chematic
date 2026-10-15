@@ -1,0 +1,171 @@
+{
+  "schema_version": 1,
+  "id": "correlated-stereo-group-alternatives-v1",
+  "provenance": {
+    "source": "original minimized synthetic acyclic, conjugated and disconnected stereochemical graphs",
+    "issue": "https://github.com/rdkit/rdkit/issues/9705",
+    "date": "2026-10-15",
+    "transformations": "generated atom/bond indices from independently authored SMILES; source-order group membership; no upstream attachments copied"
+  },
+  "license": "MIT OR Apache-2.0",
+  "redistribution": {
+    "status": "allowed",
+    "rationale": "original project fixtures; no third-party corpus"
+  },
+  "minimization": "six small graphs isolate two mixed groups, shared geometric markers, ABS exclusion, explicit H, symmetry duplicates and three independent group choices",
+  "oracle": {
+    "name": "RDKit direct atom and bond inversion (not group canonicalization or mixed-group enumeration)",
+    "version": "2026.09.1",
+    "settings": "legacy stereo; SmilesParserParams.removeHs=False; selected atom InvertChirality; selected double Bond.SetStereo E/Z swap; clear and regenerate neighbor directions; compare InChI of drawn representatives"
+  },
+  "expected": {
+    "rule": "mask bit k simultaneously flips all atoms and bonds of relative group k; ABS and ungrouped/unspecified atoms fixed; preserve metadata and every mask including duplicates",
+    "coordinate_scope": "no coordinates or 3D feasibility",
+    "comparison_tolerance": 0,
+    "sha256_encoding": "canonical UTF-8 JSON cases with sorted keys and compact separators"
+  },
+  "sha256": "4b85bdcd2244f260c58a8356e560ee241de5eb43fee089b824d04bc82208eaea",
+  "cases": [
+    {
+      "id": "two-correlated-mixed-groups",
+      "smiles": "C/C=C/[C@H](F)C[C@@H](Cl)/C=C/Br",
+      "groups": [
+        [
+          "and",
+          1,
+          [
+            3
+          ],
+          [
+            1
+          ]
+        ],
+        [
+          "or",
+          2,
+          [
+            6
+          ],
+          [
+            8
+          ]
+        ]
+      ]
+    },
+    {
+      "id": "conjugated-independent-bond-groups",
+      "smiles": "C/C=C/C=C/C",
+      "groups": [
+        [
+          "and",
+          1,
+          [],
+          [
+            1
+          ]
+        ],
+        [
+          "or",
+          2,
+          [],
+          [
+            3
+          ]
+        ]
+      ]
+    },
+    {
+      "id": "atom-groups-with-absolute-center",
+      "smiles": "F[C@](Cl)(Br)I.N[C@H](F)[C@@H](Cl)Br",
+      "groups": [
+        [
+          "abs",
+          0,
+          [
+            1
+          ],
+          []
+        ],
+        [
+          "or",
+          2,
+          [
+            6
+          ],
+          []
+        ],
+        [
+          "and",
+          3,
+          [
+            8
+          ],
+          []
+        ]
+      ]
+    },
+    {
+      "id": "explicit-hydrogen-mixed-group",
+      "smiles": "[H][C@](F)(Cl)/C=C/Br",
+      "groups": [
+        [
+          "and",
+          1,
+          [
+            1
+          ],
+          [
+            4
+          ]
+        ]
+      ]
+    },
+    {
+      "id": "symmetric-diol-full-alternative",
+      "smiles": "C[C@H](O)[C@H](O)C",
+      "groups": [
+        [
+          "and",
+          1,
+          [
+            1,
+            3
+          ],
+          []
+        ]
+      ]
+    },
+    {
+      "id": "three-independent-group-components",
+      "smiles": "C/C=C/[C@H](F)Cl.N[C@H](Br)I.C/C=C/Cl",
+      "groups": [
+        [
+          "and",
+          1,
+          [
+            3
+          ],
+          [
+            1
+          ]
+        ],
+        [
+          "or",
+          2,
+          [
+            7
+          ],
+          []
+        ],
+        [
+          "and",
+          3,
+          [],
+          [
+            9
+          ]
+        ]
+      ]
+    }
+  ]
+}

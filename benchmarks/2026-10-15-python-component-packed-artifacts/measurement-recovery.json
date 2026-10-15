@@ -1,0 +1,9 @@
+{
+  "reason": "Transient ENOSPC writing block checkpoint; original logs and incomplete matrix retained. No result-based sample replacement.",
+  "saved_blocks": 16,
+  "remaining_blocks": 4,
+  "protocol": "Built-in --resume revalidates wheel/source/input/protocol identity and every saved output hash with untimed fresh workers before adding the next rotating blocks. No existing sample discarded or pooled with another candidate.",
+  "source_and_wheels_unchanged": true,
+  "completed_nci_matrix_unchanged_sha256": "8b985faac3e41f249cbfdc8df8c0c116ffa605a0d554a5ba4a5785ba6838a7b4",
+  "unpersisted_observation": "The four-arm observation for attempted block17 completed in memory but checkpoint open failed. Its timings could not be recovered. Resume recollects that rotating block and continues through block20. All 16 successfully saved original blocks remain unchanged; the unavailable observation is not represented as retained."
+}

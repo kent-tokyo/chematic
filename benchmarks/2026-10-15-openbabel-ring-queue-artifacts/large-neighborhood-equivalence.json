@@ -1,0 +1,12 @@
+{
+  "all_64_source_snapshots_and_rewrites_byte_identical": true,
+  "all_64_original_graphs_names_and_exact_coordinates_preserved": true,
+  "sha256": {
+    "baseline.molblocks": "4d0c176fb47cf96b12a9cfcd8592d9e23edb1d9627bbdd5da2f4fdd82e1bbd70",
+    "candidate.snapshot": "4d38c489138c45d90de62edb42b8e29c0e4bb12bbf028460175d7699ec6c8854",
+    "baseline.snapshot": "4d38c489138c45d90de62edb42b8e29c0e4bb12bbf028460175d7699ec6c8854",
+    "candidate.molblocks": "4d0c176fb47cf96b12a9cfcd8592d9e23edb1d9627bbdd5da2f4fdd82e1bbd70"
+  },
+  "corpus_manifest_sha256": "f0e619952ddfa34acc1311e3227b7b05162cd227d822f17a4b54d4ca856aa23b",
+  "post_hoc_exploratory_not_openbabel_comparison": true
+}

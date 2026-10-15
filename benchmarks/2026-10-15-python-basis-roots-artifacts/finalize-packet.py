@@ -1,0 +1,11 @@
+from pathlib import Path
+import json,hashlib,shutil,importlib.util
+r=Path('/private/tmp/chematic-basis-roots-20261015');s=Path('/private/tmp/chematic-basis-roots-source-20261015');d=r/'delivery';a=d/'benchmarks/2026-10-15-python-basis-roots-artifacts';sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest();m=json.loads((r/'source-manifest.json').read_text());adopt=json.loads((r/'decision.json').read_text())['adopt_source']
+for name in ['package.py','deliver.py','package.log','finalize-packet.py']:shutil.copyfile(r/name,a/name)
+assert all(sha(s/n)==h for n,h in m['candidate_sha256'].items())
+if adopt:
+ for n in m['changed_documentation_files']+m['changed_production_files']+m['added_test_files']:assert sha(d/n)==m['candidate_sha256'][n]
+index={p.relative_to(a).as_posix():sha(p) for p in sorted(a.rglob('*')) if p.is_file() and p.name!='artifact-sha256.json'};(a/'artifact-sha256.json').write_text(json.dumps(index,indent=2)+'\n');assert all(sha(a/n)==h for n,h in index.items())
+outer={p.relative_to(d).as_posix():sha(p) for p in sorted(d.rglob('*')) if p.is_file()};(r/'delivery-sha256.json').write_text(json.dumps(outer,indent=2)+'\n');assert all(sha(d/n)==h for n,h in outer.items())
+spec=importlib.util.spec_from_file_location('names',s/'scripts/check_product_names.py');module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);assert not module.scan_paths(d,[d/'benchmarks/2026-10-15-python-basis-roots.md',a/'README.md']+([d/'CHANGELOG.md'] if adopt else []))
+print('Final packet verified:',len(index),'non-self-indexed artifacts;',len(outer),'delivery files; measured source exact; adopted=',adopt)

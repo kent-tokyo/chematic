@@ -1,0 +1,44 @@
+{
+  "declared_utc": "2026-10-15T10:58:59.865930+00:00",
+  "declared_before_generation_and_timing": true,
+  "selection_context": "Additional exploratory diagnostic after observing gains in the two fixed initial slices. It never replaces or pools with the original matrices, and is not an Open Babel comparison.",
+  "purpose": "Check whole parse/write workflows on valid branched graphs that force the production size-8 ring search beyond the 32-atom inline boundary.",
+  "recipe": {
+    "records": 64,
+    "depths": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ],
+    "variants": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "graph": "One central C=C; each endpoint has two single-bonded identical balanced binary carbon subtrees of the declared depth. Every atom obeys ordinary carbon valence.",
+    "atoms_formula": "2 + 4*(2**depth - 1)",
+    "permutation": "Rotate atom indices by variant*n//8; reverse the rotated order for odd variants. Retain every record, including equivalent permutations.",
+    "coordinates": "x=index/2; y=(index%7)/4; z=0, in angstrom; 2D conformer",
+    "producer": "Pinned existing RDKit 2026.09.1; MolToMolBlock(forceV3000=True); no input filtering."
+  },
+  "blocks": 21,
+  "repeats": 5,
+  "modes": [
+    "parse",
+    "write",
+    "roundtrip"
+  ],
+  "order": "Alternating baseline13/candidate14 native fresh processes; unchanged source-only diagnostic timer/bootstrap functions.",
+  "gates": "Every generated molecule sanitizes in RDKit; both source arms have byte-identical native snapshots and rewrites; RDKit accepts every source canonical graph and rewrite, preserving the generated graph and name. Any failure blocks speed ranking for this diagnostic; no record is removed.",
+  "adoption": "Retain every outcome. A newly observed clear regression is an additional limitation and must be evaluated against the fixed-workload gains, never hidden. No recursive retesting or pooling."
+}

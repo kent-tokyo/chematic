@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "checked_at": "2026-10-15T14:32:39.909664+00:00",
+  "scope": "Original synthetic aromatic HIN to MDL bond-type preservation; no general chemistry or speed claim",
+  "issue": {
+    "url": "https://github.com/openbabel/openbabel/issues/3000",
+    "state_checked": "open"
+  },
+  "candidate": {
+    "base_commit": "235df7a14ea2d11724ccf329fef6675f67a76423",
+    "source_candidate": true,
+    "published_artifact": false,
+    "source_sha256": {
+      "crates/chematic-mol/src/hin.rs": "b949dd0db3a5ac1e0e0eb3407c1217434f5c70026b06583379e8d6eb21805d4d",
+      "crates/chematic-mol/src/hin/reader.rs": "689559dac95ff7577ed5d3dd0c0cc09cc8ced0f84a06efc4bce70cdad21520ec",
+      "crates/chematic-mol/src/hin/json.rs": "8809fb5d2ac44e947bc879b6e9c3d9d28afa7d9df7263b5547da7b39181b64b9",
+      "crates/chematic-py/src/formats/hin.rs": "b8c361d92261d6494086f4398ea08fc179a760ffa471335b61cd609e9bc54cb6",
+      "crates/chematic-wasm/src/hin.rs": "c307dc3436ca4247e5c4caced9b6b919958cfb2c53f02a9d6b086e7aa0eb90bf"
+    },
+    "extension_sha256": "610fe4cc72596c394178eeaab4a92aa6d2f2e634f84117d1be9d0a48672e1a21",
+    "mdl_bond_types": [
+      4,
+      4,
+      4,
+      4,
+      4,
+      4
+    ],
+    "exact_source_retention": true
+  },
+  "oracle": {
+    "command": [
+      "/opt/homebrew/bin/obabel",
+      "-ihin",
+      "-",
+      "-osdf"
+    ],
+    "version": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+    "binary_sha256": "733b2c925d60b17a5c9d8ce9ec841e918cc20c7634301e23f9008a187d1d9bc5",
+    "exit_code": 0,
+    "mdl_bond_types": [
+      5,
+      5,
+      5,
+      5,
+      5,
+      5
+    ],
+    "reported_defect_reproduced": true
+  },
+  "fixture": {
+    "path": "validation/openbabel_issues/hin/aromatic-ring.hin",
+    "sha256": "31709a793f25d851e97d2e72035bfa6696a41d80f708f1a8587323d63845c210",
+    "license": "MIT OR Apache-2.0"
+  },
+  "artifact_sha256": {
+    "openbabel.sdf": "d89cfdb60bde5679e80ee34ac1b442af342634cf8a7337657d78692433799b60",
+    "openbabel.stderr.txt": "d62a9897953e0ca42ee2240c501d3cd421fbeb8d1e0231b81a468b3b9401abff",
+    "chematic.mol": "6f1d19c37511815bc8dd8f92bf10c61c7b03a554b2d0d09ccfd3f96fc4c3b44a",
+    "chematic-record.json": "663fcd9db1d3857668cd458442705089d93561008bf43e6b71802fce6296224b",
+    "wasm-record.json": "663fcd9db1d3857668cd458442705089d93561008bf43e6b71802fce6296224b"
+  },
+  "local_validation": {
+    "rust": {
+      "unit_passed": 769,
+      "hin_contract_passed": 11,
+      "failed": 0,
+      "log_sha256": "3a887abd286dc83d617e2947cfe6abab1f078c0d117d2c53c2a49cbf362d2393"
+    },
+    "python": {
+      "passed": 56,
+      "hin_passed": 16,
+      "failed": 0,
+      "version": "3.13.6",
+      "log_sha256": "1352a60bedcaa2c213d93e0bce4386465eb28d7b9386b57efd7b99e4911aad87"
+    },
+    "wasm": {
+      "hin_node_contract": "passed",
+      "normalized_python_wasm_record_parity": true,
+      "module_sha256": "e3f123ba5d033865ea15ea9407e028b3f61d0b5b4d477bdfdfe45edca5153e4e",
+      "wasm_bindgen": "0.2.129"
+    },
+    "environment": "Two build attempts encountered disk exhaustion; unused task-owned caches were removed and all listed checks rerun",
+    "checks": {
+      "rustfmt": "passed",
+      "clippy_hin_contract": "passed",
+      "clippy_mol_python_wasm_libraries": "passed",
+      "strict_mkdocs": "passed",
+      "refactor_budget": "passed without increasing allowances",
+      "binding_inventory": {
+        "python_declared": 181,
+        "python_registered": 181,
+        "wasm_exports": 305
+      },
+      "diff_whitespace": "passed"
+    }
+  }
+}

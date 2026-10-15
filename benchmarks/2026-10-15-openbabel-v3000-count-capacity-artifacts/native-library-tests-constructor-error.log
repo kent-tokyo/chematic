@@ -1,0 +1,19 @@
+   Compiling chematic-mol v1.1.4 (/private/tmp/chematic-openbabel-count-capacity-source-20261015/crates/chematic-mol)
+error[E0061]: this function takes 1 argument but 0 arguments were supplied
+   --> crates/chematic-mol/src/mol3000/token_buffer_tests.rs:8:22
+    |
+  8 |     let mut parser = V3000Parser::new();
+    |                      ^^^^^^^^^^^^^^^^-- argument #1 of type `usize` is missing
+    |
+note: associated function defined here
+   --> crates/chematic-mol/src/mol3000.rs:569:8
+    |
+569 |     fn new(allocation_limit: usize) -> Self {
+    |        ^^^ -----------------------
+help: provide the argument
+    |
+  8 |     let mut parser = V3000Parser::new(/* usize */);
+    |                                       +++++++++++
+
+For more information about this error, try `rustc --explain E0061`.
+error: could not compile `chematic-mol` (lib test) due to 1 previous error

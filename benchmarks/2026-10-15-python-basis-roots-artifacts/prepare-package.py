@@ -1,0 +1,48 @@
+from pathlib import Path
+r=Path('/private/tmp/chematic-basis-roots-20261015');old=Path('/private/tmp/chematic-component-packed-20261015/package.py').read_text();p=old[:old.index("lines=['# Python")]
+p=p.replace('component-packed','basis-roots').replace('crates/chematic-perception/src/rdkit_parity/view.rs','crates/chematic-perception/src/sssr/basis.rs').replace('baseline-view.rs','baseline-basis.rs')
+p+='''
+lines=['# Python selected-component roots — 2026-10-15','',
+('The production change is adopted in the attached source candidate.' if adopt else 'The production experiment is rejected for adoption; only its report and evidence are delivered.')+' This is unmerged source-version 1.1.4 evidence, without current-main verification or hosted CI. Complete superiority over RDKit or COSMolKit is not established.','',
+'Decision: '+decision['reason'],'',
+'## Change and correctness','',
+'The candidate reuses the final roots from the existing ordered union pass. It counts non-root atoms and each final root once, then counts selected edges by direct root lookup. This removes a temporary ring-atom flag allocation and avoids repeating root searches for every selected edge. Singleton selected self-edges retain their existing counting behavior. Root labels, selected-edge membership, component iteration order, cycle candidate generation, rank/tie selection and arithmetic are unchanged. The ordered and single-cycle fast paths are unchanged. No public API, dependency or unsafe code is added.','',
+'The immediate baseline includes all twelve previously accepted source candidates, including packed private component facts and direct V3000 integer output. Rejected prototypes are excluded. Both current wheels were built freshly; the baseline was built before edits and all 10,059 baseline source/input hashes were checked. No previous wheel or timing was reused.','',
+'A frozen copy of the entire original component-basis function checks exact selected ring sequences and order on 14,072 pinned inputs. Three whole-component masks (all, even component labels, odd component labels), both rank settings and cold/repeated calls give 168,864 differential comparisons. Independent baseline/candidate processes additionally produce byte-identical full descriptor and Morgan dumps: 112,576 descriptor outcomes including exact floating bits and 56,288 Morgan outputs, with zero parse/evaluation errors. Existing licensed input corpora are reused; no new molecular records were added.','',
+f"Scoped release Rust tests: {native['passed']:,} passed, {native['failed']} failed, {native['ignored']} existing ignored. Python: 1,389 passed, one skipped. Release all-target Clippy for chemistry/perception, formatting and the unchanged refactor budget (487 production files, 8,063 functions, 18 file allowances, 88 function allowances) passed. Full logs are retained. Builds and CPU sampling completed before formal timing; only owned completed build targets were removed.",'',
+'Fresh baseline CPU samples are retained in sample-*.txt and getter-profile-review.json. Counts are filtered to the descriptor getter ancestry; inclusive function counts overlap and are not additive. Sampling identifies a plausible target, not a predicted speedup.','',
+'## Protocol','',
+'Pinned environment: CPython 3.13.6, RDKit 2026.09.1, COSMolKit 0.5.0-rc.22, Rust 1.97.0, maturin 1.13.3, macOS arm64. Two fixed unfiltered 1,000-input slices, offsets 5,000 then 0, use 20 rotating fresh-process four-arm blocks, seven operations and all three preparation modes. This is one exposed development corpus on one host, without a sealed holdout or toolkit-wide claim.','',
+'Ratios are reference elapsed / candidate elapsed; greater than 1 is faster. Brackets are paired median-ratio 95% bootstrap intervals. A strict win requires semantic agreement, CI lower > 1 and all 20 blocks faster. Output mismatches suppress ranking; all observations and failures are retained. Whole-process RSS includes imports and preparation.','',
+'First-use prepares fresh parsed objects outside timing and can compare different eager/lazy preparation. Repeated-use warms the operation once on each object; parse-inclusive times fresh parsing and evaluation. Return objects are retained during timing; normalization and semantic checks occur outside timing. Every block validates output determinism and wheel/extension identity.','',
+'An external checkpoint wrapper leaves frozen benchmark workers, timers, output checks and selection policy unchanged. It reserves 16 MiB of owned storage and on ENOSPC releases that reserve and retries writing the same computed checkpoint for at most 60 seconds. It never removes or remeasures a performance observation. Wrapper logs retain any such event.','',
+'Initial comparator strict wins: '+', '.join(f"{mode}: {v['strict_wins']}/{v['eligible']}" for mode,v in counts.items())+'. COSMolKit has six unequal ring counts at offset 0; the corresponding modes remain unranked. Every remaining deficit is shown below.','']
+for offset,j in raw.items():lines += [f'## Initial matrix: offset {offset}','',table(j),'']
+lines += ['## Adaptive observations','',
+'The plan was saved before timing: an initial source-relative CI upper < 1 selects its entire operation for one separate 20-block follow-up in all modes. Initial and follow-up observations remain separate, without pooling or recursive retries. All new follow-up negatives remain recorded.','', '```json',json.dumps(selection,indent=2),'```','']
+for offset,j in focused.items():lines += [f'### Separate follow-up: offset {offset}','',table(j),'']
+lines += ['## Reproduction and status','',
+'[The evidence packet](2026-10-15-python-basis-roots-artifacts/README.md) contains both measured wheels, every initial/adaptive matrix, compressed exact output dumps, build/test and profile logs, original implementation, exact patch, and all frozen source/input files. Archive readback checks all '+str(len(observed))+' candidate hashes; baseline overrides and removal of the added test reconstruct all '+str(len(reconstructed))+' baseline hashes. The patch independently reconstructs changed files in a tiny Git repository. Hashes demonstrate source reconstruction, not bit-reproducibility of rebuilt wheels.','',
+'Last verified Git base: `cac480fb23cd8adeec6e5e9bed1f18677f87b392`. Shared Git metadata was not refreshed; this is not merged, published or hosted-CI-validated. Prior unresolved regressions against older source candidates, including V3000 reading and Morgan/MACCS observations, are not resolved by an immediate-baseline comparison. OpenBabel format lanes are outside this descriptor experiment. Separate-run win counts do not establish attributable algorithm gains.','']
+report=d/'benchmarks/2026-10-15-python-basis-roots.md';report.write_text('\\n'.join(lines))
+(a/'README.md').write_text("""# Selected-component roots evidence
+
+Read decision.json, measurement-plan.json, source-manifest.json, both frontier matrices and adaptive-selection.json. Any focused matrices are separate follow-ups. All blocks, modes, gates and hashes are retained.
+
+Extract candidate-build-source.tar.gz to obtain source/. Replace paths with baseline-overrides/ and remove the added test listed in the manifest to reconstruct the immediate baseline. Source-reconstruction.json checks every hash. Read the adoption decision before using an archived experiment.
+
+The wheel directories contain exact measured binaries. Install separately with Python 3.13 and pip install --no-deps --target <directory> <wheel>. Comparator dependencies are pinned in comparator-environment.txt. Build with recorded release LTO, extension-module/native-inchi features, Rust and maturin versions.
+
+Run the extracted scripts/bench_python_speed_frontier.py using --corpus source/validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi --offset 5000 --limit 1000 --blocks 20, and supply baseline/candidate wheel and installation paths, source manifest, base revision and output path. Repeat at offset 0. run-frontiers.py and run-followups.py record exact host commands and selection policy; paths need adaptation on another host. Gzipped exact dumps match manifest hashes. artifact-sha256.json indexes all other packet files.
+""")
+spec=importlib.util.spec_from_file_location('names',s/'scripts/check_product_names.py');module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+assert not module.scan_paths(d,[report,a/'README.md']+([d/'CHANGELOG.md'] if adopt else []))
+index={p.relative_to(a).as_posix():sha(p) for p in sorted(a.rglob('*')) if p.is_file() and p.name!='artifact-sha256.json'};(a/'artifact-sha256.json').write_text(json.dumps(index,indent=2)+'\\n')
+(r/'delivery-sha256.json').write_text(json.dumps({p.relative_to(d).as_posix():sha(p) for p in sorted(d.rglob('*')) if p.is_file()},indent=2)+'\\n')
+print('Packaged',len(index),'artifacts; adopted=',adopt,'validation=',native,'strict_wins=',counts)
+'''
+(r/'package.py').write_text(p)
+p=Path('/private/tmp/chematic-component-packed-20261015/deliver.py').read_text().replace('component-packed','basis-roots').replace('import json,hashlib,shutil,os','import json,hashlib,shutil,os,ctypes')
+insert=Path('/private/tmp/chematic-openbabel-integer-20261015/deliver.py').read_text();insert=insert[insert.index("lib=ctypes"):insert.index("for n,h in m['baseline_source_files_sha256']")]
+p=p.replace("for n,h in m['baseline_source']['sha256'].items():",insert+"for n,h in m['baseline_source']['sha256'].items():",1).replace('shutil.copyfile(src/n,tmp);','mode=(target if target.exists() else src/n).stat().st_mode & 0o777;copy_guarded(src/n,tmp);tmp.chmod(mode);')
+(r/'deliver.py').write_text(p)

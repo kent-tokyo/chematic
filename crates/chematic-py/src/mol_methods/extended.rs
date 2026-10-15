@@ -167,12 +167,26 @@ impl Mol {
 
     /// Topological (graph) distance matrix — N×N shortest-path distances.
     ///
-    /// Returns a list of N lists of N integers (atom graph distances).
-    /// Equivalent to RDKit's ``rdmolops.GetDistanceMatrix(mol)``.
-    ///
-    /// Note: O(N²) memory — use with caution on large molecules (>200 atoms).
-    fn topological_distance_matrix(&self) -> Vec<Vec<u32>> {
-        chematic_chem::topological_distance_matrix(&self.inner)
+    /// Uses the native non-hydrogen subgraph in original atom order. Disconnected
+    /// entries are ``4294967295``. All input atoms (including H) count towards
+    /// the hard 1024-atom cap; all bonds count towards the 16384-bond cap.
+    /// Keyword budgets can only tighten the hard caps. Limit/allocation failures
+    /// raise ValueError, without returning a partial matrix.
+    #[pyo3(signature = (*, max_atoms=None, max_bonds=None, max_entries=None))]
+    fn topological_distance_matrix(
+        &self,
+        max_atoms: Option<usize>,
+        max_bonds: Option<usize>,
+        max_entries: Option<usize>,
+    ) -> PyResult<Vec<Vec<u32>>> {
+        let defaults = chematic_chem::NativeDistanceMatrixLimits::default();
+        let limits = chematic_chem::NativeDistanceMatrixLimits {
+            max_atoms: max_atoms.unwrap_or(defaults.max_atoms),
+            max_bonds: max_bonds.unwrap_or(defaults.max_bonds),
+            max_entries: max_entries.unwrap_or(defaults.max_entries),
+        };
+        chematic_chem::try_topological_distance_matrix_with_limits(&self.inner, &limits)
+            .map_err(|error| pyo3::exceptions::PyValueError::new_err(error.to_string()))
     }
 
     // -----------------------------------------------------------------------

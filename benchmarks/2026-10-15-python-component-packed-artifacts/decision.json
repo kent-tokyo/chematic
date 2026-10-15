@@ -1,0 +1,8 @@
+{
+  "adopt_source": true,
+  "reason": "Adopt the contiguous private ComponentInfo allocation as a modest source-candidate improvement. ChEMBL first-use TPSA 1.019x [1.012,1.032] and ASA 1.018x [1.013,1.028]; uninterrupted NCI TPSA 1.010x [1.006,1.017] and ASA 1.011x [1.004,1.016]. Each cold lane wins 17/20, so none is labeled a strict cold win. NCI parse-inclusive TPSA 1.026x (19/20), ASA 1.029x (19/20), ring count 1.048x [1.039,1.056] (20/20, strict). No initial source-relative CI is wholly below 1, so the predeclared adaptive policy selects no operation. Cold gains are small and interpretation is limited by the documented ChEMBL ENOSPC checkpoint interruption; all 16 saved original blocks remain unchanged, the unavailable block is disclosed, and only missing checkpoint blocks are recollected. Exact 14,072-input parity, 1,220 native tests, 1,389 Python tests, formatting, Clippy and unchanged refactor budget pass. Three allocations become one with the same n+2c u32 payload. This does not establish complete superiority: NCI first-use ASA reference/candidate ratios are RDKit 0.206x and COSMolKit 0.086x; eager/lazy preparation differs. Prior unresolved regressions against older candidates are unchanged. Both rejected predecessor experiments remain excluded.",
+  "merged": false,
+  "published": false,
+  "adopted_in": "attached managed worktree source candidate only",
+  "cold_strict_win": false
+}

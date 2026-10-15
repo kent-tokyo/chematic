@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "records": [
+    {
+      "id": "ob2481-basic",
+      "file": "basic.pdb",
+      "provenance": "Original synthetic six-atom source authored 2026-10-15 from wwPDB 3.3 fixed columns; issue https://github.com/openbabel/openbabel/issues/2481 consulted for workflow only; no original attachment/code copied",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "Two incomplete two-atom residue fragments and a two-atom ligand isolate identity mutation without third-party structure data",
+      "oracle": "Exact retained source atom/ANISOU lines; Open Babel 3.2.1 public OBMol.DeleteAtom and GetResidue API control; RDKit 2026.09.1 PDB read sanitize=False, removeHs=False, proximityBonding=False",
+      "expected": {
+        "status": "retain selected original ATOM/HETATM line contents and aliases; filter associated records",
+        "units": "Angstrom; zero-based source ATOM/HETATM indices",
+        "tolerance": 0,
+        "remove_ligand_keep_indices": [
+          0,
+          1,
+          2,
+          3
+        ]
+      },
+      "sha256": "adb776a9e54a6b278fa783c35bcdcd200a22a7639698f0515d95cee72aae0e09"
+    },
+    {
+      "id": "ob2481-rich",
+      "file": "rich.pdb",
+      "provenance": "Original synthetic six-atom source authored 2026-10-15 from wwPDB 3.3 fixed columns; issue https://github.com/openbabel/openbabel/issues/2481 consulted for workflow only; no original attachment/code copied",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "Two incomplete two-atom residue fragments and a two-atom ligand isolate identity mutation without third-party structure data",
+      "oracle": "Exact retained source atom/ANISOU lines; Open Babel 3.2.1 public OBMol.DeleteAtom and GetResidue API control; RDKit 2026.09.1 PDB read sanitize=False, removeHs=False, proximityBonding=False",
+      "expected": {
+        "status": "retain selected original ATOM/HETATM line contents and aliases; filter associated records",
+        "units": "Angstrom; zero-based source ATOM/HETATM indices",
+        "tolerance": 0,
+        "remove_ligand_keep_indices": [
+          0,
+          1,
+          2,
+          3
+        ]
+      },
+      "sha256": "13112bc8b62290185fd99dd0c09bf893213d6cd18b63ef300287b5c7a7e330b4"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "reused_exact_fresh_baseline14_wheel_from": "/private/tmp/chematic-parity-lazy-20261015",
+  "source_files_verified": 10061,
+  "wheel_sha256": "d770304cff22c772979d713bc787477ecc41cca1fc2282aaaabf65f08b4e5ce0",
+  "first_experiment_rejected": true,
+  "no_candidate_wheel_or_timing_reuse": true,
+  "baseline_built_before_either_experiment_edit": true
+}

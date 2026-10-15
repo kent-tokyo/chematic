@@ -1,0 +1,12 @@
+optimize.log passed
+format-new.log passed
+format.log passed
+refactor.log passed
+Traceback (most recent call last):
+  File "/private/tmp/chematic-openbabel-lines-20261015/validate.py", line 7, in <module>
+    with (r/name).open('w') as f:subprocess.run(cmd,cwd=s,env=env,stdout=f,stderr=subprocess.STDOUT,check=True)
+                                 ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/subprocess.py", line 577, in run
+    raise CalledProcessError(retcode, process.args,
+                             output=stdout, stderr=stderr)
+subprocess.CalledProcessError: Command '['cargo', 'test', '--release', '--locked', '-p', 'chematic-mol']' returned non-zero exit status 101.

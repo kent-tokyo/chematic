@@ -137,6 +137,51 @@ the RDKit build. This inventory is a copyright/license notice; it is not a
 patent or freedom-to-operate opinion. No patent clearance is claimed for any
 algorithm merely because its reference implementation is BSD-licensed.
 
+### RDKit ordered path enumeration extension
+
+`crates/chematic-smiles/src/rdkit/path_enumeration.rs` and its `search.rs`
+follow `findAllPathsOfLengthsMtoN`, `findAllPathsOfLengthN`,
+`pathFinderHelper` and `extendPaths` in RDKit `Release_2026_09_1`,
+`Code/GraphMol/Subgraphs/Subgraphs.cpp` (commit
+`fece8caa860bdf6c9c82bdb9253f22a0cf87150c`), under the BSD-3-Clause notice
+above. Copyright (C) 2003-2026 Greg Landrum and other RDKit contributors.
+The port retains ordered expansion, final ring closures, bond-set deduplication
+and shortest-mode hydrogen behavior. Unweighted BFS for distances, fallible
+storage, work/output limits and early impossible-length termination are
+chematic implementation choices.
+
+### RDKit atom environment extension
+
+`crates/chematic-smiles/src/rdkit/atom_environment.rs` follows
+`findAtomEnvironmentOfRadiusN` in RDKit `Release_2026_09_1`,
+`Code/GraphMol/Subgraphs/Subgraphs.cpp` (commit
+`fece8caa860bdf6c9c82bdb9253f22a0cf87150c`), under the BSD-3-Clause notice
+above. Copyright (C) 2003-2026 Greg Landrum and other RDKit contributors.
+The ordered pending-bond semantics are retained; bounded fallible frontiers
+and independent output maps are chematic API choices.
+
+### RDKit graph query extensions
+
+`crates/chematic-smiles/src/rdkit/graph_queries.rs` follows adjacency valence
+contributions and shortest-path neighbor ordering from RDKit
+`Release_2026_09_1`, `Code/GraphMol/Matrices.cpp`, under the BSD-3-Clause
+notice above. Copyright (C) 2003-2026 Greg Landrum and other RDKit contributors.
+Upstream Matrices.cpp copyright (C) 2003-2008 Greg Landrum and Rational Discovery LLC.
+The implementation reuses the existing sanitized model and checked matrix
+storage. Input caps, fallible allocation and refusing nonzero `emptyVal`
+are chematic API choices.
+
+### Configurable Layered fingerprint extensions
+
+The shared hashing and checked parameter/path-enumeration extensions in
+`crates/chematic-fp/src/rdkit_layered/` derive behavioral details from RDKit
+`Release_2026_09_1`, `Code/GraphMol/Fingerprints/Fingerprints.cpp` and
+`Code/GraphMol/Subgraphs/Subgraphs.cpp`. They retain the BSD-3-Clause notice
+above. Copyright (C) 2003-2026 Greg Landrum and other RDKit contributors.
+The Rust default hashing implementation was refactored without changing its
+existing fixed-profile contract. Bounded computation, checked unsupported
+branches and immutable counter results are chematic API choices.
+
 ## Avalon Cheminformatics Toolkit (Avalon fingerprint)
 
 `crates/chematic-fp/src/rdkit_avalon/` (`mod.rs`, `rings.rs`,
@@ -282,3 +327,26 @@ Exact paths, source rows, transformations, oracle settings, expected results,
 and normalized payload hashes are recorded in
 `validation/benchmark_corpora/chemistry-speed-followups-v1.manifest.json`.
 These data notices do not change the license of project implementation code.
+
+## HIN aromatic-bond fixture (2026-10-15)
+
+`validation/openbabel_issues/hin/aromatic-ring.hin` is original synthetic
+project input under MIT OR Apache-2.0. No Open Babel source code or issue
+attachment was copied. The issue and format documentation are referenced
+for the behavior and file syntax; the fixture manifest records provenance,
+expected MDL bond semantics and a SHA-256 digest.
+
+## wwPDB Chemical Component Dictionary validation data (2026-10-16)
+
+The parsed CCD records in
+`validation/results/openbabel-ccd-2026-10-16.json` derive from the official
+RCSB downloads of GLY, HOH, ALA, NA, CL, BEN, ATP and HEM. Their download URLs
+and exact input hashes are recorded there. Attribution: wwPDB / RCSB PDB
+Chemical Component Dictionary, https://www.wwpdb.org/data/ccd.
+
+PDB archive data are available under the CC0 1.0 Universal public-domain
+dedication: https://www.wwpdb.org/about/usage-policies.
+The original synthetic water fixture has separate MIT OR Apache-2.0 provenance
+in `validation/openbabel_issues/ccd/manifest.json`. No Open Babel or Gemmi
+implementation is included in this feature; Gemmi 0.7.5 is used only as an
+external validation oracle.

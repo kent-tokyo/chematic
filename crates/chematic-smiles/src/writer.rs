@@ -6,8 +6,8 @@
 use std::collections::{HashMap, HashSet};
 
 use chematic_core::{
-    AtomIdx, BondIdx, BondOrder, Chirality, Molecule, STEREO_H_SENTINEL, remap_square_planar_tag,
-    remap_tetrahedral_parity,
+    AtomIdx, BondIdx, BondOrder, Chirality, Molecule, STEREO_H_SENTINEL, STEREO_VACANT_SENTINEL,
+    remap_square_planar_tag, remap_tetrahedral_parity,
 };
 
 /// Write the `H`/`Hn` token for a bracket atom's hydrogen count.
@@ -215,6 +215,49 @@ pub(crate) fn square_planar_token(p: chematic_core::SquarePlanarPermutation) -> 
         SP2 => "@SP2",
         SP3 => "@SP3",
     }
+}
+
+/// Re-express a square-planar tag with one vacant ligand position. RDKit's
+/// three-neighbor SMILES convention puts the vacancy in its own slot; applying
+/// the four-neighbor table to only the three explicit neighbors changes the
+/// configuration. This table is the 18-case RDKit 2025.09.3 permutation oracle
+/// for three distinct ligands, indexed by the written order relative to the
+/// stored order. Refuse missing or duplicate ligand ids.
+pub(crate) fn remap_three_ligand_square_planar(
+    tag: chematic_core::SquarePlanarPermutation,
+    original: [u32; 3],
+    written: [u32; 3],
+) -> Option<chematic_core::SquarePlanarPermutation> {
+    use chematic_core::SquarePlanarPermutation::{SP1, SP2, SP3};
+    if original[0] == original[1] || original[0] == original[2] || original[1] == original[2] {
+        return None;
+    }
+    let mut permutation = [0usize; 3];
+    for (slot, ligand) in written.into_iter().enumerate() {
+        permutation[slot] = original.iter().position(|&id| id == ligand)?;
+    }
+    if permutation[0] == permutation[1]
+        || permutation[0] == permutation[2]
+        || permutation[1] == permutation[2]
+    {
+        return None;
+    }
+    let mapped = match permutation {
+        [0, 1, 2] => [SP1, SP2, SP3],
+        [0, 2, 1] => [SP3, SP2, SP1],
+        [1, 0, 2] => [SP1, SP3, SP2],
+        [1, 2, 0] => [SP3, SP1, SP2],
+        [2, 0, 1] => [SP2, SP3, SP1],
+        [2, 1, 0] => [SP2, SP1, SP3],
+        _ => unreachable!("validated three-element permutation"),
+    };
+    Some(
+        mapped[match tag {
+            SP1 => 0,
+            SP2 => 1,
+            SP3 => 2,
+        }],
+    )
 }
 
 /// A non-tetrahedral tag (other than numbered `@SP`) carried from the
@@ -533,7 +576,14 @@ impl<'a> SmilesWriter<'a> {
         if let Some(prev) = from_atom {
             written.push(prev.0);
         }
-        if chematic_core::implicit_hcount(self.mol, idx) > 0 {
+        if original.contains(&STEREO_VACANT_SENTINEL) {
+            written.push(STEREO_VACANT_SENTINEL);
+        }
+        // Three-coordinate sulfoxides use the H sentinel for the stereogenic
+        // lone pair, even though the atom has no implicit hydrogen.
+        if original.contains(&STEREO_H_SENTINEL)
+            || chematic_core::implicit_hcount(self.mol, idx) > 0
+        {
             written.push(STEREO_H_SENTINEL);
         }
         if let Some(rings) = self.atom_ring_nums.get(&idx) {
@@ -580,7 +630,15 @@ impl<'a> SmilesWriter<'a> {
                 (Some(o), Some(w)) => remap_square_planar_tag(tag, o, w)
                     .map(Chirality::SquarePlanar)
                     .unwrap_or(Chirality::None),
-                _ => Chirality::None,
+                _ => match (
+                    <[u32; 3]>::try_from(original).ok(),
+                    <[u32; 3]>::try_from(written.as_slice()).ok(),
+                ) {
+                    (Some(o), Some(w)) => remap_three_ligand_square_planar(tag, o, w)
+                        .map(Chirality::SquarePlanar)
+                        .unwrap_or(Chirality::None),
+                    _ => Chirality::None,
+                },
             },
             Chirality::None => Chirality::None,
             other => remap_nontetrahedral(other, original, &written),
@@ -690,6 +748,81 @@ fn permutation_is_odd(original: &[u32], written: &[u32]) -> bool {
 mod tests {
     use super::*;
 
+    #[test]
+    fn vacant_nontetrahedral_centers_match_pinned_rdkit_after_reordering() {
+        // RDKit 2025.09.3 canonical isomeric SMILES of the source structures.
+        // Include root and non-root centers, three geometries, and tags for
+        // which a reordered ligand list needs a different permutation number.
+        for (input, expected) in [
+            ("F[Pt@SP2](Cl)Br", "[F][Pt@SP2]([Cl])[Br]"),
+            ("F[P@TB1](Cl)(Br)I", "F[P@TB1](Cl)(Br)I"),
+            ("[P@TB19](F)(Cl)(Br)I", "F[P@TB16](Cl)(Br)I"),
+            ("I[P@TB20](Br)(Cl)F", "F[P@TB3](Cl)(Br)I"),
+            ("F[S@OH27](Cl)(Br)(I)N", "N[S@OH8](F)(Cl)(Br)I"),
+            ("[S@OH30](F)(Cl)(Br)(I)N", "N[S@OH9](F)(Cl)(Br)I"),
+            ("N[S@OH15](I)(Br)(Cl)F", "N[S@OH12](F)(Cl)(Br)I"),
+        ] {
+            let mol = crate::parse(input).unwrap();
+            assert_eq!(
+                crate::rdkit_canonical_smiles(&mol).unwrap(),
+                expected,
+                "{input}"
+            );
+            for written in [write(&mol), crate::canonical_smiles(&mol)] {
+                let read_back = crate::parse(&written).unwrap();
+                assert_eq!(
+                    crate::rdkit_canonical_smiles(&read_back).unwrap(),
+                    expected,
+                    "{input} -> {written}"
+                );
+            }
+            for seed in 1..=16 {
+                let written = crate::random_smiles(&mol, seed);
+                let read_back = crate::parse(&written).unwrap();
+                assert_eq!(
+                    crate::rdkit_canonical_smiles(&read_back).unwrap(),
+                    expected,
+                    "{input} -> {written} (seed {seed})"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn three_ligand_square_planar_tags_survive_canonical_reordering() {
+        // RDKit 2025.09.3 oracle: the canonical traversal starts at Cl and
+        // swaps F/Cl relative to the input, while the vacant site stays put.
+        for (input, expected) in [
+            ("F[Pt@SP1](Cl)Br", "Cl[Pt@SP1](F)Br"),
+            ("F[Pt@SP2](Cl)Br", "Cl[Pt@SP3](F)Br"),
+            ("F[Pt@SP3](Cl)Br", "Cl[Pt@SP2](F)Br"),
+        ] {
+            let output = crate::canonical_smiles(&crate::parse(input).unwrap());
+            assert_eq!(output, expected);
+            assert_eq!(
+                crate::canonical_smiles(&crate::parse(&output).unwrap()),
+                output
+            );
+        }
+    }
+
+    #[test]
+    fn three_ligand_square_planar_remap_requires_same_distinct_ligands() {
+        use chematic_core::SquarePlanarPermutation::SP1;
+        assert_eq!(
+            remap_three_ligand_square_planar(SP1, [1, 2, 3], [2, 1, 3]),
+            Some(SP1)
+        );
+        assert_eq!(
+            remap_three_ligand_square_planar(SP1, [1, 2, 3], [1, 2, 4]),
+            None
+        );
+        assert_eq!(
+            remap_three_ligand_square_planar(SP1, [1, 2, 3], [1, 1, 3]),
+            None
+        );
+    }
+
     /// `write` re-expresses a stored `@`/`@@` for the order it emits: a
     /// molecule whose recorded neighbour order differs from the DFS order
     /// (here: atoms renumbered, as reaction products are) keeps its
@@ -701,6 +834,11 @@ mod tests {
             "O[C@@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@H]1O",
             "F[C@]1(Cl)CCC1",
             "C[C@]12CC[C@H]3[C@@H](CC=C4C[C@@H](O)CC[C@]34C)[C@@H]1CC[C@@H]2O",
+            "F[Pt@SP2](Cl)Br",
+            "F[P@TB1](Cl)(Br)I",
+            "[P@TB19](F)(Cl)(Br)I",
+            "F[S@OH27](Cl)(Br)(I)N",
+            "[S@OH30](F)(Cl)(Br)(I)N",
         ] {
             let mol = crate::parse(input).unwrap();
             let want = crate::canonical_smiles(&mol);
@@ -709,7 +847,9 @@ mod tests {
             let mut b = chematic_core::MoleculeBuilder::new();
             for i in (0..n).rev() {
                 let mut atom = mol.atom(AtomIdx(i as u32)).clone();
-                atom.hydrogen_count = None;
+                if atom.chirality.nontetrahedral().is_none() {
+                    atom.hydrogen_count = None;
+                }
                 b.add_atom(atom);
             }
             let new = |i: u32| (n as u32 - 1) - i;
@@ -725,7 +865,13 @@ mod tests {
                 if let Some(order) = mol.stereo_neighbor_order(i) {
                     let order = order
                         .iter()
-                        .map(|&v| if v == STEREO_H_SENTINEL { v } else { new(v) })
+                        .map(|&v| {
+                            if matches!(v, STEREO_H_SENTINEL | STEREO_VACANT_SENTINEL) {
+                                v
+                            } else {
+                                new(v)
+                            }
+                        })
                         .collect();
                     b.set_stereo_neighbor_order(AtomIdx(new(i.0)), order);
                 }

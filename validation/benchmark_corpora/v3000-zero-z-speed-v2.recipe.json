@@ -1,0 +1,42 @@
+{
+  "cartesian": "All x/y/z lexeme combinations at all listed source lines",
+  "id": "v3000-zero-z-lexemes-v2",
+  "lexemes": [
+    "0",
+    "0.0000",
+    "0.000000",
+    "-0",
+    "-0.0000",
+    "+0.0000",
+    "0.0",
+    "0e0",
+    "0e999",
+    "0E-999",
+    ".0",
+    "-0e-999",
+    "1",
+    "-1",
+    "1e-300",
+    "1e300",
+    "0.0001",
+    "NaN",
+    "inf",
+    "-inf",
+    "1e999",
+    "",
+    "bad",
+    " 0",
+    "0 "
+  ],
+  "lines": [
+    0,
+    1,
+    42,
+    18446744073709551615
+  ],
+  "random_f64": {
+    "algorithm": "x ^= x << 13; x ^= x >> 7; x ^= x << 17; fixed u64 wrapping; reinterpret as f64, to_string for z",
+    "count": 10000,
+    "seed_hex": "5eed1234abcd9876"
+  }
+}

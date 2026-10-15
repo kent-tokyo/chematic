@@ -1,0 +1,49 @@
+{
+  "schema": "python-cycle-root-pruning-checks/v1",
+  "base_revision": "cac480fb23cd8adeec6e5e9bed1f18677f87b392",
+  "initial_environment_failure": "First intermediate Rust build ran out of disk space; the full retry and final checks passed.",
+  "checks": {
+    "final-native-tests": {
+      "passed": true,
+      "command": "cargo test --release -p chematic-perception --lib",
+      "log": "validation/results/python-cycle-root-pruning-final-native-tests-2026-10-14.log.gz",
+      "log_sha256_uncompressed": "36f22740712beb7ecf9464f1a13a34bf8941a4508a601ba5204a704460dac180",
+      "log_sha256_compressed": "1fbfc09596282ad75c63a8201ba5fc25159fe884cb80497456b169f11c2f9c17"
+    },
+    "final-python-tests": {
+      "passed": true,
+      "command": "PYTHONPATH=<candidate-install> python -m pytest crates/chematic-py/tests -q -p no:cacheprovider",
+      "log": "validation/results/python-cycle-root-pruning-final-python-tests-2026-10-14.log.gz",
+      "log_sha256_uncompressed": "74376b2263bfa183f63b8b297cddff876e09127b6a6fddff659b19da931e6cb7",
+      "log_sha256_compressed": "23e323e22818cf07b8af52728289c2380be71f9507e874a683b1663025654185"
+    },
+    "final-clippy": {
+      "passed": true,
+      "command": "cargo clippy --release -p chematic-perception --all-targets -- -D warnings",
+      "log": "validation/results/python-cycle-root-pruning-final-clippy-2026-10-14.log.gz",
+      "log_sha256_uncompressed": "2a4950970db1cf04e8165561c273d38499850b93c03b535254819a7f732c95a6",
+      "log_sha256_compressed": "b9dda5495c0948298c1ddf8b81538fdb06dc49be11380180238eed4a0c8e8763"
+    },
+    "final-format": {
+      "passed": true,
+      "command": "cargo fmt --all -- --check",
+      "log": "validation/results/python-cycle-root-pruning-final-format-2026-10-14.log.gz",
+      "log_sha256_uncompressed": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "log_sha256_compressed": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    "final-refactor": {
+      "passed": true,
+      "command": "python scripts/check_refactor_budget.py",
+      "log": "validation/results/python-cycle-root-pruning-final-refactor-2026-10-14.log.gz",
+      "log_sha256_uncompressed": "8beadda146d4ad260ea005b64dae8038f145d6d2638fbeae90ae0ef2eb42e382",
+      "log_sha256_compressed": "a75a70344a48b279c97c584003ba37047c67e795531ae96d93a933e06a7f760a"
+    },
+    "final-parity": {
+      "passed": true,
+      "command": "verify_python_descriptor_frontier.py and verify_python_morgan_frontier.py; exact byte comparison",
+      "log": "validation/results/python-cycle-root-pruning-final-parity-2026-10-14.log.gz",
+      "log_sha256_uncompressed": "01c63b69f8871289fe769fcaafca253bf79eaf5abc89afc5959a6a1aee47df07",
+      "log_sha256_compressed": "30bfdde78d7ef986763ec9def2bfd65c003f15e7d2f4b5d418f376f2800ecf8b"
+    }
+  }
+}

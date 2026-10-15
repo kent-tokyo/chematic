@@ -1,0 +1,60 @@
+carbon
+  chematic synthetic
+
+  1  0  0  0  0  0  0  0  0  0999 V2000
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+M  END
+>  <ID>
+carbon-id
+
+>  <note>
+line1
+line2
+
+$$$$
+broken
+not a MOL block
+$$$$
+oxygen
+  chematic synthetic
+
+  1  0  0  0  0  0  0  0  0  0999 V2000
+    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0
+M  END
+>  <ID>
+oxygen-id
+
+>  <note>
+line1
+line2
+
+$$$$
+nitrogen
+  chematic synthetic
+
+  1  0  0  0  0  0  0  0  0  0999 V2000
+    0.0000    0.0000    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0
+M  END
+>  <ID>
+nitrogen-id
+
+>  <note>
+line1
+line2
+
+$$$$
+fluorine
+  chematic synthetic
+
+  0  0  0     0  0            999 V3000
+M  V30 BEGIN CTAB
+M  V30 COUNTS 1 0 0 0 0
+M  V30 BEGIN ATOM
+M  V30 1 F 0 0 0 0
+M  V30 END ATOM
+M  V30 END CTAB
+M  END
+>  <ID>
+fluorine-id
+
+$$$$

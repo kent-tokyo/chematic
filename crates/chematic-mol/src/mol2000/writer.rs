@@ -118,11 +118,11 @@ pub(crate) fn push_fixed4(out: &mut String, x: f64, width: usize) {
     out.push_str(std::str::from_utf8(digits).expect("ASCII digits"));
 }
 
-pub(super) fn push_right_aligned_u32(out: &mut String, mut value: u32, width: usize) {
-    // V2000 counts and bond fields are almost always three columns wide.
+pub(crate) fn push_right_aligned_u32(out: &mut String, mut value: u32, width: usize) {
+    // V2000 fields use three columns; V3000 ids use the same digits unpadded.
     // Append the entire field in one operation, retaining the general path
     // for widths/values outside the fixed-width format.
-    if width == 3 && value < 1000 {
+    if matches!(width, 0 | 3) && value < 1000 {
         static FIELDS: [[u8; 3]; 1000] = {
             let mut fields = [[b' '; 3]; 1000];
             let mut n = 0;
@@ -151,7 +151,19 @@ pub(super) fn push_right_aligned_u32(out: &mut String, mut value: u32, width: us
             }
             text
         };
-        out.push_str(TEXT[value as usize]);
+        let field = TEXT[value as usize];
+        if width == 0 {
+            let start = if value < 10 {
+                2
+            } else if value < 100 {
+                1
+            } else {
+                0
+            };
+            out.push_str(&field[start..]);
+        } else {
+            out.push_str(field);
+        }
         return;
     }
     let mut digits = [0_u8; 10];

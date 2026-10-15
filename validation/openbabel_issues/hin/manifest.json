@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "issue": "https://github.com/openbabel/openbabel/issues/3000",
+  "issue_state_checked_on": "2026-10-15",
+  "issue_state": "open",
+  "fixture": "aromatic-ring.hin",
+  "sha256": "31709a793f25d851e97d2e72035bfa6696a41d80f708f1a8587323d63845c210",
+  "provenance": "Original synthetic six-carbon aromatic ring with sequential source IDs for the paired reproduction; nonsequential IDs are separate local stress tests. No upstream issue attachment or third-party molecule data copied",
+  "license": "MIT OR Apache-2.0",
+  "expected": {
+    "atom_count": 6,
+    "bond_count": 6,
+    "hin_bond_type": "a",
+    "mdl_v2000_bond_type": 4,
+    "partial_charges_are_not_formal_charges": true
+  },
+  "scope": "Syntactic HIN connectivity and source fields; no force-field or stereo interpretation"
+}

@@ -1,6 +1,9 @@
 //! `MolOps::getDistanceMat` and `MolOps::get3DDistanceMat` (RDKit
 //! 2026.03.1 `Matrices.cpp`).
 
+mod checked_3d;
+pub use checked_3d::rdkit_distance_matrix_3d_checked;
+
 use super::{RdkitSmilesError, mol::Mol};
 use chematic_core::Molecule;
 
@@ -23,7 +26,7 @@ pub(super) fn checked_len(n: usize) -> Result<usize, RdkitSmilesError> {
     Ok(entries)
 }
 
-fn filled(len: usize, value: f64) -> Result<Vec<f64>, RdkitSmilesError> {
+pub(super) fn filled(len: usize, value: f64) -> Result<Vec<f64>, RdkitSmilesError> {
     let mut values = Vec::new();
     values.try_reserve_exact(len).map_err(|err| {
         RdkitSmilesError::Unsupported(format!("distance matrix allocation failed: {err}"))
