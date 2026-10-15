@@ -1,0 +1,16 @@
+{
+  "initial_profiles": [
+    "0",
+    "5000",
+    "chains"
+  ],
+  "initial_blocks_per_profile": 21,
+  "continued_blocks": 21,
+  "adaptive_profiles": [],
+  "all_complete": true,
+  "checkpoint_interruptions": 0,
+  "reserve_release_events": [],
+  "no_lost_or_recollected_blocks": true,
+  "no_timing_reuse_or_pooling": true,
+  "source_snapshots_and_rewrites_all_equal": true
+}

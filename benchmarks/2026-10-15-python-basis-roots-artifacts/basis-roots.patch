@@ -1,0 +1,225 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -11,6 +11,10 @@
+ ## [Unreleased]
+ 
+ ### Performance
++
++- Reuse final union-find roots while counting selected cyclic components,
++  avoiding repeated edge-root searches and a temporary ring-atom flag buffer
++  without changing the selected ring sequences or canonical tie-breaking.
+ 
+ - Reuse the decimal field table for unpadded V3000 2D atom and bond ids,
+   appending bond-type digits directly while preserving exact output bytes.
+diff --git a/crates/chematic-perception/src/sssr/basis.rs b/crates/chematic-perception/src/sssr/basis.rs
+--- a/crates/chematic-perception/src/sssr/basis.rs
++++ b/crates/chematic-perception/src/sssr/basis.rs
+@@ -380,20 +380,31 @@
+     // the selected set does not depend on the other components' candidates.
+     let mut edges = vec![0u32; n];
+     let mut atoms = vec![0u32; n];
+-    let mut is_ring_atom = vec![false; n];
++    let mut root_of = vec![u32::MAX; n];
++    // Every non-root participated in a selected cyclic edge. Its final root
++    // is unchanged by path compression; count each non-root and its root once.
++    for a in 0..n {
++        if parent[a] == a as u32 {
++            continue;
++        }
++        let root = find(&mut parent, a as u32) as usize;
++        root_of[a] = root as u32;
++        atoms[root] += 1;
++        if root_of[root] == u32::MAX {
++            root_of[root] = root as u32;
++            atoms[root] += 1;
++        }
++    }
+     for (bidx, b) in mol.bonds() {
+         if cyclic[bidx.0 as usize] && keep[b.atom1.0 as usize] {
+-            edges[find(&mut parent, b.atom1.0) as usize] += 1;
+-            is_ring_atom[b.atom1.0 as usize] = true;
+-            is_ring_atom[b.atom2.0 as usize] = true;
+-        }
+-    }
+-    let mut root_of = vec![u32::MAX; n];
+-    for a in 0..n {
+-        if is_ring_atom[a] {
+-            let root = find(&mut parent, a as u32);
+-            root_of[a] = root;
+-            atoms[root as usize] += 1;
++            let a = b.atom1.0 as usize;
++            // A selected singleton self-edge has no non-root to mark its
++            // endpoint. Keep that existing builder/cache boundary as well.
++            if root_of[a] == u32::MAX {
++                root_of[a] = a as u32;
++                atoms[a] = 1;
++            }
++            edges[root_of[a] as usize] += 1;
+         }
+     }
+     let mut rings: Vec<Vec<AtomIdx>> = Vec::new();
+@@ -413,7 +424,7 @@
+     }
+     if r_rest > 0 {
+         let keep_rest: Vec<bool> = (0..n)
+-            .map(|a| is_ring_atom[a] && general[root_of[a] as usize])
++            .map(|a| root_of[a] != u32::MAX && general[root_of[a] as usize])
+             .collect();
+         let candidates = horton_candidates_fast(mol, Some(&keep_rest));
+         let rest = select_horton_basis(mol, &cyclic, candidates, r_rest, false, allow_ranks)?;
+@@ -755,3 +766,7 @@
+     }
+     components
+ }
++
++#[cfg(test)]
++#[path = "basis_roots_tests.rs"]
++mod basis_roots_tests;
+diff --git a/crates/chematic-perception/src/sssr/basis_roots_tests.rs b/crates/chematic-perception/src/sssr/basis_roots_tests.rs
+new file mode 100644
+--- /dev/null
++++ b/crates/chematic-perception/src/sssr/basis_roots_tests.rs
+@@ -0,0 +1,142 @@
++//! Frozen component-basis oracle; existing pinned 10k and stress corpora only.
++use super::*;
++
++fn reference_rings_in_components(
++    mol: &Molecule,
++    keep: &[bool],
++    order_needed: bool,
++    allow_ranks: bool,
++) -> Option<Vec<Vec<AtomIdx>>> {
++    let cyclic = ring_bond_flags_shared(mol);
++    // Cycle rank of the kept components: E - V + C over their cyclic bonds.
++    let n = mol.atom_count();
++    let mut parent: Vec<u32> = (0..n as u32).collect();
++    fn find(parent: &mut [u32], mut x: u32) -> u32 {
++        while parent[x as usize] != x {
++            let p = parent[x as usize];
++            parent[x as usize] = parent[p as usize];
++            x = p;
++        }
++        x
++    }
++    let mut r = 0usize;
++    for (bidx, b) in mol.bonds() {
++        if !cyclic[bidx.0 as usize] || !keep[b.atom1.0 as usize] {
++            continue;
++        }
++        let a = find(&mut parent, b.atom1.0);
++        let c = find(&mut parent, b.atom2.0);
++        if a == c {
++            r += 1;
++        } else {
++            parent[a as usize] = c;
++        }
++    }
++    if r == 0 {
++        return Some(Vec::new());
++    }
++    if sssr_ring_count(mol) == 1 {
++        // The whole molecule takes the single-cycle path (graph-only); `r ==
++        // 1` here means that cycle is in a kept component.
++        return Some(if allow_ranks {
++            find_sssr_shared(mol).rings().to_vec()
++        } else {
++            single_cycle_sssr(mol).rings().to_vec()
++        });
++    }
++    if order_needed {
++        let candidates = horton_candidates_fast(mol, Some(keep));
++        return select_horton_basis(mol, &cyclic, candidates, r, order_needed, allow_ranks);
++    }
++    // Components whose minimum cycle basis is unique and read off the graph
++    // directly (see `unique_basis_of_small_component`); the others go through
++    // the Horton selection. Components never share cycles, and per component
++    // the selected set does not depend on the other components' candidates.
++    let mut edges = vec![0u32; n];
++    let mut atoms = vec![0u32; n];
++    let mut is_ring_atom = vec![false; n];
++    for (bidx, b) in mol.bonds() {
++        if cyclic[bidx.0 as usize] && keep[b.atom1.0 as usize] {
++            edges[find(&mut parent, b.atom1.0) as usize] += 1;
++            is_ring_atom[b.atom1.0 as usize] = true;
++            is_ring_atom[b.atom2.0 as usize] = true;
++        }
++    }
++    let mut root_of = vec![u32::MAX; n];
++    for a in 0..n {
++        if is_ring_atom[a] {
++            let root = find(&mut parent, a as u32);
++            root_of[a] = root;
++            atoms[root as usize] += 1;
++        }
++    }
++    let mut rings: Vec<Vec<AtomIdx>> = Vec::new();
++    let mut general = vec![false; n];
++    let mut r_rest = 0usize;
++    for root in 0..n {
++        if root_of[root] != root as u32 {
++            continue;
++        }
++        let rank = (edges[root] + 1).saturating_sub(atoms[root]) as usize;
++        let small = rank <= 2
++            && unique_basis_of_small_component(mol, &cyclic, &root_of, root as u32, &mut rings);
++        if !small {
++            general[root] = true;
++            r_rest += rank;
++        }
++    }
++    if r_rest > 0 {
++        let keep_rest: Vec<bool> = (0..n)
++            .map(|a| is_ring_atom[a] && general[root_of[a] as usize])
++            .collect();
++        let candidates = horton_candidates_fast(mol, Some(&keep_rest));
++        let rest = select_horton_basis(mol, &cyclic, candidates, r_rest, false, allow_ranks)?;
++        rings.extend(rest);
++    }
++    Some(rings)
++}
++
++#[test]
++fn component_roots_keep_exact_ring_selection_and_order() {
++    let corpora = [
++        include_str!(concat!(
++            env!("CARGO_MANIFEST_DIR"),
++            "/../../validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi"
++        )),
++        include_str!(concat!(
++            env!("CARGO_MANIFEST_DIR"),
++            "/../../validation/cosmolkit_comparison/corpora/stress-v1.smi"
++        )),
++    ];
++    let mut rows = 0;
++    let mut comparisons = 0;
++    for corpus in corpora {
++        for line in corpus.lines().filter(|line| !line.trim().is_empty()) {
++            let input =
++                chematic_smiles::parse_template(line.split_whitespace().next().unwrap()).unwrap();
++            let components = ring_components_shared(&input);
++            let masks = [
++                vec![true; input.atom_count()],
++                components.label.iter().map(|&root| root % 2 == 0).collect(),
++                components.label.iter().map(|&root| root % 2 != 0).collect(),
++            ];
++            for keep in masks {
++                for allow_ranks in [false, true] {
++                    // Clones start with independent empty derived caches.
++                    let original = input.clone();
++                    let actual = input.clone();
++                    for _ in 0..2 {
++                        let expected =
++                            reference_rings_in_components(&original, &keep, false, allow_ranks);
++                        let observed = sssr_rings_in_components(&actual, &keep, false, allow_ranks);
++                        assert_eq!(observed, expected, "row {rows}, ranked {allow_ranks}");
++                        comparisons += 1;
++                    }
++                }
++            }
++            rows += 1;
++        }
++    }
++    assert_eq!(rows, 14072);
++    assert_eq!(comparisons, 168864);
++}

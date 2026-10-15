@@ -1,0 +1,14 @@
+{
+  "descriptors": {
+    "byte_identical": true,
+    "baseline_sha256": "0a0f9391c39ed6bb530a208f34e0195f7468c53a74265908da58a8bd6ab11010",
+    "candidate_sha256": "0a0f9391c39ed6bb530a208f34e0195f7468c53a74265908da58a8bd6ab11010",
+    "lines": 14074
+  },
+  "morgan": {
+    "byte_identical": true,
+    "baseline_sha256": "8927414b02a8e234a8e5020bb1c8909397a0a12a952086b229fda9fe9a2e04d4",
+    "candidate_sha256": "8927414b02a8e234a8e5020bb1c8909397a0a12a952086b229fda9fe9a2e04d4",
+    "lines": 14074
+  }
+}

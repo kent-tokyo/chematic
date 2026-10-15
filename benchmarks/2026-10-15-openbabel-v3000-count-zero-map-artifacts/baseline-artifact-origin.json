@@ -1,0 +1,7 @@
+{
+  "origin": "/private/tmp/chematic-openbabel-count-capacity-20261015/baseline-v3000",
+  "sha256": "c2527bb2ad314df476acfab18eb1b35d73519d2467534cc8db1d050fc835a127",
+  "source_manifest_baseline_sha256": "4ddd4482fe5fd44cd24bb4b5ac64ec8595c7831fc39d988066a2eaf6258f9e1f",
+  "all_baseline_source_files_verified_identical": true,
+  "scope": "Exact original nine-candidate baseline reused; built before either trial. All new timing blocks are separate; no pooling."
+}

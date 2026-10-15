@@ -10,6 +10,61 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Performance
+
+- Skip aromatic perception for RDKit-default TPSA when its selected model view
+  contains no nitrogen or oxygen, retaining exact zero and all contributing-atom
+  calculations without changing parsing or S/P-inclusive TPSA.
+
+- Keep E/Z small-ring searches in one inline visited queue for up to 32 atoms;
+  retain hashed membership for larger neighborhoods and the same breadth-first
+  depth boundary, avoiding per-layer temporary arrays.
+
+- Skip E/Z aromaticity and carrier work when all literal double bonds are
+  already excluded by the existing small-ring or terminal-end rules, while
+  preserving cumulene and explicitly unspecified stereo diagnostics.
+
+- Reuse the decimal field table for unpadded V3000 2D atom and bond ids,
+  appending bond-type digits directly while preserving exact output bytes.
+
+- Combine private aromatic-component root and count buffers into one allocation
+  with the same total number of integer elements, preserving component labels,
+  aromaticity decisions and traversal order.
+
+- Reserve V3000 molecule, coordinate and source-ID storage from declared
+  counts with geometric-growth capacities bounded by the actual logical-row
+  count, while preserving parser
+  state transitions, errors and diagnostics. Write absent or zero V3000 2D
+  atom maps directly, retaining the original nonzero-map formatting.
+
+- Reserve known atom/bond capacities during aromatic normalization and reuse
+  indexed hydrogen-count storage for corrections, preserving aromaticity,
+  hydrogen counts and the existing metadata-copy behavior.
+
+- Parse the common V3000 z-coordinate spellings `0`, `0.0000` and `0.000000` directly
+  as positive zero, retaining the general parser for every other spelling,
+  signed-zero bits and existing coordinate-error precedence.
+
+- Reuse cached cyclic-component labels during RDKit-compatible aromaticity
+  typing, avoiding a redundant union-find while preserving candidate-cycle
+  detection, donor types and ring selection.
+
+- Skip unused E/Z aromaticity work for molecules without literal double
+  bonds, retaining existing stereo annotations and all nonempty-bond
+  classification and diagnostic behavior.
+
+- Reuse the bridge pass's cached cyclic components in RDKit-compatible ring
+  counts, avoiding a second union-find without changing ring selection or
+  macrocycle and coordination-bond fallbacks.
+
+- Reuse V3000 parser token storage across records within a molecule, while
+  preserving continuation handling, source line errors and diagnostics.
+
+- Avoid an unchanged Kekulé intermediate copy in RDKit-compatible aromatic
+  perception for inputs without aromatic flags or bonds and with ordered
+  adjacency, and share normalized read-only descriptor views. Preserve the
+  aromaticity verdict, metadata, ring-triple correction and error fallback.
+
 ### Fixed
 
 - Restored the v1.1.3 exhaustive-match surface of the public `CmlError` and

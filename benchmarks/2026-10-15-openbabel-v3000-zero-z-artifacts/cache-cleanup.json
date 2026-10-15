@@ -1,0 +1,9 @@
+{
+  "removed_completed_owned_target": "/private/tmp/chematic-openbabel-zero-z-target-20261015",
+  "logical_bytes": 211543091,
+  "retained_measured_binaries_sha256": {
+    "baseline": "ff4528470f6f3d9851fb69dbe713481ebdeb4fc3a05e2f2f1e588ff838ce7cf1",
+    "candidate": "baf13dcfeeef1126a9089eaa4500d9635f33d03140e4deff66d44e3b1d6672f7"
+  },
+  "after_validation_before_timing": true
+}

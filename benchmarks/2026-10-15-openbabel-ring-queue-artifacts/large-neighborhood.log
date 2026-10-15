@@ -1,0 +1,2 @@
+All 64 generated records sanitized and passed exact source/RDKit gates; timing starts now
+large-neighborhood21 {'parse': {'speedup': {'median': 1.012, 'ci95': [1.01, 1.025], 'winning_blocks': 16, 'blocks': 21}, 'strict_speed_win': False}, 'write': {'speedup': {'median': 0.992, 'ci95': [0.947, 1.011], 'winning_blocks': 10, 'blocks': 21}, 'strict_speed_win': False}, 'roundtrip': {'speedup': {'median': 1.007, 'ci95': [0.994, 1.014], 'winning_blocks': 14, 'blocks': 21}, 'strict_speed_win': False}}

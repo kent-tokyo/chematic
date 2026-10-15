@@ -1,0 +1,24 @@
+{
+  "created_before_revision_source_build": true,
+  "no_inputs_or_rows_removed": true,
+  "profiles": {
+    "0": {
+      "corpus_sha256": "6c2eccf9aae975d790e9b036e0ffce71d056b243049e3424681326bceae17a06",
+      "z_lexemes": {
+        "0.000000": 27435
+      }
+    },
+    "5000": {
+      "corpus_sha256": "45924f7db9c4ea10e7ea494cd9aff2d536129b553d1e834fdcdac444e39f3e9e",
+      "z_lexemes": {
+        "0.000000": 15291
+      }
+    },
+    "chains": {
+      "corpus_sha256": "8ea24c94237cfc4076bcbde78019dd37cf4beb254c7a6b820555791da2410186",
+      "z_lexemes": {
+        "0.000000": 33280
+      }
+    }
+  }
+}

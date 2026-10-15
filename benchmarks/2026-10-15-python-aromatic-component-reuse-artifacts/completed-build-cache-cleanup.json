@@ -1,0 +1,9 @@
+{
+  "removed_only_completed_owned_target": "/private/tmp/chematic-aromatic-components-target-20261015",
+  "logical_bytes": 495320794,
+  "retained_measured_wheel_sha256": {
+    "baseline": "a3738e9d431fe5ccaea59fb7a820bc649c80261061ddc817d3e7ceeefcee9783",
+    "candidate": "27fdc215f9b4c8486bdf3bae6b51a491a5a24753e5fe6ebfe5765d98023fd0d3"
+  },
+  "after_all_validation_before_all_timing": true
+}

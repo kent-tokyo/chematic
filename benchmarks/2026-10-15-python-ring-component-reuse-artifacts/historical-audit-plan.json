@@ -1,0 +1,14 @@
+{
+  "purpose": "Audit the previously reproduced roughly 2 percent ring parse-inclusive regression against the pre-Kekule-view-sharing checkpoint, separately from the immediate-baseline comparison.",
+  "offset": 5000,
+  "limit": 1000,
+  "blocks": 20,
+  "operations": ["num_rings"],
+  "modes": ["first_use", "repeated_use", "parse_inclusive"],
+  "baseline_wheel_directory": "/private/tmp/chematic-kekule-view-20261014/baseline-wheel",
+  "baseline_install": "/private/tmp/chematic-kekule-view-20261014/baseline",
+  "baseline_scope": "Cycle-root pruning and V3000 writer candidate, before shared Kekule descriptor views.",
+  "candidate_scope": "Current candidate also includes shared Kekule descriptor views, V3000 parser token reuse and cyclic-component reuse. This historical comparison cannot attribute timing changes to one optimization.",
+  "declared_before_current_benchmark": true,
+  "policy": "Retain all 20 blocks and all three modes. Do not pool with current baseline or adaptive follow-ups; no timing retries."
+}

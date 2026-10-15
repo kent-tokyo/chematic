@@ -800,9 +800,10 @@ fn parse_unsigned_ascii(field: &str) -> Option<usize> {
 mod reader;
 pub use reader::*;
 mod writer;
-pub use writer::*;
 #[cfg(test)]
-use writer::{push_right_aligned_i16, push_right_aligned_u32};
+use writer::push_right_aligned_i16;
+pub(crate) use writer::push_right_aligned_u32;
+pub use writer::*;
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -1176,3 +1177,7 @@ mod stereo_loss_message_boundary_tests {
         assert_eq!(loss.to_string(), "no stereo lost");
     }
 }
+
+#[cfg(test)]
+#[path = "mol2000/v3000_integer_tests.rs"]
+mod v3000_integer_tests;

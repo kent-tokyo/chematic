@@ -1,0 +1,10 @@
+optimize passed
+format-apply passed
+format passed
+refactor passed
+native-library-tests passed
+native-integration-tests passed
+clippy passed
+runner-tests passed
+candidate-build passed
+ALL VALIDATION PASSED

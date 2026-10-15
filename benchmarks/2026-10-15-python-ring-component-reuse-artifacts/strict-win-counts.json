@@ -1,0 +1,17 @@
+{
+  "first_use": {
+    "strict_wins": 5,
+    "eligible": 27,
+    "suppressed": 1
+  },
+  "repeated_use": {
+    "strict_wins": 17,
+    "eligible": 27,
+    "suppressed": 1
+  },
+  "parse_inclusive": {
+    "strict_wins": 26,
+    "eligible": 27,
+    "suppressed": 1
+  }
+}

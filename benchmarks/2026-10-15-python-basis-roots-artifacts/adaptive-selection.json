@@ -1,0 +1,36 @@
+{
+  "5000": {
+    "negative_initial_lanes": {
+      "maccs/parse_inclusive": {
+        "median": 0.989,
+        "ci95": [
+          0.975,
+          0.998
+        ],
+        "winning_blocks": 5,
+        "blocks": 20
+      }
+    },
+    "operations": [
+      "maccs"
+    ],
+    "policy": "One separate adaptive follow-up of 20 blocks. Retain all three modes and all outcomes. Do not pool or iterate."
+  },
+  "0": {
+    "negative_initial_lanes": {
+      "tpsa/first_use": {
+        "median": 0.995,
+        "ci95": [
+          0.981,
+          0.999
+        ],
+        "winning_blocks": 6,
+        "blocks": 20
+      }
+    },
+    "operations": [
+      "tpsa"
+    ],
+    "policy": "One separate adaptive follow-up of 20 blocks. Retain all three modes and all outcomes. Do not pool or iterate."
+  }
+}

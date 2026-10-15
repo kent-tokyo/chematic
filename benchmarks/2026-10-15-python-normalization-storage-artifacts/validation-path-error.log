@@ -1,0 +1,17 @@
+baseline-descriptors passed
+baseline-morgan passed
+optimize passed
+format-fragments passed
+format passed
+refactor passed
+Traceback (most recent call last):
+  File "/private/tmp/chematic-descriptor-profile-20261015/validate.py", line 16, in <module>
+    call('native-tests',['cargo','test','--release','-p','chematic-chem','-p','chematic-perception','--lib'])
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/chematic-descriptor-profile-20261015/validate.py", line 6, in call
+    with (r/(name+'.log')).open('w') as log: subprocess.run(cmd,cwd=s,env=e,stdout=log,stderr=subprocess.STDOUT,check=True)
+                                             ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/subprocess.py", line 577, in run
+    raise CalledProcessError(retcode, process.args,
+                             output=stdout, stderr=stderr)
+subprocess.CalledProcessError: Command '['cargo', 'test', '--release', '-p', 'chematic-chem', '-p', 'chematic-perception', '--lib']' returned non-zero exit status 101.

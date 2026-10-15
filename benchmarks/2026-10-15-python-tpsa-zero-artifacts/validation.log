@@ -1,0 +1,13 @@
+format-test passed
+format passed
+refactor passed
+native-tests passed
+clippy passed
+candidate-build passed
+candidate-install passed
+baseline-descriptors passed
+candidate-descriptors passed
+baseline-morgan passed
+candidate-morgan passed
+python-tests passed
+ALL VALIDATION PASSED

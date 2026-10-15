@@ -1,0 +1,812 @@
+{
+  "schema": "openbabel-v3000-writer-buffer-verification/v1",
+  "profiles": {
+    "0": {
+      "parse_snapshot_bytes_equal": true,
+      "rewrite_bytes_equal": true,
+      "semantics": {
+        "baseline": {
+          "passed": true,
+          "expected_rows": 1000,
+          "observed_rows": 1000,
+          "record_count_mismatch": false,
+          "rejected_rows": [],
+          "mismatch_counts": {
+            "graph": 0,
+            "atoms": 0,
+            "bonds": 0,
+            "coordinates": 0,
+            "name": 0,
+            "properties": 0,
+            "explicit_unknown_stereo": 0
+          },
+          "mismatch_examples": {
+            "graph": [],
+            "atoms": [],
+            "bonds": [],
+            "coordinates": [],
+            "name": [],
+            "properties": [],
+            "explicit_unknown_stereo": []
+          },
+          "accepted_rows": 1000
+        },
+        "baseline_parse": {
+          "passed": true,
+          "rows": 1000,
+          "mismatches": 0,
+          "mismatch_rows": [],
+          "rejected_rows": []
+        },
+        "candidate": {
+          "passed": true,
+          "expected_rows": 1000,
+          "observed_rows": 1000,
+          "record_count_mismatch": false,
+          "rejected_rows": [],
+          "mismatch_counts": {
+            "graph": 0,
+            "atoms": 0,
+            "bonds": 0,
+            "coordinates": 0,
+            "name": 0,
+            "properties": 0,
+            "explicit_unknown_stereo": 0
+          },
+          "mismatch_examples": {
+            "graph": [],
+            "atoms": [],
+            "bonds": [],
+            "coordinates": [],
+            "name": [],
+            "properties": [],
+            "explicit_unknown_stereo": []
+          },
+          "accepted_rows": 1000
+        },
+        "candidate_parse": {
+          "passed": true,
+          "rows": 1000,
+          "mismatches": 0,
+          "mismatch_rows": [],
+          "rejected_rows": []
+        },
+        "openbabel": {
+          "passed": false,
+          "expected_rows": 1000,
+          "observed_rows": 1000,
+          "record_count_mismatch": false,
+          "rejected_rows": [
+            73,
+            74,
+            90,
+            91,
+            106,
+            127,
+            131,
+            154,
+            159,
+            161,
+            163,
+            164,
+            165,
+            168,
+            170,
+            171,
+            176,
+            177,
+            178,
+            183,
+            184,
+            185,
+            193,
+            195,
+            255,
+            277,
+            281,
+            282,
+            287,
+            288,
+            293,
+            312,
+            313,
+            317,
+            319,
+            327,
+            332,
+            333,
+            334,
+            337,
+            338,
+            351,
+            352,
+            354,
+            366,
+            367,
+            374,
+            379,
+            380,
+            381,
+            382,
+            391,
+            393,
+            394,
+            397,
+            437,
+            438,
+            442,
+            448,
+            449,
+            463,
+            466,
+            467,
+            470,
+            473,
+            477,
+            489,
+            501,
+            504,
+            505,
+            519,
+            520,
+            524,
+            529,
+            530,
+            531,
+            539,
+            540,
+            541,
+            544,
+            551,
+            552,
+            553,
+            554,
+            561,
+            567,
+            568,
+            570,
+            577,
+            583,
+            588,
+            613,
+            624,
+            625,
+            634,
+            636,
+            637,
+            638,
+            639,
+            640,
+            659,
+            666,
+            667,
+            668,
+            691,
+            692,
+            693,
+            694,
+            696,
+            711,
+            723,
+            725,
+            726,
+            727,
+            733,
+            734,
+            735,
+            743,
+            745,
+            756,
+            758,
+            760,
+            761,
+            762,
+            768,
+            769,
+            770,
+            771,
+            772,
+            773,
+            774,
+            778,
+            779,
+            780,
+            821,
+            822,
+            823,
+            839,
+            840,
+            846,
+            847,
+            853,
+            854,
+            866,
+            877,
+            879,
+            899,
+            900,
+            906,
+            912,
+            913,
+            936,
+            944
+          ],
+          "mismatch_counts": {
+            "graph": 1,
+            "atoms": 0,
+            "bonds": 0,
+            "coordinates": 0,
+            "name": 0,
+            "properties": 0,
+            "explicit_unknown_stereo": 1
+          },
+          "mismatch_examples": {
+            "graph": [
+              766
+            ],
+            "atoms": [],
+            "bonds": [],
+            "coordinates": [],
+            "name": [],
+            "properties": [],
+            "explicit_unknown_stereo": [
+              766
+            ]
+          },
+          "accepted_rows": 847
+        },
+        "openbabel_parse": {
+          "passed": false,
+          "rows": 1000,
+          "mismatches": 3,
+          "mismatch_rows": [
+            90,
+            745,
+            766
+          ],
+          "rejected_rows": []
+        }
+      },
+      "artifacts": {
+        "baseline.molblocks": {
+          "path": "validation/results/openbabel-v3000-writer-buffer-0-baseline.molblocks-2026-10-14.gz",
+          "uncompressed_sha256": "73a24d6d52f15900af0b221e21310367c01278f93f0de4189be8d3d01c61f254",
+          "compressed_sha256": "11dc9d22f60ed1fa67cb65379c024803ddb04a5ca7321d62cbcd4579adf6e33f",
+          "bytes": 1696501
+        },
+        "baseline.snapshot": {
+          "path": "validation/results/openbabel-v3000-writer-buffer-0-baseline.snapshot-2026-10-14.gz",
+          "uncompressed_sha256": "e2fce68d8c33616317f46397cf79ee877ef856460a35b84a622ddff1d8eced74",
+          "compressed_sha256": "afb4546185937544fb98809d35ddcabb4d3184789b2b299a5ac0c1ff15175387",
+          "bytes": 8809019
+        },
+        "candidate.molblocks": {
+          "path": "validation/results/openbabel-v3000-writer-buffer-0-candidate.molblocks-2026-10-14.gz",
+          "uncompressed_sha256": "73a24d6d52f15900af0b221e21310367c01278f93f0de4189be8d3d01c61f254",
+          "compressed_sha256": "11dc9d22f60ed1fa67cb65379c024803ddb04a5ca7321d62cbcd4579adf6e33f",
+          "bytes": 1696501
+        },
+        "candidate.snapshot": {
+          "path": "validation/results/openbabel-v3000-writer-buffer-0-candidate.snapshot-2026-10-14.gz",
+          "uncompressed_sha256": "e2fce68d8c33616317f46397cf79ee877ef856460a35b84a622ddff1d8eced74",
+          "compressed_sha256": "afb4546185937544fb98809d35ddcabb4d3184789b2b299a5ac0c1ff15175387",
+          "bytes": 8809019
+        },
+        "openbabel.molblocks": {
+          "path": "validation/results/openbabel-v3000-writer-buffer-0-openbabel.molblocks-2026-10-14.gz",
+          "uncompressed_sha256": "65489588a6f8c183b2f2be80b0d90df211e5a58e955088939d8067cac17791c7",
+          "compressed_sha256": "b3b52b23e7877cb0e5cfebbbf7f50d17094d603f6d7946af3f434a2efec33fb9",
+          "bytes": 1708456
+        },
+        "openbabel.smiles": {
+          "path": "validation/results/openbabel-v3000-writer-buffer-0-openbabel.smiles-2026-10-14.gz",
+          "uncompressed_sha256": "0c55edf36d29870abba74030bba3271ef3084f0eb0e879766f3b45a10dfeeb8d",
+          "compressed_sha256": "a2aaa23a468c9f84666b15704a871214adbfa9c5baca53d3dfd5425a2c02e431",
+          "bytes": 68581
+        }
+      }
+    },
+    "5000": {
+      "parse_snapshot_bytes_equal": true,
+      "rewrite_bytes_equal": true,
+      "semantics": {
+        "baseline": {
+          "passed": true,
+          "expected_rows": 1000,
+          "observed_rows": 1000,
+          "record_count_mismatch": false,
+          "rejected_rows": [],
+          "mismatch_counts": {
+            "graph": 0,
+            "atoms": 0,
+            "bonds": 0,
+            "coordinates": 0,
+            "name": 0,
+            "properties": 0,
+            "explicit_unknown_stereo": 0
+          },
+          "mismatch_examples": {
+            "graph": [],
+            "atoms": [],
+            "bonds": [],
+            "coordinates": [],
+            "name": [],
+            "properties": [],
+            "explicit_unknown_stereo": []
+          },
+          "accepted_rows": 1000
+        },
+        "baseline_parse": {
+          "passed": true,
+          "rows": 1000,
+          "mismatches": 0,
+          "mismatch_rows": [],
+          "rejected_rows": []
+        },
+        "candidate": {
+          "passed": true,
+          "expected_rows": 1000,
+          "observed_rows": 1000,
+          "record_count_mismatch": false,
+          "rejected_rows": [],
+          "mismatch_counts": {
+            "graph": 0,
+            "atoms": 0,
+            "bonds": 0,
+            "coordinates": 0,
+            "name": 0,
+            "properties": 0,
+            "explicit_unknown_stereo": 0
+          },
+          "mismatch_examples": {
+            "graph": [],
+            "atoms": [],
+            "bonds": [],
+            "coordinates": [],
+            "name": [],
+            "properties": [],
+            "explicit_unknown_stereo": []
+          },
+          "accepted_rows": 1000
+        },
+        "candidate_parse": {
+          "passed": true,
+          "rows": 1000,
+          "mismatches": 0,
+          "mismatch_rows": [],
+          "rejected_rows": []
+        },
+        "openbabel": {
+          "passed": false,
+          "expected_rows": 1000,
+          "observed_rows": 1000,
+          "record_count_mismatch": false,
+          "rejected_rows": [],
+          "mismatch_counts": {
+            "graph": 137,
+            "atoms": 0,
+            "bonds": 0,
+            "coordinates": 0,
+            "name": 0,
+            "properties": 0,
+            "explicit_unknown_stereo": 137
+          },
+          "mismatch_examples": {
+            "graph": [
+              8,
+              22,
+              29,
+              33,
+              37,
+              43,
+              69,
+              73
+            ],
+            "atoms": [],
+            "bonds": [],
+            "coordinates": [],
+            "name": [],
+            "properties": [],
+            "explicit_unknown_stereo": [
+              8,
+              22,
+              29,
+              33,
+              37,
+              43,
+              69,
+              73
+            ]
+          },
+          "accepted_rows": 1000
+        },
+        "openbabel_parse": {
+          "passed": false,
+          "rows": 1000,
+          "mismatches": 137,
+          "mismatch_rows": [
+            8,
+            22,
+            29,
+            33,
+            37,
+            43,
+            69,
+            73,
+            77,
+            78,
+            83,
+            99,
+            139,
+            142,
+            150,
+            151,
+            152,
+            153,
+            154,
+            155,
+            156,
+            157,
+            158,
+            159,
+            160,
+            161,
+            162,
+            195,
+            196,
+            203,
+            215,
+            230,
+            233,
+            248,
+            264,
+            266,
+            267,
+            268,
+            290,
+            297,
+            309,
+            315,
+            359,
+            369,
+            370,
+            371,
+            372,
+            373,
+            384,
+            395,
+            410,
+            424,
+            440,
+            486,
+            487,
+            493,
+            499,
+            500,
+            535,
+            544,
+            557,
+            558,
+            579,
+            581,
+            594,
+            622,
+            623,
+            641,
+            652,
+            653,
+            654,
+            655,
+            656,
+            657,
+            658,
+            659,
+            682,
+            683,
+            684,
+            685,
+            686,
+            687,
+            688,
+            689,
+            690,
+            691,
+            697,
+            698,
+            699,
+            700,
+            701,
+            702,
+            704,
+            705,
+            706,
+            707,
+            709,
+            710,
+            711,
+            712,
+            713,
+            714,
+            715,
+            716,
+            717,
+            718,
+            719,
+            720,
+            721,
+            722,
+            723,
+            724,
+            725,
+            726,
+            727,
+            756,
+            758,
+            776,
+            784,
+            786,
+            787,
+            788,
+            818,
+            823,
+            851,
+            852,
+            853,
+            854,
+            855,
+            856,
+            857,
+            862,
+            899,
+            919,
+            963,
+            986,
+            992
+          ],
+          "rejected_rows": []
+        }
+      },
+      "artifacts": {
+        "baseline.molblocks": {
+          "path": "validation/results/openbabel-v3000-writer-buffer-5000-baseline.molblocks-2026-10-14.gz",
+          "uncompressed_sha256": "405cf9062ef1fe3697b478cdeaa453425546d233d60b220f73725beee68f7cdc",
+          "compressed_sha256": "dc71e37a8b1e6a2007f1169bc49886512bfc3bb1a7881347c36fdb0f09a54287",
+          "bytes": 1006399
+        },
+        "baseline.snapshot": {
+          "path": "validation/results/openbabel-v3000-writer-buffer-5000-baseline.snapshot-2026-10-14.gz",
+          "uncompressed_sha256": "7fa169eebb0d112936fd4e135d08702eb1150faa6791111f52792c51d504d67d",
+          "compressed_sha256": "b5bfdc40b16d76ff38e380af67dfd3115da41f2c3507f256fce08e4a08ca2dbd",
+          "bytes": 4921076
+        },
+        "candidate.molblocks": {
+          "path": "validation/results/openbabel-v3000-writer-buffer-5000-candidate.molblocks-2026-10-14.gz",
+          "uncompressed_sha256": "405cf9062ef1fe3697b478cdeaa453425546d233d60b220f73725beee68f7cdc",
+          "compressed_sha256": "dc71e37a8b1e6a2007f1169bc49886512bfc3bb1a7881347c36fdb0f09a54287",
+          "bytes": 1006399
+        },
+        "candidate.snapshot": {
+          "path": "validation/results/openbabel-v3000-writer-buffer-5000-candidate.snapshot-2026-10-14.gz",
+          "uncompressed_sha256": "7fa169eebb0d112936fd4e135d08702eb1150faa6791111f52792c51d504d67d",
+          "compressed_sha256": "b5bfdc40b16d76ff38e380af67dfd3115da41f2c3507f256fce08e4a08ca2dbd",
+          "bytes": 4921076
+        },
+        "openbabel.molblocks": {
+          "path": "validation/results/openbabel-v3000-writer-buffer-5000-openbabel.molblocks-2026-10-14.gz",
+          "uncompressed_sha256": "fc3f847f2a428d45bbd69d4494a549244c3fab8332d6df2367ec21947ae3ebbe",
+          "compressed_sha256": "36100218e040d4a9bf932d890c7de4b8788519a9d168dee6d584083eb0653ae3",
+          "bytes": 1017064
+        },
+        "openbabel.smiles": {
+          "path": "validation/results/openbabel-v3000-writer-buffer-5000-openbabel.smiles-2026-10-14.gz",
+          "uncompressed_sha256": "66b0ea070378204905510ae007ddb229caaa25541faca1a0f394e3a51a83104b",
+          "compressed_sha256": "1f08f47e2566f81a2074bcf6cc8b04de6453bd33d41de6e33b0898f6ec4d432d",
+          "bytes": 42780
+        }
+      }
+    },
+    "chains": {
+      "parse_snapshot_bytes_equal": true,
+      "rewrite_bytes_equal": true,
+      "semantics": {
+        "baseline": {
+          "passed": true,
+          "expected_rows": 64,
+          "observed_rows": 64,
+          "record_count_mismatch": false,
+          "rejected_rows": [],
+          "mismatch_counts": {
+            "graph": 0,
+            "atoms": 0,
+            "bonds": 0,
+            "coordinates": 0,
+            "name": 0,
+            "properties": 0,
+            "explicit_unknown_stereo": 0
+          },
+          "mismatch_examples": {
+            "graph": [],
+            "atoms": [],
+            "bonds": [],
+            "coordinates": [],
+            "name": [],
+            "properties": [],
+            "explicit_unknown_stereo": []
+          },
+          "accepted_rows": 64
+        },
+        "baseline_parse": {
+          "passed": true,
+          "rows": 64,
+          "mismatches": 0,
+          "mismatch_rows": [],
+          "rejected_rows": []
+        },
+        "candidate": {
+          "passed": true,
+          "expected_rows": 64,
+          "observed_rows": 64,
+          "record_count_mismatch": false,
+          "rejected_rows": [],
+          "mismatch_counts": {
+            "graph": 0,
+            "atoms": 0,
+            "bonds": 0,
+            "coordinates": 0,
+            "name": 0,
+            "properties": 0,
+            "explicit_unknown_stereo": 0
+          },
+          "mismatch_examples": {
+            "graph": [],
+            "atoms": [],
+            "bonds": [],
+            "coordinates": [],
+            "name": [],
+            "properties": [],
+            "explicit_unknown_stereo": []
+          },
+          "accepted_rows": 64
+        },
+        "candidate_parse": {
+          "passed": true,
+          "rows": 64,
+          "mismatches": 0,
+          "mismatch_rows": [],
+          "rejected_rows": []
+        },
+        "openbabel": {
+          "passed": true,
+          "expected_rows": 64,
+          "observed_rows": 64,
+          "record_count_mismatch": false,
+          "rejected_rows": [],
+          "mismatch_counts": {
+            "graph": 0,
+            "atoms": 0,
+            "bonds": 0,
+            "coordinates": 0,
+            "name": 0,
+            "properties": 0,
+            "explicit_unknown_stereo": 0
+          },
+          "mismatch_examples": {
+            "graph": [],
+            "atoms": [],
+            "bonds": [],
+            "coordinates": [],
+            "name": [],
+            "properties": [],
+            "explicit_unknown_stereo": []
+          },
+          "accepted_rows": 64
+        },
+        "openbabel_parse": {
+          "passed": true,
+          "rows": 64,
+          "mismatches": 0,
+          "mismatch_rows": [],
+          "rejected_rows": []
+        }
+      },
+      "artifacts": {
+        "baseline.molblocks": {
+          "path": "validation/results/openbabel-v3000-writer-buffer-chains-baseline.molblocks-2026-10-14.gz",
+          "uncompressed_sha256": "b67b1fb9cdb4c2e8977a34dd309a13ebc035050ba7e41473114c62f2c7d5ca95",
+          "compressed_sha256": "f9e08e44a29aa441bb96b16d63911df892211ae478b254f6e66602a4235cbbc1",
+          "bytes": 1972330
+        },
+        "baseline.snapshot": {
+          "path": "validation/results/openbabel-v3000-writer-buffer-chains-baseline.snapshot-2026-10-14.gz",
+          "uncompressed_sha256": "5add029fe89ad301067f53ee404c87ebb54221733bf4c5280de463eabe5e1550",
+          "compressed_sha256": "332b7e7dc9a40a376387f3ecb80b90b924ceeb11f0834fe51957db000827dbd4",
+          "bytes": 10267050
+        },
+        "candidate.molblocks": {
+          "path": "validation/results/openbabel-v3000-writer-buffer-chains-candidate.molblocks-2026-10-14.gz",
+          "uncompressed_sha256": "b67b1fb9cdb4c2e8977a34dd309a13ebc035050ba7e41473114c62f2c7d5ca95",
+          "compressed_sha256": "f9e08e44a29aa441bb96b16d63911df892211ae478b254f6e66602a4235cbbc1",
+          "bytes": 1972330
+        },
+        "candidate.snapshot": {
+          "path": "validation/results/openbabel-v3000-writer-buffer-chains-candidate.snapshot-2026-10-14.gz",
+          "uncompressed_sha256": "5add029fe89ad301067f53ee404c87ebb54221733bf4c5280de463eabe5e1550",
+          "compressed_sha256": "332b7e7dc9a40a376387f3ecb80b90b924ceeb11f0834fe51957db000827dbd4",
+          "bytes": 10267050
+        },
+        "openbabel.molblocks": {
+          "path": "validation/results/openbabel-v3000-writer-buffer-chains-openbabel.molblocks-2026-10-14.gz",
+          "uncompressed_sha256": "a4b6ecff2f7c6edab462242d5ff268ca519b57847dcfc444321f55cafab250f8",
+          "compressed_sha256": "e9e13ebf4e2808e333f0f9fbaa82545a46ba2e0f5f599b98137723d66b01fa75",
+          "bytes": 1973098
+        },
+        "openbabel.smiles": {
+          "path": "validation/results/openbabel-v3000-writer-buffer-chains-openbabel.smiles-2026-10-14.gz",
+          "uncompressed_sha256": "a6b6efc2219d09b3d27420cc8ead8ee1218b3c39fe531faa4df1f01186f24b5b",
+          "compressed_sha256": "0a25d0cd7ae6960e25fb3f28e61bf5db5626594cbce909ca62192789ee0a0525",
+          "bytes": 34422
+        }
+      }
+    }
+  },
+  "logs": {
+    "baseline-build": {
+      "path": "validation/results/openbabel-v3000-writer-buffer-baseline-build-2026-10-14.log.gz",
+      "uncompressed_sha256": "196ca7848706fda912a0add7994ff0cae49a0f3d571cf3f4afd2776f0b3efa03",
+      "compressed_sha256": "f01f42ac94e3dfee1580acc33e0f8ff4309837d434b0add44081cb28bbdf1bcc"
+    },
+    "candidate-build": {
+      "path": "validation/results/openbabel-v3000-writer-buffer-candidate-build-2026-10-14.log.gz",
+      "uncompressed_sha256": "ae2c692c7cedc54b803525cce145fc34d166aa713062ca86784b350ad513a044",
+      "compressed_sha256": "bc3f14e6b922cab4d3470748655b76ed56f1f9297c563028a8b8a22cd168de19"
+    },
+    "tests-final": {
+      "path": "validation/results/openbabel-v3000-writer-buffer-tests-final-2026-10-14.log.gz",
+      "uncompressed_sha256": "ca22d48e4c9dd62cc4087cc461828918d3d54bc872a0e5e5a61234ffd6d4ad61",
+      "compressed_sha256": "2977db719b5d59439e2397a98124443cd02cf56b2e70cf294f409d3853ebeb69"
+    },
+    "clippy": {
+      "path": "validation/results/openbabel-v3000-writer-buffer-clippy-2026-10-14.log.gz",
+      "uncompressed_sha256": "c896a5fc8134c8f8921ddbfee233f03d7979e3441e7b0245dff53621ee6401c1",
+      "compressed_sha256": "001412ee9eaccb03867754d270f2aa03bd527615480053b1c723b8a86cdeeed3"
+    },
+    "runner-tests": {
+      "path": "validation/results/openbabel-v3000-writer-buffer-runner-tests-2026-10-14.log.gz",
+      "uncompressed_sha256": "c98726dcb0c9f0252e8160d23de79ed048961494c9d2bff5c5f7d6fc6c831163",
+      "compressed_sha256": "85824abe8d3e9b937589cf83ab142f987ff9d457a609da218d443c89c205fd8e"
+    },
+    "format": {
+      "path": "validation/results/openbabel-v3000-writer-buffer-format-2026-10-14.log.gz",
+      "uncompressed_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "compressed_sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    "refactor": {
+      "path": "validation/results/openbabel-v3000-writer-buffer-refactor-2026-10-14.log.gz",
+      "uncompressed_sha256": "7af5c49c437a4365e4113bc0f5a819a810dc203431aa9c2173962a6d69764943",
+      "compressed_sha256": "2030de2bbc211db1d7c67b59fa275f871a9ecaedf804d12d94b502889af587ac"
+    },
+    "formal-profile0": {
+      "path": "validation/results/openbabel-v3000-writer-buffer-formal-profile0-2026-10-14.log.gz",
+      "uncompressed_sha256": "eb2f9c55d43117b179364945a1e784178d524a2479ee23131b586f8e64f718f7",
+      "compressed_sha256": "a0537a44fb6616c1a8d77c063f383d087afec892c10ebf4d9cb130106d7cbddc"
+    }
+  },
+  "environment_recovery": {
+    "restricted_time_wrapper_exit": 1,
+    "observed_error": "time: sysctl kern.clockrate: Operation not permitted",
+    "restricted_completed_blocks": 0,
+    "authorized_retry": "all three profiles complete; restricted attempt JSON retained"
+  },
+  "rust_tests": {
+    "passed": 1010,
+    "failed": 0,
+    "ignored": 0
+  },
+  "runner_tests_passed": 10,
+  "baseline_prerequisite": {
+    "path": "benchmarks/2026-10-14-python-cycle-root-pruning-candidate.patch",
+    "sha256": "aeb7694a61cb1c7689e28af1a8f6f60927158da54f85d3ba1e5878f9867e8483",
+    "base_revision": "cac480fb23cd8adeec6e5e9bed1f18677f87b392",
+    "frozen_baseline_hashes_match_prior_candidate": true
+  }
+}

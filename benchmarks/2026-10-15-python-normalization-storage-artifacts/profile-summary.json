@@ -1,0 +1,352 @@
+{
+  "diagnostic_not_timing": true,
+  "rdkit": "2026.09.1",
+  "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+  "no_N_O_audit": {
+    "0": {
+      "inputs": 1000,
+      "parse_errors": 0,
+      "without_N_or_O": 0,
+      "without_N_or_O_with_ring": 0
+    },
+    "5000": {
+      "inputs": 1000,
+      "parse_errors": 0,
+      "without_N_or_O": 43,
+      "without_N_or_O_with_ring": 33
+    }
+  },
+  "workers": {
+    "sample-0-labute_asa-worker.jsonl": [
+      {
+        "ready": true,
+        "pid": 18446,
+        "offset": 0,
+        "op": "labute_asa",
+        "rows": 1000,
+        "version": "1.1.4",
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f"
+      },
+      {
+        "complete": true,
+        "evaluations": 1687000,
+        "checksum": "0x1.05766d5fe0a55p+28",
+        "errors": 0
+      }
+    ],
+    "sample-0-rdkit_tpsa-worker.jsonl": [
+      {
+        "ready": true,
+        "pid": 18430,
+        "offset": 0,
+        "op": "rdkit_tpsa",
+        "rows": 1000,
+        "version": "1.1.4",
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f"
+      },
+      {
+        "complete": true,
+        "evaluations": 1772000,
+        "checksum": "0x1.3b7b1207a9c62p+27",
+        "errors": 0
+      }
+    ],
+    "sample-5000-rdkit_tpsa-worker.jsonl": [
+      {
+        "ready": true,
+        "pid": 18355,
+        "offset": 5000,
+        "op": "rdkit_tpsa",
+        "rows": 1000,
+        "version": "1.1.4",
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f"
+      },
+      {
+        "complete": true,
+        "evaluations": 968000,
+        "checksum": "0x1.51a948d70beb0p+25",
+        "errors": 0
+      }
+    ],
+    "sample-5000-labute_asa-worker.jsonl": [
+      {
+        "ready": true,
+        "pid": 18417,
+        "offset": 5000,
+        "op": "labute_asa",
+        "rows": 1000,
+        "version": "1.1.4",
+        "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f"
+      },
+      {
+        "complete": true,
+        "evaluations": 1426000,
+        "checksum": "0x1.fe3cc628f07e6p+26",
+        "errors": 0
+      }
+    ]
+  },
+  "nci_asa_main_thread_samples": 3601,
+  "call_tree_aggregates": {
+    "sample-0-labute_asa.txt": {
+      "main_thread_samples": 3626,
+      "nonrecursive_inclusive_function_samples": {
+        "descriptor_aromaticity": {
+          "inclusive_samples_sum_across_call_sites": 714,
+          "call_sites": [
+            714
+          ],
+          "share_of_main_samples": 0.1969111969111969
+        },
+        "build_molecule_from_model": {
+          "inclusive_samples_sum_across_call_sites": 0,
+          "call_sites": [],
+          "share_of_main_samples": 0.0
+        },
+        "finish_molecule_with_flags": {
+          "inclusive_samples_sum_across_call_sites": 0,
+          "call_sites": [],
+          "share_of_main_samples": 0.0
+        },
+        "parity_shortcut": {
+          "inclusive_samples_sum_across_call_sites": 715,
+          "call_sites": [
+            707,
+            3,
+            3,
+            1,
+            1
+          ],
+          "share_of_main_samples": 0.19718698290126863
+        },
+        "rdkit_model_may_disagree": {
+          "inclusive_samples_sum_across_call_sites": 571,
+          "call_sites": [
+            550,
+            4,
+            4,
+            3,
+            6,
+            1,
+            2,
+            1
+          ],
+          "share_of_main_samples": 0.1574738003309432
+        }
+      }
+    },
+    "sample-0-rdkit_tpsa.txt": {
+      "main_thread_samples": 3607,
+      "nonrecursive_inclusive_function_samples": {
+        "descriptor_aromaticity": {
+          "inclusive_samples_sum_across_call_sites": 728,
+          "call_sites": [
+            728
+          ],
+          "share_of_main_samples": 0.20182977543665095
+        },
+        "build_molecule_from_model": {
+          "inclusive_samples_sum_across_call_sites": 0,
+          "call_sites": [],
+          "share_of_main_samples": 0.0
+        },
+        "finish_molecule_with_flags": {
+          "inclusive_samples_sum_across_call_sites": 0,
+          "call_sites": [],
+          "share_of_main_samples": 0.0
+        },
+        "parity_shortcut": {
+          "inclusive_samples_sum_across_call_sites": 729,
+          "call_sites": [
+            720,
+            6,
+            1,
+            1,
+            1
+          ],
+          "share_of_main_samples": 0.20210701413917384
+        },
+        "rdkit_model_may_disagree": {
+          "inclusive_samples_sum_across_call_sites": 589,
+          "call_sites": [
+            582,
+            3,
+            2,
+            1,
+            1
+          ],
+          "share_of_main_samples": 0.16329359578597172
+        }
+      }
+    },
+    "sample-5000-labute_asa.txt": {
+      "main_thread_samples": 3601,
+      "nonrecursive_inclusive_function_samples": {
+        "descriptor_aromaticity": {
+          "inclusive_samples_sum_across_call_sites": 2063,
+          "call_sites": [
+            1589,
+            461,
+            11,
+            1,
+            1
+          ],
+          "share_of_main_samples": 0.5728964176617606
+        },
+        "build_molecule_from_model": {
+          "inclusive_samples_sum_across_call_sites": 585,
+          "call_sites": [
+            478,
+            43,
+            42,
+            17,
+            3,
+            2
+          ],
+          "share_of_main_samples": 0.1624548736462094
+        },
+        "finish_molecule_with_flags": {
+          "inclusive_samples_sum_across_call_sites": 462,
+          "call_sites": [
+            154,
+            101,
+            49,
+            43,
+            42,
+            29,
+            9,
+            6,
+            5,
+            5,
+            5,
+            3,
+            3,
+            2,
+            2,
+            2,
+            1,
+            1
+          ],
+          "share_of_main_samples": 0.12829769508469868
+        },
+        "parity_shortcut": {
+          "inclusive_samples_sum_across_call_sites": 475,
+          "call_sites": [
+            2,
+            451,
+            5,
+            3,
+            2,
+            1,
+            4,
+            2,
+            2,
+            2,
+            1
+          ],
+          "share_of_main_samples": 0.1319078033879478
+        },
+        "rdkit_model_may_disagree": {
+          "inclusive_samples_sum_across_call_sites": 106,
+          "call_sites": [
+            1,
+            1,
+            1,
+            3,
+            90,
+            5,
+            4,
+            1
+          ],
+          "share_of_main_samples": 0.029436267703415717
+        }
+      }
+    },
+    "sample-5000-rdkit_tpsa.txt": {
+      "main_thread_samples": 3433,
+      "nonrecursive_inclusive_function_samples": {
+        "descriptor_aromaticity": {
+          "inclusive_samples_sum_across_call_sites": 2008,
+          "call_sites": [
+            1533,
+            465,
+            7,
+            1,
+            1,
+            1
+          ],
+          "share_of_main_samples": 0.5849111564229537
+        },
+        "build_molecule_from_model": {
+          "inclusive_samples_sum_across_call_sites": 599,
+          "call_sites": [
+            479,
+            52,
+            37,
+            16,
+            8,
+            7
+          ],
+          "share_of_main_samples": 0.1744829595106321
+        },
+        "finish_molecule_with_flags": {
+          "inclusive_samples_sum_across_call_sites": 460,
+          "call_sites": [
+            150,
+            78,
+            57,
+            56,
+            42,
+            35,
+            11,
+            8,
+            5,
+            3,
+            2,
+            2,
+            2,
+            2,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "share_of_main_samples": 0.13399359161083602
+        },
+        "parity_shortcut": {
+          "inclusive_samples_sum_across_call_sites": 476,
+          "call_sites": [
+            1,
+            2,
+            458,
+            4,
+            2,
+            1,
+            1,
+            1,
+            4,
+            2
+          ],
+          "share_of_main_samples": 0.13865423827556073
+        },
+        "rdkit_model_may_disagree": {
+          "inclusive_samples_sum_across_call_sites": 106,
+          "call_sites": [
+            4,
+            3,
+            1,
+            3,
+            87,
+            4,
+            3,
+            1
+          ],
+          "share_of_main_samples": 0.03087678415380134
+        }
+      }
+    }
+  }
+}

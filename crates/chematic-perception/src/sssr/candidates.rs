@@ -530,16 +530,20 @@ pub fn ring_bond_flags_shared(mol: &Molecule) -> std::sync::Arc<Vec<bool>> {
 /// Connected components of the cyclic subgraph (the 2-edge-connected
 /// components of the ring-eligible graph).
 #[derive(Debug)]
-pub(crate) struct RingComponents {
+#[non_exhaustive]
+pub struct RingComponents {
     /// Component label of every atom (atoms on no cycle are singletons).
     pub label: Vec<u32>,
     /// Number of labels.
     pub count: u32,
 }
 
-/// Memoized [`RingComponents`] of `mol`, computed together with
-/// [`ring_bond_flags_shared`].
-pub(crate) fn ring_components_shared(mol: &Molecule) -> std::sync::Arc<RingComponents> {
+/// Shared, memoized [`RingComponents`] of `mol`, computed together with
+/// [`ring_bond_flags_shared`]. Labels identify connected components after
+/// removing bridges and ring-ineligible bonds; they are not stable atom IDs.
+/// Graph mutations invalidate both cached values. A graph with externally
+/// seeded bond flags may compute its component labels on this first call.
+pub fn ring_components_shared(mol: &Molecule) -> std::sync::Arc<RingComponents> {
     if let Some(c) = mol.derived_if_computed(chematic_core::DerivedSlot::RingComponents) {
         return c;
     }

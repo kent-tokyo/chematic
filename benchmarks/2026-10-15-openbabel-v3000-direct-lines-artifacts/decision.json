@@ -1,0 +1,6 @@
+{
+  "status": "rejected_for_adoption",
+  "production_source_applied": false,
+  "reason": "No original-profile parse improvement; writer regressions reproduced on all three fixed profiles and continued-chain diagnostics. All original and adaptive observations retained.",
+  "next_experiment": "Separately benchmark no-double-bond E/Z short-circuit against the unchanged five-candidate baseline."
+}

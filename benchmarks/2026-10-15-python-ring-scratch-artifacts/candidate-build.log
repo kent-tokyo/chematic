@@ -1,0 +1,16 @@
+🍹 Building a mixed python/rust project
+🐍 Found CPython 3.13 at /private/tmp/chematic-cycle-speed-20261014/env/bin/python
+🔗 Found pyo3 bindings
+📡 Using build options features from pyproject.toml
+💻 Using `MACOSX_DEPLOYMENT_TARGET=11.0` for aarch64-apple-darwin by default
+   Compiling pyo3 v0.29.3
+   Compiling numpy v0.29.0
+   Compiling ndarray v0.17.2
+   Compiling chematic-3d v1.1.4 (/private/tmp/chematic-ring-scratch-source-20261015/crates/chematic-3d)
+   Compiling chematic-inchi v1.1.4 (/private/tmp/chematic-ring-scratch-source-20261015/crates/chematic-inchi)
+   Compiling chematic-depict v1.1.4 (/private/tmp/chematic-ring-scratch-source-20261015/crates/chematic-depict)
+   Compiling chematic-crystal v1.1.4 (/private/tmp/chematic-ring-scratch-source-20261015/crates/chematic-crystal)
+   Compiling chematic-mol v1.1.4 (/private/tmp/chematic-ring-scratch-source-20261015/crates/chematic-mol)
+   Compiling chematic-py v1.1.4 (/private/tmp/chematic-ring-scratch-source-20261015/crates/chematic-py)
+    Finished `release` profile [optimized] target(s) in 2m 04s
+📦 Built wheel for CPython 3.13 to /private/tmp/chematic-ring-scratch-20261015/candidate-wheel/chematic-1.1.4-cp313-cp313-macosx_11_0_arm64.whl

@@ -1,0 +1,20 @@
+baseline-install passed
+baseline-descriptors passed
+baseline-morgan passed
+optimize passed
+format-new-test passed
+format passed
+refactor passed
+native-tests passed
+clippy passed
+Traceback (most recent call last):
+  File "/private/tmp/chematic-ring-component-20261015/validate.py", line 21, in <module>
+    call('candidate-build',['maturin','build','--release','--manifest-path','crates/chematic-py/Cargo.toml','--interpreter',python,'--out',str(r/'candidate-wheel')])
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/chematic-ring-component-20261015/validate.py", line 6, in call
+    with (r/(name+'.log')).open('w') as log: subprocess.run(cmd,cwd=s,env=e,stdout=log,stderr=subprocess.STDOUT,check=True)
+                                             ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/subprocess.py", line 577, in run
+    raise CalledProcessError(retcode, process.args,
+                             output=stdout, stderr=stderr)
+subprocess.CalledProcessError: Command '['maturin', 'build', '--release', '--manifest-path', 'crates/chematic-py/Cargo.toml', '--interpreter', '/private/tmp/chematic-cycle-speed-20261014/env/bin/python', '--out', '/private/tmp/chematic-ring-component-20261015/candidate-wheel']' returned non-zero exit status 1.

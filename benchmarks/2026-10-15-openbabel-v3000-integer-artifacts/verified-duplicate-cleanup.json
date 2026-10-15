@@ -1,0 +1,26 @@
+[
+  {
+    "removed": "verified duplicate previous Python delivery staging",
+    "files": 70
+  },
+  {
+    "removed": "/private/tmp/chematic-component-packed-20261015/baseline-descriptors.jsonl",
+    "raw_sha256": "0a0f9391c39ed6bb530a208f34e0195f7468c53a74265908da58a8bd6ab11010",
+    "retained_exact_compressed": "/Users/k_tanabe/.codex/worktrees/relevant-cycle-speed/chematic/benchmarks/2026-10-15-python-component-packed-artifacts/baseline-descriptors.jsonl.gz"
+  },
+  {
+    "removed": "/private/tmp/chematic-component-packed-20261015/baseline-morgan.jsonl",
+    "raw_sha256": "8927414b02a8e234a8e5020bb1c8909397a0a12a952086b229fda9fe9a2e04d4",
+    "retained_exact_compressed": "/Users/k_tanabe/.codex/worktrees/relevant-cycle-speed/chematic/benchmarks/2026-10-15-python-component-packed-artifacts/baseline-morgan.jsonl.gz"
+  },
+  {
+    "removed": "/private/tmp/chematic-component-packed-20261015/candidate-morgan.jsonl",
+    "raw_sha256": "8927414b02a8e234a8e5020bb1c8909397a0a12a952086b229fda9fe9a2e04d4",
+    "retained_exact_compressed": "/Users/k_tanabe/.codex/worktrees/relevant-cycle-speed/chematic/benchmarks/2026-10-15-python-component-packed-artifacts/candidate-morgan.jsonl.gz"
+  },
+  {
+    "removed": "/private/tmp/chematic-component-packed-20261015/candidate-descriptors.jsonl",
+    "raw_sha256": "0a0f9391c39ed6bb530a208f34e0195f7468c53a74265908da58a8bd6ab11010",
+    "retained_exact_compressed": "/Users/k_tanabe/.codex/worktrees/relevant-cycle-speed/chematic/benchmarks/2026-10-15-python-component-packed-artifacts/candidate-descriptors.jsonl.gz"
+  }
+]

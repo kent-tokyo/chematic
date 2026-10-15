@@ -19,10 +19,10 @@ pub struct ConformerEnsemble {
 /// record adjacency, but deliberately remains order-sensitive: repeated
 /// conformers emitted by one embedding tool preserve atom and bond order.
 pub fn read_sdf_conformer_ensembles(input: &str) -> Result<Vec<ConformerEnsemble>, MolParseError> {
-    let reports = crate::mol2000::read_sdf_with_diagnostics(input)?;
     let mut ensembles: Vec<ConformerEnsemble> = Vec::new();
 
-    for report in reports {
+    for report in super::SdfRecordReader::new(input) {
+        let report = report?;
         let Some(conformer) = report.conformer else {
             continue;
         };
@@ -34,7 +34,7 @@ pub fn read_sdf_conformer_ensembles(input: &str) -> Result<Vec<ConformerEnsemble
         } else {
             ensembles.push(ConformerEnsemble {
                 mol: report.mol,
-                metadata: report.metadata,
+                metadata: report.meta,
                 conformers: vec![conformer],
             });
         }

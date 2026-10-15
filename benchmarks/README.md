@@ -111,3 +111,9 @@ python scripts/check_published_v1042_rdkit_packet.py /tmp/chematic-rdkit.json \
 The [complete inventory](archive-index.md) contains the full dated record
 list, streaming/format matrices, 3D evidence, artifact audits and earlier
 candidate measurements.
+
+## Source speed follow-ups on 2026-10-15
+
+| Question | Record | Boundary |
+|---|---|---|
+| Does the latest default TPSA guard preserve outputs and improve source throughput? | [2026-10-15 TPSA zero-contribution guard](2026-10-15-python-tpsa-zero.md) · [E/Z ring-queue follow-up](2026-10-15-openbabel-ring-queue.md) · [all follow-up records](archive-index.md) | Two fixed unfiltered 1,000-input slices on one host. NCI TPSA medians improve 1.028x first-use and 1.026x parse-inclusive over the immediate source candidate, with 18/20 and 17/20 faster blocks; neither is an all-block win. Exact 14,072-input descriptor/Morgan retention. Comparator first-use gaps and diverse Open Babel semantic mismatches remain. No complete-superiority or remeasured-main claim. |
