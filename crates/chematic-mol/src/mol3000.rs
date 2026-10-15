@@ -903,6 +903,7 @@ fn v3000_geometry(
         diagnostics.extend(crate::mol2000::wedge_vs_3d_conflicts(mol, coords));
         if rank == GeometryRank::ThreeD && dimension != CoordinateDimension::TwoD {
             crate::mol2000::perceive_tetrahedral_from_3d(mol, coords);
+            crate::mol2000::correct_ring_alkene_directions_from_3d(mol, coords);
         }
         perceived
     });

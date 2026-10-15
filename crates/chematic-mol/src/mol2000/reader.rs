@@ -589,6 +589,7 @@ fn geometry_diagnostics(
             && coordinate_dimension != CoordinateDimension::TwoD
         {
             perceive_tetrahedral_from_3d(mol, coords);
+            super::correct_ring_alkene_directions_from_3d(mol, coords);
         }
         perceived
     });
