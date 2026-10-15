@@ -1,0 +1,32 @@
+legacy
+  chematic
+
+  1  0  0  0  0  0  0  0  0  0  0 V2000
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+M  END
+> <id>
+old
+
+$$$$
+M  END in title
+  chematic
+M  END in comment
+  0  0  0  0  0  0  0  0  0  0999 V3000
+M  V30 BEGIN CTAB
+M  V30 COUNTS 2 1 0 0 0
+M  V30 BEGIN ATOM
+M  V30 1 C 0 0 0 0
+M  V30 2 O 1 0 0 0 CHG=-1
+M  V30 END ATOM
+M  V30 BEGIN BOND
+M  V30 1 1 1 2
+M  V30 END BOND
+M  V30 END CTAB
+M  END
+> <id>
+new
+
+> <note>
+M  END is data
+
+$$$$
