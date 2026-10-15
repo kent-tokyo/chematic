@@ -71,12 +71,14 @@ fn atom(line: &str, number: usize, limits: HinParseLimits) -> Result<PendingAtom
     };
     let mut seen = BTreeSet::new();
     let mut neighbors = Vec::with_capacity(count);
-    for pair in fields[11..].chunks_exact(2) {
-        let other = positive_id(pair[0], number)?;
+    let (pairs, remainder) = fields[11..].as_chunks::<2>();
+    debug_assert!(remainder.is_empty());
+    for &[other_token, order_token] in pairs {
+        let other = positive_id(other_token, number)?;
         if other == source_id || !seen.insert(other) {
             return Err(invalid(number, "self or duplicate connectivity reference"));
         }
-        let order = match pair[1] {
+        let order = match order_token {
             "s" => BondOrder::Single,
             "d" => BondOrder::Double,
             "t" => BondOrder::Triple,

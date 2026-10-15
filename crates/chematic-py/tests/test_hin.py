@@ -41,7 +41,7 @@ def test_exact_source_retention(source):
     SOURCE.replace("6 a 2 a", "6 a 6 a"),
     SOURCE.replace("6 a 2 a", "6 q 2 a"),
     SOURCE.replace("endmol 7", "res 1 ALA 1\nendmol 7"),
-    " " * ((1 << 20) + 1),
+    pytest.param(" " * ((1 << 20) + 1), id="input-too-large"),
 ])
 def test_invalid_or_unsupported_input_refuses(bad):
     for reader in [chematic.from_hin, chematic.parse_hin_record_json, chematic.roundtrip_hin_record]:
