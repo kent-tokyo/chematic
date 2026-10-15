@@ -50,6 +50,7 @@ pub fn stable_are_identical(a: &Molecule, b: &Molecule) -> Option<bool> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chematic_core::{AtomIdx, StereoGroup, StereoGroupKind};
     use chematic_smiles::parse;
 
     fn mol(s: &str) -> Molecule {
@@ -86,6 +87,20 @@ mod tests {
         let hash1 = mol_hash(&m);
         let hash2 = mol_hash(&m);
         assert_eq!(hash1, hash2, "same molecule should produce same hash");
+    }
+
+    #[test]
+    fn stable_identity_does_not_collapse_enhanced_stereo_groups() {
+        let mut absolute = mol("F[C@](Cl)(Br)I");
+        let mut mixture = absolute.clone();
+        absolute.add_stereo_group(StereoGroup::new(
+            StereoGroupKind::Absolute,
+            vec![AtomIdx(1)],
+        ));
+        mixture.add_stereo_group(StereoGroup::new(StereoGroupKind::And(1), vec![AtomIdx(1)]));
+
+        assert_eq!(canonical_smiles(&absolute), canonical_smiles(&mixture));
+        assert_eq!(stable_are_identical(&absolute, &mixture), None);
     }
 
     #[test]

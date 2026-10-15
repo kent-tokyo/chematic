@@ -142,6 +142,10 @@ Notes on the cells above that need qualification:
 - **Rust**: `chematic_mol::{parse_pdbqt, parse_pdbqt_with_limits, write_pdbqt, PdbqtError, PdbqtParseLimits}`.
 - **Coordinate units**: Ångström.
 - **Connectivity**: no bond perception; rigid-body PDBQT only.
+- **Required atom fields**: each ATOM/HETATM record must include an explicit
+  partial charge and AutoDock atom type. The parser retains charges wider than
+  the usual fixed-width field when separated from the atom type by whitespace.
+  The writer rounds charges to three decimal places.
 - **Parse limits**: `PdbqtParseLimits` bounds input bytes, physical line
   length/count, and ATOM/HETATM records. The existing parser uses finite
   defaults.
