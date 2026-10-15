@@ -19,8 +19,8 @@
 use std::collections::{HashMap, HashSet};
 
 use chematic_core::{
-    AtomIdx, BondIdx, BondOrder, Chirality, Molecule, STEREO_H_SENTINEL, implicit_hcount,
-    remap_square_planar_tag, remap_tetrahedral_parity, valence_inferred_hcount,
+    AtomIdx, BondIdx, BondOrder, Chirality, Molecule, STEREO_H_SENTINEL, STEREO_VACANT_SENTINEL,
+    implicit_hcount, remap_square_planar_tag, remap_tetrahedral_parity, valence_inferred_hcount,
 };
 use smallvec::SmallVec;
 

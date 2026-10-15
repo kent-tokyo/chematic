@@ -17,7 +17,9 @@
 
 use std::collections::BTreeMap;
 
-use chematic_core::{AtomIdx, Molecule, MoleculeBuilder, STEREO_H_SENTINEL};
+use chematic_core::{
+    AtomIdx, Molecule, MoleculeBuilder, STEREO_H_SENTINEL, STEREO_VACANT_SENTINEL,
+};
 
 use crate::CipError;
 use crate::budget::CipBudget;
@@ -50,7 +52,7 @@ pub fn renumber_molecule(mol: &Molecule, perm: &[usize]) -> (Molecule, Vec<u32>)
             let remapped: Vec<u32> = order
                 .iter()
                 .map(|&v| {
-                    if v == STEREO_H_SENTINEL {
+                    if matches!(v, STEREO_H_SENTINEL | STEREO_VACANT_SENTINEL) {
                         v
                     } else {
                         old_to_new[v as usize]

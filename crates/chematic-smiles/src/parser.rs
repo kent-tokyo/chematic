@@ -14,7 +14,7 @@ use std::collections::HashMap;
 
 use chematic_core::{
     Atom, AtomIdx, BondOrder, Chirality, Element, MoleculeBuilder, STEREO_H_SENTINEL,
-    SquarePlanarPermutation,
+    STEREO_VACANT_SENTINEL, SquarePlanarPermutation,
 };
 
 use crate::error::SmilesError;
@@ -206,6 +206,7 @@ const MAX_OPEN_RING_LABELS: usize = MAX_ATOMS;
 enum StereoEntry {
     Atom(AtomIdx),
     ImplicitH,
+    Vacant,
     /// Ring opened at the chiral atom; will be resolved to `Atom` when the ring
     /// closes. Keyed by a unique per-occurrence slot id (see `next_ring_slot`),
     /// NOT the raw ring digit -- ring digits are reused within a single SMILES
@@ -340,6 +341,7 @@ impl<'a> Parser<'a> {
                 .map(|e| match e {
                     StereoEntry::Atom(a) => a.0,
                     StereoEntry::ImplicitH => STEREO_H_SENTINEL,
+                    StereoEntry::Vacant => STEREO_VACANT_SENTINEL,
                     StereoEntry::PendingRing(_) => STEREO_H_SENTINEL, // unresolved → skip
                 })
                 .collect();
@@ -347,6 +349,24 @@ impl<'a> Parser<'a> {
         }
 
         let mut molecule = mol.build();
+        // Retain the parse-time vacant-site position only when exactly one
+        // non-tetrahedral coordination site is unoccupied.
+        for &center in &tagged_atoms {
+            let Some((class, _)) = molecule.atom(center).chirality.nontetrahedral() else {
+                continue;
+            };
+            let Some(order) = molecule.stereo_neighbor_order(center) else {
+                continue;
+            };
+            if order.len() != class.max_nbors() {
+                let order = order
+                    .iter()
+                    .copied()
+                    .filter(|&id| id != STEREO_VACANT_SENTINEL)
+                    .collect();
+                molecule.set_stereo_neighbor_order(center, order);
+            }
+        }
         crate::allene::normalize_allene_stereo(&mut molecule, &tagged_atoms);
         // A SMILES graph with no ring-closure token is a forest by
         // construction. Publish that already-known result so the first
@@ -555,6 +575,9 @@ impl<'a> Parser<'a> {
         let mut entries: Vec<StereoEntry> = Vec::new();
         if let Some(prev) = from_atom {
             entries.push(StereoEntry::Atom(prev));
+        }
+        if atom.chirality.nontetrahedral().is_some() {
+            entries.push(StereoEntry::Vacant);
         }
         if atom.hydrogen_count.is_some_and(|h| h > 0) {
             entries.push(StereoEntry::ImplicitH);

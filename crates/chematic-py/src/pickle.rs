@@ -14,7 +14,8 @@ use std::sync::Arc;
 
 use chematic_core::{
     Atom, AtomIdx, BondIdx, BondOrder, Chirality, CipCode, Element, MoleculeBuilder, RGroupLabel,
-    STEREO_H_SENTINEL, SquarePlanarPermutation, StereoGroup, StereoGroupKind,
+    STEREO_H_SENTINEL, STEREO_VACANT_SENTINEL, SquarePlanarPermutation, StereoGroup,
+    StereoGroupKind,
 };
 
 const MAGIC: &[u8; 8] = b"CHMPKL\0\0";
@@ -464,7 +465,9 @@ fn decode_stereo_order(reader: &mut Reader<'_>, atom_count: usize) -> Result<Vec
     let mut order = Vec::with_capacity(neighbor_count);
     for _ in 0..neighbor_count {
         let neighbor = reader.u32()?;
-        if neighbor != STEREO_H_SENTINEL && neighbor as usize >= atom_count {
+        if !matches!(neighbor, STEREO_H_SENTINEL | STEREO_VACANT_SENTINEL)
+            && neighbor as usize >= atom_count
+        {
             return Err(format!(
                 "stereo neighbor atom index {neighbor} is out of range"
             ));
