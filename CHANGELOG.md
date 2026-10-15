@@ -143,6 +143,14 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Performance
 
+- Reduced ordered-ring reconstruction from repeated prefix moves to linear
+  append/reverse operations, with exhaustive differential tests preserving
+  every ring and its order.
+
+- Skip absent V3000 bond-attribute processing and reuse owned opaque property
+  strings when endpoint normalization makes no change. Parse diagnostics and
+  rewritten MOL blocks remain unchanged.
+
 - Skip aromatic perception for RDKit-default TPSA when its selected model view
   contains no nitrogen or oxygen, retaining exact zero and all contributing-atom
   calculations without changing parsing or S/P-inclusive TPSA.

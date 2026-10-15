@@ -462,6 +462,9 @@ fn parse_v3000_bond_line(
             detail: e.to_string(),
         })?;
     bond_idx_map.push((v3k_idx, bidx));
+    if kv_tokens.is_empty() {
+        return Ok(());
+    }
     if btype_raw == 2 && parse_kv(kv_tokens, "CFG") == Some("2") {
         explicitly_unspecified_ez.insert(bidx);
     }
@@ -476,7 +479,7 @@ fn parse_v3000_bond_line(
         .copied()
         .collect::<Vec<_>>()
         .join(" ");
-    let opaque_properties = normalize_v3000_endpoints(&opaque_properties, atom_idx_map);
+    let opaque_properties = normalize_v3000_endpoints(opaque_properties, atom_idx_map);
     if !opaque_properties.is_empty() {
         // As with atom metadata, normalize a source bond id to the writer's
         // sequential id. V3000 permits non-contiguous ids, whereas the
@@ -490,26 +493,26 @@ fn parse_v3000_bond_line(
 /// sequential ids emitted by this writer. Leave malformed or unknown-shaped
 /// values unchanged: they remain opaque metadata rather than becoming a
 /// guessed semantic edit.
-fn normalize_v3000_endpoints(properties: &str, atom_idx_map: &[(u32, AtomIdx)]) -> String {
+fn normalize_v3000_endpoints(properties: String, atom_idx_map: &[(u32, AtomIdx)]) -> String {
     let Some(start) = properties.find("ENDPTS=(") else {
-        return properties.to_owned();
+        return properties;
     };
     let value_start = start + "ENDPTS=(".len();
     let Some(close_offset) = properties[value_start..].find(')') else {
-        return properties.to_owned();
+        return properties;
     };
     let value_end = value_start + close_offset;
     let values: Vec<&str> = properties[value_start..value_end]
         .split_whitespace()
         .collect();
     let Some((declared, atom_ids)) = values.split_first() else {
-        return properties.to_owned();
+        return properties;
     };
     let Ok(declared) = declared.parse::<usize>() else {
-        return properties.to_owned();
+        return properties;
     };
     if atom_ids.len() != declared {
-        return properties.to_owned();
+        return properties;
     }
     let Some(writer_ids) = atom_ids
         .iter()
@@ -521,7 +524,7 @@ fn normalize_v3000_endpoints(properties: &str, atom_idx_map: &[(u32, AtomIdx)]) 
         })
         .collect::<Option<Vec<_>>>()
     else {
-        return properties.to_owned();
+        return properties;
     };
     let normalized = format!("ENDPTS=({declared} {})", writer_ids.join(" "));
     format!(
@@ -1388,3 +1391,7 @@ mod zero_z_tests;
 #[cfg(test)]
 #[path = "mol3000/count_capacity_tests.rs"]
 mod count_capacity_tests;
+
+#[cfg(test)]
+#[path = "mol3000/attribute_tail_tests.rs"]
+mod attribute_tail_tests;

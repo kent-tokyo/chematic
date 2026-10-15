@@ -22,6 +22,9 @@ the [complete inventory](archive-index.md) links every retained record.
 
 ## Recent focused follow-ups
 
+- [Ordered-ring and V3000 parser speed follow-ups](2026-10-16-chemistry-speed-followups.md):
+  exact output-retention gates and paired source timings; the NCI ring lane
+  remains inconclusive and this is not a published-package claim.
 - [PDBQT field preservation](2026-10-15-openbabel-pdbqt-fields.md)
   ([raw JSON](2026-10-15-openbabel-pdbqt-fields.json)): two bounded Open Babel
   3.2.1 cases covering an over-width charge and a missing charge; this is not
