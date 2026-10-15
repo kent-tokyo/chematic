@@ -23,6 +23,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   type 4, ahead of unresolved Open Babel #3000. Unsupported directives and
   inconsistent references refuse instead of losing fields silently.
 
+- Read a single wwPDB CCD molecular template in Rust/Python/WASM, including
+  explicit atom/bond IDs, formal charges, optional model/ideal coordinates,
+  aromatic flags and retained stereo annotations. Graph projection requires
+  consent before discarding unassigned R/S or E/Z annotations (Open Babel #1516).
+
 - Added checked molecular ChemDoodle JSON reading and graph writing in
   Rust/Python, preserving explicit zero H overrides, element labels, source
   text and IDs, with strict unsupported-field rejection and aggregate limits.

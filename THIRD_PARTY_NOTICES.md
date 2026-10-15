@@ -335,3 +335,18 @@ project input under MIT OR Apache-2.0. No Open Babel source code or issue
 attachment was copied. The issue and format documentation are referenced
 for the behavior and file syntax; the fixture manifest records provenance,
 expected MDL bond semantics and a SHA-256 digest.
+
+## wwPDB Chemical Component Dictionary validation data (2026-10-16)
+
+The parsed CCD records in
+`validation/results/openbabel-ccd-2026-10-16.json` derive from the official
+RCSB downloads of GLY, HOH, ALA, NA, CL, BEN, ATP and HEM. Their download URLs
+and exact input hashes are recorded there. Attribution: wwPDB / RCSB PDB
+Chemical Component Dictionary, https://www.wwpdb.org/data/ccd.
+
+PDB archive data are available under the CC0 1.0 Universal public-domain
+dedication: https://www.wwpdb.org/about/usage-policies.
+The original synthetic water fixture has separate MIT OR Apache-2.0 provenance
+in `validation/openbabel_issues/ccd/manifest.json`. No Open Babel or Gemmi
+implementation is included in this feature; Gemmi 0.7.5 is used only as an
+external validation oracle.

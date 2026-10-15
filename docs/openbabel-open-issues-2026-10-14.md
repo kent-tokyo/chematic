@@ -78,3 +78,12 @@ open. An independently constructed six-carbon aromatic HIN ring reproduces
 MDL query type 5 output on Open Babel 3.2.1. The new checked HIN reader maps
 `a` to the existing aromatic graph bond, so chematic emits MDL type 4.
 See the [bounded HIN profile and validation](openbabel-hin-aromatic-bonds.md).
+
+## October 16 follow-up: Chemical Component Dictionary
+
+[Open Babel #1516](https://github.com/openbabel/openbabel/issues/1516) remains
+open. The existing mmCIF adapter reads `_atom_site`, not CCD molecular templates.
+A [single-component CCD reader](ccd-components.md) now reads `_chem_comp_atom`
+and `_chem_comp_bond` in Rust/Python/WASM. It retains stereo annotations and
+requires explicit consent for an unassigned graph projection. Bulk dictionary
+streaming and CCD writing are outside this implementation.
