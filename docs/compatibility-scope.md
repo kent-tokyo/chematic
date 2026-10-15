@@ -125,7 +125,7 @@ the v1.0 contract.
 ## Glycan molecular interchange
 
 Glycan structures can use the generic SMILES and MOL/SDF molecular graph APIs.
-The [crabWURCS interchange check](../validation/crabwurcs_interchange/README.md)
+The [crabWURCS interchange check](https://github.com/kent-tokyo/chematic/blob/main/validation/crabwurcs_interchange/README.md)
 exercises that boundary on 938 source SMILES from a pinned upstream checkout.
 WURCS notation, residue and linkage semantics, and glycan extraction from
 PDB/mmCIF are outside the current CheMatic contract.
