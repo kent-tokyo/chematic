@@ -1,0 +1,1478 @@
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index c6b6430..9f7fbc9 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -224,6 +224,7 @@ jobs:
+           - { package: chematic-mol, target: turbomole_contract }
+           - { package: chematic-mol, target: exyz_contract }
+           - { package: chematic-mol, target: fhiaims_contract }
++          - { package: chematic-mol, target: mopac_cartesian_contract }
+           - { package: chematic-smiles, target: rdkit_graph_queries }
+           - { package: chematic-smiles, target: rdkit_atom_environment }
+           - { package: chematic-mol, target: rdfile_contract }
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index a828b5a..ff536e3 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -12,6 +12,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
+ 
+ ### Added
+ 
++- Added checked MOPAC Cartesian reading/writing in Rust/Python, retaining
++  header text, optional optimization flags, atom labels and 0D-3D
++  translation vectors with full floating-point precision.
++
+ - Added bounded RDKit atom-radius environments in Rust/Python, returning
+   ordered bond indices and atom distances with hydrogen filtering and exact
+   cyclic enforceSize behavior. Budget exhaustion returns an explicit error.
+diff --git a/crates/chematic-mol/src/lib.rs b/crates/chematic-mol/src/lib.rs
+index 750d07a..e2991f3 100644
+--- a/crates/chematic-mol/src/lib.rs
++++ b/crates/chematic-mol/src/lib.rs
+@@ -42,6 +42,7 @@ pub mod mol2_source;
+ pub mod mol2_tripos;
+ pub mod mol3000;
+ pub mod moljson;
++pub mod mopac;
+ pub mod mrv;
+ pub mod nucleic_acid;
+ pub mod opendx;
+@@ -162,6 +163,11 @@ pub use mol3000::{
+ pub use moljson::{
+     MolJsonError, MolJsonParseLimits, parse_moljson, parse_moljson_with_limits, write_moljson,
+ };
++pub use mopac::{
++    MopacAtom, MopacCartesianGeometry, MopacCartesianRow, MopacError, MopacOptimizationFlag,
++    MopacParseLimits, parse_mopac_cartesian, parse_mopac_cartesian_with_limits,
++    write_mopac_cartesian,
++};
+ pub use mrv::{
+     MrvError, MrvParseLimits, MrvWriteOptions, parse_mrv, parse_mrv_with_limits, write_mrv,
+ };
+diff --git a/crates/chematic-mol/src/mopac.rs b/crates/chematic-mol/src/mopac.rs
+new file mode 100644
+index 0000000..b24b594
+--- /dev/null
++++ b/crates/chematic-mol/src/mopac.rs
+@@ -0,0 +1,196 @@
++//! Checked MOPAC Cartesian geometry from the public OpenMOPAC documentation.
++//! Independently implemented; no MOPAC/Open Babel implementation code is used.
++use chematic_core::Element;
++mod reader;
++mod writer;
++pub use reader::{parse_mopac_cartesian, parse_mopac_cartesian_with_limits};
++pub use writer::write_mopac_cartesian;
++
++#[derive(Debug, Clone, Copy)]
++pub struct MopacParseLimits {
++    pub max_input_bytes: usize,
++    pub max_line_len: usize,
++    pub max_atoms: usize,
++}
++impl Default for MopacParseLimits {
++    fn default() -> Self {
++        Self {
++            max_input_bytes: 64 << 20,
++            max_line_len: 16_384,
++            max_atoms: 1_000_000,
++        }
++    }
++}
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub struct MopacError {
++    pub line: usize,
++    pub detail: String,
++}
++impl core::fmt::Display for MopacError {
++    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
++        write!(f, "MOPAC line {}: {}", self.line, self.detail)
++    }
++}
++impl std::error::Error for MopacError {}
++fn error(line: usize, detail: impl Into<String>) -> MopacError {
++    MopacError {
++        line,
++        detail: detail.into(),
++    }
++}
++
++#[derive(Debug, Clone, Copy, PartialEq, Eq)]
++pub enum MopacOptimizationFlag {
++    MiniReaction,
++    Reaction,
++    Fixed,
++    Optimize,
++    MiniOptimize,
++    TurningPoint,
++}
++impl MopacOptimizationFlag {
++    pub fn code(self) -> &'static str {
++        match self {
++            Self::MiniReaction => "-2",
++            Self::Reaction => "-1",
++            Self::Fixed => "0",
++            Self::Optimize => "1",
++            Self::MiniOptimize => "2",
++            Self::TurningPoint => "T",
++        }
++    }
++    pub fn from_code(code: &str) -> Option<Self> {
++        match code {
++            "-2" => Some(Self::MiniReaction),
++            "-1" => Some(Self::Reaction),
++            "0" | "+0" => Some(Self::Fixed),
++            "1" | "+1" => Some(Self::Optimize),
++            "2" | "+2" => Some(Self::MiniOptimize),
++            "T" => Some(Self::TurningPoint),
++            _ => None,
++        }
++    }
++}
++
++#[derive(Debug, Clone, PartialEq)]
++pub struct MopacCartesianRow {
++    pub position_angstrom: [f64; 3],
++    /// None retains an unflagged three-number row, without guessing defaults.
++    pub optimization_flags: Option<[MopacOptimizationFlag; 3]>,
++}
++#[derive(Debug, Clone, PartialEq)]
++pub struct MopacAtom {
++    pub element: Element,
++    pub label: Option<String>,
++    pub row: MopacCartesianRow,
++}
++#[derive(Debug, Clone, PartialEq)]
++pub struct MopacCartesianGeometry {
++    /// Raw keyword line; no charge, spin, Hamiltonian or optimizer is inferred.
++    pub keywords: String,
++    pub title: String,
++    pub comment: String,
++    pub atoms: Vec<MopacAtom>,
++    /// Zero to three Cartesian translation vectors in source order.
++    pub translation_vectors: Vec<MopacCartesianRow>,
++    pub source_text: String,
++}
++impl MopacCartesianGeometry {
++    pub fn periodicity(&self) -> usize {
++        self.translation_vectors.len()
++    }
++    pub fn validate(&self) -> Result<(), MopacError> {
++        for (i, text) in [&self.keywords, &self.title, &self.comment]
++            .iter()
++            .enumerate()
++        {
++            if text.len() > MopacParseLimits::default().max_line_len
++                || text.chars().any(|c| c.is_control() && c != '\t')
++            {
++                return Err(error(i + 1, "header must fit a single supported line"));
++            }
++        }
++        for token in self.keywords.split_whitespace() {
++            let key = token.split('=').next().unwrap_or("").to_ascii_uppercase();
++            if key == "A0" || matches!(key.as_str(), "+" | "++" | "&") {
++                return Err(error(
++                    1,
++                    "atomic-unit input and keyword continuations are unsupported",
++                ));
++            }
++        }
++        if self.atoms.is_empty() || self.atoms.len() > MopacParseLimits::default().max_atoms {
++            return Err(error(0, "atom count outside supported limits"));
++        }
++        for atom in &self.atoms {
++            if matches!(atom.element.atomic_number(), 85 | 87 | 99) {
++                return Err(error(
++                    0,
++                    "reserved MOPAC sparkle/dummy element encoding is unsupported",
++                ));
++            }
++            if let Some(label) = &atom.label {
++                validate_label(label)?;
++            }
++            validate_row(&atom.row)?;
++        }
++        for row in &self.translation_vectors {
++            validate_row(row)?;
++        }
++        validate_vectors(&self.translation_vectors)
++    }
++}
++fn validate_label(label: &str) -> Result<(), MopacError> {
++    if !label.is_ascii()
++        || label.len() > 38
++        || label
++            .chars()
++            .any(|c| c.is_control() || c == '(' || c == ')')
++    {
++        return Err(error(
++            0,
++            "atom label must be <=38 ASCII characters without parentheses or controls",
++        ));
++    }
++    Ok(())
++}
++fn validate_row(row: &MopacCartesianRow) -> Result<(), MopacError> {
++    if row.position_angstrom.iter().any(|v| !v.is_finite()) {
++        return Err(error(0, "non-finite Cartesian coordinate"));
++    }
++    Ok(())
++}
++fn validate_vectors(vectors: &[MopacCartesianRow]) -> Result<(), MopacError> {
++    if vectors.len() > 3 {
++        return Err(error(0, "at most three translation vectors are supported"));
++    }
++    let mut normalized = [[0.; 3]; 3];
++    for (row, out) in vectors.iter().zip(&mut normalized) {
++        let v = row.position_angstrom;
++        let norm = v[0].hypot(v[1]).hypot(v[2]);
++        if !norm.is_finite() || norm <= 0. {
++            return Err(error(
++                0,
++                "translation vector must have finite positive length",
++            ));
++        }
++        for (a, b) in out.iter_mut().zip(v) {
++            *a = b / norm;
++        }
++    }
++    let [a, b, c] = normalized;
++    let cross = [
++        a[1] * b[2] - a[2] * b[1],
++        a[2] * b[0] - a[0] * b[2],
++        a[0] * b[1] - a[1] * b[0],
++    ];
++    let valid = match vectors.len() {
++        2 => cross[0].hypot(cross[1]).hypot(cross[2]) > 1e-6,
++        3 => (cross[0] * c[0] + cross[1] * c[1] + cross[2] * c[2]).abs() > 1e-6,
++        _ => true,
++    };
++    if !valid {
++        return Err(error(0, "dependent or near-dependent translation vectors"));
++    }
++    Ok(())
++}
+diff --git a/crates/chematic-mol/src/mopac/reader.rs b/crates/chematic-mol/src/mopac/reader.rs
+new file mode 100644
+index 0000000..42eabe4
+--- /dev/null
++++ b/crates/chematic-mol/src/mopac/reader.rs
+@@ -0,0 +1,151 @@
++use super::*;
++
++pub fn parse_mopac_cartesian(text: &str) -> Result<MopacCartesianGeometry, MopacError> {
++    parse_mopac_cartesian_with_limits(text, &MopacParseLimits::default())
++}
++pub fn parse_mopac_cartesian_with_limits(
++    text: &str,
++    limits: &MopacParseLimits,
++) -> Result<MopacCartesianGeometry, MopacError> {
++    if text.len() > limits.max_input_bytes {
++        return Err(error(0, "input byte limit exceeded"));
++    }
++    for (i, line) in text.lines().enumerate() {
++        if line.len() > limits.max_line_len {
++            return Err(error(i + 1, "line length limit exceeded"));
++        }
++    }
++    let mut lines = text.lines();
++    let mut header = Vec::new();
++    for line in 1..=3 {
++        header.push(
++            lines
++                .next()
++                .ok_or_else(|| error(line, "three header lines are required"))?
++                .to_string(),
++        );
++    }
++    let mut g = MopacCartesianGeometry {
++        keywords: header[0].clone(),
++        title: header[1].clone(),
++        comment: header[2].clone(),
++        atoms: Vec::new(),
++        translation_vectors: Vec::new(),
++        source_text: String::new(),
++    };
++    let mut ended = false;
++    for (i, line) in lines.enumerate() {
++        let number = i + 4;
++        if line.trim().is_empty() {
++            ended = true;
++            continue;
++        }
++        if ended {
++            return Err(error(
++                number,
++                "additional sections after geometry are unsupported",
++            ));
++        }
++        let (symbol, label, body) = identity(line, number)?;
++        let row = parse_row(body, number)?;
++        if symbol == "Tv" {
++            if label.is_some() || g.translation_vectors.len() >= 3 {
++                return Err(error(number, "expected up to three unlabeled Tv records"));
++            }
++            g.translation_vectors.push(row);
++        } else {
++            if !g.translation_vectors.is_empty() {
++                return Err(error(number, "atoms cannot follow a Tv record"));
++            }
++            if g.atoms.len() >= limits.max_atoms.min(MopacParseLimits::default().max_atoms) {
++                return Err(error(number, "atom limit exceeded"));
++            }
++            let element=element(symbol).ok_or_else(|| error(number,"expected canonical element/atomic number; isotopes and dummy/sparkle encodings unsupported"))?;
++            if let Some(s) = &label {
++                validate_label(s).map_err(|e| error(number, e.detail))?;
++            }
++            g.atoms.push(MopacAtom {
++                element,
++                label,
++                row,
++            });
++        }
++    }
++    g.validate()?;
++    g.source_text = text.to_string();
++    Ok(g)
++}
++
++fn element(symbol: &str) -> Option<Element> {
++    if symbol.bytes().all(|b| b.is_ascii_digit()) {
++        return symbol
++            .parse::<u8>()
++            .ok()
++            .and_then(Element::from_atomic_number);
++    }
++    Element::from_symbol(symbol).filter(|e| e.symbol() == symbol)
++}
++
++fn identity(raw: &str, line: usize) -> Result<(&str, Option<String>, &str), MopacError> {
++    let raw = raw.trim_start();
++    let boundary = raw
++        .find(|c: char| c.is_whitespace() || c == '(')
++        .unwrap_or(raw.len());
++    let symbol = &raw[..boundary];
++    let tail = &raw[boundary..];
++    if let Some(label_tail) = tail.strip_prefix('(') {
++        let end = label_tail
++            .find(')')
++            .ok_or_else(|| error(line, "unclosed atom label"))?;
++        let label = &label_tail[..end];
++        let body = &label_tail[end + 1..];
++        if !body.starts_with(char::is_whitespace) {
++            return Err(error(line, "whitespace required after atom label"));
++        }
++        Ok((symbol, Some(label.to_string()), body))
++    } else {
++        Ok((symbol, None, tail))
++    }
++}
++
++fn number(text: &str, line: usize) -> Result<f64, MopacError> {
++    let v = text
++        .replace(['D', 'd'], "e")
++        .parse::<f64>()
++        .map_err(|_| error(line, "invalid real number"))?;
++    if !v.is_finite() {
++        return Err(error(line, "non-finite real number"));
++    }
++    Ok(v)
++}
++fn parse_row(body: &str, line: usize) -> Result<MopacCartesianRow, MopacError> {
++    let f: Vec<_> = body.split_whitespace().collect();
++    if f.len() == 3 {
++        return Ok(MopacCartesianRow {
++            position_angstrom: [
++                number(f[0], line)?,
++                number(f[1], line)?,
++                number(f[2], line)?,
++            ],
++            optimization_flags: None,
++        });
++    }
++    if f.len() != 6 {
++        return Err(error(
++            line,
++            "expected x y z or x flag y flag z flag, without connectivity/extra fields",
++        ));
++    }
++    let flag = |code| {
++        MopacOptimizationFlag::from_code(code)
++            .ok_or_else(|| error(line, "unsupported optimization flag"))
++    };
++    Ok(MopacCartesianRow {
++        position_angstrom: [
++            number(f[0], line)?,
++            number(f[2], line)?,
++            number(f[4], line)?,
++        ],
++        optimization_flags: Some([flag(f[1])?, flag(f[3])?, flag(f[5])?]),
++    })
++}
+diff --git a/crates/chematic-mol/src/mopac/writer.rs b/crates/chematic-mol/src/mopac/writer.rs
+new file mode 100644
+index 0000000..ac207ac
+--- /dev/null
++++ b/crates/chematic-mol/src/mopac/writer.rs
+@@ -0,0 +1,40 @@
++use super::*;
++
++/// Write current Cartesian data, preserving keyword/title/comment text, labels,
++/// flags (including absence), and ordered translation vectors. No calculation
++/// settings, formal charge, spin state, isotope or topology are inferred.
++pub fn write_mopac_cartesian(g: &MopacCartesianGeometry) -> Result<String, MopacError> {
++    g.validate()?;
++    let mut out = format!("{}\n{}\n{}\n", g.keywords, g.title, g.comment);
++    for atom in &g.atoms {
++        out.push_str(atom.element.symbol());
++        if let Some(label) = &atom.label {
++            out.push('(');
++            out.push_str(label);
++            out.push(')');
++        }
++        write_row(&mut out, &atom.row);
++        if out.len() > MopacParseLimits::default().max_input_bytes {
++            return Err(error(0, "serialized byte limit exceeded"));
++        }
++    }
++    for row in &g.translation_vectors {
++        out.push_str("Tv");
++        write_row(&mut out, row);
++    }
++    out.push('\n');
++    if out.len() > MopacParseLimits::default().max_input_bytes {
++        return Err(error(0, "serialized byte limit exceeded"));
++    }
++    Ok(out)
++}
++fn write_row(out: &mut String, row: &MopacCartesianRow) {
++    for (i, value) in row.position_angstrom.iter().enumerate() {
++        out.push_str(&format!(" {value:.17e}"));
++        if let Some(flags) = row.optimization_flags {
++            out.push(' ');
++            out.push_str(flags[i].code());
++        }
++    }
++    out.push('\n');
++}
+diff --git a/crates/chematic-mol/tests/mopac_cartesian_contract.rs b/crates/chematic-mol/tests/mopac_cartesian_contract.rs
+new file mode 100644
+index 0000000..368591f
+--- /dev/null
++++ b/crates/chematic-mol/tests/mopac_cartesian_contract.rs
+@@ -0,0 +1,174 @@
++//! Original synthetic MIT OR Apache-2.0 contracts; see the fixture manifest.
++use chematic_mol::{
++    MopacParseLimits, parse_mopac_cartesian, parse_mopac_cartesian_with_limits,
++    write_mopac_cartesian,
++};
++const TEXT: &str = "PM7 XYZ CHARGE=1 MINI\noriginal synthetic\nflag and label contract\n14(site alpha) 1.25D-1 -2 -1.25 -1 2.5 0\nCl() -1.5 1 1.25d-1 2 0.5 T\nTv 4 0 1 1 0 0\nTv -1 0 5 0 2 0\nTv 1 0 0 0 -6 0\n\n";
++
++#[test]
++fn flags_labels_headers_and_vectors_roundtrip() {
++    let g = parse_mopac_cartesian(TEXT).unwrap();
++    assert_eq!(g.source_text, TEXT);
++    assert_eq!(g.keywords, "PM7 XYZ CHARGE=1 MINI");
++    assert_eq!(g.title, "original synthetic");
++    assert_eq!(g.comment, "flag and label contract");
++    assert_eq!(g.atoms[0].element.symbol(), "Si");
++    assert_eq!(g.atoms[0].label.as_deref(), Some("site alpha"));
++    assert_eq!(g.atoms[1].label.as_deref(), Some(""));
++    assert_eq!(g.atoms[0].row.position_angstrom, [0.125, -1.25, 2.5]);
++    for (atom, codes) in g.atoms.iter().zip([["-2", "-1", "0"], ["1", "2", "T"]]) {
++        assert_eq!(
++            atom.row.optimization_flags.unwrap().map(|f| f.code()),
++            codes
++        );
++    }
++    assert_eq!(g.periodicity(), 3);
++    assert_eq!(g.translation_vectors[2].position_angstrom, [1., 0., -6.]);
++    let back = parse_mopac_cartesian(&write_mopac_cartesian(&g).unwrap()).unwrap();
++    assert_eq!(g.atoms, back.atoms);
++    assert_eq!(g.translation_vectors, back.translation_vectors);
++}
++
++#[test]
++fn mixed_flags_absence_partial_periodicity_and_no_terminator() {
++    for n in 0..=3 {
++        let mut text = String::from("\n\n\nC 0 0 0\nH 1 +0 2 +1 3 +2\n");
++        for row in ["4 1 0", "-1 5 2", "1 0 -6"].iter().take(n) {
++            text.push_str(&format!("Tv {row}\n"));
++        }
++        let g = parse_mopac_cartesian(&text).unwrap();
++        assert_eq!(g.periodicity(), n);
++        assert!(g.atoms[0].row.optimization_flags.is_none());
++        assert_eq!(
++            g.atoms[1].row.optimization_flags.unwrap().map(|f| f.code()),
++            ["0", "1", "2"]
++        );
++        let back = parse_mopac_cartesian(&write_mopac_cartesian(&g).unwrap()).unwrap();
++        assert_eq!(g.atoms, back.atoms);
++        assert_eq!(g.translation_vectors, back.translation_vectors);
++    }
++}
++
++#[test]
++fn precision_and_crlf_are_preserved() {
++    let text = "\tPM7 XYZ\r\ntitle \r\ncomment\r\nH -0.0 4.9406564584124654e-324 1.7976931348623157e308\r\n";
++    let g = parse_mopac_cartesian(text).unwrap();
++    assert_eq!(g.source_text, text);
++    assert_eq!(g.title, "title ");
++    let back = parse_mopac_cartesian(&write_mopac_cartesian(&g).unwrap()).unwrap();
++    for (a, b) in g.atoms[0]
++        .row
++        .position_angstrom
++        .iter()
++        .zip(back.atoms[0].row.position_angstrom)
++    {
++        assert_eq!(a.to_bits(), b.to_bits());
++    }
++}
++
++#[test]
++fn unsupported_geometry_cannot_be_silently_reinterpreted() {
++    for body in [
++        "",
++        "C 0 1 0 1 0 1 0 0 0",
++        "C 0 1 0 1 0 1 0.5",
++        "C 0 3 0 1 0 1",
++        "C 0 t 0 1 0 1",
++        "C 0.0 0.0",
++        "c 0 0 0",
++        "C14.0 0 0 0",
++        "X 0 0 0",
++        "XX 0 0 0",
++        "0 0 0 0",
++        "99 0 0 0",
++        "At 0 0 0",
++        "Fr 0 0 0",
++        "Es 0 0 0",
++        "+ 0 0 0",
++        "C(unclosed 0 0 0",
++        "C(nested(a)) 0 0 0",
++        "C(label)0 0 0",
++        "C(λ) 0 0 0",
++        "C NaN 0 0",
++        "C 1e309 0 0",
++        "C 0 0 0\n\nC 1 2 3",
++        "Tv 1 0 0\nC 0 0 0",
++        "C 0 0 0\nTv(label) 1 0 0",
++    ] {
++        assert!(
++            parse_mopac_cartesian(&format!("PM7 XYZ\noriginal\n\n{body}")).is_err(),
++            "{body}"
++        );
++    }
++    for keywords in ["PM7 A0", "a0=1", "PM7 +", "++", "PM7 &"] {
++        assert_eq!(
++            parse_mopac_cartesian(&format!("{keywords}\n\n\nC 0 0 0"))
++                .unwrap_err()
++                .line,
++            1
++        );
++    }
++    assert!(parse_mopac_cartesian("PM7\ntitle").is_err());
++    assert!(parse_mopac_cartesian(&format!("\n\n\nC({}) 0 0 0", "a".repeat(39))).is_err());
++    assert!(parse_mopac_cartesian(&format!("\n\n\nC({}) 0 0 0", "a".repeat(38))).is_ok());
++}
++
++#[test]
++fn degenerate_translation_vectors_fail() {
++    for rows in [
++        "Tv 0 0 0",
++        "Tv 1 0 0\nTv 2 0 0",
++        "Tv 1 0 0\nTv 1 1e-12 0",
++        "Tv 1 0 0\nTv 0 1 0\nTv 1 1 1e-12",
++        "Tv 1 0 0\nTv 0 1 0\nTv 0 0 1\nTv 1 1 1",
++        "Tv 1.79e308 1.79e308 0",
++    ] {
++        assert!(
++            parse_mopac_cartesian(&format!("\n\n\nC 0 0 0\n{rows}")).is_err(),
++            "{rows}"
++        );
++    }
++}
++
++#[test]
++fn limits_and_line_numbers() {
++    for limits in [
++        MopacParseLimits {
++            max_atoms: 1,
++            ..Default::default()
++        },
++        MopacParseLimits {
++            max_input_bytes: 5,
++            ..Default::default()
++        },
++        MopacParseLimits {
++            max_line_len: 8,
++            ..Default::default()
++        },
++    ] {
++        assert!(parse_mopac_cartesian_with_limits(TEXT, &limits).is_err());
++    }
++    assert_eq!(
++        parse_mopac_cartesian("\n\n\nC 0 0 0\nH bad 0 0")
++            .unwrap_err()
++            .line,
++        5
++    );
++}
++
++#[test]
++fn writer_validates_current_data_instead_of_replaying_source() {
++    let mut g = parse_mopac_cartesian(TEXT).unwrap();
++    g.atoms[0].row.position_angstrom[0] = 0.12345678901234566;
++    g.atoms[0].row.optimization_flags = None;
++    g.atoms[0].label = None;
++    g.keywords = "PM6 XYZ".into();
++    let back = parse_mopac_cartesian(&write_mopac_cartesian(&g).unwrap()).unwrap();
++    assert_eq!(back.atoms, g.atoms);
++    assert_eq!(back.keywords, g.keywords);
++    g.title.push('\n');
++    assert!(write_mopac_cartesian(&g).is_err());
++    g.title.clear();
++    g.atoms[0].row.position_angstrom[1] = f64::NAN;
++    assert!(write_mopac_cartesian(&g).is_err());
++}
+diff --git a/crates/chematic-py/python/chematic/__init__.pyi b/crates/chematic-py/python/chematic/__init__.pyi
+index 7d48a9c..66ffb4b 100644
+--- a/crates/chematic-py/python/chematic/__init__.pyi
++++ b/crates/chematic-py/python/chematic/__init__.pyi
+@@ -5003,3 +5003,12 @@ def parse_fhiaims(text: str, *, max_input_bytes: Optional[int] = None, max_atoms
+ def write_fhiaims(elements: Sequence[str], coordinates: Sequence[Sequence[float]], *, coordinate_kinds: Optional[Sequence[str]] = None, lattice_angstrom: Optional[Sequence[Sequence[float]]] = None, constraints: Optional[Sequence[Sequence[bool]]] = None, initial_charges: Optional[Sequence[Optional[float]]] = None, initial_moments: Optional[Sequence[Optional[float]]] = None, lattice_constraints: Optional[Sequence[Sequence[bool]]] = None) -> str:
+     """Write current explicit geometry without discarding fractional kinds or metadata."""
+     ...
++
++
++def parse_mopac_cartesian(text: str, *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None) -> dict[str, Any]:
++    """Read checked MOPAC Cartesian angstrom geometry, retaining labels and optional flags."""
++    ...
++
++def write_mopac_cartesian(elements: Sequence[str], positions_angstrom: Sequence[Sequence[float]], *, keywords: str = "", title: str = "", comment: str = "", labels: Optional[Sequence[Optional[str]]] = None, optimization_flags: Optional[Sequence[Optional[Sequence[str]]]] = None, translation_vectors_angstrom: Optional[Sequence[Sequence[float]]] = None, translation_flags: Optional[Sequence[Optional[Sequence[str]]]] = None) -> str:
++    """Write current geometry; flags are string codes -2/-1/0/1/2/T, or None per row."""
++    ...
+diff --git a/crates/chematic-py/src/formats.rs b/crates/chematic-py/src/formats.rs
+index b6de97d..667a4ee 100644
+--- a/crates/chematic-py/src/formats.rs
++++ b/crates/chematic-py/src/formats.rs
+@@ -10,6 +10,8 @@ mod cif;
+ use cif::*;
+ mod fhiaims;
+ use fhiaims::*;
++mod mopac;
++use mopac::*;
+ mod exyz;
+ use exyz::*;
+ mod gro;
+@@ -1443,6 +1445,8 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
+         write_gzmat,
+         parse_fhiaims,
+         write_fhiaims,
++        parse_mopac_cartesian,
++        write_mopac_cartesian,
+         parse_exyz,
+         write_exyz,
+         parse_turbomole,
+diff --git a/crates/chematic-py/src/formats/mopac.rs b/crates/chematic-py/src/formats/mopac.rs
+new file mode 100644
+index 0000000..1e657b9
+--- /dev/null
++++ b/crates/chematic-py/src/formats/mopac.rs
+@@ -0,0 +1,177 @@
++use super::*;
++use chematic_mol::{MopacAtom, MopacCartesianGeometry, MopacCartesianRow, MopacOptimizationFlag};
++
++fn mopac_error(e: chematic_mol::MopacError) -> PyErr {
++    PyValueError::new_err(e.to_string())
++}
++
++fn flags(rows: &[MopacCartesianRow]) -> Vec<Option<Vec<&'static str>>> {
++    rows.iter()
++        .map(|row| {
++            row.optimization_flags
++                .map(|f| f.iter().map(|v| v.code()).collect())
++        })
++        .collect()
++}
++
++#[pyfunction]
++#[pyo3(signature=(text, *, max_input_bytes=None, max_atoms=None, max_line_len=None))]
++pub(super) fn parse_mopac_cartesian<'py>(
++    py: Python<'py>,
++    text: &str,
++    max_input_bytes: Option<usize>,
++    max_atoms: Option<usize>,
++    max_line_len: Option<usize>,
++) -> PyResult<Bound<'py, PyDict>> {
++    let mut limits = chematic_mol::MopacParseLimits::default();
++    if let Some(v) = max_input_bytes {
++        limits.max_input_bytes = v;
++    }
++    if let Some(v) = max_atoms {
++        limits.max_atoms = v;
++    }
++    if let Some(v) = max_line_len {
++        limits.max_line_len = v;
++    }
++    let g = chematic_mol::parse_mopac_cartesian_with_limits(text, &limits).map_err(mopac_error)?;
++    let out = PyDict::new(py);
++    out.set_item("keywords", &g.keywords)?;
++    out.set_item("title", &g.title)?;
++    out.set_item("comment", &g.comment)?;
++    out.set_item(
++        "elements",
++        g.atoms
++            .iter()
++            .map(|a| a.element.symbol())
++            .collect::<Vec<_>>(),
++    )?;
++    out.set_item(
++        "labels",
++        g.atoms.iter().map(|a| &a.label).collect::<Vec<_>>(),
++    )?;
++    out.set_item(
++        "positions_angstrom",
++        g.atoms
++            .iter()
++            .map(|a| a.row.position_angstrom)
++            .collect::<Vec<_>>(),
++    )?;
++    out.set_item(
++        "optimization_flags",
++        g.atoms
++            .iter()
++            .map(|a| {
++                a.row
++                    .optimization_flags
++                    .map(|f| f.iter().map(|v| v.code()).collect::<Vec<_>>())
++            })
++            .collect::<Vec<_>>(),
++    )?;
++    out.set_item(
++        "translation_vectors_angstrom",
++        g.translation_vectors
++            .iter()
++            .map(|r| r.position_angstrom)
++            .collect::<Vec<_>>(),
++    )?;
++    out.set_item("translation_flags", flags(&g.translation_vectors))?;
++    out.set_item("periodicity", g.periodicity())?;
++    out.set_item("source_text", &g.source_text)?;
++    Ok(out)
++}
++
++fn row(position_angstrom: [f64; 3], codes: Option<[String; 3]>) -> PyResult<MopacCartesianRow> {
++    let optimization_flags = codes
++        .map(|codes| {
++            let convert = |s: &str| {
++                MopacOptimizationFlag::from_code(s)
++                    .ok_or_else(|| PyValueError::new_err("unsupported MOPAC optimization flag"))
++            };
++            Ok::<_, PyErr>([
++                convert(&codes[0])?,
++                convert(&codes[1])?,
++                convert(&codes[2])?,
++            ])
++        })
++        .transpose()?;
++    Ok(MopacCartesianRow {
++        position_angstrom,
++        optimization_flags,
++    })
++}
++
++#[pyfunction]
++#[pyo3(signature=(elements, positions_angstrom, *, keywords="", title="", comment="", labels=None, optimization_flags=None, translation_vectors_angstrom=None, translation_flags=None))]
++#[allow(clippy::too_many_arguments)]
++pub(super) fn write_mopac_cartesian(
++    elements: Vec<String>,
++    positions_angstrom: Vec<[f64; 3]>,
++    keywords: &str,
++    title: &str,
++    comment: &str,
++    labels: Option<Vec<Option<String>>>,
++    optimization_flags: Option<Vec<Option<[String; 3]>>>,
++    translation_vectors_angstrom: Option<Vec<[f64; 3]>>,
++    translation_flags: Option<Vec<Option<[String; 3]>>>,
++) -> PyResult<String> {
++    let n = elements.len();
++    if [
++        Some(positions_angstrom.len()),
++        labels.as_ref().map(Vec::len),
++        optimization_flags.as_ref().map(Vec::len),
++    ]
++    .into_iter()
++    .flatten()
++    .any(|len| len != n)
++    {
++        return Err(PyValueError::new_err("all atom-array lengths must match"));
++    }
++    let vectors = translation_vectors_angstrom.unwrap_or_default();
++    if translation_flags
++        .as_ref()
++        .is_some_and(|v| v.len() != vectors.len())
++    {
++        return Err(PyValueError::new_err(
++            "translation flag count must match vector count",
++        ));
++    }
++    let atoms = elements
++        .into_iter()
++        .zip(positions_angstrom)
++        .enumerate()
++        .map(|(i, (symbol, position))| {
++            let element = chematic_core::Element::from_symbol(&symbol)
++                .filter(|e| e.symbol() == symbol)
++                .ok_or_else(|| {
++                    PyValueError::new_err(format!("invalid canonical element '{symbol}'"))
++                })?;
++            Ok(MopacAtom {
++                element,
++                label: labels.as_ref().and_then(|v| v[i].clone()),
++                row: row(
++                    position,
++                    optimization_flags.as_ref().and_then(|v| v[i].clone()),
++                )?,
++            })
++        })
++        .collect::<PyResult<Vec<_>>>()?;
++    let translation_vectors = vectors
++        .into_iter()
++        .enumerate()
++        .map(|(i, position)| {
++            row(
++                position,
++                translation_flags.as_ref().and_then(|v| v[i].clone()),
++            )
++        })
++        .collect::<PyResult<Vec<_>>>()?;
++    chematic_mol::write_mopac_cartesian(&MopacCartesianGeometry {
++        keywords: keywords.to_string(),
++        title: title.to_string(),
++        comment: comment.to_string(),
++        atoms,
++        translation_vectors,
++        source_text: String::new(),
++    })
++    .map_err(mopac_error)
++}
+diff --git a/crates/chematic-py/tests/test_mopac_cartesian.py b/crates/chematic-py/tests/test_mopac_cartesian.py
+new file mode 100644
+index 0000000..d03290c
+--- /dev/null
++++ b/crates/chematic-py/tests/test_mopac_cartesian.py
+@@ -0,0 +1,99 @@
++"""Original synthetic MIT OR Apache-2.0 MOPAC Cartesian contracts."""
++import ast
++import hashlib
++import json
++import math
++from pathlib import Path
++
++import pytest
++import chematic
++
++ROOT = Path(__file__).resolve().parents[3]
++FIELDS = ('keywords', 'title', 'comment', 'labels', 'optimization_flags', 'translation_vectors_angstrom', 'translation_flags')
++
++
++def emit(g):
++    return chematic.write_mopac_cartesian(g['elements'], g['positions_angstrom'], **{k: g[k] for k in FIELDS})
++
++
++def test_manifest_and_metadata_roundtrip():
++    fixture = json.loads((ROOT/'validation/openbabel_issues/mopac/contract-fixtures.json').read_text())['records'][0]
++    text = fixture['payload']
++    assert hashlib.sha256(text.encode()).hexdigest() == fixture['sha256']
++    g = chematic.parse_mopac_cartesian(text)
++    for key, value in fixture['expected'].items():
++        if key not in ('units', 'tolerance'):
++            assert g[key] == value
++    assert g['source_text'] == text
++    back = chematic.parse_mopac_cartesian(emit(g))
++    for key in g.keys()-{'source_text'}:
++        assert back[key] == g[key]
++    g['positions_angstrom'][0] = [0.12345678901234566, 2, 3]
++    g['optimization_flags'][0] = None
++    g['labels'][0] = None
++    g['keywords'] = 'PM6 XYZ'
++    back = chematic.parse_mopac_cartesian(emit(g))
++    for key in g.keys()-{'source_text'}:
++        assert back[key] == g[key]
++
++
++@pytest.mark.parametrize('dimension', range(4))
++def test_partial_periodicity_and_flags_absence(dimension):
++    vectors = [[4, 1, 0], [-1, 5, 2], [1, 0, -6]][:dimension]
++    g = chematic.parse_mopac_cartesian(chematic.write_mopac_cartesian(['C', 'H'], [[0, 0, 0], [1, 2, 3]], optimization_flags=[None, ['+0', '+1', '+2']], translation_vectors_angstrom=vectors))
++    assert g['optimization_flags'] == [None, ['0', '1', '2']]
++    assert g['translation_flags'] == [None]*dimension
++    assert g['translation_vectors_angstrom'] == vectors
++    assert g['periodicity'] == dimension
++
++
++@pytest.mark.parametrize('body', [
++    '', 'C 0 1 0 1 0 1 0 0 0', 'C 0 3 0 1 0 1', 'C 0 t 0 1 0 1',
++    'C14.0 0 0 0', 'X 0 0 0', 'XX 0 0 0', '0 0 0 0', '99 0 0 0',
++    'At 0 0 0', 'Fr 0 0 0', 'Es 0 0 0', '+ 0 0 0', 'C NaN 0 0',
++    'C(label)0 0 0', 'C(unclosed 0 0 0', 'C(nested(a)) 0 0 0', 'C(λ) 0 0 0',
++    'C('+('a'*39)+') 0 0 0', 'C 0 0 0\n\nH 1 2 3',
++    'Tv 1 0 0\nC 0 0 0', 'C 0 0 0\nTv(label) 1 0 0', 'C 0 0 0\nTv 0 0 0',
++    'C 0 0 0\nTv 1 0 0\nTv 2 0 0', 'C 0 0 0\nTv 1 0 0\nTv 0 1 0\nTv 1 1 1e-12',
++])
++def test_invalid_reader_input(body):
++    with pytest.raises(ValueError):
++        chematic.parse_mopac_cartesian('PM7 XYZ\noriginal\n\n'+body)
++
++
++@pytest.mark.parametrize('keyword', ['A0', 'PM7 a0=1', 'PM7 +', '++', 'PM7 &'])
++def test_unsupported_units_and_continuations(keyword):
++    with pytest.raises(ValueError, match='line 1'):
++        chematic.parse_mopac_cartesian(keyword+'\n\n\nC 0 0 0')
++
++
++@pytest.mark.parametrize('kwargs', [{'max_atoms': 0}, {'max_input_bytes': 2}, {'max_line_len': 4}])
++def test_reader_limits(kwargs):
++    with pytest.raises(ValueError):
++        chematic.parse_mopac_cartesian('\n\n\nC 0 0 0', **kwargs)
++
++
++@pytest.mark.parametrize('elements,positions,kwargs', [
++    ([], [], {}), (['C'], [], {}), (['c'], [[0, 0, 0]], {}),
++    (['Es'], [[0, 0, 0]], {}), (['C'], [[float('inf'), 0, 0]], {}),
++    (['C'], [[0, 0, 0]], {'labels': []}), (['C'], [[0, 0, 0]], {'labels': ['bad)']}),
++    (['C'], [[0, 0, 0]], {'optimization_flags': []}),
++    (['C'], [[0, 0, 0]], {'optimization_flags': [['1', '3', '0']]}),
++    (['C'], [[0, 0, 0]], {'translation_flags': [['0', '0', '0']]}),
++    (['C'], [[0, 0, 0]], {'title': 'bad\nheader'}),
++])
++def test_invalid_writer_input(elements, positions, kwargs):
++    with pytest.raises(ValueError):
++        chematic.write_mopac_cartesian(elements, positions, **kwargs)
++
++
++def test_crlf_fortran_precision_and_stub():
++    text = 'PM7 XYZ\r\ntitle \r\ncomment\r\nH -0.0 4.9406564584124654D-324 1.7976931348623157e308\r\n'
++    g = chematic.parse_mopac_cartesian(text)
++    back = chematic.parse_mopac_cartesian(emit(g))
++    assert back['positions_angstrom'] == g['positions_angstrom']
++    assert math.copysign(1, back['positions_angstrom'][0][0]) == -1
++    assert g['title'] == 'title ' and g['source_text'] == text
++    p = Path(__file__).resolve().parents[1]/'python/chematic/__init__.pyi'
++    names = {n.name for n in ast.parse(p.read_text()).body if isinstance(n, ast.FunctionDef)}
++    assert {'parse_mopac_cartesian', 'write_mopac_cartesian'} <= names
+diff --git a/docs/format-capabilities.md b/docs/format-capabilities.md
+index f82ff30..3bb3701 100644
+--- a/docs/format-capabilities.md
++++ b/docs/format-capabilities.md
+@@ -58,6 +58,7 @@ exposed in that language. "—" in the WASM columns for CIF means CIF has
+ | CIF (small-molecule) | Y | Y | Y | — | — | — |
+ | PQR | Y | Y | Y | Y | Y | Y |
+ | XYZ | Y | Y | Y | — | Y | Y |
++| MOPAC Cartesian | Y | Y | Y | Y | — | — |
+ | FHI-aims geometry.in | Y | Y | Y | Y | — | — |
+ | ORCA-AICCM EXYZ | Y | Y | Y | Y | — | — |
+ | Extended XYZ | Y | Y | Y | Y | Y | Y |
+@@ -763,3 +764,8 @@ vectors, Cartesian component constraints and optional starting-density charge
+ and spin moment. Cartesian geometry supports zero to three periodic directions;
+ fractional coordinates require three independent vectors. Custom species and
+ unsupported directives fail explicitly. See [scope and validation](openbabel-fhiaims.md).
++
++MOPAC Cartesian preserves Angstrom coordinates, optional optimization flags,
++atom labels, three header lines, and zero to three translation vectors. Internal
++coordinates, atomic units, dummy/sparkle encodings and additional job sections
++are refused; see [the checked contract](openbabel-mopac-cartesian.md).
+diff --git a/docs/openbabel-mopac-cartesian.md b/docs/openbabel-mopac-cartesian.md
+new file mode 100644
+index 0000000..ac53d03
+--- /dev/null
++++ b/docs/openbabel-mopac-cartesian.md
+@@ -0,0 +1,190 @@
++# Checked MOPAC Cartesian geometry
++
++The isolated candidate adds MOPAC Cartesian input/output to `chematic-mol`
++and Python. This fills a format gap identified against Open Babel's
++[`mop` / `mopcrt` / `mpc` format](https://openbabel.org/docs/FileFormats/MOPAC_Cartesian_format.html).
++It is a geometry and source-metadata API: it does not run MOPAC, infer bonds,
++interpret charge/spin keywords or validate a quantum-chemistry calculation.
++The common-format converter and WASM surface are unchanged.
++
++The implementation was independently written from public documentation.
++No Open Babel or MOPAC implementation code or upstream test data was copied.
++
++## Rust and Python interfaces
++
++Rust exports `parse_mopac_cartesian`, `parse_mopac_cartesian_with_limits`
++and `write_mopac_cartesian`. The structured types are `MopacCartesianGeometry`,
++`MopacAtom`, `MopacCartesianRow`, `MopacOptimizationFlag`, `MopacParseLimits`
++and `MopacError`. Geometry retains three header lines, atom rows, ordered
++translation vectors and the original `source_text`.
++
++```python
++import chematic
++
++text = chematic.write_mopac_cartesian(
++    ["Si", "Cl"],
++    [[0.123456789, -1.25, 2.5], [-1.5, 0.125, 0.5]],
++    keywords="PM7 XYZ CHARGE=1",
++    title="original synthetic",
++    comment="Cartesian coordinates in Angstrom",
++    labels=["site alpha", None],
++    optimization_flags=[["0", "1", "1"], None],
++    translation_vectors_angstrom=[[4, 1, 0], [-1, 5, 2], [1, 0, -6]],
++    translation_flags=[["0", "0", "0"]] * 3,
++)
++geometry = chematic.parse_mopac_cartesian(text, max_atoms=1000)
++assert geometry["periodicity"] == 3
++assert geometry["optimization_flags"][1] is None
++assert geometry["positions_angstrom"][0][0] == 0.123456789
++```
++
++The result dictionary has `keywords`, `title`, `comment`, `elements`,
++`positions_angstrom`, `labels`, `optimization_flags`,
++`translation_vectors_angstrom`, `translation_flags`, `periodicity` and
++`source_text`. Atom-array lengths must agree. Translation flag count must
++match the vector count. Missing optional arrays supply absent labels/flags
++and no translation vectors. To make input for Open Babel 3.2.1, explicitly
++supply a three-flag row for every atom and every translation vector.
++
++## Retained source semantics
++
++| Field | Contract |
++|---|---|
++| Header | Exactly three lines: keywords, title, comment; empty lines and spaces retained |
++| Identity | Canonical element symbol or unsigned atomic number; writer emits symbols |
++| Label | Optional immediate `(text)`, at most 38 ASCII characters; empty label differs from absent label |
++| Coordinates | Three finite Cartesian values in Angstrom; `E/e` and Fortran `D/d` exponents accepted |
++| Flags | Either no flags or three interleaved string codes `-2`, `-1`, `0`, `1`, `2`, `T` |
++| Signed flags | `+0`, `+1`, `+2` accepted and serialized as `0`, `1`, `2` |
++| Periodicity | Zero to three Cartesian `Tv` rows at the end; source order, orientation and flags retained |
++| Writer | Current validated fields, 17 fractional digits in scientific notation, LF and final blank line |
++
++Absence of flags is retained as `None`, without assigning optimizer defaults.
++Flag meanings follow the public
++[optimization flag documentation](https://openmopac.net/Manual/Optimization_flags.html)
++and [MINI documentation](https://openmopac.net/Manual/mini.html).
++The API preserves each code without checking whether it is appropriate for
++the keyword line. Labels, including labels beginning with `+` or `-`, are
++opaque text; no formal charge is inferred from a label.
++
++`Tv` vectors are read directly as Cartesian row vectors, following the
++[translation-vector convention](https://openmopac.net/Manual/tv.html).
++One/two/three vectors describe one/two/three periodic directions; 3D is
++required only for the Open Babel cell comparison below. Vector norms must
++be finite and positive. Normalized cross-product magnitude (2D) or absolute
++determinant (3D) must exceed `1e-6`, rejecting dependent and nearly dependent
++directions. Left-handed cells are retained.
++
++The writer validates mutable data and never returns a stale `source_text`.
++It preserves binary64 coordinates through read/write, including negative
++zero, subnormal values and the largest finite value. It does not preserve
++numeric spelling or line endings. The original input remains available as
++`source_text` for callers that need an exact source record.
++
++## Explicit boundaries
++
++The accepted grammar is the bounded Cartesian subset described by the
++[basic usage guide](https://openmopac.net/guides/basics/),
++[Cartesian coordinate reference](https://openmopac.net/Manual/cart_coord.html)
++and [label reference](https://openmopac.net/Manual/Labels.html).
++The parser refuses:
++
++- Internal/hybrid coordinates, connectivity indices, isotope-mass suffixes,
++  partial-charge tails and other extra geometry fields.
++- Dummy atoms, sparkle encodings and the reserved `At`, `Fr`, `Es` / atomic
++  numbers `85`, `87`, `99` described in the
++  [legacy element definitions](https://openmopac.net/Manual/elements_in_PM3.html).
++  These spellings are refused in both reader and writer rather than interpreted
++  as ordinary elements.
++- Atomic-unit keyword `A0`, keyword continuations `+`, `++`, `&`, embedded
++  header controls, multiline labels and non-ASCII labels.
++- More than three translation vectors, labels on vectors, or atoms after
++  the first vector.
++- Additional sections or jobs after the first blank geometry terminator.
++  A terminator is optional; trailing blank lines are accepted.
++- Non-finite numbers, zero/dependent translation vectors and unsupported
++  optimization codes.
++
++Other keywords are retained as opaque text. Accepting a keyword line does
++not establish Hamiltonian availability, element parameterization, optimizer
++validity, electronic state or scientific correctness. Reading MOPAC output,
++archive preambles and invoking calculations are outside this feature.
++
++Default parsing limits are 64 MiB input, 16,384 bytes per line and one million
++atoms. Callers can tighten these through Rust limits or Python keyword
++arguments. The structured geometry also caps headers at 16,384 bytes and
++atom count at one million; serialized output is capped at 64 MiB. Errors
++include source line numbers when local to a record, and line zero for
++whole-geometry validation. Python maps format/validation errors to `ValueError`.
++
++## Measured interoperability, 2026-10-15
++
++The oracle is **Open Babel 3.2.1**, installed build
++`Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27`.
++The generated corpus uses original synthetic recipes: eight seeds, zero to
++three vectors, flags present/absent, labels present/absent and LF/CRLF.
++Inputs are authored independently of the production writer.
++
++| Check | Result |
++|---|---|
++| Generated exact structured roundtrips | 256 / 256 |
++| Original manifest fixture with all six flags, labels, `D/d`, skewed cell | 1 / 1 |
++| Open Babel read comparison: flagged 0D/3D, optional nonempty labels | 64 / 64 |
++| Open Babel write comparison: same cases, `-xu` enabled | 64 / 64 |
++| Unexpected mismatches in the stated comparison | 0 |
++| Maximum read position / cell error | 0 / `8.881784197001252e-16` Angstrom |
++| Maximum write position / cell error | `4.761904761840796e-6` / 0 Angstrom |
++
++Read comparison uses `obabel -imop INPUT -ocjson -ab`, with a `2e-12`
++Angstrom tolerance. `-ab` disables bond inference. Write comparison uses
++`obabel -imop INPUT -omop -ab -xu`, with a `5.00001e-6` Angstrom tolerance
++because this Open Babel writer emits five decimal places.
++
++Measured differences are recorded separately:
++
++- Open Babel replaces all optimization flags with `1`, omits labels,
++  replaces the keyword line with `PUT KEYWORDS HERE`, uses the filename as
++  the title and clears the comment. These fields are exact native-roundtrip
++  checks, not Open Babel metadata parity claims.
++- Open Babel's CJSON projection reports total charge zero for the synthetic
++  `CHARGE=1` keyword. chematic retains the keyword and exposes no inferred
++  electronic state from this format.
++- Open Babel rejects the documented unflagged Cartesian rows and an empty
++  parenthesized label in the isolated diagnostics. chematic preserves both.
++- Open Babel reads `1.25D-1` as `1.25` in the isolated diagnostic;
++  chematic reads `0.125`. Fortran exponents are outside the common oracle lane.
++- Partial periodicity is an exact native contract; no Open Babel cell parity
++  claim is made for one or two vectors.
++
++These results establish the listed geometry contracts on synthetic cases.
++They do not establish complete MOPAC support, a library-wide replacement
++claim or successful execution of a MOPAC calculation.
++
++## Reproduction and delivery
++
++The original fixture manifest is
++`validation/openbabel_issues/mopac/contract-fixtures.json`. It records
++provenance, license, redistribution, minimization, oracle settings, expected
++values and a normalized UTF-8/LF SHA-256. Generated recipes and their input
++hashes are recorded by `scripts/validate_mopac_cartesian.py`.
++
++```sh
++cargo test -p chematic-mol --lib --test mopac_cartesian_contract --test fhiaims_contract
++python -m pytest crates/chematic-py/tests/test_mopac_cartesian.py
++python scripts/validate_mopac_cartesian.py --obabel /opt/homebrew/bin/obabel
++```
++
++Build/install the candidate Python extension before the Python commands.
++The completed local validation used Python 3.13.6 / pytest 9.1.1: Rust
++753 unit tests plus 15 integration tests passed; Python 148 tests passed,
++including FHI-aims, EXYZ and atom-environment regressions. Formatting, scoped
++Clippy with warnings denied, the unchanged refactor budget, binding inventory
++and strict MkDocs are included in the evidence report.
++
++The source candidate is `/private/tmp/chematic-mopac`, based on
++`/private/tmp/chematic-atom-environment`. The incremental patch is
++`validation/openbabel_issues/mopac-cartesian-2026-10-15.patch`, and the evidence
++is `validation/results/openbabel-mopac-cartesian-2026-10-15.json`.
++Only this document, patch and evidence are copied to the primary checkout;
++unrelated source work is preserved. The feature has not been committed,
++pushed or published.
+diff --git a/mkdocs.yml b/mkdocs.yml
+index 3d0493f..7184109 100644
+--- a/mkdocs.yml
++++ b/mkdocs.yml
+@@ -81,6 +81,7 @@ nav:
+     - Format Capability Matrix: format-capabilities.md
+     - ORCA-AICCM EXYZ: openbabel-exyz.md
+     - FHI-aims Geometry: openbabel-fhiaims.md
++    - MOPAC Cartesian: openbabel-mopac-cartesian.md
+     - Language Bindings Cross-Reference: language-bindings.md
+     - Error Handling & Limits: error-and-limits.md
+   - Reliability:
+diff --git a/scripts/validate_mopac_cartesian.py b/scripts/validate_mopac_cartesian.py
+new file mode 100644
+index 0000000..f43c9bd
+--- /dev/null
++++ b/scripts/validate_mopac_cartesian.py
+@@ -0,0 +1,168 @@
++#!/usr/bin/env python3
++"""Original synthetic MOPAC Cartesian contracts against Open Babel 3.2.1."""
++import argparse
++import hashlib
++import itertools
++import json
++from pathlib import Path
++import platform
++import subprocess
++import tempfile
++
++import chematic
++
++ROOT = Path(__file__).resolve().parents[1]
++FIELDS = ('keywords', 'title', 'comment', 'labels', 'optimization_flags', 'translation_vectors_angstrom', 'translation_flags')
++NUMBERS = {'Si': 14, 'Cl': 17, 'Fe': 26, 'H': 1}
++
++
++def digest(data):
++    return hashlib.sha256(data).hexdigest()
++
++
++def emit(g):
++    return chematic.write_mopac_cartesian(g['elements'], g['positions_angstrom'], **{k: g[k] for k in FIELDS})
++
++
++def recipe(seed, dimension, flagged, labeled, crlf):
++    symbols = ['Si', 'Cl', 'Fe', 'H'][:seed % 4+1]
++    positions = [[seed/7+i/3, -i/5+0.125, (-1)**i*(seed+1)/11] for i in range(len(symbols))]
++    vectors = [[4+seed/8, 1, 0], [-1, 5, 2], [1, 0, (-1)**seed*6]][:dimension]
++    codes = ['-2', '-1', '0', '1', '2', 'T']
++    atom_flags = [[codes[(seed+3*i+j) % 6] for j in range(3)] if flagged else None for i in range(len(symbols))]
++    vector_flags = [['0', '1', '0'] if flagged else None for _ in vectors]
++    labels = [f'site {i} alpha' if labeled else None for i in range(len(symbols))]
++    expected = dict(keywords='PM7 XYZ CHARGE=1 MINI', title=f'original {seed} ', comment='Cartesian contract',
++                    elements=symbols, positions_angstrom=positions, labels=labels, optimization_flags=atom_flags,
++                    translation_vectors_angstrom=vectors, translation_flags=vector_flags, periodicity=dimension)
++    # Input is authored independently of the production writer.
++    lines = [expected['keywords'], expected['title'], expected['comment']]
++    identities = [s+('('+label+')' if label is not None else '') for s, label in zip(symbols, labels)]
++    for identity, point, flags in zip(identities+['Tv']*dimension, positions+vectors, atom_flags+vector_flags):
++        fields = [identity]
++        for j, value in enumerate(point):
++            fields.append(format(value, '.17g'))
++            if flags is not None:
++                fields.append(flags[j])
++        lines.append(' '.join(fields))
++    text = '\n'.join(lines)+'\n\n'
++    return expected, text.replace('\n', '\r\n') if crlf else text
++
++
++def native_check(expected, text):
++    g = chematic.parse_mopac_cartesian(text)
++    assert g['source_text'] == text
++    for key, value in expected.items():
++        assert g[key] == value, key
++    back = chematic.parse_mopac_cartesian(emit(g))
++    for key in g.keys()-{'source_text'}:
++        assert back[key] == g[key], key
++    return g
++
++
++def obabel(executable, path, fmt, *extra):
++    r = subprocess.run([executable, '-imop', str(path), '-o'+fmt, '-ab', *extra], capture_output=True, text=True, check=True, timeout=10)
++    assert '1 molecule converted' in r.stderr, r.stderr
++    return r.stdout
++
++
++def error(actual, expected):
++    assert len(actual) == len(expected)
++    return max((abs(a-b) for a, b in zip(actual, expected)), default=0.)
++
++
++def flatten(rows):
++    return [x for row in rows for x in row]
++
++
++def main():
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument('--obabel', default='/opt/homebrew/bin/obabel')
++    parser.add_argument('--output', type=Path, default=ROOT/'validation/results/openbabel-mopac-cartesian-2026-10-15.json')
++    args = parser.parse_args()
++    version = subprocess.check_output([args.obabel, '-V'], text=True).strip()
++    assert version.split()[2] == '3.2.1', version
++    manifest_path = ROOT/'validation/openbabel_issues/mopac/contract-fixtures.json'
++    manifest = json.loads(manifest_path.read_text())
++    for fixture in manifest['records']:
++        text = fixture['payload']
++        assert digest(text.replace('\r\n', '\n').encode()) == fixture['sha256']
++        expected = {k: v for k, v in fixture['expected'].items() if k not in ('units', 'tolerance')}
++        native_check(expected, text)
++    records = []
++    ob_count = 0
++    maxima = dict(read_positions_angstrom=0., read_cell_angstrom=0., write_positions_angstrom=0., write_cell_angstrom=0.)
++    with tempfile.TemporaryDirectory(prefix='chematic-mopac-oracle-') as directory:
++        path = Path(directory)/'input.mop'
++        for seed, dimension, flagged, labeled, crlf in itertools.product(range(8), range(4), (False, True), (False, True), (False, True)):
++            expected, text = recipe(seed, dimension, flagged, labeled, crlf)
++            g = native_check(expected, text)
++            common = flagged and dimension in (0, 3)
++            record = dict(id=f's{seed}-d{dimension}-f{int(flagged)}-l{int(labeled)}-crlf{int(crlf)}',
++                          normalized_input_sha256=digest(text.replace('\r\n', '\n').encode()),
++                          provenance='Original synthetic recipe in scripts/validate_mopac_cartesian.py, authored 2026-10-15',
++                          license='MIT OR Apache-2.0', redistribution='allowed; project-authored data',
++                          minimization='One to four atoms and zero to three skewed vectors isolate coordinates/flags/labels/line endings',
++                          oracle='Exact analytic expected values; common-lane Open Babel 3.2.1 commands and tolerances in oracle_settings',
++                          expected=expected, native_status='pass', openbabel_common_geometry=common)
++            if common:
++                path.write_bytes(text.encode())
++                ob = json.loads(obabel(args.obabel, path, 'cjson'))
++                assert ob['atoms']['elements']['number'] == [NUMBERS[s] for s in g['elements']]
++                e = error(ob['atoms']['coords']['3d'], flatten(g['positions_angstrom']))
++                assert e <= 2e-12, e
++                maxima['read_positions_angstrom'] = max(maxima['read_positions_angstrom'], e)
++                if dimension == 3:
++                    e = error(ob['unitCell']['cellVectors'], flatten(g['translation_vectors_angstrom']))
++                    assert e <= 2e-12, e
++                    maxima['read_cell_angstrom'] = max(maxima['read_cell_angstrom'], e)
++                else:
++                    assert 'unitCell' not in ob
++                # Explicit unit-cell option; defaults deliberately replace headers and flags.
++                output = obabel(args.obabel, path, 'mop', '-xu')
++                back = chematic.parse_mopac_cartesian(output)
++                assert back['elements'] == g['elements'] and back['periodicity'] == dimension
++                e = error(flatten(back['positions_angstrom']), flatten(g['positions_angstrom']))
++                assert e <= 5.00001e-6, e
++                maxima['write_positions_angstrom'] = max(maxima['write_positions_angstrom'], e)
++                e = error(flatten(back['translation_vectors_angstrom']), flatten(g['translation_vectors_angstrom']))
++                assert e <= 5.00001e-6, e
++                maxima['write_cell_angstrom'] = max(maxima['write_cell_angstrom'], e)
++                assert back['optimization_flags'] == [['1']*3 for _ in g['elements']]
++                assert back['translation_flags'] == [['1']*3 for _ in g['translation_vectors_angstrom']]
++                assert back['labels'] == [None]*len(g['elements'])
++                assert back['keywords'] == 'PUT KEYWORDS HERE' and back['title'] == str(path) and back['comment'] == ''
++                assert ob['properties']['totalCharge'] == 0
++                record['openbabel_geometry_status'] = 'pass'
++                record['openbabel_known_deltas'] = ['five-decimal output', 'flags reset to 1', 'labels omitted', 'headers replaced', 'CHARGE keyword not projected']
++                ob_count += 1
++            records.append(record)
++        diagnostics = []
++        for name, body in [('unflagged', 'Si .125 -1.25 2.5'), ('empty-label', 'Si() .125 0 -1.25 1 2.5 0')]:
++            text = 'PM7 XYZ\noriginal\n\n'+body+'\n\n'
++            assert chematic.parse_mopac_cartesian(text)['elements'] == ['Si']
++            path.write_text(text)
++            r = subprocess.run([args.obabel, '-imop', str(path), '-ocjson', '-ab'], capture_output=True, text=True, timeout=10, check=True)
++            assert '0 molecules converted' in r.stderr and not r.stdout
++            diagnostics.append(dict(id=name, native_status='accepted-preserved', openbabel_status='rejected', stderr=r.stderr.strip(), normalized_input_sha256=digest(text.encode())))
++        # Isolate Fortran exponent behavior instead of treating its interpretation as parity.
++        text = 'PM7 XYZ\noriginal\n\nSi 1.25D-1 0 -1.25 1 2.5 0\n\n'
++        path.write_text(text)
++        ob = json.loads(obabel(args.obabel, path, 'cjson'))
++        native = chematic.parse_mopac_cartesian(text)['positions_angstrom'][0][0]
++        assert native == 0.125 and ob['atoms']['coords']['3d'][0] == 1.25
++        diagnostics.append(dict(id='fortran-D-exponent', native_x_angstrom=native, openbabel_x_angstrom=ob['atoms']['coords']['3d'][0], normalized_input_sha256=digest(text.encode())))
++    report = dict(schema_version=1, date='2026-10-15', feature='MOPAC Cartesian geometry input/output',
++                  runtime=dict(python=platform.python_version(), openbabel=version),
++                  scope='Original synthetic Cartesian geometry; no bond perception, charge/spin inference, calculation validity, quantum chemistry or whole-library comparison',
++                  provenance='All fixtures/recipes project-authored MIT OR Apache-2.0; public manuals define grammar only; no upstream implementation copied',
++                  oracle_settings=dict(read='obabel -imop INPUT -ocjson -ab', write='obabel -imop INPUT -omop -ab -xu', units='angstrom', read_tolerance=2e-12, write_tolerance=5.00001e-6, comparison_scope='flagged canonical-symbol input, 0D/3D, optional nonempty labels; all metadata/0D-3D exact native roundtrip'),
++                  results=dict(native_generated_cases=len(records), native_manifest_cases=len(manifest['records']), openbabel_read_cases=ob_count, openbabel_write_cases=ob_count, unexpected_mismatches=0, maximum_absolute_errors=maxima),
++                  manifest_sha256=digest(manifest_path.read_bytes()), diagnostics=diagnostics, records=records)
++    args.output.parent.mkdir(parents=True, exist_ok=True)
++    args.output.write_text(json.dumps(report, indent=2)+'\n')
++    print(json.dumps(report['results'], indent=2))
++
++
++if __name__ == '__main__':
++    main()
+diff --git a/validation/openbabel_issues/mopac/contract-fixtures.json b/validation/openbabel_issues/mopac/contract-fixtures.json
+new file mode 100644
+index 0000000..d2496e8
+--- /dev/null
++++ b/validation/openbabel_issues/mopac/contract-fixtures.json
+@@ -0,0 +1,89 @@
++{
++  "schema_version": 1,
++  "records": [
++    {
++      "id": "labels-six-flags-left-handed-cell",
++      "payload": "PM7 XYZ CHARGE=1 MINI\noriginal synthetic\nflag and label contract\n14(site alpha) 1.25D-1 -2 -1.25 -1 2.5 0\nCl() -1.5 1 1.25d-1 2 0.5 T\nTv 4 0 1 1 0 0\nTv -1 0 5 0 2 0\nTv 1 0 0 0 -6 0\n\n",
++      "provenance": "Original synthetic minimal fixture authored 2026-10-15; https://openmopac.net/Manual/cart_coord.html and https://openmopac.net/Manual/Optimization_flags.html consulted for grammar only (2026-10-15); no upstream data/code copied",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; project-authored data",
++      "minimization": "Two atoms cover six flag codes, numeric/symbol identity, empty/nonempty labels, Fortran exponents; three skewed vectors cover orientation",
++      "oracle": "Exact analytic structured values below, tolerance zero; official OpenMOPAC grammar references in provenance. Empty labels and Fortran D/d here are outside the Open Babel 3.2.1 common lane; separately generated flagged canonical-symbol E/e inputs use obabel -imop INPUT -ocjson -ab and -omop -ab -xu.",
++      "expected": {
++        "keywords": "PM7 XYZ CHARGE=1 MINI",
++        "title": "original synthetic",
++        "comment": "flag and label contract",
++        "elements": [
++          "Si",
++          "Cl"
++        ],
++        "positions_angstrom": [
++          [
++            0.125,
++            -1.25,
++            2.5
++          ],
++          [
++            -1.5,
++            0.125,
++            0.5
++          ]
++        ],
++        "labels": [
++          "site alpha",
++          ""
++        ],
++        "optimization_flags": [
++          [
++            "-2",
++            "-1",
++            "0"
++          ],
++          [
++            "1",
++            "2",
++            "T"
++          ]
++        ],
++        "translation_vectors_angstrom": [
++          [
++            4,
++            1,
++            0
++          ],
++          [
++            -1,
++            5,
++            2
++          ],
++          [
++            1,
++            0,
++            -6
++          ]
++        ],
++        "translation_flags": [
++          [
++            "0",
++            "1",
++            "0"
++          ],
++          [
++            "0",
++            "0",
++            "0"
++          ],
++          [
++            "0",
++            "0",
++            "0"
++          ]
++        ],
++        "periodicity": 3,
++        "units": "angstrom",
++        "tolerance": 0
++      },
++      "sha256": "ccda8ba41ed807946bcf5e6519c9a80b867373fe0cb24f0789a95ac72a7c3fa8"
++    }
++  ]
++}
+diff --git a/validation/results/binding_surface_inventory-current.json b/validation/results/binding_surface_inventory-current.json
+index 519d691..db422ef 100644
+--- a/validation/results/binding_surface_inventory-current.json
++++ b/validation/results/binding_surface_inventory-current.json
+@@ -7,9 +7,9 @@
+   "scope": "Rust source declarations only; this is not semantic parity evidence",
+   "results": {
+     "wasm_export_count": 303,
+-    "python_pyfunction_count": 192,
+-    "python_registered_count": 192,
++    "python_pyfunction_count": 194,
++    "python_registered_count": 194,
+     "python_declared_without_registration": [],
+-    "surface_sha256": "51b7902937938a95b3b6253c5dc7e101a9aa142540e2cea9fd409f1e880b3b1e"
++    "surface_sha256": "2eeaa80012c18220ebaf7a296da6822dd962b6d3b692a2f6da5efb13dd372cd3"
+   }
+ }

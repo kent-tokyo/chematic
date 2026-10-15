@@ -11,6 +11,7 @@ pub mod cache;
 pub(crate) mod clock;
 pub mod cx;
 pub(crate) mod hybridization;
+pub(crate) mod match_chirality;
 pub mod match_vf2;
 pub mod mcs;
 pub mod parser;

@@ -763,8 +763,12 @@ impl Mol {
     ///     if mol.has_substructure("[OH]"):
     ///         print("has hydroxyl")
     ///
+    /// Set ``use_chirality=True`` to enforce mapped-neighbour tetrahedral
+    /// parity, including inside recursive SMARTS ``$(...)``.
+    ///
     /// Raises ``ValueError`` for invalid SMARTS.
-    fn has_substructure(&self, smarts: &str) -> PyResult<bool> {
+    #[pyo3(signature = (smarts, use_chirality = false))]
+    fn has_substructure(&self, smarts: &str, use_chirality: bool) -> PyResult<bool> {
         let query = crate::misc::cached_smarts(smarts).map_err(|e| {
             crate::errors::malformed("smarts", format!("invalid SMARTS '{smarts}': {e}"))
         })?;
@@ -772,6 +776,7 @@ impl Mol {
         // existence check doesn't need the full match set or the dedup pass.
         let config = chematic_smarts::MatchConfig {
             max_matches: Some(1),
+            use_chirality,
             uniquify: false,
             ..chematic_smarts::MatchConfig::default()
         };
@@ -790,15 +795,22 @@ impl Mol {
     ///         print("carboxyl atoms:", match_atoms)
     ///
     /// Returns an empty list when there are no matches.
+    /// Set ``use_chirality=True`` to enforce mapped-neighbour tetrahedral
+    /// parity, including inside recursive SMARTS ``$(...)``.
     /// Raises ``ValueError`` for invalid SMARTS.
-    fn find_matches(&self, smarts: &str) -> PyResult<Vec<Vec<usize>>> {
+    #[pyo3(signature = (smarts, use_chirality = false))]
+    fn find_matches(&self, smarts: &str, use_chirality: bool) -> PyResult<Vec<Vec<usize>>> {
         let query = crate::misc::cached_smarts(smarts).map_err(|e| {
             crate::errors::malformed("smarts", format!("invalid SMARTS '{smarts}': {e}"))
         })?;
+        let config = chematic_smarts::MatchConfig {
+            use_chirality,
+            ..Default::default()
+        };
         Ok(chematic_smarts::find_match_atom_sets_perceived(
             &query,
             &self.inner,
-            &chematic_smarts::MatchConfig::default(),
+            &config,
         ))
     }
 

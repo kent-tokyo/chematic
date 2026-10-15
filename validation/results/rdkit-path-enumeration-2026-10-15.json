@@ -1,0 +1,361 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-15",
+  "status": "isolated source candidate; uncommitted and unpushed",
+  "runtime": {
+    "python": "3.13.6",
+    "rdkit": "2026.09.1",
+    "pytest": "9.1.1",
+    "numpy": "2.5.3",
+    "rustc": "rustc 1.97.0 (2d8144b78 2026-07-07)",
+    "cargo": "cargo 1.97.0 (c980f4866 2026-06-30)"
+  },
+  "oracle": {
+    "name": "RDKit",
+    "version": "2026.09.1",
+    "release": "Release_2026_09_1",
+    "commit": "fece8caa860bdf6c9c82bdb9253f22a0cf87150c",
+    "source": "Code/GraphMol/Subgraphs/Subgraphs.cpp",
+    "source_sha256": "aa8295ce04042f809d93a29f8f6ca0beca2c656b4f3865270237131119a55597",
+    "settings": "Exact ordered vectors, all roots plus unrooted/outside roots; bond/atom, H and shortest flags; H removal/addition; three distinct seeded atom permutations where available; lengths 0..min(n+2,7), n+1, n+2"
+  },
+  "fixture_manifest": "validation/rdkit_issues/path-enumeration/fixtures.json",
+  "fixture_manifest_sha256": "cfe12026b9f525443602f99d2f731c3535411166d35f57aab3a0a55d0b92563f",
+  "results": {
+    "fixtures": 24,
+    "golden_cases": 8,
+    "graph_variants": 134,
+    "exact_comparisons": 107904,
+    "paths_compared": 176992,
+    "indices_compared": 672982,
+    "empty_results": 69745,
+    "shortest_mode_cases": 53952,
+    "use_hs_true_cases": 53952,
+    "permuted_cases": 71488,
+    "returned_atom_ring_closures": 1758,
+    "unexpected_mismatches": 0,
+    "normalized_output_sha256": "465f638777a1ee06999ed66fbb131391d87c6a64822fa3e70b50102e3cd3f07b"
+  },
+  "records": [
+    {
+      "id": "empty",
+      "status": "pass",
+      "exact_comparisons": 144
+    },
+    {
+      "id": "single-carbon",
+      "status": "pass",
+      "exact_comparisons": 1664
+    },
+    {
+      "id": "chain",
+      "status": "pass",
+      "exact_comparisons": 3744
+    },
+    {
+      "id": "branch",
+      "status": "pass",
+      "exact_comparisons": 5256
+    },
+    {
+      "id": "hetero-branch",
+      "status": "pass",
+      "exact_comparisons": 4776
+    },
+    {
+      "id": "triangle",
+      "status": "pass",
+      "exact_comparisons": 3744
+    },
+    {
+      "id": "square",
+      "status": "pass",
+      "exact_comparisons": 4776
+    },
+    {
+      "id": "pentagon",
+      "status": "pass",
+      "exact_comparisons": 5856
+    },
+    {
+      "id": "benzene",
+      "status": "pass",
+      "exact_comparisons": 5544
+    },
+    {
+      "id": "tail-cycle",
+      "status": "pass",
+      "exact_comparisons": 5856
+    },
+    {
+      "id": "fused",
+      "status": "pass",
+      "exact_comparisons": 10560
+    },
+    {
+      "id": "bridged",
+      "status": "pass",
+      "exact_comparisons": 7680
+    },
+    {
+      "id": "spiro",
+      "status": "pass",
+      "exact_comparisons": 9600
+    },
+    {
+      "id": "heteroaromatic",
+      "status": "pass",
+      "exact_comparisons": 5304
+    },
+    {
+      "id": "disconnected",
+      "status": "pass",
+      "exact_comparisons": 6096
+    },
+    {
+      "id": "isotope-H",
+      "status": "pass",
+      "exact_comparisons": 1936
+    },
+    {
+      "id": "two-H",
+      "status": "pass",
+      "exact_comparisons": 800
+    },
+    {
+      "id": "removed-H",
+      "status": "pass",
+      "exact_comparisons": 1920
+    },
+    {
+      "id": "dative",
+      "status": "pass",
+      "exact_comparisons": 1936
+    },
+    {
+      "id": "multiple-bonds",
+      "status": "pass",
+      "exact_comparisons": 4896
+    },
+    {
+      "id": "charged",
+      "status": "pass",
+      "exact_comparisons": 4656
+    },
+    {
+      "id": "dummy",
+      "status": "pass",
+      "exact_comparisons": 3504
+    },
+    {
+      "id": "tetrahedral",
+      "status": "pass",
+      "exact_comparisons": 4536
+    },
+    {
+      "id": "geometric",
+      "status": "pass",
+      "exact_comparisons": 3120
+    }
+  ],
+  "scope": [
+    "Sanitized RDKit model indices; input <=1024 atoms/16384 bonds",
+    "Rust/Python only, no branched or unique chemical subgraph API",
+    "Bond-set deduplication with first path retained, including atom output",
+    "Shortest mode includes graph Hs regardless of useHs; single-atom output includes isolated Hs",
+    "Source molecule/properties immutable, independent returned vectors",
+    "Bounded frontiers/work/results fail without partial output",
+    "UINT32_MAX tested only natively, not against upstream loop overflow; no timing or library-wide parity claim"
+  ],
+  "implementation": {
+    "candidate": "/private/tmp/chematic-paths",
+    "base": "/private/tmp/chematic-mopac",
+    "baseline_commit": "d3717ce715e9c1bd35d8462622f5a213a5e4c782",
+    "feature_committed": false,
+    "pushed": false,
+    "primary_source_modified": false,
+    "inherited_file_count": 2296,
+    "inherited_tree_sha256": "aa923a66f6e4cf83000e882216b3abf78af20f32d1ebeaa85147a1b00f14fd74",
+    "source_artifacts": [
+      {
+        "path": ".github/workflows/ci.yml",
+        "sha256": "29eaa81055a231402622aac2e79bcbedf8f5872ad96e771cd58049926592ed70",
+        "base_sha256": "ba52f6526b6a714948a392f30b78a8d78b58e9672261c3c4e9235562bc3c36f2"
+      },
+      {
+        "path": "CHANGELOG.md",
+        "sha256": "a52148d6694b628b062f0c5e2505047da5e76e9538ec8dfdca808ce38fa74655",
+        "base_sha256": "303f32396d864a07242d350b9cc8bbc48d2c30737980e74451106e9fc37eae13"
+      },
+      {
+        "path": "THIRD_PARTY_NOTICES.md",
+        "sha256": "bed7aa8c39f795504724ac3194161aa66c86c9f325104eea5479dc584226fa9c",
+        "base_sha256": "60c8d3a270d746627fe3fe721549079184c889ce2064602a1f898cc8d5e0109a"
+      },
+      {
+        "path": "crates/chematic-py/python/chematic/__init__.pyi",
+        "sha256": "aceea060290879c3098850ebe77d7cf95b138f084085382b3f08f1f9551b75ea",
+        "base_sha256": "d2f0d0367f5037cce509f6db23768bc4959ca4dd1c0bd05e50d0e022472b3c30"
+      },
+      {
+        "path": "crates/chematic-py/src/mol_methods.rs",
+        "sha256": "375d6a24008075c465b14942e816da9157ebf78f3394d6ae4d40102f72fb3cc2",
+        "base_sha256": "dfc060b38efefc26ee00e014505d5ad0f390eecd1214f45cd1b526e6ad9a92ae"
+      },
+      {
+        "path": "crates/chematic-py/src/mol_methods/path_enumeration.rs",
+        "sha256": "37815a289e80ca00df6df83b682d95fe4497ac3d5740ccbd8b96eda591853fba",
+        "base_sha256": null
+      },
+      {
+        "path": "crates/chematic-py/tests/test_rdkit_path_enumeration.py",
+        "sha256": "3465549e8260a2801d184ce9e108c9297672b7d651ba9bb6b4ad65f1963aab90",
+        "base_sha256": null
+      },
+      {
+        "path": "crates/chematic-smiles/src/lib.rs",
+        "sha256": "f20ba7ec5c6d611a4215b4af800e3c39e81abfeb9e2c5c475b52b50b1eb9866d",
+        "base_sha256": "01dfb740af83006a621c2c18d1110ea969b3f0bde73bc14afd54e948485732de"
+      },
+      {
+        "path": "crates/chematic-smiles/src/rdkit/mod.rs",
+        "sha256": "c234f4712e31a5b27e8e86da4113c06d4288173af75d95863cb5eb28afbd95ba",
+        "base_sha256": "874a80d21b1e1a941eae15295948cd2b32196ea96e66123600a3d0d79736696e"
+      },
+      {
+        "path": "crates/chematic-smiles/src/rdkit/path_enumeration.rs",
+        "sha256": "9131108649316bdc2f246433be9812a78913bff00bc18a22fb83b84f7eb58dd0",
+        "base_sha256": null
+      },
+      {
+        "path": "crates/chematic-smiles/src/rdkit/path_enumeration/search.rs",
+        "sha256": "3b8a22898b4396bd628ff72107f040fe776183ea4777338be51b9fda014b4955",
+        "base_sha256": null
+      },
+      {
+        "path": "crates/chematic-smiles/tests/rdkit_path_enumeration.rs",
+        "sha256": "cb0f6ba73a96576e67566a93b138430bb4e689aebea98f67fea03045ad94d339",
+        "base_sha256": null
+      },
+      {
+        "path": "docs/rdkit-migration.md",
+        "sha256": "ec8074419129de3109d38ba914cae74d2a591d48070837686dafede414d66cac",
+        "base_sha256": "301f35a2d6bd5bbbc65f48924c5d6573b7f4cc43ad3c3d6ff5683738265d9f53"
+      },
+      {
+        "path": "docs/rdkit-path-enumeration.md",
+        "sha256": "eacbe9a730106ad2c8df33bce3baf9381e3d052d1cd5992e956e5cd6929bad6d",
+        "base_sha256": null
+      },
+      {
+        "path": "mkdocs.yml",
+        "sha256": "44ea83f8311e8e3a557fb79c440671ce292e3f80de61b1feac80038cb5900293",
+        "base_sha256": "b1c6f88e1e2bbf5aa2caf64912cc5756015a773e7dab7f9b462bfabad4cb6c24"
+      },
+      {
+        "path": "scripts/validate_rdkit_paths.py",
+        "sha256": "7f2076faf8a6ec414a3efbc85e336191eb12161f2a2ee97a31b292c4bb2bf347",
+        "base_sha256": null
+      },
+      {
+        "path": "validation/rdkit_issues/path-enumeration/fixtures.json",
+        "sha256": "cfe12026b9f525443602f99d2f731c3535411166d35f57aab3a0a55d0b92563f",
+        "base_sha256": null
+      }
+    ],
+    "compiled_extension": {
+      "path": "/private/tmp/chematic-path-module/chematic/chematic.so",
+      "sha256": "23f0d399450da630b0d4f6755d830fa6ea49a26e2f408dd85024f975d89ec659",
+      "python_executable": "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+      "import_root": "/private/tmp/chematic-path-module",
+      "oracle_import_root": "/private/tmp/chematic-path-rdkit",
+      "stable_binary_copy": true
+    }
+  },
+  "validation": {
+    "rust": {
+      "command": "cargo test -p chematic-smiles --lib --test rdkit_path_enumeration --test rdkit_graph_queries --test rdkit_atom_environment --offline --quiet",
+      "unit_passed": 386,
+      "graph_queries_integration_passed": 8,
+      "atom_environment_integration_passed": 8,
+      "path_enumeration_integration_passed": 7,
+      "total_passed": 409,
+      "failed": 0,
+      "ignored": 1,
+      "ignored_test": "rdkit::profile_tests::rdkit_profile; existing manual RDKIT_PROFILE_CORPUS harness"
+    },
+    "python": {
+      "command": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=/private/tmp/chematic-path-module python3 -m pytest -p no:cacheprovider crates/chematic-py/tests/test_rdkit_path_enumeration.py crates/chematic-py/tests/test_rdkit_atom_environment.py crates/chematic-py/tests/test_rdkit_graph_queries.py crates/chematic-py/tests/test_renumber_atoms.py crates/chematic-py/tests/test_mopac_cartesian.py -q",
+      "passed": 130,
+      "path_contracts_passed": 16,
+      "failed": 0
+    },
+    "oracle": {
+      "command": "PYTHONPATH=/private/tmp/chematic-path-module:/private/tmp/chematic-path-rdkit python3 scripts/validate_rdkit_paths.py",
+      "exit_code": 0,
+      "version_checked": "2026.09.1",
+      "upstream_source_download_sha256": "aa8295ce04042f809d93a29f8f6ca0beca2c656b4f3865270237131119a55597",
+      "upstream_tag_commit": "fece8caa860bdf6c9c82bdb9253f22a0cf87150c"
+    },
+    "clippy": {
+      "command": "cargo clippy -p chematic-smiles -p chematic-py --all-targets --offline --no-deps -- -D warnings",
+      "exit_code": 0
+    },
+    "format": {
+      "command": "cargo fmt --all --check",
+      "exit_code": 0
+    },
+    "refactor_budget": {
+      "command": "python3 scripts/check_refactor_budget.py",
+      "exit_code": 0,
+      "production_rust_files": 545,
+      "functions": 8369,
+      "file_allowances": 18,
+      "function_allowances": 86,
+      "allowances_increased": false
+    },
+    "binding_surface": {
+      "command": "python3 scripts/check_binding_surface.py",
+      "exit_code": 0,
+      "python_free_functions": 194,
+      "python_registered_functions": 194,
+      "wasm_exports": 303,
+      "new_python_mol_methods": 1
+    },
+    "product_names": {
+      "command": "python3 scripts/check_product_names.py",
+      "exit_code": 0
+    },
+    "docs": {
+      "command": "python3 -m mkdocs build --strict --site-dir /private/tmp/chematic-paths-site",
+      "exit_code": 0,
+      "log_sha256": "397b2d0ec73cbe1ecead74b651c821fe4192ffe832cbdfbd96f3e8e383d5ad59"
+    },
+    "patch": {
+      "changed_source_files": 17,
+      "reverse_apply_check": true,
+      "forward_apply_check_in_inherited_base": true,
+      "only_declared_files_changed": true
+    },
+    "environment_notes": [
+      "Initial Python builds failed due to disk exhaustion; only obsolete task-owned Rust build caches were removed; final build, all listed tests and checks passed",
+      "The completed Python extension was copied to a stable task-specific import root before tests/oracle validation"
+    ],
+    "hosted_ci_run": false
+  },
+  "delivery": {
+    "primary_checkout": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic",
+    "artifacts": [
+      {
+        "path": "docs/rdkit-path-enumeration.md",
+        "sha256": "eacbe9a730106ad2c8df33bce3baf9381e3d052d1cd5992e956e5cd6929bad6d"
+      },
+      {
+        "path": "validation/rdkit_issues/path-enumeration-2026-10-15.patch",
+        "sha256": "6b50e2676b4dde86222c5f401ec55aef639465ea1ce9aa97166d38be747ea0ab"
+      }
+    ],
+    "evidence_path": "validation/results/rdkit-path-enumeration-2026-10-15.json",
+    "scope": "Only documentation, incremental patch and evidence copied; feature source remains in isolated candidate"
+  }
+}

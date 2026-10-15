@@ -1,0 +1,139 @@
+{
+  "schema_version": 1,
+  "status": "local-source-candidate",
+  "issue": "https://github.com/openbabel/openbabel/issues/3027",
+  "base": "cac480fb source snapshot plus previously preserved RDKit/Open Babel candidates; patch isolates this adapter",
+  "scope": "model-1 ATOM/HETATM coordinate block plus END; no bonds, TER, full deposition export or arbitrary mmCIF round trip",
+  "runtime": {
+    "python": "3.13.6",
+    "openbabel": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+    "chematic_extension_sha256": "a17ea428ef98ec371fd0a1d0c5a69dca31e78d5725d33a68b59a07d50a2d1d59"
+  },
+  "source_sha256": {
+    "crates/chematic-mol/src/mmcif_pdb.rs": "9350d2ec8eb077ec024419a2116fd52d3146dc4ddea0f7bc660907e407c8942f",
+    "crates/chematic-py/src/formats/mmcif_pdb.rs": "c3560d582ae392e4e115e6d4e23810be3d197df83b29d6cad06890b8cec853cc",
+    "crates/chematic-py/src/formats/mmcif_residues.rs": "0f89eaa46291e5a3a8ced131dcab8847e3660282329a1e088e89ef1840d55098",
+    "scripts/validate_mmcif_pdb_checked.py": "5a650040fb275a12abd3921cf928e1b4b13a3a71d482306cb500fc348779c21f"
+  },
+  "fixture": {
+    "path": "validation/openbabel_issues/mmcif/long-component-name.cif",
+    "sha256": "8900781fe9cb2c2557a6e07c97886ea45a3d7443513c538376d50beddc196108",
+    "provenance": {
+      "source": "original synthetic atom_site rows derived from the project branched-residues fixture",
+      "date": "2026-10-15",
+      "transformations": "retain first two rows; replace both component namespaces with A1AJ1; numeric-label control assigns source auth_seq_id to label_seq_id",
+      "external_data": "no downloaded structure or upstream attachment"
+    },
+    "license": "MIT OR Apache-2.0",
+    "redistribution": {
+      "status": "allowed",
+      "rationale": "original project fixture"
+    },
+    "minimization": "two isolated C/O coordinate records, one residue, five-character component ID; not a chemical model of A1AJ1",
+    "oracle": {
+      "name": "wwPDB PDB format 3.3 fixed columns / source-authored identifiers",
+      "version": "3.3",
+      "url": "https://www.wwpdb.org/documentation/file-format-content/format33/sect9.html",
+      "settings": "no renumbering, no truncation, auth or label selected explicitly"
+    },
+    "expected": {
+      "native": "InvalidField residue name in both namespaces regardless of metadata consent",
+      "external_Open_Babel_3_2_1": "A1AJ1 truncates to A1A; UNL control preserved"
+    }
+  },
+  "results": {
+    "permutations": 720,
+    "field_mismatches": 0,
+    "source_sidecar_mismatches": 0,
+    "cases_sha256": "97837cf724712b69550628d00f0d8703e03cec1296918c794b7d2a61d92be8c4",
+    "rejections": [
+      {
+        "namespace": "auth",
+        "allow_metadata_loss": false,
+        "error": "mmCIF atom 0: residue name is missing, invalid or cannot fit its PDB field"
+      },
+      {
+        "namespace": "auth",
+        "allow_metadata_loss": true,
+        "error": "mmCIF atom 0: residue name is missing, invalid or cannot fit its PDB field"
+      },
+      {
+        "namespace": "label",
+        "allow_metadata_loss": false,
+        "error": "mmCIF atom 0: residue name is missing, invalid or cannot fit its PDB field"
+      },
+      {
+        "namespace": "label",
+        "allow_metadata_loss": true,
+        "error": "mmCIF atom 0: residue name is missing, invalid or cannot fit its PDB field"
+      }
+    ],
+    "native_short_pdb": "HETATM    1  C1  UNL A   1      20.000   0.000   0.000  1.00 10.00           C  \nHETATM    2  O6  UNL A   1      22.000   0.000   0.000  1.00 10.00           O  \nEND\n",
+    "cross_read_preserved_residues": 3
+  },
+  "permutation_fixture": {
+    "path": "validation/openbabel_issues/mmcif/branched-residues.cif",
+    "sha256": "cc6956e5e27f7cd3cfdf96cd0da876de3acc1962dbd429aa00bafd005f7e5344",
+    "expected": "six rows, three NAG/NAG/BMA residues; all 720 input orders preserve auth names, residue keys, serials, coordinates and reader sidecar"
+  },
+  "openbabel": {
+    "command": [
+      "obabel",
+      "-immcif",
+      "<numeric-label-long-name-control>",
+      "-opdb"
+    ],
+    "input_sha256": "0100522cc0b7d2a0acf96739a45e346040ca69f2632498bba45dc1c8cc30a8a3",
+    "output_names": [
+      "A1A",
+      "A1A"
+    ],
+    "output_sha256": "f12deb38e88011c0fe6565e02f4d6ee9a7b7cb5a3f0bd02768db78ab518daa49",
+    "stderr": "1 molecule converted",
+    "short_name_control": {
+      "input_sha256": "6250eb1f04807db8bef50f6071fb399fb27dd835b8ba10e36e3973623191139d",
+      "output_sha256": "cef4f568bc2cd243af9cbe7871089beb928e9e255a5b1df4ae871f5e4958c069",
+      "passed": true
+    },
+    "native_PDB_cross_read": {
+      "output_sha256": "46389fd61048e2e1c9f74f611ef8e2c7391a199e196ab1b8450919cbddc48093",
+      "stderr": "1 molecule converted",
+      "passed": true
+    }
+  },
+  "limitations": "Inherited integer-only auth_seq_id/tokenizer; missing selected aliases fail. Parsed source sidecar covers the existing atom_site reader only; source_text retains the entire original Python input. losses lists known parsed-view omissions, not an exhaustive mmCIF category diff. Rust callers retain their original input text separately.",
+  "verification": {
+    "rust": {
+      "passed": 784,
+      "failed": 0,
+      "ignored": 0,
+      "targets": [
+        "--lib",
+        "mmcif_pdb_checked",
+        "mmcif_residue_contract",
+        "mmcif_pqr_integration"
+      ],
+      "new_contract_tests": 12
+    },
+    "python": {
+      "passed": 119,
+      "failed": 0,
+      "files": [
+        "test_mmcif_pdb_checked.py",
+        "test_mmcif_residues.py",
+        "test_new_formats.py",
+        "test_input_errors.py"
+      ],
+      "new_api_tests": 23
+    },
+    "checks": {
+      "clippy_mol_and_py_all_targets_warnings_denied": "passed",
+      "cargo_fmt": "passed",
+      "refactor_budget": "passed",
+      "product_names": "passed",
+      "binding_surface_inventory": "passed",
+      "mkdocs_strict": "passed"
+    },
+    "environment_note": "Clippy initially could not write dependency files because the disk was full; passed after removing task-owned regenerable test/link/doc outputs. No source or unrelated cache was removed."
+  }
+}

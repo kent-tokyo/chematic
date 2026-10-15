@@ -131,10 +131,15 @@ fn no_cell_keeps_full_precision_cartesian_coordinates() {
 #[test]
 fn missing_and_excess_coordinates_are_rejected() {
     for coords in [vec![], vec![(0., 0., 0.); 2]] {
-        assert!(matches!(
-            write_cif_checked(&silicon(), &coords, None),
-            Err(CifError::CoordinateCountMismatch { expected: 1, actual }) if actual == coords.len()
-        ));
+        let error = write_cif_checked(&silicon(), &coords, None).unwrap_err();
+        assert!(matches!(error, CifError::InvalidCoordinate(_)));
+        assert_eq!(
+            error.to_string(),
+            format!(
+                "invalid coordinate 'CIF requires 1 coordinates, got {}' in CIF",
+                coords.len()
+            )
+        );
     }
 }
 

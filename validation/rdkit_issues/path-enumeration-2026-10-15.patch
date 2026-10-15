@@ -1,0 +1,1690 @@
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 9f7fbc9..613fe90 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -227,6 +227,7 @@ jobs:
+           - { package: chematic-mol, target: mopac_cartesian_contract }
+           - { package: chematic-smiles, target: rdkit_graph_queries }
+           - { package: chematic-smiles, target: rdkit_atom_environment }
++          - { package: chematic-smiles, target: rdkit_path_enumeration }
+           - { package: chematic-mol, target: rdfile_contract }
+           - { package: chematic-mol, target: gzmat_precision }
+           - { package: chematic-mol, target: sdf_selections }
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index ff536e3..7450af4 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -12,6 +12,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
+ 
+ ### Added
+ 
++- Added bounded RDKit path enumeration in Rust/Python with ordered atom/bond
++  output, root and hydrogen options, shortest-path selection and final ring
++  closures. Work/storage limits return errors rather than truncated paths.
++
+ - Added checked MOPAC Cartesian reading/writing in Rust/Python, retaining
+   header text, optional optimization flags, atom labels and 0D-3D
+   translation vectors with full floating-point precision.
+diff --git a/THIRD_PARTY_NOTICES.md b/THIRD_PARTY_NOTICES.md
+index 6b05232..a54d2cf 100644
+--- a/THIRD_PARTY_NOTICES.md
++++ b/THIRD_PARTY_NOTICES.md
+@@ -137,6 +137,19 @@ the RDKit build. This inventory is a copyright/license notice; it is not a
+ patent or freedom-to-operate opinion. No patent clearance is claimed for any
+ algorithm merely because its reference implementation is BSD-licensed.
+ 
++### RDKit ordered path enumeration extension
++
++`crates/chematic-smiles/src/rdkit/path_enumeration.rs` and its `search.rs`
++follow `findAllPathsOfLengthsMtoN`, `findAllPathsOfLengthN`,
++`pathFinderHelper` and `extendPaths` in RDKit `Release_2026_09_1`,
++`Code/GraphMol/Subgraphs/Subgraphs.cpp` (commit
++`fece8caa860bdf6c9c82bdb9253f22a0cf87150c`), under the BSD-3-Clause notice
++above. Copyright (C) 2003-2026 Greg Landrum and other RDKit contributors.
++The port retains ordered expansion, final ring closures, bond-set deduplication
++and shortest-mode hydrogen behavior. Unweighted BFS for distances, fallible
++storage, work/output limits and early impossible-length termination are
++chematic implementation choices.
++
+ ### RDKit atom environment extension
+ 
+ `crates/chematic-smiles/src/rdkit/atom_environment.rs` follows
+diff --git a/crates/chematic-py/python/chematic/__init__.pyi b/crates/chematic-py/python/chematic/__init__.pyi
+index 66ffb4b..cc15ddb 100644
+--- a/crates/chematic-py/python/chematic/__init__.pyi
++++ b/crates/chematic-py/python/chematic/__init__.pyi
+@@ -374,6 +374,10 @@ class Mol:
+         """``Chem.MolFragmentToSmiles(m, atomsToUse, bondsToUse, ...)``
+         (RDKit 2026.03.1) in RDKit's atom and bond numbering."""
+         ...
++    def rdkit_paths_of_length(self, length: int, *, use_bonds: bool = True, use_hs: bool = False, rooted_at_atom: Optional[int] = None, only_shortest_paths: bool = False, max_visits: int = 1_000_000, max_frontier: int = 100_000, max_results: int = 100_000, max_path_indices: int = 1_000_000) -> list[list[int]]:
++        """Ordered RDKit paths in sanitized atom/bond numbering; budget exhaustion raises ValueError."""
++        ...
++
+     def rdkit_atom_environment(self, radius: int, rooted_at_atom: int, *, use_hs: bool = False, enforce_size: bool = True, max_visits: int = 1_000_000, max_frontier: int = 100_000) -> dict[str, Any]:
+         """RDKit ordered bond environment and minimum atom distances in sanitized numbering."""
+         ...
+diff --git a/crates/chematic-py/src/mol_methods.rs b/crates/chematic-py/src/mol_methods.rs
+index 88fe0af..7aea05b 100644
+--- a/crates/chematic-py/src/mol_methods.rs
++++ b/crates/chematic-py/src/mol_methods.rs
+@@ -27,6 +27,7 @@ mod fingerprints;
+ mod graph_queries;
+ mod identity;
+ mod layered_config;
++mod path_enumeration;
+ mod properties;
+ mod stereo_groups;
+ mod three_d;
+diff --git a/crates/chematic-py/src/mol_methods/path_enumeration.rs b/crates/chematic-py/src/mol_methods/path_enumeration.rs
+new file mode 100644
+index 0000000..2e1023e
+--- /dev/null
++++ b/crates/chematic-py/src/mol_methods/path_enumeration.rs
+@@ -0,0 +1,36 @@
++use super::*;
++
++#[pymethods]
++impl Mol {
++    /// RDKit FindAllPathsOfLengthN with exact ordered bond-set deduplication.
++    /// Indices refer to the sanitized RDKit model; limits fail without partial results.
++    #[pyo3(signature=(length, *, use_bonds=true, use_hs=false, rooted_at_atom=None, only_shortest_paths=false, max_visits=1_000_000, max_frontier=100_000, max_results=100_000, max_path_indices=1_000_000))]
++    #[allow(clippy::too_many_arguments)]
++    fn rdkit_paths_of_length(
++        &self,
++        length: u32,
++        use_bonds: bool,
++        use_hs: bool,
++        rooted_at_atom: Option<usize>,
++        only_shortest_paths: bool,
++        max_visits: usize,
++        max_frontier: usize,
++        max_results: usize,
++        max_path_indices: usize,
++    ) -> PyResult<Vec<Vec<usize>>> {
++        let params = chematic_smiles::RdkitPathParams {
++            use_bonds,
++            use_hs,
++            rooted_at_atom,
++            only_shortest_paths,
++        };
++        let limits = chematic_smiles::RdkitPathLimits {
++            max_visits,
++            max_frontier,
++            max_results,
++            max_path_indices,
++        };
++        chematic_smiles::rdkit_paths_of_length_with_limits(&self.inner, length, &params, &limits)
++            .map_err(|e| PyValueError::new_err(e.to_string()))
++    }
++}
+diff --git a/crates/chematic-py/tests/test_rdkit_path_enumeration.py b/crates/chematic-py/tests/test_rdkit_path_enumeration.py
+new file mode 100644
+index 0000000..94e61b8
+--- /dev/null
++++ b/crates/chematic-py/tests/test_rdkit_path_enumeration.py
+@@ -0,0 +1,86 @@
++"""Original synthetic MIT OR Apache-2.0 contracts; RDKit 2026.09.1 oracle."""
++import ast
++import hashlib
++import json
++from pathlib import Path
++
++import pytest
++import chematic
++
++MANIFEST = Path(__file__).resolve().parents[3]/'validation/rdkit_issues/path-enumeration/fixtures.json'
++
++
++def test_golden_paths_and_fixture_integrity():
++    manifest = json.loads(MANIFEST.read_text())
++    assert manifest['sha256'] == hashlib.sha256(json.dumps(manifest['cases'], sort_keys=True, separators=(',', ':')).encode()).hexdigest()
++    for case in manifest['cases']:
++        assert case['sha256'] == hashlib.sha256(case['smiles'].encode()).hexdigest()
++    for case in manifest['golden']:
++        mol = chematic.from_smiles(case['smiles'])
++        assert mol.rdkit_paths_of_length(case['length'], **case['params']) == case['expected']['paths']
++
++
++@pytest.mark.parametrize('use_bonds', [False, True])
++@pytest.mark.parametrize('length', [0, 2**32-1])
++def test_zero_and_impossible_lengths_need_no_search_budget(use_bonds, length):
++    assert chematic.from_smiles('CCO').rdkit_paths_of_length(length, use_bonds=use_bonds, max_visits=0, max_frontier=0, max_results=0, max_path_indices=0) == []
++
++
++@pytest.mark.parametrize('root', [3, 999])
++def test_outside_roots_return_no_paths(root):
++    assert chematic.from_smiles('CCO').rdkit_paths_of_length(1, rooted_at_atom=root, max_visits=0, max_frontier=0) == []
++
++
++@pytest.mark.parametrize('kwargs', [dict(max_visits=0), dict(max_frontier=2), dict(max_results=1), dict(max_path_indices=2)])
++def test_each_budget_raises_instead_of_truncating(kwargs):
++    m = chematic.from_smiles('CCO')
++    before = m.smiles
++    with pytest.raises(ValueError, match='resource limit'):
++        m.rdkit_paths_of_length(1, **kwargs)
++    assert m.smiles == before
++    assert m.rdkit_paths_of_length(1) == [[0], [1]]
++
++
++def test_exact_budget_boundary_and_no_visits_for_singletons():
++    m = chematic.from_smiles('CCO')
++    assert m.rdkit_paths_of_length(1, rooted_at_atom=0, max_visits=1, max_frontier=1, max_results=1, max_path_indices=2) == [[0]]
++    with pytest.raises(ValueError, match='frontier indices'):
++        m.rdkit_paths_of_length(1, rooted_at_atom=0, max_path_indices=1)
++    assert m.rdkit_paths_of_length(1, use_bonds=False, max_visits=0, max_results=3, max_path_indices=3) == [[0], [1], [2]]
++
++
++def test_returned_lists_are_independent_and_source_properties_survive():
++    m = chematic.from_smiles('C1CC1')
++    m.SetIntProp('path_sentinel', 9710)
++    first = m.rdkit_paths_of_length(2)
++    first[0].clear()
++    first.append([999])
++    assert m.rdkit_paths_of_length(2) == [[0, 1], [2, 1], [0, 2]]
++    assert m.GetIntProp('path_sentinel') == 9710
++
++
++def test_hydrogens_and_sanitized_indexing():
++    m = chematic.from_smiles('[H]C([H])([H])[H]')
++    assert m.atom_count == 5 and m.rdkit_num_atoms() == 1
++    assert m.rdkit_paths_of_length(1, use_bonds=False) == [[0]]
++    m = m.rdkit_add_hydrogens()
++    assert len(m.rdkit_paths_of_length(1, use_hs=True)) == 4
++    assert m.rdkit_paths_of_length(1) == []
++    # RDKit builds shortest-mode adjacency from its unfiltered distance matrix.
++    assert m.rdkit_paths_of_length(1, only_shortest_paths=True) == m.rdkit_paths_of_length(1, use_hs=True)
++
++
++def test_empty_model_input_cap_and_type_boundaries():
++    assert chematic.RWMol().GetMol().rdkit_paths_of_length(1) == []
++    with pytest.raises(ValueError, match='1026 atoms'):
++        chematic.from_smiles('.'.join(['[H]C']*513)).rdkit_paths_of_length(0)
++    for length in [-1, 2**32]:
++        with pytest.raises((ValueError, OverflowError)):
++            chematic.from_smiles('C').rdkit_paths_of_length(length)
++
++
++def test_stub_declares_all_options():
++    p = Path(__file__).resolve().parents[1]/'python/chematic/__init__.pyi'
++    cls = next(n for n in ast.parse(p.read_text()).body if isinstance(n, ast.ClassDef) and n.name == 'Mol')
++    method = next(n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name == 'rdkit_paths_of_length')
++    assert {a.arg for a in method.args.kwonlyargs} == {'use_bonds', 'use_hs', 'rooted_at_atom', 'only_shortest_paths', 'max_visits', 'max_frontier', 'max_results', 'max_path_indices'}
+diff --git a/crates/chematic-smiles/src/lib.rs b/crates/chematic-smiles/src/lib.rs
+index 003c5a6..e976235 100644
+--- a/crates/chematic-smiles/src/lib.rs
++++ b/crates/chematic-smiles/src/lib.rs
+@@ -63,11 +63,11 @@ pub use rdkit::{
+     InchiOutputAtom, InchiOutputStereo0D, RdkitAlignment, RdkitAtomEnvironment,
+     RdkitAtomEnvironmentLimits, RdkitChemistryProblem, RdkitCleanupEdits, RdkitHashFunction,
+     RdkitLegacyStereo, RdkitMol2Molecule, RdkitMolBlock, RdkitMolBlockAtom, RdkitMolBlockBond,
+-    RdkitMolView, RdkitPdbMolecule, RdkitSanitizedModel, RdkitSmilesError, RdkitSmilesParams,
+-    RdkitTautomerEnumeration, RdkitTautomerStatus, RdkitViewAtom, RdkitViewBond, Transform3D,
+-    rdkit_2d_coords, rdkit_added_hs_molecule, rdkit_addhs_first_pattern, rdkit_adjacency_matrix,
+-    rdkit_align_mol, rdkit_align_points, rdkit_all_conformer_best_rms,
+-    rdkit_all_conformer_best_rms_to_ref, rdkit_atom_environment,
++    RdkitMolView, RdkitPathLimits, RdkitPathParams, RdkitPdbMolecule, RdkitSanitizedModel,
++    RdkitSmilesError, RdkitSmilesParams, RdkitTautomerEnumeration, RdkitTautomerStatus,
++    RdkitViewAtom, RdkitViewBond, Transform3D, rdkit_2d_coords, rdkit_added_hs_molecule,
++    rdkit_addhs_first_pattern, rdkit_adjacency_matrix, rdkit_align_mol, rdkit_align_points,
++    rdkit_all_conformer_best_rms, rdkit_all_conformer_best_rms_to_ref, rdkit_atom_environment,
+     rdkit_atom_environment_with_limits, rdkit_atom_stereocenter_counts, rdkit_best_rms,
+     rdkit_calc_rms, rdkit_canonical_smiles, rdkit_canonical_tautomer, rdkit_chiral_centers,
+     rdkit_cleanup_edits, rdkit_crippen_contribs, rdkit_crippen_contribs_no_hs,
+@@ -78,7 +78,8 @@ pub use rdkit::{
+     rdkit_model_correct_view, rdkit_mol_block, rdkit_mol_block_2d, rdkit_mol_from_mol2_block,
+     rdkit_mol_from_pdb_block, rdkit_mol_from_xyz_block, rdkit_mol_hash, rdkit_mol_view,
+     rdkit_molecule_from_inchi_output, rdkit_murcko_scaffold, rdkit_num_atoms,
+-    rdkit_num_pi_electrons, rdkit_parsed_molecule, rdkit_pdb_block, rdkit_random_smiles,
++    rdkit_num_pi_electrons, rdkit_parsed_molecule, rdkit_paths_of_length,
++    rdkit_paths_of_length_with_limits, rdkit_pdb_block, rdkit_random_smiles,
+     rdkit_random_smiles_with, rdkit_reaction_to_smarts, rdkit_sanitized_model, rdkit_shortest_path,
+     rdkit_smarts, rdkit_smarts_to_smarts, rdkit_smiles, rdkit_stereoisomer_count,
+     rdkit_stereoisomer_smiles, rdkit_tautomer_score, register_rdkit_model_hook,
+diff --git a/crates/chematic-smiles/src/rdkit/mod.rs b/crates/chematic-smiles/src/rdkit/mod.rs
+index d33bacd..556537f 100644
+--- a/crates/chematic-smiles/src/rdkit/mod.rs
++++ b/crates/chematic-smiles/src/rdkit/mod.rs
+@@ -52,6 +52,7 @@ mod molblock2d;
+ mod molhash;
+ mod murcko;
+ mod parse;
++mod path_enumeration;
+ mod pdb;
+ mod pdb_read;
+ mod periodic;
+@@ -399,6 +400,9 @@ pub use atom_environment::{
+ };
+ pub use graph_queries::{rdkit_adjacency_matrix, rdkit_shortest_path};
+ pub use matrices::{rdkit_distance_matrix, rdkit_distance_matrix_3d};
++pub use path_enumeration::{
++    RdkitPathLimits, RdkitPathParams, rdkit_paths_of_length, rdkit_paths_of_length_with_limits,
++};
+ 
+ /// One problem `MolOps::detectChemistryProblems` reports (see
+ /// [`rdkit_detect_chemistry_problems`]).
+diff --git a/crates/chematic-smiles/src/rdkit/path_enumeration.rs b/crates/chematic-smiles/src/rdkit/path_enumeration.rs
+new file mode 100644
+index 0000000..7cf8830
+--- /dev/null
++++ b/crates/chematic-smiles/src/rdkit/path_enumeration.rs
+@@ -0,0 +1,117 @@
++//! Ordered paths following RDKit Release_2026_09_1 Subgraphs.cpp.
++//! Copyright (C) 2003-2026 Greg Landrum and other RDKit contributors.
++//! BSD-3-Clause; see THIRD_PARTY_NOTICES.md. Uses the existing sanitized model.
++use super::{RdkitSmilesError, graph_queries, mol::Mol};
++use chematic_core::Molecule;
++mod search;
++
++/// Options for RDKit's FindAllPathsOfLengthN, in sanitized model numbering.
++#[derive(Debug, Clone, Copy, PartialEq, Eq)]
++pub struct RdkitPathParams {
++    /// True: length and output indices count bonds; false: they count atoms.
++    pub use_bonds: bool,
++    pub use_hs: bool,
++    /// None starts at every atom. Out-of-range roots return no paths.
++    pub rooted_at_atom: Option<usize>,
++    /// Retains only geodesics; upstream considers graph Hs regardless of use_hs.
++    pub only_shortest_paths: bool,
++}
++impl Default for RdkitPathParams {
++    fn default() -> Self {
++        Self {
++            use_bonds: true,
++            use_hs: false,
++            rooted_at_atom: None,
++            only_shortest_paths: false,
++        }
++    }
++}
++
++/// Independent work/storage caps. Exhaustion returns an error, never partial paths.
++#[derive(Debug, Clone, Copy)]
++pub struct RdkitPathLimits {
++    /// Neighbor extensions examined, including rejected repeats/shortcuts.
++    pub max_visits: usize,
++    /// Prefix count in either breadth-first frontier, before deduplication.
++    pub max_frontier: usize,
++    /// Number of unique returned paths.
++    pub max_results: usize,
++    /// Total indices in either frontier, or in the returned paths, separately.
++    pub max_path_indices: usize,
++}
++impl Default for RdkitPathLimits {
++    fn default() -> Self {
++        Self {
++            max_visits: 1_000_000,
++            max_frontier: 100_000,
++            max_results: 100_000,
++            max_path_indices: 1_000_000,
++        }
++    }
++}
++
++fn unsupported(detail: impl Into<String>) -> RdkitSmilesError {
++    RdkitSmilesError::Unsupported(detail.into())
++}
++fn reserve<T>(v: &mut Vec<T>, count: usize) -> Result<(), RdkitSmilesError> {
++    v.try_reserve(count)
++        .map_err(|e| unsupported(format!("path allocation failed: {e}")))
++}
++type Neighbors = Vec<Vec<(usize, usize)>>;
++
++/// FindAllPathsOfLengthN with ordered atom-index expansion and bond-set dedup.
++/// Unlike branched subgraphs, prefixes are linear. The last step can close a
++/// ring to any earlier atom except the immediately previous one. Both zero
++/// lengths return empty; atom length one includes isolated/graph-H atoms.
++pub fn rdkit_paths_of_length(
++    mol: &Molecule,
++    length: u32,
++    params: &RdkitPathParams,
++) -> Result<Vec<Vec<usize>>, RdkitSmilesError> {
++    rdkit_paths_of_length_with_limits(mol, length, params, &RdkitPathLimits::default())
++}
++
++/// Same sanitized model and <=1024 input atoms /16384 bonds as graph queries.
++/// Very large lengths return empty once impossible, without looping to length.
++pub fn rdkit_paths_of_length_with_limits(
++    mol: &Molecule,
++    length: u32,
++    params: &RdkitPathParams,
++    limits: &RdkitPathLimits,
++) -> Result<Vec<Vec<usize>>, RdkitSmilesError> {
++    let model = graph_queries::prepare(mol)?;
++    let n = model.atoms.len();
++    if length == 0 || params.rooted_at_atom.is_some_and(|root| root >= n) {
++        return Ok(Vec::new());
++    }
++    // Compare before adding one so even a 32-bit target cannot overflow usize.
++    if u64::from(length) > n as u64 + u64::from(!params.use_bonds) {
++        return Ok(Vec::new());
++    }
++    let target = length as usize + usize::from(params.use_bonds);
++    // With shortest-path selection RDKit builds adjacency from the unfiltered
++    // distance matrix, which includes graph Hs even when useHs is false.
++    let neighbors = neighbors(&model, params.use_hs || params.only_shortest_paths)?;
++    search::enumerate(&neighbors, target, params, limits)
++}
++
++fn neighbors(model: &Mol, use_hs: bool) -> Result<Neighbors, RdkitSmilesError> {
++    let mut result = Vec::new();
++    reserve(&mut result, model.atoms.len())?;
++    result.resize_with(model.atoms.len(), Vec::new);
++    for (index, bond) in model.bonds.iter().enumerate() {
++        if use_hs || (model.atoms[bond.begin].anum != 1 && model.atoms[bond.end].anum != 1) {
++            reserve(&mut result[bond.begin], 1)?;
++            result[bond.begin].push((bond.end, index));
++            reserve(&mut result[bond.end], 1)?;
++            result[bond.end].push((bond.begin, index));
++        }
++    }
++    for row in &mut result {
++        row.sort_unstable();
++        // The upstream adjacency matrix has one edge per atom pair and bond
++        // lookup selects the first bond. Keep that same first-index relation.
++        row.dedup_by_key(|(atom, _)| *atom);
++    }
++    Ok(result)
++}
+diff --git a/crates/chematic-smiles/src/rdkit/path_enumeration/search.rs b/crates/chematic-smiles/src/rdkit/path_enumeration/search.rs
+new file mode 100644
+index 0000000..5e40ad7
+--- /dev/null
++++ b/crates/chematic-smiles/src/rdkit/path_enumeration/search.rs
+@@ -0,0 +1,159 @@
++use super::{Neighbors, RdkitPathLimits, RdkitPathParams, RdkitSmilesError, reserve, unsupported};
++use std::collections::HashSet;
++
++fn limit(detail: &str) -> RdkitSmilesError {
++    unsupported(format!("path enumeration resource limit: {detail}"))
++}
++
++fn append(
++    frontier: &mut Vec<Vec<usize>>,
++    indices: &mut usize,
++    prefix: &[usize],
++    atom: usize,
++    limits: &RdkitPathLimits,
++) -> Result<(), RdkitSmilesError> {
++    let len = prefix.len() + 1;
++    if frontier.len() >= limits.max_frontier {
++        return Err(limit("frontier count exceeded"));
++    }
++    let total = indices
++        .checked_add(len)
++        .ok_or_else(|| limit("frontier indices overflow"))?;
++    if total > limits.max_path_indices {
++        return Err(limit("frontier indices exceeded"));
++    }
++    let mut path = Vec::new();
++    reserve(&mut path, len)?;
++    path.extend_from_slice(prefix);
++    path.push(atom);
++    reserve(frontier, 1)?;
++    frontier.push(path);
++    *indices = total;
++    Ok(())
++}
++
++pub(super) fn enumerate(
++    neighbors: &Neighbors,
++    target: usize,
++    params: &RdkitPathParams,
++    limits: &RdkitPathLimits,
++) -> Result<Vec<Vec<usize>>, RdkitSmilesError> {
++    let mut frontier = Vec::new();
++    let mut indices = 0;
++    let n = neighbors.len();
++    for atom in 0..n {
++        if params.rooted_at_atom.is_none_or(|root| root == atom) {
++            append(&mut frontier, &mut indices, &[], atom, limits)?;
++        }
++    }
++    let distances = if params.only_shortest_paths {
++        Some(distances(neighbors)?)
++    } else {
++        None
++    };
++    let mut visits = 0;
++    for size in 1..target {
++        if frontier.is_empty() {
++            break;
++        }
++        let mut next = Vec::new();
++        indices = 0;
++        for path in &frontier {
++            for &(atom, _) in &neighbors[path[size - 1]] {
++                if visits >= limits.max_visits {
++                    return Err(limit("visit count exceeded"));
++                }
++                visits += 1;
++                if distances
++                    .as_ref()
++                    .is_some_and(|d| usize::from(d[path[0] * n + atom]) < size)
++                {
++                    continue;
++                }
++                let repeat = path.contains(&atom);
++                let closure = target > 2 && size == target - 1 && atom != path[size - 2];
++                if !repeat || closure {
++                    append(&mut next, &mut indices, path, atom, limits)?;
++                }
++            }
++        }
++        frontier = next;
++    }
++    deduplicate(frontier, neighbors, params.use_bonds, limits)
++}
++
++// Unweighted all-pairs BFS is equivalent to RDKit's default distance matrix.
++// Storage is bounded by the already checked 1024-atom model and allocated fallibly.
++fn distances(neighbors: &Neighbors) -> Result<Vec<u16>, RdkitSmilesError> {
++    let n = neighbors.len();
++    let mut out = Vec::new();
++    reserve(&mut out, n * n)?;
++    out.resize(n * n, u16::MAX);
++    let mut queue = Vec::new();
++    reserve(&mut queue, n)?;
++    for root in 0..n {
++        queue.clear();
++        queue.push(root);
++        out[root * n + root] = 0;
++        let mut cursor = 0;
++        while cursor < queue.len() {
++            let atom = queue[cursor];
++            cursor += 1;
++            for &(other, _) in &neighbors[atom] {
++                if out[root * n + other] == u16::MAX {
++                    out[root * n + other] = out[root * n + atom] + 1;
++                    queue.push(other);
++                }
++            }
++        }
++    }
++    Ok(out)
++}
++
++fn deduplicate(
++    frontier: Vec<Vec<usize>>,
++    neighbors: &Neighbors,
++    use_bonds: bool,
++    limits: &RdkitPathLimits,
++) -> Result<Vec<Vec<usize>>, RdkitSmilesError> {
++    let mut result = Vec::new();
++    let mut seen = HashSet::new();
++    let mut indices = 0usize;
++    for path in frontier {
++        let mut bonds = Vec::new();
++        reserve(&mut bonds, path.len().saturating_sub(1))?;
++        for pair in path.windows(2) {
++            let edge = neighbors[pair[0]]
++                .binary_search_by_key(&pair[1], |(atom, _)| *atom)
++                .map_err(|_| unsupported("path edge missing from sanitized model"))?;
++            bonds.push(neighbors[pair[0]][edge].1);
++        }
++        let mut key = Vec::new();
++        reserve(&mut key, bonds.len())?;
++        key.extend_from_slice(&bonds);
++        key.sort_unstable();
++        // Single-atom paths are individually retained, including isolated Hs.
++        if !key.is_empty() {
++            if seen.contains(&key) {
++                continue;
++            }
++            seen.try_reserve(1)
++                .map_err(|e| unsupported(format!("path dedup allocation failed: {e}")))?;
++            seen.insert(key);
++        }
++        let output = if use_bonds { bonds } else { path };
++        let total = indices
++            .checked_add(output.len())
++            .ok_or_else(|| limit("result indices overflow"))?;
++        if result.len() >= limits.max_results {
++            return Err(limit("result count exceeded"));
++        }
++        if total > limits.max_path_indices {
++            return Err(limit("result indices exceeded"));
++        }
++        reserve(&mut result, 1)?;
++        result.push(output);
++        indices = total;
++    }
++    Ok(result)
++}
+diff --git a/crates/chematic-smiles/tests/rdkit_path_enumeration.rs b/crates/chematic-smiles/tests/rdkit_path_enumeration.rs
+new file mode 100644
+index 0000000..7784006
+--- /dev/null
++++ b/crates/chematic-smiles/tests/rdkit_path_enumeration.rs
+@@ -0,0 +1,206 @@
++//! Original synthetic MIT OR Apache-2.0 paths, pinned RDKit 2026.09.1.
++use chematic_smiles::{
++    RdkitPathLimits, RdkitPathParams, parse, rdkit_paths_of_length,
++    rdkit_paths_of_length_with_limits,
++};
++
++#[test]
++fn ordered_atom_expansion_and_bond_set_deduplication() {
++    let mol = parse("C1CC1").unwrap();
++    let p = RdkitPathParams::default();
++    assert_eq!(
++        rdkit_paths_of_length(&mol, 1, &p).unwrap(),
++        [vec![0], vec![2], vec![1]]
++    );
++    assert_eq!(
++        rdkit_paths_of_length(&mol, 2, &p).unwrap(),
++        [vec![0, 1], vec![2, 1], vec![0, 2]]
++    );
++    let p = RdkitPathParams {
++        use_bonds: false,
++        ..p
++    };
++    assert_eq!(
++        rdkit_paths_of_length(&mol, 3, &p).unwrap(),
++        [vec![0, 1, 2], vec![0, 2, 1], vec![1, 0, 2]]
++    );
++}
++
++#[test]
++fn final_step_closes_ring_at_an_interior_atom() {
++    let mol = parse("C1CCC1C").unwrap();
++    let p = RdkitPathParams {
++        rooted_at_atom: Some(4),
++        ..Default::default()
++    };
++    assert_eq!(
++        rdkit_paths_of_length(&mol, 5, &p).unwrap(),
++        [vec![3, 4, 0, 1, 2]]
++    );
++    let p = RdkitPathParams {
++        use_bonds: false,
++        ..p
++    };
++    assert_eq!(
++        rdkit_paths_of_length(&mol, 6, &p).unwrap(),
++        [vec![4, 3, 0, 1, 2, 3]]
++    );
++    let mol = parse("CC(C)C").unwrap();
++    assert!(
++        rdkit_paths_of_length(&mol, 3, &Default::default())
++            .unwrap()
++            .is_empty()
++    );
++}
++
++#[test]
++fn shortest_paths_exclude_ring_detours() {
++    let mol = parse("C1CCC1C").unwrap();
++    let p = RdkitPathParams {
++        only_shortest_paths: true,
++        ..Default::default()
++    };
++    assert_eq!(
++        rdkit_paths_of_length(&mol, 3, &p).unwrap(),
++        [vec![0, 4, 3], vec![1, 2, 3]]
++    );
++    assert!(
++        rdkit_paths_of_length(&parse("C1CC1").unwrap(), 3, &p)
++            .unwrap()
++            .is_empty()
++    );
++}
++
++#[test]
++fn hydrogen_singletons_and_shortest_mode_follow_upstream() {
++    let mol = parse("[2H]C").unwrap();
++    let p = RdkitPathParams {
++        use_bonds: false,
++        ..Default::default()
++    };
++    assert_eq!(
++        rdkit_paths_of_length(&mol, 1, &p).unwrap(),
++        [vec![0], vec![1]]
++    );
++    assert!(rdkit_paths_of_length(&mol, 2, &p).unwrap().is_empty());
++    for p in [
++        RdkitPathParams { use_hs: true, ..p },
++        RdkitPathParams {
++            only_shortest_paths: true,
++            ..p
++        },
++    ] {
++        assert_eq!(rdkit_paths_of_length(&mol, 2, &p).unwrap(), [vec![0, 1]]);
++    }
++}
++
++#[test]
++fn empty_zero_impossible_and_outside_roots() {
++    let mol = parse("C.C").unwrap();
++    let zero = RdkitPathLimits {
++        max_visits: 0,
++        max_frontier: 0,
++        max_results: 0,
++        max_path_indices: 0,
++    };
++    for use_bonds in [false, true] {
++        let p = RdkitPathParams {
++            use_bonds,
++            ..Default::default()
++        };
++        for length in [0, u32::MAX] {
++            assert!(
++                rdkit_paths_of_length_with_limits(&mol, length, &p, &zero)
++                    .unwrap()
++                    .is_empty()
++            );
++        }
++        let p = RdkitPathParams {
++            rooted_at_atom: Some(99),
++            ..p
++        };
++        assert!(
++            rdkit_paths_of_length_with_limits(&mol, 1, &p, &zero)
++                .unwrap()
++                .is_empty()
++        );
++    }
++    assert!(
++        rdkit_paths_of_length(
++            &chematic_core::MoleculeBuilder::new().build(),
++            1,
++            &Default::default()
++        )
++        .unwrap()
++        .is_empty()
++    );
++}
++
++#[test]
++fn budgets_are_exact_and_do_not_return_truncated_data() {
++    let mol = parse("CCO").unwrap();
++    for limits in [
++        RdkitPathLimits {
++            max_visits: 0,
++            ..Default::default()
++        },
++        RdkitPathLimits {
++            max_frontier: 2,
++            ..Default::default()
++        },
++        RdkitPathLimits {
++            max_results: 1,
++            ..Default::default()
++        },
++        RdkitPathLimits {
++            max_path_indices: 2,
++            ..Default::default()
++        },
++    ] {
++        assert!(
++            rdkit_paths_of_length_with_limits(&mol, 1, &Default::default(), &limits)
++                .unwrap_err()
++                .to_string()
++                .contains("resource limit")
++        );
++    }
++    let p = RdkitPathParams {
++        rooted_at_atom: Some(0),
++        ..Default::default()
++    };
++    let limits = RdkitPathLimits {
++        max_visits: 1,
++        max_frontier: 1,
++        max_results: 1,
++        max_path_indices: 2,
++    };
++    assert_eq!(
++        rdkit_paths_of_length_with_limits(&mol, 1, &p, &limits).unwrap(),
++        [vec![0]]
++    );
++    let limits = RdkitPathLimits {
++        max_path_indices: 1,
++        ..limits
++    };
++    assert!(rdkit_paths_of_length_with_limits(&mol, 1, &p, &limits).is_err());
++}
++
++#[test]
++fn limits_precede_hydrogen_suppression_and_source_is_immutable() {
++    let text = std::iter::repeat_n("[H]C", 513)
++        .collect::<Vec<_>>()
++        .join(".");
++    assert!(
++        rdkit_paths_of_length(&parse(&text).unwrap(), 0, &Default::default())
++            .unwrap_err()
++            .to_string()
++            .contains("1026 atoms")
++    );
++    let mol = parse("N->[Cu+2]").unwrap();
++    let before = chematic_smiles::canonical_smiles(&mol);
++    assert_eq!(
++        rdkit_paths_of_length(&mol, 1, &Default::default()).unwrap(),
++        [vec![0]]
++    );
++    assert_eq!(chematic_smiles::canonical_smiles(&mol), before);
++}
+diff --git a/docs/rdkit-migration.md b/docs/rdkit-migration.md
+index 1213acf..f2c9f6b 100644
+--- a/docs/rdkit-migration.md
++++ b/docs/rdkit-migration.md
+@@ -19,6 +19,7 @@ operation-level measurement and unsupported states, see the
+ | Match SMARTS | `mol.HasSubstructMatch(q)` | `mol.has_substructure(q)` / `mol.find_matches(q)`; opt-in `mol.find_matches_rdkit_parity(q)` | Native query interpretation has recorded residuals. The opt-in result distinguishes no-match from typed refusal; match atom order can differ. |
+ | Descriptors | `Descriptors.MolWt(m)`, `rdMolDescriptors.CalcTPSA(m)` | `mol.mw`, `mol.tpsa`, `mol.descriptors()` | Choose native or named RDKit-compatible profiles explicitly. |
+ | Fingerprints | `rdFingerprintGenerator.GetMorganGenerator(...)` | `mol.ecfp4()` or named RDKit-compatible Morgan API | Native ECFP and RDKit Morgan bit positions are different profiles. |
++| Path enumeration | `Chem.FindAllPathsOfLengthN` | `mol.rdkit_paths_of_length(length)` | Ordered atom/bond indices, rooted/H/shortest options and bounded search. See [scope](rdkit-path-enumeration.md). |
+ | Atom environments | `Chem.FindAtomEnvironmentOfRadiusN` | `mol.rdkit_atom_environment(radius, rooted_at_atom)` | Ordered model bonds and atom distances; hydrogen/size flags and bounded search. See [scope](rdkit-atom-environment.md). |
+ | Graph queries | `Chem.GetAdjacencyMatrix`, `Chem.GetShortestPath` | `mol.rdkit_adjacency_matrix()`, `mol.rdkit_shortest_path(start, end)` | Sanitized RDKit atom order; adjacency emptyVal=0 only; 1024 atom / 16384 bond input caps. See [graph-query scope](rdkit-graph-queries.md). |
+ | Similarity | `DataStructs.TanimotoSimilarity(a, b)` | `chematic.tanimoto(a, b)` | Use fingerprints from the same declared profile. |
+diff --git a/docs/rdkit-path-enumeration.md b/docs/rdkit-path-enumeration.md
+new file mode 100644
+index 0000000..4b49fbc
+--- /dev/null
++++ b/docs/rdkit-path-enumeration.md
+@@ -0,0 +1,189 @@
++# Bounded RDKit path enumeration
++
++The isolated candidate adds ordered fixed-length path enumeration to Rust and
++Python, corresponding to
++[`Chem.FindAllPathsOfLengthN`](https://www.rdkit.org/docs/source/rdkit.Chem.rdmolops.html#rdkit.Chem.rdmolops.FindAllPathsOfLengthN).
++It returns either bond-index paths or atom-index paths, with root, hydrogen
++and shortest-path options. This complements the existing adjacency matrix,
++shortest-path and radius-environment APIs. It does not add branched-subgraph
++enumeration or chemical equivalence filtering.
++
++## Interfaces
++
++```python
++import chematic
++
++mol = chematic.from_smiles("C1CC1")
++assert mol.rdkit_paths_of_length(2) == [[0, 1], [2, 1], [0, 2]]
++assert mol.rdkit_paths_of_length(4, use_bonds=False) == [[0, 1, 2, 0]]
++assert mol.rdkit_paths_of_length(3, only_shortest_paths=True) == []
++
++paths = mol.rdkit_paths_of_length(
++    2,
++    use_bonds=True,
++    use_hs=False,
++    rooted_at_atom=0,
++    only_shortest_paths=False,
++    max_visits=1_000_000,
++    max_frontier=100_000,
++    max_results=100_000,
++    max_path_indices=1_000_000,
++)
++```
++
++Rust exports `RdkitPathParams`, `RdkitPathLimits`, `rdkit_paths_of_length`
++and `rdkit_paths_of_length_with_limits` from `chematic_smiles`:
++
++```rust
++use chematic_smiles::{parse, rdkit_paths_of_length, RdkitPathParams};
++
++fn main() -> Result<(), Box<dyn std::error::Error>> {
++    let mol = parse("C1CC1")?;
++    let paths = rdkit_paths_of_length(&mol, 2, &RdkitPathParams::default())?;
++    assert_eq!(paths, vec![vec![0, 1], vec![2, 1], vec![0, 2]]);
++    Ok(())
++}
++```
++
++`length` is an unsigned 32-bit integer. Python `rooted_at_atom=None` and Rust
++`None` mean unrooted; a nonnegative root starts every returned path at that
++atom. An out-of-range root returns an empty list, matching the pinned oracle.
++Python negative roots are outside this API; use `None` instead of RDKit's
++negative sentinel. Results are newly owned vectors/lists and do not mutate the
++source molecule or its properties. WASM and the `rdkit_compat` wrapper have no
++new adapter in this increment.
++
++## Exact path semantics
++
++| Option or boundary | Contract |
++|---|---|
++| `use_bonds=True` | Length counts bonds; output entries are bond indices |
++| `use_bonds=False` | Length counts atoms; output entries are atom indices |
++| Default options | Bond output, graph H excluded during expansion, unrooted, shortest filter disabled |
++| Root | Constrains the first atom, rather than requiring the root anywhere in a path |
++| Zero length | Empty result for either output mode |
++| Atom length one | One singleton for each allowed start, including isolated atoms and graph Hs |
++| Neighbors | Ascending sanitized atom index, independent of bond insertion order |
++| Duplicate removal | Same set of bond indices means duplicate, even for atom output; retain the first ordered path |
++| Last step | May revisit an earlier atom except the immediately preceding one, closing a cycle |
++| Shortest option | Every retained prefix is a shortest unweighted path from its start |
++
++Atom and bond indices refer to the existing sanitized RDKit model used by
++`rdkit_adjacency_matrix`, `rdkit_shortest_path`, `rdkit_fragment_smiles` and
++`rdkit_atom_environment`. They can differ from the raw chematic graph when
++ordinary explicit hydrogens are removed. `rdkit_num_atoms()` gives the model's
++atom-index range. Explicitly added H atoms and retained isotope H atoms follow
++the established model contract.
++
++Two upstream details are deliberate:
++
++- With `only_shortest_paths=True`, RDKit constructs adjacency from its
++  unfiltered distance matrix. Graph H atoms therefore participate even when
++  `use_hs=False`. For `[2H]C`, ordinary bond-path enumeration excludes the
++  H–C edge by default; shortest-mode enumeration includes it.
++- A final cycle closure can revisit an interior atom, not just the starting
++  atom. Starting from the tail atom 4 of `C1CCC1C`, atom length six returns
++  `[4, 3, 0, 1, 2, 3]`. Bond-set deduplication retains one representation of
++  that tail-plus-cycle path.
++
++These are index-based paths, not unique chemical fragments. Symmetry-equivalent
++paths with different bond sets remain distinct. Bond order, aromaticity and
++dative direction do not supply weights to this operation. The shortest option
++retains all enumerated geodesics after bond-set deduplication, not a single
++representative shortest path.
++
++## Bounded computation
++
++The existing preparation guard checks at most 1024 input atoms and 16,384
++input bonds before hydrogen removal. Unsupported inputs from the existing
++sanitized model remain explicit errors. The search is iterative and uses no
++depth-dependent recursion.
++
++| Limit | Default | Counted work/storage |
++|---|---|---|
++| `max_visits` | 1,000,000 | Neighbor extensions examined, including rejected repeats and shortcuts |
++| `max_frontier` | 100,000 | Prefix count in either breadth-first frontier, before deduplication |
++| `max_results` | 100,000 | Unique returned paths |
++| `max_path_indices` | 1,000,000 | Total indices in either frontier or in returned paths, checked separately |
++
++Initial singleton prefixes count toward frontier limits. For example, an
++unrooted `CCO` search needs room for three initial prefixes even when its final
++result contains two bonds. The two frontiers, result storage and deduplication
++keys have separate bounded storage; these settings are counts, not an exact
++whole-process byte limit. Vector/hash-table growth uses fallible reservation.
++
++Shortest-mode distances use unweighted all-pairs BFS over the bounded model,
++equivalent to the default RDKit topological distance matrix. This preparation
++is bounded by the input caps and is separate from `max_visits`, which counts
++path expansion work.
++
++Exceeding any limit returns `RdkitSmilesError::Unsupported` in Rust or
++`ValueError` in Python, without a partial result. Zero length, an outside root
++and a provably impossible length return empty without expanding a frontier.
++Impossible lengths, including `UINT32_MAX`, terminate after bounded model
++preparation. The oracle's loop does not stop when its frontier becomes empty,
++so huge lengths are tested only in chematic; no upstream timing or overflow
++compatibility is claimed.
++
++## Pinned validation, 2026-10-15
++
++The oracle is **RDKit 2026.09.1**, release `Release_2026_09_1`, resolved commit
++`fece8caa860bdf6c9c82bdb9253f22a0cf87150c`. The port follows
++[`Subgraphs.cpp`](https://github.com/rdkit/rdkit/blob/fece8caa860bdf6c9c82bdb9253f22a0cf87150c/Code/GraphMol/Subgraphs/Subgraphs.cpp),
++specifically `extendPaths`, `pathFinderHelper`, `findAllPathsOfLengthsMtoN`
++and `findAllPathsOfLengthN`. Retrieved source SHA-256:
++`aa8295ce04042f809d93a29f8f6ca0beca2c656b4f3865270237131119a55597`.
++Copyright (C) 2003–2026 Greg Landrum and other RDKit contributors;
++the BSD-3-Clause attribution is recorded in `THIRD_PARTY_NOTICES.md`.
++
++All checked-in graph recipes are original synthetic MIT OR Apache-2.0 data.
++The manifest records provenance, redistribution, minimization, oracle settings,
++expected behavior and normalized UTF-8 SMILES hashes. Eight explicit golden
++queries additionally store their pinned expected vectors.
++
++| Check | Result |
++|---|---|
++| Original graph recipes | 24 |
++| Explicit golden queries | 8 |
++| Graph/H/order variants | 134 |
++| Exact ordered-vector comparisons | 107,904 |
++| Paths / indices compared | 176,992 / 672,982 |
++| Shortest-mode comparisons | 53,952 |
++| Permuted-atom comparisons | 71,488 |
++| Returned atom paths with final repeated atom | 1,758 |
++| Unexpected mismatches | 0 |
++
++Comparisons cover all bond/atom, H and shortest flags; every root, unrooted
++search and two outside roots; H removal/addition; identity, reversed and seeded
++atom permutations where distinct; lengths zero through `min(n+2, 7)` plus
++`n+1` and `n+2`. Adjacency matrices and atom counts are checked before each
++variant's path comparisons. Native-only tests cover `UINT32_MAX-1` and
++`UINT32_MAX` without invoking upstream's large-length loop.
++
++Local validation passed 386 Rust unit tests and 23 integration tests, with
++one existing manual test ignored. Python 130 tests passed, including path,
++atom-environment, graph-query, renumbering and MOPAC regressions. Formatting,
++scoped Clippy with warnings denied, the unchanged refactor allowance budget,
++binding inventory, product naming and strict MkDocs are recorded in the evidence.
++No hosted CI or publication is claimed by these local results.
++
++## Reproduction and delivery
++
++```sh
++cargo test -p chematic-smiles --lib --test rdkit_path_enumeration \
++  --test rdkit_graph_queries --test rdkit_atom_environment
++python -m pytest crates/chematic-py/tests/test_rdkit_path_enumeration.py
++python scripts/validate_rdkit_paths.py
++```
++
++Build/install the candidate Python extension first. The oracle script requires
++RDKit 2026.09.1 and checks that exact version. Fixtures live in
++`validation/rdkit_issues/path-enumeration/fixtures.json`; the report is
++`validation/results/rdkit-path-enumeration-2026-10-15.json`.
++
++The source candidate is `/private/tmp/chematic-paths`, based on
++`/private/tmp/chematic-mopac`. The incremental patch is
++`validation/rdkit_issues/path-enumeration-2026-10-15.patch`.
++Only this document, patch and evidence are copied to the primary checkout.
++Unrelated primary-source work remains intact. The feature is uncommitted,
++unpushed and unpublished.
+diff --git a/mkdocs.yml b/mkdocs.yml
+index 7184109..46b854e 100644
+--- a/mkdocs.yml
++++ b/mkdocs.yml
+@@ -90,6 +90,7 @@ nav:
+     - Detailed RDKit Comparison: rdkit-comparison.md
+     - RDKit Graph Queries: rdkit-graph-queries.md
+     - RDKit Atom Environments: rdkit-atom-environment.md
++    - RDKit Path Enumeration: rdkit-path-enumeration.md
+     - RDKit Accuracy Plan: rdkit-accuracy-plan.md
+     - Canonical E/Z Plan: canonical-ez-plan.md
+     - RDKit Issue Lessons: rdkit_issue_lessons.md
+diff --git a/scripts/validate_rdkit_paths.py b/scripts/validate_rdkit_paths.py
+new file mode 100644
+index 0000000..0a5d490
+--- /dev/null
++++ b/scripts/validate_rdkit_paths.py
+@@ -0,0 +1,112 @@
++#!/usr/bin/env python3
++"""Ordered path vectors against pinned RDKit 2026.09.1, original fixtures."""
++import argparse
++import hashlib
++import itertools
++import json
++from pathlib import Path
++import platform
++import random
++
++import chematic
++from rdkit import Chem, RDLogger, rdBase
++
++ROOT = Path(__file__).resolve().parents[1]
++FIXTURE = ROOT/'validation/rdkit_issues/path-enumeration/fixtures.json'
++
++
++def digest(data):
++    return hashlib.sha256(data).hexdigest()
++
++
++def orders(n):
++    out = [list(range(n))]
++    for row in (list(reversed(range(n))), random.Random(9710+n).sample(range(n), n)):
++        if row not in out:
++            out.append(row)
++    return out
++
++
++def variant(case, added_hs, order):
++    native = chematic.from_smiles(case['smiles']) if case['smiles'] else chematic.RWMol().GetMol()
++    if added_hs:
++        native = native.rdkit_add_hydrogens()
++        reference = Chem.AddHs(Chem.MolFromSmiles(case['smiles']))
++    else:
++        params = Chem.SmilesParserParams()
++        params.removeHs = False
++        reference = Chem.MolFromSmiles(case['smiles'], params)
++    assert reference is not None and native.atom_count == reference.GetNumAtoms()
++    native = native.renumber_atoms(order)
++    reference = Chem.RenumberAtoms(reference, order) if order else Chem.Mol(reference)
++    if not added_hs:
++        reference = Chem.RemoveHs(reference)
++    return native, reference
++
++
++def main():
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument('--output', type=Path, default=ROOT/'validation/results/rdkit-path-enumeration-2026-10-15.json')
++    args = parser.parse_args()
++    assert rdBase.rdkitVersion == '2026.09.1', rdBase.rdkitVersion
++    RDLogger.DisableLog('rdApp.*')
++    manifest = json.loads(FIXTURE.read_text())
++    assert manifest['sha256'] == digest(json.dumps(manifest['cases'], sort_keys=True, separators=(',', ':')).encode())
++    for case in manifest['cases']:
++        assert case['sha256'] == digest(case['smiles'].encode())
++    for case in manifest['golden']:
++        assert chematic.from_smiles(case['smiles']).rdkit_paths_of_length(case['length'], **case['params']) == case['expected']['paths']
++    checksum = hashlib.sha256()
++    calls = variants = paths = indices = empty = shortest = hs = permuted = closures = 0
++    records = []
++    for case in manifest['cases']:
++        checked = 0
++        for added_hs in (False, True):
++            base = chematic.from_smiles(case['smiles']) if case['smiles'] else chematic.RWMol().GetMol()
++            if added_hs:
++                base = base.rdkit_add_hydrogens()
++            for order in orders(base.atom_count):
++                native, reference = variant(case, added_hs, order)
++                n = reference.GetNumAtoms()
++                assert native.rdkit_num_atoms() == n
++                assert native.rdkit_adjacency_matrix() == Chem.GetAdjacencyMatrix(reference, force=True).tolist()
++                before = native.smiles
++                native.SetIntProp('path_sentinel', 9710)
++                lengths = list(dict.fromkeys([*range(min(n+3, 8)), n+1, n+2]))
++                roots = [None, *range(n), n, n+7]
++                for length, use_bonds, use_hs, only_shortest, root in itertools.product(lengths, (False, True), (False, True), (False, True), roots):
++                    want = [list(row) for row in Chem.FindAllPathsOfLengthN(reference, length, useBonds=use_bonds, useHs=use_hs, rootedAtAtom=-1 if root is None else root, onlyShortestPaths=only_shortest)]
++                    got = native.rdkit_paths_of_length(length, use_bonds=use_bonds, use_hs=use_hs, rooted_at_atom=root, only_shortest_paths=only_shortest)
++                    assert got == want, (case['id'], added_hs, order, length, use_bonds, use_hs, only_shortest, root, got, want)
++                    checksum.update(json.dumps([case['id'], added_hs, order, length, use_bonds, use_hs, only_shortest, root, want], separators=(',', ':')).encode())
++                    calls += 1
++                    checked += 1
++                    paths += len(want)
++                    indices += sum(map(len, want))
++                    empty += not bool(want)
++                    shortest += only_shortest
++                    hs += use_hs
++                    permuted += order != list(range(len(order)))
++                    if not use_bonds:
++                        closures += sum(len(set(row)) != len(row) for row in want)
++                assert native.smiles == before and native.GetIntProp('path_sentinel') == 9710
++                variants += 1
++        records.append(dict(id=case['id'], status='pass', exact_comparisons=checked))
++    # Huge lengths still iterate in upstream after its frontier is empty, and
++    # UINT32_MAX can overflow counters. Test these only in the bounded native API.
++    for use_bonds in (False, True):
++        for length in (2**32-2, 2**32-1):
++            assert chematic.from_smiles('C1CC1').rdkit_paths_of_length(length, use_bonds=use_bonds, max_visits=0) == []
++    report = dict(schema_version=1, date='2026-10-15', status='isolated source candidate; uncommitted and unpushed',
++                  runtime=dict(python=platform.python_version(), rdkit=rdBase.rdkitVersion),
++                  oracle=dict(name='RDKit', version=rdBase.rdkitVersion, release='Release_2026_09_1', commit='fece8caa860bdf6c9c82bdb9253f22a0cf87150c', source='Code/GraphMol/Subgraphs/Subgraphs.cpp', source_sha256='aa8295ce04042f809d93a29f8f6ca0beca2c656b4f3865270237131119a55597', settings='Exact ordered vectors, all roots plus unrooted/outside roots; bond/atom, H and shortest flags; H removal/addition; three distinct seeded atom permutations where available; lengths 0..min(n+2,7), n+1, n+2'),
++                  fixture_manifest=str(FIXTURE.relative_to(ROOT)), fixture_manifest_sha256=digest(FIXTURE.read_bytes()),
++                  results=dict(fixtures=len(records), golden_cases=len(manifest['golden']), graph_variants=variants, exact_comparisons=calls, paths_compared=paths, indices_compared=indices, empty_results=empty, shortest_mode_cases=shortest, use_hs_true_cases=hs, permuted_cases=permuted, returned_atom_ring_closures=closures, unexpected_mismatches=0, normalized_output_sha256=checksum.hexdigest()), records=records,
++                  scope=['Sanitized RDKit model indices; input <=1024 atoms/16384 bonds', 'Rust/Python only, no branched or unique chemical subgraph API', 'Bond-set deduplication with first path retained, including atom output', 'Shortest mode includes graph Hs regardless of useHs; single-atom output includes isolated Hs', 'Source molecule/properties immutable, independent returned vectors', 'Bounded frontiers/work/results fail without partial output', 'UINT32_MAX tested only natively, not against upstream loop overflow; no timing or library-wide parity claim'])
++    args.output.parent.mkdir(parents=True, exist_ok=True)
++    args.output.write_text(json.dumps(report, indent=2)+'\n')
++    print(json.dumps(report['results'], indent=2))
++
++
++if __name__ == '__main__':
++    main()
+diff --git a/validation/rdkit_issues/path-enumeration/fixtures.json b/validation/rdkit_issues/path-enumeration/fixtures.json
+new file mode 100644
+index 0000000..c05f415
+--- /dev/null
++++ b/validation/rdkit_issues/path-enumeration/fixtures.json
+@@ -0,0 +1,582 @@
++{
++  "schema_version": 1,
++  "cases": [
++    {
++      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; project-authored data",
++      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
++      "expected": {
++        "status": "exact ordered path vectors equal to pinned oracle",
++        "units": "sanitized-model atom/bond indices",
++        "tolerance": 0
++      },
++      "id": "empty",
++      "smiles": "",
++      "minimization": "Small empty graph isolates index/order, closure, H or graph-component behavior",
++      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
++    },
++    {
++      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; project-authored data",
++      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
++      "expected": {
++        "status": "exact ordered path vectors equal to pinned oracle",
++        "units": "sanitized-model atom/bond indices",
++        "tolerance": 0
++      },
++      "id": "single-carbon",
++      "smiles": "C",
++      "minimization": "Small single-carbon graph isolates index/order, closure, H or graph-component behavior",
++      "sha256": "6b23c0d5f35d1b11f9b683f0b0a617355deb11277d91ae091d399c655b87940d"
++    },
++    {
++      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; project-authored data",
++      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
++      "expected": {
++        "status": "exact ordered path vectors equal to pinned oracle",
++        "units": "sanitized-model atom/bond indices",
++        "tolerance": 0
++      },
++      "id": "chain",
++      "smiles": "CCO",
++      "minimization": "Small chain graph isolates index/order, closure, H or graph-component behavior",
++      "sha256": "ab1de819ede91df490e6441934decfa9041b49f91d6bbadbba4df634ccff57fa"
++    },
++    {
++      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; project-authored data",
++      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
++      "expected": {
++        "status": "exact ordered path vectors equal to pinned oracle",
++        "units": "sanitized-model atom/bond indices",
++        "tolerance": 0
++      },
++      "id": "branch",
++      "smiles": "CC(C)C",
++      "minimization": "Small branch graph isolates index/order, closure, H or graph-component behavior",
++      "sha256": "a4989e0f473ee4981c8dc330f4867df3b27e9f8185a9c92ad25d1885d924f3b9"
++    },
++    {
++      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; project-authored data",
++      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
++      "expected": {
++        "status": "exact ordered path vectors equal to pinned oracle",
++        "units": "sanitized-model atom/bond indices",
++        "tolerance": 0
++      },
++      "id": "hetero-branch",
++      "smiles": "OC(C)C",
++      "minimization": "Small hetero-branch graph isolates index/order, closure, H or graph-component behavior",
++      "sha256": "ef167f17d425c382ca953992f06ec7c36976e772da5159d273f8753ef016a81c"
++    },
++    {
++      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; project-authored data",
++      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
++      "expected": {
++        "status": "exact ordered path vectors equal to pinned oracle",
++        "units": "sanitized-model atom/bond indices",
++        "tolerance": 0
++      },
++      "id": "triangle",
++      "smiles": "C1CC1",
++      "minimization": "Small triangle graph isolates index/order, closure, H or graph-component behavior",
++      "sha256": "3b139ddd2a925eb70d94b87995227128eb8d99ad68e3224a9e14cee641e85b07"
++    },
++    {
++      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; project-authored data",
++      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
++      "expected": {
++        "status": "exact ordered path vectors equal to pinned oracle",
++        "units": "sanitized-model atom/bond indices",
++        "tolerance": 0
++      },
++      "id": "square",
++      "smiles": "C1CCC1",
++      "minimization": "Small square graph isolates index/order, closure, H or graph-component behavior",
++      "sha256": "20396b751bf2e968cbb57976575ca74b9a42dfce95093715587144ca8fa306f3"
++    },
++    {
++      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; project-authored data",
++      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
++      "expected": {
++        "status": "exact ordered path vectors equal to pinned oracle",
++        "units": "sanitized-model atom/bond indices",
++        "tolerance": 0
++      },
++      "id": "pentagon",
++      "smiles": "C1CCCC1",
++      "minimization": "Small pentagon graph isolates index/order, closure, H or graph-component behavior",
++      "sha256": "8c2e3ed84f9272bb9c74fd5bb22819f61f7bf62201fefebdac729e0137b53413"
++    },
++    {
++      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; project-authored data",
++      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
++      "expected": {
++        "status": "exact ordered path vectors equal to pinned oracle",
++        "units": "sanitized-model atom/bond indices",
++        "tolerance": 0
++      },
++      "id": "benzene",
++      "smiles": "c1ccccc1",
++      "minimization": "Small benzene graph isolates index/order, closure, H or graph-component behavior",
++      "sha256": "13cad05ca8f49c509e5b7be8c67668484344ebf2b2d12b03b295f14d4b1c32d1"
++    },
++    {
++      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; project-authored data",
++      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
++      "expected": {
++        "status": "exact ordered path vectors equal to pinned oracle",
++        "units": "sanitized-model atom/bond indices",
++        "tolerance": 0
++      },
++      "id": "tail-cycle",
++      "smiles": "C1CCC1C",
++      "minimization": "Small tail-cycle graph isolates index/order, closure, H or graph-component behavior",
++      "sha256": "898220207211f0118d34dd564eaa03c47da03a796e4b729e5e8fadba661efd49"
++    },
++    {
++      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; project-authored data",
++      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
++      "expected": {
++        "status": "exact ordered path vectors equal to pinned oracle",
++        "units": "sanitized-model atom/bond indices",
++        "tolerance": 0
++      },
++      "id": "fused",
++      "smiles": "C1CCC2CCCCC2C1",
++      "minimization": "Small fused graph isolates index/order, closure, H or graph-component behavior",
++      "sha256": "716e53b4a2f4edbcf6516f8ba570fb4df31e5ec405d5f16ea37068ecaf5197ac"
++    },
++    {
++      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; project-authored data",
++      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
++      "expected": {
++        "status": "exact ordered path vectors equal to pinned oracle",
++        "units": "sanitized-model atom/bond indices",
++        "tolerance": 0
++      },
++      "id": "bridged",
++      "smiles": "C1CC2CCC1C2",
++      "minimization": "Small bridged graph isolates index/order, closure, H or graph-component behavior",
++      "sha256": "8decb4ecd7f11859f828999b33c19adb45a76028e77179a95905ce023bd312da"
++    },
++    {
++      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; project-authored data",
++      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
++      "expected": {
++        "status": "exact ordered path vectors equal to pinned oracle",
++        "units": "sanitized-model atom/bond indices",
++        "tolerance": 0
++      },
++      "id": "spiro",
++      "smiles": "C1CCC2(CC1)CCC2",
++      "minimization": "Small spiro graph isolates index/order, closure, H or graph-component behavior",
++      "sha256": "a52b769b28ab9b1fe2061fb323003b24d608ae8251b9d4ba5d3cfab48e7ce699"
++    },
++    {
++      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; project-authored data",
++      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
++      "expected": {
++        "status": "exact ordered path vectors equal to pinned oracle",
++        "units": "sanitized-model atom/bond indices",
++        "tolerance": 0
++      },
++      "id": "heteroaromatic",
++      "smiles": "c1ccncc1",
++      "minimization": "Small heteroaromatic graph isolates index/order, closure, H or graph-component behavior",
++      "sha256": "75c7a4b0b41e43900bfb8055909b37897a5e104541d35413384b7ff9a1c88b83"
++    },
++    {
++      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; project-authored data",
++      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
++      "expected": {
++        "status": "exact ordered path vectors equal to pinned oracle",
++        "units": "sanitized-model atom/bond indices",
++        "tolerance": 0
++      },
++      "id": "disconnected",
++      "smiles": "CC.CN.[Na+]",
++      "minimization": "Small disconnected graph isolates index/order, closure, H or graph-component behavior",
++      "sha256": "873d63123eaf53d8eb3710eab1ad053efcd4790d339a9c625ed60dfe366acc8c"
++    },
++    {
++      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; project-authored data",
++      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
++      "expected": {
++        "status": "exact ordered path vectors equal to pinned oracle",
++        "units": "sanitized-model atom/bond indices",
++        "tolerance": 0
++      },
++      "id": "isotope-H",
++      "smiles": "[2H]C",
++      "minimization": "Small isotope-H graph isolates index/order, closure, H or graph-component behavior",
++      "sha256": "e87c75f2a9ad25d4e10fb64d112795fba836314e97dcccb3b399ccb77a291db1"
++    },
++    {
++      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; project-authored data",
++      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
++      "expected": {
++        "status": "exact ordered path vectors equal to pinned oracle",
++        "units": "sanitized-model atom/bond indices",
++        "tolerance": 0
++      },
++      "id": "two-H",
++      "smiles": "[H][H]",
++      "minimization": "Small two-H graph isolates index/order, closure, H or graph-component behavior",
++      "sha256": "ea7e44a64c7461517e4f9eb140658e1650e4fe580eaa6895de3a748fdaaf72df"
++    },
++    {
++      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; project-authored data",
++      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
++      "expected": {
++        "status": "exact ordered path vectors equal to pinned oracle",
++        "units": "sanitized-model atom/bond indices",
++        "tolerance": 0
++      },
++      "id": "removed-H",
++      "smiles": "[H]C([H])([H])[H]",
++      "minimization": "Small removed-H graph isolates index/order, closure, H or graph-component behavior",
++      "sha256": "bd513a6a68633ef519d77992210d68e444a5fb66a5c41a795b2960b7808c22eb"
++    },
++    {
++      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; project-authored data",
++      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
++      "expected": {
++        "status": "exact ordered path vectors equal to pinned oracle",
++        "units": "sanitized-model atom/bond indices",
++        "tolerance": 0
++      },
++      "id": "dative",
++      "smiles": "N->[Cu+2]",
++      "minimization": "Small dative graph isolates index/order, closure, H or graph-component behavior",
++      "sha256": "bdf023cad7edae16678f5b5a7f6cac08c7aa9089655112f4632e275f2258b542"
++    },
++    {
++      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; project-authored data",
++      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
++      "expected": {
++        "status": "exact ordered path vectors equal to pinned oracle",
++        "units": "sanitized-model atom/bond indices",
++        "tolerance": 0
++      },
++      "id": "multiple-bonds",
++      "smiles": "CC#CC=C",
++      "minimization": "Small multiple-bonds graph isolates index/order, closure, H or graph-component behavior",
++      "sha256": "e84b0dfb03ee64c701cdd5074a63a1ed6619a05a639bd120012ae592c55b19a3"
++    },
++    {
++      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; project-authored data",
++      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
++      "expected": {
++        "status": "exact ordered path vectors equal to pinned oracle",
++        "units": "sanitized-model atom/bond indices",
++        "tolerance": 0
++      },
++      "id": "charged",
++      "smiles": "[O-]C(=O)C[NH3+]",
++      "minimization": "Small charged graph isolates index/order, closure, H or graph-component behavior",
++      "sha256": "764dc6aafe7afda74b4a97d6cc3fd2331511c734a375fe3108873805c898131b"
++    },
++    {
++      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; project-authored data",
++      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
++      "expected": {
++        "status": "exact ordered path vectors equal to pinned oracle",
++        "units": "sanitized-model atom/bond indices",
++        "tolerance": 0
++      },
++      "id": "dummy",
++      "smiles": "*CC",
++      "minimization": "Small dummy graph isolates index/order, closure, H or graph-component behavior",
++      "sha256": "9a1c4ea50c9f65dab85388edba1a5e36f0fea5df00e1b166adb24f59bfe4f443"
++    },
++    {
++      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; project-authored data",
++      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
++      "expected": {
++        "status": "exact ordered path vectors equal to pinned oracle",
++        "units": "sanitized-model atom/bond indices",
++        "tolerance": 0
++      },
++      "id": "tetrahedral",
++      "smiles": "N[C@@H](C)O",
++      "minimization": "Small tetrahedral graph isolates index/order, closure, H or graph-component behavior",
++      "sha256": "d4dabdede5f91ebc232b0bb5d4606c0f6bebba413fea9374471c6a5d59cd0dd9"
++    },
++    {
++      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; project-authored data",
++      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
++      "expected": {
++        "status": "exact ordered path vectors equal to pinned oracle",
++        "units": "sanitized-model atom/bond indices",
++        "tolerance": 0
++      },
++      "id": "geometric",
++      "smiles": "F/C=C/F",
++      "minimization": "Small geometric graph isolates index/order, closure, H or graph-component behavior",
++      "sha256": "848be58fb2fe6d08509debd45c06cfbcdb2a108fda0891075689abdcc5672024"
++    }
++  ],
++  "golden": [
++    {
++      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; project-authored data",
++      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
++      "expected": {
++        "paths": [
++          [
++            0
++          ],
++          [
++            2
++          ],
++          [
++            1
++          ]
++        ],
++        "units": "sanitized-model atom/bond indices",
++        "tolerance": 0
++      },
++      "id": "triangle-bond-order",
++      "smiles": "C1CC1",
++      "length": 1,
++      "params": {},
++      "minimization": "One graph/query isolates triangle-bond-order",
++      "sha256": "3b139ddd2a925eb70d94b87995227128eb8d99ad68e3224a9e14cee641e85b07"
++    },
++    {
++      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; project-authored data",
++      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
++      "expected": {
++        "paths": [
++          [
++            0,
++            1,
++            2
++          ],
++          [
++            0,
++            2,
++            1
++          ],
++          [
++            1,
++            0,
++            2
++          ]
++        ],
++        "units": "sanitized-model atom/bond indices",
++        "tolerance": 0
++      },
++      "id": "triangle-atom-dedup",
++      "smiles": "C1CC1",
++      "length": 3,
++      "params": {
++        "use_bonds": false
++      },
++      "minimization": "One graph/query isolates triangle-atom-dedup",
++      "sha256": "3b139ddd2a925eb70d94b87995227128eb8d99ad68e3224a9e14cee641e85b07"
++    },
++    {
++      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; project-authored data",
++      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
++      "expected": {
++        "paths": [
++          [
++            3,
++            4,
++            0,
++            1,
++            2
++          ]
++        ],
++        "units": "sanitized-model atom/bond indices",
++        "tolerance": 0
++      },
++      "id": "tail-cycle-close",
++      "smiles": "C1CCC1C",
++      "length": 5,
++      "params": {
++        "rooted_at_atom": 4
++      },
++      "minimization": "One graph/query isolates tail-cycle-close",
++      "sha256": "898220207211f0118d34dd564eaa03c47da03a796e4b729e5e8fadba661efd49"
++    },
++    {
++      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; project-authored data",
++      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
++      "expected": {
++        "paths": [
++          [
++            4,
++            3,
++            0,
++            1,
++            2,
++            3
++          ]
++        ],
++        "units": "sanitized-model atom/bond indices",
++        "tolerance": 0
++      },
++      "id": "tail-cycle-atoms",
++      "smiles": "C1CCC1C",
++      "length": 6,
++      "params": {
++        "rooted_at_atom": 4,
++        "use_bonds": false
++      },
++      "minimization": "One graph/query isolates tail-cycle-atoms",
++      "sha256": "898220207211f0118d34dd564eaa03c47da03a796e4b729e5e8fadba661efd49"
++    },
++    {
++      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; project-authored data",
++      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
++      "expected": {
++        "paths": [
++          [
++            0,
++            4,
++            3
++          ],
++          [
++            1,
++            2,
++            3
++          ]
++        ],
++        "units": "sanitized-model atom/bond indices",
++        "tolerance": 0
++      },
++      "id": "shortest-detours",
++      "smiles": "C1CCC1C",
++      "length": 3,
++      "params": {
++        "only_shortest_paths": true
++      },
++      "minimization": "One graph/query isolates shortest-detours",
++      "sha256": "898220207211f0118d34dd564eaa03c47da03a796e4b729e5e8fadba661efd49"
++    },
++    {
++      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; project-authored data",
++      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
++      "expected": {
++        "paths": [
++          [
++            0
++          ],
++          [
++            1
++          ]
++        ],
++        "units": "sanitized-model atom/bond indices",
++        "tolerance": 0
++      },
++      "id": "hydrogen-singletons",
++      "smiles": "[2H]C",
++      "length": 1,
++      "params": {
++        "use_bonds": false
++      },
++      "minimization": "One graph/query isolates hydrogen-singletons",
++      "sha256": "e87c75f2a9ad25d4e10fb64d112795fba836314e97dcccb3b399ccb77a291db1"
++    },
++    {
++      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; project-authored data",
++      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
++      "expected": {
++        "paths": [
++          [
++            0
++          ]
++        ],
++        "units": "sanitized-model atom/bond indices",
++        "tolerance": 0
++      },
++      "id": "shortest-hydrogens",
++      "smiles": "[2H]C",
++      "length": 1,
++      "params": {
++        "only_shortest_paths": true
++      },
++      "minimization": "One graph/query isolates shortest-hydrogens",
++      "sha256": "e87c75f2a9ad25d4e10fb64d112795fba836314e97dcccb3b399ccb77a291db1"
++    },
++    {
++      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
++      "license": "MIT OR Apache-2.0",
++      "redistribution": "allowed; project-authored data",
++      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
++      "expected": {
++        "paths": [],
++        "units": "sanitized-model atom/bond indices",
++        "tolerance": 0
++      },
++      "id": "branched-is-not-a-path",
++      "smiles": "CC(C)C",
++      "length": 3,
++      "params": {},
++      "minimization": "One graph/query isolates branched-is-not-a-path",
++      "sha256": "a4989e0f473ee4981c8dc330f4867df3b27e9f8185a9c92ad25d1885d924f3b9"
++    }
++  ],
++  "sha256": "79db354e89aa54612a92cd4356c914caf5c826d242830bc2ae5e9513c251698c"
++}

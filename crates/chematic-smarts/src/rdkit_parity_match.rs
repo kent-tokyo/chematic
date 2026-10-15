@@ -1,12 +1,10 @@
 //! Opt-in RDKit-parity SMARTS matching mode.
 //!
-//! This module is a **deliberate, near-total duplication** of
-//! [`crate::match_vf2`]'s VF2 recursive matcher, not a refactor of it. The
-//! duplication is intentional: it keeps `match_vf2.rs` at **zero diff**, so
-//! "the default matcher is byte-identical before and after this change" is
-//! trivially provable (there is no change to prove anything about) rather
-//! than something that has to be argued from a shared-code refactor. The
-//! evaluator diverges from `match_vf2.rs` for `AtomPrimitive::RingCount`
+//! This module deliberately retains its own VF2 control flow so RDKit ring
+//! semantics stay isolated from the default matcher. The parity-aware final
+//! tetrahedral check is shared with [`crate::match_vf2`] so recursive SMARTS
+//! chirality cannot drift between the two modes. The evaluator otherwise
+//! diverges from `match_vf2.rs` for `AtomPrimitive::RingCount`
 //! (`[RN]`) and `AtomPrimitive::RingSize` (`[kN]`). See
 //! [`crate::rdkit_ring_model`] for the ring-count model. Ring-size membership
 //! uses a separately bounded symmetrized-SSSR selection. The narrow
@@ -14,11 +12,9 @@
 //! a converted dative bond. Other ring primitives retain the plain-SSSR
 //! formula from `match_vf2.rs`.
 //!
-//! Everything else in this file — chirality/isotope handling, valence,
-//! hybridization, recursive-SMARTS anchoring, the visit-budget/
-//! `MatchOutcome` contract — is copied verbatim in behavior from
-//! `match_vf2.rs` so this mode's other results are identical to
-//! the default matcher's.
+//! Other atom and bond primitives, recursive-SMARTS anchoring, and the
+//! visit-budget/`MatchOutcome` contract remain behaviorally aligned with the
+//! default matcher.
 
 use std::sync::OnceLock;
 
@@ -27,8 +23,9 @@ use rustc_hash::{FxHashMap, FxHashSet};
 use chematic_core::{AtomIdx, BondIdx, BondOrder, Element, Molecule, implicit_hcount};
 use chematic_perception::{RingSet, SymmetrizedSssrStatus};
 
-use crate::match_vf2::hetero_neighbor_count;
-use crate::match_vf2::{MatchConfig, MatchOutcome};
+use crate::match_vf2::{
+    MatchConfig, MatchOutcome, hetero_neighbor_count, mapped_chirality_primitive_with_map,
+};
 use crate::query::{AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, QueryMolecule};
 use crate::rdkit_ring_model::{
     RdkitParityError, RdkitParityRingModel, RdkitRingModelBudget, build_rdkit_parity_ring_model,
@@ -723,7 +720,9 @@ fn match_recursive<S: MatchSink>(
     ctx.visit_budget.set(remaining - 1);
 
     if state.mapped == query.atoms.len() {
-        results.push(&state.map);
+        if mapped_chirality_compatible(query, state, ctx) {
+            results.push(&state.map);
+        }
         return;
     }
 
@@ -782,11 +781,38 @@ fn bonds_compatible(
 // ---------------------------------------------------------------------------
 
 fn eval_atom_query(q: &AtomQuery, idx: AtomIdx, ctx: &EvalCtx<'_>) -> bool {
+    if ctx.config.use_chirality {
+        return eval_atom_query_candidate(q, idx, ctx).unwrap_or(true);
+    }
     match q {
         AtomQuery::Primitive(p) => eval_atom_primitive(p, idx, ctx),
         AtomQuery::And(a, b) => eval_atom_query(a, idx, ctx) && eval_atom_query(b, idx, ctx),
         AtomQuery::Or(a, b) => eval_atom_query(a, idx, ctx) || eval_atom_query(b, idx, ctx),
         AtomQuery::Not(a) => !eval_atom_query(a, idx, ctx),
+    }
+}
+
+fn eval_atom_query_candidate(q: &AtomQuery, idx: AtomIdx, ctx: &EvalCtx<'_>) -> Option<bool> {
+    match q {
+        AtomQuery::Primitive(AtomPrimitive::Chirality(_)) => None,
+        AtomQuery::Primitive(p) => Some(eval_atom_primitive(p, idx, ctx)),
+        AtomQuery::And(a, b) => match (
+            eval_atom_query_candidate(a, idx, ctx),
+            eval_atom_query_candidate(b, idx, ctx),
+        ) {
+            (Some(false), _) | (_, Some(false)) => Some(false),
+            (Some(true), Some(true)) => Some(true),
+            _ => None,
+        },
+        AtomQuery::Or(a, b) => match (
+            eval_atom_query_candidate(a, idx, ctx),
+            eval_atom_query_candidate(b, idx, ctx),
+        ) {
+            (Some(true), _) | (_, Some(true)) => Some(true),
+            (Some(false), Some(false)) => Some(false),
+            _ => None,
+        },
+        AtomQuery::Not(a) => eval_atom_query_candidate(a, idx, ctx).map(|value| !value),
     }
 }
 
@@ -910,11 +936,58 @@ fn eval_chirality(idx: AtomIdx, ctx: &EvalCtx<'_>, kind: u8) -> bool {
     }
     use chematic_core::Chirality;
     let c = ctx.mol.atom(idx).chirality;
-    match kind {
-        1 => c == Chirality::CounterClockwise,
-        2 => c == Chirality::Clockwise,
-        _ => c != Chirality::None,
+    let _ = kind;
+    c != Chirality::None
+}
+
+fn eval_atom_query_mapped(
+    atom_query: &AtomQuery,
+    query_atom: usize,
+    target_atom: AtomIdx,
+    query: &QueryMolecule,
+    state: &MatchState,
+    ctx: &EvalCtx<'_>,
+) -> bool {
+    match atom_query {
+        AtomQuery::Primitive(AtomPrimitive::Chirality(kind)) => {
+            mapped_chirality_primitive_with_map(
+                *kind,
+                query_atom,
+                target_atom,
+                query,
+                &state.map,
+                ctx.mol,
+                ctx.config.use_chirality,
+            )
+        }
+        AtomQuery::Primitive(other) => eval_atom_primitive(other, target_atom, ctx),
+        AtomQuery::And(a, b) => {
+            eval_atom_query_mapped(a, query_atom, target_atom, query, state, ctx)
+                && eval_atom_query_mapped(b, query_atom, target_atom, query, state, ctx)
+        }
+        AtomQuery::Or(a, b) => {
+            eval_atom_query_mapped(a, query_atom, target_atom, query, state, ctx)
+                || eval_atom_query_mapped(b, query_atom, target_atom, query, state, ctx)
+        }
+        AtomQuery::Not(inner) => {
+            !eval_atom_query_mapped(inner, query_atom, target_atom, query, state, ctx)
+        }
     }
+}
+
+fn mapped_chirality_compatible(
+    query: &QueryMolecule,
+    state: &MatchState,
+    ctx: &EvalCtx<'_>,
+) -> bool {
+    if !ctx.config.use_chirality {
+        return true;
+    }
+    query.atoms.iter().enumerate().all(|(q, atom)| {
+        state
+            .get(q)
+            .is_some_and(|target| eval_atom_query_mapped(&atom.query, q, target, query, state, ctx))
+    })
 }
 
 // ---------------------------------------------------------------------------
@@ -955,7 +1028,7 @@ fn has_match_recursive(query: &QueryMolecule, ctx: &EvalCtx<'_>, state: &mut Mat
     ctx.visit_budget.set(remaining - 1);
 
     if state.mapped == query.atoms.len() {
-        return true;
+        return mapped_chirality_compatible(query, state, ctx);
     }
 
     let q_next = state.next_unmapped();

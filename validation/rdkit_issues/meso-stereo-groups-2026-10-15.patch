@@ -1,0 +1,2004 @@
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index d2909fd..98cfc32 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -218,6 +218,7 @@ jobs:
+           - { package: chematic-core, target: checked_stereo_groups }
+           - { package: chematic-chem, target: stereo_group_inversion }
+           - { package: chematic-chem, target: stereo_group_alternatives }
++          - { package: chematic-chem, target: meso_stereo_group }
+           - { package: chematic-mol, target: gro_contract }
+           - { package: chematic-mol, target: turbomole_contract }
+           - { package: chematic-mol, target: rdfile_contract }
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 3d7e0cc..cca60ad 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -12,6 +12,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
+ 
+ ### Added
+ 
++- Added conservative meso stereo-group reduction in Rust/Python, promoting
++  correlated tetrahedral/geometric members to ABS only with bounded exact mapping proofs.
++
+ - Added checked RDFile v1 records in Rust/Python, retaining embedded MOL/RXN
+   payloads, registry references and ordered data fields with explicit SMILES projection.
+ 
+diff --git a/crates/chematic-chem/src/lib.rs b/crates/chematic-chem/src/lib.rs
+index b618834..850a781 100644
+--- a/crates/chematic-chem/src/lib.rs
++++ b/crates/chematic-chem/src/lib.rs
+@@ -29,6 +29,7 @@ pub mod ifg;
+ pub mod isotope_distribution;
+ pub mod iupac_stereo;
+ pub mod logd;
++pub mod meso_stereo_group;
+ pub mod mlp;
+ pub mod mmff94_bci;
+ pub mod mmp;
+@@ -193,3 +194,8 @@ pub use stereo_group_alternatives::{
+     MAX_STEREO_GROUP_ALTERNATIVES, StereoGroupAlternatives, StereoGroupAlternativesError,
+     enumerate_stereo_group_alternatives,
+ };
++
++pub use meso_stereo_group::{
++    MAX_MESO_GROUP_ATOMS, MAX_MESO_GROUP_BONDS, MAX_MESO_GROUP_VISITS, MesoStereoGroupError,
++    MesoStereoGroupReduction, MesoStereoWitness, reduce_meso_stereo_group,
++};
+diff --git a/crates/chematic-chem/src/meso_stereo_group.rs b/crates/chematic-chem/src/meso_stereo_group.rs
+new file mode 100644
+index 0000000..ed82f24
+--- /dev/null
++++ b/crates/chematic-chem/src/meso_stereo_group.rs
+@@ -0,0 +1,195 @@
++//! Conservative proof-backed reduction of a relative stereo group's full alternative.
++//! Exact colored graph mappings, not canonical-string equality, justify promotion.
++use crate::{StereoGroupAlternativesError, enumerate_stereo_group_alternatives};
++use chematic_core::{AtomIdx, BondIdx, Molecule, StereoGroup, StereoGroupKind};
++mod graph;
++mod search;
++
++pub const MAX_MESO_GROUP_ATOMS: usize = 64;
++pub const MAX_MESO_GROUP_BONDS: usize = 128;
++pub const MAX_MESO_GROUP_VISITS: u64 = 10_000_000;
++
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub enum MesoStereoGroupError {
++    GroupIndex { index: usize, groups: usize },
++    AbsoluteGroup,
++    GraphLimit,
++    InvalidVisitLimit,
++    BudgetExceeded { visits: u64, limit: u64 },
++    Alternatives(StereoGroupAlternativesError),
++    UnsupportedAtom(AtomIdx),
++    IncompleteFrame(AtomIdx),
++    UnspecifiedTetrahedralAtom(AtomIdx),
++    UnsupportedBond(BondIdx),
++    UnsupportedDirections,
++}
++impl core::fmt::Display for MesoStereoGroupError {
++    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
++        match self {
++            Self::GroupIndex { index, groups } => {
++                write!(f, "group index {index} is outside {groups} groups")
++            }
++            Self::AbsoluteGroup => write!(f, "ABS is already absolute"),
++            Self::GraphLimit => write!(
++                f,
++                "meso-group proof supports at most 64 atoms and 128 bonds"
++            ),
++            Self::InvalidVisitLimit => write!(f, "max_visits must be between 1 and 10000000"),
++            Self::BudgetExceeded { visits, limit } => write!(
++                f,
++                "meso-group proof exhausted {visits} candidate visits (limit {limit}); no reduction returned"
++            ),
++            Self::Alternatives(e) => e.fmt(f),
++            Self::UnsupportedAtom(a) => write!(
++                f,
++                "atom {} has unsupported wildcard/axial/non-tetrahedral stereo",
++                a.0
++            ),
++            Self::IncompleteFrame(a) => write!(
++                f,
++                "atom {} requires a complete unique four-ligand frame",
++                a.0
++            ),
++            Self::UnspecifiedTetrahedralAtom(a) => write!(
++                f,
++                "atom {} has an unspecified locally tetrahedral configuration",
++                a.0
++            ),
++            Self::UnsupportedBond(b) => write!(
++                f,
++                "bond {} has unsupported query/dative/zero order, a loop or parallel edge",
++                b.0
++            ),
++            Self::UnsupportedDirections => write!(
++                f,
++                "unsupported, conflicting or unaccounted geometric directions"
++            ),
++        }
++    }
++}
++impl std::error::Error for MesoStereoGroupError {}
++
++/// A checked mapping from the lower-mask configuration to its full alternative.
++pub struct MesoStereoWitness {
++    pub mask: usize,
++    /// Source atom index -> target atom index; preserves groups and source labels.
++    pub atom_permutation: Vec<AtomIdx>,
++}
++pub struct MesoStereoGroupReduction {
++    pub molecule: Molecule,
++    /// True only after every other-group assignment has a checked witness.
++    pub reduced: bool,
++    pub checked_pairs: usize,
++    pub search_visits: u64,
++    pub witnesses: Vec<MesoStereoWitness>,
++}
++
++fn promote(mol: &Molecule, selected: usize) -> Molecule {
++    let mut groups: Vec<(StereoGroup, Vec<BondIdx>)> = mol
++        .stereo_groups()
++        .iter()
++        .enumerate()
++        .map(|(i, g)| {
++            (
++                g.clone(),
++                mol.stereo_group_bond_indices(i)
++                    .unwrap_or_default()
++                    .to_vec(),
++            )
++        })
++        .collect();
++    if let Some(abs) = groups
++        .iter()
++        .position(|(g, _)| g.kind == StereoGroupKind::Absolute)
++    {
++        let (relative, bonds) = groups[selected].clone();
++        groups[abs].0.atom_indices.extend(relative.atom_indices);
++        groups[abs].1.extend(bonds);
++        groups.remove(selected);
++    } else {
++        groups[selected].0.kind = StereoGroupKind::Absolute;
++    }
++    // Existing structural validation established disjoint membership. The only
++    // change merges the selected members into the unique ABS collection.
++    let mut result = mol.clone();
++    result.set_stereo_groups_with_bonds(groups);
++    for (idx, atom) in mol.atoms() {
++        if atom.cip_code.is_some() {
++            result.set_cip_code(idx, None);
++        }
++    }
++    result
++}
++
++/// Promote one AND/OR group to ABS only when its full alternative is equivalent
++/// under a configuration-preserving graph mapping for every assignment of all
++/// other relative groups. Group membership, atom maps and atom tags are colors:
++/// a proof cannot erase their distinctions or exchange independent groups.
++///
++/// Returns an unchanged cold-cache copy when no mapping is found for a pair;
++/// this is conservative retention, not a general "non-meso" classification.
++/// Budget exhaustion is an error, never a negative result or partial promotion.
++/// No drawing, indexed graph or tetrahedral/geometric configuration is changed.
++pub fn reduce_meso_stereo_group(
++    mol: &Molecule,
++    index: usize,
++    max_visits: u64,
++) -> Result<MesoStereoGroupReduction, MesoStereoGroupError> {
++    if !(1..=MAX_MESO_GROUP_VISITS).contains(&max_visits) {
++        return Err(MesoStereoGroupError::InvalidVisitLimit);
++    }
++    if mol.atom_count() > MAX_MESO_GROUP_ATOMS || mol.bond_count() > MAX_MESO_GROUP_BONDS {
++        return Err(MesoStereoGroupError::GraphLimit);
++    }
++    let group = mol
++        .stereo_groups()
++        .get(index)
++        .ok_or(MesoStereoGroupError::GroupIndex {
++            index,
++            groups: mol.stereo_groups().len(),
++        })?;
++    if group.kind == StereoGroupKind::Absolute {
++        return Err(MesoStereoGroupError::AbsoluteGroup);
++    }
++    let alternatives =
++        enumerate_stereo_group_alternatives(mol, 64).map_err(MesoStereoGroupError::Alternatives)?;
++    let bit = alternatives
++        .relative_group_indices
++        .iter()
++        .position(|&i| i == index)
++        .expect("validated relative group");
++    let mut budget = search::Budget {
++        visits: 0,
++        limit: max_visits,
++    };
++    let mut witnesses = Vec::new();
++    let mut checked_pairs = 0;
++    for mask in 0..alternatives.molecules.len() {
++        if mask & (1 << bit) != 0 {
++            continue;
++        }
++        let a = graph::Graph::new(&alternatives.molecules[mask])?;
++        let b = graph::Graph::new(&alternatives.molecules[mask | (1 << bit)])?;
++        checked_pairs += 1;
++        let Some(mapping) = search::find_mapping(&a, &b, &mut budget)? else {
++            return Ok(MesoStereoGroupReduction {
++                molecule: alternatives.molecules[0].clone(),
++                reduced: false,
++                checked_pairs,
++                search_visits: budget.visits,
++                witnesses,
++            });
++        };
++        witnesses.push(MesoStereoWitness {
++            mask,
++            atom_permutation: mapping.into_iter().map(|i| AtomIdx(i as u32)).collect(),
++        });
++    }
++    Ok(MesoStereoGroupReduction {
++        molecule: promote(mol, index),
++        reduced: true,
++        checked_pairs,
++        search_visits: budget.visits,
++        witnesses,
++    })
++}
+diff --git a/crates/chematic-chem/src/meso_stereo_group/graph.rs b/crates/chematic-chem/src/meso_stereo_group/graph.rs
+new file mode 100644
+index 0000000..927b7d4
+--- /dev/null
++++ b/crates/chematic-chem/src/meso_stereo_group/graph.rs
+@@ -0,0 +1,167 @@
++use super::MesoStereoGroupError as Error;
++use chematic_core::ez_markers::{EzFact, read_ez_facts};
++use chematic_core::{AtomIdx, BondIdx, BondOrder, Chirality, Molecule, STEREO_H_SENTINEL};
++
++#[derive(Clone, PartialEq, Eq)]
++pub(super) struct Color {
++    element: u8,
++    isotope: Option<u16>,
++    charge: i8,
++    hydrogen: u8,
++    aromatic: bool,
++    atom_map: Option<u16>,
++    tag: Option<u16>,
++    group: Option<usize>,
++    tetra: bool,
++    degree: usize,
++}
++#[derive(Clone, Copy)]
++pub(super) struct Edge {
++    pub index: BondIdx,
++    order: u8,
++    group: Option<usize>,
++    geometric: bool,
++}
++impl Edge {
++    pub fn signature(self) -> (u8, Option<usize>, bool) {
++        (self.order, self.group, self.geometric)
++    }
++}
++pub(super) struct Graph<'a> {
++    pub mol: &'a Molecule,
++    pub colors: Vec<Color>,
++    pub adj: Vec<Vec<Option<Edge>>>,
++    pub frames: Vec<Option<[u32; 4]>>,
++    pub facts: Vec<EzFact>,
++    pub fact_by_bond: Vec<Option<usize>>,
++}
++fn frame(mol: &Molecule, idx: AtomIdx) -> Result<Option<[u32; 4]>, Error> {
++    let a = mol.atom(idx);
++    if a.wildcard
++        || mol.r_group_label(idx).is_some()
++        || a.chirality.nontetrahedral().is_some()
++        || mol.is_allene_stereo(idx)
++    {
++        return Err(Error::UnsupportedAtom(idx));
++    }
++    let h = chematic_core::implicit_hcount(mol, idx);
++    if a.chirality == Chirality::None {
++        if !a.aromatic
++            && h <= 1
++            && mol.degree(idx) + h as usize == 4
++            && mol.neighbors(idx).all(|(_, b)| {
++                matches!(
++                    mol.bond(b).order,
++                    BondOrder::Single | BondOrder::Up | BondOrder::Down
++                )
++            })
++        {
++            return Err(Error::UnspecifiedTetrahedralAtom(idx));
++        }
++        return Ok(None);
++    }
++    let stored = mol.stereo_neighbor_order(idx).unwrap_or_default();
++    let mut expected: Vec<u32> = mol.neighbors(idx).map(|(a, _)| a.0).collect();
++    expected.extend(std::iter::repeat_n(STEREO_H_SENTINEL, h as usize));
++    let mut sorted = stored.to_vec();
++    sorted.sort_unstable();
++    expected.sort_unstable();
++    if expected.len() != 4 || sorted != expected || sorted.windows(2).any(|v| v[0] == v[1]) {
++        return Err(Error::IncompleteFrame(idx));
++    }
++    Ok(Some(stored.try_into().expect("four slots validated")))
++}
++fn order(order: BondOrder, index: BondIdx) -> Result<u8, Error> {
++    match order {
++        BondOrder::Single | BondOrder::Up | BondOrder::Down => Ok(1),
++        BondOrder::Double => Ok(2),
++        BondOrder::Triple => Ok(3),
++        BondOrder::Aromatic => Ok(4),
++        _ => Err(Error::UnsupportedBond(index)),
++    }
++}
++fn geometry(mol: &Molecule) -> Result<Vec<EzFact>, Error> {
++    if mol.has_bond_directions() {
++        return Err(Error::UnsupportedDirections);
++    }
++    let Some((facts, false)) = read_ez_facts(mol) else {
++        return Err(Error::UnsupportedDirections);
++    };
++    // No marker may be ignored as a lone wedge or incomplete E/Z declaration.
++    for (_, bond) in mol.bonds() {
++        if !matches!(bond.order, BondOrder::Up | BondOrder::Down) {
++            continue;
++        }
++        let accounted = facts.iter().any(|f| {
++            f.ends
++                .iter()
++                .any(|e| bond.atom1 == e.atom || bond.atom2 == e.atom)
++        });
++        if !accounted {
++            return Err(Error::UnsupportedDirections);
++        }
++    }
++    Ok(facts)
++}
++impl<'a> Graph<'a> {
++    pub fn new(mol: &'a Molecule) -> Result<Self, Error> {
++        let facts = geometry(mol)?;
++        let n = mol.atom_count();
++        let mut atom_groups = vec![None; n];
++        let mut bond_groups = vec![None; mol.bond_count()];
++        for (i, g) in mol.stereo_groups().iter().enumerate() {
++            for a in &g.atom_indices {
++                atom_groups[a.0 as usize] = Some(i);
++            }
++            for b in mol.stereo_group_bond_indices(i).unwrap_or_default() {
++                bond_groups[b.0 as usize] = Some(i);
++            }
++        }
++        let mut fact_by_bond = vec![None; mol.bond_count()];
++        for (i, f) in facts.iter().enumerate() {
++            fact_by_bond[f.double.0 as usize] = Some(i);
++        }
++        let mut colors = Vec::new();
++        let mut frames = Vec::new();
++        for (idx, a) in mol.atoms() {
++            let f = frame(mol, idx)?;
++            colors.push(Color {
++                element: a.element.atomic_number(),
++                isotope: a.isotope,
++                charge: a.charge,
++                hydrogen: chematic_core::implicit_hcount(mol, idx),
++                aromatic: a.aromatic,
++                atom_map: a.atom_map,
++                tag: mol.atom_tag(idx).map(|v| v.get()),
++                group: atom_groups[idx.0 as usize],
++                tetra: f.is_some(),
++                degree: mol.degree(idx),
++            });
++            frames.push(f);
++        }
++        let mut adj = vec![vec![None; n]; n];
++        for (idx, bond) in mol.bonds() {
++            let a = bond.atom1.0 as usize;
++            let b = bond.atom2.0 as usize;
++            if a == b || adj[a][b].is_some() {
++                return Err(Error::UnsupportedBond(idx));
++            }
++            let edge = Edge {
++                index: idx,
++                order: order(bond.order, idx)?,
++                group: bond_groups[idx.0 as usize],
++                geometric: fact_by_bond[idx.0 as usize].is_some(),
++            };
++            adj[a][b] = Some(edge);
++            adj[b][a] = Some(edge);
++        }
++        Ok(Self {
++            mol,
++            colors,
++            adj,
++            frames,
++            facts,
++            fact_by_bond,
++        })
++    }
++}
+diff --git a/crates/chematic-chem/src/meso_stereo_group/search.rs b/crates/chematic-chem/src/meso_stereo_group/search.rs
+new file mode 100644
+index 0000000..a9262ac
+--- /dev/null
++++ b/crates/chematic-chem/src/meso_stereo_group/search.rs
+@@ -0,0 +1,186 @@
++use super::MesoStereoGroupError as Error;
++use super::graph::Graph;
++use chematic_core::{AtomIdx, STEREO_H_SENTINEL};
++
++pub(super) struct Budget {
++    pub visits: u64,
++    pub limit: u64,
++}
++impl Budget {
++    fn probe(&mut self) -> Result<(), Error> {
++        if self.visits == self.limit {
++            return Err(Error::BudgetExceeded {
++                visits: self.visits,
++                limit: self.limit,
++            });
++        }
++        self.visits += 1;
++        Ok(())
++    }
++}
++fn mapped(index: u32, map: &[usize]) -> Option<u32> {
++    if index == STEREO_H_SENTINEL {
++        Some(index)
++    } else {
++        map.get(index as usize)
++            .copied()
++            .filter(|&v| v != usize::MAX)
++            .map(|v| v as u32)
++    }
++}
++fn even(from: &[u32; 4], to: &[u32; 4]) -> bool {
++    let mut positions = [0; 4];
++    for i in 0..4 {
++        positions[i] = to
++            .iter()
++            .position(|&v| v == from[i])
++            .expect("mapped full frame has the same ligands");
++    }
++    let inversions = (0..4)
++        .map(|i| (i + 1..4).filter(|&j| positions[i] > positions[j]).count())
++        .sum::<usize>();
++    inversions.is_multiple_of(2)
++}
++fn tetrahedral(a: &Graph<'_>, b: &Graph<'_>, map: &[usize]) -> bool {
++    for (source, frame) in a.frames.iter().enumerate() {
++        let Some(frame) = frame else {
++            continue;
++        };
++        let target = map[source];
++        if target == usize::MAX {
++            continue;
++        }
++        let Some(values) = frame
++            .iter()
++            .map(|&i| mapped(i, map))
++            .collect::<Option<Vec<_>>>()
++        else {
++            continue;
++        };
++        let from: [u32; 4] = values.try_into().expect("four slots");
++        let to = b.frames[target].expect("tetrahedral presence is an atom color");
++        // Every frame slot is a validated neighbor or the unique H sentinel.
++        // Adjacency and H colors make this a full permutation, not raw @/@@.
++        let same = a.mol.atom(AtomIdx(source as u32)).chirality
++            == b.mol.atom(AtomIdx(target as u32)).chirality;
++        if same != even(&from, &to) {
++            return false;
++        }
++    }
++    true
++}
++fn geometric(a: &Graph<'_>, b: &Graph<'_>, map: &[usize]) -> bool {
++    for fact in &a.facts {
++        let mut mapped_ends = Vec::new();
++        for end in &fact.ends {
++            let outer = a
++                .mol
++                .bond(end.reference)
++                .other(end.atom)
++                .expect("reference is incident");
++            let (Some(center), Some(outer)) = (mapped(end.atom.0, map), mapped(outer.0, map))
++            else {
++                break;
++            };
++            mapped_ends.push((center as usize, outer as usize));
++        }
++        if mapped_ends.len() != 2 {
++            continue;
++        }
++        let edge = b.adj[mapped_ends[0].0][mapped_ends[1].0].expect("mapped double bond");
++        let target = &b.facts
++            [b.fact_by_bond[edge.index.0 as usize].expect("geometric presence is an edge color")];
++        let mut parity = target.ends[0].up ^ target.ends[1].up;
++        for (center, outer) in mapped_ends {
++            let end = target
++                .ends
++                .iter()
++                .find(|e| e.atom.0 as usize == center)
++                .expect("matching double endpoint");
++            let reference = b
++                .mol
++                .bond(end.reference)
++                .other(end.atom)
++                .expect("reference is incident");
++            // Choosing the other explicit substituent reverses the reference
++            // side; reversing both cancels. Endpoint order itself is irrelevant.
++            parity ^= outer != reference.0 as usize;
++        }
++        if parity != (fact.ends[0].up ^ fact.ends[1].up) {
++            return false;
++        }
++    }
++    true
++}
++fn compatible(a: &Graph<'_>, b: &Graph<'_>, map: &[usize], source: usize, target: usize) -> bool {
++    if a.colors[source] != b.colors[target] {
++        return false;
++    }
++    for (s, &t) in map.iter().enumerate() {
++        if t == usize::MAX {
++            continue;
++        }
++        if a.adj[source][s].map(|e| e.signature()) != b.adj[target][t].map(|e| e.signature()) {
++            return false;
++        }
++    }
++    true
++}
++fn search(
++    a: &Graph<'_>,
++    b: &Graph<'_>,
++    map: &mut [usize],
++    used: &mut [bool],
++    budget: &mut Budget,
++) -> Result<bool, Error> {
++    let mut choice = None;
++    let mut candidates = Vec::new();
++    for source in 0..map.len() {
++        if map[source] != usize::MAX {
++            continue;
++        }
++        let mut possible = Vec::new();
++        for (target, &taken) in used.iter().enumerate() {
++            if taken {
++                continue;
++            }
++            budget.probe()?;
++            if compatible(a, b, map, source, target) {
++                possible.push(target);
++            }
++        }
++        if possible.is_empty() {
++            return Ok(false);
++        }
++        if choice.is_none() || possible.len() < candidates.len() {
++            choice = Some(source);
++            candidates = possible;
++        }
++    }
++    let Some(source) = choice else {
++        return Ok(true);
++    };
++    for target in candidates {
++        map[source] = target;
++        used[target] = true;
++        if tetrahedral(a, b, map) && geometric(a, b, map) && search(a, b, map, used, budget)? {
++            return Ok(true);
++        }
++        map[source] = usize::MAX;
++        used[target] = false;
++    }
++    Ok(false)
++}
++pub(super) fn find_mapping(
++    a: &Graph<'_>,
++    b: &Graph<'_>,
++    budget: &mut Budget,
++) -> Result<Option<Vec<usize>>, Error> {
++    let mut map = vec![usize::MAX; a.colors.len()];
++    let mut used = vec![false; map.len()];
++    if search(a, b, &mut map, &mut used, budget)? {
++        Ok(Some(map))
++    } else {
++        Ok(None)
++    }
++}
+diff --git a/crates/chematic-chem/tests/meso_stereo_group.rs b/crates/chematic-chem/tests/meso_stereo_group.rs
+new file mode 100644
+index 0000000..7ef1c44
+--- /dev/null
++++ b/crates/chematic-chem/tests/meso_stereo_group.rs
+@@ -0,0 +1,272 @@
++//! Original MIT OR Apache-2.0 meso/full-alternative graph proof contracts.
++use chematic_chem::{MesoStereoGroupError as Error, reduce_meso_stereo_group as reduce};
++use chematic_core::{
++    Atom, AtomIdx, BondIdx, BondOrder, CipCode, DerivedSlot, Element, Molecule, MoleculeBuilder,
++    StereoGroup, StereoGroupKind as Kind,
++};
++use chematic_smiles::parse;
++fn group(kind: Kind, atoms: &[u32], bonds: &[u32]) -> (StereoGroup, Vec<BondIdx>) {
++    (
++        StereoGroup::new(kind, atoms.iter().copied().map(AtomIdx).collect()),
++        bonds.iter().copied().map(BondIdx).collect(),
++    )
++}
++fn grouped(s: &str, a: &[u32], b: &[u32]) -> Molecule {
++    parse(s)
++        .unwrap()
++        .with_checked_stereo_groups(vec![group(Kind::And(1), a, b)])
++        .unwrap()
++}
++fn meso() -> Molecule {
++    grouped("C[C@H](O)[C@H](O)C", &[1, 3], &[])
++}
++#[test]
++fn atom_only_meso_group_becomes_absolute_with_a_witness() {
++    let m = meso();
++    let r = reduce(&m, 0, 1000000).unwrap();
++    assert!(r.reduced);
++    assert_eq!(r.checked_pairs, 1);
++    assert_eq!(r.witnesses.len(), 1);
++    assert_eq!(r.molecule.stereo_groups()[0].kind, Kind::Absolute);
++    assert_eq!(
++        r.witnesses[0].atom_permutation,
++        vec![
++            AtomIdx(5),
++            AtomIdx(3),
++            AtomIdx(4),
++            AtomIdx(1),
++            AtomIdx(2),
++            AtomIdx(0)
++        ]
++    );
++}
++#[test]
++fn mixed_atom_and_bond_group_preserves_its_whole_correlation() {
++    let m = grouped("C/C=C/[C@H](C)/C=C\\C", &[3], &[1, 5]);
++    let r = reduce(&m, 0, 1000000).unwrap();
++    assert!(r.reduced);
++    assert_eq!(
++        r.molecule.stereo_group_bond_indices(0).unwrap(),
++        [BondIdx(1), BondIdx(5)]
++    );
++    assert_eq!(r.molecule.stereo_groups()[0].atom_indices, [AtomIdx(3)]);
++    assert_eq!(r.molecule.stereo_groups()[0].kind, Kind::Absolute);
++}
++#[test]
++fn true_racemate_and_center_only_alternative_are_retained() {
++    for m in [
++        grouped("C[C@H](O)[C@@H](O)C", &[1, 3], &[]),
++        grouped("C/C=C/[C@H](C)/C=C\\C", &[3], &[]),
++    ] {
++        let r = reduce(&m, 0, 1000000).unwrap();
++        assert!(!r.reduced);
++        assert_eq!(r.molecule.stereo_groups(), m.stereo_groups());
++        assert!(r.witnesses.is_empty());
++    }
++}
++#[test]
++fn bond_only_group_reduces_only_when_geometry_maps() {
++    for (s, reduced) in [("C/C=C/C=C\\C", true), ("C/C=C/C=C/C", false)] {
++        let m = grouped(s, &[], &[1, 3]);
++        assert_eq!(reduce(&m, 0, 1000000).unwrap().reduced, reduced);
++    }
++}
++#[test]
++fn or_groups_use_the_same_full_alternative_proof() {
++    let m = parse("C[C@H](O)[C@H](O)C")
++        .unwrap()
++        .with_checked_stereo_groups(vec![group(Kind::Or(7), &[1, 3], &[])])
++        .unwrap();
++    assert!(reduce(&m, 0, 1000000).unwrap().reduced);
++}
++#[test]
++fn existing_absolute_members_are_merged_and_other_groups_remain_relative() {
++    let m = parse("C[C@H](O)[C@H](O)C.N[C@H](F)Cl.[C@H](F)(Cl)Br")
++        .unwrap()
++        .with_checked_stereo_groups(vec![
++            group(Kind::Absolute, &[7], &[]),
++            group(Kind::And(8), &[1, 3], &[]),
++            group(Kind::Or(9), &[10], &[]),
++        ])
++        .unwrap();
++    let r = reduce(&m, 1, 1000000).unwrap();
++    assert!(r.reduced);
++    assert_eq!(r.checked_pairs, 2);
++    assert_eq!(
++        r.witnesses.iter().map(|w| w.mask).collect::<Vec<_>>(),
++        [0, 2]
++    );
++    assert_eq!(r.molecule.stereo_groups().len(), 2);
++    assert_eq!(
++        r.molecule.stereo_groups()[0].atom_indices,
++        [AtomIdx(7), AtomIdx(1), AtomIdx(3)]
++    );
++    assert_eq!(r.molecule.stereo_groups()[1].kind, Kind::Or(9));
++}
++#[test]
++fn every_other_group_context_is_proved_with_one_shared_budget() {
++    let s = format!("C[C@H](O)[C@H](O)C.{}", ["[C@H](F)(Cl)Br"; 5].join("."));
++    let mut groups = vec![group(Kind::And(1), &[1, 3], &[])];
++    groups.extend((0..5).map(|i| group(Kind::Or(i + 2), &[6 + i * 4], &[])));
++    let m = parse(&s)
++        .unwrap()
++        .with_checked_stereo_groups(groups)
++        .unwrap();
++    let r = reduce(&m, 0, 1000000).unwrap();
++    assert!(r.reduced);
++    assert_eq!(r.checked_pairs, 32);
++    assert_eq!(r.witnesses.len(), 32);
++    assert!(matches!(
++        reduce(&m, 0, r.search_visits - 1),
++        Err(Error::BudgetExceeded { .. })
++    ));
++    assert_eq!(m.stereo_groups().len(), 6);
++}
++#[test]
++fn isotope_map_and_tag_distinctions_are_conservatively_preserved() {
++    for s in [
++        "[13CH3][C@H](O)[C@H](O)C",
++        "[CH3:11][C@H](O)[C@H](O)[CH3:12]",
++    ] {
++        assert!(
++            !reduce(&grouped(s, &[1, 3], &[]), 0, 1000000)
++                .unwrap()
++                .reduced
++        );
++    }
++    let mut m = meso();
++    m.set_tag(AtomIdx(0), Some(31));
++    let r = reduce(&m, 0, 1000000).unwrap();
++    assert!(!r.reduced);
++    assert_eq!(r.molecule.atom_tag(AtomIdx(0)), m.atom_tag(AtomIdx(0)));
++}
++#[test]
++fn drawing_graph_frames_and_source_metadata_are_unchanged() {
++    let mut m = meso();
++    m.set_cip_code(AtomIdx(1), Some(CipCode::S));
++    m.derived(DerivedSlot::Sssr, || 77u32);
++    let r = reduce(&m, 0, 1000000).unwrap();
++    assert!(r.reduced);
++    for (i, a) in m.atoms() {
++        assert_eq!(a.chirality, r.molecule.atom(i).chirality);
++        assert_eq!(
++            m.stereo_neighbor_order(i),
++            r.molecule.stereo_neighbor_order(i)
++        );
++    }
++    for (i, b) in m.bonds() {
++        assert_eq!(b, r.molecule.bond(i));
++    }
++    assert_eq!(r.molecule.atom(AtomIdx(1)).cip_code, None);
++    assert_eq!(m.atom(AtomIdx(1)).cip_code, Some(CipCode::S));
++    assert!(
++        r.molecule
++            .derived_if_computed::<u32>(DerivedSlot::Sssr)
++            .is_none()
++    );
++    assert_eq!(
++        *m.derived_if_computed::<u32>(DerivedSlot::Sssr).unwrap(),
++        77
++    );
++}
++#[test]
++fn tiny_budget_is_unknown_and_not_a_negative_or_partial_reduction() {
++    assert_eq!(
++        reduce(&meso(), 0, 1).err(),
++        Some(Error::BudgetExceeded {
++            visits: 1,
++            limit: 1
++        })
++    );
++    for limit in [0, 10000001, u64::MAX] {
++        assert_eq!(
++            reduce(&meso(), 0, limit).err(),
++            Some(Error::InvalidVisitLimit)
++        );
++    }
++}
++#[test]
++fn absolute_and_invalid_indices_are_refused() {
++    assert!(matches!(
++        reduce(&meso(), 1, 1000000),
++        Err(Error::GroupIndex { .. })
++    ));
++    let m = parse("C[C@H](O)[C@H](O)C")
++        .unwrap()
++        .with_checked_stereo_groups(vec![group(Kind::Absolute, &[1, 3], &[])])
++        .unwrap();
++    assert_eq!(reduce(&m, 0, 1000000).err(), Some(Error::AbsoluteGroup));
++}
++#[test]
++fn malformed_stored_references_fail_before_graph_indexing() {
++    let mut m = meso();
++    m.set_stereo_groups(vec![StereoGroup::new(Kind::And(1), vec![AtomIdx(999)])]);
++    assert!(matches!(
++        reduce(&m, 0, 1000000),
++        Err(Error::Alternatives(_))
++    ));
++}
++#[test]
++fn unassigned_tetrahedral_sites_and_unsupported_global_stereo_fail_closed() {
++    let m = grouped("C[C@H](O)[C@H](O)C.FC(Cl)(Br)I", &[1, 3], &[]);
++    assert_eq!(
++        reduce(&m, 0, 1000000).err(),
++        Some(Error::UnspecifiedTetrahedralAtom(AtomIdx(7)))
++    );
++    let m = grouped("C[C@H](O)[C@H](O)C.Cl[Pt@SP1](Cl)(N)N", &[1, 3], &[]);
++    assert_eq!(
++        reduce(&m, 0, 1000000).err(),
++        Some(Error::UnsupportedAtom(AtomIdx(7)))
++    );
++}
++#[test]
++fn unsupported_bond_semantics_and_direction_stashes_are_refused() {
++    let m = grouped("C[C@H](O)[C@H](O)C.C~C", &[1, 3], &[]);
++    assert!(matches!(
++        reduce(&m, 0, 1000000),
++        Err(Error::UnsupportedBond(_))
++    ));
++    let mut m = meso();
++    m.set_bond_direction(BondIdx(0), BondOrder::Up);
++    assert_eq!(
++        reduce(&m, 0, 1000000).err(),
++        Some(Error::UnsupportedDirections)
++    );
++}
++#[test]
++fn unsupported_graph_sizes_fail_before_enumeration() {
++    let mut b = MoleculeBuilder::new();
++    for _ in 0..65 {
++        b.add_atom(Atom::new(Element::C));
++    }
++    assert_eq!(
++        reduce(&b.build(), 0, 1000000).err(),
++        Some(Error::GraphLimit)
++    );
++    let mut b = MoleculeBuilder::new();
++    let atoms: Vec<_> = (0..17).map(|_| b.add_atom(Atom::new(Element::C))).collect();
++    for i in 0..17 {
++        for j in i + 1..17 {
++            b.add_bond(atoms[i], atoms[j], BondOrder::Single).unwrap();
++        }
++    }
++    assert_eq!(
++        reduce(&b.build(), 0, 1000000).err(),
++        Some(Error::GraphLimit)
++    );
++}
++#[test]
++fn incomplete_unselected_absolute_frame_is_not_ignored() {
++    let mut m = parse("C[C@H](O)[C@H](O)C.N[C@H](F)Cl")
++        .unwrap()
++        .with_checked_stereo_groups(vec![
++            group(Kind::And(1), &[1, 3], &[]),
++            group(Kind::Absolute, &[7], &[]),
++        ])
++        .unwrap();
++    m.set_stereo_neighbor_order(AtomIdx(7), vec![]);
++    assert_eq!(
++        reduce(&m, 0, 1000000).err(),
++        Some(Error::IncompleteFrame(AtomIdx(7)))
++    );
++}
+diff --git a/crates/chematic-py/python/chematic/__init__.pyi b/crates/chematic-py/python/chematic/__init__.pyi
+index 64ebb61..a30b225 100644
+--- a/crates/chematic-py/python/chematic/__init__.pyi
++++ b/crates/chematic-py/python/chematic/__init__.pyi
+@@ -124,6 +124,10 @@ class Mol:
+     def with_stereo_groups(self, groups: list[tuple[Literal["abs", "and", "or"], int, list[int], list[int]]]) -> Mol: ...
+     def invert_stereo_group(self, index: int) -> Mol: ...
+ 
++    def reduce_meso_stereo_group(self, index: int, *, max_visits: int = 1000000) -> dict[str, Any]:
++        """Promote to ABS only with complete stereo-preserving mapping proofs."""
++        ...
++
+     def enumerate_stereo_group_alternatives(self, max_alternatives: int = 64) -> tuple[list[int], list[Mol]]:
+         """Expand full AND/OR alternatives in inversion-mask order; retain groups."""
+         ...
+diff --git a/crates/chematic-py/src/mol_methods/stereo_groups.rs b/crates/chematic-py/src/mol_methods/stereo_groups.rs
+index b17a83c..faea654 100644
+--- a/crates/chematic-py/src/mol_methods/stereo_groups.rs
++++ b/crates/chematic-py/src/mol_methods/stereo_groups.rs
+@@ -135,4 +135,45 @@ impl Mol {
+             .collect();
+         Ok((result.relative_group_indices, molecules))
+     }
++    /// Conservatively promote a redundant AND/OR group to ABS using exact
++    /// stereo-preserving graph witnesses in every other-group assignment.
++    /// Budget exhaustion returns an error; no partial reduction is returned.
++    #[pyo3(signature=(index, *, max_visits=1000000))]
++    fn reduce_meso_stereo_group<'py>(
++        &self,
++        py: Python<'py>,
++        index: Bound<'py, PyAny>,
++        #[pyo3(from_py_with = group_integer)] max_visits: u32,
++    ) -> PyResult<Bound<'py, pyo3::types::PyDict>> {
++        let index = group_integer(&index)? as usize;
++        let report =
++            chematic_chem::reduce_meso_stereo_group(&self.inner, index, u64::from(max_visits))
++                .map_err(|e| PyValueError::new_err(e.to_string()))?;
++        let out = pyo3::types::PyDict::new(py);
++        out.set_item(
++            "molecule",
++            Mol {
++                inner: Arc::new(report.molecule),
++                props: self.props.clone(),
++            },
++        )?;
++        out.set_item("reduced", report.reduced)?;
++        out.set_item("checked_pairs", report.checked_pairs)?;
++        out.set_item("search_visits", report.search_visits)?;
++        let witnesses = report
++            .witnesses
++            .into_iter()
++            .map(|w| {
++                (
++                    w.mask,
++                    w.atom_permutation
++                        .into_iter()
++                        .map(|a| a.0)
++                        .collect::<Vec<_>>(),
++                )
++            })
++            .collect::<Vec<_>>();
++        out.set_item("witnesses", witnesses)?;
++        Ok(out)
++    }
+ }
+diff --git a/crates/chematic-py/tests/test_meso_stereo_group.py b/crates/chematic-py/tests/test_meso_stereo_group.py
+new file mode 100644
+index 0000000..992952d
+--- /dev/null
++++ b/crates/chematic-py/tests/test_meso_stereo_group.py
+@@ -0,0 +1,94 @@
++"""Original MIT OR Apache-2.0 proof-backed relative-group reduction tests."""
++import pytest
++import chematic
++
++
++def source(s='C[C@H](O)[C@H](O)C',atoms=(1,3),bonds=(),kind='and'):
++    return chematic.from_smiles(s).with_stereo_groups([(kind,1,list(atoms),list(bonds))])
++
++
++@pytest.mark.parametrize('kind',['and','or'])
++def test_atom_only_and_mixed_meso_reduction(kind):
++    for m in [source(kind=kind),source(r'C/C=C/[C@H](C)/C=C\C',(3,),(1,5),kind)]:
++        r=m.reduce_meso_stereo_group(0)
++        assert r['reduced'] is True and r['checked_pairs']==1
++        assert r['molecule'].stereo_groups==[('abs',0,m.stereo_groups[0][2],m.stereo_groups[0][3])]
++        assert len(r['witnesses'])==1 and sorted(r['witnesses'][0][1])==list(range(m.atom_count))
++        assert r['molecule'].smiles==m.smiles
++
++
++@pytest.mark.parametrize('s,atoms,bonds',[
++    ('C[C@H](O)[C@@H](O)C',(1,3),()),
++    (r'C/C=C/[C@H](C)/C=C\C',(3,),()),
++    ('C/C=C/C=C/C',(),(1,3)),
++    ('[13CH3][C@H](O)[C@H](O)C',(1,3),()),
++    ('[CH3:11][C@H](O)[C@H](O)[CH3:12]',(1,3),()),
++])
++def test_conservative_retention(s,atoms,bonds):
++    m=source(s,atoms,bonds);r=m.reduce_meso_stereo_group(0)
++    assert not r['reduced'] and not r['witnesses']
++    assert r['molecule'].stereo_groups==m.stereo_groups and r['molecule'].smiles==m.smiles
++
++
++def test_abs_merge_and_independent_relative_contexts():
++    m=chematic.from_smiles('C[C@H](O)[C@H](O)C.N[C@H](F)Cl.[C@H](F)(Cl)Br').with_stereo_groups([('abs',0,[7],[]),('and',8,[1,3],[]),('or',9,[10],[])])
++    r=m.reduce_meso_stereo_group(1)
++    assert r['reduced'] and r['checked_pairs']==2
++    assert r['molecule'].stereo_groups==[('abs',0,[7,1,3],[]),('or',9,[10],[])]
++    assert [mask for mask,_ in r['witnesses']]==[0,2]
++
++
++def test_properties_source_and_returned_lists_are_independent():
++    m=source();m.SetName('meso trial');m.SetIntProp('run',7)
++    before=m.stereo_groups;r=m.reduce_meso_stereo_group(0);out=r['molecule']
++    assert out.GetName()=='meso trial' and out.GetIntProp('run')==7
++    out.SetIntProp('run',99);r['witnesses'][0][1][0]=999
++    assert m.GetIntProp('run')==7 and m.stereo_groups==before
++    assert source().reduce_meso_stereo_group(0)['witnesses'][0][1][0]!=999
++
++
++@pytest.mark.parametrize('index',[True,False,-1,1,2.0,'0',2**40,None])
++def test_invalid_group_indices(index):
++    with pytest.raises(ValueError):source().reduce_meso_stereo_group(index)
++
++
++@pytest.mark.parametrize('limit',[0,10000001,-1,True,False,2.0,'100',2**40,None])
++def test_invalid_visit_limits(limit):
++    with pytest.raises(ValueError):source().reduce_meso_stereo_group(0,max_visits=limit)
++
++
++def test_visit_budget_is_not_a_negative_result():
++    m=source();before=m.stereo_groups
++    with pytest.raises(ValueError,match='exhausted'):m.reduce_meso_stereo_group(0,max_visits=1)
++    assert m.stereo_groups==before
++
++
++@pytest.mark.parametrize('s,atoms,bonds',[
++    ('C[C@H](O)[C@H](O)C.FC(Cl)(Br)I',(1,3),()),
++    ('C[C@H](O)[C@H](O)C.Cl[Pt@SP1](Cl)(N)N',(1,3),()),
++    ('C[C@H](O)[C@H](O)C.C~C',(1,3),()),
++    ('FC(Cl)(Br)I',(1,),()),
++    ('C1/C=C/CCCC1',(),(1,)),
++])
++def test_unsupported_inputs_fail_closed(s,atoms,bonds):
++    with pytest.raises(ValueError):source(s,atoms,bonds).reduce_meso_stereo_group(0)
++
++
++def test_v3000_output_keeps_abs_atom_and_bond_members_and_drawn_geometry():
++    base=chematic.from_smiles(r'C/C=C/[C@H](C)/C=C\C');coords=base.rdkit_2d_coords()
++    m=base.with_stereo_groups([('and',1,[3],[1,5])]);out=m.reduce_meso_stereo_group(0)['molecule']
++    block=out.to_mol_v3000(coords,strict=True)
++    back=chematic.from_mol_v3000(block)
++    assert back.stereo_groups==[('abs',0,[3],[1,5])]
++    assert back.smiles==out.smiles
++
++
++def test_explicit_hydrogen_frames_can_supply_a_real_witness():
++    m=source('[H][C@](C)(O)[C@@]([H])(O)C',(1,4))
++    r=m.reduce_meso_stereo_group(0)
++    assert r['reduced'] and len(r['witnesses'][0][1])==8
++
++
++def test_substituent_reference_choices_do_not_confuse_e_and_z():
++    m=source('F/C(Cl)=C(/F)Cl',(),(2,))
++    assert not m.reduce_meso_stereo_group(0)['reduced']
+diff --git a/docs/meso-stereo-group-reduction.md b/docs/meso-stereo-group-reduction.md
+new file mode 100644
+index 0000000..b72a96b
+--- /dev/null
++++ b/docs/meso-stereo-group-reduction.md
+@@ -0,0 +1,168 @@
++# Proof-backed reduction of a redundant relative stereo group
++
++RDKit [#9705](https://github.com/rdkit/rdkit/issues/9705) proposes treating a
++mixed relative group's full alternative as the simultaneous inversion of its
++atom centers and geometric double bonds. Sometimes that full alternative is
++the same drawn compound. The relative ambiguity can then be represented as ABS
++without changing the allowed configurations.
++
++This candidate adds conservative reduction of **one selected AND/OR group**.
++It builds on [full group inversion](stereo-group-inversion.md) and
++[correlated alternatives](correlated-stereo-group-alternatives.md).
++
++```python
++import chematic
++
++source = chematic.from_smiles(r"C/C=C/[C@H](C)/C=C\C")
++source = source.with_stereo_groups([("and", 1, [3], [1, 5])])
++report = source.reduce_meso_stereo_group(0)
++assert report["reduced"]
++assert report["molecule"].stereo_groups == [("abs", 0, [3], [1, 5])]
++assert report["molecule"].smiles == source.smiles
++mapping = report["witnesses"][0][1]  # source atom index -> full-alternative atom index
++```
++
++Here both double bonds and the center participate in the proof. Putting only
++the center in the group gives a different alternative, so that group is
++retained. The same API reduces a meso diol group while retaining its true
++racemic counterpart.
++
++The term meso here follows #9705's full-alternative redundancy proposal.
++Swapping E/Z is part of that group operation; the API does not identify every
++IUPAC meso structure or equate a geometric swap with a general mirror operation.
++
++## Exact mapping contract
++
++No canonical-SMILES equality or hash collision can justify a promotion. For
++each assignment of all other relative groups, the implementation searches for
++a complete bijection from the selected group's drawn state to its full
++alternative. A successful witness must preserve:
++
++- atomic element, isotope, charge, aromaticity, resolved H count and degree;
++- atom maps and nonchemical atom tags;
++- each stored group's atom and bond membership independently, including ABS;
++- adjacency and chemical bond order;
++- every specified tetrahedral configuration through its complete four-ligand
++  reference frame and the permutation's parity;
++- every specified geometric double-bond fact, accounting for endpoint reversal
++  and choosing the opposite substituent as a reference.
++
++The search prunes only by exact attributes, edges and configured parity. It
++uses a bounded recursive graph search with at most 64 atoms. Direction tokens
++are interpreted through the existing E/Z fact model, so shared markers and
++alternate reference choices do not become raw-token comparisons.
++
++If every other-group assignment has a witness, the selected members join ABS.
++If ABS already exists, its members come first and the selected atoms/bonds are
++appended; the selected relative entry is removed. Otherwise its stored position
++becomes ABS. Other groups retain their kind, number and members. Remaining
++stored group indices may shift after removal; no canonical renumbering occurs.
++
++The drawn configuration, indexed atom/bond graph, tags and reference frames
++remain unchanged. The output has cold derived caches and cleared stored atom
++CIP annotations. Python typed molecule properties are copied independently.
++Input metadata/caches are unchanged. Original drawing coordinates can still
++be used because this operation changes grouping without changing configuration.
++
++## Results and conservative retention
++
++Python `Mol.reduce_meso_stereo_group(index, *, max_visits=1000000)` returns:
++
++| Field | Meaning |
++| --- | --- |
++| `molecule` | Independent output molecule |
++| `reduced` | True only after all required pairs have verified mappings |
++| `checked_pairs` | Configuration pairs examined |
++| `search_visits` | Candidate feasibility probes across the whole call |
++| `witnesses` | `(lower_mask, atom_permutation)` tuples for successful pairs |
++
++Masks follow the relative-group order used by the family API. Each witness maps
++a configuration whose selected bit is zero to the configuration with that bit
++set. When a pair has no mapping, the output retains the original groups. The
++report can include proofs for earlier pairs; no partial promotion is performed.
++
++**Retained is not a general non-meso classification.** Preserving source labels
++and exact group identities can deliberately block an otherwise chemically
++valid equivalence. The mapped diol fixture demonstrates this: the unlabelled
++drawn compounds coincide, but its distinct source atom-map numbers block a
++label-preserving proof. The API keeps that record's relative group.
++
++In Rust, `reduce_meso_stereo_group(mol, index, max_visits)` returns
++`Result<MesoStereoGroupReduction, MesoStereoGroupError>`. Its witness list holds
++`MesoStereoWitness { mask, atom_permutation }`, using core `AtomIdx` values.
++
++## Bounds and unsupported inputs
++
++Hard graph bounds are **64 atoms** and **128 bonds**. The reused family boundary
++allows at most six relative groups / 64 representatives, giving at most 32
++selected-group pairs. A single shared probe budget covers all pairs, including
++candidate selection/pruning. Default Python budget is 1,000,000 probes; accepted
++explicit budgets are integers from 1 through 10,000,000. Bool/float/text indices
++and budgets are refused.
++
++Budget exhaustion returns an error with no output reduction. It is never
++reported as a failed equivalence proof. Invalid group indices/metadata and ABS
++selection also return errors before an unsafe graph lookup.
++
++The proof boundary rejects unspecified locally tetrahedral sites (one or zero
++H and four single-bond ligand slots), including achiral cases it has not proved
++safe to ignore. It also rejects wildcard/R groups, incomplete or nonunique
++stereo frames, allene/non-tetrahedral/axial assignments, query/dative/zero-order
++bonds, loops/parallel edges, stashed directions, and conflicting or unaccounted
++literal directions. These checks apply globally, including unselected centers,
++so a proof cannot silently ignore another configuration. Relative small-ring
++bonds below eight atoms fail through the existing inversion boundary.
++
++No 3D feasibility, stereogenicity cleanup, full stereo canonicalization,
++canonical representative selection, group sorting, compound counting or
++bond-indexed CXSMILES extension is added. Same-number mixed atom/bond grouping
++follows the #9705 proposal and existing storage contract; BIOVIA interoperability
++has not been independently confirmed.
++
++## Validation
++
++The native proof is checked independently with RDKit **2026.09.1**, legacy
++stereo perception and `removeHs=False`. The reference directly flips selected
++atom tags and bond E/Z states, then regenerates neighbor directions. Each native
++witness must appear in RDKit's complete chirality-aware substructure mappings;
++explicit attribute/label/group checks further constrain that mapping. Direct
++references have no conformer: a separate molecule supplies drawing coordinates
++for V3000 tests, avoiding stale coordinates influencing inverted configurations.
++
++Twelve original synthetic fixtures cover atom-only/mixed/bond-only redundancy,
++true racemates, center-only flips, isotope/map distinctions, existing ABS,
++independent relative groups, explicit H and substituted alkene references.
++Twenty-four numberings, AND/OR and stored/reverse group order produce:
++
++- **672 decisions:** 384 promotions and 288 conservative retentions;
++- **768 independently verified graph witnesses** across 1,056 context pairs;
++- **672 V3000 round trips**, keeping drawing, ABS members and other groups;
++- zero decision, witness, allowed-configuration-set, metadata or source-mutation
++  mismatches.
++
++Before/after allowed sets are checked using drawn InChI, not as enhanced-record
++identity keys. A separate diagnostic reproduces RDKit canonicalization dropping
++mixed bond members; its atom-only meso reduction is a passing control. Neither
++mixed canonicalization nor canonical strings are used as the reduction oracle.
++
++Local validation passed 948 Rust library tests, 16 new proof contracts, 14
++family contracts and 15 inversion contracts: **993 passed, one pre-existing
++library test ignored**. Python passed **142 tests** across proof reduction,
++family expansion, inversion and checked groups. Strict Clippy, formatting,
++static binding inventory, product naming, the refactor budget and strict MkDocs
++also passed; no refactor allowances were added.
++
++Fixture provenance, MIT OR Apache-2.0 licensing, minimization, expected decisions,
++pinned settings and payload hash are in
++`validation/rdkit_issues/stereo/meso-group-proof.json`. No upstream attachment
++or proprietary coordinates were copied. Regenerate the hashed evidence with:
++
++```sh
++python scripts/validate_meso_stereo_groups.py
++```
++
++This is a local, uncommitted, unpublished source candidate in
++`/private/tmp/chematic-meso-groups`, preserving previous candidates through
++RDFile. Its patch is `validation/rdkit_issues/meso-stereo-groups-2026-10-15.patch`
++and the record is `validation/results/rdkit-meso-stereo-groups-2026-10-15.json`.
++The patch requires the preceding group construction, inversion and family APIs.
+diff --git a/docs/rdkit-open-issues-2026-10-14.md b/docs/rdkit-open-issues-2026-10-14.md
+index d6a11b4..195c587 100644
+--- a/docs/rdkit-open-issues-2026-10-14.md
++++ b/docs/rdkit-open-issues-2026-10-14.md
+@@ -17,7 +17,7 @@ Issue state is a snapshot; an open issue can already have a proposed upstream fi
+ | [#9688: EEM charge conservation](https://github.com/rdkit/rdkit/issues/9688) | `eem_charges` and ionic conservation tests already exist. | Keep the regression; no duplicate implementation. |
+ | [#9678: allene stereo](https://github.com/rdkit/rdkit/issues/9678) | Allene stereo round-trip support already exists. | Keep the regression; no duplicate implementation. |
+ | [#9691: reaction-template order and E/Z](https://github.com/rdkit/rdkit/issues/9691) | Product stereo cleanup and an order-invariance regression already exist. | Keep the regression; no duplicate implementation. |
+-| [#9705: V3000 bond stereo collections](https://github.com/rdkit/rdkit/issues/9705) | Bond stereo-group storage and STEB collection support already exist. | [Added checked Rust/Python group construction and inspection](checked-stereo-groups.md), including mixed atom/bond membership and 216 V3000/geometry checks. Existing STE/STEB parsing/writing is reused. [Added checked full alternatives](stereo-group-inversion.md) for relative tetrahedral/geometric groups, with 528 RDKit-reference comparisons. [Added bounded correlated alternatives](correlated-stereo-group-alternatives.md) across independent AND/OR groups, with 1,056 direct-configuration reference comparisons and explicit mask ordering. Canonicalization, meso reduction and CXSMILES extensions remain outside these candidates. |
++| [#9705: V3000 bond stereo collections](https://github.com/rdkit/rdkit/issues/9705) | Bond stereo-group storage and STEB collection support already exist. | [Added checked Rust/Python group construction and inspection](checked-stereo-groups.md), including mixed atom/bond membership and 216 V3000/geometry checks. Existing STE/STEB parsing/writing is reused. [Added checked full alternatives](stereo-group-inversion.md) for relative tetrahedral/geometric groups, with 528 RDKit-reference comparisons. [Added bounded correlated alternatives](correlated-stereo-group-alternatives.md) across independent AND/OR groups, with 1,056 direct-configuration reference comparisons and explicit mask ordering. [Added conservative meso-group reduction](meso-stereo-group-reduction.md) with group/label-preserving graph proofs in every independent context: 672 decisions, 768 verified witnesses and 672 V3000 round trips. General canonicalization, axes and CXSMILES extensions remain outside these candidates. |
+ | [#9343: internal-coordinate bounds](https://github.com/rdkit/rdkit/issues/9343) | Implementation and Python tests are present as pre-existing uncommitted work. | Preserve that work; not part of this change or its validation claim. |
+ | [#9247: recursive SMARTS stereo](https://github.com/rdkit/rdkit/issues/9247) | Matcher changes and Python tests are present as pre-existing uncommitted work. | Preserve that work; not part of this change or its validation claim. |
+ | [#9524: SA-score smoothing discontinuity](https://github.com/rdkit/rdkit/issues/9524) | chematic uses its own fragment table and score mapping, without the reported logarithmic smoothing function. | Not the same defect. SA-score calibration would need an independent evaluation. |
+diff --git a/scripts/validate_meso_stereo_groups.py b/scripts/validate_meso_stereo_groups.py
+new file mode 100644
+index 0000000..7b7f516
+--- /dev/null
++++ b/scripts/validate_meso_stereo_groups.py
+@@ -0,0 +1,132 @@
++#!/usr/bin/env python3
++"""Independently verify graph witnesses and allowed configurations for group reduction."""
++import argparse
++import hashlib
++import json
++from pathlib import Path
++import random
++import sys
++import chematic
++from rdkit import Chem,RDLogger,rdBase
++from rdkit.Chem import rdDepictor
++
++ROOT=Path(__file__).resolve().parents[1]
++FIXTURE=ROOT/'validation/rdkit_issues/stereo/meso-group-proof.json'
++
++
++def digest(data):return hashlib.sha256(data).hexdigest()
++
++
++def parse(s):
++    p=Chem.SmilesParserParams();p.removeHs=False;m=Chem.MolFromSmiles(s,p);assert m is not None;return m
++
++
++def inchi(s):return Chem.MolToInchi(parse(s))
++
++
++def reference(base,native,specs,mask):
++    m=Chem.Mol(base)
++    for bit,(_,_,atoms,bonds) in enumerate(g for g in specs if g[0]!='abs'):
++        if not mask&(1<<bit):continue
++        for idx in atoms:m.GetAtomWithIdx(idx).InvertChirality()
++        for idx in bonds:
++            a,b,*_=native.bond_table[idx];bond=m.GetBondBetweenAtoms(a,b);stereo=bond.GetStereo()
++            assert stereo in (Chem.BondStereo.STEREOE,Chem.BondStereo.STEREOZ)
++            bond.SetStereo(Chem.BondStereo.STEREOZ if stereo==Chem.BondStereo.STEREOE else Chem.BondStereo.STEREOE)
++    for b in m.GetBonds():b.SetBondDir(Chem.BondDir.NONE)
++    Chem.SetDoubleBondNeighborDirections(m)
++    assert inchi(Chem.MolToSmiles(m))==Chem.MolToInchi(m)
++    return m
++
++
++def orders(n):
++    rng=random.Random(9705);out=[list(range(n)),list(reversed(range(n)))]
++    while len(out)<24:
++        order=list(range(n));rng.shuffle(order)
++        if order not in out:out.append(order)
++    return out
++
++
++def graph_signature(m):
++    return [(a.GetAtomicNum(),a.GetIsotope(),a.GetFormalCharge(),a.GetIsAromatic(),a.GetAtomMapNum()) for a in m.GetAtoms()]
++
++
++def verify_witness(a,b,mapping,native):
++    assert sorted(mapping)==list(range(a.GetNumAtoms()))
++    matches=b.GetSubstructMatches(a,uniquify=False,useChirality=True,maxMatches=200000)
++    assert tuple(mapping) in matches,'native witness is not an RDKit chirality-aware complete graph match'
++    assert [graph_signature(b)[j] for j in mapping]==graph_signature(a)
++    for _,_,atoms,bonds in native.stereo_groups:
++        assert sorted(mapping[i] for i in atoms)==sorted(atoms),'witness exchanges enhanced-group membership'
++        endpoints={tuple(sorted(native.bond_table[i][:2])) for i in bonds}
++        mapped={tuple(sorted((mapping[x],mapping[y]))) for x,y in endpoints}
++        assert mapped==endpoints,'witness exchanges independent bond groups'
++
++
++def main():
++    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,default=ROOT/'validation/results/rdkit-meso-stereo-groups-2026-10-15.json');args=p.parse_args()
++    assert rdBase.rdkitVersion=='2026.09.1';Chem.SetUseLegacyStereoPerception(True);RDLogger.DisableLog('rdApp.warning')
++    fixture=json.loads(FIXTURE.read_text());assert digest(json.dumps(fixture['cases'],sort_keys=True,separators=(',',':')).encode())==fixture['sha256']
++    checked=[];witness_count=0;positive=0;negative=0;roundtrips=0;contexts=0
++    for case in fixture['cases']:
++        base=chematic.from_smiles(case['smiles']);rd=parse(case['smiles']);assert base.atom_count==rd.GetNumAtoms()
++        assert [(a[1],a[2],a[3]) for a in base.atom_table]==[(a.GetAtomicNum(),a.GetFormalCharge(),a.GetIsAromatic()) for a in rd.GetAtoms()]
++        norm=lambda bs:sorted((min(a,b),max(a,b),str(kind),aromatic) for a,b,kind,aromatic in bs)
++        assert norm(base.bond_table)==norm([(b.GetBeginAtomIdx(),b.GetEndAtomIdx(),b.GetBondType(),b.GetIsAromatic()) for b in rd.GetBonds()])
++        drawing=Chem.Mol(rd);rdDepictor.Compute2DCoords(drawing);coords=drawing.GetConformer().GetPositions()[:,:2].tolist()
++        group_orders=[list(range(len(case['groups'])))]
++        if len(case['groups'])>1:group_orders.append(list(reversed(group_orders[0])))
++        for kind in ('and','or'):
++            for group_order in group_orders:
++                specs=[list(case['groups'][i]) for i in group_order];selected=group_order.index(case['selected']);specs[selected][0]=kind
++                relative=[i for i,g in enumerate(specs) if g[0]!='abs'];bit=relative.index(selected)
++                refs=[reference(rd,base,specs,mask) for mask in range(1<<len(relative))]
++                allowed={Chem.MolToInchi(m) for m in refs}
++                for order in orders(base.atom_count):
++                    source=base.with_stereo_groups([tuple(g) for g in specs]).renumber_atoms(order);before=source.stereo_groups;original=source.smiles
++                    source.SetIntProp('trial',9705);report=source.reduce_meso_stereo_group(selected);out=report['molecule']
++                    assert report['reduced']==case['expected_reduced']
++                    assert out.atom_table==source.atom_table and out.bond_table==source.bond_table and inchi(out.smiles)==inchi(original)
++                    assert out.GetIntProp('trial')==9705 and source.stereo_groups==before and source.smiles==original
++                    _,family=out.enumerate_stereo_group_alternatives();assert {inchi(m.smiles) for m in family}==allowed
++                    if report['reduced']:
++                        positive+=1;assert len(report['witnesses'])==len(refs)//2==report['checked_pairs']
++                        expected=[];merged=False
++                        selected_atoms=before[selected][2];selected_bonds=before[selected][3]
++                        for i,(k,num,atoms,bonds) in enumerate(before):
++                            if i==selected:continue
++                            if k=='abs':atoms=atoms+selected_atoms;bonds=bonds+selected_bonds;merged=True
++                            expected.append((k,num,atoms,bonds))
++                        if not merged:
++                            expected=list(before);expected[selected]=('abs',0,selected_atoms,selected_bonds)
++                        assert out.stereo_groups==expected
++                        for mask,mapping in report['witnesses']:
++                            a=Chem.RenumberAtoms(refs[mask],order);b=Chem.RenumberAtoms(refs[mask|(1<<bit)],order)
++                            verify_witness(a,b,mapping,source);witness_count+=1
++                    else:
++                        negative+=1;assert out.stereo_groups==before
++                    block=out.to_mol_v3000([coords[i] for i in order],strict=True);back=chematic.from_mol_v3000(block)
++                    assert back.stereo_groups==out.stereo_groups
++                    assert inchi(back.smiles)==inchi(out.smiles)
++                    roundtrips+=1;contexts+=report['checked_pairs']
++                    checked.append({'id':case['id'],'kind':kind,'group_order':group_order,'order':order,'reduced':report['reduced'],'checked_pairs':report['checked_pairs'],'visits':report['search_visits'],'witnesses':report['witnesses']})
++    # Separate upstream canonicalization diagnostics and atom-only control.
++    def upstream(s,atoms,bonds):
++        rw=Chem.RWMol(parse(s));rw.SetStereoGroups([Chem.CreateStereoGroup(Chem.StereoGroupType.STEREO_AND,rw,atoms,bonds)])
++        m=Chem.CanonicalizeStereoGroups(rw.GetMol(),Chem.StereoGroupAbsOptions.AlwaysInclude)
++        return [{'kind':g.GetGroupType().name,'atoms':[a.GetIdx() for a in g.GetAtoms()],'bonds':[b.GetIdx() for b in g.GetBonds()]} for g in m.GetStereoGroups()]
++    mixed=upstream(r'C/C=C/[C@H](C)/C=C\C',[3],[1,5]);assert sum(len(g['bonds']) for g in mixed)==0
++    atom_control=upstream('C[C@H](O)[C@H](O)C',[1,3],[]);assert all(g['kind']=='STEREO_ABSOLUTE' for g in atom_control)
++    paths=['crates/chematic-chem/src/meso_stereo_group.rs','crates/chematic-chem/src/meso_stereo_group/graph.rs','crates/chematic-chem/src/meso_stereo_group/search.rs','crates/chematic-py/src/mol_methods/stereo_groups.rs','crates/chematic-chem/tests/meso_stereo_group.rs','crates/chematic-py/tests/test_meso_stereo_group.py','crates/chematic-py/python/chematic/__init__.pyi','scripts/validate_meso_stereo_groups.py']
++    result={'schema_version':1,'status':'local-source-candidate','issue':'https://github.com/rdkit/rdkit/issues/9705','base':'cac480fb source snapshot plus preserved previous candidates through RDFile; requires checked groups, full inversion and correlated alternatives',
++        'scope':'conservative proof-backed promotion of one AND/OR group to ABS; exact group/label-colored formal graph mappings in every other-group assignment, no general canonicalization',
++        'runtime':{'python':sys.version.split()[0],'rdkit':rdBase.rdkitVersion,'settings':'legacy stereo; retain explicit H; direct atom/bond flips; chirality-aware complete graph mappings with separate group/label checks','chematic_extension_sha256':digest(Path(chematic.__file__).resolve().read_bytes())},
++        'source_sha256':{s:digest((ROOT/s).read_bytes()) for s in paths},'fixture':{'path':str(FIXTURE.relative_to(ROOT)),'manifest_sha256':digest(FIXTURE.read_bytes()),**fixture},
++        'results':{'cases':len(checked),'fixtures':len(fixture['cases']),'promoted':positive,'retained':negative,'witnesses_verified_by_rdkit':witness_count,'configuration_context_pairs':contexts,'v3000_roundtrips':roundtrips,'decision_mismatches':0,'witness_mismatches':0,'allowed_configuration_set_mismatches':0,'metadata_mismatches':0,'input_mutations':0,'numberings_per_fixture_kind_group_order':24,'case_sha256':digest(json.dumps(checked,sort_keys=True,separators=(',',':')).encode())},
++        'rdkit_mixed_canonicalization_diagnostic':{'input_atoms':[3],'input_bonds':[1,5],'output_groups':mixed,'bond_members_dropped':True},'rdkit_atom_only_meso_control':{'output_groups':atom_control,'absolute_only':True},
++        'limits':{'atoms':64,'bonds':128,'relative_groups':6,'family_representatives':64,'default_candidate_visits':1000000,'maximum_candidate_visits':10000000,'budget_unknown_is_error':True},
++        'limitations':'Preserving group identities, atom maps and tags can conservatively retain a chemically redundant group. Retained does not mean a general non-meso classification. Undefined locally tetrahedral sites, wildcard/R groups, non-tetrahedral/allene/axial stereo, query/dative/zero bonds, loops/parallel edges, stashed/conflicting/unaccounted directions fail closed. No 3D feasibility, stereogenicity cleanup, canonical representative, group renumbering, CXSMILES extension or general molecular identity claim. Same-number mixed-group interpretation follows #9705 proposal, not confirmed BIOVIA interoperability.'}
++    args.output.parent.mkdir(parents=True,exist_ok=True);args.output.write_text(json.dumps(result,indent=2)+'\n');print(json.dumps(result['results']))
++
++
++if __name__=='__main__':main()
+diff --git a/validation/rdkit_issues/stereo/meso-group-proof.json b/validation/rdkit_issues/stereo/meso-group-proof.json
+new file mode 100644
+index 0000000..bfecd6a
+--- /dev/null
++++ b/validation/rdkit_issues/stereo/meso-group-proof.json
+@@ -0,0 +1,268 @@
++{
++  "schema_version": 1,
++  "id": "meso-stereo-group-proof-v1",
++  "provenance": {
++    "source": "original minimized atom-only, geometric, mixed and disconnected formal stereochemical graphs",
++    "issue": "https://github.com/rdkit/rdkit/issues/9705",
++    "date": "2026-10-15",
++    "transformations": "synthetic explicit relative groups, isotope/map distinctions and independent groups; simple mixed heptadiene motif follows the public issue proposal; no attachments or proprietary coordinates copied"
++  },
++  "license": "MIT OR Apache-2.0",
++  "redistribution": {
++    "status": "allowed",
++    "rationale": "original project fixtures; no bulk third-party data"
++  },
++  "minimization": "twelve small cases distinguish full-alternative redundancy, center-only flips, true racemates, explicit H, substituted alkene references and source-label constraints",
++  "oracle": {
++    "name": "RDKit direct stereo assignments and complete chirality-aware graph match witnesses",
++    "version": "2026.09.1",
++    "settings": "legacy stereo; removeHs=False; direct atom/bond flips; no mixed-group CanonicalizeStereoGroups as expected truth; GetSubstructMatches(useChirality=True,uniquify=False,maxMatches=200000), plus explicit graph/group/label checks and drawn InChI set comparisons"
++  },
++  "expected": {
++    "rule": "only reduce selected AND/OR if a group/label-preserving tetrahedral/geometric mapping exists in every other-group assignment; exact original drawing/configuration retained",
++    "visit_budget": 1000000,
++    "proof_scope": "formal 64-atom/128-bond graph with explicit tetrahedral/geometric facts; no 3D feasibility or global stereo canonicalization",
++    "numeric_tolerance": 0,
++    "payload_encoding": "sorted-key compact UTF-8 JSON cases"
++  },
++  "sha256": "9bf39ee1c347127e5bd5558e1299e43bf1eac6431fae4f9d5fffcb60ad64088d",
++  "cases": [
++    {
++      "id": "meso-diol",
++      "smiles": "C[C@H](O)[C@H](O)C",
++      "groups": [
++        [
++          "and",
++          1,
++          [
++            1,
++            3
++          ],
++          []
++        ]
++      ],
++      "selected": 0,
++      "expected_reduced": true
++    },
++    {
++      "id": "true-diol-racemate",
++      "smiles": "C[C@H](O)[C@@H](O)C",
++      "groups": [
++        [
++          "and",
++          1,
++          [
++            1,
++            3
++          ],
++          []
++        ]
++      ],
++      "selected": 0,
++      "expected_reduced": false
++    },
++    {
++      "id": "mixed-full-alternative-redundancy",
++      "smiles": "C/C=C/[C@H](C)/C=C\\C",
++      "groups": [
++        [
++          "and",
++          1,
++          [
++            3
++          ],
++          [
++            1,
++            5
++          ]
++        ]
++      ],
++      "selected": 0,
++      "expected_reduced": true
++    },
++    {
++      "id": "center-only-not-redundant",
++      "smiles": "C/C=C/[C@H](C)/C=C\\C",
++      "groups": [
++        [
++          "and",
++          1,
++          [
++            3
++          ],
++          []
++        ]
++      ],
++      "selected": 0,
++      "expected_reduced": false
++    },
++    {
++      "id": "bond-only-redundant",
++      "smiles": "C/C=C/C=C\\C",
++      "groups": [
++        [
++          "and",
++          1,
++          [],
++          [
++            1,
++            3
++          ]
++        ]
++      ],
++      "selected": 0,
++      "expected_reduced": true
++    },
++    {
++      "id": "bond-only-distinct",
++      "smiles": "C/C=C/C=C/C",
++      "groups": [
++        [
++          "and",
++          1,
++          [],
++          [
++            1,
++            3
++          ]
++        ]
++      ],
++      "selected": 0,
++      "expected_reduced": false
++    },
++    {
++      "id": "isotope-breaks-symmetry",
++      "smiles": "[13CH3][C@H](O)[C@H](O)C",
++      "groups": [
++        [
++          "and",
++          1,
++          [
++            1,
++            3
++          ],
++          []
++        ]
++      ],
++      "selected": 0,
++      "expected_reduced": false
++    },
++    {
++      "id": "maps-conservatively-block-reduction",
++      "smiles": "[CH3:11][C@H](O)[C@H](O)[CH3:12]",
++      "groups": [
++        [
++          "and",
++          1,
++          [
++            1,
++            3
++          ],
++          []
++        ]
++      ],
++      "selected": 0,
++      "expected_reduced": false,
++      "note": "Drawn chemical configurations coincide when maps are ignored; the proof preserves source labels."
++    },
++    {
++      "id": "abs-merge-with-other-relative-group",
++      "smiles": "C[C@H](O)[C@H](O)C.N[C@H](F)Cl.[C@H](F)(Cl)Br",
++      "groups": [
++        [
++          "abs",
++          0,
++          [
++            7
++          ],
++          []
++        ],
++        [
++          "and",
++          8,
++          [
++            1,
++            3
++          ],
++          []
++        ],
++        [
++          "or",
++          9,
++          [
++            10
++          ],
++          []
++        ]
++      ],
++      "selected": 1,
++      "expected_reduced": true
++    },
++    {
++      "id": "two-other-relative-contexts",
++      "smiles": "C[C@H](O)[C@H](O)C.N[C@H](F)Cl.[C@H](F)(Cl)Br",
++      "groups": [
++        [
++          "and",
++          1,
++          [
++            1,
++            3
++          ],
++          []
++        ],
++        [
++          "or",
++          2,
++          [
++            7
++          ],
++          []
++        ],
++        [
++          "and",
++          3,
++          [
++            10
++          ],
++          []
++        ]
++      ],
++      "selected": 0,
++      "expected_reduced": true
++    },
++    {
++      "id": "explicit-h-meso",
++      "smiles": "[H][C@](C)(O)[C@@]([H])(O)C",
++      "groups": [
++        [
++          "and",
++          1,
++          [
++            1,
++            4
++          ],
++          []
++        ]
++      ],
++      "selected": 0,
++      "expected_reduced": true
++    },
++    {
++      "id": "four-substituent-alkene-distinct",
++      "smiles": "F/C(Cl)=C(/F)Cl",
++      "groups": [
++        [
++          "and",
++          1,
++          [],
++          [
++            2
++          ]
++        ]
++      ],
++      "selected": 0,
++      "expected_reduced": false
++    }
++  ]
++}
+diff --git a/validation/results/rdkit-meso-stereo-groups-2026-10-15.json b/validation/results/rdkit-meso-stereo-groups-2026-10-15.json
+new file mode 100644
+index 0000000..90d9ee7
+--- /dev/null
++++ b/validation/results/rdkit-meso-stereo-groups-2026-10-15.json
+@@ -0,0 +1,343 @@
++{
++  "schema_version": 1,
++  "status": "local-source-candidate",
++  "issue": "https://github.com/rdkit/rdkit/issues/9705",
++  "base": "cac480fb source snapshot plus preserved previous candidates through RDFile; requires checked groups, full inversion and correlated alternatives",
++  "scope": "conservative proof-backed promotion of one AND/OR group to ABS; exact group/label-colored formal graph mappings in every other-group assignment, no general canonicalization",
++  "runtime": {
++    "python": "3.13.6",
++    "rdkit": "2026.09.1",
++    "settings": "legacy stereo; retain explicit H; direct atom/bond flips; chirality-aware complete graph mappings with separate group/label checks",
++    "chematic_extension_sha256": "f610073cc0b71f3bea36c64addc93aa30cc42554ac859271db067b14dcfb0523"
++  },
++  "source_sha256": {
++    "crates/chematic-chem/src/meso_stereo_group.rs": "a29c330d51ed174f89209f8ce63770cc6c166773dc1db90053659dfe14248268",
++    "crates/chematic-chem/src/meso_stereo_group/graph.rs": "5683f9bc04ada285488bf86d47c456994fedfa534c4358cadf77aaa39d7f62e0",
++    "crates/chematic-chem/src/meso_stereo_group/search.rs": "89305fd4eaf0bccf9a7d1002083cd75072a362955653bfdcb8f63147b8ad4903",
++    "crates/chematic-py/src/mol_methods/stereo_groups.rs": "b333e0b0e338a45a052c2d2e2e1c988a6361196d6aadf6a6de845d198b46b461",
++    "crates/chematic-chem/tests/meso_stereo_group.rs": "cda7812f2f714815c8f3ba5cad2900b9a3f2cbf3941448460a30242a8270ff45",
++    "crates/chematic-py/tests/test_meso_stereo_group.py": "4e4dffa1616dcac7be25c2141fec426fbc924c115e41d6c8174ca88fba131ffd",
++    "crates/chematic-py/python/chematic/__init__.pyi": "672510a426aa0decd0b232d7b4fdd9bf724b650f2ab2cdda1d73ec79d396e605",
++    "scripts/validate_meso_stereo_groups.py": "9287433917aaba708dc97e148c338c97031dd98061c9979fa9aa5d15f3297fd6"
++  },
++  "fixture": {
++    "path": "validation/rdkit_issues/stereo/meso-group-proof.json",
++    "manifest_sha256": "bc22c0ed7cf0cd54af56ccb8127db0f75643a460b0eaa3707c0eb7f38099e372",
++    "schema_version": 1,
++    "id": "meso-stereo-group-proof-v1",
++    "provenance": {
++      "source": "original minimized atom-only, geometric, mixed and disconnected formal stereochemical graphs",
++      "issue": "https://github.com/rdkit/rdkit/issues/9705",
++      "date": "2026-10-15",
++      "transformations": "synthetic explicit relative groups, isotope/map distinctions and independent groups; simple mixed heptadiene motif follows the public issue proposal; no attachments or proprietary coordinates copied"
++    },
++    "license": "MIT OR Apache-2.0",
++    "redistribution": {
++      "status": "allowed",
++      "rationale": "original project fixtures; no bulk third-party data"
++    },
++    "minimization": "twelve small cases distinguish full-alternative redundancy, center-only flips, true racemates, explicit H, substituted alkene references and source-label constraints",
++    "oracle": {
++      "name": "RDKit direct stereo assignments and complete chirality-aware graph match witnesses",
++      "version": "2026.09.1",
++      "settings": "legacy stereo; removeHs=False; direct atom/bond flips; no mixed-group CanonicalizeStereoGroups as expected truth; GetSubstructMatches(useChirality=True,uniquify=False,maxMatches=200000), plus explicit graph/group/label checks and drawn InChI set comparisons"
++    },
++    "expected": {
++      "rule": "only reduce selected AND/OR if a group/label-preserving tetrahedral/geometric mapping exists in every other-group assignment; exact original drawing/configuration retained",
++      "visit_budget": 1000000,
++      "proof_scope": "formal 64-atom/128-bond graph with explicit tetrahedral/geometric facts; no 3D feasibility or global stereo canonicalization",
++      "numeric_tolerance": 0,
++      "payload_encoding": "sorted-key compact UTF-8 JSON cases"
++    },
++    "sha256": "9bf39ee1c347127e5bd5558e1299e43bf1eac6431fae4f9d5fffcb60ad64088d",
++    "cases": [
++      {
++        "id": "meso-diol",
++        "smiles": "C[C@H](O)[C@H](O)C",
++        "groups": [
++          [
++            "and",
++            1,
++            [
++              1,
++              3
++            ],
++            []
++          ]
++        ],
++        "selected": 0,
++        "expected_reduced": true
++      },
++      {
++        "id": "true-diol-racemate",
++        "smiles": "C[C@H](O)[C@@H](O)C",
++        "groups": [
++          [
++            "and",
++            1,
++            [
++              1,
++              3
++            ],
++            []
++          ]
++        ],
++        "selected": 0,
++        "expected_reduced": false
++      },
++      {
++        "id": "mixed-full-alternative-redundancy",
++        "smiles": "C/C=C/[C@H](C)/C=C\\C",
++        "groups": [
++          [
++            "and",
++            1,
++            [
++              3
++            ],
++            [
++              1,
++              5
++            ]
++          ]
++        ],
++        "selected": 0,
++        "expected_reduced": true
++      },
++      {
++        "id": "center-only-not-redundant",
++        "smiles": "C/C=C/[C@H](C)/C=C\\C",
++        "groups": [
++          [
++            "and",
++            1,
++            [
++              3
++            ],
++            []
++          ]
++        ],
++        "selected": 0,
++        "expected_reduced": false
++      },
++      {
++        "id": "bond-only-redundant",
++        "smiles": "C/C=C/C=C\\C",
++        "groups": [
++          [
++            "and",
++            1,
++            [],
++            [
++              1,
++              3
++            ]
++          ]
++        ],
++        "selected": 0,
++        "expected_reduced": true
++      },
++      {
++        "id": "bond-only-distinct",
++        "smiles": "C/C=C/C=C/C",
++        "groups": [
++          [
++            "and",
++            1,
++            [],
++            [
++              1,
++              3
++            ]
++          ]
++        ],
++        "selected": 0,
++        "expected_reduced": false
++      },
++      {
++        "id": "isotope-breaks-symmetry",
++        "smiles": "[13CH3][C@H](O)[C@H](O)C",
++        "groups": [
++          [
++            "and",
++            1,
++            [
++              1,
++              3
++            ],
++            []
++          ]
++        ],
++        "selected": 0,
++        "expected_reduced": false
++      },
++      {
++        "id": "maps-conservatively-block-reduction",
++        "smiles": "[CH3:11][C@H](O)[C@H](O)[CH3:12]",
++        "groups": [
++          [
++            "and",
++            1,
++            [
++              1,
++              3
++            ],
++            []
++          ]
++        ],
++        "selected": 0,
++        "expected_reduced": false,
++        "note": "Drawn chemical configurations coincide when maps are ignored; the proof preserves source labels."
++      },
++      {
++        "id": "abs-merge-with-other-relative-group",
++        "smiles": "C[C@H](O)[C@H](O)C.N[C@H](F)Cl.[C@H](F)(Cl)Br",
++        "groups": [
++          [
++            "abs",
++            0,
++            [
++              7
++            ],
++            []
++          ],
++          [
++            "and",
++            8,
++            [
++              1,
++              3
++            ],
++            []
++          ],
++          [
++            "or",
++            9,
++            [
++              10
++            ],
++            []
++          ]
++        ],
++        "selected": 1,
++        "expected_reduced": true
++      },
++      {
++        "id": "two-other-relative-contexts",
++        "smiles": "C[C@H](O)[C@H](O)C.N[C@H](F)Cl.[C@H](F)(Cl)Br",
++        "groups": [
++          [
++            "and",
++            1,
++            [
++              1,
++              3
++            ],
++            []
++          ],
++          [
++            "or",
++            2,
++            [
++              7
++            ],
++            []
++          ],
++          [
++            "and",
++            3,
++            [
++              10
++            ],
++            []
++          ]
++        ],
++        "selected": 0,
++        "expected_reduced": true
++      },
++      {
++        "id": "explicit-h-meso",
++        "smiles": "[H][C@](C)(O)[C@@]([H])(O)C",
++        "groups": [
++          [
++            "and",
++            1,
++            [
++              1,
++              4
++            ],
++            []
++          ]
++        ],
++        "selected": 0,
++        "expected_reduced": true
++      },
++      {
++        "id": "four-substituent-alkene-distinct",
++        "smiles": "F/C(Cl)=C(/F)Cl",
++        "groups": [
++          [
++            "and",
++            1,
++            [],
++            [
++              2
++            ]
++          ]
++        ],
++        "selected": 0,
++        "expected_reduced": false
++      }
++    ]
++  },
++  "results": {
++    "cases": 672,
++    "fixtures": 12,
++    "promoted": 384,
++    "retained": 288,
++    "witnesses_verified_by_rdkit": 768,
++    "configuration_context_pairs": 1056,
++    "v3000_roundtrips": 672,
++    "decision_mismatches": 0,
++    "witness_mismatches": 0,
++    "allowed_configuration_set_mismatches": 0,
++    "metadata_mismatches": 0,
++    "input_mutations": 0,
++    "numberings_per_fixture_kind_group_order": 24,
++    "case_sha256": "d9630b2e8d1cbc9e70aec69e0a52b121a68847947e75b009cbe233cdd8db7749"
++  },
++  "rdkit_mixed_canonicalization_diagnostic": {
++    "input_atoms": [
++      3
++    ],
++    "input_bonds": [
++      1,
++      5
++    ],
++    "output_groups": [],
++    "bond_members_dropped": true
++  },
++  "rdkit_atom_only_meso_control": {
++    "output_groups": [
++      {
++        "kind": "STEREO_ABSOLUTE",
++        "atoms": [
++          1,
++          3
++        ],
++        "bonds": []
++      }
++    ],
++    "absolute_only": true
++  },
++  "limits": {
++    "atoms": 64,
++    "bonds": 128,
++    "relative_groups": 6,
++    "family_representatives": 64,
++    "default_candidate_visits": 1000000,
++    "maximum_candidate_visits": 10000000,
++    "budget_unknown_is_error": true
++  },
++  "limitations": "Preserving group identities, atom maps and tags can conservatively retain a chemically redundant group. Retained does not mean a general non-meso classification. Undefined locally tetrahedral sites, wildcard/R groups, non-tetrahedral/allene/axial stereo, query/dative/zero bonds, loops/parallel edges, stashed/conflicting/unaccounted directions fail closed. No 3D feasibility, stereogenicity cleanup, canonical representative, group renumbering, CXSMILES extension or general molecular identity claim. Same-number mixed-group interpretation follows #9705 proposal, not confirmed BIOVIA interoperability."
++}

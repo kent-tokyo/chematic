@@ -26,6 +26,10 @@ the changelog and validation pages.
 - **Compatibility CI:** keep the v1.1.2 downstream exhaustive-`Chirality`
   compile fixture in every release candidate. Treat public enum variant
   additions as semver-significant even when the new syntax is additive.
+- **Unreleased source surfaces:** publish and re-run cross-binding gates for
+  the bounded PDB/mmCIF protein projection and pre-smoothing distance-geometry
+  constraints. Until then they are source-candidate APIs, not v1.1.3 package
+  capabilities.
 - **Remaining unusual-input boundaries:** square-planar tags do not receive
   tetrahedral CIP labels; wildcard ligands return typed `oracle_unstable`;
   one isotope fixture intentionally follows Sequence Rule 2 before remote

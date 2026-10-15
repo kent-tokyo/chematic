@@ -62,9 +62,9 @@ The 24-row corpus checks adapter wiring and obvious chemical-class regressions
 only. Accuracy or performance claims require a larger frozen stratified corpus,
 exact artifact hashes, a second host, and a separate peak-RSS lane.
 
-## Current source-candidate baseline
+## Recorded source-candidate baseline
 
-On the 24-row smoke corpus, the current source candidate matches the pinned
+On the 24-row smoke corpus, the recorded source candidate matches the pinned
 RDKit reference on all 15 measured operations. The MOL V2000 round trip now
 retains `M  ISO` isotopes and coordinate-derived E/Z; those defects were found
 by this comparison and are covered by Rust regressions.
