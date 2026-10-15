@@ -79,6 +79,7 @@ nav:
   - Benchmark: benchmark.md
   - Formats & Bindings:
     - Format Capability Matrix: format-capabilities.md
+    - HIN Aromatic Bond Preservation: openbabel-hin-aromatic-bonds.md
     - Language Bindings Cross-Reference: language-bindings.md
     - Error Handling & Limits: error-and-limits.md
   - Reliability:

@@ -1,0 +1,9 @@
+; Original synthetic fixture: no upstream molecule data copied.
+mol 7 "aromatic ring — source fields"
+atom 1 C1 C ** - -0.75 1.2345678901234567 0.0 0.125 2 6 a 2 a
+atom 2 C2 C ** - 0.125 0.5 0.875 0.125 2 1 a 3 a
+atom 3 C3 C ** - 0.25 -0.5 0.875 0.125 2 2 a 4 a
+atom 4 C4 C ** - 0.125 -1.0 0.0 0.125 2 3 a 5 a
+atom 5 C5 C ** - 0.125 -0.5 -0.875 0.125 2 4 a 6 a
+atom 6 C6 C ** - 0.125 0.5 -0.875 0.125 2 5 a 1 a
+endmol 7

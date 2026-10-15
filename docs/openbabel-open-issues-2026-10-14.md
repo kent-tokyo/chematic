@@ -66,3 +66,11 @@ zero failures or ignored tests. Clippy with warnings denied and formatting
 checks passed for the changed Rust files.
 Validation concerns local source; it does not constitute package publication
 or an upstream Open Babel change.
+
+## October 15 follow-up: HIN aromatic bonds
+
+[Open Babel #3000](https://github.com/openbabel/openbabel/issues/3000) remains
+open. An independently constructed six-carbon aromatic HIN ring reproduces
+MDL query type 5 output on Open Babel 3.2.1. The new checked HIN reader maps
+`a` to the existing aromatic graph bond, so chematic emits MDL type 4.
+See the [bounded HIN profile and validation](openbabel-hin-aromatic-bonds.md).

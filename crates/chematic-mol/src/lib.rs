@@ -28,6 +28,7 @@ pub mod conversion;
 pub mod cube;
 pub mod error;
 pub mod gaussian;
+pub mod hin;
 pub mod ket;
 pub mod lammps_data;
 pub mod lammps_dump;
@@ -98,6 +99,10 @@ pub use error::MolParseError as MolError;
 pub use gaussian::{
     GaussianError, GaussianLogResult, GaussianParseLimits, parse_gaussian_log,
     parse_gaussian_log_with_limits, parse_gjf, parse_gjf_with_limits, write_gjf,
+};
+pub use hin::{
+    HinAtom, HinBond, HinError, HinParseLimits, HinRecord, parse_hin_record,
+    parse_hin_record_with_limits, write_hin_record,
 };
 pub use ket::{
     KetError, KetParseLimits, parse_ket, parse_ket_3d, parse_ket_3d_with_limits,

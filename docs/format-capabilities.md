@@ -52,6 +52,7 @@ exposed in that language. "—" in the WASM columns for CIF means CIF has
 |---|---|---|---|---|---|---|
 | SMILES | Y | Y | Y | Y (`Mol.smiles` property) | Y | Y |
 | SMARTS | Y | — (matching, not writing) | validation only | — | Y (match) | — |
+| HIN (bounded profile) | Y | exact source only | Y | exact source only | inspection JSON | exact source only |
 | MOL/SDF | Y | Y | Y | Y (`Mol.to_mol_block()`/`.to_mol_block_2d()`) | Y | Y |
 | PDB | Y | Y | Y | Y (`Mol.to_pdb(coords)`) | Y | Y (`ConformerHandle.get_conformer_pdb(idx)`) |
 | mmCIF | Y | Y | Y | Y | Y | Y |
@@ -68,6 +69,11 @@ exposed in that language. "—" in the WASM columns for CIF means CIF has
 | LAMMPS dump/trajectory | Y | Y | Y | Y | Y | Y |
 
 Notes on the cells above that need qualification:
+
+- **HIN**: one checked `mol`/`atom`/`endmol` record, reciprocal `s/d/t/a`
+  connectivity, typed source metadata and exact-source retention. No edited
+  graph writer or generic conversion-bridge route is added. See the
+  [HIN contract and Open Babel #3000 reproduction](openbabel-hin-aromatic-bonds.md).
 
 - **SMILES Python write / MOL-SDF Python write**: exposed as `Mol` object
   methods/properties (`Mol.smiles`, `Mol.to_mol_block()`/

@@ -4911,3 +4911,18 @@ def explain_rdkit_topological_torsion_code(
 ) -> list[tuple[str, int, int]]:
     """Decode a legacy RDKit torsion code into one tuple per path atom."""
     ...
+
+
+def from_hin(text: str) -> Mol:
+    """Checked HIN graph projection; charges/types/coordinates remain in the source record."""
+    ...
+
+
+def parse_hin_record_json(text: str) -> str:
+    """Inspect a single HIN record as chematic.hin-record.v1 JSON."""
+    ...
+
+
+def roundtrip_hin_record(text: str) -> str:
+    """Validate one bounded HIN record and preserve its exact source text."""
+    ...
