@@ -26,8 +26,8 @@ accuracy superiority over RDKit or COSMolKit.
 The before binary was built from main commit
 `235df7a14ea2d11724ccf329fef6675f67a76423` and has SHA-256
 `14f9dc54ccc293e7990e3ce153a791ce8764b95ff536908e77454db9fbb68b2d`.
-The candidate binary SHA-256 was
-`f6a22c6cbc22a0e2dc6c4323981e01dad302dc7576ef75c9c83caf5cd2032b2a`.
+The candidate binary SHA-256 after extracting the parser stereo helper was
+`0ab0e342322971737dfbd0a2112e574624c658b34f05296f1c60219dfe521b36`.
 
 The independent 4,072-row `stress-v1.smi` comparison stayed at 4,050
 CheMatic matches and 4,064 COSMolKit matches. Its strict string oracle may

@@ -19,6 +19,8 @@ use chematic_core::{
 
 use crate::error::SmilesError;
 
+mod stereo;
+
 pub use chematic_core::Molecule;
 
 /// Parse an OpenSMILES string into a [`Molecule`].
@@ -349,24 +351,7 @@ impl<'a> Parser<'a> {
         }
 
         let mut molecule = mol.build();
-        // Retain the parse-time vacant-site position only when exactly one
-        // non-tetrahedral coordination site is unoccupied.
-        for &center in &tagged_atoms {
-            let Some((class, _)) = molecule.atom(center).chirality.nontetrahedral() else {
-                continue;
-            };
-            let Some(order) = molecule.stereo_neighbor_order(center) else {
-                continue;
-            };
-            if order.len() != class.max_nbors() {
-                let order = order
-                    .iter()
-                    .copied()
-                    .filter(|&id| id != STEREO_VACANT_SENTINEL)
-                    .collect();
-                molecule.set_stereo_neighbor_order(center, order);
-            }
-        }
+        stereo::retain_single_vacant_site(&mut molecule, &tagged_atoms);
         crate::allene::normalize_allene_stereo(&mut molecule, &tagged_atoms);
         // A SMILES graph with no ring-closure token is a forest by
         // construction. Publish that already-known result so the first
@@ -560,29 +545,6 @@ impl<'a> Parser<'a> {
 
         let _ = current_from; // suppress unused warning
         Ok(Some(current))
-    }
-
-    /// Start a stereo record for `atom_idx` if `atom` has chirality.
-    fn begin_stereo_if_chiral(
-        atom: &Atom,
-        atom_idx: AtomIdx,
-        from_atom: Option<AtomIdx>,
-        current_stereo: &mut Option<(AtomIdx, Vec<StereoEntry>)>,
-    ) {
-        if atom.chirality == Chirality::None {
-            return;
-        }
-        let mut entries: Vec<StereoEntry> = Vec::new();
-        if let Some(prev) = from_atom {
-            entries.push(StereoEntry::Atom(prev));
-        }
-        if atom.chirality.nontetrahedral().is_some() {
-            entries.push(StereoEntry::Vacant);
-        }
-        if atom.hydrogen_count.is_some_and(|h| h > 0) {
-            entries.push(StereoEntry::ImplicitH);
-        }
-        *current_stereo = Some((atom_idx, entries));
     }
 
     /// Parse a `(...)` branch: consume `(`, parse the inner chain, then `)`.
