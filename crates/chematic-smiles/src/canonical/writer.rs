@@ -945,7 +945,15 @@ impl<'a> CanonicalWriter<'a> {
                 (Some(o), Some(c)) => remap_square_planar_tag(tag, o, c)
                     .map(Chirality::SquarePlanar)
                     .unwrap_or(Chirality::None),
-                _ => Chirality::None,
+                _ => match (
+                    <[u32; 3]>::try_from(original).ok(),
+                    <[u32; 3]>::try_from(canonical).ok(),
+                ) {
+                    (Some(o), Some(c)) => crate::writer::remap_three_ligand_square_planar(tag, o, c)
+                        .map(Chirality::SquarePlanar)
+                        .unwrap_or(Chirality::None),
+                    _ => Chirality::None,
+                },
             },
             Chirality::None => Chirality::None,
             other => crate::writer::remap_nontetrahedral(other, original, canonical),
