@@ -34,8 +34,24 @@
     "mkdocs": "strict passed",
     "git_diff_check": "passed; archived patch context spaces retain narrow attributes",
     "workspace_test_attempt": "Interrupted with SIGTERM during the existing CIP permutation oracle; 1642 tests had passed, 5 were ignored. Not a complete workspace pass.",
-    "new_integration_target_attempt": "First attempt exited 101 without diagnostic output after build-cache interference; hosted CI must validate all 27 added targets.",
-    "python_runtime": "Fresh integrated debug extension build in progress; prior isolated-candidate records retained."
+    "new_integration_target_attempt": "First local attempt exited 101 without diagnostic output; retry uses a separate task-owned build directory. No product failure diagnosis is inferred from the empty log.",
+    "python_runtime": {
+      "passed": 1032,
+      "failed": 0,
+      "suites": 29,
+      "extension_sha256": "e0442949a78c0e8f80abf4aabed0691b0f9a963d8aa7ecbc0328edc5ce0eba4d",
+      "log_sha256": "4f0ff4401ca59328630089f880bdc29758f2d8be3c971440c15ff87ac842aacc",
+      "rdkit": "2026.09.1",
+      "native_inchi": false
+    },
+    "new_integration_targets": {
+      "targets": 27,
+      "passed": 303,
+      "failed": 0,
+      "ignored": 0,
+      "log_sha256": "136358c621c1132d75e9b06f626de1dcceb03e18c6426dcdff98f2af34ac41b2",
+      "isolated_build_directory": true
+    }
   },
   "evidence_policy": "Historical candidate records preserve their original source and runtime hashes and isolation status. This integration record does not relabel those runs as tests of a published artifact.",
   "files": [
