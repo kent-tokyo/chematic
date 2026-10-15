@@ -1,0 +1,135 @@
+{
+  "id": "relative-group-alternatives-v1",
+  "license": "MIT OR Apache-2.0",
+  "provenance": {
+    "source": "Original small-molecule cases authored for declared tetrahedral/geometric group alternatives",
+    "issue": "https://github.com/rdkit/rdkit/issues/9705",
+    "date": "2026-10-15",
+    "transformations": "Select atom and bond member indices on small acyclic SMILES; no downloaded structures or attachment data",
+    "redistribution": "allowed: original project fixtures",
+    "minimization": "Conjugated dienes isolate shared direction markers; small mixed alcohols isolate atom/bond correlation; explicit H and an unselected center test preservation",
+    "oracle": "RDKit 2026.09.1, legacy perception, removeHs=False; Atom.InvertChirality and Bond.SetStereo E/Z swap with neighbour directions regenerated",
+    "spec_url": "https://www.3ds.com/assets/invest/2026-01/biovia_chemistry_2026_ctfile_formats.pdf",
+    "spec_retrieved": "2026-10-15"
+  },
+  "expected": {
+    "membership_changes": 0,
+    "indexed_graph_changes": 0,
+    "drawn_alternative_inchi_mismatches": 0,
+    "two_applications_restore_configuration": true,
+    "count_tolerance": 0
+  },
+  "cases": [
+    {
+      "id": "mixed-alcohol",
+      "smiles": "C/C=C/[C@H](O)CC",
+      "atoms": [
+        3
+      ],
+      "bonds": [
+        1
+      ]
+    },
+    {
+      "id": "diene-both",
+      "smiles": "C/C=C/C=C/C",
+      "atoms": [],
+      "bonds": [
+        1,
+        3
+      ]
+    },
+    {
+      "id": "diene-first",
+      "smiles": "C/C=C/C=C/C",
+      "atoms": [],
+      "bonds": [
+        1
+      ]
+    },
+    {
+      "id": "diene-second",
+      "smiles": "C/C=C/C=C/C",
+      "atoms": [],
+      "bonds": [
+        3
+      ]
+    },
+    {
+      "id": "alanine-center",
+      "smiles": "N[C@@H](C)C(=O)O",
+      "atoms": [
+        1
+      ],
+      "bonds": []
+    },
+    {
+      "id": "explicit-h",
+      "smiles": "[H][C@](F)(Cl)Br",
+      "atoms": [
+        1
+      ],
+      "bonds": []
+    },
+    {
+      "id": "mixed-two-bonds",
+      "smiles": "F/C=C/[C@H](C)/C=C/Cl",
+      "atoms": [
+        3
+      ],
+      "bonds": [
+        1,
+        5
+      ]
+    },
+    {
+      "id": "mixed-one-bond",
+      "smiles": "F/C=C/[C@H](C)/C=C/Cl",
+      "atoms": [
+        3
+      ],
+      "bonds": [
+        1
+      ]
+    },
+    {
+      "id": "symmetric-full-alternative",
+      "smiles": "C/C=C/[C@H](C)/C=C\\C",
+      "atoms": [
+        3
+      ],
+      "bonds": [
+        1,
+        5
+      ]
+    },
+    {
+      "id": "unselected-center",
+      "smiles": "C/C=C/[C@H](O)CC.F[C@](Cl)(Br)I",
+      "atoms": [
+        3
+      ],
+      "bonds": [
+        1
+      ]
+    },
+    {
+      "id": "eight-membered-ring",
+      "smiles": "C1/C=C/CCCCC1",
+      "atoms": [],
+      "bonds": [
+        1
+      ]
+    }
+  ],
+  "redistribution": {
+    "status": "allowed",
+    "rationale": "original project fixtures"
+  },
+  "minimization": "Conjugated dienes isolate shared direction markers; small mixed alcohols isolate atom/bond correlation; explicit H and an unselected center test preservation",
+  "oracle": {
+    "name": "direct atom/bond alternative and InChI reference",
+    "version": "RDKit 2026.09.1",
+    "settings": "legacy stereo, removeHs=False; Atom.InvertChirality, Bond.SetStereo E/Z swap, SetDoubleBondNeighborDirections; native/reference bonds matched by indexed endpoints"
+  }
+}

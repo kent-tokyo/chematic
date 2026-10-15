@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "records": [
+    {
+      "id": "fractional-mixed-left-handed-metadata",
+      "payload": "# original\nlattice_vector 4 1 0\nconstrain_relaxation x\nlattice_vector -1 5 2\nlattice_vector 1 0 -6\natom_frac 0.5 0.25 -0.5 Si\nconstrain_relaxation y\ninitial_charge 0.25\ninitial_moment -1.5\natom 1 2 3 Cl\n",
+      "provenance": "Original synthetic minimal Rust/Python contract fixture, authored 2026-10-15; official FHI-aims manual 261002 describes grammar only",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "minimization": "Two atoms, mixed frames, one skewed cell and atom/lattice-local metadata isolate source semantics",
+      "oracle": "Manual Cartesian row-basis multiplication; ASE 3.27.0 homogeneous/Cartesian projection; exact structured roundtrip",
+      "expected": {
+        "positions_angstrom": [
+          [
+            1.25,
+            1.75,
+            3.5
+          ],
+          [
+            1,
+            2,
+            3
+          ]
+        ],
+        "coordinate_kinds": [
+          "fractional",
+          "cartesian"
+        ],
+        "initial_charges": [
+          0.25,
+          null
+        ],
+        "initial_moments": [
+          -1.5,
+          null
+        ],
+        "units": "angstrom; charge +e; moment N_up-N_down",
+        "tolerance": 0
+      },
+      "sha256": "a29a18d60b88bd99eaadde60962e9bebc2c7f02a0c5f600177cf5502f6b85e25"
+    }
+  ]
+}

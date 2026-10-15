@@ -1,0 +1,582 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
+      "expected": {
+        "status": "exact ordered path vectors equal to pinned oracle",
+        "units": "sanitized-model atom/bond indices",
+        "tolerance": 0
+      },
+      "id": "empty",
+      "smiles": "",
+      "minimization": "Small empty graph isolates index/order, closure, H or graph-component behavior",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
+      "expected": {
+        "status": "exact ordered path vectors equal to pinned oracle",
+        "units": "sanitized-model atom/bond indices",
+        "tolerance": 0
+      },
+      "id": "single-carbon",
+      "smiles": "C",
+      "minimization": "Small single-carbon graph isolates index/order, closure, H or graph-component behavior",
+      "sha256": "6b23c0d5f35d1b11f9b683f0b0a617355deb11277d91ae091d399c655b87940d"
+    },
+    {
+      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
+      "expected": {
+        "status": "exact ordered path vectors equal to pinned oracle",
+        "units": "sanitized-model atom/bond indices",
+        "tolerance": 0
+      },
+      "id": "chain",
+      "smiles": "CCO",
+      "minimization": "Small chain graph isolates index/order, closure, H or graph-component behavior",
+      "sha256": "ab1de819ede91df490e6441934decfa9041b49f91d6bbadbba4df634ccff57fa"
+    },
+    {
+      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
+      "expected": {
+        "status": "exact ordered path vectors equal to pinned oracle",
+        "units": "sanitized-model atom/bond indices",
+        "tolerance": 0
+      },
+      "id": "branch",
+      "smiles": "CC(C)C",
+      "minimization": "Small branch graph isolates index/order, closure, H or graph-component behavior",
+      "sha256": "a4989e0f473ee4981c8dc330f4867df3b27e9f8185a9c92ad25d1885d924f3b9"
+    },
+    {
+      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
+      "expected": {
+        "status": "exact ordered path vectors equal to pinned oracle",
+        "units": "sanitized-model atom/bond indices",
+        "tolerance": 0
+      },
+      "id": "hetero-branch",
+      "smiles": "OC(C)C",
+      "minimization": "Small hetero-branch graph isolates index/order, closure, H or graph-component behavior",
+      "sha256": "ef167f17d425c382ca953992f06ec7c36976e772da5159d273f8753ef016a81c"
+    },
+    {
+      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
+      "expected": {
+        "status": "exact ordered path vectors equal to pinned oracle",
+        "units": "sanitized-model atom/bond indices",
+        "tolerance": 0
+      },
+      "id": "triangle",
+      "smiles": "C1CC1",
+      "minimization": "Small triangle graph isolates index/order, closure, H or graph-component behavior",
+      "sha256": "3b139ddd2a925eb70d94b87995227128eb8d99ad68e3224a9e14cee641e85b07"
+    },
+    {
+      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
+      "expected": {
+        "status": "exact ordered path vectors equal to pinned oracle",
+        "units": "sanitized-model atom/bond indices",
+        "tolerance": 0
+      },
+      "id": "square",
+      "smiles": "C1CCC1",
+      "minimization": "Small square graph isolates index/order, closure, H or graph-component behavior",
+      "sha256": "20396b751bf2e968cbb57976575ca74b9a42dfce95093715587144ca8fa306f3"
+    },
+    {
+      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
+      "expected": {
+        "status": "exact ordered path vectors equal to pinned oracle",
+        "units": "sanitized-model atom/bond indices",
+        "tolerance": 0
+      },
+      "id": "pentagon",
+      "smiles": "C1CCCC1",
+      "minimization": "Small pentagon graph isolates index/order, closure, H or graph-component behavior",
+      "sha256": "8c2e3ed84f9272bb9c74fd5bb22819f61f7bf62201fefebdac729e0137b53413"
+    },
+    {
+      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
+      "expected": {
+        "status": "exact ordered path vectors equal to pinned oracle",
+        "units": "sanitized-model atom/bond indices",
+        "tolerance": 0
+      },
+      "id": "benzene",
+      "smiles": "c1ccccc1",
+      "minimization": "Small benzene graph isolates index/order, closure, H or graph-component behavior",
+      "sha256": "13cad05ca8f49c509e5b7be8c67668484344ebf2b2d12b03b295f14d4b1c32d1"
+    },
+    {
+      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
+      "expected": {
+        "status": "exact ordered path vectors equal to pinned oracle",
+        "units": "sanitized-model atom/bond indices",
+        "tolerance": 0
+      },
+      "id": "tail-cycle",
+      "smiles": "C1CCC1C",
+      "minimization": "Small tail-cycle graph isolates index/order, closure, H or graph-component behavior",
+      "sha256": "898220207211f0118d34dd564eaa03c47da03a796e4b729e5e8fadba661efd49"
+    },
+    {
+      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
+      "expected": {
+        "status": "exact ordered path vectors equal to pinned oracle",
+        "units": "sanitized-model atom/bond indices",
+        "tolerance": 0
+      },
+      "id": "fused",
+      "smiles": "C1CCC2CCCCC2C1",
+      "minimization": "Small fused graph isolates index/order, closure, H or graph-component behavior",
+      "sha256": "716e53b4a2f4edbcf6516f8ba570fb4df31e5ec405d5f16ea37068ecaf5197ac"
+    },
+    {
+      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
+      "expected": {
+        "status": "exact ordered path vectors equal to pinned oracle",
+        "units": "sanitized-model atom/bond indices",
+        "tolerance": 0
+      },
+      "id": "bridged",
+      "smiles": "C1CC2CCC1C2",
+      "minimization": "Small bridged graph isolates index/order, closure, H or graph-component behavior",
+      "sha256": "8decb4ecd7f11859f828999b33c19adb45a76028e77179a95905ce023bd312da"
+    },
+    {
+      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
+      "expected": {
+        "status": "exact ordered path vectors equal to pinned oracle",
+        "units": "sanitized-model atom/bond indices",
+        "tolerance": 0
+      },
+      "id": "spiro",
+      "smiles": "C1CCC2(CC1)CCC2",
+      "minimization": "Small spiro graph isolates index/order, closure, H or graph-component behavior",
+      "sha256": "a52b769b28ab9b1fe2061fb323003b24d608ae8251b9d4ba5d3cfab48e7ce699"
+    },
+    {
+      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
+      "expected": {
+        "status": "exact ordered path vectors equal to pinned oracle",
+        "units": "sanitized-model atom/bond indices",
+        "tolerance": 0
+      },
+      "id": "heteroaromatic",
+      "smiles": "c1ccncc1",
+      "minimization": "Small heteroaromatic graph isolates index/order, closure, H or graph-component behavior",
+      "sha256": "75c7a4b0b41e43900bfb8055909b37897a5e104541d35413384b7ff9a1c88b83"
+    },
+    {
+      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
+      "expected": {
+        "status": "exact ordered path vectors equal to pinned oracle",
+        "units": "sanitized-model atom/bond indices",
+        "tolerance": 0
+      },
+      "id": "disconnected",
+      "smiles": "CC.CN.[Na+]",
+      "minimization": "Small disconnected graph isolates index/order, closure, H or graph-component behavior",
+      "sha256": "873d63123eaf53d8eb3710eab1ad053efcd4790d339a9c625ed60dfe366acc8c"
+    },
+    {
+      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
+      "expected": {
+        "status": "exact ordered path vectors equal to pinned oracle",
+        "units": "sanitized-model atom/bond indices",
+        "tolerance": 0
+      },
+      "id": "isotope-H",
+      "smiles": "[2H]C",
+      "minimization": "Small isotope-H graph isolates index/order, closure, H or graph-component behavior",
+      "sha256": "e87c75f2a9ad25d4e10fb64d112795fba836314e97dcccb3b399ccb77a291db1"
+    },
+    {
+      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
+      "expected": {
+        "status": "exact ordered path vectors equal to pinned oracle",
+        "units": "sanitized-model atom/bond indices",
+        "tolerance": 0
+      },
+      "id": "two-H",
+      "smiles": "[H][H]",
+      "minimization": "Small two-H graph isolates index/order, closure, H or graph-component behavior",
+      "sha256": "ea7e44a64c7461517e4f9eb140658e1650e4fe580eaa6895de3a748fdaaf72df"
+    },
+    {
+      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
+      "expected": {
+        "status": "exact ordered path vectors equal to pinned oracle",
+        "units": "sanitized-model atom/bond indices",
+        "tolerance": 0
+      },
+      "id": "removed-H",
+      "smiles": "[H]C([H])([H])[H]",
+      "minimization": "Small removed-H graph isolates index/order, closure, H or graph-component behavior",
+      "sha256": "bd513a6a68633ef519d77992210d68e444a5fb66a5c41a795b2960b7808c22eb"
+    },
+    {
+      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
+      "expected": {
+        "status": "exact ordered path vectors equal to pinned oracle",
+        "units": "sanitized-model atom/bond indices",
+        "tolerance": 0
+      },
+      "id": "dative",
+      "smiles": "N->[Cu+2]",
+      "minimization": "Small dative graph isolates index/order, closure, H or graph-component behavior",
+      "sha256": "bdf023cad7edae16678f5b5a7f6cac08c7aa9089655112f4632e275f2258b542"
+    },
+    {
+      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
+      "expected": {
+        "status": "exact ordered path vectors equal to pinned oracle",
+        "units": "sanitized-model atom/bond indices",
+        "tolerance": 0
+      },
+      "id": "multiple-bonds",
+      "smiles": "CC#CC=C",
+      "minimization": "Small multiple-bonds graph isolates index/order, closure, H or graph-component behavior",
+      "sha256": "e84b0dfb03ee64c701cdd5074a63a1ed6619a05a639bd120012ae592c55b19a3"
+    },
+    {
+      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
+      "expected": {
+        "status": "exact ordered path vectors equal to pinned oracle",
+        "units": "sanitized-model atom/bond indices",
+        "tolerance": 0
+      },
+      "id": "charged",
+      "smiles": "[O-]C(=O)C[NH3+]",
+      "minimization": "Small charged graph isolates index/order, closure, H or graph-component behavior",
+      "sha256": "764dc6aafe7afda74b4a97d6cc3fd2331511c734a375fe3108873805c898131b"
+    },
+    {
+      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
+      "expected": {
+        "status": "exact ordered path vectors equal to pinned oracle",
+        "units": "sanitized-model atom/bond indices",
+        "tolerance": 0
+      },
+      "id": "dummy",
+      "smiles": "*CC",
+      "minimization": "Small dummy graph isolates index/order, closure, H or graph-component behavior",
+      "sha256": "9a1c4ea50c9f65dab85388edba1a5e36f0fea5df00e1b166adb24f59bfe4f443"
+    },
+    {
+      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
+      "expected": {
+        "status": "exact ordered path vectors equal to pinned oracle",
+        "units": "sanitized-model atom/bond indices",
+        "tolerance": 0
+      },
+      "id": "tetrahedral",
+      "smiles": "N[C@@H](C)O",
+      "minimization": "Small tetrahedral graph isolates index/order, closure, H or graph-component behavior",
+      "sha256": "d4dabdede5f91ebc232b0bb5d4606c0f6bebba413fea9374471c6a5d59cd0dd9"
+    },
+    {
+      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
+      "expected": {
+        "status": "exact ordered path vectors equal to pinned oracle",
+        "units": "sanitized-model atom/bond indices",
+        "tolerance": 0
+      },
+      "id": "geometric",
+      "smiles": "F/C=C/F",
+      "minimization": "Small geometric graph isolates index/order, closure, H or graph-component behavior",
+      "sha256": "848be58fb2fe6d08509debd45c06cfbcdb2a108fda0891075689abdcc5672024"
+    }
+  ],
+  "golden": [
+    {
+      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
+      "expected": {
+        "paths": [
+          [
+            0
+          ],
+          [
+            2
+          ],
+          [
+            1
+          ]
+        ],
+        "units": "sanitized-model atom/bond indices",
+        "tolerance": 0
+      },
+      "id": "triangle-bond-order",
+      "smiles": "C1CC1",
+      "length": 1,
+      "params": {},
+      "minimization": "One graph/query isolates triangle-bond-order",
+      "sha256": "3b139ddd2a925eb70d94b87995227128eb8d99ad68e3224a9e14cee641e85b07"
+    },
+    {
+      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
+      "expected": {
+        "paths": [
+          [
+            0,
+            1,
+            2
+          ],
+          [
+            0,
+            2,
+            1
+          ],
+          [
+            1,
+            0,
+            2
+          ]
+        ],
+        "units": "sanitized-model atom/bond indices",
+        "tolerance": 0
+      },
+      "id": "triangle-atom-dedup",
+      "smiles": "C1CC1",
+      "length": 3,
+      "params": {
+        "use_bonds": false
+      },
+      "minimization": "One graph/query isolates triangle-atom-dedup",
+      "sha256": "3b139ddd2a925eb70d94b87995227128eb8d99ad68e3224a9e14cee641e85b07"
+    },
+    {
+      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
+      "expected": {
+        "paths": [
+          [
+            3,
+            4,
+            0,
+            1,
+            2
+          ]
+        ],
+        "units": "sanitized-model atom/bond indices",
+        "tolerance": 0
+      },
+      "id": "tail-cycle-close",
+      "smiles": "C1CCC1C",
+      "length": 5,
+      "params": {
+        "rooted_at_atom": 4
+      },
+      "minimization": "One graph/query isolates tail-cycle-close",
+      "sha256": "898220207211f0118d34dd564eaa03c47da03a796e4b729e5e8fadba661efd49"
+    },
+    {
+      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
+      "expected": {
+        "paths": [
+          [
+            4,
+            3,
+            0,
+            1,
+            2,
+            3
+          ]
+        ],
+        "units": "sanitized-model atom/bond indices",
+        "tolerance": 0
+      },
+      "id": "tail-cycle-atoms",
+      "smiles": "C1CCC1C",
+      "length": 6,
+      "params": {
+        "rooted_at_atom": 4,
+        "use_bonds": false
+      },
+      "minimization": "One graph/query isolates tail-cycle-atoms",
+      "sha256": "898220207211f0118d34dd564eaa03c47da03a796e4b729e5e8fadba661efd49"
+    },
+    {
+      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
+      "expected": {
+        "paths": [
+          [
+            0,
+            4,
+            3
+          ],
+          [
+            1,
+            2,
+            3
+          ]
+        ],
+        "units": "sanitized-model atom/bond indices",
+        "tolerance": 0
+      },
+      "id": "shortest-detours",
+      "smiles": "C1CCC1C",
+      "length": 3,
+      "params": {
+        "only_shortest_paths": true
+      },
+      "minimization": "One graph/query isolates shortest-detours",
+      "sha256": "898220207211f0118d34dd564eaa03c47da03a796e4b729e5e8fadba661efd49"
+    },
+    {
+      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
+      "expected": {
+        "paths": [
+          [
+            0
+          ],
+          [
+            1
+          ]
+        ],
+        "units": "sanitized-model atom/bond indices",
+        "tolerance": 0
+      },
+      "id": "hydrogen-singletons",
+      "smiles": "[2H]C",
+      "length": 1,
+      "params": {
+        "use_bonds": false
+      },
+      "minimization": "One graph/query isolates hydrogen-singletons",
+      "sha256": "e87c75f2a9ad25d4e10fb64d112795fba836314e97dcccb3b399ccb77a291db1"
+    },
+    {
+      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
+      "expected": {
+        "paths": [
+          [
+            0
+          ]
+        ],
+        "units": "sanitized-model atom/bond indices",
+        "tolerance": 0
+      },
+      "id": "shortest-hydrogens",
+      "smiles": "[2H]C",
+      "length": 1,
+      "params": {
+        "only_shortest_paths": true
+      },
+      "minimization": "One graph/query isolates shortest-hydrogens",
+      "sha256": "e87c75f2a9ad25d4e10fb64d112795fba836314e97dcccb3b399ccb77a291db1"
+    },
+    {
+      "provenance": "Original synthetic minimal graph recipes authored 2026-10-15; no upstream corpus copied",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; project-authored data",
+      "oracle": "RDKit 2026.09.1 Chem.FindAllPathsOfLengthN; all declared bond/atom, H, root and shortest flags after matching removal/addition and atom permutation",
+      "expected": {
+        "paths": [],
+        "units": "sanitized-model atom/bond indices",
+        "tolerance": 0
+      },
+      "id": "branched-is-not-a-path",
+      "smiles": "CC(C)C",
+      "length": 3,
+      "params": {},
+      "minimization": "One graph/query isolates branched-is-not-a-path",
+      "sha256": "a4989e0f473ee4981c8dc330f4867df3b27e9f8185a9c92ad25d1885d924f3b9"
+    }
+  ],
+  "sha256": "79db354e89aa54612a92cd4356c914caf5c826d242830bc2ae5e9513c251698c"
+}

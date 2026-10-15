@@ -38,7 +38,10 @@ pub use extension::{ExtensionError, ExtensionRegistry, ExtensionValue, MoleculeE
 pub use kekulization::{
     KekuleError, KekuleResult, apply_kekule, atom_must_be_matched, kekulize, kekulize_with,
 };
-pub use molecule::{AtomIdx, BondIdx, MolError, Molecule, MoleculeBuilder, STEREO_H_SENTINEL};
+pub use molecule::{
+    AtomIdx, BondIdx, MolError, Molecule, MoleculeBuilder, RenumberError, STEREO_H_SENTINEL,
+    STEREO_VACANT_SENTINEL, StereoGroupError,
+};
 pub use nontetrahedral::NonTetrahedralClass;
 // `StereoConfiguration`/`CanonicalStereoConfiguration`/`canonicalize_configuration`/
 // `equivalent_under_rotation` are deliberately `pub(crate)`, not re-exported

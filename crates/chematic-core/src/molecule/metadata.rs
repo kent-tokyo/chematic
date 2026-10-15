@@ -135,8 +135,8 @@ impl Molecule {
                 let new_order: Vec<u32> = order
                     .iter()
                     .filter_map(|&v| {
-                        if v == STEREO_H_SENTINEL {
-                            Some(STEREO_H_SENTINEL)
+                        if matches!(v, STEREO_H_SENTINEL | STEREO_VACANT_SENTINEL) {
+                            Some(v)
                         } else if v as usize == removed {
                             None
                         } else {
@@ -633,7 +633,8 @@ impl Molecule {
     ///
     /// Returns `None` for atoms not parsed from SMILES or without stereo.
     /// The slice contains neighbor atom indices in SMILES text order;
-    /// [`STEREO_H_SENTINEL`] (`u32::MAX`) marks the implicit bracket-H slot.
+    /// [`STEREO_H_SENTINEL`] marks bracket H; [`STEREO_VACANT_SENTINEL`]
+    /// marks an unoccupied non-tetrahedral coordination site.
     ///
     /// # Invariant
     ///

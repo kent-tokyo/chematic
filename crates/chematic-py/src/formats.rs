@@ -8,11 +8,39 @@ use std::sync::Arc;
 
 mod hin;
 use hin::*;
+mod cjson;
+use cjson::*;
 mod cif;
 use cif::*;
+mod cdjson;
+use cdjson::*;
+mod fhiaims;
+use fhiaims::*;
+mod dmol3;
+use dmol3::*;
+mod mopac;
+use mopac::*;
+mod exyz;
+use exyz::*;
+mod gro;
+mod gzmat;
+use gzmat::*;
+mod rdfile;
+use rdfile::*;
+mod turbomole;
+use turbomole::*;
 mod interchange;
 mod materials;
+mod mmcif_pdb;
+mod pdb_selection;
+use pdb_selection::*;
+mod mmcif_residues;
+use mmcif_pdb::*;
+use mmcif_residues::*;
+mod pqr_pdbqt;
+use pqr_pdbqt::*;
 mod xyz;
+use gro::parse_gro;
 use interchange::*;
 use materials::*;
 pub(crate) use materials::{dict_get, dict_get_opt, dict_get_required};
@@ -558,35 +586,6 @@ fn from_mrv_block(mrv_str: &str) -> PyResult<Mol> {
             props: Default::default(),
         })
         .map_err(|e| PyValueError::new_err(e.to_string()))
-}
-
-/// Parse a ChemicalJSON (.cjson) string.
-///
-/// Returns ``(mol, coords)`` where ``coords`` is a list of ``[x, y, z]``
-/// coordinate triples (Å), one per heavy atom.  ``coords`` is empty when
-/// the file has no ``atoms.coords.3d`` field.
-///
-/// ChemicalJSON is the native format of Avogadro 2 and the MolSSI
-/// Open Chemistry toolkit.
-///
-/// Raises ``ValueError`` on parse failure.
-///
-///     mol, coords = chematic.from_cjson(open("mol.cjson").read())
-///     print(mol.smiles)
-///     # Round-trip:
-///     open("out.cjson", "w").write(mol.to_cjson(coords))
-#[pyfunction]
-fn from_cjson(cjson_str: &str) -> PyResult<(Mol, Vec<Vec<f64>>)> {
-    let (mol, coords) =
-        chematic_mol::parse_cjson(cjson_str).map_err(|e| PyValueError::new_err(e.to_string()))?;
-    let py_coords = coords.iter().map(|&(x, y, z)| vec![x, y, z]).collect();
-    Ok((
-        Mol {
-            inner: Arc::new(mol),
-            props: Default::default(),
-        },
-        py_coords,
-    ))
 }
 
 /// Parse a MolJSON string into a ``Mol`` object.
@@ -1378,6 +1377,8 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     register_pyfunctions!(
         m,
         from_smiles,
+        parse_cdjson,
+        write_cdjson_graph,
         canonicalize_smiles_batch_json,
         from_cxsmiles,
         from_condensed,
@@ -1443,11 +1444,31 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         parse_smi_file,
         write_smi_file,
         parse_mmcif,
+        parse_gro,
+        parse_rdfile,
+        write_rdfile,
+        rdfile_to_smiles,
+        cartesian_to_zmatrix,
+        write_gzmat,
+        parse_fhiaims,
+        write_fhiaims,
+        parse_dmol3,
+        write_dmol3,
+        select_pdb_atoms,
+        parse_mopac_cartesian,
+        write_mopac_cartesian,
+        parse_exyz,
+        write_exyz,
+        parse_turbomole,
+        write_turbomole,
+        parse_mmcif_residues,
+        mmcif_to_pdb_checked,
         protein_from_pdb_json,
         protein_from_mmcif_json,
         write_mmcif,
         parse_pqr,
         write_pqr,
+        pqr_to_pdbqt,
         infer_element,
         parse_orca_input,
         write_orca_input,

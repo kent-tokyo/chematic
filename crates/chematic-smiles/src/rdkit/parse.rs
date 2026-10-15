@@ -7,7 +7,9 @@
 //! closure begin atoms, `/` `\` directions relative to each bond's begin
 //! atom and chiral tags relative to RDKit's bond order.
 
-use chematic_core::{AtomIdx, BondIdx, BondOrder, Chirality, Molecule, STEREO_H_SENTINEL};
+use chematic_core::{
+    AtomIdx, BondIdx, BondOrder, Chirality, Molecule, STEREO_H_SENTINEL, STEREO_VACANT_SENTINEL,
+};
 
 use super::RdkitSmilesError;
 use super::mol::{
@@ -166,7 +168,7 @@ pub(crate) fn from_chematic_ordered(
             // the atom's own position.
             let mut closures: Vec<usize> = Vec::new();
             for &nb in text {
-                if nb == STEREO_H_SENTINEL {
+                if matches!(nb, STEREO_H_SENTINEL | STEREO_VACANT_SENTINEL) {
                     continue;
                 }
                 let (bidx, _) = mol
@@ -199,9 +201,12 @@ pub(crate) fn from_chematic_ordered(
             if bonds.len() != out.degree(a) {
                 return Err(unsupported("stereo neighbour order out of sync"));
             }
-            let is_start = !mol
-                .neighbors(aidx)
-                .any(|(nb, b)| (nb.0 as usize) < a && !is_closure[b.0 as usize]);
+            let is_start = if text.contains(&STEREO_VACANT_SENTINEL) {
+                text.first() == Some(&STEREO_VACANT_SENTINEL)
+            } else {
+                !mol.neighbors(aidx)
+                    .any(|(nb, b)| (nb.0 as usize) < a && !is_closure[b.0 as usize])
+            };
             insert_implicit_nbors(&mut bonds, class, is_start);
             out.atoms[a].chiral = written;
             out.atoms[a].chiral_perm = perm;
@@ -213,7 +218,7 @@ pub(crate) fn from_chematic_ordered(
         // without the bracket H.
         let mut smiles_bonds = Vec::with_capacity(text.len());
         for &nb in text {
-            if nb == STEREO_H_SENTINEL {
+            if matches!(nb, STEREO_H_SENTINEL | STEREO_VACANT_SENTINEL) {
                 continue;
             }
             let (bidx, _) = mol

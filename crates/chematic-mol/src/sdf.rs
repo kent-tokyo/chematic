@@ -13,11 +13,13 @@ use chematic_core::{Coords3D, Molecule};
 use chematic_perception::{EzDirectionDiagnostic, StereoDiagnostic};
 
 mod dataset;
-mod fields;
-pub use dataset::{SdfDataset, SdfRecordMetadata};
 mod ensemble;
+mod fields;
+mod selection;
+pub use dataset::{SdfDataset, SdfRecordMetadata};
 pub use ensemble::{ConformerEnsemble, read_sdf_conformer_ensembles};
 use fields::parse_sd_fields;
+pub use selection::{SdfIndexedBatch, SdfSelectionError, SdfSelectionLimits};
 
 fn is_v3000_record(block: &str) -> bool {
     block
@@ -26,19 +28,19 @@ fn is_v3000_record(block: &str) -> bool {
         .is_some_and(|line| line.trim_end().ends_with("V3000"))
 }
 
-// Search physical lines after the four-line MOL header. A title, comment or
-// SD value containing "M  END" is not a CTAB terminator.
+// Search physical lines after the four-line MOL header. V2000 readers accept
+// leading whitespace and trailing text on the terminator, while excluding the
+// title/comment header and later SD values from consideration.
 fn sdf_ctab_end(block: &str) -> Option<usize> {
     let mut end = 0;
     for (index, line) in block.split_inclusive('\n').enumerate() {
         end += line.len();
-        if index >= 4 && line.trim_end_matches(['\r', '\n']) == "M  END" {
+        if index >= 4 && line.trim_start().starts_with("M  END") {
             return Some(end);
         }
     }
     None
 }
-
 fn sdf_ctab(block: &str) -> &str {
     &block[..sdf_ctab_end(block).unwrap_or(block.len())]
 }
