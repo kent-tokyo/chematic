@@ -70,3 +70,12 @@ a source-built chematic Python extension and a pinned installed Open Babel
 binary. It records both MDL bond-type lists, source/artifact hashes and raw
 outputs. This checks Open Babel #3000's bounded bond semantics, not general
 chemical equivalence or performance.
+
+### CCD molecular templates
+
+`validate_ccd.py --download` caches eight official RCSB component files, compares
+CCD atom/bond/coordinate fields against pinned Gemmi 0.7.5, and records the local
+Open Babel CIF/mmCIF diagnostic. It needs a source-built Python extension and
+Gemmi in the oracle environment. Result hashes identify the downloaded bytes;
+the hermetic CI fixture is independently authored. This validates single CCD
+components, not a bulk dictionary or package release.

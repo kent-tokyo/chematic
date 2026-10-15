@@ -8,6 +8,10 @@ use std::sync::Arc;
 
 mod hin;
 use hin::*;
+
+mod ccd;
+use ccd::*;
+
 mod cjson;
 use cjson::*;
 mod cif;
@@ -1443,6 +1447,8 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         nearest_neighbors_from_fp,
         parse_smi_file,
         write_smi_file,
+        parse_ccd_json,
+        from_ccd,
         parse_mmcif,
         parse_gro,
         parse_rdfile,

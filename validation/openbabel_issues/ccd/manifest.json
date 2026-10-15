@@ -1,0 +1,10 @@
+{
+  "issue": "https://github.com/openbabel/openbabel/issues/1516",
+  "fixture": "water.cif",
+  "sha256": "855408ea13040ddd1f9d1f96e0c93d6ecc3d8720bd71e425537186832b0b91c1",
+  "provenance": "Original synthetic water template authored from the wwPDB CCD category definitions; no upstream attachment, external molecule data or code copied",
+  "license": "MIT OR Apache-2.0",
+  "external_oracle": "Official RCSB CCD files are downloaded by validate_ccd.py into a local cache; URLs and hashes are retained in the result report",
+  "external_record_data_license": "CC0-1.0",
+  "external_usage_policy": "https://www.wwpdb.org/about/usage-policies"
+}
