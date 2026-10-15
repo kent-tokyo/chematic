@@ -399,6 +399,11 @@ class Mol:
     ) -> list[list[float]]:
         """``Chem.Get3DDistanceMatrix(m, useAtomWts)`` for ``coords``."""
         ...
+    def rdkit_distance_matrix_3d_checked(
+        self, coords: list[list[float]], use_atom_wts: bool = False
+    ) -> list[list[float]]:
+        """Bounded finite 3D matrix with a scaled norm fallback for extreme distances."""
+        ...
     def rdkit_all_conformer_best_rms(
         self,
         conformers: list[list[list[float]]],

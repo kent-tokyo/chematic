@@ -20,6 +20,7 @@ const WASM_MAX_SMARTS_MATCHES: usize = 10_000;
 
 mod ccd;
 pub use ccd::*;
+mod checked_matrices;
 mod ensemble_v2;
 mod format_io;
 mod hin;

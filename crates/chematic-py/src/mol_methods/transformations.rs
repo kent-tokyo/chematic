@@ -601,6 +601,19 @@ impl Mol {
             .map_err(|e| PyValueError::new_err(e.to_string()))
     }
 
+    /// Checked 3D matrix: finite coordinates and results, bounded dimensions,
+    /// scaled fallback for representable extreme distances. Prepared atom order
+    /// is the same as rdkit_distance_matrix_3d; legacy behavior is unchanged.
+    #[pyo3(signature = (coords, use_atom_wts = false))]
+    fn rdkit_distance_matrix_3d_checked(
+        &self,
+        coords: Vec<[f64; 3]>,
+        use_atom_wts: bool,
+    ) -> PyResult<Vec<Vec<f64>>> {
+        chematic_smiles::rdkit_distance_matrix_3d_checked(&self.inner, &coords, use_atom_wts)
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
     /// RDKit 2026.03.1's ``Chem.DetectChemistryProblems(Chem.MolFromSmiles(s))``
     /// on RDKit's sanitized molecule: ``[(type, atom_indices)]`` (see
     /// :func:`chematic.rdkit_detect_chemistry_problems` for unsanitized input).

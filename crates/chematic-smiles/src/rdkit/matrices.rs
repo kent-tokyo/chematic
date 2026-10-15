@@ -1,6 +1,9 @@
 //! `MolOps::getDistanceMat` and `MolOps::get3DDistanceMat` (RDKit
 //! 2026.03.1 `Matrices.cpp`).
 
+mod checked_3d;
+pub use checked_3d::rdkit_distance_matrix_3d_checked;
+
 use super::{RdkitSmilesError, mol::Mol};
 use chematic_core::Molecule;
 
