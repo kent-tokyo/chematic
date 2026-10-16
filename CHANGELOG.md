@@ -16,6 +16,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Rust/Python `rdkit_pick_tautomer` selects from caller-supplied candidates
+  using the existing RDKit-port score and canonical-SMILES ties. Empty input,
+  oversized input and unsupported candidates return explicit errors; Python
+  generators own their yielded molecules and preserve selected metadata.
+  See [candidate selection](docs/tautomer-candidate-selection.md).
 - Rust/Python `FeaturePatternSet` owns up to 32 caller-supplied SMARTS feature
   definitions and produces full-width atom masks or native circular feature
   fingerprints. Matching budgets and size limits refuse partial output;

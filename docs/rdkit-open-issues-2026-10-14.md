@@ -107,3 +107,12 @@ Bold/Hash/Dash inference already existed, but Python and WASM could not opt in.
 screen-coordinate, hashed-sense and directional ownership defects in the
 reader. Default non-directional markers remain unassigned. This validates
 bounded molecular reading, not binary CDX or a general ChemDraw writer.
+
+## October 17 follow-up: supplied tautomer candidates
+
+[#9601](https://github.com/rdkit/rdkit/issues/9601) remains open. Added
+[checked Rust/Python candidate selection](tautomer-candidate-selection.md)
+using the existing RDKit-port score and lexical tie policy. Empty input and
+count/size overflow are explicit errors; Python owns each yielded molecule
+and copies the winning metadata. This is one bounded part of the tracking
+issue, not a complete nanobind-wrapper replacement.

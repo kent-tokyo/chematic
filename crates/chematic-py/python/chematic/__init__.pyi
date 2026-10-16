@@ -25,6 +25,18 @@ _FileSystemPath = str | bytes | PathLike[str] | PathLike[bytes]
 
 __version__: str
 
+def rdkit_pick_tautomer(candidates: Iterable[Mol], *, max_candidates: int = 1000) -> Mol:
+    """Copy the highest-scoring supplied Mol; do not enumerate or clean stereo.
+
+    Uses the existing RDKit-port score, then smallest canonical SMILES and
+    first occurrence. Preserves source metadata. Empty inputs, limits outside
+    1..4096, more than max_candidates items, unsupported chemistry and inputs
+    above 1024 atoms/4096 bonds raise ValueError. Non-Mol items raise TypeError;
+    iterator exceptions propagate. Consumes at most max_candidates + 1 items.
+    Integers outside signed 64-bit range raise OverflowError. No custom
+    scorer or tautomer-family validation is provided.
+    """
+
 class SmartsParityOk(TypedDict):
     status: Literal["ok"]
     reason: None

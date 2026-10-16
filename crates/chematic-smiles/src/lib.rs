@@ -61,11 +61,12 @@ pub use error::SmilesError;
 pub use parser::{SmilesParseLimits, parse, parse_template, parse_with_limits};
 pub use random_smiles::{random_smiles, random_smiles_vect};
 pub use rdkit::{
-    InchiOutputAtom, InchiOutputStereo0D, OgbGraphFeatures, RdkitAlignment, RdkitAtomEnvironment,
-    RdkitAtomEnvironmentLimits, RdkitChemistryProblem, RdkitCleanupEdits, RdkitHashFunction,
-    RdkitLegacyStereo, RdkitMol2Molecule, RdkitMolBlock, RdkitMolBlockAtom, RdkitMolBlockBond,
-    RdkitMolView, RdkitPathLimits, RdkitPathParams, RdkitPdbMolecule, RdkitSanitizedModel,
-    RdkitSmilesError, RdkitSmilesParams, RdkitTautomerEnumeration, RdkitTautomerStatus,
+    InchiOutputAtom, InchiOutputStereo0D, OgbGraphFeatures, RDKIT_TAUTOMER_PICK_MAX_CANDIDATES,
+    RdkitAlignment, RdkitAtomEnvironment, RdkitAtomEnvironmentLimits, RdkitChemistryProblem,
+    RdkitCleanupEdits, RdkitHashFunction, RdkitLegacyStereo, RdkitMol2Molecule, RdkitMolBlock,
+    RdkitMolBlockAtom, RdkitMolBlockBond, RdkitMolView, RdkitPathLimits, RdkitPathParams,
+    RdkitPdbMolecule, RdkitSanitizedModel, RdkitSmilesError, RdkitSmilesParams,
+    RdkitTautomerEnumeration, RdkitTautomerPick, RdkitTautomerPickError, RdkitTautomerStatus,
     RdkitViewAtom, RdkitViewBond, Transform3D, ogb_graph_features, ogb_graph_features_with_options,
     rdkit_2d_coords, rdkit_added_hs_molecule, rdkit_addhs_first_pattern, rdkit_adjacency_matrix,
     rdkit_align_mol, rdkit_align_points, rdkit_all_conformer_best_rms,
@@ -81,7 +82,7 @@ pub use rdkit::{
     rdkit_mol_from_mol2_block, rdkit_mol_from_pdb_block, rdkit_mol_from_xyz_block, rdkit_mol_hash,
     rdkit_mol_view, rdkit_molecule_from_inchi_output, rdkit_murcko_scaffold, rdkit_num_atoms,
     rdkit_num_pi_electrons, rdkit_parsed_molecule, rdkit_paths_of_length,
-    rdkit_paths_of_length_with_limits, rdkit_pdb_block, rdkit_random_smiles,
+    rdkit_paths_of_length_with_limits, rdkit_pdb_block, rdkit_pick_tautomer, rdkit_random_smiles,
     rdkit_random_smiles_with, rdkit_reaction_to_smarts, rdkit_sanitized_model, rdkit_shortest_path,
     rdkit_smarts, rdkit_smarts_to_smarts, rdkit_smiles, rdkit_stereoisomer_count,
     rdkit_stereoisomer_smiles, rdkit_tautomer_score, register_rdkit_model_hook,

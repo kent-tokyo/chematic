@@ -52,6 +52,7 @@ mod reactions;
 mod reports;
 mod rwmol;
 mod similarity;
+mod tautomer_pick;
 mod volumetric;
 
 mod bulk;
