@@ -56,6 +56,7 @@ pub use rdkit_sssr_order::{
 };
 pub use relevant_cycles::{
     RelevantCyclesTooMany, relevant_cycle_counts, relevant_cycles, relevant_cycles_from_graph,
+    relevant_cycles_with_limits,
 };
 pub use ring_family::{RingFamily, RingSystemKind, find_ring_families, find_ring_families_over};
 

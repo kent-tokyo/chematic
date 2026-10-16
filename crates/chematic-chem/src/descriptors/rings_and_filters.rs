@@ -68,7 +68,14 @@ fn rdkit_num_rings_uncached(mol: &Molecule) -> usize {
                 && !chematic_perception::rdkit_organometallic_dative_bonds(mol)
                     .iter()
                     .any(|&dative| dative)
-                && let Ok(rings) = chematic_perception::relevant_cycles(mol, MAX_RELEVANT_RINGS)
+                && let Ok(rings) = chematic_perception::relevant_cycles_with_limits(
+                    mol,
+                    // Stop once the fallback below is certain. Keep the
+                    // original path cap: overlapping shortest paths need
+                    // not produce equally many distinct output rings.
+                    legacy_count.saturating_mul(3).min(MAX_RELEVANT_RINGS),
+                    MAX_RELEVANT_RINGS,
+                )
             {
                 // RingDecomposerLib keeps the independent relevant families,
                 // not every combination of equal shortest paths.  The graph

@@ -19,8 +19,8 @@
 
 use chematic_core::{AtomIdx, BondOrder, Molecule};
 
-/// More relevant cycles than the caller's cap (families of equally short
-/// rings in large fused or cage systems can grow combinatorially).
+/// Relevant-cycle output or shortest-path expansion exceeds the caller's
+/// cap (families in large fused or cage systems can grow combinatorially).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct RelevantCyclesTooMany {
     /// The cap that was exceeded.
@@ -321,8 +321,14 @@ impl CycleGraph {
 }
 
 fn meet_only_at_root(a: &[usize], b: &[usize]) -> bool {
-    let (a, b) = (&a[..a.len() - 1], &b[..b.len() - 1]);
-    a.iter().all(|vertex| !b.contains(vertex))
+    // Both are shortest paths to the same root, stored root last. A shared
+    // vertex has the same root distance in either path, so compare equal
+    // depths once instead of scanning the other path for every vertex.
+    a.iter()
+        .rev()
+        .skip(1)
+        .zip(b.iter().rev().skip(1))
+        .all(|(left, right)| left != right)
 }
 
 fn reduce_by_basis(basis: &[(usize, Vec<u64>)], vector: &mut [u64]) {
@@ -388,6 +394,7 @@ fn expand_relevant_families(
     searches: &[Option<RootSearch>],
     relevant: &[usize],
     max_cycles: usize,
+    max_paths: usize,
 ) -> Result<Vec<Vec<AtomIdx>>, RelevantCyclesTooMany> {
     let mut seen = std::collections::HashSet::new();
     let mut rings = Vec::new();
@@ -398,10 +405,10 @@ fn expand_relevant_families(
             Closure::Odd { y, z } => (y, z, None),
             Closure::Even { p, y, q } => (p, q, Some(y)),
         };
-        let paths_a = all_shortest_paths(search, a, max_cycles)
-            .ok_or(RelevantCyclesTooMany { cap: max_cycles })?;
-        let paths_b = all_shortest_paths(search, b, max_cycles)
-            .ok_or(RelevantCyclesTooMany { cap: max_cycles })?;
+        let paths_a = all_shortest_paths(search, a, max_paths)
+            .ok_or(RelevantCyclesTooMany { cap: max_paths })?;
+        let paths_b = all_shortest_paths(search, b, max_paths)
+            .ok_or(RelevantCyclesTooMany { cap: max_paths })?;
         for path_a in &paths_a {
             for path_b in &paths_b {
                 if !meet_only_at_root(path_a, path_b) {
@@ -440,8 +447,24 @@ pub fn relevant_cycles(
     mol: &Molecule,
     max_cycles: usize,
 ) -> Result<Vec<Vec<AtomIdx>>, RelevantCyclesTooMany> {
+    relevant_cycles_with_limits(mol, max_cycles, max_cycles)
+}
+
+/// Relevant cycles with separate limits on output rings and shortest paths
+/// per candidate endpoint. This allows a caller that rejects oversized ring
+/// families to stop expansion early without also rejecting a smaller family
+/// merely because it has many overlapping shortest paths.
+///
+/// On success, returns the same rings in the same order as [`relevant_cycles`]
+/// with both limits set to the larger of these limits. An exceeded limit is
+/// reported in [`RelevantCyclesTooMany::cap`]; partial results are not returned.
+pub fn relevant_cycles_with_limits(
+    mol: &Molecule,
+    max_cycles: usize,
+    max_paths: usize,
+) -> Result<Vec<Vec<AtomIdx>>, RelevantCyclesTooMany> {
     let graph = CycleGraph::from_molecule(mol);
-    relevant_cycle_indices(&graph, max_cycles).map(|rings| {
+    relevant_cycle_indices(&graph, max_cycles, max_paths).map(|rings| {
         rings
             .into_iter()
             .map(|ring| {
@@ -463,19 +486,28 @@ pub fn relevant_cycles_from_graph(
     max_cycles: usize,
 ) -> Result<Vec<Vec<usize>>, RelevantCyclesTooMany> {
     let graph = CycleGraph::from_bonds(n_atoms, bonds);
-    relevant_cycle_indices(&graph, max_cycles)
+    relevant_cycle_indices(&graph, max_cycles, max_cycles)
 }
 
 fn relevant_cycle_indices(
     graph: &CycleGraph,
     max_cycles: usize,
+    max_paths: usize,
 ) -> Result<Vec<Vec<usize>>, RelevantCyclesTooMany> {
     if !graph.has_cycles() {
         return Ok(Vec::new());
     }
     let (candidates, searches) = graph.collect_candidates();
     let relevant = relevant_candidate_indices(&candidates);
-    expand_relevant_families(graph, &candidates, &searches, &relevant, max_cycles).map(|rings| {
+    expand_relevant_families(
+        graph,
+        &candidates,
+        &searches,
+        &relevant,
+        max_cycles,
+        max_paths,
+    )
+    .map(|rings| {
         rings
             .into_iter()
             .map(|ring| ring.into_iter().map(|atom| atom.0 as usize).collect())
@@ -600,3 +632,7 @@ mod tests {
 #[cfg(test)]
 #[path = "relevant_cycles_path_tests.rs"]
 mod path_tests;
+
+#[cfg(test)]
+#[path = "relevant_cycles_limits_tests.rs"]
+mod limits_tests;
