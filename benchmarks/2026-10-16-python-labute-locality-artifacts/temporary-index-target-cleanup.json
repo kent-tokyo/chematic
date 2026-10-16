@@ -1,0 +1,2407 @@
+[
+  {
+    "path": "benchmarks/2026-10-12-a6-multiconformer-etkdg-mmff-summary.json",
+    "size": 2100,
+    "sha256": "16ec3d38be84ef8055a82e5f78d740194c8f8fc51223433093a72118f612924b"
+  },
+  {
+    "path": "benchmarks/2026-10-10-cdk-indigo-smoke-benchmark.json",
+    "size": 655364,
+    "sha256": "8f61e11b11ba331ba737d10ccd7f3f60b7a53da028dd662fb99ef6a519cd9880"
+  },
+  {
+    "path": "benchmarks/2026-09-09-same-process-pdb-contract-v1.0.10.json",
+    "size": 1532,
+    "sha256": "24d29c917ed4422bb8696b82b1a47e8ff5f55801c2549d6533668d281d067cc1"
+  },
+  {
+    "path": "benchmarks/2026-10-11-rdkit-2026-09-accuracy-speed-candidate.json",
+    "size": 19053,
+    "sha256": "386f26fc6185c10ff516c912c9d40f90313ee935b56bdb19cd6a17d3b3c69658"
+  },
+  {
+    "path": "benchmarks/2026-09-06-wasm-size-v1.0.7.md",
+    "size": 1084,
+    "sha256": "44de8d10e7676512450f048b3850c71854db5114dc0c8a08d1ccd69695106857"
+  },
+  {
+    "path": "benchmarks/2026-10-13-mmff-final-energy-cache.md",
+    "size": 1535,
+    "sha256": "8e1faf098cb0ed43535948cbd7ec9df3c32d672ff8b8f0520ef5f1930475dde4"
+  },
+  {
+    "path": "benchmarks/2026-10-06-734-754-followups-batch11.md",
+    "size": 8013,
+    "sha256": "1efe1278d33acc1ce1a71a388de309b46a038ed0f03fa4fb7497863e6537b06e"
+  },
+  {
+    "path": "benchmarks/2026-10-05-mol-stereo-cip-mmff-followups.md",
+    "size": 8203,
+    "sha256": "0cba30f4bc653e8bd7e0ebe1061d44d38f65a3bd068b5cffe6d7e104eed12068"
+  },
+  {
+    "path": "benchmarks/2026-09-07-streaming-equivalent.md",
+    "size": 1829,
+    "sha256": "4ecfbe2232d0038f4b54efc50601752f9d5d9f29ca9bb8abdb919996d46a8bab"
+  },
+  {
+    "path": "benchmarks/2026-10-16-openbabel-sdf-buffered-main.md",
+    "size": 15593,
+    "sha256": "d142a6f8ebea9f207688f93ce505b0f43144742ea4e06d3a9d78e3a09f71675b"
+  },
+  {
+    "path": "benchmarks/2026-09-09-reaction-3d-focus-v1.0.10.md",
+    "size": 929,
+    "sha256": "c615b96c2cdc0741f3abe78ddee5f6731c4373baa3b9999699c037889ad1b238"
+  },
+  {
+    "path": "benchmarks/2026-09-09-3d-class-failure-rates-v1.0.10.md",
+    "size": 1027,
+    "sha256": "eaed64726d6e8b90b9beb10c7ffbda767ed46867736e5e099aff160eb58ad0fd"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-scalar-stereo-parity.json",
+    "size": 12496,
+    "sha256": "6435be75a456875634a908631671aeb197c5b82e5d779473494a518825863781"
+  },
+  {
+    "path": "benchmarks/2026-10-14-openbabel-v3000-speed-5000-paired21.json",
+    "size": 74819,
+    "sha256": "ac5dff49092bb5e72b460be7b50bc180bc92bd07aac5fd789bdf1507a94b36fc"
+  },
+  {
+    "path": "benchmarks/2026-10-10-rdkit-cosmolkit-performance-candidate.md",
+    "size": 4456,
+    "sha256": "472d8a7a6693ddc3f56c5345aa677b8482831291252dcd73475621ec32703100"
+  },
+  {
+    "path": "benchmarks/2026-10-02-v1.0.30-vs-rdkit-paired-hba.json",
+    "size": 10428,
+    "sha256": "27ab8ad5c1f1c98bb95f149fb61e9d116ec5725fa96311b49fec971eac22e3fa"
+  },
+  {
+    "path": "benchmarks/2026-10-15-openbabel-0d-stereo.md",
+    "size": 2146,
+    "sha256": "d1a921ea6a45d5624773f2d4c6b029abf108c99246693bd6d97b7ad73c618995"
+  },
+  {
+    "path": "benchmarks/2026-10-03-source-smarts-k6-mixed-size.md",
+    "size": 2056,
+    "sha256": "a1b1d62fc0c1c6b87e3f050846127f88e007a26174886874e61d13508847e75c"
+  },
+  {
+    "path": "benchmarks/2026-09-09-streaming-cross-engine-matrix-v1.0.10.md",
+    "size": 1597,
+    "sha256": "ef3ecb9a2133333eae111c65034ff730de8293f527180f73d2b1eb2aec328b13"
+  },
+  {
+    "path": "benchmarks/2026-10-03-source-smarts-dense-cage-rings.md",
+    "size": 2424,
+    "sha256": "175cb43fb6efd9bceaed2c9a4f948b4276b754e46ab5059ee7736d5461e4d23a"
+  },
+  {
+    "path": "benchmarks/2026-09-09-same-process-v3000-mol-contract-v1.0.10.md",
+    "size": 953,
+    "sha256": "e9ffe2252640278df5a7a2dfb7efbf994684a5f48b2eec0956d00cb34dfa1ad7"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-scalar-stereo-slice5000-paired20.json",
+    "size": 162379,
+    "sha256": "57f47865b57f09580f72297e4d22885cc908abe9a8e92b6e82db1339a09445a8"
+  },
+  {
+    "path": "benchmarks/2026-10-15-openbabel-v3000-stereo.json",
+    "size": 252615,
+    "sha256": "a929aed6645d55bf0d72deb9056d69994e3e8535cd4588d88ff2db28dfe2c518"
+  },
+  {
+    "path": "benchmarks/2026-09-08-streaming-gzip-openbabel-pdb.md",
+    "size": 1560,
+    "sha256": "4789ff7d5c0e3c37a019ee83cc45c908162cf76ff780794f31597e3edfcf68d8"
+  },
+  {
+    "path": "benchmarks/2026-10-04-rdkit-2026-09-1-python-baseline.md",
+    "size": 5801,
+    "sha256": "c662138bf18244628ebb26c46736699ebf36b3217e1594f2f335e8137f488d50"
+  },
+  {
+    "path": "benchmarks/2026-09-10-same-process-xyz-contract-v1.0.10.json",
+    "size": 1334,
+    "sha256": "e150320a51a31d2fa73b4c8ced3f41f6299c928b720628fe99d6535d6fdc6f46"
+  },
+  {
+    "path": "benchmarks/2026-09-08-streaming-cross-engine-v3000.md",
+    "size": 1089,
+    "sha256": "fd75b8a1a7037f4bee498e48a439617f51142347afb228e6bd2bf458ce4b760e"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-cycle-root-pruning-source.json",
+    "size": 2113,
+    "sha256": "eccd09a1b4283ed0464ed5240ef28c367212629540e97d009232a751c3861803"
+  },
+  {
+    "path": "benchmarks/2026-10-16-chemistry-speed-followups.md",
+    "size": 2548,
+    "sha256": "fd98a6ffafd90431484c93f1f4c5da4813514bb3748c9c99255798111aa2e751"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-kekule-view-reuse-slice5000-paired20.json",
+    "size": 579864,
+    "sha256": "edb3bc124105eda03ad5c978b550e56bb46087c69a6c8d002788cdde35fff772"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-cycle-path-reuse-slice0-paired20.json",
+    "size": 159924,
+    "sha256": "ffc349dfd4cd3d935bb23d7877a51deb04043966aba4d7911d2472071507fc90"
+  },
+  {
+    "path": "benchmarks/2026-09-09-uff-prepared-topology-v1.0.10.md",
+    "size": 1004,
+    "sha256": "d4c78e76f269974e0efbb1b8f718e96f60094362ff300872f3a542e6348dd428"
+  },
+  {
+    "path": "benchmarks/2026-10-02-v1.0.29-vs-v1.0.30-paired-ring-prepared.json",
+    "size": 17679,
+    "sha256": "40b2604392a0277d6b7c2f1d76bd6d5733b5d71cf68395b30a43836ee11b4f68"
+  },
+  {
+    "path": "benchmarks/2026-10-03-v1029-v1030-rdkitjs-node-isolated-paired20.json",
+    "size": 389642,
+    "sha256": "edb2b289698dc022db9791b0307f6cb001b141d961045324a524b60e0882ae37"
+  },
+  {
+    "path": "benchmarks/2026-09-05-descriptor-streaming.md",
+    "size": 2457,
+    "sha256": "44239c362fbeddf8d733d094d67c4eead30d554f428a99b8c000ddcaebaac4ee"
+  },
+  {
+    "path": "benchmarks/2026-10-02-v1.0.29-vs-v1.0.30-paired-hba.json",
+    "size": 17434,
+    "sha256": "700bbd81ef180b803c4b3dca89401bfca30464841ea48a785a996f8aa8c4d909"
+  },
+  {
+    "path": "benchmarks/2026-10-13-v113-evaluation-fixes.md",
+    "size": 3453,
+    "sha256": "63fd30467b469256a88d5700af577511c07fb10563b5de400efb798ae1575a76"
+  },
+  {
+    "path": "benchmarks/2026-09-24-perf-digest-time-pair-v1.0.23-6bd3fae0.json",
+    "size": 3481,
+    "sha256": "977ead775f2a4c1f81248a7d1333e58f97428ca3610276bc3b8206fe4cc40c08"
+  },
+  {
+    "path": "benchmarks/2026-10-08-734-754-followups-batch21.md",
+    "size": 4385,
+    "sha256": "0c28a2ceaa9fa779653bf0d93177f0583404d7c90a0aeb599a49ba7cbcb0c994"
+  },
+  {
+    "path": "benchmarks/2026-10-03-v1.0.30-reaction-new-product-maps.md",
+    "size": 2747,
+    "sha256": "0ac4c3ad0e199974ec2c133820fb8e6f65af92d4d156b033a7e3fadf61822cf6"
+  },
+  {
+    "path": "benchmarks/2026-10-15-openbabel-0d-stress.json",
+    "size": 651363,
+    "sha256": "cc3c00c199312e4face7a647effe95e7e56212dc961e55504d3e890143e065c2"
+  },
+  {
+    "path": "benchmarks/2026-09-22-canonical-orbit-perf-v1.0.19.md",
+    "size": 2772,
+    "sha256": "3f9ef1ca5db32c1eed328b570c34b3747726fa65ba334720f998b1c734ac9936"
+  },
+  {
+    "path": "benchmarks/published-browser-firefox-row-direct.json",
+    "size": 2967,
+    "sha256": "3e09497571787c6681a65c8483fae130aecd8f9ec3d50b539237f51a09ed31c1"
+  },
+  {
+    "path": "benchmarks/2026-10-05-mol-stereo-loss-and-clean-a6.md",
+    "size": 6238,
+    "sha256": "18b80814e4a2dea1ef6b03dfbfbd590a640c27de67d24d26943758196cc780a1"
+  },
+  {
+    "path": "benchmarks/2026-09-25-perf-digest-time-pair-912c4b7d-5269d69f.json",
+    "size": 4584,
+    "sha256": "6af39a5915113edc927e794fa87025283072b7ed258974cd56a0d69732a31a06"
+  },
+  {
+    "path": "benchmarks/2026-09-09-streaming-cross-engine-matrix-v1.0.10.json",
+    "size": 10308,
+    "sha256": "57553b435484219a7d4adc8ef25f0306538e5e7381bc78e632fa1af051236d56"
+  },
+  {
+    "path": "benchmarks/2026-09-09-identity-budget-gate-v1.0.10.json",
+    "size": 931,
+    "sha256": "cd5e4eacbdddb3ba8fe4acb65384101cd0d7090c246b4844970ad33f8256bed7"
+  },
+  {
+    "path": "benchmarks/2026-10-12-a6-full-h-mmff-vs-rdkit.md",
+    "size": 3699,
+    "sha256": "2fa3799374c767d8ed58ecb1308292e78334885a2e254302115740b7b47ae81c"
+  },
+  {
+    "path": "benchmarks/2026-10-03-a6-mmff94-aromatic-propagation-source.md",
+    "size": 2285,
+    "sha256": "75075be98a05340d294321bd3fa3460ae6c4a63e043cc73ac9458bf34880e25c"
+  },
+  {
+    "path": "benchmarks/2026-09-09-same-process-v3000-mol-contract-v1.0.10.json",
+    "size": 1273,
+    "sha256": "48134ab76f2ed89ddbd62e81665531640917b35072fb4b29ae558da888411cca"
+  },
+  {
+    "path": "benchmarks/2026-10-15-python-aromatic-component-reuse.md",
+    "size": 14508,
+    "sha256": "5b83481c3e6d2877f76dfc4a54dcbf94d9072e5f1ecf10b832021414b69a0f1b"
+  },
+  {
+    "path": "benchmarks/2026-10-12-indigo-workflows-source.md",
+    "size": 2860,
+    "sha256": "37cec68e235f4ae389412c1907989124525ba5bc05e47b7594a3a130f0af0149"
+  },
+  {
+    "path": "benchmarks/2026-10-03-v1.0.29-vs-v1.0.30-isolated-morgan-parse-inclusive.json",
+    "size": 23073,
+    "sha256": "641febd5f5c02a1f35dbbe68282c202cccbf57d15ea05ec5a240be5d12bfe71a"
+  },
+  {
+    "path": "benchmarks/2026-10-03-rust-v1029-v1030-morgan-precomputed-paired20.json",
+    "size": 16376,
+    "sha256": "bbaf83c67b7fa99fd470a426950283cbb8c24300ebb861dd11b0b772562f2b41"
+  },
+  {
+    "path": "benchmarks/2026-10-15-openbabel-v3000-count-capacity.md",
+    "size": 13537,
+    "sha256": "904cada825e99ba796e5e93e5c671086c1413aa78dccb2cbdd4e7b8de1ecaffb"
+  },
+  {
+    "path": "benchmarks/2026-10-12-rdkit-workflows-expanded-source.json",
+    "size": 43209,
+    "sha256": "07051fc1c32a11004b81f2a6cc270c6fd8fd80181fc49fd752f6ef4cf11686b8"
+  },
+  {
+    "path": "benchmarks/2026-09-09-same-process-pdb-contract-v1.0.10.md",
+    "size": 1010,
+    "sha256": "0e5537877437442e2acd7bfe17076ec21fdff46fa59e99d643a136bf1ba9edcf"
+  },
+  {
+    "path": "benchmarks/2026-07-17.md",
+    "size": 8915,
+    "sha256": "7dceab7da5ab2e7209cf95e5bfd40b5ab0d761c00797dbec39d2721a9ca75e2f"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-scalar-reuse-slice5000-paired20.json",
+    "size": 72047,
+    "sha256": "4125eb8c7705df41973d80ec76d41f0c3d2acb46ac30ace3bd2d4dd72483ec0c"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-unambiguous-metal-model-slice5000-paired20.json",
+    "size": 576553,
+    "sha256": "f9a821748f0546ad75607f7ab623fac5d5e2d9df2b4060446d7921f41b063acb"
+  },
+  {
+    "path": "benchmarks/2026-10-15-python-huckel-fifo.md",
+    "size": 12991,
+    "sha256": "f62233a033795d1c632edee061f316ebbe6c3401f79c8a5035a35788cf20d068"
+  },
+  {
+    "path": "benchmarks/2026-09-05-tanimoto-parallel.md",
+    "size": 1316,
+    "sha256": "8d31b74c794f85128a27d359e7956e2a1471e1928a3329e763426db959c65305"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-kekule-view-reuse-verification.json",
+    "size": 16616,
+    "sha256": "dba085f128e488fb0d3738024a3c94a3b97e42d51ff294e4accd23dbc9c11a54"
+  },
+  {
+    "path": "benchmarks/2026-09-08-streaming-cross-engine-cml.md",
+    "size": 935,
+    "sha256": "f54b2c4bd545ac56700318abe55f33a67d826cb05563e602c8b9e1be2419c780"
+  },
+  {
+    "path": "benchmarks/2026-10-02-v1.0.29-vs-v1.0.30-paired-morgan-parse-inclusive.json",
+    "size": 18071,
+    "sha256": "945a4452968677cd5231284ecf492efd9885aecae0786956f187b38e5055c206"
+  },
+  {
+    "path": "benchmarks/2026-09-09-streaming-safety-v1.0.10.md",
+    "size": 2058,
+    "sha256": "98fbda6f136622b65a9edce29a6e921243261383b4a330e1d71ded67ca1d5119"
+  },
+  {
+    "path": "benchmarks/2026-10-14-openbabel-v3000-writer-buffer-verification.json",
+    "size": 23977,
+    "sha256": "9ab5d2689b5cfb48286f321a9357bb887b10ce87cabe8b0c003830b4b21910eb"
+  },
+  {
+    "path": "benchmarks/2026-10-10-rdkit-cosmolkit-pipeline-candidate.json",
+    "size": 30842,
+    "sha256": "f145c687f0fa1ed197228bb42c602bee4a98a0adebdab63d4d9c2c5a6385ba35"
+  },
+  {
+    "path": "benchmarks/2026-10-03-v1030-published-linux-three-browser-paired20.md",
+    "size": 3239,
+    "sha256": "b7b34afc308429abed47ed7a1dd25b260912fcfcc3a772875ca90cb9be981959"
+  },
+  {
+    "path": "benchmarks/2026-09-09-tfd-oracle-evidence-v1.0.10.md",
+    "size": 518,
+    "sha256": "7f83c26102a54a29ea9a3794a601f926b149137169a00f4ed05b0bd190898418"
+  },
+  {
+    "path": "benchmarks/2026-09-11-v3000-cross-engine-v1.0.12.md",
+    "size": 1219,
+    "sha256": "e8f36f8d90c89c1fc1bc6ffef58c28a280f53992f32e798bdd8d20835bdd389c"
+  },
+  {
+    "path": "benchmarks/2026-10-07-734-754-followups-batch16.md",
+    "size": 8245,
+    "sha256": "e5db31932acdd87a4671905f79d50bb9c87200b8bd73814431e3c4c774b2b089"
+  },
+  {
+    "path": "benchmarks/2026-09-10-same-process-v2000-mol-contract-v1.0.10.json",
+    "size": 1320,
+    "sha256": "124d527b0361ebd51d0d0ac426d6f53fecd385ae08bdc8ec82ae6b00fec0aa9b"
+  },
+  {
+    "path": "benchmarks/2026-10-15-openbabel-pdbqt-fields.json",
+    "size": 1916,
+    "sha256": "5ecefcae1eade1af2800df8e1fcc621b3021b7d78a5b36e91b32e2e2c3ddc04d"
+  },
+  {
+    "path": "benchmarks/2026-10-02-v1.0.30-vs-rdkit-paired-ring-lanes.json",
+    "size": 19356,
+    "sha256": "30b8160834202b5a575a9e024ec98764b3152b0257a6824e464ef33b542ed96c"
+  },
+  {
+    "path": "benchmarks/2026-09-09-same-process-sdf-contract-v1.0.10.json",
+    "size": 1444,
+    "sha256": "524e50417a252d468ba92de34d01216f1cae235f8b596ed9391650dfdbbe7fbb"
+  },
+  {
+    "path": "benchmarks/2026-10-08-734-754-followups-batch20.md",
+    "size": 9977,
+    "sha256": "a90845298f63d922b7dc5807693e879cee261baf7e3dbfa3475e00dabf8d08e8"
+  },
+  {
+    "path": "benchmarks/2026-10-15-python-tpsa-zero.md",
+    "size": 13487,
+    "sha256": "a909b9dcb50bb94b922e4ca9330f8d2e836281da32f8917f097a1c0da7a86114"
+  },
+  {
+    "path": "benchmarks/2026-10-03-rust-v1029-v1030-hba-prepared-first-use-paired20.json",
+    "size": 16549,
+    "sha256": "724bb49ba70cc9461881fcd11bc45b0c07f344af3746e90aeedf4e90d6d3f95c"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-kekule-view-reuse-focused-slice0-paired20.json",
+    "size": 550508,
+    "sha256": "4706abcf034d8abb83a7ba2769f0cd50586c2eacc61185dd852ef91ec195a685"
+  },
+  {
+    "path": "benchmarks/2026-09-09-symmetric-rmsd-oracle-v1.0.10.md",
+    "size": 1235,
+    "sha256": "e73363852d3409ea496a35489343b15a957e4b4f78bfc00a8fd90066f46cbcaa"
+  },
+  {
+    "path": "benchmarks/2026-09-03-competitive.md",
+    "size": 1925,
+    "sha256": "70be33f57036f0535186b9d72de2bf4fe20495a2c19cfd76d68da41ca05e27b7"
+  },
+  {
+    "path": "benchmarks/2026-10-14-openbabel-sdf-read-followup-slice5000-paired21.json",
+    "size": 69469,
+    "sha256": "64a55529c164c4ae5f5a2d0096b3fd854db0a572559753a66b0be117de5b0a6a"
+  },
+  {
+    "path": "benchmarks/2026-09-25-perf-digest-diff-912c4b7d-98f57746.json",
+    "size": 4653,
+    "sha256": "d17b9e5c98f18e4b5dc9456570ba7cf544451214a595931f07b3c1d3af94428c"
+  },
+  {
+    "path": "benchmarks/2026-09-10-same-process-cdxml-contract-v1.0.10.json",
+    "size": 1550,
+    "sha256": "d86ce617b8bf05a35a62eea6f8da0958a3188a612933bbffda1bf8f748d87964"
+  },
+  {
+    "path": "benchmarks/2026-09-10-generated-wasm-v3000-gate-v1.0.11.md",
+    "size": 2013,
+    "sha256": "4967f9cb58abf30bebc65fc5135ab5dd9dc248bfb0370ca1930bd8034b72029a"
+  },
+  {
+    "path": "benchmarks/2026-10-15-python-aromatic-indexed.md",
+    "size": 15031,
+    "sha256": "48421f392ed4c75e9a7796d418d1d03dc555c9767ca430498d0c0247b3f9ed7a"
+  },
+  {
+    "path": "benchmarks/2026-09-10-same-process-sdf-timing-v1.0.10.md",
+    "size": 1526,
+    "sha256": "83e355db02bfe8ed06ed2d1011c36f9e43fae8acfbf3e1eff84c74e28e1d2a48"
+  },
+  {
+    "path": "benchmarks/2026-09-25-rdkit-agreement-branch-98f57746.json",
+    "size": 3479,
+    "sha256": "1c660d4618301bd4d3cf2042d9950ec08e9827a89275c9e980e6d19a46fb2cd6"
+  },
+  {
+    "path": "benchmarks/2026-10-16-openbabel-sdf-buffer-lazy.md",
+    "size": 16256,
+    "sha256": "e07c6fe3d64515d18ad0700fe2273ad8615f16a552c2a7263c0f516b57b84916"
+  },
+  {
+    "path": "benchmarks/2026-10-14-openbabel-v3000-speed.md",
+    "size": 13124,
+    "sha256": "dab15bd31fccf50497c6c2b7f33f06ec78131e753f925ae172ae6a6588c33c34"
+  },
+  {
+    "path": "benchmarks/2026-10-15-openbabel-0d-stress.md",
+    "size": 3167,
+    "sha256": "b1816fcc5165e7855d3f13f28fa02dcbe9e78fe1cb7a65c852b9e771a5f6f089"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-first-use-followup-slice0-paired20.json",
+    "size": 170143,
+    "sha256": "86b06331c708cf35a68950b165902eb4d47cce149664a5caa8bfff997871cafa"
+  },
+  {
+    "path": "benchmarks/2026-09-09-workspace-test-v1.0.10.md",
+    "size": 869,
+    "sha256": "5589912ade1c88cfc93b0884f7c449a8c51763222f2934ea74fbb4bdc4c74cf9"
+  },
+  {
+    "path": "benchmarks/2026-10-03-v1029-v1030-rdkitjs-node-isolated-paired20.md",
+    "size": 4182,
+    "sha256": "677011bd84d882fbcd316a1f6e7294a5418ea1d23399c6ed8b2dad340605d5a0"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-first-use-followup-parity.json",
+    "size": 5319,
+    "sha256": "13c5e908a1cee9f62d7c7dadd3de88fe9083b49975aea6a54a5e61942a8c66cf"
+  },
+  {
+    "path": "benchmarks/2026-10-15-openbabel-v3000-integer.md",
+    "size": 11225,
+    "sha256": "ac2979f7378f44b436a7779774f598617e47309c1217b9b3bfb512d5923af55a"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-unambiguous-metal-model.md",
+    "size": 13224,
+    "sha256": "3748174271b98f34873d09d8f18210668adcab561f72086198b87af4b9fbb5ea"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-scalar-reuse-source.json",
+    "size": 1378,
+    "sha256": "e0a7f1ae307cf93285c7b4042ae16b05a17db197f63968ea24cf8392e9cc42f1"
+  },
+  {
+    "path": "benchmarks/2026-10-08-cosmolkit-parity.md",
+    "size": 5171,
+    "sha256": "e8a61fa49134531f1cf1d3053a47239c0aa3df04cc5733dded240c6a95d58b9b"
+  },
+  {
+    "path": "benchmarks/2026-10-15-openbabel-v3000-flat-geometry.md",
+    "size": 8305,
+    "sha256": "832b4fcbe16a4c2f8c6e566165409a8473ddbe9f6405a4fd525d0e6cbebe27a1"
+  },
+  {
+    "path": "benchmarks/2026-09-24-python-op-matrix-vs-rdkit-branch-ea967d47.json",
+    "size": 38626,
+    "sha256": "eff5a144fcfe7f357c9be1cf1e04aa2ec937104788d95d39f4efc8ab5ad19549"
+  },
+  {
+    "path": "benchmarks/2026-10-14-rdkit-conformer-batch-rmsd.md",
+    "size": 2382,
+    "sha256": "fd4d130e503f14c29993f9a3ba0c3b612fbf9de31a71e982157dd43c5b2e8121"
+  },
+  {
+    "path": "benchmarks/2026-10-07-734-754-followups-batch17.md",
+    "size": 5254,
+    "sha256": "ab81b4c149fe941366d1fc10136f458da4f630f0f577944d20657c9ec64433d9"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-sanitized-view-reuse-source.json",
+    "size": 121766,
+    "sha256": "e487e16b6e0bc1f6a11d5418bcb1b568f9622f4c699a5392d4f4ac384d5211fc"
+  },
+  {
+    "path": "benchmarks/2026-10-15-openbabel-v3000-count-rounded.md",
+    "size": 12130,
+    "sha256": "7bdf474eb37e54e0b7de3e22e5dfe2a3f6bf03a913be5a2c767e7d211a76d97b"
+  },
+  {
+    "path": "benchmarks/2026-10-10-cdk-indigo-smoke-hot-benchmark.json",
+    "size": 250180,
+    "sha256": "0e3bf9814123aae435c1ddbb80b4a5195b4cf664cefa2e0ebaeb3aa386d28887"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-first-use-followup-slice5000-paired20.json",
+    "size": 170279,
+    "sha256": "d2194e00d42c79ce6875fe2be9827052b801093c79c91007e1642be94c44b4b2"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-cycle-root-pruning-slice5000-paired20.json",
+    "size": 160160,
+    "sha256": "4e234f6b452dc0377a47a131bd4452b6d2ddba576dd3ca6e0ec0985124211c1d"
+  },
+  {
+    "path": "benchmarks/2026-10-15-openbabel-v3000-zero-z.md",
+    "size": 8322,
+    "sha256": "ad01206c81332a63203d1b05b3c928be9088c77f34608faef52730f6f4cbddbe"
+  },
+  {
+    "path": "benchmarks/2026-10-15-openbabel-stereo-paired.json",
+    "size": 344555,
+    "sha256": "60cb6bea7da196b69a7b30d29c164e13cadbb7d7d3c431e515d3d501a8848f2b"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-cycle-root-pruning-slice0-paired20.json",
+    "size": 159763,
+    "sha256": "64a4c305f9afe217a09ab451193aaa25da0f23db19139fd21aeb602a02628e2c"
+  },
+  {
+    "path": "benchmarks/2026-10-03-python-source-smarts-optin-310k.md",
+    "size": 2458,
+    "sha256": "10fbd79bbfdea6f519968ba5a6812950674df3016c71365f6e33ca650e7a0599"
+  },
+  {
+    "path": "benchmarks/2026-10-06-734-754-followups-batch10.md",
+    "size": 6465,
+    "sha256": "8a13465e03381b1a59c14ff51c072be7e7729b40630adec2ef75a8db6946d6be"
+  },
+  {
+    "path": "benchmarks/2026-10-15-openbabel-pdbqt-fields.md",
+    "size": 1645,
+    "sha256": "8dfb6fca4ed2b3363122433e99d644bd79d86ea23f975abc5fcc1d4cd8a7ac92"
+  },
+  {
+    "path": "benchmarks/2026-10-03-source-reaction-83-checked-graph-origin-map.md",
+    "size": 3751,
+    "sha256": "473ed859549bcd5dd3bd102716089e450aeed183666d73460546e1ea559d2264"
+  },
+  {
+    "path": "benchmarks/2026-09-11-same-process-xyz-contract-v1.0.12.json",
+    "size": 1334,
+    "sha256": "7f16763597ab1c329c6e7887336400375015324e3525cfd15d9c2ebaf552fe2c"
+  },
+  {
+    "path": "benchmarks/2026-10-15-openbabel-v3000-count-zero-map.md",
+    "size": 10983,
+    "sha256": "c88bc34d1bd1fb9ce90290940cc3e994f7ffc51b68b195731a722f30aa622b79"
+  },
+  {
+    "path": "benchmarks/2026-09-24-python-op-matrix-vs-rdkit-v1.0.23-6f8645ef.json",
+    "size": 38632,
+    "sha256": "7fff215e774be19e6e12e7f0ffe44da873518ec7b3bb33dc11a3f4ac2b2cf442"
+  },
+  {
+    "path": "benchmarks/2026-10-14-openbabel-v3000-writer-buffer.md",
+    "size": 9131,
+    "sha256": "97b2043764511c0426415bd63abc34a82a5a09002b040def318411562ad77b4d"
+  },
+  {
+    "path": "benchmarks/2026-10-10-rdkit-cosmolkit-championship-performance.json",
+    "size": 23703,
+    "sha256": "41a75edb67f0e005aae43f15ecc6db8b3ea7c7afd776e9cbfda5a5229ecacc74"
+  },
+  {
+    "path": "benchmarks/2026-10-13-v113-fix-v112-tpsa-paired20.json",
+    "size": 17711,
+    "sha256": "58f67dcdb6d2523e0e4469aa0ce569465a65d66441aa1e96ace5613d37fd3273"
+  },
+  {
+    "path": "benchmarks/published-browser-firefox-row-prepared.json",
+    "size": 2969,
+    "sha256": "a267ec1e47f39f59db3f54e977a7e80d8682a0ab9e3e650b3fc2d4569259623b"
+  },
+  {
+    "path": "benchmarks/2026-09-10-same-process-mol2-contract-v1.0.10.json",
+    "size": 1320,
+    "sha256": "0baab5ff0c4887f9ab5f274466d9f76e39775adb914298d2488af7552435bad3"
+  },
+  {
+    "path": "benchmarks/2026-10-15-openbabel-v3000-parser-token-reuse-verification.json",
+    "size": 8998,
+    "sha256": "c221ff42d413e7cd528ba036200a455ef3135bbc9104918ba7ded197949c1da6"
+  },
+  {
+    "path": "benchmarks/2026-09-09-similarity-search-v1.0.9.md",
+    "size": 2535,
+    "sha256": "cd2a9065380948be7b08c5b51f0479ba25b98ff37ccdf420f7f0290e9df88dc3"
+  },
+  {
+    "path": "benchmarks/2026-09-09-3d-energy-sanity-v1.0.10.md",
+    "size": 1430,
+    "sha256": "7b6b601a285bcb99d9106d9a50d074705cf9d8091f18d9b39321a3787ce37b5b"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-cycle-path-reuse.md",
+    "size": 1525,
+    "sha256": "96fada12b9bdbdc39cec839ec796b2e703313869ca77b5b274f79d651d3cfab9"
+  },
+  {
+    "path": "benchmarks/2026-09-09-symmetric-rmsd-oracle-v1.0.10.json",
+    "size": 1325,
+    "sha256": "8baa6aff57e520b46feaa9e062bc7ab8a787b6f27d5871206cf4ca5469af4984"
+  },
+  {
+    "path": "benchmarks/2026-10-15-openbabel-ring-queue.md",
+    "size": 12262,
+    "sha256": "6e01e9d965b3bc7e51c1af4a4e0c7fa8177ec57ef2cbda81dfd55a9975895037"
+  },
+  {
+    "path": "benchmarks/2026-10-11-v1042-published-rdkit-python-macos-arm64.json",
+    "size": 47439,
+    "sha256": "539e55d0bb9b004f717f48975c6bb7602b8cb1906c4ed106e6f5793cd5213371"
+  },
+  {
+    "path": "benchmarks/2026-09-09-wasm-rdkit-gate.md",
+    "size": 2161,
+    "sha256": "6d4fe8e955adc60e20981b67ce34813d77406ffa4ac8faa04174d7d48b6ff755"
+  },
+  {
+    "path": "benchmarks/2026-09-11-same-process-v2000-mol-contract-v1.0.12.json",
+    "size": 1320,
+    "sha256": "22bd6d4290664f74e9745f39b2a2eae706d73fe8abddbff6845720310db0d317"
+  },
+  {
+    "path": "benchmarks/2026-10-14-openbabel-sdf-speed-paired21.json",
+    "size": 69462,
+    "sha256": "8b76c0dc0cfad3d9ef831a343e2470f62ff48c0a6880dd127f1753480ff510c6"
+  },
+  {
+    "path": "benchmarks/2026-09-09-clean-install-cold-start-v1.0.10.md",
+    "size": 2112,
+    "sha256": "029e9893159867af64112a6fe85c11906b51ff1b6830f5c13ed013957713c70e"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-kekule-view-reuse.md",
+    "size": 17181,
+    "sha256": "3a160d3f07ae5caedd4d712f34fd7302a8ce649599a471f6f779806bcdddf19e"
+  },
+  {
+    "path": "benchmarks/2026-09-24-rdkit-agreement-branch-ea967d47.json",
+    "size": 3511,
+    "sha256": "acd71b8b2443ed1588049310c3f9f61f2617503f8d70d61de7c26397aac3d52c"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-model-view-speed-slice5000-paired20.json",
+    "size": 280906,
+    "sha256": "7acba9cf4692cc29e7d9f8950f6c7f828bb5a68d8cfe1b7d25424613b92650c6"
+  },
+  {
+    "path": "benchmarks/2026-10-07-734-754-followups-batch13.md",
+    "size": 12294,
+    "sha256": "2a4ffb0d9c601e0786ee0ff26e509732757650e8c5fe58b8779c25c9ea70e47a"
+  },
+  {
+    "path": "benchmarks/2026-09-08-streaming-matrix-v1.0.9.json",
+    "size": 18952,
+    "sha256": "1fb8fa2c6927a9e73bb04833d8dbebaf602f80798f433df44aa0c8d1887b13e8"
+  },
+  {
+    "path": "benchmarks/2026-09-09-node-wasm-contract-v1.0.10.json",
+    "size": 661,
+    "sha256": "feb845c21201674662ecf136c818e026de85d69653220406c86ba2944aa90edb"
+  },
+  {
+    "path": "benchmarks/2026-09-11-same-process-sdf-contract-v1.0.12.json",
+    "size": 1444,
+    "sha256": "7ac3c9a4b699a1d8d80b26731011da88e000ceebab839a5c5957fb5ca3fbdd2a"
+  },
+  {
+    "path": "benchmarks/2026-10-02-v1.0.29-python-op-matrix.json",
+    "size": 38594,
+    "sha256": "6c855b32f4e5f8d6dfe758661c752488a2e5eb211c11e4dd40ca759c8d1dd341"
+  },
+  {
+    "path": "benchmarks/2026-10-04-rdkit-2026-09-1-npm-rebaseline.md",
+    "size": 8449,
+    "sha256": "01242fda144ab13749121c908ce7673fc003d0d0be23115e1c14d2739203c7eb"
+  },
+  {
+    "path": "benchmarks/2026-10-03-smarts-ring-refusal-census.md",
+    "size": 2134,
+    "sha256": "d4016568f5ca82492bd75043535f8f521a5b1189eb641ffa38bfe361363d9265"
+  },
+  {
+    "path": "benchmarks/2026-10-03-a6-separated-quality-matrix.md",
+    "size": 2925,
+    "sha256": "ca9175faa00474e85a9ab8ab185ef7f0b1dbfcbcf19aa8208bc05ae7845fcdb4"
+  },
+  {
+    "path": "benchmarks/2026-10-03-source-smarts-310k-profiles.md",
+    "size": 3503,
+    "sha256": "ac9f652efe6fa17660ae72d7be3d0fefe9da5d32f813c4c60a0e2aab6246b7d4"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-scalar-stereo.md",
+    "size": 15216,
+    "sha256": "821382d2f09bdeadb6020aa75119e751184b172e7121f811c884f08df7df40c8"
+  },
+  {
+    "path": "benchmarks/2026-09-08-streaming-gzip-openbabel-v3000.md",
+    "size": 1570,
+    "sha256": "7bd64fde60551ca26e4eb8fbfb0c4d818046f8ddb195bdf8bcb7a13323d6e941"
+  },
+  {
+    "path": "benchmarks/2026-10-15-openbabel-v3000-ascii.md",
+    "size": 9410,
+    "sha256": "9b255b045228f12d033ccdf33396ff2b2ef9eb1046298fa6cf012d9763cf5cbe"
+  },
+  {
+    "path": "benchmarks/2026-09-04-rdkit-openbabel.md",
+    "size": 4538,
+    "sha256": "746a89a1f96a7f9eb4aa155d5dd170c9d4df3688bc5a309ccb101e6de1fb42ff"
+  },
+  {
+    "path": "benchmarks/2026-09-23-a6-analytic-mmff94-source-candidate.md",
+    "size": 4160,
+    "sha256": "a4b3651ff2f472592658274219cb53596ade4093da1516dc08ee7db6817883fc"
+  },
+  {
+    "path": "benchmarks/2026-09-05-prepared-index.md",
+    "size": 1512,
+    "sha256": "018b2fc5ffe04a3ed34ee2a819fb9c82acb5cd87191bd7e191e627bf396b5da9"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-scalar-reuse-slice0-paired20.json",
+    "size": 72047,
+    "sha256": "5a25bdfb166fc3e681f5741882717c46af365f7d26793d30031633977941f1aa"
+  },
+  {
+    "path": "benchmarks/2026-10-11-rdkit-rgroup-labeled-source.md",
+    "size": 1429,
+    "sha256": "2a88f35b1b24f02679743fb3080d9cd4e7ad7c95fe0e369f28b972175fcd21a8"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-kekule-view-reuse-focused-slice5000-paired20.json",
+    "size": 506417,
+    "sha256": "49e2a0e399daf9244eb867345d6d5bdb934fc48b5d6215661f718220049dc9ad"
+  },
+  {
+    "path": "benchmarks/2026-09-10-official-rdkit-js-gate-v1.0.11.md",
+    "size": 1939,
+    "sha256": "40650f2453348c647b7a4468201665fe42a7156e0ce0676c9ba49e22c72ae9a0"
+  },
+  {
+    "path": "benchmarks/2026-10-03-source-smarts-mixed-ring-fallback.md",
+    "size": 2637,
+    "sha256": "3f37c90e83f79b3de4dcdd9e5825ae1f632251e41f304cbc8db15a30be67aaad"
+  },
+  {
+    "path": "benchmarks/2026-10-12-v111-public-vs-lazy-fix-parse-paired20.json",
+    "size": 18018,
+    "sha256": "d924d7d932ac24a7ed9639912c57a1fc87cd5e12f3b0b8dea8550098fbf9f165"
+  },
+  {
+    "path": "benchmarks/2026-10-14-openbabel-v3000-writer-buffer-0-paired21.json",
+    "size": 481192,
+    "sha256": "58a0ae3682e3d52c78b31adc2022fa9cd46710d1970bc76c62a0a64e8c91e149"
+  },
+  {
+    "path": "benchmarks/2026-10-07-734-754-followups-batch18.md",
+    "size": 7232,
+    "sha256": "95cc0797411d50b34b038fde09bf1e3a5595be3195386070534732c783cc0773"
+  },
+  {
+    "path": "benchmarks/2026-10-16-openbabel-sdf-direct-fields.md",
+    "size": 16774,
+    "sha256": "eb1991c2a7e6286d7b09bf70c54cdd99d32176dc200bff0d344867f405ba49a1"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-sanitized-view-reuse-slice5000-paired20.json",
+    "size": 281156,
+    "sha256": "40c0844cbdc6283d7c26cee79e1afde73ce37143a2c05c07658acecfa36f8c65"
+  },
+  {
+    "path": "benchmarks/2026-10-12-a6-multiconformer-etkdg-mmff.md",
+    "size": 3814,
+    "sha256": "cf28e0deef4115349a75510f93d768adae52ba6af28f62830849c925932fcae7"
+  },
+  {
+    "path": "benchmarks/2026-09-12-similarity-search-a3-v1.0.13.json",
+    "size": 3150,
+    "sha256": "2dfb48f77def1d4bb5f7975b96dfdca24592ac89661b0d519b441a894c6773e6"
+  },
+  {
+    "path": "benchmarks/2026-10-13-a6-mmff-distance-cache.md",
+    "size": 2414,
+    "sha256": "95a481254798c2cb9bc0f834aa2d0c767f82e00403d7b0f48c98536bec7e0baa"
+  },
+  {
+    "path": "benchmarks/published-browser-chromium-row-prepared.json",
+    "size": 3037,
+    "sha256": "bc7dafe2dc0598c172687e1bc97768f4d237ab1edefc5602c1dafffafdf7e8d9"
+  },
+  {
+    "path": "benchmarks/2026-09-05-hotpath-110.md",
+    "size": 6519,
+    "sha256": "fb149b9135e4a750951f21b1889800c0202f2e7030cb16f5387b8a0f39c9111f"
+  },
+  {
+    "path": "benchmarks/2026-10-10-v1042-regression-followups.md",
+    "size": 5114,
+    "sha256": "1af5c9be49417655e3a50f71b5146b3b25b536ddf0ae874c8528158618539aa1"
+  },
+  {
+    "path": "benchmarks/2026-10-13-a6-mmff-gradient-rescue-development.md",
+    "size": 2667,
+    "sha256": "395738678d1924b13406d04d31ada50dddd67400808eacc9945664ea8088a102"
+  },
+  {
+    "path": "benchmarks/2026-09-08-streaming-cross-engine-matrix-v1.0.9.json",
+    "size": 10300,
+    "sha256": "a5a845e0a695dc5fa084ad85edb4034685e2783061cb1b409f0462e5660ab006"
+  },
+  {
+    "path": "benchmarks/2026-09-09-identity-budget-gate-v1.0.10.md",
+    "size": 897,
+    "sha256": "a714f52fa3f81381d2716fc551df1256b3c7bad2047856b364c4dbad02999a8e"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-model-view-speed-slice0-paired20.json",
+    "size": 280773,
+    "sha256": "0f197c9835adcd64e18283b24b4e69a527cfd9bd7b31e2e892bc9fee26c22715"
+  },
+  {
+    "path": "benchmarks/2026-09-10-mmff94-electrostatic-neighbor-list-v1.0.10.md",
+    "size": 1595,
+    "sha256": "0d2aba1c1b914e5469e40ca44fa3512a6b4838a4af233411dae44a0d46f942a3"
+  },
+  {
+    "path": "benchmarks/2026-09-09-periodic-neighbor-cell-list-v1.0.10.md",
+    "size": 1156,
+    "sha256": "805a9f6a993e343b82348c2c8481cdf40ef5e76a816640f6d1f762c4149fa330"
+  },
+  {
+    "path": "benchmarks/2026-09-11-streaming-safety-v1.0.13.json",
+    "size": 3719,
+    "sha256": "e5789dffda444c60b7266cf8624ed23a2e2daf2e9f66b3a2dda07cabeb7c519b"
+  },
+  {
+    "path": "benchmarks/2026-09-25-rdkit-agreement-branch-5269d69f.json",
+    "size": 3479,
+    "sha256": "c739661c732594a4f9f7e9583bb0bde40a0d1f52541a84f7695b77b6d4b6d695"
+  },
+  {
+    "path": "benchmarks/2026-09-11-canonical-orbit-perf-v1.0.13.md",
+    "size": 1825,
+    "sha256": "06c9bb0456adb0a92e1df95b971e35b52f453ae50b3b8e070915b33f7e99d016"
+  },
+  {
+    "path": "benchmarks/2026-09-25-perf-digest-diff-912c4b7d-5269d69f.json",
+    "size": 4589,
+    "sha256": "3c11d04d3d9a7d85641ced3d03af5ee28384f4d1e64acfae69ba8c6e9472c2da"
+  },
+  {
+    "path": "benchmarks/2026-09-09-same-process-xyz-contract-v1.0.10.json",
+    "size": 1334,
+    "sha256": "58f21f7026d414235a0bce856d48ed55d6a4ff354e34102d86c218198de27dcb"
+  },
+  {
+    "path": "benchmarks/2026-09-24-python-op-matrix-vs-rdkit-branch-20b2cbc3.json",
+    "size": 38659,
+    "sha256": "8ccde5c44eca4e70bd20c0e725b2917ae32a9d0056952c7d331f4291aa860b82"
+  },
+  {
+    "path": "benchmarks/2026-09-08-streaming-gzip-contract.md",
+    "size": 1017,
+    "sha256": "59062630a1687545e9c25cf9b6f9e8c2accf5c6aca7450d508f32f50daea2b8d"
+  },
+  {
+    "path": "benchmarks/2026-10-14-openbabel-v3000-writer-buffer-parse-repeat21.json",
+    "size": 34434,
+    "sha256": "9413bd6c912d6efcb8107c42fe6a9e2180ce1021adf912fb31553954c7caf18c"
+  },
+  {
+    "path": "benchmarks/published-browser-webkit-row-prepared.json",
+    "size": 2968,
+    "sha256": "387346af953fd5983a56b12c96e5c542e3da443da39ba16b7dc6a134234446c6"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-sanitized-view-reuse-parity.json",
+    "size": 8338,
+    "sha256": "fb153b1a71df4869b0e253fce6a15fdb22a6fe0c3f9d27f44fb8c6868677d2ef"
+  },
+  {
+    "path": "benchmarks/2026-10-10-direct-descriptor-fastpaths-candidate.md",
+    "size": 2746,
+    "sha256": "92de9f7f063ecd26e598719b210f5035a04d006991d795a7c5b7fb105c65fee2"
+  },
+  {
+    "path": "benchmarks/2026-09-11-same-process-extxyz-contract-v1.0.12.json",
+    "size": 1445,
+    "sha256": "419e3ffccfe6e19d13cb28bbea2c1938c9568c1290a56e802a9f53108cbb8cce"
+  },
+  {
+    "path": "benchmarks/2026-09-11-same-process-cdxml-contract-v1.0.12.json",
+    "size": 1550,
+    "sha256": "6a9dd9ef49d2b3369f2b61c1785ad3d6b603fcaa81113366f99a5e20f8d9767d"
+  },
+  {
+    "path": "benchmarks/2026-09-10-same-process-pdb-contract-v1.0.10.json",
+    "size": 1532,
+    "sha256": "4be64f96f72acf5c28fdc64581a48273b47b26926973618f532d00e7825b4e12"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-model-view-speed.md",
+    "size": 13385,
+    "sha256": "816d9a2ff490a7ea1403f391dc8129c4f71c98830b3f25e77f4295824f0e9c7e"
+  },
+  {
+    "path": "benchmarks/2026-10-11-rdkit-2026-09-accuracy-speed-candidate.md",
+    "size": 2913,
+    "sha256": "1a9bf37e62347d623841bb2d9856b0008b69623112640aad25944270ffc94cdb"
+  },
+  {
+    "path": "benchmarks/2026-09-07-wasm-size-v1.0.9.md",
+    "size": 833,
+    "sha256": "824d10916f0af826c663069ba419ad45513404cdffc81acb1dfc1ff06133721c"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-first-use-followup-source.json",
+    "size": 12627,
+    "sha256": "14f4bcc2d480b9c19312e37c0a39d35c128e9c8196325cc88f147bd816532da0"
+  },
+  {
+    "path": "benchmarks/2026-10-15-openbabel-v3000-parser-token-reuse-5000-paired21.json",
+    "size": 2784347,
+    "sha256": "d6a4ca6776b2fb6f5b3c878d8c3d1dac9335240253f62b931b74b76c9b43afa8"
+  },
+  {
+    "path": "benchmarks/2026-10-10-cdk-indigo-bounded-baseline.md",
+    "size": 4011,
+    "sha256": "9f24499e2c54bcd791a8a0fa0b52c264dc9c968e23689c724b5dca9555aa92b0"
+  },
+  {
+    "path": "benchmarks/2026-10-10-cosmolkit-050.md",
+    "size": 4908,
+    "sha256": "6cf5526c8c17150e335e461d239c53a836ac907a466e416a252037f6d9fe2d8d"
+  },
+  {
+    "path": "benchmarks/2026-09-11-same-process-pdb-contract-v1.0.12.json",
+    "size": 1532,
+    "sha256": "2aff92d7cd159036f0f742565942f4adbfc1cb1dae8b39141b1b43baedf7b0ea"
+  },
+  {
+    "path": "benchmarks/2026-10-04-xsmarts-autoconf-v1034.md",
+    "size": 11002,
+    "sha256": "056bb31ae6b89eceedcc5d85d06bae14118ca25a2d02351e381e2868854bd156"
+  },
+  {
+    "path": "benchmarks/2026-10-14-openbabel-v3000-speed-source.json",
+    "size": 9572,
+    "sha256": "cc16f7bdfb06b057e22770ceed08e40bc6e69ebe6aaa7e1d46b2887c0484f674"
+  },
+  {
+    "path": "benchmarks/2026-10-12-v111-public-vs-lazy-fix-morgan-precomputed-paired20.json",
+    "size": 17798,
+    "sha256": "acc0e4b96c1fce804b23bb3815cc424c63f056f4d3c055bc7a8158832c88315c"
+  },
+  {
+    "path": "benchmarks/2026-10-03-v1.0.29-vs-v1.0.30-isolated-hba-parse-inclusive.json",
+    "size": 22940,
+    "sha256": "3d7a4d63b5c68805981ea9ccab390dc4e096a1771426f89fbc2b29db2b58e6d6"
+  },
+  {
+    "path": "benchmarks/2026-10-15-python-ring-component-reuse.md",
+    "size": 12479,
+    "sha256": "6663d90e6c819afcb9be3f41ebf649a0552c2c31785a8576ac0b56d4f6b13ff2"
+  },
+  {
+    "path": "benchmarks/2026-10-03-v1.0.30-vs-rdkit-isolated-morgan-prepared-first-use.json",
+    "size": 23441,
+    "sha256": "110b94a3b55edcf99047a472f25fd9797ea6cb204a3c64c9a8e3983d5da74c9b"
+  },
+  {
+    "path": "benchmarks/2026-09-09-ensemble-diversity-v1.0.10.json",
+    "size": 1157,
+    "sha256": "998eee3fdf4f8a8c152bd26009b050d344dc584035dcf6db32ec72f53ffa7d9b"
+  },
+  {
+    "path": "benchmarks/2026-10-14-cosmolkit-fingerprint-numpy.md",
+    "size": 2404,
+    "sha256": "ec35d81d826135a985c3d3c97de9e11da9f2071099773abc400f9a5084856db7"
+  },
+  {
+    "path": "benchmarks/2026-09-08-streaming-cross-engine-openbabel-mol2.md",
+    "size": 948,
+    "sha256": "0bf5c94149b1c9d6e9740979746783b98b332f55a757ed2a38b443a9cbbe191c"
+  },
+  {
+    "path": "benchmarks/2026-09-09-same-process-v2000-mol-contract-v1.0.10.md",
+    "size": 975,
+    "sha256": "058f9f726ed7780f04484156c21fa5b5ebce25a9903b25b073cb89b80e40e4bc"
+  },
+  {
+    "path": "benchmarks/2026-09-09-reaction-3d-focus-v1.0.10.json",
+    "size": 893,
+    "sha256": "7435d1482ce25c53894a9099a590dbdd6aa6d15408d512ca776ae0fcbe84c239"
+  },
+  {
+    "path": "benchmarks/2026-10-14-openbabel-v3000-writer-buffer-sandbox-attempt.json",
+    "size": 425184,
+    "sha256": "8dd2df9dac1aea38c4b0c9398504a9a5ca2577d1bc6a2d31d033bace677eb3b2"
+  },
+  {
+    "path": "benchmarks/2026-10-15-openbabel-v3000-parser-token-reuse-source.json",
+    "size": 2681041,
+    "sha256": "ad7cc1bfe77dc213f76fca5b6b2cae90809b83d56a931fbabf39a301a32d58dd"
+  },
+  {
+    "path": "benchmarks/2026-09-25-perf-digest-time-pair-912c4b7d-98f57746.json",
+    "size": 3078,
+    "sha256": "8f7a2536375dd482a3f4c69e64ae36e0d0729fd8eae4d16a4e63b6b0bf2aacf3"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-sanitized-view-reuse.md",
+    "size": 15238,
+    "sha256": "6460ae189c281ed625e0284462cdf59613ceb18b4fe3a94168b7290abbc79a87"
+  },
+  {
+    "path": "benchmarks/2026-10-12-a6-rdkit-2026-09-bounds-followup.md",
+    "size": 3431,
+    "sha256": "36c4beafc7a68ed61447e0ab1c7023fd5a313511daf9e50aafc2fc5c248f5545"
+  },
+  {
+    "path": "benchmarks/2026-09-06-wasm-size-v1.0.8.md",
+    "size": 1040,
+    "sha256": "35bbb841caae57bdbe630a7c743ff344d28856145b3df8d17d16a47baa5e525f"
+  },
+  {
+    "path": "benchmarks/2026-10-03-v1030-published-chromium-morgan-10k-direct.json",
+    "size": 3117,
+    "sha256": "f7c404c1e32d5f4b136bff17c8b4a974f6e3bfd2057309ba68d2c557e2bfb2f6"
+  },
+  {
+    "path": "benchmarks/2026-09-10-official-rdkit-js-browser-gate-v1.0.11.md",
+    "size": 2970,
+    "sha256": "1bfa139bde8d972aae9206c28a88020b8a7ee802b577b9bbb403271c88daded6"
+  },
+  {
+    "path": "benchmarks/published-browser-chromium-row-direct.json",
+    "size": 3035,
+    "sha256": "69c670a5266d4f07e7ae3bf761da6cbef6dcbcfd55140e91632099f31f5a9124"
+  },
+  {
+    "path": "benchmarks/2026-10-03-v1030-rdkitjs-published-chromium-prepared-split20.md",
+    "size": 3512,
+    "sha256": "f6210f4bb9f2804d74756bf25d479f9f0f78ce6ec44df19de1c5843183b718f3"
+  },
+  {
+    "path": "benchmarks/2026-10-14-openbabel-v3000-writer-buffer-chains-paired21.json",
+    "size": 479402,
+    "sha256": "3b3e9cec363430e1d17c116c5466e83aa1e8275443060cbb43a7c975f04c4e35"
+  },
+  {
+    "path": "benchmarks/2026-10-03-reaction-83-python-provenance-source.md",
+    "size": 2694,
+    "sha256": "a598a6eecefa0c1c1281851ca9599683a56ab1a403867d1d101ffa1f373f86c7"
+  },
+  {
+    "path": "benchmarks/2026-10-05-biotransformer-corpus-followups-2.md",
+    "size": 6845,
+    "sha256": "2f23f249ce4f7c758f84cadc5ca6e2531483f7162f2fd5a2cf129a927eeb9915"
+  },
+  {
+    "path": "benchmarks/2026-10-04-rdkit-2026-09-1-native-source-rebaseline.md",
+    "size": 5253,
+    "sha256": "bca63c6330ad4509c6400a823c2f80e44cc5570b169c6ef0aba096b6762d7149"
+  },
+  {
+    "path": "benchmarks/2026-10-15-sdf-v3000-recognition.md",
+    "size": 2620,
+    "sha256": "c3a7aebf2a56a714844d9f791d8fe3c91d6b56cc113c1fb6027042e0f847e6d7"
+  },
+  {
+    "path": "benchmarks/published-browser-chromium.json",
+    "size": 106490,
+    "sha256": "a8d92068a1f22c986df95e20063e0a1c34b9856201f6fb63aef4df34fb8c92cd"
+  },
+  {
+    "path": "benchmarks/2026-09-11-streaming-safety-v1.0.12.json",
+    "size": 3719,
+    "sha256": "d2b6eb321f4d2906aaf844c2a9748a0aebf334dd57ca2277a7c8f1138d62bc2f"
+  },
+  {
+    "path": "benchmarks/2026-10-03-source-smarts-organometallic-ring-view.md",
+    "size": 2751,
+    "sha256": "ab17c31467b6a0030b724b340c8a9317fc5321bc8b60640e2ab0e97d84e4f0da"
+  },
+  {
+    "path": "benchmarks/2026-09-05-hotpath-110.json",
+    "size": 6444,
+    "sha256": "e341d0b3884c183a534e49cf2cc8b844734ba3dca4c6db9f602211734f914c4b"
+  },
+  {
+    "path": "benchmarks/2026-09-08-streaming-gzip-xyz-contract.md",
+    "size": 942,
+    "sha256": "90a92160951b18e571ce78aca78f16305a77ccaaf550916b006d50b48fb90979"
+  },
+  {
+    "path": "benchmarks/2026-10-13-qed-stress-parity.md",
+    "size": 2366,
+    "sha256": "212903c51656935473ed60b612ae9af52a15f768b21dc7edfaa523e2675404f4"
+  },
+  {
+    "path": "benchmarks/2026-10-10-openbabel-file-io-same-process-v1.0.42.md",
+    "size": 1453,
+    "sha256": "4e38e20c5d50abee9a8e56d705603773d7d993e13892d26ed41871ad0be40a7c"
+  },
+  {
+    "path": "benchmarks/2026-10-14-openbabel-sdf-read-followup-slice0-paired21.json",
+    "size": 69664,
+    "sha256": "805ca27b8c2da06bd4fbac6957f1b757ca55747a73cf508c20f538a7ce9a45b9"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-scalar-stereo-source.json",
+    "size": 4392,
+    "sha256": "58873fc545e3d81a983ceea5422ce481c14020e9c6c1a9286c8dd46fd0999788"
+  },
+  {
+    "path": "benchmarks/2026-09-09-same-process-mol2-contract-v1.0.10.md",
+    "size": 1028,
+    "sha256": "7bc49e49addf857e3dd6c77d66441ff0ec69c12cee3f009225802cdf0ee77b1e"
+  },
+  {
+    "path": "benchmarks/2026-10-14-v113-published-artifact-packet.md",
+    "size": 2440,
+    "sha256": "e041b200e15b7f98cddc40af917fc4e0801a66529edd63ea53b1bc3d36e88261"
+  },
+  {
+    "path": "benchmarks/2026-10-14-openbabel-v3000-speed-verification.json",
+    "size": 21007,
+    "sha256": "34238354d5d6f9b5ef02708d53695058cadacebb372d62d21a38b2623e2aa7cc"
+  },
+  {
+    "path": "benchmarks/2026-09-25-perf-speed4-output-identical.md",
+    "size": 17364,
+    "sha256": "8b45dd7c11760ffd7e2bcf5fb40462f70d18200dfb9835f966f8f16b403aa058"
+  },
+  {
+    "path": "benchmarks/2026-09-09-wasm-size-v1.0.10.json",
+    "size": 570,
+    "sha256": "f6dd74f57f16fec18de25f60bcec54cc151ed301b8d09c0fd5d5271e906a2f2d"
+  },
+  {
+    "path": "benchmarks/2026-09-09-clean-install-cold-start-v1.0.9.md",
+    "size": 1297,
+    "sha256": "6024d157ad51bc16fa2d1f0c88fe59a6798c00d4566c7eb42b0037dbdb1fad0c"
+  },
+  {
+    "path": "benchmarks/2026-09-09-node-wasm-contract-v1.0.10.md",
+    "size": 935,
+    "sha256": "053bbd78b8f8f01359486b02e186c219a8cba80de4511fd7ee93bb23728c7659"
+  },
+  {
+    "path": "benchmarks/2026-09-10-same-process-contract-bundle-v1.0.10.md",
+    "size": 2651,
+    "sha256": "020009625f77da5aef9005ef7c1591d33b9b072d9c37a34eddc25d0de1caae1e"
+  },
+  {
+    "path": "benchmarks/2026-10-14-openbabel-sdf-read-followup.md",
+    "size": 10454,
+    "sha256": "12c66a34407b3fdc5ecef9f57028fb86a6a92f85d4bc1569b918ca9cb6ffc7a3"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-first-use-followup.md",
+    "size": 13397,
+    "sha256": "50567ff4c23a006f9a0fd7cf1a18d3902a021ccc47650d09ae96d644f3b3ae5c"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-sanitized-view-reuse-slice0-paired20.json",
+    "size": 281041,
+    "sha256": "e612db10bb8768dccef79ddf36e0318164fe20b28d58d6ec0233d0aec966f9ac"
+  },
+  {
+    "path": "benchmarks/2026-10-14-openbabel-v3000-writer-buffer-5000-paired21.json",
+    "size": 480898,
+    "sha256": "89140d70c68dbf1c31e8f4477bd60b9d6e897d8d520ce43258cdc976fe0f8b15"
+  },
+  {
+    "path": "benchmarks/2026-09-10-same-process-sdf-contract-v1.0.10.json",
+    "size": 1444,
+    "sha256": "1c433d80affd34b7b899633dd40c859155b4add351645417b3f9a239c8746182"
+  },
+  {
+    "path": "benchmarks/2026-09-11-similarity-search-v1.0.12.md",
+    "size": 2229,
+    "sha256": "8bc02fe7a9f03d5967358f41f50162f12e2558cdc77bb9b206ac52a05930c2ad"
+  },
+  {
+    "path": "benchmarks/2026-10-14-openbabel-v3000-speed-0-paired21.json",
+    "size": 75079,
+    "sha256": "9de0feab1efe3fa94082e3aae5da8b1686da1100c3437a10e4130a45510d3658"
+  },
+  {
+    "path": "benchmarks/2026-10-13-v113-fix-v112-parse-paired20.json",
+    "size": 17998,
+    "sha256": "edc3e0726887262c2fa1901fe904dc3c30f82e1841ba701fa947a1b2089a424c"
+  },
+  {
+    "path": "benchmarks/2026-10-03-v1.0.30-isolated-python-time-memory.md",
+    "size": 4967,
+    "sha256": "26e0f49ff71f411d270c6b280ef8b29417a4aa76aeccf26dd62116c5da3ac087"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-cycle-root-pruning-parity.json",
+    "size": 506,
+    "sha256": "01c63b69f8871289fe769fcaafca253bf79eaf5abc89afc5959a6a1aee47df07"
+  },
+  {
+    "path": "benchmarks/2026-10-16-openbabel-sdf-buffered.md",
+    "size": 14009,
+    "sha256": "dfad99b8b1f6035e3999a8659b8baca82bb8b8a8f6b3994cbaa991139745521f"
+  },
+  {
+    "path": "benchmarks/2026-10-13-a6-mmff-distance-cache-v4.md",
+    "size": 3203,
+    "sha256": "033cf9b18a1c9786f86dc0c8b6b70785aa8e1a4774995496b1643e47c43351fc"
+  },
+  {
+    "path": "benchmarks/2026-10-12-v111-public-vs-lazy-fix-tpsa-precomputed-paired20.json",
+    "size": 17507,
+    "sha256": "2be630c03557e8852f8b45435a013d3f0b23e8a57d6a20e2e36c67c9b63d3e7e"
+  },
+  {
+    "path": "benchmarks/2026-10-13-a6-conformer-tail-development.md",
+    "size": 3475,
+    "sha256": "18d82fe3da75ae30121885212e6319845f613373dcc88ff8ab5606e32e3c3fd3"
+  },
+  {
+    "path": "benchmarks/2026-10-12-rdkit-workflows-expanded-source.md",
+    "size": 3439,
+    "sha256": "13b55da9bb4ddab8151ac05d85f99db05603a1a0b731dc980fefb2b094247a1a"
+  },
+  {
+    "path": "benchmarks/2026-10-11-v1.1.0-main-vs-rdkit-2026.09.1.md",
+    "size": 3853,
+    "sha256": "d498c3222a6dfbb61bd3630bf5bab4359849d949d14790caf38488d2663a9b11"
+  },
+  {
+    "path": "benchmarks/2026-10-12-rdkit-workflows-source.json",
+    "size": 9546,
+    "sha256": "19d68e06509aa6d2e68b2eabdc6010f82e6fd69b9d1de4296aeb90ddfa00ffe2"
+  },
+  {
+    "path": "benchmarks/2026-06-25.md",
+    "size": 2734,
+    "sha256": "b425f11b708189163ba619dfc716bf390cfa6e416083a694c9ee822fd0ea42e6"
+  },
+  {
+    "path": "benchmarks/2026-09-25-python-op-matrix-vs-rdkit-branch-5269d69f.json",
+    "size": 38617,
+    "sha256": "e3b103ade80c241882aab5f4135f82b39d2b3ea44e2da6745afc5d2456b03e2a"
+  },
+  {
+    "path": "benchmarks/2026-09-09-3d-class-failure-rates-v1.0.10.json",
+    "size": 1808,
+    "sha256": "68787632298faa510d293e7e8a9193a34af9d81b427901d7db1eff2bce8cae9c"
+  },
+  {
+    "path": "benchmarks/2026-10-02-v1.0.29-vs-v1.0.30-paired-parse.json",
+    "size": 18129,
+    "sha256": "d8b0b0ac9b140a76a49b64bd4ed1809b8496ac141d97744039256c90a3e3bee5"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-speed-frontier-parity.json",
+    "size": 5227,
+    "sha256": "4ec5bed2f2ee1eab59d74f7419538a34d4d69a6be1a2a1bcb6def1a4dba78a6b"
+  },
+  {
+    "path": "benchmarks/2026-09-09-mmff94-nonbonded-gradient-v1.0.10.md",
+    "size": 945,
+    "sha256": "e5aec78d70c0474adb94b7bf16d0e3c2c9ee2738389f5e3aad2b7141c587a76e"
+  },
+  {
+    "path": "benchmarks/2026-10-03-v1030-published-chromium-morgan-row-direct.json",
+    "size": 2854,
+    "sha256": "3d1428b094bdcb756566a12b27690eb369c5e6ef6a8cbdac7264ca86a02cc105"
+  },
+  {
+    "path": "benchmarks/2026-10-11-v1042-published-rdkit-node-linux-x64.json",
+    "size": 26222,
+    "sha256": "fa4bc372dc82de409f1de68811fe1eb471089b456a11fe53f66282599fa05420"
+  },
+  {
+    "path": "benchmarks/2026-09-08-streaming-cross-engine-xyz.md",
+    "size": 1075,
+    "sha256": "3177d94702e0c330ecc5a5f0d806707dd9ea24f81a7ea93cdb62544f37d49d0d"
+  },
+  {
+    "path": "benchmarks/2026-10-09-cosmolkit-parity-2.md",
+    "size": 5371,
+    "sha256": "1ad6f880cc84b71c8c0c516bd8bed814a8bbb7e18269699975870fd5c963f581"
+  },
+  {
+    "path": "benchmarks/2026-09-09-same-process-sdf-contract-v1.0.10.md",
+    "size": 1116,
+    "sha256": "2d6691e39d22ae330476fa0673940dff57011458d46a8ec334171d82ccbf2cc4"
+  },
+  {
+    "path": "benchmarks/2026-10-03-v1030-rdkitjs-published-chromium-paired20.md",
+    "size": 4213,
+    "sha256": "44eed3b696043167d4c3aeab25e80ac7bd614a253d05f470f1a2884d54b6c536"
+  },
+  {
+    "path": "benchmarks/2026-10-13-v113-fix-v112-morgan-paired20.json",
+    "size": 17996,
+    "sha256": "1fbd586e03783345478b8d82198c1b296fb0989bec4e7e625a0e4ff5a675f5ad"
+  },
+  {
+    "path": "benchmarks/2026-10-03-reaction-83-postmerge-binding-gate.md",
+    "size": 3194,
+    "sha256": "79ef5be910d709cc9e84aa8d72021f4b347869d82addb43643097959f9112476"
+  },
+  {
+    "path": "benchmarks/2026-09-09-rxn-atomic-number-h1-v1.0.10.md",
+    "size": 950,
+    "sha256": "f8070e9c6f4b58564fa819dbfe00c0f56e30bc244ee3ec8efb0307fdb1ac5659"
+  },
+  {
+    "path": "benchmarks/2026-10-15-openbabel-v3000-parser-token-reuse-0-paired21.json",
+    "size": 2784643,
+    "sha256": "e83c56303acbb291fd2d06fd59d3f6efcb6b4dac4412d4953b91a064a6db15b9"
+  },
+  {
+    "path": "benchmarks/2026-10-03-v1030-published-chromium-morgan-row-prepared.json",
+    "size": 2856,
+    "sha256": "2ffcff1c190881d45a26f62ba96d001afdc68c00c2b8549099d0bb20d09892a2"
+  },
+  {
+    "path": "benchmarks/2026-10-03-v1030-rdkitjs-published-chromium-paired20-summary.json",
+    "size": 2901,
+    "sha256": "3f27f1c17824aabfee7b52ae9c122974736290eb00da7249c29f5053823d2233"
+  },
+  {
+    "path": "benchmarks/published-browser-chromium-summary.json",
+    "size": 3471,
+    "sha256": "c3cdb31481cd47ca43a81691f2dc26c02b55ca25c34e6e447f8bb24b10209815"
+  },
+  {
+    "path": "benchmarks/2026-09-24-python-op-matrix-vs-rdkit-branch-8cc01365.json",
+    "size": 38043,
+    "sha256": "4fac39c0401222ce1eba264e03a3fdc0eda3b0f3c9b991bcb2229adc4126e16e"
+  },
+  {
+    "path": "benchmarks/published-browser-webkit-row-direct.json",
+    "size": 2966,
+    "sha256": "5f12d3f810b64b17595c33d7f25730f43818f6642edef3b9307073511a19d579"
+  },
+  {
+    "path": "benchmarks/2026-10-03-smarts-ring-family-diagnostic.md",
+    "size": 3113,
+    "sha256": "b1b089db43e41f8dcc632875443eeb913d27d38c5a93732672f4411787683379"
+  },
+  {
+    "path": "benchmarks/2026-09-26-mmff94-public-v1.0.26.md",
+    "size": 3003,
+    "sha256": "67a8b9274e8ea907e5897b22f28aef6ac84a67f629709edadbbf0d16d01360f6"
+  },
+  {
+    "path": "benchmarks/2026-10-03-a6-source-mmff94-termination.md",
+    "size": 9463,
+    "sha256": "0fc8f39730e1e1a8a0afcd57d1cf6bc93b68d74f1920bb0df4ba98b55cfc266d"
+  },
+  {
+    "path": "benchmarks/2026-09-10-same-process-extxyz-contract-v1.0.10.json",
+    "size": 1445,
+    "sha256": "f7e86641774d44ebb4b099af05f4db036bcffe477c0391c62d215b4ccbfa99a7"
+  },
+  {
+    "path": "benchmarks/2026-09-10-same-process-sdf-timing-v1.0.10.json",
+    "size": 1051,
+    "sha256": "38c6561e2c6a023536b9ebc651efcc1ece29c5914dcaf2b13b28df4d4ded0172"
+  },
+  {
+    "path": "benchmarks/2026-09-09-rxn-atomic-number-h1-v1.0.10.json",
+    "size": 860,
+    "sha256": "d16def98303de081b282d1534ffd73c2077b6ec8add37f9a9e663ac89958b280"
+  },
+  {
+    "path": "benchmarks/2026-10-08-754-734-followups-batch24.md",
+    "size": 10862,
+    "sha256": "6543018cdf54027b12b7d3998d392ae32521fb06deb1f65a71466f6fb21bb264"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-speed-frontier-paired20.json",
+    "size": 159288,
+    "sha256": "9a18d013c1520f6fe88392327fd70cc55811c516ec1a81da73128aca9692c64d"
+  },
+  {
+    "path": "benchmarks/2026-09-08-streaming-cross-engine.md",
+    "size": 1475,
+    "sha256": "b2fc9d84e111454377e18e8cc9895b849d36b0ebf19b89e907f78c7b93b6b202"
+  },
+  {
+    "path": "benchmarks/published-browser-firefox.json",
+    "size": 90354,
+    "sha256": "9631752721d678cbecc42a7e6077de1aa0634f31e4d2b41411f74c22bcdc1115"
+  },
+  {
+    "path": "benchmarks/2026-10-08-734-754-followups-batch19.md",
+    "size": 7745,
+    "sha256": "31e6626b1a0d036aa3705d3bd6ec7330ba8dc7688bf34e7b2e5ebf2b91dc18bd"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-cycle-path-reuse-source.json",
+    "size": 2106,
+    "sha256": "9372a4af1dba8ab819d105540cc84b243aee65ee0a31950b5f9bdf1ee2f92454"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-model-view-speed-parity.json",
+    "size": 6517,
+    "sha256": "2b05507db38e2a138d5b033a000ed47bf03ea9d9f75bf7f9028b227f80ec32f0"
+  },
+  {
+    "path": "benchmarks/2026-09-24-rdkit-agreement-v1.0.22-297fec4d.json",
+    "size": 3440,
+    "sha256": "819598bea8f0e562f12347f388567fe2780a9a9bf1e07b6ea80b851c08bfddf4"
+  },
+  {
+    "path": "benchmarks/published-browser-webkit.json",
+    "size": 91814,
+    "sha256": "249ec3fca431a60b8b61e183eb2459e193b7465670eb71b700cea1c70f6f03f8"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-cycle-root-pruning-slice5000-focused-repeat20.json",
+    "size": 86613,
+    "sha256": "7ed392a047699034e099f099d98daf034a80ab31d606c409a09df0fc5f53b004"
+  },
+  {
+    "path": "benchmarks/2026-10-15-openbabel-v3000-direct-lines.md",
+    "size": 13227,
+    "sha256": "160d176c289ad9782a42449ea3ebd0d66852e6c19eb58cb306e9de6721048656"
+  },
+  {
+    "path": "benchmarks/2026-10-03-v1030-rdkitjs-published-chromium-prepared-split20.json",
+    "size": 112614,
+    "sha256": "feaa0a80067e18e34e82c3048ef0aed626bfbe1ae4f843b2a95f6235403e2af7"
+  },
+  {
+    "path": "benchmarks/2026-09-23-a6-mmff94-stereo-safe-quality.md",
+    "size": 3705,
+    "sha256": "414b0ca709b2fbac8ddf02ff17cc8955c459a17d801ad83299cc82739cf79d64"
+  },
+  {
+    "path": "benchmarks/2026-10-15-openbabel-v3000-parser-token-reuse-chains-paired21.json",
+    "size": 2782730,
+    "sha256": "2f2e2ccf64aab57128b95978daa66cf43c704186707c1c03522b656db499ccf6"
+  },
+  {
+    "path": "benchmarks/2026-10-12-v1.1.0-source-rdkit-labute-ring-speed.json",
+    "size": 87069,
+    "sha256": "9fb2145c87a41f827fd6d1c25ae1060d2323f63f998522a80317737f613e2bca"
+  },
+  {
+    "path": "benchmarks/2026-10-02-v1.0.29-python-accuracy.md",
+    "size": 6456,
+    "sha256": "cf8615996a9b489730b8d606604e16f038698d2faf049a12cfcc81d26924c7bb"
+  },
+  {
+    "path": "benchmarks/2026-09-24-perf-speed3-output-identical.md",
+    "size": 11766,
+    "sha256": "c86c80d4a3ec0d2e0dfd2ac30ab30ec8947ac84b5b4da2c8deb5d6329e90b7a8"
+  },
+  {
+    "path": "benchmarks/2026-09-09-ensemble-diversity-v1.0.10.md",
+    "size": 935,
+    "sha256": "77fc8d38e54e0fccd51fa85c2398cac9a1c1bcbf48582ad01f29e4a51583d1a0"
+  },
+  {
+    "path": "benchmarks/2026-09-09-same-process-extxyz-contract-v1.0.10.md",
+    "size": 1104,
+    "sha256": "4246ec25ab35c79066a666cdeefea98ba140fc121c3b12c56b6d66e4006b0963"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-kekule-view-reuse-source.json",
+    "size": 415451,
+    "sha256": "5a2bab472e67b00821a3e490921b17ed85facbaf20d39e607b53c025da093583"
+  },
+  {
+    "path": "benchmarks/2026-10-03-rust-v1029-v1030-hba-parse-inclusive-paired20.json",
+    "size": 16147,
+    "sha256": "0badf5728c23bf129dc7866aa6b2e01a3f56d70dff5b1e9bc25ee2f409042bbe"
+  },
+  {
+    "path": "benchmarks/2026-10-12-parallel-conformer-ensemble-vs-rdkit.md",
+    "size": 3007,
+    "sha256": "60eb722ebed6607ce71a86b02a6751e6f5a424199d38fd3f383c394f1eef9e83"
+  },
+  {
+    "path": "benchmarks/2026-09-09-same-process-xyz-contract-v1.0.10.md",
+    "size": 948,
+    "sha256": "f13f2fb5c06a279ac8c79d7cab031dc34468e4cd0855fc02d24f33bd1079f966"
+  },
+  {
+    "path": "benchmarks/2026-09-22-public-package-fingerprint-3d.md",
+    "size": 4512,
+    "sha256": "917c5059cb0086d64185e42adc3639d9dbcd8a07ec3919dcb492dbb8a582acc4"
+  },
+  {
+    "path": "benchmarks/2026-10-10-direct-descriptor-fastpaths-candidate.json",
+    "size": 11700,
+    "sha256": "2d5853cfc0932aaa0edc3e5b9ba396d2594db1187d74fc533b268ea517c2ba9f"
+  },
+  {
+    "path": "benchmarks/2026-10-11-v1042-published-rdkit-node-macos-arm64.json",
+    "size": 26209,
+    "sha256": "0d6b447d62ae8d8d264927e946ddcefaaf634eacacae94d1df1877515a97329d"
+  },
+  {
+    "path": "benchmarks/2026-09-08-streaming-cross-engine-openbabel.md",
+    "size": 1329,
+    "sha256": "1ac2931971b468c3162c5871d16e45c1eff3f30b95a844a93f9f7fb14d4a4ed6"
+  },
+  {
+    "path": "benchmarks/2026-10-03-v1030-rdkitjs-published-chromium-paired20.json",
+    "size": 96371,
+    "sha256": "de0e7f1f8ba7ad208aeb906acb435b10ca210c05bf4ddc860a4217618c99275d"
+  },
+  {
+    "path": "benchmarks/2026-09-25-mmff94-per-term-energy.md",
+    "size": 8132,
+    "sha256": "07c29e91108efd9907bcc76fa9ad243b6bab94eef3da4ca2c1a9ad6dee6ff6a2"
+  },
+  {
+    "path": "benchmarks/2026-09-24-perf-digest-diff-v1.0.23-6bd3fae0-smarts.json",
+    "size": 2304,
+    "sha256": "0794bd6a6400b4e9728384e85b2cef1539dc362d39a6df14767cb37ac248017c"
+  },
+  {
+    "path": "benchmarks/2026-09-09-wasm-size-v1.0.10.md",
+    "size": 856,
+    "sha256": "b6b67788bd0f91a1562e62686ffb871cd2c8ac329903b5d61c0fcaf77b25b0b4"
+  },
+  {
+    "path": "benchmarks/2026-10-10-rdkit-cosmolkit-championship-accuracy.json",
+    "size": 3229,
+    "sha256": "a33996dcc5a4b026af038fd8bcee1f4d576bc5300a7008245520a200880ddc32"
+  },
+  {
+    "path": "benchmarks/2026-09-09-workspace-unit-integration-v1.0.10.md",
+    "size": 610,
+    "sha256": "6b61dda583c45d2f9bbf5eb049ce283fc812fef7fdbe0e6f2c7e7014a70696fa"
+  },
+  {
+    "path": "benchmarks/2026-08-23.md",
+    "size": 9310,
+    "sha256": "e2bf39a0955d6b0981e9b020e1e952f27a44371b857eb04a8ea03c7ed161c50e"
+  },
+  {
+    "path": "benchmarks/2026-10-02-v1.0.30-vs-rdkit-python-63op-paired20.json",
+    "size": 279167,
+    "sha256": "5448fd34190d5358227663a77e415e31dca71718cfd38c2d01e156ab539719da"
+  },
+  {
+    "path": "benchmarks/2026-10-03-a6-published-v1031-mmff94-quality.md",
+    "size": 4740,
+    "sha256": "8699f1a4fec26171183a09ba8016e7aead8c0b64575b70ff9fa33377c79416de"
+  },
+  {
+    "path": "benchmarks/2026-09-08-streaming-cross-engine-extxyz.md",
+    "size": 1148,
+    "sha256": "41fd6c3d404b3204e2c00fcbdc5e9af47af80ed8740f571f0087db5c1cd9d277"
+  },
+  {
+    "path": "benchmarks/2026-09-09-workspace-unit-integration-v1.0.10.json",
+    "size": 838,
+    "sha256": "4ec210f85933938fe7873147cbdd24ed64e9e08a22b10444c0813d4f6e775d89"
+  },
+  {
+    "path": "benchmarks/2026-10-09-issues-769-779.md",
+    "size": 8658,
+    "sha256": "de5dfd3dda2b32ebd5d7f7f96c4c02538950af7e106196e4e8ac06872124b739"
+  },
+  {
+    "path": "benchmarks/2026-09-08-streaming-cross-engine-cdxml.md",
+    "size": 900,
+    "sha256": "0861504ed35c6d5edb70d325730ca16ba5a034956914ef018b1612996d0fa914"
+  },
+  {
+    "path": "benchmarks/2026-10-15-openbabel-ez-inactive.md",
+    "size": 10208,
+    "sha256": "2f0eca1b3e1661113267c0e0b25987f25b37902005b747f7c10c80f14b1a799c"
+  },
+  {
+    "path": "benchmarks/2026-10-14-openbabel-sdf-speed-source.json",
+    "size": 5028,
+    "sha256": "482b2092c623756174ae20ba5232f5cc3e887422bcef5de7141c95e628eacda3"
+  },
+  {
+    "path": "benchmarks/2026-09-05-hot-path-follow-up.md",
+    "size": 4430,
+    "sha256": "a1f55fbad3b67053d5f160d9de441dd846637ced18d6430c341777e91a6fe263"
+  },
+  {
+    "path": "benchmarks/2026-10-10-openbabel-file-io-same-process-v1.0.42.json",
+    "size": 66219,
+    "sha256": "bcf677d237a710f33012127724d3a16fdafda2689e52b60ea50665c1155d0c3e"
+  },
+  {
+    "path": "benchmarks/2026-09-11-v3000-cross-engine-v1.0.12.json",
+    "size": 1271,
+    "sha256": "f61654a739ad133a5e25903939ae4a24f51517e0f7c6888b16e4fdc14fe67c3f"
+  },
+  {
+    "path": "benchmarks/2026-10-10-openbabel-file-io-cli-roundtrip-v1.0.42.json",
+    "size": 22253,
+    "sha256": "5379718b2700a8e678c002628579cbb3da256fac6e07d88d3d41942344503a7c"
+  },
+  {
+    "path": "benchmarks/2026-09-20-parse-morgan-rdkitjs.md",
+    "size": 3538,
+    "sha256": "40b385ee53922e9f523b33efc287d5c94a4818f3cf5b50c2fa280f3412dd358b"
+  },
+  {
+    "path": "benchmarks/2026-10-03-v1.0.30-vs-rdkit-isolated-morgan-precomputed.json",
+    "size": 23147,
+    "sha256": "9162e2e848b7c5df4d8365b4b8708fb546fb6b2e357a2357d687c3efe24ba58b"
+  },
+  {
+    "path": "benchmarks/2026-09-24-rdkit-agreement-accuracy-branch.md",
+    "size": 11431,
+    "sha256": "184dc5e1a40d783901a0eaff9892f227902feea3daae3c66990c410e04fb1c51"
+  },
+  {
+    "path": "benchmarks/2026-10-03-source-smarts-ring-size-follow-up.md",
+    "size": 2436,
+    "sha256": "3906ca3f25459a5b8d24039237edc32f9ab7de93d1ae044fce30ff3751a27e5a"
+  },
+  {
+    "path": "benchmarks/2026-09-08-streaming-cross-engine-mmcif.md",
+    "size": 902,
+    "sha256": "9479d1fef36d10615d53e261255e2e64175bd7744cea33ab4657ba61e55447c1"
+  },
+  {
+    "path": "benchmarks/2026-10-14-openbabel-sdf-read-followup-source.json",
+    "size": 6328,
+    "sha256": "0fea6e74ceafb86f2517d8f09de5767f5f50cacb9d9507bfa5ef710bf6ceb994"
+  },
+  {
+    "path": "benchmarks/2026-10-15-python-ring-scratch.md",
+    "size": 21451,
+    "sha256": "4d2b58bcfc4ac158b47f91bbe3666a818cfd0466f2a4a5ba6195d6c63b470fdc"
+  },
+  {
+    "path": "benchmarks/2026-09-11-streaming-safety-v1.0.12.md",
+    "size": 1469,
+    "sha256": "26fab026ac52b2f55d4cfbcb2286b44b2507dc2f2a5d18fc6cb1dd9133af49f1"
+  },
+  {
+    "path": "benchmarks/2026-09-05-rdkit-openbabel-speed.md",
+    "size": 2908,
+    "sha256": "fa35679a9a8a5f548e8289bad751dc8a38019fee2d28d85e292169060a1b7c84"
+  },
+  {
+    "path": "benchmarks/2026-09-09-same-process-extxyz-contract-v1.0.10.json",
+    "size": 1445,
+    "sha256": "b4270d5772236d533425b3563b15f5b55d84ad6638d2b6cceeef3cd6e15e176e"
+  },
+  {
+    "path": "benchmarks/2026-10-11-v1042-published-rdkit-python-linux-x64.json",
+    "size": 47390,
+    "sha256": "f407e48261c3a873bdc6b82466cc7eb90ee2e7399b85005740b36b25ba9ff925"
+  },
+  {
+    "path": "benchmarks/2026-10-12-parallel-conformer-ensemble-rdkit.json",
+    "size": 1421,
+    "sha256": "716c0b211a8c81a353cea4f6405d224b897a6be3c950d1c686a57848b509432e"
+  },
+  {
+    "path": "benchmarks/2026-10-12-a6-full-h-mmff-vs-rdkit.json",
+    "size": 2372,
+    "sha256": "a5833f2e4d80ad417aaf59101111fdc76ae410115f68e8307e8b847031fba87c"
+  },
+  {
+    "path": "benchmarks/2026-09-23-mmff94-stereo-safe-performance.md",
+    "size": 6215,
+    "sha256": "ca304f0c0d56ac9dcd6c4a7ae534ac809bf30b2663b2d0775bda08a7b651667c"
+  },
+  {
+    "path": "benchmarks/2026-10-12-v111-public-vs-lazy-fix.md",
+    "size": 3118,
+    "sha256": "1bb4dceda4c99b62382175065e33a65858d6da117b4bd5b08b9d268e88862a31"
+  },
+  {
+    "path": "benchmarks/2026-10-15-python-component-packed.md",
+    "size": 14234,
+    "sha256": "05dcc7a0314c94e0628bfe88f03e2994027f57eb5d0284e40e9a1442f2200171"
+  },
+  {
+    "path": "benchmarks/2026-09-04-wasm-size.md",
+    "size": 1358,
+    "sha256": "2579bbd7c45e1b811b08126eaac2c66438449fffefe771aaca5c99573be9251f"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-unambiguous-metal-model-source.json",
+    "size": 412097,
+    "sha256": "1d0848676627ad7c12335c6d940949e4118ce6b4a9ba7ddf5ea02450a44524c4"
+  },
+  {
+    "path": "benchmarks/2026-09-09-similarity-search-v1.0.9.json",
+    "size": 1846,
+    "sha256": "42c6d5f4b57089e4570358307d286b4c2b9f7a9341359a0ee0cd43b6bc3ed8f8"
+  },
+  {
+    "path": "benchmarks/2026-09-24-python-op-matrix-vs-rdkit-base-01a86b62.json",
+    "size": 38037,
+    "sha256": "9523fb0d083955152e86a2d14465e3877f9668d23c4579206bb06807147cf024"
+  },
+  {
+    "path": "benchmarks/2026-10-15-openbabel-v3000-parser-token-reuse.md",
+    "size": 8861,
+    "sha256": "bb3a7b9c02ccd8816536e79a80f2e2869fbd36396359055ea4067b2e3d57f1ca"
+  },
+  {
+    "path": "benchmarks/2026-10-12-a6-rdkit-2026-09-bounds-followup-summary.json",
+    "size": 2776,
+    "sha256": "726d4580f0bdb20e3d76e27e1dd05cd0934df5e817afe15df2a53fbdb71e4099"
+  },
+  {
+    "path": "benchmarks/2026-10-16-openbabel-sdf-loss-work.md",
+    "size": 19466,
+    "sha256": "9079933f3504f2046f66d0ab21456eaf312e3492fa3045a1f43e81bd724c0a82"
+  },
+  {
+    "path": "benchmarks/2026-10-02-v1.0.30-vs-rdkit-paired-parse.json",
+    "size": 6102,
+    "sha256": "0e26f8b1859410624e5a53a93bf292cf32fab8cced491f3e30825b8577c1b4c2"
+  },
+  {
+    "path": "benchmarks/2026-09-09-symmetric-torsion-distance-v1.0.10.md",
+    "size": 1420,
+    "sha256": "aa54121040ef6c54681b335a4e7da99e121f425456d4600c9cffc754cf837467"
+  },
+  {
+    "path": "benchmarks/2026-09-05-descriptor-topology.md",
+    "size": 1062,
+    "sha256": "15100690bcf39322614d599cf255ae73e640b14e814391587a1144ad26733f25"
+  },
+  {
+    "path": "benchmarks/2026-10-02-v1.0.29-vs-v1.0.30-paired-morgan.json",
+    "size": 17761,
+    "sha256": "df4ee7310b3080946dedf0c6d98bd010c094acc920f899a76d07be0e5f92064f"
+  },
+  {
+    "path": "benchmarks/2026-10-08-issues-769-739.md",
+    "size": 8337,
+    "sha256": "f844b779b6cf56b01d48dff77e47c145b3b07bf7c5fb7b02d5ce7e5c9cb78561"
+  },
+  {
+    "path": "benchmarks/2026-09-05-mmff94-gradient-parallel.md",
+    "size": 1399,
+    "sha256": "a32d721b57171f05448e639d6ecd4aa6bbb199fdc3be9e20119c022118e0b04e"
+  },
+  {
+    "path": "benchmarks/2026-10-15-openbabel-v3000-zero-z6.md",
+    "size": 8985,
+    "sha256": "2ecc2176d7617a4445d5e2cff98b0192ddc275543eae2ffe1d9bef712aaa10eb"
+  },
+  {
+    "path": "benchmarks/2026-10-02-v1.0.30-python-op-matrix.json",
+    "size": 38570,
+    "sha256": "a8ba3de1ceddd0a23eccea8c6dbba3327cf1c1d469f1bd8f32bd15b9acadcdca"
+  },
+  {
+    "path": "benchmarks/2026-10-12-v1.1.0-source-labute-ring-speed.md",
+    "size": 2692,
+    "sha256": "0a7167ee704be56063e641fe911ba8f9149df1f0943d8b95f5da6a491d0093e8"
+  },
+  {
+    "path": "benchmarks/2026-10-14-openbabel-sdf-speed.md",
+    "size": 8788,
+    "sha256": "7e4c35600187cda30ca4da63be8d271f4f10a65562f866706becca260d347f4c"
+  },
+  {
+    "path": "benchmarks/2026-10-12-rdkit-workflows-source.md",
+    "size": 3570,
+    "sha256": "c8fb978e793eaaeba35c3269cf566134e50831cd24c79dabbd43fcf0ece29d18"
+  },
+  {
+    "path": "benchmarks/2026-10-03-v1.0.30-vs-rdkit-isolated-morgan-parse-inclusive.json",
+    "size": 23080,
+    "sha256": "806b75696f69ff79b61c0d9128cd178e93d26dca4dd9b65d30e7c502ae25d0e0"
+  },
+  {
+    "path": "benchmarks/2026-10-03-v1029-v1030-published-rust-isolated-time-memory.md",
+    "size": 4179,
+    "sha256": "8bc8fb56b2242e627c1a3837d1231c2e077d271ae46071081ffcab8e9bb34ae6"
+  },
+  {
+    "path": "benchmarks/2026-10-08-734-754-followups-batch23.md",
+    "size": 1891,
+    "sha256": "3936ff6c8dff9ed1e0e6aebff15c1a030918fbbb6eb58990cfa1537619b67a6c"
+  },
+  {
+    "path": "benchmarks/2026-09-09-workspace-test-v1.0.10.json",
+    "size": 559,
+    "sha256": "addb0afca1dd1a8fc9ee068390e8f2d944ad60886005ff21332774a43145bb98"
+  },
+  {
+    "path": "benchmarks/2026-10-12-indigo-workflows-source.json",
+    "size": 6659,
+    "sha256": "c6e51a24aa0930be6c1ab78299394de2487253ada558640fa7ba5e51f08d04be"
+  },
+  {
+    "path": "benchmarks/2026-09-08-streaming-cross-engine-mol2.md",
+    "size": 1077,
+    "sha256": "1bcacef5facbdaf0744cca4f51217b57e907388589a0764bd5ee0752193d9ea3"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-unambiguous-metal-model-slice0-paired20.json",
+    "size": 576414,
+    "sha256": "a0d4e4aa597307f19b998dd8998ae7b08997c7e29f6dc8e5daf5cc456ef771c0"
+  },
+  {
+    "path": "benchmarks/2026-10-12-parallel-conformer-ensemble-chematic.json",
+    "size": 1378,
+    "sha256": "f8f54c1aadca7928f01b8964bccb3c2161ee7546fd81aff7d3e52e2157dd949f"
+  },
+  {
+    "path": "benchmarks/2026-10-03-a6-published-v1031-typing-census.md",
+    "size": 4525,
+    "sha256": "334d51195f3b39662bde9d17e7682db43037f70fa77792655cf9a43cf050bec5"
+  },
+  {
+    "path": "benchmarks/2026-09-08-streaming-gzip-openbabel-cml.md",
+    "size": 1560,
+    "sha256": "9441c043f8e7528a5982c6aee0335141bd0df34781ca0aea215796b01eeed7f2"
+  },
+  {
+    "path": "benchmarks/2026-10-15-openbabel-0d-stereo.json",
+    "size": 69641,
+    "sha256": "c65741537d487ee8c5fd9e3ecc3939d788bad15e37cbc20c88b69185d3c70701"
+  },
+  {
+    "path": "benchmarks/2026-09-09-canonical-identity-focused-v1.0.10.json",
+    "size": 991,
+    "sha256": "bc7831762ec997a5cd7a45fc48aa2d05c56f33c432de43e950aa2c187dbdb6c0"
+  },
+  {
+    "path": "benchmarks/2026-10-02-reaction-checked-source-profile.md",
+    "size": 2819,
+    "sha256": "06c5b02997dd94c04f9405b9cfad71dbe662a31a5536718189c6c0d98d0261ab"
+  },
+  {
+    "path": "benchmarks/2026-09-09-ewald-cell-list-v1.0.10.md",
+    "size": 974,
+    "sha256": "d7b10a547ddf9efbbb6bd21d8e788fdbcf5ccea6a639ed01b832e34dc0a2af3f"
+  },
+  {
+    "path": "benchmarks/2026-09-24-python-op-matrix-vs-rdkit-branch-6bd3fae0.json",
+    "size": 38627,
+    "sha256": "ec159a66b1781ae3d7eefffe4e55da8c31265b2b74d70772321c3577b29cff99"
+  },
+  {
+    "path": "benchmarks/2026-10-14-openbabel-sdf-read-followup-verification.json",
+    "size": 15570,
+    "sha256": "43a8da4221799429faf78431d82dbb5ab224c00e15fdf87ade6c953a50008c27"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-scalar-stereo-slice0-paired20.json",
+    "size": 161881,
+    "sha256": "99076db923d52be2180028346953e5ab5316ce181fd82047d221b2ce7734256d"
+  },
+  {
+    "path": "benchmarks/2026-10-03-rust-v1029-v1030-morgan-prepared-first-use-paired20.json",
+    "size": 16677,
+    "sha256": "0fbba9ba3e2ee89a4bce3ecf6622ef8b2e7f59d746d01a75dee08c404b7c9d5d"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-unambiguous-metal-model-verification.json",
+    "size": 10665,
+    "sha256": "b093b47859a87874bdbad015ed2093c006a030b5d1978f2c563787fd2df35713"
+  },
+  {
+    "path": "benchmarks/2026-10-10-rdkit-cosmolkit-championship-start.md",
+    "size": 3359,
+    "sha256": "5a1953203206a4f92bd4c8a6065f815bdef964a71ff1642d1504a98d69ca1db0"
+  },
+  {
+    "path": "benchmarks/2026-10-07-734-754-followups-batch14.md",
+    "size": 10006,
+    "sha256": "a16781f21409313dccc0f35d9712aff6e81ffc4fa302a245934e40199c7d7afa"
+  },
+  {
+    "path": "benchmarks/2026-10-13-a6-conformer-tail-v3-summary.json",
+    "size": 2435,
+    "sha256": "372796131cfae82c61ca814acfb61861807acd5989073184224880494749b43a"
+  },
+  {
+    "path": "benchmarks/2026-09-09-3d-energy-sanity-v1.0.10.json",
+    "size": 1075,
+    "sha256": "11459e48436e338dd61eb733e98902be6de224cf649fdcab14ee5bb17cdd4571"
+  },
+  {
+    "path": "benchmarks/2026-10-05-biotransformer-rule-corpus.md",
+    "size": 7000,
+    "sha256": "3dc6afcfb4487392ec077f768a18bcd0e8aaa8c9048e89ea7fd58a75a2de7255"
+  },
+  {
+    "path": "benchmarks/2026-09-04-mmff94-3d.md",
+    "size": 916,
+    "sha256": "c83d8fd358d08f9771a30ede5dfb314bf3d941f5f7d5d2d4f743c5fb905ccb18"
+  },
+  {
+    "path": "benchmarks/2026-10-03-a6-source-wheel-mmff94-typing.md",
+    "size": 2795,
+    "sha256": "ad028e684f37f7ef4f9a2a15a4862d8579450b8e1e9c869a9a4ae6dea308e4eb"
+  },
+  {
+    "path": "benchmarks/2026-10-15-python-normalization-storage.md",
+    "size": 13738,
+    "sha256": "c414b7741642afe0bf369ecfa0089b9bf592bea1a667ad6f87c025103916dd98"
+  },
+  {
+    "path": "benchmarks/2026-10-15-openbabel-stereo-paired.md",
+    "size": 2072,
+    "sha256": "c07e6eed9f8a33c41c51abe069be4cd7f7c4ad278f22a52a424c4b0e373b3a4d"
+  },
+  {
+    "path": "benchmarks/2026-09-11-same-process-v3000-mol-contract-v1.0.12.json",
+    "size": 1272,
+    "sha256": "a9babff3e697270ef5503f0a57c106f9f87de1cb0b646ef75595f22c6e29487e"
+  },
+  {
+    "path": "benchmarks/2026-09-25-perf-digest-diff-v1.0.24-issue-650.json",
+    "size": 1936,
+    "sha256": "2f34bd0922f1c9625153496a0b7279c0b4aad62492d657485ffd7870f851cfea"
+  },
+  {
+    "path": "benchmarks/2026-09-23-mmff94-current-source-energy.md",
+    "size": 3559,
+    "sha256": "1726444644a9a725c62c224bea39c5b94eecea09643983112414a763ea9cc49a"
+  },
+  {
+    "path": "benchmarks/2026-09-24-rdkit-agreement-branch-6bd3fae0.json",
+    "size": 3511,
+    "sha256": "fe83fe57c9a7e0827329f0ae6c89505fd017888da6e6c872c430ee59754fe98b"
+  },
+  {
+    "path": "benchmarks/2026-10-14-openbabel-v3000-speed-chains-paired21.json",
+    "size": 73244,
+    "sha256": "823eb1d01aa179e0c360787ff323e75b970df3b805746ea50243903cbb433cf5"
+  },
+  {
+    "path": "benchmarks/2026-09-24-rdkitjs-m4-sssr-cache.md",
+    "size": 2989,
+    "sha256": "2258ec099f4652bfc7b5214a5b56d6b506e00c75d670fa17238b122a11eb2c73"
+  },
+  {
+    "path": "benchmarks/2026-09-08-streaming-cross-engine-pdb.md",
+    "size": 955,
+    "sha256": "4692e3a13835a85ba3589ea60e32c052dd749c5debaa47d22a9735b12721e8f7"
+  },
+  {
+    "path": "benchmarks/2026-10-04-stereo-integrity-smarts-a6-followups.md",
+    "size": 6922,
+    "sha256": "87118d1fbba6ea3dedc5ce725634a061a60a393545980375af7da3927938bfa4"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-kekule-view-reuse-slice0-paired20.json",
+    "size": 579663,
+    "sha256": "36b21da382e075ca5d144811ef0bb02b22f4ec3339d872374af14f5248d525d8"
+  },
+  {
+    "path": "benchmarks/2026-09-09-streaming-safety-v1.0.10.json",
+    "size": 3250,
+    "sha256": "e63405669fa9043baf17535a83c6506b3605011bda3df3e96feaa650079070dc"
+  },
+  {
+    "path": "benchmarks/2026-10-03-a6-v1031-nonconvergence-classification.md",
+    "size": 2645,
+    "sha256": "5d07651b6360c53c6904da12ca623a2a4abd9099b038f3bc8efaab57c79e370a"
+  },
+  {
+    "path": "benchmarks/2026-10-02-v1.0.29-vs-v1.0.30-paired-ring-parse-inclusive.json",
+    "size": 18006,
+    "sha256": "b63c3ff64c4052c4e90242f53ea814c1c9ba91eecb525237f54064952a0abc52"
+  },
+  {
+    "path": "benchmarks/2026-10-10-openbabel-file-io-record-accounting-v1.0.42.json",
+    "size": 16597,
+    "sha256": "4f17348de58cbf8d1dae07a9f2446964bd7972a43e0d1956240f5200465b64c8"
+  },
+  {
+    "path": "benchmarks/2026-09-08-streaming-cross-engine-mol.md",
+    "size": 1119,
+    "sha256": "d69fc6f9117e199211889bedd893330beaa31bfb1a4b478e3663e0b069fe7876"
+  },
+  {
+    "path": "benchmarks/published-browser-webkit-summary.json",
+    "size": 3443,
+    "sha256": "567d6d2fbed78ca8b9a59daf0fef6aeae68b93a9b5057c9c7817e2a3741fc35b"
+  },
+  {
+    "path": "benchmarks/2026-10-13-v113-fix-v113-qed-paired20.json",
+    "size": 17423,
+    "sha256": "9650f0bd1cb70d6a5c91df4b6f2a096d0d0e72a303f360590659b5750609e3dc"
+  },
+  {
+    "path": "benchmarks/2026-10-03-v1.0.30-vs-rdkit-isolated-hba-parse-inclusive.json",
+    "size": 22961,
+    "sha256": "aa1b4e80818cbcc69f16dfae551a19a8f3e7952bcc30317fe9d96c020ef1e7d0"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-cycle-root-pruning.md",
+    "size": 13459,
+    "sha256": "dfeeee396e9fc7d88de1173d19aea51c52051f21562d4939240c14897091bc7c"
+  },
+  {
+    "path": "benchmarks/2026-10-15-openbabel-v3000-stereo.md",
+    "size": 1996,
+    "sha256": "d8ce1f7f7022ad4d6f8c1e7f3fe0c053f035841cc43efa2c86e0876f28f03306"
+  },
+  {
+    "path": "benchmarks/2026-09-09-clean-install-cold-start-v1.0.10.json",
+    "size": 1240,
+    "sha256": "6e1a51b394f281af4f40a37e14157aac8e628548eb321177d4ec68a8b0cd1bc5"
+  },
+  {
+    "path": "benchmarks/2026-09-09-same-process-mol2-contract-v1.0.10.json",
+    "size": 1320,
+    "sha256": "a8919a0f2d1f0699d610ce0483b955c56b394de1d01c7e43253713b0694499ce"
+  },
+  {
+    "path": "benchmarks/2026-09-04-streaming-formats.md",
+    "size": 4813,
+    "sha256": "9cfae69a7f16c8fecc4eb73d02680636fccc37f24886b2ee8ad7b05c69a823f9"
+  },
+  {
+    "path": "benchmarks/2026-10-06-734-754-followups-batch12.md",
+    "size": 10508,
+    "sha256": "5ded55efe30b01b832ed8915057ad4abd559bf4c04f3b492a8a737ac8b5e55e4"
+  },
+  {
+    "path": "benchmarks/2026-10-03-v1030-rdkitjs-published-chromium-prepared-split20-summary.json",
+    "size": 3514,
+    "sha256": "16cc70762572b0b953418826fadb90172529bb0fb2dee72a138df3d51cd33bd8"
+  },
+  {
+    "path": "benchmarks/2026-09-11-similarity-search-v1.0.12.json",
+    "size": 3483,
+    "sha256": "e15874ee9ccaf4e99252417bfe4550feea866dc0d73759981b11ea13fed8019a"
+  },
+  {
+    "path": "benchmarks/2026-10-14-openbabel-v3000-writer-buffer-source.json",
+    "size": 411147,
+    "sha256": "2c5b3806deb010296ea7affa2af7b65ea19774e415908c40539884e7741512fd"
+  },
+  {
+    "path": "benchmarks/2026-10-03-rust-v1029-v1030-morgan-parse-inclusive-paired20.json",
+    "size": 16320,
+    "sha256": "82ce829123b60b53ae42e5dd5a4ee4fc2d7486ab15999b59e7add46fe1205843"
+  },
+  {
+    "path": "benchmarks/published-browser-firefox-summary.json",
+    "size": 3404,
+    "sha256": "0322f2c454c47d92a83a84d13a7f94f0bf8da45e4eef6eadb5b9b77217c8f3d4"
+  },
+  {
+    "path": "benchmarks/2026-09-11-official-rdkit-js-v1.0.12.md",
+    "size": 1612,
+    "sha256": "14c80801798e75ba4f7738f9c2c5a2f2a3865c5160b27985a46c725f5db77f1d"
+  },
+  {
+    "path": "benchmarks/2026-10-15-square-planar-smiles-roundtrip.md",
+    "size": 2569,
+    "sha256": "3049f1ff795acf58892d2ad4485ae0e5566876b9bccd022d45208c7d1185ceda"
+  },
+  {
+    "path": "benchmarks/2026-09-04-sdf-fast-path.md",
+    "size": 1909,
+    "sha256": "9fab42105ba015ee9491af59d636c72eb902483dc256593c070122f43f2dd558"
+  },
+  {
+    "path": "benchmarks/2026-09-08-streaming-gzip-openbabel-mmcif.md",
+    "size": 1573,
+    "sha256": "b077a9cd51a244246d5d49a33be5aeaf0aa881591e7ccc7fa49a776e71762968"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-cycle-path-reuse-parity.json",
+    "size": 506,
+    "sha256": "01c63b69f8871289fe769fcaafca253bf79eaf5abc89afc5959a6a1aee47df07"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-model-view-speed-source.json",
+    "size": 121488,
+    "sha256": "eeeabc0f0a02e4c98d5dd113c0de71957709538c4f81c83c6df31c4695b93684"
+  },
+  {
+    "path": "benchmarks/2026-10-14-openbabel-sdf-read-followup-full10k.json",
+    "size": 2052,
+    "sha256": "eb62d4b6c6d78266685411dd3f705708ed946449e721d5221c686863c5aa1044"
+  },
+  {
+    "path": "benchmarks/2026-10-03-a6-v1031-iteration400-diagnostic.md",
+    "size": 2550,
+    "sha256": "90b3aa75788f619ef6d38ee0e31c82dd2f1a13f304b1e544e329e371d7c3f703"
+  },
+  {
+    "path": "benchmarks/2026-09-11-same-process-mol2-contract-v1.0.12.json",
+    "size": 1320,
+    "sha256": "7dd5ec39d0e4f91746b75711c0761241c569576821606ef605b849d83f4392b2"
+  },
+  {
+    "path": "benchmarks/2026-09-09-symmetric-torsion-distance-v1.0.10.json",
+    "size": 1114,
+    "sha256": "ebf52a3e57e221385103a87a4163a3cc0f042de48ef47042e327c39561ef17b4"
+  },
+  {
+    "path": "benchmarks/2026-09-05-mmff94-prepared-nonbonded.md",
+    "size": 1539,
+    "sha256": "c3d78fddb184a2a3908cf8d6cf4e90273ea6fbde2ef75501535906635a0ba4ba"
+  },
+  {
+    "path": "benchmarks/2026-10-06-v1036-published-reruns-and-followups.md",
+    "size": 7542,
+    "sha256": "72f8121601b231c429ead07b54889fd8b79a36538c60f6f174181df55dc6ccb5"
+  },
+  {
+    "path": "benchmarks/2026-09-09-canonical-identity-focused-v1.0.10.md",
+    "size": 700,
+    "sha256": "ba23dfc79befa1c8cae8b3a18fd71921ddfb0e4e6cf5d5761a00524752c02081"
+  },
+  {
+    "path": "benchmarks/2026-09-09-wasm-rdkit-gate.json",
+    "size": 2695,
+    "sha256": "4caf64eeb4892fffad382b596dfcaf7d6338317c5482d8e0b9fe709e8eb1b32a"
+  },
+  {
+    "path": "benchmarks/2026-10-15-openbabel-v3000-empty-ez.md",
+    "size": 8262,
+    "sha256": "ac2de5648f506a12b6759e10a59f342f4e2a8f6e9eeeb8f2d65fca22253ace9d"
+  },
+  {
+    "path": "benchmarks/2026-10-03-v1.0.30-reaction-multiplicity.md",
+    "size": 2023,
+    "sha256": "302208667e5fcb0be3dead9aff1e49b0f76c3dc9dc3d4286315ae87ba465e20f"
+  },
+  {
+    "path": "benchmarks/2026-09-24-python-op-matrix-vs-rdkit-perf-branch.md",
+    "size": 12373,
+    "sha256": "aced205f23efdbdfa38b1c9d7be4f1f889a6cc96db0ffa00f0a9588feaf7ffd7"
+  },
+  {
+    "path": "benchmarks/2026-10-12-v111-public-vs-lazy-fix-morgan-pipeline-paired20.json",
+    "size": 17995,
+    "sha256": "4530946b4a4b937937181703755fe8272b574243552407aadd8d3042ae74ad15"
+  },
+  {
+    "path": "benchmarks/2026-10-05-biotransformer-corpus-followups.md",
+    "size": 5193,
+    "sha256": "269f1ad65ac5df87d9949d240bd340c21195823fb38268395b5501c7d85a67d5"
+  },
+  {
+    "path": "benchmarks/2026-09-25-python-op-matrix-vs-rdkit-912c4b7d.json",
+    "size": 38635,
+    "sha256": "c299ccfbd5a28becb7cb71978a60cd405486dba579af2c5c52f127c01869a138"
+  },
+  {
+    "path": "benchmarks/2026-09-08-streaming-gzip-openbabel-sdf.md",
+    "size": 1560,
+    "sha256": "a82e0904f375e9cf38b2f08be401c2a584a02b4c63d2765ed6b1570e1785356c"
+  },
+  {
+    "path": "benchmarks/2026-10-03-v1030-published-p0-acceptance-policy.md",
+    "size": 3784,
+    "sha256": "8ad14d77791db9baf2fc298f19cf50c321724ea17cfea7702733a2f779065d63"
+  },
+  {
+    "path": "benchmarks/2026-09-08-streaming-cross-engine-openbabel-v3000.md",
+    "size": 952,
+    "sha256": "8f40e4ae3da0fbf565e4a8f1c1266066115a7a5efad6813a38d61a0ce8ea455d"
+  },
+  {
+    "path": "benchmarks/2026-09-08-streaming-gzip-openbabel-cdxml.md",
+    "size": 1572,
+    "sha256": "5811cc8ee508c6bda7f68124c36344603908ca7cb6856b83a22dd12685fbb7ce"
+  },
+  {
+    "path": "benchmarks/2026-10-02-v1.0.30-published-artifact-gates.md",
+    "size": 27382,
+    "sha256": "f036186821bd5f360743efac7ef6d83a53f4b3b69cf7247854fc4a8f03a9fdd6"
+  },
+  {
+    "path": "benchmarks/2026-09-09-wasm-rdkit-paired.md",
+    "size": 1430,
+    "sha256": "807be6e390931c4edc8832fd467e05dc3873b124eeafcf6015a4b6e316511ffe"
+  },
+  {
+    "path": "benchmarks/2026-09-24-perf-digest-diff-v1.0.23-20b2cbc3.json",
+    "size": 3098,
+    "sha256": "b0217a800b00c9115d28d867b0fffae9bfbc4b55a349b022b0e2a65d97678d98"
+  },
+  {
+    "path": "benchmarks/2026-09-08-streaming-gzip-extxyz-contract.md",
+    "size": 986,
+    "sha256": "53b204437da1bfdaa3e3daa1ba4dca94fb938000659cd3512aae626050a35ec1"
+  },
+  {
+    "path": "benchmarks/2026-10-12-v111-public-vs-lazy-fix-tpsa-pipeline-paired20.json",
+    "size": 17710,
+    "sha256": "7c74e92d6bea71a221c9c617d7ce84dc42796153a2934852abd7301f8fe0f553"
+  },
+  {
+    "path": "benchmarks/2026-09-16-official-rdkit-js-isolated-browser-v1.0.15.md",
+    "size": 15165,
+    "sha256": "e9b231049c491051e9d385c1fcf487205555af311ce29673fb9599f4aa2ed599"
+  },
+  {
+    "path": "benchmarks/2026-10-08-734-754-followups-batch22.md",
+    "size": 4717,
+    "sha256": "b627b2b6bf5519d73d06f974c44af58a0809f59e96e828c5d6f9f903e1332b49"
+  },
+  {
+    "path": "benchmarks/2026-09-09-wasm-rdkit-paired.json",
+    "size": 2670,
+    "sha256": "d7d13363b8ac05f45754c650ee8be5c9985aaf725aa9eb0b8a60b710a8ef1dc3"
+  },
+  {
+    "path": "benchmarks/2026-10-03-rust-v1029-v1030-hba-precomputed-paired20.json",
+    "size": 16222,
+    "sha256": "69c165fab21b452c3280ead783f5735c08e773e7f053e2c8b1e85f580094b4f6"
+  },
+  {
+    "path": "benchmarks/2026-09-10-same-process-v3000-mol-contract-v1.0.10.json",
+    "size": 1273,
+    "sha256": "e5197331ff267991496d2a94491188b4d0b833191130d75b3ce64c61501e0614"
+  },
+  {
+    "path": "benchmarks/2026-09-12-similarity-search-a3-v1.0.13.md",
+    "size": 1555,
+    "sha256": "0613e3f2f233294b24628225af77770d471195a21aedacb99c61421e7a43443a"
+  },
+  {
+    "path": "benchmarks/2026-10-13-cosmolkit-persistent-force-field.md",
+    "size": 2979,
+    "sha256": "dfe6141b0a8d2d030336e8b2fcdd09ee2316e8573af1ac7419ccc8d442dd1c42"
+  },
+  {
+    "path": "benchmarks/2026-09-25-rdkit-agreement-912c4b7d.json",
+    "size": 3479,
+    "sha256": "a839b4104536362e65ba01f72027c22642494ba05994d8b9e21622f22460aaad"
+  },
+  {
+    "path": "benchmarks/2026-10-15-python-basis-roots.md",
+    "size": 15043,
+    "sha256": "cc2a3db7e0270dc013a3222969d6dd7eb77d74b9bf4b28767e4318dd316bacf1"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-speed-frontier-source.json",
+    "size": 1918,
+    "sha256": "ecc1f84975ee1982653a44366908e92ac2632e9db86566db672c72528a30bfe1"
+  },
+  {
+    "path": "benchmarks/2026-09-04-canonical-fast-path.md",
+    "size": 2834,
+    "sha256": "1632a4b4e6e6e1698be4b1c2e5137a790f8571f38c9c931882cb3f1f7d6e5bf2"
+  },
+  {
+    "path": "benchmarks/2026-09-25-python-op-matrix-vs-rdkit-branch-98f57746.json",
+    "size": 38584,
+    "sha256": "202676e020f5f6a43a76a7dbb7bf35c7037bd677b70540b7ced9185f9c20a4d7"
+  },
+  {
+    "path": "benchmarks/2026-10-03-v1030-published-chromium-morgan-row-parity.md",
+    "size": 2355,
+    "sha256": "cc9ae2428d19a21ba7ed1b67493168662505d509d2a0e0c622f1aa6f012e64d7"
+  },
+  {
+    "path": "benchmarks/2026-09-11-streaming-cross-engine-matrix-v1.0.12.md",
+    "size": 1128,
+    "sha256": "5ea73c1e8407e16c1a5e93cfd06092cbbc4c3bcd98688747c6fcc289e0202fcc"
+  },
+  {
+    "path": "benchmarks/2026-09-23-public-package-fingerprint-3d-v1.0.20.md",
+    "size": 3754,
+    "sha256": "5aa12f155cb63972545c1e828a50288f6b23b7daabac976badee49eee4b6572c"
+  },
+  {
+    "path": "benchmarks/2026-10-10-openbabel-file-io-semantics-v1.0.42.json",
+    "size": 3254,
+    "sha256": "1ebe7df9e56724f05abb55e8f623bdb8195518875d7c714c0155175654718241"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-unambiguous-metal-model-focused-asa-slice0-paired20.json",
+    "size": 488348,
+    "sha256": "b8daf8829b74f9b9ca8fb0fea8055359694d4ceef0b2ef01af7d2200eac712db"
+  },
+  {
+    "path": "benchmarks/2026-09-09-same-process-v2000-mol-contract-v1.0.10.json",
+    "size": 1320,
+    "sha256": "3e67e74ff3c0cc0d164a90d806d50f8a150519261cf85e7bc02e2ea4252d20ed"
+  },
+  {
+    "path": "benchmarks/2026-10-10-cdk-indigo-smoke-scorecard.json",
+    "size": 8384,
+    "sha256": "529cbc06e9f649561dde381ae850e884dd6f3648dd6acbac530be84a45ce54ab"
+  },
+  {
+    "path": "benchmarks/2026-09-08-streaming-gzip-openbabel-mol2.md",
+    "size": 1565,
+    "sha256": "3501f73170a97789c3acbd59ccef6d6f94bbf7d22470a7363103cfee2e4c5823"
+  },
+  {
+    "path": "benchmarks/2026-10-14-python-speed-frontier.md",
+    "size": 8548,
+    "sha256": "6a1542db9ba1836f242e6da453b922686621c1fac8de61ea38550b4ca372968c"
+  },
+  {
+    "path": "benchmarks/2026-09-05-descriptor-scaling.md",
+    "size": 1889,
+    "sha256": "bb4aebbfa0f9bd342660371d2fd7d67e1c809048e34783b8018b99fde842bcfb"
+  },
+  {
+    "path": "benchmarks/2026-10-11-v1.1.0-main-vs-rdkit-63op-paired20.json",
+    "size": 278925,
+    "sha256": "a9f6bd5487621dda10b03dedbe85102c98e558d0032f9a8fd2280910cd2944b4"
+  },
+  {
+    "path": "benchmarks/2026-10-11-v1.1.0-main-rdkit-python-macos-arm64.json",
+    "size": 46715,
+    "sha256": "abac034793f9e777fae348c269dcfb72efabad779a1ec809dc6edf984a60657e"
+  },
+  {
+    "path": "benchmarks/2026-09-05-distance-descriptors.md",
+    "size": 889,
+    "sha256": "20810fd8513c1ab9432bbd663395e6b7ba498c29f4e2e966bc246d0e526e826e"
+  },
+  {
+    "path": "benchmarks/2026-10-06-734-754-followups-batch9.md",
+    "size": 4606,
+    "sha256": "41a9b38c97a798d38e2264cc8aba9f07fe76d6a39549cb58e8fd7ff348e81ef7"
+  },
+  {
+    "path": "benchmarks/2026-10-11-v1042-published-rdkit-packet.md",
+    "size": 4598,
+    "sha256": "461341753ab797d3dce6462785c5bc316d5ba923af98a39fd7ad7ae99bce57ff"
+  },
+  {
+    "path": "benchmarks/2026-10-02-v1.0.30-vs-rdkit-paired-morgan.json",
+    "size": 6106,
+    "sha256": "8cc9236b677350b4bcea01781f1066c653f6fcf2d624f37f547ddcbc8cd84c0d"
+  },
+  {
+    "path": "benchmarks/2026-10-07-734-754-followups-batch15.md",
+    "size": 8056,
+    "sha256": "244b5ee196aa2d59e59199d125184609a01e9df8548ab931b8ae89d6eff9eab1"
+  },
+  {
+    "path": "benchmarks/2026-10-02-v1.0.29-vs-v1.0.30-paired-morgan-precomputed.json",
+    "size": 17884,
+    "sha256": "0d207fe54eb1d3f917c0de41a751acdde82efb7f17994b20adc8356fc164e720"
+  },
+  {
+    "path": "benchmarks/2026-10-10-openbabel-file-io-cli-roundtrip-v1.0.42.md",
+    "size": 2133,
+    "sha256": "3437e4012e3d0dc8626b77c4626da16c903327e10358803798c5d47cd22cffd5"
+  },
+  {
+    "path": "benchmarks/2026-10-03-v1030-published-chromium-morgan-10k-prepared.json",
+    "size": 3119,
+    "sha256": "96f1eb2640243e6adcf71cbf330956f8fd7e4a4a40642415195475ca9df38b58"
+  }
+]

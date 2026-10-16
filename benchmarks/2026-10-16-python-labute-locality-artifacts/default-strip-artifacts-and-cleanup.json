@@ -1,0 +1,16 @@
+{
+  "baseline": {
+    "wheel": "/private/tmp/chematic-labute-locality-evidence-20261016/baseline-wheel/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl",
+    "sha256": "0591328523e58a38071dfd6a6cdbff1907e3bd56b2721ba4889ee2071558bc4f"
+  },
+  "candidate": {
+    "wheel": "/private/tmp/chematic-labute-locality-evidence-20261016/candidate-wheel/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl",
+    "sha256": "d0d85f4a4e3c184afef11e4daee0ad38bf8f013f4a45fb442e470dab302c134f"
+  },
+  "cleanup": {
+    "target": "/private/tmp/chematic-labute-locality-target-20261016",
+    "size_kib": 495644,
+    "lsof_rc": 1,
+    "active_build_processes": []
+  }
+}

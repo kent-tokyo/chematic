@@ -1,0 +1,31 @@
+{
+  "source_files_verified": 1845,
+  "patch_reconstructed_from_base": "96a1addb742b9b4cb3c8258e123563cee0d7055c",
+  "changed_and_added_files_verified": [
+    "crates/chematic-chem/src/topo_descriptors.rs",
+    "crates/chematic-chem/src/labute_locality_tests.rs"
+  ],
+  "all_matrix_comparisons_recomputed": 126,
+  "strict_wins_including_source": 61,
+  "all_unranked_lanes": [
+    [
+      0,
+      "num_rings/first_use",
+      "cosmolkit"
+    ],
+    [
+      0,
+      "num_rings/repeated_use",
+      "cosmolkit"
+    ],
+    [
+      0,
+      "num_rings/parse_inclusive",
+      "cosmolkit"
+    ]
+  ],
+  "all_20_hashes_match_fresh_observers": true,
+  "full_source_dump_hashes_verified": true,
+  "interrupted_epoch_retained_separately": true,
+  "universal_superiority": false
+}

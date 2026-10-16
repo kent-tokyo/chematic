@@ -1,0 +1,20 @@
+{
+  "baseline": {
+    "wheel_sha256": "b3c26e9d994595c7871faf25d235cf8381b3d0218bc3f6dc5a5d26fc9075e2f7",
+    "extensions": {
+      "chematic/chematic.cpython-313-darwin.so": "226c2817d4c3b1531bdc442b453107e7c3fe4a3132f317a752b76d00ffd04fdd"
+    }
+  },
+  "candidate": {
+    "wheel_sha256": "578394b566ba39a1a7fa31b374bc9c12aeb1ef8ebfe8588ebd1c3b5ee416682f",
+    "extensions": {
+      "chematic/chematic.cpython-313-darwin.so": "5440624a91bfe906cac352cc89fac6e0a3346f89defe74e62dac04d4a5ad86c3"
+    }
+  },
+  "cleanup": {
+    "path": "/private/tmp/chematic-labute-locality-target-20261016",
+    "size_kib": 498964,
+    "lsof_rc": 1,
+    "active_own_builders": []
+  }
+}

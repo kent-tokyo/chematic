@@ -1,0 +1,1 @@
+Complete single-candidate source experiment. Read ../2026-10-16-python-labute-locality.md for scope and decisions. Wheel binaries and full repeated output streams remain in the local evidence directory; their exact hashes are retained. All complete timing blocks, source manifests, plans and failures are versioned. No partial run is promoted.

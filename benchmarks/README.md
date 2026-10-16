@@ -22,6 +22,9 @@ the [complete inventory](archive-index.md) links every retained record.
 
 ## Recent focused follow-ups
 
+- [Labute ASA loop-locality experiment](2026-10-16-python-labute-locality.md):
+  exact output gates pass, but both initial ASA intervals fail to establish
+  improvement and one ring median misses the 1% budget; unpromoted.
 - [SDF reads and requested stereo-loss collection](2026-10-16-openbabel-sdf-loss-work.md):
   final source passes both-slice read/write/roundtrip improvement conditions
   and all 15 source median budgets; V3000 negative intervals remain disclosed.

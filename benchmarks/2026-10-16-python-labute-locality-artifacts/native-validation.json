@@ -1,0 +1,10 @@
+{
+  "passed": 1249,
+  "failed": 0,
+  "ignored": 5,
+  "suites": 29,
+  "new_frozen_oracles": [
+    "test topo_descriptors::labute_locality_tests::fused_labute_loop_keeps_empty_dummy_nonfinite_and_capacity_boundaries ... ok",
+    "test topo_descriptors::labute_locality_tests::fused_labute_loop_keeps_all_pinned_per_atom_and_total_bits ... ok"
+  ]
+}

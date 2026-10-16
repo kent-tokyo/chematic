@@ -1,0 +1,7 @@
+{
+  "base": "96a1addb742b9b4cb3c8258e123563cee0d7055c",
+  "original_core_sha256": "8cb87bc862b57f2cd98f27dc0353845a3ddcd8b04c303032fddf396426077235",
+  "frozen_core_tokens_match": true,
+  "shared_helpers": "rb0, bond_scale, aromaticity view and RDKit bond traversal are unchanged production code",
+  "candidate_operations": "same floating expressions; independent hydrogen and surface sums still in original atom-index order"
+}

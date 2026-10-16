@@ -1,0 +1,45 @@
+from pathlib import Path
+import gzip, hashlib, json, shutil
+ROOT = Path('/private/tmp/chematic-labute-locality-20261016')
+OUT = Path(__file__).resolve().parent
+STEM = '2026-10-16-python-labute-locality'
+PACKET = ROOT / 'benchmarks' / (STEM + '-artifacts')
+PACKET.mkdir(parents=True, exist_ok=True)
+plan = json.loads((OUT / 'measurement-plan.json').read_text())
+parity = json.loads((OUT / 'parity.json').read_text())
+matrices = {offset: json.loads((OUT / f'frontier-{offset}.json').read_text()) for offset in plan['offsets']}
+assert all(v['complete'] and len(v['blocks']) == 20 for v in matrices.values())
+primary = {str(offset): matrices[offset]['summary']['labute_asa/first_use']['baseline'] for offset in matrices}
+negative = {str(offset): {key: row['baseline']['speedup'] for key, row in data['summary'].items() if row['baseline']['speedup']['ci95'][1] < 1} for offset, data in matrices.items()}
+below_floor = {str(offset): {key: row['baseline']['speedup'] for key, row in data['summary'].items() if row['baseline']['speedup']['median'] < .99} for offset, data in matrices.items()}
+passed = parity['outputs']['baseline'] == parity['outputs']['candidate'] and all(v['speedup']['ci95'][0] > 1 for v in primary.values()) and not any(below_floor.values())
+decision = {'adopt': passed, 'criteria': plan['adoption'], 'primary': primary, 'all_negative_source_intervals': negative, 'all_source_medians_below_floor': below_floor, 'universal_superiority': False}
+(OUT / 'decision.json').write_text(json.dumps(decision, indent=2) + '\n')
+text = [f'# Python Labute ASA loop locality — 2026-10-16\n', f'Local adoption gate: **{"PASS" if passed else "FAIL"}**. Toolkit-wide superiority remains unproved. The complete measured candidate and every observation are retained.\n', 'The two first-use ASA ratios are 1.004 [0.993, 1.014] and 1.003 [1.000, 1.011], so neither establishes the required improvement. Offset-0 repeated ring count has median 0.982 [0.962, 1.013], below the 0.99 floor; its interval is inconclusive and does not establish a causal ring regression. The candidate remains unpromoted and must not be merged as a demonstrated optimization.\n', '## Source change and correctness\n', f'Baseline: `{plan["base"]}`. The candidate fuses the final hydrogen and atom-surface loops in `labute_asa_core`. Radii, bond overlap, RDKit bond traversal, formulas, independent atom-index accumulation orders, model preparation and APIs are unchanged. It also iterates the existing scratch array directly. No new dependency or unsafe code.\n', 'The regression oracle freezes the entire original core from the named base and compares every per-atom value, the hydrogen pool and total by exact float bits, with and without per-atom collection, cold and repeated calls on 14,072 pinned inputs. Empty, dummy/nonfinite, explicit-H, dative, disconnected, aromatic and inline/spill-capacity boundaries are checked separately. Public descriptor outcomes, Morgan bytes and MACCS bytes are also compared between the two measured wheels on all 14,072 inputs. These are development inputs, not an independent holdout. Preserved nonfinite outcomes are not accuracy passes.\n', '## Protocol\n', 'Two unfiltered 1,000-input slices (offsets 0 and 5,000) of the pinned 10,000-row corpus. Twenty rotating four-arm fresh-process blocks per slice. Seven operations and three preparation modes yield 42 source-relative lanes. Native return objects remain retained during timing; output normalization is outside the timer. First use excludes parsing and includes lazy work; repeated use warms the operation once; parse inclusive runs actual parsing inside the loop. Published comparator parsing may eagerly perform perception.\n', 'Builds: Rust 1.97.0, release opt3/full LTO/one codegen unit/one job, native-inchi, explicit strip=none. Source wheels are local builds, not published chematic artifacts. Comparators: RDKit 2026.09.1 and COSMolKit 0.5.0, CPython 3.13.6 on one macOS arm64 host. Package-local native libraries are hashed before and after timing; this excludes system libraries and is not a full runtime closure. Host load averages and whole-process peak RSS are retained; RSS includes imports/preparation/warmup and is not per-operation memory. External host activity is uncontrolled.\n', 'Ratios are reference time / candidate time. Brackets are paired-bootstrap 95% intervals (existing 10,000-resample procedure, three-decimal output). A strict comparator win requires equivalent outputs, CI lower >1 and all 20 blocks faster. COSMolKit ring differences are unranked. The local adoption gate was fixed before timing: first-use ASA CI lower >1 on both slices, exact source outputs, and every source-relative median >=0.99. All negative intervals are disclosed; no adaptive timing reruns or pooled observations.\n']
+for offset, data in matrices.items():
+    text += [f'## Complete matrix: offset {offset}\n', '| Operation / mode | Baseline | RDKit | COSMolKit |', '|---|---:|---:|---:|']
+    for key, row in data['summary'].items():
+        cells=[]
+        for engine in ['baseline','rdkit','cosmolkit']:
+            value=row[engine]; ratio=value['speedup']
+            cells.append('unranked: output difference' if ratio is None else f'{ratio["median"]:.3f} [{ratio["ci95"][0]:.3f}, {ratio["ci95"][1]:.3f}]; {ratio["winning_blocks"]}/20' + (' **strict win**' if value['demonstrated_win'] else ''))
+        text.append('| ' + key + ' | ' + ' | '.join(cells) + ' |')
+    text.append('')
+text += ['## Every negative source interval\n', '```json', json.dumps(negative,indent=2), '```\n', '## Validation and retention\n']
+for name in ['native-tests.log','python-tests-final.log','runner-tests.log']:
+    lines=(OUT/name).read_text().splitlines()
+    summaries=[line for line in lines if 'test result:' in line or ('passed' in line and ('skipped' in line or ' in ' in line))]
+    text.append(f'- `{name}`: ' + '; '.join(summaries))
+text += ['', 'Release Rust tests use LTO=false and 16 codegen units in a separate target; those are correctness checks, not the full-LTO timing executables. All-target chemistry Clippy, formatting, refactor budget and the frozen-oracle extraction check passed.\n', 'An initial default-strip wheel failed to import with the macOS LINKEDIT alignment error. Both source arms were rebuilt with explicit strip=none and imports validated before timing. A candidate rebuild also stopped on ENOSPC before timing. Failed logs and unusable-binary hashes remain; the unused regenerable failed binaries and completed owned build caches were cleaned with preservation/process/open-file checks. No failed or partial build contributed timing samples.\n', f'[{STEM}-artifacts]({STEM}-artifacts/README.md) contains complete raw matrices, every negative interval, the predeclared plan, source/library/wheel manifests, output hashes, reconstructable candidate patch, test/build logs, and exact launch/validation drivers. Full source wheels, installed extensions and complete output streams remain under `{OUT}`; hashes are versioned. Source reconstruction does not imply bit-reproducibility of a rebuilt wheel.\n', 'The offset-5000 checkpoint initially stopped on ENOSPC after seven saved blocks (the eighth in-memory observation was lost). That incomplete epoch and its logs are retained separately. Before inspecting performance summaries, one administrative restart was declared: a fresh complete 20-block offset-5000 epoch, with no pooling or sample substitution. The complete original offset-0 matrix was retained. The recovery reserves 64MiB and retries only the same checkpoint after ENOSPC, without rerunning a worker or timer.\n', 'The scope excludes additional hosts, held-out chemistry, other APIs, 3D/reaction throughput, cold CLI startup and published artifacts. An immediate-baseline result does not resolve historical regressions against older candidates, and a source optimization does not establish universal RDKit/COSMolKit superiority.\n']
+(ROOT/'benchmarks'/f'{STEM}.md').write_text('\n'.join(text))
+for path in sorted(OUT.iterdir()):
+    if not path.is_file(): continue
+    if path.name.endswith('.so') or path.suffix == '.whl' or path.name.endswith('.jsonl.gz'): continue
+    if path.suffix in ('.log','.patch','.rs') or 'frontier-' in path.name and path.suffix=='.json':
+        (PACKET/(path.name+'.gz')).write_bytes(gzip.compress(path.read_bytes(),mtime=0))
+    elif path.suffix in ('.json','.py'):
+        shutil.copy2(path,PACKET/path.name)
+(PACKET/'README.md').write_text('Complete single-candidate source experiment. Read ../'+STEM+'.md for scope and decisions. Wheel binaries and full repeated output streams remain in the local evidence directory; their exact hashes are retained. All complete timing blocks, source manifests, plans and failures are versioned. No partial run is promoted.\n')
+files={path.name:hashlib.sha256(path.read_bytes()).hexdigest() for path in sorted(PACKET.iterdir()) if path.is_file() and path.name!='packet.sha256.json'}
+(PACKET/'packet.sha256.json').write_text(json.dumps(files,indent=2)+'\n')
+print(json.dumps(decision,indent=2))

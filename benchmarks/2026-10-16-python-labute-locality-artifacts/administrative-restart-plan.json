@@ -1,0 +1,8 @@
+{
+  "created_utc": "2026-10-16T07:23:08.145010+00:00",
+  "reason": "ENOSPC while checkpointing complete block 8; process exited and that in-memory observation was lost",
+  "saved_complete_blocks": 7,
+  "incomplete_epoch_kept": true,
+  "policy": "One independent complete offset-5000 epoch; do not pool, substitute or summarize the interrupted seven-block epoch as a completed result. Offset 0 remains the original complete 20-block matrix. Restart selected solely by I/O failure; no performance summary was inspected to select this restart. No performance-adaptive rerun.",
+  "new_checkpoint_policy": "Owned 64MiB reserve; on ENOSPC release reserve and retry only the same in-memory checkpoint; never rerun a worker or timer."
+}

@@ -1,0 +1,5 @@
+{
+  "target": "/private/tmp/chematic-aromatic-proof-commit-target-20261016",
+  "deleted": false,
+  "reason": "Read-only audit observed other cargo/rustc builders; conservative global guard stopped deletion. Free space then recovered before candidate build retry."
+}

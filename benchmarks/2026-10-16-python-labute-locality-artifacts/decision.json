@@ -1,0 +1,49 @@
+{
+  "adopt": false,
+  "criteria": "Full source output bit equality; both primary paired 95% CI lower > 1; all 42 source-relative median ratios >= 0.99; retain every negative interval; no adaptive rerun",
+  "primary": {
+    "0": {
+      "speedup": {
+        "median": 1.004,
+        "ci95": [
+          0.993,
+          1.014
+        ],
+        "winning_blocks": 11,
+        "blocks": 20
+      },
+      "demonstrated_win": false
+    },
+    "5000": {
+      "speedup": {
+        "median": 1.003,
+        "ci95": [
+          1.0,
+          1.011
+        ],
+        "winning_blocks": 14,
+        "blocks": 20
+      },
+      "demonstrated_win": false
+    }
+  },
+  "all_negative_source_intervals": {
+    "0": {},
+    "5000": {}
+  },
+  "all_source_medians_below_floor": {
+    "0": {
+      "num_rings/repeated_use": {
+        "median": 0.982,
+        "ci95": [
+          0.962,
+          1.013
+        ],
+        "winning_blocks": 8,
+        "blocks": 20
+      }
+    },
+    "5000": {}
+  },
+  "universal_superiority": false
+}

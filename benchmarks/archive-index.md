@@ -9,6 +9,7 @@ package, comparator, corpus, host, runtime and operation.
 
 | Need | Start with |
 |---|---|
+| Review the unpromoted Labute locality experiment | [2026-10-16-python-labute-locality](2026-10-16-python-labute-locality.md): exact outputs, both complete matrices and separately retained ENOSPC interruption; local adoption gate failed |
 | Review final SDF reader/writer source | [2026-10-16-openbabel-sdf-loss-work](2026-10-16-openbabel-sdf-loss-work.md): five complete profiles, six positive SDF primary intervals, 1% budget and disclosed V3000 retreats |
 | Review the direct SD-field experiment | [2026-10-16-openbabel-sdf-direct-fields](2026-10-16-openbabel-sdf-direct-fields.md): retained failure of two median floors |
 | Review lazy SDF framing storage | [2026-10-16-openbabel-sdf-buffer-lazy](2026-10-16-openbabel-sdf-buffer-lazy.md): retained prepared-write regressions |

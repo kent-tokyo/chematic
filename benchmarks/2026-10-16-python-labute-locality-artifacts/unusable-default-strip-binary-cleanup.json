@@ -1,0 +1,17 @@
+[
+  {
+    "path": "/private/tmp/chematic-labute-locality-evidence-20261016/baseline-default-strip-wheel/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl",
+    "size": 8129102,
+    "sha256": "0591328523e58a38071dfd6a6cdbff1907e3bd56b2721ba4889ee2071558bc4f"
+  },
+  {
+    "path": "/private/tmp/chematic-labute-locality-evidence-20261016/candidate-default-strip-wheel/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl",
+    "size": 8128705,
+    "sha256": "d0d85f4a4e3c184afef11e4daee0ad38bf8f013f4a45fb442e470dab302c134f"
+  },
+  {
+    "path": "/private/tmp/chematic-labute-locality-evidence-20261016/baseline-linkedit-probe.so",
+    "size": 17346440,
+    "sha256": "4ecae08996bc3a3632fbcad7a2888d24ce91c31b2c798507d3eb9fdc4f8dd2be"
+  }
+]

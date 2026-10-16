@@ -657,21 +657,19 @@ fn labute_asa_core(mol: &Molecule, collect_per_atom: bool) -> (Vec<f64>, f64, f6
     // One hydrogen per atom, pooled into a single term (as RDKit does).
     let rh = crate::descriptors::RDKIT_RB0[0];
     let mut h_contrib = 0.0f64;
-    for i in 0..n {
-        let ri = atom_data[i].0;
-        let bij = ri + rh;
-        let dij = (ri - rh).abs().max(bij).min(ri + rh);
-        atom_data[i].1 += rh * rh - (ri - dij) * (ri - dij) / dij;
-        h_contrib += ri * ri - (rh - dij) * (rh - dij) / dij;
-    }
     let mut per_atom = if collect_per_atom {
         Vec::with_capacity(n)
     } else {
         Vec::new()
     };
     let mut total = 0.0;
-    for i in 0..n {
-        let (ri, overlap) = atom_data[i];
+    // Finish each atom once. Hydrogen and surface totals still accumulate
+    // independently in atom-index order, with the original expressions.
+    for &(ri, mut overlap) in &atom_data {
+        let bij = ri + rh;
+        let dij = (ri - rh).abs().max(bij).min(ri + rh);
+        overlap += rh * rh - (ri - dij) * (ri - dij) / dij;
+        h_contrib += ri * ri - (rh - dij) * (rh - dij) / dij;
         let contribution = PI * ri * (4.0 * ri - overlap);
         total += contribution;
         if collect_per_atom {
@@ -1385,3 +1383,7 @@ pub fn num_valence_electrons(mol: &Molecule) -> u32 {
 
 #[cfg(test)]
 include!("topo_descriptors_tests.rs");
+
+#[cfg(test)]
+#[path = "labute_locality_tests.rs"]
+mod labute_locality_tests;
