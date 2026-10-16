@@ -7,7 +7,8 @@ on:
     branches: [main]
 
 concurrency:
-  group: ci-${{ github.event.pull_request.number || github.ref }}
+  # Keep PR supersession, but let each main push finish for an honest status badge.
+  group: ci-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: true
 
 permissions:
