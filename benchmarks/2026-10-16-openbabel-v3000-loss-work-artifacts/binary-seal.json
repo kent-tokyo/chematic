@@ -1,0 +1,17 @@
+{
+  "files_sha256": {
+    "candidate-sdf": "9363345fb9660ffa599f349b3f0deac3a3b2d219b99fce6e9915c4ca964cde24",
+    "candidate-v3000": "57deba4b80fc6a46e1a95ffc8efb6bfeb0caca71f1ef2434d7bc76754f766afa",
+    "baseline-v3000": "12e727567aa33ff0c90f9c8001073de117e256c50b8357bbbe3ec31040d70c5a",
+    "openbabel-v3000": "34981dcbb977f1f652030d092caf297a120241bb62ca094151a6ed58c3752846",
+    "baseline-sdf": "9363345fb9660ffa599f349b3f0deac3a3b2d219b99fce6e9915c4ca964cde24",
+    "openbabel-sdf": "9e489bcdebfdda2adb29a0613eb3bd7f17a10f6d554185887366f96a0fc7964e"
+  },
+  "cleanup": {
+    "target": "/private/tmp/chematic-v3000-loss-work-target-20261016",
+    "size_kib": 176524,
+    "lsof_rc": 1,
+    "active_own_builders": []
+  },
+  "old_timing_samples_reused": false
+}

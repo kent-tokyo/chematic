@@ -1,0 +1,7 @@
+{
+  "frozen_reporting_code_tokens_equal_baseline": true,
+  "depiction_and_output_construction_byte_identical": true,
+  "plain_requests_loss_collection": false,
+  "reporting_requests_loss_collection": true,
+  "loss_collector_source_unchanged": true
+}

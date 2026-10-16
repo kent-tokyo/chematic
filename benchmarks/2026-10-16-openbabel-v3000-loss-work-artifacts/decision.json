@@ -1,0 +1,88 @@
+{
+  "local_adoption_gate_passed": true,
+  "all_source_snapshots_and_rewrites_exact": true,
+  "primary": {
+    "v3000-0": {
+      "speedup": {
+        "median": 1.015,
+        "ci95": [
+          1.008,
+          1.021
+        ],
+        "winning_blocks": 17,
+        "blocks": 21
+      },
+      "semantic_prerequisite": true,
+      "strict_speed_win": false
+    },
+    "v3000-5000": {
+      "speedup": {
+        "median": 1.015,
+        "ci95": [
+          1.011,
+          1.025
+        ],
+        "winning_blocks": 17,
+        "blocks": 21
+      },
+      "semantic_prerequisite": true,
+      "strict_speed_win": false
+    }
+  },
+  "primary_ci_pass": true,
+  "all_15_source_median_floor": 0.99,
+  "below_floor": {
+    "sdf-0": {},
+    "sdf-5000": {},
+    "v3000-0": {},
+    "v3000-5000": {},
+    "v3000-chains": {}
+  },
+  "unranked_source_lanes": [],
+  "all_negative_source_intervals": {
+    "sdf-0": {},
+    "sdf-5000": {},
+    "v3000-0": {},
+    "v3000-5000": {
+      "parse": {
+        "median": 0.993,
+        "ci95": [
+          0.99,
+          0.998
+        ],
+        "winning_blocks": 4,
+        "blocks": 21
+      }
+    },
+    "v3000-chains": {}
+  },
+  "openbabel_strict_wins": {
+    "sdf-0": {
+      "parse": false,
+      "write": true,
+      "roundtrip": true
+    },
+    "sdf-5000": {
+      "parse": true,
+      "write": true,
+      "roundtrip": true
+    },
+    "v3000-0": {
+      "parse": false,
+      "write": false,
+      "roundtrip": false
+    },
+    "v3000-5000": {
+      "parse": false,
+      "write": false,
+      "roundtrip": false
+    },
+    "v3000-chains": {
+      "parse": true,
+      "write": true,
+      "roundtrip": true
+    }
+  },
+  "no_timing_samples_reused": true,
+  "universal_superiority": false
+}

@@ -22,6 +22,9 @@ the [complete inventory](archive-index.md) links every retained record.
 
 ## Recent focused follow-ups
 
+- [V3000 requested stereo-loss collection](2026-10-16-openbabel-v3000-loss-work.md):
+  prepared writing improves on both diverse slices; all 15 source median
+  budgets pass, with a disclosed additional-slice parse retreat.
 - [SDF reads and requested stereo-loss collection](2026-10-16-openbabel-sdf-loss-work.md):
   final source passes both-slice read/write/roundtrip improvement conditions
   and all 15 source median budgets; V3000 negative intervals remain disclosed.

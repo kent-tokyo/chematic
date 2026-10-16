@@ -1,0 +1,26 @@
+{
+  "passed": true,
+  "native": {
+    "passed": 1264,
+    "failed": 0,
+    "ignored": 0,
+    "suites": 55,
+    "new_oracles": [
+      "test mol3000::writer::loss_collection_tests::reporting_api_keeps_losses_and_groups_with_empty_and_supplied_coordinates ... ok",
+      "test mol3000::writer::loss_collection_tests::v2000_read_graphs_keep_v3000_plain_bytes_and_full_loss_reports ... ok",
+      "test mol3000::writer::loss_collection_tests::plain_v3000_bytes_and_reported_losses_match_on_all_pinned_profiles ... ok"
+    ]
+  },
+  "runner_gates_passed": 10,
+  "release_all_target_clippy": true,
+  "format": true,
+  "refactor_budget": true,
+  "patch_reconstructed_from_base": true,
+  "loss_preservation": {
+    "frozen_reporting_code_tokens_equal_baseline": true,
+    "depiction_and_output_construction_byte_identical": true,
+    "plain_requests_loss_collection": false,
+    "reporting_requests_loss_collection": true,
+    "loss_collector_source_unchanged": true
+  }
+}
