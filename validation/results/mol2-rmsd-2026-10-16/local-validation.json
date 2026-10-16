@@ -1,0 +1,74 @@
+{
+  "schema": "chematic.mol2-rmsd-local-validation.v1",
+  "issue": {
+    "url": "https://github.com/openbabel/openbabel/issues/2671",
+    "state": "OPEN",
+    "observed_date": "2026-10-16"
+  },
+  "source_base": "57d318c03b5bd22e46b8482e72ba47d190d77701",
+  "observed_main": "57d318c03b5bd22e46b8482e72ba47d190d77701",
+  "scope": "Rust/Python bounded multi-record source retention and all-reference-vs-one heavy-atom RMSD; exact source identity/order and bonds required. No graph-isomorphism mapping, symmetry search, file streaming, performance or released-artifact claim.",
+  "upstream_interpretation": "The default upstream command pairs nth records, per its manual. Reversing inputs with -f works; one-line output is not proof of an upstream parser defect.",
+  "baseline": "Retained local RDKit #9601 serialized-input candidate from PR #939 / commit 75b972c2bb7291e8698fb6ccf6f70ea0c2c08f12, based on 57d318c0. Not a released package. Actual tested extension hash is recorded below.",
+  "extension_sha256": {
+    "baseline": "828461385486b50b2f5983251916ec90939d366e96bf0c21fcb7c0fb0c0ce9fd",
+    "candidate": "ec5933c8867e661d10e07791318df23108082ecef3650fc45c0fc3d032753d65"
+  },
+  "independent_evidence": "independent-validation.json",
+  "independent_checks": {
+    "analytical_reference_records": 5,
+    "generated_cases": 39,
+    "raw_math_tolerance": 1e-10,
+    "aligned_svd_tolerance": 1e-09,
+    "aligned_rdkit_tolerance": 1e-05,
+    "rdkit_max_iters": 1000,
+    "max_alignment_delta_svd": 8.455736111301349e-14,
+    "max_alignment_delta_rdkit": 8.706813832104577e-07,
+    "atom_order_permutations_rejected": 23
+  },
+  "tests": {
+    "rust": {
+      "passed": 43,
+      "new_contracts": 20,
+      "existing_contracts": 23,
+      "command": "cargo test -p chematic-mol --test mol2_stream_rmsd --test mol2_preservation --test mol2_unity_charge --test mol2_3d_stereo --offline"
+    },
+    "python": {
+      "passed": 78,
+      "new_contracts": 32,
+      "existing_contracts": 46,
+      "command": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=<candidate-package> python3.13 -m pytest crates/chematic-py/tests/test_mol2_stream_rmsd.py crates/chematic-py/tests/test_mol2_preservation.py crates/chematic-py/tests/test_input_errors.py crates/chematic-py/tests/test_format_convert.py -q"
+    }
+  },
+  "checks": {
+    "production_clippy": "passed: cargo clippy -p chematic-mol -p chematic-py --offline -- -D warnings",
+    "test_clippy": "passed: cargo clippy -p chematic-mol --test mol2_stream_rmsd --offline --no-deps -- -D warnings",
+    "format": "passed: cargo fmt --all -- --check",
+    "refactor_budget": "passed: 586 files, 8625 functions, existing 18 file/85 function allowances unchanged",
+    "static_binding_inventory": "passed: Python 208 registered functions / WASM 307 exports; inventory only, not parity",
+    "cross_binding_manifest": "passed: 58 four-binding operations; bookkeeping only",
+    "product_names": "passed",
+    "unsafe_surface": "passed",
+    "python_ast": "passed: stub, new test, independent validator",
+    "mkdocs": "passed: build --strict"
+  },
+  "build": "Native macOS dev profile with opt-level=1, debug=0, codegen-units=1, CARGO_INCREMENTAL=0; final cargo rustc -p chematic-py --offline -- -C strip=none -C link-arg=-undefined -C link-arg=dynamic_lookup. Not a release wheel.",
+  "toolchain": "rustc 1.97.0 (2d8144b78 2026-07-07)",
+  "host": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "source_sha256": {
+    "crates/chematic-mol/src/lib.rs": "7afaf237b3160d03b3cdac9a86728ffe448b919ef883b6bd216e50ea7b9aae77",
+    "crates/chematic-mol/src/mol2_stream.rs": "c847d36a3c74db02ffee1c14424d83a507da014a47e1c60f7f98b291cc787af6",
+    "crates/chematic-mol/src/mol2_rmsd.rs": "666eb29d3019de3c45d7cdab6142c36340268bca65f2abd8e00a4843fe4f8187",
+    "crates/chematic-mol/tests/mol2_stream_rmsd.rs": "df43d869674eb0d621f3aff04a0c00374071fe560e7f4774a90a25b9306e87ac",
+    "crates/chematic-py/src/formats.rs": "f684076bb955e70d4be107e13f639552edc5fd3e82f62fdeddf2cc7c989e0331",
+    "crates/chematic-py/src/formats/mol2_ensemble.rs": "f988e6eb1d3317951c435502b036bb348bf776c194b649c7cea2a7920387e813",
+    "crates/chematic-py/python/chematic/__init__.pyi": "949e122656ee2f9cdb0bb88418ce9ba138247d7fd4462db6a1ea4a78b0cd54df",
+    "crates/chematic-py/tests/test_mol2_stream_rmsd.py": "5c1bae3defee3995013f2855e5a8fad9800dab4dcfe6aa0b703e0aeac75b6e11",
+    "validation/openbabel_issues/mol2-rmsd/validate.py": "c1b8934fa53f2e5e716f48408ac332c7aa8ddaa984e65d7716611d475dcb948a",
+    "validation/openbabel_issues/mol2-rmsd/references.mol2": "1a0671eafd219b169fc624041917a20ba5b618a2e8bbb937245fed0f9284590a",
+    "validation/openbabel_issues/mol2-rmsd/probe.mol2": "7c71e9ed901afc3a79486e247807ea111105e4fa312d3d271c9db827f08de7f1",
+    "validation/openbabel_issues/mol2-rmsd/expected.json": "b56da2b9aea152c0b1fe4bcbcd0f46de9df900cbf7b28ead6a6163b4421577b0",
+    "validation/results/binding_surface_inventory-current.json": "433086d4bb82b9d36c4a41f23e96cd87ea1854167cca7538d0d916a24f98af54"
+  },
+  "hosted_ci": "Separate from completed local validation; inspect PR checks."
+}

@@ -14,6 +14,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Added bounded source-preserving multi-record MOL2 inspection and explicit
+  all-reference heavy-atom RMSD in Rust/Python. Atom correspondence and indexed
+  bonds are checked; every reference is returned or an error is reported, with
+  optional proper rigid alignment and no implicit remapping.
+
 ### Performance
 
 - Parse complete buffered SDF records directly, reserving owned record storage

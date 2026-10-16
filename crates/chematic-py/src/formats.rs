@@ -34,6 +34,8 @@ use rdfile::*;
 mod turbomole;
 use turbomole::*;
 mod interchange;
+mod mol2_ensemble;
+use mol2_ensemble::*;
 mod materials;
 mod mmcif_pdb;
 mod pdb_selection;
@@ -1413,6 +1415,8 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         parse_cjson_record_json,
         roundtrip_cjson_record,
         parse_mol2_record_json,
+        parse_mol2_records_json,
+        mol2_reference_rmsds_json,
         convert_with_report_json,
         roundtrip_mol2_record,
         from_pdbqt,
