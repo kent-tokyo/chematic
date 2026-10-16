@@ -9,6 +9,7 @@ package, comparator, corpus, host, runtime and operation.
 
 | Need | Start with |
 |---|---|
+| Review borrowed complete SDF records | [SDF buffer packet](2026-10-16-openbabel-sdf-buffered.md): two unfiltered slices, five complete 21-block profiles, exact source retention, 1% regression budget and explicit negative intervals |
 | Review the ordered-ring and V3000 parser optimizations | [`2026-10-16-chemistry-speed-followups.md`](2026-10-16-chemistry-speed-followups.md): exact frozen-implementation gates, paired source timings, rejected lazy-state prototype, and explicit source-candidate limits without retaining transient build artifacts |
 | Review the superseded bounded RDKit workflow baseline | [`2026-10-12-rdkit-workflows-source.md`](2026-10-12-rdkit-workflows-source.md) and [raw JSON](2026-10-12-rdkit-workflows-source.json): the original 83-reaction, 39-largest-fragment, and 16-labelled-R-group source packet before prepared R-group and multi-stage standardization lanes were added |
 | Review the Labute ASA and first-use ring-count optimization | [`2026-10-12-v1.1.0-source-labute-ring-speed.md`](2026-10-12-v1.1.0-source-labute-ring-speed.md) and [raw JSON](2026-10-12-v1.1.0-source-rdkit-labute-ring-speed.json): source-built v1.1.0 wheel, 10,000/10,000 equivalent outputs, 41 alternating blocks, and favorable prepared-operation intervals against RDKit 2026.09.1 on one macOS arm64 host; not a published-package claim |

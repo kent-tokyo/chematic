@@ -22,6 +22,10 @@ the [complete inventory](archive-index.md) links every retained record.
 
 ## Recent focused follow-ups
 
+- [Borrowed SDF record parsing](2026-10-16-openbabel-sdf-buffered.md):
+  exact source retention and 1.9–3.0% parse / 2.4–2.8% roundtrip gains on two
+  slices; all 15 source medians within the predeclared 1% budget, including
+  a disclosed 0.5% V3000 roundtrip retreat. Source-built, one-host evidence.
 - [Ordered-ring and V3000 parser speed follow-ups](2026-10-16-chemistry-speed-followups.md):
   exact output-retention gates and paired source timings; the NCI ring lane
   remains inconclusive and this is not a published-package claim.

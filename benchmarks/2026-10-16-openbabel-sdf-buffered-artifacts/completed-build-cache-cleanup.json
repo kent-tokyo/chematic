@@ -1,0 +1,16 @@
+[
+  {
+    "path": "/private/tmp/chematic-sdf-buffer-scan-target-20261016",
+    "deleted_kib": 426100,
+    "active_owned_compilers": false,
+    "open_files": false,
+    "binaries_sources_logs_preserved": true
+  },
+  {
+    "path": "/private/tmp/chematic-sdf-buffer-scan-test-target-20261016",
+    "deleted_kib": 259888,
+    "active_owned_compilers": false,
+    "open_files": false,
+    "binaries_sources_logs_preserved": true
+  }
+]

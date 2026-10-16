@@ -14,7 +14,12 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-No unreleased changes.
+### Performance
+
+- Parse complete SDF records directly from the available input buffer, keeping
+  the existing line reader for incomplete records and resource-limit cases.
+  Diagnostic and lightweight readers preserve errors, metadata and input
+  positions. See the [bounded source measurements](benchmarks/2026-10-16-openbabel-sdf-buffered.md).
 
 ## [1.1.5] - 2026-10-16
 
