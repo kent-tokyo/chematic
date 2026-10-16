@@ -1,0 +1,61 @@
+{
+  "schema": "chematic.python-filesystem-paths-integration.v1",
+  "checked_at_utc": "2026-10-16T10:56:44.684556+00:00",
+  "original_head": "affe9305d2005bdfa01363613591b7090f450d4b",
+  "merged_main": "b4dbecf8e0193141541c14938e211d7389d15c67",
+  "conflicts": 0,
+  "fix": "Read the checked-in UTF-8 stub with explicit encoding in the AST test; native path converter unchanged.",
+  "windows_initial": {
+    "head": "affe9305d2005bdfa01363613591b7090f450d4b",
+    "passed": 2602,
+    "skipped": 32,
+    "failed": 1,
+    "failure": "test_file_api_stubs_cover_all_path_parameters: cp1252 UnicodeDecodeError",
+    "job_url": "https://github.com/kent-tokyo/chematic/actions/runs/38887825459/job/116929784728"
+  },
+  "linux_initial": {
+    "passed": 2456,
+    "skipped": 80,
+    "failed": 0,
+    "job_conclusion": "success",
+    "job_url": "https://github.com/kent-tokyo/chematic/actions/runs/38887825459/job/116929784774"
+  },
+  "codec_control": {
+    "original_stub_cp1252_decode": "UnicodeDecodeError reproduced",
+    "explicit_utf8_ast_parse": "passed"
+  },
+  "fresh_native_module": {
+    "path": "/private/tmp/chematic-filesystem-integration-python/chematic/chematic.so",
+    "sha256": "ef19872f28a08efb0d7666913f0f627ea2189ddae63e6afc09cb81c9f0b4b5cd"
+  },
+  "source_sha256": {
+    "crates/chematic-py/src/filesystem.rs": "bb887a01a0f56c9d9952242c4d37fa3533acbaf033a658858e90f88be702a615",
+    "crates/chematic-py/src/io.rs": "93b7bca329c3164ef66c5c94f379ccbffee865788318bdaddaa240301fc2c752",
+    "crates/chematic-py/src/io/dataset.rs": "261245c8e90a069cee25b65157781c478481ff7783ca91e6b98826e55287fd0e",
+    "crates/chematic-py/src/io/tdt.rs": "aa7b4e13604ba1cd00b6e9e85c80b5da16e061b94b47fc9ff42cd0cbbe2b54bd",
+    "crates/chematic-py/src/reports.rs": "9d1a081a3ff32fe872ec555c3a2b080bab76b21d5160f8da5fa51f5708e6087d",
+    "crates/chematic-py/tests/test_filesystem_paths.py": "59347610f04ed4a5443fd7782a5308064c02dc5f6835c09ae5203fb2f30ed207",
+    "crates/chematic-py/python/chematic/__init__.pyi": "b01942f4d7a8f480ff799127387f1724140a888213f76533dde98079e67aed55",
+    "crates/chematic-mol/src/stereo_depiction.rs": "a46900857eb33b7c02c7460f90ce19d0718d610ba91c00d756652428c80baabb",
+    "crates/chematic-mol/src/mol3000/tests.rs": "f525a01aab42dec25db2b0940f22129c74be4d2d90fb2eeeb238b507e67d1b18"
+  },
+  "local_revalidation": {
+    "python_passed": 390,
+    "python_skipped": 30,
+    "python_failed": 0,
+    "rust_dative_unit_passed": 4,
+    "strict_clippy_all_targets": "passed; chematic-py and chematic-mol",
+    "fmt": "passed",
+    "refactor_budget": "passed",
+    "binding_surface": "passed",
+    "cross_binding_manifest": "passed",
+    "strict_mkdocs": "passed",
+    "git_diff_check": "passed"
+  },
+  "commands": [
+    "cargo rustc -p chematic-py --offline -- -C strip=none -C link-arg=-undefined -C link-arg=dynamic_lookup",
+    "cargo test -p chematic-mol --lib dative --offline",
+    "cargo clippy -p chematic-py -p chematic-mol --all-targets --offline -- -D warnings"
+  ],
+  "final_hosted_checks": "Follow the exact updated head on PR #948; original-head successes do not verify the updated head."
+}

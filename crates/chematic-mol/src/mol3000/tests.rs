@@ -416,6 +416,48 @@ M  END
     assert!(written.contains("M  V30 2 8 3 4"), "{written}");
 }
 
+#[test]
+fn dative_bonds_do_not_hide_unspecified_double_bond_stereo() {
+    // RDKit 2025.09.3 reads these unmarked V3000 bonds as E/Z when
+    // depiction leaves out CFG=2. Dative bonds do not close small stereo
+    // rings or count as E/Z substituents in this writer path.
+    for (smiles, bonds) in [
+        (
+            "CC(C)C[C@H](NC(=O)C1=C(C2->CC=CC3=CC=CC=C23)C=C(CNC)C=C1)C(=O)O.CNC=N.O",
+            &[12][..],
+        ),
+        (
+            "N1=[C]2(C3C(=CC=C(C=3SC3<-C2=CC=CC=3)NCCNCCO)N1CCN)[Pt@@]",
+            &[12, 14, 16],
+        ),
+        (
+            "CC1=CC(C)=CC(OP(=O)(CN[C@@H](C[C]2=CC<-C(C3=CC=CC=C3)C=C2)C(=O)O)OC2=CC(C)=CC(C)=C2)=C1",
+            &[14, 25],
+        ),
+        (
+            "N#CC1=CC=C->C=C1C1=CC=C(C[C@H](NC(=O)[C@@H]2[C@@H](O)CCN2S(=O)(=O)C2=CC(Cl)=CC(Cl)=C2)C(=O)O)C=C1",
+            &[2],
+        ),
+    ] {
+        let mol = chematic_smiles::parse(smiles).unwrap();
+        let either = crate::stereo_depiction::undeclared_stereo_double_bonds(&mol);
+        for &bond in bonds {
+            assert!(
+                either.contains(&chematic_core::BondIdx(bond)),
+                "unmarked bond {bond} in {smiles}: {either:?}"
+            );
+        }
+        let block = write_mol_v3000(&mol, &crate::mol2000::MolMetadata::default(), &[]);
+        for &bond in bonds {
+            let line = block
+                .lines()
+                .find(|line| line.starts_with(&format!("M  V30 {} 2 ", bond + 1)))
+                .unwrap_or_else(|| panic!("missing double bond {bond} in {smiles}"));
+            assert!(line.contains("CFG=2"), "{smiles}: {line}");
+        }
+    }
+}
+
 // -----------------------------------------------------------------------
 // Test: MDL bond type 9 (dative/coordinate) round-trips, not silently
 // corrupted to Single -- regression test for the platinum coordination-

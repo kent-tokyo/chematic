@@ -65,3 +65,10 @@ See `crates/chematic-py/tests/test_filesystem_paths.py` and the commands, raw
 logs, hashes and limitations in
 `validation/results/filesystem-paths-2026-10-16/`. This implements the filesystem
 portion of RDKit #9601, not all wrapper requests or a package release.
+
+During main integration, the first hosted Linux Python job passed. The Windows
+run passed 2,602 tests but failed the new stub AST check because it read the
+UTF-8 stub with the platform's cp1252 default. That test now explicitly reads
+UTF-8. This changes the validation reader, not the filesystem-path converter.
+The separate integration record retains the failure and subsequent local
+checks; final hosted results belong to the exact PR head.

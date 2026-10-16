@@ -131,7 +131,7 @@ fn unspecified_double_bonds(
     let end_subs = |end: AtomIdx, other: AtomIdx, db: BondIdx| {
         let subs: Vec<AtomIdx> = mol
             .neighbors(end)
-            .filter(|&(nb, _)| nb != other)
+            .filter(|&(nb, bi)| nb != other && mol.bond(bi).order != BondOrder::Dative)
             .map(|(nb, _)| nb)
             .collect();
         let cumulated = mol
@@ -179,7 +179,7 @@ pub(crate) fn undeclared_stereo_double_bonds(mol: &Molecule) -> Vec<BondIdx> {
     unspecified_double_bonds(mol, &HashMap::new())
 }
 
-/// Whether `bond` lies on a ring of fewer than `size` atoms.
+/// Whether `bond` lies on a ring of fewer than `size` atoms, ignoring dative bonds.
 fn in_ring_smaller_than(mol: &Molecule, bond: BondIdx, size: usize) -> bool {
     let (start, goal) = (mol.bond(bond).atom1, mol.bond(bond).atom2);
     let mut seen = vec![false; mol.atom_count()];
@@ -189,7 +189,7 @@ fn in_ring_smaller_than(mol: &Molecule, bond: BondIdx, size: usize) -> bool {
         let mut next = Vec::new();
         for &a in &frontier {
             for (nb, bi) in mol.neighbors(a) {
-                if bi == bond {
+                if bi == bond || mol.bond(bi).order == BondOrder::Dative {
                     continue;
                 }
                 if nb == goal {

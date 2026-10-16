@@ -21,3 +21,9 @@ is copied. Paths containing Japanese characters and spaces are exercised.
 An AST test checks all 15 path stub annotations. This is not a complete static
 type checker or a wheel-content test. No chemical algorithms or native formats
 change, and this record makes no speed, release or general RDKit parity claim.
+
+`integration-validation.json` records the later merge of updated main and the
+Windows test-only UTF-8 correction. The original local snapshot above remains
+unchanged, including its original native-module hash. The first Windows run
+passed 2,602 tests and failed only the new stub AST reader; the first Linux
+Python job succeeded. Final hosted checks are tracked on PR #948.

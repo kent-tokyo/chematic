@@ -188,7 +188,7 @@ def test_non_utf8_filename_bytes_are_lossless(files, name, as_surrogate):
 def test_file_api_stubs_cover_all_path_parameters():
     import ast
     stub = Path(__file__).resolve().parents[1] / 'python/chematic/__init__.pyi'
-    tree = ast.parse(stub.read_text())
+    tree = ast.parse(stub.read_text(encoding='utf-8'))
     declarations = {node.name: node for node in tree.body if hasattr(node, 'name')}
     for name in OPERATIONS:
         argument = 'output' if name == 'report.output' else 'path'
