@@ -9,7 +9,7 @@ fn frozen_perceive_tetrahedral_from_3d(mol: &mut Molecule, conformer: &Coords3D)
             .collect();
     // The CIP classifier keeps ring-path provenance and remote stereo.
     ordinary_centers.extend(chematic_chem::potential_stereocenter_indices(mol));
-    ordinary_centers.extend(additional_3d_ring_centers(mol));
+    ordinary_centers.extend(additional_3d_ring_centers(mol, false));
     let candidates: Vec<_> = mol
         .atoms()
         .filter(|(_, atom)| atom.chirality == Chirality::None && !atom.aromatic)
