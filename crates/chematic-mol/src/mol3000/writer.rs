@@ -108,11 +108,15 @@ fn append_inferred_valence_properties(
         line.push_str(" VAL=-1");
         return;
     }
-    let normal = if atom.element == Element::N && atom.charge == 1 && ordinary_bonds {
-        // A cationic nitrogen has four ordinary valence slots. An explicit
-        // bracket form with fewer bonds/H atoms is a nitrenium radical, not
-        // an invitation to infer more hydrogens from CHG=1.
-        Some(4)
+    let charged_normal = match (atom.element, atom.charge) {
+        (Element::N, 1) | (Element::B, -1) | (Element::F, 3) => Some(4),
+        (Element::O, 1 | 3) => Some(3),
+        _ => None,
+    };
+    let normal = if ordinary_bonds && charged_normal.is_some() {
+        // Some bracket ions have vacant valence slots even after their
+        // formal charge is written. CTfile readers otherwise add implicit H.
+        charged_normal
     } else if atom.charge == 0 && ordinary_bonds {
         atom.element
             .normal_valences()

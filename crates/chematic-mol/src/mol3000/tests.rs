@@ -52,6 +52,14 @@ fn bracket_atom_valence_and_radicals_survive_v3000_writing() {
         ("[c]1ccccc1", "RAD=2 VAL=3"),
         ("[C@H](C)(C)->C", "RAD=2 VAL=3"),
         ("[O]", "VAL=-1"),
+        ("[B-](F)F", "RAD=3 VAL=2"),
+        ("[B-](F)(Cl)Br", "RAD=2 VAL=3"),
+        ("[O+]C", "RAD=3 VAL=1"),
+        ("[O+](C)C", "RAD=2 VAL=2"),
+        ("[O+3]C", "RAD=3 VAL=1"),
+        ("[O+3](C)C", "RAD=2 VAL=2"),
+        ("[F+3]C", "RAD=2 VAL=1"),
+        ("[F+3](C)C", "RAD=3 VAL=2"),
     ] {
         let mol = chematic_smiles::parse(smiles).unwrap();
         let block = write_mol_v3000(&mol, &MolMetadata::default(), &[]);
@@ -68,6 +76,13 @@ fn bracket_atom_valence_and_radicals_survive_v3000_writing() {
         !block.contains(" RAD=") && !block.contains(" VAL="),
         "{block}"
     );
+    let borate = chematic_smiles::parse("[B-](F)(Cl)(Br)I").unwrap();
+    let block = write_mol_v3000(&borate, &MolMetadata::default(), &[]);
+    let first_atom = block
+        .lines()
+        .find(|line| line.starts_with("M  V30 1 "))
+        .unwrap();
+    assert!(!first_atom.contains(" RAD=") && !first_atom.contains(" VAL="));
 }
 
 #[test]

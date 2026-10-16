@@ -28,6 +28,9 @@ scores CheMatic, RDKit and COSMolKit on three fixed development corpora with
 the same RDKit-normalized molecular input. It supersedes the earlier
 [316-row raw-input report](v3000-three-engine-2026-10-17.md). Its reproduction
 script is `scripts/compare_rdkit_cosmolkit_v3000.py`.
+The [charged-bracket follow-up](v3000-charged-radicals-2026-10-17.md) fixes
+four additional V3000 read-back identities on `stress-v1` with no regressions
+on the three exposed corpora.
 
 The focused [aromatic sulfur stereo read-back
 check](aromatic-s-stereo-2026-10-16.md) compares whether each toolkit keeps
