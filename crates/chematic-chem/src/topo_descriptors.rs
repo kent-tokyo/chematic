@@ -1136,6 +1136,7 @@ pub fn topological_distance_matrix(mol: &Molecule) -> Vec<Vec<u32>> {
     matrix
 }
 
+#[inline(always)]
 pub fn labute_asa(mol: &Molecule) -> f64 {
     chematic_smiles::with_rdkit_model_scalar(
         mol,

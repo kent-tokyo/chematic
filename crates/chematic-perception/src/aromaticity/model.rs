@@ -579,7 +579,7 @@ pub(crate) fn build_molecule_from_model_authoritative(
         .filter_map(|(idx, _)| model.is_atom_aromatic(idx).then_some(idx))
         .collect();
     for (bidx, bond) in mol.bonds() {
-        if bond_orders[&bidx] == BondOrder::Aromatic {
+        if bond_orders[bidx.0 as usize] == BondOrder::Aromatic {
             atom_aromatic.insert(bond.atom1);
             atom_aromatic.insert(bond.atom2);
         }
@@ -594,15 +594,14 @@ pub(crate) fn build_molecule_from_model_authoritative(
 /// [`build_molecule_from_model_authoritative`] -- this part of the
 /// computation never differed between the two; only the ATOM flag's
 /// promote-only-vs-authoritative decision does.
-fn compute_bond_orders(mol: &Molecule, model: &AromaticityModel) -> FxHashMap<BondIdx, BondOrder> {
+fn compute_bond_orders(mol: &Molecule, model: &AromaticityModel) -> Vec<BondOrder> {
     mol.bonds()
         .map(|(bidx, bond)| {
-            let order = if model.is_bond_aromatic(bidx) {
+            if model.is_bond_aromatic(bidx) {
                 BondOrder::Aromatic
             } else {
                 bond.order
-            };
-            (bidx, order)
+            }
         })
         .collect()
 }
@@ -616,9 +615,9 @@ fn compute_bond_orders(mol: &Molecule, model: &AromaticityModel) -> FxHashMap<Bo
 fn finish_molecule_with_flags(
     mol: &Molecule,
     atom_aromatic: &FxHashSet<AtomIdx>,
-    bond_orders: &FxHashMap<BondIdx, BondOrder>,
+    bond_orders: &[BondOrder],
 ) -> Molecule {
-    use chematic_core::{MoleculeBuilder, implicit_hcount};
+    use chematic_core::{MoleculeBuilder, implicit_hcount, implicit_hcount_with};
 
     // Implicit-H counts computed BEFORE bond orders are normalized below, for
     // organic-subset atoms without an explicit bracket H count. Needed because
@@ -634,26 +633,27 @@ fn finish_molecule_with_flags(
     // returns the wrong value for atoms that reach this function via
     // Kekule-then-perceive instead. This under-counts molecular weight and
     // formula, not just fingerprints/canonical SMILES.
-    let mut pre_h: Vec<Option<u8>> = mol
-        .atoms()
-        .map(|(idx, atom)| {
-            if atom.hydrogen_count.is_some() {
-                None // already explicit; nothing to preserve
-            } else {
-                Some(implicit_hcount(mol, idx))
-            }
-        })
-        .collect();
-
     let mut builder = MoleculeBuilder::with_capacity(mol.atom_count(), mol.bond_count());
+    let mut needs_patch = false;
     for (idx, atom) in mol.atoms() {
         let mut a = atom.clone();
         a.aromatic = atom_aromatic.contains(&idx);
+        if atom.hydrogen_count.is_none() {
+            let before = implicit_hcount(mol, idx);
+            // This helper reads only this atom and its incident bond orders.
+            // They are exactly the fields the normalized builder would have.
+            let after =
+                implicit_hcount_with(mol, idx, a.aromatic, |bond| bond_orders[bond.0 as usize]);
+            if before != after {
+                a.hydrogen_count = Some(before);
+                needs_patch = true;
+            }
+        }
         builder.add_atom(a);
     }
     let mut stash = Vec::new();
     for (bidx, bond) in mol.bonds() {
-        let order = bond_orders[&bidx];
+        let order = bond_orders[bidx.0 as usize];
         if let Ok(new_bidx) = builder.add_bond(bond.atom1, bond.atom2, order)
             && order == BondOrder::Aromatic
             && matches!(bond.order, BondOrder::Up | BondOrder::Down)
@@ -669,7 +669,11 @@ fn finish_molecule_with_flags(
     // none skipped, so indices line up 1:1 — safe to copy side-channel
     // metadata wholesale. (This rebuild previously dropped stereo_groups and
     // stereo_neighbor_order silently; closing that here too.)
-    builder.copy_r_groups_from(mol);
+    // The historical H-correction rebuild omitted R-group sidecars.
+    // Preserve that branch's behavior; all other metadata copies are equal.
+    if !needs_patch {
+        builder.copy_r_groups_from(mol);
+    }
     builder.copy_atom_tags_from(mol);
     builder.copy_stereo_groups_from(mol);
     builder.copy_stereo_from(mol);
@@ -679,42 +683,7 @@ fn finish_molecule_with_flags(
         builder.set_bond_direction(bidx, dir);
         builder.set_bond_direction_anchor(bidx, anchor);
     }
-    let normalized = builder.build();
-
-    // Compare the pre-normalization implicit H against what the same
-    // (already-tested, unmodified) `implicit_hcount` computes on the
-    // normalized bonds; only atoms where normalization actually changed the
-    // answer get an explicit H frozen in. Benzene CH and pyridine-type N
-    // (heuristic already agrees) are left untouched -- no spurious bracket
-    // notation for atoms that didn't need it.
-    // Reuse the pre-normalization storage as an indexed patch map. Clearing
-    // unchanged entries avoids a second allocation and per-atom linear scans.
-    let mut needs_patch = false;
-    for (index, h) in pre_h.iter_mut().enumerate() {
-        *h = h.filter(|&pre| pre != implicit_hcount(&normalized, AtomIdx(index as u32)));
-        needs_patch |= h.is_some();
-    }
-    if !needs_patch {
-        return normalized;
-    }
-
-    let mut patched =
-        MoleculeBuilder::with_capacity(normalized.atom_count(), normalized.bond_count());
-    for (idx, atom) in normalized.atoms() {
-        let mut a = atom.clone();
-        if let Some(h) = pre_h[idx.0 as usize] {
-            a.hydrogen_count = Some(h);
-        }
-        patched.add_atom(a);
-    }
-    for (_bond_idx, bond) in normalized.bonds() {
-        let _ = patched.add_bond(bond.atom1, bond.atom2, bond.order);
-    }
-    patched.copy_stereo_groups_from(&normalized);
-    patched.copy_stereo_from(&normalized);
-    patched.copy_atom_tags_from(&normalized);
-    patched.copy_bond_directions_from(&normalized);
-    patched.build()
+    builder.build()
 }
 
 #[cfg(test)]

@@ -1,0 +1,41 @@
+{
+  "primary": [
+    "tpsa/first_use",
+    "labute_asa/first_use"
+  ],
+  "offsets": [
+    0,
+    5000
+  ],
+  "limit": 1000,
+  "blocks": 20,
+  "ops": [
+    "tpsa",
+    "labute_asa",
+    "num_rings",
+    "morgan2_2048",
+    "morgan2_chiral",
+    "morgan3_2048",
+    "maccs"
+  ],
+  "modes": [
+    "first_use",
+    "repeated_use",
+    "parse_inclusive"
+  ],
+  "adoption": "exact complete descriptor/Morgan/MACCS source outputs, TPSA and ASA first-use CI lower >1 on both profiles, every source-relative lane median >=0.99; retain every negative interval; no adaptive reruns",
+  "competitor_ranking": "matching outputs, CI lower>1 and 20/20 wins",
+  "build": {
+    "profile": "release",
+    "lto": true,
+    "codegen_units": 1,
+    "strip": "none",
+    "jobs": 1,
+    "features": "native-inchi"
+  },
+  "source_scope": "current main plus one production view.rs optimization; previous unpromoted candidates excluded",
+  "followup_reason": "Third distinct source candidate: outline scalar cache-miss sanitization frame and inline scalar entry points; combined candidate had one prepared TPSA median below floor with an inconclusive interval; all prior matrices retained; baseline reused by exact hash, no timing reused",
+  "additional_primary": [
+    "tpsa/repeated_use on both profiles: CI lower>1"
+  ]
+}

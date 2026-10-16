@@ -1,0 +1,25 @@
+{
+  "prior_candidate": {
+    "wheel_sha256": "3b2d2ca724fd069dd4a5e60c785bbcf207f8bba2f32482f2118ed43fa054ae95",
+    "extension_sha256": "58534e0734b00338000948d5fced1c5872e146dbe90da126436e260d40262bd6"
+  },
+  "current_candidate": {
+    "wheel_sha256": "21aeba2df4cb1b51b770c5b4608b7fa136e24b66fa7436c45a23168580ceafbd",
+    "extension_sha256": "ed931d10a3d9476e7d63faea55d01edb1a9b2434594da3f4b492de8448d7780f"
+  },
+  "tool": "/Library/Developer/CommandLineTools/usr/bin/llvm-objdump",
+  "arguments": [
+    "--macho",
+    "--disassemble",
+    "--dis-symname",
+    "__RNvMs0_NtNtCsjAGnXPCYzRf_8chematic11mol_methods11descriptorsNtB9_3Mol27___pymethod_get_rdkit_tpsa__"
+  ],
+  "prior_frame": "TPSA scalar wrapper subtracts 0x6d0 bytes in addition to saved-register frame before checking the scalar cache",
+  "current_getter_stack_allocations": [
+    "74830:\tff 03 02 d1\tsub\tsp, sp, #0x80"
+  ],
+  "scope": "selected compiled function frames only; excludes shared Python/TLS/native callees and is not RSS or timing evidence",
+  "current_getter_frame_bytes": 128,
+  "prior_scalar_frame_bytes": 1824,
+  "prior_getter_frame_bytes": 96
+}

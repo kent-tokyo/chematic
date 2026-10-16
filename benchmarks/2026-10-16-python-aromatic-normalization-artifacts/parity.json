@@ -1,0 +1,47 @@
+{
+  "baseline": {
+    "descriptor": {
+      "sha256": "c7ea09d88c845b70acc70c6e2d8b6563805c01a572d30bc3faf0a51a9b3cd220",
+      "rows": 14072,
+      "errors": 0,
+      "nonfinite_float_outcomes": 6
+    },
+    "morgan": {
+      "sha256": "e22d41e44fdb540896e99fa0a95621448a0e7e84cb543c72f6f20ac02c9d5907",
+      "rows": 14072,
+      "errors": 0,
+      "nonfinite_float_outcomes": 0
+    },
+    "maccs": {
+      "sha256": "7e5fb5d3da9ba9c1da5caf1899bf6f1484817f0acce0954d841d5581fb48add8",
+      "rows": 14072,
+      "errors": 0,
+      "nonfinite_float_outcomes": 0
+    }
+  },
+  "candidate": {
+    "descriptor": {
+      "sha256": "c7ea09d88c845b70acc70c6e2d8b6563805c01a572d30bc3faf0a51a9b3cd220",
+      "rows": 14072,
+      "errors": 0,
+      "nonfinite_float_outcomes": 6
+    },
+    "morgan": {
+      "sha256": "e22d41e44fdb540896e99fa0a95621448a0e7e84cb543c72f6f20ac02c9d5907",
+      "rows": 14072,
+      "errors": 0,
+      "nonfinite_float_outcomes": 0
+    },
+    "maccs": {
+      "sha256": "7e5fb5d3da9ba9c1da5caf1899bf6f1484817f0acce0954d841d5581fb48add8",
+      "rows": 14072,
+      "errors": 0,
+      "nonfinite_float_outcomes": 0
+    }
+  },
+  "counts": {
+    "descriptor_outcomes": 112576,
+    "morgan_outputs": 56288,
+    "maccs_outcomes": 28144
+  }
+}

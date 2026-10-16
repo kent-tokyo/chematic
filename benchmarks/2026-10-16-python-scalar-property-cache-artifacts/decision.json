@@ -1,0 +1,99 @@
+{
+  "primary": {
+    "0": {
+      "tpsa/first_use": {
+        "median": 1.082,
+        "ci95": [
+          1.077,
+          1.092
+        ],
+        "winning_blocks": 19,
+        "blocks": 20
+      },
+      "labute_asa/first_use": {
+        "median": 1.074,
+        "ci95": [
+          1.073,
+          1.082
+        ],
+        "winning_blocks": 19,
+        "blocks": 20
+      }
+    },
+    "5000": {
+      "tpsa/first_use": {
+        "median": 1.038,
+        "ci95": [
+          1.03,
+          1.044
+        ],
+        "winning_blocks": 19,
+        "blocks": 20
+      },
+      "labute_asa/first_use": {
+        "median": 1.041,
+        "ci95": [
+          1.035,
+          1.052
+        ],
+        "winning_blocks": 19,
+        "blocks": 20
+      }
+    }
+  },
+  "primary_intervals_pass": true,
+  "prepared_tpsa": {
+    "0": {
+      "median": 1.022,
+      "ci95": [
+        1.002,
+        1.033
+      ],
+      "winning_blocks": 14,
+      "blocks": 20
+    },
+    "5000": {
+      "median": 1.019,
+      "ci95": [
+        1.008,
+        1.035
+      ],
+      "winning_blocks": 15,
+      "blocks": 20
+    }
+  },
+  "prepared_tpsa_intervals_pass": true,
+  "source_median_floor": 0.99,
+  "source_lanes_below_floor": {
+    "0": {
+      "num_rings/repeated_use": {
+        "median": 0.984,
+        "ci95": [
+          0.972,
+          0.994
+        ],
+        "winning_blocks": 5,
+        "blocks": 20
+      }
+    },
+    "5000": {}
+  },
+  "all_source_negative_intervals": {
+    "0": {
+      "num_rings/repeated_use": {
+        "median": 0.984,
+        "ci95": [
+          0.972,
+          0.994
+        ],
+        "winning_blocks": 5,
+        "blocks": 20
+      }
+    },
+    "5000": {}
+  },
+  "exact_source_outputs": true,
+  "local_adoption_gate_passed": false,
+  "adaptive_reruns": false,
+  "nonfinite_outcomes_not_chemical_successes": 6
+}

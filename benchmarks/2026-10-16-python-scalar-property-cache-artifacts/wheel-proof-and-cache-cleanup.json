@@ -1,0 +1,17 @@
+{
+  "artifacts": {
+    "baseline": {
+      "wheel_sha256": "1c8bdbac537fcde7ec88d63a52559bbf86a3eed88bbba31321bca641356e18a5",
+      "extension_sha256": "28a23cfc163e4760869f0ebf14fe61dd7c0d34b388fdf23ce13a2b48e2ce9b67"
+    },
+    "candidate": {
+      "wheel_sha256": "77ecba0e7ddb60f5cddefbd782d7fbdd434d027abada3968050f82dc530f0fe4",
+      "extension_sha256": "73c08361d88b476c47ef27d75ff68f122fe34dd7a4bf09a985a6585d564082f7"
+    }
+  },
+  "cache_path": "/private/tmp/chematic-property-cache-target-20261016",
+  "deleted_kib": 667116,
+  "active_processes": [],
+  "lsof_returncode": 1,
+  "baseline_reuse": "exact original baseline wheel; no timing reused"
+}

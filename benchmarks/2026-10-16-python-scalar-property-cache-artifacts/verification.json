@@ -1,0 +1,93 @@
+{
+  "source_reconstruction_passed": true,
+  "source_hashes_passed": true,
+  "native_tests": {
+    "reused_by_source_hash": true,
+    "rerun_for_fourth_candidate": false,
+    "passed": 1627,
+    "failed": 0,
+    "existing_ignored": 3,
+    "perception": 276,
+    "smiles": 393,
+    "chemistry": 958
+  },
+  "python_tests": {
+    "passed": 2304,
+    "skipped": 2
+  },
+  "runner_tests": 9,
+  "parity": {
+    "baseline": {
+      "descriptor": {
+        "sha256": "c7ea09d88c845b70acc70c6e2d8b6563805c01a572d30bc3faf0a51a9b3cd220",
+        "rows": 14072,
+        "errors": 0,
+        "nonfinite_float_outcomes": 6
+      },
+      "morgan": {
+        "sha256": "e22d41e44fdb540896e99fa0a95621448a0e7e84cb543c72f6f20ac02c9d5907",
+        "rows": 14072,
+        "errors": 0,
+        "nonfinite_float_outcomes": 0
+      },
+      "maccs": {
+        "sha256": "7e5fb5d3da9ba9c1da5caf1899bf6f1484817f0acce0954d841d5581fb48add8",
+        "rows": 14072,
+        "errors": 0,
+        "nonfinite_float_outcomes": 0
+      }
+    },
+    "candidate": {
+      "descriptor": {
+        "sha256": "c7ea09d88c845b70acc70c6e2d8b6563805c01a572d30bc3faf0a51a9b3cd220",
+        "rows": 14072,
+        "errors": 0,
+        "nonfinite_float_outcomes": 6
+      },
+      "morgan": {
+        "sha256": "e22d41e44fdb540896e99fa0a95621448a0e7e84cb543c72f6f20ac02c9d5907",
+        "rows": 14072,
+        "errors": 0,
+        "nonfinite_float_outcomes": 0
+      },
+      "maccs": {
+        "sha256": "7e5fb5d3da9ba9c1da5caf1899bf6f1484817f0acce0954d841d5581fb48add8",
+        "rows": 14072,
+        "errors": 0,
+        "nonfinite_float_outcomes": 0
+      }
+    },
+    "counts": {
+      "descriptor_outcomes": 112576,
+      "morgan_outputs": 56288,
+      "maccs_outcomes": 28144
+    }
+  },
+  "raw_output_artifacts_local_only": {
+    "baseline-descriptor.jsonl.gz": {
+      "bytes": 334963,
+      "sha256": "402a8a01e2ec3b031ff21072b6d064fd83cde94f964e81fcc86c5820f1d17905"
+    },
+    "baseline-maccs.jsonl.gz": {
+      "bytes": 265240,
+      "sha256": "a6a39c833606f8741c9b8cf4478291f357ecb97b02f7b19adaaaf2ad8f917b4f"
+    },
+    "baseline-morgan.jsonl.gz": {
+      "bytes": 1499745,
+      "sha256": "e0df77144c9c50a532367822b546dc4287221ea043640a06928cc7d346d9f3b5"
+    },
+    "candidate-descriptor.jsonl.gz": {
+      "bytes": 334963,
+      "sha256": "402a8a01e2ec3b031ff21072b6d064fd83cde94f964e81fcc86c5820f1d17905"
+    },
+    "candidate-maccs.jsonl.gz": {
+      "bytes": 265240,
+      "sha256": "a6a39c833606f8741c9b8cf4478291f357ecb97b02f7b19adaaaf2ad8f917b4f"
+    },
+    "candidate-morgan.jsonl.gz": {
+      "bytes": 1499745,
+      "sha256": "e0df77144c9c50a532367822b546dc4287221ea043640a06928cc7d346d9f3b5"
+    }
+  },
+  "source_selection": "fourth distinct source candidate from pinned main; all three previous matrices retained, no timing reused"
+}

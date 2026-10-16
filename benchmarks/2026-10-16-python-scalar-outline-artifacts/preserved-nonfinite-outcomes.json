@@ -1,0 +1,47 @@
+{
+  "scope": "unchanged existing stress outcomes; no timing ranking for nonfinite outputs",
+  "outcomes": [
+    {
+      "corpus": "stress-v1.smi",
+      "index": 698,
+      "mode": "first",
+      "operation": "labute_asa",
+      "float_bits": "7ff8000000000000"
+    },
+    {
+      "corpus": "stress-v1.smi",
+      "index": 698,
+      "mode": "repeated",
+      "operation": "labute_asa",
+      "float_bits": "7ff8000000000000"
+    },
+    {
+      "corpus": "stress-v1.smi",
+      "index": 707,
+      "mode": "first",
+      "operation": "labute_asa",
+      "float_bits": "7ff8000000000000"
+    },
+    {
+      "corpus": "stress-v1.smi",
+      "index": 707,
+      "mode": "repeated",
+      "operation": "labute_asa",
+      "float_bits": "7ff8000000000000"
+    },
+    {
+      "corpus": "stress-v1.smi",
+      "index": 721,
+      "mode": "first",
+      "operation": "labute_asa",
+      "float_bits": "7ff8000000000000"
+    },
+    {
+      "corpus": "stress-v1.smi",
+      "index": 721,
+      "mode": "repeated",
+      "operation": "labute_asa",
+      "float_bits": "7ff8000000000000"
+    }
+  ]
+}

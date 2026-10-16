@@ -1,6 +1,7 @@
 //! Storage-only normalization oracle frozen from the immediate baseline.
 //! All chemical inputs come from the existing licensed and pinned 10k corpus.
 use super::*;
+use rustc_hash::FxHashMap;
 
 fn reference_finish(
     mol: &Molecule,
@@ -106,6 +107,21 @@ fn reference_finish(
     patched.build()
 }
 
+fn reference_orders(mol: &Molecule, model: &AromaticityModel) -> FxHashMap<BondIdx, BondOrder> {
+    mol.bonds()
+        .map(|(idx, bond)| {
+            (
+                idx,
+                if model.is_bond_aromatic(idx) {
+                    BondOrder::Aromatic
+                } else {
+                    bond.order
+                },
+            )
+        })
+        .collect()
+}
+
 fn compare_graph(expected: &Molecule, actual: &Molecule) {
     assert_eq!(actual.atom_count(), expected.atom_count());
     assert_eq!(actual.bond_count(), expected.bond_count());
@@ -154,7 +170,7 @@ fn compare_normalization(input: &Molecule, model: &AromaticityModel) -> usize {
         .atoms()
         .filter_map(|(idx, atom)| (model.is_atom_aromatic(idx) || atom.aromatic).then_some(idx))
         .collect();
-    let expected = reference_finish(input, &flags, &orders);
+    let expected = reference_finish(input, &flags, &reference_orders(input, model));
     let actual = finish_molecule_with_flags(input, &flags, &orders);
     compare_graph(&expected, &actual);
     input
@@ -191,4 +207,105 @@ fn fixed_corpus_normalization_matches_original_storage() {
     }
     assert_eq!(rows, 10000);
     assert!(patches > 0, "exercise the indexed hydrogen patch map");
+}
+
+#[test]
+fn owned_hydrogen_corrections_match_frozen_rebuild_on_both_corpora() {
+    let corpora = [
+        include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi"
+        )),
+        include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../validation/cosmolkit_comparison/corpora/stress-v1.smi"
+        )),
+    ];
+    let mut rows = 0;
+    let mut comparisons = 0;
+    let mut corrected = 0;
+    for corpus in corpora {
+        for line in corpus.lines().filter(|line| !line.trim().is_empty()) {
+            let input =
+                chematic_smiles::parse_template(line.split_whitespace().next().unwrap()).unwrap();
+            let kekulized = chematic_core::kekulize(&input)
+                .map(|form| chematic_core::apply_kekule(&input, &form))
+                .unwrap_or_else(|_| input.clone());
+            for mol in [&input, &kekulized] {
+                for algorithm in [
+                    AromaticityAlgorithm::Huckel,
+                    AromaticityAlgorithm::RdkitLike,
+                ] {
+                    let model = assign_aromaticity_ex(mol, algorithm);
+                    let reference = reference_orders(mol, &model);
+                    for authoritative in [false, true] {
+                        let mut flags: FxHashSet<_> = mol
+                            .atoms()
+                            .filter_map(|(idx, atom)| {
+                                (model.is_atom_aromatic(idx) || (!authoritative && atom.aromatic))
+                                    .then_some(idx)
+                            })
+                            .collect();
+                        if authoritative {
+                            for (idx, bond) in mol.bonds() {
+                                if reference[&idx] == BondOrder::Aromatic {
+                                    flags.extend([bond.atom1, bond.atom2]);
+                                }
+                            }
+                        }
+                        let expected = reference_finish(mol, &flags, &reference);
+                        let actual = if authoritative {
+                            build_molecule_from_model_authoritative(mol, &model)
+                        } else {
+                            build_molecule_from_model(mol, &model)
+                        };
+                        compare_graph(&expected, &actual);
+                        corrected += mol
+                            .atoms()
+                            .filter(|(idx, atom)| {
+                                atom.hydrogen_count != actual.atom(*idx).hydrogen_count
+                            })
+                            .count();
+                        comparisons += 1;
+                    }
+                }
+            }
+            rows += 1;
+        }
+    }
+    assert_eq!(rows, 14072);
+    assert_eq!(comparisons, 112576);
+    assert!(corrected > 0);
+    eprintln!(
+        "Owned H correction oracle: {rows} inputs, {comparisons} full graph/metadata comparisons, {corrected} corrected atom counts"
+    );
+}
+
+#[test]
+fn owned_hydrogen_corrections_keep_historical_sidecars_and_invalidation() {
+    let mut mol = chematic_smiles::parse_template("N1C=CC=C1.*").unwrap();
+    mol.set_tag(AtomIdx(0), Some(23));
+    mol.set_r_group(AtomIdx(5), chematic_core::RGroupLabel::unnumbered());
+    mol.set_stereo_neighbor_order(AtomIdx(0), vec![1, 4, chematic_core::STEREO_H_SENTINEL]);
+    mol.add_stereo_group_with_bonds(
+        chematic_core::StereoGroup::new(chematic_core::StereoGroupKind::Or(9), vec![AtomIdx(0)]),
+        vec![BondIdx(0)],
+    );
+    mol.set_bond_order(BondIdx(0), BondOrder::Up);
+    let model = AromaticityModel::from_atom_bond_sets(
+        (0..5).map(AtomIdx).collect(),
+        (0..5).map(BondIdx).collect(),
+    );
+    let orders = compute_bond_orders(&mol, &model);
+    let flags = (0..5).map(AtomIdx).collect();
+    let expected = reference_finish(&mol, &flags, &reference_orders(&mol, &model));
+    let actual = finish_molecule_with_flags(&mol, &flags, &orders);
+    compare_graph(&expected, &actual);
+    assert_eq!(actual.atom(AtomIdx(0)).hydrogen_count, Some(1));
+    assert!(actual.r_group_label(AtomIdx(5)).is_none());
+    assert!(
+        actual
+            .derived_if_computed::<Vec<Option<BondOrder>>>(chematic_core::DerivedSlot::KekuleOrders)
+            .is_none()
+    );
 }

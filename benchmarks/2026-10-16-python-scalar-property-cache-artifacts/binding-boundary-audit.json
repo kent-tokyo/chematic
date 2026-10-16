@@ -1,0 +1,15 @@
+{
+  "molecule_graph": "immutable Arc<Molecule>; metadata lives separately",
+  "direct_native_model_callback_entry_points_in_python": [],
+  "in_place_graph_mutation_sites_in_python": [],
+  "native_model_dependencies_exclude_pyo3": true,
+  "cache_slot": "existing core scalar slots, no extra storage",
+  "cold_initializer": "core computes outside initialization lock; regression test bounds cold first calls by timeout",
+  "scope": "Python property boundary only; native nested model bypass remains unchanged",
+  "audit_patterns": [
+    "Arc::make_mut",
+    "Arc::get_mut",
+    "self.inner =",
+    "self.inner="
+  ]
+}

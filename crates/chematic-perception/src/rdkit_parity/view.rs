@@ -252,10 +252,13 @@ fn parity_shortcut(mol: &Molecule) -> ParityShortcut {
         {
             return ParityShortcut::Identity;
         }
-        let info = ComponentInfo::new(mol);
         if has_aromatic_macrocycle_bridge_donor(mol) {
             return ParityShortcut::Full;
         }
+        if !model_may_disagree && preperceived_edges_are_complete(mol) {
+            return ParityShortcut::Identity;
+        }
+        let info = ComponentInfo::new(mol);
         match preperceived_kind_with(mol, &info) {
             Some(kind) => kind,
             None if unchanged_without_kekulization_with(mol, &info) => ParityShortcut::Identity,
@@ -263,6 +266,41 @@ fn parity_shortcut(mol: &Molecule) -> ParityShortcut {
             None => ParityShortcut::Full,
         }
     })
+}
+
+/// A sufficient case of `preperceived_kind_with` that needs no component
+/// scratch table: every cyclic edge is either explicitly aromatic or joins
+/// unflagged saturated atoms with no incident multiple bond. Such components
+/// cannot mix aromatic and non-aromatic edges or need a candidate check.
+/// The caller must retain the model, cleanup and macrocycle-donor guards.
+fn preperceived_edges_are_complete(mol: &Molecule) -> bool {
+    let cyclic = crate::sssr::ring_bond_flags_shared(mol);
+    for (idx, bond) in mol.bonds() {
+        if bond.order == BondOrder::Aromatic {
+            if !cyclic[idx.0 as usize]
+                || !mol.atom(bond.atom1).aromatic
+                || !mol.atom(bond.atom2).aromatic
+            {
+                return false;
+            }
+        } else if cyclic[idx.0 as usize]
+            && (!matches!(
+                bond.order,
+                BondOrder::Single | BondOrder::Up | BondOrder::Down
+            ) || [bond.atom1, bond.atom2].into_iter().any(|atom| {
+                mol.atom(atom).aromatic
+                    || mol.neighbors(atom).any(|(_, edge)| {
+                        matches!(
+                            mol.bond(edge).order,
+                            BondOrder::Double | BondOrder::Triple | BondOrder::Quadruple
+                        )
+                    })
+            }))
+        {
+            return false;
+        }
+    }
+    true
 }
 
 /// Whether the RDKit-parity aromatic view of `mol`
@@ -1141,7 +1179,9 @@ fn apply_aromaticity_rdkit_parity_unseeded(mol: &Molecule) -> Result<Molecule, A
 
 fn already_kekulized_in_bond_order(mol: &Molecule) -> bool {
     !mol.atoms().any(|(_, atom)| atom.aromatic)
-        && !mol.bonds().any(|(_, bond)| bond.order == BondOrder::Aromatic)
+        && !mol
+            .bonds()
+            .any(|(_, bond)| bond.order == BondOrder::Aromatic)
         && mol.adjacency_in_bond_order()
 }
 
@@ -1152,3 +1192,7 @@ mod kekule_view_tests;
 #[cfg(test)]
 #[path = "component_packed_tests.rs"]
 mod component_packed_tests;
+
+#[cfg(test)]
+#[path = "edge_proof_tests.rs"]
+mod edge_proof_tests;

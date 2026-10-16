@@ -1,0 +1,25 @@
+{
+  "source_manifest": "/private/tmp/chematic-scalar-outline-evidence-20261016/source-manifest.json",
+  "sources_unchanged_sha256": {
+    "crates/chematic-perception/src/rdkit_parity/view.rs": "57ec91ed634fe3dc0961acba6c7fae3c698b14c901b525ec3e8bb5864664ddc4",
+    "crates/chematic-perception/src/rdkit_parity/edge_proof_tests.rs": "95c3e2e0a2be91e698cac03918480b32c7b804fd5b068a947802baca98aab62e",
+    "scripts/verify_python_maccs_frontier.py": "4b19ec0a6b85345c5f1b4d98f211af9441725981d15aa90a5083b28fa727a291",
+    "crates/chematic-perception/src/rdkit_parity/kekule_view_tests.rs": "faf0c4df6ab8a0d34f1b8a4af0c43f05d8af64fb8dfc64005963b1a04f3c6797",
+    "crates/chematic-perception/src/aromaticity/model.rs": "9c5b27fb42bc80f83ed9b42218a175c28aca2db4caa842c51d13081894ba8927",
+    "crates/chematic-perception/src/aromaticity/normalization_storage_tests.rs": "5c232fb33a96f671d1da201bc271c17d9ff322457c0cf4db8dfcff22c1e07dcd",
+    "crates/chematic-smiles/src/rdkit/model_view.rs": "b3d1ce8b3f110d4284b94cb86c694829772f4204dbc526bbf56c346c4b8f9160",
+    "crates/chematic-chem/src/descriptors/tpsa.rs": "261ff1e74ca7204df606705aa77c7f7570a4472ed57a983c853b8b6e8ee0a741",
+    "crates/chematic-chem/src/topo_descriptors.rs": "ebe8930b92488fd08468a21abb19d890f380026d7ccfab82497735d76f552c0a",
+    "scripts/bench_python_speed_frontier.py": "f6693ba7d2e6216d21229e134a06433b9ad3b949fd652fc0dca809d61f1de248",
+    "validation/cosmolkit_comparison/bench_corpus.py": "6ad2dc64556b8e88e2b246f3c9dd4953b849a1c266fb8055520598b5e7deeb4c",
+    "scripts/verify_python_descriptor_frontier.py": "5b64211b11bb0bb9a696ff209d33213a455015dde169ed18f2c968852bc82639",
+    "scripts/verify_python_morgan_frontier.py": "48545259dd551c5b8e75d82e2ebc7696181af460bd0a7c9cff1f1bcfecea356d",
+    "crates/chematic-perception/src/rdkit_model_hook.rs": "bf7d6a2140f6fc75394d4db24a673191a4907f7ba187c5d5ce3c4a1daf65f589",
+    "Cargo.lock": "322fdd485bc43442d331530f74e6db19a81fe8bc4b7153df65fcd180cc3eea7f",
+    "Cargo.toml": "4cb261d4afdb461074b9f5fae966caaa32799f2facaab3754cd1b4c3d3ca5388"
+  },
+  "native_tests_log_sha256": "66bcc40cf991f651c324e5d04c74c76e7f81c6fc206908e7be5c01d133b14fe6",
+  "passed": 1627,
+  "existing_ignored": 3,
+  "scope": "unchanged Rust library sources; Python binding and its two new regression tests are rebuilt and revalidated separately"
+}

@@ -22,6 +22,19 @@ the [complete inventory](archive-index.md) links every retained record.
 
 ## Recent focused follow-ups
 
+- [Python scalar property cache](2026-10-16-python-scalar-property-cache.md):
+  prepared TPSA improves on both slices, but prepared ring count regresses
+  on the first; this fourth candidate is rejected and its patch retained.
+- [Outlined scalar model callback](2026-10-16-python-scalar-outline.md):
+  cold TPSA/ASA improve on both slices and all 42 source medians meet the
+  regression budget. Prepared TPSA improvement remains unproved on the first
+  slice; this third candidate is retained for review and remains unpromoted.
+- [Aromatic normalization follow-up](2026-10-16-python-aromatic-normalization.md):
+  cold TPSA/ASA improve on both slices; one prepared TPSA median misses
+  the predeclared floor, so this standalone candidate is not promoted.
+- [Aromatic edge proof experiment](2026-10-16-python-aromatic-edge-proof.md):
+  first-use TPSA/ASA improve on the first slice; the second slice is
+  inconclusive, so this standalone candidate is not promoted.
 - [Ordered-ring and V3000 parser speed follow-ups](2026-10-16-chemistry-speed-followups.md):
   exact output-retention gates and paired source timings; the NCI ring lane
   remains inconclusive and this is not a published-package claim.

@@ -9,6 +9,8 @@ package, comparator, corpus, host, runtime and operation.
 
 | Need | Start with |
 |---|---|
+| Review the Python scalar property cache candidate | [fourth candidate](2026-10-16-python-scalar-property-cache.md): exact output retention and prepared TPSA gains on both slices; prepared ring count regresses, so rejected |
+| Review the retained outlined scalar candidate | [third candidate](2026-10-16-python-scalar-outline.md): cold TPSA/ASA gains on both slices, all 42 source medians within budget; prepared TPSA condition still unproved, unpromoted |
 | Review the ordered-ring and V3000 parser optimizations | [`2026-10-16-chemistry-speed-followups.md`](2026-10-16-chemistry-speed-followups.md): exact frozen-implementation gates, paired source timings, rejected lazy-state prototype, and explicit source-candidate limits without retaining transient build artifacts |
 | Review the superseded bounded RDKit workflow baseline | [`2026-10-12-rdkit-workflows-source.md`](2026-10-12-rdkit-workflows-source.md) and [raw JSON](2026-10-12-rdkit-workflows-source.json): the original 83-reaction, 39-largest-fragment, and 16-labelled-R-group source packet before prepared R-group and multi-stage standardization lanes were added |
 | Review the Labute ASA and first-use ring-count optimization | [`2026-10-12-v1.1.0-source-labute-ring-speed.md`](2026-10-12-v1.1.0-source-labute-ring-speed.md) and [raw JSON](2026-10-12-v1.1.0-source-rdkit-labute-ring-speed.json): source-built v1.1.0 wheel, 10,000/10,000 equivalent outputs, 41 alternating blocks, and favorable prepared-operation intervals against RDKit 2026.09.1 on one macOS arm64 host; not a published-package claim |
@@ -484,6 +486,8 @@ integrated-main or toolkit-wide superiority.
 - [TPSA zero-contribution guard](2026-10-15-python-tpsa-zero.md)
 - [Ring scratch reuse](2026-10-15-python-ring-scratch.md)
 - [Ring component reuse](2026-10-15-python-ring-component-reuse.md)
+- [Aromatic normalization follow-up](2026-10-16-python-aromatic-normalization.md)
+- [Aromatic edge proof experiment](2026-10-16-python-aromatic-edge-proof.md)
 - [Normalization storage](2026-10-15-python-normalization-storage.md)
 - [Huckel FIFO](2026-10-15-python-huckel-fifo.md)
 - [Packed components](2026-10-15-python-component-packed.md)

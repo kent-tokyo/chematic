@@ -1,0 +1,16 @@
+{
+  "artifacts": {
+    "baseline": {
+      "wheel_sha256": "1c8bdbac537fcde7ec88d63a52559bbf86a3eed88bbba31321bca641356e18a5",
+      "extension_sha256": "28a23cfc163e4760869f0ebf14fe61dd7c0d34b388fdf23ce13a2b48e2ce9b67"
+    },
+    "candidate": {
+      "wheel_sha256": "52d44fb1c221c0494b6a821283ce7869d416f540a172fc3177bee2d568fc5408",
+      "extension_sha256": "3f7acb27fc6b141eacde5cf1099347d14ae0f1ef0dd7ed605e5f81ca0b1db15c"
+    }
+  },
+  "cache_path": "/private/tmp/chematic-aromatic-proof-target-20261016",
+  "deleted_kib": 731128,
+  "active_processes": [],
+  "lsof_returncode": 1
+}

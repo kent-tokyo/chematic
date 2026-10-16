@@ -1,0 +1,78 @@
+{
+  "primary": {
+    "0": {
+      "tpsa/first_use": {
+        "median": 1.087,
+        "ci95": [
+          1.077,
+          1.093
+        ],
+        "winning_blocks": 20,
+        "blocks": 20
+      },
+      "labute_asa/first_use": {
+        "median": 1.072,
+        "ci95": [
+          1.069,
+          1.078
+        ],
+        "winning_blocks": 19,
+        "blocks": 20
+      }
+    },
+    "5000": {
+      "tpsa/first_use": {
+        "median": 1.041,
+        "ci95": [
+          1.036,
+          1.05
+        ],
+        "winning_blocks": 19,
+        "blocks": 20
+      },
+      "labute_asa/first_use": {
+        "median": 1.046,
+        "ci95": [
+          1.042,
+          1.054
+        ],
+        "winning_blocks": 19,
+        "blocks": 20
+      }
+    }
+  },
+  "primary_intervals_pass": true,
+  "source_median_floor": 0.99,
+  "source_lanes_below_floor": {
+    "0": {
+      "tpsa/repeated_use": {
+        "median": 0.985,
+        "ci95": [
+          0.966,
+          1.023
+        ],
+        "winning_blocks": 8,
+        "blocks": 20
+      }
+    },
+    "5000": {}
+  },
+  "all_source_negative_intervals": {
+    "0": {
+      "maccs/first_use": {
+        "median": 0.998,
+        "ci95": [
+          0.994,
+          0.999
+        ],
+        "winning_blocks": 4,
+        "blocks": 20
+      }
+    },
+    "5000": {}
+  },
+  "exact_source_outputs": true,
+  "local_adoption_gate_passed": false,
+  "adaptive_reruns": false,
+  "nonfinite_outcomes_not_chemical_successes": 6
+}

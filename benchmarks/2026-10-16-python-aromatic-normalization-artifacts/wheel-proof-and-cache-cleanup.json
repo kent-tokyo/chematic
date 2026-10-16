@@ -1,0 +1,17 @@
+{
+  "artifacts": {
+    "baseline": {
+      "wheel_sha256": "1c8bdbac537fcde7ec88d63a52559bbf86a3eed88bbba31321bca641356e18a5",
+      "extension_sha256": "28a23cfc163e4760869f0ebf14fe61dd7c0d34b388fdf23ce13a2b48e2ce9b67"
+    },
+    "candidate": {
+      "wheel_sha256": "3b2d2ca724fd069dd4a5e60c785bbcf207f8bba2f32482f2118ed43fa054ae95",
+      "extension_sha256": "58534e0734b00338000948d5fced1c5872e146dbe90da126436e260d40262bd6"
+    }
+  },
+  "cache_path": "/private/tmp/chematic-hydrogen-patch-target-20261016",
+  "deleted_kib": 731076,
+  "active_processes": [],
+  "lsof_returncode": 1,
+  "baseline_reuse": "exact first-candidate baseline wheel and installed extension; no timing reused"
+}

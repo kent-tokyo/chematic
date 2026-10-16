@@ -1,0 +1,62 @@
+{
+  "passed": true,
+  "retained_candidate": 3,
+  "packets": [
+    {
+      "candidate": 1,
+      "source_reconstruction": true,
+      "exact_output_outcomes": 197008,
+      "preserved_nonfinite": 6,
+      "complete_profiles": 2,
+      "blocks_per_profile": 20,
+      "source_lanes": 42,
+      "cold_gate": false,
+      "floor_gate": true,
+      "prepared_tpsa_gate": false,
+      "negative_intervals": 0,
+      "adoption_gate": false
+    },
+    {
+      "candidate": 2,
+      "source_reconstruction": true,
+      "exact_output_outcomes": 197008,
+      "preserved_nonfinite": 6,
+      "complete_profiles": 2,
+      "blocks_per_profile": 20,
+      "source_lanes": 42,
+      "cold_gate": true,
+      "floor_gate": false,
+      "prepared_tpsa_gate": false,
+      "negative_intervals": 1,
+      "adoption_gate": false
+    },
+    {
+      "candidate": 3,
+      "source_reconstruction": true,
+      "exact_output_outcomes": 197008,
+      "preserved_nonfinite": 6,
+      "complete_profiles": 2,
+      "blocks_per_profile": 20,
+      "source_lanes": 42,
+      "cold_gate": true,
+      "floor_gate": true,
+      "prepared_tpsa_gate": false,
+      "negative_intervals": 0,
+      "adoption_gate": false
+    },
+    {
+      "candidate": 4,
+      "source_reconstruction": true,
+      "exact_output_outcomes": 197008,
+      "preserved_nonfinite": 6,
+      "complete_profiles": 2,
+      "blocks_per_profile": 20,
+      "source_lanes": 42,
+      "cold_gate": true,
+      "floor_gate": false,
+      "prepared_tpsa_gate": true,
+      "negative_intervals": 1,
+      "adoption_gate": false
+    }
+  ]
+}

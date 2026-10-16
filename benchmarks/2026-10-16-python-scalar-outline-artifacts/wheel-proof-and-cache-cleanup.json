@@ -1,0 +1,17 @@
+{
+  "artifacts": {
+    "baseline": {
+      "wheel_sha256": "1c8bdbac537fcde7ec88d63a52559bbf86a3eed88bbba31321bca641356e18a5",
+      "extension_sha256": "28a23cfc163e4760869f0ebf14fe61dd7c0d34b388fdf23ce13a2b48e2ce9b67"
+    },
+    "candidate": {
+      "wheel_sha256": "21aeba2df4cb1b51b770c5b4608b7fa136e24b66fa7436c45a23168580ceafbd",
+      "extension_sha256": "ed931d10a3d9476e7d63faea55d01edb1a9b2434594da3f4b492de8448d7780f"
+    }
+  },
+  "cache_path": "/private/tmp/chematic-scalar-outline-target-20261016",
+  "deleted_kib": 770168,
+  "active_processes": [],
+  "lsof_returncode": 1,
+  "baseline_reuse": "exact original baseline wheel; no timing reused"
+}

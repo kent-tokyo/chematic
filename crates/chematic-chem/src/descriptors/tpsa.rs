@@ -301,6 +301,7 @@ pub fn tpsa(mol: &Molecule) -> f64 {
 
 /// RDKit-default TPSA: `rdMolDescriptors.CalcTPSA(mol)` / `Descriptors.TPSA(mol)`
 /// with `includeSandP=False`, i.e. the N and O contributions of [`tpsa`] only.
+#[inline(always)]
 pub fn rdkit_tpsa(mol: &Molecule) -> f64 {
     chematic_smiles::with_rdkit_model_scalar(
         mol,

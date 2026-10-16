@@ -19,7 +19,14 @@ pub fn with_rdkit_model_scalar(
     if IN_RDKIT_MODEL.with(|c| c.get()) {
         return f(mol);
     }
-    mol.derived_scalar(slot, || with_rdkit_model_molecule_impl(mol, f, true))
+    mol.derived_scalar(slot, || with_rdkit_model_scalar_uncached(mol, f))
+}
+
+// Keep the sanitized molecule's large stack frame out of cached scalar reads.
+// Nested-model handling and the outside-lock cache initialization stay above.
+#[inline(never)]
+fn with_rdkit_model_scalar_uncached(mol: &Molecule, f: impl FnOnce(&Molecule) -> f64) -> f64 {
+    with_rdkit_model_molecule_impl(mol, f, true)
 }
 
 /// Runs `f` on RDKit's own molecule for `mol` (`Chem.MolFromSmiles(s)`:

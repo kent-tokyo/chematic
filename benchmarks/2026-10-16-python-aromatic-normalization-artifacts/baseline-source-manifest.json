@@ -1,0 +1,16 @@
+{
+  "base_revision": "19f07cd198d55c31afc99c2fae437a4b891b109c",
+  "source_sha256": {
+    "crates/chematic-perception/src/rdkit_parity/view.rs": "80ee25a51aae777f2e4c7e2cb2542470ccd17027c45f9f0a29545f4ffab68113",
+    "crates/chematic-chem/src/descriptors/tpsa.rs": "22662f5bed5768d4f2c8e823c95cadac4422f78f0480063fe53824b07de7e8eb",
+    "crates/chematic-chem/src/topo_descriptors.rs": "50d06115df97aa0ca3d82d5c07220a7f62f0ce7d0779fed6e9de5c1b8af5ed9e",
+    "scripts/bench_python_speed_frontier.py": "f6693ba7d2e6216d21229e134a06433b9ad3b949fd652fc0dca809d61f1de248",
+    "validation/cosmolkit_comparison/bench_corpus.py": "6ad2dc64556b8e88e2b246f3c9dd4953b849a1c266fb8055520598b5e7deeb4c",
+    "Cargo.lock": "322fdd485bc43442d331530f74e6db19a81fe8bc4b7153df65fcd180cc3eea7f",
+    "Cargo.toml": "4cb261d4afdb461074b9f5fae966caaa32799f2facaab3754cd1b4c3d3ca5388",
+    "crates/chematic-perception/src/rdkit_parity/kekule_view_tests.rs": "edcc595369c886230830ac08e86f72e8a11ed7e0cc7ecb98350eb35a48ede560",
+    "crates/chematic-perception/src/aromaticity/model.rs": "29200f22ca9aed850179886aac6ae63a8f96f07690bc372f9f6af841f51a1989",
+    "crates/chematic-perception/src/aromaticity/normalization_storage_tests.rs": "3d8fadd0725d4d5beae9d6324c9b8ce6bca1c2656771a80ed0642e72a7bc332c"
+  },
+  "compiler": "rustc 1.97.0 (2d8144b78 2026-07-07)\nbinary: rustc\ncommit-hash: 2d8144b7880597b6e6d3dfd63a9a9efae3f533d3\ncommit-date: 2026-07-07\nhost: aarch64-apple-darwin\nrelease: 1.97.0\nLLVM version: 22.1.6\n"
+}
