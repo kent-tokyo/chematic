@@ -2,6 +2,8 @@
 
 Local adoption gate: **PASS**. Open Babel-wide superiority remains unproved. These are native source results on one shared macOS arm64 host.
 
+The measured candidate is commit `6dc7cf1f94a15266c2f963992fb7cd6cabfdbe43`. Later main integration also includes the radical-preservation fix `d03106b5` and collinear-carbon depiction fix `1b4603db`, which landed after this benchmark base was frozen. The fixed measurement packet remains unchanged; its timings belong to the measured candidate, not that combined integration revision. Correctness checks and hosted CI are repeated for the combined revision.
+
 ## Implementation and preservation
 
 Base `faa8092e6050ad6250c68498970245cfbc6579e9`, source version 1.1.6. Only `append_atoms_3d` changes in production: it appends atom/map integers and x/y/z using the existing integer and `push_fixed4` helpers already used by V2000 and 2D V3000. Ties, large magnitudes and nonfinite values still use the exact Rust formatter fallback. Atom properties, missing-coordinate zeros, checked-writer validation, bond writing, stereo, collections, headers, allocation policy, parsing and public APIs are unchanged. No unsafe code or new dependency. Earlier unpromoted candidates are excluded.
