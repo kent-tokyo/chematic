@@ -117,17 +117,18 @@ fn append_atoms_3d(out: &mut String, mol: &Molecule, metadata: &MolMetadata, con
             .get(idx.0 as usize)
             .copied()
             .unwrap_or(Point3::zero());
-        write!(
-            out,
-            "M  V30 {} {} {:.4} {:.4} {:.4} {}",
-            idx.0 + 1,
-            v3000_atom_symbol(mol, idx, atom),
-            point.x,
-            point.y,
-            point.z,
-            atom.atom_map.unwrap_or(0)
-        )
-        .expect("writing to String cannot fail");
+        out.push_str("M  V30 ");
+        crate::mol2000::push_right_aligned_u32(out, idx.0 + 1, 0);
+        out.push(' ');
+        out.push_str(v3000_atom_symbol(mol, idx, atom));
+        for coordinate in [point.x, point.y, point.z] {
+            out.push(' ');
+            // Reuse the same exact fallback for ties, large and nonfinite
+            // coordinates as the V2000 and 2D V3000 writers.
+            crate::mol2000::push_fixed4(out, coordinate, 0);
+        }
+        out.push(' ');
+        crate::mol2000::push_right_aligned_u32(out, atom.atom_map.unwrap_or(0).into(), 0);
         append_atom_properties(out, mol, metadata, idx, atom);
         out.push('\n');
     }
@@ -678,3 +679,7 @@ mod speed_tests;
 #[cfg(test)]
 #[path = "loss_collection_tests.rs"]
 mod loss_collection_tests;
+
+#[cfg(test)]
+#[path = "coordinate_format_tests.rs"]
+mod coordinate_format_tests;

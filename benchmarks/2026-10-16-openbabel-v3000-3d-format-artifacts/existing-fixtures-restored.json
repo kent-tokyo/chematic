@@ -1,0 +1,12 @@
+{
+  "benchmarks/fixtures/ethanol.cdxml": "b74560cfaf369e4bc32d5c710f7b488ded05e801c54934d7a709013825ce290c",
+  "benchmarks/fixtures/ethanol.cml": "0d89c3e1250890147debd2ae097b27f8128f73b8d44bb60cbe3279242053e06c",
+  "benchmarks/fixtures/ethanol.mol2": "80144aad97332e2f58eb42bb2da1472587a9dfc2466f9d2fe081eb9834c2224d",
+  "benchmarks/fixtures/ethanol.v3000": "64ac11b3de1c186deae555d54d6a47e7f3c72607ef0a90b0d93f467496bbd3ad",
+  "benchmarks/fixtures/minimal.mmcif": "d583d8047758d0e804c98729796d76eea3fa87f3b5b8ed85962717e784e98998",
+  "benchmarks/fixtures/minimal.pdb": "69d1e5a2d6cbdb39377325cbbf077face011ef0893718e28b42d0563901ad15b",
+  "benchmarks/fixtures/sgroup_collection.v3000": "e6756afb099cd7121b8031b62f02d34a31e602f0784f1afbe9205c562ef4b7c9",
+  "benchmarks/fixtures/streaming.extxyz": "0094ab92ea84aa6acd826004e1849f2f2cb750c81d02e061c4156dc25c2830c7",
+  "benchmarks/fixtures/streaming.sdf": "627e7814694f7d00a9212712ec697f2174d30327b459d983d2a10f717cae0465",
+  "benchmarks/fixtures/streaming.xyz": "3c717e4520a3e1b7b90ace86b72e73cce4dda38de7ae29aa811733d2ec227221"
+}
