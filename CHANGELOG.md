@@ -14,6 +14,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Added opt-in MOL2 Kekulé bond encoding in Rust/Python/WASM. A bounded neutral
+  aromatic profile changes only `ar` bond tokens to `1`/`2`, retaining all other
+  source bytes and refusing failed matching, valence/H changes and aromaticity
+  loss. Existing source round-trips and writer defaults are unchanged.
+
 ### Performance
 
 - Parse complete buffered SDF records directly, reserving owned record storage

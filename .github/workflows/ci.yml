@@ -230,6 +230,7 @@ jobs:
           - { package: chematic-mol, target: hin_contract }
           - { package: chematic-mol, target: coverage_boundaries }
           - { package: chematic-mol, target: mol2_unity_charge }
+          - { package: chematic-mol, target: mol2_kekule_contract }
           - { package: chematic-mol, target: public_api_compat_v1_1_3 }
           - { package: chematic-mol, target: ccd_contract }
           - { package: chematic-smiles, target: rdkit_matrix_limits }

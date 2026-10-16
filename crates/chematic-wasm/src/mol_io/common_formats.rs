@@ -1,5 +1,12 @@
 use super::*;
 
+/// Replace only ar bond tokens in a bounded neutral aromatic MOL2 record.
+/// Retains atom types and every other source byte; errors throw, no partial text.
+#[wasm_bindgen]
+pub fn kekulize_mol2_record(text: &str) -> Result<String, JsValue> {
+    chematic_mol::kekulize_mol2_record(text).map_err(|error| JsValue::from_str(&error.to_string()))
+}
+
 /// Parse a Tripos MOL2 string and return SMILES.
 ///
 /// Returns `"error:<msg>"` on failure.

@@ -1,5 +1,10 @@
 # Maintenance scripts
 
+`validate_mol2_kekule.py` checks exact MOL2 token changes, actual Rust/Python/WASM
+outputs, RDKit identity and explicit valence, and Open Babel cross-reads for
+[#2668](https://github.com/openbabel/openbabel/issues/2668). See the
+[bounded API and reproduction instructions](../docs/mol2-kekule-bond-output.md).
+
 Scripts are retained when they are used by CI, reproduce a checked-in evidence
 record, generate a committed fixture, or provide a documented release operation.
 One-off diagnostics should be removed after their result is captured unless a
