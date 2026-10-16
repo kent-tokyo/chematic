@@ -1,0 +1,14 @@
+[
+  {
+    "path": "/private/tmp/chematic-sdf-direct-fields-target-20261016",
+    "deleted_kib": 206604,
+    "no_active_compilers_or_open_files": true,
+    "binaries_sources_logs_preserved": true
+  },
+  {
+    "path": "/private/tmp/chematic-sdf-direct-fields-test-target-20261016",
+    "deleted_kib": 263404,
+    "no_active_compilers_or_open_files": true,
+    "binaries_sources_logs_preserved": true
+  }
+]

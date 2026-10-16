@@ -21,6 +21,16 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   and source labels; failed proofs retain the declaration, and unsupported inputs
   or exhausted budgets return errors. Parsing/writing defaults remain unchanged.
 
+### Performance
+
+- Parse complete buffered SDF records directly, reserving owned record storage
+  only for the existing line-reader fallback. Preserve diagnostic/lightweight
+  results, limits, errors, metadata and logical input positions.
+- Append SD data fields directly and skip stereo-loss collection for plain
+  V2000 output callers that discard it. Reporting APIs retain every loss field;
+  stereo depiction and serialized bytes remain unchanged. See the
+  [bounded source comparison](benchmarks/2026-10-16-openbabel-sdf-loss-work.md).
+
 ## [1.1.5] - 2026-10-16
 
 ### Added

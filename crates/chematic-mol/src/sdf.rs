@@ -12,6 +12,7 @@ use crate::mol2000::{
 use chematic_core::{Coords3D, Molecule};
 use chematic_perception::{EzDirectionDiagnostic, StereoDiagnostic};
 
+mod buffer;
 mod dataset;
 mod ensemble;
 mod fields;
@@ -449,7 +450,7 @@ impl<R: std::io::BufRead> SdfFileReader<R> {
     fn with_limits_and_diagnostics(reader: R, limits: SdfParseLimits, diagnostics: bool) -> Self {
         Self {
             reader,
-            block: Vec::with_capacity(2048),
+            block: Vec::new(),
             done: false,
             limits,
             bytes_read: 0,
@@ -460,6 +461,8 @@ impl<R: std::io::BufRead> SdfFileReader<R> {
 
     fn fill_next_block(&mut self) -> Result<bool, MolParseError> {
         self.block.clear();
+        // The complete-buffer path needs no owned record storage.
+        self.block.reserve(2048);
         loop {
             let line_start = self.block.len();
             let bytes = self
@@ -514,14 +517,14 @@ impl<R: std::io::BufRead> SdfFileReader<R> {
         Ok(())
     }
 
-    fn parse_current_block(&self) -> Result<SdfRecord, MolParseError> {
-        let block = std::str::from_utf8(&self.block)
-            .map_err(|error| MolParseError::Io(error.to_string()))?;
+    fn parse_block(bytes: &[u8], diagnostics: bool) -> Result<SdfRecord, MolParseError> {
+        let block =
+            std::str::from_utf8(bytes).map_err(|error| MolParseError::Io(error.to_string()))?;
         let data_part = sdf_ctab_end(block)
             .map(|position| &block[position..])
             .unwrap_or("");
         let properties = parse_sd_fields(data_part);
-        if !self.diagnostics {
+        if !diagnostics {
             let (mol, meta) = if is_v3000_record(block) {
                 crate::mol3000::parse_mol_v3000(sdf_ctab(block))?
             } else {
@@ -563,6 +566,9 @@ impl<R: std::io::BufRead> Iterator for SdfFileReader<R> {
         if self.done {
             return None;
         }
+        if let Some(record) = self.next_buffered() {
+            return Some(record);
+        }
         loop {
             match self.fill_next_block() {
                 Ok(false) => return None,
@@ -578,7 +584,7 @@ impl<R: std::io::BufRead> Iterator for SdfFileReader<R> {
             self.done = true;
             return Some(Err(error));
         }
-        match self.parse_current_block() {
+        match Self::parse_block(&self.block, self.diagnostics) {
             Ok(record) => Some(Ok(record)),
             Err(error) => Some(Err(error)),
         }

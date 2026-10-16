@@ -1,0 +1,26 @@
+{
+  "native_compiler": "Apple clang version 21.0.0 (clang-2100.3.34.2)\nTarget: arm64-apple-darwin27.0.0\nThread model: posix\nInstalledDir: /Library/Developer/CommandLineTools/usr/bin\n",
+  "openbabel_version": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+  "pkg_config_flags": "-I/opt/homebrew/Cellar/open-babel/3.2.1/include/openbabel3 -L/opt/homebrew/Cellar/open-babel/3.2.1/lib -lopenbabel",
+  "comparator_reused_by_exact_hash": true,
+  "timing_samples_reused": false,
+  "files_sha256": {
+    "baseline-sdf": "4bf6ae82bab20f27b85a4be8844e7a82a0526a4b0c4a750b95ecb583454e3747",
+    "baseline-v3000": "7eb93ad322acd9607f185f2d53e7168f9209990fa744368eb34e516fce6efb55",
+    "candidate-sdf": "3cb2b661ab2e91b51dc7740a7cce01ece10577067881f8b56c2a445b1056dca2",
+    "candidate-v3000": "6b1c79e64da4d43e8a4bdabcdf2d4ac59563807a24caff10d59f8064537014f5",
+    "openbabel-sdf": "9e489bcdebfdda2adb29a0613eb3bd7f17a10f6d554185887366f96a0fc7964e",
+    "openbabel-v3000": "34981dcbb977f1f652030d092caf297a120241bb62ca094151a6ed58c3752846",
+    "measurement-plan.json": "c42f3d158a2c56e0b33b9144bd8d7a6d190d765beaf9ff8a1cf0036bddf94421",
+    "run-formal.py": "05dcfe9167d7c1a159a6d95b377adc6ad5bd34c175f739c91facfd8c53b7b500",
+    "run-native-safe.py": "ed2a5ac28ebc8a50199191ee41ce4a3a0f0f8dee023eac541b7c8bc3d66dc13d",
+    "candidate.patch.gz": "cd02c4e2d09c651d72452a671497d4ad07398fc1b6774fa56630188e5034fbf3",
+    "sdf-5000.sdf": "38d1d169f40de9fe4c95ec475035658ffcb27a2c84c448e3c619c32aefe8fd60",
+    "sdf-0.sdf": "8e7ad63db96f6fb87b87333ab1f7710a18bc3be5cb4676c15c345c09d4ce718b",
+    "v3000-chains.molblocks": "8ea24c94237cfc4076bcbde78019dd37cf4beb254c7a6b820555791da2410186",
+    "v3000-0.molblocks": "6c2eccf9aae975d790e9b036e0ffce71d056b243049e3424681326bceae17a06",
+    "v3000-5000.molblocks": "45924f7db9c4ea10e7ea494cd9aff2d536129b553d1e834fdcdac444e39f3e9e"
+  },
+  "patch_sha256": "ad2c781c266aa0644c8a19505eb545f8ba00cca25ed2cf6e2d3cf52f51cfc9cd",
+  "baseline_reused_by_exact_hash": true
+}

@@ -1,0 +1,31 @@
+{
+  "passed": true,
+  "native": {
+    "passed": 1254,
+    "failed": 0,
+    "ignored": 0,
+    "suites": 54,
+    "unit": 779,
+    "final_source_full_suite": true,
+    "profile": "release opt3, lto=false, codegen-units16, jobs1, incremental=false"
+  },
+  "buffer_oracle": {
+    "boundary_limit_cases": 5796,
+    "io_fault_cases": 3774,
+    "pinned_record_comparisons": 20000,
+    "actual_bufreader_record_comparisons": 10000,
+    "actual_complete_spans": 3340
+  },
+  "runner_checks": 10,
+  "release_all_target_clippy": true,
+  "format": true,
+  "refactor": true,
+  "source_hashes_match": true,
+  "timing_profile": "release opt3, full LTO, codegen-units1, jobs1, incremental=false",
+  "prior_untimed_draft_checks_separate": true,
+  "integration_base_revision": "025fa2f63da324869aa144a7520626ae4ebbfd22",
+  "same_sdf_optimization_as_first_packet": false,
+  "lazy_owned_buffer_candidate": true,
+  "independent_frozen_old_line_reader": true,
+  "zero_owned_framing_capacity_on_complete_records_tested": true
+}

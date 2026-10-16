@@ -9,6 +9,11 @@ package, comparator, corpus, host, runtime and operation.
 
 | Need | Start with |
 |---|---|
+| Review final SDF reader/writer source | [2026-10-16-openbabel-sdf-loss-work](2026-10-16-openbabel-sdf-loss-work.md): five complete profiles, six positive SDF primary intervals, 1% budget and disclosed V3000 retreats |
+| Review the direct SD-field experiment | [2026-10-16-openbabel-sdf-direct-fields](2026-10-16-openbabel-sdf-direct-fields.md): retained failure of two median floors |
+| Review lazy SDF framing storage | [2026-10-16-openbabel-sdf-buffer-lazy](2026-10-16-openbabel-sdf-buffer-lazy.md): retained prepared-write regressions |
+| Review the first newer-main integration | [2026-10-16-openbabel-sdf-buffered-main](2026-10-16-openbabel-sdf-buffered-main.md): retained prepared-write regressions after the shared geometry update |
+| Review borrowed complete SDF records | [SDF buffer packet](2026-10-16-openbabel-sdf-buffered.md): two unfiltered slices, five complete 21-block profiles, exact source retention, 1% regression budget and explicit negative intervals |
 | Review the ordered-ring and V3000 parser optimizations | [`2026-10-16-chemistry-speed-followups.md`](2026-10-16-chemistry-speed-followups.md): exact frozen-implementation gates, paired source timings, rejected lazy-state prototype, and explicit source-candidate limits without retaining transient build artifacts |
 | Review the superseded bounded RDKit workflow baseline | [`2026-10-12-rdkit-workflows-source.md`](2026-10-12-rdkit-workflows-source.md) and [raw JSON](2026-10-12-rdkit-workflows-source.json): the original 83-reaction, 39-largest-fragment, and 16-labelled-R-group source packet before prepared R-group and multi-stage standardization lanes were added |
 | Review the Labute ASA and first-use ring-count optimization | [`2026-10-12-v1.1.0-source-labute-ring-speed.md`](2026-10-12-v1.1.0-source-labute-ring-speed.md) and [raw JSON](2026-10-12-v1.1.0-source-rdkit-labute-ring-speed.json): source-built v1.1.0 wheel, 10,000/10,000 equivalent outputs, 41 alternating blocks, and favorable prepared-operation intervals against RDKit 2026.09.1 on one macOS arm64 host; not a published-package claim |

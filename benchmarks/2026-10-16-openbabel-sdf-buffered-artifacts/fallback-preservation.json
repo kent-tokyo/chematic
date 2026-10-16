@@ -1,0 +1,6 @@
+{
+  "fallback_line_reader_and_limit_validator_byte_identical": true,
+  "shared_parser_token_identical_after_slice_and_boolean_parameter_substitution": true,
+  "fallback_code_sha256": "55d1b2d6a4a9e8f8554893dc9f9a3f9c8984123e1b327b0d3e8d97330b1919dc",
+  "base_revision": "b9f1e3cdd959a20f1cfa4c635237418a550ffa00"
+}

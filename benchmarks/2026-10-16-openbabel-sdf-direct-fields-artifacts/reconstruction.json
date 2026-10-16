@@ -1,0 +1,14 @@
+{
+  "passed": true,
+  "base_revision": "025fa2f63da324869aa144a7520626ae4ebbfd22",
+  "patch_sha256": "66b949be6d5f67441d174b9faa630666836fc4c6fe0cf273de684bb1737912cf",
+  "changed_source_files": [
+    "Cargo.lock",
+    "crates/chematic-mol/Cargo.toml",
+    "crates/chematic-mol/src/sdf.rs",
+    "crates/chematic-mol/src/sdf/buffer.rs",
+    "crates/chematic-mol/src/sdf/buffer_tests.rs",
+    "crates/chematic-mol/src/mol2000/writer.rs",
+    "crates/chematic-mol/src/mol2000/sd_field_tests.rs"
+  ]
+}
