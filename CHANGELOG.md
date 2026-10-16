@@ -16,6 +16,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Rust `SdfInput` / `SdfCompression` and Python `iter_sdf_checked(...,
+  compression="plain" | "gzip" | "auto")` support independent per-input
+  gzip detection and concatenated members. Plain input remains the default;
+  native SDF limits count decoded data and compression failures are reported.
+  See [SDF gzip input](docs/sdf-gzip-input.md).
 - Python `ForwardSDMolSupplier` reads binary file objects, including BytesIO
   and gzip streams, through the native SDF parser. Both native and compatibility
   APIs reject missing/non-callable `read` at construction and preserve read

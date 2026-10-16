@@ -1,0 +1,10 @@
+{
+  "retained_baseline_commit": "a89446d34bec1b0b3a978a09daedb04cc9042989",
+  "current_base_commit": "d03106b59fdd4d06f40ab267bb540e20508bd988",
+  "io_source_blob_both": "1429f9cfa32d9d65262e5411d75fdb9ef4552b91",
+  "baseline_module_sha256": "84628f424efd41020513a7c09d62ae77003b4636f17f84acd7143b5fb4a51a3b",
+  "signature": "(path, *, max_input_bytes=None, max_record_bytes=None, max_line_bytes=None, max_records=None)",
+  "new_compression_keyword_tests_failed": 6,
+  "failure": "unexpected keyword compression; no gzip API before change",
+  "scope": "retained older module with identical Python IO source; not a full rebuild of current base"
+}
