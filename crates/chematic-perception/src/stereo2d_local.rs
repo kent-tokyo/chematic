@@ -188,7 +188,13 @@ fn is_stereogenic_chalcogen_lone_pair(mol: &Molecule, center: AtomIdx) -> bool {
         .neighbors(center)
         .map(|(_, bond)| mol.bond(bond).order.order_int())
         .sum();
-    (atom.charge == 1 && valence == 3) || (atom.charge == 0 && valence == 4)
+    (atom.charge == 1 && valence == 3)
+        || (atom.charge == 0
+            && valence == 4
+            && mol.neighbors(center).any(|(neighbor, bond)| {
+                mol.atom(neighbor).element == Element::O
+                    && mol.bond(bond).order == BondOrder::Double
+            }))
 }
 
 fn is_ring_constrained_n_lone_pair(mol: &Molecule, center: AtomIdx, nbs: &[AtomIdx]) -> bool {

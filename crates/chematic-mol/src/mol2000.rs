@@ -238,10 +238,9 @@ pub enum Stereo3DDiagnostic {
     /// compared: for a genuinely-3D record, `(x, y)` alone is not a
     /// meaningful 2D depiction, so this is "the wedge disagrees with the
     /// shape", not "the declared stereo failed verification". When a wedge
-    /// and nonzero-z geometry coexist and *agree*, nothing is emitted here
-    /// -- 3D geometry is treated as the higher-fidelity signal, but it is
-    /// never written back to `Atom.chirality` (which stays exactly what the
-    /// 2D wedge pathway produced); only genuine disagreement is surfaced.
+    /// and nonzero-z geometry coexist and *agree*, nothing is emitted here.
+    /// On a non-flat 3D record, the reader uses the geometric parity while
+    /// retaining this diagnostic to expose the conflicting notation.
     WedgeVs3DParityConflict {
         atom: AtomIdx,
         wedge_2d: Chirality,
@@ -299,14 +298,96 @@ fn tetrahedral_chirality_from_3d(
     }
 }
 
-/// Recover unspecified tetrahedral stereo from a genuine 3D CTAB. Keep
-/// explicit wedge/CFG assignments authoritative; geometry is used for their
-/// conflict diagnostics separately.
-pub(crate) fn perceive_tetrahedral_from_3d(mol: &mut Molecule, conformer: &Coords3D) {
-    let ordinary_centers: std::collections::HashSet<_> = chematic_perception::stereo_centers(mol)
-        .into_iter()
+fn same_ring_component(mol: &Molecule, ring_bonds: &[bool], start: AtomIdx, goal: AtomIdx) -> bool {
+    let mut seen = std::collections::HashSet::from([start]);
+    let mut frontier = vec![start];
+    while let Some(atom) = frontier.pop() {
+        if atom == goal {
+            return true;
+        }
+        for (neighbor, bond) in mol.neighbors(atom) {
+            if ring_bonds[bond.0 as usize] && seen.insert(neighbor) {
+                frontier.push(neighbor);
+            }
+        }
+    }
+    false
+}
+
+fn additional_3d_ring_centers(mol: &Molecule) -> Vec<AtomIdx> {
+    // RDKit also records the 3D orientation of the two bridgeheads in a
+    // simple bicyclic cage such as norbornane, even when CIP regards its
+    // paired ring paths as equivalent. Limit this case to exactly two
+    // three-ring-bond carbon bridgeheads; symmetric multi-bridgehead cages
+    // such as adamantane must not acquire arbitrary tetrahedral tags.
+    let ring_bonds = chematic_perception::ring_bond_flags(mol);
+    let mut additional = Vec::new();
+    let bridgeheads: Vec<_> = mol
+        .atoms()
+        .filter(|(idx, atom)| {
+            atom.element == Element::C
+                && !atom.aromatic
+                && mol.degree(*idx) == 3
+                && chematic_core::implicit_hcount(mol, *idx) == 1
+                && mol.neighbors(*idx).all(|(_, bond)| {
+                    mol.bond(bond).order == BondOrder::Single && ring_bonds[bond.0 as usize]
+                })
+        })
         .map(|(idx, _)| idx)
         .collect();
+    if bridgeheads.len() == 2
+        && same_ring_component(mol, &ring_bonds, bridgeheads[0], bridgeheads[1])
+    {
+        additional.extend(bridgeheads);
+    }
+    // Two differently substituted quaternary carbons in one ring can
+    // distinguish each other's otherwise identical ring arms. Neither
+    // center is found by an atom-at-a-time graph comparison before the
+    // partner receives its 3D tag. A lone substituted ring carbon remains
+    // achiral, so require a connected pair in the cyclic subgraph.
+    let paired_ring_centers: Vec<_> = mol
+        .atoms()
+        .filter(|(idx, atom)| {
+            if atom.element != Element::C || atom.aromatic || mol.degree(*idx) != 4 {
+                return false;
+            }
+            let (ring, outside): (Vec<_>, Vec<_>) = mol
+                .neighbors(*idx)
+                .partition(|&(_, bond)| ring_bonds[bond.0 as usize]);
+            ring.len() == 2
+                && outside.len() == 2
+                && ring
+                    .iter()
+                    .chain(outside.iter())
+                    .all(|&(_, bond)| mol.bond(bond).order == BondOrder::Single)
+                && mol.atom(outside[0].0).element != mol.atom(outside[1].0).element
+        })
+        .map(|(idx, _)| idx)
+        .collect();
+    if paired_ring_centers.len() == 2
+        && same_ring_component(
+            mol,
+            &ring_bonds,
+            paired_ring_centers[0],
+            paired_ring_centers[1],
+        )
+    {
+        additional.extend(paired_ring_centers);
+    }
+    additional
+}
+
+/// Recover unspecified tetrahedral stereo from a genuine 3D CTAB. Conflicting
+/// wedge/CFG assignments are corrected from geometry before this runs.
+pub(crate) fn perceive_tetrahedral_from_3d(mol: &mut Molecule, conformer: &Coords3D) {
+    let mut ordinary_centers: std::collections::HashSet<_> =
+        chematic_perception::stereo_centers(mol)
+            .into_iter()
+            .map(|(idx, _)| idx)
+            .collect();
+    // The CIP classifier keeps ring-path provenance and remote stereo.
+    ordinary_centers.extend(chematic_chem::potential_stereocenter_indices(mol));
+    ordinary_centers.extend(additional_3d_ring_centers(mol));
     let candidates: Vec<_> = mol
         .atoms()
         .filter(|(_, atom)| atom.chirality == Chirality::None && !atom.aromatic)
@@ -323,17 +404,26 @@ pub(crate) fn perceive_tetrahedral_from_3d(mol: &mut Molecule, conformer: &Coord
                         .neighbors(idx)
                         .map(|(_, bond)| mol.bond(bond).order.order_int())
                         .sum();
-                    (atom.charge == 1 && valence == 3) || (atom.charge == 0 && valence == 4)
+                    (atom.charge == 1 && valence == 3)
+                        || (atom.charge == 0
+                            && valence == 4
+                            && mol.neighbors(idx).any(|(neighbor, bond)| {
+                                mol.atom(neighbor).element == Element::O
+                                    && mol.bond(bond).order == BondOrder::Double
+                            }))
                 };
             if !ordinary_centers.contains(&idx) && !sulfur_lone_pair {
                 return None;
             }
             if ordinary_centers.contains(&idx)
-                && mol.neighbors(idx).any(|(_, bond)| {
+                && !sulfur_lone_pair
+                && mol.neighbors(idx).any(|(neighbor, bond)| {
                     !matches!(
                         mol.bond(bond).order,
-                        BondOrder::Single | BondOrder::Up | BondOrder::Down
-                    )
+                        BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Dative
+                    ) && !(atom.element == Element::P
+                        && mol.bond(bond).order == BondOrder::Double
+                        && mol.atom(neighbor).element == Element::O)
                 })
             {
                 return None;
@@ -351,6 +441,112 @@ pub(crate) fn perceive_tetrahedral_from_3d(mol: &mut Molecule, conformer: &Coord
             mol.set_stereo_neighbor_order(idx, order);
             mol.set_chirality(idx, chirality);
         }
+    }
+}
+
+/// Correct only wedge assignments that conflict with genuine 3D geometry.
+/// Keep the diagnostic and the existing stereo-neighbor order so the
+/// correction remains observable and SMILES parity uses the same frame.
+pub(crate) fn correct_conflicting_wedges_from_3d(
+    mol: &mut Molecule,
+    conflicts: &[Stereo3DDiagnostic],
+) {
+    for conflict in conflicts {
+        if let Stereo3DDiagnostic::WedgeVs3DParityConflict {
+            atom,
+            from_3d_geometry,
+            ..
+        } = conflict
+        {
+            mol.set_chirality(*atom, *from_3d_geometry);
+        }
+    }
+}
+
+/// The XY projection of a puckered ring can put the two alkene substituents
+/// on the wrong apparent sides of a double bond. Correct an already inferred
+/// direction only when the ring alkene has one unshared carrier at each end.
+pub(crate) fn correct_ring_alkene_directions_from_3d(mol: &mut Molecule, coords: &Coords3D) {
+    let ring_bonds = chematic_perception::ring_bond_flags(mol);
+    let mut corrections = Vec::new();
+    for (db_idx, db) in mol.bonds() {
+        if db.order != BondOrder::Double || !ring_bonds[db_idx.0 as usize] {
+            continue;
+        }
+        let ends = [db.atom1, db.atom2];
+        let mut carriers = Vec::new();
+        for &end in &ends {
+            let other = if end == ends[0] { ends[1] } else { ends[0] };
+            let subs: Vec<_> = mol
+                .neighbors(end)
+                .filter(|&(atom, _)| atom != other)
+                .collect();
+            if subs.len() != 1 {
+                break;
+            }
+            let (sub, bond) = subs[0];
+            if mol.bond(bond).order != BondOrder::Single
+                || mol
+                    .neighbors(sub)
+                    .any(|(_, b)| mol.bond(b).order == BondOrder::Double)
+            {
+                break;
+            }
+            let Some(direction @ (BondOrder::Up | BondOrder::Down)) = mol.bond_direction(bond)
+            else {
+                break;
+            };
+            carriers.push((sub, bond, direction));
+        }
+        if carriers.len() != 2 {
+            continue;
+        }
+        let Some((&p1, &p2, &s1, &s2)) = coords
+            .points
+            .get(ends[0].0 as usize)
+            .zip(coords.points.get(ends[1].0 as usize))
+            .zip(coords.points.get(carriers[0].0.0 as usize))
+            .zip(coords.points.get(carriers[1].0.0 as usize))
+            .map(|(((p1, p2), s1), s2)| (p1, p2, s1, s2))
+        else {
+            continue;
+        };
+        let axis = p2.sub(&p1);
+        let length2 = axis.x * axis.x + axis.y * axis.y + axis.z * axis.z;
+        if length2 < 1e-8 {
+            continue;
+        }
+        let side = |point: Point3, origin: Point3| {
+            let v = point.sub(&origin);
+            let scale = (v.x * axis.x + v.y * axis.y + v.z * axis.z) / length2;
+            (
+                v.x - scale * axis.x,
+                v.y - scale * axis.y,
+                v.z - scale * axis.z,
+            )
+        };
+        let a = side(s1, p1);
+        let b = side(s2, p2);
+        let dot = a.0 * b.0 + a.1 * b.1 + a.2 * b.2;
+        let norm2 = (a.0 * a.0 + a.1 * a.1 + a.2 * a.2) * (b.0 * b.0 + b.1 * b.1 + b.2 * b.2);
+        if norm2 < 1e-12 || dot.abs() / norm2.sqrt() < 0.1 {
+            continue;
+        }
+        let up_from = |end: AtomIdx, bond: BondIdx, direction: BondOrder| {
+            (mol.bond(bond).atom1 == end) == (direction == BondOrder::Up)
+        };
+        let encoded_same = up_from(ends[0], carriers[0].1, carriers[0].2)
+            == up_from(ends[1], carriers[1].1, carriers[1].2);
+        if encoded_same != (dot > 0.0) {
+            let reverse = match carriers[1].2 {
+                BondOrder::Up => BondOrder::Down,
+                _ => BondOrder::Up,
+            };
+            corrections.push((carriers[1].1, reverse));
+        }
+    }
+    for (bond, direction) in corrections {
+        mol.set_bond_direction(bond, direction);
     }
 }
 
