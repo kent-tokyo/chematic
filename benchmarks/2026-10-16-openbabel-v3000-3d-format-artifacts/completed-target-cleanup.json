@@ -1,0 +1,10 @@
+{
+  "paths_KiB": {
+    "/private/tmp/chematic-v3000-coordinate-format-target-20261016": 182484,
+    "/private/tmp/chematic-v3000-coordinate-format-test-target-20261016": 324468
+  },
+  "all_16_measured_binaries_and_corpora_hashes_verified_before_cleanup": true,
+  "ps": "no live cargo/rustc or task worker",
+  "lsof_both": "exit 1, no output",
+  "source_evidence_and_compiled_measurement_binaries_preserved": true
+}

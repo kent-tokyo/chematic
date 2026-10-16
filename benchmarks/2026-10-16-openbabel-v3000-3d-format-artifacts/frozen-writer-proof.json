@@ -1,0 +1,8 @@
+{
+  "original_3d_atom_function_tokens_match_after_rename": true,
+  "original_sha256": "040f95bba4b96692e3b045691fa2999e55ec62d29aa8860d513583d7b974e7a0",
+  "baseline_and_candidate_probe_equal_after_rustfmt": true,
+  "baseline_probe_sha256": "052bb233dd386695dcd3aa4b84ca0ccd34242bf6f726a265b444d3e99520080c",
+  "candidate_probe_sha256": "b191954183b4f48b7029898bfc9c2f2a7bbfff82060336460c0208d8c1ff2eff",
+  "probe_difference": "Rustfmt normalization only; same API and timed work"
+}
