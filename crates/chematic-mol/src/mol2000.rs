@@ -324,20 +324,32 @@ fn additional_3d_ring_centers(mol: &Molecule) -> Vec<AtomIdx> {
     // RDKit also records the 3D orientation of the two bridgeheads in a
     // simple bicyclic cage such as norbornane, even when CIP regards its
     // paired ring paths as equivalent. Limit this case to exactly two
-    // three-ring-bond carbon bridgeheads; symmetric multi-bridgehead cages
-    // such as adamantane must not acquire arbitrary tetrahedral tags.
+    // three-ring-bond carbon bridgeheads with one implicit or explicit H;
+    // symmetric multi-bridgehead cages such as adamantane must not acquire
+    // arbitrary tetrahedral tags.
     let ring_bonds = chematic_perception::ring_bond_flags(mol);
     let mut additional = Vec::new();
     let bridgeheads: Vec<_> = mol
         .atoms()
         .filter(|(idx, atom)| {
-            atom.element == Element::C
-                && !atom.aromatic
-                && mol.degree(*idx) == 3
-                && chematic_core::implicit_hcount(mol, *idx) == 1
-                && mol.neighbors(*idx).all(|(_, bond)| {
-                    mol.bond(bond).order == BondOrder::Single && ring_bonds[bond.0 as usize]
-                })
+            if atom.element != Element::C || atom.aromatic {
+                return false;
+            }
+            let mut ring_neighbors = 0;
+            let mut explicit_h = 0;
+            for (neighbor, bond) in mol.neighbors(*idx) {
+                if mol.bond(bond).order != BondOrder::Single {
+                    return false;
+                }
+                if ring_bonds[bond.0 as usize] {
+                    ring_neighbors += 1;
+                } else if mol.atom(neighbor).element == Element::H {
+                    explicit_h += 1;
+                } else {
+                    return false;
+                }
+            }
+            ring_neighbors == 3 && explicit_h + chematic_core::implicit_hcount(mol, *idx) == 1
         })
         .map(|(idx, _)| idx)
         .collect();

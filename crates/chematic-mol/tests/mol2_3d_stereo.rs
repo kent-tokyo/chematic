@@ -8,6 +8,8 @@ const EXPLICIT_H: &str = include_str!("data/mol2-3d-stereo-0.mol2");
 const IMPLICIT_H: &str = include_str!("data/mol2-3d-stereo-noh.mol2");
 const AMINO_ACID: &str = include_str!("data/mol2-3d-stereo-1.mol2");
 const FOUR_HEAVY: &str = include_str!("data/mol2-3d-stereo-2.mol2");
+const EXPLICIT_H_BRIDGEHEADS: &str = include_str!("data/mol2-3d-bridgehead-explicit-h.mol2");
+const EXPLICIT_H_ADAMANTANE: &str = include_str!("data/mol2-3d-adamantane-explicit-h.mol2");
 const ALKENE_CASES: [&str; 12] = [
     include_str!("data/mol2-3d-ez-00.mol2"),
     include_str!("data/mol2-3d-ez-01.mol2"),
@@ -148,6 +150,58 @@ fn mol2_3d_tetrahedral_coordinates_recover_stereo_in_both_readers() {
             .collect::<Vec<_>>();
         let (flat, _) = parse_mol2(&write_mol2(&mol, &planar)).unwrap();
         assert_eq!(flat.atom(AtomIdx(center)).chirality, Chirality::None);
+    }
+}
+
+#[test]
+fn mol2_3d_bridgeheads_with_explicit_hydrogens_recover_stereo() {
+    let (mol, coordinates) = parse_mol2(EXPLICIT_H_BRIDGEHEADS).unwrap();
+    let retained = parse_mol2_source_record(EXPLICIT_H_BRIDGEHEADS).unwrap();
+    for center in [2, 5] {
+        let chirality = mol.atom(AtomIdx(center)).chirality;
+        assert!(
+            chirality.is_tetrahedral(),
+            "bridgehead {center} lost stereo"
+        );
+        assert_eq!(
+            retained.molecule().atom(AtomIdx(center)).chirality,
+            chirality
+        );
+
+        let mirrored = coordinates
+            .iter()
+            .map(|&(x, y, z)| (x, y, -z))
+            .collect::<Vec<_>>();
+        let (opposite, _) = parse_mol2(&write_mol2(&mol, &mirrored)).unwrap();
+        assert_eq!(
+            opposite.atom(AtomIdx(center)).chirality,
+            match chirality {
+                Chirality::Clockwise => Chirality::CounterClockwise,
+                Chirality::CounterClockwise => Chirality::Clockwise,
+                _ => unreachable!(),
+            },
+        );
+
+        let planar = coordinates
+            .iter()
+            .map(|&(x, y, _)| (x, y, 0.0))
+            .collect::<Vec<_>>();
+        let (flat, _) = parse_mol2(&write_mol2(&mol, &planar)).unwrap();
+        assert_eq!(flat.atom(AtomIdx(center)).chirality, Chirality::None);
+    }
+}
+
+#[test]
+fn mol2_3d_symmetric_multibridgehead_cage_remains_untagged() {
+    let (mol, _) = parse_mol2(EXPLICIT_H_ADAMANTANE).unwrap();
+    let source = parse_mol2_source_record(EXPLICIT_H_ADAMANTANE).unwrap();
+    for molecule in [&mol, source.molecule()] {
+        assert!(
+            molecule
+                .atoms()
+                .all(|(_, atom)| atom.chirality == Chirality::None),
+            "symmetric cage acquired an arbitrary tetrahedral tag"
+        );
     }
 }
 
