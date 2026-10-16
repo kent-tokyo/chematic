@@ -103,7 +103,7 @@ const RING_CASES: [(&str, &str, &str); 10] = [
     ),
 ];
 
-const ADDITIONAL_CASES: [(&str, &str, &str); 9] = [
+const ADDITIONAL_CASES: [(&str, &str, &str); 11] = [
     (
         "V2000 phosphorus oxide",
         include_str!("fixtures/chematic-unmarked-3d-phosphorus-v2000.mol"),
@@ -148,6 +148,16 @@ const ADDITIONAL_CASES: [(&str, &str, &str); 9] = [
         "V3000 paired fluorine/chlorine ring centers",
         include_str!("fixtures/chematic-unmarked-3d-paired-ring-4-fcl-v3000.mol"),
         "C[C@]1(F)C[C@](C)(Cl)C1",
+    ),
+    (
+        "V2000 coupled ring centers from browser holdout",
+        include_str!("fixtures/chematic-unmarked-3d-coupled-ring-v2000.mol"),
+        "C=CCOc1ccc(/C=C(\\C)C(=O)N[C@@H]2[C@H](O)CCC[C@@H]2O)cc1O",
+    ),
+    (
+        "V3000 coupled ring centers from browser holdout",
+        include_str!("fixtures/chematic-unmarked-3d-coupled-ring-v3000.mol"),
+        "C=CCOc1ccc(/C=C(\\C)C(=O)N[C@@H]2[C@H](O)CCC[C@@H]2O)cc1O",
     ),
 ];
 

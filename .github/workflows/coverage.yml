@@ -8,7 +8,8 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: coverage-${{ github.event.pull_request.number || github.ref }}
+  # Keep PR supersession, but let each main push finish for an honest status badge.
+  group: coverage-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: true
 
 permissions:
