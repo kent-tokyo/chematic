@@ -1,0 +1,35 @@
+{
+  "validated_at_utc": "2026-10-16T15:24:08.621307+00:00",
+  "base_commit": "1b4603db0a20af91ca598415b48e13c81bee0578",
+  "rustc": "rustc 1.97.0 (2d8144b78 2026-07-07)",
+  "python": "3.13.6",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "native_module_sha256": "c8563c29887c2de6580ea49c0da8239fd9ea7f710f9b56a5bed734dfab5a532b",
+  "source_file_count": 1141,
+  "python_tests": {
+    "passed": 255,
+    "new_stream_cases": 66,
+    "failed": 0,
+    "skipped": 0
+  },
+  "rust_tests": {
+    "library_passed": 788,
+    "integration_passed": 17,
+    "failed": 0
+  },
+  "rdkit_version": "2025.09.3",
+  "rdkit_comparisons_passed": 80,
+  "clippy": "passed; chematic-py and chematic-mol all targets, warnings denied",
+  "other_checks": [
+    "format",
+    "refactor_budget",
+    "python_stubs",
+    "binding_surface",
+    "cross_binding_manifest",
+    "product_names",
+    "unsafe_surface",
+    "mkdocs_strict",
+    "git_diff_check"
+  ],
+  "scope": "local source candidate; no published wheel or hosted CI claim"
+}

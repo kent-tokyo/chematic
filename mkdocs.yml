@@ -101,6 +101,7 @@ nav:
   - Reliability:
     - Complete Molecule Reset: molecule-clear.md
     - Python Filesystem Paths: python-filesystem-paths.md
+    - Python Forward SDF Streams: python-forward-sdf.md
     - Python Stub Packaging Gate: python-stub-packaging-gate.md
     - Proof-Backed Tetrahedral Cleanup: tetrahedral-stereo-cleanup.md
     - MOL2 Kekulé Bond Output: mol2-kekule-bond-output.md

@@ -777,6 +777,34 @@ class SDMolSupplier:
 
 
 # ---------------------------------------------------------------------------
+# ForwardSDMolSupplier — binary stream SDF reader
+# ---------------------------------------------------------------------------
+
+class ForwardSDMolSupplier:
+    """Forward-only SDF iterator over a binary ``read(size)`` source.
+
+    The source is retained and never closed. Missing/non-callable ``read``
+    raises ValueError at construction; read exceptions propagate unchanged.
+    ``sanitize`` and ``removeHs`` are compatibility no-ops. Text-mode streams
+    are rejected on first read. No random access or restart is provided.
+    """
+
+    def __init__(self, fileobj: object, sanitize: bool = True,
+                 removeHs: bool = True, strictParsing: bool = True) -> None:
+        self._supplier = _ch.ForwardSDMolSupplier(
+            fileobj, sanitize=sanitize, removeHs=removeHs,
+            strictParsing=strictParsing,
+        )
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        mol = next(self._supplier)
+        return Mol(mol) if mol is not None else None
+
+
+# ---------------------------------------------------------------------------
 # SDWriter — streaming SDF writer
 # ---------------------------------------------------------------------------
 

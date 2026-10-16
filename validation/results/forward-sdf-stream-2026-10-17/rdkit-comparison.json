@@ -1,0 +1,494 @@
+{
+  "rdkit_version": "2025.09.3",
+  "missing_read": {
+    "timed_out": true,
+    "timeout_seconds": 2,
+    "stdout": "constructed\n"
+  },
+  "comparison": {
+    "passed": 80,
+    "cases": [
+      {
+        "v3000": false,
+        "gzip": false,
+        "api": "chematic",
+        "smiles": "CCO"
+      },
+      {
+        "v3000": false,
+        "gzip": false,
+        "api": "chematic",
+        "smiles": "CN"
+      },
+      {
+        "v3000": false,
+        "gzip": false,
+        "api": "chematic",
+        "smiles": "c1ccccc1"
+      },
+      {
+        "v3000": false,
+        "gzip": false,
+        "api": "chematic",
+        "smiles": "F[C@H](Cl)Br"
+      },
+      {
+        "v3000": false,
+        "gzip": false,
+        "api": "chematic",
+        "smiles": "[13CH3][NH3+]"
+      },
+      {
+        "v3000": false,
+        "gzip": false,
+        "api": "chematic",
+        "smiles": "F/C=C/Cl"
+      },
+      {
+        "v3000": false,
+        "gzip": false,
+        "api": "chematic",
+        "smiles": "F/C=C\\Cl"
+      },
+      {
+        "v3000": false,
+        "gzip": false,
+        "api": "chematic",
+        "smiles": "C1CCCCC1"
+      },
+      {
+        "v3000": false,
+        "gzip": false,
+        "api": "chematic",
+        "smiles": "CC(=O)O"
+      },
+      {
+        "v3000": false,
+        "gzip": false,
+        "api": "chematic",
+        "smiles": "O=[N+]([O-])c1ccccc1"
+      },
+      {
+        "v3000": false,
+        "gzip": true,
+        "api": "chematic",
+        "smiles": "CCO"
+      },
+      {
+        "v3000": false,
+        "gzip": true,
+        "api": "chematic",
+        "smiles": "CN"
+      },
+      {
+        "v3000": false,
+        "gzip": true,
+        "api": "chematic",
+        "smiles": "c1ccccc1"
+      },
+      {
+        "v3000": false,
+        "gzip": true,
+        "api": "chematic",
+        "smiles": "F[C@H](Cl)Br"
+      },
+      {
+        "v3000": false,
+        "gzip": true,
+        "api": "chematic",
+        "smiles": "[13CH3][NH3+]"
+      },
+      {
+        "v3000": false,
+        "gzip": true,
+        "api": "chematic",
+        "smiles": "F/C=C/Cl"
+      },
+      {
+        "v3000": false,
+        "gzip": true,
+        "api": "chematic",
+        "smiles": "F/C=C\\Cl"
+      },
+      {
+        "v3000": false,
+        "gzip": true,
+        "api": "chematic",
+        "smiles": "C1CCCCC1"
+      },
+      {
+        "v3000": false,
+        "gzip": true,
+        "api": "chematic",
+        "smiles": "CC(=O)O"
+      },
+      {
+        "v3000": false,
+        "gzip": true,
+        "api": "chematic",
+        "smiles": "O=[N+]([O-])c1ccccc1"
+      },
+      {
+        "v3000": false,
+        "gzip": false,
+        "api": "chematic.rdkit_compat",
+        "smiles": "CCO"
+      },
+      {
+        "v3000": false,
+        "gzip": false,
+        "api": "chematic.rdkit_compat",
+        "smiles": "CN"
+      },
+      {
+        "v3000": false,
+        "gzip": false,
+        "api": "chematic.rdkit_compat",
+        "smiles": "c1ccccc1"
+      },
+      {
+        "v3000": false,
+        "gzip": false,
+        "api": "chematic.rdkit_compat",
+        "smiles": "F[C@H](Cl)Br"
+      },
+      {
+        "v3000": false,
+        "gzip": false,
+        "api": "chematic.rdkit_compat",
+        "smiles": "[13CH3][NH3+]"
+      },
+      {
+        "v3000": false,
+        "gzip": false,
+        "api": "chematic.rdkit_compat",
+        "smiles": "F/C=C/Cl"
+      },
+      {
+        "v3000": false,
+        "gzip": false,
+        "api": "chematic.rdkit_compat",
+        "smiles": "F/C=C\\Cl"
+      },
+      {
+        "v3000": false,
+        "gzip": false,
+        "api": "chematic.rdkit_compat",
+        "smiles": "C1CCCCC1"
+      },
+      {
+        "v3000": false,
+        "gzip": false,
+        "api": "chematic.rdkit_compat",
+        "smiles": "CC(=O)O"
+      },
+      {
+        "v3000": false,
+        "gzip": false,
+        "api": "chematic.rdkit_compat",
+        "smiles": "O=[N+]([O-])c1ccccc1"
+      },
+      {
+        "v3000": false,
+        "gzip": true,
+        "api": "chematic.rdkit_compat",
+        "smiles": "CCO"
+      },
+      {
+        "v3000": false,
+        "gzip": true,
+        "api": "chematic.rdkit_compat",
+        "smiles": "CN"
+      },
+      {
+        "v3000": false,
+        "gzip": true,
+        "api": "chematic.rdkit_compat",
+        "smiles": "c1ccccc1"
+      },
+      {
+        "v3000": false,
+        "gzip": true,
+        "api": "chematic.rdkit_compat",
+        "smiles": "F[C@H](Cl)Br"
+      },
+      {
+        "v3000": false,
+        "gzip": true,
+        "api": "chematic.rdkit_compat",
+        "smiles": "[13CH3][NH3+]"
+      },
+      {
+        "v3000": false,
+        "gzip": true,
+        "api": "chematic.rdkit_compat",
+        "smiles": "F/C=C/Cl"
+      },
+      {
+        "v3000": false,
+        "gzip": true,
+        "api": "chematic.rdkit_compat",
+        "smiles": "F/C=C\\Cl"
+      },
+      {
+        "v3000": false,
+        "gzip": true,
+        "api": "chematic.rdkit_compat",
+        "smiles": "C1CCCCC1"
+      },
+      {
+        "v3000": false,
+        "gzip": true,
+        "api": "chematic.rdkit_compat",
+        "smiles": "CC(=O)O"
+      },
+      {
+        "v3000": false,
+        "gzip": true,
+        "api": "chematic.rdkit_compat",
+        "smiles": "O=[N+]([O-])c1ccccc1"
+      },
+      {
+        "v3000": true,
+        "gzip": false,
+        "api": "chematic",
+        "smiles": "CCO"
+      },
+      {
+        "v3000": true,
+        "gzip": false,
+        "api": "chematic",
+        "smiles": "CN"
+      },
+      {
+        "v3000": true,
+        "gzip": false,
+        "api": "chematic",
+        "smiles": "c1ccccc1"
+      },
+      {
+        "v3000": true,
+        "gzip": false,
+        "api": "chematic",
+        "smiles": "F[C@H](Cl)Br"
+      },
+      {
+        "v3000": true,
+        "gzip": false,
+        "api": "chematic",
+        "smiles": "[13CH3][NH3+]"
+      },
+      {
+        "v3000": true,
+        "gzip": false,
+        "api": "chematic",
+        "smiles": "F/C=C/Cl"
+      },
+      {
+        "v3000": true,
+        "gzip": false,
+        "api": "chematic",
+        "smiles": "F/C=C\\Cl"
+      },
+      {
+        "v3000": true,
+        "gzip": false,
+        "api": "chematic",
+        "smiles": "C1CCCCC1"
+      },
+      {
+        "v3000": true,
+        "gzip": false,
+        "api": "chematic",
+        "smiles": "CC(=O)O"
+      },
+      {
+        "v3000": true,
+        "gzip": false,
+        "api": "chematic",
+        "smiles": "O=[N+]([O-])c1ccccc1"
+      },
+      {
+        "v3000": true,
+        "gzip": true,
+        "api": "chematic",
+        "smiles": "CCO"
+      },
+      {
+        "v3000": true,
+        "gzip": true,
+        "api": "chematic",
+        "smiles": "CN"
+      },
+      {
+        "v3000": true,
+        "gzip": true,
+        "api": "chematic",
+        "smiles": "c1ccccc1"
+      },
+      {
+        "v3000": true,
+        "gzip": true,
+        "api": "chematic",
+        "smiles": "F[C@H](Cl)Br"
+      },
+      {
+        "v3000": true,
+        "gzip": true,
+        "api": "chematic",
+        "smiles": "[13CH3][NH3+]"
+      },
+      {
+        "v3000": true,
+        "gzip": true,
+        "api": "chematic",
+        "smiles": "F/C=C/Cl"
+      },
+      {
+        "v3000": true,
+        "gzip": true,
+        "api": "chematic",
+        "smiles": "F/C=C\\Cl"
+      },
+      {
+        "v3000": true,
+        "gzip": true,
+        "api": "chematic",
+        "smiles": "C1CCCCC1"
+      },
+      {
+        "v3000": true,
+        "gzip": true,
+        "api": "chematic",
+        "smiles": "CC(=O)O"
+      },
+      {
+        "v3000": true,
+        "gzip": true,
+        "api": "chematic",
+        "smiles": "O=[N+]([O-])c1ccccc1"
+      },
+      {
+        "v3000": true,
+        "gzip": false,
+        "api": "chematic.rdkit_compat",
+        "smiles": "CCO"
+      },
+      {
+        "v3000": true,
+        "gzip": false,
+        "api": "chematic.rdkit_compat",
+        "smiles": "CN"
+      },
+      {
+        "v3000": true,
+        "gzip": false,
+        "api": "chematic.rdkit_compat",
+        "smiles": "c1ccccc1"
+      },
+      {
+        "v3000": true,
+        "gzip": false,
+        "api": "chematic.rdkit_compat",
+        "smiles": "F[C@H](Cl)Br"
+      },
+      {
+        "v3000": true,
+        "gzip": false,
+        "api": "chematic.rdkit_compat",
+        "smiles": "[13CH3][NH3+]"
+      },
+      {
+        "v3000": true,
+        "gzip": false,
+        "api": "chematic.rdkit_compat",
+        "smiles": "F/C=C/Cl"
+      },
+      {
+        "v3000": true,
+        "gzip": false,
+        "api": "chematic.rdkit_compat",
+        "smiles": "F/C=C\\Cl"
+      },
+      {
+        "v3000": true,
+        "gzip": false,
+        "api": "chematic.rdkit_compat",
+        "smiles": "C1CCCCC1"
+      },
+      {
+        "v3000": true,
+        "gzip": false,
+        "api": "chematic.rdkit_compat",
+        "smiles": "CC(=O)O"
+      },
+      {
+        "v3000": true,
+        "gzip": false,
+        "api": "chematic.rdkit_compat",
+        "smiles": "O=[N+]([O-])c1ccccc1"
+      },
+      {
+        "v3000": true,
+        "gzip": true,
+        "api": "chematic.rdkit_compat",
+        "smiles": "CCO"
+      },
+      {
+        "v3000": true,
+        "gzip": true,
+        "api": "chematic.rdkit_compat",
+        "smiles": "CN"
+      },
+      {
+        "v3000": true,
+        "gzip": true,
+        "api": "chematic.rdkit_compat",
+        "smiles": "c1ccccc1"
+      },
+      {
+        "v3000": true,
+        "gzip": true,
+        "api": "chematic.rdkit_compat",
+        "smiles": "F[C@H](Cl)Br"
+      },
+      {
+        "v3000": true,
+        "gzip": true,
+        "api": "chematic.rdkit_compat",
+        "smiles": "[13CH3][NH3+]"
+      },
+      {
+        "v3000": true,
+        "gzip": true,
+        "api": "chematic.rdkit_compat",
+        "smiles": "F/C=C/Cl"
+      },
+      {
+        "v3000": true,
+        "gzip": true,
+        "api": "chematic.rdkit_compat",
+        "smiles": "F/C=C\\Cl"
+      },
+      {
+        "v3000": true,
+        "gzip": true,
+        "api": "chematic.rdkit_compat",
+        "smiles": "C1CCCCC1"
+      },
+      {
+        "v3000": true,
+        "gzip": true,
+        "api": "chematic.rdkit_compat",
+        "smiles": "CC(=O)O"
+      },
+      {
+        "v3000": true,
+        "gzip": true,
+        "api": "chematic.rdkit_compat",
+        "smiles": "O=[N+]([O-])c1ccccc1"
+      }
+    ],
+    "module_sha256": "c8563c29887c2de6580ea49c0da8239fd9ea7f710f9b56a5bed734dfab5a532b"
+  }
+}
