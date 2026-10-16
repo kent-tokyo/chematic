@@ -1,0 +1,43 @@
+{
+  "schema": "chematic.chemdraw-validation.v1",
+  "source_base": "025fa2f63da324869aa144a7520626ae4ebbfd22",
+  "source_sha256": {
+    "crates/chematic-mol/src/chemdraw.rs": "a575f97879000e9de1bc653c6ab8ede0e4307298d658d4cb02a2c400af1bf837",
+    "crates/chematic-mol/src/chemdraw/binary.rs": "5afa541cc49989aeef8bfd30d30e9098f38d7a78fea70d5d04762bee75f6dbae",
+    "crates/chematic-mol/src/chemdraw/properties.rs": "7ed64eeae27ab7ec463d73cccf845c82d031eb8027954acc1ba28d93a1b29802",
+    "crates/chematic-mol/src/chemdraw/xml.rs": "9dbde48251171d5b4f07a643d25381738fbabaa2949cfc48f391766230460320",
+    "crates/chematic-py/src/formats/chemdraw.rs": "53fba143edfca409cb88907b66a4fe8fdcfbcc7e856ec8097ab287f5e26842bf",
+    "crates/chematic-wasm/src/chemdraw.rs": "aa15bbb2c9ebd31e66aa4e062992317c88fdff582fb50fb1ea99d7dcce7abf7d",
+    "scripts/generate_chemdraw_fixtures.py": "13a6c2c59dd7f48815b21031810398944c2e5e9353d8e16fceb213ec86014d3c",
+    "scripts/validate_chemdraw_block.py": "59f87746a24a1d4888f308acb094da1b3b5260d94502b48c0eef357ccfaedf40",
+    "scripts/validate_chemdraw_block_node.mjs": "bed67cb8d293d0196945f334fd6d0a530aeb0addbbed10e10c0c197899222e62",
+    "validation/rdkit_issues/chemdraw-block/cases.json": "a94dd46d522ffa49b7a7455e5bb01cb7b79fe50b7e8272f7f6204efab2bd3d77"
+  },
+  "runtime": {
+    "rdkit": "2026.09.1",
+    "python": "3.13.6",
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "python_extension_sha256": "edd398131405ad13a202877b614de35c8ed0908778902a7fc5d60e9a3b645861",
+    "wasm_sha256": "63084583dee1760618f6cc9be769016b4b2471280e48a6f364a9231e2b32bc9c"
+  },
+  "results": {
+    "authored_binary_recipes": 56,
+    "python_graph_comparisons": 224,
+    "wasm_graph_comparisons": 224,
+    "source_bytes_and_coordinate_checks": 224,
+    "failures": 0
+  },
+  "issue": {
+    "url": "https://github.com/rdkit/rdkit/issues/9604",
+    "input_sha256": "e16494f580ca141cd026f514387b1c304692536a880bf4c0eebc6eb5f84bf152",
+    "binary_block_molecule_count": 0,
+    "binary_file_error": "File parsing error: Failed parsing XML with error code 4",
+    "explicit_format_error": "Python argument types in\n    rdkit.Chem.rdChemDraw.MolsFromChemDrawBlock(bytes)\ndid not match C++ signature:\n    MolsFromChemDrawBlock(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> block, bool sanitize=True, bool removeHs=True, RDKit::v2::NeedsCleanPolicy needsCleanPolicy=rdkit.Chem.rdChemDraw.NeedsCleanPolicy.TrustSource, bool parseQueries=False, bool strictQueryParsing=False)",
+    "native_binary_molecule_count": 1
+  },
+  "packet": {
+    "path": "comparisons.json.gz",
+    "sha256": "41bba5ba947daeb6f106fa5645dc5ad2acc615aeee1a8b350c6fa18bcbb15f7d"
+  },
+  "scope": "bounded concrete CDX profile and explicit dispatch; CDXML graph policy retained. No full ChemDraw, reaction/query, marked CDX stereo, vendor round trip, speed or published-artifact claim"
+}

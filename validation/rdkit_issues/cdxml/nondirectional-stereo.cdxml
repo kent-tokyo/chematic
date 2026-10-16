@@ -1,0 +1,17 @@
+<CDXML>
+<page>
+<fragment>
+<n id="1" p="0 0"/>
+<n id="2" p="-1 -1" Element="9"/>
+<n id="3" p="1 1"/>
+<n id="4" p="2 1"/>
+<n id="5" p="-1 1"/>
+<n id="6" p="1 -1" Element="17"/>
+<b id="101" B="1" E="2" Display="Bold"/>
+<b B="1" E="3"/>
+<b B="3" E="4"/>
+<b B="1" E="5"/>
+<b B="1" E="6"/>
+</fragment>
+</page>
+</CDXML>

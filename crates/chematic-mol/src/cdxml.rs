@@ -24,7 +24,7 @@
 //!   ChemDraw itself will accept requires undocumented attributes.
 //! - Tetrahedral chirality (`Atom.chirality`) is perceived from wedge/hash
 //!   `Display` bonds plus 2D coordinates via
-//!   [`chematic_perception::apply_local_parity_from_wedges`] -- the same
+//!   [`chematic_perception::apply_ctab_local_parity_from_wedges_with_diagnostics`] -- the same
 //!   CIP-independent mechanism the MOL/MRV readers use, so it abstains
 //!   (leaves `Chirality::None`) rather than guessing on contradictory
 //!   wedges, missing coordinates, or degenerate/coplanar geometry.
@@ -39,7 +39,7 @@
 //!   qualify as stereocenter candidates (3-4 neighbours) still abstains --
 //!   one such bond cannot mean "toward the viewer" from both ends at once
 //!   -- while a directional wedge in the same situation is not ambiguous
-//!   (the Begin atom is the reference by CDXML's own convention) and is
+//!   (the narrow endpoint is the reference by CDXML's convention) and is
 //!   unaffected either way.
 //! - E/Z double-bond stereo is derived from 2D coordinates via `assign_ez_from_2d`.
 //! - Presentation-only nodes (text boxes, arrows, etc.) are silently skipped.
@@ -47,7 +47,9 @@
 use std::collections::HashMap;
 
 use chematic_core::{Atom, AtomIdx, BondOrder, Element, Molecule, MoleculeBuilder, RGroupLabel};
-use chematic_perception::{apply_local_parity_from_wedges, assign_ez_from_2d};
+use chematic_perception::{
+    apply_ctab_local_parity_from_wedges_with_diagnostics, assign_ez_from_2d,
+};
 
 use crate::cml::parse_xml_attrs;
 
@@ -221,8 +223,9 @@ pub fn parse_cdxml_with_options_and_limits(
 /// # Stereochemistry
 ///
 /// Wedge bonds are derived from the `Display` attribute of `<b>` elements:
-/// `"WedgeBegin"` / `"WedgedHashBegin"` / `"Bold"` → [`BondOrder::Up`];
-/// `"Hash"` / `"Dash"` / `"WedgeEnd"` / `"WedgedHashEnd"` → [`BondOrder::Down`].
+/// Solid wedges (`WedgeBegin`/`WedgeEnd`) and `Bold` use [`BondOrder::Up`];
+/// hashed wedges (`WedgedHashBegin`/`WedgedHashEnd`) and `Hash`/`Dash` use
+/// [`BondOrder::Down`]. End glyphs reverse the bond's reference endpoint.
 /// `"Bold"` is ChemDraw's simplified, non-directional "coming toward viewer"
 /// convention (a plain thick line, used by some chemists in place of a real
 /// wedge), mapped to the same `BondOrder` bucket as `"WedgeBegin"` for
@@ -348,6 +351,15 @@ impl FragAccum {
             coords.push((self.atom_xs[index], self.atom_ys[index]));
         }
         for (bond_index, &(begin, end)) in bond_positions.iter().enumerate() {
+            // CDXML End glyphs put the narrow/reference end on E.
+            let (begin, end) = if matches!(
+                self.bond_display[bond_index].as_deref(),
+                Some("WedgeEnd") | Some("WedgedHashEnd")
+            ) {
+                (end, begin)
+            } else {
+                (begin, end)
+            };
             builder
                 .add_bond(indices[&begin], indices[&end], self.bond_ords[bond_index])
                 .map_err(|_| {
@@ -375,40 +387,37 @@ impl FragAccum {
 
     fn normalize_nondirectional_wedges(
         &self,
-        view: &mut Molecule,
-        indices: &HashMap<usize, AtomIdx>,
+        molecule: &Molecule,
         bond_positions: &[(usize, usize)],
         degree: &[usize],
         options: &CdxmlParseOptions,
-    ) {
-        for (bond_index, &(begin, end)) in bond_positions.iter().enumerate() {
-            if !matches!(
+    ) -> Result<Molecule, CdxmlError> {
+        let mut builder =
+            MoleculeBuilder::with_capacity(molecule.atom_count(), molecule.bond_count());
+        for (_, atom) in molecule.atoms() {
+            builder.add_atom(atom.clone());
+        }
+        for (bond_index, (_, bond)) in molecule.bonds().enumerate() {
+            let (mut begin, mut end, mut order) = (bond.atom1, bond.atom2, bond.order);
+            if matches!(
                 self.bond_display[bond_index].as_deref(),
                 Some("Bold") | Some("Hash") | Some("Dash")
-            ) {
-                continue;
+            ) && matches!(order, BondOrder::Up | BondOrder::Down)
+            {
+                let (b, e) = bond_positions[bond_index];
+                let eligible = |value: usize| (3..=4).contains(&value);
+                let (b_ok, e_ok) = (eligible(degree[b]), eligible(degree[e]));
+                if !options.infer_nondirectional_stereo || b_ok == e_ok {
+                    order = BondOrder::Single;
+                } else if e_ok {
+                    (begin, end) = (end, begin);
+                }
             }
-            let (begin_atom, end_atom) = (indices[&begin], indices[&end]);
-            let Some((index, _)) = view.bond_between(begin_atom, end_atom) else {
-                continue;
-            };
-            if !options.infer_nondirectional_stereo {
-                view.set_bond_order(index, BondOrder::Single);
-                continue;
-            }
-            let eligible = |value: usize| (3..=4).contains(&value);
-            let (begin_eligible, end_eligible) = (eligible(degree[begin]), eligible(degree[end]));
-            if begin_eligible && end_eligible {
-                view.set_bond_order(index, BondOrder::Single);
-            } else if end_eligible && !begin_eligible {
-                let flipped = match view.bond(index).order {
-                    BondOrder::Up => BondOrder::Down,
-                    BondOrder::Down => BondOrder::Up,
-                    other => other,
-                };
-                view.set_bond_order(index, flipped);
-            }
+            builder.add_bond(begin, end, order).map_err(|error| {
+                CdxmlError::InvalidDocument(format!("invalid perception bond: {error}"))
+            })?;
         }
+        Ok(builder.build())
     }
 
     fn apply_stereo(
@@ -419,14 +428,17 @@ impl FragAccum {
         degree: &[usize],
         coords: &[(f64, f64)],
         options: &CdxmlParseOptions,
-    ) {
+    ) -> Result<(), CdxmlError> {
+        // CDXML uses screen Y-down coordinates; perception expects Cartesian Y-up.
+        // Keep the returned source coordinates unchanged.
+        let cartesian: Vec<_> = coords.iter().map(|&(x, y)| (x, -y)).collect();
         if !self.has_nondirectional_wedge() {
-            apply_local_parity_from_wedges(molecule, coords);
-            return;
+            apply_ctab_local_parity_from_wedges_with_diagnostics(molecule, &cartesian);
+            return Ok(());
         }
-        let mut view = molecule.clone();
-        self.normalize_nondirectional_wedges(&mut view, indices, bond_positions, degree, options);
-        apply_local_parity_from_wedges(&mut view, coords);
+        let mut view =
+            self.normalize_nondirectional_wedges(molecule, bond_positions, degree, options)?;
+        apply_ctab_local_parity_from_wedges_with_diagnostics(&mut view, &cartesian);
         for index in 0..self.atom_ids.len() {
             let atom = indices[&index];
             let chirality = view.atom(atom).chirality;
@@ -437,6 +449,7 @@ impl FragAccum {
                 }
             }
         }
+        Ok(())
     }
 
     fn flush(
@@ -456,7 +469,7 @@ impl FragAccum {
             &bonds.degree,
             &fragment.coords,
             options,
-        );
+        )?;
         assign_ez_from_2d(&mut fragment.molecule, &fragment.coords);
         results.push((fragment.molecule, fragment.coords));
         *self = Self::default();
@@ -608,8 +621,10 @@ fn cdxml_bond_order(attrs: &HashMap<String, String>) -> BondOrder {
         return base;
     }
     match attrs.get("Display").map(String::as_str) {
-        Some("WedgeBegin") | Some("WedgedHashBegin") | Some("Bold") => BondOrder::Up,
-        Some("Hash") | Some("Dash") | Some("WedgeEnd") | Some("WedgedHashEnd") => BondOrder::Down,
+        Some("WedgeBegin") | Some("WedgeEnd") | Some("Bold") => BondOrder::Up,
+        Some("Hash") | Some("Dash") | Some("WedgedHashBegin") | Some("WedgedHashEnd") => {
+            BondOrder::Down
+        }
         _ => BondOrder::Single,
     }
 }

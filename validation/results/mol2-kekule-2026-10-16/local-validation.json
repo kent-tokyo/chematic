@@ -1,0 +1,83 @@
+{
+  "schema": "chematic.mol2-kekule-local-validation.v1",
+  "source_base": "96a1addb742b9b4cb3c8258e123563cee0d7055c",
+  "observed_main": "8a1ab7f25fc228d33ecc9f84e5c22cb22f3cd6bb",
+  "scope": "Bounded opt-in neutral C/N/O/S MOL2 bond encoding, with source-byte preservation. Not general atom retyping, aromaticity-model parity, 3D generation, charge prediction, performance or release proof.",
+  "proof_summary": "summary.json",
+  "results": {
+    "cases": 17,
+    "cross_binding_outputs": 204,
+    "exact_token_proofs": 204,
+    "rdkit_identity_and_explicit_valence_checks": 204,
+    "openbabel_identity_checks": 17,
+    "mismatches": 0
+  },
+  "tests": {
+    "rust": {
+      "passed": 34,
+      "new_contracts": 11,
+      "existing_source_preservation": 12,
+      "existing_unity_charge": 7,
+      "existing_coordinate_stereo": 4,
+      "command": "cargo test -p chematic-mol --test mol2_kekule_contract --test mol2_preservation --test mol2_unity_charge --test mol2_3d_stereo --offline"
+    },
+    "python": {
+      "passed": 58,
+      "new_tests": 47,
+      "existing_source_preservation": 11,
+      "command": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=<candidate-package> python -m pytest crates/chematic-py/tests/test_mol2_kekule.py crates/chematic-py/tests/test_mol2_preservation.py -q"
+    },
+    "node_wasm": {
+      "fixture_cases": 34,
+      "rich_source_control": 1,
+      "refusal_contracts": 9,
+      "command": "CHEMATIC_WASM_MODULE=<candidate-module> node crates/chematic-wasm/tests/mol2_kekule.test.mjs"
+    }
+  },
+  "checks": {
+    "production_clippy": "Passed separately for chematic-mol, chematic-py, chematic-wasm; --offline -- -D warnings. A combined-cache attempt exhausted disk; fresh per-crate checks passed.",
+    "test_and_example_clippy": "passed: mol2_kekule_contract and mol2_kekule_dump; --offline --no-deps -- -D warnings",
+    "format": "passed: cargo fmt --all -- --check",
+    "refactor_budget": "passed: 584 files, 8619 functions, 18 file allowances, 85 function allowances",
+    "binding_inventory": "passed: WASM 308 / Python 207; static inventory, not full API parity",
+    "cross_binding_manifest": "passed: 58 operations; bookkeeping only",
+    "product_names": "passed",
+    "python_syntax": "passed: stub/new test/validator AST",
+    "mkdocs": "passed: build --strict",
+    "source_packet_and_retained_runtime_hashes": "passed",
+    "ci_node_default_package_path": "passed: no argument/default pkg-node path against actual compiled Node/WASM module",
+    "git_diff_check": "passed with intentional CRLF fixture attributes"
+  },
+  "validation_boundaries": {
+    "rdkit": "Independent normalized MOL2 graph projection with sequential IDs and explicit UNITY formal charges; not a direct raw-record interoperability claim.",
+    "openbabel": "LF oracle copies and reparse of valid output SMILES normalize reader-specific aromatic flags. Source bytes are checked separately. Sodium and hydrogen-omitted MOL2 interpretations are not used as absolute chemical truth.",
+    "upstream_diagnostic": "Open Babel 3.2.1 emits six ar bonds both with and without -xk for pyridine."
+  },
+  "changed_file_sha256": {
+    ".github/workflows/ci.yml": "8659c5ac822df492759573e9383bde8266d11dd937c45d4b13f7ba827f92d612",
+    "CHANGELOG.md": "3b96f1f02123bc7a70c426ca936e8e873e841adc4e74b96dcf792ef4d6653bc5",
+    "crates/chematic-mol/examples/mol2_kekule_dump.rs": "09051a72c86b9820838ef77325f9f2e21cb0758ca3dbce53db62976f68d5e9cf",
+    "crates/chematic-mol/src/lib.rs": "fce728a828f92c47c67b6f3702bd7928f0053398954befcfe7aff44f1d73167c",
+    "crates/chematic-mol/src/mol2_kekule.rs": "229e9bd1866e29fb5cce8f6defc8aa05bb3b8470e1485ea5ccfe7b9a2d5286d8",
+    "crates/chematic-mol/tests/mol2_kekule_contract.rs": "12888cc37358063187a7ec96c4ee7608a6b30c9d3a22d4d4dc72aaad27a897a3",
+    "crates/chematic-py/python/chematic/__init__.pyi": "039b146647dea4ca97970da155153bd4a09180722f672da1d9642a10c28baf2c",
+    "crates/chematic-py/src/formats.rs": "c301b6a4af1feb8de656efc8020f5211e2555a3672165a732724680db994eb3b",
+    "crates/chematic-py/src/formats/interchange.rs": "05a93b3c0fc2cb7d68769dad1d74e684d5106b02d2f380036e44f42cd2cacf17",
+    "crates/chematic-py/tests/test_mol2_kekule.py": "2e20bc023664c6c7586a8095f0f7eecbb51f9e35c951c480d4a310882fe4e621",
+    "crates/chematic-wasm/src/mol_io/common_formats.rs": "7c076c83ef5ca69fc86aafb47ab947ea3278bff6b8ad51dc612a2b360108db96",
+    "crates/chematic-wasm/tests/mol2_kekule.test.mjs": "937a9f5b3a4514a658ad6d4a6a5dd18e6a3c96203d5b370bf0604f2a7f276e5c",
+    "docs/mol2-kekule-bond-output.md": "7813a3d84a0e832c4e994d35fe29a7e16786605fb12c05f740f9cf01b02f8fc1",
+    "docs/openbabel-open-issues-2026-10-14.md": "6c958a7580e40b4e3da5a5b5908ac3a6a679b055348b448db258bbb10968395b",
+    "mkdocs.yml": "960d94e6c97a767b60f8b287c260a70005c0272a94ef633c702d14b1acd2e89b",
+    "scripts/README.md": "01284313ff89836854d784059e89ae2a00f9cc321e3734a33c83331e45e1234e",
+    "scripts/validate_mol2_kekule.py": "1969e3b1f65bb5a5b0108a3e1336f1a7416f05b4e1645efa46b04788958b8128",
+    "scripts/validate_mol2_kekule_node.mjs": "ad6d112e5287188d0dbabeebf68f32d38e657916855290c37458c65b5f62de57",
+    "validation/openbabel_issues/mol2-kekule/cases.json": "b95073244459c053d35e93a3e0fb9b11c0edceb63b463bc47f57bc27c4fc708e",
+    "validation/openbabel_issues/mol2-kekule/rich-source.mol2": "1be3a2efdeefce1345b9c1c8f6454f744cdfe91fb1cf8d791d39e24318565aae",
+    "validation/results/binding_surface_inventory-current.json": "e8079448e8ea20fab021826606b0568a1cdd345f2f5a3b753640079255f6f052",
+    "validation/results/mol2-kekule-2026-10-16/comparisons.json.gz": "a9996c3b17e1e19f45e2c91812d2c60e97f9bc5a9cb9ebd7b56d0bd5b4f8873b",
+    "validation/results/mol2-kekule-2026-10-16/summary.json": "ac4ab05c15378cfc7667cc4746692e07ffb4ddd7ae9b5ea6c12f15d28dce312f",
+    ".gitattributes": "bd9991cc331b898db8b796927339f48a94d7fc842354dcc2bb4d3e469d6cee07"
+  },
+  "hosted_ci": "Separate from completed local validation; inspect the PR checks."
+}

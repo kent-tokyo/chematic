@@ -1,0 +1,281 @@
+{
+  "schema": "chematic.mol2-section-order-validation.v1",
+  "baseline_commit": "3e7f04b20593af4b07569d886b56afc1184468fe",
+  "scope": "9 original native controls; 8 Python/Node byte parity and 9 two-profile Open Babel diagnostics",
+  "limits": [
+    "Antechamber not installed or executed",
+    "No full Amber workflow, broad chemistry parity, speed, or publication claim"
+  ],
+  "native_section_content_checks": 9,
+  "opt_in_changed_outputs": 7,
+  "default_outputs_byte_identical": 9,
+  "openbabel_default_charge_matches": 9,
+  "openbabel_adjacent_charge_mismatches": 6,
+  "neutral_outputs_byte_identical": 2,
+  "python_node_native_parity_cases": 8,
+  "source_exact_checks": 4,
+  "openbabel_version": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+  "openbabel_default_probe": {
+    "output": "@<TRIPOS>MOLECULE\n*****\n 1 0 0 0 0\nSMALL\nGASTEIGER\n\n@<TRIPOS>ATOM\n      1 O           0.0000    0.0000    0.0000 O.3     1  HOH1        0.0000\n@<TRIPOS>UNITY_ATOM_ATTR\n1 1\ncharge -2\n@<TRIPOS>BOND\n",
+    "stderr": "1 molecule converted\n"
+  },
+  "fixtures_sha256": {
+    "baseline_native_dump.rs": "995b0e578838397ad08b1841f63852b6de034cebf4dfd1041615f2da8eeb1d04",
+    "cases.json": "b98ede6779ea619c9ea8fb7a050eb4acdad61343eb79a64f8a1c99a0f39d316c",
+    "charged-source.mol2": "487830d77df73e733f4e727c9d8cf1ede4c76e26a804c1c7bacd4515562b4bd4",
+    "neutral-expected.mol2": "ba86c23adfd05b3a93e34122c1aeb863c72704eaff1083142706eaf30ed1d8f4",
+    "validate.py": "82e8a8c2b6fa500a71702509c6b7762cf16337fb71609ef18603f44ebbaab846"
+  },
+  "rows": [
+    {
+      "id": "anion",
+      "section_content_identical": true,
+      "bytes_changed": true,
+      "binding_bytes_identical": true,
+      "openbabel_default": {
+        "atoms": 1,
+        "bonds": 0,
+        "formal_charges": [
+          -2
+        ],
+        "mol": "chematic\n OpenBabel10162618363D\n\n  1  0  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 O   0  6  0  0  0  0  0  0  0  0  0  0\nM  CHG  1   1  -2\nM  END\n",
+        "stderr": "==============================\n*** Open Babel Warning  in Translate\n  Cannot perform atom type translation: table cannot find requested types.\n==============================\n*** Open Babel Warning  in ReadMolecule\n  This Mol2 file is non-standard. Problem with molecule: chematic Cannot interpret atom types correctly, instead attempting to interpret atom type: O as elements instead.\n==============================\n*** Open Babel Warning  in Translate\n  Cannot perform atom type translation: table cannot find requested types.\n1 molecule converted\n"
+      },
+      "openbabel_adjacent": {
+        "atoms": 1,
+        "bonds": 0,
+        "formal_charges": [
+          0
+        ],
+        "mol": "chematic\n OpenBabel10162618363D\n\n  1  0  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\nM  END\n",
+        "stderr": "==============================\n*** Open Babel Warning  in Translate\n  Cannot perform atom type translation: table cannot find requested types.\n==============================\n*** Open Babel Warning  in ReadMolecule\n  This Mol2 file is non-standard. Problem with molecule: chematic Cannot interpret atom types correctly, instead attempting to interpret atom type: O as elements instead.\n==============================\n*** Open Babel Warning  in Translate\n  Cannot perform atom type translation: table cannot find requested types.\n1 molecule converted\n"
+      },
+      "openbabel_adjacent_charge_match": false
+    },
+    {
+      "id": "cation",
+      "section_content_identical": true,
+      "bytes_changed": true,
+      "binding_bytes_identical": true,
+      "openbabel_default": {
+        "atoms": 1,
+        "bonds": 0,
+        "formal_charges": [
+          1
+        ],
+        "mol": "chematic\n OpenBabel10162618363D\n\n  1  0  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 Na  0  3  0  0  0  0  0  0  0  0  0  0\nM  CHG  1   1   1\nM  END\n",
+        "stderr": "1 molecule converted\n"
+      },
+      "openbabel_adjacent": {
+        "atoms": 1,
+        "bonds": 0,
+        "formal_charges": [
+          0
+        ],
+        "mol": "chematic\n OpenBabel10162618363D\n\n  1  0  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 Na  0  0  0  0  0  0  0  0  0  0  0  0\nM  END\n",
+        "stderr": "1 molecule converted\n"
+      },
+      "openbabel_adjacent_charge_match": false
+    },
+    {
+      "id": "ammonium",
+      "section_content_identical": true,
+      "bytes_changed": true,
+      "binding_bytes_identical": true,
+      "openbabel_default": {
+        "atoms": 1,
+        "bonds": 0,
+        "formal_charges": [
+          1
+        ],
+        "mol": "chematic\n OpenBabel10162618363D\n\n  1  0  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 N   0  3  0  0  0  0  0  0  0  0  0  0\nM  CHG  1   1   1\nM  END\n",
+        "stderr": "1 molecule converted\n"
+      },
+      "openbabel_adjacent": {
+        "atoms": 1,
+        "bonds": 0,
+        "formal_charges": [
+          0
+        ],
+        "mol": "chematic\n OpenBabel10162618363D\n\n  1  0  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0\nM  END\n",
+        "stderr": "1 molecule converted\n"
+      },
+      "openbabel_adjacent_charge_match": false
+    },
+    {
+      "id": "tetra",
+      "section_content_identical": true,
+      "bytes_changed": true,
+      "binding_bytes_identical": true,
+      "openbabel_default": {
+        "atoms": 5,
+        "bonds": 4,
+        "formal_charges": [
+          0,
+          1,
+          0,
+          0,
+          0
+        ],
+        "mol": "chematic\n OpenBabel10162618363D\n\n  5  4  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 N   0  3  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\n  2  3  1  0  0  0  0\n  2  4  1  0  0  0  0\n  2  5  1  0  0  0  0\nM  CHG  1   2   1\nM  END\n",
+        "stderr": "1 molecule converted\n"
+      },
+      "openbabel_adjacent": {
+        "atoms": 5,
+        "bonds": 4,
+        "formal_charges": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "mol": "chematic\n OpenBabel10162618363D\n\n  5  4  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 N   0  0  0  0  0  4  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\n  2  3  1  0  0  0  0\n  2  4  1  0  0  0  0\n  2  5  1  0  0  0  0\nM  END\n",
+        "stderr": "1 molecule converted\n"
+      },
+      "openbabel_adjacent_charge_match": false
+    },
+    {
+      "id": "zwitterion",
+      "section_content_identical": true,
+      "bytes_changed": true,
+      "binding_bytes_identical": true,
+      "openbabel_default": {
+        "atoms": 4,
+        "bonds": 3,
+        "formal_charges": [
+          1,
+          0,
+          0,
+          -1
+        ],
+        "mol": "chematic\n OpenBabel10162618363D\n\n  4  3  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 N   0  3  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 O   0  5  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\n  2  3  1  0  0  0  0\n  3  4  1  0  0  0  0\nM  CHG  2   1   1   4  -1\nM  END\n",
+        "stderr": "==============================\n*** Open Babel Warning  in Translate\n  Cannot perform atom type translation: table cannot find requested types.\n==============================\n*** Open Babel Warning  in ReadMolecule\n  This Mol2 file is non-standard. Problem with molecule: chematic Cannot interpret atom types correctly, instead attempting to interpret atom type: O as elements instead.\n==============================\n*** Open Babel Warning  in Translate\n  Cannot perform atom type translation: table cannot find requested types.\n1 molecule converted\n"
+      },
+      "openbabel_adjacent": {
+        "atoms": 4,
+        "bonds": 3,
+        "formal_charges": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "mol": "chematic\n OpenBabel10162618363D\n\n  4  3  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\n  2  3  1  0  0  0  0\n  3  4  1  0  0  0  0\nM  END\n",
+        "stderr": "==============================\n*** Open Babel Warning  in Translate\n  Cannot perform atom type translation: table cannot find requested types.\n==============================\n*** Open Babel Warning  in ReadMolecule\n  This Mol2 file is non-standard. Problem with molecule: chematic Cannot interpret atom types correctly, instead attempting to interpret atom type: O as elements instead.\n==============================\n*** Open Babel Warning  in Translate\n  Cannot perform atom type translation: table cannot find requested types.\n1 molecule converted\n"
+      },
+      "openbabel_adjacent_charge_match": false
+    },
+    {
+      "id": "magnesium",
+      "section_content_identical": true,
+      "bytes_changed": true,
+      "binding_bytes_identical": true,
+      "openbabel_default": {
+        "atoms": 1,
+        "bonds": 0,
+        "formal_charges": [
+          2
+        ],
+        "mol": "chematic\n OpenBabel10162618363D\n\n  1  0  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 Mg  0  2  0  0  0  0  0  0  0  0  0  0\nM  CHG  1   1   2\nM  END\n",
+        "stderr": "1 molecule converted\n"
+      },
+      "openbabel_adjacent": {
+        "atoms": 1,
+        "bonds": 0,
+        "formal_charges": [
+          0
+        ],
+        "mol": "chematic\n OpenBabel10162618363D\n\n  1  0  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 Mg  0  0  0  0  0  0  0  0  0  0  0  0\nM  END\n",
+        "stderr": "1 molecule converted\n"
+      },
+      "openbabel_adjacent_charge_match": false
+    },
+    {
+      "id": "neutral",
+      "section_content_identical": true,
+      "bytes_changed": false,
+      "binding_bytes_identical": true,
+      "openbabel_default": {
+        "atoms": 2,
+        "bonds": 1,
+        "formal_charges": [
+          0,
+          0
+        ],
+        "mol": "chematic\n OpenBabel10162618363D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n",
+        "stderr": "==============================\n*** Open Babel Warning  in Translate\n  Cannot perform atom type translation: table cannot find requested types.\n==============================\n*** Open Babel Warning  in ReadMolecule\n  This Mol2 file is non-standard. Problem with molecule: chematic Cannot interpret atom types correctly, instead attempting to interpret atom type: O as elements instead.\n==============================\n*** Open Babel Warning  in Translate\n  Cannot perform atom type translation: table cannot find requested types.\n1 molecule converted\n"
+      },
+      "openbabel_adjacent": {
+        "atoms": 2,
+        "bonds": 1,
+        "formal_charges": [
+          0,
+          0
+        ],
+        "mol": "chematic\n OpenBabel10162618363D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n",
+        "stderr": "==============================\n*** Open Babel Warning  in Translate\n  Cannot perform atom type translation: table cannot find requested types.\n==============================\n*** Open Babel Warning  in ReadMolecule\n  This Mol2 file is non-standard. Problem with molecule: chematic Cannot interpret atom types correctly, instead attempting to interpret atom type: O as elements instead.\n==============================\n*** Open Babel Warning  in Translate\n  Cannot perform atom type translation: table cannot find requested types.\n1 molecule converted\n"
+      },
+      "openbabel_adjacent_charge_match": true
+    },
+    {
+      "id": "aromatic-neutral",
+      "section_content_identical": true,
+      "bytes_changed": false,
+      "binding_bytes_identical": true,
+      "openbabel_default": {
+        "atoms": 6,
+        "bonds": 6,
+        "formal_charges": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "mol": "chematic\n OpenBabel10162618363D\n\n  6  6  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  2  0  0  0  0\n  1  6  1  0  0  0  0\n  2  3  1  0  0  0  0\n  3  4  2  0  0  0  0\n  4  5  1  0  0  0  0\n  5  6  2  0  0  0  0\nM  END\n",
+        "stderr": "1 molecule converted\n"
+      },
+      "openbabel_adjacent": {
+        "atoms": 6,
+        "bonds": 6,
+        "formal_charges": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "mol": "chematic\n OpenBabel10162618363D\n\n  6  6  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  2  0  0  0  0\n  1  6  1  0  0  0  0\n  2  3  1  0  0  0  0\n  3  4  2  0  0  0  0\n  4  5  1  0  0  0  0\n  5  6  2  0  0  0  0\nM  END\n",
+        "stderr": "1 molecule converted\n"
+      },
+      "openbabel_adjacent_charge_match": true
+    },
+    {
+      "id": "editable-rich-record",
+      "section_content_identical": true,
+      "bytes_changed": true,
+      "openbabel_default": {
+        "atoms": 1,
+        "bonds": 0,
+        "formal_charges": [
+          1
+        ],
+        "mol": "original nitrogen\n OpenBabel10162618363D\n\n  1  0  0  0  0  0  0  0  0  0999 V2000\n    1.2500   -2.5000    3.7500 N   0  3  0  0  0  0  0  0  0  0  0  0\nM  CHG  1   1   1\nM  END\n",
+        "stderr": "1 molecule converted\n"
+      },
+      "openbabel_adjacent": {
+        "atoms": 1,
+        "bonds": 0,
+        "formal_charges": [
+          1
+        ],
+        "mol": "original nitrogen\n OpenBabel10162618363D\n\n  1  0  0  0  0  0  0  0  0  0999 V2000\n    1.2500   -2.5000    3.7500 N   0  3  0  0  0  0  0  0  0  0  0  0\nM  CHG  1   1   1\nM  END\n",
+        "stderr": "1 molecule converted\n"
+      },
+      "openbabel_adjacent_charge_match": true
+    }
+  ]
+}

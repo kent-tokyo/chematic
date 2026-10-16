@@ -8,6 +8,12 @@ Issue state is a snapshot; an open issue can already have a proposed upstream fi
 | RDKit issue | Source finding | Decision |
 | --- | --- | --- |
 | [#9601: filesystem path input types](https://github.com/rdkit/rdkit/issues/9601) | Fifteen Python file entry points accepted only `str`; previous I/O/report source matches the pinned base. | [Added filesystem-path inputs](python-filesystem-paths.md): bytes/PathLike, typed stubs and explicit conversion/OS errors. This 2026-10-16 follow-up covers the filesystem portion only. |
+| [#9581: PDB sulfur valence seven from proximity bonding](https://github.com/rdkit/rdkit/issues/9581) | Reproduced with RDKit 2026.09.1; disabling proximity already works upstream. Native PDB reading ignored CONECT and inferred distances. | [Added native explicit CONECT graph reading](pdb-conect-graph.md) for Rust/Python/WASM: declared multiplicities, exact atom/coordinate/serial order, resource limits and explicit extended-slot opt-in. No sanitizer or general PDB compatibility claim. |
+| [#9604: explicit AUTO/CDX/CDXML reader formats](https://github.com/rdkit/rdkit/issues/9604) | RDKit 2026.09.1 routes binary blocks/files through XML and lacks the format keyword. Native chematic had XML-only readers. | [Added checked byte-based dispatch and a concrete CDX profile](chemdraw-block.md) in Rust/Python/WASM, retaining exact source and reporting opted-in presentation omissions. Unsupported CDX chemistry/marked stereo refuse; existing XML APIs remain unchanged. |
+| [#9540: invalid shipped Python type stubs stop downstream type checking](https://github.com/rdkit/rdkit/issues/9540) | Current native stubs parse, but CI and wheel publication did not validate their syntax or packaged presence. RDKit 2026.09.1's installed stubs have two syntax failures on this host. | [Added source and wheel gates](python-stub-packaging-gate.md): Python 3.9 grammar, compiler syntax, typed marker and exact source/wheel bytes; standard-library negative tests and checks before wheel upload/publication. This is a packaging safeguard, not a chemistry or type-signature parity change. |
+| [#9656: redundant tetrahedral declarations in a bridged ring](https://github.com/rdkit/rdkit/issues/9656) | The native writer retained the reported central declaration. No targeted, proof-backed cleanup API existed. | [Added bounded explicit cleanup](tetrahedral-stereo-cleanup.md): fix the selected atom, prove its inversion equivalent while preserving all other configurations and source labels, then clear only its tag/frame. Unsupported profiles and budget exhaustion fail. |
+| [#9601: typed serialized Python inputs](https://github.com/rdkit/rdkit/issues/9601) | The selected native readers/validators accepted `str` but rejected immutable serialized `bytes` at the Python boundary. | [Added UTF-8 `str | bytes` extraction](python-serialized-input.md) for thirteen related inputs, retaining native parse behavior and keyword names; invalid encoding and unsupported types fail at the boundary. Paths, identifiers and other wrapper work are separate. |
+| [#9719: traversal-order-dependent 1–4 stereo](https://github.com/rdkit/rdkit/issues/9719) | The native legacy bounds predicate reproduced order dependence when called with an arbitrary reversed outer pair; ordinary builder paths were already oriented, so this does not establish a default matrix defect. | [Added a checked four-atom path query](alkene-path-stereo.md) in Rust/Python with endpoint normalization, relative cis/trans/unspecified results, 34,608 permutation/direction decisions and unchanged bounds/embedding defaults. |
 | [#9701: pseudoasymmetric rings and duplicate stereo enumeration](https://github.com/rdkit/rdkit/issues/9701) | Native inositol keys were already stable; aminoadamantane enumeration hit the cap because CH2 atoms were counted. | [Corrected native candidate selection](native-stereo-candidate-budget.md): four aminoadamantane assignments, nine inositols, metadata preservation and 60 InChI-set comparisons with RDKit 2026.09.1. |
 | [#9629: atom-renumbering changes stereo counts](https://github.com/rdkit/rdkit/issues/9629) | Native baseline counted one center but lacked a public permutation API. | [Added checked atom permutations](atom-renumbering-stereo.md) with remapped stereo metadata and cold caches; 838 RDKit-reference permutations, including the identity-ring regression. |
 | [#9675: query H folding loses/inverts tetrahedral configuration](https://github.com/rdkit/rdkit/issues/9675) | No query-H folding API existed; the main native matcher compared raw chirality tags. | [Local Rust/Python candidate](query-hydrogen-folding.md): conservative H folding, complete-frame parity, lexical ring slots and 198 live RDKit-reference cases; recursive folding is rejected. |
@@ -81,3 +87,21 @@ refuses nonfinite coordinates and genuinely unrepresentable distances, while
 recovering finite norms when intermediate squares overflow or underflow.
 These are locally investigated numeric boundaries; the upstream issue remains
 a report of matrix-allocation safety, and its large-input crash was not run.
+
+## October 16 follow-up: rooted implicit-H bridgeheads
+
+[#9646](https://github.com/rdkit/rdkit/issues/9646) remains open. A reduced
+constructed graph with only the two bridgehead tags reproduces S/R changes
+on RDKit 2026.09.1 when those implicit-H centers are rooted first. Added
+[checked rooted serialization](rooted-smiles-stereo.md) with verified
+four-ligand tetrahedral frames and original atom correspondences in
+Rust/Python/WASM. This is an opt-in native API; compatibility output is
+unchanged, and missing/unsupported stereo data is refused rather than guessed.
+## October 16 follow-up: CDXML stereo options
+
+[#9359](https://github.com/rdkit/rdkit/issues/9359) remains open. Native
+Bold/Hash/Dash inference already existed, but Python and WASM could not opt in.
+[Expose the option](cdxml-stereo-options.md) and correct independently observed
+screen-coordinate, hashed-sense and directional ownership defects in the
+reader. Default non-directional markers remain unassigned. This validates
+bounded molecular reading, not binary CDX or a general ChemDraw writer.

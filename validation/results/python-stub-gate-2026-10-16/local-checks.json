@@ -1,0 +1,31 @@
+{
+  "schema": "chematic.python-stub-local-checks.v1",
+  "source_base": "ecda5c5364b1a011431b544ce5d399363d600a6f",
+  "tests": [
+    {
+      "python": "3.9.6",
+      "command": "/Library/Developer/CommandLineTools/usr/bin/python3 -m unittest scripts.tests.test_check_python_stubs -v",
+      "passed": 17,
+      "failed": 0
+    },
+    {
+      "python": "3.13.6",
+      "command": "python3 -m unittest scripts.tests.test_check_python_stubs -v",
+      "passed": 17,
+      "failed": 0
+    }
+  ],
+  "observed_checks": [
+    "real retained wheel accepted on Python 3.9.6 and 3.13.6",
+    "8 actual-wheel mutations refused with CLI exit 1",
+    "YAML syntax and gate ordering before upload/publication verified",
+    "Python compile check",
+    "Product names",
+    "Static binding inventory",
+    "Cross-binding manifest",
+    "Strict MkDocs build",
+    "git diff --check"
+  ],
+  "packet_sha256": "0aca1e44a19d888637ffab07b49a62bc205536e4f5a9b9ce59f0b475858407d8",
+  "scope": "Observed local summaries; raw CLI reports retained in validation.json. No Rust runtime code changes, fresh wheel build, release or hosted CI completion claimed."
+}

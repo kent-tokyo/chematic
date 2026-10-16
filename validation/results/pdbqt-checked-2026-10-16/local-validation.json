@@ -1,0 +1,95 @@
+{
+  "schema": "chematic.pdbqt-local-validation.v1",
+  "scope": "Observed local check summaries; raw cross-read inputs and outputs are in comparisons.json.gz. Hosted CI is separate.",
+  "environment_script": "export CARGO_INCREMENTAL=0\nexport CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0\nexport CARGO_PROFILE_DEV_STRIP=debuginfo\nexport CARGO_PROFILE_DEV_OPT_LEVEL=1 CARGO_PROFILE_TEST_OPT_LEVEL=1\nexport CARGO_PROFILE_DEV_CODEGEN_UNITS=1 CARGO_PROFILE_TEST_CODEGEN_UNITS=1\nexport CARGO_TARGET_DIR=/private/tmp/chematic-pdbqt-target-20261016\nexport CARGO_BUILD_JOBS=1\nexport PYO3_PYTHON=/Library/Frameworks/Python.framework/Versions/3.13/bin/python3\n",
+  "python_extension_build": "cargo rustc -p chematic-py --lib --offline -- -C link-arg=-undefined -C link-arg=dynamic_lookup",
+  "rustc": "rustc 1.97.0 (2d8144b78 2026-07-07)",
+  "cargo": "cargo 1.97.0 (c980f4866 2026-06-30)",
+  "node": "v24.5.0",
+  "source_sha256": {
+    "crates/chematic-mol/tests/pdbqt_checked_contract.rs": "19895dddf821405889ebac8a00802c98e2668e3987241ae0fe451c5ad6460bfd",
+    "crates/chematic-py/tests/test_pdbqt_checked.py": "ed9b24b75dfe7abf0ba4d8544eba45f61f25e5d5fab703e7e0114a57586fccdc",
+    "crates/chematic-wasm/tests/pdbqt_checked.test.mjs": "36b4f5c3b535b34dbfb7e70ba6558f217b9d962d3d4d3975a8888dbce468ad08",
+    "docs/pdbqt-checked-output.md": "0fbd957c906727d0a8d5a483e9f7a8e864b99c705bad223f06d52d5994b35ad4",
+    "crates/chematic-py/python/chematic/__init__.pyi": "90263d0c6d952781dd71b7fd31d9625a3be4c11fc93f80e1a298262392150eae",
+    ".github/workflows/ci.yml": "6b432de2969ebc5cb6b32ec7ca0970da2930fa5bee454854f3d41c790e1f18b0"
+  },
+  "checks": [
+    {
+      "command": "cargo test -p chematic-mol --test pdbqt_checked_contract --test public_api_compat_v1_1_3 --test pqr_pdbqt_contract --offline",
+      "status": "passed",
+      "new_tests": 8,
+      "existing_tests": 11
+    },
+    {
+      "command": "python3 -m pytest crates/chematic-py/tests/test_pdbqt_checked.py crates/chematic-py/tests/test_pqr_pdbqt.py -q",
+      "environment": {
+        "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1",
+        "PYTHONPATH": "/private/tmp/chematic-pdbqt-python"
+      },
+      "status": "passed",
+      "new_tests": 52,
+      "existing_tests": 17
+    },
+    {
+      "command": "node crates/chematic-wasm/tests/pdbqt_checked.test.mjs /private/tmp/chematic-pdbqt-node/chematic_wasm.js",
+      "status": "passed"
+    },
+    {
+      "command": "python3 scripts/validate_pdbqt_checked.py --wasm-module /private/tmp/chematic-pdbqt-node/chematic_wasm.js --openbabel-probe /private/tmp/chematic-pdbqt-obabel-probe",
+      "status": "passed",
+      "accepted": 27,
+      "refused": 33
+    },
+    {
+      "command": "cargo clippy -p chematic-mol -p chematic-py -p chematic-wasm --offline --no-deps -- -D warnings",
+      "status": "passed"
+    },
+    {
+      "command": "cargo clippy -p chematic-mol --test pdbqt_checked_contract --offline --no-deps -- -D warnings",
+      "status": "passed"
+    },
+    {
+      "command": "cargo fmt --all -- --check",
+      "status": "passed"
+    },
+    {
+      "command": "python3 scripts/check_binding_surface.py",
+      "status": "passed",
+      "wasm_exports": 308,
+      "python_declarations_and_registrations": 207
+    },
+    {
+      "command": "python3 scripts/check_cross_binding_manifest.py",
+      "status": "passed"
+    },
+    {
+      "command": "python3 scripts/check_product_names.py",
+      "status": "passed"
+    },
+    {
+      "command": "python3 scripts/check_refactor_budget.py",
+      "status": "passed",
+      "production_files": 585,
+      "functions": 8602,
+      "file_allowances": 18,
+      "function_allowances": 86
+    },
+    {
+      "command": "python3 -m mkdocs build --strict --site-dir /private/tmp/chematic-pdbqt-docs-20261016",
+      "status": "passed"
+    },
+    {
+      "command": "git diff --check",
+      "status": "passed"
+    },
+    {
+      "command": "ast.parse of Python binding stub; py_compile of evidence runner",
+      "status": "passed"
+    },
+    {
+      "command": "SHA-256 verification of final candidate sources, runtime modules and compressed evidence; 60-case count",
+      "status": "passed"
+    }
+  ]
+}

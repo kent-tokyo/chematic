@@ -1,0 +1,12 @@
+{
+  "schema": "chematic.cif-bond-fixtures.v1",
+  "provenance": "Original synthetic molecular graphs and Cartesian coordinates; no upstream attachment copied.",
+  "cases": [
+    {"name":"water","smiles":"[H]O[H]","elements":["H","O","H"],"coords":[[0.9,0,0],[0,0,0],[0,1.1,0]],"bonds":[[0,1,"S"],[1,2,"S"]]},
+    {"name":"double","smiles":"C=C","elements":["C","C"],"coords":[[0,0,0],[1.34,0,0]],"bonds":[[0,1,"D"]]},
+    {"name":"triple","smiles":"C#N","elements":["C","N"],"coords":[[0,0,0],[0,0,1.16]],"bonds":[[0,1,"T"]]},
+    {"name":"aromatic","smiles":"c1ccccc1","elements":["C","C","C","C","C","C"],"coords":[[1.4,0,0],[0.7,1.21,0],[-0.7,1.21,0],[-1.4,0,0],[-0.7,-1.21,0],[0.7,-1.21,0]],"bonds":[[0,1,"A"],[1,2,"A"],[2,3,"A"],[3,4,"A"],[4,5,"A"],[5,0,"A"]]},
+    {"name":"disconnected","smiles":"CC.[Na+]","elements":["C","C","Na"],"coords":[[0,0,0],[1.5,0,0],[0,0.1,0]],"bonds":[[0,1,"S"]]},
+    {"name":"edgeless","smiles":"[Na+].[Cl-]","elements":["Na","Cl"],"coords":[[0,0,0],[0,0,0]],"bonds":[]}
+  ]
+}

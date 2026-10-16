@@ -25,6 +25,11 @@ pub use ccd::{
 pub mod cdjson;
 pub mod cdxml;
 pub mod cdxml_document;
+pub mod chemdraw;
+pub use chemdraw::{
+    ChemDrawBlock, ChemDrawError, ChemDrawFormat, ChemDrawLimits, ChemDrawMolecule,
+    ChemDrawOmission, ChemDrawOptions, parse_chemdraw_block, parse_chemdraw_block_with_limits,
+};
 pub mod cif;
 #[cfg(feature = "crystal")]
 mod cif_symmetry;
@@ -47,7 +52,10 @@ pub mod lammps_dump;
 pub mod mmcif;
 pub mod mmcif_pdb;
 pub mod mol2000;
+pub mod mol2_kekule;
+pub mod mol2_rmsd;
 pub mod mol2_source;
+pub mod mol2_stream;
 pub mod mol2_tripos;
 pub mod mol3000;
 pub mod moljson;
@@ -56,6 +64,7 @@ pub mod mrv;
 pub mod nucleic_acid;
 pub mod opendx;
 pub mod orca;
+pub mod pdb_conect;
 pub mod pdb_selection;
 pub mod pdbqt;
 pub mod pqr;
@@ -97,8 +106,8 @@ pub use cdxml_document::{
     CdxmlTextStyle, CdxmlTransform, CdxmlValue,
 };
 pub use cif::{
-    CifError, CifParseLimits, CifResult, UnitCell, parse_cif, parse_cif_with_limits, write_cif,
-    write_cif_checked,
+    CifBondWriteError, CifError, CifParseLimits, CifResult, UnitCell, parse_cif,
+    parse_cif_with_limits, write_cif, write_cif_checked, write_cif_with_bonds_checked,
 };
 #[cfg(feature = "crystal")]
 pub use cif::{
@@ -162,8 +171,9 @@ pub use mmcif::{
 };
 pub use mol2_tripos::{
     Mol2AtomRecord, Mol2BondRecord, Mol2Error, Mol2OpaqueSection, Mol2ParseLimits, Mol2Record,
-    Mol2UnityAtomAttributes, parse_mol2, parse_mol2_record, parse_mol2_record_with_limits,
-    parse_mol2_with_limits, write_mol2, write_mol2_record,
+    Mol2SectionOrder, Mol2UnityAtomAttributes, parse_mol2, parse_mol2_record,
+    parse_mol2_record_with_limits, parse_mol2_with_limits, write_mol2, write_mol2_record,
+    write_mol2_record_with_section_order, write_mol2_with_section_order,
 };
 pub use mol2000::{
     CoordinateDimension, GeometryRank, MolFormat, MolMetadata, MolReadReport, MolStereoLoss,
@@ -214,8 +224,8 @@ pub use pdb_selection::{
     select_pdb_atoms, select_pdb_atoms_with_limits,
 };
 pub use pdbqt::{
-    PdbqtError, PdbqtParseLimits, autodock_atom_type, parse_pdbqt, parse_pdbqt_with_limits,
-    write_pdbqt,
+    PdbqtError, PdbqtParseLimits, PdbqtWriteError, autodock_atom_type, parse_pdbqt,
+    parse_pdbqt_with_limits, write_pdbqt, write_pdbqt_checked,
 };
 pub use pqr::{
     PqrAtomRecord, PqrError, PqrParseLimits, PqrResult, infer_element, parse_pqr,
@@ -295,10 +305,13 @@ mod format_limit_contract_tests;
 #[cfg(test)]
 mod format_bridge_boundary_contract_tests;
 
+pub use mol2_kekule::{Mol2KekuleError, kekulize_mol2_record};
+pub use mol2_rmsd::{Mol2ReferenceRmsd, Mol2RmsdError, mol2_reference_rmsds};
 pub use mol2_source::{
     Mol2SourceAtomRecord, Mol2SourceBondRecord, Mol2SourceRecord, parse_mol2_source_record,
     parse_mol2_source_record_with_limits, write_mol2_source_record,
 };
+pub use mol2_stream::{Mol2SourceReader, Mol2StreamError, Mol2StreamLimits};
 
 pub use pqr_pdbqt::{PqrPdbqtError, PqrPdbqtReport, pqr_to_pdbqt};
 
@@ -322,4 +335,9 @@ pub use rdfile::{
     RdfileData, RdfileDocument, RdfileError, RdfileKind, RdfileParseLimits, RdfileRecord,
     RdfileWriteOptions, parse_rdfile, parse_rdfile_with_limits, write_rdfile,
     write_rdfile_with_options,
+};
+
+pub use pdb_conect::{
+    PdbConectError, PdbConectFrame, PdbConectLimits, PdbConectOptions, parse_pdb_conect,
+    parse_pdb_conect_with_options, parse_pdb_conect_with_options_and_limits,
 };

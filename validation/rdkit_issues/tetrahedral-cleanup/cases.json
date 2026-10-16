@@ -1,0 +1,115 @@
+{
+  "schema": "chematic.tetrahedral-cleanup-fixtures.v1",
+  "provenance": "Original small controls; reported_bridge and same_chiral_branches use the published molecular examples from RDKit #9656. No attachments copied. MIT OR Apache-2.0 for authored code/fixtures.",
+  "issue": "https://github.com/rdkit/rdkit/issues/9656",
+  "cases": [
+    {
+      "id": "identical_methyl",
+      "smiles": "C[C@H](C)C",
+      "atom_index": 1,
+      "removed": true
+    },
+    {
+      "id": "four_methyl",
+      "smiles": "C[C@](C)(C)C",
+      "atom_index": 1,
+      "removed": true
+    },
+    {
+      "id": "identical_fluorine",
+      "smiles": "F[C@H](F)Cl",
+      "atom_index": 1,
+      "removed": true
+    },
+    {
+      "id": "distinct_ligands",
+      "smiles": "F[C@H](Cl)Br",
+      "atom_index": 1,
+      "removed": false
+    },
+    {
+      "id": "hydrogen_isotope",
+      "smiles": "[2H][C@H](F)Cl",
+      "atom_index": 1,
+      "removed": false
+    },
+    {
+      "id": "atom_maps",
+      "smiles": "[F:1][C@H]([F:2])Cl",
+      "atom_index": 1,
+      "removed": false
+    },
+    {
+      "id": "same_chiral_branches",
+      "smiles": "C[C@@H]([C@@H](C)O)[C@@H](C)O",
+      "atom_index": 1,
+      "removed": true
+    },
+    {
+      "id": "enantiomorphic_branches",
+      "smiles": "C[C@@H]([C@@H](C)O)[C@H](C)O",
+      "atom_index": 1,
+      "removed": false
+    },
+    {
+      "id": "same_alkene_geometry",
+      "smiles": "C[C@H](/C=C/C)/C=C/C",
+      "atom_index": 1,
+      "removed": true
+    },
+    {
+      "id": "different_alkene_geometry",
+      "smiles": "C[C@H](/C=C/C)/C=C\\C",
+      "atom_index": 1,
+      "removed": false
+    },
+    {
+      "id": "remote_alkene",
+      "smiles": "C/C=C/[C@H](C)C",
+      "atom_index": 3,
+      "removed": true
+    },
+    {
+      "id": "explicit_implicit_H_retained",
+      "smiles": "[H][C@H](F)Cl",
+      "atom_index": 1,
+      "removed": false
+    },
+    {
+      "id": "reported_bridge_center",
+      "smiles": "C=C1C[C@H]2CC(=C)C[C@@H](C1)[C@H]2C",
+      "atom_index": 10,
+      "removed": true
+    },
+    {
+      "id": "reported_bridgehead_left",
+      "smiles": "C=C1C[C@H]2CC(=C)C[C@@H](C1)[C@H]2C",
+      "atom_index": 3,
+      "removed": false
+    },
+    {
+      "id": "reported_bridgehead_right",
+      "smiles": "C=C1C[C@H]2CC(=C)C[C@@H](C1)[C@H]2C",
+      "atom_index": 8,
+      "removed": false
+    },
+    {
+      "id": "identical_aromatic_branches",
+      "smiles": "c1ccccc1[C@H](c1ccccc1)F",
+      "atom_index": 6,
+      "removed": true
+    },
+    {
+      "id": "charge_distinction",
+      "smiles": "[NH3+][C@H](N)F",
+      "atom_index": 1,
+      "removed": false
+    },
+    {
+      "id": "bond_order_distinction",
+      "smiles": "C[C@H](C=C)C#C",
+      "atom_index": 1,
+      "removed": false
+    }
+  ]
+}

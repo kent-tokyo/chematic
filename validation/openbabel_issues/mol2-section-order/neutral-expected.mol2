@@ -1,0 +1,11 @@
+@<TRIPOS>MOLECULE
+chematic
+2 1 0 0 0
+SMALL
+NO_CHARGES
+
+@<TRIPOS>ATOM
+     1 C1           0.0000     0.0000     0.0000 C           1  LIG          0.0000
+     2 O2           0.0000     0.0000     0.0000 O           1  LIG          0.0000
+@<TRIPOS>BOND
+     1      1      2 1

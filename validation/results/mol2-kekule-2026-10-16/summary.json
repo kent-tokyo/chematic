@@ -1,0 +1,34 @@
+{
+  "schema": "chematic.mol2-kekule-summary.v1",
+  "source_base": "96a1addb742b9b4cb3c8258e123563cee0d7055c",
+  "source_sha256": {
+    "crates/chematic-mol/src/mol2_kekule.rs": "229e9bd1866e29fb5cce8f6defc8aa05bb3b8470e1485ea5ccfe7b9a2d5286d8",
+    "crates/chematic-mol/src/mol2_source.rs": "85d6bd5b2ff508d0b31a9a3280976b4fc7e6412b2d91726e760cf00f319beb19",
+    "crates/chematic-core/src/kekulization.rs": "c59b4d981f15459b3b649c52be445cb932dd70ab18868a5650bb0d2b4683e04c",
+    "crates/chematic-py/src/formats/interchange.rs": "05a93b3c0fc2cb7d68769dad1d74e684d5106b02d2f380036e44f42cd2cacf17",
+    "crates/chematic-wasm/src/mol_io/common_formats.rs": "7c076c83ef5ca69fc86aafb47ab947ea3278bff6b8ad51dc612a2b360108db96",
+    "crates/chematic-mol/examples/mol2_kekule_dump.rs": "09051a72c86b9820838ef77325f9f2e21cb0758ca3dbce53db62976f68d5e9cf",
+    "scripts/validate_mol2_kekule.py": "1969e3b1f65bb5a5b0108a3e1336f1a7416f05b4e1645efa46b04788958b8128",
+    "scripts/validate_mol2_kekule_node.mjs": "ad6d112e5287188d0dbabeebf68f32d38e657916855290c37458c65b5f62de57",
+    "validation/openbabel_issues/mol2-kekule/cases.json": "b95073244459c053d35e93a3e0fb9b11c0edceb63b463bc47f57bc27c4fc708e"
+  },
+  "runtime": {
+    "python": "3.13.6",
+    "rdkit": "2026.09.1",
+    "openbabel": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+    "python_extension_sha256": "8257c5abcd244114f6746fa658f7ea826101024357acbc6c0cc9d1191d576987",
+    "native_dump_sha256": "3914e13a11674d0882fb1fae778d741051a9083c77b4b281ebcb9a3f61256b40",
+    "wasm_sha256": "f6bd8e73bb1f780877caf39dd6aedd71f256891eb97382328d87da2c5ebacae0"
+  },
+  "results": {
+    "cases": 17,
+    "cross_binding_outputs": 204,
+    "exact_token_proofs": 204,
+    "rdkit_identity_and_explicit_valence_checks": 204,
+    "openbabel_identity_checks": 17,
+    "mismatches": 0
+  },
+  "packet_sha256": "a9996c3b17e1e19f45e2c91812d2c60e97f9bc5a9cb9ebd7b56d0bd5b4f8873b",
+  "rdkit_boundary": "Independent normalized MOL2 graph projection with sequential IDs and explicit UNITY formal charges; not a direct raw-record interoperability claim.",
+  "scope": "Bounded opt-in neutral C/N/O/S MOL2 bond encoding, with source-byte preservation. Not general atom retyping, aromaticity-model parity, 3D generation, charge prediction, performance or release proof."
+}

@@ -1,0 +1,74 @@
+{
+  "schema": "chematic.cdxml-stereo-options-validation.v1",
+  "utc": "2026-10-16T00:30:33.468516+00:00",
+  "issue": "https://github.com/rdkit/rdkit/issues/9359",
+  "source_base": "a01482bfdf69f6f5809239de2b0f565e3f2cb9f5",
+  "source_sha256": {
+    "crates/chematic-mol/src/cdxml.rs": "31c5883acd70ce83a3edcf1c0cf58ad9e5536e84b891b10a2d21f168400caad0",
+    "crates/chematic-py/src/formats.rs": "dcec0373bf7ec76d243af88e49c8b47c970e59071555be53603dc608dbcc36fb",
+    "crates/chematic-wasm/src/mol_io.rs": "1fb41f9082eb1fbfafb0225096b31b892972e29ef006a4d9c2d5c52e9b7ddccd"
+  },
+  "runner_sha256": "0834e8cd1e63009b7f194118ede1fd7b657e4bf650f59f3f88edbf8598cb6549",
+  "fixture_sha256": "022ea4c8ea42dac4a15f5510f95e7e68ffc4963f743a264ffe6b8d8f8aa44d89",
+  "rdkit_version": "2026.09.1",
+  "rdkit_runtime_sha256": "2fb1e7377e7441fcc3c9ae813803adb288fdb710b2b0de66aecbfc1f4b5919ff",
+  "python_extension_sha256": "e0fcc4ce976584638668add88fe1f44cd0299d45f5bb013a132844284bc92920",
+  "wasm_runtime_sha256": {
+    "chematic_wasm_bg.wasm": "a1f1fb084c56b668634ba82a7d94b58933ad668fac2831ab02f321c41003dae4",
+    "chematic_wasm.js": "b1e0fefff949e3cd08404dd815c3dea4eda91ad8dec7cbe4ccfc54b6a953f222",
+    "chematic_wasm_bg.wasm.d.ts": "cb4ec3a6aa925aa8f219390b7b84a6baa216cc7ab5afa0bd23c2833e482fe5a1",
+    "chematic_wasm.d.ts": "f4682179d82d283bbd4c85d3f1628b95f4a7a567335eafd0af936181ec7494ea"
+  },
+  "corpus_cases": 216,
+  "python_configurations_matched": 216,
+  "python_default_controls_matched": 216,
+  "wasm_configurations_matched": 216,
+  "wasm_batch_configurations_matched": 216,
+  "wasm_default_controls_matched": 216,
+  "upstream_nondirectional_unassigned": 216,
+  "python_directional_controls_matched": 288,
+  "wasm_directional_controls_matched": 288,
+  "candidate_failures": 0,
+  "baseline": {
+    "option_available": false,
+    "default": "FC(C)(CC)Cl",
+    "directional_mismatch_count": 216,
+    "scope": "Retained pre-fix source runtime, not a released package",
+    "extension_sha256": "db5897e51c8461e7342ac7d30ba8871005d62a06c3e9bb80d3e781fce03f5052"
+  },
+  "packet": "rdkit-cdxml-stereo-options-2026-10-16.packet.json.gz",
+  "packet_sha256": "d51bd70569ab903212860874127d2ec5e7a6dee8f8179866f9f32df2c70af0c4",
+  "scope": "Unique degree-4 carbon / terminal F drawings; CIP and full isomeric graph comparisons against explicit directional controls. Transformations, B/E reversal and node-order changes. Heuristic inference, not general ChemDraw compatibility or source preservation; source candidate only.",
+  "local_validation": {
+    "rust_tests": 70,
+    "rust_existing_cdxml_tests": 65,
+    "rust_new_semantics_tests": 4,
+    "rust_existing_api_compatibility_tests": 1,
+    "python_tests": 20,
+    "python_new_tests": 16,
+    "python_existing_contract_tests": 4,
+    "node_wasm_regression": "passed",
+    "clippy": "passed with -D warnings for changed libraries and new integration test",
+    "checks": [
+      "cargo fmt --all -- --check",
+      "refactor budget",
+      "binding inventory",
+      "cross-binding manifest",
+      "product names",
+      "strict MkDocs",
+      "stub syntax and comparison packet hashes"
+    ],
+    "log_sha256": {
+      "native": "2d70dd99913660a2651530702051ee1669affd139a150d0798d3e549eefa6c62",
+      "native-integration": "454f75a6f4aa2b7322a1143a3b463cbd4919d9e5d32331dde57305a44015d96c",
+      "python-tests": "636365d009951ddb85854b2044e02712903bcf3d51d077fed9d23f3963d41186",
+      "wasm-tests": "45b3d5846ab7374e1233a3aa43ebf057d54d445e33b57ab925314cf2b6a4750f",
+      "clippy": "df7161e6f073f6064a4882bf9460dded997ddb2ca9d8dfb6bd0d74e41618a806",
+      "clippy-lib": "3701cb4f4808d813bf5a9196cb040db8206cce0e849e0c5f13cc357ac3467221",
+      "oracle": "7d0a35e6d61af2d3f63eb260495db1d4783c43d5e471382938f85011ad184315",
+      "docs": "1224af73ee6dbd78b1e6606b498eab12fb6567810cf7367876eb0c2e6e1ad881",
+      "binding": "dd1d6ac86c5fae84184c57f928665c43a152fa5dd73469e31991b173ed2c320a"
+    }
+  },
+  "source_note": "The final CDXML source differs from the built runtime only in a rustdoc reference-end wording correction; executable statements are unchanged."
+}

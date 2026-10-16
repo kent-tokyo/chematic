@@ -1,0 +1,17 @@
+{
+  "checked_at": "2026-10-16T04:17:23.766470+00:00",
+  "scope": "local source candidate; hosted CI and package release separate",
+  "rust_tests": {
+    "new_contract": 8,
+    "existing_pdb": 11,
+    "existing_public_api_compat": 1
+  },
+  "python_tests": 15,
+  "node_contract": "passed including input/atom caps and malformed profile refusal",
+  "checks_passed": 14,
+  "log": {
+    "path": "local-checks.json.gz",
+    "sha256": "04eb9863b68ba5906f074920097d5405ee46fef6e17fcc4b2a6d76c7ae637ac0"
+  },
+  "stub_ast": "parsed in separate read-only check"
+}

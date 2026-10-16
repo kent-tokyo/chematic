@@ -315,6 +315,17 @@ use the record or checked API for source retention.
 
 ### MOL2 (Tripos)
 
+- **Multiple records / RMSD (Rust/Python)**: `Mol2SourceReader` lazily parses
+  bounded records from an in-memory string; Python `parse_mol2_records_json`
+  retains each source. `mol2_reference_rmsds` / Python
+  `mol2_reference_rmsds_json` compare every reference with one probe, checking
+  source/indexed-graph identity and optionally applying a proper rigid alignment.
+  See [contracts, limits and the upstream diagnostic](mol2-reference-rmsd.md).
+Generated/editable Rust output and Python/WASM graph output support an
+[opt-in adjacent ATOM/BOND section order](mol2-section-order.md). The default
+retains UNITY before BOND for measured Open Babel charge compatibility;
+source-preserving APIs retain the original order.
+
 - **Rust**: `chematic_mol::{parse_mol2, parse_mol2_with_limits, write_mol2}` retains the published graph/editable-record contract. Exact-source inspection uses the additive `Mol2SourceRecord`, `parse_mol2_source_record`, `parse_mol2_source_record_with_limits`, and `write_mol2_source_record` APIs. `Mol2SourceAtomRecord` and `Mol2SourceBondRecord` describe their metadata; the shared `Mol2Error`/`Mol2ParseLimits` types remain compatible.
 - **Python/WASM**: `parse_mol2_record_json` exposes the shared
   `chematic.mol2-record.v1` inspection schema; `roundtrip_mol2_record` validates
@@ -380,6 +391,11 @@ use the record or checked API for source retention.
 
 ### CDXML
 
+- **Stereo options**: [Python and WASM opt-in inference](cdxml-stereo-options.md)
+  exposes the existing Rust Bold/Hash/Dash policy. Directional wedge parsing
+  uses the narrow endpoint and converts screen coordinates for parity;
+  source coordinates are retained.
+
 - **Rust**: `chematic_mol::{parse_cdxml, parse_cdxml_with_limits, parse_cdxml_all, parse_cdxml_all_with_limits, write_cdxml, CdxmlError, CdxmlParseLimits, CdxmlParseOptions}`.
 - **Document API**: `CdxmlDocument` supports bounded multi-page summaries,
   exact-source writing, and loss-preserving page/object command edits. Opaque
@@ -432,7 +448,8 @@ use the record or checked API for source retention.
 ### PDB
 
 - **Rust**: `chematic_3d::{PdbAtom, parse_pdb_atoms, parse_pdb_atoms_strict, pdb_to_molecule, write_pdb}` —
-  this format lives in `chematic-3d`, not `chematic-mol`.
+  geometry-based reading lives in `chematic-3d`. `chematic_mol::parse_pdb_conect`
+  provides the separate explicit-graph projection described below.
 - **Python**: `from_pdb` (lenient) and `from_pdb_strict` (fixed-column
   validation) for reading; both delegate to `chematic_3d`;
   `Mol.to_pdb(coords)` for writing. `protein_from_pdb_json` exposes the shared
@@ -456,9 +473,16 @@ use the record or checked API for source retention.
 - **Connectivity**: `pdb_to_molecule` perceives bonds from geometry
   (distance-based), unlike most of the other formats in this table, which
   either carry an explicit bond table or never infer one.
+  [Explicit CONECT graph reading](pdb-conect-graph.md) is available through
+  Rust `parse_pdb_conect`, Python `from_pdb_conect`, and WASM
+  `mol_from_pdb_conect` / `pdb_conect_frame_json`. This narrow, unmodelled
+  single-location profile preserves explicit atoms/charges/XYZ/serials and
+  repeated-target bond multiplicities without adding proximity edges.
 - **Round-trip**: not characterized in this pass — no documented round-trip
   guarantee found; treat as best-effort.
-- **Lossy operations**: none named.
+- **Lossy operations**: the explicit CONECT API projects graph fields only;
+  it drops residue/name/chain and other PDB metadata and performs no stereo,
+  aromaticity or valence perception. Legacy extra contact slots require opt-in.
 - **Parse limits**: `PdbParseLimits` bounds input bytes, physical line length,
   ATOM/HETATM records and MODEL records. Use `parse_pdb_atoms_with_limits`
   for typed resource-limit errors. `parse_pdb_atoms_strict` additionally
@@ -492,11 +516,14 @@ use the record or checked API for source retention.
 
 ### CIF (plain, small-molecule)
 
-- **Rust**: `chematic_mol::{parse_cif, write_cif, CifError, CifResult, UnitCell}`, plus `#[cfg(feature = "crystal")]`-gated periodic-structure variants.
-- **Python**: `parse_cif` — **read only**, no `write_cif` binding exists in `chematic-py`.
+- **Rust**: `chematic_mol::{parse_cif, write_cif, write_cif_checked, write_cif_with_bonds_checked, CifError, CifBondWriteError, CifResult, UnitCell}`, plus `#[cfg(feature = "crystal")]`-gated periodic-structure variants.
+- **Python**: `parse_cif`, `write_cif_checked`, `write_cif_with_bonds_checked`.
 - **WASM**: **none.** Zero WASM exposure — confirmed by grep, not by omission from this table.
 - **Coordinate units**: fractional cell coordinates converted to orthogonal Ångström on read (IUCr convention).
-- **Connectivity**: **no bond table at all** — CIF's `_atom_site` loop carries only positions; this module returns atoms with no bonds.
+- **Connectivity**: the reader returns atoms with no bonds. The opt-in
+  [molecular bond writer](cif-molecular-bonds.md) emits explicit graph edges as
+  `_geom_bond_*` rows, including Cartesian distances and S/D/T/A bond types.
+  It does not infer connectivity, wrap periodic images or read that bond table.
 - **Round-trip**: symmetry expansion is **not** performed on the plain (non-`crystal`-feature) path — only atoms literally listed in `_atom_site_*` are returned (effectively P1 treatment). See `docs/crystal_scope.md` for the `crystal`-feature periodic-structure variants.
 - **Lossy operations**: symmetry-operation information is not applied/round-tripped on the plain path.
 - **Parse limits**: `CifParseLimits { max_input_bytes, max_line_bytes,
@@ -524,17 +551,20 @@ Two distinct functions share the name `parse_xyz` in different crates —
 disambiguate by crate, not by name alone:
 
 - `chematic_3d::parse_xyz -> Result<(Molecule, Coords3D), XyzError>` —
-  infers bonds by distance, returns a full `Molecule`.
+  returns every listed atom and coordinate, including H, with no bonds.
 - `chematic_mol::parse_xyz -> Result<XyzFrame, XyzError>` — no `Molecule`,
   no bonds; the Extended-XYZ-superset document type. Also has
   `parse_extxyz`/`parse_extxyz_all`/`write_extxyz`/`write_xyz`,
   `XyzReader`/`ExtxyzReader`/`ExtxyzWriter`.
-- **Python**: `from_xyz` uses `chematic_3d`'s bond-inferring version.
+- **Python**: `from_xyz` uses `chematic_3d`'s atoms/coordinates version.
   `from_extxyz`/`from_extxyz_all`/`to_extxyz` use `chematic_mol`'s
   non-bond version.
 - **WASM**: `mol_from_xyz`/`to_xyz` use `chematic_3d`'s version.
   `mol_from_extxyz`/`extxyz_frame_json`/`to_extxyz_json` use
   `chematic_mol`'s version.
+- **Element symbols**: both native paths accept canonical symbols and
+  [uppercase two-letter XYZ aliases](xyz-element-symbols.md). This rule is
+  local to the species column; core lookup, PDB names and SMILES are unchanged.
 - **Streaming**: `XyzFileReader<R: BufRead>` is a true file-backed streaming
   iterator, and `XyzBatchReader<R: BufRead>` adds bounded pull-based batches
   with input order, cancellation, and a versioned progress manifest.

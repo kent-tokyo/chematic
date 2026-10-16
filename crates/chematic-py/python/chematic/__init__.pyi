@@ -85,6 +85,20 @@ class MolecularForceField:
     """
 
     @property
+    def dielectric_constant(self) -> float:
+        """Constant MMFF relative dielectric, default 1.0; UFF raises ValueError."""
+        ...
+
+    def set_dielectric_constant_(self, value: float) -> MolecularForceField:
+        """Update MMFF screening for energy, gradient and minimization immediately.
+
+        Preserves prepared pairs/charges and coordinates. Requires a finite
+        positive value that keeps electrostatic coefficients finite. Invalid
+        updates and UFF raise ValueError without changing the field.
+        """
+        ...
+
+    @property
     def kind(self) -> str: ...
 
     @property
@@ -127,6 +141,16 @@ class Mol:
     def stereo_groups(self) -> list[tuple[Literal["abs", "and", "or"], int, list[int], list[int]]]: ...
     def with_stereo_groups(self, groups: list[tuple[Literal["abs", "and", "or"], int, list[int], list[int]]]) -> Mol: ...
     def invert_stereo_group(self, index: int) -> Mol: ...
+
+    def remove_redundant_tetrahedral_stereo(self, atom_idx: int, *, max_visits: int = 1000000) -> dict[str, Any]:
+        """Proof-backed removal of one redundant declaration; source unchanged.
+
+        Returns molecule, removed, atom_index, search_visits and witness (original
+        to one-center-inverted mapping, fixing the target). No witness means
+        conservative retention. Unsupported inputs or exhausted budgets raise
+        ValueError; no partial result. Bounds: 64 atoms, 128 bonds, 1..10000000 visits.
+        """
+        ...
 
     def reduce_meso_stereo_group(self, index: int, *, max_visits: int = 1000000) -> dict[str, Any]:
         """Promote to ABS only with complete stereo-preserving mapping proofs."""
@@ -325,6 +349,14 @@ class Mol:
         high-gradient candidates when no initial conformer converged."""
         ...
 
+    def rdkit_alkene_path_stereo(self, path: Sequence[int]) -> Optional[Literal["cis", "trans"]]:
+        """Return 'cis', 'trans' or None for a real four-atom alkene path.
+
+        Reversing the path preserves the relation. Declared stereo only;
+        invalid paths raise ValueError. Pass exactly four atom indices.
+        """
+        ...
+
     def rdkit_bounds_matrix(
         self,
         *,
@@ -514,6 +546,15 @@ class Mol:
         ``k``-th atom written (its index after re-parsing the string)."""
         ...
 
+    def smiles_rooted_checked(self, rooted_at_atom: int) -> tuple[str, list[int]]:
+        """Non-canonical rooted SMILES and order[parsed_index] = original_index.
+
+        Up to 256 atoms. Requires recorded four-ligand tetrahedral frames;
+        rejects missing/invalid frames, other stereo classes, enhanced groups
+        and zero/query bonds. Raises ValueError on refusal; does not mutate Mol.
+        """
+        ...
+
     @property
     def formula(self) -> str:
         """Molecular formula in Hill notation (C first, H second, then alphabetical)."""
@@ -600,6 +641,8 @@ class Mol:
         name: str = "LIG",
     ) -> str:
         """Write molecule to AutoDock PDBQT format (rigid body, no torsion tree).
+
+        Use ``write_pdbqt_checked`` for exact counts and checked fixed widths.
 
         Args:
             coords: list of (x, y, z) tuples in Å, one per heavy atom.
@@ -730,8 +773,12 @@ class Mol:
         """
         ...
 
-    def to_mol2(self) -> str:
+    def to_mol2(self, *, atom_bond_adjacent: bool = False) -> str:
         """Serialize to Tripos MOL2 format string (SYBYL MOL2).
+
+        Set ``atom_bond_adjacent=True`` for ATOM → BOND → UNITY output.
+        Open Babel 3.2.1 may ignore UNITY formal charges in this order.
+        The default preserves the existing output order and bytes.
 
         The output contains the mandatory @<TRIPOS>MOLECULE, @<TRIPOS>ATOM,
         and @<TRIPOS>BOND sections.  Atom coordinates are all zero when no
@@ -2336,7 +2383,8 @@ class Mol:
 
     @property
     def num_hydrogens(self) -> int:
-        """Total hydrogen count (implicit + explicit)."""
+        """Hydrogen nuclei: H atom nodes (including isotopes/ions) plus attached
+        bracket or inferred H, each counted once across all components."""
         ...
 
     @property
@@ -2853,7 +2901,7 @@ def atom_color_rgb(atomic_num: int) -> tuple[int, int, int]:
     """
     ...
 
-def from_smiles(smiles: str) -> Mol:
+def from_smiles(smiles: str | bytes) -> Mol:
     """Parse a SMILES string and return a :class:`Mol`.
 
     Raises:
@@ -2873,7 +2921,7 @@ def stable_are_identical(mol1: Mol, mol2: Mol) -> Optional[bool]:
     """
     ...
 
-def from_cxsmiles(s: str) -> tuple[Mol, dict]:
+def from_cxsmiles(s: str | bytes) -> tuple[Mol, dict]:
     """Parse a CXSMILES string and return the molecule with CX metadata.
 
     Returns a 2-tuple ``(mol, cx)`` where ``cx`` is a dict with:
@@ -2909,7 +2957,7 @@ def from_condensed(formula: str) -> Optional[Mol]:
     """
     ...
 
-def from_cml(cml_str: str) -> Mol:
+def from_cml(cml_str: str | bytes) -> Mol:
     """Parse a Chemical Markup Language (CML) string and return a :class:`Mol`.
 
     Raises:
@@ -2917,12 +2965,27 @@ def from_cml(cml_str: str) -> Mol:
     """
     ...
 
-def from_cml_strict(cml_str: str) -> Mol:
+def from_cml_strict(cml_str: str | bytes) -> Mol:
     """Parse structurally valid, non-empty CML; reject malformed XML."""
     ...
 
-def from_cdxml(cdxml_str: str) -> Mol:
+def from_chemdraw_block(data: bytes, *, format: str = "AUTO", allow_metadata_loss: bool = False) -> dict[str, Any]:
+    """Project CDX or UTF-8 CDXML into source-ordered molecules/coordinates.
+
+    Returns format, source_bytes, projected_cdxml, molecules, coordinates and
+    omissions. AUTO detects the CDX signature; format may force CDX/CDXML.
+    Binary CDX requires the concrete molecular profile. Known presentation
+    omissions require opt-in; unsupported chemistry always raises ValueError.
+    CDXML retains the existing graph-only reader policy; omissions is CDX-only.
+    """
+    ...
+
+def from_cdxml(cdxml_str: str, *, infer_nondirectional_stereo: bool = False) -> Mol:
     """Parse a ChemDraw XML (CDXML) string and return a :class:`Mol`.
+
+    Opt in to infer tetrahedral stereo from non-directional Bold/Hash/Dash
+    bonds. Defaults to False; ambiguous or degenerate drawings abstain.
+    Only the first molecular fragment is returned.
 
     Raises:
         ValueError: on parse failure.
@@ -2946,7 +3009,7 @@ def nucleic_acid_apply_json_command(document_json: str, command_json: str) -> st
     """
     ...
 
-def from_mol_v3000(block: str) -> Mol:
+def from_mol_v3000(block: str | bytes) -> Mol:
     """Parse an MDL MOL V3000 block and return a :class:`Mol`.
 
     Raises:
@@ -2954,7 +3017,7 @@ def from_mol_v3000(block: str) -> Mol:
     """
     ...
 
-def from_mol_v3000_with_coords(block: str) -> tuple[Mol, str, list[list[float]]]:
+def from_mol_v3000_with_coords(block: str | bytes) -> tuple[Mol, str, list[list[float]]]:
     """Parse a MDL MOL V3000 block and return the molecule with its 2D layout coordinates.
 
     Returns a 3-tuple ``(mol, name, coords_2d)`` identical to
@@ -2971,7 +3034,7 @@ def from_mol_v3000_with_coords(block: str) -> tuple[Mol, str, list[list[float]]]
     ...
 
 def from_mol_v3000_with_diagnostics(
-    block: str,
+    block: str | bytes,
 ) -> tuple[Mol, str, list[list[float]], list[dict[str, object]]]:
     """Parse a MDL MOL V3000 block, returning stereo-perception diagnostics
     alongside the molecule.
@@ -2983,7 +3046,7 @@ def from_mol_v3000_with_diagnostics(
     """
     ...
 
-def from_mol_block(block: str) -> Mol:
+def from_mol_block(block: str | bytes) -> Mol:
     """Parse a MOL/SDF block and return a :class:`Mol`.
 
     Raises:
@@ -2991,7 +3054,7 @@ def from_mol_block(block: str) -> Mol:
     """
     ...
 
-def from_mol_block_with_coords(block: str) -> tuple[Mol, str, list[list[float]]]:
+def from_mol_block_with_coords(block: str | bytes) -> tuple[Mol, str, list[list[float]]]:
     """Parse a MDL MOL V2000 block and return the molecule with its 2D layout coordinates.
 
     Returns a 3-tuple ``(mol, name, coords_2d)`` where:
@@ -3014,7 +3077,7 @@ def from_mol_block_with_coords(block: str) -> tuple[Mol, str, list[list[float]]]
     ...
 
 def from_mol_block_with_diagnostics(
-    block: str,
+    block: str | bytes,
 ) -> tuple[Mol, str, list[list[float]], list[dict[str, object]]]:
     """Parse a MDL MOL V2000 block, returning stereo-perception diagnostics
     alongside the molecule.
@@ -3070,6 +3133,27 @@ def roundtrip_cjson_record(text: str) -> str:
     """Validate the local CJSON profile and return the exact UTF-8 source."""
     ...
 
+def parse_mol2_records_json(
+    text: str, *, max_input_bytes: int = 67_108_864,
+    max_records: int = 10_000, max_record_bytes: int = 16_777_216,
+    max_atoms: int = 100_000, max_bonds: int = 200_000,
+) -> str:
+    """Inspect all MOL2 records and retain exact sources; invalid records raise ValueError."""
+    ...
+
+def mol2_reference_rmsds_json(
+    reference_text: str, probe_text: str, *, align: bool = False,
+    max_input_bytes: int = 67_108_864, max_records: int = 10_000,
+    max_record_bytes: int = 16_777_216, max_atoms: int = 100_000,
+    max_bonds: int = 200_000,
+) -> str:
+    """All-reference heavy-atom RMSD with checked source/indexed-graph identity.
+
+    No symmetry search/remapping. Raw RMSD by default; align=True enables a
+    proper rotation and translation. Invalid/mismatched records raise ValueError.
+    """
+    ...
+
 def parse_mol2_record_json(text: str) -> str:
     """Return source metadata and bounded graph interpretation as MOL2 record JSON."""
     ...
@@ -3078,7 +3162,15 @@ def roundtrip_mol2_record(text: str) -> str:
     """Validate one MOL2 record and preserve its exact source."""
     ...
 
-def from_mol2(mol2_str: str) -> Mol:
+def kekulize_mol2_record(text: str) -> str:
+    """Replace only ar bond tokens in a bounded neutral aromatic MOL2 record.
+
+    Other source bytes, including atom types and coordinates, are retained.
+    Unsupported profiles and failed matching raise ValueError.
+    """
+    ...
+
+def from_mol2(mol2_str: str | bytes) -> Mol:
     """Parse a Tripos MOL2 string and return a :class:`Mol`.
 
     Reads the mandatory @<TRIPOS>MOLECULE, @<TRIPOS>ATOM, and @<TRIPOS>BOND
@@ -3138,11 +3230,11 @@ def from_inchi(inchi: str) -> Mol:
     """
     ...
 
-def is_valid_smiles(smiles: str) -> bool:
+def is_valid_smiles(smiles: str | bytes) -> bool:
     """Return True if the SMILES can be parsed without error."""
     ...
 
-def is_valid_smarts(smarts: str) -> bool:
+def is_valid_smarts(smarts: str | bytes) -> bool:
     """Return ``True`` if ``smarts`` is a valid SMARTS pattern.
 
     Mirrors :func:`is_valid_smiles` for SMARTS validation.
@@ -3268,10 +3360,22 @@ def smarts_find(smarts: str, mol: Mol) -> list[list[int]]:
     """
     ...
 
+def from_pdb_conect(pdb_str: str, *, allow_extended_targets: bool = False) -> dict[str, Any]:
+    """Explicit CONECT graph projection, without proximity bonds.
+
+    Returns mol, coords and serials in atom-record order. Requires unmodelled,
+    single-location records and valid element/charge fields. Repeated targets
+    encode order 1..3; reciprocal orders must agree. Extended slots beyond
+    four targets require explicit consent. Other metadata is not retained.
+    """
+    ...
+
 def from_pdb(pdb_str: str) -> tuple[Mol, list[list[float]]]:
     """Parse a PDB string and return ``(Mol, coords)``.
 
-    ``coords`` is a list of ``[x, y, z]`` lists (Å), one per heavy atom.
+    ``coords`` is a list of ``[x, y, z]`` lists (Å), one per listed atom,
+    including explicit H. No bonds are inferred. Canonical element symbols
+    and uppercase two-letter XYZ aliases (e.g. CL) are accepted.
     Bond information is inferred from inter-atom distances.
 
     Raises:
@@ -3370,6 +3474,21 @@ def write_cif_checked(
     alpha, beta, gamma. Raises ValueError for invalid or numerically singular
     cells, non-finite values, coordinate count mismatch or conversion overflow.
     Bonds, occupancies, symmetry operations and metadata are not serialized.
+    """
+    ...
+
+def write_cif_with_bonds_checked(
+    mol: Mol,
+    coords: list[list[float]],
+    cell: Optional[dict[str, float]] = None,
+) -> str:
+    """Write checked CIF positions and explicit S/D/T/A molecular bonds.
+
+    Distances use Cartesian Å without periodic wrapping or bond perception.
+    Rejects invalid inputs, unsupported bond orders and zero/non-finite bond
+    distances. Projects positions and connectivity only: charge, isotopes,
+    implicit H, stereo annotations and metadata are not serialized.
+    parse_cif still reads positions only. Edgeless graphs have no bond loop.
     """
     ...
 
@@ -5232,3 +5351,12 @@ class Report:
     def __repr__(self) -> str: ...
 
 def report(mols: list[Mol], names: list[str | None] | None = None, title: str = "chematic report", output: _FileSystemPath | None = None) -> Report: ...
+
+def write_pdbqt_checked(mol: Mol, coords: Sequence[Sequence[float]], charges: Sequence[float], name: str = "LIG") -> str:
+    """Rigid PDBQT with exact counts, finite values and checked field widths.
+
+    Coordinates are in angstroms, partial charges in e, per graph atom including
+    explicit H. Raises ValueError for unrepresentable input. AutoDock types use
+    the existing heuristic; no charge calculation or ligand preparation.
+    """
+    ...

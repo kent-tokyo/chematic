@@ -531,6 +531,28 @@ impl Mol {
         .map_err(|error| PyValueError::new_err(error.to_string()))
     }
 
+    /// Return 'cis', 'trans' or None for a four-atom path around a double bond.
+    /// Reversing the complete path preserves the relation (RDKit #9719).
+    /// Uses declared stereo and atom indices; infers no stereo from geometry.
+    /// Repeated/disconnected/out-of-range/non-double paths raise ValueError.
+    fn rdkit_alkene_path_stereo(&self, path: [i64; 4]) -> PyResult<Option<&'static str>> {
+        use chematic_3d::rdkit_embed::AlkenePathStereo;
+        let mut indices = [0usize; 4];
+        for (index, value) in indices.iter_mut().zip(path) {
+            *index = usize::try_from(value).map_err(|_| {
+                PyValueError::new_err("alkene path: atom index must be nonnegative")
+            })?;
+        }
+        chematic_3d::rdkit_embed::rdkit_alkene_path_stereo(&self.inner, indices)
+            .map(|relation| {
+                relation.map(|r| match r {
+                    AlkenePathStereo::Cis => "cis",
+                    AlkenePathStereo::Trans => "trans",
+                })
+            })
+            .map_err(|error| PyValueError::new_err(error.to_string()))
+    }
+
     /// RDKit 2026.09.1's ``rdDistGeom.GetMoleculeBoundsMatrix(mol, ...)``
     /// (``scaleVDW=False``), bit for bit: the distance-geometry bounds
     /// matrix as a list of rows, upper bounds above the diagonal and lower
@@ -1093,8 +1115,16 @@ impl Mol {
     ///     mol = chematic.from_smiles("CCO")
     ///     with open("ethanol.mol2", "w") as f:
     ///         f.write(mol.to_mol2())
-    fn to_mol2(&self) -> String {
-        chematic_mol::write_mol2(&self.inner, &[])
+    /// Set `atom_bond_adjacent=True` for ATOM → BOND → UNITY output. Some
+    /// readers (including Open Babel 3.2.1) ignore UNITY charges in this order.
+    #[pyo3(signature = (*, atom_bond_adjacent=false))]
+    fn to_mol2(&self, atom_bond_adjacent: bool) -> String {
+        let order = if atom_bond_adjacent {
+            chematic_mol::Mol2SectionOrder::AtomBondAdjacent
+        } else {
+            chematic_mol::Mol2SectionOrder::default()
+        };
+        chematic_mol::write_mol2_with_section_order(&self.inner, &[], order)
     }
 
     /// Serialize to MDL MOL V2000 format with 2D coordinates (Å).

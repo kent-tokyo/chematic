@@ -1,0 +1,18 @@
+{
+  "checked_at": "2026-10-16T04:35:40.261241+00:00",
+  "scope": "local source validation; hosted CI and publication separate",
+  "rust_tests": {
+    "new_dielectric": 5,
+    "existing_rdkit_mmff_filter": 5
+  },
+  "python_tests": {
+    "new_dielectric": 26,
+    "existing_forcefield": 8
+  },
+  "checks_passed": 12,
+  "log": {
+    "path": "local-checks.json.gz",
+    "sha256": "cae0bbebd1bca2ad7bf3a40c5f2b09d7cff6c986404f30d936a84c241c2eacbe"
+  },
+  "stub_ast": "parsed in a separate read-only check"
+}

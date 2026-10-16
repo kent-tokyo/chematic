@@ -21,6 +21,7 @@ const WASM_MAX_SMARTS_MATCHES: usize = 10_000;
 mod ccd;
 pub use ccd::*;
 mod checked_matrices;
+mod chemdraw;
 mod ensemble_v2;
 mod format_io;
 mod hin;
@@ -30,10 +31,15 @@ mod mol_descriptors;
 mod mol_edit;
 mod mol_fingerprints;
 mod mol_io;
+mod pdb_conect;
+pub use chemdraw::*;
+pub use pdb_conect::*;
 mod mol_reactions;
 mod nucleic_acid;
 mod pipeline_v2;
 mod rdkit_compat;
+mod rooted;
+mod stereo_cleanup;
 #[cfg(test)]
 mod tests;
 
@@ -50,6 +56,7 @@ pub use mol_reactions::*;
 pub use nucleic_acid::*;
 pub use pipeline_v2::embed_pipeline_v2_json;
 pub use rdkit_compat::*;
+pub use stereo_cleanup::*;
 
 #[wasm_bindgen(start)]
 pub fn start() {
@@ -943,3 +950,6 @@ fn rgroup_fragment_smiles(
 // ---------------------------------------------------------------------------
 // Sprint AA: FCFP bitvecs, Dice ECFP6, write_smiles, reaction normalization
 // ---------------------------------------------------------------------------
+
+mod pdbqt_checked;
+pub use pdbqt_checked::*;

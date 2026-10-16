@@ -20,6 +20,9 @@ use chematic_core::{AtomIdx, BondOrder, Molecule};
 use rustc_hash::{FxHashMap, FxHashSet};
 use std::cell::RefCell;
 
+mod dielectric;
+pub use dielectric::MmffDielectricError;
+
 use crate::mmff94_minimizer::{MinimizerError, rdkit_prepared_parts};
 use crate::mmff94_numeric::mmff94_charges_rdkit_order;
 
@@ -174,8 +177,8 @@ struct NonbondedTerm {
     j: usize,
     /// (R_ij_star, epsilon)
     vdw: Option<(f64, f64)>,
-    /// (chargeTerm, is1_4)
-    ele: Option<(f64, bool)>,
+    /// (unscreened charge product, screened chargeTerm, is1_4)
+    ele: Option<(f64, f64, bool)>,
 }
 
 /// RDKit's MMFF94 force field for one molecule (all atoms, RDKit order).
@@ -191,6 +194,7 @@ pub struct RdkitMmffField {
     /// Which term classes are included (bond, angle, stbn, oop, torsion,
     /// vdW, electrostatic), as `MMFFMolProperties::SetMMFF*Term`.
     terms: [bool; 7],
+    dielectric_constant: f64,
 }
 
 /// MMFF parameter set (RDKit `mmffVariant`).
@@ -438,7 +442,11 @@ fn mmff_nonbonded_terms(
             }
             let vdw = terms[5].then(|| vdw_params(types[i], types[j])).flatten();
             let ele = (terms[6] && !is_double_zero(charges[i]) && !is_double_zero(charges[j]))
-                .then_some((charges[i] * charges[j], relation == 3));
+                .then_some((
+                    charges[i] * charges[j],
+                    charges[i] * charges[j],
+                    relation == 3,
+                ));
             if vdw.is_some() || ele.is_some() {
                 output.push(NonbondedTerm { i, j, vdw, ele });
             }
@@ -507,6 +515,7 @@ impl RdkitMmffField {
                 terms,
             ),
             terms,
+            dielectric_constant: 1.0,
         })
     }
 
@@ -980,7 +989,7 @@ impl RdkitMmffField {
             if let Some((r_star, well)) = t.vdw {
                 sum += vdw_energy(dist, r_star, well);
             }
-            if let Some((charge_term, is14)) = t.ele {
+            if let Some((_, charge_term, is14)) = t.ele {
                 let corr_dist = dist + 0.05;
                 sum += 332.0716 * charge_term / corr_dist * (if is14 { 0.75 } else { 1.0 });
             }
@@ -1034,7 +1043,7 @@ impl RdkitMmffField {
                         + ((-vdw2t7 / q7pvdw2m1 + 14.0) / (q + vdw1m1)));
                 vdw_grad = de_dr / dist;
             }
-            if let Some((charge_term, is14)) = t.ele {
+            if let Some((_, charge_term, is14)) = t.ele {
                 let mut corr_dist = dist + 0.05;
                 corr_dist *= corr_dist;
                 let de_dr =

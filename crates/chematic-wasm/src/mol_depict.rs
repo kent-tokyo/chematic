@@ -157,7 +157,9 @@ pub fn erg_vec_json(mol: &MolHandle) -> String {
 ///
 /// Fields: `element` (symbol), `hybridization` ("sp"/"sp2"/"sp3"),
 /// `charge` (formal charge integer), `isAromatic` (bool),
-/// `totalHydrogens` (explicit + implicit H count, integer).
+/// `totalHydrogens` (attached H: bracket/inferred plus explicit H neighbors).
+/// This excludes the atom itself when it is H; use `num_hydrogens` for the
+/// molecule's total. Isotopic H neighbors count as hydrogen.
 /// sp3d/sp3d2 (hypervalent P/S) are not distinguished from sp3/sp2.
 #[wasm_bindgen]
 pub fn get_atom_info(mol: &MolHandle, idx: u32) -> String {
@@ -171,7 +173,19 @@ pub fn get_atom_info(mol: &MolHandle, idx: u32) -> String {
     let symbol = atom.element.symbol();
     let charge = atom.charge;
     let is_aromatic = atom.aromatic;
-    let total_h = atom.hydrogen_count.unwrap_or(0) as u32 + implicit_hcount(mol, atom_idx) as u32;
+    let attached = if atom.wildcard {
+        atom.hydrogen_count.unwrap_or(0)
+    } else {
+        implicit_hcount(mol, atom_idx)
+    };
+    let explicit_neighbors = mol
+        .neighbors(atom_idx)
+        .filter(|(other, _)| {
+            let neighbor = mol.atom(*other);
+            !neighbor.wildcard && neighbor.element == chematic_core::Element::H
+        })
+        .count();
+    let total_h = usize::from(attached) + explicit_neighbors;
 
     let hybridization = if is_aromatic {
         Some("sp2")

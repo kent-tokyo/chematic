@@ -1,0 +1,707 @@
+{
+  "schema": "chematic.python-stub-gate-validation.v1",
+  "host_python": "3.13.6",
+  "source_base": "ecda5c5364b1a011431b544ce5d399363d600a6f",
+  "source_sha256": {
+    "scripts/check_python_stubs.py": "cc0da34f7fed8e061eedf800e2b4c714b854881f90b6965df9ae4f2a0bd9cdaf",
+    "scripts/tests/test_check_python_stubs.py": "7ed2c1782d27e6154fe8282c5bd35f5325dd972b75b3f2009c831a1b8bda50e5",
+    "scripts/validate_python_stub_gate.py": "9f1da6da537dda003d70e3fbb05fea26da2802f2240f208f6e6fc679a3f69782",
+    ".github/workflows/ci.yml": "6fe2b20cbebd08fd76497cd514ffd3c5fa1feacdb6df3c1967034fb57eeb91bf",
+    ".github/workflows/publish-pypi.yml": "a8a802de896ab59c6ef2a4888b9694ce3d852f572d63820e0ee6d3fe26b225ad"
+  },
+  "runs": [
+    {
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "/private/tmp/chematic-python-stub-gate-20261016/scripts/check_python_stubs.py",
+        "--wheel",
+        "/private/tmp/chematic-aromatic-proof-evidence-20261016/baseline-wheel/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl",
+        "--report",
+        "/private/tmp/chematic-python-stub-gate-20261016/validation/results/python-stub-gate-2026-10-16/real-wheel.json"
+      ],
+      "returncode": 0,
+      "stdout": "Python stub gate passed: 1 source stubs, 1 wheels\n",
+      "stderr": "",
+      "report": {
+        "schema": "chematic.python-stub-gate.v1",
+        "status": "passed",
+        "grammar": "Python 3.9 (ast feature_version; actual host compiler also checked)",
+        "host_python": "3.13.6",
+        "source": {
+          "path": "/private/tmp/chematic-python-stub-gate-20261016/crates/chematic-py/python/chematic",
+          "stubs": [
+            {
+              "path": "__init__.pyi",
+              "bytes": 178918,
+              "sha256": "cea814d6f80d6aafd095a41f46d130ba6e9a822f9a990ae7d68e9a084a03c241",
+              "status": "passed"
+            }
+          ],
+          "errors": []
+        },
+        "wheels": [
+          {
+            "path": "/private/tmp/chematic-aromatic-proof-evidence-20261016/baseline-wheel/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl",
+            "stubs": [
+              {
+                "path": "chematic/__init__.pyi",
+                "bytes": 178918,
+                "sha256": "cea814d6f80d6aafd095a41f46d130ba6e9a822f9a990ae7d68e9a084a03c241",
+                "status": "passed"
+              }
+            ],
+            "errors": [],
+            "sha256": "1c8bdbac537fcde7ec88d63a52559bbf86a3eed88bbba31321bca641356e18a5"
+          }
+        ],
+        "errors": [],
+        "scope": "syntax, typed marker and exact source/wheel stub bytes; no type/API/ABI parity or execution"
+      }
+    },
+    {
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "/private/tmp/chematic-python-stub-gate-20261016/scripts/check_python_stubs.py",
+        "--wheel",
+        "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl",
+        "--report",
+        "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/report.json"
+      ],
+      "returncode": 1,
+      "stdout": "Python stub gate failed: 1 source stubs, 1 wheels\n",
+      "stderr": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl:chematic/__init__.pyi:5174:1: syntax: illegal target for annotation (__init__.pyi, line 5174)\n/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl:chematic/__init__.pyi: mismatch: wheel stub bytes differ from source\n",
+      "report": {
+        "schema": "chematic.python-stub-gate.v1",
+        "status": "failed",
+        "grammar": "Python 3.9 (ast feature_version; actual host compiler also checked)",
+        "host_python": "3.13.6",
+        "source": {
+          "path": "/private/tmp/chematic-python-stub-gate-20261016/crates/chematic-py/python/chematic",
+          "stubs": [
+            {
+              "path": "__init__.pyi",
+              "bytes": 178918,
+              "sha256": "cea814d6f80d6aafd095a41f46d130ba6e9a822f9a990ae7d68e9a084a03c241",
+              "status": "passed"
+            }
+          ],
+          "errors": []
+        },
+        "wheels": [
+          {
+            "path": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl",
+            "stubs": [
+              {
+                "path": "chematic/__init__.pyi",
+                "bytes": 178929,
+                "sha256": "b794ad23f1f3042042838893e534ed8d4767a7bb661b9cbb13a044dae060cebc",
+                "status": "failed"
+              }
+            ],
+            "errors": [
+              {
+                "path": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl:chematic/__init__.pyi",
+                "kind": "syntax",
+                "message": "illegal target for annotation (__init__.pyi, line 5174)",
+                "line": 5174,
+                "column": 1,
+                "phase": "parse"
+              },
+              {
+                "path": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl:chematic/__init__.pyi",
+                "kind": "mismatch",
+                "message": "wheel stub bytes differ from source",
+                "line": null,
+                "column": null
+              }
+            ],
+            "sha256": "b7370beddc5d715bb5fd3ab915ab4dc98578c5384a7e6e9e305e17d8efe32302"
+          }
+        ],
+        "errors": [
+          {
+            "path": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl:chematic/__init__.pyi",
+            "kind": "syntax",
+            "message": "illegal target for annotation (__init__.pyi, line 5174)",
+            "line": 5174,
+            "column": 1,
+            "phase": "parse"
+          },
+          {
+            "path": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl:chematic/__init__.pyi",
+            "kind": "mismatch",
+            "message": "wheel stub bytes differ from source",
+            "line": null,
+            "column": null
+          }
+        ],
+        "scope": "syntax, typed marker and exact source/wheel stub bytes; no type/API/ABI parity or execution"
+      },
+      "mutation": "annotation"
+    },
+    {
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "/private/tmp/chematic-python-stub-gate-20261016/scripts/check_python_stubs.py",
+        "--wheel",
+        "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl",
+        "--report",
+        "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/report.json"
+      ],
+      "returncode": 1,
+      "stdout": "Python stub gate failed: 1 source stubs, 1 wheels\n",
+      "stderr": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl:chematic/__init__.pyi:5174:23: syntax: parameter without a default follows parameter with a default (__init__.pyi, line 5174)\n/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl:chematic/__init__.pyi: mismatch: wheel stub bytes differ from source\n",
+      "report": {
+        "schema": "chematic.python-stub-gate.v1",
+        "status": "failed",
+        "grammar": "Python 3.9 (ast feature_version; actual host compiler also checked)",
+        "host_python": "3.13.6",
+        "source": {
+          "path": "/private/tmp/chematic-python-stub-gate-20261016/crates/chematic-py/python/chematic",
+          "stubs": [
+            {
+              "path": "__init__.pyi",
+              "bytes": 178918,
+              "sha256": "cea814d6f80d6aafd095a41f46d130ba6e9a822f9a990ae7d68e9a084a03c241",
+              "status": "passed"
+            }
+          ],
+          "errors": []
+        },
+        "wheels": [
+          {
+            "path": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl",
+            "stubs": [
+              {
+                "path": "chematic/__init__.pyi",
+                "bytes": 178956,
+                "sha256": "6642b6b1f08a76af2fdaedeb9c319227fbe77e4e121922034c77335422430f2c",
+                "status": "failed"
+              }
+            ],
+            "errors": [
+              {
+                "path": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl:chematic/__init__.pyi",
+                "kind": "syntax",
+                "message": "parameter without a default follows parameter with a default (__init__.pyi, line 5174)",
+                "line": 5174,
+                "column": 23,
+                "phase": "parse"
+              },
+              {
+                "path": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl:chematic/__init__.pyi",
+                "kind": "mismatch",
+                "message": "wheel stub bytes differ from source",
+                "line": null,
+                "column": null
+              }
+            ],
+            "sha256": "f44b510d37124b7640bc8ea3291a7fb3d76769fabe3aadc8f966ce15d0aa4a45"
+          }
+        ],
+        "errors": [
+          {
+            "path": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl:chematic/__init__.pyi",
+            "kind": "syntax",
+            "message": "parameter without a default follows parameter with a default (__init__.pyi, line 5174)",
+            "line": 5174,
+            "column": 23,
+            "phase": "parse"
+          },
+          {
+            "path": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl:chematic/__init__.pyi",
+            "kind": "mismatch",
+            "message": "wheel stub bytes differ from source",
+            "line": null,
+            "column": null
+          }
+        ],
+        "scope": "syntax, typed marker and exact source/wheel stub bytes; no type/API/ABI parity or execution"
+      },
+      "mutation": "default-order"
+    },
+    {
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "/private/tmp/chematic-python-stub-gate-20261016/scripts/check_python_stubs.py",
+        "--wheel",
+        "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl",
+        "--report",
+        "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/report.json"
+      ],
+      "returncode": 1,
+      "stdout": "Python stub gate failed: 1 source stubs, 1 wheels\n",
+      "stderr": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl:chematic/__init__.pyi:5174:19: syntax: duplicate argument 'value' in function definition (__init__.pyi, line 5174)\n/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl:chematic/__init__.pyi: mismatch: wheel stub bytes differ from source\n",
+      "report": {
+        "schema": "chematic.python-stub-gate.v1",
+        "status": "failed",
+        "grammar": "Python 3.9 (ast feature_version; actual host compiler also checked)",
+        "host_python": "3.13.6",
+        "source": {
+          "path": "/private/tmp/chematic-python-stub-gate-20261016/crates/chematic-py/python/chematic",
+          "stubs": [
+            {
+              "path": "__init__.pyi",
+              "bytes": 178918,
+              "sha256": "cea814d6f80d6aafd095a41f46d130ba6e9a822f9a990ae7d68e9a084a03c241",
+              "status": "passed"
+            }
+          ],
+          "errors": []
+        },
+        "wheels": [
+          {
+            "path": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl",
+            "stubs": [
+              {
+                "path": "chematic/__init__.pyi",
+                "bytes": 178949,
+                "sha256": "b4ebc7ca4bda350022363504b50cc277dbf173b07143217c7324dafe44d3a38a",
+                "status": "failed"
+              }
+            ],
+            "errors": [
+              {
+                "path": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl:chematic/__init__.pyi",
+                "kind": "syntax",
+                "message": "duplicate argument 'value' in function definition (__init__.pyi, line 5174)",
+                "line": 5174,
+                "column": 19,
+                "phase": "compile"
+              },
+              {
+                "path": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl:chematic/__init__.pyi",
+                "kind": "mismatch",
+                "message": "wheel stub bytes differ from source",
+                "line": null,
+                "column": null
+              }
+            ],
+            "sha256": "8a6ac8154c524b1cb91da8ca156de4deb9c45f72b5ae32e74497e9db07887c32"
+          }
+        ],
+        "errors": [
+          {
+            "path": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl:chematic/__init__.pyi",
+            "kind": "syntax",
+            "message": "duplicate argument 'value' in function definition (__init__.pyi, line 5174)",
+            "line": 5174,
+            "column": 19,
+            "phase": "compile"
+          },
+          {
+            "path": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl:chematic/__init__.pyi",
+            "kind": "mismatch",
+            "message": "wheel stub bytes differ from source",
+            "line": null,
+            "column": null
+          }
+        ],
+        "scope": "syntax, typed marker and exact source/wheel stub bytes; no type/API/ABI parity or execution"
+      },
+      "mutation": "duplicate-argument"
+    },
+    {
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "/private/tmp/chematic-python-stub-gate-20261016/scripts/check_python_stubs.py",
+        "--wheel",
+        "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl",
+        "--report",
+        "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/report.json"
+      ],
+      "returncode": 1,
+      "stdout": "Python stub gate failed: 1 source stubs, 1 wheels\n",
+      "stderr": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl:chematic/__init__.pyi: missing: source stub is absent from wheel\n",
+      "report": {
+        "schema": "chematic.python-stub-gate.v1",
+        "status": "failed",
+        "grammar": "Python 3.9 (ast feature_version; actual host compiler also checked)",
+        "host_python": "3.13.6",
+        "source": {
+          "path": "/private/tmp/chematic-python-stub-gate-20261016/crates/chematic-py/python/chematic",
+          "stubs": [
+            {
+              "path": "__init__.pyi",
+              "bytes": 178918,
+              "sha256": "cea814d6f80d6aafd095a41f46d130ba6e9a822f9a990ae7d68e9a084a03c241",
+              "status": "passed"
+            }
+          ],
+          "errors": []
+        },
+        "wheels": [
+          {
+            "path": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl",
+            "stubs": [],
+            "errors": [
+              {
+                "path": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl:chematic/__init__.pyi",
+                "kind": "missing",
+                "message": "source stub is absent from wheel",
+                "line": null,
+                "column": null
+              }
+            ],
+            "sha256": "8afc23dcef75fe1ecbbfe0abc950fad845dce1fbe332cf90084673f8a6138e2d"
+          }
+        ],
+        "errors": [
+          {
+            "path": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl:chematic/__init__.pyi",
+            "kind": "missing",
+            "message": "source stub is absent from wheel",
+            "line": null,
+            "column": null
+          }
+        ],
+        "scope": "syntax, typed marker and exact source/wheel stub bytes; no type/API/ABI parity or execution"
+      },
+      "mutation": "missing-stub"
+    },
+    {
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "/private/tmp/chematic-python-stub-gate-20261016/scripts/check_python_stubs.py",
+        "--wheel",
+        "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl",
+        "--report",
+        "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/report.json"
+      ],
+      "returncode": 1,
+      "stdout": "Python stub gate failed: 1 source stubs, 1 wheels\n",
+      "stderr": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl: missing: wheel has no chematic/py.typed\n",
+      "report": {
+        "schema": "chematic.python-stub-gate.v1",
+        "status": "failed",
+        "grammar": "Python 3.9 (ast feature_version; actual host compiler also checked)",
+        "host_python": "3.13.6",
+        "source": {
+          "path": "/private/tmp/chematic-python-stub-gate-20261016/crates/chematic-py/python/chematic",
+          "stubs": [
+            {
+              "path": "__init__.pyi",
+              "bytes": 178918,
+              "sha256": "cea814d6f80d6aafd095a41f46d130ba6e9a822f9a990ae7d68e9a084a03c241",
+              "status": "passed"
+            }
+          ],
+          "errors": []
+        },
+        "wheels": [
+          {
+            "path": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl",
+            "stubs": [
+              {
+                "path": "chematic/__init__.pyi",
+                "bytes": 178918,
+                "sha256": "cea814d6f80d6aafd095a41f46d130ba6e9a822f9a990ae7d68e9a084a03c241",
+                "status": "passed"
+              }
+            ],
+            "errors": [
+              {
+                "path": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl",
+                "kind": "missing",
+                "message": "wheel has no chematic/py.typed",
+                "line": null,
+                "column": null
+              }
+            ],
+            "sha256": "532e87967f6b87c998f848722790d4e6a548e2267291689817d17b04ccfe871e"
+          }
+        ],
+        "errors": [
+          {
+            "path": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl",
+            "kind": "missing",
+            "message": "wheel has no chematic/py.typed",
+            "line": null,
+            "column": null
+          }
+        ],
+        "scope": "syntax, typed marker and exact source/wheel stub bytes; no type/API/ABI parity or execution"
+      },
+      "mutation": "missing-marker"
+    },
+    {
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "/private/tmp/chematic-python-stub-gate-20261016/scripts/check_python_stubs.py",
+        "--wheel",
+        "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl",
+        "--report",
+        "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/report.json"
+      ],
+      "returncode": 1,
+      "stdout": "Python stub gate failed: 1 source stubs, 1 wheels\n",
+      "stderr": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl:chematic/__init__.pyi: mismatch: wheel stub bytes differ from source\n",
+      "report": {
+        "schema": "chematic.python-stub-gate.v1",
+        "status": "failed",
+        "grammar": "Python 3.9 (ast feature_version; actual host compiler also checked)",
+        "host_python": "3.13.6",
+        "source": {
+          "path": "/private/tmp/chematic-python-stub-gate-20261016/crates/chematic-py/python/chematic",
+          "stubs": [
+            {
+              "path": "__init__.pyi",
+              "bytes": 178918,
+              "sha256": "cea814d6f80d6aafd095a41f46d130ba6e9a822f9a990ae7d68e9a084a03c241",
+              "status": "passed"
+            }
+          ],
+          "errors": []
+        },
+        "wheels": [
+          {
+            "path": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl",
+            "stubs": [
+              {
+                "path": "chematic/__init__.pyi",
+                "bytes": 178938,
+                "sha256": "37f95a581784aa5c26e7ecc9a739ad85657ccc0323bc8c36a99f97f6bc145774",
+                "status": "passed"
+              }
+            ],
+            "errors": [
+              {
+                "path": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl:chematic/__init__.pyi",
+                "kind": "mismatch",
+                "message": "wheel stub bytes differ from source",
+                "line": null,
+                "column": null
+              }
+            ],
+            "sha256": "5a120419b6aca6780977bba3f84bccf123e97910d50808e8d9fc0c2acd4722b4"
+          }
+        ],
+        "errors": [
+          {
+            "path": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl:chematic/__init__.pyi",
+            "kind": "mismatch",
+            "message": "wheel stub bytes differ from source",
+            "line": null,
+            "column": null
+          }
+        ],
+        "scope": "syntax, typed marker and exact source/wheel stub bytes; no type/API/ABI parity or execution"
+      },
+      "mutation": "stale-valid"
+    },
+    {
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "/private/tmp/chematic-python-stub-gate-20261016/scripts/check_python_stubs.py",
+        "--wheel",
+        "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl",
+        "--report",
+        "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/report.json"
+      ],
+      "returncode": 1,
+      "stdout": "Python stub gate failed: 1 source stubs, 1 wheels\n",
+      "stderr": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl:chematic/py.typed: mismatch: py.typed differs from source\n",
+      "report": {
+        "schema": "chematic.python-stub-gate.v1",
+        "status": "failed",
+        "grammar": "Python 3.9 (ast feature_version; actual host compiler also checked)",
+        "host_python": "3.13.6",
+        "source": {
+          "path": "/private/tmp/chematic-python-stub-gate-20261016/crates/chematic-py/python/chematic",
+          "stubs": [
+            {
+              "path": "__init__.pyi",
+              "bytes": 178918,
+              "sha256": "cea814d6f80d6aafd095a41f46d130ba6e9a822f9a990ae7d68e9a084a03c241",
+              "status": "passed"
+            }
+          ],
+          "errors": []
+        },
+        "wheels": [
+          {
+            "path": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl",
+            "stubs": [
+              {
+                "path": "chematic/__init__.pyi",
+                "bytes": 178918,
+                "sha256": "cea814d6f80d6aafd095a41f46d130ba6e9a822f9a990ae7d68e9a084a03c241",
+                "status": "passed"
+              }
+            ],
+            "errors": [
+              {
+                "path": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl:chematic/py.typed",
+                "kind": "mismatch",
+                "message": "py.typed differs from source",
+                "line": null,
+                "column": null
+              }
+            ],
+            "sha256": "53f8cdd825f3a4e003ca76785566ed7a25679b0b422177c4b17ef5c8cf7a50fa"
+          }
+        ],
+        "errors": [
+          {
+            "path": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl:chematic/py.typed",
+            "kind": "mismatch",
+            "message": "py.typed differs from source",
+            "line": null,
+            "column": null
+          }
+        ],
+        "scope": "syntax, typed marker and exact source/wheel stub bytes; no type/API/ABI parity or execution"
+      },
+      "mutation": "stale-marker"
+    },
+    {
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "/private/tmp/chematic-python-stub-gate-20261016/scripts/check_python_stubs.py",
+        "--wheel",
+        "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl",
+        "--report",
+        "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/report.json"
+      ],
+      "returncode": 1,
+      "stdout": "Python stub gate failed: 1 source stubs, 1 wheels\n",
+      "stderr": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl: wheel: duplicate archive members: chematic/__init__.pyi\n",
+      "report": {
+        "schema": "chematic.python-stub-gate.v1",
+        "status": "failed",
+        "grammar": "Python 3.9 (ast feature_version; actual host compiler also checked)",
+        "host_python": "3.13.6",
+        "source": {
+          "path": "/private/tmp/chematic-python-stub-gate-20261016/crates/chematic-py/python/chematic",
+          "stubs": [
+            {
+              "path": "__init__.pyi",
+              "bytes": 178918,
+              "sha256": "cea814d6f80d6aafd095a41f46d130ba6e9a822f9a990ae7d68e9a084a03c241",
+              "status": "passed"
+            }
+          ],
+          "errors": []
+        },
+        "wheels": [
+          {
+            "path": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl",
+            "stubs": [],
+            "errors": [
+              {
+                "path": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl",
+                "kind": "wheel",
+                "message": "duplicate archive members: chematic/__init__.pyi",
+                "line": null,
+                "column": null
+              }
+            ],
+            "sha256": "3dd4636316c7f398ca1f3cc34c9bac4eca3154b24fef8d512a36012bd729c0f3"
+          }
+        ],
+        "errors": [
+          {
+            "path": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-stub-negative-xqmdt5cz/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl",
+            "kind": "wheel",
+            "message": "duplicate archive members: chematic/__init__.pyi",
+            "line": null,
+            "column": null
+          }
+        ],
+        "scope": "syntax, typed marker and exact source/wheel stub bytes; no type/API/ABI parity or execution"
+      },
+      "mutation": "duplicate-member"
+    }
+  ],
+  "rdkit": {
+    "version": "2026.09.1",
+    "files": 284,
+    "failures": [
+      {
+        "path": "Chem/rdGaussianShape.pyi",
+        "sha256": "4f90143b2f2f405456b3a239c449539e584d4d7d350bdfe7acde4980338f7250",
+        "diagnostic": {
+          "path": "Chem/rdGaussianShape.pyi",
+          "kind": "syntax",
+          "message": "duplicate argument 'self' in function definition (rdGaussianShape.pyi, line 252)",
+          "line": 252,
+          "column": 24,
+          "phase": "compile"
+        }
+      },
+      {
+        "path": "Chem/rdRGroupDecomposition.pyi",
+        "sha256": "c52fb1a2a23b17cb4be4a21f708383f67c36df1039c1b2c96f1af2e7634512de",
+        "diagnostic": {
+          "path": "Chem/rdRGroupDecomposition.pyi",
+          "kind": "syntax",
+          "message": "illegal target for annotation (rdRGroupDecomposition.pyi, line 87)",
+          "line": 87,
+          "column": 5,
+          "phase": "parse"
+        }
+      },
+      {
+        "path": "Chem/rdSynthonSpaceSearch.pyi",
+        "sha256": "bc7b605834ebf13703c39c313595f97761a1b1de1481a38e4bc943b65d16b2d8",
+        "diagnostic": {
+          "path": "Chem/rdSynthonSpaceSearch.pyi",
+          "kind": "syntax",
+          "message": "parameter without a default follows parameter with a default (rdSynthonSpaceSearch.pyi, line 619)",
+          "line": 619,
+          "column": 114,
+          "phase": "parse"
+        }
+      },
+      {
+        "path": "ML/MLUtils/VoteImg.pyi",
+        "sha256": "a4eb94012bb8d721e0c46383209fd16baed2c6ce9a8739e9c52371f6fd6fc6a1",
+        "diagnostic": {
+          "path": "ML/MLUtils/VoteImg.pyi",
+          "kind": "syntax",
+          "message": "from __future__ imports must occur at the beginning of the file (VoteImg.pyi, line 10)",
+          "line": 10,
+          "column": 1,
+          "phase": "compile"
+        }
+      },
+      {
+        "path": "sping/PIL/__init__.pyi",
+        "sha256": "64e104f7e18ae92b79fbd07c42aab5a4b7b2ef2ac997465e8fd955a049ec3295",
+        "diagnostic": {
+          "path": "sping/PIL/__init__.pyi",
+          "kind": "syntax",
+          "message": "from __future__ imports must occur at the beginning of the file (__init__.pyi, line 4)",
+          "line": 4,
+          "column": 1,
+          "phase": "compile"
+        }
+      },
+      {
+        "path": "sping/PIL/pidPIL.pyi",
+        "sha256": "a7acb23b6d156f7b8e015709939b4cb34fa12dd07955b08572d1b32b4c033887",
+        "diagnostic": {
+          "path": "sping/PIL/pidPIL.pyi",
+          "kind": "syntax",
+          "message": "from __future__ imports must occur at the beginning of the file (pidPIL.pyi, line 16)",
+          "line": 16,
+          "column": 1,
+          "phase": "compile"
+        }
+      },
+      {
+        "path": "utils/cactvs.pyi",
+        "sha256": "007f8737893d9b6b36454a45d18a5348caf308a63bfb5b63ecdac51d93fd7d47",
+        "diagnostic": {
+          "path": "utils/cactvs.pyi",
+          "kind": "syntax",
+          "message": "from __future__ imports must occur at the beginning of the file (cactvs.pyi, line 2)",
+          "line": 2,
+          "column": 1,
+          "phase": "compile"
+        }
+      }
+    ]
+  },
+  "scope": "Existing retained macOS wheel, not a new build or publication. Grammar/compiler policy only; native modules and stubs are not imported or executed; no type/API/ABI parity claim."
+}

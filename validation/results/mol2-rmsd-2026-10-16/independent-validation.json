@@ -1,0 +1,461 @@
+{
+  "schema": "chematic.mol2-rmsd-validation.v1",
+  "scope": "Original bounded all-vs-one controls; fixed correspondence, no speed/release/general chemistry claim.",
+  "issue": "https://github.com/openbabel/openbabel/issues/2671",
+  "baseline": {
+    "from_mol2": {
+      "error": "ValueError",
+      "message": "MOL2: this API accepts one molecule, but the input contains 5 MOLECULE sections"
+    },
+    "parse_mol2_record_json": {
+      "error": "ValueError",
+      "message": "MOL2: invalid atom line 20: multiple MOLECULE sections/records are unsupported"
+    },
+    "new_apis_present": [
+      false,
+      false
+    ],
+    "module_sha256": "828461385486b50b2f5983251916ec90939d366e96bf0c21fcb7c0fb0c0ce9fd"
+  },
+  "candidate_module_sha256": "ec5933c8867e661d10e07791318df23108082ecef3650fc45c0fc3d032753d65",
+  "rdkit_version": "2025.09.3",
+  "numpy_version": "2.5.3",
+  "tolerances": {
+    "raw_math": 1e-10,
+    "aligned_svd": 1e-09,
+    "aligned_rdkit": 1e-05,
+    "rdkit_max_iters": 1000
+  },
+  "max_alignment_delta_svd": 8.455736111301349e-14,
+  "max_alignment_delta_rdkit": 8.706813832104577e-07,
+  "python": "3.13.6 (v3.13.6:4e665351082, Aug  6 2025, 11:22:35) [Clang 16.0.0 (clang-1600.0.26.6)]",
+  "openbabel_version": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+  "fixture_sha256": {
+    "probe.mol2": "7c71e9ed901afc3a79486e247807ea111105e4fa312d3d271c9db827f08de7f1",
+    "references.mol2": "1a0671eafd219b169fc624041917a20ba5b618a2e8bbb937245fed0f9284590a",
+    "expected.json": "b56da2b9aea152c0b1fe4bcbcd0f46de9df900cbf7b28ead6a6163b4421577b0"
+  },
+  "analytical_raw": [
+    {
+      "heavy_atom_count": 3,
+      "probe_name": "probe",
+      "reference_index": 0,
+      "reference_name": "reference_0",
+      "rmsd": 0.0
+    },
+    {
+      "heavy_atom_count": 3,
+      "probe_name": "probe",
+      "reference_index": 1,
+      "reference_name": "reference_1",
+      "rmsd": 1.0
+    },
+    {
+      "heavy_atom_count": 3,
+      "probe_name": "probe",
+      "reference_index": 2,
+      "reference_name": "reference_2",
+      "rmsd": 2.0
+    },
+    {
+      "heavy_atom_count": 3,
+      "probe_name": "probe",
+      "reference_index": 3,
+      "reference_name": "reference_3",
+      "rmsd": 3.0
+    },
+    {
+      "heavy_atom_count": 3,
+      "probe_name": "probe",
+      "reference_index": 4,
+      "reference_name": "reference_4",
+      "rmsd": 5.0
+    }
+  ],
+  "analytical_aligned": [
+    {
+      "heavy_atom_count": 3,
+      "probe_name": "probe",
+      "reference_index": 0,
+      "reference_name": "reference_0",
+      "rmsd": 1.3597399555105182e-16
+    },
+    {
+      "heavy_atom_count": 3,
+      "probe_name": "probe",
+      "reference_index": 1,
+      "reference_name": "reference_1",
+      "rmsd": 1.7554167342883506e-16
+    },
+    {
+      "heavy_atom_count": 3,
+      "probe_name": "probe",
+      "reference_index": 2,
+      "reference_name": "reference_2",
+      "rmsd": 2.3111135221866393e-16
+    },
+    {
+      "heavy_atom_count": 3,
+      "probe_name": "probe",
+      "reference_index": 3,
+      "reference_name": "reference_3",
+      "rmsd": 1.3597399555105182e-16
+    },
+    {
+      "heavy_atom_count": 3,
+      "probe_name": "probe",
+      "reference_index": 4,
+      "reference_name": "reference_4",
+      "rmsd": 2.9021946219117546e-16
+    }
+  ],
+  "generated_comparisons": [
+    {
+      "name": "rigid_0_0",
+      "native_raw": 0.0,
+      "math_raw": 0.0,
+      "native_aligned": 1.0091642558535882e-14,
+      "svd_aligned": 1.3597399555105182e-16,
+      "rdkit_aligned": 0.0
+    },
+    {
+      "name": "rigid_0_1",
+      "native_raw": 1.0,
+      "math_raw": 1.0,
+      "native_aligned": 1.0091642558535882e-14,
+      "svd_aligned": 1.3597399555105182e-16,
+      "rdkit_aligned": 0.0
+    },
+    {
+      "name": "rigid_0_2",
+      "native_raw": 2.0,
+      "math_raw": 2.0,
+      "native_aligned": 1.0091642558535882e-14,
+      "svd_aligned": 1.3597399555105182e-16,
+      "rdkit_aligned": 0.0
+    },
+    {
+      "name": "rigid_0_3",
+      "native_raw": 3.0,
+      "math_raw": 3.0,
+      "native_aligned": 1.0091642558535882e-14,
+      "svd_aligned": 1.3597399555105182e-16,
+      "rdkit_aligned": 0.0
+    },
+    {
+      "name": "rigid_0_4",
+      "native_raw": 5.0,
+      "math_raw": 5.0,
+      "native_aligned": 1.0091642558535882e-14,
+      "svd_aligned": 1.3597399555105182e-16,
+      "rdkit_aligned": 0.0
+    },
+    {
+      "name": "rigid_1_0",
+      "native_raw": 1.224744871391589,
+      "math_raw": 1.224744871391589,
+      "native_aligned": 1.0091642558535882e-14,
+      "svd_aligned": 2.6477131637640694e-16,
+      "rdkit_aligned": 0.0
+    },
+    {
+      "name": "rigid_1_1",
+      "native_raw": 1.0,
+      "math_raw": 1.0,
+      "native_aligned": 1.0091642558535882e-14,
+      "svd_aligned": 2.6477131637640694e-16,
+      "rdkit_aligned": 0.0
+    },
+    {
+      "name": "rigid_1_2",
+      "native_raw": 2.5495097567963922,
+      "math_raw": 2.5495097567963922,
+      "native_aligned": 1.0091642558535882e-14,
+      "svd_aligned": 2.6477131637640694e-16,
+      "rdkit_aligned": 0.0
+    },
+    {
+      "name": "rigid_1_3",
+      "native_raw": 3.24037034920393,
+      "math_raw": 3.24037034920393,
+      "native_aligned": 1.0091642558535882e-14,
+      "svd_aligned": 2.6477131637640694e-16,
+      "rdkit_aligned": 0.0
+    },
+    {
+      "name": "rigid_1_4",
+      "native_raw": 4.898979485566356,
+      "math_raw": 4.898979485566356,
+      "native_aligned": 1.0091642558535882e-14,
+      "svd_aligned": 2.6477131637640694e-16,
+      "rdkit_aligned": 0.0
+    },
+    {
+      "name": "rigid_2_0",
+      "native_raw": 1.224744871391589,
+      "math_raw": 1.224744871391589,
+      "native_aligned": 1.0091642558535882e-14,
+      "svd_aligned": 4.773232787336168e-16,
+      "rdkit_aligned": 1.4901161193847656e-08
+    },
+    {
+      "name": "rigid_2_1",
+      "native_raw": 1.4142135623730951,
+      "math_raw": 1.4142135623730951,
+      "native_aligned": 1.0091642558535882e-14,
+      "svd_aligned": 4.773232787336168e-16,
+      "rdkit_aligned": 0.0
+    },
+    {
+      "name": "rigid_2_2",
+      "native_raw": 2.345207879911715,
+      "math_raw": 2.345207879911715,
+      "native_aligned": 1.0091642558535882e-14,
+      "svd_aligned": 4.773232787336168e-16,
+      "rdkit_aligned": 0.0
+    },
+    {
+      "name": "rigid_2_3",
+      "native_raw": 2.449489742783178,
+      "math_raw": 2.449489742783178,
+      "native_aligned": 1.0091642558535882e-14,
+      "svd_aligned": 4.773232787336168e-16,
+      "rdkit_aligned": 0.0
+    },
+    {
+      "name": "rigid_2_4",
+      "native_raw": 5.0,
+      "math_raw": 5.0,
+      "native_aligned": 1.0091642558535882e-14,
+      "svd_aligned": 4.773232787336168e-16,
+      "rdkit_aligned": 0.0
+    },
+    {
+      "name": "rigid_3_0",
+      "native_raw": 1.0,
+      "math_raw": 1.0,
+      "native_aligned": 1.0091642558535882e-14,
+      "svd_aligned": 1.3947004136484323e-16,
+      "rdkit_aligned": 1.4901161193847656e-08
+    },
+    {
+      "name": "rigid_3_1",
+      "native_raw": 1.4142135623730951,
+      "math_raw": 1.4142135623730951,
+      "native_aligned": 1.0091642558535882e-14,
+      "svd_aligned": 1.3947004136484323e-16,
+      "rdkit_aligned": 0.0
+    },
+    {
+      "name": "rigid_3_2",
+      "native_raw": 1.7320508075688772,
+      "math_raw": 1.7320508075688772,
+      "native_aligned": 1.0091642558535882e-14,
+      "svd_aligned": 1.3947004136484323e-16,
+      "rdkit_aligned": 0.0
+    },
+    {
+      "name": "rigid_3_3",
+      "native_raw": 3.1622776601683795,
+      "math_raw": 3.1622776601683795,
+      "native_aligned": 1.0091642558535882e-14,
+      "svd_aligned": 1.3947004136484323e-16,
+      "rdkit_aligned": 0.0
+    },
+    {
+      "name": "rigid_3_4",
+      "native_raw": 4.69041575982343,
+      "math_raw": 4.69041575982343,
+      "native_aligned": 1.0091642558535882e-14,
+      "svd_aligned": 1.3947004136484323e-16,
+      "rdkit_aligned": 0.0
+    },
+    {
+      "name": "rigid_4_0",
+      "native_raw": 1.7320508075688772,
+      "math_raw": 1.7320508075688772,
+      "native_aligned": 1.0091642558535882e-14,
+      "svd_aligned": 1.3597399555105182e-16,
+      "rdkit_aligned": 0.0
+    },
+    {
+      "name": "rigid_4_1",
+      "native_raw": 1.4142135623730951,
+      "math_raw": 1.4142135623730951,
+      "native_aligned": 1.0091642558535882e-14,
+      "svd_aligned": 1.3597399555105182e-16,
+      "rdkit_aligned": 0.0
+    },
+    {
+      "name": "rigid_4_2",
+      "native_raw": 2.6457513110645907,
+      "math_raw": 2.6457513110645907,
+      "native_aligned": 1.0091642558535882e-14,
+      "svd_aligned": 1.3597399555105182e-16,
+      "rdkit_aligned": 0.0
+    },
+    {
+      "name": "rigid_4_3",
+      "native_raw": 3.0,
+      "math_raw": 3.0,
+      "native_aligned": 1.0091642558535882e-14,
+      "svd_aligned": 1.3597399555105182e-16,
+      "rdkit_aligned": 0.0
+    },
+    {
+      "name": "rigid_4_4",
+      "native_raw": 4.69041575982343,
+      "math_raw": 4.69041575982343,
+      "native_aligned": 1.0091642558535882e-14,
+      "svd_aligned": 1.3597399555105182e-16,
+      "rdkit_aligned": 0.0
+    },
+    {
+      "name": "rigid_5_0",
+      "native_raw": 0.3186047419138057,
+      "math_raw": 0.3186047419138057,
+      "native_aligned": 2.401807231213743e-10,
+      "svd_aligned": 2.401826959566477e-10,
+      "rdkit_aligned": 8.704115072792908e-07
+    },
+    {
+      "name": "rigid_5_1",
+      "native_raw": 0.923595480483725,
+      "math_raw": 0.9235954804837249,
+      "native_aligned": 2.401807890596629e-10,
+      "svd_aligned": 2.4018342868033453e-10,
+      "rdkit_aligned": 8.704115072792908e-07
+    },
+    {
+      "name": "rigid_5_2",
+      "native_raw": 2.1810701940950827,
+      "math_raw": 2.1810701940950827,
+      "native_aligned": 2.4018066536397245e-10,
+      "svd_aligned": 2.4018283061341257e-10,
+      "rdkit_aligned": 8.709215638758217e-07
+    },
+    {
+      "name": "rigid_5_3",
+      "native_raw": 3.016870726691809,
+      "math_raw": 3.016870726691809,
+      "native_aligned": 2.401807231213743e-10,
+      "svd_aligned": 2.401826959566477e-10,
+      "rdkit_aligned": 8.699011516169562e-07
+    },
+    {
+      "name": "rigid_5_4",
+      "native_raw": 5.066279136760031,
+      "math_raw": 5.066279136760031,
+      "native_aligned": 2.4018088000879607e-10,
+      "svd_aligned": 2.401829558237658e-10,
+      "rdkit_aligned": 8.678567277527473e-07
+    },
+    {
+      "name": "distortion_1",
+      "native_raw": 0.0625,
+      "math_raw": 0.0625,
+      "native_aligned": 0.034628838171205406,
+      "svd_aligned": 0.03462883817120724,
+      "rdkit_aligned": 0.034628838171192756
+    },
+    {
+      "name": "distortion_2",
+      "native_raw": 0.125,
+      "math_raw": 0.125,
+      "native_aligned": 0.06871630932968983,
+      "svd_aligned": 0.06871630932970565,
+      "rdkit_aligned": 0.06871630932970466
+    },
+    {
+      "name": "distortion_3",
+      "native_raw": 0.1875,
+      "math_raw": 0.1875,
+      "native_aligned": 0.10239300596454387,
+      "svd_aligned": 0.10239300596462843,
+      "rdkit_aligned": 0.10239300596462644
+    },
+    {
+      "name": "distortion_4",
+      "native_raw": 0.25,
+      "math_raw": 0.25,
+      "native_aligned": 0.1358034801583622,
+      "svd_aligned": 0.13580348015836202,
+      "rdkit_aligned": 0.13580348015836555
+    },
+    {
+      "name": "distortion_5",
+      "native_raw": 0.3125,
+      "math_raw": 0.3125,
+      "native_aligned": 0.16910023824120649,
+      "svd_aligned": 0.1691002382412068,
+      "rdkit_aligned": 0.16910023824120693
+    },
+    {
+      "name": "distortion_6",
+      "native_raw": 0.375,
+      "math_raw": 0.375,
+      "native_aligned": 0.2024370719586088,
+      "svd_aligned": 0.20243707195860888,
+      "rdkit_aligned": 0.2024370719586069
+    },
+    {
+      "name": "distortion_7",
+      "native_raw": 0.4375,
+      "math_raw": 0.4375,
+      "native_aligned": 0.23596243841038736,
+      "svd_aligned": 0.23596243841038722,
+      "rdkit_aligned": 0.23596243841038625
+    },
+    {
+      "name": "distortion_8",
+      "native_raw": 0.5,
+      "math_raw": 0.5,
+      "native_aligned": 0.269813570552567,
+      "svd_aligned": 0.269813570552567,
+      "rdkit_aligned": 0.26981357055256705
+    },
+    {
+      "name": "mirror",
+      "native_raw": 1.4142135623730951,
+      "math_raw": 1.4142135623730951,
+      "native_aligned": 0.5411961001461968,
+      "svd_aligned": 0.541196100146197,
+      "rdkit_aligned": 0.541196100146197
+    }
+  ],
+  "generated_stream_sha256": "d72aac0b4ce77be885d347fb0a49e735929338fe51895ea8904310bd76964926",
+  "identity_permutations_rejected": 23,
+  "upstream_diagnostic": {
+    "reported_order": {
+      "command": [
+        "/opt/homebrew/bin/obrms",
+        "/private/tmp/chematic-mol2-rmsd-20261016/validation/openbabel_issues/mol2-rmsd/references.mol2",
+        "/private/tmp/chematic-mol2-rmsd-20261016/validation/openbabel_issues/mol2-rmsd/probe.mol2"
+      ],
+      "stdout": "RMSD reference_0:probe 0\n",
+      "stderr": ""
+    },
+    "documented_all_vs_one": {
+      "command": [
+        "/opt/homebrew/bin/obrms",
+        "-f",
+        "/private/tmp/chematic-mol2-rmsd-20261016/validation/openbabel_issues/mol2-rmsd/probe.mol2",
+        "/private/tmp/chematic-mol2-rmsd-20261016/validation/openbabel_issues/mol2-rmsd/references.mol2"
+      ],
+      "stdout": "RMSD probe:reference_0 0\nRMSD probe:reference_1 1\nRMSD probe:reference_2 2\nRMSD probe:reference_3 3\nRMSD probe:reference_4 5\n",
+      "stderr": ""
+    },
+    "documented_aligned": {
+      "command": [
+        "/opt/homebrew/bin/obrms",
+        "-m",
+        "-f",
+        "/private/tmp/chematic-mol2-rmsd-20261016/validation/openbabel_issues/mol2-rmsd/probe.mol2",
+        "/private/tmp/chematic-mol2-rmsd-20261016/validation/openbabel_issues/mol2-rmsd/references.mol2"
+      ],
+      "stdout": "RMSD probe:reference_0 0\nRMSD probe:reference_1 0\nRMSD probe:reference_2 0\nRMSD probe:reference_3 0\nRMSD probe:reference_4 0\n",
+      "stderr": ""
+    }
+  },
+  "interpretation": "The default upstream command pairs nth records, per its manual. Reversing inputs with -f works; one-line output is not proof of an upstream parser defect."
+}

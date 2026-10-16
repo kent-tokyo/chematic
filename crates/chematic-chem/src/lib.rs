@@ -53,6 +53,7 @@ pub mod stereo;
 pub mod stereo_group_alternatives;
 pub mod stereo_group_inversion;
 pub mod tautomer;
+pub mod tetrahedral_cleanup;
 pub mod topo_descriptors;
 pub mod vsa;
 pub mod workflow;
@@ -204,4 +205,8 @@ pub use stereo_group_alternatives::{
 pub use meso_stereo_group::{
     MAX_MESO_GROUP_ATOMS, MAX_MESO_GROUP_BONDS, MAX_MESO_GROUP_VISITS, MesoStereoGroupError,
     MesoStereoGroupReduction, MesoStereoWitness, reduce_meso_stereo_group,
+};
+
+pub use tetrahedral_cleanup::{
+    TetrahedralCleanupError, TetrahedralStereoCleanup, remove_redundant_tetrahedral_stereo,
 };

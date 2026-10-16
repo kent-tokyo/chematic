@@ -1,0 +1,70 @@
+{
+  "schema": "chematic.mmff-dielectric-validation.v1",
+  "source_base": "025fa2f63da324869aa144a7520626ae4ebbfd22",
+  "source_sha256": {
+    "crates/chematic-ff/src/rdkit_mmff.rs": "35e59143f36cd7f492d52d8e61b9ee746ad789c431b40325c23c0191f70ebc49",
+    "crates/chematic-ff/src/rdkit_mmff/dielectric.rs": "dba0fba59ba2fb814efc43aa4170e2d90b2ff345ec7ce16318620e001dade3bf",
+    "crates/chematic-py/src/force_field.rs": "574dd2e5c427c48aaa5e2cecb0ae5b557db06151a0774ca5b171cc64a24fc897",
+    "scripts/validate_mmff_dielectric.py": "6a13a2d5076ff8a644a69faf5ee096290efa47cfc219e10b097fe068bc61502f",
+    "validation/openbabel_issues/mmff-dielectric/cases.json": "8f189f2ab488bac73ffd04d2a22ae5d2688e85f8c4fa0c500ac7d96f4be36551",
+    "validation/openbabel_issues/mmff-dielectric/openbabel_probe.cpp": "896b43f513ad848f7e017e104f26f05c0d624e24d4f50d5878647393db855a0b"
+  },
+  "runtime": {
+    "rdkit": "2026.09.1",
+    "python": "3.13.6",
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "python_extension_sha256": "0004ef054e6ca4583b51e0f715f9790098d5fd02834a89ea9f675cfb4afaeda7",
+    "openbabel": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+    "openbabel_probe_sha256": "861ecb27b4291d21800527817673a47eabf08a16d268f463f5cf093e49b5f78a"
+  },
+  "results": {
+    "golden_energy_gradient_checks": 56,
+    "live_energy_gradient_checks": 252,
+    "minimization_fresh_native_matches": 126,
+    "minimization_rdkit_diagnostics": 126,
+    "minimization_rdkit_status_matches": 126,
+    "minimization_diagnostic_tolerances": {
+      "energy_absolute": 1e-06,
+      "energy_relative": 1e-09,
+      "coordinate_absolute": 5e-06
+    },
+    "minimization_rdkit_residuals": [
+      {
+        "smiles": "[Na+].[Cl-]",
+        "seed": 7,
+        "variant": "MMFF94",
+        "epsilon": 4.0,
+        "native_status": 0,
+        "rdkit_status": 0,
+        "energy_abs_error": 9.833186709329311e-09,
+        "coordinate_max_abs_error": 1.5000477086801745e-05
+      },
+      {
+        "smiles": "[Na+].[Cl-]",
+        "seed": 7,
+        "variant": "MMFF94s",
+        "epsilon": 4.0,
+        "native_status": 0,
+        "rdkit_status": 0,
+        "energy_abs_error": 9.833186709329311e-09,
+        "coordinate_max_abs_error": 1.5000477086801745e-05
+      }
+    ],
+    "max_energy_abs_error": 4.263256414560601e-14,
+    "max_gradient_abs_error": 4.1033842990145786e-13,
+    "max_minimization_energy_abs_error": 9.833186709329311e-09,
+    "max_minimization_coordinate_abs_error": 1.5000477086801745e-05,
+    "energy_gradient_failures": 0,
+    "fresh_native_minimization_failures": 0
+  },
+  "openbabel_issue": {
+    "url": "https://github.com/openbabel/openbabel/issues/2811",
+    "observed": "live updates and Setup on the same object keep stale energy; a fresh instance respects epsilon",
+    "fixture": "authored Na+/Cl- pair at 4 Angstrom"
+  },
+  "packet": {
+    "path": "comparisons.json.gz",
+    "sha256": "842c801e439d439b2be8e31a79b5f6a622db718c5b0adef8d087349bbffff48a"
+  },
+  "scope": "local MMFF94/MMFF94s constant screening; minimizer oracle residuals are reported separately; no general solvation, distance-dependent dielectric, UFF/GAFF, speed or package release claim"
+}

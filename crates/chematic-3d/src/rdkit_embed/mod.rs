@@ -12,7 +12,9 @@
     clippy::too_many_arguments
 )]
 
+mod alkene_path;
 pub mod bounds;
+pub use alkene_path::{AlkenePathStereo, rdkit_alkene_path_stereo};
 mod constraints;
 pub mod dg;
 pub mod embed;

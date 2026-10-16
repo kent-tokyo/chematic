@@ -1,0 +1,51 @@
+{
+  "schema": "chematic.alkene-path-validation.v1",
+  "issue": "https://github.com/rdkit/rdkit/issues/9719",
+  "scope": "Declared four-atom relative side queries; not an upstream screenshot reproduction, matrix change, embedding-quality, speed or release claim.",
+  "cases": [
+    {
+      "smiles": "F/C(Cl)=C(Br)/I",
+      "add_hs": false,
+      "permutations": 720
+    },
+    {
+      "smiles": "F/C(Cl)=C(Br)\\I",
+      "add_hs": false,
+      "permutations": 720
+    },
+    {
+      "smiles": "I/C(Br)=C(Cl)/F",
+      "add_hs": false,
+      "permutations": 720
+    },
+    {
+      "smiles": "I/C(Br)=C(Cl)\\F",
+      "add_hs": false,
+      "permutations": 720
+    },
+    {
+      "smiles": "F/C=C/Cl",
+      "add_hs": true,
+      "permutations": 720
+    },
+    {
+      "smiles": "F/C=C\\Cl",
+      "add_hs": true,
+      "permutations": 720
+    },
+    {
+      "smiles": "FC=CCl",
+      "add_hs": false,
+      "permutations": 24
+    }
+  ],
+  "permutations": 4344,
+  "path_direction_decisions": 34608,
+  "mismatches": 0,
+  "rdkit_version": "2025.09.3",
+  "python": "3.13.6 (v3.13.6:4e665351082, Aug  6 2025, 11:22:35) [Clang 16.0.0 (clang-1600.0.26.6)]",
+  "candidate_module_sha256": "4cf49c858d7f470276e1e1d0640d4d7053c37dd11a3617269302f727bf04e9c7",
+  "fixture_sha256": "56a5f8ab1d49b7afdf6c360e0c04ac4ccaa2e1bc36a24383cba6006523f15055",
+  "proof_sha256": "b73f5e93789d67d7bb9f42c9df590b9550f82a01b9e7f54ceb20b15893c35a57",
+  "decoded_proof_sha256": "55336640b18d8f5211c81128253d33153b4d71eaf3ec7b7b54bd6f1439711f9c"
+}

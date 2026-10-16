@@ -20,6 +20,40 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `bytes` and `os.PathLike` alongside `str`, using native filesystem encoding
   and preserving custom path-protocol errors. The 15 entry points and local
   platform limits are recorded in [Python filesystem paths](docs/python-filesystem-paths.md).
+- Add Rust/Python `write_cif_with_bonds_checked` for explicit molecular CIF
+  bond geometry (S/D/T/A), with checked Cartesian distances and no periodic
+  bond perception. Related to Open Babel #2726; that upstream report was a
+  CLI option mix-up, not missing Open Babel support.
+- Add opt-in stereo-checked rooted SMILES in Rust, Python and WASM, with an
+  original-atom correspondence, validated tetrahedral frames and a 256-atom
+  bound. Addresses the implicit-H bridgehead serialization failure class in
+  RDKit #9646 without changing the RDKit-compatibility writer.
+- Added opt-in proof-backed removal of one redundant tetrahedral declaration in
+  Rust/Python/WASM. An anchored graph witness preserves all other configurations
+  and source labels; failed proofs retain the declaration, and unsupported inputs
+  or exhausted budgets return errors. Parsing/writing defaults remain unchanged.
+- Added opt-in MOL2 Kekulé bond encoding in Rust/Python/WASM. A bounded neutral
+  aromatic profile changes only `ar` bond tokens to `1`/`2`, retaining all other
+  source bytes and refusing failed matching, valence/H changes and aromaticity
+  loss. Existing source round-trips and writer defaults are unchanged.
+- Thirteen Python serialized-text readers/validators now accept immutable UTF-8
+  `bytes` alongside `str`, retaining native parsing, return shapes and keyword
+  names. Invalid UTF-8 raises `UnicodeDecodeError`; unrelated object types raise
+  `TypeError` without implicit protocol conversion. Paths and identifiers retain
+  their existing contracts.
+- Added bounded source-preserving multi-record MOL2 inspection and explicit
+  all-reference heavy-atom RMSD in Rust/Python. Atom correspondence and indexed
+  bonds are checked; every reference is returned or an error is reported, with
+  optional proper rigid alignment and no implicit remapping.
+- Added a Rust/Python four-atom alkene stereo query with endpoint-aware
+  traversal normalization, explicit cis/trans/unspecified results and invalid
+  path errors. Existing RDKit bounds matrices and embedding defaults retain
+  their compatibility behavior.
+- Added an opt-in MOL2 ATOM → BOND → UNITY section order to Rust and the
+  existing Python/WASM graph writers for readers requiring adjacent core
+  sections (Open Babel #2350). Default bytes and immutable source retention
+  remain unchanged. Open Babel 3.2.1 ignores trailing UNITY charges in six
+  original graph controls; see the [compatibility record](docs/mol2-section-order.md).
 
 ### Performance
 
@@ -35,6 +69,42 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   V2000 output callers that discard it. Reporting APIs retain every loss field;
   stereo depiction and serialized bytes remain unchanged. See the
   [bounded source comparison](benchmarks/2026-10-16-openbabel-sdf-loss-work.md).
+- Fix native XYZ/extxyz readers to recognize uppercase two-letter species
+  aliases (CL/BR/CA/FE and the other supported elements), addressing the
+  element-identity failure class in Open Babel #2333. Core symbol lookup,
+  SMILES and PDB atom-name rules are unchanged.
+- Expose opt-in CDXML Bold/Hash/Dash stereo inference to Python and WASM
+  (RDKit #9359). Correct screen-coordinate parity, solid/hashed sense and
+  directional narrow-end ownership in the native reader. Default
+  non-directional inference remains disabled.
+- Fix total hydrogen counts to include H atom nodes once and avoid double
+  counting bracket H. Correct WASM atom-info attached H and expose the total
+  counter there. Found while reproducing Open Babel #3008/#2624; molecular
+  formulas and hydrogen transformation algorithms are unchanged.
+- Added native explicit PDB CONECT graph reading in Rust, Python and WASM.
+  The new API preserves atom/coordinate/serial order and declared bond
+  multiplicities without distance-based bonding, bounds input and graph
+  resources, and requires opt-in for extended target slots. Existing PDB
+  readers keep their behavior. See [the accepted profile and losses](docs/pdb-conect-graph.md).
+- Added checked constant-dielectric updates to prepared Rust/Python MMFF94 and
+  MMFF94s fields. Energy, gradient and minimization immediately use the new
+  screening while retaining prepared atom types, charges and pairs. Invalid
+  updates leave the field unchanged; the default remains 1.0. See
+  [the API and numerical contract](docs/mmff-dielectric-updates.md).
+- Added explicit AUTO/CDX/CDXML byte-block reading in Rust/Python/WASM with a
+  bounded concrete-molecule CDX profile, exact source sidecars and reported
+  presentation-loss opt-in. Unsupported CDX chemistry and marked stereo refuse.
+  The new projection also retains supported geometry-derived E/Z in graph
+  output. Existing CDXML entry points are unchanged. See
+  [the accepted profile and limits](docs/chemdraw-block.md).
+- Added checked rigid PDBQT output in Rust/Python/WASM, rejecting missing or
+  excess values, non-finite coordinates/charges, fixed-column overflow after
+  rounding, unsafe names and unsupported default atom types. Existing writers
+  retain their behavior.
+- Added a Python type-stub gate for source and built wheels, covering Python 3.9
+  grammar, compiler syntax, typed markers and exact source/package stub bytes.
+  CI checks source on Python 3.9/3.13 and source wheels on Linux/macOS/Windows;
+  the PyPI workflow checks all wheel stubs before artifact upload and publication.
 
 ## [1.1.5] - 2026-10-16
 
