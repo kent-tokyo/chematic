@@ -36,6 +36,8 @@ use turbomole::*;
 mod interchange;
 mod materials;
 mod mmcif_pdb;
+mod pdb_conect;
+use pdb_conect::*;
 mod pdb_selection;
 use pdb_selection::*;
 mod mmcif_residues;
@@ -1430,6 +1432,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         is_valid_smarts,
         from_inchi,
         from_pdb,
+        from_pdb_conect,
         from_pdb_strict,
         rdkit_from_pdb_block,
         rdkit_pdb_block_to_smiles,

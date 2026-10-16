@@ -1,0 +1,13 @@
+HETATM   10  CA  SO4 A   1       0.000   0.000   0.000  1.00  0.00           S  
+HETATM   20  CA  SO4 A   1       1.400   0.000   0.000  1.00  0.00           O  
+HETATM   30  CA  SO4 A   1      -1.400   0.000   0.000  1.00  0.00           O  
+HETATM   40  CA  SO4 A   1       0.000   1.400   0.000  1.00  0.00           O1-
+HETATM   50  CA  SO4 A   1       0.000  -1.400   0.000  1.00  0.00           O1-
+HETATM   90  CA  SO4 A   1       0.000   0.000   0.800  1.00  0.00           H  
+CONECT   10   20   20   30   30
+CONECT   10   40   50
+CONECT   20   10   10
+CONECT   30   10   10
+CONECT   40   10
+CONECT   50   10
+END   

@@ -55,6 +55,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   counting bracket H. Correct WASM atom-info attached H and expose the total
   counter there. Found while reproducing Open Babel #3008/#2624; molecular
   formulas and hydrogen transformation algorithms are unchanged.
+- Added native explicit PDB CONECT graph reading in Rust, Python and WASM.
+  The new API preserves atom/coordinate/serial order and declared bond
+  multiplicities without distance-based bonding, bounds input and graph
+  resources, and requires opt-in for extended target slots. Existing PDB
+  readers keep their behavior. See [the accepted profile and losses](docs/pdb-conect-graph.md).
 
 ## [1.1.5] - 2026-10-16
 

@@ -437,7 +437,8 @@ use the record or checked API for source retention.
 ### PDB
 
 - **Rust**: `chematic_3d::{PdbAtom, parse_pdb_atoms, parse_pdb_atoms_strict, pdb_to_molecule, write_pdb}` —
-  this format lives in `chematic-3d`, not `chematic-mol`.
+  geometry-based reading lives in `chematic-3d`. `chematic_mol::parse_pdb_conect`
+  provides the separate explicit-graph projection described below.
 - **Python**: `from_pdb` (lenient) and `from_pdb_strict` (fixed-column
   validation) for reading; both delegate to `chematic_3d`;
   `Mol.to_pdb(coords)` for writing. `protein_from_pdb_json` exposes the shared
@@ -461,9 +462,16 @@ use the record or checked API for source retention.
 - **Connectivity**: `pdb_to_molecule` perceives bonds from geometry
   (distance-based), unlike most of the other formats in this table, which
   either carry an explicit bond table or never infer one.
+  [Explicit CONECT graph reading](pdb-conect-graph.md) is available through
+  Rust `parse_pdb_conect`, Python `from_pdb_conect`, and WASM
+  `mol_from_pdb_conect` / `pdb_conect_frame_json`. This narrow, unmodelled
+  single-location profile preserves explicit atoms/charges/XYZ/serials and
+  repeated-target bond multiplicities without adding proximity edges.
 - **Round-trip**: not characterized in this pass — no documented round-trip
   guarantee found; treat as best-effort.
-- **Lossy operations**: none named.
+- **Lossy operations**: the explicit CONECT API projects graph fields only;
+  it drops residue/name/chain and other PDB metadata and performs no stereo,
+  aromaticity or valence perception. Legacy extra contact slots require opt-in.
 - **Parse limits**: `PdbParseLimits` bounds input bytes, physical line length,
   ATOM/HETATM records and MODEL records. Use `parse_pdb_atoms_with_limits`
   for typed resource-limit errors. `parse_pdb_atoms_strict` additionally

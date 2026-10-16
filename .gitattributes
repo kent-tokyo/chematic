@@ -1,5 +1,6 @@
 # These fixed-column PDB fixtures intentionally retain blank trailing fields.
 validation/openbabel_issues/pdb-selection/*.pdb text eol=lf whitespace=-blank-at-eol
+validation/rdkit_issues/pdb-conect/*.pdb text eol=lf whitespace=-blank-at-eol
 
 # Archived patches retain Git context-line spaces for reproducibility.
 validation/rdkit_issues/*.patch whitespace=-blank-at-eol

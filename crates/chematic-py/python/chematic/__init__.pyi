@@ -3282,6 +3282,16 @@ def smarts_find(smarts: str, mol: Mol) -> list[list[int]]:
     """
     ...
 
+def from_pdb_conect(pdb_str: str, *, allow_extended_targets: bool = False) -> dict[str, Any]:
+    """Explicit CONECT graph projection, without proximity bonds.
+
+    Returns mol, coords and serials in atom-record order. Requires unmodelled,
+    single-location records and valid element/charge fields. Repeated targets
+    encode order 1..3; reciprocal orders must agree. Extended slots beyond
+    four targets require explicit consent. Other metadata is not retained.
+    """
+    ...
+
 def from_pdb(pdb_str: str) -> tuple[Mol, list[list[float]]]:
     """Parse a PDB string and return ``(Mol, coords)``.
 
