@@ -11,9 +11,10 @@ Then run with RDKit 2025.09.3 and COSMolKit 0.5.0:
 The oracle is RDKit's canonical isomeric SMILES of each source molecule.
 Each engine's native output is parsed by RDKit before comparison. Report both
 strict read-back and verified equivalence: exact stereochemical SMILES after
-renumbering up to 10,000 graph matches, followed by a bounded resonance search
-for molecules without specified stereochemistry. Other differences remain
-unresolved.
+renumbering up to 10,000 graph matches, then identical unsanitized aromatic
+input graphs with matching formulas and no specified stereochemistry, followed
+by a bounded resonance search for remaining molecules without specified
+stereochemistry. Other differences remain unresolved.
 """
 
 from __future__ import annotations
@@ -26,6 +27,7 @@ from pathlib import Path
 
 import cosmolkit
 from rdkit import Chem, RDLogger
+from rdkit.Chem import rdMolDescriptors
 
 
 def has_specified_stereo(mol: Chem.Mol) -> bool:
@@ -70,13 +72,38 @@ def stereo_isomorphic(expected: Chem.Mol, actual: Chem.Mol) -> bool:
     return False
 
 
-def classify(expected: Chem.Mol, actual: Chem.Mol | None) -> str:
+def same_raw_aromatic_graph(
+    expected_text: str, actual_text: str, expected: Chem.Mol, actual: Chem.Mol
+) -> bool:
+    """Check the input aromatic graph before order-dependent Kekulization."""
+    if has_specified_stereo(expected) or has_specified_stereo(actual):
+        return False
+    if rdMolDescriptors.CalcMolFormula(expected) != rdMolDescriptors.CalcMolFormula(actual):
+        return False
+    raw_expected = Chem.MolFromSmiles(expected_text, sanitize=False)
+    raw_actual = Chem.MolFromSmiles(actual_text, sanitize=False)
+    if raw_expected is None or raw_actual is None:
+        return False
+    if not any(atom.GetIsAromatic() for atom in raw_expected.GetAtoms()):
+        return False
+    return Chem.MolToSmiles(raw_expected) == Chem.MolToSmiles(raw_actual)
+
+
+def classify(
+    expected: Chem.Mol,
+    actual: Chem.Mol | None,
+    expected_text: str | None = None,
+    actual_text: str | None = None,
+) -> str:
     if actual is None:
         return "invalid"
     if Chem.MolToSmiles(expected) == Chem.MolToSmiles(actual):
         return "strict"
     if stereo_isomorphic(expected, actual):
         return "stereo_isomorphic"
+    if expected_text is not None and actual_text is not None:
+        if same_raw_aromatic_graph(expected_text, actual_text, expected, actual):
+            return "raw_aromatic_graph"
     # The resonance supplier may change bond orders and charges. Do not use it
     # to waive a mismatch involving specified atom or bond stereochemistry.
     if not has_specified_stereo(expected) and not has_specified_stereo(actual):
@@ -105,7 +132,7 @@ def main() -> None:
     eligible = 0
     skipped = 0
     matched = {"chematic": 0, "cosmolkit": 0}
-    labels = ("strict", "stereo_isomorphic", "resonance", "unresolved", "invalid")
+    labels = ("strict", "stereo_isomorphic", "raw_aromatic_graph", "resonance", "unresolved", "invalid")
     classifications = {engine: {label: 0 for label in labels} for engine in matched}
     misses = {"chematic": [], "cosmolkit": []}
     for index, line in enumerate(lines):
@@ -129,7 +156,7 @@ def main() -> None:
         ):
             actual_mol = Chem.MolFromSmiles(smiles) if smiles and not smiles.startswith("ERROR:") else None
             actual = Chem.MolToSmiles(actual_mol) if actual_mol is not None else None
-            classification = classify(expected_mol, actual_mol)
+            classification = classify(expected_mol, actual_mol, source, smiles)
             classifications[engine][classification] += 1
             if classification == "strict":
                 matched[engine] += 1
@@ -148,7 +175,8 @@ def main() -> None:
         "matched": matched,
         "classifications": classifications,
         "verified_equivalent": {
-            engine: counts["strict"] + counts["stereo_isomorphic"] + counts["resonance"]
+            engine: counts["strict"] + counts["stereo_isomorphic"]
+            + counts["raw_aromatic_graph"] + counts["resonance"]
             for engine, counts in classifications.items()
         },
         "unresolved_indices": {
