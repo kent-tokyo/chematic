@@ -1,0 +1,166 @@
+//! Additional geometry-derived ring centers shared with MOL2.
+
+use super::*;
+
+fn same_ring_component(mol: &Molecule, ring_bonds: &[bool], start: AtomIdx, goal: AtomIdx) -> bool {
+    let mut seen = std::collections::HashSet::from([start]);
+    let mut frontier = vec![start];
+    while let Some(atom) = frontier.pop() {
+        if atom == goal {
+            return true;
+        }
+        for (neighbor, bond) in mol.neighbors(atom) {
+            if ring_bonds[bond.0 as usize] && seen.insert(neighbor) {
+                frontier.push(neighbor);
+            }
+        }
+    }
+    false
+}
+
+fn ring_component_labels(mol: &Molecule, ring_bonds: &[bool]) -> Vec<usize> {
+    let mut labels = vec![usize::MAX; mol.atom_count()];
+    let mut next_label = 0;
+    for (start, _) in mol.atoms() {
+        if labels[start.0 as usize] != usize::MAX {
+            continue;
+        }
+        let mut frontier = vec![start];
+        labels[start.0 as usize] = next_label;
+        while let Some(atom) = frontier.pop() {
+            for (neighbor, bond) in mol.neighbors(atom) {
+                if ring_bonds[bond.0 as usize] && labels[neighbor.0 as usize] == usize::MAX {
+                    labels[neighbor.0 as usize] = next_label;
+                    frontier.push(neighbor);
+                }
+            }
+        }
+        next_label += 1;
+    }
+    labels
+}
+
+pub(super) fn additional_3d_ring_centers(mol: &Molecule, mol2_extensions: bool) -> Vec<AtomIdx> {
+    // RDKit also records the 3D orientation of the two bridgeheads in a
+    // simple bicyclic cage such as norbornane, even when CIP regards its
+    // paired ring paths as equivalent. Limit this case to exactly two
+    // three-ring-bond carbon bridgeheads with one exocyclic substituent;
+    // symmetric multi-bridgehead cages such as adamantane must not acquire
+    // arbitrary tetrahedral tags.
+    let ring_bonds = chematic_perception::ring_bond_flags(mol);
+    let mut additional = Vec::new();
+    let bridgeheads: Vec<_> = mol
+        .atoms()
+        .filter(|(idx, atom)| {
+            if atom.element != Element::C || atom.aromatic {
+                return false;
+            }
+            let mut ring_neighbors = 0;
+            let mut outside = 0;
+            for (neighbor, bond) in mol.neighbors(*idx) {
+                if mol.bond(bond).order != BondOrder::Single {
+                    return false;
+                }
+                if ring_bonds[bond.0 as usize] {
+                    ring_neighbors += 1;
+                } else {
+                    // A pendant carbon can replace the bridgehead H without
+                    // removing the geometry-defined paired configuration.
+                    if mol.atom(neighbor).element == Element::H
+                        || (mol2_extensions && mol.atom(neighbor).element == Element::C)
+                    {
+                        outside += 1;
+                    } else {
+                        return false;
+                    }
+                }
+            }
+            ring_neighbors == 3 && outside + chematic_core::implicit_hcount(mol, *idx) == 1
+        })
+        .map(|(idx, _)| idx)
+        .collect();
+    if bridgeheads.len() == 2
+        && same_ring_component(mol, &ring_bonds, bridgeheads[0], bridgeheads[1])
+    {
+        additional.extend(bridgeheads);
+    }
+    // Two differently substituted quaternary carbons in one ring can
+    // distinguish each other's otherwise identical ring arms. Neither
+    // center is found by an atom-at-a-time graph comparison before the
+    // partner receives its 3D tag. A lone substituted ring carbon remains
+    // achiral, so require a connected pair in the cyclic subgraph.
+    let paired_ring_centers: Vec<_> = mol
+        .atoms()
+        .filter(|(idx, atom)| {
+            if atom.element != Element::C || atom.aromatic || mol.degree(*idx) != 4 {
+                return false;
+            }
+            let (ring, outside): (Vec<_>, Vec<_>) = mol
+                .neighbors(*idx)
+                .partition(|&(_, bond)| ring_bonds[bond.0 as usize]);
+            ring.len() == 2
+                && outside.len() == 2
+                && ring
+                    .iter()
+                    .chain(outside.iter())
+                    .all(|&(_, bond)| mol.bond(bond).order == BondOrder::Single)
+                && mol.atom(outside[0].0).element != mol.atom(outside[1].0).element
+        })
+        .map(|(idx, _)| idx)
+        .collect();
+    if paired_ring_centers.len() == 2
+        && same_ring_component(
+            mol,
+            &ring_bonds,
+            paired_ring_centers[0],
+            paired_ring_centers[1],
+        )
+    {
+        additional.extend(paired_ring_centers);
+    }
+    if mol2_extensions {
+        additional.extend(mol2_ring_ch_sites(mol, &ring_bonds));
+    }
+    additional
+}
+
+/// Two or more substituted ring CH sites can encode relative cis/trans
+/// configuration even when each site's ring paths look equivalent before
+/// its partners receive 3D tags (e.g. trimethylcyclohexane).
+fn mol2_ring_ch_sites(mol: &Molecule, ring_bonds: &[bool]) -> Vec<AtomIdx> {
+    let ring_ch_sites: Vec<_> = mol
+        .atoms()
+        .filter(|(idx, atom)| {
+            if atom.element != Element::C || atom.aromatic {
+                return false;
+            }
+            let (ring, outside): (Vec<_>, Vec<_>) = mol
+                .neighbors(*idx)
+                .partition(|&(_, bond)| ring_bonds[bond.0 as usize]);
+            ring.len() == 2
+                && ring
+                    .iter()
+                    .chain(outside.iter())
+                    .all(|&(_, bond)| mol.bond(bond).order == BondOrder::Single)
+                && outside
+                    .iter()
+                    .filter(|&&(neighbor, _)| mol.atom(neighbor).element == Element::H)
+                    .count()
+                    + usize::from(chematic_core::implicit_hcount(mol, *idx))
+                    == 1
+                && outside
+                    .iter()
+                    .any(|&(neighbor, _)| mol.atom(neighbor).element != Element::H)
+        })
+        .map(|(idx, _)| idx)
+        .collect();
+    let labels = ring_component_labels(mol, ring_bonds);
+    let mut counts = std::collections::HashMap::new();
+    for &center in &ring_ch_sites {
+        *counts.entry(labels[center.0 as usize]).or_insert(0usize) += 1;
+    }
+    ring_ch_sites
+        .into_iter()
+        .filter(|center| counts[&labels[center.0 as usize]] >= 2)
+        .collect()
+}

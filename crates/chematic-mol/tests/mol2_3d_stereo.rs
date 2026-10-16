@@ -10,6 +10,14 @@ const AMINO_ACID: &str = include_str!("data/mol2-3d-stereo-1.mol2");
 const FOUR_HEAVY: &str = include_str!("data/mol2-3d-stereo-2.mol2");
 const EXPLICIT_H_BRIDGEHEADS: &str = include_str!("data/mol2-3d-bridgehead-explicit-h.mol2");
 const EXPLICIT_H_ADAMANTANE: &str = include_str!("data/mol2-3d-adamantane-explicit-h.mol2");
+const OPENBABEL_STRESS_STEREO: [(&str, usize); 4] = [
+    (include_str!("data/mol2-3d-openbabel-651.mol2"), 2),
+    (include_str!("data/mol2-3d-openbabel-658.mol2"), 3),
+    (include_str!("data/mol2-3d-openbabel-2601.mol2"), 3),
+    (include_str!("data/mol2-3d-openbabel-3599.mol2"), 2),
+];
+const SINGLE_METHYL_RING: &str = include_str!("data/mol2-3d-methylcyclohexane.mol2");
+const SYMMETRIC_PHOSPHORUS: &str = include_str!("data/mol2-3d-symmetric-phosphorus.mol2");
 const ALKENE_CASES: [&str; 12] = [
     include_str!("data/mol2-3d-ez-00.mol2"),
     include_str!("data/mol2-3d-ez-01.mol2"),
@@ -201,6 +209,64 @@ fn mol2_3d_symmetric_multibridgehead_cage_remains_untagged() {
                 .atoms()
                 .all(|(_, atom)| atom.chirality == Chirality::None),
             "symmetric cage acquired an arbitrary tetrahedral tag"
+        );
+    }
+}
+
+#[test]
+fn mol2_3d_recovers_paired_ring_and_phosphorus_centers() {
+    for (input, expected_centers) in OPENBABEL_STRESS_STEREO {
+        let (mol, coordinates) = parse_mol2(input).unwrap();
+        let retained = parse_mol2_source_record(input).unwrap();
+        let tagged: Vec<_> = mol
+            .atoms()
+            .filter(|(_, atom)| atom.chirality.is_tetrahedral())
+            .map(|(idx, _)| idx)
+            .collect();
+        assert_eq!(tagged.len(), expected_centers);
+        for &center in &tagged {
+            assert_eq!(
+                retained.molecule().atom(center).chirality,
+                mol.atom(center).chirality
+            );
+        }
+
+        let mirrored = coordinates
+            .iter()
+            .map(|&(x, y, z)| (x, y, -z))
+            .collect::<Vec<_>>();
+        let (opposite, _) = parse_mol2(&write_mol2(&mol, &mirrored)).unwrap();
+        for &center in &tagged {
+            assert_ne!(opposite.atom(center).chirality, mol.atom(center).chirality);
+            assert!(opposite.atom(center).chirality.is_tetrahedral());
+        }
+    }
+}
+
+#[test]
+fn mol2_3d_single_methyl_ring_remains_untagged() {
+    let (mol, _) = parse_mol2(SINGLE_METHYL_RING).unwrap();
+    let retained = parse_mol2_source_record(SINGLE_METHYL_RING).unwrap();
+    for molecule in [&mol, retained.molecule()] {
+        assert!(
+            molecule
+                .atoms()
+                .all(|(_, atom)| atom.chirality == Chirality::None),
+            "a ring with one methyl group has no tetrahedral center"
+        );
+    }
+}
+
+#[test]
+fn mol2_3d_phosphorus_with_duplicate_ligands_remains_untagged() {
+    let (mol, _) = parse_mol2(SYMMETRIC_PHOSPHORUS).unwrap();
+    let retained = parse_mol2_source_record(SYMMETRIC_PHOSPHORUS).unwrap();
+    for molecule in [&mol, retained.molecule()] {
+        assert!(
+            molecule
+                .atoms()
+                .all(|(_, atom)| atom.chirality == Chirality::None),
+            "phosphorus with two methyl ligands is not tetrahedrally stereogenic"
         );
     }
 }
