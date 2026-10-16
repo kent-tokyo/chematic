@@ -91,8 +91,8 @@ pub fn render_eps_opts(mol: &Molecule, layout: &Layout, opts: &RenderOptions) ->
     // Bonds
     set_color(&mut out, bond_color);
     for (bond_idx, bond) in mol.bonds() {
-        let p1 = layout.get(bond.atom1);
-        let p2 = layout.get(bond.atom2);
+        let (p1, p2) =
+            crate::svg::linear_carbon::bond_endpoints(mol, layout, bond.atom1, bond.atom2);
         let (bx1, by1) = tp(p1);
         let (bx2, by2) = tp(p2);
         let bond_col = if opts.highlight_bonds.contains(&bond_idx) {
@@ -463,5 +463,19 @@ mod tests {
         let layout = compute_layout(&m);
         let eps = render_eps(&m, &layout);
         assert!(eps.contains("(CH4)"), "single C EPS should show CH4");
+    }
+
+    #[test]
+    fn eps_co2_shows_middle_carbon_with_a_bond_gap() {
+        let m = mol("O=C=O");
+        let layout = compute_layout(&m);
+        let opts = RenderOptions {
+            background: "transparent".into(),
+            ..Default::default()
+        };
+        let eps = render_eps_opts(&m, &layout, &opts);
+        assert!(eps.contains("(C) show"));
+        assert!(eps.contains("20.00 58.00 moveto 51.00 58.00 lineto"));
+        assert!(eps.contains("69.00 58.00 moveto 100.00 58.00 lineto"));
     }
 }
