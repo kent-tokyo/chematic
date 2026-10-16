@@ -13,6 +13,15 @@
   "format-check-final.log.gz": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
   "format-final.log.gz": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
   "index-check.log": "72e5eab25322a2e108a45d3a400242adaed26ad49f8f51baa4ef9d3576b01f92",
+  "integration-clippy.log.gz": "c8f3cbe241f5ec77f6de5d0ccbc7aaf624664d8140e78ac46ca6bebadce1936c",
+  "integration-format.log.gz": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+  "integration-index.log.gz": "f8b85d6b19d8ca8ded8117b20ea78c82deeea9a7b6aaf168ff3004008f128094",
+  "integration-mol-tests.log.gz": "83828a0234b300f4ca4afc39ee62c92444b3490996bbd47494ebef987903287d",
+  "integration-packet-audit.json": "6d76369ea01597197808a403154851b797de1886cc60c5f3b056cec2a81264fa",
+  "integration-perception-smiles-tests.log.gz": "c64a105340fb90118fc695ebc9059df8dd36c90652391e8b39eb9caf8827dc55",
+  "integration-plan.json": "b43922782c6163b23ee426041e59b1e14332e167a94f666d8e5ebb33b0388009",
+  "integration-refactor.log.gz": "82fa5c8dba63718b956fd9f4307400a62fef7b218be4a7fbaaf6ff28f272a31b",
+  "integration-validation.json": "c102cf517235257e9949f91d939df985e3913faa6f7d53b5ce2bfbafab1db1a9",
   "local-semantic-streams.json": "e09bb9ecc29f25f69a2a18e02806698855130dfb024642a1d1ed42dbe2736e62",
   "loss-preservation.json": "143c6517dce8c6eaddd6f22dd633d8db49120880c33a960b4e2c529a4c8d870e",
   "measurement-plan.json": "091f703a8a00b71a66515d0e8e9e5802a7a41fe65698e4fa5faea15c37704796",
@@ -37,5 +46,5 @@
   "source-manifest.json": "fb058b46f04841c37014261e7bb9f3691f641a76424777962febd0fba1218a97",
   "sparse-index-restoration.json": "cf7ea48f985bb3505cc7e33d62caf5c537ab2b182c800592934a80cc665f04d2",
   "validation.json": "0d76c7bbb5ba5a86a903291f6a000e6266ecbdadcfc206c89ace902937376add",
-  "verify_packets.py": "0e5aa4a7a82197bb4f246bcac39c2c27d2c5d5acdeeb44b8dde263aec2efeb48"
+  "verify_packets.py": "57cbbed638f2422b0f558dd77b32e9116d4c08b9b15641f0a05e5b8f8e68e281"
 }

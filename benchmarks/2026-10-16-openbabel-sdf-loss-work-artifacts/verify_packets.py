@@ -4,6 +4,7 @@ import gzip
 import hashlib
 import json
 import subprocess
+import sys
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -75,8 +76,12 @@ def main():
                         'blocks_per_profile':21,'adoption_gate':accepted,
                         'negative_intervals':sum(len(v) for v in negative.values())})
     final=json.loads((ROOT/'benchmarks'/(NAMES[-1]+'-artifacts')/'source-manifest.json').read_text())
-    assert all(sha((ROOT/n).read_bytes())==h for n,h in final['source_files_sha256'].items())
-    print(json.dumps({'passed':True,'current_measured_source_matches':True,
+    exact=all(sha((ROOT/n).read_bytes())==h for n,h in final['source_files_sha256'].items())
+    target=json.loads((ROOT/'benchmarks'/(NAMES[-1]+'-artifacts')/'reconstruction.json').read_text())['changed_source_files']
+    assert all(sha((ROOT/n).read_bytes())==final['source_files_sha256'][n] for n in target)
+    if '--require-exact-source' in sys.argv:
+        assert exact, 'check out measured source checkpoint for whole-source identity'
+    print(json.dumps({'passed':True,'current_optimization_files_match':True,'current_whole_source_matches_measured':exact,
                       'no_timing_pooled_or_substituted':True,'packets':audited},indent=2))
 
 if __name__=='__main__':

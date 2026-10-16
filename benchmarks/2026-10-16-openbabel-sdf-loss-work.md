@@ -197,6 +197,25 @@ The [predeclared plan](2026-10-16-openbabel-sdf-loss-work-artifacts/measurement-
 
 The independent [packet audit](2026-10-16-openbabel-sdf-loss-work-artifacts/packet-audit.json) and [audit script](2026-10-16-openbabel-sdf-loss-work-artifacts/verify_packets.py) reconstruct all five patches and verify all 25 complete matrices against their separate frozen decisions. The first packet passes only at its older baseline; the fifth passes at the named integration baseline. No prior observation is replaced.
 
+## Latest-main correctness integration
+
+The measured source is committed as a1e8c8e87c99a92966547cdf384953063d42ff09
+on the named 025fa2f6 baseline. Later main ecda5c53 adds shared 2D/3D E/Z
+and stereo-enumeration changes. Integration commit
+247b9f8614ebc33d353f9088b3826195c1b34b69 retains all seven optimization-file
+hashes, and separately passes 1,258 MOL tests plus 271 perception and 394
+SMILES library tests (1,923 passed, zero failed, two existing ignored).
+All-target Clippy for those three crates, formatting, refactor budget and
+the 481-record index also pass. See the
+[integration validation](2026-10-16-openbabel-sdf-loss-work-artifacts/integration-validation.json)
+and [post-integration audit](2026-10-16-openbabel-sdf-loss-work-artifacts/integration-packet-audit.json).
+
+These later checks establish correctness integration. The timings above
+remain bound to the measured checkpoint; they are not new speed measurements
+of the later main merge or published packages. The audit's optional
+--require-exact-source flag requires the measured checkpoint rather than a
+later checkout.
+
 ## Reproduction and limits
 
 Check out the named baseline in an isolated worktree. Decompress/apply the candidate patch for a separate candidate. Build both using CARGO_BUILD_JOBS=1 CARGO_INCREMENTAL=0 cargo build --release --locked -p chematic-mol --example openbabel_sdf_throughput --example openbabel_v3000_throughput; preserve baseline executables before rebuilding. Compile the unchanged C++ harnesses with the recorded pkg-config Open Babel flags. Decompress the five named checked-in corpora. Run the unchanged scripts/bench_openbabel_sdf_throughput.py and scripts/bench_openbabel_v3000_throughput.py with --baseline, --candidate, --openbabel, --corpus, --records <1000-or-64>, --blocks 21 --repeats 3 --source-manifest <manifest.json> --output <report.json> in the pinned observer environment.
