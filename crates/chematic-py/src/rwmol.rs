@@ -52,6 +52,13 @@ impl RWMol {
         }
     }
 
+    /// Reset to a fresh editable molecule, including title and all properties.
+    /// Existing Mol snapshots remain unchanged. Repeated calls are harmless.
+    fn Clear(&mut self) {
+        self.inner.clear();
+        self.props = PropertyStore::default();
+    }
+
     /// Add an atom by atomic number, returning its (0-based) atom index.
     fn AddAtom(&mut self, atomic_num: u8) -> PyResult<u32> {
         let element = Element::from_atomic_number(atomic_num)

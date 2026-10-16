@@ -487,6 +487,10 @@ class RWMol:
     def __init__(self, mol: "Mol | None" = None) -> None:
         self._rw = _ch.RWMol(mol._mol if mol is not None else None)
 
+    def Clear(self) -> None:
+        """chematic extension: reset graph, title and properties; preserve snapshots."""
+        self._rw.Clear()
+
     def AddAtom(self, atom) -> int:
         """Add an atom given an atomic number (``int``), element symbol
         (``str``), or any object with ``GetAtomicNum()`` (e.g. an existing
@@ -770,6 +774,34 @@ class SDMolSupplier:
 
     def __exit__(self, *args) -> None:
         pass
+
+
+# ---------------------------------------------------------------------------
+# ForwardSDMolSupplier — binary stream SDF reader
+# ---------------------------------------------------------------------------
+
+class ForwardSDMolSupplier:
+    """Forward-only SDF iterator over a binary ``read(size)`` source.
+
+    The source is retained and never closed. Missing/non-callable ``read``
+    raises ValueError at construction; read exceptions propagate unchanged.
+    ``sanitize`` and ``removeHs`` are compatibility no-ops. Text-mode streams
+    are rejected on first read. No random access or restart is provided.
+    """
+
+    def __init__(self, fileobj: object, sanitize: bool = True,
+                 removeHs: bool = True, strictParsing: bool = True) -> None:
+        self._supplier = _ch.ForwardSDMolSupplier(
+            fileobj, sanitize=sanitize, removeHs=removeHs,
+            strictParsing=strictParsing,
+        )
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        mol = next(self._supplier)
+        return Mol(mol) if mol is not None else None
 
 
 # ---------------------------------------------------------------------------

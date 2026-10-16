@@ -87,6 +87,50 @@ fn v3000_source_radical_attributes_are_not_duplicated() {
 }
 
 #[test]
+fn unusual_explicit_hydrogen_valence_is_written_for_non_organic_atoms() {
+    for (smiles, expected) in [
+        ("[BH2]", "VAL=2"),
+        ("[SiH3]", "VAL=3"),
+        ("[SH]", "VAL=1"),
+        ("[ZnH2]", "VAL=2"),
+        ("[Zn@H](F)(Cl)Br", "VAL=4"),
+        ("[P@H](F)(Cl)Br", "VAL=4"),
+        ("[CuH]", "VAL=1"),
+    ] {
+        let mol = chematic_smiles::parse(smiles).unwrap();
+        let block = write_mol_v3000(&mol, &MolMetadata::default(), &[]);
+        let first_atom = block
+            .lines()
+            .find(|line| line.starts_with("M  V30 1 "))
+            .unwrap();
+        assert!(first_atom.contains(expected), "{smiles}: {first_atom}");
+    }
+
+    let ordinary = chematic_smiles::parse("[SH2]").unwrap();
+    let block = write_mol_v3000(&ordinary, &MolMetadata::default(), &[]);
+    assert!(!block.contains(" VAL="), "{block}");
+
+    let mol = chematic_smiles::parse("[Zn@H](F)(Cl)Br").unwrap();
+    let block_3d = write_mol_v3000_with_conformer(
+        &mol,
+        &MolMetadata::default(),
+        &Coords3D::new_zeroed(mol.atom_count()),
+    );
+    assert!(block_3d.contains(" VAL=4"), "{block_3d}");
+
+    let metadata = MolMetadata {
+        v3000_atom_properties: vec![(1, "VAL=4".into())],
+        ..Default::default()
+    };
+    let block = write_mol_v3000(&mol, &metadata, &[]);
+    let first_atom = block
+        .lines()
+        .find(|line| line.starts_with("M  V30 1 "))
+        .unwrap();
+    assert_eq!(first_atom.matches(" VAL=").count(), 1, "{first_atom}");
+}
+
+#[test]
 fn dative_carbonyl_does_not_emit_fictitious_ez_direction() {
     // Minimal form of stress-v1.smi line 3945, written as 2D V3000 by
     // RDKit 2025.09.3. Oxygen-to-sodium is a coordinate bond, not an E/Z

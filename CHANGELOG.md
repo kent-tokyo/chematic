@@ -21,6 +21,21 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   gzip detection and concatenated members. Plain input remains the default;
   native SDF limits count decoded data and compression failures are reported.
   See [SDF gzip input](docs/sdf-gzip-input.md).
+- Python `ForwardSDMolSupplier` reads binary file objects, including BytesIO
+  and gzip streams, through the native SDF parser. Both native and compatibility
+  APIs reject missing/non-callable `read` at construction and preserve read
+  exceptions, titles and SD fields. See [stream input contracts](docs/python-forward-sdf.md).
+- Added Rust `Molecule::clear()` and Python `RWMol.Clear()` for complete
+  molecule reuse, including metadata/cache reset and Python title/typed
+  properties. Existing snapshots stay independent. The compatibility wrapper
+  exposes the same chematic extension. See [molecule reset](docs/molecule-clear.md)
+  for the Open Babel #3032 reproduction and bounded validation.
+
+### Fixed
+
+- Preserve SDF data fields whose headers contain optional trailing information,
+  including RDKit SDWriter's `> <Field> (record-number)` headers, across native
+  stream, file and in-memory readers.
 
 ## [1.1.6] - 2026-10-16
 

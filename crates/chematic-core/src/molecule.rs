@@ -113,4 +113,7 @@ include!("molecule/checked_stereo_groups.rs");
 include!("molecule/builder.rs");
 
 #[cfg(test)]
+mod clear_tests;
+
+#[cfg(test)]
 include!("molecule_tests.rs");

@@ -1,0 +1,13 @@
+{
+  "audit_all_48_comparisons_verified": true,
+  "all_24_source_median_guards_verified": true,
+  "source_minimum_median": 0.994,
+  "primary_lower_bounds": [
+    5.289,
+    5.434
+  ],
+  "adoption_passed": true,
+  "original_incomplete_launch_has_zero_blocks": true,
+  "frozen_plan_unchanged": true,
+  "universal_superiority": false
+}

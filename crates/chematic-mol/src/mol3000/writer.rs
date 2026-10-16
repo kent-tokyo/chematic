@@ -54,10 +54,11 @@ fn append_header(out: &mut String, mol: &Molecule, metadata: &MolMetadata, dimen
 }
 
 /// Bracket SMILES atoms have no implicit hydrogens. For neutral C/N/O, the
-/// difference from ordinary valence therefore records unpaired electrons.
-/// CTfile readers otherwise fill that difference with hydrogens and change
-/// the molecule. Opaque source attributes take precedence when present.
-fn append_inferred_radical_properties(
+/// difference from ordinary valence records unpaired electrons. For other
+/// neutral atoms with explicit H and an unusual total valence, CTfile needs
+/// VAL to retain those hydrogens (notably on metal stereocentres). Opaque
+/// source attributes take precedence when present.
+fn append_inferred_valence_properties(
     line: &mut String,
     mol: &Molecule,
     idx: AtomIdx,
@@ -69,7 +70,6 @@ fn append_inferred_radical_properties(
     };
     if atom.charge != 0
         || atom.wildcard
-        || !matches!(atom.element, Element::C | Element::N | Element::O)
         || source_properties.is_some_and(|properties| {
             properties
                 .split_whitespace()
@@ -80,6 +80,7 @@ fn append_inferred_radical_properties(
     }
     let mut drawn = hydrogens;
     let mut aromatic_bonds = 0u8;
+    let mut ordinary_bonds = true;
     for (_, bond_idx) in mol.neighbors(idx) {
         let bond = mol.bond(bond_idx);
         let order = match bond.order {
@@ -87,25 +88,39 @@ fn append_inferred_radical_properties(
             BondOrder::Double => 2,
             BondOrder::Triple => 3,
             BondOrder::Aromatic => {
+                ordinary_bonds = false;
                 aromatic_bonds += 1;
                 1
             }
-            BondOrder::Dative if bond.atom1 == idx => 0,
-            BondOrder::Dative => 1,
+            BondOrder::Dative if bond.atom1 == idx => {
+                ordinary_bonds = false;
+                0
+            }
+            BondOrder::Dative => {
+                ordinary_bonds = false;
+                1
+            }
             _ => return,
         };
         drawn = drawn.saturating_add(order);
     }
     drawn = drawn.saturating_add(aromatic_bonds / 2);
-    let normal = atom.element.normal_valences()[0];
-    if drawn >= normal {
-        return;
-    }
-    if drawn == 0 {
-        line.push_str(" VAL=-1");
-    } else {
-        let radical = if (normal - drawn) % 2 == 1 { 2 } else { 3 };
-        write!(line, " RAD={radical} VAL={drawn}").expect("writing to String cannot fail");
+    if matches!(atom.element, Element::C | Element::N | Element::O) {
+        let normal = atom.element.normal_valences()[0];
+        if drawn < normal {
+            if drawn == 0 {
+                line.push_str(" VAL=-1");
+            } else {
+                let radical = if (normal - drawn) % 2 == 1 { 2 } else { 3 };
+                write!(line, " RAD={radical} VAL={drawn}").expect("writing to String cannot fail");
+            }
+        }
+    } else if hydrogens > 0
+        && ordinary_bonds
+        && (1..=14).contains(&drawn)
+        && !atom.element.normal_valences().contains(&drawn)
+    {
+        write!(line, " VAL={drawn}").expect("writing to String cannot fail");
     }
 }
 
@@ -131,7 +146,7 @@ fn append_atom_properties(
         .iter()
         .find(|(atom_id, _)| *atom_id == idx.0 + 1)
         .map(|(_, properties)| properties.as_str());
-    append_inferred_radical_properties(line, mol, idx, atom, source_properties);
+    append_inferred_valence_properties(line, mol, idx, atom, source_properties);
     if let Some(properties) = source_properties {
         line.push(' ');
         line.push_str(properties);
@@ -175,17 +190,18 @@ fn append_atoms_3d(out: &mut String, mol: &Molecule, metadata: &MolMetadata, con
             .get(idx.0 as usize)
             .copied()
             .unwrap_or(Point3::zero());
-        write!(
-            out,
-            "M  V30 {} {} {:.4} {:.4} {:.4} {}",
-            idx.0 + 1,
-            v3000_atom_symbol(mol, idx, atom),
-            point.x,
-            point.y,
-            point.z,
-            atom.atom_map.unwrap_or(0)
-        )
-        .expect("writing to String cannot fail");
+        out.push_str("M  V30 ");
+        crate::mol2000::push_right_aligned_u32(out, idx.0 + 1, 0);
+        out.push(' ');
+        out.push_str(v3000_atom_symbol(mol, idx, atom));
+        for coordinate in [point.x, point.y, point.z] {
+            out.push(' ');
+            // Reuse the same exact fallback for ties, large and nonfinite
+            // coordinates as the V2000 and 2D V3000 writers.
+            crate::mol2000::push_fixed4(out, coordinate, 0);
+        }
+        out.push(' ');
+        crate::mol2000::push_right_aligned_u32(out, atom.atom_map.unwrap_or(0).into(), 0);
         append_atom_properties(out, mol, metadata, idx, atom);
         out.push('\n');
     }
@@ -736,3 +752,7 @@ mod speed_tests;
 #[cfg(test)]
 #[path = "loss_collection_tests.rs"]
 mod loss_collection_tests;
+
+#[cfg(test)]
+#[path = "coordinate_format_tests.rs"]
+mod coordinate_format_tests;
