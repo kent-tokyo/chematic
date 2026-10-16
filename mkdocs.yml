@@ -100,6 +100,7 @@ nav:
     - Prepared MMFF Dielectric: mmff-dielectric-updates.md
   - Reliability:
     - Python Filesystem Paths: python-filesystem-paths.md
+    - Custom Feature Patterns: custom-feature-patterns.md
     - Python Stub Packaging Gate: python-stub-packaging-gate.md
     - Proof-Backed Tetrahedral Cleanup: tetrahedral-stereo-cleanup.md
     - MOL2 Kekulé Bond Output: mol2-kekule-bond-output.md

@@ -27,6 +27,7 @@ pub mod ecfp;
 mod ecfp_diagnostics;
 pub mod erg;
 pub mod fcfp;
+pub mod feature_patterns;
 pub mod fold_density;
 pub mod fps;
 pub mod hdf;

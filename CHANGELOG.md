@@ -14,7 +14,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-No unreleased changes.
+### Added
+
+- Rust/Python `FeaturePatternSet` owns up to 32 caller-supplied SMARTS feature
+  definitions and produces full-width atom masks or native circular feature
+  fingerprints. Matching budgets and size limits refuse partial output;
+  empty definitions use no defaults. See [custom feature patterns](docs/custom-feature-patterns.md)
+  for the native hashing contract and RDKit comparison scope.
 
 ## [1.1.6] - 2026-10-16
 

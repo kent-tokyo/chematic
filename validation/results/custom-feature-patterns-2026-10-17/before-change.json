@@ -1,0 +1,10 @@
+{
+  "current_base_commit": "d03106b59fdd4d06f40ab267bb540e20508bd988",
+  "current_base_api_present": false,
+  "retained_module_commit": "a89446d34bec1b0b3a978a09daedb04cc9042989",
+  "module_sha256": "84628f424efd41020513a7c09d62ae77003b4636f17f84acd7143b5fb4a51a3b",
+  "retained_module_api_present": false,
+  "initial_tests_failed": 4,
+  "failure": "AttributeError: FeaturePatternSet absent",
+  "scope": "focused API-absence baseline; retained older module is not a full rebuild of current base"
+}
