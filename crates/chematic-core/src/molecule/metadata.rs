@@ -32,6 +32,16 @@ fn remap_stereo_groups_after_atom_removal(
 }
 
 impl Molecule {
+    /// Replace this molecule with a fresh empty graph.
+    ///
+    /// Drops atoms, bonds, adjacency, tags, R labels, all stereo/ring-order
+    /// metadata and every derived cache. Previously cloned molecules remain
+    /// independent. Storage is released rather than reserved for reuse.
+    /// Wrapper-owned titles/properties are outside this core graph.
+    pub fn clear(&mut self) {
+        *self = MoleculeBuilder::new().build();
+    }
+
     /// Append a new atom and return its index.
     pub fn add_atom(&mut self, atom: Atom) -> AtomIdx {
         self.invalidate_derived();

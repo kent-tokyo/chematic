@@ -99,6 +99,7 @@ nav:
     - Checked 3D Distance Matrices: rdkit-checked-3d-distance-matrix.md
     - Prepared MMFF Dielectric: mmff-dielectric-updates.md
   - Reliability:
+    - Complete Molecule Reset: molecule-clear.md
     - Python Filesystem Paths: python-filesystem-paths.md
     - Python Stub Packaging Gate: python-stub-packaging-gate.md
     - Proof-Backed Tetrahedral Cleanup: tetrahedral-stereo-cleanup.md
