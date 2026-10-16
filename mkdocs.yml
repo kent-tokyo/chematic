@@ -104,6 +104,7 @@ nav:
     - Proof-Backed Tetrahedral Cleanup: tetrahedral-stereo-cleanup.md
     - MOL2 Kekulé Bond Output: mol2-kekule-bond-output.md
     - Python Serialized Input Types: python-serialized-input.md
+    - All-reference MOL2 RMSD: mol2-reference-rmsd.md
     - ChemDoodle JSON: chemdoodle-json.md
     - Fingerprint Target Density: fingerprint-target-density.md
     - Bounded Native Distance Matrices: native-distance-matrix-limits.md

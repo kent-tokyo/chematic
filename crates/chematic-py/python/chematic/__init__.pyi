@@ -3121,6 +3121,27 @@ def roundtrip_cjson_record(text: str) -> str:
     """Validate the local CJSON profile and return the exact UTF-8 source."""
     ...
 
+def parse_mol2_records_json(
+    text: str, *, max_input_bytes: int = 67_108_864,
+    max_records: int = 10_000, max_record_bytes: int = 16_777_216,
+    max_atoms: int = 100_000, max_bonds: int = 200_000,
+) -> str:
+    """Inspect all MOL2 records and retain exact sources; invalid records raise ValueError."""
+    ...
+
+def mol2_reference_rmsds_json(
+    reference_text: str, probe_text: str, *, align: bool = False,
+    max_input_bytes: int = 67_108_864, max_records: int = 10_000,
+    max_record_bytes: int = 16_777_216, max_atoms: int = 100_000,
+    max_bonds: int = 200_000,
+) -> str:
+    """All-reference heavy-atom RMSD with checked source/indexed-graph identity.
+
+    No symmetry search/remapping. Raw RMSD by default; align=True enables a
+    proper rotation and translation. Invalid/mismatched records raise ValueError.
+    """
+    ...
+
 def parse_mol2_record_json(text: str) -> str:
     """Return source metadata and bounded graph interpretation as MOL2 record JSON."""
     ...

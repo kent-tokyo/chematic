@@ -315,6 +315,12 @@ use the record or checked API for source retention.
 
 ### MOL2 (Tripos)
 
+- **Multiple records / RMSD (Rust/Python)**: `Mol2SourceReader` lazily parses
+  bounded records from an in-memory string; Python `parse_mol2_records_json`
+  retains each source. `mol2_reference_rmsds` / Python
+  `mol2_reference_rmsds_json` compare every reference with one probe, checking
+  source/indexed-graph identity and optionally applying a proper rigid alignment.
+  See [contracts, limits and the upstream diagnostic](mol2-reference-rmsd.md).
 - **Rust**: `chematic_mol::{parse_mol2, parse_mol2_with_limits, write_mol2}` retains the published graph/editable-record contract. Exact-source inspection uses the additive `Mol2SourceRecord`, `parse_mol2_source_record`, `parse_mol2_source_record_with_limits`, and `write_mol2_source_record` APIs. `Mol2SourceAtomRecord` and `Mol2SourceBondRecord` describe their metadata; the shared `Mol2Error`/`Mol2ParseLimits` types remain compatible.
 - **Python/WASM**: `parse_mol2_record_json` exposes the shared
   `chematic.mol2-record.v1` inspection schema; `roundtrip_mol2_record` validates
