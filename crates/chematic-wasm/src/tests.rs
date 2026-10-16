@@ -782,6 +782,21 @@ fn depict_svg_opts_transparent_background() {
 }
 
 #[test]
+fn depict_svg_co2_keeps_center_carbon_visible_in_both_public_paths() {
+    let co2 = parse("O=C=O");
+    let default_svg = co2.depict_svg();
+    let mut opts = DepictOptions::new();
+    opts.set_background("transparent".to_string());
+    let transparent_svg = co2.depict_svg_opts(&opts);
+    for svg in [&default_svg, &transparent_svg] {
+        assert_eq!(svg.matches(">C</text>").count(), 1);
+        assert_eq!(svg.matches("<line ").count(), 4);
+        assert!(svg.contains("x2=\"31.00\""));
+        assert!(svg.contains("x1=\"49.00\""));
+    }
+}
+
+#[test]
 fn depict_svg_opts_custom_size() {
     let h = parse("CCO");
     let mut opts = DepictOptions::new();

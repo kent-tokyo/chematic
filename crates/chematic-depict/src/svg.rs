@@ -7,6 +7,7 @@
 use chematic_core::{AtomIdx, BondIdx, BondOrder, Molecule, apply_kekule, kekulize};
 
 use crate::layout::{BOND_LEN, Layout, Point};
+pub(crate) mod linear_carbon;
 
 /// Font size used for atom labels, in SVG pixels.
 const FONT_SIZE: f64 = 12.0;
@@ -255,8 +256,7 @@ pub(crate) fn render_mol_body(mol: &Molecule, layout: &Layout) -> String {
     };
     let mut body = String::new();
     for (_, bond) in mol.bonds() {
-        let p1 = layout.get(bond.atom1);
-        let p2 = layout.get(bond.atom2);
+        let (p1, p2) = linear_carbon::bond_endpoints(mol, layout, bond.atom1, bond.atom2);
         body.push_str(&render_bond_c(bond.order, p1, p2, ctx.bond_color));
     }
     write_atom_labels_ctx(mol, layout, &ctx, &mut body);
@@ -300,10 +300,8 @@ pub(crate) fn render_mol_body_opts(
         ));
     }
 
-    // Bonds.
     for (bond_idx, bond) in mol.bonds() {
-        let p1 = layout.get(bond.atom1);
-        let p2 = layout.get(bond.atom2);
+        let (p1, p2) = linear_carbon::bond_endpoints(mol, layout, bond.atom1, bond.atom2);
         if opts.highlight_bonds.contains(&bond_idx) {
             body.push_str(&render_line(p1, p2, "4.0", "#FF8C00"));
         } else {
@@ -388,10 +386,8 @@ pub fn render_svg_opts(mol: &Molecule, layout: &Layout, opts: &RenderOptions) ->
         ));
     }
 
-    // Bonds.
     for (bond_idx, bond) in mol.bonds() {
-        let p1 = layout.get(bond.atom1);
-        let p2 = layout.get(bond.atom2);
+        let (p1, p2) = linear_carbon::bond_endpoints(mol, layout, bond.atom1, bond.atom2);
         if opts.highlight_bonds.contains(&bond_idx) {
             svg.push_str(&render_line(p1, p2, "4.0", "#FF8C00")); // R1
         } else {
@@ -476,8 +472,7 @@ pub fn render_svg_with_metadata(
     }
 
     for (bond_idx, bond) in mol.bonds() {
-        let p1 = layout.get(bond.atom1);
-        let p2 = layout.get(bond.atom2);
+        let (p1, p2) = linear_carbon::bond_endpoints(mol, layout, bond.atom1, bond.atom2);
         if opts.highlight_bonds.contains(&bond_idx) {
             svg.push_str(&render_line(p1, p2, "4.0", "#FF8C00"));
         } else {
@@ -540,7 +535,7 @@ fn write_svg_header_opts(layout: &Layout, opts: &RenderOptions, svg: &mut String
 
 fn write_atom_labels_ctx(mol: &Molecule, layout: &Layout, ctx: &DrawCtx, svg: &mut String) {
     for (idx, atom) in mol.atoms() {
-        let label = atom_label(mol, idx);
+        let label = atom_label(mol, layout, idx);
         let p = layout.get(idx);
 
         if !label.is_empty() {
@@ -924,8 +919,8 @@ fn format_charge(c: i8) -> String {
 ///
 /// Isolated atoms (single-atom molecule or degree-0 in a multi-atom molecule)
 /// use Hill-notation molecular-formula style: H2O, CH4, NH3.
-/// Plain carbons in bonded multi-atom molecules return "".
-fn atom_label(mol: &Molecule, idx: AtomIdx) -> String {
+/// Plain carbons in bonded multi-atom molecules return "" unless collinear.
+fn atom_label(mol: &Molecule, layout: &Layout, idx: AtomIdx) -> String {
     let atom = mol.atom(idx);
     let is_carbon = atom.element.atomic_number() == 6;
     let has_charge = atom.charge != 0;
@@ -943,8 +938,8 @@ fn atom_label(mol: &Molecule, idx: AtomIdx) -> String {
         );
     }
 
-    // Plain carbon in a bonded multi-atom molecule: no label in skeletal structure.
-    if is_carbon && !has_charge && !has_isotope {
+    // Suppress only carbons whose bond geometry still reveals their position.
+    if is_carbon && !has_charge && !has_isotope && !linear_carbon::needs_label(mol, layout, idx) {
         return String::new();
     }
 
@@ -1017,7 +1012,7 @@ pub struct AtomLabel {
 /// - "NH₂" for terminal nitrogen
 /// - "OH" for terminal oxygen
 ///
-/// Interior carbons (degree ≥ 2) with no charge/isotope return empty label.
+/// Bent interior carbons (degree ≥ 2) with no charge/isotope return empty label.
 pub fn atom_label_with_h(mol: &Molecule, idx: AtomIdx) -> AtomLabel {
     let atom = mol.atom(idx);
     let is_carbon = atom.element.atomic_number() == 6;
@@ -1043,8 +1038,13 @@ pub fn atom_label_with_h(mol: &Molecule, idx: AtomIdx) -> AtomLabel {
         };
     }
 
-    // Interior carbon with no charge/isotope: no label (skeletal structure)
-    if is_carbon && atom.charge == 0 && atom.isotope.is_none() && degree >= 2 {
+    // Keep an sp-axis carbon visible in structured labels too.
+    if is_carbon
+        && atom.charge == 0
+        && atom.isotope.is_none()
+        && degree >= 2
+        && !linear_carbon::has_sp_axis(mol, idx)
+    {
         return AtomLabel {
             symbol: String::new(),
             h_count: 0,
@@ -1087,7 +1087,7 @@ pub fn atom_label_with_h(mol: &Molecule, idx: AtomIdx) -> AtomLabel {
 /// - Non-terminal nitrogen with 2 H: "NH₂"
 /// - Hydroxyl (O with 1 H): "OH"
 /// - Isolated oxygen with 2 H: "H₂O" (Hill notation)
-/// - Interior carbon in skeleton: "" (empty)
+/// - Bent interior carbon in skeleton: "" (empty)
 pub fn atom_display_label(mol: &Molecule, idx: AtomIdx) -> String {
     let label = atom_label_with_h(mol, idx);
 

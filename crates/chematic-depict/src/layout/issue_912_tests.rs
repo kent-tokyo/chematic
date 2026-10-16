@@ -64,10 +64,11 @@ fn svg_bonds_follow_the_linear_sp_axis() {
     // The SVG renderer writes double bonds as parallel lines and a triple
     // bond as three lines. These coordinates check the actual output path.
     let co2 = crate::depict_svg(&parse("O=C=O").unwrap());
-    assert!(co2.contains("<line x1=\"0.00\" y1=\"-2.00\" x2=\"40.00\" y2=\"-2.00\""));
-    assert!(co2.contains("<line x1=\"40.00\" y1=\"-2.00\" x2=\"80.00\" y2=\"-2.00\""));
+    assert!(co2.contains("<line x1=\"0.00\" y1=\"-2.00\" x2=\"31.00\" y2=\"-2.00\""));
+    assert!(co2.contains("<line x1=\"49.00\" y1=\"-2.00\" x2=\"80.00\" y2=\"-2.00\""));
+    assert!(co2.contains(">C</text>"));
 
     let nitrile = crate::depict_svg(&parse("CC#N").unwrap());
-    assert!(nitrile.contains("<line x1=\"0.00\" y1=\"0.00\" x2=\"40.00\" y2=\"0.00\""));
-    assert!(nitrile.contains("<line x1=\"40.00\" y1=\"0.00\" x2=\"80.00\" y2=\"0.00\""));
+    assert!(nitrile.contains("<line x1=\"0.00\" y1=\"0.00\" x2=\"31.00\" y2=\"0.00\""));
+    assert!(nitrile.contains("<line x1=\"49.00\" y1=\"0.00\" x2=\"80.00\" y2=\"0.00\""));
 }
