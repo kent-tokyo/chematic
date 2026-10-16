@@ -23,10 +23,11 @@ recorded in [ez-cip-2026-10-16.md](ez-cip-2026-10-16.md). It compares the
 source-built default and accurate modes plus COSMolKit against RDKit's CIP
 labels, keyed by bond endpoint atoms.
 
-The [V3000 three-writer comparison](v3000-three-engine-2026-10-17.md) uses a
-fixed 316-row development corpus and one RDKit read-back rule to score
-CheMatic, RDKit and COSMolKit. Its reproduction script is
-`scripts/compare_rdkit_cosmolkit_v3000.py`.
+The [normalized-input V3000 comparison](v3000-radical-stereo-2026-10-17.md)
+scores CheMatic, RDKit and COSMolKit on three fixed development corpora with
+the same RDKit-normalized molecular input. It supersedes the earlier
+[316-row raw-input report](v3000-three-engine-2026-10-17.md). Its reproduction
+script is `scripts/compare_rdkit_cosmolkit_v3000.py`.
 
 The focused [aromatic sulfur stereo read-back
 check](aromatic-s-stereo-2026-10-16.md) compares whether each toolkit keeps

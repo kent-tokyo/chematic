@@ -53,11 +53,11 @@ fn append_header(out: &mut String, mol: &Molecule, metadata: &MolMetadata, dimen
     .expect("writing to String cannot fail");
 }
 
-/// Bracket SMILES atoms have no implicit hydrogens. For neutral C/N/O, the
-/// difference from ordinary valence records unpaired electrons. For other
-/// neutral atoms with explicit H and an unusual total valence, CTfile needs
-/// VAL to retain those hydrogens (notably on metal stereocentres). Opaque
-/// source attributes take precedence when present.
+/// Bracket SMILES atoms have no implicit hydrogens. For neutral atoms and
+/// cationic nitrogen below their ordinary valence, CTfile needs VAL and RAD to
+/// prevent readers from inventing hydrogens. Isolated atoms use VAL=-1 even
+/// when their normal valence is undefined. Opaque source attributes take
+/// precedence when present.
 fn append_inferred_valence_properties(
     line: &mut String,
     mol: &Molecule,
@@ -68,8 +68,7 @@ fn append_inferred_valence_properties(
     let Some(hydrogens) = atom.hydrogen_count else {
         return;
     };
-    if atom.charge != 0
-        || atom.wildcard
+    if atom.wildcard
         || source_properties.is_some_and(|properties| {
             properties
                 .split_whitespace()
@@ -105,17 +104,41 @@ fn append_inferred_valence_properties(
         drawn = drawn.saturating_add(order);
     }
     drawn = drawn.saturating_add(aromatic_bonds / 2);
-    if matches!(atom.element, Element::C | Element::N | Element::O) {
-        let normal = atom.element.normal_valences()[0];
-        if drawn < normal {
-            if drawn == 0 {
-                line.push_str(" VAL=-1");
-            } else {
-                let radical = if (normal - drawn) % 2 == 1 { 2 } else { 3 };
-                write!(line, " RAD={radical} VAL={drawn}").expect("writing to String cannot fail");
-            }
-        }
-    } else if hydrogens > 0
+    if drawn == 0 {
+        line.push_str(" VAL=-1");
+        return;
+    }
+    let normal = if atom.element == Element::N && atom.charge == 1 && ordinary_bonds {
+        // A cationic nitrogen has four ordinary valence slots. An explicit
+        // bracket form with fewer bonds/H atoms is a nitrenium radical, not
+        // an invitation to infer more hydrogens from CHG=1.
+        Some(4)
+    } else if atom.charge == 0 && ordinary_bonds {
+        atom.element
+            .normal_valences()
+            .iter()
+            .copied()
+            .find(|&valence| valence >= drawn)
+    } else if atom.charge == 0 && matches!(atom.element, Element::C | Element::N | Element::O) {
+        // Aromatic bonds are only an approximate integer valence here. Keep
+        // the previous C/N/O rule instead of searching higher valences: an
+        // aromatic [nH] would otherwise be mislabeled as a radical.
+        atom.element.normal_valences().first().copied()
+    } else {
+        None
+    };
+    if let Some(normal) = normal
+        && drawn < normal
+    {
+        let radical = if (normal - drawn) % 2 == 1 { 2 } else { 3 };
+        write!(line, " RAD={radical} VAL={drawn}").expect("writing to String cannot fail");
+        return;
+    }
+    if atom.charge != 0 {
+        return;
+    }
+    if !matches!(atom.element, Element::C | Element::N | Element::O)
+        && hydrogens > 0
         && ordinary_bonds
         && (1..=14).contains(&drawn)
         && !atom.element.normal_valences().contains(&drawn)
