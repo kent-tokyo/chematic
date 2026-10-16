@@ -1,0 +1,20 @@
+{
+  "files_sha256": {
+    "baseline-sdf": "ab129f94a6222afe31dca8a3d3ce3e6d70eb6147f7a15ec670dc49626fc9ef68",
+    "baseline-v3000": "a27793de71ecc3da81ff905951080229e700d0f6bb7a2dabdef7059cc10de8a0",
+    "baseline-v3000-3d": "f76bb455d64fbb91445c14b13f8c7772e1332ab71a2c717429e27870a16148f2",
+    "candidate-sdf": "ab129f94a6222afe31dca8a3d3ce3e6d70eb6147f7a15ec670dc49626fc9ef68",
+    "candidate-v3000": "a27793de71ecc3da81ff905951080229e700d0f6bb7a2dabdef7059cc10de8a0",
+    "candidate-v3000-3d": "b18f15a409e71a104e1f377d2c49843db489c467708c82cebe3cc00c78711bda",
+    "openbabel-sdf": "9e489bcdebfdda2adb29a0613eb3bd7f17a10f6d554185887366f96a0fc7964e",
+    "openbabel-v3000": "34981dcbb977f1f652030d092caf297a120241bb62ca094151a6ed58c3752846",
+    "sdf-0.sdf": "8e7ad63db96f6fb87b87333ab1f7710a18bc3be5cb4676c15c345c09d4ce718b",
+    "sdf-5000.sdf": "38d1d169f40de9fe4c95ec475035658ffcb27a2c84c448e3c619c32aefe8fd60",
+    "v3000-0.molblocks": "6c2eccf9aae975d790e9b036e0ffce71d056b243049e3424681326bceae17a06",
+    "v3000-3d-offset.molblocks": "833444b116dbb25dada72635985e2b82f8ee1586bb1d88b9826bf16a90ac4150",
+    "v3000-3d-spiral.molblocks": "8a6b899aa87262ac5271e3dc38bcc6ffa923ce5ff525bfb449cce3fd9739f157",
+    "v3000-5000.molblocks": "45924f7db9c4ea10e7ea494cd9aff2d536129b553d1e834fdcdac444e39f3e9e",
+    "v3000-chains.molblocks": "8ea24c94237cfc4076bcbde78019dd37cf4beb254c7a6b820555791da2410186",
+    "v3000-continued.molblocks": "c62a7a1caad5581e46112e8bbede1068a46a99dec431026f8b7e2d8d4cba4ec7"
+  }
+}
