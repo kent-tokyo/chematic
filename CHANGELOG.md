@@ -24,6 +24,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   bond geometry (S/D/T/A), with checked Cartesian distances and no periodic
   bond perception. Related to Open Babel #2726; that upstream report was a
   CLI option mix-up, not missing Open Babel support.
+- Add opt-in stereo-checked rooted SMILES in Rust, Python and WASM, with an
+  original-atom correspondence, validated tetrahedral frames and a 256-atom
+  bound. Addresses the implicit-H bridgehead serialization failure class in
+  RDKit #9646 without changing the RDKit-compatibility writer.
 
 ### Performance
 

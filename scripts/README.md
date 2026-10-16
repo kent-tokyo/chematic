@@ -91,3 +91,14 @@ run `python3 scripts/validate_cif_bonds.py`. Native hermetic tests run with
 `crates/chematic-py/tests/test_cif_bond_writer.py`. See
 [`docs/cif-molecular-bonds.md`](../docs/cif-molecular-bonds.md) for the projection
 boundary and the distinction between Open Babel's `-ag` and `-xg` options.
+
+## Rooted SMILES stereo
+
+`validate_rooted_stereo.py --cases /tmp/rooted-cases.json` compares original
+constructed bridgehead configurations with RDKit 2026.09.1's accurate CIP
+labeler. Generate cases with
+`cargo run -p chematic-smiles --example rooted_stereo_probe`. Provide the
+source-built Python extension and pinned RDKit on `PYTHONPATH`; optional
+`--wasm-module` adds exact real Node/WASM versus Python checks. The output
+contains a compressed complete packet and a source/runtime-hashed summary.
+See [the checked API scope](../docs/rooted-smiles-stereo.md).

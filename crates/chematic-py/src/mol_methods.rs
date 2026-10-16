@@ -30,6 +30,7 @@ mod layered_config;
 pub(crate) mod ogb;
 mod path_enumeration;
 mod properties;
+mod rooted;
 mod stereo_groups;
 mod three_d;
 mod transformations;

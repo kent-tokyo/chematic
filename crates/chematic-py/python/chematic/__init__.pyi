@@ -514,6 +514,15 @@ class Mol:
         ``k``-th atom written (its index after re-parsing the string)."""
         ...
 
+    def smiles_rooted_checked(self, rooted_at_atom: int) -> tuple[str, list[int]]:
+        """Non-canonical rooted SMILES and order[parsed_index] = original_index.
+
+        Up to 256 atoms. Requires recorded four-ligand tetrahedral frames;
+        rejects missing/invalid frames, other stereo classes, enhanced groups
+        and zero/query bonds. Raises ValueError on refusal; does not mutate Mol.
+        """
+        ...
+
     @property
     def formula(self) -> str:
         """Molecular formula in Hill notation (C first, H second, then alphabetical)."""

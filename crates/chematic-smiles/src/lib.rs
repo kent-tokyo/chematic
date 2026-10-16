@@ -37,6 +37,7 @@ pub mod error;
 pub mod parser;
 pub mod random_smiles;
 pub mod rdkit;
+pub mod rooted;
 pub mod smi_file;
 pub mod writer;
 
@@ -86,6 +87,7 @@ pub use rdkit::{
     rdkit_stereoisomer_smiles, rdkit_tautomer_score, register_rdkit_model_hook,
     with_rdkit_model_molecule, with_rdkit_model_scalar,
 };
+pub use rooted::{ROOTED_SMILES_MAX_ATOMS, RootedSmilesError, write_rooted_checked};
 pub use smi_file::{
     SmiFileParseLimits, parse_smi_file, parse_smi_file_with_limits, write_smi_file,
 };
