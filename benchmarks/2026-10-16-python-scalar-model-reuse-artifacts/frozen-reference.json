@@ -1,0 +1,6 @@
+{
+  "base": "2251a9f5d2e706087efaf55cb0f8ab1ff20b8016",
+  "function": "with_rdkit_model_molecule_impl",
+  "original_sha256": "1161e60d7a66d073519535427267ce55e7ff00b4a34127b455fc44fbb8d43c8e",
+  "frozen_tokens_match_after_rename_and_whitespace": true
+}

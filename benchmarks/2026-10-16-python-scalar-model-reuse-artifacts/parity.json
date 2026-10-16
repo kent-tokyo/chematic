@@ -1,0 +1,65 @@
+{
+  "wheels": {
+    "baseline": {
+      "wheel": "/private/tmp/chematic-scalar-model-reuse-evidence-20261016/baseline-wheel/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl",
+      "sha256": "9941ced0d3a21d5afe564559f65295f7370331ef6837879970dd50585a16231c",
+      "extensions": {
+        "chematic/chematic.cpython-313-darwin.so": "b8d0585c11ffba20467fd7f7470875c12607749a6f1707dd9d0efd46139c7719"
+      }
+    },
+    "candidate": {
+      "wheel": "/private/tmp/chematic-scalar-model-reuse-evidence-20261016/candidate-wheel/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl",
+      "sha256": "592407d8efbeffbe23c51e24a1baa2e59eb3789cf2531eb4b53f1c934c402248",
+      "extensions": {
+        "chematic/chematic.cpython-313-darwin.so": "6bcfc9d780768f02b2b717c74510c13ea1ca03fa2937ba3afdb3a1a423b28631"
+      }
+    }
+  },
+  "outputs": {
+    "baseline": {
+      "descriptor": {
+        "sha256": "c7ea09d88c845b70acc70c6e2d8b6563805c01a572d30bc3faf0a51a9b3cd220",
+        "rows": 14072,
+        "errors": 0,
+        "nonfinite_float_outcomes": 6
+      },
+      "morgan": {
+        "sha256": "e22d41e44fdb540896e99fa0a95621448a0e7e84cb543c72f6f20ac02c9d5907",
+        "rows": 14072,
+        "errors": 0,
+        "nonfinite_float_outcomes": 0
+      },
+      "maccs": {
+        "sha256": "7e5fb5d3da9ba9c1da5caf1899bf6f1484817f0acce0954d841d5581fb48add8",
+        "rows": 14072,
+        "errors": 0,
+        "nonfinite_float_outcomes": 0
+      }
+    },
+    "candidate": {
+      "descriptor": {
+        "sha256": "c7ea09d88c845b70acc70c6e2d8b6563805c01a572d30bc3faf0a51a9b3cd220",
+        "rows": 14072,
+        "errors": 0,
+        "nonfinite_float_outcomes": 6
+      },
+      "morgan": {
+        "sha256": "e22d41e44fdb540896e99fa0a95621448a0e7e84cb543c72f6f20ac02c9d5907",
+        "rows": 14072,
+        "errors": 0,
+        "nonfinite_float_outcomes": 0
+      },
+      "maccs": {
+        "sha256": "7e5fb5d3da9ba9c1da5caf1899bf6f1484817f0acce0954d841d5581fb48add8",
+        "rows": 14072,
+        "errors": 0,
+        "nonfinite_float_outcomes": 0
+      }
+    }
+  },
+  "counts": {
+    "descriptor_outcomes": 112576,
+    "morgan_outputs": 56288,
+    "maccs_outcomes": 28144
+  }
+}
