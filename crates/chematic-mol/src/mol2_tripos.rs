@@ -7,7 +7,26 @@
 
 use core::fmt::Write as _;
 
-use chematic_core::{Atom, AtomIdx, BondIdx, BondOrder, Element, Molecule, MoleculeBuilder};
+use chematic_core::{
+    Atom, AtomIdx, BondIdx, BondOrder, Coords3D, Element, Molecule, MoleculeBuilder, Point3,
+};
+
+/// MOL2 has no wedge/parity field. A non-coplanar conformer can still specify
+/// tetrahedral configuration; planar depictions and degenerate coordinates
+/// must not acquire an arbitrary tag.
+pub(crate) fn perceive_mol2_tetrahedral_from_3d(
+    mol: &mut Molecule,
+    coordinates: &[(f64, f64, f64)],
+) {
+    let points: Vec<_> = coordinates
+        .iter()
+        .map(|&(x, y, z)| Point3::new(x, y, z))
+        .collect();
+    if crate::mol2000::classify_geometry_rank(&points) != crate::mol2000::GeometryRank::ThreeD {
+        return;
+    }
+    crate::mol2000::perceive_tetrahedral_from_3d(mol, &Coords3D { points });
+}
 
 /// One `@<TRIPOS>ATOM` row whose interchange fields are not representable by
 /// [`Molecule`]. The vector is index-aligned with [`Mol2Record::molecule`].
@@ -483,6 +502,9 @@ fn parse_mol2_atom(
         coordinate(3, "y")?,
         coordinate(4, "z")?,
     );
+    if !coords.0.is_finite() || !coords.1.is_finite() || !coords.2.is_finite() {
+        return Err(invalid("coordinates must be finite".into()));
+    }
     let symbol = mol2_symbol(fields[5]);
     let element = Element::from_symbol(&symbol).ok_or(Mol2Error::UnknownElement {
         symbol,
@@ -652,8 +674,10 @@ pub fn parse_mol2_record_with_limits(
     let (unity_formal_charges, unity_atom_attributes) = parse_unity_formal_charges(&all_lines)?;
     let mut atoms = parse_mol2_atoms(&all_lines, limits, &unity_formal_charges)?;
     let (bond_records, duplicate_bonds) = add_mol2_bonds(&all_lines, limits, &mut atoms)?;
+    let mut molecule = atoms.builder.build();
+    perceive_mol2_tetrahedral_from_3d(&mut molecule, &atoms.coords);
     Ok(Mol2Record {
-        molecule: atoms.builder.build(),
+        molecule,
         coords: atoms.coords,
         name: header.name,
         molecule_type: header.molecule_type,
