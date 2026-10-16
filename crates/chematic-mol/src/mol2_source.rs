@@ -42,7 +42,7 @@ pub struct Mol2SourceBondRecord {
 /// The graph does not infer formal charge from partial charge. It recognizes
 /// explicit `UNITY_ATOM_ATTR` charge attributes, falling back to +1 for `N.4`
 /// when no explicit charge is present. Other atom-type rules and
-/// coordinate-derived stereochemistry are not interpreted.
+/// non-tetrahedral coordinate-derived stereochemistry is not interpreted.
 #[derive(Clone)]
 pub struct Mol2SourceRecord {
     source: String,
@@ -117,7 +117,7 @@ impl Mol2SourceRecord {
             "opaque_sections": self.opaque_sections,
             "graph_projection": {
                 "formal_charge_policy": "UNITY_charge_then_N.4",
-                "coordinate_stereo": "not_interpreted",
+                "coordinate_stereo": "noncoplanar_tetrahedral_only",
                 "opaque_sections": "not_interpreted"
             },
             "source": self.source,
@@ -551,13 +551,15 @@ fn parse_mol2_impl(
         }
     }
 
+    let mut molecule = builder.build();
+    crate::mol2_tripos::perceive_mol2_tetrahedral_from_3d(&mut molecule, &coords);
     Ok(Mol2SourceRecord {
         source: if retain_source {
             s.to_string()
         } else {
             String::new()
         },
-        molecule: builder.build(),
+        molecule,
         coordinates: coords,
         atoms,
         bonds,
