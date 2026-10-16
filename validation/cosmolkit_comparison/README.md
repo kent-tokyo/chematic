@@ -18,6 +18,11 @@ The chematic source reader is covered by `cargo test -p chematic-mol --test
 sdf_v3000_recognition`. This two-record development fixture establishes a
 specific ingestion contract, not general recognition or stereo superiority.
 
+The bond-level E/Z CIP comparison on the exposed 10,000-molecule corpus is
+recorded in [ez-cip-2026-10-16.md](ez-cip-2026-10-16.md). It compares the
+source-built default and accurate modes plus COSMolKit against RDKit's CIP
+labels, keyed by bond endpoint atoms.
+
 ## Corpus-scale comparison
 
 Install each engine in a Python that also has RDKit (round-trip operations
