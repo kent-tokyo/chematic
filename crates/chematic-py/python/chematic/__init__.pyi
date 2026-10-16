@@ -142,6 +142,16 @@ class Mol:
     def with_stereo_groups(self, groups: list[tuple[Literal["abs", "and", "or"], int, list[int], list[int]]]) -> Mol: ...
     def invert_stereo_group(self, index: int) -> Mol: ...
 
+    def remove_redundant_tetrahedral_stereo(self, atom_idx: int, *, max_visits: int = 1000000) -> dict[str, Any]:
+        """Proof-backed removal of one redundant declaration; source unchanged.
+
+        Returns molecule, removed, atom_index, search_visits and witness (original
+        to one-center-inverted mapping, fixing the target). No witness means
+        conservative retention. Unsupported inputs or exhausted budgets raise
+        ValueError; no partial result. Bounds: 64 atoms, 128 bonds, 1..10000000 visits.
+        """
+        ...
+
     def reduce_meso_stereo_group(self, index: int, *, max_visits: int = 1000000) -> dict[str, Any]:
         """Promote to ABS only with complete stereo-preserving mapping proofs."""
         ...

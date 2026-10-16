@@ -1,0 +1,12 @@
+{
+  "schema": "chematic.tetrahedral-cleanup-integration.v1",
+  "tested_feature_commit": "0b401bb8fc42f66fb2f589e93d01bdde63d216a3",
+  "merged_upstream_commit": "96a1addb742b9b4cb3c8258e123563cee0d7055c",
+  "conflicts": [
+    "CHANGELOG.md: retained both Added and Performance sections"
+  ],
+  "proof_source_hashes": "All 11 source/fixture/validator hashes still match summary.json.",
+  "format_check": "passed after merge",
+  "refactor_budget": "passed after merge: 586 files, 8626 functions, 18 file allowances, 85 function allowances",
+  "validation_scope": "The existing local runtime proof packet remains tied to its recorded source base and runtime hashes. No claim of rebuilding the Python/WASM modules against the new upstream SDF implementation; hosted CI is separate."
+}

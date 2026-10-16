@@ -28,6 +28,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   original-atom correspondence, validated tetrahedral frames and a 256-atom
   bound. Addresses the implicit-H bridgehead serialization failure class in
   RDKit #9646 without changing the RDKit-compatibility writer.
+- Added opt-in proof-backed removal of one redundant tetrahedral declaration in
+  Rust/Python/WASM. An anchored graph witness preserves all other configurations
+  and source labels; failed proofs retain the declaration, and unsupported inputs
+  or exhausted budgets return errors. Parsing/writing defaults remain unchanged.
 
 ### Performance
 

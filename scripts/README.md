@@ -147,3 +147,9 @@ are optional via `--report`. See `docs/python-stub-packaging-gate.md` for scope.
 `validate_python_stub_gate.py --wheel /path/to/chematic.whl` checks the real CLI
 against an existing wheel and eight temporary negative mutations. Optional
 `--rdkit-stubs` and `--rdkit-version` record a read-only upstream syntax audit.
+### Proof-backed tetrahedral cleanup
+
+`validate_tetrahedral_cleanup.py` compares Rust/Python/WASM decisions and
+independently verifies anchored atom mappings, frames and RDKit-supplied E/Z
+facts. Use the native `tetrahedral_cleanup_dump` example and actual Node/WASM
+module; setup and precise scope are in `docs/tetrahedral-stereo-cleanup.md`.

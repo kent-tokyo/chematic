@@ -678,6 +678,15 @@ impl Molecule {
         self.stereo_neighbor_order.insert(idx.0, order);
     }
 
+    /// Discard the stored reference frame for one atom, leaving its tag and
+    /// every other frame unchanged. Clear the chirality tag first when removing
+    /// a declaration; a retained nonzero tag still requires a valid frame.
+    /// Removing an absent frame is a no-op.
+    pub fn clear_stereo_neighbor_order(&mut self, idx: AtomIdx) {
+        self.invalidate_derived();
+        self.stereo_neighbor_order.remove(&idx.0);
+    }
+
     /// Directional (`/`, `\`) marker stashed for bond `idx`, if its `order`
     /// was overwritten to `Aromatic` while it still carried E/Z direction.
     /// Returns `BondOrder::Up` or `BondOrder::Down` when present.

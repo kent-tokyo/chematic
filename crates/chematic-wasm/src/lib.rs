@@ -39,6 +39,7 @@ mod nucleic_acid;
 mod pipeline_v2;
 mod rdkit_compat;
 mod rooted;
+mod stereo_cleanup;
 #[cfg(test)]
 mod tests;
 
@@ -55,6 +56,7 @@ pub use mol_reactions::*;
 pub use nucleic_acid::*;
 pub use pipeline_v2::embed_pipeline_v2_json;
 pub use rdkit_compat::*;
+pub use stereo_cleanup::*;
 
 #[wasm_bindgen(start)]
 pub fn start() {
