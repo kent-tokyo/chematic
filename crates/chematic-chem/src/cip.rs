@@ -9,6 +9,9 @@ use chematic_core::{
     AtomIdx, BondIdx, BondOrder, Chirality, CipCode, Element, Molecule, implicit_hcount,
 };
 
+#[path = "cip_aromatic_ez.rs"]
+mod aromatic_ez;
+
 /// The result of a CIP stereochemistry assignment run.
 #[derive(Debug)]
 pub struct CipAssignment {
@@ -146,8 +149,10 @@ pub enum CipMode {
     /// [`assign_cip`] as-is -- the only mode every existing call site
     /// (`iupac_name_stereo`, `num_stereocenters`, `Mol.cip_stereo()`, the WASM
     /// bindings, `chematic-inchi`'s stereo layers) uses today, and continues to use
-    /// unless a caller explicitly opts into `Accurate`. ~96.3% oracle agreement,
-    /// infallible, silent on ties (always produces *an* answer, never "unresolved").
+    /// unless a caller explicitly opts into `Accurate`. Aromatic-substituted
+    /// E/Z bonds use the accurate substituent ranker when it resolves both
+    /// ends; this fixes MANCUDE priorities without changing the legacy
+    /// tetrahedral engine. Infallible and silent on unresolved tetrahedral ties.
     LegacyFast,
     /// Tetrahedral R/S (incl. Rule 5 pseudoasymmetric `r`/`s`) from the hierarchical
     /// digraph engine (~99.64% oracle-stable agreement, see `docs/rfcs/cip_accurate_rfc.md`),
@@ -1222,6 +1227,10 @@ fn assign_ez(mol: &Molecule, bond_idx: BondIdx) -> Option<(AtomIdx, CipCode)> {
         return None;
     }
 
+    if let Some(result) = aromatic_ez::try_assign(mol, bond_idx) {
+        return Some(result);
+    }
+
     let a1 = bond.atom1;
     let a2 = bond.atom2;
 
@@ -1618,11 +1627,10 @@ mod tests {
         }
     }
 
-    /// Issue #634: accurate-mode E/Z ranks substituents with the hierarchical
-    /// digraph (MANCUDE duplicates for aromatic rings). The legacy sphere
-    /// comparison adds no duplicate for aromatic bonds and let tert-butyl
-    /// outrank an aryl carbon, or an sp3 ring CH outrank an aromatic carbon,
-    /// flipping these labels relative to RDKit's rdCIPLabeler.
+    /// Issue #634: aromatic E/Z ranks substituents with the hierarchical
+    /// digraph (MANCUDE duplicates for aromatic rings). The plain sphere
+    /// comparison adds no duplicate for aromatic bonds and can let tert-butyl
+    /// outrank an aryl carbon, or an sp3 ring CH outrank an aromatic carbon.
     #[test]
     fn accurate_ez_ranks_aryl_above_alkyl() {
         let cases: &[(&str, (u32, u32), CipCode)] = &[
@@ -1658,6 +1666,12 @@ mod tests {
                 (bond.atom1.0, bond.atom2.0) == (*a, *b) || (bond.atom1.0, bond.atom2.0) == (*b, *a)
             });
             assert_eq!(found.map(|(_, c)| *c), Some(*expected), "{smiles}");
+            assert!(
+                assign_ez_bonds_with_mode(&mol, CipMode::LegacyFast)
+                    .iter()
+                    .any(|&(bond_idx, code)| bond_idx == found.unwrap().0 && code == *expected),
+                "{smiles}: default E/Z assignment"
+            );
             // assign_cip_with_mode reports the same label under atom1.
             let merged = assign_cip_with_mode(&mol, CipMode::Accurate).unwrap();
             let atom1 = mol.bond(found.unwrap().0).atom1;
@@ -2547,14 +2561,13 @@ mod tests {
         // Exposed 10k rows 1206/1213/1214/1287/1370/1371: an exocyclic imine
         // on the ring-fusion carbon of an imidazo[1,2-a]pyridine. RDKit
         // 2026.03.6 rdCIPLabeler and RDKit.js 2026.03.6/2026.09.1 label it Z;
-        // the accurate ranking does too. The legacy engine (the default
-        // mode, kept unchanged) says E.
+        // both modes now use the accurate aromatic substituent ranking.
         let mol = chematic_smiles::parse("CCOC(=O)c1cc2ccccn2/c(=N/c2ccc(OC)cc2)n1")
             .expect("valid SMILES");
         let accurate = assign_cip_with_mode(&mol, CipMode::Accurate).expect("no engine error");
         assert_eq!(accurate.get(AtomIdx(13)), Some(CipCode::Z));
         let legacy = assign_cip_with_mode(&mol, CipMode::LegacyFast).expect("infallible");
-        assert_eq!(legacy.get(AtomIdx(13)), Some(CipCode::E));
+        assert_eq!(legacy.get(AtomIdx(13)), Some(CipCode::Z));
     }
 
     #[test]
