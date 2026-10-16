@@ -1,0 +1,10 @@
+{
+  "current_base_commit": "a4ca27e63bdf689f5f52e36bbddc02d6862f65ab",
+  "current_base_api_present": false,
+  "retained_module_commit": "a5a2951fb59e116edee734a55b12eab569c01078",
+  "module_sha256": "b413a76450fd37a6ba9d2cf54b65551bd61f3a19b61039e140e453a488fc3542",
+  "retained_module_api_present": false,
+  "initial_tests_failed": 3,
+  "failure": "AttributeError: gro_to_lammps_atomic absent",
+  "scope": "focused API baseline; retained module is not a full rebuild of current base"
+}

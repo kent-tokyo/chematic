@@ -5218,6 +5218,17 @@ def parse_gro(text: str, *, elements: Optional[Sequence[str]] = None, max_input_
     """Read one GRO frame, with unresolved or caller-supplied elements and explicit nm units."""
     ...
 
+def gro_to_lammps_atomic(text: str, atom_types: Sequence[int], masses: Sequence[float], *, units: Literal["real", "metal"]) -> dict[str, Any]:
+    """Convert GRO nm geometry to LAMMPS atomic data, retaining source identity.
+
+    Types are 1-based indices into caller masses in grams/mole. Units are
+    mandatory; velocity factors are 0.01 (real) or 10 (metal). Orthogonal and
+    restricted triclinic cells only. No topology, charges or image inference.
+    Returns data_text, units, atom_style, scaling factors, atom_identity and
+    exact source_text. Invalid profiles or values raise ValueError.
+    """
+    ...
+
 def parse_turbomole(text: str, *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None) -> dict[str, Any]:
     """Read standalone nonperiodic/3D TURBOMOLE geometry in Cartesian angstroms."""
     ...

@@ -44,6 +44,7 @@ pub mod exyz;
 pub mod fhiaims;
 pub mod gaussian;
 pub mod gro;
+pub mod gro_lammps;
 pub mod gzmat;
 pub mod hin;
 pub mod ket;

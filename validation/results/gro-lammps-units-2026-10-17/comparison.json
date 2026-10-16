@@ -1,0 +1,1192 @@
+{
+  "openbabel": {
+    "version": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+    "actual_bounds_angstrom": {
+      "x": [
+        -0.5,
+        9.5
+      ],
+      "y": [
+        -0.5,
+        9.5
+      ],
+      "z": [
+        -0.5,
+        9.5
+      ]
+    },
+    "expected_bounds_angstrom": {
+      "x": [
+        0,
+        20
+      ],
+      "y": [
+        0,
+        30
+      ],
+      "z": [
+        0,
+        40
+      ]
+    },
+    "input_sha256": "52dbbc70836a1e5f0b7b7bb0908fea7a49bae4069cf7a85a5935ca154745e2e5"
+  },
+  "analytic_geometry": {
+    "passed": 96,
+    "cases": [
+      {
+        "cell": 0,
+        "units": "real",
+        "velocities": false,
+        "order": [
+          0,
+          1,
+          2
+        ],
+        "input_sha256": "9b71556b2129b52f8cae041212653d4459a8079faaa0b3973321cb2693e81b8f",
+        "output_sha256": "b8f240e301e05ffc30105509bec379be8e6cc5f9a8534425b2e8302f6b99ddef"
+      },
+      {
+        "cell": 0,
+        "units": "real",
+        "velocities": false,
+        "order": [
+          0,
+          2,
+          1
+        ],
+        "input_sha256": "12e6244833a24539bfb480ba12713c56b38a294a1cc04309e3b6f6b7d1cffae3",
+        "output_sha256": "c3d974a50943a957a9560e40b7470cfdbef382f299a7381eae6e7efbca7cf79d"
+      },
+      {
+        "cell": 0,
+        "units": "real",
+        "velocities": false,
+        "order": [
+          1,
+          0,
+          2
+        ],
+        "input_sha256": "db59ed0e30952ed14b08082cd282406ba68e31ad8f79e66d5e9d5b0084407a9d",
+        "output_sha256": "8427eb6477c01e75905edd485cf955df43bb8a70704f9a5dd0112fca27e60840"
+      },
+      {
+        "cell": 0,
+        "units": "real",
+        "velocities": false,
+        "order": [
+          1,
+          2,
+          0
+        ],
+        "input_sha256": "5555d09801cb68e18c6e1a1ed6ac4f3de74fe51fc11e3924bfd6afe79cd63fd1",
+        "output_sha256": "a5813b244e9b626217865fa7cf763490ae0e719f086572138fc2925b417569b8"
+      },
+      {
+        "cell": 0,
+        "units": "real",
+        "velocities": false,
+        "order": [
+          2,
+          0,
+          1
+        ],
+        "input_sha256": "8c3bd496a68a342f9b27d33db83dbd8627dd90d1a81f38a4b8527c19488c6929",
+        "output_sha256": "0e8c1bc88a4e95c995d8cae6e013b879e0e945aad4758c692acba8c09b540c75"
+      },
+      {
+        "cell": 0,
+        "units": "real",
+        "velocities": false,
+        "order": [
+          2,
+          1,
+          0
+        ],
+        "input_sha256": "3e61cb528fc31998a6464e98339184b8980e18777212b66e6508cd68be79253e",
+        "output_sha256": "c2a7e0db98f8d0a1ea9ce29b71dc2b941daac546800cac0a34bfd7a5790f7da0"
+      },
+      {
+        "cell": 0,
+        "units": "real",
+        "velocities": true,
+        "order": [
+          0,
+          1,
+          2
+        ],
+        "input_sha256": "e6aeed6b74678ee01e118c4ec61cfa4cfc9f2a2d4acc353810525575de240c08",
+        "output_sha256": "be2be0fdc9997b91841c8073065251503385e537c089ee8c48174514d2a79e29"
+      },
+      {
+        "cell": 0,
+        "units": "real",
+        "velocities": true,
+        "order": [
+          0,
+          2,
+          1
+        ],
+        "input_sha256": "7ed57ff2f25f945557a0fad5534d7d260fe3be0e8c0f786b0ab0d7e2e97f9f26",
+        "output_sha256": "9d30448ecb3842e27bc7ef460caa04f963ccf3ced687a14dbf92bfaaedad5121"
+      },
+      {
+        "cell": 0,
+        "units": "real",
+        "velocities": true,
+        "order": [
+          1,
+          0,
+          2
+        ],
+        "input_sha256": "58ca2de78d0cd7e24a69cd62318ea19e5b81178cc1e3378bd9e35f27cef7415a",
+        "output_sha256": "cc9daca41b414c7de3c27175f5d1c2e5cebedfdc8658857be02f898f43a4de1b"
+      },
+      {
+        "cell": 0,
+        "units": "real",
+        "velocities": true,
+        "order": [
+          1,
+          2,
+          0
+        ],
+        "input_sha256": "341a406a7009f194d146a3f895937fd6d5fe20f24fa9b1a02cf97d81aac34c9b",
+        "output_sha256": "7ad1cff85ea4b5386113a3a440ab59d3861d9b832270eb0d1d390a5c1bb7b2c1"
+      },
+      {
+        "cell": 0,
+        "units": "real",
+        "velocities": true,
+        "order": [
+          2,
+          0,
+          1
+        ],
+        "input_sha256": "8856ebba219db8380d8276e15feb320130358d4bc42fd5588ad8a72990c3b733",
+        "output_sha256": "95cfe656e5de8714fa39ddca5e50b5d8f455a41ef9a56fe4ed909385b0ed033f"
+      },
+      {
+        "cell": 0,
+        "units": "real",
+        "velocities": true,
+        "order": [
+          2,
+          1,
+          0
+        ],
+        "input_sha256": "e4fbd61ef76e1ae5435ab44085d635065840ef164c245a77b048e0790eedf947",
+        "output_sha256": "3e97b8b1f7db0a6fce8d8f47b1d09330a0c61d80f3428f321cb0f7710e52b272"
+      },
+      {
+        "cell": 0,
+        "units": "metal",
+        "velocities": false,
+        "order": [
+          0,
+          1,
+          2
+        ],
+        "input_sha256": "9b71556b2129b52f8cae041212653d4459a8079faaa0b3973321cb2693e81b8f",
+        "output_sha256": "b8f240e301e05ffc30105509bec379be8e6cc5f9a8534425b2e8302f6b99ddef"
+      },
+      {
+        "cell": 0,
+        "units": "metal",
+        "velocities": false,
+        "order": [
+          0,
+          2,
+          1
+        ],
+        "input_sha256": "12e6244833a24539bfb480ba12713c56b38a294a1cc04309e3b6f6b7d1cffae3",
+        "output_sha256": "c3d974a50943a957a9560e40b7470cfdbef382f299a7381eae6e7efbca7cf79d"
+      },
+      {
+        "cell": 0,
+        "units": "metal",
+        "velocities": false,
+        "order": [
+          1,
+          0,
+          2
+        ],
+        "input_sha256": "db59ed0e30952ed14b08082cd282406ba68e31ad8f79e66d5e9d5b0084407a9d",
+        "output_sha256": "8427eb6477c01e75905edd485cf955df43bb8a70704f9a5dd0112fca27e60840"
+      },
+      {
+        "cell": 0,
+        "units": "metal",
+        "velocities": false,
+        "order": [
+          1,
+          2,
+          0
+        ],
+        "input_sha256": "5555d09801cb68e18c6e1a1ed6ac4f3de74fe51fc11e3924bfd6afe79cd63fd1",
+        "output_sha256": "a5813b244e9b626217865fa7cf763490ae0e719f086572138fc2925b417569b8"
+      },
+      {
+        "cell": 0,
+        "units": "metal",
+        "velocities": false,
+        "order": [
+          2,
+          0,
+          1
+        ],
+        "input_sha256": "8c3bd496a68a342f9b27d33db83dbd8627dd90d1a81f38a4b8527c19488c6929",
+        "output_sha256": "0e8c1bc88a4e95c995d8cae6e013b879e0e945aad4758c692acba8c09b540c75"
+      },
+      {
+        "cell": 0,
+        "units": "metal",
+        "velocities": false,
+        "order": [
+          2,
+          1,
+          0
+        ],
+        "input_sha256": "3e61cb528fc31998a6464e98339184b8980e18777212b66e6508cd68be79253e",
+        "output_sha256": "c2a7e0db98f8d0a1ea9ce29b71dc2b941daac546800cac0a34bfd7a5790f7da0"
+      },
+      {
+        "cell": 0,
+        "units": "metal",
+        "velocities": true,
+        "order": [
+          0,
+          1,
+          2
+        ],
+        "input_sha256": "e6aeed6b74678ee01e118c4ec61cfa4cfc9f2a2d4acc353810525575de240c08",
+        "output_sha256": "963f95bebea6ac82511aa7b3df902ee395844a6e9a5e4bbc6b484f84f288a2fc"
+      },
+      {
+        "cell": 0,
+        "units": "metal",
+        "velocities": true,
+        "order": [
+          0,
+          2,
+          1
+        ],
+        "input_sha256": "7ed57ff2f25f945557a0fad5534d7d260fe3be0e8c0f786b0ab0d7e2e97f9f26",
+        "output_sha256": "e50c6d6d42d5fec8563d1649b058c389ff2ff2fcbdb937d7211712b9e0835155"
+      },
+      {
+        "cell": 0,
+        "units": "metal",
+        "velocities": true,
+        "order": [
+          1,
+          0,
+          2
+        ],
+        "input_sha256": "58ca2de78d0cd7e24a69cd62318ea19e5b81178cc1e3378bd9e35f27cef7415a",
+        "output_sha256": "2a444035bf6cec98d4e4ee530ea6f4ded4aa0a6e208ddbb35e4b093b735dd627"
+      },
+      {
+        "cell": 0,
+        "units": "metal",
+        "velocities": true,
+        "order": [
+          1,
+          2,
+          0
+        ],
+        "input_sha256": "341a406a7009f194d146a3f895937fd6d5fe20f24fa9b1a02cf97d81aac34c9b",
+        "output_sha256": "f303201b18792c200fe41d530ba5011586b9e1f69708a1e5384e89ee73e3fa69"
+      },
+      {
+        "cell": 0,
+        "units": "metal",
+        "velocities": true,
+        "order": [
+          2,
+          0,
+          1
+        ],
+        "input_sha256": "8856ebba219db8380d8276e15feb320130358d4bc42fd5588ad8a72990c3b733",
+        "output_sha256": "56b7eb70c2389447e423601be3ad85c57ef4871370acc6437750b33b1ba5d05c"
+      },
+      {
+        "cell": 0,
+        "units": "metal",
+        "velocities": true,
+        "order": [
+          2,
+          1,
+          0
+        ],
+        "input_sha256": "e4fbd61ef76e1ae5435ab44085d635065840ef164c245a77b048e0790eedf947",
+        "output_sha256": "3e8118d67b306c79ba52d0a33caad6745787c6865c32f519c41831db54fd004c"
+      },
+      {
+        "cell": 1,
+        "units": "real",
+        "velocities": false,
+        "order": [
+          0,
+          1,
+          2
+        ],
+        "input_sha256": "fba1af07ae8833f3fe398fb17b2a375d491b52821cdee356fcbd762ff1510b02",
+        "output_sha256": "ca24273246c54a98a73be87ec22f2616551ea5e083b8c835dc6366eca448a2a6"
+      },
+      {
+        "cell": 1,
+        "units": "real",
+        "velocities": false,
+        "order": [
+          0,
+          2,
+          1
+        ],
+        "input_sha256": "7afc2506ec856e87c0fc7975f75aa1b83a4ac1eff372d2479cc01a30d6229115",
+        "output_sha256": "c4a8db2657e16bafbf5346d4be01181b06fd83c2cb464da3f3cde3ffdf8cb91a"
+      },
+      {
+        "cell": 1,
+        "units": "real",
+        "velocities": false,
+        "order": [
+          1,
+          0,
+          2
+        ],
+        "input_sha256": "9d92b6d7209f989f621db29e7ce193e3f1dd3cf13f848082a8ec052241c6ae2f",
+        "output_sha256": "f47127d5b1c28f2909cd10d8f53cec872fdab2336957ce848949393568ce32b0"
+      },
+      {
+        "cell": 1,
+        "units": "real",
+        "velocities": false,
+        "order": [
+          1,
+          2,
+          0
+        ],
+        "input_sha256": "86261fd61b79d0d2a743d60a79b9cac7287b3ded1232c54cb0eebd9bbaffd4e3",
+        "output_sha256": "508099fbc0c127948a09c243034fb7f0918ab766c8cf166157d3c3ed4e93004c"
+      },
+      {
+        "cell": 1,
+        "units": "real",
+        "velocities": false,
+        "order": [
+          2,
+          0,
+          1
+        ],
+        "input_sha256": "a3178b6fe4c01d67962ad35f5701c5e086adaa014a9e08314587f11d8ff9a1ea",
+        "output_sha256": "0c43d80d82973618df23fc7a348215bfc7e220c4015f209f0e11266dc8a9a815"
+      },
+      {
+        "cell": 1,
+        "units": "real",
+        "velocities": false,
+        "order": [
+          2,
+          1,
+          0
+        ],
+        "input_sha256": "e81863daa0889d378e6c5e8cf125c27d743850a8b2eae0025500c4c7fd5fc554",
+        "output_sha256": "259262d40f6e0598ddf711a199bfb6103d590c832a85fb8a3ae68d933308d6bf"
+      },
+      {
+        "cell": 1,
+        "units": "real",
+        "velocities": true,
+        "order": [
+          0,
+          1,
+          2
+        ],
+        "input_sha256": "dec38d8d7d027e2d1dee04e1f65273cebe6bde834a948d6a674831b6925ef71e",
+        "output_sha256": "e19b21ef647753cdfc770aeec5b4abb1d9d333aa37bc13191cfbacb50cb0404e"
+      },
+      {
+        "cell": 1,
+        "units": "real",
+        "velocities": true,
+        "order": [
+          0,
+          2,
+          1
+        ],
+        "input_sha256": "f685c66da73a5c65633a28e11a3aac2a6177a27acd86ffbe6165df488024bcbf",
+        "output_sha256": "c0f5d9a5763bc1622a0e9bd93b725d7df3976a27304783784eba2740bb48efe8"
+      },
+      {
+        "cell": 1,
+        "units": "real",
+        "velocities": true,
+        "order": [
+          1,
+          0,
+          2
+        ],
+        "input_sha256": "d4b51c6d452c5df7f764f0e4d866bface5fd4ea5327957f2ba099a9cc81362d8",
+        "output_sha256": "9c9424c03a33b44931501e86f5b0fc31096c7e649da6a8595736ece1757c6346"
+      },
+      {
+        "cell": 1,
+        "units": "real",
+        "velocities": true,
+        "order": [
+          1,
+          2,
+          0
+        ],
+        "input_sha256": "f6e874b7e89a06c929c252f2d13e08cd217398192705761ef123cd40a9fd6c13",
+        "output_sha256": "a30bafbc22b191afc2900aaac2c0f137905dd4aefd37909b5ab3ec851390abb1"
+      },
+      {
+        "cell": 1,
+        "units": "real",
+        "velocities": true,
+        "order": [
+          2,
+          0,
+          1
+        ],
+        "input_sha256": "84d2c37c54825e6f12c0a49ebfa8c67623e6d819643ccca3c4259068bdcf2c9c",
+        "output_sha256": "cbe9d91bbcf1a428afde8aad42cd9dcccf11c257c6e7c9ca71a3f5e72f8cc34e"
+      },
+      {
+        "cell": 1,
+        "units": "real",
+        "velocities": true,
+        "order": [
+          2,
+          1,
+          0
+        ],
+        "input_sha256": "b12014b68666c62f924578780ad5a4c9f1146e1cf8ecf38740fd5f6cee8b06a3",
+        "output_sha256": "0a5bf5bc4b4e42b394bf66cc5064ebd52e5f30e91ca77a1ab9989c48b3f6fff8"
+      },
+      {
+        "cell": 1,
+        "units": "metal",
+        "velocities": false,
+        "order": [
+          0,
+          1,
+          2
+        ],
+        "input_sha256": "fba1af07ae8833f3fe398fb17b2a375d491b52821cdee356fcbd762ff1510b02",
+        "output_sha256": "ca24273246c54a98a73be87ec22f2616551ea5e083b8c835dc6366eca448a2a6"
+      },
+      {
+        "cell": 1,
+        "units": "metal",
+        "velocities": false,
+        "order": [
+          0,
+          2,
+          1
+        ],
+        "input_sha256": "7afc2506ec856e87c0fc7975f75aa1b83a4ac1eff372d2479cc01a30d6229115",
+        "output_sha256": "c4a8db2657e16bafbf5346d4be01181b06fd83c2cb464da3f3cde3ffdf8cb91a"
+      },
+      {
+        "cell": 1,
+        "units": "metal",
+        "velocities": false,
+        "order": [
+          1,
+          0,
+          2
+        ],
+        "input_sha256": "9d92b6d7209f989f621db29e7ce193e3f1dd3cf13f848082a8ec052241c6ae2f",
+        "output_sha256": "f47127d5b1c28f2909cd10d8f53cec872fdab2336957ce848949393568ce32b0"
+      },
+      {
+        "cell": 1,
+        "units": "metal",
+        "velocities": false,
+        "order": [
+          1,
+          2,
+          0
+        ],
+        "input_sha256": "86261fd61b79d0d2a743d60a79b9cac7287b3ded1232c54cb0eebd9bbaffd4e3",
+        "output_sha256": "508099fbc0c127948a09c243034fb7f0918ab766c8cf166157d3c3ed4e93004c"
+      },
+      {
+        "cell": 1,
+        "units": "metal",
+        "velocities": false,
+        "order": [
+          2,
+          0,
+          1
+        ],
+        "input_sha256": "a3178b6fe4c01d67962ad35f5701c5e086adaa014a9e08314587f11d8ff9a1ea",
+        "output_sha256": "0c43d80d82973618df23fc7a348215bfc7e220c4015f209f0e11266dc8a9a815"
+      },
+      {
+        "cell": 1,
+        "units": "metal",
+        "velocities": false,
+        "order": [
+          2,
+          1,
+          0
+        ],
+        "input_sha256": "e81863daa0889d378e6c5e8cf125c27d743850a8b2eae0025500c4c7fd5fc554",
+        "output_sha256": "259262d40f6e0598ddf711a199bfb6103d590c832a85fb8a3ae68d933308d6bf"
+      },
+      {
+        "cell": 1,
+        "units": "metal",
+        "velocities": true,
+        "order": [
+          0,
+          1,
+          2
+        ],
+        "input_sha256": "dec38d8d7d027e2d1dee04e1f65273cebe6bde834a948d6a674831b6925ef71e",
+        "output_sha256": "3d8457e8d036ff9b3f965adde8b053e19e5fbe2f145254fbafffbba5037c62be"
+      },
+      {
+        "cell": 1,
+        "units": "metal",
+        "velocities": true,
+        "order": [
+          0,
+          2,
+          1
+        ],
+        "input_sha256": "f685c66da73a5c65633a28e11a3aac2a6177a27acd86ffbe6165df488024bcbf",
+        "output_sha256": "c18f340a11e3018b705335b8d2c32cd1f6b4fa860d58cf2035cb4481dab9770c"
+      },
+      {
+        "cell": 1,
+        "units": "metal",
+        "velocities": true,
+        "order": [
+          1,
+          0,
+          2
+        ],
+        "input_sha256": "d4b51c6d452c5df7f764f0e4d866bface5fd4ea5327957f2ba099a9cc81362d8",
+        "output_sha256": "fe08926c02ed54fe52e643f55cb21c613343f52380d08933ad7686e2e537da6f"
+      },
+      {
+        "cell": 1,
+        "units": "metal",
+        "velocities": true,
+        "order": [
+          1,
+          2,
+          0
+        ],
+        "input_sha256": "f6e874b7e89a06c929c252f2d13e08cd217398192705761ef123cd40a9fd6c13",
+        "output_sha256": "535dad46a331f77e3dfdbb6a147c6f1a470399cf9fecc2f3a4bfb6dc286a5853"
+      },
+      {
+        "cell": 1,
+        "units": "metal",
+        "velocities": true,
+        "order": [
+          2,
+          0,
+          1
+        ],
+        "input_sha256": "84d2c37c54825e6f12c0a49ebfa8c67623e6d819643ccca3c4259068bdcf2c9c",
+        "output_sha256": "9fc7f7e2847186ebcbb5a07a4e56b372fed446aa7deff41d303fb55bbbba86f9"
+      },
+      {
+        "cell": 1,
+        "units": "metal",
+        "velocities": true,
+        "order": [
+          2,
+          1,
+          0
+        ],
+        "input_sha256": "b12014b68666c62f924578780ad5a4c9f1146e1cf8ecf38740fd5f6cee8b06a3",
+        "output_sha256": "da6b4171a22487e65c5653bc5a5d3b6f0d2c61c0518ebab255a5597cd08e5933"
+      },
+      {
+        "cell": 2,
+        "units": "real",
+        "velocities": false,
+        "order": [
+          0,
+          1,
+          2
+        ],
+        "input_sha256": "1fa8daa9b0700f0ea919e11ce84290e51df4661c261165b535efec0e690e0c52",
+        "output_sha256": "8d088c9a2f3f8b80059c1a11f2ca397dca3f734913078d1581a52ee67ee1a4fe"
+      },
+      {
+        "cell": 2,
+        "units": "real",
+        "velocities": false,
+        "order": [
+          0,
+          2,
+          1
+        ],
+        "input_sha256": "f627a59205444789b547a44bb0e5e0ee2b3ac14df92ee7398d670daf212e98eb",
+        "output_sha256": "1d1641fbd3258afebf0cb63e626de01fcafbd6e739b99a1f97cef2ddfcfe4e35"
+      },
+      {
+        "cell": 2,
+        "units": "real",
+        "velocities": false,
+        "order": [
+          1,
+          0,
+          2
+        ],
+        "input_sha256": "9b7a5e11df4c17c5fd217797bc560029c9b8dfffbb440a47679f42af12e2e412",
+        "output_sha256": "5f7a3fc0817634b1b11376bd4ae339c1a58f5ad05b2f31e40efeb74d552dcb00"
+      },
+      {
+        "cell": 2,
+        "units": "real",
+        "velocities": false,
+        "order": [
+          1,
+          2,
+          0
+        ],
+        "input_sha256": "0ec16bbb6a3080ff5f12bac0cabb44e0fec0e6d4fd3f564427e4e3f073177f55",
+        "output_sha256": "f415f5b0000e45bde445fa6043cdd8f3a4228c75985c2cf316364eb446a49ec8"
+      },
+      {
+        "cell": 2,
+        "units": "real",
+        "velocities": false,
+        "order": [
+          2,
+          0,
+          1
+        ],
+        "input_sha256": "be0977ccc364cb86625a95950e2f07d3877bdc5334c9ded244cbdb697f494fa4",
+        "output_sha256": "40eced7a43ceb5b17df8ac8587de9ee777a075952f331b3b8ca124e4d0a66d67"
+      },
+      {
+        "cell": 2,
+        "units": "real",
+        "velocities": false,
+        "order": [
+          2,
+          1,
+          0
+        ],
+        "input_sha256": "c62854c7ac56b2e7baafe1a75ab95b938e04d7d44ff51a21b461a89d42331250",
+        "output_sha256": "700f79a74b3a5e9427e2d1d7858bf4bd85912581bcb6a734f8f9063e92d8e91f"
+      },
+      {
+        "cell": 2,
+        "units": "real",
+        "velocities": true,
+        "order": [
+          0,
+          1,
+          2
+        ],
+        "input_sha256": "f0dc5ee9b8ecf51418b49af2d94225fcbebf1e18d03c655b4a7bbf4d39f46ffb",
+        "output_sha256": "2bccc29db17892f55a3aeffacede6a6d5198cbe5ca4a1e275e45e4b4af4ee4d1"
+      },
+      {
+        "cell": 2,
+        "units": "real",
+        "velocities": true,
+        "order": [
+          0,
+          2,
+          1
+        ],
+        "input_sha256": "0d94a0557b7ec0d6a9884e7ac4f7d8d62bd11f7aa924f706611da7a82e4c3004",
+        "output_sha256": "ee951253c6dd6e3422731eb51809dadeb3b9f508114c47c8bcb7cd68ed1cd22d"
+      },
+      {
+        "cell": 2,
+        "units": "real",
+        "velocities": true,
+        "order": [
+          1,
+          0,
+          2
+        ],
+        "input_sha256": "fe29574e62657f9e10aae5dd9a9092256b701e5a3e42516e2f65a8d6be9982fd",
+        "output_sha256": "b312da4aa200f25e216e77d1e9f3cc87917446c238316849420270e04a74a04e"
+      },
+      {
+        "cell": 2,
+        "units": "real",
+        "velocities": true,
+        "order": [
+          1,
+          2,
+          0
+        ],
+        "input_sha256": "879e784056225ec54343a4a55ef83b455ff7342cb2df8cf316dd28511f25388c",
+        "output_sha256": "1303d9596882f6362c98639f002b07c0422cd9f56f2585fce13c00855085ae1a"
+      },
+      {
+        "cell": 2,
+        "units": "real",
+        "velocities": true,
+        "order": [
+          2,
+          0,
+          1
+        ],
+        "input_sha256": "9fe1eecc0171ae01a84c65500be968dc651d31a46ef9400989c65bbd1fd86f7a",
+        "output_sha256": "15c506e6c91301400ec557c0075e122f904ac7a5460e1d77a001b7a61e78c452"
+      },
+      {
+        "cell": 2,
+        "units": "real",
+        "velocities": true,
+        "order": [
+          2,
+          1,
+          0
+        ],
+        "input_sha256": "71c0fa5dbe7dcb09ff9b6f0a7968153bdc9e1097b3a1a377ae01b7fd2161e070",
+        "output_sha256": "e0b58c50afb34fd74ecfc62613d853cadcb913920153eb09c3039e9e41982ccc"
+      },
+      {
+        "cell": 2,
+        "units": "metal",
+        "velocities": false,
+        "order": [
+          0,
+          1,
+          2
+        ],
+        "input_sha256": "1fa8daa9b0700f0ea919e11ce84290e51df4661c261165b535efec0e690e0c52",
+        "output_sha256": "8d088c9a2f3f8b80059c1a11f2ca397dca3f734913078d1581a52ee67ee1a4fe"
+      },
+      {
+        "cell": 2,
+        "units": "metal",
+        "velocities": false,
+        "order": [
+          0,
+          2,
+          1
+        ],
+        "input_sha256": "f627a59205444789b547a44bb0e5e0ee2b3ac14df92ee7398d670daf212e98eb",
+        "output_sha256": "1d1641fbd3258afebf0cb63e626de01fcafbd6e739b99a1f97cef2ddfcfe4e35"
+      },
+      {
+        "cell": 2,
+        "units": "metal",
+        "velocities": false,
+        "order": [
+          1,
+          0,
+          2
+        ],
+        "input_sha256": "9b7a5e11df4c17c5fd217797bc560029c9b8dfffbb440a47679f42af12e2e412",
+        "output_sha256": "5f7a3fc0817634b1b11376bd4ae339c1a58f5ad05b2f31e40efeb74d552dcb00"
+      },
+      {
+        "cell": 2,
+        "units": "metal",
+        "velocities": false,
+        "order": [
+          1,
+          2,
+          0
+        ],
+        "input_sha256": "0ec16bbb6a3080ff5f12bac0cabb44e0fec0e6d4fd3f564427e4e3f073177f55",
+        "output_sha256": "f415f5b0000e45bde445fa6043cdd8f3a4228c75985c2cf316364eb446a49ec8"
+      },
+      {
+        "cell": 2,
+        "units": "metal",
+        "velocities": false,
+        "order": [
+          2,
+          0,
+          1
+        ],
+        "input_sha256": "be0977ccc364cb86625a95950e2f07d3877bdc5334c9ded244cbdb697f494fa4",
+        "output_sha256": "40eced7a43ceb5b17df8ac8587de9ee777a075952f331b3b8ca124e4d0a66d67"
+      },
+      {
+        "cell": 2,
+        "units": "metal",
+        "velocities": false,
+        "order": [
+          2,
+          1,
+          0
+        ],
+        "input_sha256": "c62854c7ac56b2e7baafe1a75ab95b938e04d7d44ff51a21b461a89d42331250",
+        "output_sha256": "700f79a74b3a5e9427e2d1d7858bf4bd85912581bcb6a734f8f9063e92d8e91f"
+      },
+      {
+        "cell": 2,
+        "units": "metal",
+        "velocities": true,
+        "order": [
+          0,
+          1,
+          2
+        ],
+        "input_sha256": "f0dc5ee9b8ecf51418b49af2d94225fcbebf1e18d03c655b4a7bbf4d39f46ffb",
+        "output_sha256": "864dd023a3c7434c89d29a9e8526c27408687593b12383f4f672dfd42e3bb7f7"
+      },
+      {
+        "cell": 2,
+        "units": "metal",
+        "velocities": true,
+        "order": [
+          0,
+          2,
+          1
+        ],
+        "input_sha256": "0d94a0557b7ec0d6a9884e7ac4f7d8d62bd11f7aa924f706611da7a82e4c3004",
+        "output_sha256": "cc9e1f58a894441de8674534349a91227114e37c935ef61d2e9f5f70bb9fd394"
+      },
+      {
+        "cell": 2,
+        "units": "metal",
+        "velocities": true,
+        "order": [
+          1,
+          0,
+          2
+        ],
+        "input_sha256": "fe29574e62657f9e10aae5dd9a9092256b701e5a3e42516e2f65a8d6be9982fd",
+        "output_sha256": "bfc413eb4ff9d69c0661a769c7580bbb7ec204d1dabf53248fe3231c0b12738a"
+      },
+      {
+        "cell": 2,
+        "units": "metal",
+        "velocities": true,
+        "order": [
+          1,
+          2,
+          0
+        ],
+        "input_sha256": "879e784056225ec54343a4a55ef83b455ff7342cb2df8cf316dd28511f25388c",
+        "output_sha256": "87bad6ca097618b1839d7b09f0f731f3effd5ab378b64dd70c73dcde2cf82f9d"
+      },
+      {
+        "cell": 2,
+        "units": "metal",
+        "velocities": true,
+        "order": [
+          2,
+          0,
+          1
+        ],
+        "input_sha256": "9fe1eecc0171ae01a84c65500be968dc651d31a46ef9400989c65bbd1fd86f7a",
+        "output_sha256": "a5ee4af009b877ac9f469c9dc638c94071832af617e281c67d22c8837f7e2a77"
+      },
+      {
+        "cell": 2,
+        "units": "metal",
+        "velocities": true,
+        "order": [
+          2,
+          1,
+          0
+        ],
+        "input_sha256": "71c0fa5dbe7dcb09ff9b6f0a7968153bdc9e1097b3a1a377ae01b7fd2161e070",
+        "output_sha256": "f2db72881b92f4b24b126268b2c1cb4abb6394c188aee6f5cd9e0453391532f2"
+      },
+      {
+        "cell": 3,
+        "units": "real",
+        "velocities": false,
+        "order": [
+          0,
+          1,
+          2
+        ],
+        "input_sha256": "08af995d7de49879b4bc84648ce5537291101dacadfa0174f00763de9f482ef2",
+        "output_sha256": "51b48b77557e32f28a47d42c18324776c5a926a4e4390f78cd1bc78e9e7eeac3"
+      },
+      {
+        "cell": 3,
+        "units": "real",
+        "velocities": false,
+        "order": [
+          0,
+          2,
+          1
+        ],
+        "input_sha256": "d181eca40c0b19083dd81c04e6ff6b45696a5e787f9eb82d530f201afbe74a8d",
+        "output_sha256": "7a2448ff02cdebc2495d6e1552cf65b047d0a7420705691fee7f53151c7f9314"
+      },
+      {
+        "cell": 3,
+        "units": "real",
+        "velocities": false,
+        "order": [
+          1,
+          0,
+          2
+        ],
+        "input_sha256": "93b1aa96d661415e0b1823701896019a95e642ab81ea628e001e570dea10ada5",
+        "output_sha256": "462dadf9a91804001692e64cbe68b886a52ac1a75f1f211040aa8945b8fca723"
+      },
+      {
+        "cell": 3,
+        "units": "real",
+        "velocities": false,
+        "order": [
+          1,
+          2,
+          0
+        ],
+        "input_sha256": "e18d28164f5a98ec22381051f44b600c52424ad12a1c72fc8dd225e86e426718",
+        "output_sha256": "ad6a835662eb976a6363a8e8bd865bb72f69d4dd4018449972ffcc1569b86c3b"
+      },
+      {
+        "cell": 3,
+        "units": "real",
+        "velocities": false,
+        "order": [
+          2,
+          0,
+          1
+        ],
+        "input_sha256": "73881df128279d1f607b765673093bd97a75d2a412a9650b2242ed79568dd778",
+        "output_sha256": "2d200a655cd2a85bfd3235c179b87dc97d732e6d4f709a5ae14ccd0f03ff5c70"
+      },
+      {
+        "cell": 3,
+        "units": "real",
+        "velocities": false,
+        "order": [
+          2,
+          1,
+          0
+        ],
+        "input_sha256": "4a7a50d367e111bd09cfbbf5d94d544a57dbd6d4b2c9853fcd77cc8e3ad8b760",
+        "output_sha256": "a5acfd319cf88dbb54593ba4a1baa990918b0ce1741f156d1edc5e0cd61f2f02"
+      },
+      {
+        "cell": 3,
+        "units": "real",
+        "velocities": true,
+        "order": [
+          0,
+          1,
+          2
+        ],
+        "input_sha256": "5813fc3e57548c2bcad5f16c88730bad974af1a5ef82a8c2a9e3073c33223239",
+        "output_sha256": "45117b0d1381c235d43a02b4eabd4ac8905bb9f1db3991732fe1a9e66d87428b"
+      },
+      {
+        "cell": 3,
+        "units": "real",
+        "velocities": true,
+        "order": [
+          0,
+          2,
+          1
+        ],
+        "input_sha256": "d7725bd93fa27b2294571b7f75c1a3575ae189b2e6d8fe67f34c34d356b1b9db",
+        "output_sha256": "d79c1bc12805f38a2c1db003767580a4834dca6fd16bcd03a3efed604e1b630a"
+      },
+      {
+        "cell": 3,
+        "units": "real",
+        "velocities": true,
+        "order": [
+          1,
+          0,
+          2
+        ],
+        "input_sha256": "0bf8e2a496a43e60e4021e329bd1cdc4920c9d16c7d08e1777d3eedf1fdcbb6e",
+        "output_sha256": "23123133e84074d50a9852eb453a3b7fdb6d4c5d96f96dbf9c6127485f27aebb"
+      },
+      {
+        "cell": 3,
+        "units": "real",
+        "velocities": true,
+        "order": [
+          1,
+          2,
+          0
+        ],
+        "input_sha256": "0b59c3cd27f7bb9f3dfc0befa87ebb6a3913ac66e396100ebbc07b9c232ddca3",
+        "output_sha256": "274f9bb94255b52f429352f2cd8511ca87f425286906f8496bdafd9b64a2ad7b"
+      },
+      {
+        "cell": 3,
+        "units": "real",
+        "velocities": true,
+        "order": [
+          2,
+          0,
+          1
+        ],
+        "input_sha256": "411e114d64840b58e4c7b43d28077c919b5aaeb7e866c8ddf6687f9fe6caff3b",
+        "output_sha256": "ab7e9307ac4ae83f2a4376ed1b4978c48514e197e6c24fd3898dca430a669890"
+      },
+      {
+        "cell": 3,
+        "units": "real",
+        "velocities": true,
+        "order": [
+          2,
+          1,
+          0
+        ],
+        "input_sha256": "c52e1b5d7588d61cc8fd43fecfe9aa8c89f4f5bc807948029af4c1993bbf7eea",
+        "output_sha256": "358760a21b3bd9e82938a6b9a939b9ee6cdfd99cd02461606f0798abd2ac24ce"
+      },
+      {
+        "cell": 3,
+        "units": "metal",
+        "velocities": false,
+        "order": [
+          0,
+          1,
+          2
+        ],
+        "input_sha256": "08af995d7de49879b4bc84648ce5537291101dacadfa0174f00763de9f482ef2",
+        "output_sha256": "51b48b77557e32f28a47d42c18324776c5a926a4e4390f78cd1bc78e9e7eeac3"
+      },
+      {
+        "cell": 3,
+        "units": "metal",
+        "velocities": false,
+        "order": [
+          0,
+          2,
+          1
+        ],
+        "input_sha256": "d181eca40c0b19083dd81c04e6ff6b45696a5e787f9eb82d530f201afbe74a8d",
+        "output_sha256": "7a2448ff02cdebc2495d6e1552cf65b047d0a7420705691fee7f53151c7f9314"
+      },
+      {
+        "cell": 3,
+        "units": "metal",
+        "velocities": false,
+        "order": [
+          1,
+          0,
+          2
+        ],
+        "input_sha256": "93b1aa96d661415e0b1823701896019a95e642ab81ea628e001e570dea10ada5",
+        "output_sha256": "462dadf9a91804001692e64cbe68b886a52ac1a75f1f211040aa8945b8fca723"
+      },
+      {
+        "cell": 3,
+        "units": "metal",
+        "velocities": false,
+        "order": [
+          1,
+          2,
+          0
+        ],
+        "input_sha256": "e18d28164f5a98ec22381051f44b600c52424ad12a1c72fc8dd225e86e426718",
+        "output_sha256": "ad6a835662eb976a6363a8e8bd865bb72f69d4dd4018449972ffcc1569b86c3b"
+      },
+      {
+        "cell": 3,
+        "units": "metal",
+        "velocities": false,
+        "order": [
+          2,
+          0,
+          1
+        ],
+        "input_sha256": "73881df128279d1f607b765673093bd97a75d2a412a9650b2242ed79568dd778",
+        "output_sha256": "2d200a655cd2a85bfd3235c179b87dc97d732e6d4f709a5ae14ccd0f03ff5c70"
+      },
+      {
+        "cell": 3,
+        "units": "metal",
+        "velocities": false,
+        "order": [
+          2,
+          1,
+          0
+        ],
+        "input_sha256": "4a7a50d367e111bd09cfbbf5d94d544a57dbd6d4b2c9853fcd77cc8e3ad8b760",
+        "output_sha256": "a5acfd319cf88dbb54593ba4a1baa990918b0ce1741f156d1edc5e0cd61f2f02"
+      },
+      {
+        "cell": 3,
+        "units": "metal",
+        "velocities": true,
+        "order": [
+          0,
+          1,
+          2
+        ],
+        "input_sha256": "5813fc3e57548c2bcad5f16c88730bad974af1a5ef82a8c2a9e3073c33223239",
+        "output_sha256": "12005055c5672d81664b0e71b38d1c6f755102bbf4eafc20942f67b7848474aa"
+      },
+      {
+        "cell": 3,
+        "units": "metal",
+        "velocities": true,
+        "order": [
+          0,
+          2,
+          1
+        ],
+        "input_sha256": "d7725bd93fa27b2294571b7f75c1a3575ae189b2e6d8fe67f34c34d356b1b9db",
+        "output_sha256": "020f5f9b40d9c52c7e3c0dba853f4fad19eb91d07dec91946fdc5842bd2a2326"
+      },
+      {
+        "cell": 3,
+        "units": "metal",
+        "velocities": true,
+        "order": [
+          1,
+          0,
+          2
+        ],
+        "input_sha256": "0bf8e2a496a43e60e4021e329bd1cdc4920c9d16c7d08e1777d3eedf1fdcbb6e",
+        "output_sha256": "ca7018ea298eb5d34a0eda143dcac50deb767d97ca93bef712b411a190ad8bb7"
+      },
+      {
+        "cell": 3,
+        "units": "metal",
+        "velocities": true,
+        "order": [
+          1,
+          2,
+          0
+        ],
+        "input_sha256": "0b59c3cd27f7bb9f3dfc0befa87ebb6a3913ac66e396100ebbc07b9c232ddca3",
+        "output_sha256": "f6d159753c0a2b9036cfd3ce4b2b619b0ff6826a6c6761417c5c117c30cde457"
+      },
+      {
+        "cell": 3,
+        "units": "metal",
+        "velocities": true,
+        "order": [
+          2,
+          0,
+          1
+        ],
+        "input_sha256": "411e114d64840b58e4c7b43d28077c919b5aaeb7e866c8ddf6687f9fe6caff3b",
+        "output_sha256": "b85a4c9ee1aa0add3a80314df9806c15429bf36c6a6c47ed7f148c33086ed172"
+      },
+      {
+        "cell": 3,
+        "units": "metal",
+        "velocities": true,
+        "order": [
+          2,
+          1,
+          0
+        ],
+        "input_sha256": "c52e1b5d7588d61cc8fd43fecfe9aa8c89f4f5bc807948029af4c1993bbf7eea",
+        "output_sha256": "6a936a68fb83520074c1ba69b5fd7cc099d66066f09ed0fb89264f8bf53a76bb"
+      }
+    ],
+    "module_sha256": "e8e124f7a1acf4705ce0129351f032c07e11e22f7c18954a917d64060ddc67c7"
+  }
+}
