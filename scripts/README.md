@@ -79,3 +79,9 @@ Open Babel CIF/mmCIF diagnostic. It needs a source-built Python extension and
 Gemmi in the oracle environment. Result hashes identify the downloaded bytes;
 the hermetic CI fixture is independently authored. This validates single CCD
 components, not a bulk dictionary or package release.
+
+### Checked PDBQT output
+
+`validate_pdbqt_checked.py` checks fixed-column output, Python/WASM byte parity,
+refusals, an Open Babel #2101 reproduction and independent Open Babel cross-read.
+See `docs/pdbqt-checked-output.md` for runtime/probe setup and limits.

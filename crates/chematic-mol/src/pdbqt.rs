@@ -12,6 +12,9 @@
 //!
 //! Reference: AutoDock 4.2 manual, Section 7 (PDBQT format specification).
 
+mod checked;
+pub use checked::{PdbqtWriteError, write_pdbqt_checked};
+
 use chematic_core::{Atom, AtomIdx, Element, Molecule};
 
 type ParsedPdbqt = (Molecule, Vec<(f64, f64, f64)>, Vec<f64>);
@@ -155,6 +158,8 @@ pub fn autodock_atom_type(mol: &Molecule, idx: AtomIdx) -> &'static str {
 // ── Writer ────────────────────────────────────────────────────────────────────
 
 /// Write a molecule to PDBQT format.
+///
+/// Use [`write_pdbqt_checked`] to reject missing values and fixed-column overflow.
 ///
 /// `coords` — 3D coordinates per atom (Å). If shorter than `mol.atom_count()`,
 /// missing atoms receive `(0, 0, 0)`.

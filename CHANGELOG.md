@@ -14,7 +14,12 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-No unreleased changes.
+### Added
+
+- Added checked rigid PDBQT output in Rust/Python/WASM, rejecting missing or
+  excess values, non-finite coordinates/charges, fixed-column overflow after
+  rounding, unsafe names and unsupported default atom types. Existing writers
+  retain their behavior.
 
 ## [1.1.5] - 2026-10-16
 

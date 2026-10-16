@@ -597,6 +597,8 @@ class Mol:
     ) -> str:
         """Write molecule to AutoDock PDBQT format (rigid body, no torsion tree).
 
+        Use ``write_pdbqt_checked`` for exact counts and checked fixed widths.
+
         Args:
             coords: list of (x, y, z) tuples in Å, one per heavy atom.
             charges: partial charges (float) per heavy atom. Use
@@ -5169,4 +5171,14 @@ def parse_ccd_json(text: str, *, max_input_bytes: int | None = None, max_atoms: 
 
 def from_ccd(text: str, *, allow_stereo_loss: bool = False) -> Mol:
     """Explicit CCD graph; unassigned R/S and E/Z require loss consent."""
+    ...
+
+
+def write_pdbqt_checked(mol: Mol, coords: Sequence[Sequence[float]], charges: Sequence[float], name: str = "LIG") -> str:
+    """Rigid PDBQT with exact counts, finite values and checked field widths.
+
+    Coordinates are in angstroms, partial charges in e, per graph atom including
+    explicit H. Raises ValueError for unrepresentable input. AutoDock types use
+    the existing heuristic; no charge calculation or ligand preparation.
+    """
     ...
