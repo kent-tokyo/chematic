@@ -33,7 +33,9 @@ mod rdfile;
 use rdfile::*;
 mod turbomole;
 use turbomole::*;
+mod chemdraw;
 mod interchange;
+use chemdraw::*;
 mod materials;
 mod mmcif_pdb;
 mod pdb_selection;
@@ -1397,6 +1399,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         from_cjson,
         from_moljson,
         from_cdxml,
+        from_chemdraw_block,
         parse_cdxml_document_json,
         edit_cdxml_document_json,
         semantic_model_json,

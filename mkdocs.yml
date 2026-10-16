@@ -79,6 +79,7 @@ nav:
   - Benchmark: benchmark.md
   - Formats & Bindings:
     - CCD Molecular Templates: ccd-components.md
+    - ChemDraw Block Formats: chemdraw-block.md
     - Format Capability Matrix: format-capabilities.md
     - HIN Aromatic Bond Preservation: openbabel-hin-aromatic-bonds.md
     - ORCA-AICCM EXYZ: openbabel-exyz.md

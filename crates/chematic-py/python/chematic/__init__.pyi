@@ -2917,6 +2917,17 @@ def from_cml_strict(cml_str: str) -> Mol:
     """Parse structurally valid, non-empty CML; reject malformed XML."""
     ...
 
+def from_chemdraw_block(data: bytes, *, format: str = "AUTO", allow_metadata_loss: bool = False) -> dict[str, Any]:
+    """Project CDX or UTF-8 CDXML into source-ordered molecules/coordinates.
+
+    Returns format, source_bytes, projected_cdxml, molecules, coordinates and
+    omissions. AUTO detects the CDX signature; format may force CDX/CDXML.
+    Binary CDX requires the concrete molecular profile. Known presentation
+    omissions require opt-in; unsupported chemistry always raises ValueError.
+    CDXML retains the existing graph-only reader policy; omissions is CDX-only.
+    """
+    ...
+
 def from_cdxml(cdxml_str: str) -> Mol:
     """Parse a ChemDraw XML (CDXML) string and return a :class:`Mol`.
 

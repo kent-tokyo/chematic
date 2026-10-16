@@ -25,6 +25,11 @@ pub use ccd::{
 pub mod cdjson;
 pub mod cdxml;
 pub mod cdxml_document;
+pub mod chemdraw;
+pub use chemdraw::{
+    ChemDrawBlock, ChemDrawError, ChemDrawFormat, ChemDrawLimits, ChemDrawMolecule,
+    ChemDrawOmission, ChemDrawOptions, parse_chemdraw_block, parse_chemdraw_block_with_limits,
+};
 pub mod cif;
 #[cfg(feature = "crystal")]
 mod cif_symmetry;

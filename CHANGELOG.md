@@ -14,7 +14,14 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-No unreleased changes.
+### Added
+
+- Added explicit AUTO/CDX/CDXML byte-block reading in Rust/Python/WASM with a
+  bounded concrete-molecule CDX profile, exact source sidecars and reported
+  presentation-loss opt-in. Unsupported CDX chemistry and marked stereo refuse.
+  The new projection also retains supported geometry-derived E/Z in graph
+  output. Existing CDXML entry points are unchanged. See
+  [the accepted profile and limits](docs/chemdraw-block.md).
 
 ## [1.1.5] - 2026-10-16
 
