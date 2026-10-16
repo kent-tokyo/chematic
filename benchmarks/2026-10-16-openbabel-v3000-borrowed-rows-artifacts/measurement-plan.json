@@ -1,0 +1,61 @@
+{
+  "base_revision": "2251a9f5d2e706087efaf55cb0f8ab1ff20b8016",
+  "candidate": "Borrow plain V30 rows directly after unchanged physical validation; retain original collection for continuations and exact allocation hints",
+  "primary": "parse CI lower>1 on both unfiltered V3000 slices at offsets 0 and 5000",
+  "adoption": "Exact source snapshots/rewrites and frozen full reports/errors; both primary parse paired CI lower>1; all 18 source-relative medians >=0.99; disclose all negative intervals",
+  "profiles": [
+    {
+      "kind": "sdf",
+      "profile": "0",
+      "records": 1000
+    },
+    {
+      "kind": "sdf",
+      "profile": "5000",
+      "records": 1000
+    },
+    {
+      "kind": "v3000",
+      "profile": "0",
+      "records": 1000
+    },
+    {
+      "kind": "v3000",
+      "profile": "5000",
+      "records": 1000
+    },
+    {
+      "kind": "v3000",
+      "profile": "chains",
+      "records": 64
+    },
+    {
+      "kind": "v3000",
+      "profile": "continued",
+      "records": 64
+    }
+  ],
+  "blocks": 21,
+  "native_repeats": 3,
+  "comparator_win": "semantic prerequisite, paired CI lower>1 and 21/21 faster blocks",
+  "build": {
+    "release": true,
+    "opt_level": 3,
+    "lto": true,
+    "codegen_units": 1,
+    "jobs": 1,
+    "incremental": false,
+    "strip": "none"
+  },
+  "test_build": {
+    "release": true,
+    "lto": false,
+    "codegen_units": 16,
+    "jobs": 1,
+    "strip": "none"
+  },
+  "no_adaptive_timing_reruns": true,
+  "scope": "Shared macOS arm64 host, exposed development corpora, current native source; no toolkit-wide or publication claim",
+  "previous_unpromoted_candidates": "excluded",
+  "checkpoint_policy": "64MiB owned reserve; retry identical in-memory checkpoint only, never worker or timer"
+}

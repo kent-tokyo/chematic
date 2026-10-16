@@ -1041,6 +1041,56 @@ fn finish_v3000_report(
     })
 }
 
+fn plain_v3000_line_count(lines: &[(usize, &str)]) -> Option<usize> {
+    lines
+        .iter()
+        .try_fold(0, |count, &(_, raw)| match raw.strip_prefix(V30_PREFIX) {
+            Some(payload) if payload.ends_with('-') => None,
+            Some(_) => Some(count + 1),
+            None => Some(count),
+        })
+}
+
+fn consume_v3000_rows(
+    parser: &mut V3000Parser,
+    lines: &[(usize, &str)],
+) -> Result<(), MolParseError> {
+    if let Some(count) = plain_v3000_line_count(lines) {
+        // Without continuation, raw input already owns every payload. Keep
+        // the exact logical row count as the allocation hint, but avoid a
+        // second full-batch vector of borrowed logical-line wrappers.
+        parser.allocation_limit = count;
+        let mut tokens = Vec::new();
+        for &(line_num, raw) in lines {
+            if let Some(payload) = raw.strip_prefix(V30_PREFIX) {
+                tokens.clear();
+                tokens.extend(payload.split_whitespace());
+                parser.consume(
+                    &LogicalLine {
+                        line_num,
+                        payload: std::borrow::Cow::Borrowed(payload),
+                    },
+                    &tokens,
+                )?;
+            }
+        }
+        return Ok(());
+    }
+    // Retain the original joining/lifetime behavior for continuation text.
+    let logical_lines = collect_v30_lines(lines);
+    parser.allocation_limit = logical_lines.len();
+    // Logical payloads live until the entire parse ends, including owned
+    // continuation text. Reuse only the token vector's storage; clear every
+    // row before borrowing that row's exact Unicode-whitespace tokens.
+    let mut tokens = Vec::new();
+    for line in &logical_lines {
+        tokens.clear();
+        tokens.extend(line.payload.split_whitespace());
+        parser.consume(line, &tokens)?;
+    }
+    Ok(())
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -1064,18 +1114,8 @@ fn finish_v3000_report(
 pub fn read_mol_v3000_with_diagnostics(input: &str) -> Result<MolReadReport, MolParseError> {
     let lines = validate_v3000_physical_lines(input)?;
     let (metadata, line2) = v3000_metadata(&lines)?;
-    let logical_lines = collect_v30_lines(&lines);
     let mut parser = V3000Parser::new();
-    parser.allocation_limit = logical_lines.len();
-    // Logical payloads live until the entire parse ends, including owned
-    // continuation text. Reuse only the token vector's storage; clear every
-    // row before borrowing that row's exact Unicode-whitespace tokens.
-    let mut tokens = Vec::new();
-    for line in &logical_lines {
-        tokens.clear();
-        tokens.extend(line.payload.split_whitespace());
-        parser.consume(line, &tokens)?;
-    }
+    consume_v3000_rows(&mut parser, &lines)?;
     finish_v3000_report(parser, metadata, line2)
 }
 
@@ -1440,3 +1480,7 @@ mod count_capacity_tests;
 #[cfg(test)]
 #[path = "mol3000/attribute_tail_tests.rs"]
 mod attribute_tail_tests;
+
+#[cfg(test)]
+#[path = "mol3000/record_stream_tests.rs"]
+mod record_stream_tests;

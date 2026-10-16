@@ -1,0 +1,40 @@
+{
+  "source_file_hashes_verified": 2062,
+  "native_library_entries_verified": 281,
+  "patch_reconstructed_from": "2251a9f5d2e706087efaf55cb0f8ab1ff20b8016",
+  "all_comparisons_recomputed": 36,
+  "profiles": {
+    "sdf-0": {
+      "complete_blocks": 21,
+      "source_snapshots_and_rewrites_exact": true,
+      "saved_rewrites_and_parse_semantics_revalidated": true
+    },
+    "sdf-5000": {
+      "complete_blocks": 21,
+      "source_snapshots_and_rewrites_exact": true,
+      "saved_rewrites_and_parse_semantics_revalidated": true
+    },
+    "v3000-0": {
+      "complete_blocks": 21,
+      "source_snapshots_and_rewrites_exact": true,
+      "saved_rewrites_and_parse_semantics_revalidated": true
+    },
+    "v3000-5000": {
+      "complete_blocks": 21,
+      "source_snapshots_and_rewrites_exact": true,
+      "saved_rewrites_and_parse_semantics_revalidated": true
+    },
+    "v3000-chains": {
+      "complete_blocks": 21,
+      "source_snapshots_and_rewrites_exact": true,
+      "saved_rewrites_and_parse_semantics_revalidated": true
+    },
+    "v3000-continued": {
+      "complete_blocks": 21,
+      "source_snapshots_and_rewrites_exact": true,
+      "saved_rewrites_and_parse_semantics_revalidated": true
+    }
+  },
+  "post_timing_sdf_smiles_observers_not_timing_samples": true,
+  "universal_superiority": false
+}

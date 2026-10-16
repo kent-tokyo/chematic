@@ -1,0 +1,16 @@
+{
+  "files_sha256": {
+    "baseline-sdf": "c5e87c160106e16ade61e8c5ffd2e7b949f879a1b2704a56afb29d813c46ec64",
+    "baseline-v3000": "025ae8d776e3995e862bf302a43e63055b54c72d2e8da8a78a17eb67fa54b5c0",
+    "candidate-sdf": "e872a4cb2833d6bf8e3807d843001ce8b4e8e6222f48bfa44c99f3b244c7a0d4",
+    "candidate-v3000": "e5fe8f1ecc41d4034783477b00279e30beb6117865e985aac5e8570eaa3fc923",
+    "openbabel-sdf": "9e489bcdebfdda2adb29a0613eb3bd7f17a10f6d554185887366f96a0fc7964e",
+    "openbabel-v3000": "34981dcbb977f1f652030d092caf297a120241bb62ca094151a6ed58c3752846",
+    "sdf-0.sdf": "8e7ad63db96f6fb87b87333ab1f7710a18bc3be5cb4676c15c345c09d4ce718b",
+    "sdf-5000.sdf": "38d1d169f40de9fe4c95ec475035658ffcb27a2c84c448e3c619c32aefe8fd60",
+    "v3000-0.molblocks": "6c2eccf9aae975d790e9b036e0ffce71d056b243049e3424681326bceae17a06",
+    "v3000-5000.molblocks": "45924f7db9c4ea10e7ea494cd9aff2d536129b553d1e834fdcdac444e39f3e9e",
+    "v3000-chains.molblocks": "8ea24c94237cfc4076bcbde78019dd37cf4beb254c7a6b820555791da2410186",
+    "v3000-continued.molblocks": "c62a7a1caad5581e46112e8bbede1068a46a99dec431026f8b7e2d8d4cba4ec7"
+  }
+}

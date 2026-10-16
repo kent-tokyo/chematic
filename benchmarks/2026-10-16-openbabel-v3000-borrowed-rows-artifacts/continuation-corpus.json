@@ -1,0 +1,7 @@
+{
+  "recipe": "Split every atom row after the x coordinate with exact V30 continuation; no field changes",
+  "source_sha256": "8ea24c94237cfc4076bcbde78019dd37cf4beb254c7a6b820555791da2410186",
+  "continued_sha256": "c62a7a1caad5581e46112e8bbede1068a46a99dec431026f8b7e2d8d4cba4ec7",
+  "changed_atom_rows": 33280,
+  "records": 64
+}

@@ -1,0 +1,1 @@
+Read [the report](../2026-10-16-openbabel-v3000-borrowed-rows.md) with the fixed plan and decision. Complete raw matrices, all negative observations and mismatch rows are retained. Binaries/full generated streams stay local with versioned hashes; no historical timing is reused. The candidate patch reconstructs measured source files from the pinned base.

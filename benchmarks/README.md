@@ -22,6 +22,9 @@ the [complete inventory](archive-index.md) links every retained record.
 
 ## Recent focused follow-ups
 
+- [Borrowed V3000 logical rows](2026-10-16-openbabel-v3000-borrowed-rows.md):
+  unpromoted source trial; both primary parse intervals improve, but SDF
+  writing and continuation parsing exceed the fixed regression budget.
 - [V3000 requested stereo-loss collection](2026-10-16-openbabel-v3000-loss-work.md):
   prepared writing improves on both diverse slices; all 15 source median
   budgets pass, with a disclosed additional-slice parse retreat.

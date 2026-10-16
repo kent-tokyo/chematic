@@ -1,0 +1,155 @@
+{
+  "local_adoption_gate_passed": false,
+  "all_source_snapshots_and_rewrites_exact": true,
+  "primary": {
+    "v3000-0": {
+      "speedup": {
+        "median": 1.02,
+        "ci95": [
+          1.018,
+          1.023
+        ],
+        "winning_blocks": 18,
+        "blocks": 21
+      },
+      "semantic_prerequisite": true,
+      "strict_speed_win": false
+    },
+    "v3000-5000": {
+      "speedup": {
+        "median": 1.041,
+        "ci95": [
+          1.032,
+          1.049
+        ],
+        "winning_blocks": 21,
+        "blocks": 21
+      },
+      "semantic_prerequisite": true,
+      "strict_speed_win": true
+    }
+  },
+  "primary_ci_pass": true,
+  "all_18_source_median_floor": 0.99,
+  "below_floor": {
+    "sdf-0": {
+      "write": {
+        "median": 0.986,
+        "ci95": [
+          0.976,
+          0.989
+        ],
+        "winning_blocks": 3,
+        "blocks": 21
+      }
+    },
+    "sdf-5000": {
+      "write": {
+        "median": 0.983,
+        "ci95": [
+          0.97,
+          0.994
+        ],
+        "winning_blocks": 5,
+        "blocks": 21
+      }
+    },
+    "v3000-0": {},
+    "v3000-5000": {},
+    "v3000-chains": {},
+    "v3000-continued": {
+      "parse": {
+        "median": 0.989,
+        "ci95": [
+          0.986,
+          0.998
+        ],
+        "winning_blocks": 6,
+        "blocks": 21
+      }
+    }
+  },
+  "unranked_source_lanes": [],
+  "all_negative_source_intervals": {
+    "sdf-0": {
+      "write": {
+        "median": 0.986,
+        "ci95": [
+          0.976,
+          0.989
+        ],
+        "winning_blocks": 3,
+        "blocks": 21
+      }
+    },
+    "sdf-5000": {
+      "write": {
+        "median": 0.983,
+        "ci95": [
+          0.97,
+          0.994
+        ],
+        "winning_blocks": 5,
+        "blocks": 21
+      }
+    },
+    "v3000-0": {
+      "write": {
+        "median": 0.995,
+        "ci95": [
+          0.99,
+          0.996
+        ],
+        "winning_blocks": 4,
+        "blocks": 21
+      }
+    },
+    "v3000-5000": {},
+    "v3000-chains": {},
+    "v3000-continued": {
+      "parse": {
+        "median": 0.989,
+        "ci95": [
+          0.986,
+          0.998
+        ],
+        "winning_blocks": 6,
+        "blocks": 21
+      }
+    }
+  },
+  "openbabel_strict_wins": {
+    "sdf-0": {
+      "parse": false,
+      "write": true,
+      "roundtrip": true
+    },
+    "sdf-5000": {
+      "parse": true,
+      "write": true,
+      "roundtrip": true
+    },
+    "v3000-0": {
+      "parse": false,
+      "write": false,
+      "roundtrip": false
+    },
+    "v3000-5000": {
+      "parse": false,
+      "write": false,
+      "roundtrip": false
+    },
+    "v3000-chains": {
+      "parse": true,
+      "write": true,
+      "roundtrip": true
+    },
+    "v3000-continued": {
+      "parse": true,
+      "write": false,
+      "roundtrip": false
+    }
+  },
+  "no_timing_samples_reused": true,
+  "universal_superiority": false
+}
