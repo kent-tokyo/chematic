@@ -5298,6 +5298,20 @@ def from_ccd(text: str, *, allow_stereo_loss: bool = False) -> Mol:
     """Explicit CCD graph; unassigned R/S and E/Z require loss consent."""
     ...
 
+class FeaturePatternSet:
+    """Owned SMARTS feature definitions; maximum 32 patterns.
+
+    Pattern i sets bit i on every atom in any match. Empty sets use no default
+    definitions. Fingerprints use native FNV hashing, not RDKit Morgan bits.
+    Targets are limited to 256 atoms/512 bonds; matching budget failures raise
+    ValueError without partial masks. Native SSSR SMARTS semantics apply.
+    """
+    def __init__(self, patterns: Iterable[str]) -> None: ...
+    @property
+    def patterns(self) -> list[str]: ...
+    def invariants(self, mol: Mol, *, max_visits: int = 100_000) -> list[int]: ...
+    def fingerprint(self, mol: Mol, *, radius: int = 2, nbits: int = 2048, max_visits: int = 100_000) -> bytes: ...
+
 # Native filesystem APIs accept the same path protocol as os.fspath/fsdecode.
 class SDMolSupplier(Iterator[Mol | None]):
     def __init__(self, path: _FileSystemPath, sanitize: bool = True, removeHs: bool = True, strictParsing: bool = True) -> None: ...

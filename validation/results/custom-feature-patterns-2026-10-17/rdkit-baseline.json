@@ -1,0 +1,167 @@
+{
+  "rdkit_version": "2025.09.3",
+  "wrapper_cases": [
+    {
+      "patterns": [
+        "O"
+      ],
+      "actual_atom_masks": [
+        [
+          0
+        ],
+        [
+          0
+        ],
+        [
+          3
+        ]
+      ],
+      "requested_atom_masks": [
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "patterns": [
+        "C"
+      ],
+      "actual_atom_masks": [
+        [
+          0
+        ],
+        [
+          0
+        ],
+        [
+          3
+        ]
+      ],
+      "requested_atom_masks": [
+        1,
+        1,
+        0
+      ]
+    },
+    {
+      "patterns": [],
+      "actual_atom_masks": [
+        [
+          0
+        ],
+        [
+          0
+        ],
+        [
+          3
+        ]
+      ],
+      "requested_atom_masks": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "patterns": [
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O"
+      ],
+      "actual_atom_masks": [
+        [
+          0
+        ],
+        [
+          0
+        ],
+        [
+          3
+        ]
+      ],
+      "requested_atom_masks": [
+        0,
+        0,
+        4294967295
+      ]
+    },
+    {
+      "patterns": [
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O"
+      ],
+      "actual_atom_masks": [
+        [
+          0
+        ],
+        [
+          0
+        ],
+        [
+          3
+        ]
+      ],
+      "requested_atom_masks": null
+    }
+  ]
+}

@@ -16,6 +16,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Rust/Python `FeaturePatternSet` owns up to 32 caller-supplied SMARTS feature
+  definitions and produces full-width atom masks or native circular feature
+  fingerprints. Matching budgets and size limits refuse partial output;
+  empty definitions use no defaults. See [custom feature patterns](docs/custom-feature-patterns.md)
+  for the native hashing contract and RDKit comparison scope.
 - Rust `SdfInput` / `SdfCompression` and Python `iter_sdf_checked(...,
   compression="plain" | "gzip" | "auto")` support independent per-input
   gzip detection and concatenated members. Plain input remains the default;

@@ -1,0 +1,35 @@
+{
+  "validated_at_utc": "2026-10-16T16:06:06.092747+00:00",
+  "base_commit": "d03106b59fdd4d06f40ab267bb540e20508bd988",
+  "rustc": "rustc 1.97.0 (2d8144b78 2026-07-07)",
+  "python": "3.13.6",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "native_module_sha256": "b413a76450fd37a6ba9d2cf54b65551bd61f3a19b61039e140e453a488fc3542",
+  "source_file_count": 1143,
+  "rust_tests": {
+    "library_passed": 346,
+    "new_tests_passed": 6,
+    "failed": 0
+  },
+  "python_tests": {
+    "passed": 211,
+    "new_feature_cases": 49,
+    "failed": 0,
+    "skipped": 0
+  },
+  "rdkit_version": "2025.09.3",
+  "direct_rdkit_smarts_mask_comparisons_passed": 150,
+  "strict_clippy": "passed; chematic-fp and chematic-py all targets",
+  "other_checks": [
+    "format",
+    "refactor_budget",
+    "source_stubs",
+    "binding_surface",
+    "cross_binding_manifest",
+    "product_names",
+    "unsafe_surface",
+    "mkdocs_strict",
+    "git_diff_check"
+  ],
+  "scope": "custom native API and feature-mask oracle; fingerprint bits are native FNV and not RDKit Morgan parity; no published wheel/hosted CI/main integration claim"
+}
