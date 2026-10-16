@@ -14,7 +14,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-No unreleased changes.
+### Added
+
+- Added Rust `Molecule::clear()` and Python `RWMol.Clear()` for complete
+  molecule reuse, including metadata/cache reset and Python title/typed
+  properties. Existing snapshots stay independent. The compatibility wrapper
+  exposes the same chematic extension. See [molecule reset](docs/molecule-clear.md)
+  for the Open Babel #3032 reproduction and bounded validation.
 
 ## [1.1.6] - 2026-10-16
 

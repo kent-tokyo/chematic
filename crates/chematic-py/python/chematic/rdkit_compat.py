@@ -487,6 +487,10 @@ class RWMol:
     def __init__(self, mol: "Mol | None" = None) -> None:
         self._rw = _ch.RWMol(mol._mol if mol is not None else None)
 
+    def Clear(self) -> None:
+        """chematic extension: reset graph, title and properties; preserve snapshots."""
+        self._rw.Clear()
+
     def AddAtom(self, atom) -> int:
         """Add an atom given an atomic number (``int``), element symbol
         (``str``), or any object with ``GetAtomicNum()`` (e.g. an existing
