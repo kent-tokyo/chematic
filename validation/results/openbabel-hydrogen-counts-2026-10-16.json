@@ -1,0 +1,90 @@
+{
+  "schema": "chematic.hydrogen-count-validation.v1",
+  "utc": "2026-10-16T00:55:21.060228+00:00",
+  "issues": [
+    "https://github.com/openbabel/openbabel/issues/3008",
+    "https://github.com/openbabel/openbabel/issues/2624"
+  ],
+  "source_base": "19f07cd198d55c31afc99c2fae437a4b891b109c",
+  "source_sha256": {
+    "crates/chematic-chem/src/descriptors/composition.rs": "ac671197a6f3a1e67d2eea9bea5c5e31d53c4ec2c0b2fcd5391579c574827c6a",
+    "crates/chematic-wasm/src/mol_depict.rs": "162404e861eff3845d7340d6cddef8b833c8c52fb6b47567f8fe0ead65d5ba16",
+    "crates/chematic-wasm/src/mol_descriptors.rs": "bc48c30cb616043eafb956a71f6f78f0b8df31a8227f444a0c4a01a31a77354c"
+  },
+  "runner_sha256": "69fdbd160a086f0c6218bd04456dd672c0ec75001dd5ef29e4309f156ab63774",
+  "fixture_sha256": "2dfcf5f55d8dfd1c9ed902712a158028be17f546abe5385880ec475b6c51882b",
+  "rdkit_version": "2026.09.1",
+  "rdkit_runtime_sha256": "2fb1e7377e7441fcc3c9ae813803adb288fdb710b2b0de66aecbfc1f4b5919ff",
+  "python_extension_sha256": "99cd226b958ee5e7b1f2bdb07cb2c0a0c3b78dcc61a453c9df8b10294d7f6b8e",
+  "wasm_runtime_sha256": {
+    "chematic_wasm_bg.wasm": "10fee34c41351aa19098d9f2343f671e0c0c444a43ea9e884acde2999f2ebc2b",
+    "chematic_wasm.js": "2671396843babbbdf794045ee9c16c752f514af29ab6d1352e9a610f3ea50a3d",
+    "chematic_wasm_bg.wasm.d.ts": "6fc8b6fd0d2a8166d4196dedd884f80313ee4d8dcc72f54fb5db0c0f498bafd3",
+    "chematic_wasm.d.ts": "abb8f19990429aee6f6696c1ec3fde1317d6e20f68f2acb432edc8c2a64aa65b"
+  },
+  "cases": 280,
+  "distinct_smiles": 202,
+  "python_matches": 280,
+  "python_smiles_roundtrip_matches": 280,
+  "python_formula_h_controls": 280,
+  "wasm_total_matches": 280,
+  "wasm_atom_info_matches": 1132,
+  "candidate_failures": 0,
+  "baseline": {
+    "scope": "Retained pre-fix source runtime, not a released package",
+    "extension_sha256": "e0fcc4ce976584638668add88fe1f44cd0299d45f5bb013a132844284bc92920",
+    "mismatch_count": 224,
+    "formula_h_mismatch_count": 0
+  },
+  "openbabel_version": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+  "openbabel_binary_sha256": "733b2c925d60b17a5c9d8ce9ec841e918cc20c7634301e23f9008a187d1d9bc5",
+  "openbabel": {
+    "formula_compared": 34,
+    "formula_missing": 2,
+    "missing_formula_inputs": [
+      "[*H2]",
+      "*"
+    ],
+    "smiles_compared": 36,
+    "formula_h_mismatches": 8,
+    "smiles_h_mismatches": 2
+  },
+  "packet": "openbabel-hydrogen-counts-2026-10-16.packet.json.gz",
+  "packet_sha256": "ea22829080ffe25274240162fa08a4e42f7f9a9306d58ece9c4828e42c2b9046",
+  "scope": "Hydrogen nuclei and attached-H accounting only. Native formulas were already correct on these cases. Unsanitized RDKit graph/cache references retain unusual explicit-H inputs; this is not chemical-validity, mass or general engine-parity evidence. Native H transformation internals and SMILES serialization are unchanged; source candidate only.",
+  "local_validation": {
+    "rust_tests": 11,
+    "rust_new_regressions": 4,
+    "rust_existing_shared_contract_tests": 4,
+    "rust_existing_hydrogen_unit_tests": 3,
+    "python_tests": 46,
+    "node_wasm_regression": "passed",
+    "clippy": "passed with -D warnings for changed libraries and new integration target",
+    "checks": [
+      "cargo fmt --all -- --check",
+      "refactor budget",
+      "cross-binding manifest",
+      "binding inventory",
+      "product names",
+      "strict MkDocs",
+      "stub syntax and source/packet hashes"
+    ],
+    "build_profile": {
+      "opt_level": 1,
+      "debug": 0,
+      "codegen_units": 1,
+      "incremental": false
+    },
+    "log_sha256": {
+      "native": "8174a14b4e3809400a8aec0d374a44e65fcb6ac3f57875bf093210fe8251fef7",
+      "native-unit": "58b2be0194ee09b93722f0658e3e90858839068b56eaa1f66c59515c8bfebfa1",
+      "python-tests": "7c0877ae6e95b1c92bacf7a11be660ef13745e7c5c987747c7222afe5b9725e9",
+      "wasm-tests": "2b16fddaf437cd2f72cf5f3870630505a19935cca047363dd8fd5a69ba7ba7ec",
+      "clippy": "3f18673fa9f33c8b50603cbcaa5c50faa0bdaf33f60872feb7e2e0131f1ba27b",
+      "clippy-lib": "b7481f4d4c79675297d8c4c6918560f4b95b2646e0c0fa2133cbc6b1fc3b004b",
+      "oracle": "2b7dc75c13fda722759c406255471707eed3874058d1f7d33bb894443ed84f5d",
+      "docs": "74864aef907792761e760f9e8849036021fa927b46ee9321ec956d37b1231057",
+      "binding": "cf707f41ae056e0c4be267d6eb52d74a34853b19e561640b817eb2e5fe30bb0c"
+    }
+  }
+}

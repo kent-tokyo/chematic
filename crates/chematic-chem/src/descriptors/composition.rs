@@ -55,13 +55,18 @@ pub fn num_phosphorus(mol: &Molecule) -> usize {
 
 /// Total hydrogen count (explicit + implicit).
 ///
-/// Sums explicit hydrogens and implicit hydrogens for all atoms.
+/// Counts each real hydrogen atom node (including isotopes/ions) once, plus
+/// attached bracket or valence-inferred hydrogens. `implicit_hcount` already
+/// returns stored bracket H counts; adding them again would double-count.
+/// Wildcards contribute only their explicitly stored attached H count.
 pub fn num_hydrogens(mol: &Molecule) -> usize {
     mol.atoms()
         .map(|(idx, atom)| {
-            let explicit = atom.hydrogen_count.unwrap_or(0) as usize;
-            let implicit = implicit_hcount(mol, idx) as usize;
-            explicit + implicit
+            if atom.wildcard {
+                usize::from(atom.hydrogen_count.unwrap_or(0))
+            } else {
+                usize::from(atom.element == Element::H) + usize::from(implicit_hcount(mol, idx))
+            }
         })
         .sum()
 }

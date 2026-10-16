@@ -79,3 +79,12 @@ Open Babel CIF/mmCIF diagnostic. It needs a source-built Python extension and
 Gemmi in the oracle environment. Result hashes identify the downloaded bytes;
 the hermetic CI fixture is independently authored. This validates single CCD
 components, not a bulk dictionary or package release.
+
+## Hydrogen-count accounting
+
+`validate_hydrogen_count_contract.py` uses pinned RDKit 2026.09.1 graph
+references for total nuclei and attached-H atom fields. Provide fresh source
+chematic and RDKit on `PYTHONPATH`; `--wasm-module` adds real Node/WASM, and
+`--baseline-pythonpath` probes an earlier source runtime separately.
+Open Babel formula and serialized-output diagnostics have separate counts.
+See [the accounting contract](../docs/hydrogen-count-accounting.md).

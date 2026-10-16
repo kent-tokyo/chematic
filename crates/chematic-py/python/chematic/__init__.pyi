@@ -2332,7 +2332,8 @@ class Mol:
 
     @property
     def num_hydrogens(self) -> int:
-        """Total hydrogen count (implicit + explicit)."""
+        """Hydrogen nuclei: H atom nodes (including isotopes/ions) plus attached
+        bracket or inferred H, each counted once across all components."""
         ...
 
     @property
