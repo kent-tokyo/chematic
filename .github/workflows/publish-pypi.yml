@@ -85,6 +85,16 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Normalize packaged Python typing files to LF
+        shell: python
+        run: |
+          from pathlib import Path
+
+          package = Path("crates/chematic-py/python/chematic")
+          paths = [*package.rglob("*.pyi"), package / "py.typed"]
+          for path in paths:
+              data = path.read_bytes()
+              path.write_bytes(data.replace(b"\r\n", b"\n").replace(b"\r", b"\n"))
       - uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1
         with:
           args: --release --out dist --manifest-path crates/chematic-py/Cargo.toml
