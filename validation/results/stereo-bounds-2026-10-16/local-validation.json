@@ -1,0 +1,76 @@
+{
+  "schema": "chematic.alkene-path-local-validation.v1",
+  "source_base": "57d318c03b5bd22e46b8482e72ba47d190d77701",
+  "observed_main": "3e7f04b20593af4b07569d886b56afc1184468fe",
+  "main_difference": "Latest main adds V3000 writer loss-work optimization; no changed new-query or 3D source. This candidate was validated against the recorded source_base.",
+  "issue": {
+    "url": "https://github.com/rdkit/rdkit/issues/9719",
+    "state": "OPEN",
+    "observed_date": "2026-10-16"
+  },
+  "scope": "Additive four-atom declared stereo query, with endpoint normalization and cis/trans/unspecified results. Not a claim of a default native matrix defect, upstream screenshot reproduction, embedding quality, speed or release proof. Existing bounds and embedding behavior unchanged.",
+  "baseline": {
+    "probe": "validation/rdkit_issues/stereo-bounds/baseline_probe.rs",
+    "log": "baseline-failure.txt.gz",
+    "observed_exit_code": 101,
+    "expected_failure": "Native legacy predicate: outer pair 0,5 returned 3; reverse 5,0 returned 2 with central endpoints 1,3 and reference atoms [2,5]. Current builder ordinary paths are already oriented; the predicate is retained for compatibility."
+  },
+  "candidate_extension_sha256": "4cf49c858d7f470276e1e1d0640d4d7053c37dd11a3617269302f727bf04e9c7",
+  "oracle": {
+    "summary": "summary.json",
+    "proof": "permutations.jsonl.gz",
+    "rdkit_version": "2025.09.3",
+    "permutations": 4344,
+    "path_direction_decisions": 34608,
+    "mismatches": 0,
+    "method": "Hand-derived side labels and RDKit reference atoms with unordered-set side parity, independent of native endpoint normalization."
+  },
+  "tests": {
+    "rust": {
+      "passed": 18,
+      "new": 7,
+      "existing_bounds": 10,
+      "existing_pinned_boundary_suites": 1,
+      "commands": [
+        "cargo test -p chematic-3d --test alkene_path_stereo --offline",
+        "cargo test -p chematic-3d --lib rdkit_embed::bounds:: --offline",
+        "cargo test -p chematic-3d --lib bounds_boundary_contract_tests --offline"
+      ]
+    },
+    "python": {
+      "passed": 56,
+      "new": 25,
+      "existing": 31,
+      "command": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=<candidate-package> python3.13 -m pytest crates/chematic-py/tests/test_alkene_path_stereo.py crates/chematic-py/tests/test_renumber_atoms.py crates/chematic-py/tests/test_internal_coordinate_constraints.py -q"
+    }
+  },
+  "checks": {
+    "production_clippy": "passed: cargo clippy -p chematic-3d -p chematic-py --offline -- -D warnings",
+    "test_clippy": "passed: cargo clippy -p chematic-3d --test alkene_path_stereo --offline --no-deps -- -D warnings",
+    "format": "passed",
+    "refactor_budget": "passed: 584 production Rust files, 8614 functions; existing allowances unchanged",
+    "static_binding_inventory": "passed; pyfunction/export names unchanged, new Python API is a Mol method",
+    "cross_binding_manifest": "passed: 58 four-binding operations; bookkeeping only",
+    "product_names": "passed",
+    "unsafe_surface": "passed",
+    "python_ast": "passed: stub, tests, validator",
+    "mkdocs": "passed: build --strict",
+    "legacy_bounds_source": "Exact baseline source retained after normalizing the helper visibility change; no legacy builder/predicate logic modified."
+  },
+  "build": "Native macOS unoptimized dev profile, debug=0, codegen-units=1, CARGO_INCREMENTAL=0; cargo rustc -p chematic-py --offline -- -C strip=none -C link-arg=-undefined -C link-arg=dynamic_lookup. Not a release wheel.",
+  "host": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "toolchain": "rustc 1.97.0 (2d8144b78 2026-07-07)",
+  "source_sha256": {
+    "crates/chematic-3d/src/rdkit_embed/alkene_path.rs": "b35dfdbfa05ff83f04fe0b53148608588ca03161f60de3ff16a72519cce767f5",
+    "crates/chematic-3d/src/rdkit_embed/bounds.rs": "128a672c3a856c088c9e6d7ea2e071218e74cb35b4e173b46863daa772d4f5ef",
+    "crates/chematic-3d/src/rdkit_embed/mod.rs": "45fe4a542e21fe34d7117a7b569db2e0a8ba94e3ab71851a3576cfde78d6f817",
+    "crates/chematic-3d/tests/alkene_path_stereo.rs": "da45554c345c4dfdfe8b8c018143f0f01421d148d4f83e633d396f6f47d407ac",
+    "crates/chematic-py/src/mol_methods/identity.rs": "50437a341c3f9e4b1c262754140914fb7ac0aec53434bcadfc79730253806507",
+    "crates/chematic-py/python/chematic/__init__.pyi": "155254d05d62cb8cb07818015a77d7a4de11069d22b827ed4e1b2ce9f2940837",
+    "crates/chematic-py/tests/test_alkene_path_stereo.py": "064ae11d9c98282f340063191211350c96940cd1f7b1a2cfebfd8aa5cf064dea",
+    "validation/rdkit_issues/stereo-bounds/cases.json": "56a5f8ab1d49b7afdf6c360e0c04ac4ccaa2e1bc36a24383cba6006523f15055",
+    "validation/rdkit_issues/stereo-bounds/baseline_probe.rs": "69727320bbf42236236a563333ab9b294aa898557356ad5af1b19dc884ec88de",
+    "validation/rdkit_issues/stereo-bounds/validate.py": "53dfdc81868f99494d744d4c450dd728d4dd1dcd611bd11d2f3cc22141443c69"
+  },
+  "hosted_ci": "Separate from completed local validation; inspect PR checks."
+}

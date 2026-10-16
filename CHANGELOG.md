@@ -45,6 +45,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   all-reference heavy-atom RMSD in Rust/Python. Atom correspondence and indexed
   bonds are checked; every reference is returned or an error is reported, with
   optional proper rigid alignment and no implicit remapping.
+- Added a Rust/Python four-atom alkene stereo query with endpoint-aware
+  traversal normalization, explicit cis/trans/unspecified results and invalid
+  path errors. Existing RDKit bounds matrices and embedding defaults retain
+  their compatibility behavior.
 
 ### Performance
 

@@ -526,7 +526,7 @@ fn set13_bounds(
 }
 
 /// `_getAtomStereo`.
-fn atom_stereo(mol: &RdkitMolView, b: usize, aid1: usize, aid4: usize) -> u8 {
+pub(super) fn atom_stereo(mol: &RdkitMolView, b: usize, aid1: usize, aid4: usize) -> u8 {
     let bond = &mol.bonds[b];
     let mut st = bond.stereo;
     if st > STEREO_ANY
