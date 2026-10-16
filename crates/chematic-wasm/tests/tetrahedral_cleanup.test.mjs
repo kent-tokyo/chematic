@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {createRequire} from 'node:module';
+import {fileURLToPath} from 'node:url';
 const require=createRequire(import.meta.url);
-const w=require(process.argv[2]);
+const modulePath=process.argv[2]??process.env.CHEMATIC_WASM_MODULE??fileURLToPath(new URL('../pkg-node/chematic_wasm.js',import.meta.url));
+const w=require(modulePath);
 const fixtures=JSON.parse(fs.readFileSync(new URL('../../../validation/rdkit_issues/tetrahedral-cleanup/cases.json',import.meta.url),'utf8')).cases;
 const mirror=s=>s.replaceAll('@@','TEMP').replaceAll('@','@@').replaceAll('TEMP','@');
 let decisions=0;
