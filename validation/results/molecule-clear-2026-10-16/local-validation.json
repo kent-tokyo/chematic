@@ -1,0 +1,77 @@
+{
+  "schema": "chematic.molecule-clear-local-validation.v1",
+  "checked_at_utc": "2026-10-16T14:59:46.883682+00:00",
+  "issue": "https://github.com/openbabel/openbabel/issues/3032",
+  "base_commit": "faa8092e6050ad6250c68498970245cfbc6579e9",
+  "baseline_native_module_commit": "a89446d34bec1b0b3a978a09daedb04cc9042989",
+  "baseline_editor_sources_match_base": true,
+  "baseline_module": {
+    "path": "/private/tmp/chematic-filesystem-main994-python/chematic/chematic.so",
+    "sha256": "84628f424efd41020513a7c09d62ae77003b4636f17f84acd7143b5fb4a51a3b"
+  },
+  "candidate_module": {
+    "path": "/private/tmp/chematic-molecule-clear-python/chematic/chematic.so",
+    "sha256": "2fab297b737e6bb5c4f810a9085d621f585e685fe9db7094da6cdd04ef8b09cb"
+  },
+  "source_sha256": {
+    "crates/chematic-core/src/molecule.rs": "39b6e6fd1922022549d464d8fe1e27a316ea0b1071daa27373085f6ecfb41329",
+    "crates/chematic-core/src/molecule/metadata.rs": "e1ba4c27be98b79c4c92d3e0be5327fab81c781c86c205472ea5fc7afa26c3f9",
+    "crates/chematic-core/src/molecule/clear_tests.rs": "da1b19ee1cbfdf0ca5e83d552f59849cf6cf0fa9816d28fc8425a18502be6e07",
+    "crates/chematic-py/src/rwmol.rs": "1b03186ea6da80b856ead24066788268230d5ade2fa0ebe0066999d7d3e93dc6",
+    "crates/chematic-py/python/chematic/__init__.pyi": "ea8bea3fea3501caa007dde515e2581097b43e86a23fd29e3f712d51608f1216",
+    "crates/chematic-py/python/chematic/rdkit_compat.py": "c092247ffad9e02c3cf8bbf9964437038e97cb4720c610fb119697b7417e2906",
+    "crates/chematic-py/tests/test_molecule_clear.py": "81d9d0ce5a74d5b124a0bcfa8e366f8754bb91a33c82ae681041c9773b6a7c9e",
+    "validation/openbabel_issues/molecule-clear/openbabel_probe.cpp": "0a00e68735e672f4614a672143e1978ea45248b159b7a4eb0f1321e92357890b"
+  },
+  "observed": {
+    "core_unit_passed": 162,
+    "new_core_lifecycle_tests": 3,
+    "python_passed": 173,
+    "new_python_tests": 11,
+    "existing_compat_tests": 162,
+    "baseline_clear_missing_failures": 10,
+    "native_python_reuse_cycles": 100,
+    "compat_python_reuse_cycles": 100,
+    "openbabel_title_leak_cycles": 4
+  },
+  "commands": [
+    "cargo test -p chematic-core --lib --offline",
+    "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3.13 -m pytest -q crates/chematic-py/tests/test_molecule_clear.py crates/chematic-py/tests/test_rdkit_compat.py",
+    "cargo clippy -p chematic-core -p chematic-py --all-targets --offline -- -D warnings"
+  ],
+  "build_command": "cargo rustc -p chematic-py --offline -- -C strip=none -C link-arg=-undefined -C link-arg=dynamic_lookup",
+  "profile": {
+    "optimization": 1,
+    "debug": 0,
+    "strip": "none",
+    "incremental": false,
+    "codegen_units": 1,
+    "jobs": 1
+  },
+  "versions": {
+    "rustc": "rustc 1.97.0 (2d8144b78 2026-07-07)",
+    "python": "Python 3.13.6",
+    "openbabel": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+    "openbabel_pkg_config": "3.2.1"
+  },
+  "gates": {
+    "clippy_all_targets": "passed",
+    "fmt": "passed",
+    "refactor_budget": "passed",
+    "binding_surface": "passed; module-level names unchanged: Python 213, WASM 317",
+    "cross_binding_manifest": "passed",
+    "unsafe_surface": "passed",
+    "product_names": "passed",
+    "python_stub_syntax": "passed",
+    "mkdocs_strict": "passed",
+    "git_diff_check": "passed"
+  },
+  "limits": [
+    "Additive reset API; no existing chematic Clear bug claimed",
+    "Core graph has no wrapper-owned titles or properties",
+    "Compat Clear is a chematic extension",
+    "Empty descriptors match the existing fresh editor contract",
+    "Local macOS native module; no published package, Windows/Linux/WASM or performance claim",
+    "Hosted CI tracked separately on PR"
+  ]
+}

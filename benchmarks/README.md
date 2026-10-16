@@ -22,6 +22,9 @@ the [complete inventory](archive-index.md) links every retained record.
 
 ## Recent focused follow-ups
 
+- [V3000 3D coordinate formatting](2026-10-16-openbabel-v3000-3d-format.md):
+  controlled 3D writing improves 5.330–5.543x over the source base and
+  beats Open Babel by 8.556–8.560x; all 24 source median budgets pass.
 - [Scalar descriptor model reuse candidate](2026-10-16-python-scalar-model-reuse.md):
   TPSA→ASA first-use improves 1.013–1.045x, but five parse-inclusive
   medians miss the retention floor; manual integration requested after disclosure,

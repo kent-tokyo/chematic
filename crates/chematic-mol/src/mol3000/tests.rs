@@ -42,6 +42,95 @@ M  END
 ";
 
 #[test]
+fn bracket_atom_valence_and_radicals_survive_v3000_writing() {
+    for (smiles, expected) in [
+        ("[C]SCCC(S)C(=O)O", "RAD=2 VAL=1"),
+        ("[CH]C", "RAD=3 VAL=2"),
+        ("[CH2]C", "RAD=2 VAL=3"),
+        ("[O]C", "RAD=2 VAL=1"),
+        ("[N]N", "RAD=3 VAL=1"),
+        ("[c]1ccccc1", "RAD=2 VAL=3"),
+        ("[C@H](C)(C)->C", "RAD=2 VAL=3"),
+        ("[O]", "VAL=-1"),
+    ] {
+        let mol = chematic_smiles::parse(smiles).unwrap();
+        let block = write_mol_v3000(&mol, &MolMetadata::default(), &[]);
+        let first_atom = block
+            .lines()
+            .find(|line| line.starts_with("M  V30 1 "))
+            .unwrap();
+        assert!(first_atom.contains(expected), "{smiles}: {first_atom}");
+    }
+
+    let methane = chematic_smiles::parse("[CH4]").unwrap();
+    let block = write_mol_v3000(&methane, &MolMetadata::default(), &[]);
+    assert!(
+        !block.contains(" RAD=") && !block.contains(" VAL="),
+        "{block}"
+    );
+}
+
+#[test]
+fn v3000_source_radical_attributes_are_not_duplicated() {
+    let mol = chematic_smiles::parse("[CH]C").unwrap();
+    let metadata = MolMetadata {
+        v3000_atom_properties: vec![(1, "RAD=3 VAL=2".into())],
+        ..Default::default()
+    };
+    let block = write_mol_v3000(&mol, &metadata, &[]);
+    let first_atom = block
+        .lines()
+        .find(|line| line.starts_with("M  V30 1 "))
+        .unwrap();
+    assert_eq!(first_atom.matches(" RAD=").count(), 1, "{first_atom}");
+    assert_eq!(first_atom.matches(" VAL=").count(), 1, "{first_atom}");
+}
+
+#[test]
+fn unusual_explicit_hydrogen_valence_is_written_for_non_organic_atoms() {
+    for (smiles, expected) in [
+        ("[BH2]", "VAL=2"),
+        ("[SiH3]", "VAL=3"),
+        ("[SH]", "VAL=1"),
+        ("[ZnH2]", "VAL=2"),
+        ("[Zn@H](F)(Cl)Br", "VAL=4"),
+        ("[P@H](F)(Cl)Br", "VAL=4"),
+        ("[CuH]", "VAL=1"),
+    ] {
+        let mol = chematic_smiles::parse(smiles).unwrap();
+        let block = write_mol_v3000(&mol, &MolMetadata::default(), &[]);
+        let first_atom = block
+            .lines()
+            .find(|line| line.starts_with("M  V30 1 "))
+            .unwrap();
+        assert!(first_atom.contains(expected), "{smiles}: {first_atom}");
+    }
+
+    let ordinary = chematic_smiles::parse("[SH2]").unwrap();
+    let block = write_mol_v3000(&ordinary, &MolMetadata::default(), &[]);
+    assert!(!block.contains(" VAL="), "{block}");
+
+    let mol = chematic_smiles::parse("[Zn@H](F)(Cl)Br").unwrap();
+    let block_3d = write_mol_v3000_with_conformer(
+        &mol,
+        &MolMetadata::default(),
+        &Coords3D::new_zeroed(mol.atom_count()),
+    );
+    assert!(block_3d.contains(" VAL=4"), "{block_3d}");
+
+    let metadata = MolMetadata {
+        v3000_atom_properties: vec![(1, "VAL=4".into())],
+        ..Default::default()
+    };
+    let block = write_mol_v3000(&mol, &metadata, &[]);
+    let first_atom = block
+        .lines()
+        .find(|line| line.starts_with("M  V30 1 "))
+        .unwrap();
+    assert_eq!(first_atom.matches(" VAL=").count(), 1, "{first_atom}");
+}
+
+#[test]
 fn dative_carbonyl_does_not_emit_fictitious_ez_direction() {
     // Minimal form of stress-v1.smi line 3945, written as 2D V3000 by
     // RDKit 2025.09.3. Oxygen-to-sodium is a coordinate bond, not an E/Z
