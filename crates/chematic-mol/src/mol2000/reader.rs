@@ -1,5 +1,9 @@
 use super::*;
 
+#[cfg(test)]
+#[path = "stereo3d_guard_tests.rs"]
+mod stereo3d_guard_tests;
+
 /// Parse a MOL V2000 string, running stereo perception and returning every
 /// rejected wedge/hash center as a structured [`StereoDiagnostic`].
 ///
