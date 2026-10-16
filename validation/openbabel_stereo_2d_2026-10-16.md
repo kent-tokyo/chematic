@@ -13,7 +13,7 @@ lone-pair SMILES writer fix in this change. Its SHA-256 was
 The Open Babel binary SHA-256 was
 `733b2c925d60b17a5c9d8ce9ec841e918cc20c7634301e23f9008a187d1d9bc5`.
 
-| Corpus and format | Comparable | CheMatic correct | Open Babel correct | Open Babel only |
+| Corpus and format | Comparable | CheMatic strict | Open Babel strict | Open Babel only |
 | --- | ---: | ---: | ---: | ---: |
 | CIP corpus, V2000 | 155 | 155 | 143 | 0 |
 | CIP corpus, V3000 | 155 | 155 | 146 | 0 |
@@ -30,6 +30,34 @@ first 300 distinct RDKit identities containing `@`, `/`, or `\` syntax. Of
 V3000 despite a V2000 request, four changed identity on RDKit re-read, and
 two could not be written by RDKit. The same source molecule accounts for the
 one case where neither converter matched in each format.
+
+## Nonstereogenic explicit-H adjudication on latest main
+
+The strict table above treats stress source line 305 (`[H]/N=C(/N)N`) as a
+miss for both converters. RDKit 2025.09.3 finds no specified stereo in this
+source: the imine carbon has two identical N substituents. CheMatic writes
+`C(N)(N)=N[H]`; Open Babel writes `N=C(N)N`. RDKit removes the ordinary
+explicit H from each representation and obtains the same molecular identity.
+The paired gate now accepts this H representation difference only when both
+parsed molecules have no specified stereo and no labeled or isotopic explicit
+H. A stereogenic H-defined imine, E/Z reversal, and isotope loss remain
+negative controls. The strict result remains available per row.
+
+| Corpus and format | Comparable | CheMatic verified equivalent | Open Babel verified equivalent | Open Babel only |
+| --- | ---: | ---: | ---: | ---: |
+| CIP corpus, V2000 | 155 | 155 | 143 | 0 |
+| CIP corpus, V3000 | 155 | 155 | 146 | 0 |
+| First 300 unique stereo stress molecules, V2000 | 291 | 291 | 248 | 0 |
+| First 300 unique stereo stress molecules, V3000 | 297 | 297 | 237 | 0 |
+
+Only line 305 changed classification for both engines and both MOL versions.
+The current-main source revision was `1a7188cd6d6ea6b566892cd841fe3481f08f94b6`;
+the source-built CheMatic CLI SHA-256 was
+`326274218779f255c284c72f943de3c9584847ff6f343d0301754b9cdb9eea6e`.
+Open Babel remained 3.2.1 with binary SHA-256
+`733b2c925d60b17a5c9d8ce9ec841e918cc20c7634301e23f9008a187d1d9bc5`.
+This correction removes a false negative in the *comparison*. It does not
+change CheMatic's molecular parser or its SMILES writer.
 
 The fixed defect was a three-coordinate sulfoxide. MOL wedge perception stores
 its stereogenic lone pair as a virtual terminal in the neighbor order, but
