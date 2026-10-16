@@ -2,7 +2,7 @@
 
 Local adoption gate: **FAIL**. RDKit/COSMolKit-wide superiority remains unproved. All measured lanes are retained.
 
-This candidate must remain unpromoted: the predeclared primary or retention gate did not pass. Correctness CI does not override this performance decision.
+The frozen performance recommendation was to keep this candidate unpromoted because the retention gate failed. After these regressions were disclosed, the user explicitly requested commit and push to main on 2026-10-16. Integration therefore proceeds as manual acceptance of the tradeoff, subject to correctness CI; the performance gate remains **FAIL**. The evidence packet is retained unchanged from measured commit `bdd1ae4a135c3768da406838a8a6f86632e02931`, including its original recommendation. Integration includes the later main change `b4dbecf8` to V3000 stereo depiction; no timing results are attributed to that combined revision.
 
 ## Change and correctness
 
