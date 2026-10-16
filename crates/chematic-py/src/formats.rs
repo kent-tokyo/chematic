@@ -1426,6 +1426,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         parse_mol2_record_json,
         convert_with_report_json,
         roundtrip_mol2_record,
+        kekulize_mol2_record,
         from_pdbqt,
         from_gjf,
         parse_gaussian_log,

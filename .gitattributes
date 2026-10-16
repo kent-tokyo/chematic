@@ -6,3 +6,6 @@ validation/rdkit_issues/pdb-conect/*.pdb text eol=lf whitespace=-blank-at-eol
 validation/rdkit_issues/*.patch whitespace=-blank-at-eol
 validation/openbabel_issues/*.patch whitespace=-blank-at-eol
 validation/cosmolkit_comparison/*.patch whitespace=-blank-at-eol
+
+# This source-preservation fixture deliberately retains CRLF bytes.
+validation/openbabel_issues/mol2-kekule/rich-source.mol2 -text whitespace=cr-at-eol

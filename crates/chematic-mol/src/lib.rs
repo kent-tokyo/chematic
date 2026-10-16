@@ -52,6 +52,7 @@ pub mod lammps_dump;
 pub mod mmcif;
 pub mod mmcif_pdb;
 pub mod mol2000;
+pub mod mol2_kekule;
 pub mod mol2_source;
 pub mod mol2_tripos;
 pub mod mol3000;
@@ -301,6 +302,7 @@ mod format_limit_contract_tests;
 #[cfg(test)]
 mod format_bridge_boundary_contract_tests;
 
+pub use mol2_kekule::{Mol2KekuleError, kekulize_mol2_record};
 pub use mol2_source::{
     Mol2SourceAtomRecord, Mol2SourceBondRecord, Mol2SourceRecord, parse_mol2_source_record,
     parse_mol2_source_record_with_limits, write_mol2_source_record,

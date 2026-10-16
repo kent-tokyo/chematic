@@ -102,6 +102,7 @@ nav:
     - Python Filesystem Paths: python-filesystem-paths.md
     - Python Stub Packaging Gate: python-stub-packaging-gate.md
     - Proof-Backed Tetrahedral Cleanup: tetrahedral-stereo-cleanup.md
+    - MOL2 Kekulé Bond Output: mol2-kekule-bond-output.md
     - ChemDoodle JSON: chemdoodle-json.md
     - Fingerprint Target Density: fingerprint-target-density.md
     - Bounded Native Distance Matrices: native-distance-matrix-limits.md

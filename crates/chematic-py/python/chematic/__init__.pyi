@@ -3129,6 +3129,14 @@ def roundtrip_mol2_record(text: str) -> str:
     """Validate one MOL2 record and preserve its exact source."""
     ...
 
+def kekulize_mol2_record(text: str) -> str:
+    """Replace only ar bond tokens in a bounded neutral aromatic MOL2 record.
+
+    Other source bytes, including atom types and coordinates, are retained.
+    Unsupported profiles and failed matching raise ValueError.
+    """
+    ...
+
 def from_mol2(mol2_str: str) -> Mol:
     """Parse a Tripos MOL2 string and return a :class:`Mol`.
 

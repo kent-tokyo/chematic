@@ -1,5 +1,13 @@
 use super::*;
 
+/// Replace only MOL2 ar bond tokens with explicit single/double orders.
+/// Bounded neutral C/N/O/S profile; other source bytes stay unchanged.
+#[pyfunction]
+pub(super) fn kekulize_mol2_record(text: &str) -> PyResult<String> {
+    chematic_mol::kekulize_mol2_record(text)
+        .map_err(|error| PyValueError::new_err(error.to_string()))
+}
+
 /// Inspect a source-preserving MOL2 record, including partial charges and types.
 #[pyfunction]
 pub(super) fn parse_mol2_record_json(text: &str) -> PyResult<String> {
