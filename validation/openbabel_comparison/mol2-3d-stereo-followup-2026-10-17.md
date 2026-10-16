@@ -31,7 +31,8 @@ not proof that every such source intended radicals.
 Four gains recover two mixed bridgeheads, three mutually dependent methylated
 ring centers, a ring center distinguished by remote stereo, and two P=N
 phosphorus centers from nonplanar coordinates. The extra recognition runs
-only in the MOL2 reader. MOL/SDF keeps its existing pinned 3D interpretation.
+only in the MOL2 reader. A subsequent narrow CTAB refinement is measured in
+the [browser-corpus SDF holdout](unmarked-3d-browser-holdout-2026-10-17.md).
 Single-methyl cyclohexane, symmetric phosphorus with duplicate methyl
 ligands, and adamantane remain untagged in the new tests.
 

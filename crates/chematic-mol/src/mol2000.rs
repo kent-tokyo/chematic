@@ -370,7 +370,13 @@ fn perceive_tetrahedral_from_3d_with_mode(
     }) {
         return;
     }
-    for _ in 0..if mol2_extensions { 2 } else { 1 } {
+    let mut previous_pass_centers = std::collections::HashSet::new();
+    for pass in 0..2 {
+        // CTAB keeps its original one-pass interpretation except for a ring
+        // CH between two centers assigned by the first pass. Those two
+        // configurations can distinguish its otherwise equivalent ring arms.
+        let ring_bonds =
+            (pass == 1 && !mol2_extensions).then(|| chematic_perception::ring_bond_flags(mol));
         let mut ordinary_centers: std::collections::HashSet<_> =
             chematic_perception::stereo_centers(mol)
                 .into_iter()
@@ -383,6 +389,24 @@ fn perceive_tetrahedral_from_3d_with_mode(
             .atoms()
             .filter(|(_, atom)| atom.chirality == Chirality::None && !atom.aromatic)
             .filter_map(|(idx, _)| {
+                if let Some(ring_bonds) = &ring_bonds {
+                    let assigned_ring_neighbors = mol
+                        .neighbors(idx)
+                        .filter(|&(neighbor, bond)| {
+                            ring_bonds[bond.0 as usize]
+                                && previous_pass_centers.contains(&neighbor)
+                                && mol.atom(neighbor).hydrogen_count.is_none()
+                        })
+                        .take(2)
+                        .count();
+                    if mol.degree(idx) != 3
+                        || mol.atom(idx).hydrogen_count.is_some()
+                        || chematic_core::implicit_hcount(mol, idx) != 1
+                        || assigned_ring_neighbors != 2
+                    {
+                        return None;
+                    }
+                }
                 let mut order: Vec<u32> =
                     mol.neighbors(idx).map(|(neighbor, _)| neighbor.0).collect();
                 order.sort_unstable();
@@ -407,11 +431,13 @@ fn perceive_tetrahedral_from_3d_with_mode(
             })
             .collect();
         let mut newly_assigned = 0;
+        previous_pass_centers.clear();
         for (idx, order) in candidates {
             if let Some(chirality) = tetrahedral_chirality_from_3d(&order, idx, conformer) {
                 mol.set_stereo_neighbor_order(idx, order);
                 mol.set_chirality(idx, chirality);
                 newly_assigned += 1;
+                previous_pass_centers.insert(idx);
             }
         }
         if newly_assigned == 0 {

@@ -77,7 +77,13 @@ def prepare(corpus: Path, seed: int, per_category: int, excluded: set[int]):
         settings = AllChem.ETKDGv3()
         settings.randomSeed = 20261016 + index
         settings.maxIterations = 30
-        if AllChem.EmbedMolecule(with_h, settings) != 0:
+        try:
+            embedded = AllChem.EmbedMolecule(with_h, settings)
+        except ValueError:
+            # Some parseable aromatic inputs fail RDKit's embedding-time
+            # kekulization. They cannot supply a source-gated 3D record.
+            continue
+        if embedded != 0:
             continue
         mol = Chem.RemoveHs(with_h)
         candidate = {}
