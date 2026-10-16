@@ -53,6 +53,62 @@ fn append_header(out: &mut String, mol: &Molecule, metadata: &MolMetadata, dimen
     .expect("writing to String cannot fail");
 }
 
+/// Bracket SMILES atoms have no implicit hydrogens. For neutral C/N/O, the
+/// difference from ordinary valence therefore records unpaired electrons.
+/// CTfile readers otherwise fill that difference with hydrogens and change
+/// the molecule. Opaque source attributes take precedence when present.
+fn append_inferred_radical_properties(
+    line: &mut String,
+    mol: &Molecule,
+    idx: AtomIdx,
+    atom: &Atom,
+    source_properties: Option<&str>,
+) {
+    let Some(hydrogens) = atom.hydrogen_count else {
+        return;
+    };
+    if atom.charge != 0
+        || atom.wildcard
+        || !matches!(atom.element, Element::C | Element::N | Element::O)
+        || source_properties.is_some_and(|properties| {
+            properties
+                .split_whitespace()
+                .any(|token| token.starts_with("RAD=") || token.starts_with("VAL="))
+        })
+    {
+        return;
+    }
+    let mut drawn = hydrogens;
+    let mut aromatic_bonds = 0u8;
+    for (_, bond_idx) in mol.neighbors(idx) {
+        let bond = mol.bond(bond_idx);
+        let order = match bond.order {
+            BondOrder::Single | BondOrder::Up | BondOrder::Down => 1,
+            BondOrder::Double => 2,
+            BondOrder::Triple => 3,
+            BondOrder::Aromatic => {
+                aromatic_bonds += 1;
+                1
+            }
+            BondOrder::Dative if bond.atom1 == idx => 0,
+            BondOrder::Dative => 1,
+            _ => return,
+        };
+        drawn = drawn.saturating_add(order);
+    }
+    drawn = drawn.saturating_add(aromatic_bonds / 2);
+    let normal = atom.element.normal_valences()[0];
+    if drawn >= normal {
+        return;
+    }
+    if drawn == 0 {
+        line.push_str(" VAL=-1");
+    } else {
+        let radical = if (normal - drawn) % 2 == 1 { 2 } else { 3 };
+        write!(line, " RAD={radical} VAL={drawn}").expect("writing to String cannot fail");
+    }
+}
+
 fn append_atom_properties(
     line: &mut String,
     mol: &Molecule,
@@ -70,11 +126,13 @@ fn append_atom_properties(
         write!(line, " HCOUNT={hydrogens}").expect("writing to String cannot fail");
     }
     append_v3000_rgroup_property(line, mol, idx);
-    if let Some((_, properties)) = metadata
+    let source_properties = metadata
         .v3000_atom_properties
         .iter()
         .find(|(atom_id, _)| *atom_id == idx.0 + 1)
-    {
+        .map(|(_, properties)| properties.as_str());
+    append_inferred_radical_properties(line, mol, idx, atom, source_properties);
+    if let Some(properties) = source_properties {
         line.push(' ');
         line.push_str(properties);
     }
