@@ -704,6 +704,15 @@ pub fn parse_mol2_record_with_limits(
 /// `coords` must have one entry per atom in `mol`.  Missing entries use
 /// `(0.0, 0.0, 0.0)`.
 pub fn write_mol2(mol: &Molecule, coords: &[(f64, f64, f64)]) -> String {
+    write_mol2_with_section_order(mol, coords, Mol2SectionOrder::default())
+}
+
+/// Write graph output with an explicit section-order compatibility policy.
+pub fn write_mol2_with_section_order(
+    mol: &Molecule,
+    coords: &[(f64, f64, f64)],
+    order: Mol2SectionOrder,
+) -> String {
     let record = Mol2Record {
         molecule: mol.clone(),
         coords: coords.to_vec(),
@@ -737,7 +746,7 @@ pub fn write_mol2(mol: &Molecule, coords: &[(f64, f64, f64)]) -> String {
         unity_atom_attributes: Vec::new(),
         opaque_sections: Vec::new(),
     };
-    write_mol2_record(&record)
+    write_mol2_record_with_section_order(&record, order)
 }
 
 fn bond_type_token(order: BondOrder) -> &'static str {
@@ -941,14 +950,41 @@ fn write_mol2_opaque_sections(record: &Mol2Record, out: &mut String) {
 /// Serialize a loss-aware MOL2 record, retaining atom types, partial charges,
 /// residue fields, status bits, formal-charge attributes, and opaque sections.
 pub fn write_mol2_record(record: &Mol2Record) -> String {
+    write_mol2_record_with_section_order(record, Mol2SectionOrder::default())
+}
+
+/// Output compatibility policy for editable/generated MOL2 records.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum Mol2SectionOrder {
+    /// Retain the existing ATOM → UNITY → BOND order. Open Babel 3.2.1 reads
+    /// UNITY formal charges only before BOND in the tested graph controls.
+    #[default]
+    UnityBeforeBonds,
+    /// Emit ATOM → BOND → UNITY for readers requiring adjacent core sections
+    /// (Open Babel #2350). Open Babel 3.2.1 may ignore these UNITY charges.
+    AtomBondAdjacent,
+}
+
+/// Serialize an editable record with an explicit section-order policy.
+/// All section contents are retained; this does not assign SYBYL atom types
+/// or calculate partial charges. Immutable source writers remain separate.
+pub fn write_mol2_record_with_section_order(
+    record: &Mol2Record,
+    order: Mol2SectionOrder,
+) -> String {
     let mol = &record.molecule;
     let mut out = String::with_capacity(
         256 + mol.atom_count().saturating_mul(96) + mol.bond_count().saturating_mul(32),
     );
     write_mol2_header(record, &mut out);
     write_mol2_atoms(record, &mut out);
-    write_mol2_unity(&mol2_unity_groups(record), &mut out);
+    if order == Mol2SectionOrder::UnityBeforeBonds {
+        write_mol2_unity(&mol2_unity_groups(record), &mut out);
+    }
     write_mol2_bonds(record, &mut out);
+    if order == Mol2SectionOrder::AtomBondAdjacent {
+        write_mol2_unity(&mol2_unity_groups(record), &mut out);
+    }
     write_mol2_opaque_sections(record, &mut out);
     out
 }

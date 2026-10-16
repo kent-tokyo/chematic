@@ -1,0 +1,15 @@
+@<TRIPOS>MOLECULE
+original nitrogen
+1 0 0 0 0
+SMALL
+USER_CHARGES
+
+@<TRIPOS>ATOM
+17 nitrogen 1.25 -2.5 3.75 N.4 2 LIG -0.7 ACTIVE
+@<TRIPOS>UNITY_ATOM_ATTR
+17 2
+charge 1
+color red
+@<TRIPOS>BOND
+@<TRIPOS>VENDOR
+opaque retained

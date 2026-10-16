@@ -1,0 +1,92 @@
+{
+  "schema": "chematic.mol2-section-order-local-validation.v1",
+  "checked_at_utc": "2026-10-16T09:38:07.506127+00:00",
+  "base_commit": "3e7f04b20593af4b07569d886b56afc1184468fe",
+  "versions": {
+    "rustc": "rustc 1.97.0 (2d8144b78 2026-07-07)",
+    "cargo": "cargo 1.97.0 (c980f4866 2026-06-30)",
+    "python": "Python 3.13.6",
+    "node": "v24.5.0",
+    "wasm_bindgen": "wasm-bindgen 0.2.129"
+  },
+  "build_profile": {
+    "optimization": 1,
+    "debug": 0,
+    "incremental": false,
+    "codegen_units": 1,
+    "jobs": 1,
+    "strip": "none",
+    "python_extension": "native macOS dynamic_lookup",
+    "wasm_target": "wasm32-unknown-unknown"
+  },
+  "test_commands": [
+    "cargo test -p chematic-mol --test mol2_section_order --test mol2_preservation --test mol2_unity_charge --test mol2_3d_stereo --offline",
+    "cargo test -p chematic-mol --lib mol2_tripos::tests --offline",
+    "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3.13 -m pytest -q crates/chematic-py/tests/test_mol2_section_order.py crates/chematic-py/tests/test_mol2_preservation.py crates/chematic-py/tests/test_input_errors.py crates/chematic-py/tests/test_format_convert.py",
+    "node crates/chematic-wasm/tests/mol2_section_order.test.mjs",
+    "node crates/chematic-wasm/tests/mol2_preservation.test.mjs",
+    "python3.13 validation/openbabel_issues/mol2-section-order/validate.py --results validation/results/mol2-section-order-2026-10-16 --obabel /opt/homebrew/bin/obabel",
+    "cargo clippy -p chematic-mol -p chematic-py -p chematic-wasm --all-targets --offline -- -D warnings"
+  ],
+  "observed_results": {
+    "rust_integration_passed": 27,
+    "rust_unit_passed": 15,
+    "python_passed": 57,
+    "node_section_order_checks": 11,
+    "node_existing_preservation_script": "passed",
+    "native_section_content_cases": 9,
+    "default_native_bytes_unchanged": 9,
+    "native_python_node_byte_parity": 8,
+    "openbabel_default_charge_matches": 9,
+    "openbabel_adjacent_charge_mismatches": 6
+  },
+  "gates": {
+    "cargo_fmt": "passed",
+    "clippy_all_targets": "passed",
+    "refactor_budget": "passed",
+    "binding_surface": "passed; 206 Python functions, 307 WASM exports, unchanged",
+    "cross_binding_manifest": "passed; 58 operations",
+    "product_names": "passed",
+    "unsafe_surface": "passed",
+    "python_and_node_syntax": "passed",
+    "mkdocs_strict": "passed",
+    "git_diff_check": "passed"
+  },
+  "host_test_note": "Disabled auto-loaded third-party pytest plugins because installed pytest_asyncio 0.23.3 is incompatible with pytest 9.1.1 collection.",
+  "source_sha256": {
+    "crates/chematic-mol/src/mol2_tripos.rs": "415576e9faa182cab23c725888caaf7a30859823d3588889900f0a36dbdf16c5",
+    "crates/chematic-mol/src/lib.rs": "f59dc677ae8c8bfa2207020e7b0da2826d3415806be5dc1f71b8498a8c3f893f",
+    "crates/chematic-py/src/mol_methods/identity.rs": "6119a44f9ea91653f5ddf8c7de63e90360b470c303560b4f955d7309a25073f6",
+    "crates/chematic-py/python/chematic/__init__.pyi": "1decb0f5da033f39eb954df78f8d4c590c9368c082ab13d27f9c35d946ab27fe",
+    "crates/chematic-wasm/src/mol_io/common_formats.rs": "597dad486337a336dcb68f87078c08af3b2aa5ca6040c82d2ea0b4ced3276b28",
+    "crates/chematic-mol/examples/mol2_section_order_dump.rs": "9f74fe988431082e1d7cbff9fae4172a63779158ee98cb174a09eb3a430d5a26",
+    "crates/chematic-mol/tests/mol2_section_order.rs": "1a7156b03a3e8bf9b0caf98549c4905b34188f26b582c61e96e0648a121a9b79",
+    "crates/chematic-py/tests/test_mol2_section_order.py": "ded3a717901ed96cb605d7f2b8d4ae8405237e1de17092f6e9f4ef5156044a41",
+    "crates/chematic-wasm/tests/mol2_section_order.test.mjs": "77554f3506bdb9025efe8f9443c6328e4612aa0b805f03cf9958950e8148ed47"
+  },
+  "artifacts": {
+    "python_extension": {
+      "path": "/private/tmp/chematic-mol2-order-python/chematic/chematic.so",
+      "sha256": "475dd3e8b65f6a2fa28ba95d310f7af5a71925069650950094a2be8f9572a73d"
+    },
+    "node_js": {
+      "path": "/private/tmp/chematic-mol2-order-node/chematic_wasm.js",
+      "sha256": "e110061d312147769e339347123fddb679c5b7885c44bff82d307d2f172c0c63"
+    },
+    "node_wasm": {
+      "path": "/private/tmp/chematic-mol2-order-node/chematic_wasm_bg.wasm",
+      "sha256": "5a70cfabeeaa386de37cb4c3c1ffacef8c1f48049b9fa0c558601f4dd99aeff5"
+    },
+    "native_dump": {
+      "path": "/private/tmp/chematic-mol2-order-target-20261016/debug/examples/mol2_section_order_dump",
+      "sha256": "cc2ee65b7d0d75d1b2bf6eb35150a31ff5e4290d268286d73ad5fd0d345e16a4"
+    }
+  },
+  "wasm_bindgen_official_archive_checksum_verified": true,
+  "scope_limits": [
+    "Antechamber not installed or run",
+    "Source evidence only; no publication or main merge",
+    "Hosted CI tracked separately on the PR",
+    "No full-suite or broad chemical equivalence claim"
+  ]
+}

@@ -49,6 +49,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   traversal normalization, explicit cis/trans/unspecified results and invalid
   path errors. Existing RDKit bounds matrices and embedding defaults retain
   their compatibility behavior.
+- Added an opt-in MOL2 ATOM → BOND → UNITY section order to Rust and the
+  existing Python/WASM graph writers for readers requiring adjacent core
+  sections (Open Babel #2350). Default bytes and immutable source retention
+  remain unchanged. Open Babel 3.2.1 ignores trailing UNITY charges in six
+  original graph controls; see the [compatibility record](docs/mol2-section-order.md).
 
 ### Performance
 

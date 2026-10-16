@@ -106,6 +106,7 @@ nav:
     - Python Serialized Input Types: python-serialized-input.md
     - All-reference MOL2 RMSD: mol2-reference-rmsd.md
     - Alkene Path Stereo: alkene-path-stereo.md
+    - MOL2 Section Order: mol2-section-order.md
     - ChemDoodle JSON: chemdoodle-json.md
     - Fingerprint Target Density: fingerprint-target-density.md
     - Bounded Native Distance Matrices: native-distance-matrix-limits.md

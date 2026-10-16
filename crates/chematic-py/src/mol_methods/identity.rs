@@ -1115,8 +1115,16 @@ impl Mol {
     ///     mol = chematic.from_smiles("CCO")
     ///     with open("ethanol.mol2", "w") as f:
     ///         f.write(mol.to_mol2())
-    fn to_mol2(&self) -> String {
-        chematic_mol::write_mol2(&self.inner, &[])
+    /// Set `atom_bond_adjacent=True` for ATOM → BOND → UNITY output. Some
+    /// readers (including Open Babel 3.2.1) ignore UNITY charges in this order.
+    #[pyo3(signature = (*, atom_bond_adjacent=false))]
+    fn to_mol2(&self, atom_bond_adjacent: bool) -> String {
+        let order = if atom_bond_adjacent {
+            chematic_mol::Mol2SectionOrder::AtomBondAdjacent
+        } else {
+            chematic_mol::Mol2SectionOrder::default()
+        };
+        chematic_mol::write_mol2_with_section_order(&self.inner, &[], order)
     }
 
     /// Serialize to MDL MOL V2000 format with 2D coordinates (Å).

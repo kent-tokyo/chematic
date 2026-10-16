@@ -1,0 +1,83 @@
+{
+  "schema": "chematic.mol2-section-order-fixtures.v1",
+  "issue": "https://github.com/openbabel/openbabel/issues/2350",
+  "provenance": "Original small ion/neutral controls and source-ID/partial-charge/opaque-attribute record. MIT OR Apache-2.0. No upstream source or attachments copied.",
+  "cases": [
+    {
+      "id": "anion",
+      "smiles": "[O-2]",
+      "formal_charges": [
+        -2
+      ]
+    },
+    {
+      "id": "cation",
+      "smiles": "[Na+]",
+      "formal_charges": [
+        1
+      ]
+    },
+    {
+      "id": "ammonium",
+      "smiles": "[NH4+]",
+      "formal_charges": [
+        1
+      ]
+    },
+    {
+      "id": "tetra",
+      "smiles": "C[N+](C)(C)C",
+      "formal_charges": [
+        0,
+        1,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "zwitterion",
+      "smiles": "[NH3+]CC[O-]",
+      "formal_charges": [
+        1,
+        0,
+        0,
+        -1
+      ]
+    },
+    {
+      "id": "magnesium",
+      "smiles": "[Mg+2]",
+      "formal_charges": [
+        2
+      ]
+    },
+    {
+      "id": "neutral",
+      "smiles": "CO",
+      "formal_charges": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "aromatic-neutral",
+      "smiles": "c1ccccc1",
+      "formal_charges": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "editable-rich-record",
+      "record": "@<TRIPOS>MOLECULE\noriginal nitrogen\n1 0 0 0 0\nSMALL\nUSER_CHARGES\n\n@<TRIPOS>ATOM\n17 nitrogen 1.25 -2.5 3.75 N.4 2 LIG -0.7 ACTIVE\n@<TRIPOS>UNITY_ATOM_ATTR\n17 2\ncharge 1\ncolor red\n@<TRIPOS>BOND\n@<TRIPOS>VENDOR\nopaque retained\n",
+      "formal_charges": [
+        1
+      ]
+    }
+  ]
+}
