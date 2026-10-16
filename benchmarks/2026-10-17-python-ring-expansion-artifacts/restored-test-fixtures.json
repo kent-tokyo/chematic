@@ -1,0 +1,5 @@
+[
+  "validation/rdkit_issues/resonance/local_cation_pairs.smi",
+  "validation/rdkit_issues/tetrahedral-cleanup/cases.json",
+  "validation/openbabel_issues/hydrogen-counts/cases.tsv"
+]

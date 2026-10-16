@@ -1,0 +1,44 @@
+    Checking serde_core v1.0.229
+    Checking chematic-core v1.1.6 (/private/tmp/chematic-python-ring-first-use-20261017/crates/chematic-core)
+    Checking chematic-perception v1.1.6 (/private/tmp/chematic-python-ring-first-use-20261017/crates/chematic-perception)
+    Checking serde v1.0.229
+    Checking either v1.18.0
+    Checking memchr v2.8.3
+    Checking serde_json v1.0.151
+    Checking zerocopy v0.8.56
+    Checking half v2.7.1
+    Checking rayon v1.12.0
+    Checking chematic-smiles v1.1.6 (/private/tmp/chematic-python-ring-first-use-20261017/crates/chematic-smiles)
+    Checking clap_lex v1.1.0
+    Checking plotters-backend v0.3.7
+    Checking ciborium-io v0.2.2
+    Checking anstyle v1.0.14
+    Checking regex-syntax v0.8.11
+    Checking regex-automata v0.4.18
+    Checking clap_builder v4.6.7
+    Checking ciborium-ll v0.2.2
+    Checking plotters-svg v0.3.7
+    Checking num-traits v0.2.19
+    Checking libc v0.2.189
+    Checking itertools v0.13.0
+    Checking same-file v1.0.6
+    Checking cast v0.3.0
+    Checking criterion-plot v0.8.2
+    Checking walkdir v2.5.0
+    Checking page_size v0.6.0
+    Checking alloca v0.4.0
+    Checking plotters v0.3.7
+    Checking ciborium v0.2.2
+    Checking clap v4.6.7
+    Checking regex v1.13.1
+    Checking tinytemplate v1.2.1
+    Checking oorandom v11.1.5
+    Checking anes v0.1.6
+    Checking criterion v0.8.2
+    Checking chematic-smarts v1.1.6 (/private/tmp/chematic-python-ring-first-use-20261017/crates/chematic-smarts)
+    Checking chematic-rxn v1.1.6 (/private/tmp/chematic-python-ring-first-use-20261017/crates/chematic-rxn)
+    Checking chematic-cip v1.1.6 (/private/tmp/chematic-python-ring-first-use-20261017/crates/chematic-cip)
+    Checking chematic-fp v1.1.6 (/private/tmp/chematic-python-ring-first-use-20261017/crates/chematic-fp)
+    Checking chematic-iupac v1.1.6 (/private/tmp/chematic-python-ring-first-use-20261017/crates/chematic-iupac)
+    Checking chematic-chem v1.1.6 (/private/tmp/chematic-python-ring-first-use-20261017/crates/chematic-chem)
+    Finished `release` profile [optimized] target(s) in 22.99s

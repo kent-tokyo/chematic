@@ -1,0 +1,17 @@
+baseline-descriptor complete
+baseline-morgan complete
+baseline-maccs complete
+candidate-descriptor complete
+candidate-morgan complete
+candidate-maccs complete
+Traceback (most recent call last):
+  File "/private/tmp/chematic-ring-expansion-evidence-20261017/validate.py", line 52, in <module>
+    run('python-tests', ['-m', 'pytest', '-q', '-p', 'no:cacheprovider', 'crates/chematic-py/tests'], 'candidate')
+    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/chematic-ring-expansion-evidence-20261017/validate.py", line 15, in run
+    subprocess.run([PYTHON, *args], env=env, cwd=ROOT, stdout=log, stderr=subprocess.STDOUT, check=True)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/subprocess.py", line 577, in run
+    raise CalledProcessError(retcode, process.args,
+                             output=stdout, stderr=stderr)
+subprocess.CalledProcessError: Command '['/private/tmp/chematic-ring-frontier-env-20261016/bin/python', '-m', 'pytest', '-q', '-p', 'no:cacheprovider', 'crates/chematic-py/tests']' returned non-zero exit status 2.

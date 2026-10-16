@@ -1,0 +1,33 @@
+{
+  "source_files_verified": 1541,
+  "patch_reconstructed_from_base": "7d6b092f448913a4ef87f1a3d6353789dad69cb5",
+  "changed_and_added_files_verified": [
+    "crates/chematic-chem/src/descriptors/rings_and_filters.rs",
+    "crates/chematic-perception/src/lib.rs",
+    "crates/chematic-perception/src/relevant_cycles.rs",
+    "crates/chematic-perception/src/relevant_cycles_limits_tests.rs"
+  ],
+  "all_matrix_comparisons_recomputed": 126,
+  "strict_wins_including_source": 68,
+  "all_unranked_lanes": [
+    [
+      0,
+      "num_rings/first_use",
+      "cosmolkit"
+    ],
+    [
+      0,
+      "num_rings/repeated_use",
+      "cosmolkit"
+    ],
+    [
+      0,
+      "num_rings/parse_inclusive",
+      "cosmolkit"
+    ]
+  ],
+  "all_20_hashes_match_fresh_observers": true,
+  "full_source_dump_hashes_verified": true,
+  "single_complete_epochs_no_reruns": true,
+  "universal_superiority": false
+}

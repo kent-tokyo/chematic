@@ -1,0 +1,13 @@
+   Compiling chematic-smarts v1.1.6 (/private/tmp/chematic-python-ring-first-use-20261017/crates/chematic-smarts)
+   Compiling chematic-rxn v1.1.6 (/private/tmp/chematic-python-ring-first-use-20261017/crates/chematic-rxn)
+   Compiling chematic-cip v1.1.6 (/private/tmp/chematic-python-ring-first-use-20261017/crates/chematic-cip)
+   Compiling chematic-fp v1.1.6 (/private/tmp/chematic-python-ring-first-use-20261017/crates/chematic-fp)
+   Compiling chematic-iupac v1.1.6 (/private/tmp/chematic-python-ring-first-use-20261017/crates/chematic-iupac)
+   Compiling chematic-chem v1.1.6 (/private/tmp/chematic-python-ring-first-use-20261017/crates/chematic-chem)
+error: couldn't read `crates/chematic-chem/tests/../../../validation/openbabel_issues/hydrogen-counts/cases.tsv`: No such file or directory (os error 2)
+ --> crates/chematic-chem/tests/hydrogen_count_contract.rs:5:21
+  |
+5 | const CASES: &str = include_str!("../../../validation/openbabel_issues/hydrogen-counts/cases.tsv");
+  |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: could not compile `chematic-chem` (test "hydrogen_count_contract") due to 1 previous error

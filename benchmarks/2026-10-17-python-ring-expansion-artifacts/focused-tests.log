@@ -1,0 +1,85 @@
+   Compiling proc-macro2 v1.0.107
+   Compiling quote v1.0.47
+   Compiling serde_core v1.0.229
+   Compiling syn v2.0.119
+   Compiling zerocopy v0.8.56
+   Compiling zerocopy-derive v0.8.56
+   Compiling syn v3.0.5
+   Compiling find-msvc-tools v0.1.14
+   Compiling autocfg v1.5.1
+   Compiling shlex v2.0.1
+   Compiling serde v1.0.229
+   Compiling cc v1.6.0
+   Compiling num-traits v0.2.19
+   Compiling serde_derive v1.0.229
+   Compiling either v1.18.0
+   Compiling serde_json v1.0.151
+   Compiling libc v0.2.189
+   Compiling half v2.7.1
+   Compiling alloca v0.4.0
+   Compiling anstyle v1.0.14
+   Compiling clap_lex v1.1.0
+   Compiling plotters-backend v0.3.7
+   Compiling ciborium-io v0.2.2
+   Compiling regex-syntax v0.8.11
+   Compiling memchr v2.8.3
+   Compiling regex-automata v0.4.18
+   Compiling ciborium-ll v0.2.2
+   Compiling plotters-svg v0.3.7
+   Compiling clap_builder v4.6.7
+   Compiling itertools v0.13.0
+   Compiling chematic-core v1.1.6 (/private/tmp/chematic-python-ring-first-use-20261017/crates/chematic-core)
+   Compiling same-file v1.0.6
+   Compiling cast v0.3.0
+   Compiling chematic-perception v1.1.6 (/private/tmp/chematic-python-ring-first-use-20261017/crates/chematic-perception)
+   Compiling criterion-plot v0.8.2
+   Compiling walkdir v2.5.0
+   Compiling page_size v0.6.0
+   Compiling rayon v1.12.0
+   Compiling plotters v0.3.7
+   Compiling clap v4.6.7
+   Compiling ciborium v0.2.2
+   Compiling regex v1.13.1
+   Compiling tinytemplate v1.2.1
+   Compiling anes v0.1.6
+   Compiling oorandom v11.1.5
+   Compiling criterion v0.8.2
+   Compiling chematic-smiles v1.1.6 (/private/tmp/chematic-python-ring-first-use-20261017/crates/chematic-smiles)
+    Finished `release` profile [optimized] target(s) in 1m 32s
+     Running unittests src/lib.rs (/private/tmp/chematic-v3000-coordinate-format-integration-target-20261017/release/deps/chematic_perception-1dd6a28cf85fc732)
+
+running 13 tests
+test relevant_cycles::limits_tests::output_limit_does_not_shorten_endpoint_path_search ... ok
+test relevant_cycles::path_tests::fixed_path_rows_exclude_peeled_tails_and_other_components ... ok
+test relevant_cycles::tests::bicyclo_222_has_three_relevant_six_rings ... ok
+test relevant_cycles::tests::atom_order_does_not_change_counts ... ok
+test relevant_cycles::tests::cap_is_a_typed_error ... ok
+test relevant_cycles::tests::cyclohexane_and_naphthalene_skeleton ... ok
+test relevant_cycles::tests::cubane_has_six_relevant_four_rings ... ok
+test relevant_cycles::path_tests::multiword_vectors_disconnected_graphs_and_ineligible_edges ... ok
+test relevant_cycles::limits_tests::macrocycles_cages_and_disconnected_graphs_preserve_capped_outputs ... ok
+test relevant_cycles::path_tests::long_paths_cross_word_boundaries_without_changing_candidates ... ok
+test relevant_cycles::path_tests::all_five_vertex_graphs_retain_candidate_sequence ... ok
+test relevant_cycles::limits_tests::separate_limits_preserve_ring_sequence_and_legacy_errors_on_all_five_vertex_graphs ... ok
+test relevant_cycles::path_tests::relabelled_sparse_and_dense_graphs_retain_candidate_sequence ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 263 filtered out; finished in 0.03s
+
+     Running tests/aromatic_identity_edits.rs (/private/tmp/chematic-v3000-coordinate-format-integration-target-20261017/release/deps/aromatic_identity_edits-bbd67e41dc2bc22b)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.00s
+
+     Running tests/aromaticity_edge_gate.rs (/private/tmp/chematic-v3000-coordinate-format-integration-target-20261017/release/deps/aromaticity_edge_gate-74bb372815359f19)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s
+
+     Running tests/ctab_overlap_contract.rs (/private/tmp/chematic-v3000-coordinate-format-integration-target-20261017/release/deps/ctab_overlap_contract-274060033dd026cd)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.00s
+

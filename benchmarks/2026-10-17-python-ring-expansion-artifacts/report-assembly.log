@@ -1,0 +1,68 @@
+{
+  "adoption_passed": false,
+  "primary": {
+    "offset": 0,
+    "lane": "num_rings/first_use",
+    "speedup": {
+      "median": 0.997,
+      "ci95": [
+        0.992,
+        1.006
+      ],
+      "winning_blocks": 9,
+      "blocks": 20
+    }
+  },
+  "guard_failures": {
+    "0": {
+      "labute_asa/first_use": {
+        "median": 0.985,
+        "ci95": [
+          0.975,
+          0.992
+        ],
+        "winning_blocks": 3,
+        "blocks": 20
+      }
+    },
+    "5000": {}
+  },
+  "all_negative_source_intervals": {
+    "0": {
+      "labute_asa/first_use": {
+        "median": 0.985,
+        "ci95": [
+          0.975,
+          0.992
+        ],
+        "winning_blocks": 3,
+        "blocks": 20
+      }
+    },
+    "5000": {}
+  },
+  "comparator_strict_wins": {
+    "0": {
+      "rdkit": {
+        "strict_wins": 19,
+        "eligible": 21
+      },
+      "cosmolkit": {
+        "strict_wins": 15,
+        "eligible": 18
+      }
+    },
+    "5000": {
+      "rdkit": {
+        "strict_wins": 18,
+        "eligible": 21
+      },
+      "cosmolkit": {
+        "strict_wins": 16,
+        "eligible": 21
+      }
+    }
+  },
+  "universal_superiority": false,
+  "epochs": "Exactly one complete 20-block epoch per profile; no timing reruns or pooling"
+}

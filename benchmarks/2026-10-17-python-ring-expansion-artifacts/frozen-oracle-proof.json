@@ -1,0 +1,13 @@
+{
+  "base": "7d6b092f448913a4ef87f1a3d6353789dad69cb5",
+  "functions": {
+    "meet_only_at_root": {
+      "exact_after_identifier_restore": true,
+      "sha256": "e09bb0225765e96db7e302163a249cc0af3f6997c3ab0ae7d911c3865e1d7e54"
+    },
+    "expand_relevant_families": {
+      "exact_after_identifier_restore": true,
+      "sha256": "1139f8708f7dda213cc6f95722b9d76d297dc866c622bb0c1c3bd4aa54b9ed0a"
+    }
+  }
+}

@@ -7,6 +7,8 @@ package, comparator, corpus, host, runtime and operation.
 
 ## Start here
 
+- [Relevant-cycle expansion candidate](2026-10-17-python-ring-expansion.md): rejected fixed primary and ASA retention floor; exact source outputs and complete timing evidence retained.
+
 | Need | Start with |
 |---|---|
 | Review requested-only V3000 loss collection | [2026-10-16-openbabel-v3000-loss-work](2026-10-16-openbabel-v3000-loss-work.md): exact outputs/reports, both primary write intervals positive, all 15 median budgets pass; parsing retreat disclosed |

@@ -1,0 +1,35 @@
+Running clippy on modified crates...
+   Compiling proc-macro2 v1.0.107
+   Compiling unicode-ident v1.0.24
+   Compiling quote v1.0.47
+    Checking smallvec v1.16.2
+    Checking chematic-core v1.1.6 (/private/tmp/chematic-python-ring-first-use-20261017/crates/chematic-core)
+    Checking rustc-hash v2.1.3
+   Compiling crossbeam-utils v0.8.23
+    Checking chematic-perception v1.1.6 (/private/tmp/chematic-python-ring-first-use-20261017/crates/chematic-perception)
+   Compiling serde_core v1.0.229
+   Compiling crossbeam-epoch v0.9.21
+   Compiling crossbeam-deque v0.8.8
+   Compiling zmij v1.0.23
+   Compiling syn v3.0.5
+   Compiling serde_json v1.0.151
+   Compiling serde v1.0.229
+   Compiling rayon-core v1.13.0
+   Compiling serde_derive v1.0.229
+    Checking memchr v2.8.3
+    Checking itoa v1.0.18
+    Checking chematic-smiles v1.1.6 (/private/tmp/chematic-python-ring-first-use-20261017/crates/chematic-smiles)
+    Checking chematic-smarts v1.1.6 (/private/tmp/chematic-python-ring-first-use-20261017/crates/chematic-smarts)
+    Checking either v1.18.0
+    Checking rayon v1.12.0
+    Checking chematic-rxn v1.1.6 (/private/tmp/chematic-python-ring-first-use-20261017/crates/chematic-rxn)
+    Checking chematic-cip v1.1.6 (/private/tmp/chematic-python-ring-first-use-20261017/crates/chematic-cip)
+    Checking chematic-fp v1.1.6 (/private/tmp/chematic-python-ring-first-use-20261017/crates/chematic-fp)
+    Checking chematic-iupac v1.1.6 (/private/tmp/chematic-python-ring-first-use-20261017/crates/chematic-iupac)
+    Checking chematic-chem v1.1.6 (/private/tmp/chematic-python-ring-first-use-20261017/crates/chematic-chem)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 12.75s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.02s
+Clippy OK.
+[codex/python-ring-first-use-20261017 69c6d39a] perf: bound relevant-cycle expansion and align shortest paths
+ 4 files changed, 219 insertions(+), 12 deletions(-)
+ create mode 100644 crates/chematic-perception/src/relevant_cycles_limits_tests.rs

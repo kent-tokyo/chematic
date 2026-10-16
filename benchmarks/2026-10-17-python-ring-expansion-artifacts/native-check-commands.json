@@ -1,0 +1,49 @@
+{
+  "commands": {
+    "native-tests": [
+      "cargo",
+      "test",
+      "--offline",
+      "--locked",
+      "--release",
+      "-p",
+      "chematic-perception",
+      "-p",
+      "chematic-chem"
+    ],
+    "clippy": [
+      "cargo",
+      "clippy",
+      "--offline",
+      "--locked",
+      "--release",
+      "-p",
+      "chematic-perception",
+      "-p",
+      "chematic-chem",
+      "--all-targets",
+      "--",
+      "-D",
+      "warnings"
+    ],
+    "format": [
+      "cargo",
+      "fmt",
+      "--all",
+      "--",
+      "--check"
+    ],
+    "refactor": [
+      "python3",
+      "scripts/check_refactor_budget.py"
+    ]
+  },
+  "env": {
+    "CARGO_TARGET_DIR": "/private/tmp/chematic-v3000-coordinate-format-integration-target-20261017",
+    "CARGO_BUILD_JOBS": "1",
+    "CARGO_INCREMENTAL": "0",
+    "CARGO_PROFILE_RELEASE_LTO": "false",
+    "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "16",
+    "CARGO_PROFILE_RELEASE_STRIP": "none"
+  }
+}

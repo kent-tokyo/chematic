@@ -22,6 +22,10 @@ the [complete inventory](archive-index.md) links every retained record.
 
 ## Recent focused follow-ups
 
+- [Relevant-cycle expansion candidate](2026-10-17-python-ring-expansion.md):
+  first-use ring count 0.997x, interval crosses 1; first-use ASA 0.985x
+  misses the 0.99 retention floor. Rejected; full 42-lane matrices retained.
+
 - [Scalar descriptor model reuse candidate](2026-10-16-python-scalar-model-reuse.md):
   TPSA→ASA first-use improves 1.013–1.045x, but five parse-inclusive
   medians miss the retention floor; manual integration requested after disclosure,

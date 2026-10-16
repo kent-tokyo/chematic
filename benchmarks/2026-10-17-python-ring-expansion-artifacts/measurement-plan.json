@@ -1,0 +1,44 @@
+{
+  "base": "7d6b092f448913a4ef87f1a3d6353789dad69cb5",
+  "candidate": "Bound relevant-cycle output expansion at the existing three-times-legacy rejection threshold, retaining the original shortest-path cap and fallback; existing public relevant-cycle API limits unchanged; compare shortest paths at equal root distances in linear time instead of nested membership scans",
+  "primary": [
+    "num_rings/first_use at offset 0"
+  ],
+  "corpus": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+  "offsets": [
+    0,
+    5000
+  ],
+  "rows_each": 1000,
+  "blocks": 20,
+  "operations": [
+    "tpsa",
+    "labute_asa",
+    "num_rings",
+    "morgan2_2048",
+    "morgan2_chiral",
+    "morgan3_2048",
+    "maccs"
+  ],
+  "modes": [
+    "first_use",
+    "repeated_use",
+    "parse_inclusive"
+  ],
+  "adoption": "Primary paired 95% CI lower >1; exact source outcomes on all 14072 inputs; all 42 source-relative medians >=0.99; disclose every negative interval; one fixed timing epoch per profile",
+  "comparator_win": "Equal outputs vs RDKit and comparator, paired CI lower >1 and 20/20 wins; mismatches unranked",
+  "build": {
+    "opt_level": 3,
+    "lto": true,
+    "codegen_units": 1,
+    "jobs": 1,
+    "incremental": false,
+    "features": [
+      "native-inchi"
+    ],
+    "strip": "none"
+  },
+  "scope": "One macOS arm64 host, exposed corpus; no package-wide or universal claim",
+  "diagnostic": "Older source wheel per-row diagnostic only; no diagnostic timings enter formal statistics",
+  "pre_timing_amendment": "Code inspection found quadratic path-intersection scans. Added depth-aligned intersection before candidate wheel build and before any formal timing. Primary and all acceptance gates unchanged. Retained initial plan separately."
+}

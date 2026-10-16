@@ -1,0 +1,9 @@
+{
+  "suites": 36,
+  "passed": 1543,
+  "failed": 0,
+  "ignored": 7,
+  "python_result": "3,314 passed, 32 skipped on each source wheel; 30 non-UTF8 filename cases are unsupported on this filesystem, plus two existing skips",
+  "python_baseline_summary": "======================= 3314 passed, 32 skipped in 5.48s =======================",
+  "python_candidate_summary": "======================= 3314 passed, 32 skipped in 5.52s ======================="
+}

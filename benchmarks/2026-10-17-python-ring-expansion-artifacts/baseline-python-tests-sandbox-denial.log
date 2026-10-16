@@ -1,0 +1,345 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.13.6, pytest-8.4.2, pluggy-1.6.0
+rootdir: /private/tmp/chematic-python-ring-first-use-20261017/crates/chematic-py
+configfile: pytest.ini
+collected 3345 items / 1 skipped
+
+crates/chematic-py/tests/test_alkene_path_stereo.py .................... [  0%]
+.....                                                                    [  0%]
+crates/chematic-py/tests/test_atom_order.py ...                          [  0%]
+crates/chematic-py/tests/test_bulk.py .......                            [  1%]
+crates/chematic-py/tests/test_canonical_diff.py ........................ [  1%]
+........................................................................ [  3%]
+....................                                                     [  4%]
+crates/chematic-py/tests/test_ccd.py .............                       [  4%]
+crates/chematic-py/tests/test_cdjson.py ...............................  [  5%]
+crates/chematic-py/tests/test_cdxml_stereo_options.py ................   [  6%]
+crates/chematic-py/tests/test_chemdraw_block.py ........................ [  7%]
+.........................................                                [  8%]
+crates/chematic-py/tests/test_cif_bond_writer.py ..................      [  8%]
+crates/chematic-py/tests/test_cif_checked_writer.py .................... [  9%]
+.........................                                                [ 10%]
+crates/chematic-py/tests/test_cjson_preservation.py .................... [ 10%]
+...                                                                      [ 10%]
+crates/chematic-py/tests/test_cml_hydrogen_contract.py ................. [ 11%]
+............                                                             [ 11%]
+crates/chematic-py/tests/test_conformer_ensemble.py .............        [ 12%]
+crates/chematic-py/tests/test_conformer_ensemble_v2.py ...........       [ 12%]
+crates/chematic-py/tests/test_conversion_report.py ..................... [ 13%]
+.......                                                                  [ 13%]
+crates/chematic-py/tests/test_cross_binding_contract.py ................ [ 13%]
+........................................................................ [ 15%]
+..................................................................       [ 17%]
+crates/chematic-py/tests/test_crystal.py ...................             [ 18%]
+crates/chematic-py/tests/test_depiction_stereo.py ......                 [ 18%]
+crates/chematic-py/tests/test_dmol3.py ..........................        [ 19%]
+crates/chematic-py/tests/test_eem.py ..                                  [ 19%]
+crates/chematic-py/tests/test_exyz.py .................................. [ 20%]
+.........                                                                [ 20%]
+crates/chematic-py/tests/test_fhiaims.py ............................... [ 21%]
+.......                                                                  [ 21%]
+crates/chematic-py/tests/test_filesystem_paths.py ...................... [ 22%]
+........................................................................ [ 24%]
+........................................................................ [ 26%]
+........................................................................ [ 28%]
+..............................................................FFFFFFFFFF [ 31%]
+FFFFFFFFFFFFFFFFFFFF.                                                    [ 31%]
+crates/chematic-py/tests/test_fold_density.py ....................       [ 32%]
+crates/chematic-py/tests/test_format_convert.py ..............           [ 32%]
+crates/chematic-py/tests/test_fp.py .................................... [ 33%]
+............................................                             [ 35%]
+crates/chematic-py/tests/test_gro.py ................................... [ 36%]
+........                                                                 [ 36%]
+crates/chematic-py/tests/test_gzmat_precision.py ....................... [ 37%]
+....................                                                     [ 37%]
+crates/chematic-py/tests/test_hin.py ................                    [ 38%]
+crates/chematic-py/tests/test_hydrogen_count_contract.py ............... [ 38%]
+...............................                                          [ 39%]
+crates/chematic-py/tests/test_input_errors.py .....................      [ 40%]
+crates/chematic-py/tests/test_internal_coordinate_constraints.py ...     [ 40%]
+crates/chematic-py/tests/test_io.py ...........................          [ 41%]
+crates/chematic-py/tests/test_layered_config.py ........................ [ 41%]
+........................................                                 [ 43%]
+crates/chematic-py/tests/test_local_cation_resonance.py .............    [ 43%]
+crates/chematic-py/tests/test_meso_stereo_group.py ..................... [ 44%]
+..............                                                           [ 44%]
+crates/chematic-py/tests/test_mmcif_pdb_checked.py ..................... [ 45%]
+..                                                                       [ 45%]
+crates/chematic-py/tests/test_mmcif_residues.py ........................ [ 45%]
+.                                                                        [ 45%]
+crates/chematic-py/tests/test_mmff_dielectric.py ....................... [ 46%]
+...                                                                      [ 46%]
+crates/chematic-py/tests/test_module_functions.py ...................... [ 47%]
+..............................................                           [ 48%]
+crates/chematic-py/tests/test_mol.py ................................... [ 49%]
+.........................                                                [ 50%]
+crates/chematic-py/tests/test_mol2_kekule.py ........................... [ 51%]
+....................                                                     [ 51%]
+crates/chematic-py/tests/test_mol2_preservation.py ...........           [ 52%]
+crates/chematic-py/tests/test_mol2_section_order.py ...........          [ 52%]
+crates/chematic-py/tests/test_mol2_stream_rmsd.py ...................... [ 53%]
+..........                                                               [ 53%]
+crates/chematic-py/tests/test_mopac_cartesian.py ....................... [ 54%]
+...........................                                              [ 55%]
+crates/chematic-py/tests/test_native_distance_matrix.py ................ [ 55%]
+                                                                         [ 55%]
+crates/chematic-py/tests/test_new_formats.py ........................... [ 56%]
+.......................                                                  [ 56%]
+crates/chematic-py/tests/test_nucleic_acid_document.py ....              [ 57%]
+crates/chematic-py/tests/test_o3a.py .....                               [ 57%]
+crates/chematic-py/tests/test_ogb_graph.py .............s.               [ 57%]
+crates/chematic-py/tests/test_pdb_conect.py ...............              [ 58%]
+crates/chematic-py/tests/test_pdb_selection.py ......................... [ 58%]
+.                                                                        [ 58%]
+crates/chematic-py/tests/test_pdbqt_checked.py ......................... [ 59%]
+...........................                                              [ 60%]
+crates/chematic-py/tests/test_pickle.py .........                        [ 60%]
+crates/chematic-py/tests/test_pipeline_v2.py ..........................  [ 61%]
+crates/chematic-py/tests/test_pqr_pdbqt.py .................             [ 62%]
+crates/chematic-py/tests/test_public_input_validation.py .               [ 62%]
+crates/chematic-py/tests/test_query_hydrogens.py ......................  [ 62%]
+crates/chematic-py/tests/test_rdfile.py ................................ [ 63%]
+..........                                                               [ 63%]
+crates/chematic-py/tests/test_rdkit_atom_environment.py ................ [ 64%]
+.                                                                        [ 64%]
+crates/chematic-py/tests/test_rdkit_compat.py .......................... [ 65%]
+........................................................................ [ 67%]
+................................................................         [ 69%]
+crates/chematic-py/tests/test_rdkit_conformer_rms.py ...                 [ 69%]
+crates/chematic-py/tests/test_rdkit_count_fps.py ..                      [ 69%]
+crates/chematic-py/tests/test_rdkit_diff.py ............................ [ 70%]
+........................................................................ [ 72%]
+                                                                         [ 72%]
+crates/chematic-py/tests/test_rdkit_ecfp4_stable_api.py ................ [ 72%]
+........................................................................ [ 75%]
+...................                                                      [ 75%]
+crates/chematic-py/tests/test_rdkit_embed.py ............                [ 76%]
+crates/chematic-py/tests/test_rdkit_forcefield.py ........               [ 76%]
+crates/chematic-py/tests/test_rdkit_graph_queries.py ................... [ 76%]
+                                                                         [ 76%]
+crates/chematic-py/tests/test_rdkit_matrix_3d_checked.py ............... [ 77%]
+                                                                         [ 77%]
+crates/chematic-py/tests/test_rdkit_matrix_limits.py ....                [ 77%]
+crates/chematic-py/tests/test_rdkit_path_enumeration.py ................ [ 77%]
+                                                                         [ 77%]
+crates/chematic-py/tests/test_rdkit_smiles.py .............              [ 78%]
+crates/chematic-py/tests/test_rdkit_stereoisomers.py ...                 [ 78%]
+crates/chematic-py/tests/test_rdkit_tautomer.py .........                [ 78%]
+crates/chematic-py/tests/test_rdkit_writers.py .......                   [ 78%]
+crates/chematic-py/tests/test_rebaseline_semantics.py ....               [ 78%]
+crates/chematic-py/tests/test_recursive_smarts_chirality.py ..           [ 79%]
+crates/chematic-py/tests/test_renumber_atoms.py ........................ [ 79%]
+....                                                                     [ 79%]
+crates/chematic-py/tests/test_rgroup_labeled.py ....                     [ 79%]
+crates/chematic-py/tests/test_rooted_stereo.py ...............           [ 80%]
+crates/chematic-py/tests/test_screening_enrichment.py .................. [ 80%]
+.......                                                                  [ 81%]
+crates/chematic-py/tests/test_sdf_selections.py ........................ [ 81%]
+.................                                                        [ 82%]
+crates/chematic-py/tests/test_serialized_input.py ...................... [ 83%]
+........................................................................ [ 85%]
+........................................................................ [ 87%]
+........................................................................ [ 89%]
+.........................                                                [ 90%]
+crates/chematic-py/tests/test_similarity_index.py ..........             [ 90%]
+crates/chematic-py/tests/test_smarts_parity_profile.py .....             [ 90%]
+crates/chematic-py/tests/test_sprint16.py .............................. [ 91%]
+..................................                                       [ 92%]
+crates/chematic-py/tests/test_stereo_candidate_budget.py ............... [ 93%]
+..                                                                       [ 93%]
+crates/chematic-py/tests/test_stereo_diagnostics.py .....                [ 93%]
+crates/chematic-py/tests/test_stereo_group_alternatives.py ............. [ 93%]
+...................                                                      [ 94%]
+crates/chematic-py/tests/test_stereo_group_inversion.py ................ [ 94%]
+...............                                                          [ 95%]
+crates/chematic-py/tests/test_stereo_groups.py ......................... [ 95%]
+...................                                                      [ 96%]
+crates/chematic-py/tests/test_tetrahedral_cleanup.py ................... [ 97%]
+.........................................                                [ 98%]
+crates/chematic-py/tests/test_turbomole.py ............................. [ 99%]
+.........                                                                [ 99%]
+crates/chematic-py/tests/test_xyz_symbol_case.py ....................    [100%]
+
+=================================== FAILURES ===================================
+__________ test_non_utf8_filename_bytes_are_lossless[bytes-iter_sdf] ___________
+crates/chematic-py/tests/test_filesystem_paths.py:170: in test_non_utf8_filename_bytes_are_lossless
+    with open(raw, 'wb'):
+         ^^^^^^^^^^^^^^^
+E   PermissionError: [Errno 1] Operation not permitted: b'/private/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/pytest-of-k_tanabe/pytest-186/test_non_utf8_filename_bytes_a0/\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e paths/iter_sdf.input\xff'
+______ test_non_utf8_filename_bytes_are_lossless[bytes-iter_sdf_checked] _______
+crates/chematic-py/tests/test_filesystem_paths.py:170: in test_non_utf8_filename_bytes_are_lossless
+    with open(raw, 'wb'):
+         ^^^^^^^^^^^^^^^
+E   PermissionError: [Errno 1] Operation not permitted: b'/private/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/pytest-of-k_tanabe/pytest-186/test_non_utf8_filename_bytes_a1/\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e paths/iter_sdf_checked.input\xff'
+______ test_non_utf8_filename_bytes_are_lossless[bytes-iter_sdf_batched] _______
+crates/chematic-py/tests/test_filesystem_paths.py:170: in test_non_utf8_filename_bytes_are_lossless
+    with open(raw, 'wb'):
+         ^^^^^^^^^^^^^^^
+E   PermissionError: [Errno 1] Operation not permitted: b'/private/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/pytest-of-k_tanabe/pytest-186/test_non_utf8_filename_bytes_a2/\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e paths/iter_sdf_batched.input\xff'
+_________ test_non_utf8_filename_bytes_are_lossless[bytes-SdfDataset] __________
+crates/chematic-py/tests/test_filesystem_paths.py:170: in test_non_utf8_filename_bytes_are_lossless
+    with open(raw, 'wb'):
+         ^^^^^^^^^^^^^^^
+E   PermissionError: [Errno 1] Operation not permitted: b'/private/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/pytest-of-k_tanabe/pytest-186/test_non_utf8_filename_bytes_a3/\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e paths/SdfDataset.input\xff'
+_______ test_non_utf8_filename_bytes_are_lossless[bytes-SdfDataset.open] _______
+crates/chematic-py/tests/test_filesystem_paths.py:170: in test_non_utf8_filename_bytes_are_lossless
+    with open(raw, 'wb'):
+         ^^^^^^^^^^^^^^^
+E   PermissionError: [Errno 1] Operation not permitted: b'/private/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/pytest-of-k_tanabe/pytest-186/test_non_utf8_filename_bytes_a4/\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e paths/SdfDataset.open.input\xff'
+________ test_non_utf8_filename_bytes_are_lossless[bytes-SDMolSupplier] ________
+crates/chematic-py/tests/test_filesystem_paths.py:170: in test_non_utf8_filename_bytes_are_lossless
+    with open(raw, 'wb'):
+         ^^^^^^^^^^^^^^^
+E   PermissionError: [Errno 1] Operation not permitted: b'/private/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/pytest-of-k_tanabe/pytest-186/test_non_utf8_filename_bytes_a5/\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e paths/SDMolSupplier.input\xff'
+______ test_non_utf8_filename_bytes_are_lossless[bytes-SmilesMolSupplier] ______
+crates/chematic-py/tests/test_filesystem_paths.py:170: in test_non_utf8_filename_bytes_are_lossless
+    with open(raw, 'wb'):
+         ^^^^^^^^^^^^^^^
+E   PermissionError: [Errno 1] Operation not permitted: b'/private/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/pytest-of-k_tanabe/pytest-186/test_non_utf8_filename_bytes_a6/\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e paths/SmilesMolSupplier.input\xff'
+_______ test_non_utf8_filename_bytes_are_lossless[bytes-TDTMolSupplier] ________
+crates/chematic-py/tests/test_filesystem_paths.py:170: in test_non_utf8_filename_bytes_are_lossless
+    with open(raw, 'wb'):
+         ^^^^^^^^^^^^^^^
+E   PermissionError: [Errno 1] Operation not permitted: b'/private/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/pytest-of-k_tanabe/pytest-186/test_non_utf8_filename_bytes_a7/\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e paths/TDTMolSupplier.input\xff'
+______ test_non_utf8_filename_bytes_are_lossless[bytes-iter_xyz_batched] _______
+crates/chematic-py/tests/test_filesystem_paths.py:170: in test_non_utf8_filename_bytes_are_lossless
+    with open(raw, 'wb'):
+         ^^^^^^^^^^^^^^^
+E   PermissionError: [Errno 1] Operation not permitted: b'/private/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/pytest-of-k_tanabe/pytest-186/test_non_utf8_filename_bytes_a8/\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e paths/iter_xyz_batched.input\xff'
+_____ test_non_utf8_filename_bytes_are_lossless[bytes-iter_extxyz_batched] _____
+crates/chematic-py/tests/test_filesystem_paths.py:170: in test_non_utf8_filename_bytes_are_lossless
+    with open(raw, 'wb'):
+         ^^^^^^^^^^^^^^^
+E   PermissionError: [Errno 1] Operation not permitted: b'/private/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/pytest-of-k_tanabe/pytest-186/test_non_utf8_filename_bytes_a9/\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e paths/iter_extxyz_batched.input\xff'
+__________ test_non_utf8_filename_bytes_are_lossless[bytes-SDWriter] ___________
+crates/chematic-py/tests/test_filesystem_paths.py:170: in test_non_utf8_filename_bytes_are_lossless
+    with open(raw, 'wb'):
+         ^^^^^^^^^^^^^^^
+E   PermissionError: [Errno 1] Operation not permitted: b'/private/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/pytest-of-k_tanabe/pytest-186/test_non_utf8_filename_bytes_a10/\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e paths/SDWriter.input\xff'
+________ test_non_utf8_filename_bytes_are_lossless[bytes-SmilesWriter] _________
+crates/chematic-py/tests/test_filesystem_paths.py:170: in test_non_utf8_filename_bytes_are_lossless
+    with open(raw, 'wb'):
+         ^^^^^^^^^^^^^^^
+E   PermissionError: [Errno 1] Operation not permitted: b'/private/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/pytest-of-k_tanabe/pytest-186/test_non_utf8_filename_bytes_a11/\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e paths/SmilesWriter.input\xff'
+__________ test_non_utf8_filename_bytes_are_lossless[bytes-TDTWriter] __________
+crates/chematic-py/tests/test_filesystem_paths.py:170: in test_non_utf8_filename_bytes_are_lossless
+    with open(raw, 'wb'):
+         ^^^^^^^^^^^^^^^
+E   PermissionError: [Errno 1] Operation not permitted: b'/private/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/pytest-of-k_tanabe/pytest-186/test_non_utf8_filename_bytes_a12/\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e paths/TDTWriter.input\xff'
+_________ test_non_utf8_filename_bytes_are_lossless[bytes-Report.save] _________
+crates/chematic-py/tests/test_filesystem_paths.py:170: in test_non_utf8_filename_bytes_are_lossless
+    with open(raw, 'wb'):
+         ^^^^^^^^^^^^^^^
+E   PermissionError: [Errno 1] Operation not permitted: b'/private/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/pytest-of-k_tanabe/pytest-186/test_non_utf8_filename_bytes_a13/\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e paths/Report.save.input\xff'
+________ test_non_utf8_filename_bytes_are_lossless[bytes-report.output] ________
+crates/chematic-py/tests/test_filesystem_paths.py:170: in test_non_utf8_filename_bytes_are_lossless
+    with open(raw, 'wb'):
+         ^^^^^^^^^^^^^^^
+E   PermissionError: [Errno 1] Operation not permitted: b'/private/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/pytest-of-k_tanabe/pytest-186/test_non_utf8_filename_bytes_a14/\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e paths/report.output.input\xff'
+______ test_non_utf8_filename_bytes_are_lossless[surrogate-str-iter_sdf] _______
+crates/chematic-py/tests/test_filesystem_paths.py:170: in test_non_utf8_filename_bytes_are_lossless
+    with open(raw, 'wb'):
+         ^^^^^^^^^^^^^^^
+E   PermissionError: [Errno 1] Operation not permitted: b'/private/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/pytest-of-k_tanabe/pytest-186/test_non_utf8_filename_bytes_a15/\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e paths/iter_sdf.input\xff'
+__ test_non_utf8_filename_bytes_are_lossless[surrogate-str-iter_sdf_checked] ___
+crates/chematic-py/tests/test_filesystem_paths.py:170: in test_non_utf8_filename_bytes_are_lossless
+    with open(raw, 'wb'):
+         ^^^^^^^^^^^^^^^
+E   PermissionError: [Errno 1] Operation not permitted: b'/private/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/pytest-of-k_tanabe/pytest-186/test_non_utf8_filename_bytes_a16/\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e paths/iter_sdf_checked.input\xff'
+__ test_non_utf8_filename_bytes_are_lossless[surrogate-str-iter_sdf_batched] ___
+crates/chematic-py/tests/test_filesystem_paths.py:170: in test_non_utf8_filename_bytes_are_lossless
+    with open(raw, 'wb'):
+         ^^^^^^^^^^^^^^^
+E   PermissionError: [Errno 1] Operation not permitted: b'/private/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/pytest-of-k_tanabe/pytest-186/test_non_utf8_filename_bytes_a17/\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e paths/iter_sdf_batched.input\xff'
+_____ test_non_utf8_filename_bytes_are_lossless[surrogate-str-SdfDataset] ______
+crates/chematic-py/tests/test_filesystem_paths.py:170: in test_non_utf8_filename_bytes_are_lossless
+    with open(raw, 'wb'):
+         ^^^^^^^^^^^^^^^
+E   PermissionError: [Errno 1] Operation not permitted: b'/private/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/pytest-of-k_tanabe/pytest-186/test_non_utf8_filename_bytes_a18/\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e paths/SdfDataset.input\xff'
+___ test_non_utf8_filename_bytes_are_lossless[surrogate-str-SdfDataset.open] ___
+crates/chematic-py/tests/test_filesystem_paths.py:170: in test_non_utf8_filename_bytes_are_lossless
+    with open(raw, 'wb'):
+         ^^^^^^^^^^^^^^^
+E   PermissionError: [Errno 1] Operation not permitted: b'/private/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/pytest-of-k_tanabe/pytest-186/test_non_utf8_filename_bytes_a19/\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e paths/SdfDataset.open.input\xff'
+____ test_non_utf8_filename_bytes_are_lossless[surrogate-str-SDMolSupplier] ____
+crates/chematic-py/tests/test_filesystem_paths.py:170: in test_non_utf8_filename_bytes_are_lossless
+    with open(raw, 'wb'):
+         ^^^^^^^^^^^^^^^
+E   PermissionError: [Errno 1] Operation not permitted: b'/private/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/pytest-of-k_tanabe/pytest-186/test_non_utf8_filename_bytes_a20/\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e paths/SDMolSupplier.input\xff'
+__ test_non_utf8_filename_bytes_are_lossless[surrogate-str-SmilesMolSupplier] __
+crates/chematic-py/tests/test_filesystem_paths.py:170: in test_non_utf8_filename_bytes_are_lossless
+    with open(raw, 'wb'):
+         ^^^^^^^^^^^^^^^
+E   PermissionError: [Errno 1] Operation not permitted: b'/private/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/pytest-of-k_tanabe/pytest-186/test_non_utf8_filename_bytes_a21/\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e paths/SmilesMolSupplier.input\xff'
+___ test_non_utf8_filename_bytes_are_lossless[surrogate-str-TDTMolSupplier] ____
+crates/chematic-py/tests/test_filesystem_paths.py:170: in test_non_utf8_filename_bytes_are_lossless
+    with open(raw, 'wb'):
+         ^^^^^^^^^^^^^^^
+E   PermissionError: [Errno 1] Operation not permitted: b'/private/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/pytest-of-k_tanabe/pytest-186/test_non_utf8_filename_bytes_a22/\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e paths/TDTMolSupplier.input\xff'
+__ test_non_utf8_filename_bytes_are_lossless[surrogate-str-iter_xyz_batched] ___
+crates/chematic-py/tests/test_filesystem_paths.py:170: in test_non_utf8_filename_bytes_are_lossless
+    with open(raw, 'wb'):
+         ^^^^^^^^^^^^^^^
+E   PermissionError: [Errno 1] Operation not permitted: b'/private/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/pytest-of-k_tanabe/pytest-186/test_non_utf8_filename_bytes_a23/\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e paths/iter_xyz_batched.input\xff'
+_ test_non_utf8_filename_bytes_are_lossless[surrogate-str-iter_extxyz_batched] _
+crates/chematic-py/tests/test_filesystem_paths.py:170: in test_non_utf8_filename_bytes_are_lossless
+    with open(raw, 'wb'):
+         ^^^^^^^^^^^^^^^
+E   PermissionError: [Errno 1] Operation not permitted: b'/private/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/pytest-of-k_tanabe/pytest-186/test_non_utf8_filename_bytes_a24/\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e paths/iter_extxyz_batched.input\xff'
+______ test_non_utf8_filename_bytes_are_lossless[surrogate-str-SDWriter] _______
+crates/chematic-py/tests/test_filesystem_paths.py:170: in test_non_utf8_filename_bytes_are_lossless
+    with open(raw, 'wb'):
+         ^^^^^^^^^^^^^^^
+E   PermissionError: [Errno 1] Operation not permitted: b'/private/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/pytest-of-k_tanabe/pytest-186/test_non_utf8_filename_bytes_a25/\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e paths/SDWriter.input\xff'
+____ test_non_utf8_filename_bytes_are_lossless[surrogate-str-SmilesWriter] _____
+crates/chematic-py/tests/test_filesystem_paths.py:170: in test_non_utf8_filename_bytes_are_lossless
+    with open(raw, 'wb'):
+         ^^^^^^^^^^^^^^^
+E   PermissionError: [Errno 1] Operation not permitted: b'/private/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/pytest-of-k_tanabe/pytest-186/test_non_utf8_filename_bytes_a26/\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e paths/SmilesWriter.input\xff'
+______ test_non_utf8_filename_bytes_are_lossless[surrogate-str-TDTWriter] ______
+crates/chematic-py/tests/test_filesystem_paths.py:170: in test_non_utf8_filename_bytes_are_lossless
+    with open(raw, 'wb'):
+         ^^^^^^^^^^^^^^^
+E   PermissionError: [Errno 1] Operation not permitted: b'/private/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/pytest-of-k_tanabe/pytest-186/test_non_utf8_filename_bytes_a27/\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e paths/TDTWriter.input\xff'
+_____ test_non_utf8_filename_bytes_are_lossless[surrogate-str-Report.save] _____
+crates/chematic-py/tests/test_filesystem_paths.py:170: in test_non_utf8_filename_bytes_are_lossless
+    with open(raw, 'wb'):
+         ^^^^^^^^^^^^^^^
+E   PermissionError: [Errno 1] Operation not permitted: b'/private/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/pytest-of-k_tanabe/pytest-186/test_non_utf8_filename_bytes_a28/\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e paths/Report.save.input\xff'
+____ test_non_utf8_filename_bytes_are_lossless[surrogate-str-report.output] ____
+crates/chematic-py/tests/test_filesystem_paths.py:170: in test_non_utf8_filename_bytes_are_lossless
+    with open(raw, 'wb'):
+         ^^^^^^^^^^^^^^^
+E   PermissionError: [Errno 1] Operation not permitted: b'/private/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/pytest-of-k_tanabe/pytest-186/test_non_utf8_filename_bytes_a29/\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e paths/report.output.input\xff'
+=========================== short test summary info ============================
+FAILED crates/chematic-py/tests/test_filesystem_paths.py::test_non_utf8_filename_bytes_are_lossless[bytes-iter_sdf]
+FAILED crates/chematic-py/tests/test_filesystem_paths.py::test_non_utf8_filename_bytes_are_lossless[bytes-iter_sdf_checked]
+FAILED crates/chematic-py/tests/test_filesystem_paths.py::test_non_utf8_filename_bytes_are_lossless[bytes-iter_sdf_batched]
+FAILED crates/chematic-py/tests/test_filesystem_paths.py::test_non_utf8_filename_bytes_are_lossless[bytes-SdfDataset]
+FAILED crates/chematic-py/tests/test_filesystem_paths.py::test_non_utf8_filename_bytes_are_lossless[bytes-SdfDataset.open]
+FAILED crates/chematic-py/tests/test_filesystem_paths.py::test_non_utf8_filename_bytes_are_lossless[bytes-SDMolSupplier]
+FAILED crates/chematic-py/tests/test_filesystem_paths.py::test_non_utf8_filename_bytes_are_lossless[bytes-SmilesMolSupplier]
+FAILED crates/chematic-py/tests/test_filesystem_paths.py::test_non_utf8_filename_bytes_are_lossless[bytes-TDTMolSupplier]
+FAILED crates/chematic-py/tests/test_filesystem_paths.py::test_non_utf8_filename_bytes_are_lossless[bytes-iter_xyz_batched]
+FAILED crates/chematic-py/tests/test_filesystem_paths.py::test_non_utf8_filename_bytes_are_lossless[bytes-iter_extxyz_batched]
+FAILED crates/chematic-py/tests/test_filesystem_paths.py::test_non_utf8_filename_bytes_are_lossless[bytes-SDWriter]
+FAILED crates/chematic-py/tests/test_filesystem_paths.py::test_non_utf8_filename_bytes_are_lossless[bytes-SmilesWriter]
+FAILED crates/chematic-py/tests/test_filesystem_paths.py::test_non_utf8_filename_bytes_are_lossless[bytes-TDTWriter]
+FAILED crates/chematic-py/tests/test_filesystem_paths.py::test_non_utf8_filename_bytes_are_lossless[bytes-Report.save]
+FAILED crates/chematic-py/tests/test_filesystem_paths.py::test_non_utf8_filename_bytes_are_lossless[bytes-report.output]
+FAILED crates/chematic-py/tests/test_filesystem_paths.py::test_non_utf8_filename_bytes_are_lossless[surrogate-str-iter_sdf]
+FAILED crates/chematic-py/tests/test_filesystem_paths.py::test_non_utf8_filename_bytes_are_lossless[surrogate-str-iter_sdf_checked]
+FAILED crates/chematic-py/tests/test_filesystem_paths.py::test_non_utf8_filename_bytes_are_lossless[surrogate-str-iter_sdf_batched]
+FAILED crates/chematic-py/tests/test_filesystem_paths.py::test_non_utf8_filename_bytes_are_lossless[surrogate-str-SdfDataset]
+FAILED crates/chematic-py/tests/test_filesystem_paths.py::test_non_utf8_filename_bytes_are_lossless[surrogate-str-SdfDataset.open]
+FAILED crates/chematic-py/tests/test_filesystem_paths.py::test_non_utf8_filename_bytes_are_lossless[surrogate-str-SDMolSupplier]
+FAILED crates/chematic-py/tests/test_filesystem_paths.py::test_non_utf8_filename_bytes_are_lossless[surrogate-str-SmilesMolSupplier]
+FAILED crates/chematic-py/tests/test_filesystem_paths.py::test_non_utf8_filename_bytes_are_lossless[surrogate-str-TDTMolSupplier]
+FAILED crates/chematic-py/tests/test_filesystem_paths.py::test_non_utf8_filename_bytes_are_lossless[surrogate-str-iter_xyz_batched]
+FAILED crates/chematic-py/tests/test_filesystem_paths.py::test_non_utf8_filename_bytes_are_lossless[surrogate-str-iter_extxyz_batched]
+FAILED crates/chematic-py/tests/test_filesystem_paths.py::test_non_utf8_filename_bytes_are_lossless[surrogate-str-SDWriter]
+FAILED crates/chematic-py/tests/test_filesystem_paths.py::test_non_utf8_filename_bytes_are_lossless[surrogate-str-SmilesWriter]
+FAILED crates/chematic-py/tests/test_filesystem_paths.py::test_non_utf8_filename_bytes_are_lossless[surrogate-str-TDTWriter]
+FAILED crates/chematic-py/tests/test_filesystem_paths.py::test_non_utf8_filename_bytes_are_lossless[surrogate-str-Report.save]
+FAILED crates/chematic-py/tests/test_filesystem_paths.py::test_non_utf8_filename_bytes_are_lossless[surrogate-str-report.output]
+================== 30 failed, 3314 passed, 2 skipped in 5.75s ==================

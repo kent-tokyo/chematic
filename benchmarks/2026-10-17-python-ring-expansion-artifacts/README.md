@@ -1,0 +1,3 @@
+# Relevant-cycle expansion evidence
+
+Read [the complete report](../2026-10-17-python-ring-expansion.md) and `decision.json`. Each `frontier-*.json.gz` contains every raw observation from one 20-block epoch. `observer-*` files are fresh post-timing outputs; their elapsed fields were discarded. Full 14,072-input source streams are compressed without filtering. `candidate.patch` reconstructs the three modified Rust files and one added oracle test file from `7d6b092f448913a4ef87f1a3d6353789dad69cb5`. Source snapshots, wheels and installed extensions remain at `/private/tmp/chematic-ring-expansion-evidence-20261017`. No timing reruns or pooling.
