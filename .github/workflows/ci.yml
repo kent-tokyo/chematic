@@ -271,6 +271,7 @@ jobs:
           - { package: chematic-chem, target: stereo_group_inversion }
           - { package: chematic-chem, target: stereo_group_alternatives }
           - { package: chematic-chem, target: meso_stereo_group }
+          - { package: chematic-chem, target: tetrahedral_cleanup }
           - { package: chematic-mol, target: gro_contract }
           - { package: chematic-mol, target: turbomole_contract }
           - { package: chematic-mol, target: exyz_contract }

@@ -193,3 +193,22 @@ pub fn reduce_meso_stereo_group(
         witnesses,
     })
 }
+
+/// Reuse the exact stereo/label-preserving proof with one atom pinned. This
+/// internal entry point does not promote or alter enhanced-group metadata.
+pub(crate) fn anchored_inversion_witness(
+    original: &Molecule,
+    inverted: &Molecule,
+    anchor: AtomIdx,
+    max_visits: u64,
+) -> Result<(Option<Vec<AtomIdx>>, u64), MesoStereoGroupError> {
+    let a = graph::Graph::new(original)?;
+    let b = graph::Graph::new(inverted)?;
+    let mut budget = search::Budget {
+        visits: 0,
+        limit: max_visits,
+    };
+    let witness = search::find_mapping_anchored(&a, &b, &mut budget, anchor.0 as usize)?
+        .map(|map| map.into_iter().map(|i| AtomIdx(i as u32)).collect());
+    Ok((witness, budget.visits))
+}

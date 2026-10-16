@@ -184,3 +184,26 @@ pub(super) fn find_mapping(
         Ok(None)
     }
 }
+
+pub(super) fn find_mapping_anchored(
+    a: &Graph<'_>,
+    b: &Graph<'_>,
+    budget: &mut Budget,
+    anchor: usize,
+) -> Result<Option<Vec<usize>>, Error> {
+    let mut map = vec![usize::MAX; a.colors.len()];
+    let mut used = vec![false; map.len()];
+    if !compatible(a, b, &map, anchor, anchor) {
+        return Ok(None);
+    }
+    map[anchor] = anchor;
+    used[anchor] = true;
+    if tetrahedral(a, b, &map)
+        && geometric(a, b, &map)
+        && search(a, b, &mut map, &mut used, budget)?
+    {
+        Ok(Some(map))
+    } else {
+        Ok(None)
+    }
+}

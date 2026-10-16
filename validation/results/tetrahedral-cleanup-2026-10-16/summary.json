@@ -1,0 +1,35 @@
+{
+  "schema": "chematic.tetrahedral-cleanup-summary.v1",
+  "source_base": "ecda5c5364b1a011431b544ce5d399363d600a6f",
+  "source_sha256": {
+    "crates/chematic-core/src/molecule/metadata.rs": "1a97ffbd9a8ccf0e2c37306f4d87bffa117fa92c165e27eee345662413646c03",
+    "crates/chematic-chem/src/tetrahedral_cleanup.rs": "6de528235fffdc3cbd1bbce02b0c58e15085c59da03bbfe4b29eb37a1742fe93",
+    "crates/chematic-chem/src/meso_stereo_group.rs": "ff110ba823c32bc0e6d4516a731ba1922bfd50b0233b6e5c63b72694f49ddebf",
+    "crates/chematic-chem/src/meso_stereo_group/graph.rs": "5683f9bc04ada285488bf86d47c456994fedfa534c4358cadf77aaa39d7f62e0",
+    "crates/chematic-chem/src/meso_stereo_group/search.rs": "1809b8e36f37ed36ccb591bde514e347a760b30d54e1cfa527a0272e291e457a",
+    "crates/chematic-py/src/mol_methods/stereo_cleanup.rs": "5eaafebc424e56dceadc1235ca65a5ad7c082777f3d52f42abefcda1a101b587",
+    "crates/chematic-wasm/src/stereo_cleanup.rs": "199e51f3b68eec3b81800af02a34054010180a537c1da9deddaad6c8df922954",
+    "crates/chematic-chem/examples/tetrahedral_cleanup_dump.rs": "b1a69878d9e0cca595c0ef57ecdf493c13b4528945e0566728493765f592d604",
+    "scripts/validate_tetrahedral_cleanup.py": "61aef6ef7716956f64badb03fe0ffa187bd21470ceb9eb6df042f4c70755cc7b",
+    "scripts/validate_tetrahedral_cleanup_node.mjs": "eda73c66fbb3d5b8e26d061a687271957151b2c7a6fb0873f794c6e3f0898259",
+    "validation/rdkit_issues/tetrahedral-cleanup/cases.json": "e8ca6dfb9a4fd484d55cec3e101501bfba5269cfb57f271bf6a389616b94d4ed"
+  },
+  "runtime": {
+    "rdkit": "2026.09.1",
+    "python": "3.13.6",
+    "python_extension_sha256": "8623c743a6ea467b05c2fd4abc3d939630b6290be29722c4be73c8c390c5a220",
+    "wasm_sha256": "0e9f8c6be42d2620434b75bdd1f624cedc73989ec3aa7430dd9a72ce973258ed",
+    "native_dump_sha256": "afe1ac9d51665be72bf9e50b1cf0350ec47f2569facf37fb9de5458bce55f933"
+  },
+  "results": {
+    "native_decisions": 144,
+    "python_decision_parity": 144,
+    "wasm_decision_parity": 36,
+    "independently_verified_witnesses": 64,
+    "rdkit_atom_bond_graphs_checked": 144,
+    "rdkit_geometric_facts_checked": 24,
+    "failures": 0
+  },
+  "packet_sha256": "88ba7644c7b9e082d057b36eb307a99501e79c4d6aadbb16c947695fe0c43f7f",
+  "scope": "Bounded opt-in anchored 0D graph proof and declaration removal. Not general stereo cleanup, CIP-label correctness, 3D feasibility, performance or release proof."
+}

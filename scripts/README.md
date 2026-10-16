@@ -79,3 +79,10 @@ Open Babel CIF/mmCIF diagnostic. It needs a source-built Python extension and
 Gemmi in the oracle environment. Result hashes identify the downloaded bytes;
 the hermetic CI fixture is independently authored. This validates single CCD
 components, not a bulk dictionary or package release.
+
+### Proof-backed tetrahedral cleanup
+
+`validate_tetrahedral_cleanup.py` compares Rust/Python/WASM decisions and
+independently verifies anchored atom mappings, frames and RDKit-supplied E/Z
+facts. Use the native `tetrahedral_cleanup_dump` example and actual Node/WASM
+module; setup and precise scope are in `docs/tetrahedral-stereo-cleanup.md`.

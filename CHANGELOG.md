@@ -14,7 +14,12 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-No unreleased changes.
+### Added
+
+- Added opt-in proof-backed removal of one redundant tetrahedral declaration in
+  Rust/Python/WASM. An anchored graph witness preserves all other configurations
+  and source labels; failed proofs retain the declaration, and unsupported inputs
+  or exhausted budgets return errors. Parsing/writing defaults remain unchanged.
 
 ## [1.1.5] - 2026-10-16
 
