@@ -11,6 +11,9 @@
 //! `ForceField::minimize` (`BFGSOpt::minimize` with its line search and
 //! RDKit's gradient scaling), so `MMFFOptimizeMolecule` lands on the same
 //! coordinates. The MMFF parameters come from chematic's MMFF94 typing.
+//! The opt-in [`RdkitMmffField::with_terms_and_partial_charges`] constructor
+//! substitutes external electrostatic charges and defines a hybrid model
+//! outside the standard-MMFF/default-constructor parity contract.
 
 // RDKit's spelling (`x * -1.0`, `-1. * k`) is kept: those are exact
 // negations, so rewriting them would not change any result.
@@ -21,7 +24,11 @@ use rustc_hash::{FxHashMap, FxHashSet};
 use std::cell::RefCell;
 
 mod dielectric;
+mod nonbonded;
+mod partial_charges;
 pub use dielectric::MmffDielectricError;
+use nonbonded::mmff_nonbonded_terms;
+pub use partial_charges::MmffPartialChargeError;
 
 use crate::mmff94_minimizer::{MinimizerError, rdkit_prepared_parts};
 use crate::mmff94_numeric::mmff94_charges_rdkit_order;
@@ -409,52 +416,6 @@ fn add_mmff_torsions_for_bond(
     }
 }
 
-#[allow(clippy::too_many_arguments)]
-fn mmff_nonbonded_terms(
-    coords: &[[f64; 3]],
-    adjacency: &BondAdjacency,
-    types: &[u8],
-    charges: &[f64],
-    threshold: f64,
-    ignore_interfrag: bool,
-    terms: [bool; 7],
-) -> Vec<NonbondedTerm> {
-    let n = adjacency.len();
-    let topology = topological_distances(n, adjacency);
-    let fragments = fragments(n, adjacency);
-    let mut output = Vec::new();
-    for i in 0..n {
-        for j in (i + 1)..n {
-            if ignore_interfrag && fragments[i] != fragments[j] {
-                continue;
-            }
-            let relation = topology[i * n + j];
-            if matches!(relation, 1 | 2) {
-                continue;
-            }
-            let delta = P3 {
-                x: coords[i][0] - coords[j][0],
-                y: coords[i][1] - coords[j][1],
-                z: coords[i][2] - coords[j][2],
-            };
-            if delta.length() > threshold {
-                continue;
-            }
-            let vdw = terms[5].then(|| vdw_params(types[i], types[j])).flatten();
-            let ele = (terms[6] && !is_double_zero(charges[i]) && !is_double_zero(charges[j]))
-                .then_some((
-                    charges[i] * charges[j],
-                    charges[i] * charges[j],
-                    relation == 3,
-                ));
-            if vdw.is_some() || ele.is_some() {
-                output.push(NonbondedTerm { i, j, vdw, ele });
-            }
-        }
-    }
-    output
-}
-
 impl RdkitMmffField {
     /// `MMFFGetMoleculeForceField(mol, MMFFGetMoleculeProperties(mol),
     /// nonBondedThresh, confId, ignoreInterfragInteractions)` with the
@@ -486,6 +447,26 @@ impl RdkitMmffField {
         ignore_interfrag: bool,
         terms: [bool; 7],
     ) -> Result<Self, MinimizerError> {
+        Self::prepare(
+            mol,
+            coords,
+            variant,
+            non_bonded_thresh,
+            ignore_interfrag,
+            terms,
+            None,
+        )
+    }
+
+    fn prepare(
+        mol: &Molecule,
+        coords: &[[f64; 3]],
+        variant: MmffVariant,
+        non_bonded_thresh: f64,
+        ignore_interfrag: bool,
+        terms: [bool; 7],
+        supplied_charges: Option<&[f64]>,
+    ) -> Result<Self, MinimizerError> {
         let mmffs = variant == MmffVariant::Mmff94s;
         let n = mol.atom_count();
         let (parts, types, view) = rdkit_prepared_parts(mol)?;
@@ -494,8 +475,15 @@ impl RdkitMmffField {
             .iter()
             .map(|v| v.iter().map(|&(a, _)| a).collect())
             .collect();
-        let charges =
-            mmff94_charges_rdkit_order(mol, &nbrs).map_err(MinimizerError::ChargeCalculation)?;
+        let assigned_charges;
+        let charges = match supplied_charges {
+            Some(charges) => charges,
+            None => {
+                assigned_charges = mmff94_charges_rdkit_order(mol, &nbrs)
+                    .map_err(MinimizerError::ChargeCalculation)?;
+                &assigned_charges
+            }
+        };
 
         let (angles, stretch_bends) = crate::mmff94_minimizer::rdkit_angle_parts(mol, &nbrs)?;
         Ok(RdkitMmffField {
@@ -509,10 +497,11 @@ impl RdkitMmffField {
                 coords,
                 &adj,
                 &types,
-                &charges,
+                charges,
                 non_bonded_thresh,
                 ignore_interfrag,
                 terms,
+                supplied_charges.is_some(),
             ),
             terms,
             dielectric_constant: 1.0,

@@ -98,6 +98,7 @@ nav:
     - Error Handling & Limits: error-and-limits.md
     - Checked 3D Distance Matrices: rdkit-checked-3d-distance-matrix.md
     - Prepared MMFF Dielectric: mmff-dielectric-updates.md
+    - Custom MMFF Partial Charges: mmff-partial-charges.md
   - Reliability:
     - Complete Molecule Reset: molecule-clear.md
     - Python Filesystem Paths: python-filesystem-paths.md
