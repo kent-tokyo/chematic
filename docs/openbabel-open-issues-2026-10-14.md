@@ -97,3 +97,11 @@ functionality. Added the previously missing chematic
 [checked molecular bond writer](cif-molecular-bonds.md) in Rust/Python, with
 explicit graph edges, S/D/T/A types and finite positive Cartesian distances.
 The positions-only reader and periodic adapter retain their existing scope.
+## October 16 follow-up: XYZ element symbols
+
+[#2333](https://github.com/openbabel/openbabel/issues/2333) remains open.
+Open Babel 3.2.1 maps original CL/BR/CA/FE XYZ probes to dummy atoms; the
+previous chematic readers refused them. Added
+[format-local uppercase species support](xyz-element-symbols.md) to native
+XYZ/extxyz and their stream readers. Core lookup, SMILES grammar and PDB atom
+names remain case-sensitive; coordinates and opaque properties are unaffected.

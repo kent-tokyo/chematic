@@ -527,17 +527,20 @@ Two distinct functions share the name `parse_xyz` in different crates —
 disambiguate by crate, not by name alone:
 
 - `chematic_3d::parse_xyz -> Result<(Molecule, Coords3D), XyzError>` —
-  infers bonds by distance, returns a full `Molecule`.
+  returns every listed atom and coordinate, including H, with no bonds.
 - `chematic_mol::parse_xyz -> Result<XyzFrame, XyzError>` — no `Molecule`,
   no bonds; the Extended-XYZ-superset document type. Also has
   `parse_extxyz`/`parse_extxyz_all`/`write_extxyz`/`write_xyz`,
   `XyzReader`/`ExtxyzReader`/`ExtxyzWriter`.
-- **Python**: `from_xyz` uses `chematic_3d`'s bond-inferring version.
+- **Python**: `from_xyz` uses `chematic_3d`'s atoms/coordinates version.
   `from_extxyz`/`from_extxyz_all`/`to_extxyz` use `chematic_mol`'s
   non-bond version.
 - **WASM**: `mol_from_xyz`/`to_xyz` use `chematic_3d`'s version.
   `mol_from_extxyz`/`extxyz_frame_json`/`to_extxyz_json` use
   `chematic_mol`'s version.
+- **Element symbols**: both native paths accept canonical symbols and
+  [uppercase two-letter XYZ aliases](xyz-element-symbols.md). This rule is
+  local to the species column; core lookup, PDB names and SMILES are unchanged.
 - **Streaming**: `XyzFileReader<R: BufRead>` is a true file-backed streaming
   iterator, and `XyzBatchReader<R: BufRead>` adds bounded pull-based batches
   with input order, cancellation, and a versioned progress manifest.

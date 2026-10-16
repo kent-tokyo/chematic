@@ -63,8 +63,9 @@ impl Default for XyzParseLimits {
 
 /// Parse an XYZ format string into a [`Molecule`] and [`Coords3D`].
 ///
-/// The returned `Molecule` contains only heavy atoms with no bonds; XYZ files
-/// do not encode connectivity.
+/// Every listed atom, including explicit H, is retained with no bonds.
+/// XYZ files do not encode connectivity. Canonical element symbols and
+/// uppercase two-letter aliases (e.g. `CL`) are accepted.
 pub fn parse_xyz(input: &str) -> Result<(Molecule, Coords3D), XyzError> {
     parse_xyz_with_limits(input, XyzParseLimits::default())
 }
@@ -133,7 +134,7 @@ pub fn parse_xyz_with_limits(
         let y: f64 = parts[2].parse().map_err(|_| XyzError::InvalidLine(i + 3))?;
         let z: f64 = parts[3].parse().map_err(|_| XyzError::InvalidLine(i + 3))?;
 
-        let element = Element::from_symbol(symbol)
+        let element = element_from_xyz_symbol(symbol)
             .ok_or_else(|| XyzError::UnknownElement(symbol.to_string()))?;
 
         builder.add_atom(Atom::new(element));
@@ -144,6 +145,27 @@ pub fn parse_xyz_with_limits(
     let mol = builder.build();
     let coords = Coords3D { points };
     Ok((mol, coords))
+}
+
+/// Resolve a canonical XYZ species token or an uppercase two-letter alias.
+///
+/// Format-local support for Open Babel #2333: `CL` means chlorine in an XYZ
+/// species column, while PDB atom names and SMILES retain their own rules.
+/// The core [`Element::from_symbol`] stays case-sensitive. Lowercase/mixed-case
+/// aliases, atom labels, atomic numbers and isotope aliases are not added.
+pub fn element_from_xyz_symbol(symbol: &str) -> Option<Element> {
+    Element::from_symbol(symbol).or_else(|| {
+        let [first, second] = symbol.as_bytes() else {
+            return None;
+        };
+        if !first.is_ascii_uppercase() || !second.is_ascii_uppercase() {
+            return None;
+        }
+        let normalized = [*first, second.to_ascii_lowercase()];
+        std::str::from_utf8(&normalized)
+            .ok()
+            .and_then(Element::from_symbol)
+    })
 }
 
 /// Write a molecule and its coordinates as an XYZ format string.

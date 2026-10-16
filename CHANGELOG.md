@@ -43,6 +43,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   V2000 output callers that discard it. Reporting APIs retain every loss field;
   stereo depiction and serialized bytes remain unchanged. See the
   [bounded source comparison](benchmarks/2026-10-16-openbabel-sdf-loss-work.md).
+- Fix native XYZ/extxyz readers to recognize uppercase two-letter species
+  aliases (CL/BR/CA/FE and the other supported elements), addressing the
+  element-identity failure class in Open Babel #2333. Core symbol lookup,
+  SMILES and PDB atom-name rules are unchanged.
 
 ## [1.1.5] - 2026-10-16
 

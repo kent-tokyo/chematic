@@ -33,9 +33,7 @@
 //! bonds. [`XyzFrame::to_molecule`] always returns a `Molecule` with zero
 //! bonds; this module never guesses bonds from interatomic distance and
 //! never guesses bond order. Distance-based connectivity inference belongs
-//! at a higher crate layer -- `chematic-3d` already has `determine_bonds`
-//! for exactly that, but `chematic-mol` does not (and should not) depend on
-//! `chematic-3d`, so wiring it in here is out of scope for this module.
+//! in a separate operation; these format readers do not invoke it.
 //!
 //! # Extended XYZ (extxyz)
 //!
@@ -72,6 +70,7 @@
 
 use std::collections::HashSet;
 
+use chematic_3d::xyz::element_from_xyz_symbol;
 use chematic_core::{Atom, Element, Molecule, MoleculeBuilder};
 
 /// The declared type of an extended-XYZ `Properties=` column
@@ -454,10 +453,11 @@ fn parse_one_frame(text: &str) -> Result<(XyzFrame, &str), XyzError> {
                 detail: format!("expected 'element x y z', got '{raw_line}'"),
             });
         }
-        let element = Element::from_symbol(parts[0]).ok_or_else(|| XyzError::UnknownElement {
-            symbol: parts[0].to_string(),
-            line: lineno,
-        })?;
+        let element =
+            element_from_xyz_symbol(parts[0]).ok_or_else(|| XyzError::UnknownElement {
+                symbol: parts[0].to_string(),
+                line: lineno,
+            })?;
 
         let parse_coord = |raw: &str, axis: &'static str| -> Result<f64, XyzError> {
             let v: f64 = raw.parse().map_err(|_| XyzError::InvalidAtomLine {

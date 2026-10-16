@@ -3280,7 +3280,9 @@ def smarts_find(smarts: str, mol: Mol) -> list[list[int]]:
 def from_pdb(pdb_str: str) -> tuple[Mol, list[list[float]]]:
     """Parse a PDB string and return ``(Mol, coords)``.
 
-    ``coords`` is a list of ``[x, y, z]`` lists (Å), one per heavy atom.
+    ``coords`` is a list of ``[x, y, z]`` lists (Å), one per listed atom,
+    including explicit H. No bonds are inferred. Canonical element symbols
+    and uppercase two-letter XYZ aliases (e.g. CL) are accepted.
     Bond information is inferred from inter-atom distances.
 
     Raises:

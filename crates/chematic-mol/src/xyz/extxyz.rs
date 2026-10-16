@@ -238,7 +238,7 @@ fn parse_extxyz_atom_line(
         });
     }
 
-    let element = Element::from_symbol(tokens[0]).ok_or_else(|| XyzError::UnknownElement {
+    let element = element_from_xyz_symbol(tokens[0]).ok_or_else(|| XyzError::UnknownElement {
         symbol: tokens[0].to_string(),
         line: lineno,
     })?;
