@@ -63,6 +63,13 @@ let optimized = minimize_dreiding_with_config(&mol, coords, &config);
 
 ## MMFF94
 
+Prepared `rdkit_mmff::RdkitMmffField` objects support checked constant-dielectric
+updates through `set_dielectric_constant(value)` and `dielectric_constant()`.
+Energy, gradient and minimization immediately use the new setting; atom types,
+charges and prepared pair selection are retained. The default is 1.0. Python
+exposes `MolecularForceField.set_dielectric_constant_` for MMFF94/MMFF94s.
+See [the API, limits and validation](../../docs/mmff-dielectric-updates.md).
+
 Full Merck Molecular Force Field 94 implementation with PBCI/BCI partial charges.
 
 ### Atom Typing & Charges
