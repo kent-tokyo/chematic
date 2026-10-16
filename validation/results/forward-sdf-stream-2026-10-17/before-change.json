@@ -1,0 +1,12 @@
+{
+  "base_commit": "1b4603db0a20af91ca598415b48e13c81bee0578",
+  "base_native_forward_supplier_present": false,
+  "base_compat_forward_supplier_present": false,
+  "before_sd_header_fix": {
+    "native_module_sha256": "0f7c3f9039491d8bfef3b3b6cf0bff732b85186baff4320f4f2376f381ffad7f",
+    "pytest_passed": 251,
+    "pytest_failed": 2,
+    "failure": "RDKit-style SD field header loses Activity in both new supplier APIs",
+    "scope": "new stream implementation with unchanged base SDF field parser"
+  }
+}

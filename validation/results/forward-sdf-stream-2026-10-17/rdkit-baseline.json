@@ -1,0 +1,8 @@
+{
+  "rdkit_version": "2025.09.3",
+  "missing_read": {
+    "timed_out": true,
+    "timeout_seconds": 2,
+    "stdout": "constructed\n"
+  }
+}

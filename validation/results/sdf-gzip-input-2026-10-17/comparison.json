@@ -1,0 +1,886 @@
+{
+  "comparisons_passed": 80,
+  "cases": [
+    {
+      "v3000": false,
+      "variant": "plain_auto",
+      "index": 0,
+      "smiles": "C(C)O",
+      "name": "compound-日本語-0",
+      "properties": {
+        "Activity": "0"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": false,
+      "variant": "plain_auto",
+      "index": 1,
+      "smiles": "CN",
+      "name": "compound-日本語-1",
+      "properties": {
+        "Activity": "1"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": false,
+      "variant": "plain_auto",
+      "index": 2,
+      "smiles": "c1ccccc1",
+      "name": "compound-日本語-2",
+      "properties": {
+        "Activity": "2"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": false,
+      "variant": "plain_auto",
+      "index": 3,
+      "smiles": "Cl[C@@H](F)Br",
+      "name": "compound-日本語-3",
+      "properties": {
+        "Activity": "3"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": false,
+      "variant": "plain_auto",
+      "index": 4,
+      "smiles": "Cl[C@H](F)Br",
+      "name": "compound-日本語-4",
+      "properties": {
+        "Activity": "4"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": false,
+      "variant": "plain_auto",
+      "index": 5,
+      "smiles": "[13CH3][NH3+]",
+      "name": "compound-日本語-5",
+      "properties": {
+        "Activity": "5"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": false,
+      "variant": "plain_auto",
+      "index": 6,
+      "smiles": "F/C=C/Cl",
+      "name": "compound-日本語-6",
+      "properties": {
+        "Activity": "6"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": false,
+      "variant": "plain_auto",
+      "index": 7,
+      "smiles": "F/C=C\\Cl",
+      "name": "compound-日本語-7",
+      "properties": {
+        "Activity": "7"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": false,
+      "variant": "plain_auto",
+      "index": 8,
+      "smiles": "C1CCCCC1",
+      "name": "compound-日本語-8",
+      "properties": {
+        "Activity": "8"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": false,
+      "variant": "plain_auto",
+      "index": 9,
+      "smiles": "CC(O)=O",
+      "name": "compound-日本語-9",
+      "properties": {
+        "Activity": "9"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": false,
+      "variant": "gzip_auto",
+      "index": 0,
+      "smiles": "C(C)O",
+      "name": "compound-日本語-0",
+      "properties": {
+        "Activity": "0"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": false,
+      "variant": "gzip_auto",
+      "index": 1,
+      "smiles": "CN",
+      "name": "compound-日本語-1",
+      "properties": {
+        "Activity": "1"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": false,
+      "variant": "gzip_auto",
+      "index": 2,
+      "smiles": "c1ccccc1",
+      "name": "compound-日本語-2",
+      "properties": {
+        "Activity": "2"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": false,
+      "variant": "gzip_auto",
+      "index": 3,
+      "smiles": "Cl[C@@H](F)Br",
+      "name": "compound-日本語-3",
+      "properties": {
+        "Activity": "3"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": false,
+      "variant": "gzip_auto",
+      "index": 4,
+      "smiles": "Cl[C@H](F)Br",
+      "name": "compound-日本語-4",
+      "properties": {
+        "Activity": "4"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": false,
+      "variant": "gzip_auto",
+      "index": 5,
+      "smiles": "[13CH3][NH3+]",
+      "name": "compound-日本語-5",
+      "properties": {
+        "Activity": "5"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": false,
+      "variant": "gzip_auto",
+      "index": 6,
+      "smiles": "F/C=C/Cl",
+      "name": "compound-日本語-6",
+      "properties": {
+        "Activity": "6"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": false,
+      "variant": "gzip_auto",
+      "index": 7,
+      "smiles": "F/C=C\\Cl",
+      "name": "compound-日本語-7",
+      "properties": {
+        "Activity": "7"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": false,
+      "variant": "gzip_auto",
+      "index": 8,
+      "smiles": "C1CCCCC1",
+      "name": "compound-日本語-8",
+      "properties": {
+        "Activity": "8"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": false,
+      "variant": "gzip_auto",
+      "index": 9,
+      "smiles": "CC(O)=O",
+      "name": "compound-日本語-9",
+      "properties": {
+        "Activity": "9"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": false,
+      "variant": "gzip_explicit",
+      "index": 0,
+      "smiles": "C(C)O",
+      "name": "compound-日本語-0",
+      "properties": {
+        "Activity": "0"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": false,
+      "variant": "gzip_explicit",
+      "index": 1,
+      "smiles": "CN",
+      "name": "compound-日本語-1",
+      "properties": {
+        "Activity": "1"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": false,
+      "variant": "gzip_explicit",
+      "index": 2,
+      "smiles": "c1ccccc1",
+      "name": "compound-日本語-2",
+      "properties": {
+        "Activity": "2"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": false,
+      "variant": "gzip_explicit",
+      "index": 3,
+      "smiles": "Cl[C@@H](F)Br",
+      "name": "compound-日本語-3",
+      "properties": {
+        "Activity": "3"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": false,
+      "variant": "gzip_explicit",
+      "index": 4,
+      "smiles": "Cl[C@H](F)Br",
+      "name": "compound-日本語-4",
+      "properties": {
+        "Activity": "4"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": false,
+      "variant": "gzip_explicit",
+      "index": 5,
+      "smiles": "[13CH3][NH3+]",
+      "name": "compound-日本語-5",
+      "properties": {
+        "Activity": "5"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": false,
+      "variant": "gzip_explicit",
+      "index": 6,
+      "smiles": "F/C=C/Cl",
+      "name": "compound-日本語-6",
+      "properties": {
+        "Activity": "6"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": false,
+      "variant": "gzip_explicit",
+      "index": 7,
+      "smiles": "F/C=C\\Cl",
+      "name": "compound-日本語-7",
+      "properties": {
+        "Activity": "7"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": false,
+      "variant": "gzip_explicit",
+      "index": 8,
+      "smiles": "C1CCCCC1",
+      "name": "compound-日本語-8",
+      "properties": {
+        "Activity": "8"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": false,
+      "variant": "gzip_explicit",
+      "index": 9,
+      "smiles": "CC(O)=O",
+      "name": "compound-日本語-9",
+      "properties": {
+        "Activity": "9"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": false,
+      "variant": "members_auto",
+      "index": 0,
+      "smiles": "C(C)O",
+      "name": "compound-日本語-0",
+      "properties": {
+        "Activity": "0"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": false,
+      "variant": "members_auto",
+      "index": 1,
+      "smiles": "CN",
+      "name": "compound-日本語-1",
+      "properties": {
+        "Activity": "1"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": false,
+      "variant": "members_auto",
+      "index": 2,
+      "smiles": "c1ccccc1",
+      "name": "compound-日本語-2",
+      "properties": {
+        "Activity": "2"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": false,
+      "variant": "members_auto",
+      "index": 3,
+      "smiles": "Cl[C@@H](F)Br",
+      "name": "compound-日本語-3",
+      "properties": {
+        "Activity": "3"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": false,
+      "variant": "members_auto",
+      "index": 4,
+      "smiles": "Cl[C@H](F)Br",
+      "name": "compound-日本語-4",
+      "properties": {
+        "Activity": "4"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": false,
+      "variant": "members_auto",
+      "index": 5,
+      "smiles": "[13CH3][NH3+]",
+      "name": "compound-日本語-5",
+      "properties": {
+        "Activity": "5"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": false,
+      "variant": "members_auto",
+      "index": 6,
+      "smiles": "F/C=C/Cl",
+      "name": "compound-日本語-6",
+      "properties": {
+        "Activity": "6"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": false,
+      "variant": "members_auto",
+      "index": 7,
+      "smiles": "F/C=C\\Cl",
+      "name": "compound-日本語-7",
+      "properties": {
+        "Activity": "7"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": false,
+      "variant": "members_auto",
+      "index": 8,
+      "smiles": "C1CCCCC1",
+      "name": "compound-日本語-8",
+      "properties": {
+        "Activity": "8"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": false,
+      "variant": "members_auto",
+      "index": 9,
+      "smiles": "CC(O)=O",
+      "name": "compound-日本語-9",
+      "properties": {
+        "Activity": "9"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": true,
+      "variant": "plain_auto",
+      "index": 0,
+      "smiles": "C(C)O",
+      "name": "compound-日本語-0",
+      "properties": {
+        "Activity": "0"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": true,
+      "variant": "plain_auto",
+      "index": 1,
+      "smiles": "CN",
+      "name": "compound-日本語-1",
+      "properties": {
+        "Activity": "1"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": true,
+      "variant": "plain_auto",
+      "index": 2,
+      "smiles": "c1ccccc1",
+      "name": "compound-日本語-2",
+      "properties": {
+        "Activity": "2"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": true,
+      "variant": "plain_auto",
+      "index": 3,
+      "smiles": "Cl[C@@H](F)Br",
+      "name": "compound-日本語-3",
+      "properties": {
+        "Activity": "3"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": true,
+      "variant": "plain_auto",
+      "index": 4,
+      "smiles": "Cl[C@H](F)Br",
+      "name": "compound-日本語-4",
+      "properties": {
+        "Activity": "4"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": true,
+      "variant": "plain_auto",
+      "index": 5,
+      "smiles": "[13CH3][NH3+]",
+      "name": "compound-日本語-5",
+      "properties": {
+        "Activity": "5"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": true,
+      "variant": "plain_auto",
+      "index": 6,
+      "smiles": "F/C=C/Cl",
+      "name": "compound-日本語-6",
+      "properties": {
+        "Activity": "6"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": true,
+      "variant": "plain_auto",
+      "index": 7,
+      "smiles": "F/C=C\\Cl",
+      "name": "compound-日本語-7",
+      "properties": {
+        "Activity": "7"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": true,
+      "variant": "plain_auto",
+      "index": 8,
+      "smiles": "C1CCCCC1",
+      "name": "compound-日本語-8",
+      "properties": {
+        "Activity": "8"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": true,
+      "variant": "plain_auto",
+      "index": 9,
+      "smiles": "CC(O)=O",
+      "name": "compound-日本語-9",
+      "properties": {
+        "Activity": "9"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": true,
+      "variant": "gzip_auto",
+      "index": 0,
+      "smiles": "C(C)O",
+      "name": "compound-日本語-0",
+      "properties": {
+        "Activity": "0"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": true,
+      "variant": "gzip_auto",
+      "index": 1,
+      "smiles": "CN",
+      "name": "compound-日本語-1",
+      "properties": {
+        "Activity": "1"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": true,
+      "variant": "gzip_auto",
+      "index": 2,
+      "smiles": "c1ccccc1",
+      "name": "compound-日本語-2",
+      "properties": {
+        "Activity": "2"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": true,
+      "variant": "gzip_auto",
+      "index": 3,
+      "smiles": "Cl[C@@H](F)Br",
+      "name": "compound-日本語-3",
+      "properties": {
+        "Activity": "3"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": true,
+      "variant": "gzip_auto",
+      "index": 4,
+      "smiles": "Cl[C@H](F)Br",
+      "name": "compound-日本語-4",
+      "properties": {
+        "Activity": "4"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": true,
+      "variant": "gzip_auto",
+      "index": 5,
+      "smiles": "[13CH3][NH3+]",
+      "name": "compound-日本語-5",
+      "properties": {
+        "Activity": "5"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": true,
+      "variant": "gzip_auto",
+      "index": 6,
+      "smiles": "F/C=C/Cl",
+      "name": "compound-日本語-6",
+      "properties": {
+        "Activity": "6"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": true,
+      "variant": "gzip_auto",
+      "index": 7,
+      "smiles": "F/C=C\\Cl",
+      "name": "compound-日本語-7",
+      "properties": {
+        "Activity": "7"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": true,
+      "variant": "gzip_auto",
+      "index": 8,
+      "smiles": "C1CCCCC1",
+      "name": "compound-日本語-8",
+      "properties": {
+        "Activity": "8"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": true,
+      "variant": "gzip_auto",
+      "index": 9,
+      "smiles": "CC(O)=O",
+      "name": "compound-日本語-9",
+      "properties": {
+        "Activity": "9"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": true,
+      "variant": "gzip_explicit",
+      "index": 0,
+      "smiles": "C(C)O",
+      "name": "compound-日本語-0",
+      "properties": {
+        "Activity": "0"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": true,
+      "variant": "gzip_explicit",
+      "index": 1,
+      "smiles": "CN",
+      "name": "compound-日本語-1",
+      "properties": {
+        "Activity": "1"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": true,
+      "variant": "gzip_explicit",
+      "index": 2,
+      "smiles": "c1ccccc1",
+      "name": "compound-日本語-2",
+      "properties": {
+        "Activity": "2"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": true,
+      "variant": "gzip_explicit",
+      "index": 3,
+      "smiles": "Cl[C@@H](F)Br",
+      "name": "compound-日本語-3",
+      "properties": {
+        "Activity": "3"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": true,
+      "variant": "gzip_explicit",
+      "index": 4,
+      "smiles": "Cl[C@H](F)Br",
+      "name": "compound-日本語-4",
+      "properties": {
+        "Activity": "4"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": true,
+      "variant": "gzip_explicit",
+      "index": 5,
+      "smiles": "[13CH3][NH3+]",
+      "name": "compound-日本語-5",
+      "properties": {
+        "Activity": "5"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": true,
+      "variant": "gzip_explicit",
+      "index": 6,
+      "smiles": "F/C=C/Cl",
+      "name": "compound-日本語-6",
+      "properties": {
+        "Activity": "6"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": true,
+      "variant": "gzip_explicit",
+      "index": 7,
+      "smiles": "F/C=C\\Cl",
+      "name": "compound-日本語-7",
+      "properties": {
+        "Activity": "7"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": true,
+      "variant": "gzip_explicit",
+      "index": 8,
+      "smiles": "C1CCCCC1",
+      "name": "compound-日本語-8",
+      "properties": {
+        "Activity": "8"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": true,
+      "variant": "gzip_explicit",
+      "index": 9,
+      "smiles": "CC(O)=O",
+      "name": "compound-日本語-9",
+      "properties": {
+        "Activity": "9"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": true,
+      "variant": "members_auto",
+      "index": 0,
+      "smiles": "C(C)O",
+      "name": "compound-日本語-0",
+      "properties": {
+        "Activity": "0"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": true,
+      "variant": "members_auto",
+      "index": 1,
+      "smiles": "CN",
+      "name": "compound-日本語-1",
+      "properties": {
+        "Activity": "1"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": true,
+      "variant": "members_auto",
+      "index": 2,
+      "smiles": "c1ccccc1",
+      "name": "compound-日本語-2",
+      "properties": {
+        "Activity": "2"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": true,
+      "variant": "members_auto",
+      "index": 3,
+      "smiles": "Cl[C@@H](F)Br",
+      "name": "compound-日本語-3",
+      "properties": {
+        "Activity": "3"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": true,
+      "variant": "members_auto",
+      "index": 4,
+      "smiles": "Cl[C@H](F)Br",
+      "name": "compound-日本語-4",
+      "properties": {
+        "Activity": "4"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": true,
+      "variant": "members_auto",
+      "index": 5,
+      "smiles": "[13CH3][NH3+]",
+      "name": "compound-日本語-5",
+      "properties": {
+        "Activity": "5"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": true,
+      "variant": "members_auto",
+      "index": 6,
+      "smiles": "F/C=C/Cl",
+      "name": "compound-日本語-6",
+      "properties": {
+        "Activity": "6"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": true,
+      "variant": "members_auto",
+      "index": 7,
+      "smiles": "F/C=C\\Cl",
+      "name": "compound-日本語-7",
+      "properties": {
+        "Activity": "7"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": true,
+      "variant": "members_auto",
+      "index": 8,
+      "smiles": "C1CCCCC1",
+      "name": "compound-日本語-8",
+      "properties": {
+        "Activity": "8"
+      },
+      "stereo_diagnostics": []
+    },
+    {
+      "v3000": true,
+      "variant": "members_auto",
+      "index": 9,
+      "smiles": "CC(O)=O",
+      "name": "compound-日本語-9",
+      "properties": {
+        "Activity": "9"
+      },
+      "stereo_diagnostics": []
+    }
+  ],
+  "module_sha256": "bf6c2750a26132f14938b459003145eb510156d840572ec5f1ed77999344a906"
+}

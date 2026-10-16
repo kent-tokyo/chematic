@@ -1,0 +1,5 @@
+fresh_plain_string	ok=1	atoms=3	gzip=0
+gzip_input	ok=1	atoms=2	gzip=1
+replacement_plain_string	ok=0	atoms=0	gzip=1
+replacement_plain_stream	ok=0	atoms=0	gzip=1
+fresh_plain_stream	ok=1	atoms=2	gzip=0

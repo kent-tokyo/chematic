@@ -36,6 +36,53 @@ pub(crate) fn perceive_mol2_stereo_from_coordinates(
     chematic_perception::apply_ez_directions_from_3d(mol, coordinates);
 }
 
+/// Open Babel writes both carboxylate C--O bonds as `ar` when the oxygen type
+/// is `O.co2`. A formal -1 charge identifies the single-bonded oxygen; keep
+/// the original bond tokens in the source record while projecting the graph.
+pub(crate) fn restore_mol2_carboxylate_orders(
+    mol: &mut Molecule,
+    is_co2_oxygen: impl Fn(AtomIdx) -> bool,
+) {
+    let corrections: Vec<_> = mol
+        .atoms()
+        .filter(|(center, atom)| {
+            atom.element == Element::C && atom.charge == 0 && mol.degree(*center) == 3
+        })
+        .filter_map(|(center, _)| {
+            let oxygen_bonds: Vec<_> = mol
+                .neighbors(center)
+                .filter(|&(neighbor, bond)| {
+                    is_co2_oxygen(neighbor)
+                        && mol.atom(neighbor).element == Element::O
+                        && mol.degree(neighbor) == 1
+                        && mol.bond(bond).order == BondOrder::Aromatic
+                })
+                .collect();
+            if oxygen_bonds.len() != 2 {
+                return None;
+            }
+            let first = oxygen_bonds[0];
+            let second = oxygen_bonds[1];
+            if mol.neighbors(center).any(|(_, bond)| {
+                bond != first.1 && bond != second.1 && mol.bond(bond).order != BondOrder::Single
+            }) {
+                return None;
+            }
+            let first_charge = mol.atom(first.0).charge;
+            let second_charge = mol.atom(second.0).charge;
+            match (first_charge, second_charge) {
+                (-1, 0) => Some((first.1, second.1)),
+                (0, -1) => Some((second.1, first.1)),
+                _ => None,
+            }
+        })
+        .collect();
+    for (single, double) in corrections {
+        mol.set_bond_order(single, BondOrder::Single);
+        mol.set_bond_order(double, BondOrder::Double);
+    }
+}
+
 /// One `@<TRIPOS>ATOM` row whose interchange fields are not representable by
 /// [`Molecule`]. The vector is index-aligned with [`Mol2Record::molecule`].
 #[derive(Debug, Clone, PartialEq)]
@@ -619,11 +666,11 @@ fn parse_mol2_bond(
     let a1_id = parse_id(1, "origin atom_id")?;
     let a2_id = parse_id(2, "target atom_id")?;
     let order = match fields[3] {
-        "1" | "1.5" => BondOrder::Single,
+        "1" | "1.5" | "am" => BondOrder::Single,
         "2" => BondOrder::Double,
         "3" => BondOrder::Triple,
         "4" => BondOrder::Quadruple,
-        "ar" | "am" => BondOrder::Aromatic,
+        "ar" => BondOrder::Aromatic,
         "un" => BondOrder::QueryAny,
         "du" | "nc" => BondOrder::Zero,
         _ => BondOrder::Single,
@@ -683,6 +730,11 @@ pub fn parse_mol2_record_with_limits(
     let mut atoms = parse_mol2_atoms(&all_lines, limits, &unity_formal_charges)?;
     let (bond_records, duplicate_bonds) = add_mol2_bonds(&all_lines, limits, &mut atoms)?;
     let mut molecule = atoms.builder.build();
+    restore_mol2_carboxylate_orders(&mut molecule, |idx| {
+        atoms.records[idx.0 as usize]
+            .atom_type
+            .eq_ignore_ascii_case("O.co2")
+    });
     perceive_mol2_stereo_from_coordinates(&mut molecule, &atoms.coords);
     Ok(Mol2Record {
         molecule,
@@ -1176,6 +1228,15 @@ GASTEIGER
         for (_, bond) in mol.bonds() {
             assert_eq!(bond.order, BondOrder::Aromatic);
         }
+    }
+
+    #[test]
+    fn amide_bond_type_is_single_and_keeps_its_source_token() {
+        let input = ETHANOL_MOL2.replace("2     2     3    1", "2     2     3    am");
+        let (mol, _) = parse_mol2(&input).unwrap();
+        assert_eq!(mol.bonds().nth(1).unwrap().1.order, BondOrder::Single);
+        let record = parse_mol2_record(&input).unwrap();
+        assert_eq!(record.bonds[1].bond_type, "am");
     }
 
     #[test]

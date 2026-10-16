@@ -1,0 +1,10 @@
+{
+  "cause": "macOS sandbox denies time -l sysctl kern.clockrate",
+  "failed_worker": "baseline-sdf parse",
+  "completed_blocks": 0,
+  "accepted_timing_samples": 0,
+  "native_child_executed": true,
+  "failure_stage": "RSS wrapper, elapsed output was not accepted by parent",
+  "same_frozen_plan_sources_binaries_and_corpora": true,
+  "resolution": "Run the complete fixed matrix with read-only process statistics permission; preserve failed launch and do not pool samples"
+}

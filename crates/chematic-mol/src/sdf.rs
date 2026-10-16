@@ -13,10 +13,12 @@ use chematic_core::{Coords3D, Molecule};
 use chematic_perception::{EzDirectionDiagnostic, StereoDiagnostic};
 
 mod buffer;
+mod compression;
 mod dataset;
 mod ensemble;
 mod fields;
 mod selection;
+pub use compression::{SdfCompression, SdfInput};
 pub use dataset::{SdfDataset, SdfRecordMetadata};
 pub use ensemble::{ConformerEnsemble, read_sdf_conformer_ensembles};
 use fields::parse_sd_fields;

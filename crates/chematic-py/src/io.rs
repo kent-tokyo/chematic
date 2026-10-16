@@ -8,6 +8,7 @@ use crate::Mol;
 mod dataset;
 mod dataset_batch;
 mod dataset_selector;
+mod forward_sdf;
 mod tdt;
 use dataset::PySdfDataset;
 use tdt::{PyTdtMolSupplier, PyTdtWriter};
@@ -274,15 +275,30 @@ pub fn iter_sdf(
 /// of ``record`` and ``error`` is non-None. A malformed record does not stop
 /// later records. Opening the file can raise ``IOError``; read errors are
 /// yielded in place and end the stream.
+/// ``compression`` is ``plain`` (default), ``gzip`` or ``auto``. Auto detects
+/// gzip magic independently for each input, ignoring its filename. Gzip
+/// members can be concatenated; limits count decoded bytes. Auto header-probe
+/// failures raise ``IOError`` at construction. Consume to EOF to check trailers.
 #[pyfunction]
-#[pyo3(signature = (path, *, max_input_bytes=None, max_record_bytes=None, max_line_bytes=None, max_records=None))]
+#[pyo3(signature = (path, *, compression="plain", max_input_bytes=None, max_record_bytes=None, max_line_bytes=None, max_records=None))]
 pub fn iter_sdf_checked(
     #[pyo3(from_py_with=crate::filesystem::path)] path: std::path::PathBuf,
+    compression: &str,
     max_input_bytes: Option<usize>,
     max_record_bytes: Option<usize>,
     max_line_bytes: Option<usize>,
     max_records: Option<usize>,
 ) -> PyResult<SdfCheckedIter> {
+    let compression = match compression {
+        "plain" => chematic_mol::SdfCompression::Plain,
+        "gzip" => chematic_mol::SdfCompression::Gzip,
+        "auto" => chematic_mol::SdfCompression::Auto,
+        _ => {
+            return Err(pyo3::exceptions::PyValueError::new_err(
+                "compression must be plain, gzip or auto",
+            ));
+        }
+    };
     let mut limits = chematic_mol::SdfParseLimits::default();
     for (name, supplied, field) in [
         (
@@ -309,8 +325,10 @@ pub fn iter_sdf_checked(
     }
     let file = std::fs::File::open(&path)
         .map_err(|e| pyo3::exceptions::PyIOError::new_err(format!("{}: {e}", path.display())))?;
+    let input = chematic_mol::SdfInput::new(file, compression)
+        .map_err(|error| pyo3::exceptions::PyIOError::new_err(error.to_string()))?;
     Ok(SdfCheckedIter {
-        inner: chematic_mol::SdfFileReader::with_limits(std::io::BufReader::new(file), limits),
+        inner: chematic_mol::SdfFileReader::with_limits(input, limits),
         next_index: 0,
     })
 }
@@ -390,7 +408,7 @@ pub struct SdfFileIter {
 /// Streaming SDF iterator which preserves rejected record positions.
 #[pyclass]
 pub struct SdfCheckedIter {
-    inner: chematic_mol::SdfFileReader<std::io::BufReader<std::fs::File>>,
+    inner: chematic_mol::SdfFileReader<chematic_mol::SdfInput<std::fs::File>>,
     next_index: usize,
 }
 
@@ -1304,6 +1322,7 @@ fn register_classes(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<SdfBatchIter>()?;
     m.add_class::<XyzBatchIter>()?;
     m.add_class::<SdMolSupplier>()?;
+    m.add_class::<forward_sdf::ForwardSdMolSupplier>()?;
     m.add_class::<SdWriter>()?;
     m.add_class::<PySmilesMolSupplier>()?;
     m.add_class::<PySmilesWriter>()?;

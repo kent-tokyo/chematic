@@ -1,0 +1,38 @@
+{
+  "validated_at_utc": "2026-10-16T15:42:09.231259+00:00",
+  "base_commit": "d03106b59fdd4d06f40ab267bb540e20508bd988",
+  "rustc": "rustc 1.97.0 (2d8144b78 2026-07-07)",
+  "python": "3.13.6",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "openbabel": "3.2.1",
+  "native_module_sha256": "bf6c2750a26132f14938b459003145eb510156d840572ec5f1ed77999344a906",
+  "source_file_count": 1143,
+  "rust_tests": {
+    "library": 853,
+    "new_compression": 9,
+    "existing_sdf_integration": 17,
+    "total_passed": 879,
+    "failed": 0
+  },
+  "python_tests": {
+    "passed": 74,
+    "new_compression_cases": 33,
+    "skipped": 1,
+    "skip_reason": "optional ogb package not installed",
+    "failed": 0
+  },
+  "record_preservation_comparisons": 80,
+  "strict_clippy": "passed; chematic-mol and chematic-py, all targets",
+  "other_checks": [
+    "format",
+    "source_stubs",
+    "refactor_budget",
+    "binding_surface",
+    "cross_binding_manifest",
+    "product_names",
+    "unsafe_surface",
+    "mkdocs_strict",
+    "git_diff_check"
+  ],
+  "scope": "local source candidate; no existing chematic sticky-converter defect, published wheel, hosted CI or main integration claim"
+}
