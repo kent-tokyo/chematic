@@ -41,6 +41,49 @@ M  V30 END CTAB
 M  END
 ";
 
+#[test]
+fn dative_carbonyl_does_not_emit_fictitious_ez_direction() {
+    // Minimal form of stress-v1.smi line 3945, written as 2D V3000 by
+    // RDKit 2025.09.3. Oxygen-to-sodium is a coordinate bond, not an E/Z
+    // substituent on the C=O bond.
+    let input = "\
+dative carbonyl
+     RDKit          2D
+
+  0  0  0  0  0  0  0  0  0  0999 V3000
+M  V30 BEGIN CTAB
+M  V30 COUNTS 5 4 0 0 0
+M  V30 BEGIN ATOM
+M  V30 1 C -1.818653 0.750000 0.000000 0
+M  V30 2 C -0.519615 0.000000 0.000000 0
+M  V30 3 N -0.519615 -1.500000 0.000000 0
+M  V30 4 O 0.779423 0.750000 0.000000 0
+M  V30 5 Na 2.078461 -0.000000 0.000000 0 VAL=1
+M  V30 END ATOM
+M  V30 BEGIN BOND
+M  V30 1 1 1 2
+M  V30 2 1 2 3
+M  V30 3 2 2 4
+M  V30 4 9 4 5
+M  V30 END BOND
+M  V30 END CTAB
+M  END
+";
+    let (mol, _) = parse_mol_v3000(input).expect("parse RDKit V3000");
+    let (dative, bond) = mol.bond_between(AtomIdx(3), AtomIdx(4)).unwrap();
+    assert_eq!(bond.order, BondOrder::Dative);
+    assert_eq!(mol.bond_direction(dative), None);
+    let written = chematic_smiles::write(&mol);
+    assert!(
+        written.contains("->") || written.contains("<-"),
+        "{written}"
+    );
+    assert!(
+        !written.contains('/') && !written.contains('\\'),
+        "{written}"
+    );
+}
+
 // -----------------------------------------------------------------------
 // Test 1: methane — 1 atom, 0 bonds
 // -----------------------------------------------------------------------

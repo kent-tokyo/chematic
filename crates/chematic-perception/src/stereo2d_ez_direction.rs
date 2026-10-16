@@ -421,8 +421,10 @@ fn classify_double_bonds(
                 } else {
                     bond.atom1
                 };
-                mol.neighbors(end)
-                    .all(|(nb, bi)| nb == other || mol.bond(bi).order == BondOrder::Double)
+                mol.neighbors(end).all(|(nb, bi)| {
+                    nb == other
+                        || matches!(mol.bond(bi).order, BondOrder::Double | BondOrder::Dative)
+                })
             });
         terminal || in_ring_smaller_than(mol, bidx, 8)
     }) {
@@ -842,11 +844,15 @@ fn has_other_double_bond(mol: &Molecule, atom: AtomIdx, exclude: BondIdx) -> boo
         .any(|(_, bidx)| bidx != exclude && mol.bond(bidx).order == BondOrder::Double)
 }
 
-/// Non-double-bond neighbors of `end`, excluding `other_end` (the double
-/// bond's other atom) -- an alkene carbon's up-to-two sigma substituents.
+/// Sigma substituents of `end`, excluding the double bond's other atom.
+/// A coordinate/dative bond is not a substituent that can define E/Z:
+/// otherwise C=[O]->[Na] acquires a fictitious direction from its 2D drawing.
 fn substituents(mol: &Molecule, end: AtomIdx, other_end: AtomIdx) -> Vec<(AtomIdx, BondIdx)> {
     mol.neighbors(end)
-        .filter(|&(nb, bidx)| nb != other_end && mol.bond(bidx).order != BondOrder::Double)
+        .filter(|&(nb, bidx)| {
+            nb != other_end
+                && !matches!(mol.bond(bidx).order, BondOrder::Double | BondOrder::Dative)
+        })
         .collect()
 }
 
@@ -1004,6 +1010,44 @@ mod tests {
         let coords = vec![(-1.0, 0.0), (0.0, 0.0), (0.5, 1.0)];
         let diagnostics = apply_ez_directions_from_2d_with_diagnostics(&mut mol, &coords);
         assert!(diagnostics.is_empty());
+    }
+
+    #[test]
+    fn carbonyl_dative_attachment_does_not_create_ez_stereo() {
+        // RDKit-written V3000 for CC(N)=[O]->[Na]: the oxygen-to-sodium
+        // coordinate bond must not make the carbonyl oxygen an E/Z terminus.
+        let mut b = MoleculeBuilder::new();
+        let methyl = b.add_atom(Atom::new(Element::C));
+        let carbonyl = b.add_atom(Atom::new(Element::C));
+        let amine = b.add_atom(Atom::new(Element::N));
+        let oxygen = b.add_atom(Atom::new(Element::O));
+        let sodium = b.add_atom(Atom::new(Element::NA));
+        let methyl_bond = b.add_bond(methyl, carbonyl, BondOrder::Single).unwrap();
+        let amine_bond = b.add_bond(carbonyl, amine, BondOrder::Single).unwrap();
+        b.add_bond(carbonyl, oxygen, BondOrder::Double).unwrap();
+        let dative_bond = b.add_bond(oxygen, sodium, BondOrder::Dative).unwrap();
+        let mut mol = b.build();
+        let coords = vec![
+            (-1.818653, 0.75),
+            (-0.519615, 0.0),
+            (-0.519615, -1.5),
+            (0.779423, 0.75),
+            (2.078461, 0.0),
+        ];
+        let diagnostics = apply_ez_directions_from_2d_with_diagnostics(&mut mol, &coords);
+        assert!(diagnostics.is_empty());
+        for bond in [methyl_bond, amine_bond, dative_bond] {
+            assert_eq!(mol.bond_direction(bond), None);
+        }
+
+        // The same topology gate is shared by 3D conformer perception.
+        let mut from_3d = mol.clone();
+        let coords_3d: Vec<_> = coords.iter().map(|&(x, y)| (x, y, 0.0)).collect();
+        let diagnostics_3d = apply_ez_directions_from_3d(&mut from_3d, &coords_3d);
+        assert!(diagnostics_3d.is_empty());
+        for bond in [methyl_bond, amine_bond, dative_bond] {
+            assert_eq!(from_3d.bond_direction(bond), None);
+        }
     }
 
     #[test]
