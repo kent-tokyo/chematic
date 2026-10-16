@@ -103,6 +103,37 @@ pub(crate) struct PyMolecularForceField {
 
 #[pymethods]
 impl PyMolecularForceField {
+    /// Constant relative dielectric for MMFF94/MMFF94s (default 1.0).
+    /// UFF has no electrostatic term and raises ``ValueError``.
+    #[getter]
+    fn dielectric_constant(&self) -> PyResult<f64> {
+        match &self.field {
+            PreparedField::Mmff { field, .. } => Ok(field.dielectric_constant()),
+            PreparedField::Uff(_) => Err(PyValueError::new_err(
+                "UFF has no dielectric electrostatic term",
+            )),
+        }
+    }
+
+    /// Change constant screening immediately, preserving coordinates and terms.
+    /// Finite positive values are required; overflowing coefficients are refused.
+    fn set_dielectric_constant_<'py>(
+        mut slf: PyRefMut<'py, Self>,
+        value: f64,
+    ) -> PyResult<PyRefMut<'py, Self>> {
+        match &mut slf.field {
+            PreparedField::Mmff { field, .. } => field
+                .set_dielectric_constant(value)
+                .map_err(|e| PyValueError::new_err(e.to_string()))?,
+            PreparedField::Uff(_) => {
+                return Err(PyValueError::new_err(
+                    "UFF has no dielectric electrostatic term",
+                ));
+            }
+        }
+        Ok(slf)
+    }
+
     /// Force-field family (``"MMFF94"`` or ``"UFF"``).
     #[getter]
     fn kind(&self) -> &'static str {

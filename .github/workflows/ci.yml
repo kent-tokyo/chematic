@@ -209,6 +209,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - { package: chematic-ff, target: mmff_dielectric }
           - { package: chematic-3d, target: g1_regression_byte_identical }
           - { package: chematic-3d, target: rdkit_g1_parity }
           - { package: chematic-3d, target: torsion_knowledge_negative_controls }

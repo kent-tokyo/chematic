@@ -95,6 +95,7 @@ nav:
     - Language Bindings Cross-Reference: language-bindings.md
     - Error Handling & Limits: error-and-limits.md
     - Checked 3D Distance Matrices: rdkit-checked-3d-distance-matrix.md
+    - Prepared MMFF Dielectric: mmff-dielectric-updates.md
   - Reliability:
     - Python Filesystem Paths: python-filesystem-paths.md
     - ChemDoodle JSON: chemdoodle-json.md

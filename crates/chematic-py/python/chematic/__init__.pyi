@@ -85,6 +85,20 @@ class MolecularForceField:
     """
 
     @property
+    def dielectric_constant(self) -> float:
+        """Constant MMFF relative dielectric, default 1.0; UFF raises ValueError."""
+        ...
+
+    def set_dielectric_constant_(self, value: float) -> MolecularForceField:
+        """Update MMFF screening for energy, gradient and minimization immediately.
+
+        Preserves prepared pairs/charges and coordinates. Requires a finite
+        positive value that keeps electrostatic coefficients finite. Invalid
+        updates and UFF raise ValueError without changing the field.
+        """
+        ...
+
+    @property
     def kind(self) -> str: ...
 
     @property

@@ -60,6 +60,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   multiplicities without distance-based bonding, bounds input and graph
   resources, and requires opt-in for extended target slots. Existing PDB
   readers keep their behavior. See [the accepted profile and losses](docs/pdb-conect-graph.md).
+- Added checked constant-dielectric updates to prepared Rust/Python MMFF94 and
+  MMFF94s fields. Energy, gradient and minimization immediately use the new
+  screening while retaining prepared atom types, charges and pairs. Invalid
+  updates leave the field unchanged; the default remains 1.0. See
+  [the API and numerical contract](docs/mmff-dielectric-updates.md).
 
 ## [1.1.5] - 2026-10-16
 
