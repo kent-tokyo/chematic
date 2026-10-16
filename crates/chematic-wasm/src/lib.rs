@@ -30,6 +30,8 @@ mod mol_descriptors;
 mod mol_edit;
 mod mol_fingerprints;
 mod mol_io;
+mod pdb_conect;
+pub use pdb_conect::*;
 mod mol_reactions;
 mod nucleic_acid;
 mod pipeline_v2;

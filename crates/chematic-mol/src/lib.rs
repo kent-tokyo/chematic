@@ -56,6 +56,7 @@ pub mod mrv;
 pub mod nucleic_acid;
 pub mod opendx;
 pub mod orca;
+pub mod pdb_conect;
 pub mod pdb_selection;
 pub mod pdbqt;
 pub mod pqr;
@@ -322,4 +323,9 @@ pub use rdfile::{
     RdfileData, RdfileDocument, RdfileError, RdfileKind, RdfileParseLimits, RdfileRecord,
     RdfileWriteOptions, parse_rdfile, parse_rdfile_with_limits, write_rdfile,
     write_rdfile_with_options,
+};
+
+pub use pdb_conect::{
+    PdbConectError, PdbConectFrame, PdbConectLimits, PdbConectOptions, parse_pdb_conect,
+    parse_pdb_conect_with_options, parse_pdb_conect_with_options_and_limits,
 };

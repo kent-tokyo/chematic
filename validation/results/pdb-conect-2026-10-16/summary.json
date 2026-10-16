@@ -1,0 +1,71 @@
+{
+  "schema": "chematic.pdb-conect-validation.v1",
+  "scope": "explicit indexed atoms/charges/bond orders/coordinates/serials; no sanitizer, aromaticity, implicit-H, stereo, general PDB or speed claim",
+  "source_base": "b9f1e3cdd959a20f1cfa4c635237418a550ffa00",
+  "source_sha256": {
+    "crates/chematic-mol/src/pdb_conect.rs": "7240df2457a60121b0cc066b490ac3cae1539902408a5e5648ffbf3fdfc9606a",
+    "crates/chematic-py/src/formats/pdb_conect.rs": "e6e59ed550b68168976a0450b292cb376d06ca65cc3d9bdfbc51c70d81ff0c07",
+    "crates/chematic-wasm/src/pdb_conect.rs": "b98d03063267d8d34cca6f41be20db958cacdfdb10508ec30fe52a6fb0d656ed",
+    "scripts/validate_pdb_conect.py": "3698d18c5d1ba6c7292a87e8e21b08f435a2dc24602e66bad4dcadd714fe48c7",
+    "scripts/validate_pdb_conect_node.mjs": "881bff3e6b0bc0e0c749a69ff30bc08056e5b1fa0917469fdd62cce92686da83",
+    "validation/rdkit_issues/pdb-conect/sulfur.pdb": "80df1f17a77ba79769067da5aaa83a837742c0bdc3fd1c6c9343fa760275caa8"
+  },
+  "runtime": {
+    "python": "3.13.6",
+    "rdkit": "2026.09.1",
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "python_extension_sha256": "b5c8776cab53ef0c67ae7b703f415a222070f8e55f0ee28bc0764c1caece6dd0",
+    "wasm_sha256": "a0e6775d3bc56f7830053b2f95ea797079de7922446262df3ad7193c1b7db570"
+  },
+  "comparisons": {
+    "cases": 102,
+    "python_passed": 102,
+    "wasm_frame_passed": 102,
+    "wasm_handle_graph_passed": 102,
+    "failures": 0
+  },
+  "issue": {
+    "url": "https://github.com/rdkit/rdkit/issues/9581",
+    "input_sha256": "d60aa413323492fa7a294d631d24036166ef6b95dbaad9eae8d05fee57e8cc32",
+    "default_proximity_sanitized_result": null,
+    "proximity_disabled_sulfur_bond_order_sum": 6,
+    "native_default": "extended targets refused",
+    "native_opt_in": "exact indexed graph comparison",
+    "legacy_native": {
+      "atoms": 41,
+      "bonds": 44,
+      "sulfur_edges": [
+        [
+          0,
+          1,
+          1
+        ],
+        [
+          0,
+          2,
+          1
+        ],
+        [
+          0,
+          3,
+          1
+        ],
+        [
+          0,
+          4,
+          1
+        ],
+        [
+          0,
+          7,
+          1
+        ]
+      ],
+      "sulfur_bond_order_sum": 5
+    }
+  },
+  "packet": {
+    "path": "comparisons.json.gz",
+    "sha256": "2106b11b52e321838059000c655f916f7ea09042268e362639f9ad553794d9d7"
+  }
+}
