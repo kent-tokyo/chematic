@@ -398,6 +398,15 @@ fn additional_3d_ring_centers(mol: &Molecule) -> Vec<AtomIdx> {
 /// Recover unspecified tetrahedral stereo from a genuine 3D CTAB. Conflicting
 /// wedge/CFG assignments are corrected from geometry before this runs.
 pub(crate) fn perceive_tetrahedral_from_3d(mol: &mut Molecule, conformer: &Coords3D) {
+    // Every emitted tag below requires a non-aromatic, untagged atom with
+    // three or four graph neighbors. With no such atom, global graph/CIP
+    // perception cannot contribute an assignment (including ring or S/Se
+    // lone-pair cases), so avoid that work altogether.
+    if !mol.atoms().any(|(idx, atom)| {
+        atom.chirality == Chirality::None && !atom.aromatic && matches!(mol.degree(idx), 3 | 4)
+    }) {
+        return;
+    }
     let mut ordinary_centers: std::collections::HashSet<_> =
         chematic_perception::stereo_centers(mol)
             .into_iter()

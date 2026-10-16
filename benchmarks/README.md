@@ -22,6 +22,10 @@ the [complete inventory](archive-index.md) links every retained record.
 
 ## Recent focused follow-ups
 
+- [3D tetrahedral candidate guard](2026-10-17-openbabel-3d-stereo-guard.md):
+  controlled 3D parse improves 6.547–6.641x versus source and 118.775–119.730x
+  versus Open Babel; all 24 median floors pass, with a disclosed 0.9% write retreat.
+
 - [V3000 3D coordinate formatting](2026-10-16-openbabel-v3000-3d-format.md):
   controlled 3D writing improves 5.330–5.543x over the source base and
   beats Open Babel by 8.556–8.560x; all 24 source median budgets pass.

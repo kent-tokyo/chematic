@@ -1,0 +1,23 @@
+{
+  "baseline": {
+    "instruction_text_sha256": "457116499f64fda8912de66006961f22f2a1d83df644d4170e64e46823376668",
+    "lines": 3078
+  },
+  "candidate": {
+    "instruction_text_sha256": "412a6eaf3720b6172b0f2a31c5ef8b2a93b14b3ab38f44384acaceb6d65ef961",
+    "lines": 3099
+  },
+  "source_contrast_valid": true,
+  "compiler_rebuilt_production_library": true,
+  "all_three_arm_binaries_differ": true,
+  "candidate_commit": "a093ce86d8c18eae2c17db3d33405489dc309ace",
+  "binary_sha256": {
+    "baseline-sdf": "1baa9b408078fe5b42cce9f902ec31c0ec54ca9ef67ba8ec3623518a000bec50",
+    "baseline-v3000": "d60e167f65c6fdf0a23ec1a1a2babf8df42d89397f3a456374e0a2655389eaf3",
+    "baseline-v3000-3d": "29a7344f2192faf195a736b17d7820bd09c5fffd745d66c87700ff7dff71f426",
+    "candidate-sdf": "36b2ff4ec33e15452ac54ca58bf1524dfa5088b0fcab8e7744f510a8468fc1b1",
+    "candidate-v3000": "e0f2df2ee422247a677430a619fa70d2b7a63dab577f0481b1f32aae410f7574",
+    "candidate-v3000-3d": "09cfdb1082d9c9ce8ecec0c16f4ec8dff339e9869b2ff879b224058dd687e478"
+  },
+  "candidate_compiler_log_sha256": "2e900850fd64e4048bedcadfb2283fccf8b385aa500a88b79907e92ba893466f"
+}

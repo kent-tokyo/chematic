@@ -1,0 +1,8 @@
+{
+  "base": "7d6b092f448913a4ef87f1a3d6353789dad69cb5",
+  "function": "perceive_tetrahedral_from_3d",
+  "original_sha256": "7040a45212b7c0581a1665a8a90f60685a163c82e9b58342ab6b6ff36ff28eea",
+  "complete_original_body_frozen": true,
+  "candidate_suffix_after_guard_byte_identical": true,
+  "guard_necessary_condition": "The original output filter excludes aromatic/tagged atoms and accepts only exactly three or four graph neighbors"
+}
