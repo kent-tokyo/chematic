@@ -1,8 +1,47 @@
 use super::*;
 use std::io::{self, BufRead, Read};
 
-// The old iterator decision path. fill_next_block and validate_record_limits
-// are unchanged; the shared molecule/SD-field parser only accepts a slice now.
+fn reference_fill_next_block<R: BufRead>(
+    reader: &mut SdfFileReader<R>,
+) -> Result<bool, MolParseError> {
+    reader.block.clear();
+    loop {
+        let line_start = reader.block.len();
+        let bytes = reader
+            .reader
+            .read_until(b'\n', &mut reader.block)
+            .map_err(|error| MolParseError::Io(error.to_string()))?;
+        if bytes == 0 {
+            reader.done = true;
+            return Ok(!reader.block.iter().all(u8::is_ascii_whitespace));
+        }
+        let line = &reader.block[line_start..];
+        if line.len() > reader.limits.max_line_bytes {
+            return Err(MolParseError::ResourceLimit {
+                resource: "line bytes",
+                actual: line.len(),
+                limit: reader.limits.max_line_bytes,
+            });
+        }
+        reader.bytes_read = reader.bytes_read.saturating_add(line.len());
+        if reader.bytes_read > reader.limits.max_input_bytes {
+            return Err(MolParseError::ResourceLimit {
+                resource: "input bytes",
+                actual: reader.bytes_read,
+                limit: reader.limits.max_input_bytes,
+            });
+        }
+        let trimmed = line.strip_suffix(b"\n").unwrap_or(line);
+        let trimmed = trimmed.strip_suffix(b"\r").unwrap_or(trimmed);
+        if trimmed == b"$$$$" {
+            reader.block.truncate(line_start);
+            return Ok(true);
+        }
+    }
+}
+
+// The old iterator and independently frozen line reader. The limit validator
+// is unchanged; the shared molecule/SD-field parser only accepts a slice now.
 fn reference_next<R: BufRead>(
     reader: &mut SdfFileReader<R>,
 ) -> Option<Result<SdfRecord, MolParseError>> {
@@ -10,7 +49,7 @@ fn reference_next<R: BufRead>(
         return None;
     }
     loop {
-        match reader.fill_next_block() {
+        match reference_fill_next_block(reader) {
             Ok(false) => return None,
             Ok(true) if reader.block.iter().all(u8::is_ascii_whitespace) => continue,
             Ok(true) => break,
@@ -137,6 +176,7 @@ fn compare(
     let mut candidate =
         SdfFileReader::with_limits_and_diagnostics(source.clone(), limits, diagnostics);
     let mut reference = SdfFileReader::with_limits_and_diagnostics(source, limits, diagnostics);
+    reference.block = Vec::with_capacity(2048);
     let mut records = 0;
     loop {
         let a = candidate.next();
@@ -258,8 +298,10 @@ fn complete_records_borrow_without_filling_owned_block() {
     let mut reader = SdfFileReader::new(io::Cursor::new(input));
     assert!(reader.next().unwrap().is_ok());
     assert!(reader.block.is_empty());
+    assert_eq!(reader.block.capacity(), 0);
     assert!(reader.next().unwrap().is_ok());
     assert!(reader.block.is_empty());
+    assert_eq!(reader.block.capacity(), 0);
     assert!(reader.next().is_none());
 }
 
@@ -357,6 +399,7 @@ fn actual_bufreader_refills_match_line_reader() {
                 SdfParseLimits::default(),
                 diagnostics,
             );
+            reference.block = Vec::with_capacity(2048);
             loop {
                 borrowed += usize::from(
                     record_span(

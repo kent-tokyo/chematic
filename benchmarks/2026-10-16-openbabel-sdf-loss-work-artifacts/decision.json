@@ -1,0 +1,110 @@
+{
+  "exact_source_snapshots_and_rewrites": true,
+  "sdf_primary": {
+    "sdf-0": {
+      "parse": {
+        "median": 1.019,
+        "ci95": [
+          1.011,
+          1.023
+        ],
+        "winning_blocks": 19,
+        "blocks": 21
+      },
+      "write": {
+        "median": 1.011,
+        "ci95": [
+          1.004,
+          1.027
+        ],
+        "winning_blocks": 16,
+        "blocks": 21
+      },
+      "roundtrip": {
+        "median": 1.022,
+        "ci95": [
+          1.018,
+          1.028
+        ],
+        "winning_blocks": 21,
+        "blocks": 21
+      }
+    },
+    "sdf-5000": {
+      "parse": {
+        "median": 1.029,
+        "ci95": [
+          1.026,
+          1.031
+        ],
+        "winning_blocks": 21,
+        "blocks": 21
+      },
+      "write": {
+        "median": 1.017,
+        "ci95": [
+          1.013,
+          1.029
+        ],
+        "winning_blocks": 19,
+        "blocks": 21
+      },
+      "roundtrip": {
+        "median": 1.031,
+        "ci95": [
+          1.024,
+          1.035
+        ],
+        "winning_blocks": 21,
+        "blocks": 21
+      }
+    }
+  },
+  "sdf_primary_ci_pass": true,
+  "all_15_source_lane_median_floor": 0.99,
+  "below_floor": {
+    "sdf-0": {},
+    "sdf-5000": {},
+    "v3000-0": {},
+    "v3000-5000": {},
+    "v3000-chains": {}
+  },
+  "all_negative_intervals": {
+    "sdf-0": {},
+    "sdf-5000": {},
+    "v3000-0": {
+      "parse": {
+        "median": 0.993,
+        "ci95": [
+          0.988,
+          0.996
+        ],
+        "winning_blocks": 5,
+        "blocks": 21
+      },
+      "roundtrip": {
+        "median": 0.995,
+        "ci95": [
+          0.993,
+          0.997
+        ],
+        "winning_blocks": 3,
+        "blocks": 21
+      }
+    },
+    "v3000-5000": {},
+    "v3000-chains": {
+      "roundtrip": {
+        "median": 0.993,
+        "ci95": [
+          0.989,
+          0.996
+        ],
+        "winning_blocks": 4,
+        "blocks": 21
+      }
+    }
+  },
+  "local_adoption_gate_passed": true,
+  "no_adaptive_timing_reruns": true
+}

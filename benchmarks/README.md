@@ -22,8 +22,18 @@ the [complete inventory](archive-index.md) links every retained record.
 
 ## Recent focused follow-ups
 
+- [SDF reads and requested stereo-loss collection](2026-10-16-openbabel-sdf-loss-work.md):
+  final source passes both-slice read/write/roundtrip improvement conditions
+  and all 15 source median budgets; V3000 negative intervals remain disclosed.
+- [Direct SD-field candidate](2026-10-16-openbabel-sdf-direct-fields.md):
+  first-slice writing and diverse V3000 parsing miss the median floor;
+  rejected, with every observation retained.
+- [Lazy framing-buffer candidate](2026-10-16-openbabel-sdf-buffer-lazy.md):
+  parse/roundtrip gains remain, prepared writing retreats; rejected.
+- [Integration after the geometry update](2026-10-16-openbabel-sdf-buffered-main.md):
+  initial source fails prepared-write budgets on the newer main baseline.
 - [Borrowed SDF record parsing](2026-10-16-openbabel-sdf-buffered.md):
-  exact source retention and 1.9–3.0% parse / 2.4–2.8% roundtrip gains on two
+  historical b9f1e3cd baseline: exact retention and 1.9–3.0% parse / 2.4–2.8% roundtrip gains on two
   slices; all 15 source medians within the predeclared 1% budget, including
   a disclosed 0.5% V3000 roundtrip retreat. Source-built, one-host evidence.
 - [Ordered-ring and V3000 parser speed follow-ups](2026-10-16-chemistry-speed-followups.md):

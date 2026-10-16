@@ -450,7 +450,7 @@ impl<R: std::io::BufRead> SdfFileReader<R> {
     fn with_limits_and_diagnostics(reader: R, limits: SdfParseLimits, diagnostics: bool) -> Self {
         Self {
             reader,
-            block: Vec::with_capacity(2048),
+            block: Vec::new(),
             done: false,
             limits,
             bytes_read: 0,
@@ -461,6 +461,8 @@ impl<R: std::io::BufRead> SdfFileReader<R> {
 
     fn fill_next_block(&mut self) -> Result<bool, MolParseError> {
         self.block.clear();
+        // The complete-buffer path needs no owned record storage.
+        self.block.reserve(2048);
         loop {
             let line_start = self.block.len();
             let bytes = self

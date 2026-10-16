@@ -1,0 +1,9 @@
+{
+  "base_revision": "025fa2f63da324869aa144a7520626ae4ebbfd22",
+  "fallback_line_reader_and_limit_validator_identical_after_removing_deferred_reservation": true,
+  "only_constructor_change": "Vec::with_capacity(2048) becomes Vec::new",
+  "only_fallback_storage_change": "reserve(2048) after clear, before original line reader",
+  "independent_old_line_reader_in_oracle": true,
+  "all_other_reader_semantics_unchanged": true,
+  "frozen_oracle_body_verified_from_base_after_receiver_rename": true
+}

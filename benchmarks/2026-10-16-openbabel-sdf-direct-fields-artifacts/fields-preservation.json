@@ -1,0 +1,9 @@
+{
+  "map_iteration_order_unchanged": true,
+  "private_key_filter_unchanged": true,
+  "aggregate_reservation_unchanged": true,
+  "delimiter_unchanged": true,
+  "new_operation": "concatenate literal > <, key, > newline, value, two newlines",
+  "frozen_original_formatter_oracle": true,
+  "old_reference_body_verified_from_pinned_base": true
+}

@@ -221,7 +221,7 @@ pub fn write_mol_with_coords_into(
     metadata: &MolMetadata,
     coords: &[(f64, f64)],
 ) {
-    write_v2000_reporting(out, mol, metadata, coords, &[]);
+    write_v2000_reporting(out, mol, metadata, coords, &[], false);
 }
 
 /// [`write_mol_with_coords`] that also reports the stereo the block does not
@@ -240,7 +240,7 @@ pub fn write_mol_with_stereo_report(
     coords: &[(f64, f64)],
 ) -> (String, MolStereoLoss) {
     let mut out = String::new();
-    let loss = write_v2000_reporting(&mut out, mol, metadata, coords, &[]);
+    let loss = write_v2000_reporting(&mut out, mol, metadata, coords, &[], true);
     (out, loss)
 }
 
@@ -379,7 +379,7 @@ pub fn write_laid_out_mol_into(
     } else {
         crate::stereo_depiction::undeclared_stereo_double_bonds(mol)
     };
-    write_v2000_reporting(out, mol, metadata, &coords, &either)
+    write_v2000_reporting(out, mol, metadata, &coords, &either, true)
 }
 
 /// An SDF record written as [`write_laid_out_mol`] writes its MOL block.
@@ -537,6 +537,7 @@ fn write_v2000_reporting(
     metadata: &MolMetadata,
     coords: &[(f64, f64)],
     either: &[chematic_core::BondIdx],
+    collect_loss: bool,
 ) -> MolStereoLoss {
     // A MOL block is dominated by fixed-width atom and bond rows.  Reserve
     // the common-size output up front so serialization does not repeatedly
@@ -572,7 +573,13 @@ fn write_v2000_reporting(
 
     // Terminator
     out.push_str("M  END\n");
-    MolStereoLoss::from_depiction(mol, depiction.as_ref(), MolFormat::V2000)
+    if collect_loss {
+        MolStereoLoss::from_depiction(mol, depiction.as_ref(), MolFormat::V2000)
+    } else {
+        // Plain output callers discard this value. Keep the stereo depiction
+        // needed for the bytes, without cloning/scanning unused loss vectors.
+        MolStereoLoss::default()
+    }
 }
 
 /// Serialize `mol` to MOL V2000 format using `conformer`'s real 3D
@@ -1020,7 +1027,7 @@ pub fn write_sdf_record_into(
     } else {
         Vec::new()
     };
-    write_v2000_reporting(out, mol, meta, coords, &either);
+    write_v2000_reporting(out, mol, meta, coords, &either, false);
     append_sd_fields_and_delimiter(out, props);
 }
 
@@ -1031,8 +1038,6 @@ fn append_sd_fields_and_delimiter(
     out: &mut String,
     props: &std::collections::HashMap<String, String>,
 ) {
-    use std::fmt::Write as _;
-
     let additional = props
         .iter()
         .filter(|(key, _)| !key.starts_with('_'))
@@ -1042,11 +1047,19 @@ fn append_sd_fields_and_delimiter(
     out.reserve(additional);
     for (key, value) in props {
         if !key.starts_with('_') {
-            write!(out, "> <{key}>\n{value}\n\n").expect("writing to String cannot fail");
+            out.push_str("> <");
+            out.push_str(key);
+            out.push_str(">\n");
+            out.push_str(value);
+            out.push_str("\n\n");
         }
     }
     out.push_str("$$$$\n");
 }
+
+#[cfg(test)]
+#[path = "sd_field_tests.rs"]
+mod sd_field_tests;
 
 /// Like [`write_sdf_record`] but emits a MOL V3000 (Extended Ctab) block
 /// instead of V2000 — required for molecules with more than 999 atoms or
