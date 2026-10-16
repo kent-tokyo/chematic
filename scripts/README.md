@@ -120,3 +120,11 @@ fresh source extension and pinned RDKit on `PYTHONPATH`; `--wasm-module`
 adds real Node/WASM, and `--baseline-pythonpath` diagnoses a retained pre-fix
 source runtime separately. Full isomeric graph, CIP and default controls
 have distinct counts. See [the inference boundary](../docs/cdxml-stereo-options.md).
+## Hydrogen-count accounting
+
+`validate_hydrogen_count_contract.py` uses pinned RDKit 2026.09.1 graph
+references for total nuclei and attached-H atom fields. Provide fresh source
+chematic and RDKit on `PYTHONPATH`; `--wasm-module` adds real Node/WASM, and
+`--baseline-pythonpath` probes an earlier source runtime separately.
+Open Babel formula and serialized-output diagnostics have separate counts.
+See [the accounting contract](../docs/hydrogen-count-accounting.md).

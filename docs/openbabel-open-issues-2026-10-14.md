@@ -105,3 +105,12 @@ previous chematic readers refused them. Added
 [format-local uppercase species support](xyz-element-symbols.md) to native
 XYZ/extxyz and their stream readers. Core lookup, SMILES grammar and PDB atom
 names remain case-sensitive; coordinates and opaque properties are unaffected.
+## October 16 follow-up: total hydrogen accounting
+
+[#3008](https://github.com/openbabel/openbabel/issues/3008) and
+[#2624](https://github.com/openbabel/openbabel/issues/2624) remain open.
+Open Babel 3.2.1 reproduces formula-H loss on original explicit-H/component
+probes. Chematic formulas already pass, but its separate total-H descriptor
+double-counted bracket H and missed H atom nodes. [Fix the counter and WASM
+atom information](hydrogen-count-accounting.md), keeping formula and
+serialization behavior as controls.

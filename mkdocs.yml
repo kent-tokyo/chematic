@@ -84,6 +84,7 @@ nav:
     - XYZ Element Symbols: xyz-element-symbols.md
     - Format Capability Matrix: format-capabilities.md
     - CDXML Stereo Options: cdxml-stereo-options.md
+    - Hydrogen Count Accounting: hydrogen-count-accounting.md
     - HIN Aromatic Bond Preservation: openbabel-hin-aromatic-bonds.md
     - ORCA-AICCM EXYZ: openbabel-exyz.md
     - FHI-aims Geometry: openbabel-fhiaims.md

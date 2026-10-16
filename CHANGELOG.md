@@ -51,6 +51,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   (RDKit #9359). Correct screen-coordinate parity, solid/hashed sense and
   directional narrow-end ownership in the native reader. Default
   non-directional inference remains disabled.
+- Fix total hydrogen counts to include H atom nodes once and avoid double
+  counting bracket H. Correct WASM atom-info attached H and expose the total
+  counter there. Found while reproducing Open Babel #3008/#2624; molecular
+  formulas and hydrogen transformation algorithms are unchanged.
 
 ## [1.1.5] - 2026-10-16
 

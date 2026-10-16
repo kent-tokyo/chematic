@@ -3,6 +3,13 @@
 use crate::{MolHandle, WASM_MAX_ATOMS, WASM_MAX_INPUT_BYTES, json_error};
 use wasm_bindgen::prelude::*;
 
+/// Total hydrogen nuclei: explicit nodes plus attached bracket/inferred H.
+/// Isotopic, charged, bridging and disconnected H nodes each count once.
+#[wasm_bindgen]
+pub fn num_hydrogens(mol: &MolHandle) -> usize {
+    chematic_chem::num_hydrogens(&mol.inner)
+}
+
 /// Validate a vendor-neutral NMR spectrum JSON document without parsing a
 /// vendor-specific raw file or predicting peaks.
 #[wasm_bindgen]
