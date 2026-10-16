@@ -1,4 +1,4 @@
-//! CIP-independent E/Z (double-bond cis/trans) *direction* from 2D
+//! CIP-independent E/Z (double-bond cis/trans) *direction* from 2D or 3D
 //! coordinates -- the double-bond counterpart to [`crate::stereo2d_local`]'s
 //! tetrahedral parity stage.
 //!
@@ -68,8 +68,8 @@ use crate::aromaticity::{AromaticityModel, assign_aromaticity};
 use crate::cip_priority::compare_branches;
 use chematic_core::{AtomIdx, BondIdx, BondOrder, Molecule};
 
-/// Tolerance below which a 2D cross product (substituent vs. double-bond
-/// axis) or a bond-length vector is treated as exactly zero.
+/// Tolerance below which a coordinate vector or 2D cross product is treated
+/// as exactly zero.
 const AXIS_EPS: f64 = 1e-6;
 
 // ---------------------------------------------------------------------------
@@ -85,13 +85,13 @@ const AXIS_EPS: f64 = 1e-6;
 /// bond that was actually drawn.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EzDirectionRejectionReason {
-    /// The double bond's own, or a chosen substituent's, 2D coordinate is
+    /// The double bond's own, or a chosen substituent's, coordinate is
     /// missing from `coords`.
     MissingCoordinate,
     /// A required coordinate is present but not finite (NaN or infinite).
     NonFiniteCoordinate,
-    /// Zero-length double bond, or every candidate substituent at some end
-    /// lies exactly on the double-bond axis (collinear geometry).
+    /// Zero-length double bond, collinear substituent geometry, or nearly
+    /// orthogonal 3D substituent planes without a stable E/Z assignment.
     DegenerateGeometry,
     /// The file explicitly marked this double bond's stereo as unspecified
     /// (MDL V2000 double-bond stereo code 3 / V3000 bond `CFG=2`, the
@@ -172,6 +172,30 @@ pub fn apply_ez_directions_from_2d_ex(
     coords: &[(f64, f64)],
     explicitly_unspecified: &HashSet<BondIdx>,
 ) -> Vec<EzDirectionDiagnostic> {
+    apply_ez_directions_from_geometry(mol, EzGeometry::TwoD(coords), explicitly_unspecified)
+}
+
+/// Recover alkene directions from a 3D conformer. Each double bond uses its
+/// own axis, so the answer is invariant under rotation of the molecule.
+/// Nearly orthogonal substituent planes are left unspecified.
+pub fn apply_ez_directions_from_3d(
+    mol: &mut Molecule,
+    coords: &[(f64, f64, f64)],
+) -> Vec<EzDirectionDiagnostic> {
+    apply_ez_directions_from_geometry(mol, EzGeometry::ThreeD(coords), &HashSet::new())
+}
+
+#[derive(Clone, Copy)]
+enum EzGeometry<'a> {
+    TwoD(&'a [(f64, f64)]),
+    ThreeD(&'a [(f64, f64, f64)]),
+}
+
+fn apply_ez_directions_from_geometry(
+    mol: &mut Molecule,
+    geometry: EzGeometry<'_>,
+    explicitly_unspecified: &HashSet<BondIdx>,
+) -> Vec<EzDirectionDiagnostic> {
     let double_bonds: Vec<BondIdx> = mol
         .bonds()
         .filter(|(_, b)| b.order == BondOrder::Double)
@@ -181,11 +205,22 @@ pub fn apply_ez_directions_from_2d_ex(
     // Classification returns no outcomes when every double bond is already
     // known to be NotRequested from the existing topology rules.
     let Some(mut outcomes) =
-        classify_double_bonds(mol, coords, &double_bonds, explicitly_unspecified)
+        classify_double_bonds(mol, geometry, &double_bonds, explicitly_unspecified)
     else {
         return Vec::new();
     };
 
+    let constraints = carrier_constraints(mol, &outcomes);
+    let (conflicted, flipped) = resolve_carrier_constraints(constraints, &outcomes);
+    commit_ez_outcomes(mol, &double_bonds, &mut outcomes, &conflicted, &flipped)
+}
+
+type CarrierConstraint = (BondIdx, BondIdx, bool);
+
+fn carrier_constraints(
+    mol: &Molecule,
+    outcomes: &HashMap<BondIdx, EzOutcome>,
+) -> Vec<CarrierConstraint> {
     // Phase 2: a physical substituent bond can be the chosen carrier for TWO
     // different double bonds at once (the ordinary conjugated-diene shape,
     // see module docs). Group every Assigned outcome's claims by physical
@@ -195,7 +230,7 @@ pub fn apply_ez_directions_from_2d_ex(
     // `double_bonds` iteration order, i.e. bond-index/parse order, which the
     // spec explicitly rules out).
     let mut claims: HashMap<BondIdx, Vec<(BondIdx, BondOrder)>> = HashMap::new();
-    for (&db, outcome) in &outcomes {
+    for (&db, outcome) in outcomes {
         if let EzOutcome::Assigned {
             carrier_a1,
             carrier_a2,
@@ -218,16 +253,6 @@ pub fn apply_ez_directions_from_2d_ex(
     // assignment does for conjugated polyenes). Only a claim graph with no
     // consistent colouring (an odd cycle) still rejects every double bond
     // in it.
-    let mut parent: HashMap<BondIdx, (BondIdx, bool)> = HashMap::new();
-    fn find(parent: &mut HashMap<BondIdx, (BondIdx, bool)>, x: BondIdx) -> (BondIdx, bool) {
-        let (p, flip) = *parent.get(&x).unwrap_or(&(x, false));
-        if p == x {
-            return (x, false);
-        }
-        let (root, f) = find(parent, p);
-        parent.insert(x, (root, flip ^ f));
-        (root, flip ^ f)
-    }
     // Constraints `flip(x) ^ flip(y) == want`:
     // * two double bonds claiming one bond must leave it one value;
     // * an alkene end whose two substituents both carry a marker (its own
@@ -273,6 +298,23 @@ pub fn apply_ez_directions_from_2d_ex(
             }
         }
     }
+    constraints
+}
+
+fn resolve_carrier_constraints(
+    constraints: Vec<CarrierConstraint>,
+    outcomes: &HashMap<BondIdx, EzOutcome>,
+) -> (HashSet<BondIdx>, HashSet<BondIdx>) {
+    let mut parent: HashMap<BondIdx, (BondIdx, bool)> = HashMap::new();
+    fn find(parent: &mut HashMap<BondIdx, (BondIdx, bool)>, x: BondIdx) -> (BondIdx, bool) {
+        let (p, flip) = *parent.get(&x).unwrap_or(&(x, false));
+        if p == x {
+            return (x, false);
+        }
+        let (root, f) = find(parent, p);
+        parent.insert(x, (root, flip ^ f));
+        (root, flip ^ f)
+    }
     let mut inconsistent: HashSet<BondIdx> = HashSet::new();
     for (db0, db, want) in constraints {
         {
@@ -311,10 +353,20 @@ pub fn apply_ez_directions_from_2d_ex(
         }
     }
 
+    (conflicted, flipped)
+}
+
+fn commit_ez_outcomes(
+    mol: &mut Molecule,
+    double_bonds: &[BondIdx],
+    outcomes: &mut HashMap<BondIdx, EzOutcome>,
+    conflicted: &HashSet<BondIdx>,
+    flipped: &HashSet<BondIdx>,
+) -> Vec<EzDirectionDiagnostic> {
     // Phase 3: commit. Only an Assigned outcome not caught by Phase 2 ever
     // writes to `mol`; everything else contributes at most one diagnostic.
     let mut diagnostics = Vec::with_capacity(double_bonds.len());
-    for &bidx in &double_bonds {
+    for &bidx in double_bonds {
         match outcomes.remove(&bidx).expect("classified in phase 1") {
             EzOutcome::NotRequested => {}
             EzOutcome::Rejected(reason) => {
@@ -351,7 +403,7 @@ pub fn apply_ez_directions_from_2d_ex(
 #[inline]
 fn classify_double_bonds(
     mol: &Molecule,
-    coords: &[(f64, f64)],
+    geometry: EzGeometry<'_>,
     double_bonds: &[BondIdx],
     explicitly_unspecified: &HashSet<BondIdx>,
 ) -> Option<HashMap<BondIdx, EzOutcome>> {
@@ -381,7 +433,13 @@ fn classify_double_bonds(
     let aromaticity = assign_aromaticity(mol);
     let mut outcomes = HashMap::with_capacity(double_bonds.len());
     for &bidx in double_bonds {
-        let outcome = classify_double_bond(mol, coords, bidx, explicitly_unspecified, &aromaticity);
+        let outcome = classify_double_bond_geometry(
+            mol,
+            geometry,
+            bidx,
+            explicitly_unspecified,
+            &aromaticity,
+        );
         outcomes.insert(bidx, outcome);
     }
     Some(outcomes)
@@ -410,6 +468,7 @@ enum EzOutcome {
 /// One alkene end's resolution, before the whole-molecule carrier-conflict
 /// check in [`apply_ez_directions_from_2d_ex`] (which can still downgrade a
 /// `Resolved` outcome to a rejection).
+#[derive(Clone, Copy)]
 enum EndOutcome {
     /// This end's substituents are topologically equivalent -- the whole
     /// double bond is not stereogenic (see [`EzOutcome::NotRequested`]).
@@ -420,9 +479,27 @@ enum EndOutcome {
     Failed(EzDirectionRejectionReason),
 }
 
+// The existing 2D classifier is also used by the pinned reference tests.
+#[cfg(test)]
 fn classify_double_bond(
     mol: &Molecule,
     coords: &[(f64, f64)],
+    bond_idx: BondIdx,
+    explicitly_unspecified: &HashSet<BondIdx>,
+    aromaticity: &AromaticityModel,
+) -> EzOutcome {
+    classify_double_bond_geometry(
+        mol,
+        EzGeometry::TwoD(coords),
+        bond_idx,
+        explicitly_unspecified,
+        aromaticity,
+    )
+}
+
+fn classify_double_bond_geometry(
+    mol: &Molecule,
+    geometry: EzGeometry<'_>,
     bond_idx: BondIdx,
     explicitly_unspecified: &HashSet<BondIdx>,
     aromaticity: &AromaticityModel,
@@ -470,30 +547,10 @@ fn classify_double_bond(
         return EzOutcome::Rejected(EzDirectionRejectionReason::UnsupportedTopology);
     }
 
-    let p1 = match coord(coords, a1) {
-        Ok(p) => p,
-        Err(e) => return EzOutcome::Rejected(e),
+    let (end1, end2) = match geometry {
+        EzGeometry::TwoD(coords) => resolve_pair_2d(mol, coords, a1, a2, &subs_a1, &subs_a2),
+        EzGeometry::ThreeD(coords) => resolve_pair_3d(mol, coords, a1, a2, &subs_a1, &subs_a2),
     };
-    let p2 = match coord(coords, a2) {
-        Ok(p) => p,
-        Err(e) => return EzOutcome::Rejected(e),
-    };
-    let axis = (p2.0 - p1.0, p2.1 - p1.1);
-    if axis.0.hypot(axis.1) < AXIS_EPS {
-        return EzOutcome::Rejected(EzDirectionRejectionReason::DegenerateGeometry); // zero-length double bond
-    }
-
-    // Both ends' cross products are referenced from the SAME origin (`p1`,
-    // a1's own position) -- valid because a2 also lies on the axis line
-    // through p1, so "which side of the line" is well-defined regardless of
-    // which endpoint the origin sits at. Mirrors
-    // `crate::stereo2d::ez_from_coords`'s existing, already-tested
-    // convention exactly, so a later CIP E/Z *label* computed on top of
-    // these directions (`chematic_chem::cip::assign_ez`) reproduces the
-    // same Z/E verdict `assign_ez_from_2d` would compute directly from the
-    // same coordinates.
-    let end1 = resolve_end(mol, coords, a1, &subs_a1, p1, axis);
-    let end2 = resolve_end(mol, coords, a2, &subs_a2, p1, axis);
 
     match (end1, end2) {
         (EndOutcome::NonStereogenic, _) | (_, EndOutcome::NonStereogenic) => {
@@ -510,6 +567,155 @@ fn classify_double_bond(
             }
         }
     }
+}
+
+fn resolve_pair_2d(
+    mol: &Molecule,
+    coords: &[(f64, f64)],
+    a1: AtomIdx,
+    a2: AtomIdx,
+    subs_a1: &[(AtomIdx, BondIdx)],
+    subs_a2: &[(AtomIdx, BondIdx)],
+) -> (EndOutcome, EndOutcome) {
+    let p1 = match coord(coords, a1) {
+        Ok(p) => p,
+        Err(e) => return (EndOutcome::Failed(e), EndOutcome::Failed(e)),
+    };
+    let p2 = match coord(coords, a2) {
+        Ok(p) => p,
+        Err(e) => return (EndOutcome::Failed(e), EndOutcome::Failed(e)),
+    };
+    let axis = (p2.0 - p1.0, p2.1 - p1.1);
+    if axis.0.hypot(axis.1) < AXIS_EPS {
+        return (
+            EndOutcome::Failed(EzDirectionRejectionReason::DegenerateGeometry),
+            EndOutcome::Failed(EzDirectionRejectionReason::DegenerateGeometry),
+        );
+    }
+
+    // Both ends' cross products are referenced from the SAME origin (`p1`,
+    // a1's own position) -- valid because a2 also lies on the axis line
+    // through p1, so "which side of the line" is well-defined regardless of
+    // which endpoint the origin sits at. Mirrors
+    // `crate::stereo2d::ez_from_coords`'s existing, already-tested
+    // convention exactly, so a later CIP E/Z *label* computed on top of
+    // these directions (`chematic_chem::cip::assign_ez`) reproduces the
+    // same Z/E verdict `assign_ez_from_2d` would compute directly from the
+    // same coordinates.
+    let end1 = resolve_end(mol, coords, a1, subs_a1, p1, axis);
+    let end2 = resolve_end(mol, coords, a2, subs_a2, p1, axis);
+
+    (end1, end2)
+}
+
+fn resolve_pair_3d(
+    mol: &Molecule,
+    coords: &[(f64, f64, f64)],
+    a1: AtomIdx,
+    a2: AtomIdx,
+    subs_a1: &[(AtomIdx, BondIdx)],
+    subs_a2: &[(AtomIdx, BondIdx)],
+) -> (EndOutcome, EndOutcome) {
+    let p1 = match coord3d(coords, a1) {
+        Ok(p) => p,
+        Err(e) => return (EndOutcome::Failed(e), EndOutcome::Failed(e)),
+    };
+    let p2 = match coord3d(coords, a2) {
+        Ok(p) => p,
+        Err(e) => return (EndOutcome::Failed(e), EndOutcome::Failed(e)),
+    };
+    let axis = sub3d(p2, p1);
+    let axis_sq = dot3d(axis, axis);
+    if axis_sq < AXIS_EPS * AXIS_EPS {
+        let failed = EndOutcome::Failed(EzDirectionRejectionReason::DegenerateGeometry);
+        return (failed, failed);
+    }
+    let end1 = resolve_end_3d(mol, coords, a1, subs_a1, p1, axis, axis_sq);
+    let end2 = resolve_end_3d(mol, coords, a2, subs_a2, p2, axis, axis_sq);
+    match (end1, end2) {
+        (Err(e1), Err(e2)) => (e1, e2),
+        (Err(e), Ok(_)) | (Ok(_), Err(e)) => (e, e),
+        (Ok((b1, v1)), Ok((b2, v2))) => {
+            let cosine = dot3d(v1, v2) / (dot3d(v1, v1) * dot3d(v2, v2)).sqrt();
+            if cosine.abs() < 0.25 {
+                let failed = EndOutcome::Failed(EzDirectionRejectionReason::DegenerateGeometry);
+                (failed, failed)
+            } else {
+                (
+                    EndOutcome::Resolved(b1, true),
+                    EndOutcome::Resolved(b2, cosine > 0.0),
+                )
+            }
+        }
+    }
+}
+
+fn resolve_end_3d(
+    mol: &Molecule,
+    coords: &[(f64, f64, f64)],
+    end: AtomIdx,
+    subs: &[(AtomIdx, BondIdx)],
+    origin: (f64, f64, f64),
+    axis: (f64, f64, f64),
+    axis_sq: f64,
+) -> Result<(BondIdx, (f64, f64, f64)), EndOutcome> {
+    if subs.len() == 2
+        && compare_branches(mol, end, subs[0].0, subs[1].0) == std::cmp::Ordering::Equal
+    {
+        return Err(EndOutcome::NonStereogenic);
+    }
+    let mut first_failure = None;
+    let mut ordered = subs.to_vec();
+    ordered.sort_by_key(|&(_, b)| matches!(mol.bond(b).order, BondOrder::Up | BondOrder::Down));
+    for (sub_atom, sub_bond) in ordered {
+        if mol.bond_direction(sub_bond).is_some() {
+            continue;
+        }
+        let p = match coord3d(coords, sub_atom) {
+            Ok(p) => p,
+            Err(e) => {
+                first_failure.get_or_insert(e);
+                continue;
+            }
+        };
+        let vector = sub3d(p, origin);
+        let projection = dot3d(vector, axis) / axis_sq;
+        let transverse = (
+            vector.0 - projection * axis.0,
+            vector.1 - projection * axis.1,
+            vector.2 - projection * axis.2,
+        );
+        if dot3d(transverse, transverse) < AXIS_EPS * AXIS_EPS {
+            first_failure.get_or_insert(EzDirectionRejectionReason::DegenerateGeometry);
+            continue;
+        }
+        return Ok((sub_bond, transverse));
+    }
+    Err(EndOutcome::Failed(
+        first_failure.unwrap_or(EzDirectionRejectionReason::CarrierConflict),
+    ))
+}
+
+fn coord3d(
+    coords: &[(f64, f64, f64)],
+    idx: AtomIdx,
+) -> Result<(f64, f64, f64), EzDirectionRejectionReason> {
+    let p = coords
+        .get(idx.0 as usize)
+        .copied()
+        .ok_or(EzDirectionRejectionReason::MissingCoordinate)?;
+    if !p.0.is_finite() || !p.1.is_finite() || !p.2.is_finite() {
+        return Err(EzDirectionRejectionReason::NonFiniteCoordinate);
+    }
+    Ok(p)
+}
+
+fn sub3d(a: (f64, f64, f64), b: (f64, f64, f64)) -> (f64, f64, f64) {
+    (a.0 - b.0, a.1 - b.1, a.2 - b.2)
+}
+
+fn dot3d(a: (f64, f64, f64), b: (f64, f64, f64)) -> f64 {
+    a.0 * b.0 + a.1 * b.1 + a.2 * b.2
 }
 
 /// Resolve one alkene end's carrier substituent bond and geometric side.

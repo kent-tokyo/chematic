@@ -28,6 +28,14 @@ pub(crate) fn perceive_mol2_tetrahedral_from_3d(
     crate::mol2000::perceive_tetrahedral_from_3d(mol, &Coords3D { points });
 }
 
+pub(crate) fn perceive_mol2_stereo_from_coordinates(
+    mol: &mut Molecule,
+    coordinates: &[(f64, f64, f64)],
+) {
+    perceive_mol2_tetrahedral_from_3d(mol, coordinates);
+    chematic_perception::apply_ez_directions_from_3d(mol, coordinates);
+}
+
 /// One `@<TRIPOS>ATOM` row whose interchange fields are not representable by
 /// [`Molecule`]. The vector is index-aligned with [`Mol2Record::molecule`].
 #[derive(Debug, Clone, PartialEq)]
@@ -675,7 +683,7 @@ pub fn parse_mol2_record_with_limits(
     let mut atoms = parse_mol2_atoms(&all_lines, limits, &unity_formal_charges)?;
     let (bond_records, duplicate_bonds) = add_mol2_bonds(&all_lines, limits, &mut atoms)?;
     let mut molecule = atoms.builder.build();
-    perceive_mol2_tetrahedral_from_3d(&mut molecule, &atoms.coords);
+    perceive_mol2_stereo_from_coordinates(&mut molecule, &atoms.coords);
     Ok(Mol2Record {
         molecule,
         coords: atoms.coords,
