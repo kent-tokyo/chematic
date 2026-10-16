@@ -10,7 +10,7 @@ support and refusal boundaries, see [compatibility scope](compatibility-scope.md
 
 ## Current measured boundary
 
-The **v1.1.5 release** retains the named RDKit 2026.03.1-compatible surface,
+The **v1.1.6 release** retains the named RDKit 2026.03.1-compatible surface,
 adds bounded graph, fingerprint, stereo, and 3D utilities, and reduces repeated
 work in selected ring, descriptor, E/Z, and V3000 paths. In the recorded v1.0.41 source comparison, chematic matches RDKit at
 least as often as COSMolKit 0.5.0rc15 on all 161 operations over ChEMBL 5k and
@@ -21,7 +21,7 @@ published-package chemistry and speed comparison packet is pinned to
 **v1.0.42** against RDKit 2026.09.1. A separate v1.1.3 Python artifact packet
 covers exact public wheels on hosted Linux x86-64, macOS arm64, macOS x86-64,
 and Windows x86-64. It is an output-validation packet, not evidence for
-npm/WASM, crates.io, or v1.1.5 package performance.
+npm/WASM, crates.io, or v1.1.6 package performance.
 
 | Lane | Recorded result | What it does not show |
 |---|---|---|

@@ -1,19 +1,25 @@
 # Open-work ledger
 
-Updated 2026-10-16 for **v1.1.5**.
+Updated 2026-10-16 for **v1.1.6**.
 This file lists unresolved work only. Completed changes belong in the
 [CHANGELOG](https://github.com/kent-tokyo/chematic/blob/main/CHANGELOG.md); measurements belong in the
 [validation report](validation.md) and [benchmark index](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/README.md).
 
 ## Active follow-up
 
-- **v1.1.5 artifact packet:** after publication, a complete checked-in
-  Linux/macOS/Windows Python, npm/WASM, and crates.io chemistry packet is still
-  required before replacing the current v1.1.3 hosted chemistry packet and
-  v1.0.42 broad performance packet.
-- **Rust compatibility:** keep the v1.1.3 downstream compile fixture and
-  `cargo-semver-checks` release lane. Public enum variants and struct fields
-  remain semver-sensitive even when chemistry behavior is additive.
+- **v1.1.6 artifact packet:** run the hosted Linux/macOS/Windows chemistry
+  workflow after publication and check in artifact/corpus hashes and failure
+  counts. The successful v1.1.5 hosted run remains the latest complete package
+  lane; npm/WASM and crates.io remain separate evidence channels.
+- **QED and LogP performance:** reproduce the externally reported v1.1.4 to
+  v1.1.5 slowdown with 21 alternating blocks before tuning. Preserve exact
+  outputs and split parse, first-use, prepared reuse, and host conversion.
+- **Standardization:** reproduce the reported 254-row lane and classify
+  Normalize, Reionize, and Cleanup residuals as bug, semantic equivalent,
+  policy difference, or typed unsupported. Only the bug class is parity work.
+- **Rust compatibility:** extend the v1.1.3 downstream fixture and
+  `cargo-semver-checks` from selected surfaces to all 20 public crates and
+  relevant feature sets. Cover enums, error types, structs, and traits.
 - **Equivalent-work performance:** close prepared-operation deficits without
   moving work into parsing. Separate parse-inclusive, first-use, prepared,
   startup, and peak-memory results; add a second host before broad claims.
@@ -33,14 +39,15 @@ This file lists unresolved work only. Completed changes belong in the
   exact-package lanes.
 - **A6 quality:** topology bounds are aligned on the frozen corpus, while
   minimization and basin-diversity tails remain. The 265-row set and holdouts
-  v1–v4 are development data. A fresh candidate must be frozen before new
-  outcome-blind data are selected.
+  v1–v4 are development data. Freeze a new outcome-blind holdout before any
+  further 3D tuning and retain quality tails, convergence, time, and memory.
 - **A6 publication:** add 21 alternating blocks, a second host, peak memory,
   exact public artifacts, and an unused quality set before claiming a general
   speed-and-quality win.
 - **Independent workflow corpora:** add multi-reactant reactions, multi-core
-  R-groups, and real MOL2/CJSON/CIF files while retaining refusals and semantic
-  losses in the denominator.
+  R-groups, and unseen SDF/V3000/MOL2/CJSON/CIF files while retaining refusals
+  and semantic losses in the denominator. Extend the OGB lane beyond the known
+  EGFR sample before making a broad throughput claim.
 
 Issues #734 and #754 are closed, as are #739, #769, #779, and #785. Their
 fixtures remain regression tests; closed status does not broaden the supported

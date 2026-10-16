@@ -567,6 +567,11 @@ export class MolHandle {
      */
     rotatable_bond_count(): number;
     /**
+     * Checked rooted SMILES as {smiles, atom_order}; order maps parsed to original indices.
+     * Limited to 256 atoms and verified ordinary tetrahedral frames; see the Rust API.
+     */
+    smiles_rooted_checked_json(rooted_at_atom: number): string;
+    /**
      * Sum of EState indices over all heavy atoms.
      */
     sum_estate(): number;
@@ -710,6 +715,24 @@ export class SmilesBatchStreamHandle {
      * Stop before EOF with a typed reason and an explicitly unknown unread suffix.
      */
     stop_json(terminal_reason: string): string;
+}
+
+/**
+ * One proof result. The witness maps original atoms to a copy with only the
+ * selected tetrahedral declaration inverted; it fixes that selected atom.
+ */
+export class TetrahedralCleanupResult {
+    private constructor();
+    free(): void;
+    [Symbol.dispose](): void;
+    report_json(): string;
+    readonly atom_index: number;
+    /**
+     * Independent molecule; all source labels and other configurations remain.
+     */
+    readonly molecule: MolHandle;
+    readonly removed: boolean;
+    readonly search_visits: number;
 }
 
 /**
@@ -908,6 +931,12 @@ export function cdxml_document_projection_json_v1(cdxml: string): string;
 export function cdxml_to_smiles_json(cdxml: string): string;
 
 /**
+ * Read all CDXML fragments with optional Bold/Hash/Dash stereo inference.
+ * Retains the existing input/atom/fragment limits and JSON result shape.
+ */
+export function cdxml_to_smiles_json_with_options(cdxml: string, infer_nondirectional_stereo: boolean): string;
+
+/**
  * Compute the charge Parent and return a status-shaped JSON result.
  */
 export function charge_parent_json(mol: MolHandle): string;
@@ -920,6 +949,12 @@ export function charge_parent_json(mol: MolHandle): string;
  * static version string that silently went stale across releases.
  */
 export function chematic_version(): string;
+
+/**
+ * Exact source bytes, projected XML, fragment coordinates and CDX omission tags.
+ * CDXML uses the existing graph projection; omissions lists CDX tags only.
+ */
+export function chemdraw_block_report_json(data: Uint8Array, format: string, allow_metadata_loss: boolean): string;
 
 /**
  * CIP stereo assignments via the accurate hierarchical-digraph engine, as a JSON
@@ -1439,7 +1474,9 @@ export function generic_murcko_scaffold(mol: MolHandle): MolHandle;
  *
  * Fields: `element` (symbol), `hybridization` ("sp"/"sp2"/"sp3"),
  * `charge` (formal charge integer), `isAromatic` (bool),
- * `totalHydrogens` (explicit + implicit H count, integer).
+ * `totalHydrogens` (attached H: bracket/inferred plus explicit H neighbors).
+ * This excludes the atom itself when it is H; use `num_hydrogens` for the
+ * molecule's total. Isotopic H neighbors count as hydrogen.
  * sp3d/sp3d2 (hypervalent P/S) are not distinguished from sp3/sp2.
  */
 export function get_atom_info(mol: MolHandle, idx: number): string;
@@ -1600,6 +1637,12 @@ export function is_valid_smiles(s: string): boolean;
  * Compute the isotope Parent and return a status-shaped JSON result.
  */
 export function isotope_parent_json(mol: MolHandle): string;
+
+/**
+ * Replace only ar bond tokens in a bounded neutral aromatic MOL2 record.
+ * Retains atom types and every other source byte; errors throw, no partial text.
+ */
+export function kekulize_mol2_record(text: string): string;
 
 /**
  * Per-atom Labute approximate surface area contributions as a JSON array of f64.
@@ -2011,6 +2054,13 @@ export function mol_from_ccd(text: string, allow_stereo_loss: boolean): MolHandl
 export function mol_from_cdxml(cdxml: string): MolHandle;
 
 /**
+ * Read the first CDXML fragment, optionally inferring Bold/Hash/Dash stereo.
+ * Non-directional displays are heuristic: ambiguous or degenerate drawings
+ * remain unassigned. `false` has the same behavior as `mol_from_cdxml`.
+ */
+export function mol_from_cdxml_with_options(cdxml: string, infer_nondirectional_stereo: boolean): MolHandle;
+
+/**
  * Parse a ChemicalJSON (CJSON) string into a `MolHandle`.
  *
  * Coordinates and CJSON-specific metadata are intentionally not retained by
@@ -2094,6 +2144,12 @@ export function mol_from_orca_input(text: string): MolHandle;
  * atom distances (the same heuristic as the internal `pdb_to_molecule` function).
  */
 export function mol_from_pdb(pdb: string): MolHandle;
+
+/**
+ * Explicit CONECT graph, without distance-based bonding. Only unmodelled,
+ * single-location atoms with explicit element fields are accepted.
+ */
+export function mol_from_pdb_conect(input: string, allow_extended_targets: boolean): MolHandle;
 
 /**
  * Strict PDB parser. Unlike [`mol_from_pdb`], malformed ATOM/HETATM fields
@@ -2226,6 +2282,11 @@ export function mol_with_bond_removed(mol: MolHandle, idx: number): MolHandle;
 export function molecule_report_json(smiles: string): string;
 
 /**
+ * Concrete CDX/CDXML fragment handles, in source fragment order.
+ */
+export function mols_from_chemdraw_block(data: Uint8Array, format: string, allow_metadata_loss: boolean): MolHandle[];
+
+/**
  * MQN descriptor (42 integer values: Molecular Quantum Numbers).
  */
 export function mqn_json(mol: MolHandle): string;
@@ -2285,6 +2346,12 @@ export function nucleic_acid_apply_json_command(document_json: string, command_j
  * document or `ok: false` and a typed error category.
  */
 export function nucleic_acid_validate_json(document_json: string): string;
+
+/**
+ * Total hydrogen nuclei: explicit nodes plus attached bracket/inferred H.
+ * Isotopic, charged, bridging and disconnected H nodes each count once.
+ */
+export function num_hydrogens(mol: MolHandle): number;
 
 /**
  * Parse an OpenDX (APBS scalar-field subset) file and return its full
@@ -2389,6 +2456,12 @@ export function parse_mol2_record_json(text: string): string;
  * Returns a JS error string on parse failure or if atom count exceeds 10,000.
  */
 export function parse_smiles(s: string): MolHandle;
+
+/**
+ * Indexed atoms/charges, bonds, coordinates and source serials for the same
+ * explicit CONECT projection. Molecular identity and coordinate order agree.
+ */
+export function pdb_conect_frame_json(input: string, allow_extended_targets: boolean): string;
 
 /**
  * Extract the atomic coordinates from a PDB block, in the SAME atom order
@@ -2722,6 +2795,13 @@ export function reaction_smarts_match(smarts: string, reaction_smiles: string): 
 export function remove_hydrogens(mol: MolHandle): MolHandle;
 
 /**
+ * Opt-in exact tetrahedral cleanup. Both index and budget must be JS numbers
+ * containing integers (bool/string/null are rejected). The kernel caps inputs
+ * at 64 atoms/128 bonds and max_visits at 10000000. Errors throw without a result.
+ */
+export function remove_redundant_tetrahedral_stereo(mol: MolHandle, atom_index: any, max_visits: any): TetrahedralCleanupResult;
+
+/**
  * Single-step retrosynthetic disconnection (issue #91).
  *
  * Thin wrapper around [`chematic_rxn::retro::retro_disconnect`] -- applies
@@ -3038,9 +3118,11 @@ export function smiles_array_to_sdf(smiles_json: string): string;
 /**
  * Convert a SMILES to a minimal Tripos MOL2 string (no 3D coordinates).
  *
- * Returns `"error:<msg>"` on parse failure.
+ * Optional `atom_bond_adjacent=true` emits ATOM → BOND → UNITY. Some
+ * readers (including Open Babel 3.2.1) ignore UNITY charges in this order.
+ * Omit it to retain existing bytes. Returns `"error:<msg>"` on parse failure.
  */
-export function smiles_to_mol2(smiles: string): string;
+export function smiles_to_mol2(smiles: string, atom_bond_adjacent?: boolean | null): string;
 
 /**
  * Write a molecule to AutoDock PDBQT format.
@@ -3052,6 +3134,15 @@ export function smiles_to_mol2(smiles: string): string;
  * Returns the PDBQT string, or `"error:<msg>"` on failure.
  */
 export function smiles_to_pdbqt(smiles: string, coords_json: string, charges_json: string, name: string): string;
+
+/**
+ * Write rigid PDBQT or throw for malformed/unrepresentable input. Coordinates
+ * are JSON [x,y,z] arrays in Å; charges are JSON numbers in e. Both arrays must
+ * contain exactly one value per graph atom, including explicit H. No defaults,
+ * charge calculation, atom removal or ligand torsion preparation are applied.
+ * AutoDock types retain the legacy heuristic, with unknown `X` types rejected.
+ */
+export function smiles_to_pdbqt_checked(smiles: string, coords_json: string, charges_json: string, name: string): string;
 
 /**
  * Render a highlighted SVG from a SMILES string in one call.
@@ -3441,6 +3532,7 @@ export interface InitOutput {
     readonly __wbg_rdkitreadresult_free: (a: number, b: number) => void;
     readonly __wbg_rdkitsearchindex_free: (a: number, b: number) => void;
     readonly __wbg_smilesbatchstreamhandle_free: (a: number, b: number) => void;
+    readonly __wbg_tetrahedralcleanupresult_free: (a: number, b: number) => void;
     readonly add_hydrogens: (a: number) => number;
     readonly admet_profile_json: (a: number, b: number) => [number, number];
     readonly atom_pair_bitvec: (a: number) => [number, number];
@@ -3463,8 +3555,10 @@ export interface InitOutput {
     readonly cdxml_document_json_v1: (a: number, b: number) => [number, number, number, number];
     readonly cdxml_document_projection_json_v1: (a: number, b: number) => [number, number, number, number];
     readonly cdxml_to_smiles_json: (a: number, b: number) => [number, number, number, number];
+    readonly cdxml_to_smiles_json_with_options: (a: number, b: number, c: number) => [number, number, number, number];
     readonly charge_parent_json: (a: number) => [number, number];
     readonly chematic_version: () => [number, number];
+    readonly chemdraw_block_report_json: (a: number, b: number, c: number, d: number, e: number) => [number, number, number, number];
     readonly cip_assignments_accurate_json: (a: number) => [number, number];
     readonly cip_assignments_json: (a: number) => [number, number];
     readonly cip_unresolved_json: (a: number) => [number, number];
@@ -3562,6 +3656,7 @@ export interface InitOutput {
     readonly invert_stereocenter_at: (a: number, b: number) => [number, number, number];
     readonly is_valid_smiles: (a: number, b: number) => number;
     readonly isotope_parent_json: (a: number) => [number, number];
+    readonly kekulize_mol2_record: (a: number, b: number) => [number, number, number, number];
     readonly labute_asa_per_atom_json: (a: number) => [number, number];
     readonly lammps_data_to_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly lammps_dump_cartesian_positions_f64: (a: number, b: number) => [number, number, number];
@@ -3604,6 +3699,7 @@ export interface InitOutput {
     readonly mol_block_stereo_loss_json: (a: number) => [number, number];
     readonly mol_from_ccd: (a: number, b: number, c: number) => [number, number, number];
     readonly mol_from_cdxml: (a: number, b: number) => [number, number, number];
+    readonly mol_from_cdxml_with_options: (a: number, b: number, c: number) => [number, number, number];
     readonly mol_from_cjson: (a: number, b: number) => [number, number, number];
     readonly mol_from_cml: (a: number, b: number) => [number, number, number];
     readonly mol_from_cml_strict: (a: number, b: number) => [number, number, number];
@@ -3613,6 +3709,7 @@ export interface InitOutput {
     readonly mol_from_moljson: (a: number, b: number) => [number, number, number];
     readonly mol_from_orca_input: (a: number, b: number) => [number, number, number];
     readonly mol_from_pdb: (a: number, b: number) => number;
+    readonly mol_from_pdb_conect: (a: number, b: number, c: number) => [number, number, number];
     readonly mol_from_pdb_strict: (a: number, b: number) => [number, number, number];
     readonly mol_from_pdbqt: (a: number, b: number) => [number, number, number];
     readonly mol_from_pqr: (a: number, b: number) => [number, number, number];
@@ -3722,6 +3819,7 @@ export interface InitOutput {
     readonly molhandle_reos_passes: (a: number) => number;
     readonly molhandle_ring_count: (a: number) => number;
     readonly molhandle_rotatable_bond_count: (a: number) => number;
+    readonly molhandle_smiles_rooted_checked_json: (a: number, b: number) => [number, number, number, number];
     readonly molhandle_sum_estate: (a: number) => number;
     readonly molhandle_to_inchi: (a: number) => [number, number];
     readonly molhandle_to_inchikey: (a: number) => [number, number];
@@ -3729,6 +3827,7 @@ export interface InitOutput {
     readonly molhandle_veber_passes: (a: number) => number;
     readonly molhandle_wiener_index: (a: number) => number;
     readonly molhandle_zagreb_index_m1: (a: number) => number;
+    readonly mols_from_chemdraw_block: (a: number, b: number, c: number, d: number, e: number) => [number, number, number, number];
     readonly mqn_json: (a: number) => [number, number];
     readonly mr_per_atom_json: (a: number) => [number, number];
     readonly murcko_scaffold: (a: number) => number;
@@ -3738,6 +3837,7 @@ export interface InitOutput {
     readonly normalize_reaction_smiles: (a: number, b: number) => [number, number, number, number];
     readonly nucleic_acid_apply_json_command: (a: number, b: number, c: number, d: number) => [number, number];
     readonly nucleic_acid_validate_json: (a: number, b: number) => [number, number];
+    readonly num_hydrogens: (a: number) => number;
     readonly opendx_grid_json: (a: number, b: number) => [number, number, number, number];
     readonly opendx_shape_u32: (a: number, b: number) => [number, number, number];
     readonly opendx_values_f64: (a: number, b: number) => [number, number, number];
@@ -3752,6 +3852,7 @@ export interface InitOutput {
     readonly parse_hin_record_json: (a: number, b: number) => [number, number, number, number];
     readonly parse_mol2_record_json: (a: number, b: number) => [number, number, number, number];
     readonly parse_smiles: (a: number, b: number) => [number, number, number];
+    readonly pdb_conect_frame_json: (a: number, b: number, c: number) => [number, number, number, number];
     readonly pdb_coords_json: (a: number, b: number) => [number, number];
     readonly peoe_vsa_json: (a: number) => [number, number];
     readonly periodic_structure_fingerprint_json: (a: number, b: number, c: number, d: number) => [number, number];
@@ -3801,6 +3902,7 @@ export interface InitOutput {
     readonly reaction_document_to_rxn_v1: (a: number, b: number) => [number, number, number, number];
     readonly reaction_smarts_match: (a: number, b: number, c: number, d: number) => [number, number, number];
     readonly remove_hydrogens: (a: number) => number;
+    readonly remove_redundant_tetrahedral_stereo: (a: number, b: any, c: any) => [number, number, number];
     readonly retro_disconnect_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly rgroup_decompose_columns_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly rgroup_decompose_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
@@ -3832,8 +3934,9 @@ export interface InitOutput {
     readonly smarts_match_atoms: (a: number, b: number, c: number) => [number, number, number, number];
     readonly smarts_match_atoms_with_chirality: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly smiles_array_to_sdf: (a: number, b: number) => [number, number, number, number];
-    readonly smiles_to_mol2: (a: number, b: number) => [number, number];
+    readonly smiles_to_mol2: (a: number, b: number, c: number) => [number, number];
     readonly smiles_to_pdbqt: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number];
+    readonly smiles_to_pdbqt_checked: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number, number, number];
     readonly smiles_to_svg_highlighted: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number, number, number];
     readonly smilesbatchstreamhandle_finish_json: (a: number) => [number, number, number, number];
     readonly smilesbatchstreamhandle_new: () => number;
@@ -3861,6 +3964,11 @@ export interface InitOutput {
     readonly tanimoto_topo_path: (a: number, b: number) => number;
     readonly tanimoto_torsion: (a: number, b: number) => number;
     readonly tautomer_parent_json: (a: number, b: number, c: number, d: number, e: bigint) => [number, number];
+    readonly tetrahedralcleanupresult_atom_index: (a: number) => number;
+    readonly tetrahedralcleanupresult_molecule: (a: number) => number;
+    readonly tetrahedralcleanupresult_removed: (a: number) => number;
+    readonly tetrahedralcleanupresult_report_json: (a: number) => [number, number];
+    readonly tetrahedralcleanupresult_search_visits: (a: number) => number;
     readonly to_cml: (a: number) => [number, number];
     readonly to_extxyz_json: (a: number, b: number, c: number, d: number, e: number) => [number, number, number, number];
     readonly to_mol_block: (a: number) => [number, number];
@@ -3897,6 +4005,7 @@ export interface InitOutput {
     readonly __wbindgen_externrefs: WebAssembly.Table;
     readonly __wbindgen_free: (a: number, b: number, c: number) => void;
     readonly __externref_table_dealloc: (a: number) => void;
+    readonly __externref_drop_slice: (a: number, b: number) => void;
     readonly __wbindgen_start: () => void;
 }
 

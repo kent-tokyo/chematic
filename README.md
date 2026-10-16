@@ -25,15 +25,13 @@ npm install @kent-tokyo/chematic
 
 Python wheels need no C/C++ compiler. All bindings share the Rust core.
 
-### v1.1.5 release boundary
+### v1.1.6 release boundary
 
-v1.1.5 adds checked molecular and materials interchange, indexed SDF
-selection, bounded graph and stereo utilities, query-hydrogen folding,
-chirality-aware compiled SMARTS matching, Layered fingerprint options, and a
-checked RDKit-model 3D distance matrix. It also reduces repeated ring,
-aromaticity, TPSA, E/Z, and V3000 work, restores the established public CML/CIF
-error surface, and updates `rustls` for three security advisories. Claims
-remain limited to their recorded artifacts, corpora, options, and hosts. See
+v1.1.6 adds checked filesystem-path and UTF-8 byte handling, source-preserving
+MOL2/CDX/PDBQT/PDB/CIF APIs, rooted SMILES and stereo-proof utilities, and live
+MMFF dielectric updates. It improves checked stereo recovery from 3D inputs
+and reduces SDF/V3000 I/O overhead. Claims remain limited to their recorded
+artifacts, corpora, options, and hosts. See
 [validation](docs/validation.md) and
 [CHANGELOG](CHANGELOG.md).
 
