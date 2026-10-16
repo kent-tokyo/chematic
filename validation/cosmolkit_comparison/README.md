@@ -23,6 +23,10 @@ recorded in [ez-cip-2026-10-16.md](ez-cip-2026-10-16.md). It compares the
 source-built default and accurate modes plus COSMolKit against RDKit's CIP
 labels, keyed by bond endpoint atoms.
 
+The focused [aromatic sulfur stereo read-back
+check](aromatic-s-stereo-2026-10-16.md) compares whether each toolkit keeps
+RDKit-enumerated `[s@+]` and `[s@@+]` SMILES distinct across five source rows.
+
 ## Corpus-scale comparison
 
 Install each engine in a Python that also has RDKit (round-trip operations

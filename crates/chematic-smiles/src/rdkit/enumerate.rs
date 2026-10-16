@@ -205,4 +205,28 @@ mod tests {
         let unlimited = rdkit_stereoisomer_smiles(&mol, 0);
         assert!(unlimited.is_err());
     }
+
+    #[test]
+    fn aromatic_sulfoxide_has_two_stereoisomers() {
+        let smiles = "CN(C)Cc1ccc(CSCCNc2n[s+]([O-])nc2N)[nH]1";
+        let variants = isomers(smiles);
+        assert_eq!(
+            variants,
+            [
+                "CN(C)Cc1ccc(CSCCNc2n[s@+]([O-])nc2N)[nH]1",
+                "CN(C)Cc1ccc(CSCCNc2n[s@@+]([O-])nc2N)[nH]1",
+            ]
+        );
+        let native: Vec<_> = variants
+            .iter()
+            .map(|s| crate::canonical_smiles(&crate::parse(s).unwrap()))
+            .collect();
+        assert_ne!(native[0], native[1]);
+        for canonical in native {
+            assert_eq!(
+                crate::canonical_smiles(&crate::parse(&canonical).unwrap()),
+                canonical
+            );
+        }
+    }
 }
