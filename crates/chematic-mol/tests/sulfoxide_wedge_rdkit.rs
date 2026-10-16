@@ -5,6 +5,7 @@ use chematic_smiles::{canonical_smiles, parse, rdkit_canonical_smiles, write};
 
 const V2000: &str = include_str!("fixtures/rdkit-sulfoxide-2d-v2000.mol");
 const V3000: &str = include_str!("fixtures/rdkit-sulfoxide-2d-v3000.mol");
+const OPENBABEL_SELENOETHER: &str = include_str!("fixtures/openbabel-nonstereo-selenide-v2000.mol");
 
 #[test]
 fn sulfoxide_wedge_stereo_survives_both_mol_formats_and_smiles_writers() {
@@ -38,5 +39,21 @@ fn sulfoxide_wedge_stereo_survives_both_mol_formats_and_smiles_writers() {
                 );
             }
         }
+    }
+}
+
+#[test]
+fn openbabel_wedge_on_nonstereogenic_selenium_does_not_create_a_chiral_center() {
+    // Open Babel emits both atom parity and a wedge at this ring selenium,
+    // although its Se=C bond does not make the atom a stereogenic sulfoxide.
+    let mol = read_mol_with_diagnostics(OPENBABEL_SELENOETHER)
+        .unwrap()
+        .mol;
+    for smiles in [write(&mol), canonical_smiles(&mol)] {
+        assert_eq!(
+            rdkit_canonical_smiles(&parse(&smiles).unwrap()).unwrap(),
+            "C/C(CN(C)C)=C(/n1ccnc1)[Se]1=C(OCC(C)C)C=CC=C1",
+            "{smiles}"
+        );
     }
 }

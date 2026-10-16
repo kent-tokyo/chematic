@@ -900,11 +900,13 @@ fn v3000_geometry(
     };
     let square_planar = conformer.as_ref().map_or_else(Vec::new, |coords| {
         let perceived = crate::mol2000::perceive_square_planar_from_3d(mol, coords);
-        diagnostics.extend(crate::mol2000::wedge_vs_3d_conflicts(mol, coords));
+        let conflicts = crate::mol2000::wedge_vs_3d_conflicts(mol, coords);
         if rank == GeometryRank::ThreeD && dimension != CoordinateDimension::TwoD {
+            crate::mol2000::correct_conflicting_wedges_from_3d(mol, &conflicts);
             crate::mol2000::perceive_tetrahedral_from_3d(mol, coords);
             crate::mol2000::correct_ring_alkene_directions_from_3d(mol, coords);
         }
+        diagnostics.extend(conflicts);
         perceived
     });
     (conformer, rank, diagnostics, square_planar)
@@ -958,6 +960,44 @@ fn apply_v3000_valence_overrides(mol: &mut Molecule, properties: &[(u32, String)
     }
 }
 
+/// The core molecule stores explicit hydrogen count but not radical spin.
+/// For supported neutral main-group atoms, RAD constrains the hydrogens that
+/// would otherwise be added by ordinary valence inference. Keep the original
+/// RAD attribute in metadata for V3000 reserialization.
+fn apply_v3000_radical_hydrogens(mol: &mut Molecule, properties: &[(u32, String)]) {
+    for (atom_id, attributes) in properties {
+        let tokens: Vec<_> = attributes.split_whitespace().collect();
+        let radical_deficit = match parse_kv(&tokens, "RAD") {
+            Some("2") => 1u8, // doublet
+            Some("3") => 2u8, // triplet
+            _ => continue,
+        };
+        if parse_kv(&tokens, "VAL").is_some() {
+            continue;
+        }
+        let atom = AtomIdx(atom_id - 1);
+        let identity = mol.atom(atom);
+        if identity.charge != 0
+            || identity.hydrogen_count.is_some()
+            || !matches!(identity.element, Element::C | Element::N | Element::O)
+        {
+            continue;
+        }
+        let Some(&normal_valence) = identity.element.normal_valences().first() else {
+            continue;
+        };
+        let aromatic_bonds = mol
+            .neighbors(atom)
+            .filter(|&(_, bond)| mol.bond(bond).order == BondOrder::Aromatic)
+            .count() as u8;
+        let drawn = v3000_valence_bond_order_sum(mol, atom).saturating_add(aromatic_bonds / 2);
+        mol.set_hydrogen_count(
+            atom,
+            Some(normal_valence.saturating_sub(drawn.saturating_add(radical_deficit))),
+        );
+    }
+}
+
 fn finish_v3000_report(
     parser: V3000Parser,
     mut metadata: MolMetadata,
@@ -967,6 +1007,7 @@ fn finish_v3000_report(
     let mut mol = parser.builder.build();
     crate::mol2000::flag_aromatic_bond_atoms(&mut mol);
     apply_v3000_valence_overrides(&mut mol, &parser.atom_properties);
+    apply_v3000_radical_hydrogens(&mut mol, &parser.atom_properties);
     metadata.v3000_sgroups = parser.sgroups;
     metadata.v3000_bond_properties = parser.bond_properties;
     metadata.v3000_atom_properties = parser.atom_properties;

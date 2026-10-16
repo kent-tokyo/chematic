@@ -584,13 +584,15 @@ fn geometry_diagnostics(
     };
     let square_planar = conformer.as_ref().map_or_else(Vec::new, |coords| {
         let perceived = perceive_square_planar_from_3d(mol, coords);
-        diagnostics.extend(wedge_vs_3d_conflicts(mol, coords));
+        let conflicts = wedge_vs_3d_conflicts(mol, coords);
         if geometry_rank == GeometryRank::ThreeD
             && coordinate_dimension != CoordinateDimension::TwoD
         {
+            correct_conflicting_wedges_from_3d(mol, &conflicts);
             perceive_tetrahedral_from_3d(mol, coords);
             super::correct_ring_alkene_directions_from_3d(mol, coords);
         }
+        diagnostics.extend(conflicts);
         perceived
     });
     (conformer, geometry_rank, diagnostics, square_planar)
