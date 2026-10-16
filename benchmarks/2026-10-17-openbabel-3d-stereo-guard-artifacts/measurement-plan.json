@@ -1,0 +1,75 @@
+{
+  "base_revision": "7d6b092f448913a4ef87f1a3d6353789dad69cb5",
+  "candidate": "Return before global 3D tetrahedral perception only when no atom can pass the existing chirality/aromaticity/degree output shape; every other path uses the original implementation",
+  "primary": "Both controlled 3D parse paired CI lower>1",
+  "adoption": "Exact source snapshots, rewrites and frozen tetrahedral-function outputs; both primary parse CI lower>1; all 24 source medians>=0.99; disclose all negative intervals",
+  "profiles": [
+    {
+      "kind": "sdf",
+      "profile": "0",
+      "records": 1000
+    },
+    {
+      "kind": "sdf",
+      "profile": "5000",
+      "records": 1000
+    },
+    {
+      "kind": "v3000",
+      "profile": "0",
+      "records": 1000
+    },
+    {
+      "kind": "v3000",
+      "profile": "5000",
+      "records": 1000
+    },
+    {
+      "kind": "v3000",
+      "profile": "chains",
+      "records": 64
+    },
+    {
+      "kind": "v3000",
+      "profile": "continued",
+      "records": 64
+    },
+    {
+      "kind": "v3000-3d",
+      "profile": "spiral",
+      "records": 64
+    },
+    {
+      "kind": "v3000-3d",
+      "profile": "offset",
+      "records": 64
+    }
+  ],
+  "blocks": 21,
+  "native_repeats": 3,
+  "comparator_win": "Declared semantic prerequisite, CI lower>1 and 21/21 faster blocks",
+  "build": {
+    "opt_level": 3,
+    "lto": true,
+    "codegen_units": 1,
+    "jobs": 1,
+    "incremental": false,
+    "strip": "none"
+  },
+  "test_build": {
+    "release": true,
+    "lto": false,
+    "codegen_units": 16,
+    "jobs": 1
+  },
+  "no_adaptive_timing_reruns": true,
+  "scope": "Shared macOS arm64 native source results. Primary synthetic achiral-chain coordinates test absent candidate shapes, not realistic conformers or all Open Babel. Existing diverse SDF/V3000 profiles retained without filtering. No published-package or universal claim.",
+  "previous_unpromoted_candidates": "Excluded; pending successful writer PR #960 is also excluded from this source base. Reuse only corpus/comparator binaries by exact hash, no old timings.",
+  "checkpoint_policy": "64MiB own reserve; retry only checkpoint write, never workers/timers",
+  "build_provenance_correction": {
+    "invalid_epoch": "/private/tmp/chematic-3d-stereo-guard-evidence-20261017",
+    "reason": "Identical tetrahedral machine code in both arms from shared-target library reuse",
+    "fresh_strategy": "Copy unchanged dependency cache to isolated candidate-only target; cargo clean schematic-mol there, then verbose rebuild; verify actual machine code before any valid epoch",
+    "unchanged": "candidate commit a093ce86, base 7d6b092f, all eight corpora, 21 blocks, three repeats, primary and retention gates; no old timing samples reused"
+  }
+}

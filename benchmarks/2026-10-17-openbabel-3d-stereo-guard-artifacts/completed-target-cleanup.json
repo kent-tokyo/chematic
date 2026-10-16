@@ -1,0 +1,15 @@
+{
+  "utc": "2026-10-16T16:41:59.484018+00:00",
+  "removed_regenerable_completed_target": "/private/tmp/chematic-ring-expansion-target-20261017",
+  "measured_kib": 500468,
+  "ps_and_lsof_checked_unused": true,
+  "retained_wheels_and_extensions_sha256": {
+    "/private/tmp/chematic-ring-expansion-evidence-20261017/baseline-wheel/chematic-1.1.6-cp313-cp313-macosx_11_0_arm64.whl": "7503b252085c323d13c99f0c6c7eb3cb1676d6ed94981f1beae800dc8ba69bea",
+    "/private/tmp/chematic-ring-expansion-evidence-20261017/baseline/chematic/chematic.cpython-313-darwin.so": "c2043f68a7f5dcb715aea9a0632b097505073a182dd64833e093b2907deaad6e",
+    "/private/tmp/chematic-ring-expansion-evidence-20261017/candidate-wheel/chematic-1.1.6-cp313-cp313-macosx_11_0_arm64.whl": "d6dc404dc42b6582835c24fdb59bb03c9e854be56470e6c31a61d997c0199032",
+    "/private/tmp/chematic-ring-expansion-evidence-20261017/candidate/chematic/chematic.cpython-313-darwin.so": "c6a8440c4cd08981acb3e9ee225c9c9287d9b5916f9c46cb0e0f5fe7fd6c6455"
+  },
+  "before_df": "Filesystem      Size    Used   Avail Capacity iused ifree %iused  Mounted on\n/dev/disk3s5   228Gi   198Gi   891Mi   100%    2.8M  9.2M   23%   /System/Volumes/Data\n",
+  "after_df": "Filesystem      Size    Used   Avail Capacity iused ifree %iused  Mounted on\n/dev/disk3s5   228Gi   197Gi   1.3Gi   100%    2.8M   14M   17%   /System/Volumes/Data\n",
+  "sources_evidence_and_other_targets": "preserved"
+}

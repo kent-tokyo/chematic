@@ -1,0 +1,25 @@
+{
+  "command": [
+    "cargo",
+    "build",
+    "--offline",
+    "--locked",
+    "--release",
+    "-p",
+    "chematic-mol",
+    "--example",
+    "openbabel_sdf_throughput",
+    "--example",
+    "openbabel_v3000_throughput",
+    "--example",
+    "openbabel_v3000_3d_throughput"
+  ],
+  "env": {
+    "CARGO_TARGET_DIR": "/private/tmp/chematic-3d-stereo-guard-native-verified-target-20261017",
+    "CARGO_BUILD_JOBS": "1",
+    "CARGO_INCREMENTAL": "0",
+    "CARGO_PROFILE_RELEASE_LTO": "false",
+    "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "16",
+    "CARGO_PROFILE_RELEASE_STRIP": "none"
+  }
+}

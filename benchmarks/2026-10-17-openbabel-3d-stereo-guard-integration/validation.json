@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "native": {
+    "passed": 1356,
+    "failed": 0,
+    "ignored": 0,
+    "suites": 64
+  },
+  "release_all_target_clippy": true,
+  "format": true,
+  "refactor_budget": true,
+  "runner_gates_passed": 10
+}

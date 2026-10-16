@@ -7,6 +7,8 @@ package, comparator, corpus, host, runtime and operation.
 
 ## Start here
 
+- [3D tetrahedral candidate guard](2026-10-17-openbabel-3d-stereo-guard.md): source-valid 21-block native comparison, all 24 floors, preserved source outputs and archived invalid build epoch.
+
 | Need | Start with |
 |---|---|
 | Review requested-only V3000 loss collection | [2026-10-16-openbabel-v3000-loss-work](2026-10-16-openbabel-v3000-loss-work.md): exact outputs/reports, both primary write intervals positive, all 15 median budgets pass; parsing retreat disclosed |

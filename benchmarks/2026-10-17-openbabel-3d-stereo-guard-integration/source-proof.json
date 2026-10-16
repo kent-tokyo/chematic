@@ -1,0 +1,8 @@
+{
+  "combined_head": "33ad98f224333f6bd51d23d7b300e6598fe96dff",
+  "integrated_main": "4a97a599",
+  "measured_guard_function_unchanged": true,
+  "measured_guard_sha256": "0ef0a3272286d7b3a605a28f97d521d9b5147591d2d21b95df7e1294f25eb4ef",
+  "timing_candidate": "a093ce86d8c18eae2c17db3d33405489dc309ace",
+  "scope": "Combined head includes writer #960 and MOL2 semantic fix #963; no combined timing claim"
+}

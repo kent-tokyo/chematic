@@ -1,0 +1,3 @@
+# 3D candidate-guard evidence
+
+Read [the report](../2026-10-17-openbabel-3d-stereo-guard.md), frozen plan and `decision.json`. All eight complete single 21-block epochs, mismatch fields and negative intervals are retained. No timing reruns or pooling. `candidate.patch.gz` reconstructs the two modified Rust files, added frozen-function tests and common 3D probe from `7d6b092f448913a4ef87f1a3d6353789dad69cb5`. Full binaries, saved streams and source snapshots remain at `/private/tmp/chematic-3d-stereo-guard-valid-evidence-20261017`. Controlled 3D chains do not establish physical-conformer or toolkit-wide superiority.
