@@ -1715,6 +1715,20 @@ class Mol:
         """
         ...
 
+    def sasa_with_radii_checked(self, coordinates: Iterable[Sequence[float]], radii: Iterable[float], *, probe_radius: float = 1.4, sphere_points: int = 960) -> dict[str, Any]:
+        """Native Shrake-Rupley total/per_atom SASA with explicit coordinates/radii.
+
+        Uses Angstrom and square Angstrom; one positive radius per atom,
+        including explicit H. No defaults or coordinate generation. Accepts
+        empty molecules, <=2048 atoms, 32..65536 sphere points, and <=50 million
+        potential point-neighbor checks. Invalid/nonfinite data, ambiguous
+        coincident equal spheres and numeric/work limits raise ValueError.
+        Wrong types raise TypeError; shape errors may raise ValueError.
+        Iterables consume at most atom_count + 1 items; source errors propagate.
+        Integers outside signed 64-bit range raise OverflowError. Sampling
+        error remains; this is not a FreeSASA/RDKit compatibility API.
+        """
+
     def sasa_per_atom_3d(self, coords: list[list[float]]) -> list[float]:
         """Per-atom Solvent-Accessible Surface Area (Å²) from explicit 3D coordinates.
 

@@ -107,3 +107,11 @@ Bold/Hash/Dash inference already existed, but Python and WASM could not opt in.
 screen-coordinate, hashed-sense and directional ownership defects in the
 reader. Default non-directional markers remain unassigned. This validates
 bounded molecular reading, not binary CDX or a general ChemDraw writer.
+
+## October 17 follow-up: explicit SASA radii
+
+[#9601](https://github.com/rdkit/rdkit/issues/9601) and open PR #9611 include
+the radius-count boundary for FreeSASA. Added [checked Rust/Python SASA](checked-sasa-radii.md)
+with caller-supplied coordinates and radii, value/size/work limits, local
+normalized occlusion and explicit errors. This is a native Shrake-Rupley
+algorithm; it does not replace FreeSASA or claim bitwise RDKit parity.
