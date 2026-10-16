@@ -350,7 +350,7 @@ fn finish_ctab(out: &mut String, mol: &Molecule, metadata: &MolMetadata) {
 }
 
 pub fn write_mol_v3000(mol: &Molecule, metadata: &MolMetadata, coords: &[(f64, f64)]) -> String {
-    write_mol_v3000_with_stereo_report(mol, metadata, coords).0
+    write_v3000_reporting(mol, metadata, coords, false).0
 }
 
 /// [`write_mol_v3000`] that also reports the stereo the block does not carry
@@ -359,6 +359,15 @@ pub fn write_mol_v3000_with_stereo_report(
     mol: &Molecule,
     metadata: &MolMetadata,
     coords: &[(f64, f64)],
+) -> (String, crate::MolStereoLoss) {
+    write_v3000_reporting(mol, metadata, coords, true)
+}
+
+fn write_v3000_reporting(
+    mol: &Molecule,
+    metadata: &MolMetadata,
+    coords: &[(f64, f64)],
+    collect_loss: bool,
 ) -> (String, crate::MolStereoLoss) {
     let mut out = writer_buffer(mol, metadata);
     append_header(&mut out, mol, metadata, "  chematic\n");
@@ -371,11 +380,17 @@ pub fn write_mol_v3000_with_stereo_report(
     append_bonds_2d(&mut out, mol, metadata, depiction.as_ref());
     finish_ctab(&mut out, mol, metadata);
 
-    let loss = crate::MolStereoLoss::from_depiction(
-        mol,
-        depiction.as_ref(),
-        crate::mol2000::MolFormat::V3000,
-    );
+    // Plain output discards this report. Keep depiction and serialization
+    // identical, collecting losses only for the public reporting API.
+    let loss = if collect_loss {
+        crate::MolStereoLoss::from_depiction(
+            mol,
+            depiction.as_ref(),
+            crate::mol2000::MolFormat::V3000,
+        )
+    } else {
+        crate::MolStereoLoss::default()
+    };
     (out, loss)
 }
 
@@ -659,3 +674,7 @@ mod reference;
 #[cfg(test)]
 #[path = "writer_speed_tests.rs"]
 mod speed_tests;
+
+#[cfg(test)]
+#[path = "loss_collection_tests.rs"]
+mod loss_collection_tests;

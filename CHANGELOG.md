@@ -16,6 +16,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Performance
 
+- Skip unused stereo-loss collection for plain V3000 output. Reporting APIs
+  preserve all loss fields and serialized bytes remain identical. The fixed
+  source comparison measures a 1.5% prepared-write gain on both diverse slices;
+  the disclosed parsing retreat and complete scope are retained in the
+  [V3000 source record](benchmarks/2026-10-16-openbabel-v3000-loss-work.md).
 - Parse complete buffered SDF records directly, reserving owned record storage
   only for the existing line-reader fallback. Preserve diagnostic/lightweight
   results, limits, errors, metadata and logical input positions.
