@@ -210,6 +210,17 @@ fn apply_ez_directions_from_geometry(
         return Vec::new();
     };
 
+    let constraints = carrier_constraints(mol, &outcomes);
+    let (conflicted, flipped) = resolve_carrier_constraints(constraints, &outcomes);
+    commit_ez_outcomes(mol, &double_bonds, &mut outcomes, &conflicted, &flipped)
+}
+
+type CarrierConstraint = (BondIdx, BondIdx, bool);
+
+fn carrier_constraints(
+    mol: &Molecule,
+    outcomes: &HashMap<BondIdx, EzOutcome>,
+) -> Vec<CarrierConstraint> {
     // Phase 2: a physical substituent bond can be the chosen carrier for TWO
     // different double bonds at once (the ordinary conjugated-diene shape,
     // see module docs). Group every Assigned outcome's claims by physical
@@ -219,7 +230,7 @@ fn apply_ez_directions_from_geometry(
     // `double_bonds` iteration order, i.e. bond-index/parse order, which the
     // spec explicitly rules out).
     let mut claims: HashMap<BondIdx, Vec<(BondIdx, BondOrder)>> = HashMap::new();
-    for (&db, outcome) in &outcomes {
+    for (&db, outcome) in outcomes {
         if let EzOutcome::Assigned {
             carrier_a1,
             carrier_a2,
@@ -242,16 +253,6 @@ fn apply_ez_directions_from_geometry(
     // assignment does for conjugated polyenes). Only a claim graph with no
     // consistent colouring (an odd cycle) still rejects every double bond
     // in it.
-    let mut parent: HashMap<BondIdx, (BondIdx, bool)> = HashMap::new();
-    fn find(parent: &mut HashMap<BondIdx, (BondIdx, bool)>, x: BondIdx) -> (BondIdx, bool) {
-        let (p, flip) = *parent.get(&x).unwrap_or(&(x, false));
-        if p == x {
-            return (x, false);
-        }
-        let (root, f) = find(parent, p);
-        parent.insert(x, (root, flip ^ f));
-        (root, flip ^ f)
-    }
     // Constraints `flip(x) ^ flip(y) == want`:
     // * two double bonds claiming one bond must leave it one value;
     // * an alkene end whose two substituents both carry a marker (its own
@@ -297,6 +298,23 @@ fn apply_ez_directions_from_geometry(
             }
         }
     }
+    constraints
+}
+
+fn resolve_carrier_constraints(
+    constraints: Vec<CarrierConstraint>,
+    outcomes: &HashMap<BondIdx, EzOutcome>,
+) -> (HashSet<BondIdx>, HashSet<BondIdx>) {
+    let mut parent: HashMap<BondIdx, (BondIdx, bool)> = HashMap::new();
+    fn find(parent: &mut HashMap<BondIdx, (BondIdx, bool)>, x: BondIdx) -> (BondIdx, bool) {
+        let (p, flip) = *parent.get(&x).unwrap_or(&(x, false));
+        if p == x {
+            return (x, false);
+        }
+        let (root, f) = find(parent, p);
+        parent.insert(x, (root, flip ^ f));
+        (root, flip ^ f)
+    }
     let mut inconsistent: HashSet<BondIdx> = HashSet::new();
     for (db0, db, want) in constraints {
         {
@@ -335,10 +353,20 @@ fn apply_ez_directions_from_geometry(
         }
     }
 
+    (conflicted, flipped)
+}
+
+fn commit_ez_outcomes(
+    mol: &mut Molecule,
+    double_bonds: &[BondIdx],
+    outcomes: &mut HashMap<BondIdx, EzOutcome>,
+    conflicted: &HashSet<BondIdx>,
+    flipped: &HashSet<BondIdx>,
+) -> Vec<EzDirectionDiagnostic> {
     // Phase 3: commit. Only an Assigned outcome not caught by Phase 2 ever
     // writes to `mol`; everything else contributes at most one diagnostic.
     let mut diagnostics = Vec::with_capacity(double_bonds.len());
-    for &bidx in &double_bonds {
+    for &bidx in double_bonds {
         match outcomes.remove(&bidx).expect("classified in phase 1") {
             EzOutcome::NotRequested => {}
             EzOutcome::Rejected(reason) => {

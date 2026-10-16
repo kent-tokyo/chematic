@@ -42,12 +42,15 @@ fn mol2_3d_alkenes_recover_ez_in_both_readers_and_after_rotation() {
         assert_eq!(canonical_smiles(&rotated_mol), canonical);
         smiles.push(canonical);
     }
-    for pair in smiles.chunks_exact(2) {
-        assert_ne!(pair[0], pair[1], "opposite geometries were collapsed");
-    }
-    for pair in source_smiles.chunks_exact(2) {
+    for index in (0..smiles.len()).step_by(2) {
         assert_ne!(
-            pair[0], pair[1],
+            smiles[index],
+            smiles[index + 1],
+            "opposite geometries were collapsed"
+        );
+        assert_ne!(
+            source_smiles[index],
+            source_smiles[index + 1],
             "source reader collapsed opposite geometries"
         );
     }
