@@ -1,0 +1,77 @@
+{
+  "schema": "chematic.python-filesystem-paths-validation.v1",
+  "checked_at_utc": "2026-10-16T10:29:25.620248+00:00",
+  "issue": "https://github.com/rdkit/rdkit/issues/9601",
+  "base_commit": "2251a9f5d2e706087efaf55cb0f8ab1ff20b8016",
+  "baseline_module_commit": "b066f0d70fb952995ebe019ce7f47d9054fa66ea",
+  "baseline_affected_source_identical_to_base": true,
+  "baseline_native_module": {
+    "path": "/private/tmp/chematic-mol2-order-python/chematic/chematic.so",
+    "sha256": "475dd3e8b65f6a2fa28ba95d310f7af5a71925069650950094a2be8f9572a73d"
+  },
+  "candidate_native_module": {
+    "path": "/private/tmp/chematic-filesystem-python/chematic/chematic.so",
+    "sha256": "172173aa3b671aafc3292b25ed48892573136befee881ee88e93189ce1f22caf"
+  },
+  "source_sha256": {
+    "crates/chematic-py/src/filesystem.rs": "bb887a01a0f56c9d9952242c4d37fa3533acbaf033a658858e90f88be702a615",
+    "crates/chematic-py/src/lib.rs": "8f7cc7d7c27ea657ddf4e88bd3353a3ccda20d32490b2c2a2f2e47bc6e4e4c35",
+    "crates/chematic-py/src/io.rs": "93b7bca329c3164ef66c5c94f379ccbffee865788318bdaddaa240301fc2c752",
+    "crates/chematic-py/src/io/dataset.rs": "261245c8e90a069cee25b65157781c478481ff7783ca91e6b98826e55287fd0e",
+    "crates/chematic-py/src/io/tdt.rs": "aa7b4e13604ba1cd00b6e9e85c80b5da16e061b94b47fc9ff42cd0cbbe2b54bd",
+    "crates/chematic-py/src/reports.rs": "9d1a081a3ff32fe872ec555c3a2b080bab76b21d5160f8da5fa51f5708e6087d",
+    "crates/chematic-py/python/chematic/__init__.pyi": "b01942f4d7a8f480ff799127387f1724140a888213f76533dde98079e67aed55",
+    "crates/chematic-py/tests/test_filesystem_paths.py": "62811d05ad566683b1f1dc2e5bcd591d73f48409dcd930e9b7b82807eac74c11"
+  },
+  "baseline_acceptance": {
+    "passed_string_cases": 30,
+    "failed_new_path_cases": 75,
+    "deselected": 225
+  },
+  "candidate": {
+    "total_selected": 420,
+    "passed": 390,
+    "skipped": 30,
+    "failed": 0,
+    "new_path_suite_passed": 301,
+    "existing_io_selection_input_tests_passed": 89,
+    "acceptance_cases_passed": 105,
+    "filesystem_entry_points": 15
+  },
+  "skip_reason": "Python open on this macOS filesystem rejects raw non-UTF-8 names with errno EILSEQ (92). Those 30 controls check boundary OSError then skip actual file round trips.",
+  "pytest_command": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=/private/tmp/chematic-filesystem-python python3.13 -m pytest -q crates/chematic-py/tests/test_filesystem_paths.py crates/chematic-py/tests/test_io.py crates/chematic-py/tests/test_sdf_selections.py crates/chematic-py/tests/test_input_errors.py --basetemp=/private/tmp/chematic-filesystem-pytest",
+  "test_environment": "Permission escalation used for raw-filename probes; sandbox rejects invalid-UTF-8 paths before native OS reports EILSEQ. External pytest plugin autoload disabled for installed plugin compatibility.",
+  "build_command": "cargo rustc -p chematic-py --offline -- -C strip=none -C link-arg=-undefined -C link-arg=dynamic_lookup",
+  "profile": {
+    "optimization": 1,
+    "debug": 0,
+    "strip": "none",
+    "incremental": false,
+    "codegen_units": 1,
+    "jobs": 1
+  },
+  "clippy_command": "cargo clippy -p chematic-py --all-targets --offline -- -D warnings",
+  "gates": {
+    "clippy": "passed",
+    "cargo_fmt": "passed",
+    "git_diff_check": "passed",
+    "python_stub_test_syntax": "passed",
+    "refactor_budget": "passed",
+    "binding_surface": "passed; exported name set unchanged",
+    "cross_binding_manifest": "passed",
+    "unsafe_surface": "passed",
+    "product_names": "passed",
+    "mkdocs_strict": "passed"
+  },
+  "versions": {
+    "rustc": "rustc 1.97.0 (2d8144b78 2026-07-07)",
+    "python": "Python 3.13.6"
+  },
+  "limits": [
+    "Filesystem subset of RDKit #9601 only",
+    "No Linux/Windows runtime validation in this local record",
+    "No general chemistry parity, speed or publication claim",
+    "Hosted CI tracked separately on PR"
+  ],
+  "cache_cleanup": "Dedicated native build cache removed after successful build/tests/Clippy to recover disk space. Tested native module retained."
+}

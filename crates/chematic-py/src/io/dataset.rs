@@ -13,12 +13,16 @@ pub struct PySdfDataset {
 #[pymethods]
 impl PySdfDataset {
     #[new]
-    fn new(path: &str) -> PyResult<Self> {
+    fn new(
+        #[pyo3(from_py_with=crate::filesystem::path)] path: std::path::PathBuf,
+    ) -> PyResult<Self> {
         Self::open(path)
     }
 
     #[staticmethod]
-    fn open(path: &str) -> PyResult<Self> {
+    fn open(
+        #[pyo3(from_py_with=crate::filesystem::path)] path: std::path::PathBuf,
+    ) -> PyResult<Self> {
         chematic_mol::SdfDataset::open(path)
             .map(|inner| Self {
                 inner: Arc::new(inner),

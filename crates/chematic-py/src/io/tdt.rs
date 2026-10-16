@@ -15,7 +15,7 @@ impl PyTdtMolSupplier {
     #[allow(non_snake_case)]
     #[pyo3(signature = (path, nameRecord="NAME".to_string(), confId2D=-1, confId3D=-1, sanitize=true))]
     fn new(
-        path: &str,
+        #[pyo3(from_py_with=crate::filesystem::path)] path: std::path::PathBuf,
         nameRecord: String,
         confId2D: i32,
         confId3D: i32,
@@ -30,8 +30,9 @@ impl PyTdtMolSupplier {
                  for full 2D/3D coordinate support.",
             ));
         }
-        let file = std::fs::File::open(path)
-            .map_err(|e| pyo3::exceptions::PyIOError::new_err(format!("{path}: {e}")))?;
+        let file = std::fs::File::open(&path).map_err(|e| {
+            pyo3::exceptions::PyIOError::new_err(format!("{}: {e}", path.display()))
+        })?;
         let options = chematic_mol::TdtReaderOptions {
             name_tag: (!nameRecord.is_empty()).then_some(nameRecord),
             read_2d: false,
@@ -81,9 +82,12 @@ pub(super) struct PyTdtWriter {
 #[pymethods]
 impl PyTdtWriter {
     #[new]
-    fn new(path: &str) -> PyResult<Self> {
-        let file = std::fs::File::create(path)
-            .map_err(|e| pyo3::exceptions::PyIOError::new_err(format!("{path}: {e}")))?;
+    fn new(
+        #[pyo3(from_py_with=crate::filesystem::path)] path: std::path::PathBuf,
+    ) -> PyResult<Self> {
+        let file = std::fs::File::create(&path).map_err(|e| {
+            pyo3::exceptions::PyIOError::new_err(format!("{}: {e}", path.display()))
+        })?;
         Ok(Self {
             writer: Some(chematic_mol::TdtRecordWriter::new(
                 std::io::BufWriter::new(file),

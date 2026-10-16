@@ -24,7 +24,10 @@ impl Report {
         &self.html
     }
 
-    fn save(&self, path: &str) -> PyResult<()> {
+    fn save(
+        &self,
+        #[pyo3(from_py_with=crate::filesystem::path)] path: std::path::PathBuf,
+    ) -> PyResult<()> {
         std::fs::write(path, &self.html)
             .map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))
     }
@@ -320,7 +323,7 @@ fn report(
     mols: Vec<Mol>,
     names: Option<Vec<Option<String>>>,
     title: &str,
-    output: Option<&str>,
+    #[pyo3(from_py_with=crate::filesystem::optional_path)] output: Option<std::path::PathBuf>,
 ) -> PyResult<Report> {
     use chematic_chem::{
         brenk_passes, hbd_count, logp_and_mr, molecular_weight, pains_passes, qed_with_bundle,
