@@ -236,9 +236,16 @@ Times are median milliseconds per complete batch, native elapsed divided by thre
 
 ## Retention and limits
 
+The immutable file manifest also includes pre-existing Python bytecode caches
+copied with the baseline tree. Those files are unused by both native Rust
+executables and the external RDKit observer environment. The
+`manifest-entry-classification.json` inventory separates them from Git-tracked
+code/build inputs; cache hashes are retained as incidental files, not claimed
+as reconstructable source. All native source/build inputs match the committed
+files. No timing observation or adoption decision changed.
+
 Existing tiny test fixtures excluded by sparse checkout were restored from unchanged Git contents before testing. The timing wrapper reserves 64MiB and can retry only the same in-memory owned output write after ENOSPC; it never repeats a worker or timer.
 
 The [2026-10-16-openbabel-v3000-borrowed-rows-artifacts](2026-10-16-openbabel-v3000-borrowed-rows-artifacts/README.md) packet retains complete raw matrices and every mismatch/negative interval, decisions, source/compiler/corpus/library/binary hashes, frozen plan, reconstructable patch, full-report oracle proof, build/test logs and launch/verification drivers. Full binaries, generated profile inputs and complete source snapshot/rewrite streams remain locally under `/private/tmp/chematic-v3000-record-stream-evidence-20261016` with versioned hashes. Source reconstruction does not imply bit-reproducible compiler output.
 
 Additional hosts, sealed holdout chemistry, richer query/SGROUP throughput, cold CLI startup, Python/WASM throughput, published packages, other formats and FF/3D performance remain open. Correctness checks do not prove toolkit-wide superiority, and source measurements are separate from main integration, hosted CI and publication.
-

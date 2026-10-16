@@ -1,6 +1,6 @@
 {
-  "README.md": "50b19269042e4127e4481907ad9512ed19c9fe269a62593500a888849f379d27",
-  "assemble-report.py": "64922f75ac1c03ec4cd2705ade3052af664b9d20f104d1cb9c81ed6efcf49c8e",
+  "README.md": "4f89d9fe3717638cd97d7521f16212284492ba3a3d4a53324f628295ce8748c2",
+  "assemble-report.py": "7485cdcf1665f6f44af581015ef3cef6463d52a05b0f21fb44356b766c41545b",
   "baseline-build-command.json": "b50deaad3f277b203b11bcd67cc508b1810ebbc54d583fc9559d88ae3c270f73",
   "baseline-build.log.gz": "eb29117ce7d020c2f6b0c2aa809f56ebfa8d97e513b62dc0e5419c74840e66bd",
   "baseline-source-manifest.json": "411a01239eb1e4a54a2964b2e3a2de0f46f19efc63db12c670dedbdc2d7c368e",
@@ -19,6 +19,7 @@
   "format.log.gz": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
   "freeze-tests.py": "c581cb9387c1d02de4d4b256155738962e9dfeebe50e45a4aedd1acd3fae8e68",
   "frozen-reader-proof.json": "798e9487794e660ce2c9458ab1d0f6c1cbe255b402a78fe0053954a6f751758a",
+  "manifest-entry-classification.json": "4d1ad2632d7b9b659839776a15873ca17c95862a0cb4b8bfa15cc9c16ffdeceb",
   "measurement-plan.json": "99e5da61f657ecfea3558b751c882e0330dc6680e8fa288a0a9899eebc04d6a3",
   "native-check-commands.json": "56c252bddf6dbf2f514d2dc647b57af02cf99a3ceb29d465d2568b539b7a764b",
   "native-checks.py": "d3c5cf0bb4ee5181a94f46ded92c9e92fa380f82d4145a1cf8c3c73f6ca1ca33",

@@ -50,6 +50,7 @@ for profile,data in matrices.items():
   memory=[statistics.median(b[arm][mode]['peak_process_rss_bytes'] for b in data['blocks'])/2**20 for arm in ['baseline','candidate','openbabel']]
   text.append(f'| {profile} | {mode} | '+' | '.join(f'{v:.2f}' for v in memory)+' |')
 text += ['\n## Retention and limits\n',
+'The immutable file manifest also includes pre-existing Python bytecode caches copied with the baseline tree. Those files are unused by both native Rust executables and the external RDKit observer environment. `manifest-entry-classification.json` separates them from Git-tracked code/build inputs. Cache hashes are incidental files, not reconstructable source. All native source/build inputs match committed files; no timing observation or adoption decision changed.\n',
 'Existing tiny test fixtures excluded by sparse checkout were restored from unchanged Git contents before testing. The timing wrapper reserves 64MiB and can retry only the same in-memory owned output write after ENOSPC; it never repeats a worker or timer.\n',
 f'The [{STEM}-artifacts]({STEM}-artifacts/README.md) packet retains complete raw matrices and every mismatch/negative interval, decisions, source/compiler/corpus/library/binary hashes, frozen plan, reconstructable patch, full-report oracle proof, build/test logs and launch/verification drivers. Full binaries, generated profile inputs and complete source snapshot/rewrite streams remain locally under `{OUT}` with versioned hashes. Source reconstruction does not imply bit-reproducible compiler output.\n',
 'Additional hosts, sealed holdout chemistry, richer query/SGROUP throughput, cold CLI startup, Python/WASM throughput, published packages, other formats and FF/3D performance remain open. Correctness checks do not prove toolkit-wide superiority, and source measurements are separate from main integration, hosted CI and publication.\n']
@@ -61,6 +62,8 @@ for p in sorted(OUT.iterdir()):
   (PACKET/(p.name+'.gz')).write_bytes(gzip.compress(p.read_bytes(),mtime=0))
  elif p.suffix in ('.json','.py'):shutil.copy2(p,PACKET/p.name)
 (PACKET/'README.md').write_text('Read [the report](../'+STEM+'.md) with the fixed plan and decision. Complete raw matrices, all negative observations and mismatch rows are retained. Binaries/full generated streams stay local with versioned hashes; no historical timing is reused. The candidate patch reconstructs measured source files from the pinned base.\n')
+with (PACKET/'README.md').open('a') as output:
+ output.write('\nThe immutable measurement manifest includes incidental pre-existing Python bytecode caches. `manifest-entry-classification.json` separates those unused entries from Git-tracked native source/build inputs. Cache bytes are not a source-reconstruction claim. Timing samples and the failed adoption decision are unchanged.\n')
 seal={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(PACKET.iterdir()) if p.is_file() and p.name!='packet.sha256.json'}
 (PACKET/'packet.sha256.json').write_text(json.dumps(seal,indent=2)+'\n')
 print(json.dumps(decision,indent=2))
