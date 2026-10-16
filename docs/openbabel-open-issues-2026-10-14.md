@@ -87,3 +87,12 @@ A [single-component CCD reader](ccd-components.md) now reads `_chem_comp_atom`
 and `_chem_comp_bond` in Rust/Python/WASM. It retains stereo annotations and
 requires explicit consent for an unassigned graph projection. Bulk dictionary
 streaming and CCD writing are outside this implementation.
+
+## October 16 follow-up: XYZ element symbols
+
+[#2333](https://github.com/openbabel/openbabel/issues/2333) remains open.
+Open Babel 3.2.1 maps original CL/BR/CA/FE XYZ probes to dummy atoms; the
+previous chematic readers refused them. Added
+[format-local uppercase species support](xyz-element-symbols.md) to native
+XYZ/extxyz and their stream readers. Core lookup, SMILES grammar and PDB atom
+names remain case-sensitive; coordinates and opaque properties are unaffected.

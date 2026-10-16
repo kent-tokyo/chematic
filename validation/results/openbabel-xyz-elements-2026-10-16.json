@@ -1,0 +1,133 @@
+{
+  "schema": "chematic.xyz-species-validation.v1",
+  "utc": "2026-10-16T00:09:09.548119+00:00",
+  "issue": "https://github.com/openbabel/openbabel/issues/2333",
+  "source_base": "a01482bfdf69f6f5809239de2b0f565e3f2cb9f5",
+  "validation_runner_sha256": "6ceb1f30012526811e368b0a7b3042fe398c78403bf0269d7caf237531f41820",
+  "source_sha256": {
+    "crates/chematic-3d/src/xyz.rs": "3626740e9256f448a03443587538ecbf9f9b13b94ed440f2ac4b73a7342eac55",
+    "crates/chematic-mol/src/xyz.rs": "cf1c515b4b4af90fc6b19ed165a0bc4bd1eba548e813412483f6dffee37ffe22",
+    "crates/chematic-mol/src/xyz/extxyz.rs": "1cd7ef275df53b3c1f59938e5284fdbe434e401e224df55f827f846fa7af188c",
+    "crates/chematic-py/src/formats/xyz.rs": "ddca4050d94b140bff34b308e5939f6e78c9e1167fd503215a2d8115c8ae8a73"
+  },
+  "python_extension_sha256": "db5897e51c8461e7342ac7d30ba8871005d62a06c3e9bb80d3e781fce03f5052",
+  "rdkit_version": "2026.09.1",
+  "rdkit_runtime_sha256": "2fb1e7377e7441fcc3c9ae813803adb288fdb710b2b0de66aecbfc1f4b5919ff",
+  "wasm_runtime_sha256": {
+    "chematic_wasm_bg.wasm": "8c94520b7f89b712f0ceb1aa4da1f734a8cf58f112c314c94b86b0379e77bc68",
+    "chematic_wasm.js": "90e5d8e87b66adabfd1426e3cface9f764432067c1bf8ee3953200014a218b24",
+    "chematic_wasm_bg.wasm.d.ts": "f22ae0da78cfc2530a0ab72598b4391a66fc4d49ebf82a7b1cb801f15017f4e0",
+    "chematic_wasm.d.ts": "33628ed5e2010a78d3ad4e4b8b465faf11ae66e0ae1b1ba76cd3333cc1a32e2f"
+  },
+  "fixture_sha256": "93fbd765c68afcb0e4b9f0d0c7b42c931ca30a0ee52175b1d52525bd1fb6c732",
+  "casing_cases": 236,
+  "distinct_species_tokens": 222,
+  "packet": "openbabel-xyz-elements-2026-10-16.packet.json.gz",
+  "packet_sha256": "3080b40b7c9c54a5b0b3aaa2a1f3d498265ca40ae2e439e67cbf2c7c6eb8259f",
+  "counts": {
+    "python_plain_matches": 236,
+    "python_extxyz_matches": 236,
+    "wasm_plain_and_extxyz_matches": 472
+  },
+  "candidate_failures": 0,
+  "baseline": {
+    "scope": "Retained pre-fix source runtime; not a released-package comparison",
+    "extension_sha256": "1a8f6fc784726bb2212ca2fc11932b23f5b4bec013300337b9d7f4777a94dc96",
+    "rejected_uppercase": 104
+  },
+  "openbabel_version": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+  "openbabel_binary_sha256": "733b2c925d60b17a5c9d8ce9ec841e918cc20c7634301e23f9008a187d1d9bc5",
+  "openbabel": [
+    {
+      "mode": "canonical",
+      "matches": 118,
+      "mismatch_count": 0,
+      "samples": []
+    },
+    {
+      "mode": "uppercase",
+      "matches": 14,
+      "mismatch_count": 104,
+      "samples": [
+        {
+          "atomic_number": 2,
+          "input": "HE",
+          "expected": "He",
+          "actual": "*"
+        },
+        {
+          "atomic_number": 3,
+          "input": "LI",
+          "expected": "Li",
+          "actual": "*"
+        },
+        {
+          "atomic_number": 4,
+          "input": "BE",
+          "expected": "Be",
+          "actual": "*"
+        },
+        {
+          "atomic_number": 10,
+          "input": "NE",
+          "expected": "Ne",
+          "actual": "*"
+        },
+        {
+          "atomic_number": 11,
+          "input": "NA",
+          "expected": "Na",
+          "actual": "*"
+        },
+        {
+          "atomic_number": 12,
+          "input": "MG",
+          "expected": "Mg",
+          "actual": "*"
+        },
+        {
+          "atomic_number": 13,
+          "input": "AL",
+          "expected": "Al",
+          "actual": "*"
+        },
+        {
+          "atomic_number": 14,
+          "input": "SI",
+          "expected": "Si",
+          "actual": "*"
+        }
+      ]
+    }
+  ],
+  "boundary": "Element/coordinate identity in native XYZ/extxyz only; no bond inference, chemical perception or exact source preservation. Core symbol lookup, PDB names and SMILES grammar remain case-sensitive. Source candidate only.",
+  "local_validation": {
+    "rust_regression_and_api_tests": 8,
+    "existing_xyz_unit_tests": 66,
+    "python_tests": 20,
+    "node_wasm_regression": "passed",
+    "clippy": "passed with -D warnings for changed libraries and new Rust integration test",
+    "checks": [
+      "cargo fmt --all -- --check",
+      "refactor budget",
+      "cross-binding manifest",
+      "binding surface inventory",
+      "product names",
+      "Open Babel file-I/O contract",
+      "Python stub syntax",
+      "strict MkDocs",
+      "source and packet hashes"
+    ],
+    "log_sha256": {
+      "native": "7c47df9aac365f533926507987cbb1de150ca43ff1588f0b50888aa4c0581151",
+      "existing-xyz-tests": "a43f9cef2e57f7b4a37e69c3f20e683dbfa411db81f240bc6dba7f69c6292bc1",
+      "python-tests": "c7b364c62f34c0eb76d1ad9adde4bd32282ec8b874fdf3824f7906aa9373dc86",
+      "wasm-tests": "f748296eeb42f66e39bcbabe92f96895abc1ca1c3a243f3ab33946b2405db6f2",
+      "clippy": "594fc7ec47fc43aac100b88011875a2f91177a9ebd388c49ae5384100862f563",
+      "clippy-lib": "230bc85c41a0bc33ccad02c67b52d506833e68eb343f2a4995390ec8cabe5e2c",
+      "docs": "e7e2486a8eb742c074d638064335ec7642f8b215d4fb3161c5f2393c851946eb",
+      "oracle": "245648d6e56538be744b50514d0fc7f561ed2e6beb86d8a297c965a0ac227e2e",
+      "docs-final": "60c67dac5ddd7c38465bad46b0a320d624fefd89d504e0ee5ca3d151ad07d473"
+    }
+  }
+}

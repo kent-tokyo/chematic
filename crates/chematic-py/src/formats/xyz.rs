@@ -2,7 +2,8 @@ use super::*;
 
 /// Parse an XYZ string and return ``(Mol, coords)`` where coords is a list of ``[x,y,z]``.
 ///
-/// Bond information is inferred from inter-atom distances.
+/// Keeps every listed atom, including H, without inferring bonds. Accepts
+/// canonical species symbols and uppercase two-letter XYZ aliases (e.g. CL).
 ///
 ///     mol, coords = chematic.from_xyz(open("molecule.xyz").read())
 #[pyfunction]

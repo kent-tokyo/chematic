@@ -79,3 +79,14 @@ Open Babel CIF/mmCIF diagnostic. It needs a source-built Python extension and
 Gemmi in the oracle environment. Result hashes identify the downloaded bytes;
 the hermetic CI fixture is independently authored. This validates single CCD
 components, not a bulk dictionary or package release.
+
+## XYZ element identity
+
+`validate_xyz_symbol_case.py` checks canonical/uppercase XYZ species against
+RDKit 2026.09.1's periodic table and runs bounded Open Babel 3.2.1 controls.
+Provide the source-built Python extension and pinned RDKit on `PYTHONPATH`;
+optional `--wasm-module` adds real Node/WASM checks, and
+`--baseline-pythonpath` probes a retained pre-fix source runtime separately.
+The complete compressed packet and source/runtime-hashed summary preserve
+the element/coordinate comparison boundary. See
+[the format-local scope](../docs/xyz-element-symbols.md).
