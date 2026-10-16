@@ -36,6 +36,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   aromatic profile changes only `ar` bond tokens to `1`/`2`, retaining all other
   source bytes and refusing failed matching, valence/H changes and aromaticity
   loss. Existing source round-trips and writer defaults are unchanged.
+- Thirteen Python serialized-text readers/validators now accept immutable UTF-8
+  `bytes` alongside `str`, retaining native parsing, return shapes and keyword
+  names. Invalid UTF-8 raises `UnicodeDecodeError`; unrelated object types raise
+  `TypeError` without implicit protocol conversion. Paths and identifiers retain
+  their existing contracts.
 
 ### Performance
 

@@ -1,0 +1,72 @@
+{
+  "schema": "chematic.serialized-input-fixtures.v1",
+  "issue": "https://github.com/rdkit/rdkit/issues/9601",
+  "provenance": "Original small SMILES/SMARTS/CXSMILES controls and CO blocks generated with the baseline chematic module. MIT OR Apache-2.0. No upstream code/attachments copied.",
+  "cases": [
+    {
+      "function": "from_smiles",
+      "keyword": "smiles",
+      "text": "[13CH3][C@H](F)Cl"
+    },
+    {
+      "function": "from_cxsmiles",
+      "keyword": "s",
+      "text": "CO |$炭素;酸素$|"
+    },
+    {
+      "function": "from_mol_block",
+      "keyword": "block",
+      "text": "\n  chematic\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n"
+    },
+    {
+      "function": "from_mol_v3000",
+      "keyword": "block",
+      "text": "\n  chematic\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 1.4000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n"
+    },
+    {
+      "function": "from_mol2",
+      "keyword": "mol2_str",
+      "text": "@<TRIPOS>MOLECULE\nchematic\n2 1 0 0 0\nSMALL\nNO_CHARGES\n\n@<TRIPOS>ATOM\n     1 C1           0.0000     0.0000     0.0000 C           1  LIG          0.0000\n     2 O2           0.0000     0.0000     0.0000 O           1  LIG          0.0000\n@<TRIPOS>BOND\n     1      1      2 1\n"
+    },
+    {
+      "function": "from_cml",
+      "keyword": "cml_str",
+      "text": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<molecule xmlns=\"http://www.xml-cml.org/schema\">\n  <atomArray>\n    <atom id=\"a1\" elementType=\"C\" hydrogenCount=\"3\"/>\n    <atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\"/>\n  </atomArray>\n  <bondArray>\n    <bond atomRefs2=\"a1 a2\" order=\"1\"/>\n  </bondArray>\n</molecule>\n"
+    },
+    {
+      "function": "is_valid_smiles",
+      "keyword": "smiles",
+      "text": "c1ccccc1"
+    },
+    {
+      "function": "is_valid_smarts",
+      "keyword": "smarts",
+      "text": "[#6]-[#8]"
+    },
+    {
+      "function": "from_mol_block_with_coords",
+      "keyword": "block",
+      "text": "\n  chematic\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n"
+    },
+    {
+      "function": "from_mol_block_with_diagnostics",
+      "keyword": "block",
+      "text": "\n  chematic\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n"
+    },
+    {
+      "function": "from_mol_v3000_with_coords",
+      "keyword": "block",
+      "text": "\n  chematic\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 1.4000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n"
+    },
+    {
+      "function": "from_mol_v3000_with_diagnostics",
+      "keyword": "block",
+      "text": "\n  chematic\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 1.4000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n"
+    },
+    {
+      "function": "from_cml_strict",
+      "keyword": "cml_str",
+      "text": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<molecule xmlns=\"http://www.xml-cml.org/schema\">\n  <atomArray>\n    <atom id=\"a1\" elementType=\"C\" hydrogenCount=\"3\"/>\n    <atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\"/>\n  </atomArray>\n  <bondArray>\n    <bond atomRefs2=\"a1 a2\" order=\"1\"/>\n  </bondArray>\n</molecule>\n"
+    }
+  ]
+}
