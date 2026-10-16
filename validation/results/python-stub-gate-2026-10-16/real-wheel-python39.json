@@ -1,0 +1,35 @@
+{
+  "schema": "chematic.python-stub-gate.v1",
+  "status": "passed",
+  "grammar": "Python 3.9 (ast feature_version; actual host compiler also checked)",
+  "host_python": "3.9.6",
+  "source": {
+    "path": "/private/tmp/chematic-python-stub-gate-20261016/crates/chematic-py/python/chematic",
+    "stubs": [
+      {
+        "path": "__init__.pyi",
+        "bytes": 178918,
+        "sha256": "cea814d6f80d6aafd095a41f46d130ba6e9a822f9a990ae7d68e9a084a03c241",
+        "status": "passed"
+      }
+    ],
+    "errors": []
+  },
+  "wheels": [
+    {
+      "path": "/private/tmp/chematic-aromatic-proof-evidence-20261016/baseline-wheel/chematic-1.1.5-cp313-cp313-macosx_11_0_arm64.whl",
+      "stubs": [
+        {
+          "path": "chematic/__init__.pyi",
+          "bytes": 178918,
+          "sha256": "cea814d6f80d6aafd095a41f46d130ba6e9a822f9a990ae7d68e9a084a03c241",
+          "status": "passed"
+        }
+      ],
+      "errors": [],
+      "sha256": "1c8bdbac537fcde7ec88d63a52559bbf86a3eed88bbba31321bca641356e18a5"
+    }
+  ],
+  "errors": [],
+  "scope": "syntax, typed marker and exact source/wheel stub bytes; no type/API/ABI parity or execution"
+}

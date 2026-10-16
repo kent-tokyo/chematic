@@ -40,6 +40,8 @@ jobs:
           target: ${{ matrix.platform.target }}
           args: --release --out dist --manifest-path crates/chematic-py/Cargo.toml -i python${{ matrix.python-version }}
           manylinux: auto
+      - name: Validate packaged Python stubs before upload
+        run: python scripts/check_python_stubs.py --wheel "dist/chematic-*.whl"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: wheels-linux-${{ matrix.platform.target }}-py${{ matrix.python-version }}
@@ -63,6 +65,8 @@ jobs:
         with:
           target: ${{ matrix.target }}
           args: --release --out dist --manifest-path crates/chematic-py/Cargo.toml
+      - name: Validate packaged Python stubs before upload
+        run: python scripts/check_python_stubs.py --wheel "dist/chematic-*.whl"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: wheels-macos-${{ matrix.target }}-py${{ matrix.python-version }}
@@ -84,6 +88,8 @@ jobs:
       - uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1
         with:
           args: --release --out dist --manifest-path crates/chematic-py/Cargo.toml
+      - name: Validate packaged Python stubs before upload
+        run: python scripts/check_python_stubs.py --wheel "dist/chematic-*.whl"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: wheels-windows-py${{ matrix.python-version }}
@@ -114,13 +120,22 @@ jobs:
       name: pypi
       url: https://pypi.org/project/chematic/
     permissions:
+      contents: read
       id-token: write
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.13"
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           pattern: wheels-*
           merge-multiple: true
           path: dist
+      - name: Validate all downloaded wheel stubs before publishing
+        run: python scripts/check_python_stubs.py --wheel "dist/chematic-*.whl"
       - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1
         with:
           skip-existing: true

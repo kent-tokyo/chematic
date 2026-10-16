@@ -100,6 +100,7 @@ nav:
     - Prepared MMFF Dielectric: mmff-dielectric-updates.md
   - Reliability:
     - Python Filesystem Paths: python-filesystem-paths.md
+    - Python Stub Packaging Gate: python-stub-packaging-gate.md
     - ChemDoodle JSON: chemdoodle-json.md
     - Fingerprint Target Density: fingerprint-target-density.md
     - Bounded Native Distance Matrices: native-distance-matrix-limits.md

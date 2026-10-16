@@ -136,3 +136,14 @@ See [the accounting contract](../docs/hydrogen-count-accounting.md).
 `validate_pdbqt_checked.py` checks fixed-column output, Python/WASM byte parity,
 refusals, an Open Babel #2101 reproduction and independent Open Babel cross-read.
 See `docs/pdbqt-checked-output.md` for runtime/probe setup and limits.
+### Python stub packaging gate
+
+`check_python_stubs.py` validates every source `.pyi` and the `py.typed` marker.
+`--wheel "dist/chematic-*.whl"` additionally checks all matched archives without
+importing native modules, requires the typed marker and compares all package
+stub bytes with source. An unmatched wheel pattern is a failure. JSON reports
+are optional via `--report`. See `docs/python-stub-packaging-gate.md` for scope.
+
+`validate_python_stub_gate.py --wheel /path/to/chematic.whl` checks the real CLI
+against an existing wheel and eight temporary negative mutations. Optional
+`--rdkit-stubs` and `--rdkit-version` record a read-only upstream syntax audit.

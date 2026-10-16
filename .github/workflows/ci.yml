@@ -20,6 +20,22 @@ env:
   A6_PUBLISHED_VERSION: "1.1.3"
 
 jobs:
+  test-python-stubs:
+    name: Python stub syntax (${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.13"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Check source stubs and negative controls
+        run: |
+          python scripts/check_python_stubs.py
+          python -m unittest scripts.tests.test_check_python_stubs -v
+
   test:
     name: Test
     runs-on: ubuntu-latest
@@ -384,6 +400,7 @@ jobs:
         run: |
           .venv/bin/pip install 'rdkit==2026.3.6' --quiet
           .venv/bin/maturin build --release -m crates/chematic-py/Cargo.toml --interpreter .venv/bin/python --out dist/hba-wheel
+          .venv/bin/python scripts/check_python_stubs.py --wheel "dist/hba-wheel/chematic-*.whl"
           .venv/bin/pip install --force-reinstall --no-deps dist/hba-wheel/chematic-*.whl
           .venv/bin/python scripts/check_rdkit_hba_wheel.py --wheel dist/hba-wheel/chematic-*.whl --build-profile release --output validation/results/rdkit-hba-source-wheel-5k.json
           .venv/bin/python scripts/run_reaction_compatibility_v2.py --artifact dist/hba-wheel/chematic-*.whl --output validation/results/reaction-checked-source-wheel-83-linux.json --expected-rdkit 2026.03.6 --checked-rdkit-compat --expected-outcomes '{"semantic_match":80,"joint_invalid_input":3}'
@@ -439,6 +456,7 @@ jobs:
           python -m venv .venv
           .venv/bin/pip install --index-url https://pypi.org/simple maturin numpy
           .venv/bin/maturin build --release -m crates/chematic-py/Cargo.toml --interpreter .venv/bin/python --out dist/a6-source-wheel
+          .venv/bin/python scripts/check_python_stubs.py --wheel "dist/a6-source-wheel/chematic-*.whl"
           .venv/bin/pip install --no-deps dist/a6-source-wheel/chematic-*.whl
           git diff --quiet
           .venv/bin/python scripts/public_package_3d_chematic.py --wheel dist/a6-source-wheel/chematic-*.whl --tiers AB --arms chematic_pipeline_v2_mmff94_strict_stereo_safe --output validation/results/a6-source-265-linux-cp39.jsonl --metadata-output validation/results/a6-source-265-linux-cp39.meta.json --wall-budget-seconds 1200 --package-kind source_candidate --source-revision "$(git rev-parse HEAD)" --source-diff-sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
@@ -484,6 +502,7 @@ jobs:
           python3 -m venv .venv
           .venv/bin/pip install maturin 'rdkit==2026.3.6' numpy --quiet
           .venv/bin/maturin build --release -m crates/chematic-py/Cargo.toml --interpreter .venv/bin/python --out dist/hba-wheel
+          .venv/bin/python scripts/check_python_stubs.py --wheel "dist/hba-wheel/chematic-*.whl"
           .venv/bin/pip install --no-deps dist/hba-wheel/chematic-*.whl
           .venv/bin/python scripts/check_rdkit_hba_wheel.py --wheel dist/hba-wheel/chematic-*.whl --build-profile release --output validation/results/rdkit-hba-source-wheel-5k-macos.json
           .venv/bin/python scripts/run_reaction_compatibility_v2.py --artifact dist/hba-wheel/chematic-*.whl --output validation/results/reaction-checked-source-wheel-83-macos.json --expected-rdkit 2026.03.6 --checked-rdkit-compat --expected-outcomes '{"semantic_match":80,"joint_invalid_input":3}'
@@ -548,6 +567,7 @@ jobs:
           python -m venv .venv
           .venv/Scripts/python -m pip install maturin 'pytest<9' 'pytest-asyncio>=0.23,<1' numpy 'rdkit==2026.3.6' --quiet
           .venv/Scripts/maturin build --locked --release -m crates/chematic-py/Cargo.toml --interpreter .venv/Scripts/python.exe --out dist/source-wheel
+          .venv/Scripts/python scripts/check_python_stubs.py --wheel "dist/source-wheel/chematic-*.whl"
           .venv/Scripts/python -m pip install --no-deps dist/source-wheel/chematic-*.whl
       - name: Run pytest (chematic-py)
         run: |
