@@ -27,14 +27,13 @@ npm install @kent-tokyo/chematic
 
 Python wheelはC/C++コンパイラを必要とせず、各バインディングは同じRustコアを使います。
 
-### v1.1.5 の対応範囲
+### v1.1.6 の対応範囲
 
-v1.1.5では、検証付きの分子・材料形式変換、索引指定SDF読み込み、上限付きのグラフ・
-立体化学API、query hydrogenのfolding、立体を考慮するコンパイル済みSMARTS検索、
-Layered fingerprintのオプション、検証付きのRDKit型3D距離行列を追加しました。
-環・芳香族性・TPSA・E/Z・V3000の重複処理も削減し、CML/CIFの公開エラーAPIとの
-互換性を復元したほか、3件のsecurity advisoryに対応して`rustls`を更新しています。
-性能と互換性の主張は、記録に明記したartifact・corpus・option・hostの範囲に限ります。詳しくは
+v1.1.6では、PythonのファイルAPIで`PathLike`とUTF-8の`bytes`を扱えるようにしました。
+MOL2、CDX、PDBQT、PDB、CIFの検証付き入出力、原子対応を返すrooted SMILES、立体宣言を
+安全に整理するAPI、MMFFの誘電率を更新するAPIも追加しています。3D入力からの立体復元を
+改善し、SDFとV3000の入出力負荷も削減しました。性能と互換性の主張は、記録に明記した
+artifact・corpus・option・hostの範囲に限ります。詳しくは
 [検証報告](docs/validation.md)と[CHANGELOG](CHANGELOG.md)を参照してください。
 
 ## 使い方

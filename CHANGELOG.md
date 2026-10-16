@@ -14,6 +14,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+No unreleased changes.
+
+## [1.1.6] - 2026-10-16
+
 ### Added
 
 - Python file readers, suppliers, writers and HTML report outputs now accept
@@ -105,6 +109,25 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   grammar, compiler syntax, typed markers and exact source/package stub bytes.
   CI checks source on Python 3.9/3.13 and source wheels on Linux/macOS/Windows;
   the PyPI workflow checks all wheel stubs before artifact upload and publication.
+
+### Fixed
+
+- Kept degree-two non-aromatic sp centres linear in 2D depictions and improved
+  recovery of tetrahedral and alkene stereochemistry from unmarked 3D SDF,
+  PDB, and MOL2 inputs under the checked format contracts.
+- Corrected aromatic-ligand CIP/E/Z priorities, explicit-hydrogen accounting,
+  and dative-carbonyl/ring E/Z rendering without broadening unsupported
+  stereochemistry into guessed results.
+- Reconciled the integrated Python and WASM binding surfaces and added stable
+  MMFF dielectric error-contract tests, restoring the Rust coverage gate after
+  the feature integration.
+
+### Verification boundary
+
+- The merged source candidate passed the required hosted CI and the Rust
+  coverage gate. Registry publication and exact PyPI/npm/crates.io artifact
+  chemistry remain post-publication evidence and are not inferred from source
+  tests.
 
 ## [1.1.5] - 2026-10-16
 

@@ -1643,6 +1643,30 @@ export class MolHandle {
         return ret >>> 0;
     }
     /**
+     * Checked rooted SMILES as {smiles, atom_order}; order maps parsed to original indices.
+     * Limited to 256 atoms and verified ordinary tetrahedral frames; see the Rust API.
+     * @param {number} rooted_at_atom
+     * @returns {string}
+     */
+    smiles_rooted_checked_json(rooted_at_atom) {
+        let deferred2_0;
+        let deferred2_1;
+        try {
+            const ret = wasm.molhandle_smiles_rooted_checked_json(this.__wbg_ptr, rooted_at_atom);
+            var ptr1 = ret[0];
+            var len1 = ret[1];
+            if (ret[3]) {
+                ptr1 = 0; len1 = 0;
+                throw takeFromExternrefTable0(ret[2]);
+            }
+            deferred2_0 = ptr1;
+            deferred2_1 = len1;
+            return getStringFromWasm0(ptr1, len1);
+        } finally {
+            wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+        }
+    }
+    /**
      * Sum of EState indices over all heavy atoms.
      * @returns {number}
      */
@@ -2058,6 +2082,74 @@ export class SmilesBatchStreamHandle {
     }
 }
 if (Symbol.dispose) SmilesBatchStreamHandle.prototype[Symbol.dispose] = SmilesBatchStreamHandle.prototype.free;
+
+/**
+ * One proof result. The witness maps original atoms to a copy with only the
+ * selected tetrahedral declaration inverted; it fixes that selected atom.
+ */
+export class TetrahedralCleanupResult {
+    static __wrap(ptr) {
+        const obj = Object.create(TetrahedralCleanupResult.prototype);
+        obj.__wbg_ptr = ptr;
+        TetrahedralCleanupResultFinalization.register(obj, obj.__wbg_ptr, obj);
+        return obj;
+    }
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        TetrahedralCleanupResultFinalization.unregister(this);
+        return ptr;
+    }
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_tetrahedralcleanupresult_free(ptr, 0);
+    }
+    /**
+     * @returns {number}
+     */
+    get atom_index() {
+        const ret = wasm.tetrahedralcleanupresult_atom_index(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
+     * Independent molecule; all source labels and other configurations remain.
+     * @returns {MolHandle}
+     */
+    get molecule() {
+        const ret = wasm.tetrahedralcleanupresult_molecule(this.__wbg_ptr);
+        return MolHandle.__wrap(ret);
+    }
+    /**
+     * @returns {boolean}
+     */
+    get removed() {
+        const ret = wasm.tetrahedralcleanupresult_removed(this.__wbg_ptr);
+        return ret !== 0;
+    }
+    /**
+     * @returns {string}
+     */
+    report_json() {
+        let deferred1_0;
+        let deferred1_1;
+        try {
+            const ret = wasm.tetrahedralcleanupresult_report_json(this.__wbg_ptr);
+            deferred1_0 = ret[0];
+            deferred1_1 = ret[1];
+            return getStringFromWasm0(ret[0], ret[1]);
+        } finally {
+            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+        }
+    }
+    /**
+     * @returns {number}
+     */
+    get search_visits() {
+        const ret = wasm.tetrahedralcleanupresult_search_visits(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+}
+if (Symbol.dispose) TetrahedralCleanupResult.prototype[Symbol.dispose] = TetrahedralCleanupResult.prototype.free;
 
 /**
  * Return a copy of the molecule with all implicit hydrogens converted to explicit H atoms.
@@ -2614,6 +2706,34 @@ export function cdxml_to_smiles_json(cdxml) {
 }
 
 /**
+ * Read all CDXML fragments with optional Bold/Hash/Dash stereo inference.
+ * Retains the existing input/atom/fragment limits and JSON result shape.
+ * @param {string} cdxml
+ * @param {boolean} infer_nondirectional_stereo
+ * @returns {string}
+ */
+export function cdxml_to_smiles_json_with_options(cdxml, infer_nondirectional_stereo) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(cdxml, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.cdxml_to_smiles_json_with_options(ptr0, len0, infer_nondirectional_stereo);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
  * Compute the charge Parent and return a status-shaped JSON result.
  * @param {MolHandle} mol
  * @returns {string}
@@ -2650,6 +2770,37 @@ export function chematic_version() {
         return getStringFromWasm0(ret[0], ret[1]);
     } finally {
         wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * Exact source bytes, projected XML, fragment coordinates and CDX omission tags.
+ * CDXML uses the existing graph projection; omissions lists CDX tags only.
+ * @param {Uint8Array} data
+ * @param {string} format
+ * @param {boolean} allow_metadata_loss
+ * @returns {string}
+ */
+export function chemdraw_block_report_json(data, format, allow_metadata_loss) {
+    let deferred4_0;
+    let deferred4_1;
+    try {
+        const ptr0 = passArray8ToWasm0(data, wasm.__wbindgen_malloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(format, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ret = wasm.chemdraw_block_report_json(ptr0, len0, ptr1, len1, allow_metadata_loss);
+        var ptr3 = ret[0];
+        var len3 = ret[1];
+        if (ret[3]) {
+            ptr3 = 0; len3 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred4_0 = ptr3;
+        deferred4_1 = len3;
+        return getStringFromWasm0(ptr3, len3);
+    } finally {
+        wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
     }
 }
 
@@ -4070,7 +4221,9 @@ export function generic_murcko_scaffold(mol) {
  *
  * Fields: `element` (symbol), `hybridization` ("sp"/"sp2"/"sp3"),
  * `charge` (formal charge integer), `isAromatic` (bool),
- * `totalHydrogens` (explicit + implicit H count, integer).
+ * `totalHydrogens` (attached H: bracket/inferred plus explicit H neighbors).
+ * This excludes the atom itself when it is H; use `num_hydrogens` for the
+ * molecule's total. Isotopic H neighbors count as hydrogen.
  * sp3d/sp3d2 (hypervalent P/S) are not distinguished from sp3/sp2.
  * @param {MolHandle} mol
  * @param {number} idx
@@ -4474,6 +4627,33 @@ export function isotope_parent_json(mol) {
         return getStringFromWasm0(ret[0], ret[1]);
     } finally {
         wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * Replace only ar bond tokens in a bounded neutral aromatic MOL2 record.
+ * Retains atom types and every other source byte; errors throw, no partial text.
+ * @param {string} text
+ * @returns {string}
+ */
+export function kekulize_mol2_record(text) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.kekulize_mol2_record(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
     }
 }
 
@@ -5508,6 +5688,24 @@ export function mol_from_cdxml(cdxml) {
 }
 
 /**
+ * Read the first CDXML fragment, optionally inferring Bold/Hash/Dash stereo.
+ * Non-directional displays are heuristic: ambiguous or degenerate drawings
+ * remain unassigned. `false` has the same behavior as `mol_from_cdxml`.
+ * @param {string} cdxml
+ * @param {boolean} infer_nondirectional_stereo
+ * @returns {MolHandle}
+ */
+export function mol_from_cdxml_with_options(cdxml, infer_nondirectional_stereo) {
+    const ptr0 = passStringToWasm0(cdxml, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.mol_from_cdxml_with_options(ptr0, len0, infer_nondirectional_stereo);
+    if (ret[2]) {
+        throw takeFromExternrefTable0(ret[1]);
+    }
+    return MolHandle.__wrap(ret[0]);
+}
+
+/**
  * Parse a ChemicalJSON (CJSON) string into a `MolHandle`.
  *
  * Coordinates and CJSON-specific metadata are intentionally not retained by
@@ -5677,6 +5875,23 @@ export function mol_from_pdb(pdb) {
     const len0 = WASM_VECTOR_LEN;
     const ret = wasm.mol_from_pdb(ptr0, len0);
     return MolHandle.__wrap(ret);
+}
+
+/**
+ * Explicit CONECT graph, without distance-based bonding. Only unmodelled,
+ * single-location atoms with explicit element fields are accepted.
+ * @param {string} input
+ * @param {boolean} allow_extended_targets
+ * @returns {MolHandle}
+ */
+export function mol_from_pdb_conect(input, allow_extended_targets) {
+    const ptr0 = passStringToWasm0(input, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.mol_from_pdb_conect(ptr0, len0, allow_extended_targets);
+    if (ret[2]) {
+        throw takeFromExternrefTable0(ret[1]);
+    }
+    return MolHandle.__wrap(ret[0]);
 }
 
 /**
@@ -6009,6 +6224,27 @@ export function molecule_report_json(smiles) {
 }
 
 /**
+ * Concrete CDX/CDXML fragment handles, in source fragment order.
+ * @param {Uint8Array} data
+ * @param {string} format
+ * @param {boolean} allow_metadata_loss
+ * @returns {MolHandle[]}
+ */
+export function mols_from_chemdraw_block(data, format, allow_metadata_loss) {
+    const ptr0 = passArray8ToWasm0(data, wasm.__wbindgen_malloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ptr1 = passStringToWasm0(format, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len1 = WASM_VECTOR_LEN;
+    const ret = wasm.mols_from_chemdraw_block(ptr0, len0, ptr1, len1, allow_metadata_loss);
+    if (ret[3]) {
+        throw takeFromExternrefTable0(ret[2]);
+    }
+    var v3 = getArrayJsValueFromWasm0(ret[0], ret[1]);
+    wasm.__wbindgen_free(ret[0], ret[1] * 4, 4);
+    return v3;
+}
+
+/**
  * MQN descriptor (42 integer values: Molecular Quantum Numbers).
  * @param {MolHandle} mol
  * @returns {string}
@@ -6201,6 +6437,18 @@ export function nucleic_acid_validate_json(document_json) {
     } finally {
         wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
     }
+}
+
+/**
+ * Total hydrogen nuclei: explicit nodes plus attached bracket/inferred H.
+ * Isotopic, charged, bridging and disconnected H nodes each count once.
+ * @param {MolHandle} mol
+ * @returns {number}
+ */
+export function num_hydrogens(mol) {
+    _assertClass(mol, MolHandle);
+    const ret = wasm.num_hydrogens(mol.__wbg_ptr);
+    return ret >>> 0;
 }
 
 /**
@@ -6559,6 +6807,34 @@ export function parse_smiles(s) {
         throw takeFromExternrefTable0(ret[1]);
     }
     return MolHandle.__wrap(ret[0]);
+}
+
+/**
+ * Indexed atoms/charges, bonds, coordinates and source serials for the same
+ * explicit CONECT projection. Molecular identity and coordinate order agree.
+ * @param {string} input
+ * @param {boolean} allow_extended_targets
+ * @returns {string}
+ */
+export function pdb_conect_frame_json(input, allow_extended_targets) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(input, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.pdb_conect_frame_json(ptr0, len0, allow_extended_targets);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
 }
 
 /**
@@ -7516,6 +7792,24 @@ export function remove_hydrogens(mol) {
     _assertClass(mol, MolHandle);
     const ret = wasm.remove_hydrogens(mol.__wbg_ptr);
     return MolHandle.__wrap(ret);
+}
+
+/**
+ * Opt-in exact tetrahedral cleanup. Both index and budget must be JS numbers
+ * containing integers (bool/string/null are rejected). The kernel caps inputs
+ * at 64 atoms/128 bonds and max_visits at 10000000. Errors throw without a result.
+ * @param {MolHandle} mol
+ * @param {any} atom_index
+ * @param {any} max_visits
+ * @returns {TetrahedralCleanupResult}
+ */
+export function remove_redundant_tetrahedral_stereo(mol, atom_index, max_visits) {
+    _assertClass(mol, MolHandle);
+    const ret = wasm.remove_redundant_tetrahedral_stereo(mol.__wbg_ptr, atom_index, max_visits);
+    if (ret[2]) {
+        throw takeFromExternrefTable0(ret[1]);
+    }
+    return TetrahedralCleanupResult.__wrap(ret[0]);
 }
 
 /**
@@ -8498,17 +8792,20 @@ export function smiles_array_to_sdf(smiles_json) {
 /**
  * Convert a SMILES to a minimal Tripos MOL2 string (no 3D coordinates).
  *
- * Returns `"error:<msg>"` on parse failure.
+ * Optional `atom_bond_adjacent=true` emits ATOM → BOND → UNITY. Some
+ * readers (including Open Babel 3.2.1) ignore UNITY charges in this order.
+ * Omit it to retain existing bytes. Returns `"error:<msg>"` on parse failure.
  * @param {string} smiles
+ * @param {boolean | null} [atom_bond_adjacent]
  * @returns {string}
  */
-export function smiles_to_mol2(smiles) {
+export function smiles_to_mol2(smiles, atom_bond_adjacent) {
     let deferred2_0;
     let deferred2_1;
     try {
         const ptr0 = passStringToWasm0(smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.smiles_to_mol2(ptr0, len0);
+        const ret = wasm.smiles_to_mol2(ptr0, len0, isLikeNone(atom_bond_adjacent) ? 0xFFFFFF : atom_bond_adjacent ? 1 : 0);
         deferred2_0 = ret[0];
         deferred2_1 = ret[1];
         return getStringFromWasm0(ret[0], ret[1]);
@@ -8549,6 +8846,45 @@ export function smiles_to_pdbqt(smiles, coords_json, charges_json, name) {
         return getStringFromWasm0(ret[0], ret[1]);
     } finally {
         wasm.__wbindgen_free(deferred5_0, deferred5_1, 1);
+    }
+}
+
+/**
+ * Write rigid PDBQT or throw for malformed/unrepresentable input. Coordinates
+ * are JSON [x,y,z] arrays in Å; charges are JSON numbers in e. Both arrays must
+ * contain exactly one value per graph atom, including explicit H. No defaults,
+ * charge calculation, atom removal or ligand torsion preparation are applied.
+ * AutoDock types retain the legacy heuristic, with unknown `X` types rejected.
+ * @param {string} smiles
+ * @param {string} coords_json
+ * @param {string} charges_json
+ * @param {string} name
+ * @returns {string}
+ */
+export function smiles_to_pdbqt_checked(smiles, coords_json, charges_json, name) {
+    let deferred6_0;
+    let deferred6_1;
+    try {
+        const ptr0 = passStringToWasm0(smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ptr2 = passStringToWasm0(charges_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len2 = WASM_VECTOR_LEN;
+        const ptr3 = passStringToWasm0(name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len3 = WASM_VECTOR_LEN;
+        const ret = wasm.smiles_to_pdbqt_checked(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3);
+        var ptr5 = ret[0];
+        var len5 = ret[1];
+        if (ret[3]) {
+            ptr5 = 0; len5 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred6_0 = ptr5;
+        deferred6_1 = len5;
+        return getStringFromWasm0(ptr5, len5);
+    } finally {
+        wasm.__wbindgen_free(deferred6_0, deferred6_1, 1);
     }
 }
 
@@ -9744,6 +10080,12 @@ function __wbg_get_imports() {
             const ret = arg0 === undefined;
             return ret;
         },
+        __wbg___wbindgen_number_get_2e0e7dee9f701a71: function(arg0, arg1) {
+            const obj = arg1;
+            const ret = typeof(obj) === 'number' ? obj : undefined;
+            getDataViewMemory0().setFloat64(arg0 + 8 * 1, isLikeNone(ret) ? 0 : ret, true);
+            getDataViewMemory0().setInt32(arg0 + 4 * 0, !isLikeNone(ret), true);
+        },
         __wbg___wbindgen_string_get_0380ccaa2f57f0d9: function(arg0, arg1) {
             const obj = arg1;
             const ret = typeof(obj) === 'string' ? obj : undefined;
@@ -9757,6 +10099,10 @@ function __wbg_get_imports() {
         },
         __wbg_error_c9cf3fc2064683a9: function(arg0) {
             console.error(arg0);
+        },
+        __wbg_molhandle_new: function(arg0) {
+            const ret = MolHandle.__wrap(arg0);
+            return ret;
         },
         __wbg_new_from_slice_37a3c3a194266cb8: function(arg0, arg1) {
             const ret = new Uint32Array(getArrayU32FromWasm0(arg0, arg1));
@@ -9840,6 +10186,9 @@ const RdkitSearchIndexFinalization = (typeof FinalizationRegistry === 'undefined
 const SmilesBatchStreamHandleFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_smilesbatchstreamhandle_free(ptr, 1));
+const TetrahedralCleanupResultFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_tetrahedralcleanupresult_free(ptr, 1));
 
 function addToExternrefTable0(obj) {
     const idx = wasm.__externref_table_alloc();
@@ -9856,6 +10205,17 @@ function _assertClass(instance, klass) {
 function getArrayF64FromWasm0(ptr, len) {
     ptr = ptr >>> 0;
     return getFloat64ArrayMemory0().subarray(ptr / 8, ptr / 8 + len);
+}
+
+function getArrayJsValueFromWasm0(ptr, len) {
+    ptr = ptr >>> 0;
+    const mem = getDataViewMemory0();
+    const result = [];
+    for (let i = ptr; i < ptr + 4 * len; i += 4) {
+        result.push(wasm.__wbindgen_externrefs.get(mem.getUint32(i, true)));
+    }
+    wasm.__externref_drop_slice(ptr, len);
+    return result;
 }
 
 function getArrayU32FromWasm0(ptr, len) {
@@ -9911,6 +10271,13 @@ function isLikeNone(x) {
 function passArray32ToWasm0(arg, malloc) {
     const ptr = malloc(arg.length * 4, 4) >>> 0;
     getUint32ArrayMemory0().set(arg, ptr / 4);
+    WASM_VECTOR_LEN = arg.length;
+    return ptr;
+}
+
+function passArray8ToWasm0(arg, malloc) {
+    const ptr = malloc(arg.length * 1, 1) >>> 0;
+    getUint8ArrayMemory0().set(arg, ptr / 1);
     WASM_VECTOR_LEN = arg.length;
     return ptr;
 }
