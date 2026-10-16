@@ -45,6 +45,8 @@ use pdb_selection::*;
 mod mmcif_residues;
 use mmcif_pdb::*;
 use mmcif_residues::*;
+mod pdbqt_checked;
+use pdbqt_checked::*;
 mod pqr_pdbqt;
 use pqr_pdbqt::*;
 mod xyz;
@@ -1486,6 +1488,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         parse_pqr,
         write_pqr,
         pqr_to_pdbqt,
+        write_pdbqt_checked,
         infer_element,
         parse_orca_input,
         write_orca_input,

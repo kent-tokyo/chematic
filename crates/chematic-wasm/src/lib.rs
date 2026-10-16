@@ -948,3 +948,6 @@ fn rgroup_fragment_smiles(
 // ---------------------------------------------------------------------------
 // Sprint AA: FCFP bitvecs, Dice ECFP6, write_smiles, reaction normalization
 // ---------------------------------------------------------------------------
+
+mod pdbqt_checked;
+pub use pdbqt_checked::*;

@@ -1,0 +1,31 @@
+{
+  "schema": "chematic.pdbqt-checked-summary.v1",
+  "source_base": "25e5c76ccc78d5992cacc313139c752b2647f7a8",
+  "source_sha256": {
+    "crates/chematic-mol/src/pdbqt/checked.rs": "48fa59eb533f948f53c5fa57fb70e51087a6f3ad9c87470d2a72c8bf4dfbbe46",
+    "crates/chematic-mol/src/pdbqt.rs": "f5363bb1c80770bd0f7c4e63adabd33e19becddbdfa27635300a831e1c19ae97",
+    "crates/chematic-py/src/formats/pdbqt_checked.rs": "d1772da1372ef8e1a17ef8045f52664a481fa96a1f5c7cd4c13d4459b83d76a1",
+    "crates/chematic-wasm/src/pdbqt_checked.rs": "abd15251fb99344d024bb2c65340b5744f24017536a65559d87941da4eae3699",
+    "scripts/validate_pdbqt_checked.py": "5352ffb14493c8840c052be213bfdc9ad9a1c3e53ff526a54580363a3e2fd2b6",
+    "scripts/validate_pdbqt_checked_node.mjs": "c0ad95600c37449cc090de05679d0b5ba0ecb7b7e89c65ee11e8c79fcff170ed",
+    "validation/openbabel_issues/pdbqt-checked/openbabel_read_probe.cpp": "bb6c87a5d2c92cae59a72cdbcb87fb6b883a70714e0d41f12b9255ac89d902a8"
+  },
+  "runtime": {
+    "python": "3.13.6",
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "openbabel": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+    "python_extension_sha256": "0dc473bfeb01388b32486deb5655b69fd5e5da483dc7f645cf8e426a9250eed1",
+    "wasm_sha256": "7ddb4133edcdeb0e99a707508932dc184b9e528b95cebe6d11bbad45876a0778",
+    "openbabel_probe_sha256": "4c1198efbd1678d34d7ec41e85b16f5fd632b6c267109b353e9b54d5af72d5c1"
+  },
+  "results": {
+    "accepted_python_wasm_byte_parity": 27,
+    "accepted_openbabel_element_coordinate_charge_crossreads": 27,
+    "refused_python_and_wasm": 33,
+    "failures": 0
+  },
+  "issue": "https://github.com/openbabel/openbabel/issues/2101",
+  "fixture_sha256": "da27911b46e80dc89a28d37c9a45bb28d5d163716bb8d5f72e1832d599595dbb",
+  "packet_sha256": "d3e8f7c6daf7465b345ad2380f38417dcadc2107e45957afe66a8d262ef268b7",
+  "scope": "Fixed-column serialization only; no atom typing, docking, protonation, torsion tree or release claim."
+}

@@ -71,6 +71,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   The new projection also retains supported geometry-derived E/Z in graph
   output. Existing CDXML entry points are unchanged. See
   [the accepted profile and limits](docs/chemdraw-block.md).
+- Added checked rigid PDBQT output in Rust/Python/WASM, rejecting missing or
+  excess values, non-finite coordinates/charges, fixed-column overflow after
+  rounding, unsafe names and unsupported default atom types. Existing writers
+  retain their behavior.
 
 ## [1.1.5] - 2026-10-16
 

@@ -624,6 +624,8 @@ class Mol:
     ) -> str:
         """Write molecule to AutoDock PDBQT format (rigid body, no torsion tree).
 
+        Use ``write_pdbqt_checked`` for exact counts and checked fixed widths.
+
         Args:
             coords: list of (x, y, z) tuples in Å, one per heavy atom.
             charges: partial charges (float) per heavy atom. Use
@@ -5298,3 +5300,12 @@ class Report:
     def __repr__(self) -> str: ...
 
 def report(mols: list[Mol], names: list[str | None] | None = None, title: str = "chematic report", output: _FileSystemPath | None = None) -> Report: ...
+
+def write_pdbqt_checked(mol: Mol, coords: Sequence[Sequence[float]], charges: Sequence[float], name: str = "LIG") -> str:
+    """Rigid PDBQT with exact counts, finite values and checked field widths.
+
+    Coordinates are in angstroms, partial charges in e, per graph atom including
+    explicit H. Raises ValueError for unrepresentable input. AutoDock types use
+    the existing heuristic; no charge calculation or ligand preparation.
+    """
+    ...

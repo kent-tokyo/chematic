@@ -131,3 +131,8 @@ chematic and RDKit on `PYTHONPATH`; `--wasm-module` adds real Node/WASM, and
 `--baseline-pythonpath` probes an earlier source runtime separately.
 Open Babel formula and serialized-output diagnostics have separate counts.
 See [the accounting contract](../docs/hydrogen-count-accounting.md).
+### Checked PDBQT output
+
+`validate_pdbqt_checked.py` checks fixed-column output, Python/WASM byte parity,
+refusals, an Open Babel #2101 reproduction and independent Open Babel cross-read.
+See `docs/pdbqt-checked-output.md` for runtime/probe setup and limits.
