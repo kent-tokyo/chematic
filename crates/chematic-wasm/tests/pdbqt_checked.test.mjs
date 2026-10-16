@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
 const require = createRequire(import.meta.url);
-const wasm = require(process.argv[2]);
+const modulePath = process.argv[2]
+  ?? process.env.CHEMATIC_WASM_MODULE
+  ?? fileURLToPath(new URL('../pkg-node/chematic_wasm.js', import.meta.url));
+const wasm = require(modulePath);
 const write = (smiles, coords, charges, name='LIG') => wasm.smiles_to_pdbqt_checked(smiles, JSON.stringify(coords), JSON.stringify(charges), name);
 const coords = [[0,-2.345,6.789],[1,-2.345,6.789],[2,-2.345,6.789],[3,-2.345,6.789],[4,-2.345,6.789]];
 const text=write('[H]OC(Cl)Br',coords,[-.123,-.123,-.123,-.123,-.123]);

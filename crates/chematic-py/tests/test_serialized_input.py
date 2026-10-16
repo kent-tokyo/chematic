@@ -106,14 +106,17 @@ def test_identifiers_paths_and_unselected_apis_keep_their_existing_contract():
         mol.SetProp(b"name", "value")
     with pytest.raises(TypeError):
         mol.GetProp(b"name")
-    with pytest.raises(TypeError):
+    # Filesystem paths have their own public contract and accept native bytes.
+    with pytest.raises(OSError):
         chematic.iter_sdf(b"not-a-path")
     with pytest.raises(TypeError):
         chematic.from_condensed(b"CH4")
 
 
 def test_stub_annotations_cover_exactly_the_selected_thirteen_inputs():
-    tree = ast.parse((ROOT / "crates/chematic-py/python/chematic/__init__.pyi").read_text())
+    tree = ast.parse(
+        (ROOT / "crates/chematic-py/python/chematic/__init__.pyi").read_text(encoding="utf-8")
+    )
     functions = {node.name: node for node in tree.body if isinstance(node, ast.FunctionDef)}
     for case in CASES:
         assert ast.unparse(functions[case["function"]].args.args[0].annotation) == "str | bytes"
