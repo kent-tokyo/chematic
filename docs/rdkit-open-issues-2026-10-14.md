@@ -91,3 +91,11 @@ on RDKit 2026.09.1 when those implicit-H centers are rooted first. Added
 four-ligand tetrahedral frames and original atom correspondences in
 Rust/Python/WASM. This is an opt-in native API; compatibility output is
 unchanged, and missing/unsupported stereo data is refused rather than guessed.
+## October 16 follow-up: CDXML stereo options
+
+[#9359](https://github.com/rdkit/rdkit/issues/9359) remains open. Native
+Bold/Hash/Dash inference already existed, but Python and WASM could not opt in.
+[Expose the option](cdxml-stereo-options.md) and correct independently observed
+screen-coordinate, hashed-sense and directional ownership defects in the
+reader. Default non-directional markers remain unassigned. This validates
+bounded molecular reading, not binary CDX or a general ChemDraw writer.

@@ -380,6 +380,11 @@ use the record or checked API for source retention.
 
 ### CDXML
 
+- **Stereo options**: [Python and WASM opt-in inference](cdxml-stereo-options.md)
+  exposes the existing Rust Bold/Hash/Dash policy. Directional wedge parsing
+  uses the narrow endpoint and converts screen coordinates for parity;
+  source coordinates are retained.
+
 - **Rust**: `chematic_mol::{parse_cdxml, parse_cdxml_with_limits, parse_cdxml_all, parse_cdxml_all_with_limits, write_cdxml, CdxmlError, CdxmlParseLimits, CdxmlParseOptions}`.
 - **Document API**: `CdxmlDocument` supports bounded multi-page summaries,
   exact-source writing, and loss-preserving page/object command edits. Opaque

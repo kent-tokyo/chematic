@@ -615,18 +615,22 @@ fn from_moljson(json_str: &str) -> PyResult<Mol> {
 
 /// Parse a ChemDraw XML (CDXML) string into a ``Mol`` object.
 ///
-/// Raises ``ValueError`` on parse failure.
-///
-///     with open("molecule.cdxml") as f:
-///         mol = chematic.from_cdxml(f.read())
+/// Set ``infer_nondirectional_stereo=True`` to infer Bold/Hash/Dash stereo.
+/// The default leaves these displays unassigned. Raises ``ValueError`` on failure.
 #[pyfunction]
-fn from_cdxml(cdxml_str: &str) -> PyResult<Mol> {
-    chematic_mol::parse_cdxml(cdxml_str)
-        .map(|(mol, _coords)| Mol {
-            inner: Arc::new(mol),
-            props: Default::default(),
-        })
-        .map_err(|e| PyValueError::new_err(e.to_string()))
+#[pyo3(signature = (cdxml_str, *, infer_nondirectional_stereo=false))]
+fn from_cdxml(cdxml_str: &str, infer_nondirectional_stereo: bool) -> PyResult<Mol> {
+    chematic_mol::parse_cdxml_with_options(
+        cdxml_str,
+        &chematic_mol::CdxmlParseOptions {
+            infer_nondirectional_stereo,
+        },
+    )
+    .map(|(mol, _coords)| Mol {
+        inner: Arc::new(mol),
+        props: Default::default(),
+    })
+    .map_err(|e| PyValueError::new_err(e.to_string()))
 }
 
 /// Parse CDXML page/presentation structure without dropping unknown objects.

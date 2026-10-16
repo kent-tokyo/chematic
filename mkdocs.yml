@@ -83,6 +83,7 @@ nav:
     - Rooted SMILES Stereo: rooted-smiles-stereo.md
     - XYZ Element Symbols: xyz-element-symbols.md
     - Format Capability Matrix: format-capabilities.md
+    - CDXML Stereo Options: cdxml-stereo-options.md
     - HIN Aromatic Bond Preservation: openbabel-hin-aromatic-bonds.md
     - ORCA-AICCM EXYZ: openbabel-exyz.md
     - FHI-aims Geometry: openbabel-fhiaims.md
