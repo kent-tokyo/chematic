@@ -172,7 +172,20 @@ fn classify_local_parity_with(
     };
 
     match result {
-        Ok((chirality, order)) => ParityOutcome::Assigned(chirality, order),
+        Ok((chirality, mut order)) => {
+            // RDKit treats the lone pair of pyramidal S/Se as the first
+            // virtual neighbor. The shared three-bond geometry routine puts
+            // its implicit-H sentinel last. Rotating the order aligns wedge
+            // selection. The CTAB reader stores the same three-neighbor
+            // order that the SMILES parser records for a chalcogen lone pair.
+            if nbs.len() == 3 && is_stereogenic_chalcogen_lone_pair(mol, center) {
+                order.rotate_right(1);
+                if ctab_atom1_only {
+                    order.remove(0);
+                }
+            }
+            ParityOutcome::Assigned(chirality, order)
+        }
         Err(reason) => ParityOutcome::Rejected(reason),
     }
 }

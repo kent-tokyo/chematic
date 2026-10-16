@@ -1165,8 +1165,12 @@ fn normalize_ring_wildcards(mol: &mut Molecule) {
     if mol.smiles_ring_closure_bond_count() == 0 || !mol.atoms().any(|(_, atom)| atom.wildcard) {
         return;
     }
-    let ring_bonds = chematic_perception::ring_bond_flags_shared(mol);
-    let rings = chematic_perception::find_sssr_shared(mol);
+    // Keep perception's type-erased caches off the returned parser graph.
+    // Downstream callers may prepare that graph with a different perception
+    // build (for example a crate's test dependency graph).
+    let ring_view = mol.clone();
+    let ring_bonds = chematic_perception::ring_bond_flags_shared(&ring_view);
+    let rings = chematic_perception::find_sssr_shared(&ring_view);
     let mut changes = Vec::new();
     for (idx, atom) in mol.atoms() {
         if !atom.wildcard

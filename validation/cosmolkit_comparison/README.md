@@ -37,6 +37,9 @@ stereo sets remain unchanged.
 The [aromatic-ring wildcard follow-up](v3000-ring-wildcards-2026-10-17.md)
 recovers five more `stress-v1` identities with no changed browser or focused
 stereo rows.
+The [pyramidal-sulfur stereo follow-up](v3000-sulfoxide-lone-pair-2026-10-17.md)
+recovers four more `stress-v1` identities and checks 12 additional sulfoxide
+variants against RDKit, COSMolKit, and CheMatic's own read-back.
 
 The focused [aromatic sulfur stereo read-back
 check](aromatic-s-stereo-2026-10-16.md) compares whether each toolkit keeps

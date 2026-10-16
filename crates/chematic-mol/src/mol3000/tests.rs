@@ -70,6 +70,37 @@ fn aromatic_ring_wildcard_uses_kekule_bonds_in_v3000() {
 }
 
 #[test]
+fn three_coordinate_sulfur_stereo_survives_v3000() {
+    for smiles in [
+        "C[S@](=O)c1ccccc1",
+        "C[S@@](=O)c1ccccc1",
+        "C[S@+]([O-])c1ccccc1",
+        "C[S@@+]([O-])c1ccccc1",
+        "C[S@](=O)CC",
+        "C[S@@](=O)CC",
+        "C[S@](=O)N",
+        "C[S@@](=O)N",
+        "C[S@](=O)Cl",
+        "C[S@@](=O)Cl",
+        "C[S@+]([O-])CC",
+        "C[S@@+]([O-])CC",
+        "C[S@+]([O-])N",
+        "C[S@@+]([O-])N",
+        "Cc1ccc([S@](=O)Cl)cc1",
+        "Cc1ccc([S@@](=O)Cl)cc1",
+    ] {
+        let mol = chematic_smiles::parse(smiles).unwrap();
+        let block = write_mol_v3000(&mol, &MolMetadata::default(), &[]);
+        let (read, _) = parse_mol_v3000(&block).unwrap();
+        assert_eq!(
+            chematic_smiles::canonical_smiles(&read),
+            chematic_smiles::canonical_smiles(&mol),
+            "{smiles}: {block}"
+        );
+    }
+}
+
+#[test]
 fn decorated_wildcards_keep_their_identity_in_v3000() {
     for (smiles, property) in [
         ("[1*]C", "MASS=1"),
