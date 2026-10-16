@@ -22,6 +22,9 @@ the [complete inventory](archive-index.md) links every retained record.
 
 ## Recent focused follow-ups
 
+- [Scalar descriptor model reuse candidate](2026-10-16-python-scalar-model-reuse.md):
+  TPSA→ASA first-use improves 1.013–1.045x, but five parse-inclusive
+  medians miss the retention floor; unpromoted, with all 48 source lanes retained.
 - [V3000 requested stereo-loss collection](2026-10-16-openbabel-v3000-loss-work.md):
   prepared writing improves on both diverse slices; all 15 source median
   budgets pass, with a disclosed additional-slice parse retreat.

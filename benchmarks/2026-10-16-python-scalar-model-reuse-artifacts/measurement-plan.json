@@ -1,0 +1,53 @@
+{
+  "base": "2251a9f5d2e706087efaf55cb0f8ab1ff20b8016",
+  "candidate": "Memoize the sanitized core model only for scalar descriptor callbacks; original generic model callbacks remain uncached; graph edits/clones clear the new derived slot",
+  "primary": [
+    "tpsa_then_asa/first_use at offsets 0 and 5000"
+  ],
+  "bundle_operations": [
+    "tpsa",
+    "labute_asa"
+  ],
+  "bundle_modes": [
+    "first_use",
+    "repeated_use",
+    "parse_inclusive"
+  ],
+  "corpus": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+  "offsets": [
+    0,
+    5000
+  ],
+  "rows_each": 1000,
+  "blocks": 20,
+  "operations": [
+    "tpsa",
+    "labute_asa",
+    "num_rings",
+    "morgan2_2048",
+    "morgan2_chiral",
+    "morgan3_2048",
+    "maccs"
+  ],
+  "modes": [
+    "first_use",
+    "repeated_use",
+    "parse_inclusive"
+  ],
+  "adoption": "Both bundle first-use paired CI lower>1; all 14072 source outputs exact; all 48 source-relative medians >=0.99; disclose all negative intervals; no adaptive timing reruns",
+  "comparator_win": "Equivalent output, paired CI lower>1 and 20/20 faster blocks; mismatches unranked",
+  "build": {
+    "opt_level": 3,
+    "lto": true,
+    "codegen_units": 1,
+    "jobs": 1,
+    "incremental": false,
+    "features": [
+      "native-inchi"
+    ],
+    "strip": "none"
+  },
+  "scope": "One shared macOS arm64 host, exposed development corpus, source wheels; not toolkit-wide or published-package superiority",
+  "memory": "Model copies are retained until their original molecule is dropped; whole-process RSS recorded, no operation-memory or universal-memory win required or claimed",
+  "epochs": "One complete 20-block matrix per slice for ordinary operations and the descriptor bundle, with no timing pooling or substitution"
+}

@@ -1,0 +1,173 @@
+{
+  "adoption_passed": false,
+  "primary": {
+    "bundle-0": {
+      "median": 1.013,
+      "ci95": [
+        1.01,
+        1.022
+      ],
+      "winning_blocks": 17,
+      "blocks": 20
+    },
+    "bundle-5000": {
+      "median": 1.045,
+      "ci95": [
+        1.04,
+        1.05
+      ],
+      "winning_blocks": 20,
+      "blocks": 20
+    }
+  },
+  "guard_failures": {
+    "frontier-0": {
+      "tpsa/parse_inclusive": {
+        "median": 0.978,
+        "ci95": [
+          0.972,
+          0.985
+        ],
+        "winning_blocks": 3,
+        "blocks": 20
+      },
+      "labute_asa/parse_inclusive": {
+        "median": 0.984,
+        "ci95": [
+          0.97,
+          0.994
+        ],
+        "winning_blocks": 5,
+        "blocks": 20
+      },
+      "num_rings/parse_inclusive": {
+        "median": 0.988,
+        "ci95": [
+          0.973,
+          0.994
+        ],
+        "winning_blocks": 3,
+        "blocks": 20
+      },
+      "morgan2_2048/parse_inclusive": {
+        "median": 0.989,
+        "ci95": [
+          0.985,
+          0.998
+        ],
+        "winning_blocks": 6,
+        "blocks": 20
+      },
+      "morgan3_2048/parse_inclusive": {
+        "median": 0.987,
+        "ci95": [
+          0.983,
+          1.003
+        ],
+        "winning_blocks": 6,
+        "blocks": 20
+      }
+    },
+    "frontier-5000": {},
+    "bundle-0": {},
+    "bundle-5000": {}
+  },
+  "all_negative_source_intervals": {
+    "frontier-0": {
+      "tpsa/parse_inclusive": {
+        "median": 0.978,
+        "ci95": [
+          0.972,
+          0.985
+        ],
+        "winning_blocks": 3,
+        "blocks": 20
+      },
+      "labute_asa/parse_inclusive": {
+        "median": 0.984,
+        "ci95": [
+          0.97,
+          0.994
+        ],
+        "winning_blocks": 5,
+        "blocks": 20
+      },
+      "num_rings/parse_inclusive": {
+        "median": 0.988,
+        "ci95": [
+          0.973,
+          0.994
+        ],
+        "winning_blocks": 3,
+        "blocks": 20
+      },
+      "morgan2_2048/parse_inclusive": {
+        "median": 0.989,
+        "ci95": [
+          0.985,
+          0.998
+        ],
+        "winning_blocks": 6,
+        "blocks": 20
+      }
+    },
+    "frontier-5000": {
+      "tpsa/parse_inclusive": {
+        "median": 0.99,
+        "ci95": [
+          0.985,
+          0.999
+        ],
+        "winning_blocks": 5,
+        "blocks": 20
+      }
+    },
+    "bundle-0": {},
+    "bundle-5000": {}
+  },
+  "comparator_strict_wins": {
+    "frontier-0": {
+      "rdkit": {
+        "strict_wins": 19,
+        "eligible": 21
+      },
+      "cosmolkit": {
+        "strict_wins": 15,
+        "eligible": 18
+      }
+    },
+    "frontier-5000": {
+      "rdkit": {
+        "strict_wins": 18,
+        "eligible": 21
+      },
+      "cosmolkit": {
+        "strict_wins": 14,
+        "eligible": 21
+      }
+    },
+    "bundle-0": {
+      "rdkit": {
+        "strict_wins": 3,
+        "eligible": 3
+      },
+      "cosmolkit": {
+        "strict_wins": 2,
+        "eligible": 3
+      }
+    },
+    "bundle-5000": {
+      "rdkit": {
+        "strict_wins": 2,
+        "eligible": 3
+      },
+      "cosmolkit": {
+        "strict_wins": 2,
+        "eligible": 3
+      }
+    }
+  },
+  "source_lanes": 48,
+  "universal_superiority": false,
+  "epochs": "Four complete single 20-block matrices; no timing reruns, pooling or substitution"
+}

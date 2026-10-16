@@ -45,11 +45,23 @@ fn with_rdkit_model_molecule_impl<R>(
         || mol
             .atoms()
             .any(|(_, a)| !a.wildcard && a.element == chematic_core::Element::H);
-    let model = if needed {
-        rdkit_model_molecule(mol, reuse_aromatic_view).ok()
+    // Scalar descriptors on the same immutable graph share sanitization.
+    // Clone and every graph edit clear this slot together with other derived
+    // data. Cache failures too, retaining the original graph fallback.
+    let cached = (needed && reuse_aromatic_view).then(|| {
+        mol.derived(chematic_core::DerivedSlot::RdkitScalarModel, || {
+            rdkit_model_molecule(mol, true).ok()
+        })
+    });
+    let owned = if needed && !reuse_aromatic_view {
+        rdkit_model_molecule(mol, false).ok()
     } else {
         None
     };
+    let model = cached
+        .as_ref()
+        .and_then(|cached| cached.as_ref().as_ref())
+        .or(owned.as_ref());
     match model {
         Some(m) => {
             struct Reset;
@@ -60,11 +72,15 @@ fn with_rdkit_model_molecule_impl<R>(
             }
             IN_RDKIT_MODEL.with(|c| c.set(true));
             let _reset = Reset;
-            f(&m)
+            f(m)
         }
         None => f(mol),
     }
 }
+
+#[cfg(test)]
+#[path = "model_view_cache_tests.rs"]
+mod cache_tests;
 
 /// Descriptor/fingerprint callbacks consume a core molecule, which cannot
 /// carry CIP ranks or the port's potential-stereocenter flags. Keep stereo

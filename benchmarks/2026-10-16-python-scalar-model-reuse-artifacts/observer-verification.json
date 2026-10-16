@@ -1,0 +1,432 @@
+{
+  "scope": "Fresh post-timing output observers only; all observer elapsed fields discarded, no samples added or pooled",
+  "profiles": {
+    "frontier-0": {
+      "all_20_output_and_extension_hashes_revalidated": true,
+      "agreement": {
+        "tpsa": {
+          "candidate_vs_baseline": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "baseline_vs_rdkit": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "candidate_vs_rdkit": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "cosmolkit_vs_rdkit": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          }
+        },
+        "labute_asa": {
+          "candidate_vs_baseline": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "baseline_vs_rdkit": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "candidate_vs_rdkit": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "cosmolkit_vs_rdkit": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          }
+        },
+        "num_rings": {
+          "candidate_vs_baseline": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "baseline_vs_rdkit": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "candidate_vs_rdkit": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "cosmolkit_vs_rdkit": {
+            "passed": false,
+            "rows": 1000,
+            "mismatches": 6
+          }
+        },
+        "morgan2_2048": {
+          "candidate_vs_baseline": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "baseline_vs_rdkit": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "candidate_vs_rdkit": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "cosmolkit_vs_rdkit": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          }
+        },
+        "morgan2_chiral": {
+          "candidate_vs_baseline": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "baseline_vs_rdkit": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "candidate_vs_rdkit": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "cosmolkit_vs_rdkit": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          }
+        },
+        "morgan3_2048": {
+          "candidate_vs_baseline": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "baseline_vs_rdkit": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "candidate_vs_rdkit": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "cosmolkit_vs_rdkit": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          }
+        },
+        "maccs": {
+          "candidate_vs_baseline": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "baseline_vs_rdkit": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "candidate_vs_rdkit": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "cosmolkit_vs_rdkit": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          }
+        }
+      },
+      "all_cosmolkit_differences": {
+        "tpsa": [],
+        "labute_asa": [],
+        "num_rings": [
+          {
+            "row": 9,
+            "rdkit": 10,
+            "cosmolkit": 8
+          },
+          {
+            "row": 23,
+            "rdkit": 22,
+            "cosmolkit": 10
+          },
+          {
+            "row": 28,
+            "rdkit": 22,
+            "cosmolkit": 9
+          },
+          {
+            "row": 29,
+            "rdkit": 22,
+            "cosmolkit": 10
+          },
+          {
+            "row": 30,
+            "rdkit": 22,
+            "cosmolkit": 10
+          },
+          {
+            "row": 34,
+            "rdkit": 11,
+            "cosmolkit": 9
+          }
+        ],
+        "morgan2_2048": [],
+        "morgan2_chiral": [],
+        "morgan3_2048": [],
+        "maccs": []
+      }
+    },
+    "frontier-5000": {
+      "all_20_output_and_extension_hashes_revalidated": true,
+      "agreement": {
+        "tpsa": {
+          "candidate_vs_baseline": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "baseline_vs_rdkit": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "candidate_vs_rdkit": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "cosmolkit_vs_rdkit": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          }
+        },
+        "labute_asa": {
+          "candidate_vs_baseline": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "baseline_vs_rdkit": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "candidate_vs_rdkit": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "cosmolkit_vs_rdkit": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          }
+        },
+        "num_rings": {
+          "candidate_vs_baseline": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "baseline_vs_rdkit": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "candidate_vs_rdkit": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "cosmolkit_vs_rdkit": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          }
+        },
+        "morgan2_2048": {
+          "candidate_vs_baseline": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "baseline_vs_rdkit": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "candidate_vs_rdkit": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "cosmolkit_vs_rdkit": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          }
+        },
+        "morgan2_chiral": {
+          "candidate_vs_baseline": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "baseline_vs_rdkit": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "candidate_vs_rdkit": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "cosmolkit_vs_rdkit": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          }
+        },
+        "morgan3_2048": {
+          "candidate_vs_baseline": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "baseline_vs_rdkit": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "candidate_vs_rdkit": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "cosmolkit_vs_rdkit": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          }
+        },
+        "maccs": {
+          "candidate_vs_baseline": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "baseline_vs_rdkit": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "candidate_vs_rdkit": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "cosmolkit_vs_rdkit": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          }
+        }
+      },
+      "all_cosmolkit_differences": {
+        "tpsa": [],
+        "labute_asa": [],
+        "num_rings": [],
+        "morgan2_2048": [],
+        "morgan2_chiral": [],
+        "morgan3_2048": [],
+        "maccs": []
+      }
+    },
+    "bundle-0": {
+      "all_20_output_and_extension_hashes_revalidated": true,
+      "agreement": {
+        "tpsa_then_asa": {
+          "candidate_vs_baseline": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "baseline_vs_rdkit": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "candidate_vs_rdkit": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "cosmolkit_vs_rdkit": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          }
+        }
+      },
+      "all_cosmolkit_differences": {
+        "tpsa_then_asa": []
+      }
+    },
+    "bundle-5000": {
+      "all_20_output_and_extension_hashes_revalidated": true,
+      "agreement": {
+        "tpsa_then_asa": {
+          "candidate_vs_baseline": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "baseline_vs_rdkit": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "candidate_vs_rdkit": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          },
+          "cosmolkit_vs_rdkit": {
+            "passed": true,
+            "rows": 1000,
+            "mismatches": 0
+          }
+        }
+      },
+      "all_cosmolkit_differences": {
+        "tpsa_then_asa": []
+      }
+    }
+  }
+}
