@@ -73,10 +73,34 @@ def tool_version(executable: Path, flag: str) -> str:
     return (result.stdout or result.stderr).strip()
 
 
+def nonstereogenic_explicit_h_equivalent(expected: Chem.Mol, actual: Chem.Mol) -> bool:
+    """Normalize a plain explicit H only when neither molecule specifies stereo."""
+    if not any(atom.GetAtomicNum() == 1 for atom in expected.GetAtoms()):
+        return False
+    for mol in (expected, actual):
+        if any(
+            atom.GetAtomicNum() == 1 and (atom.GetIsotope() or atom.GetAtomMapNum())
+            for atom in mol.GetAtoms()
+        ):
+            return False
+        if any(
+            str(info.specified) == "Specified"
+            for info in Chem.FindPotentialStereo(Chem.Mol(mol), cleanIt=True, flagPossible=True)
+        ):
+            return False
+    return identity(Chem.RemoveHs(expected)) == identity(Chem.RemoveHs(actual))
+
+
 def evaluate(expected: Chem.Mol, expected_identity: str, exit_code: int, smiles: str) -> dict:
     parsed = Chem.MolFromSmiles(smiles) if exit_code == 0 and smiles else None
     actual_identity = identity(parsed)
-    equal = actual_identity == expected_identity
+    strict_equal = actual_identity == expected_identity
+    hydrogen_equivalent = (
+        not strict_equal
+        and parsed is not None
+        and nonstereogenic_explicit_h_equivalent(expected, parsed)
+    )
+    equal = strict_equal or hydrogen_equivalent
     classification = None
     if not equal:
         classification, _, _ = classify_stereo_difference(expected, parsed)
@@ -84,6 +108,8 @@ def evaluate(expected: Chem.Mol, expected_identity: str, exit_code: int, smiles:
         "exit_code": exit_code,
         "smiles": smiles,
         "identity": actual_identity,
+        "strict_equal": strict_equal,
+        "hydrogen_representation_equivalent": hydrogen_equivalent,
         "semantic_equal": equal,
         "difference_class": classification,
     }
