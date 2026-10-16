@@ -14,7 +14,12 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-No unreleased changes.
+### Added
+
+- Added a Python type-stub gate for source and built wheels, covering Python 3.9
+  grammar, compiler syntax, typed markers and exact source/package stub bytes.
+  CI checks source on Python 3.9/3.13 and source wheels on Linux/macOS/Windows;
+  the PyPI workflow checks all wheel stubs before artifact upload and publication.
 
 ## [1.1.5] - 2026-10-16
 
