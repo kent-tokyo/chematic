@@ -1,0 +1,650 @@
+{
+  "schema": "chematic.cif-bonds-validation.v1",
+  "utc": "2026-10-15T23:15:40.609980+00:00",
+  "source_base": "52328da37ab525757eda4a1f290f44262241c613",
+  "source_sha256": {
+    "crates/chematic-mol/src/cif/bonds.rs": "e825f844eb5994d8ed89072516419f6c7c41bf62f3fe49201f9c78c6c31c1a36",
+    "crates/chematic-mol/src/cif.rs": "0ef82f0e85a7732a273dc41eb23f99471af7f79a383db28f7136b14ce274e750",
+    "crates/chematic-mol/src/cif/writer.rs": "6c0dfe17a7cd856a32e91c0ebf0d5d34bf7429cd3e8e4bb654b83808868a5579",
+    "crates/chematic-mol/src/lib.rs": "aee5678a16f802c129a5bb76eaf7ef188f383f47f03c26f2bd974e5bae810784",
+    "crates/chematic-py/src/formats/cif.rs": "4361946512bf97579e252d73046e9097aa3060efc4b5809defef216a2936b127",
+    "crates/chematic-py/src/formats.rs": "e7f879c89d9f5db6f5680c3503ef0bca99f3a6c5f453ebea015b532c7bfa53d2",
+    "crates/chematic-py/python/chematic/__init__.pyi": "7b7c6d615dc0d95586c8994f8b7ebf4a35a68134eaa7652d02f2d0c19426fe7b"
+  },
+  "extension_sha256": "c8737e276e4275a371e0de41dbb55badfdb9f03f6ed79c4ce1d111b5eaf4e6ea",
+  "fixture_sha256": {
+    "water.xyz": "5f9905c71d72fe060da26ae040ad31ad5d9dd32cd7190c0d1261d0957fdaf55c",
+    "cases.json": "ec9327a649ef8a8d91c5e7cc11eb6b1c0fffd9e57bc6fab9030aac923b6267b8"
+  },
+  "gemmi_version": "0.7.5",
+  "gemmi_runtime_sha256": {
+    "gemmi_ext.cpython-313-darwin.so": "fbcc2fee5b96e911465d7385b2bd5d656dde7747360007e005f2aaec9e914896"
+  },
+  "cases": [
+    {
+      "name": "water",
+      "cell": null,
+      "atom_count": 3,
+      "bond_rows": [
+        [
+          "H1",
+          "O2",
+          "0.9",
+          ".",
+          ".",
+          "S"
+        ],
+        [
+          "O2",
+          "H3",
+          "1.1",
+          ".",
+          ".",
+          "S"
+        ]
+      ],
+      "checks": 19,
+      "cif_sha256": "b3e79c5390787cb81945836ccca4075f59147af6e16b6ece1f4c19428086b4e0"
+    },
+    {
+      "name": "water",
+      "cell": {
+        "a": 10.0,
+        "b": 10.0,
+        "c": 10.0,
+        "alpha": 90.0,
+        "beta": 90.0,
+        "gamma": 90.0
+      },
+      "atom_count": 3,
+      "bond_rows": [
+        [
+          "H1",
+          "O2",
+          "0.9",
+          ".",
+          ".",
+          "S"
+        ],
+        [
+          "O2",
+          "H3",
+          "1.1",
+          ".",
+          ".",
+          "S"
+        ]
+      ],
+      "checks": 19,
+      "cif_sha256": "e9e3afdd080ac9c6dee035f7b5d016ab547f88c27d2a2eed55a971608fcd3a51"
+    },
+    {
+      "name": "water",
+      "cell": {
+        "a": 12.0,
+        "b": 14.0,
+        "c": 15.0,
+        "alpha": 75.0,
+        "beta": 83.0,
+        "gamma": 64.0
+      },
+      "atom_count": 3,
+      "bond_rows": [
+        [
+          "H1",
+          "O2",
+          "0.9",
+          ".",
+          ".",
+          "S"
+        ],
+        [
+          "O2",
+          "H3",
+          "1.1",
+          ".",
+          ".",
+          "S"
+        ]
+      ],
+      "checks": 19,
+      "cif_sha256": "55a30b13b63b4a4a0f15ea3807db7b3e6d4317e48bcdb66ae7f254909bb3ce10"
+    },
+    {
+      "name": "double",
+      "cell": null,
+      "atom_count": 2,
+      "bond_rows": [
+        [
+          "C1",
+          "C2",
+          "1.34",
+          ".",
+          ".",
+          "D"
+        ]
+      ],
+      "checks": 13,
+      "cif_sha256": "b8f916d77c3f148eb0088652191d938375523f06e41fa086da16d66509b807c1"
+    },
+    {
+      "name": "double",
+      "cell": {
+        "a": 10.0,
+        "b": 10.0,
+        "c": 10.0,
+        "alpha": 90.0,
+        "beta": 90.0,
+        "gamma": 90.0
+      },
+      "atom_count": 2,
+      "bond_rows": [
+        [
+          "C1",
+          "C2",
+          "1.34",
+          ".",
+          ".",
+          "D"
+        ]
+      ],
+      "checks": 13,
+      "cif_sha256": "cd2e37ee5c96790024f559ae17d53f14e3e708a947fec46eb31cd8b679c888e7"
+    },
+    {
+      "name": "double",
+      "cell": {
+        "a": 12.0,
+        "b": 14.0,
+        "c": 15.0,
+        "alpha": 75.0,
+        "beta": 83.0,
+        "gamma": 64.0
+      },
+      "atom_count": 2,
+      "bond_rows": [
+        [
+          "C1",
+          "C2",
+          "1.34",
+          ".",
+          ".",
+          "D"
+        ]
+      ],
+      "checks": 13,
+      "cif_sha256": "09e3f8559dbac8971e597caf796886e0cf9510708aeae40a2d156542c65469fe"
+    },
+    {
+      "name": "triple",
+      "cell": null,
+      "atom_count": 2,
+      "bond_rows": [
+        [
+          "C1",
+          "N2",
+          "1.16",
+          ".",
+          ".",
+          "T"
+        ]
+      ],
+      "checks": 13,
+      "cif_sha256": "2b0f9ca63ef60fcf3f94c3dc8be0cee6c873d7af84ce4e2dbd7073887d87e64e"
+    },
+    {
+      "name": "triple",
+      "cell": {
+        "a": 10.0,
+        "b": 10.0,
+        "c": 10.0,
+        "alpha": 90.0,
+        "beta": 90.0,
+        "gamma": 90.0
+      },
+      "atom_count": 2,
+      "bond_rows": [
+        [
+          "C1",
+          "N2",
+          "1.16",
+          ".",
+          ".",
+          "T"
+        ]
+      ],
+      "checks": 13,
+      "cif_sha256": "bf2f4bd94231f8b5d3c29ccb1dbfd88f04221d039e5058b4869f610114a5d476"
+    },
+    {
+      "name": "triple",
+      "cell": {
+        "a": 12.0,
+        "b": 14.0,
+        "c": 15.0,
+        "alpha": 75.0,
+        "beta": 83.0,
+        "gamma": 64.0
+      },
+      "atom_count": 2,
+      "bond_rows": [
+        [
+          "C1",
+          "N2",
+          "1.16",
+          ".",
+          ".",
+          "T"
+        ]
+      ],
+      "checks": 13,
+      "cif_sha256": "4e01f07669471469e5acc1b1114dd6c6bb8e16db1b763a41eeec3a67d3cdae33"
+    },
+    {
+      "name": "aromatic",
+      "cell": null,
+      "atom_count": 6,
+      "bond_rows": [
+        [
+          "C1",
+          "C2",
+          "1.397891269019161",
+          ".",
+          ".",
+          "A"
+        ],
+        [
+          "C2",
+          "C3",
+          "1.4",
+          ".",
+          ".",
+          "A"
+        ],
+        [
+          "C3",
+          "C4",
+          "1.397891269019161",
+          ".",
+          ".",
+          "A"
+        ],
+        [
+          "C4",
+          "C5",
+          "1.397891269019161",
+          ".",
+          ".",
+          "A"
+        ],
+        [
+          "C5",
+          "C6",
+          "1.4",
+          ".",
+          ".",
+          "A"
+        ],
+        [
+          "C1",
+          "C6",
+          "1.397891269019161",
+          ".",
+          ".",
+          "A"
+        ]
+      ],
+      "checks": 40,
+      "cif_sha256": "0936f7fe06c90d137d09f35a8f21445330f74f1be959350551abfc88b2db7c1f"
+    },
+    {
+      "name": "aromatic",
+      "cell": {
+        "a": 10.0,
+        "b": 10.0,
+        "c": 10.0,
+        "alpha": 90.0,
+        "beta": 90.0,
+        "gamma": 90.0
+      },
+      "atom_count": 6,
+      "bond_rows": [
+        [
+          "C1",
+          "C2",
+          "1.397891269019161",
+          ".",
+          ".",
+          "A"
+        ],
+        [
+          "C2",
+          "C3",
+          "1.4",
+          ".",
+          ".",
+          "A"
+        ],
+        [
+          "C3",
+          "C4",
+          "1.397891269019161",
+          ".",
+          ".",
+          "A"
+        ],
+        [
+          "C4",
+          "C5",
+          "1.397891269019161",
+          ".",
+          ".",
+          "A"
+        ],
+        [
+          "C5",
+          "C6",
+          "1.4",
+          ".",
+          ".",
+          "A"
+        ],
+        [
+          "C1",
+          "C6",
+          "1.397891269019161",
+          ".",
+          ".",
+          "A"
+        ]
+      ],
+      "checks": 40,
+      "cif_sha256": "e19a0c5a04ad6de0e6ee6bdd52c89affa53ace179cdf66705c201d66278dff32"
+    },
+    {
+      "name": "aromatic",
+      "cell": {
+        "a": 12.0,
+        "b": 14.0,
+        "c": 15.0,
+        "alpha": 75.0,
+        "beta": 83.0,
+        "gamma": 64.0
+      },
+      "atom_count": 6,
+      "bond_rows": [
+        [
+          "C1",
+          "C2",
+          "1.397891269019161",
+          ".",
+          ".",
+          "A"
+        ],
+        [
+          "C2",
+          "C3",
+          "1.4",
+          ".",
+          ".",
+          "A"
+        ],
+        [
+          "C3",
+          "C4",
+          "1.397891269019161",
+          ".",
+          ".",
+          "A"
+        ],
+        [
+          "C4",
+          "C5",
+          "1.397891269019161",
+          ".",
+          ".",
+          "A"
+        ],
+        [
+          "C5",
+          "C6",
+          "1.4",
+          ".",
+          ".",
+          "A"
+        ],
+        [
+          "C1",
+          "C6",
+          "1.397891269019161",
+          ".",
+          ".",
+          "A"
+        ]
+      ],
+      "checks": 40,
+      "cif_sha256": "a30f04d4d5e473311957b2425915a7e758b349eadb64ae6aca11017ad698c6d1"
+    },
+    {
+      "name": "disconnected",
+      "cell": null,
+      "atom_count": 3,
+      "bond_rows": [
+        [
+          "C1",
+          "C2",
+          "1.5",
+          ".",
+          ".",
+          "S"
+        ]
+      ],
+      "checks": 16,
+      "cif_sha256": "9e337fa320f35c199b939c38f29b9d720a5371bf97c98315892ee4efe79b8ab8"
+    },
+    {
+      "name": "disconnected",
+      "cell": {
+        "a": 10.0,
+        "b": 10.0,
+        "c": 10.0,
+        "alpha": 90.0,
+        "beta": 90.0,
+        "gamma": 90.0
+      },
+      "atom_count": 3,
+      "bond_rows": [
+        [
+          "C1",
+          "C2",
+          "1.5",
+          ".",
+          ".",
+          "S"
+        ]
+      ],
+      "checks": 16,
+      "cif_sha256": "6c6f2eb894e297373883307fc92e54554eeb680cbb1a87214c5bb0aa0b66e86b"
+    },
+    {
+      "name": "disconnected",
+      "cell": {
+        "a": 12.0,
+        "b": 14.0,
+        "c": 15.0,
+        "alpha": 75.0,
+        "beta": 83.0,
+        "gamma": 64.0
+      },
+      "atom_count": 3,
+      "bond_rows": [
+        [
+          "C1",
+          "C2",
+          "1.5",
+          ".",
+          ".",
+          "S"
+        ]
+      ],
+      "checks": 16,
+      "cif_sha256": "187e0cfd6d612dc3482a994f3f0b6d301427fdb469d9227b7c5f5bda9e3c7cb4"
+    },
+    {
+      "name": "edgeless",
+      "cell": null,
+      "atom_count": 2,
+      "bond_rows": [],
+      "checks": 10,
+      "cif_sha256": "71ef0708f4ca867418612c16c90b907e93fad73dd21217617f4c923478eb24c3"
+    },
+    {
+      "name": "edgeless",
+      "cell": {
+        "a": 10.0,
+        "b": 10.0,
+        "c": 10.0,
+        "alpha": 90.0,
+        "beta": 90.0,
+        "gamma": 90.0
+      },
+      "atom_count": 2,
+      "bond_rows": [],
+      "checks": 10,
+      "cif_sha256": "ce83003abffffada6335543b78a255ca31c163309b673514d9dbc7eb7a4d122f"
+    },
+    {
+      "name": "edgeless",
+      "cell": {
+        "a": 12.0,
+        "b": 14.0,
+        "c": 15.0,
+        "alpha": 75.0,
+        "beta": 83.0,
+        "gamma": 64.0
+      },
+      "atom_count": 2,
+      "bond_rows": [],
+      "checks": 10,
+      "cif_sha256": "c535f4eea42095922911ea16ad7c5cdedb66e67cda363016736f7977ca80eb42"
+    },
+    {
+      "name": "extreme-1e+308",
+      "cell": null,
+      "atom_count": 2,
+      "bond_rows": [
+        [
+          "C1",
+          "C2",
+          "100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          ".",
+          ".",
+          "S"
+        ]
+      ],
+      "checks": 13,
+      "cif_sha256": "eeee86413e3a359d0a157476008a7681bf77db648c04961e56e18b89b9d518ad"
+    },
+    {
+      "name": "extreme-1e-300",
+      "cell": null,
+      "atom_count": 2,
+      "bond_rows": [
+        [
+          "C1",
+          "C2",
+          "0.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001",
+          ".",
+          ".",
+          "S"
+        ]
+      ],
+      "checks": 13,
+      "cif_sha256": "881f7dcce5ce0cbdfa9f8a49ff49b270bb7f45b7baa1c2fc28339f41d5ab2f2e"
+    },
+    {
+      "name": "extreme-5e-324",
+      "cell": null,
+      "atom_count": 2,
+      "bond_rows": [
+        [
+          "C1",
+          "C2",
+          "0.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005",
+          ".",
+          ".",
+          "S"
+        ]
+      ],
+      "checks": 13,
+      "cif_sha256": "2a60d0ca75df790083a898e95a09f9b8c14138f3fccd601d835871efea8e4589"
+    }
+  ],
+  "gemmi_checks": 372,
+  "failed_checks": 0,
+  "openbabel_version": {
+    "command": [
+      "/opt/homebrew/bin/obabel",
+      "-V"
+    ],
+    "returncode": 0,
+    "stdout": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27\n",
+    "stderr": ""
+  },
+  "openbabel_binary_sha256": "733b2c925d60b17a5c9d8ce9ec841e918cc20c7634301e23f9008a187d1d9bc5",
+  "openbabel_writes": [
+    {
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-ixyz",
+        "/private/tmp/chematic-cif-bonds-20261016/validation/openbabel_issues/cif-bonds/water.xyz",
+        "-ocif",
+        "-ag"
+      ],
+      "returncode": 0,
+      "stdout": "# CIF file generated by openbabel 3.2.1, see https://openbabel.org\ndata_I\n_chemical_name_common 'Original explicit water geometry for CIF CLI option probe'\nloop_\n    _atom_site_label\n    _atom_site_type_symbol\n    _atom_site_fract_x\n    _atom_site_fract_y\n    _atom_site_fract_z\n    _atom_site_occupancy\n    O0       O        0.00000    0.00000    0.00000    1.000\n    H1       H        0.90000    0.00000    0.00000    1.000\n    H2       H        0.00000    1.10000    0.00000    1.000\n",
+      "stderr": "1 molecule converted\n"
+    },
+    {
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-ixyz",
+        "/private/tmp/chematic-cif-bonds-20261016/validation/openbabel_issues/cif-bonds/water.xyz",
+        "-ocif",
+        "-xg"
+      ],
+      "returncode": 0,
+      "stdout": "# CIF file generated by openbabel 3.2.1, see https://openbabel.org\ndata_I\n_chemical_name_common 'Original explicit water geometry for CIF CLI option probe'\nloop_\n    _atom_site_label\n    _atom_site_type_symbol\n    _atom_site_fract_x\n    _atom_site_fract_y\n    _atom_site_fract_z\n    _atom_site_occupancy\n    O0       O        0.00000    0.00000    0.00000    1.000\n    H1       H        0.90000    0.00000    0.00000    1.000\n    H2       H        0.00000    1.10000    0.00000    1.000\nloop_\n    _geom_bond_atom_site_label_1\n    _geom_bond_atom_site_label_2\n    _geom_bond_distance\n    _geom_bond_site_symmetry_2\n    _ccdc_geom_bond_type\n    O0     H1        0.90000      .   S\n    O0     H2        1.10000      .   S\n",
+      "stderr": "1 molecule converted\n"
+    }
+  ],
+  "openbabel_read": {
+    "command": [
+      "/opt/homebrew/bin/obabel",
+      "-icif",
+      "-aB",
+      "-omolreport"
+    ],
+    "timeout_seconds": 5
+  },
+  "boundary": "Source candidate only. #2726 was a CLI option mix-up; Open Babel already supports -xg. Plain chematic CIF reader remains positions-only; no periodic bond perception or full molecular serialization.",
+  "local_validation": {
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "python": "3.13.6",
+    "rust_tests_passed": 22,
+    "new_rust_tests": 8,
+    "python_tests_passed": 63,
+    "new_python_tests": 18,
+    "clippy_libraries_and_new_rust_tests": "passed with warnings denied",
+    "rustfmt": "passed",
+    "refactor_budget": "passed",
+    "cross_binding_manifest": "passed",
+    "binding_surface": "207 Python functions, all registered; no WASM surface change",
+    "logs_sha256": {
+      "chematic-cif-bonds-native.log": "fcc01524ab68e51ee5b9e937cfd22e65ba093210d0785cf865e11410cc3bb9ea",
+      "chematic-cif-bonds-python-tests.log": "56f6ab8579ffcb89b4e1e0f2088079cc0e431083424e331a5b093effda6ca4e0",
+      "chematic-cif-bonds-clippy.log": "9e2fb0d7026f93b6c2bd4b61736d10d3f30bcf4f97d266a25f24e21c2a31f4aa",
+      "chematic-cif-bonds-test-clippy.log": "a7ed301769ebf2cc33bba9abd022d35db8e743cd7ffd9aadfb51ba4077c4c044"
+    }
+  }
+}

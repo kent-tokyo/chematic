@@ -87,3 +87,13 @@ A [single-component CCD reader](ccd-components.md) now reads `_chem_comp_atom`
 and `_chem_comp_bond` in Rust/Python/WASM. It retains stereo annotations and
 requires explicit consent for an unassigned graph projection. Bulk dictionary
 streaming and CCD writing are outside this implementation.
+
+## October 16 follow-up: explicit CIF molecular bonds
+
+[#2726](https://github.com/openbabel/openbabel/issues/2726) remains open, but
+the comments explain that `-xg` already enables Open Babel bond output; the
+reported `-ag` selects a read option. Do not count it as missing upstream
+functionality. Added the previously missing chematic
+[checked molecular bond writer](cif-molecular-bonds.md) in Rust/Python, with
+explicit graph edges, S/D/T/A types and finite positive Cartesian distances.
+The positions-only reader and periodic adapter retain their existing scope.

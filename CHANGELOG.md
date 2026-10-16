@@ -20,6 +20,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `bytes` and `os.PathLike` alongside `str`, using native filesystem encoding
   and preserving custom path-protocol errors. The 15 entry points and local
   platform limits are recorded in [Python filesystem paths](docs/python-filesystem-paths.md).
+- Add Rust/Python `write_cif_with_bonds_checked` for explicit molecular CIF
+  bond geometry (S/D/T/A), with checked Cartesian distances and no periodic
+  bond perception. Related to Open Babel #2726; that upstream report was a
+  CLI option mix-up, not missing Open Babel support.
 
 ### Performance
 

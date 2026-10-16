@@ -554,6 +554,8 @@ pub fn parse_cif_with_limits(input: &str, limits: &CifParseLimits) -> Result<Cif
 // Writer
 // ---------------------------------------------------------------------------
 
+mod bonds;
+pub use bonds::{CifBondWriteError, write_cif_with_bonds_checked};
 mod writer;
 pub use writer::{write_cif, write_cif_checked};
 

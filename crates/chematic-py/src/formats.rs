@@ -1421,6 +1421,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         write_gjf,
         parse_cif,
         write_cif_checked,
+        write_cif_with_bonds_checked,
         is_valid_smiles,
         is_valid_smarts,
         from_inchi,
