@@ -14,6 +14,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Python file readers, suppliers, writers and HTML report outputs now accept
+  `bytes` and `os.PathLike` alongside `str`, using native filesystem encoding
+  and preserving custom path-protocol errors. The 15 entry points and local
+  platform limits are recorded in [Python filesystem paths](docs/python-filesystem-paths.md).
+
 ### Performance
 
 - Skip unused stereo-loss collection for plain V3000 output. Reporting APIs

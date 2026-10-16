@@ -258,9 +258,11 @@ impl From<&chematic_mol::SdfRecordMetadata> for PySdfRecordMetadata {
 ///     because the total record count is not known until the file is fully read.
 ///     Use ``iter_sdf_str`` if you need ``len()`` on an in-memory string.
 #[pyfunction]
-pub fn iter_sdf(path: &str) -> PyResult<SdfFileIter> {
-    let file = std::fs::File::open(path)
-        .map_err(|e| pyo3::exceptions::PyIOError::new_err(format!("{path}: {e}")))?;
+pub fn iter_sdf(
+    #[pyo3(from_py_with=crate::filesystem::path)] path: std::path::PathBuf,
+) -> PyResult<SdfFileIter> {
+    let file = std::fs::File::open(&path)
+        .map_err(|e| pyo3::exceptions::PyIOError::new_err(format!("{}: {e}", path.display())))?;
     Ok(SdfFileIter {
         inner: chematic_mol::SdfFileReader::new(std::io::BufReader::new(file)),
     })
@@ -275,7 +277,7 @@ pub fn iter_sdf(path: &str) -> PyResult<SdfFileIter> {
 #[pyfunction]
 #[pyo3(signature = (path, *, max_input_bytes=None, max_record_bytes=None, max_line_bytes=None, max_records=None))]
 pub fn iter_sdf_checked(
-    path: &str,
+    #[pyo3(from_py_with=crate::filesystem::path)] path: std::path::PathBuf,
     max_input_bytes: Option<usize>,
     max_record_bytes: Option<usize>,
     max_line_bytes: Option<usize>,
@@ -305,8 +307,8 @@ pub fn iter_sdf_checked(
             *field = value;
         }
     }
-    let file = std::fs::File::open(path)
-        .map_err(|e| pyo3::exceptions::PyIOError::new_err(format!("{path}: {e}")))?;
+    let file = std::fs::File::open(&path)
+        .map_err(|e| pyo3::exceptions::PyIOError::new_err(format!("{}: {e}", path.display())))?;
     Ok(SdfCheckedIter {
         inner: chematic_mol::SdfFileReader::with_limits(std::io::BufReader::new(file), limits),
         next_index: 0,
@@ -328,7 +330,10 @@ pub fn iter_sdf_checked(
 ///     print(stream.manifest_json())    # deterministic progress/status JSON
 #[pyfunction]
 #[pyo3(signature = (path, batch_size=1000))]
-pub fn iter_sdf_batched(path: &str, batch_size: usize) -> PyResult<SdfBatchIter> {
+pub fn iter_sdf_batched(
+    #[pyo3(from_py_with=crate::filesystem::path)] path: std::path::PathBuf,
+    batch_size: usize,
+) -> PyResult<SdfBatchIter> {
     if batch_size == 0 {
         return Err(pyo3::exceptions::PyValueError::new_err(
             "batch_size must be greater than zero",
@@ -340,8 +345,8 @@ pub fn iter_sdf_batched(path: &str, batch_size: usize) -> PyResult<SdfBatchIter>
             "batch_size exceeds maximum ({MAX_BATCH_SIZE})"
         )));
     }
-    let file = std::fs::File::open(path)
-        .map_err(|e| pyo3::exceptions::PyIOError::new_err(format!("{path}: {e}")))?;
+    let file = std::fs::File::open(&path)
+        .map_err(|e| pyo3::exceptions::PyIOError::new_err(format!("{}: {e}", path.display())))?;
     Ok(SdfBatchIter {
         inner: chematic_mol::SdfFileReader::new(std::io::BufReader::new(file)),
         batch_size,
@@ -678,7 +683,11 @@ pub struct XyzBatchIter {
     rejected_frames: usize,
 }
 
-fn open_xyz_batch(path: &str, batch_size: usize, extxyz: bool) -> PyResult<XyzBatchIter> {
+fn open_xyz_batch(
+    path: &std::path::Path,
+    batch_size: usize,
+    extxyz: bool,
+) -> PyResult<XyzBatchIter> {
     if batch_size == 0 {
         return Err(pyo3::exceptions::PyValueError::new_err(
             "batch_size must be greater than zero",
@@ -691,7 +700,7 @@ fn open_xyz_batch(path: &str, batch_size: usize, extxyz: bool) -> PyResult<XyzBa
         )));
     }
     let file = std::fs::File::open(path)
-        .map_err(|e| pyo3::exceptions::PyIOError::new_err(format!("{path}: {e}")))?;
+        .map_err(|e| pyo3::exceptions::PyIOError::new_err(format!("{}: {e}", path.display())))?;
     let reader = std::io::BufReader::new(file);
     Ok(XyzBatchIter {
         inner: if extxyz {
@@ -723,15 +732,21 @@ fn open_xyz_batch(path: &str, batch_size: usize, extxyz: bool) -> PyResult<XyzBa
 /// Iterate over bounded batches of plain XYZ frames from a file.
 #[pyfunction]
 #[pyo3(signature = (path, batch_size=1000))]
-pub fn iter_xyz_batched(path: &str, batch_size: usize) -> PyResult<XyzBatchIter> {
-    open_xyz_batch(path, batch_size, false)
+pub fn iter_xyz_batched(
+    #[pyo3(from_py_with=crate::filesystem::path)] path: std::path::PathBuf,
+    batch_size: usize,
+) -> PyResult<XyzBatchIter> {
+    open_xyz_batch(&path, batch_size, false)
 }
 
 /// Iterate over bounded batches of Extended XYZ frames from a file.
 #[pyfunction]
 #[pyo3(signature = (path, batch_size=1000))]
-pub fn iter_extxyz_batched(path: &str, batch_size: usize) -> PyResult<XyzBatchIter> {
-    open_xyz_batch(path, batch_size, true)
+pub fn iter_extxyz_batched(
+    #[pyo3(from_py_with=crate::filesystem::path)] path: std::path::PathBuf,
+    batch_size: usize,
+) -> PyResult<XyzBatchIter> {
+    open_xyz_batch(&path, batch_size, true)
 }
 
 #[pymethods]
@@ -826,10 +841,16 @@ impl SdMolSupplier {
     #[new]
     #[allow(non_snake_case)]
     #[pyo3(signature = (path, sanitize=true, removeHs=true, strictParsing=true))]
-    fn new(path: &str, sanitize: bool, removeHs: bool, strictParsing: bool) -> PyResult<Self> {
+    fn new(
+        #[pyo3(from_py_with=crate::filesystem::path)] path: std::path::PathBuf,
+        sanitize: bool,
+        removeHs: bool,
+        strictParsing: bool,
+    ) -> PyResult<Self> {
         let _ = (sanitize, removeHs); // accepted, no-op
-        let file = std::fs::File::open(path)
-            .map_err(|e| pyo3::exceptions::PyIOError::new_err(format!("{path}: {e}")))?;
+        let file = std::fs::File::open(&path).map_err(|e| {
+            pyo3::exceptions::PyIOError::new_err(format!("{}: {e}", path.display()))
+        })?;
         Ok(SdMolSupplier {
             // SDMolSupplier exposes RDKit-style molecules, not chematic's
             // optional stereo/3D diagnostics. Use the matching lightweight
@@ -899,9 +920,13 @@ pub struct SdWriter {
 impl SdWriter {
     #[new]
     #[pyo3(signature = (path, compute2d=true))]
-    fn new(path: &str, compute2d: bool) -> PyResult<Self> {
-        let file = std::fs::File::create(path)
-            .map_err(|e| pyo3::exceptions::PyIOError::new_err(format!("{path}: {e}")))?;
+    fn new(
+        #[pyo3(from_py_with=crate::filesystem::path)] path: std::path::PathBuf,
+        compute2d: bool,
+    ) -> PyResult<Self> {
+        let file = std::fs::File::create(&path).map_err(|e| {
+            pyo3::exceptions::PyIOError::new_err(format!("{}: {e}", path.display()))
+        })?;
         Ok(SdWriter {
             writer: Some(std::io::BufWriter::new(file)),
             record_buffer: String::new(),
@@ -1075,7 +1100,7 @@ impl PySmilesMolSupplier {
     #[allow(non_snake_case)]
     #[pyo3(signature = (path, delimiter=" ".to_string(), smilesColumn=0, nameColumn=1, titleLine=true, sanitize=true))]
     fn new(
-        path: &str,
+        #[pyo3(from_py_with=crate::filesystem::path)] path: std::path::PathBuf,
         delimiter: String,
         smilesColumn: usize,
         nameColumn: i64,
@@ -1084,8 +1109,9 @@ impl PySmilesMolSupplier {
     ) -> PyResult<Self> {
         let _ = sanitize; // accepted, no-op (see doc comment)
         let delim = parse_delimiter(&delimiter)?;
-        let file = std::fs::File::open(path)
-            .map_err(|e| pyo3::exceptions::PyIOError::new_err(format!("{path}: {e}")))?;
+        let file = std::fs::File::open(&path).map_err(|e| {
+            pyo3::exceptions::PyIOError::new_err(format!("{}: {e}", path.display()))
+        })?;
         let options = chematic_mol::SmilesReaderOptions {
             delimiter: delim,
             smiles_column: smilesColumn,
@@ -1156,7 +1182,7 @@ impl PySmilesWriter {
     #[allow(non_snake_case)]
     #[pyo3(signature = (path, delimiter=" ".to_string(), nameHeader="Name".to_string(), includeHeader=true, isomericSmiles=true, kekuleSmiles=false))]
     fn new(
-        path: &str,
+        #[pyo3(from_py_with=crate::filesystem::path)] path: std::path::PathBuf,
         delimiter: String,
         nameHeader: String,
         includeHeader: bool,
@@ -1174,8 +1200,9 @@ impl PySmilesWriter {
             ));
         }
         let delim = parse_delimiter(&delimiter)?;
-        let file = std::fs::File::create(path)
-            .map_err(|e| pyo3::exceptions::PyIOError::new_err(format!("{path}: {e}")))?;
+        let file = std::fs::File::create(&path).map_err(|e| {
+            pyo3::exceptions::PyIOError::new_err(format!("{}: {e}", path.display()))
+        })?;
         let options = chematic_mol::SmilesWriterOptions {
             delimiter: delim,
             name_header: nameHeader,

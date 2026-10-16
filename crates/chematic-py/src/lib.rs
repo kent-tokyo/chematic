@@ -36,6 +36,7 @@ macro_rules! register_pyfunctions {
 mod crystal;
 mod ensemble_v2;
 mod errors;
+mod filesystem;
 mod fingerprint_similarity;
 mod fold_density;
 mod force_field;
