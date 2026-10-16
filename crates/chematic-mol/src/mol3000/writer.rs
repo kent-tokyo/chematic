@@ -25,6 +25,15 @@ fn v3000_atom_symbol(mol: &Molecule, idx: AtomIdx, atom: &Atom) -> &'static str 
     match mol.r_group_label(idx).and_then(|label| label.number()) {
         Some(_) => "R#",
         None if mol.r_group_label(idx).is_some() => "R",
+        // RDKit's V3000 reader drops MASS, CHG, and explicit H from `*`.
+        // Its `R` atom preserves those decorated wildcard identities. CTfile
+        // readers may also label that spelling as an unnumbered R group.
+        None if atom.isotope.is_some()
+            || atom.charge != 0
+            || atom.hydrogen_count.is_some_and(|count| count > 0) =>
+        {
+            "R"
+        }
         None => "*",
     }
 }
@@ -173,6 +182,31 @@ fn append_atom_properties(
         .iter()
         .find(|(atom_id, _)| *atom_id == idx.0 + 1)
         .map(|(_, properties)| properties.as_str());
+    if atom.wildcard
+        && mol.r_group_label(idx).is_none()
+        && atom.hydrogen_count.is_some_and(|count| count > 0)
+        && !source_properties.is_some_and(|properties| {
+            properties
+                .split_whitespace()
+                .any(|token| token.starts_with("VAL=") || token.starts_with("RAD="))
+        })
+    {
+        let bonds = mol.neighbors(idx).try_fold(0u8, |sum, (_, bond_idx)| {
+            let order = match mol.bond(bond_idx).order {
+                BondOrder::Single | BondOrder::Up | BondOrder::Down => 1,
+                BondOrder::Double => 2,
+                BondOrder::Triple => 3,
+                _ => return None,
+            };
+            sum.checked_add(order)
+        });
+        if let Some(valence) = bonds
+            .and_then(|bonds| bonds.checked_add(atom.hydrogen_count.unwrap_or(0)))
+            .filter(|&valence| (1..=14).contains(&valence))
+        {
+            write!(line, " VAL={valence}").expect("writing to String cannot fail");
+        }
+    }
     append_inferred_valence_properties(line, mol, idx, atom, source_properties);
     if let Some(properties) = source_properties {
         line.push(' ');

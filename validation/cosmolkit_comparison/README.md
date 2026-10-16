@@ -31,6 +31,9 @@ script is `scripts/compare_rdkit_cosmolkit_v3000.py`.
 The [charged-bracket follow-up](v3000-charged-radicals-2026-10-17.md) fixes
 four additional V3000 read-back identities on `stress-v1` with no regressions
 on the three exposed corpora.
+The [decorated-wildcard follow-up](v3000-decorated-wildcards-2026-10-17.md)
+recovers seven more `stress-v1` identities while the browser and focused
+stereo sets remain unchanged.
 
 The focused [aromatic sulfur stereo read-back
 check](aromatic-s-stereo-2026-10-16.md) compares whether each toolkit keeps

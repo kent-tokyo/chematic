@@ -42,6 +42,43 @@ M  END
 ";
 
 #[test]
+fn decorated_wildcards_keep_their_identity_in_v3000() {
+    for (smiles, property) in [
+        ("[1*]C", "MASS=1"),
+        ("[2*]CC[3*]", "MASS=2"),
+        ("[*-]", "CHG=-1"),
+        ("[*H]", "VAL=1"),
+        ("[*H2]", "VAL=2"),
+        ("C[*H]", "VAL=2"),
+    ] {
+        let mol = chematic_smiles::parse(smiles).unwrap();
+        let block = write_mol_v3000(&mol, &MolMetadata::default(), &[]);
+        assert!(
+            block.lines().any(|line| line.starts_with("M  V30 ")
+                && line.contains(" R ")
+                && line.contains(property)),
+            "{smiles}: {block}"
+        );
+        let reread = read_mol_v3000_with_diagnostics(&block).unwrap().mol;
+        assert_eq!(
+            chematic_smiles::rdkit_canonical_smiles(&reread).unwrap(),
+            chematic_smiles::rdkit_canonical_smiles(&mol).unwrap(),
+            "{smiles}"
+        );
+    }
+    let ordinary = chematic_smiles::parse("*C").unwrap();
+    let block = write_mol_v3000(&ordinary, &MolMetadata::default(), &[]);
+    assert!(block.contains("M  V30 1 * "), "{block}");
+    let explicit = chematic_smiles::parse("[*H]").unwrap();
+    let metadata = MolMetadata {
+        v3000_atom_properties: vec![(1, "VAL=1".into())],
+        ..Default::default()
+    };
+    let block = write_mol_v3000(&explicit, &metadata, &[]);
+    assert_eq!(block.matches(" VAL=1").count(), 1, "{block}");
+}
+
+#[test]
 fn bracket_atom_valence_and_radicals_survive_v3000_writing() {
     for (smiles, expected) in [
         ("[C]SCCC(S)C(=O)O", "RAD=2 VAL=1"),
