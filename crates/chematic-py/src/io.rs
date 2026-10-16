@@ -8,6 +8,7 @@ use crate::Mol;
 mod dataset;
 mod dataset_batch;
 mod dataset_selector;
+mod forward_sdf;
 mod tdt;
 use dataset::PySdfDataset;
 use tdt::{PyTdtMolSupplier, PyTdtWriter};
@@ -1304,6 +1305,7 @@ fn register_classes(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<SdfBatchIter>()?;
     m.add_class::<XyzBatchIter>()?;
     m.add_class::<SdMolSupplier>()?;
+    m.add_class::<forward_sdf::ForwardSdMolSupplier>()?;
     m.add_class::<SdWriter>()?;
     m.add_class::<PySmilesMolSupplier>()?;
     m.add_class::<PySmilesWriter>()?;

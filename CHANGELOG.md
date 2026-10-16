@@ -14,7 +14,18 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-No unreleased changes.
+### Added
+
+- Python `ForwardSDMolSupplier` reads binary file objects, including BytesIO
+  and gzip streams, through the native SDF parser. Both native and compatibility
+  APIs reject missing/non-callable `read` at construction and preserve read
+  exceptions, titles and SD fields. See [stream input contracts](docs/python-forward-sdf.md).
+
+### Fixed
+
+- Preserve SDF data fields whose headers contain optional trailing information,
+  including RDKit SDWriter's `> <Field> (record-number)` headers, across native
+  stream, file and in-memory readers.
 
 ## [1.1.6] - 2026-10-16
 
