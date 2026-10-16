@@ -4701,6 +4701,7 @@ def iter_sdf(path: _FileSystemPath) -> SdfIter:
 def iter_sdf_checked(
     path: _FileSystemPath,
     *,
+    compression: Literal["plain", "gzip", "auto"] = "plain",
     max_input_bytes: Optional[int] = None,
     max_record_bytes: Optional[int] = None,
     max_line_bytes: Optional[int] = None,
@@ -4713,6 +4714,9 @@ def iter_sdf_checked(
     Indices are zero-based source record positions.
     Positive limit overrides can be set for larger inputs; defaults are
     1 GiB total, 16 MiB per record and line, and 100,000 records.
+    Limits count decoded bytes. Auto detects gzip magic independently per input;
+    filenames are ignored. Concatenated members are supported. Probe failures
+    raise IOError at construction; decompression failures are yielded in place.
     """
     ...
 

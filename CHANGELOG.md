@@ -14,7 +14,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-No unreleased changes.
+### Added
+
+- Rust `SdfInput` / `SdfCompression` and Python `iter_sdf_checked(...,
+  compression="plain" | "gzip" | "auto")` support independent per-input
+  gzip detection and concatenated members. Plain input remains the default;
+  native SDF limits count decoded data and compression failures are reported.
+  See [SDF gzip input](docs/sdf-gzip-input.md).
 
 ## [1.1.6] - 2026-10-16
 
