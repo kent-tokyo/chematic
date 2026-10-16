@@ -53,3 +53,20 @@ impl RdkitMmffField {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::MmffDielectricError;
+
+    #[test]
+    fn dielectric_errors_have_stable_messages() {
+        assert_eq!(
+            MmffDielectricError::InvalidConstant.to_string(),
+            "MMFF dielectric constant must be finite and positive"
+        );
+        assert_eq!(
+            MmffDielectricError::CoefficientOverflow.to_string(),
+            "MMFF dielectric constant overflows electrostatic coefficients"
+        );
+    }
+}
