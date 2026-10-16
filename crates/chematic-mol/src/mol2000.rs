@@ -635,11 +635,16 @@ pub(crate) fn kekule_orders_for_writing(
     }
     // An atom's inferred H count depends on its own bonds only, so each
     // stored count is compared with the inference directly.
-    let inferable = mol.atoms().all(|(idx, atom)| match atom.hydrogen_count {
-        Some(h) if atom.aromatic && !atom.wildcard => {
-            chematic_core::valence::valence_inferred_hcount(mol, idx) == h
+    let inferable = mol.atoms().all(|(idx, atom)| {
+        if atom.aromatic && atom.wildcard {
+            return false;
         }
-        _ => true,
+        match atom.hydrogen_count {
+            Some(h) if atom.aromatic => {
+                chematic_core::valence::valence_inferred_hcount(mol, idx) == h
+            }
+            _ => true,
+        }
     });
     if inferable {
         return None;

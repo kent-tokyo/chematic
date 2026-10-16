@@ -42,6 +42,34 @@ M  END
 ";
 
 #[test]
+fn aromatic_ring_wildcard_uses_kekule_bonds_in_v3000() {
+    for smiles in ["c1cc*cc1", "c1cc*(F)cc1", "Cc1c*ccc1"] {
+        let mol = chematic_smiles::parse(smiles).unwrap();
+        let block = write_mol_v3000(&mol, &MolMetadata::default(), &[]);
+        let bonds: Vec<_> = block
+            .lines()
+            .skip_while(|line| *line != "M  V30 BEGIN BOND")
+            .skip(1)
+            .take_while(|line| *line != "M  V30 END BOND")
+            .collect();
+        assert!(
+            bonds
+                .iter()
+                .all(|line| line.split_whitespace().nth(3) != Some("4")),
+            "{smiles}: {block}"
+        );
+        assert_eq!(
+            bonds
+                .iter()
+                .filter(|line| line.split_whitespace().nth(3) == Some("2"))
+                .count(),
+            3,
+            "{smiles}: {block}"
+        );
+    }
+}
+
+#[test]
 fn decorated_wildcards_keep_their_identity_in_v3000() {
     for (smiles, property) in [
         ("[1*]C", "MASS=1"),

@@ -351,6 +351,7 @@ impl<'a> Parser<'a> {
         }
 
         let mut molecule = mol.build();
+        normalize_ring_wildcards(&mut molecule);
         stereo::retain_single_vacant_site(&mut molecule, &tagged_atoms);
         crate::allene::normalize_allene_stereo(&mut molecule, &tagged_atoms);
         // A SMILES graph with no ring-closure token is a forest by
@@ -1156,6 +1157,44 @@ impl ParsedBond {
     }
 }
 
+/// A wildcard between aromatic atoms on a 4n+2 ring is aromatic in RDKit's
+/// SMILES model, including when its two written bonds were explicit single
+/// bonds. The ring-size gate avoids promoting seven- and eight-membered rings
+/// that RDKit de-aromatizes. A branch or inter-ring bridge stays aliphatic.
+fn normalize_ring_wildcards(mol: &mut Molecule) {
+    if mol.smiles_ring_closure_bond_count() == 0 || !mol.atoms().any(|(_, atom)| atom.wildcard) {
+        return;
+    }
+    let ring_bonds = chematic_perception::ring_bond_flags_shared(mol);
+    let rings = chematic_perception::find_sssr_shared(mol);
+    let mut changes = Vec::new();
+    for (idx, atom) in mol.atoms() {
+        if !atom.wildcard
+            || atom.aromatic
+            || !rings
+                .rings()
+                .iter()
+                .any(|ring| ring.len() % 4 == 2 && ring.contains(&idx))
+        {
+            continue;
+        }
+        let aromatic_ring_bonds: Vec<_> = mol
+            .neighbors(idx)
+            .filter(|&(neighbor, bond)| ring_bonds[bond.0 as usize] && mol.atom(neighbor).aromatic)
+            .map(|(_, bond)| bond)
+            .collect();
+        if aromatic_ring_bonds.len() >= 2 {
+            changes.push((idx, aromatic_ring_bonds));
+        }
+    }
+    for (idx, bonds) in changes {
+        mol.set_atom_aromatic(idx, true);
+        for bond in bonds {
+            mol.set_bond_order(bond, BondOrder::Aromatic);
+        }
+    }
+}
+
 /// Determine the implicit bond between two adjacent atoms already in the builder.
 ///
 /// Rule: if both atoms are aromatic → Aromatic bond; otherwise → Single bond.
@@ -1339,6 +1378,40 @@ mod tests {
         let mol = parse("[*:17]C").unwrap();
         assert!(mol.atom(AtomIdx(0)).wildcard);
         assert_eq!(mol.atom(AtomIdx(0)).atom_map, Some(17));
+    }
+
+    #[test]
+    fn wildcard_in_aromatic_ring_has_aromatic_ring_bonds() {
+        for smiles in ["c1cc*cc1", "c1cc[*]cc1", "c1cc-*-cc1", "c1cc*(F)cc1"] {
+            let mol = parse(smiles).unwrap();
+            let (idx, atom) = mol.atoms().find(|(_, atom)| atom.wildcard).unwrap();
+            assert!(atom.aromatic, "{smiles}");
+            assert_eq!(
+                mol.neighbors(idx)
+                    .filter(|&(_, bond)| mol.bond(bond).order == BondOrder::Aromatic)
+                    .count(),
+                2,
+                "{smiles}"
+            );
+        }
+    }
+
+    #[test]
+    fn pendant_inter_ring_and_non_huckel_wildcards_remain_nonaromatic() {
+        for smiles in [
+            "c1cc(*)ccc1",
+            "c1cc(*c2ccccc2)ccc1",
+            "c1cc*ccc1",
+            "c1cc*cccc1",
+        ] {
+            let mol = parse(smiles).unwrap();
+            assert!(
+                mol.atoms()
+                    .filter(|(_, atom)| atom.wildcard)
+                    .all(|(_, atom)| !atom.aromatic),
+                "{smiles}"
+            );
+        }
     }
 
     #[test]

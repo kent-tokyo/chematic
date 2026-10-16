@@ -34,6 +34,9 @@ on the three exposed corpora.
 The [decorated-wildcard follow-up](v3000-decorated-wildcards-2026-10-17.md)
 recovers seven more `stress-v1` identities while the browser and focused
 stereo sets remain unchanged.
+The [aromatic-ring wildcard follow-up](v3000-ring-wildcards-2026-10-17.md)
+recovers five more `stress-v1` identities with no changed browser or focused
+stereo rows.
 
 The focused [aromatic sulfur stereo read-back
 check](aromatic-s-stereo-2026-10-16.md) compares whether each toolkit keeps
