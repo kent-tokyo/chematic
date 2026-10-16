@@ -14,7 +14,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-No unreleased changes.
+- Expose opt-in CDXML Bold/Hash/Dash stereo inference to Python and WASM
+  (RDKit #9359). Correct screen-coordinate parity, solid/hashed sense and
+  directional narrow-end ownership in the native reader. Default
+  non-directional inference remains disabled.
 
 ## [1.1.5] - 2026-10-16
 

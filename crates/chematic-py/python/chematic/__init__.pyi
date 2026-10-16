@@ -2917,8 +2917,12 @@ def from_cml_strict(cml_str: str) -> Mol:
     """Parse structurally valid, non-empty CML; reject malformed XML."""
     ...
 
-def from_cdxml(cdxml_str: str) -> Mol:
+def from_cdxml(cdxml_str: str, *, infer_nondirectional_stereo: bool = False) -> Mol:
     """Parse a ChemDraw XML (CDXML) string and return a :class:`Mol`.
+
+    Opt in to infer tetrahedral stereo from non-directional Bold/Hash/Dash
+    bonds. Defaults to False; ambiguous or degenerate drawings abstain.
+    Only the first molecular fragment is returned.
 
     Raises:
         ValueError: on parse failure.

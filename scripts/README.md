@@ -79,3 +79,12 @@ Open Babel CIF/mmCIF diagnostic. It needs a source-built Python extension and
 Gemmi in the oracle environment. Result hashes identify the downloaded bytes;
 the hermetic CI fixture is independently authored. This validates single CCD
 components, not a bulk dictionary or package release.
+
+## CDXML stereo inference
+
+`validate_cdxml_stereo_options.py` compares 216 transformed non-directional
+CDXML drawings with explicit directional RDKit 2026.09.1 controls. Supply a
+fresh source extension and pinned RDKit on `PYTHONPATH`; `--wasm-module`
+adds real Node/WASM, and `--baseline-pythonpath` diagnoses a retained pre-fix
+source runtime separately. Full isomeric graph, CIP and default controls
+have distinct counts. See [the inference boundary](../docs/cdxml-stereo-options.md).

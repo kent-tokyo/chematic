@@ -673,11 +673,27 @@ pub fn to_moljson(mol: &MolHandle) -> String {
 /// Returns a JS error if the document cannot be parsed.
 #[wasm_bindgen]
 pub fn mol_from_cdxml(cdxml: &str) -> Result<MolHandle, JsValue> {
+    mol_from_cdxml_with_options(cdxml, false)
+}
+
+/// Read the first CDXML fragment, optionally inferring Bold/Hash/Dash stereo.
+/// Non-directional displays are heuristic: ambiguous or degenerate drawings
+/// remain unassigned. `false` has the same behavior as `mol_from_cdxml`.
+#[wasm_bindgen]
+pub fn mol_from_cdxml_with_options(
+    cdxml: &str,
+    infer_nondirectional_stereo: bool,
+) -> Result<MolHandle, JsValue> {
     if cdxml.len() > WASM_MAX_INPUT_BYTES {
         return Err(JsValue::from_str("CDXML input too large"));
     }
-    let (mol, _coords) =
-        chematic_mol::parse_cdxml(cdxml).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let (mol, _coords) = chematic_mol::parse_cdxml_with_options(
+        cdxml,
+        &chematic_mol::CdxmlParseOptions {
+            infer_nondirectional_stereo,
+        },
+    )
+    .map_err(|e| JsValue::from_str(&e.to_string()))?;
     if mol.atom_count() > WASM_MAX_ATOMS {
         return Err(JsValue::from_str(&format!(
             "molecule too large (max {} atoms)",
@@ -698,11 +714,24 @@ pub fn mol_from_cdxml(cdxml: &str) -> Result<MolHandle, JsValue> {
 /// of bond elements.
 #[wasm_bindgen]
 pub fn cdxml_to_smiles_json(cdxml: &str) -> Result<String, JsValue> {
+    cdxml_to_smiles_json_with_options(cdxml, false)
+}
+
+/// Read all CDXML fragments with optional Bold/Hash/Dash stereo inference.
+/// Retains the existing input/atom/fragment limits and JSON result shape.
+#[wasm_bindgen]
+pub fn cdxml_to_smiles_json_with_options(
+    cdxml: &str,
+    infer_nondirectional_stereo: bool,
+) -> Result<String, JsValue> {
     if cdxml.len() > WASM_MAX_INPUT_BYTES {
         return Err(JsValue::from_str("CDXML input too large"));
     }
-    let fragments = chematic_mol::parse_cdxml_all_with_limits(
+    let fragments = chematic_mol::parse_cdxml_all_with_options_and_limits(
         cdxml,
+        &chematic_mol::CdxmlParseOptions {
+            infer_nondirectional_stereo,
+        },
         &chematic_mol::CdxmlParseLimits {
             max_fragments: WASM_MAX_BATCH_ITEMS,
             ..Default::default()

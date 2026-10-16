@@ -311,9 +311,9 @@ fn parse_cdxml_bold_addition_does_not_change_other_display_values() {
     for (display, expected) in [
         ("Hash", BondOrder::Down),
         ("Dash", BondOrder::Down),
-        ("WedgeEnd", BondOrder::Down),
+        ("WedgeEnd", BondOrder::Up),
         ("WedgedHashEnd", BondOrder::Down),
-        ("WedgedHashBegin", BondOrder::Up),
+        ("WedgedHashBegin", BondOrder::Down),
     ] {
         let cdxml = format!(
             r#"<CDXML><fragment>
@@ -585,27 +585,16 @@ fn rdkit_9359_hash_be_reversed_preserves_configuration() {
     );
 }
 
-/// Negative control, directional: `WedgeBegin` DOES have a real
-/// Begin/End convention (the Begin atom is the drawn narrow end), so
-/// switching to `WedgeEnd` for the SAME B/E atom order must genuinely
-/// invert the configuration (the reference atom flips) -- proves the
-/// preserve-under-swap behavior above is specific to the
-/// non-directional set, not a blanket "wedges don't encode direction"
-/// regression. Uses the default parser (no opt-in needed, directional
-/// wedges are unaffected by the flag either way).
+/// An End glyph belongs to E, not B. The fluorine endpoint cannot own
+/// tetrahedral stereo, so this marker must not assign the wide carbon end.
 #[test]
-fn rdkit_9359_wedge_begin_vs_wedge_end_inverts_configuration() {
+fn rdkit_9359_wedge_end_does_not_assign_the_wide_endpoint() {
     let (mol_begin, _) = parse_cdxml(&rdkit_9359_cdxml(Some("WedgeBegin"))).unwrap();
     let (mol_end, _) = parse_cdxml(&rdkit_9359_cdxml(Some("WedgeEnd"))).unwrap();
     let begin = mol_begin.atom(RDKIT_9359_CENTER).chirality;
     let end = mol_end.atom(RDKIT_9359_CENTER).chirality;
     assert_ne!(begin, Chirality::None);
-    assert_ne!(end, Chirality::None);
-    assert_ne!(
-        begin, end,
-        "WedgeBegin vs WedgeEnd (same B/E order) must invert -- the Begin \
-             atom is a real, drawn reference, unlike Bold/Hash"
-    );
+    assert_eq!(end, Chirality::None);
 }
 
 /// Reflection (negate all Y coordinates) must invert the perceived
@@ -640,7 +629,10 @@ fn rdkit_9359_bold_reflection_inverts_rotation_translation_preserves() {
         })
         .collect();
     let mut mol_rt = mol_base.clone();
-    chematic_perception::apply_local_parity_from_wedges(&mut mol_rt, &rotated_translated);
+    // The generic perception helper takes Cartesian coordinates, while
+    // the CDXML parser intentionally returns the source screen coordinates.
+    let cartesian: Vec<_> = rotated_translated.iter().map(|&(x, y)| (x, -y)).collect();
+    chematic_perception::apply_local_parity_from_wedges(&mut mol_rt, &cartesian);
     assert_eq!(
         mol_rt.atom(RDKIT_9359_CENTER).chirality,
         base_chirality,

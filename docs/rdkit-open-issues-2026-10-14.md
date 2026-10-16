@@ -80,3 +80,12 @@ refuses nonfinite coordinates and genuinely unrepresentable distances, while
 recovering finite norms when intermediate squares overflow or underflow.
 These are locally investigated numeric boundaries; the upstream issue remains
 a report of matrix-allocation safety, and its large-input crash was not run.
+
+## October 16 follow-up: CDXML stereo options
+
+[#9359](https://github.com/rdkit/rdkit/issues/9359) remains open. Native
+Bold/Hash/Dash inference already existed, but Python and WASM could not opt in.
+[Expose the option](cdxml-stereo-options.md) and correct independently observed
+screen-coordinate, hashed-sense and directional ownership defects in the
+reader. Default non-directional markers remain unassigned. This validates
+bounded molecular reading, not binary CDX or a general ChemDraw writer.
