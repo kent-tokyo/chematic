@@ -9,6 +9,9 @@ use chematic_core::{
     AtomIdx, BondIdx, BondOrder, Chirality, CipCode, Element, Molecule, implicit_hcount,
 };
 
+#[path = "cip_aromatic_ez.rs"]
+mod aromatic_ez;
+
 /// The result of a CIP stereochemistry assignment run.
 #[derive(Debug)]
 pub struct CipAssignment {
@@ -1224,22 +1227,8 @@ fn assign_ez(mol: &Molecule, bond_idx: BondIdx) -> Option<(AtomIdx, CipCode)> {
         return None;
     }
 
-    // The legacy sphere walk counts explicit double-bond duplicate atoms but
-    // not MANCUDE duplicates of aromatic bonds. That can reverse an imine's
-    // CIP priority at an aromatic ring junction. Use the hierarchical ranker
-    // only where an E/Z end has an aromatic substituent; keep the fast path for
-    // the much more common aliphatic bond. If the accurate comparator cannot
-    // resolve this input, retain the existing legacy answer.
-    let aromatic_substituent = [bond.atom1, bond.atom2].into_iter().any(|end| {
-        mol.neighbors(end)
-            .any(|(neighbor, _)| mol.atom(neighbor).aromatic)
-    });
-    if aromatic_substituent {
-        let ranker =
-            chematic_cip::SubstituentRanker::new(mol, chematic_cip::CipBudget::default_budget());
-        if let Some(result) = assign_ez_accurate(mol, bond_idx, &ranker) {
-            return Some(result);
-        }
+    if let Some(result) = aromatic_ez::try_assign(mol, bond_idx) {
+        return Some(result);
     }
 
     let a1 = bond.atom1;
