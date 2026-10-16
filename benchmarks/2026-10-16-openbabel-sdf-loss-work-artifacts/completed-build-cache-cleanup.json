@@ -1,0 +1,14 @@
+[
+  {
+    "path": "/private/tmp/chematic-sdf-loss-work-target-20261016",
+    "deleted_kib": 206572,
+    "no_active_compilers_or_open_files": true,
+    "binaries_sources_logs_preserved": true
+  },
+  {
+    "path": "/private/tmp/chematic-sdf-loss-work-test-target-20261016",
+    "deleted_kib": 263828,
+    "no_active_compilers_or_open_files": true,
+    "binaries_sources_logs_preserved": true
+  }
+]

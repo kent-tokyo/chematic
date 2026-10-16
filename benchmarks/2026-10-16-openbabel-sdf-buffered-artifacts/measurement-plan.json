@@ -1,0 +1,28 @@
+{
+  "base_revision": "b9f1e3cdd959a20f1cfa4c635237418a550ffa00",
+  "candidate": "borrow contiguous complete SDF records, conservative fallback",
+  "adoption": {
+    "source_output_exact": true,
+    "sdf_parse_and_roundtrip_ci_lower_above_one_on_both_slices": true,
+    "all_15_sdf_v3000_source_lane_medians_minimum": 0.99,
+    "all_negative_intervals_disclosed": true
+  },
+  "profiles": {
+    "sdf": [
+      0,
+      5000
+    ],
+    "v3000": [
+      0,
+      5000,
+      "chains"
+    ]
+  },
+  "blocks": 21,
+  "native_repeats": 3,
+  "comparator_win": "semantic prerequisite, paired bootstrap CI lower>1, 21/21 wins",
+  "no_adaptive_timing_reruns": true,
+  "host_scope": "one shared development host; other workloads uncontrolled",
+  "source_scope": "clean current main plus SDF buffer fast path, separate from all previous unpromoted candidates",
+  "limits_and_errors": "preserve original resource-limit/error precedence and actual consumed bytes; unchanged read_until fallback"
+}

@@ -1,0 +1,37 @@
+{
+  "sdf-0": {
+    "records": 1000,
+    "snapshots_equal": true,
+    "rewrites_equal": true,
+    "snapshot_sha256": "3a007d14136703bdd1d23198af9e91ea48a7099df72419e8b3daafad3d9e9f7b",
+    "rewrite_sha256": "c3a0479d492f48d4ba27acf2a4c0585ea19170e845be38d3bcc4fcceb0717172"
+  },
+  "sdf-5000": {
+    "records": 1000,
+    "snapshots_equal": true,
+    "rewrites_equal": true,
+    "snapshot_sha256": "4e326d586393d02463e09a5a657c085deeb4191d34a72ce33efe0c7fb31c7dbe",
+    "rewrite_sha256": "4995f90edbde0fa249cc96ec12e5dc7502c4479ab8c267c4ca3700952cc08d0f"
+  },
+  "v3000-0": {
+    "records": 1000,
+    "snapshots_equal": true,
+    "rewrites_equal": true,
+    "snapshot_sha256": "e2fce68d8c33616317f46397cf79ee877ef856460a35b84a622ddff1d8eced74",
+    "rewrite_sha256": "73a24d6d52f15900af0b221e21310367c01278f93f0de4189be8d3d01c61f254"
+  },
+  "v3000-5000": {
+    "records": 1000,
+    "snapshots_equal": true,
+    "rewrites_equal": true,
+    "snapshot_sha256": "7fa169eebb0d112936fd4e135d08702eb1150faa6791111f52792c51d504d67d",
+    "rewrite_sha256": "405cf9062ef1fe3697b478cdeaa453425546d233d60b220f73725beee68f7cdc"
+  },
+  "v3000-chains": {
+    "records": 64,
+    "snapshots_equal": true,
+    "rewrites_equal": true,
+    "snapshot_sha256": "5add029fe89ad301067f53ee404c87ebb54221733bf4c5280de463eabe5e1550",
+    "rewrite_sha256": "b67b1fb9cdb4c2e8977a34dd309a13ebc035050ba7e41473114c62f2c7d5ca95"
+  }
+}
