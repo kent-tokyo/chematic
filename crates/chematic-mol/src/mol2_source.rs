@@ -552,7 +552,7 @@ fn parse_mol2_impl(
     }
 
     let mut molecule = builder.build();
-    crate::mol2_tripos::perceive_mol2_tetrahedral_from_3d(&mut molecule, &coords);
+    crate::mol2_tripos::perceive_mol2_stereo_from_coordinates(&mut molecule, &coords);
     Ok(Mol2SourceRecord {
         source: if retain_source {
             s.to_string()
