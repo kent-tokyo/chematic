@@ -158,29 +158,26 @@ pub(crate) fn classify_geometry_rank(points: &[Point3]) -> GeometryRank {
     if points.len() < 3 {
         return GeometryRank::Coplanar;
     }
-    // Find a non-degenerate plane-defining pair of vectors from point 0.
-    // ponytail: fixing the origin at point 0 makes this O(n) instead of
-    // O(n^3); it misses only the vanishingly rare pathological case where
-    // point 0 is collinear with every other point yet some other, unrelated
-    // triple isn't -- not worth a full O(n^3) search for real molecular
-    // input up to `MAX_ATOMS`.
+    // Use the widest baseline and the point farthest from that line. Both
+    // scans are linear, including a collinear cloud. MOL2 can contain far
+    // more atoms than V2000, so a nested pair search would be unbounded here.
     let origin = points[0];
-    let mut normal: Option<Point3> = None;
-    'outer: for (j, pj) in points.iter().enumerate().skip(1) {
-        let v1 = pj.sub(&origin);
-        for pk in points.iter().skip(j + 1) {
-            let v2 = pk.sub(&origin);
-            let n = v1.cross(&v2);
-            if n.norm() > COLLINEAR_EPS {
-                normal = Some(n);
-                break 'outer;
-            }
-        }
-    }
-    let Some(n) = normal else {
+    let baseline = points
+        .iter()
+        .skip(1)
+        .map(|point| point.sub(&origin))
+        .max_by(|a, b| a.norm().total_cmp(&b.norm()))
+        .unwrap();
+    let n = points
+        .iter()
+        .skip(1)
+        .map(|point| baseline.cross(&point.sub(&origin)))
+        .max_by(|a, b| a.norm().total_cmp(&b.norm()))
+        .unwrap();
+    if n.norm() <= COLLINEAR_EPS {
         // Every point is collinear with point 0 -- trivially coplanar.
         return GeometryRank::Coplanar;
-    };
+    }
     let n = n.normalize();
     let max_dev = points
         .iter()
@@ -191,6 +188,15 @@ pub(crate) fn classify_geometry_rank(points: &[Point3]) -> GeometryRank {
     } else {
         GeometryRank::ThreeD
     }
+}
+
+#[cfg(test)]
+#[test]
+fn large_collinear_coordinate_cloud_is_coplanar() {
+    let points = (0..10_000)
+        .map(|index| Point3::new(f64::from(index), 0.0, 1.0))
+        .collect::<Vec<_>>();
+    assert_eq!(classify_geometry_rank(&points), GeometryRank::Coplanar);
 }
 
 /// Parse the dimensional-code field (columns 20..22, 0-indexed) from a MOL

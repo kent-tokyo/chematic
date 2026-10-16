@@ -198,8 +198,10 @@ chematic convert-with-report --input-format mol2 --output-format smiles \
   carry source IDs and zero-based source/candidate indices only if this check
   passes. These mappings refer to the candidate even when strict policy
   refuses to emit it. `verification_scope` defines the checked fields.
-- MOL2 formal-charge interpretation beyond `N.4`, coordinate/extension stereo,
-  and source implicit-hydrogen assignment remain unverified. SMILES hydrogen
+- MOL2 formal-charge interpretation beyond `N.4` and source implicit-hydrogen
+  assignment remain unverified. Noncoplanar 3D tetrahedral stereo is perceived
+  in graph reads, but checked conversion does not verify stereo; other
+  coordinate/extension stereo remains unverified. SMILES hydrogen
   counts are explicitly inferred under the graph valence model; CJSON does
   not emit an inferred hydrogen count. A verified projected graph does not establish chemical equivalence to the full source record.
 - MOL2 → CJSON carries source x/y/z components and projected formal charges.
@@ -333,7 +335,9 @@ use the record or checked API for source retention.
   atom/bond metadata, including source IDs, names, atom types, substructure
   references, partial charges, and original bond tokens. Extra sections are
   listed as opaque; source retention does not prove their interpretation.
-  Geometry-derived stereochemistry is not perceived by this reader.
+  Noncoplanar 3D coordinates are used to perceive tetrahedral configuration;
+  planar and degenerate coordinates do not produce a tag. Other
+  geometry-derived stereo remains unverified.
 - **Graph-only write**: `write_mol2` emits `NO_CHARGES`, simplified atom types,
   and zero numerical charge placeholders; it does not compute Gasteiger
   charges or retain source metadata. Missing coordinates still default to

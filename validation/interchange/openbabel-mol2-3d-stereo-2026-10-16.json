@@ -1,0 +1,763 @@
+{
+  "schema": "openbabel_mol2_3d_tetrahedral_paired_v1",
+  "scope": "generated RDKit 3D chiral molecules with explicit H, Open Babel MOL2 writer, RDKit source/re-read gate",
+  "rdkit_version": "2025.09.3",
+  "script_sha256": "1d931a3e5bffb768af15f62ad532dd8c3b7be5214f860a0a5f6b0288e2fd71b1",
+  "source_sha256": {
+    "crates/chematic-mol/src/mol2_tripos.rs": "ac6c7e167b8dbbdd5ce3992fab8bd60d6ed4f97f1a24e2277674492ce371c0b7",
+    "crates/chematic-mol/src/mol2_source.rs": "ff8a4ca91b4cbadeec067ef5c422e16addce52e4304f03df2e61a2cd6c8336fb",
+    "crates/chematic-mol/src/mol2000.rs": "40a01b9a281661dd08ab9caa55be6788be954eb5fb43fae4d6bfb390eff10c8c"
+  },
+  "tools": {
+    "chematic": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/target/debug/chematic",
+      "sha256": "0452b46dec6220d2d572c598cf7785f8a2efe3e9ef946effc034473591b12d05"
+    },
+    "openbabel": {
+      "path": "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+      "sha256": "733b2c925d60b17a5c9d8ce9ec841e918cc20c7634301e23f9008a187d1d9bc5"
+    },
+    "before": {
+      "path": "/private/tmp/chematic-mol2-baseline-cli-20261016",
+      "sha256": "a89e13a8d7dbbf39e9cf689de0cb349618e2509f2a70be35534be29c24444b31"
+    }
+  },
+  "summary": {
+    "attempted": 24,
+    "comparable": 24,
+    "source_exclusions": 0,
+    "chematic_correct": 24,
+    "openbabel_correct": 24,
+    "chematic_only": 0,
+    "openbabel_only": 0,
+    "both_wrong": 0,
+    "before_correct": 0
+  },
+  "rows": [
+    {
+      "source": "C[C@H](F)Cl",
+      "seed_index": 0,
+      "inverted": false,
+      "expected": "C[C@H](F)Cl",
+      "mol2_sha256": "1e34535d644bba3693f8c44249dbe45b245e8835efe28bd5a71bb89c9db82fb7",
+      "source_reread": "C[C@H](F)Cl",
+      "gate": "comparable",
+      "chematic": {
+        "exit_code": 0,
+        "smiles": "C([H])([H])([H])[C@](Cl)([H])F",
+        "identity": "C[C@H](F)Cl",
+        "stderr": "",
+        "matches_source": true
+      },
+      "openbabel": {
+        "exit_code": 0,
+        "smiles": "C[C@@H](Cl)F",
+        "identity": "C[C@H](F)Cl",
+        "stderr": "1 molecule converted",
+        "matches_source": true
+      },
+      "before": {
+        "exit_code": 0,
+        "smiles": "C([H])([H])([H])C(Cl)([H])F",
+        "identity": "CC(F)Cl",
+        "stderr": "",
+        "matches_source": false
+      }
+    },
+    {
+      "source": "C[C@@H](F)Cl",
+      "seed_index": 0,
+      "inverted": true,
+      "expected": "C[C@@H](F)Cl",
+      "mol2_sha256": "a0892095faed46fd7d3ece0a1cfe8eed98868cf5f3720483cfe20666b93bc2bf",
+      "source_reread": "C[C@@H](F)Cl",
+      "gate": "comparable",
+      "chematic": {
+        "exit_code": 0,
+        "smiles": "C([H])([H])([H])[C@@](Cl)([H])F",
+        "identity": "C[C@@H](F)Cl",
+        "stderr": "",
+        "matches_source": true
+      },
+      "openbabel": {
+        "exit_code": 0,
+        "smiles": "C[C@H](Cl)F",
+        "identity": "C[C@@H](F)Cl",
+        "stderr": "1 molecule converted",
+        "matches_source": true
+      },
+      "before": {
+        "exit_code": 0,
+        "smiles": "C([H])([H])([H])C(Cl)([H])F",
+        "identity": "CC(F)Cl",
+        "stderr": "",
+        "matches_source": false
+      }
+    },
+    {
+      "source": "C[C@H](F)Br",
+      "seed_index": 1,
+      "inverted": false,
+      "expected": "C[C@H](F)Br",
+      "mol2_sha256": "9c942d9a4e56b1659ec58b8783b1181232eb0ccfedf0955f783abc02e9236864",
+      "source_reread": "C[C@H](F)Br",
+      "gate": "comparable",
+      "chematic": {
+        "exit_code": 0,
+        "smiles": "[C@](F)([H])(Br)C([H])([H])[H]",
+        "identity": "C[C@H](F)Br",
+        "stderr": "",
+        "matches_source": true
+      },
+      "openbabel": {
+        "exit_code": 0,
+        "smiles": "C[C@@H](Br)F",
+        "identity": "C[C@H](F)Br",
+        "stderr": "1 molecule converted",
+        "matches_source": true
+      },
+      "before": {
+        "exit_code": 0,
+        "smiles": "C(F)([H])(Br)C([H])([H])[H]",
+        "identity": "CC(F)Br",
+        "stderr": "",
+        "matches_source": false
+      }
+    },
+    {
+      "source": "C[C@@H](F)Br",
+      "seed_index": 1,
+      "inverted": true,
+      "expected": "C[C@@H](F)Br",
+      "mol2_sha256": "e563f9f7a0a5b1ab182a8791328febcab880f519f4844cfaba1496b39d0f6ce8",
+      "source_reread": "C[C@@H](F)Br",
+      "gate": "comparable",
+      "chematic": {
+        "exit_code": 0,
+        "smiles": "[C@@](F)([H])(Br)C([H])([H])[H]",
+        "identity": "C[C@@H](F)Br",
+        "stderr": "",
+        "matches_source": true
+      },
+      "openbabel": {
+        "exit_code": 0,
+        "smiles": "C[C@H](Br)F",
+        "identity": "C[C@@H](F)Br",
+        "stderr": "1 molecule converted",
+        "matches_source": true
+      },
+      "before": {
+        "exit_code": 0,
+        "smiles": "C(F)([H])(Br)C([H])([H])[H]",
+        "identity": "CC(F)Br",
+        "stderr": "",
+        "matches_source": false
+      }
+    },
+    {
+      "source": "C[C@H](Cl)Br",
+      "seed_index": 2,
+      "inverted": false,
+      "expected": "C[C@H](Cl)Br",
+      "mol2_sha256": "1f17661afa72121dacfeb8de4f690655d1137696e0baec2247756569f25c9048",
+      "source_reread": "C[C@H](Cl)Br",
+      "gate": "comparable",
+      "chematic": {
+        "exit_code": 0,
+        "smiles": "[C@](Br)(Cl)([H])C([H])([H])[H]",
+        "identity": "C[C@H](Cl)Br",
+        "stderr": "",
+        "matches_source": true
+      },
+      "openbabel": {
+        "exit_code": 0,
+        "smiles": "C[C@@H](Br)Cl",
+        "identity": "C[C@H](Cl)Br",
+        "stderr": "1 molecule converted",
+        "matches_source": true
+      },
+      "before": {
+        "exit_code": 0,
+        "smiles": "C(Br)(Cl)([H])C([H])([H])[H]",
+        "identity": "CC(Cl)Br",
+        "stderr": "",
+        "matches_source": false
+      }
+    },
+    {
+      "source": "C[C@@H](Cl)Br",
+      "seed_index": 2,
+      "inverted": true,
+      "expected": "C[C@@H](Cl)Br",
+      "mol2_sha256": "fe9f955b1f65134c86bdb3d95354eb7cb42c867f20323c62f12d5134e9fc5fb8",
+      "source_reread": "C[C@@H](Cl)Br",
+      "gate": "comparable",
+      "chematic": {
+        "exit_code": 0,
+        "smiles": "[C@@](Br)(Cl)([H])C([H])([H])[H]",
+        "identity": "C[C@@H](Cl)Br",
+        "stderr": "",
+        "matches_source": true
+      },
+      "openbabel": {
+        "exit_code": 0,
+        "smiles": "C[C@H](Br)Cl",
+        "identity": "C[C@@H](Cl)Br",
+        "stderr": "1 molecule converted",
+        "matches_source": true
+      },
+      "before": {
+        "exit_code": 0,
+        "smiles": "C(Br)(Cl)([H])C([H])([H])[H]",
+        "identity": "CC(Cl)Br",
+        "stderr": "",
+        "matches_source": false
+      }
+    },
+    {
+      "source": "CC[C@H](F)Cl",
+      "seed_index": 3,
+      "inverted": false,
+      "expected": "CC[C@H](F)Cl",
+      "mol2_sha256": "18a3cb1ee967490d1342f2043f5f7a1c61b260cc967c13b140902254031415b1",
+      "source_reread": "CC[C@H](F)Cl",
+      "gate": "comparable",
+      "chematic": {
+        "exit_code": 0,
+        "smiles": "[C@](C([H])([H])C([H])([H])[H])(F)(Cl)[H]",
+        "identity": "CC[C@H](F)Cl",
+        "stderr": "",
+        "matches_source": true
+      },
+      "openbabel": {
+        "exit_code": 0,
+        "smiles": "CC[C@@H](Cl)F",
+        "identity": "CC[C@H](F)Cl",
+        "stderr": "1 molecule converted",
+        "matches_source": true
+      },
+      "before": {
+        "exit_code": 0,
+        "smiles": "C(C([H])([H])C([H])([H])[H])(F)(Cl)[H]",
+        "identity": "CCC(F)Cl",
+        "stderr": "",
+        "matches_source": false
+      }
+    },
+    {
+      "source": "CC[C@@H](F)Cl",
+      "seed_index": 3,
+      "inverted": true,
+      "expected": "CC[C@@H](F)Cl",
+      "mol2_sha256": "dfbf741fb0845525a987de1efcf95b0d30cabf87e4ed26640694213b9cc3677f",
+      "source_reread": "CC[C@@H](F)Cl",
+      "gate": "comparable",
+      "chematic": {
+        "exit_code": 0,
+        "smiles": "[C@@](C([H])([H])C([H])([H])[H])(F)(Cl)[H]",
+        "identity": "CC[C@@H](F)Cl",
+        "stderr": "",
+        "matches_source": true
+      },
+      "openbabel": {
+        "exit_code": 0,
+        "smiles": "CC[C@H](Cl)F",
+        "identity": "CC[C@@H](F)Cl",
+        "stderr": "1 molecule converted",
+        "matches_source": true
+      },
+      "before": {
+        "exit_code": 0,
+        "smiles": "C(C([H])([H])C([H])([H])[H])(F)(Cl)[H]",
+        "identity": "CCC(F)Cl",
+        "stderr": "",
+        "matches_source": false
+      }
+    },
+    {
+      "source": "CC[C@H](Cl)Br",
+      "seed_index": 4,
+      "inverted": false,
+      "expected": "CC[C@H](Cl)Br",
+      "mol2_sha256": "500b8b0b7e534fda7d22b428eeea740f7bc94c61ce888d864b785e18d9d18ae5",
+      "source_reread": "CC[C@H](Cl)Br",
+      "gate": "comparable",
+      "chematic": {
+        "exit_code": 0,
+        "smiles": "[C@@](Br)([H])(Cl)C([H])([H])C([H])([H])[H]",
+        "identity": "CC[C@H](Cl)Br",
+        "stderr": "",
+        "matches_source": true
+      },
+      "openbabel": {
+        "exit_code": 0,
+        "smiles": "CC[C@@H](Br)Cl",
+        "identity": "CC[C@H](Cl)Br",
+        "stderr": "1 molecule converted",
+        "matches_source": true
+      },
+      "before": {
+        "exit_code": 0,
+        "smiles": "C(Br)([H])(Cl)C([H])([H])C([H])([H])[H]",
+        "identity": "CCC(Cl)Br",
+        "stderr": "",
+        "matches_source": false
+      }
+    },
+    {
+      "source": "CC[C@@H](Cl)Br",
+      "seed_index": 4,
+      "inverted": true,
+      "expected": "CC[C@@H](Cl)Br",
+      "mol2_sha256": "c21c7476496b22370c4170a20eedf94fbae648d8ad05600b87a263dbec6d5ba3",
+      "source_reread": "CC[C@@H](Cl)Br",
+      "gate": "comparable",
+      "chematic": {
+        "exit_code": 0,
+        "smiles": "[C@](Br)([H])(Cl)C([H])([H])C([H])([H])[H]",
+        "identity": "CC[C@@H](Cl)Br",
+        "stderr": "",
+        "matches_source": true
+      },
+      "openbabel": {
+        "exit_code": 0,
+        "smiles": "CC[C@H](Br)Cl",
+        "identity": "CC[C@@H](Cl)Br",
+        "stderr": "1 molecule converted",
+        "matches_source": true
+      },
+      "before": {
+        "exit_code": 0,
+        "smiles": "C(Br)([H])(Cl)C([H])([H])C([H])([H])[H]",
+        "identity": "CCC(Cl)Br",
+        "stderr": "",
+        "matches_source": false
+      }
+    },
+    {
+      "source": "N[C@H](C)C(=O)O",
+      "seed_index": 5,
+      "inverted": false,
+      "expected": "C[C@@H](N)C(=O)O",
+      "mol2_sha256": "882f0bdcab73904027d4c1389f1738a52729e64768de3ae1c2578a299fb3f646",
+      "source_reread": "C[C@@H](N)C(=O)O",
+      "gate": "comparable",
+      "chematic": {
+        "exit_code": 0,
+        "smiles": "O=C([C@](C([H])([H])[H])([H])N([H])[H])O[H]",
+        "identity": "C[C@@H](N)C(=O)O",
+        "stderr": "",
+        "matches_source": true
+      },
+      "openbabel": {
+        "exit_code": 0,
+        "smiles": "C[C@H](C(=O)O)N",
+        "identity": "C[C@@H](N)C(=O)O",
+        "stderr": "1 molecule converted",
+        "matches_source": true
+      },
+      "before": {
+        "exit_code": 0,
+        "smiles": "O=C(C(C([H])([H])[H])([H])N([H])[H])O[H]",
+        "identity": "CC(N)C(=O)O",
+        "stderr": "",
+        "matches_source": false
+      }
+    },
+    {
+      "source": "N[C@@H](C)C(=O)O",
+      "seed_index": 5,
+      "inverted": true,
+      "expected": "C[C@H](N)C(=O)O",
+      "mol2_sha256": "30956fc7935eeb21c2aa1465cb546773c47bfd79ee883e8400c03461375192f2",
+      "source_reread": "C[C@H](N)C(=O)O",
+      "gate": "comparable",
+      "chematic": {
+        "exit_code": 0,
+        "smiles": "O=C([C@@](C([H])([H])[H])([H])N([H])[H])O[H]",
+        "identity": "C[C@H](N)C(=O)O",
+        "stderr": "",
+        "matches_source": true
+      },
+      "openbabel": {
+        "exit_code": 0,
+        "smiles": "C[C@@H](C(=O)O)N",
+        "identity": "C[C@H](N)C(=O)O",
+        "stderr": "1 molecule converted",
+        "matches_source": true
+      },
+      "before": {
+        "exit_code": 0,
+        "smiles": "O=C(C(C([H])([H])[H])([H])N([H])[H])O[H]",
+        "identity": "CC(N)C(=O)O",
+        "stderr": "",
+        "matches_source": false
+      }
+    },
+    {
+      "source": "O=C(O)[C@H](O)C",
+      "seed_index": 6,
+      "inverted": false,
+      "expected": "C[C@@H](O)C(=O)O",
+      "mol2_sha256": "59aebbb027196db45f14306f6637dee192bfe70dd7d5b8accde2c0c9ba8ec9c7",
+      "source_reread": "C[C@@H](O)C(=O)O",
+      "gate": "comparable",
+      "chematic": {
+        "exit_code": 0,
+        "smiles": "[C@](C([H])([H])[H])(O[H])([H])C(=O)O[H]",
+        "identity": "C[C@@H](O)C(=O)O",
+        "stderr": "",
+        "matches_source": true
+      },
+      "openbabel": {
+        "exit_code": 0,
+        "smiles": "OC(=O)[C@H](O)C",
+        "identity": "C[C@@H](O)C(=O)O",
+        "stderr": "1 molecule converted",
+        "matches_source": true
+      },
+      "before": {
+        "exit_code": 0,
+        "smiles": "C(C([H])([H])[H])(O[H])([H])C(=O)O[H]",
+        "identity": "CC(O)C(=O)O",
+        "stderr": "",
+        "matches_source": false
+      }
+    },
+    {
+      "source": "O=C(O)[C@@H](O)C",
+      "seed_index": 6,
+      "inverted": true,
+      "expected": "C[C@H](O)C(=O)O",
+      "mol2_sha256": "fc7e485f901a75ec95e4ade49b5c6cb277cb6ef68bd7702d53d8ccc64a866b5e",
+      "source_reread": "C[C@H](O)C(=O)O",
+      "gate": "comparable",
+      "chematic": {
+        "exit_code": 0,
+        "smiles": "[C@@](C([H])([H])[H])(O[H])([H])C(=O)O[H]",
+        "identity": "C[C@H](O)C(=O)O",
+        "stderr": "",
+        "matches_source": true
+      },
+      "openbabel": {
+        "exit_code": 0,
+        "smiles": "OC(=O)[C@@H](O)C",
+        "identity": "C[C@H](O)C(=O)O",
+        "stderr": "1 molecule converted",
+        "matches_source": true
+      },
+      "before": {
+        "exit_code": 0,
+        "smiles": "C(C([H])([H])[H])(O[H])([H])C(=O)O[H]",
+        "identity": "CC(O)C(=O)O",
+        "stderr": "",
+        "matches_source": false
+      }
+    },
+    {
+      "source": "C[C@H](O)N",
+      "seed_index": 7,
+      "inverted": false,
+      "expected": "C[C@@H](N)O",
+      "mol2_sha256": "a9a521af1718107e0c41c0bf68eb89ccb66f29462a2da1ea4f3b44065b7c7b9a",
+      "source_reread": "C[C@@H](N)O",
+      "gate": "comparable",
+      "chematic": {
+        "exit_code": 0,
+        "smiles": "O([H])[C@]([H])(N([H])[H])C([H])([H])[H]",
+        "identity": "C[C@@H](N)O",
+        "stderr": "",
+        "matches_source": true
+      },
+      "openbabel": {
+        "exit_code": 0,
+        "smiles": "C[C@H](O)N",
+        "identity": "C[C@@H](N)O",
+        "stderr": "1 molecule converted",
+        "matches_source": true
+      },
+      "before": {
+        "exit_code": 0,
+        "smiles": "O([H])C([H])(N([H])[H])C([H])([H])[H]",
+        "identity": "CC(N)O",
+        "stderr": "",
+        "matches_source": false
+      }
+    },
+    {
+      "source": "C[C@@H](O)N",
+      "seed_index": 7,
+      "inverted": true,
+      "expected": "C[C@H](N)O",
+      "mol2_sha256": "60ffb16c062e72f7ca4819a584128d0c4381b25c8c1125f27d755480fad38fcc",
+      "source_reread": "C[C@H](N)O",
+      "gate": "comparable",
+      "chematic": {
+        "exit_code": 0,
+        "smiles": "O([H])[C@@]([H])(N([H])[H])C([H])([H])[H]",
+        "identity": "C[C@H](N)O",
+        "stderr": "",
+        "matches_source": true
+      },
+      "openbabel": {
+        "exit_code": 0,
+        "smiles": "C[C@@H](O)N",
+        "identity": "C[C@H](N)O",
+        "stderr": "1 molecule converted",
+        "matches_source": true
+      },
+      "before": {
+        "exit_code": 0,
+        "smiles": "O([H])C([H])(N([H])[H])C([H])([H])[H]",
+        "identity": "CC(N)O",
+        "stderr": "",
+        "matches_source": false
+      }
+    },
+    {
+      "source": "C[C@H](F)O",
+      "seed_index": 8,
+      "inverted": false,
+      "expected": "C[C@@H](O)F",
+      "mol2_sha256": "78fd0b446c4160b4ad8b9b27ec9e672382f121f479f800f697292e3f24142e5e",
+      "source_reread": "C[C@@H](O)F",
+      "gate": "comparable",
+      "chematic": {
+        "exit_code": 0,
+        "smiles": "O([H])[C@@]([H])(F)C([H])([H])[H]",
+        "identity": "C[C@@H](O)F",
+        "stderr": "",
+        "matches_source": true
+      },
+      "openbabel": {
+        "exit_code": 0,
+        "smiles": "C[C@H](F)O",
+        "identity": "C[C@@H](O)F",
+        "stderr": "1 molecule converted",
+        "matches_source": true
+      },
+      "before": {
+        "exit_code": 0,
+        "smiles": "O([H])C([H])(F)C([H])([H])[H]",
+        "identity": "CC(O)F",
+        "stderr": "",
+        "matches_source": false
+      }
+    },
+    {
+      "source": "C[C@@H](F)O",
+      "seed_index": 8,
+      "inverted": true,
+      "expected": "C[C@H](O)F",
+      "mol2_sha256": "5d4ffabf55eb4f81b4b3563087fa05a6c9ac55eeefb1f4416af0473efe799009",
+      "source_reread": "C[C@H](O)F",
+      "gate": "comparable",
+      "chematic": {
+        "exit_code": 0,
+        "smiles": "O([H])[C@]([H])(F)C([H])([H])[H]",
+        "identity": "C[C@H](O)F",
+        "stderr": "",
+        "matches_source": true
+      },
+      "openbabel": {
+        "exit_code": 0,
+        "smiles": "C[C@@H](F)O",
+        "identity": "C[C@H](O)F",
+        "stderr": "1 molecule converted",
+        "matches_source": true
+      },
+      "before": {
+        "exit_code": 0,
+        "smiles": "O([H])C([H])(F)C([H])([H])[H]",
+        "identity": "CC(O)F",
+        "stderr": "",
+        "matches_source": false
+      }
+    },
+    {
+      "source": "C[C@H]1CCCO1",
+      "seed_index": 9,
+      "inverted": false,
+      "expected": "C[C@H]1CCCO1",
+      "mol2_sha256": "4f44de6b935f9f2f7589289a75ef26806e9556b06312e1033f08128691856c92",
+      "source_reread": "C[C@H]1CCCO1",
+      "gate": "comparable",
+      "chematic": {
+        "exit_code": 0,
+        "smiles": "[H][C@]1(C([H])([H])[H])C(C([H])([H])C([H])([H])O1)([H])[H]",
+        "identity": "C[C@H]1CCCO1",
+        "stderr": "",
+        "matches_source": true
+      },
+      "openbabel": {
+        "exit_code": 0,
+        "smiles": "C[C@H]1CCCO1",
+        "identity": "C[C@H]1CCCO1",
+        "stderr": "1 molecule converted",
+        "matches_source": true
+      },
+      "before": {
+        "exit_code": 0,
+        "smiles": "[H]C1(C([H])([H])[H])C(C([H])([H])C([H])([H])O1)([H])[H]",
+        "identity": "CC1CCCO1",
+        "stderr": "",
+        "matches_source": false
+      }
+    },
+    {
+      "source": "C[C@@H]1CCCO1",
+      "seed_index": 9,
+      "inverted": true,
+      "expected": "C[C@@H]1CCCO1",
+      "mol2_sha256": "ae7432144f008753b86f0f47273b3170e1ed966905f2456aea6590b3d961892d",
+      "source_reread": "C[C@@H]1CCCO1",
+      "gate": "comparable",
+      "chematic": {
+        "exit_code": 0,
+        "smiles": "[H][C@@]1(C([H])([H])[H])C(C([H])([H])C([H])([H])O1)([H])[H]",
+        "identity": "C[C@@H]1CCCO1",
+        "stderr": "",
+        "matches_source": true
+      },
+      "openbabel": {
+        "exit_code": 0,
+        "smiles": "C[C@@H]1CCCO1",
+        "identity": "C[C@@H]1CCCO1",
+        "stderr": "1 molecule converted",
+        "matches_source": true
+      },
+      "before": {
+        "exit_code": 0,
+        "smiles": "[H]C1(C([H])([H])[H])C(C([H])([H])C([H])([H])O1)([H])[H]",
+        "identity": "CC1CCCO1",
+        "stderr": "",
+        "matches_source": false
+      }
+    },
+    {
+      "source": "F[C@](Cl)(Br)I",
+      "seed_index": 10,
+      "inverted": false,
+      "expected": "F[C@](Cl)(Br)I",
+      "mol2_sha256": "e3dfbbd652498da7743b599e1a0a54eb3402b22454ad87101da6d28ec8d1b668",
+      "source_reread": "F[C@](Cl)(Br)I",
+      "gate": "comparable",
+      "chematic": {
+        "exit_code": 0,
+        "smiles": "[C@](Br)(Cl)(I)F",
+        "identity": "F[C@](Cl)(Br)I",
+        "stderr": "",
+        "matches_source": true
+      },
+      "openbabel": {
+        "exit_code": 0,
+        "smiles": "F[C@@](I)(Br)Cl",
+        "identity": "F[C@](Cl)(Br)I",
+        "stderr": "1 molecule converted",
+        "matches_source": true
+      },
+      "before": {
+        "exit_code": 0,
+        "smiles": "C(Br)(Cl)(I)F",
+        "identity": "FC(Cl)(Br)I",
+        "stderr": "",
+        "matches_source": false
+      }
+    },
+    {
+      "source": "F[C@@](Cl)(Br)I",
+      "seed_index": 10,
+      "inverted": true,
+      "expected": "F[C@@](Cl)(Br)I",
+      "mol2_sha256": "9ee8114de177441d9516473ae0919ba5e55e28d59b031509c3e32f1aae35b3d9",
+      "source_reread": "F[C@@](Cl)(Br)I",
+      "gate": "comparable",
+      "chematic": {
+        "exit_code": 0,
+        "smiles": "[C@@](Br)(Cl)(I)F",
+        "identity": "F[C@@](Cl)(Br)I",
+        "stderr": "",
+        "matches_source": true
+      },
+      "openbabel": {
+        "exit_code": 0,
+        "smiles": "F[C@](I)(Br)Cl",
+        "identity": "F[C@@](Cl)(Br)I",
+        "stderr": "1 molecule converted",
+        "matches_source": true
+      },
+      "before": {
+        "exit_code": 0,
+        "smiles": "C(Br)(Cl)(I)F",
+        "identity": "FC(Cl)(Br)I",
+        "stderr": "",
+        "matches_source": false
+      }
+    },
+    {
+      "source": "C[C@H](F)[C@H](Cl)Br",
+      "seed_index": 11,
+      "inverted": false,
+      "expected": "C[C@H](F)[C@H](Cl)Br",
+      "mol2_sha256": "b61c7bf1fb0115c390555accbeb0052e9058fce096bb0dd0a74c8da59e0c47b6",
+      "source_reread": "C[C@H](F)[C@H](Cl)Br",
+      "gate": "comparable",
+      "chematic": {
+        "exit_code": 0,
+        "smiles": "C([H])([H])([H])[C@@](F)([H])[C@](Br)([H])Cl",
+        "identity": "C[C@H](F)[C@H](Cl)Br",
+        "stderr": "",
+        "matches_source": true
+      },
+      "openbabel": {
+        "exit_code": 0,
+        "smiles": "C[C@@H]([C@@H](Br)Cl)F",
+        "identity": "C[C@H](F)[C@H](Cl)Br",
+        "stderr": "1 molecule converted",
+        "matches_source": true
+      },
+      "before": {
+        "exit_code": 0,
+        "smiles": "C([H])([H])([H])C(F)([H])C(Br)([H])Cl",
+        "identity": "CC(F)C(Cl)Br",
+        "stderr": "",
+        "matches_source": false
+      }
+    },
+    {
+      "source": "C[C@@H](F)[C@H](Cl)Br",
+      "seed_index": 11,
+      "inverted": true,
+      "expected": "C[C@@H](F)[C@H](Cl)Br",
+      "mol2_sha256": "af38150e643ecdd4c8c1bbdeab5e3e47d574b3ef84b8f9d0aef79db0f2d99ba6",
+      "source_reread": "C[C@@H](F)[C@H](Cl)Br",
+      "gate": "comparable",
+      "chematic": {
+        "exit_code": 0,
+        "smiles": "C([H])([H])([H])[C@](F)([H])[C@](Br)([H])Cl",
+        "identity": "C[C@@H](F)[C@H](Cl)Br",
+        "stderr": "",
+        "matches_source": true
+      },
+      "openbabel": {
+        "exit_code": 0,
+        "smiles": "C[C@H]([C@@H](Br)Cl)F",
+        "identity": "C[C@@H](F)[C@H](Cl)Br",
+        "stderr": "1 molecule converted",
+        "matches_source": true
+      },
+      "before": {
+        "exit_code": 0,
+        "smiles": "C([H])([H])([H])C(F)([H])C(Br)([H])Cl",
+        "identity": "CC(F)C(Cl)Br",
+        "stderr": "",
+        "matches_source": false
+      }
+    }
+  ],
+  "not_claimed": [
+    "all MOL2 dialects",
+    "independent experimental stereochemical truth",
+    "toolkit-wide superiority"
+  ]
+}
