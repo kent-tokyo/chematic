@@ -2849,7 +2849,7 @@ def atom_color_rgb(atomic_num: int) -> tuple[int, int, int]:
     """
     ...
 
-def from_smiles(smiles: str) -> Mol:
+def from_smiles(smiles: str | bytes) -> Mol:
     """Parse a SMILES string and return a :class:`Mol`.
 
     Raises:
@@ -2869,7 +2869,7 @@ def stable_are_identical(mol1: Mol, mol2: Mol) -> Optional[bool]:
     """
     ...
 
-def from_cxsmiles(s: str) -> tuple[Mol, dict]:
+def from_cxsmiles(s: str | bytes) -> tuple[Mol, dict]:
     """Parse a CXSMILES string and return the molecule with CX metadata.
 
     Returns a 2-tuple ``(mol, cx)`` where ``cx`` is a dict with:
@@ -2905,7 +2905,7 @@ def from_condensed(formula: str) -> Optional[Mol]:
     """
     ...
 
-def from_cml(cml_str: str) -> Mol:
+def from_cml(cml_str: str | bytes) -> Mol:
     """Parse a Chemical Markup Language (CML) string and return a :class:`Mol`.
 
     Raises:
@@ -2913,7 +2913,7 @@ def from_cml(cml_str: str) -> Mol:
     """
     ...
 
-def from_cml_strict(cml_str: str) -> Mol:
+def from_cml_strict(cml_str: str | bytes) -> Mol:
     """Parse structurally valid, non-empty CML; reject malformed XML."""
     ...
 
@@ -2942,7 +2942,7 @@ def nucleic_acid_apply_json_command(document_json: str, command_json: str) -> st
     """
     ...
 
-def from_mol_v3000(block: str) -> Mol:
+def from_mol_v3000(block: str | bytes) -> Mol:
     """Parse an MDL MOL V3000 block and return a :class:`Mol`.
 
     Raises:
@@ -2950,7 +2950,7 @@ def from_mol_v3000(block: str) -> Mol:
     """
     ...
 
-def from_mol_v3000_with_coords(block: str) -> tuple[Mol, str, list[list[float]]]:
+def from_mol_v3000_with_coords(block: str | bytes) -> tuple[Mol, str, list[list[float]]]:
     """Parse a MDL MOL V3000 block and return the molecule with its 2D layout coordinates.
 
     Returns a 3-tuple ``(mol, name, coords_2d)`` identical to
@@ -2967,7 +2967,7 @@ def from_mol_v3000_with_coords(block: str) -> tuple[Mol, str, list[list[float]]]
     ...
 
 def from_mol_v3000_with_diagnostics(
-    block: str,
+    block: str | bytes,
 ) -> tuple[Mol, str, list[list[float]], list[dict[str, object]]]:
     """Parse a MDL MOL V3000 block, returning stereo-perception diagnostics
     alongside the molecule.
@@ -2979,7 +2979,7 @@ def from_mol_v3000_with_diagnostics(
     """
     ...
 
-def from_mol_block(block: str) -> Mol:
+def from_mol_block(block: str | bytes) -> Mol:
     """Parse a MOL/SDF block and return a :class:`Mol`.
 
     Raises:
@@ -2987,7 +2987,7 @@ def from_mol_block(block: str) -> Mol:
     """
     ...
 
-def from_mol_block_with_coords(block: str) -> tuple[Mol, str, list[list[float]]]:
+def from_mol_block_with_coords(block: str | bytes) -> tuple[Mol, str, list[list[float]]]:
     """Parse a MDL MOL V2000 block and return the molecule with its 2D layout coordinates.
 
     Returns a 3-tuple ``(mol, name, coords_2d)`` where:
@@ -3010,7 +3010,7 @@ def from_mol_block_with_coords(block: str) -> tuple[Mol, str, list[list[float]]]
     ...
 
 def from_mol_block_with_diagnostics(
-    block: str,
+    block: str | bytes,
 ) -> tuple[Mol, str, list[list[float]], list[dict[str, object]]]:
     """Parse a MDL MOL V2000 block, returning stereo-perception diagnostics
     alongside the molecule.
@@ -3074,7 +3074,7 @@ def roundtrip_mol2_record(text: str) -> str:
     """Validate one MOL2 record and preserve its exact source."""
     ...
 
-def from_mol2(mol2_str: str) -> Mol:
+def from_mol2(mol2_str: str | bytes) -> Mol:
     """Parse a Tripos MOL2 string and return a :class:`Mol`.
 
     Reads the mandatory @<TRIPOS>MOLECULE, @<TRIPOS>ATOM, and @<TRIPOS>BOND
@@ -3134,11 +3134,11 @@ def from_inchi(inchi: str) -> Mol:
     """
     ...
 
-def is_valid_smiles(smiles: str) -> bool:
+def is_valid_smiles(smiles: str | bytes) -> bool:
     """Return True if the SMILES can be parsed without error."""
     ...
 
-def is_valid_smarts(smarts: str) -> bool:
+def is_valid_smarts(smarts: str | bytes) -> bool:
     """Return ``True`` if ``smarts`` is a valid SMARTS pattern.
 
     Mirrors :func:`is_valid_smiles` for SMARTS validation.

@@ -14,6 +14,14 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Thirteen Python serialized-text readers/validators now accept immutable UTF-8
+  `bytes` alongside `str`, retaining native parsing, return shapes and keyword
+  names. Invalid UTF-8 raises `UnicodeDecodeError`; unrelated object types raise
+  `TypeError` without implicit protocol conversion. Paths and identifiers retain
+  their existing contracts.
+
 ### Performance
 
 - Parse complete buffered SDF records directly, reserving owned record storage

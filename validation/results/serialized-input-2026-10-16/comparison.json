@@ -1,0 +1,2596 @@
+{
+  "schema": "chematic.serialized-input-comparison.v1",
+  "issue": "https://github.com/rdkit/rdkit/issues/9601",
+  "scope": "Thirteen Python text inputs; local extensions, not released artifacts or a chemistry/speed benchmark.",
+  "python": "3.13.6 (v3.13.6:4e665351082, Aug  6 2025, 11:22:35) [Clang 16.0.0 (clang-1600.0.26.6)]",
+  "fixture_sha256": "d8afef44cb9cb1715b04c8dd16feeac06699c9a61b264565087ca3c0a8aa51c5",
+  "checks": {
+    "baseline_bytes_rejections": 13,
+    "preserved_str_outputs": 13,
+    "candidate_bytes_matches": 13,
+    "preserved_malformed_inputs": 39,
+    "preserved_surrogate_errors": 13
+  },
+  "runs": {
+    "baseline": {
+      "module_sha256": "8257c5abcd244114f6746fa658f7ea826101024357acbc6c0cc9d1191d576987",
+      "rows": [
+        {
+          "function": "from_smiles",
+          "str": {
+            "result": {
+              "smiles": "Cl[C@@H](F)[13CH3]",
+              "formula": "C2H4ClF",
+              "atoms": 4,
+              "bonds": [
+                [
+                  0,
+                  1,
+                  "SINGLE",
+                  false
+                ],
+                [
+                  1,
+                  2,
+                  "SINGLE",
+                  false
+                ],
+                [
+                  1,
+                  3,
+                  "SINGLE",
+                  false
+                ]
+              ]
+            }
+          },
+          "bytes": {
+            "error": "TypeError",
+            "message": "'bytes' object is not an instance of 'str'",
+            "attributes": {
+              "category": null,
+              "code": null,
+              "format": null
+            }
+          },
+          "malformed_str": [
+            {
+              "error": "ChematicInputError",
+              "message": "SMILES input is empty",
+              "attributes": {
+                "category": "malformed",
+                "code": "smiles_parse",
+                "format": "smiles"
+              }
+            },
+            {
+              "error": "ChematicInputError",
+              "message": "unexpected character at position 2",
+              "attributes": {
+                "category": "malformed",
+                "code": "smiles_parse",
+                "format": "smiles"
+              }
+            },
+            {
+              "error": "ChematicInputError",
+              "message": "unexpected character at position 1",
+              "attributes": {
+                "category": "malformed",
+                "code": "smiles_parse",
+                "format": "smiles"
+              }
+            }
+          ],
+          "malformed_bytes": [
+            {
+              "error": "TypeError",
+              "message": "'bytes' object is not an instance of 'str'",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "TypeError",
+              "message": "'bytes' object is not an instance of 'str'",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "TypeError",
+              "message": "'bytes' object is not an instance of 'str'",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            }
+          ],
+          "surrogate": {
+            "error": "UnicodeEncodeError",
+            "message": "'utf-8' codec can't encode character '\\ud800' in position 0: surrogates not allowed",
+            "attributes": {
+              "category": null,
+              "code": null,
+              "format": null
+            }
+          }
+        },
+        {
+          "function": "from_cxsmiles",
+          "str": {
+            "result": [
+              {
+                "smiles": "OC",
+                "formula": "CH4O",
+                "atoms": 2,
+                "bonds": [
+                  [
+                    0,
+                    1,
+                    "SINGLE",
+                    false
+                  ]
+                ]
+              },
+              {
+                "atom_labels": [
+                  "\u70ad\u7d20",
+                  "\u9178\u7d20"
+                ],
+                "atom_props": [],
+                "atom_radicals": [
+                  null,
+                  null
+                ]
+              }
+            ]
+          },
+          "bytes": {
+            "error": "TypeError",
+            "message": "'bytes' object is not an instance of 'str'",
+            "attributes": {
+              "category": null,
+              "code": null,
+              "format": null
+            }
+          },
+          "malformed_str": [
+            {
+              "error": "ValueError",
+              "message": "SMILES input is empty",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "ValueError",
+              "message": "unexpected character at position 2",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "ValueError",
+              "message": "unexpected character at position 1",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            }
+          ],
+          "malformed_bytes": [
+            {
+              "error": "TypeError",
+              "message": "'bytes' object is not an instance of 'str'",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "TypeError",
+              "message": "'bytes' object is not an instance of 'str'",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "TypeError",
+              "message": "'bytes' object is not an instance of 'str'",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            }
+          ],
+          "surrogate": {
+            "error": "UnicodeEncodeError",
+            "message": "'utf-8' codec can't encode character '\\ud800' in position 0: surrogates not allowed",
+            "attributes": {
+              "category": null,
+              "code": null,
+              "format": null
+            }
+          }
+        },
+        {
+          "function": "from_mol_block",
+          "str": {
+            "result": {
+              "smiles": "OC",
+              "formula": "CH4O",
+              "atoms": 2,
+              "bonds": [
+                [
+                  0,
+                  1,
+                  "SINGLE",
+                  false
+                ]
+              ]
+            }
+          },
+          "bytes": {
+            "error": "TypeError",
+            "message": "'bytes' object is not an instance of 'str'",
+            "attributes": {
+              "category": null,
+              "code": null,
+              "format": null
+            }
+          },
+          "malformed_str": [
+            {
+              "error": "ChematicInputError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": "malformed",
+                "code": "mol_block_parse",
+                "format": "mol_block"
+              }
+            },
+            {
+              "error": "ChematicInputError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": "malformed",
+                "code": "mol_block_parse",
+                "format": "mol_block"
+              }
+            },
+            {
+              "error": "ChematicInputError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": "malformed",
+                "code": "mol_block_parse",
+                "format": "mol_block"
+              }
+            }
+          ],
+          "malformed_bytes": [
+            {
+              "error": "TypeError",
+              "message": "'bytes' object is not an instance of 'str'",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "TypeError",
+              "message": "'bytes' object is not an instance of 'str'",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "TypeError",
+              "message": "'bytes' object is not an instance of 'str'",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            }
+          ],
+          "surrogate": {
+            "error": "UnicodeEncodeError",
+            "message": "'utf-8' codec can't encode character '\\ud800' in position 0: surrogates not allowed",
+            "attributes": {
+              "category": null,
+              "code": null,
+              "format": null
+            }
+          }
+        },
+        {
+          "function": "from_mol_v3000",
+          "str": {
+            "result": {
+              "smiles": "OC",
+              "formula": "CH4O",
+              "atoms": 2,
+              "bonds": [
+                [
+                  0,
+                  1,
+                  "SINGLE",
+                  false
+                ]
+              ]
+            }
+          },
+          "bytes": {
+            "error": "TypeError",
+            "message": "'bytes' object is not an instance of 'str'",
+            "attributes": {
+              "category": null,
+              "code": null,
+              "format": null
+            }
+          },
+          "malformed_str": [
+            {
+              "error": "ValueError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "ValueError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "ValueError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            }
+          ],
+          "malformed_bytes": [
+            {
+              "error": "TypeError",
+              "message": "'bytes' object is not an instance of 'str'",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "TypeError",
+              "message": "'bytes' object is not an instance of 'str'",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "TypeError",
+              "message": "'bytes' object is not an instance of 'str'",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            }
+          ],
+          "surrogate": {
+            "error": "UnicodeEncodeError",
+            "message": "'utf-8' codec can't encode character '\\ud800' in position 0: surrogates not allowed",
+            "attributes": {
+              "category": null,
+              "code": null,
+              "format": null
+            }
+          }
+        },
+        {
+          "function": "from_mol2",
+          "str": {
+            "result": {
+              "smiles": "OC",
+              "formula": "CH4O",
+              "atoms": 2,
+              "bonds": [
+                [
+                  0,
+                  1,
+                  "SINGLE",
+                  false
+                ]
+              ]
+            }
+          },
+          "bytes": {
+            "error": "TypeError",
+            "message": "'bytes' object is not an instance of 'str'",
+            "attributes": {
+              "category": null,
+              "code": null,
+              "format": null
+            }
+          },
+          "malformed_str": [
+            {
+              "error": "ValueError",
+              "message": "MOL2: missing section @<TRIPOS>MOLECULE",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "ValueError",
+              "message": "MOL2: missing section @<TRIPOS>MOLECULE",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "ValueError",
+              "message": "MOL2: missing section @<TRIPOS>MOLECULE",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            }
+          ],
+          "malformed_bytes": [
+            {
+              "error": "TypeError",
+              "message": "'bytes' object is not an instance of 'str'",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "TypeError",
+              "message": "'bytes' object is not an instance of 'str'",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "TypeError",
+              "message": "'bytes' object is not an instance of 'str'",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            }
+          ],
+          "surrogate": {
+            "error": "UnicodeEncodeError",
+            "message": "'utf-8' codec can't encode character '\\ud800' in position 0: surrogates not allowed",
+            "attributes": {
+              "category": null,
+              "code": null,
+              "format": null
+            }
+          }
+        },
+        {
+          "function": "from_cml",
+          "str": {
+            "result": {
+              "smiles": "OC",
+              "formula": "CH4O",
+              "atoms": 2,
+              "bonds": [
+                [
+                  0,
+                  1,
+                  "SINGLE",
+                  false
+                ]
+              ]
+            }
+          },
+          "bytes": {
+            "error": "TypeError",
+            "message": "'bytes' object is not an instance of 'str'",
+            "attributes": {
+              "category": null,
+              "code": null,
+              "format": null
+            }
+          },
+          "malformed_str": [
+            {
+              "result": {
+                "smiles": "",
+                "formula": "H0",
+                "atoms": 0,
+                "bonds": []
+              }
+            },
+            {
+              "result": {
+                "smiles": "",
+                "formula": "H0",
+                "atoms": 0,
+                "bonds": []
+              }
+            },
+            {
+              "result": {
+                "smiles": "",
+                "formula": "H0",
+                "atoms": 0,
+                "bonds": []
+              }
+            }
+          ],
+          "malformed_bytes": [
+            {
+              "error": "TypeError",
+              "message": "'bytes' object is not an instance of 'str'",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "TypeError",
+              "message": "'bytes' object is not an instance of 'str'",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "TypeError",
+              "message": "'bytes' object is not an instance of 'str'",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            }
+          ],
+          "surrogate": {
+            "error": "UnicodeEncodeError",
+            "message": "'utf-8' codec can't encode character '\\ud800' in position 0: surrogates not allowed",
+            "attributes": {
+              "category": null,
+              "code": null,
+              "format": null
+            }
+          }
+        },
+        {
+          "function": "is_valid_smiles",
+          "str": {
+            "result": true
+          },
+          "bytes": {
+            "error": "TypeError",
+            "message": "'bytes' object is not an instance of 'str'",
+            "attributes": {
+              "category": null,
+              "code": null,
+              "format": null
+            }
+          },
+          "malformed_str": [
+            {
+              "result": false
+            },
+            {
+              "result": false
+            },
+            {
+              "result": false
+            }
+          ],
+          "malformed_bytes": [
+            {
+              "error": "TypeError",
+              "message": "'bytes' object is not an instance of 'str'",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "TypeError",
+              "message": "'bytes' object is not an instance of 'str'",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "TypeError",
+              "message": "'bytes' object is not an instance of 'str'",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            }
+          ],
+          "surrogate": {
+            "error": "UnicodeEncodeError",
+            "message": "'utf-8' codec can't encode character '\\ud800' in position 0: surrogates not allowed",
+            "attributes": {
+              "category": null,
+              "code": null,
+              "format": null
+            }
+          }
+        },
+        {
+          "function": "is_valid_smarts",
+          "str": {
+            "result": true
+          },
+          "bytes": {
+            "error": "TypeError",
+            "message": "'bytes' object is not an instance of 'str'",
+            "attributes": {
+              "category": null,
+              "code": null,
+              "format": null
+            }
+          },
+          "malformed_str": [
+            {
+              "result": true
+            },
+            {
+              "result": false
+            },
+            {
+              "result": false
+            }
+          ],
+          "malformed_bytes": [
+            {
+              "error": "TypeError",
+              "message": "'bytes' object is not an instance of 'str'",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "TypeError",
+              "message": "'bytes' object is not an instance of 'str'",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "TypeError",
+              "message": "'bytes' object is not an instance of 'str'",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            }
+          ],
+          "surrogate": {
+            "error": "UnicodeEncodeError",
+            "message": "'utf-8' codec can't encode character '\\ud800' in position 0: surrogates not allowed",
+            "attributes": {
+              "category": null,
+              "code": null,
+              "format": null
+            }
+          }
+        },
+        {
+          "function": "from_mol_block_with_coords",
+          "str": {
+            "result": [
+              {
+                "smiles": "OC",
+                "formula": "CH4O",
+                "atoms": 2,
+                "bonds": [
+                  [
+                    0,
+                    1,
+                    "SINGLE",
+                    false
+                  ]
+                ]
+              },
+              "",
+              [
+                [
+                  0.0,
+                  -0.0
+                ],
+                [
+                  1.5,
+                  -0.0
+                ]
+              ]
+            ]
+          },
+          "bytes": {
+            "error": "TypeError",
+            "message": "'bytes' object is not an instance of 'str'",
+            "attributes": {
+              "category": null,
+              "code": null,
+              "format": null
+            }
+          },
+          "malformed_str": [
+            {
+              "error": "ChematicInputError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": "malformed",
+                "code": "mol_block_parse",
+                "format": "mol_block"
+              }
+            },
+            {
+              "error": "ChematicInputError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": "malformed",
+                "code": "mol_block_parse",
+                "format": "mol_block"
+              }
+            },
+            {
+              "error": "ChematicInputError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": "malformed",
+                "code": "mol_block_parse",
+                "format": "mol_block"
+              }
+            }
+          ],
+          "malformed_bytes": [
+            {
+              "error": "TypeError",
+              "message": "'bytes' object is not an instance of 'str'",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "TypeError",
+              "message": "'bytes' object is not an instance of 'str'",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "TypeError",
+              "message": "'bytes' object is not an instance of 'str'",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            }
+          ],
+          "surrogate": {
+            "error": "UnicodeEncodeError",
+            "message": "'utf-8' codec can't encode character '\\ud800' in position 0: surrogates not allowed",
+            "attributes": {
+              "category": null,
+              "code": null,
+              "format": null
+            }
+          }
+        },
+        {
+          "function": "from_mol_block_with_diagnostics",
+          "str": {
+            "result": [
+              {
+                "smiles": "OC",
+                "formula": "CH4O",
+                "atoms": 2,
+                "bonds": [
+                  [
+                    0,
+                    1,
+                    "SINGLE",
+                    false
+                  ]
+                ]
+              },
+              "",
+              [
+                [
+                  0.0,
+                  -0.0
+                ],
+                [
+                  1.5,
+                  -0.0
+                ]
+              ],
+              []
+            ]
+          },
+          "bytes": {
+            "error": "TypeError",
+            "message": "'bytes' object is not an instance of 'str'",
+            "attributes": {
+              "category": null,
+              "code": null,
+              "format": null
+            }
+          },
+          "malformed_str": [
+            {
+              "error": "ValueError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "ValueError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "ValueError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            }
+          ],
+          "malformed_bytes": [
+            {
+              "error": "TypeError",
+              "message": "'bytes' object is not an instance of 'str'",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "TypeError",
+              "message": "'bytes' object is not an instance of 'str'",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "TypeError",
+              "message": "'bytes' object is not an instance of 'str'",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            }
+          ],
+          "surrogate": {
+            "error": "UnicodeEncodeError",
+            "message": "'utf-8' codec can't encode character '\\ud800' in position 0: surrogates not allowed",
+            "attributes": {
+              "category": null,
+              "code": null,
+              "format": null
+            }
+          }
+        },
+        {
+          "function": "from_mol_v3000_with_coords",
+          "str": {
+            "result": [
+              {
+                "smiles": "OC",
+                "formula": "CH4O",
+                "atoms": 2,
+                "bonds": [
+                  [
+                    0,
+                    1,
+                    "SINGLE",
+                    false
+                  ]
+                ]
+              },
+              "",
+              [
+                [
+                  0.0,
+                  0.0
+                ],
+                [
+                  1.4,
+                  0.0
+                ]
+              ]
+            ]
+          },
+          "bytes": {
+            "error": "TypeError",
+            "message": "'bytes' object is not an instance of 'str'",
+            "attributes": {
+              "category": null,
+              "code": null,
+              "format": null
+            }
+          },
+          "malformed_str": [
+            {
+              "error": "ValueError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "ValueError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "ValueError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            }
+          ],
+          "malformed_bytes": [
+            {
+              "error": "TypeError",
+              "message": "'bytes' object is not an instance of 'str'",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "TypeError",
+              "message": "'bytes' object is not an instance of 'str'",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "TypeError",
+              "message": "'bytes' object is not an instance of 'str'",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            }
+          ],
+          "surrogate": {
+            "error": "UnicodeEncodeError",
+            "message": "'utf-8' codec can't encode character '\\ud800' in position 0: surrogates not allowed",
+            "attributes": {
+              "category": null,
+              "code": null,
+              "format": null
+            }
+          }
+        },
+        {
+          "function": "from_mol_v3000_with_diagnostics",
+          "str": {
+            "result": [
+              {
+                "smiles": "OC",
+                "formula": "CH4O",
+                "atoms": 2,
+                "bonds": [
+                  [
+                    0,
+                    1,
+                    "SINGLE",
+                    false
+                  ]
+                ]
+              },
+              "",
+              [
+                [
+                  0.0,
+                  0.0
+                ],
+                [
+                  1.4,
+                  0.0
+                ]
+              ],
+              []
+            ]
+          },
+          "bytes": {
+            "error": "TypeError",
+            "message": "'bytes' object is not an instance of 'str'",
+            "attributes": {
+              "category": null,
+              "code": null,
+              "format": null
+            }
+          },
+          "malformed_str": [
+            {
+              "error": "ValueError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "ValueError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "ValueError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            }
+          ],
+          "malformed_bytes": [
+            {
+              "error": "TypeError",
+              "message": "'bytes' object is not an instance of 'str'",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "TypeError",
+              "message": "'bytes' object is not an instance of 'str'",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "TypeError",
+              "message": "'bytes' object is not an instance of 'str'",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            }
+          ],
+          "surrogate": {
+            "error": "UnicodeEncodeError",
+            "message": "'utf-8' codec can't encode character '\\ud800' in position 0: surrogates not allowed",
+            "attributes": {
+              "category": null,
+              "code": null,
+              "format": null
+            }
+          }
+        },
+        {
+          "function": "from_cml_strict",
+          "str": {
+            "result": {
+              "smiles": "OC",
+              "formula": "CH4O",
+              "atoms": 2,
+              "bonds": [
+                [
+                  0,
+                  1,
+                  "SINGLE",
+                  false
+                ]
+              ]
+            }
+          },
+          "bytes": {
+            "error": "TypeError",
+            "message": "'bytes' object is not an instance of 'str'",
+            "attributes": {
+              "category": null,
+              "code": null,
+              "format": null
+            }
+          },
+          "malformed_str": [
+            {
+              "error": "ValueError",
+              "message": "CML: missing molecule element",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "ValueError",
+              "message": "CML: missing molecule element",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "ValueError",
+              "message": "CML: missing molecule element",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            }
+          ],
+          "malformed_bytes": [
+            {
+              "error": "TypeError",
+              "message": "'bytes' object is not an instance of 'str'",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "TypeError",
+              "message": "'bytes' object is not an instance of 'str'",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "TypeError",
+              "message": "'bytes' object is not an instance of 'str'",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            }
+          ],
+          "surrogate": {
+            "error": "UnicodeEncodeError",
+            "message": "'utf-8' codec can't encode character '\\ud800' in position 0: surrogates not allowed",
+            "attributes": {
+              "category": null,
+              "code": null,
+              "format": null
+            }
+          }
+        }
+      ]
+    },
+    "candidate": {
+      "module_sha256": "828461385486b50b2f5983251916ec90939d366e96bf0c21fcb7c0fb0c0ce9fd",
+      "rows": [
+        {
+          "function": "from_smiles",
+          "str": {
+            "result": {
+              "smiles": "Cl[C@@H](F)[13CH3]",
+              "formula": "C2H4ClF",
+              "atoms": 4,
+              "bonds": [
+                [
+                  0,
+                  1,
+                  "SINGLE",
+                  false
+                ],
+                [
+                  1,
+                  2,
+                  "SINGLE",
+                  false
+                ],
+                [
+                  1,
+                  3,
+                  "SINGLE",
+                  false
+                ]
+              ]
+            }
+          },
+          "bytes": {
+            "result": {
+              "smiles": "Cl[C@@H](F)[13CH3]",
+              "formula": "C2H4ClF",
+              "atoms": 4,
+              "bonds": [
+                [
+                  0,
+                  1,
+                  "SINGLE",
+                  false
+                ],
+                [
+                  1,
+                  2,
+                  "SINGLE",
+                  false
+                ],
+                [
+                  1,
+                  3,
+                  "SINGLE",
+                  false
+                ]
+              ]
+            }
+          },
+          "malformed_str": [
+            {
+              "error": "ChematicInputError",
+              "message": "SMILES input is empty",
+              "attributes": {
+                "category": "malformed",
+                "code": "smiles_parse",
+                "format": "smiles"
+              }
+            },
+            {
+              "error": "ChematicInputError",
+              "message": "unexpected character at position 2",
+              "attributes": {
+                "category": "malformed",
+                "code": "smiles_parse",
+                "format": "smiles"
+              }
+            },
+            {
+              "error": "ChematicInputError",
+              "message": "unexpected character at position 1",
+              "attributes": {
+                "category": "malformed",
+                "code": "smiles_parse",
+                "format": "smiles"
+              }
+            }
+          ],
+          "malformed_bytes": [
+            {
+              "error": "ChematicInputError",
+              "message": "SMILES input is empty",
+              "attributes": {
+                "category": "malformed",
+                "code": "smiles_parse",
+                "format": "smiles"
+              }
+            },
+            {
+              "error": "ChematicInputError",
+              "message": "unexpected character at position 2",
+              "attributes": {
+                "category": "malformed",
+                "code": "smiles_parse",
+                "format": "smiles"
+              }
+            },
+            {
+              "error": "ChematicInputError",
+              "message": "unexpected character at position 1",
+              "attributes": {
+                "category": "malformed",
+                "code": "smiles_parse",
+                "format": "smiles"
+              }
+            }
+          ],
+          "surrogate": {
+            "error": "UnicodeEncodeError",
+            "message": "'utf-8' codec can't encode character '\\ud800' in position 0: surrogates not allowed",
+            "attributes": {
+              "category": null,
+              "code": null,
+              "format": null
+            }
+          }
+        },
+        {
+          "function": "from_cxsmiles",
+          "str": {
+            "result": [
+              {
+                "smiles": "OC",
+                "formula": "CH4O",
+                "atoms": 2,
+                "bonds": [
+                  [
+                    0,
+                    1,
+                    "SINGLE",
+                    false
+                  ]
+                ]
+              },
+              {
+                "atom_labels": [
+                  "\u70ad\u7d20",
+                  "\u9178\u7d20"
+                ],
+                "atom_props": [],
+                "atom_radicals": [
+                  null,
+                  null
+                ]
+              }
+            ]
+          },
+          "bytes": {
+            "result": [
+              {
+                "smiles": "OC",
+                "formula": "CH4O",
+                "atoms": 2,
+                "bonds": [
+                  [
+                    0,
+                    1,
+                    "SINGLE",
+                    false
+                  ]
+                ]
+              },
+              {
+                "atom_labels": [
+                  "\u70ad\u7d20",
+                  "\u9178\u7d20"
+                ],
+                "atom_props": [],
+                "atom_radicals": [
+                  null,
+                  null
+                ]
+              }
+            ]
+          },
+          "malformed_str": [
+            {
+              "error": "ValueError",
+              "message": "SMILES input is empty",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "ValueError",
+              "message": "unexpected character at position 2",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "ValueError",
+              "message": "unexpected character at position 1",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            }
+          ],
+          "malformed_bytes": [
+            {
+              "error": "ValueError",
+              "message": "SMILES input is empty",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "ValueError",
+              "message": "unexpected character at position 2",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "ValueError",
+              "message": "unexpected character at position 1",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            }
+          ],
+          "surrogate": {
+            "error": "UnicodeEncodeError",
+            "message": "'utf-8' codec can't encode character '\\ud800' in position 0: surrogates not allowed",
+            "attributes": {
+              "category": null,
+              "code": null,
+              "format": null
+            }
+          }
+        },
+        {
+          "function": "from_mol_block",
+          "str": {
+            "result": {
+              "smiles": "OC",
+              "formula": "CH4O",
+              "atoms": 2,
+              "bonds": [
+                [
+                  0,
+                  1,
+                  "SINGLE",
+                  false
+                ]
+              ]
+            }
+          },
+          "bytes": {
+            "result": {
+              "smiles": "OC",
+              "formula": "CH4O",
+              "atoms": 2,
+              "bonds": [
+                [
+                  0,
+                  1,
+                  "SINGLE",
+                  false
+                ]
+              ]
+            }
+          },
+          "malformed_str": [
+            {
+              "error": "ChematicInputError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": "malformed",
+                "code": "mol_block_parse",
+                "format": "mol_block"
+              }
+            },
+            {
+              "error": "ChematicInputError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": "malformed",
+                "code": "mol_block_parse",
+                "format": "mol_block"
+              }
+            },
+            {
+              "error": "ChematicInputError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": "malformed",
+                "code": "mol_block_parse",
+                "format": "mol_block"
+              }
+            }
+          ],
+          "malformed_bytes": [
+            {
+              "error": "ChematicInputError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": "malformed",
+                "code": "mol_block_parse",
+                "format": "mol_block"
+              }
+            },
+            {
+              "error": "ChematicInputError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": "malformed",
+                "code": "mol_block_parse",
+                "format": "mol_block"
+              }
+            },
+            {
+              "error": "ChematicInputError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": "malformed",
+                "code": "mol_block_parse",
+                "format": "mol_block"
+              }
+            }
+          ],
+          "surrogate": {
+            "error": "UnicodeEncodeError",
+            "message": "'utf-8' codec can't encode character '\\ud800' in position 0: surrogates not allowed",
+            "attributes": {
+              "category": null,
+              "code": null,
+              "format": null
+            }
+          }
+        },
+        {
+          "function": "from_mol_v3000",
+          "str": {
+            "result": {
+              "smiles": "OC",
+              "formula": "CH4O",
+              "atoms": 2,
+              "bonds": [
+                [
+                  0,
+                  1,
+                  "SINGLE",
+                  false
+                ]
+              ]
+            }
+          },
+          "bytes": {
+            "result": {
+              "smiles": "OC",
+              "formula": "CH4O",
+              "atoms": 2,
+              "bonds": [
+                [
+                  0,
+                  1,
+                  "SINGLE",
+                  false
+                ]
+              ]
+            }
+          },
+          "malformed_str": [
+            {
+              "error": "ValueError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "ValueError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "ValueError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            }
+          ],
+          "malformed_bytes": [
+            {
+              "error": "ValueError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "ValueError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "ValueError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            }
+          ],
+          "surrogate": {
+            "error": "UnicodeEncodeError",
+            "message": "'utf-8' codec can't encode character '\\ud800' in position 0: surrogates not allowed",
+            "attributes": {
+              "category": null,
+              "code": null,
+              "format": null
+            }
+          }
+        },
+        {
+          "function": "from_mol2",
+          "str": {
+            "result": {
+              "smiles": "OC",
+              "formula": "CH4O",
+              "atoms": 2,
+              "bonds": [
+                [
+                  0,
+                  1,
+                  "SINGLE",
+                  false
+                ]
+              ]
+            }
+          },
+          "bytes": {
+            "result": {
+              "smiles": "OC",
+              "formula": "CH4O",
+              "atoms": 2,
+              "bonds": [
+                [
+                  0,
+                  1,
+                  "SINGLE",
+                  false
+                ]
+              ]
+            }
+          },
+          "malformed_str": [
+            {
+              "error": "ValueError",
+              "message": "MOL2: missing section @<TRIPOS>MOLECULE",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "ValueError",
+              "message": "MOL2: missing section @<TRIPOS>MOLECULE",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "ValueError",
+              "message": "MOL2: missing section @<TRIPOS>MOLECULE",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            }
+          ],
+          "malformed_bytes": [
+            {
+              "error": "ValueError",
+              "message": "MOL2: missing section @<TRIPOS>MOLECULE",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "ValueError",
+              "message": "MOL2: missing section @<TRIPOS>MOLECULE",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "ValueError",
+              "message": "MOL2: missing section @<TRIPOS>MOLECULE",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            }
+          ],
+          "surrogate": {
+            "error": "UnicodeEncodeError",
+            "message": "'utf-8' codec can't encode character '\\ud800' in position 0: surrogates not allowed",
+            "attributes": {
+              "category": null,
+              "code": null,
+              "format": null
+            }
+          }
+        },
+        {
+          "function": "from_cml",
+          "str": {
+            "result": {
+              "smiles": "OC",
+              "formula": "CH4O",
+              "atoms": 2,
+              "bonds": [
+                [
+                  0,
+                  1,
+                  "SINGLE",
+                  false
+                ]
+              ]
+            }
+          },
+          "bytes": {
+            "result": {
+              "smiles": "OC",
+              "formula": "CH4O",
+              "atoms": 2,
+              "bonds": [
+                [
+                  0,
+                  1,
+                  "SINGLE",
+                  false
+                ]
+              ]
+            }
+          },
+          "malformed_str": [
+            {
+              "result": {
+                "smiles": "",
+                "formula": "H0",
+                "atoms": 0,
+                "bonds": []
+              }
+            },
+            {
+              "result": {
+                "smiles": "",
+                "formula": "H0",
+                "atoms": 0,
+                "bonds": []
+              }
+            },
+            {
+              "result": {
+                "smiles": "",
+                "formula": "H0",
+                "atoms": 0,
+                "bonds": []
+              }
+            }
+          ],
+          "malformed_bytes": [
+            {
+              "result": {
+                "smiles": "",
+                "formula": "H0",
+                "atoms": 0,
+                "bonds": []
+              }
+            },
+            {
+              "result": {
+                "smiles": "",
+                "formula": "H0",
+                "atoms": 0,
+                "bonds": []
+              }
+            },
+            {
+              "result": {
+                "smiles": "",
+                "formula": "H0",
+                "atoms": 0,
+                "bonds": []
+              }
+            }
+          ],
+          "surrogate": {
+            "error": "UnicodeEncodeError",
+            "message": "'utf-8' codec can't encode character '\\ud800' in position 0: surrogates not allowed",
+            "attributes": {
+              "category": null,
+              "code": null,
+              "format": null
+            }
+          }
+        },
+        {
+          "function": "is_valid_smiles",
+          "str": {
+            "result": true
+          },
+          "bytes": {
+            "result": true
+          },
+          "malformed_str": [
+            {
+              "result": false
+            },
+            {
+              "result": false
+            },
+            {
+              "result": false
+            }
+          ],
+          "malformed_bytes": [
+            {
+              "result": false
+            },
+            {
+              "result": false
+            },
+            {
+              "result": false
+            }
+          ],
+          "surrogate": {
+            "error": "UnicodeEncodeError",
+            "message": "'utf-8' codec can't encode character '\\ud800' in position 0: surrogates not allowed",
+            "attributes": {
+              "category": null,
+              "code": null,
+              "format": null
+            }
+          }
+        },
+        {
+          "function": "is_valid_smarts",
+          "str": {
+            "result": true
+          },
+          "bytes": {
+            "result": true
+          },
+          "malformed_str": [
+            {
+              "result": true
+            },
+            {
+              "result": false
+            },
+            {
+              "result": false
+            }
+          ],
+          "malformed_bytes": [
+            {
+              "result": true
+            },
+            {
+              "result": false
+            },
+            {
+              "result": false
+            }
+          ],
+          "surrogate": {
+            "error": "UnicodeEncodeError",
+            "message": "'utf-8' codec can't encode character '\\ud800' in position 0: surrogates not allowed",
+            "attributes": {
+              "category": null,
+              "code": null,
+              "format": null
+            }
+          }
+        },
+        {
+          "function": "from_mol_block_with_coords",
+          "str": {
+            "result": [
+              {
+                "smiles": "OC",
+                "formula": "CH4O",
+                "atoms": 2,
+                "bonds": [
+                  [
+                    0,
+                    1,
+                    "SINGLE",
+                    false
+                  ]
+                ]
+              },
+              "",
+              [
+                [
+                  0.0,
+                  -0.0
+                ],
+                [
+                  1.5,
+                  -0.0
+                ]
+              ]
+            ]
+          },
+          "bytes": {
+            "result": [
+              {
+                "smiles": "OC",
+                "formula": "CH4O",
+                "atoms": 2,
+                "bonds": [
+                  [
+                    0,
+                    1,
+                    "SINGLE",
+                    false
+                  ]
+                ]
+              },
+              "",
+              [
+                [
+                  0.0,
+                  -0.0
+                ],
+                [
+                  1.5,
+                  -0.0
+                ]
+              ]
+            ]
+          },
+          "malformed_str": [
+            {
+              "error": "ChematicInputError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": "malformed",
+                "code": "mol_block_parse",
+                "format": "mol_block"
+              }
+            },
+            {
+              "error": "ChematicInputError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": "malformed",
+                "code": "mol_block_parse",
+                "format": "mol_block"
+              }
+            },
+            {
+              "error": "ChematicInputError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": "malformed",
+                "code": "mol_block_parse",
+                "format": "mol_block"
+              }
+            }
+          ],
+          "malformed_bytes": [
+            {
+              "error": "ChematicInputError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": "malformed",
+                "code": "mol_block_parse",
+                "format": "mol_block"
+              }
+            },
+            {
+              "error": "ChematicInputError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": "malformed",
+                "code": "mol_block_parse",
+                "format": "mol_block"
+              }
+            },
+            {
+              "error": "ChematicInputError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": "malformed",
+                "code": "mol_block_parse",
+                "format": "mol_block"
+              }
+            }
+          ],
+          "surrogate": {
+            "error": "UnicodeEncodeError",
+            "message": "'utf-8' codec can't encode character '\\ud800' in position 0: surrogates not allowed",
+            "attributes": {
+              "category": null,
+              "code": null,
+              "format": null
+            }
+          }
+        },
+        {
+          "function": "from_mol_block_with_diagnostics",
+          "str": {
+            "result": [
+              {
+                "smiles": "OC",
+                "formula": "CH4O",
+                "atoms": 2,
+                "bonds": [
+                  [
+                    0,
+                    1,
+                    "SINGLE",
+                    false
+                  ]
+                ]
+              },
+              "",
+              [
+                [
+                  0.0,
+                  -0.0
+                ],
+                [
+                  1.5,
+                  -0.0
+                ]
+              ],
+              []
+            ]
+          },
+          "bytes": {
+            "result": [
+              {
+                "smiles": "OC",
+                "formula": "CH4O",
+                "atoms": 2,
+                "bonds": [
+                  [
+                    0,
+                    1,
+                    "SINGLE",
+                    false
+                  ]
+                ]
+              },
+              "",
+              [
+                [
+                  0.0,
+                  -0.0
+                ],
+                [
+                  1.5,
+                  -0.0
+                ]
+              ],
+              []
+            ]
+          },
+          "malformed_str": [
+            {
+              "error": "ValueError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "ValueError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "ValueError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            }
+          ],
+          "malformed_bytes": [
+            {
+              "error": "ValueError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "ValueError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "ValueError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            }
+          ],
+          "surrogate": {
+            "error": "UnicodeEncodeError",
+            "message": "'utf-8' codec can't encode character '\\ud800' in position 0: surrogates not allowed",
+            "attributes": {
+              "category": null,
+              "code": null,
+              "format": null
+            }
+          }
+        },
+        {
+          "function": "from_mol_v3000_with_coords",
+          "str": {
+            "result": [
+              {
+                "smiles": "OC",
+                "formula": "CH4O",
+                "atoms": 2,
+                "bonds": [
+                  [
+                    0,
+                    1,
+                    "SINGLE",
+                    false
+                  ]
+                ]
+              },
+              "",
+              [
+                [
+                  0.0,
+                  0.0
+                ],
+                [
+                  1.4,
+                  0.0
+                ]
+              ]
+            ]
+          },
+          "bytes": {
+            "result": [
+              {
+                "smiles": "OC",
+                "formula": "CH4O",
+                "atoms": 2,
+                "bonds": [
+                  [
+                    0,
+                    1,
+                    "SINGLE",
+                    false
+                  ]
+                ]
+              },
+              "",
+              [
+                [
+                  0.0,
+                  0.0
+                ],
+                [
+                  1.4,
+                  0.0
+                ]
+              ]
+            ]
+          },
+          "malformed_str": [
+            {
+              "error": "ValueError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "ValueError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "ValueError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            }
+          ],
+          "malformed_bytes": [
+            {
+              "error": "ValueError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "ValueError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "ValueError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            }
+          ],
+          "surrogate": {
+            "error": "UnicodeEncodeError",
+            "message": "'utf-8' codec can't encode character '\\ud800' in position 0: surrogates not allowed",
+            "attributes": {
+              "category": null,
+              "code": null,
+              "format": null
+            }
+          }
+        },
+        {
+          "function": "from_mol_v3000_with_diagnostics",
+          "str": {
+            "result": [
+              {
+                "smiles": "OC",
+                "formula": "CH4O",
+                "atoms": 2,
+                "bonds": [
+                  [
+                    0,
+                    1,
+                    "SINGLE",
+                    false
+                  ]
+                ]
+              },
+              "",
+              [
+                [
+                  0.0,
+                  0.0
+                ],
+                [
+                  1.4,
+                  0.0
+                ]
+              ],
+              []
+            ]
+          },
+          "bytes": {
+            "result": [
+              {
+                "smiles": "OC",
+                "formula": "CH4O",
+                "atoms": 2,
+                "bonds": [
+                  [
+                    0,
+                    1,
+                    "SINGLE",
+                    false
+                  ]
+                ]
+              },
+              "",
+              [
+                [
+                  0.0,
+                  0.0
+                ],
+                [
+                  1.4,
+                  0.0
+                ]
+              ],
+              []
+            ]
+          },
+          "malformed_str": [
+            {
+              "error": "ValueError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "ValueError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "ValueError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            }
+          ],
+          "malformed_bytes": [
+            {
+              "error": "ValueError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "ValueError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "ValueError",
+              "message": "unexpected end of input",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            }
+          ],
+          "surrogate": {
+            "error": "UnicodeEncodeError",
+            "message": "'utf-8' codec can't encode character '\\ud800' in position 0: surrogates not allowed",
+            "attributes": {
+              "category": null,
+              "code": null,
+              "format": null
+            }
+          }
+        },
+        {
+          "function": "from_cml_strict",
+          "str": {
+            "result": {
+              "smiles": "OC",
+              "formula": "CH4O",
+              "atoms": 2,
+              "bonds": [
+                [
+                  0,
+                  1,
+                  "SINGLE",
+                  false
+                ]
+              ]
+            }
+          },
+          "bytes": {
+            "result": {
+              "smiles": "OC",
+              "formula": "CH4O",
+              "atoms": 2,
+              "bonds": [
+                [
+                  0,
+                  1,
+                  "SINGLE",
+                  false
+                ]
+              ]
+            }
+          },
+          "malformed_str": [
+            {
+              "error": "ValueError",
+              "message": "CML: missing molecule element",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "ValueError",
+              "message": "CML: missing molecule element",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "ValueError",
+              "message": "CML: missing molecule element",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            }
+          ],
+          "malformed_bytes": [
+            {
+              "error": "ValueError",
+              "message": "CML: missing molecule element",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "ValueError",
+              "message": "CML: missing molecule element",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            },
+            {
+              "error": "ValueError",
+              "message": "CML: missing molecule element",
+              "attributes": {
+                "category": null,
+                "code": null,
+                "format": null
+              }
+            }
+          ],
+          "surrogate": {
+            "error": "UnicodeEncodeError",
+            "message": "'utf-8' codec can't encode character '\\ud800' in position 0: surrogates not allowed",
+            "attributes": {
+              "category": null,
+              "code": null,
+              "format": null
+            }
+          }
+        }
+      ]
+    }
+  }
+}

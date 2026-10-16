@@ -6,6 +6,12 @@ use pyo3::prelude::*;
 use pyo3::types::PyDict;
 use std::sync::Arc;
 
+mod cml;
+use cml::*;
+
+mod serialized_input;
+use serialized_input::serialized_text;
+
 mod hin;
 use hin::*;
 
@@ -121,13 +127,14 @@ pub(crate) fn checked_coords3d(
 // ---------------------------------------------------------------------------
 
 /// Parse a SMILES string and return a Mol.
+/// Accepts ``str`` or UTF-8 ``bytes``; malformed UTF-8 raises ``UnicodeDecodeError``.
 ///
 /// Raises :class:`ChematicInputError` (a ``ValueError``; ``category``
 /// ``"malformed"``, ``code`` ``"smiles_parse"``) on invalid SMILES, and
 /// with ``code`` ``"smiles_valence"`` when the graph gives a neutral oxygen
 /// or fluorine more bonds than it permits (``CO(C)C``).
 #[pyfunction]
-fn from_smiles(smiles: &str) -> PyResult<Mol> {
+fn from_smiles(#[pyo3(from_py_with = serialized_text)] smiles: &str) -> PyResult<Mol> {
     chematic_smiles::parse(smiles)
         .map(|mol| Mol {
             // Descriptor and ring preparation stays lazy.  Calling one of
@@ -310,8 +317,13 @@ impl PySmilesBatchStream {
 ///
 ///     mol, cx = chematic.from_cxsmiles("CC |$R1;R2$|")
 ///     print(cx['atom_labels'])   # ['R1', 'R2']
+///
+/// Accepts ``str`` or UTF-8 ``bytes``; malformed UTF-8 raises ``UnicodeDecodeError``.
 #[pyfunction]
-fn from_cxsmiles<'py>(py: Python<'py>, s: &str) -> PyResult<(Mol, Bound<'py, PyDict>)> {
+fn from_cxsmiles<'py>(
+    py: Python<'py>,
+    #[pyo3(from_py_with = serialized_text)] s: &str,
+) -> PyResult<(Mol, Bound<'py, PyDict>)> {
     let cx =
         chematic_smiles::parse_cxsmiles(s).map_err(|e| PyValueError::new_err(e.to_string()))?;
 
@@ -367,8 +379,9 @@ fn from_condensed(formula: &str) -> Option<Mol> {
 
 /// Raises :class:`ChematicInputError` (a ``ValueError``; ``code``
 /// ``"mol_block_parse"``) on parse failure.
+/// Accepts ``str`` or UTF-8 ``bytes``; malformed UTF-8 raises ``UnicodeDecodeError``.
 #[pyfunction]
-fn from_mol_block(block: &str) -> PyResult<Mol> {
+fn from_mol_block(#[pyo3(from_py_with = serialized_text)] block: &str) -> PyResult<Mol> {
     chematic_mol::parse_mol(block)
         .map(|(mol, _meta)| Mol {
             inner: Arc::new(mol),
@@ -393,8 +406,12 @@ fn from_mol_block(block: &str) -> PyResult<Mol> {
 ///
 ///     mol, name, coords_2d = chematic.from_mol_block_with_coords(block)
 ///     new_block = mol.to_mol_block_2d(coords_2d, name=name)
+///
+/// Accepts ``str`` or UTF-8 ``bytes``; malformed UTF-8 raises ``UnicodeDecodeError``.
 #[pyfunction]
-fn from_mol_block_with_coords(block: &str) -> PyResult<(Mol, String, Vec<Vec<f64>>)> {
+fn from_mol_block_with_coords(
+    #[pyo3(from_py_with = serialized_text)] block: &str,
+) -> PyResult<(Mol, String, Vec<Vec<f64>>)> {
     chematic_mol::parse_mol_with_coords(block)
         .map(|(mol, meta, coords)| {
             let py_coords: Vec<Vec<f64>> = coords.iter().map(|(x, y)| vec![*x, *y]).collect();
@@ -427,11 +444,13 @@ fn from_mol_block_with_coords(block: &str) -> PyResult<(Mol, String, Vec<Vec<f64
 /// center was rejected.
 ///
 /// Raises ``ValueError`` on parse failure.
+///
+/// Accepts ``str`` or UTF-8 ``bytes``; malformed UTF-8 raises ``UnicodeDecodeError``.
 #[pyfunction]
 #[allow(clippy::type_complexity)]
 fn from_mol_block_with_diagnostics<'py>(
     py: Python<'py>,
-    block: &str,
+    #[pyo3(from_py_with = serialized_text)] block: &str,
 ) -> PyResult<(Mol, String, Vec<Vec<f64>>, Vec<Bound<'py, PyDict>>)> {
     let report = chematic_mol::read_mol_with_diagnostics(block)
         .map_err(|e| PyValueError::new_err(e.to_string()))?;
@@ -538,36 +557,6 @@ fn from_mrv_block_with_coords(mrv_str: &str) -> PyResult<(Mol, Vec<Vec<f64>>, Ve
                 coords_2d,
                 coords_3d,
             )
-        })
-        .map_err(|e| PyValueError::new_err(e.to_string()))
-}
-
-/// Parse a Chemical Markup Language (CML) string into a ``Mol`` object.
-///
-/// Raises ``ValueError`` on parse failure.
-///
-///     with open("molecule.cml") as f:
-///         mol = chematic.from_cml(f.read())
-#[pyfunction]
-fn from_cml(cml_str: &str) -> PyResult<Mol> {
-    chematic_mol::parse_cml(cml_str)
-        .map(|(mol, _coords)| Mol {
-            inner: Arc::new(mol),
-            props: Default::default(),
-        })
-        .map_err(|e| PyValueError::new_err(e.to_string()))
-}
-
-/// Parse a structurally valid, non-empty CML string into a ``Mol`` object.
-///
-/// Unlike :func:`from_cml`, this opt-in entry point rejects missing molecules,
-/// empty molecules, and mismatched or unclosed XML elements.
-#[pyfunction]
-fn from_cml_strict(cml_str: &str) -> PyResult<Mol> {
-    chematic_mol::parse_cml_strict(cml_str)
-        .map(|(mol, _coords)| Mol {
-            inner: Arc::new(mol),
-            props: Default::default(),
         })
         .map_err(|e| PyValueError::new_err(e.to_string()))
 }
@@ -720,8 +709,10 @@ fn semantic_expand_json_with_limits(
 ///
 ///     with open("ligand_v3000.mol") as f:
 ///         mol = chematic.from_mol_v3000(f.read())
+///
+/// Accepts ``str`` or UTF-8 ``bytes``; malformed UTF-8 raises ``UnicodeDecodeError``.
 #[pyfunction]
-fn from_mol_v3000(block: &str) -> PyResult<Mol> {
+fn from_mol_v3000(#[pyo3(from_py_with = serialized_text)] block: &str) -> PyResult<Mol> {
     chematic_mol::parse_mol_v3000(block)
         .map(|(mol, _meta)| Mol {
             inner: Arc::new(mol),
@@ -739,8 +730,12 @@ fn from_mol_v3000(block: &str) -> PyResult<Mol> {
 ///
 ///     mol, name, coords_2d = chematic.from_mol_v3000_with_coords(block)
 ///     new_block = mol.to_mol_v3000(coords_2d, name=name)
+///
+/// Accepts ``str`` or UTF-8 ``bytes``; malformed UTF-8 raises ``UnicodeDecodeError``.
 #[pyfunction]
-fn from_mol_v3000_with_coords(block: &str) -> PyResult<(Mol, String, Vec<Vec<f64>>)> {
+fn from_mol_v3000_with_coords(
+    #[pyo3(from_py_with = serialized_text)] block: &str,
+) -> PyResult<(Mol, String, Vec<Vec<f64>>)> {
     chematic_mol::parse_mol_v3000_with_coords(block)
         .map(|(mol, meta, coords)| {
             let py_coords: Vec<Vec<f64>> = coords.iter().map(|(x, y)| vec![*x, *y]).collect();
@@ -763,11 +758,13 @@ fn from_mol_v3000_with_coords(block: &str) -> PyResult<(Mol, String, Vec<Vec<f64
 /// input -- see that function for the diagnostics dict shape.
 ///
 /// Raises ``ValueError`` on parse failure.
+///
+/// Accepts ``str`` or UTF-8 ``bytes``; malformed UTF-8 raises ``UnicodeDecodeError``.
 #[pyfunction]
 #[allow(clippy::type_complexity)]
 fn from_mol_v3000_with_diagnostics<'py>(
     py: Python<'py>,
-    block: &str,
+    #[pyo3(from_py_with = serialized_text)] block: &str,
 ) -> PyResult<(Mol, String, Vec<Vec<f64>>, Vec<Bound<'py, PyDict>>)> {
     let report = chematic_mol::read_mol_v3000_with_diagnostics(block)
         .map_err(|e| PyValueError::new_err(e.to_string()))?;
@@ -793,8 +790,10 @@ fn from_mol_v3000_with_diagnostics<'py>(
 ///     print(mol.mw)
 ///
 /// Raises ``ValueError`` on parse failure.
+///
+/// Accepts ``str`` or UTF-8 ``bytes``; malformed UTF-8 raises ``UnicodeDecodeError``.
 #[pyfunction]
-fn from_mol2(mol2_str: &str) -> PyResult<Mol> {
+fn from_mol2(#[pyo3(from_py_with = serialized_text)] mol2_str: &str) -> PyResult<Mol> {
     chematic_mol::parse_mol2(mol2_str)
         .map(|(mol, _coords)| Mol {
             inner: Arc::new(mol),
@@ -903,8 +902,10 @@ fn write_gjf(
 }
 
 /// Return True if the SMILES can be parsed without error.
+///
+/// Accepts ``str`` or UTF-8 ``bytes``; malformed UTF-8 raises ``UnicodeDecodeError``.
 #[pyfunction]
-fn is_valid_smiles(smiles: &str) -> bool {
+fn is_valid_smiles(#[pyo3(from_py_with = serialized_text)] smiles: &str) -> bool {
     chematic_smiles::parse(smiles).is_ok()
 }
 
@@ -917,8 +918,10 @@ fn is_valid_smiles(smiles: &str) -> bool {
 ///     chematic.is_valid_smarts("c1ccccc1")  # True
 ///     chematic.is_valid_smarts("[invalid")  # False
 ///     chematic.is_valid_smarts("[#6]-[#7]") # True
+///
+/// Accepts ``str`` or UTF-8 ``bytes``; malformed UTF-8 raises ``UnicodeDecodeError``.
 #[pyfunction]
-fn is_valid_smarts(smarts: &str) -> bool {
+fn is_valid_smarts(#[pyo3(from_py_with = serialized_text)] smarts: &str) -> bool {
     chematic_smarts::parse_smarts(smarts).is_ok()
 }
 

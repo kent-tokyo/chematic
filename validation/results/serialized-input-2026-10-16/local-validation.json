@@ -1,0 +1,55 @@
+{
+  "schema": "chematic.serialized-input-local-validation.v1",
+  "issue": {
+    "url": "https://github.com/rdkit/rdkit/issues/9601",
+    "state": "OPEN",
+    "observed_date": "2026-10-16",
+    "scope": "Serialized text subset only; not the full nanobind wrapper checklist."
+  },
+  "source_base": "57d318c03b5bd22e46b8482e72ba47d190d77701",
+  "observed_main": "57d318c03b5bd22e46b8482e72ba47d190d77701",
+  "baseline": "Retained local MOL2 Kekule candidate from base 96a1addb742b9b4cb3c8258e123563cee0d7055c and PR #938 changes. Not a released artifact; the extension hash identifies the actual tested binary.",
+  "scope": "Thirteen Python text reader/validator inputs; same native parsers, keyword names and return shapes. UTF-8 bytes added without coercion. Paths, identifiers, other bindings and parsing defaults unchanged. Not performance, general chemistry parity or release proof.",
+  "comparison": "comparison.json",
+  "extension_sha256": {
+    "baseline": "8257c5abcd244114f6746fa658f7ea826101024357acbc6c0cc9d1191d576987",
+    "candidate": "828461385486b50b2f5983251916ec90939d366e96bf0c21fcb7c0fb0c0ce9fd"
+  },
+  "comparison_checks": {
+    "baseline_bytes_rejections": 13,
+    "preserved_str_outputs": 13,
+    "candidate_bytes_matches": 13,
+    "preserved_malformed_inputs": 39,
+    "preserved_surrogate_errors": 13
+  },
+  "tests": {
+    "passed": 448,
+    "new_boundary_tests": 263,
+    "existing_tests": 185,
+    "command": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=<candidate-package> python3.13 -m pytest crates/chematic-py/tests/test_serialized_input.py crates/chematic-py/tests/test_input_errors.py crates/chematic-py/tests/test_new_formats.py crates/chematic-py/tests/test_format_convert.py crates/chematic-py/tests/test_cml_hydrogen_contract.py crates/chematic-py/tests/test_mol2_preservation.py crates/chematic-py/tests/test_mol.py -q"
+  },
+  "checks": {
+    "clippy": "passed: cargo clippy -p chematic-py --offline -- -D warnings",
+    "format": "passed: cargo fmt --all -- --check",
+    "refactor_budget": "passed: 585 production Rust files, 8613 functions; existing 18 file and 85 function allowances unchanged",
+    "static_binding_surface": "passed; exported/registered names unchanged",
+    "cross_binding_manifest": "passed: 58 operations, 4 bindings; bookkeeping only",
+    "product_names": "passed",
+    "unsafe_surface": "passed",
+    "python_ast": "passed: stub, new test and comparison script",
+    "mkdocs": "passed: python3 -m mkdocs build --strict"
+  },
+  "toolchain": "rustc 1.97.0 (2d8144b78 2026-07-07)",
+  "build": "Native macOS dev profile, opt-level=1, debug=0, codegen-units=1, CARGO_INCREMENTAL=0. Final extension built with cargo rustc -p chematic-py --offline -- -C strip=none -C link-arg=-undefined -C link-arg=dynamic_lookup.",
+  "local_build_workaround": "An initial local -C strip=debuginfo build compiled but dyld rejected a misaligned LINKEDIT pool. Rebuilding only the extension with -C strip=none loaded and passed tests. Known toolchain issue https://github.com/rust-lang/rust/issues/157750; no repository build defaults changed.",
+  "source_sha256": {
+    "crates/chematic-py/src/formats.rs": "67febb536680ed70cb3939f3261e5a603d7ff0ef0cb42cadbfce91d61d7d5eb3",
+    "crates/chematic-py/src/formats/cml.rs": "ae697765839586e35030e912f6306099baf860d0d243dbcddf7d90b233dfabf0",
+    "crates/chematic-py/src/formats/serialized_input.rs": "a1f3c673c73bba4e3bee05808600fcbcec0dfd76e1ad2dbc7ed9ef19bf3dfe79",
+    "crates/chematic-py/python/chematic/__init__.pyi": "d33218c36b64c69e1b5f5f2b7cbb8727744896a534af3858a320d2112700f1c9",
+    "crates/chematic-py/tests/test_serialized_input.py": "f15fc2a7da4101b00df68e94904dfb2e48fe6b9b7ac8ec144f9396da5e297534",
+    "validation/rdkit_issues/python-serialized-input/cases.json": "d8afef44cb9cb1715b04c8dd16feeac06699c9a61b264565087ca3c0a8aa51c5",
+    "validation/rdkit_issues/python-serialized-input/compare.py": "44f047a00d3766c2387a0d4baa27da4ac15ab4ac8b63ea771567d8c4487f5fcf"
+  },
+  "hosted_ci": "Separate from completed local validation; inspect PR checks."
+}
