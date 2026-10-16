@@ -117,6 +117,16 @@ fn append_inferred_valence_properties(
         line.push_str(" VAL=-1");
         return;
     }
+    // RDKit's CTfile reader drops explicit H from a +3 carbon with two to
+    // four drawn valence units unless the radical and valence are both
+    // specified. The parity of the missing valence determines the radical
+    // code used by RDKit's V3000 writer for these bracket atoms.
+    if atom.element == Element::C && atom.charge == 3 && ordinary_bonds && (2..=4).contains(&drawn)
+    {
+        let radical = if drawn % 2 == 0 { 2 } else { 3 };
+        write!(line, " RAD={radical} VAL={drawn}").expect("writing to String cannot fail");
+        return;
+    }
     let charged_normal = match (atom.element, atom.charge) {
         (Element::N, 1) | (Element::B, -1) | (Element::F, 3) => Some(4),
         (Element::O, 1 | 3) => Some(3),

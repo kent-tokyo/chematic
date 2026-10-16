@@ -101,6 +101,26 @@ fn three_coordinate_sulfur_stereo_survives_v3000() {
 }
 
 #[test]
+fn highly_charged_carbon_keeps_explicit_valence_in_v3000() {
+    for (smiles, property) in [
+        ("[CH2+3]", "RAD=2 VAL=2"),
+        ("C[CH+3]N", "RAD=3 VAL=3"),
+        ("C[C@H+3](N)O", "RAD=2 VAL=4"),
+        ("C[C+3](N)O", "RAD=3 VAL=3"),
+    ] {
+        let mol = chematic_smiles::parse(smiles).unwrap();
+        let block = write_mol_v3000(&mol, &MolMetadata::default(), &[]);
+        assert!(block.contains(property), "{smiles}: {block}");
+        let (read, _) = parse_mol_v3000(&block).unwrap();
+        assert_eq!(
+            chematic_smiles::canonical_smiles(&read),
+            chematic_smiles::canonical_smiles(&mol),
+            "{smiles}: {block}"
+        );
+    }
+}
+
+#[test]
 fn decorated_wildcards_keep_their_identity_in_v3000() {
     for (smiles, property) in [
         ("[1*]C", "MASS=1"),

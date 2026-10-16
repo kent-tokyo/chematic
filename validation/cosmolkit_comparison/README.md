@@ -40,6 +40,9 @@ stereo rows.
 The [pyramidal-sulfur stereo follow-up](v3000-sulfoxide-lone-pair-2026-10-17.md)
 recovers four more `stress-v1` identities and checks 12 additional sulfoxide
 variants against RDKit, COSMolKit, and CheMatic's own read-back.
+The [charged-carbon follow-up](v3000-charged-carbon-2026-10-17.md) recovers
+the final CheMatic-only `stress-v1` miss; CheMatic's correct rows now include
+every RDKit and COSMolKit correct row on all three fixed V3000 corpora.
 
 The focused [aromatic sulfur stereo read-back
 check](aromatic-s-stereo-2026-10-16.md) compares whether each toolkit keeps
