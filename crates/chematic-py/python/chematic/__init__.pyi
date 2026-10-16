@@ -321,6 +321,14 @@ class Mol:
         high-gradient candidates when no initial conformer converged."""
         ...
 
+    def rdkit_alkene_path_stereo(self, path: Sequence[int]) -> Optional[Literal["cis", "trans"]]:
+        """Return 'cis', 'trans' or None for a real four-atom alkene path.
+
+        Reversing the path preserves the relation. Declared stereo only;
+        invalid paths raise ValueError. Pass exactly four atom indices.
+        """
+        ...
+
     def rdkit_bounds_matrix(
         self,
         *,

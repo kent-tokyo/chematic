@@ -1,0 +1,274 @@
+{
+  "schema": "chematic.alkene-path-fixtures.v1",
+  "issue": "https://github.com/rdkit/rdkit/issues/9719",
+  "provenance": "Original small halogen/explicit-H controls with hand-derived relative side relations; no upstream code or attachments copied. MIT OR Apache-2.0.",
+  "cases": [
+    {
+      "smiles": "F/C(Cl)=C(Br)/I",
+      "add_hs": false,
+      "paths": [
+        {
+          "path": [
+            0,
+            1,
+            3,
+            5
+          ],
+          "relation": "trans"
+        },
+        {
+          "path": [
+            0,
+            1,
+            3,
+            4
+          ],
+          "relation": "cis"
+        },
+        {
+          "path": [
+            2,
+            1,
+            3,
+            5
+          ],
+          "relation": "cis"
+        },
+        {
+          "path": [
+            2,
+            1,
+            3,
+            4
+          ],
+          "relation": "trans"
+        }
+      ]
+    },
+    {
+      "smiles": "F/C(Cl)=C(Br)\\I",
+      "add_hs": false,
+      "paths": [
+        {
+          "path": [
+            0,
+            1,
+            3,
+            5
+          ],
+          "relation": "cis"
+        },
+        {
+          "path": [
+            0,
+            1,
+            3,
+            4
+          ],
+          "relation": "trans"
+        },
+        {
+          "path": [
+            2,
+            1,
+            3,
+            5
+          ],
+          "relation": "trans"
+        },
+        {
+          "path": [
+            2,
+            1,
+            3,
+            4
+          ],
+          "relation": "cis"
+        }
+      ]
+    },
+    {
+      "smiles": "I/C(Br)=C(Cl)/F",
+      "add_hs": false,
+      "paths": [
+        {
+          "path": [
+            0,
+            1,
+            3,
+            5
+          ],
+          "relation": "trans"
+        },
+        {
+          "path": [
+            0,
+            1,
+            3,
+            4
+          ],
+          "relation": "cis"
+        },
+        {
+          "path": [
+            2,
+            1,
+            3,
+            5
+          ],
+          "relation": "cis"
+        },
+        {
+          "path": [
+            2,
+            1,
+            3,
+            4
+          ],
+          "relation": "trans"
+        }
+      ]
+    },
+    {
+      "smiles": "I/C(Br)=C(Cl)\\F",
+      "add_hs": false,
+      "paths": [
+        {
+          "path": [
+            0,
+            1,
+            3,
+            5
+          ],
+          "relation": "cis"
+        },
+        {
+          "path": [
+            0,
+            1,
+            3,
+            4
+          ],
+          "relation": "trans"
+        },
+        {
+          "path": [
+            2,
+            1,
+            3,
+            5
+          ],
+          "relation": "trans"
+        },
+        {
+          "path": [
+            2,
+            1,
+            3,
+            4
+          ],
+          "relation": "cis"
+        }
+      ]
+    },
+    {
+      "smiles": "F/C=C/Cl",
+      "add_hs": true,
+      "paths": [
+        {
+          "path": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "relation": "trans"
+        },
+        {
+          "path": [
+            4,
+            1,
+            2,
+            3
+          ],
+          "relation": "cis"
+        },
+        {
+          "path": [
+            0,
+            1,
+            2,
+            5
+          ],
+          "relation": "cis"
+        },
+        {
+          "path": [
+            4,
+            1,
+            2,
+            5
+          ],
+          "relation": "trans"
+        }
+      ]
+    },
+    {
+      "smiles": "F/C=C\\Cl",
+      "add_hs": true,
+      "paths": [
+        {
+          "path": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "relation": "cis"
+        },
+        {
+          "path": [
+            4,
+            1,
+            2,
+            3
+          ],
+          "relation": "trans"
+        },
+        {
+          "path": [
+            0,
+            1,
+            2,
+            5
+          ],
+          "relation": "trans"
+        },
+        {
+          "path": [
+            4,
+            1,
+            2,
+            5
+          ],
+          "relation": "cis"
+        }
+      ]
+    },
+    {
+      "smiles": "FC=CCl",
+      "add_hs": false,
+      "paths": [
+        {
+          "path": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "relation": null
+        }
+      ]
+    }
+  ]
+}

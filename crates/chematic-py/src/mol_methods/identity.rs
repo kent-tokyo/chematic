@@ -531,6 +531,28 @@ impl Mol {
         .map_err(|error| PyValueError::new_err(error.to_string()))
     }
 
+    /// Return 'cis', 'trans' or None for a four-atom path around a double bond.
+    /// Reversing the complete path preserves the relation (RDKit #9719).
+    /// Uses declared stereo and atom indices; infers no stereo from geometry.
+    /// Repeated/disconnected/out-of-range/non-double paths raise ValueError.
+    fn rdkit_alkene_path_stereo(&self, path: [i64; 4]) -> PyResult<Option<&'static str>> {
+        use chematic_3d::rdkit_embed::AlkenePathStereo;
+        let mut indices = [0usize; 4];
+        for (index, value) in indices.iter_mut().zip(path) {
+            *index = usize::try_from(value).map_err(|_| {
+                PyValueError::new_err("alkene path: atom index must be nonnegative")
+            })?;
+        }
+        chematic_3d::rdkit_embed::rdkit_alkene_path_stereo(&self.inner, indices)
+            .map(|relation| {
+                relation.map(|r| match r {
+                    AlkenePathStereo::Cis => "cis",
+                    AlkenePathStereo::Trans => "trans",
+                })
+            })
+            .map_err(|error| PyValueError::new_err(error.to_string()))
+    }
+
     /// RDKit 2026.09.1's ``rdDistGeom.GetMoleculeBoundsMatrix(mol, ...)``
     /// (``scaleVDW=False``), bit for bit: the distance-geometry bounds
     /// matrix as a list of rows, upper bounds above the diagonal and lower

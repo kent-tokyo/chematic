@@ -90,6 +90,7 @@ nav:
     - Error Handling & Limits: error-and-limits.md
     - Checked 3D Distance Matrices: rdkit-checked-3d-distance-matrix.md
   - Reliability:
+    - Alkene Path Stereo: alkene-path-stereo.md
     - ChemDoodle JSON: chemdoodle-json.md
     - Fingerprint Target Density: fingerprint-target-density.md
     - Bounded Native Distance Matrices: native-distance-matrix-limits.md
