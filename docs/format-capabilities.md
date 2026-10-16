@@ -315,6 +315,11 @@ use the record or checked API for source retention.
 
 ### MOL2 (Tripos)
 
+Generated/editable Rust output and Python/WASM graph output support an
+[opt-in adjacent ATOM/BOND section order](mol2-section-order.md). The default
+retains UNITY before BOND for measured Open Babel charge compatibility;
+source-preserving APIs retain the original order.
+
 - **Rust**: `chematic_mol::{parse_mol2, parse_mol2_with_limits, write_mol2}` retains the published graph/editable-record contract. Exact-source inspection uses the additive `Mol2SourceRecord`, `parse_mol2_source_record`, `parse_mol2_source_record_with_limits`, and `write_mol2_source_record` APIs. `Mol2SourceAtomRecord` and `Mol2SourceBondRecord` describe their metadata; the shared `Mol2Error`/`Mol2ParseLimits` types remain compatible.
 - **Python/WASM**: `parse_mol2_record_json` exposes the shared
   `chematic.mol2-record.v1` inspection schema; `roundtrip_mol2_record` validates

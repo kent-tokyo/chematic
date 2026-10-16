@@ -13,11 +13,18 @@ pub fn mol2_to_smiles(mol2_str: &str) -> String {
 
 /// Convert a SMILES to a minimal Tripos MOL2 string (no 3D coordinates).
 ///
-/// Returns `"error:<msg>"` on parse failure.
+/// Optional `atom_bond_adjacent=true` emits ATOM → BOND → UNITY. Some
+/// readers (including Open Babel 3.2.1) ignore UNITY charges in this order.
+/// Omit it to retain existing bytes. Returns `"error:<msg>"` on parse failure.
 #[wasm_bindgen]
-pub fn smiles_to_mol2(smiles: &str) -> String {
+pub fn smiles_to_mol2(smiles: &str, atom_bond_adjacent: Option<bool>) -> String {
+    let order = if atom_bond_adjacent.unwrap_or(false) {
+        chematic_mol::Mol2SectionOrder::AtomBondAdjacent
+    } else {
+        chematic_mol::Mol2SectionOrder::default()
+    };
     match chematic_smiles::parse(smiles) {
-        Ok(mol) => chematic_mol::write_mol2(&mol, &[]),
+        Ok(mol) => chematic_mol::write_mol2_with_section_order(&mol, &[], order),
         Err(e) => format!("error:{e}"),
     }
 }

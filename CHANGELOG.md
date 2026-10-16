@@ -14,6 +14,14 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Added an opt-in MOL2 ATOM → BOND → UNITY section order to Rust and the
+  existing Python/WASM graph writers for readers requiring adjacent core
+  sections (Open Babel #2350). Default bytes and immutable source retention
+  remain unchanged. Open Babel 3.2.1 ignores trailing UNITY charges in six
+  original graph controls; see the [compatibility record](docs/mol2-section-order.md).
+
 ### Performance
 
 - Skip unused stereo-loss collection for plain V3000 output. Reporting APIs

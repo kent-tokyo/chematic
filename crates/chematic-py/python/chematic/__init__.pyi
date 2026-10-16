@@ -726,8 +726,12 @@ class Mol:
         """
         ...
 
-    def to_mol2(self) -> str:
+    def to_mol2(self, *, atom_bond_adjacent: bool = False) -> str:
         """Serialize to Tripos MOL2 format string (SYBYL MOL2).
+
+        Set ``atom_bond_adjacent=True`` for ATOM → BOND → UNITY output.
+        Open Babel 3.2.1 may ignore UNITY formal charges in this order.
+        The default preserves the existing output order and bytes.
 
         The output contains the mandatory @<TRIPOS>MOLECULE, @<TRIPOS>ATOM,
         and @<TRIPOS>BOND sections.  Atom coordinates are all zero when no
