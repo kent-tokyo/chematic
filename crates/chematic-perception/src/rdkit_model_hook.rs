@@ -228,16 +228,18 @@ fn pi_electrons(mol: &Molecule, idx: AtomIdx) -> Option<u32> {
 /// 4n+2-electron smallest rings ([`fused_rings_are_huckel`]).
 fn aromatic_systems_are_huckel(mol: &Molecule) -> bool {
     let n = mol.atom_count();
-    let mut seen = vec![false; n];
-    let mut electrons_of = vec![0u32; n];
-    let mut stack = Vec::new();
+    // Keep common molecular graphs inline; larger inputs spill to the heap.
+    // The traversal and electron-counting order stay unchanged.
+    let mut seen: smallvec::SmallVec<[bool; 64]> = smallvec::smallvec![false; n];
+    let mut electrons_of: smallvec::SmallVec<[u32; 64]> = smallvec::smallvec![0u32; n];
+    let mut stack = smallvec::SmallVec::<[usize; 64]>::new();
     for start in 0..n {
         if seen[start] || !mol.atom(AtomIdx(start as u32)).aromatic {
             continue;
         }
         seen[start] = true;
         stack.push(start);
-        let mut comp = Vec::new();
+        let mut comp = smallvec::SmallVec::<[usize; 64]>::new();
         let mut electrons = 0u32;
         let mut twice_bonds = 0usize;
         while let Some(a) = stack.pop() {
@@ -281,13 +283,13 @@ fn aromatic_systems_are_huckel(mol: &Molecule) -> bool {
 /// aromatic bond (RDKit judges fused systems ring by ring) has 4n+2 pi
 /// electrons, and every aromatic bond is in such a ring.
 fn fused_rings_are_huckel(mol: &Molecule, comp: &[usize], electrons_of: &[u32]) -> bool {
-    let mut local = vec![u32::MAX; mol.atom_count()];
+    let mut local: smallvec::SmallVec<[u32; 64]> = smallvec::smallvec![u32::MAX; mol.atom_count()];
     for (k, &a) in comp.iter().enumerate() {
         local[a] = k as u32;
     }
     // Flat aromatic adjacency of the component in local numbering.
-    let mut start = Vec::with_capacity(comp.len() + 1);
-    let mut flat: Vec<usize> = Vec::with_capacity(comp.len() * 3);
+    let mut start = smallvec::SmallVec::<[usize; 128]>::with_capacity(comp.len() + 1);
+    let mut flat = smallvec::SmallVec::<[usize; 256]>::with_capacity(comp.len() * 3);
     for &a in comp {
         start.push(flat.len());
         flat.extend(
@@ -300,8 +302,8 @@ fn fused_rings_are_huckel(mol: &Molecule, comp: &[usize], electrons_of: &[u32]) 
     start.push(flat.len());
     let adj = |x: usize| &flat[start[x]..start[x + 1]];
     let m = comp.len();
-    let mut parent = vec![usize::MAX; m];
-    let mut queue = std::collections::VecDeque::with_capacity(m);
+    let mut parent: smallvec::SmallVec<[usize; 64]> = smallvec::smallvec![usize::MAX; m];
+    let mut queue = smallvec::SmallVec::<[usize; 64]>::with_capacity(m);
     for u in 0..m {
         for &v in adj(u) {
             if v < u {
@@ -311,8 +313,11 @@ fn fused_rings_are_huckel(mol: &Molecule, comp: &[usize], electrons_of: &[u32]) 
             parent.iter_mut().for_each(|p| *p = usize::MAX);
             parent[u] = u;
             queue.clear();
-            queue.push_back(u);
-            'bfs: while let Some(x) = queue.pop_front() {
+            queue.push(u);
+            let mut head = 0;
+            'bfs: while head < queue.len() {
+                let x = queue[head];
+                head += 1;
                 for &y in adj(x) {
                     if (x == u && y == v) || parent[y] != usize::MAX {
                         continue;
@@ -321,7 +326,7 @@ fn fused_rings_are_huckel(mol: &Molecule, comp: &[usize], electrons_of: &[u32]) 
                     if y == v {
                         break 'bfs;
                     }
-                    queue.push_back(y);
+                    queue.push(y);
                 }
             }
             if parent[v] == usize::MAX {
@@ -343,3 +348,7 @@ fn fused_rings_are_huckel(mol: &Molecule, comp: &[usize], electrons_of: &[u32]) 
     }
     true
 }
+
+#[cfg(test)]
+#[path = "rdkit_model_hook_inline_tests.rs"]
+mod inline_tests;

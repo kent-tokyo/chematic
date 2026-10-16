@@ -22,6 +22,9 @@ the [complete inventory](archive-index.md) links every retained record.
 
 ## Recent focused follow-ups
 
+- [Inline aromatic model-gate scratch](2026-10-16-python-model-hook-inline.md):
+  unpromoted source trial; exact outputs retained, all four primary speed
+  intervals inconclusive, and the negative ASA pipeline interval disclosed.
 - [V3000 requested stereo-loss collection](2026-10-16-openbabel-v3000-loss-work.md):
   prepared writing improves on both diverse slices; all 15 source median
   budgets pass, with a disclosed additional-slice parse retreat.

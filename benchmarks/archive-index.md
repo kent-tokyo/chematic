@@ -9,6 +9,7 @@ package, comparator, corpus, host, runtime and operation.
 
 | Need | Start with |
 |---|---|
+| Review the unpromoted aromatic model-gate scratch trial | [2026-10-16-python-model-hook-inline](2026-10-16-python-model-hook-inline.md): exact outputs, four inconclusive primary intervals and the negative ASA pipeline interval retained |
 | Review requested-only V3000 loss collection | [2026-10-16-openbabel-v3000-loss-work](2026-10-16-openbabel-v3000-loss-work.md): exact outputs/reports, both primary write intervals positive, all 15 median budgets pass; parsing retreat disclosed |
 | Review final SDF reader/writer source | [2026-10-16-openbabel-sdf-loss-work](2026-10-16-openbabel-sdf-loss-work.md): five complete profiles, six positive SDF primary intervals, 1% budget and disclosed V3000 retreats |
 | Review the direct SD-field experiment | [2026-10-16-openbabel-sdf-direct-fields](2026-10-16-openbabel-sdf-direct-fields.md): retained failure of two median floors |

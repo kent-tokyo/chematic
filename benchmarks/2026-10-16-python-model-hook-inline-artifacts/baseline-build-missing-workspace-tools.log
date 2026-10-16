@@ -1,0 +1,11 @@
+error: failed to load manifest for workspace member `/private/tmp/chematic-model-hook-inline-evidence-20261016/baseline-source/tools/gen_sa_table`
+referenced by workspace at `/private/tmp/chematic-model-hook-inline-evidence-20261016/baseline-source/Cargo.toml`
+
+Caused by:
+  failed to read `/private/tmp/chematic-model-hook-inline-evidence-20261016/baseline-source/tools/gen_sa_table/Cargo.toml`
+
+Caused by:
+  No such file or directory (os error 2)
+💥 maturin failed
+  Caused by: Cargo metadata failed. Does your crate compile with `cargo build`?
+  Caused by: `cargo metadata` exited with an error: 

@@ -1,0 +1,24 @@
+{
+  "process_check": "No active own builders/workers; ps filtered output only the check itself",
+  "lsof_results": {
+    "wheel_target": {
+      "rc": 1,
+      "output": ""
+    },
+    "test_target": {
+      "rc": 1,
+      "output": ""
+    }
+  },
+  "wheels_and_installed_extensions_reverified": true,
+  "cleanup": [
+    {
+      "path": "/private/tmp/chematic-model-hook-inline-target-20261016",
+      "size_kib": 499048
+    },
+    {
+      "path": "/private/tmp/chematic-model-hook-inline-test-target-20261016",
+      "size_kib": 437144
+    }
+  ]
+}

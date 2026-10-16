@@ -1,0 +1,20 @@
+{
+  "base": "3e7f04b20593af4b07569d886b56afc1184468fe",
+  "file": "crates/chematic-perception/src/rdkit_model_hook.rs",
+  "functions": {
+    "rdkit_model_may_disagree_uncached": {
+      "source_sha256": "37d2ce7da45e2c9d9ddf5667b58453378363cc2f515e4c115eb4720a2302666a",
+      "only_identifiers_renamed": true
+    },
+    "aromatic_systems_are_huckel": {
+      "source_sha256": "b685e43f99bcfedc72f1fc9af3a2efff0d074e439c13a7f95acdd40013761867",
+      "only_identifiers_renamed": true
+    },
+    "fused_rings_are_huckel": {
+      "source_sha256": "9bc3174f6a8d1837c0d412385a6f22bd3e43282c64742e913063d02ff51a50ec",
+      "only_identifiers_renamed": true
+    }
+  },
+  "saved_test_sha256": "674ec82e0b32ca8ff911ee49d678c4fb25614f283f61bd6fd0d1485c74353340",
+  "all_saved_function_tokens_match_baseline_after_identifier_restoration": true
+}

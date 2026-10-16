@@ -1,0 +1,87 @@
+{
+  "adoption_passed": false,
+  "primary": {
+    "0": {
+      "tpsa/first_use": {
+        "median": 1.0,
+        "ci95": [
+          0.998,
+          1.008
+        ],
+        "winning_blocks": 10,
+        "blocks": 20
+      },
+      "labute_asa/first_use": {
+        "median": 0.999,
+        "ci95": [
+          0.996,
+          1.013
+        ],
+        "winning_blocks": 9,
+        "blocks": 20
+      }
+    },
+    "5000": {
+      "tpsa/first_use": {
+        "median": 1.007,
+        "ci95": [
+          0.994,
+          1.011
+        ],
+        "winning_blocks": 13,
+        "blocks": 20
+      },
+      "labute_asa/first_use": {
+        "median": 1.002,
+        "ci95": [
+          0.991,
+          1.005
+        ],
+        "winning_blocks": 11,
+        "blocks": 20
+      }
+    }
+  },
+  "guard_failures": {
+    "0": {},
+    "5000": {}
+  },
+  "all_negative_source_intervals": {
+    "0": {
+      "labute_asa/parse_inclusive": {
+        "median": 0.993,
+        "ci95": [
+          0.988,
+          0.999
+        ],
+        "winning_blocks": 6,
+        "blocks": 20
+      }
+    },
+    "5000": {}
+  },
+  "comparator_strict_wins": {
+    "0": {
+      "rdkit": {
+        "strict_wins": 19,
+        "eligible": 21
+      },
+      "cosmolkit": {
+        "strict_wins": 15,
+        "eligible": 18
+      }
+    },
+    "5000": {
+      "rdkit": {
+        "strict_wins": 18,
+        "eligible": 21
+      },
+      "cosmolkit": {
+        "strict_wins": 15,
+        "eligible": 21
+      }
+    }
+  },
+  "universal_superiority": false,
+  "epochs": "Two complete single 20-block epochs; no timing reruns, pooling or substitutions"
+}

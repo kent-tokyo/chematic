@@ -1,0 +1,25 @@
+{
+  "cmd": [
+    "maturin",
+    "build",
+    "--offline",
+    "--locked",
+    "--release",
+    "--manifest-path",
+    "/private/tmp/chematic-model-hook-inline-evidence-20261016/baseline-source/crates/chematic-py/Cargo.toml",
+    "--interpreter",
+    "/private/tmp/chematic-ring-frontier-env-20261016/bin/python",
+    "--out",
+    "/private/tmp/chematic-model-hook-inline-evidence-20261016/baseline-wheel"
+  ],
+  "env": {
+    "CARGO_TARGET_DIR": "/private/tmp/chematic-model-hook-inline-target-20261016",
+    "CARGO_BUILD_JOBS": "1",
+    "CARGO_INCREMENTAL": "0",
+    "CARGO_PROFILE_RELEASE_OPT_LEVEL": "3",
+    "CARGO_PROFILE_RELEASE_LTO": "true",
+    "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "1",
+    "CARGO_PROFILE_RELEASE_STRIP": "none",
+    "PYO3_PYTHON": "/private/tmp/chematic-ring-frontier-env-20261016/bin/python"
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "base": "3e7f04b20593af4b07569d886b56afc1184468fe",
+  "candidate": "Inline small aromatic-model gate scratch buffers; preserve graph traversal, pi-electron rules, BFS queue order and large-input heap fallback",
+  "primary": [
+    "tpsa/first_use and labute_asa/first_use at offsets 0 and 5000"
+  ],
+  "corpus": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+  "offsets": [
+    0,
+    5000
+  ],
+  "rows_each": 1000,
+  "blocks": 20,
+  "operations": [
+    "tpsa",
+    "labute_asa",
+    "num_rings",
+    "morgan2_2048",
+    "morgan2_chiral",
+    "morgan3_2048",
+    "maccs"
+  ],
+  "modes": [
+    "first_use",
+    "repeated_use",
+    "parse_inclusive"
+  ],
+  "adoption": "All four primary paired 95% CI lower >1; exact source outputs on all 14072 pinned inputs; all 42 source-relative medians >=0.99; retain all negative intervals; no adaptive timing reruns",
+  "comparator_win": "Equivalent output, paired CI lower >1 and 20/20 wins; mismatches unranked",
+  "build": {
+    "opt_level": 3,
+    "lto": true,
+    "codegen_units": 1,
+    "jobs": 1,
+    "incremental": false,
+    "features": [
+      "native-inchi"
+    ],
+    "strip": "none"
+  },
+  "scope": "One shared macOS arm64 host, exposed development corpus, fresh source wheels; not published or universal superiority"
+}
