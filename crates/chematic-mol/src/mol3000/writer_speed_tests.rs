@@ -7,7 +7,9 @@ fn numeric_edges_and_missing_coordinates_are_byte_identical() {
     let mut atom = Atom::new(Element::C);
     atom.charge = -2;
     atom.isotope = Some(13);
-    atom.hydrogen_count = Some(0);
+    // Keep this coordinate-format comparison outside the intentional
+    // zero-valence CTfile change exercised by v3000_bracket_valence.
+    atom.hydrogen_count = Some(1);
     atom.atom_map = Some(u16::MAX);
     b.add_atom(atom);
     let mol = b.build();

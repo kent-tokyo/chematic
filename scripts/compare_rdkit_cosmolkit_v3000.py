@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """Measure SMILES -> V3000 -> RDKit read-back with three independent writers.
 
-The JSONL corpus contains ``id`` and ``smiles`` fields. Atom maps are removed
-from identities for all engines. This is a development comparison, not an
-independent chemical truth or an unseen holdout.
+JSONL corpora contain ``id`` and ``smiles`` fields; SMILES corpora contain one
+source molecule per line. Atom maps are removed
+from identities for all engines. Each writer receives the same RDKit-normalized
+SMILES so that source spellings RDKit rewrites (such as ``[H]=C``) cannot make
+the writers operate on different molecular graphs. This is a development
+comparison, not an independent chemical truth or an unseen holdout.
 """
 
 import argparse
@@ -57,31 +60,59 @@ def chematic_block(cli: Path, smiles: str) -> str | None:
     return process.stdout if process.returncode == 0 else None
 
 
+def rdkit_block(molecule: Chem.Mol) -> str | None:
+    try:
+        return Chem.MolToMolBlock(molecule, forceV3000=True)
+    except (RuntimeError, ValueError):
+        return None
+
+
+def cases(corpus: Path):
+    for line_number, line in enumerate(corpus.read_text().splitlines(), 1):
+        if not line.strip():
+            continue
+        if corpus.suffix == ".smi":
+            yield {"id": f"line-{line_number}", "smiles": line.split()[0]}
+        elif corpus.suffix == ".jsonl":
+            yield json.loads(line)
+        else:
+            raise ValueError("corpus must be .smi or .jsonl")
+
+
 def compare(corpus: Path, cli: Path) -> dict:
     params = cosmolkit.MolBlockWriteParams(format=cosmolkit.SdfFormat.V3000)
     rows = []
-    for line in corpus.read_text().splitlines():
-        if not line:
-            continue
-        case = json.loads(line)
+    for case in cases(corpus):
         source = case["smiles"]
         molecule = Chem.MolFromSmiles(source)
         if molecule is None:
-            raise ValueError(f"RDKit cannot parse {case['id']}")
+            rows.append({"id": case["id"], "source_smiles": source,
+                         "excluded": "RDKit cannot parse source"})
+            continue
         expected = identity(molecule)
+        assert expected is not None
+        # The original text can denote a different graph under different
+        # parsers. Give all three writers the same RDKit-judged molecule.
+        comparison_molecule = Chem.MolFromSmiles(expected)
+        if comparison_molecule is None or identity(comparison_molecule) != expected:
+            rows.append({"id": case["id"], "source_smiles": source,
+                         "comparison_smiles": expected,
+                         "excluded": "RDKit-normalized SMILES does not preserve identity"})
+            continue
         try:
-            cosmolkit_block = cosmolkit.Molecule.from_smiles(source).to_mol_with_params(params)
+            cosmolkit_block = cosmolkit.Molecule.from_smiles(expected).to_mol_with_params(params)
         except Exception:
             cosmolkit_block = None
         blocks = {
-            "rdkit": Chem.MolToMolBlock(molecule, forceV3000=True),
+            "rdkit": rdkit_block(comparison_molecule),
             "cosmolkit": cosmolkit_block,
-            "chematic": chematic_block(cli, source),
+            "chematic": chematic_block(cli, expected),
         }
         rows.append(
             {
                 "id": case["id"],
                 "source_smiles": source,
+                "comparison_smiles": expected,
                 "expected": expected,
                 "source_has_stereo_token": any(token in expected for token in "@/\\"),
                 "identities": {engine: readback(block) for engine, block in blocks.items()},
@@ -91,21 +122,23 @@ def compare(corpus: Path, cli: Path) -> dict:
                 },
             }
         )
-    summary = {"cases": len(rows)}
+    comparable = [row for row in rows if "identities" in row]
+    summary = {"cases": len(rows), "comparable": len(comparable),
+               "excluded": len(rows) - len(comparable)}
     for engine in ("rdkit", "cosmolkit", "chematic"):
         summary[engine] = {
-            "exact": sum(row["identities"][engine] == row["expected"] for row in rows),
+            "exact": sum(row["identities"][engine] == row["expected"] for row in comparable),
             "stereo_exact": sum(
                 row["source_has_stereo_token"]
                 and row["identities"][engine] == row["expected"]
-                for row in rows
+                for row in comparable
             ),
             "failed_ids": [
-                row["id"] for row in rows if row["identities"][engine] != row["expected"]
+                row["id"] for row in comparable if row["identities"][engine] != row["expected"]
             ],
         }
     return {
-        "scope": "development SMILES to V3000 to RDKit read-back; atom maps ignored",
+        "scope": "development RDKit-normalized SMILES to V3000 to RDKit read-back; atom maps ignored",
         "corpus": str(corpus),
         "corpus_sha256": digest(corpus),
         "cli": str(cli),
