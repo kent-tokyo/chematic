@@ -65,6 +65,12 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   screening while retaining prepared atom types, charges and pairs. Invalid
   updates leave the field unchanged; the default remains 1.0. See
   [the API and numerical contract](docs/mmff-dielectric-updates.md).
+- Added explicit AUTO/CDX/CDXML byte-block reading in Rust/Python/WASM with a
+  bounded concrete-molecule CDX profile, exact source sidecars and reported
+  presentation-loss opt-in. Unsupported CDX chemistry and marked stereo refuse.
+  The new projection also retains supported geometry-derived E/Z in graph
+  output. Existing CDXML entry points are unchanged. See
+  [the accepted profile and limits](docs/chemdraw-block.md).
 
 ## [1.1.5] - 2026-10-16
 

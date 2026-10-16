@@ -82,6 +82,7 @@ nav:
     - CIF Molecular Bonds: cif-molecular-bonds.md
     - Rooted SMILES Stereo: rooted-smiles-stereo.md
     - XYZ Element Symbols: xyz-element-symbols.md
+    - ChemDraw Block Formats: chemdraw-block.md
     - Format Capability Matrix: format-capabilities.md
     - CDXML Stereo Options: cdxml-stereo-options.md
     - Hydrogen Count Accounting: hydrogen-count-accounting.md

@@ -1,0 +1,16 @@
+{
+  "checked_at": "2026-10-16T05:18:49.739941+00:00",
+  "scope": "local source; hosted CI/publication separate",
+  "rust_tests": {
+    "new_contract": 9,
+    "existing_api_compatibility": 1
+  },
+  "python_tests": 65,
+  "node_contract": "56 recipes across AUTO/explicit format, source/report/handle, truncation and input cap checks passed",
+  "checks_passed": 12,
+  "stub_ast": "parsed in a separate check",
+  "log": {
+    "path": "local-checks.json.gz",
+    "sha256": "93ea1456fdae575095c0d3293173e5d44d576f2839a8ed5686ac3ec3c3e8305e"
+  }
+}
