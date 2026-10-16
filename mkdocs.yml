@@ -85,6 +85,7 @@ nav:
     - ChemDraw Block Formats: chemdraw-block.md
     - Format Capability Matrix: format-capabilities.md
     - CDXML Stereo Options: cdxml-stereo-options.md
+    - Named CML Atoms: cml-named-atoms.md
     - Hydrogen Count Accounting: hydrogen-count-accounting.md
     - HIN Aromatic Bond Preservation: openbabel-hin-aromatic-bonds.md
     - ORCA-AICCM EXYZ: openbabel-exyz.md

@@ -16,6 +16,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Rust/Python `write_cml_named_checked` exports caller-supplied unique atom
+  IDs and optional Cartesian 3D coordinates, including matching bond
+  references. Invalid IDs and unsupported graph semantics are explicit
+  errors. See [named CML atoms](docs/cml-named-atoms.md) for the MOL2 recipe.
 - Rust/Python `FeaturePatternSet` owns up to 32 caller-supplied SMARTS feature
   definitions and produces full-width atom masks or native circular feature
   fingerprints. Matching budgets and size limits refuse partial output;

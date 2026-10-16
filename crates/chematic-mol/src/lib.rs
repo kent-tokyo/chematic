@@ -36,6 +36,7 @@ mod cif_symmetry;
 pub mod cjson;
 pub mod cjson_record;
 pub mod cml;
+pub mod cml_named;
 pub mod conversion;
 pub mod cube;
 pub mod dmol3;
@@ -84,6 +85,7 @@ pub mod volumetric;
 pub mod xyz;
 
 // Convenient re-exports at crate root.
+pub use cml_named::{CmlNamedError, write_cml_named_checked};
 pub use conversion::{
     ConversionAtomMapping, ConversionBondMapping, ConversionError, ConversionLimits,
     ConversionObservation, ConversionPolicy, ConversionReport, PreservationStatus,

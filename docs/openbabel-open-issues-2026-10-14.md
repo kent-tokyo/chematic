@@ -121,3 +121,11 @@ probes. Chematic formulas already pass, but its separate total-H descriptor
 double-counted bracket H and missed H atom nodes. [Fix the counter and WASM
 atom information](hydrogen-count-accounting.md), keeping formula and
 serialization behavior as controls.
+
+## October 17 follow-up: named CML atoms
+
+[#2120](https://github.com/openbabel/openbabel/issues/2120) remains open. Added
+a [checked Rust/Python writer](cml-named-atoms.md) with exact caller-supplied
+atom IDs, consistent bond references and optional Cartesian 3D coordinates.
+The documented MOL2 recipe preserves names in this graph export; source-only
+MOL2 metadata and unsupported stereo remain outside the contract.

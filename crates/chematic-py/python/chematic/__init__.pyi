@@ -25,6 +25,17 @@ _FileSystemPath = str | bytes | PathLike[str] | PathLike[bytes]
 
 __version__: str
 
+def write_cml_named_checked(mol: Mol, atom_ids: Iterable[str], coordinates: Optional[Iterable[Sequence[float]]] = None) -> str:
+    """Export graph fields with unique caller-supplied CML atom IDs.
+
+    IDs follow atom order, use [A-Za-z][A-Za-z0-9_-]* and at most 128 bytes.
+    Optional finite 3D coordinates use Angstrom. Counts must match. Supports
+    1..4096 atoms/8192 bonds; rejects stereo, maps, tags, wildcards and unsupported
+    bonds. ValueError reports invalid data; wrong types raise TypeError.
+    Each iterable consumes at most atom_count + 1 items; exceptions propagate.
+    Source-only types, partial charges and metadata are outside this graph API.
+    """
+
 class SmartsParityOk(TypedDict):
     status: Literal["ok"]
     reason: None

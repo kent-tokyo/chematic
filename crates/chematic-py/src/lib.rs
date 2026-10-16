@@ -33,6 +33,7 @@ macro_rules! register_pyfunctions {
     }};
 }
 
+mod cml_named;
 mod crystal;
 mod ensemble_v2;
 mod errors;
