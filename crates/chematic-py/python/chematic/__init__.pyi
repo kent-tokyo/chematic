@@ -3397,6 +3397,11 @@ def protein_from_pdb_json(pdb_str: str) -> str:
     """
     ...
 
+def write_xyz_checked(elements: Iterable[str], positions_angstrom: Iterable[Iterable[float]], *, comment: str = "", notation: Literal["fixed", "scientific"] = "fixed", decimal_places: int = 12, min_width: int = 20, max_output_bytes: int = 67108864) -> str:
+    """Checked plain XYZ geometry; caller-selected decimal precision and width."""
+    ...
+
+
 def from_xyz(xyz_str: str) -> tuple[Mol, list[list[float]]]:
     """Parse an XYZ string and return ``(Mol, coords)``.
 

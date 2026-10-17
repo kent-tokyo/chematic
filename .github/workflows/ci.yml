@@ -311,6 +311,7 @@ jobs:
           - { package: chematic-smiles, target: rdkit_path_enumeration }
           - { package: chematic-mol, target: rdfile_contract }
           - { package: chematic-mol, target: gzmat_precision }
+          - { package: chematic-mol, target: xyz_precision }
           - { package: chematic-mol, target: sdf_selections }
           - { package: chematic-mol, target: qcschema }
           - { package: chematic-mol, target: sdf_v3000_recognition }

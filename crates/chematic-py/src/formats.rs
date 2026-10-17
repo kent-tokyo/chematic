@@ -61,6 +61,7 @@ use pdbqt_checked::*;
 mod pqr_pdbqt;
 use pqr_pdbqt::*;
 mod xyz;
+mod xyz_output;
 use gro::parse_gro;
 use interchange::*;
 use materials::*;
@@ -1332,6 +1333,7 @@ fn write_smi_file(records: Vec<(Mol, String)>) -> PyResult<String> {
 // ---------------------------------------------------------------------------
 
 pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    xyz_output::register(m)?;
     m.add_class::<PySmilesBatchStream>()?;
     register_pyfunctions!(
         m,
@@ -1392,10 +1394,6 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         rdkit_from_xyz_block,
         rdkit_from_mol2_block,
         rdkit_mol2_block_to_smiles,
-        from_xyz,
-        from_extxyz,
-        from_extxyz_all,
-        to_extxyz,
         parse_formula,
         mol_hash,
         are_identical,
