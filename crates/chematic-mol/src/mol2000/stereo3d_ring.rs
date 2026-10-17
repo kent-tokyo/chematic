@@ -128,7 +128,9 @@ pub(super) fn additional_3d_ring_centers(mol: &Molecule, mol2_extensions: bool) 
         let partner_component = labels[paired_ring_centers[0].0 as usize];
         let ring_ch_sites: Vec<_> = ring_ch_candidates(mol, &ring_bonds)
             .into_iter()
-            .filter(|&center| labels[center.0 as usize] == partner_component)
+            .filter(|&center| {
+                center != paired_ring_centers[0] && labels[center.0 as usize] == partner_component
+            })
             .collect();
         if !ring_ch_sites.is_empty() {
             additional.push(paired_ring_centers[0]);
@@ -184,3 +186,7 @@ fn ring_ch_candidates(mol: &Molecule, ring_bonds: &[bool]) -> Vec<AtomIdx> {
         .map(|(idx, _)| idx)
         .collect()
 }
+
+#[cfg(test)]
+#[path = "stereo3d_ring_partner_tests.rs"]
+mod partner_tests;
