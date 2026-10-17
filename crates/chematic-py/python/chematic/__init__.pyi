@@ -5740,3 +5740,9 @@ from ._crystal_stl import (
     StlMeshExport as StlMeshExport,
     write_crystal_stl_checked as write_crystal_stl_checked,
 )
+
+from ._pdb_hydrogen_names import (
+    PdbHydrogenName as PdbHydrogenName,
+    PdbHydrogenNaming as PdbHydrogenNaming,
+    name_pdb_hydrogens_checked as name_pdb_hydrogens_checked,
+)
