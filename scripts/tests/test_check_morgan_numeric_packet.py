@@ -16,37 +16,44 @@ SPEC.loader.exec_module(audit)
 class NumericCorruptionTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.packet = json.loads(
-            gzip.decompress(
-                (
-                    ROOT / "benchmarks/2026-10-17-morgan-inline-adjacency.json.gz"
-                ).read_bytes()
+        cls.packets = {
+            name: json.loads(gzip.decompress((ROOT / "benchmarks" / name).read_bytes()))
+            for name in (
+                "2026-10-17-morgan-inline-adjacency.json.gz",
+                "2026-10-18-morgan-tied-cip-numeric.json.gz",
+                "2026-10-18-morgan-shared-h-numeric.json.gz",
             )
-        )
+        }
 
     def test_changed_elapsed_sum_is_rejected(self):
-        packet = copy.deepcopy(self.packet)
-        row = packet["profiles"][0]["blocks"][0]["arms"]["baseline"]["morgan2_2048"][
-            "first_use"
-        ]
-        row["batch_ns"][0] += 1
-        with self.assertRaises(AssertionError):
-            audit.check(packet)
+        for name, original in self.packets.items():
+            with self.subTest(packet=name):
+                packet = copy.deepcopy(original)
+                row = packet["profiles"][0]["blocks"][0]["arms"]["baseline"][
+                    "morgan2_2048"
+                ]["first_use"]
+                row["batch_ns"][0] += 1
+                with self.assertRaises(AssertionError):
+                    audit.check(packet)
 
     def test_missing_arm_is_rejected(self):
-        packet = copy.deepcopy(self.packet)
-        del packet["profiles"][0]["blocks"][0]["arms"]["candidate"]
-        with self.assertRaises(AssertionError):
-            audit.check(packet)
+        for name, original in self.packets.items():
+            with self.subTest(packet=name):
+                packet = copy.deepcopy(original)
+                del packet["profiles"][0]["blocks"][0]["arms"]["candidate"]
+                with self.assertRaises(AssertionError):
+                    audit.check(packet)
 
     def test_changed_output_digest_is_rejected(self):
-        packet = copy.deepcopy(self.packet)
-        row = packet["profiles"][0]["blocks"][0]["arms"]["baseline"]["morgan2_chiral"][
-            "first_use"
-        ]
-        row["output_sha256_per_batch"] = ["0" * 64] * row["batches"]
-        with self.assertRaises(AssertionError):
-            audit.check(packet)
+        for name, original in self.packets.items():
+            with self.subTest(packet=name):
+                packet = copy.deepcopy(original)
+                row = packet["profiles"][0]["blocks"][0]["arms"]["baseline"][
+                    "morgan2_chiral"
+                ]["first_use"]
+                row["output_sha256_per_batch"] = ["0" * 64] * row["batches"]
+                with self.assertRaises(AssertionError):
+                    audit.check(packet)
 
 
 if __name__ == "__main__":
