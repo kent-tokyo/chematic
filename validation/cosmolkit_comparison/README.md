@@ -28,6 +28,21 @@ scores CheMatic, RDKit and COSMolKit on three fixed development corpora with
 the same RDKit-normalized molecular input. It supersedes the earlier
 [316-row raw-input report](v3000-three-engine-2026-10-17.md). Its reproduction
 script is `scripts/compare_rdkit_cosmolkit_v3000.py`.
+The [charged-bracket follow-up](v3000-charged-radicals-2026-10-17.md) fixes
+four additional V3000 read-back identities on `stress-v1` with no regressions
+on the three exposed corpora.
+The [decorated-wildcard follow-up](v3000-decorated-wildcards-2026-10-17.md)
+recovers seven more `stress-v1` identities while the browser and focused
+stereo sets remain unchanged.
+The [aromatic-ring wildcard follow-up](v3000-ring-wildcards-2026-10-17.md)
+recovers five more `stress-v1` identities with no changed browser or focused
+stereo rows.
+The [pyramidal-sulfur stereo follow-up](v3000-sulfoxide-lone-pair-2026-10-17.md)
+recovers four more `stress-v1` identities and checks 12 additional sulfoxide
+variants against RDKit, COSMolKit, and CheMatic's own read-back.
+The [charged-carbon follow-up](v3000-charged-carbon-2026-10-17.md) recovers
+the final CheMatic-only `stress-v1` miss; CheMatic's correct rows now include
+every RDKit and COSMolKit correct row on all three fixed V3000 corpora.
 
 The focused [aromatic sulfur stereo read-back
 check](aromatic-s-stereo-2026-10-16.md) compares whether each toolkit keeps

@@ -25,6 +25,15 @@ fn v3000_atom_symbol(mol: &Molecule, idx: AtomIdx, atom: &Atom) -> &'static str 
     match mol.r_group_label(idx).and_then(|label| label.number()) {
         Some(_) => "R#",
         None if mol.r_group_label(idx).is_some() => "R",
+        // RDKit's V3000 reader drops MASS, CHG, and explicit H from `*`.
+        // Its `R` atom preserves those decorated wildcard identities. CTfile
+        // readers may also label that spelling as an unnumbered R group.
+        None if atom.isotope.is_some()
+            || atom.charge != 0
+            || atom.hydrogen_count.is_some_and(|count| count > 0) =>
+        {
+            "R"
+        }
         None => "*",
     }
 }
@@ -51,6 +60,21 @@ fn append_header(out: &mut String, mol: &Molecule, metadata: &MolMetadata, dimen
         metadata.v3000_sgroups.len()
     )
     .expect("writing to String cannot fail");
+}
+
+fn append_cationic_carbon_valence(
+    line: &mut String,
+    atom: &Atom,
+    drawn: u8,
+    ordinary: bool,
+) -> bool {
+    if atom.element != Element::C || atom.charge != 3 || !ordinary || !(2..=4).contains(&drawn) {
+        return false;
+    }
+    // RDKit's CTfile reader needs both fields to retain explicit H on +3 C.
+    let radical = if drawn.is_multiple_of(2) { 2 } else { 3 };
+    write!(line, " RAD={radical} VAL={drawn}").expect("writing to String cannot fail");
+    true
 }
 
 /// Bracket SMILES atoms have no implicit hydrogens. For neutral atoms and
@@ -108,11 +132,22 @@ fn append_inferred_valence_properties(
         line.push_str(" VAL=-1");
         return;
     }
-    let normal = if atom.element == Element::N && atom.charge == 1 && ordinary_bonds {
-        // A cationic nitrogen has four ordinary valence slots. An explicit
-        // bracket form with fewer bonds/H atoms is a nitrenium radical, not
-        // an invitation to infer more hydrogens from CHG=1.
-        Some(4)
+    // RDKit's CTfile reader drops explicit H from a +3 carbon with two to
+    // four drawn valence units unless the radical and valence are both
+    // specified. The parity of the missing valence determines the radical
+    // code used by RDKit's V3000 writer for these bracket atoms.
+    if append_cationic_carbon_valence(line, atom, drawn, ordinary_bonds) {
+        return;
+    }
+    let charged_normal = match (atom.element, atom.charge) {
+        (Element::N, 1) | (Element::B, -1) | (Element::F, 3) => Some(4),
+        (Element::O, 1 | 3) => Some(3),
+        _ => None,
+    };
+    let normal = if ordinary_bonds && charged_normal.is_some() {
+        // Some bracket ions have vacant valence slots even after their
+        // formal charge is written. CTfile readers otherwise add implicit H.
+        charged_normal
     } else if atom.charge == 0 && ordinary_bonds {
         atom.element
             .normal_valences()
@@ -169,6 +204,31 @@ fn append_atom_properties(
         .iter()
         .find(|(atom_id, _)| *atom_id == idx.0 + 1)
         .map(|(_, properties)| properties.as_str());
+    if atom.wildcard
+        && mol.r_group_label(idx).is_none()
+        && atom.hydrogen_count.is_some_and(|count| count > 0)
+        && !source_properties.is_some_and(|properties| {
+            properties
+                .split_whitespace()
+                .any(|token| token.starts_with("VAL=") || token.starts_with("RAD="))
+        })
+    {
+        let bonds = mol.neighbors(idx).try_fold(0u8, |sum, (_, bond_idx)| {
+            let order = match mol.bond(bond_idx).order {
+                BondOrder::Single | BondOrder::Up | BondOrder::Down => 1,
+                BondOrder::Double => 2,
+                BondOrder::Triple => 3,
+                _ => return None,
+            };
+            sum.checked_add(order)
+        });
+        if let Some(valence) = bonds
+            .and_then(|bonds| bonds.checked_add(atom.hydrogen_count.unwrap_or(0)))
+            .filter(|&valence| (1..=14).contains(&valence))
+        {
+            write!(line, " VAL={valence}").expect("writing to String cannot fail");
+        }
+    }
     append_inferred_valence_properties(line, mol, idx, atom, source_properties);
     if let Some(properties) = source_properties {
         line.push(' ');

@@ -1,6 +1,7 @@
 //! RDKit 2025.09.3 embedded 3D MOL blocks with atom parity and bond CFG
 //! deliberately removed. The conformer is the only source of stereo.
 
+use chematic_core::{AtomIdx, Chirality};
 use chematic_mol::{mol2000::read_mol_with_diagnostics, read_mol_v3000_with_diagnostics};
 use chematic_smiles::{canonical_smiles, parse, rdkit_canonical_smiles, write};
 
@@ -160,6 +161,37 @@ const ADDITIONAL_CASES: [(&str, &str, &str); 11] = [
         "C=CCOc1ccc(/C=C(\\C)C(=O)N[C@@H]2[C@H](O)CCC[C@@H]2O)cc1O",
     ),
 ];
+
+#[test]
+fn nearly_planar_three_bond_carbons_remain_unspecified() {
+    // Exact SDF records 136 and 188 from the second browser holdout.
+    for (block, center) in [
+        (
+            include_str!("fixtures/chematic-nearly-planar-browser-136-v2000.mol"),
+            9,
+        ),
+        (
+            include_str!("fixtures/chematic-nearly-planar-browser-188-v2000.mol"),
+            5,
+        ),
+    ] {
+        let mol = read_mol_with_diagnostics(block).unwrap().mol;
+        assert_eq!(mol.atom(AtomIdx(center)).chirality, Chirality::None);
+    }
+    for (block, center) in [
+        (
+            include_str!("fixtures/chematic-nearly-planar-browser-136-v3000.mol"),
+            9,
+        ),
+        (
+            include_str!("fixtures/chematic-nearly-planar-browser-188-v3000.mol"),
+            5,
+        ),
+    ] {
+        let mol = read_mol_v3000_with_diagnostics(block).unwrap().mol;
+        assert_eq!(mol.atom(AtomIdx(center)).chirality, Chirality::None);
+    }
+}
 
 #[test]
 fn unmarked_3d_geometry_recovers_stereo() {
