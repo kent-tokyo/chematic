@@ -105,3 +105,5 @@ moving "current" command in this index.
 - Link every root-level record from this file or `archive-index.md`.
 - Run `python3 scripts/check_benchmark_index.py` after changes.
 - Do not infer universal accuracy or speed from one corpus, host, or API lane.
+
+- [2026-10-17: Open Babel substituent stack-buffer source experiment](2026-10-17-openbabel-substituent-pair.md) ([numeric packet](2026-10-17-openbabel-substituent-pair.json))
