@@ -1,0 +1,24 @@
+{
+  "profile": "v3000-chains",
+  "block": 15,
+  "arm": "baseline",
+  "mode": "write",
+  "timing": {
+    "elapsed_ns": 1252404,
+    "engine": "chematic",
+    "minimum_timed_ns": 100000000,
+    "minimum_warmup_ns": 500000000,
+    "mode": "write",
+    "output_units": 157760800,
+    "records": 5120,
+    "repeats": 80,
+    "warmup_elapsed_ns": 501183250,
+    "warmup_repeats": 396,
+    "elapsed_ns_raw": 100192333,
+    "elapsed_ns_per_batch": 1252404,
+    "records_per_batch": 64,
+    "minimum_repeats": 3,
+    "elapsed_unit": "nanoseconds per full batch; raw elapsed and actual counts retained",
+    "peak_process_rss_bytes": 10043392
+  }
+}

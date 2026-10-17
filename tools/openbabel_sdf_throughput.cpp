@@ -1,3 +1,4 @@
+#include "openbabel_steady_timing.hpp"
 #include <openbabel/mol.h>
 #include <openbabel/obconversion.h>
 
@@ -73,28 +74,29 @@ int main(int argc, char** argv) {
     if (!writer.SetOutFormat("sdf")) throw std::runtime_error("SDF writer unavailable");
     write_records(prepared, writer);
     if (mode == "dump") {
+      if (chematic_benchmark::warmed_dump()) {
+        chematic_benchmark::measure(chematic_benchmark::dump_repeats(), [&]() { return write_records(prepared, writer); });
+      }
       for (const auto& molecule : prepared) std::cout << writer.WriteString(molecule.get(), false);
       return 0;
     }
-    std::size_t units = 0;
-    const auto started = std::chrono::steady_clock::now();
-    for (std::uint64_t iteration = 0; iteration < repeats; ++iteration) {
+    const auto timing = chematic_benchmark::measure(repeats, [&]() -> std::uint64_t {
       if (mode == "parse") {
         const auto molecules = read_records(input, expected);
+        std::uint64_t units = 0;
         for (const auto& molecule : molecules) units += molecule->NumAtoms();
-      } else if (mode == "write") {
-        units += write_records(prepared, writer);
-      } else if (mode == "roundtrip") {
-        units += write_records(read_records(input, expected), writer);
-      } else {
-        throw std::runtime_error("unknown mode");
+        return units;
       }
-    }
-    const auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(
-        std::chrono::steady_clock::now() - started).count();
+      if (mode == "write") return write_records(prepared, writer);
+      if (mode == "roundtrip") return write_records(read_records(input, expected), writer);
+      throw std::runtime_error("unknown mode");
+    });
     std::cout << "{\"engine\":\"openbabel\",\"mode\":\"" << mode
-              << "\",\"records\":" << expected * repeats << ",\"repeats\":" << repeats
-              << ",\"output_units\":" << units << ",\"elapsed_ns\":" << elapsed << "}\n";
+              << "\",\"records\":" << expected * timing.repeats << ",\"repeats\":" << timing.repeats
+              << ",\"output_units\":" << timing.units << ",\"elapsed_ns\":" << timing.elapsed_ns << ",\"warmup_repeats\":" << timing.warmup_repeats
+              << ",\"warmup_elapsed_ns\":" << timing.warmup_elapsed_ns
+              << ",\"minimum_warmup_ns\":" << timing.minimum_warmup_ns
+              << ",\"minimum_timed_ns\":" << timing.minimum_timed_ns << "}\n";
     return 0;
   } catch (const std::exception& error) {
     std::cerr << error.what() << '\n';
