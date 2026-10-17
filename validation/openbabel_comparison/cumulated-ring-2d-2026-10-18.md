@@ -8,7 +8,9 @@ aromaticity normalization: its ring model counted a carbon with two
 endocyclic double bonds as an ordinary 1π aromatic center, changing a
 nonaromatic cumulated ring into aromatic radical atoms. This patch excludes
 that carbon from the ring's aromatic circuit while retaining normalization
-of genuinely aromatic CTABs.
+of genuinely aromatic CTABs. The after-patch packet tests commit
+`5615a0adfd360d54031d5922c0b3b916e55b278a`, rebased onto main
+`d3cc76b828c4732c49413d9a5fcf19b29f8bee11`.
 
 RDKit 2026.09.1 wrote and reread every 2D MOL input. Rows enter the comparison
 only when the requested MOL version and source identity survive that gate.
@@ -32,10 +34,10 @@ has compressed SHA-256
 `e5b3850ab5860dd971dbe861fff4bb7a5e7808a87cec1ef7d4d6338819e6292e`.
 The [after packet](results/openbabel-stereo-2d-stress-1216-cumulated-ring-2026-10-18.json.gz)
 has compressed SHA-256
-`c49ca2e270baed322c19f5e96b161e424ebcf9a293c7b63e4744d61e8d696487`.
+`bd4794ecc14c5eda1dc6265c9036b0cc46bee76e403082602431bf47e4a5609c`.
 Both preserve per-row outputs, input MOL hashes, exclusions, classifications,
 and tool metadata. The tested after-patch CLI SHA-256 is
-`3ad08f26a1a9aeecd98c11596710d5a65fed8304db29b9069fa144770d064803`;
+`1a6d1b2081ef726d0cedc8e0ed0703b7e8bc53cbc2caa69a4e34cdd643553e95`;
 Open Babel's executable SHA-256 is
 `733b2c925d60b17a5c9d8ce9ec841e918cc20c7634301e23f9008a187d1d9bc5`.
 The corpus SHA-256 is
