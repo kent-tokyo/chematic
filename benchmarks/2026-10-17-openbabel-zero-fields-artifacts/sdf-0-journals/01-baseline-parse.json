@@ -1,0 +1,24 @@
+{
+  "profile": "sdf-0",
+  "block": 1,
+  "arm": "baseline",
+  "mode": "parse",
+  "timing": {
+    "elapsed_ns": 12208421,
+    "engine": "chematic",
+    "minimum_timed_ns": 100000000,
+    "minimum_warmup_ns": 500000000,
+    "mode": "parse",
+    "output_units": 246915,
+    "records": 9000,
+    "repeats": 9,
+    "warmup_elapsed_ns": 511917417,
+    "warmup_repeats": 42,
+    "elapsed_ns_raw": 109875792,
+    "elapsed_ns_per_batch": 12208421,
+    "records_per_batch": 1000,
+    "minimum_repeats": 3,
+    "elapsed_unit": "nanoseconds per full batch; raw elapsed and actual counts retained",
+    "peak_process_rss_bytes": 16039936
+  }
+}

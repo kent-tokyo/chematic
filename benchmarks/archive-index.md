@@ -7,6 +7,11 @@ package, comparator, corpus, host, runtime and operation.
 
 ## Start here
 
+- [V2000 zero-attribute tail](2026-10-17-openbabel-zero-fields.md):
+  SDF writes improve 1.039–1.040x; all 30 source median floors pass, including
+  a disclosed 0.6% 3D-write retreat. Five eligible fresh Open Babel lanes win
+  24/24; first-slice parse remains unranked. One-host source evidence.
+
 - [3D tetrahedral candidate guard](2026-10-17-openbabel-3d-stereo-guard.md): source-valid 21-block native comparison, all 24 floors, preserved source outputs and archived invalid build epoch.
 
 | Need | Start with |

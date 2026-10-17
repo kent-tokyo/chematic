@@ -1,0 +1,24 @@
+{
+  "profile": "v3000_3d-branched-offset",
+  "block": 21,
+  "arm": "candidate",
+  "mode": "parse",
+  "timing": {
+    "elapsed_ns": 84806347,
+    "engine": "chematic",
+    "minimum_timed_ns": 100000000,
+    "minimum_warmup_ns": 500000000,
+    "mode": "parse",
+    "output_units": 100032,
+    "records": 192,
+    "repeats": 3,
+    "warmup_elapsed_ns": 507084625,
+    "warmup_repeats": 6,
+    "elapsed_ns_raw": 254419041,
+    "elapsed_ns_per_batch": 84806347,
+    "records_per_batch": 64,
+    "minimum_repeats": 3,
+    "elapsed_unit": "nanoseconds per full batch; raw elapsed and actual counts retained",
+    "peak_process_rss_bytes": 18202624
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "before_any_formal_sample": true,
+  "path": "crates/chematic-mol/src/mol2000/zero_atom_fields_tests.rs",
+  "old_sha256": "60fd23a3d7c2e2a3cb9773f496b8d7038a9364629b96680c2faa5c8169f3d6c5",
+  "new_sha256": "f62f236851dab367890ff1d2e156ba970cfe08b42aad90a943b7f5b762ea4e90",
+  "change": "Fix test-only R-group setter to actual set_r_group API. Production code and every copied native binary unchanged. Module is cfg(test).",
+  "native_release_recheck": "Same build command/settings below, after the correction.",
+  "additional_correction": "Use actual uppercase Element::CL/BR/FE constants in the cfg(test) fixture; initial compile diagnostics preserved.",
+  "final_test_sha256": "8aa051d7ed35a7668ded85418e0e13e7636b8f11df0a7d81f35b129da511016f"
+}

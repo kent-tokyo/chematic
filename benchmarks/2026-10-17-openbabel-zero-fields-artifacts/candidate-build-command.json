@@ -1,0 +1,30 @@
+{
+  "command": [
+    "cargo",
+    "build",
+    "-vv",
+    "--offline",
+    "--locked",
+    "--release",
+    "-p",
+    "chematic-mol",
+    "--example",
+    "openbabel_sdf_throughput",
+    "--example",
+    "openbabel_v3000_throughput",
+    "--example",
+    "openbabel_v3000_3d_throughput"
+  ],
+  "cwd": "/Users/k_tanabe/.codex/worktrees/rdkit-cosmolkit-speed-20261017/chematic",
+  "environment": {
+    "CARGO_TARGET_DIR": "/private/tmp/chematic-v2000-zero-fields-evidence-20261017/candidate-target",
+    "CARGO_BUILD_JOBS": "1",
+    "CARGO_INCREMENTAL": "0",
+    "CARGO_PROFILE_RELEASE_OPT_LEVEL": "3",
+    "CARGO_PROFILE_RELEASE_LTO": "true",
+    "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "1",
+    "CARGO_PROFILE_RELEASE_STRIP": "none"
+  },
+  "target_started_empty": true,
+  "rust": "rustc 1.97.0 (2d8144b78 2026-07-07)\nbinary: rustc\ncommit-hash: 2d8144b7880597b6e6d3dfd63a9a9efae3f533d3\ncommit-date: 2026-07-07\nhost: aarch64-apple-darwin\nrelease: 1.97.0\nLLVM version: 22.1.6\n"
+}

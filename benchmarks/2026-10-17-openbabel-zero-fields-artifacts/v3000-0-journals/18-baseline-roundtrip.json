@@ -1,0 +1,24 @@
+{
+  "profile": "v3000-0",
+  "block": 18,
+  "arm": "baseline",
+  "mode": "roundtrip",
+  "timing": {
+    "elapsed_ns": 15828797,
+    "engine": "chematic",
+    "minimum_timed_ns": 100000000,
+    "minimum_warmup_ns": 500000000,
+    "mode": "roundtrip",
+    "output_units": 11840507,
+    "records": 7000,
+    "repeats": 7,
+    "warmup_elapsed_ns": 508042166,
+    "warmup_repeats": 32,
+    "elapsed_ns_raw": 110801583,
+    "elapsed_ns_per_batch": 15828797,
+    "records_per_batch": 1000,
+    "minimum_repeats": 3,
+    "elapsed_unit": "nanoseconds per full batch; raw elapsed and actual counts retained",
+    "peak_process_rss_bytes": 17498112
+  }
+}
