@@ -9,6 +9,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <vector>
 
 using Molecules = std::vector<std::unique_ptr<OpenBabel::OBMol>>;
@@ -17,7 +18,7 @@ using Molecules = std::vector<std::unique_ptr<OpenBabel::OBMol>>;
 // the entire SDF buffer on every parse. Only the get area is exposed.
 class InputBuffer : public std::streambuf {
  public:
-  explicit InputBuffer(const std::string& input) {
+  explicit InputBuffer(std::string_view input) {
     auto first = const_cast<char*>(input.data());
     setg(first, first, first + input.size());
   }
@@ -31,7 +32,7 @@ Molecules read_records(const std::string& input, std::size_t expected) {
   std::size_t start = 0;
   while (true) {
     const auto end = input.find("\n$$$$\n", start);
-    const auto block = input.substr(start, end == std::string::npos ? end : end-start);
+    const auto block = std::string_view(input).substr(start, end == std::string::npos ? end : end-start);
     InputBuffer buffer(block);
     std::istream stream(&buffer);
     auto molecule = std::make_unique<OpenBabel::OBMol>();
