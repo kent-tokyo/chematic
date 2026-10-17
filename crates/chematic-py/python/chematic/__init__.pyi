@@ -5560,3 +5560,4 @@ from ._pymatgen_json import (
     PymatgenStructureRecord as PymatgenStructureRecord,
     parse_pymatgen_structures as parse_pymatgen_structures,
 )
+from ._nucleic_linear_svg import nucleic_acid_linear_svg as nucleic_acid_linear_svg

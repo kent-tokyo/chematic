@@ -81,6 +81,7 @@ nav:
     - CCD Molecular Templates: ccd-components.md
     - CIF Molecular Bonds: cif-molecular-bonds.md
     - pymatgen JSON: pymatgen-json.md
+    - Linear Nucleic-Acid Diagrams: nucleic-linear-svg.md
     - Rooted SMILES Stereo: rooted-smiles-stereo.md
     - XYZ Element Symbols: xyz-element-symbols.md
     - ChemDraw Block Formats: chemdraw-block.md
