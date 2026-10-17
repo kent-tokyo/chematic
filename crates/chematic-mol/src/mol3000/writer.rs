@@ -222,7 +222,13 @@ fn append_atom_properties(
                     BondOrder::Aromatic | BondOrder::Single
                 )
             });
-        if atom.charge != 0 || atom.wildcard || !(aliphatic_carbon_h || aromatic_n_h) {
+        // A charged atom also needs no query HCOUNT when its element, charge,
+        // and bonds already determine the same hydrogen count. Retain it for
+        // cases such as [CH2-] and [SH2+], where inference would add an H.
+        let charged_inferred_h = atom.charge != 0
+            && atom.element.is_organic_subset()
+            && chematic_core::valence::valence_inferred_hcount(mol, idx) == hydrogens;
+        if atom.wildcard || !(aliphatic_carbon_h || aromatic_n_h || charged_inferred_h) {
             write!(line, " HCOUNT={hydrogens}").expect("writing to String cannot fail");
         }
     }
