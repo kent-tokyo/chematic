@@ -18,6 +18,7 @@ pub mod canonical;
 pub mod checked_distance_matrix;
 pub mod cip;
 pub mod condensed;
+pub mod core_replacement;
 pub mod descriptor_distances;
 pub mod descriptors;
 pub mod diversity;

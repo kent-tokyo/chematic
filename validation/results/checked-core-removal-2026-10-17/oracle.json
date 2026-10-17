@@ -1,0 +1,169 @@
+{
+  "rdkit": "2026.09.1",
+  "source_molecules": 32,
+  "core_graphs": 14,
+  "cases": 415,
+  "passed": 415,
+  "empty_outputs": 4,
+  "indexed_v3000_cases": 411,
+  "representation_refusals": 12,
+  "refusal_details": [
+    {
+      "source": "CC(=O)OC1=CC=CC=C1C(=O)O",
+      "core": "c1ccccc1",
+      "matching": [
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "reason": "native representation mismatch"
+    },
+    {
+      "source": "CC(=O)OC1=CC=CC=C1C(=O)O",
+      "core": "c1ccccc1",
+      "matching": [
+        4,
+        9,
+        8,
+        7,
+        6,
+        5
+      ],
+      "reason": "native representation mismatch"
+    },
+    {
+      "source": "CC(=O)OC1=CC=CC=C1C(=O)O",
+      "core": "c1ccccc1",
+      "matching": [
+        5,
+        4,
+        9,
+        8,
+        7,
+        6
+      ],
+      "reason": "native representation mismatch"
+    },
+    {
+      "source": "CC(=O)OC1=CC=CC=C1C(=O)O",
+      "core": "c1ccccc1",
+      "matching": [
+        5,
+        6,
+        7,
+        8,
+        9,
+        4
+      ],
+      "reason": "native representation mismatch"
+    },
+    {
+      "source": "CC(=O)OC1=CC=CC=C1C(=O)O",
+      "core": "c1ccccc1",
+      "matching": [
+        6,
+        5,
+        4,
+        9,
+        8,
+        7
+      ],
+      "reason": "native representation mismatch"
+    },
+    {
+      "source": "CC(=O)OC1=CC=CC=C1C(=O)O",
+      "core": "c1ccccc1",
+      "matching": [
+        6,
+        7,
+        8,
+        9,
+        4,
+        5
+      ],
+      "reason": "native representation mismatch"
+    },
+    {
+      "source": "CC(=O)OC1=CC=CC=C1C(=O)O",
+      "core": "c1ccccc1",
+      "matching": [
+        7,
+        6,
+        5,
+        4,
+        9,
+        8
+      ],
+      "reason": "native representation mismatch"
+    },
+    {
+      "source": "CC(=O)OC1=CC=CC=C1C(=O)O",
+      "core": "c1ccccc1",
+      "matching": [
+        7,
+        8,
+        9,
+        4,
+        5,
+        6
+      ],
+      "reason": "native representation mismatch"
+    },
+    {
+      "source": "CC(=O)OC1=CC=CC=C1C(=O)O",
+      "core": "c1ccccc1",
+      "matching": [
+        8,
+        7,
+        6,
+        5,
+        4,
+        9
+      ],
+      "reason": "native representation mismatch"
+    },
+    {
+      "source": "CC(=O)OC1=CC=CC=C1C(=O)O",
+      "core": "c1ccccc1",
+      "matching": [
+        8,
+        9,
+        4,
+        5,
+        6,
+        7
+      ],
+      "reason": "native representation mismatch"
+    },
+    {
+      "source": "CC(=O)OC1=CC=CC=C1C(=O)O",
+      "core": "c1ccccc1",
+      "matching": [
+        9,
+        8,
+        7,
+        6,
+        5,
+        4
+      ],
+      "reason": "native representation mismatch"
+    },
+    {
+      "source": "CC(=O)OC1=CC=CC=C1C(=O)O",
+      "core": "c1ccccc1",
+      "matching": [
+        9,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "reason": "native representation mismatch"
+    }
+  ],
+  "failures": 0
+}
