@@ -1,0 +1,6 @@
+{
+  "base_commit": "34f141266a81264f42990f98acbe25c91d9074af",
+  "complete_frozen_function_exact": true,
+  "trimmed_function_sha256": "3490ec03f121a5a0d2f9a01c3307e862e942ffb7dfb1be4566d8888ea562c6f6",
+  "tests": "Every fractional pair 0000..9999, 100000 fixed-seed random f64 bit patterns, signs, padding widths 0/1/6/10/24/30, decimal carries, neighboring f64 values around rounding ties, zero/subnormal/large/nonfinite boundaries; both frozen and standard-format oracles; existing 400000 generated coordinates plus directed formatter cases retained"
+}

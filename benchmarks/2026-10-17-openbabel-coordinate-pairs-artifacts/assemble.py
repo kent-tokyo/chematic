@@ -69,7 +69,7 @@ for path in (O/'unmeasured-main-failure').iterdir():
 (D/'README.md').write_text('One-host source experiment. The fixed plan, every raw timing block, exact inputs, source/native/executable seals, production disassembly, verbose compiler logs, full frozen-function proof and recomputed statistical audit are retained. The outcomes directory contains shared complete source snapshots/rewrites and every retained Open Babel rewrite/graph artifact, including unranked rows. Full executables and duplicate per-arm streams remain at '+str(O)+'. Recipes retain original local absolute paths and require adaptation. No universal or published-package performance claim.\n')
 packet={str(p.relative_to(D)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(D.rglob('*')) if p.is_file() and p.name!='packet.sha256.json'}
 (D/'packet.sha256.json').write_text(json.dumps(packet,indent=2)+'\n')
-status='PASS' if decision['local_adoption_gate_passed'] else 'FAIL: retain as an unpromoted draft'
+status='PASS' if decision['local_adoption_gate_passed'] else 'FAIL: formatter-only candidate was not adopted'
 report=f'''# Open Babel comparison: decimal-pair coordinate formatting
 
 Decision: **{status}**. The two diverse SDF write lanes are the predeclared primary. All source outputs must match and all 30 source median ratios must be at least 0.99. This is one macOS source experiment, not universal superiority or published-package evidence.

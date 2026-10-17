@@ -1,0 +1,11 @@
+{
+  "scope": "Separate baseline branched-3D parse worker CPU diagnostic, including preparation and repeated parsing. Use parse/classifier frame ancestry; no diagnostic elapsed value enters formal matrices",
+  "command": [
+    "/private/tmp/chematic-degree-filter-coordinate-evidence-20261017/baseline-v3000_3d",
+    "/private/tmp/chematic-degree-filter-coordinate-evidence-20261017/v3000_3d-branched-spiral.molblocks",
+    "parse",
+    "100",
+    "64"
+  ],
+  "sample_duration_seconds": 2
+}

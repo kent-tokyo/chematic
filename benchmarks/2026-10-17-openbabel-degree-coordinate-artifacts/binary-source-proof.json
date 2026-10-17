@@ -1,0 +1,74 @@
+{
+  "compiler_log_shows_real_production_compilation": true,
+  "independent_targets": true,
+  "candidate_target_started_empty": true,
+  "baseline_reused_from_exact_sealed_binary": {
+    "baseline_commit": "34f141266a81264f42990f98acbe25c91d9074af",
+    "source_root": "/private/tmp/chematic-coordinate-pairs-evidence-20261017/baseline-source",
+    "original_build_command": {
+      "cwd": "/private/tmp/chematic-coordinate-pairs-evidence-20261017/baseline-source",
+      "command": [
+        "cargo",
+        "build",
+        "-vv",
+        "--offline",
+        "--locked",
+        "--release",
+        "-p",
+        "chematic-mol",
+        "--example",
+        "openbabel_sdf_throughput",
+        "--example",
+        "openbabel_v3000_throughput",
+        "--example",
+        "openbabel_v3000_3d_throughput"
+      ],
+      "env": {
+        "CARGO_TARGET_DIR": "/private/tmp/chematic-coordinate-pairs-evidence-20261017/baseline-corrected-target",
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_INCREMENTAL": "0",
+        "CARGO_PROFILE_RELEASE_OPT_LEVEL": "3",
+        "CARGO_PROFILE_RELEASE_LTO": "true",
+        "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "1",
+        "CARGO_PROFILE_RELEASE_STRIP": "none"
+      }
+    },
+    "binaries_unchanged_from_sealed_predecessor": {
+      "baseline-sdf": "72e3b34392b8da59737756aa863af2a389f1d81d9d848babd6da6ff9834f8b3c",
+      "baseline-v3000": "347e9c89d202fffb5012b60fe8338de8b5cf100c1b46bbbd75a8a1f8e058c5c7",
+      "baseline-v3000_3d": "4c23b4559302b4e4fad6c088e09a87678fe2e99514d514d4674ffa316e6aa1ac",
+      "openbabel-sdf": "9e489bcdebfdda2adb29a0613eb3bd7f17a10f6d554185887366f96a0fc7964e",
+      "openbabel-v3000": "34981dcbb977f1f652030d092caf297a120241bb62ca094151a6ed58c3752846"
+    },
+    "same_rust_compiler": true,
+    "old_elapsed_samples_reused": false
+  },
+  "base_commit": "34f141266a81264f42990f98acbe25c91d9074af",
+  "candidate_commit": "086a3da876de812ac01d6784911beb42e67e9c80",
+  "all_baseline_source_files_match_base": true,
+  "source_contrast_valid": true,
+  "production_fixed4_function": {
+    "baseline": {
+      "symbol": "__RNvNtNtCs9k7NSpE0Bwv_12chematic_mol7mol20006writer11push_fixed4",
+      "instruction_sha256": "5818b51f937f462e37075574971385a8a10c3ebf77780427e97f9e08d1d61a5f",
+      "instructions": 542
+    },
+    "candidate": {
+      "symbol": "__RNvNtNtNtCs9k7NSpE0Bwv_12chematic_mol7mol20006writer6fixed411push_fixed4",
+      "instruction_sha256": "2eef81897e4c0df78d1defe05083f28a2bfa34e4abbf71e12a47e9051dcc208f",
+      "instructions": 297
+    }
+  },
+  "inlined_stereo_classifier_owner": {
+    "baseline": {
+      "symbol": "__RNvNtCs9k7NSpE0Bwv_12chematic_mol7mol200038perceive_tetrahedral_from_3d_with_mode",
+      "instruction_sha256": "b0d65f3527c44610ae465cc272b08231fac9cd35e6fe0c9719d2867b8bac2810",
+      "instructions": 3881
+    },
+    "candidate": {
+      "symbol": "__RNvNtCs9k7NSpE0Bwv_12chematic_mol7mol200038perceive_tetrahedral_from_3d_with_mode",
+      "instruction_sha256": "98d17634ebbb3b902d8f2a32521f9ae11a489056534d37452b6ce635961ee278",
+      "instructions": 3876
+    }
+  }
+}

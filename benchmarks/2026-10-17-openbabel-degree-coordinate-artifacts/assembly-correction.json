@@ -1,0 +1,6 @@
+{
+  "artifact_only_correction": "Remove unused predecessor prepare.py from copy list; actual input creation is in setup.py",
+  "formal_samples_rerun": false,
+  "measurement_plan_changed": false,
+  "original_failure_retained": "assembly-attempt1.log.gz"
+}

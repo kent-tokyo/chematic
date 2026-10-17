@@ -1,0 +1,290 @@
+{
+  "sdf-0-source-common-snapshot.gz": {
+    "engines": [
+      "baseline",
+      "candidate"
+    ],
+    "source_streams_identical": true,
+    "records": 1000,
+    "raw_sha256": "3a007d14136703bdd1d23198af9e91ea48a7099df72419e8b3daafad3d9e9f7b"
+  },
+  "sdf-0-source-common-dump.gz": {
+    "engines": [
+      "baseline",
+      "candidate"
+    ],
+    "source_streams_identical": true,
+    "records": 1000,
+    "raw_sha256": "c3a0479d492f48d4ba27acf2a4c0585ea19170e845be38d3bcc4fcceb0717172"
+  },
+  "sdf-0-openbabel.sdf.gz": {
+    "engine": "openbabel",
+    "records": 1000,
+    "raw_sha256": "c9fdf0c8bb264f1b9e571557657de20db169f225ccda74641b88399f878daa3c",
+    "artifact": "openbabel.sdf"
+  },
+  "sdf-5000-source-common-snapshot.gz": {
+    "engines": [
+      "baseline",
+      "candidate"
+    ],
+    "source_streams_identical": true,
+    "records": 1000,
+    "raw_sha256": "4e326d586393d02463e09a5a657c085deeb4191d34a72ce33efe0c7fb31c7dbe"
+  },
+  "sdf-5000-source-common-dump.gz": {
+    "engines": [
+      "baseline",
+      "candidate"
+    ],
+    "source_streams_identical": true,
+    "records": 1000,
+    "raw_sha256": "4995f90edbde0fa249cc96ec12e5dc7502c4479ab8c267c4ca3700952cc08d0f"
+  },
+  "sdf-5000-openbabel.sdf.gz": {
+    "engine": "openbabel",
+    "records": 1000,
+    "raw_sha256": "762f53bf7ec26046298d878d4a48a93a0e5a78c1ea3f192b75a70818be199715",
+    "artifact": "openbabel.sdf"
+  },
+  "v3000-0-source-common-snapshot.gz": {
+    "engines": [
+      "baseline",
+      "candidate"
+    ],
+    "source_streams_identical": true,
+    "records": 1000,
+    "raw_sha256": "e2fce68d8c33616317f46397cf79ee877ef856460a35b84a622ddff1d8eced74"
+  },
+  "v3000-0-source-common-dump.gz": {
+    "engines": [
+      "baseline",
+      "candidate"
+    ],
+    "source_streams_identical": true,
+    "records": 1000,
+    "raw_sha256": "73a24d6d52f15900af0b221e21310367c01278f93f0de4189be8d3d01c61f254"
+  },
+  "v3000-0-openbabel.molblocks.gz": {
+    "engine": "openbabel",
+    "records": 1000,
+    "raw_sha256": "b12d543d7b8254d3bba43a2419f7b58ba77979080569cf19eb417c60c88138e4",
+    "artifact": "openbabel.molblocks"
+  },
+  "v3000-0-openbabel.smiles.gz": {
+    "engine": "openbabel",
+    "records": 1000,
+    "raw_sha256": "0c55edf36d29870abba74030bba3271ef3084f0eb0e879766f3b45a10dfeeb8d",
+    "artifact": "openbabel.smiles"
+  },
+  "v3000-5000-source-common-snapshot.gz": {
+    "engines": [
+      "baseline",
+      "candidate"
+    ],
+    "source_streams_identical": true,
+    "records": 1000,
+    "raw_sha256": "7fa169eebb0d112936fd4e135d08702eb1150faa6791111f52792c51d504d67d"
+  },
+  "v3000-5000-source-common-dump.gz": {
+    "engines": [
+      "baseline",
+      "candidate"
+    ],
+    "source_streams_identical": true,
+    "records": 1000,
+    "raw_sha256": "405cf9062ef1fe3697b478cdeaa453425546d233d60b220f73725beee68f7cdc"
+  },
+  "v3000-5000-openbabel.molblocks.gz": {
+    "engine": "openbabel",
+    "records": 1000,
+    "raw_sha256": "3c66df014f77eae8ecb1aeb47889c80b29f4c5a478f42954005bc644beaed76b",
+    "artifact": "openbabel.molblocks"
+  },
+  "v3000-5000-openbabel.smiles.gz": {
+    "engine": "openbabel",
+    "records": 1000,
+    "raw_sha256": "66b0ea070378204905510ae007ddb229caaa25541faca1a0f394e3a51a83104b",
+    "artifact": "openbabel.smiles"
+  },
+  "v3000-chains-source-common-snapshot.gz": {
+    "engines": [
+      "baseline",
+      "candidate"
+    ],
+    "source_streams_identical": true,
+    "records": 64,
+    "raw_sha256": "5add029fe89ad301067f53ee404c87ebb54221733bf4c5280de463eabe5e1550"
+  },
+  "v3000-chains-source-common-dump.gz": {
+    "engines": [
+      "baseline",
+      "candidate"
+    ],
+    "source_streams_identical": true,
+    "records": 64,
+    "raw_sha256": "b67b1fb9cdb4c2e8977a34dd309a13ebc035050ba7e41473114c62f2c7d5ca95"
+  },
+  "v3000-chains-openbabel.molblocks.gz": {
+    "engine": "openbabel",
+    "records": 64,
+    "raw_sha256": "9d2e0c09c6d5e39e8248873212ce838d5f447237efecda02b2f2bc20f2216736",
+    "artifact": "openbabel.molblocks"
+  },
+  "v3000-chains-openbabel.smiles.gz": {
+    "engine": "openbabel",
+    "records": 64,
+    "raw_sha256": "a6b6efc2219d09b3d27420cc8ead8ee1218b3c39fe531faa4df1f01186f24b5b",
+    "artifact": "openbabel.smiles"
+  },
+  "v3000-continued-source-common-snapshot.gz": {
+    "engines": [
+      "baseline",
+      "candidate"
+    ],
+    "source_streams_identical": true,
+    "records": 64,
+    "raw_sha256": "5add029fe89ad301067f53ee404c87ebb54221733bf4c5280de463eabe5e1550"
+  },
+  "v3000-continued-source-common-dump.gz": {
+    "engines": [
+      "baseline",
+      "candidate"
+    ],
+    "source_streams_identical": true,
+    "records": 64,
+    "raw_sha256": "b67b1fb9cdb4c2e8977a34dd309a13ebc035050ba7e41473114c62f2c7d5ca95"
+  },
+  "v3000-continued-openbabel.molblocks.gz": {
+    "engine": "openbabel",
+    "records": 64,
+    "raw_sha256": "49cc74e1adcdc68ba9fc9ecef59050d6788fee52df090f07b918df6d0e98a362",
+    "artifact": "openbabel.molblocks"
+  },
+  "v3000-continued-openbabel.smiles.gz": {
+    "engine": "openbabel",
+    "records": 64,
+    "raw_sha256": "a6b6efc2219d09b3d27420cc8ead8ee1218b3c39fe531faa4df1f01186f24b5b",
+    "artifact": "openbabel.smiles"
+  },
+  "v3000_3d-spiral-source-common-snapshot.gz": {
+    "engines": [
+      "baseline",
+      "candidate"
+    ],
+    "source_streams_identical": true,
+    "records": 64,
+    "raw_sha256": "42fc3a5a7d628c561c37f9bdcd518b73942e127551a41094c30aa62c3dee596e"
+  },
+  "v3000_3d-spiral-source-common-dump.gz": {
+    "engines": [
+      "baseline",
+      "candidate"
+    ],
+    "source_streams_identical": true,
+    "records": 64,
+    "raw_sha256": "0bd2fef9efc45bae218c4ca38c843f13574e9a966ed262077b7cba5173ee24fc"
+  },
+  "v3000_3d-spiral-openbabel.molblocks.gz": {
+    "engine": "openbabel",
+    "records": 64,
+    "raw_sha256": "355dcf51acdc50e4f6d88b53100606b964418116acb644ed2ec38f561a502a4a",
+    "artifact": "openbabel.molblocks"
+  },
+  "v3000_3d-spiral-openbabel.smiles.gz": {
+    "engine": "openbabel",
+    "records": 64,
+    "raw_sha256": "a0e806fb18cdd5f6ff3cf84cabf6d050f7a79fc35678778002900c5474c097c8",
+    "artifact": "openbabel.smiles"
+  },
+  "v3000_3d-branched-spiral-source-common-snapshot.gz": {
+    "engines": [
+      "baseline",
+      "candidate"
+    ],
+    "source_streams_identical": true,
+    "records": 64,
+    "raw_sha256": "23aedcefc37f3bd50db9edca3a3c16a730329fa189672e84587cfec5da656622"
+  },
+  "v3000_3d-branched-spiral-source-common-dump.gz": {
+    "engines": [
+      "baseline",
+      "candidate"
+    ],
+    "source_streams_identical": true,
+    "records": 64,
+    "raw_sha256": "f756b6e96f8b0f5fb2848866b04a84959546fbaa2189c06c114835fc7b13faa4"
+  },
+  "v3000_3d-branched-spiral-openbabel.molblocks.gz": {
+    "engine": "openbabel",
+    "records": 64,
+    "raw_sha256": "2329936f9b1df0e3c2dded5f1bf6b612d6499d248809dc8c2eb9d798811ec4db",
+    "artifact": "openbabel.molblocks"
+  },
+  "v3000_3d-branched-spiral-openbabel.smiles.gz": {
+    "engine": "openbabel",
+    "records": 64,
+    "raw_sha256": "67e4b7d80f339c981facca9fbd967a454d01a32b23c662ece36d16d795eab80c",
+    "artifact": "openbabel.smiles"
+  },
+  "v3000_3d-offset-source-common-snapshot.gz": {
+    "engines": [
+      "baseline",
+      "candidate"
+    ],
+    "source_streams_identical": true,
+    "records": 64,
+    "raw_sha256": "6677625295c56021345517a5a137cb58c5cc72f7c71336d81730d7aa83faf882"
+  },
+  "v3000_3d-offset-source-common-dump.gz": {
+    "engines": [
+      "baseline",
+      "candidate"
+    ],
+    "source_streams_identical": true,
+    "records": 64,
+    "raw_sha256": "e547a6ec1ae09bf7b215f3d9a21e8725d959eb914b86b7b6aef099d57500a222"
+  },
+  "v3000_3d-offset-openbabel.molblocks.gz": {
+    "engine": "openbabel",
+    "records": 64,
+    "raw_sha256": "86eb702ce8e549f38faacefdc3355ef79835b6839606cc392031a8f11a008d12",
+    "artifact": "openbabel.molblocks"
+  },
+  "v3000_3d-offset-openbabel.smiles.gz": {
+    "engine": "openbabel",
+    "records": 64,
+    "raw_sha256": "a0e806fb18cdd5f6ff3cf84cabf6d050f7a79fc35678778002900c5474c097c8",
+    "artifact": "openbabel.smiles"
+  },
+  "v3000_3d-branched-offset-source-common-snapshot.gz": {
+    "engines": [
+      "baseline",
+      "candidate"
+    ],
+    "source_streams_identical": true,
+    "records": 64,
+    "raw_sha256": "e85a002d7901f99caddeb40aff7a0072c6ad67ca6955d661fed66d453e1085e7"
+  },
+  "v3000_3d-branched-offset-source-common-dump.gz": {
+    "engines": [
+      "baseline",
+      "candidate"
+    ],
+    "source_streams_identical": true,
+    "records": 64,
+    "raw_sha256": "0621651e3bddad02a2eb34d95c199ee44ba5fd53bb96045d8ec10d8090d97280"
+  },
+  "v3000_3d-branched-offset-openbabel.molblocks.gz": {
+    "engine": "openbabel",
+    "records": 64,
+    "raw_sha256": "abbce01bbab77a38fdf320d4f93b67983616a9d57d1d73d42627c1387f6485a0",
+    "artifact": "openbabel.molblocks"
+  },
+  "v3000_3d-branched-offset-openbabel.smiles.gz": {
+    "engine": "openbabel",
+    "records": 64,
+    "raw_sha256": "42c7df8c66bba59f2043c274cb41da381907e2b7301d089fc186b25f0879ddfb",
+    "artifact": "openbabel.smiles"
+  }
+}

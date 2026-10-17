@@ -77,6 +77,8 @@ not establish current behavior.
 
 - [Decimal-pair coordinate formatting](2026-10-17-openbabel-coordinate-pairs.md): ten fixed Open Babel/source profiles, full byte oracles and all source retention results.
 
+- [Coordinate pairs and degree filtering](2026-10-17-openbabel-degree-coordinate.md): separate compound-source experiment with four primary lanes, all 30 retention results and complete outcome streams.
+
 ## What counts as a speed win
 
 A lane is called an equivalent-output speed win only when:

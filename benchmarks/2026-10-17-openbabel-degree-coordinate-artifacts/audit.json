@@ -1,0 +1,190 @@
+{
+  "passed": true,
+  "all_30_source_ratios_recomputed": true,
+  "all_ranked_comparator_ratios_recomputed": true,
+  "adoption_recomputed_from_unrounded_source_medians": true,
+  "no_filtered_rows_or_timing_reruns": true,
+  "complete_frozen_function_exact": true,
+  "comparisons": [
+    {
+      "lane": "sdf-0/parse",
+      "source_ratio_recomputed": true,
+      "source_unrounded_median": 1.0033940175869076,
+      "openbabel_ratio_recomputed": false
+    },
+    {
+      "lane": "sdf-0/write",
+      "source_ratio_recomputed": true,
+      "source_unrounded_median": 1.0015301817315987,
+      "openbabel_ratio_recomputed": true
+    },
+    {
+      "lane": "sdf-0/roundtrip",
+      "source_ratio_recomputed": true,
+      "source_unrounded_median": 0.9984039918367141,
+      "openbabel_ratio_recomputed": true
+    },
+    {
+      "lane": "sdf-5000/parse",
+      "source_ratio_recomputed": true,
+      "source_unrounded_median": 1.0114179577105111,
+      "openbabel_ratio_recomputed": true
+    },
+    {
+      "lane": "sdf-5000/write",
+      "source_ratio_recomputed": true,
+      "source_unrounded_median": 0.9845157731632681,
+      "openbabel_ratio_recomputed": true
+    },
+    {
+      "lane": "sdf-5000/roundtrip",
+      "source_ratio_recomputed": true,
+      "source_unrounded_median": 0.9969797805320124,
+      "openbabel_ratio_recomputed": true
+    },
+    {
+      "lane": "v3000-0/parse",
+      "source_ratio_recomputed": true,
+      "source_unrounded_median": 0.996269980226478,
+      "openbabel_ratio_recomputed": false
+    },
+    {
+      "lane": "v3000-0/write",
+      "source_ratio_recomputed": true,
+      "source_unrounded_median": 1.0015118970882062,
+      "openbabel_ratio_recomputed": false
+    },
+    {
+      "lane": "v3000-0/roundtrip",
+      "source_ratio_recomputed": true,
+      "source_unrounded_median": 1.005075535610812,
+      "openbabel_ratio_recomputed": false
+    },
+    {
+      "lane": "v3000-5000/parse",
+      "source_ratio_recomputed": true,
+      "source_unrounded_median": 1.0029446224024021,
+      "openbabel_ratio_recomputed": false
+    },
+    {
+      "lane": "v3000-5000/write",
+      "source_ratio_recomputed": true,
+      "source_unrounded_median": 1.0335540617164707,
+      "openbabel_ratio_recomputed": false
+    },
+    {
+      "lane": "v3000-5000/roundtrip",
+      "source_ratio_recomputed": true,
+      "source_unrounded_median": 1.0084245768738445,
+      "openbabel_ratio_recomputed": false
+    },
+    {
+      "lane": "v3000-chains/parse",
+      "source_ratio_recomputed": true,
+      "source_unrounded_median": 1.012837036655153,
+      "openbabel_ratio_recomputed": true
+    },
+    {
+      "lane": "v3000-chains/write",
+      "source_ratio_recomputed": true,
+      "source_unrounded_median": 1.001018465050695,
+      "openbabel_ratio_recomputed": true
+    },
+    {
+      "lane": "v3000-chains/roundtrip",
+      "source_ratio_recomputed": true,
+      "source_unrounded_median": 1.0015441053973198,
+      "openbabel_ratio_recomputed": true
+    },
+    {
+      "lane": "v3000-continued/parse",
+      "source_ratio_recomputed": true,
+      "source_unrounded_median": 1.0120870648933025,
+      "openbabel_ratio_recomputed": true
+    },
+    {
+      "lane": "v3000-continued/write",
+      "source_ratio_recomputed": true,
+      "source_unrounded_median": 1.0076748235950832,
+      "openbabel_ratio_recomputed": false
+    },
+    {
+      "lane": "v3000-continued/roundtrip",
+      "source_ratio_recomputed": true,
+      "source_unrounded_median": 1.0124434529062953,
+      "openbabel_ratio_recomputed": false
+    },
+    {
+      "lane": "v3000_3d-spiral/parse",
+      "source_ratio_recomputed": true,
+      "source_unrounded_median": 1.0068591623328846,
+      "openbabel_ratio_recomputed": true
+    },
+    {
+      "lane": "v3000_3d-spiral/write",
+      "source_ratio_recomputed": true,
+      "source_unrounded_median": 1.0055152388130184,
+      "openbabel_ratio_recomputed": true
+    },
+    {
+      "lane": "v3000_3d-spiral/roundtrip",
+      "source_ratio_recomputed": true,
+      "source_unrounded_median": 1.0049850196098356,
+      "openbabel_ratio_recomputed": true
+    },
+    {
+      "lane": "v3000_3d-branched-spiral/parse",
+      "source_ratio_recomputed": true,
+      "source_unrounded_median": 8.267631113616524,
+      "openbabel_ratio_recomputed": false
+    },
+    {
+      "lane": "v3000_3d-branched-spiral/write",
+      "source_ratio_recomputed": true,
+      "source_unrounded_median": 0.9916243760588235,
+      "openbabel_ratio_recomputed": true
+    },
+    {
+      "lane": "v3000_3d-branched-spiral/roundtrip",
+      "source_ratio_recomputed": true,
+      "source_unrounded_median": 6.80716327281066,
+      "openbabel_ratio_recomputed": true
+    },
+    {
+      "lane": "v3000_3d-offset/parse",
+      "source_ratio_recomputed": true,
+      "source_unrounded_median": 1.0114433838349046,
+      "openbabel_ratio_recomputed": true
+    },
+    {
+      "lane": "v3000_3d-offset/write",
+      "source_ratio_recomputed": true,
+      "source_unrounded_median": 1.0073867514798585,
+      "openbabel_ratio_recomputed": true
+    },
+    {
+      "lane": "v3000_3d-offset/roundtrip",
+      "source_ratio_recomputed": true,
+      "source_unrounded_median": 1.0113188147596635,
+      "openbabel_ratio_recomputed": true
+    },
+    {
+      "lane": "v3000_3d-branched-offset/parse",
+      "source_ratio_recomputed": true,
+      "source_unrounded_median": 8.15436726203032,
+      "openbabel_ratio_recomputed": true
+    },
+    {
+      "lane": "v3000_3d-branched-offset/write",
+      "source_ratio_recomputed": true,
+      "source_unrounded_median": 0.999485370933702,
+      "openbabel_ratio_recomputed": true
+    },
+    {
+      "lane": "v3000_3d-branched-offset/roundtrip",
+      "source_ratio_recomputed": true,
+      "source_unrounded_median": 6.770964973297748,
+      "openbabel_ratio_recomputed": true
+    }
+  ]
+}

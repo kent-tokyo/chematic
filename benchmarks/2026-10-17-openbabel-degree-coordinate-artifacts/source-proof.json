@@ -1,0 +1,10 @@
+{
+  "base_commit": "34f141266a81264f42990f98acbe25c91d9074af",
+  "predecessor_candidate_commit": "774ddc180d7389b95ed30ab7fbae6bcab65f2d64",
+  "predecessor_evidence_commit": "4c374951",
+  "predecessor_gate_passed": false,
+  "frozen_classifier_sha256": "e48f9f45349e28abee36e25bc35925570fb0b7115f1bb9c40279d5bccda92f2e",
+  "transformation": "Retain decimal-pair formatting and reject degree<3 before local Vec/H-count/signature work. Every returned shape has at least three heavy neighbors; find_sssr still runs first. No changed valid-center branch or public API.",
+  "baseline_source_reused": "/private/tmp/chematic-coordinate-pairs-evidence-20261017/baseline-source",
+  "prior_timing_samples_reused": false
+}

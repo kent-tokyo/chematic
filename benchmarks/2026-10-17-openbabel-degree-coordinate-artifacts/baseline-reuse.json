@@ -1,0 +1,41 @@
+{
+  "baseline_commit": "34f141266a81264f42990f98acbe25c91d9074af",
+  "source_root": "/private/tmp/chematic-coordinate-pairs-evidence-20261017/baseline-source",
+  "original_build_command": {
+    "cwd": "/private/tmp/chematic-coordinate-pairs-evidence-20261017/baseline-source",
+    "command": [
+      "cargo",
+      "build",
+      "-vv",
+      "--offline",
+      "--locked",
+      "--release",
+      "-p",
+      "chematic-mol",
+      "--example",
+      "openbabel_sdf_throughput",
+      "--example",
+      "openbabel_v3000_throughput",
+      "--example",
+      "openbabel_v3000_3d_throughput"
+    ],
+    "env": {
+      "CARGO_TARGET_DIR": "/private/tmp/chematic-coordinate-pairs-evidence-20261017/baseline-corrected-target",
+      "CARGO_BUILD_JOBS": "1",
+      "CARGO_INCREMENTAL": "0",
+      "CARGO_PROFILE_RELEASE_OPT_LEVEL": "3",
+      "CARGO_PROFILE_RELEASE_LTO": "true",
+      "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "1",
+      "CARGO_PROFILE_RELEASE_STRIP": "none"
+    }
+  },
+  "binaries_unchanged_from_sealed_predecessor": {
+    "baseline-sdf": "72e3b34392b8da59737756aa863af2a389f1d81d9d848babd6da6ff9834f8b3c",
+    "baseline-v3000": "347e9c89d202fffb5012b60fe8338de8b5cf100c1b46bbbd75a8a1f8e058c5c7",
+    "baseline-v3000_3d": "4c23b4559302b4e4fad6c088e09a87678fe2e99514d514d4674ffa316e6aa1ac",
+    "openbabel-sdf": "9e489bcdebfdda2adb29a0613eb3bd7f17a10f6d554185887366f96a0fc7964e",
+    "openbabel-v3000": "34981dcbb977f1f652030d092caf297a120241bb62ca094151a6ed58c3752846"
+  },
+  "same_rust_compiler": true,
+  "old_elapsed_samples_reused": false
+}

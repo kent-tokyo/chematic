@@ -1,0 +1,8 @@
+{
+  "base_commit": "34f141266a81264f42990f98acbe25c91d9074af",
+  "complete_frozen_classifier_exact": true,
+  "body_sha256": "e2e81ed829c925c1d536fc0e1eb3135ebc3eb6a9be6c928a4086a482dd5b72fa",
+  "pinned_graphs": 14072,
+  "five_atom_graph_hydrogen_variants": 6144,
+  "proof": "Every emitted branch needs heavy_nbs length 3 or 4, including constrained ring nitrogen; heavy_nbs.len <= degree. find_sssr remains before the loop."
+}

@@ -1,0 +1,332 @@
+{
+  "local_adoption_gate_passed": false,
+  "primary": {
+    "sdf-0/write": {
+      "median": 1.002,
+      "ci95": [
+        0.993,
+        1.016
+      ],
+      "winning_blocks": 11,
+      "blocks": 21
+    },
+    "sdf-5000/write": {
+      "median": 0.985,
+      "ci95": [
+        0.943,
+        1.022
+      ],
+      "winning_blocks": 8,
+      "blocks": 21
+    },
+    "v3000_3d-branched-spiral/parse": {
+      "median": 8.268,
+      "ci95": [
+        8.194,
+        8.341
+      ],
+      "winning_blocks": 21,
+      "blocks": 21
+    },
+    "v3000_3d-branched-offset/parse": {
+      "median": 8.154,
+      "ci95": [
+        8.119,
+        8.191
+      ],
+      "winning_blocks": 21,
+      "blocks": 21
+    }
+  },
+  "source_ratios": {
+    "sdf-0/parse": {
+      "median": 1.003,
+      "ci95": [
+        0.995,
+        1.009
+      ],
+      "winning_blocks": 13,
+      "blocks": 21
+    },
+    "sdf-0/write": {
+      "median": 1.002,
+      "ci95": [
+        0.993,
+        1.016
+      ],
+      "winning_blocks": 11,
+      "blocks": 21
+    },
+    "sdf-0/roundtrip": {
+      "median": 0.998,
+      "ci95": [
+        0.995,
+        1.003
+      ],
+      "winning_blocks": 10,
+      "blocks": 21
+    },
+    "sdf-5000/parse": {
+      "median": 1.011,
+      "ci95": [
+        0.995,
+        1.018
+      ],
+      "winning_blocks": 14,
+      "blocks": 21
+    },
+    "sdf-5000/write": {
+      "median": 0.985,
+      "ci95": [
+        0.943,
+        1.022
+      ],
+      "winning_blocks": 8,
+      "blocks": 21
+    },
+    "sdf-5000/roundtrip": {
+      "median": 0.997,
+      "ci95": [
+        0.986,
+        1.007
+      ],
+      "winning_blocks": 9,
+      "blocks": 21
+    },
+    "v3000-0/parse": {
+      "median": 0.996,
+      "ci95": [
+        0.981,
+        1.003
+      ],
+      "winning_blocks": 8,
+      "blocks": 21
+    },
+    "v3000-0/write": {
+      "median": 1.002,
+      "ci95": [
+        0.987,
+        1.014
+      ],
+      "winning_blocks": 12,
+      "blocks": 21
+    },
+    "v3000-0/roundtrip": {
+      "median": 1.005,
+      "ci95": [
+        0.997,
+        1.024
+      ],
+      "winning_blocks": 14,
+      "blocks": 21
+    },
+    "v3000-5000/parse": {
+      "median": 1.003,
+      "ci95": [
+        0.998,
+        1.008
+      ],
+      "winning_blocks": 13,
+      "blocks": 21
+    },
+    "v3000-5000/write": {
+      "median": 1.034,
+      "ci95": [
+        1.027,
+        1.042
+      ],
+      "winning_blocks": 20,
+      "blocks": 21
+    },
+    "v3000-5000/roundtrip": {
+      "median": 1.008,
+      "ci95": [
+        1.002,
+        1.02
+      ],
+      "winning_blocks": 15,
+      "blocks": 21
+    },
+    "v3000-chains/parse": {
+      "median": 1.013,
+      "ci95": [
+        0.999,
+        1.02
+      ],
+      "winning_blocks": 14,
+      "blocks": 21
+    },
+    "v3000-chains/write": {
+      "median": 1.001,
+      "ci95": [
+        0.989,
+        1.023
+      ],
+      "winning_blocks": 11,
+      "blocks": 21
+    },
+    "v3000-chains/roundtrip": {
+      "median": 1.002,
+      "ci95": [
+        0.993,
+        1.007
+      ],
+      "winning_blocks": 12,
+      "blocks": 21
+    },
+    "v3000-continued/parse": {
+      "median": 1.012,
+      "ci95": [
+        1.0,
+        1.023
+      ],
+      "winning_blocks": 14,
+      "blocks": 21
+    },
+    "v3000-continued/write": {
+      "median": 1.008,
+      "ci95": [
+        0.982,
+        1.032
+      ],
+      "winning_blocks": 11,
+      "blocks": 21
+    },
+    "v3000-continued/roundtrip": {
+      "median": 1.012,
+      "ci95": [
+        0.999,
+        1.016
+      ],
+      "winning_blocks": 13,
+      "blocks": 21
+    },
+    "v3000_3d-spiral/parse": {
+      "median": 1.007,
+      "ci95": [
+        1.006,
+        1.009
+      ],
+      "winning_blocks": 17,
+      "blocks": 21
+    },
+    "v3000_3d-spiral/write": {
+      "median": 1.006,
+      "ci95": [
+        0.998,
+        1.015
+      ],
+      "winning_blocks": 13,
+      "blocks": 21
+    },
+    "v3000_3d-spiral/roundtrip": {
+      "median": 1.005,
+      "ci95": [
+        1.0,
+        1.012
+      ],
+      "winning_blocks": 14,
+      "blocks": 21
+    },
+    "v3000_3d-branched-spiral/parse": {
+      "median": 8.268,
+      "ci95": [
+        8.194,
+        8.341
+      ],
+      "winning_blocks": 21,
+      "blocks": 21
+    },
+    "v3000_3d-branched-spiral/write": {
+      "median": 0.992,
+      "ci95": [
+        0.987,
+        1.005
+      ],
+      "winning_blocks": 8,
+      "blocks": 21
+    },
+    "v3000_3d-branched-spiral/roundtrip": {
+      "median": 6.807,
+      "ci95": [
+        6.774,
+        6.844
+      ],
+      "winning_blocks": 21,
+      "blocks": 21
+    },
+    "v3000_3d-offset/parse": {
+      "median": 1.011,
+      "ci95": [
+        1.005,
+        1.014
+      ],
+      "winning_blocks": 17,
+      "blocks": 21
+    },
+    "v3000_3d-offset/write": {
+      "median": 1.007,
+      "ci95": [
+        0.996,
+        1.021
+      ],
+      "winning_blocks": 14,
+      "blocks": 21
+    },
+    "v3000_3d-offset/roundtrip": {
+      "median": 1.011,
+      "ci95": [
+        1.005,
+        1.018
+      ],
+      "winning_blocks": 17,
+      "blocks": 21
+    },
+    "v3000_3d-branched-offset/parse": {
+      "median": 8.154,
+      "ci95": [
+        8.119,
+        8.191
+      ],
+      "winning_blocks": 21,
+      "blocks": 21
+    },
+    "v3000_3d-branched-offset/write": {
+      "median": 0.999,
+      "ci95": [
+        0.996,
+        1.011
+      ],
+      "winning_blocks": 10,
+      "blocks": 21
+    },
+    "v3000_3d-branched-offset/roundtrip": {
+      "median": 6.771,
+      "ci95": [
+        6.723,
+        6.791
+      ],
+      "winning_blocks": 21,
+      "blocks": 21
+    }
+  },
+  "negative_intervals": [],
+  "source_floor_failures": [
+    {
+      "lane": "sdf-5000/write",
+      "speedup": {
+        "median": 0.985,
+        "ci95": [
+          0.943,
+          1.022
+        ],
+        "winning_blocks": 8,
+        "blocks": 21
+      },
+      "unrounded_median": 0.9845157731632681
+    }
+  ],
+  "all_source_snapshots_and_rewrites_exact": true,
+  "source_valid_epochs": 10,
+  "universal_superiority": false
+}

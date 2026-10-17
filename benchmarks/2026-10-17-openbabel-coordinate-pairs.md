@@ -1,6 +1,6 @@
 # Open Babel comparison: decimal-pair coordinate formatting
 
-Decision: **FAIL: retain as an unpromoted draft**. The two diverse SDF write lanes are the predeclared primary. All source outputs must match and all 30 source median ratios must be at least 0.99. This is one macOS source experiment, not universal superiority or published-package evidence.
+Decision: **FAIL: formatter-only candidate was not adopted**. The two diverse SDF write lanes are the predeclared primary. All source outputs must match and all 30 source median ratios must be at least 0.99. This is one macOS source experiment, not universal superiority or published-package evidence.
 
 ## Change and correctness
 

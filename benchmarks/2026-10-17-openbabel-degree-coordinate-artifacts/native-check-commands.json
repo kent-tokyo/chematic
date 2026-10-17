@@ -1,0 +1,69 @@
+{
+  "commands": {
+    "native-tests": [
+      "cargo",
+      "test",
+      "--offline",
+      "--locked",
+      "--release",
+      "--lib",
+      "--tests",
+      "--no-fail-fast",
+      "-p",
+      "chematic-perception",
+      "-p",
+      "chematic-mol",
+      "-p",
+      "chematic-chem",
+      "-p",
+      "chematic-fp"
+    ],
+    "clippy": [
+      "cargo",
+      "clippy",
+      "--offline",
+      "--locked",
+      "--release",
+      "--all-targets",
+      "-p",
+      "chematic-perception",
+      "-p",
+      "chematic-mol",
+      "-p",
+      "chematic-chem",
+      "-p",
+      "chematic-fp",
+      "--",
+      "-D",
+      "warnings"
+    ],
+    "format": [
+      "cargo",
+      "fmt",
+      "--all",
+      "--",
+      "--check"
+    ],
+    "refactor": [
+      "python3",
+      "scripts/check_refactor_budget.py"
+    ],
+    "runner-tests": [
+      "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+      "-m",
+      "pytest",
+      "-q",
+      "-p",
+      "no:cacheprovider",
+      "scripts/tests/test_bench_openbabel_sdf_throughput.py",
+      "scripts/tests/test_bench_openbabel_v3000_throughput.py"
+    ]
+  },
+  "env": {
+    "CARGO_TARGET_DIR": "/private/tmp/chematic-coordinate-pairs-evidence-20261017/native-target",
+    "CARGO_BUILD_JOBS": "1",
+    "CARGO_INCREMENTAL": "0",
+    "CARGO_PROFILE_RELEASE_LTO": "false",
+    "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "16"
+  }
+}
