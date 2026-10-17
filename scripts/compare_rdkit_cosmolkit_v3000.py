@@ -7,6 +7,7 @@ from identities for all engines. Each writer receives the same RDKit-normalized
 SMILES so that source spellings RDKit rewrites (such as ``[H]=C``) cannot make
 the writers operate on different molecular graphs. This is a development
 comparison, not an independent chemical truth or an unseen holdout.
+COSMolKit also reads CheMatic's block as a separate interoperability measure.
 """
 
 import argparse
@@ -45,6 +46,17 @@ def readback(block: str | None) -> str | None:
         return None
 
 
+def cosmolkit_readback(block: str | None) -> tuple[str | None, str | None]:
+    if block is None:
+        return None, "writer produced no block"
+    try:
+        smiles = cosmolkit.Molecule.from_mol(block).to_smiles()
+        actual = identity(Chem.MolFromSmiles(smiles))
+    except Exception as error:
+        return None, f"{type(error).__name__}: {error}"
+    return (actual, None) if actual is not None else (None, "unreadable SMILES")
+
+
 def chematic_block(cli: Path, smiles: str) -> str | None:
     try:
         process = subprocess.run(
@@ -74,7 +86,10 @@ def cases(corpus: Path):
         if corpus.suffix == ".smi":
             yield {"id": f"line-{line_number}", "smiles": line.split()[0]}
         elif corpus.suffix == ".jsonl":
-            yield json.loads(line)
+            case = json.loads(line)
+            if case.get("_manifest") is True:
+                continue
+            yield case
         else:
             raise ValueError("corpus must be .smi or .jsonl")
 
@@ -108,6 +123,7 @@ def compare(corpus: Path, cli: Path) -> dict:
             "cosmolkit": cosmolkit_block,
             "chematic": chematic_block(cli, expected),
         }
+        cosmolkit_read, cosmolkit_error = cosmolkit_readback(blocks["chematic"])
         rows.append(
             {
                 "id": case["id"],
@@ -115,7 +131,11 @@ def compare(corpus: Path, cli: Path) -> dict:
                 "comparison_smiles": expected,
                 "expected": expected,
                 "source_has_stereo_token": any(token in expected for token in "@/\\"),
-                "identities": {engine: readback(block) for engine, block in blocks.items()},
+                "identities": {
+                    **{engine: readback(block) for engine, block in blocks.items()},
+                    "chematic_cosmolkit_reader": cosmolkit_read,
+                },
+                "readback_errors": {"chematic_cosmolkit_reader": cosmolkit_error},
                 "block_sha256": {
                     engine: hashlib.sha256(block.encode()).hexdigest() if block else None
                     for engine, block in blocks.items()
@@ -125,7 +145,7 @@ def compare(corpus: Path, cli: Path) -> dict:
     comparable = [row for row in rows if "identities" in row]
     summary = {"cases": len(rows), "comparable": len(comparable),
                "excluded": len(rows) - len(comparable)}
-    for engine in ("rdkit", "cosmolkit", "chematic"):
+    for engine in ("rdkit", "cosmolkit", "chematic", "chematic_cosmolkit_reader"):
         summary[engine] = {
             "exact": sum(row["identities"][engine] == row["expected"] for row in comparable),
             "stereo_exact": sum(

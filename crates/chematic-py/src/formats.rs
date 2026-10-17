@@ -60,8 +60,8 @@ mod pdbqt_checked;
 use pdbqt_checked::*;
 mod pqr_pdbqt;
 use pqr_pdbqt::*;
+mod gro_lammps;
 mod xyz;
-use gro::parse_gro;
 use interchange::*;
 use materials::*;
 pub(crate) use materials::{dict_get, dict_get_opt, dict_get_required};
@@ -1332,6 +1332,7 @@ fn write_smi_file(records: Vec<(Mol, String)>) -> PyResult<String> {
 // ---------------------------------------------------------------------------
 
 pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    gro_lammps::register(m)?;
     m.add_class::<PySmilesBatchStream>()?;
     register_pyfunctions!(
         m,
@@ -1411,7 +1412,6 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         parse_ccd_json,
         from_ccd,
         parse_mmcif,
-        parse_gro,
         parse_rdfile,
         write_rdfile,
         rdfile_to_smiles,

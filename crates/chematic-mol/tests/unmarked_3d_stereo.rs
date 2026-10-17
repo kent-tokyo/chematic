@@ -1,6 +1,7 @@
 //! RDKit 2025.09.3 embedded 3D MOL blocks with atom parity and bond CFG
 //! deliberately removed. The conformer is the only source of stereo.
 
+use chematic_core::{AtomIdx, Chirality};
 use chematic_mol::{mol2000::read_mol_with_diagnostics, read_mol_v3000_with_diagnostics};
 use chematic_smiles::{canonical_smiles, parse, rdkit_canonical_smiles, write};
 
@@ -103,7 +104,7 @@ const RING_CASES: [(&str, &str, &str); 10] = [
     ),
 ];
 
-const ADDITIONAL_CASES: [(&str, &str, &str); 9] = [
+const ADDITIONAL_CASES: [(&str, &str, &str); 15] = [
     (
         "V2000 phosphorus oxide",
         include_str!("fixtures/chematic-unmarked-3d-phosphorus-v2000.mol"),
@@ -149,7 +150,68 @@ const ADDITIONAL_CASES: [(&str, &str, &str); 9] = [
         include_str!("fixtures/chematic-unmarked-3d-paired-ring-4-fcl-v3000.mol"),
         "C[C@]1(F)C[C@](C)(Cl)C1",
     ),
+    (
+        "V2000 coupled ring centers from browser holdout",
+        include_str!("fixtures/chematic-unmarked-3d-coupled-ring-v2000.mol"),
+        "C=CCOc1ccc(/C=C(\\C)C(=O)N[C@@H]2[C@H](O)CCC[C@@H]2O)cc1O",
+    ),
+    (
+        "V3000 coupled ring centers from browser holdout",
+        include_str!("fixtures/chematic-unmarked-3d-coupled-ring-v3000.mol"),
+        "C=CCOc1ccc(/C=C(\\C)C(=O)N[C@@H]2[C@H](O)CCC[C@@H]2O)cc1O",
+    ),
+    (
+        "V2000 exocyclic alkene from ChEMBL 3174",
+        include_str!("fixtures/openbabel-3d-exocyclic-3174-v2000.mol"),
+        "Cc1cccc(C)c1NC(=O)/C=C1/SCC(=O)N1C",
+    ),
+    (
+        "V3000 exocyclic alkene from ChEMBL 3174",
+        include_str!("fixtures/openbabel-3d-exocyclic-3174-v3000.mol"),
+        "Cc1cccc(C)c1NC(=O)/C=C1/SCC(=O)N1C",
+    ),
+    (
+        "V2000 substituted adamantane from ChEMBL 591",
+        include_str!("fixtures/openbabel-3d-adamantane-591-v2000.mol"),
+        "O=c1cc(COC2CCOCC2)occ1OC(=O)[C@]12C[C@H]3C[C@H](C[C@H](C3)C1)C2",
+    ),
+    (
+        "V3000 substituted adamantane from ChEMBL 591",
+        include_str!("fixtures/openbabel-3d-adamantane-591-v3000.mol"),
+        "O=c1cc(COC2CCOCC2)occ1OC(=O)[C@]12C[C@H]3C[C@H](C[C@H](C3)C1)C2",
+    ),
 ];
+
+#[test]
+fn nearly_planar_three_bond_carbons_remain_unspecified() {
+    // Exact SDF records 136 and 188 from the second browser holdout.
+    for (block, center) in [
+        (
+            include_str!("fixtures/chematic-nearly-planar-browser-136-v2000.mol"),
+            9,
+        ),
+        (
+            include_str!("fixtures/chematic-nearly-planar-browser-188-v2000.mol"),
+            5,
+        ),
+    ] {
+        let mol = read_mol_with_diagnostics(block).unwrap().mol;
+        assert_eq!(mol.atom(AtomIdx(center)).chirality, Chirality::None);
+    }
+    for (block, center) in [
+        (
+            include_str!("fixtures/chematic-nearly-planar-browser-136-v3000.mol"),
+            9,
+        ),
+        (
+            include_str!("fixtures/chematic-nearly-planar-browser-188-v3000.mol"),
+            5,
+        ),
+    ] {
+        let mol = read_mol_v3000_with_diagnostics(block).unwrap().mol;
+        assert_eq!(mol.atom(AtomIdx(center)).chirality, Chirality::None);
+    }
+}
 
 #[test]
 fn unmarked_3d_geometry_recovers_stereo() {

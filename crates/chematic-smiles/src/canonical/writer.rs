@@ -901,12 +901,13 @@ impl<'a> CanonicalWriter<'a> {
         if let Some(previous) = from_atom {
             canonical.push(previous.0);
         }
-        if self
-            .mol
-            .stereo_neighbor_order(atom)
-            .is_some_and(|order| order.contains(&STEREO_VACANT_SENTINEL))
-        {
-            canonical.push(STEREO_VACANT_SENTINEL);
+        if let Some(order) = self.mol.stereo_neighbor_order(atom) {
+            canonical.extend(
+                order
+                    .iter()
+                    .filter(|&&id| id == STEREO_VACANT_SENTINEL)
+                    .copied(),
+            );
         }
         if has_h {
             canonical.push(STEREO_H_SENTINEL);
@@ -952,6 +953,9 @@ impl<'a> CanonicalWriter<'a> {
                 } else {
                     stored
                 }
+            }
+            Chirality::SquarePlanar(_) if crate::writer::has_two_vacant_sites(original) => {
+                crate::writer::remap_nontetrahedral(stored, original, canonical)
             }
             Chirality::SquarePlanar(tag) => match (original_arr, canonical_arr) {
                 (Some(o), Some(c)) => remap_square_planar_tag(tag, o, c)

@@ -260,10 +260,17 @@ pub(crate) fn remap_three_ligand_square_planar(
     )
 }
 
-/// A non-tetrahedral tag (other than numbered `@SP`) carried from the
-/// stored ligand order `original` to the written order `written`, with
-/// RDKit's permutation tables; `None` when the orders do not hold the same
-/// ligands.
+/// Whether the recorded coordination has exactly two unoccupied positions.
+pub(crate) fn has_two_vacant_sites(order: &[u32]) -> bool {
+    order
+        .iter()
+        .filter(|&&id| id == STEREO_VACANT_SENTINEL)
+        .count()
+        == 2
+}
+
+/// Carry a non-tetrahedral tag from the stored ligand order to the written
+/// order with RDKit's permutation tables. Refuse mismatched ligand sets.
 pub(crate) fn remap_nontetrahedral(
     stored: chematic_core::Chirality,
     original: &[u32],
@@ -272,8 +279,31 @@ pub(crate) fn remap_nontetrahedral(
     let Some((class, perm)) = stored.nontetrahedral() else {
         return chematic_core::Chirality::None;
     };
-    let o: Vec<Option<usize>> = original.iter().map(|&x| Some(x as usize)).collect();
-    let w: Vec<Option<usize>> = written.iter().map(|&x| Some(x as usize)).collect();
+    let two_vacancies = has_two_vacant_sites(original) && has_two_vacant_sites(written);
+    let root_changes = (original.first() == Some(&STEREO_VACANT_SENTINEL))
+        != (written.first() == Some(&STEREO_VACANT_SENTINEL));
+    // The two empty positions are indistinguishable in the molecular graph,
+    // but RDKit's SMILES permutation convention exchanges their slots when
+    // a ligand moves between the incoming and first-child positions.
+    let order = |ids: &[u32], reverse_vacancies: bool| {
+        let mut vacancy = 0;
+        ids.iter()
+            .map(|&id| {
+                if two_vacancies && id == STEREO_VACANT_SENTINEL {
+                    vacancy += 1;
+                    if (vacancy == 1) != reverse_vacancies {
+                        None
+                    } else {
+                        Some(id as usize)
+                    }
+                } else {
+                    Some(id as usize)
+                }
+            })
+            .collect::<Vec<Option<usize>>>()
+    };
+    let o = order(original, false);
+    let w = order(written, two_vacancies && root_changes);
     chematic_core::nontetrahedral::permute(class, perm, &o, &w)
         .and_then(|p| chematic_core::Chirality::from_nontetrahedral(class, p))
         .unwrap_or(chematic_core::Chirality::None)
@@ -576,9 +606,12 @@ impl<'a> SmilesWriter<'a> {
         if let Some(prev) = from_atom {
             written.push(prev.0);
         }
-        if original.contains(&STEREO_VACANT_SENTINEL) {
-            written.push(STEREO_VACANT_SENTINEL);
-        }
+        written.extend(
+            original
+                .iter()
+                .filter(|&&id| id == STEREO_VACANT_SENTINEL)
+                .copied(),
+        );
         // Three-coordinate sulfoxides use the H sentinel for the stereogenic
         // lone pair, even though the atom has no implicit hydrogen.
         if original.contains(&STEREO_H_SENTINEL)
@@ -625,6 +658,9 @@ impl<'a> SmilesWriter<'a> {
                     (true, Chirality::CounterClockwise) => Chirality::Clockwise,
                     (true, _) => Chirality::CounterClockwise,
                 }
+            }
+            Chirality::SquarePlanar(_) if has_two_vacant_sites(original) => {
+                remap_nontetrahedral(stored, original, &written)
             }
             Chirality::SquarePlanar(tag) => match (original_arr, written_arr) {
                 (Some(o), Some(w)) => remap_square_planar_tag(tag, o, w)
@@ -743,6 +779,9 @@ fn permutation_is_odd(original: &[u32], written: &[u32]) -> bool {
     }
     swaps % 2 == 1
 }
+
+#[cfg(test)]
+mod two_vacant_tests;
 
 #[cfg(test)]
 mod tests {

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Audit accurate CIP atom and E/Z bond labels against a pinned RDKit oracle.
 
-The input is a provenance-carrying JSONL corpus with one ``smiles`` field per
-record.  Atom R/S labels and bond E/Z labels are compared as separate maps;
+The input is a JSONL corpus with one ``smiles`` field per record, or a .smi
+corpus with one SMILES per line. Atom R/S labels and bond E/Z CIP labels are
+compared as separate maps keyed by atom index and bond endpoints;
 accurate-mode unresolved entries are retained as a third outcome rather than
 being counted as silently correct or incorrect assignments.
 """
@@ -29,7 +30,11 @@ def load_rows(path: Path) -> list[dict]:
     for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
         if not line.strip():
             continue
-        record = json.loads(line)
+        record = (
+            {"smiles": line.split()[0]}
+            if path.suffix == ".smi"
+            else json.loads(line)
+        )
         if not isinstance(record, dict):
             raise ValueError(f"{path}:{line_number}: row must be an object")
         if record.get("_manifest") is True:
@@ -40,7 +45,7 @@ def load_rows(path: Path) -> list[dict]:
     return rows
 
 
-def rdkit_labels(smiles: str) -> tuple[dict[int, str], dict[int, str]] | None:
+def rdkit_labels(smiles: str) -> tuple[dict[int, str], dict[tuple[int, int], str]] | None:
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return None
@@ -50,27 +55,30 @@ def rdkit_labels(smiles: str) -> tuple[dict[int, str], dict[int, str]] | None:
         for atom in mol.GetAtoms()
         if atom.HasProp("_CIPCode")
     }
-    bonds: dict[int, str] = {}
+    bonds: dict[tuple[int, int], str] = {}
     for bond in mol.GetBonds():
-        stereo = bond.GetStereo()
-        if stereo == Chem.BondStereo.STEREOTRANS:
-            bonds[bond.GetIdx()] = "E"
-        elif stereo == Chem.BondStereo.STEREOCIS:
-            bonds[bond.GetIdx()] = "Z"
+        if bond.HasProp("_CIPCode"):
+            label = bond.GetProp("_CIPCode")
+            if label in {"E", "Z"}:
+                endpoints = tuple(sorted((bond.GetBeginAtomIdx(), bond.GetEndAtomIdx())))
+                bonds[endpoints] = label
     return atoms, bonds
 
 
-def chematic_labels(mol) -> tuple[dict[int, str], dict[int, str], dict[int, str]]:
+def chematic_labels(mol) -> tuple[dict[int, str], dict[tuple[int, int], str], dict[int, str]]:
     assignments = mol.cip_stereo(mode="accurate")
     atoms: dict[int, str] = {}
-    bonds: dict[int, str] = {}
+    bonds: dict[tuple[int, int], str] = {}
     for item in assignments:
         index = int(item["atom_idx"])
         descriptor = str(item["descriptor"])
         if descriptor in {"R", "S", "r", "s"}:
             atoms[index] = descriptor
         elif descriptor in {"E", "Z"}:
-            bonds[index] = descriptor
+            endpoints = item.get("bond_atoms")
+            if endpoints is None:
+                raise ValueError("E/Z assignment has no bond_atoms")
+            bonds[tuple(sorted(map(int, endpoints)))] = descriptor
     unresolved = {
         int(item["atom_idx"]): str(item["reason"])
         for item in mol.cip_stereo_unresolved()

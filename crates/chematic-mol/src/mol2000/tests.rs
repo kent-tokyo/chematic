@@ -1,6 +1,118 @@
 use super::*;
 
 #[test]
+fn unmarked_3d_ring_ch_and_quaternary_partner_keep_relative_stereo() {
+    // RDKit 2025.09.3 generated these unmarked coordinates from
+    // OC1CCC(F)(Cl)CC1 (EmbedMolecule seed 4). The two ring arms at either
+    // substituted carbon are equivalent until the partner is considered.
+    let block = r"
+     RDKit          3D
+
+  9  9  0  0  0  0  0  0  0  0999 V2000
+   -1.1643    1.8164    0.7206 O   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.8448    1.0514   -0.3884 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -1.3468   -0.3400   -0.3428 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.4461   -1.3663    0.2433 C   0  0  0  0  0  0  0  0  0  0  0
+    1.0114   -1.0758    0.1540 C   0  0  0  0  0  0  0  0  0  0  0
+    1.5672   -1.4123   -1.0704 F   0  0  0  0  0  0  0  0  0  0  0
+    1.8867   -2.0336    1.3705 Cl  0  0  0  0  0  0  0  0  0  0  0
+    1.3326    0.3810    0.4095 C   0  0  0  0  0  0  0  0  0  0  0
+    0.6425    1.1345   -0.7168 C   0  0  0  0  0  0  0  0  0  0  0
+  1  2  1  0
+  2  3  1  0
+  3  4  1  0
+  4  5  1  0
+  5  6  1  0
+  5  7  1  0
+  5  8  1  0
+  8  9  1  0
+  9  2  1  0
+M  END
+";
+    let (mol, _) = parse_mol(block).unwrap();
+    let expected = chematic_smiles::parse("O[C@H]1CC[C@@](F)(Cl)CC1").unwrap();
+    assert_eq!(
+        chematic_smiles::canonical_smiles(&mol),
+        chematic_smiles::canonical_smiles(&expected)
+    );
+    for smiles in ["OC1CCCCC1", "OC1CCC(F)(F)CC1"] {
+        let single = chematic_smiles::parse_template(smiles).unwrap();
+        assert!(
+            additional_3d_ring_centers(&single, false).is_empty(),
+            "{smiles}"
+        );
+    }
+}
+
+#[test]
+fn unmarked_3d_ring_with_three_ch_partners_keeps_all_four_tags() {
+    // RDKit 2025.09.3, OC1C(O)CC(F)(Cl)CC1O, EmbedMolecule seed 8.
+    // One ring CH is only distinguished after its other ring partners are
+    // assigned; requiring exactly one CH partner loses that configuration.
+    let block = r"
+     RDKit          3D
+
+ 11 11  0  0  0  0  0  0  0  0999 V2000
+   -0.7494   -1.1736   -1.6387 O   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.4449   -1.2600   -0.2703 C   0  0  0  0  0  0  0  0  0  0  0
+   -1.3314   -0.2172    0.4020 C   0  0  0  0  0  0  0  0  0  0  0
+   -1.0089   -0.0494    1.7322 O   0  0  0  0  0  0  0  0  0  0  0
+   -1.1069    1.0564   -0.3758 C   0  0  0  0  0  0  0  0  0  0  0
+    0.3132    1.5096   -0.2931 C   0  0  0  0  0  0  0  0  0  0  0
+    0.7514    1.9034   -1.5473 F   0  0  0  0  0  0  0  0  0  0  0
+    0.3241    2.9309    0.7945 Cl  0  0  0  0  0  0  0  0  0  0  0
+    1.2725    0.5086    0.2587 C   0  0  0  0  0  0  0  0  0  0  0
+    1.0194   -0.9057   -0.1474 C   0  0  0  0  0  0  0  0  0  0  0
+    1.5440   -1.8050    0.7974 O   0  0  0  0  0  0  0  0  0  0  0
+  1  2  1  0
+  2  3  1  0
+  3  4  1  0
+  3  5  1  0
+  5  6  1  0
+  6  7  1  0
+  6  8  1  0
+  6  9  1  0
+  9 10  1  0
+ 10 11  1  0
+ 10  2  1  0
+M  END
+";
+    let (mol, _) = parse_mol(block).unwrap();
+    let expected = chematic_smiles::parse("O[C@H]1[C@H](O)C[C@](F)(Cl)C[C@@H]1O").unwrap();
+    assert_eq!(
+        chematic_smiles::canonical_smiles(&mol),
+        chematic_smiles::canonical_smiles(&expected)
+    );
+}
+
+#[test]
+fn unmarked_3d_imino_phosphorus_keeps_tetrahedral_stereo() {
+    // RDKit 2025.09.3, N=P(F)(Cl)Br, EmbedMolecule seed 4. A double-bonded
+    // imino nitrogen occupies one of the four distinct phosphorus slots.
+    let block = r"
+     RDKit          3D
+
+  5  4  0  0  0  0  0  0  0  0999 V2000
+   -1.1061   -0.7030    0.0445 N   0  0  0  0  0  0  0  0  0  0  0  0
+    0.2541    0.0579    0.1760 P   0  0  0  0  0  0  0  0  0  0  0  0
+    0.5857    0.3460    1.8047 F   0  0  0  0  0  0  0  0  0  0  0  0
+    0.2488    1.8901   -0.7658 Cl  0  0  0  0  0  0  0  0  0  0  0
+    1.9060   -1.1706   -0.7067 Br  0  0  0  0  0  0  0  0  0  0  0
+  1  2  2  0
+  2  3  1  0
+  2  4  1  0
+  2  5  1  0
+M  END
+";
+    let (mol, _) = parse_mol(block).unwrap();
+    let expected = chematic_smiles::parse("N=[P@](F)(Cl)Br").unwrap();
+    assert_eq!(
+        chematic_smiles::canonical_smiles(&mol),
+        chematic_smiles::canonical_smiles(&expected)
+    );
+}
+
+#[test]
 fn single_hash_centre_with_unequal_flat_bonds_reads_rdkit_parity() {
     // RDKit's layout of an artemisinin analogue (ChEMBL): the methyl
     // carbon's two O bonds are drawn 6 degrees apart with different

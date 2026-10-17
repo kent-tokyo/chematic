@@ -25,7 +25,7 @@ pub(crate) fn perceive_mol2_tetrahedral_from_3d(
     if crate::mol2000::classify_geometry_rank(&points) != crate::mol2000::GeometryRank::ThreeD {
         return;
     }
-    crate::mol2000::perceive_tetrahedral_from_3d(mol, &Coords3D { points });
+    crate::mol2000::perceive_tetrahedral_from_3d_mol2(mol, &Coords3D { points });
 }
 
 pub(crate) fn perceive_mol2_stereo_from_coordinates(
@@ -34,6 +34,26 @@ pub(crate) fn perceive_mol2_stereo_from_coordinates(
 ) {
     perceive_mol2_tetrahedral_from_3d(mol, coordinates);
     chematic_perception::apply_ez_directions_from_3d(mol, coordinates);
+}
+
+/// MOL2 carries no implicit-H count or radical field. A record with explicit
+/// hydrogen atoms uses its atom/bond inventory as the hydrogen authority;
+/// otherwise a valence deficit is indistinguishable from an omitted H and
+/// the usual implicit-H rules remain in effect. Apply this before 3D stereo
+/// perception so the candidate-center calculation sees the same graph that
+/// SMILES output will use.
+pub(crate) fn preserve_mol2_explicit_hydrogen_inventory(mol: &mut Molecule) {
+    if !mol.atoms().any(|(_, atom)| atom.element == Element::H) {
+        return;
+    }
+    let heavy_atoms: Vec<_> = mol
+        .atoms()
+        .filter(|(_, atom)| atom.element != Element::H)
+        .map(|(idx, _)| idx)
+        .collect();
+    for idx in heavy_atoms {
+        mol.set_hydrogen_count(idx, Some(0));
+    }
 }
 
 /// Open Babel writes both carboxylate C--O bonds as `ar` when the oxygen type
@@ -720,6 +740,10 @@ fn add_mol2_bonds(
 }
 
 /// Parse a loss-aware MOL2 record with explicit resource limits.
+///
+/// If any H atom is present, its explicit atom/bond inventory defines the
+/// hydrogen count for all heavy atoms. With no H atoms, normal valence-based
+/// implicit-H inference applies. Mixed-H sources are ambiguous in MOL2.
 pub fn parse_mol2_record_with_limits(
     s: &str,
     limits: &Mol2ParseLimits,
@@ -730,6 +754,7 @@ pub fn parse_mol2_record_with_limits(
     let mut atoms = parse_mol2_atoms(&all_lines, limits, &unity_formal_charges)?;
     let (bond_records, duplicate_bonds) = add_mol2_bonds(&all_lines, limits, &mut atoms)?;
     let mut molecule = atoms.builder.build();
+    preserve_mol2_explicit_hydrogen_inventory(&mut molecule);
     restore_mol2_carboxylate_orders(&mut molecule, |idx| {
         atoms.records[idx.0 as usize]
             .atom_type

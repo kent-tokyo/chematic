@@ -1,0 +1,37 @@
+{
+  "manifest": "/private/tmp/chematic-chembl-unmarked3d-rdkit2026-20261017-manifest.json",
+  "results": {
+    "v2000": {
+      "hits": {
+        "chematic": {
+          "tetra": 50,
+          "alkene": 50
+        },
+        "cosmolkit": {
+          "tetra": 50,
+          "alkene": 50
+        }
+      },
+      "misses": {
+        "chematic": [],
+        "cosmolkit": []
+      }
+    },
+    "v3000": {
+      "hits": {
+        "chematic": {
+          "tetra": 50,
+          "alkene": 50
+        },
+        "cosmolkit": {
+          "tetra": 50,
+          "alkene": 50
+        }
+      },
+      "misses": {
+        "chematic": [],
+        "cosmolkit": []
+      }
+    }
+  }
+}

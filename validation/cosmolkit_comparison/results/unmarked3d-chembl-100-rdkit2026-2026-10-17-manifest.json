@@ -1,0 +1,618 @@
+{
+  "corpus_sha256": "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e",
+  "seed": 20261017,
+  "excluded_source_indices": [],
+  "rdkit_version": "2026.09.1",
+  "cosmolkit_version": "0.5.0",
+  "counts": {
+    "tetra": 50,
+    "alkene": 50
+  },
+  "rows": [
+    {
+      "source_index": 2820,
+      "source": "COC(=O)/C=C\\[C@H]1CCC2=C/C(=N/N=C(N)N)CC[C@@]21C",
+      "expected": "COC(=O)/C=C\\[C@H]1CCC2=C/C(=N/N=C(N)N)CC[C@@]21C",
+      "category": "tetra"
+    },
+    {
+      "source_index": 1412,
+      "source": "CC1(C)O[C@H]2[C@@H]3O[C@](C)(C(C)(C)C)O[C@@H]3CO[C@@]2(COS(N)(=O)=O)O1",
+      "expected": "CC1(C)O[C@H]2[C@@H]3O[C@](C)(C(C)(C)C)O[C@@H]3CO[C@@]2(COS(N)(=O)=O)O1",
+      "category": "tetra"
+    },
+    {
+      "source_index": 1289,
+      "source": "CSC(=O)O[C@H]1CO[C@@]2(COS(N)(=O)=O)OC(C)(C)O[C@H]2[C@@H]1I",
+      "expected": "CSC(=O)O[C@H]1CO[C@@]2(COS(N)(=O)=O)OC(C)(C)O[C@H]2[C@@H]1I",
+      "category": "tetra"
+    },
+    {
+      "source_index": 1567,
+      "source": "NS(=O)(=O)OC[C@]12CCC[C@H]1[C@@H]1C[C@@H]1CC2",
+      "expected": "NS(=O)(=O)OC[C@]12CCC[C@H]1[C@@H]1C[C@@H]1CC2",
+      "category": "tetra"
+    },
+    {
+      "source_index": 1744,
+      "source": "CCCn1c(=O)c2nc(/C=C/c3cc(OC)c(OC)cc3OC)[nH]c2n(CCC)c1=O",
+      "expected": "CCCn1c(=O)c2nc(/C=C/c3cc(OC)c(OC)cc3OC)[nH]c2n(CCC)c1=O",
+      "category": "alkene"
+    },
+    {
+      "source_index": 210,
+      "source": "CCCCCCc1c(O)noc1C[C@H](N)C(=O)O",
+      "expected": "CCCCCCc1c(O)noc1C[C@H](N)C(=O)O",
+      "category": "tetra"
+    },
+    {
+      "source_index": 1518,
+      "source": "CC1(C)O[C@H]2[C@@H]3OS(=O)(=O)O[C@@H]3CO[C@@]2(COS(=O)(=O)NC2CCCCCCC2)O1",
+      "expected": "CC1(C)O[C@H]2[C@@H]3OS(=O)(=O)O[C@@H]3CO[C@@]2(COS(=O)(=O)NC2CCCCCCC2)O1",
+      "category": "tetra"
+    },
+    {
+      "source_index": 4354,
+      "source": "C/C(=C\\c1ccc(OCCO)c(O)c1)C(=O)N[C@@H]1[C@H](O)[C@@H](O)[C@H]2OCO[C@H]2[C@@H]1O",
+      "expected": "C/C(=C\\c1ccc(OCCO)c(O)c1)C(=O)N[C@@H]1[C@H](O)[C@@H](O)[C@H]2OCO[C@H]2[C@@H]1O",
+      "category": "tetra"
+    },
+    {
+      "source_index": 4595,
+      "source": "CCN1CCN(C)C[C@H](NC(=O)c2cc(Cl)c(NC)nc2OC)C1",
+      "expected": "CCN1CCN(C)C[C@H](NC(=O)c2cc(Cl)c(NC)nc2OC)C1",
+      "category": "tetra"
+    },
+    {
+      "source_index": 4812,
+      "source": "CCCCC#C/C=C/CN(C)Cc1cccc2ccccc12",
+      "expected": "CCCCC#C/C=C/CN(C)Cc1cccc2ccccc12",
+      "category": "alkene"
+    },
+    {
+      "source_index": 2848,
+      "source": "COc1ccc(CN2C(=O)[C@H](CS)NC(=O)[C@@H]2Cc2ccc([N+](=O)[O-])cc2)cc1",
+      "expected": "COc1ccc(CN2C(=O)[C@H](CS)NC(=O)[C@@H]2Cc2ccc([N+](=O)[O-])cc2)cc1",
+      "category": "tetra"
+    },
+    {
+      "source_index": 1413,
+      "source": "COc1ccc(/C=C/c2nc3c(c(=O)n(C)c(=O)n3C)n2C)cc1OC",
+      "expected": "COc1ccc(/C=C/c2nc3c(c(=O)n(C)c(=O)n3C)n2C)cc1OC",
+      "category": "alkene"
+    },
+    {
+      "source_index": 4610,
+      "source": "CCOCCCC[C@H](c1ccc(O)cc1)[C@@H](CC)c1ccc(O)cc1",
+      "expected": "CCOCCCC[C@H](c1ccc(O)cc1)[C@@H](CC)c1ccc(O)cc1",
+      "category": "tetra"
+    },
+    {
+      "source_index": 3213,
+      "source": "O=C1/C(=C/c2ccccc2)CCc2ccccc21",
+      "expected": "O=C1/C(=C/c2ccccc2)CCc2ccccc21",
+      "category": "alkene"
+    },
+    {
+      "source_index": 4060,
+      "source": "N[C@@H](Cc1c[nH]c2ccccc12)C(=O)N1Cc2ccccc2C[C@H]1C(=O)N[C@@H](CS)C(=O)O",
+      "expected": "N[C@@H](Cc1c[nH]c2ccccc12)C(=O)N1Cc2ccccc2C[C@H]1C(=O)N[C@@H](CS)C(=O)O",
+      "category": "tetra"
+    },
+    {
+      "source_index": 1483,
+      "source": "CCN(C/C=C/C#CC(C)(C)C)Cc1cccc(OCCN(CC)S(=O)(=O)c2cccs2)c1",
+      "expected": "CCN(C/C=C/C#CC(C)(C)C)Cc1cccc(OCCN(CC)S(=O)(=O)c2cccs2)c1",
+      "category": "alkene"
+    },
+    {
+      "source_index": 4029,
+      "source": "CNC(=O)[C@H](Cc1ccc(OC)cc1)NC(=O)Nc1nnc(S)s1",
+      "expected": "CNC(=O)[C@H](Cc1ccc(OC)cc1)NC(=O)Nc1nnc(S)s1",
+      "category": "tetra"
+    },
+    {
+      "source_index": 2725,
+      "source": "O=C(O)/C=C/c1ccccc1Oc1ccc(Cl)cc1Cl",
+      "expected": "O=C(O)/C=C/c1ccccc1Oc1ccc(Cl)cc1Cl",
+      "category": "alkene"
+    },
+    {
+      "source_index": 1597,
+      "source": "CCCn1c(=O)c2nc(/C=C/c3cc(F)cc(F)c3)[nH]c2n(CCC)c1=O",
+      "expected": "CCCn1c(=O)c2nc(/C=C/c3cc(F)cc(F)c3)[nH]c2n(CCC)c1=O",
+      "category": "alkene"
+    },
+    {
+      "source_index": 854,
+      "source": "C=Cc1cc(O[C@@H]2CCNC2)cnc1Cl",
+      "expected": "C=Cc1cc(O[C@@H]2CCNC2)cnc1Cl",
+      "category": "tetra"
+    },
+    {
+      "source_index": 1288,
+      "source": "CC1(C)O[C@H]2[C@H](Br)[C@@H](Br)CO[C@@]2(COS(N)(=O)=O)O1",
+      "expected": "CC1(C)O[C@H]2[C@H](Br)[C@@H](Br)CO[C@@]2(COS(N)(=O)=O)O1",
+      "category": "tetra"
+    },
+    {
+      "source_index": 1403,
+      "source": "C#CCn1c(/C=C/c2cc(OC)c(OC)c(OC)c2)nc2c1c(=O)n(C)c(=O)n2C",
+      "expected": "C#CCn1c(/C=C/c2cc(OC)c(OC)c(OC)c2)nc2c1c(=O)n(C)c(=O)n2C",
+      "category": "alkene"
+    },
+    {
+      "source_index": 2987,
+      "source": "Cc1cn([C@H]2C[C@H](O)[C@@H](CO)[C@@H]2C)c(=O)[nH]c1=O",
+      "expected": "Cc1cn([C@H]2C[C@H](O)[C@@H](CO)[C@@H]2C)c(=O)[nH]c1=O",
+      "category": "tetra"
+    },
+    {
+      "source_index": 2194,
+      "source": "CC(=O)N[C@@H](Cc1ccccc1)C(=O)NNC(=O)Oc1ccc([N+](=O)[O-])cc1",
+      "expected": "CC(=O)N[C@@H](Cc1ccccc1)C(=O)NNC(=O)Oc1ccc([N+](=O)[O-])cc1",
+      "category": "tetra"
+    },
+    {
+      "source_index": 1568,
+      "source": "NS(=O)(=O)OC[C@@]12CCCC[C@@H]1CCC2",
+      "expected": "NS(=O)(=O)OC[C@@]12CCCC[C@@H]1CCC2",
+      "category": "tetra"
+    },
+    {
+      "source_index": 2227,
+      "source": "Cc1cccc(Oc2ccc(NC[C@@H](N)CS)cc2)c1",
+      "expected": "Cc1cccc(Oc2ccc(NC[C@@H](N)CS)cc2)c1",
+      "category": "tetra"
+    },
+    {
+      "source_index": 732,
+      "source": "CN(CCc1ccc2c(c1)OCO2)C[C@@H]1CC[C@H]2CCOc3cccc1c32",
+      "expected": "CN(CCc1ccc2c(c1)OCO2)C[C@@H]1CC[C@H]2CCOc3cccc1c32",
+      "category": "tetra"
+    },
+    {
+      "source_index": 4038,
+      "source": "CNC(=O)[C@H](Cc1ccc(F)cc1)NC(=O)Nc1nnc(S)s1",
+      "expected": "CNC(=O)[C@H](Cc1ccc(F)cc1)NC(=O)Nc1nnc(S)s1",
+      "category": "tetra"
+    },
+    {
+      "source_index": 4916,
+      "source": "CC[C@@](C)(c1ccc(O)cc1)[C@H](CCCCN(CCO)CCO)c1ccc(O)cc1",
+      "expected": "CC[C@@](C)(c1ccc(O)cc1)[C@H](CCCCN(CCO)CCO)c1ccc(O)cc1",
+      "category": "tetra"
+    },
+    {
+      "source_index": 1712,
+      "source": "CC1(C)O[C@H]2[C@H](CO[C@]3(COS(N)(=O)=O)OC(C)(C)O[C@H]23)O1",
+      "expected": "CC1(C)O[C@H]2[C@H](CO[C@]3(COS(N)(=O)=O)OC(C)(C)O[C@H]23)O1",
+      "category": "tetra"
+    },
+    {
+      "source_index": 619,
+      "source": "COc1cccc2c1CCC[C@H]2CN(C)CCc1ccc2c(c1)CCS2(=O)=O",
+      "expected": "COc1cccc2c1CCC[C@H]2CN(C)CCc1ccc2c(c1)CCS2(=O)=O",
+      "category": "tetra"
+    },
+    {
+      "source_index": 869,
+      "source": "N#Cc1ccc(-c2cncc(O[C@@H]3CCNC3)c2)cc1",
+      "expected": "N#Cc1ccc(-c2cncc(O[C@@H]3CCNC3)c2)cc1",
+      "category": "tetra"
+    },
+    {
+      "source_index": 2898,
+      "source": "C[C@]12CC/C(=N\\N=C(N)N)C=C1CC[C@@H]2CN",
+      "expected": "C[C@]12CC/C(=N\\N=C(N)N)C=C1CC[C@@H]2CN",
+      "category": "tetra"
+    },
+    {
+      "source_index": 1870,
+      "source": "CCOC(=O)N(C)NC(=O)[C@H](Cc1ccccc1)NC(C)=O",
+      "expected": "CCOC(=O)N(C)NC(=O)[C@H](Cc1ccccc1)NC(C)=O",
+      "category": "tetra"
+    },
+    {
+      "source_index": 1320,
+      "source": "N[P@]1(Cl)=NP(N2CC2)(N2CC2)=N[P@](N)(Cl)=N1",
+      "expected": "N[P@]1(Cl)=NP(N2CC2)(N2CC2)=N[P@](N)(Cl)=N1",
+      "category": "tetra"
+    },
+    {
+      "source_index": 930,
+      "source": "Clc1ncc(O[C@@H]2CCNC2)cc1-c1ccncc1",
+      "expected": "Clc1ncc(O[C@@H]2CCNC2)cc1-c1ccncc1",
+      "category": "tetra"
+    },
+    {
+      "source_index": 2285,
+      "source": "CN1CCc2ccc3c4c2[C@H]1Cc1cccc(c1-4)[C@@H]3O",
+      "expected": "CN1CCc2ccc3c4c2[C@H]1Cc1cccc(c1-4)[C@@H]3O",
+      "category": "tetra"
+    },
+    {
+      "source_index": 4068,
+      "source": "CC/N=C(/c1ccccc1)n1nc(C(=O)OC)cc1C",
+      "expected": "CC/N=C(/c1ccccc1)n1nc(C(=O)OC)cc1C",
+      "category": "alkene"
+    },
+    {
+      "source_index": 4278,
+      "source": "CS(=O)(=O)N[C@@H](CNC(=O)c1cc2n(n1)CCN(CCC1CCNCC1)C2=O)C(=O)O",
+      "expected": "CS(=O)(=O)N[C@@H](CNC(=O)c1cc2n(n1)CCN(CCC1CCNCC1)C2=O)C(=O)O",
+      "category": "tetra"
+    },
+    {
+      "source_index": 2830,
+      "source": "CNC(=O)[C@@H](NC(=O)[C@H](CC(C)C)[C@@H](C(=O)NO)C1CCCC1)C(C)(C)C",
+      "expected": "CNC(=O)[C@@H](NC(=O)[C@H](CC(C)C)[C@@H](C(=O)NO)C1CCCC1)C(C)(C)C",
+      "category": "tetra"
+    },
+    {
+      "source_index": 2745,
+      "source": "COC(=O)[C@@H]1C[C@H](CSC(C)=O)NC(=O)N1",
+      "expected": "COC(=O)[C@@H]1C[C@H](CSC(C)=O)NC(=O)N1",
+      "category": "tetra"
+    },
+    {
+      "source_index": 733,
+      "source": "COc1cccc2c1CCC[C@H]2CN(C)CCc1ccc2c(c1)CCO2",
+      "expected": "COc1cccc2c1CCC[C@H]2CN(C)CCc1ccc2c(c1)CCO2",
+      "category": "tetra"
+    },
+    {
+      "source_index": 4112,
+      "source": "CN(C(=O)Cc1ccc(Cl)c(Cl)c1)[C@H](CN1CCCC1)c1ccccc1",
+      "expected": "CN(C(=O)Cc1ccc(Cl)c(Cl)c1)[C@H](CN1CCCC1)c1ccccc1",
+      "category": "tetra"
+    },
+    {
+      "source_index": 4765,
+      "source": "CCCC[C@H]1OC(=O)C[C@H](OCOC)[C@H](Cc2ccccc2)N(C)C(=O)COC(=O)[C@H]1C",
+      "expected": "CCCC[C@H]1OC(=O)C[C@H](OCOC)[C@H](Cc2ccccc2)N(C)C(=O)COC(=O)[C@H]1C",
+      "category": "tetra"
+    },
+    {
+      "source_index": 3707,
+      "source": "c1ccc(CO[C@H]2C3CCN(CC3)[C@H]2C(c2ccccc2)c2ccccc2)cc1",
+      "expected": "c1ccc(CO[C@H]2C3CCN(CC3)[C@H]2C(c2ccccc2)c2ccccc2)cc1",
+      "category": "tetra"
+    },
+    {
+      "source_index": 2044,
+      "source": "CC1(C)O[C@@H]2[C@@H](CO[C@@]3(CCOS(N)(=O)=O)OC(C)(C)O[C@@H]23)O1",
+      "expected": "CC1(C)O[C@@H]2[C@@H](CO[C@@]3(CCOS(N)(=O)=O)OC(C)(C)O[C@@H]23)O1",
+      "category": "tetra"
+    },
+    {
+      "source_index": 3734,
+      "source": "O=C1/C(=C/c2ccccc2)Cc2ccccc21",
+      "expected": "O=C1/C(=C/c2ccccc2)Cc2ccccc21",
+      "category": "alkene"
+    },
+    {
+      "source_index": 1035,
+      "source": "CC(C)C[C@H](NC(=O)c1ccc(CNCc2c[nH]cn2)cc1-c1cccc2ccccc12)C(=O)O",
+      "expected": "CC(C)C[C@H](NC(=O)c1ccc(CNCc2c[nH]cn2)cc1-c1cccc2ccccc12)C(=O)O",
+      "category": "tetra"
+    },
+    {
+      "source_index": 4349,
+      "source": "Cc1oc2cc3sc4ccccc4c3c(-c3cc(I)c(O[C@H](C)C(=O)O)c(I)c3)c2c1C",
+      "expected": "Cc1oc2cc3sc4ccccc4c3c(-c3cc(I)c(O[C@H](C)C(=O)O)c(I)c3)c2c1C",
+      "category": "tetra"
+    },
+    {
+      "source_index": 3983,
+      "source": "CC(C)[C@@H]1OC(=O)[C@@H](C)[C@@H](C)OC(=O)C[C@@H](O)[C@H](Cc2ccccc2)N(C)C1=O",
+      "expected": "CC(C)[C@@H]1OC(=O)[C@@H](C)[C@@H](C)OC(=O)C[C@@H](O)[C@H](Cc2ccccc2)N(C)C1=O",
+      "category": "tetra"
+    },
+    {
+      "source_index": 4253,
+      "source": "C/N=C(/c1ccccc1)n1nc(C(=O)OC)cc1C",
+      "expected": "C/N=C(/c1ccccc1)n1nc(C(=O)OC)cc1C",
+      "category": "alkene"
+    },
+    {
+      "source_index": 1966,
+      "source": "Cc1cn([C@H]2C[C@@H](N=[N+]=[N-])[C@@H](CO)O2)c(=O)[nH]c1=O",
+      "expected": "Cc1cn([C@H]2C[C@@H](N=[N+]=[N-])[C@@H](CO)O2)c(=O)[nH]c1=O",
+      "category": "tetra"
+    },
+    {
+      "source_index": 1817,
+      "source": "CCCC[C@H]1CN(C(=O)c2ccccc2)CCN1C[C@@H](N)CS",
+      "expected": "CCCC[C@H]1CN(C(=O)c2ccccc2)CCN1C[C@@H](N)CS",
+      "category": "tetra"
+    },
+    {
+      "source_index": 2710,
+      "source": "O=C(O)[C@H]1C[C@@H](/C=C/CP(=O)(O)O)CCN1",
+      "expected": "O=C(O)[C@H]1C[C@@H](/C=C/CP(=O)(O)O)CCN1",
+      "category": "tetra"
+    },
+    {
+      "source_index": 1895,
+      "source": "COC(=O)N(C)NC(=O)[C@H](Cc1ccccc1)NC(C)=O",
+      "expected": "COC(=O)N(C)NC(=O)[C@H](Cc1ccccc1)NC(C)=O",
+      "category": "tetra"
+    },
+    {
+      "source_index": 1504,
+      "source": "O=C(NCCN1CCN(/C(O)=C2/COCCO2)CC1)c1ccc(F)cc1",
+      "expected": "O=C(NCCN1CCN(/C(O)=C2/COCCO2)CC1)c1ccc(F)cc1",
+      "category": "alkene"
+    },
+    {
+      "source_index": 1580,
+      "source": "CC1(C)O[C@H]2[C@@H]3OS(=O)(=O)O[C@@H]3CO[C@@]2(COS(=O)(=O)NC2CC2)O1",
+      "expected": "CC1(C)O[C@H]2[C@@H]3OS(=O)(=O)O[C@@H]3CO[C@@]2(COS(=O)(=O)NC2CC2)O1",
+      "category": "tetra"
+    },
+    {
+      "source_index": 738,
+      "source": "CC[C@H](NC(=O)c1c(O)c(-c2ccccc2)nc2ccccc12)c1ccccc1",
+      "expected": "CC[C@H](NC(=O)c1c(O)c(-c2ccccc2)nc2ccccc12)c1ccccc1",
+      "category": "tetra"
+    },
+    {
+      "source_index": 4363,
+      "source": "C#C[C@H](CC(=O)O)NC(=O)c1cc2n(n1)CCN(CCC1CCNCC1)C2=O",
+      "expected": "C#C[C@H](CC(=O)O)NC(=O)c1cc2n(n1)CCN(CCC1CCNCC1)C2=O",
+      "category": "tetra"
+    },
+    {
+      "source_index": 4739,
+      "source": "CSc1ccc(/C=N/NC(=O)c2cccc(C)c2O)s1",
+      "expected": "CSc1ccc(/C=N/NC(=O)c2cccc(C)c2O)s1",
+      "category": "alkene"
+    },
+    {
+      "source_index": 139,
+      "source": "CCN(CC)c1c(N[C@@H](Cc2ccc(Oc3ncccn3)cc2)C(=O)O)c(=O)c1=O",
+      "expected": "CCN(CC)c1c(N[C@@H](Cc2ccc(Oc3ncccn3)cc2)C(=O)O)c(=O)c1=O",
+      "category": "tetra"
+    },
+    {
+      "source_index": 1369,
+      "source": "CC1(C)O[C@H]2[C@@H]3OCCO[C@@H]3CO[C@@]2(COS(N)(=O)=O)O1",
+      "expected": "CC1(C)O[C@H]2[C@@H]3OCCO[C@@H]3CO[C@@]2(COS(N)(=O)=O)O1",
+      "category": "tetra"
+    },
+    {
+      "source_index": 2603,
+      "source": "OC[C@@H]1C[C@@H]2CN3CCc4cc5c(cc4[C@@H]3C[C@@H]2C[C@@H]1O)OCO5",
+      "expected": "OC[C@@H]1C[C@@H]2CN3CCc4cc5c(cc4[C@@H]3C[C@@H]2C[C@@H]1O)OCO5",
+      "category": "tetra"
+    },
+    {
+      "source_index": 4111,
+      "source": "NC(=O)N/N=C/c1ccc(Oc2ccc(F)cc2)cc1",
+      "expected": "NC(=O)N/N=C/c1ccc(Oc2ccc(F)cc2)cc1",
+      "category": "alkene"
+    },
+    {
+      "source_index": 1385,
+      "source": "COc1cc(/C=C/c2nc3c(=O)n(C)c(=O)n(C)c3[nH]2)cc(OC)c1OC",
+      "expected": "COc1cc(/C=C/c2nc3c(=O)n(C)c(=O)n(C)c3[nH]2)cc(OC)c1OC",
+      "category": "alkene"
+    },
+    {
+      "source_index": 304,
+      "source": "COc1cc(C(=O)/C(C)=C/c2ccc3c(c2)OCCO3)cc(OC)c1OC",
+      "expected": "COc1cc(C(=O)/C(C)=C/c2ccc3c(c2)OCCO3)cc(OC)c1OC",
+      "category": "alkene"
+    },
+    {
+      "source_index": 2817,
+      "source": "Cn1c(/C=C/C(=O)NO)ccc1C(=O)c1ccccc1",
+      "expected": "Cn1c(/C=C/C(=O)NO)ccc1C(=O)c1ccccc1",
+      "category": "alkene"
+    },
+    {
+      "source_index": 1431,
+      "source": "Cn1c(=O)c2c(nc(/C=C/c3ccccc3)n2C)n(C)c1=O",
+      "expected": "Cn1c(=O)c2c(nc(/C=C/c3ccccc3)n2C)n(C)c1=O",
+      "category": "alkene"
+    },
+    {
+      "source_index": 1427,
+      "source": "Cn1c(=O)c2c(nc(/C=C/c3cccc(NC(=O)CCC(=O)O)c3)n2C)n(C)c1=O",
+      "expected": "Cn1c(=O)c2c(nc(/C=C/c3cccc(NC(=O)CCC(=O)O)c3)n2C)n(C)c1=O",
+      "category": "alkene"
+    },
+    {
+      "source_index": 1442,
+      "source": "COc1cc(/C=C/c2nc3c(c(=O)n(C)c(=O)n3C)n2CCc2ccccc2)cc(OC)c1OC",
+      "expected": "COc1cc(/C=C/c2nc3c(c(=O)n(C)c(=O)n3C)n2CCc2ccccc2)cc(OC)c1OC",
+      "category": "alkene"
+    },
+    {
+      "source_index": 2337,
+      "source": "CC(C)=CCC/C(C)=C/CC/C(=C/CC/C(C)=C/CO)CO",
+      "expected": "CC(C)=CCC/C(C)=C/CC/C(=C/CC/C(C)=C/CO)CO",
+      "category": "alkene"
+    },
+    {
+      "source_index": 1451,
+      "source": "COc1ccc(/C=C/c2nc3c(=O)n(C)c(=O)n(C)c3[nH]2)cc1OC",
+      "expected": "COc1ccc(/C=C/c2nc3c(=O)n(C)c(=O)n(C)c3[nH]2)cc1OC",
+      "category": "alkene"
+    },
+    {
+      "source_index": 725,
+      "source": "CC(C)(C)C(=O)Oc1ccc(/N=N/c2ccc(OC(=O)C(C)(C)C)cc2)cc1",
+      "expected": "CC(C)(C)C(=O)Oc1ccc(/N=N/c2ccc(OC(=O)C(C)(C)C)cc2)cc1",
+      "category": "alkene"
+    },
+    {
+      "source_index": 1174,
+      "source": "CCCn1c(=O)c2nc(/C=C/c3cccc(Cl)c3)[nH]c2n(CCC)c1=O",
+      "expected": "CCCn1c(=O)c2nc(/C=C/c3cccc(Cl)c3)[nH]c2n(CCC)c1=O",
+      "category": "alkene"
+    },
+    {
+      "source_index": 1615,
+      "source": "COc1cc(/C=C/c2nc3c(c(=O)n(C)c(=O)n3C)n2C)cc(OC)c1OC/C=C/CNC(C)=O",
+      "expected": "COc1cc(/C=C/c2nc3c(c(=O)n(C)c(=O)n3C)n2C)cc(OC)c1OC/C=C/CNC(C)=O",
+      "category": "alkene"
+    },
+    {
+      "source_index": 2639,
+      "source": "CC/C(=C(\\c1ccccc1)c1ccc(OC(C)=O)cc1)c1ccc(OC(C)=O)c(OC(C)=O)c1",
+      "expected": "CC/C(=C(\\c1ccccc1)c1ccc(OC(C)=O)cc1)c1ccc(OC(C)=O)c(OC(C)=O)c1",
+      "category": "alkene"
+    },
+    {
+      "source_index": 2667,
+      "source": "CC/C(=C(/c1ccccc1)c1ccc(OC(C)=O)cc1)c1ccc(OC(C)=O)c(OC(C)=O)c1",
+      "expected": "CC/C(=C(/c1ccccc1)c1ccc(OC(C)=O)cc1)c1ccc(OC(C)=O)c(OC(C)=O)c1",
+      "category": "alkene"
+    },
+    {
+      "source_index": 4598,
+      "source": "CN(C)c1ccc(/C=C2\\NC(=O)NC2=O)cc1",
+      "expected": "CN(C)c1ccc(/C=C2\\NC(=O)NC2=O)cc1",
+      "category": "alkene"
+    },
+    {
+      "source_index": 469,
+      "source": "CCCCCCCC/C=C/CCCCCCCC(=O)OCc1cc(=O)c(OC(=O)C(C)(C)C)co1",
+      "expected": "CCCCCCCC/C=C/CCCCCCCC(=O)OCc1cc(=O)c(OC(=O)C(C)(C)C)co1",
+      "category": "alkene"
+    },
+    {
+      "source_index": 4000,
+      "source": "O=C(O)c1ccc2ccc(/C=C/c3cccnc3)nc2c1O",
+      "expected": "O=C(O)c1ccc2ccc(/C=C/c3cccnc3)nc2c1O",
+      "category": "alkene"
+    },
+    {
+      "source_index": 4538,
+      "source": "CCN(CC)c1ccc(/C=C2\\NC(=O)NC2=O)cc1",
+      "expected": "CCN(CC)c1ccc(/C=C2\\NC(=O)NC2=O)cc1",
+      "category": "alkene"
+    },
+    {
+      "source_index": 17,
+      "source": "CN(Cc1ccccc1)/N=N/c1ccc(C(=O)O)cc1",
+      "expected": "CN(Cc1ccccc1)/N=N/c1ccc(C(=O)O)cc1",
+      "category": "alkene"
+    },
+    {
+      "source_index": 1155,
+      "source": "CCCn1c(=O)c2nc(/C=C/c3cc(OC)cc(OC)c3)[nH]c2n(CCC)c1=O",
+      "expected": "CCCn1c(=O)c2nc(/C=C/c3cc(OC)cc(OC)c3)[nH]c2n(CCC)c1=O",
+      "category": "alkene"
+    },
+    {
+      "source_index": 4390,
+      "source": "O=C1NC(=O)/C(=C/c2cccs2)N1",
+      "expected": "O=C1NC(=O)/C(=C/c2cccs2)N1",
+      "category": "alkene"
+    },
+    {
+      "source_index": 4251,
+      "source": "O=C1NC(=O)/C(=C/c2ccccn2)N1",
+      "expected": "O=C1NC(=O)/C(=C/c2ccccn2)N1",
+      "category": "alkene"
+    },
+    {
+      "source_index": 3884,
+      "source": "Cc1cc(C)c(/C=C2/NC(=O)NC2=O)c(C)c1",
+      "expected": "Cc1cc(C)c(/C=C2/NC(=O)NC2=O)c(C)c1",
+      "category": "alkene"
+    },
+    {
+      "source_index": 4291,
+      "source": "O=C1NC(=O)/C(=C/c2ccc(F)c(F)c2)N1",
+      "expected": "O=C1NC(=O)/C(=C/c2ccc(F)c(F)c2)N1",
+      "category": "alkene"
+    },
+    {
+      "source_index": 3285,
+      "source": "O=C1/C(=C/c2ccc(Cl)cc2)Cc2ccccc21",
+      "expected": "O=C1/C(=C/c2ccc(Cl)cc2)Cc2ccccc21",
+      "category": "alkene"
+    },
+    {
+      "source_index": 4344,
+      "source": "O=C(N/N=C/c1ccc(-c2cccc([N+](=O)[O-])c2)o1)c1ccc2ccccc2c1",
+      "expected": "O=C(N/N=C/c1ccc(-c2cccc([N+](=O)[O-])c2)o1)c1ccc2ccccc2c1",
+      "category": "alkene"
+    },
+    {
+      "source_index": 4383,
+      "source": "O=C1NC(=O)/C(=C/C2CCCCC2)N1",
+      "expected": "O=C1NC(=O)/C(=C/C2CCCCC2)N1",
+      "category": "alkene"
+    },
+    {
+      "source_index": 1574,
+      "source": "Cn1c(=O)c2nc(/C=C/c3ccccc3)[nH]c2n(C)c1=O",
+      "expected": "Cn1c(=O)c2nc(/C=C/c3ccccc3)[nH]c2n(C)c1=O",
+      "category": "alkene"
+    },
+    {
+      "source_index": 4411,
+      "source": "O=C1NC(=O)/C(=C/c2ccccc2OCc2ccccc2)N1",
+      "expected": "O=C1NC(=O)/C(=C/c2ccccc2OCc2ccccc2)N1",
+      "category": "alkene"
+    },
+    {
+      "source_index": 224,
+      "source": "CC/N=C(\\NCC)Nc1ccc(Sc2ccc(OC)cc2)cc1",
+      "expected": "CC/N=C(\\NCC)Nc1ccc(Sc2ccc(OC)cc2)cc1",
+      "category": "alkene"
+    },
+    {
+      "source_index": 3085,
+      "source": "CC/C(=C(/c1ccccc1)c1ccc(OC(C)=O)c(OC(C)=O)c1)c1ccc(OC(C)=O)cc1",
+      "expected": "CC/C(=C(/c1ccccc1)c1ccc(OC(C)=O)c(OC(C)=O)c1)c1ccc(OC(C)=O)cc1",
+      "category": "alkene"
+    },
+    {
+      "source_index": 3485,
+      "source": "CN(C)c1ccc(/C=C2\\CCCc3ccccc3C2=O)cc1",
+      "expected": "CN(C)c1ccc(/C=C2\\CCCc3ccccc3C2=O)cc1",
+      "category": "alkene"
+    },
+    {
+      "source_index": 3409,
+      "source": "Cc1cccc(/C=C2\\Cc3ccccc3C2=O)c1",
+      "expected": "Cc1cccc(/C=C2\\Cc3ccccc3C2=O)c1",
+      "category": "alkene"
+    },
+    {
+      "source_index": 1525,
+      "source": "CCN(C/C=C/C#CC(C)(C)C)Cc1cccc(OCCN(C)S(=O)(=O)c2ccc(F)cc2)c1",
+      "expected": "CCN(C/C=C/C#CC(C)(C)C)Cc1cccc(OCCN(C)S(=O)(=O)c2ccc(F)cc2)c1",
+      "category": "alkene"
+    },
+    {
+      "source_index": 1743,
+      "source": "CCCn1c(=O)c2c(nc(/C=C/c3cc(OC)c(OC)cc3OC)n2C)n(CCC)c1=O",
+      "expected": "CCCn1c(=O)c2c(nc(/C=C/c3cc(OC)c(OC)cc3OC)n2C)n(CCC)c1=O",
+      "category": "alkene"
+    },
+    {
+      "source_index": 3864,
+      "source": "Cc1cccc(/C=C2\\NC(=O)NC2=O)c1",
+      "expected": "Cc1cccc(/C=C2\\NC(=O)NC2=O)c1",
+      "category": "alkene"
+    },
+    {
+      "source_index": 1437,
+      "source": "CCN(C/C=C/C#CC(C)(C)C)Cc1cccc(OCCN(C)S(=O)(=O)c2cccs2)c1",
+      "expected": "CCN(C/C=C/C#CC(C)(C)C)Cc1cccc(OCCN(C)S(=O)(=O)c2cccs2)c1",
+      "category": "alkene"
+    }
+  ],
+  "sdf_sha256": {
+    "v2000": "c22ee98debf6052147e31364fecda551c02e92ecfa4ac81d3c31a81950d0dfec",
+    "v3000": "18bd2a3c964674c672d399cbad5d5e614ce0885c4972773f978a0bea6ae4bde8"
+  },
+  "chematic_binary_sha256": "913737362497c3b5681fc622483b2b8e896d99be18a43c7e4dcc980192ccbb05"
+}

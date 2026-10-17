@@ -180,7 +180,9 @@ fn strip_atom_type(sym: &str) -> &str {
 /// molecule's atom indices.
 /// Partial charges are validated but not rounded into formal charges. `N.4`
 /// supplies +1 when no explicit UNITY charge exists; general formal-charge
-/// perception is not performed. Use
+/// perception is not performed. If any H atom is present, its atom/bond
+/// inventory defines heavy-atom hydrogen counts; otherwise normal implicit-H
+/// inference applies. Mixed-H sources are ambiguous in MOL2. Use
 /// [`parse_mol2_source_record`] to retain charges, atom typing, and source metadata.
 #[allow(clippy::type_complexity)]
 pub fn parse_mol2_source(s: &str) -> Result<(Molecule, Vec<(f64, f64, f64)>), Mol2Error> {
@@ -554,6 +556,7 @@ fn parse_mol2_impl(
     }
 
     let mut molecule = builder.build();
+    crate::mol2_tripos::preserve_mol2_explicit_hydrogen_inventory(&mut molecule);
     crate::mol2_tripos::restore_mol2_carboxylate_orders(&mut molecule, |idx| {
         co2_oxygen[idx.0 as usize]
     });

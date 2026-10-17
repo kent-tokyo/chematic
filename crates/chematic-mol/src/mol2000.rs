@@ -15,7 +15,7 @@ use chematic_core::{
 };
 use chematic_perception::{
     EzDirectionDiagnostic, StereoDiagnostic, apply_ctab_local_parity_from_wedges_with_diagnostics,
-    apply_ez_directions_from_2d_ex,
+    apply_ez_directions_from_2d_ex, apply_ez_directions_from_3d,
 };
 
 use crate::error::MolParseError;
@@ -121,6 +121,12 @@ const COLLINEAR_EPS: f64 = 1e-6;
 /// Minimum |signed volume| (Angstrom^3) treated as a reliable, non-degenerate
 /// tetrahedral sign in [`wedge_vs_3d_conflicts`].
 const VOLUME_EPS: f64 = 1e-6;
+/// For a three-neighbor center with an inferred fourth slot, reject nearly
+/// planar geometry.
+/// In two pinned 200-molecule browser SDF holdouts, all five unspecified
+/// candidate carbons were below 0.026 and all 339 assigned ones above 0.43.
+/// The normalized triple product makes this guard independent of bond scale.
+const THREE_BOND_TETRAHEDRAL_MIN_NORMALIZED_VOLUME: f64 = 0.1;
 /// Minimum bond-vector norm (Angstrom) accepted as non-degenerate by
 /// [`classify_square_planar_geometry`] -- below this, a neighbor's position
 /// coincides with (or is implausibly close to) the center's own position,
@@ -281,12 +287,19 @@ fn tetrahedral_chirality_from_3d(
         else {
             return None;
         };
+        let v0 = p0.sub(&pivot);
+        let v1 = p1.sub(&pivot);
+        let v2 = p2.sub(&pivot);
+        let scale = v0.norm() * v1.norm() * v2.norm();
         let volume = signed_volume3(p0, p1, p2, pivot);
-        (volume.abs() >= VOLUME_EPS).then_some(if volume < 0.0 {
-            Chirality::Clockwise
-        } else {
-            Chirality::CounterClockwise
-        })
+        (volume.abs() >= VOLUME_EPS
+            && scale.is_finite()
+            && volume.abs() >= THREE_BOND_TETRAHEDRAL_MIN_NORMALIZED_VOLUME * scale)
+            .then_some(if volume < 0.0 {
+                Chirality::Clockwise
+            } else {
+                Chirality::CounterClockwise
+            })
     } else if order.len() == 4 {
         let (Some(p0), Some(p1), Some(p2), Some(p3)) =
             (get(order[0]), get(order[1]), get(order[2]), get(order[3]))
@@ -304,100 +317,63 @@ fn tetrahedral_chirality_from_3d(
     }
 }
 
-fn same_ring_component(mol: &Molecule, ring_bonds: &[bool], start: AtomIdx, goal: AtomIdx) -> bool {
-    let mut seen = std::collections::HashSet::from([start]);
-    let mut frontier = vec![start];
-    while let Some(atom) = frontier.pop() {
-        if atom == goal {
-            return true;
-        }
-        for (neighbor, bond) in mol.neighbors(atom) {
-            if ring_bonds[bond.0 as usize] && seen.insert(neighbor) {
-                frontier.push(neighbor);
-            }
-        }
+#[path = "mol2000/stereo3d_ring.rs"]
+mod stereo3d_ring;
+use stereo3d_ring::additional_3d_ring_centers;
+
+fn sulfur_lone_pair_3d_candidate(mol: &Molecule, idx: AtomIdx, neighbors: &[AtomIdx]) -> bool {
+    let atom = mol.atom(idx);
+    if !matches!(atom.element, Element::S | Element::SE)
+        || neighbors.len() != 3
+        || chematic_core::implicit_hcount(mol, idx) != 0
+        || !chematic_perception::substituent_signatures_distinct(mol, idx, neighbors)
+    {
+        return false;
     }
-    false
+    let valence: u8 = mol
+        .neighbors(idx)
+        .map(|(_, bond)| mol.bond(bond).order.order_int())
+        .sum();
+    (atom.charge == 1 && valence == 3)
+        || (atom.charge == 0
+            && valence == 4
+            && mol.neighbors(idx).any(|(neighbor, bond)| {
+                mol.atom(neighbor).element == Element::O
+                    && mol.bond(bond).order == BondOrder::Double
+            }))
 }
 
-fn additional_3d_ring_centers(mol: &Molecule) -> Vec<AtomIdx> {
-    // RDKit also records the 3D orientation of the two bridgeheads in a
-    // simple bicyclic cage such as norbornane, even when CIP regards its
-    // paired ring paths as equivalent. Limit this case to exactly two
-    // three-ring-bond carbon bridgeheads with one implicit or explicit H;
-    // symmetric multi-bridgehead cages such as adamantane must not acquire
-    // arbitrary tetrahedral tags.
-    let ring_bonds = chematic_perception::ring_bond_flags(mol);
-    let mut additional = Vec::new();
-    let bridgeheads: Vec<_> = mol
-        .atoms()
-        .filter(|(idx, atom)| {
-            if atom.element != Element::C || atom.aromatic {
-                return false;
-            }
-            let mut ring_neighbors = 0;
-            let mut explicit_h = 0;
-            for (neighbor, bond) in mol.neighbors(*idx) {
-                if mol.bond(bond).order != BondOrder::Single {
-                    return false;
-                }
-                if ring_bonds[bond.0 as usize] {
-                    ring_neighbors += 1;
-                } else if mol.atom(neighbor).element == Element::H {
-                    explicit_h += 1;
-                } else {
-                    return false;
-                }
-            }
-            ring_neighbors == 3 && explicit_h + chematic_core::implicit_hcount(mol, *idx) == 1
-        })
-        .map(|(idx, _)| idx)
-        .collect();
-    if bridgeheads.len() == 2
-        && same_ring_component(mol, &ring_bonds, bridgeheads[0], bridgeheads[1])
-    {
-        additional.extend(bridgeheads);
-    }
-    // Two differently substituted quaternary carbons in one ring can
-    // distinguish each other's otherwise identical ring arms. Neither
-    // center is found by an atom-at-a-time graph comparison before the
-    // partner receives its 3D tag. A lone substituted ring carbon remains
-    // achiral, so require a connected pair in the cyclic subgraph.
-    let paired_ring_centers: Vec<_> = mol
-        .atoms()
-        .filter(|(idx, atom)| {
-            if atom.element != Element::C || atom.aromatic || mol.degree(*idx) != 4 {
-                return false;
-            }
-            let (ring, outside): (Vec<_>, Vec<_>) = mol
-                .neighbors(*idx)
-                .partition(|&(_, bond)| ring_bonds[bond.0 as usize]);
-            ring.len() == 2
-                && outside.len() == 2
-                && ring
-                    .iter()
-                    .chain(outside.iter())
-                    .all(|&(_, bond)| mol.bond(bond).order == BondOrder::Single)
-                && mol.atom(outside[0].0).element != mol.atom(outside[1].0).element
-        })
-        .map(|(idx, _)| idx)
-        .collect();
-    if paired_ring_centers.len() == 2
-        && same_ring_component(
-            mol,
-            &ring_bonds,
-            paired_ring_centers[0],
-            paired_ring_centers[1],
-        )
-    {
-        additional.extend(paired_ring_centers);
-    }
-    additional
+fn has_disallowed_3d_tetrahedral_bond(mol: &Molecule, idx: AtomIdx) -> bool {
+    let atom = mol.atom(idx);
+    mol.neighbors(idx).any(|(neighbor, bond)| {
+        !matches!(
+            mol.bond(bond).order,
+            BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Dative
+        ) && !(atom.element == Element::P
+            && mol.bond(bond).order == BondOrder::Double
+            && (mol.atom(neighbor).element == Element::O
+                || mol.atom(neighbor).element == Element::N))
+    })
 }
 
 /// Recover unspecified tetrahedral stereo from a genuine 3D CTAB. Conflicting
 /// wedge/CFG assignments are corrected from geometry before this runs.
 pub(crate) fn perceive_tetrahedral_from_3d(mol: &mut Molecule, conformer: &Coords3D) {
+    perceive_tetrahedral_from_3d_with_mode(mol, conformer, false);
+}
+
+/// MOL2 has no parity declaration, so its full 3D atom inventory can carry
+/// additional paired-ring configurations. Its broader ring-CH candidate
+/// search remains separate from the CTAB reader's pinned interpretation.
+pub(crate) fn perceive_tetrahedral_from_3d_mol2(mol: &mut Molecule, conformer: &Coords3D) {
+    perceive_tetrahedral_from_3d_with_mode(mol, conformer, true);
+}
+
+fn perceive_tetrahedral_from_3d_with_mode(
+    mol: &mut Molecule,
+    conformer: &Coords3D,
+    mol2_extensions: bool,
+) {
     // Every emitted tag below requires a non-aromatic, untagged atom with
     // three or four graph neighbors. With no such atom, global graph/CIP
     // perception cannot contribute an assignment (including ring or S/Se
@@ -407,66 +383,78 @@ pub(crate) fn perceive_tetrahedral_from_3d(mol: &mut Molecule, conformer: &Coord
     }) {
         return;
     }
-    let mut ordinary_centers: std::collections::HashSet<_> =
-        chematic_perception::stereo_centers(mol)
-            .into_iter()
-            .map(|(idx, _)| idx)
-            .collect();
-    // The CIP classifier keeps ring-path provenance and remote stereo.
-    ordinary_centers.extend(chematic_chem::potential_stereocenter_indices(mol));
-    ordinary_centers.extend(additional_3d_ring_centers(mol));
-    let candidates: Vec<_> = mol
-        .atoms()
-        .filter(|(_, atom)| atom.chirality == Chirality::None && !atom.aromatic)
-        .filter_map(|(idx, atom)| {
-            let mut order: Vec<u32> = mol.neighbors(idx).map(|(neighbor, _)| neighbor.0).collect();
-            order.sort_unstable();
-            let neighbors: Vec<AtomIdx> = order.iter().map(|&neighbor| AtomIdx(neighbor)).collect();
-            let sulfur_lone_pair = matches!(atom.element, Element::S | Element::SE)
-                && order.len() == 3
-                && chematic_core::implicit_hcount(mol, idx) == 0
-                && chematic_perception::substituent_signatures_distinct(mol, idx, &neighbors)
-                && {
-                    let valence: u8 = mol
+    let mut previous_pass_centers = std::collections::HashSet::new();
+    for pass in 0..2 {
+        // CTAB keeps its original one-pass interpretation except for a ring
+        // CH between two centers assigned by the first pass. Those two
+        // configurations can distinguish its otherwise equivalent ring arms.
+        let ring_bonds =
+            (pass == 1 && !mol2_extensions).then(|| chematic_perception::ring_bond_flags(mol));
+        let mut ordinary_centers: std::collections::HashSet<_> =
+            chematic_perception::stereo_centers(mol)
+                .into_iter()
+                .map(|(idx, _)| idx)
+                .collect();
+        // The CIP classifier keeps ring-path provenance and remote stereo.
+        ordinary_centers.extend(chematic_chem::potential_stereocenter_indices(mol));
+        ordinary_centers.extend(additional_3d_ring_centers(mol, mol2_extensions));
+        let candidates: Vec<_> = mol
+            .atoms()
+            .filter(|(_, atom)| atom.chirality == Chirality::None && !atom.aromatic)
+            .filter_map(|(idx, _)| {
+                if let Some(ring_bonds) = &ring_bonds {
+                    let assigned_ring_neighbors = mol
                         .neighbors(idx)
-                        .map(|(_, bond)| mol.bond(bond).order.order_int())
-                        .sum();
-                    (atom.charge == 1 && valence == 3)
-                        || (atom.charge == 0
-                            && valence == 4
-                            && mol.neighbors(idx).any(|(neighbor, bond)| {
-                                mol.atom(neighbor).element == Element::O
-                                    && mol.bond(bond).order == BondOrder::Double
-                            }))
-                };
-            if !ordinary_centers.contains(&idx) && !sulfur_lone_pair {
-                return None;
+                        .filter(|&(neighbor, bond)| {
+                            ring_bonds[bond.0 as usize]
+                                && previous_pass_centers.contains(&neighbor)
+                                && mol.atom(neighbor).hydrogen_count.is_none()
+                        })
+                        .take(2)
+                        .count();
+                    if mol.degree(idx) != 3
+                        || mol.atom(idx).hydrogen_count.is_some()
+                        || chematic_core::implicit_hcount(mol, idx) != 1
+                        || assigned_ring_neighbors != 2
+                    {
+                        return None;
+                    }
+                }
+                let mut order: Vec<u32> =
+                    mol.neighbors(idx).map(|(neighbor, _)| neighbor.0).collect();
+                order.sort_unstable();
+                let neighbors: Vec<AtomIdx> =
+                    order.iter().map(|&neighbor| AtomIdx(neighbor)).collect();
+                let sulfur_lone_pair = sulfur_lone_pair_3d_candidate(mol, idx, &neighbors);
+                if !ordinary_centers.contains(&idx) && !sulfur_lone_pair {
+                    return None;
+                }
+                if ordinary_centers.contains(&idx)
+                    && !sulfur_lone_pair
+                    && has_disallowed_3d_tetrahedral_bond(mol, idx)
+                {
+                    return None;
+                }
+                if order.len() == 3 {
+                    order.push(STEREO_H_SENTINEL);
+                } else if order.len() != 4 {
+                    return None;
+                }
+                Some((idx, order))
+            })
+            .collect();
+        let mut newly_assigned = 0;
+        previous_pass_centers.clear();
+        for (idx, order) in candidates {
+            if let Some(chirality) = tetrahedral_chirality_from_3d(&order, idx, conformer) {
+                mol.set_stereo_neighbor_order(idx, order);
+                mol.set_chirality(idx, chirality);
+                newly_assigned += 1;
+                previous_pass_centers.insert(idx);
             }
-            if ordinary_centers.contains(&idx)
-                && !sulfur_lone_pair
-                && mol.neighbors(idx).any(|(neighbor, bond)| {
-                    !matches!(
-                        mol.bond(bond).order,
-                        BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Dative
-                    ) && !(atom.element == Element::P
-                        && mol.bond(bond).order == BondOrder::Double
-                        && mol.atom(neighbor).element == Element::O)
-                })
-            {
-                return None;
-            }
-            if order.len() == 3 {
-                order.push(STEREO_H_SENTINEL);
-            } else if order.len() != 4 {
-                return None;
-            }
-            Some((idx, order))
-        })
-        .collect();
-    for (idx, order) in candidates {
-        if let Some(chirality) = tetrahedral_chirality_from_3d(&order, idx, conformer) {
-            mol.set_stereo_neighbor_order(idx, order);
-            mol.set_chirality(idx, chirality);
+        }
+        if newly_assigned == 0 {
+            break;
         }
     }
 }
@@ -488,6 +476,38 @@ pub(crate) fn correct_conflicting_wedges_from_3d(
             mol.set_chirality(*atom, *from_3d_geometry);
         }
     }
+}
+
+/// Use the full conformer for unmarked 3D alkene stereo. A 2D projection can
+/// reverse an exocyclic double bond when the ring substituents pucker out of
+/// its plane. Explicit CTAB stereo and declared 2D drawings keep their
+/// existing interpretation.
+pub(crate) fn apply_ctab_ez_directions(
+    mol: &mut Molecule,
+    coords: &[(f64, f64)],
+    raw_z: &[f64],
+    dimension: CoordinateDimension,
+    unspecified_ez: &std::collections::HashSet<BondIdx>,
+) -> Vec<EzDirectionDiagnostic> {
+    let has_explicit_directions = mol.bonds().any(|(idx, bond)| {
+        matches!(bond.order, BondOrder::Up | BondOrder::Down) || mol.bond_direction(idx).is_some()
+    });
+    if dimension != CoordinateDimension::TwoD
+        && unspecified_ez.is_empty()
+        && !has_explicit_directions
+        && coords.len() == raw_z.len()
+    {
+        let points: Vec<_> = coords
+            .iter()
+            .zip(raw_z)
+            .map(|(&(x, y), &z)| Point3::new(x, y, z))
+            .collect();
+        if classify_geometry_rank(&points) == GeometryRank::ThreeD {
+            let xyz: Vec<_> = points.iter().map(|p| (p.x, p.y, p.z)).collect();
+            return apply_ez_directions_from_3d(mol, &xyz);
+        }
+    }
+    apply_ez_directions_from_2d_ex(mol, coords, unspecified_ez)
 }
 
 /// The XY projection of a puckered ring can put the two alkene substituents
@@ -635,11 +655,16 @@ pub(crate) fn kekule_orders_for_writing(
     }
     // An atom's inferred H count depends on its own bonds only, so each
     // stored count is compared with the inference directly.
-    let inferable = mol.atoms().all(|(idx, atom)| match atom.hydrogen_count {
-        Some(h) if atom.aromatic && !atom.wildcard => {
-            chematic_core::valence::valence_inferred_hcount(mol, idx) == h
+    let inferable = mol.atoms().all(|(idx, atom)| {
+        if atom.aromatic && atom.wildcard {
+            return false;
         }
-        _ => true,
+        match atom.hydrogen_count {
+            Some(h) if atom.aromatic => {
+                chematic_core::valence::valence_inferred_hcount(mol, idx) == h
+            }
+            _ => true,
+        }
     });
     if inferable {
         return None;

@@ -1,0 +1,39 @@
+{
+  "validated_at_utc": "2026-10-16T22:19:56.486413+00:00",
+  "base_commit": "a4ca27e63bdf689f5f52e36bbddc02d6862f65ab",
+  "rustc": "rustc 1.97.0 (2d8144b78 2026-07-07)",
+  "python": "3.13.6",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "openbabel": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+  "native_module_sha256": "e8e124f7a1acf4705ce0129351f032c07e11e22f7c18954a917d64060ddc67c7",
+  "source_file_count": 1156,
+  "rust_tests": {
+    "library_passed": 863,
+    "new_integration_passed": 5,
+    "failed": 0
+  },
+  "python_tests": {
+    "passed": 75,
+    "new_adapter_cases": 32,
+    "failed": 0,
+    "skipped": 0
+  },
+  "analytic_geometry_cases_passed": 96,
+  "binding_surface": {
+    "python_functions": 214,
+    "wasm_exports": 317
+  },
+  "strict_clippy": "passed; chematic-mol and chematic-py all targets",
+  "other_checks": [
+    "format",
+    "source_stubs",
+    "refactor_budget",
+    "binding_surface",
+    "cross_binding_manifest",
+    "product_names",
+    "unsafe_surface",
+    "mkdocs_strict",
+    "git_diff_check"
+  ],
+  "scope": "local source candidate; atomic geometry only; no LAMMPS engine execution, full force-field setup, published wheel or hosted-CI/main-integration claim"
+}

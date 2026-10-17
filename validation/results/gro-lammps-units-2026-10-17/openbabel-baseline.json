@@ -1,0 +1,34 @@
+{
+  "openbabel": {
+    "version": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+    "actual_bounds_angstrom": {
+      "x": [
+        -0.5,
+        9.5
+      ],
+      "y": [
+        -0.5,
+        9.5
+      ],
+      "z": [
+        -0.5,
+        9.5
+      ]
+    },
+    "expected_bounds_angstrom": {
+      "x": [
+        0,
+        20
+      ],
+      "y": [
+        0,
+        30
+      ],
+      "z": [
+        0,
+        40
+      ]
+    },
+    "input_sha256": "52dbbc70836a1e5f0b7b7bb0908fea7a49bae4069cf7a85a5935ca154745e2e5"
+  }
+}

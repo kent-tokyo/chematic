@@ -44,7 +44,7 @@ def identity(smiles):
     return Chem.MolToSmiles(mol, isomericSmiles=True) if mol is not None else None
 
 
-def stress_cases(corpus):
+def stress_cases(corpus, limit=160):
     seen = set()
     selected = []
     for line_number, line in enumerate(corpus.read_text().splitlines(), 1):
@@ -61,7 +61,7 @@ def stress_cases(corpus):
             continue
         seen.add(expected)
         selected.append((f"stress-line-{line_number}", source, 20261017 + len(selected)))
-        if len(selected) == 160:
+        if limit is not None and len(selected) == limit:
             break
     return selected
 
@@ -116,6 +116,10 @@ def main():
     parser.add_argument("--cli", type=Path, required=True)
     parser.add_argument("--corpus", type=Path, default=DEFAULT_CORPUS)
     parser.add_argument("--bridge-holdout", action="store_true")
+    parser.add_argument(
+        "--all-stereo", action="store_true",
+        help="include every eligible distinct stereo identity instead of the first 160",
+    )
     parser.add_argument("--report", type=Path, required=True)
     args = parser.parse_args()
     RDLogger.DisableLog("rdApp.*")
@@ -124,7 +128,8 @@ def main():
         parser.error("Open Babel executable `obabel` is required")
     cli = args.cli.resolve(strict=True)
     corpus = args.corpus.resolve(strict=True)
-    cases = bridge_holdout_cases() if args.bridge_holdout else stress_cases(corpus)
+    cases = bridge_holdout_cases() if args.bridge_holdout else stress_cases(
+        corpus, None if args.all_stereo else 160)
     with tempfile.TemporaryDirectory() as directory:
         directory = Path(directory)
         rows = [
@@ -149,6 +154,7 @@ def main():
         "cli_sha256": sha256(cli),
         "corpus_sha256": sha256(corpus) if not args.bridge_holdout else None,
         "bridge_holdout": args.bridge_holdout,
+        "all_stereo": args.all_stereo,
         "summary": summary,
         "rows": rows,
     }
