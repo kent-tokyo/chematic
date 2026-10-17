@@ -5561,3 +5561,8 @@ from ._pymatgen_json import (
     parse_pymatgen_structures as parse_pymatgen_structures,
 )
 from ._nucleic_linear_svg import nucleic_acid_linear_svg as nucleic_acid_linear_svg
+from ._cml_collection import (
+    CmlMoleculeRecord as CmlMoleculeRecord,
+    read_cml_collection as read_cml_collection,
+    write_cml_collection as write_cml_collection,
+)
