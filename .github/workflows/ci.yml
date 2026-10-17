@@ -269,6 +269,8 @@ jobs:
           - { package: chematic-mol, target: hin_contract }
           - { package: chematic-mol, target: coverage_boundaries }
           - { package: chematic-mol, target: mol2_unity_charge }
+          - { package: chematic-mol, target: mol2_atom_index }
+          - { package: chematic-mol, target: mol2_fixed4_writer }
           - { package: chematic-mol, target: mol2_kekule_contract }
           - { package: chematic-mol, target: public_api_compat_v1_1_3 }
           - { package: chematic-mol, target: ccd_contract }
@@ -797,6 +799,11 @@ jobs:
         with:
           python-version: "3.12"
       - run: python3 scripts/check_benchmark_index.py
+      - name: Verify MOL2 timing packets and corruption controls
+        run: |
+          python3 scripts/check_mol2_index_numeric_packet.py benchmarks/2026-10-18-mol2-index-only-numeric.json.gz
+          python3 scripts/check_mol2_index_numeric_packet.py benchmarks/2026-10-18-mol2-index-fixed4-numeric.json.gz
+          python3 -m unittest scripts.tests.test_check_mol2_index_numeric_packet -v
       - name: Verify bounded Open Babel file-I/O evidence
         run: python3 scripts/check_openbabel_file_io_evidence.py
       - name: Verify bounded Indigo workflow evidence
