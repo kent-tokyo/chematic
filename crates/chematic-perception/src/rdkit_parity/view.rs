@@ -252,6 +252,15 @@ fn parity_shortcut(mol: &Molecule) -> ParityShortcut {
         {
             return ParityShortcut::Identity;
         }
+        // Uniform cyclic components already satisfy the complete-preperceived
+        // test. Keep the ring flags/components cache, but avoid temporary
+        // component facts when no mixed or multiple-bond ring can occur.
+        if !model_may_disagree
+            && uniform_components::preperceived(mol)
+            && !has_aromatic_macrocycle_bridge_donor(mol)
+        {
+            return ParityShortcut::Identity;
+        }
         let info = ComponentInfo::new(mol);
         if has_aromatic_macrocycle_bridge_donor(mol) {
             return ParityShortcut::Full;
@@ -1152,3 +1161,10 @@ mod kekule_view_tests;
 #[cfg(test)]
 #[path = "component_packed_tests.rs"]
 mod component_packed_tests;
+
+#[path = "uniform_components.rs"]
+mod uniform_components;
+
+#[cfg(test)]
+#[path = "uniform_component_tests.rs"]
+mod uniform_component_tests;
