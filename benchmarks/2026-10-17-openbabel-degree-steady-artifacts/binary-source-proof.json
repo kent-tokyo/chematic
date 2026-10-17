@@ -1,0 +1,22 @@
+{
+  "source_contrast_valid": true,
+  "both_targets_started_empty": true,
+  "both_production_libraries_recompiled_in_both_arms": true,
+  "base_commit": "35b932f911851f51c5cdb89fa371f1c2c4a1b11a",
+  "candidate_commit": "f7e3c0dfb00ec797f9aabac07b5ef6ac747be00d",
+  "baseline_git_matches_except_seven_symmetric_probe_files": true,
+  "common_probe_patch_matches_both_arms": true,
+  "numeric_formatter_unchanged_from_base": true,
+  "inlined_classifier_owner": {
+    "baseline": {
+      "symbol": "__RNvNtCs9k7NSpE0Bwv_12chematic_mol7mol200038perceive_tetrahedral_from_3d_with_mode",
+      "instruction_sha256": "6467b5b7fbccf9fd4182c2b49bfc66091866cf86a58167d632e1787904ae8bdb",
+      "instructions": 3881
+    },
+    "candidate": {
+      "symbol": "__RNvNtCs9k7NSpE0Bwv_12chematic_mol7mol200038perceive_tetrahedral_from_3d_with_mode",
+      "instruction_sha256": "4041573897680562464b08afbc76f1b6359a5ab6e1554d6a692ac61950ec0de1",
+      "instructions": 3876
+    }
+  }
+}

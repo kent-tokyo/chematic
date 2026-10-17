@@ -1,0 +1,95 @@
+{
+  "baseline_commit": "35b932f911851f51c5cdb89fa371f1c2c4a1b11a",
+  "production_change": "Only the necessary degree>=3 precondition in stereo_centers; the formatter is identical to baseline. Preserve find_sssr preparation and all valid-center branches.",
+  "reason": "Formatter-only and compound predecessors have failed their fixed gates. Isolate the large parser optimization from numeric formatting and reduce short-operation timing uncertainty with symmetric steady-state instrumentation.",
+  "prior_timing_samples_reused": false,
+  "primary": [
+    "v3000_3d-branched-spiral/parse",
+    "v3000_3d-branched-offset/parse"
+  ],
+  "blocks": 21,
+  "minimum_repeats": 3,
+  "minimum_warmup_ns": 500000000,
+  "minimum_timed_ns": 100000000,
+  "timing_unit": "ns per full unfiltered batch = raw elapsed / actual iterations; preserve raw elapsed, iterations, processed records and units",
+  "warmup": "Same measured mode, at least 500ms; fresh parse/roundtrip objects, prepared write objects. All three arms receive identical settings.",
+  "write_semantics": "Check rewrites after the same write warmup/time budget. Source before/after snapshots and warmed rewrites must be byte-identical.",
+  "data": "Exactly the ten 4384-record profiles and corpus hashes of the predecessor, no row filtering or added holdout claims",
+  "adoption": "Both primary paired CI lower bounds>1; every unrounded source median>=0.99; exact source outcomes and complete frozen classifier/numeral oracles; disclose negative intervals",
+  "build": "Independent initially empty per-arm targets. Both arms contain the identical probe-only timing patch; all other baseline files must match Git. Verify both actual production compilations and classifier-owner code contrast.",
+  "scope": "New steady-state throughput protocol, not directly comparable in absolute time or RSS to earlier fixed-three-repeat experiments; not startup/cold-process latency or universal superiority",
+  "reruns": "One valid timing epoch per profile; no performance-informed reruns or pooling",
+  "baseline_update": "Use newly merged #981/#986 main before any C samples; earlier sources and results remain unchanged.",
+  "profiles": [
+    {
+      "kind": "sdf",
+      "profile": "0",
+      "records": 1000,
+      "path": "sdf-0.sdf",
+      "sha256": "8e7ad63db96f6fb87b87333ab1f7710a18bc3be5cb4676c15c345c09d4ce718b"
+    },
+    {
+      "kind": "sdf",
+      "profile": "5000",
+      "records": 1000,
+      "path": "sdf-5000.sdf",
+      "sha256": "38d1d169f40de9fe4c95ec475035658ffcb27a2c84c448e3c619c32aefe8fd60"
+    },
+    {
+      "kind": "v3000",
+      "profile": "0",
+      "records": 1000,
+      "path": "v3000-0.molblocks",
+      "sha256": "6c2eccf9aae975d790e9b036e0ffce71d056b243049e3424681326bceae17a06"
+    },
+    {
+      "kind": "v3000",
+      "profile": "5000",
+      "records": 1000,
+      "path": "v3000-5000.molblocks",
+      "sha256": "45924f7db9c4ea10e7ea494cd9aff2d536129b553d1e834fdcdac444e39f3e9e"
+    },
+    {
+      "kind": "v3000",
+      "profile": "chains",
+      "records": 64,
+      "path": "v3000-chains.molblocks",
+      "sha256": "8ea24c94237cfc4076bcbde78019dd37cf4beb254c7a6b820555791da2410186"
+    },
+    {
+      "kind": "v3000",
+      "profile": "continued",
+      "records": 64,
+      "path": "v3000-continued.molblocks",
+      "sha256": "ebf67c73081a981338e5130991c342ad80876a3cdbdb65d4a04551f1ea595d67"
+    },
+    {
+      "kind": "v3000_3d",
+      "profile": "spiral",
+      "records": 64,
+      "path": "v3000_3d-spiral.molblocks",
+      "sha256": "a7363fb554d6a1800dfb51050c4c653bc56476a109787b2d8ab05b273fcdefed"
+    },
+    {
+      "kind": "v3000_3d",
+      "profile": "branched-spiral",
+      "records": 64,
+      "path": "v3000_3d-branched-spiral.molblocks",
+      "sha256": "eccbf01b4a1ed297989641a6d7f41fdc4c1a79670cc2f9d207d866b00d620aa4"
+    },
+    {
+      "kind": "v3000_3d",
+      "profile": "offset",
+      "records": 64,
+      "path": "v3000_3d-offset.molblocks",
+      "sha256": "907983286ba0b4b45c609173caefef7ac4677e7b3071b668abadddfc07c10529"
+    },
+    {
+      "kind": "v3000_3d",
+      "profile": "branched-offset",
+      "records": 64,
+      "path": "v3000_3d-branched-offset.molblocks",
+      "sha256": "6b8c92a7b9cc4cf49b3a0951c7bd8482c7a35041cf49a73132ac16e001c1f5fe"
+    }
+  ]
+}

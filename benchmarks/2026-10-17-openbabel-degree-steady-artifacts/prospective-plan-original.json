@@ -1,0 +1,19 @@
+{
+  "baseline_commit": "34f141266a81264f42990f98acbe25c91d9074af",
+  "production_change": "Only the necessary degree>=3 precondition in stereo_centers; the formatter is identical to baseline. Preserve find_sssr preparation and all valid-center branches.",
+  "reason": "Formatter-only and compound predecessors have failed their fixed gates. Isolate the large parser optimization from numeric formatting and reduce short-operation timing uncertainty with symmetric steady-state instrumentation.",
+  "prior_timing_samples_reused": false,
+  "primary": ["v3000_3d-branched-spiral/parse", "v3000_3d-branched-offset/parse"],
+  "blocks": 21,
+  "minimum_repeats": 3,
+  "minimum_warmup_ns": 500000000,
+  "minimum_timed_ns": 100000000,
+  "timing_unit": "ns per full unfiltered batch = raw elapsed / actual iterations; preserve raw elapsed, iterations, processed records and units",
+  "warmup": "Same measured mode, at least 500ms; fresh parse/roundtrip objects, prepared write objects. All three arms receive identical settings.",
+  "write_semantics": "Check rewrites after the same write warmup/time budget. Source before/after snapshots and warmed rewrites must be byte-identical.",
+  "data": "Exactly the ten 4384-record profiles and corpus hashes of the predecessor, no row filtering or added holdout claims",
+  "adoption": "Both primary paired CI lower bounds>1; every unrounded source median>=0.99; exact source outcomes and complete frozen classifier/numeral oracles; disclose negative intervals",
+  "build": "Independent initially empty per-arm targets. Both arms contain the identical probe-only timing patch; all other baseline files must match Git. Verify both actual production compilations and classifier-owner code contrast.",
+  "scope": "New steady-state throughput protocol, not directly comparable in absolute time or RSS to earlier fixed-three-repeat experiments; not startup/cold-process latency or universal superiority",
+  "reruns": "One valid timing epoch per profile; no performance-informed reruns or pooling"
+}

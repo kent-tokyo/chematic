@@ -75,6 +75,8 @@ Older artifact audits, similarity-search work, streaming/format matrices,
 [`archive-index.md`](archive-index.md). They are retained for provenance and do
 not establish current behavior.
 
+- [Degree-only steady native throughput](2026-10-17-openbabel-degree-steady.md): parser-only production change, symmetric warmup/time budgets, raw counts and all 30 retention lanes.
+
 ## What counts as a speed win
 
 A lane is called an equivalent-output speed win only when:

@@ -1,0 +1,10 @@
+{
+  "purpose": "Diagnostic same-binary label/order control, never an adoption dataset",
+  "rust_labels": "Both baseline and candidate execute the exact same baseline-sdf path and bytes",
+  "comparator": "Same Open Babel SDK binary, third arm retained",
+  "data": "Unfiltered sdf-0 1000-record corpus, all parse/write/roundtrip modes in original order",
+  "conditions": "Identical 500ms warmup, 100ms minimum timing and per-batch normalization",
+  "designs": [{"name":"cyclic","blocks":21},{"name":"balanced","blocks":24,"orders":"all six permutations, shuffled once with fixed seed20261017, four complete cycles"}],
+  "reruns": false,
+  "interpretation": "A nonunit ratio for identical binaries can reveal label/order or environment bias; a null result does not prove the candidate slowdown is code layout. Preserve every observation."
+}
