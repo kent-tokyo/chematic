@@ -178,19 +178,24 @@ fn is_atom_potential_chiral_center(
             }
         }
         if legal && !ranks.is_empty() {
-            let mut seen = vec![false; mol.atoms.len()];
+            // Legality above bounds the chirality-affecting degree to four.
+            // Outgoing dative bonds can make the physical degree larger, but
+            // are still appended to `nbrs` and skipped before this storage.
+            let mut seen = [0_u32; 4];
+            let mut seen_len = 0;
             for &b in &mol.atom_bonds[a] {
                 let other = mol.bonds[b].other(a);
                 nbrs.push((ranks[other], b));
                 if !bond_affects_atom_chirality(mol, b, a) {
                     continue;
                 }
-                let r = ranks[other] as usize;
-                if seen[r] {
+                let r = ranks[other];
+                if seen[..seen_len].contains(&r) {
                     dupes = true;
                     break;
                 }
-                seen[r] = true;
+                seen[seen_len] = r;
+                seen_len += 1;
             }
         }
     }
@@ -445,9 +450,11 @@ fn assign_atom_chiral_codes(
     mol: &mut Mol,
     ranks: &mut Vec<u32>,
     flag_possible: bool,
+    retain_flags_and_ranks: bool,
 ) -> (bool, bool) {
     let mut atom_changed = false;
     let mut unassigned = 0;
+    let mut nbrs = Vec::new();
     for a in 0..mol.atoms.len() {
         let tag = mol.atoms[a].chiral;
         if !(flag_possible || tag != ChiralTag::Unspecified) {
@@ -459,12 +466,20 @@ fn assign_atom_chiral_codes(
         if ranks.is_empty() {
             assign_atom_cip_ranks(mol, ranks);
         }
-        let mut nbrs = Vec::new();
-        let (legal, dupes) = is_atom_potential_chiral_center(mol, a, ranks, &mut nbrs);
+        nbrs.clear();
+        // Untagged atoms still count as unassigned and initialize ranks at
+        // the same point. Their duplicate ranks only affect the optional
+        // flag; they cannot assign a CIP code or change the iteration.
+        let neighbor_ranks = if retain_flags_and_ranks || tag != ChiralTag::Unspecified {
+            ranks.as_slice()
+        } else {
+            &[]
+        };
+        let (legal, dupes) = is_atom_potential_chiral_center(mol, a, neighbor_ranks, &mut nbrs);
         if legal {
             unassigned += 1;
         }
-        if legal && !dupes && flag_possible {
+        if legal && !dupes && flag_possible && retain_flags_and_ranks {
             mol.atoms[a].chirality_possible = true;
         }
         if legal && !dupes && tag != ChiralTag::Unspecified {
@@ -473,7 +488,7 @@ fn assign_atom_chiral_codes(
             // std::sort with Rankers::pairLess (ranks are distinct here,
             // except for bonds that do not affect chirality).
             nbrs.sort_by_key(|p| p.0);
-            let indices: Vec<usize> = nbrs.iter().map(|p| p.1).collect();
+            let indices: smallvec::SmallVec<[usize; 4]> = nbrs.iter().map(|p| p.1).collect();
             let mut odd = mol.perturbation_is_odd(a, &indices);
             if indices.len() == 3 && mol.total_num_hs(a) == 1 {
                 odd = !odd;
@@ -758,16 +773,51 @@ pub(crate) fn legacy_stereo_perception(
     clean_it: bool,
     flag_possible: bool,
 ) -> Vec<u32> {
-    legacy_stereo_perception_impl(mol, clean_it, flag_possible, false)
+    legacy_stereo_perception_impl(mol, clean_it, flag_possible, false, true)
 }
 
 /// `legacy_stereo_perception(mol, true, true)` for callers that read neither
 /// `chirality_possible` nor the returned ranks. On a molecule without
 /// stereo atoms or bonds the flagging pass only sets `chirality_possible`
 /// (no CIP codes, bond stereo or ring-stereo data survive it), so it is
-/// skipped there, and with it the CIP ranking.
+/// skipped there, and with it the CIP ranking. Where specified stereo is
+/// present, retain legal-center counts and all consumed ranking, omitting
+/// only flag writes, their untagged-neighbor checks and an unused final
+/// rerank after every tag and stereo bond has been resolved.
 pub(crate) fn legacy_stereo_perception_unflagged(mol: &mut Mol) {
-    legacy_stereo_perception_impl(mol, true, true, true);
+    legacy_stereo_perception_impl(mol, true, true, true, false);
+}
+
+// The projection reads neither possible-center flags nor final ranks.
+// With every tagged atom resolved and no unresolved stereo bond, another
+// iteration can only flag untagged atoms. Ring-special-case cleanup skips
+// those resolved tags too, and therefore cannot consume the updated ranks.
+fn stereo_rerank_is_consumed(
+    mol: &Mol,
+    retain_flags_and_ranks: bool,
+    unresolved_bonds: bool,
+) -> bool {
+    retain_flags_and_ranks
+        || unresolved_bonds
+        || mol
+            .atoms
+            .iter()
+            .any(|a| a.chiral != ChiralTag::Unspecified && a.cip_code.is_none())
+}
+
+fn reset_and_find_ring_stereo(mol: &mut Mol, ranks: &mut Vec<u32>) -> Vec<bool> {
+    for atom in &mut mol.atoms {
+        atom.ring_stereochem_cand = None;
+        atom.ring_stereo_atoms = None;
+    }
+    if ranks.is_empty() && !mol.atoms.iter().any(|a| a.chiral != ChiralTag::Unspecified) {
+        vec![false; mol.atoms.len()]
+    } else {
+        if ranks.is_empty() {
+            assign_atom_cip_ranks(mol, ranks);
+        }
+        find_chiral_atom_special_cases(mol, ranks)
+    }
 }
 
 fn legacy_stereo_perception_impl(
@@ -775,6 +825,7 @@ fn legacy_stereo_perception_impl(
     clean_it: bool,
     flag_possible: bool,
     skip_flag_only_pass: bool,
+    retain_flags_and_ranks: bool,
 ) -> Vec<u32> {
     let mut has_stereo_atoms = false;
     let mut has_potential_stereo_atoms = false;
@@ -844,7 +895,8 @@ fn legacy_stereo_perception_impl(
         let changed_atoms;
         let changed_bonds;
         if has_stereo_atoms || has_potential_stereo_atoms {
-            let (h, c) = assign_atom_chiral_codes(mol, &mut ranks, flag_possible);
+            let (h, c) =
+                assign_atom_chiral_codes(mol, &mut ranks, flag_possible, retain_flags_and_ranks);
             has_stereo_atoms = h;
             changed_atoms = c;
         } else {
@@ -857,7 +909,9 @@ fn legacy_stereo_perception_impl(
         } else {
             changed_bonds = false;
         }
-        keep_going = (has_stereo_atoms || has_stereo_bonds) && (changed_atoms || changed_bonds);
+        keep_going = (has_stereo_atoms || has_stereo_bonds)
+            && (changed_atoms || changed_bonds)
+            && stereo_rerank_is_consumed(mol, retain_flags_and_ranks, has_stereo_bonds);
         if keep_going {
             rerank_atoms(mol, &mut ranks);
         }
@@ -865,19 +919,7 @@ fn legacy_stereo_perception_impl(
     if !clean_it {
         return ranks;
     }
-    for atom in &mut mol.atoms {
-        atom.ring_stereochem_cand = None;
-        atom.ring_stereo_atoms = None;
-    }
-    let possible =
-        if ranks.is_empty() && !mol.atoms.iter().any(|a| a.chiral != ChiralTag::Unspecified) {
-            vec![false; mol.atoms.len()]
-        } else {
-            if ranks.is_empty() {
-                assign_atom_cip_ranks(mol, &mut ranks);
-            }
-            find_chiral_atom_special_cases(mol, &ranks)
-        };
+    let possible = reset_and_find_ring_stereo(mol, &mut ranks);
     for a in 0..mol.atoms.len() {
         let atom = &mol.atoms[a];
         if atom.chiral != ChiralTag::Unspecified
@@ -938,3 +980,6 @@ fn legacy_stereo_perception_impl(
     }
     ranks
 }
+
+#[cfg(test)]
+mod code_projection_tests;

@@ -272,7 +272,7 @@ pub fn rdkit_legacy_stereo(mol: &Molecule) -> Result<RdkitLegacyStereo, RdkitSmi
             "hydrogen removal renumbers atoms".into(),
         ));
     }
-    stereo::legacy_stereo_perception(&mut m, true, true);
+    stereo::legacy_stereo_perception_unflagged(&mut m);
     let order = mol.rdkit_bond_order();
     let mut bond_stereo = vec![0u8; mol.bond_count()];
     for (k, b) in order.iter().enumerate() {
