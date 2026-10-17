@@ -676,6 +676,10 @@ class Mol:
         """
         ...
 
+    def _fragment_single_bonds_checked(
+        self, bonds: list[int], labels: Optional[list[tuple[int, int]]],
+    ) -> tuple[Mol, list[int], list[tuple[int, int, int, int]]]: ...
+
     @property
     def recap_breakable_bond_count(self) -> int:
         """Number of RECAP-breakable bonds (C–N, C–O, C–S single bonds)."""
@@ -5704,4 +5708,9 @@ from ._crystal_obj import (
 from ._parent_types import (
     ParentStage as ParentStage,
     SuperParentReport as SuperParentReport,
+)
+from ._bond_fragment import (
+    BondFragmentation as BondFragmentation,
+    FragmentAttachment as FragmentAttachment,
+    fragment_on_bonds_checked as fragment_on_bonds_checked,
 )

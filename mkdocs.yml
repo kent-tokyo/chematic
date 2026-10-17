@@ -122,6 +122,7 @@ nav:
     - Checked XBS Scene Output: xbs-output.md
     - Checked XYZ Per-Atom Data: xyz-atom-data.md
     - Checked CIF-to-XSF Geometry: cif-xsf-output.md
+    - Checked Bond Fragmentation: checked-bond-fragmentation.md
     - Complete Molecule Reset: molecule-clear.md
     - Python Filesystem Paths: python-filesystem-paths.md
     - GRO to LAMMPS Units: gro-lammps-units.md

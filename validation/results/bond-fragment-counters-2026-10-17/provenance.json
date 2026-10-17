@@ -1,0 +1,21 @@
+{
+  "base": "c6d10dc0218f190f88fb01f1e43fee0631575c22",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "python": "3.13.6",
+  "native_sha256": "e134b28b880aee0de1a0889b3b5c4664d5dad1b3a507d0bb70340ee76a81d7ce",
+  "native_bytes": 84426608,
+  "source_sha256": {
+    "crates/chematic-chem/src/bond_fragment.rs": "846334946e7f1ddaac9a6be5a0b7a207459ef0491651c2e983507d517fcfd6d5",
+    "crates/chematic-chem/src/bond_fragment_tests.rs": "8f0e806c632c03b4c439a925ccdb2c1adbc5a725af3268af350dc6378bac33c9",
+    "crates/chematic-py/src/mol_methods/bond_fragment.rs": "bd4f767969762ea2e7a6271fc78fabb0a2a1b68d4bbe080b35fdbbb744db317d",
+    "crates/chematic-py/python/chematic/_bond_fragment.py": "9f6b76a3cde98e2b56c3f4d446ec024666f2144cb71ec4fcb3dfec1dee5c24b0",
+    "crates/chematic-py/python/chematic/__init__.py": "eca3702f0478f51f91724ec3e1e5b692e4a3ebe31d12bd139811742a8c158366",
+    "crates/chematic-py/python/chematic/__init__.pyi": "9a4ed7d9eff73a08ef1fb5b1fc5061aeb0de7d22a8bceee0fc79798766f5055f",
+    "crates/chematic-py/tests/test_bond_fragment.py": "456bc2f9e643e66b9e68d607b90eb0f33d42430b8ad71975faff5be61cf1bb09"
+  },
+  "oracle_rdkit": "2026.09.1",
+  "native_features": [
+    "native-inchi"
+  ],
+  "artifact_scope": "fresh local native extension; not a published wheel"
+}

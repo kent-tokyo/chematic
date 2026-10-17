@@ -1,0 +1,7 @@
+validation/results/bond-fragment-counters-2026-10-17/typing_invalid.py:5: error: Argument 1 to "fragment_on_bonds_checked" has incompatible type "str"; expected "Mol"  [arg-type]
+validation/results/bond-fragment-counters-2026-10-17/typing_invalid.py:6: error: List item 0 has incompatible type "str"; expected "int"  [list-item]
+validation/results/bond-fragment-counters-2026-10-17/typing_invalid.py:7: error: Argument "cuts_per_atom" to "fragment_on_bonds_checked" has incompatible type "tuple[int, int, int]"; expected "list[int] | None"  [arg-type]
+validation/results/bond-fragment-counters-2026-10-17/typing_invalid.py:8: error: List item 0 has incompatible type "tuple[str, int]"; expected "tuple[int, int]"  [list-item]
+validation/results/bond-fragment-counters-2026-10-17/typing_invalid.py:10: error: Property "cuts_per_atom" defined in "BondFragmentation" is read-only  [misc]
+validation/results/bond-fragment-counters-2026-10-17/typing_invalid.py:11: error: Property "dummy" defined in "FragmentAttachment" is read-only  [misc]
+Found 6 errors in 1 file (checked 1 source file)

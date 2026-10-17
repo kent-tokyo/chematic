@@ -1,0 +1,12 @@
+   Compiling chematic-chem v1.1.6 (/private/tmp/chematic-bond-fragment-counters-20261017/crates/chematic-chem)
+    Finished `test` profile [unoptimized] target(s) in 2.42s
+     Running unittests src/lib.rs (/private/tmp/chematic-sparse-tanimoto-target/debug/deps/chematic_chem-e6be56d5dc091007)
+
+running 4 tests
+test bond_fragment::tests::bridge_fragment_counters_and_attachment_order ... ok
+test bond_fragment::tests::bridge_fragment_refuses_unsupported_edits ... ok
+test bond_fragment::tests::bridge_fragment_keeps_original_atoms_and_hydrogens ... ok
+test bond_fragment::tests::bridge_fragment_empty_is_a_true_graph_noop ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 959 filtered out; finished in 0.00s
+
