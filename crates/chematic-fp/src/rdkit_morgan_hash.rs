@@ -514,6 +514,7 @@ where
         }
         round.sort_unstable();
         let seen_before = seen.len();
+        let mut seen_index = 0;
         let mut g = 0;
         while g < round.len() {
             let bond_env = round[g].0;
@@ -522,7 +523,11 @@ where
                 end += 1;
             }
             // Sorted by (env, invariant, atom): round[g] is the group winner.
-            if seen[..seen_before].binary_search(&bond_env).is_ok() {
+            // Both sequences are sorted; new pushes lie outside the old prefix.
+            while seen_index < seen_before && seen[seen_index] < bond_env {
+                seen_index += 1;
+            }
+            if seen_index < seen_before && seen[seen_index] == bond_env {
                 for &(_, _, atom) in &round[g..end] {
                     dead[atom as usize] = true;
                 }
@@ -921,3 +926,7 @@ mod rdkit_ground_truth_radius0 {
         ids
     }
 }
+
+#[cfg(test)]
+#[path = "morgan_linear_scan_tests.rs"]
+mod linear_scan_tests;
