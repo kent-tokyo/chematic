@@ -30,6 +30,8 @@ from ._sdf_split import (
 
 from ._xbs import XbsBondRule as XbsBondRule, XbsSpecies as XbsSpecies, write_xbs as write_xbs
 
+from ._xyz_atom_data import XyzAtomDataFrame as XyzAtomDataFrame, parse_xyz_atom_data as parse_xyz_atom_data
+
 from typing import overload, Any, Iterable, Iterator, Literal, Optional, Sequence, TypedDict, Union
 
 from os import PathLike

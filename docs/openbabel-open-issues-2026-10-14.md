@@ -149,3 +149,15 @@ cross-reading passed 96 synthetic scenes plus a 10,000-atom scene. This
 adds the requested dialect without treating the existing `bs` output as a
 broken implementation of XBS. RGB, wildcard rules, movies and GUI validation
 remain outside this profile.
+
+## October 17 follow-up: headerless XYZ per-atom data
+
+[#1703](https://github.com/openbabel/openbabel/issues/1703) requests access to
+unnamed per-atom vectors and suggests scalar/tensor generalization. Existing
+named extxyz fields already work; the missing boundary is a headerless
+`xyz+vec` row. Added [checked XYZ atom-data records](xyz-atom-data.md) with
+explicit widths 1/3/9, immutable arrays, raw source retention and conversion
+to a caller-named extxyz field. ASE 3.26.0 and the existing native reader each
+cross-read 150 synthetic records with all 11,570 payload scalars preserved.
+The local Open Babel 3.2.1 XYZ rewrite drops the extra columns. Physical
+meaning, tensor orientation, lattices and trajectories remain outside scope.

@@ -116,6 +116,7 @@ nav:
     - Explicit-Charge Coulomb Field: coulomb-interaction-field.md
     - Local-Solvation Coulomb Field: coulomb-dielectric-field.md
     - Checked XBS Scene Output: xbs-output.md
+    - Checked XYZ Per-Atom Data: xyz-atom-data.md
     - Complete Molecule Reset: molecule-clear.md
     - Python Filesystem Paths: python-filesystem-paths.md
     - GRO to LAMMPS Units: gro-lammps-units.md

@@ -1,0 +1,45 @@
+[
+  {
+    "command": [
+      "python3.13",
+      "-m",
+      "mypy",
+      "--follow-imports=silent",
+      "--ignore-missing-imports",
+      "--no-incremental",
+      "--cache-dir=/private/tmp/chematic-xyz-atom-data-mypy",
+      "validation/typing/xyz_atom_data_valid.py"
+    ],
+    "exit_code": 0,
+    "expected_exit_code": 0
+  },
+  {
+    "command": [
+      "python3.13",
+      "-m",
+      "mypy",
+      "--follow-imports=silent",
+      "--ignore-missing-imports",
+      "--no-incremental",
+      "--cache-dir=/private/tmp/chematic-xyz-atom-data-mypy",
+      "validation/typing/xyz_atom_data_invalid.py"
+    ],
+    "exit_code": 1,
+    "expected_exit_code": 1
+  },
+  {
+    "command": [
+      "python3.13",
+      "-m",
+      "mypy",
+      "--follow-imports=silent",
+      "--ignore-missing-imports",
+      "--no-incremental",
+      "--cache-dir=/private/tmp/chematic-xyz-atom-data-mypy",
+      "--strict",
+      "/private/tmp/chematic_xyz_atom_data_typecheck.py"
+    ],
+    "exit_code": 0,
+    "expected_exit_code": 0
+  }
+]

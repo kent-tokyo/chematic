@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-17",
+  "base_commit": "35b932f911851f51c5cdb89fa371f1c2c4a1b11a",
+  "baseline": {
+    "python_sources_verified_against_git": true,
+    "runtime_probe": {
+      "has_parser": false,
+      "has_record": false,
+      "plain_xyz_return_items": 2,
+      "headerless_extxyz_error": "atom line 3: Properties columns declare 4 value(s), found 7"
+    },
+    "native_boundary": "pre-existing reused native extension; not a fresh base build"
+  },
+  "upstream": {
+    "number": 1703,
+    "state": "OPEN",
+    "title": "Per-atom vectors in extended (xyz+vec) format",
+    "updatedAt": "2018-03-15T01:53:03Z",
+    "url": "https://github.com/openbabel/openbabel/issues/1703"
+  },
+  "candidate_files": {
+    "crates/chematic-py/python/chematic/_xyz_atom_data.py": "1324d124056b0314c546d8284b3482ca4e6ba3c167f3722af8d16e782e85cd5d",
+    "crates/chematic-py/python/chematic/__init__.py": "bafb275789ab549af79467da6542fb1962642a0d4fe442907eaa383f0890c778",
+    "crates/chematic-py/python/chematic/__init__.pyi": "d8446b60c2b4a69a4ba6a0cb7de251ab77b13700d2ec38e450fb2bbf4d8f3dd6",
+    "crates/chematic-py/tests/test_xyz_atom_data.py": "1439aebac23383cbb992dae8eb81d65f1f9056158d9dd83da7ee8a8ccb8391b7",
+    "validation/validate_xyz_atom_data.py": "7b413350e1ad0fe4f50a56c0ddddaf5b5772c23b98ab58aab372e876b5a841b7",
+    "validation/openbabel_issues/xyz_atom_data/asymmetric.xyz": "2d55ed11cdb980da8952cfa7695c057a08e4c7df0388e7e498ddcebf8d3700cd"
+  },
+  "native_extension": {
+    "sha256": "c6db880b6f5ca4ea0388f238c24e8a5b55751daab1084cf0d1d7b56e2427257b",
+    "reused_from_commit": "71d9c12b0c16a8e6b23e4078479d5754230c831b",
+    "scope": "package import, existing compatibility tests and native cross-read only; no fresh build; new helper standard-library Python"
+  },
+  "ase": {
+    "version": "3.26.0",
+    "install": "python3.13 -m pip install --no-cache-dir --no-deps --target /private/tmp/chematic-xyz-atom-data-oracle ase==3.26.0",
+    "extxyz_source_sha256": "f3ce35e8677664b3d8ba572e6b7078374ad054073883d8dc17031519bdbd38d5",
+    "element_table_source_sha256": "4d90ca8ec7ea5b47e90a758a386d12410f079e3a6f7963a21e8072c5bcfa3321",
+    "documentation": "ASE 3.26.0 read_xyz docstring and https://docs.ase-lib.org/_modules/ase/io/extxyz.html"
+  },
+  "pytest": {
+    "passed": 234,
+    "failed": 0,
+    "skipped": 0,
+    "new": 72,
+    "existing": 162,
+    "command": "PYTHONDONTWRITEBYTECODE=1 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=/private/tmp/chematic-xyz-atom-data-python python3.13 -m pytest crates/chematic-py/tests/test_xyz_atom_data.py crates/chematic-py/tests/test_rdkit_compat.py -q -p no:cacheprovider"
+  },
+  "oracle_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/private/tmp/chematic-xyz-atom-data-python:/private/tmp/chematic-xyz-atom-data-oracle python3.13 validation/validate_xyz_atom_data.py --output validation/results/xyz-atom-data-2026-10-17/crossread.json",
+  "typing": "mypy 1.8.0; public consumers follow imports silently, helper checked strictly as unchanged standalone copy",
+  "scope": "headerless single-frame payload preservation and explicit named extxyz conversion; no chemistry/units/tensor interpretation or speed claim"
+}

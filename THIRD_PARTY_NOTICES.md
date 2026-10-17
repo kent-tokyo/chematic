@@ -382,3 +382,13 @@ No XBS or Open Babel implementation or manual example fixture is included.
 The fixture in `validation/openbabel_issues/xbs/` and the seeded validation
 inputs are original project data under MIT OR Apache-2.0. External hofmann
 0.21.1 is used solely as a parser oracle, not bundled as a dependency.
+
+## XYZ atom-data format references (2026-10-17)
+
+`crates/chematic-py/python/chematic/_xyz_atom_data.py` is an independent
+implementation of the headerless layout requested in Open Babel issue #1703
+and of the ASE-documented named extxyz property syntax. No Open Babel/ASE
+source or issue example coordinates are copied. The fixtures under
+`validation/openbabel_issues/xyz_atom_data/` and seeded validation inputs
+are original project data under MIT OR Apache-2.0. ASE 3.26.0 is an external
+validation oracle, not a runtime dependency or vendored implementation.

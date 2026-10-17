@@ -94,6 +94,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - Python `write_xbs`, `XbsSpecies` and `XbsBondRule` emit checked static XBS
   scene files with explicit gray styles and distance drawing rules. XBS is
   distinct from Open Babel's `bs` dialect. See [XBS output](docs/xbs-output.md).
+- Python `parse_xyz_atom_data` / `XyzAtomDataFrame` preserve headerless XYZ
+  scalar, vector or flat nine-component payloads with explicit widths, source
+  retention and named extxyz conversion. See [XYZ per-atom data](docs/xyz-atom-data.md).
 - Rust/Python `FeaturePatternSet` owns up to 32 caller-supplied SMARTS feature
   definitions and produces full-width atom masks or native circular feature
   fingerprints. Matching budgets and size limits refuse partial output;
