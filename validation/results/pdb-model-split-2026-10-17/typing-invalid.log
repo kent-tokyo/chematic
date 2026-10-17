@@ -1,0 +1,5 @@
+validation/typing/pdb_model_split_invalid.py:3: error: Argument 1 to "split_pdb_models" has incompatible type "bytes"; expected "str"  [arg-type]
+validation/typing/pdb_model_split_invalid.py:4: error: Argument "prefix" to "split_pdb_models" has incompatible type "int"; expected "str"  [arg-type]
+validation/typing/pdb_model_split_invalid.py:5: error: Argument "max_models" to "split_pdb_models" has incompatible type "float"; expected "SupportsIndex"  [arg-type]
+validation/typing/pdb_model_split_invalid.py:6: error: Property "filename" defined in "PdbModelFile" is read-only  [misc]
+Found 4 errors in 1 file (checked 1 source file)

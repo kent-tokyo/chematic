@@ -1,0 +1,18 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.13.6, pytest-9.1.1, pluggy-1.6.0
+rootdir: /private/tmp/chematic-pdb-model-split-20261017/crates/chematic-py
+configfile: pytest.ini
+collected 202 items
+
+crates/chematic-py/tests/test_pdb_models.py ............................ [ 13%]
+.........................................                                [ 34%]
+crates/chematic-py/tests/test_pdb_selection.py ......................... [ 46%]
+.                                                                        [ 47%]
+crates/chematic-py/tests/test_mmcif_pdb_checked.py ..................... [ 57%]
+..                                                                       [ 58%]
+crates/chematic-py/tests/test_pdb_conect.py ...............              [ 65%]
+crates/chematic-py/tests/test_pqr_pdbqt.py .................             [ 74%]
+crates/chematic-py/tests/test_pdbqt_checked.py ......................... [ 86%]
+...........................                                              [100%]
+
+============================= 202 passed in 0.80s ==============================
