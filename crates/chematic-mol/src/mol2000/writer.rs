@@ -476,6 +476,48 @@ fn v2000_bond_type(order: BondOrder) -> u32 {
     }
 }
 
+// Bond type is 1..=8 and stereo comes from the bounded CTfile codes below.
+// Validate the fixed ASCII fields once at compile time, then append each
+// complete type/stereo/newline tail in one operation.
+fn push_v2000_bond_tail(out: &mut String, order: BondOrder, stereo: u32) {
+    static FIELDS: [[[u8; 7]; 7]; 8] = {
+        let mut fields = [[[b' '; 7]; 7]; 8];
+        let mut kind = 0;
+        while kind < 8 {
+            let mut stereo = 0;
+            while stereo < 7 {
+                fields[kind][stereo][2] = b'1' + kind as u8;
+                fields[kind][stereo][5] = b'0' + stereo as u8;
+                fields[kind][stereo][6] = b'\n';
+                stereo += 1;
+            }
+            kind += 1;
+        }
+        fields
+    };
+    static TEXT: [[&str; 7]; 8] = {
+        let mut text = [[""; 7]; 8];
+        let mut kind = 0;
+        while kind < 8 {
+            let mut stereo = 0;
+            while stereo < 7 {
+                text[kind][stereo] = match std::str::from_utf8(&FIELDS[kind][stereo]) {
+                    Ok(field) => field,
+                    Err(_) => panic!("ASCII bond tail"),
+                };
+                stereo += 1;
+            }
+            kind += 1;
+        }
+        text
+    };
+    out.push_str(TEXT[(v2000_bond_type(order) - 1) as usize][stereo as usize]);
+}
+
+#[cfg(test)]
+#[path = "bond_tail_tests.rs"]
+mod bond_tail_tests;
+
 fn v2000_bond_stereo(
     bond_idx: BondIdx,
     bond: &chematic_core::BondEntry,
@@ -528,9 +570,7 @@ fn write_bond_rows(
         let (atom1, atom2, stereo) = v2000_bond_stereo(bond_idx, bond, depiction, either);
         push_right_aligned_u32(out, atom1, 3);
         push_right_aligned_u32(out, atom2, 3);
-        push_right_aligned_u32(out, v2000_bond_type(order), 3);
-        push_right_aligned_u32(out, stereo, 3);
-        out.push('\n');
+        push_v2000_bond_tail(out, order, stereo);
     }
 }
 
