@@ -2,6 +2,8 @@
 use chematic_mol::{Mol2Record, parse_mol2_record, write_mol2_record};
 use serde_json::json;
 use std::{error::Error, fs, hint::black_box, io::Write};
+// This probe uses untimed snapshots, leaving the shared dump warmup helpers unused.
+#[allow(dead_code)]
 #[path = "support/steady_timing.rs"]
 mod steady_timing;
 
