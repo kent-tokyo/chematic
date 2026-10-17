@@ -16,6 +16,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added Rust/Python checked sparse binary Tanimoto condensed matrices from
+  on-bit indices or Python `GetOnBits()` sources, with bounded extraction,
+  resource limits and explicit empty-set policy. See
+  [sparse Tanimoto matrices](docs/sparse-tanimoto-matrix.md).
+
 - Rust/Python `FeaturePatternSet` owns up to 32 caller-supplied SMARTS feature
   definitions and produces full-width atom masks or native circular feature
   fingerprints. Matching budgets and size limits refuse partial output;

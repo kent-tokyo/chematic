@@ -52,6 +52,7 @@ mod reactions;
 mod reports;
 mod rwmol;
 mod similarity;
+mod sparse_similarity;
 mod volumetric;
 
 mod bulk;

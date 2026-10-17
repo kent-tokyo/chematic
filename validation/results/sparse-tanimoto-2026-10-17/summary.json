@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "scope": "supplied binary on-bit sets, not fingerprint-generation or full RDKit wrapper parity",
+  "rdkit_version": "2026.09.1",
+  "numpy_version": "2.5.3",
+  "python_version": "3.13.6 (v3.13.6:4e665351082, Aug  6 2025, 11:22:35) [Clang 16.0.0 (clang-1600.0.26.6)]",
+  "native_binary_sha256": "feb307a0c126a2b0dc560717d8b5372a9f834a2e030532d642ae7adf4c43a411",
+  "datasets": 240,
+  "native_runs": 2880,
+  "oracle_runs": 960,
+  "compared_values": 106176,
+  "max_absolute_error": 0.0,
+  "ordinary_comparison_failures": 0,
+  "failures": [],
+  "empty_empty_policy": {
+    "native_similarity": [
+      1.0
+    ],
+    "native_distance": [
+      0.0
+    ],
+    "rdkit_similarity": [
+      0.0
+    ],
+    "rdkit_distance": [
+      1.0
+    ],
+    "interpretation": "Native empty/empty similarity is 1, matching existing BitVec2048; current RDKit differs. This diagnostic is excluded from ordinary parity counts."
+  },
+  "singleton_policy": {
+    "native": [],
+    "rdkit_error": "Invariant Violation\n\t\n\tViolation occurred on line 206 in file Code/DataManip/MetricMatrixCalc/Wrap/rdMetricMatrixCalc.cpp\n\tFailed Expression: nrows > 1\n\tRDKIT: 2026.09.1\n\tBOOST: 1_85\n"
+  },
+  "high_sparse_ids": {
+    "rows": [
+      [
+        0,
+        2147483646
+      ],
+      [
+        2147483646
+      ],
+      [
+        2147483645
+      ]
+    ],
+    "similarity": {
+      "native": [
+        0.5,
+        0.0,
+        0.0
+      ],
+      "rdkit_sparse": [
+        0.5,
+        0.0,
+        0.0
+      ],
+      "reference": [
+        0.5,
+        0.0,
+        0.0
+      ]
+    },
+    "distance": {
+      "native": [
+        0.5,
+        1.0,
+        1.0
+      ],
+      "rdkit_sparse": [
+        0.5,
+        1.0,
+        1.0
+      ],
+      "reference": [
+        0.5,
+        1.0,
+        1.0
+      ]
+    }
+  },
+  "signed_rdkit_view": {
+    "rdkit_onbits": [
+      -2,
+      0
+    ],
+    "native_error": "out of range integral type conversion attempted",
+    "interpretation": "RDKit GetOnBits exposes -2 for bit 2**32-2 on this build. Native unsigned input refuses the negative view; caller-supplied unsigned IDs remain supported."
+  },
+  "u32_max_native_similarity": [
+    0.5,
+    0.0,
+    0.0
+  ]
+}
