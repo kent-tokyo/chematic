@@ -1,0 +1,78 @@
+{
+  "0": {
+    "baseline": {
+      "speedup": {
+        "median": 1.052,
+        "ci95": [
+          1.031,
+          1.081
+        ],
+        "winning_blocks": 17,
+        "blocks": 20
+      },
+      "demonstrated_win": false
+    },
+    "rdkit": {
+      "speedup": {
+        "median": 0.819,
+        "ci95": [
+          0.792,
+          0.848
+        ],
+        "winning_blocks": 1,
+        "blocks": 20
+      },
+      "demonstrated_win": false
+    },
+    "cosmolkit": {
+      "speedup": {
+        "median": 0.399,
+        "ci95": [
+          0.389,
+          0.425
+        ],
+        "winning_blocks": 0,
+        "blocks": 20
+      },
+      "demonstrated_win": false
+    }
+  },
+  "5000": {
+    "baseline": {
+      "speedup": {
+        "median": 1.004,
+        "ci95": [
+          0.994,
+          1.013
+        ],
+        "winning_blocks": 12,
+        "blocks": 20
+      },
+      "demonstrated_win": false
+    },
+    "rdkit": {
+      "speedup": {
+        "median": 0.229,
+        "ci95": [
+          0.22,
+          0.235
+        ],
+        "winning_blocks": 0,
+        "blocks": 20
+      },
+      "demonstrated_win": false
+    },
+    "cosmolkit": {
+      "speedup": {
+        "median": 0.106,
+        "ci95": [
+          0.103,
+          0.108
+        ],
+        "winning_blocks": 0,
+        "blocks": 20
+      },
+      "demonstrated_win": false
+    }
+  }
+}

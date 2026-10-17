@@ -1,0 +1,9 @@
+{
+  "passed": true,
+  "native": {
+    "passed": 3835,
+    "failed": 0,
+    "ignored": 4,
+    "suites": 137
+  }
+}

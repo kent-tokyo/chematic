@@ -1,0 +1,218 @@
+{
+  "passed": true,
+  "all_42_source_ratios_recomputed": true,
+  "all_ranked_comparator_ratios_recomputed": true,
+  "full_frozen_function_and_binary_source_proof": true,
+  "comparisons": [
+    {
+      "lane": "0/tpsa/first_use",
+      "source_ratio_recomputed": true,
+      "ranked_comparator_ratios_recomputed": true
+    },
+    {
+      "lane": "0/tpsa/repeated_use",
+      "source_ratio_recomputed": true,
+      "ranked_comparator_ratios_recomputed": true
+    },
+    {
+      "lane": "0/tpsa/parse_inclusive",
+      "source_ratio_recomputed": true,
+      "ranked_comparator_ratios_recomputed": true
+    },
+    {
+      "lane": "0/labute_asa/first_use",
+      "source_ratio_recomputed": true,
+      "ranked_comparator_ratios_recomputed": true
+    },
+    {
+      "lane": "0/labute_asa/repeated_use",
+      "source_ratio_recomputed": true,
+      "ranked_comparator_ratios_recomputed": true
+    },
+    {
+      "lane": "0/labute_asa/parse_inclusive",
+      "source_ratio_recomputed": true,
+      "ranked_comparator_ratios_recomputed": true
+    },
+    {
+      "lane": "0/num_rings/first_use",
+      "source_ratio_recomputed": true,
+      "ranked_comparator_ratios_recomputed": true
+    },
+    {
+      "lane": "0/num_rings/repeated_use",
+      "source_ratio_recomputed": true,
+      "ranked_comparator_ratios_recomputed": true
+    },
+    {
+      "lane": "0/num_rings/parse_inclusive",
+      "source_ratio_recomputed": true,
+      "ranked_comparator_ratios_recomputed": true
+    },
+    {
+      "lane": "0/morgan2_2048/first_use",
+      "source_ratio_recomputed": true,
+      "ranked_comparator_ratios_recomputed": true
+    },
+    {
+      "lane": "0/morgan2_2048/repeated_use",
+      "source_ratio_recomputed": true,
+      "ranked_comparator_ratios_recomputed": true
+    },
+    {
+      "lane": "0/morgan2_2048/parse_inclusive",
+      "source_ratio_recomputed": true,
+      "ranked_comparator_ratios_recomputed": true
+    },
+    {
+      "lane": "0/morgan2_chiral/first_use",
+      "source_ratio_recomputed": true,
+      "ranked_comparator_ratios_recomputed": true
+    },
+    {
+      "lane": "0/morgan2_chiral/repeated_use",
+      "source_ratio_recomputed": true,
+      "ranked_comparator_ratios_recomputed": true
+    },
+    {
+      "lane": "0/morgan2_chiral/parse_inclusive",
+      "source_ratio_recomputed": true,
+      "ranked_comparator_ratios_recomputed": true
+    },
+    {
+      "lane": "0/morgan3_2048/first_use",
+      "source_ratio_recomputed": true,
+      "ranked_comparator_ratios_recomputed": true
+    },
+    {
+      "lane": "0/morgan3_2048/repeated_use",
+      "source_ratio_recomputed": true,
+      "ranked_comparator_ratios_recomputed": true
+    },
+    {
+      "lane": "0/morgan3_2048/parse_inclusive",
+      "source_ratio_recomputed": true,
+      "ranked_comparator_ratios_recomputed": true
+    },
+    {
+      "lane": "0/maccs/first_use",
+      "source_ratio_recomputed": true,
+      "ranked_comparator_ratios_recomputed": true
+    },
+    {
+      "lane": "0/maccs/repeated_use",
+      "source_ratio_recomputed": true,
+      "ranked_comparator_ratios_recomputed": true
+    },
+    {
+      "lane": "0/maccs/parse_inclusive",
+      "source_ratio_recomputed": true,
+      "ranked_comparator_ratios_recomputed": true
+    },
+    {
+      "lane": "5000/tpsa/first_use",
+      "source_ratio_recomputed": true,
+      "ranked_comparator_ratios_recomputed": true
+    },
+    {
+      "lane": "5000/tpsa/repeated_use",
+      "source_ratio_recomputed": true,
+      "ranked_comparator_ratios_recomputed": true
+    },
+    {
+      "lane": "5000/tpsa/parse_inclusive",
+      "source_ratio_recomputed": true,
+      "ranked_comparator_ratios_recomputed": true
+    },
+    {
+      "lane": "5000/labute_asa/first_use",
+      "source_ratio_recomputed": true,
+      "ranked_comparator_ratios_recomputed": true
+    },
+    {
+      "lane": "5000/labute_asa/repeated_use",
+      "source_ratio_recomputed": true,
+      "ranked_comparator_ratios_recomputed": true
+    },
+    {
+      "lane": "5000/labute_asa/parse_inclusive",
+      "source_ratio_recomputed": true,
+      "ranked_comparator_ratios_recomputed": true
+    },
+    {
+      "lane": "5000/num_rings/first_use",
+      "source_ratio_recomputed": true,
+      "ranked_comparator_ratios_recomputed": true
+    },
+    {
+      "lane": "5000/num_rings/repeated_use",
+      "source_ratio_recomputed": true,
+      "ranked_comparator_ratios_recomputed": true
+    },
+    {
+      "lane": "5000/num_rings/parse_inclusive",
+      "source_ratio_recomputed": true,
+      "ranked_comparator_ratios_recomputed": true
+    },
+    {
+      "lane": "5000/morgan2_2048/first_use",
+      "source_ratio_recomputed": true,
+      "ranked_comparator_ratios_recomputed": true
+    },
+    {
+      "lane": "5000/morgan2_2048/repeated_use",
+      "source_ratio_recomputed": true,
+      "ranked_comparator_ratios_recomputed": true
+    },
+    {
+      "lane": "5000/morgan2_2048/parse_inclusive",
+      "source_ratio_recomputed": true,
+      "ranked_comparator_ratios_recomputed": true
+    },
+    {
+      "lane": "5000/morgan2_chiral/first_use",
+      "source_ratio_recomputed": true,
+      "ranked_comparator_ratios_recomputed": true
+    },
+    {
+      "lane": "5000/morgan2_chiral/repeated_use",
+      "source_ratio_recomputed": true,
+      "ranked_comparator_ratios_recomputed": true
+    },
+    {
+      "lane": "5000/morgan2_chiral/parse_inclusive",
+      "source_ratio_recomputed": true,
+      "ranked_comparator_ratios_recomputed": true
+    },
+    {
+      "lane": "5000/morgan3_2048/first_use",
+      "source_ratio_recomputed": true,
+      "ranked_comparator_ratios_recomputed": true
+    },
+    {
+      "lane": "5000/morgan3_2048/repeated_use",
+      "source_ratio_recomputed": true,
+      "ranked_comparator_ratios_recomputed": true
+    },
+    {
+      "lane": "5000/morgan3_2048/parse_inclusive",
+      "source_ratio_recomputed": true,
+      "ranked_comparator_ratios_recomputed": true
+    },
+    {
+      "lane": "5000/maccs/first_use",
+      "source_ratio_recomputed": true,
+      "ranked_comparator_ratios_recomputed": true
+    },
+    {
+      "lane": "5000/maccs/repeated_use",
+      "source_ratio_recomputed": true,
+      "ranked_comparator_ratios_recomputed": true
+    },
+    {
+      "lane": "5000/maccs/parse_inclusive",
+      "source_ratio_recomputed": true,
+      "ranked_comparator_ratios_recomputed": true
+    }
+  ]
+}

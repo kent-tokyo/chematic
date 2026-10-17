@@ -1,0 +1,54 @@
+{
+  "outputs": {
+    "baseline": {
+      "descriptor": {
+        "sha256": "f3bb0583c506efee9191a8777632995191d55c8d7b46e5b516cf7f6801c76d32",
+        "rows": 14072,
+        "errors": 0,
+        "nonfinite_float_outcomes": 6
+      },
+      "morgan": {
+        "sha256": "dd7145e5104b1c32895ced98329845a2b919fd30510e35096477f64f75ce0140",
+        "rows": 14072,
+        "errors": 0,
+        "nonfinite_float_outcomes": 0
+      },
+      "maccs": {
+        "sha256": "06b79dc30a2dc893d05032009f693d37a2826a6a8d87f10322503d47f29ec3f4",
+        "rows": 14072,
+        "errors": 0,
+        "nonfinite_float_outcomes": 0
+      }
+    },
+    "candidate": {
+      "descriptor": {
+        "sha256": "f3bb0583c506efee9191a8777632995191d55c8d7b46e5b516cf7f6801c76d32",
+        "rows": 14072,
+        "errors": 0,
+        "nonfinite_float_outcomes": 6
+      },
+      "morgan": {
+        "sha256": "dd7145e5104b1c32895ced98329845a2b919fd30510e35096477f64f75ce0140",
+        "rows": 14072,
+        "errors": 0,
+        "nonfinite_float_outcomes": 0
+      },
+      "maccs": {
+        "sha256": "06b79dc30a2dc893d05032009f693d37a2826a6a8d87f10322503d47f29ec3f4",
+        "rows": 14072,
+        "errors": 0,
+        "nonfinite_float_outcomes": 0
+      }
+    }
+  },
+  "python_tests": {
+    "baseline": "====================== 3473 passed, 32 skipped in 18.12s =======================",
+    "candidate": "======================= 3473 passed, 32 skipped in 9.01s ======================="
+  },
+  "passed": true,
+  "counts": {
+    "descriptor_outcomes": 112576,
+    "morgan_outputs": 56288,
+    "maccs_outcomes": 28144
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "scope": "Synthetic factory/state spy; all preflight elapsed fields discarded. Not formal samples.",
+  "factory_calls": 61001,
+  "evaluated_once_objects": 40001,
+  "evaluated_twice_objects": 20000,
+  "returned_rows_each_mode": 20000,
+  "first_use_is_fresh": true,
+  "repeated_use_is_warmed_once": true,
+  "parse_inclusive_calls_factory_each_row": true
+}

@@ -1,0 +1,5 @@
+{
+  "returncode": 0,
+  "stderr": "Sampling process 37271 for 2 seconds with 1 millisecond of run time between samples\nSampling completed, processing symbols...\nSample analysis of process 37271 written to file /private/tmp/chematic-python-asa-evidence-20261017/profile-5000-retry1.txt\n",
+  "scope": "Diagnostic only; initial attachment failure retained. No formal samples."
+}

@@ -1,0 +1,60 @@
+{
+  "base_commit": "ad0283a8101dfc6f7d5ea6b6bdea94a35f8404f0",
+  "candidate": "Exact uniform cyclic-component shortcut to existing Identity result, preserving shared ring cache preparation and full fallback",
+  "primary": [
+    "labute_asa/first_use at offset 0",
+    "labute_asa/first_use at offset 5000"
+  ],
+  "corpus": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+  "offsets": [
+    0,
+    5000
+  ],
+  "unique_records_each": 1000,
+  "blocks": 20,
+  "operations": [
+    "tpsa",
+    "labute_asa",
+    "num_rings",
+    "morgan2_2048",
+    "morgan2_chiral",
+    "morgan3_2048",
+    "maccs"
+  ],
+  "modes": [
+    "first_use",
+    "repeated_use",
+    "parse_inclusive"
+  ],
+  "fixed_batch_copies": {
+    "tpsa": 20,
+    "labute_asa": 20,
+    "num_rings": 20,
+    "morgan2_2048": 1,
+    "morgan2_chiral": 1,
+    "morgan3_2048": 1,
+    "maccs": 1
+  },
+  "batch_method": "Scalar batches contain 20 copies of the complete unfiltered 1000-record slice. Every copy is parsed into an independent molecule. First use evaluates each fresh object once; repeated use warms each object once; parse-inclusive parses/evaluates every row inside timer. Fingerprints retain original single 1000-record batch. Fixed before all formal timing, to reduce timer noise for roughly 40-microsecond warm scalar batches. No pooled measurements or reused timing samples.",
+  "adoption": "Exact full 14072 source descriptor/Morgan/MACCS outcomes and frozen shortcut; both primary paired CI lower>1; all 42 source-relative median ratios>=0.99; disclose every negative interval",
+  "comparator_win": "Equivalent outputs, paired CI lower>1, 20/20 faster blocks; mismatches/nonfinite errors stay unranked",
+  "source_valid_epochs": 1,
+  "adaptive_timing_reruns": false,
+  "build": {
+    "opt_level": 3,
+    "lto": true,
+    "codegen_units": 1,
+    "jobs": 1,
+    "incremental": false,
+    "strip": "none",
+    "features": [
+      "native-inchi"
+    ],
+    "independent_targets": true
+  },
+  "comparators": {
+    "rdkit": "2026.09.1",
+    "cosmolkit": "0.5.0"
+  },
+  "scope": "One shared macOS arm64 host, source wheels, exposed development slices. Not universal, holdout, published-package, or unchanged-1000-object-batch evidence. Inputs, imports and preparation outside operation timer except parse-inclusive; native returned objects retained, normalization outside timer. Whole-process peak RSS includes imports and all operation batches; scalar batches are larger than historical single-copy benchmarks."
+}

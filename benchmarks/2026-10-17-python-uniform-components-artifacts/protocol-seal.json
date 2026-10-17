@@ -1,0 +1,15 @@
+{
+  "files_sha256": {
+    "build.py": "8c480d5d67276669e8ebb4ab3f016eebbe8bb02372e83426564d9b6ea25a7b37",
+    "source-manifest.json": "32b6dde464f00432e511dd90007e48fbacbce421a32fc3f0ba3e1967cc6b7ec2",
+    "formal.py": "c9b303e1b8397081a6288a2c7ce449a6eace8672a5453e93f8d01d45192afe67",
+    "measurement-plan.json": "3ceb7542ec85aa9c4a28e9c4e9107d0d51db06ffbd39fca5e39ec116491b6c48",
+    "bench-fixed-batches.py": "97aaddb50897b1a585b5794c82488619c3ed5ca2a3c22e4e6fba5ee9629dd8c3",
+    "instrumentation-check.json": "ba6677548996cb01d4a8d7f88b26f8c7e40b0eb0053965fa3f3b2e1a9a6046b9",
+    "binary-source-proof.json": "f0f285f2a258b8f544d6d576257683ec140a3e71e072a5397e0c275d0b23ff4c",
+    "implement.py": "7c3a811ab454f898c17c168e9c028e0fe6cbcf7af00ed0e8c82feb9fcbb2ae42",
+    "comparator-manifest.json": "7a9a882a02de80e53f2f523a5933edbebaf19ada9e65d17d37805fe8f5e69817",
+    "prepare-protocol.py": "6f82e3a71e724556bb62d4a2b56acefaa1012ffb8304c74720003d42ae09af9e",
+    "check-instrumentation.py": "f9a5d143b4cd1ef07e73cf3af396942ccd952f60820e3e5eca04f756afc216ee"
+  }
+}

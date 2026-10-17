@@ -1,0 +1,421 @@
+{
+  "local_adoption_gate_passed": false,
+  "primary": {
+    "0": {
+      "median": 1.052,
+      "ci95": [
+        1.031,
+        1.081
+      ],
+      "winning_blocks": 17,
+      "blocks": 20
+    },
+    "5000": {
+      "median": 1.004,
+      "ci95": [
+        0.994,
+        1.013
+      ],
+      "winning_blocks": 12,
+      "blocks": 20
+    }
+  },
+  "source_ratios": {
+    "0/tpsa/first_use": {
+      "median": 1.078,
+      "ci95": [
+        1.049,
+        1.11
+      ],
+      "winning_blocks": 16,
+      "blocks": 20
+    },
+    "0/tpsa/repeated_use": {
+      "median": 1.114,
+      "ci95": [
+        0.973,
+        1.197
+      ],
+      "winning_blocks": 13,
+      "blocks": 20
+    },
+    "0/tpsa/parse_inclusive": {
+      "median": 1.019,
+      "ci95": [
+        1.011,
+        1.041
+      ],
+      "winning_blocks": 16,
+      "blocks": 20
+    },
+    "0/labute_asa/first_use": {
+      "median": 1.052,
+      "ci95": [
+        1.031,
+        1.081
+      ],
+      "winning_blocks": 17,
+      "blocks": 20
+    },
+    "0/labute_asa/repeated_use": {
+      "median": 1.061,
+      "ci95": [
+        0.972,
+        1.112
+      ],
+      "winning_blocks": 13,
+      "blocks": 20
+    },
+    "0/labute_asa/parse_inclusive": {
+      "median": 1.019,
+      "ci95": [
+        1.002,
+        1.034
+      ],
+      "winning_blocks": 15,
+      "blocks": 20
+    },
+    "0/num_rings/first_use": {
+      "median": 1.005,
+      "ci95": [
+        0.991,
+        1.024
+      ],
+      "winning_blocks": 11,
+      "blocks": 20
+    },
+    "0/num_rings/repeated_use": {
+      "median": 1.078,
+      "ci95": [
+        1.003,
+        1.163
+      ],
+      "winning_blocks": 15,
+      "blocks": 20
+    },
+    "0/num_rings/parse_inclusive": {
+      "median": 1.008,
+      "ci95": [
+        0.993,
+        1.014
+      ],
+      "winning_blocks": 12,
+      "blocks": 20
+    },
+    "0/morgan2_2048/first_use": {
+      "median": 1.023,
+      "ci95": [
+        1.011,
+        1.038
+      ],
+      "winning_blocks": 18,
+      "blocks": 20
+    },
+    "0/morgan2_2048/repeated_use": {
+      "median": 1.022,
+      "ci95": [
+        0.998,
+        1.039
+      ],
+      "winning_blocks": 13,
+      "blocks": 20
+    },
+    "0/morgan2_2048/parse_inclusive": {
+      "median": 1.011,
+      "ci95": [
+        1.002,
+        1.034
+      ],
+      "winning_blocks": 15,
+      "blocks": 20
+    },
+    "0/morgan2_chiral/first_use": {
+      "median": 1.007,
+      "ci95": [
+        0.993,
+        1.026
+      ],
+      "winning_blocks": 11,
+      "blocks": 20
+    },
+    "0/morgan2_chiral/repeated_use": {
+      "median": 0.997,
+      "ci95": [
+        0.986,
+        1.006
+      ],
+      "winning_blocks": 8,
+      "blocks": 20
+    },
+    "0/morgan2_chiral/parse_inclusive": {
+      "median": 1.005,
+      "ci95": [
+        0.988,
+        1.018
+      ],
+      "winning_blocks": 12,
+      "blocks": 20
+    },
+    "0/morgan3_2048/first_use": {
+      "median": 1.018,
+      "ci95": [
+        1.008,
+        1.033
+      ],
+      "winning_blocks": 16,
+      "blocks": 20
+    },
+    "0/morgan3_2048/repeated_use": {
+      "median": 1.008,
+      "ci95": [
+        0.978,
+        1.04
+      ],
+      "winning_blocks": 11,
+      "blocks": 20
+    },
+    "0/morgan3_2048/parse_inclusive": {
+      "median": 1.009,
+      "ci95": [
+        0.988,
+        1.026
+      ],
+      "winning_blocks": 13,
+      "blocks": 20
+    },
+    "0/maccs/first_use": {
+      "median": 0.999,
+      "ci95": [
+        0.996,
+        1.003
+      ],
+      "winning_blocks": 9,
+      "blocks": 20
+    },
+    "0/maccs/repeated_use": {
+      "median": 1.0,
+      "ci95": [
+        0.998,
+        1.015
+      ],
+      "winning_blocks": 11,
+      "blocks": 20
+    },
+    "0/maccs/parse_inclusive": {
+      "median": 1.001,
+      "ci95": [
+        0.997,
+        1.011
+      ],
+      "winning_blocks": 12,
+      "blocks": 20
+    },
+    "5000/tpsa/first_use": {
+      "median": 1.004,
+      "ci95": [
+        0.991,
+        1.008
+      ],
+      "winning_blocks": 12,
+      "blocks": 20
+    },
+    "5000/tpsa/repeated_use": {
+      "median": 0.989,
+      "ci95": [
+        0.966,
+        1.01
+      ],
+      "winning_blocks": 8,
+      "blocks": 20
+    },
+    "5000/tpsa/parse_inclusive": {
+      "median": 1.0,
+      "ci95": [
+        0.991,
+        1.029
+      ],
+      "winning_blocks": 10,
+      "blocks": 20
+    },
+    "5000/labute_asa/first_use": {
+      "median": 1.004,
+      "ci95": [
+        0.994,
+        1.013
+      ],
+      "winning_blocks": 12,
+      "blocks": 20
+    },
+    "5000/labute_asa/repeated_use": {
+      "median": 0.997,
+      "ci95": [
+        0.937,
+        1.036
+      ],
+      "winning_blocks": 10,
+      "blocks": 20
+    },
+    "5000/labute_asa/parse_inclusive": {
+      "median": 1.007,
+      "ci95": [
+        1.002,
+        1.017
+      ],
+      "winning_blocks": 15,
+      "blocks": 20
+    },
+    "5000/num_rings/first_use": {
+      "median": 1.0,
+      "ci95": [
+        0.975,
+        1.017
+      ],
+      "winning_blocks": 10,
+      "blocks": 20
+    },
+    "5000/num_rings/repeated_use": {
+      "median": 1.023,
+      "ci95": [
+        0.991,
+        1.049
+      ],
+      "winning_blocks": 13,
+      "blocks": 20
+    },
+    "5000/num_rings/parse_inclusive": {
+      "median": 1.005,
+      "ci95": [
+        0.99,
+        1.033
+      ],
+      "winning_blocks": 11,
+      "blocks": 20
+    },
+    "5000/morgan2_2048/first_use": {
+      "median": 1.001,
+      "ci95": [
+        0.985,
+        1.019
+      ],
+      "winning_blocks": 10,
+      "blocks": 20
+    },
+    "5000/morgan2_2048/repeated_use": {
+      "median": 1.026,
+      "ci95": [
+        1.005,
+        1.044
+      ],
+      "winning_blocks": 15,
+      "blocks": 20
+    },
+    "5000/morgan2_2048/parse_inclusive": {
+      "median": 1.002,
+      "ci95": [
+        0.997,
+        1.017
+      ],
+      "winning_blocks": 11,
+      "blocks": 20
+    },
+    "5000/morgan2_chiral/first_use": {
+      "median": 1.019,
+      "ci95": [
+        0.993,
+        1.039
+      ],
+      "winning_blocks": 14,
+      "blocks": 20
+    },
+    "5000/morgan2_chiral/repeated_use": {
+      "median": 1.006,
+      "ci95": [
+        0.985,
+        1.017
+      ],
+      "winning_blocks": 12,
+      "blocks": 20
+    },
+    "5000/morgan2_chiral/parse_inclusive": {
+      "median": 0.997,
+      "ci95": [
+        0.987,
+        1.012
+      ],
+      "winning_blocks": 9,
+      "blocks": 20
+    },
+    "5000/morgan3_2048/first_use": {
+      "median": 1.005,
+      "ci95": [
+        0.994,
+        1.031
+      ],
+      "winning_blocks": 11,
+      "blocks": 20
+    },
+    "5000/morgan3_2048/repeated_use": {
+      "median": 1.006,
+      "ci95": [
+        0.993,
+        1.044
+      ],
+      "winning_blocks": 11,
+      "blocks": 20
+    },
+    "5000/morgan3_2048/parse_inclusive": {
+      "median": 1.021,
+      "ci95": [
+        0.993,
+        1.048
+      ],
+      "winning_blocks": 14,
+      "blocks": 20
+    },
+    "5000/maccs/first_use": {
+      "median": 1.008,
+      "ci95": [
+        0.996,
+        1.016
+      ],
+      "winning_blocks": 13,
+      "blocks": 20
+    },
+    "5000/maccs/repeated_use": {
+      "median": 1.002,
+      "ci95": [
+        0.996,
+        1.013
+      ],
+      "winning_blocks": 11,
+      "blocks": 20
+    },
+    "5000/maccs/parse_inclusive": {
+      "median": 1.004,
+      "ci95": [
+        0.999,
+        1.011
+      ],
+      "winning_blocks": 13,
+      "blocks": 20
+    }
+  },
+  "source_floor_failures": [
+    {
+      "lane": "5000/tpsa/repeated_use",
+      "speedup": {
+        "median": 0.989,
+        "ci95": [
+          0.966,
+          1.01
+        ],
+        "winning_blocks": 8,
+        "blocks": 20
+      }
+    }
+  ],
+  "negative_intervals": [],
+  "all_14072_source_outcomes_exact": true,
+  "source_valid_epochs_each_slice": 1,
+  "universal_superiority": false
+}

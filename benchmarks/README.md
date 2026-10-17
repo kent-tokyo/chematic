@@ -75,6 +75,8 @@ Older artifact audits, similarity-search work, streaming/format matrices,
 [`archive-index.md`](archive-index.md). They are retained for provenance and do
 not establish current behavior.
 
+- [Uniform cyclic-component descriptor preparation](2026-10-17-python-uniform-components.md): exact full-source outcomes and all 42 fixed RDKit/COSMolKit retention lanes.
+
 ## What counts as a speed win
 
 A lane is called an equivalent-output speed win only when:

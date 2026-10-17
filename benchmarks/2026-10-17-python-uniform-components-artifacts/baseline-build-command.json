@@ -1,0 +1,27 @@
+{
+  "command": [
+    "/Library/Frameworks/Python.framework/Versions/3.13/bin/maturin",
+    "build",
+    "--offline",
+    "--locked",
+    "--release",
+    "--manifest-path",
+    "/private/tmp/chematic-python-asa-evidence-20261017/baseline-source/crates/chematic-py/Cargo.toml",
+    "--interpreter",
+    "/private/tmp/chematic-python-asa-env-20261017/bin/python",
+    "--out",
+    "/private/tmp/chematic-python-asa-evidence-20261017/baseline-wheel",
+    "-vv"
+  ],
+  "cwd": "/private/tmp/chematic-python-asa-evidence-20261017/baseline-source/crates/chematic-py",
+  "env": {
+    "CARGO_TARGET_DIR": "/private/tmp/chematic-python-asa-evidence-20261017/baseline-target",
+    "CARGO_BUILD_JOBS": "1",
+    "CARGO_INCREMENTAL": "0",
+    "CARGO_PROFILE_RELEASE_OPT_LEVEL": "3",
+    "CARGO_PROFILE_RELEASE_LTO": "true",
+    "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "1",
+    "CARGO_PROFILE_RELEASE_STRIP": "none",
+    "PYO3_PYTHON": "/private/tmp/chematic-python-asa-env-20261017/bin/python"
+  }
+}

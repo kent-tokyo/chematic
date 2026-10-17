@@ -1,0 +1,72 @@
+{
+  "commands": {
+    "native-tests": [
+      "cargo",
+      "test",
+      "--offline",
+      "--locked",
+      "--release",
+      "--lib",
+      "--tests",
+      "-p",
+      "chematic-perception",
+      "-p",
+      "chematic-smiles",
+      "-p",
+      "chematic-chem",
+      "-p",
+      "chematic-fp",
+      "-p",
+      "chematic-mol"
+    ],
+    "clippy": [
+      "cargo",
+      "clippy",
+      "--offline",
+      "--locked",
+      "--release",
+      "--all-targets",
+      "-p",
+      "chematic-perception",
+      "-p",
+      "chematic-smiles",
+      "-p",
+      "chematic-chem",
+      "-p",
+      "chematic-fp",
+      "-p",
+      "chematic-mol",
+      "--",
+      "-D",
+      "warnings"
+    ],
+    "format": [
+      "cargo",
+      "fmt",
+      "--all",
+      "--",
+      "--check"
+    ],
+    "refactor": [
+      "python3",
+      "scripts/check_refactor_budget.py"
+    ],
+    "runner-tests": [
+      "/private/tmp/chematic-python-asa-env-20261017/bin/python",
+      "-m",
+      "pytest",
+      "-q",
+      "-p",
+      "no:cacheprovider",
+      "scripts/tests/test_bench_python_speed_frontier.py"
+    ]
+  },
+  "env": {
+    "CARGO_TARGET_DIR": "/private/tmp/chematic-python-asa-evidence-20261017/native-target",
+    "CARGO_BUILD_JOBS": "1",
+    "CARGO_INCREMENTAL": "0",
+    "CARGO_PROFILE_RELEASE_LTO": "false",
+    "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "16",
+    "PYO3_PYTHON": "/private/tmp/chematic-python-asa-env-20261017/bin/python"
+  }
+}

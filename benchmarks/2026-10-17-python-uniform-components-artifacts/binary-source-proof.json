@@ -1,0 +1,51 @@
+{
+  "source_contrast_valid": true,
+  "compiler_rebuilt_production_library": true,
+  "independent_targets": true,
+  "all_baseline_source_files_match_git": true,
+  "complete_frozen_function_exact": true,
+  "base_commit": "ad0283a8101dfc6f7d5ea6b6bdea94a35f8404f0",
+  "candidate_commit": "3222303a4a5c4a1956ee82cb0e35529273239a12",
+  "shortcut_machine_code": {
+    "baseline": [
+      {
+        "symbol": "__RNCNvNtCsgpDvea1FsNu_19chematic_perception12rdkit_parity15parity_shortcut0B5_",
+        "sha256": "20dfa65fdcc00896f49e6f5bf7194690cc232a01ddb5a5b690802cd73d4aed66",
+        "instructions": 3918
+      },
+      {
+        "symbol": "__RNvNtCsgpDvea1FsNu_19chematic_perception12rdkit_parity15parity_shortcut",
+        "sha256": "71acf69097922bcc6c54d443666750a591c87780844796ba2ede1a4976f40ce0",
+        "instructions": 141
+      }
+    ],
+    "candidate": [
+      {
+        "symbol": "__RNCNvNtCsgpDvea1FsNu_19chematic_perception12rdkit_parity15parity_shortcut0B5_",
+        "sha256": "e34bef7d14ce5ada68464288609b57d13e060ef9f32437667511f2ed337e02ec",
+        "instructions": 4160
+      },
+      {
+        "symbol": "__RNvNtCsgpDvea1FsNu_19chematic_perception12rdkit_parity15parity_shortcut",
+        "sha256": "f589fb371e142f49efeb215f9fea9dc4b7c461c41c0b3a995c63ef62b151f9d0",
+        "instructions": 141
+      }
+    ]
+  },
+  "wheels": {
+    "baseline": {
+      "path": "/private/tmp/chematic-python-asa-evidence-20261017/baseline-wheel/chematic-1.1.6-cp313-cp313-macosx_11_0_arm64.whl",
+      "sha256": "35786940e15ceb7bd7f0e9c044466b8b05eb7cd5d37fc545aec3eb1a30a3ca6f",
+      "extensions": {
+        "chematic/chematic.cpython-313-darwin.so": "065ffceb813eb3d58588b9581cddee9945e9acb41968abf556d14ab5be4b2c18"
+      }
+    },
+    "candidate": {
+      "path": "/private/tmp/chematic-python-asa-evidence-20261017/candidate-wheel/chematic-1.1.6-cp313-cp313-macosx_11_0_arm64.whl",
+      "sha256": "5aecb24a91028854fd500ad4fa8800da5de2c5fb5e32afd5f4dab1f5e09d81c8",
+      "extensions": {
+        "chematic/chematic.cpython-313-darwin.so": "2dad33be19cd7920343b338be9fa51d83d42fdd1fe0dc87d1c56296d044a932a"
+      }
+    }
+  }
+}

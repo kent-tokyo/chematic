@@ -1,0 +1,16 @@
+{
+  "command": [
+    "/private/tmp/chematic-python-asa-env-20261017/bin/python",
+    "-m",
+    "pytest",
+    "-q",
+    "-rs",
+    "-p",
+    "no:cacheprovider",
+    "crates/chematic-py/tests"
+  ],
+  "env": {
+    "PYTHONPATH": "/private/tmp/chematic-python-asa-evidence-20261017/candidate",
+    "PYTHONDONTWRITEBYTECODE": "1"
+  }
+}
