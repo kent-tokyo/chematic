@@ -1,0 +1,6 @@
+validation/typing/crystal_obj_invalid.py:4: error: Argument 1 to "write_crystal_obj_checked" has incompatible type "str"; expected "PeriodicStructure"  [arg-type]
+validation/typing/crystal_obj_invalid.py:5: error: List item 0 has incompatible type "str"; expected "float"  [list-item]
+validation/typing/crystal_obj_invalid.py:6: error: Argument "subdivisions" to "write_crystal_obj_checked" has incompatible type "str"; expected "int"  [arg-type]
+validation/typing/crystal_obj_invalid.py:8: error: Incompatible types in assignment (expression has type "str", variable has type "int")  [assignment]
+validation/typing/crystal_obj_invalid.py:9: error: Property "face_count" defined in "ObjMeshExport" is read-only  [misc]
+Found 5 errors in 1 file (checked 1 source file)

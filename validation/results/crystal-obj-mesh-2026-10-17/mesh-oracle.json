@@ -1,0 +1,742 @@
+{
+  "trimesh_version": "4.9.0",
+  "ase_version": "3.26.0",
+  "conditions": 73,
+  "spheres": 532,
+  "vertices": 107148,
+  "faces": 212168,
+  "max_center_error_angstrom": 1.1723955140041653e-13,
+  "max_radius_error_angstrom": 2.886579864025407e-15,
+  "extension_sha256": "c6db880b6f5ca4ea0388f238c24e8a5b55751daab1084cf0d1d7b56e2427257b",
+  "records": [
+    {
+      "kind": "explicit_cell",
+      "cell": 0,
+      "spheres": 1,
+      "subdivisions": 0,
+      "vertices": 6,
+      "faces": 8,
+      "max_center_error_angstrom": 2.6645352591003757e-15,
+      "max_radius_error_angstrom": 3.3306690738754696e-16
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 0,
+      "spheres": 1,
+      "subdivisions": 1,
+      "vertices": 18,
+      "faces": 32,
+      "max_center_error_angstrom": 4.440892098500626e-16,
+      "max_radius_error_angstrom": 3.3306690738754696e-16
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 0,
+      "spheres": 1,
+      "subdivisions": 2,
+      "vertices": 66,
+      "faces": 128,
+      "max_center_error_angstrom": 8.881784197001252e-16,
+      "max_radius_error_angstrom": 3.3306690738754696e-16
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 0,
+      "spheres": 1,
+      "subdivisions": 3,
+      "vertices": 258,
+      "faces": 512,
+      "max_center_error_angstrom": 4.440892098500626e-16,
+      "max_radius_error_angstrom": 4.440892098500626e-16
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 0,
+      "spheres": 1,
+      "subdivisions": 4,
+      "vertices": 1026,
+      "faces": 2048,
+      "max_center_error_angstrom": 4.440892098500626e-16,
+      "max_radius_error_angstrom": 5.551115123125783e-16
+    },
+    {
+      "kind": "ase_cif",
+      "cell": 0,
+      "spheres": 1,
+      "subdivisions": 2,
+      "vertices": 66,
+      "faces": 128,
+      "max_center_error_angstrom": 1.7763568394002505e-15,
+      "max_radius_error_angstrom": 6.661338147750939e-16
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 0,
+      "spheres": 2,
+      "subdivisions": 0,
+      "vertices": 12,
+      "faces": 16,
+      "max_center_error_angstrom": 3.552713678800501e-15,
+      "max_radius_error_angstrom": 2.220446049250313e-16
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 0,
+      "spheres": 2,
+      "subdivisions": 1,
+      "vertices": 36,
+      "faces": 64,
+      "max_center_error_angstrom": 2.6645352591003757e-15,
+      "max_radius_error_angstrom": 4.440892098500626e-16
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 0,
+      "spheres": 2,
+      "subdivisions": 2,
+      "vertices": 132,
+      "faces": 256,
+      "max_center_error_angstrom": 1.7763568394002505e-15,
+      "max_radius_error_angstrom": 4.440892098500626e-16
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 0,
+      "spheres": 2,
+      "subdivisions": 3,
+      "vertices": 516,
+      "faces": 1024,
+      "max_center_error_angstrom": 1.7763568394002505e-15,
+      "max_radius_error_angstrom": 4.440892098500626e-16
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 0,
+      "spheres": 2,
+      "subdivisions": 4,
+      "vertices": 2052,
+      "faces": 4096,
+      "max_center_error_angstrom": 3.552713678800501e-15,
+      "max_radius_error_angstrom": 5.551115123125783e-16
+    },
+    {
+      "kind": "ase_cif",
+      "cell": 0,
+      "spheres": 2,
+      "subdivisions": 2,
+      "vertices": 132,
+      "faces": 256,
+      "max_center_error_angstrom": 1.7763568394002505e-15,
+      "max_radius_error_angstrom": 6.661338147750939e-16
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 0,
+      "spheres": 7,
+      "subdivisions": 0,
+      "vertices": 42,
+      "faces": 56,
+      "max_center_error_angstrom": 2.5757174171303632e-14,
+      "max_radius_error_angstrom": 7.216449660063518e-16
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 0,
+      "spheres": 7,
+      "subdivisions": 1,
+      "vertices": 126,
+      "faces": 224,
+      "max_center_error_angstrom": 7.993605777301127e-15,
+      "max_radius_error_angstrom": 7.216449660063518e-16
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 0,
+      "spheres": 7,
+      "subdivisions": 2,
+      "vertices": 462,
+      "faces": 896,
+      "max_center_error_angstrom": 7.105427357601002e-15,
+      "max_radius_error_angstrom": 8.326672684688674e-16
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 0,
+      "spheres": 7,
+      "subdivisions": 3,
+      "vertices": 1806,
+      "faces": 3584,
+      "max_center_error_angstrom": 7.993605777301127e-15,
+      "max_radius_error_angstrom": 8.326672684688674e-16
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 0,
+      "spheres": 7,
+      "subdivisions": 4,
+      "vertices": 7182,
+      "faces": 14336,
+      "max_center_error_angstrom": 9.769962616701378e-15,
+      "max_radius_error_angstrom": 8.326672684688674e-16
+    },
+    {
+      "kind": "ase_cif",
+      "cell": 0,
+      "spheres": 7,
+      "subdivisions": 2,
+      "vertices": 462,
+      "faces": 896,
+      "max_center_error_angstrom": 8.881784197001252e-16,
+      "max_radius_error_angstrom": 7.771561172376096e-16
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 0,
+      "spheres": 13,
+      "subdivisions": 0,
+      "vertices": 78,
+      "faces": 104,
+      "max_center_error_angstrom": 1.7763568394002505e-14,
+      "max_radius_error_angstrom": 4.996003610813204e-16
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 0,
+      "spheres": 13,
+      "subdivisions": 1,
+      "vertices": 234,
+      "faces": 416,
+      "max_center_error_angstrom": 6.217248937900877e-15,
+      "max_radius_error_angstrom": 6.661338147750939e-16
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 0,
+      "spheres": 13,
+      "subdivisions": 2,
+      "vertices": 858,
+      "faces": 1664,
+      "max_center_error_angstrom": 7.105427357601002e-15,
+      "max_radius_error_angstrom": 6.661338147750939e-16
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 0,
+      "spheres": 13,
+      "subdivisions": 3,
+      "vertices": 3354,
+      "faces": 6656,
+      "max_center_error_angstrom": 7.105427357601002e-15,
+      "max_radius_error_angstrom": 6.661338147750939e-16
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 0,
+      "spheres": 13,
+      "subdivisions": 4,
+      "vertices": 13338,
+      "faces": 26624,
+      "max_center_error_angstrom": 2.6645352591003757e-14,
+      "max_radius_error_angstrom": 8.881784197001252e-16
+    },
+    {
+      "kind": "ase_cif",
+      "cell": 0,
+      "spheres": 13,
+      "subdivisions": 2,
+      "vertices": 858,
+      "faces": 1664,
+      "max_center_error_angstrom": 5.329070518200751e-15,
+      "max_radius_error_angstrom": 1.4432899320127035e-15
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 1,
+      "spheres": 1,
+      "subdivisions": 0,
+      "vertices": 6,
+      "faces": 8,
+      "max_center_error_angstrom": 6.661338147750939e-16,
+      "max_radius_error_angstrom": 3.3306690738754696e-16
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 1,
+      "spheres": 1,
+      "subdivisions": 1,
+      "vertices": 18,
+      "faces": 32,
+      "max_center_error_angstrom": 4.440892098500626e-16,
+      "max_radius_error_angstrom": 3.3306690738754696e-16
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 1,
+      "spheres": 1,
+      "subdivisions": 2,
+      "vertices": 66,
+      "faces": 128,
+      "max_center_error_angstrom": 8.881784197001252e-16,
+      "max_radius_error_angstrom": 3.3306690738754696e-16
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 1,
+      "spheres": 1,
+      "subdivisions": 3,
+      "vertices": 258,
+      "faces": 512,
+      "max_center_error_angstrom": 4.440892098500626e-16,
+      "max_radius_error_angstrom": 3.3306690738754696e-16
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 1,
+      "spheres": 1,
+      "subdivisions": 4,
+      "vertices": 1026,
+      "faces": 2048,
+      "max_center_error_angstrom": 4.440892098500626e-16,
+      "max_radius_error_angstrom": 5.551115123125783e-16
+    },
+    {
+      "kind": "ase_cif",
+      "cell": 1,
+      "spheres": 1,
+      "subdivisions": 2,
+      "vertices": 66,
+      "faces": 128,
+      "max_center_error_angstrom": 1.3322676295501878e-15,
+      "max_radius_error_angstrom": 1.1102230246251565e-16
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 1,
+      "spheres": 2,
+      "subdivisions": 0,
+      "vertices": 12,
+      "faces": 16,
+      "max_center_error_angstrom": 6.217248937900877e-15,
+      "max_radius_error_angstrom": 1.27675647831893e-15
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 1,
+      "spheres": 2,
+      "subdivisions": 1,
+      "vertices": 36,
+      "faces": 64,
+      "max_center_error_angstrom": 3.552713678800501e-15,
+      "max_radius_error_angstrom": 1.27675647831893e-15
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 1,
+      "spheres": 2,
+      "subdivisions": 2,
+      "vertices": 132,
+      "faces": 256,
+      "max_center_error_angstrom": 2.6645352591003757e-15,
+      "max_radius_error_angstrom": 1.27675647831893e-15
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 1,
+      "spheres": 2,
+      "subdivisions": 3,
+      "vertices": 516,
+      "faces": 1024,
+      "max_center_error_angstrom": 3.552713678800501e-15,
+      "max_radius_error_angstrom": 1.27675647831893e-15
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 1,
+      "spheres": 2,
+      "subdivisions": 4,
+      "vertices": 2052,
+      "faces": 4096,
+      "max_center_error_angstrom": 1.7763568394002505e-15,
+      "max_radius_error_angstrom": 1.27675647831893e-15
+    },
+    {
+      "kind": "ase_cif",
+      "cell": 1,
+      "spheres": 2,
+      "subdivisions": 2,
+      "vertices": 132,
+      "faces": 256,
+      "max_center_error_angstrom": 1.7763568394002505e-15,
+      "max_radius_error_angstrom": 4.440892098500626e-16
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 1,
+      "spheres": 7,
+      "subdivisions": 0,
+      "vertices": 42,
+      "faces": 56,
+      "max_center_error_angstrom": 4.440892098500626e-14,
+      "max_radius_error_angstrom": 4.163336342344337e-16
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 1,
+      "spheres": 7,
+      "subdivisions": 1,
+      "vertices": 126,
+      "faces": 224,
+      "max_center_error_angstrom": 8.881784197001252e-15,
+      "max_radius_error_angstrom": 5.273559366969494e-16
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 1,
+      "spheres": 7,
+      "subdivisions": 2,
+      "vertices": 462,
+      "faces": 896,
+      "max_center_error_angstrom": 8.881784197001252e-15,
+      "max_radius_error_angstrom": 5.551115123125783e-16
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 1,
+      "spheres": 7,
+      "subdivisions": 3,
+      "vertices": 1806,
+      "faces": 3584,
+      "max_center_error_angstrom": 1.5987211554602254e-14,
+      "max_radius_error_angstrom": 6.661338147750939e-16
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 1,
+      "spheres": 7,
+      "subdivisions": 4,
+      "vertices": 7182,
+      "faces": 14336,
+      "max_center_error_angstrom": 8.881784197001252e-15,
+      "max_radius_error_angstrom": 8.881784197001252e-16
+    },
+    {
+      "kind": "ase_cif",
+      "cell": 1,
+      "spheres": 7,
+      "subdivisions": 2,
+      "vertices": 462,
+      "faces": 896,
+      "max_center_error_angstrom": 2.220446049250313e-15,
+      "max_radius_error_angstrom": 1.27675647831893e-15
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 1,
+      "spheres": 13,
+      "subdivisions": 0,
+      "vertices": 78,
+      "faces": 104,
+      "max_center_error_angstrom": 2.220446049250313e-14,
+      "max_radius_error_angstrom": 9.992007221626409e-16
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 1,
+      "spheres": 13,
+      "subdivisions": 1,
+      "vertices": 234,
+      "faces": 416,
+      "max_center_error_angstrom": 8.881784197001252e-15,
+      "max_radius_error_angstrom": 9.992007221626409e-16
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 1,
+      "spheres": 13,
+      "subdivisions": 2,
+      "vertices": 858,
+      "faces": 1664,
+      "max_center_error_angstrom": 5.329070518200751e-15,
+      "max_radius_error_angstrom": 1.2212453270876722e-15
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 1,
+      "spheres": 13,
+      "subdivisions": 3,
+      "vertices": 3354,
+      "faces": 6656,
+      "max_center_error_angstrom": 1.4210854715202004e-14,
+      "max_radius_error_angstrom": 1.2212453270876722e-15
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 1,
+      "spheres": 13,
+      "subdivisions": 4,
+      "vertices": 13338,
+      "faces": 26624,
+      "max_center_error_angstrom": 8.881784197001252e-15,
+      "max_radius_error_angstrom": 1.2212453270876722e-15
+    },
+    {
+      "kind": "ase_cif",
+      "cell": 1,
+      "spheres": 13,
+      "subdivisions": 2,
+      "vertices": 858,
+      "faces": 1664,
+      "max_center_error_angstrom": 3.552713678800501e-15,
+      "max_radius_error_angstrom": 6.661338147750939e-16
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 2,
+      "spheres": 1,
+      "subdivisions": 0,
+      "vertices": 6,
+      "faces": 8,
+      "max_center_error_angstrom": 1.1102230246251565e-16,
+      "max_radius_error_angstrom": 0.0
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 2,
+      "spheres": 1,
+      "subdivisions": 1,
+      "vertices": 18,
+      "faces": 32,
+      "max_center_error_angstrom": 1.1102230246251565e-16,
+      "max_radius_error_angstrom": 5.551115123125783e-17
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 2,
+      "spheres": 1,
+      "subdivisions": 2,
+      "vertices": 66,
+      "faces": 128,
+      "max_center_error_angstrom": 1.1102230246251565e-16,
+      "max_radius_error_angstrom": 5.551115123125783e-17
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 2,
+      "spheres": 1,
+      "subdivisions": 3,
+      "vertices": 258,
+      "faces": 512,
+      "max_center_error_angstrom": 1.1102230246251565e-16,
+      "max_radius_error_angstrom": 5.551115123125783e-17
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 2,
+      "spheres": 1,
+      "subdivisions": 4,
+      "vertices": 1026,
+      "faces": 2048,
+      "max_center_error_angstrom": 2.220446049250313e-16,
+      "max_radius_error_angstrom": 1.1102230246251565e-16
+    },
+    {
+      "kind": "ase_cif",
+      "cell": 2,
+      "spheres": 1,
+      "subdivisions": 2,
+      "vertices": 66,
+      "faces": 128,
+      "max_center_error_angstrom": 2.6645352591003757e-15,
+      "max_radius_error_angstrom": 1.0547118733938987e-15
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 2,
+      "spheres": 2,
+      "subdivisions": 0,
+      "vertices": 12,
+      "faces": 16,
+      "max_center_error_angstrom": 8.881784197001252e-16,
+      "max_radius_error_angstrom": 1.1657341758564144e-15
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 2,
+      "spheres": 2,
+      "subdivisions": 1,
+      "vertices": 36,
+      "faces": 64,
+      "max_center_error_angstrom": 6.217248937900877e-15,
+      "max_radius_error_angstrom": 1.1657341758564144e-15
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 2,
+      "spheres": 2,
+      "subdivisions": 2,
+      "vertices": 132,
+      "faces": 256,
+      "max_center_error_angstrom": 2.6645352591003757e-15,
+      "max_radius_error_angstrom": 1.1657341758564144e-15
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 2,
+      "spheres": 2,
+      "subdivisions": 3,
+      "vertices": 516,
+      "faces": 1024,
+      "max_center_error_angstrom": 5.329070518200751e-15,
+      "max_radius_error_angstrom": 1.1657341758564144e-15
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 2,
+      "spheres": 2,
+      "subdivisions": 4,
+      "vertices": 2052,
+      "faces": 4096,
+      "max_center_error_angstrom": 1.1546319456101628e-14,
+      "max_radius_error_angstrom": 1.3322676295501878e-15
+    },
+    {
+      "kind": "ase_cif",
+      "cell": 2,
+      "spheres": 2,
+      "subdivisions": 2,
+      "vertices": 132,
+      "faces": 256,
+      "max_center_error_angstrom": 2.6645352591003757e-15,
+      "max_radius_error_angstrom": 2.886579864025407e-15
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 2,
+      "spheres": 7,
+      "subdivisions": 0,
+      "vertices": 42,
+      "faces": 56,
+      "max_center_error_angstrom": 2.3092638912203256e-14,
+      "max_radius_error_angstrom": 7.771561172376096e-16
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 2,
+      "spheres": 7,
+      "subdivisions": 1,
+      "vertices": 126,
+      "faces": 224,
+      "max_center_error_angstrom": 6.661338147750939e-15,
+      "max_radius_error_angstrom": 7.771561172376096e-16
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 2,
+      "spheres": 7,
+      "subdivisions": 2,
+      "vertices": 462,
+      "faces": 896,
+      "max_center_error_angstrom": 1.0658141036401503e-14,
+      "max_radius_error_angstrom": 7.771561172376096e-16
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 2,
+      "spheres": 7,
+      "subdivisions": 3,
+      "vertices": 1806,
+      "faces": 3584,
+      "max_center_error_angstrom": 4.440892098500626e-15,
+      "max_radius_error_angstrom": 7.771561172376096e-16
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 2,
+      "spheres": 7,
+      "subdivisions": 4,
+      "vertices": 7182,
+      "faces": 14336,
+      "max_center_error_angstrom": 8.881784197001252e-15,
+      "max_radius_error_angstrom": 7.771561172376096e-16
+    },
+    {
+      "kind": "ase_cif",
+      "cell": 2,
+      "spheres": 7,
+      "subdivisions": 2,
+      "vertices": 462,
+      "faces": 896,
+      "max_center_error_angstrom": 5.329070518200751e-15,
+      "max_radius_error_angstrom": 2.7755575615628914e-15
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 2,
+      "spheres": 13,
+      "subdivisions": 0,
+      "vertices": 78,
+      "faces": 104,
+      "max_center_error_angstrom": 3.730349362740526e-14,
+      "max_radius_error_angstrom": 2.1649348980190553e-15
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 2,
+      "spheres": 13,
+      "subdivisions": 1,
+      "vertices": 234,
+      "faces": 416,
+      "max_center_error_angstrom": 1.4210854715202004e-14,
+      "max_radius_error_angstrom": 2.1649348980190553e-15
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 2,
+      "spheres": 13,
+      "subdivisions": 2,
+      "vertices": 858,
+      "faces": 1664,
+      "max_center_error_angstrom": 7.105427357601002e-15,
+      "max_radius_error_angstrom": 2.275957200481571e-15
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 2,
+      "spheres": 13,
+      "subdivisions": 3,
+      "vertices": 3354,
+      "faces": 6656,
+      "max_center_error_angstrom": 2.6645352591003757e-14,
+      "max_radius_error_angstrom": 2.275957200481571e-15
+    },
+    {
+      "kind": "explicit_cell",
+      "cell": 2,
+      "spheres": 13,
+      "subdivisions": 4,
+      "vertices": 13338,
+      "faces": 26624,
+      "max_center_error_angstrom": 3.907985046680551e-14,
+      "max_radius_error_angstrom": 2.4980018054066022e-15
+    },
+    {
+      "kind": "ase_cif",
+      "cell": 2,
+      "spheres": 13,
+      "subdivisions": 2,
+      "vertices": 858,
+      "faces": 1664,
+      "max_center_error_angstrom": 4.440892098500626e-15,
+      "max_radius_error_angstrom": 2.4424906541753444e-15
+    },
+    {
+      "kind": "118_elements",
+      "spheres": 118,
+      "subdivisions": 2,
+      "vertices": 7788,
+      "faces": 15104,
+      "max_center_error_angstrom": 1.1723955140041653e-13,
+      "max_radius_error_angstrom": 1.3322676295501878e-15
+    }
+  ]
+}

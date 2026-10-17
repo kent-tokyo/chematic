@@ -4755,12 +4755,20 @@ def iter_extxyz_batched(path: _FileSystemPath, batch_size: int = 1000) -> XyzBat
 class CifSymmetryStatus:
     """How a CIF's declared symmetry relates to a PeriodicStructure's sites.
 
-    ``is_p1=False`` means the source CIF declared symmetry beyond P1 that
-    chematic's CIF adapter did not expand — the structure's ``sites`` are
-    only the asymmetric unit, not a full unit cell.
+    ``is_complete_cell`` is true for P1 or an explicitly expanded cell.
+    Non-P1 structures with ``is_expanded=False`` contain only the asymmetric
+    unit. Expansion uses operations explicitly listed in the source CIF.
     """
 
     is_p1: bool
+    @property
+    def is_expanded(self) -> bool: ...
+    @property
+    def is_complete_cell(self) -> bool: ...
+    @property
+    def asymmetric_site_count(self) -> Optional[int]: ...
+    @property
+    def expanded_site_count(self) -> Optional[int]: ...
     space_group_name: Optional[str]
     operation_count: int
 
@@ -4852,7 +4860,7 @@ class PeriodicStructure:
 
     def __new__(cls, lattice: Lattice, sites: list[Site]) -> PeriodicStructure: ...
     @staticmethod
-    def from_cif(text: str) -> PeriodicStructure: ...
+    def from_cif(text: str, expand_symmetry: bool = True) -> PeriodicStructure: ...
     @staticmethod
     def from_poscar(text: str) -> PeriodicStructure: ...
     @property
@@ -5406,3 +5414,8 @@ class RWMol:
     def GetName(self) -> str: ...
     def SetName(self, name: str) -> None: ...
     def GetMol(self) -> Mol: ...
+
+from ._crystal_obj import (
+    ObjMeshExport as ObjMeshExport,
+    write_crystal_obj_checked as write_crystal_obj_checked,
+)
