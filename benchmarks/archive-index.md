@@ -527,3 +527,5 @@ integrated-main or toolkit-wide superiority.
 - [Morgan shared H inference and selective CIP epochs](2026-10-18-morgan-hcounts-and-cip.md) ([CIP-only numeric](2026-10-18-morgan-tied-cip-numeric.json.gz), [combined numeric](2026-10-18-morgan-shared-h-numeric.json.gz)): both runtime candidates rejected by unchanged gates; primary improvements, every source/external lane and negative controls retained; evidence-only change.
 
 - [V2000 bond-tail rejected performance candidate](2026-10-18-openbabel-v2000-bond-tail.md) ([numeric packet](2026-10-18-openbabel-v2000-bond-tail.json)): both SDF write primaries improve but one 3D parse control fails the unchanged 0.99 floor; all 36 lanes and the disk-pause continuation retained; runtime excluded.
+
+- [Legacy stereo code projection rejected gate](2026-10-18-morgan-stereo-projection.md) ([numeric packet](2026-10-18-morgan-stereo-projection-numeric.json.gz)): offset-0 first-use chiral Morgan improves but offset-5,000 regresses; all 42 floors pass yet the two-primary adoption gate fails; all 78 comparisons and negative results retained; runtime excluded.
