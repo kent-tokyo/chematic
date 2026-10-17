@@ -2983,7 +2983,19 @@ def sparse_tanimoto_matrix_checked(fingerprints: Iterable[Iterable[SupportsIndex
     out-of-u32 IDs OverflowError and allocation failure MemoryError.
     """
     ...
+def write_reaction_cdxml_checked(reaction_smiles: str, coords: Iterable[Iterable[Sequence[float]]], arrow: Sequence[Sequence[float]]) -> str:
+    """Single-step CDXML roles and caller layout (reactants, agents, products).
 
+    Arrow is tail then head in CDXML Y-down units. Refuses aromatic, mapped,
+    query/stereo atoms and nonterminal double bonds. Bracket H must match native
+    normal-valence inference; isolated/bridging H is refused. No automatic depiction.
+    Limits: 16 KiB SMILES, 32 components, 256 atoms/component, 1024 atoms total,
+    4096 bonds total; exact finite coordinate pairs within +/-1e6.
+    Invalid input/profile raises ValueError, wrong types TypeError.
+    Source iterator errors propagate; at most one excess item is consumed
+    per row or outer iterable to detect coordinate shape errors.
+    """
+    ...
 def from_smiles(smiles: str | bytes) -> Mol:
     """Parse a SMILES string and return a :class:`Mol`.
 

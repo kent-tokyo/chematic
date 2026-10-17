@@ -74,6 +74,7 @@ pub mod pqr_pdbqt;
 pub mod protein;
 pub mod qcschema;
 pub mod rdfile;
+pub mod reaction_cdxml;
 pub mod record;
 pub mod rxn;
 pub mod sdf;
@@ -93,6 +94,7 @@ pub use conversion::{
     convert_with_report, convert_with_report_json, convert_with_report_with_limits,
 };
 pub use error::MolParseError;
+pub use reaction_cdxml::{ReactionCdxmlError, write_reaction_cdxml_checked};
 // Re-export MolParseError under the alias MolError as specified by the public API.
 pub use cdjson::{
     CdjsonDocument, CdjsonError, CdjsonMolecule, CdjsonParseLimits, parse_cdjson,

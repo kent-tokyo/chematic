@@ -43,6 +43,8 @@ use rdfile::*;
 mod turbomole;
 use turbomole::*;
 mod chemdraw;
+mod reaction_cdxml;
+use reaction_cdxml::write_reaction_cdxml_checked;
 mod interchange;
 use chemdraw::*;
 mod mol2_ensemble;
@@ -1331,6 +1333,18 @@ fn write_smi_file(records: Vec<(Mol, String)>) -> PyResult<String> {
 // Register
 // ---------------------------------------------------------------------------
 
+fn register_reaction_formats(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    register_pyfunctions!(
+        m,
+        write_reaction_cdxml_checked,
+        write_reaction,
+        from_rxn_file,
+        to_rxn_file,
+        from_rxn_document_json,
+        to_rxn_document_json,
+    )
+}
+
 pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     gro_lammps::register(m)?;
     m.add_class::<PySmilesBatchStream>()?;
@@ -1401,11 +1415,6 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         mol_hash,
         are_identical,
         stable_are_identical,
-        write_reaction,
-        from_rxn_file,
-        to_rxn_file,
-        from_rxn_document_json,
-        to_rxn_document_json,
         nearest_neighbors_from_fp,
         parse_smi_file,
         write_smi_file,
@@ -1449,5 +1458,6 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         write_atomic_input,
         parse_atomic_result,
         write_atomic_result,
-    )
+    )?;
+    register_reaction_formats(m)
 }

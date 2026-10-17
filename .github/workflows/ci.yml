@@ -309,6 +309,7 @@ jobs:
           - { package: chematic-smiles, target: rdkit_graph_queries }
           - { package: chematic-smiles, target: rdkit_atom_environment }
           - { package: chematic-smiles, target: rdkit_path_enumeration }
+          - { package: chematic-mol, target: reaction_cdxml }
           - { package: chematic-mol, target: rdfile_contract }
           - { package: chematic-mol, target: gzmat_precision }
           - { package: chematic-mol, target: sdf_selections }
