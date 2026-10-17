@@ -5,6 +5,9 @@
 //!
 //! Reference: Tripos MOL2 format specification (SYBYL 7.x).
 
+mod atom_index;
+
+use atom_index::{mol2_atom_index, prepare_atom_ids};
 use core::fmt::Write as _;
 
 use chematic_core::{
@@ -649,17 +652,8 @@ fn parse_mol2_atoms(
         parsed.coords.push(atom.coords);
         parsed.records.push(atom.record);
     }
+    prepare_atom_ids(&mut parsed.ids);
     Ok(parsed)
-}
-
-fn mol2_atom_index(ids: &[(u32, AtomIdx)], id: u32, line: usize) -> Result<AtomIdx, Mol2Error> {
-    ids.iter()
-        .find(|&&(candidate, _)| candidate == id)
-        .map(|&(_, index)| index)
-        .ok_or_else(|| Mol2Error::InvalidBondLine {
-            line,
-            detail: format!("atom_id {id} not found"),
-        })
 }
 
 fn parse_mol2_bond(
