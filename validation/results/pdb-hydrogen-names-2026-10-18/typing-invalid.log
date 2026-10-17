@@ -1,0 +1,6 @@
+validation/results/pdb-hydrogen-names-2026-10-18/typing_invalid.py:2: error: Argument 1 to "name_pdb_hydrogens_checked" has incompatible type "bytes"; expected "str"  [arg-type]
+validation/results/pdb-hydrogen-names-2026-10-18/typing_invalid.py:3: error: List item 0 has incompatible type "float"; expected "SupportsIndex"  [list-item]
+validation/results/pdb-hydrogen-names-2026-10-18/typing_invalid.py:4: error: Argument 2 to "name_pdb_hydrogens_checked" has incompatible type "set[int]"; expected "Sequence[SupportsIndex] | None"  [arg-type]
+validation/results/pdb-hydrogen-names-2026-10-18/typing_invalid.py:6: error: Property "pdb" defined in "PdbHydrogenNaming" is read-only  [misc]
+validation/results/pdb-hydrogen-names-2026-10-18/typing_invalid.py:7: error: Property "new_name" defined in "PdbHydrogenName" is read-only  [misc]
+Found 5 errors in 1 file (checked 1 source file)
