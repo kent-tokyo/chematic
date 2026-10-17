@@ -101,6 +101,29 @@ fn three_coordinate_sulfur_stereo_survives_v3000() {
 }
 
 #[test]
+fn charged_atoms_retain_needed_hcount_and_omit_redundant_hcount() {
+    let aromatic = chematic_smiles::parse("[cH-]1cccc1").unwrap();
+    let aromatic_block = write_mol_v3000(&aromatic, &MolMetadata::default(), &[]);
+    assert!(aromatic_block.contains(" HCOUNT=1"));
+    for (smiles, keep_hcount) in [
+        ("[NH4+]", false),
+        ("[CH3+]", false),
+        ("[CH2-]", true),
+        ("[SH2+]", true),
+    ] {
+        let mol = chematic_smiles::parse(smiles).unwrap();
+        let block = write_mol_v3000(&mol, &MolMetadata::default(), &[]);
+        assert_eq!(block.contains(" HCOUNT="), keep_hcount, "{smiles}: {block}");
+        let (read, _) = parse_mol_v3000(&block).unwrap();
+        assert_eq!(
+            chematic_smiles::canonical_smiles(&read),
+            chematic_smiles::canonical_smiles(&mol),
+            "{smiles}: {block}"
+        );
+    }
+}
+
+#[test]
 fn highly_charged_carbon_keeps_explicit_valence_in_v3000() {
     for (smiles, property) in [
         ("[CH2+3]", "RAD=2 VAL=2"),
