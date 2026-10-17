@@ -116,7 +116,24 @@ pub(super) fn additional_3d_ring_centers(mol: &Molecule, mol2_extensions: bool) 
             paired_ring_centers[1],
         )
     {
-        additional.extend(paired_ring_centers);
+        additional.extend(paired_ring_centers.iter().copied());
+    }
+    // A substituted ring CH and a quaternary ring carbon with two distinct
+    // exocyclic groups likewise define a paired cis/trans configuration.
+    // Neither site need be independently stereogenic when its two ring arms
+    // are identical. Require a partner in the same ring component so a
+    // singly substituted ring cannot acquire a geometry-dependent tag.
+    if paired_ring_centers.len() == 1 {
+        let labels = ring_component_labels(mol, &ring_bonds);
+        let partner_component = labels[paired_ring_centers[0].0 as usize];
+        let ring_ch_sites: Vec<_> = ring_ch_candidates(mol, &ring_bonds)
+            .into_iter()
+            .filter(|&center| labels[center.0 as usize] == partner_component)
+            .collect();
+        if !ring_ch_sites.is_empty() {
+            additional.push(paired_ring_centers[0]);
+            additional.extend(ring_ch_sites);
+        }
     }
     if mol2_extensions {
         additional.extend(mol2_ring_ch_sites(mol, &ring_bonds));
@@ -128,8 +145,20 @@ pub(super) fn additional_3d_ring_centers(mol: &Molecule, mol2_extensions: bool) 
 /// configuration even when each site's ring paths look equivalent before
 /// its partners receive 3D tags (e.g. trimethylcyclohexane).
 fn mol2_ring_ch_sites(mol: &Molecule, ring_bonds: &[bool]) -> Vec<AtomIdx> {
-    let ring_ch_sites: Vec<_> = mol
-        .atoms()
+    let ring_ch_sites = ring_ch_candidates(mol, ring_bonds);
+    let labels = ring_component_labels(mol, ring_bonds);
+    let mut counts = std::collections::HashMap::new();
+    for &center in &ring_ch_sites {
+        *counts.entry(labels[center.0 as usize]).or_insert(0usize) += 1;
+    }
+    ring_ch_sites
+        .into_iter()
+        .filter(|center| counts[&labels[center.0 as usize]] >= 2)
+        .collect()
+}
+
+fn ring_ch_candidates(mol: &Molecule, ring_bonds: &[bool]) -> Vec<AtomIdx> {
+    mol.atoms()
         .filter(|(idx, atom)| {
             if atom.element != Element::C || atom.aromatic {
                 return false;
@@ -153,14 +182,5 @@ fn mol2_ring_ch_sites(mol: &Molecule, ring_bonds: &[bool]) -> Vec<AtomIdx> {
                     .any(|&(neighbor, _)| mol.atom(neighbor).element != Element::H)
         })
         .map(|(idx, _)| idx)
-        .collect();
-    let labels = ring_component_labels(mol, ring_bonds);
-    let mut counts = std::collections::HashMap::new();
-    for &center in &ring_ch_sites {
-        *counts.entry(labels[center.0 as usize]).or_insert(0usize) += 1;
-    }
-    ring_ch_sites
-        .into_iter()
-        .filter(|center| counts[&labels[center.0 as usize]] >= 2)
         .collect()
 }

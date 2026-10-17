@@ -93,11 +93,31 @@ fn compare(mol: &Molecule, coords: &Coords3D) {
     let mut actual = mol.clone();
     frozen_perceive_tetrahedral_from_3d(&mut expected, coords);
     perceive_tetrahedral_from_3d(&mut actual, coords);
+    // The intentional CTAB extension permits P=N as one tetrahedral slot.
+    // Remove only newly recovered imino-P tags before comparing with the
+    // frozen baseline; every other atom and graph field must still match.
+    let added_imino_phosphorus: Vec<_> = actual
+        .atoms()
+        .filter(|(idx, atom)| {
+            atom.element == Element::P
+                && atom.chirality.is_tetrahedral()
+                && expected.atom(*idx).chirality == Chirality::None
+                && actual.neighbors(*idx).any(|(neighbor, bond)| {
+                    actual.atom(neighbor).element == Element::N
+                        && actual.bond(bond).order == BondOrder::Double
+                })
+        })
+        .map(|(idx, _)| idx)
+        .collect();
+    for idx in added_imino_phosphorus {
+        actual.set_chirality(idx, Chirality::None);
+        actual.clear_stereo_neighbor_order(idx);
+    }
     assert_eq!(snapshot(&actual), snapshot(&expected));
 }
 
 #[test]
-fn original_tetrahedral_results_match_on_all_pinned_14072_graphs() {
+fn only_imino_phosphorus_additions_change_pinned_14072_graphs() {
     let corpora = [
         include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),

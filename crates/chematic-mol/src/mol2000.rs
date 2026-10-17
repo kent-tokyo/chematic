@@ -343,7 +343,7 @@ fn sulfur_lone_pair_3d_candidate(mol: &Molecule, idx: AtomIdx, neighbors: &[Atom
             }))
 }
 
-fn has_disallowed_3d_tetrahedral_bond(mol: &Molecule, idx: AtomIdx, mol2_extensions: bool) -> bool {
+fn has_disallowed_3d_tetrahedral_bond(mol: &Molecule, idx: AtomIdx) -> bool {
     let atom = mol.atom(idx);
     mol.neighbors(idx).any(|(neighbor, bond)| {
         !matches!(
@@ -352,7 +352,7 @@ fn has_disallowed_3d_tetrahedral_bond(mol: &Molecule, idx: AtomIdx, mol2_extensi
         ) && !(atom.element == Element::P
             && mol.bond(bond).order == BondOrder::Double
             && (mol.atom(neighbor).element == Element::O
-                || (mol2_extensions && mol.atom(neighbor).element == Element::N)))
+                || mol.atom(neighbor).element == Element::N))
     })
 }
 
@@ -363,8 +363,8 @@ pub(crate) fn perceive_tetrahedral_from_3d(mol: &mut Molecule, conformer: &Coord
 }
 
 /// MOL2 has no parity declaration, so its full 3D atom inventory can carry
-/// additional paired-ring and P=N configurations. Keep those extensions out
-/// of the CTAB reader's pinned interpretation.
+/// additional paired-ring configurations. Its broader ring-CH candidate
+/// search remains separate from the CTAB reader's pinned interpretation.
 pub(crate) fn perceive_tetrahedral_from_3d_mol2(mol: &mut Molecule, conformer: &Coords3D) {
     perceive_tetrahedral_from_3d_with_mode(mol, conformer, true);
 }
@@ -431,7 +431,7 @@ fn perceive_tetrahedral_from_3d_with_mode(
                 }
                 if ordinary_centers.contains(&idx)
                     && !sulfur_lone_pair
-                    && has_disallowed_3d_tetrahedral_bond(mol, idx, mol2_extensions)
+                    && has_disallowed_3d_tetrahedral_bond(mol, idx)
                 {
                     return None;
                 }
