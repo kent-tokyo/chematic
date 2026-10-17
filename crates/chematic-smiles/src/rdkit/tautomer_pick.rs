@@ -101,3 +101,64 @@ pub fn rdkit_pick_tautomer<'a>(
     }
     best.ok_or(RdkitTautomerPickError::Empty)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::parse;
+
+    #[test]
+    fn checked_selection_and_limits_cover_the_public_contract() {
+        let enol = parse("C=C(C)O").unwrap();
+        let keto = parse("CC(C)=O").unwrap();
+        let pick = rdkit_pick_tautomer([&enol, &keto], 2).unwrap();
+        assert_eq!(
+            (pick.index, pick.score, pick.smiles.as_str()),
+            (1, 5, "CC(C)=O")
+        );
+
+        assert_eq!(
+            rdkit_pick_tautomer([], 1),
+            Err(RdkitTautomerPickError::Empty)
+        );
+        assert_eq!(
+            rdkit_pick_tautomer([], 0),
+            Err(RdkitTautomerPickError::InvalidLimit)
+        );
+        assert_eq!(
+            rdkit_pick_tautomer([&enol, &keto], 1),
+            Err(RdkitTautomerPickError::TooManyCandidates { limit: 1 })
+        );
+
+        let large = parse(&"C".repeat(1025)).unwrap();
+        assert_eq!(
+            rdkit_pick_tautomer([&large], 1),
+            Err(RdkitTautomerPickError::CandidateTooLarge { index: 0 })
+        );
+        let invalid = parse("[CH5]").unwrap();
+        assert!(matches!(
+            rdkit_pick_tautomer([&invalid], 1),
+            Err(RdkitTautomerPickError::Candidate { index: 0, .. })
+        ));
+    }
+
+    #[test]
+    fn typed_errors_have_actionable_messages() {
+        assert_eq!(
+            RdkitTautomerPickError::InvalidLimit.to_string(),
+            "max_candidates must be in 1..=4096"
+        );
+        assert_eq!(
+            RdkitTautomerPickError::Empty.to_string(),
+            "candidates must contain at least one molecule"
+        );
+        assert_eq!(
+            RdkitTautomerPickError::TooManyCandidates { limit: 7 }.to_string(),
+            "candidates exceed max_candidates (7)"
+        );
+        assert_eq!(
+            RdkitTautomerPickError::CandidateTooLarge { index: 3 }.to_string(),
+            "candidate 3 exceeds 1024 atoms or 4096 bonds"
+        );
+    }
+}
