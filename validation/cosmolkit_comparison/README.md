@@ -50,6 +50,9 @@ COSMolKit read-back of CheMatic blocks after omitting redundant V3000 `HCOUNT`.
 The [neutral phosphorus follow-up](v3000-neutral-phosphorus-hcount-2026-10-18.md)
 omits valence-inferred `[PH]` `HCOUNT`, with 15 additional exact COSMolKit
 read-backs and no changed V3000 writer identities on two full corpora.
+The [four-reader 3D MOL2 comparison](../openbabel_comparison/mol2-four-engine-stereo-2026-10-18.md)
+uses identical MOL2 bytes to compare CheMatic, Open Babel, RDKit, and
+COSMolKit on three stereo-eligible development selections.
 The [two-vacancy non-tetrahedral comparison](two-vacancy-nontetra-2026-10-17.md)
 checks SP2, TB3, and OH4 SMILES recognition across all tags, ligand orders, and
 root/incoming positions, including randomized write-back.

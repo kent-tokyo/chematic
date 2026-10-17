@@ -8,6 +8,7 @@ development comparison with a common RDKit identity judge, not chemical truth.
 
 import argparse
 import hashlib
+import importlib
 import json
 import shutil
 import subprocess
@@ -74,7 +75,7 @@ def bridge_holdout_cases():
     ]
 
 
-def compare_case(case_id, source, seed, cli, mol_path, mol2_path):
+def compare_case(case_id, source, seed, cli, mol_path, mol2_path, cosmolkit=None):
     expected = identity(source)
     molecule = Chem.AddHs(Chem.MolFromSmiles(source))
     try:
@@ -108,6 +109,21 @@ def compare_case(case_id, source, seed, cli, mol_path, mol2_path):
             "openbabel": identity(openbabel.stdout) if openbabel and openbabel.returncode == 0 else None,
         },
     })
+    if cosmolkit is not None:
+        try:
+            rdkit_mol = Chem.MolFromMol2File(str(mol2_path), removeHs=True)
+        except (RuntimeError, ValueError):
+            rdkit_mol = None
+        row["identities"]["rdkit_mol2"] = (
+            identity(Chem.MolToSmiles(rdkit_mol, isomericSmiles=True))
+            if rdkit_mol is not None else None
+        )
+        try:
+            row["identities"]["cosmolkit_mol2"] = identity(
+                cosmolkit.mol_from_mol2(mol2_path.read_text()).to_smiles()
+            )
+        except (ValueError, RuntimeError, cosmolkit.MolecularIoError):
+            row["identities"]["cosmolkit_mol2"] = None
     return row
 
 
@@ -116,6 +132,10 @@ def main():
     parser.add_argument("--cli", type=Path, required=True)
     parser.add_argument("--corpus", type=Path, default=DEFAULT_CORPUS)
     parser.add_argument("--bridge-holdout", action="store_true")
+    parser.add_argument(
+        "--include-rdkit-cosmolkit", action="store_true",
+        help="also score both native MOL2 readers on the same input bytes",
+    )
     parser.add_argument(
         "--all-stereo", action="store_true",
         help="include every eligible distinct stereo identity instead of the first 160",
@@ -127,29 +147,43 @@ def main():
     if obabel is None:
         parser.error("Open Babel executable `obabel` is required")
     cli = args.cli.resolve(strict=True)
+    cosmolkit = importlib.import_module("cosmolkit") if args.include_rdkit_cosmolkit else None
     corpus = args.corpus.resolve(strict=True)
     cases = bridge_holdout_cases() if args.bridge_holdout else stress_cases(
         corpus, None if args.all_stereo else 160)
     with tempfile.TemporaryDirectory() as directory:
         directory = Path(directory)
         rows = [
-            compare_case(case_id, source, seed, cli, directory / "source.mol", directory / "source.mol2")
+            compare_case(
+                case_id, source, seed, cli, directory / "source.mol",
+                directory / "source.mol2", cosmolkit,
+            )
             for case_id, source, seed in cases
         ]
     comparable = [row for row in rows if "identities" in row]
     summary = {"selected": len(rows), "comparable": len(comparable),
                "excluded": len(rows) - len(comparable)}
-    for engine in ("chematic", "openbabel"):
+    engines = ("chematic", "openbabel", "rdkit_mol2", "cosmolkit_mol2") if cosmolkit else (
+        "chematic", "openbabel")
+    for engine in engines:
         summary[engine] = sum(row["identities"][engine] == row["expected"] for row in comparable)
     summary["openbabel_only"] = sum(
         row["identities"]["openbabel"] == row["expected"]
         and row["identities"]["chematic"] != row["expected"]
         for row in comparable
     )
+    if cosmolkit is not None:
+        for engine in ("rdkit_mol2", "cosmolkit_mol2"):
+            summary[f"{engine}_only"] = sum(
+                row["identities"][engine] == row["expected"]
+                and row["identities"]["chematic"] != row["expected"]
+                for row in comparable
+            )
     report = {
         "scope": "development 3D MOL2 identity; RDKit V2000 source gate; same MOL2 bytes",
         "rdkit_version": rdBase.rdkitVersion,
         "openbabel_version": command([obabel, "-V"]).stdout.strip(),
+        "cosmolkit_version": cosmolkit.__version__ if cosmolkit else None,
         "openbabel_sha256": sha256(Path(obabel)),
         "cli_sha256": sha256(cli),
         "corpus_sha256": sha256(corpus) if not args.bridge_holdout else None,
