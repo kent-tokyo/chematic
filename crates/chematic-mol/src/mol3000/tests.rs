@@ -137,6 +137,29 @@ fn charged_atoms_retain_needed_hcount_and_omit_redundant_hcount() {
 }
 
 #[test]
+fn neutral_phosphorus_omits_only_inferred_hcount_in_v3000() {
+    for (smiles, keep_hcount) in [
+        ("[PH3]", false),
+        ("C[PH](=O)O", false),
+        ("N[PH](=O)O", false),
+        ("[PH2](=O)O", true),
+        ("[PH+]", true),
+    ] {
+        let mol = chematic_smiles::parse(smiles).unwrap();
+        let block = write_mol_v3000(&mol, &MolMetadata::default(), &[]);
+        assert_eq!(block.contains(" HCOUNT="), keep_hcount, "{smiles}: {block}");
+        if !keep_hcount {
+            let (read, _) = parse_mol_v3000(&block).unwrap();
+            assert_eq!(
+                chematic_smiles::canonical_smiles(&read),
+                chematic_smiles::canonical_smiles(&mol),
+                "{smiles}: {block}"
+            );
+        }
+    }
+}
+
+#[test]
 fn highly_charged_carbon_keeps_explicit_valence_in_v3000() {
     for (smiles, property) in [
         ("[CH2+3]", "RAD=2 VAL=2"),
