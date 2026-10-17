@@ -1,0 +1,5 @@
+validation/typing/point_alignment_invalid.py:4: error: Argument 1 to "GetAlignmentTransform" of "rdAlignment" has incompatible type "str"; expected "Sequence[Sequence[float] | Point3DLike] | ndarray[Any, dtype[Any]]"  [arg-type]
+validation/typing/point_alignment_invalid.py:5: error: Argument "weights" to "GetAlignmentTransform" of "rdAlignment" has incompatible type "str"; expected "Sequence[float] | ndarray[Any, dtype[Any]] | None"  [arg-type]
+validation/typing/point_alignment_invalid.py:6: error: Argument "reflect" to "GetAlignmentTransform" of "rdAlignment" has incompatible type "str"; expected "bool"  [arg-type]
+validation/typing/point_alignment_invalid.py:7: error: Argument "maxIterations" to "GetAlignmentTransform" of "rdAlignment" has incompatible type "float"; expected "int"  [arg-type]
+Found 4 errors in 1 file (checked 1 source file)

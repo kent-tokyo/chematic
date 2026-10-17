@@ -1,0 +1,47 @@
+{
+  "date": "2026-10-17",
+  "main_commit_at_check": "35b932f911851f51c5cdb89fa371f1c2c4a1b11a",
+  "parent_commit": "f7a7620811fe0b3121510ce1b878757edf7acebc",
+  "upstream_issue": {
+    "url": "https://github.com/rdkit/rdkit/issues/9601",
+    "state": "OPEN",
+    "scope": "AlignMolConformers typed caller-owned RMS output, explicit-coordinate alternative; not complete tracking issue resolution"
+  },
+  "tests": {
+    "passed": 297,
+    "new": 73,
+    "existing_point": 62,
+    "existing_compat": 162
+  },
+  "typing": {
+    "helper": "strict with imported stub diagnostics silenced",
+    "valid_consumer": "passed",
+    "invalid_consumer": "4 expected errors",
+    "whole_package_strict": "not claimed"
+  },
+  "native_fixture": {
+    "fresh_native_build": false,
+    "path": "/private/tmp/chematic-conformer-alignment-python/chematic/chematic.so",
+    "source_commit": "71d9c12b0c16a8e6b23e4078479d5754230c831b",
+    "sha256": "c6db880b6f5ca4ea0388f238c24e8a5b55751daab1084cf0d1d7b56e2427257b",
+    "scope": "unchanged native extension used only as package import/regression fixture; new solver and API are Python/NumPy"
+  },
+  "source_sha256": {
+    "crates/chematic-py/python/chematic/_point_alignment.py": "b5847a6a400447b1235eefa4d63f1842d77dfe80b210789bec95a1aba20b3d95",
+    "crates/chematic-py/python/chematic/_conformer_alignment.py": "05244eb9b2d044fa25983d7471dd1c677990a2cafc5b4c416ed0a6c0ac24362d",
+    "crates/chematic-py/python/chematic/__init__.py": "0b5ac5fe8c28a8204ae9ac0a23984e464c9a2cb479c5f6265576991c819b3eee",
+    "crates/chematic-py/python/chematic/__init__.pyi": "ec12a42cb1782f8b2fc7549a8e713d7d8cf9f6c1a86e826be57fad9123c26bee",
+    "crates/chematic-py/tests/test_conformer_alignment.py": "e3f5a9b13b0f0f5e86541cbfe02a679e460e1002a419615ac3b2a274dc1d3642",
+    "validation/validate_conformer_alignment.py": "c42fd585e44b1e6eb9d1d01df4a993d412f62c36c498b9387bea9a7c3d170f57"
+  },
+  "official_source": {
+    "url": "https://github.com/rdkit/rdkit/blob/Release_2026_09_1/Code/GraphMol/MolAlign/AlignMolecules.cpp",
+    "sha256": "917b7b866f5b3e92a000417dcc98bde7a7768323a248a5d7d1758ad72e3e59fe"
+  },
+  "commands": [
+    "PYTHONDONTWRITEBYTECODE=1 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=/private/tmp/chematic-conformer-alignment-python python3.13 -m pytest crates/chematic-py/tests/test_conformer_alignment.py crates/chematic-py/tests/test_point_alignment.py crates/chematic-py/tests/test_rdkit_compat.py -q -p no:cacheprovider",
+    "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/private/tmp/chematic-conformer-alignment-python:/private/tmp/chematic-sparse-tanimoto-rdkit python3.13 validation/validate_conformer_alignment.py",
+    "MYPYPATH=crates/chematic-py/python python3.13 -m mypy --follow-imports=silent --ignore-missing-imports --no-incremental validation/typing/conformer_alignment_valid.py",
+    "python3.13 -m mkdocs build --strict --site-dir /private/tmp/chematic-conformer-alignment-site"
+  ]
+}

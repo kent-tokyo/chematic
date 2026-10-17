@@ -5516,3 +5516,4 @@ class RWMol:
 def parse_mopac_archive(text: str, *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None) -> dict[str, Any]:
     """Read one MOPAC archive restart deck, preserving coordinate references and raw sections."""
     ...
+from ._conformer_alignment import align_conformers_checked as align_conformers_checked

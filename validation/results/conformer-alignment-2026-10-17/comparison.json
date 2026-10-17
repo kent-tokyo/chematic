@@ -1,0 +1,34 @@
+{
+  "rdkit": "2026.09.1",
+  "seed": 9601,
+  "cases": 2592,
+  "frames_compared": 9072,
+  "rms_values_compared": 4320,
+  "max_coordinate_absolute_difference": 0.00023317489246332812,
+  "max_rms_absolute_difference": 2.2966761825671256e-10,
+  "coordinate_equality_claimed": false,
+  "rms_tolerance": {
+    "rtol": 1e-07,
+    "atol": 1e-07
+  },
+  "rigid_distance_checks": 2592,
+  "input_sha256": "ebe7eadb578ba4d3fc142ac32a1241be0f2b78d9e4fcc6254504134cd135f608",
+  "degenerate_diagnostics": [
+    {
+      "atoms": 1,
+      "rms_agrees": true,
+      "coordinate_equality_claimed": false
+    },
+    {
+      "atoms": 2,
+      "rms_agrees": true,
+      "coordinate_equality_claimed": false
+    },
+    {
+      "atoms": 3,
+      "rms_agrees": true,
+      "coordinate_equality_claimed": false
+    }
+  ],
+  "scope": "paired explicit coordinate arrays; proper rotation, ordinary positive weights; no atom mapping, generation or Mol mutation"
+}
