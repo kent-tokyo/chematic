@@ -51,6 +51,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   and coordinates. Unsupported graph annotations fail explicitly; see
   [reaction CDXML output](docs/reaction-cdxml-output.md) for the bounded profile
   and external-reader differences.
+- Rust/Python `parse_mopac_archive` reads one MOPAC archive restart deck,
+  preserving Cartesian/internal values, references, flags, announced charges
+  and raw summary/ancillary sections. See [archive input](docs/mopac-archive-input.md).
 - Rust/Python `FeaturePatternSet` owns up to 32 caller-supplied SMARTS feature
   definitions and produces full-width atom masks or native circular feature
   fingerprints. Matching budgets and size limits refuse partial output;

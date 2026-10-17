@@ -31,9 +31,8 @@ mod fhiaims;
 use fhiaims::*;
 mod dmol3;
 use dmol3::*;
-mod mopac;
-use mopac::*;
 mod exyz;
+mod mopac;
 use exyz::*;
 mod gro;
 mod gzmat;
@@ -1348,6 +1347,7 @@ fn register_reaction_formats(m: &Bound<'_, PyModule>) -> PyResult<()> {
 pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     gro_lammps::register(m)?;
     m.add_class::<PySmilesBatchStream>()?;
+    mopac::register(m)?;
     register_pyfunctions!(
         m,
         from_smiles,
@@ -1431,8 +1431,6 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         parse_dmol3,
         write_dmol3,
         select_pdb_atoms,
-        parse_mopac_cartesian,
-        write_mopac_cartesian,
         parse_exyz,
         write_exyz,
         parse_turbomole,

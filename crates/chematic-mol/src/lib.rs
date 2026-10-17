@@ -201,8 +201,9 @@ pub use moljson::{
     MolJsonError, MolJsonParseLimits, parse_moljson, parse_moljson_with_limits, write_moljson,
 };
 pub use mopac::{
-    MopacAtom, MopacCartesianGeometry, MopacCartesianRow, MopacError, MopacOptimizationFlag,
-    MopacParseLimits, parse_mopac_cartesian, parse_mopac_cartesian_with_limits,
+    MopacArchive, MopacArchiveAtom, MopacAtom, MopacCartesianGeometry, MopacCartesianRow,
+    MopacError, MopacOptimizationFlag, MopacParseLimits, parse_mopac_archive,
+    parse_mopac_archive_with_limits, parse_mopac_cartesian, parse_mopac_cartesian_with_limits,
     write_mopac_cartesian,
 };
 pub use mrv::{
