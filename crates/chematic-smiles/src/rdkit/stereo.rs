@@ -324,18 +324,25 @@ fn iterate_cip_ranks(mol: &Mol, invars: &[i64], ranks: &mut Vec<u32>, seed_with_
         && num_its < max_its
         && (last_num_ranks < 0 || (last_num_ranks as usize) < num_ranks)
     {
-        for index in 0..n {
-            vals.clear();
-            for &(count, nbr) in &features[feature_start[index]..feature_start[index + 1]] {
-                for _ in 0..count {
-                    vals.push(ranks[nbr] as i32 + 1);
+        // Only resort sections are compared beyond their distinct rank prefixes.
+        // Adjacent sections share a boundary: rebuild that entry exactly once.
+        let mut refined_until = 0;
+        for &(first, last) in &needs_sorting {
+            let end = last + 1;
+            for &index in &sorted[first.max(refined_until)..end] {
+                vals.clear();
+                for &(count, nbr) in &features[feature_start[index]..feature_start[index + 1]] {
+                    for _ in 0..count {
+                        vals.push(ranks[nbr] as i32 + 1);
+                    }
                 }
+                vals.sort_unstable_by(|x, y| y.cmp(x));
+                let entry = &mut cip[index];
+                entry.reserve(vals.len() + total_hs[index]);
+                entry.extend_from_slice(&vals);
+                entry.resize(entry.len() + total_hs[index], 0);
             }
-            vals.sort_unstable_by(|x, y| y.cmp(x));
-            let entry = &mut cip[index];
-            entry.reserve(vals.len() + total_hs[index]);
-            entry.extend_from_slice(&vals);
-            entry.resize(entry.len() + total_hs[index], 0);
+            refined_until = end;
         }
         last_num_ranks = num_ranks as i64;
         for &(first, last) in &needs_sorting {
@@ -938,3 +945,7 @@ fn legacy_stereo_perception_impl(
     }
     ranks
 }
+
+#[cfg(test)]
+#[path = "stereo/cip_reference_tests.rs"]
+mod cip_reference_tests;
