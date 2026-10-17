@@ -4878,9 +4878,10 @@ def iter_extxyz_batched(path: _FileSystemPath, batch_size: int = 1000) -> XyzBat
 class CifSymmetryStatus:
     """How a CIF's declared symmetry relates to a PeriodicStructure's sites.
 
-    ``is_complete_cell`` means P1 or expansion of the source's explicit
-    operations. An unexpanded asymmetric unit has this flag set to False.
-    Expansion does not verify the operation list against a space-group database.
+    ``is_complete_cell`` is true for P1 or expansion of the source's explicit
+    operations. Non-P1 structures with ``is_expanded=False`` contain only the
+    asymmetric unit. Expansion does not verify the operation list against a
+    space-group database.
     """
 
     is_p1: bool
@@ -5574,4 +5575,8 @@ from ._tautomer_control import (
     TautomerEnumeration as TautomerEnumeration,
     TautomerProgress as TautomerProgress,
     enumerate_tautomers_checked as enumerate_tautomers_checked,
+)
+from ._crystal_obj import (
+    ObjMeshExport as ObjMeshExport,
+    write_crystal_obj_checked as write_crystal_obj_checked,
 )
