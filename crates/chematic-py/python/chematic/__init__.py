@@ -5,6 +5,12 @@ from ._pdb_models import (
     split_pdb_models as split_pdb_models,
 )
 
+from ._sdf_split import (
+    SdfSplitPart as SdfSplitPart,
+    SdfSplitPlan as SdfSplitPlan,
+    plan_sdf_split as plan_sdf_split,
+)
+
 from .chematic import *
 from .chematic import (
     __version__,

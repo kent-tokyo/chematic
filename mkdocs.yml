@@ -112,6 +112,7 @@ nav:
     - PDB Model Splitting: pdb-model-splitting.md
     - Layered Caller Counters: layered-caller-counts.md
     - XYZ Output Precision: xyz-output-precision.md
+    - SDF File Partitions: sdf-file-partitions.md
     - Complete Molecule Reset: molecule-clear.md
     - Python Filesystem Paths: python-filesystem-paths.md
     - GRO to LAMMPS Units: gro-lammps-units.md
