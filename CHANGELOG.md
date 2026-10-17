@@ -16,6 +16,12 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added Rust/Python checked single-step reaction CDXML output with explicit
+  reactant/agent/product roles, unique object IDs and a caller-supplied arrow
+  and coordinates. Unsupported graph annotations fail explicitly; see
+  [reaction CDXML output](docs/reaction-cdxml-output.md) for the bounded profile
+  and external-reader differences.
+
 - Rust/Python `FeaturePatternSet` owns up to 32 caller-supplied SMARTS feature
   definitions and produces full-width atom masks or native circular feature
   fingerprints. Matching budgets and size limits refuse partial output;

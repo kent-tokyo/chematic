@@ -1,0 +1,33 @@
+{
+  "base_commit": "ad0283a8101dfc6f7d5ea6b6bdea94a35f8404f0",
+  "rustc": "rustc 1.97.0 (2d8144b78 2026-07-07)",
+  "cargo": "cargo 1.97.0 (c980f4866 2026-06-30)",
+  "target_profile": {
+    "incremental": false,
+    "jobs": 1,
+    "dev_debug": 0,
+    "test_debug": 0,
+    "dev_opt_level": 1,
+    "test_opt_level": 1,
+    "dev_codegen_units": 1,
+    "test_codegen_units": 1,
+    "dev_strip": "none"
+  },
+  "sha256": {
+    "Cargo.lock": "abfe0dfeca2dee6fb69c97ce02513ef7b3b34084a74e7142b38979b1c36aaebc",
+    "Cargo.toml": "cb4a96c1a04ae0db3f990dba53520508ccb2bad5bf490d760003a991a68a11a4",
+    "crates/chematic-mol/Cargo.toml": "93b2792690726913dd414f448ca1b1b08ff00f22ed805f5cdc392d3f1e29cbb1",
+    "crates/chematic-mol/src/lib.rs": "9940e34e0b4e159013b4a0b9afd1309698e412358d5644460bcc24b786056669",
+    "crates/chematic-mol/src/reaction_cdxml.rs": "7fed148fb911c4bc8ef0ab62550bd40045325bc6d0bda768e4283ee7c5caeb61",
+    "crates/chematic-mol/src/cdxml.rs": "31c5883acd70ce83a3edcf1c0cf58ad9e5536e84b891b10a2d21f168400caad0",
+    "crates/chematic-mol/tests/reaction_cdxml.rs": "e15e4c8da318ed30d6941214b798db921dbe8e231fc488f697bc4cd8c2b3015f",
+    "crates/chematic-py/Cargo.toml": "dea17e3dba5c6972891816fd479f1cb31f668e7ba7ddac427f0adc023caf73a6",
+    "crates/chematic-py/src/formats.rs": "f29eed742b1fa0a3e5ffcdd37148f2e7ac7bfd044984856baaaaa1662a8ed9a0",
+    "crates/chematic-py/src/formats/reaction_cdxml.rs": "d563adb66cc852ccd9248e52d8e9e997ff54c1dfd6ded9f93edc361fb66a4273",
+    "crates/chematic-py/python/chematic/__init__.py": "2792b41ccbfd7e42c6e902efb82b4494f6292a59c8ca90cd22573c691e0500c5",
+    "crates/chematic-py/python/chematic/__init__.pyi": "ff7b76ac77d8653dc368f0fb7df835bb25620ea17c76aa964a2a55eab963b81d",
+    "crates/chematic-py/tests/test_reaction_cdxml.py": "19e23d7e5feb918fed97945cf6eeb6d3f64737df2c6b65b4067521a004c50701",
+    "validation/openbabel_issues/reaction-cdxml/probe.py": "2683f329c052beb0a9c6ce61bf75c999d307344e55e7280aa714bb376575742b",
+    ".github/workflows/ci.yml": "752c7fb3efa4500cfb0bd06ec81cf0c463c9d6bd8748ffc03d5169cd3d95bdd9"
+  }
+}

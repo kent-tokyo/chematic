@@ -1,0 +1,1258 @@
+{
+  "schema_version": 1,
+  "scope": "bounded supplied single-step roles and layout; no reaction-feasibility or full ChemDraw claim",
+  "datasets": 256,
+  "xml_role_layout_checks": 256,
+  "indigo_cross_reads": 256,
+  "rdkit_reactant_product_cross_reads": 256,
+  "failures": [],
+  "failure_count": 0,
+  "rdkit_agent_role_differences": [
+    {
+      "case": 0,
+      "expected": [
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 1,
+      "expected": [
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 2,
+      "expected": [
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 3,
+      "expected": [
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 4,
+      "expected": [
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 5,
+      "expected": [
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 6,
+      "expected": [
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 7,
+      "expected": [
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 8,
+      "expected": [
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 9,
+      "expected": [
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 10,
+      "expected": [
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 11,
+      "expected": [
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 12,
+      "expected": [
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 13,
+      "expected": [
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 14,
+      "expected": [
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 15,
+      "expected": [
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 16,
+      "expected": [
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 17,
+      "expected": [
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 18,
+      "expected": [
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 19,
+      "expected": [
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 20,
+      "expected": [
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 21,
+      "expected": [
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 22,
+      "expected": [
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 23,
+      "expected": [
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 24,
+      "expected": [
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 25,
+      "expected": [
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 26,
+      "expected": [
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 27,
+      "expected": [
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 28,
+      "expected": [
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 29,
+      "expected": [
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 30,
+      "expected": [
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 31,
+      "expected": [
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 64,
+      "expected": [
+        "O",
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 65,
+      "expected": [
+        "O",
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 66,
+      "expected": [
+        "O",
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 67,
+      "expected": [
+        "O",
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 68,
+      "expected": [
+        "O",
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 69,
+      "expected": [
+        "O",
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 70,
+      "expected": [
+        "O",
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 71,
+      "expected": [
+        "O",
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 72,
+      "expected": [
+        "Cl",
+        "O"
+      ],
+      "actual": []
+    },
+    {
+      "case": 73,
+      "expected": [
+        "Cl",
+        "O"
+      ],
+      "actual": []
+    },
+    {
+      "case": 74,
+      "expected": [
+        "Cl",
+        "O"
+      ],
+      "actual": []
+    },
+    {
+      "case": 75,
+      "expected": [
+        "Cl",
+        "O"
+      ],
+      "actual": []
+    },
+    {
+      "case": 76,
+      "expected": [
+        "Cl",
+        "O"
+      ],
+      "actual": []
+    },
+    {
+      "case": 77,
+      "expected": [
+        "Cl",
+        "O"
+      ],
+      "actual": []
+    },
+    {
+      "case": 78,
+      "expected": [
+        "Cl",
+        "O"
+      ],
+      "actual": []
+    },
+    {
+      "case": 79,
+      "expected": [
+        "Cl",
+        "O"
+      ],
+      "actual": []
+    },
+    {
+      "case": 80,
+      "expected": [
+        "O",
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 81,
+      "expected": [
+        "O",
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 82,
+      "expected": [
+        "O",
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 83,
+      "expected": [
+        "O",
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 84,
+      "expected": [
+        "O",
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 85,
+      "expected": [
+        "O",
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 86,
+      "expected": [
+        "O",
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 87,
+      "expected": [
+        "O",
+        "Cl"
+      ],
+      "actual": []
+    },
+    {
+      "case": 88,
+      "expected": [
+        "Cl",
+        "O"
+      ],
+      "actual": []
+    },
+    {
+      "case": 89,
+      "expected": [
+        "Cl",
+        "O"
+      ],
+      "actual": []
+    },
+    {
+      "case": 90,
+      "expected": [
+        "Cl",
+        "O"
+      ],
+      "actual": []
+    },
+    {
+      "case": 91,
+      "expected": [
+        "Cl",
+        "O"
+      ],
+      "actual": []
+    },
+    {
+      "case": 92,
+      "expected": [
+        "Cl",
+        "O"
+      ],
+      "actual": []
+    },
+    {
+      "case": 93,
+      "expected": [
+        "Cl",
+        "O"
+      ],
+      "actual": []
+    },
+    {
+      "case": 94,
+      "expected": [
+        "Cl",
+        "O"
+      ],
+      "actual": []
+    },
+    {
+      "case": 95,
+      "expected": [
+        "Cl",
+        "O"
+      ],
+      "actual": []
+    },
+    {
+      "case": 96,
+      "expected": [
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 97,
+      "expected": [
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 98,
+      "expected": [
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 99,
+      "expected": [
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 100,
+      "expected": [
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 101,
+      "expected": [
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 102,
+      "expected": [
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 103,
+      "expected": [
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 104,
+      "expected": [
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 105,
+      "expected": [
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 106,
+      "expected": [
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 107,
+      "expected": [
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 108,
+      "expected": [
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 109,
+      "expected": [
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 110,
+      "expected": [
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 111,
+      "expected": [
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 112,
+      "expected": [
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 113,
+      "expected": [
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 114,
+      "expected": [
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 115,
+      "expected": [
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 116,
+      "expected": [
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 117,
+      "expected": [
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 118,
+      "expected": [
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 119,
+      "expected": [
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 120,
+      "expected": [
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 121,
+      "expected": [
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 122,
+      "expected": [
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 123,
+      "expected": [
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 124,
+      "expected": [
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 125,
+      "expected": [
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 126,
+      "expected": [
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 127,
+      "expected": [
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 192,
+      "expected": [
+        "N"
+      ],
+      "actual": []
+    },
+    {
+      "case": 193,
+      "expected": [
+        "N"
+      ],
+      "actual": []
+    },
+    {
+      "case": 194,
+      "expected": [
+        "N"
+      ],
+      "actual": []
+    },
+    {
+      "case": 195,
+      "expected": [
+        "N"
+      ],
+      "actual": []
+    },
+    {
+      "case": 196,
+      "expected": [
+        "N"
+      ],
+      "actual": []
+    },
+    {
+      "case": 197,
+      "expected": [
+        "N"
+      ],
+      "actual": []
+    },
+    {
+      "case": 198,
+      "expected": [
+        "N"
+      ],
+      "actual": []
+    },
+    {
+      "case": 199,
+      "expected": [
+        "N"
+      ],
+      "actual": []
+    },
+    {
+      "case": 200,
+      "expected": [
+        "N"
+      ],
+      "actual": []
+    },
+    {
+      "case": 201,
+      "expected": [
+        "N"
+      ],
+      "actual": []
+    },
+    {
+      "case": 202,
+      "expected": [
+        "N"
+      ],
+      "actual": []
+    },
+    {
+      "case": 203,
+      "expected": [
+        "N"
+      ],
+      "actual": []
+    },
+    {
+      "case": 204,
+      "expected": [
+        "N"
+      ],
+      "actual": []
+    },
+    {
+      "case": 205,
+      "expected": [
+        "N"
+      ],
+      "actual": []
+    },
+    {
+      "case": 206,
+      "expected": [
+        "N"
+      ],
+      "actual": []
+    },
+    {
+      "case": 207,
+      "expected": [
+        "N"
+      ],
+      "actual": []
+    },
+    {
+      "case": 208,
+      "expected": [
+        "N"
+      ],
+      "actual": []
+    },
+    {
+      "case": 209,
+      "expected": [
+        "N"
+      ],
+      "actual": []
+    },
+    {
+      "case": 210,
+      "expected": [
+        "N"
+      ],
+      "actual": []
+    },
+    {
+      "case": 211,
+      "expected": [
+        "N"
+      ],
+      "actual": []
+    },
+    {
+      "case": 212,
+      "expected": [
+        "N"
+      ],
+      "actual": []
+    },
+    {
+      "case": 213,
+      "expected": [
+        "N"
+      ],
+      "actual": []
+    },
+    {
+      "case": 214,
+      "expected": [
+        "N"
+      ],
+      "actual": []
+    },
+    {
+      "case": 215,
+      "expected": [
+        "N"
+      ],
+      "actual": []
+    },
+    {
+      "case": 216,
+      "expected": [
+        "N"
+      ],
+      "actual": []
+    },
+    {
+      "case": 217,
+      "expected": [
+        "N"
+      ],
+      "actual": []
+    },
+    {
+      "case": 218,
+      "expected": [
+        "N"
+      ],
+      "actual": []
+    },
+    {
+      "case": 219,
+      "expected": [
+        "N"
+      ],
+      "actual": []
+    },
+    {
+      "case": 220,
+      "expected": [
+        "N"
+      ],
+      "actual": []
+    },
+    {
+      "case": 221,
+      "expected": [
+        "N"
+      ],
+      "actual": []
+    },
+    {
+      "case": 222,
+      "expected": [
+        "N"
+      ],
+      "actual": []
+    },
+    {
+      "case": 223,
+      "expected": [
+        "N"
+      ],
+      "actual": []
+    },
+    {
+      "case": 224,
+      "expected": [
+        "[Na+]",
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 225,
+      "expected": [
+        "[Na+]",
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 226,
+      "expected": [
+        "[Na+]",
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 227,
+      "expected": [
+        "[Na+]",
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 228,
+      "expected": [
+        "[Na+]",
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 229,
+      "expected": [
+        "[Na+]",
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 230,
+      "expected": [
+        "[Na+]",
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 231,
+      "expected": [
+        "[Na+]",
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 232,
+      "expected": [
+        "[Cl-]",
+        "[Na+]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 233,
+      "expected": [
+        "[Cl-]",
+        "[Na+]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 234,
+      "expected": [
+        "[Cl-]",
+        "[Na+]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 235,
+      "expected": [
+        "[Cl-]",
+        "[Na+]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 236,
+      "expected": [
+        "[Cl-]",
+        "[Na+]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 237,
+      "expected": [
+        "[Cl-]",
+        "[Na+]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 238,
+      "expected": [
+        "[Cl-]",
+        "[Na+]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 239,
+      "expected": [
+        "[Cl-]",
+        "[Na+]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 240,
+      "expected": [
+        "[Na+]",
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 241,
+      "expected": [
+        "[Na+]",
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 242,
+      "expected": [
+        "[Na+]",
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 243,
+      "expected": [
+        "[Na+]",
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 244,
+      "expected": [
+        "[Na+]",
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 245,
+      "expected": [
+        "[Na+]",
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 246,
+      "expected": [
+        "[Na+]",
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 247,
+      "expected": [
+        "[Na+]",
+        "[Cl-]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 248,
+      "expected": [
+        "[Cl-]",
+        "[Na+]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 249,
+      "expected": [
+        "[Cl-]",
+        "[Na+]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 250,
+      "expected": [
+        "[Cl-]",
+        "[Na+]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 251,
+      "expected": [
+        "[Cl-]",
+        "[Na+]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 252,
+      "expected": [
+        "[Cl-]",
+        "[Na+]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 253,
+      "expected": [
+        "[Cl-]",
+        "[Na+]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 254,
+      "expected": [
+        "[Cl-]",
+        "[Na+]"
+      ],
+      "actual": []
+    },
+    {
+      "case": 255,
+      "expected": [
+        "[Cl-]",
+        "[Na+]"
+      ],
+      "actual": []
+    }
+  ],
+  "rdkit_agent_role_difference_count": 160,
+  "rdkit_version": "2026.09.1",
+  "indigo_version": "1.46.0.0-gb36d38f52-aarch64-darwin-appleclang-17000013",
+  "openbabel_version": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+  "openbabel_diagnostics": [
+    {
+      "reaction": "CCO.O>Cl>CC=O",
+      "exit_code": 0,
+      "fragments": 1,
+      "arrows": 0,
+      "schemes": 0,
+      "steps": 0
+    },
+    {
+      "reaction": "CCO.O>>CC=O.O",
+      "exit_code": 0,
+      "fragments": 1,
+      "arrows": 0,
+      "schemes": 0,
+      "steps": 0
+    },
+    {
+      "reaction": "CC(=O)O>N>CC(=O)N.O",
+      "exit_code": 0,
+      "fragments": 1,
+      "arrows": 0,
+      "schemes": 0,
+      "steps": 0
+    }
+  ],
+  "legacy_atom_state_diagnostics": [
+    {
+      "input": "[O]",
+      "indigo_reference": "[O]",
+      "indigo_legacy_read": "O",
+      "legacy_cdxml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"8\" NumHydrogens=\"0\"/>\n</fragment>\n</page>\n</CDXML>\n",
+      "checked_refusal": "reaction CDXML component 0: bracket hydrogen count differs from native normal-valence inference"
+    },
+    {
+      "input": "[N]",
+      "indigo_reference": "[N]",
+      "indigo_legacy_read": "N",
+      "legacy_cdxml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"7\" NumHydrogens=\"0\"/>\n</fragment>\n</page>\n</CDXML>\n",
+      "checked_refusal": "reaction CDXML component 0: bracket hydrogen count differs from native normal-valence inference"
+    },
+    {
+      "input": "[CH3]",
+      "indigo_reference": "[CH3]",
+      "indigo_legacy_read": "[CH3]",
+      "legacy_cdxml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"6\" NumHydrogens=\"3\"/>\n</fragment>\n</page>\n</CDXML>\n",
+      "checked_refusal": "reaction CDXML component 0: bracket hydrogen count differs from native normal-valence inference"
+    },
+    {
+      "input": "[H]",
+      "indigo_reference": "[H]",
+      "indigo_legacy_read": "[HH]",
+      "legacy_cdxml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"1\" NumHydrogens=\"0\"/>\n</fragment>\n</page>\n</CDXML>\n",
+      "checked_refusal": "reaction CDXML component 0: isolated or bridging hydrogen atoms are unsupported"
+    }
+  ],
+  "native_binary_sha256": "15b1445f12fb4209b5a96eaef22548d343271a6068ad39301d755afc1758c427",
+  "python_version": "3.13.6 (v3.13.6:4e665351082, Aug  6 2025, 11:22:35) [Clang 16.0.0 (clang-1600.0.26.6)]"
+}
