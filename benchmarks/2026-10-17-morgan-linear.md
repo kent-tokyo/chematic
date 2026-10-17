@@ -19,7 +19,7 @@ main, release, public-wheel, whole-toolkit, or cross-host speed improvement.
   Baseline target began empty. Candidate reused dependency cache and actually
   recompiled fingerprint/Python production libraries. No benchmark-specific production
   feature, dependency, cache, preparation relocation, API change, or unsafe code was added.
-- Corpus: unfiltered 1,000-row windows at offsets0 and5000 of
+- Corpus: unfiltered 1,000-row windows at offsets 0 and 5000 of
   `validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi`.
 - Timed boundary: each public API's native return (chematic packed bytes versus
   RDKit/COSMolKit fingerprint objects). Canonical on-bit conversion and checking are
@@ -29,16 +29,16 @@ main, release, public-wheel, whole-toolkit, or cross-host speed improvement.
   batch and calls the operation once per fresh molecule. Repeated-use prepares a
   fresh batch, calls that operation once untimed, then reuses those objects.
   Parse-inclusive performs fresh parsing and the operation inside each timer.
-- Every full batch returns all1,000 outputs. Every batch is checked against the
+- Every full batch returns all 1,000 outputs. Every batch is checked against the
   same engine's canonical outputs, and all modes are checked against each other.
-  Primary operations accumulate at least50ms of timed full-batch work per mode;
-  source controls at least20ms. Durations, counts, and output hashes are retained.
-  The average is sum(raw batch ns)/actual complete batches, floored by less than1ns.
+  Primary operations accumulate at least 50 ms of timed full-batch work per mode;
+  source controls at least 20 ms. Durations, counts, and output hashes are retained.
+  The average is sum(raw batch ns)/actual complete batches, floored by less than 1 ns.
   Preparation and checking gaps are excluded; this is not a contiguous steady-state
   or cold-interpreter benchmark. Whole-process RSS includes imports/preparation/checks;
   it is recorded but not ranked.
-- Each profile runs all24 permutations of the four arms once, shuffled with
-  seeds20261017+offset. Each arm occupies each position six times. Samples stay
+- Each profile runs all 24 permutations of the four arms once, shuffled with
+  seeds 20261017 + offset. Each arm occupies each position six times. Samples stay
   paired by block. Statistics use10,000 fixed-seed bootstrap resamples; rounded
   display values never decide the median floor. There are no filtered rows,
   missing observations, interrupted profiles, or performance-informed reruns.
@@ -53,13 +53,13 @@ registry update check or a claim about another version.
 
 - baseline wheel SHA-256: `7a3fc614b887fdd3fc93801a8bce1e3df31100cddeacaa8444bc268190d0c91b`.
 - candidate wheel SHA-256: `99aaf790b8e124dd714fd0e634557feb245bd5815b06850f1d5a029ba99d99d8`.
-- offset0 corpus SHA-256: `f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f`; exact row-window SHA-256: `844703091ec45b9c0833f705c9b2e532425c79edd71d874cf74b8d2f1e018c82`.
-- offset5000 corpus SHA-256: `f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f`; exact row-window SHA-256: `a84109c44220cdbc44e011b2745e2e3d6253e0d6a448191c977678e543f8186b`.
+- offset 0 corpus SHA-256: `f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f`; exact row-window SHA-256: `844703091ec45b9c0833f705c9b2e532425c79edd71d874cf74b8d2f1e018c82`.
+- offset 5000 corpus SHA-256: `f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f`; exact row-window SHA-256: `a84109c44220cdbc44e011b2745e2e3d6253e0d6a448191c977678e543f8186b`.
 
 ## Source decision
 
-Adoption required both predeclared primary source CI lower bounds>1, every one
-of42 unrounded source paired medians>=0.99, complete data, and exact source outputs.
+Adoption required both predeclared primary source CI lower bounds >1, every one
+of 42 unrounded source paired medians >=0.99, complete data, and exact source outputs.
 Neither primary CI is positive. The six floor misses below are binding even where
 a CI also includes one. Unchanged descriptor control bodies do not establish that
 the algorithm itself caused those fluctuations; the preregistered retention test
@@ -76,12 +76,12 @@ still fails, so no exception or favorable resampling was used.
 | 5000 | tpsa | first_use | 0.989667 | [0.981885, 1.000728] | 8/24 |
 | 5000 | labute_asa | parse_inclusive | 0.985738 | [0.976510, 1.015684] | 9/24 |
 
-Additionally offset0 `num_rings/repeated_use` has an entirely negative interval:
+Additionally offset 0 `num_rings/repeated_use` has an entirely negative interval:
 0.991299 [0.983534,0.998288],7/24 faster. Its median clears the floor but its
-negative interval is retained. The0.989949 Morgan parse-inclusive median above
+negative interval is retained. The 0.989949 Morgan parse-inclusive median above
 fails despite rounding to0.990 at three decimals.
 
-All42 source lanes, including every negative or inconclusive interval:
+All 42 source lanes, including every negative or inconclusive interval:
 
 | Offset | Operation | Mode | Paired median | 95% CI | Faster blocks |
 |---:|---|---|---:|---|---:|
@@ -133,7 +133,7 @@ All42 source lanes, including every negative or inconclusive interval:
 For each external lane the gate requires equivalent outputs, CI lower>1, and24/24
 faster paired blocks. All ordinary timed outputs match.32 of36 lanes pass that
 stricter speed gate. These measurements do not rescue the failed source decision.
-The offset0 first-use chiral lane is slower than COSMolKit:0.820467
+The offset 0 first-use chiral lane is slower than COSMolKit:0.820467
 [0.813832,0.831359],0/24 faster (native API batches roughly12.321ms versus10.106ms).
 The other three non-wins have positive medians but21/24,21/24,or23/24 faster
 blocks; they are not labelled consistent wins.
@@ -167,7 +167,7 @@ ring count and MACCS are **source-only controls** here. No other workflow is ran
 ## Correctness and native-code validation
 
 - Existing fingerprint suite:387 tests passed, zero failures/ignored. Includes
- 24,576 exhaustive comparisons (all1,024 five-vertex simple undirected carbon
+ 24,576 exhaustive comparisons (all 1,024 five-vertex simple undirected carbon
  graphs ×3 ring-flag choices ×2 chirality choices ×4 radii), with ordered
  emissions and fallback results compared against the complete frozen old function.
  Directed tests cover empty/isolated/symmetric/ring/stereo cases,64/65 atom inline
@@ -175,15 +175,15 @@ ring count and MACCS are **source-only controls** here. No other workflow is ran
  mutation and radius/width cache tests remain in the full suite.
 - The frozen complete reference matches baseline exactly after only the test
  function name, visibility and module indentation change. Its hash/check is saved.
-- On10,000 ordinary plus4,072 stress inputs, baseline and candidate rows (including
+- On 10,000 ordinary plus 4,072 stress inputs, baseline and candidate rows (including
  error/refusal fields) are identical. All56,288 Morgan values (R2/R3 ×chirality
  off/on) also match RDKit2026.09.1 exactly; there are no source refusals.
-- COSMolKit matches all40,000 ordinary cells. On stress inputs, each plain radius
- matches4,066/4,072 with6 parse refusals. Each chiral radius matches4,059/4,072 with
- the same6 refusals and7 different fingerprints. All exceptional rows and their
+- COSMolKit matches all 40,000 ordinary cells. On stress inputs, each plain radius
+ matches 4,066/4,072 with 6 parse refusals. Each chiral radius matches 4,059/4,072 with
+ the same 6 refusals and 7 different fingerprints. All exceptional rows and their
  values/errors remain in the differences file. They are not counted as agreement
  or silently omitted from a speed claim. The timing windows contain ordinary rows.
-- All192 compressed per-arm journals are present. Independent audit checks2,880
+- All 192 compressed per-arm journals are present. Independent audit checks 2,880
  accounting cells,177,202 complete timed batches and177,202,000 processed records,
  all canonical outputs/digests, exact permutations/positions, and the raw statistics.
  Every source and external timed output matches over all modes and batches.
@@ -192,7 +192,7 @@ ring count and MACCS are **source-only controls** here. No other workflow is ran
  candidate exists in the measured code, rather than only in a reference path.
  The [code-realization record](2026-10-17-morgan-linear-artifacts/code-realization.json)
  identifies both symbols, commands, code and extension hashes.
-- Local Clippy all-targets, rustfmt check and refactor budget passed.12 benchmark
+- Local Clippy all-targets, rustfmt check and refactor budget passed. 12 benchmark
  driver/frontier tests pass. New tests verify first-use freshness, repeated-use
  priming/reuse, parse-inclusive timer placement, fractional batch accounting,
  refusal/mismatch/nonpositive-time rejection, unfiltered corpus windows, and
@@ -200,9 +200,9 @@ ring count and MACCS are **source-only controls** here. No other workflow is ran
 
 ## Diagnostic follow-up, excluded from formal timing
 
-After both formal profiles finished, a separate5-second macOS sample profiled
+After both formal profiles finished, a separate 5-second macOS sample profiled
 baseline parsing plus first-use chiral Morgan on the first1,000 ordinary rows.
-The sampled fingerprint method has2,693 inclusive stacks;1,596 are inside stereo
+The sampled fingerprint method has 2,693 inclusive stacks; 1,596 are inside stereo
 preparation (~59.3%). Within that subtree, observed work includes sanitization,
 RDKit ring perception and CIP ranking. These are inclusive sampling counts, not
 independent additive times, a causal speedup estimate, or another formal trial.
@@ -212,7 +212,7 @@ The diagnostic worker, sample and output log are retained.
 
 ## Evidence and reproduction
 
-- [Independent audit and all78 comparisons](2026-10-17-morgan-linear-artifacts/formal-audit.json),
+- [Independent audit and all 78 comparisons](2026-10-17-morgan-linear-artifacts/formal-audit.json),
   [unrounded CSV](2026-10-17-morgan-linear-artifacts/formal-lanes.csv),
   [broad audit](2026-10-17-morgan-linear-artifacts/broad-audit.json).
 - Both `profile-*/` directories contain the original plan, result/progress records
@@ -259,6 +259,5 @@ PYTHONDONTWRITEBYTECODE=1 /private/tmp/chematic-cosmolkit-stereo-venv/bin/python
   --output /private/tmp/chematic-morgan-linear-evidence-20261017/profile-0
 ```
 
-The second original invocation used `--offset5000` (separate arguments
-`--offset 5000`) and `profile-5000`. Existing plans prevent rerunning either epoch.
+The second original invocation used `--offset 5000` and `profile-5000`. Existing plans prevent rerunning either epoch.
 Main integration and a universal speed claim remain unjustified by this packet.
