@@ -779,7 +779,13 @@ fn diagnostic_report(
 ) -> MolReadReport {
     let stereo_diagnostics =
         apply_ctab_local_parity_from_wedges_with_diagnostics(&mut mol, &coords);
-    let ez_diagnostics = apply_ez_directions_from_2d_ex(&mut mol, &coords, unspecified_ez);
+    let ez_diagnostics = super::apply_ctab_ez_directions(
+        &mut mol,
+        &coords,
+        &raw_z,
+        coordinate_dimension,
+        unspecified_ez,
+    );
     let (conformer, geometry_rank, stereo3d_diagnostics, square_planar_diagnostics) =
         geometry_diagnostics(&mut mol, &coords, &raw_z, coordinate_dimension);
     if geometry_rank == GeometryRank::FlatZero
