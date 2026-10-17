@@ -485,6 +485,7 @@ fn explain_rdkit_topological_torsion_code(
 
 pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     crate::tautomer_pick::register(m)?;
+    crate::cml_named::register(m)?;
     m.add_class::<crate::feature_patterns::PyFeaturePatternSet>()?;
     m.add_class::<PyMoleculeBatch>()?;
     m.add_class::<PySmartsQuery>()?;

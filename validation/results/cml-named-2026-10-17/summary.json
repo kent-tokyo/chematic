@@ -1,0 +1,50 @@
+{
+  "recorded_at": "2026-10-16T23:05:52.340223+00:00",
+  "source_base": "bef0d008d49f3d432fc35a900ccbf6acab2cd957",
+  "host": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "python": "3.13.6",
+  "lxml_version": [
+    6,
+    0,
+    2,
+    0
+  ],
+  "native_sha256": "6fada006000ecb1ad861a3846f61b06b6efc04d41ea4a4c7b587ef6342fd3443",
+  "official_schema_sha256": "842e8e1c78e0b2615ef651fccb0aea8dc4ce79f7827d4ac75c411492f8689676",
+  "source_manifest_files": 1157,
+  "baseline": {
+    "native_candidate": "retained PR #971 tautomer-selection build; not a fresh rebuild of current main",
+    "native_sha256": "e7031c92a76c9fa2d7611b0916fb9ed0b3e493c4ebe63a93e6b5f5df5debb3b9",
+    "new_api_absence_test": "1 test failed with AttributeError",
+    "old_chematic_writer_ids": [
+      "a1",
+      "a2",
+      "a3"
+    ],
+    "openbabel_version": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+    "openbabel_control_ids": [
+      "a1",
+      "a2",
+      "a3"
+    ],
+    "openbabel_control_bonds": 2
+  },
+  "validation": {
+    "new_rust_passed": 6,
+    "new_python_passed": 35,
+    "existing_python_hydrogen_passed": 29,
+    "independent_schema_geometry_cases": 129,
+    "additional_named_water_fixture": 1,
+    "failures": 0,
+    "clippy_all_targets": "passed for chematic-mol and chematic-py with -D warnings",
+    "format_stubs_binding_inventory_manifest_naming_unsafe_docs": "passed"
+  },
+  "scope": [
+    "graph export with caller-supplied IDs; documented MOL2 recipe",
+    "strict common subset of molecular-convention and Schema 3 atomRefs2 ID grammars; dots are rejected",
+    "no stereo, maps, nonchemical tags, wildcard or special bonds",
+    "source-only MOL2 types, partial charges, substructures and opaque sections are not encoded",
+    "existing CML reader returns graph/2D, not atom IDs or 3D coordinates",
+    "Rust/Python only; no WASM, published-wheel or main-integration claim"
+  ]
+}
