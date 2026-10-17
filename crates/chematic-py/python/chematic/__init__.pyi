@@ -5406,3 +5406,9 @@ class RWMol:
     def GetName(self) -> str: ...
     def SetName(self, name: str) -> None: ...
     def GetMol(self) -> Mol: ...
+
+from ._cml_collection import (
+    CmlMoleculeRecord as CmlMoleculeRecord,
+    read_cml_collection as read_cml_collection,
+    write_cml_collection as write_cml_collection,
+)

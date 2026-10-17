@@ -1,0 +1,49 @@
+{
+  "date": "2026-10-17",
+  "base_commit": "c84c68f297f95562d1d29c75234f2190cd5f9d75",
+  "upstream_issue": {
+    "number": 2339,
+    "url": "https://github.com/openbabel/openbabel/issues/2339",
+    "state": "OPEN",
+    "scope": "CML collection framing only; no MDL/SDF writer change"
+  },
+  "python": "3.13.6",
+  "tests": {
+    "passed": 240,
+    "new_collection": 49,
+    "existing_cml_hydrogen": 29,
+    "existing_compat": 162
+  },
+  "typing": {
+    "new_helper": "strict, imported stub diagnostics silenced",
+    "public_valid_consumer": "passed",
+    "public_invalid_consumer": "5 expected errors",
+    "whole_package_strict": "not claimed"
+  },
+  "native_fixture": {
+    "path": "/private/tmp/chematic-cml-collection-python/chematic/chematic.so",
+    "source_commit": "71d9c12b0c16a8e6b23e4078479d5754230c831b",
+    "sha256": "c6db880b6f5ca4ea0388f238c24e8a5b55751daab1084cf0d1d7b56e2427257b",
+    "fresh_native_build": false,
+    "unchanged_native_cml_source_files": [
+      "crates/chematic-mol/src/cml.rs",
+      "crates/chematic-py/src/formats/cml.rs"
+    ],
+    "unchanged_native_to_cml_function_sha256": "5e25a42f19be7837025ac634ec82910bd0b168cc1f994ccd71def946968b7d7c",
+    "scope": "package import, basic CML fixtures and compatibility regressions; collection parser/writer is Python only"
+  },
+  "source_sha256": {
+    "crates/chematic-py/python/chematic/_cml_collection.py": "3ae67b7dff4505a5a469b0e7cac65804d1986d8e2fac0148dd985bebb8cd79aa",
+    "crates/chematic-py/python/chematic/__init__.py": "b58f53490b60a60a493662dab76a7928d3de0fe27af3357fc6b923dc2661052b",
+    "crates/chematic-py/python/chematic/__init__.pyi": "2c6a05c0cd8bcc6d1686b59b13201dff0ac2a704d946b582b8007528222634cb",
+    "crates/chematic-py/tests/test_cml_collection.py": "9b8c4b330ca01069a67a670af9a0c6a7728f6deae9719714400c9318cc6029b0",
+    "validation/validate_cml_collection.py": "047ab3e0285098f62af8813638d284a8b5aff3f0391cf2b707f5020d9f81dc14",
+    "validation/validate_cml_pybel_output.py": "6c028eb5669aa8106c2240af8df05eb4a953b04cab0cf0cefd9a01757645645b"
+  },
+  "commands": [
+    "PYTHONDONTWRITEBYTECODE=1 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=/private/tmp/chematic-cml-collection-python python3.13 -m pytest crates/chematic-py/tests/test_cml_collection.py crates/chematic-py/tests/test_cml_hydrogen_contract.py crates/chematic-py/tests/test_rdkit_compat.py -q -p no:cacheprovider",
+    "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/private/tmp/chematic-cml-collection-python python3.13 validation/validate_cml_collection.py",
+    "PYTHONDONTWRITEBYTECODE=1 /opt/homebrew/bin/python3.14 validation/validate_cml_pybel_output.py",
+    "python3.13 -m mkdocs build --strict --site-dir /private/tmp/chematic-cml-collection-site"
+  ]
+}

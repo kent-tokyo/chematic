@@ -1,0 +1,8 @@
+{
+  "openbabel_version": "3.2.1",
+  "method": "pybel.Outputfile(cml).write three molecules, followed by close()",
+  "xml_valid": false,
+  "xml_error": "junk after document element: line 13, column 0",
+  "source_file": "pybel-closed-output.cml",
+  "scope": "original three-molecule synthetic control; no force-field or coordinate generation"
+}
