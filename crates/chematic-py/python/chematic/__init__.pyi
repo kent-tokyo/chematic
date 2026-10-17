@@ -5735,3 +5735,8 @@ from ._mcs_comparators import (
     McsBondCompare as McsBondCompare,
     McsBondComparison as McsBondComparison,
 )
+
+from ._crystal_stl import (
+    StlMeshExport as StlMeshExport,
+    write_crystal_stl_checked as write_crystal_stl_checked,
+)
