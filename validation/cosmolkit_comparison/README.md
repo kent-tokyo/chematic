@@ -43,6 +43,9 @@ variants against RDKit, COSMolKit, and CheMatic's own read-back.
 The [charged-carbon follow-up](v3000-charged-carbon-2026-10-17.md) recovers
 the final CheMatic-only `stress-v1` miss; CheMatic's correct rows now include
 every RDKit and COSMolKit correct row on all three fixed V3000 corpora.
+The [RDKit 2026.09.1 stereochemistry comparison](rdkit-2026-09-1-stereo-2026-10-17.md)
+adds ChEMBL V3000 writer read-back, an independent NCI negative control,
+corrected atom/bond CIP comparisons, and a ChEMBL unmarked 3D reader sample.
 
 The focused [aromatic sulfur stereo read-back
 check](aromatic-s-stereo-2026-10-16.md) compares whether each toolkit keeps

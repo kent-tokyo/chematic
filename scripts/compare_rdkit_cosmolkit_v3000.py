@@ -74,7 +74,10 @@ def cases(corpus: Path):
         if corpus.suffix == ".smi":
             yield {"id": f"line-{line_number}", "smiles": line.split()[0]}
         elif corpus.suffix == ".jsonl":
-            yield json.loads(line)
+            case = json.loads(line)
+            if case.get("_manifest") is True:
+                continue
+            yield case
         else:
             raise ValueError("corpus must be .smi or .jsonl")
 

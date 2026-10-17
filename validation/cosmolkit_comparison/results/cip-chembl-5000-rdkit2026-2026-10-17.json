@@ -1,0 +1,31 @@
+{
+  "atom": {
+    "assigned": 4186,
+    "exact": 5000,
+    "mismatches": 0,
+    "oracle": 4186
+  },
+  "atom_mismatch_classes": {},
+  "atom_mismatch_elements": {},
+  "atom_mismatch_oracle_labels": {},
+  "bond": {
+    "assigned": 678,
+    "exact": 5000,
+    "mismatches": 0,
+    "oracle": 678
+  },
+  "compared_rows": 5000,
+  "corpus": "scripts/chembl_accuracy_corpus_4999.smi",
+  "corpus_sha256": "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e",
+  "engine_failures": 0,
+  "gate_passed": true,
+  "input_rows": 5000,
+  "mismatch_examples": [],
+  "parse_failures": 0,
+  "profile": "A2-cip-label-parity",
+  "rdkit_version": "2026.09.1",
+  "schema_version": 1,
+  "unresolved_reasons": {
+    "tied": 2
+  }
+}

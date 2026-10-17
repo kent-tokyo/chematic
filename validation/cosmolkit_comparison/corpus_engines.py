@@ -678,7 +678,7 @@ def _cosmolkit_05_engine():
         "heavy_atoms": lambda m: m.num_heavy_atoms(),
         "unspecified_stereocenters": lambda m: m.num_unspecified_atom_stereo_centers(),
         "smiles_kekule": smiles_with(kekule=True),
-        "smiles_noniso": smiles_with(do_isomeric_smiles=False),
+        "smiles_noniso": smiles_with(isomeric_smiles=False),
         "smiles_explicit": smiles_with(all_bonds_explicit=True, all_hydrogens_explicit=True),
         "smiles_addhs": lambda m: m.with_hydrogens().to_smiles(),
         "smarts_write": lambda m: m.to_smarts(),
