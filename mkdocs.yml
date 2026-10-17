@@ -129,6 +129,7 @@ nav:
     - Tautomer Candidate Selection: tautomer-candidate-selection.md
     - Checked SASA Radii: checked-sasa-radii.md
     - Cancellable Tautomer Enumeration: tautomer-callback.md
+    - Parent Transformations: standardization-parents.md
     - SDF Gzip Input: sdf-gzip-input.md
     - Python Forward SDF Streams: python-forward-sdf.md
     - Python Stub Packaging Gate: python-stub-packaging-gate.md
