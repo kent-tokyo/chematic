@@ -648,3 +648,5 @@ def screen(smiles, profile: str = "druglike", filters=None) -> list:
         row["overall_pass"] = all(v for k, v in row.items() if k.endswith("_pass"))
         results.append(row)
     return results
+
+from ._pymatgen_json import PymatgenStructureRecord, parse_pymatgen_structures
