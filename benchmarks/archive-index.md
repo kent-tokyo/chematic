@@ -529,3 +529,5 @@ integrated-main or toolkit-wide superiority.
 - [V2000 bond-tail rejected performance candidate](2026-10-18-openbabel-v2000-bond-tail.md) ([numeric packet](2026-10-18-openbabel-v2000-bond-tail.json)): both SDF write primaries improve but one 3D parse control fails the unchanged 0.99 floor; all 36 lanes and the disk-pause continuation retained; runtime excluded.
 
 - [MOL2 indexed reads and guarded fixed4 writes](2026-10-18-mol2-index-fixed4.md): seven primary source lanes win 24/24; all 27 floors pass; rejected index-only epoch and unranked Open Babel observations retained. One-host source evidence.
+
+- [Legacy stereo code projection rejected gate](2026-10-18-morgan-stereo-projection.md) ([numeric packet](2026-10-18-morgan-stereo-projection-numeric.json.gz)): offset-0 first-use chiral Morgan improves but offset-5,000 regresses; all 42 floors pass yet the two-primary adoption gate fails; all 78 comparisons and negative results retained; runtime excluded.

@@ -22,6 +22,7 @@ class NumericCorruptionTests(unittest.TestCase):
                 "2026-10-17-morgan-inline-adjacency.json.gz",
                 "2026-10-18-morgan-tied-cip-numeric.json.gz",
                 "2026-10-18-morgan-shared-h-numeric.json.gz",
+                "2026-10-18-morgan-stereo-projection-numeric.json.gz",
             )
         }
 
