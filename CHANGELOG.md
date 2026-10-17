@@ -16,6 +16,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Python `rdkit_compat.rdMIF.Coulomb` adds typed, copied explicit-charge vacuum
+  fields with bounded real inputs and scalar kJ/mol evaluation. See the
+  [Coulomb field profile](docs/coulomb-interaction-field.md) for squared-distance
+  thresholds, narrowed settings and measured RDKit rounding-boundary differences.
+
 - Rust/Python `FeaturePatternSet` owns up to 32 caller-supplied SMARTS feature
   definitions and produces full-width atom masks or native circular feature
   fingerprints. Matching budgets and size limits refuse partial output;

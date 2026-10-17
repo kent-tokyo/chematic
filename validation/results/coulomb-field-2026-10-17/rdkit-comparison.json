@@ -1,0 +1,73 @@
+{
+  "boundary_diagnostics": {
+    "comparisons": 88128,
+    "differences_above_tolerance": 108,
+    "examples": [
+      {
+        "candidate": 3603.8580643382165,
+        "point": [
+          -5.984187084053493,
+          5.414487438363686,
+          -3.731585003252855
+        ],
+        "reference": 3615.2531995556787,
+        "sites": 129,
+        "threshold": 148.46467778693685
+      },
+      {
+        "candidate": -2702.8935482536626,
+        "point": [
+          -5.984187084053493,
+          5.414487438363686,
+          -3.731585003252855
+        ],
+        "reference": -2711.439899666759,
+        "sites": 129,
+        "threshold": 148.46467778693685
+      },
+      {
+        "candidate": -7207.716128676433,
+        "point": [
+          -5.984187084053493,
+          5.414487438363686,
+          -3.731585003252855
+        ],
+        "reference": -7230.5063991113575,
+        "sites": 129,
+        "threshold": 148.46467778693685
+      }
+    ],
+    "interpretation": "inclusion at rounded squared-distance boundaries may differ across Python/C++ arithmetic; every difference was within 8 ULP of a site boundary"
+  },
+  "case_parameters_sha256": "7e97466e8f66854902f3468218e22931979172300cd6e0ac5fe39215db9a1633",
+  "constructor_cases": 864,
+  "exclusions": [
+    "molecule/conformer overload",
+    "automatic charges",
+    "dielectric fields",
+    "grids",
+    "performance claim"
+  ],
+  "max_absolute_error_kj_mol": 4.656612873077393e-10,
+  "max_error_scaled_by_max_1_reference": 2.8705596187101174e-14,
+  "numpy": "2.5.3",
+  "python": "3.13.6",
+  "rdkit": "2026.09.1",
+  "scalar_comparisons": 120960,
+  "schema_version": 1,
+  "scope": "explicit-charge vacuum scalar Coulomb; synthetic supported profiles",
+  "seed": 9601,
+  "threshold_probe": {
+    "above_4": 694.5243164352524,
+    "at_4": 0.0,
+    "distance": 2.0
+  },
+  "tolerance": {
+    "absolute_kj_mol": 2e-09,
+    "relative": 2e-12
+  },
+  "unsupported_reference_diagnostic": {
+    "candidate": "cutoff below 0.001 is refused, not reproduced",
+    "cutoff_0_at_origin": 43925.57460613827
+  }
+}

@@ -38,7 +38,7 @@ from __future__ import annotations
 
 __all__ = [
     "Mol", "Atom", "Bond", "BondType", "RingInfo", "RWMol",
-    "ExplicitBitVect",
+    "ExplicitBitVect", "rdMIF",
     "MolFromSmiles", "MolToSmiles", "MolFromMolBlock", "MolFromMolFile",
     "MolToMolBlock", "SanitizeMol", "Kekulize", "AddHs", "RemoveHs",
     "MolFromSmarts", "RenumberAtoms",
@@ -51,6 +51,8 @@ __all__ = [
 
 
 import chematic as _ch
+
+from ._coulomb_field import Coulomb as _Coulomb
 
 
 _MISSING = object()
@@ -1409,3 +1411,9 @@ class DataStructs:
         for i in fp.GetOnBits():
             dest[i] = 1
         return dest
+
+
+class rdMIF:
+    """Checked subset of molecular interaction fields for explicit caller data."""
+
+    Coulomb = _Coulomb

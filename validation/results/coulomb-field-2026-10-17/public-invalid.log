@@ -1,0 +1,5 @@
+validation/typing/coulomb_field_invalid.py:5: error: Argument 1 has incompatible type "Generator[float, None, None]"; expected "MifScalarSequence"  [arg-type]
+validation/typing/coulomb_field_invalid.py:6: error: List item 0 has incompatible type "str"; expected "float"  [list-item]
+validation/typing/coulomb_field_invalid.py:7: error: List item 0 has incompatible type "float"; expected "MifScalarSequence"  [list-item]
+validation/typing/coulomb_field_invalid.py:8: error: Argument "probeCharge" has incompatible type "str"; expected "float"  [arg-type]
+Found 4 errors in 1 file (checked 1 source file)

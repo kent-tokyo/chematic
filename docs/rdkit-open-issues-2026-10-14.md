@@ -107,3 +107,15 @@ Bold/Hash/Dash inference already existed, but Python and WASM could not opt in.
 screen-coordinate, hashed-sense and directional ownership defects in the
 reader. Default non-directional markers remain unassigned. This validates
 bounded molecular reading, not binary CDX or a general ChemDraw writer.
+
+
+## October 17 follow-up: typed explicit-charge Coulomb fields
+
+[#9601](https://github.com/rdkit/rdkit/issues/9601) still lists the `rdMIF`
+`charges` / `positions` typing boundary. Added
+[checked explicit-charge vacuum fields](coulomb-interaction-field.md) as a
+partial implementation: copied indexed inputs, finite bounds and typed scalar
+evaluation. The ordinary-point comparison passed 120,960 evaluations against
+RDKit 2026.09.1; 108 of 88,128 separate rounded-boundary diagnostics differed
+and are disclosed. Molecule overloads, charge generation, dielectric models
+and grids remain outside this addition.
