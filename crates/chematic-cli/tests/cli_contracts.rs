@@ -98,6 +98,50 @@ fn conversion_round_trips_all_advertised_molecular_formats() {
 }
 
 #[test]
+fn converts_kekule_ctabs_to_aromatic_smiles() {
+    for smiles in [
+        "c1ccccc1",
+        "c1cc[nH]c1",
+        "[cH-]1cccc1",
+        "[cH+]1cccccc1",
+        "[cH+]1cc1",
+        "C1=CC=CC1",
+    ] {
+        let source = chematic_smiles::parse(smiles).unwrap();
+        let expected = chematic_smiles::canonical_smiles(&source);
+        for format in ["mol", "mol_v3000"] {
+            let block = invoke(
+                &[
+                    "convert",
+                    "--input-format",
+                    "smiles",
+                    "--output-format",
+                    format,
+                ],
+                smiles,
+            );
+            assert!(block.status.success(), "{format}: {smiles}");
+            let converted = invoke(
+                &[
+                    "convert",
+                    "--input-format",
+                    format,
+                    "--output-format",
+                    "smiles",
+                ],
+                &String::from_utf8(block.stdout).unwrap(),
+            );
+            assert!(converted.status.success(), "{format}: {smiles}");
+            assert_eq!(
+                String::from_utf8(converted.stdout).unwrap().trim(),
+                expected,
+                "{format}: {smiles}"
+            );
+        }
+    }
+}
+
+#[test]
 fn molecule_and_reaction_commands_emit_inspectable_json() {
     for (args, path, expected) in [
         (vec!["parse", "CCO"], "/atoms", json!(3)),

@@ -7,6 +7,8 @@ use std::fs;
 use std::io::{self, Read, Write};
 use std::path::PathBuf;
 
+mod conversion_format;
+
 #[derive(Parser, Debug)]
 #[command(
     name = "chematic",
@@ -243,29 +245,10 @@ enum Command {
     },
 }
 
-fn format_name(format: &str) -> Option<String> {
-    match format
-        .to_ascii_lowercase()
-        .trim_start_matches('.')
-        .replace('-', "_")
-        .as_str()
-    {
-        "smi" | "smiles" => Some("smiles".to_string()),
-        "mol" | "sdf" => Some("mol".to_string()),
-        "v3000" | "mol_v3000" => Some("mol_v3000".to_string()),
-        "mol2" => Some("mol2".to_string()),
-        "cml" => Some("cml".to_string()),
-        "cjson" => Some("cjson".to_string()),
-        "moljson" => Some("moljson".to_string()),
-        "cdxml" => Some("cdxml".to_string()),
-        _ => None,
-    }
-}
-
 fn convert_text(text: &str, input_format: &str, output_format: &str) -> Result<String, String> {
-    let input = format_name(input_format)
+    let input = conversion_format::format_name(input_format)
         .ok_or_else(|| format!("unsupported input format: {input_format}"))?;
-    let output = format_name(output_format)
+    let output = conversion_format::format_name(output_format)
         .ok_or_else(|| format!("unsupported output format: {output_format}"))?;
 
     if input == "mol2" && output == "mol2" {
@@ -1379,27 +1362,6 @@ mod tests {
         assert_eq!(converted.atom_count(), 3);
         assert_eq!(converted.bond_count(), 2);
         assert_eq!(converted.total_formula(), "C2H6O");
-    }
-
-    #[test]
-    fn converts_kekule_ctabs_to_aromatic_smiles() {
-        for smiles in [
-            "c1ccccc1",
-            "c1cc[nH]c1",
-            "[cH-]1cccc1",
-            "[cH+]1cccccc1",
-            "[cH+]1cc1",
-            "C1=CC=CC1",
-        ] {
-            let source = chematic_smiles::parse(smiles).unwrap();
-            let expected = chematic_smiles::canonical_smiles(&source);
-            let v2000 = chematic_mol::write_mol(&source, &Default::default());
-            let v3000 = chematic_mol::write_mol_v3000(&source, &Default::default(), &[]);
-            for (format, block) in [("mol", v2000), ("mol_v3000", v3000)] {
-                let actual = convert_text(&block, format, "smiles").unwrap();
-                assert_eq!(actual, expected, "{format}: {smiles}");
-            }
-        }
     }
 
     #[test]
