@@ -1,0 +1,6 @@
+RDKit 2026.09.1: 1976/1980 MCS count comparisons
+{'inputs': ('[2H]O[2H]', '[H]OC'), 'atom_mode': 'any_heavy_atom', 'bond_mode': 'order_or_aromatic', 'actual': [1, 0], 'expected': [2, 1], 'native_profile_expected': [1, 0], 'native_timed_out': False, 'rdkit_canceled': False, 'passed': False, 'native_profile_passed': True}
+{'inputs': ('[2H]O[2H]', '[H]OC'), 'atom_mode': 'any_heavy_atom', 'bond_mode': 'any', 'actual': [1, 0], 'expected': [2, 1], 'native_profile_expected': [1, 0], 'native_timed_out': False, 'rdkit_canceled': False, 'passed': False, 'native_profile_passed': True}
+{'inputs': ('[H]OC', '[2H]O[2H]'), 'atom_mode': 'any_heavy_atom', 'bond_mode': 'order_or_aromatic', 'actual': [1, 0], 'expected': [2, 1], 'native_profile_expected': [1, 0], 'native_timed_out': False, 'rdkit_canceled': False, 'passed': False, 'native_profile_passed': True}
+{'inputs': ('[H]OC', '[2H]O[2H]'), 'atom_mode': 'any_heavy_atom', 'bond_mode': 'any', 'actual': [1, 0], 'expected': [2, 1], 'native_profile_expected': [1, 0], 'native_timed_out': False, 'rdkit_canceled': False, 'passed': False, 'native_profile_passed': True}
+Native mode definitions (heavy-only induced reference): 1980/1980

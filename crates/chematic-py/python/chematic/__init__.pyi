@@ -4511,8 +4511,8 @@ def find_mcs(
     timeout_ms: Optional[int] = None,
     ring_matches_ring_only: bool = False,
     complete_rings_only: bool = False,
-    atom_compare: str = "elements",
-    bond_compare: str = "order_or_aromatic",
+    atom_compare: McsAtomComparison = "elements",
+    bond_compare: McsBondComparison = "order_or_aromatic",
     match_chiral_tag: bool = False,
     match_charge: bool = False,
     match_isotope: bool = False,
@@ -4527,6 +4527,8 @@ def find_mcs(
 
     ``atom_compare`` is one of ``"elements"`` (default), ``"any_heavy_atom"``, or ``"any"``.
     ``bond_compare`` is one of ``"order_or_aromatic"`` (default) or ``"any"``.
+    Typed choices are :class:`McsAtomCompare` and :class:`McsBondCompare`.
+    The result is a first-input-side concrete projection, not generalized SMARTS.
 
     Example::
 
@@ -4546,8 +4548,8 @@ def find_mcs_checked(
     timeout_ms: Optional[int] = None,
     ring_matches_ring_only: bool = False,
     complete_rings_only: bool = False,
-    atom_compare: str = "elements",
-    bond_compare: str = "order_or_aromatic",
+    atom_compare: McsAtomComparison = "elements",
+    bond_compare: McsBondComparison = "order_or_aromatic",
     match_chiral_tag: bool = False,
     match_charge: bool = False,
     match_isotope: bool = False,
@@ -4555,6 +4557,9 @@ def find_mcs_checked(
 ) -> tuple[Optional[Mol], bool]:
     """Like :func:`find_mcs`, but also reports whether ``timeout_ms`` was reached
     before the search finished exhaustively.
+
+    Accepts :class:`McsAtomCompare` and :class:`McsBondCompare`, or valid legacy
+    literal strings. Comparator callbacks are outside the native API modes.
 
     Returns ``(mcs, was_timed_out)``: ``mcs`` is the MCS as a :class:`Mol` (or ``None``
     if there is no common substructure), and ``was_timed_out`` is ``True`` if the search
@@ -5713,4 +5718,11 @@ from ._bond_fragment import (
     BondFragmentation as BondFragmentation,
     FragmentAttachment as FragmentAttachment,
     fragment_on_bonds_checked as fragment_on_bonds_checked,
+)
+
+from ._mcs_comparators import (
+    McsAtomCompare as McsAtomCompare,
+    McsAtomComparison as McsAtomComparison,
+    McsBondCompare as McsBondCompare,
+    McsBondComparison as McsBondComparison,
 )

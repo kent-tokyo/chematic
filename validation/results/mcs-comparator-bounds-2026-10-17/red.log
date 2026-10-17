@@ -1,0 +1,54 @@
+   Compiling chematic-core v1.1.6 (/private/tmp/chematic-mcs-comparator-bounds-20261017/crates/chematic-core)
+   Compiling chematic-perception v1.1.6 (/private/tmp/chematic-mcs-comparator-bounds-20261017/crates/chematic-perception)
+   Compiling chematic-smiles v1.1.6 (/private/tmp/chematic-mcs-comparator-bounds-20261017/crates/chematic-smiles)
+   Compiling chematic-smarts v1.1.6 (/private/tmp/chematic-mcs-comparator-bounds-20261017/crates/chematic-smarts)
+    Finished `test` profile [unoptimized] target(s) in 5.91s
+     Running unittests src/lib.rs (/private/tmp/chematic-sparse-tanimoto-target/debug/deps/chematic_smarts-0ad023153f3adf71)
+
+running 5 tests
+test mcs::comparator_tests::comparator_elements_remain_element_specific ... ok
+test mcs::comparator_tests::comparator_cross_element_chains_keep_the_full_common_topology ... FAILED
+test mcs::comparator_tests::comparator_heavy_mode_does_not_match_explicit_hydrogen ... FAILED
+test mcs::comparator_tests::comparator_cross_element_three_molecule_search_is_not_underbounded ... FAILED
+test mcs::comparator_tests::comparator_search_budget_still_reports_resource_limit ... FAILED
+
+failures:
+
+---- mcs::comparator_tests::comparator_cross_element_chains_keep_the_full_common_topology stdout ----
+
+thread 'mcs::comparator_tests::comparator_cross_element_chains_keep_the_full_common_topology' (1490385) panicked at crates/chematic-smarts/src/mcs_comparator_tests.rs:14:17:
+assertion `left == right` failed: Any
+  left: 1
+ right: 3
+
+---- mcs::comparator_tests::comparator_heavy_mode_does_not_match_explicit_hydrogen stdout ----
+
+thread 'mcs::comparator_tests::comparator_heavy_mode_does_not_match_explicit_hydrogen' (1490388) panicked at crates/chematic-smarts/src/mcs_comparator_tests.rs:43:5:
+assertion `left == right` failed
+  left: 1
+ right: 2
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- mcs::comparator_tests::comparator_cross_element_three_molecule_search_is_not_underbounded stdout ----
+
+thread 'mcs::comparator_tests::comparator_cross_element_three_molecule_search_is_not_underbounded' (1490386) panicked at crates/chematic-smarts/src/mcs_comparator_tests.rs:25:9:
+assertion `left == right` failed
+  left: 1
+ right: 3
+
+---- mcs::comparator_tests::comparator_search_budget_still_reports_resource_limit stdout ----
+
+thread 'mcs::comparator_tests::comparator_search_budget_still_reports_resource_limit' (1490389) panicked at crates/chematic-smarts/src/mcs_comparator_tests.rs:55:5:
+assertion failed: matches!(find_mcs_with_config_checked(&[&a, &b], &config),
+    McsOutcome::ResourceLimited(_))
+
+
+failures:
+    mcs::comparator_tests::comparator_cross_element_chains_keep_the_full_common_topology
+    mcs::comparator_tests::comparator_cross_element_three_molecule_search_is_not_underbounded
+    mcs::comparator_tests::comparator_heavy_mode_does_not_match_explicit_hydrogen
+    mcs::comparator_tests::comparator_search_budget_still_reports_resource_limit
+
+test result: FAILED. 1 passed; 4 failed; 0 ignored; 0 measured; 217 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p chematic-smarts --lib`

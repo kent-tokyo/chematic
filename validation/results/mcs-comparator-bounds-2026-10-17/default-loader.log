@@ -1,0 +1,55 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.13.6, pytest-9.1.1, pluggy-1.6.0
+rootdir: /private/tmp/chematic-mcs-comparator-bounds-20261017/crates/chematic-py
+configfile: pytest.ini
+collected 0 items / 3 errors
+
+==================================== ERRORS ====================================
+________________ ERROR collecting tests/test_mcs_comparators.py ________________
+ImportError while importing test module '/private/tmp/chematic-mcs-comparator-bounds-20261017/crates/chematic-py/tests/test_mcs_comparators.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+crates/chematic-py/tests/test_mcs_comparators.py:3: in <module>
+    import chematic as ch
+../chematic-mcs-comparator-python/chematic/__init__.py:1: in <module>
+    from ._pdb_models import (
+../chematic-mcs-comparator-python/chematic/_pdb_models.py:10: in <module>
+    from .chematic import select_pdb_atoms
+E   ImportError: dlopen(/private/tmp/chematic-mcs-comparator-python/chematic/chematic.so, 0x0002): tried: '/private/tmp/chematic-mcs-comparator-python/chematic/chematic.so' (mis-aligned LINKEDIT string pool, fileOffset=0x02E8D87C), '/System/Volumes/Preboot/Cryptexes/OS/private/tmp/chematic-mcs-comparator-python/chematic/chematic.so' (no such file), '/private/tmp/chematic-mcs-comparator-python/chematic/chematic.so' (mis-aligned LINKEDIT string pool, fileOffset=0x02E8D87C)
+_______________ ERROR collecting tests/test_module_functions.py ________________
+ImportError while importing test module '/private/tmp/chematic-mcs-comparator-bounds-20261017/crates/chematic-py/tests/test_module_functions.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+crates/chematic-py/tests/test_module_functions.py:5: in <module>
+    import chematic
+../chematic-mcs-comparator-python/chematic/__init__.py:1: in <module>
+    from ._pdb_models import (
+../chematic-mcs-comparator-python/chematic/_pdb_models.py:10: in <module>
+    from .chematic import select_pdb_atoms
+E   ImportError: dlopen(/private/tmp/chematic-mcs-comparator-python/chematic/chematic.so, 0x0002): tried: '/private/tmp/chematic-mcs-comparator-python/chematic/chematic.so' (mis-aligned LINKEDIT string pool, fileOffset=0x02E8D87C), '/System/Volumes/Preboot/Cryptexes/OS/private/tmp/chematic-mcs-comparator-python/chematic/chematic.so' (no such file), '/private/tmp/chematic-mcs-comparator-python/chematic/chematic.so' (mis-aligned LINKEDIT string pool, fileOffset=0x02E8D87C)
+_________________ ERROR collecting tests/test_rdkit_compat.py __________________
+ImportError while importing test module '/private/tmp/chematic-mcs-comparator-bounds-20261017/crates/chematic-py/tests/test_rdkit_compat.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+crates/chematic-py/tests/test_rdkit_compat.py:3: in <module>
+    import chematic
+../chematic-mcs-comparator-python/chematic/__init__.py:1: in <module>
+    from ._pdb_models import (
+../chematic-mcs-comparator-python/chematic/_pdb_models.py:10: in <module>
+    from .chematic import select_pdb_atoms
+E   ImportError: dlopen(/private/tmp/chematic-mcs-comparator-python/chematic/chematic.so, 0x0002): tried: '/private/tmp/chematic-mcs-comparator-python/chematic/chematic.so' (mis-aligned LINKEDIT string pool, fileOffset=0x02E8D87C), '/System/Volumes/Preboot/Cryptexes/OS/private/tmp/chematic-mcs-comparator-python/chematic/chematic.so' (no such file), '/private/tmp/chematic-mcs-comparator-python/chematic/chematic.so' (mis-aligned LINKEDIT string pool, fileOffset=0x02E8D87C)
+=========================== short test summary info ============================
+ERROR crates/chematic-py/tests/test_mcs_comparators.py
+ERROR crates/chematic-py/tests/test_module_functions.py
+ERROR crates/chematic-py/tests/test_rdkit_compat.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 3 errors during collection !!!!!!!!!!!!!!!!!!!!
+============================== 3 errors in 0.19s ===============================

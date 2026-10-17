@@ -1,0 +1,7 @@
+validation/results/mcs-comparator-bounds-2026-10-17/typing_invalid.py:4: error: Argument "atom_compare" to "find_mcs" has incompatible type "Literal['typo']"; expected "Literal['elements', 'any_heavy_atom', 'any'] | McsAtomCompare"  [arg-type]
+validation/results/mcs-comparator-bounds-2026-10-17/typing_invalid.py:5: error: Argument "bond_compare" to "find_mcs" has incompatible type "Literal['typo']"; expected "Literal['order_or_aromatic', 'any'] | McsBondCompare"  [arg-type]
+validation/results/mcs-comparator-bounds-2026-10-17/typing_invalid.py:6: error: Argument "atom_compare" to "find_mcs_checked" has incompatible type "Literal[McsBondCompare.ANY]"; expected "Literal['elements', 'any_heavy_atom', 'any'] | McsAtomCompare"  [arg-type]
+validation/results/mcs-comparator-bounds-2026-10-17/typing_invalid.py:7: error: Argument "bond_compare" to "find_mcs_checked" has incompatible type "Literal[McsAtomCompare.ANY]"; expected "Literal['order_or_aromatic', 'any'] | McsBondCompare"  [arg-type]
+validation/results/mcs-comparator-bounds-2026-10-17/typing_invalid.py:8: error: Argument "atom_compare" to "find_mcs" has incompatible type "Callable[[], bool]"; expected "Literal['elements', 'any_heavy_atom', 'any'] | McsAtomCompare"  [arg-type]
+validation/results/mcs-comparator-bounds-2026-10-17/typing_invalid.py:9: error: Argument "bond_compare" to "find_mcs_checked" has incompatible type "Literal[123]"; expected "Literal['order_or_aromatic', 'any'] | McsBondCompare"  [arg-type]
+Found 6 errors in 1 file (checked 1 source file)
