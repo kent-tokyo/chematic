@@ -1,4 +1,4 @@
-"""Bounded entropy ranking of labelled binary fingerprints."""
+"""Bounded entropy and Pearson chi-square ranking of binary fingerprints."""
 
 from __future__ import annotations
 
@@ -78,8 +78,30 @@ def _entropy(
     return result
 
 
+def _chi_square(
+    on: np.ndarray[Any, np.dtype[np.float64]],
+    totals: np.ndarray[Any, np.dtype[np.float64]],
+    records: int,
+) -> np.ndarray[Any, np.dtype[np.float64]]:
+    """Pearson statistic; empty rows/classes contribute zero, without Yates."""
+    scores: np.ndarray[Any, np.dtype[np.float64]] = np.zeros(
+        on.shape[0], dtype=np.float64
+    )
+    for observed in (on, totals[None, :] - on):
+        expected = observed.sum(axis=1, keepdims=True) * (totals / records)
+        differences = observed - expected
+        terms = np.divide(
+            differences * differences,
+            expected,
+            out=np.zeros_like(expected),
+            where=expected > 0,
+        )
+        scores += terms.sum(axis=1)
+    return scores
+
+
 class InfoBitRanker:
-    """Checked ENTROPY subset of RDKit's labelled binary fingerprint ranker.
+    """Checked ENTROPY/CHISQUARE binary fingerprint ranker.
 
     Accepts structural explicit/sparse binary vectors. Counts are committed
     only after all bit IDs and the label have passed validation. No chemical
@@ -95,14 +117,15 @@ class InfoBitRanker:
         width = _integer(nBits, "nBits")
         classes = _integer(nClasses, "nClasses")
         metric = _integer(infoType, "infoType")
-        if metric != InfoType.ENTROPY:
-            raise ValueError("only InfoType.ENTROPY is supported")
+        if metric not in (InfoType.ENTROPY, InfoType.CHISQUARE):
+            raise ValueError("only InfoType.ENTROPY and CHISQUARE are supported")
         if not 1 <= width <= MAX_RANKER_BITS or not 1 <= classes <= MAX_RANKER_CLASSES:
             raise ValueError("nBits must be 1..65536 and nClasses must be 1..256")
         if width * classes > MAX_RANKER_ENTRIES:
             raise ValueError("nBits*nClasses must not exceed 1048576 count entries")
         self._width = width
         self._classes = classes
+        self._metric = metric
         self._records = 0
         self._class_counts: np.ndarray[Any, np.dtype[np.uint64]] = np.zeros(
             classes, dtype=np.uint64
@@ -134,10 +157,12 @@ class InfoBitRanker:
         self._records += 1
 
     def GetTopN(self, num: SupportsIndex) -> np.ndarray[Any, np.dtype[np.float64]]:
-        """Return rows [bit ID, information gain, on-count for each class].
+        """Return rows [bit ID, score, on-count for each class].
 
-        Scores use log2 and rank descending; exact score ties use ascending
-        bit ID. This deterministic tie order can differ from RDKit's heap.
+        ENTROPY scores are information gain in bits; CHISQUARE scores are the
+        uncorrected Pearson statistic of the 2-by-nClasses on/off table, not
+        p-values. Empty classes/constant features contribute zero. Scores rank
+        descending; exact ties use ascending bit ID, unlike RDKit's heap.
         At least one record is required. The returned float64 array is a copy.
         """
         count = _integer(num, "num")
@@ -152,15 +177,18 @@ class InfoBitRanker:
             return output
         totals = self._class_counts.astype(np.float64)
         on = self._on_counts.astype(np.float64)
-        off = totals[None, :] - on
-        parent = float(_entropy(totals[None, :])[0])
-        probability_on = on.sum(axis=1) / self._records
-        gains: np.ndarray[Any, np.dtype[np.float64]] = np.asarray(
-            parent
-            - probability_on * _entropy(on)
-            - (1.0 - probability_on) * _entropy(off)
-        )
-        gains = np.clip(gains, 0.0, parent)
+        if self._metric == InfoType.CHISQUARE:
+            gains = _chi_square(on, totals, self._records)
+        else:
+            off = totals[None, :] - on
+            parent = float(_entropy(totals[None, :])[0])
+            probability_on = on.sum(axis=1) / self._records
+            gains = np.asarray(
+                parent
+                - probability_on * _entropy(on)
+                - (1.0 - probability_on) * _entropy(off)
+            )
+            gains = np.clip(gains, 0.0, parent)
         order: np.ndarray[Any, np.dtype[np.intp]] = np.lexsort(
             (np.arange(self._width), -gains)
         )
@@ -171,7 +199,7 @@ class InfoBitRanker:
         return output
 
     def SetBiasList(self, classList: Iterable[int]) -> None:
-        """Biasing is outside this ENTROPY-only profile."""
+        """Biasing is outside this ENTROPY/CHISQUARE profile."""
         raise NotImplementedError("biased metrics are unsupported")
 
     def SetMaskBits(self, maskBits: Iterable[int]) -> None:
@@ -180,7 +208,7 @@ class InfoBitRanker:
 
 
 class rdInfoTheory:
-    """Typed namespace exposing the bounded entropy ranker."""
+    """Typed namespace exposing the bounded entropy/chi-square ranker."""
 
     InfoType = InfoType
     InfoBitRanker = InfoBitRanker
