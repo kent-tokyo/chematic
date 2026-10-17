@@ -1,0 +1,5 @@
+{
+  "base_source_commit": "f20304f4699ee803ab993f73b98c3c8be38b58fc",
+  "has_rdInfoTheory": false,
+  "scope": "clean baseline Python source; reused native import fixture"
+}

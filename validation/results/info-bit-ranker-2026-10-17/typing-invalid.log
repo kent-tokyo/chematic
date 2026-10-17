@@ -1,0 +1,5 @@
+validation/typing/info_bit_ranker_invalid.py:4: error: Argument 1 to "AccumulateVotes" of "InfoBitRanker" has incompatible type "list[int]"; expected "BinaryBitVector"  [arg-type]
+validation/typing/info_bit_ranker_invalid.py:5: error: Argument 1 to "AccumulateVotes" of "InfoBitRanker" has incompatible type "str"; expected "BinaryBitVector"  [arg-type]
+validation/typing/info_bit_ranker_invalid.py:6: error: Argument 1 to "GetTopN" of "InfoBitRanker" has incompatible type "str"; expected "SupportsIndex"  [arg-type]
+validation/typing/info_bit_ranker_invalid.py:7: error: Argument 1 has incompatible type "str"; expected "SupportsIndex"  [arg-type]
+Found 4 errors in 1 file (checked 1 source file)

@@ -1,0 +1,17 @@
+{
+  "base_commit": "f20304f4699ee803ab993f73b98c3c8be38b58fc",
+  "validation_time_utc": "2026-10-17T06:10:34.093038+00:00",
+  "python": "3.13.6",
+  "mypy_version": "mypy 1.8.0 (compiled: no)",
+  "source_sha256": {
+    "crates/chematic-py/python/chematic/_info_theory.py": "183a9d3593374ac7feb51494737e1c8deca9745d67d1e5b990e2251b0cf3ce81",
+    "crates/chematic-py/python/chematic/rdkit_compat.py": "a9f702c29715aaee00dd82d15e63917758ed5be62dd7942e4f4c3b33dc0311cc",
+    "crates/chematic-py/tests/test_info_bit_ranker.py": "f10c5d874fe5fc902f72ed39886fbc7a1e6bbc6a66ea9facbd890e92e246e54c",
+    "validation/validate_info_bit_ranker.py": "7cd9b695b5230bac804f111cf388fc42503e38500dd5f4c90ca2e30eea0cda3d",
+    "validation/typing/info_bit_ranker_valid.py": "f634170ca46e4af1664e132b5da9285378626fcf30687aba8077f862f0f24806",
+    "validation/typing/info_bit_ranker_invalid.py": "237a43c5b910da5d093f6e5025ab278e85783aea9d154087d5e560f44d7f0ed7"
+  },
+  "native_fixture_source_commit": "a56bc1353bd70eb5381dce38f818c0b78755d027",
+  "native_fixture_sha256": "79622bf1b914242b46bc08eaf44d7069e5f7aac9772b5a7dedb960f678807f7e",
+  "native_build": "reused import fixture; no native rebuild; new implementation is Python/NumPy only"
+}

@@ -16,6 +16,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Python compatibility `rdInfoTheory.InfoBitRanker` accepts typed explicit/
+  sparse binary vectors and returns bounded entropy-based feature rankings
+  with per-class counts, atomic vote validation and deterministic tie ordering.
+  See [entropy bit ranking](docs/info-bit-ranker.md) for the supported profile.
+
 - Rust/Python `FeaturePatternSet` owns up to 32 caller-supplied SMARTS feature
   definitions and produces full-width atom masks or native circular feature
   fingerprints. Matching budgets and size limits refuse partial output;

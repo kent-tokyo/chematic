@@ -46,9 +46,11 @@ __all__ = [
     "MolFromMrvBlock", "MolFromMrvFile", "MolToMrvBlock", "MolToMrvFile",
     "SDMolSupplier", "SDWriter", "SmilesMolSupplier", "SmilesWriter",
     "TDTMolSupplier", "TDTWriter",
-    "Descriptors", "rdMolDescriptors", "DataStructs", "pyAvalonTools",
+    "Descriptors", "rdMolDescriptors", "DataStructs", "pyAvalonTools", "rdInfoTheory",
 ]
 
+
+from ._info_theory import rdInfoTheory
 
 import chematic as _ch
 

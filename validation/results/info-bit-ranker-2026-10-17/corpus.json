@@ -1,0 +1,14 @@
+{
+  "scope": "ENTROPY information gain and per-class on-counts; ties use candidate bit-ID order",
+  "rdkit_version": "2026.09.1",
+  "numpy_version": "2.5.3",
+  "ranker_comparisons": 768,
+  "paired_votes": 10560,
+  "metamorphic_checks": 1536,
+  "maximum_absolute_information_gain_difference": 1.2212453270876722e-15,
+  "rank_order_difference_diagnostic": 462,
+  "corpus_sha256": "2146ea06346bf2ce7c246a27716eb6351726690385b425f393e8639f5d13170b",
+  "native_fixture_sha256": "79622bf1b914242b46bc08eaf44d7069e5f7aac9772b5a7dedb960f678807f7e",
+  "native_fixture_source_commit": "a56bc1353bd70eb5381dce38f818c0b78755d027",
+  "native_fixture_scope": "reused import fixture; new implementation calls Python/NumPy only; no native rebuild"
+}
