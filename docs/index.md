@@ -12,7 +12,7 @@ WebAssembly, without a chematic backend.</p>
   <a class="chm-btn chm-btn-secondary" href="getting_started/installation/">Install chematic</a>
 </div>
 
-<p class="chm-links-row">Current release: <strong>v1.1.6</strong> · <a href="changelog/">release notes</a></p>
+<p class="chm-links-row">Current release: <strong>v1.1.7</strong> · <a href="changelog/">release notes</a></p>
 
 </div>
 
@@ -80,12 +80,13 @@ Installation: `pip install chematic`, `cargo add chematic`, or
 
 ## Current evidence boundary
 
-v1.1.6 adds checked filesystem-path and byte handling, source-preserving
-interchange, rooted SMILES and stereo-proof utilities, selected 3D stereo
-recovery, and SDF/V3000 I/O improvements. The latest complete hosted Python
-chemistry run remains v1.1.5, while the broadest published-package RDKit
-performance packet remains v1.0.42. The 83-row reaction gate remains 80 exact
-graph/origin/map rows and three inputs invalid in both engines.
+v1.1.7 adds checked scientific-file conversion and export APIs, custom
+fingerprint and force-field inputs, source-preserving SDF/PDB/MOL2 workflows,
+and typed compatibility helpers. Its published-wheel chemistry gate completed
+all 11 Linux, macOS, Windows, RDKit-comparison, A6, and autoconf jobs. The
+broadest published-package RDKit performance packet remains v1.0.42. The
+83-row reaction gate remains 80 exact graph/origin/map rows and three inputs
+invalid in both engines.
 
 Each result applies only to its named artifact, corpus, options, and failure
 policy. Release availability is not accuracy evidence, source results are not
