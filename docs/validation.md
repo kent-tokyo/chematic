@@ -1,25 +1,25 @@
 # Validation report
 
-Updated 2026-10-16 for **v1.1.6**.
+Updated 2026-10-18 for **v1.1.7**.
 Every result is limited to its recorded artifact or source revision,
 comparator, corpus, options, platform, and failure policy.
 
 ## Evidence boundary
 
-- v1.1.6 is the current registry release.
-- The v1.1.5 published-wheel chemistry workflow completed all 11 hosted jobs.
+- v1.1.7 is the current registry release.
+- The v1.1.7 published-wheel chemistry workflow completed all 11 hosted jobs.
   The latest durable checked-in cross-platform packet remains v1.1.3.
 - The broadest published-package RDKit performance packet is v1.0.42.
 - Source and earlier package records are useful development evidence, but they
-  are not relabelled as v1.1.6 package results.
+  are not relabelled as v1.1.7 package results.
 - Typed refusals and abstentions stay in the denominator and are not matches.
 
 ## Current evidence
 
 | Area | Result and limit | Record |
 |---|---|---|
-| Hosted Python artifacts | Exact v1.1.5 PyPI wheels completed 11 Linux, macOS, Windows, RDKit-comparison, A6, and autoconf jobs. The hosted run establishes pass/fail evidence; its durable hashes and counts still need a checked-in packet. npm/WASM and crates.io remain separate evidence. | [v1.1.5 hosted run](https://github.com/kent-tokyo/chematic/actions/runs/38821173538) · [v1.1.3 checked-in packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-14-v113-published-artifact-packet.md) |
-| Unusual-input descriptors | The checked-in v1.1.3 packet confirms HBD on 4,072/4,072 rows and QED on all 4,071 comparable rows; RDKit rejects the remaining QED input. v1.1.5 completed its hosted cross-platform gate, but exact durable per-row counts should be quoted from a checked-in v1.1.5 packet rather than inferred from workflow success. | [v1.1.5 hosted run](https://github.com/kent-tokyo/chematic/actions/runs/38821173538) · [v1.1.3 packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-14-v113-published-artifact-packet.md) |
+| Hosted Python artifacts | Exact v1.1.7 PyPI wheels completed 11 Linux, macOS, Windows, RDKit-comparison, A6, and autoconf jobs. The hosted run establishes pass/fail evidence; its durable hashes and counts still need a checked-in packet. npm/WASM and crates.io remain separate evidence. | [v1.1.7 hosted run](https://github.com/kent-tokyo/chematic/actions/runs/39078219154) · [v1.1.3 checked-in packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-14-v113-published-artifact-packet.md) |
+| Unusual-input descriptors | The checked-in v1.1.3 packet confirms HBD on 4,072/4,072 rows and QED on all 4,071 comparable rows; RDKit rejects the remaining QED input. v1.1.7 completed its hosted cross-platform gate, but exact durable per-row counts should be quoted from a checked-in packet rather than inferred from workflow success. | [v1.1.7 hosted run](https://github.com/kent-tokyo/chematic/actions/runs/39078219154) · [v1.1.3 packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-14-v113-published-artifact-packet.md) |
 | RDKit performance | Exact v1.0.42 CPython 3.13 wheels on hosted Linux x64 and macOS arm64 pass 10k TPSA, Labute ASA, and chiral-Morgan output gates. Parse-inclusive intervals favor chematic on both hosts; prepared macOS Labute loses and prepared Morgan crosses parity. | [published packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-11-v1042-published-rdkit-packet.md) |
 | Reactions and workflows | The 83-row gate has 80 exact product graph/origin/map rows and three inputs invalid in both engines. The bounded RDKit workflow packet also has 39/39 largest-fragment, 254/254 Normalize after common-input filtering, and 16/16 labelled R-group rows. These are bounded fixtures, not universal parity. | [reaction follow-up](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-10-v1042-regression-followups.md) · [workflow packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-12-rdkit-workflows-expanded-source.md) |
 | Browser Morgan | Published v1.0.30 npm artifacts have 250/250 direct and prepared bit parity in Chromium, Firefox, and WebKit, with favorable 20-block intervals. A separate 10k Chromium lane has 9,999 exact rows and one typed Fe refusal. | [three-browser packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1030-published-linux-three-browser-paired20.md) |
@@ -43,13 +43,13 @@ comparator, corpus, options, platform, and failure policy.
 - **3D:** typing, energy, gradient, convergence, stereo, clash, conformer
   quality, time, and memory are independent gates.
 
-## v1.1.6 safeguards
+## v1.1.7 safeguards
 
-v1.1.6 adds checked filesystem-path and byte handling, source-preserving
-interchange, rooted-SMILES and stereo-proof APIs, selected 3D stereo recovery,
-and SDF/V3000 I/O improvements. Required source CI and Rust coverage passed;
-exact v1.1.6 registry-artifact chemistry remains a separate post-publication
-record.
+v1.1.7 adds checked scientific-file conversion and export APIs, custom
+fingerprint and force-field inputs, source-preserving SDF/PDB/MOL2 workflows,
+and typed compatibility helpers. Required source CI and Rust coverage passed;
+the exact registry wheels completed the hosted cross-platform chemistry gate,
+while a durable checked-in per-row artifact packet remains follow-up work.
 
 ## How to interpret results
 
