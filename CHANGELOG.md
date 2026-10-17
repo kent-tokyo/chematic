@@ -16,6 +16,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Rust/Python `euclidean_distance_matrix_checked` accepts rectangular finite
+  descriptor vectors and returns condensed lower-triangle distances. Bounded
+  inputs/work, fallible buffers and scaled norms retain tiny/huge distances.
+  See [descriptor distances](docs/descriptor-euclidean-distances.md).
+
 - Rust/Python `FeaturePatternSet` owns up to 32 caller-supplied SMARTS feature
   definitions and produces full-width atom masks or native circular feature
   fingerprints. Matching budgets and size limits refuse partial output;

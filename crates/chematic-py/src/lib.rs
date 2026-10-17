@@ -34,6 +34,7 @@ macro_rules! register_pyfunctions {
 }
 
 mod crystal;
+mod descriptor_distances;
 mod ensemble_v2;
 mod errors;
 mod feature_patterns;
