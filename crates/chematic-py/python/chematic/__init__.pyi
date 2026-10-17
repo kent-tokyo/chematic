@@ -680,6 +680,10 @@ class Mol:
         self, bonds: list[int], labels: Optional[list[tuple[int, int]]],
     ) -> tuple[Mol, list[int], list[tuple[int, int, int, int]]]: ...
 
+    def _replace_core_checked(
+        self, core: Mol, matching: list[int],
+    ) -> tuple[Mol, list[Optional[int]], list[tuple[int, int, int, int, int, int]]]: ...
+
     @property
     def recap_breakable_bond_count(self) -> int:
         """Number of RECAP-breakable bonds (C–N, C–O, C–S single bonds)."""
@@ -5720,9 +5724,19 @@ from ._bond_fragment import (
     fragment_on_bonds_checked as fragment_on_bonds_checked,
 )
 
+from ._core_replacement import (
+    CoreAttachment as CoreAttachment,
+    CoreReplacement as CoreReplacement,
+    replace_core_checked as replace_core_checked,
+)
 from ._mcs_comparators import (
     McsAtomCompare as McsAtomCompare,
     McsAtomComparison as McsAtomComparison,
     McsBondCompare as McsBondCompare,
     McsBondComparison as McsBondComparison,
+)
+
+from ._crystal_stl import (
+    StlMeshExport as StlMeshExport,
+    write_crystal_stl_checked as write_crystal_stl_checked,
 )

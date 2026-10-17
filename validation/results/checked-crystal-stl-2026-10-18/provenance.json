@@ -1,0 +1,27 @@
+{
+  "base": "0e7a6d9f8d50fd75a9b1bfada00336f8e320f8ec",
+  "time_utc": "2026-10-17T15:30:39.220406+00:00",
+  "python": "3.13.6",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "native_fixture_commit": "ca7e14e892cab8b495183bcda4449f49471ba1b1",
+  "native_fixture_base": "abcc3569e7f49d15e911945509a5083ffff8a63d",
+  "native_sha256": "90f81980b0fdf06c8edb616d8f8e5acd1831a9b6de404ed2b3405646cff41423",
+  "native_bytes": 85142576,
+  "native_fixture_evidence": "ca7e14e8:validation/results/checked-core-removal-2026-10-17/provenance.json",
+  "unchanged_native_backend_paths": [
+    "crates/chematic-core",
+    "crates/chematic-crystal",
+    "crates/chematic-mol",
+    "crates/chematic-py/src/crystal.rs"
+  ],
+  "native_backend_changed_files": [],
+  "source_sha256": {
+    "crates/chematic-py/python/chematic/__init__.py": "aebe8ba623afdb54746c47de5bff174289c407f426273559639aefc14acecad6",
+    "crates/chematic-py/python/chematic/__init__.pyi": "d0fcf10428fbb2f2237b427bade2d84a836118d5421f80108989159c2996da44",
+    "crates/chematic-py/python/chematic/_crystal_obj.py": "5cfe8ab4c13dbff4f2a40432cb9be11872899dcd5fd3442de45fb1ec0c38e2ab",
+    "crates/chematic-py/python/chematic/_crystal_stl.py": "64cff3b8a6f19c4dfad6abcfe7b9da82893a6d3d8f13955aff4e88c9a66da977",
+    "crates/chematic-py/tests/test_crystal_stl.py": "1a6d15ef3b8fa70f152139a3e33c0ac4e6e352ef07b9ba2ce8e80cd7dd045477"
+  },
+  "native_build_scope": "reused verified local fixture; no new Rust/native build; no published wheel claim",
+  "initial_base": "abcc3569e7f49d15e911945509a5083ffff8a63d"
+}

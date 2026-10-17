@@ -1,0 +1,29 @@
+{
+  "base": "abcc3569e7f49d15e911945509a5083ffff8a63d",
+  "time_utc": "2026-10-17T15:09:24.693571+00:00",
+  "python": "3.13.6",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "compiler": "rustc 1.97.0 (2d8144b78 2026-07-07)",
+  "native_sha256": "90f81980b0fdf06c8edb616d8f8e5acd1831a9b6de404ed2b3405646cff41423",
+  "native_bytes": 85142576,
+  "source_sha256": {
+    "crates/chematic-chem/src/core_replacement.rs": "741db5687e1653246b570a9b99d046e1b7475bf61885fc5257a3b9a71834be4b",
+    "crates/chematic-chem/src/core_replacement_tests.rs": "ab90e3816dcf173950db30fee8b73d50c4af9b096116f48d6e241d850d375e62",
+    "crates/chematic-chem/src/bond_fragment.rs": "cbe9015ff1b037912ecedb54dd3a72c1480623caec3ebdf50959c2d8a562b06c",
+    "crates/chematic-chem/src/lib.rs": "cf7535588fef5aed3b001139fe354ba0d1abb5c7e6e0f35e10e49fe365ff4663",
+    "crates/chematic-py/src/mol_methods.rs": "b5c45a342cf87824c3cdba5aeec03372af9a28e47aea41144d0b77ddb3af2e2d",
+    "crates/chematic-py/src/mol_methods/core_replacement.rs": "36bb06141fdb890fe9d1d5e65ca9ce0bbf72b61698c3f15e1299ebbedf97253b",
+    "crates/chematic-py/python/chematic/__init__.py": "da81d2cbcd28f042a9413c7cbdc74dd90f6afc6448dad4121fac0ab73aa1c9e4",
+    "crates/chematic-py/python/chematic/__init__.pyi": "945e0169e8022b633e7d3220428ede0b7b7276e7ac295e4d450d6d99fd4e41c5",
+    "crates/chematic-py/python/chematic/_core_replacement.py": "b595e8f0a11d2d9778f7c264220970bde973f709774b6fe357b419f8676ce593",
+    "crates/chematic-py/tests/test_core_replacement.py": "ecf979f415c8e8a60a5d5df20cc9c6daeb7b370073fffb2287c96803a7412c08"
+  },
+  "native_features": [
+    "native-inchi"
+  ],
+  "linker": "Rust bundled LLD 22.1.6",
+  "sdk": "/Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk",
+  "native_postprocessing": "none; direct copy of successful local LLD artifact",
+  "artifact_scope": "fresh local native extension; not a published wheel",
+  "build_command": "SDKROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk PYO3_PYTHON=/opt/homebrew/bin/python3.13 CARGO_TARGET_DIR=/private/tmp/chematic-sparse-tanimoto-target CARGO_PROFILE_DEV_DEBUG=0 CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=1 cargo rustc -p chematic-py --features native-inchi -- -C link-arg=-undefined -C link-arg=dynamic_lookup -C link-arg=-fuse-ld=/Users/k_tanabe/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/aarch64-apple-darwin/bin/gcc-ld/ld64.lld"
+}

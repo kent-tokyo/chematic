@@ -1,0 +1,16 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.13.6, pytest-9.1.1, pluggy-1.6.0
+rootdir: /private/tmp/chematic-checked-crystal-stl-20261018/crates/chematic-py
+configfile: pytest.ini
+collected 266 items
+
+crates/chematic-py/tests/test_crystal_stl.py ........................... [ 10%]
+.......                                                                  [ 12%]
+crates/chematic-py/tests/test_crystal_obj.py ........................... [ 22%]
+........................                                                 [ 31%]
+crates/chematic-py/tests/test_crystal.py ...................             [ 39%]
+crates/chematic-py/tests/test_rdkit_compat.py .......................... [ 48%]
+........................................................................ [ 75%]
+................................................................         [100%]
+
+============================= 266 passed in 0.66s ==============================

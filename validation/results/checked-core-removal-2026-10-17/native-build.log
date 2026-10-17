@@ -1,0 +1,67 @@
+   Compiling chematic-perception v1.1.6 (/private/tmp/chematic-checked-core-removal-20261017/crates/chematic-perception)
+   Compiling chematic-smarts v1.1.6 (/private/tmp/chematic-checked-core-removal-20261017/crates/chematic-smarts)
+   Compiling chematic-smiles v1.1.6 (/private/tmp/chematic-checked-core-removal-20261017/crates/chematic-smiles)
+   Compiling chematic-rxn v1.1.6 (/private/tmp/chematic-checked-core-removal-20261017/crates/chematic-rxn)
+   Compiling chematic-cip v1.1.6 (/private/tmp/chematic-checked-core-removal-20261017/crates/chematic-cip)
+   Compiling chematic-fp v1.1.6 (/private/tmp/chematic-checked-core-removal-20261017/crates/chematic-fp)
+   Compiling chematic-iupac v1.1.6 (/private/tmp/chematic-checked-core-removal-20261017/crates/chematic-iupac)
+   Compiling chematic-chem v1.1.6 (/private/tmp/chematic-checked-core-removal-20261017/crates/chematic-chem)
+   Compiling chematic-inchi v1.1.6 (/private/tmp/chematic-checked-core-removal-20261017/crates/chematic-inchi)
+   Compiling chematic-ff v1.1.6 (/private/tmp/chematic-checked-core-removal-20261017/crates/chematic-ff)
+   Compiling chematic-3d v1.1.6 (/private/tmp/chematic-checked-core-removal-20261017/crates/chematic-3d)
+   Compiling chematic-depict v1.1.6 (/private/tmp/chematic-checked-core-removal-20261017/crates/chematic-depict)
+   Compiling chematic-crystal v1.1.6 (/private/tmp/chematic-checked-core-removal-20261017/crates/chematic-crystal)
+   Compiling chematic-mol v1.1.6 (/private/tmp/chematic-checked-core-removal-20261017/crates/chematic-mol)
+   Compiling chematic-py v1.1.6 (/private/tmp/chematic-checked-core-removal-20261017/crates/chematic-py)
+warning: linker stderr: rust-lld: /private/tmp/chematic-sparse-tanimoto-target/debug/deps/libchematic_inchi.rlib(37899fc9ca513999-ikey_dll.o) has version 27.0.0, which is newer than target minimum of 11.0.0
+         rust-lld: /private/tmp/chematic-sparse-tanimoto-target/debug/deps/libchematic_inchi.rlib(37899fc9ca513999-ikey_base26.o) has version 27.0.0, which is newer than target minimum of 11.0.0
+         rust-lld: /private/tmp/chematic-sparse-tanimoto-target/debug/deps/libchematic_inchi.rlib(37899fc9ca513999-sha2.o) has version 27.0.0, which is newer than target minimum of 11.0.0
+         rust-lld: /private/tmp/chematic-sparse-tanimoto-target/debug/deps/libchematic_inchi.rlib(37899fc9ca513999-util.o) has version 27.0.0, which is newer than target minimum of 11.0.0
+         rust-lld: /private/tmp/chematic-sparse-tanimoto-target/debug/deps/libchematic_inchi.rlib(5d23a78416b16ac3-inchi_dll.o) has version 27.0.0, which is newer than target minimum of 11.0.0
+         rust-lld: /private/tmp/chematic-sparse-tanimoto-target/debug/deps/libchematic_inchi.rlib(37899fc9ca513999-ichierr.o) has version 27.0.0, which is newer than target minimum of 11.0.0
+         rust-lld: /private/tmp/chematic-sparse-tanimoto-target/debug/deps/libchematic_inchi.rlib(37899fc9ca513999-readinch.o) has version 27.0.0, which is newer than target minimum of 11.0.0
+         rust-lld: /private/tmp/chematic-sparse-tanimoto-target/debug/deps/libchematic_inchi.rlib(37899fc9ca513999-mol2atom.o) has version 27.0.0, which is newer than target minimum of 11.0.0
+         rust-lld: /private/tmp/chematic-sparse-tanimoto-target/debug/deps/libchematic_inchi.rlib(37899fc9ca513999-mol_fmt2.o) has version 27.0.0, which is newer than target minimum of 11.0.0
+         rust-lld: /private/tmp/chematic-sparse-tanimoto-target/debug/deps/libchematic_inchi.rlib(37899fc9ca513999-mol_fmt3.o) has version 27.0.0, which is newer than target minimum of 11.0.0
+         rust-lld: /private/tmp/chematic-sparse-tanimoto-target/debug/deps/libchematic_inchi.rlib(37899fc9ca513999-mol_fmt4.o) has version 27.0.0, which is newer than target minimum of 11.0.0
+         rust-lld: /private/tmp/chematic-sparse-tanimoto-target/debug/deps/libchematic_inchi.rlib(37899fc9ca513999-ichi_io.o) has version 27.0.0, which is newer than target minimum of 11.0.0
+         rust-lld: /private/tmp/chematic-sparse-tanimoto-target/debug/deps/libchematic_inchi.rlib(37899fc9ca513999-runichi.o) has version 27.0.0, which is newer than target minimum of 11.0.0
+         rust-lld: /private/tmp/chematic-sparse-tanimoto-target/debug/deps/libchematic_inchi.rlib(37899fc9ca513999-strutil.o) has version 27.0.0, which is newer than target minimum of 11.0.0
+         rust-lld: /private/tmp/chematic-sparse-tanimoto-target/debug/deps/libchematic_inchi.rlib(37899fc9ca513999-runichi2.o) has version 27.0.0, which is newer than target minimum of 11.0.0
+         rust-lld: /private/tmp/chematic-sparse-tanimoto-target/debug/deps/libchematic_inchi.rlib(37899fc9ca513999-runichi4.o) has version 27.0.0, which is newer than target minimum of 11.0.0
+         rust-lld: /private/tmp/chematic-sparse-tanimoto-target/debug/deps/libchematic_inchi.rlib(37899fc9ca513999-ichimake.o) has version 27.0.0, which is newer than target minimum of 11.0.0
+         rust-lld: /private/tmp/chematic-sparse-tanimoto-target/debug/deps/libchematic_inchi.rlib(37899fc9ca513999-ichicano.o) has version 27.0.0, which is newer than target minimum of 11.0.0
+         rust-lld: /private/tmp/chematic-sparse-tanimoto-target/debug/deps/libchematic_inchi.rlib(37899fc9ca513999-ichisort.o) has version 27.0.0, which is newer than target minimum of 11.0.0
+         rust-lld: /private/tmp/chematic-sparse-tanimoto-target/debug/deps/libchematic_inchi.rlib(37899fc9ca513999-ichimap2.o) has version 27.0.0, which is newer than target minimum of 11.0.0
+         rust-lld: /private/tmp/chematic-sparse-tanimoto-target/debug/deps/libchematic_inchi.rlib(37899fc9ca513999-ichicans.o) has version 27.0.0, which is newer than target minimum of 11.0.0
+         rust-lld: /private/tmp/chematic-sparse-tanimoto-target/debug/deps/libchematic_inchi.rlib(37899fc9ca513999-ichimap1.o) has version 27.0.0, which is newer than target minimum of 11.0.0
+         rust-lld: /private/tmp/chematic-sparse-tanimoto-target/debug/deps/libchematic_inchi.rlib(37899fc9ca513999-ichitaut.o) has version 27.0.0, which is newer than target minimum of 11.0.0
+         rust-lld: /private/tmp/chematic-sparse-tanimoto-target/debug/deps/libchematic_inchi.rlib(37899fc9ca513999-ichi_bns.o) has version 27.0.0, which is newer than target minimum of 11.0.0
+         rust-lld: /private/tmp/chematic-sparse-tanimoto-target/debug/deps/libchematic_inchi.rlib(37899fc9ca513999-ichican2.o) has version 27.0.0, which is newer than target minimum of 11.0.0
+         rust-lld: /private/tmp/chematic-sparse-tanimoto-target/debug/deps/libchematic_inchi.rlib(37899fc9ca513999-ichiisot.o) has version 27.0.0, which is newer than target minimum of 11.0.0
+         rust-lld: /private/tmp/chematic-sparse-tanimoto-target/debug/deps/libchematic_inchi.rlib(37899fc9ca513999-ichister.o) has version 27.0.0, which is newer than target minimum of 11.0.0
+         rust-lld: /private/tmp/chematic-sparse-tanimoto-target/debug/deps/libchematic_inchi.rlib(37899fc9ca513999-ichiring.o) has version 27.0.0, which is newer than target minimum of 11.0.0
+         rust-lld: /private/tmp/chematic-sparse-tanimoto-target/debug/deps/libchematic_inchi.rlib(37899fc9ca513999-ichiqueu.o) has version 27.0.0, which is newer than target minimum of 11.0.0
+         rust-lld: /private/tmp/chematic-sparse-tanimoto-target/debug/deps/libchematic_inchi.rlib(37899fc9ca513999-ichimap4.o) has version 27.0.0, which is newer than target minimum of 11.0.0
+         rust-lld: /private/tmp/chematic-sparse-tanimoto-target/debug/deps/libchematic_inchi.rlib(37899fc9ca513999-ichiprt2.o) has version 27.0.0, which is newer than target minimum of 11.0.0
+         rust-lld: /private/tmp/chematic-sparse-tanimoto-target/debug/deps/libchematic_inchi.rlib(37899fc9ca513999-ichimak2.o) has version 27.0.0, which is newer than target minimum of 11.0.0
+         rust-lld: /private/tmp/chematic-sparse-tanimoto-target/debug/deps/libchematic_inchi.rlib(37899fc9ca513999-ichinorm.o) has version 27.0.0, which is newer than target minimum of 11.0.0
+         rust-lld: /private/tmp/chematic-sparse-tanimoto-target/debug/deps/libchematic_inchi.rlib(37899fc9ca513999-runichi3.o) has version 27.0.0, which is newer than target minimum of 11.0.0
+         rust-lld: /private/tmp/chematic-sparse-tanimoto-target/debug/deps/libchematic_inchi.rlib(37899fc9ca513999-ichiprt1.o) has version 27.0.0, which is newer than target minimum of 11.0.0
+         rust-lld: /private/tmp/chematic-sparse-tanimoto-target/debug/deps/libchematic_inchi.rlib(37899fc9ca513999-ichiprt3.o) has version 27.0.0, which is newer than target minimum of 11.0.0
+         rust-lld: /private/tmp/chematic-sparse-tanimoto-target/debug/deps/libchematic_inchi.rlib(37899fc9ca513999-ichiread.o) has version 27.0.0, which is newer than target minimum of 11.0.0
+         rust-lld: /private/tmp/chematic-sparse-tanimoto-target/debug/deps/libchematic_inchi.rlib(37899fc9ca513999-ichirvr7.o) has version 27.0.0, which is newer than target minimum of 11.0.0
+         rust-lld: /private/tmp/chematic-sparse-tanimoto-target/debug/deps/libchematic_inchi.rlib(37899fc9ca513999-ichirvr4.o) has version 27.0.0, which is newer than target minimum of 11.0.0
+         rust-lld: /private/tmp/chematic-sparse-tanimoto-target/debug/deps/libchematic_inchi.rlib(37899fc9ca513999-ichirvr1.o) has version 27.0.0, which is newer than target minimum of 11.0.0
+         rust-lld: /private/tmp/chematic-sparse-tanimoto-target/debug/deps/libchematic_inchi.rlib(37899fc9ca513999-ichirvr2.o) has version 27.0.0, which is newer than target minimum of 11.0.0
+         rust-lld: /private/tmp/chematic-sparse-tanimoto-target/debug/deps/libchematic_inchi.rlib(37899fc9ca513999-ichirvr3.o) has version 27.0.0, which is newer than target minimum of 11.0.0
+         rust-lld: /private/tmp/chematic-sparse-tanimoto-target/debug/deps/libchematic_inchi.rlib(37899fc9ca513999-ichirvr5.o) has version 27.0.0, which is newer than target minimum of 11.0.0
+         rust-lld: /private/tmp/chematic-sparse-tanimoto-target/debug/deps/libchematic_inchi.rlib(37899fc9ca513999-ichirvr6.o) has version 27.0.0, which is newer than target minimum of 11.0.0
+         rust-lld: /private/tmp/chematic-sparse-tanimoto-target/debug/deps/libchematic_inchi.rlib(37899fc9ca513999-mol_fmt1.o) has version 27.0.0, which is newer than target minimum of 11.0.0
+         rust-lld: /private/tmp/chematic-sparse-tanimoto-target/debug/deps/libchematic_inchi.rlib(37899fc9ca513999-ichiparm.o) has version 27.0.0, which is newer than target minimum of 11.0.0
+         rust-lld: /private/tmp/chematic-sparse-tanimoto-target/debug/deps/libchematic_inchi.rlib(5d23a78416b16ac3-inchi_dll_a2.o) has version 27.0.0, which is newer than target minimum of 11.0.0
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `chematic-py` (lib) generated 1 warning
+    Finished `dev` profile [unoptimized] target(s) in 29.21s
