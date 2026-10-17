@@ -143,12 +143,20 @@ fn with_rdkit_morgan_input<R>(
         return with_rdkit_morgan_input(&h, config, consume);
     }
     reject_known_rdkit_coordination_sanitization_gap(mol)?;
-    let view = chematic_perception::apply_aromaticity_rdkit_parity_shared(mol);
-    let aromatized: &Molecule = match view.as_ref() {
-        Ok(m) => m,
-        Err(e) => return Err(e.clone().into()),
-    };
+    // The identity proof preserves every atom and bond field. Borrowing that
+    // view avoids an otherwise identical molecule clone and retains its caches.
+    chematic_perception::with_rdkit_parity_view(mol, |view| {
+        let aromatized = view.map_err(|e| RdkitMorganError::from(e.clone()))?;
+        with_rdkit_morgan_aromatized_input(mol, aromatized, config, consume)
+    })
+}
 
+fn with_rdkit_morgan_aromatized_input<R>(
+    mol: &Molecule,
+    aromatized: &Molecule,
+    config: &RdkitMorganConfig,
+    consume: impl FnOnce(&Molecule, &[bool], &[u32], Option<&MorganChirality>) -> R,
+) -> Result<R, RdkitMorganError> {
     let ring_atoms = if aromatized.smiles_ring_closure_bond_count() == 1 {
         chematic_perception::ring_atom_flags(aromatized)
     } else {
@@ -396,6 +404,130 @@ mod tests {
     use super::*;
     use chematic_core::MoleculeBuilder;
     use chematic_smiles::parse;
+
+    #[derive(Debug, PartialEq, Eq)]
+    struct InputSnapshot {
+        atoms: Vec<chematic_core::Atom>,
+        bonds: Vec<chematic_core::BondEntry>,
+        ring_atoms: Vec<bool>,
+        bond_invariants: Vec<u32>,
+        chirality: Option<(Vec<bool>, Vec<u32>)>,
+    }
+
+    fn snapshot_input(
+        mol: &Molecule,
+        rings: &[bool],
+        bonds: &[u32],
+        chirality: Option<&MorganChirality>,
+    ) -> InputSnapshot {
+        InputSnapshot {
+            atoms: mol.atoms().map(|(_, atom)| atom.clone()).collect(),
+            bonds: mol.bonds().map(|(_, bond)| bond.clone()).collect(),
+            ring_atoms: rings.to_vec(),
+            bond_invariants: bonds.to_vec(),
+            chirality: chirality.map(|c| (c.tagged.clone(), c.code.clone())),
+        }
+    }
+
+    // Freeze the former owned-view preparation boundary. The downstream helper
+    // is shared so this comparison isolates borrowing and cache ownership.
+    fn owned_view_input(
+        mol: &Molecule,
+        config: &RdkitMorganConfig,
+    ) -> Result<InputSnapshot, RdkitMorganError> {
+        if let Some(h) = chematic_smiles::rdkit_hydrogen_suppressed(mol) {
+            return owned_view_input(&h, config);
+        }
+        reject_known_rdkit_coordination_sanitization_gap(mol)?;
+        let view = chematic_perception::apply_aromaticity_rdkit_parity_shared(mol);
+        let aromatized = view
+            .as_ref()
+            .as_ref()
+            .map_err(|e| RdkitMorganError::from(e.clone()))?;
+        with_rdkit_morgan_aromatized_input(mol, aromatized, config, snapshot_input)
+    }
+
+    fn assert_owned_view_equivalent(mol: &Molecule) {
+        for include_chirality in [false, true] {
+            let config = RdkitMorganConfig {
+                include_chirality,
+                ..RdkitMorganConfig::default()
+            };
+            let reference = mol.clone();
+            let expected = owned_view_input(&reference, &config);
+            // Repeated calls exercise caches retained on the borrowed input.
+            for _ in 0..3 {
+                assert_eq!(
+                    with_rdkit_morgan_input(mol, &config, snapshot_input),
+                    expected,
+                );
+            }
+            assert_eq!(
+                with_rdkit_morgan_input(&mol.clone(), &config, snapshot_input),
+                expected,
+            );
+        }
+    }
+
+    #[test]
+    fn borrowed_parity_input_matches_owned_view() {
+        let mut identity = 0;
+        let mut nonidentity = 0;
+        assert_owned_view_equivalent(&MoleculeBuilder::new().build());
+        for smiles in [
+            "C",
+            "CC(=O)[O-]",
+            "[13CH4]",
+            "C1CCCCC1",
+            "c1ccncc1",
+            "c1ccc2ccccc2c1",
+            "C1=CC=CC=C1",
+            "c1ccccc1.C1=CC=CC=C1",
+            "O=C1C=CC(=O)C=C1",
+            "C1CC2CCC1C2",
+            "C1CC2(CC1)CCCC2",
+            "c1ccsc1",
+            "C[C@H](N)C(=O)O",
+            "C[C@@H](N)C(=O)O",
+            "F/C=C\\Cl",
+            "C[C@H]1CCCC[C@@H]1O",
+            "C1[C@H]2CC[C@@H]1C2",
+            "[2H][C@](F)(Cl)Br",
+            "[H][C@](F)(Cl)Br",
+            "C[C@H](N)C(=O)O.[Na+]",
+            "N->[Cu+2]<-N",
+            "CN(C)C[C-]12C3=C4C5=C1[Fe++]23456789[C-]%10C6=C7C8=C9%10",
+            "c1cccc1",
+            "[nH]1cccc1",
+            "[O-][N+](=O)c1ccccc1",
+        ] {
+            let mol = parse(smiles).unwrap();
+            if chematic_perception::rdkit_parity_view_is_identity(&mol) {
+                identity += 1;
+            } else {
+                nonidentity += 1;
+            }
+            assert_owned_view_equivalent(&mol);
+        }
+        assert!(identity > 0 && nonidentity > 0);
+    }
+
+    #[test]
+    fn borrowed_parity_input_invalidates_after_graph_and_stereo_edits() {
+        let mut mol = parse("C[C@H](O)/C=C/c1ccccc1").unwrap();
+        assert_owned_view_equivalent(&mol);
+        mol.set_chirality(AtomIdx(1), chematic_core::Chirality::None);
+        assert_owned_view_equivalent(&mol);
+        mol.set_isotope(AtomIdx(0), Some(13));
+        assert_owned_view_equivalent(&mol);
+        mol.set_charge(AtomIdx(2), -1);
+        mol.set_hydrogen_count(AtomIdx(2), Some(0));
+        assert_owned_view_equivalent(&mol);
+        mol.set_bond_order(BondIdx(3), BondOrder::Single);
+        assert_owned_view_equivalent(&mol);
+        mol.remove_bond(BondIdx(5));
+        assert_owned_view_equivalent(&mol);
+    }
 
     /// Proves this module's generalized path agrees with the frozen, untouched
     /// `rdkit_morgan_ecfp4_experimental` at their one shared config point --
