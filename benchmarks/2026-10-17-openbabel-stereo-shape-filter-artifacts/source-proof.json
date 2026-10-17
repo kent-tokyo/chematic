@@ -1,0 +1,5 @@
+{
+  "base_commit": "de41dadd8f123a4b1368937c7dd86df823434588",
+  "frozen_body_sha256": "e48f9f45349e28abee36e25bc35925570fb0b7115f1bb9c40279d5bccda92f2e",
+  "transformation": "Move unchanged local group-shape rejection before substituent_signatures_distinct; unchanged branch signature algorithm"
+}

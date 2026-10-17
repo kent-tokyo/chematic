@@ -1,0 +1,386 @@
+{
+  "local_adoption_gate_passed": false,
+  "primary": {
+    "v3000_3d-branched-spiral": {
+      "median": 7.304,
+      "ci95": [
+        7.189,
+        7.339
+      ],
+      "winning_blocks": 21,
+      "blocks": 21
+    },
+    "v3000_3d-branched-offset": {
+      "median": 7.17,
+      "ci95": [
+        7.104,
+        7.227
+      ],
+      "winning_blocks": 21,
+      "blocks": 21
+    }
+  },
+  "source_ratios": {
+    "sdf-0/parse": {
+      "median": 1.001,
+      "ci95": [
+        1.0,
+        1.006
+      ],
+      "winning_blocks": 14,
+      "blocks": 21
+    },
+    "sdf-0/write": {
+      "median": 0.988,
+      "ci95": [
+        0.976,
+        0.995
+      ],
+      "winning_blocks": 6,
+      "blocks": 21
+    },
+    "sdf-0/roundtrip": {
+      "median": 0.997,
+      "ci95": [
+        0.992,
+        1.001
+      ],
+      "winning_blocks": 8,
+      "blocks": 21
+    },
+    "sdf-5000/parse": {
+      "median": 1.004,
+      "ci95": [
+        0.989,
+        1.013
+      ],
+      "winning_blocks": 11,
+      "blocks": 21
+    },
+    "sdf-5000/write": {
+      "median": 0.963,
+      "ci95": [
+        0.957,
+        0.973
+      ],
+      "winning_blocks": 3,
+      "blocks": 21
+    },
+    "sdf-5000/roundtrip": {
+      "median": 1.004,
+      "ci95": [
+        0.988,
+        1.016
+      ],
+      "winning_blocks": 11,
+      "blocks": 21
+    },
+    "v3000-0/parse": {
+      "median": 1.004,
+      "ci95": [
+        0.987,
+        1.012
+      ],
+      "winning_blocks": 12,
+      "blocks": 21
+    },
+    "v3000-0/write": {
+      "median": 1.005,
+      "ci95": [
+        0.968,
+        1.015
+      ],
+      "winning_blocks": 11,
+      "blocks": 21
+    },
+    "v3000-0/roundtrip": {
+      "median": 1.001,
+      "ci95": [
+        0.979,
+        1.017
+      ],
+      "winning_blocks": 13,
+      "blocks": 21
+    },
+    "v3000-5000/parse": {
+      "median": 1.003,
+      "ci95": [
+        0.974,
+        1.017
+      ],
+      "winning_blocks": 12,
+      "blocks": 21
+    },
+    "v3000-5000/write": {
+      "median": 0.991,
+      "ci95": [
+        0.973,
+        1.003
+      ],
+      "winning_blocks": 9,
+      "blocks": 21
+    },
+    "v3000-5000/roundtrip": {
+      "median": 1.0,
+      "ci95": [
+        0.984,
+        1.012
+      ],
+      "winning_blocks": 10,
+      "blocks": 21
+    },
+    "v3000-chains/parse": {
+      "median": 0.999,
+      "ci95": [
+        0.994,
+        1.007
+      ],
+      "winning_blocks": 9,
+      "blocks": 21
+    },
+    "v3000-chains/write": {
+      "median": 0.993,
+      "ci95": [
+        0.975,
+        1.012
+      ],
+      "winning_blocks": 7,
+      "blocks": 21
+    },
+    "v3000-chains/roundtrip": {
+      "median": 1.001,
+      "ci95": [
+        0.997,
+        1.012
+      ],
+      "winning_blocks": 12,
+      "blocks": 21
+    },
+    "v3000-continued/parse": {
+      "median": 0.997,
+      "ci95": [
+        0.988,
+        1.011
+      ],
+      "winning_blocks": 8,
+      "blocks": 21
+    },
+    "v3000-continued/write": {
+      "median": 0.98,
+      "ci95": [
+        0.952,
+        1.005
+      ],
+      "winning_blocks": 7,
+      "blocks": 21
+    },
+    "v3000-continued/roundtrip": {
+      "median": 0.993,
+      "ci95": [
+        0.988,
+        1.0
+      ],
+      "winning_blocks": 7,
+      "blocks": 21
+    },
+    "v3000_3d-spiral/parse": {
+      "median": 1.0,
+      "ci95": [
+        0.991,
+        1.004
+      ],
+      "winning_blocks": 11,
+      "blocks": 21
+    },
+    "v3000_3d-spiral/write": {
+      "median": 0.999,
+      "ci95": [
+        0.973,
+        1.008
+      ],
+      "winning_blocks": 9,
+      "blocks": 21
+    },
+    "v3000_3d-spiral/roundtrip": {
+      "median": 0.99,
+      "ci95": [
+        0.985,
+        0.997
+      ],
+      "winning_blocks": 6,
+      "blocks": 21
+    },
+    "v3000_3d-branched-spiral/parse": {
+      "median": 7.304,
+      "ci95": [
+        7.189,
+        7.339
+      ],
+      "winning_blocks": 21,
+      "blocks": 21
+    },
+    "v3000_3d-branched-spiral/write": {
+      "median": 1.007,
+      "ci95": [
+        1.0,
+        1.016
+      ],
+      "winning_blocks": 15,
+      "blocks": 21
+    },
+    "v3000_3d-branched-spiral/roundtrip": {
+      "median": 6.202,
+      "ci95": [
+        6.144,
+        6.239
+      ],
+      "winning_blocks": 21,
+      "blocks": 21
+    },
+    "v3000_3d-offset/parse": {
+      "median": 0.992,
+      "ci95": [
+        0.989,
+        0.999
+      ],
+      "winning_blocks": 6,
+      "blocks": 21
+    },
+    "v3000_3d-offset/write": {
+      "median": 0.992,
+      "ci95": [
+        0.984,
+        1.007
+      ],
+      "winning_blocks": 8,
+      "blocks": 21
+    },
+    "v3000_3d-offset/roundtrip": {
+      "median": 0.995,
+      "ci95": [
+        0.992,
+        1.003
+      ],
+      "winning_blocks": 7,
+      "blocks": 21
+    },
+    "v3000_3d-branched-offset/parse": {
+      "median": 7.17,
+      "ci95": [
+        7.104,
+        7.227
+      ],
+      "winning_blocks": 21,
+      "blocks": 21
+    },
+    "v3000_3d-branched-offset/write": {
+      "median": 1.003,
+      "ci95": [
+        0.982,
+        1.012
+      ],
+      "winning_blocks": 11,
+      "blocks": 21
+    },
+    "v3000_3d-branched-offset/roundtrip": {
+      "median": 6.136,
+      "ci95": [
+        6.105,
+        6.222
+      ],
+      "winning_blocks": 21,
+      "blocks": 21
+    }
+  },
+  "negative_intervals": [
+    {
+      "lane": "sdf-0/write",
+      "speedup": {
+        "median": 0.988,
+        "ci95": [
+          0.976,
+          0.995
+        ],
+        "winning_blocks": 6,
+        "blocks": 21
+      }
+    },
+    {
+      "lane": "sdf-5000/write",
+      "speedup": {
+        "median": 0.963,
+        "ci95": [
+          0.957,
+          0.973
+        ],
+        "winning_blocks": 3,
+        "blocks": 21
+      }
+    },
+    {
+      "lane": "v3000_3d-spiral/roundtrip",
+      "speedup": {
+        "median": 0.99,
+        "ci95": [
+          0.985,
+          0.997
+        ],
+        "winning_blocks": 6,
+        "blocks": 21
+      }
+    },
+    {
+      "lane": "v3000_3d-offset/parse",
+      "speedup": {
+        "median": 0.992,
+        "ci95": [
+          0.989,
+          0.999
+        ],
+        "winning_blocks": 6,
+        "blocks": 21
+      }
+    }
+  ],
+  "source_floor_failures": [
+    {
+      "lane": "sdf-0/write",
+      "speedup": {
+        "median": 0.988,
+        "ci95": [
+          0.976,
+          0.995
+        ],
+        "winning_blocks": 6,
+        "blocks": 21
+      }
+    },
+    {
+      "lane": "sdf-5000/write",
+      "speedup": {
+        "median": 0.963,
+        "ci95": [
+          0.957,
+          0.973
+        ],
+        "winning_blocks": 3,
+        "blocks": 21
+      }
+    },
+    {
+      "lane": "v3000-continued/write",
+      "speedup": {
+        "median": 0.98,
+        "ci95": [
+          0.952,
+          1.005
+        ],
+        "winning_blocks": 7,
+        "blocks": 21
+      }
+    }
+  ],
+  "all_source_snapshots_and_rewrites_exact": true,
+  "source_valid_epochs": 10,
+  "universal_superiority": false
+}

@@ -1,0 +1,13 @@
+Error: V3000ParseError { line: 8, msg: "expected an 'M  V30 ' record or the terminal 'M  END' line" }
+Traceback (most recent call last):
+  File "/private/tmp/chematic-stereo-shape-evidence-20261017/formal.py", line 23, in <module>
+    raw=subprocess.check_output([str(O/(arm+'-'+kind)),str(corpus),mode,'1',str(count)])
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/subprocess.py", line 472, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+           ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+               **kwargs).stdout
+               ^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/subprocess.py", line 577, in run
+    raise CalledProcessError(retcode, process.args,
+                             output=stdout, stderr=stderr)
+subprocess.CalledProcessError: Command '['/private/tmp/chematic-stereo-shape-evidence-20261017/baseline-v3000', '/private/tmp/chematic-stereo-shape-evidence-20261017/v3000-continued.molblocks', 'snapshot', '1', '64']' returned non-zero exit status 1.

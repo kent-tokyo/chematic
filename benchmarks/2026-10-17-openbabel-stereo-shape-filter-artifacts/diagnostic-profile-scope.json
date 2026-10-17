@@ -1,0 +1,11 @@
+{
+  "scope": "Diagnostic baseline own-CPU sample; worker timer excluded from all formal samples",
+  "command": [
+    "/private/tmp/chematic-stereo-shape-evidence-20261017/baseline-v3000_3d",
+    "/private/tmp/chematic-stereo-shape-evidence-20261017/v3000_3d-branched-spiral.molblocks",
+    "parse",
+    "300",
+    "64"
+  ],
+  "sample_duration_seconds": 2
+}

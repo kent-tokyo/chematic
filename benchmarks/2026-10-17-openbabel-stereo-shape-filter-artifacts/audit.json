@@ -1,0 +1,159 @@
+{
+  "passed": true,
+  "all_30_source_ratios_recomputed": true,
+  "all_ranked_comparator_ratios_recomputed": true,
+  "no_filtered_rows_or_timing_reruns": true,
+  "complete_frozen_function_exact": true,
+  "comparisons": [
+    {
+      "lane": "sdf-0/parse",
+      "source_ratio_recomputed": true,
+      "openbabel_ratio_recomputed": false
+    },
+    {
+      "lane": "sdf-0/write",
+      "source_ratio_recomputed": true,
+      "openbabel_ratio_recomputed": true
+    },
+    {
+      "lane": "sdf-0/roundtrip",
+      "source_ratio_recomputed": true,
+      "openbabel_ratio_recomputed": true
+    },
+    {
+      "lane": "sdf-5000/parse",
+      "source_ratio_recomputed": true,
+      "openbabel_ratio_recomputed": true
+    },
+    {
+      "lane": "sdf-5000/write",
+      "source_ratio_recomputed": true,
+      "openbabel_ratio_recomputed": true
+    },
+    {
+      "lane": "sdf-5000/roundtrip",
+      "source_ratio_recomputed": true,
+      "openbabel_ratio_recomputed": true
+    },
+    {
+      "lane": "v3000-0/parse",
+      "source_ratio_recomputed": true,
+      "openbabel_ratio_recomputed": false
+    },
+    {
+      "lane": "v3000-0/write",
+      "source_ratio_recomputed": true,
+      "openbabel_ratio_recomputed": false
+    },
+    {
+      "lane": "v3000-0/roundtrip",
+      "source_ratio_recomputed": true,
+      "openbabel_ratio_recomputed": false
+    },
+    {
+      "lane": "v3000-5000/parse",
+      "source_ratio_recomputed": true,
+      "openbabel_ratio_recomputed": false
+    },
+    {
+      "lane": "v3000-5000/write",
+      "source_ratio_recomputed": true,
+      "openbabel_ratio_recomputed": false
+    },
+    {
+      "lane": "v3000-5000/roundtrip",
+      "source_ratio_recomputed": true,
+      "openbabel_ratio_recomputed": false
+    },
+    {
+      "lane": "v3000-chains/parse",
+      "source_ratio_recomputed": true,
+      "openbabel_ratio_recomputed": true
+    },
+    {
+      "lane": "v3000-chains/write",
+      "source_ratio_recomputed": true,
+      "openbabel_ratio_recomputed": true
+    },
+    {
+      "lane": "v3000-chains/roundtrip",
+      "source_ratio_recomputed": true,
+      "openbabel_ratio_recomputed": true
+    },
+    {
+      "lane": "v3000-continued/parse",
+      "source_ratio_recomputed": true,
+      "openbabel_ratio_recomputed": true
+    },
+    {
+      "lane": "v3000-continued/write",
+      "source_ratio_recomputed": true,
+      "openbabel_ratio_recomputed": false
+    },
+    {
+      "lane": "v3000-continued/roundtrip",
+      "source_ratio_recomputed": true,
+      "openbabel_ratio_recomputed": false
+    },
+    {
+      "lane": "v3000_3d-spiral/parse",
+      "source_ratio_recomputed": true,
+      "openbabel_ratio_recomputed": true
+    },
+    {
+      "lane": "v3000_3d-spiral/write",
+      "source_ratio_recomputed": true,
+      "openbabel_ratio_recomputed": true
+    },
+    {
+      "lane": "v3000_3d-spiral/roundtrip",
+      "source_ratio_recomputed": true,
+      "openbabel_ratio_recomputed": true
+    },
+    {
+      "lane": "v3000_3d-branched-spiral/parse",
+      "source_ratio_recomputed": true,
+      "openbabel_ratio_recomputed": true
+    },
+    {
+      "lane": "v3000_3d-branched-spiral/write",
+      "source_ratio_recomputed": true,
+      "openbabel_ratio_recomputed": true
+    },
+    {
+      "lane": "v3000_3d-branched-spiral/roundtrip",
+      "source_ratio_recomputed": true,
+      "openbabel_ratio_recomputed": true
+    },
+    {
+      "lane": "v3000_3d-offset/parse",
+      "source_ratio_recomputed": true,
+      "openbabel_ratio_recomputed": true
+    },
+    {
+      "lane": "v3000_3d-offset/write",
+      "source_ratio_recomputed": true,
+      "openbabel_ratio_recomputed": true
+    },
+    {
+      "lane": "v3000_3d-offset/roundtrip",
+      "source_ratio_recomputed": true,
+      "openbabel_ratio_recomputed": true
+    },
+    {
+      "lane": "v3000_3d-branched-offset/parse",
+      "source_ratio_recomputed": true,
+      "openbabel_ratio_recomputed": true
+    },
+    {
+      "lane": "v3000_3d-branched-offset/write",
+      "source_ratio_recomputed": true,
+      "openbabel_ratio_recomputed": true
+    },
+    {
+      "lane": "v3000_3d-branched-offset/roundtrip",
+      "source_ratio_recomputed": true,
+      "openbabel_ratio_recomputed": true
+    }
+  ]
+}

@@ -75,6 +75,8 @@ Older artifact audits, similarity-search work, streaming/format matrices,
 [`archive-index.md`](archive-index.md). They are retained for provenance and do
 not establish current behavior.
 
+- [Local stereocenter shape filter](2026-10-17-openbabel-stereo-shape-filter.md): ten fixed Open Babel/source profiles with exact outputs and all retention results.
+
 ## What counts as a speed win
 
 A lane is called an equivalent-output speed win only when:

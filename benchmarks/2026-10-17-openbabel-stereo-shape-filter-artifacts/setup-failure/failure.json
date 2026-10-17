@@ -1,0 +1,8 @@
+{
+  "scope": "Preflight input generation failure; zero formal timing samples",
+  "reason": "Generated continued ATOM record used M V30 instead of required M  V30 prefix",
+  "correction": "Restore required two spaces in first continued-line prefix only; same chain graphs/rows, source arms, hypothesis, primary and adoption criteria",
+  "timing_samples": 0,
+  "source_changes": 0,
+  "rows_removed": 0
+}

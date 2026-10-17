@@ -1,0 +1,21 @@
+{
+  "compiler_rebuilt_production_library": true,
+  "separate_empty_targets": true,
+  "base_commit": "de41dadd8f123a4b1368937c7dd86df823434588",
+  "candidate_commit": "812bf0a953789299cdb1c7cf4a81133a0afe14ba",
+  "all_baseline_source_files_match_base": true,
+  "source_contrast_valid": true,
+  "inlined_stereo_classifier_owner": {
+    "baseline": {
+      "symbol": "__RNvNtCs9k7NSpE0Bwv_12chematic_mol7mol200038perceive_tetrahedral_from_3d_with_mode",
+      "instruction_sha256": "28c5673a03db3e76b940f093dbdedf8783dcbab696e0aa343eb8109d01cf1211",
+      "instructions": 4672
+    },
+    "candidate": {
+      "symbol": "__RNvNtCs9k7NSpE0Bwv_12chematic_mol7mol200038perceive_tetrahedral_from_3d_with_mode",
+      "instruction_sha256": "dcfe36f0435028d9f348c83464563a990825fef19a3c1d200905a392ce7d608d",
+      "instructions": 4678
+    }
+  },
+  "owner": "perceive_tetrahedral_from_3d_with_mode; full LTO inlines stereo_centers"
+}
