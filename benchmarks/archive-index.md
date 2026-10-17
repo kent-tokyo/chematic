@@ -531,3 +531,5 @@ integrated-main or toolkit-wide superiority.
 - [MOL2 indexed reads and guarded fixed4 writes](2026-10-18-mol2-index-fixed4.md): seven primary source lanes win 24/24; all 27 floors pass; rejected index-only epoch and unranked Open Babel observations retained. One-host source evidence.
 
 - [Legacy stereo code projection rejected gate](2026-10-18-morgan-stereo-projection.md) ([numeric packet](2026-10-18-morgan-stereo-projection-numeric.json.gz)): offset-0 first-use chiral Morgan improves but offset-5,000 regresses; all 42 floors pass yet the two-primary adoption gate fails; all 78 comparisons and negative results retained; runtime excluded.
+
+- [Configured Morgan borrowing and single-ring scratch](2026-10-18-morgan-borrowed-view-ring-scratch.md): combined two-primary gate and all 42 source floors pass; rejected borrowing-only epoch, all 78 comparisons, ASA regression and COSMolKit non-win retained; source wheels on one host.

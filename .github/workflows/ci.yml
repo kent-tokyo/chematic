@@ -799,6 +799,11 @@ jobs:
         with:
           python-version: "3.12"
       - run: python3 scripts/check_benchmark_index.py
+      - name: Verify Morgan timing packets and corruption controls
+        run: |
+          python3 scripts/check_morgan_numeric_packet.py benchmarks/2026-10-18-morgan-borrowed-view-only-numeric.json.gz
+          python3 scripts/check_morgan_numeric_packet.py benchmarks/2026-10-18-morgan-borrowed-view-ring-scratch-numeric.json.gz
+          python3 -m unittest scripts.tests.test_check_morgan_numeric_packet -v
       - name: Verify MOL2 timing packets and corruption controls
         run: |
           python3 scripts/check_mol2_index_numeric_packet.py benchmarks/2026-10-18-mol2-index-only-numeric.json.gz
