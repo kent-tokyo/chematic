@@ -185,10 +185,13 @@ fn append_inferred_valence_properties(
 fn append_explicit_hcount(line: &mut String, mol: &Molecule, idx: AtomIdx, atom: &Atom) {
     if let Some(hydrogens) = atom.hydrogen_count {
         // HCOUNT is a query property for some V3000 readers. An aliphatic
-        // carbon with an inferred H count or a pyrrole-like [nH] with two
-        // ring bonds needs no such property in a concrete block.
-        let aliphatic_carbon_h = atom.element == Element::C
+        // carbon or phosphorus with an inferred H count, or a pyrrole-like
+        // [nH] with two ring bonds, needs no query property in a concrete
+        // block. In particular, neutral P-H in phosphinic acids is inferred
+        // from valence by both RDKit and COSMolKit.
+        let aliphatic_inferred_h = matches!(atom.element, Element::C | Element::P)
             && !atom.aromatic
+            && atom.charge == 0
             && mol.neighbors(idx).all(|(_, bond_idx)| {
                 matches!(
                     mol.bond(bond_idx).order,
@@ -228,7 +231,7 @@ fn append_explicit_hcount(line: &mut String, mol: &Molecule, idx: AtomIdx, atom:
             && atom.element.is_organic_subset()
             && chematic_core::valence::valence_inferred_hcount(mol, idx) == hydrogens;
         if atom.wildcard
-            || !(aliphatic_carbon_h
+            || !(aliphatic_inferred_h
                 || aromatic_n_h
                 || aromatic_charged_carbon_h
                 || charged_inferred_h)
