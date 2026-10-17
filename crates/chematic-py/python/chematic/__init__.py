@@ -676,3 +676,9 @@ from ._crystal_obj import ObjMeshExport, write_crystal_obj_checked
 from ._parent_types import ParentStage, SuperParentReport
 from ._bond_fragment import BondFragmentation, FragmentAttachment, fragment_on_bonds_checked
 from ._core_replacement import CoreAttachment, CoreReplacement, replace_core_checked
+from ._mcs_comparators import (
+    McsAtomCompare,
+    McsAtomComparison,
+    McsBondCompare,
+    McsBondComparison,
+)

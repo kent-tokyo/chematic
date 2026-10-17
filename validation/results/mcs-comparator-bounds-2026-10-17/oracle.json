@@ -1,0 +1,106 @@
+{
+  "rdkit": "2026.09.1",
+  "samples": 35,
+  "groups": 165,
+  "comparisons": 1980,
+  "passed": 1976,
+  "failures": [
+    {
+      "inputs": [
+        "[2H]O[2H]",
+        "[H]OC"
+      ],
+      "atom_mode": "any_heavy_atom",
+      "bond_mode": "order_or_aromatic",
+      "actual": [
+        1,
+        0
+      ],
+      "expected": [
+        2,
+        1
+      ],
+      "native_profile_expected": [
+        1,
+        0
+      ],
+      "native_timed_out": false,
+      "rdkit_canceled": false,
+      "passed": false,
+      "native_profile_passed": true
+    },
+    {
+      "inputs": [
+        "[2H]O[2H]",
+        "[H]OC"
+      ],
+      "atom_mode": "any_heavy_atom",
+      "bond_mode": "any",
+      "actual": [
+        1,
+        0
+      ],
+      "expected": [
+        2,
+        1
+      ],
+      "native_profile_expected": [
+        1,
+        0
+      ],
+      "native_timed_out": false,
+      "rdkit_canceled": false,
+      "passed": false,
+      "native_profile_passed": true
+    },
+    {
+      "inputs": [
+        "[H]OC",
+        "[2H]O[2H]"
+      ],
+      "atom_mode": "any_heavy_atom",
+      "bond_mode": "order_or_aromatic",
+      "actual": [
+        1,
+        0
+      ],
+      "expected": [
+        2,
+        1
+      ],
+      "native_profile_expected": [
+        1,
+        0
+      ],
+      "native_timed_out": false,
+      "rdkit_canceled": false,
+      "passed": false,
+      "native_profile_passed": true
+    },
+    {
+      "inputs": [
+        "[H]OC",
+        "[2H]O[2H]"
+      ],
+      "atom_mode": "any_heavy_atom",
+      "bond_mode": "any",
+      "actual": [
+        1,
+        0
+      ],
+      "expected": [
+        2,
+        1
+      ],
+      "native_profile_expected": [
+        1,
+        0
+      ],
+      "native_timed_out": false,
+      "rdkit_canceled": false,
+      "passed": false,
+      "native_profile_passed": true
+    }
+  ],
+  "native_profile_passed": 1980
+}

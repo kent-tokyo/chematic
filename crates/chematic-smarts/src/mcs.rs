@@ -6,13 +6,19 @@
 //! search that grows the common subgraph one atom at a time, pruning subtrees whose upper
 //! bound on reachable size is no better than the current best.
 
-use std::collections::HashMap;
-
 use chematic_core::{AtomIdx, BondOrder, Molecule};
 use chematic_perception::{RingSet, find_sssr};
 
 use crate::clock::Instant;
 use crate::query::{AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, QueryMolecule};
+
+#[path = "mcs_bounds.rs"]
+mod bounds;
+use bounds::{upper_bound_additional, upper_bound_for_seeds};
+
+#[cfg(test)]
+#[path = "mcs_comparator_tests.rs"]
+mod comparator_tests;
 
 // ---------------------------------------------------------------------------
 // Public API types
@@ -257,8 +263,8 @@ pub fn find_mcs_with_config_checked(mols: &[&Molecule], config: &McsConfig) -> M
                 break 'outer;
             }
 
-            // Prune: upper bound for a single-atom seed is at most min(atom counts by element).
-            let ub = upper_bound_for_seeds(mols, AtomIdx(a0 as u32), &seed);
+            // Prune with a conservative bound under the selected atom comparator.
+            let ub = upper_bound_for_seeds(mols, AtomIdx(a0 as u32), &seed, &config.atom_compare);
             if ub <= state.best.size {
                 continue;
             }
@@ -467,7 +473,12 @@ fn grow(state: &mut McsState<'_>, mapping: &mut PartialMapping) {
     }
 
     // Upper bound pruning: compute max additional atoms reachable from current state.
-    let additional_ub = upper_bound_additional(state.mols, mapping, &state.excluded);
+    let additional_ub = upper_bound_additional(
+        state.mols,
+        mapping,
+        &state.excluded,
+        &state.config.atom_compare,
+    );
     if mapping.size + additional_ub <= state.best.size {
         return;
     }
@@ -670,58 +681,6 @@ fn collect_seed_candidates(
         result.push(cands);
     }
     result
-}
-
-// ---------------------------------------------------------------------------
-// Upper bound heuristics
-// ---------------------------------------------------------------------------
-
-/// Upper bound on the total MCS size for a given seed (used at the seed level).
-fn upper_bound_for_seeds(mols: &[&Molecule], a0: AtomIdx, seed: &[AtomIdx]) -> usize {
-    // Count atoms of each element in each molecule.
-    // Minimum across molecules gives max atoms of that element that can be matched.
-    let mut counts: HashMap<u8, Vec<usize>> = HashMap::new();
-    for (mi, mol) in mols.iter().enumerate() {
-        let exclude = if mi == 0 { a0 } else { seed[mi - 1] };
-        for (ai, atom) in mol.atoms() {
-            if ai == exclude {
-                continue; // seed atom already counts; we'll add 1 at the end
-            }
-            let en = atom.element.atomic_number();
-            counts.entry(en).or_insert_with(|| vec![0; mols.len()])[mi] += 1;
-        }
-    }
-    let ub: usize = counts.values().map(|v| *v.iter().min().unwrap_or(&0)).sum();
-    ub + 1 // +1 for the seed atom itself
-}
-
-/// Upper bound on *additional* atoms reachable from the current mapping.
-///
-/// For each element, count unmapped atoms in each molecule (mol[0] atoms already
-/// excluded from this branch don't count -- they can never be reached); the maximum
-/// additional atoms of that element = min over all molecules.
-fn upper_bound_additional(
-    mols: &[&Molecule],
-    mapping: &PartialMapping,
-    excluded: &[bool],
-) -> usize {
-    let mut counts: HashMap<u8, Vec<usize>> = HashMap::new();
-
-    for (mi, mol) in mols.iter().enumerate() {
-        for (ai, atom) in mol.atoms() {
-            if mapping.is_mapped(mi, ai) {
-                continue;
-            }
-            if mi == 0 && excluded[ai.0 as usize] {
-                continue;
-            }
-            let en = atom.element.atomic_number();
-            let entry = counts.entry(en).or_insert_with(|| vec![0; mols.len()]);
-            entry[mi] += 1;
-        }
-    }
-
-    counts.values().map(|v| *v.iter().min().unwrap_or(&0)).sum()
 }
 
 // ---------------------------------------------------------------------------

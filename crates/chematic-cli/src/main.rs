@@ -7,6 +7,8 @@ use std::fs;
 use std::io::{self, Read, Write};
 use std::path::PathBuf;
 
+mod conversion_format;
+
 #[derive(Parser, Debug)]
 #[command(
     name = "chematic",
@@ -243,29 +245,10 @@ enum Command {
     },
 }
 
-fn format_name(format: &str) -> Option<String> {
-    match format
-        .to_ascii_lowercase()
-        .trim_start_matches('.')
-        .replace('-', "_")
-        .as_str()
-    {
-        "smi" | "smiles" => Some("smiles".to_string()),
-        "mol" | "sdf" => Some("mol".to_string()),
-        "v3000" | "mol_v3000" => Some("mol_v3000".to_string()),
-        "mol2" => Some("mol2".to_string()),
-        "cml" => Some("cml".to_string()),
-        "cjson" => Some("cjson".to_string()),
-        "moljson" => Some("moljson".to_string()),
-        "cdxml" => Some("cdxml".to_string()),
-        _ => None,
-    }
-}
-
 fn convert_text(text: &str, input_format: &str, output_format: &str) -> Result<String, String> {
-    let input = format_name(input_format)
+    let input = conversion_format::format_name(input_format)
         .ok_or_else(|| format!("unsupported input format: {input_format}"))?;
-    let output = format_name(output_format)
+    let output = conversion_format::format_name(output_format)
         .ok_or_else(|| format!("unsupported output format: {output_format}"))?;
 
     if input == "mol2" && output == "mol2" {
@@ -331,6 +314,13 @@ fn convert_text(text: &str, input_format: &str, output_format: &str) -> Result<S
         ));
     }
     Ok(match output.as_str() {
+        // CTAB writers use Kekule bonds when aromatic bond type 4 would
+        // discard an aromatic heteroatom's or charged carbon's hydrogen.
+        // Recover the aromatic SMILES spelling after reading either CTAB;
+        // leave the parsed graph unchanged for other output formats.
+        "smiles" if matches!(input.as_str(), "mol" | "mol_v3000") => {
+            chematic_smiles::canonical_smiles(&chematic_perception::apply_aromaticity(&mol))
+        }
         "smiles" => chematic_smiles::canonical_smiles(&mol),
         "mol" => chematic_mol::write_mol(&mol, &chematic_mol::MolMetadata::default()),
         "mol_v3000" => {

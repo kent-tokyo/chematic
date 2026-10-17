@@ -1,0 +1,97 @@
+{
+  "rdkit": "2026.09.1",
+  "rows": [
+    {
+      "inputs": [
+        "CCC",
+        "NNN"
+      ],
+      "mode": "any",
+      "native_atoms": 1,
+      "rdkit_atoms": 3,
+      "native_timed_out": false
+    },
+    {
+      "inputs": [
+        "CCC",
+        "NNN"
+      ],
+      "mode": "any_heavy_atom",
+      "native_atoms": 1,
+      "rdkit_atoms": 3,
+      "native_timed_out": false
+    },
+    {
+      "inputs": [
+        "CCC",
+        "NNN"
+      ],
+      "mode": "elements",
+      "native_atoms": 0,
+      "rdkit_atoms": 0,
+      "native_timed_out": false
+    },
+    {
+      "inputs": [
+        "CCCO",
+        "NCCN"
+      ],
+      "mode": "any",
+      "native_atoms": 3,
+      "rdkit_atoms": 4,
+      "native_timed_out": false
+    },
+    {
+      "inputs": [
+        "CCCO",
+        "NCCN"
+      ],
+      "mode": "any_heavy_atom",
+      "native_atoms": 3,
+      "rdkit_atoms": 4,
+      "native_timed_out": false
+    },
+    {
+      "inputs": [
+        "CCCO",
+        "NCCN"
+      ],
+      "mode": "elements",
+      "native_atoms": 2,
+      "rdkit_atoms": 2,
+      "native_timed_out": false
+    },
+    {
+      "inputs": [
+        "COC",
+        "NNN"
+      ],
+      "mode": "any",
+      "native_atoms": 1,
+      "rdkit_atoms": 3,
+      "native_timed_out": false
+    },
+    {
+      "inputs": [
+        "COC",
+        "NNN"
+      ],
+      "mode": "any_heavy_atom",
+      "native_atoms": 1,
+      "rdkit_atoms": 3,
+      "native_timed_out": false
+    },
+    {
+      "inputs": [
+        "COC",
+        "NNN"
+      ],
+      "mode": "elements",
+      "native_atoms": 0,
+      "rdkit_atoms": 0,
+      "native_timed_out": false
+    }
+  ],
+  "native_sha256": "e134b28b880aee0de1a0889b3b5c4664d5dad1b3a507d0bb70340ee76a81d7ce",
+  "native_origin": "previous fresh cc72a803 native fixture; MCS engine/binding byte-identical to candidate base a07a1294"
+}
