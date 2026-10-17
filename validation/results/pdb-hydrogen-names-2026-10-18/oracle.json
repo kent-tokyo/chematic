@@ -1,0 +1,29 @@
+{
+  "rdkit": "2026.09.1",
+  "cases": 2048,
+  "atom_cross_reads": 16384,
+  "selected_hydrogens": 6144,
+  "changed_anisou": 4992,
+  "exact_lines": 53248,
+  "idempotence_checks": 2048,
+  "default_selection_checks": 32,
+  "implicit_model_bond_checks": 1024,
+  "explicit_model_coordinate_checks": 1024,
+  "openbabel_omitted_metadata": [
+    {
+      "line": 1,
+      "record_name": "COMPND"
+    },
+    {
+      "line": 2,
+      "record_name": "AUTHOR"
+    },
+    {
+      "line": 15,
+      "record_name": "MASTER"
+    }
+  ],
+  "openbabel_renamed_hydrogens": 4,
+  "rdkit_explicit_model_limitation": "RDKit ignores global CONECT after ENDMDL in these controls (zero source/output bonds); bond cross-read applies to implicit models only. All original CONECT bytes and native checked references are verified for every case.",
+  "oracle_sha256": "43ef0df4321b0afe99b90fda54a5ea10d3bb0dcd3f281101d5ff9d46f8dd3b3d"
+}

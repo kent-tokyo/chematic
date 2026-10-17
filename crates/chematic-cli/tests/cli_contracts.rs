@@ -142,6 +142,37 @@ fn converts_kekule_ctabs_to_aromatic_smiles() {
 }
 
 #[test]
+fn preserves_cumulated_ring_and_alkene_stereo_from_ctabs() {
+    let expected = "C1(Oc2ccc(O/C=C/C)cc2)=CC=C=C=C1";
+    for (format, block) in [
+        (
+            "mol",
+            include_str!("fixtures/cumulated_ring_stereo_v2000.mol"),
+        ),
+        (
+            "mol_v3000",
+            include_str!("fixtures/cumulated_ring_stereo_v3000.mol"),
+        ),
+    ] {
+        let converted = invoke(
+            &[
+                "convert",
+                "--input-format",
+                format,
+                "--output-format",
+                "smiles",
+            ],
+            block,
+        );
+        assert!(converted.status.success(), "{format}");
+        assert_eq!(
+            String::from_utf8(converted.stdout).unwrap().trim(),
+            expected
+        );
+    }
+}
+
+#[test]
 fn molecule_and_reaction_commands_emit_inspectable_json() {
     for (args, path, expected) in [
         (vec!["parse", "CCO"], "/atoms", json!(3)),

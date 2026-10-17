@@ -4,6 +4,9 @@
     options:
       members:
         - Mol
+        - name_pdb_hydrogens_checked
+        - PdbHydrogenName
+        - PdbHydrogenNaming
         - write_crystal_stl_checked
         - StlMeshExport
         - ParentStage
