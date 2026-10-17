@@ -4,6 +4,8 @@
     options:
       members:
         - Mol
+        - write_crystal_stl_checked
+        - StlMeshExport
         - ParentStage
         - SuperParentReport
         - from_smiles

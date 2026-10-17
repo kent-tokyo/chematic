@@ -1,0 +1,725 @@
+{
+  "trimesh": "4.9.0",
+  "ase": "3.26.0",
+  "cases": 75,
+  "obj_byte_identical_cases": 20,
+  "totals": {
+    "spheres": 210,
+    "triangles": 114576,
+    "vertices": 57708
+  },
+  "ase_minus_native_lattice_image_shifts": {
+    "NACL_P1_CIF": [
+      [
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0
+      ]
+    ],
+    "SYMMETRIC_C2C_CIF": [
+      [
+        1,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0
+      ]
+    ]
+  },
+  "failures": 0,
+  "rows": [
+    {
+      "source": "authored-1",
+      "level": 0,
+      "mm_per_angstrom": 0.25,
+      "spheres": 1,
+      "triangles": 8,
+      "max_radial_error_mm": 4.163336342344337e-17,
+      "bytes": 2007
+    },
+    {
+      "source": "authored-1",
+      "level": 0,
+      "mm_per_angstrom": 3.0,
+      "spheres": 1,
+      "triangles": 8,
+      "max_radial_error_mm": 4.440892098500626e-16,
+      "bytes": 1903
+    },
+    {
+      "source": "authored-1",
+      "level": 0,
+      "mm_per_angstrom": 12.5,
+      "spheres": 1,
+      "triangles": 8,
+      "max_radial_error_mm": 0.0,
+      "bytes": 1601
+    },
+    {
+      "source": "authored-1",
+      "level": 1,
+      "mm_per_angstrom": 0.25,
+      "spheres": 1,
+      "triangles": 32,
+      "max_radial_error_mm": 5.551115123125783e-17,
+      "bytes": 9045
+    },
+    {
+      "source": "authored-1",
+      "level": 1,
+      "mm_per_angstrom": 3.0,
+      "spheres": 1,
+      "triangles": 32,
+      "max_radial_error_mm": 6.661338147750939e-16,
+      "bytes": 8673
+    },
+    {
+      "source": "authored-1",
+      "level": 1,
+      "mm_per_angstrom": 12.5,
+      "spheres": 1,
+      "triangles": 32,
+      "max_radial_error_mm": 0.0,
+      "bytes": 8421
+    },
+    {
+      "source": "authored-1",
+      "level": 2,
+      "mm_per_angstrom": 0.25,
+      "spheres": 1,
+      "triangles": 128,
+      "max_radial_error_mm": 5.551115123125783e-17,
+      "bytes": 39455
+    },
+    {
+      "source": "authored-1",
+      "level": 2,
+      "mm_per_angstrom": 3.0,
+      "spheres": 1,
+      "triangles": 128,
+      "max_radial_error_mm": 7.771561172376096e-16,
+      "bytes": 38251
+    },
+    {
+      "source": "authored-1",
+      "level": 2,
+      "mm_per_angstrom": 12.5,
+      "spheres": 1,
+      "triangles": 128,
+      "max_radial_error_mm": 3.1086244689504383e-15,
+      "bytes": 37982
+    },
+    {
+      "source": "authored-1",
+      "level": 3,
+      "mm_per_angstrom": 0.25,
+      "spheres": 1,
+      "triangles": 512,
+      "max_radial_error_mm": 5.551115123125783e-17,
+      "bytes": 166721
+    },
+    {
+      "source": "authored-1",
+      "level": 3,
+      "mm_per_angstrom": 3.0,
+      "spheres": 1,
+      "triangles": 512,
+      "max_radial_error_mm": 7.771561172376096e-16,
+      "bytes": 161671
+    },
+    {
+      "source": "authored-1",
+      "level": 3,
+      "mm_per_angstrom": 12.5,
+      "spheres": 1,
+      "triangles": 512,
+      "max_radial_error_mm": 3.1086244689504383e-15,
+      "bytes": 160930
+    },
+    {
+      "source": "authored-1",
+      "level": 4,
+      "mm_per_angstrom": 0.25,
+      "spheres": 1,
+      "triangles": 2048,
+      "max_radial_error_mm": 6.938893903907228e-17,
+      "bytes": 684988
+    },
+    {
+      "source": "authored-1",
+      "level": 4,
+      "mm_per_angstrom": 3.0,
+      "spheres": 1,
+      "triangles": 2048,
+      "max_radial_error_mm": 8.881784197001252e-16,
+      "bytes": 665617
+    },
+    {
+      "source": "authored-1",
+      "level": 4,
+      "mm_per_angstrom": 12.5,
+      "spheres": 1,
+      "triangles": 2048,
+      "max_radial_error_mm": 3.552713678800501e-15,
+      "bytes": 662222
+    },
+    {
+      "source": "authored-2",
+      "level": 0,
+      "mm_per_angstrom": 0.25,
+      "spheres": 2,
+      "triangles": 16,
+      "max_radial_error_mm": 4.85722573273506e-17,
+      "bytes": 3805
+    },
+    {
+      "source": "authored-2",
+      "level": 0,
+      "mm_per_angstrom": 3.0,
+      "spheres": 2,
+      "triangles": 16,
+      "max_radial_error_mm": 1.2212453270876722e-15,
+      "bytes": 3723
+    },
+    {
+      "source": "authored-2",
+      "level": 0,
+      "mm_per_angstrom": 12.5,
+      "spheres": 2,
+      "triangles": 16,
+      "max_radial_error_mm": 4.440892098500626e-16,
+      "bytes": 3183
+    },
+    {
+      "source": "authored-2",
+      "level": 1,
+      "mm_per_angstrom": 0.25,
+      "spheres": 2,
+      "triangles": 64,
+      "max_radial_error_mm": 1.249000902703301e-16,
+      "bytes": 17499
+    },
+    {
+      "source": "authored-2",
+      "level": 1,
+      "mm_per_angstrom": 3.0,
+      "spheres": 2,
+      "triangles": 64,
+      "max_radial_error_mm": 1.2212453270876722e-15,
+      "bytes": 17163
+    },
+    {
+      "source": "authored-2",
+      "level": 1,
+      "mm_per_angstrom": 12.5,
+      "spheres": 2,
+      "triangles": 64,
+      "max_radial_error_mm": 7.993605777301127e-15,
+      "bytes": 16661
+    },
+    {
+      "source": "authored-2",
+      "level": 2,
+      "mm_per_angstrom": 0.25,
+      "spheres": 2,
+      "triangles": 256,
+      "max_radial_error_mm": 1.249000902703301e-16,
+      "bytes": 77272
+    },
+    {
+      "source": "authored-2",
+      "level": 2,
+      "mm_per_angstrom": 3.0,
+      "spheres": 2,
+      "triangles": 256,
+      "max_radial_error_mm": 1.4432899320127035e-15,
+      "bytes": 75784
+    },
+    {
+      "source": "authored-2",
+      "level": 2,
+      "mm_per_angstrom": 12.5,
+      "spheres": 2,
+      "triangles": 256,
+      "max_radial_error_mm": 7.993605777301127e-15,
+      "bytes": 75145
+    },
+    {
+      "source": "authored-2",
+      "level": 3,
+      "mm_per_angstrom": 0.25,
+      "spheres": 2,
+      "triangles": 1024,
+      "max_radial_error_mm": 2.0122792321330962e-16,
+      "bytes": 327053
+    },
+    {
+      "source": "authored-2",
+      "level": 3,
+      "mm_per_angstrom": 3.0,
+      "spheres": 2,
+      "triangles": 1024,
+      "max_radial_error_mm": 2.6645352591003757e-15,
+      "bytes": 320667
+    },
+    {
+      "source": "authored-2",
+      "level": 3,
+      "mm_per_angstrom": 12.5,
+      "spheres": 2,
+      "triangles": 1024,
+      "max_radial_error_mm": 7.993605777301127e-15,
+      "bytes": 318465
+    },
+    {
+      "source": "authored-2",
+      "level": 4,
+      "mm_per_angstrom": 0.25,
+      "spheres": 2,
+      "triangles": 4096,
+      "max_radial_error_mm": 2.2898349882893854e-16,
+      "bytes": 1346668
+    },
+    {
+      "source": "authored-2",
+      "level": 4,
+      "mm_per_angstrom": 3.0,
+      "spheres": 2,
+      "triangles": 4096,
+      "max_radial_error_mm": 3.219646771412954e-15,
+      "bytes": 1320017
+    },
+    {
+      "source": "authored-2",
+      "level": 4,
+      "mm_per_angstrom": 12.5,
+      "spheres": 2,
+      "triangles": 4096,
+      "max_radial_error_mm": 1.3322676295501878e-14,
+      "bytes": 1310905
+    },
+    {
+      "source": "authored-5",
+      "level": 0,
+      "mm_per_angstrom": 0.25,
+      "spheres": 5,
+      "triangles": 40,
+      "max_radial_error_mm": 2.7755575615628914e-16,
+      "bytes": 9944
+    },
+    {
+      "source": "authored-5",
+      "level": 0,
+      "mm_per_angstrom": 3.0,
+      "spheres": 5,
+      "triangles": 40,
+      "max_radial_error_mm": 1.2434497875801753e-14,
+      "bytes": 9885
+    },
+    {
+      "source": "authored-5",
+      "level": 0,
+      "mm_per_angstrom": 12.5,
+      "spheres": 5,
+      "triangles": 40,
+      "max_radial_error_mm": 4.440892098500626e-16,
+      "bytes": 8892
+    },
+    {
+      "source": "authored-5",
+      "level": 1,
+      "mm_per_angstrom": 0.25,
+      "spheres": 5,
+      "triangles": 160,
+      "max_radial_error_mm": 5.551115123125783e-16,
+      "bytes": 44826
+    },
+    {
+      "source": "authored-5",
+      "level": 1,
+      "mm_per_angstrom": 3.0,
+      "spheres": 5,
+      "triangles": 160,
+      "max_radial_error_mm": 1.2434497875801753e-14,
+      "bytes": 44376
+    },
+    {
+      "source": "authored-5",
+      "level": 1,
+      "mm_per_angstrom": 12.5,
+      "spheres": 5,
+      "triangles": 160,
+      "max_radial_error_mm": 2.398081733190338e-14,
+      "bytes": 43617
+    },
+    {
+      "source": "authored-5",
+      "level": 2,
+      "mm_per_angstrom": 0.25,
+      "spheres": 5,
+      "triangles": 640,
+      "max_radial_error_mm": 6.800116025829084e-16,
+      "bytes": 193745
+    },
+    {
+      "source": "authored-5",
+      "level": 2,
+      "mm_per_angstrom": 3.0,
+      "spheres": 5,
+      "triangles": 640,
+      "max_radial_error_mm": 1.2434497875801753e-14,
+      "bytes": 191445
+    },
+    {
+      "source": "authored-5",
+      "level": 2,
+      "mm_per_angstrom": 12.5,
+      "spheres": 5,
+      "triangles": 640,
+      "max_radial_error_mm": 2.886579864025407e-14,
+      "bytes": 190807
+    },
+    {
+      "source": "authored-5",
+      "level": 3,
+      "mm_per_angstrom": 0.25,
+      "spheres": 5,
+      "triangles": 2560,
+      "max_radial_error_mm": 7.632783294297951e-16,
+      "bytes": 809365
+    },
+    {
+      "source": "authored-5",
+      "level": 3,
+      "mm_per_angstrom": 3.0,
+      "spheres": 5,
+      "triangles": 2560,
+      "max_radial_error_mm": 1.2434497875801753e-14,
+      "bytes": 800152
+    },
+    {
+      "source": "authored-5",
+      "level": 3,
+      "mm_per_angstrom": 12.5,
+      "spheres": 5,
+      "triangles": 2560,
+      "max_radial_error_mm": 4.1744385725905886e-14,
+      "bytes": 798646
+    },
+    {
+      "source": "authored-5",
+      "level": 4,
+      "mm_per_angstrom": 0.25,
+      "spheres": 5,
+      "triangles": 10240,
+      "max_radial_error_mm": 8.049116928532385e-16,
+      "bytes": 3309385
+    },
+    {
+      "source": "authored-5",
+      "level": 4,
+      "mm_per_angstrom": 3.0,
+      "spheres": 5,
+      "triangles": 10240,
+      "max_radial_error_mm": 1.3766765505351941e-14,
+      "bytes": 3273341
+    },
+    {
+      "source": "authored-5",
+      "level": 4,
+      "mm_per_angstrom": 12.5,
+      "spheres": 5,
+      "triangles": 10240,
+      "max_radial_error_mm": 4.973799150320701e-14,
+      "bytes": 3265117
+    },
+    {
+      "source": "NACL_P1_CIF",
+      "level": 0,
+      "mm_per_angstrom": 0.25,
+      "spheres": 2,
+      "triangles": 16,
+      "max_radial_error_mm": 4.85722573273506e-17,
+      "bytes": 4573
+    },
+    {
+      "source": "NACL_P1_CIF",
+      "level": 0,
+      "mm_per_angstrom": 3.0,
+      "spheres": 2,
+      "triangles": 16,
+      "max_radial_error_mm": 5.551115123125783e-16,
+      "bytes": 4477
+    },
+    {
+      "source": "NACL_P1_CIF",
+      "level": 0,
+      "mm_per_angstrom": 12.5,
+      "spheres": 2,
+      "triangles": 16,
+      "max_radial_error_mm": 4.440892098500626e-16,
+      "bytes": 4093
+    },
+    {
+      "source": "NACL_P1_CIF",
+      "level": 1,
+      "mm_per_angstrom": 0.25,
+      "spheres": 2,
+      "triangles": 64,
+      "max_radial_error_mm": 6.245004513516506e-17,
+      "bytes": 19423
+    },
+    {
+      "source": "NACL_P1_CIF",
+      "level": 1,
+      "mm_per_angstrom": 3.0,
+      "spheres": 2,
+      "triangles": 64,
+      "max_radial_error_mm": 5.551115123125783e-16,
+      "bytes": 19030
+    },
+    {
+      "source": "NACL_P1_CIF",
+      "level": 1,
+      "mm_per_angstrom": 12.5,
+      "spheres": 2,
+      "triangles": 64,
+      "max_radial_error_mm": 3.552713678800501e-15,
+      "bytes": 18508
+    },
+    {
+      "source": "NACL_P1_CIF",
+      "level": 2,
+      "mm_per_angstrom": 0.25,
+      "spheres": 2,
+      "triangles": 256,
+      "max_radial_error_mm": 6.245004513516506e-17,
+      "bytes": 81892
+    },
+    {
+      "source": "NACL_P1_CIF",
+      "level": 2,
+      "mm_per_angstrom": 3.0,
+      "spheres": 2,
+      "triangles": 256,
+      "max_radial_error_mm": 7.771561172376096e-16,
+      "bytes": 79825
+    },
+    {
+      "source": "NACL_P1_CIF",
+      "level": 2,
+      "mm_per_angstrom": 12.5,
+      "spheres": 2,
+      "triangles": 256,
+      "max_radial_error_mm": 3.552713678800501e-15,
+      "bytes": 78616
+    },
+    {
+      "source": "NACL_P1_CIF",
+      "level": 3,
+      "mm_per_angstrom": 0.25,
+      "spheres": 2,
+      "triangles": 1024,
+      "max_radial_error_mm": 6.245004513516506e-17,
+      "bytes": 337537
+    },
+    {
+      "source": "NACL_P1_CIF",
+      "level": 3,
+      "mm_per_angstrom": 3.0,
+      "spheres": 2,
+      "triangles": 1024,
+      "max_radial_error_mm": 9.992007221626409e-16,
+      "bytes": 328537
+    },
+    {
+      "source": "NACL_P1_CIF",
+      "level": 3,
+      "mm_per_angstrom": 12.5,
+      "spheres": 2,
+      "triangles": 1024,
+      "max_radial_error_mm": 3.552713678800501e-15,
+      "bytes": 325033
+    },
+    {
+      "source": "NACL_P1_CIF",
+      "level": 4,
+      "mm_per_angstrom": 0.25,
+      "spheres": 2,
+      "triangles": 4096,
+      "max_radial_error_mm": 6.938893903907228e-17,
+      "bytes": 1371415
+    },
+    {
+      "source": "NACL_P1_CIF",
+      "level": 4,
+      "mm_per_angstrom": 3.0,
+      "spheres": 2,
+      "triangles": 4096,
+      "max_radial_error_mm": 1.3322676295501878e-15,
+      "bytes": 1334032
+    },
+    {
+      "source": "NACL_P1_CIF",
+      "level": 4,
+      "mm_per_angstrom": 12.5,
+      "spheres": 2,
+      "triangles": 4096,
+      "max_radial_error_mm": 4.884981308350689e-15,
+      "bytes": 1320391
+    },
+    {
+      "source": "SYMMETRIC_C2C_CIF",
+      "level": 0,
+      "mm_per_angstrom": 0.25,
+      "spheres": 4,
+      "triangles": 32,
+      "max_radial_error_mm": 6.938893903907228e-17,
+      "bytes": 10406
+    },
+    {
+      "source": "SYMMETRIC_C2C_CIF",
+      "level": 0,
+      "mm_per_angstrom": 3.0,
+      "spheres": 4,
+      "triangles": 32,
+      "max_radial_error_mm": 1.2212453270876722e-15,
+      "bytes": 10127
+    },
+    {
+      "source": "SYMMETRIC_C2C_CIF",
+      "level": 0,
+      "mm_per_angstrom": 12.5,
+      "spheres": 4,
+      "triangles": 32,
+      "max_radial_error_mm": 3.1086244689504383e-15,
+      "bytes": 10007
+    },
+    {
+      "source": "SYMMETRIC_C2C_CIF",
+      "level": 1,
+      "mm_per_angstrom": 0.25,
+      "spheres": 4,
+      "triangles": 128,
+      "max_radial_error_mm": 1.249000902703301e-16,
+      "bytes": 41781
+    },
+    {
+      "source": "SYMMETRIC_C2C_CIF",
+      "level": 1,
+      "mm_per_angstrom": 3.0,
+      "spheres": 4,
+      "triangles": 128,
+      "max_radial_error_mm": 1.2212453270876722e-15,
+      "bytes": 40855
+    },
+    {
+      "source": "SYMMETRIC_C2C_CIF",
+      "level": 1,
+      "mm_per_angstrom": 12.5,
+      "spheres": 4,
+      "triangles": 128,
+      "max_radial_error_mm": 5.329070518200751e-15,
+      "bytes": 40723
+    },
+    {
+      "source": "SYMMETRIC_C2C_CIF",
+      "level": 2,
+      "mm_per_angstrom": 0.25,
+      "spheres": 4,
+      "triangles": 512,
+      "max_radial_error_mm": 1.5265566588595902e-16,
+      "bytes": 167657
+    },
+    {
+      "source": "SYMMETRIC_C2C_CIF",
+      "level": 2,
+      "mm_per_angstrom": 3.0,
+      "spheres": 4,
+      "triangles": 512,
+      "max_radial_error_mm": 1.7763568394002505e-15,
+      "bytes": 164785
+    },
+    {
+      "source": "SYMMETRIC_C2C_CIF",
+      "level": 2,
+      "mm_per_angstrom": 12.5,
+      "spheres": 4,
+      "triangles": 512,
+      "max_radial_error_mm": 5.329070518200751e-15,
+      "bytes": 164430
+    },
+    {
+      "source": "SYMMETRIC_C2C_CIF",
+      "level": 3,
+      "mm_per_angstrom": 0.25,
+      "spheres": 4,
+      "triangles": 2048,
+      "max_radial_error_mm": 1.942890293094024e-16,
+      "bytes": 673830
+    },
+    {
+      "source": "SYMMETRIC_C2C_CIF",
+      "level": 3,
+      "mm_per_angstrom": 3.0,
+      "spheres": 4,
+      "triangles": 2048,
+      "max_radial_error_mm": 1.7763568394002505e-15,
+      "bytes": 662624
+    },
+    {
+      "source": "SYMMETRIC_C2C_CIF",
+      "level": 3,
+      "mm_per_angstrom": 12.5,
+      "spheres": 4,
+      "triangles": 2048,
+      "max_radial_error_mm": 6.661338147750939e-15,
+      "bytes": 661777
+    },
+    {
+      "source": "SYMMETRIC_C2C_CIF",
+      "level": 4,
+      "mm_per_angstrom": 0.25,
+      "spheres": 4,
+      "triangles": 8192,
+      "max_radial_error_mm": 2.1510571102112408e-16,
+      "bytes": 2700958
+    },
+    {
+      "source": "SYMMETRIC_C2C_CIF",
+      "level": 4,
+      "mm_per_angstrom": 3.0,
+      "spheres": 4,
+      "triangles": 8192,
+      "max_radial_error_mm": 1.7763568394002505e-15,
+      "bytes": 2656763
+    },
+    {
+      "source": "SYMMETRIC_C2C_CIF",
+      "level": 4,
+      "mm_per_angstrom": 12.5,
+      "spheres": 4,
+      "triangles": 8192,
+      "max_radial_error_mm": 9.769962616701378e-15,
+      "bytes": 2655947
+    }
+  ]
+}

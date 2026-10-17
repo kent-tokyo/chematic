@@ -1,0 +1,7 @@
+validation/results/checked-crystal-stl-2026-10-18/typing_invalid.py:5: error: Missing named argument "millimeters_per_angstrom" for "write_crystal_stl_checked"  [call-arg]
+validation/results/checked-crystal-stl-2026-10-18/typing_invalid.py:6: error: Argument 1 to "write_crystal_stl_checked" has incompatible type "str"; expected "PeriodicStructure"  [arg-type]
+validation/results/checked-crystal-stl-2026-10-18/typing_invalid.py:7: error: List item 0 has incompatible type "str"; expected "float"  [list-item]
+validation/results/checked-crystal-stl-2026-10-18/typing_invalid.py:8: error: Argument "millimeters_per_angstrom" to "write_crystal_stl_checked" has incompatible type "str"; expected "float"  [arg-type]
+validation/results/checked-crystal-stl-2026-10-18/typing_invalid.py:9: error: Argument "subdivisions" to "write_crystal_stl_checked" has incompatible type "str"; expected "int"  [arg-type]
+validation/results/checked-crystal-stl-2026-10-18/typing_invalid.py:11: error: Property "triangle_count" defined in "StlMeshExport" is read-only  [misc]
+Found 6 errors in 1 file (checked 1 source file)
