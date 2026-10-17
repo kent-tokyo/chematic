@@ -1,0 +1,37 @@
+[
+  {
+    "command": [
+      "python3.13",
+      "scripts/check_refactor_budget.py"
+    ],
+    "exit_code": 0
+  },
+  {
+    "command": [
+      "python3.13",
+      "scripts/check_python_stubs.py"
+    ],
+    "exit_code": 0
+  },
+  {
+    "command": [
+      "python3.13",
+      "scripts/check_binding_surface.py"
+    ],
+    "exit_code": 0
+  },
+  {
+    "command": [
+      "python3.13",
+      "scripts/check_cross_binding_manifest.py"
+    ],
+    "exit_code": 0
+  },
+  {
+    "command": [
+      "python3.13",
+      "scripts/check_unsafe_surface.py"
+    ],
+    "exit_code": 0
+  }
+]

@@ -44,7 +44,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "Mol", "Atom", "Bond", "BondType", "RingInfo", "RWMol",
-    "ExplicitBitVect", "LayeredFingerprint", "LayeredAtomCounts", "LayeredBitMask",
+    "ExplicitBitVect", "LayeredFingerprint", "LayeredAtomCounts", "LayeredBitMask", "rdMIF",
     "MolFromSmiles", "MolToSmiles", "MolFromMolBlock", "MolFromMolFile",
     "MolToMolBlock", "SanitizeMol", "Kekulize", "AddHs", "RemoveHs",
     "MolFromSmarts", "RenumberAtoms",
@@ -68,6 +68,8 @@ from ._layered_counts import (
     LayeredResult as _LayeredResult,
     prepare as _prepare_layered,
 )
+from ._coulomb_field import Coulomb as _Coulomb
+from ._coulomb_dielectric import CoulombDielectric as _CoulombDielectric
 
 
 _MISSING = object()
@@ -1489,3 +1491,11 @@ class DataStructs:
         from ._numpy_fingerprint import _convert
 
         return _convert(fp, dest)
+        return _convert(fp, dest)
+
+
+class rdMIF:
+    """Checked explicit-charge vacuum and local-solvation interaction fields."""
+
+    Coulomb = _Coulomb
+    CoulombDielectric = _CoulombDielectric

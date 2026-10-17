@@ -130,3 +130,26 @@ the radius-count boundary for FreeSASA. Added [checked Rust/Python SASA](checked
 with caller-supplied coordinates and radii, value/size/work limits, local
 normalized occlusion and explicit errors. This is a native Shrake-Rupley
 algorithm; it does not replace FreeSASA or claim bitwise RDKit parity.
+
+## October 17 follow-up: typed explicit-charge Coulomb fields
+
+[#9601](https://github.com/rdkit/rdkit/issues/9601) still lists the `rdMIF`
+`charges` / `positions` typing boundary. Added
+[checked explicit-charge vacuum fields](coulomb-interaction-field.md) as a
+partial implementation: copied indexed inputs, finite bounds and typed scalar
+evaluation. The ordinary-point comparison passed 120,960 evaluations against
+RDKit 2026.09.1; 108 of 88,128 separate rounded-boundary diagnostics differed
+and are disclosed. Molecule overloads, charge generation, dielectric models
+and grids remain outside this addition.
+
+
+## October 17 follow-up: typed dielectric fields
+
+The explicit-charge `rdMIF` boundary in
+[#9601](https://github.com/rdkit/rdkit/issues/9601) also applies to
+`CoulombDielectric`. The [local-solvation field](coulomb-dielectric-field.md)
+now reuses the copied input contract, with a 1,024-site cap before quadratic
+neighbor counting and finite positive permittivities. Independent analytical
+regressions and 154,080 ordinary RDKit-reference evaluations pass; 72 exact
+4 A boundary checks and 85,536 threshold diagnostics are recorded separately.
+This extends the existing vacuum-field PR, not a full `rdMIF` implementation.

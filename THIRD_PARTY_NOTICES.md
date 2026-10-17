@@ -350,3 +350,25 @@ The original synthetic water fixture has separate MIT OR Apache-2.0 provenance
 in `validation/openbabel_issues/ccd/manifest.json`. No Open Babel or Gemmi
 implementation is included in this feature; Gemmi 0.7.5 is used only as an
 external validation oracle.
+
+
+## Explicit-charge Coulomb reference conventions (2026-10-17)
+
+`crates/chematic-py/python/chematic/_coulomb_field.py` independently implements
+the standard vacuum Coulomb equation. Its legacy conversion constant and
+scalar-call conventions reference RDKit
+`Release_2026_09_1/Code/GraphMol/MolInteractionFields/MIFDescriptors.cpp`:
+https://github.com/rdkit/rdkit/blob/Release_2026_09_1/Code/GraphMol/MolInteractionFields/MIFDescriptors.cpp
+
+The reference file is copyright (c) 2014-2024, Novartis Institutes for
+BioMedical Research and other RDKit contributors, under the BSD 3-Clause
+license reproduced above. No C++ implementation or issue attachment is
+bundled. The comparison fixtures are original synthetic project inputs under
+MIT OR Apache-2.0; the RDKit wheel is an external validation oracle.
+
+
+The follow-up `_coulomb_dielectric.py` independently implements the same
+reference's local-solvation equation and empirical neighbor-depth convention.
+The Novartis/RDKit copyright and BSD 3-Clause notice above also apply to
+that reference. No C++ source is bundled. The new comparison inputs remain
+original synthetic project data under MIT OR Apache-2.0.

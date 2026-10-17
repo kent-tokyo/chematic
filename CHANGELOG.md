@@ -83,6 +83,14 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   and bounded chunk iterators. Source bytes and record order are preserved;
   whole-source/part hashes and file identity detect changes without loading
   the complete file. See [SDF file partitions](docs/sdf-file-partitions.md).
+- Python `rdkit_compat.rdMIF.CoulombDielectric` adds a typed local-solvation
+  model with copied inputs, explicit solvent/solute permittivities and a
+  1,024-site construction limit. See [the model and validation](docs/coulomb-dielectric-field.md).
+
+- Python `rdkit_compat.rdMIF.Coulomb` adds typed, copied explicit-charge vacuum
+  fields with bounded real inputs and scalar kJ/mol evaluation. See the
+  [Coulomb field profile](docs/coulomb-interaction-field.md) for squared-distance
+  thresholds, narrowed settings and measured RDKit rounding-boundary differences.
 - Rust/Python `FeaturePatternSet` owns up to 32 caller-supplied SMARTS feature
   definitions and produces full-width atom masks or native circular feature
   fingerprints. Matching budgets and size limits refuse partial output;

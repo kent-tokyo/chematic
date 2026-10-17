@@ -113,6 +113,8 @@ nav:
     - Layered Caller Counters: layered-caller-counts.md
     - XYZ Output Precision: xyz-output-precision.md
     - SDF File Partitions: sdf-file-partitions.md
+    - Explicit-Charge Coulomb Field: coulomb-interaction-field.md
+    - Local-Solvation Coulomb Field: coulomb-dielectric-field.md
     - Complete Molecule Reset: molecule-clear.md
     - Python Filesystem Paths: python-filesystem-paths.md
     - GRO to LAMMPS Units: gro-lammps-units.md

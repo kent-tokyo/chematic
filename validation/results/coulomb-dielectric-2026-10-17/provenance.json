@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-17",
+  "main_base": "35b932f911851f51c5cdb89fa371f1c2c4a1b11a",
+  "previous_pr_commit": "5473b7dece3cc528e7ceba3c0b951db493ec3111",
+  "baseline": {
+    "python_sources_extracted_from_git": true,
+    "runtime_probe": {
+      "has_Coulomb": true,
+      "has_CoulombDielectric": false
+    }
+  },
+  "upstream": {
+    "number": 9601,
+    "title": "Tracking: nanobind wrapper improvements",
+    "state": "OPEN",
+    "url": "https://github.com/rdkit/rdkit/issues/9601"
+  },
+  "selected_boundary": "typed rdMIF explicit charges/positions; local-solvation CoulombDielectric extension to PR995",
+  "candidate_files": {
+    "crates/chematic-py/python/chematic/_coulomb_dielectric.py": "19e0697f3b1e846472b2808df41aad024db1ad367b9a7f56bbb5a324d275f509",
+    "crates/chematic-py/python/chematic/_coulomb_field.py": "c3049d6c7655b55d5bc780952aa1f67ae158a641e1d3cc65df278643d26b3d70",
+    "crates/chematic-py/python/chematic/rdkit_compat.py": "3c8f6668b64c465bb7d0f14bcd77107b3d570f42c9ca2af2a7f207c8d14087e7",
+    "crates/chematic-py/tests/test_coulomb_dielectric.py": "f7c8c4d973840c5cc50b7d5d0a9dd1952fa660eae509365a708562082a51d233",
+    "validation/validate_coulomb_dielectric.py": "6f1e9c3d598ffcc56d12831bdae2364f6d5f11b73c17f20bffa3740a2669ae2d"
+  },
+  "reference_source": {
+    "url": "https://raw.githubusercontent.com/rdkit/rdkit/Release_2026_09_1/Code/GraphMol/MolInteractionFields/MIFDescriptors.cpp",
+    "sha256": "8ac14d77a4945dd9d688f6780336b0116b1d70f3d0ee9574d0b9a2232bfc4682"
+  },
+  "native_extension": {
+    "sha256": "c6db880b6f5ca4ea0388f238c24e8a5b55751daab1084cf0d1d7b56e2427257b",
+    "reused_from_commit": "71d9c12b0c16a8e6b23e4078479d5754230c831b",
+    "scope": "package import and old compatibility tests only; no fresh build or native calls in new helper"
+  },
+  "pytest": {
+    "passed": 284,
+    "failed": 0,
+    "skipped": 0,
+    "new_dielectric": 59,
+    "vacuum": 63,
+    "existing_compat": 162,
+    "command": "PYTHONDONTWRITEBYTECODE=1 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=/private/tmp/chematic-coulomb-field-python python3.13 -m pytest crates/chematic-py/tests/test_coulomb_dielectric.py crates/chematic-py/tests/test_coulomb_field.py crates/chematic-py/tests/test_rdkit_compat.py -q -p no:cacheprovider"
+  },
+  "oracle_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/private/tmp/chematic-coulomb-field-python:/private/tmp/chematic-sparse-tanimoto-rdkit python3.13 validation/validate_coulomb_dielectric.py --output validation/results/coulomb-dielectric-2026-10-17/rdkit-comparison.json",
+  "typing_tool": "mypy 1.8.0; isolated package copies both helper files unchanged plus an empty __init__.py; consumers follow imports silently",
+  "scope": "partial #9601; no molecule overload, charge generation, grid, fresh native build or speed claim"
+}
