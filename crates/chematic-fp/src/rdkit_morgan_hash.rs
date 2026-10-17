@@ -43,8 +43,9 @@
 //! shape (round loop, degree-0 death, bondset-keyed suppression) — reusing
 //! only genuinely hash-independent infrastructure
 //! ([`crate::morgan_environment::BondSet`], and `ecfp.rs`'s
-//! `rdkit_total_degree`/`rdkit_total_h_count`/`rdkit_isotope_delta` value
-//! computations) so this module was never pre-emptively entangled with
+//! `rdkit_isotope_delta`; the total-degree/total-H formulas are checked
+//! against the original helpers while sharing pure H inference) so this
+//! module was never pre-emptively entangled with
 //! either existing path.
 //!
 //! **Numeric exactness proven (M4-A0), now promoted to a real production
@@ -77,7 +78,7 @@ use chematic_perception::ring_atom_flags;
 use rustc_hash::{FxHashMap, FxHashSet};
 use smallvec::SmallVec;
 
-use crate::ecfp::{MAX_ECFP_RADIUS, rdkit_isotope_delta, rdkit_total_degree, rdkit_total_h_count};
+use crate::ecfp::{MAX_ECFP_RADIUS, rdkit_isotope_delta};
 use crate::morgan_environment::BondSet;
 
 /// `gboost::hash_combine`: `seed ^= hasher(v) + 0x9e3779b9 + (seed<<6) +
@@ -135,21 +136,37 @@ pub(crate) fn hash_vec(values: &[u32]) -> u32 {
 /// own doc comment) — only the assembly and hash function differ here.
 fn connectivity_invariant(mol: &Molecule, idx: AtomIdx, ring_atoms: &[bool]) -> u32 {
     let atom = mol.atom(idx);
-    let mut components: SmallVec<[u32; 6]> = SmallVec::new();
-    // Dummy atoms have atomic number 0 (chematic stores them as C).
-    components.push(if atom.wildcard {
+    let neighbors = mol.neighbor_slice(idx);
+    // Both components use the same pure H inference, including bracket H on '*'.
+    let inferred_h = if atom.wildcard {
+        atom.hydrogen_count.unwrap_or(0)
+    } else {
+        chematic_core::implicit_hcount(mol, idx)
+    };
+    let explicit_h = neighbors
+        .iter()
+        .filter(|&&(neighbor, _)| {
+            let atom = mol.atom(neighbor);
+            !atom.wildcard && atom.element.atomic_number() == 1
+        })
+        .count() as u8;
+    let total_degree = neighbors.len() as u16 + u16::from(inferred_h);
+    let total_h = inferred_h.saturating_add(explicit_h);
+    let number = if atom.wildcard {
         0
     } else {
         atom.element.atomic_number() as u32
-    });
-    components.push(rdkit_total_degree(mol, idx) as u32);
-    components.push(rdkit_total_h_count(mol, idx) as u32);
-    components.push((atom.charge as i32) as u32);
-    components.push(rdkit_isotope_delta(mol, idx) as u32);
+    };
+    // Preserve hash_vec's exact component order and wrapping hash arithmetic.
+    let mut invariant = hash_combine(0, number);
+    invariant = hash_combine(invariant, u32::from(total_degree));
+    invariant = hash_combine(invariant, u32::from(total_h));
+    invariant = hash_combine(invariant, (atom.charge as i32) as u32);
+    invariant = hash_combine(invariant, rdkit_isotope_delta(mol, idx) as u32);
     if ring_atoms.get(idx.0 as usize).copied().unwrap_or(false) {
-        components.push(1);
+        invariant = hash_combine(invariant, 1);
     }
-    hash_vec(&components)
+    invariant
 }
 
 /// `MorganBondInvGenerator::getBondInvariants`, `useBondTypes=true,
@@ -921,3 +938,7 @@ mod rdkit_ground_truth_radius0 {
         ids
     }
 }
+
+#[cfg(test)]
+#[path = "rdkit_morgan_hash/connectivity_reference_tests.rs"]
+mod connectivity_reference_tests;
