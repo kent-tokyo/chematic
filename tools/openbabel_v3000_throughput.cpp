@@ -1,3 +1,4 @@
+#include "openbabel_steady_timing.hpp"
 #include <openbabel/mol.h>
 #include <openbabel/obconversion.h>
 
@@ -93,28 +94,29 @@ int main(int argc, char** argv) {
     writer.AddOption("3", OpenBabel::OBConversion::OUTOPTIONS);
     write(prepared, writer);
     if (mode == "dump") {
+      if (chematic_benchmark::warmed_dump()) {
+        chematic_benchmark::measure(chematic_benchmark::dump_repeats(), [&]() { return write(prepared, writer); });
+      }
       for (const auto& mol : prepared) std::cout << writer.WriteString(mol.get(), false) << "$$$$\n";
       return 0;
     }
-    std::size_t units = 0;
-    const auto started = std::chrono::steady_clock::now();
-    for (std::size_t i = 0; i < repeats; ++i) {
+    const auto timing = chematic_benchmark::measure(repeats, [&]() -> std::uint64_t {
       if (mode == "parse") {
         const auto molecules = read(blocks);
-        for (const auto& mol : molecules) units += mol->NumAtoms();
-      } else if (mode == "write") {
-        units += write(prepared, writer);
-      } else if (mode == "roundtrip") {
-        units += write(read(blocks), writer);
-      } else {
-        throw std::runtime_error("unknown operation");
+        std::uint64_t units = 0;
+        for (const auto& molecule : molecules) units += molecule->NumAtoms();
+        return units;
       }
-    }
-    const auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(
-        std::chrono::steady_clock::now() - started).count();
+      if (mode == "write") return write(prepared, writer);
+      if (mode == "roundtrip") return write(read(blocks), writer);
+      throw std::runtime_error("unknown mode");
+    });
     std::cout << "{\"engine\":\"openbabel\",\"mode\":\"" << mode << "\",\"records\":"
-              << expected * repeats << ",\"repeats\":" << repeats << ",\"output_units\":"
-              << units << ",\"elapsed_ns\":" << elapsed << "}\n";
+              << expected * timing.repeats << ",\"repeats\":" << timing.repeats << ",\"output_units\":"
+              << timing.units << ",\"elapsed_ns\":" << timing.elapsed_ns << ",\"warmup_repeats\":" << timing.warmup_repeats
+              << ",\"warmup_elapsed_ns\":" << timing.warmup_elapsed_ns
+              << ",\"minimum_warmup_ns\":" << timing.minimum_warmup_ns
+              << ",\"minimum_timed_ns\":" << timing.minimum_timed_ns << "}\n";
     return 0;
   } catch (const std::exception& error) {
     std::cerr << error.what() << '\n';

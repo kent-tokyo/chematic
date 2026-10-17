@@ -1,10 +1,13 @@
 //! Native 3D V3000 MOL APIs; fail closed if a parsed conformer is absent.
-use std::{error::Error, fs, hint::black_box, io::Write, time::Instant};
+use std::{error::Error, fs, hint::black_box, io::Write};
 
 use chematic_mol::{
     MolReadReport, read_mol_v3000_with_diagnostics, write_mol_v3000_with_conformer,
 };
 use serde_json::json;
+
+#[path = "support/steady_timing.rs"]
+mod steady_timing;
 
 fn blocks(input: &str, expected: usize) -> Result<Vec<&str>, Box<dyn Error>> {
     let (mut start, mut position) = (0, 0);
@@ -71,6 +74,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
     write(&prepared);
     if args[2] == "dump" {
+        if steady_timing::warmed_dump() {
+            steady_timing::measure(steady_timing::dump_repeats()?, || Ok(write(&prepared)))?;
+        }
         let mut stdout = std::io::stdout().lock();
         for r in &prepared {
             stdout.write_all(
@@ -85,23 +91,23 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
         return Ok(());
     }
-    let mut units = 0usize;
-    let started = Instant::now();
-    for _ in 0..repeats {
-        match args[2].as_str() {
+    let timing = steady_timing::measure(repeats, || {
+        Ok(match args[2].as_str() {
             "parse" => {
                 let records = black_box(read(black_box(&blocks))?);
-                units += records.iter().map(|r| r.mol.atom_count()).sum::<usize>();
+                records.iter().map(|r| r.mol.atom_count()).sum::<usize>()
             }
-            "write" => units += write(&prepared),
-            "roundtrip" => units += write(&read(black_box(&blocks))?),
+            "write" => write(&prepared),
+            "roundtrip" => write(&read(black_box(&blocks))?),
             _ => return Err("unknown operation".into()),
-        }
-    }
+        })
+    })?;
     println!(
         "{}",
-        json!({"engine":"chematic","mode":args[2],"records":expected*repeats,
-        "repeats":repeats,"output_units":units,"elapsed_ns":started.elapsed().as_nanos()})
+        json!({"engine":"chematic","mode":args[2],"records":expected*timing.repeats,
+        "repeats":timing.repeats,"output_units":timing.units,"elapsed_ns":timing.elapsed_ns,
+        "warmup_repeats":timing.warmup_repeats,"warmup_elapsed_ns":timing.warmup_elapsed_ns,
+        "minimum_warmup_ns":timing.minimum_warmup_ns,"minimum_timed_ns":timing.minimum_timed_ns})
     );
     Ok(())
 }

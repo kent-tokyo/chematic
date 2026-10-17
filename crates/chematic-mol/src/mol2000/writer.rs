@@ -439,6 +439,11 @@ fn write_atom_row(
     for _ in symbol.len()..3 {
         out.push(' ');
     }
+    // All these attributes were computed normally; combine only their bytes.
+    if mass == 0 && charge == 0 && valence == 0 && atom_map == 0 {
+        out.push_str(" 0  0  0  0  0  0  0  0  0  0  0\n");
+        return;
+    }
     if mass == 0 && charge == 0 {
         out.push_str(" 0  0");
     } else {
@@ -1125,3 +1130,7 @@ pub fn write_sdf_record_with_conformer_checked(
     validate_square_planar_for_write(mol, Some(conformer), MolFormat::V2000)?;
     Ok(write_sdf_record_with_conformer(mol, meta, conformer, props))
 }
+
+#[cfg(test)]
+#[path = "zero_atom_fields_tests.rs"]
+mod zero_atom_fields_tests;
