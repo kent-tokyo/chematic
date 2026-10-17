@@ -77,6 +77,8 @@ not establish current behavior.
 
 - [Degree-only steady native throughput](2026-10-17-openbabel-degree-steady.md): parser-only production change, symmetric warmup/time budgets, raw counts and all 30 retention lanes.
 
+- [Outlined classifier with balanced native timing](2026-10-17-openbabel-degree-outline.md): interrupted: nine complete profiles, one five-block partial; failed SDF retention gates, fresh SDF-only Open Babel comparison.
+
 ## What counts as a speed win
 
 A lane is called an equivalent-output speed win only when:

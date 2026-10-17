@@ -1,0 +1,19 @@
+{
+  "utc": "2026-10-17T08:21:37.484570+00:00",
+  "deleted_regenerable_unused_paths": [
+    "/private/tmp/chematic-degree-only-steady-evidence-20261017/baseline-target",
+    "/private/tmp/chematic-degree-only-steady-evidence-20261017/candidate-target"
+  ],
+  "measured_kib": [
+    183096,
+    183024
+  ],
+  "lsof_no_open_files": true,
+  "ps_no_references": true,
+  "all_six_C_copied_binaries_match_seal": true,
+  "all_three_reused_D_baseline_binaries_match_seal": true,
+  "source_logs_and_evidence_retained": true,
+  "free_before_bytes": 1986150400,
+  "free_after_bytes": 2334994432,
+  "concurrent_build_growth_possible": true
+}

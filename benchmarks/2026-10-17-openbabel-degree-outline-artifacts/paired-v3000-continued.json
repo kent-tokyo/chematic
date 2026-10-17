@@ -1,0 +1,853 @@
+{
+  "schema": "balanced-steady-throughput/v1",
+  "created_utc": "2026-10-17T08:40:04.556377+00:00",
+  "corpus": {
+    "kind": "v3000",
+    "profile": "continued",
+    "records": 64,
+    "path": "v3000-continued.molblocks",
+    "sha256": "ebf67c73081a981338e5130991c342ad80876a3cdbdb65d4a04551f1ea595d67",
+    "orders": [
+      [
+        "baseline",
+        "candidate"
+      ],
+      [
+        "candidate",
+        "baseline"
+      ],
+      [
+        "baseline",
+        "candidate"
+      ],
+      [
+        "candidate",
+        "baseline"
+      ],
+      [
+        "baseline",
+        "candidate"
+      ],
+      [
+        "candidate",
+        "baseline"
+      ],
+      [
+        "baseline",
+        "candidate"
+      ],
+      [
+        "candidate",
+        "baseline"
+      ],
+      [
+        "baseline",
+        "candidate"
+      ],
+      [
+        "candidate",
+        "baseline"
+      ],
+      [
+        "baseline",
+        "candidate"
+      ],
+      [
+        "candidate",
+        "baseline"
+      ],
+      [
+        "baseline",
+        "candidate"
+      ],
+      [
+        "candidate",
+        "baseline"
+      ],
+      [
+        "baseline",
+        "candidate"
+      ],
+      [
+        "candidate",
+        "baseline"
+      ],
+      [
+        "baseline",
+        "candidate"
+      ],
+      [
+        "candidate",
+        "baseline"
+      ],
+      [
+        "baseline",
+        "candidate"
+      ],
+      [
+        "candidate",
+        "baseline"
+      ],
+      [
+        "baseline",
+        "candidate"
+      ],
+      [
+        "candidate",
+        "baseline"
+      ],
+      [
+        "baseline",
+        "candidate"
+      ],
+      [
+        "candidate",
+        "baseline"
+      ]
+    ]
+  },
+  "source_manifest_sha256": "23826f9975e80bcfa0b968bcde56c5b7970a82c0e043bf1ce462ed185fb31f4c",
+  "preflight": {
+    "records": 64,
+    "snapshot_sha256": {
+      "baseline": "5add029fe89ad301067f53ee404c87ebb54221733bf4c5280de463eabe5e1550",
+      "candidate": "5add029fe89ad301067f53ee404c87ebb54221733bf4c5280de463eabe5e1550"
+    },
+    "rewrite_sha256": {
+      "baseline": "b67b1fb9cdb4c2e8977a34dd309a13ebc035050ba7e41473114c62f2c7d5ca95",
+      "candidate": "b67b1fb9cdb4c2e8977a34dd309a13ebc035050ba7e41473114c62f2c7d5ca95"
+    },
+    "source_parse_snapshots_equal": true,
+    "source_warmed_rewrites_equal": true,
+    "semantics": {
+      "baseline": {
+        "passed": true,
+        "expected_rows": 64,
+        "observed_rows": 64,
+        "record_count_mismatch": false,
+        "rejected_rows": [],
+        "mismatch_counts": {
+          "graph": 0,
+          "atoms": 0,
+          "bonds": 0,
+          "coordinates": 0,
+          "name": 0,
+          "properties": 0,
+          "explicit_unknown_stereo": 0
+        },
+        "mismatch_examples": {
+          "graph": [],
+          "atoms": [],
+          "bonds": [],
+          "coordinates": [],
+          "name": [],
+          "properties": [],
+          "explicit_unknown_stereo": []
+        },
+        "accepted_rows": 64
+      },
+      "baseline_parse": {
+        "passed": true,
+        "rows": 64,
+        "mismatches": 0,
+        "mismatch_rows": [],
+        "rejected_rows": []
+      },
+      "candidate": {
+        "passed": true,
+        "expected_rows": 64,
+        "observed_rows": 64,
+        "record_count_mismatch": false,
+        "rejected_rows": [],
+        "mismatch_counts": {
+          "graph": 0,
+          "atoms": 0,
+          "bonds": 0,
+          "coordinates": 0,
+          "name": 0,
+          "properties": 0,
+          "explicit_unknown_stereo": 0
+        },
+        "mismatch_examples": {
+          "graph": [],
+          "atoms": [],
+          "bonds": [],
+          "coordinates": [],
+          "name": [],
+          "properties": [],
+          "explicit_unknown_stereo": []
+        },
+        "accepted_rows": 64
+      },
+      "candidate_parse": {
+        "passed": true,
+        "rows": 64,
+        "mismatches": 0,
+        "mismatch_rows": [],
+        "rejected_rows": []
+      },
+      "openbabel": {
+        "passed": false,
+        "expected_rows": 64,
+        "observed_rows": 64,
+        "record_count_mismatch": false,
+        "rejected_rows": [],
+        "mismatch_counts": {
+          "graph": 0,
+          "atoms": 0,
+          "bonds": 0,
+          "coordinates": 64,
+          "name": 0,
+          "properties": 0,
+          "explicit_unknown_stereo": 0
+        },
+        "mismatch_examples": {
+          "graph": [],
+          "atoms": [],
+          "bonds": [],
+          "coordinates": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "name": [],
+          "properties": [],
+          "explicit_unknown_stereo": []
+        },
+        "accepted_rows": 64
+      },
+      "openbabel_parse": {
+        "passed": true,
+        "rows": 64,
+        "mismatches": 0,
+        "mismatch_rows": [],
+        "rejected_rows": []
+      }
+    },
+    "semantic_basis": "Fresh byte-exact match to C source outcomes; C observer assessments retained. SDF assessments recomputed below."
+  },
+  "blocks": [
+    {
+      "order": [
+        "baseline",
+        "candidate"
+      ],
+      "load_average_start": [
+        3.650390625,
+        3.087890625,
+        2.89599609375
+      ],
+      "baseline": {
+        "parse": {
+          "elapsed_ns": 7982041,
+          "engine": "chematic",
+          "minimum_timed_ns": 100000000,
+          "minimum_warmup_ns": 500000000,
+          "mode": "parse",
+          "output_units": 432640,
+          "records": 832,
+          "repeats": 13,
+          "warmup_elapsed_ns": 500643583,
+          "warmup_repeats": 63,
+          "elapsed_ns_raw": 103766541,
+          "elapsed_ns_per_batch": 7982041,
+          "records_per_batch": 64,
+          "minimum_repeats": 3,
+          "elapsed_unit": "nanoseconds per full batch; raw elapsed and actual counts retained",
+          "peak_process_rss_bytes": 15269888
+        },
+        "write": {
+          "elapsed_ns": 1355935,
+          "engine": "chematic",
+          "minimum_timed_ns": 100000000,
+          "minimum_warmup_ns": 500000000,
+          "mode": "write",
+          "output_units": 145928740,
+          "records": 4736,
+          "repeats": 74,
+          "warmup_elapsed_ns": 500126041,
+          "warmup_repeats": 366,
+          "elapsed_ns_raw": 100339208,
+          "elapsed_ns_per_batch": 1355935,
+          "records_per_batch": 64,
+          "minimum_repeats": 3,
+          "elapsed_unit": "nanoseconds per full batch; raw elapsed and actual counts retained",
+          "peak_process_rss_bytes": 10420224
+        },
+        "roundtrip": {
+          "elapsed_ns": 9735606,
+          "engine": "chematic",
+          "minimum_timed_ns": 100000000,
+          "minimum_warmup_ns": 500000000,
+          "mode": "roundtrip",
+          "output_units": 21692110,
+          "records": 704,
+          "repeats": 11,
+          "warmup_elapsed_ns": 500647042,
+          "warmup_repeats": 52,
+          "elapsed_ns_raw": 107091666,
+          "elapsed_ns_per_batch": 9735606,
+          "records_per_batch": 64,
+          "minimum_repeats": 3,
+          "elapsed_unit": "nanoseconds per full batch; raw elapsed and actual counts retained",
+          "peak_process_rss_bytes": 15466496
+        }
+      },
+      "candidate": {
+        "parse": {
+          "elapsed_ns": 7838875,
+          "engine": "chematic",
+          "minimum_timed_ns": 100000000,
+          "minimum_warmup_ns": 500000000,
+          "mode": "parse",
+          "output_units": 432640,
+          "records": 832,
+          "repeats": 13,
+          "warmup_elapsed_ns": 504988917,
+          "warmup_repeats": 63,
+          "elapsed_ns_raw": 101905375,
+          "elapsed_ns_per_batch": 7838875,
+          "records_per_batch": 64,
+          "minimum_repeats": 3,
+          "elapsed_unit": "nanoseconds per full batch; raw elapsed and actual counts retained",
+          "peak_process_rss_bytes": 14974976
+        },
+        "write": {
+          "elapsed_ns": 1368325,
+          "engine": "chematic",
+          "minimum_timed_ns": 100000000,
+          "minimum_warmup_ns": 500000000,
+          "mode": "write",
+          "output_units": 145928740,
+          "records": 4736,
+          "repeats": 74,
+          "warmup_elapsed_ns": 501027917,
+          "warmup_repeats": 376,
+          "elapsed_ns_raw": 101256084,
+          "elapsed_ns_per_batch": 1368325,
+          "records_per_batch": 64,
+          "minimum_repeats": 3,
+          "elapsed_unit": "nanoseconds per full batch; raw elapsed and actual counts retained",
+          "peak_process_rss_bytes": 10420224
+        },
+        "roundtrip": {
+          "elapsed_ns": 9564708,
+          "engine": "chematic",
+          "minimum_timed_ns": 100000000,
+          "minimum_warmup_ns": 500000000,
+          "mode": "roundtrip",
+          "output_units": 21692110,
+          "records": 704,
+          "repeats": 11,
+          "warmup_elapsed_ns": 504038416,
+          "warmup_repeats": 53,
+          "elapsed_ns_raw": 105211791,
+          "elapsed_ns_per_batch": 9564708,
+          "records_per_batch": 64,
+          "minimum_repeats": 3,
+          "elapsed_unit": "nanoseconds per full batch; raw elapsed and actual counts retained",
+          "peak_process_rss_bytes": 15122432
+        }
+      }
+    },
+    {
+      "order": [
+        "candidate",
+        "baseline"
+      ],
+      "load_average_start": [
+        3.91845703125,
+        3.15283203125,
+        2.919921875
+      ],
+      "candidate": {
+        "parse": {
+          "elapsed_ns": 8515055,
+          "engine": "chematic",
+          "minimum_timed_ns": 100000000,
+          "minimum_warmup_ns": 500000000,
+          "mode": "parse",
+          "output_units": 399360,
+          "records": 768,
+          "repeats": 12,
+          "warmup_elapsed_ns": 502309917,
+          "warmup_repeats": 61,
+          "elapsed_ns_raw": 102180667,
+          "elapsed_ns_per_batch": 8515055,
+          "records_per_batch": 64,
+          "minimum_repeats": 3,
+          "elapsed_unit": "nanoseconds per full batch; raw elapsed and actual counts retained",
+          "peak_process_rss_bytes": 15237120
+        },
+        "write": {
+          "elapsed_ns": 1373640,
+          "engine": "chematic",
+          "minimum_timed_ns": 100000000,
+          "minimum_warmup_ns": 500000000,
+          "mode": "write",
+          "output_units": 143956730,
+          "records": 4672,
+          "repeats": 73,
+          "warmup_elapsed_ns": 500148250,
+          "warmup_repeats": 363,
+          "elapsed_ns_raw": 100275792,
+          "elapsed_ns_per_batch": 1373640,
+          "records_per_batch": 64,
+          "minimum_repeats": 3,
+          "elapsed_unit": "nanoseconds per full batch; raw elapsed and actual counts retained",
+          "peak_process_rss_bytes": 10436608
+        },
+        "roundtrip": {
+          "elapsed_ns": 9295454,
+          "engine": "chematic",
+          "minimum_timed_ns": 100000000,
+          "minimum_warmup_ns": 500000000,
+          "mode": "roundtrip",
+          "output_units": 21692110,
+          "records": 704,
+          "repeats": 11,
+          "warmup_elapsed_ns": 501370500,
+          "warmup_repeats": 54,
+          "elapsed_ns_raw": 102250000,
+          "elapsed_ns_per_batch": 9295454,
+          "records_per_batch": 64,
+          "minimum_repeats": 3,
+          "elapsed_unit": "nanoseconds per full batch; raw elapsed and actual counts retained",
+          "peak_process_rss_bytes": 15122432
+        }
+      },
+      "baseline": {
+        "parse": {
+          "elapsed_ns": 7939397,
+          "engine": "chematic",
+          "minimum_timed_ns": 100000000,
+          "minimum_warmup_ns": 500000000,
+          "mode": "parse",
+          "output_units": 432640,
+          "records": 832,
+          "repeats": 13,
+          "warmup_elapsed_ns": 506790000,
+          "warmup_repeats": 63,
+          "elapsed_ns_raw": 103212167,
+          "elapsed_ns_per_batch": 7939397,
+          "records_per_batch": 64,
+          "minimum_repeats": 3,
+          "elapsed_unit": "nanoseconds per full batch; raw elapsed and actual counts retained",
+          "peak_process_rss_bytes": 15351808
+        },
+        "write": {
+          "elapsed_ns": 1323111,
+          "engine": "chematic",
+          "minimum_timed_ns": 100000000,
+          "minimum_warmup_ns": 500000000,
+          "mode": "write",
+          "output_units": 149872760,
+          "records": 4864,
+          "repeats": 76,
+          "warmup_elapsed_ns": 500444083,
+          "warmup_repeats": 375,
+          "elapsed_ns_raw": 100556500,
+          "elapsed_ns_per_batch": 1323111,
+          "records_per_batch": 64,
+          "minimum_repeats": 3,
+          "elapsed_unit": "nanoseconds per full batch; raw elapsed and actual counts retained",
+          "peak_process_rss_bytes": 10387456
+        },
+        "roundtrip": {
+          "elapsed_ns": 9378840,
+          "engine": "chematic",
+          "minimum_timed_ns": 100000000,
+          "minimum_warmup_ns": 500000000,
+          "mode": "roundtrip",
+          "output_units": 21692110,
+          "records": 704,
+          "repeats": 11,
+          "warmup_elapsed_ns": 502502625,
+          "warmup_repeats": 53,
+          "elapsed_ns_raw": 103167250,
+          "elapsed_ns_per_batch": 9378840,
+          "records_per_batch": 64,
+          "minimum_repeats": 3,
+          "elapsed_unit": "nanoseconds per full batch; raw elapsed and actual counts retained",
+          "peak_process_rss_bytes": 15417344
+        }
+      }
+    },
+    {
+      "order": [
+        "baseline",
+        "candidate"
+      ],
+      "load_average_start": [
+        4.4052734375,
+        3.26611328125,
+        2.9609375
+      ],
+      "baseline": {
+        "parse": {
+          "elapsed_ns": 7928977,
+          "engine": "chematic",
+          "minimum_timed_ns": 100000000,
+          "minimum_warmup_ns": 500000000,
+          "mode": "parse",
+          "output_units": 432640,
+          "records": 832,
+          "repeats": 13,
+          "warmup_elapsed_ns": 505477750,
+          "warmup_repeats": 63,
+          "elapsed_ns_raw": 103076709,
+          "elapsed_ns_per_batch": 7928977,
+          "records_per_batch": 64,
+          "minimum_repeats": 3,
+          "elapsed_unit": "nanoseconds per full batch; raw elapsed and actual counts retained",
+          "peak_process_rss_bytes": 15482880
+        },
+        "write": {
+          "elapsed_ns": 1419944,
+          "engine": "chematic",
+          "minimum_timed_ns": 100000000,
+          "minimum_warmup_ns": 500000000,
+          "mode": "write",
+          "output_units": 140012710,
+          "records": 4544,
+          "repeats": 71,
+          "warmup_elapsed_ns": 500556708,
+          "warmup_repeats": 353,
+          "elapsed_ns_raw": 100816042,
+          "elapsed_ns_per_batch": 1419944,
+          "records_per_batch": 64,
+          "minimum_repeats": 3,
+          "elapsed_unit": "nanoseconds per full batch; raw elapsed and actual counts retained",
+          "peak_process_rss_bytes": 10354688
+        },
+        "roundtrip": {
+          "elapsed_ns": 9124401,
+          "engine": "chematic",
+          "minimum_timed_ns": 100000000,
+          "minimum_warmup_ns": 500000000,
+          "mode": "roundtrip",
+          "output_units": 21692110,
+          "records": 704,
+          "repeats": 11,
+          "warmup_elapsed_ns": 505382625,
+          "warmup_repeats": 53,
+          "elapsed_ns_raw": 100368417,
+          "elapsed_ns_per_batch": 9124401,
+          "records_per_batch": 64,
+          "minimum_repeats": 3,
+          "elapsed_unit": "nanoseconds per full batch; raw elapsed and actual counts retained",
+          "peak_process_rss_bytes": 15138816
+        }
+      },
+      "candidate": {
+        "parse": {
+          "elapsed_ns": 7966099,
+          "engine": "chematic",
+          "minimum_timed_ns": 100000000,
+          "minimum_warmup_ns": 500000000,
+          "mode": "parse",
+          "output_units": 432640,
+          "records": 832,
+          "repeats": 13,
+          "warmup_elapsed_ns": 505823750,
+          "warmup_repeats": 64,
+          "elapsed_ns_raw": 103559292,
+          "elapsed_ns_per_batch": 7966099,
+          "records_per_batch": 64,
+          "minimum_repeats": 3,
+          "elapsed_unit": "nanoseconds per full batch; raw elapsed and actual counts retained",
+          "peak_process_rss_bytes": 15253504
+        },
+        "write": {
+          "elapsed_ns": 1390625,
+          "engine": "chematic",
+          "minimum_timed_ns": 100000000,
+          "minimum_warmup_ns": 500000000,
+          "mode": "write",
+          "output_units": 141984720,
+          "records": 4608,
+          "repeats": 72,
+          "warmup_elapsed_ns": 500715125,
+          "warmup_repeats": 346,
+          "elapsed_ns_raw": 100125000,
+          "elapsed_ns_per_batch": 1390625,
+          "records_per_batch": 64,
+          "minimum_repeats": 3,
+          "elapsed_unit": "nanoseconds per full batch; raw elapsed and actual counts retained",
+          "peak_process_rss_bytes": 10403840
+        },
+        "roundtrip": {
+          "elapsed_ns": 9699128,
+          "engine": "chematic",
+          "minimum_timed_ns": 100000000,
+          "minimum_warmup_ns": 500000000,
+          "mode": "roundtrip",
+          "output_units": 21692110,
+          "records": 704,
+          "repeats": 11,
+          "warmup_elapsed_ns": 503669334,
+          "warmup_repeats": 51,
+          "elapsed_ns_raw": 106690417,
+          "elapsed_ns_per_batch": 9699128,
+          "records_per_batch": 64,
+          "minimum_repeats": 3,
+          "elapsed_unit": "nanoseconds per full batch; raw elapsed and actual counts retained",
+          "peak_process_rss_bytes": 15335424
+        }
+      }
+    },
+    {
+      "order": [
+        "candidate",
+        "baseline"
+      ],
+      "load_average_start": [
+        4.4052734375,
+        3.26611328125,
+        2.9609375
+      ],
+      "candidate": {
+        "parse": {
+          "elapsed_ns": 7800750,
+          "engine": "chematic",
+          "minimum_timed_ns": 100000000,
+          "minimum_warmup_ns": 500000000,
+          "mode": "parse",
+          "output_units": 432640,
+          "records": 832,
+          "repeats": 13,
+          "warmup_elapsed_ns": 505267416,
+          "warmup_repeats": 62,
+          "elapsed_ns_raw": 101409750,
+          "elapsed_ns_per_batch": 7800750,
+          "records_per_batch": 64,
+          "minimum_repeats": 3,
+          "elapsed_unit": "nanoseconds per full batch; raw elapsed and actual counts retained",
+          "peak_process_rss_bytes": 14974976
+        },
+        "write": {
+          "elapsed_ns": 1390979,
+          "engine": "chematic",
+          "minimum_timed_ns": 100000000,
+          "minimum_warmup_ns": 500000000,
+          "mode": "write",
+          "output_units": 141984720,
+          "records": 4608,
+          "repeats": 72,
+          "warmup_elapsed_ns": 501013667,
+          "warmup_repeats": 359,
+          "elapsed_ns_raw": 100150500,
+          "elapsed_ns_per_batch": 1390979,
+          "records_per_batch": 64,
+          "minimum_repeats": 3,
+          "elapsed_unit": "nanoseconds per full batch; raw elapsed and actual counts retained",
+          "peak_process_rss_bytes": 10403840
+        },
+        "roundtrip": {
+          "elapsed_ns": 9844488,
+          "engine": "chematic",
+          "minimum_timed_ns": 100000000,
+          "minimum_warmup_ns": 500000000,
+          "mode": "roundtrip",
+          "output_units": 21692110,
+          "records": 704,
+          "repeats": 11,
+          "warmup_elapsed_ns": 503565375,
+          "warmup_repeats": 50,
+          "elapsed_ns_raw": 108289375,
+          "elapsed_ns_per_batch": 9844488,
+          "records_per_batch": 64,
+          "minimum_repeats": 3,
+          "elapsed_unit": "nanoseconds per full batch; raw elapsed and actual counts retained",
+          "peak_process_rss_bytes": 15351808
+        }
+      },
+      "baseline": {
+        "parse": {
+          "elapsed_ns": 8041195,
+          "engine": "chematic",
+          "minimum_timed_ns": 100000000,
+          "minimum_warmup_ns": 500000000,
+          "mode": "parse",
+          "output_units": 432640,
+          "records": 832,
+          "repeats": 13,
+          "warmup_elapsed_ns": 506585292,
+          "warmup_repeats": 61,
+          "elapsed_ns_raw": 104535542,
+          "elapsed_ns_per_batch": 8041195,
+          "records_per_batch": 64,
+          "minimum_repeats": 3,
+          "elapsed_unit": "nanoseconds per full batch; raw elapsed and actual counts retained",
+          "peak_process_rss_bytes": 15384576
+        },
+        "write": {
+          "elapsed_ns": 1324012,
+          "engine": "chematic",
+          "minimum_timed_ns": 100000000,
+          "minimum_warmup_ns": 500000000,
+          "mode": "write",
+          "output_units": 149872760,
+          "records": 4864,
+          "repeats": 76,
+          "warmup_elapsed_ns": 500725666,
+          "warmup_repeats": 370,
+          "elapsed_ns_raw": 100624958,
+          "elapsed_ns_per_batch": 1324012,
+          "records_per_batch": 64,
+          "minimum_repeats": 3,
+          "elapsed_unit": "nanoseconds per full batch; raw elapsed and actual counts retained",
+          "peak_process_rss_bytes": 10452992
+        },
+        "roundtrip": {
+          "elapsed_ns": 9366969,
+          "engine": "chematic",
+          "minimum_timed_ns": 100000000,
+          "minimum_warmup_ns": 500000000,
+          "mode": "roundtrip",
+          "output_units": 21692110,
+          "records": 704,
+          "repeats": 11,
+          "warmup_elapsed_ns": 506282750,
+          "warmup_repeats": 52,
+          "elapsed_ns_raw": 103036667,
+          "elapsed_ns_per_batch": 9366969,
+          "records_per_batch": 64,
+          "minimum_repeats": 3,
+          "elapsed_unit": "nanoseconds per full batch; raw elapsed and actual counts retained",
+          "peak_process_rss_bytes": 15417344
+        }
+      }
+    },
+    {
+      "order": [
+        "baseline",
+        "candidate"
+      ],
+      "load_average_start": [
+        4.69287109375,
+        3.34423828125,
+        2.990234375
+      ],
+      "baseline": {
+        "parse": {
+          "elapsed_ns": 8176211,
+          "engine": "chematic",
+          "minimum_timed_ns": 100000000,
+          "minimum_warmup_ns": 500000000,
+          "mode": "parse",
+          "output_units": 432640,
+          "records": 832,
+          "repeats": 13,
+          "warmup_elapsed_ns": 505303625,
+          "warmup_repeats": 60,
+          "elapsed_ns_raw": 106290750,
+          "elapsed_ns_per_batch": 8176211,
+          "records_per_batch": 64,
+          "minimum_repeats": 3,
+          "elapsed_unit": "nanoseconds per full batch; raw elapsed and actual counts retained",
+          "peak_process_rss_bytes": 15335424
+        },
+        "write": {
+          "elapsed_ns": 1357071,
+          "engine": "chematic",
+          "minimum_timed_ns": 100000000,
+          "minimum_warmup_ns": 500000000,
+          "mode": "write",
+          "output_units": 145928740,
+          "records": 4736,
+          "repeats": 74,
+          "warmup_elapsed_ns": 500045167,
+          "warmup_repeats": 368,
+          "elapsed_ns_raw": 100423292,
+          "elapsed_ns_per_batch": 1357071,
+          "records_per_batch": 64,
+          "minimum_repeats": 3,
+          "elapsed_unit": "nanoseconds per full batch; raw elapsed and actual counts retained",
+          "peak_process_rss_bytes": 10420224
+        },
+        "roundtrip": {
+          "elapsed_ns": 9737996,
+          "engine": "chematic",
+          "minimum_timed_ns": 100000000,
+          "minimum_warmup_ns": 500000000,
+          "mode": "roundtrip",
+          "output_units": 21692110,
+          "records": 704,
+          "repeats": 11,
+          "warmup_elapsed_ns": 506824042,
+          "warmup_repeats": 53,
+          "elapsed_ns_raw": 107117958,
+          "elapsed_ns_per_batch": 9737996,
+          "records_per_batch": 64,
+          "minimum_repeats": 3,
+          "elapsed_unit": "nanoseconds per full batch; raw elapsed and actual counts retained",
+          "peak_process_rss_bytes": 15253504
+        }
+      },
+      "candidate": {
+        "parse": {
+          "elapsed_ns": 7906621,
+          "engine": "chematic",
+          "minimum_timed_ns": 100000000,
+          "minimum_warmup_ns": 500000000,
+          "mode": "parse",
+          "output_units": 432640,
+          "records": 832,
+          "repeats": 13,
+          "warmup_elapsed_ns": 507679917,
+          "warmup_repeats": 64,
+          "elapsed_ns_raw": 102786083,
+          "elapsed_ns_per_batch": 7906621,
+          "records_per_batch": 64,
+          "minimum_repeats": 3,
+          "elapsed_unit": "nanoseconds per full batch; raw elapsed and actual counts retained",
+          "peak_process_rss_bytes": 15089664
+        },
+        "write": {
+          "elapsed_ns": 1377566,
+          "engine": "chematic",
+          "minimum_timed_ns": 100000000,
+          "minimum_warmup_ns": 500000000,
+          "mode": "write",
+          "output_units": 143956730,
+          "records": 4672,
+          "repeats": 73,
+          "warmup_elapsed_ns": 500353125,
+          "warmup_repeats": 364,
+          "elapsed_ns_raw": 100562375,
+          "elapsed_ns_per_batch": 1377566,
+          "records_per_batch": 64,
+          "minimum_repeats": 3,
+          "elapsed_unit": "nanoseconds per full batch; raw elapsed and actual counts retained",
+          "peak_process_rss_bytes": 10420224
+        },
+        "roundtrip": {
+          "elapsed_ns": 9001270,
+          "engine": "chematic",
+          "minimum_timed_ns": 100000000,
+          "minimum_warmup_ns": 500000000,
+          "mode": "roundtrip",
+          "output_units": 23664120,
+          "records": 768,
+          "repeats": 12,
+          "warmup_elapsed_ns": 503814666,
+          "warmup_repeats": 53,
+          "elapsed_ns_raw": 108015250,
+          "elapsed_ns_per_batch": 9001270,
+          "records_per_batch": 64,
+          "minimum_repeats": 3,
+          "elapsed_unit": "nanoseconds per full batch; raw elapsed and actual counts retained",
+          "peak_process_rss_bytes": 15024128
+        }
+      }
+    }
+  ],
+  "summary": {},
+  "complete": false
+}

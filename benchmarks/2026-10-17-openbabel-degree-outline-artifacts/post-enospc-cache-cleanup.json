@@ -1,0 +1,19 @@
+{
+  "deleted_regenerable_unused_paths": [
+    "/private/tmp/chematic-coordinate-pairs-evidence-20261017/native-target",
+    "/private/tmp/chematic-degree-outline-evidence-20261017/candidate-target"
+  ],
+  "measured_kib": [
+    836276,
+    183024
+  ],
+  "lsof_no_open_files": true,
+  "ps_no_exact_path_references": true,
+  "native_and_build_processes_completed": true,
+  "all_eight_copied_formal_binaries_still_match_seal": true,
+  "3306_passed_native_log_retained": true,
+  "sources_logs_corpora_and_all_formal_outputs_preserved": true,
+  "free_before_bytes": 1689862144,
+  "free_after_bytes": 2711425024,
+  "ENOSPC_was_transient_and_external_allocation_source_not_identified": true
+}

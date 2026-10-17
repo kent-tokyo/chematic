@@ -1,0 +1,12 @@
+{
+  "completed_new_profile_keys": [
+    "v3000_3d-spiral",
+    "v3000_3d-branched-spiral",
+    "v3000_3d-offset",
+    "v3000_3d-branched-offset"
+  ],
+  "all_preexisting_raw_files_unchanged": true,
+  "interrupted_profile_not_rerun": true,
+  "adoption_eligible": false,
+  "reason": "One planned profile remains incomplete; completed SDF source write floors also fail"
+}

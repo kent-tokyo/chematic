@@ -1,0 +1,22 @@
+{
+  "base_commit": "35b932f911851f51c5cdb89fa371f1c2c4a1b11a",
+  "candidate_commit": "a774a05c55d038aa4abf3122d09eaa87b604ffaa",
+  "source_contrast_valid": true,
+  "baseline_binary_reused_from_C_without_elapsed_observations": true,
+  "baseline_source_and_binaries_still_match_C_seals": true,
+  "candidate_target_started_empty": true,
+  "candidate_production_libraries_recompiled": true,
+  "common_probe_patch_identical": true,
+  "only_change_from_C_source": "inline(never) on stereo_centers",
+  "classifier_is_separate_called_function": true,
+  "candidate_reader": {
+    "symbol": "__RNvNtCs9k7NSpE0Bwv_12chematic_mol7mol200038perceive_tetrahedral_from_3d_with_mode",
+    "instruction_sha256": "06e04efa6fbfa49896f90e361bb341a6e8ab715951735e6c52c80b27cd9125c5",
+    "instructions": 3628
+  },
+  "candidate_classifier": {
+    "symbol": "__RNvNtCsaXeDenX7mtv_19chematic_perception17stereo_validation14stereo_centers",
+    "instruction_sha256": "ae7d95d542cab9da42abf59b3e4e82ca467fc91acfbb17510e2912e2f4da183f",
+    "instructions": 274
+  }
+}

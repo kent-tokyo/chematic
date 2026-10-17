@@ -1,0 +1,153 @@
+{
+  "passed": true,
+  "all_1470_persisted_sample_counts_budgets_normalizations_checked": true,
+  "all_27_completed_source_ratios_recomputed": true,
+  "planned_rows": 1584,
+  "unpersisted_rows": 6,
+  "never_measured_rows": 108,
+  "missing_lanes_unranked": [
+    "v3000-continued/parse",
+    "v3000-continued/write",
+    "v3000-continued/roundtrip"
+  ],
+  "all_SDF_external_eligibility_and_ranked_ratios_recomputed": true,
+  "planned_orders_and_position_balance_verified": true,
+  "no_performance_informed_filtering_or_reruns": true,
+  "comparisons": [
+    {
+      "lane": "sdf-0/parse",
+      "unrounded_source_median": 1.0002665776032784,
+      "ratio_recomputed": true
+    },
+    {
+      "lane": "sdf-0/write",
+      "unrounded_source_median": 0.979881088853413,
+      "ratio_recomputed": true
+    },
+    {
+      "lane": "sdf-0/roundtrip",
+      "unrounded_source_median": 0.998499418391109,
+      "ratio_recomputed": true
+    },
+    {
+      "lane": "sdf-5000/parse",
+      "unrounded_source_median": 0.9909965072722867,
+      "ratio_recomputed": true
+    },
+    {
+      "lane": "sdf-5000/write",
+      "unrounded_source_median": 0.9694023385136397,
+      "ratio_recomputed": true
+    },
+    {
+      "lane": "sdf-5000/roundtrip",
+      "unrounded_source_median": 0.9917427287629521,
+      "ratio_recomputed": true
+    },
+    {
+      "lane": "v3000-0/parse",
+      "unrounded_source_median": 1.008931644344342,
+      "ratio_recomputed": true
+    },
+    {
+      "lane": "v3000-0/write",
+      "unrounded_source_median": 1.0031068785268442,
+      "ratio_recomputed": true
+    },
+    {
+      "lane": "v3000-0/roundtrip",
+      "unrounded_source_median": 1.0036266013719182,
+      "ratio_recomputed": true
+    },
+    {
+      "lane": "v3000-5000/parse",
+      "unrounded_source_median": 0.9924501457585998,
+      "ratio_recomputed": true
+    },
+    {
+      "lane": "v3000-5000/write",
+      "unrounded_source_median": 0.9975481470053038,
+      "ratio_recomputed": true
+    },
+    {
+      "lane": "v3000-5000/roundtrip",
+      "unrounded_source_median": 1.0032436246290968,
+      "ratio_recomputed": true
+    },
+    {
+      "lane": "v3000-chains/parse",
+      "unrounded_source_median": 0.9946316235764903,
+      "ratio_recomputed": true
+    },
+    {
+      "lane": "v3000-chains/write",
+      "unrounded_source_median": 0.9927664648907216,
+      "ratio_recomputed": true
+    },
+    {
+      "lane": "v3000-chains/roundtrip",
+      "unrounded_source_median": 0.9980515449460587,
+      "ratio_recomputed": true
+    },
+    {
+      "lane": "v3000_3d-spiral/parse",
+      "unrounded_source_median": 1.0043794161488706,
+      "ratio_recomputed": true
+    },
+    {
+      "lane": "v3000_3d-spiral/write",
+      "unrounded_source_median": 1.008087442330729,
+      "ratio_recomputed": true
+    },
+    {
+      "lane": "v3000_3d-spiral/roundtrip",
+      "unrounded_source_median": 1.0117190441349888,
+      "ratio_recomputed": true
+    },
+    {
+      "lane": "v3000_3d-branched-spiral/parse",
+      "unrounded_source_median": 8.364228831723523,
+      "ratio_recomputed": true
+    },
+    {
+      "lane": "v3000_3d-branched-spiral/write",
+      "unrounded_source_median": 1.0162800460887405,
+      "ratio_recomputed": true
+    },
+    {
+      "lane": "v3000_3d-branched-spiral/roundtrip",
+      "unrounded_source_median": 6.890484218635235,
+      "ratio_recomputed": true
+    },
+    {
+      "lane": "v3000_3d-offset/parse",
+      "unrounded_source_median": 1.0035806380408623,
+      "ratio_recomputed": true
+    },
+    {
+      "lane": "v3000_3d-offset/write",
+      "unrounded_source_median": 1.0238229869524886,
+      "ratio_recomputed": true
+    },
+    {
+      "lane": "v3000_3d-offset/roundtrip",
+      "unrounded_source_median": 1.0127300718149699,
+      "ratio_recomputed": true
+    },
+    {
+      "lane": "v3000_3d-branched-offset/parse",
+      "unrounded_source_median": 8.344712881045826,
+      "ratio_recomputed": true
+    },
+    {
+      "lane": "v3000_3d-branched-offset/write",
+      "unrounded_source_median": 1.02966263377483,
+      "ratio_recomputed": true
+    },
+    {
+      "lane": "v3000_3d-branched-offset/roundtrip",
+      "unrounded_source_median": 6.849854843437362,
+      "ratio_recomputed": true
+    }
+  ]
+}

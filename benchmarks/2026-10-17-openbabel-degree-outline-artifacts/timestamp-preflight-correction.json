@@ -1,0 +1,11 @@
+{
+  "formal_samples": 0,
+  "paired_files": [],
+  "reason": "Open Babel program header includes current output time, unlike stable source outputs",
+  "correction": "Retain fresh complete OB output and recompute every SDF semantic prerequisite independently, never reuse the older OB assessment for ranking. All source byte-exact conditions remain.",
+  "plan_changed": false,
+  "source_binary_threshold_or_order_changed": false,
+  "failed_log": "timestamp-preflight-failure.log",
+  "unmeasured_source_outputs_retained": "/private/tmp/chematic-degree-outline-evidence-20261017/unmeasured-timestamp-preflight",
+  "prior_OB_header_example": " OpenBabel10172616252D"
+}

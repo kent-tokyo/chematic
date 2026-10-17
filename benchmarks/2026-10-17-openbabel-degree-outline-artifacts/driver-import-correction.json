@@ -1,0 +1,10 @@
+{
+  "before_formal_samples": 0,
+  "paired_files_before_fix": [],
+  "error": "Chem is imported inside the legacy main, not exported at module scope",
+  "correction": "Import Chem from rdkit directly; no source/binary/plan/threshold/order changes",
+  "formal_sha256_before": "94b5d4819db895e65aa71e6305db52c08826c8f32c7afc0d4c33cf864b13b8a4",
+  "formal_sha256_after": "da557094f8f2eb432a1f9ed2faed4612e4096f22350bdbbbde6f4b8d104a4aa3",
+  "original_log": "driver-import-failure.log",
+  "pre-fix_seal": "binary-seal-before-import-fix.json"
+}

@@ -1,0 +1,10 @@
+{
+  "formal_samples": 0,
+  "paired_files": [],
+  "reason": "Input observer list shadowed the semantic-reference mapping after first profile",
+  "correction": "Use separate semantic_reference and observed_input variables",
+  "source_binary_plan_threshold_or_order_changed": false,
+  "failed_log": "reference-preflight-failure.log",
+  "pre-fix_driver": "formal-before-reference-fix.py",
+  "unmeasured_outputs": "/private/tmp/chematic-degree-outline-evidence-20261017/unmeasured-reference-preflight"
+}

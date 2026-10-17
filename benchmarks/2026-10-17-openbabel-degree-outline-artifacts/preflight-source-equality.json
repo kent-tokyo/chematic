@@ -1,0 +1,1482 @@
+{
+  "sdf-0": {
+    "records": 1000,
+    "snapshot_sha256": {
+      "baseline": "3a007d14136703bdd1d23198af9e91ea48a7099df72419e8b3daafad3d9e9f7b",
+      "candidate": "3a007d14136703bdd1d23198af9e91ea48a7099df72419e8b3daafad3d9e9f7b"
+    },
+    "rewrite_sha256": {
+      "baseline": "c3a0479d492f48d4ba27acf2a4c0585ea19170e845be38d3bcc4fcceb0717172",
+      "candidate": "c3a0479d492f48d4ba27acf2a4c0585ea19170e845be38d3bcc4fcceb0717172",
+      "openbabel": "9238ed041db98590d42003e07f0eb069e64836882e85afc5d4fdedd07727b34c"
+    },
+    "source_parse_snapshots_equal": true,
+    "source_warmed_rewrites_equal": true,
+    "semantics": {
+      "baseline": {
+        "passed": true,
+        "expected_rows": 1000,
+        "observed_rows": 1000,
+        "record_count_mismatch": false,
+        "mismatch_counts": {
+          "graph": 0,
+          "atoms": 0,
+          "bonds": 0,
+          "coordinates": 0,
+          "name": 0,
+          "properties": 0,
+          "explicit_unknown_stereo": 0
+        },
+        "mismatch_examples": {
+          "graph": [],
+          "atoms": [],
+          "bonds": [],
+          "coordinates": [],
+          "name": [],
+          "properties": [],
+          "explicit_unknown_stereo": []
+        }
+      },
+      "baseline_parse": {
+        "passed": true,
+        "rows": 1000,
+        "mismatches": 0,
+        "examples": []
+      },
+      "candidate": {
+        "passed": true,
+        "expected_rows": 1000,
+        "observed_rows": 1000,
+        "record_count_mismatch": false,
+        "mismatch_counts": {
+          "graph": 0,
+          "atoms": 0,
+          "bonds": 0,
+          "coordinates": 0,
+          "name": 0,
+          "properties": 0,
+          "explicit_unknown_stereo": 0
+        },
+        "mismatch_examples": {
+          "graph": [],
+          "atoms": [],
+          "bonds": [],
+          "coordinates": [],
+          "name": [],
+          "properties": [],
+          "explicit_unknown_stereo": []
+        }
+      },
+      "candidate_parse": {
+        "passed": true,
+        "rows": 1000,
+        "mismatches": 0,
+        "examples": []
+      },
+      "openbabel": {
+        "passed": true,
+        "expected_rows": 1000,
+        "observed_rows": 1000,
+        "record_count_mismatch": false,
+        "mismatch_counts": {
+          "graph": 0,
+          "atoms": 0,
+          "bonds": 0,
+          "coordinates": 0,
+          "name": 0,
+          "properties": 0,
+          "explicit_unknown_stereo": 0
+        },
+        "mismatch_examples": {
+          "graph": [],
+          "atoms": [],
+          "bonds": [],
+          "coordinates": [],
+          "name": [],
+          "properties": [],
+          "explicit_unknown_stereo": []
+        }
+      },
+      "openbabel_parse": {
+        "passed": false,
+        "rows": 1000,
+        "mismatches": 2,
+        "examples": [
+          90,
+          745
+        ]
+      }
+    },
+    "semantic_basis": "Fresh SDF observer assessment; all rewritten streams also match C hashes",
+    "openbabel_byte_comparison_to_C": {
+      "equal": false,
+      "prior_sha256": "9c4ca9d7acead25efc9d1a4662474c7caa29345bdf22dec568ed81ab250af26f",
+      "fresh_sha256": "9238ed041db98590d42003e07f0eb069e64836882e85afc5d4fdedd07727b34c",
+      "assessment": "Fresh independent observer assessment below; Open Babel program header includes output time"
+    }
+  },
+  "sdf-5000": {
+    "records": 1000,
+    "snapshot_sha256": {
+      "baseline": "4e326d586393d02463e09a5a657c085deeb4191d34a72ce33efe0c7fb31c7dbe",
+      "candidate": "4e326d586393d02463e09a5a657c085deeb4191d34a72ce33efe0c7fb31c7dbe"
+    },
+    "rewrite_sha256": {
+      "baseline": "4995f90edbde0fa249cc96ec12e5dc7502c4479ab8c267c4ca3700952cc08d0f",
+      "candidate": "4995f90edbde0fa249cc96ec12e5dc7502c4479ab8c267c4ca3700952cc08d0f",
+      "openbabel": "f7496e9b7d6acb90e23a9006a90add74e10cc90c4cfef059cc0fb963b1ad3062"
+    },
+    "source_parse_snapshots_equal": true,
+    "source_warmed_rewrites_equal": true,
+    "semantics": {
+      "baseline": {
+        "passed": true,
+        "expected_rows": 1000,
+        "observed_rows": 1000,
+        "record_count_mismatch": false,
+        "mismatch_counts": {
+          "graph": 0,
+          "atoms": 0,
+          "bonds": 0,
+          "coordinates": 0,
+          "name": 0,
+          "properties": 0,
+          "explicit_unknown_stereo": 0
+        },
+        "mismatch_examples": {
+          "graph": [],
+          "atoms": [],
+          "bonds": [],
+          "coordinates": [],
+          "name": [],
+          "properties": [],
+          "explicit_unknown_stereo": []
+        }
+      },
+      "baseline_parse": {
+        "passed": true,
+        "rows": 1000,
+        "mismatches": 0,
+        "examples": []
+      },
+      "candidate": {
+        "passed": true,
+        "expected_rows": 1000,
+        "observed_rows": 1000,
+        "record_count_mismatch": false,
+        "mismatch_counts": {
+          "graph": 0,
+          "atoms": 0,
+          "bonds": 0,
+          "coordinates": 0,
+          "name": 0,
+          "properties": 0,
+          "explicit_unknown_stereo": 0
+        },
+        "mismatch_examples": {
+          "graph": [],
+          "atoms": [],
+          "bonds": [],
+          "coordinates": [],
+          "name": [],
+          "properties": [],
+          "explicit_unknown_stereo": []
+        }
+      },
+      "candidate_parse": {
+        "passed": true,
+        "rows": 1000,
+        "mismatches": 0,
+        "examples": []
+      },
+      "openbabel": {
+        "passed": true,
+        "expected_rows": 1000,
+        "observed_rows": 1000,
+        "record_count_mismatch": false,
+        "mismatch_counts": {
+          "graph": 0,
+          "atoms": 0,
+          "bonds": 0,
+          "coordinates": 0,
+          "name": 0,
+          "properties": 0,
+          "explicit_unknown_stereo": 0
+        },
+        "mismatch_examples": {
+          "graph": [],
+          "atoms": [],
+          "bonds": [],
+          "coordinates": [],
+          "name": [],
+          "properties": [],
+          "explicit_unknown_stereo": []
+        }
+      },
+      "openbabel_parse": {
+        "passed": true,
+        "rows": 1000,
+        "mismatches": 0,
+        "examples": []
+      }
+    },
+    "semantic_basis": "Fresh SDF observer assessment; all rewritten streams also match C hashes",
+    "openbabel_byte_comparison_to_C": {
+      "equal": false,
+      "prior_sha256": "04eac200b21507470da9e4362635a13e71e11c81b2e49d70e461fe244e68d081",
+      "fresh_sha256": "f7496e9b7d6acb90e23a9006a90add74e10cc90c4cfef059cc0fb963b1ad3062",
+      "assessment": "Fresh independent observer assessment below; Open Babel program header includes output time"
+    }
+  },
+  "v3000-0": {
+    "records": 1000,
+    "snapshot_sha256": {
+      "baseline": "e2fce68d8c33616317f46397cf79ee877ef856460a35b84a622ddff1d8eced74",
+      "candidate": "e2fce68d8c33616317f46397cf79ee877ef856460a35b84a622ddff1d8eced74"
+    },
+    "rewrite_sha256": {
+      "baseline": "73a24d6d52f15900af0b221e21310367c01278f93f0de4189be8d3d01c61f254",
+      "candidate": "73a24d6d52f15900af0b221e21310367c01278f93f0de4189be8d3d01c61f254"
+    },
+    "source_parse_snapshots_equal": true,
+    "source_warmed_rewrites_equal": true,
+    "semantics": {
+      "baseline": {
+        "passed": true,
+        "expected_rows": 1000,
+        "observed_rows": 1000,
+        "record_count_mismatch": false,
+        "rejected_rows": [],
+        "mismatch_counts": {
+          "graph": 0,
+          "atoms": 0,
+          "bonds": 0,
+          "coordinates": 0,
+          "name": 0,
+          "properties": 0,
+          "explicit_unknown_stereo": 0
+        },
+        "mismatch_examples": {
+          "graph": [],
+          "atoms": [],
+          "bonds": [],
+          "coordinates": [],
+          "name": [],
+          "properties": [],
+          "explicit_unknown_stereo": []
+        },
+        "accepted_rows": 1000
+      },
+      "baseline_parse": {
+        "passed": true,
+        "rows": 1000,
+        "mismatches": 0,
+        "mismatch_rows": [],
+        "rejected_rows": []
+      },
+      "candidate": {
+        "passed": true,
+        "expected_rows": 1000,
+        "observed_rows": 1000,
+        "record_count_mismatch": false,
+        "rejected_rows": [],
+        "mismatch_counts": {
+          "graph": 0,
+          "atoms": 0,
+          "bonds": 0,
+          "coordinates": 0,
+          "name": 0,
+          "properties": 0,
+          "explicit_unknown_stereo": 0
+        },
+        "mismatch_examples": {
+          "graph": [],
+          "atoms": [],
+          "bonds": [],
+          "coordinates": [],
+          "name": [],
+          "properties": [],
+          "explicit_unknown_stereo": []
+        },
+        "accepted_rows": 1000
+      },
+      "candidate_parse": {
+        "passed": true,
+        "rows": 1000,
+        "mismatches": 0,
+        "mismatch_rows": [],
+        "rejected_rows": []
+      },
+      "openbabel": {
+        "passed": false,
+        "expected_rows": 1000,
+        "observed_rows": 1000,
+        "record_count_mismatch": false,
+        "rejected_rows": [
+          73,
+          74,
+          90,
+          91,
+          106,
+          127,
+          131,
+          154,
+          159,
+          161,
+          163,
+          164,
+          165,
+          168,
+          170,
+          171,
+          176,
+          177,
+          178,
+          183,
+          184,
+          185,
+          193,
+          195,
+          255,
+          277,
+          281,
+          282,
+          287,
+          288,
+          293,
+          312,
+          313,
+          317,
+          319,
+          327,
+          332,
+          333,
+          334,
+          337,
+          338,
+          351,
+          352,
+          354,
+          366,
+          367,
+          374,
+          379,
+          380,
+          381,
+          382,
+          391,
+          393,
+          394,
+          397,
+          437,
+          438,
+          442,
+          448,
+          449,
+          463,
+          466,
+          467,
+          470,
+          473,
+          477,
+          489,
+          501,
+          504,
+          505,
+          519,
+          520,
+          524,
+          529,
+          530,
+          531,
+          539,
+          540,
+          541,
+          544,
+          551,
+          552,
+          553,
+          554,
+          561,
+          567,
+          568,
+          570,
+          577,
+          583,
+          588,
+          613,
+          624,
+          625,
+          634,
+          636,
+          637,
+          638,
+          639,
+          640,
+          659,
+          666,
+          667,
+          668,
+          691,
+          692,
+          693,
+          694,
+          696,
+          711,
+          723,
+          725,
+          726,
+          727,
+          733,
+          734,
+          735,
+          743,
+          745,
+          756,
+          758,
+          760,
+          761,
+          762,
+          768,
+          769,
+          770,
+          771,
+          772,
+          773,
+          774,
+          778,
+          779,
+          780,
+          821,
+          822,
+          823,
+          839,
+          840,
+          846,
+          847,
+          853,
+          854,
+          866,
+          877,
+          879,
+          899,
+          900,
+          906,
+          912,
+          913,
+          936,
+          944
+        ],
+        "mismatch_counts": {
+          "graph": 1,
+          "atoms": 0,
+          "bonds": 0,
+          "coordinates": 0,
+          "name": 0,
+          "properties": 0,
+          "explicit_unknown_stereo": 1
+        },
+        "mismatch_examples": {
+          "graph": [
+            766
+          ],
+          "atoms": [],
+          "bonds": [],
+          "coordinates": [],
+          "name": [],
+          "properties": [],
+          "explicit_unknown_stereo": [
+            766
+          ]
+        },
+        "accepted_rows": 847
+      },
+      "openbabel_parse": {
+        "passed": false,
+        "rows": 1000,
+        "mismatches": 3,
+        "mismatch_rows": [
+          90,
+          745,
+          766
+        ],
+        "rejected_rows": []
+      }
+    },
+    "semantic_basis": "Fresh byte-exact match to C source outcomes; C observer assessments retained. SDF assessments recomputed below."
+  },
+  "v3000-5000": {
+    "records": 1000,
+    "snapshot_sha256": {
+      "baseline": "7fa169eebb0d112936fd4e135d08702eb1150faa6791111f52792c51d504d67d",
+      "candidate": "7fa169eebb0d112936fd4e135d08702eb1150faa6791111f52792c51d504d67d"
+    },
+    "rewrite_sha256": {
+      "baseline": "405cf9062ef1fe3697b478cdeaa453425546d233d60b220f73725beee68f7cdc",
+      "candidate": "405cf9062ef1fe3697b478cdeaa453425546d233d60b220f73725beee68f7cdc"
+    },
+    "source_parse_snapshots_equal": true,
+    "source_warmed_rewrites_equal": true,
+    "semantics": {
+      "baseline": {
+        "passed": true,
+        "expected_rows": 1000,
+        "observed_rows": 1000,
+        "record_count_mismatch": false,
+        "rejected_rows": [],
+        "mismatch_counts": {
+          "graph": 0,
+          "atoms": 0,
+          "bonds": 0,
+          "coordinates": 0,
+          "name": 0,
+          "properties": 0,
+          "explicit_unknown_stereo": 0
+        },
+        "mismatch_examples": {
+          "graph": [],
+          "atoms": [],
+          "bonds": [],
+          "coordinates": [],
+          "name": [],
+          "properties": [],
+          "explicit_unknown_stereo": []
+        },
+        "accepted_rows": 1000
+      },
+      "baseline_parse": {
+        "passed": true,
+        "rows": 1000,
+        "mismatches": 0,
+        "mismatch_rows": [],
+        "rejected_rows": []
+      },
+      "candidate": {
+        "passed": true,
+        "expected_rows": 1000,
+        "observed_rows": 1000,
+        "record_count_mismatch": false,
+        "rejected_rows": [],
+        "mismatch_counts": {
+          "graph": 0,
+          "atoms": 0,
+          "bonds": 0,
+          "coordinates": 0,
+          "name": 0,
+          "properties": 0,
+          "explicit_unknown_stereo": 0
+        },
+        "mismatch_examples": {
+          "graph": [],
+          "atoms": [],
+          "bonds": [],
+          "coordinates": [],
+          "name": [],
+          "properties": [],
+          "explicit_unknown_stereo": []
+        },
+        "accepted_rows": 1000
+      },
+      "candidate_parse": {
+        "passed": true,
+        "rows": 1000,
+        "mismatches": 0,
+        "mismatch_rows": [],
+        "rejected_rows": []
+      },
+      "openbabel": {
+        "passed": false,
+        "expected_rows": 1000,
+        "observed_rows": 1000,
+        "record_count_mismatch": false,
+        "rejected_rows": [],
+        "mismatch_counts": {
+          "graph": 137,
+          "atoms": 0,
+          "bonds": 0,
+          "coordinates": 0,
+          "name": 0,
+          "properties": 0,
+          "explicit_unknown_stereo": 137
+        },
+        "mismatch_examples": {
+          "graph": [
+            8,
+            22,
+            29,
+            33,
+            37,
+            43,
+            69,
+            73
+          ],
+          "atoms": [],
+          "bonds": [],
+          "coordinates": [],
+          "name": [],
+          "properties": [],
+          "explicit_unknown_stereo": [
+            8,
+            22,
+            29,
+            33,
+            37,
+            43,
+            69,
+            73
+          ]
+        },
+        "accepted_rows": 1000
+      },
+      "openbabel_parse": {
+        "passed": false,
+        "rows": 1000,
+        "mismatches": 137,
+        "mismatch_rows": [
+          8,
+          22,
+          29,
+          33,
+          37,
+          43,
+          69,
+          73,
+          77,
+          78,
+          83,
+          99,
+          139,
+          142,
+          150,
+          151,
+          152,
+          153,
+          154,
+          155,
+          156,
+          157,
+          158,
+          159,
+          160,
+          161,
+          162,
+          195,
+          196,
+          203,
+          215,
+          230,
+          233,
+          248,
+          264,
+          266,
+          267,
+          268,
+          290,
+          297,
+          309,
+          315,
+          359,
+          369,
+          370,
+          371,
+          372,
+          373,
+          384,
+          395,
+          410,
+          424,
+          440,
+          486,
+          487,
+          493,
+          499,
+          500,
+          535,
+          544,
+          557,
+          558,
+          579,
+          581,
+          594,
+          622,
+          623,
+          641,
+          652,
+          653,
+          654,
+          655,
+          656,
+          657,
+          658,
+          659,
+          682,
+          683,
+          684,
+          685,
+          686,
+          687,
+          688,
+          689,
+          690,
+          691,
+          697,
+          698,
+          699,
+          700,
+          701,
+          702,
+          704,
+          705,
+          706,
+          707,
+          709,
+          710,
+          711,
+          712,
+          713,
+          714,
+          715,
+          716,
+          717,
+          718,
+          719,
+          720,
+          721,
+          722,
+          723,
+          724,
+          725,
+          726,
+          727,
+          756,
+          758,
+          776,
+          784,
+          786,
+          787,
+          788,
+          818,
+          823,
+          851,
+          852,
+          853,
+          854,
+          855,
+          856,
+          857,
+          862,
+          899,
+          919,
+          963,
+          986,
+          992
+        ],
+        "rejected_rows": []
+      }
+    },
+    "semantic_basis": "Fresh byte-exact match to C source outcomes; C observer assessments retained. SDF assessments recomputed below."
+  },
+  "v3000-chains": {
+    "records": 64,
+    "snapshot_sha256": {
+      "baseline": "5add029fe89ad301067f53ee404c87ebb54221733bf4c5280de463eabe5e1550",
+      "candidate": "5add029fe89ad301067f53ee404c87ebb54221733bf4c5280de463eabe5e1550"
+    },
+    "rewrite_sha256": {
+      "baseline": "b67b1fb9cdb4c2e8977a34dd309a13ebc035050ba7e41473114c62f2c7d5ca95",
+      "candidate": "b67b1fb9cdb4c2e8977a34dd309a13ebc035050ba7e41473114c62f2c7d5ca95"
+    },
+    "source_parse_snapshots_equal": true,
+    "source_warmed_rewrites_equal": true,
+    "semantics": {
+      "baseline": {
+        "passed": true,
+        "expected_rows": 64,
+        "observed_rows": 64,
+        "record_count_mismatch": false,
+        "rejected_rows": [],
+        "mismatch_counts": {
+          "graph": 0,
+          "atoms": 0,
+          "bonds": 0,
+          "coordinates": 0,
+          "name": 0,
+          "properties": 0,
+          "explicit_unknown_stereo": 0
+        },
+        "mismatch_examples": {
+          "graph": [],
+          "atoms": [],
+          "bonds": [],
+          "coordinates": [],
+          "name": [],
+          "properties": [],
+          "explicit_unknown_stereo": []
+        },
+        "accepted_rows": 64
+      },
+      "baseline_parse": {
+        "passed": true,
+        "rows": 64,
+        "mismatches": 0,
+        "mismatch_rows": [],
+        "rejected_rows": []
+      },
+      "candidate": {
+        "passed": true,
+        "expected_rows": 64,
+        "observed_rows": 64,
+        "record_count_mismatch": false,
+        "rejected_rows": [],
+        "mismatch_counts": {
+          "graph": 0,
+          "atoms": 0,
+          "bonds": 0,
+          "coordinates": 0,
+          "name": 0,
+          "properties": 0,
+          "explicit_unknown_stereo": 0
+        },
+        "mismatch_examples": {
+          "graph": [],
+          "atoms": [],
+          "bonds": [],
+          "coordinates": [],
+          "name": [],
+          "properties": [],
+          "explicit_unknown_stereo": []
+        },
+        "accepted_rows": 64
+      },
+      "candidate_parse": {
+        "passed": true,
+        "rows": 64,
+        "mismatches": 0,
+        "mismatch_rows": [],
+        "rejected_rows": []
+      },
+      "openbabel": {
+        "passed": true,
+        "expected_rows": 64,
+        "observed_rows": 64,
+        "record_count_mismatch": false,
+        "rejected_rows": [],
+        "mismatch_counts": {
+          "graph": 0,
+          "atoms": 0,
+          "bonds": 0,
+          "coordinates": 0,
+          "name": 0,
+          "properties": 0,
+          "explicit_unknown_stereo": 0
+        },
+        "mismatch_examples": {
+          "graph": [],
+          "atoms": [],
+          "bonds": [],
+          "coordinates": [],
+          "name": [],
+          "properties": [],
+          "explicit_unknown_stereo": []
+        },
+        "accepted_rows": 64
+      },
+      "openbabel_parse": {
+        "passed": true,
+        "rows": 64,
+        "mismatches": 0,
+        "mismatch_rows": [],
+        "rejected_rows": []
+      }
+    },
+    "semantic_basis": "Fresh byte-exact match to C source outcomes; C observer assessments retained. SDF assessments recomputed below."
+  },
+  "v3000-continued": {
+    "records": 64,
+    "snapshot_sha256": {
+      "baseline": "5add029fe89ad301067f53ee404c87ebb54221733bf4c5280de463eabe5e1550",
+      "candidate": "5add029fe89ad301067f53ee404c87ebb54221733bf4c5280de463eabe5e1550"
+    },
+    "rewrite_sha256": {
+      "baseline": "b67b1fb9cdb4c2e8977a34dd309a13ebc035050ba7e41473114c62f2c7d5ca95",
+      "candidate": "b67b1fb9cdb4c2e8977a34dd309a13ebc035050ba7e41473114c62f2c7d5ca95"
+    },
+    "source_parse_snapshots_equal": true,
+    "source_warmed_rewrites_equal": true,
+    "semantics": {
+      "baseline": {
+        "passed": true,
+        "expected_rows": 64,
+        "observed_rows": 64,
+        "record_count_mismatch": false,
+        "rejected_rows": [],
+        "mismatch_counts": {
+          "graph": 0,
+          "atoms": 0,
+          "bonds": 0,
+          "coordinates": 0,
+          "name": 0,
+          "properties": 0,
+          "explicit_unknown_stereo": 0
+        },
+        "mismatch_examples": {
+          "graph": [],
+          "atoms": [],
+          "bonds": [],
+          "coordinates": [],
+          "name": [],
+          "properties": [],
+          "explicit_unknown_stereo": []
+        },
+        "accepted_rows": 64
+      },
+      "baseline_parse": {
+        "passed": true,
+        "rows": 64,
+        "mismatches": 0,
+        "mismatch_rows": [],
+        "rejected_rows": []
+      },
+      "candidate": {
+        "passed": true,
+        "expected_rows": 64,
+        "observed_rows": 64,
+        "record_count_mismatch": false,
+        "rejected_rows": [],
+        "mismatch_counts": {
+          "graph": 0,
+          "atoms": 0,
+          "bonds": 0,
+          "coordinates": 0,
+          "name": 0,
+          "properties": 0,
+          "explicit_unknown_stereo": 0
+        },
+        "mismatch_examples": {
+          "graph": [],
+          "atoms": [],
+          "bonds": [],
+          "coordinates": [],
+          "name": [],
+          "properties": [],
+          "explicit_unknown_stereo": []
+        },
+        "accepted_rows": 64
+      },
+      "candidate_parse": {
+        "passed": true,
+        "rows": 64,
+        "mismatches": 0,
+        "mismatch_rows": [],
+        "rejected_rows": []
+      },
+      "openbabel": {
+        "passed": false,
+        "expected_rows": 64,
+        "observed_rows": 64,
+        "record_count_mismatch": false,
+        "rejected_rows": [],
+        "mismatch_counts": {
+          "graph": 0,
+          "atoms": 0,
+          "bonds": 0,
+          "coordinates": 64,
+          "name": 0,
+          "properties": 0,
+          "explicit_unknown_stereo": 0
+        },
+        "mismatch_examples": {
+          "graph": [],
+          "atoms": [],
+          "bonds": [],
+          "coordinates": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "name": [],
+          "properties": [],
+          "explicit_unknown_stereo": []
+        },
+        "accepted_rows": 64
+      },
+      "openbabel_parse": {
+        "passed": true,
+        "rows": 64,
+        "mismatches": 0,
+        "mismatch_rows": [],
+        "rejected_rows": []
+      }
+    },
+    "semantic_basis": "Fresh byte-exact match to C source outcomes; C observer assessments retained. SDF assessments recomputed below."
+  },
+  "v3000_3d-spiral": {
+    "records": 64,
+    "snapshot_sha256": {
+      "baseline": "42fc3a5a7d628c561c37f9bdcd518b73942e127551a41094c30aa62c3dee596e",
+      "candidate": "42fc3a5a7d628c561c37f9bdcd518b73942e127551a41094c30aa62c3dee596e"
+    },
+    "rewrite_sha256": {
+      "baseline": "0bd2fef9efc45bae218c4ca38c843f13574e9a966ed262077b7cba5173ee24fc",
+      "candidate": "0bd2fef9efc45bae218c4ca38c843f13574e9a966ed262077b7cba5173ee24fc"
+    },
+    "source_parse_snapshots_equal": true,
+    "source_warmed_rewrites_equal": true,
+    "semantics": {
+      "baseline": {
+        "passed": true,
+        "expected_rows": 64,
+        "observed_rows": 64,
+        "record_count_mismatch": false,
+        "rejected_rows": [],
+        "mismatch_counts": {
+          "graph": 0,
+          "atoms": 0,
+          "bonds": 0,
+          "coordinates": 0,
+          "name": 0,
+          "properties": 0,
+          "explicit_unknown_stereo": 0
+        },
+        "mismatch_examples": {
+          "graph": [],
+          "atoms": [],
+          "bonds": [],
+          "coordinates": [],
+          "name": [],
+          "properties": [],
+          "explicit_unknown_stereo": []
+        },
+        "accepted_rows": 64
+      },
+      "baseline_parse": {
+        "passed": true,
+        "rows": 64,
+        "mismatches": 0,
+        "mismatch_rows": [],
+        "rejected_rows": []
+      },
+      "candidate": {
+        "passed": true,
+        "expected_rows": 64,
+        "observed_rows": 64,
+        "record_count_mismatch": false,
+        "rejected_rows": [],
+        "mismatch_counts": {
+          "graph": 0,
+          "atoms": 0,
+          "bonds": 0,
+          "coordinates": 0,
+          "name": 0,
+          "properties": 0,
+          "explicit_unknown_stereo": 0
+        },
+        "mismatch_examples": {
+          "graph": [],
+          "atoms": [],
+          "bonds": [],
+          "coordinates": [],
+          "name": [],
+          "properties": [],
+          "explicit_unknown_stereo": []
+        },
+        "accepted_rows": 64
+      },
+      "candidate_parse": {
+        "passed": true,
+        "rows": 64,
+        "mismatches": 0,
+        "mismatch_rows": [],
+        "rejected_rows": []
+      },
+      "openbabel": {
+        "passed": true,
+        "expected_rows": 64,
+        "observed_rows": 64,
+        "record_count_mismatch": false,
+        "rejected_rows": [],
+        "mismatch_counts": {
+          "graph": 0,
+          "atoms": 0,
+          "bonds": 0,
+          "coordinates": 0,
+          "name": 0,
+          "properties": 0,
+          "explicit_unknown_stereo": 0
+        },
+        "mismatch_examples": {
+          "graph": [],
+          "atoms": [],
+          "bonds": [],
+          "coordinates": [],
+          "name": [],
+          "properties": [],
+          "explicit_unknown_stereo": []
+        },
+        "accepted_rows": 64
+      },
+      "openbabel_parse": {
+        "passed": true,
+        "rows": 64,
+        "mismatches": 0,
+        "mismatch_rows": [],
+        "rejected_rows": []
+      }
+    },
+    "semantic_basis": "Fresh byte-exact match to C source outcomes; C observer assessments retained. SDF assessments recomputed below."
+  },
+  "v3000_3d-branched-spiral": {
+    "records": 64,
+    "snapshot_sha256": {
+      "baseline": "23aedcefc37f3bd50db9edca3a3c16a730329fa189672e84587cfec5da656622",
+      "candidate": "23aedcefc37f3bd50db9edca3a3c16a730329fa189672e84587cfec5da656622"
+    },
+    "rewrite_sha256": {
+      "baseline": "f756b6e96f8b0f5fb2848866b04a84959546fbaa2189c06c114835fc7b13faa4",
+      "candidate": "f756b6e96f8b0f5fb2848866b04a84959546fbaa2189c06c114835fc7b13faa4"
+    },
+    "source_parse_snapshots_equal": true,
+    "source_warmed_rewrites_equal": true,
+    "semantics": {
+      "baseline": {
+        "passed": true,
+        "expected_rows": 64,
+        "observed_rows": 64,
+        "record_count_mismatch": false,
+        "rejected_rows": [],
+        "mismatch_counts": {
+          "graph": 0,
+          "atoms": 0,
+          "bonds": 0,
+          "coordinates": 0,
+          "name": 0,
+          "properties": 0,
+          "explicit_unknown_stereo": 0
+        },
+        "mismatch_examples": {
+          "graph": [],
+          "atoms": [],
+          "bonds": [],
+          "coordinates": [],
+          "name": [],
+          "properties": [],
+          "explicit_unknown_stereo": []
+        },
+        "accepted_rows": 64
+      },
+      "baseline_parse": {
+        "passed": false,
+        "rows": 64,
+        "mismatches": 1,
+        "mismatch_rows": [
+          0
+        ],
+        "rejected_rows": []
+      },
+      "candidate": {
+        "passed": true,
+        "expected_rows": 64,
+        "observed_rows": 64,
+        "record_count_mismatch": false,
+        "rejected_rows": [],
+        "mismatch_counts": {
+          "graph": 0,
+          "atoms": 0,
+          "bonds": 0,
+          "coordinates": 0,
+          "name": 0,
+          "properties": 0,
+          "explicit_unknown_stereo": 0
+        },
+        "mismatch_examples": {
+          "graph": [],
+          "atoms": [],
+          "bonds": [],
+          "coordinates": [],
+          "name": [],
+          "properties": [],
+          "explicit_unknown_stereo": []
+        },
+        "accepted_rows": 64
+      },
+      "candidate_parse": {
+        "passed": false,
+        "rows": 64,
+        "mismatches": 1,
+        "mismatch_rows": [
+          0
+        ],
+        "rejected_rows": []
+      },
+      "openbabel": {
+        "passed": true,
+        "expected_rows": 64,
+        "observed_rows": 64,
+        "record_count_mismatch": false,
+        "rejected_rows": [],
+        "mismatch_counts": {
+          "graph": 0,
+          "atoms": 0,
+          "bonds": 0,
+          "coordinates": 0,
+          "name": 0,
+          "properties": 0,
+          "explicit_unknown_stereo": 0
+        },
+        "mismatch_examples": {
+          "graph": [],
+          "atoms": [],
+          "bonds": [],
+          "coordinates": [],
+          "name": [],
+          "properties": [],
+          "explicit_unknown_stereo": []
+        },
+        "accepted_rows": 64
+      },
+      "openbabel_parse": {
+        "passed": true,
+        "rows": 64,
+        "mismatches": 0,
+        "mismatch_rows": [],
+        "rejected_rows": []
+      }
+    },
+    "semantic_basis": "Fresh byte-exact match to C source outcomes; C observer assessments retained. SDF assessments recomputed below."
+  },
+  "v3000_3d-offset": {
+    "records": 64,
+    "snapshot_sha256": {
+      "baseline": "6677625295c56021345517a5a137cb58c5cc72f7c71336d81730d7aa83faf882",
+      "candidate": "6677625295c56021345517a5a137cb58c5cc72f7c71336d81730d7aa83faf882"
+    },
+    "rewrite_sha256": {
+      "baseline": "e547a6ec1ae09bf7b215f3d9a21e8725d959eb914b86b7b6aef099d57500a222",
+      "candidate": "e547a6ec1ae09bf7b215f3d9a21e8725d959eb914b86b7b6aef099d57500a222"
+    },
+    "source_parse_snapshots_equal": true,
+    "source_warmed_rewrites_equal": true,
+    "semantics": {
+      "baseline": {
+        "passed": true,
+        "expected_rows": 64,
+        "observed_rows": 64,
+        "record_count_mismatch": false,
+        "rejected_rows": [],
+        "mismatch_counts": {
+          "graph": 0,
+          "atoms": 0,
+          "bonds": 0,
+          "coordinates": 0,
+          "name": 0,
+          "properties": 0,
+          "explicit_unknown_stereo": 0
+        },
+        "mismatch_examples": {
+          "graph": [],
+          "atoms": [],
+          "bonds": [],
+          "coordinates": [],
+          "name": [],
+          "properties": [],
+          "explicit_unknown_stereo": []
+        },
+        "accepted_rows": 64
+      },
+      "baseline_parse": {
+        "passed": true,
+        "rows": 64,
+        "mismatches": 0,
+        "mismatch_rows": [],
+        "rejected_rows": []
+      },
+      "candidate": {
+        "passed": true,
+        "expected_rows": 64,
+        "observed_rows": 64,
+        "record_count_mismatch": false,
+        "rejected_rows": [],
+        "mismatch_counts": {
+          "graph": 0,
+          "atoms": 0,
+          "bonds": 0,
+          "coordinates": 0,
+          "name": 0,
+          "properties": 0,
+          "explicit_unknown_stereo": 0
+        },
+        "mismatch_examples": {
+          "graph": [],
+          "atoms": [],
+          "bonds": [],
+          "coordinates": [],
+          "name": [],
+          "properties": [],
+          "explicit_unknown_stereo": []
+        },
+        "accepted_rows": 64
+      },
+      "candidate_parse": {
+        "passed": true,
+        "rows": 64,
+        "mismatches": 0,
+        "mismatch_rows": [],
+        "rejected_rows": []
+      },
+      "openbabel": {
+        "passed": true,
+        "expected_rows": 64,
+        "observed_rows": 64,
+        "record_count_mismatch": false,
+        "rejected_rows": [],
+        "mismatch_counts": {
+          "graph": 0,
+          "atoms": 0,
+          "bonds": 0,
+          "coordinates": 0,
+          "name": 0,
+          "properties": 0,
+          "explicit_unknown_stereo": 0
+        },
+        "mismatch_examples": {
+          "graph": [],
+          "atoms": [],
+          "bonds": [],
+          "coordinates": [],
+          "name": [],
+          "properties": [],
+          "explicit_unknown_stereo": []
+        },
+        "accepted_rows": 64
+      },
+      "openbabel_parse": {
+        "passed": true,
+        "rows": 64,
+        "mismatches": 0,
+        "mismatch_rows": [],
+        "rejected_rows": []
+      }
+    },
+    "semantic_basis": "Fresh byte-exact match to C source outcomes; C observer assessments retained. SDF assessments recomputed below."
+  },
+  "v3000_3d-branched-offset": {
+    "records": 64,
+    "snapshot_sha256": {
+      "baseline": "e85a002d7901f99caddeb40aff7a0072c6ad67ca6955d661fed66d453e1085e7",
+      "candidate": "e85a002d7901f99caddeb40aff7a0072c6ad67ca6955d661fed66d453e1085e7"
+    },
+    "rewrite_sha256": {
+      "baseline": "0621651e3bddad02a2eb34d95c199ee44ba5fd53bb96045d8ec10d8090d97280",
+      "candidate": "0621651e3bddad02a2eb34d95c199ee44ba5fd53bb96045d8ec10d8090d97280"
+    },
+    "source_parse_snapshots_equal": true,
+    "source_warmed_rewrites_equal": true,
+    "semantics": {
+      "baseline": {
+        "passed": true,
+        "expected_rows": 64,
+        "observed_rows": 64,
+        "record_count_mismatch": false,
+        "rejected_rows": [],
+        "mismatch_counts": {
+          "graph": 0,
+          "atoms": 0,
+          "bonds": 0,
+          "coordinates": 0,
+          "name": 0,
+          "properties": 0,
+          "explicit_unknown_stereo": 0
+        },
+        "mismatch_examples": {
+          "graph": [],
+          "atoms": [],
+          "bonds": [],
+          "coordinates": [],
+          "name": [],
+          "properties": [],
+          "explicit_unknown_stereo": []
+        },
+        "accepted_rows": 64
+      },
+      "baseline_parse": {
+        "passed": true,
+        "rows": 64,
+        "mismatches": 0,
+        "mismatch_rows": [],
+        "rejected_rows": []
+      },
+      "candidate": {
+        "passed": true,
+        "expected_rows": 64,
+        "observed_rows": 64,
+        "record_count_mismatch": false,
+        "rejected_rows": [],
+        "mismatch_counts": {
+          "graph": 0,
+          "atoms": 0,
+          "bonds": 0,
+          "coordinates": 0,
+          "name": 0,
+          "properties": 0,
+          "explicit_unknown_stereo": 0
+        },
+        "mismatch_examples": {
+          "graph": [],
+          "atoms": [],
+          "bonds": [],
+          "coordinates": [],
+          "name": [],
+          "properties": [],
+          "explicit_unknown_stereo": []
+        },
+        "accepted_rows": 64
+      },
+      "candidate_parse": {
+        "passed": true,
+        "rows": 64,
+        "mismatches": 0,
+        "mismatch_rows": [],
+        "rejected_rows": []
+      },
+      "openbabel": {
+        "passed": true,
+        "expected_rows": 64,
+        "observed_rows": 64,
+        "record_count_mismatch": false,
+        "rejected_rows": [],
+        "mismatch_counts": {
+          "graph": 0,
+          "atoms": 0,
+          "bonds": 0,
+          "coordinates": 0,
+          "name": 0,
+          "properties": 0,
+          "explicit_unknown_stereo": 0
+        },
+        "mismatch_examples": {
+          "graph": [],
+          "atoms": [],
+          "bonds": [],
+          "coordinates": [],
+          "name": [],
+          "properties": [],
+          "explicit_unknown_stereo": []
+        },
+        "accepted_rows": 64
+      },
+      "openbabel_parse": {
+        "passed": true,
+        "rows": 64,
+        "mismatches": 0,
+        "mismatch_rows": [],
+        "rejected_rows": []
+      }
+    },
+    "semantic_basis": "Fresh byte-exact match to C source outcomes; C observer assessments retained. SDF assessments recomputed below."
+  }
+}

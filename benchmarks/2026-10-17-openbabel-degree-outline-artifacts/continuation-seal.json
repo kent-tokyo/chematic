@@ -1,0 +1,28 @@
+{
+  "utc": "2026-10-17T08:44:42.757912+00:00",
+  "purpose": "First observations only for the four profiles never reached after a transient ENOSPC. Preserve all five completed profiles and the five-block incomplete profile byte-exact. Never rerun the interrupted profile.",
+  "original_formal_sha256": "50ef34228c93017d2ed21fb3d436b604bbe903d8ff71b8521c4115bd13982584",
+  "original_timing_loop_sha256": "b535280f4a7a5e5ba64435238c0de7451fadfde0764e5c1902cab10844688daa",
+  "continuation_driver_sha256": "196dcd1a247aa1a093a5cc12af26ac645b643c842b6702536bb01146b1a3880b",
+  "measurement_plan_sha256": "d1833ecf1c854f41eb5a679dde9e060e2b56ddc3be2c19ddac578bdfe398e92c",
+  "existing_raw_files_sha256": {
+    "paired-v3000-continued.json": "36711b4f24e0f73a03869ab20edfddfb380e9117cffd5b81e4aa64f7c72307d3",
+    "paired-v3000-chains.json": "b606927c27be916dc9fc0d475308a9ba3e0f5ffbd8b382fdab38a0a7c21554e9",
+    "paired-v3000-5000.json": "1747c80d4238465dbf12565dc5bce480a6bc26a83158cf6a7934241f5286bba5",
+    "paired-v3000-0.json": "1efbc2845c39c1ad60b9f41a8fce4f9ba682d66f44448c558fa87c96fa6c271c",
+    "paired-sdf-5000.json": "0468870b3a064abbf48eff90248507dfc47bd8acbf57c5c4221a11918108bd44",
+    "paired-sdf-0.json": "56073f506329c1f700b032fc530336db8a8f8ca31f54724cec6c1f3a0e9923f1"
+  },
+  "scheduled_keys": [
+    "v3000_3d-spiral",
+    "v3000_3d-branched-spiral",
+    "v3000_3d-offset",
+    "v3000_3d-branched-offset"
+  ],
+  "unpersisted_native_rows_in_failed_block": 6,
+  "unpersisted_values_not_reconstructed": true,
+  "experiment_remains_incomplete_and_ineligible_for_adoption": true,
+  "failure_log": "formal.log",
+  "source_binaries_thresholds_orders_and_timing_loop_unchanged": true,
+  "disk_free_bytes_before": 2674515968
+}

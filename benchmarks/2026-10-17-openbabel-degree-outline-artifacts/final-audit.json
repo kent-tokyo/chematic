@@ -1,0 +1,12 @@
+{
+  "passed": true,
+  "source_files_still_match_timed_commit": 1551,
+  "baseline_source_still_matches": true,
+  "runtime_library_and_all_binary_protocol_seals_unchanged": true,
+  "all_six_preinterruption_raw_files_unchanged": true,
+  "all_1470_persisted_rows_mode_output_unit_accounting_checked": true,
+  "source_output_units_per_batch_equal_across_arms_and_blocks": true,
+  "both_complete_C_and_interrupted_D_packets_verified": true,
+  "overall_experiment_complete": false,
+  "performance_adoption_allowed": false
+}
