@@ -78,7 +78,7 @@ pub struct Molecule {
     /// Keyed by atom index.  Each value lists the atom indices of neighbors in
     /// the order they appeared in the SMILES string (including ring-closure
     /// partners). [`STEREO_H_SENTINEL`] stands for a bracket H, and
-    /// [`STEREO_VACANT_SENTINEL`] for one unoccupied non-tetrahedral site.
+    /// [`STEREO_VACANT_SENTINEL`] for each unoccupied non-tetrahedral site.
     /// Populated by the SMILES parser; absent for atoms
     /// not parsed from SMILES or without recorded stereo.
     stereo_neighbor_order: std::collections::HashMap<u32, Vec<u32>>,

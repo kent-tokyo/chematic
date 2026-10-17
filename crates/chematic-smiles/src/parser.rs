@@ -352,7 +352,7 @@ impl<'a> Parser<'a> {
 
         let mut molecule = mol.build();
         normalize_ring_wildcards(&mut molecule);
-        stereo::retain_single_vacant_site(&mut molecule, &tagged_atoms);
+        stereo::retain_vacant_sites(&mut molecule, &tagged_atoms);
         crate::allene::normalize_allene_stereo(&mut molecule, &tagged_atoms);
         // A SMILES graph with no ring-closure token is a forest by
         // construction. Publish that already-known result so the first
