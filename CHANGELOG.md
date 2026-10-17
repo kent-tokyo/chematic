@@ -16,6 +16,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Python `parse_xyz_atom_data` / `XyzAtomDataFrame` preserve headerless XYZ
+  scalar, vector or flat nine-component payloads with explicit widths, source
+  retention and named extxyz conversion. See [XYZ per-atom data](docs/xyz-atom-data.md).
+
 - Rust/Python `FeaturePatternSet` owns up to 32 caller-supplied SMARTS feature
   definitions and produces full-width atom masks or native circular feature
   fingerprints. Matching budgets and size limits refuse partial output;

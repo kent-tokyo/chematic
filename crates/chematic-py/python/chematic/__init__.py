@@ -1,4 +1,5 @@
 from .chematic import *
+from ._xyz_atom_data import XyzAtomDataFrame, parse_xyz_atom_data
 from .chematic import (
     __version__,
     Mol,

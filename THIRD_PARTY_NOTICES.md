@@ -350,3 +350,14 @@ The original synthetic water fixture has separate MIT OR Apache-2.0 provenance
 in `validation/openbabel_issues/ccd/manifest.json`. No Open Babel or Gemmi
 implementation is included in this feature; Gemmi 0.7.5 is used only as an
 external validation oracle.
+
+
+## XYZ atom-data format references (2026-10-17)
+
+`crates/chematic-py/python/chematic/_xyz_atom_data.py` is an independent
+implementation of the headerless layout requested in Open Babel issue #1703
+and of the ASE-documented named extxyz property syntax. No Open Babel/ASE
+source or issue example coordinates are copied. The fixtures under
+`validation/openbabel_issues/xyz_atom_data/` and seeded validation inputs
+are original project data under MIT OR Apache-2.0. ASE 3.26.0 is an external
+validation oracle, not a runtime dependency or vendored implementation.
