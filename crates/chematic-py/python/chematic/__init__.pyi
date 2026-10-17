@@ -13,6 +13,7 @@ Quick start::
 """
 
 from __future__ import annotations
+from typing import Protocol, SupportsIndex
 
 from typing import overload, Any, Iterable, Iterator, Literal, Optional, Sequence, TypedDict, Union
 
@@ -2960,6 +2961,26 @@ def euclidean_distance_matrix_checked(descriptor_matrix: Iterable[Iterable[float
     wrong types raise TypeError and allocation failure raises MemoryError.
     Stable scaled norms retain tiny/huge representable distances; finite
     precision remains. This returns a Python list, not RDKit's NumPy array.
+    """
+    ...
+
+class _OnBitPositions(Protocol):
+    def GetOnBits(self) -> Iterable[SupportsIndex]: ...
+
+def sparse_tanimoto_matrix_checked(fingerprints: Iterable[Iterable[SupportsIndex] | _OnBitPositions], *, metric: Literal["distance", "similarity"] = "distance") -> list[float]:
+    """Condensed binary Tanimoto from unsigned 32-bit on-bit positions.
+
+    Returns (1,0), (2,0), (2,1), ...; metric is distance or similarity.
+    Rows are index iterables or sources providing GetOnBits(). Source rows
+    stay alive while their returned iterators are consumed.
+    Duplicates/order are ignored. Empty/empty similarity is 1; distance is
+    1-similarity. No declared bit length or dense allocation. This is binary
+    set similarity, not count-weighted similarity or fingerprint generation.
+    Limits: 1024 rows, 65536 raw IDs per row, one million raw IDs total and
+    50 million pair-bit work units. Iteration consumes at most one excess
+    item to detect limits and preserves source exceptions. Invalid metrics
+    or limits raise ValueError, wrong types (including Python bool IDs) TypeError,
+    out-of-u32 IDs OverflowError and allocation failure MemoryError.
     """
     ...
 

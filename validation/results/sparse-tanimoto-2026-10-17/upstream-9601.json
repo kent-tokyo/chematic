@@ -1,0 +1,9 @@
+{
+  "number": 9601,
+  "title": "Tracking: nanobind wrapper improvements",
+  "state": "OPEN",
+  "url": "https://github.com/rdkit/rdkit/issues/9601",
+  "updatedAt": "2026-09-29T16:40:13Z",
+  "body_sha256": "582ab4d77d943850b4c4d29d58497a1f66eab36d5e2c655513149e6042934a21",
+  "selected_scope": "Remaining wrapper typing work includes explicit or sparse bit-vector inputs for Tanimoto distance/similarity matrices; matrix computation already exists upstream."
+}

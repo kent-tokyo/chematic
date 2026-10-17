@@ -102,6 +102,7 @@ nav:
     - Custom MMFF Partial Charges: mmff-partial-charges.md
   - Reliability:
     - Descriptor Euclidean Distances: descriptor-euclidean-distances.md
+    - Sparse Tanimoto Matrices: sparse-tanimoto-matrix.md
     - Complete Molecule Reset: molecule-clear.md
     - Python Filesystem Paths: python-filesystem-paths.md
     - GRO to LAMMPS Units: gro-lammps-units.md

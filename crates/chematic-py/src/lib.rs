@@ -55,6 +55,7 @@ mod reports;
 mod rwmol;
 mod similarity;
 mod tautomer_pick;
+mod sparse_similarity;
 mod volumetric;
 
 mod bulk;
