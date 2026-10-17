@@ -1,0 +1,12 @@
+   Compiling chematic-chem v1.1.6 (/private/tmp/chematic-checked-core-removal-20261017/crates/chematic-chem)
+    Finished `test` profile [unoptimized] target(s) in 3.71s
+     Running unittests src/lib.rs (/private/tmp/chematic-sparse-tanimoto-target/debug/deps/chematic_chem-e6be56d5dc091007)
+
+running 4 tests
+test core_replacement::tests::core_removal_refuses_bad_maps_and_unsupported_chemistry ... ok
+test core_replacement::tests::core_removal_whole_ring_and_whole_source_are_supported ... ok
+test core_replacement::tests::core_removal_records_shifted_atoms_and_attachment_labels ... ok
+test core_replacement::tests::core_removal_keeps_whole_unrelated_components_and_remaining_attributes ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 963 filtered out; finished in 0.00s
+

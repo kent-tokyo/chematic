@@ -55,7 +55,7 @@ fn is_ring_bond(mol: &Molecule, cut: BondIdx) -> bool {
     false
 }
 
-fn validate_graph(mol: &Molecule) -> Result<(), BondFragmentError> {
+pub(crate) fn validate_graph(mol: &Molecule) -> Result<(), BondFragmentError> {
     if mol
         .atoms()
         .any(|(_, a)| a.chirality != Chirality::None || a.cip_code.is_some())

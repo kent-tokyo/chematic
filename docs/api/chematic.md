@@ -23,6 +23,9 @@
         - iter_sdf
         - iter_sdf_str
         - fragment_on_bonds_checked
+        - replace_core_checked
+        - CoreReplacement
+        - CoreAttachment
         - BondFragmentation
         - FragmentAttachment
 
