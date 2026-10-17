@@ -24,4 +24,5 @@ chematic-fp = { path = "../chematic-fp", version = "1.1.6" }
 chematic-chem = { path = "../chematic-chem", version = "1.1.6", features = ["serde"] }
 chematic-rxn = { path = "../chematic-rxn", version = "1.1.6" }
 chematic-mol = { path = "../chematic-mol", version = "1.1.6" }
+chematic-perception = { path = "../chematic-perception", version = "1.1.6" }
 chematic-smiles = { path = "../chematic-smiles", version = "1.1.6" }

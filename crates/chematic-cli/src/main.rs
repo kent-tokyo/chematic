@@ -331,6 +331,13 @@ fn convert_text(text: &str, input_format: &str, output_format: &str) -> Result<S
         ));
     }
     Ok(match output.as_str() {
+        // CTAB writers use Kekule bonds when aromatic bond type 4 would
+        // discard an aromatic heteroatom's or charged carbon's hydrogen.
+        // Recover the aromatic SMILES spelling after reading either CTAB;
+        // leave the parsed graph unchanged for other output formats.
+        "smiles" if matches!(input.as_str(), "mol" | "mol_v3000") => {
+            chematic_smiles::canonical_smiles(&chematic_perception::apply_aromaticity(&mol))
+        }
         "smiles" => chematic_smiles::canonical_smiles(&mol),
         "mol" => chematic_mol::write_mol(&mol, &chematic_mol::MolMetadata::default()),
         "mol_v3000" => {
@@ -1372,6 +1379,27 @@ mod tests {
         assert_eq!(converted.atom_count(), 3);
         assert_eq!(converted.bond_count(), 2);
         assert_eq!(converted.total_formula(), "C2H6O");
+    }
+
+    #[test]
+    fn converts_kekule_ctabs_to_aromatic_smiles() {
+        for smiles in [
+            "c1ccccc1",
+            "c1cc[nH]c1",
+            "[cH-]1cccc1",
+            "[cH+]1cccccc1",
+            "[cH+]1cc1",
+            "C1=CC=CC1",
+        ] {
+            let source = chematic_smiles::parse(smiles).unwrap();
+            let expected = chematic_smiles::canonical_smiles(&source);
+            let v2000 = chematic_mol::write_mol(&source, &Default::default());
+            let v3000 = chematic_mol::write_mol_v3000(&source, &Default::default(), &[]);
+            for (format, block) in [("mol", v2000), ("mol_v3000", v3000)] {
+                let actual = convert_text(&block, format, "smiles").unwrap();
+                assert_eq!(actual, expected, "{format}: {smiles}");
+            }
+        }
     }
 
     #[test]
