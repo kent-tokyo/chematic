@@ -99,6 +99,7 @@ nav:
     - Checked 3D Distance Matrices: rdkit-checked-3d-distance-matrix.md
     - Prepared MMFF Dielectric: mmff-dielectric-updates.md
   - Reliability:
+    - Checked CIF-to-XSF Geometry: cif-xsf-output.md
     - Complete Molecule Reset: molecule-clear.md
     - Python Filesystem Paths: python-filesystem-paths.md
     - Custom Feature Patterns: custom-feature-patterns.md

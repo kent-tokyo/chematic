@@ -16,6 +16,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Python `write_xsf_checked` exports ordered periodic geometry from native
+  structures/CIF to XSF, refusing partial occupancy and known unexpanded
+  symmetry and requiring explicit metadata-loss consent. See [CIF-to-XSF output](docs/cif-xsf-output.md).
+
 - Rust/Python `FeaturePatternSet` owns up to 32 caller-supplied SMARTS feature
   definitions and produces full-width atom masks or native circular feature
   fingerprints. Matching budgets and size limits refuse partial output;

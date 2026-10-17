@@ -14,6 +14,8 @@ Quick start::
 
 from __future__ import annotations
 
+from ._xsf import write_xsf_checked as write_xsf_checked
+
 from typing import overload, Any, Iterable, Iterator, Literal, Optional, Sequence, TypedDict, Union
 
 from os import PathLike
@@ -4755,12 +4757,20 @@ def iter_extxyz_batched(path: _FileSystemPath, batch_size: int = 1000) -> XyzBat
 class CifSymmetryStatus:
     """How a CIF's declared symmetry relates to a PeriodicStructure's sites.
 
-    ``is_p1=False`` means the source CIF declared symmetry beyond P1 that
-    chematic's CIF adapter did not expand — the structure's ``sites`` are
-    only the asymmetric unit, not a full unit cell.
+    ``is_complete_cell`` means P1 or expansion of the source's explicit
+    operations. An unexpanded asymmetric unit has this flag set to False.
+    Expansion does not verify the operation list against a space-group database.
     """
 
     is_p1: bool
+    @property
+    def is_expanded(self) -> bool: ...
+    @property
+    def is_complete_cell(self) -> bool: ...
+    @property
+    def asymmetric_site_count(self) -> Optional[int]: ...
+    @property
+    def expanded_site_count(self) -> Optional[int]: ...
     space_group_name: Optional[str]
     operation_count: int
 
@@ -4852,7 +4862,7 @@ class PeriodicStructure:
 
     def __new__(cls, lattice: Lattice, sites: list[Site]) -> PeriodicStructure: ...
     @staticmethod
-    def from_cif(text: str) -> PeriodicStructure: ...
+    def from_cif(text: str, expand_symmetry: bool = True) -> PeriodicStructure: ...
     @staticmethod
     def from_poscar(text: str) -> PeriodicStructure: ...
     @property

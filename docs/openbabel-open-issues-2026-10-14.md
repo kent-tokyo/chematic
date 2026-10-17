@@ -121,3 +121,15 @@ probes. Chematic formulas already pass, but its separate total-H descriptor
 double-counted bracket H and missed H atom nodes. [Fix the counter and WASM
 atom information](hydrogen-count-accounting.md), keeping formula and
 serialization behavior as controls.
+
+
+## October 17 follow-up: CIF-to-XSF geometry
+
+[#2252](https://github.com/openbabel/openbabel/issues/2252) asks for XSF output
+from CIF. Open Babel 3.2.1 lists XSF as read-only. Added a
+[checked geometry writer](cif-xsf-output.md) over existing `PeriodicStructure`
+objects, with explicit metadata-loss consent and refusal of partial/mixed
+occupancy or known unexpanded CIF symmetry. ASE 3.26.0 cross-read 60 synthetic
+cases, and Open Babel read 48 cases with coordinate differences within its
+XYZ output rounding. No GUI execution, primitive-cell reduction, conventional
+basis generation or metadata round trip is claimed.

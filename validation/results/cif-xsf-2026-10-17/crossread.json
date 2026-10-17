@@ -1,0 +1,35 @@
+{
+  "additional_all_element_check": 118,
+  "additional_cif_pipeline_crossreads": 1,
+  "ase": "3.26.0",
+  "ase_corpus_crossreads": 60,
+  "cell_coordinate_check": "ASE binary64 byte equality to native geometry getters; no basis reduction or wrapping by writer",
+  "corpus_atom_rows": 1360,
+  "corpus_xsf_sha256": "be477e2ae1d286f9bbbc6e4efb85b499753537bc304f14a2d9dd4bb845fae78f",
+  "fixture_sha256": "670180dbc541eb78eb0d7e22fa7d45ce82452a598161fdfd5905dd3627dfa94d",
+  "limits": [
+    "no XCrySDen GUI run",
+    "no metadata roundtrip",
+    "no occupancy collapse",
+    "no space-group operation inference",
+    "no primitive/conventional reduction",
+    "no fresh native build or speed claim"
+  ],
+  "max_openbabel_xyz_error_angstrom": 4.984001341412636e-06,
+  "numpy": "2.5.3",
+  "openbabel": {
+    "cif_to_xsf_returncode": 1,
+    "cif_to_xsf_stderr": "Invalid output format\n",
+    "cif_to_xsf_stdout": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27\nUsage:\nobabel [-i<input-type>] <infilename> [-o<output-type>] -O<outfilename> [Options]\nTry  -H option for more information.\n",
+    "version": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+    "xsf_listing": [
+      "xsf -- XCrySDen Structure Format [Read-only]"
+    ]
+  },
+  "openbabel_xyz_crossreads": 48,
+  "openbabel_xyz_tolerance_angstrom": 5.1e-06,
+  "python": "3.13.6",
+  "schema_version": 1,
+  "scope": "ordered 3D-periodic geometry only; no topology or metadata parity",
+  "seed": 2252
+}

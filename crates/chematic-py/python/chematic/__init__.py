@@ -1,4 +1,5 @@
 from .chematic import *
+from ._xsf import write_xsf_checked
 from .chematic import (
     __version__,
     Mol,

@@ -350,3 +350,14 @@ The original synthetic water fixture has separate MIT OR Apache-2.0 provenance
 in `validation/openbabel_issues/ccd/manifest.json`. No Open Babel or Gemmi
 implementation is included in this feature; Gemmi 0.7.5 is used only as an
 external validation oracle.
+
+
+## XSF geometry format references (2026-10-17)
+
+`crates/chematic-py/python/chematic/_xsf.py` independently implements the
+static geometry syntax in the XCrySDen distribution's XSF specification:
+https://web.mit.edu/xcrysden_v1.5.60/www/XCRYSDEN/doc/XSF.html
+No external implementation or manual example coordinates are copied. The
+CIF in `validation/openbabel_issues/xsf/` and seeded structure inputs are
+original project data under MIT OR Apache-2.0. ASE 3.26.0 and Open Babel
+3.2.1 are external reader oracles, not bundled implementations.
