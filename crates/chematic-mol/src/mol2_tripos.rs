@@ -892,10 +892,13 @@ fn write_mol2_atom(record: &Mol2Record, idx: AtomIdx, out: &mut String) {
         .and_then(|row| row.subst_name.as_deref())
         .unwrap_or("LIG");
     let partial_charge = source.and_then(|row| row.partial_charge).unwrap_or(0.0);
-    let _ = write!(
-        out,
-        "{atom_id:>6} {atom_name:<8} {x:>10.4} {y:>10.4} {z:>10.4} {atom_type:<8} {subst_id:>4}  {subst_name:<8} {partial_charge:>10.4}"
-    );
+    let _ = write!(out, "{atom_id:>6} {atom_name:<8} ");
+    for value in [x, y, z] {
+        crate::mol2000::push_fixed4(out, value, 10);
+        out.push(' ');
+    }
+    let _ = write!(out, "{atom_type:<8} {subst_id:>4}  {subst_name:<8} ");
+    crate::mol2000::push_fixed4(out, partial_charge, 10);
     if let Some(row) = source {
         for status in &row.status_bits {
             out.push(' ');
