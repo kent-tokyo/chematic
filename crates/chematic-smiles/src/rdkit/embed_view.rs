@@ -393,7 +393,7 @@ pub fn rdkit_mol_view(mol: &Molecule) -> Result<RdkitMolView, RdkitSmilesError> 
     Ok(RdkitMolView {
         atoms,
         bonds,
-        atom_bonds: m.atom_bonds.clone(),
+        atom_bonds: m.atom_bonds.iter().map(|bonds| bonds.to_vec()).collect(),
         atom_rings,
         bond_rings,
         chematic_bond: order.iter().map(|b| b.0 as usize).collect(),

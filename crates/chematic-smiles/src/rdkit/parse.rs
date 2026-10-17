@@ -230,7 +230,7 @@ pub(crate) fn from_chematic_ordered(
         sorted_smiles.sort_unstable();
         let mut sorted_ref = out.atom_bonds[a].clone();
         sorted_ref.sort_unstable();
-        if sorted_smiles != sorted_ref {
+        if sorted_smiles.as_slice() != sorted_ref.as_slice() {
             return Err(unsupported("stereo neighbour order out of sync"));
         }
         let mut n_swaps = count_swaps(&smiles_bonds, &out.atom_bonds[a]);

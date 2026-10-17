@@ -7,6 +7,7 @@ use super::RdkitSmilesError;
 use super::periodic;
 use chematic_core::NonTetrahedralClass;
 use chematic_core::nontetrahedral;
+use smallvec::SmallVec;
 
 /// `Atom::ChiralType` (the tags this pipeline carries).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -367,14 +368,15 @@ pub(crate) struct Mol {
     pub atoms: Vec<Atom>,
     pub bonds: Vec<Bond>,
     /// Per atom: its bond indices in bond-index order.
-    pub atom_bonds: Vec<Vec<usize>>,
+    /// Keep ordinary valences inline; higher degrees spill without a fixed limit.
+    pub atom_bonds: Vec<SmallVec<[usize; 4]>>,
     pub rings: Option<RingInfo>,
 }
 
 impl Mol {
     pub(crate) fn add_atom(&mut self, atom: Atom) -> usize {
         self.atoms.push(atom);
-        self.atom_bonds.push(Vec::new());
+        self.atom_bonds.push(SmallVec::new());
         self.atoms.len() - 1
     }
 
@@ -691,7 +693,7 @@ impl Mol {
     /// `RWMol::removeAtom`: drops the atom and its bonds and renumbers the
     /// rest, keeping their order. Ring information is reset.
     pub(crate) fn remove_atom(&mut self, idx: usize) {
-        let removed: Vec<usize> = self.atom_bonds[idx].clone();
+        let removed = self.atom_bonds[idx].clone();
         let mut keep = vec![true; self.bonds.len()];
         for &b in &removed {
             keep[b] = false;
@@ -728,7 +730,7 @@ impl Mol {
     pub(crate) fn remove_bond(&mut self, b: usize) {
         self.bonds.remove(b);
         for list in &mut self.atom_bonds {
-            list.retain(|&x| x != b);
+            list.retain(|x| *x != b);
             for x in list.iter_mut() {
                 if *x > b {
                     *x -= 1;
@@ -782,7 +784,7 @@ impl Mol {
             !gone[i - 1]
         });
         for list in &mut self.atom_bonds {
-            list.retain(|&b| new_bond_idx[b] != usize::MAX);
+            list.retain(|b| new_bond_idx[*b] != usize::MAX);
             for b in list.iter_mut() {
                 *b = new_bond_idx[*b];
             }
@@ -981,3 +983,7 @@ pub(crate) fn count_swaps(reference: &[usize], probe: &[usize]) -> usize {
     }
     n
 }
+
+#[cfg(test)]
+#[path = "mol_adjacency_tests.rs"]
+mod adjacency_tests;
