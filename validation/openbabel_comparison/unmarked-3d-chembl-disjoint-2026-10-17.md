@@ -99,13 +99,14 @@ Extract the manifest from the report, decompress each SDF, and run
 with a source-built CheMatic example. The report also records the generator
 and comparator hashes and the Open Babel binary hash.
 
-The final candidate plus the independent ring-center repair from PR #986
-passed all 807 `chematic-mol` library tests, integration suites, and doc tests.
-Clippy, formatting, and the refactor budget passed. The PR branch by itself
-still hits the pre-existing main failure
-`mol2_3d_single_methyl_ring_remains_untagged`, addressed by PR #986. The new
-V2000/V3000 exocyclic and cage fixtures fail before their respective fixes
-and pass after them.
+After the independent ring-center repair from PR #986 merged to main as
+`35b932f9`, the rebased candidate `dda3afa2` passed all 807 `chematic-mol`
+library tests, integration suites, and doc tests. Clippy, formatting, and
+the refactor budget passed. Its source-built example binary SHA-256 is
+`482bdc248e9b381c5c4813b91fd7a6b6c79e61cede71c7f8f3829afeb349bf69`;
+the same 300/300 exact-identity and 740/740 exposed-regression results held
+in both formats. The new V2000/V3000 exocyclic and cage fixtures fail before
+their respective fixes and pass after them.
 
 This measures source-relative identity under an RDKit gate, not independent
 chemical truth or toolkit-wide superiority. These are source builds, not
