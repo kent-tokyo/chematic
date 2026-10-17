@@ -15,7 +15,7 @@ use chematic_core::{
 };
 use chematic_perception::{
     EzDirectionDiagnostic, StereoDiagnostic, apply_ctab_local_parity_from_wedges_with_diagnostics,
-    apply_ez_directions_from_2d_ex,
+    apply_ez_directions_from_2d_ex, apply_ez_directions_from_3d,
 };
 
 use crate::error::MolParseError;
@@ -476,6 +476,38 @@ pub(crate) fn correct_conflicting_wedges_from_3d(
             mol.set_chirality(*atom, *from_3d_geometry);
         }
     }
+}
+
+/// Use the full conformer for unmarked 3D alkene stereo. A 2D projection can
+/// reverse an exocyclic double bond when the ring substituents pucker out of
+/// its plane. Explicit CTAB stereo and declared 2D drawings keep their
+/// existing interpretation.
+pub(crate) fn apply_ctab_ez_directions(
+    mol: &mut Molecule,
+    coords: &[(f64, f64)],
+    raw_z: &[f64],
+    dimension: CoordinateDimension,
+    unspecified_ez: &std::collections::HashSet<BondIdx>,
+) -> Vec<EzDirectionDiagnostic> {
+    let has_explicit_directions = mol.bonds().any(|(idx, bond)| {
+        matches!(bond.order, BondOrder::Up | BondOrder::Down) || mol.bond_direction(idx).is_some()
+    });
+    if dimension != CoordinateDimension::TwoD
+        && unspecified_ez.is_empty()
+        && !has_explicit_directions
+        && coords.len() == raw_z.len()
+    {
+        let points: Vec<_> = coords
+            .iter()
+            .zip(raw_z)
+            .map(|(&(x, y), &z)| Point3::new(x, y, z))
+            .collect();
+        if classify_geometry_rank(&points) == GeometryRank::ThreeD {
+            let xyz: Vec<_> = points.iter().map(|p| (p.x, p.y, p.z)).collect();
+            return apply_ez_directions_from_3d(mol, &xyz);
+        }
+    }
+    apply_ez_directions_from_2d_ex(mol, coords, unspecified_ez)
 }
 
 /// The XY projection of a puckered ring can put the two alkene substituents

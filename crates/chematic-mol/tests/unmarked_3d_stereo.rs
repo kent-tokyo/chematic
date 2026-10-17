@@ -104,7 +104,7 @@ const RING_CASES: [(&str, &str, &str); 10] = [
     ),
 ];
 
-const ADDITIONAL_CASES: [(&str, &str, &str); 11] = [
+const ADDITIONAL_CASES: [(&str, &str, &str); 13] = [
     (
         "V2000 phosphorus oxide",
         include_str!("fixtures/chematic-unmarked-3d-phosphorus-v2000.mol"),
@@ -159,6 +159,16 @@ const ADDITIONAL_CASES: [(&str, &str, &str); 11] = [
         "V3000 coupled ring centers from browser holdout",
         include_str!("fixtures/chematic-unmarked-3d-coupled-ring-v3000.mol"),
         "C=CCOc1ccc(/C=C(\\C)C(=O)N[C@@H]2[C@H](O)CCC[C@@H]2O)cc1O",
+    ),
+    (
+        "V2000 exocyclic alkene from ChEMBL 3174",
+        include_str!("fixtures/openbabel-3d-exocyclic-3174-v2000.mol"),
+        "Cc1cccc(C)c1NC(=O)/C=C1/SCC(=O)N1C",
+    ),
+    (
+        "V3000 exocyclic alkene from ChEMBL 3174",
+        include_str!("fixtures/openbabel-3d-exocyclic-3174-v3000.mol"),
+        "Cc1cccc(C)c1NC(=O)/C=C1/SCC(=O)N1C",
     ),
 ];
 

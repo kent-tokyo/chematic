@@ -10,9 +10,7 @@ use chematic_core::{
     Atom, AtomIdx, BondIdx, BondOrder, Coords3D, Element, Molecule, MoleculeBuilder, Point3,
     RGroupLabel, StereoGroup, StereoGroupKind,
 };
-use chematic_perception::{
-    apply_ctab_local_parity_from_wedges_with_diagnostics, apply_ez_directions_from_2d_ex,
-};
+use chematic_perception::apply_ctab_local_parity_from_wedges_with_diagnostics;
 
 use crate::error::MolParseError;
 use crate::mol2000::{
@@ -1022,9 +1020,14 @@ fn finish_v3000_report(
     }
     let stereo_diagnostics =
         apply_ctab_local_parity_from_wedges_with_diagnostics(&mut mol, &parser.coords);
-    let ez_diagnostics =
-        apply_ez_directions_from_2d_ex(&mut mol, &parser.coords, &parser.unspecified_ez);
     let dimension = crate::mol2000::parse_dimension_code(line2);
+    let ez_diagnostics = crate::mol2000::apply_ctab_ez_directions(
+        &mut mol,
+        &parser.coords,
+        &parser.raw_z,
+        dimension,
+        &parser.unspecified_ez,
+    );
     let (conformer, geometry_rank, stereo3d_diagnostics, square_planar_diagnostics) =
         v3000_geometry(&mut mol, &parser.coords, &parser.raw_z, dimension);
     Ok(MolReadReport {
