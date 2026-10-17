@@ -75,6 +75,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   successful calculation. Strided views, seeded counts and bit masks are
   supported with typed inputs and bounded native enumeration. See
   [Layered caller counters](docs/layered-caller-counts.md).
+- Rust/Python `write_xyz_checked` supports caller-selected fixed/scientific
+  XYZ coordinates, fractional digits and minimum field widths, with finite
+  geometry checks, bounded output and unchanged legacy writer defaults.
+  See [XYZ output precision](docs/xyz-output-precision.md).
 - Rust/Python `FeaturePatternSet` owns up to 32 caller-supplied SMARTS feature
   definitions and produces full-width atom masks or native circular feature
   fingerprints. Matching budgets and size limits refuse partial output;

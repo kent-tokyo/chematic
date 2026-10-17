@@ -87,6 +87,7 @@ pub mod tdt;
 pub mod turbomole;
 pub mod volumetric;
 pub mod xyz;
+pub mod xyz_output;
 
 // Convenient re-exports at crate root.
 pub use cml_named::{CmlNamedError, write_cml_named_checked};
@@ -281,6 +282,8 @@ pub use xyz::{
     parse_extxyz, parse_extxyz_all, parse_extxyz_with_limits, parse_xyz, parse_xyz_all,
     parse_xyz_all_with_limits, parse_xyz_with_limits, write_extxyz, write_xyz,
 };
+
+pub use xyz_output::{XyzNotation, XyzWriteError, XyzWriteOptions, write_xyz_checked};
 
 #[cfg(test)]
 mod semantic_contract_tests;

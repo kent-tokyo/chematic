@@ -62,6 +62,7 @@ mod pqr_pdbqt;
 use pqr_pdbqt::*;
 mod gro_lammps;
 mod xyz;
+mod xyz_output;
 use interchange::*;
 use materials::*;
 pub(crate) use materials::{dict_get, dict_get_opt, dict_get_required};
@@ -1345,6 +1346,7 @@ fn register_reaction_formats(m: &Bound<'_, PyModule>) -> PyResult<()> {
 
 pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     gro_lammps::register(m)?;
+    xyz_output::register(m)?;
     m.add_class::<PySmilesBatchStream>()?;
     mopac::register(m)?;
     gzmat::register(m)?;
@@ -1407,10 +1409,6 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         rdkit_from_xyz_block,
         rdkit_from_mol2_block,
         rdkit_mol2_block_to_smiles,
-        from_xyz,
-        from_extxyz,
-        from_extxyz_all,
-        to_extxyz,
         parse_formula,
         mol_hash,
         are_identical,
