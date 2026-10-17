@@ -105,6 +105,7 @@ nav:
     - GRO to LAMMPS Units: gro-lammps-units.md
     - Custom Feature Patterns: custom-feature-patterns.md
     - Tautomer Candidate Selection: tautomer-candidate-selection.md
+    - Checked SASA Radii: checked-sasa-radii.md
     - SDF Gzip Input: sdf-gzip-input.md
     - Python Forward SDF Streams: python-forward-sdf.md
     - Python Stub Packaging Gate: python-stub-packaging-gate.md

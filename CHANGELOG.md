@@ -30,6 +30,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   IDs and optional Cartesian 3D coordinates, including matching bond
   references. Invalid IDs and unsupported graph semantics are explicit
   errors. See [named CML atoms](docs/cml-named-atoms.md) for the MOL2 recipe.
+- Rust/Python `sasa_with_radii_checked` accepts explicit coordinates and one
+  positive radius per atom, with checked values, work limits and typed errors.
+  It returns per-atom and total native Shrake-Rupley areas without generating
+  coordinates or choosing default radii. See [checked SASA](docs/checked-sasa-radii.md).
 - Rust/Python `FeaturePatternSet` owns up to 32 caller-supplied SMARTS feature
   definitions and produces full-width atom masks or native circular feature
   fingerprints. Matching budgets and size limits refuse partial output;
