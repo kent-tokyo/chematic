@@ -50,6 +50,9 @@ COSMolKit read-back of CheMatic blocks after omitting redundant V3000 `HCOUNT`.
 The [two-vacancy non-tetrahedral comparison](two-vacancy-nontetra-2026-10-17.md)
 checks SP2, TB3, and OH4 SMILES recognition across all tags, ligand orders, and
 root/incoming positions, including randomized write-back.
+The [native SMILES aromatic-stereo oracle follow-up](native-smiles-aromatic-stereo-oracle-2026-10-17.md)
+checks a fused-arsenic ring with remote tetrahedral stereo under RDKit 2026.09.1
+and guards against accepting an inverted center.
 
 The focused [aromatic sulfur stereo read-back
 check](aromatic-s-stereo-2026-10-16.md) compares whether each toolkit keeps

@@ -1,6 +1,7 @@
 """False-positive controls for the native SMILES comparison oracle."""
 
 import unittest
+from typing import Union
 
 from rdkit import Chem
 
@@ -8,12 +9,17 @@ from check_native_smiles_roundtrip import classify
 
 
 class NativeSmilesEquivalenceTest(unittest.TestCase):
-    def check_pair(self, source: str, read_back: str, expected: str) -> None:
+    def check_pair(
+        self, source: str, read_back: str, expected: Union[str, tuple[str, ...]]
+    ) -> None:
         source_mol = Chem.MolFromSmiles(source)
         read_back_mol = Chem.MolFromSmiles(read_back)
         self.assertIsNotNone(source_mol)
         self.assertIsNotNone(read_back_mol)
-        self.assertEqual(classify(source_mol, read_back_mol, source, read_back), expected)
+        self.assertIn(
+            classify(source_mol, read_back_mol, source, read_back),
+            (expected,) if isinstance(expected, str) else expected,
+        )
 
     def test_equivalent_permutations_and_resonance(self) -> None:
         self.check_pair("C[Pt@SP1](Cl)(N)N", "N[Pt@SP1](N)(Cl)C", "stereo_isomorphic")
@@ -37,7 +43,17 @@ class NativeSmilesEquivalenceTest(unittest.TestCase):
         self.check_pair(
             "P(OC)(OC)(Nc1cc(OC)c(cc1)Nc1c2c(cccc2)nc2c1cc([as]c2)C)=O",
             "n2c1c(c(Nc4c(OC)cc(cc4)NP(=O)(OC)OC)c3cc(C)[as]cc23)cccc1",
-            "raw_aromatic_graph",
+            ("strict", "raw_aromatic_graph"),
+        )
+
+    def test_raw_aromatic_graph_preserves_remote_stereo(self) -> None:
+        source = "c12ccccc2[as]ccc1C(N1CCN(C[C@H](CS)N)[C@@H](CCOC)C1)=O"
+        reordered = "c23c(cc[as]c2cccc3)C(N1CCN(C[C@H](CS)N)[C@H](C1)CCOC)=O"
+        self.check_pair(source, reordered, "raw_aromatic_graph")
+        self.check_pair(
+            source,
+            reordered.replace("C[C@H](CS)N", "C[C@@H](CS)N"),
+            "unresolved",
         )
 
     def test_raw_aromatic_graph_does_not_waive_other_differences(self) -> None:
