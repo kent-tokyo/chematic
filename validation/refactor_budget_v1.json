@@ -364,10 +364,6 @@
     "crates/chematic-smiles/src/rdkit/stereo.rs::legacy_stereo_perception_impl#1": {
       "decisions": 67,
       "lines": 168
-    },
-    "crates/chematic-smiles/src/rdkit/tautomer.rs::enumerate#1": {
-      "decisions": 44,
-      "lines": 175
     }
   },
   "limits": {

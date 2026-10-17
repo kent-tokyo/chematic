@@ -1,0 +1,23 @@
+{
+  "base_commit": "c84c68f297f95562d1d29c75234f2190cd5f9d75",
+  "python": "3.13.6",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "rustc": "rustc 1.97.0 (2d8144b78 2026-07-07)",
+  "extension_sha256": "d25b9351bed66d98a0da77a2dc8b4a7fa5e9878cc625512f3e7489a7441f5efc",
+  "source_sha256": {
+    "crates/chematic-smiles/src/lib.rs": "4919a28e3c9897ff767e3be5cd0289d69c9c1186ed1574a2749ad62d13b500d8",
+    "crates/chematic-smiles/src/rdkit/mod.rs": "14035dd861d9a2ff8a2993dbac0cad7f534b088802324c75f083fda3115db3b2",
+    "crates/chematic-smiles/src/rdkit/tautomer.rs": "5cc5b966c61b466815c158226d3d73b4d8a99615489c2e91dea55832f9957a56",
+    "crates/chematic-smiles/src/rdkit/tautomer_control.rs": "4c848980bbe5f69b7407830f61a05ee7d8f5a037dfd06489267bcfb3eca732c2",
+    "crates/chematic-py/src/mol_methods.rs": "56ae821ff98dc14d4630bbd985598621ba18c1d94075faefac8a3eb154f7743f",
+    "crates/chematic-py/src/mol_methods/tautomer_control.rs": "d773cb1b1bc7685a7ad925fd22bc6675bf44bd531c670bead1c8ca544f960c98",
+    "crates/chematic-py/python/chematic/__init__.py": "aca686f481ce179837e6d599cda059247e0c69027ba2baad2a3618d0731355b3",
+    "crates/chematic-py/python/chematic/__init__.pyi": "a027cdbe3bab412174307b6340a773ac4305721283acc600376f4c8352353834",
+    "crates/chematic-py/python/chematic/_tautomer_control.py": "91e4b54803465f70ac2f22a60b514fbd59369044561f51c67841217f0e42993f",
+    "crates/chematic-py/tests/test_tautomer_control.py": "249f7972ee6d0564b5240334d61384652db71f562041ba70782e7e9ffb0d858f",
+    "validation/validate_tautomer_callback.py": "70f6c065bdb626c74e3a3f1b0393ec9f2e05bce5a760f93f78e350c2e159e685"
+  },
+  "upstream_algorithm": "https://github.com/rdkit/rdkit/blob/Release_2026_09_1/Code/GraphMol/MolStandardize/Tautomer.cpp",
+  "upstream_source_sha256": "30a17c53a467248dc3270c05977746e20fd357b86090de452fc4414945066a9b",
+  "python_39_grammar": "passed"
+}

@@ -33,6 +33,7 @@ mod properties;
 mod rooted;
 mod stereo_cleanup;
 mod stereo_groups;
+mod tautomer_control;
 mod three_d;
 mod transformations;
 

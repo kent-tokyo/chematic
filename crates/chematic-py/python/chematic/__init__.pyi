@@ -14,7 +14,7 @@ Quick start::
 
 from __future__ import annotations
 
-from typing import overload, Any, Iterable, Iterator, Literal, Optional, Sequence, TypedDict, Union
+from typing import overload, Callable, Any, Iterable, Iterator, Literal, Optional, Sequence, TypedDict, Union
 
 from os import PathLike
 
@@ -500,6 +500,10 @@ class Mol:
         from the same SMILES. Raises ``ValueError`` for unsupported inputs."""
         ...
 
+    def _rdkit_tautomers_controlled(
+        self, max_tautomers: int, max_transforms: int,
+        callback: Callable[[int, tuple[str, ...]], bool],
+    ) -> tuple[list[str], list[str], str]: ...
     def rdkit_tautomers(self) -> list[str]:
         """``sorted(Chem.MolToSmiles(t) for t in
         rdMolStandardize.TautomerEnumerator().Enumerate(m))`` (RDKit
@@ -5406,3 +5410,9 @@ class RWMol:
     def GetName(self) -> str: ...
     def SetName(self, name: str) -> None: ...
     def GetMol(self) -> Mol: ...
+
+from ._tautomer_control import (
+    TautomerEnumeration as TautomerEnumeration,
+    TautomerProgress as TautomerProgress,
+    enumerate_tautomers_checked as enumerate_tautomers_checked,
+)
