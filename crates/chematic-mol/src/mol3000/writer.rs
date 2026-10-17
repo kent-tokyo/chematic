@@ -62,6 +62,21 @@ fn append_header(out: &mut String, mol: &Molecule, metadata: &MolMetadata, dimen
     .expect("writing to String cannot fail");
 }
 
+fn append_cationic_carbon_valence(
+    line: &mut String,
+    atom: &Atom,
+    drawn: u8,
+    ordinary: bool,
+) -> bool {
+    if atom.element != Element::C || atom.charge != 3 || !ordinary || !(2..=4).contains(&drawn) {
+        return false;
+    }
+    // RDKit's CTfile reader needs both fields to retain explicit H on +3 C.
+    let radical = if drawn.is_multiple_of(2) { 2 } else { 3 };
+    write!(line, " RAD={radical} VAL={drawn}").expect("writing to String cannot fail");
+    true
+}
+
 /// Bracket SMILES atoms have no implicit hydrogens. For neutral atoms and
 /// cationic nitrogen below their ordinary valence, CTfile needs VAL and RAD to
 /// prevent readers from inventing hydrogens. Isolated atoms use VAL=-1 even
@@ -121,10 +136,7 @@ fn append_inferred_valence_properties(
     // four drawn valence units unless the radical and valence are both
     // specified. The parity of the missing valence determines the radical
     // code used by RDKit's V3000 writer for these bracket atoms.
-    if atom.element == Element::C && atom.charge == 3 && ordinary_bonds && (2..=4).contains(&drawn)
-    {
-        let radical = if drawn % 2 == 0 { 2 } else { 3 };
-        write!(line, " RAD={radical} VAL={drawn}").expect("writing to String cannot fail");
+    if append_cationic_carbon_valence(line, atom, drawn, ordinary_bonds) {
         return;
     }
     let charged_normal = match (atom.element, atom.charge) {

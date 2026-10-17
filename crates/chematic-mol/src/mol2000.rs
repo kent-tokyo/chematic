@@ -121,6 +121,12 @@ const COLLINEAR_EPS: f64 = 1e-6;
 /// Minimum |signed volume| (Angstrom^3) treated as a reliable, non-degenerate
 /// tetrahedral sign in [`wedge_vs_3d_conflicts`].
 const VOLUME_EPS: f64 = 1e-6;
+/// For a three-neighbor center with an inferred fourth slot, reject nearly
+/// planar geometry.
+/// In two pinned 200-molecule browser SDF holdouts, all five unspecified
+/// candidate carbons were below 0.026 and all 339 assigned ones above 0.43.
+/// The normalized triple product makes this guard independent of bond scale.
+const THREE_BOND_TETRAHEDRAL_MIN_NORMALIZED_VOLUME: f64 = 0.1;
 /// Minimum bond-vector norm (Angstrom) accepted as non-degenerate by
 /// [`classify_square_planar_geometry`] -- below this, a neighbor's position
 /// coincides with (or is implausibly close to) the center's own position,
@@ -281,12 +287,19 @@ fn tetrahedral_chirality_from_3d(
         else {
             return None;
         };
+        let v0 = p0.sub(&pivot);
+        let v1 = p1.sub(&pivot);
+        let v2 = p2.sub(&pivot);
+        let scale = v0.norm() * v1.norm() * v2.norm();
         let volume = signed_volume3(p0, p1, p2, pivot);
-        (volume.abs() >= VOLUME_EPS).then_some(if volume < 0.0 {
-            Chirality::Clockwise
-        } else {
-            Chirality::CounterClockwise
-        })
+        (volume.abs() >= VOLUME_EPS
+            && scale.is_finite()
+            && volume.abs() >= THREE_BOND_TETRAHEDRAL_MIN_NORMALIZED_VOLUME * scale)
+            .then_some(if volume < 0.0 {
+                Chirality::Clockwise
+            } else {
+                Chirality::CounterClockwise
+            })
     } else if order.len() == 4 {
         let (Some(p0), Some(p1), Some(p2), Some(p3)) =
             (get(order[0]), get(order[1]), get(order[2]), get(order[3]))
