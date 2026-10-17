@@ -673,6 +673,7 @@ from ._tautomer_control import (
     TautomerEnumeration, TautomerProgress, enumerate_tautomers_checked,
 )
 from ._crystal_obj import ObjMeshExport, write_crystal_obj_checked
+from ._crystal_stl import StlMeshExport, write_crystal_stl_checked
 from ._parent_types import ParentStage, SuperParentReport
 from ._bond_fragment import BondFragmentation, FragmentAttachment, fragment_on_bonds_checked
 

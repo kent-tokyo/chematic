@@ -1,0 +1,23 @@
+{
+  "version": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+  "command": [
+    "/opt/homebrew/bin/obabel",
+    "-icif",
+    "validation/results/checked-crystal-stl-2026-10-18/nacl-p1.cif",
+    "-ostl"
+  ],
+  "scope": "installed Open Babel control; open issue is not proof of absent current support",
+  "timed_out": true,
+  "stderr": "",
+  "seconds": 30.005531791000976,
+  "output_bytes": 0,
+  "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "format_help_exit_code": 0,
+  "format_help_stdout": "One of the formats\nstl -- STL 3D-printing format [Write-only]\nThe STereoLithography format developed by 3D Systems\n\nWrite Options, e.g. -xc\n  p <radius> radius for probe particle (default 0.0 A)\n  s <scale> scale-factor for VDW radius and bond radius/spacing (default 1.0)\n  c add CPK colours\n  b draw bonds\nGeneral options,\n  --bond-radius <radius> radius for bond visualization (default: 0.5 A)\n  --bond-spacing <spacing> spacing between bond visualizations (default: 0.1 A)\n  --colour-order-rgb export colours in red green blue (RGB) order (default: BGR order)\n\n\nSpecification at: https://www.fabbers.com/tech/STL_Format\n\n",
+  "format_help_stderr": "",
+  "format_help_command": [
+    "/opt/homebrew/bin/obabel",
+    "-L",
+    "stl"
+  ]
+}

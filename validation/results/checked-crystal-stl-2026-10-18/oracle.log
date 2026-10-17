@@ -1,0 +1,1 @@
+{"trimesh": "4.9.0", "ase": "3.26.0", "cases": 75, "obj_byte_identical_cases": 20, "totals": {"spheres": 210, "triangles": 114576, "vertices": 57708}, "ase_minus_native_lattice_image_shifts": {"NACL_P1_CIF": [[0, 0, 0], [0, 0, 0]], "SYMMETRIC_C2C_CIF": [[1, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]}, "failures": 0}

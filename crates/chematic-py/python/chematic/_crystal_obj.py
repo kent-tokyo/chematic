@@ -125,39 +125,10 @@ def _sphere_positions(
     return result
 
 
-def write_crystal_obj_checked(
-    structure: PeriodicStructure,
-    radii: Sequence[float],
-    *,
-    subdivisions: int = 2,
-) -> ObjMeshExport:
-    """Tessellate ordered periodic sites as atom spheres in Wavefront OBJ.
-
-    Args:
-        structure: Native periodic structure with 1..1000 ordered sites. Known
-            unexpanded CIF symmetry and partial/mixed occupancy are refused.
-        radii: One finite positive display radius per site, in angstroms. These
-            are caller-selected display sizes; no chemical radii are inferred.
-        subdivisions: Integer 0..4. Each step subdivides an octahedron's faces
-            and projects the new vertices onto the sphere. Default 2.
-
-    Returns:
-        Frozen report containing OBJ text, sphere/vertex/triangle counts and
-        omitted features. One coordinate unit means one angstrom; OBJ readers
-        must be configured for that scale because OBJ has no standard unit field.
-
-    Raises:
-        TypeError: Wrong structure, radii or subdivision type.
-        ValueError: Unsupported site/symmetry, invalid radius, unrepresentable
-            vertex, or resource cap (100000 vertices, 200000 faces, 16 MiB).
-
-    Uses supplied Cartesian positions without wrapping, symmetry expansion or
-    lattice reduction. Each site has a named object, shared radial unit normals,
-    and counterclockwise triangles. This is an atom display mesh: it omits
-    periodic topology, bonds, labels, chemical properties, colors and materials.
-    Spheres may overlap or be disconnected; no surface union or printable-solid
-    guarantee is made. The input is unchanged and no files are written.
-    """
+def _prepare_spheres(
+    structure: PeriodicStructure, radii: Sequence[float], subdivisions: int
+) -> Tuple[List[Vector], List[float], List[str], List[Vector], List[Face]]:
+    """Shared checked sites, caller radii and finite unit-sphere template."""
     if not isinstance(structure, PeriodicStructure):
         raise TypeError("structure must be a chematic PeriodicStructure")
     if type(subdivisions) is not int:
@@ -193,6 +164,47 @@ def write_crystal_obj_checked(
             raise ValueError("Cartesian positions must have three finite components")
         centers.append((float(row[0]), float(row[1]), float(row[2])))
     normals, faces = _unit_sphere(subdivisions)
+    return centers, sizes, symbols, normals, faces
+
+
+def write_crystal_obj_checked(
+    structure: PeriodicStructure,
+    radii: Sequence[float],
+    *,
+    subdivisions: int = 2,
+) -> ObjMeshExport:
+    """Tessellate ordered periodic sites as atom spheres in Wavefront OBJ.
+
+    Args:
+        structure: Native periodic structure with 1..1000 ordered sites. Known
+            unexpanded CIF symmetry and partial/mixed occupancy are refused.
+        radii: One finite positive display radius per site, in angstroms. These
+            are caller-selected display sizes; no chemical radii are inferred.
+        subdivisions: Integer 0..4. Each step subdivides an octahedron's faces
+            and projects the new vertices onto the sphere. Default 2.
+
+    Returns:
+        Frozen report containing OBJ text, sphere/vertex/triangle counts and
+        omitted features. One coordinate unit means one angstrom; OBJ readers
+        must be configured for that scale because OBJ has no standard unit field.
+
+    Raises:
+        TypeError: Wrong structure, radii or subdivision type.
+        ValueError: Unsupported site/symmetry, invalid radius, unrepresentable
+            vertex, or resource cap (100000 vertices, 200000 faces, 16 MiB).
+
+    Uses supplied Cartesian positions without wrapping, symmetry expansion or
+    lattice reduction. Each site has a named object, shared radial unit normals,
+    and counterclockwise triangles. This is an atom display mesh: it omits
+    periodic topology, bonds, labels, chemical properties, colors and materials.
+    Spheres may overlap or be disconnected; no surface union or printable-solid
+    guarantee is made. The input is unchanged and no files are written.
+    """
+    centers, sizes, symbols, normals, faces = _prepare_spheres(
+        structure, radii, subdivisions
+    )
+    count = len(centers)
+    vertex_count, face_count = count * len(normals), count * len(faces)
     output = io.StringIO()
     size = 0
 
