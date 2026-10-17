@@ -10,6 +10,7 @@ pub mod activity_cliff;
 pub mod admet;
 pub mod alerts;
 pub mod atropisomer;
+pub mod bond_fragment;
 pub mod brics;
 pub mod cache;
 pub mod canonical;

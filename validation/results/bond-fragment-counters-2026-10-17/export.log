@@ -1,0 +1,11 @@
+[22:07:44]  atom 0 has a negative isotope offset. line:  10
+{
+  "native_smiles": "[*]COC.C[1*]",
+  "expected_canonical": "*COC.[1*]C",
+  "v2000_canonical": "*COC.[65535*+3:0]C",
+  "moljson_dummy_elements": [
+    "C",
+    "C"
+  ],
+  "scope": "Existing writers; no V2000/MolJSON dummy graph preservation claim"
+}

@@ -1,0 +1,11 @@
+{
+  "native_smiles": "[*]COC.C[1*]",
+  "expected_canonical": "*COC.[1*]C",
+  "v2000_canonical": "*COC.[65535*+3:0]C",
+  "v2000_block": "\n  chematic\n\n  6  4  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\n    7.2990    0.7500    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\n    6.0000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\n    4.5000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\n    8.7990    0.7500    0.0000 *   0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 *  -11  0  0  0  0  0  0  0  0  0  0\n  2  3  1  0\n  3  4  1  0\n  2  5  1  0\n  1  6  1  0\nM  END\n",
+  "moljson_dummy_elements": [
+    "C",
+    "C"
+  ],
+  "scope": "Existing writers; no V2000/MolJSON dummy graph preservation claim"
+}
