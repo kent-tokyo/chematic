@@ -28,6 +28,8 @@ from ._sdf_split import (
     plan_sdf_split as plan_sdf_split,
 )
 
+from ._xbs import XbsBondRule as XbsBondRule, XbsSpecies as XbsSpecies, write_xbs as write_xbs
+
 from typing import overload, Any, Iterable, Iterator, Literal, Optional, Sequence, TypedDict, Union
 
 from os import PathLike

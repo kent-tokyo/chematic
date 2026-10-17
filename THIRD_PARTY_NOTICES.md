@@ -372,3 +372,13 @@ reference's local-solvation equation and empirical neighbor-depth convention.
 The Novartis/RDKit copyright and BSD 3-Clause notice above also apply to
 that reference. No C++ source is bundled. The new comparison inputs remain
 original synthetic project data under MIT OR Apache-2.0.
+
+## XBS output format references (2026-10-17)
+
+`crates/chematic-py/python/chematic/_xbs.py` is independently implemented
+from the XBS author-supplied manual distributed by Debian:
+https://manpages.debian.org/bookworm/xbs/xbs.1.en.html
+No XBS or Open Babel implementation or manual example fixture is included.
+The fixture in `validation/openbabel_issues/xbs/` and the seeded validation
+inputs are original project data under MIT OR Apache-2.0. External hofmann
+0.21.1 is used solely as a parser oracle, not bundled as a dependency.
