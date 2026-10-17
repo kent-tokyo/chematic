@@ -230,9 +230,9 @@ fn append_atom_properties(
             && matches!(atom.charge, -1 | 1)
             && hydrogens == 1
             && mol.neighbors(idx).count() == 2
-            && mol.neighbors(idx).all(|(_, bond_idx)| {
-                mol.bond(bond_idx).order == BondOrder::Aromatic
-            });
+            && mol
+                .neighbors(idx)
+                .all(|(_, bond_idx)| mol.bond(bond_idx).order == BondOrder::Aromatic);
         // A charged atom also needs no query HCOUNT when its element, charge,
         // and bonds already determine the same hydrogen count. Retain it for
         // cases such as [CH2-] and [SH2+], where inference would add an H.
