@@ -16,6 +16,15 @@ mapless graph and stereo comparison.
 | V2000, exact identity / 300 | 298 | **299** | 296 |
 | V3000, exact identity / 300 | 298 | **299** | 296 |
 
+An additional standard InChIKey comparison of the stored source and reader
+SMILES gives 298/300 for the baseline, 299/300 for the candidate, and
+**300/300 for Open Babel** in each format. These keys were generated through
+RDKit 2026.09.1's InChI wrapper from the row-level report, not by an
+independent SDF reader. The four source-SMILES mismatches for Open Babel
+collapse to the same standard InChIKey; CheMatic still differs at source
+index 591. Thus the exact-SMILES advantage above does not establish an
+advantage under this second identity criterion.
+
 Source index 3174 is the only CheMatic gain in each format, with no lost
 identity. It is an exocyclic alkene attached to a puckered five-membered
 ring. The old reader inferred E/Z from the XY projection even though the
@@ -53,6 +62,22 @@ The baseline and candidate example binaries were built with
 -p chematic-mol --example sdf_v3000_accuracy_dump`; their SHA-256 values are
 `cc4c32d4c9639f8fe31dd37e489c14e40c1af53e96889ace40e232c482cfb368`
 and `e8a5aa569bec61fbfc02ac23449f39695e38d5f3e4ab1ebf3e477478367b4c8c`.
+
+To reproduce the InChIKey counts from the row-level report, use RDKit with
+InChI support:
+
+```python
+import gzip, json
+from rdkit import Chem
+
+with gzip.open("validation/openbabel_comparison/results/unmarked-3d-chembl-disjoint-300-2026-10-17.json.gz", "rt") as source:
+    report = json.load(source)
+key = lambda smiles: Chem.MolToInchiKey(Chem.MolFromSmiles(smiles))
+for fmt, result in report["formats"].items():
+    print(fmt, {engine: sum(key(row["expected"]) == key(row["actual"][engine])
+                        for row in result["rows"])
+                for engine in ("baseline", "candidate", "openbabel")})
+```
 
 Extract the manifest from the report, decompress each SDF, and run
 `validation/openbabel_comparison/check_unmarked_3d_stereo.py --case MANIFEST SDF`
