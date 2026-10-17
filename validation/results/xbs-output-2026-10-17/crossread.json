@@ -1,0 +1,29 @@
+{
+  "atom_rows": 5344,
+  "coordinate_check": "binary64 byte equality, including negative zero and smallest subnormal",
+  "hofmann": "0.21.1",
+  "limits": [
+    "no original XBS GUI execution",
+    "no rendering or bond-detection validation",
+    "no chemical topology, charge or unit conversion",
+    "no native build or performance claim"
+  ],
+  "max_size_scene_atoms": 10000,
+  "numpy": "2.5.3",
+  "openbabel": {
+    "bs_is_xbs_atom_records": false,
+    "bs_stderr": "1 molecule converted\n",
+    "bs_stdout": "Original asymmetric three-site geometry\n3\nO     0.0000    0.0000    0.0000     2     3\nH     0.9200    0.1300    0.0000     1\nH    -0.2000    0.8800    0.0700     1\n",
+    "has_xbs_format": false,
+    "input_xyz": "3\nOriginal asymmetric three-site geometry\nO 0 0 0\nH 0.92 0.13 0\nH -0.2 0.88 0.07\n",
+    "version": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27"
+  },
+  "ordinary_scenes": 96,
+  "output_sha256": "479ee3356fb155cac9c4f764fb37f2bc39b369675cb10de189dca807264bff91",
+  "python": "3.13.6",
+  "rule_checks": 96,
+  "schema_version": 1,
+  "scope": "static gray-style XBS writer; independent file parser only",
+  "seed": 2576,
+  "style_checks": 288
+}

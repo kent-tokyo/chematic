@@ -1,4 +1,5 @@
 from .chematic import *
+from ._xbs import XbsBondRule, XbsSpecies, write_xbs
 from .chematic import (
     __version__,
     Mol,

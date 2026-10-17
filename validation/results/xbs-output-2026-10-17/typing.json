@@ -1,0 +1,45 @@
+[
+  {
+    "command": [
+      "python3.13",
+      "-m",
+      "mypy",
+      "--follow-imports=silent",
+      "--ignore-missing-imports",
+      "--no-incremental",
+      "--cache-dir=/private/tmp/chematic-xbs-mypy",
+      "validation/typing/xbs_valid.py"
+    ],
+    "exit_code": 0,
+    "expected_exit_code": 0
+  },
+  {
+    "command": [
+      "python3.13",
+      "-m",
+      "mypy",
+      "--follow-imports=silent",
+      "--ignore-missing-imports",
+      "--no-incremental",
+      "--cache-dir=/private/tmp/chematic-xbs-mypy",
+      "validation/typing/xbs_invalid.py"
+    ],
+    "exit_code": 1,
+    "expected_exit_code": 1
+  },
+  {
+    "command": [
+      "python3.13",
+      "-m",
+      "mypy",
+      "--follow-imports=silent",
+      "--ignore-missing-imports",
+      "--no-incremental",
+      "--cache-dir=/private/tmp/chematic-xbs-mypy",
+      "--strict",
+      "/private/tmp/chematic_xbs_typecheck.py"
+    ],
+    "exit_code": 0,
+    "expected_exit_code": 0
+  }
+]

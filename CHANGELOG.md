@@ -16,6 +16,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Python `write_xbs`, `XbsSpecies` and `XbsBondRule` emit checked static XBS
+  scene files with explicit gray styles and distance drawing rules. XBS is
+  distinct from Open Babel's `bs` dialect. See [XBS output](docs/xbs-output.md).
+
 - Rust/Python `FeaturePatternSet` owns up to 32 caller-supplied SMARTS feature
   definitions and produces full-width atom masks or native circular feature
   fingerprints. Matching budgets and size limits refuse partial output;

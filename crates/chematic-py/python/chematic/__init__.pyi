@@ -14,6 +14,8 @@ Quick start::
 
 from __future__ import annotations
 
+from ._xbs import XbsBondRule as XbsBondRule, XbsSpecies as XbsSpecies, write_xbs as write_xbs
+
 from typing import overload, Any, Iterable, Iterator, Literal, Optional, Sequence, TypedDict, Union
 
 from os import PathLike

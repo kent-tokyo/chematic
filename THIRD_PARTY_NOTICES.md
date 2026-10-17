@@ -350,3 +350,14 @@ The original synthetic water fixture has separate MIT OR Apache-2.0 provenance
 in `validation/openbabel_issues/ccd/manifest.json`. No Open Babel or Gemmi
 implementation is included in this feature; Gemmi 0.7.5 is used only as an
 external validation oracle.
+
+
+## XBS output format references (2026-10-17)
+
+`crates/chematic-py/python/chematic/_xbs.py` is independently implemented
+from the XBS author-supplied manual distributed by Debian:
+https://manpages.debian.org/bookworm/xbs/xbs.1.en.html
+No XBS or Open Babel implementation or manual example fixture is included.
+The fixture in `validation/openbabel_issues/xbs/` and the seeded validation
+inputs are original project data under MIT OR Apache-2.0. External hofmann
+0.21.1 is used solely as a parser oracle, not bundled as a dependency.

@@ -121,3 +121,16 @@ probes. Chematic formulas already pass, but its separate total-H descriptor
 double-counted bracket H and missed H atom nodes. [Fix the counter and WASM
 atom information](hydrogen-count-accounting.md), keeping formula and
 serialization behavior as controls.
+
+
+## October 17 follow-up: explicit XBS scene output
+
+[#2576](https://github.com/openbabel/openbabel/issues/2576) asks for the XBS
+`atom` / `spec` / `bonds` syntax. Open Babel's `bs` writer targets a different
+Ball and Stick format, and the local 3.2.1 format list has no `xbs` identifier.
+Added a [checked static XBS writer](xbs-output.md) in Python, with explicit
+species styles and distance drawing rules. Independent hofmann 0.21.1
+cross-reading passed 96 synthetic scenes plus a 10,000-atom scene. This
+adds the requested dialect without treating the existing `bs` output as a
+broken implementation of XBS. RGB, wildcard rules, movies and GUI validation
+remain outside this profile.
