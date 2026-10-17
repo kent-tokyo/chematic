@@ -80,15 +80,21 @@ nav:
   - Formats & Bindings:
     - CCD Molecular Templates: ccd-components.md
     - CIF Molecular Bonds: cif-molecular-bonds.md
+    - pymatgen JSON: pymatgen-json.md
+    - Linear Nucleic-Acid Diagrams: nucleic-linear-svg.md
+    - CML Molecular Collections: cml-collection.md
+    - Crystal OBJ Atom Meshes: crystal-obj-mesh.md
     - Rooted SMILES Stereo: rooted-smiles-stereo.md
     - XYZ Element Symbols: xyz-element-symbols.md
     - ChemDraw Block Formats: chemdraw-block.md
     - Format Capability Matrix: format-capabilities.md
     - CDXML Stereo Options: cdxml-stereo-options.md
+    - Named CML Atoms: cml-named-atoms.md
     - Hydrogen Count Accounting: hydrogen-count-accounting.md
     - HIN Aromatic Bond Preservation: openbabel-hin-aromatic-bonds.md
     - ORCA-AICCM EXYZ: openbabel-exyz.md
     - FHI-aims Geometry: openbabel-fhiaims.md
+    - MOPAC archive input: mopac-archive-input.md
     - MOPAC Cartesian: openbabel-mopac-cartesian.md
     - DMol3 Coordinates: openbabel-dmol3.md
     - PDB Atom Selection: pdb-atom-selection.md
@@ -98,11 +104,33 @@ nav:
     - Error Handling & Limits: error-and-limits.md
     - Checked 3D Distance Matrices: rdkit-checked-3d-distance-matrix.md
     - Prepared MMFF Dielectric: mmff-dielectric-updates.md
+    - Custom MMFF Partial Charges: mmff-partial-charges.md
   - Reliability:
+    - Descriptor Euclidean Distances: descriptor-euclidean-distances.md
+    - Sparse Tanimoto Matrices: sparse-tanimoto-matrix.md
+    - Reaction CDXML Output: reaction-cdxml-output.md
+    - NumPy Fingerprint Output: numpy-fingerprint-output.md
+    - Typed Point Alignment: point-alignment.md
+    - GAMESS Internal Coordinates: gamess-zmat-output.md
+    - Typed Entropy Bit Ranking: info-bit-ranker.md
+    - PDB Model Splitting: pdb-model-splitting.md
+    - Layered Caller Counters: layered-caller-counts.md
+    - XYZ Output Precision: xyz-output-precision.md
+    - SDF File Partitions: sdf-file-partitions.md
+    - Explicit-Charge Coulomb Field: coulomb-interaction-field.md
+    - Local-Solvation Coulomb Field: coulomb-dielectric-field.md
+    - Checked XBS Scene Output: xbs-output.md
+    - Checked XYZ Per-Atom Data: xyz-atom-data.md
+    - Checked CIF-to-XSF Geometry: cif-xsf-output.md
+    - Checked Bond Fragmentation: checked-bond-fragmentation.md
     - Complete Molecule Reset: molecule-clear.md
     - Python Filesystem Paths: python-filesystem-paths.md
     - GRO to LAMMPS Units: gro-lammps-units.md
     - Custom Feature Patterns: custom-feature-patterns.md
+    - Tautomer Candidate Selection: tautomer-candidate-selection.md
+    - Checked SASA Radii: checked-sasa-radii.md
+    - Cancellable Tautomer Enumeration: tautomer-callback.md
+    - Parent Transformations: standardization-parents.md
     - SDF Gzip Input: sdf-gzip-input.md
     - Python Forward SDF Streams: python-forward-sdf.md
     - Python Stub Packaging Gate: python-stub-packaging-gate.md

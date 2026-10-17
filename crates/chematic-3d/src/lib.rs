@@ -42,6 +42,7 @@ pub(crate) mod prng;
 pub mod rdkit_embed;
 pub mod rdkit_shape_descriptors;
 pub mod sasa;
+pub mod sasa_checked;
 pub mod shape_descriptors;
 pub mod stereo3d;
 pub mod stereo_constraints;
@@ -1002,3 +1003,5 @@ mod legacy_geometry_tests;
 
 #[cfg(test)]
 mod torsion_boundary_contract_tests;
+
+pub use sasa_checked::{CheckedSasa, SasaInputError, sasa_with_radii_checked};

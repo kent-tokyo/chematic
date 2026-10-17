@@ -350,3 +350,55 @@ The original synthetic water fixture has separate MIT OR Apache-2.0 provenance
 in `validation/openbabel_issues/ccd/manifest.json`. No Open Babel or Gemmi
 implementation is included in this feature; Gemmi 0.7.5 is used only as an
 external validation oracle.
+
+
+## Explicit-charge Coulomb reference conventions (2026-10-17)
+
+`crates/chematic-py/python/chematic/_coulomb_field.py` independently implements
+the standard vacuum Coulomb equation. Its legacy conversion constant and
+scalar-call conventions reference RDKit
+`Release_2026_09_1/Code/GraphMol/MolInteractionFields/MIFDescriptors.cpp`:
+https://github.com/rdkit/rdkit/blob/Release_2026_09_1/Code/GraphMol/MolInteractionFields/MIFDescriptors.cpp
+
+The reference file is copyright (c) 2014-2024, Novartis Institutes for
+BioMedical Research and other RDKit contributors, under the BSD 3-Clause
+license reproduced above. No C++ implementation or issue attachment is
+bundled. The comparison fixtures are original synthetic project inputs under
+MIT OR Apache-2.0; the RDKit wheel is an external validation oracle.
+
+
+The follow-up `_coulomb_dielectric.py` independently implements the same
+reference's local-solvation equation and empirical neighbor-depth convention.
+The Novartis/RDKit copyright and BSD 3-Clause notice above also apply to
+that reference. No C++ source is bundled. The new comparison inputs remain
+original synthetic project data under MIT OR Apache-2.0.
+
+## XBS output format references (2026-10-17)
+
+`crates/chematic-py/python/chematic/_xbs.py` is independently implemented
+from the XBS author-supplied manual distributed by Debian:
+https://manpages.debian.org/bookworm/xbs/xbs.1.en.html
+No XBS or Open Babel implementation or manual example fixture is included.
+The fixture in `validation/openbabel_issues/xbs/` and the seeded validation
+inputs are original project data under MIT OR Apache-2.0. External hofmann
+0.21.1 is used solely as a parser oracle, not bundled as a dependency.
+
+## XYZ atom-data format references (2026-10-17)
+
+`crates/chematic-py/python/chematic/_xyz_atom_data.py` is an independent
+implementation of the headerless layout requested in Open Babel issue #1703
+and of the ASE-documented named extxyz property syntax. No Open Babel/ASE
+source or issue example coordinates are copied. The fixtures under
+`validation/openbabel_issues/xyz_atom_data/` and seeded validation inputs
+are original project data under MIT OR Apache-2.0. ASE 3.26.0 is an external
+validation oracle, not a runtime dependency or vendored implementation.
+
+## XSF geometry format references (2026-10-17)
+
+`crates/chematic-py/python/chematic/_xsf.py` independently implements the
+static geometry syntax in the XCrySDen distribution's XSF specification:
+https://web.mit.edu/xcrysden_v1.5.60/www/XCRYSDEN/doc/XSF.html
+No external implementation or manual example coordinates are copied. The
+CIF in `validation/openbabel_issues/xsf/` and seeded structure inputs are
+original project data under MIT OR Apache-2.0. ASE 3.26.0 and Open Babel
+3.2.1 are external reader oracles, not bundled implementations.

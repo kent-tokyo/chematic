@@ -1,0 +1,52 @@
+{
+  "base_commit": "db0cf128c3e300d0e5da5a0f2abb4924489d7962",
+  "commands": [
+    "source /private/tmp/chematic-sparse-tanimoto-env.sh; cargo test -p chematic-mol --lib --test xyz_precision --offline --quiet",
+    "source /private/tmp/chematic-sparse-tanimoto-env.sh; cargo clippy -p chematic-mol -p chematic-py --all-targets --offline --no-deps -- -D warnings",
+    "source /private/tmp/chematic-sparse-tanimoto-env.sh; cargo rustc -p chematic-py --offline -- -C strip=none -C link-arg=-undefined -C link-arg=dynamic_lookup",
+    "PYTHONPATH=/private/tmp/chematic-xyz-precision-python PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3.13 -m pytest crates/chematic-py/tests/test_xyz_precision.py crates/chematic-py/tests/test_xyz_symbol_case.py crates/chematic-py/tests/test_exyz.py crates/chematic-py/tests/test_new_formats.py -q -p no:cacheprovider",
+    "PYTHONPATH=/private/tmp/chematic-xyz-precision-python:/private/tmp/chematic-sparse-tanimoto-rdkit python3.13 validation/validate_xyz_precision.py",
+    "MYPYPATH=crates/chematic-py/python python3.13 -m mypy --ignore-missing-imports --follow-imports=silent --no-incremental validation/typing/xyz_precision_valid.py",
+    "MYPYPATH=crates/chematic-py/python python3.13 -m mypy --ignore-missing-imports --follow-imports=silent --no-incremental validation/typing/xyz_precision_invalid.py",
+    "MYPYPATH=/private/tmp/chematic-xyz-precision-isolated-types python3.13 -m mypy --strict --ignore-missing-imports --follow-imports=silent --no-incremental validation/typing/xyz_precision_valid.py"
+  ],
+  "date": "2026-10-17",
+  "native_artifact": {
+    "fresh_candidate_build": true,
+    "new_function": "write_xyz_checked",
+    "path": "/private/tmp/chematic-xyz-precision-python/chematic/chematic.so",
+    "profile": "dev opt-level=1, one codegen unit, no incremental, debug=0, macOS dynamic lookup",
+    "sha256": "c6db880b6f5ca4ea0388f238c24e8a5b55751daab1084cf0d1d7b56e2427257b"
+  },
+  "numeric_comparisons": {
+    "decimal_formatter": 12288,
+    "external_successful_reads": 12,
+    "native_reader_finite_bit_patterns": 4096,
+    "rdkit_scientific_refusals": 4,
+    "scientific_exact_f64": 12288
+  },
+  "python": "3.13.6",
+  "reference_documentation": "https://openbabel.org/docs/FileFormats/XYZ_cartesian_coordinates_format.html",
+  "source_sha256": {
+    "crates/chematic-mol/src/lib.rs": "d2901e1090026dfa59f5238fad013692999d51392e63708ea3120096e5bc7b06",
+    "crates/chematic-mol/src/xyz_output.rs": "82e80a64ff62a7fbd40d34f93c2f3a46ab1ef9e76192c95298eec5eaf7bb0f0c",
+    "crates/chematic-mol/tests/xyz_precision.rs": "3c40e3f169ac5bc19c47c025028c55be47a149dcb0e1672807d305a86ad38536",
+    "crates/chematic-py/python/chematic/__init__.pyi": "d6df94ca95b44037fd33af78d29f307a8cd2a27a16333fd531909c1e65e746be",
+    "crates/chematic-py/src/formats.rs": "2cbd8eccfb916c5d6621cc8452d572b5572ebca723d4697e14eaf7f36213fe8e",
+    "crates/chematic-py/src/formats/xyz_output.rs": "41b2500ea5139effff02415b5e84cbb949512aa0cc1f06a889540aec2715060a",
+    "crates/chematic-py/tests/test_xyz_precision.py": "47fa0f9661cae3d9eb48265fa71ba0fbe87a78a5df217774412638f05eaf75a7",
+    "validation/validate_xyz_precision.py": "a603cdf11bbb038c09476f23617b439092780113a93e14ba9f8554c6141c940b"
+  },
+  "tests": {
+    "python_new": 55,
+    "python_total": 168,
+    "rust_library": 805,
+    "rust_new": 10
+  },
+  "typing": {
+    "full_package_strict": "81 existing missing generic arguments in unrelated stubs; no full-package strict claim",
+    "invalid_consumer": "4 expected type errors",
+    "isolated_exact_new_stub_strict": "passed; exact signature extracted from source by AST",
+    "public_consumer": "passed"
+  }
+}

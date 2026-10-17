@@ -35,7 +35,22 @@ jobs:
       - name: Check source stubs and negative controls
         run: |
           python scripts/check_python_stubs.py
+          python scripts/check_parent_api_docs.py
           python -m unittest scripts.tests.test_check_python_stubs -v
+
+  test-parent-api-docs:
+    name: Parent API documentation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.11"
+      - name: Build and verify generated Parent reference
+        run: |
+          pip install -r requirements-docs.txt
+          mkdocs build --strict --site-dir _parent_docs_site
+          python scripts/check_parent_api_docs.py --site-dir _parent_docs_site
 
   test:
     name: Test
@@ -303,14 +318,18 @@ jobs:
           - { package: chematic-mol, target: exyz_contract }
           - { package: chematic-mol, target: fhiaims_contract }
           - { package: chematic-mol, target: mopac_cartesian_contract }
+          - { package: chematic-mol, target: mopac_archive_contract }
           - { package: chematic-mol, target: dmol3_contract }
           - { package: chematic-mol, target: pdb_selection_contract }
           - { package: chematic-mol, target: pdb_conect_contract }
           - { package: chematic-smiles, target: rdkit_graph_queries }
           - { package: chematic-smiles, target: rdkit_atom_environment }
           - { package: chematic-smiles, target: rdkit_path_enumeration }
+          - { package: chematic-mol, target: reaction_cdxml }
           - { package: chematic-mol, target: rdfile_contract }
           - { package: chematic-mol, target: gzmat_precision }
+          - { package: chematic-mol, target: gamess_zmat_contract }
+          - { package: chematic-mol, target: xyz_precision }
           - { package: chematic-mol, target: sdf_selections }
           - { package: chematic-mol, target: qcschema }
           - { package: chematic-mol, target: sdf_v3000_recognition }

@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "scope": "binary bit projection; ordinary RDKit outputs plus independently checked adapter strided destinations",
+  "datasets": 576,
+  "adapter_calls": 11520,
+  "rdkit_calls": 576,
+  "failures": [],
+  "failure_count": 0,
+  "rdkit_version": "2026.09.1",
+  "rdkit_sparse_binary_conversion": {
+    "accepted": false,
+    "error_type": "ArgumentError",
+    "error": "Python argument types in\n    rdkit.DataStructs.cDataStructs.ConvertToNumpyArray(SparseBitVect, numpy.ndarray)\ndid not match C++ signature:\n    ConvertToNumpyArray(RDKit::RealValueVect rvv, boost::python::api::object destArray)\n    ConvertToNumpyArray(RDKit::SparseIntVect<unsigned long long> bv, boost::python::api::object destArray)\n    ConvertToNumpyArray(RDKit::SparseIntVect<unsigned int> bv, boost::python::api::object destArray)\n    ConvertToNumpyArray(RDKit::SparseIntVect<long long> bv, boost::python::api::object destArray)\n    ConvertToNumpyArray(RDKit::SparseIntVect<int> bv, boost::python::api::object destArray)\n    ConvertToNumpyArray(RDKit::DiscreteValueVect bv, boost::python::api::object destArray)\n    ConvertToNumpyArray(ExplicitBitVect bv, boost::python::api::object destArray)"
+  },
+  "numpy_version": "2.5.3",
+  "python_version": "3.13.6 (v3.13.6:4e665351082, Aug  6 2025, 11:22:35) [Clang 16.0.0 (clang-1600.0.26.6)]",
+  "adapter_sha256": "11415d0d2338bb60770d521b51b17aacb9bd94b8ce66406b0aa03cbcb13cdb2a",
+  "helper_sha256": "fb2d5a686a27208169cf2e0b2ee51447f192e61fcad1dfe2a11389f60abecd3d",
+  "reused_extension_sha256": "15b1445f12fb4209b5a96eaef22548d343271a6068ad39301d755afc1758c427",
+  "extension_scope": "Only reused to import the existing package. Modified conversion code is pure Python/NumPy and does not call chematic Rust APIs; no main-wheel build claim."
+}

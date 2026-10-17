@@ -76,7 +76,7 @@ pub fn parse_mopac_cartesian_with_limits(
     Ok(g)
 }
 
-fn element(symbol: &str) -> Option<Element> {
+pub(super) fn element(symbol: &str) -> Option<Element> {
     if symbol.bytes().all(|b| b.is_ascii_digit()) {
         return symbol
             .parse::<u8>()
@@ -86,7 +86,7 @@ fn element(symbol: &str) -> Option<Element> {
     Element::from_symbol(symbol).filter(|e| e.symbol() == symbol)
 }
 
-fn identity(raw: &str, line: usize) -> Result<(&str, Option<String>, &str), MopacError> {
+pub(super) fn identity(raw: &str, line: usize) -> Result<(&str, Option<String>, &str), MopacError> {
     let raw = raw.trim_start();
     let boundary = raw
         .find(|c: char| c.is_whitespace() || c == '(')
@@ -108,7 +108,7 @@ fn identity(raw: &str, line: usize) -> Result<(&str, Option<String>, &str), Mopa
     }
 }
 
-fn number(text: &str, line: usize) -> Result<f64, MopacError> {
+pub(super) fn number(text: &str, line: usize) -> Result<f64, MopacError> {
     let v = text
         .replace(['D', 'd'], "e")
         .parse::<f64>()
@@ -118,7 +118,7 @@ fn number(text: &str, line: usize) -> Result<f64, MopacError> {
     }
     Ok(v)
 }
-fn parse_row(body: &str, line: usize) -> Result<MopacCartesianRow, MopacError> {
+pub(super) fn parse_row(body: &str, line: usize) -> Result<MopacCartesianRow, MopacError> {
     let f: Vec<_> = body.split_whitespace().collect();
     if f.len() == 3 {
         return Ok(MopacCartesianRow {

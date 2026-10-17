@@ -1,0 +1,15 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.13.6, pytest-9.1.1, pluggy-1.6.0
+rootdir: /private/tmp/chematic-layered-counts-20261017/crates/chematic-py
+configfile: pytest.ini
+collected 307 items
+
+crates/chematic-py/tests/test_layered_counts.py ........................ [  7%]
+.........................................................                [ 26%]
+crates/chematic-py/tests/test_layered_config.py ........................ [ 34%]
+........................................                                 [ 47%]
+crates/chematic-py/tests/test_rdkit_compat.py .......................... [ 55%]
+........................................................................ [ 79%]
+................................................................         [100%]
+
+============================= 307 passed in 0.26s ==============================

@@ -1,0 +1,35 @@
+{
+  "python39_grammar": {
+    "status": "passed",
+    "scope": "crates/chematic-py/python/chematic/_pymatgen_json.py"
+  },
+  "check_refactor_budget": {
+    "status": "passed",
+    "output": "Refactor budget OK: 618 production Rust files, 8757 functions, 17 file allowances, 85 function allowances"
+  },
+  "check_python_stubs": {
+    "status": "passed",
+    "output": "Python stub gate passed: 1 source stubs, 0 wheels"
+  },
+  "check_cross_binding_manifest": {
+    "status": "passed",
+    "output": "Cross-binding operation manifest OK: 58 four-binding operations, 0 source-only operations, 4 bindings declared"
+  },
+  "check_unsafe_surface": {
+    "status": "passed",
+    "output": "unsafe surface OK: only the reviewed native-InChI FFI boundary is allowed"
+  },
+  "check_binding_surface": {
+    "status": "passed",
+    "inventory_sha256": "068c581b2b901067a4d0038fdd8719b738f37b0a5f7d36921276e5a0c6360622"
+  },
+  "public_documentation_example": {
+    "status": "passed"
+  },
+  "check_product_names": {
+    "status": "passed"
+  },
+  "mkdocs_strict": {
+    "status": "passed"
+  }
+}

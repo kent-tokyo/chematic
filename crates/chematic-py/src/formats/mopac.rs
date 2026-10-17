@@ -175,3 +175,55 @@ pub(super) fn write_mopac_cartesian(
     })
     .map_err(mopac_error)
 }
+
+#[pyfunction]
+#[pyo3(signature=(text, *, max_input_bytes=None, max_atoms=None, max_line_len=None))]
+pub(super) fn parse_mopac_archive<'py>(
+    py: Python<'py>,
+    text: &str,
+    max_input_bytes: Option<usize>,
+    max_atoms: Option<usize>,
+    max_line_len: Option<usize>,
+) -> PyResult<Bound<'py, PyDict>> {
+    let defaults = chematic_mol::MopacParseLimits::default();
+    let limits = chematic_mol::MopacParseLimits {
+        max_input_bytes: max_input_bytes.unwrap_or(defaults.max_input_bytes),
+        max_atoms: max_atoms.unwrap_or(defaults.max_atoms),
+        max_line_len: max_line_len.unwrap_or(defaults.max_line_len),
+    };
+    let archive =
+        chematic_mol::parse_mopac_archive_with_limits(text, &limits).map_err(mopac_error)?;
+    let out = PyDict::new(py);
+    out.set_item("keywords", archive.keywords)?;
+    out.set_item("title", archive.title)?;
+    out.set_item("comment", archive.comment)?;
+    out.set_item("summary_text", archive.summary_text)?;
+    out.set_item("restart_text", archive.restart_text)?;
+    out.set_item("trailing_text", archive.trailing_text)?;
+    out.set_item("source_text", archive.source_text)?;
+    let atoms = pyo3::types::PyList::empty(py);
+    for atom in archive.atoms {
+        let row = PyDict::new(py);
+        row.set_item("element", atom.element.symbol())?;
+        row.set_item("label", atom.label)?;
+        row.set_item("values", atom.values)?;
+        row.set_item(
+            "optimization_flags",
+            atom.optimization_flags.map(|f| f.code()),
+        )?;
+        row.set_item("references", atom.references)?;
+        row.set_item("partial_charge", atom.partial_charge)?;
+        atoms.append(row)?;
+    }
+    out.set_item("atoms", atoms)?;
+    Ok(out)
+}
+
+pub(super) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    register_pyfunctions!(
+        m,
+        parse_mopac_cartesian,
+        write_mopac_cartesian,
+        parse_mopac_archive
+    )
+}

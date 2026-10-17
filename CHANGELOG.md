@@ -16,12 +16,90 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Rust/Python `rdkit_pick_tautomer` selects from caller-supplied candidates
+  using the existing RDKit-port score and canonical-SMILES ties. Empty input,
+  oversized input and unsupported candidates return explicit errors; Python
+  generators own their yielded molecules and preserve selected metadata.
+  See [candidate selection](docs/tautomer-candidate-selection.md).
 - Rust/Python `gro_to_lammps_atomic` converts GRO coordinates, periodic cells
   and optional velocities with explicit real/metal units and caller-supplied
   type/mass tables. Orthogonal and restricted triclinic cells retain their
   geometry; exact source and row identity are returned as sidecars.
   See [GRO to LAMMPS units](docs/gro-lammps-units.md) for the atomic-only scope.
+- Rust/Python `write_cml_named_checked` exports caller-supplied unique atom
+  IDs and optional Cartesian 3D coordinates, including matching bond
+  references. Invalid IDs and unsupported graph semantics are explicit
+  errors. See [named CML atoms](docs/cml-named-atoms.md) for the MOL2 recipe.
+- Rust/Python `sasa_with_radii_checked` accepts explicit coordinates and one
+  positive radius per atom, with checked values, work limits and typed errors.
+  It returns per-atom and total native Shrake-Rupley areas without generating
+  coordinates or choosing default radii. See [checked SASA](docs/checked-sasa-radii.md).
+- Rust/Python prepared MMFF94/MMFF94s can use caller-supplied partial charges
+  with checked counts, finite values and coefficient range. Explicit charge
+  products drive energy, gradient, dielectric updates and minimization.
+  See [custom MMFF charges](docs/mmff-partial-charges.md).
+- Rust/Python `euclidean_distance_matrix_checked` accepts rectangular finite
+  descriptor vectors and returns condensed lower-triangle distances. Bounded
+  inputs/work, fallible buffers and scaled norms retain tiny/huge distances.
+  See [descriptor distances](docs/descriptor-euclidean-distances.md).
+- Added Rust/Python checked sparse binary Tanimoto condensed matrices from
+  on-bit indices or Python `GetOnBits()` sources, with bounded extraction,
+  resource limits and explicit empty-set policy. See
+  [sparse Tanimoto matrices](docs/sparse-tanimoto-matrix.md).
+- Added Rust/Python checked single-step reaction CDXML output with explicit
+  reactant/agent/product roles, unique object IDs and a caller-supplied arrow
+  and coordinates. Unsupported graph annotations fail explicitly; see
+  [reaction CDXML output](docs/reaction-cdxml-output.md) for the bounded profile
+  and external-reader differences.
+- Rust/Python `parse_mopac_archive` reads one MOPAC archive restart deck,
+  preserving Cartesian/internal values, references, flags, announced charges
+  and raw summary/ancillary sections. See [archive input](docs/mopac-archive-input.md).
+- Python compatibility `rdAlignment.GetAlignmentTransform` accepts typed
+  point rows, numeric arrays or x/y/z points, and returns weighted SSD plus
+  a checked proper/improper transform. See [point alignment](docs/point-alignment.md)
+  for input limits and the default-only iteration option.
+- Rust/Python `write_gamess_zmat` emits a checked GAMESS-US geometry
+  template with source-frame Cartesian `$DATA` and caller-defined `$ZMAT`
+  distance/angle/torsion definitions. See [GAMESS output](docs/gamess-zmat-output.md)
+  for precision, card limits and calculation-setup scope.
+- Python compatibility `rdInfoTheory.InfoBitRanker` accepts typed explicit/
+  sparse binary vectors and returns bounded entropy-based feature rankings
+  with per-class counts, atomic vote validation and deterministic tie ordering.
+  See [entropy bit ranking](docs/info-bit-ranker.md) for the supported profile.
+- Python `split_pdb_models` produces validated coordinate-only PDB documents
+  with names padded to the total model count. Atom/ANISOU/TER and global CONECT
+  lines retain their identity; metadata loss requires explicit consent, and
+  aggregate output limits refuse partial results. See [PDB model splitting](docs/pdb-model-splitting.md).
+- Python `rdkit_compat.LayeredFingerprint` exposes checked native Layered
+  options and accumulates caller-owned list/uint32 NumPy atom counters after
+  successful calculation. Strided views, seeded counts and bit masks are
+  supported with typed inputs and bounded native enumeration. See
+  [Layered caller counters](docs/layered-caller-counts.md).
+- Rust/Python `write_xyz_checked` supports caller-selected fixed/scientific
+  XYZ coordinates, fractional digits and minimum field widths, with finite
+  geometry checks, bounded output and unchanged legacy writer defaults.
+  See [XYZ output precision](docs/xyz-output-precision.md).
+- Python `plan_sdf_split` creates an exact-count, balanced SDF partition plan
+  and bounded chunk iterators. Source bytes and record order are preserved;
+  whole-source/part hashes and file identity detect changes without loading
+  the complete file. See [SDF file partitions](docs/sdf-file-partitions.md).
+- Python `rdkit_compat.rdMIF.CoulombDielectric` adds a typed local-solvation
+  model with copied inputs, explicit solvent/solute permittivities and a
+  1,024-site construction limit. See [the model and validation](docs/coulomb-dielectric-field.md).
 
+- Python `rdkit_compat.rdMIF.Coulomb` adds typed, copied explicit-charge vacuum
+  fields with bounded real inputs and scalar kJ/mol evaluation. See the
+  [Coulomb field profile](docs/coulomb-interaction-field.md) for squared-distance
+  thresholds, narrowed settings and measured RDKit rounding-boundary differences.
+- Python `write_xbs`, `XbsSpecies` and `XbsBondRule` emit checked static XBS
+  scene files with explicit gray styles and distance drawing rules. XBS is
+  distinct from Open Babel's `bs` dialect. See [XBS output](docs/xbs-output.md).
+- Python `parse_xyz_atom_data` / `XyzAtomDataFrame` preserve headerless XYZ
+  scalar, vector or flat nine-component payloads with explicit widths, source
+  retention and named extxyz conversion. See [XYZ per-atom data](docs/xyz-atom-data.md).
+- Python `write_xsf_checked` exports ordered periodic geometry from native
+  structures/CIF to XSF, refusing partial occupancy and known unexpanded
+  symmetry and requiring explicit metadata-loss consent. See [CIF-to-XSF output](docs/cif-xsf-output.md).
 - Rust/Python `FeaturePatternSet` owns up to 32 caller-supplied SMARTS feature
   definitions and produces full-width atom masks or native circular feature
   fingerprints. Matching budgets and size limits refuse partial output;
@@ -43,6 +121,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   for the Open Babel #3032 reproduction and bounded validation.
 
 ### Fixed
+
+- `rdkit_compat.DataStructs.ConvertToNumpyArray` now replaces zero bits as well
+  as on-bits, validates source/destination types and dimensions, and reads the
+  complete source before modifying an existing array. Bounded inputs and numeric
+  NumPy views are covered in [NumPy fingerprint output](docs/numpy-fingerprint-output.md).
 
 - Preserve SDF data fields whose headers contain optional trailing information,
   including RDKit SDWriter's `> <Field> (record-number)` headers, across native

@@ -1,4 +1,20 @@
+from ._pdb_models import (
+    PdbModelFile as PdbModelFile,
+    PdbModelSplit as PdbModelSplit,
+    PdbSplitLoss as PdbSplitLoss,
+    split_pdb_models as split_pdb_models,
+)
+
+from ._sdf_split import (
+    SdfSplitPart as SdfSplitPart,
+    SdfSplitPlan as SdfSplitPlan,
+    plan_sdf_split as plan_sdf_split,
+)
+
 from .chematic import *
+from ._xbs import XbsBondRule, XbsSpecies, write_xbs
+from ._xyz_atom_data import XyzAtomDataFrame, parse_xyz_atom_data
+from ._xsf import write_xsf_checked
 from .chematic import (
     __version__,
     Mol,
@@ -648,3 +664,14 @@ def screen(smiles, profile: str = "druglike", filters=None) -> list:
         row["overall_pass"] = all(v for k, v in row.items() if k.endswith("_pass"))
         results.append(row)
     return results
+
+from ._conformer_alignment import align_conformers_checked
+from ._pymatgen_json import PymatgenStructureRecord, parse_pymatgen_structures
+from ._nucleic_linear_svg import nucleic_acid_linear_svg
+from ._cml_collection import CmlMoleculeRecord, read_cml_collection, write_cml_collection
+from ._tautomer_control import (
+    TautomerEnumeration, TautomerProgress, enumerate_tautomers_checked,
+)
+from ._crystal_obj import ObjMeshExport, write_crystal_obj_checked
+from ._parent_types import ParentStage, SuperParentReport
+from ._bond_fragment import BondFragmentation, FragmentAttachment, fragment_on_bonds_checked

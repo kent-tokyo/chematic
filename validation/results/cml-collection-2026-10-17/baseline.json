@@ -1,0 +1,5 @@
+{
+  "base_commit": "c84c68f297f95562d1d29c75234f2190cd5f9d75",
+  "collection_api_exported": false,
+  "scope": "native single-molecule CML reader/writer exists; no collection framing API"
+}

@@ -7,6 +7,11 @@ package, comparator, corpus, host, runtime and operation.
 
 ## Start here
 
+- [V2000 zero-attribute tail](2026-10-17-openbabel-zero-fields.md):
+  SDF writes improve 1.039–1.040x; all 30 source median floors pass, including
+  a disclosed 0.6% 3D-write retreat. Five eligible fresh Open Babel lanes win
+  24/24; first-slice parse remains unranked. One-host source evidence.
+
 - [3D tetrahedral candidate guard](2026-10-17-openbabel-3d-stereo-guard.md): source-valid 21-block native comparison, all 24 floors, preserved source outputs and archived invalid build epoch.
 
 | Need | Start with |
@@ -516,3 +521,5 @@ integrated-main or toolkit-wide superiority.
 - [Cycle-root pruning](2026-10-14-python-cycle-root-pruning.md) ([parity](2026-10-14-python-cycle-root-pruning-parity.json), [slice 0](2026-10-14-python-cycle-root-pruning-slice0-paired20.json), [focused 5000](2026-10-14-python-cycle-root-pruning-slice5000-focused-repeat20.json), [slice 5000](2026-10-14-python-cycle-root-pruning-slice5000-paired20.json), [source](2026-10-14-python-cycle-root-pruning-source.json))
 - [Cycle-path reuse](2026-10-14-python-cycle-path-reuse.md) ([parity](2026-10-14-python-cycle-path-reuse-parity.json), [slice 0](2026-10-14-python-cycle-path-reuse-slice0-paired20.json), [source](2026-10-14-python-cycle-path-reuse-source.json))
 - [V3000 writer buffer](2026-10-14-openbabel-v3000-writer-buffer.md) ([slice 0](2026-10-14-openbabel-v3000-writer-buffer-0-paired21.json), [slice 5000](2026-10-14-openbabel-v3000-writer-buffer-5000-paired21.json), [chains](2026-10-14-openbabel-v3000-writer-buffer-chains-paired21.json), [repeat](2026-10-14-openbabel-v3000-writer-buffer-parse-repeat21.json), [sandbox](2026-10-14-openbabel-v3000-writer-buffer-sandbox-attempt.json), [source](2026-10-14-openbabel-v3000-writer-buffer-source.json), [verification](2026-10-14-openbabel-v3000-writer-buffer-verification.json))
+
+- [Private inline adjacency failed performance gate](2026-10-17-morgan-inline-adjacency.md) ([numeric packet](2026-10-17-morgan-inline-adjacency.json.gz)): historical source experiment fails second primary improvement and eight source floors; runtime optimization excluded, all 78 lanes retained.

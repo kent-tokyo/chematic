@@ -1,0 +1,48 @@
+[
+  {
+    "name": "public-valid",
+    "command": [
+      "python3.13",
+      "-m",
+      "mypy",
+      "--follow-imports=silent",
+      "--ignore-missing-imports",
+      "--no-incremental",
+      "--cache-dir=/private/tmp/chematic-coulomb-public-mypy",
+      "validation/typing/coulomb_field_valid.py"
+    ],
+    "exit_code": 0,
+    "expected_exit_code": 0
+  },
+  {
+    "name": "public-invalid",
+    "command": [
+      "python3.13",
+      "-m",
+      "mypy",
+      "--follow-imports=silent",
+      "--ignore-missing-imports",
+      "--no-incremental",
+      "--cache-dir=/private/tmp/chematic-coulomb-public-mypy",
+      "validation/typing/coulomb_field_invalid.py"
+    ],
+    "exit_code": 1,
+    "expected_exit_code": 1
+  },
+  {
+    "name": "strict-helper",
+    "command": [
+      "python3.13",
+      "-m",
+      "mypy",
+      "--follow-imports=silent",
+      "--ignore-missing-imports",
+      "--no-incremental",
+      "--cache-dir=/private/tmp/chematic-coulomb-public-mypy",
+      "--strict",
+      "/private/tmp/chematic_coulomb_field_typecheck.py"
+    ],
+    "exit_code": 0,
+    "expected_exit_code": 0
+  }
+]

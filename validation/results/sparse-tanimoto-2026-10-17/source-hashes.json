@@ -1,0 +1,32 @@
+{
+  "base_commit": "de41dadd8f123a4b1368937c7dd86df823434588",
+  "rustc": "rustc 1.97.0 (2d8144b78 2026-07-07)",
+  "cargo": "cargo 1.97.0 (c980f4866 2026-06-30)",
+  "target_profile": {
+    "incremental": false,
+    "jobs": 1,
+    "dev_debug": 0,
+    "test_debug": 0,
+    "dev_opt_level": 1,
+    "test_opt_level": 1,
+    "dev_codegen_units": 1,
+    "test_codegen_units": 1,
+    "dev_strip": "none"
+  },
+  "sha256": {
+    "Cargo.lock": "abfe0dfeca2dee6fb69c97ce02513ef7b3b34084a74e7142b38979b1c36aaebc",
+    "Cargo.toml": "cb4a96c1a04ae0db3f990dba53520508ccb2bad5bf490d760003a991a68a11a4",
+    "crates/chematic-fp/Cargo.toml": "2c9a3c0d849006046d1eb92ee476234e598b612b01151a7a70cbaa4696e876ed",
+    "crates/chematic-fp/src/lib.rs": "bf9898513571dd88076dfbf0b3d54203edf0e89050a8836d89cc671ca40d29c2",
+    "crates/chematic-fp/src/sparse_matrix.rs": "6a0d615c006d26b3ddc9247ed8214bd41039d58c82f96cb288752277ba8ac582",
+    "crates/chematic-fp/tests/sparse_matrix.rs": "383c259fe0a374b3ae66038c0fb4ef089150652290255fbfc0d2df709c55d0c1",
+    "crates/chematic-py/Cargo.toml": "dea17e3dba5c6972891816fd479f1cb31f668e7ba7ddac427f0adc023caf73a6",
+    "crates/chematic-py/src/lib.rs": "e8a3717d62231147f3b2459bba31e04425cfea542060ff4cf6b3a8264249e805",
+    "crates/chematic-py/src/similarity.rs": "cabba1f5a0709f5d9c9a6e8c7261782492fb53e7fa989cf21a586c21be2f6341",
+    "crates/chematic-py/src/sparse_similarity.rs": "2f8edb585dca30eae3e9e640931309f7cd41ed35cde4d1836efc69386dbac265",
+    "crates/chematic-py/python/chematic/__init__.py": "2792b41ccbfd7e42c6e902efb82b4494f6292a59c8ca90cd22573c691e0500c5",
+    "crates/chematic-py/python/chematic/__init__.pyi": "cedb0e7d2ceb8e507474eec5127e0bb1f9139bfab2247aeab6766eac860257e7",
+    "crates/chematic-py/tests/test_sparse_tanimoto.py": "99c01fb862eec617bd26ab43ab23ef06d4dc94e6e3d2cabc14c14c500dff5de5",
+    "validation/rdkit_issues/sparse-tanimoto/probe.py": "9d405d089e55f68620fc2ed7ac6517b47aa63e9d93d5fb5a327d5bb110b2a2a1"
+  }
+}

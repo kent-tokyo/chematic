@@ -1,0 +1,35 @@
+{
+  "ase": "3.26.0",
+  "ase_cross_reads": 150,
+  "atom_rows": 2670,
+  "canonical_element_check": 118,
+  "comment_check": "ASE decodes _JSON metadata; native raw metadata recovered with json.loads(value[6:])",
+  "exclusions": [
+    "no topology parity",
+    "no physical meaning or tensor reshaping",
+    "no lattice/trajectory parsing",
+    "no fresh native build",
+    "no performance claim"
+  ],
+  "native_cross_reads": 150,
+  "numpy": "2.5.3",
+  "openbabel_probe": {
+    "input": "3\nOriginal asymmetric vector fixture\nC 0 0 0 .125 -.25 .5\nCl 1.5 .1 0 -1 .75 .2\nO -.3 2 .2 .001 .002 .003\n",
+    "output_atom_column_counts": [
+      4,
+      4,
+      4
+    ],
+    "stderr": "1 molecule converted\n",
+    "stdout": "3\nOriginal asymmetric vector fixture\nC          0.00000        0.00000        0.00000\nCl         1.50000        0.10000        0.00000\nO         -0.30000        2.00000        0.20000\n",
+    "version": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27"
+  },
+  "payload_scalar_values": 11570,
+  "python": "3.13.6",
+  "schema_version": 1,
+  "scope": "single-frame data interchange, not topology or physical units",
+  "seed": 1703,
+  "source_and_extxyz_sha256": "6e3991cf63879106beaf444299350197e54993e422dad6437c7f718571345256",
+  "source_records": 150,
+  "value_check": "binary64 byte equality for coordinates and all payload values; negative zero, subnormal and largest finite payload included"
+}

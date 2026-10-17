@@ -22,6 +22,11 @@ the [complete inventory](archive-index.md) links every retained record.
 
 ## Recent focused follow-ups
 
+- [V2000 zero-attribute tail](2026-10-17-openbabel-zero-fields.md):
+  SDF writes improve 1.039–1.040x; all 30 source median floors pass, including
+  a disclosed 0.6% 3D-write retreat. Five eligible fresh Open Babel lanes win
+  24/24; first-slice parse remains unranked. One-host source evidence.
+
 - [3D tetrahedral candidate guard](2026-10-17-openbabel-3d-stereo-guard.md):
   controlled 3D parse improves 6.547–6.641x versus source and 118.775–119.730x
   versus Open Babel; all 24 median floors pass, with a disclosed 0.9% write retreat.
@@ -100,3 +105,5 @@ moving "current" command in this index.
 - Link every root-level record from this file or `archive-index.md`.
 - Run `python3 scripts/check_benchmark_index.py` after changes.
 - Do not infer universal accuracy or speed from one corpus, host, or API lane.
+
+- [2026-10-17: Open Babel substituent stack-buffer source experiment](2026-10-17-openbabel-substituent-pair.md) ([numeric packet](2026-10-17-openbabel-substituent-pair.json))

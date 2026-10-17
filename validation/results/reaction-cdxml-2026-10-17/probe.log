@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "scope": "bounded supplied single-step roles and layout; no reaction-feasibility or full ChemDraw claim",
+  "datasets": 256,
+  "xml_role_layout_checks": 256,
+  "indigo_cross_reads": 256,
+  "rdkit_reactant_product_cross_reads": 256,
+  "failures": [],
+  "failure_count": 0,
+  "rdkit_agent_role_difference_count": 160,
+  "rdkit_version": "2026.09.1",
+  "indigo_version": "1.46.0.0-gb36d38f52-aarch64-darwin-appleclang-17000013",
+  "openbabel_version": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+  "openbabel_diagnostics": [
+    {
+      "reaction": "CCO.O>Cl>CC=O",
+      "exit_code": 0,
+      "fragments": 1,
+      "arrows": 0,
+      "schemes": 0,
+      "steps": 0
+    },
+    {
+      "reaction": "CCO.O>>CC=O.O",
+      "exit_code": 0,
+      "fragments": 1,
+      "arrows": 0,
+      "schemes": 0,
+      "steps": 0
+    },
+    {
+      "reaction": "CC(=O)O>N>CC(=O)N.O",
+      "exit_code": 0,
+      "fragments": 1,
+      "arrows": 0,
+      "schemes": 0,
+      "steps": 0
+    }
+  ],
+  "legacy_atom_state_diagnostics": [
+    {
+      "input": "[O]",
+      "indigo_reference": "[O]",
+      "indigo_legacy_read": "O",
+      "legacy_cdxml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"8\" NumHydrogens=\"0\"/>\n</fragment>\n</page>\n</CDXML>\n",
+      "checked_refusal": "reaction CDXML component 0: bracket hydrogen count differs from native normal-valence inference"
+    },
+    {
+      "input": "[N]",
+      "indigo_reference": "[N]",
+      "indigo_legacy_read": "N",
+      "legacy_cdxml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"7\" NumHydrogens=\"0\"/>\n</fragment>\n</page>\n</CDXML>\n",
+      "checked_refusal": "reaction CDXML component 0: bracket hydrogen count differs from native normal-valence inference"
+    },
+    {
+      "input": "[CH3]",
+      "indigo_reference": "[CH3]",
+      "indigo_legacy_read": "[CH3]",
+      "legacy_cdxml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"6\" NumHydrogens=\"3\"/>\n</fragment>\n</page>\n</CDXML>\n",
+      "checked_refusal": "reaction CDXML component 0: bracket hydrogen count differs from native normal-valence inference"
+    },
+    {
+      "input": "[H]",
+      "indigo_reference": "[H]",
+      "indigo_legacy_read": "[HH]",
+      "legacy_cdxml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"1\" NumHydrogens=\"0\"/>\n</fragment>\n</page>\n</CDXML>\n",
+      "checked_refusal": "reaction CDXML component 0: isolated or bridging hydrogen atoms are unsupported"
+    }
+  ],
+  "native_binary_sha256": "15b1445f12fb4209b5a96eaef22548d343271a6068ad39301d755afc1758c427",
+  "python_version": "3.13.6 (v3.13.6:4e665351082, Aug  6 2025, 11:22:35) [Clang 16.0.0 (clang-1600.0.26.6)]"
+}

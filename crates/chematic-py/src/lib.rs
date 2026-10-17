@@ -33,7 +33,9 @@ macro_rules! register_pyfunctions {
     }};
 }
 
+mod cml_named;
 mod crystal;
+mod descriptor_distances;
 mod ensemble_v2;
 mod errors;
 mod feature_patterns;
@@ -52,6 +54,8 @@ mod reactions;
 mod reports;
 mod rwmol;
 mod similarity;
+mod sparse_similarity;
+mod tautomer_pick;
 mod volumetric;
 
 mod bulk;

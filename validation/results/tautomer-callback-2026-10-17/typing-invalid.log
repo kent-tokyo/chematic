@@ -1,0 +1,6 @@
+validation/typing/tautomer_control_invalid.py:9: error: Argument "callback" to "enumerate_tautomers_checked" has incompatible type "Callable[[TautomerProgress], int]"; expected "Callable[[TautomerProgress], bool] | None"  [arg-type]
+validation/typing/tautomer_control_invalid.py:10: error: Argument 1 to "enumerate_tautomers_checked" has incompatible type "str"; expected "Mol"  [arg-type]
+validation/typing/tautomer_control_invalid.py:11: error: Argument "max_tautomers" to "enumerate_tautomers_checked" has incompatible type "str"; expected "int"  [arg-type]
+validation/typing/tautomer_control_invalid.py:13: error: Incompatible types in assignment (expression has type "tuple[str, ...]", variable has type "str")  [assignment]
+validation/typing/tautomer_control_invalid.py:14: error: Property "status" defined in "TautomerEnumeration" is read-only  [misc]
+Found 5 errors in 1 file (checked 1 source file)

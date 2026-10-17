@@ -1,0 +1,5 @@
+refactor: Refactor budget OK: 618 production Rust files, 8757 functions, 17 file allowances, 85 function allowances
+stubs: Python stub gate passed: 1 source stubs, 0 wheels
+cross-binding: Cross-binding operation manifest OK: 58 four-binding operations, 0 source-only operations, 4 bindings declared
+unsafe: unsafe surface OK: only the reviewed native-InChI FFI boundary is allowed
+names: Product naming check OK: chematic and chematic-draw are canonical

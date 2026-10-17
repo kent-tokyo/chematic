@@ -1,0 +1,24 @@
+{
+  "profile": "sdf-0",
+  "block": 3,
+  "arm": "openbabel",
+  "mode": "roundtrip",
+  "timing": {
+    "engine": "openbabel",
+    "mode": "roundtrip",
+    "records": 3000,
+    "repeats": 3,
+    "output_units": 8056842,
+    "elapsed_ns": 116441777,
+    "warmup_repeats": 5,
+    "warmup_elapsed_ns": 585128500,
+    "minimum_warmup_ns": 500000000,
+    "minimum_timed_ns": 100000000,
+    "elapsed_ns_raw": 349325333,
+    "elapsed_ns_per_batch": 116441777,
+    "records_per_batch": 1000,
+    "minimum_repeats": 3,
+    "elapsed_unit": "nanoseconds per full batch; raw elapsed and actual counts retained",
+    "peak_process_rss_bytes": 55410688
+  }
+}

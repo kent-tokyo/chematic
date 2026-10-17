@@ -1,0 +1,16 @@
+{
+  "pymatgen_version": "2025.6.14",
+  "numpy_version": "2.5.3",
+  "seed": 2675,
+  "additional_element_symbols_checked": 118,
+  "structures": 384,
+  "sites_checked": 3936,
+  "species_entries_checked": 5448,
+  "two_record_responses": 384,
+  "matrices_fractional_coordinates_labels_species": "exact equality",
+  "metadata_dictionary_reread": "pymatgen Structure.from_dict(...).as_dict() equals original",
+  "maximum_cartesian_absolute_difference_angstrom": 7.105427357601002e-15,
+  "cartesian_atol_angstrom": 1e-12,
+  "input_sha256": "488af20116206c5aaf60f4a84075a9b195d8838254899e64de9a9f8a4a46d781",
+  "scope": "synthetic explicit periodic cells; no Materials Project request, symmetry inference, chemical bonds, or format-wide parity claim"
+}

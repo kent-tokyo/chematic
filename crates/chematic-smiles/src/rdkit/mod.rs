@@ -66,6 +66,8 @@ mod smarts_write;
 mod stereo;
 mod substruct;
 mod tautomer;
+mod tautomer_control;
+mod tautomer_pick;
 mod write;
 mod xyz_read;
 
@@ -77,6 +79,14 @@ pub use molblock::{RdkitMolBlock, RdkitMolBlockAtom, RdkitMolBlockBond, rdkit_mo
 pub use molhash::RdkitHashFunction;
 pub use ogb::{OgbGraphFeatures, ogb_graph_features, ogb_graph_features_with_options};
 pub use tautomer::RdkitTautomerStatus;
+pub use tautomer_control::{
+    RdkitTautomerEnumeration, RdkitTautomerProgress, rdkit_enumerate_tautomers,
+    rdkit_enumerate_tautomers_with_callback,
+};
+pub use tautomer_pick::{
+    RDKIT_TAUTOMER_PICK_MAX_CANDIDATES, RdkitTautomerPick, RdkitTautomerPickError,
+    rdkit_pick_tautomer,
+};
 
 /// Why [`rdkit_canonical_smiles`] produced no string.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -921,20 +931,6 @@ pub fn rdkit_mol_from_mol2_block(
     })
 }
 
-/// [`rdkit_mol_from_smiles`]'s molecule for writers, which read neither
-/// `chirality_possible` nor the CIP ranks.
-/// The result of [`rdkit_enumerate_tautomers`].
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct RdkitTautomerEnumeration {
-    /// `Chem.MolToSmiles(t)` of every tautomer, in the result's order (its
-    /// map keys' order).
-    pub smiles: Vec<String>,
-    /// The result's map keys (`TautomerEnumeratorResult.smiles`).
-    pub keys: Vec<String>,
-    /// `TautomerEnumeratorResult.status`.
-    pub status: RdkitTautomerStatus,
-}
-
 /// `Chem.MolToSmiles(rdMolStandardize.TautomerEnumerator().Canonicalize(m))`
 /// for `m = Chem.MolFromSmiles(s)` (RDKit 2026.03.1, default
 /// `CleanupParameters`): the port of `TautomerEnumerator::canonicalize`
@@ -949,25 +945,6 @@ pub fn rdkit_canonical_tautomer(mol: &Molecule) -> Result<String, RdkitSmilesErr
     let (m, _) = rdkit_mol_from_smiles(mol)?;
     let (canon, _) = tautomer::canonicalize(&m)?;
     write::mol_to_smiles_owned(canon, &RdkitSmilesParams::default())
-}
-
-/// `rdMolStandardize.TautomerEnumerator().Enumerate(m)` for
-/// `m = Chem.MolFromSmiles(s)` (RDKit 2026.03.1, default
-/// `CleanupParameters`): the tautomers' SMILES and the result status.
-pub fn rdkit_enumerate_tautomers(
-    mol: &Molecule,
-) -> Result<RdkitTautomerEnumeration, RdkitSmilesError> {
-    let (m, _) = rdkit_mol_from_smiles(mol)?;
-    let res = tautomer::enumerate(&m, &tautomer::Settings::default())?;
-    let mut smiles = Vec::with_capacity(res.tautomers.len());
-    for t in res.tautomers.values() {
-        smiles.push(write::mol_to_smiles(&t.mol, &RdkitSmilesParams::default())?);
-    }
-    Ok(RdkitTautomerEnumeration {
-        smiles,
-        keys: res.tautomers.keys().cloned().collect(),
-        status: res.status,
-    })
 }
 
 /// `rdMolStandardize.TautomerEnumerator.ScoreTautomer(m)` for

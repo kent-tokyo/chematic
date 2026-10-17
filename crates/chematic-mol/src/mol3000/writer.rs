@@ -182,19 +182,7 @@ fn append_inferred_valence_properties(
     }
 }
 
-fn append_atom_properties(
-    line: &mut String,
-    mol: &Molecule,
-    metadata: &MolMetadata,
-    idx: AtomIdx,
-    atom: &Atom,
-) {
-    if atom.charge != 0 {
-        write!(line, " CHG={}", atom.charge).expect("writing to String cannot fail");
-    }
-    if let Some(isotope) = atom.isotope {
-        write!(line, " MASS={isotope}").expect("writing to String cannot fail");
-    }
+fn append_explicit_hcount(line: &mut String, mol: &Molecule, idx: AtomIdx, atom: &Atom) {
     if let Some(hydrogens) = atom.hydrogen_count {
         // HCOUNT is a query property for some V3000 readers. An aliphatic
         // carbon with an inferred H count or a pyrrole-like [nH] with two
@@ -222,47 +210,90 @@ fn append_atom_properties(
                     BondOrder::Aromatic | BondOrder::Single
                 )
             });
+        // Both charged aromatic carbon ions [cH-] and [cH+] keep their H
+        // when the two ring bonds and CHG are written without HCOUNT. The
+        // redundant query property prevents concrete COSMolKit read-back.
+        let aromatic_charged_carbon_h = atom.element == Element::C
+            && atom.aromatic
+            && matches!(atom.charge, -1 | 1)
+            && hydrogens == 1
+            && mol.neighbors(idx).count() == 2
+            && mol
+                .neighbors(idx)
+                .all(|(_, bond_idx)| mol.bond(bond_idx).order == BondOrder::Aromatic);
         // A charged atom also needs no query HCOUNT when its element, charge,
         // and bonds already determine the same hydrogen count. Retain it for
         // cases such as [CH2-] and [SH2+], where inference would add an H.
         let charged_inferred_h = atom.charge != 0
             && atom.element.is_organic_subset()
             && chematic_core::valence::valence_inferred_hcount(mol, idx) == hydrogens;
-        if atom.wildcard || !(aliphatic_carbon_h || aromatic_n_h || charged_inferred_h) {
+        if atom.wildcard
+            || !(aliphatic_carbon_h
+                || aromatic_n_h
+                || aromatic_charged_carbon_h
+                || charged_inferred_h)
+        {
             write!(line, " HCOUNT={hydrogens}").expect("writing to String cannot fail");
         }
     }
+}
+
+fn append_wildcard_valence(
+    line: &mut String,
+    mol: &Molecule,
+    idx: AtomIdx,
+    atom: &Atom,
+    source_properties: Option<&str>,
+) {
+    if !atom.wildcard
+        || mol.r_group_label(idx).is_some()
+        || !atom.hydrogen_count.is_some_and(|count| count > 0)
+        || source_properties.is_some_and(|properties| {
+            properties
+                .split_whitespace()
+                .any(|token| token.starts_with("VAL=") || token.starts_with("RAD="))
+        })
+    {
+        return;
+    }
+    let bonds = mol.neighbors(idx).try_fold(0u8, |sum, (_, bond_idx)| {
+        let order = match mol.bond(bond_idx).order {
+            BondOrder::Single | BondOrder::Up | BondOrder::Down => 1,
+            BondOrder::Double => 2,
+            BondOrder::Triple => 3,
+            _ => return None,
+        };
+        sum.checked_add(order)
+    });
+    if let Some(valence) = bonds
+        .and_then(|bonds| bonds.checked_add(atom.hydrogen_count.unwrap_or(0)))
+        .filter(|&valence| (1..=14).contains(&valence))
+    {
+        write!(line, " VAL={valence}").expect("writing to String cannot fail");
+    }
+}
+
+fn append_atom_properties(
+    line: &mut String,
+    mol: &Molecule,
+    metadata: &MolMetadata,
+    idx: AtomIdx,
+    atom: &Atom,
+) {
+    if atom.charge != 0 {
+        write!(line, " CHG={}", atom.charge).expect("writing to String cannot fail");
+    }
+    if let Some(isotope) = atom.isotope {
+        write!(line, " MASS={isotope}").expect("writing to String cannot fail");
+    }
+    append_explicit_hcount(line, mol, idx, atom);
     append_v3000_rgroup_property(line, mol, idx);
     let source_properties = metadata
         .v3000_atom_properties
         .iter()
         .find(|(atom_id, _)| *atom_id == idx.0 + 1)
         .map(|(_, properties)| properties.as_str());
-    if atom.wildcard
-        && mol.r_group_label(idx).is_none()
-        && atom.hydrogen_count.is_some_and(|count| count > 0)
-        && !source_properties.is_some_and(|properties| {
-            properties
-                .split_whitespace()
-                .any(|token| token.starts_with("VAL=") || token.starts_with("RAD="))
-        })
-    {
-        let bonds = mol.neighbors(idx).try_fold(0u8, |sum, (_, bond_idx)| {
-            let order = match mol.bond(bond_idx).order {
-                BondOrder::Single | BondOrder::Up | BondOrder::Down => 1,
-                BondOrder::Double => 2,
-                BondOrder::Triple => 3,
-                _ => return None,
-            };
-            sum.checked_add(order)
-        });
-        if let Some(valence) = bonds
-            .and_then(|bonds| bonds.checked_add(atom.hydrogen_count.unwrap_or(0)))
-            .filter(|&valence| (1..=14).contains(&valence))
-        {
-            write!(line, " VAL={valence}").expect("writing to String cannot fail");
-        }
-    }
+    append_wildcard_valence(line, mol, idx, atom, source_properties);
     append_inferred_valence_properties(line, mol, idx, atom, source_properties);
     if let Some(properties) = source_properties {
         line.push(' ');

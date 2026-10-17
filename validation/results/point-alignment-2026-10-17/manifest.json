@@ -1,0 +1,17 @@
+{
+  "base_commit": "f20304f4699ee803ab993f73b98c3c8be38b58fc",
+  "validation_time_utc": "2026-10-17T05:48:02.124816+00:00",
+  "python": "3.13.6",
+  "source_sha256": {
+    "crates/chematic-py/python/chematic/rdkit_compat.py": "6c9c0003373d13181400c7e5a04556cdf21f6c4867044c529a7bab22c92f6a97",
+    "crates/chematic-py/python/chematic/_point_alignment.py": "b5847a6a400447b1235eefa4d63f1842d77dfe80b210789bec95a1aba20b3d95",
+    "crates/chematic-py/tests/test_point_alignment.py": "ad1ea149724a1cfc29e13acee3f758b1f4f1f1c89055394932f66c3b10db23f6",
+    "validation/validate_point_alignment.py": "1ecd60ef3b57ce25bf7e99c13439ce5bc3363944d796b85b8e412da7ec35d321",
+    "validation/typing/point_alignment_valid.py": "e6a6b867cf9dcf5dacc0f1c0d6ae7e0154349de368fc49910a755c0bf39c82fb",
+    "validation/typing/point_alignment_invalid.py": "12a21227d3c897a34473cb6267b6997121504e138a652f3ec86e08431cfa5d98"
+  },
+  "mypy_version": "mypy 1.8.0 (compiled: no)",
+  "native_fixture": "reused MOPAC archive candidate extension, import fixture only; not rebuilt for this Python/NumPy change",
+  "native_fixture_sha256": "049c1c81414b36a64f55ac448b3c5d265a977c84ffc629bfd1d2e9ecdd63052b",
+  "package_strict_existing_stub_diagnostics": 81
+}

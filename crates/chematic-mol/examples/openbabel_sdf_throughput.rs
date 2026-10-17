@@ -1,8 +1,11 @@
 //! In-process SDF read/write throughput and exact source-regression snapshots.
-use std::{collections::BTreeMap, error::Error, fs, hint::black_box, io::Write, time::Instant};
+use std::{collections::BTreeMap, error::Error, fs, hint::black_box, io::Write};
 
 use chematic_mol::{SdfFileReader, SdfRecord, mol2000::write_sdf_record_into};
 use serde_json::json;
+
+#[path = "support/steady_timing.rs"]
+mod steady_timing;
 
 fn read(input: &str, expected: usize) -> Result<Vec<SdfRecord>, Box<dyn Error>> {
     let records = SdfFileReader::new(std::io::Cursor::new(input.as_bytes()))
@@ -57,6 +60,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         return Ok(());
     }
     if mode == "dump" {
+        if steady_timing::warmed_dump() {
+            steady_timing::measure(steady_timing::dump_repeats()?, || {
+                Ok(write(&prepared, &mut buffer))
+            })?;
+        }
         let mut stdout = std::io::stdout().lock();
         for r in &prepared {
             write_sdf_record_into(&mut buffer, &r.mol, &r.meta, &r.coords, &r.properties);
@@ -66,23 +74,23 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
     // Warm disjoint results; prepared write inputs stay unchanged.
     write(&prepared, &mut buffer);
-    let mut units = 0usize;
-    let started = Instant::now();
-    for _ in 0..repeats {
-        match mode.as_str() {
+    let timing = steady_timing::measure(repeats, || {
+        Ok(match mode.as_str() {
             "parse" => {
                 let records = black_box(read(black_box(&input), expected)?);
-                units += records.iter().map(|r| r.mol.atom_count()).sum::<usize>();
+                records.iter().map(|r| r.mol.atom_count()).sum::<usize>()
             }
-            "write" => units += write(&prepared, &mut buffer),
-            "roundtrip" => units += write(&read(black_box(&input), expected)?, &mut buffer),
-            _ => return Err(format!("unknown mode {mode}").into()),
-        }
-    }
+            "write" => write(&prepared, &mut buffer),
+            "roundtrip" => write(&read(black_box(&input), expected)?, &mut buffer),
+            _ => return Err("unknown operation".into()),
+        })
+    })?;
     println!(
         "{}",
-        json!({"engine":"chematic", "mode":mode, "records":expected * repeats,
-        "repeats":repeats, "output_units":units, "elapsed_ns":started.elapsed().as_nanos()})
+        json!({"engine":"chematic", "mode":mode, "records":expected * timing.repeats,
+        "repeats":timing.repeats, "output_units":timing.units, "elapsed_ns":timing.elapsed_ns,
+        "warmup_repeats":timing.warmup_repeats,"warmup_elapsed_ns":timing.warmup_elapsed_ns,
+        "minimum_warmup_ns":timing.minimum_warmup_ns,"minimum_timed_ns":timing.minimum_timed_ns})
     );
     Ok(())
 }

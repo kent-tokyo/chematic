@@ -1,0 +1,5 @@
+{
+  "base_commit": "35b932f911851f51c5cdb89fa371f1c2c4a1b11a",
+  "pymatgen_reader_exported": false,
+  "verification": "root Python source at base has no pymatgen JSON reader; native Lattice/Site/PeriodicStructure constructors already exist"
+}

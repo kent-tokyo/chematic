@@ -1,0 +1,5 @@
+validation/typing/coulomb_dielectric_invalid.py:5: error: Argument "epsilon" has incompatible type "str"; expected "float"  [arg-type]
+validation/typing/coulomb_dielectric_invalid.py:6: error: Argument 2 has incompatible type "Generator[tuple[int, int, int], None, None]"; expected "MifPositionSequence"  [arg-type]
+validation/typing/coulomb_dielectric_invalid.py:7: error: List item 0 has incompatible type "str"; expected "float"  [list-item]
+validation/typing/coulomb_dielectric_invalid.py:8: error: Argument 4 to "__call__" of "CoulombDielectric" has incompatible type "str"; expected "float"  [arg-type]
+Found 4 errors in 1 file (checked 1 source file)

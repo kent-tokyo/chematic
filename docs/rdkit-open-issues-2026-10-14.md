@@ -7,6 +7,12 @@ Issue state is a snapshot; an open issue can already have a proposed upstream fi
 
 | RDKit issue | Source finding | Decision |
 | --- | --- | --- |
+| [#9601: descriptor matrix input handling](https://github.com/rdkit/rdkit/issues/9601) | Native graph/3D distances existed, but no supplied descriptor-space Euclidean matrix API. Independently observed RDKit norm overflow/underflow on valid extreme-scale inputs. | [Added checked Rust/Python descriptor distances](descriptor-euclidean-distances.md): nested iterable/NumPy inputs, lower-triangle ordering, bounded work and stable scaled norms. Wrapper typing and numeric observations are distinguished; no whole-issue or bit-parity claim. |
+| [#9601: explicit/sparse bit-vector matrix inputs](https://github.com/rdkit/rdkit/issues/9601) | RDKit already calculates these matrices; chematic lacked a supplied sparse-set condensed matrix API. | [Added checked sparse Tanimoto](sparse-tanimoto-matrix.md) in Rust/Python, with structural `GetOnBits()` inputs, bounded extraction, typed stubs and native empty/empty policy. This 2026-10-17 slice does not close the tracking issue. |
+| [#9601: typed NumPy destination buffers](https://github.com/rdkit/rdkit/issues/9601) | The local compatibility converter wrote only on-bits, leaving stale off-bit data and partial writes on source errors. RDKit 2026.09.1 already overwrites zeros correctly. | [Fixed binary NumPy output](numpy-fingerprint-output.md): typed source protocol, validated writable numeric destination, exact dimensions, bounded extraction and source preparation before writes. This 2026-10-17 slice preserves chematic return/optional-destination extensions and does not close the upstream tracking issue. |
+| [#9601: typed point alignment inputs](https://github.com/rdkit/rdkit/issues/9601) | Native coordinate alignment exists, but the Python compatibility layer has no `rdAlignment` transform API. | [Added typed checked Python point alignment](point-alignment.md): numeric arrays, row/Point3D-like sequences, positive weights, explicit reflection, and SSD/transform output; 2026-10-17 follow-up. SVD backend accepts only the default iteration option. Added coordinate-ensemble alignment with selected atoms/frames, positive weights and atomic typed RMS-list output; no Mol mutation or coordinate-equality claim. |
+| [#9601: typed InfoTheory bit-vector inputs](https://github.com/rdkit/rdkit/issues/9601) | No entropy bit-ranker API exists in the Python compatibility layer. | [Added a typed bounded ENTROPY ranker](info-bit-ranker.md) accepting explicit/sparse binary vector protocols, staged votes and per-class counts; 2026-10-17 follow-up. Ties are deterministic; bias, chi-squared and masks are unsupported. |
+| [#9617: linear RNA depiction](https://github.com/rdkit/rdkit/issues/9617) | Native explicit nucleic-acid document validation exists, but no linear sequence SVG API exists. | [Added bounded document sequence diagrams](nucleic-linear-svg.md) with uniform base orientation, explicit antiparallel canonical pair marks, overhang register alignment and exact JSON metadata retention. This does not infer RNA from SMILES or replace all-atom Mol.svg layout. |
 | [#9601: custom Morgan feature patterns ignored](https://github.com/rdkit/rdkit/issues/9601) | The installed RDKit 2025.09.3 Boost wrapper ignores O/C custom definitions; chematic had no custom feature-pattern API. Proposed upstream PR #9615 also guards the 32-bit mask boundary. | [Added owned custom feature patterns](custom-feature-patterns.md) in Rust/Python: ordered SMARTS, full-width masks, bounded matching and native FNV circular bits. This is a distinct native API; RDKit Morgan bit/complete-wrapper parity is not claimed. |
 | [#9601: unreadable Python streams](https://github.com/rdkit/rdkit/issues/9601) | Only path-based SDF suppliers existed. RDKit's unreadable-stream report is addressed upstream in proposed PR #9615. | [Added binary stream suppliers](python-forward-sdf.md) in native Python and the compatibility shim, with construction-time validation, original exceptions, incremental reads, source ownership and GC support. Other wrapper issues remain separate. |
 | [#9601: filesystem path input types](https://github.com/rdkit/rdkit/issues/9601) | Fifteen Python file entry points accepted only `str`; previous I/O/report source matches the pinned base. | [Added filesystem-path inputs](python-filesystem-paths.md): bytes/PathLike, typed stubs and explicit conversion/OS errors. This 2026-10-16 follow-up covers the filesystem portion only. |
@@ -19,6 +25,7 @@ Issue state is a snapshot; an open issue can already have a proposed upstream fi
 | [#9701: pseudoasymmetric rings and duplicate stereo enumeration](https://github.com/rdkit/rdkit/issues/9701) | Native inositol keys were already stable; aminoadamantane enumeration hit the cap because CH2 atoms were counted. | [Corrected native candidate selection](native-stereo-candidate-budget.md): four aminoadamantane assignments, nine inositols, metadata preservation and 60 InChI-set comparisons with RDKit 2026.09.1. |
 | [#9629: atom-renumbering changes stereo counts](https://github.com/rdkit/rdkit/issues/9629) | Native baseline counted one center but lacked a public permutation API. | [Added checked atom permutations](atom-renumbering-stereo.md) with remapped stereo metadata and cold caches; 838 RDKit-reference permutations, including the identity-ring regression. |
 | [#9675: query H folding loses/inverts tetrahedral configuration](https://github.com/rdkit/rdkit/issues/9675) | No query-H folding API existed; the main native matcher compared raw chirality tags. | [Local Rust/Python candidate](query-hydrogen-folding.md): conservative H folding, complete-frame parity, lexical ring slots and 198 live RDKit-reference cases; recursive folding is rejected. |
+| [#9601: typed Layered atomCounts output](https://github.com/rdkit/rdkit/issues/9601) | A checked native copy-in/copy-out calculator existed, but the RDKit-style mutable-output adapter was missing. | [Added typed caller-owned Layered counters](layered-caller-counts.md): plain lists and uint32 NumPy views, staged updates, native bounds/errors and 2,048 live reference comparisons. This is a 2026-10-17 follow-up for one listed output-argument boundary; other tracking items remain separate. |
 | [#7981: enrichment factor returns an empty list](https://github.com/rdkit/rdkit/issues/7981) | No ranked screening enrichment API existed. RDKit 2026.09.1 reproduced the top-90% and full-library defects. | [Implemented native Rust/Python EF](screening-enrichment.md): ceiling cutoffs, full-library endpoints, order/duplicates and explicit undefined-input errors; 3,048 ordinary live-RDKit comparisons. |
 | [#9647: oversized dense matrix allocation](https://github.com/rdkit/rdkit/issues/9647) | Existing RDKit-compatible distance APIs used unchecked sizes and infallible buffers. | [Implemented allocation boundary](rdkit-distance-matrix-limits.md): checked dimensions, 1024-input/prepared-atom cap, fallible buffers and Python errors; applies to the two named distance APIs. |
 | [#6716: MOL2 UNITY formal charge](https://github.com/rdkit/rdkit/issues/6716) | The editable reader understood `charge`, but the immutable source projection ignored it; its graph writer also omitted nonzero charges. | Implement the missing projection and graph round trip in this change. |
@@ -107,3 +114,43 @@ Bold/Hash/Dash inference already existed, but Python and WASM could not opt in.
 screen-coordinate, hashed-sense and directional ownership defects in the
 reader. Default non-directional markers remain unassigned. This validates
 bounded molecular reading, not binary CDX or a general ChemDraw writer.
+
+## October 17 follow-up: supplied tautomer candidates
+
+[#9601](https://github.com/rdkit/rdkit/issues/9601) remains open. Added
+[checked Rust/Python candidate selection](tautomer-candidate-selection.md)
+using the existing RDKit-port score and lexical tie policy. Empty input and
+count/size overflow are explicit errors; Python owns each yielded molecule
+and copies the winning metadata. This is one bounded part of the tracking
+issue, not a complete nanobind-wrapper replacement.
+
+## October 17 follow-up: explicit SASA radii
+
+[#9601](https://github.com/rdkit/rdkit/issues/9601) and open PR #9611 include
+the radius-count boundary for FreeSASA. Added [checked Rust/Python SASA](checked-sasa-radii.md)
+with caller-supplied coordinates and radii, value/size/work limits, local
+normalized occlusion and explicit errors. This is a native Shrake-Rupley
+algorithm; it does not replace FreeSASA or claim bitwise RDKit parity.
+
+## October 17 follow-up: typed explicit-charge Coulomb fields
+
+[#9601](https://github.com/rdkit/rdkit/issues/9601) still lists the `rdMIF`
+`charges` / `positions` typing boundary. Added
+[checked explicit-charge vacuum fields](coulomb-interaction-field.md) as a
+partial implementation: copied indexed inputs, finite bounds and typed scalar
+evaluation. The ordinary-point comparison passed 120,960 evaluations against
+RDKit 2026.09.1; 108 of 88,128 separate rounded-boundary diagnostics differed
+and are disclosed. Molecule overloads, charge generation, dielectric models
+and grids remain outside this addition.
+
+
+## October 17 follow-up: typed dielectric fields
+
+The explicit-charge `rdMIF` boundary in
+[#9601](https://github.com/rdkit/rdkit/issues/9601) also applies to
+`CoulombDielectric`. The [local-solvation field](coulomb-dielectric-field.md)
+now reuses the copied input contract, with a 1,024-site cap before quadratic
+neighbor counting and finite positive permittivities. Independent analytical
+regressions and 154,080 ordinary RDKit-reference evaluations pass; 72 exact
+4 A boundary checks and 85,536 threshold diagnostics are recorded separately.
+This extends the existing vacuum-field PR, not a full `rdMIF` implementation.

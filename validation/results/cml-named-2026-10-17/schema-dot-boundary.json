@@ -1,0 +1,11 @@
+{
+  "schema_url": "https://www.xml-cml.org/schema/schema3/schema.xsd",
+  "schema_sha256": "842e8e1c78e0b2615ef651fccb0aea8dc4ce79f7827d4ac75c411492f8689676",
+  "example": "<molecule xmlns=\"http://www.xml-cml.org/schema\" id=\"m1\"><atomArray><atom id=\"C.1\" elementType=\"C\"/><atom id=\"O1\" elementType=\"O\"/></atomArray><bondArray><bond atomRefs2=\"C.1 O1\" order=\"1\"/></bondArray></molecule>",
+  "valid": false,
+  "errors": [
+    "<string>:1:0:ERROR:SCHEMASV:SCHEMAV_CVC_PATTERN_VALID: Element '{http://www.xml-cml.org/schema}bond', attribute 'atomRefs2': [facet 'pattern'] The value 'C.1' is not accepted by the pattern '[A-Za-z_][A-Za-z0-9_\\-]*(:[A-Za-z0-9_\\-]+)?'.",
+    "<string>:1:0:ERROR:SCHEMASV:SCHEMAV_CVC_DATATYPE_VALID_1_2_2: Element '{http://www.xml-cml.org/schema}bond', attribute 'atomRefs2': 'C.1 O1' is not a valid value of the list type '{http://www.xml-cml.org/schema}atomRefs2Type'."
+  ],
+  "decision": "Use [A-Za-z][A-Za-z0-9_-]* for all emitted atom IDs; reject dots without automatic renaming."
+}

@@ -1,0 +1,9 @@
+{
+  "path": "/private/tmp/chematic-morgan-linear-evidence-20261017/build-target",
+  "du_before": "501220\t/private/tmp/chematic-morgan-linear-evidence-20261017/build-target\n",
+  "lsof_returncode": 1,
+  "free_before": 1695436800,
+  "free_after": 2172956672,
+  "baseline_candidate_wheels_and_measured_extensions_still_hash_verified": true,
+  "source_logs_formal_data_preserved": true
+}

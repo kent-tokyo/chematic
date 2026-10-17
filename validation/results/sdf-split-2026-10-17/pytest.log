@@ -1,0 +1,22 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.13.6, pytest-9.1.1, pluggy-1.6.0
+rootdir: /private/tmp/chematic-sdf-split-20261017/crates/chematic-py
+configfile: pytest.ini
+collected 518 items
+
+crates/chematic-py/tests/test_sdf_split.py ............................. [  5%]
+..................                                                       [  9%]
+crates/chematic-py/tests/test_sdf_selections.py ........................ [ 13%]
+.................                                                        [ 16%]
+crates/chematic-py/tests/test_forward_sdf.py ........................... [ 22%]
+.......................................                                  [ 29%]
+crates/chematic-py/tests/test_sdf_compression.py ....................... [ 34%]
+..........                                                               [ 36%]
+crates/chematic-py/tests/test_filesystem_paths.py ...................... [ 40%]
+........................................................................ [ 54%]
+........................................................................ [ 68%]
+........................................................................ [ 82%]
+..............................................................ssssssssss [ 95%]
+ssssssssssssssssssss.                                                    [100%]
+
+======================= 488 passed, 30 skipped in 1.28s ========================

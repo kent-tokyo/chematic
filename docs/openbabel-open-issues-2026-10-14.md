@@ -9,6 +9,12 @@ charge work. Existing changes were retained.
 | Open Babel issue | chematic source finding | Decision |
 | --- | --- | --- |
 | [#2669: GRO coordinates and cell scale inconsistently](https://github.com/openbabel/openbabel/issues/2669) | An original Open Babel 3.2.1 probe scales coordinates but replaces a 2×3×4 nm box with a 10 Å cube. Native GRO and LAMMPS documents had no checked unit adapter. | [Added explicit GRO→LAMMPS atomic geometry](gro-lammps-units.md) for Rust/Python: caller types/masses, real/metal units, cell/tilt/velocity scaling and exact source/ID sidecars. No molecular topology inference or LAMMPS engine execution claim. |
+| [#2496: external partial charges for force-field calculations](https://github.com/openbabel/openbabel/issues/2496) | Reproduced unchanged GAFF energies with authored preassigned-charge controls on Open Babel 3.2.1. Chematic prepared MMFF fields had no charge override. | [Added checked construction-time MMFF94/MMFF94s charges](mmff-partial-charges.md), with energy/gradient and lifecycle checks. The upstream report is GAFF; this is a transferable capability, not GAFF parity or a charge-file parser. |
+| [#2703: reaction roles lost in CDXML output](https://github.com/openbabel/openbabel/issues/2703) | Open Babel 3.2.1 emits a merged fragment with no scheme/arrow on three original examples; chematic only had molecular CDXML output. | [Added checked single-step reaction output](reaction-cdxml-output.md) in Rust/Python: explicit roles, unique IDs and caller layout, with a conservative graph profile. Indigo reads all roles; the inspected RDKit build omits agents. This is a 2026-10-17 follow-up. |
+| [#2253: MOPAC archive input](https://github.com/openbabel/openbabel/issues/2253) | Existing MOPAC reader accepts Cartesian input decks, not archive summaries or internal-coordinate restart rows. | [Added a typed archive reader](mopac-archive-input.md) preserving values/references, flags, announced charges and raw ancillary sections; 2026-10-17 follow-up. No coordinate conversion or convergence claim. |
+| [#2523: GAMESS-US $ZMAT conversion](https://github.com/openbabel/openbabel/issues/2523) | Existing caller-referenced internal conversion has no GAMESS writer. | [Added checked Rust/Python geometry templates](gamess-zmat-output.md) with source-frame Cartesian $DATA and explicit $ZMAT IZMAT definitions; 2026-10-17 follow-up. No basis selection, COORD=ZMT data profile or GAMESS execution claim. |
+| [#2675: pymatgen/Materials Project JSON input](https://github.com/openbabel/openbabel/issues/2675) | No pymatgen JSON reader exists; native periodic constructors already validate geometry and occupancies. Open Babel 3.2.1 does not recognize this input format. | [Added a bounded Python JSON reader](pymatgen-json.md) for bare Structure/IStructure or multi-record data/structure responses, with original text and metadata retention, disorder/site order preservation and explicit native-projection loss consent. |
+| [#2339: malformed multi-molecule CML output](https://github.com/openbabel/openbabel/issues/2339) | Closed pybel.Outputfile output is still malformed on Open Babel 3.2.1. Native single-molecule blocks have no collection framing API. | [Added bounded Python CML collection read/write](cml-collection.md): ordered opaque molecular subtrees, scoped atom IDs, namespace closure and source retention. Indigo/lxml confirm 272 records; Open Babel returns all checked records but emits a closing-container diagnostic, recorded separately. |
 | [#3030: auto-detected gzip state leaks into later inputs](https://github.com/openbabel/openbabel/issues/3030) | Reproduced plain string/stream replacement failures on Open Babel 3.2.1. Native checked SDF files had no gzip selection; no analogous shared conversion session exists. | [Added per-input SDF compression](sdf-gzip-input.md) in Rust/Python: explicit plain/gzip/auto, magic detection, concatenated members, terminal integrity errors and decoded-data limits. This adds a missing capability, not a demonstrated chematic sticky-state fix. |
 | [#3032: Clear retains the previous title](https://github.com/openbabel/openbabel/issues/3032) | A four-cycle probe reproduces the title leak in Open Babel 3.2.1; chematic had no full reset entry point. | [Added complete molecule reset](molecule-clear.md): Rust graph/metadata/cache clearing and native/compatibility Python title/property reset, preserving snapshots. This row is a 2026-10-16 follow-up. |
 | [#2811: dielectric changes leave prepared electrostatics stale](https://github.com/openbabel/openbabel/issues/2811) | Reproduced on Open Babel 3.2.1 with an original two-ion probe. Prepared native MMFF fields had no dielectric-update API. | [Added checked constant-dielectric updates](mmff-dielectric-updates.md) to Rust/Python MMFF94/MMFF94s fields, with immediate energy/gradient/minimizer use and atomic refusal of invalid settings. UFF/GAFF and solvent modelling are outside this scope. |
@@ -16,6 +22,9 @@ charge work. Existing changes were retained.
 | [#2668: Kekulé bonds in MOL2 output](https://github.com/openbabel/openbabel/issues/2668) | Graph writers and exact source round-trips retain `ar` bond tokens; no explicit bond-encoding choice existed. | [Added a bounded source-token conversion](mol2-kekule-bond-output.md) in Rust/Python/WASM, retaining atom types and all other source bytes; neutral C/N/O/S cycles only, with matching, H/valence and aromaticity checks. |
 | [#2671: RMSD for all MOL2 reference conformations](https://github.com/openbabel/openbabel/issues/2671) | Native single-record readers rejected concatenated MOL2; no explicit all-reference-versus-one RMSD API existed. Open Babel's default pairs nth records; reversed inputs with `-f` work, so the one-line diagnostic alone does not establish a parser bug. | [Added bounded source-preserving record iteration and checked all-reference RMSD](mol2-reference-rmsd.md) in Rust/Python, with stable source/indexed-graph correspondence, optional proper rigid alignment and errors rather than skipped records. |
 | [#2350: order of MOL2 sections](https://github.com/openbabel/openbabel/issues/2350) | Default editable/generated output also places UNITY between ATOM and BOND. Moving it globally causes Open Babel 3.2.1 to lose formal charges in six original graph controls. | [Added an explicit adjacent-core output option](mol2-section-order.md); default bytes and source preservation remain unchanged. This row is a 2026-10-16 follow-up; Antechamber was not executed. |
+| [#2476: padded multimodel split filenames](https://github.com/openbabel/openbabel/issues/2476) | Reproduced unpadded names on Open Babel 3.2.1 using the reported 1NER input; main had no checked model splitter. | [Added typed Python PDB model splitting](pdb-model-splitting.md): total-count padding, source coordinate identity, per-model native validation, bounded aggregate output and explicit metadata-loss consent. This row is a 2026-10-17 follow-up; Rust/WASM/CLI splitting is outside this addition. |
+| [#1693: configurable XYZ output precision](https://github.com/openbabel/openbabel/issues/1693) | Existing plain XYZ writers used fixed 6/8-place output. | [Added checked Rust/Python XYZ output](xyz-output-precision.md): fixed/scientific notation, fractional digits and minimum width, finite rounded values and bounded geometry/output. This row is a 2026-10-17 follow-up; ADF parsing remains outside this addition. |
+| [#2147: splitting SDF into a requested number of files](https://github.com/openbabel/openbabel/issues/2147) | Open Babel 3.2.1 reproduces the one-output `--splitinto 3` behavior; existing native dataset APIs lacked an exact-count byte-preserving partition plan. | [Added file-backed Python SDF partitions](sdf-file-partitions.md): balanced contiguous record groups, preserved raw bytes, bounded streams and source/part hashes. This row is a 2026-10-17 follow-up; framing does not claim molecular validation or automatic output writing. |
 | [#2481: deletion changes remaining PDB identity](https://github.com/openbabel/openbabel/issues/2481) | Reproduced on Open Babel 3.2.1 with an original six-atom fixture; existing PDB graph projection has no source-preserving atom selector. | [Added checked PDB coordinate selection](pdb-atom-selection.md), exact atom/ANISOU lines, filtered CONECT, validated TER updates and explicit unknown-record loss consent; this row is a 2026-10-15 follow-up. |
 | [#2995: CIF Cartesian coordinates labeled as fractional](https://github.com/openbabel/openbabel/issues/2995) | `write_cif(..., None)` had the same labeling defect and produced output that `parse_cif` rejected for missing cell parameters. | Implemented here, with coordinate-family and finite-value reader checks. |
 | [#2655: explicit CML hydrogens gain implicit hydrogens](https://github.com/openbabel/openbabel/issues/2655) | A follow-up corrected explicit-H inference and total `hydrogenCount` reconciliation in both reader and writer. | [Implemented contract, compatibility and validation](cml-hydrogen-accounting.md): CH2, mixed H representations, isotopes, invalid totals, and a live Open Babel cross-read. |
@@ -122,3 +131,46 @@ probes. Chematic formulas already pass, but its separate total-H descriptor
 double-counted bracket H and missed H atom nodes. [Fix the counter and WASM
 atom information](hydrogen-count-accounting.md), keeping formula and
 serialization behavior as controls.
+
+## October 17 follow-up: named CML atoms
+
+[#2120](https://github.com/openbabel/openbabel/issues/2120) remains open. Added
+a [checked Rust/Python writer](cml-named-atoms.md) with exact caller-supplied
+atom IDs, consistent bond references and optional Cartesian 3D coordinates.
+The documented MOL2 recipe preserves names in this graph export; source-only
+MOL2 metadata and unsupported stereo remain outside the contract.
+
+## October 17 follow-up: explicit XBS scene output
+
+[#2576](https://github.com/openbabel/openbabel/issues/2576) asks for the XBS
+`atom` / `spec` / `bonds` syntax. Open Babel's `bs` writer targets a different
+Ball and Stick format, and the local 3.2.1 format list has no `xbs` identifier.
+Added a [checked static XBS writer](xbs-output.md) in Python, with explicit
+species styles and distance drawing rules. Independent hofmann 0.21.1
+cross-reading passed 96 synthetic scenes plus a 10,000-atom scene. This
+adds the requested dialect without treating the existing `bs` output as a
+broken implementation of XBS. RGB, wildcard rules, movies and GUI validation
+remain outside this profile.
+
+## October 17 follow-up: headerless XYZ per-atom data
+
+[#1703](https://github.com/openbabel/openbabel/issues/1703) requests access to
+unnamed per-atom vectors and suggests scalar/tensor generalization. Existing
+named extxyz fields already work; the missing boundary is a headerless
+`xyz+vec` row. Added [checked XYZ atom-data records](xyz-atom-data.md) with
+explicit widths 1/3/9, immutable arrays, raw source retention and conversion
+to a caller-named extxyz field. ASE 3.26.0 and the existing native reader each
+cross-read 150 synthetic records with all 11,570 payload scalars preserved.
+The local Open Babel 3.2.1 XYZ rewrite drops the extra columns. Physical
+meaning, tensor orientation, lattices and trajectories remain outside scope.
+
+## October 17 follow-up: CIF-to-XSF geometry
+
+[#2252](https://github.com/openbabel/openbabel/issues/2252) asks for XSF output
+from CIF. Open Babel 3.2.1 lists XSF as read-only. Added a
+[checked geometry writer](cif-xsf-output.md) over existing `PeriodicStructure`
+objects, with explicit metadata-loss consent and refusal of partial/mixed
+occupancy or known unexpanded CIF symmetry. ASE 3.26.0 cross-read 60 synthetic
+cases, and Open Babel read 48 cases with coordinate differences within its
+XYZ output rounding. No GUI execution, primitive-cell reduction, conventional
+basis generation or metadata round trip is claimed.

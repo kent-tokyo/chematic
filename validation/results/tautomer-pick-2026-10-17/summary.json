@@ -1,0 +1,42 @@
+{
+  "recorded_at": "2026-10-16T22:42:11.153286+00:00",
+  "base_commit": "a4ca27e63bdf689f5f52e36bbddc02d6862f65ab",
+  "host": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "python": "3.13.6",
+  "native_sha256": "e7031c92a76c9fa2d7611b0916fb9ed0b3e493c4ebe63a93e6b5f5df5debb3b9",
+  "source_manifest_files": 1155,
+  "baseline": {
+    "source_api_absent_at_base": true,
+    "retained_module": "PR #968 GRO/LAMMPS candidate, based on same main plus unrelated conversion feature",
+    "native_sha256": "e8e124f7a1acf4705ce0129351f032c07e11e22f7c18954a917d64060ddc67c7",
+    "api_absence_tests": 3,
+    "failures": 3,
+    "failure_type": "AttributeError; no native candidate-selection API existed"
+  },
+  "validation": {
+    "rust_new_integration_passed": 5,
+    "python_new_passed": 34,
+    "python_existing_tautomer_passed": 9,
+    "independent_reference_versions": [
+      "2025.09.3",
+      "2026.09.1"
+    ],
+    "independent_selection_comparisons": 1050,
+    "independent_score_comparisons": 882,
+    "reference_failures_in_declared_corpus": 0,
+    "upstream_empty_input_returncodes": {
+      "2025.09.3": -11,
+      "2026.09.1": -11
+    },
+    "clippy_all_targets": "passed with -D warnings for chematic-smiles and chematic-py",
+    "format_stubs_binding_inventory_manifest_naming_unsafe_docs": "passed"
+  },
+  "scope": [
+    "supplied native molecules only; no enumeration or tautomer-family check",
+    "existing RDKit-port default score and lexical ties; no custom callback",
+    "raw source winner copied; no upstream final stereo cleanup",
+    "mixed specified/unspecified stereo tie policy differs from RDKit 2026.09.1; recorded separately outside parity corpus",
+    "Rust and Python only; WASM and compatibility shim unchanged",
+    "source-built CPython extension; no published wheel or hosted CI result"
+  ]
+}

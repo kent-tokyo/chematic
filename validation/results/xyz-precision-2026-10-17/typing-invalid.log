@@ -1,0 +1,5 @@
+validation/typing/xyz_precision_invalid.py:3: error: List item 0 has incompatible type "int"; expected "str"  [list-item]
+validation/typing/xyz_precision_invalid.py:4: error: Argument "notation" to "write_xyz_checked" has incompatible type "Literal['general']"; expected "Literal['fixed', 'scientific']"  [arg-type]
+validation/typing/xyz_precision_invalid.py:5: error: Argument "decimal_places" to "write_xyz_checked" has incompatible type "float"; expected "int"  [arg-type]
+validation/typing/xyz_precision_invalid.py:6: error: Argument "min_width" to "write_xyz_checked" has incompatible type "str"; expected "int"  [arg-type]
+Found 4 errors in 1 file (checked 1 source file)

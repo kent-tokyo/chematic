@@ -36,9 +36,15 @@ Known differences vs RDKit:
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import numpy as np
+    from ._numpy_fingerprint import _BitVectorSource
+
 __all__ = [
     "Mol", "Atom", "Bond", "BondType", "RingInfo", "RWMol",
-    "ExplicitBitVect",
+    "ExplicitBitVect", "LayeredFingerprint", "LayeredAtomCounts", "LayeredBitMask", "rdMIF",
     "MolFromSmiles", "MolToSmiles", "MolFromMolBlock", "MolFromMolFile",
     "MolToMolBlock", "SanitizeMol", "Kekulize", "AddHs", "RemoveHs",
     "MolFromSmarts", "RenumberAtoms",
@@ -46,11 +52,24 @@ __all__ = [
     "MolFromMrvBlock", "MolFromMrvFile", "MolToMrvBlock", "MolToMrvFile",
     "SDMolSupplier", "SDWriter", "SmilesMolSupplier", "SmilesWriter",
     "TDTMolSupplier", "TDTWriter",
-    "Descriptors", "rdMolDescriptors", "DataStructs", "pyAvalonTools",
+    "Descriptors", "rdMolDescriptors", "DataStructs", "pyAvalonTools", "rdAlignment", "rdInfoTheory",
 ]
 
 
+from ._point_alignment import rdAlignment
+from ._info_theory import rdInfoTheory
+
 import chematic as _ch
+
+from typing import Optional, Sequence, SupportsIndex, cast
+from ._layered_counts import (
+    LayeredAtomCounts as LayeredAtomCounts,
+    LayeredBitMask as LayeredBitMask,
+    LayeredResult as _LayeredResult,
+    prepare as _prepare_layered,
+)
+from ._coulomb_field import Coulomb as _Coulomb
+from ._coulomb_dielectric import CoulombDielectric as _CoulombDielectric
 
 
 _MISSING = object()
@@ -106,6 +125,59 @@ class ExplicitBitVect:
 
     def __repr__(self) -> str:
         return f"ExplicitBitVect({self._nbits})"
+
+
+def LayeredFingerprint(
+    mol: Mol,
+    layerFlags: SupportsIndex = 0xFFFFFFFF,
+    minPath: SupportsIndex = 1,
+    maxPath: SupportsIndex = 7,
+    fpSize: SupportsIndex = 2048,
+    atomCounts: Optional[LayeredAtomCounts] = None,
+    setOnlyBits: Optional[LayeredBitMask] = None,
+    branchedPaths: bool = True,
+    fromAtoms: Optional[Sequence[SupportsIndex]] = None,
+    *,
+    maxVisits: SupportsIndex = 1_000_000,
+    maxPaths: SupportsIndex = 100_000,
+) -> ExplicitBitVect:
+    """Compute Layered bits and update checked caller-owned u32 counters.
+
+    Args:
+        mol: A compatibility Mol containing the indexed native graph.
+        atomCounts: Optional plain list or writable, non-overlapping uint32
+            ndarray covering the atoms. Seeds accumulate with u32 wrapping.
+        setOnlyBits: Optional binary bit-vector mask with fpSize bits.
+        maxVisits: Native enumeration visit budget; exhaustion returns no result.
+        maxPaths: Native selected-path budget; exhaustion returns no result.
+
+    Returns:
+        An ExplicitBitVect. All calculation and conversion finishes before the
+        caller's counters are updated; trailing counter entries stay unchanged.
+
+    Raises:
+        TypeError: Wrong input types, including bool in integer fields.
+        ValueError: Invalid bounds, unsupported graphs or exhausted budgets.
+    """
+    if not isinstance(mol, Mol):
+        raise TypeError("mol must be a chematic.rdkit_compat.Mol")
+    options, counters = _prepare_layered(
+        mol.GetNumAtoms(),
+        layerFlags,
+        minPath,
+        maxPath,
+        fpSize,
+        atomCounts,
+        setOnlyBits,
+        branchedPaths,
+        fromAtoms,
+        maxVisits,
+        maxPaths,
+    )
+    result = cast(_LayeredResult, mol._mol.rdkit_layered_config(**options))
+    fingerprint = ExplicitBitVect._from_bytes(result["bits"], options["nbits"])
+    counters.commit(result["atom_counts"])
+    return fingerprint
 
 
 def _fp_bytes(fp) -> bytes:
@@ -1394,18 +1466,36 @@ class DataStructs:
         return [_ch.tanimoto(b, _fp_bytes(f)) for f in fps]
 
     @staticmethod
-    def ConvertToNumpyArray(fp, dest=None):
-        """Fill *dest* (or a new int8 array) with the bits of *fp*.
+    def ConvertToNumpyArray(
+        fp: _BitVectorSource, dest: np.ndarray | None = None,
+    ) -> np.ndarray:
+        """Replace every destination element with the corresponding binary bit.
 
-        Unlike RDKit's in-place-only signature, *dest* is optional; when
-        omitted a new ``numpy.int8`` array of length ``fp.GetNumBits()`` is
-        returned.
+        Sources provide GetNumBits()/GetOnBits(), including explicit/sparse
+        RDKit vectors. A supplied dest must be a plain writable 1D NumPy array
+        of exactly that width, with boolean/integer/float dtype and disjoint
+        elements. Strided/reversed and non-native byte-order arrays are allowed.
+        No resizing occurs. Validation/source errors leave dest unchanged.
+
+        Width and raw on-bit IDs are each limited to 1048576; duplicate IDs are
+        idempotent. Invalid shapes/ranges/limits raise ValueError; wrong types
+        (including bool widths/IDs) raise TypeError. Source call/iterator errors
+        propagate. At most one excess ID is consumed to detect the input cap.
+        Arbitrary source callbacks have no timeout.
+
+        Returns the supplied dest, or a new independent int8 array if omitted.
+        Optional dest and the returned array are chematic extensions to RDKit's
+        in-place-only API. Count fingerprints and whole-RDKit parity are outside
+        this binary projection contract.
         """
-        import numpy as np
+        from ._numpy_fingerprint import _convert
 
-        n = fp.GetNumBits()
-        if dest is None:
-            dest = np.zeros(n, dtype=np.int8)
-        for i in fp.GetOnBits():
-            dest[i] = 1
-        return dest
+        return _convert(fp, dest)
+        return _convert(fp, dest)
+
+
+class rdMIF:
+    """Checked explicit-charge vacuum and local-solvation interaction fields."""
+
+    Coulomb = _Coulomb
+    CoulombDielectric = _CoulombDielectric

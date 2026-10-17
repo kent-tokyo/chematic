@@ -1,0 +1,50 @@
+{
+  "recorded_at_utc": "2026-10-16T23:25:57.442079+00:00",
+  "base_commit": "bef0d008d49f3d432fc35a900ccbf6acab2cd957",
+  "host": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "python": "3.13.6",
+  "rust": "rustc 1.97.0 (2d8144b78 2026-07-07)",
+  "native_sha256": "5b3d449d0923a9e9e05a98316ceabf75df4e6d9b632277956594939ebaca91cc",
+  "rdkit_version": "2026.09.1",
+  "new_rust_tests_passed": 8,
+  "legacy_sasa_rust_tests_passed": 27,
+  "python_tests_passed": 43,
+  "strict_clippy": "passed: chematic-3d and chematic-py, all-targets, no-deps, -D warnings",
+  "baseline": "Retained native from PR #972 (same main base plus unrelated checked CML writer) has no method: one expected AttributeError test failure; source on base also lacks method.",
+  "analytic_geometry_cases": 96,
+  "native_geometry_runs": 288,
+  "extreme_scale_cases": 5,
+  "native_analytic_failures": 0,
+  "max_native_error_relative_to_full_sphere": 0.001586914062499955,
+  "native_tolerance_relative_to_full_sphere": 0.005,
+  "rdkit_diagnostic_counts": {
+    "within_diagnostic_tolerance": 95,
+    "outside_diagnostic_tolerance": 0,
+    "nonfinite": 1
+  },
+  "rdkit_nonfinite_case": {
+    "radii": [
+      1.0,
+      1.5
+    ],
+    "probe_radius": 0.0,
+    "coordinates": [
+      [
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        1
+      ]
+    ],
+    "result": "total NaN; per_atom [5.654866776461628, NaN]"
+  },
+  "short_radii_observation": "RDKit 2026.09.1 returned a finite value for two atoms / one radius in an isolated subprocess; no crash or exception observed on this host.",
+  "scope": "Explicit geometry/custom radii native midpoint Fibonacci Shrake-Rupley; no FreeSASA backend/API parity, radius classifier, implicit H generation, WASM binding, or molecule-property mutation.",
+  "source_gates": "passed: fmt, refactor budget, Python stubs, binding surface, cross-binding manifest, product names, unsafe surface, diff whitespace",
+  "strict_mkdocs": "passed",
+  "baseline_native_sha256": "6fada006000ecb1ad861a3846f61b06b6efc04d41ea4a4c7b587ef6342fd3443"
+}

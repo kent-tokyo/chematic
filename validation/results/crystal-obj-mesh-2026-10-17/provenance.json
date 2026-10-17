@@ -1,0 +1,26 @@
+{
+  "base_commit": "c84c68f297f95562d1d29c75234f2190cd5f9d75",
+  "python": "3.13.6",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "native_fixture_source_commit": "71d9c12b0c16a8e6b23e4078479d5754230c831b",
+  "native_fixture_sha256": "c6db880b6f5ca4ea0388f238c24e8a5b55751daab1084cf0d1d7b56e2427257b",
+  "unchanged_native_paths": [
+    "crates/chematic-crystal",
+    "crates/chematic-py/src/crystal.rs"
+  ],
+  "python_39_grammar": "passed",
+  "source_sha256": {
+    "crates/chematic-py/python/chematic/__init__.py": "05dcf4755856116fd657056771de3977dfae90ccb5ec83610f8d99ee4de05dd6",
+    "crates/chematic-py/python/chematic/__init__.pyi": "2a51b27034e7560b2c48dd9bb65837a98a1eea767fbf0c30b1443a1563342033",
+    "crates/chematic-py/python/chematic/_crystal_obj.py": "8b4435f3bbd30ee46164d71c653ee08a9a035429c58bb00d5c12359040aa5806",
+    "crates/chematic-py/tests/test_crystal_obj.py": "f2bb34f4bb0a98530064634f09cfaf3eb47309fed408bc57179054fa8b0098aa",
+    "validation/validate_crystal_obj.py": "9808bec75f59a8df8efb823f1e9821e057ee4e285e9757642189630606081c80",
+    "validation/render_crystal_obj_example.py": "93de7347184a29d4aefd4d115c45eb142eeae04b96d6ab18a1cd2304e9ec9511"
+  },
+  "issue": {
+    "body": "How to batch convert crystal format(.cif) to 3dmesh format (.obj) by using openbabel\uff1f\r\nAlso can use other format as a bridge to convert crystal format to .obj.\r\nHow I can do ?\r\n",
+    "state": "OPEN",
+    "updatedAt": "2024-03-11T16:59:33Z",
+    "url": "https://github.com/openbabel/openbabel/issues/2680"
+  }
+}

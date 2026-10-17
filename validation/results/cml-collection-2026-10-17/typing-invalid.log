@@ -1,0 +1,6 @@
+validation/typing/cml_collection_invalid.py:3: error: Argument 1 to "read_cml_collection" has incompatible type "dict[Never, Never]"; expected "str | bytes"  [arg-type]
+validation/typing/cml_collection_invalid.py:4: error: Argument 1 to "read_cml_collection" has incompatible type "None"; expected "str | bytes"  [arg-type]
+validation/typing/cml_collection_invalid.py:5: error: List item 0 has incompatible type "int"; expected "str | bytes"  [list-item]
+validation/typing/cml_collection_invalid.py:6: error: List item 0 has incompatible type "None"; expected "str | bytes"  [list-item]
+validation/typing/cml_collection_invalid.py:7: error: Incompatible types in assignment (expression has type "str", variable has type "int")  [assignment]
+Found 5 errors in 1 file (checked 1 source file)

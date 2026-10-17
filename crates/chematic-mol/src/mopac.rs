@@ -1,6 +1,10 @@
 //! Checked MOPAC Cartesian geometry from the public OpenMOPAC documentation.
 //! Independently implemented; no MOPAC/Open Babel implementation code is used.
 use chematic_core::Element;
+mod archive;
+pub use archive::{
+    MopacArchive, MopacArchiveAtom, parse_mopac_archive, parse_mopac_archive_with_limits,
+};
 mod reader;
 mod writer;
 pub use reader::{parse_mopac_cartesian, parse_mopac_cartesian_with_limits};

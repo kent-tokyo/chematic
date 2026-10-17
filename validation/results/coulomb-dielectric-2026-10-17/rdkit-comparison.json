@@ -1,0 +1,33 @@
+{
+  "case_parameters_sha256": "8e84883f01cb82801220e62f373f5425f56c2e9ce1f0ffcebf3245c6066cfec7",
+  "constructors": 3168,
+  "exclusions": [
+    "molecule overload",
+    "charge generation",
+    "arbitrary dielectric solver",
+    "original threshold-boundary bit parity",
+    "native build",
+    "performance claim"
+  ],
+  "max_absolute_error_kj_mol": 9.313225746154785e-10,
+  "max_error_scaled_by_max_1_reference": 4.2895157911782e-13,
+  "neighbor_boundary_checks": 72,
+  "numpy": "2.5.3",
+  "ordinary_comparisons": 154080,
+  "python": "3.13.6",
+  "query_stream_sha256": "4e178a06dbb8e49cf513d45f6e2647026607cdbf024729625fca25f0b473509d",
+  "rdkit": "2026.09.1",
+  "schema_version": 1,
+  "scope": "copied explicit-charge local-solvation Coulomb model; synthetic scalar evaluations",
+  "seed": 960102,
+  "threshold_boundary_diagnostics": {
+    "comparisons": 85536,
+    "differences_above_tolerance": 0,
+    "examples": [],
+    "interpretation": "diagnostics are not passing parity cases; differences must be within 8 ULP of an energy threshold boundary"
+  },
+  "tolerance": {
+    "absolute_kj_mol": 2e-09,
+    "relative": 2e-12
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "profile": "v3000_3d-branched-spiral",
+  "block": 11,
+  "arm": "baseline",
+  "mode": "parse",
+  "timing": {
+    "elapsed_ns": 83219611,
+    "engine": "chematic",
+    "minimum_timed_ns": 100000000,
+    "minimum_warmup_ns": 500000000,
+    "mode": "parse",
+    "output_units": 100032,
+    "records": 192,
+    "repeats": 3,
+    "warmup_elapsed_ns": 505560334,
+    "warmup_repeats": 6,
+    "elapsed_ns_raw": 249658833,
+    "elapsed_ns_per_batch": 83219611,
+    "records_per_batch": 64,
+    "minimum_repeats": 3,
+    "elapsed_unit": "nanoseconds per full batch; raw elapsed and actual counts retained",
+    "peak_process_rss_bytes": 18251776
+  }
+}

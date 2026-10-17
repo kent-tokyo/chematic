@@ -1,0 +1,10 @@
+   Compiling chematic-smiles v1.1.6 (/private/tmp/chematic-tautomer-callback-20261017/crates/chematic-smiles)
+   Compiling chematic-rxn v1.1.6 (/private/tmp/chematic-tautomer-callback-20261017/crates/chematic-rxn)
+   Compiling chematic-fp v1.1.6 (/private/tmp/chematic-tautomer-callback-20261017/crates/chematic-fp)
+   Compiling chematic-depict v1.1.6 (/private/tmp/chematic-tautomer-callback-20261017/crates/chematic-depict)
+   Compiling chematic-chem v1.1.6 (/private/tmp/chematic-tautomer-callback-20261017/crates/chematic-chem)
+   Compiling chematic-3d v1.1.6 (/private/tmp/chematic-tautomer-callback-20261017/crates/chematic-3d)
+   Compiling chematic-inchi v1.1.6 (/private/tmp/chematic-tautomer-callback-20261017/crates/chematic-inchi)
+   Compiling chematic-mol v1.1.6 (/private/tmp/chematic-tautomer-callback-20261017/crates/chematic-mol)
+   Compiling chematic-py v1.1.6 (/private/tmp/chematic-tautomer-callback-20261017/crates/chematic-py)
+    Finished `dev` profile [unoptimized] target(s) in 12.57s

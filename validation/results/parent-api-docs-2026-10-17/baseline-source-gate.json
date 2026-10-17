@@ -1,0 +1,33 @@
+{
+  "status": "failed",
+  "methods": [
+    "fragment_parent",
+    "charge_parent",
+    "isotope_parent",
+    "stereo_parent",
+    "tautomer_parent",
+    "super_parent",
+    "super_parent_report"
+  ],
+  "report_types": [
+    "ParentStage",
+    "SuperParentReport"
+  ],
+  "checked_anchors": [],
+  "errors": [
+    "expected one typed Mol.fragment_parent; found 0",
+    "expected one typed Mol.charge_parent; found 0",
+    "expected one typed Mol.isotope_parent; found 0",
+    "expected one typed Mol.stereo_parent; found 0",
+    "expected one typed Mol.tautomer_parent; found 0",
+    "expected one typed Mol.super_parent; found 0",
+    "expected one typed Mol.super_parent_report; found 0",
+    "runtime report export missing: ParentStage",
+    "runtime report export missing: SuperParentReport",
+    "stub report export missing: ParentStage",
+    "stub report export missing: SuperParentReport",
+    "Parent guide missing",
+    "API reference member missing: ParentStage",
+    "API reference member missing: SuperParentReport"
+  ]
+}

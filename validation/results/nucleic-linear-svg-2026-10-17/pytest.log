@@ -1,0 +1,14 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.13.6, pytest-9.1.1, pluggy-1.6.0
+rootdir: /private/tmp/chematic-nucleic-linear-svg-20261017/crates/chematic-py
+configfile: pytest.ini
+collected 218 items
+
+crates/chematic-py/tests/test_nucleic_linear_svg.py .................... [  9%]
+................................                                         [ 23%]
+crates/chematic-py/tests/test_nucleic_acid_document.py ....              [ 25%]
+crates/chematic-py/tests/test_rdkit_compat.py .......................... [ 37%]
+........................................................................ [ 70%]
+................................................................         [100%]
+
+============================= 218 passed in 0.26s ==============================

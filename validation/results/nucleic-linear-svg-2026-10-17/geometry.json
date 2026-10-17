@@ -1,0 +1,9 @@
+{
+  "cases": 1360,
+  "residues_checked": 7512,
+  "explicit_pairs_checked": 2504,
+  "input_sha256": "37519f10c849bfc53ee119c3a1b242ef9be7abd88a61ae190290c8b472b059df",
+  "source_roundtrip": "exact decoded JSON text, including CRLF",
+  "geometry": "straight backbones, 64-unit spacing, uniform base side, opposite duplex direction, non-overlapping in-bounds glyph boxes",
+  "scope": "all length-1..4 canonical RNA/DNA sequences and their explicit reverse complements; sequence diagrams, not atomic chemical depictions or measured secondary structure"
+}

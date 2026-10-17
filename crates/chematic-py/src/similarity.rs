@@ -493,5 +493,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         tanimoto_slice,
         tanimoto_pharmacophore_3d,
         o3a_align,
-    )
+    )?;
+    crate::descriptor_distances::register(m)?;
+    crate::sparse_similarity::register(m)
 }

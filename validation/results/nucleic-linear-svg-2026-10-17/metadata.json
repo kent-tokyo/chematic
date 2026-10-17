@@ -1,0 +1,62 @@
+{
+  "date": "2026-10-17",
+  "base_commit": "35b932f911851f51c5cdb89fa371f1c2c4a1b11a",
+  "upstream_issue": {
+    "number": 9617,
+    "url": "https://github.com/rdkit/rdkit/issues/9617",
+    "state": "OPEN",
+    "scope": "explicit nucleic-acid document sequence diagrams; no SMILES recognition or full-atom coordinate layout"
+  },
+  "python": "3.13.6",
+  "tests": {
+    "passed": 218,
+    "new_svg": 52,
+    "existing_nucleic_document": 4,
+    "existing_compat": 162
+  },
+  "typing": {
+    "new_helper": "strict, imported stub diagnostics silenced",
+    "public_valid_consumer": "passed",
+    "public_invalid_consumer": "5 expected errors",
+    "whole_package_strict": "not claimed"
+  },
+  "rendering": {
+    "tool": "CairoSVG 2.9.1",
+    "library_path": "DYLD_FALLBACK_LIBRARY_PATH=/opt/homebrew/lib",
+    "visually_inspected": [
+      "single-rna.png",
+      "antiparallel-rna.png"
+    ],
+    "tool_is_runtime_dependency": false
+  },
+  "native_fixture": {
+    "path": "/private/tmp/chematic-nucleic-linear-svg-python/chematic/chematic.so",
+    "source_commit": "71d9c12b0c16a8e6b23e4078479d5754230c831b",
+    "sha256": "c6db880b6f5ca4ea0388f238c24e8a5b55751daab1084cf0d1d7b56e2427257b",
+    "fresh_native_build": false,
+    "native_validator_sources_unchanged": [
+      "crates/chematic-mol/src/nucleic_acid.rs",
+      "crates/chematic-py/src/nucleic_acid.rs"
+    ],
+    "scope": "existing extension reused for package imports and unchanged document validation"
+  },
+  "source_sha256": {
+    "crates/chematic-py/python/chematic/_nucleic_linear_svg.py": "122f16cea2f16e31994b9b645621d507373fcb880a33e0fa76cd45e555ab0b63",
+    "crates/chematic-py/python/chematic/__init__.py": "a1e2af8189380f37b89efa6200a2ff59f268bf2f4bbec26e21d04d30065b16c7",
+    "crates/chematic-py/python/chematic/__init__.pyi": "57bf999df56a3f5c665368d4cabbcf1452fcebaa3a00a079bf3b89209dffc3d4",
+    "crates/chematic-py/tests/test_nucleic_linear_svg.py": "31e973e4957deb1b208c42740351070e8a6a6d1598854bcc823118b5a621add8",
+    "validation/validate_nucleic_linear_svg.py": "fd73bb4799e619d1dd0485bf6b64689d1a9aec7d61f4851565a6387c1ee02c19",
+    "validation/nucleic_linear_svg_cases.json": "2522336e90c19c47dc54c7e2d386210906396f004236dd1196b9eed4137be313"
+  },
+  "rendered_sha256": {
+    "antiparallel-rna.png": "0d6b598fc008bb7edbe2fcfff768c2603813e2afb62882c61d2d26c40b5f1613",
+    "antiparallel-rna.svg": "6984f1a51f84f509412bc299e7e8f316b468f5d62c36c8bdd1963c83a9b0c9ab",
+    "single-rna.png": "534c55386be870bab1aada09431b8a686a215951d3b0d4a85d3dc07b7d95171d",
+    "single-rna.svg": "ec56091e516212f19cef39f101c355cad00d8eb5d67b7799035df457d5bdb628"
+  },
+  "commands": [
+    "PYTHONDONTWRITEBYTECODE=1 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=/private/tmp/chematic-nucleic-linear-svg-python python3.13 -m pytest crates/chematic-py/tests/test_nucleic_linear_svg.py crates/chematic-py/tests/test_nucleic_acid_document.py crates/chematic-py/tests/test_rdkit_compat.py -q -p no:cacheprovider",
+    "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/private/tmp/chematic-nucleic-linear-svg-python python3.13 validation/validate_nucleic_linear_svg.py",
+    "python3.13 -m mkdocs build --strict --site-dir /private/tmp/chematic-nucleic-linear-svg-site"
+  ]
+}

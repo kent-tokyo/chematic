@@ -1,0 +1,35 @@
+{
+  "removed": [
+    {
+      "path": "/private/tmp/chematic-v2000-zero-fields-evidence-20261017/baseline-target",
+      "du_before": "183296\t/private/tmp/chematic-v2000-zero-fields-evidence-20261017/baseline-target\n",
+      "lsof_returncode": 1,
+      "free_before": 1702707200,
+      "free_after": 1877078016
+    },
+    {
+      "path": "/private/tmp/chematic-v2000-zero-fields-evidence-20261017/candidate-target",
+      "du_before": "183296\t/private/tmp/chematic-v2000-zero-fields-evidence-20261017/candidate-target\n",
+      "lsof_returncode": 1,
+      "free_before": 1877078016,
+      "free_after": 2051489792
+    },
+    {
+      "path": "/private/tmp/chematic-v2000-zero-fields-evidence-20261017/native-target",
+      "du_before": "386264\t/private/tmp/chematic-v2000-zero-fields-evidence-20261017/native-target\n",
+      "lsof_returncode": 1,
+      "free_before": 2051489792,
+      "free_after": 2436370432
+    }
+  ],
+  "preserved_binary_sha256": {
+    "baseline-sdf": "352de15f4f2df6d75bc39bc1022808bf8d9d20919a58368ef2bdb2a2a9b4bbc1",
+    "baseline-v3000": "c739f864973af6f729c9406313960cb804f43562460dccd9b827bf065ae40790",
+    "baseline-v3000_3d": "bc68366c61a0f4d71cd19c119446556fe607acbaf190e1d762c1e51b3370287f",
+    "candidate-sdf": "8df357c04b34bf59f4e1332c4bf186ffc1d2e01c2a45655fc4dda0f15ba831d1",
+    "candidate-v3000": "0e582464419395250d1f135a337af077f2628592d9ae44895a7ef2fd764ad41e",
+    "candidate-v3000_3d": "3efff3f1e1a159ccd22ef6fd8c41da41b19cce4a14b2898886fb558d382d0caa"
+  },
+  "all_compilation_tests_and_clippy_finished_before_cleanup": true,
+  "source_logs_corpora_all_formal_binaries_preserved": true
+}

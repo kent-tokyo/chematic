@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-17",
+  "base_commit": "35b932f911851f51c5cdb89fa371f1c2c4a1b11a",
+  "baseline": {
+    "python_files_verified_against_git": true,
+    "runtime_probe": {
+      "write_xbs": false,
+      "XbsSpecies": false,
+      "XbsBondRule": false
+    }
+  },
+  "upstream": {
+    "number": 2576,
+    "state": "OPEN",
+    "title": "bs format doesn't seem to work",
+    "updatedAt": "2023-03-23T16:58:30Z",
+    "url": "https://github.com/openbabel/openbabel/issues/2576"
+  },
+  "manual": {
+    "url": "https://manpages.debian.org/bookworm/xbs/xbs.1.en.html",
+    "downloaded_html_sha256": "c451263aeae22954bee9c5120e8a5dd4336b80f5b46564d9a424b1c0b21ffa61"
+  },
+  "candidate_files": {
+    "crates/chematic-py/python/chematic/_xbs.py": "7b5faad36dbf04a3190cd78546ec40d42af355308652c8e7af885ebe302619f2",
+    "crates/chematic-py/python/chematic/__init__.py": "b8bcecd294e163fd3dfd4dda84b4c54dc4f4f18dab0ff81b58e0560db5f75914",
+    "crates/chematic-py/python/chematic/__init__.pyi": "89b9318fd420c5d28e8b6b6e827e0a22b788612b45186a11cdfb319382c3b130",
+    "crates/chematic-py/tests/test_xbs_output.py": "3a5e91ca0ec1f4e80df3549362b640db5de8366805f5fb7fadbdf4369271f3cf",
+    "validation/validate_xbs_output.py": "6c2c2e3f290a1979496d3561e297f08bc0df5e0546e8bd1cec7d26ac04058ebd",
+    "validation/openbabel_issues/xbs/asymmetric.xyz": "8f75a6e587216b2cf3634eb84d0c4a30c9816470fa5c51b1c8b960c8a7bdaf61",
+    "validation/openbabel_issues/xbs/asymmetric.bs": "ba0b613ab65a8365097c82250df699770c911776bc6bdd676af26a62b303a0a4"
+  },
+  "native_extension": {
+    "sha256": "c6db880b6f5ca4ea0388f238c24e8a5b55751daab1084cf0d1d7b56e2427257b",
+    "reused_from_commit": "71d9c12b0c16a8e6b23e4078479d5754230c831b",
+    "scope": "package import and existing compatibility tests; no fresh build; new helper standard-library Python"
+  },
+  "external_parser": {
+    "package": "hofmann",
+    "version": "0.21.1",
+    "install": "python3.13 -m pip install --no-cache-dir --no-deps --target /private/tmp/chematic-xbs-oracle hofmann==0.21.1",
+    "parser_sha256": "073b99b0bda7fb3eed40db1c6377b9396c2ca05d32d7ec2dfb19bafaf2430cd2",
+    "scene_builder_sha256": "7f8f25913bd1bf426951a133c9065e65623b78ffdd28901eace388e50da5753d",
+    "api": "StructureScene.from_xbs(path); parsing only"
+  },
+  "pytest": {
+    "passed": 209,
+    "failed": 0,
+    "skipped": 0,
+    "new": 47,
+    "existing": 162,
+    "command": "PYTHONDONTWRITEBYTECODE=1 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=/private/tmp/chematic-xbs-python python3.13 -m pytest crates/chematic-py/tests/test_xbs_output.py crates/chematic-py/tests/test_rdkit_compat.py -q -p no:cacheprovider"
+  },
+  "crossread_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/private/tmp/chematic-xbs-python:/private/tmp/chematic-xbs-oracle python3.13 validation/validate_xbs_output.py --output validation/results/xbs-output-2026-10-17/crossread.json",
+  "typing_tool": "mypy 1.8.0; consumers use follow-imports=silent and ignore-missing-imports; helper checked strictly in isolation",
+  "scope": "partial requested XBS dialect, distinct from existing Open Babel bs; no chemical semantics inferred"
+}

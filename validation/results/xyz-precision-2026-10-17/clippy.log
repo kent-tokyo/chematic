@@ -1,0 +1,4 @@
+    Checking chematic-mol v1.1.6 (/private/tmp/chematic-xyz-precision-20261017/crates/chematic-mol)
+   Compiling chematic-inchi v1.1.6 (/private/tmp/chematic-xyz-precision-20261017/crates/chematic-inchi)
+    Checking chematic-py v1.1.6 (/private/tmp/chematic-xyz-precision-20261017/crates/chematic-py)
+    Finished `dev` profile [optimized] target(s) in 16.14s

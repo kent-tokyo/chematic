@@ -1,5 +1,9 @@
 # Configurable RDKit Layered fingerprints
 
+The optional [RDKit-style caller counter adapter](layered-caller-counts.md)
+updates checked lists/uint32 NumPy destinations after successful calculation.
+The native API described here continues to copy counter inputs.
+
 This candidate fills the gap between chematic's existing fixed-default Layered
 fingerprint and the parameter controls exposed by
 [RDKit `LayeredFingerprint`](https://www.rdkit.org/docs/source/rdkit.Chem.rdmolops.html#rdkit.Chem.rdmolops.LayeredFingerprint).

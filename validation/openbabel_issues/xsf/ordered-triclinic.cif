@@ -1,0 +1,18 @@
+data_original_xsf_probe
+_cell_length_a 4.6
+_cell_length_b 5.3
+_cell_length_c 6.2
+_cell_angle_alpha 82
+_cell_angle_beta 96
+_cell_angle_gamma 103
+_symmetry_space_group_name_H-M 'P 1'
+loop_
+_atom_site_label
+_atom_site_type_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_occupancy
+Na_probe Na 0.125 0.25 0.375 1
+Cl_probe Cl 0.65 0.35 0.8 1
+O_probe O -0.1 1.2 0.4 1

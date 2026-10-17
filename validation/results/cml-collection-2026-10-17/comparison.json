@@ -1,0 +1,65 @@
+{
+  "indigo_version": "1.46.0.0-gb36d38f52-aarch64-darwin-appleclang-17000013",
+  "lxml_version": [
+    6,
+    0,
+    2,
+    0
+  ],
+  "collection_cases": 32,
+  "molecular_records_checked": 272,
+  "input_sha256": "fdee9e6656d3bf4049b56d059af3f7aa9b86f33b6c1250345fff1f53b35b4206",
+  "xml_payload": "expanded element/attribute/text trees equal; all internal source spelling retained separately",
+  "graph_reference": "Indigo input-CML vs collection canonical SMILES/atom/bond counts, including the Indigo-stereo source lane; native writer stereo omissions are not repaired",
+  "reassembly_cases": 32,
+  "openbabel_version": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+  "openbabel_observations": [
+    {
+      "molecules": 1,
+      "returned_rows": 1,
+      "exit_code": 0,
+      "xml_diagnostic": true,
+      "stderr": ":1: parser error : StartTag: invalid element name\n</cml>\n ^\n==============================\n*** Open Babel Error  in XML Parser \n  StartTag: invalid element name\n\n1 molecule converted\n"
+    },
+    {
+      "molecules": 2,
+      "returned_rows": 2,
+      "exit_code": 0,
+      "xml_diagnostic": true,
+      "stderr": ":1: parser error : StartTag: invalid element name\n</cml>\n ^\n==============================\n*** Open Babel Error  in XML Parser \n  StartTag: invalid element name\n\n2 molecules converted\n"
+    },
+    {
+      "molecules": 3,
+      "returned_rows": 3,
+      "exit_code": 0,
+      "xml_diagnostic": true,
+      "stderr": ":1: parser error : StartTag: invalid element name\n</cml>\n ^\n==============================\n*** Open Babel Error  in XML Parser \n  StartTag: invalid element name\n\n3 molecules converted\n"
+    },
+    {
+      "molecules": 7,
+      "returned_rows": 7,
+      "exit_code": 0,
+      "xml_diagnostic": true,
+      "stderr": ":1: parser error : StartTag: invalid element name\n</cml>\n ^\n==============================\n*** Open Babel Error  in XML Parser \n  StartTag: invalid element name\n\n7 molecules converted\n"
+    },
+    {
+      "molecules": 12,
+      "returned_rows": 12,
+      "exit_code": 0,
+      "xml_diagnostic": true,
+      "stderr": ":1: parser error : StartTag: invalid element name\n</cml>\n ^\n==============================\n*** Open Babel Error  in XML Parser \n  StartTag: invalid element name\n\n12 molecules converted\n"
+    }
+  ],
+  "openbabel_cli_self_read_control": {
+    "writer_command": "obabel -ismi -ocml",
+    "reader_command": "obabel -icml -ocan",
+    "writer_exit_code": 0,
+    "reader_exit_code": 0,
+    "input_molecules": 3,
+    "candidate_returned_records": 3,
+    "xml_molecule_elements": 3,
+    "returned_rows": 1,
+    "stderr": ":1: parser error : Extra content at the end of the document\n elementType=\"N\" formalCharge=\"1\" hydrogenCount=\"4\"/>  </atomArray> </molecule> \n                                                                               ^\n==============================\n*** Open Babel Error  in XML Parser \n  Extra content at the end of the document\n\n1 molecule converted\n"
+  },
+  "scope": "CML framing and opaque molecular subtree retention, not complete schema/chemistry validation or full native CML projection parity"
+}

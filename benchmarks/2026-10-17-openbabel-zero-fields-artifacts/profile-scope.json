@@ -1,0 +1,12 @@
+{
+  "command": [
+    "/private/tmp/chematic-v2000-zero-fields-evidence-20261017/baseline-sdf",
+    "/private/tmp/chematic-v2000-zero-fields-evidence-20261017/sdf-5000.sdf",
+    "write",
+    "3000",
+    "1000"
+  ],
+  "excluded_from_formal": true,
+  "scope": "baseline native prepared SDF write; startup/read ancestry not attributed to serialization",
+  "sample_seconds": 2
+}

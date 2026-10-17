@@ -36,16 +36,19 @@ mod cif_symmetry;
 pub mod cjson;
 pub mod cjson_record;
 pub mod cml;
+pub mod cml_named;
 pub mod conversion;
 pub mod cube;
 pub mod dmol3;
 pub mod error;
 pub mod exyz;
 pub mod fhiaims;
+pub mod gamess_zmat;
 pub mod gaussian;
 pub mod gro;
 pub mod gro_lammps;
 pub mod gzmat;
+pub use gamess_zmat::{GamessZmatWriteOptions, write_gamess_zmat, xyz_to_gamess_zmat};
 pub mod hin;
 pub mod ket;
 pub mod lammps_data;
@@ -73,6 +76,7 @@ pub mod pqr_pdbqt;
 pub mod protein;
 pub mod qcschema;
 pub mod rdfile;
+pub mod reaction_cdxml;
 pub mod record;
 pub mod rxn;
 pub mod sdf;
@@ -83,14 +87,17 @@ pub mod tdt;
 pub mod turbomole;
 pub mod volumetric;
 pub mod xyz;
+pub mod xyz_output;
 
 // Convenient re-exports at crate root.
+pub use cml_named::{CmlNamedError, write_cml_named_checked};
 pub use conversion::{
     ConversionAtomMapping, ConversionBondMapping, ConversionError, ConversionLimits,
     ConversionObservation, ConversionPolicy, ConversionReport, PreservationStatus,
     convert_with_report, convert_with_report_json, convert_with_report_with_limits,
 };
 pub use error::MolParseError;
+pub use reaction_cdxml::{ReactionCdxmlError, write_reaction_cdxml_checked};
 // Re-export MolParseError under the alias MolError as specified by the public API.
 pub use cdjson::{
     CdjsonDocument, CdjsonError, CdjsonMolecule, CdjsonParseLimits, parse_cdjson,
@@ -197,8 +204,9 @@ pub use moljson::{
     MolJsonError, MolJsonParseLimits, parse_moljson, parse_moljson_with_limits, write_moljson,
 };
 pub use mopac::{
-    MopacAtom, MopacCartesianGeometry, MopacCartesianRow, MopacError, MopacOptimizationFlag,
-    MopacParseLimits, parse_mopac_cartesian, parse_mopac_cartesian_with_limits,
+    MopacArchive, MopacArchiveAtom, MopacAtom, MopacCartesianGeometry, MopacCartesianRow,
+    MopacError, MopacOptimizationFlag, MopacParseLimits, parse_mopac_archive,
+    parse_mopac_archive_with_limits, parse_mopac_cartesian, parse_mopac_cartesian_with_limits,
     write_mopac_cartesian,
 };
 pub use mrv::{
@@ -274,6 +282,8 @@ pub use xyz::{
     parse_extxyz, parse_extxyz_all, parse_extxyz_with_limits, parse_xyz, parse_xyz_all,
     parse_xyz_all_with_limits, parse_xyz_with_limits, write_extxyz, write_xyz,
 };
+
+pub use xyz_output::{XyzNotation, XyzWriteError, XyzWriteOptions, write_xyz_checked};
 
 #[cfg(test)]
 mod semantic_contract_tests;

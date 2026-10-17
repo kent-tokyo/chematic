@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-17",
+  "base_commit": "35b932f911851f51c5cdb89fa371f1c2c4a1b11a",
+  "baseline": {
+    "verified_exact_python_sources": true,
+    "runtime_probe": {
+      "has_rdMIF": false
+    }
+  },
+  "upstream": {
+    "number": 9601,
+    "title": "Tracking: nanobind wrapper improvements",
+    "state": "OPEN",
+    "url": "https://github.com/rdkit/rdkit/issues/9601",
+    "updatedAt": "2026-09-29T16:40:13Z",
+    "selected_boundary": "rdMIF charges and positions typing; explicit-charge vacuum Coulomb subset",
+    "issue_excerpt": "rdMIF's charges and positions, which raise ValueError for a non-sequence"
+  },
+  "reference_source": {
+    "url": "https://raw.githubusercontent.com/rdkit/rdkit/Release_2026_09_1/Code/GraphMol/MolInteractionFields/MIFDescriptors.cpp",
+    "sha256": "8ac14d77a4945dd9d688f6780336b0116b1d70f3d0ee9574d0b9a2232bfc4682"
+  },
+  "candidate_files": {
+    "crates/chematic-py/python/chematic/_coulomb_field.py": "c3049d6c7655b55d5bc780952aa1f67ae158a641e1d3cc65df278643d26b3d70",
+    "crates/chematic-py/python/chematic/rdkit_compat.py": "0a6779a7a08b1a1f6dce93261435ebbb32e7f1ed24ad324b5594367d74fd31ab",
+    "crates/chematic-py/tests/test_coulomb_field.py": "0b7257aade0f2026418f395c59cc9322a701eb7c0beb59508127e50af9424dc2",
+    "validation/validate_coulomb_field.py": "73ffdf9d21b6e184fbf0d316ea36f983048ee243108643e0e61416dd3a6003e2"
+  },
+  "native_extension": {
+    "sha256": "c6db880b6f5ca4ea0388f238c24e8a5b55751daab1084cf0d1d7b56e2427257b",
+    "reused_from_commit": "71d9c12b0c16a8e6b23e4078479d5754230c831b",
+    "scope": "package import and existing compatibility tests only; no fresh native build; new field uses standard-library Python"
+  },
+  "pytest": {
+    "passed": 225,
+    "failed": 0,
+    "skipped": 0,
+    "new_tests": 63,
+    "existing_compat_tests": 162,
+    "command": "PYTHONDONTWRITEBYTECODE=1 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=/private/tmp/chematic-coulomb-field-python python3.13 -m pytest crates/chematic-py/tests/test_coulomb_field.py crates/chematic-py/tests/test_rdkit_compat.py -q -p no:cacheprovider"
+  },
+  "oracle_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/private/tmp/chematic-coulomb-field-python:/private/tmp/chematic-sparse-tanimoto-rdkit python3.13 validation/validate_coulomb_field.py --output validation/results/coulomb-field-2026-10-17/rdkit-comparison.json",
+  "source_changes": "Python-only helper and compatibility namespace; no native binding change"
+}

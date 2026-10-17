@@ -1,0 +1,41 @@
+[
+  {
+    "check": "check_refactor_budget.py",
+    "exit_code": 0,
+    "output": "Refactor budget OK: 620 production Rust files, 8770 functions, 17 file allowances, 85 function allowances"
+  },
+  {
+    "check": "check_python_stubs.py",
+    "exit_code": 0,
+    "output": "Python stub gate passed: 1 source stubs, 0 wheels"
+  },
+  {
+    "check": "check_binding_surface.py",
+    "exit_code": 0,
+    "output": {
+      "python_registered_count": 214,
+      "surface_sha256": "28a0e5e3ce5648e7041cf7c30c51a479a731b108c9a311201b2aefccdb5a3782",
+      "python_declared_without_registration": []
+    }
+  },
+  {
+    "check": "check_cross_binding_manifest.py",
+    "exit_code": 0,
+    "output": "Cross-binding operation manifest OK: 58 four-binding operations, 0 source-only operations, 4 bindings declared"
+  },
+  {
+    "check": "check_unsafe_surface.py",
+    "exit_code": 0,
+    "output": "unsafe surface OK: only the reviewed native-InChI FFI boundary is allowed"
+  },
+  {
+    "check": "check_product_names.py",
+    "exit_code": 0,
+    "output": "Product naming check OK: chematic and chematic-draw are canonical"
+  },
+  {
+    "check": "check_workflow_pins.py",
+    "exit_code": 0,
+    "output": "Workflow action pins verified: 194 immutable references"
+  }
+]

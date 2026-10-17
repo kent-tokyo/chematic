@@ -1,0 +1,5 @@
+validation/typing/layered_counts_invalid.py:5: error: Argument "atomCounts" to "LayeredFingerprint" has incompatible type "tuple[int, int, int]"; expected "list[int] | ndarray[Any, dtype[unsignedinteger[_32Bit]]] | None"  [arg-type]
+validation/typing/layered_counts_invalid.py:6: error: Argument "fpSize" to "LayeredFingerprint" has incompatible type "float"; expected "SupportsIndex"  [arg-type]
+validation/typing/layered_counts_invalid.py:7: error: Argument "setOnlyBits" to "LayeredFingerprint" has incompatible type "bytes"; expected "LayeredBitMask | None"  [arg-type]
+validation/typing/layered_counts_invalid.py:8: error: Argument "fromAtoms" to "LayeredFingerprint" has incompatible type "Iterator[int]"; expected "Sequence[SupportsIndex] | None"  [arg-type]
+Found 4 errors in 1 file (checked 1 source file)

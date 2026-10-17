@@ -31,18 +31,18 @@ mod fhiaims;
 use fhiaims::*;
 mod dmol3;
 use dmol3::*;
-mod mopac;
-use mopac::*;
 mod exyz;
+mod mopac;
 use exyz::*;
 mod gro;
 mod gzmat;
-use gzmat::*;
 mod rdfile;
 use rdfile::*;
 mod turbomole;
 use turbomole::*;
 mod chemdraw;
+mod reaction_cdxml;
+use reaction_cdxml::write_reaction_cdxml_checked;
 mod interchange;
 use chemdraw::*;
 mod mol2_ensemble;
@@ -62,6 +62,7 @@ mod pqr_pdbqt;
 use pqr_pdbqt::*;
 mod gro_lammps;
 mod xyz;
+mod xyz_output;
 use interchange::*;
 use materials::*;
 pub(crate) use materials::{dict_get, dict_get_opt, dict_get_required};
@@ -1331,9 +1332,24 @@ fn write_smi_file(records: Vec<(Mol, String)>) -> PyResult<String> {
 // Register
 // ---------------------------------------------------------------------------
 
+fn register_reaction_formats(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    register_pyfunctions!(
+        m,
+        write_reaction_cdxml_checked,
+        write_reaction,
+        from_rxn_file,
+        to_rxn_file,
+        from_rxn_document_json,
+        to_rxn_document_json,
+    )
+}
+
 pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     gro_lammps::register(m)?;
+    xyz_output::register(m)?;
     m.add_class::<PySmilesBatchStream>()?;
+    mopac::register(m)?;
+    gzmat::register(m)?;
     register_pyfunctions!(
         m,
         from_smiles,
@@ -1393,19 +1409,10 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         rdkit_from_xyz_block,
         rdkit_from_mol2_block,
         rdkit_mol2_block_to_smiles,
-        from_xyz,
-        from_extxyz,
-        from_extxyz_all,
-        to_extxyz,
         parse_formula,
         mol_hash,
         are_identical,
         stable_are_identical,
-        write_reaction,
-        from_rxn_file,
-        to_rxn_file,
-        from_rxn_document_json,
-        to_rxn_document_json,
         nearest_neighbors_from_fp,
         parse_smi_file,
         write_smi_file,
@@ -1415,15 +1422,11 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         parse_rdfile,
         write_rdfile,
         rdfile_to_smiles,
-        cartesian_to_zmatrix,
-        write_gzmat,
         parse_fhiaims,
         write_fhiaims,
         parse_dmol3,
         write_dmol3,
         select_pdb_atoms,
-        parse_mopac_cartesian,
-        write_mopac_cartesian,
         parse_exyz,
         write_exyz,
         parse_turbomole,
@@ -1449,5 +1452,6 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         write_atomic_input,
         parse_atomic_result,
         write_atomic_result,
-    )
+    )?;
+    register_reaction_formats(m)
 }

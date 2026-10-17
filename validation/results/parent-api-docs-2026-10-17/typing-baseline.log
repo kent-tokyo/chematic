@@ -1,0 +1,10 @@
+validation/typing/parent_api_valid.py:5: error: "Mol" has no attribute "fragment_parent"  [attr-defined]
+validation/typing/parent_api_valid.py:5: error: "Mol" has no attribute "charge_parent"  [attr-defined]
+validation/typing/parent_api_valid.py:5: error: "Mol" has no attribute "isotope_parent"  [attr-defined]
+validation/typing/parent_api_valid.py:5: error: "Mol" has no attribute "stereo_parent"  [attr-defined]
+validation/typing/parent_api_valid.py:7: error: "Mol" has no attribute "tautomer_parent"  [attr-defined]
+validation/typing/parent_api_valid.py:8: error: "Mol" has no attribute "super_parent"  [attr-defined]
+validation/typing/parent_api_valid.py:9: error: Name "ch.SuperParentReport" is not defined  [name-defined]
+validation/typing/parent_api_valid.py:9: error: "Mol" has no attribute "super_parent_report"  [attr-defined]
+validation/typing/parent_api_valid.py:10: error: Name "ch.ParentStage" is not defined  [name-defined]
+Found 9 errors in 1 file (checked 1 source file)

@@ -1,0 +1,15 @@
+{
+  "baseline": {
+    "legacy_chematic_to_xyz": "1\nlegacy\nNe      1.234568    -2.345679     0.000000\n",
+    "openbabel_xyz_output": "1\noriginal source\nNe         1.23457       -2.34568        0.00000\n"
+  },
+  "corpus_sha256": "ecd3b10dc22877645182c6af28ec7e8ddbf97481e62043f96b1203b734a0a40e",
+  "crossreads": 12,
+  "exact_scientific_f64_checks": 12288,
+  "format_profiles": 64,
+  "independent_decimal_checks": 12288,
+  "openbabel_max_coordinate_error": 4.321099000059725e-06,
+  "openbabel_version": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+  "rdkit_scientific_refusals": 4,
+  "rdkit_version": "2026.09.1"
+}

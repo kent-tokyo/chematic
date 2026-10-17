@@ -4,6 +4,8 @@
     options:
       members:
         - Mol
+        - ParentStage
+        - SuperParentReport
         - from_smiles
         - from_mol_block
         - from_inchi
@@ -20,3 +22,9 @@
         - SdfIter
         - iter_sdf
         - iter_sdf_str
+        - fragment_on_bonds_checked
+        - BondFragmentation
+        - FragmentAttachment
+
+See [Parent transformations](../standardization-parents.md) for the native
+chemistry scope, composition order, status handling and executable examples.

@@ -1,0 +1,13 @@
+{
+  "scope": "paired point-cloud weighted SSD; no molecule matching or conformer generation",
+  "rdkit_version": "2026.09.1",
+  "numpy_version": "2.5.3",
+  "reference_cases": 576,
+  "metamorphic_checks": 1152,
+  "corpus_sha256": "f23b53ada474d1eb3d450be000e732304d59873faf70792962b87c29b9b95f73",
+  "maximum_absolute_ssd_difference": 2.3877788635218167e-10,
+  "maximum_nondegenerate_transform_difference_diagnostic": 3.641913534035979e-05,
+  "native_fixture_sha256": "049c1c81414b36a64f55ac448b3c5d265a977c84ffc629bfd1d2e9ecdd63052b",
+  "native_fixture_source_commit": "e2041226b67030108acb00309da5f0659f636c1d",
+  "native_fixture_scope": "reused import fixture; alignment implementation is Python/NumPy only; no fresh Rust build"
+}

@@ -1,0 +1,27 @@
+{
+  "cases": 52,
+  "memory_probe": {
+    "max_yielded_chunk_bytes": 65536,
+    "parts": 3,
+    "records": 4096,
+    "scope": "Python traced allocations, not process RSS",
+    "source_bytes": 35418112,
+    "source_sha256": "9a1d5cb0699413e24c2f2a88cb60c2a0175425d1cf4160dc996bf48191ea00b1",
+    "tracemalloc_peak_bytes": 2138024
+  },
+  "native_record_reads": 9148,
+  "openbabel_baseline": {
+    "filenames": [
+      "baseline.sdf"
+    ],
+    "requested_parts": 3,
+    "returncode": 0,
+    "stderr": "7 molecules converted"
+  },
+  "openbabel_part_reads": 3,
+  "openbabel_record_reads": 7,
+  "openbabel_version": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+  "parts_checked": 1194,
+  "rdkit_record_reads": 9148,
+  "rdkit_version": "2026.09.1"
+}
