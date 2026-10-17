@@ -1,0 +1,11 @@
+{
+  "command": [
+    "obabel",
+    "-ixyz",
+    "-ogamin"
+  ],
+  "input": "3\nOriginal water\nO 0 0 0\nH .96 0 0\nH -.24 .93 0\n",
+  "stdout": " $CONTRL COORD=CART UNITS=ANGS $END\n\n $DATA\nOriginal water\nC1\nO      8.0      0.0000000000    0.0000000000    0.0000000000 \nH      1.0      0.9600000000    0.0000000000    0.0000000000 \nH      1.0     -0.2400000000    0.9300000000    0.0000000000 \n $END\n\n\n",
+  "stderr": "1 molecule converted\n",
+  "returncode": 0
+}

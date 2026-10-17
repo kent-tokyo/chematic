@@ -16,6 +16,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Rust/Python `write_gamess_zmat` emits a checked GAMESS-US geometry
+  template with source-frame Cartesian `$DATA` and caller-defined `$ZMAT`
+  distance/angle/torsion definitions. See [GAMESS output](docs/gamess-zmat-output.md)
+  for precision, card limits and calculation-setup scope.
+
 - Rust/Python `FeaturePatternSet` owns up to 32 caller-supplied SMARTS feature
   definitions and produces full-width atom masks or native circular feature
   fingerprints. Matching budgets and size limits refuse partial output;
