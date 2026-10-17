@@ -1,0 +1,20 @@
+{
+  "compiler_rebuilt_production_library": true,
+  "separate_empty_targets": true,
+  "base_commit": "34f141266a81264f42990f98acbe25c91d9074af",
+  "candidate_commit": "774ddc180d7389b95ed30ab7fbae6bcab65f2d64",
+  "all_baseline_source_files_match_base": true,
+  "source_contrast_valid": true,
+  "production_fixed4_function": {
+    "baseline": {
+      "symbol": "__RNvNtNtCs9k7NSpE0Bwv_12chematic_mol7mol20006writer11push_fixed4",
+      "instruction_sha256": "5818b51f937f462e37075574971385a8a10c3ebf77780427e97f9e08d1d61a5f",
+      "instructions": 542
+    },
+    "candidate": {
+      "symbol": "__RNvNtNtNtCs9k7NSpE0Bwv_12chematic_mol7mol20006writer6fixed411push_fixed4",
+      "instruction_sha256": "8e9898f289f4168572efee79f9015df18bd0a027c5d2bb5994bf501e8b2a46a4",
+      "instructions": 297
+    }
+  }
+}

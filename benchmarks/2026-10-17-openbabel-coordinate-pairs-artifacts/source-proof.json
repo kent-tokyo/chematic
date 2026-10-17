@@ -1,0 +1,7 @@
+{
+  "base_commit": "34f141266a81264f42990f98acbe25c91d9074af",
+  "frozen_helper_sha256": "4b0784ae681abbb1c30ce93fbbe79296079a76fb74fdb93bb12ac0526dc02d8d",
+  "transformation": "Convert the fixed4 integer and fractional digits in decimal pairs; include common field padding in the same stack buffer; unchanged rounding and fallback",
+  "original_unmeasured_base_commit": "f20304f4699ee803ab993f73b98c3c8be38b58fc",
+  "correctness_prerequisite": "Exclude a ring CH from its own partner set, identically in both arms; main f20304f4 test failed in both unmodified baseline and formatter candidate before any timing"
+}

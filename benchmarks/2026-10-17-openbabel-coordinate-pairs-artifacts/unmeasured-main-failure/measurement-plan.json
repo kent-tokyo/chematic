@@ -1,0 +1,93 @@
+{
+  "base_commit": "f20304f4699ee803ab993f73b98c3c8be38b58fc",
+  "candidate": "Decimal pairs and stack-buffer padding in shared fixed4 coordinate formatter",
+  "profiles": [
+    {
+      "kind": "sdf",
+      "profile": "0",
+      "records": 1000,
+      "path": "sdf-0.sdf",
+      "sha256": "8e7ad63db96f6fb87b87333ab1f7710a18bc3be5cb4676c15c345c09d4ce718b"
+    },
+    {
+      "kind": "sdf",
+      "profile": "5000",
+      "records": 1000,
+      "path": "sdf-5000.sdf",
+      "sha256": "38d1d169f40de9fe4c95ec475035658ffcb27a2c84c448e3c619c32aefe8fd60"
+    },
+    {
+      "kind": "v3000",
+      "profile": "0",
+      "records": 1000,
+      "path": "v3000-0.molblocks",
+      "sha256": "6c2eccf9aae975d790e9b036e0ffce71d056b243049e3424681326bceae17a06"
+    },
+    {
+      "kind": "v3000",
+      "profile": "5000",
+      "records": 1000,
+      "path": "v3000-5000.molblocks",
+      "sha256": "45924f7db9c4ea10e7ea494cd9aff2d536129b553d1e834fdcdac444e39f3e9e"
+    },
+    {
+      "kind": "v3000",
+      "profile": "chains",
+      "records": 64,
+      "path": "v3000-chains.molblocks",
+      "sha256": "8ea24c94237cfc4076bcbde78019dd37cf4beb254c7a6b820555791da2410186"
+    },
+    {
+      "kind": "v3000",
+      "profile": "continued",
+      "records": 64,
+      "path": "v3000-continued.molblocks",
+      "sha256": "ebf67c73081a981338e5130991c342ad80876a3cdbdb65d4a04551f1ea595d67"
+    },
+    {
+      "kind": "v3000_3d",
+      "profile": "spiral",
+      "records": 64,
+      "path": "v3000_3d-spiral.molblocks",
+      "sha256": "a7363fb554d6a1800dfb51050c4c653bc56476a109787b2d8ab05b273fcdefed"
+    },
+    {
+      "kind": "v3000_3d",
+      "profile": "branched-spiral",
+      "records": 64,
+      "path": "v3000_3d-branched-spiral.molblocks",
+      "sha256": "eccbf01b4a1ed297989641a6d7f41fdc4c1a79670cc2f9d207d866b00d620aa4"
+    },
+    {
+      "kind": "v3000_3d",
+      "profile": "offset",
+      "records": 64,
+      "path": "v3000_3d-offset.molblocks",
+      "sha256": "907983286ba0b4b45c609173caefef7ac4677e7b3071b668abadddfc07c10529"
+    },
+    {
+      "kind": "v3000_3d",
+      "profile": "branched-offset",
+      "records": 64,
+      "path": "v3000_3d-branched-offset.molblocks",
+      "sha256": "6b8c92a7b9cc4cf49b3a0951c7bd8482c7a35041cf49a73132ac16e001c1f5fe"
+    }
+  ],
+  "primary": [
+    "sdf-0",
+    "sdf-5000"
+  ],
+  "blocks": 21,
+  "repeats": 3,
+  "adoption": "Exact source snapshots and rewrites, frozen helper and standard formatter match decimal pairs, random f64 bits and directed boundaries; both primary write paired CI lower>1; all 30 source medians>=0.99; disclose negative intervals",
+  "source_valid_epochs": 1,
+  "adaptive_reruns": false,
+  "build": "Rust opt3 full LTO 1 CGU 1 job, incremental false; separate empty per-arm targets and separate source roots",
+  "comparator": "Open Babel installed native C++ API compiled -O3, RDKit installed observer version recorded",
+  "timed_scope": "Native batch parse/prepared write/roundtrip. Inputs loaded and V3000 framed before timer. Diagnostic readers and retained full batches. Startup and plugin loading excluded. Whole-process RSS includes preparation and warmup.",
+  "scope": "One macOS host, source build. Synthetic 16..1024-carbon chains, fluorine attached to carbon 2 for branched primary. Arbitrary finite nonplanar coordinates, not physical conformers or holdout. No universal or published-package claim.",
+  "coordinates": {
+    "spiral": "x=i*.1251;y=((i*37)%101-50)*.1234;z=((i*73)%97-48)*.2345",
+    "offset": "x=(i-512)*1.2345;y=((i*19)%53-26)*.3456;z=-((i*43)%79-39)*.4567"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "scope": "Separate baseline own-CPU sample on write mode; excludes startup/prepared read ancestry from writer attribution and all diagnostic elapsed values from formal matrices",
+  "command": [
+    "/private/tmp/chematic-coordinate-pairs-evidence-20261017/baseline-sdf",
+    "/private/tmp/chematic-coordinate-pairs-evidence-20261017/sdf-5000.sdf",
+    "write",
+    "1000",
+    "1000"
+  ],
+  "sample_duration_seconds": 2
+}

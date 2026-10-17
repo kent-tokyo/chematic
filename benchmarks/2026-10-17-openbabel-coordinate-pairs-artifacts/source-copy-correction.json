@@ -1,0 +1,6 @@
+{
+  "unused_files_removed_before_seal": [
+    "fixed4.rs"
+  ],
+  "reason": "Candidate-only files were copied before the production module was wired. Baseline writer never referenced them; baseline production sources are unchanged and checked against Git at seal time. No formal samples taken."
+}

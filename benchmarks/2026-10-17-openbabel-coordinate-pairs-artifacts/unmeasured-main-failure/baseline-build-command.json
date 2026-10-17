@@ -1,0 +1,28 @@
+{
+  "cwd": "/private/tmp/chematic-coordinate-pairs-evidence-20261017/baseline-source",
+  "command": [
+    "cargo",
+    "build",
+    "-vv",
+    "--offline",
+    "--locked",
+    "--release",
+    "-p",
+    "chematic-mol",
+    "--example",
+    "openbabel_sdf_throughput",
+    "--example",
+    "openbabel_v3000_throughput",
+    "--example",
+    "openbabel_v3000_3d_throughput"
+  ],
+  "env": {
+    "CARGO_TARGET_DIR": "/private/tmp/chematic-coordinate-pairs-evidence-20261017/baseline-target",
+    "CARGO_BUILD_JOBS": "1",
+    "CARGO_INCREMENTAL": "0",
+    "CARGO_PROFILE_RELEASE_OPT_LEVEL": "3",
+    "CARGO_PROFILE_RELEASE_LTO": "true",
+    "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "1",
+    "CARGO_PROFILE_RELEASE_STRIP": "none"
+  }
+}

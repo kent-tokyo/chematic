@@ -1,0 +1,10 @@
+{
+  "passed": true,
+  "native": {
+    "passed": 1386,
+    "failed": 0,
+    "ignored": 0,
+    "suites": 67
+  },
+  "runner_log": "..........                                                               [100%]\n10 passed in 0.03s\n"
+}

@@ -75,6 +75,8 @@ Older artifact audits, similarity-search work, streaming/format matrices,
 [`archive-index.md`](archive-index.md). They are retained for provenance and do
 not establish current behavior.
 
+- [Decimal-pair coordinate formatting](2026-10-17-openbabel-coordinate-pairs.md): ten fixed Open Babel/source profiles, full byte oracles and all source retention results.
+
 ## What counts as a speed win
 
 A lane is called an equivalent-output speed win only when:
