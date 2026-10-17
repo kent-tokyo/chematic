@@ -1,0 +1,33 @@
+{
+  "rdkit_version": "2026.09.1",
+  "cases": [
+    {
+      "rows": [
+        [
+          0
+        ],
+        [
+          1e+200
+        ]
+      ],
+      "expected": 1e+200,
+      "observed": [
+        "inf"
+      ]
+    },
+    {
+      "rows": [
+        [
+          0
+        ],
+        [
+          1e-200
+        ]
+      ],
+      "expected": 1e-200,
+      "observed": [
+        0.0
+      ]
+    }
+  ]
+}

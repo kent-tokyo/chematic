@@ -2948,6 +2948,21 @@ def atom_color_rgb(atomic_num: int) -> tuple[int, int, int]:
     """
     ...
 
+def euclidean_distance_matrix_checked(descriptor_matrix: Iterable[Iterable[float]]) -> list[float]:
+    """Condensed Euclidean distances: (1,0), (2,0), (2,1), ...
+
+    Requires rectangular finite numeric vectors; no scaling or normalization.
+    Accepts nested iterables and numeric NumPy rows. Limits are 1024 rows,
+    256 features and 50 million pair-feature operations. Iterators consume at
+    most one excess item per dimension; source exceptions propagate. Empty
+    or singleton inputs return []; zero-feature vectors have zero distances.
+    Invalid values/shapes/limits or unrepresentable distances raise ValueError,
+    wrong types raise TypeError and allocation failure raises MemoryError.
+    Stable scaled norms retain tiny/huge representable distances; finite
+    precision remains. This returns a Python list, not RDKit's NumPy array.
+    """
+    ...
+
 def from_smiles(smiles: str | bytes) -> Mol:
     """Parse a SMILES string and return a :class:`Mol`.
 

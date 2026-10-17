@@ -35,6 +35,7 @@ macro_rules! register_pyfunctions {
 
 mod cml_named;
 mod crystal;
+mod descriptor_distances;
 mod ensemble_v2;
 mod errors;
 mod feature_patterns;

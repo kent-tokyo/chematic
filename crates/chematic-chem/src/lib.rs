@@ -1,6 +1,7 @@
 //! `chematic-chem` — molecular descriptors for chematic.
 //!
-//! All descriptor functions take a `&Molecule` reference.
+//! Molecular descriptor functions take a `&Molecule` reference; descriptor-space
+//! distance helpers accept caller-supplied numeric vectors.
 //! Values are approximate; calibrated against RDKit defaults.
 
 #![forbid(unsafe_code)]
@@ -16,6 +17,7 @@ pub mod canonical;
 pub mod checked_distance_matrix;
 pub mod cip;
 pub mod condensed;
+pub mod descriptor_distances;
 pub mod descriptors;
 pub mod diversity;
 pub mod drug_score;
