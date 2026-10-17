@@ -1,0 +1,5 @@
+validation/typing/conformer_alignment_invalid.py:3: error: Argument 1 to "align_conformers_checked" has incompatible type "str"; expected "Sequence[Sequence[Sequence[float] | Point3DLike] | ndarray[Any, dtype[Any]]] | ndarray[Any, dtype[Any]]"  [arg-type]
+validation/typing/conformer_alignment_invalid.py:4: error: Argument "rms_list" to "align_conformers_checked" has incompatible type "tuple[()]"; expected "list[float] | None"  [arg-type]
+validation/typing/conformer_alignment_invalid.py:5: error: List item 0 has incompatible type "str"; expected "int"  [list-item]
+validation/typing/conformer_alignment_invalid.py:6: error: List item 0 has incompatible type "str"; expected "int"  [list-item]
+Found 4 errors in 1 file (checked 1 source file)

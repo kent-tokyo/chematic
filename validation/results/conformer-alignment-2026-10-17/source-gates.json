@@ -1,0 +1,11 @@
+{
+  "python39_grammar": "passed for new helper",
+  "refactor_budget": "passed: 618 production Rust files; 8757 functions; 17 file allowances; 85 function allowances",
+  "python_stubs": "passed: 1 source stub; 0 wheels",
+  "cross_binding_manifest": "passed: 58 operations, 4 bindings declared",
+  "unsafe_surface": "passed",
+  "product_names": "passed",
+  "binding_surface_inventory_sha256": "068c581b2b901067a4d0038fdd8719b738f37b0a5f7d36921276e5a0c6360622",
+  "mkdocs_strict": "passed",
+  "native_build": "not run; Python/NumPy API only"
+}

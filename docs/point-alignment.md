@@ -79,3 +79,74 @@ Reproduction commands, source and runtime-fixture hashes are in
 `validation/results/point-alignment-2026-10-17/`. This Python/NumPy change used
 a reused native extension as an import fixture. No fresh native build, wheel
 publication, Rust alignment change or complete RDKit wrapper parity is claimed.
+
+## Align multiple conformers and collect RMS values
+
+`chematic.align_conformers_checked` extends the same solver to coordinate
+ensembles and addresses the `AlignMolConformers` RMS-output item in
+[RDKit #9601](https://github.com/rdkit/rdkit/issues/9601). It accepts explicit
+coordinates rather than a molecule holding mutable conformers.
+
+```python
+from chematic import align_conformers_checked
+
+rms = [12.5]  # existing results are retained
+aligned = align_conformers_checked(
+    [
+        [[0., 0., 0.], [1., 0., 0.], [0., 2., 0.]],
+        [[3., 4., 1.], [3., 5., 1.], [1., 4., 1.]],
+    ],
+    atom_ids=[0, 1, 2],
+    conformer_ids=[0, 1],
+    weights=[1., 2., 3.],
+    rms_list=rms,
+)
+# aligned: a new float64 (2, 3, 3) array; rms: [12.5, approximately 0.0]
+```
+
+Every frame has the same atom count, atom order and units. The first selected
+frame is the reference, and the remaining selected frames are fitted to it in
+selection order. Fitting on an atom subset still applies the resulting rigid
+transform to **all** atoms of that frame. Reference and unselected frames retain
+their coordinates. Frame indices refer to the input array, not external molecule
+conformer IDs. None or empty selections mean all atoms/frames. Duplicate and
+out-of-range indices raise. Only proper rotations are supported; mirror fitting,
+atom correspondence search and conformer generation are outside this API.
+
+The result is a separate array: caller coordinates remain unchanged, including
+on failure. `rms_list` is annotated `Optional[list[float]]` and must be an ordinary
+list containing finite Python floats. One RMS float per selected probe frame is
+appended **only after every fit succeeds**. Tuple/array destinations, list
+subclasses and invalid existing entries raise before fitting. There is no bare
+`object` output parameter or acceptance of arbitrary `append` methods. A single
+selected frame adds no RMS entries, but inputs and weights are still validated.
+
+For selected atoms A and positive weights w, RMS is
+`sqrt(sum(w[a] * squared_distance[a] for a in A) / len(A))`. This follows
+[RDKit's implementation](https://github.com/rdkit/rdkit/blob/Release_2026_09_1/Code/GraphMol/MolAlign/AlignMolecules.cpp#L420-L478):
+it divides by atom count, not the sum of weights. Multiplying all weights by k
+retains the fit and multiplies RMS by sqrt(k). Default/empty weights mean ones.
+The inherited point and weight validation applies. Ensembles are limited to
+1..1024 frames, 1..65536 atoms per frame and one million coordinate points in
+total, checked before output allocation. Coordinate magnitudes must be finite
+and at most 1e100. Ordinary numeric arrays (including strided, read-only and
+non-native-endian arrays) and point-cloud sequences are supported; booleans,
+complex/object arrays, generators and ragged shapes are rejected.
+
+On 2026-10-17, 2,592 seeded cases compared 9,072 frames and 4,320 appended RMS
+values with RDKit 2026.09.1, varying atom selection/order, frame selection/order,
+and weights. RMS agreed within rtol=atol=1e-7 (largest absolute difference
+2.30e-10), and every case preserved intra-frame distances within 1e-12. **Output
+coordinates are not claimed identical:** the SVD and RDKit iterative solvers
+produced a largest component difference of 2.34e-4 in these generated coordinates.
+For underdetermined fits, rotations can differ while residuals and distances
+agree; one-, two- and three-atom diagnostics check those quantities. These finite
+samples establish neither universal numerical parity nor chemistry or speed.
+
+Regression tests cover atomic output on a later solver failure, rejected
+inputs, weighted RMS scaling, atom subsets, reference ordering and unchanged
+inputs. Reproduce the independent comparison with
+`python validation/validate_conformer_alignment.py` with RDKit 2026.09.1
+installed. Evidence lives in `validation/results/conformer-alignment-2026-10-17/`.
+This extension of the Python/NumPy API reuses the existing native extension as
+an import fixture; it is not a fresh native build of the candidate.

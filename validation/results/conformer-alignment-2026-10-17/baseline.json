@@ -1,0 +1,5 @@
+{
+  "main_commit": "35b932f911851f51c5cdb89fa371f1c2c4a1b11a",
+  "root_api_present": false,
+  "verification": "root Python source at origin/main has no align_conformers_checked export; not a runtime/native parity claim"
+}
