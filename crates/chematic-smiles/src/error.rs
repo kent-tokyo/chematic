@@ -125,4 +125,90 @@ mod tests {
         };
         assert_eq!(error.to_string(), "unknown element 'Qq' at position 7");
     }
+
+    #[test]
+    fn every_public_error_variant_has_a_stable_diagnostic() {
+        let cases = [
+            (
+                SmilesError::ResourceLimit {
+                    resource: "atoms",
+                    actual: 9,
+                    limit: 8,
+                },
+                "SMILES atoms exceeds limit 8 (got 9)",
+            ),
+            (
+                SmilesError::UnexpectedEnd { pos: 2 },
+                "unexpected end of input at position 2",
+            ),
+            (
+                SmilesError::UnmatchedRingClosure {
+                    ring_num: 3,
+                    pos: 4,
+                },
+                "unmatched ring closure 3 at position 4",
+            ),
+            (
+                SmilesError::UnmatchedExtendedRingClosure {
+                    ring_num: 300,
+                    pos: 5,
+                },
+                "unmatched extended ring closure 300 at position 5",
+            ),
+            (
+                SmilesError::MismatchedParentheses { pos: 6 },
+                "mismatched parenthesis at position 6",
+            ),
+            (
+                SmilesError::InvalidBracketAtom {
+                    detail: "bad isotope".into(),
+                    pos: 7,
+                },
+                "invalid bracket atom at position 7: bad isotope",
+            ),
+            (
+                SmilesError::ConflictingRingBond {
+                    ring_num: 8,
+                    pos: 9,
+                },
+                "conflicting bond types for ring closure 8 at position 9",
+            ),
+            (
+                SmilesError::ConflictingExtendedRingBond {
+                    ring_num: 400,
+                    pos: 10,
+                },
+                "conflicting bond types for extended ring closure 400 at position 10",
+            ),
+            (SmilesError::EmptyInput, "SMILES input is empty"),
+            (
+                SmilesError::NestingTooDeep { pos: 11 },
+                "branch nesting too deep at position 11",
+            ),
+            (
+                SmilesError::UnexpectedCharacter { pos: 12 },
+                "unexpected character at position 12",
+            ),
+            (
+                SmilesError::UnsupportedChiralityClass {
+                    class: "TB21".into(),
+                    pos: 13,
+                },
+                "unsupported chirality class '@TB21' at position 13: valid are @TH1-2, @AL1-2, @SP1-3, @TB1-20 and @OH1-30 (or the class without a number)",
+            ),
+            (
+                SmilesError::InvalidValence {
+                    element: "O",
+                    atom: 2,
+                    valence: 3,
+                    max: 2,
+                },
+                "explicit valence 3 for neutral O atom #2 is greater than permitted (2)",
+            ),
+        ];
+
+        for (error, expected) in cases {
+            assert_eq!(error.to_string(), expected);
+        }
+    }
 }

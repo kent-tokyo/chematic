@@ -27,11 +27,11 @@ npm install @kent-tokyo/chematic
 
 Python wheel 无需 C/C++ 编译器；各绑定共享同一 Rust 内核。
 
-### v1.1.6 范围
+### v1.1.7 范围
 
-v1.1.6 增加了受检的文件路径与 UTF-8 字节处理、保留来源信息的 MOL2/CDX/PDBQT/PDB/CIF
-API、带原子对应关系的 rooted SMILES、立体声明校验工具，以及可更新介电常数的 MMFF API。
-本版本还改进了从 3D 输入恢复立体化学的过程，并降低了 SDF/V3000 输入输出开销。
+v1.1.7 扩展了受检的科学文件转换与输出、自定义指纹和力场输入，以及保留来源信息的
+SDF、PDB 和 MOL2 工作流。版本还增加了 alignment、information theory 与 MIF 的类型化兼容
+API，并修正了芳香性、立体化学、Morgan、MOL2 和 PDB 的边界情况。各 API 明确报告资源限制和失败原因。
 性能与兼容性结论仅适用于记录中注明的 artifact、corpus、option 和 host。详情见
 [验证报告](docs/validation.md)和
 [CHANGELOG](CHANGELOG.md)。

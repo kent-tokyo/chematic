@@ -14,6 +14,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.1.7] - 2026-10-18
+
 ### Added
 
 - Rust/Python `rdkit_pick_tautomer` selects from caller-supplied candidates

@@ -1,6 +1,6 @@
 # chematic roadmap
 
-> Updated 2026-10-16. Release line: **v1.1.6**. Work merged after the
+> Updated 2026-10-18. Release line: **v1.1.7**. Work merged after the
 > release remains **Unreleased** until the next tag.
 
 chematic is a safe, typed, local-first chemistry kernel for Rust, Python,
@@ -11,9 +11,9 @@ contracts and reproducible evidence over feature-count parity.
 
 - Stable selected paths cover SMILES/SMARTS, descriptors, fingerprints,
   search, and common MOL/SDF workflows through one Rust core.
-- v1.1.6 adds checked filesystem-path and byte handling, source-preserving
-  MOL2/CDX/PDBQT/PDB/CIF paths, rooted-SMILES and stereo-proof APIs, selected
-  3D stereo recovery, MMFF dielectric updates, and SDF/V3000 I/O improvements.
+- v1.1.7 adds checked scientific-file conversion and export, custom
+  fingerprint and force-field inputs, source-preserving SDF/PDB/MOL2
+  workflows, and typed alignment, information-theory, and MIF helpers.
 - Issues #734 and #754 are closed, but their reaction, SMARTS, autoconf, and
   fuzz corpora remain regression gates. Closure is not universal parity.
 - The bounded workflow gates cover 80 exact reaction rows plus three jointly
