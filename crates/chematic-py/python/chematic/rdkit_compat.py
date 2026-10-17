@@ -44,7 +44,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "Mol", "Atom", "Bond", "BondType", "RingInfo", "RWMol",
-    "ExplicitBitVect",
+    "ExplicitBitVect", "LayeredFingerprint", "LayeredAtomCounts", "LayeredBitMask",
     "MolFromSmiles", "MolToSmiles", "MolFromMolBlock", "MolFromMolFile",
     "MolToMolBlock", "SanitizeMol", "Kekulize", "AddHs", "RemoveHs",
     "MolFromSmarts", "RenumberAtoms",
@@ -60,6 +60,14 @@ from ._point_alignment import rdAlignment
 from ._info_theory import rdInfoTheory
 
 import chematic as _ch
+
+from typing import Optional, Sequence, SupportsIndex, cast
+from ._layered_counts import (
+    LayeredAtomCounts as LayeredAtomCounts,
+    LayeredBitMask as LayeredBitMask,
+    LayeredResult as _LayeredResult,
+    prepare as _prepare_layered,
+)
 
 
 _MISSING = object()
@@ -115,6 +123,59 @@ class ExplicitBitVect:
 
     def __repr__(self) -> str:
         return f"ExplicitBitVect({self._nbits})"
+
+
+def LayeredFingerprint(
+    mol: Mol,
+    layerFlags: SupportsIndex = 0xFFFFFFFF,
+    minPath: SupportsIndex = 1,
+    maxPath: SupportsIndex = 7,
+    fpSize: SupportsIndex = 2048,
+    atomCounts: Optional[LayeredAtomCounts] = None,
+    setOnlyBits: Optional[LayeredBitMask] = None,
+    branchedPaths: bool = True,
+    fromAtoms: Optional[Sequence[SupportsIndex]] = None,
+    *,
+    maxVisits: SupportsIndex = 1_000_000,
+    maxPaths: SupportsIndex = 100_000,
+) -> ExplicitBitVect:
+    """Compute Layered bits and update checked caller-owned u32 counters.
+
+    Args:
+        mol: A compatibility Mol containing the indexed native graph.
+        atomCounts: Optional plain list or writable, non-overlapping uint32
+            ndarray covering the atoms. Seeds accumulate with u32 wrapping.
+        setOnlyBits: Optional binary bit-vector mask with fpSize bits.
+        maxVisits: Native enumeration visit budget; exhaustion returns no result.
+        maxPaths: Native selected-path budget; exhaustion returns no result.
+
+    Returns:
+        An ExplicitBitVect. All calculation and conversion finishes before the
+        caller's counters are updated; trailing counter entries stay unchanged.
+
+    Raises:
+        TypeError: Wrong input types, including bool in integer fields.
+        ValueError: Invalid bounds, unsupported graphs or exhausted budgets.
+    """
+    if not isinstance(mol, Mol):
+        raise TypeError("mol must be a chematic.rdkit_compat.Mol")
+    options, counters = _prepare_layered(
+        mol.GetNumAtoms(),
+        layerFlags,
+        minPath,
+        maxPath,
+        fpSize,
+        atomCounts,
+        setOnlyBits,
+        branchedPaths,
+        fromAtoms,
+        maxVisits,
+        maxPaths,
+    )
+    result = cast(_LayeredResult, mol._mol.rdkit_layered_config(**options))
+    fingerprint = ExplicitBitVect._from_bytes(result["bits"], options["nbits"])
+    counters.commit(result["atom_counts"])
+    return fingerprint
 
 
 def _fp_bytes(fp) -> bytes:

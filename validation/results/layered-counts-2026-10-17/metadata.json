@@ -1,0 +1,40 @@
+{
+  "base_commit": "db0cf128c3e300d0e5da5a0f2abb4924489d7962",
+  "commands": [
+    "PYTHONPATH=/private/tmp/chematic-layered-counts-python PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3.13 -m pytest crates/chematic-py/tests/test_layered_counts.py crates/chematic-py/tests/test_layered_config.py crates/chematic-py/tests/test_rdkit_compat.py -q -p no:cacheprovider",
+    "PYTHONPATH=/private/tmp/chematic-layered-counts-python:/private/tmp/chematic-sparse-tanimoto-rdkit python3.13 validation/validate_layered_counts.py",
+    "python3.13 -m mypy --strict --ignore-missing-imports --follow-imports=silent --no-incremental /private/tmp/chematic_layered_counts_typecheck.py",
+    "MYPYPATH=crates/chematic-py/python python3.13 -m mypy --follow-imports=silent --ignore-missing-imports --no-incremental validation/typing/layered_counts_valid.py",
+    "MYPYPATH=crates/chematic-py/python python3.13 -m mypy --follow-imports=silent --ignore-missing-imports --no-incremental validation/typing/layered_counts_invalid.py",
+    "python3.13 -m mkdocs build --strict --site-dir /private/tmp/chematic-layered-counts-site"
+  ],
+  "date": "2026-10-17",
+  "native_fixture": {
+    "fingerprint_perception_and_layered_binding_sources_unchanged": true,
+    "fresh_native_build": false,
+    "path": "/private/tmp/chematic-layered-counts-python/chematic/chematic.so",
+    "scope": "Existing extension reused as import/calculation fixture; not a native build of this candidate.",
+    "sha256": "79622bf1b914242b46bc08eaf44d7069e5f7aac9772b5a7dedb960f678807f7e",
+    "source_commit": "a56bc1353bd70eb5381dce38f818c0b78755d027"
+  },
+  "python": "3.13.6",
+  "source_sha256": {
+    "crates/chematic-fp/src/rdkit_layered/config.rs": "6a85d8b4035964eeb86554eaa61b955603a09db9409e004342f2507b918ad36d",
+    "crates/chematic-py/python/chematic/_layered_counts.py": "864c3b6394f6b76a473f2238ded46ecde4e375e0dfb6315ebf9b0193479d392e",
+    "crates/chematic-py/python/chematic/rdkit_compat.py": "c0416e27a278fba3374c3842cc04be795a71161baa86278ce2a772e11c26f5b0",
+    "crates/chematic-py/src/mol_methods/layered_config.rs": "8052dc578d1d5b3ca1de9392eb7f3eae6aecac17a165b6771ea3327cb17fe849",
+    "crates/chematic-py/tests/test_layered_counts.py": "b56d33f6f534cc30dd31c80cd077318b0f723eafcfa3dca4704976bdaac77bee",
+    "validation/validate_layered_counts.py": "668255b26695a08208c0102f40e92a812487d78deca1b628b7c8f594342e49a2"
+  },
+  "tests": {
+    "existing_related": 226,
+    "new": 81,
+    "passed": 307
+  },
+  "typing": {
+    "package_wide_strict": "not claimed",
+    "public_invalid_consumer": "4 expected arg-type errors",
+    "public_valid_consumer": "passed",
+    "strict_helper": "passed in isolated unchanged copy"
+  }
+}

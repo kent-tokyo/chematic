@@ -110,6 +110,7 @@ nav:
     - GAMESS Internal Coordinates: gamess-zmat-output.md
     - Typed Entropy Bit Ranking: info-bit-ranker.md
     - PDB Model Splitting: pdb-model-splitting.md
+    - Layered Caller Counters: layered-caller-counts.md
     - Complete Molecule Reset: molecule-clear.md
     - Python Filesystem Paths: python-filesystem-paths.md
     - GRO to LAMMPS Units: gro-lammps-units.md

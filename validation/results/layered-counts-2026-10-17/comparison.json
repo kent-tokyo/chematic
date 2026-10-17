@@ -1,0 +1,9 @@
+{
+  "corpus_sha256": "38d617db2f1a87bd93aab2e6e11a0869f41be007f203c5564aee22ffead261df",
+  "molecules": 16,
+  "numpy_version": "2.5.3",
+  "numpy_view_checks": 4096,
+  "rdkit_version": "2026.09.1",
+  "reference_comparisons": 2048,
+  "second_call_accumulation_checks": 2048
+}
