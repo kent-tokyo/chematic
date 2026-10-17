@@ -1,0 +1,29 @@
+{
+  "base": "abcc3569e7f49d15e911945509a5083ffff8a63d",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "python": "3.13.6",
+  "native_sha256": "f642ec051be591d5139ece2311dfb01acdb0399836a0438132706be6d76b8bef",
+  "native_bytes": 85032064,
+  "source_sha256": {
+    "crates/chematic-smarts/src/mcs.rs": "31a50786c1ff3f49ee487d9eb66cd615cdc214f9b173c2a6e4a85a180cde65a5",
+    "crates/chematic-smarts/src/mcs_bounds.rs": "77246347c5f5f35b0c61f17e0c3a6ad00c82a7b8a540bfa23af21c66f19564b5",
+    "crates/chematic-smarts/src/mcs_comparator_tests.rs": "e4aa81ca5d2b5c9cb9d8a051e75ee5a168d5ef91e76abac89cefa602754c82b8",
+    "crates/chematic-py/python/chematic/__init__.py": "ee62388ee60f8fcadb3d43601d543b4bc9daff6e90c685f6645f9db99275e073",
+    "crates/chematic-py/python/chematic/__init__.pyi": "569487492a1ed39048dde4b3e51036edfbfe13ecd551fbb24ade2def18744473",
+    "crates/chematic-py/python/chematic/_mcs_comparators.py": "c451835ad3d3880b9c9c674b269abbced6c45838c085c7ec84a8fc15c0afea66",
+    "crates/chematic-py/tests/test_mcs_comparators.py": "af0f61bbe1eee3f26aa28c8a4a54c2cfde2048385082ba7090d87a438d6fff16"
+  },
+  "native_features": [
+    "native-inchi"
+  ],
+  "artifact_scope": "fresh local native extension; not a wheel/registry artifact",
+  "build_command": "SDKROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk PYO3_PYTHON=/opt/homebrew/bin/python3.13 CARGO_TARGET_DIR=/private/tmp/chematic-sparse-tanimoto-target CARGO_PROFILE_DEV_DEBUG=0 CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=1 cargo rustc -p chematic-py --features native-inchi -- -C link-arg=-undefined -C link-arg=dynamic_lookup -C link-arg=-fuse-ld=/Users/k_tanabe/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/aarch64-apple-darwin/bin/gcc-ld/ld64.lld",
+  "compiler": "rustc 1.97.0 (2d8144b78 2026-07-07)",
+  "raw_rdkit_count_matches": "1976/1980",
+  "native_heavy_profile_count_matches": "1980/1980",
+  "initial_base": "a07a1294c550d5fa55e5fdac66c5755556d76ff2",
+  "linker": "Rust bundled LLD 22.1.6",
+  "sdk": "/Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk",
+  "native_postprocessing": "none; copied directly from successful LLD build",
+  "local_loader_note": "Default Apple ld output failed dyld LINKEDIT alignment; final LLD binary passed native import, pytest and oracle. Only this macOS 27 host validated."
+}

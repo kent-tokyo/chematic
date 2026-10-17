@@ -16,6 +16,9 @@
         - depict_grid
         - run_smirks
         - find_mcs
+        - find_mcs_checked
+        - McsAtomCompare
+        - McsBondCompare
         - reaction_smarts_match
         - SimilarityIndex
         - SdfRecord

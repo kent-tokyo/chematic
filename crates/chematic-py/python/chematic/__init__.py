@@ -675,3 +675,10 @@ from ._tautomer_control import (
 from ._crystal_obj import ObjMeshExport, write_crystal_obj_checked
 from ._parent_types import ParentStage, SuperParentReport
 from ._bond_fragment import BondFragmentation, FragmentAttachment, fragment_on_bonds_checked
+
+from ._mcs_comparators import (
+    McsAtomCompare,
+    McsAtomComparison,
+    McsBondCompare,
+    McsBondComparison,
+)
