@@ -72,6 +72,10 @@ jobs:
         shell: bash
         run: |
           python -m pip install --disable-pip-version-check "json5==0.15.0"
+          # Keep the wheel itself isolated from transitive dependencies while
+          # installing its required NumPy runtime explicitly. Importing
+          # chematic now loads NumPy-backed helpers from __init__.py.
+          python -m pip install --disable-pip-version-check "numpy==2.0.2"
           python -m pip download --disable-pip-version-check --only-binary=:all: --no-deps \
             -d published-wheel "chematic==${{ inputs.version }}"
           python -m pip install --disable-pip-version-check --no-deps published-wheel/chematic-*.whl
