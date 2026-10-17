@@ -75,48 +75,9 @@ fn write_v2000_rgroups(out: &mut String, mol: &Molecule) {
     }
 }
 
-#[inline]
-/// Append `x` as `format!("{x:>width$.4}")` would, without the general
-/// float formatter (its exact fallback dominated writing laid-out
-/// molecules). Values near a rounding tie, very large values and
-/// non-finite values take the formatter, so the bytes are always the same.
-pub(crate) fn push_fixed4(out: &mut String, x: f64, width: usize) {
-    use std::fmt::Write as _;
-    let scaled = x.abs() * 10_000.0;
-    let frac = scaled - scaled.floor();
-    if !x.is_finite() || scaled >= 1e15 || (frac - 0.5).abs() < 1e-6 {
-        write!(out, "{x:>width$.4}").expect("writing to String cannot fail");
-        return;
-    }
-    let units = scaled.round() as u64;
-    let mut buf = [0u8; 24];
-    let mut pos = buf.len();
-    let mut push = |b: u8| {
-        pos -= 1;
-        buf[pos] = b;
-    };
-    let (mut int, mut dec) = (units / 10_000, units % 10_000);
-    for _ in 0..4 {
-        push(b'0' + (dec % 10) as u8);
-        dec /= 10;
-    }
-    push(b'.');
-    loop {
-        push(b'0' + (int % 10) as u8);
-        int /= 10;
-        if int == 0 {
-            break;
-        }
-    }
-    if x.is_sign_negative() {
-        push(b'-');
-    }
-    let digits = &buf[pos..];
-    for _ in digits.len()..width {
-        out.push(' ');
-    }
-    out.push_str(std::str::from_utf8(digits).expect("ASCII digits"));
-}
+#[path = "fixed4.rs"]
+mod fixed4;
+pub(crate) use fixed4::push_fixed4;
 
 pub(crate) fn push_right_aligned_u32(out: &mut String, mut value: u32, width: usize) {
     // V2000 fields use three columns; V3000 ids use the same digits unpadded.
