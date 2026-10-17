@@ -411,3 +411,20 @@ fn every_five_atom_simple_graph_matches_reference() {
         compare(&mol);
     }
 }
+
+#[test]
+fn single_closure_inline_scratch_matches_reference_at_spill_boundaries() {
+    for n in [3, 16, 17, 31, 32, 33, 63, 64, 65, 127, 128, 129, 512] {
+        // Plain rings cross the visited-word boundaries. Comb-shaped trees
+        // attached to the ring also force the pending stack to spill.
+        for smiles in [
+            format!("C1{}1", "C".repeat(n - 1)),
+            format!("C1{}C1", "C(C)".repeat(n - 2)),
+            format!("C1{}C1.CC", "C(C)".repeat(n - 2)),
+        ] {
+            let mol = chematic_smiles::parse_template(&smiles).unwrap();
+            assert_eq!(mol.smiles_ring_closure_bond_count(), 1);
+            compare(&mol);
+        }
+    }
+}
