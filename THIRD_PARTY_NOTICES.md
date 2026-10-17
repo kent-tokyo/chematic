@@ -365,3 +365,10 @@ BioMedical Research and other RDKit contributors, under the BSD 3-Clause
 license reproduced above. No C++ implementation or issue attachment is
 bundled. The comparison fixtures are original synthetic project inputs under
 MIT OR Apache-2.0; the RDKit wheel is an external validation oracle.
+
+
+The follow-up `_coulomb_dielectric.py` independently implements the same
+reference's local-solvation equation and empirical neighbor-depth convention.
+The Novartis/RDKit copyright and BSD 3-Clause notice above also apply to
+that reference. No C++ source is bundled. The new comparison inputs remain
+original synthetic project data under MIT OR Apache-2.0.

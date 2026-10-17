@@ -53,6 +53,7 @@ __all__ = [
 import chematic as _ch
 
 from ._coulomb_field import Coulomb as _Coulomb
+from ._coulomb_dielectric import CoulombDielectric as _CoulombDielectric
 
 
 _MISSING = object()
@@ -1414,6 +1415,7 @@ class DataStructs:
 
 
 class rdMIF:
-    """Checked subset of molecular interaction fields for explicit caller data."""
+    """Checked explicit-charge vacuum and local-solvation interaction fields."""
 
     Coulomb = _Coulomb
+    CoulombDielectric = _CoulombDielectric

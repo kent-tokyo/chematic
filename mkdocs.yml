@@ -100,6 +100,7 @@ nav:
     - Prepared MMFF Dielectric: mmff-dielectric-updates.md
   - Reliability:
     - Explicit-Charge Coulomb Field: coulomb-interaction-field.md
+    - Local-Solvation Coulomb Field: coulomb-dielectric-field.md
     - Complete Molecule Reset: molecule-clear.md
     - Python Filesystem Paths: python-filesystem-paths.md
     - Custom Feature Patterns: custom-feature-patterns.md

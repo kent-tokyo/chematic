@@ -16,6 +16,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Python `rdkit_compat.rdMIF.CoulombDielectric` adds a typed local-solvation
+  model with copied inputs, explicit solvent/solute permittivities and a
+  1,024-site construction limit. See [the model and validation](docs/coulomb-dielectric-field.md).
+
 - Python `rdkit_compat.rdMIF.Coulomb` adds typed, copied explicit-charge vacuum
   fields with bounded real inputs and scalar kJ/mol evaluation. See the
   [Coulomb field profile](docs/coulomb-interaction-field.md) for squared-distance

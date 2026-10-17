@@ -4,7 +4,9 @@
 field from caller-supplied charges and Cartesian positions. It addresses the
 remaining `rdMIF` `charges` / `positions` typing boundary in
 [RDKit #9601](https://github.com/rdkit/rdkit/issues/9601), which remains an
-upstream tracking issue. This is a partial implementation of that request.
+upstream tracking issue. This is a partial implementation of that request. A follow-up adds the
+[local-solvation dielectric field](coulomb-dielectric-field.md) as a separate
+class with a smaller site limit.
 
 ```python
 from chematic.rdkit_compat import rdMIF
