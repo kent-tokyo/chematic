@@ -4,15 +4,16 @@
 Build the current source first:
   cargo build -p chematic-smiles --example canonical_roundtrip_dump --offline
 
-Then run with RDKit 2025.09.3 and COSMolKit 0.5.0:
+Then run with a pinned RDKit version and COSMolKit 0.5.0:
   python check_native_smiles_roundtrip.py --corpus corpora/stress-v1.smi \
-      --chematic ../../target/debug/examples/canonical_roundtrip_dump
+      --chematic ../../target/debug/examples/canonical_roundtrip_dump \
+      --expected-rdkit 2025.09.3
 
 The oracle is RDKit's canonical isomeric SMILES of each source molecule.
 Each engine's native output is parsed by RDKit before comparison. Report both
 strict read-back and verified equivalence: exact stereochemical SMILES after
 renumbering up to 10,000 graph matches, then identical unsanitized aromatic
-input graphs with matching formulas and no specified stereochemistry, followed
+input graphs with matching formulas and stereo-aware canonical SMILES, followed
 by a bounded resonance search for remaining molecules without specified
 stereochemistry. Other differences remain unresolved.
 """
@@ -75,9 +76,7 @@ def stereo_isomorphic(expected: Chem.Mol, actual: Chem.Mol) -> bool:
 def same_raw_aromatic_graph(
     expected_text: str, actual_text: str, expected: Chem.Mol, actual: Chem.Mol
 ) -> bool:
-    """Check the input aromatic graph before order-dependent Kekulization."""
-    if has_specified_stereo(expected) or has_specified_stereo(actual):
-        return False
+    """Check the full stereo-aware aromatic graph before Kekulization."""
     if rdMolDescriptors.CalcMolFormula(expected) != rdMolDescriptors.CalcMolFormula(actual):
         return False
     raw_expected = Chem.MolFromSmiles(expected_text, sanitize=False)
@@ -86,7 +85,11 @@ def same_raw_aromatic_graph(
         return False
     if not any(atom.GetIsAromatic() for atom in raw_expected.GetAtoms()):
         return False
-    return Chem.MolToSmiles(raw_expected) == Chem.MolToSmiles(raw_actual)
+    # Unsanitized isomeric SMILES includes atom and bond stereo, so equality
+    # cannot waive an inversion elsewhere in the same molecule.
+    return Chem.MolToSmiles(raw_expected, isomericSmiles=True) == Chem.MolToSmiles(
+        raw_actual, isomericSmiles=True
+    )
 
 
 def classify(
@@ -116,9 +119,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--corpus", required=True, type=Path)
     parser.add_argument("--chematic", required=True, type=Path)
+    parser.add_argument("--expected-rdkit", default="2025.09.3")
     args = parser.parse_args()
-    if Chem.rdBase.rdkitVersion != "2025.09.3" or cosmolkit.__version__ != "0.5.0":
-        raise SystemExit("requires RDKit 2025.09.3 and COSMolKit 0.5.0")
+    if Chem.rdBase.rdkitVersion != args.expected_rdkit or cosmolkit.__version__ != "0.5.0":
+        raise SystemExit(f"requires RDKit {args.expected_rdkit} and COSMolKit 0.5.0")
     RDLogger.DisableLog("rdApp.*")
     corpus = args.corpus.resolve()
     binary = args.chematic.resolve()
