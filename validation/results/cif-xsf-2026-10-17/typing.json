@@ -1,0 +1,44 @@
+[
+  {
+    "command": [
+      "python3.13",
+      "-m",
+      "mypy",
+      "--follow-imports=silent",
+      "--ignore-missing-imports",
+      "--no-incremental",
+      "--cache-dir=/private/tmp/chematic-cif-xsf-mypy",
+      "validation/typing/xsf_valid.py"
+    ],
+    "exit_code": 0,
+    "expected_exit_code": 0
+  },
+  {
+    "command": [
+      "python3.13",
+      "-m",
+      "mypy",
+      "--follow-imports=silent",
+      "--ignore-missing-imports",
+      "--no-incremental",
+      "--cache-dir=/private/tmp/chematic-cif-xsf-mypy",
+      "validation/typing/xsf_invalid.py"
+    ],
+    "exit_code": 1,
+    "expected_exit_code": 1
+  },
+  {
+    "command": [
+      "python3.13",
+      "-m",
+      "mypy",
+      "--config-file",
+      "validation/results/cif-xsf-2026-10-17/strict-mypy.ini",
+      "--no-incremental",
+      "--cache-dir=/private/tmp/chematic-cif-xsf-mypy",
+      "crates/chematic-py/python/chematic/_xsf.py"
+    ],
+    "exit_code": 0,
+    "expected_exit_code": 0
+  }
+]

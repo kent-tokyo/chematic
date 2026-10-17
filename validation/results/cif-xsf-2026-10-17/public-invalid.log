@@ -1,0 +1,5 @@
+validation/typing/xsf_invalid.py:6: error: Argument 1 to "write_xsf_checked" has incompatible type "str"; expected "PeriodicStructure"  [arg-type]
+validation/typing/xsf_invalid.py:7: error: Argument "allow_metadata_loss" to "write_xsf_checked" has incompatible type "str"; expected "bool"  [arg-type]
+validation/typing/xsf_invalid.py:8: error: Argument "expand_symmetry" to "from_cif" of "PeriodicStructure" has incompatible type "str"; expected "bool"  [arg-type]
+validation/typing/xsf_invalid.py:11: error: Property "is_complete_cell" defined in "CifSymmetryStatus" is read-only  [misc]
+Found 4 errors in 1 file (checked 1 source file)

@@ -14,6 +14,7 @@ from ._sdf_split import (
 from .chematic import *
 from ._xbs import XbsBondRule, XbsSpecies, write_xbs
 from ._xyz_atom_data import XyzAtomDataFrame, parse_xyz_atom_data
+from ._xsf import write_xsf_checked
 from .chematic import (
     __version__,
     Mol,

@@ -392,3 +392,13 @@ source or issue example coordinates are copied. The fixtures under
 `validation/openbabel_issues/xyz_atom_data/` and seeded validation inputs
 are original project data under MIT OR Apache-2.0. ASE 3.26.0 is an external
 validation oracle, not a runtime dependency or vendored implementation.
+
+## XSF geometry format references (2026-10-17)
+
+`crates/chematic-py/python/chematic/_xsf.py` independently implements the
+static geometry syntax in the XCrySDen distribution's XSF specification:
+https://web.mit.edu/xcrysden_v1.5.60/www/XCRYSDEN/doc/XSF.html
+No external implementation or manual example coordinates are copied. The
+CIF in `validation/openbabel_issues/xsf/` and seeded structure inputs are
+original project data under MIT OR Apache-2.0. ASE 3.26.0 and Open Babel
+3.2.1 are external reader oracles, not bundled implementations.

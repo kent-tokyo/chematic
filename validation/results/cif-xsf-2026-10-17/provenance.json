@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-17",
+  "base_commit": "35b932f911851f51c5cdb89fa371f1c2c4a1b11a",
+  "baseline": {
+    "python_sources_verified_against_git": true,
+    "runtime_probe": {
+      "has_write_xsf_checked": false,
+      "has_to_xsf": false
+    },
+    "native_boundary": "reused prior native extension, not a fresh baseline build"
+  },
+  "upstream": {
+    "number": 2252,
+    "state": "OPEN",
+    "title": "Convert cif to xsf.",
+    "updatedAt": "2020-06-24T23:25:57Z",
+    "url": "https://github.com/openbabel/openbabel/issues/2252"
+  },
+  "candidate_files": {
+    "crates/chematic-py/python/chematic/_xsf.py": "8801ebe45543a2fabae99ae36cf9373478bafdcb7e8de96ee984b1b24c16fe50",
+    "crates/chematic-py/python/chematic/__init__.py": "9b4228440c74694e224b0997b6b169144f6740ea60debfa6659015de6b88c102",
+    "crates/chematic-py/python/chematic/__init__.pyi": "21255b6b203a506bc98d684755ca63dfdcfcf74bafbaa4bb39a23258e29a536b",
+    "crates/chematic-py/tests/test_xsf_output.py": "f9c0b069642dcb25f5b351ace1e31dccdfc2050526b7b596995fc902529b0199",
+    "validation/validate_cif_xsf.py": "1035fce90a8aebb45b3cb763e53437acdd1058fd26a26bdaec7d3495ea94991d",
+    "validation/openbabel_issues/xsf/ordered-triclinic.cif": "670180dbc541eb78eb0d7e22fa7d45ce82452a598161fdfd5905dd3627dfa94d"
+  },
+  "specification": {
+    "canonical_url": "https://www.xcrysden.org/doc/XSF.html",
+    "canonical_fetch": "timed out after 20 seconds",
+    "distribution_mirror": "https://web.mit.edu/xcrysden_v1.5.60/www/XCRYSDEN/doc/XSF.html",
+    "download_sha256": "7eea3109433f9a5871afb85c06c0da6df3899da381020c8ce8ce4e2f986b7309"
+  },
+  "native_extension": {
+    "sha256": "c6db880b6f5ca4ea0388f238c24e8a5b55751daab1084cf0d1d7b56e2427257b",
+    "reused_from_commit": "71d9c12b0c16a8e6b23e4078479d5754230c831b",
+    "scope": "native crystal constructors, geometry getters, old tests; no fresh build or native binding changes"
+  },
+  "ase": {
+    "version": "3.26.0",
+    "source_sha256": "dbce0b38accab0ffe245b64ee9a15efa01eff7a5b908e5a7b2e0d9ba1a94ad0e",
+    "package_location": "/private/tmp/chematic-xyz-atom-data-oracle",
+    "install": "python3.13 -m pip install --no-cache-dir --no-deps --target /private/tmp/chematic-xyz-atom-data-oracle ase==3.26.0"
+  },
+  "pytest": {
+    "passed": 198,
+    "failed": 0,
+    "skipped": 0,
+    "new": 17,
+    "existing_crystal": 19,
+    "existing_compat": 162,
+    "command": "PYTHONDONTWRITEBYTECODE=1 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=/private/tmp/chematic-cif-xsf-python python3.13 -m pytest crates/chematic-py/tests/test_xsf_output.py crates/chematic-py/tests/test_crystal.py crates/chematic-py/tests/test_rdkit_compat.py -q -p no:cacheprovider"
+  },
+  "oracle_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/private/tmp/chematic-cif-xsf-python:/private/tmp/chematic-xyz-atom-data-oracle python3.13 validation/validate_cif_xsf.py --output validation/results/cif-xsf-2026-10-17/crossread.json",
+  "typing": "mypy 1.8.0; initial full strict import reported 81 legacy generic-stub errors; targeted strict helper uses follow_imports_for_stubs=True to silence imported diagnostics; no package-wide strict claim",
+  "scope": "ordered static 3D-periodic geometry; explicit metadata-loss consent; no occupancy collapse, symmetry inference, primitive reduction, GUI, fresh build or speed claim"
+}
