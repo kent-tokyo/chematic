@@ -323,6 +323,22 @@ mod tests {
         }
     }
 
+    #[test]
+    fn test_cumulated_ring_double_bonds_remain_nonaromatic() {
+        // RDKit leaves this six-membered cumulene ring nonaromatic. Its
+        // central carbons have two orthogonal pi bonds, not one continuous
+        // aromatic p orbital around the ring.
+        let mol = mol_kekulized("C1=CC=C=C=C1.c1ccccc1");
+        let aromatic = apply_aromaticity(&mol);
+        assert_eq!(assign_aromaticity(&mol).aromatic_atom_count(), 6);
+        for i in 0..6 {
+            assert!(!aromatic.atom(AtomIdx(i)).aromatic, "cumulene atom {i}");
+        }
+        for i in 6..12 {
+            assert!(aromatic.atom(AtomIdx(i)).aromatic, "benzene atom {i}");
+        }
+    }
+
     // =========================================================================
     // Antiaromaticity
     // =========================================================================
