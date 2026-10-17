@@ -4,10 +4,11 @@ use chematic_core::{Atom, AtomIdx, Chirality, Molecule, STEREO_VACANT_SENTINEL};
 
 use super::{Parser, StereoEntry};
 
-/// Retain the vacant-site marker only when exactly one coordination site is
-/// unoccupied. Fully coordinated and more incomplete centers keep their
-/// prior ligand-order representation.
-pub(super) fn retain_single_vacant_site(molecule: &mut Molecule, tagged_atoms: &[AtomIdx]) {
+/// Retain one or two unoccupied non-tetrahedral coordination sites.
+/// RDKit places these sites immediately after the incoming ligand (or first
+/// when the center starts a component) when interpreting a SMILES tag. More
+/// incomplete centers retain their previous ligand-order representation.
+pub(super) fn retain_vacant_sites(molecule: &mut Molecule, tagged_atoms: &[AtomIdx]) {
     for &center in tagged_atoms {
         let Some((class, _)) = molecule.atom(center).chirality.nontetrahedral() else {
             continue;
@@ -15,12 +16,24 @@ pub(super) fn retain_single_vacant_site(molecule: &mut Molecule, tagged_atoms: &
         let Some(order) = molecule.stereo_neighbor_order(center) else {
             continue;
         };
-        if order.len() != class.max_nbors() {
+        let missing = class
+            .max_nbors()
+            .saturating_sub(order.len().saturating_sub(1));
+        if missing == 0 || missing > 2 {
             let order = order
                 .iter()
                 .copied()
                 .filter(|&id| id != STEREO_VACANT_SENTINEL)
                 .collect();
+            molecule.set_stereo_neighbor_order(center, order);
+        } else if missing == 2
+            && let Some(position) = order.iter().position(|&id| id == STEREO_VACANT_SENTINEL)
+        {
+            let mut order = order.to_vec();
+            order.splice(
+                position..position,
+                std::iter::repeat_n(STEREO_VACANT_SENTINEL, missing - 1),
+            );
             molecule.set_stereo_neighbor_order(center, order);
         }
     }
