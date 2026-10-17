@@ -1,0 +1,29 @@
+{
+  "base_commit": "f20304f4699ee803ab993f73b98c3c8be38b58fc",
+  "validation_time_utc": "2026-10-17T06:00:12.718683+00:00",
+  "python": "3.13.6",
+  "rustc": "rustc 1.97.0 (2d8144b78 2026-07-07)",
+  "build_profile": "fresh Python 3.13 extension, dev opt-level=1; no published wheel",
+  "source_sha256": {
+    "crates/chematic-mol/src/lib.rs": "a8015662ccee2ff0db93b019873a04b93e3c289db1eefd5764dd955c82927836",
+    "crates/chematic-mol/src/gamess_zmat.rs": "021f1cdda4c6d6e00ad209eedee2451af94fb75afac79a0d6477ea364d93ddda",
+    "crates/chematic-mol/tests/gamess_zmat_contract.rs": "73fd6b3f71d3db22abc8e45581fc362fd6e7b50b89a2140044b8ce0bc5469f85",
+    "crates/chematic-py/src/formats.rs": "11260fdddb1c0a7bfd8fcb29811ab1967caa2d01438fd5eb3db0241e8d227223",
+    "crates/chematic-py/src/formats/gzmat.rs": "c911f08f89f52115660dec16ac1712ce44137745f8c8e08eb655b9206bd63ad1",
+    "crates/chematic-py/python/chematic/__init__.pyi": "04696bc9516dd99dee5566f48904fbd42c8b1f07fdc56e98d8c2cbc0cd441f4a",
+    "crates/chematic-py/tests/test_gamess_zmat.py": "21ffac08fe4a790bb86a6490c615380460d1b148f44fbcca4c4d3891c883e460",
+    "validation/validate_gamess_zmat.py": "ab85f71f92947bb02ed0eca3df272b8aa07354b351591a9319764d769e7b63f9",
+    "Cargo.lock": "abfe0dfeca2dee6fb69c97ce02513ef7b3b34084a74e7142b38979b1c36aaebc"
+  },
+  "native_extension_sha256": "79622bf1b914242b46bc08eaf44d7069e5f7aac9772b5a7dedb960f678807f7e",
+  "format_reference": {
+    "url": "https://www.msg.chem.iastate.edu/gamess/GAMESS_Manual/input.pdf",
+    "pdf_sha256": "1440acd7946c230d2e8402a581b0bf2217831c2eda9bf8ead374e3ef5296213f",
+    "sections": [
+      "$CONTRL COORD/UNITS/NZVAR",
+      "$DATA C1 and Cartesian cards",
+      "$ZMAT IZMAT codes 1/2/3"
+    ]
+  },
+  "GAMESS_execution": "not performed"
+}

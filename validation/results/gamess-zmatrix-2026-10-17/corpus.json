@@ -1,0 +1,13 @@
+{
+  "scope": "Cartesian frame and explicit IZMAT definitions; no GAMESS execution",
+  "records": 640,
+  "direct_xyz_equivalence_checks": 640,
+  "rdkit_internal_value_checks": 3584,
+  "maximum_rdkit_internal_difference": 3.979039320256561e-13,
+  "openbabel_cartesian_cross_reads": 80,
+  "corpus_sha256": "44f9dbefcbb6e8bec48d3c20a3dc26e0ef4505751a5e87c0183dee29a9812873",
+  "rdkit_version": "2026.09.1",
+  "numpy_version": "2.5.3",
+  "openbabel_version": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+  "native_extension_sha256": "79622bf1b914242b46bc08eaf44d7069e5f7aac9772b5a7dedb960f678807f7e"
+}

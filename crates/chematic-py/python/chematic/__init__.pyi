@@ -5517,3 +5517,10 @@ def parse_mopac_archive(text: str, *, max_input_bytes: Optional[int] = None, max
     """Read one MOPAC archive restart deck, preserving coordinate references and raw sections."""
     ...
 from ._conformer_alignment import align_conformers_checked as align_conformers_checked
+def write_gamess_zmat(elements: Sequence[str], positions_angstrom: Sequence[Sequence[float]], references: Sequence[Sequence[int]], *, charge: int, multiplicity: int, significant_digits: int = 17, title: str = "chematic GAMESS internal coordinates") -> str:
+    """Write GAMESS-US Cartesian $DATA plus explicit $ZMAT internal definitions; no basis or method."""
+    ...
+
+def xyz_to_gamess_zmat(text: str, references: Sequence[Sequence[int]], *, charge: int, multiplicity: int, significant_digits: int = 17, title: str = "chematic GAMESS internal coordinates") -> str:
+    """Convert exactly one bounded plain XYZ frame, retaining all atoms, to a GAMESS geometry template."""
+    ...

@@ -36,7 +36,6 @@ mod mopac;
 use exyz::*;
 mod gro;
 mod gzmat;
-use gzmat::*;
 mod rdfile;
 use rdfile::*;
 mod turbomole;
@@ -1348,6 +1347,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     gro_lammps::register(m)?;
     m.add_class::<PySmilesBatchStream>()?;
     mopac::register(m)?;
+    gzmat::register(m)?;
     register_pyfunctions!(
         m,
         from_smiles,
@@ -1424,8 +1424,6 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         parse_rdfile,
         write_rdfile,
         rdfile_to_smiles,
-        cartesian_to_zmatrix,
-        write_gzmat,
         parse_fhiaims,
         write_fhiaims,
         parse_dmol3,
