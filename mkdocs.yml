@@ -106,6 +106,7 @@ nav:
     - Prepared MMFF Dielectric: mmff-dielectric-updates.md
     - Custom MMFF Partial Charges: mmff-partial-charges.md
   - Reliability:
+    - Checked Core Removal: checked-core-replacement.md
     - Typed MCS Comparator Modes: mcs-comparator-modes.md
     - Descriptor Euclidean Distances: descriptor-euclidean-distances.md
     - Sparse Tanimoto Matrices: sparse-tanimoto-matrix.md

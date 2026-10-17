@@ -1,0 +1,7 @@
+validation/results/checked-core-removal-2026-10-17/typing_invalid.py:5: error: Argument 1 to "replace_core_checked" has incompatible type "str"; expected "Mol"  [arg-type]
+validation/results/checked-core-removal-2026-10-17/typing_invalid.py:6: error: Argument 2 to "replace_core_checked" has incompatible type "None"; expected "Mol"  [arg-type]
+validation/results/checked-core-removal-2026-10-17/typing_invalid.py:7: error: List item 0 has incompatible type "str"; expected "int"  [list-item]
+validation/results/checked-core-removal-2026-10-17/typing_invalid.py:8: error: Argument 3 to "replace_core_checked" has incompatible type "Iterator[int]"; expected "Sequence[int]"  [arg-type]
+validation/results/checked-core-removal-2026-10-17/typing_invalid.py:10: error: Property "original_to_output" defined in "CoreReplacement" is read-only  [misc]
+validation/results/checked-core-removal-2026-10-17/typing_invalid.py:11: error: Property "dummy" defined in "CoreAttachment" is read-only  [misc]
+Found 6 errors in 1 file (checked 1 source file)
