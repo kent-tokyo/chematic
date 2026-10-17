@@ -27,12 +27,12 @@ npm install @kent-tokyo/chematic
 
 Python wheelはC/C++コンパイラを必要とせず、各バインディングは同じRustコアを使います。
 
-### v1.1.6 の対応範囲
+### v1.1.7 の対応範囲
 
-v1.1.6では、PythonのファイルAPIで`PathLike`とUTF-8の`bytes`を扱えるようにしました。
-MOL2、CDX、PDBQT、PDB、CIFの検証付き入出力、原子対応を返すrooted SMILES、立体宣言を
-安全に整理するAPI、MMFFの誘電率を更新するAPIも追加しています。3D入力からの立体復元を
-改善し、SDFとV3000の入出力負荷も削減しました。性能と互換性の主張は、記録に明記した
+v1.1.7では、科学計算ファイルの検証付き変換・出力、指紋と力場へのカスタム入力、
+SDF・PDB・MOL2のsource-preserving処理を拡充しました。alignment、information theory、
+MIFの型付き互換APIも追加し、芳香族性・立体化学・Morgan・MOL2・PDBの境界例を修正しています。
+各APIはresource limitと失敗理由を明示します。性能と互換性の主張は、記録に明記した
 artifact・corpus・option・hostの範囲に限ります。詳しくは
 [検証報告](docs/validation.md)と[CHANGELOG](CHANGELOG.md)を参照してください。
 

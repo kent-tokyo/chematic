@@ -25,12 +25,13 @@ npm install @kent-tokyo/chematic
 
 Python wheels need no C/C++ compiler. All bindings share the Rust core.
 
-### v1.1.6 release boundary
+### v1.1.7 release boundary
 
-v1.1.6 adds checked filesystem-path and UTF-8 byte handling, source-preserving
-MOL2/CDX/PDBQT/PDB/CIF APIs, rooted SMILES and stereo-proof utilities, and live
-MMFF dielectric updates. It improves checked stereo recovery from 3D inputs
-and reduces SDF/V3000 I/O overhead. Claims remain limited to their recorded
+v1.1.7 adds checked scientific-file conversion and export APIs, custom
+fingerprint and force-field inputs, source-preserving SDF/PDB/MOL2 workflows,
+and typed compatibility helpers for alignment, information theory, and MIF.
+It also improves aromatic, stereo, Morgan, MOL2, and PDB edge cases while
+retaining explicit resource limits and failure reports. Claims remain limited to their recorded
 artifacts, corpora, options, and hosts. See
 [validation](docs/validation.md) and
 [CHANGELOG](CHANGELOG.md).
