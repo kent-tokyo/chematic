@@ -1,0 +1,33 @@
+{
+  "base_commit": "c84c68f297f95562d1d29c75234f2190cd5f9d75",
+  "python": "3.13.6",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "native_fixture_source_commit": "71d9c12b0c16a8e6b23e4078479d5754230c831b",
+  "native_fixture_sha256": "c6db880b6f5ca4ea0388f238c24e8a5b55751daab1084cf0d1d7b56e2427257b",
+  "versions": {
+    "mkdocs": "1.6.1",
+    "mkdocs-material": "9.7.7",
+    "mkdocstrings": "1.0.6",
+    "pymdown-extensions": "12.0.1",
+    "mypy": "1.8.0"
+  },
+  "python_39_grammar": "passed",
+  "source_sha256": {
+    "crates/chematic-py/python/chematic/__init__.py": "7a520468f83f63e43b7924c25b2e492ae49a06022d5367e2d71441bfd5e58093",
+    "crates/chematic-py/python/chematic/__init__.pyi": "8708079437932c1739b5a77acc598d21759329a39daf8eedb0be982d0e7abc2e",
+    "crates/chematic-py/python/chematic/_parent_types.py": "ffeea3c1dfce3155a073c6f328e18cca94672ea5405a0b5faac25d56cbdd9a52",
+    "crates/chematic-py/tests/test_parent_api_docs.py": "a688ef64bd2c9269a92a512be1e9d56ce7af7c7cbfbb2506bf331ec80c6e6df2",
+    "scripts/check_parent_api_docs.py": "88807ec2483759fd9219e4eb7193ec6f26cb866ba9ef874dfe36af6684847327",
+    "docs/standardization-parents.md": "2ab391a0c823ffa4fd9b0a7df4b960bad0a2e4440bd540b71bbaf380c51b6980",
+    "docs/api/chematic.md": "f478db626f393407c5f64b45267cc4abb7ae19f5bec53acaa7a8b96a03fd89ba",
+    ".github/workflows/ci.yml": "fdfce9b5353b5981cbfc1984f0a89957535e895f28afb53840a9dbf8aa8099a1",
+    ".github/workflows/pages.yml": "f0e6fce53375584629af129d46ab77737740774ce36d6b00428874bd302f0e72",
+    "mkdocs.yml": "1d0d1b02e1b5614170e4fb8f8540ec37fff8ea1c166445b84c8045bfc1d48dbb"
+  },
+  "issue": {
+    "body": "Hi, apologies, if this has been documented somewhere, but neither me nor Google nor the LLM could find it, but In the current documentation of the Python bindings to [rdMolStandardize](https://www.rdkit.org/docs/source/rdkit.Chem.MolStandardize.rdMolStandardize.html) all entries for the convenience functions XyzParent (e.g. ChargeParent, StereoParent, TautomerParent, ...) are missing.\n\nDoes this mean that they will be or are already deprecated? Or is this just a glitch in the documentation generation?  \n\nThanks.  \nKR Axel",
+    "state": "OPEN",
+    "updatedAt": "2026-09-29T15:43:01Z",
+    "url": "https://github.com/rdkit/rdkit/issues/9651"
+  }
+}

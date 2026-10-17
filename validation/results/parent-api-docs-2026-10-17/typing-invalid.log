@@ -1,0 +1,7 @@
+validation/typing/parent_api_invalid.py:4: error: Argument "max_transforms" to "tautomer_parent" of "Mol" has incompatible type "str"; expected "int"  [arg-type]
+validation/typing/parent_api_invalid.py:5: error: Argument "timeout_ms" to "super_parent" of "Mol" has incompatible type "str"; expected "int | None"  [arg-type]
+validation/typing/parent_api_invalid.py:6: error: Incompatible types in assignment (expression has type "Mol", variable has type "str")  [assignment]
+validation/typing/parent_api_invalid.py:8: error: Incompatible types in assignment (expression has type "str", variable has type "int")  [assignment]
+validation/typing/parent_api_invalid.py:9: error: Incompatible types (expression has type "Literal['cleanup']", TypedDict item "name" has type "Literal['fragment', 'charge', 'isotope', 'stereo', 'tautomer']")  [typeddict-item]
+validation/typing/parent_api_invalid.py:10: error: TypedDict "SuperParentReport" has no key "molecule"  [typeddict-item]
+Found 6 errors in 1 file (checked 1 source file)

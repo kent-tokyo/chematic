@@ -1,0 +1,20 @@
+{
+  "status": "failed",
+  "methods": [
+    "fragment_parent",
+    "charge_parent",
+    "isotope_parent",
+    "stereo_parent",
+    "tautomer_parent",
+    "super_parent",
+    "super_parent_report"
+  ],
+  "report_types": [
+    "ParentStage",
+    "SuperParentReport"
+  ],
+  "checked_anchors": [],
+  "errors": [
+    "wrong native defaults/signature: Mol.tautomer_parent"
+  ]
+}

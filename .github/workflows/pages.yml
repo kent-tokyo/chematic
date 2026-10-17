@@ -7,6 +7,8 @@ on:
       - 'crates/chematic-wasm/**'
       - 'demo/**'
       - 'docs/**'
+      - 'crates/chematic-py/python/chematic/**'
+      - 'scripts/check_parent_api_docs.py'
       - 'mkdocs.yml'
       - 'requirements-docs.txt'
       - '.github/workflows/pages.yml'
@@ -68,6 +70,9 @@ jobs:
 
       - name: Build MkDocs site
         run: mkdocs build --strict --site-dir _site
+
+      - name: Verify generated Parent reference
+        run: python scripts/check_parent_api_docs.py --site-dir _site
 
       - name: Verify homepage release marker
         run: |

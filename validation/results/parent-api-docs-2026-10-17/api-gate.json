@@ -1,0 +1,28 @@
+{
+  "status": "passed",
+  "methods": [
+    "fragment_parent",
+    "charge_parent",
+    "isotope_parent",
+    "stereo_parent",
+    "tautomer_parent",
+    "super_parent",
+    "super_parent_report"
+  ],
+  "report_types": [
+    "ParentStage",
+    "SuperParentReport"
+  ],
+  "checked_anchors": [
+    "chematic.Mol.fragment_parent",
+    "chematic.Mol.charge_parent",
+    "chematic.Mol.isotope_parent",
+    "chematic.Mol.stereo_parent",
+    "chematic.Mol.tautomer_parent",
+    "chematic.Mol.super_parent",
+    "chematic.Mol.super_parent_report",
+    "chematic.ParentStage",
+    "chematic.SuperParentReport"
+  ],
+  "errors": []
+}

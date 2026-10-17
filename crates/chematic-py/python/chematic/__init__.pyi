@@ -1410,6 +1410,127 @@ class Mol:
         """Standardize the molecule; optionally retain only the largest fragment."""
         ...
 
+    def fragment_parent(self) -> Mol:
+        """Select one fragment using chematic's native fragment policy.
+
+        Returns:
+            New Mol selected by salt/water/ion classification, then heavy-atom
+            count, carbon preference and canonical-SMILES tie breaking. A
+            size-ranked fallback is used when every fragment is classified
+            for removal. Python properties are not copied.
+        """
+        ...
+
+    def charge_parent(self) -> Mol:
+        """Select a fragment, then apply native local charge neutralization.
+
+        Returns:
+            New Mol. Neutralizes supported carbon-bound O- and protonated N+/O+
+            motifs; it does not promise a neutral total charge or model pH.
+            Isotope/stereo parent steps are not performed. Python properties
+            are not copied.
+        """
+        ...
+
+    def isotope_parent(self) -> Mol:
+        """Clear isotope labels across the whole input graph.
+
+        Returns:
+            New Mol, retaining all fragments and explicit graph atoms. An
+            explicit deuterium atom becomes ordinary H, not an implicit H.
+            No stereo-parent step runs. Python properties are not copied.
+        """
+        ...
+
+    def stereo_parent(self) -> Mol:
+        """Remove stored stereochemical annotations across the whole graph.
+
+        Returns:
+            New Mol with atom chirality cleared, directional single bonds
+            made ordinary single bonds, and stereo metadata omitted. All
+            fragments and isotope labels remain. Python properties are not
+            copied.
+        """
+        ...
+
+    def tautomer_parent(
+        self, max_transforms: int = 16, max_tautomers: int = 32,
+        timeout_ms: Optional[int] = None,
+    ) -> tuple[Mol, str]:
+        """Choose the native bounded tautomer parent, with completion status.
+
+        Args:
+            max_transforms: Nonnegative native transformation budget, default 16.
+            max_tautomers: Native candidate-comparison budget, default 32. Zero
+                skips direct-aromatic-shift comparison, not all tautomer work.
+            timeout_ms: Optional nonnegative wall-clock budget in milliseconds.
+                None disables wall-clock checks. Timing may depend on load.
+
+        Returns:
+            (new Mol, status string). Completed means this native search
+            completed. Limits/timeouts return a partial result, with
+            MaxTransformsReached, MaxTautomersReached or TimedOut. Empty input
+            returns InvalidInput(EmptyMolecule). Inspect status before accepting
+            a grouping key. Python properties are not copied. This is distinct
+            from the RDKit-profile rdkit_canonical_tautomer method.
+
+        Raises:
+            TypeError: Non-integer budget argument.
+            OverflowError: Negative or out-of-range unsigned integer budget.
+        """
+        ...
+
+    def super_parent(
+        self, max_transforms: int = 16, max_tautomers: int = 32,
+        timeout_ms: Optional[int] = None,
+    ) -> tuple[Mol, str]:
+        """Compose fragment, charge, isotope, stereo, then tautomer parents.
+
+        Args:
+            max_transforms: Nonnegative native tautomer budget, default 16.
+            max_tautomers: Native candidate-comparison budget, default 32.
+                Zero skips direct-aromatic-shift comparison.
+            timeout_ms: Optional nonnegative native tautomer timeout in ms.
+                It does not cover the preceding four transformations.
+
+        Returns:
+            (new Mol, status string) from the final tautomer-parent stage.
+            Each preceding stage feeds the next. Python properties are not
+            copied. Empty input returns InvalidInput(EmptyMolecule). The same
+            completion/limit rules as tautomer_parent apply.
+
+        Raises:
+            TypeError: Non-integer budget argument.
+            OverflowError: Negative or out-of-range unsigned integer budget.
+        """
+        ...
+
+    def super_parent_report(
+        self, max_transforms: int = 16, max_tautomers: int = 32,
+        timeout_ms: Optional[int] = None,
+    ) -> SuperParentReport:
+        """Return a typed dictionary of final SMILES, status and five stages.
+
+        Args:
+            max_transforms: Nonnegative native tautomer budget, default 16.
+            max_tautomers: Native candidate-comparison budget, default 32.
+                Zero skips direct-aromatic-shift comparison.
+            timeout_ms: Optional nonnegative final-stage timeout in ms.
+
+        Returns:
+            SuperParentReport with smiles, status, and stages. Every stage
+            contains name and smiles; order is fragment, charge, isotope,
+            stereo, tautomer. These strings expose intermediate structures,
+            not the full Rust audit with fragment-selection reasons or applied
+            rule records. For an empty graph, strings may be empty and status
+            is InvalidInput(EmptyMolecule).
+
+        Raises:
+            TypeError: Non-integer budget argument.
+            OverflowError: Negative or out-of-range unsigned integer budget.
+        """
+        ...
+
     def scaffold(self) -> Mol:
         """Return the Bemis–Murcko scaffold as a new Mol."""
         ...
@@ -5406,3 +5527,8 @@ class RWMol:
     def GetName(self) -> str: ...
     def SetName(self, name: str) -> None: ...
     def GetMol(self) -> Mol: ...
+
+from ._parent_types import (
+    ParentStage as ParentStage,
+    SuperParentReport as SuperParentReport,
+)
