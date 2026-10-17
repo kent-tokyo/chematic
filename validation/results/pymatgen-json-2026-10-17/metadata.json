@@ -1,0 +1,47 @@
+{
+  "date": "2026-10-17",
+  "base_commit": "35b932f911851f51c5cdb89fa371f1c2c4a1b11a",
+  "upstream_issue": {
+    "number": 2675,
+    "url": "https://github.com/openbabel/openbabel/issues/2675",
+    "state": "OPEN",
+    "scope": "Python explicit periodic Structure/IStructure JSON reader; no C++ plugin or Rust parser"
+  },
+  "python": "3.13.6",
+  "tests": {
+    "passed": 258,
+    "new": 77,
+    "existing_crystal": 19,
+    "existing_compat": 162
+  },
+  "typing": {
+    "new_helper": "strict with imported stub diagnostics silenced",
+    "public_valid_consumer": "passed",
+    "public_invalid_consumer": "6 expected errors, including native return-type misuse",
+    "whole_package_strict": "not claimed"
+  },
+  "native_fixture": {
+    "path": "/private/tmp/chematic-pymatgen-json-python/chematic/chematic.so",
+    "sha256": "c6db880b6f5ca4ea0388f238c24e8a5b55751daab1084cf0d1d7b56e2427257b",
+    "source_commit": "71d9c12b0c16a8e6b23e4078479d5754230c831b",
+    "fresh_native_build": false,
+    "scope": "existing extension used as import/constructor/regression fixture; reader is Python only"
+  },
+  "oracle": {
+    "pymatgen": "2025.6.14",
+    "installed_to": "/private/tmp/chematic-pymatgen-oracle",
+    "project_dependency_added": false
+  },
+  "source_sha256": {
+    "crates/chematic-py/python/chematic/_pymatgen_json.py": "cf8ab4b754fbbec932eb8aa5f4be16b5b7240c3b58919f82dd1c7107a4697fc2",
+    "crates/chematic-py/python/chematic/__init__.py": "06ab94635aad4608ea7196ea51ea2947fcc27f90e671dcb9d4abce5e706c2f90",
+    "crates/chematic-py/python/chematic/__init__.pyi": "d9dcbac06f3ce207c75603cc8239d5c78b68e7fa7329cc86570dd44fd76a34da",
+    "crates/chematic-py/tests/test_pymatgen_json.py": "167212c7557ba8ae6cb21699585560659def8b5e9529f17ad0fa8caae43dccf0",
+    "validation/validate_pymatgen_json.py": "95d69daf6a3b5b0632fcdfdcbb06ee30fe12d8c312660b4f00a9d853b0e7a44f"
+  },
+  "commands": [
+    "PYTHONDONTWRITEBYTECODE=1 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=/private/tmp/chematic-pymatgen-json-python python3.13 -m pytest crates/chematic-py/tests/test_pymatgen_json.py crates/chematic-py/tests/test_crystal.py crates/chematic-py/tests/test_rdkit_compat.py -q -p no:cacheprovider",
+    "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/private/tmp/chematic-pymatgen-json-python:/private/tmp/chematic-pymatgen-oracle python3.13 validation/validate_pymatgen_json.py",
+    "python3.13 -m mkdocs build --strict --site-dir /private/tmp/chematic-pymatgen-json-site"
+  ]
+}

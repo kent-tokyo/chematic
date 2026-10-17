@@ -5556,3 +5556,7 @@ def write_gamess_zmat(elements: Sequence[str], positions_angstrom: Sequence[Sequ
 def xyz_to_gamess_zmat(text: str, references: Sequence[Sequence[int]], *, charge: int, multiplicity: int, significant_digits: int = 17, title: str = "chematic GAMESS internal coordinates") -> str:
     """Convert exactly one bounded plain XYZ frame, retaining all atoms, to a GAMESS geometry template."""
     ...
+from ._pymatgen_json import (
+    PymatgenStructureRecord as PymatgenStructureRecord,
+    parse_pymatgen_structures as parse_pymatgen_structures,
+)

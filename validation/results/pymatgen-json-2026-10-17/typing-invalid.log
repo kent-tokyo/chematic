@@ -1,0 +1,7 @@
+validation/typing/pymatgen_json_invalid.py:3: error: Argument 1 to "parse_pymatgen_structures" has incompatible type "dict[Never, Never]"; expected "str | bytes"  [arg-type]
+validation/typing/pymatgen_json_invalid.py:4: error: Argument 1 to "parse_pymatgen_structures" has incompatible type "list[str]"; expected "str | bytes"  [arg-type]
+validation/typing/pymatgen_json_invalid.py:5: error: Argument 1 to "parse_pymatgen_structures" has incompatible type "None"; expected "str | bytes"  [arg-type]
+validation/typing/pymatgen_json_invalid.py:6: error: Argument 1 to "parse_pymatgen_structures" has incompatible type "int"; expected "str | bytes"  [arg-type]
+validation/typing/pymatgen_json_invalid.py:7: error: Argument "allow_metadata_loss" to "to_periodic_structure" of "PymatgenStructureRecord" has incompatible type "str"; expected "bool"  [arg-type]
+validation/typing/pymatgen_json_invalid.py:9: error: Incompatible types in assignment (expression has type "PeriodicStructure", variable has type "str")  [assignment]
+Found 6 errors in 1 file (checked 1 source file)

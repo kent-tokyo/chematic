@@ -666,3 +666,4 @@ def screen(smiles, profile: str = "druglike", filters=None) -> list:
     return results
 
 from ._conformer_alignment import align_conformers_checked
+from ._pymatgen_json import PymatgenStructureRecord, parse_pymatgen_structures
