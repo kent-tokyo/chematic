@@ -109,7 +109,6 @@ def test_constructor_bounds(width, classes, exc):
     "metric,exc",
     [
         (I.InfoType.BIASENTROPY, ValueError),
-        (I.InfoType.CHISQUARE, ValueError),
         (I.InfoType.BIASCHISQUARE, ValueError),
         (99, ValueError),
         (True, TypeError),

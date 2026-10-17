@@ -1,0 +1,27 @@
+{
+  "base": "832450783b3faff6ad455a4d514cadf6837b597d",
+  "initial_base": "0e7a6d9f8d50fd75a9b1bfada00336f8e320f8ec",
+  "time_utc": "2026-10-17T15:41:22.379464+00:00",
+  "python": "3.13.6",
+  "numpy": "2.5.3",
+  "pytest": "9.1.1",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "native_fixture_commit": "ca7e14e892cab8b495183bcda4449f49471ba1b1",
+  "native_sha256": "90f81980b0fdf06c8edb616d8f8e5acd1831a9b6de404ed2b3405646cff41423",
+  "native_bytes": 85142576,
+  "native_fixture_evidence": "ca7e14e8:validation/results/checked-core-removal-2026-10-17/provenance.json",
+  "native_scope": "verified existing import fixture only; no native build or wheel validation",
+  "source_sha256": {
+    "crates/chematic-py/python/chematic/_info_theory.py": "a59b58b12b40cffac4cf8007884d12da3bd0719da2b2f4129d659cbb88fa5b58",
+    "crates/chematic-py/python/chematic/rdkit_compat.py": "a99ac5342bfb66acfd719ebb424c90ec60ce4d3dc32decbef56f3e9c2c1e39d6",
+    "crates/chematic-py/python/chematic/__init__.py": "359fd642030965a9027dfda71f2896217c53d493d38e7942522ee7cc46c879c9",
+    "crates/chematic-py/python/chematic/__init__.pyi": "4de365fac33c62a70bae69b09ac2d96d9de68abf12827de0e834d14d3016aad3",
+    "crates/chematic-py/tests/test_info_bit_ranker.py": "2c6a76ce527b16a58a4e77b1aa66e91e41fadc815794104650822b59b4712c87",
+    "crates/chematic-py/tests/test_chi_square_bit_ranker.py": "fab339a3c1c2452b681e2a8a32e09a834b6aa5251adc23475ab3e17ba2d82637"
+  },
+  "upstream_revision": "7f3d37d16b71ff8c8a6b0de82c12a8b371e0a8df",
+  "verified_upstream_blobs": {
+    "Code/ML/InfoTheory/InfoBitRanker.cpp": "81037caa45399213eaf665a405d67268e88c5523",
+    "Code/ML/InfoTheory/InfoGainFuncs.h": "fc72810a5bcb9cbed61f63246b80d9065359b0f3"
+  }
+}
