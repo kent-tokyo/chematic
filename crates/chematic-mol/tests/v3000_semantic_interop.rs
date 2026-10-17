@@ -10,6 +10,54 @@ use chematic_mol::{V3000SGroupKind, parse_mol_v3000, parse_v3000_sgroup_line, wr
 
 const HEADER: &str = "\n\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\n";
 
+#[test]
+fn v3000_concrete_atoms_omit_redundant_query_hcount() {
+    for (smiles, count) in [("F[C@H](Cl)Br", 1), ("F[C@](Cl)(Br)I", 0)] {
+        let mol = chematic_smiles::parse(smiles).expect("SMILES parse");
+        let block = write_mol_v3000(&mol, &Default::default(), &[]);
+        assert!(
+            !block.contains(&format!("HCOUNT={count}")),
+            "valence-inferred carbon H count is not a query property: {smiles}"
+        );
+        parse_mol_v3000(&block).expect("concrete V3000 parse");
+    }
+
+    let radical = chematic_smiles::parse("[CH]C").expect("radical SMILES parse");
+    let block = write_mol_v3000(&radical, &Default::default(), &[]);
+    assert!(block.contains("HCOUNT=1"), "nonredundant H must remain");
+
+    let aromatic = chematic_smiles::parse("c1c[nH]cn1").expect("aromatic SMILES parse");
+    let block = write_mol_v3000(&aromatic, &Default::default(), &[]);
+    assert!(
+        !block.contains("HCOUNT=1"),
+        "aromatic N H follows from the Kekule bonds"
+    );
+    let (reparsed, _) = parse_mol_v3000(&block).expect("aromatic V3000 parse");
+    let n_h = aromatic
+        .atoms()
+        .find(|(_, atom)| {
+            atom.element == chematic_core::Element::N && atom.hydrogen_count == Some(1)
+        })
+        .expect("aromatic [nH]")
+        .0;
+    let atom_prefix = format!("M  V30 {} N ", n_h.0 + 1);
+    let with_query_h = block
+        .lines()
+        .map(|line| {
+            if line.starts_with(&atom_prefix) {
+                format!("{line} HCOUNT=1\n")
+            } else {
+                format!("{line}\n")
+            }
+        })
+        .collect::<String>();
+    let (baseline, _) = parse_mol_v3000(&with_query_h).expect("query HCOUNT V3000 parse");
+    assert_eq!(
+        chematic_smiles::canonical_smiles(&reparsed),
+        chematic_smiles::canonical_smiles(&baseline)
+    );
+}
+
 fn block(collection_first: bool) -> String {
     let collection =
         "M  V30 BEGIN COLLECTION\nM  V30 MDLV30/STEABS ATOMS=(1 1)\nM  V30 END COLLECTION\n";
