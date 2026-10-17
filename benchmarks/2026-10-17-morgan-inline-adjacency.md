@@ -1,8 +1,10 @@
-# Private inline adjacency: rejected source candidate
+# Private inline adjacency: failed performance gate
 
 Baseline `c84c68f297f95562d1d29c75234f2190cd5f9d75`; measured candidate `61d91ccb7091c74d9823dda25035d232b492e31b`. The private RDKit model changes each atom's adjacency from `Vec<usize>` to `SmallVec<[usize;4]>`, spilling above four entries. Bond order, mutation rules, stereo perception and public `RdkitMolView` types are preserved. No new dependency or molecule-output cache.
 
-**Decision: do not integrate this candidate.** Both first-use chiral Morgan intervals must have lower bounds above 1 and all 42 source medians must be at least 0.99. The second primary interval fails the improvement rule and eight lanes fail the median floor. Do not rerun or alter the gate after observing this epoch.
+**Performance decision: rejected.** Both first-use chiral Morgan intervals must have lower bounds above 1 and all 42 source medians must be at least 0.99. The second primary interval fails the improvement rule and eight lanes fail the median floor. Do not rerun or alter the gate after observing this epoch.
+
+The maintainer subsequently requested `commit, push to main` after the failed result was disclosed. Integration is therefore requested as an explicit manual override of the performance adoption decision, subject to correctness validation and protected-main CI. The failed gate, measured source revision, all eight floor violations and every observation below remain unchanged. This is not a claim of a speed improvement on the newer main.
 
 ## Evidence and scope
 
@@ -124,4 +126,4 @@ Recompute numeric consistency without chemistry SDKs:
 python3 scripts/check_morgan_numeric_packet.py benchmarks/2026-10-17-morgan-inline-adjacency.json.gz
 ```
 
-The complete local packet is retained independently of the public numeric export. This candidate stays on a draft branch; production code must not be integrated based on these failed results.
+The complete local packet is retained independently of the public numeric export. Manual integration was requested after disclosure of the failed results; integration must not be represented as a passing performance gate. Correctness checks on the merged main source and required hosted checks are tracked separately from this historical timing epoch.
