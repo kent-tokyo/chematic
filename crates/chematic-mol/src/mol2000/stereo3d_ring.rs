@@ -40,13 +40,121 @@ fn ring_component_labels(mol: &Molecule, ring_bonds: &[bool]) -> Vec<usize> {
     labels
 }
 
+/// A single substituted adamantane bridgehead distinguishes a rigid set of
+/// three hydrogen-bearing bridgeheads. Require the exact subdivided K4 ring
+/// graph: four degree-three cage carbons and six CH2 links, one for every
+/// bridgehead pair. The topology gate avoids assigning arbitrary geometry
+/// tags to other multi-bridgehead cages.
+fn is_monosubstituted_adamantane(
+    mol: &Molecule,
+    ring_bonds: &[bool],
+    hydrogen_bridgeheads: &[AtomIdx],
+    substituted_bridgeheads: &[AtomIdx],
+) -> bool {
+    if hydrogen_bridgeheads.len() != 3 || substituted_bridgeheads.len() != 1 {
+        return false;
+    }
+    let centers: std::collections::HashSet<_> = hydrogen_bridgeheads
+        .iter()
+        .chain(substituted_bridgeheads)
+        .copied()
+        .collect();
+    let mut links = std::collections::HashSet::new();
+    let mut pairs = std::collections::HashSet::new();
+    for &center in &centers {
+        let ring_neighbors: Vec<_> = mol
+            .neighbors(center)
+            .filter(|&(_, bond)| ring_bonds[bond.0 as usize])
+            .collect();
+        if ring_neighbors.len() != 3 {
+            return false;
+        }
+        for (link, bond) in ring_neighbors {
+            if mol.bond(bond).order != BondOrder::Single || centers.contains(&link) {
+                return false;
+            }
+            if !links.insert(link) {
+                continue;
+            }
+            let atom = mol.atom(link);
+            if atom.element != Element::C || atom.aromatic {
+                return false;
+            }
+            let (ring, outside): (Vec<_>, Vec<_>) = mol
+                .neighbors(link)
+                .partition(|&(_, bond)| ring_bonds[bond.0 as usize]);
+            if ring.len() != 2
+                || ring.iter().any(|&(neighbor, bond)| {
+                    !centers.contains(&neighbor) || mol.bond(bond).order != BondOrder::Single
+                })
+                || outside.iter().any(|&(neighbor, bond)| {
+                    mol.atom(neighbor).element != Element::H
+                        || mol.bond(bond).order != BondOrder::Single
+                })
+                || outside.len() + usize::from(chematic_core::implicit_hcount(mol, link)) != 2
+            {
+                return false;
+            }
+            let a = ring[0].0.0;
+            let b = ring[1].0.0;
+            if !pairs.insert((a.min(b), a.max(b))) {
+                return false;
+            }
+        }
+    }
+    links.len() == 6 && pairs.len() == 6
+}
+
+fn substituted_adamantane_centers(
+    mol: &Molecule,
+    ring_bonds: &[bool],
+    hydrogen_bridgeheads: &[AtomIdx],
+) -> Vec<AtomIdx> {
+    if hydrogen_bridgeheads.len() != 3 {
+        return Vec::new();
+    }
+    let substituted_bridgeheads: Vec<_> = mol
+        .atoms()
+        .filter(|(idx, atom)| {
+            if atom.element != Element::C || atom.aromatic || mol.degree(*idx) != 4 {
+                return false;
+            }
+            let (ring, outside): (Vec<_>, Vec<_>) = mol
+                .neighbors(*idx)
+                .partition(|&(_, bond)| ring_bonds[bond.0 as usize]);
+            ring.len() == 3
+                && outside.len() == 1
+                && mol.atom(outside[0].0).element == Element::C
+                && ring
+                    .iter()
+                    .chain(outside.iter())
+                    .all(|&(_, bond)| mol.bond(bond).order == BondOrder::Single)
+        })
+        .map(|(idx, _)| idx)
+        .collect();
+    if is_monosubstituted_adamantane(
+        mol,
+        ring_bonds,
+        hydrogen_bridgeheads,
+        &substituted_bridgeheads,
+    ) {
+        hydrogen_bridgeheads
+            .iter()
+            .chain(&substituted_bridgeheads)
+            .copied()
+            .collect()
+    } else {
+        Vec::new()
+    }
+}
+
 pub(super) fn additional_3d_ring_centers(mol: &Molecule, mol2_extensions: bool) -> Vec<AtomIdx> {
     // RDKit also records the 3D orientation of the two bridgeheads in a
     // simple bicyclic cage such as norbornane, even when CIP regards its
     // paired ring paths as equivalent. Limit this case to exactly two
     // three-ring-bond carbon bridgeheads with one exocyclic substituent;
-    // symmetric multi-bridgehead cages such as adamantane must not acquire
-    // arbitrary tetrahedral tags.
+    // symmetric multi-bridgehead cages such as unsubstituted adamantane must
+    // not acquire arbitrary tetrahedral tags.
     let ring_bonds = chematic_perception::ring_bond_flags(mol);
     let mut additional = Vec::new();
     let bridgeheads: Vec<_> = mol
@@ -82,8 +190,13 @@ pub(super) fn additional_3d_ring_centers(mol: &Molecule, mol2_extensions: bool) 
     if bridgeheads.len() == 2
         && same_ring_component(mol, &ring_bonds, bridgeheads[0], bridgeheads[1])
     {
-        additional.extend(bridgeheads);
+        additional.extend(bridgeheads.iter().copied());
     }
+    additional.extend(substituted_adamantane_centers(
+        mol,
+        &ring_bonds,
+        &bridgeheads,
+    ));
     // Two differently substituted quaternary carbons in one ring can
     // distinguish each other's otherwise identical ring arms. Neither
     // center is found by an atom-at-a-time graph comparison before the
