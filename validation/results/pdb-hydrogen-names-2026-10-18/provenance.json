@@ -1,0 +1,28 @@
+{
+  "base": "d3cc76b828c4732c49413d9a5fcf19b29f8bee11",
+  "time_utc": "2026-10-17T15:55:34.384468+00:00",
+  "python": "3.13.6",
+  "numpy": "2.5.3",
+  "pytest": "9.1.1",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "native_fixture_commit": "ca7e14e892cab8b495183bcda4449f49471ba1b1",
+  "native_sha256": "90f81980b0fdf06c8edb616d8f8e5acd1831a9b6de404ed2b3405646cff41423",
+  "native_bytes": 85142576,
+  "native_fixture_evidence": "ca7e14e8:validation/results/checked-core-removal-2026-10-17/provenance.json",
+  "native_build_scope": "verified existing local extension used as import/unchanged PDB validator fixture; no new native build or wheel validation",
+  "unchanged_pdb_backend_paths": [
+    "crates/chematic-mol/src/pdb_selection.rs",
+    "crates/chematic-mol/src/pdb_selection",
+    "crates/chematic-3d/src/pdb.rs",
+    "crates/chematic-3d/src/pdb",
+    "crates/chematic-py/src/formats/pdb_selection.rs"
+  ],
+  "pdb_backend_changed_files": [],
+  "source_sha256": {
+    "crates/chematic-py/python/chematic/__init__.py": "604bd2ddda88c3bb18f7e555be4b34f7d5f3bb5c6a6f201cf1f03cbe32963cac",
+    "crates/chematic-py/python/chematic/__init__.pyi": "7b153dade097b3edeb2a67499cbf3a698010536673e33a5d7b9ba51827d9f208",
+    "crates/chematic-py/python/chematic/_pdb_hydrogen_names.py": "89cb39c8c86ff6c9b0ccc8131c44448b535c27cc731bd4c30b244c90b9e98715",
+    "crates/chematic-py/tests/test_pdb_hydrogen_names.py": "7c6dc42551ec3453323e9b8d1451e7c5fb68f2402dfb8ff03cb3f64569a8fe35"
+  },
+  "specification": "https://www.wwpdb.org/documentation/file-format-content/format33/sect9.html"
+}

@@ -683,3 +683,7 @@ from ._mcs_comparators import (
     McsBondCompare,
     McsBondComparison,
 )
+
+from ._pdb_hydrogen_names import (
+    PdbHydrogenName, PdbHydrogenNaming, name_pdb_hydrogens_checked,
+)
