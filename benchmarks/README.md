@@ -22,6 +22,11 @@ the [complete inventory](archive-index.md) links every retained record.
 
 ## Recent focused follow-ups
 
+- [Compact Morgan linear-scan candidate](2026-10-17-morgan-linear.md):
+  complete24-permutation RDKit/COSMolKit comparison on two1,000-row windows;
+ 56,288 outputs match RDKit, but both primary intervals cross one and six source
+ medians miss the floor. Rejected;32/36 external lanes pass the strict gate.
+
 - [3D tetrahedral candidate guard](2026-10-17-openbabel-3d-stereo-guard.md):
   controlled 3D parse improves 6.547–6.641x versus source and 118.775–119.730x
   versus Open Babel; all 24 median floors pass, with a disclosed 0.9% write retreat.

@@ -1,0 +1,60 @@
+{
+  "candidate": {
+    "rdkit-js-browser-10k-v1.smi/morgan_r2_chiral0": {
+      "equal": 10000
+    },
+    "rdkit-js-browser-10k-v1.smi/morgan_r2_chiral1": {
+      "equal": 10000
+    },
+    "rdkit-js-browser-10k-v1.smi/morgan_r3_chiral0": {
+      "equal": 10000
+    },
+    "rdkit-js-browser-10k-v1.smi/morgan_r3_chiral1": {
+      "equal": 10000
+    },
+    "stress-v1.smi/morgan_r2_chiral0": {
+      "equal": 4072
+    },
+    "stress-v1.smi/morgan_r2_chiral1": {
+      "equal": 4072
+    },
+    "stress-v1.smi/morgan_r3_chiral0": {
+      "equal": 4072
+    },
+    "stress-v1.smi/morgan_r3_chiral1": {
+      "equal": 4072
+    }
+  },
+  "cosmolkit": {
+    "rdkit-js-browser-10k-v1.smi/morgan_r2_chiral0": {
+      "equal": 10000
+    },
+    "rdkit-js-browser-10k-v1.smi/morgan_r2_chiral1": {
+      "equal": 10000
+    },
+    "rdkit-js-browser-10k-v1.smi/morgan_r3_chiral0": {
+      "equal": 10000
+    },
+    "rdkit-js-browser-10k-v1.smi/morgan_r3_chiral1": {
+      "equal": 10000
+    },
+    "stress-v1.smi/morgan_r2_chiral0": {
+      "equal": 4066,
+      "source_unavailable": 6
+    },
+    "stress-v1.smi/morgan_r2_chiral1": {
+      "equal": 4059,
+      "mismatch": 7,
+      "source_unavailable": 6
+    },
+    "stress-v1.smi/morgan_r3_chiral0": {
+      "equal": 4066,
+      "source_unavailable": 6
+    },
+    "stress-v1.smi/morgan_r3_chiral1": {
+      "equal": 4059,
+      "mismatch": 7,
+      "source_unavailable": 6
+    }
+  }
+}

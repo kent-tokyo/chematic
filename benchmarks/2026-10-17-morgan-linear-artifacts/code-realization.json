@@ -1,0 +1,26 @@
+{
+  "baseline": {
+    "symbol": "__RNCNvNtCs74TgBTe3Hat_11chematic_fp19rdkit_morgan_config19rdkit_morgan_bitvec0B5_",
+    "extension_sha256": "47ddef465dd92b8ea2456e5b0bbdc8565c8523e3b66da1e8d8c8251b61ca0b25",
+    "disassembly_sha256": "4c832332ec1e62eefc3749758197f74a33bda7d99ee360cd18ba061f6af749c5",
+    "lines": 3095,
+    "command": [
+      "/Library/Developer/CommandLineTools/usr/bin/llvm-objdump",
+      "--disassemble-symbols=__RNCNvNtCs74TgBTe3Hat_11chematic_fp19rdkit_morgan_config19rdkit_morgan_bitvec0B5_",
+      "--no-show-raw-insn",
+      "/private/tmp/chematic-morgan-linear-evidence-20261017/baseline-site/chematic/chematic.cpython-313-darwin.so"
+    ]
+  },
+  "candidate": {
+    "symbol": "__RNCNvNtCs74TgBTe3Hat_11chematic_fp19rdkit_morgan_config19rdkit_morgan_bitvec0B5_",
+    "extension_sha256": "392d8759a2c3bd7312b6785f2896496b873fc4403aeb3207725622c6a2dde8a9",
+    "disassembly_sha256": "c7e9dab2b376872bc7c23c604142bb428b9753761000e1660398e09c4b60d8af",
+    "lines": 3071,
+    "command": [
+      "/Library/Developer/CommandLineTools/usr/bin/llvm-objdump",
+      "--disassemble-symbols=__RNCNvNtCs74TgBTe3Hat_11chematic_fp19rdkit_morgan_config19rdkit_morgan_bitvec0B5_",
+      "--no-show-raw-insn",
+      "/private/tmp/chematic-morgan-linear-evidence-20261017/candidate-site/chematic/chematic.cpython-313-darwin.so"
+    ]
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "removed": "/private/tmp/chematic-morgan-linear-evidence-20261017/check-target",
+  "du_before": "480168\t/private/tmp/chematic-morgan-linear-evidence-20261017/check-target\n",
+  "free_before": 3633254400,
+  "free_after": 4055093248,
+  "tests_and_clippy_completed": true,
+  "lsof_returncode": 1,
+  "logs_preserved": true
+}

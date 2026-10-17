@@ -1,0 +1,160 @@
+{
+  "complete": true,
+  "checks": {
+    "0": {
+      "all_24_permutations_once": true,
+      "each_arm_position_count": 6,
+      "all_source_and_external_outputs_equal": true,
+      "no_missing_rows_or_batches": true,
+      "journal_count": 96
+    },
+    "5000": {
+      "all_24_permutations_once": true,
+      "each_arm_position_count": 6,
+      "all_source_and_external_outputs_equal": true,
+      "no_missing_rows_or_batches": true,
+      "journal_count": 96
+    }
+  },
+  "journals": 192,
+  "accounting_cells": 2880,
+  "total_batches": 177202,
+  "total_processed_rows_in_timed_batches": 177202000,
+  "source_lane_count": 42,
+  "all_lane_count": 78,
+  "primary_source_lanes": [
+    {
+      "offset": 0,
+      "operation": "morgan2_chiral",
+      "mode": "repeated_use",
+      "comparator": "baseline",
+      "paired_median": 1.0073435175447438,
+      "ci95_low": 0.9967869773904257,
+      "ci95_high": 1.0245518085990466,
+      "winning_blocks": 15,
+      "blocks": 24,
+      "comparator_median_ns": 2918295.5,
+      "candidate_median_ns": 2871957.0,
+      "strict_external_win": false
+    },
+    {
+      "offset": 5000,
+      "operation": "morgan2_chiral",
+      "mode": "repeated_use",
+      "comparator": "baseline",
+      "paired_median": 1.0040942949601468,
+      "ci95_low": 0.9878286489127291,
+      "ci95_high": 1.017851234414758,
+      "winning_blocks": 14,
+      "blocks": 24,
+      "comparator_median_ns": 1874758.0,
+      "candidate_median_ns": 1864681.5,
+      "strict_external_win": false
+    }
+  ],
+  "source_floor_violations": [
+    {
+      "offset": 0,
+      "operation": "labute_asa",
+      "mode": "first_use",
+      "comparator": "baseline",
+      "paired_median": 0.9867691522670002,
+      "ci95_low": 0.9746113318269842,
+      "ci95_high": 1.0073784372531642,
+      "winning_blocks": 9,
+      "blocks": 24,
+      "comparator_median_ns": 1360576.0,
+      "candidate_median_ns": 1361640.0,
+      "strict_external_win": false
+    },
+    {
+      "offset": 0,
+      "operation": "num_rings",
+      "mode": "first_use",
+      "comparator": "baseline",
+      "paired_median": 0.9864652046573417,
+      "ci95_low": 0.9638296570444138,
+      "ci95_high": 1.0032959496712084,
+      "winning_blocks": 8,
+      "blocks": 24,
+      "comparator_median_ns": 1553083.0,
+      "candidate_median_ns": 1578166.5,
+      "strict_external_win": false
+    },
+    {
+      "offset": 0,
+      "operation": "num_rings",
+      "mode": "parse_inclusive",
+      "comparator": "baseline",
+      "paired_median": 0.9890291387686101,
+      "ci95_low": 0.9736825372485711,
+      "ci95_high": 1.0033874472990314,
+      "winning_blocks": 10,
+      "blocks": 24,
+      "comparator_median_ns": 4618758.0,
+      "candidate_median_ns": 4643578.5,
+      "strict_external_win": false
+    },
+    {
+      "offset": 5000,
+      "operation": "morgan2_2048",
+      "mode": "parse_inclusive",
+      "comparator": "baseline",
+      "paired_median": 0.9899493644834176,
+      "ci95_low": 0.9680064625453345,
+      "ci95_high": 1.0053950252936812,
+      "winning_blocks": 8,
+      "blocks": 24,
+      "comparator_median_ns": 7599237.5,
+      "candidate_median_ns": 7741002.5,
+      "strict_external_win": false
+    },
+    {
+      "offset": 5000,
+      "operation": "tpsa",
+      "mode": "first_use",
+      "comparator": "baseline",
+      "paired_median": 0.9896667979515731,
+      "ci95_low": 0.9818845923073659,
+      "ci95_high": 1.0007277245783284,
+      "winning_blocks": 8,
+      "blocks": 24,
+      "comparator_median_ns": 3449805.0,
+      "candidate_median_ns": 3566982.0,
+      "strict_external_win": false
+    },
+    {
+      "offset": 5000,
+      "operation": "labute_asa",
+      "mode": "parse_inclusive",
+      "comparator": "baseline",
+      "paired_median": 0.9857383868899537,
+      "ci95_low": 0.9765096216412009,
+      "ci95_high": 1.0156838710002063,
+      "winning_blocks": 9,
+      "blocks": 24,
+      "comparator_median_ns": 5457989.5,
+      "candidate_median_ns": 5517015.5,
+      "strict_external_win": false
+    }
+  ],
+  "source_ci_upper_below_one": [
+    {
+      "offset": 0,
+      "operation": "num_rings",
+      "mode": "repeated_use",
+      "comparator": "baseline",
+      "paired_median": 0.9912993472379277,
+      "ci95_low": 0.9835338046705231,
+      "ci95_high": 0.9982880376631714,
+      "winning_blocks": 7,
+      "blocks": 24,
+      "comparator_median_ns": 32474.5,
+      "candidate_median_ns": 32607.5,
+      "strict_external_win": false
+    }
+  ],
+  "broad_source_and_rdkit_equal_cells": 56288,
+  "source_adoption_passed": false
+}
+external strict wins 32 of36

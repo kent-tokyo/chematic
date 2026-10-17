@@ -1,0 +1,21 @@
+{
+  "deleted_paths": [
+    "/private/tmp/chematic-coordinate-pairs-evidence-20261017/baseline-corrected-target",
+    "/private/tmp/chematic-coordinate-pairs-evidence-20261017/candidate-corrected-target",
+    "/private/tmp/chematic-coordinate-pairs-evidence-20261017/hook-target",
+    "/private/tmp/chematic-degree-filter-coordinate-evidence-20261017/candidate-target"
+  ],
+  "measured_kib": [
+    185428,
+    183008,
+    399400,
+    183008
+  ],
+  "no_open_files": true,
+  "prior_build_and_native_processes_finished": true,
+  "all_C_and_D_copied_formal_binaries_preserved_and_hash_checked": true,
+  "sources_logs_raw_data_and_foreign_worktrees_preserved": true,
+  "free_before_bytes": 793620480,
+  "free_after_bytes": 1736044544,
+  "other_filesystem_activity_not_controlled": true
+}

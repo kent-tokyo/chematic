@@ -1,0 +1,12 @@
+{
+  "root": "/Users/k_tanabe/.codex/worktrees/rdkit-cosmolkit-speed-20261017/chematic",
+  "base_commit": "c84c68f297f95562d1d29c75234f2190cd5f9d75",
+  "sparse_patterns": [
+    "/*",
+    "!/benchmarks/*-artifacts/",
+    "/benchmarks/2026-10-17-morgan-linear-artifacts/"
+  ],
+  "purpose": "Avoid duplicate historical benchmark artifact expansion in the newly created worktree; all Git objects, existing worktrees, source, corpus and original evidence retained",
+  "benchmark_index_passed": true,
+  "source_worktree_clean": true
+}

@@ -1,0 +1,17 @@
+test_accounting_corruption_is_rejected (scripts.tests.test_bench_python_morgan_linear.MorganBatchTests.test_accounting_corruption_is_rejected) ... ok
+test_first_use_parses_fresh_outside_every_timer (scripts.tests.test_bench_python_morgan_linear.MorganBatchTests.test_first_use_parses_fresh_outside_every_timer) ... ok
+test_inclusive_parses_inside_every_timer (scripts.tests.test_bench_python_morgan_linear.MorganBatchTests.test_inclusive_parses_inside_every_timer) ... ok
+test_normalizes_actual_batches_with_fractional_remainder (scripts.tests.test_bench_python_morgan_linear.MorganBatchTests.test_normalizes_actual_batches_with_fractional_remainder) ... ok
+test_refusals_nondeterminism_and_nonpositive_time_fail (scripts.tests.test_bench_python_morgan_linear.MorganBatchTests.test_refusals_nondeterminism_and_nonpositive_time_fail) ... ok
+test_repeated_reuses_objects_after_untimed_priming (scripts.tests.test_bench_python_morgan_linear.MorganBatchTests.test_repeated_reuses_objects_after_untimed_priming) ... ok
+test_unfiltered_window_and_atomic_failure_preserve_evidence (scripts.tests.test_bench_python_morgan_linear.MorganBatchTests.test_unfiltered_window_and_atomic_failure_preserve_evidence) ... ok
+test_candidate_requires_exact_equality_but_oracle_allows_declared_tolerance (scripts.tests.test_bench_python_speed_frontier.SpeedFrontierTests.test_candidate_requires_exact_equality_but_oracle_allows_declared_tolerance) ... ok
+test_fixed_slice_preserves_rows_and_does_not_filter_failures (scripts.tests.test_bench_python_speed_frontier.SpeedFrontierTests.test_fixed_slice_preserves_rows_and_does_not_filter_failures) ... ok
+test_missing_rows_nonfinite_values_and_wrong_types_never_count_as_agreement (scripts.tests.test_bench_python_speed_frontier.SpeedFrontierTests.test_missing_rows_nonfinite_values_and_wrong_types_never_count_as_agreement) ... ok
+test_packed_fingerprints_keep_rdkit_bit_indices_and_maccs_offset (scripts.tests.test_bench_python_speed_frontier.SpeedFrontierTests.test_packed_fingerprints_keep_rdkit_bit_indices_and_maccs_offset) ... ok
+test_rdkit_comparison_uses_reference_directly_and_cosmolkit_needs_both_gates (scripts.tests.test_bench_python_speed_frontier.SpeedFrontierTests.test_rdkit_comparison_uses_reference_directly_and_cosmolkit_needs_both_gates) ... ok
+
+----------------------------------------------------------------------
+Ran 12 tests in 0.001s
+
+OK

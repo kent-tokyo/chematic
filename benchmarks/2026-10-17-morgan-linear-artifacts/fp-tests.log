@@ -1,0 +1,510 @@
+   Compiling proc-macro2 v1.0.107
+   Compiling quote v1.0.47
+   Compiling unicode-ident v1.0.24
+   Compiling serde_core v1.0.229
+   Compiling crossbeam-utils v0.8.23
+   Compiling syn v3.0.5
+   Compiling serde v1.0.229
+   Compiling zmij v1.0.23
+   Compiling crossbeam-epoch v0.9.21
+   Compiling serde_derive v1.0.229
+   Compiling syn v2.0.119
+   Compiling smallvec v1.16.2
+   Compiling rustc-hash v2.1.3
+   Compiling chematic-core v1.1.6 (/Users/k_tanabe/.codex/worktrees/rdkit-cosmolkit-speed-20261017/chematic/crates/chematic-core)
+   Compiling serde_json v1.0.151
+   Compiling crossbeam-deque v0.8.8
+   Compiling zerocopy v0.8.56
+   Compiling chematic-perception v1.1.6 (/Users/k_tanabe/.codex/worktrees/rdkit-cosmolkit-speed-20261017/chematic/crates/chematic-perception)
+   Compiling zerocopy-derive v0.8.56
+   Compiling autocfg v1.5.1
+   Compiling memchr v2.8.3
+   Compiling rayon-core v1.13.0
+   Compiling find-msvc-tools v0.1.14
+   Compiling either v1.18.0
+   Compiling shlex v2.0.1
+   Compiling itoa v1.0.18
+   Compiling cc v1.6.0
+   Compiling num-traits v0.2.19
+   Compiling libc v0.2.189
+   Compiling cfg-if v1.0.4
+   Compiling half v2.7.1
+   Compiling alloca v0.4.0
+   Compiling plotters-backend v0.3.7
+   Compiling anstyle v1.0.14
+   Compiling clap_lex v1.1.0
+   Compiling ciborium-io v0.2.2
+   Compiling regex-syntax v0.8.11
+   Compiling regex-automata v0.4.18
+   Compiling ciborium-ll v0.2.2
+   Compiling clap_builder v4.6.7
+   Compiling plotters-svg v0.3.7
+   Compiling rayon v1.12.0
+   Compiling itertools v0.13.0
+   Compiling chematic-smiles v1.1.6 (/Users/k_tanabe/.codex/worktrees/rdkit-cosmolkit-speed-20261017/chematic/crates/chematic-smiles)
+   Compiling chematic-smarts v1.1.6 (/Users/k_tanabe/.codex/worktrees/rdkit-cosmolkit-speed-20261017/chematic/crates/chematic-smarts)
+   Compiling cast v0.3.0
+   Compiling same-file v1.0.6
+   Compiling walkdir v2.5.0
+   Compiling criterion-plot v0.8.2
+   Compiling chematic-rxn v1.1.6 (/Users/k_tanabe/.codex/worktrees/rdkit-cosmolkit-speed-20261017/chematic/crates/chematic-rxn)
+   Compiling page_size v0.6.0
+   Compiling plotters v0.3.7
+   Compiling clap v4.6.7
+   Compiling ciborium v0.2.2
+   Compiling regex v1.13.1
+   Compiling tinytemplate v1.2.1
+   Compiling chematic-cip v1.1.6 (/Users/k_tanabe/.codex/worktrees/rdkit-cosmolkit-speed-20261017/chematic/crates/chematic-cip)
+   Compiling anes v0.1.6
+   Compiling oorandom v11.1.5
+   Compiling criterion v0.8.2
+   Compiling chematic-fp v1.1.6 (/Users/k_tanabe/.codex/worktrees/rdkit-cosmolkit-speed-20261017/chematic/crates/chematic-fp)
+    Finished `test` profile [unoptimized] target(s) in 33.88s
+     Running unittests src/lib.rs (/private/tmp/chematic-morgan-linear-evidence-20261017/check-target/debug/deps/chematic_fp-6aa2930d98924b37)
+
+running 348 tests
+test atom_pair::tests::test_atom_pair_single_atom_zero ... ok
+test atom_pair::tests::test_torsion_propane_zero ... ok
+test atom_pair::tests::test_torsion_ethane_zero ... ok
+test atom_pair::tests::test_atom_pair_benzene_nonzero ... ok
+test atom_pair::tests::test_torsion_butane_nonzero ... ok
+test atom_pair::tests::test_torsion_benzene_nonzero ... ok
+test atom_pair::tests::test_atom_pair_identical ... ok
+test atom_pair::tests::test_atom_pair_benzene_vs_cyclohexane ... ok
+test atom_pair::tests::test_torsion_identical ... ok
+test avalon::tests::bond_order_sensitivity ... ok
+test avalon::tests::aromaticity_sensitivity ... ok
+test avalon::tests::deterministic ... ok
+test bitvec::tests::and_or_basic_correctness ... ok
+test avalon::tests::non_degenerate ... ok
+test bitvec::tests::bitvec2048_le_bytes_preserve_lsb_bit_positions ... ok
+test bitvec::tests::bitvecn_conversion_to_from_2048 ... ok
+test bitvec::tests::bitvecn_arbitrary_sizes ... ok
+test avalon::tests::isomorphism_invariant ... ok
+test avalon::tests::similarity_ordering ... ok
+test bitvec::tests::bitvecn_new_creates_zero_vector ... ok
+test bitvec::tests::bitvecn_set_get_basic ... ok
+test bitvec::tests::bitvecn_tanimoto_disjoint ... ok
+test bitvec::tests::bitvecn_tanimoto_identical ... ok
+test bitvec::tests::dice_identical_nonzero ... ok
+test bitvec::tests::fold_1024_popcount_leq_original ... ok
+test bitvec::tests::bitvecn_le_bytes_match_bit_positions_including_partial_words ... ok
+test bitvec::tests::new_bitvec_is_all_zero ... ok
+test bitvec::tests::set_and_get_boundary_bits ... ok
+test bitvec::tests::tanimoto_disjoint_is_zero ... ok
+test bitvec::tests::tanimoto_identical_nonzero ... ok
+test bulk::tests::test_tanimoto_matrix_empty ... ok
+test bulk::tests::test_self_similarity_is_one ... ok
+test bulk::tests::test_tanimoto_slice_all_zero_convention ... ok
+test bulk::tests::test_tanimoto_matrix_row_major ... ok
+test bulk::tests::test_tanimoto_slice_dense_no_zero_filter ... ok
+test bulk::tests::test_tanimoto_slice_empty_db ... ok
+test bulk::tests::test_top_k_similar_empty_db ... ok
+test bulk::tests::test_top_k_similar_k_exceeds_db ... ok
+test bulk::tests::test_tanimoto_slice_parity_with_single ... ok
+test bulk::tests::test_top_k_similar_k_zero ... ok
+test ecfp::tests::aspirin_ecfp4_many_bits ... ok
+test bulk::tests::test_top_k_similar_sorted_descending ... ok
+test bulk::tests::test_top_k_similar_matches_sorted_slice ... ok
+test bulk::tests::test_tanimoto_matrix_parallel_matches_serial ... ok
+test ecfp::tests::benzene_ecfp4_deterministic ... ok
+test ecfp::tests::benzene_ecfp4_nonzero ... ok
+test ecfp::tests::benzene_vs_benzene_tanimoto_eq1 ... ok
+test ecfp::tests::benzene_vs_toluene_tanimoto_between ... ok
+test ecfp::tests::bitinfo_keys_are_set_bits_and_valid ... ok
+test ecfp::tests::bitinfo_fp_matches_ecfp4 ... ok
+test ecfp::tests::ecfp4_explicit_h_atom_changes_fingerprint ... ok
+test ecfp::tests::ecfp4_distinguishes_enantiomers_with_chirality ... ok
+test ecfp::tests::ecfp4_implicit_h_water_vs_no_atoms ... ok
+test ecfp::tests::ecfp4_distinguishes_allene_enantiomers_with_chirality ... ok
+test ecfp::tests::ecfp4_ignores_chirality_by_default ... ok
+test ecfp::tests::ecfp4_implicit_vs_explicit_h_in_organic_molecule ... ok
+test ecfp::tests::ethane_vs_benzene_tanimoto_lt1 ... ok
+test ecfp::tests::ecfp6_vs_ecfp4_benzene_differ ... ok
+test ecfp::tests::ecfp4_non_chiral_generates_with_chirality_flag ... ok
+test ecfp::tests::methane_ecfp4_nonzero ... ok
+test ecfp::tests::morgan_counts_benzene_symmetry ... ok
+test ecfp::tests::morgan_counts_empty_mol_is_empty ... ok
+test ecfp::tests::morgan_counts_consistent_with_ecfp_bits ... ok
+test ecfp::tests::morgan_counts_radius0_atom_count ... ok
+test ecfp::tests::morgan_counts_radius2_total_grows ... ok
+test ecfp::tests::morgan_counts_deterministic ... ok
+test ecfp::tests::rdkit_isotope_delta_table_is_sorted_for_binary_search ... ok
+test ecfp::tests::rdkit_mode_distinguishes_charge ... ok
+test ecfp::tests::rdkit_mode_charge_stress_full_i8_range_no_collision ... ok
+test ecfp::tests::rdkit_mode_distinguishes_ring_from_acyclic ... ok
+test ecfp::tests::rdkit_mode_ignores_aromaticity ... ok
+test ecfp::tests::rdkit_mode_ignores_explicit_h_in_degree ... ok
+test ecfp::tests::rdkit_mode_isotope_carbon_10_11_different_class ... ok
+test ecfp::tests::rdkit_mode_isotope_carbon_10_12_different_class ... ok
+test ecfp::tests::rdkit_mode_isotope_carbon_11_12_same_class ... ok
+test ecfp::tests::rdkit_mode_isotope_carbon_12_13_same_class ... ok
+test ecfp::tests::rdkit_mode_isotope_carbon_12_14_different_class ... ok
+test ecfp::tests::rdkit_mode_isotope_multi_element_stress ... ok
+test ecfp::tests::rdkit_mode_isotope_oxygen_15_16_same_class ... ok
+test ecfp::tests::rdkit_mode_isotope_oxygen_16_17_different_class ... ok
+test ecfp::tests::rdkit_mode_isotope_oxygen_16_18_different_class ... ok
+test ecfp::tests::rdkit_mode_isotope_recognized_raw_delta_values ... ok
+test ecfp::tests::rdkit_mode_isotope_unrecognized_uses_average_atomic_weight_fallback ... ok
+test ecfp::tests::rdkit_mode_isotope_unspecified_equals_most_common ... ok
+test ecfp::tests::tanimoto_ecfp4_benzene_self_is_one ... ok
+test ecfp::tests::tanimoto_ecfp4_methane_vs_benzene_lt_half ... ok
+test ecfp::tests::water_ecfp4_nonzero ... ok
+test ecfp_diagnostics::tests::atom_ball_grows_with_radius ... ok
+test ecfp_diagnostics::tests::atom_ball_radius0_is_self ... ok
+test ecfp_diagnostics::tests::atom_ball_stops_growing_past_molecule_diameter ... ok
+test ecfp_diagnostics::tests::empty_molecule_trace_is_empty ... ok
+test ecfp_config_boundary_contract_tests::ecfp_public_shortcuts_match_explicit_configuration ... ok
+test ecfp::tests::rdkit_isotope_delta_table_exhaustive_lookup_round_trip ... ok
+test erg::tests::test_erg_adjacent_groups_bin0 ... ok
+test erg::tests::test_erg_amide_n_is_acceptor_not_donor ... ok
+test erg::tests::test_erg_amine_n_is_donor_and_acceptor ... ok
+test ecfp_diagnostics::tests::trace_matches_production_chematic_mode ... ok
+test erg::tests::test_erg_aromatic_vs_aliphatic ... ok
+test erg::tests::test_erg_bond_counting ... ok
+test erg::tests::test_erg_carbonyl_acceptor ... ok
+test erg::tests::test_erg_carboxylate_negative ... ok
+test ecfp_diagnostics::tests::trace_matches_production_rdkit_morgan_mode ... ok
+test erg::tests::test_erg_config ... ok
+test erg::tests::test_erg_different_molecules ... ok
+test erg::tests::test_erg_functional_group_aromatic_bit ... ok
+test erg::tests::test_erg_functional_group_improved_discrimination ... ok
+test erg::tests::test_erg_functional_group_heteroatom_bit ... ok
+test erg::tests::test_erg_heteroatom_detection ... ok
+test erg::tests::test_erg_hydrophobic_chain ... ok
+test erg::tests::test_erg_identical ... ok
+test erg::tests::test_erg_linker_distance_changes_fingerprint ... ok
+test erg::tests::test_erg_nh_donor ... ok
+test erg::tests::test_erg_pyridine_vs_pyrrole_acceptor ... ok
+test erg::tests::test_erg_simple ... ok
+test erg::tests::test_erg_sulfonamide_n_is_acceptor_not_donor ... ok
+test erg::tests::test_erg_symmetry ... ok
+test erg::tests::test_erg_vec_consistency ... ok
+test avalon_boundary_contract_tests::avalon_v3000_charge_radical_and_isotope_records_match_pinned_rdkit ... ok
+test erg::tests::test_erg_vec_different_molecules ... ok
+test erg::tests::test_erg_vec_donor_acceptor_linker_distance ... ok
+test erg::tests::test_erg_vec_length ... ok
+test erg::tests::test_erg_vec_fuzz_spreads_adjacent_bins ... ok
+test erg::tests::test_pair_idx_all_21 ... ok
+test erg::tests::test_erg_vec_same_mol_self_similarity ... ok
+test erg::tests::test_erg_vec_nonnegative ... ok
+test fcfp::tests::test_fcfp4_nonempty ... ok
+test fcfp::tests::test_fcfp4_bioisostere_closer_than_ecfp4 ... ok
+test fcfp::tests::test_fcfp4_different_molecules ... ok
+test fcfp::tests::test_fcfp_with_bitinfo_empty_molecule ... ok
+test fcfp::tests::test_fcfp4_same_molecule ... ok
+test fps::tests::builder_methods_set_arbitrary_caller_supplied_fields ... ok
+test fps::tests::for_chematic_stamps_software_and_type ... ok
+test fcfp::tests::test_fcfp_with_bitinfo_matches_fcfp ... ok
+test fps::tests::header_recognizes_standard_fields_and_keeps_extras ... ok
+test fps::tests::header_write_back_keeps_version_line_first_and_preserves_extras ... ok
+test fps::tests::hex_length_mismatch_is_rejected ... ok
+test fps::tests::invalid_hex_digit_is_rejected ... ok
+test fps::tests::malformed_record_missing_tab_is_rejected ... ok
+test fps::tests::missing_num_bits_errors ... ok
+test fps::tests::ecfp4_round_trip_read_write_read_byte_identical_hex ... ok
+test fps::tests::reads_non_byte_aligned_166_bit_external_fixture ... ok
+test fps::tests::spec_example_bit_patterns_round_trip ... ok
+test fps::tests::trailing_blank_line_is_tolerated ... ok
+test fps::tests::write_matches_spec_example_hex ... ok
+test fps::tests::write_record_rejects_tab_in_identifier ... ok
+test hdf::tests::charged_atom_differs_from_neutral ... ok
+test hdf::tests::empty_molecule_returns_zero_vector ... ok
+test fps::tests::multi_record_stream_iterates_in_order ... ok
+test hdf::tests::different_seeds_give_different_vectors ... ok
+test hdf::tests::different_radius_gives_different_vectors ... ok
+test layered::tests::test_layered_fp_by_layer_count ... ok
+test layered::tests::test_layered_fp_benzene_aromatic ... ok
+test layered::tests::test_layered_fp_heteroatom_layer ... ok
+test layered::tests::test_layered_fp_charged_molecule ... ok
+test layered::tests::test_layered_fp_hydrogen_count_layer ... ok
+test layered::tests::test_layered_fp_identical_molecules ... ok
+test hdf::tests::same_molecule_cosine_one ... ok
+test layered::tests::test_layered_fp_methane ... ok
+test layered::tests::test_layered_fp_ring_detection ... ok
+test layered::tests::test_layered_tanimoto_disjoint ... ok
+test hdf::tests::different_dims_work ... ok
+test lsh::tests::test_lsh_empty_query ... ok
+test hdf::tests::ethanol_vs_benzene_less_similar_than_propanol ... ok
+test lsh::tests::test_lsh_self_similarity ... ok
+test lsh::tests::test_lsh_custom_bands ... ok
+test fps::tests::maccs_round_trip_read_write_read_byte_identical_hex ... ok
+test ecfp_config_boundary_contract_tests::fingerprint_aliases_and_similarity_helpers_preserve_their_public_contracts ... ok
+test maccs::tests::all_maccs_smarts_parse ... ok
+test lsh::tests::test_lsh_threshold_filtering ... ok
+test maccs::tests::maccs_benzene_aromatic_ring_gt1_not_set ... ok
+test maccs::tests::maccs_benzene_has_aromatic_bits ... ok
+test hdf::tests::unit_norm ... ok
+test maccs::tests::maccs_ethanol_has_oxygen_bits ... ok
+test maccs::tests::maccs_bromine_key ... ok
+test maccs::tests::maccs_isotope_key_is_never_set_like_rdkit ... ok
+test lsh::tests::test_lsh_similar_mols_found ... ok
+test maccs::tests::maccs_fragment_key ... ok
+test maccs::tests::maccs_nitrile_key ... ok
+test maccs::tests::maccs_n_gt1_key ... ok
+test map4::tests::map4_length_equals_n_permutations ... ok
+test map4::tests::map4_same_molecule_identical ... ok
+test maccs::tests::maccs_carbonyl_key ... ok
+test maccs::tests::maccs_deterministic ... ok
+test maccs::tests::maccs_naphthalene_aromatic_ring_gt1_set ... ok
+test lsh::tests::test_lsh_sorted_descending ... ok
+test maccs::tests::maccs_oxygen_count_keys ... ok
+test map4::tests::map4_self_similarity_is_one ... ok
+test mhfp::tests::test_extract_fragment_hashes ... ok
+test mhfp::tests::test_fragment_hashes_count ... ok
+test mhfp::tests::test_mhfp_config ... ok
+test map4::tests::tanimoto_bounds ... ok
+test mhfp::tests::test_mhfp_canonical_same_mol_different_parse ... ok
+test mhfp::tests::test_mhfp_consistency ... ok
+test mhfp::tests::test_mhfp_amine_h_count ... ok
+test mhfp::tests::test_mhfp_different_molecules ... ok
+test maccs::tests::maccs_key26_ring_double_bond ... ok
+test morgan_environment::tests::bondset_union_order_independent ... ok
+test morgan_environment::tests::degree_zero_atom_never_emits_past_radius_0_in_either_mode ... ok
+test morgan_environment::tests::ethane_suppresses_duplicate_atom_at_radius_1_then_saturates_at_radius_2 ... ok
+test morgan_environment::tests::neopentane_all_atoms_suppressed_at_radius_2_via_cross_round_seen ... ok
+test morgan_environment::tests::neopentane_center_saturates_before_radius_2 ... ok
+test morgan_environment::tests::dying_atom_invariant_has_one_round_grace_period ... ok
+test path::tests::test_rdkit_path_fp_aromatic_distinction ... ok
+test path::tests::test_rdkit_path_fp_benzene ... ok
+test path::tests::test_rdkit_path_fp_bond_type_consistency ... ok
+test path::tests::test_rdkit_path_fp_bond_type_distinction ... ok
+test path::tests::test_rdkit_path_fp_ethane ... ok
+test path::tests::test_rdkit_path_fp_identical ... ok
+test mhfp::tests::test_mhfp_symmetry ... ok
+test morgan_environment::tests::suppression_never_over_emits_relative_to_include_redundant ... ok
+test path::tests::test_rdkit_path_fp_propane ... ok
+test path::tests::test_rdkit_path_fp_single_atom ... ok
+test mhfp::tests::test_mhfp_pyridine_vs_pyrrole ... ok
+test path::tests::test_rdkit_path_fp_triple_bond ... ok
+test pattern::tests::test_pattern_fp_benzene ... ok
+test pattern::tests::test_pattern_fp_ethane ... ok
+test pattern::tests::test_pattern_fp_order_independent ... ok
+test pattern::tests::test_pattern_fp_similarity ... ok
+test pattern::tests::test_pattern_fp_single_atom ... ok
+test pharmacophore_fp::tests::test_pharmacophore_fp_2d_ethanol ... ok
+test mhfp::tests::test_mhfp_similar_mols_higher_than_dissimilar ... ok
+test pharmacophore_fp::tests::test_pharmacophore_fp_2d_benzene ... ok
+test pharmacophore_fp::tests::test_pharmacophore_fp_2d_pair_bit_order_independent ... ok
+test rdkit_atom_pair::tests::all_pairs_dist_uncapped_beyond_native_max_dist_7 ... ok
+test pharmacophore_fp::tests::test_pharmacophore_feature_counts_aspirin ... ok
+test pharmacophore_fp::tests::test_tanimoto_similarity_identical ... ok
+test map4::tests::map4_similar_molecules_higher_than_dissimilar ... ok
+test mhfp::tests::test_mhfp_radius_effect ... ok
+test rdkit_atom_pair::tests::deterministic ... ok
+test rdkit_atom_pair::tests::different_molecules_differ ... ok
+test rdkit_avalon::convert::tests::avalon_error_wraps_and_displays_rdkit_failure ... ok
+test rdkit_atom_pair::tests::single_atom_has_no_pairs ... ok
+test rdkit_avalon::rings::tests::glibc_rand_matches_srand_1 ... ok
+test rdkit_avalon::tests::charges_and_radicals_from_property_lines ... ok
+test rdkit_layered::tests::single_atom_has_no_bits ... ok
+test rdkit_layered::tests::explicit_isotope_labeled_hydrogen_is_excluded_from_enumeration ... ok
+test rdkit_layered::tests::different_molecules_differ ... ok
+test rdkit_morgan_config::tests::dummy_bracket_hydrogens_match_rdkit_morgan ... ok
+test rdkit_morgan_config::tests::empty_molecule_yields_empty_result_not_an_error ... ok
+test rdkit_morgan_config::tests::default_config_matches_frozen_rdkit_morgan_ecfp4 ... ok
+test rdkit_morgan_config::tests::fold_is_plain_modulo_not_xor_fold ... ok
+test rdkit_morgan_config::tests::radius_zero_has_no_bond_environment_regardless_of_fp_size ... ok
+test map4::tests::precomputed_environment_shingles_match_reference ... ok
+test rdkit_morgan_config::tests::tetrahedral_chirality_matches_rdkit_and_distinguishes_enantiomers ... ok
+test rdkit_morgan_config::tests::feii_coordination_sanitization_is_modeled ... ok
+test rdkit_avalon::tests::molblock_path_matches_smiles_path ... ok
+test rdkit_morgan_ecfp4::tests::benzene_matches_rdkit_ground_truth_radius0_and_folds_correctly ... ok
+test rdkit_morgan_config::tests::valid_explicit_aromatic_input_is_accepted_for_every_config ... ok
+test rdkit_morgan_ecfp4::tests::degree_zero_atom_emits_only_its_radius0_identifier ... ok
+test rdkit_morgan_ecfp4::tests::empty_molecule_yields_empty_result_not_an_error ... ok
+test rdkit_morgan_ecfp4::tests::bridgehead_n_purine_preserves_explicit_aromatic_input ... ok
+test rdkit_morgan_ecfp4::tests::hermetic_equivalence_to_diagnostic_default_lifecycle ... ok
+test rdkit_morgan_ecfp4::tests::feii_coordination_sanitization_matches_rdkit ... ok
+test rdkit_morgan_ecfp4::tests::bit_only_path_matches_detailed_bits_and_refusals ... ok
+test rdkit_morgan_ecfp4::tests::hueckel_fallback_would_be_detectable_if_silently_reintroduced ... ok
+test rdkit_morgan_ecfp4::tests::normalizes_neutral_perchloric_acid_for_rdkit_morgan_invariants ... ok
+test rdkit_morgan_ecfp4::tests::neutral_high_coordinate_iron_remains_supported ... ok
+test rdkit_morgan_ecfp4::tests::prepared_bitvec_matches_direct_bitvec ... ok
+test rdkit_morgan_ecfp4::tests::query_bond_order_is_an_explicit_unsupported_bond_order_error_not_a_guess ... ok
+test rdkit_morgan_ecfp4::tests::porphyrin_like_fused_system_matches_pinned_rdkit_bits ... ok
+test rdkit_layered::tests::matches_rdkit_oracle_on_hand_picked_molecules ... ok
+test rdkit_layered::tests::deterministic ... ok
+test rdkit_morgan_hash::rdkit_ground_truth_radius0::matches_real_rdkit_full_trace_aromatic_pyridine ... ok
+test rdkit_morgan_hash::rdkit_ground_truth_radius0::kekule_input_matches_aromatic_input_only_after_apply_aromaticity ... ok
+test rdkit_morgan_hash::rdkit_ground_truth_radius0::matches_real_rdkit_getconnectivityinvariants ... ok
+test rdkit_morgan_hash::tests::bond_invariant_aromatic_is_twelve_not_chematic_own_four ... ok
+test rdkit_morgan_hash::tests::connectivity_invariant_ring_membership_changes_vector_length_not_just_value ... ok
+test rdkit_morgan_hash::tests::degree_zero_atom_never_appears_past_radius_zero ... ok
+test rdkit_morgan_hash::tests::ethane_suppresses_one_of_two_symmetric_atoms_at_radius_one ... ok
+test rdkit_morgan_hash::tests::hash_combine_matches_boost_formula_by_construction ... ok
+test rdkit_morgan_hash::tests::hash_pair_is_nested_not_flat ... ok
+test rdkit_morgan_hash::tests::radius_zero_trace_covers_every_atom_exactly_once ... ok
+test rdkit_morgan_hash::tests::suppressed_atom_still_computes_full_lifecycle_entries_at_later_radii ... ok
+test rdkit_pattern::tests::deterministic ... ok
+test rdkit_pattern::tests::different_molecules_differ ... ok
+test rdkit_pattern::tests::single_atom_sets_at_least_one_bit ... ok
+test rdkit_rdk::tests::deterministic ... ok
+test rdkit_rdk::tests::different_molecules_differ ... ok
+test rdkit_rdk::tests::empty_ignore_set_preserves_existing_fingerprint ... ok
+test rdkit_rdk::tests::ignore_atoms_matches_rdkit_2026_09_1_oracle ... ok
+test rdkit_rdk::tests::ignored_graph_hydrogen_uses_input_atom_indices ... ok
+test rdkit_rdk::tests::invalid_ignored_atom_is_rejected ... ok
+test rdkit_rdk::tests::matches_rdkit_oracle_on_hand_picked_molecules ... ok
+test rdkit_rdk::tests::single_atom_has_no_bits ... ok
+test rdkit_avalon::tests::matches_rdkit_on_bits ... ok
+test rdkit_torsion::tests::atom_type_index_above_table_clamps_to_phantom_slot ... ok
+test rdkit_torsion::tests::atom_type_index_below_table_clamps_to_phantom_slot ... ok
+test rdkit_torsion::tests::atom_type_index_between_entries_clamps_to_phantom_slot_too ... ok
+test rdkit_torsion::tests::atom_type_index_exact_match ... ok
+test rdkit_torsion::tests::four_atom_paths_linear_butane_finds_one_undirected_path ... ok
+test rdkit_torsion::tests::four_atom_paths_none_shorter_than_four_atoms ... ok
+test rdkit_torsion::tests::num_pi_electrons_aromatic_atom_is_always_one ... ok
+test rdkit_torsion::tests::num_pi_electrons_double_bond_is_one ... ok
+test rdkit_torsion::tests::num_pi_electrons_single_bonds_only_is_zero ... ok
+test rdkit_torsion::tests::num_pi_electrons_triple_bond_is_two ... ok
+test rdkit_torsion::tests::public_atom_code_explanation_matches_reference_fields ... ok
+test rdkit_torsion::tests::public_diagnostics_reject_invalid_indices_and_sizes ... ok
+test rdkit_torsion::tests::public_path_code_is_direction_independent_and_explainable ... ok
+test rdkit_torsion::tests::rdkit_torsion_fp_deterministic_and_nonempty_for_butane ... ok
+test rdkit_torsion::tests::rdkit_torsion_fp_empty_for_short_molecules ... ok
+test rdkit_torsion::tests::rdkit_torsion_fp_nonempty_for_bare_cyclopropane ... ok
+test rdkit_torsion::tests::triangle_closure_empty_for_larger_rings ... ok
+test rdkit_torsion::tests::triangle_closure_empty_for_non_cyclic_molecules ... ok
+test rdkit_torsion::tests::triangle_closure_finds_one_entry_for_bare_cyclopropane ... ok
+test rdkit_torsion::tests::triangle_closure_pivot_is_lowest_index_ring_atom ... ok
+test reaction_fp::tests::directed_difference_partitions_the_xor_signal ... ok
+test reaction_fp::tests::test_reaction_fp_bounds ... ok
+test reaction_fp::tests::test_reaction_fp_config ... ok
+test reaction_fp::tests::test_reaction_fp_different_products ... ok
+test reaction_fp::tests::test_reaction_fp_different_reactants ... ok
+test reaction_fp::tests::test_reaction_fp_identical ... ok
+test reaction_fp::tests::test_reaction_fp_multi_molecule ... ok
+test reaction_fp::tests::test_reaction_fp_simple ... ok
+test reaction_fp::tests::test_reaction_fp_structural_difference ... ok
+test reaction_fp::tests::test_reaction_fp_transformation_vs_composition ... ok
+test reaction_fp::tests::test_reaction_tanimoto_symmetry ... ok
+test search::tests::prepared_index_handles_empty_and_zero_k ... ok
+test search::tests::prepared_index_matches_one_shot_search ... ok
+test search::tests::prepared_index_supports_fallible_rdkit_ecfp4_profile ... ok
+test search::tests::test_nn_empty_db ... ok
+test search::tests::test_nn_from_fp ... ok
+test search::tests::test_nn_k_zero ... ok
+test rdkit_morgan_hash::tests::compact_stereo_emissions_match_general_lifecycle ... ok
+test search::tests::test_nn_returns_k_results ... ok
+test search::tests::test_nn_maccs_type ... ok
+test search::tests::test_nn_self_is_first ... ok
+test search::tests::threshold_search_is_inclusive_and_keeps_zero_scores_at_zero ... ok
+test search::tests::test_nn_sorted_descending ... ok
+test search::tests::threshold_search_rejects_invalid_thresholds ... ok
+test search::tests::top_k_ties_are_ordered_by_database_index ... ok
+test sparse_boundary_contract_tests::fps_errors_explain_headers_hex_lengths_and_bad_digits_before_stopping ... ok
+test sparse_boundary_contract_tests::prepared_morgan_rejects_query_only_bond_types_with_the_original_index ... ok
+test sparse_boundary_contract_tests::sparse_count_fingerprint_codes_and_multiplicities_match_pinned_rdkit ... ok
+test topo_path::tests::aspirin_many_bits ... ok
+test topo_path::tests::benzene_nonzero ... ok
+test topo_path::tests::deterministic ... ok
+test topo_path::tests::ethane_nonzero ... ok
+test topo_path::tests::ethane_vs_benzene_differ ... ok
+test topo_path::tests::longer_max_len_more_bits ... ok
+test rdkit_morgan_ecfp4::large_input_boundary_contract_tests::polymer_fingerprints_match_pinned_rdkit_across_the_128_bond_fast_path_limit ... ok
+test rdkit_morgan_config::tests::bit_only_path_matches_detailed_path_for_all_supported_configs ... ok
+test sparse_boundary_contract_tests::fallible_similarity_search_keeps_identical_ties_stable_and_respects_limits ... ok
+test ecfp_config_boundary_contract_tests::ecfp_bit_origins_follow_size_radius_and_folding_configuration ... ok
+test rdkit_morgan_ecfp4::tests::large_explicit_polycyclic_aromatic_matches_pinned_rdkit_bits ... ok
+test rdkit_morgan_hash::linear_scan_tests::tests::ordered_emissions_preserve_spill_stereo_and_fallback_boundaries ... ok
+test rdkit_rdk::tests::streaming_walk_matches_reference ... ok
+test rdkit_morgan_hash::linear_scan_tests::tests::ordered_emissions_match_all_five_vertex_graphs ... ok
+test avalon_boundary_contract_tests::avalon_boundary_fingerprints_match_pinned_rdkit ... ok
+
+test result: ok. 348 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.85s
+
+     Running tests/error_display_contract.rs (/private/tmp/chematic-morgan-linear-evidence-20261017/check-target/debug/deps/error_display_contract-fd0af98ac5cf948d)
+
+running 2 tests
+test fold_density_errors_have_stable_messages ... ok
+test rdkit_morgan_errors_preserve_the_failed_boundary ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/feature_patterns.rs (/private/tmp/chematic-morgan-linear-evidence-20261017/check-target/debug/deps/feature_patterns-11bd262c74710fbe)
+
+running 6 tests
+test empty_definitions_mean_zero_features_not_defaults ... ok
+test masks_use_caller_order_and_all_matched_atoms ... ok
+test changed_patterns_affect_native_fingerprint_and_upper_bits ... ok
+test all_32_bits_are_preserved_and_the_33rd_is_rejected ... ok
+test aromatic_and_kekule_forms_share_masks_and_fingerprint ... ok
+test budgets_and_invalid_profiles_refuse_partial_results ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/fold_density.rs (/private/tmp/chematic-morgan-linear-evidence-20261017/check-target/debug/deps/fold_density-106e07088f282b2f)
+
+running 10 tests
+test input_shorter_than_minimum_and_single_bit_are_valid ... ok
+test equality_at_density_stops_and_equality_at_minimum_allows_one_fold ... ok
+test collisions_are_or_not_xor ... ok
+test invalid_options_are_typed_errors ... ok
+test odd_width_tail_bits_use_modulo_and_can_reduce_density ... ok
+test packed_validation_precedes_decode_and_ignores_no_data ... ok
+test sparse_fingerprints_fold_and_dense_ones_do_not ... ok
+test zero_bits_reach_minimum_but_zero_target_needs_no_fold ... ok
+test packed_and_native_inputs_agree_for_partial_bytes_and_words ... ok
+test maximum_width_accepts_and_next_bit_rejects ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/morgan_stereo_cache_contract.rs (/private/tmp/chematic-morgan-linear-evidence-20261017/check-target/debug/deps/morgan_stereo_cache_contract-e9a5e2e46947d591)
+
+running 3 tests
+test chirality_and_direction_edits_do_not_reuse_old_preparation ... ok
+test prepared_stereo_is_independent_of_radius_width_and_plain_calls ... ok
+test large_chiral_graphs_keep_detailed_and_compact_fingerprints_equal ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/public_api_stress.rs (/private/tmp/chematic-morgan-linear-evidence-20261017/check-target/debug/deps/public_api_stress-ec7e0669d8aeb2a4)
+
+running 1 test
+test fingerprint_surface_handles_special_chemistry has been running for over 60 seconds
+test fingerprint_surface_handles_special_chemistry ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 80.08s
+
+     Running tests/rdkit_count_and_chiral_fps.rs (/private/tmp/chematic-morgan-linear-evidence-20261017/check-target/debug/deps/rdkit_count_and_chiral_fps-741f60a743cedd20)
+
+running 3 tests
+test hashed_atom_pair_and_torsion_counts_match_rdkit ... ok
+test morgan_count_simulation_matches_rdkit ... ok
+test morgan_include_chirality_covers_ez_and_tetrahedral ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/rdkit_layered_config.rs (/private/tmp/chematic-morgan-linear-evidence-20261017/check-target/debug/deps/rdkit_layered_config-7d84ff5d3ca0f18b)
+
+running 12 tests
+test graph_limits_are_checked_before_perception ... ok
+test query_zero_and_dative_bonds_are_rejected ... ok
+test invalid_options_and_known_invalid_upstream_branch_are_checked ... ok
+test explicit_hydrogen_roots_keep_original_indices_but_set_no_bits ... ok
+test counters_wrap_like_unsigned_rdkit_counters ... ok
+test rooted_linear_frontier_and_visit_caps_fail_atomically ... ok
+test root_multiplicity_and_seeded_counter_contract ... ok
+test bit_mask_controls_counters_even_after_hash_collisions ... ok
+test exhausted_budgets_return_no_partial_mutation ... ok
+test rooted_linear_uses_endpoint_semantics_and_final_range_closures ... ok
+test selected_layers_union_and_zero_layers ... ok
+test defaults_preserve_existing_packed_fingerprints ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/rdkit_morgan_stable_api_fixtures.rs (/private/tmp/chematic-morgan-linear-evidence-20261017/check-target/debug/deps/rdkit_morgan_stable_api_fixtures-d03d1b2aa6d2dd0c)
+
+running 2 tests
+test rdkit_morgan_ecfp4_experimental_matches_shared_rdkit_oracle_corpus ... ok
+test rdkit_morgan_fingerprint_matches_shared_oracle_corpus_across_radius_and_fp_size_axes ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+   Doc-tests chematic_fp
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
