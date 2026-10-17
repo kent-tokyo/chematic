@@ -1,0 +1,18 @@
+    Blocking waiting for file lock on build directory
+    Checking chematic-core v1.1.6 (/private/tmp/chematic-mopac-archive-20261017/crates/chematic-core)
+    Checking chematic-perception v1.1.6 (/private/tmp/chematic-mopac-archive-20261017/crates/chematic-perception)
+    Checking chematic-smarts v1.1.6 (/private/tmp/chematic-mopac-archive-20261017/crates/chematic-smarts)
+    Checking chematic-smiles v1.1.6 (/private/tmp/chematic-mopac-archive-20261017/crates/chematic-smiles)
+    Checking chematic-rxn v1.1.6 (/private/tmp/chematic-mopac-archive-20261017/crates/chematic-rxn)
+    Checking chematic-cip v1.1.6 (/private/tmp/chematic-mopac-archive-20261017/crates/chematic-cip)
+    Checking chematic-fp v1.1.6 (/private/tmp/chematic-mopac-archive-20261017/crates/chematic-fp)
+    Checking chematic-iupac v1.1.6 (/private/tmp/chematic-mopac-archive-20261017/crates/chematic-iupac)
+    Checking chematic-chem v1.1.6 (/private/tmp/chematic-mopac-archive-20261017/crates/chematic-chem)
+    Checking chematic-ff v1.1.6 (/private/tmp/chematic-mopac-archive-20261017/crates/chematic-ff)
+    Checking chematic-3d v1.1.6 (/private/tmp/chematic-mopac-archive-20261017/crates/chematic-3d)
+    Checking chematic-depict v1.1.6 (/private/tmp/chematic-mopac-archive-20261017/crates/chematic-depict)
+    Checking chematic-crystal v1.1.6 (/private/tmp/chematic-mopac-archive-20261017/crates/chematic-crystal)
+    Checking chematic-mol v1.1.6 (/private/tmp/chematic-mopac-archive-20261017/crates/chematic-mol)
+   Compiling chematic-inchi v1.1.6 (/private/tmp/chematic-mopac-archive-20261017/crates/chematic-inchi)
+    Checking chematic-py v1.1.6 (/private/tmp/chematic-mopac-archive-20261017/crates/chematic-py)
+    Finished `dev` profile [optimized] target(s) in 23.89s

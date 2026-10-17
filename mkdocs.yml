@@ -89,6 +89,7 @@ nav:
     - HIN Aromatic Bond Preservation: openbabel-hin-aromatic-bonds.md
     - ORCA-AICCM EXYZ: openbabel-exyz.md
     - FHI-aims Geometry: openbabel-fhiaims.md
+    - MOPAC archive input: mopac-archive-input.md
     - MOPAC Cartesian: openbabel-mopac-cartesian.md
     - DMol3 Coordinates: openbabel-dmol3.md
     - PDB Atom Selection: pdb-atom-selection.md

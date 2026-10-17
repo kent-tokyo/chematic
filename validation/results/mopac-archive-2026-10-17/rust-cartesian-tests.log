@@ -1,0 +1,14 @@
+   Compiling chematic-mol v1.1.6 (/private/tmp/chematic-mopac-archive-20261017/crates/chematic-mol)
+    Finished `test` profile [optimized] target(s) in 0.48s
+     Running tests/mopac_cartesian_contract.rs (/private/tmp/chematic-sparse-tanimoto-target/debug/deps/mopac_cartesian_contract-966ed215fb192644)
+
+running 7 tests
+test precision_and_crlf_are_preserved ... ok
+test limits_and_line_numbers ... ok
+test degenerate_translation_vectors_fail ... ok
+test flags_labels_headers_and_vectors_roundtrip ... ok
+test writer_validates_current_data_instead_of_replaying_source ... ok
+test unsupported_geometry_cannot_be_silently_reinterpreted ... ok
+test mixed_flags_absence_partial_periodicity_and_no_terminator ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s

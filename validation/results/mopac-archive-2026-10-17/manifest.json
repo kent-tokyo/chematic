@@ -1,0 +1,21 @@
+{
+  "base_commit": "f20304f4699ee803ab993f73b98c3c8be38b58fc",
+  "validation_time_utc": "2026-10-17T05:38:18.204413+00:00",
+  "python": "3.13.6",
+  "rustc": "rustc 1.97.0 (2d8144b78 2026-07-07)",
+  "artifact_profile": "fresh local Python 3.13 extension, dev opt-level=1; not a published wheel",
+  "source_sha256": {
+    "crates/chematic-mol/src/mopac.rs": "92a0a9eebece4989bcd89709827e5b830e88576a25ef86283de7e49a1f3147e0",
+    "crates/chematic-mol/src/mopac/archive.rs": "dbc0a1e810f3025839f791ec9633dbafe843849ab7d4f05d6bc6657c02839967",
+    "crates/chematic-mol/src/mopac/reader.rs": "7c421d9ec39b4fe974cfcdb07f849062f779e882ea76f438949afc47ea1c6e42",
+    "crates/chematic-mol/src/lib.rs": "a4beb71da93910e14c06011cb74b06bd5d2e0c13409c77fc870a556ad5465a58",
+    "crates/chematic-py/src/formats.rs": "744504192bb9b81e9c6b6db9e07f63ffd5d215ed5e9a82227bc150da8a8ff6f9",
+    "crates/chematic-py/src/formats/mopac.rs": "bf7b95b251848a3179777561696ad8f8a566f50a94199aa6ddd1909df98eec97",
+    "crates/chematic-py/python/chematic/__init__.pyi": "023ccf23f922ccb5bec8df4ab75a5cb92466b0861f1abe233a819c8f84e2b694",
+    "crates/chematic-mol/tests/mopac_archive_contract.rs": "81106352f0171e917aa3412d78558c90a5adfe001722b8410d0d44cb0ee5141e",
+    "crates/chematic-py/tests/test_mopac_archive.py": "c5e4d6e60ba4858985018259da5651041d199f16832020db64faa07e1e7d8789",
+    "validation/validate_mopac_archive.py": "799c1038e9a038aec12380b16cdf93fa7811184d3a613adf3761ce0ded643a8e",
+    "Cargo.lock": "abfe0dfeca2dee6fb69c97ce02513ef7b3b34084a74e7142b38979b1c36aaebc"
+  },
+  "native_extension_sha256": "049c1c81414b36a64f55ac448b3c5d265a977c84ffc629bfd1d2e9ecdd63052b"
+}

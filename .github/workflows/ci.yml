@@ -303,6 +303,7 @@ jobs:
           - { package: chematic-mol, target: exyz_contract }
           - { package: chematic-mol, target: fhiaims_contract }
           - { package: chematic-mol, target: mopac_cartesian_contract }
+          - { package: chematic-mol, target: mopac_archive_contract }
           - { package: chematic-mol, target: dmol3_contract }
           - { package: chematic-mol, target: pdb_selection_contract }
           - { package: chematic-mol, target: pdb_conect_contract }
