@@ -1,0 +1,3 @@
+validation/rdkit_issues/numpy-fingerprint/typecheck_invalid.py:4: error: Argument 1 to "ConvertToNumpyArray" of "DataStructs" has incompatible type "list[Never]"; expected "_BitVectorSource"  [arg-type]
+validation/rdkit_issues/numpy-fingerprint/typecheck_invalid.py:5: error: Argument 2 to "ConvertToNumpyArray" of "DataStructs" has incompatible type "list[int]"; expected "ndarray[Any, Any] | None"  [arg-type]
+Found 2 errors in 1 file (checked 1 source file)
