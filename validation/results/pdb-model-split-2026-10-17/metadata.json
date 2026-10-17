@@ -1,0 +1,49 @@
+{
+  "base_commit": "db0cf128c3e300d0e5da5a0f2abb4924489d7962",
+  "commands": [
+    "PYTHONPATH=/private/tmp/chematic-pdb-model-split-python PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3.13 -m pytest crates/chematic-py/tests/test_pdb_models.py crates/chematic-py/tests/test_pdb_selection.py crates/chematic-py/tests/test_mmcif_pdb_checked.py crates/chematic-py/tests/test_pdb_conect.py crates/chematic-py/tests/test_pqr_pdbqt.py crates/chematic-py/tests/test_pdbqt_checked.py -q -p no:cacheprovider",
+    "PYTHONPATH=/private/tmp/chematic-pdb-model-split-python python3.13 validation/validate_pdb_model_split.py --pdb /private/tmp/chematic-pdb-model-split-1ner.pdb",
+    "python3.13 -m mypy --strict --ignore-missing-imports --follow-imports=silent --no-incremental /private/tmp/chematic-pdb-model-split-types/pdb_split_check/_pdb_models.py",
+    "MYPYPATH=crates/chematic-py/python python3.13 -m mypy --follow-imports=silent --ignore-missing-imports --no-incremental validation/typing/pdb_model_split_valid.py",
+    "MYPYPATH=crates/chematic-py/python python3.13 -m mypy --follow-imports=silent --ignore-missing-imports --no-incremental validation/typing/pdb_model_split_invalid.py",
+    "python3.13 -m mkdocs build --strict --site-dir /private/tmp/chematic-pdb-model-split-site"
+  ],
+  "date": "2026-10-17",
+  "implementation_scope": "Python-only orchestration using the unchanged native PDB selection validator",
+  "native_fixture": {
+    "build_source_commit": "a56bc1353bd70eb5381dce38f818c0b78755d027",
+    "fresh_native_build": false,
+    "path": "/private/tmp/chematic-pdb-model-split-python/chematic/chematic.so",
+    "relevant_native_sources_unchanged": true,
+    "scope": "Import/selection fixture reused from GAMESS work; this is not a native build of this candidate.",
+    "sha256": "79622bf1b914242b46bc08eaf44d7069e5f7aac9772b5a7dedb960f678807f7e"
+  },
+  "python": "3.13.6",
+  "source_sha256": {
+    "crates/chematic-3d/src/pdb.rs": "b963edb846d3f174f5c79cd22da29b357703ce1af4bf745c8bd01cc1f34e12a5",
+    "crates/chematic-mol/src/pdb_selection.rs": "8bd78e7f854fb32c00ecb2aaf07ce3cc331193dc8cb2e5163237ccc5a376491b",
+    "crates/chematic-mol/src/pdb_selection/reader.rs": "e30639ae149da4be53711027177c9cf4b4c9e123f129531281b693274dcdad75",
+    "crates/chematic-mol/src/pdb_selection/writer.rs": "976a8b4ae34882d5febb63163e476583a91fb6dc42e2d2a1f73d73ee524053db",
+    "crates/chematic-py/python/chematic/__init__.py": "43a87d2519b0478f67e8115d1cc323e3fdc296d9141a739f9c86bdbd984938ef",
+    "crates/chematic-py/python/chematic/__init__.pyi": "a49402811ad935551f77bd5ddba6de766b427834e5ccd6f18eb491ca711fea97",
+    "crates/chematic-py/python/chematic/_pdb_models.py": "53143e92b79b2d53ca26dc9c0d59a21601a72f3386457ea472efd2625eca7058",
+    "crates/chematic-py/src/formats/pdb_selection.rs": "0f3e51c0a2d54697cfacf24001156e698644158a3bd39f1f7e2f6ec5a229d8a7",
+    "crates/chematic-py/tests/test_pdb_models.py": "6552d8ad71ec1062d1539e90916567ccce2791ea7c29d17f74697cd4e06a0a8a",
+    "validation/validate_pdb_model_split.py": "084718c9a704e8bdb60587185f79cfd4473536e96132547d652fdc40e64b7e80"
+  },
+  "specification": {
+    "download_sha256": "cfeb13f433c4897dc46925ef8baf5914319213b13824cd4bd94527cd0de8e418",
+    "url": "https://www.wwpdb.org/documentation/file-format-content/format33/sect9.html"
+  },
+  "test_counts": {
+    "new_pdb_model_tests": 69,
+    "passed": 202,
+    "related_existing_tests": 133
+  },
+  "typing": {
+    "invalid_consumer": "4 expected errors; bytes input, non-string prefix, fractional max_models, immutable filename",
+    "module_strict": "isolated unchanged module, with select_pdb_atoms signature extracted verbatim by AST from public stub",
+    "package_wide_strict": "not claimed",
+    "valid_consumer": "passed"
+  }
+}

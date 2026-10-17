@@ -1,3 +1,10 @@
+from ._pdb_models import (
+    PdbModelFile as PdbModelFile,
+    PdbModelSplit as PdbModelSplit,
+    PdbSplitLoss as PdbSplitLoss,
+    split_pdb_models as split_pdb_models,
+)
+
 from .chematic import *
 from .chematic import (
     __version__,

@@ -14,6 +14,13 @@ Quick start::
 
 from __future__ import annotations
 
+from ._pdb_models import (
+    PdbModelFile as PdbModelFile,
+    PdbModelSplit as PdbModelSplit,
+    PdbSplitLoss as PdbSplitLoss,
+    split_pdb_models as split_pdb_models,
+)
+
 from typing import overload, Any, Iterable, Iterator, Literal, Optional, Sequence, TypedDict, Union
 
 from os import PathLike

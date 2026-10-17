@@ -1,0 +1,69 @@
+{
+  "issue_fixture": {
+    "atom_and_auxiliary_lines_exact": true,
+    "atom_counts": [
+      1187,
+      1187,
+      1187,
+      1187,
+      1187,
+      1187,
+      1187,
+      1187,
+      1187,
+      1187,
+      1187,
+      1187,
+      1187,
+      1187,
+      1187,
+      1187,
+      1187,
+      1187,
+      1187,
+      1187,
+      1187,
+      1187,
+      1187,
+      1187,
+      1187,
+      1187,
+      1187,
+      1187,
+      1187,
+      1187
+    ],
+    "default_refusal": "PDB split line 1: record 'HEADER' requires metadata-loss consent",
+    "first_filename": "split01.pdb",
+    "last_filename": "split30.pdb",
+    "loss_record_count": 222,
+    "model_count": 30,
+    "openbabel_baseline": {
+      "file_count": 30,
+      "lexical_first_12": [
+        "split1.pdb",
+        "split10.pdb",
+        "split11.pdb",
+        "split12.pdb",
+        "split13.pdb",
+        "split14.pdb",
+        "split15.pdb",
+        "split16.pdb",
+        "split17.pdb",
+        "split18.pdb",
+        "split19.pdb",
+        "split2.pdb"
+      ],
+      "padding_gap_reproduced": true
+    },
+    "source_bytes": 2909763,
+    "source_sha256": "087b8e3ec46d3961ca620e468770235d0f2ce6947c25196b5e410f58a58b00d4",
+    "source_url": "https://files.rcsb.org/download/1NER.pdb"
+  },
+  "openbabel_version": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+  "synthetic": {
+    "cases": 80,
+    "openbabel_xyz_crossreads": 8,
+    "retained_atom_line_checks": 7530
+  }
+}
