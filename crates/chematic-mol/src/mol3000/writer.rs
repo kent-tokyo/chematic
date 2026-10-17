@@ -196,7 +196,35 @@ fn append_atom_properties(
         write!(line, " MASS={isotope}").expect("writing to String cannot fail");
     }
     if let Some(hydrogens) = atom.hydrogen_count {
-        write!(line, " HCOUNT={hydrogens}").expect("writing to String cannot fail");
+        // HCOUNT is a query property for some V3000 readers. An aliphatic
+        // carbon with an inferred H count or a pyrrole-like [nH] with two
+        // ring bonds needs no such property in a concrete block.
+        let aliphatic_carbon_h = atom.element == Element::C
+            && !atom.aromatic
+            && mol.neighbors(idx).all(|(_, bond_idx)| {
+                matches!(
+                    mol.bond(bond_idx).order,
+                    BondOrder::Single
+                        | BondOrder::Double
+                        | BondOrder::Triple
+                        | BondOrder::Up
+                        | BondOrder::Down
+                )
+            })
+            && chematic_core::valence::valence_inferred_hcount(mol, idx) == hydrogens;
+        let aromatic_n_h = atom.element == Element::N
+            && atom.aromatic
+            && hydrogens == 1
+            && mol.neighbors(idx).count() == 2
+            && mol.neighbors(idx).all(|(_, bond_idx)| {
+                matches!(
+                    mol.bond(bond_idx).order,
+                    BondOrder::Aromatic | BondOrder::Single
+                )
+            });
+        if atom.charge != 0 || atom.wildcard || !(aliphatic_carbon_h || aromatic_n_h) {
+            write!(line, " HCOUNT={hydrogens}").expect("writing to String cannot fail");
+        }
     }
     append_v3000_rgroup_property(line, mol, idx);
     let source_properties = metadata
