@@ -1,14 +1,10 @@
 // ---------------------------------------------------------------------------
-// Diagnostic trace (Aromaticity-A1-0) — observational only, no production
-// behavior change. `ring_pi_electrons` above is untouched and remains the
-// single source of truth for `assign_aromaticity_ex`'s actual decisions;
-// this is a parallel, read-only explanation layer for `component/atom/reason`
-// tracing, used by `aromaticity_a1_0_report` and the corpus diagnostics in
-// `validation/aromaticity_a1_0_corpus.jsonl`. See `docs/rfcs/aromaticity_a1_rfc.md`.
+// Per-atom pi contributions shared by aromaticity assignment and its
+// diagnostic trace. Both paths call `evaluate_atom_pi_contribution_inner`,
+// so the reported reason follows the production decision.
 // ---------------------------------------------------------------------------
 
-/// Reason a ring atom contributes (or fails to contribute) pi electrons,
-/// mirroring `ring_pi_electrons`'s branches one-to-one. Purely diagnostic.
+/// Reason a ring atom contributes (or fails to contribute) pi electrons.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ContributionReason {
     /// Already aromatic from a previous Pass 1/Pass 2 ring: contributes 1π unconditionally.
@@ -24,7 +20,8 @@ pub enum ContributionReason {
     /// aromatic-bond) -- mirrors `CarbonCarbanionLonePair`'s anion rule at
     /// the opposite electron-count extreme.
     CarbonCationVacant,
-    /// sp3 carbon (no double bond, not a carbanion): ineligible.
+    /// Carbon without a usable p orbital in this aromatic circuit, including
+    /// sp3 carbon and carbon with two cumulated endocyclic double bonds.
     CarbonSp3Ineligible,
     /// Pyrrole-type N with an H, neutral or anionic: 2π.
     NitrogenPyrroleTypeH,
@@ -261,9 +258,7 @@ pub fn evaluate_atom_pi_contribution(
     }
 }
 
-/// Per-atom contribution logic, mirroring `ring_pi_electrons`'s match arms
-/// condition-for-condition, but returning a reason alongside the
-/// contribution instead of returning early on `None`.
+/// Per-atom contribution logic used by both production counting and tracing.
 fn evaluate_atom_pi_contribution_inner(
     mol: &Molecule,
     atom_idx: AtomIdx,
@@ -356,9 +351,19 @@ fn carbon_pi_contribution(
             (None, ContributionReason::CarbonSp3Ineligible)
         };
     }
-    let endocyclic_double = mol.neighbors(atom_idx).any(|(neighbor, bond)| {
-        ring_atom_set.contains(&neighbor) && mol.bond(bond).order == BondOrder::Double
-    });
+    let endocyclic_double_count = mol
+        .neighbors(atom_idx)
+        .filter(|(neighbor, bond)| {
+            ring_atom_set.contains(neighbor) && mol.bond(*bond).order == BondOrder::Double
+        })
+        .count();
+    if endocyclic_double_count > 1 {
+        // Both pi bonds of a cumulated carbon cannot supply one continuous
+        // p orbital around this ring. Reuse the existing ineligible-carbon
+        // reason to keep the public diagnostic enum stable.
+        return (None, ContributionReason::CarbonSp3Ineligible);
+    }
+    let endocyclic_double = endocyclic_double_count == 1;
     let heteroatom_double = mol.neighbors(atom_idx).any(|(neighbor, bond)| {
         !all_ring_bonds.contains(&bond)
             && mol.bond(bond).order == BondOrder::Double

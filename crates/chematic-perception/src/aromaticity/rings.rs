@@ -646,7 +646,9 @@ fn count_complex_aromatic_rings(mol: &Molecule, keep: &[bool]) -> usize {
 /// - **C**: if already in `aromatic_context` → 1π (confirmed sp2).
 ///   1. No double bond anywhere: carbanion (`charge == -1`) → 2π (lone pair,
 ///      e.g. cyclopentadienyl anion); otherwise sp3 → None.
-///   2. Has a double bond whose far atom is on NO ring at all (a genuine
+///   2. Two endocyclic double bonds: cumulated ring carbon → None; its
+///      orthogonal pi orbitals cannot form one aromatic circuit.
+///   3. Has a double bond whose far atom is on NO ring at all (a genuine
 ///      exocyclic substituent, not a ring-fusion bond into a different ring)
 ///      and is a more electronegative atom (O/N/S) → 0π (its p-orbital
 ///      electrons are in the exocyclic π bond, e.g. the carbonyl carbon in
@@ -654,8 +656,8 @@ fn count_complex_aromatic_rings(mol: &Molecule, keep: &[bool]) -> usize {
 ///      DIFFERENT ring (e.g. a fusion carbon whose own Kekule double bond
 ///      happens to point into the other ring of a fused bicyclic, as in
 ///      quinazoline/quinoxaline) is a ring bond, not a substituent, and
-///      falls through to rule 3 instead — see `all_ring_bonds` below.
-///   3. Otherwise (has an endocyclic Double/Aromatic bond, or a double bond
+///      falls through to rule 4 instead — see `all_ring_bonds` below.
+///   4. Otherwise (has an endocyclic Double/Aromatic bond, or a double bond
 ///      into another ring) → 1π.
 /// - **N**:
 ///   1. Has H → 2π (pyrrole-type lone pair).
