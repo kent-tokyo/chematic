@@ -355,17 +355,18 @@ pub fn stereo_centers(mol: &Molecule) -> Vec<(AtomIdx, bool)> {
             continue;
         } // only tetrahedral candidates
 
-        // Compare heavy-atom branches from this center. Implicit H and the
-        // lone-pair group of a constrained ring nitrogen are fourth groups by
-        // construction and do not need a graph signature.
-        if !substituent_signatures_distinct(mol, idx, &heavy_nbs) {
-            continue;
-        }
         if implicit_h > 0 && heavy_nbs.len() == 3 {
             // An implicit H is a fourth group and is distinct from every
             // heavy-atom branch. A ring nitrogen's fourth group is its lone
             // pair, handled by the same branch-distinctness condition.
         } else if heavy_nbs.len() != 4 && !is_ring_nitrogen {
+            continue;
+        }
+
+        // Compare heavy-atom branches from this center. Implicit H and the
+        // lone-pair group of a constrained ring nitrogen are fourth groups by
+        // construction and do not need a graph signature.
+        if !substituent_signatures_distinct(mol, idx, &heavy_nbs) {
             continue;
         }
 
@@ -717,3 +718,7 @@ mod annotation_diagnostic_boundary_tests {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "stereo_shape_tests.rs"]
+mod shape_tests;
