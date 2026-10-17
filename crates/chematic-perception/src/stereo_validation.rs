@@ -329,6 +329,8 @@ pub fn validate_stereo(mol: &Molecule) -> Vec<StereoError> {
 ///
 /// This is the single source of truth for stereocenter classification;
 /// [`stereo_completeness`] is defined in terms of it.
+// Keep this graph walk out of format-reader instruction streams.
+#[inline(never)]
 pub fn stereo_centers(mol: &Molecule) -> Vec<(AtomIdx, bool)> {
     let ring_set = find_sssr(mol);
     let mut centers = Vec::new();
