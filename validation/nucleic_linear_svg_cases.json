@@ -1,0 +1,541 @@
+{
+  "schema_version": 1,
+  "scope": "original explicit sequence documents; not extracted from SMILES",
+  "cases": [
+    {
+      "name": "single-rna",
+      "document": {
+        "schema": "chematic.nucleic-acid.v1",
+        "atom_ids": [
+          "s0r0-5",
+          "s0r0-3",
+          "s0r1-5",
+          "s0r1-3",
+          "s0r2-5",
+          "s0r2-3",
+          "s0r3-5",
+          "s0r3-3",
+          "s0r4-5",
+          "s0r4-3",
+          "s0r5-5",
+          "s0r5-3",
+          "s0r6-5",
+          "s0r6-3"
+        ],
+        "strands": [
+          {
+            "id": "strand-0",
+            "kind": "rna",
+            "residues": [
+              {
+                "id": "s0r0",
+                "base": "A",
+                "sugar": "ribose",
+                "atom_refs": [
+                  "s0r0-5",
+                  "s0r0-3"
+                ],
+                "annotations": {},
+                "three_prime_linkage": "s0l0"
+              },
+              {
+                "id": "s0r1",
+                "base": "C",
+                "sugar": "ribose",
+                "atom_refs": [
+                  "s0r1-5",
+                  "s0r1-3"
+                ],
+                "annotations": {},
+                "five_prime_linkage": "s0l0",
+                "three_prime_linkage": "s0l1"
+              },
+              {
+                "id": "s0r2",
+                "base": "G",
+                "sugar": "ribose",
+                "atom_refs": [
+                  "s0r2-5",
+                  "s0r2-3"
+                ],
+                "annotations": {},
+                "five_prime_linkage": "s0l1",
+                "three_prime_linkage": "s0l2"
+              },
+              {
+                "id": "s0r3",
+                "base": "U",
+                "sugar": "ribose",
+                "atom_refs": [
+                  "s0r3-5",
+                  "s0r3-3"
+                ],
+                "annotations": {},
+                "five_prime_linkage": "s0l2",
+                "three_prime_linkage": "s0l3"
+              },
+              {
+                "id": "s0r4",
+                "base": "A",
+                "sugar": "ribose",
+                "atom_refs": [
+                  "s0r4-5",
+                  "s0r4-3"
+                ],
+                "annotations": {},
+                "five_prime_linkage": "s0l3",
+                "three_prime_linkage": "s0l4"
+              },
+              {
+                "id": "s0r5",
+                "base": "C",
+                "sugar": "ribose",
+                "atom_refs": [
+                  "s0r5-5",
+                  "s0r5-3"
+                ],
+                "annotations": {},
+                "five_prime_linkage": "s0l4",
+                "three_prime_linkage": "s0l5"
+              },
+              {
+                "id": "s0r6",
+                "base": "G",
+                "sugar": "ribose",
+                "atom_refs": [
+                  "s0r6-5",
+                  "s0r6-3"
+                ],
+                "annotations": {},
+                "five_prime_linkage": "s0l5"
+              }
+            ],
+            "annotations": {}
+          }
+        ],
+        "linkages": [
+          {
+            "id": "s0l0",
+            "kind": "phosphodiester",
+            "three_prime_residue_id": "s0r0",
+            "five_prime_residue_id": "s0r1",
+            "three_prime_atom_ref": "s0r0-3",
+            "five_prime_atom_ref": "s0r1-5",
+            "annotations": {}
+          },
+          {
+            "id": "s0l1",
+            "kind": "phosphodiester",
+            "three_prime_residue_id": "s0r1",
+            "five_prime_residue_id": "s0r2",
+            "three_prime_atom_ref": "s0r1-3",
+            "five_prime_atom_ref": "s0r2-5",
+            "annotations": {}
+          },
+          {
+            "id": "s0l2",
+            "kind": "phosphodiester",
+            "three_prime_residue_id": "s0r2",
+            "five_prime_residue_id": "s0r3",
+            "three_prime_atom_ref": "s0r2-3",
+            "five_prime_atom_ref": "s0r3-5",
+            "annotations": {}
+          },
+          {
+            "id": "s0l3",
+            "kind": "phosphodiester",
+            "three_prime_residue_id": "s0r3",
+            "five_prime_residue_id": "s0r4",
+            "three_prime_atom_ref": "s0r3-3",
+            "five_prime_atom_ref": "s0r4-5",
+            "annotations": {}
+          },
+          {
+            "id": "s0l4",
+            "kind": "phosphodiester",
+            "three_prime_residue_id": "s0r4",
+            "five_prime_residue_id": "s0r5",
+            "three_prime_atom_ref": "s0r4-3",
+            "five_prime_atom_ref": "s0r5-5",
+            "annotations": {}
+          },
+          {
+            "id": "s0l5",
+            "kind": "phosphodiester",
+            "three_prime_residue_id": "s0r5",
+            "five_prime_residue_id": "s0r6",
+            "three_prime_atom_ref": "s0r5-3",
+            "five_prime_atom_ref": "s0r6-5",
+            "annotations": {}
+          }
+        ],
+        "annotations": {
+          "source": "original synthetic fixture"
+        }
+      },
+      "options": {}
+    },
+    {
+      "name": "antiparallel-rna",
+      "document": {
+        "schema": "chematic.nucleic-acid.v1",
+        "atom_ids": [
+          "s0r0-5",
+          "s0r0-3",
+          "s0r1-5",
+          "s0r1-3",
+          "s0r2-5",
+          "s0r2-3",
+          "s0r3-5",
+          "s0r3-3",
+          "s0r4-5",
+          "s0r4-3",
+          "s0r5-5",
+          "s0r5-3",
+          "s0r6-5",
+          "s0r6-3",
+          "s1r0-5",
+          "s1r0-3",
+          "s1r1-5",
+          "s1r1-3",
+          "s1r2-5",
+          "s1r2-3",
+          "s1r3-5",
+          "s1r3-3",
+          "s1r4-5",
+          "s1r4-3",
+          "s1r5-5",
+          "s1r5-3",
+          "s1r6-5",
+          "s1r6-3"
+        ],
+        "strands": [
+          {
+            "id": "strand-0",
+            "kind": "rna",
+            "residues": [
+              {
+                "id": "s0r0",
+                "base": "A",
+                "sugar": "ribose",
+                "atom_refs": [
+                  "s0r0-5",
+                  "s0r0-3"
+                ],
+                "annotations": {},
+                "three_prime_linkage": "s0l0"
+              },
+              {
+                "id": "s0r1",
+                "base": "C",
+                "sugar": "ribose",
+                "atom_refs": [
+                  "s0r1-5",
+                  "s0r1-3"
+                ],
+                "annotations": {},
+                "five_prime_linkage": "s0l0",
+                "three_prime_linkage": "s0l1"
+              },
+              {
+                "id": "s0r2",
+                "base": "G",
+                "sugar": "ribose",
+                "atom_refs": [
+                  "s0r2-5",
+                  "s0r2-3"
+                ],
+                "annotations": {},
+                "five_prime_linkage": "s0l1",
+                "three_prime_linkage": "s0l2"
+              },
+              {
+                "id": "s0r3",
+                "base": "U",
+                "sugar": "ribose",
+                "atom_refs": [
+                  "s0r3-5",
+                  "s0r3-3"
+                ],
+                "annotations": {},
+                "five_prime_linkage": "s0l2",
+                "three_prime_linkage": "s0l3"
+              },
+              {
+                "id": "s0r4",
+                "base": "A",
+                "sugar": "ribose",
+                "atom_refs": [
+                  "s0r4-5",
+                  "s0r4-3"
+                ],
+                "annotations": {},
+                "five_prime_linkage": "s0l3",
+                "three_prime_linkage": "s0l4"
+              },
+              {
+                "id": "s0r5",
+                "base": "C",
+                "sugar": "ribose",
+                "atom_refs": [
+                  "s0r5-5",
+                  "s0r5-3"
+                ],
+                "annotations": {},
+                "five_prime_linkage": "s0l4",
+                "three_prime_linkage": "s0l5"
+              },
+              {
+                "id": "s0r6",
+                "base": "G",
+                "sugar": "ribose",
+                "atom_refs": [
+                  "s0r6-5",
+                  "s0r6-3"
+                ],
+                "annotations": {},
+                "five_prime_linkage": "s0l5"
+              }
+            ],
+            "annotations": {}
+          },
+          {
+            "id": "strand-1",
+            "kind": "rna",
+            "residues": [
+              {
+                "id": "s1r0",
+                "base": "C",
+                "sugar": "ribose",
+                "atom_refs": [
+                  "s1r0-5",
+                  "s1r0-3"
+                ],
+                "annotations": {},
+                "three_prime_linkage": "s1l0"
+              },
+              {
+                "id": "s1r1",
+                "base": "G",
+                "sugar": "ribose",
+                "atom_refs": [
+                  "s1r1-5",
+                  "s1r1-3"
+                ],
+                "annotations": {},
+                "five_prime_linkage": "s1l0",
+                "three_prime_linkage": "s1l1"
+              },
+              {
+                "id": "s1r2",
+                "base": "U",
+                "sugar": "ribose",
+                "atom_refs": [
+                  "s1r2-5",
+                  "s1r2-3"
+                ],
+                "annotations": {},
+                "five_prime_linkage": "s1l1",
+                "three_prime_linkage": "s1l2"
+              },
+              {
+                "id": "s1r3",
+                "base": "A",
+                "sugar": "ribose",
+                "atom_refs": [
+                  "s1r3-5",
+                  "s1r3-3"
+                ],
+                "annotations": {},
+                "five_prime_linkage": "s1l2",
+                "three_prime_linkage": "s1l3"
+              },
+              {
+                "id": "s1r4",
+                "base": "C",
+                "sugar": "ribose",
+                "atom_refs": [
+                  "s1r4-5",
+                  "s1r4-3"
+                ],
+                "annotations": {},
+                "five_prime_linkage": "s1l3",
+                "three_prime_linkage": "s1l4"
+              },
+              {
+                "id": "s1r5",
+                "base": "G",
+                "sugar": "ribose",
+                "atom_refs": [
+                  "s1r5-5",
+                  "s1r5-3"
+                ],
+                "annotations": {},
+                "five_prime_linkage": "s1l4",
+                "three_prime_linkage": "s1l5"
+              },
+              {
+                "id": "s1r6",
+                "base": "U",
+                "sugar": "ribose",
+                "atom_refs": [
+                  "s1r6-5",
+                  "s1r6-3"
+                ],
+                "annotations": {},
+                "five_prime_linkage": "s1l5"
+              }
+            ],
+            "annotations": {}
+          }
+        ],
+        "linkages": [
+          {
+            "id": "s0l0",
+            "kind": "phosphodiester",
+            "three_prime_residue_id": "s0r0",
+            "five_prime_residue_id": "s0r1",
+            "three_prime_atom_ref": "s0r0-3",
+            "five_prime_atom_ref": "s0r1-5",
+            "annotations": {}
+          },
+          {
+            "id": "s0l1",
+            "kind": "phosphodiester",
+            "three_prime_residue_id": "s0r1",
+            "five_prime_residue_id": "s0r2",
+            "three_prime_atom_ref": "s0r1-3",
+            "five_prime_atom_ref": "s0r2-5",
+            "annotations": {}
+          },
+          {
+            "id": "s0l2",
+            "kind": "phosphodiester",
+            "three_prime_residue_id": "s0r2",
+            "five_prime_residue_id": "s0r3",
+            "three_prime_atom_ref": "s0r2-3",
+            "five_prime_atom_ref": "s0r3-5",
+            "annotations": {}
+          },
+          {
+            "id": "s0l3",
+            "kind": "phosphodiester",
+            "three_prime_residue_id": "s0r3",
+            "five_prime_residue_id": "s0r4",
+            "three_prime_atom_ref": "s0r3-3",
+            "five_prime_atom_ref": "s0r4-5",
+            "annotations": {}
+          },
+          {
+            "id": "s0l4",
+            "kind": "phosphodiester",
+            "three_prime_residue_id": "s0r4",
+            "five_prime_residue_id": "s0r5",
+            "three_prime_atom_ref": "s0r4-3",
+            "five_prime_atom_ref": "s0r5-5",
+            "annotations": {}
+          },
+          {
+            "id": "s0l5",
+            "kind": "phosphodiester",
+            "three_prime_residue_id": "s0r5",
+            "five_prime_residue_id": "s0r6",
+            "three_prime_atom_ref": "s0r5-3",
+            "five_prime_atom_ref": "s0r6-5",
+            "annotations": {}
+          },
+          {
+            "id": "s1l0",
+            "kind": "phosphodiester",
+            "three_prime_residue_id": "s1r0",
+            "five_prime_residue_id": "s1r1",
+            "three_prime_atom_ref": "s1r0-3",
+            "five_prime_atom_ref": "s1r1-5",
+            "annotations": {}
+          },
+          {
+            "id": "s1l1",
+            "kind": "phosphodiester",
+            "three_prime_residue_id": "s1r1",
+            "five_prime_residue_id": "s1r2",
+            "three_prime_atom_ref": "s1r1-3",
+            "five_prime_atom_ref": "s1r2-5",
+            "annotations": {}
+          },
+          {
+            "id": "s1l2",
+            "kind": "phosphodiester",
+            "three_prime_residue_id": "s1r2",
+            "five_prime_residue_id": "s1r3",
+            "three_prime_atom_ref": "s1r2-3",
+            "five_prime_atom_ref": "s1r3-5",
+            "annotations": {}
+          },
+          {
+            "id": "s1l3",
+            "kind": "phosphodiester",
+            "three_prime_residue_id": "s1r3",
+            "five_prime_residue_id": "s1r4",
+            "three_prime_atom_ref": "s1r3-3",
+            "five_prime_atom_ref": "s1r4-5",
+            "annotations": {}
+          },
+          {
+            "id": "s1l4",
+            "kind": "phosphodiester",
+            "three_prime_residue_id": "s1r4",
+            "five_prime_residue_id": "s1r5",
+            "three_prime_atom_ref": "s1r4-3",
+            "five_prime_atom_ref": "s1r5-5",
+            "annotations": {}
+          },
+          {
+            "id": "s1l5",
+            "kind": "phosphodiester",
+            "three_prime_residue_id": "s1r5",
+            "five_prime_residue_id": "s1r6",
+            "three_prime_atom_ref": "s1r5-3",
+            "five_prime_atom_ref": "s1r6-5",
+            "annotations": {}
+          }
+        ],
+        "annotations": {
+          "source": "original synthetic fixture"
+        }
+      },
+      "options": {
+        "antiparallel": true,
+        "base_pairs": [
+          [
+            "s0r0",
+            "s1r6"
+          ],
+          [
+            "s0r1",
+            "s1r5"
+          ],
+          [
+            "s0r2",
+            "s1r4"
+          ],
+          [
+            "s0r3",
+            "s1r3"
+          ],
+          [
+            "s0r4",
+            "s1r2"
+          ],
+          [
+            "s0r5",
+            "s1r1"
+          ],
+          [
+            "s0r6",
+            "s1r0"
+          ]
+        ]
+      }
+    }
+  ]
+}

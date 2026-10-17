@@ -648,3 +648,5 @@ def screen(smiles, profile: str = "druglike", filters=None) -> list:
         row["overall_pass"] = all(v for k, v in row.items() if k.endswith("_pass"))
         results.append(row)
     return results
+
+from ._nucleic_linear_svg import nucleic_acid_linear_svg
