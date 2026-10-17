@@ -47,6 +47,9 @@ The [RDKit 2026.09.1 stereochemistry comparison](rdkit-2026-09-1-stereo-2026-10-
 adds ChEMBL V3000 writer read-back, an independent NCI negative control,
 corrected atom/bond CIP comparisons, a ChEMBL unmarked 3D reader sample, and
 COSMolKit read-back of CheMatic blocks after omitting redundant V3000 `HCOUNT`.
+The [two-vacancy non-tetrahedral comparison](two-vacancy-nontetra-2026-10-17.md)
+checks SP2, TB3, and OH4 SMILES recognition across all tags, ligand orders, and
+root/incoming positions, including randomized write-back.
 
 The focused [aromatic sulfur stereo read-back
 check](aromatic-s-stereo-2026-10-16.md) compares whether each toolkit keeps
