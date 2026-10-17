@@ -36,6 +36,12 @@ Known differences vs RDKit:
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import numpy as np
+    from ._numpy_fingerprint import _BitVectorSource
+
 __all__ = [
     "Mol", "Atom", "Bond", "BondType", "RingInfo", "RWMol",
     "ExplicitBitVect",
@@ -1394,18 +1400,28 @@ class DataStructs:
         return [_ch.tanimoto(b, _fp_bytes(f)) for f in fps]
 
     @staticmethod
-    def ConvertToNumpyArray(fp, dest=None):
-        """Fill *dest* (or a new int8 array) with the bits of *fp*.
+    def ConvertToNumpyArray(
+        fp: _BitVectorSource, dest: np.ndarray | None = None,
+    ) -> np.ndarray:
+        """Replace every destination element with the corresponding binary bit.
 
-        Unlike RDKit's in-place-only signature, *dest* is optional; when
-        omitted a new ``numpy.int8`` array of length ``fp.GetNumBits()`` is
-        returned.
+        Sources provide GetNumBits()/GetOnBits(), including explicit/sparse
+        RDKit vectors. A supplied dest must be a plain writable 1D NumPy array
+        of exactly that width, with boolean/integer/float dtype and disjoint
+        elements. Strided/reversed and non-native byte-order arrays are allowed.
+        No resizing occurs. Validation/source errors leave dest unchanged.
+
+        Width and raw on-bit IDs are each limited to 1048576; duplicate IDs are
+        idempotent. Invalid shapes/ranges/limits raise ValueError; wrong types
+        (including bool widths/IDs) raise TypeError. Source call/iterator errors
+        propagate. At most one excess ID is consumed to detect the input cap.
+        Arbitrary source callbacks have no timeout.
+
+        Returns the supplied dest, or a new independent int8 array if omitted.
+        Optional dest and the returned array are chematic extensions to RDKit's
+        in-place-only API. Count fingerprints and whole-RDKit parity are outside
+        this binary projection contract.
         """
-        import numpy as np
+        from ._numpy_fingerprint import _convert
 
-        n = fp.GetNumBits()
-        if dest is None:
-            dest = np.zeros(n, dtype=np.int8)
-        for i in fp.GetOnBits():
-            dest[i] = 1
-        return dest
+        return _convert(fp, dest)

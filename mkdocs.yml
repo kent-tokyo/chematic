@@ -104,6 +104,7 @@ nav:
     - Descriptor Euclidean Distances: descriptor-euclidean-distances.md
     - Sparse Tanimoto Matrices: sparse-tanimoto-matrix.md
     - Reaction CDXML Output: reaction-cdxml-output.md
+    - NumPy Fingerprint Output: numpy-fingerprint-output.md
     - Complete Molecule Reset: molecule-clear.md
     - Python Filesystem Paths: python-filesystem-paths.md
     - GRO to LAMMPS Units: gro-lammps-units.md

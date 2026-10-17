@@ -1,0 +1,17 @@
+{
+  "base_commit": "f20304f4699ee803ab993f73b98c3c8be38b58fc",
+  "baseline_adapter_sha256": "a977766a0412ae989d34f66fff0d2fba0ee9c3eb7cbad8bc2b17493c9debee1b",
+  "baseline_regression_exit_code": 1,
+  "mypy_version": "mypy 1.8.0 (compiled: no)",
+  "extension_fixture_source_commit": "0ed8958cb9a9e6a7140074ceb592e89061eb47cd",
+  "extension_fixture_sha256": "15b1445f12fb4209b5a96eaef22548d343271a6068ad39301d755afc1758c427",
+  "scope": "Only Python adapter code changed; extension fixture reused for package import/existing regression tests, not a fresh main native/wheel build",
+  "sha256": {
+    "crates/chematic-py/python/chematic/rdkit_compat.py": "11415d0d2338bb60770d521b51b17aacb9bd94b8ce66406b0aa03cbcb13cdb2a",
+    "crates/chematic-py/python/chematic/_numpy_fingerprint.py": "fb2d5a686a27208169cf2e0b2ee51447f192e61fcad1dfe2a11389f60abecd3d",
+    "crates/chematic-py/tests/test_numpy_fingerprint.py": "f451e5061ad84bc3309fcda719b4093d545753f1118cd54d9c8cf7e34c801092",
+    "validation/rdkit_issues/numpy-fingerprint/probe.py": "ff3640184c36a57e0c54758d8a808db6fdf0455a2f92c169405daae5f991bfec",
+    "validation/rdkit_issues/numpy-fingerprint/typecheck_valid.py": "047460a6fb01bdf52b3a88c7d544e190cffaacc7132969d755ea6c7bbea0f289",
+    "validation/rdkit_issues/numpy-fingerprint/typecheck_invalid.py": "91a80560a39dd32efb4a7cd873eb5e935e2441ab9f43004591113cf3b3c23783"
+  }
+}

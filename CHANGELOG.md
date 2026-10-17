@@ -73,6 +73,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- `rdkit_compat.DataStructs.ConvertToNumpyArray` now replaces zero bits as well
+  as on-bits, validates source/destination types and dimensions, and reads the
+  complete source before modifying an existing array. Bounded inputs and numeric
+  NumPy views are covered in [NumPy fingerprint output](docs/numpy-fingerprint-output.md).
+
 - Preserve SDF data fields whose headers contain optional trailing information,
   including RDKit SDWriter's `> <Field> (record-number)` headers, across native
   stream, file and in-memory readers.
