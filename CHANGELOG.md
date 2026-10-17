@@ -34,6 +34,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   positive radius per atom, with checked values, work limits and typed errors.
   It returns per-atom and total native Shrake-Rupley areas without generating
   coordinates or choosing default radii. See [checked SASA](docs/checked-sasa-radii.md).
+- Rust/Python prepared MMFF94/MMFF94s can use caller-supplied partial charges
+  with checked counts, finite values and coefficient range. Explicit charge
+  products drive energy, gradient, dielectric updates and minimization.
+  See [custom MMFF charges](docs/mmff-partial-charges.md).
 - Rust/Python `FeaturePatternSet` owns up to 32 caller-supplied SMARTS feature
   definitions and produces full-width atom masks or native circular feature
   fingerprints. Matching budgets and size limits refuse partial output;

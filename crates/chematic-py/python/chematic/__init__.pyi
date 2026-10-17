@@ -1775,8 +1775,18 @@ class Mol:
         variant: str = "MMFF94",
         non_bonded_thresh: float = 100.0,
         ignore_interfrag_interactions: bool = True,
+        *,
+        partial_charges: Iterable[float] | None = None,
     ) -> MolecularForceField:
-        """Build a reusable RDKit-compatible MMFF94 force field."""
+        """Build MMFF94/MMFF94s with optional atom-ordered partial charges.
+
+        Charges use elementary-charge units and require one finite value per
+        atom, including explicit H. No normalization or charge-sum check is
+        applied. Only electrostatics change; rebuild to change charges.
+        Iterables consume at most atom_count + 1 items; source errors propagate.
+        Invalid counts, values or included-pair coefficients raise ValueError.
+        This opt-in hybrid charge model is not standard MMFF parametrization.
+        """
         ...
 
     def uff_force_field(

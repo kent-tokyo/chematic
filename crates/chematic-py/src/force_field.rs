@@ -70,6 +70,21 @@ fn flatten_positions(coords: Vec<[f64; 3]>, atom_count: usize) -> PyResult<Vec<f
     Ok(coords.into_iter().flatten().collect())
 }
 
+fn collect_partial_charges(value: &Bound<'_, PyAny>, count: usize) -> PyResult<Vec<f64>> {
+    let charges: Vec<f64> = value
+        .try_iter()?
+        .take(count + 1)
+        .map(|item| item?.extract::<f64>())
+        .collect::<PyResult<_>>()?;
+    if charges.len() != count {
+        return Err(PyValueError::new_err(format!(
+            "partial charges must have one entry per atom: expected {count}, got {}",
+            charges.len()
+        )));
+    }
+    Ok(charges)
+}
+
 fn nested_positions(flat: &[f64]) -> Vec<[f64; 3]> {
     (0..flat.len() / 3)
         .map(|index| {
@@ -233,13 +248,17 @@ impl Mol {
     /// ``coords`` must contain one position per explicit atom. Non-bonded
     /// pairs are selected once at construction, matching RDKit's force-field
     /// lifecycle; coordinate updates reuse that prepared term set.
-    #[pyo3(signature = (coords, variant = "MMFF94", non_bonded_thresh = 100.0, ignore_interfrag_interactions = true))]
+    /// Optional partial_charges override electrostatics in input atom order,
+    /// including explicit H. Rebuild to change them; no net-charge adjustment
+    /// is applied. This opt-in hybrid model is not standard MMFF parameters.
+    #[pyo3(signature = (coords, variant = "MMFF94", non_bonded_thresh = 100.0, ignore_interfrag_interactions = true, *, partial_charges=None))]
     fn mmff_force_field(
         &self,
         coords: Vec<[f64; 3]>,
         variant: &str,
         non_bonded_thresh: f64,
         ignore_interfrag_interactions: bool,
+        partial_charges: Option<&Bound<'_, PyAny>>,
     ) -> PyResult<PyMolecularForceField> {
         if !non_bonded_thresh.is_finite() || non_bonded_thresh < 0.0 {
             return Err(PyValueError::new_err(
@@ -253,15 +272,29 @@ impl Mol {
             chematic_ff::rdkit_mmff::MmffVariant::Mmff94 => "MMFF94",
             chematic_ff::rdkit_mmff::MmffVariant::Mmff94s => "MMFF94s",
         };
-        let field = chematic_ff::rdkit_mmff::RdkitMmffField::with_terms(
-            &self.inner,
-            &nested,
-            parsed_variant,
-            non_bonded_thresh,
-            ignore_interfrag_interactions,
-            [true; 7],
-        )
-        .map_err(|error| PyValueError::new_err(error.to_string()))?;
+        let field = if let Some(values) = partial_charges {
+            let charges = collect_partial_charges(values, self.inner.atom_count())?;
+            chematic_ff::rdkit_mmff::RdkitMmffField::with_terms_and_partial_charges(
+                &self.inner,
+                &nested,
+                parsed_variant,
+                non_bonded_thresh,
+                ignore_interfrag_interactions,
+                [true; 7],
+                &charges,
+            )
+            .map_err(|error| PyValueError::new_err(error.to_string()))?
+        } else {
+            chematic_ff::rdkit_mmff::RdkitMmffField::with_terms(
+                &self.inner,
+                &nested,
+                parsed_variant,
+                non_bonded_thresh,
+                ignore_interfrag_interactions,
+                [true; 7],
+            )
+            .map_err(|error| PyValueError::new_err(error.to_string()))?
+        };
         Ok(PyMolecularForceField {
             field: PreparedField::Mmff {
                 field,
