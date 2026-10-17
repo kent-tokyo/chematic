@@ -117,9 +117,17 @@ fn single_smiles_closure_ring_count(mol: &Molecule) -> Option<usize> {
     if excluded[closure_idx.0 as usize] || closure.order == BondOrder::Dative {
         return Some(0);
     }
-    let mut seen = vec![false; mol.atom_count()];
-    let mut stack = vec![closure.atom1];
-    seen[closure.atom1.0 as usize] = true;
+    // Most parsed molecules fit in two visited words and a short pending
+    // stack. SmallVec retains the same traversal with heap fallback for
+    // large rings or many branches.
+    let mut seen = smallvec::SmallVec::<[u64; 2]>::from_elem(
+        0,
+        mol.atom_count().div_ceil(u64::BITS as usize),
+    );
+    let mut stack = smallvec::SmallVec::<[AtomIdx; 16]>::new();
+    stack.push(closure.atom1);
+    let start = closure.atom1.0 as usize;
+    seen[start / 64] |= 1u64 << (start % 64);
     while let Some(atom) = stack.pop() {
         for (neighbor, bond_idx) in mol.neighbors(atom) {
             if bond_idx == closure_idx
@@ -131,9 +139,11 @@ fn single_smiles_closure_ring_count(mol: &Molecule) -> Option<usize> {
             if neighbor == closure.atom2 {
                 return Some(1);
             }
-            let visited = &mut seen[neighbor.0 as usize];
-            if !*visited {
-                *visited = true;
+            let index = neighbor.0 as usize;
+            let visited = &mut seen[index / 64];
+            let mask = 1u64 << (index % 64);
+            if *visited & mask == 0 {
+                *visited |= mask;
                 stack.push(neighbor);
             }
         }
