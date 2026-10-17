@@ -16,6 +16,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Python `plan_sdf_split` creates an exact-count, balanced SDF partition plan
+  and bounded chunk iterators. Source bytes and record order are preserved;
+  whole-source/part hashes and file identity detect changes without loading
+  the complete file. See [SDF file partitions](docs/sdf-file-partitions.md).
+
 - Rust/Python `FeaturePatternSet` owns up to 32 caller-supplied SMARTS feature
   definitions and produces full-width atom masks or native circular feature
   fingerprints. Matching budgets and size limits refuse partial output;

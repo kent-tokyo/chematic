@@ -1,0 +1,38 @@
+{
+  "base_commit": "35b932f911851f51c5cdb89fa371f1c2c4a1b11a",
+  "commands": [
+    "PYTHONPATH=/private/tmp/chematic-sdf-split-python PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3.13 -m pytest crates/chematic-py/tests/test_sdf_split.py crates/chematic-py/tests/test_sdf_selections.py crates/chematic-py/tests/test_forward_sdf.py crates/chematic-py/tests/test_sdf_compression.py crates/chematic-py/tests/test_filesystem_paths.py -q -p no:cacheprovider",
+    "PYTHONPATH=/private/tmp/chematic-sdf-split-python:/private/tmp/chematic-sparse-tanimoto-rdkit python3.13 validation/validate_sdf_split.py",
+    "python3.13 -m mypy --strict --ignore-missing-imports --follow-imports=silent --no-incremental /private/tmp/chematic_sdf_split_typecheck.py",
+    "MYPYPATH=crates/chematic-py/python python3.13 -m mypy --ignore-missing-imports --follow-imports=silent --no-incremental validation/typing/sdf_split_valid.py",
+    "MYPYPATH=crates/chematic-py/python python3.13 -m mypy --ignore-missing-imports --follow-imports=silent --no-incremental validation/typing/sdf_split_invalid.py"
+  ],
+  "date": "2026-10-17",
+  "implementation": "Standard-library Python byte framing and two-pass hashed file-backed partitions; no native splitter",
+  "native_import_reader_fixture": {
+    "fresh_native_build": false,
+    "path": "/private/tmp/chematic-sdf-split-python/chematic/chematic.so",
+    "scope": "Reused native extension for package import and ordinary 2D reader checks, not a native build of current main.",
+    "sha256": "c6db880b6f5ca4ea0388f238c24e8a5b55751daab1084cf0d1d7b56e2427257b",
+    "source_commit": "71d9c12b0c16a8e6b23e4078479d5754230c831b"
+  },
+  "python": "3.13.6",
+  "source_sha256": {
+    "crates/chematic-py/python/chematic/__init__.py": "b1925a99e1164ae460e686d3ad3ccd975e97945c4ab44ccd737743af49c86c7d",
+    "crates/chematic-py/python/chematic/__init__.pyi": "02ca04bd6f77d7b393828d80c7a3721781d6be671bad670c34d0e82810d953b2",
+    "crates/chematic-py/python/chematic/_sdf_split.py": "b0c3d2b04fb06cee1c6645203a5f3909c50c99a0e2f468ca228aa72c26149591",
+    "crates/chematic-py/tests/test_sdf_split.py": "aeace5ecdd6a59249dc6cce0a92c5ef44aee6b4860bd858191107500af4b017c",
+    "validation/validate_sdf_split.py": "fe8deb651dff4fb9ca8d38b67481ea770beeee92e54f28f629b6930ef3a4c87c"
+  },
+  "tests": {
+    "new": 47,
+    "passed": 488,
+    "platform_skipped": 30
+  },
+  "typing": {
+    "isolated_helper_strict": "passed; unchanged copy",
+    "package_wide_strict": "not claimed",
+    "public_invalid_consumer": "4 expected errors",
+    "public_valid_consumer": "passed"
+  }
+}

@@ -1,3 +1,9 @@
+from ._sdf_split import (
+    SdfSplitPart as SdfSplitPart,
+    SdfSplitPlan as SdfSplitPlan,
+    plan_sdf_split as plan_sdf_split,
+)
+
 from .chematic import *
 from .chematic import (
     __version__,

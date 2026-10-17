@@ -14,6 +14,12 @@ Quick start::
 
 from __future__ import annotations
 
+from ._sdf_split import (
+    SdfSplitPart as SdfSplitPart,
+    SdfSplitPlan as SdfSplitPlan,
+    plan_sdf_split as plan_sdf_split,
+)
+
 from typing import overload, Any, Iterable, Iterator, Literal, Optional, Sequence, TypedDict, Union
 
 from os import PathLike
