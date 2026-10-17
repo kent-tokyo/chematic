@@ -222,13 +222,29 @@ fn append_atom_properties(
                     BondOrder::Aromatic | BondOrder::Single
                 )
             });
+        // Both charged aromatic carbon ions [cH-] and [cH+] keep their H
+        // when the two ring bonds and CHG are written without HCOUNT. The
+        // redundant query property prevents concrete COSMolKit read-back.
+        let aromatic_charged_carbon_h = atom.element == Element::C
+            && atom.aromatic
+            && matches!(atom.charge, -1 | 1)
+            && hydrogens == 1
+            && mol.neighbors(idx).count() == 2
+            && mol.neighbors(idx).all(|(_, bond_idx)| {
+                mol.bond(bond_idx).order == BondOrder::Aromatic
+            });
         // A charged atom also needs no query HCOUNT when its element, charge,
         // and bonds already determine the same hydrogen count. Retain it for
         // cases such as [CH2-] and [SH2+], where inference would add an H.
         let charged_inferred_h = atom.charge != 0
             && atom.element.is_organic_subset()
             && chematic_core::valence::valence_inferred_hcount(mol, idx) == hydrogens;
-        if atom.wildcard || !(aliphatic_carbon_h || aromatic_n_h || charged_inferred_h) {
+        if atom.wildcard
+            || !(aliphatic_carbon_h
+                || aromatic_n_h
+                || aromatic_charged_carbon_h
+                || charged_inferred_h)
+        {
             write!(line, " HCOUNT={hydrogens}").expect("writing to String cannot fail");
         }
     }
