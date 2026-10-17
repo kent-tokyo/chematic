@@ -1,8 +1,8 @@
-# Typed entropy bit ranking
+# Typed binary feature ranking
 
 `chematic.rdkit_compat.rdInfoTheory.InfoBitRanker` ranks binary fingerprint
-features by information gain against caller-supplied integer class labels.
-It implements the entropy-ranker part of the typed explicit/sparse bit-vector
+features by information gain or Pearson chi-square against caller-supplied
+integer class labels. It implements part of the typed explicit/sparse bit-vector
 input work in [RDKit #9601](https://github.com/rdkit/rdkit/issues/9601),
 verified open on 2026-10-17. This is an independently implemented Python/NumPy
 compatibility API; RDKit is not required at runtime.
@@ -45,7 +45,7 @@ IDs and returned counts exactly representable in float64. Work and temporary
 storage for ranking scale with the bounded count table, plus sorting by bit.
 
 `GetTopN(num)` returns a new float64 array with `num` rows and `nClasses + 2`
-columns. Information gain is label entropy minus weighted conditional label
+columns. The default ENTROPY information gain is label entropy minus weighted conditional label
 entropy for bit-on/off subsets, using log2. Zero-probability terms contribute
 zero. Floating-point results are clipped to `[0, label entropy]`. Ranking is
 by decreasing gain and then ascending bit ID for exactly equal computed
@@ -54,9 +54,11 @@ exact ranking-order parity is not promised. Empty rankers raise `ValueError`.
 After at least one observation, `GetTopN(0)` returns an empty array with the
 correct column count. Changing a returned array does not alter later results.
 
-Only `InfoType.ENTROPY` is implemented. Other enum metrics raise `ValueError`
-at construction. `SetBiasList` and `SetMaskBits` explicitly raise
-`NotImplementedError`. Biased entropy, chi-squared scores, masks, correlation
+`InfoType.ENTROPY` and [`InfoType.CHISQUARE`](chi-square-bit-ranking.md) are
+implemented. CHISQUARE returns an uncorrected Pearson statistic, not information
+gain or a p-value; it uses the same count table and deterministic tie policy.
+Biased enum metrics raise `ValueError` at construction. `SetBiasList` and
+`SetMaskBits` explicitly raise `NotImplementedError`. Biased scores, masks, correlation
 matrices and file output are outside this profile. This is supervised binary
 feature ranking; it does not generate chemical fingerprints or infer activity
 labels. No speed advantage over RDKit is claimed.
@@ -68,7 +70,7 @@ source and runtime-fixture hashes, input-state tests, public type-check examples
 and a live RDKit 2026.09.1 comparison. The implementation uses Python/NumPy
 only; native code was reused as an import fixture and was not rebuilt here.
 
-Local validation passed 207 Python tests, including 45 new ranker tests, and
+The original entropy validation passed 207 Python tests, including 45 new ranker tests, and
 768 live explicit/sparse ranker comparisons (10,560 paired votes). Per-class
 counts matched exactly; maximum information-gain difference was 1.23e-15.
 All 1,536 order-reversal/data-duplication checks passed. Ranking order differed

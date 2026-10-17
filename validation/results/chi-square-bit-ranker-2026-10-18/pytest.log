@@ -1,0 +1,15 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.13.6, pytest-9.1.1, pluggy-1.6.0
+rootdir: /private/tmp/chematic-chi-square-bit-ranker-20261018/crates/chematic-py
+configfile: pytest.ini
+collected 225 items
+
+crates/chematic-py/tests/test_info_bit_ranker.py ....................... [ 10%]
+.....................                                                    [ 19%]
+crates/chematic-py/tests/test_chi_square_bit_ranker.py ................. [ 27%]
+..                                                                       [ 28%]
+crates/chematic-py/tests/test_rdkit_compat.py .......................... [ 39%]
+........................................................................ [ 71%]
+................................................................         [100%]
+
+============================= 225 passed in 0.42s ==============================

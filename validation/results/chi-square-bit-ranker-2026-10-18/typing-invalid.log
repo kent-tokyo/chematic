@@ -1,0 +1,5 @@
+validation/results/chi-square-bit-ranker-2026-10-18/typing_invalid.py:3: error: Argument 3 has incompatible type "str"; expected "SupportsIndex"  [arg-type]
+validation/results/chi-square-bit-ranker-2026-10-18/typing_invalid.py:4: error: Argument 1 to "AccumulateVotes" of "InfoBitRanker" has incompatible type "list[int]"; expected "BinaryBitVector"  [arg-type]
+validation/results/chi-square-bit-ranker-2026-10-18/typing_invalid.py:5: error: Argument 1 to "AccumulateVotes" of "InfoBitRanker" has incompatible type "None"; expected "BinaryBitVector"  [arg-type]
+validation/results/chi-square-bit-ranker-2026-10-18/typing_invalid.py:6: error: Argument 1 to "GetTopN" of "InfoBitRanker" has incompatible type "float"; expected "SupportsIndex"  [arg-type]
+Found 4 errors in 1 file (checked 1 source file)
