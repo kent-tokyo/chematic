@@ -334,8 +334,9 @@ pub fn stereo_centers(mol: &Molecule) -> Vec<(AtomIdx, bool)> {
     let mut centers = Vec::new();
 
     for (idx, atom) in mol.atoms() {
-        // Skip aromatics and obvious non-centers.
-        if atom.aromatic {
+        // Every emitted shape needs at least three heavy neighbors,
+        // including a constrained ring nitrogen with a lone pair.
+        if atom.aromatic || mol.degree(idx) < 3 {
             continue;
         }
 
@@ -717,3 +718,7 @@ mod annotation_diagnostic_boundary_tests {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "stereo_degree_tests.rs"]
+mod degree_tests;
