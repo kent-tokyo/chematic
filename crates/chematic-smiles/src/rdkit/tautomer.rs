@@ -476,11 +476,139 @@ fn sanitize_product(product: &mut Mol) -> Result<bool, RdkitSmilesError> {
     Ok(true)
 }
 
+fn apply_match(
+    mol: &Mol,
+    kmol: &Mol,
+    transform: &Transform,
+    m: &[usize],
+    res: &mut EnumerateResult,
+    settings: &Settings,
+) -> Result<(), RdkitSmilesError> {
+    let mut product = kmol.clone();
+    let first = m[0];
+    let last = *m.last().expect("non-empty match");
+    res.modified_atoms[first] = true;
+    res.modified_atoms[last] = true;
+    let first_hs = product.total_num_hs(first);
+    product.atoms[first].num_explicit_hs = first_hs.saturating_sub(1);
+    let last_hs = product.total_num_hs(last);
+    product.atoms[last].num_explicit_hs = last_hs + 1;
+    product.atoms[first].no_implicit = true;
+    product.atoms[last].no_implicit = true;
+    for (bi, qb) in (0..transform.query.num_bonds()).enumerate() {
+        let (qa, qz) = transform.query.bond_atoms(qb);
+        let b = product
+            .bond_between(m[qa], m[qz])
+            .expect("required bond not found");
+        if !transform.bond_types.is_empty() {
+            product.bonds[b].bt = transform.bond_types[bi];
+        } else {
+            match product.bonds[b].bt {
+                BondType::Single => product.bonds[b].bt = BondType::Double,
+                BondType::Double => product.bonds[b].bt = BondType::Single,
+                _ => {}
+            }
+        }
+        res.modified_bonds[b] = true;
+    }
+    if !transform.charges.is_empty() {
+        for (ci, &a) in m.iter().enumerate() {
+            product.atoms[a].charge += transform.charges[ci];
+        }
+    }
+    if !sanitize_product(&mut product)? {
+        return Ok(());
+    }
+    set_tautomer_stereo(
+        mol,
+        &mut product,
+        &res.modified_atoms,
+        &res.modified_bonds,
+        settings.reassign_stereo,
+    );
+    let tsmiles = smiles(&product, !settings.reassign_stereo)?;
+    if res.tautomers.contains_key(&tsmiles) {
+        return Ok(());
+    }
+    for i in 0..mol.bonds.len() {
+        if mol.bonds[i].bt != product.bonds[i].bt && !res.modified_bonds[i] {
+            res.modified_bonds[i] = true;
+        }
+    }
+    let mut kekulized_product = product.clone();
+    kekulize_canonical(&mut kekulized_product)?;
+    let n_atoms = res.modified_atoms.iter().filter(|&&x| x).count();
+    let n_bonds = res.modified_bonds.iter().filter(|&&x| x).count();
+    res.tautomers.insert(
+        tsmiles,
+        Tautomer {
+            mol: product,
+            kekulized: kekulized_product,
+            n_modified_atoms: n_atoms,
+            n_modified_bonds: n_bonds,
+            done: false,
+            flag_kept: !settings.reassign_stereo,
+        },
+    );
+    Ok(())
+}
+
+fn normalize_result(
+    mol: &Mol,
+    res: &mut EnumerateResult,
+    settings: &Settings,
+) -> Result<bool, RdkitSmilesError> {
+    let mut completed = true;
+    let max_atoms = res.modified_atoms.iter().filter(|&&x| x).count();
+    let max_bonds = res.modified_bonds.iter().filter(|&&x| x).count();
+    let mut cursor = res.tautomers.keys().next().cloned();
+    while let Some(key) = cursor {
+        let t = res.tautomers.get_mut(&key).expect("current tautomer");
+        if !t.done {
+            completed = false;
+        }
+        if (t.n_modified_atoms < max_atoms || t.n_modified_bonds < max_bonds)
+            && set_tautomer_stereo(
+                mol,
+                &mut t.mol,
+                &res.modified_atoms,
+                &res.modified_bonds,
+                settings.reassign_stereo,
+            )
+        {
+            let mut stored = res.tautomers.remove(&key).expect("current tautomer");
+            let after = next_key(&res.tautomers, &key);
+            stored.n_modified_atoms = max_atoms;
+            stored.n_modified_bonds = max_bonds;
+            let new_key = smiles(&stored.mol, stored.flag_kept)?;
+            if res.tautomers.contains_key(&new_key) {
+                cursor = after;
+            } else {
+                res.tautomers.insert(new_key.clone(), stored);
+                cursor = Some(new_key);
+            }
+        } else {
+            cursor = next_key(&res.tautomers, &key);
+        }
+    }
+    Ok(completed)
+}
+
 /// `TautomerEnumerator::enumerate(mol)`; `mol` as `MolFromSmiles` leaves
 /// it.
 pub(crate) fn enumerate(
     mol: &Mol,
     settings: &Settings,
+) -> Result<EnumerateResult, RdkitSmilesError> {
+    enumerate_with_callback(mol, settings, None)
+}
+
+pub(crate) type Callback<'a> = dyn FnMut(usize, &EnumerateResult) -> bool + 'a;
+
+pub(crate) fn enumerate_with_callback(
+    mol: &Mol,
+    settings: &Settings,
+    mut callback: Option<&mut Callback<'_>>,
 ) -> Result<EnumerateResult, RdkitSmilesError> {
     let transforms = transforms();
     let smi = smiles(mol, false)?;
@@ -534,115 +662,21 @@ pub(crate) fn enumerate(
                         } else if res.tautomers.len() >= settings.max_tautomers {
                             res.status = RdkitTautomerStatus::MaxTautomersReached;
                             bail_out = true;
+                        } else if callback.as_mut().is_some_and(|cb| !cb(n_transforms, &res)) {
+                            res.status = RdkitTautomerStatus::Canceled;
+                            bail_out = true;
                         }
                         if bail_out {
                             break;
                         }
-                        let mut product = kmol.clone();
-                        let first = m[0];
-                        let last = *m.last().expect("non-empty match");
-                        res.modified_atoms[first] = true;
-                        res.modified_atoms[last] = true;
-                        let first_hs = product.total_num_hs(first);
-                        product.atoms[first].num_explicit_hs = first_hs.saturating_sub(1);
-                        let last_hs = product.total_num_hs(last);
-                        product.atoms[last].num_explicit_hs = last_hs + 1;
-                        product.atoms[first].no_implicit = true;
-                        product.atoms[last].no_implicit = true;
-                        for (bi, qb) in (0..transform.query.num_bonds()).enumerate() {
-                            let (qa, qz) = transform.query.bond_atoms(qb);
-                            let b = product
-                                .bond_between(m[qa], m[qz])
-                                .expect("required bond not found");
-                            if !transform.bond_types.is_empty() {
-                                product.bonds[b].bt = transform.bond_types[bi];
-                            } else {
-                                match product.bonds[b].bt {
-                                    BondType::Single => product.bonds[b].bt = BondType::Double,
-                                    BondType::Double => product.bonds[b].bt = BondType::Single,
-                                    _ => {}
-                                }
-                            }
-                            res.modified_bonds[b] = true;
-                        }
-                        if !transform.charges.is_empty() {
-                            for (ci, &a) in m.iter().enumerate() {
-                                product.atoms[a].charge += transform.charges[ci];
-                            }
-                        }
-                        if !sanitize_product(&mut product)? {
-                            continue;
-                        }
-                        set_tautomer_stereo(
-                            mol,
-                            &mut product,
-                            &res.modified_atoms,
-                            &res.modified_bonds,
-                            settings.reassign_stereo,
-                        );
-                        let tsmiles = smiles(&product, !settings.reassign_stereo)?;
-                        if res.tautomers.contains_key(&tsmiles) {
-                            continue;
-                        }
-                        for i in 0..mol.bonds.len() {
-                            if mol.bonds[i].bt != product.bonds[i].bt && !res.modified_bonds[i] {
-                                res.modified_bonds[i] = true;
-                            }
-                        }
-                        let mut kekulized_product = product.clone();
-                        kekulize_canonical(&mut kekulized_product)?;
-                        let n_atoms = res.modified_atoms.iter().filter(|&&x| x).count();
-                        let n_bonds = res.modified_bonds.iter().filter(|&&x| x).count();
-                        res.tautomers.insert(
-                            tsmiles,
-                            Tautomer {
-                                mol: product,
-                                kekulized: kekulized_product,
-                                n_modified_atoms: n_atoms,
-                                n_modified_bonds: n_bonds,
-                                done: false,
-                                flag_kept: !settings.reassign_stereo,
-                            },
-                        );
+                        apply_match(mol, &kmol, transform, m, &mut res, settings)?;
                     }
                 }
                 res.tautomers.get_mut(&key).expect("current tautomer").done = true;
             }
             cursor = next_key(&res.tautomers, &key);
         }
-        completed = true;
-        let max_atoms = res.modified_atoms.iter().filter(|&&x| x).count();
-        let max_bonds = res.modified_bonds.iter().filter(|&&x| x).count();
-        let mut cursor = res.tautomers.keys().next().cloned();
-        while let Some(key) = cursor {
-            let t = res.tautomers.get_mut(&key).expect("current tautomer");
-            if !t.done {
-                completed = false;
-            }
-            if (t.n_modified_atoms < max_atoms || t.n_modified_bonds < max_bonds)
-                && set_tautomer_stereo(
-                    mol,
-                    &mut t.mol,
-                    &res.modified_atoms,
-                    &res.modified_bonds,
-                    settings.reassign_stereo,
-                )
-            {
-                let mut stored = res.tautomers.remove(&key).expect("current tautomer");
-                let after = next_key(&res.tautomers, &key);
-                stored.n_modified_atoms = max_atoms;
-                stored.n_modified_bonds = max_bonds;
-                let new_key = smiles(&stored.mol, stored.flag_kept)?;
-                if res.tautomers.contains_key(&new_key) {
-                    cursor = after;
-                } else {
-                    res.tautomers.insert(new_key.clone(), stored);
-                    cursor = Some(new_key);
-                }
-            } else {
-                cursor = next_key(&res.tautomers, &key);
-            }
-        }
+        completed = normalize_result(mol, &mut res, settings)?;
         if bail_out
             && res.tautomers.len() < settings.max_tautomers
             && res.status == RdkitTautomerStatus::MaxTautomersReached
