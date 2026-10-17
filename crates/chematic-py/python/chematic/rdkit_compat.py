@@ -52,11 +52,12 @@ __all__ = [
     "MolFromMrvBlock", "MolFromMrvFile", "MolToMrvBlock", "MolToMrvFile",
     "SDMolSupplier", "SDWriter", "SmilesMolSupplier", "SmilesWriter",
     "TDTMolSupplier", "TDTWriter",
-    "Descriptors", "rdMolDescriptors", "DataStructs", "pyAvalonTools", "rdAlignment",
+    "Descriptors", "rdMolDescriptors", "DataStructs", "pyAvalonTools", "rdAlignment", "rdInfoTheory",
 ]
 
 
 from ._point_alignment import rdAlignment
+from ._info_theory import rdInfoTheory
 
 import chematic as _ch
 

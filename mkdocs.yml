@@ -108,6 +108,7 @@ nav:
     - NumPy Fingerprint Output: numpy-fingerprint-output.md
     - Typed Point Alignment: point-alignment.md
     - GAMESS Internal Coordinates: gamess-zmat-output.md
+    - Typed Entropy Bit Ranking: info-bit-ranker.md
     - Complete Molecule Reset: molecule-clear.md
     - Python Filesystem Paths: python-filesystem-paths.md
     - GRO to LAMMPS Units: gro-lammps-units.md
