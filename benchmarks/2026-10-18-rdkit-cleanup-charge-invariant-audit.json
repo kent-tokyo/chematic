@@ -1,7 +1,7 @@
 {
   "profile": "cleanup_formal_charge_preservation",
   "cleanup_oracle_version": "2026.09.1",
-  "formal_charge_parser_version": "2025.09.3",
+  "formal_charge_parser_version": "2026.09.1",
   "comparison_sha256": "9a9a37a49d527648a387719afede74883e37c352210fa3222c4529d8f9ff3d45",
   "source_dump_sha256": "d82b09a20ee09b4b2ee87d4a57d0d83051db02ae50375e3cc20dfc25aed68d83",
   "compatible_rows": 4069,
@@ -74,7 +74,6 @@
   ],
   "limits": [
     "selected stress corpus",
-    "formal charge preservation alone does not prove chemical correctness",
-    "parser version may differ from the frozen Cleanup oracle version"
+    "formal charge preservation alone does not prove chemical correctness"
   ]
 }

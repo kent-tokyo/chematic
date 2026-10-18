@@ -31,6 +31,10 @@ def main() -> None:
     RDLogger.DisableLog("rdApp.*")
 
     comparison = json.loads(args.comparison.read_text())
+    if rdBase.rdkitVersion != comparison["rdkit_version"]:
+        parser.error(
+            f"expected RDKit {comparison['rdkit_version']}; found {rdBase.rdkitVersion}"
+        )
     dump_hash = sha256(args.dump)
     if dump_hash != comparison["source_dump_sha256"]:
         parser.error("source dump hash differs from the pinned comparison")
@@ -102,7 +106,6 @@ def main() -> None:
         "limits": [
             "selected stress corpus",
             "formal charge preservation alone does not prove chemical correctness",
-            "parser version may differ from the frozen Cleanup oracle version",
         ],
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
