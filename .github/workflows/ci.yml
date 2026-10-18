@@ -747,8 +747,6 @@ jobs:
       - name: Build WASM (--target nodejs)
         working-directory: crates/chematic-wasm
         run: wasm-pack build --target nodejs --out-dir pkg-node --release
-      - name: Python and WASM declaration compatibility
-        run: python3 scripts/check_binding_api_compat.py --baseline v1.1.7 --wasm-dts crates/chematic-wasm/pkg-node/chematic_wasm.d.ts
       - name: Node integration tests (nodejs target)
         run: |
           for f in crates/chematic-wasm/tests/*.test.mjs; do
@@ -762,6 +760,10 @@ jobs:
       - name: Build WASM (--target web)
         working-directory: crates/chematic-wasm
         run: wasm-pack build --target web --out-dir pkg-web --release
+      - name: Python and WASM declaration compatibility
+        # The published package uses the web target. Node-target glue omits
+        # initSync/InitInput declarations by design and is not the npm API.
+        run: python3 scripts/check_binding_api_compat.py --baseline v1.1.7 --wasm-dts crates/chematic-wasm/pkg-web/chematic_wasm.d.ts
       - name: Web-target runtime smoke (via Node initSync)
         run: node crates/chematic-wasm/tests/pipeline_v2_web_target.test.mjs
       - name: Web-target package smoke (Node byte initialization)
