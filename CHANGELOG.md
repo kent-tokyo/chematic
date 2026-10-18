@@ -14,6 +14,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Python `InfoBitRanker.SetMaskBits` accepts typed integer iterables, validates
+  masks before replacing state and limits both future on-votes and ranked
+  candidates. Existing counts remain intact; skipped votes are not restored.
+  See [feature mask semantics](docs/info-ranker-masks.md).
+
 ## [1.1.7] - 2026-10-18
 
 ### Added

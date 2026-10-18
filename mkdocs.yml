@@ -101,6 +101,7 @@ nav:
     - Explicit PDB CONECT Graph: pdb-conect-graph.md
     - Checked PDBQT Output: pdbqt-checked-output.md
     - Language Bindings Cross-Reference: language-bindings.md
+    - InfoTheory Feature Masks: info-ranker-masks.md
     - Error Handling & Limits: error-and-limits.md
     - Checked 3D Distance Matrices: rdkit-checked-3d-distance-matrix.md
     - Prepared MMFF Dielectric: mmff-dielectric-updates.md

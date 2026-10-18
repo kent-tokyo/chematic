@@ -1,0 +1,4 @@
+Strict mypy: helper and public valid consumer passed.
+Negative consumer: exactly four expected errors.
+Python 3.9 AST parse passed.
+Public documentation snippet executed successfully.

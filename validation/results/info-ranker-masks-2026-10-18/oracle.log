@@ -1,0 +1,15 @@
+{
+  "rdkit_version": "2026.09.1",
+  "seed": 960118,
+  "datasets": 96,
+  "metric_source_runs": 768,
+  "matrix_comparisons": 2064,
+  "ranked_rows": 25192,
+  "independent_checks": 2304,
+  "empty_shape_checks": 768,
+  "reference_anomalies": 240,
+  "max_score_absolute_error": 7.105427357601002e-15,
+  "count_mismatches": 0,
+  "distinct_reference_anomalies": 60
+}
+Separate diagnostics: [('zero_top_with_nonempty_mask', -11), ('invalid_mask_can_replace_previous_mask', 0)]

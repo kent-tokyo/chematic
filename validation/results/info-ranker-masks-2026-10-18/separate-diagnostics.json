@@ -1,0 +1,14 @@
+[
+  {
+    "name": "zero_top_with_nonempty_mask",
+    "returncode": -11,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "name": "invalid_mask_can_replace_previous_mask",
+    "returncode": 0,
+    "stdout": "IndexError\n[[2.0, 0.0, 0.0, 0.0]]\n",
+    "stderr": ""
+  }
+]

@@ -57,9 +57,9 @@ correct column count. Changing a returned array does not alter later results.
 `InfoType.ENTROPY` and [`InfoType.CHISQUARE`](chi-square-bit-ranking.md) are
 implemented. CHISQUARE returns an uncorrected Pearson statistic, not information
 gain or a p-value; it uses the same count table and deterministic tie policy.
-Biased enum metrics raise `ValueError` at construction. `SetBiasList` and
-`SetMaskBits` explicitly raise `NotImplementedError`. Biased scores, masks, correlation
-matrices and file output are outside this profile. This is supervised binary
+Biased enum metrics raise `ValueError` at construction. `SetBiasList` explicitly raises `NotImplementedError`.
+[Typed feature masks](info-ranker-masks.md) are supported. Biased scores,
+correlation matrices and file output are outside this profile. This is supervised binary
 feature ranking; it does not generate chemical fingerprints or infer activity
 labels. No speed advantage over RDKit is claimed.
 
