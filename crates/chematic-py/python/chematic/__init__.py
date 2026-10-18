@@ -696,3 +696,8 @@ from ._mmcif_chains import (
     MmcifChainResidue as MmcifChainResidue,
     read_mmcif_chains as read_mmcif_chains,
 )
+from ._pdb_atom_records import (
+    PdbAtomRead as PdbAtomRead,
+    PdbAtomRecord as PdbAtomRecord,
+    read_pdb_atom_records as read_pdb_atom_records,
+)

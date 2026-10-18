@@ -1,0 +1,8 @@
+Native fixture source: ca7e14e892cab8b495183bcda4449f49471ba1b1
+Candidate base: f99c7b8ab33098a2e1fd9fd568aee370bf79ab38
+Unchanged source paths:
+crates/chematic-mol/src/pdb_selection.rs
+crates/chematic-mol/src/pdb_selection
+crates/chematic-3d/src/pdb.rs
+crates/chematic-py/src/formats/pdb_selection.rs
+No current-main native rebuild or whole-extension equivalence claim.

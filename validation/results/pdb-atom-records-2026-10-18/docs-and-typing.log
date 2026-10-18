@@ -1,0 +1,5 @@
+Python 3.9 source grammar: pass
+Guide example: pass
+Strict helper/public consumer mypy: exit 0
+Negative public consumer mypy: exit 1, four expected errors
+Rendered guide and three public API anchors: pass
