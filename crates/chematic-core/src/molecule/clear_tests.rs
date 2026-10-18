@@ -46,6 +46,7 @@ fn clear_drops_all_cache_kinds_but_retained_derived_views_remain_valid() {
         DerivedScalar::Tpsa,
         DerivedScalar::RdkitTpsa,
         DerivedScalar::LabuteAsa,
+        DerivedScalar::Qed,
     ] {
         assert_eq!(mol.derived_scalar(slot, || 7.0), 7.0);
     }
@@ -61,6 +62,7 @@ fn clear_drops_all_cache_kinds_but_retained_derived_views_remain_valid() {
         DerivedScalar::Tpsa,
         DerivedScalar::RdkitTpsa,
         DerivedScalar::LabuteAsa,
+        DerivedScalar::Qed,
     ] {
         assert_eq!(mol.derived_scalar(slot, || 0.0), 0.0);
     }

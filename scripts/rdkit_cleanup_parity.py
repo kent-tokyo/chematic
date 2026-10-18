@@ -9,6 +9,7 @@ that API performs transformations outside RDKit Cleanup's contract.
 from __future__ import annotations
 
 import argparse
+from collections import Counter
 import hashlib
 import importlib
 import json
@@ -20,18 +21,15 @@ import rdkit
 from rdkit import Chem, RDLogger
 from rdkit.Chem.MolStandardize import rdMolStandardize
 
+from rdkit_standardization_classification import (
+    classify_cleanup_mismatch,
+    classify_normalize_mismatch,
+    classify_reionize_mismatch,
+    smiles,
+)
+
 ROOT = Path(__file__).resolve().parents[1]
 CORPUS = ROOT / "validation/cosmolkit_comparison/corpora/stress-v1.smi"
-METALS = {
-    3, 4, 11, 12, 13, 19, 20, *range(21, 32), *range(37, 51),
-    *range(55, 84), *range(87, 117),
-}
-
-
-def smiles(mol: Chem.Mol) -> str:
-    return Chem.MolToSmiles(mol, canonical=True, isomericSmiles=True)
-
-
 def chematic_output(operation) -> tuple[str | None, str | None]:
     try:
         return operation().rdkit_smiles, None
@@ -72,6 +70,8 @@ def main() -> None:
             str(path.relative_to(ROOT)): hashlib.sha256(path.read_bytes()).hexdigest()
             for path in (
                 ROOT / "crates/chematic-chem/src/standardize.rs",
+                ROOT / "crates/chematic-chem/src/standardize/cleanup.rs",
+                ROOT / "crates/chematic-chem/src/standardize/groups.rs",
                 ROOT / "crates/chematic-py/src/mol_methods/transformations.rs",
             )
         },
@@ -93,11 +93,20 @@ def main() -> None:
     cleanup_exact = 0
     normalizer_only_exact = 0
     normalize_stage_exact = 0
+    reionize_exact = 0
     rdkit_changed = 0
     excluded = []
     oracle_errors = []
     operation_errors = []
     mismatches = []
+    classifications: Counter[str] = Counter()
+    support_statuses: Counter[str] = Counter()
+    reionize_classifications: Counter[str] = Counter()
+    reionize_support_statuses: Counter[str] = Counter()
+    reionize_mismatches = []
+    normalize_classifications: Counter[str] = Counter()
+    normalize_support_statuses: Counter[str] = Counter()
+    normalize_mismatches = []
     for index, text in enumerate(sampled):
         try:
             cmol = chematic.from_smiles(text)
@@ -124,13 +133,19 @@ def main() -> None:
             normalized = smiles(rdMolStandardize.Normalize(rmol))
         except Exception:
             normalized = None
+        try:
+            expected_reionized = smiles(rdMolStandardize.Reionize(rmol))
+        except Exception:
+            expected_reionized = None
         legacy, legacy_error = chematic_output(cmol.standardize)
         normalizer_only, normalize_error = chematic_output(cmol.normalize_groups)
         actual, cleanup_error = chematic_output(cmol.cleanup)
+        actual_reionized, reionize_error = chematic_output(cmol.reionize)
         for operation, error in (
             ("standardize", legacy_error),
             ("normalize_groups", normalize_error),
             ("cleanup", cleanup_error),
+            ("reionize", reionize_error),
         ):
             if error is not None:
                 operation_errors.append({"sample_index": index,
@@ -139,9 +154,29 @@ def main() -> None:
         cleanup_exact += actual == expected
         normalizer_only_exact += normalizer_only == expected
         normalize_stage_exact += normalizer_only == normalized
+        reionize_exact += actual_reionized == expected_reionized
         rdkit_changed += expected != r_input
+        if normalizer_only != normalized:
+            classification, support_status = classify_normalize_mismatch(
+                normalized, normalizer_only, normalize_error
+            )
+            normalize_classifications[classification] += 1
+            normalize_support_statuses[support_status] += 1
+            normalize_mismatches.append({
+                "sample_index": index,
+                "input": text,
+                "rdkit_normalize": normalized,
+                "chematic_normalize": normalizer_only,
+                "chematic_error": normalize_error,
+                "classification": classification,
+                "support_status": support_status,
+            })
         if actual != expected:
-            metal = any(atom.GetAtomicNum() in METALS for atom in rmol.GetAtoms())
+            classification, support_status = classify_cleanup_mismatch(
+                rmol, normalized, expected, actual, cleanup_error
+            )
+            classifications[classification] += 1
+            support_statuses[support_status] += 1
             mismatches.append({
                 "sample_index": index,
                 "input": text,
@@ -149,9 +184,23 @@ def main() -> None:
                 "rdkit_cleanup": expected,
                 "chematic_cleanup": actual,
                 "chematic_error": cleanup_error,
-                "category": "metal" if metal else (
-                    "reionization" if normalized != expected else "other"
-                ),
+                "classification": classification,
+                "support_status": support_status,
+            })
+        if actual_reionized != expected_reionized:
+            classification, support_status = classify_reionize_mismatch(
+                r_input, expected_reionized, actual_reionized, reionize_error
+            )
+            reionize_classifications[classification] += 1
+            reionize_support_statuses[support_status] += 1
+            reionize_mismatches.append({
+                "sample_index": index,
+                "input": text,
+                "rdkit_reionize": expected_reionized,
+                "chematic_reionize": actual_reionized,
+                "chematic_error": reionize_error,
+                "classification": classification,
+                "support_status": support_status,
             })
 
     result.update({
@@ -164,8 +213,17 @@ def main() -> None:
         "legacy_standardize_exact": legacy_exact,
         "normalizer_only_vs_cleanup_exact": normalizer_only_exact,
         "normalize_stage_exact": normalize_stage_exact,
+        "normalize_classification_counts": dict(sorted(normalize_classifications.items())),
+        "normalize_support_status_counts": dict(sorted(normalize_support_statuses.items())),
+        "normalize_mismatches": normalize_mismatches,
         "cleanup_exact": cleanup_exact,
+        "classification_counts": dict(sorted(classifications.items())),
+        "support_status_counts": dict(sorted(support_statuses.items())),
         "mismatches": mismatches,
+        "reionize_exact": reionize_exact,
+        "reionize_classification_counts": dict(sorted(reionize_classifications.items())),
+        "reionize_support_status_counts": dict(sorted(reionize_support_statuses.items())),
+        "reionize_mismatches": reionize_mismatches,
     })
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2, ensure_ascii=False) + "\n")
@@ -174,6 +232,8 @@ def main() -> None:
     print(f"normalize vs normalize: {normalize_stage_exact}/{compatible}")
     print(f"cleanup: {cleanup_exact}/{compatible}")
     print(f"mismatches: {len(mismatches)}")
+    print(f"reionize: {reionize_exact}/{compatible}")
+    print(f"reionize mismatches: {len(reionize_mismatches)}")
 
 
 if __name__ == "__main__":

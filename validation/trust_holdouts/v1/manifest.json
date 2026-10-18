@@ -1,0 +1,844 @@
+{
+  "schema": "chematic.trust-holdout-manifest.v1",
+  "candidate_frozen_commit": "f5d6cd6fae6a369585a72af0c2659c44b3e18a35",
+  "candidate_frozen_at": "2026-10-18T13:44:40+09:00",
+  "frozen_on": "2026-10-18",
+  "selection_policy": "Post-candidate external sources; SHA-256 rank of source identity and input text with lane-specific fixed seed. Selection does not execute chematic, RDKit, COSMolKit, or inspect outcomes.",
+  "sources": {
+    "nci": {
+      "url": "https://cactus.nci.nih.gov/download/nci/NCISMA99.sdz",
+      "archive_sha256": "3da792f624dc94caa9a3e9967fc7b1eed0ca79e0bd2d044f808cf916680a17ad",
+      "decompressed_sha256": "031736b438a9596d89cf11802fa97934c3878ebbf021924c417a57e02c7930cd",
+      "rows": 249081,
+      "acquired_at": "2026-10-18T13:48:19+09:00",
+      "acquired_after_candidate_freeze": true
+    },
+    "pubchem": {
+      "url_template": "https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/{cids}/property/IsomericSMILES/JSON",
+      "bundle_sha256": "5e416ad053da70488f87bdd7422118963e9b92f52342ee45ad55e7fb8ab175ab",
+      "records": 15904,
+      "acquired_at": "2026-10-18T04:54:14.826434Z",
+      "requests": [
+        {
+          "cid_first": 4097,
+          "cid_last": 4196,
+          "sha256": "b8ed359541304ddc2944cd35d4e4b0ded3c7b33f8bd0c788585e2feacdcfecd3"
+        },
+        {
+          "cid_first": 4197,
+          "cid_last": 4296,
+          "sha256": "b4ff0c8336d8d024e45f4b1feaffca61aca5d768d6586e6ee83d12af7a53a92c"
+        },
+        {
+          "cid_first": 4297,
+          "cid_last": 4396,
+          "sha256": "900ee3895f7b6a38c0984b8b0a3c8d720b8cb64cb3bd8e127ca3b6309f84fc35"
+        },
+        {
+          "cid_first": 4397,
+          "cid_last": 4496,
+          "sha256": "9663b87e116479ef6b3bd9ada7ce8388023adcd12fb75ada1f555b9a1e46e328"
+        },
+        {
+          "cid_first": 4497,
+          "cid_last": 4596,
+          "sha256": "c167f4fbb74a24a7786a0b848a3b9c83dd8260334d347c93b92640b63dc79b72"
+        },
+        {
+          "cid_first": 4597,
+          "cid_last": 4696,
+          "sha256": "3a6a681a1eb138f20d8a5bfe88112ec695c76412b7a0a1292714d5ae1edd6e9c"
+        },
+        {
+          "cid_first": 4697,
+          "cid_last": 4796,
+          "sha256": "87381c32177a98fc8bf37c47acd95105ed6882117a8e3ea32c2e678605f47d44"
+        },
+        {
+          "cid_first": 4797,
+          "cid_last": 4896,
+          "sha256": "d3d994b9e930337aae69d232e6f34ca7b3087c5d5f62a4d45d15460b72939c51"
+        },
+        {
+          "cid_first": 4897,
+          "cid_last": 4996,
+          "sha256": "64c04a99945b3e69aca95e55baccf1c0ffa384cad50da5a5495268c88372aaa6"
+        },
+        {
+          "cid_first": 4997,
+          "cid_last": 5096,
+          "sha256": "0e1246bc944618dd30747cebd48376be80c4097fcfb8a51a3f9ce8a4da183ae4"
+        },
+        {
+          "cid_first": 5097,
+          "cid_last": 5196,
+          "sha256": "dd4b49b4f8d4109224e92433993c36b5ff5ee83e52094e853fdb9f988f86d371"
+        },
+        {
+          "cid_first": 5197,
+          "cid_last": 5296,
+          "sha256": "662e3a7fead28e193c8cd8145684fd3bb9e03248c63943da0efc6e09c4d264cd"
+        },
+        {
+          "cid_first": 5297,
+          "cid_last": 5396,
+          "sha256": "711a882ca4d035928f4f27a6e7d4b27c5a5d03405b63d48b016bc0d601c6e86e"
+        },
+        {
+          "cid_first": 5397,
+          "cid_last": 5496,
+          "sha256": "6d19c0aa17f28a413474cee2a212885a477bb87e1b7e2abaf1b097b0dcc2a890"
+        },
+        {
+          "cid_first": 5497,
+          "cid_last": 5596,
+          "sha256": "99c39dfb93b064457c0ffb8f4ac4fe911b475c1afdece1511d3e2acdd0bc91ea"
+        },
+        {
+          "cid_first": 5597,
+          "cid_last": 5696,
+          "sha256": "2ab96eb3fa530ae4162b1f4e30c621c15b572eb38d2bbec59eca4070fab10797"
+        },
+        {
+          "cid_first": 5697,
+          "cid_last": 5796,
+          "sha256": "afe53d01843bcfc37cd75c1b6459399b71c1ecc05416a99d8e6e6fc9c0798ae8"
+        },
+        {
+          "cid_first": 5797,
+          "cid_last": 5896,
+          "sha256": "46c7db877a6f19d70dfb6936d03f82e1f82bd4deaa393e6c2175dcacec490d37"
+        },
+        {
+          "cid_first": 5897,
+          "cid_last": 5996,
+          "sha256": "21b7b0ff3d57eee43d53de61e228b35cedaa9c78ae22d2e4bcc0d84a7bab7d63"
+        },
+        {
+          "cid_first": 5997,
+          "cid_last": 6096,
+          "sha256": "e507996fcee15980c4e94c50e524371d6638b5fa47663dc4e82e60def4c92afa"
+        },
+        {
+          "cid_first": 6097,
+          "cid_last": 6196,
+          "sha256": "cf6fd9829cae2b7812965c051e42cc1489df802e2e33619e409ffbbfc0ec1e11"
+        },
+        {
+          "cid_first": 6197,
+          "cid_last": 6296,
+          "sha256": "cadc208a5de71c5a7f4f56f96352ac69cc729852ec5169238d393cd1f6e049ba"
+        },
+        {
+          "cid_first": 6297,
+          "cid_last": 6396,
+          "sha256": "74357c7a8a75ba892ebe703376ebd184db3c9db48f48c7bff732e27f319c95b9"
+        },
+        {
+          "cid_first": 6397,
+          "cid_last": 6496,
+          "sha256": "931b0a122668a189abf3d1419cb52088600a0424672957da4ba6407b9c93bcab"
+        },
+        {
+          "cid_first": 6497,
+          "cid_last": 6596,
+          "sha256": "a49387d19a20b7fb4074703e741615f91795d01a7fde672bf9e201829deab44b"
+        },
+        {
+          "cid_first": 6597,
+          "cid_last": 6696,
+          "sha256": "ae67b98631f51be0fff2b246f6600372f5a37ebb924885e52cc9142bbed2e429"
+        },
+        {
+          "cid_first": 6697,
+          "cid_last": 6796,
+          "sha256": "fcfbf2b7a23ad396994163c735e53a20ed118ffe9426a33e421a9b9b9cafd962"
+        },
+        {
+          "cid_first": 6797,
+          "cid_last": 6896,
+          "sha256": "9a70677b8a76c23ff0f14646ecd2b030007e425468d82a7e7007800b1df2029c"
+        },
+        {
+          "cid_first": 6897,
+          "cid_last": 6996,
+          "sha256": "fdf6381771ae3cdc17b399df0747f9b9b52a2496abe603f92dddd48cb728fe6c"
+        },
+        {
+          "cid_first": 6997,
+          "cid_last": 7096,
+          "sha256": "95811b5515f47bea8257d936d99bef2735e03693a5e5bad42ea8c9517538047e"
+        },
+        {
+          "cid_first": 7097,
+          "cid_last": 7196,
+          "sha256": "5b80441b702684c2cab4d4142c694f107650bfab42e03dab5532849329ff5a56"
+        },
+        {
+          "cid_first": 7197,
+          "cid_last": 7296,
+          "sha256": "a5e47e4b59c1c9d0371342a796b2e64d46dbaae83f6e989890b5d635351d5a1e"
+        },
+        {
+          "cid_first": 7297,
+          "cid_last": 7396,
+          "sha256": "4055dd9cd269e892d55b1ca7422cb3bed6fbb5ab55541893ecefaa51282f3853"
+        },
+        {
+          "cid_first": 7397,
+          "cid_last": 7496,
+          "sha256": "cea9eebbb7f0964afe241f47c997249d529061ae85f940b1d1ee0ecc2fe035fe"
+        },
+        {
+          "cid_first": 7497,
+          "cid_last": 7596,
+          "sha256": "9faa81b02538f92a89f200fd3961a3124ad5f70fb5eae52425fa787d690fe128"
+        },
+        {
+          "cid_first": 7597,
+          "cid_last": 7696,
+          "sha256": "0774ad4c2771d2af3bb5dac4e442119565e0b7e7152dd533ae47ff8b81fee297"
+        },
+        {
+          "cid_first": 7697,
+          "cid_last": 7796,
+          "sha256": "efbcc543dc9aa2b4483b5736ba4586a0f1cbdce17ab74d6e19b9e334a80d75b4"
+        },
+        {
+          "cid_first": 7797,
+          "cid_last": 7896,
+          "sha256": "e840385dc8450426422997c1d0de386422e21df644c304ba7a79fa2a5ff791cf"
+        },
+        {
+          "cid_first": 7897,
+          "cid_last": 7996,
+          "sha256": "3e45899250d811ae2968ba55b75dd1490aa267404539d54cd4e121d7fb220364"
+        },
+        {
+          "cid_first": 7997,
+          "cid_last": 8096,
+          "sha256": "d4ac671d794304b0e80e560c6a767195ebe4319468e26701704134210bac770d"
+        },
+        {
+          "cid_first": 8097,
+          "cid_last": 8196,
+          "sha256": "6b93e2ef0860add03908152813a53959f43ea741428273b4ca2498c94cb41de9"
+        },
+        {
+          "cid_first": 8197,
+          "cid_last": 8296,
+          "sha256": "73e39fe8c7452db38f5da0f54b9475d3f2a0b0cedee12060930aa9ab47159826"
+        },
+        {
+          "cid_first": 8297,
+          "cid_last": 8396,
+          "sha256": "7b222f36c5aadb48f244b9597882b369eb6269b729989979e748e122b65524a7"
+        },
+        {
+          "cid_first": 8397,
+          "cid_last": 8496,
+          "sha256": "c3443c3657b2e66455a327770bda9e29881e7ecb031b3f2731978c104d674fcd"
+        },
+        {
+          "cid_first": 8497,
+          "cid_last": 8596,
+          "sha256": "78d5ac7ccda5a2d85a9e965ef4588c54e94fcbc9a235f25f9c989563e48cc373"
+        },
+        {
+          "cid_first": 8597,
+          "cid_last": 8696,
+          "sha256": "73579a5e50f10815b7ad1423ab8273494acad59a7806173aafb0e900e9411cc2"
+        },
+        {
+          "cid_first": 8697,
+          "cid_last": 8796,
+          "sha256": "7f14de1566d08757287f54878547c5129b1088ac51f83916c5645f3a47e52ea9"
+        },
+        {
+          "cid_first": 8797,
+          "cid_last": 8896,
+          "sha256": "664e8e87b91b6c3f72094918441d716577819ed63be8377e4a01ac64267f9614"
+        },
+        {
+          "cid_first": 8897,
+          "cid_last": 8996,
+          "sha256": "7ad86fb355ceca9be1499fdce99597f2ae7d597ee728a18b2d00e8bf2da80302"
+        },
+        {
+          "cid_first": 8997,
+          "cid_last": 9096,
+          "sha256": "4ea2d246a10d7e333193376543f7155d04848de316fd30ec7a8f0edc8a5afd76"
+        },
+        {
+          "cid_first": 9097,
+          "cid_last": 9196,
+          "sha256": "ace382c1816f8886591d2a8dcd80183f1fc17c8e45fe4e659a370896f4c98827"
+        },
+        {
+          "cid_first": 9197,
+          "cid_last": 9296,
+          "sha256": "3fba1e97f9b59581161772e8bc6198456638660f9e5173866382f123836af212"
+        },
+        {
+          "cid_first": 9297,
+          "cid_last": 9396,
+          "sha256": "c3be48afffb9a3f059f96171337c9989feb61303953bfa1adedbd8a4bed9c838"
+        },
+        {
+          "cid_first": 9397,
+          "cid_last": 9496,
+          "sha256": "af1a0756f3220e72b7f5d5b7027f21f351dcea20e891f20b22cb346d28c8b82c"
+        },
+        {
+          "cid_first": 9497,
+          "cid_last": 9596,
+          "sha256": "ed2a619780db33af3f6ff4fd3c40f53c29e91f724217b3991fd143a2ad75a1e2"
+        },
+        {
+          "cid_first": 9597,
+          "cid_last": 9696,
+          "sha256": "fa9ded6f2974dfd9275b8cf5756477ae12659514852ac9648166cf863c894d4b"
+        },
+        {
+          "cid_first": 9697,
+          "cid_last": 9796,
+          "sha256": "2129515c7553a3884e8296320ffb6fbb0eebf12b504c1fee18bfcf538090a2d4"
+        },
+        {
+          "cid_first": 9797,
+          "cid_last": 9896,
+          "sha256": "bb7bb92f1ec66715bcacfca588d69f423d33c7ae4a5e9644f3622dae8b8b4526"
+        },
+        {
+          "cid_first": 9897,
+          "cid_last": 9996,
+          "sha256": "dbe3d417a3270dee30344a771d5a2003b210b6e47ce6dc456ae50ff382c77f56"
+        },
+        {
+          "cid_first": 9997,
+          "cid_last": 10096,
+          "sha256": "d10ae8575cec5f27dd44512b02bc999e66f7993363e422d99064ed6e1f26ff98"
+        },
+        {
+          "cid_first": 10097,
+          "cid_last": 10196,
+          "sha256": "715ad596f54c13fe6a474cb88b2ce3734363393fd9ce1b182e4b3ebe2c1f7829"
+        },
+        {
+          "cid_first": 10197,
+          "cid_last": 10296,
+          "sha256": "3d1f5e57647d25db73a2e1a53abdceb16d67fb9f7fae808cb86a3ce4341a96fa"
+        },
+        {
+          "cid_first": 10297,
+          "cid_last": 10396,
+          "sha256": "34526acd5e8571f1d5136b2ce3039c1b93ad2992eece06323410f3d0074f70e9"
+        },
+        {
+          "cid_first": 10397,
+          "cid_last": 10496,
+          "sha256": "b0111ab443d3eef4a3403f9070a2fa6a1d0e29c5c4812f4917a174628775c7f8"
+        },
+        {
+          "cid_first": 10497,
+          "cid_last": 10596,
+          "sha256": "710376bcc49a21d210fd15e54a28d93d96ece7f626e67d8fcd95be5142051447"
+        },
+        {
+          "cid_first": 10597,
+          "cid_last": 10696,
+          "sha256": "f567e73408f610ddd78991c1f675c045c26088b71a537f8a4953ef9588857f11"
+        },
+        {
+          "cid_first": 10697,
+          "cid_last": 10796,
+          "sha256": "ce4f225ee7355d0ecd84bcedaa30391f1441f316ff517fcb1715ee726efb4b5b"
+        },
+        {
+          "cid_first": 10797,
+          "cid_last": 10896,
+          "sha256": "28a6500c531d909a67c9936ee9a871ef494e09f8cd5a7675151b3bea8c85bae1"
+        },
+        {
+          "cid_first": 10897,
+          "cid_last": 10996,
+          "sha256": "5c90fc006f19d091edbbf3faf6acf1910edea1284aac97a3c1632b2d56c61d60"
+        },
+        {
+          "cid_first": 10997,
+          "cid_last": 11096,
+          "sha256": "adfe3c25e88bc85a061fed33557d168551902bbbe37a4d53e3ccaa658993e2d2"
+        },
+        {
+          "cid_first": 11097,
+          "cid_last": 11196,
+          "sha256": "71e1b3faa116f33ef6ede4399c0cdd958cf394b93ee1eb77eeca086594a4ec02"
+        },
+        {
+          "cid_first": 11197,
+          "cid_last": 11296,
+          "sha256": "40a2d68db7add578efec95289bc758bf055a49eaf96658cf8ab4a10a43849b31"
+        },
+        {
+          "cid_first": 11297,
+          "cid_last": 11396,
+          "sha256": "819becb916a0ad59afdde14b1e5687243527f4de8aa7b4ae82cc753ecbdaee53"
+        },
+        {
+          "cid_first": 11397,
+          "cid_last": 11496,
+          "sha256": "5efca7088922843b0693a72cf8a1d75db762ea274f6e8bafec2dffd38cb853b7"
+        },
+        {
+          "cid_first": 11497,
+          "cid_last": 11596,
+          "sha256": "7d4afa2a9002331fc8fc1ab280581e002deb0ee3bb6baa66f59875feed7e53b8"
+        },
+        {
+          "cid_first": 11597,
+          "cid_last": 11696,
+          "sha256": "675268eae36d52b154698a3a5fafa9a9df1bc3129231d447c0bee77afe11748a"
+        },
+        {
+          "cid_first": 11697,
+          "cid_last": 11796,
+          "sha256": "14eb9ea243b0cbe3c4e967f4228b796fb66213da74ca80e27f1bae037f811b1c"
+        },
+        {
+          "cid_first": 11797,
+          "cid_last": 11896,
+          "sha256": "daf226288a7e9208240674ddbefbf6e272d80e172fd4d1d524199709bae77ee5"
+        },
+        {
+          "cid_first": 11897,
+          "cid_last": 11996,
+          "sha256": "d40ab1866d198548b59435b6477853b93085556a83c2ed25fca64591c6820707"
+        },
+        {
+          "cid_first": 11997,
+          "cid_last": 12096,
+          "sha256": "ac64c862a9c8a39d2fa93cf421f93bd38d8a85ef13ad430cc86a48d20be439eb"
+        },
+        {
+          "cid_first": 12097,
+          "cid_last": 12196,
+          "sha256": "65085a7e058af5827015a687cce822b9ed9f2c678eb0046962c603edf861c5f9"
+        },
+        {
+          "cid_first": 12197,
+          "cid_last": 12296,
+          "sha256": "6a2ba1d02257098cabc661555c4a745bfd4cd573300139c3e4bcd02e879be18e"
+        },
+        {
+          "cid_first": 12297,
+          "cid_last": 12396,
+          "sha256": "e934322b230d204042e61b7a05984cc14de83b7df39042fc2a2a938bb5cc3298"
+        },
+        {
+          "cid_first": 12397,
+          "cid_last": 12496,
+          "sha256": "ae6c03dfccbffcf113771d2863675e731d7dcad38257b1cd3c8da794577c123e"
+        },
+        {
+          "cid_first": 12497,
+          "cid_last": 12596,
+          "sha256": "a0082e8724331ef646a2a4d32e79f82a6d8d1aa15375100d753c376f02704ebb"
+        },
+        {
+          "cid_first": 12597,
+          "cid_last": 12696,
+          "sha256": "b9a876b1c61b022ff43d7a9c42589dfd4232726a238c571a594ba860459acd07"
+        },
+        {
+          "cid_first": 12697,
+          "cid_last": 12796,
+          "sha256": "4c9e9c20f849d3551085ae0eb16ce6328be8f14a39bf3e24f9e660ea17dc58f7"
+        },
+        {
+          "cid_first": 12797,
+          "cid_last": 12896,
+          "sha256": "d2572689f91771cff247e9f2b3acd5eae0a6f7a96e30e44298013daa5d7df9ee"
+        },
+        {
+          "cid_first": 12897,
+          "cid_last": 12996,
+          "sha256": "a2d413977ff3195ce57bdaf7e15ea3b9543db78515a414f82fbb333496adc0c7"
+        },
+        {
+          "cid_first": 12997,
+          "cid_last": 13096,
+          "sha256": "1ebcb2feaeaf01cf3a57a29da475f84ee88e6e7e771bde7559019039cd71db41"
+        },
+        {
+          "cid_first": 13097,
+          "cid_last": 13196,
+          "sha256": "65f98d342f5b58195e3e0209732791fed145c48b0ffce9e9752f536b2e905849"
+        },
+        {
+          "cid_first": 13197,
+          "cid_last": 13296,
+          "sha256": "12bc1ea7d6f92c2340cd9a3915ed10565e03ea25a93aac8a8706f944f53a2905"
+        },
+        {
+          "cid_first": 13297,
+          "cid_last": 13396,
+          "sha256": "551b9eb94d6f449245e53eda69bc73e5fdc4613e7c67616a34db0d5540e089d6"
+        },
+        {
+          "cid_first": 13397,
+          "cid_last": 13496,
+          "sha256": "76738c14649c9293fe4c7e21f0fa0f8a2fe1a4450cd8bcdf518c2b0acb9f9a39"
+        },
+        {
+          "cid_first": 13497,
+          "cid_last": 13596,
+          "sha256": "4def30187e5fddf7746d4fdcbbbca0f46f1cc790711bdc2a8eb72c9de3a6afd8"
+        },
+        {
+          "cid_first": 13597,
+          "cid_last": 13696,
+          "sha256": "0cfbbb6129e95fcd0cc3dd40b8f8f9e34a59523943e2d383efe2e25670e82175"
+        },
+        {
+          "cid_first": 13697,
+          "cid_last": 13796,
+          "sha256": "7b97c7b7d5371763ea849f8428187b264a27c8e87d09a66ba4aa3e9d29626905"
+        },
+        {
+          "cid_first": 13797,
+          "cid_last": 13896,
+          "sha256": "868e0d6cc3c642d3319143f285d2d946d18e7dd76e1ecca2e92530f16724338d"
+        },
+        {
+          "cid_first": 13897,
+          "cid_last": 13996,
+          "sha256": "f5e50671fedcd9f6153337cccd2ba869b43932944854b72f7985de8adc958c88"
+        },
+        {
+          "cid_first": 13997,
+          "cid_last": 14096,
+          "sha256": "5a07b969f521c2d05615a35a2f598f57abc0589b3621b5fe60f3c5b046d2b36d"
+        },
+        {
+          "cid_first": 14097,
+          "cid_last": 14196,
+          "sha256": "3f1bb5dd180c52939e105e5361a8b053159850fb2551ddaa6df1b5b500cea09a"
+        },
+        {
+          "cid_first": 14197,
+          "cid_last": 14296,
+          "sha256": "884ee597072ef7c598dddc44b8cc2b9ad474e80b6401b7294582d8ceb9572dec"
+        },
+        {
+          "cid_first": 14297,
+          "cid_last": 14396,
+          "sha256": "67879f37968af7357c22044e1374e6353b9af8df4d0d36bcee7db97ed17e8912"
+        },
+        {
+          "cid_first": 14397,
+          "cid_last": 14496,
+          "sha256": "2f73c86cd34a88a788f7be87ced3c6cb9e4ce66959b197b2f9954308279159be"
+        },
+        {
+          "cid_first": 14497,
+          "cid_last": 14596,
+          "sha256": "a69a3f91c8468be8da8b01672b952f387a6b79142e46bf5f8e70dab753b1a983"
+        },
+        {
+          "cid_first": 14597,
+          "cid_last": 14696,
+          "sha256": "a7148700da3ea0a45446318e6e30ce6166a3e07c7868f951637d6432db6ede4a"
+        },
+        {
+          "cid_first": 14697,
+          "cid_last": 14796,
+          "sha256": "e77e8f52ac364b6ef780e3d5e344c54bbb1cd570d920579aa0ef903ab06c2124"
+        },
+        {
+          "cid_first": 14797,
+          "cid_last": 14896,
+          "sha256": "ebb1980afa390a34b7e6794036ee1e819dc609c4868cca864018bad2c78fd041"
+        },
+        {
+          "cid_first": 14897,
+          "cid_last": 14996,
+          "sha256": "6dc9898248a58398636e06da8c1b5856e845aebeaff6b8fe55cbd123801d8c5b"
+        },
+        {
+          "cid_first": 14997,
+          "cid_last": 15096,
+          "sha256": "dcb0c906993b6957885e72ce95470693e90b3d366c4b06bc1503abcee6e7c5f2"
+        },
+        {
+          "cid_first": 15097,
+          "cid_last": 15196,
+          "sha256": "3dfe0097026be7724535c0c1d3cd56962deddbb55c6fe39150bb6e12b8108136"
+        },
+        {
+          "cid_first": 15197,
+          "cid_last": 15296,
+          "sha256": "8797f397515632f014c7353c7c3453c9578a2501397c3d850ee61be25d577978"
+        },
+        {
+          "cid_first": 15297,
+          "cid_last": 15396,
+          "sha256": "570286f105fbd261c81c2151b275d854702c7ba1c4c9041763d715177f5a3b16"
+        },
+        {
+          "cid_first": 15397,
+          "cid_last": 15496,
+          "sha256": "b268045d941e6f4dc1c08de6caa9a7a949d11976fbcd01b2f48fd4d3876b19d3"
+        },
+        {
+          "cid_first": 15497,
+          "cid_last": 15596,
+          "sha256": "819473613fe3afd71f09826901a3cf45fb263578b37f03bba84afbdf5489da60"
+        },
+        {
+          "cid_first": 15597,
+          "cid_last": 15696,
+          "sha256": "2ecefe60919f623dfe705b7505d13f415c951fd2ee24d82721dfa172667bc326"
+        },
+        {
+          "cid_first": 15697,
+          "cid_last": 15796,
+          "sha256": "49911cfa953a16935c5f73a9c601e3989789b31a0671d1623b548c5795dd6a74"
+        },
+        {
+          "cid_first": 15797,
+          "cid_last": 15896,
+          "sha256": "23c57f674dd0973a081edf4c88b10988abd753450bed1ed9e38a5e6ca8115a53"
+        },
+        {
+          "cid_first": 15897,
+          "cid_last": 15996,
+          "sha256": "96a72a8eda5a5e1306bc24abc07432cb20711d652b00f07266ccdf895f965293"
+        },
+        {
+          "cid_first": 15997,
+          "cid_last": 16096,
+          "sha256": "1478c645ebd3511bd173d82223b3e7a280746654f8f4e08d5a8d2e30228c7f1e"
+        },
+        {
+          "cid_first": 16097,
+          "cid_last": 16196,
+          "sha256": "c6fe28dd183768b79f07b9dd07e85c6b007e2aa34c804682759bda68afbe87ea"
+        },
+        {
+          "cid_first": 16197,
+          "cid_last": 16296,
+          "sha256": "ff4a4f57bf5db7ae2c5bb41073a15048233e0abccff7bef699387ce64ab32a52"
+        },
+        {
+          "cid_first": 16297,
+          "cid_last": 16396,
+          "sha256": "2050bc13d7dab7e4897db59ffd035f604fb7df110ac3b11d4d18b66b01fe4a48"
+        },
+        {
+          "cid_first": 16397,
+          "cid_last": 16496,
+          "sha256": "d507de5a18f6b753a72c8ec653b60447876d2f87eb7d6f3bb26765e04c7adea4"
+        },
+        {
+          "cid_first": 16497,
+          "cid_last": 16596,
+          "sha256": "5627d923d5bc725c159f87b18da4ea995559ba0392fafa53e7b8de4f00723341"
+        },
+        {
+          "cid_first": 16597,
+          "cid_last": 16696,
+          "sha256": "1c59d62c9fd9ee0788bd6fbc580affa3b532637e7fde32e59c1d3f1e502568dd"
+        },
+        {
+          "cid_first": 16697,
+          "cid_last": 16796,
+          "sha256": "ced8d4b2ff3fa481d526cf74f4b7111dd1a3df34df56444ebfbdc788d9243ed4"
+        },
+        {
+          "cid_first": 16797,
+          "cid_last": 16896,
+          "sha256": "c3eb249b6951bc54ba3e71f2449184dbd12df7b7e89d09d9499ba6a59bd522ba"
+        },
+        {
+          "cid_first": 16897,
+          "cid_last": 16996,
+          "sha256": "1c6bd76165faa691c7b5f329eba5e0dc2acb882e6df497ba8e0fea1954b1006a"
+        },
+        {
+          "cid_first": 16997,
+          "cid_last": 17096,
+          "sha256": "661b0c5bd31c73330f438fc1b7d2910efa22c6caba9b1997533c0a2b35f89463"
+        },
+        {
+          "cid_first": 17097,
+          "cid_last": 17196,
+          "sha256": "710eed80a5adca28ddc0823d70fa49f6a07596fecaf362f21261a872460a17b0"
+        },
+        {
+          "cid_first": 17197,
+          "cid_last": 17296,
+          "sha256": "89814912316e475c49e325cffeec1df145ab3afc6b86d569fbf2789fc01a2180"
+        },
+        {
+          "cid_first": 17297,
+          "cid_last": 17396,
+          "sha256": "3731108701b849778c17a27ca112cacd651c57e940a7c19a156571da0084f685"
+        },
+        {
+          "cid_first": 17397,
+          "cid_last": 17496,
+          "sha256": "10072efdeee41ac7bb384e7ef674c2b93ccdb25aff954843ef52492c427dd287"
+        },
+        {
+          "cid_first": 17497,
+          "cid_last": 17596,
+          "sha256": "0de56c0f584071df3ebd745e4fdb3eed15b3e4370076a9bf3251751515088a3e"
+        },
+        {
+          "cid_first": 17597,
+          "cid_last": 17696,
+          "sha256": "1a3fcbf1328dcc826feef0efcd2b70899e8de475f9f5b562a4f0cbcf9cf7f20b"
+        },
+        {
+          "cid_first": 17697,
+          "cid_last": 17796,
+          "sha256": "071f6bf76e47ee2cd8d435256a63b4d83311fe04c3936a0fa4ad5e7387d379df"
+        },
+        {
+          "cid_first": 17797,
+          "cid_last": 17896,
+          "sha256": "090e659644238ddb30aa8c5a87a007067b021333da505c78a1600e8d4fbcc00a"
+        },
+        {
+          "cid_first": 17897,
+          "cid_last": 17996,
+          "sha256": "04cf007fdc689a404db0719da4830a8f1a8074735d068fb25ccc749a9829fa18"
+        },
+        {
+          "cid_first": 17997,
+          "cid_last": 18096,
+          "sha256": "488c44b9da919e94bb4780feeeb271ce2bdc64d45c9de85d27d8108bc12cc9fb"
+        },
+        {
+          "cid_first": 18097,
+          "cid_last": 18196,
+          "sha256": "a97b9ca6bf559e2b9c1b04c9ae62528a3f6f4d4b7f9ee578cd280fc812eb3d95"
+        },
+        {
+          "cid_first": 18197,
+          "cid_last": 18296,
+          "sha256": "b781c4b0d53bf69478bb583ec2f05919424fe583212ec62231eec269e2a81d44"
+        },
+        {
+          "cid_first": 18297,
+          "cid_last": 18396,
+          "sha256": "eeea5130a98820e33e34217c884501f3b0ff7e2b0c3bc10842f6efe608b26d03"
+        },
+        {
+          "cid_first": 18397,
+          "cid_last": 18496,
+          "sha256": "c3897a34e096946ffc7dd8c2cb9fd4feef43bc14a6856790e2b6eb9b185420d1"
+        },
+        {
+          "cid_first": 18497,
+          "cid_last": 18596,
+          "sha256": "a3eb1bc5d13e1c7635f2d4ef1ea2e4d9d0a3876938a8f47ac59b19481c4ed008"
+        },
+        {
+          "cid_first": 18597,
+          "cid_last": 18696,
+          "sha256": "aa98f78ee16c458a3f92b2758342fc19c63c5d32cf3a906dde6542163f854390"
+        },
+        {
+          "cid_first": 18697,
+          "cid_last": 18796,
+          "sha256": "546d21b6d721eade185e1a287acff66c441cb66d9f8fc6cb4a988c88f63ae300"
+        },
+        {
+          "cid_first": 18797,
+          "cid_last": 18896,
+          "sha256": "ab365e5a1a5dc55e0d5dba650352db1e01daf7643d907ba2481f92b253c0d998"
+        },
+        {
+          "cid_first": 18897,
+          "cid_last": 18996,
+          "sha256": "d6b8f2a9f4dfefb0401c581697ed815d90600472c939e61f843324181948cf53"
+        },
+        {
+          "cid_first": 18997,
+          "cid_last": 19096,
+          "sha256": "0450a8d49a2a74df663fe36a461b9f92a43142a11680853ff7ec7f63985227f3"
+        },
+        {
+          "cid_first": 19097,
+          "cid_last": 19196,
+          "sha256": "27a8bdd7fd8062c15334c31785839077ea05200b1e8950187861790f9c20f78c"
+        },
+        {
+          "cid_first": 19197,
+          "cid_last": 19296,
+          "sha256": "5b82d2955fda9ee3ceb0f16d29cbd1d7abcb7b95c24611ce1b0afe64f1005850"
+        },
+        {
+          "cid_first": 19297,
+          "cid_last": 19396,
+          "sha256": "c1585e31aca1960e02524db925c3556fbb7a2c7ece0041d19a25bc10ad3c5a21"
+        },
+        {
+          "cid_first": 19397,
+          "cid_last": 19496,
+          "sha256": "27a8d5c0edc1540611838018daaa53e65721312b37767dfbcf84aa38253f2ce6"
+        },
+        {
+          "cid_first": 19497,
+          "cid_last": 19596,
+          "sha256": "db29865f00b6834d7f6eefea23d7d51fe4595ff0c65da0cda6286198673e29c5"
+        },
+        {
+          "cid_first": 19597,
+          "cid_last": 19696,
+          "sha256": "4011bf48cb37336c785c900607ec37a11bc7faf2f4bdc72d592efe3dc06c2411"
+        },
+        {
+          "cid_first": 19697,
+          "cid_last": 19796,
+          "sha256": "38e9d5c521e2147381452d4cfcc225335e6416252e92804ccccbc542b1431a23"
+        },
+        {
+          "cid_first": 19797,
+          "cid_last": 19896,
+          "sha256": "d343fb4bdfadc20b65b345ee40f773c026c99f8eda5d0edaee2b4d7fbf966f0c"
+        },
+        {
+          "cid_first": 19897,
+          "cid_last": 19996,
+          "sha256": "a0af248b2666a7c2e4737855e5c2a8c832ce12f405fc2f1e2da9c31d20d6cb63"
+        },
+        {
+          "cid_first": 19997,
+          "cid_last": 20000,
+          "sha256": "f5db9a6f23d529c78be146276670978432293e5efa807bd958c8b9557e366392"
+        }
+      ],
+      "acquired_after_candidate_freeze": true
+    }
+  },
+  "lanes": {
+    "mcs-comparison.jsonl": {
+      "rows": 64,
+      "sha256": "0234c81f8d84d676e0941dafe1452ea6a3661d47bc955f56f9726d4722961bd7",
+      "contains_expected_outputs": false
+    },
+    "sdf-attributes.jsonl": {
+      "rows": 64,
+      "sha256": "ed687af292a3a8d946ff45c69466429d1169b9d76f883f7ba94880c1aa0b6c2d",
+      "contains_expected_outputs": false
+    },
+    "stereo-3d.jsonl": {
+      "rows": 96,
+      "sha256": "25a803506fb997ae12eff622cb4e932d0e4d673e134edcbacbb1f761c3341e86",
+      "contains_expected_outputs": false
+    }
+  },
+  "use_policy": "Freeze before measuring this or future candidates. Record every row; do not tune on these inputs, replace failures, or pool them with development data."
+}

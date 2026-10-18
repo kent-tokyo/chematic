@@ -27,7 +27,10 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "validation/cosmolkit_comparison"))
 from bench_corpus import paired_median_ratio_ci, table  # noqa: E402
 
-OPS = ("tpsa", "labute_asa", "num_rings", "morgan2_2048", "morgan2_chiral", "morgan3_2048", "maccs")
+OPS = (
+    "tpsa", "labute_asa", "qed", "num_rings", "morgan2_2048",
+    "morgan2_chiral", "morgan3_2048", "maccs",
+)
 MODES = ("first_use", "repeated_use", "parse_inclusive")
 
 
@@ -158,6 +161,10 @@ def parent(args) -> None:
         "host": {"platform": platform.platform(), "python": sys.version, "cpus": os.cpu_count()},
         "wheels": {name: {"path": str(path), "sha256": sha(path.read_bytes())}
                    for name, path in wheels.items()},
+        "comparator_paths": {
+            name: None if getattr(args, name + "_path") is None else str(getattr(args, name + "_path"))
+            for name in ("rdkit", "cosmolkit")
+        },
         "corpus": {"path": str(args.corpus), "sha256": sha(args.corpus.read_bytes()),
                    "offset": args.offset, "limit": args.limit},
         "protocol": {"blocks": args.blocks, "order": "four rotating fresh-process arms, sequential",
@@ -171,7 +178,10 @@ def parent(args) -> None:
     report["source_manifest"] = json.loads(args.source_manifest.read_text()) if args.source_manifest else None
     if args.resume:
         previous = json.loads(args.output.read_text())
-        for key in ("schema", "base_revision", "source_manifest", "wheels", "corpus", "protocol", "host"):
+        for key in (
+            "schema", "base_revision", "source_manifest", "wheels", "comparator_paths",
+            "corpus", "protocol", "host",
+        ):
             if previous[key] != report[key]:
                 raise ValueError(f"resume {key} differs")
         if len(previous["blocks"]) > args.blocks:
@@ -193,8 +203,9 @@ def parent(args) -> None:
         record = {"order": order, "load_average_start": list(os.getloadavg())}
         for name in order:
             env = os.environ.copy()
-            if name in wheels:
-                env["PYTHONPATH"] = str(getattr(args, name + "_path"))
+            path = getattr(args, name + "_path")
+            if path is not None:
+                env["PYTHONPATH"] = str(path)
             else:
                 env.pop("PYTHONPATH", None)
             cmd = [sys.executable, __file__, "--worker", name, "--corpus", str(args.corpus),
@@ -263,6 +274,8 @@ def main():
     for name in ("baseline", "candidate"):
         parser.add_argument("--" + name + "-wheel", type=Path)
         parser.add_argument("--" + name + "-path", type=Path)
+    parser.add_argument("--rdkit-path", type=Path)
+    parser.add_argument("--cosmolkit-path", type=Path)
     args = parser.parse_args()
     if set(args.ops.split(",")) - set(OPS):
         parser.error("unsupported operation")

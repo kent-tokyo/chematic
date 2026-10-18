@@ -168,6 +168,7 @@ fn apply_permutation(mol: &Molecule, permutation: &[usize]) -> Molecule {
 mod tests {
     use super::*;
     use crate::parse;
+    use chematic_core::{BondIdx, StereoGroupKind};
 
     #[test]
     fn random_smiles_keep_stereo() {
@@ -247,5 +248,24 @@ mod tests {
         // due to symmetry, so we just check they're both valid
         assert!(!s1.is_empty());
         assert!(!s2.is_empty());
+    }
+
+    #[test]
+    fn permutation_remaps_enhanced_stereo_atoms_and_bonds() {
+        let mut mol = parse("F[C@](Cl)(Br)I").unwrap();
+        mol.set_stereo_groups_with_bonds(vec![(
+            StereoGroup::new(StereoGroupKind::And(7), vec![AtomIdx(1)]),
+            vec![BondIdx(0)],
+        )]);
+
+        let permuted = apply_permutation(&mol, &[4, 3, 2, 1, 0]);
+        assert_eq!(
+            permuted.stereo_groups(),
+            &[StereoGroup::new(StereoGroupKind::And(7), vec![AtomIdx(3)])]
+        );
+        assert_eq!(
+            permuted.stereo_group_bond_indices(0),
+            Some(&[BondIdx(0)][..])
+        );
     }
 }
