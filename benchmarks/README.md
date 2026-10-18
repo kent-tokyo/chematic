@@ -12,7 +12,7 @@ the [complete inventory](archive-index.md) links every retained record.
 | Do hosted Python packages reproduce the chemistry contract? | [v1.1.3 published artifact packet](2026-10-14-v113-published-artifact-packet.md) | Four exact PyPI wheels; npm/WASM, crates.io, and speed are separate. A complete v1.1.4 package packet is still open. |
 | What is the broadest published RDKit performance comparison? | [v1.0.42 / RDKit 2026.09.1](2026-10-11-v1042-published-rdkit-packet.md) | Exact PyPI/npm artifacts on hosted Linux x64 and macOS arm64. |
 | What are the latest Python descriptor and Morgan source results? | [terminal TPSA](2026-10-18-terminal-tpsa.md) · [Morgan view/ring scratch](2026-10-18-morgan-borrowed-view-ring-scratch.md) | Source wheels on one macOS arm64 host; exact retention gates, not package or toolkit-wide superiority. |
-| What do the current first-use/reuse/RSS trust lanes show? | [Labute ASA and ring-count follow-up](2026-10-18-python-first-use-ring-asa.md) · [raw JSON](2026-10-18-python-first-use-ring-asa.json) · [trust-gate summary](2026-10-18-trust-gates-and-residuals.md) · [earlier macOS raw JSON](2026-10-18-trust-performance-macos-arm64.json) | On one macOS source-candidate lane, exact first-use Labute ASA and ring count now beat RDKit in 20/20 blocks. COSMolKit still leads first-use ASA, and Linux/public-wheel evidence remains open. |
+| What do the current first-use/reuse/RSS trust lanes show? | [10k Labute ASA follow-up](2026-10-19-python-labute-asa-cosmolkit.md) · [raw JSON](2026-10-19-python-labute-asa-cosmolkit.json) · [historical 1k ASA/ring result](2026-10-18-python-first-use-ring-asa.md) · [trust-gate summary](2026-10-18-trust-gates-and-residuals.md) | On one macOS source-candidate lane, Labute ASA matches all 10,000 RDKit/COSMolKit values and beats both in 20/20 first-use, repeated-use, and parse-inclusive blocks. COSMolKit's six unequal ring counts remain unranked; Linux/public-wheel evidence is open. |
 | How do reaction, standardization, and labelled R-group workflows compare with RDKit? | [current R-group auto-H check](2026-10-18-rdkit-rgroup-auto-hydrogen-followup.md) · [previous source check](2026-10-18-rdkit-workflows-followup.md) · [83 reaction rows](2026-10-18-rdkit-reaction-83-followup.json) · [stereo safety](2026-10-18-rdkit-reaction-stereo-safety-followup.json) · [R-group hydrogen rows](2026-10-18-rdkit-rgroup-hydrogen-followup.json) · [older source check](2026-10-18-rdkit-reaction-cleanup-rgroup-source.md) · [previous reaction rows](2026-10-18-rdkit-reaction-83-source-gate.json) · [previous stereo safety](2026-10-18-rdkit-reaction-stereo-safety.json) · [previous R-group rows](2026-10-18-rdkit-rgroup-hydrogen-source-gate.json) · [expanded workflow packet](2026-10-12-rdkit-workflows-expanded-source.md) | Bounded source results: 80/83 reaction cases have exact graph/origin/map agreement, three inputs are invalid in both engines; the prior 8/8 small R-group Python result remains, while the new automatic-H case has Rust graph/label agreement and awaits Python-extension verification. Broad accuracy remains open. |
 | How closely does Cleanup match RDKit? | [current source check](2026-10-18-rdkit-cleanup-alkali-oxygen-followup.md) · [4,069-row source result](2026-10-18-rdkit-cleanup-alkali-oxygen-followup.json) · [previous source check](2026-10-18-rdkit-cleanup-isolated-metals-followup.md) · [previous source result](2026-10-18-rdkit-cleanup-isolated-metals-followup.json) · [previous source check](2026-10-18-rdkit-cleanup-pyridone-followup.md) · [previous source result](2026-10-18-rdkit-cleanup-pyridone-followup.json) · [previous source check](2026-10-18-rdkit-cleanup-nontetra-followup.md) · [previous source result](2026-10-18-rdkit-cleanup-nontetra-followup.json) · [earlier source check](2026-10-18-rdkit-workflows-followup.md) · [earlier source result](2026-10-18-rdkit-cleanup-n-oxide-followup.json) · [older source result](2026-10-18-rdkit-cleanup-source-gate.json) · [pre-change extension](2026-10-18-rdkit-cleanup-before-metal-scope.json) · [prior Cleanup comparison](2026-10-18-rdkit-cleanup-source.md) · [prior 254-row result](2026-10-18-rdkit-cleanup-source.json) · [prior full-corpus result](2026-10-18-rdkit-cleanup-full-corpus-source.json) | Source candidate: 3,923/4,069 exact; one fixed and zero regressed against the previous source result. 146 differences remain. |
 | How closely do Normalize, Reionize, Cleanup and CTfile readback match RDKit? | [current source classification](../validation/results/rdkit-standardization-current-source-2026-10-18.json) · [summary](2026-10-18-trust-gates-and-residuals.md) · [CTfile classification](../validation/results/rdkit-molblock-readback-current-2026-10-18.json) | Normalize, Cleanup, Reionize and CTfile residuals are versioned and classified separately; use the newer focused Cleanup row above for the latest Cleanup-only result. |
@@ -26,11 +26,22 @@ the [complete inventory](archive-index.md) links every retained record.
 
 ## Recent focused follow-ups
 
+- [10k Labute ASA versus RDKit and COSMolKit](2026-10-19-python-labute-asa-cosmolkit.md)
+  ([raw JSON](2026-10-19-python-labute-asa-cosmolkit.json)):
+  exact 10,000-row agreement and strict 20/20 source wins for first use,
+  repeated use, and parse-inclusive use against both comparators. Ring count
+  remains a separate unranked lane because COSMolKit differs from the pinned
+  RDKit result on six rows. The record now starts with a user-facing summary,
+  API example, availability boundary, and guidance on what it does not prove.
+  One-host source evidence only.
+
 - [Python first-use Labute ASA and ring count](2026-10-18-python-first-use-ring-asa.md):
-  exact 1,000-row output agreement against RDKit 2026.09.1. First-use ASA is
+  historical 1,000-row output agreement against RDKit 2026.09.1. First-use ASA is
   1.908x and ring count 1.419x faster with 20/20 block wins. The bounded Python
-  parser prepares equivalent ring/aromatic state; Rust remains lazy. This is
-  one-host source evidence, not a public-wheel or toolkit-wide claim.
+  parser prepares equivalent ring/aromatic state; Rust remains lazy. The later
+  10k record supersedes its current-candidate ASA conclusion. Retained inputs:
+  [focused raw JSON](2026-10-18-python-first-use-ring-asa.json) and
+  [earlier trust-lane JSON](2026-10-18-trust-performance-macos-arm64.json).
 
 - [RDKit Cleanup source sequence](2026-10-18-rdkit-cleanup-source.md):
   [initial full-corpus source run](2026-10-18-rdkit-cleanup-full-corpus-source.json),

@@ -77,6 +77,12 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- Labute ASA now reuses bounded RDKit-compatible scalar preparation from the
+  Python parse boundary and avoids redundant bond/radius work. On the fixed
+  10,000-row macOS source lane, values match RDKit and COSMolKit while
+  first-use, repeated-use, and parse-inclusive calls win all 20 paired blocks.
+  This is not yet public-wheel or two-host evidence; see the
+  [dated record](benchmarks/2026-10-19-python-labute-asa-cosmolkit.md).
 - Python SMILES parsing now prepares the RDKit-compatible aromatic-view
   decision and ring count for bounded ordinary molecules, so first-use Labute
   ASA and ring-count calls reuse work that RDKit also performs during parsing.

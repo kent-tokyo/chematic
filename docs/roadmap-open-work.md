@@ -1,6 +1,6 @@
 # Open-work ledger
 
-Updated 2026-10-18 for **v1.1.7**.
+Updated 2026-10-19 for **v1.1.7**.
 This file lists unresolved work only. Completed changes belong in the
 [CHANGELOG](https://github.com/kent-tokyo/chematic/blob/main/CHANGELOG.md); measurements belong in the
 [validation report](validation.md) and [benchmark index](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/README.md).
@@ -13,15 +13,17 @@ This file lists unresolved work only. Completed changes belong in the
   lane; npm/WASM and crates.io remain separate evidence channels.
 - **Descriptor performance:** repeated QED now has a mutation-safe cache.
   Complete the hosted Linux 20-block run, compare it with macOS, and keep
-  the first-use chiral Morgan and COSMolKit Labute ASA deficits visible. Do not
-  turn a hot-cache or one-host win into a toolkit-wide claim.
+  the first-use chiral Morgan and COSMolKit TPSA deficits visible. Do not turn
+  a hot-cache or one-host win into a toolkit-wide claim.
   The [terminal-TPSA source experiment](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-18-terminal-tpsa.md)
   improves first-use TPSA by 1.037x/1.270x on two fixed macOS windows;
   the [ASA/ring follow-up](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-18-python-first-use-ring-asa.md)
-  closes the measured RDKit first-use deficits on one macOS source lane.
-  COSMolKit deficits remain in first-use TPSA, ASA and one chiral-Morgan
-  window. Re-time public artifacts and add an independent host before
-  broadening these source results.
+  closes the measured RDKit first-use deficits on one macOS source lane. The
+  [10k ASA follow-up](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-19-python-labute-asa-cosmolkit.md)
+  also clears the fixed COSMolKit ASA lane in all 20 blocks. COSMolKit deficits
+  remain in first-use TPSA and one chiral-Morgan window; its six unequal ring
+  counts remain unranked. Re-time exact public artifacts in hosted CI and keep
+  the single-macOS-host limitation visible before broadening these results.
 - **Standardization implementation:** every current Normalize, Reionize and
   Cleanup residual is classified from the same source revision. Prioritize 36
   missing Reionize assignments, aromatic N-oxide kekulization and common

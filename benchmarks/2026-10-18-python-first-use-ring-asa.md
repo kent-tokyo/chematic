@@ -1,5 +1,10 @@
 # Python first-use Labute ASA and ring count
 
+> Historical record. The later
+> [10,000-row RDKit/COSMolKit follow-up](2026-10-19-python-labute-asa-cosmolkit.md)
+> supersedes the current-candidate ASA conclusion. This 1,000-row result is
+> retained to show the earlier development boundary.
+
 This source-candidate record tests the two first-use Python operations that
 still trailed RDKit in the 2026-10-18 performance audit. It is evidence for
 one corpus and one macOS arm64 host, not a published-package or toolkit-wide
