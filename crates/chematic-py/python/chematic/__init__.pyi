@@ -33,6 +33,11 @@ from ._xbs import XbsBondRule as XbsBondRule, XbsSpecies as XbsSpecies, write_xb
 from ._xyz_atom_data import XyzAtomDataFrame as XyzAtomDataFrame, parse_xyz_atom_data as parse_xyz_atom_data
 
 from ._xsf import write_xsf_checked as write_xsf_checked
+from ._cube_datasets import (
+    CubeDatasetDocument as CubeDatasetDocument,
+    CubeDatasetSelection as CubeDatasetSelection,
+    read_cube_datasets as read_cube_datasets,
+)
 
 from typing import overload, Callable, Any, Iterable, Iterator, Literal, Optional, Sequence, TypedDict, Union
 

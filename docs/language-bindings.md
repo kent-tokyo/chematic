@@ -222,7 +222,9 @@ by both bindings — no binding loosens or bypasses them:
 
 - `write_opendx` on a `Bohr`-tagged grid → typed error in all 3 languages (see OpenDX table above).
 - Both OpenDX writers on a grid with any atoms → `OpenDxError::AtomsNotSupported` in all 3 languages (no lossy-atom-dropping path exists at all).
-- Gaussian Cube multi-dataset input → `CubeError::MultiDatasetUnsupported` in all 3 languages (typed rejection, not silent truncation).
+- Gaussian Cube native scalar readers return `CubeError::MultiDatasetUnsupported`
+  for multi-dataset input in all 3 languages. Python additionally provides a
+  separate [bounded dataset reader and explicit scalar selection](cube-dataset-selection.md).
 - LAMMPS data with an unrecognized `atom_style` → `LammpsDataError::UnsupportedAtomStyle` in all 3 languages (no best-effort guess).
 - LAMMPS "Type Labels" sections → rejected in all 3 languages.
 

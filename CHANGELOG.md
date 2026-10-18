@@ -14,6 +14,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Python `read_cube_datasets` reads bounded multi-field CUBE inputs, retaining
+  source text and dataset IDs. Explicit selection exports one ordinary scalar
+  CUBE with an omission sidecar and native geometry validation. See
+  [CUBE dataset selection](docs/cube-dataset-selection.md).
+
 ## [1.1.7] - 2026-10-18
 
 ### Added

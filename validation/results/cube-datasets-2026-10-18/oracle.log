@@ -1,0 +1,14 @@
+{
+  "ase": "3.26.0",
+  "numpy": "2.5.3",
+  "input_documents": 192,
+  "positive_nval_original_fields": 240,
+  "selected_single_fields": 480,
+  "selected_scalar_values": 12724,
+  "max_value_error": 0.0,
+  "max_geometry_error_angstrom": 0.0,
+  "ase_negative_original_accepted": 24,
+  "ase_negative_original_refused": 72,
+  "inputs_sha256": "fd62747125ee42c35c4f57217e77009852b2e859b14df730f2db1109824fcf1e",
+  "scope": "ASE positive-NVAL original reads and all scalar exports; negative multi-dataset original refusals reported separately; exact authored values independently checked"
+}

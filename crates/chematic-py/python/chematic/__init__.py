@@ -15,6 +15,7 @@ from .chematic import *
 from ._xbs import XbsBondRule, XbsSpecies, write_xbs
 from ._xyz_atom_data import XyzAtomDataFrame, parse_xyz_atom_data
 from ._xsf import write_xsf_checked
+from ._cube_datasets import CubeDatasetDocument, CubeDatasetSelection, read_cube_datasets
 from .chematic import (
     __version__,
     Mol,
