@@ -1,0 +1,17 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.13.6, pytest-9.1.1, pluggy-1.6.0
+rootdir: /private/tmp/chematic-metric-matrix-facade-20261018/crates/chematic-py
+configfile: pytest.ini
+collected 281 items
+
+crates/chematic-py/tests/test_metric_matrix_facade.py .................. [  6%]
+............................                                             [ 16%]
+crates/chematic-py/tests/test_sparse_tanimoto.py ....................... [ 24%]
+.................                                                        [ 30%]
+crates/chematic-py/tests/test_descriptor_distances.py .................. [ 37%]
+...............                                                          [ 42%]
+crates/chematic-py/tests/test_rdkit_compat.py .......................... [ 51%]
+........................................................................ [ 77%]
+................................................................         [100%]
+
+============================= 281 passed in 0.99s ==============================

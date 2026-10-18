@@ -50,6 +50,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   strict options and refusal of atom-index changes during preparation. See
   [NumPy graph matrices](docs/compat-graph-matrices.md) for supported weights
   and the uncached, 1024-input-atom scope.
+- Python `rdkit_compat.rdMetricMatrixCalc` provides typed Euclidean and binary
+  Tanimoto condensed matrices as owned float64 NumPy arrays. It reuses checked
+  native calculators with staged binary inputs and RDKit's empty-pair policy.
+  See [metric matrix facade](docs/metric-matrix-facade.md).
 
 ### Changed
 

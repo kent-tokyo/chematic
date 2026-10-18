@@ -122,6 +122,7 @@ nav:
     - Reaction CDXML Output: reaction-cdxml-output.md
     - NumPy Fingerprint Output: numpy-fingerprint-output.md
     - Typed Point Alignment: point-alignment.md
+    - Typed Metric Matrices: metric-matrix-facade.md
     - GAMESS Internal Coordinates: gamess-zmat-output.md
     - Typed Binary Feature Ranking: info-bit-ranker.md
     - Chi-square Bit Ranking: chi-square-bit-ranking.md

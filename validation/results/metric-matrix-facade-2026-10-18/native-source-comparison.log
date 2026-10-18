@@ -1,0 +1,7 @@
+Native fixture source: ca7e14e892cab8b495183bcda4449f49471ba1b1
+Candidate base: f99c7b8ab33098a2e1fd9fd568aee370bf79ab38
+Unchanged relevant source: crates/chematic-chem/src/descriptor_distances.rs
+Unchanged relevant source: crates/chematic-fp/src/sparse_matrix.rs
+Unchanged relevant source: crates/chematic-py/src/descriptor_distances.rs
+Unchanged relevant source: crates/chematic-py/src/sparse_similarity.rs
+No fresh current-main native build or whole-extension equivalence claim.
