@@ -1,6 +1,6 @@
 use chematic_core::{
-    AtomIdx, BondOrder, Chirality, Molecule, MoleculeBuilder, STEREO_H_SENTINEL, StereoGroup,
-    StereoGroupKind, remap_tetrahedral_parity,
+    AtomIdx, BondOrder, Chirality, Molecule, MoleculeBuilder, RenumberError, STEREO_H_SENTINEL,
+    StereoGroup, StereoGroupKind, remap_tetrahedral_parity,
 };
 use chematic_smiles::{ROOTED_SMILES_MAX_ATOMS, RootedSmilesError, parse, write_rooted_checked};
 #[path = "support/rooted_bridgehead.rs"]
@@ -169,4 +169,51 @@ fn invalid_roots_and_atom_limits_refuse_before_traversal() {
         write_rooted_checked(&above, 0),
         Err(RootedSmilesError::ResourceLimit { .. })
     ));
+}
+
+#[test]
+fn refusal_messages_and_sources_are_stable() {
+    let cases = [
+        (
+            RootedSmilesError::InvalidRoot { root: 3, atoms: 2 },
+            "root atom 3 is outside 2 atoms",
+        ),
+        (
+            RootedSmilesError::ResourceLimit {
+                atoms: 257,
+                limit: 256,
+            },
+            "rooted SMILES atom limit: 257 > 256",
+        ),
+        (
+            RootedSmilesError::MissingStereoFrame { atom: 4 },
+            "atom 4 has no recorded stereo frame",
+        ),
+        (
+            RootedSmilesError::InvalidStereoFrame { atom: 5 },
+            "atom 5 has an invalid tetrahedral stereo frame",
+        ),
+        (
+            RootedSmilesError::UnsupportedStereo { atom: Some(6) },
+            "rooted SMILES supports ordinary tetrahedral stereo only (atom Some(6)); enhanced groups are unsupported",
+        ),
+        (
+            RootedSmilesError::UnsupportedBond {
+                bond: 7,
+                order: BondOrder::QueryAny,
+            },
+            "rooted SMILES bond 7 has unsupported order QueryAny",
+        ),
+    ];
+    for (error, expected) in cases {
+        assert_eq!(error.to_string(), expected);
+        assert!(std::error::Error::source(&error).is_none());
+    }
+
+    let error = RootedSmilesError::InvalidMetadata(RenumberError::InvalidMetadata {
+        field: "stereo group",
+        index: 9,
+    });
+    assert_eq!(error.to_string(), "invalid stereo group reference 9");
+    assert!(std::error::Error::source(&error).is_some());
 }
