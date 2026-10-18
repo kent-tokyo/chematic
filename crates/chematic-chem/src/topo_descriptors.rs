@@ -616,36 +616,6 @@ fn bond_scale(view: &Molecule, bond: chematic_core::BondIdx) -> f64 {
     }
 }
 
-// These two overlap terms depend only on the immutable element radius.
-// Evaluate the original f64 operations at compile time, then keep exactly
-// the original atom-index accumulation order at runtime. Slot0 is a dummy
-// or missing radius; slots1..=118 are the periodic-table entries.
-const fn labute_h_terms(radius: f64, rh: f64) -> (f64, f64) {
-    let delta = radius - rh;
-    let absolute = if delta < 0.0 { -delta } else { delta };
-    let bij = radius + rh;
-    let maximum = if absolute > bij { absolute } else { bij };
-    let dij = if maximum < bij { maximum } else { bij };
-    (
-        rh * rh - (radius - dij) * (radius - dij) / dij,
-        radius * radius - (rh - dij) * (rh - dij) / dij,
-    )
-}
-
-const fn labute_h_terms_table(radii: &[f64; 118]) -> [(f64, f64); 119] {
-    let mut result = [(0.0, 0.0); 119];
-    let rh = radii[0];
-    result[0] = labute_h_terms(0.0, rh);
-    let mut i = 0;
-    while i < radii.len() {
-        result[i + 1] = labute_h_terms(radii[i], rh);
-        i += 1;
-    }
-    result
-}
-
-static LABUTE_H_TERMS: [(f64, f64); 119] = labute_h_terms_table(&crate::descriptors::RDKIT_RB0);
-
 /// Per-atom Labute approximate surface area contributions (Å²) plus the
 /// pooled implicit-hydrogen area term, computed together in one pass.
 ///
@@ -687,15 +657,12 @@ fn labute_asa_core(mol: &Molecule, collect_per_atom: bool) -> (Vec<f64>, f64, f6
     // One hydrogen per atom, pooled into a single term (as RDKit does).
     let rh = crate::descriptors::RDKIT_RB0[0];
     let mut h_contrib = 0.0f64;
-    for (i, (_, atom)) in mol.atoms().enumerate() {
-        let index = if atom.wildcard {
-            0
-        } else {
-            atom.element.atomic_number() as usize
-        };
-        let &(overlap, pool) = LABUTE_H_TERMS.get(index).unwrap_or(&LABUTE_H_TERMS[0]);
-        atom_data[i].1 += overlap;
-        h_contrib += pool;
+    for i in 0..n {
+        let ri = atom_data[i].0;
+        let bij = ri + rh;
+        let dij = (ri - rh).abs().max(bij).min(ri + rh);
+        atom_data[i].1 += rh * rh - (ri - dij) * (ri - dij) / dij;
+        h_contrib += ri * ri - (rh - dij) * (rh - dij) / dij;
     }
     let mut per_atom = if collect_per_atom {
         Vec::with_capacity(n)
@@ -1418,129 +1385,3 @@ pub fn num_valence_electrons(mol: &Molecule) -> u32 {
 
 #[cfg(test)]
 include!("topo_descriptors_tests.rs");
-
-#[cfg(test)]
-mod labute_h_terms_tests {
-    use super::*;
-
-    fn labute_asa_core_reference(mol: &Molecule, collect_per_atom: bool) -> (Vec<f64>, f64, f64) {
-        // RDKit's getLabuteAtomContribs (MolSurf.cpp) with includeHs, operation
-        // for operation; bond aromaticity as RDKit perceives it.
-        let n = mol.atom_count();
-        if n == 0 {
-            return (Vec::new(), 0.0, 0.0);
-        }
-        let view = crate::descriptors::descriptor_aromaticity(mol);
-        let view: &Molecule = &view;
-        // Most drug-like molecules fit inline.  Keeping radius and overlap in one
-        // buffer avoids two heap allocations and improves locality without
-        // changing RDKit's accumulation order.
-        let mut atom_data: smallvec::SmallVec<[(f64, f64); 64]> =
-            mol.atoms().map(|(_, a)| (rb0(a), 0.0)).collect();
-        let mut accumulate_bond = |bidx| {
-            let bond = view.bond(bidx);
-            let i = bond.atom1.0 as usize;
-            let j = bond.atom2.0 as usize;
-            let (ri, rj) = (atom_data[i].0, atom_data[j].0);
-            let mut bij = ri + rj;
-            bij -= bond_scale(view, bidx);
-            let dij = (ri - rj).abs().max(bij).min(ri + rj);
-            atom_data[i].1 += rj * rj - (ri - dij) * (ri - dij) / dij;
-            atom_data[j].1 += ri * ri - (rj - dij) * (rj - dij) / dij;
-        };
-        // Bonds in RDKit's numbering (ring closures last), without materializing
-        // the complete order vector for every molecule.
-        mol.for_each_bond_in_rdkit_order(&mut accumulate_bond);
-        // One hydrogen per atom, pooled into a single term (as RDKit does).
-        let rh = crate::descriptors::RDKIT_RB0[0];
-        let mut h_contrib = 0.0f64;
-        for i in 0..n {
-            let ri = atom_data[i].0;
-            let bij = ri + rh;
-            let dij = (ri - rh).abs().max(bij).min(ri + rh);
-            atom_data[i].1 += rh * rh - (ri - dij) * (ri - dij) / dij;
-            h_contrib += ri * ri - (rh - dij) * (rh - dij) / dij;
-        }
-        let mut per_atom = if collect_per_atom {
-            Vec::with_capacity(n)
-        } else {
-            Vec::new()
-        };
-        let mut total = 0.0;
-        for i in 0..n {
-            let (ri, overlap) = atom_data[i];
-            let contribution = PI * ri * (4.0 * ri - overlap);
-            total += contribution;
-            if collect_per_atom {
-                per_atom.push(contribution);
-            }
-        }
-        let h_pool_area = if h_contrib.abs() > 1e-4 {
-            PI * rh * (4.0 * rh - h_contrib)
-        } else {
-            0.0
-        };
-        (per_atom, h_pool_area, total + h_pool_area)
-    }
-
-    fn compare(mol: &Molecule) {
-        for collect in [false, true] {
-            let (a, ah, at) = labute_asa_core(mol, collect);
-            let (b, bh, bt) = labute_asa_core_reference(mol, collect);
-            assert_eq!(
-                a.iter().map(|v| v.to_bits()).collect::<Vec<_>>(),
-                b.iter().map(|v| v.to_bits()).collect::<Vec<_>>()
-            );
-            assert_eq!(ah.to_bits(), bh.to_bits());
-            assert_eq!(at.to_bits(), bt.to_bits());
-        }
-    }
-
-    #[test]
-    fn constant_h_terms_keep_every_original_float_bit() {
-        let rh = std::hint::black_box(crate::descriptors::RDKIT_RB0[0]);
-        for (i, actual) in LABUTE_H_TERMS.iter().enumerate() {
-            let radius = std::hint::black_box(if i == 0 {
-                0.0
-            } else {
-                crate::descriptors::RDKIT_RB0[i - 1]
-            });
-            let bij = radius + rh;
-            let dij = (radius - rh).abs().max(bij).min(radius + rh);
-            let overlap = rh * rh - (radius - dij) * (radius - dij) / dij;
-            let pool = radius * radius - (rh - dij) * (rh - dij) / dij;
-            assert_eq!(actual.0.to_bits(), overlap.to_bits(), "element={i}");
-            assert_eq!(actual.1.to_bits(), pool.to_bits(), "element={i}");
-        }
-    }
-
-    #[test]
-    fn constant_h_terms_keep_all_corpus_totals_and_per_atom_contributions() {
-        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-        let mut rows = 0;
-        for path in [
-            "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
-            "validation/cosmolkit_comparison/corpora/stress-v1.smi",
-        ] {
-            let corpus = std::fs::read_to_string(root.join(path)).unwrap();
-            for line in corpus.lines().filter(|line| !line.trim().is_empty()) {
-                let mol = chematic_smiles::parse(line.split_whitespace().next().unwrap()).unwrap();
-                compare(&mol);
-                rows += 1;
-            }
-        }
-        assert_eq!(rows, 14_072);
-        for n in [0, 1, 63, 64, 65, 128, 129] {
-            let smiles = "C".repeat(n);
-            if n == 0 {
-                compare(&chematic_core::MoleculeBuilder::new().build());
-            } else {
-                compare(&chematic_smiles::parse(&smiles).unwrap());
-            }
-        }
-        for smiles in ["*", "*-*", "[2H]C([3H])O", "[U]", "[Og]", "[H]O[H]"] {
-            let mol = chematic_smiles::parse(smiles).unwrap();
-            compare(&mol);
-        }
-    }
-}

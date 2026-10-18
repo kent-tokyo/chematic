@@ -302,9 +302,15 @@ pub fn tpsa(mol: &Molecule) -> f64 {
 /// RDKit-default TPSA: `rdMolDescriptors.CalcTPSA(mol)` / `Descriptors.TPSA(mol)`
 /// with `includeSandP=False`, i.e. the N and O contributions of [`tpsa`] only.
 pub fn rdkit_tpsa(mol: &Molecule) -> f64 {
-    chematic_smiles::with_rdkit_model_scalar(
+    chematic_smiles::with_rdkit_model_scalar_shortcut(
         mol,
         chematic_core::derived_cache::DerivedScalar::RdkitTpsa,
+        |original| {
+            // Model cleanup can remove H atoms, but cannot create N/O.
+            // With neither element the final descriptor is positive zero.
+            (!original.atoms().any(|(_, atom)| matches!(atom.element.atomic_number(), 7 | 8)))
+                .then_some(0.0)
+        },
         |view| rdkit_tpsa_impl_with_local(view, std::ptr::eq(view, mol)),
     )
 }
@@ -388,6 +394,21 @@ mod terminal_environment_tests {
         for smiles in ["CNC", "c1ccncc1", "O1CC1", "C[N+](C)(C)C", "N(=O)(=O)C", "[Cu]N"] {
             let mol = chematic_smiles::parse(smiles).unwrap();
             assert!(!terminal_tpsa_environment_is_stable(&mol), "{smiles}");
+        }
+    }
+}
+
+#[cfg(test)]
+mod no_polar_model_tests {
+    use super::*;
+
+    #[test]
+    fn no_polar_atoms_skip_unneeded_model_preparation() {
+        for smiles in ["c1ccccc1", "C1=CC=CC=C1", "[CH3-]", "[13CH4]", "[2H]C([3H])([H])[H]", "[Cu]", "P(=S)(S)(S)S", "*C"] {
+            let mol = chematic_smiles::parse(smiles).unwrap();
+            assert_eq!(rdkit_tpsa(&mol).to_bits(), 0.0f64.to_bits(), "{smiles}");
+            assert!(mol.derived_if_computed::<bool>(chematic_core::DerivedSlot::RdkitModelGate).is_none(), "{smiles}");
+            assert!(mol.derived_if_computed::<Option<Molecule>>(chematic_core::DerivedSlot::RdkitScalarModel).is_none(), "{smiles}");
         }
     }
 }

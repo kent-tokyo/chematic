@@ -22,6 +22,26 @@ pub fn with_rdkit_model_scalar(
     mol.derived_scalar(slot, || with_rdkit_model_molecule_impl(mol, f, true))
 }
 
+/// Memoize a scalar with a proof-based constant shortcut on the original
+/// graph, before model preparation. `shortcut` may return a value only when
+/// it equals `f` on the sanitized/H-normalized model as well. Nested model
+/// callbacks still evaluate `f` directly, bypassing outer caches/shortcuts.
+#[doc(hidden)]
+#[inline]
+pub fn with_rdkit_model_scalar_shortcut(
+    mol: &Molecule,
+    slot: chematic_core::derived_cache::DerivedScalar,
+    shortcut: impl FnOnce(&Molecule) -> Option<f64>,
+    f: impl FnOnce(&Molecule) -> f64,
+) -> f64 {
+    if IN_RDKIT_MODEL.with(|c| c.get()) {
+        return f(mol);
+    }
+    mol.derived_scalar(slot, || {
+        shortcut(mol).unwrap_or_else(|| with_rdkit_model_molecule_impl(mol, f, true))
+    })
+}
+
 /// Runs `f` on RDKit's own molecule for `mol` (`Chem.MolFromSmiles(s)`:
 /// hydrogen graph atoms removed, RDKit's aromaticity, bond orders, charges
 /// and per-atom hydrogen counts, as [`rdkit_hydrogen_suppressed`] builds it)
@@ -111,4 +131,105 @@ pub(super) fn rdkit_model_molecule(
         );
     }
     Ok(view)
+}
+
+#[cfg(test)]
+mod shortcut_tests {
+    use super::*;
+    use chematic_core::derived_cache::DerivedScalar;
+    use std::cell::Cell;
+
+    fn no_polar_atoms(mol: &Molecule) -> bool {
+        !mol.atoms()
+            .any(|(_, atom)| matches!(atom.element.atomic_number(), 7 | 8))
+    }
+
+    #[test]
+    fn scalar_shortcut_preserves_cache_clone_and_edit_rules() {
+        let mut mol = crate::parse("c1ccccc1").unwrap();
+        let shortcuts = Cell::new(0);
+        let callbacks = Cell::new(0);
+        for _ in 0..2 {
+            let value = with_rdkit_model_scalar_shortcut(
+                &mol,
+                DerivedScalar::RdkitTpsa,
+                |input| {
+                    shortcuts.set(shortcuts.get() + 1);
+                    no_polar_atoms(input).then_some(0.0)
+                },
+                |input| {
+                    callbacks.set(callbacks.get() + 1);
+                    input
+                        .atoms()
+                        .filter(|(_, a)| matches!(a.element.atomic_number(), 7 | 8))
+                        .count() as f64
+                },
+            );
+            assert_eq!(value.to_bits(), 0.0f64.to_bits());
+        }
+        assert_eq!(shortcuts.get(), 1);
+        assert_eq!(callbacks.get(), 0);
+        assert!(
+            mol.derived_if_computed::<bool>(chematic_core::DerivedSlot::RdkitModelGate)
+                .is_none()
+        );
+        let cloned = mol.clone();
+        let value = with_rdkit_model_scalar_shortcut(
+            &cloned,
+            DerivedScalar::RdkitTpsa,
+            |_| {
+                shortcuts.set(shortcuts.get() + 1);
+                Some(0.0)
+            },
+            |_| panic!("zero callback"),
+        );
+        assert_eq!(value, 0.0);
+        assert_eq!(shortcuts.get(), 2);
+        let _ = mol.add_atom(chematic_core::Atom::new(chematic_core::Element::O));
+        let value = with_rdkit_model_scalar_shortcut(
+            &mol,
+            DerivedScalar::RdkitTpsa,
+            |input| {
+                shortcuts.set(shortcuts.get() + 1);
+                no_polar_atoms(input).then_some(0.0)
+            },
+            |input| {
+                callbacks.set(callbacks.get() + 1);
+                input
+                    .atoms()
+                    .filter(|(_, a)| matches!(a.element.atomic_number(), 7 | 8))
+                    .count() as f64
+            },
+        );
+        assert_eq!(value, 1.0);
+        assert_eq!(shortcuts.get(), 3);
+        assert_eq!(callbacks.get(), 1);
+    }
+
+    #[test]
+    fn nested_model_callback_bypasses_shortcut_and_outer_scalar_cache() {
+        let mol = crate::parse("C").unwrap();
+        assert_eq!(
+            with_rdkit_model_scalar_shortcut(
+                &mol,
+                DerivedScalar::RdkitTpsa,
+                |_| Some(0.0),
+                |_| panic!("shortcut")
+            ),
+            0.0
+        );
+        let previous = IN_RDKIT_MODEL.with(|cell| cell.replace(true));
+        let value = with_rdkit_model_scalar_shortcut(
+            &mol,
+            DerivedScalar::RdkitTpsa,
+            |_| panic!("nested shortcut"),
+            |_| 42.0,
+        );
+        IN_RDKIT_MODEL.with(|cell| cell.set(previous));
+        assert_eq!(value, 42.0);
+        assert_eq!(
+            mol.derived_scalar(DerivedScalar::RdkitTpsa, || panic!("outer cache")),
+            0.0
+        );
+    }
 }

@@ -87,7 +87,7 @@ pub use rdkit::{
     rdkit_random_smiles_with, rdkit_reaction_to_smarts, rdkit_sanitized_model, rdkit_shortest_path,
     rdkit_smarts, rdkit_smarts_to_smarts, rdkit_smiles, rdkit_stereoisomer_count,
     rdkit_stereoisomer_smiles, rdkit_tautomer_score, register_rdkit_model_hook,
-    with_rdkit_model_molecule, with_rdkit_model_scalar,
+    with_rdkit_model_molecule, with_rdkit_model_scalar, with_rdkit_model_scalar_shortcut,
 };
 pub use rooted::{ROOTED_SMILES_MAX_ATOMS, RootedSmilesError, write_rooted_checked};
 pub use smi_file::{
