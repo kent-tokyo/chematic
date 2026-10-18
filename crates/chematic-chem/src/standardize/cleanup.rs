@@ -63,16 +63,14 @@ fn disconnect_metals_for_cleanup(mol: &Molecule) -> Molecule {
             (bond.atom2.0 as usize, bond.atom1.0 as usize)
         };
         let ligand_atom = &atoms[ligand];
-        // RDKit's default disconnector leaves aromatic metal-carbon bonds and
-        // ordinary Sn-C bonds attached. Its other metal-carbon cases include
-        // aliphatic organometallics and metal carbonyls.
-        if ligand_atom.element.atomic_number() == 1
-            || (ligand_atom.element.atomic_number() == 6
+        let metal_z = atoms[metal].element.atomic_number();
+        let ligand_z = ligand_atom.element.atomic_number();
+        if !default_metal_disconnector_match(metal_z, ligand_z)
+            || (ligand_z == 6
                 && (ligand_atom.aromatic
                     || aromaticity
                         .as_ref()
-                        .is_some_and(|model| model.is_atom_aromatic(AtomIdx(ligand as u32)))
-                    || atoms[metal].element.atomic_number() == 50))
+                        .is_some_and(|model| model.is_atom_aromatic(AtomIdx(ligand as u32)))))
         {
             continue;
         }
@@ -84,6 +82,18 @@ fn disconnect_metals_for_cleanup(mol: &Molecule) -> Molecule {
     }
 
     rebuild_after_metal_disconnection(mol, atoms, &removed)
+}
+
+/// RDKit 2026.09.1's default MetalNof and MetalNon SMARTS element sets.
+/// Alkali/alkaline-earth metals only disconnect N/O/F, while the smaller
+/// transition-metal/Al set also disconnects C, halogens, and other ligands.
+fn default_metal_disconnector_match(metal_z: u8, ligand_z: u8) -> bool {
+    let metal_nof =
+        matches!(metal_z, 3 | 4 | 11 | 12 | 13 | 19..=31 | 37..=50 | 55 | 56 | 72..=83 | 87 | 88);
+    let metal_non = matches!(metal_z, 13 | 21..=30 | 39..=48 | 72..=79);
+    let ligand_nof = matches!(ligand_z, 7..=9);
+    let ligand_non = matches!(ligand_z, 5 | 6 | 14..=17 | 33..=35 | 51..=53 | 85);
+    (metal_nof && ligand_nof) || (metal_non && ligand_non)
 }
 
 fn transfer_metal_ligand_charge(
