@@ -140,6 +140,8 @@ def main() -> None:
                 ROOT / "crates/chematic-chem/src/standardize/cleanup.rs",
                 ROOT / "crates/chematic-chem/src/standardize/groups.rs",
                 ROOT / "crates/chematic-chem/examples/cleanup_rdkit_dump.rs",
+                ROOT / "crates/chematic-smiles/src/lib.rs",
+                ROOT / "crates/chematic-smiles/src/rdkit/mod.rs",
             )
         },
         "corpus": str(CORPUS.relative_to(ROOT)),

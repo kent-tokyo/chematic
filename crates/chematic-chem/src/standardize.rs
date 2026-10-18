@@ -1893,6 +1893,36 @@ mod tests {
     }
 
     #[test]
+    fn cleanup_writer_keeps_isolated_metal_coordination_tag() {
+        for (input, expected) in [
+            ("F[Pt@SP1](Cl)(Br)I", "[Br-].[Cl-].[F-].[I-].[Pt@SP1+4]"),
+            ("F[Pt@SP2](Cl)(Br)I", "[Br-].[Cl-].[F-].[I-].[Pt@SP2+4]"),
+            (
+                "C[Co@OH1](N)(N)(N)(N)Cl",
+                "[CH3-].[Cl-].[Co@OH1+6].[NH2-].[NH2-].[NH2-].[NH2-]",
+            ),
+            (
+                "C[Fe@TB2](F)(Cl)(Br)I",
+                "[Br-].[CH3-].[Cl-].[F-].[Fe@TB2+5].[I-]",
+            ),
+        ] {
+            let cleaned = cleanup(&parse(input).unwrap());
+            assert_eq!(
+                chematic_smiles::rdkit_cleanup_canonical_smiles(&cleaned).as_deref(),
+                Ok(expected),
+                "{input}"
+            );
+        }
+        // A vacant coordination site changes the permutation when the ligands
+        // are removed. Until that remapping is represented, omit the tag.
+        let partial = cleanup(&parse("F[Pt@SP1](Cl)Br").unwrap());
+        assert_eq!(
+            chematic_smiles::rdkit_cleanup_canonical_smiles(&partial).as_deref(),
+            Ok("[Br-].[Cl-].[F-].[Pt+3]")
+        );
+    }
+
+    #[test]
     fn cleanup_disconnects_covalent_metal_ligands_with_charge_balance() {
         let mol = parse("Cl[Au]").unwrap();
         let cleaned = cleanup(&mol);
