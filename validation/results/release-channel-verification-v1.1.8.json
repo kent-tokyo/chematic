@@ -3,46 +3,46 @@
   "release": {
     "version": "1.1.8",
     "tag": "v1.1.8",
-    "commit": null
+    "commit": "00596fb1ea5397524f98e3789c41f17ee8616fdc"
   },
-  "checked_at": "2026-10-18T20:57:19Z",
+  "checked_at": "2026-10-18T22:28:14Z",
   "release_ready": false,
   "channels": [
     {
       "id": "github_release",
-      "status": "not_measured",
+      "status": "passed",
       "url": "https://github.com/kent-tokyo/chematic/releases/tag/v1.1.8",
-      "detail": "Pre-publication record: verify the annotated tag target, release state, and metadata asset after publication."
+      "detail": "Published, non-draft, non-prerelease release. The metadata asset is present with SHA-256 07d2130afe84839ba4b5a9c135324eb08fe634fa9f7d86707a9a047ffc89495e."
     },
     {
       "id": "npm",
-      "status": "not_measured",
+      "status": "passed",
       "url": "https://www.npmjs.com/package/@kent-tokyo/chematic/v/1.1.8",
-      "detail": "Pre-publication record: verify registry metadata, integrity, and gitHead after publication."
+      "detail": "Registry metadata reports version 1.1.8, gitHead 00596fb1ea5397524f98e3789c41f17ee8616fdc, and integrity sha512-cUYv2/1jHWCr2iyYuCLlPznYkfixEQd22GzxBARta6QTHOnpD5aBX/4gFSLSkcDTmkrflJaxahoUkBn1cFGhdA==."
     },
     {
       "id": "pypi",
-      "status": "not_measured",
-      "url": "https://pypi.org/pypi/chematic/1.1.8/json",
-      "detail": "Pre-publication record: verify the wheel matrix and sdist digest after publication."
+      "status": "partial",
+      "url": "https://pypi.org/project/chematic/1.1.8/",
+      "detail": "Twenty-one wheels totaling 187385322 bytes were published before the project-wide 10 GiB limit was reached. CPython 3.10-3.13 wheels are present for Linux x86_64/aarch64, macOS x86_64/arm64, and Windows x86_64. The CPython 3.9 macOS arm64, Linux x86_64/aarch64, and Windows wheels plus the sdist remain blocked. A project-limit increase is tracked at https://github.com/pypi/support/issues/12750. A clean macOS arm64 CPython 3.13 install imported version 1.1.8 and parsed SMILES successfully."
     },
     {
       "id": "crates_io",
-      "status": "not_measured",
+      "status": "passed",
       "url": "https://crates.io/crates/chematic/1.1.8",
-      "detail": "Pre-publication record: verify all publishable workspace crates and the top-level checksum after publication."
+      "detail": "The top-level crate is published and not yanked. crates.io reports checksum caeb7eb0918b2e83e43d2d2bab3c74f08da9961e9333e37593534e11a6d3e570; the dependency-ordered workspace publication workflow passed."
     },
     {
       "id": "docs_rs",
-      "status": "not_measured",
+      "status": "passed",
       "url": "https://docs.rs/chematic/1.1.8/chematic/",
-      "detail": "Pre-publication record: version-pinned rustdoc is unavailable until crates.io publication and docs.rs processing complete."
+      "detail": "The version-pinned documentation endpoint returned HTTP 200."
     },
     {
       "id": "site",
-      "status": "not_measured",
+      "status": "passed",
       "url": "https://kent-tokyo.github.io/chematic/",
-      "detail": "Pre-publication record: verify the Pages workflow and displayed version after publication."
+      "detail": "The v1.1.8 main-branch Pages deployment workflow completed successfully and the deployed site returned HTTP 200."
     }
   ]
 }
