@@ -444,6 +444,10 @@ jobs:
           .venv/bin/python scripts/summarize_a6_mmff94_termination.py --rows validation/results/a6-source-265-linux.jsonl --metadata validation/results/a6-source-265-linux.meta.json --output validation/results/a6-source-265-linux.summary.json --build-profile release
           cargo run --release -q -p chematic-3d --example pipeline_v2_vs_rdkit_common_scorer -- --chematic-rows validation/results/a6-source-265-linux.jsonl --rdkit-rows validation/results/public-package-3d-rdkit-2026.3.6-2026-09-22.jsonl --output validation/results/a6-source-265-linux.scored.jsonl
           .venv/bin/python scripts/a6_platform_gate.py --rows validation/results/a6-source-265-linux.jsonl --scored validation/results/a6-source-265-linux.scored.jsonl --scope source-linux-x86_64 --output validation/results/a6-source-265-linux.gate.json
+      - name: RDKit 2026.09.1 R-group hydrogen columns from source wheel
+        run: |
+          .venv/bin/pip install 'rdkit==2026.09.1' --quiet
+          .venv/bin/python scripts/rdkit_rgroup_hydrogen_gate.py --output validation/results/rdkit-rgroup-hydrogen-source-wheel-linux.json
       - name: Retain HBA source-wheel parity result
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
@@ -463,6 +467,7 @@ jobs:
             validation/results/a6-source-265-linux.summary.json
             validation/results/a6-source-265-linux.scored.jsonl
             validation/results/a6-source-265-linux.gate.json
+            validation/results/rdkit-rgroup-hydrogen-source-wheel-linux.json
           if-no-files-found: ignore
 
   test-a6-paired-linux-cp39:

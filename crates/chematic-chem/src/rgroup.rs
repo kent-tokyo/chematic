@@ -165,6 +165,11 @@ struct LabeledCandidate {
     result: LabeledRGroupResult,
 }
 
+struct PlaceholderSites {
+    attachments: BTreeMap<u16, (AtomIdx, AtomIdx)>,
+    hydrogen_sites: BTreeMap<u16, AtomIdx>,
+}
+
 /// Decompose `mols` against `scaffold_smarts`.
 ///
 /// For each molecule the algorithm:
@@ -425,17 +430,14 @@ fn finalize_labeled_rows(
 // embedding exists. Keep original indices so the candidate builder sees one
 // consistent query regardless of which matcher produced the embedding.
 fn without_terminal_mapped_wildcards(query: &QueryMolecule) -> Option<(QueryMolecule, Vec<usize>)> {
-    let mut optional_anchors = HashSet::new();
     for idx in 0..query.atom_count() {
         if is_terminal_mapped_wildcard(query, idx) {
-            let (bond_idx, anchor) = query.adj[idx][0];
+            let (bond_idx, _) = query.adj[idx][0];
             if !matches!(
                 query.bonds[bond_idx].query,
                 BondQuery::Any | BondQuery::Primitive(BondPrimitive::Single)
-            ) || !optional_anchors.insert(anchor)
-            {
-                // Non-single attachment bonds and multiple R labels on one
-                // anchor need a separate assignment policy.
+            ) {
+                // A missing multiple-bond attachment cannot be hydrogen.
                 return None;
             }
         }
@@ -570,6 +572,71 @@ fn canonical_atom_ranks(mol: &Molecule) -> Vec<usize> {
     ranks
 }
 
+fn placeholder_sites(
+    mol_idx: usize,
+    mol: &Molecule,
+    query: &QueryMolecule,
+    mapping: &rustc_hash::FxHashMap<usize, AtomIdx>,
+    explicit_labels: &HashMap<usize, u16>,
+    placeholder_queries: &HashSet<usize>,
+    core: &HashSet<AtomIdx>,
+) -> Result<Option<PlaceholderSites>, RGroupError> {
+    let mut attachments = BTreeMap::new();
+    let mut hydrogen_sites = BTreeMap::new();
+    let mut placeholders_by_anchor: BTreeMap<usize, Vec<usize>> = BTreeMap::new();
+    for &placeholder_idx in placeholder_queries {
+        placeholders_by_anchor
+            .entry(query.adj[placeholder_idx][0].1)
+            .or_default()
+            .push(placeholder_idx);
+    }
+    for (anchor_idx, mut placeholders) in placeholders_by_anchor {
+        placeholders.sort_by_key(|idx| explicit_labels[idx]);
+        let site = mapping[&anchor_idx];
+        if placeholders.iter().all(|idx| mapping.contains_key(idx)) {
+            for placeholder_idx in placeholders {
+                let label = explicit_labels[&placeholder_idx];
+                insert_attachment(
+                    &mut attachments,
+                    mol_idx,
+                    label,
+                    (site, mapping[&placeholder_idx]),
+                )?;
+            }
+            continue;
+        }
+        if placeholders.iter().any(|idx| mapping.contains_key(idx)) {
+            return Ok(None);
+        }
+        let external: Vec<_> = mol
+            .neighbors(site)
+            .filter_map(|(neighbor, _)| (!core.contains(&neighbor)).then_some(neighbor))
+            .collect();
+        // The reduced query can assign one substituent to the lowest label.
+        // More than one unbound substituent would require a column-alignment
+        // choice, so leave that case to the complete query match above.
+        if external.len() > 1
+            || usize::from(implicit_hcount(mol, site)) < placeholders.len() - external.len()
+        {
+            return Ok(None);
+        }
+        for (index, placeholder_idx) in placeholders.into_iter().enumerate() {
+            let label = explicit_labels[&placeholder_idx];
+            if index == 0
+                && let Some(&root) = external.first()
+            {
+                insert_attachment(&mut attachments, mol_idx, label, (site, root))?;
+            } else {
+                hydrogen_sites.insert(label, site);
+            }
+        }
+    }
+    Ok(Some(PlaceholderSites {
+        attachments,
+        hydrogen_sites,
+    }))
+}
+
 #[allow(clippy::too_many_arguments)]
 fn labeled_candidate(
     mol_idx: usize,
@@ -596,30 +663,21 @@ fn labeled_candidate(
         })
         .collect();
 
-    let mut attachments: BTreeMap<u16, (AtomIdx, AtomIdx)> = BTreeMap::new();
-    let mut hydrogen_sites = BTreeMap::new();
-    for &placeholder_idx in &placeholder_queries {
-        let label = explicit_labels[&placeholder_idx];
-        let core_query_idx = query.adj[placeholder_idx][0].1;
-        let site = mapping[&core_query_idx];
-        if let Some(&root) = mapping.get(&placeholder_idx) {
-            insert_attachment(&mut attachments, mol_idx, label, (site, root))?;
-        } else {
-            let external: Vec<_> = mol
-                .neighbors(site)
-                .filter_map(|(neighbor, _)| (!core.contains(&neighbor)).then_some(neighbor))
-                .collect();
-            match external.as_slice() {
-                [root] => insert_attachment(&mut attachments, mol_idx, label, (site, *root))?,
-                [] if implicit_hcount(mol, site) > 0 => {
-                    hydrogen_sites.insert(label, site);
-                }
-                // A reduced embedding must not silently choose one of several
-                // substituents or invent hydrogen on a saturated atom.
-                _ => return Ok(None),
-            }
-        }
-    }
+    let Some(PlaceholderSites {
+        mut attachments,
+        mut hydrogen_sites,
+    }) = placeholder_sites(
+        mol_idx,
+        mol,
+        query,
+        mapping,
+        explicit_labels,
+        &placeholder_queries,
+        &core,
+    )?
+    else {
+        return Ok(None);
+    };
 
     let placeholder_pairs: HashSet<(AtomIdx, AtomIdx)> = attachments.values().copied().collect();
     for &core_atom in &core {
@@ -1023,6 +1081,42 @@ mod tests {
         assert_eq!(first.r_groups[&1], "[*:1]C");
         assert_eq!(first.r_groups[&2], "[*:2][H]");
         assert_eq!(first.core_smiles, second.core_smiles);
+    }
+
+    #[test]
+    fn two_terminal_wildcards_on_one_atom_align_substituent_and_hydrogen() {
+        let mols = [mol("CO"), mol("CCO"), mol("CC(O)N")];
+        let refs: Vec<&Molecule> = mols.iter().collect();
+        let rows = rgroup_decompose_labeled("C([*:1])([*:2])O", &refs).unwrap();
+        let rows: Vec<_> = rows.iter().map(|row| row.as_ref().unwrap()).collect();
+        assert!(
+            rows.iter()
+                .all(|row| row.core_smiles == rows[0].core_smiles)
+        );
+        assert_eq!(
+            canonical_smiles(&mol(&rows[0].core_smiles)),
+            canonical_smiles(&mol("OC([*:1])[*:2]"))
+        );
+        assert_eq!(rows[0].r_groups[&1], "[*:1][H]");
+        assert_eq!(rows[0].r_groups[&2], "[*:2][H]");
+        assert_eq!(rows[1].r_groups[&1], "[*:1]C");
+        assert_eq!(rows[1].r_groups[&2], "[*:2][H]");
+        assert_eq!(rows[2].r_groups[&1], "[*:1]C");
+        assert_eq!(rows[2].r_groups[&2], "N[*:2]");
+
+        let alone = rgroup_decompose_labeled("C([*:1])([*:2])O", &refs[..1]).unwrap();
+        assert!(alone[0].as_ref().unwrap().r_groups.is_empty());
+
+        let pair = rgroup_decompose_labeled("C([*:1])([*:2])O", &refs[..2]).unwrap();
+        for row in pair.iter().flatten() {
+            assert_eq!(row.r_groups.keys().copied().collect::<Vec<_>>(), [1]);
+            assert_eq!(
+                canonical_smiles(&mol(&row.core_smiles)),
+                canonical_smiles(&mol("OC[*:1]"))
+            );
+        }
+        assert_eq!(pair[0].as_ref().unwrap().r_groups[&1], "[*:1][H]");
+        assert_eq!(pair[1].as_ref().unwrap().r_groups[&1], "[*:1]C");
     }
 
     #[test]
