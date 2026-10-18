@@ -2002,6 +2002,41 @@ mod tests {
     }
 
     #[test]
+    fn cleanup_charges_bare_isolated_metals_like_rdkit() {
+        // RDKit 2026.09.1 Cleanup changes only the bare isolated atoms in
+        // this set. Explicit hydrides and bonded metals retain their form.
+        for (input, expected) in [
+            ("[Li]", "[Li+]"),
+            ("[Na]", "[Na+]"),
+            ("[K]", "[K+]"),
+            ("[Mg]", "[Mg+2]"),
+            ("[Ca]", "[Ca+2]"),
+            ("[Rb]", "[Rb]"),
+            ("[Cs]", "[Cs]"),
+            ("[13Na:7]", "[13Na+:7]"),
+            ("[LiH]", "[LiH]"),
+            ("[MgH2]", "[MgH2]"),
+            ("[H][Li]", "[LiH]"),
+            ("[H][Mg][H]", "[MgH2]"),
+            ("[Na]C", "[CH3][Na]"),
+            ("[Na].c1ccccc1", "[Na+].c1ccccc1"),
+            ("[Na].F[C@](Cl)(Br)I", "F[C@](Cl)(Br)I.[Na+]"),
+        ] {
+            let cleaned = cleanup(&parse(input).unwrap());
+            assert_eq!(
+                chematic_smiles::rdkit_cleanup_canonical_smiles(&cleaned).as_deref(),
+                Ok(expected),
+                "{input}"
+            );
+            assert_eq!(
+                chematic_smiles::rdkit_cleanup_canonical_smiles(&cleanup(&cleaned)).as_deref(),
+                Ok(expected),
+                "second Cleanup: {input}"
+            );
+        }
+    }
+
+    #[test]
     fn largest_fragment_two_fragments_picks_larger() {
         // "CC.CCC" — ethane (2 C) and propane (3 C)
         let mol = parse("CC.CCC").unwrap();
