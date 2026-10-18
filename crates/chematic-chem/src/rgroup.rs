@@ -24,7 +24,9 @@
 
 use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
 
-use chematic_core::{Atom, AtomIdx, BondIdx, BondOrder, Molecule, MoleculeBuilder};
+use chematic_core::{
+    Atom, AtomIdx, BondIdx, BondOrder, Element, Molecule, MoleculeBuilder, implicit_hcount,
+};
 use chematic_smarts::{
     AtomPrimitive, AtomQuery, MatchConfig, QueryMolecule, find_matches_with_config, parse_smarts,
 };
@@ -156,6 +158,9 @@ struct LabeledCandidate {
     missing_explicit: usize,
     signature: Vec<(u16, String, usize)>,
     rgroup_fingerprints: BTreeMap<u16, chematic_fp::BitVec2048>,
+    core: HashSet<AtomIdx>,
+    attachments: BTreeMap<u16, (AtomIdx, AtomIdx)>,
+    hydrogen_sites: BTreeMap<u16, AtomIdx>,
     result: LabeledRGroupResult,
 }
 
@@ -290,7 +295,7 @@ fn decompose_labeled_prepared(
         ..Default::default()
     };
 
-    let mut rows = Vec::with_capacity(mols.len());
+    let mut rows: Vec<Option<LabeledCandidate>> = Vec::with_capacity(mols.len());
     let mut column_counts: BTreeMap<u16, HashMap<String, usize>> = BTreeMap::new();
     let mut column_fingerprints: BTreeMap<u16, Vec<chematic_fp::BitVec2048>> = BTreeMap::new();
     for (mol_idx, &input_mol) in mols.iter().enumerate() {
@@ -348,14 +353,49 @@ fn decompose_labeled_prepared(
                     .or_default()
                     .push(fingerprint.clone());
             }
-            rows.push(Some(candidate.result));
+            rows.push(Some(candidate));
         } else if let Some(err) = first_error {
             return Err(err);
         } else {
             rows.push(None);
         }
     }
-    Ok(rows)
+    // RDKit emits an R-group hydrogen only when another row establishes that
+    // column. A lone unsubstituted core therefore has no empty R column.
+    let active_labels: HashSet<u16> = rows
+        .iter()
+        .flatten()
+        .flat_map(|candidate| candidate.result.r_groups.keys().copied())
+        .collect();
+    Ok(rows
+        .into_iter()
+        .map(|row| {
+            row.map(|mut candidate| {
+                let mut attachments = candidate.attachments;
+                let mut filled_hydrogen = false;
+                for (label, site) in candidate.hydrogen_sites {
+                    if active_labels.contains(&label) {
+                        filled_hydrogen = true;
+                        candidate
+                            .result
+                            .r_groups
+                            .insert(label, canonical_smiles(&hydrogen_rgroup(label)));
+                        // The second tuple component is unused by the core
+                        // builder for a hydrogen attachment.
+                        attachments.insert(label, (site, AtomIdx(u32::MAX)));
+                    }
+                }
+                if filled_hydrogen {
+                    candidate.result.core_smiles = canonical_smiles(&build_core_mol_labeled(
+                        mols[candidate.result.mol_idx],
+                        &candidate.core,
+                        &attachments,
+                    ));
+                }
+                candidate.result
+            })
+        })
+        .collect())
 }
 
 fn compare_labeled_candidates(
@@ -534,17 +574,40 @@ fn labeled_candidate(
         .iter()
         .filter(|label| !attachments.contains_key(label))
         .count();
+    let hydrogen_sites = explicit_labels
+        .iter()
+        .filter_map(|(&query_idx, &label)| {
+            if placeholder_queries.contains(&query_idx) || attachments.contains_key(&label) {
+                return None;
+            }
+            let site = mapping[&query_idx];
+            (implicit_hcount(mol, site) > 0).then_some((label, site))
+        })
+        .collect();
 
     Ok(LabeledCandidate {
         missing_explicit,
         signature,
         rgroup_fingerprints,
+        core,
+        attachments,
+        hydrogen_sites,
         result: LabeledRGroupResult {
             mol_idx,
             core_smiles,
             r_groups,
         },
     })
+}
+
+fn hydrogen_rgroup(label: u16) -> Molecule {
+    let mut builder = MoleculeBuilder::new();
+    let hydrogen = builder.add_atom(Atom::new(Element::H));
+    let mut wildcard = Atom::wildcard();
+    wildcard.atom_map = Some(label);
+    let attachment = builder.add_atom(wildcard);
+    let _ = builder.add_bond(hydrogen, attachment, BondOrder::Single);
+    builder.build()
 }
 
 fn insert_attachment(
@@ -788,6 +851,31 @@ mod tests {
         assert!(first.core_smiles.contains("*:2"));
         assert!(first.r_groups[&1].contains("*:1"));
         assert!(first.r_groups[&2].contains("*:2"));
+    }
+
+    #[test]
+    fn labelled_core_fills_hydrogen_only_for_established_columns() {
+        for (core, unsubstituted, substituted) in [
+            ("[c:1]1ccccc1", "c1ccccc1", "Cc1ccccc1"),
+            ("[C:1]1CCCCC1", "C1CCCCC1", "CC1CCCCC1"),
+            ("[O:1]C", "CO", "COC"),
+            ("[N:1]C", "CN", "CNC"),
+        ] {
+            let mols = [mol(unsubstituted), mol(substituted)];
+            let refs: Vec<&Molecule> = mols.iter().collect();
+            let rows = rgroup_decompose_labeled(core, &refs).unwrap();
+            let first = rows[0].as_ref().unwrap();
+            let second = rows[1].as_ref().unwrap();
+            assert_eq!(
+                first.r_groups.get(&1).map(String::as_str),
+                Some("[*:1][H]"),
+                "{core}"
+            );
+            assert_eq!(first.core_smiles, second.core_smiles, "{core}");
+
+            let one = rgroup_decompose_labeled(core, &refs[..1]).unwrap();
+            assert!(one[0].as_ref().unwrap().r_groups.is_empty(), "{core}");
+        }
     }
 
     #[test]
