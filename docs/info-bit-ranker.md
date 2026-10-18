@@ -58,10 +58,10 @@ correct column count. Changing a returned array does not alter later results.
 [class-biased variants](biased-bit-ranking.md) are implemented. CHISQUARE returns an uncorrected Pearson statistic, not information
 gain or a p-value; it uses the same count table and deterministic tie policy.
 `SetBiasList` accepts a validated iterable of preferred class IDs for
-BIASENTROPY/BIASCHISQUARE. `SetMaskBits` explicitly raises `NotImplementedError`.
-Masks and file output are outside this ranker profile. A separate
+BIASENTROPY/BIASCHISQUARE.
+[Typed feature masks](info-ranker-masks.md) are supported. A separate
 [bit-pair co-occurrence generator](bit-cooccurrence.md) counts selected pairs.
-This is supervised binary
+Correlation matrices and file output remain outside this profile. This is supervised binary
 feature ranking; it does not generate chemical fingerprints or infer activity
 labels. No speed advantage over RDKit is claimed.
 

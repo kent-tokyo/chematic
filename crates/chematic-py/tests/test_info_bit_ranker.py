@@ -186,12 +186,10 @@ def test_invalid_top_count(num, exc):
         populated().GetTopN(num)
 
 
-def test_empty_ranker_and_masks_are_explicit_errors():
+def test_empty_ranker_is_explicit_error():
     ranker = I.InfoBitRanker(4, 2)
     with pytest.raises(ValueError, match="one record"):
         ranker.GetTopN(1)
-    with pytest.raises(NotImplementedError):
-        ranker.SetMaskBits([1])
 
 
 def test_numeric_index_protocol_and_dimension_boundaries():

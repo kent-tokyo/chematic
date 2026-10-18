@@ -40,8 +40,9 @@ structural `GetNumBits()` / `GetOnBits()` vectors, bounded dimensions and record
 count, uint64 counters, staged validated votes, independent output arrays,
 and explicit errors. `GetTopN(0)` works after a vote; empty rankers still refuse.
 [Class-biased variants](biased-bit-ranking.md) were added in a follow-up.
-Masks, p-values, chemical fingerprint generation and Rust/WASM APIs remain
-outside this Python/NumPy addition. It has no RDKit runtime dependency.
+[Feature masks](info-ranker-masks.md) are supported in a follow-up.
+p-values, chemical fingerprint generation and Rust/WASM APIs
+remain outside this Python/NumPy addition. It has no RDKit runtime dependency.
 
 ## Validation
 

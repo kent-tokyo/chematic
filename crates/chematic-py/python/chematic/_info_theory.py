@@ -130,6 +130,7 @@ class InfoBitRanker:
         self._metric = metric
         self._bias: tuple[int, ...] = ()
         self._records = 0
+        self._mask_bits: frozenset[int] | None = None
         self._class_counts: np.ndarray[Any, np.dtype[np.uint64]] = np.zeros(
             classes, dtype=np.uint64
         )
@@ -155,6 +156,8 @@ class InfoBitRanker:
         if self._records >= MAX_RANKER_RECORDS:
             raise ValueError("ranker record limit exceeded")
         bits = _on_bits(bitVect, self._width)
+        if self._mask_bits is not None:
+            bits = [bit for bit in bits if bit in self._mask_bits]
         self._on_counts[bits, category] += 1
         self._class_counts[category] += 1
         self._records += 1
@@ -167,11 +170,14 @@ class InfoBitRanker:
         p-values. BIAS modes zero scores failing SetBiasList preferences.
         Empty classes/constant features contribute zero. Scores rank
         descending; exact ties use ascending bit ID, unlike RDKit's heap.
-        At least one record is required. The returned float64 array is a copy.
+        Only currently masked-in bits are eligible; num cannot exceed their
+        unique count. At least one record is required. The returned float64
+        array is a copy.
         """
         count = _integer(num, "num")
-        if not 0 <= count <= self._width:
-            raise ValueError("num must be in [0, nBits]")
+        available = self._width if self._mask_bits is None else len(self._mask_bits)
+        if not 0 <= count <= available:
+            raise ValueError("num must be in [0, number of eligible bits]")
         if self._records == 0:
             raise ValueError("information ranking requires at least one record")
         output: np.ndarray[Any, np.dtype[np.float64]] = np.empty(
@@ -203,10 +209,12 @@ class InfoBitRanker:
                 axis=1
             )
             gains = np.where(accepted, gains, 0.0)
-        order: np.ndarray[Any, np.dtype[np.intp]] = np.lexsort(
-            (np.arange(self._width), -gains)
+        candidates = (
+            np.arange(self._width)
+            if self._mask_bits is None
+            else np.asarray(sorted(self._mask_bits), dtype=np.intp)
         )
-        order = order[:count]
+        order = candidates[np.lexsort((candidates, -gains[candidates]))][:count]
         output[:, 0] = order
         output[:, 1] = gains[order]
         output[:, 2:] = on[order]
@@ -242,9 +250,36 @@ class InfoBitRanker:
             selected.add(category)
         self._bias = tuple(sorted(selected))
 
-    def SetMaskBits(self, maskBits: Iterable[int]) -> None:
-        """Feature masking is outside this profile."""
-        raise NotImplementedError("bit masks are unsupported")
+    def SetMaskBits(self, maskBits: Iterable[SupportsIndex]) -> None:
+        """Replace the eligible feature set for future votes and ranking.
+
+        Args:
+            maskBits: At most nBits integer IDs in [0, nBits). Duplicates
+                collapse to a set. Empty selects no features; range(nBits)
+                restores all features. Text, bytes and bool IDs are rejected.
+
+        Raises:
+            TypeError: The source is not an integer iterable.
+            ValueError: An ID is out of range or the raw item limit is exceeded.
+
+        The complete iterable is validated before replacing the previous mask.
+        Existing counts and class totals remain unchanged. Later votes update
+        on-counts only for selected bits, but always update class totals. A
+        newly selected bit does not regain on-votes skipped by an earlier mask.
+        Exceptions from user iteration propagate; caller side effects are not
+        rolled back. This method does not retain the source iterable.
+        """
+        if isinstance(maskBits, (str, bytes, bytearray)):
+            raise TypeError("maskBits must be an iterable of integer bit IDs")
+        selected: set[int] = set()
+        for position, value in enumerate(maskBits):
+            if position >= self._width:
+                raise ValueError("maskBits raw item count must not exceed nBits")
+            bit = _integer(value, "mask bit ID")
+            if not 0 <= bit < self._width:
+                raise ValueError("mask bit ID must be in [0, nBits)")
+            selected.add(bit)
+        self._mask_bits = frozenset(selected)
 
 
 class rdInfoTheory:

@@ -1,0 +1,17 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.13.6, pytest-9.1.1, pluggy-1.6.0
+rootdir: /private/tmp/chematic-info-ranker-masks-20261018/crates/chematic-py
+configfile: pytest.ini
+collected 251 items
+
+crates/chematic-py/tests/test_info_ranker_masks.py ..................... [  8%]
+.....                                                                    [ 10%]
+crates/chematic-py/tests/test_info_bit_ranker.py ....................... [ 19%]
+.....................                                                    [ 27%]
+crates/chematic-py/tests/test_chi_square_bit_ranker.py ................. [ 34%]
+..                                                                       [ 35%]
+crates/chematic-py/tests/test_rdkit_compat.py .......................... [ 45%]
+........................................................................ [ 74%]
+................................................................         [100%]
+
+============================= 251 passed in 0.90s ==============================
