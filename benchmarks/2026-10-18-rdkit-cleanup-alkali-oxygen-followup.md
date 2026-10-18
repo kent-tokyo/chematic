@@ -33,7 +33,19 @@ python scripts/rdkit_cleanup_source_gate.py \
   --output /tmp/chematic-cleanup-alkali-oxygen-gate.json
 ```
 
-Local checks: `chematic-chem` unit tests 984 passed and 1 ignored; Clippy,
+Local checks: `chematic-chem` unit tests 985 passed and 1 ignored; Clippy,
 rustfmt, and refactor budget passed. This is output agreement on a selected
 corpus, not independent chemical truth or broad accuracy superiority over
 RDKit. Reaction and R-group source behavior is unchanged by this follow-up.
+
+## Charge conservation in two remaining disagreements
+
+The frozen row-level result also exposes two simple metal-disconnection cases
+where exact RDKit agreement would lose a useful invariant. For row 410,
+`O=[Mn](=O)(=O)[O-].[K+]` has total formal charge 0. RDKit Cleanup produces
+`[K+].[Mn+8].[O-2].[O-2].[O-2].[O-2]` (charge +1); CheMatic produces the same
+separated ions with `[Mn+7]` (charge 0). For row 455, `C(#N)[Cu]` starts at
+charge 0. RDKit produces `[C-]#N.[Cu]` (charge -1); CheMatic produces
+`[C-]#N.[Cu+]` (charge 0). A source unit test now pins both outputs and checks
+charge conservation. These are two narrow, independently checkable advantages
+on the recorded examples; they do not establish general Cleanup superiority.

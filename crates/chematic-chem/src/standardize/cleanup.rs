@@ -255,7 +255,33 @@ fn rebuild_after_metal_disconnection(
 #[cfg(test)]
 mod tests {
     use super::cleanup;
+    use chematic_core::Molecule;
     use chematic_smiles::parse;
+
+    #[test]
+    fn preserves_charge_for_permanganate_and_copper_cyanide() {
+        for (input, expected) in [
+            (
+                "O=[Mn](=O)(=O)[O-].[K+]",
+                "[K+].[Mn+7].[O-2].[O-2].[O-2].[O-2]",
+            ),
+            ("C(#N)[Cu]", "[C-]#N.[Cu+]"),
+        ] {
+            let mol = parse(input).unwrap();
+            let cleaned = cleanup(&mol);
+            let total_charge = |mol: &Molecule| {
+                mol.atoms()
+                    .map(|(_, atom)| i32::from(atom.charge))
+                    .sum::<i32>()
+            };
+            assert_eq!(total_charge(&cleaned), total_charge(&mol), "{input}");
+            assert_eq!(
+                chematic_smiles::rdkit_cleanup_canonical_smiles(&cleaned).as_deref(),
+                Ok(expected),
+                "{input}"
+            );
+        }
+    }
 
     #[test]
     fn balances_one_isolated_alkali_with_one_oxygen_acid() {
