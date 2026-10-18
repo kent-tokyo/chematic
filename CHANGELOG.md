@@ -14,6 +14,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Native MOPAC Cartesian readers/writers accept bounded standalone `+`
+  keyword continuations, preserving physical keyword text and the following
+  title/comment lines. Signed values and quoted markers do not continue lines.
+  See [continuation semantics](docs/mopac-keyword-continuation.md).
+
 ## [1.1.7] - 2026-10-18
 
 ### Added

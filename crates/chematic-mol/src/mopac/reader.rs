@@ -15,27 +15,19 @@ pub fn parse_mopac_cartesian_with_limits(
             return Err(error(i + 1, "line length limit exceeded"));
         }
     }
-    let mut lines = text.lines();
-    let mut header = Vec::new();
-    for line in 1..=3 {
-        header.push(
-            lines
-                .next()
-                .ok_or_else(|| error(line, "three header lines are required"))?
-                .to_string(),
-        );
-    }
+    let mut lines = text.lines().enumerate();
+    let (keywords, title, comment) = header::read(&mut lines)?;
     let mut g = MopacCartesianGeometry {
-        keywords: header[0].clone(),
-        title: header[1].clone(),
-        comment: header[2].clone(),
+        keywords,
+        title,
+        comment,
         atoms: Vec::new(),
         translation_vectors: Vec::new(),
         source_text: String::new(),
     };
     let mut ended = false;
-    for (i, line) in lines.enumerate() {
-        let number = i + 4;
+    for (i, line) in lines {
+        let number = i + 1;
         if line.trim().is_empty() {
             ended = true;
             continue;

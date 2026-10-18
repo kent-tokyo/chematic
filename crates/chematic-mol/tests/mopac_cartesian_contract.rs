@@ -112,7 +112,7 @@ fn unsupported_geometry_cannot_be_silently_reinterpreted() {
             "{body}"
         );
     }
-    for keywords in ["PM7 A0", "a0=1", "PM7 +", "++", "PM7 &"] {
+    for keywords in ["PM7 A0", "a0=1", "++", "PM7 &"] {
         assert_eq!(
             diagnostic(parse_mopac_cartesian(&format!("{keywords}\n\n\nC 0 0 0")))
                 .unwrap_err()

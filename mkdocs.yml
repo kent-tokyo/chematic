@@ -96,6 +96,7 @@ nav:
     - FHI-aims Geometry: openbabel-fhiaims.md
     - MOPAC archive input: mopac-archive-input.md
     - MOPAC Cartesian: openbabel-mopac-cartesian.md
+    - MOPAC Keyword Continuations: mopac-keyword-continuation.md
     - DMol3 Coordinates: openbabel-dmol3.md
     - PDB Atom Selection: pdb-atom-selection.md
     - Explicit PDB CONECT Graph: pdb-conect-graph.md
