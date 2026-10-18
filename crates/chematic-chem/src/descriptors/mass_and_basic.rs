@@ -568,6 +568,17 @@ pub fn rotatable_bond_atom_pairs(mol: &Molecule) -> Vec<(AtomIdx, AtomIdx)> {
         &[a, b] => Some((AtomIdx(a.min(b) as u32), AtomIdx(a.max(b) as u32))),
         _ => None,
     })
+    .filter(|&(a, b)| {
+        // RDKit removes ordinary explicit H atoms on SMILES input. Keep
+        // isotope-labelled H, but do not let a removable H make a terminal
+        // OH/NH group appear to have two neighbours in the strict SMARTS.
+        [a, b].into_iter().all(|end| {
+            mol.neighbors(end)
+                .filter(|&(nb, _)| !crate::hydrogen::is_removable_explicit_h(mol, nb))
+                .count()
+                > 1
+        })
+    })
     .collect();
     pairs.sort_unstable_by_key(|&(a, b)| (a.0, b.0));
     pairs.dedup();

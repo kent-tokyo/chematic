@@ -239,7 +239,7 @@ pub fn add_stereocenter_hydrogens(mol: &Molecule) -> Molecule {
 /// terminal substituent: an isolated H (`[H+]`, `[H]`), an H bonded only to
 /// H (`[H][H]`), an H of degree other than 1, a hydride (`[H-]`), or an H on
 /// a wildcard (`*[H]`).
-fn is_removable_explicit_h(mol: &Molecule, idx: AtomIdx) -> bool {
+pub(crate) fn is_removable_explicit_h(mol: &Molecule, idx: AtomIdx) -> bool {
     let a = mol.atom(idx);
     if a.element != Element::H || a.isotope.is_some() || a.charge == -1 {
         return false;
