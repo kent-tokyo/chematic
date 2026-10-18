@@ -101,6 +101,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- Release validation now sends only publishable library crates to
+  `cargo-semver-checks` and refreshes the current-source standardization
+  evidence after SMILES parser changes, keeping patch-release CI fail-closed
+  without treating the binary-only CLI as a Rust API surface.
 - Native MOL/SDF V2000 and V3000 writers bound titles to 80 UTF-8 bytes,
   keep complete characters and replace controls/line separators with spaces.
   Original metadata stays unchanged; serialized titles can lose content.
