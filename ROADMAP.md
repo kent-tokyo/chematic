@@ -58,9 +58,12 @@ in the [benchmark index](benchmarks/README.md), and unresolved work in the
    retain first-use output identity and use the hosted Linux 20-block lane to
    adjudicate chiral Morgan, Labute ASA and QED alongside macOS.
    The [terminal-TPSA source follow-up](benchmarks/2026-10-18-terminal-tpsa.md)
-   improves both fixed first-use windows, but first-use TPSA, ASA, ring count
-   and one chiral-Morgan window still trail COSMolKit. Keep these deficits
-   separate from repeated-use and parse-inclusive results.
+   improves both fixed first-use windows. The
+   [Python ASA/ring follow-up](benchmarks/2026-10-18-python-first-use-ring-asa.md)
+   closes the measured RDKit first-use ASA and ring-count deficits on one
+   macOS source lane. COSMolKit still leads first-use ASA, and first-use TPSA
+   plus one chiral-Morgan window remain open. Keep these deficits separate
+   from repeated-use and parse-inclusive results.
 
 **Exit:** the release candidate passes all changed-crate/binding compatibility
 gates, evaluates the frozen rows exactly once, and has separate two-host
@@ -98,8 +101,9 @@ versioned, and unsupported inputs never become guessed successes.
 1. Require exact or toleranced output agreement before timing.
 2. Separate parse-inclusive, first-use, prepared/hot, startup, and memory
    lanes.
-3. Prioritize reproducible deficits in QED/LogP first-use, ring perception,
-   Labute ASA/TPSA, chiral Morgan, and reaction application.
+3. Prioritize reproducible deficits in QED/LogP first-use, Labute ASA/TPSA
+   against COSMolKit, chiral Morgan, and reaction application. Preserve the
+   new RDKit first-use ring/ASA win through public-wheel and second-host gates.
 4. Reject rows with comparator errors, skipped work, or asymmetric APIs.
 
 **Exit:** a declared win uses at least 21 alternating blocks, wins every block,

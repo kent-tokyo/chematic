@@ -77,6 +77,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- Python SMILES parsing now prepares the RDKit-compatible aromatic-view
+  decision and ring count for bounded ordinary molecules, so first-use Labute
+  ASA and ring-count calls reuse work that RDKit also performs during parsing.
+  Larger or highly cyclic inputs remain lazy, graph edits still invalidate
+  derived state, and the Rust parser is unchanged. Exact one-host evidence and
+  the parse/first-use tradeoff are recorded in the
+  [dated benchmark](benchmarks/2026-10-18-python-first-use-ring-asa.md).
 - Repeated QED reads on an unchanged molecule now reuse the computed scalar.
   The cache is cleared by every graph edit and clones continue to start with
   empty derived caches; first-use values are unchanged.
