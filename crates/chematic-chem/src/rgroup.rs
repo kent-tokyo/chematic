@@ -1139,18 +1139,22 @@ mod tests {
         for (smiles, heteroatom) in [("CC(O)N", "N"), ("CC(O)Cl", "Cl"), ("CC(O)F", "F")] {
             let single = [mol(smiles)];
             let single_refs: Vec<&Molecule> = single.iter().collect();
-            let rows = rgroup_decompose_labeled("C([*:1])([*:2])O", &single_refs).unwrap();
-            let row = rows[0].as_ref().unwrap();
-            assert_eq!(
-                canonical_smiles(&mol(&row.r_groups[&1])),
-                canonical_smiles(&mol(&format!("{heteroatom}[*:1]"))),
-                "{smiles}"
-            );
-            assert_eq!(
-                canonical_smiles(&mol(&row.r_groups[&2])),
-                canonical_smiles(&mol("C[*:2]")),
-                "{smiles}"
-            );
+            for inputs in [&single_refs[..], &[&mols[0], &single[0]][..]] {
+                let rows = rgroup_decompose_labeled("C([*:1])([*:2])O", inputs).unwrap();
+                let row = rows.last().unwrap().as_ref().unwrap();
+                assert_eq!(
+                    canonical_smiles(&mol(&row.r_groups[&1])),
+                    canonical_smiles(&mol(&format!("{heteroatom}[*:1]"))),
+                    "{smiles} with {} rows",
+                    inputs.len()
+                );
+                assert_eq!(
+                    canonical_smiles(&mol(&row.r_groups[&2])),
+                    canonical_smiles(&mol("C[*:2]")),
+                    "{smiles} with {} rows",
+                    inputs.len()
+                );
+            }
         }
     }
 
