@@ -7,6 +7,8 @@ returns an empty list instead of one enrichment factor. The same defect occurs
 at 100%, including a one-compound library.
 
 chematic now provides `enrichment_factors` in Rust (`chematic_chem`) and Python.
+A later [ranked-record Scoring facade](scoring-enrichment-facade.md) accepts
+RDKit-style records and a selected activity column.
 The input is a binary activity label for every ranked compound, best first.
 The function does not sort scores or break ties. The caller must use a ranking
 and tie policy appropriate to its screening experiment.

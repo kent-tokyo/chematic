@@ -1,0 +1,15 @@
+{
+  "seed": 7981,
+  "rdkit": "2026.09.1",
+  "numpy": "2.5.3",
+  "ordinary_rankings": 1024,
+  "ordinary_representation_comparisons": 4096,
+  "paired_records": 137216,
+  "max_rdkit_error": 4.440892098500626e-16,
+  "max_independent_error": 4.440892098500626e-16,
+  "corrected_boundary_cases": 6,
+  "upstream_boundary_differences": 6,
+  "inputs_sha256": "0cbe1084b0868dc7e88a64b2b1830d5158ca8dd7064491e039a41098125337b4",
+  "rdkit_function_sha256": "842bdfc65daf3ac81d17f76abca2b6478320f5ffc78d7b5891faa6439f673e55",
+  "scope": "Ordinary single-cutoff parity; boundary corrections validated separately against exact count formula"
+}

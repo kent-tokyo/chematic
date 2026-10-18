@@ -1,0 +1,5 @@
+validation/results/scoring-enrichment-facade-2026-10-18/typing_invalid.py:5: error: Argument 1 has incompatible type "int"; expected "Iterable[RankedScoreRow]"  [arg-type]
+validation/results/scoring-enrichment-facade-2026-10-18/typing_invalid.py:6: error: List item 0 has incompatible type "int"; expected "RankedScoreRow"  [list-item]
+validation/results/scoring-enrichment-facade-2026-10-18/typing_invalid.py:7: error: Argument 2 has incompatible type "float"; expected "SupportsIndex"  [arg-type]
+validation/results/scoring-enrichment-facade-2026-10-18/typing_invalid.py:8: error: List item 0 has incompatible type "str"; expected "float"  [list-item]
+Found 4 errors in 1 file (checked 1 source file)

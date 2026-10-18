@@ -14,6 +14,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Python `rdkit_compat.Scoring.CalcEnrichment` adapts bounded ranked records,
+  generators and NumPy arrays to the existing native enrichment calculator,
+  with explicit binary labels, checked column selection and corrected endpoint
+  behavior. See [ranked-record enrichment](docs/scoring-enrichment-facade.md).
+
 ## [1.1.7] - 2026-10-18
 
 ### Added
