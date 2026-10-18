@@ -164,7 +164,7 @@ pub use standardize::{
     FragmentDecision, FragmentPolicy, FragmentRecord, FragmentSnapshot, MoleculeSnapshot,
     PipelineStatus, StandardizationPipeline, StandardizationReport, StandardizationStep,
     StandardizationStepReport, StandardizationWarning, StandardizeOptions, TransformationRecord,
-    ZwitterionHandling, charge_parent, fragment_parent, has_zwitterion, isotope_parent,
+    ZwitterionHandling, charge_parent, cleanup, fragment_parent, has_zwitterion, isotope_parent,
     largest_fragment, neutralize_charges, normalize_groups, normalize_zwitterion, prefer_organic,
     reionize, remove_isotopes, remove_stereo, select_fragment, standardize, stereo_parent,
     uncharge,
