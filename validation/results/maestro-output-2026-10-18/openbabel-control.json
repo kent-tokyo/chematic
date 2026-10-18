@@ -1,0 +1,15 @@
+{
+  "version": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+  "format_help": "mae is not a recognized plugin type. Those with instances of sub-types loaded are:\ncharges\ndescriptors\nfingerprints\nforcefields\nformats\nloaders\nops\n",
+  "format_stderr": "",
+  "command": [
+    "/opt/homebrew/bin/obabel",
+    "-isdf",
+    "validation/results/maestro-output-2026-10-18/water.sdf",
+    "-omae"
+  ],
+  "returncode": 1,
+  "stderr": "obabel: cannot write output format!\n",
+  "output_bytes": 169,
+  "registered_mae": false
+}

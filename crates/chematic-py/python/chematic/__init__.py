@@ -687,3 +687,5 @@ from ._mcs_comparators import (
 from ._pdb_hydrogen_names import (
     PdbHydrogenName, PdbHydrogenNaming, name_pdb_hydrogens_checked,
 )
+
+from ._maestro import MaeExport, write_mae_checked, v2000_to_mae_checked

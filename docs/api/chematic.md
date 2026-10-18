@@ -4,6 +4,9 @@
     options:
       members:
         - Mol
+        - MaeExport
+        - write_mae_checked
+        - v2000_to_mae_checked
         - name_pdb_hydrogens_checked
         - PdbHydrogenName
         - PdbHydrogenNaming

@@ -1,0 +1,26 @@
+{
+  "base": "540086f978612df1e21baa731c0884dea7441f46",
+  "time_utc": "2026-10-18T05:21:20.237761+00:00",
+  "python": "3.13.6",
+  "numpy": "2.5.3",
+  "pytest": "9.1.1",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "native_fixture_commit": "ca7e14e892cab8b495183bcda4449f49471ba1b1",
+  "native_sha256": "90f81980b0fdf06c8edb616d8f8e5acd1831a9b6de404ed2b3405646cff41423",
+  "native_bytes": 85142576,
+  "native_fixture_evidence": "ca7e14e8:validation/results/checked-core-removal-2026-10-17/provenance.json",
+  "native_scope": "verified existing native fixture; no fresh current-main native build or published-wheel validation",
+  "unchanged_projection_paths": [
+    "crates/chematic-mol/src/cdjson",
+    "crates/chematic-py/src/formats/cdjson.rs"
+  ],
+  "projection_changed_files": [],
+  "source_sha256": {
+    "crates/chematic-py/python/chematic/__init__.py": "77b65c32bf72184dd5e4a7ea5f5d77290b988492e5e099b361879453bd5abec1",
+    "crates/chematic-py/python/chematic/__init__.pyi": "012e1a3e26dcf731d923c1f9b8ccb43dac60bc67946db83762f9998f8ae37f46",
+    "crates/chematic-py/python/chematic/_maestro.py": "9a7530049e930302b6879315753025b45a561c617fbbc355c27a9940780945fb",
+    "crates/chematic-py/tests/test_maestro_output.py": "00c0cd91480e27ed7f938493d52dbf12a9a21bf9ba23ef14f2fbdbde61609c23"
+  },
+  "maeparser_source_revision": "b8106cc17c4857fb2b0072159bf42d9df2d8ef34",
+  "reader_scope": "installed RDKit 2026.09.1 Maestro supplier; not a standalone maeparser build or Maestro GUI"
+}

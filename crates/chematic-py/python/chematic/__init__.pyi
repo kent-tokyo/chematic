@@ -5754,3 +5754,5 @@ from ._pdb_hydrogen_names import (
     PdbHydrogenNaming as PdbHydrogenNaming,
     name_pdb_hydrogens_checked as name_pdb_hydrogens_checked,
 )
+
+from ._maestro import MaeExport as MaeExport, write_mae_checked as write_mae_checked, v2000_to_mae_checked as v2000_to_mae_checked
