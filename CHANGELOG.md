@@ -14,6 +14,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Python `rdInfoTheory.InfoBitRanker` supports class-biased entropy and Pearson
+  ranking with typed, bounded, transactional `SetBiasList` inputs. Preferences
+  can be replaced without resetting votes. See
+  [class-biased ranking](docs/biased-bit-ranking.md) for semantics and scope.
+
 ## [1.1.7] - 2026-10-18
 
 ### Added

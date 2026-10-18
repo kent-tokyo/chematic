@@ -1,4 +1,4 @@
-"""Bounded entropy and Pearson chi-square ranking of binary fingerprints."""
+"""Bounded entropy and Pearson ranking, with optional class bias."""
 
 from __future__ import annotations
 
@@ -101,7 +101,7 @@ def _chi_square(
 
 
 class InfoBitRanker:
-    """Checked ENTROPY/CHISQUARE binary fingerprint ranker.
+    """Checked binary fingerprint ranker with optional class-biased scores.
 
     Accepts structural explicit/sparse binary vectors. Counts are committed
     only after all bit IDs and the label have passed validation. No chemical
@@ -117,8 +117,8 @@ class InfoBitRanker:
         width = _integer(nBits, "nBits")
         classes = _integer(nClasses, "nClasses")
         metric = _integer(infoType, "infoType")
-        if metric not in (InfoType.ENTROPY, InfoType.CHISQUARE):
-            raise ValueError("only InfoType.ENTROPY and CHISQUARE are supported")
+        if metric not in tuple(InfoType):
+            raise ValueError("infoType must be a supported InfoType value")
         if not 1 <= width <= MAX_RANKER_BITS or not 1 <= classes <= MAX_RANKER_CLASSES:
             raise ValueError("nBits must be 1..65536 and nClasses must be 1..256")
         if width * classes > MAX_RANKER_ENTRIES:
@@ -126,6 +126,7 @@ class InfoBitRanker:
         self._width = width
         self._classes = classes
         self._metric = metric
+        self._bias: tuple[int, ...] = ()
         self._records = 0
         self._class_counts: np.ndarray[Any, np.dtype[np.uint64]] = np.zeros(
             classes, dtype=np.uint64
@@ -161,7 +162,8 @@ class InfoBitRanker:
 
         ENTROPY scores are information gain in bits; CHISQUARE scores are the
         uncorrected Pearson statistic of the 2-by-nClasses on/off table, not
-        p-values. Empty classes/constant features contribute zero. Scores rank
+        p-values. BIAS modes zero scores failing SetBiasList preferences.
+        Empty classes/constant features contribute zero. Scores rank
         descending; exact ties use ascending bit ID, unlike RDKit's heap.
         At least one record is required. The returned float64 array is a copy.
         """
@@ -177,7 +179,7 @@ class InfoBitRanker:
             return output
         totals = self._class_counts.astype(np.float64)
         on = self._on_counts.astype(np.float64)
-        if self._metric == InfoType.CHISQUARE:
+        if self._metric in (InfoType.CHISQUARE, InfoType.BIASCHISQUARE):
             gains = _chi_square(on, totals, self._records)
         else:
             off = totals[None, :] - on
@@ -189,6 +191,16 @@ class InfoBitRanker:
                 - (1.0 - probability_on) * _entropy(off)
             )
             gains = np.clip(gains, 0.0, parent)
+        if (
+            self._metric in (InfoType.BIASENTROPY, InfoType.BIASCHISQUARE)
+            and 0 < len(self._bias) < self._classes
+        ):
+            fractions = np.divide(on, totals, out=np.zeros_like(on), where=totals > 0)
+            others = [c for c in range(self._classes) if c not in self._bias]
+            accepted = fractions[:, self._bias].max(axis=1) >= fractions[:, others].max(
+                axis=1
+            )
+            gains = np.where(accepted, gains, 0.0)
         order: np.ndarray[Any, np.dtype[np.intp]] = np.lexsort(
             (np.arange(self._width), -gains)
         )
@@ -198,9 +210,35 @@ class InfoBitRanker:
         output[:, 2:] = on[order]
         return output
 
-    def SetBiasList(self, classList: Iterable[int]) -> None:
-        """Biasing is outside this ENTROPY/CHISQUARE profile."""
-        raise NotImplementedError("biased metrics are unsupported")
+    def SetBiasList(self, classList: Iterable[SupportsIndex]) -> None:
+        """Replace the preferred classes after validating the complete iterable.
+
+        Args:
+            classList: Unique integer IDs in [0, nClasses). An empty
+                list accepts every bit. Fewer than nClasses IDs are allowed.
+                The list is copied, not retained.
+
+        Raises:
+            TypeError: Noniterable input or noninteger IDs (including bool).
+            ValueError: Duplicate/out-of-range IDs or nClasses or more IDs.
+
+        In biased modes, a bit retains its base score if any preferred class
+        has an on-fraction at least as high as every nonpreferred class;
+        otherwise its score becomes zero. Empty classes have fraction zero.
+        Counts remain intact; zero-scored bits still participate in ranking.
+        Unbiased modes ignore the preference. Replacing it after votes
+        reranks the existing data.
+        Invalid input leaves the previous preference and counts unchanged.
+        """
+        selected: set[int] = set()
+        for value in classList:
+            if len(selected) >= self._classes - 1:
+                raise ValueError("classList must contain fewer than nClasses IDs")
+            category = _integer(value, "bias class ID")
+            if not 0 <= category < self._classes or category in selected:
+                raise ValueError("bias class IDs must be unique and in [0, nClasses)")
+            selected.add(category)
+        self._bias = tuple(sorted(selected))
 
     def SetMaskBits(self, maskBits: Iterable[int]) -> None:
         """Feature masking is outside this profile."""
@@ -208,7 +246,7 @@ class InfoBitRanker:
 
 
 class rdInfoTheory:
-    """Typed namespace exposing the bounded entropy/chi-square ranker."""
+    """Typed namespace exposing the bounded binary feature ranker."""
 
     InfoType = InfoType
     InfoBitRanker = InfoBitRanker
