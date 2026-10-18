@@ -80,6 +80,7 @@ nav:
   - Formats & Bindings:
     - CCD Molecular Templates: ccd-components.md
     - CIF Molecular Bonds: cif-molecular-bonds.md
+    - mmCIF Chain Records: mmcif-chain-records.md
     - pymatgen JSON: pymatgen-json.md
     - Linear Nucleic-Acid Diagrams: nucleic-linear-svg.md
     - CML Molecular Collections: cml-collection.md

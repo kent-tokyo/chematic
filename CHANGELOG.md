@@ -14,6 +14,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Python `read_mmcif_chains` returns immutable model/label-chain atom records
+  with full residue/atom aliases, source indices and original text. Explicit
+  input/work limits and native residue checks protect ambiguous reads. See
+  [mmCIF chain records](docs/mmcif-chain-records.md) for the first-loop scope.
+
 ## [1.1.7] - 2026-10-18
 
 ### Added

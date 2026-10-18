@@ -687,3 +687,11 @@ from ._mcs_comparators import (
 from ._pdb_hydrogen_names import (
     PdbHydrogenName, PdbHydrogenNaming, name_pdb_hydrogens_checked,
 )
+
+from ._mmcif_chains import (
+    MmcifChain as MmcifChain,
+    MmcifChainAtom as MmcifChainAtom,
+    MmcifChainRead as MmcifChainRead,
+    MmcifChainResidue as MmcifChainResidue,
+    read_mmcif_chains as read_mmcif_chains,
+)
