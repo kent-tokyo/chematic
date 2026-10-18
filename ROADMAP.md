@@ -20,9 +20,11 @@ contracts and reproducible evidence over feature-count parity.
 - The bounded workflow gates cover 80 exact reaction rows plus three jointly
   invalid inputs, 39/39 largest-fragment decisions, and 16/16 labelled
   R-group rows. Broader standardization and R-group chemistry remain open.
-- The latest complete hosted Python chemistry packet is v1.1.3. The broadest
-  published-package RDKit performance packet remains v1.0.42. Source results
-  are not relabelled as package evidence.
+- The v1.1.5 published-wheel chemistry workflow completed all 11 Linux,
+  macOS, Windows, RDKit-comparison, A6, and autoconf jobs. Its hosted run is
+  package evidence; a durable checked-in v1.1.5 packet is still required.
+- The broadest published-package RDKit performance packet remains v1.0.42.
+  Source or exploratory timings are not relabelled as package evidence.
 - The processed Linux Codecov lane reports 96.93% Rust line coverage.
   Coverage proves execution, not chemical correctness.
 - 3D, MMFF94, pKa/ADMET screening, IUPAC naming, broad Markush/polymer
@@ -34,13 +36,34 @@ in the [benchmark index](benchmarks/README.md), and unresolved work in the
 
 ## Priority order
 
-### P0 — Publish evidence from exact v1.1.x artifacts
+### Next candidate — immediate sequence
 
-1. Run chemistry, reaction, SMARTS, fingerprint, format, and A6 gates from
-   exact PyPI, npm, and crates.io artifacts.
-2. Record artifact and corpus hashes, comparator builds, options, platform,
+1. **Restore QED and LogP throughput.** Reproduce the reported v1.1.4 to
+   v1.1.5 slowdown under the same 21-block alternating protocol, profile the
+   equivalent-work path, and optimize without changing descriptor outputs.
+2. **Close standardization gaps.** Reproduce the 254-row Normalize, Reionize,
+   and Cleanup comparison, classify each residual as bug, semantic equivalent,
+   declared policy difference, or typed unsupported, then fix the bug class.
+3. **Expand Rust compatibility coverage.** Compile previous-release consumers
+   against every public crate and feature set; retain `cargo-semver-checks` and
+   explicit fixtures for public enums, errors, structs, and traits.
+4. **Freeze new IO/OGB/3D holdouts.** Select outcome-blind SDF/V3000 and 3D
+   quality rows before implementation changes, then measure meaning retention,
+   convergence, quality tails, time, and peak memory from exact artifacts.
+
+**Exit:** the next release candidate has no descriptor-speed regression,
+standardization residuals are classified, all public crates pass compatibility
+fixtures, and new holdouts are frozen before inspection.
+
+### P0 — Maintain evidence from exact v1.1.x artifacts
+
+1. Preserve the successful v1.1.5 published-wheel chemistry run and check in
+   its versions, hashes, counts, and failure accounting as a durable packet.
+2. Run reaction, SMARTS, fingerprint, format, browser, and A6 gates from exact
+   PyPI, npm, and crates.io artifacts when a claim depends on that channel.
+3. Record artifact and corpus hashes, comparator builds, options, platform,
    and failure accounting.
-3. Keep Linux, macOS, Windows, browser, and native results separate.
+4. Keep Linux, macOS, Windows, browser, and native results separate.
 
 **Exit:** every public claim points to a reproducible artifact record.
 
@@ -61,8 +84,8 @@ versioned, and unsupported inputs never become guessed successes.
 1. Require exact or toleranced output agreement before timing.
 2. Separate parse-inclusive, first-use, prepared/hot, startup, and memory
    lanes.
-3. Prioritize remaining deficits in ring perception, Labute ASA/TPSA, chiral
-   Morgan, and reaction application.
+3. Prioritize reproducible deficits in QED/LogP first-use, ring perception,
+   Labute ASA/TPSA, chiral Morgan, and reaction application.
 4. Reject rows with comparator errors, skipped work, or asymmetric APIs.
 
 **Exit:** a declared win uses at least 21 alternating blocks, wins every block,

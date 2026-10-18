@@ -4,10 +4,12 @@ chematic benchmarks are specific to a package or source revision, comparator,
 corpus, host, runtime, options, and timed operation. A speed result counts only
 when the stated work and outputs are equivalent.
 
-The current release is **v1.1.5**. The latest complete hosted Python chemistry
-packet is v1.1.3, while the broadest published-package RDKit performance packet
-is v1.0.42. Later source records are development evidence, not v1.1.5 package
-claims. See the [record index](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/README.md) for current entry points
+The current release is **v1.1.5**. Its published-wheel chemistry workflow
+completed all 11 hosted jobs; the latest durable checked-in cross-platform
+packet remains v1.1.3. The broadest published-package RDKit performance packet
+is v1.0.42. The v1.1.5 hosted chemistry run is correctness and failure-accounting
+evidence, not a replacement performance packet. Later source records remain
+development evidence. See the [record index](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/README.md) for current entry points
 and the [complete inventory](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/archive-index.md) for all history.
 
 ## Required provenance
