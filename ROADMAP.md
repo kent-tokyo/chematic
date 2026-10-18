@@ -57,6 +57,10 @@ in the [benchmark index](benchmarks/README.md), and unresolved work in the
 4. **Finish two-host performance evidence.** Repeated QED caching is complete;
    retain first-use output identity and use the hosted Linux 20-block lane to
    adjudicate chiral Morgan, Labute ASA and QED alongside macOS.
+   The [terminal-TPSA source follow-up](benchmarks/2026-10-18-terminal-tpsa.md)
+   improves both fixed first-use windows, but first-use TPSA, ASA, ring count
+   and one chiral-Morgan window still trail COSMolKit. Keep these deficits
+   separate from repeated-use and parse-inclusive results.
 
 **Exit:** the release candidate passes all changed-crate/binding compatibility
 gates, evaluates the frozen rows exactly once, and has separate two-host

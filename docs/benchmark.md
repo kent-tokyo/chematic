@@ -89,6 +89,17 @@ properties, and format metadata before throughput. For batch readers, require:
 Keep cold start, first record, steady-state throughput, round trip, large-file
 behavior, and peak memory separate.
 
+## Focused source example
+
+The [terminal-TPSA record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-18-terminal-tpsa.md) compares
+frozen source `f8e9d7de` with `add2b6b4` on two macOS windows. First-use TPSA
+improves 1.037x and 1.270x under its predeclared source-adoption rule; all 42
+source median ratios meet the 0.99 floor. The largest observed speed decrease
+is 0.845%, and every negative lane is retained. This bounded adoption decision
+is separate from the every-block external-win rule above. Later main
+integration was checked for correctness but not re-timed; it does not inherit
+the frozen tree's measured ratios as a new experiment.
+
 ## Repository checks
 
 ```bash
