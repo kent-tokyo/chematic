@@ -146,7 +146,7 @@ mod shortcut_tests {
 
     #[test]
     fn scalar_shortcut_preserves_cache_clone_and_edit_rules() {
-        let mut mol = crate::parse("c1ccccc1").unwrap();
+        let mut mol = crate::parse_template("c1ccccc1").unwrap();
         let shortcuts = Cell::new(0);
         let callbacks = Cell::new(0);
         for _ in 0..2 {

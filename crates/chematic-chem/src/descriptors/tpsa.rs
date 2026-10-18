@@ -405,10 +405,16 @@ mod no_polar_model_tests {
     #[test]
     fn no_polar_atoms_skip_unneeded_model_preparation() {
         for smiles in ["c1ccccc1", "C1=CC=CC=C1", "[CH3-]", "[13CH4]", "[2H]C([3H])([H])[H]", "[Cu]", "P(=S)(S)(S)S", "*C"] {
-            let mol = chematic_smiles::parse(smiles).unwrap();
-            assert_eq!(rdkit_tpsa(&mol).to_bits(), 0.0f64.to_bits(), "{smiles}");
-            assert!(mol.derived_if_computed::<bool>(chematic_core::DerivedSlot::RdkitModelGate).is_none(), "{smiles}");
-            assert!(mol.derived_if_computed::<Option<Molecule>>(chematic_core::DerivedSlot::RdkitScalarModel).is_none(), "{smiles}");
+            for template in [false, true] {
+                let mol = if template { chematic_smiles::parse_template(smiles) } else { chematic_smiles::parse(smiles) }.unwrap();
+                // Normal parsing may preseed the model gate; templates do not.
+                // The shortcut must leave either initial state untouched.
+                let before_gate = mol.derived_if_computed::<bool>(chematic_core::DerivedSlot::RdkitModelGate).map(|v| *v);
+                let before_model = mol.derived_if_computed::<Option<Molecule>>(chematic_core::DerivedSlot::RdkitScalarModel).map(|v| v.is_some());
+                assert_eq!(rdkit_tpsa(&mol).to_bits(), 0.0f64.to_bits(), "{smiles}");
+                assert_eq!(mol.derived_if_computed::<bool>(chematic_core::DerivedSlot::RdkitModelGate).map(|v| *v), before_gate, "{smiles}");
+                assert_eq!(mol.derived_if_computed::<Option<Molecule>>(chematic_core::DerivedSlot::RdkitScalarModel).map(|v| v.is_some()), before_model, "{smiles}");
+            }
         }
     }
 }
