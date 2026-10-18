@@ -1881,6 +1881,18 @@ mod tests {
     }
 
     #[test]
+    fn cleanup_preserves_aromatic_n_oxide_charge_and_valence() {
+        for input in ["c1cc[n+]([O-])cc1", "[O-][n+]1ccccc1"] {
+            let cleaned = cleanup(&parse(input).unwrap());
+            assert_eq!(
+                chematic_smiles::rdkit_canonical_smiles(&cleaned).as_deref(),
+                Ok("[O-][n+]1ccccc1"),
+                "{input}"
+            );
+        }
+    }
+
+    #[test]
     fn cleanup_disconnects_covalent_metal_ligands_with_charge_balance() {
         let mol = parse("Cl[Au]").unwrap();
         let cleaned = cleanup(&mol);

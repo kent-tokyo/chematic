@@ -1,0 +1,307 @@
+{
+  "profile": "source_labelled_rgroup_hydrogen_columns",
+  "versions": {
+    "chematic": "1.1.7",
+    "rdkit": "2026.09.1"
+  },
+  "extension_sha256": "36c2316c5f660bb094c5d7c4b70b2ad4a2fe29298544db6f048d212704588da2",
+  "source_sha256": {
+    "crates/chematic-chem/src/rgroup.rs": "4a9ec6c34bcf9b4aecd2b88e062d74d0565a3548be1b8af760bd806a3d8ed416"
+  },
+  "agreement": {
+    "matched": 8,
+    "total": 8
+  },
+  "cases": [
+    {
+      "core": "[c:1]1ccccc1",
+      "molecules": [
+        "c1ccccc1",
+        "Cc1ccccc1"
+      ],
+      "hydrogen_column": "R1",
+      "rdkit_rows": [
+        {
+          "Core": "c1ccc([*:1])cc1",
+          "R1": "[H][*:1]"
+        },
+        {
+          "Core": "c1ccc([*:1])cc1",
+          "R1": "C[*:1]"
+        }
+      ],
+      "chematic_rows": [
+        {
+          "mol_idx": 0,
+          "Core": "c1cc([*:1])ccc1",
+          "R1": "[*:1][H]"
+        },
+        {
+          "mol_idx": 1,
+          "Core": "c1cc([*:1])ccc1",
+          "R1": "[*:1]C"
+        }
+      ],
+      "single_unsubstituted_row": {
+        "mol_idx": 0,
+        "Core": "c1ccccc1"
+      },
+      "graph_and_labels_match": true
+    },
+    {
+      "core": "[C:1]1CCCCC1",
+      "molecules": [
+        "C1CCCCC1",
+        "CC1CCCCC1"
+      ],
+      "hydrogen_column": "R1",
+      "rdkit_rows": [
+        {
+          "Core": "C1CCC([*:1])CC1",
+          "R1": "[H][*:1]"
+        },
+        {
+          "Core": "C1CCC([*:1])CC1",
+          "R1": "C[*:1]"
+        }
+      ],
+      "chematic_rows": [
+        {
+          "mol_idx": 0,
+          "Core": "C1([*:1])CCCCC1",
+          "R1": "[*:1][H]"
+        },
+        {
+          "mol_idx": 1,
+          "Core": "C1([*:1])CCCCC1",
+          "R1": "[*:1]C"
+        }
+      ],
+      "single_unsubstituted_row": {
+        "mol_idx": 0,
+        "Core": "C1CCCCC1"
+      },
+      "graph_and_labels_match": true
+    },
+    {
+      "core": "[O:1]C",
+      "molecules": [
+        "CO",
+        "COC"
+      ],
+      "hydrogen_column": "R1",
+      "rdkit_rows": [
+        {
+          "Core": "CO[*:1]",
+          "R1": "[H][*:1]"
+        },
+        {
+          "Core": "CO[*:1]",
+          "R1": "C[*:1]"
+        }
+      ],
+      "chematic_rows": [
+        {
+          "mol_idx": 0,
+          "Core": "O(C)[*:1]",
+          "R1": "[*:1][H]"
+        },
+        {
+          "mol_idx": 1,
+          "Core": "O(C)[*:1]",
+          "R1": "[*:1]C"
+        }
+      ],
+      "single_unsubstituted_row": {
+        "mol_idx": 0,
+        "Core": "OC"
+      },
+      "graph_and_labels_match": true
+    },
+    {
+      "core": "[N:1]C",
+      "molecules": [
+        "CN",
+        "CNC"
+      ],
+      "hydrogen_column": "R1",
+      "rdkit_rows": [
+        {
+          "Core": "CN[*:1]",
+          "R1": "[H][*:1]"
+        },
+        {
+          "Core": "CN[*:1]",
+          "R1": "C[*:1]"
+        }
+      ],
+      "chematic_rows": [
+        {
+          "mol_idx": 0,
+          "Core": "[*:1]NC",
+          "R1": "[*:1][H]"
+        },
+        {
+          "mol_idx": 1,
+          "Core": "[*:1]NC",
+          "R1": "[*:1]C"
+        }
+      ],
+      "single_unsubstituted_row": {
+        "mol_idx": 0,
+        "Core": "CN"
+      },
+      "graph_and_labels_match": true
+    },
+    {
+      "core": "c1ccccc1[*:1]",
+      "molecules": [
+        "c1ccccc1",
+        "Cc1ccccc1"
+      ],
+      "hydrogen_column": "R1",
+      "rdkit_rows": [
+        {
+          "Core": "c1ccc([*:1])cc1",
+          "R1": "[H][*:1]"
+        },
+        {
+          "Core": "c1ccc([*:1])cc1",
+          "R1": "C[*:1]"
+        }
+      ],
+      "chematic_rows": [
+        {
+          "mol_idx": 0,
+          "Core": "c1cc([*:1])ccc1",
+          "R1": "[*:1][H]"
+        },
+        {
+          "mol_idx": 1,
+          "Core": "c1cc([*:1])ccc1",
+          "R1": "[*:1]C"
+        }
+      ],
+      "single_unsubstituted_row": {
+        "mol_idx": 0,
+        "Core": "c1ccccc1"
+      },
+      "graph_and_labels_match": true
+    },
+    {
+      "core": "CC([*:1])O",
+      "molecules": [
+        "CCO",
+        "CC(N)O"
+      ],
+      "hydrogen_column": "R1",
+      "rdkit_rows": [
+        {
+          "Core": "CC(O)[*:1]",
+          "R1": "[H][*:1]"
+        },
+        {
+          "Core": "CC(O)[*:1]",
+          "R1": "N[*:1]"
+        }
+      ],
+      "chematic_rows": [
+        {
+          "mol_idx": 0,
+          "Core": "C([*:1])(C)O",
+          "R1": "[*:1][H]"
+        },
+        {
+          "mol_idx": 1,
+          "Core": "C([*:1])(C)O",
+          "R1": "N[*:1]"
+        }
+      ],
+      "single_unsubstituted_row": {
+        "mol_idx": 0,
+        "Core": "C(C)O"
+      },
+      "graph_and_labels_match": true
+    },
+    {
+      "core": "[C:1]([*:2])O",
+      "molecules": [
+        "CO",
+        "CCO"
+      ],
+      "hydrogen_column": "R2",
+      "rdkit_rows": [
+        {
+          "Core": "OC[*:2]",
+          "R2": "[H][*:2]"
+        },
+        {
+          "Core": "OC[*:2]",
+          "R2": "C[*:2]"
+        }
+      ],
+      "chematic_rows": [
+        {
+          "mol_idx": 0,
+          "Core": "C(O)[*:2]",
+          "R2": "[*:2][H]"
+        },
+        {
+          "mol_idx": 1,
+          "Core": "C(O)[*:2]",
+          "R2": "[*:2]C"
+        }
+      ],
+      "single_unsubstituted_row": {
+        "mol_idx": 0,
+        "Core": "OC"
+      },
+      "graph_and_labels_match": true
+    },
+    {
+      "core": "c1cc([*:1])ccc1[*:2]",
+      "molecules": [
+        "Cc1ccccc1",
+        "Cc1ccc(CC)cc1"
+      ],
+      "hydrogen_column": "R2",
+      "rdkit_rows": [
+        {
+          "Core": "c1cc([*:2])ccc1[*:1]",
+          "R1": "C[*:1]",
+          "R2": "[H][*:2]"
+        },
+        {
+          "Core": "c1cc([*:2])ccc1[*:1]",
+          "R1": "C[*:1]",
+          "R2": "CC[*:2]"
+        }
+      ],
+      "chematic_rows": [
+        {
+          "mol_idx": 0,
+          "Core": "c1cc([*:1])ccc1[*:2]",
+          "R1": "[*:1]C",
+          "R2": "[*:2][H]"
+        },
+        {
+          "mol_idx": 1,
+          "Core": "c1cc([*:1])ccc1[*:2]",
+          "R1": "[*:1]C",
+          "R2": "[*:2]CC"
+        }
+      ],
+      "single_unsubstituted_row": {
+        "mol_idx": 0,
+        "Core": "c1cc([*:1])ccc1",
+        "R1": "[*:1]C"
+      },
+      "graph_and_labels_match": true
+    }
+  ],
+  "limits": [
+    "eight small mapped-atom and terminal-wildcard cases",
+    "two molecules per core",
+    "graph and label comparison, not raw SMILES string comparison"
+  ]
+}
