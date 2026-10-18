@@ -1897,6 +1897,26 @@ mod tests {
     }
 
     #[test]
+    fn cleanup_respects_default_metal_disconnector_element_scope() {
+        for (input, expected) in [
+            ("[Na]Cl", "[Na][Cl]"),
+            ("[Li]C", "[Li][CH3]"),
+            ("C[Mg]Br", "[CH3][Mg][Br]"),
+            ("C[Hg]Cl", "[CH3][Hg][Cl]"),
+            ("[Na]O", "[Na+].[OH-]"),
+            ("[Fe]Cl", "[Cl-].[Fe+]"),
+            ("[Sn]C", "[CH3][Sn]"),
+        ] {
+            let cleaned = cleanup(&parse(input).unwrap());
+            assert_eq!(
+                chematic_smiles::rdkit_canonical_smiles(&cleaned).as_deref(),
+                Ok(expected),
+                "{input}"
+            );
+        }
+    }
+
+    #[test]
     fn largest_fragment_two_fragments_picks_larger() {
         // "CC.CCC" — ethane (2 C) and propane (3 C)
         let mol = parse("CC.CCC").unwrap();

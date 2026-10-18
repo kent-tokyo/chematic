@@ -36,6 +36,15 @@ def test_labeled_rgroup_columns_preserve_unmatched_rows() -> None:
     assert columns["R2"][1] is None
 
 
+def test_labeled_core_hydrogen_fills_an_established_column() -> None:
+    core = "[c:1]1ccccc1"
+    rows = chematic.rgroup_decompose_labeled(core, _mols("c1ccccc1", "Cc1ccccc1"))
+    assert rows[0] is not None and rows[1] is not None
+    assert rows[0]["R1"] == "[*:1][H]"
+    assert rows[0]["Core"] == rows[1]["Core"]
+    assert "R1" not in chematic.rgroup_decompose_labeled(core, _mols("c1ccccc1"))[0]
+
+
 def test_labeled_rgroup_refuses_ambiguous_label_contracts() -> None:
     with pytest.raises(ValueError, match="appears more than once"):
         chematic.rgroup_decompose_labeled(
