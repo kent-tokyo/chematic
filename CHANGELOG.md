@@ -33,6 +33,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   attributes, including altloc, occupancy and B factor, with source indices
   and original text. Blank optional numbers remain distinct from explicit
   zero. See [PDB atom attributes](docs/pdb-atom-records.md) for limits and scope.
+- Python `merge_pdb_coordinate_blocks` assembles validated PDB coordinate blocks
+  while preserving ATOM/HETATM identity and numeric fields. It explicitly maps
+  chains, remaps serial/ANISOU/CONECT references and retains source/loss sidecars.
+  See [PDB coordinate merging](docs/pdb-coordinate-merge.md).
 
 ### Changed
 

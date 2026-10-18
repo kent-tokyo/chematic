@@ -99,6 +99,7 @@ nav:
     - MOPAC Cartesian: openbabel-mopac-cartesian.md
     - DMol3 Coordinates: openbabel-dmol3.md
     - PDB Atom Selection: pdb-atom-selection.md
+    - PDB Coordinate Merging: pdb-coordinate-merge.md
     - Explicit PDB CONECT Graph: pdb-conect-graph.md
     - Checked PDBQT Output: pdbqt-checked-output.md
     - Language Bindings Cross-Reference: language-bindings.md

@@ -1,0 +1,21 @@
+{
+  "gemmi": "0.7.3",
+  "assemblies": 96,
+  "sources": 382,
+  "atoms": 1338,
+  "anisou_records": 382,
+  "conect_target_references": 1146,
+  "max_coordinate_error_angstrom": 0.0,
+  "inputs_sha256": "a074a16eecb9abf66f5b3119fda7bac2cd49e934afce53f8a63934751d5e234a",
+  "scope": "Synthetic source identity, numeric spelling, tensor and explicit-connectivity preservation; no chemistry/geometry alignment claim"
+}
+{
+  "returncode": 0,
+  "atoms": 3,
+  "changed_record_kinds": 2,
+  "changed_residue_names": 3,
+  "changed_chains": 3,
+  "openbabel_ter_records": 0,
+  "chematic_ter_records": 2,
+  "version": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27"
+}
