@@ -227,19 +227,17 @@ fn pi_electrons(mol: &Molecule, idx: AtomIdx) -> Option<u32> {
 /// Hückel count of 4n+2 pi electrons, is not a tree, and, when fused, has
 /// 4n+2-electron smallest rings ([`fused_rings_are_huckel`]).
 fn aromatic_systems_are_huckel(mol: &Molecule) -> bool {
-    // Small aromatic systems fit inline; larger molecules and traversal
-    // frontiers retain the same ordering and grow onto the heap.
     let n = mol.atom_count();
-    let mut seen = smallvec::SmallVec::<[bool; 64]>::from_elem(false, n);
-    let mut electrons_of = smallvec::SmallVec::<[u32; 64]>::from_elem(0, n);
-    let mut stack = smallvec::SmallVec::<[usize; 16]>::new();
+    let mut seen = vec![false; n];
+    let mut electrons_of = vec![0u32; n];
+    let mut stack = Vec::new();
     for start in 0..n {
         if seen[start] || !mol.atom(AtomIdx(start as u32)).aromatic {
             continue;
         }
         seen[start] = true;
         stack.push(start);
-        let mut comp = smallvec::SmallVec::<[usize; 16]>::new();
+        let mut comp = Vec::new();
         let mut electrons = 0u32;
         let mut twice_bonds = 0usize;
         while let Some(a) = stack.pop() {
@@ -283,13 +281,13 @@ fn aromatic_systems_are_huckel(mol: &Molecule) -> bool {
 /// aromatic bond (RDKit judges fused systems ring by ring) has 4n+2 pi
 /// electrons, and every aromatic bond is in such a ring.
 fn fused_rings_are_huckel(mol: &Molecule, comp: &[usize], electrons_of: &[u32]) -> bool {
-    let mut local = smallvec::SmallVec::<[u32; 64]>::from_elem(u32::MAX, mol.atom_count());
+    let mut local = vec![u32::MAX; mol.atom_count()];
     for (k, &a) in comp.iter().enumerate() {
         local[a] = k as u32;
     }
     // Flat aromatic adjacency of the component in local numbering.
-    let mut start = smallvec::SmallVec::<[usize; 32]>::with_capacity(comp.len() + 1);
-    let mut flat = smallvec::SmallVec::<[usize; 64]>::with_capacity(comp.len() * 3);
+    let mut start = Vec::with_capacity(comp.len() + 1);
+    let mut flat: Vec<usize> = Vec::with_capacity(comp.len() * 3);
     for &a in comp {
         start.push(flat.len());
         flat.extend(
@@ -302,7 +300,7 @@ fn fused_rings_are_huckel(mol: &Molecule, comp: &[usize], electrons_of: &[u32]) 
     start.push(flat.len());
     let adj = |x: usize| &flat[start[x]..start[x + 1]];
     let m = comp.len();
-    let mut parent = smallvec::SmallVec::<[usize; 64]>::from_elem(usize::MAX, m);
+    let mut parent = vec![usize::MAX; m];
     let mut queue = std::collections::VecDeque::with_capacity(m);
     for u in 0..m {
         for &v in adj(u) {
@@ -344,207 +342,4 @@ fn fused_rings_are_huckel(mol: &Molecule, comp: &[usize], electrons_of: &[u32]) 
         }
     }
     true
-}
-
-#[cfg(test)]
-mod scratch_tests {
-    use super::*;
-
-    // Frozen pre-optimization Vec implementation: chemistry decisions and
-    // traversal order must survive both inline and spilled storage.
-    fn aromatic_systems_are_huckel_reference(mol: &Molecule) -> bool {
-        let n = mol.atom_count();
-        let mut seen = vec![false; n];
-        let mut electrons_of = vec![0u32; n];
-        let mut stack = Vec::new();
-        for start in 0..n {
-            if seen[start] || !mol.atom(AtomIdx(start as u32)).aromatic {
-                continue;
-            }
-            seen[start] = true;
-            stack.push(start);
-            let mut comp = Vec::new();
-            let mut electrons = 0u32;
-            let mut twice_bonds = 0usize;
-            while let Some(a) = stack.pop() {
-                let idx = AtomIdx(a as u32);
-                match pi_electrons(mol, idx) {
-                    Some(e) => {
-                        electrons += e;
-                        electrons_of[a] = e;
-                    }
-                    None => return false,
-                }
-                comp.push(a);
-                for &(nb, b) in mol.neighbor_slice(idx) {
-                    if mol.bond(b).order != BondOrder::Aromatic {
-                        continue;
-                    }
-                    twice_bonds += 1;
-                    let j = nb.0 as usize;
-                    if !seen[j] {
-                        seen[j] = true;
-                        stack.push(j);
-                    }
-                }
-            }
-            if electrons < 2 || !(electrons - 2).is_multiple_of(4) {
-                return false;
-            }
-            let bonds = twice_bonds / 2;
-            if bonds < comp.len() {
-                // a tree: aromatic atoms outside any aromatic ring
-                return false;
-            }
-            if bonds > comp.len() && !fused_rings_are_huckel_reference(mol, &comp, &electrons_of) {
-                return false;
-            }
-        }
-        true
-    }
-
-    /// For a fused aromatic component: the smallest aromatic ring through each
-    /// aromatic bond (RDKit judges fused systems ring by ring) has 4n+2 pi
-    /// electrons, and every aromatic bond is in such a ring.
-    fn fused_rings_are_huckel_reference(
-        mol: &Molecule,
-        comp: &[usize],
-        electrons_of: &[u32],
-    ) -> bool {
-        let mut local = vec![u32::MAX; mol.atom_count()];
-        for (k, &a) in comp.iter().enumerate() {
-            local[a] = k as u32;
-        }
-        // Flat aromatic adjacency of the component in local numbering.
-        let mut start = Vec::with_capacity(comp.len() + 1);
-        let mut flat: Vec<usize> = Vec::with_capacity(comp.len() * 3);
-        for &a in comp {
-            start.push(flat.len());
-            flat.extend(
-                mol.neighbor_slice(AtomIdx(a as u32))
-                    .iter()
-                    .filter(|&&(_, b)| mol.bond(b).order == BondOrder::Aromatic)
-                    .map(|&(nb, _)| local[nb.0 as usize] as usize),
-            );
-        }
-        start.push(flat.len());
-        let adj = |x: usize| &flat[start[x]..start[x + 1]];
-        let m = comp.len();
-        let mut parent = vec![usize::MAX; m];
-        let mut queue = std::collections::VecDeque::with_capacity(m);
-        for u in 0..m {
-            for &v in adj(u) {
-                if v < u {
-                    continue;
-                }
-                // BFS from u to v without the edge u-v.
-                parent.iter_mut().for_each(|p| *p = usize::MAX);
-                parent[u] = u;
-                queue.clear();
-                queue.push_back(u);
-                'bfs: while let Some(x) = queue.pop_front() {
-                    for &y in adj(x) {
-                        if (x == u && y == v) || parent[y] != usize::MAX {
-                            continue;
-                        }
-                        parent[y] = x;
-                        if y == v {
-                            break 'bfs;
-                        }
-                        queue.push_back(y);
-                    }
-                }
-                if parent[v] == usize::MAX {
-                    return false;
-                }
-                let mut electrons = 0u32;
-                let mut x = v;
-                loop {
-                    electrons += electrons_of[comp[x]];
-                    if x == u {
-                        break;
-                    }
-                    x = parent[x];
-                }
-                if electrons < 2 || !(electrons - 2).is_multiple_of(4) {
-                    return false;
-                }
-            }
-        }
-        true
-    }
-
-    #[test]
-    fn aromatic_scratch_matches_reference_on_both_corpora() {
-        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-        let mut rows = 0;
-        for path in [
-            "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
-            "validation/cosmolkit_comparison/corpora/stress-v1.smi",
-        ] {
-            let corpus = std::fs::read_to_string(root.join(path)).unwrap();
-            for line in corpus.lines().filter(|line| !line.trim().is_empty()) {
-                let smiles = line.split_whitespace().next().unwrap();
-                let molecule = chematic_smiles::parse(smiles).unwrap();
-                assert_eq!(
-                    aromatic_systems_are_huckel(&molecule),
-                    aromatic_systems_are_huckel_reference(&molecule),
-                    "{smiles}"
-                );
-                rows += 1;
-            }
-        }
-        assert_eq!(rows, 14_072);
-    }
-
-    #[test]
-    fn aromatic_scratch_preserves_inline_and_spill_boundaries() {
-        // Aromatic cycles straddle the component/start/atom buffer bounds;
-        // disconnected fragments exercise repeated components and offsets.
-        for size in [15, 16, 17, 30, 31, 32, 33, 63, 64, 65, 66, 128, 129] {
-            for atom in ["c", "n", "[nH]"] {
-                let smiles = format!("{atom}1{}1", atom.repeat(size - 1));
-                let molecule = chematic_smiles::parse(&smiles).unwrap();
-                assert_eq!(
-                    aromatic_systems_are_huckel(&molecule),
-                    aromatic_systems_are_huckel_reference(&molecule),
-                    "{smiles}"
-                );
-            }
-        }
-        for fragments in [1, 2, 5, 10, 11, 12, 24] {
-            for ring in ["c1ccccc1", "c1ccc2ccccc2c1", "c1cccc1", "c1ccc1"] {
-                let smiles = vec![ring; fragments].join(".");
-                let molecule = chematic_smiles::parse(&smiles).unwrap();
-                assert_eq!(
-                    aromatic_systems_are_huckel(&molecule),
-                    aromatic_systems_are_huckel_reference(&molecule),
-                    "{smiles}"
-                );
-            }
-        }
-    }
-
-    #[test]
-    fn fused_aromatic_scratch_preserves_all_buffer_spills() {
-        for size in [6, 18, 30, 34, 62, 66, 126, 130] {
-            let smiles = format!("c1{}1", "c".repeat(size - 1));
-            let mut molecule = chematic_smiles::parse(&smiles).unwrap();
-            molecule
-                .add_bond(AtomIdx(0), AtomIdx((size / 2) as u32), BondOrder::Aromatic)
-                .unwrap();
-            let component: Vec<usize> = (0..size).collect();
-            let electrons = vec![1; size];
-            assert_eq!(
-                fused_rings_are_huckel(&molecule, &component, &electrons),
-                fused_rings_are_huckel_reference(&molecule, &component, &electrons),
-                "size={size}"
-            );
-            assert_eq!(
-                aromatic_systems_are_huckel(&molecule),
-                aromatic_systems_are_huckel_reference(&molecule),
-                "size={size}"
-            );
-        }
-    }
 }

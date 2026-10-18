@@ -305,11 +305,30 @@ pub fn rdkit_tpsa(mol: &Molecule) -> f64 {
     chematic_smiles::with_rdkit_model_scalar(
         mol,
         chematic_core::derived_cache::DerivedScalar::RdkitTpsa,
-        rdkit_tpsa_impl,
+        |view| rdkit_tpsa_impl_with_local(view, std::ptr::eq(view, mol)),
     )
 }
 
+#[cfg(test)]
 fn rdkit_tpsa_impl(mol: &Molecule) -> f64 {
+    rdkit_tpsa_impl_with_local(mol, true)
+}
+
+fn terminal_tpsa_environment_is_stable(mol: &Molecule) -> bool {
+    // Aromaticity can only change cyclic bond environments. A nonaromatic
+    // N/O with at most one neighbor cannot participate in a ring. The model
+    // gate separately excludes charge/bond cleanup (nitro, dative, etc.).
+    if mol.atoms().any(|(idx, atom)| {
+        matches!(atom.element.atomic_number(), 7 | 8)
+            && (atom.aromatic || mol.degree(idx) > 1
+                || mol.neighbors(idx).any(|(_, bond)| mol.bond(bond).order == BondOrder::Aromatic))
+    }) {
+        return false;
+    }
+    !chematic_perception::rdkit_model_may_disagree(mol)
+}
+
+fn rdkit_tpsa_impl_with_local(mol: &Molecule, permit_local: bool) -> f64 {
     // This default model sums only N/O contributions. With neither element,
     // the original fold adds only positive zeros, without needing perception.
     if !mol
@@ -318,7 +337,11 @@ fn rdkit_tpsa_impl(mol: &Molecule) -> f64 {
     {
         return 0.0;
     }
-    let mol_arom = descriptor_aromaticity(mol);
+    let mol_arom = if permit_local && terminal_tpsa_environment_is_stable(mol) {
+        DescriptorView::Same(mol)
+    } else {
+        descriptor_aromaticity(mol)
+    };
     // RDKit's default excludes S/P. Compute only N/O instead of allocating a
     // full contribution vector and typing atoms whose values are discarded.
     // Iteration and accumulation order remain atom-index order, exactly as in
@@ -351,3 +374,20 @@ mod descriptor_view_tests;
 #[cfg(test)]
 #[path = "tpsa_zero_tests.rs"]
 mod tpsa_zero_tests;
+
+#[cfg(test)]
+mod terminal_environment_tests {
+    use super::*;
+
+    #[test]
+    fn terminal_fast_path_has_conservative_topology_and_model_guards() {
+        for smiles in ["NC(=O)c1ccc(O)cc1", "N[C@@H](C)C(=O)O", "Oc1ccccc1", "CC=O", "Nc1ccccc1"] {
+            let mol = chematic_smiles::parse(smiles).unwrap();
+            assert!(terminal_tpsa_environment_is_stable(&mol), "{smiles}");
+        }
+        for smiles in ["CNC", "c1ccncc1", "O1CC1", "C[N+](C)(C)C", "N(=O)(=O)C", "[Cu]N"] {
+            let mol = chematic_smiles::parse(smiles).unwrap();
+            assert!(!terminal_tpsa_environment_is_stable(&mol), "{smiles}");
+        }
+    }
+}

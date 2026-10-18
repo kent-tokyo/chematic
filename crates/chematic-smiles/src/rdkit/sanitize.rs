@@ -244,7 +244,7 @@ pub(crate) fn sanitize_mol_with(
     set_hybridization(mol);
     cleanup_chirality(mol);
     adjust_hs(mol)?;
-    mol.update_property_cache(true)?;
+    mol.update_cache_after_adjust_hs()?;
     Ok(())
 }
 
@@ -775,5 +775,64 @@ mod tests {
             let input = super::super::parse::from_chematic(&molecule).unwrap();
             compare_with_general_path(&input, smiles);
         }
+    }
+}
+
+#[cfg(test)]
+mod final_cache_tests {
+    use super::*;
+
+    fn sanitize_mol_reference(
+        mol: &mut Mol,
+        organometallics: bool,
+    ) -> Result<(), RdkitSmilesError> {
+        clean_up(mol)?;
+        if organometallics {
+            clean_up_organometallics(mol)?;
+        }
+        mol.update_property_cache(true)?;
+        mol.find_rings()?;
+        kekulize(mol)?;
+        assign_radicals(mol);
+        set_aromaticity(mol);
+        set_conjugation(mol);
+        set_hybridization(mol);
+        cleanup_chirality(mol);
+        adjust_hs(mol)?;
+        mol.update_property_cache(true)?;
+        Ok(())
+    }
+
+    #[test]
+    fn adjusted_cache_matches_the_original_full_strict_pass() {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let mut rows = 0;
+        for path in [
+            "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+            "validation/cosmolkit_comparison/corpora/stress-v1.smi",
+        ] {
+            let corpus = std::fs::read_to_string(root.join(path)).unwrap();
+            for line in corpus.lines().filter(|line| !line.trim().is_empty()) {
+                let smiles = line.split_whitespace().next().unwrap();
+                let core = crate::parse(smiles).unwrap();
+                let input = super::super::parse::from_chematic(&core).unwrap();
+                for organometallics in [false, true] {
+                    let mut expected = input.clone();
+                    let mut actual = input.clone();
+                    for atom in &mut actual.atoms {
+                        atom.explicit_valence = 97;
+                        atom.implicit_valence = 89;
+                    }
+                    let old = sanitize_mol_reference(&mut expected, organometallics);
+                    let new = sanitize_mol_with(&mut actual, organometallics);
+                    assert_eq!(format!("{new:?}"), format!("{old:?}"), "{smiles}");
+                    if old.is_ok() {
+                        assert_eq!(format!("{actual:?}"), format!("{expected:?}"), "{smiles}");
+                    }
+                }
+                rows += 1;
+            }
+        }
+        assert_eq!(rows, 14_072);
     }
 }
