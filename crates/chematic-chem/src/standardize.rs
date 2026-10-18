@@ -1893,6 +1893,49 @@ mod tests {
     }
 
     #[test]
+    fn cleanup_neutralizes_ortho_and_para_pyridinium_phenoxide() {
+        assert_eq!(
+            chematic_perception::assign_aromaticity(&parse("C[N+]1=CC=C(C=C1)[O-]").unwrap())
+                .aromatic_atom_count(),
+            6
+        );
+        for (input, expected) in [
+            ("[O-]c1cc[n+](C)cc1", "Cn1ccc(=O)cc1"),
+            ("C[N+]1=CC=C(C=C1)[O-]", "Cn1ccc(=O)cc1"),
+            ("[O-]c1cccc[n+]1[O-]", "O=c1ccccn1[O-]"),
+            ("c1c([O-])cc[n+](c1)C", "Cn1ccc(=O)cc1"),
+            ("[O-]c1cc[nH+]cc1", "O=c1cc[nH]cc1"),
+            ("[O-]c1cccc[nH+]1", "O=c1cccc[nH]1"),
+            // The meta charge-separated form is outside this normalization.
+            ("[O-]c1ccc[n+](C)c1", "C[n+]1cccc([O-])c1"),
+            ("[O-]c1cc[n+](CC)cc1", "CCn1ccc(=O)cc1"),
+            ("[O-]c1cc[n+](C)c(F)c1", "Cn1ccc(=O)cc1F"),
+            ("[O-]c1cc[n+](C)c(Cl)c1", "Cn1ccc(=O)cc1Cl"),
+            ("[O-]c1cc[n+](C)cc1C", "Cc1cn(C)ccc1=O"),
+            // Fused systems are intentionally outside the simple-ring rule.
+            ("[O-]c1ccc2cc[n+](C)cc2c1", "C[n+]1ccc2ccc([O-])cc2c1"),
+            ("[O-]c1cc[n+](C)cc1[O-]", "Cn1ccc(=O)c([O-])c1"),
+            ("[O-]c1cc[n+](C)cc1.[Na+]", "Cn1ccc(=O)cc1.[Na+]"),
+            (
+                "[O-]c1cc[n+](C)cc1.[O-]c1cc[n+](C)cc1",
+                "Cn1ccc(=O)cc1.Cn1ccc(=O)cc1",
+            ),
+        ] {
+            let cleaned = cleanup(&parse(input).unwrap());
+            assert_eq!(
+                chematic_smiles::rdkit_cleanup_canonical_smiles(&cleaned).as_deref(),
+                Ok(expected),
+                "{input}"
+            );
+            assert_eq!(
+                chematic_smiles::rdkit_cleanup_canonical_smiles(&cleanup(&cleaned)).as_deref(),
+                Ok(expected),
+                "second Cleanup: {input}"
+            );
+        }
+    }
+
+    #[test]
     fn cleanup_writer_keeps_isolated_metal_coordination_tag() {
         for (input, expected) in [
             ("F[Pt@SP1](Cl)(Br)I", "[Br-].[Cl-].[F-].[I-].[Pt@SP1+4]"),

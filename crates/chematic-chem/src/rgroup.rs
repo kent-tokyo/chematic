@@ -652,12 +652,16 @@ fn labeled_candidate(
         .iter()
         .filter(|label| !attachments.contains_key(label))
         .count();
-    for (&query_idx, &label) in explicit_labels {
-        if !placeholder_queries.contains(&query_idx) && !attachments.contains_key(&label) {
-            let site = mapping[&query_idx];
-            if implicit_hcount(mol, site) > 0 {
-                hydrogen_sites.insert(label, site);
-            }
+    // An automatically labelled site needs the same deferred hydrogen fill as
+    // an explicitly labelled one once another row establishes its column.
+    for (&site, &query_idx) in &target_to_query {
+        let label = explicit_labels
+            .get(&query_idx)
+            .or_else(|| auto_labels.get(&query_idx))
+            .copied()
+            .expect("each core query atom has an explicit or automatic label");
+        if !attachments.contains_key(&label) && implicit_hcount(mol, site) > 0 {
+            hydrogen_sites.insert(label, site);
         }
     }
 
@@ -952,6 +956,31 @@ mod tests {
             let one = rgroup_decompose_labeled(core, &refs[..1]).unwrap();
             assert!(one[0].as_ref().unwrap().r_groups.is_empty(), "{core}");
         }
+    }
+
+    #[test]
+    fn automatically_labelled_site_fills_hydrogen_in_established_column() {
+        let mols = [mol("c1ccncc1"), mol("Cc1ccncc1"), mol("Clc1ccncc1")];
+        let refs: Vec<&Molecule> = mols.iter().collect();
+        let core = "c1ccncc1[*:1]";
+        let rows = rgroup_decompose_labeled(core, &refs).unwrap();
+        let first = rows[0].as_ref().unwrap();
+        assert_eq!(first.r_groups.get(&2).map(String::as_str), Some("[*:2][H]"));
+        assert_eq!(first.core_smiles, rows[1].as_ref().unwrap().core_smiles);
+        assert_eq!(first.core_smiles, rows[2].as_ref().unwrap().core_smiles);
+        for (row, expected_group) in rows.iter().zip(["[H][*:2]", "C[*:2]", "Cl[*:2]"]) {
+            let row = row.as_ref().unwrap();
+            assert_eq!(
+                canonical_smiles(&mol(&row.core_smiles)),
+                canonical_smiles(&mol("c1cc([*:2])ccn1"))
+            );
+            assert_eq!(
+                canonical_smiles(&mol(&row.r_groups[&2])),
+                canonical_smiles(&mol(expected_group))
+            );
+        }
+        let alone = rgroup_decompose_labeled(core, &refs[..1]).unwrap();
+        assert!(alone[0].as_ref().unwrap().r_groups.is_empty());
     }
 
     #[test]
