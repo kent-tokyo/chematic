@@ -1,3 +1,4 @@
+Human-readable source comparison: blank context-line prefixes are omitted.
 crates/chematic-py/src/pickle.rs: unchanged from fixture commit; SHA256 4eb631e34f7791e45ff3a0fd2661b298735e158c9a8148958159a51cbee75d4f
 crates/chematic-py/src/mol_methods/properties.rs: unchanged from fixture commit; SHA256 c66184039fb145a1830ca6acff3da8257426984db90ecab41549a65f4fd79a75
 crates/chematic-py/src/mol_methods/identity.rs: unchanged from fixture commit; SHA256 7d09c75a86799a1ecb46e44ffcfef4cd24e65cbd936e4237d900f3354b96f3c4
@@ -51,7 +52,7 @@ index 08013fca..baaad819 100644
 @@ -22,6 +22,26 @@ pub fn with_rdkit_model_scalar(
      mol.derived_scalar(slot, || with_rdkit_model_molecule_impl(mol, f, true))
  }
- 
+
 +/// Memoize a scalar with a proof-based constant shortcut on the original
 +/// graph, before model preparation. `shortcut` may return a value only when
 +/// it equals `f` on the sanitized/H-normalized model as well. Nested model
