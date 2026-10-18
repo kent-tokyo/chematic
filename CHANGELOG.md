@@ -14,6 +14,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.1.8] - 2026-10-19
+
 ### Added
 
 - Added post-candidate, outcome-blind MCS, SDF-attribute and stereo/3D holdouts

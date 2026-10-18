@@ -4,11 +4,12 @@ chematic benchmarks are specific to a package or source revision, comparator,
 corpus, host, runtime, options, and timed operation. A speed result counts only
 when the stated work and outputs are equivalent.
 
-The current release is **v1.1.7**. The v1.1.7 published-wheel chemistry
-workflow completed all 11 hosted jobs; the latest durable checked-in
+The current release is **v1.1.8**. Its Labute ASA and first-use ring
+measurements are source-build, one-host results. The v1.1.7 published-wheel
+chemistry workflow remains the latest completed hosted package lane; the latest durable checked-in
 cross-platform packet remains v1.1.3. The broadest published-package RDKit
 performance packet is v1.0.42. The v1.1.7 hosted run remains correctness and
-failure-accounting evidence, not a v1.1.7 performance packet. See the
+failure-accounting evidence, not a v1.1.8 performance packet. See the
 [record index](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/README.md) for current entry points
 and the [complete inventory](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/archive-index.md) for all history.
 

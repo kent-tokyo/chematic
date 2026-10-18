@@ -1,6 +1,6 @@
 # chematic roadmap
 
-> Updated 2026-10-18. Release line: **v1.1.7**. Work merged after the
+> Updated 2026-10-19. Release line: **v1.1.8**. Work merged after the
 > release remains **Unreleased** until the next tag.
 
 chematic is a safe, typed, local-first chemistry kernel for Rust, Python,
@@ -11,17 +11,17 @@ contracts and reproducible evidence over feature-count parity.
 
 - Stable selected paths cover SMILES/SMARTS, descriptors, fingerprints,
   search, and common MOL/SDF workflows through one Rust core.
-- v1.1.7 adds checked scientific-file conversion and export, custom
-  fingerprint and force-field inputs, source-preserving SDF/PDB/MOL2
-  workflows, and typed alignment, information-theory, and MIF helpers.
+- v1.1.8 reduces first-use Labute ASA and ring-count overhead for bounded
+  ordinary Python molecules without changing descriptor results. Exact
+  public-wheel and second-host performance evidence remains open.
 - Issues #734 and #754 are closed, but their reaction, SMARTS, autoconf, and
   fuzz corpora remain regression gates. Closure is not universal parity.
 - The bounded workflow gates cover 80 exact reaction rows plus three jointly
   invalid inputs, 39/39 largest-fragment decisions, and 16/16 labelled
   R-group rows. Broader standardization and R-group chemistry remain open.
-- The v1.1.5 published-wheel chemistry workflow completed all 11 Linux,
+- The v1.1.7 published-wheel chemistry workflow completed all 11 Linux,
   macOS, Windows, RDKit-comparison, A6, and autoconf jobs. Its hosted run is
-  package evidence; a durable checked-in v1.1.5 packet is still required.
+  package evidence; a durable checked-in v1.1.7 packet is still required.
 - The broadest published-package RDKit performance packet remains v1.0.42.
   Source or exploratory timings are not relabelled as package evidence.
 - The processed Linux Codecov lane reports 96.93% Rust line coverage.

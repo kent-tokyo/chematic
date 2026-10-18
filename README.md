@@ -25,14 +25,13 @@ npm install @kent-tokyo/chematic
 
 Python wheels need no C/C++ compiler. All bindings share the Rust core.
 
-### v1.1.7 release boundary
+### v1.1.8 release boundary
 
-v1.1.7 adds checked scientific-file conversion and export APIs, custom
-fingerprint and force-field inputs, source-preserving SDF/PDB/MOL2 workflows,
-and typed compatibility helpers for alignment, information theory, and MIF.
-It also improves aromatic, stereo, Morgan, MOL2, and PDB edge cases while
-retaining explicit resource limits and failure reports. Claims remain limited to their recorded
-artifacts, corpora, options, and hosts. See
+v1.1.8 reduces first-use Labute ASA and ring-count overhead for bounded ordinary
+molecules in Python while preserving descriptor results and lazy handling for
+larger or highly cyclic inputs. The accompanying measurements remain limited to
+their recorded source build, corpus, options, and macOS host; they are not yet
+public-wheel or multi-host evidence. See
 [validation](docs/validation.md) and
 [CHANGELOG](CHANGELOG.md).
 
