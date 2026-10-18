@@ -1127,6 +1127,11 @@ mod tests {
                 label: 1
             })
         ));
+
+        let radical = [mol("[C]")];
+        let radical_refs: Vec<&Molecule> = radical.iter().collect();
+        let missing_hydrogen = rgroup_decompose_labeled("C([*:1])", &radical_refs).unwrap();
+        assert!(missing_hydrogen[0].is_none());
     }
 
     #[test]
