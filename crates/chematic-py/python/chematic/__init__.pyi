@@ -5576,7 +5576,7 @@ def write_fhiaims(elements: Sequence[str], coordinates: Sequence[Sequence[float]
 
 
 def parse_mopac_cartesian(text: str, *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None) -> dict[str, Any]:
-    """Read checked MOPAC Cartesian angstrom geometry, retaining labels and optional flags."""
+    """Read checked MOPAC Cartesian geometry, including bounded standalone + keyword continuations."""
     ...
 
 def write_mopac_cartesian(elements: Sequence[str], positions_angstrom: Sequence[Sequence[float]], *, keywords: str = "", title: str = "", comment: str = "", labels: Optional[Sequence[Optional[str]]] = None, optimization_flags: Optional[Sequence[Optional[Sequence[str]]]] = None, translation_vectors_angstrom: Optional[Sequence[Sequence[float]]] = None, translation_flags: Optional[Sequence[Optional[Sequence[str]]]] = None) -> str:

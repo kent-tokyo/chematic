@@ -15,7 +15,7 @@ No Open Babel or MOPAC implementation code or upstream test data was copied.
 Rust exports `parse_mopac_cartesian`, `parse_mopac_cartesian_with_limits`
 and `write_mopac_cartesian`. The structured types are `MopacCartesianGeometry`,
 `MopacAtom`, `MopacCartesianRow`, `MopacOptimizationFlag`, `MopacParseLimits`
-and `MopacError`. Geometry retains three header lines, atom rows, ordered
+and `MopacError`. Geometry retains a physical keyword block, two description lines, atom rows, ordered
 translation vectors and the original `source_text`.
 
 ```python
@@ -38,6 +38,9 @@ assert geometry["optimization_flags"][1] is None
 assert geometry["positions_angstrom"][0][0] == 0.123456789
 ```
 
+`keywords` supports bounded standalone `+` continuations as described in the
+[continuation contract](mopac-keyword-continuation.md).
+
 The result dictionary has `keywords`, `title`, `comment`, `elements`,
 `positions_angstrom`, `labels`, `optimization_flags`,
 `translation_vectors_angstrom`, `translation_flags`, `periodicity` and
@@ -50,7 +53,7 @@ supply a three-flag row for every atom and every translation vector.
 
 | Field | Contract |
 |---|---|
-| Header | Exactly three lines: keywords, title, comment; empty lines and spaces retained |
+| Header | [One to 64 keyword lines](mopac-keyword-continuation.md), then title and comment; spacing/empty lines retained |
 | Identity | Canonical element symbol or unsigned atomic number; writer emits symbols |
 | Label | Optional immediate `(text)`, at most 38 ASCII characters; empty label differs from absent label |
 | Coordinates | Three finite Cartesian values in Angstrom; `E/e` and Fortran `D/d` exponents accepted |
@@ -96,7 +99,7 @@ The parser refuses:
   [legacy element definitions](https://openmopac.net/Manual/elements_in_PM3.html).
   These spellings are refused in both reader and writer rather than interpreted
   as ordinary elements.
-- Atomic-unit keyword `A0`, keyword continuations `+`, `++`, `&`, embedded
+- Atomic-unit keyword `A0`, keyword continuations `++` / `&` outside quoted values, embedded
   header controls, multiline labels and non-ASCII labels.
 - More than three translation vectors, labels on vectors, or atoms after
   the first vector.

@@ -1,0 +1,530 @@
+[
+  {
+    "keyword_lines": 2,
+    "plus_position": 0,
+    "field": "input",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 2,
+    "plus_position": 0,
+    "field": "output",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 2,
+    "plus_position": 1,
+    "field": "input",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 2,
+    "plus_position": 1,
+    "field": "output",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 2,
+    "plus_position": 2,
+    "field": "input",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 2,
+    "plus_position": 2,
+    "field": "output",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 3,
+    "plus_position": 0,
+    "field": "input",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 3,
+    "plus_position": 0,
+    "field": "output",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 3,
+    "plus_position": 1,
+    "field": "input",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 3,
+    "plus_position": 1,
+    "field": "output",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 3,
+    "plus_position": 2,
+    "field": "input",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 3,
+    "plus_position": 2,
+    "field": "output",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 4,
+    "plus_position": 0,
+    "field": "input",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 4,
+    "plus_position": 0,
+    "field": "output",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 4,
+    "plus_position": 1,
+    "field": "input",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 4,
+    "plus_position": 1,
+    "field": "output",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 4,
+    "plus_position": 2,
+    "field": "input",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 4,
+    "plus_position": 2,
+    "field": "output",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 5,
+    "plus_position": 0,
+    "field": "input",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 5,
+    "plus_position": 0,
+    "field": "output",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 5,
+    "plus_position": 1,
+    "field": "input",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 5,
+    "plus_position": 1,
+    "field": "output",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 5,
+    "plus_position": 2,
+    "field": "input",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 5,
+    "plus_position": 2,
+    "field": "output",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 6,
+    "plus_position": 0,
+    "field": "input",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 6,
+    "plus_position": 0,
+    "field": "output",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 6,
+    "plus_position": 1,
+    "field": "input",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 6,
+    "plus_position": 1,
+    "field": "output",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 6,
+    "plus_position": 2,
+    "field": "input",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 6,
+    "plus_position": 2,
+    "field": "output",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 7,
+    "plus_position": 0,
+    "field": "input",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 7,
+    "plus_position": 0,
+    "field": "output",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 7,
+    "plus_position": 1,
+    "field": "input",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 7,
+    "plus_position": 1,
+    "field": "output",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 7,
+    "plus_position": 2,
+    "field": "input",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 7,
+    "plus_position": 2,
+    "field": "output",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 8,
+    "plus_position": 0,
+    "field": "input",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 8,
+    "plus_position": 0,
+    "field": "output",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 8,
+    "plus_position": 1,
+    "field": "input",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 8,
+    "plus_position": 1,
+    "field": "output",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 8,
+    "plus_position": 2,
+    "field": "input",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 8,
+    "plus_position": 2,
+    "field": "output",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 9,
+    "plus_position": 0,
+    "field": "input",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 9,
+    "plus_position": 0,
+    "field": "output",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 9,
+    "plus_position": 1,
+    "field": "input",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 9,
+    "plus_position": 1,
+    "field": "output",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 9,
+    "plus_position": 2,
+    "field": "input",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 9,
+    "plus_position": 2,
+    "field": "output",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 10,
+    "plus_position": 0,
+    "field": "input",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 10,
+    "plus_position": 0,
+    "field": "output",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 10,
+    "plus_position": 1,
+    "field": "input",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 10,
+    "plus_position": 1,
+    "field": "output",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 10,
+    "plus_position": 2,
+    "field": "input",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 10,
+    "plus_position": 2,
+    "field": "output",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 11,
+    "plus_position": 0,
+    "field": "input",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 11,
+    "plus_position": 0,
+    "field": "output",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 11,
+    "plus_position": 1,
+    "field": "input",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 11,
+    "plus_position": 1,
+    "field": "output",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 11,
+    "plus_position": 2,
+    "field": "input",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 11,
+    "plus_position": 2,
+    "field": "output",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 12,
+    "plus_position": 0,
+    "field": "input",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 12,
+    "plus_position": 0,
+    "field": "output",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 12,
+    "plus_position": 1,
+    "field": "input",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 12,
+    "plus_position": 1,
+    "field": "output",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 12,
+    "plus_position": 2,
+    "field": "input",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  },
+  {
+    "keyword_lines": 12,
+    "plus_position": 2,
+    "field": "output",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "Invalid format in geometry specification.\n0 molecules converted\n"
+  }
+]

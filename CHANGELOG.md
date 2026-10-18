@@ -41,6 +41,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   source text and dataset IDs. Explicit selection exports one ordinary scalar
   CUBE with an omission sidecar and native geometry validation. See
   [CUBE dataset selection](docs/cube-dataset-selection.md).
+- Native MOPAC Cartesian readers/writers accept bounded standalone `+`
+  keyword continuations, preserving physical keyword text and the following
+  title/comment lines. Signed values and quoted markers do not continue lines.
+  See [continuation semantics](docs/mopac-keyword-continuation.md).
 
 ### Changed
 
