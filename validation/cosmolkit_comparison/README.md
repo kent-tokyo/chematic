@@ -59,6 +59,9 @@ root/incoming positions, including randomized write-back.
 The [native SMILES aromatic-stereo oracle follow-up](native-smiles-aromatic-stereo-oracle-2026-10-17.md)
 checks a fused-arsenic ring with remote tetrahedral stereo under RDKit 2026.09.1
 and guards against accepting an inverted center.
+The [large O/S ring and explicit-H rotor follow-up](rdkit-2026-09-macrocycle-rotor-2026-10-18.md)
+compares source-built CheMatic 1.1.7, RDKit 2026.09.1, and COSMolKit 0.5.0
+on a 256-row operation audit and a 4,072-row three-operation check.
 
 The focused [aromatic sulfur stereo read-back
 check](aromatic-s-stereo-2026-10-16.md) compares whether each toolkit keeps

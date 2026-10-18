@@ -137,6 +137,13 @@ mod tests {
         assert_eq!(rotatable_bond_count(&mol("[2H]CNC=O")), 1);
     }
 
+    #[test]
+    fn plain_explicit_h_does_not_make_a_terminal_rotor() {
+        assert_eq!(rotatable_bond_count(&mol("[H]OC(=O)C([H])([H])N([H])[H]")), 1);
+        assert_eq!(rotatable_bond_count(&mol("[H]NCC")), 0);
+        assert_eq!(rotatable_bond_count(&mol("[2H]NCC")), 1);
+    }
+
     /// Deterministically relabel a graph while preserving original atom
     /// identity as atom-map metadata. `permutation[new_index] = old_index`.
     fn mapped_permutation(mol: &Molecule, permutation: &[usize]) -> Molecule {

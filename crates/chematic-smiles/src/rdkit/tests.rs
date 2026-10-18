@@ -132,6 +132,18 @@ fn aromatic_and_kekule_inputs() {
 }
 
 #[test]
+fn macrocycle_oxygen_and_sulfur_bridges_match_rdkit_2026_09() {
+    // RDKit 2026.09.1 no longer treats these large O/S rings as aromatic.
+    check(&[
+        ("s1cccccccc1", "C1=CC=CSC=CC=C1"),
+        ("s1cccccccccccc1", "C1=CC=CC=CSC=CC=CC=C1"),
+        ("c1ccccccsccccccccc1", "C1=CC=CC=CC=CSC=CC=CC=CC=C1"),
+        ("o1cccccccc1", "C1=CC=COC=CC=C1"),
+        ("s1cccc1", "c1ccsc1"),
+    ]);
+}
+
+#[test]
 fn multiple_fragments() {
     check(&[
         ("[Na+].[Cl-]", "[Cl-].[Na+]"),
