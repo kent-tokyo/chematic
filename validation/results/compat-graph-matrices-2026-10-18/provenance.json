@@ -1,0 +1,50 @@
+{
+  "base": "f99c7b8ab33098a2e1fd9fd568aee370bf79ab38",
+  "time_utc": "2026-10-18T05:52:31.601865+00:00",
+  "python": "3.13.6",
+  "numpy": "2.5.3",
+  "pytest": "9.1.1",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "native_fixture_commit": "ca7e14e892cab8b495183bcda4449f49471ba1b1",
+  "native_sha256": "90f81980b0fdf06c8edb616d8f8e5acd1831a9b6de404ed2b3405646cff41423",
+  "native_bytes": 85142576,
+  "native_scope": "verified existing extension for local Python tests; no current-main native build or wheel validation",
+  "upstream_reference_revision": "7f3d37d16b71ff8c8a6b0de82c12a8b371e0a8df",
+  "verified_upstream_blobs": {
+    "Code/GraphMol/Matrices.cpp": "a0a036ef7fe7cce7454fafcd07c9eb7a565f00b0"
+  },
+  "issue": {
+    "number": 9647,
+    "state": "OPEN",
+    "title": "Variant analysis: 3 unfixed sibling safety gaps in rdkit",
+    "updatedAt": "2026-10-10T16:48:18Z",
+    "url": "https://github.com/rdkit/rdkit/issues/9647",
+    "checked_at_utc": "2026-10-18T05:52:31.593748+00:00"
+  },
+  "source_sha256": {
+    "CHANGELOG.md": "a02dcc131afe27839e064d45b33eccdaedf70af324ba5fe6d2d906145b03c302",
+    "mkdocs.yml": "101515d5cfa63db3e778d3786581b6881099ec52bc13344c2443a3f5b61e437b",
+    "crates/chematic-py/python/chematic/_graph_matrices.py": "9f58efe63ac3588a27ad871122bc5cf25549a759d1122e205f68102594d36eed",
+    "crates/chematic-py/python/chematic/rdkit_compat.py": "58cea85153d8be7e05fe6f85e3321e7f8163c8930fdd9f34b5c6477822804b91",
+    "crates/chematic-py/tests/test_compat_graph_matrices.py": "24fce0c43b3b45450f1666a446e5880503f6bd1acb68cd71572eddee6dc85c4f",
+    "docs/compat-graph-matrices.md": "846c943412835c55cd53398bd888b15daa116267437bc7d95bef584e877a8b20",
+    "docs/rdkit-graph-queries.md": "1e160d7888a4adbfa739803512bebe8b68e7e60e6bf56c2bc5fb5d83a6d79934",
+    "docs/rdkit-migration.md": "47a0590aeb1c6dbde6111492138d811bee1be8b36691c02d5d6b801ce6a18bd7",
+    "docs/rdkit-open-issues-2026-10-14.md": "af49c90d3c3858959dc8bfcb74dbd05b27265d0eb27bbbf2dc934fb1fd32d46d"
+  },
+  "evidence_sha256": {
+    "README.md": "9ca9be9d27863fb29051f8a76f64d6ee1f0e5ff15ea726ebaeea46df4a8eea1e",
+    "docs-and-typing.log": "149b648f6face5c5dadc6ee2f35155567e4a47a333666c7e3db22f72812ad480",
+    "mkdocs.log": "33f610d2304fc8e6d1c10f85eb85015abe3ca3efdab9765dcb2462a523483dfd",
+    "native-source-comparison.log": "b6ccce987ffa619b217e39619be33648a8e08ae62e2672d1ae1cf966b115d210",
+    "oracle-summary.json": "428e0d441435889c60e3d2823c1cec664f1889a649cd8500fe8b438ae634017b",
+    "oracle.log": "428e0d441435889c60e3d2823c1cec664f1889a649cd8500fe8b438ae634017b",
+    "oracle.py": "4f254de32a5d711df47f0d6f3b5c6aa059dccd10d45961c582525f2fdc4f874f",
+    "pytest.log": "4aa7aab8c27f081a602fa176e3fc2ad566865533325571caacf700804c18b403",
+    "source-gates.log": "93c5929e06701a031d620af7c18bf7d7cd727c1b57d60a0f68d554583d065729",
+    "typing-invalid.log": "2a316352c69d26f42dbfbd27237571c0c423e7f5264f62d3ef7875b907f5d5f3",
+    "typing-valid.log": "f9b031e5c45aa702cd4fef028d465551cb20a2c4698e0913c7b00766b20ac4d8",
+    "typing_invalid.py": "ccf7337ee517858cd96538f8c9c1b80047f4fed3e96941336ce2f9fa9bd83cc4",
+    "typing_valid.py": "9d83c95e6306466459c416f78cd64abff5db96ea9d29aa49b7f4a4f11d38597e"
+  }
+}

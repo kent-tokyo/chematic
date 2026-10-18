@@ -1,0 +1,13 @@
+{
+  "rdkit": "2026.09.1",
+  "numpy": "2.5.3",
+  "original_structures": 32,
+  "added_h_profiles": 12,
+  "variants": 110,
+  "matrices": 1320,
+  "compared_cells": 51552,
+  "max_distance_difference": 0.0,
+  "adjacency": "exact values and dtype",
+  "inputs_sha256": "49bc7c39c336ca48bbbb07230c49af5ada3da804baf97633c4a263a40b69520e",
+  "scope": "Bounded supported graphs, model indices unchanged; no large unsafe RDKit matrix calls"
+}

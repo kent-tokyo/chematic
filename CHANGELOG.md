@@ -14,6 +14,14 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Python `rdkit_compat.GetAdjacencyMatrix` and `GetDistanceMatrix` expose the
+  existing bounded native graph profiles as independent NumPy arrays, with
+  strict options and refusal of atom-index changes during preparation. See
+  [NumPy graph matrices](docs/compat-graph-matrices.md) for supported weights
+  and the uncached, 1024-input-atom scope.
+
 ## [1.1.7] - 2026-10-18
 
 ### Added
