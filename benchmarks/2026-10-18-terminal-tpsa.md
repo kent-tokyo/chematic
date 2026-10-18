@@ -74,3 +74,7 @@ Both earlier epochs remain rejected under their own six-primary rules. The final
 - Pointwise paired 95% bootstrap intervals use 10,000 fixed-seed resamples. Unrounded ratios decide adoption; no block, error, refusal or negative observation is removed. Full host-load observations and preregistration hashes are retained. Other host activity and this exposed development corpus limit transfer to other workloads, hosts and packages.
 - Recomputed accounting: 192 journals, 2880 cells, 188696 timed batches and 188696000 processed rows. This row total counts repeated work, not independent chemical structures.
 - Required benchmark CI recomputes the legacy and new packets, the selected TPSA primaries, all 42 floors, scalar accounting and rejected decisions, with corruption controls. Hosted CI validates the source; it does not reproduce this local timing experiment.
+
+## Integration boundary
+
+After timing completed, main `6bc36d020b78fab7c413652d5cb998a19c6ddc8d` added the independent macrocycle-aromaticity and explicit-H rotor parity fix (PR #1036). That main was merged before final integration validation. The four measured TPSA/helper implementation files remain byte-identical. The timings and 42 source floors above belong exclusively to the frozen `f8e9d7de` → `add2b6b4` experiment; the combined tree was not re-timed. Final affected-crate tests, all-target Clippy and hosted CI validate the integrated source separately.
