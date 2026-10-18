@@ -158,7 +158,7 @@ fallback or a silent truncation:
 |---|---|
 | LAMMPS data with an `atom_style` outside `atomic`/`charge`/`molecular`/`full` | `LammpsDataError::UnsupportedAtomStyle` — `charge` and `molecular` rows are both genuinely ambiguous 6-field rows by column count alone, so there is no safe guess to fall back to. |
 | LAMMPS "Type Labels" sections (`Atom Type Labels`, `Bond Type Labels`, etc.) | rejected — any section name ending in `"Type Labels"` fails the parse rather than being silently misread as a different section shape. |
-| Gaussian Cube file with more than one dataset | `CubeError::MultiDatasetUnsupported` — rejected, not silently truncated to the first dataset. |
+| Gaussian Cube file with more than one dataset, native scalar reader | `CubeError::MultiDatasetUnsupported` — rejected, not silently truncated. Python's separate [dataset reader](cube-dataset-selection.md) supports explicit selection. |
 | OpenDX write of a `Bohr`-tagged grid via `write_opendx` | `OpenDxError::NonAngstromUnits` — see the fail-closed section below. |
 | OpenDX write of a grid with any atoms (either writer) | `OpenDxError::AtomsNotSupported` — there is no lossy-atom-dropping path; the format simply has no atom section to write to. |
 

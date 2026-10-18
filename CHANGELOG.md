@@ -37,6 +37,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   while preserving ATOM/HETATM identity and numeric fields. It explicitly maps
   chains, remaps serial/ANISOU/CONECT references and retains source/loss sidecars.
   See [PDB coordinate merging](docs/pdb-coordinate-merge.md).
+- Python `read_cube_datasets` reads bounded multi-field CUBE inputs, retaining
+  source text and dataset IDs. Explicit selection exports one ordinary scalar
+  CUBE with an omission sidecar and native geometry validation. See
+  [CUBE dataset selection](docs/cube-dataset-selection.md).
 
 ### Changed
 

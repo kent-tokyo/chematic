@@ -1,0 +1,113 @@
+{
+  "base_commit": "f99c7b8ab33098a2e1fd9fd568aee370bf79ab38",
+  "created_at_utc": "2026-10-18T06:25:34.211853+00:00",
+  "issue": {
+    "number": 2579,
+    "state": "OPEN",
+    "title": "Correct way to deal with dialects for output of CUBE files",
+    "updatedAt": "2023-04-06T04:23:47Z",
+    "url": "https://github.com/openbabel/openbabel/issues/2579",
+    "checked_at_utc": "2026-10-18T06:25:34.202665+00:00"
+  },
+  "upstream_pr": {
+    "number": 2580,
+    "state": "OPEN",
+    "merged_at": null
+  },
+  "versions": {
+    "python": "3.13.6",
+    "numpy": "2.5.3",
+    "pytest": "9.1.1"
+  },
+  "native_fixture": {
+    "source_commit": "ca7e14e892cab8b495183bcda4449f49471ba1b1",
+    "sha256": "90f81980b0fdf06c8edb616d8f8e5acd1831a9b6de404ed2b3405646cff41423",
+    "bytes": 85142576,
+    "path": "/private/tmp/chematic-cube-python/chematic/chematic.so",
+    "source_provenance": "validation/results/checked-core-removal-2026-10-17/provenance.json"
+  },
+  "native_scope": "Reused hash-verified extension. Relevant cube.rs, volumetric.rs and Python volumetric.rs unchanged from fixture; no fresh current-main build or whole-extension equivalence claim.",
+  "source_sha256": {
+    "CHANGELOG.md": "137012c1a9f06f8a96db4df7dfecc802fdc952b9d0252a699ddc36b509a0581f",
+    "mkdocs.yml": "a206618c17d93576eb90a314a72b4076ac1c3792b619fe530c154c26aa943a54",
+    "crates/chematic-py/python/chematic/__init__.py": "fa8407baac224fc31b39c2db1de70a3aab5c2016b32114ee231c01ec8315029c",
+    "crates/chematic-py/python/chematic/__init__.pyi": "75652fee8a23d726770b70b36309ecea60087ff1e2d84d965adf2ceb6f7c59f2",
+    "crates/chematic-py/python/chematic/_cube_datasets.py": "c47033f850c234c671f1c8ec6fb63dd1fa88b576ebae0670889a75d078379f6a",
+    "crates/chematic-py/tests/test_cube_datasets.py": "6fbc8be1d569a7fbaebd1d7fb8016a23e1a857701c0a47c2c08c5e19492fd672",
+    "docs/cube-dataset-selection.md": "7ae03bfc8eccf8ea345f4300c883cc84e191e218bbb00775af600c1f38370a5f",
+    "docs/openbabel-open-issues-2026-10-14.md": "2a3254fb4fc94073c9127110f01aff4bc197cc7c1e4cfc610f81d8237b9da432",
+    "docs/format-capabilities.md": "1ffc9f45618f0039a55e512f11665ff74a53b031be791cf486974e528e6f7e37",
+    "docs/error-and-limits.md": "682170235df7896dd43d0a7502c929b23033354803ef7ce3e06b686b2efcb36d",
+    "docs/language-bindings.md": "d24f45a55d786006f667b6750ac866d9dbfbde7d088a43a56e8a2174f6f17cdd"
+  },
+  "evidence_sha256": {
+    "README.md": "0ced1ca1e07fd8bbd48eb6f7ca6c6e078dabc1c17b67fea9b245b67385b83139",
+    "docs-and-typing.log": "4d63ba3f054b96b28136ed4e3d1da176cfbe4215f5a8232c5b9b3e942e3cc681",
+    "mkdocs.log": "767af9236550cfed0494d799f5d995c0cec5f882da33bd628f68ec9b5c51d292",
+    "native-source-comparison.log": "e224a76f30904c63af9c87475d94c192eadd82eeedada90d9b5be8359580614e",
+    "openbabel-orbital.cube": "bbc376f39f0058bb8fb1c48fc39c1a88d2a4ec555fc53b8eadb47dd7f4216a50",
+    "openbabel-orbital.stderr": "d62a9897953e0ca42ee2240c501d3cd421fbeb8d1e0231b81a468b3b9401abff",
+    "openbabel-single.cube": "62fdc8c5b2c6484203df2f1c6f6259d3c97caedc4466445648f20eb4e2f3c8f1",
+    "openbabel-single.stderr": "d62a9897953e0ca42ee2240c501d3cd421fbeb8d1e0231b81a468b3b9401abff",
+    "openbabel-summary.json": "cf3fffc40a53bdec02897ee0ba9d9c0c5f90f6f786bd36b25d51c29f47bd548a",
+    "oracle-summary.json": "5ddb6f4665e7fd152ea26d59e05ed85f14b53315915b966bf34da0fef916e134",
+    "oracle.log": "5ddb6f4665e7fd152ea26d59e05ed85f14b53315915b966bf34da0fef916e134",
+    "oracle.py": "6d0c35c5fcd3f84438cc13bd32cb09551a59152ca5fa5c359817e6acf3ce6c2d",
+    "orbital-input.cube": "76bac46fcc2d3375d23f32dfe68a4846b0925551faad54f7133ac80bc434a35e",
+    "pytest.log": "e133180e2a7a842844cdb26dfdb7ac3afc7961c468a7c6fa1f157537bd4b1686",
+    "single-input.cube": "e753b9db480486bdd32d94dd53ab349a26a67299a93e172e46f7d91e8fcbf685",
+    "source-gates.log": "93c5929e06701a031d620af7c18bf7d7cd727c1b57d60a0f68d554583d065729",
+    "typing-invalid.log": "454dd06e0e72f55934a749de24ef08be8d5efd2afa63f8bda326cae5e8915b5f",
+    "typing-valid.log": "f9b031e5c45aa702cd4fef028d465551cb20a2c4698e0913c7b00766b20ac4d8",
+    "typing_invalid.py": "67c6ca825527461e2336f8f2c80d01761c90aaeb9e2cbe4f151b481ed8778867",
+    "typing_valid.py": "1414a0817621e41694d8fe343ec1e3b470e3050ede96163d63c0769520f17207"
+  },
+  "oracle_summary": {
+    "ase": "3.26.0",
+    "numpy": "2.5.3",
+    "input_documents": 192,
+    "positive_nval_original_fields": 240,
+    "selected_single_fields": 480,
+    "selected_scalar_values": 12724,
+    "max_value_error": 0.0,
+    "max_geometry_error_angstrom": 0.0,
+    "ase_negative_original_accepted": 24,
+    "ase_negative_original_refused": 72,
+    "inputs_sha256": "fd62747125ee42c35c4f57217e77009852b2e859b14df730f2db1109824fcf1e",
+    "scope": "ASE positive-NVAL original reads and all scalar exports; negative multi-dataset original refusals reported separately; exact authored values independently checked"
+  },
+  "openbabel_summary": {
+    "orbital": {
+      "returncode": 0,
+      "input_ids": [
+        7,
+        9
+      ],
+      "output_ids": [
+        1,
+        2
+      ],
+      "input_nuclear_charge": 4.0,
+      "output_nuclear_charge": 6.0,
+      "scalar_values_unchanged": true,
+      "output_natoms": -1
+    },
+    "single": {
+      "returncode": 0,
+      "input_ids": null,
+      "output_ids": [
+        1
+      ],
+      "input_nuclear_charge": 4.0,
+      "output_nuclear_charge": 6.0,
+      "scalar_values_unchanged": true,
+      "output_natoms": -1
+    },
+    "openbabel_version": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27"
+  },
+  "pytest": {
+    "total": 106,
+    "new": 56,
+    "existing_formats": 50
+  }
+}

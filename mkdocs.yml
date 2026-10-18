@@ -84,6 +84,7 @@ nav:
     - pymatgen JSON: pymatgen-json.md
     - Linear Nucleic-Acid Diagrams: nucleic-linear-svg.md
     - CML Molecular Collections: cml-collection.md
+    - CUBE Dataset Selection: cube-dataset-selection.md
     - Crystal OBJ Atom Meshes: crystal-obj-mesh.md
     - Rooted SMILES Stereo: rooted-smiles-stereo.md
     - XYZ Element Symbols: xyz-element-symbols.md

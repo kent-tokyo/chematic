@@ -1,0 +1,5 @@
+validation/results/cube-datasets-2026-10-18/typing_invalid.py:2: error: Argument 1 to "read_cube_datasets" has incompatible type "int"; expected "str"  [arg-type]
+validation/results/cube-datasets-2026-10-18/typing_invalid.py:3: error: Argument "max_atoms" to "read_cube_datasets" has incompatible type "float"; expected "int"  [arg-type]
+validation/results/cube-datasets-2026-10-18/typing_invalid.py:4: error: Argument 1 to "select" of "CubeDatasetDocument" has incompatible type "str"; expected "SupportsIndex"  [arg-type]
+validation/results/cube-datasets-2026-10-18/typing_invalid.py:5: error: Incompatible types in assignment (expression has type "str", variable has type "int")  [assignment]
+Found 4 errors in 1 file (checked 1 source file)

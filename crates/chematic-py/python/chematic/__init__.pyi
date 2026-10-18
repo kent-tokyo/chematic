@@ -52,6 +52,11 @@ from ._pdb_merge import (
     PdbMergeResult as PdbMergeResult,
     merge_pdb_coordinate_blocks as merge_pdb_coordinate_blocks,
 )
+from ._cube_datasets import (
+    CubeDatasetDocument as CubeDatasetDocument,
+    CubeDatasetSelection as CubeDatasetSelection,
+    read_cube_datasets as read_cube_datasets,
+)
 
 from typing import overload, Callable, Any, Iterable, Iterator, Literal, Optional, Sequence, TypedDict, Union
 
