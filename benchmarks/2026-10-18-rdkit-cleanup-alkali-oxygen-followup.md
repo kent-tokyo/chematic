@@ -49,3 +49,23 @@ charge 0. RDKit produces `[C-]#N.[Cu]` (charge -1); CheMatic produces
 `[C-]#N.[Cu+]` (charge 0). A source unit test now pins both outputs and checks
 charge conservation. These are two narrow, independently checkable advantages
 on the recorded examples; they do not establish general Cleanup superiority.
+
+The [formal-charge audit](2026-10-18-rdkit-cleanup-charge-invariant-audit.json)
+reconstructs all 4,069 comparable RDKit `2026.09.1` Cleanup outputs from the
+frozen comparison and verifies the source dump hash. RDKit `2025.09.3` was used
+only to parse the recorded SMILES and sum formal charges. Of 4,066 rows that
+parser accepts in all three forms, both outputs preserve input charge in 4,061,
+only CheMatic does in 3 (indices 410, 455, and 3514), only RDKit does in 0,
+and neither does in 2. Three rows cannot be scored by that parser. The two
+rows where neither preserves charge are bare-metal cases where both tools add
+charge. Charge preservation is one necessary check for the two disconnection
+examples above, not a complete correctness metric.
+
+After generating the source dump with the command above, reproduce the audit:
+
+```sh
+python scripts/rdkit_cleanup_charge_invariant_audit.py \
+  --dump /tmp/chematic-cleanup-alkali-oxygen.jsonl \
+  --comparison benchmarks/2026-10-18-rdkit-cleanup-alkali-oxygen-followup.json \
+  --output /tmp/chematic-cleanup-charge-audit.json
+```
