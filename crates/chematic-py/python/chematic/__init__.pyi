@@ -5754,3 +5754,5 @@ from ._pdb_hydrogen_names import (
     PdbHydrogenNaming as PdbHydrogenNaming,
     name_pdb_hydrogens_checked as name_pdb_hydrogens_checked,
 )
+
+from ._scored_tautomer import rdkit_pick_tautomer_scored as rdkit_pick_tautomer_scored

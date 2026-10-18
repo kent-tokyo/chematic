@@ -1,0 +1,11 @@
+{
+  "rdkit_version": "2026.09.1",
+  "seed": 960119,
+  "trials": 128,
+  "comparisons": 1536,
+  "callback_calls_candidate": 3456,
+  "callback_calls_reference": 3456,
+  "index_mismatches": 0,
+  "graph_mismatches": 0
+}
+Separate lexical/stereo policy difference: {'name': 'specified_vs_unspecified_stereo_tie', 'inputs': ['CC(F)O', 'C[C@H](F)O'], 'candidate': 'CC(O)F', 'reference': 'C[C@@H](O)F', 'counted_as_parity': False}

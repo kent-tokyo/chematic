@@ -687,3 +687,5 @@ from ._mcs_comparators import (
 from ._pdb_hydrogen_names import (
     PdbHydrogenName, PdbHydrogenNaming, name_pdb_hydrogens_checked,
 )
+
+from ._scored_tautomer import rdkit_pick_tautomer_scored as rdkit_pick_tautomer_scored

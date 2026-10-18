@@ -14,6 +14,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Python `rdkit_pick_tautomer_scored` selects supplied candidates with typed
+  integer scoring callbacks. Input snapshots and canonical keys are prepared
+  before callbacks, scoring views are isolated, and graph/state/count limits
+  refuse oversized input. See [scored selection](docs/scored-tautomer-selection.md).
+
 ## [1.1.7] - 2026-10-18
 
 ### Added

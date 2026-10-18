@@ -1,0 +1,5 @@
+validation/results/tautomer-score-callback-2026-10-18/typing_invalid.py:6: error: List item 0 has incompatible type "str"; expected "Mol"  [list-item]
+validation/results/tautomer-score-callback-2026-10-18/typing_invalid.py:7: error: Argument 2 to "rdkit_pick_tautomer_scored" has incompatible type "Callable[[Mol], float]"; expected "Callable[[Mol], SupportsIndex]"  [arg-type]
+validation/results/tautomer-score-callback-2026-10-18/typing_invalid.py:8: error: Argument 2 to "rdkit_pick_tautomer_scored" has incompatible type "None"; expected "Callable[[Mol], SupportsIndex]"  [arg-type]
+validation/results/tautomer-score-callback-2026-10-18/typing_invalid.py:9: error: Argument "max_candidates" to "rdkit_pick_tautomer_scored" has incompatible type "float"; expected "SupportsIndex"  [arg-type]
+Found 4 errors in 1 file (checked 1 source file)
