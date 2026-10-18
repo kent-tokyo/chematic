@@ -52,9 +52,9 @@ on the recorded examples; they do not establish general Cleanup superiority.
 
 The [formal-charge audit](2026-10-18-rdkit-cleanup-charge-invariant-audit.json)
 reconstructs all 4,069 comparable RDKit `2026.09.1` Cleanup outputs from the
-frozen comparison and verifies the source dump hash. RDKit `2025.09.3` was used
-only to parse the recorded SMILES and sum formal charges. Of 4,066 rows that
-parser accepts in all three forms, both outputs preserve input charge in 4,061,
+frozen comparison and verifies the source dump hash. The same RDKit `2026.09.1`
+parses the recorded SMILES and sums formal charges. Of 4,066 rows it accepts
+in all three forms, both outputs preserve input charge in 4,061,
 only CheMatic does in 3 (indices 410, 455, and 3514), only RDKit does in 0,
 and neither does in 2. Three rows cannot be scored by that parser. The two
 rows where neither preserves charge are bare-metal cases where both tools add
