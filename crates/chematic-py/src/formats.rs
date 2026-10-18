@@ -85,14 +85,7 @@ type SdfWithCoords = Vec<(Mol, String, Vec<Vec<f64>>)>;
 #[pyfunction]
 fn from_smiles(#[pyo3(from_py_with = serialized_text)] smiles: &str) -> PyResult<Mol> {
     chematic_smiles::parse(smiles)
-        .map(|mol| Mol {
-            // Descriptor and ring preparation stays lazy.  Calling one of
-            // those APIs memoizes its result on the molecule, so repeated
-            // workflows still reuse the work without charging parse-only or
-            // single-property callers for unrelated perception.
-            inner: Arc::new(mol),
-            props: Default::default(),
-        })
+        .map(Mol::from_smiles_parsed)
         .map_err(|e| match e {
             chematic_smiles::SmilesError::InvalidValence { .. } => {
                 crate::errors::input_error("malformed", "smiles_valence", "smiles", e.to_string())

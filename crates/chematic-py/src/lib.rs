@@ -154,6 +154,33 @@ impl Mol {
             props: Default::default(),
         }
     }
+
+    /// Wrap a molecule parsed from SMILES after preparing the same two
+    /// perception results RDKit materializes during `MolFromSmiles`.
+    ///
+    /// Keeping this at the Python boundary preserves the deliberately lean
+    /// Rust SMILES parser while making Python parse/descriptor comparisons
+    /// symmetric: aromaticity-dependent scalar descriptors and
+    /// `CalcNumRings` no longer pay sanitization work after parsing that
+    /// RDKit already charged to parsing.
+    fn from_smiles_parsed(mol: chematic_core::Molecule) -> Self {
+        // Keep the parser's resource contract for unusually large or highly
+        // cyclic inputs. Those retain the existing lazy behavior rather than
+        // making a plain parse trigger potentially expensive ring-family
+        // enumeration. The limits cover ordinary small-molecule workloads;
+        // every derived cache is still invalidated by graph mutation.
+        const MAX_EAGER_ATOMS: usize = 128;
+        const MAX_EAGER_BONDS: usize = 192;
+        const MAX_EAGER_RING_CLOSURES: usize = 16;
+        if mol.atom_count() <= MAX_EAGER_ATOMS
+            && mol.bond_count() <= MAX_EAGER_BONDS
+            && mol.smiles_ring_closure_bond_count() <= MAX_EAGER_RING_CLOSURES
+        {
+            let _ = chematic_perception::rdkit_parity_view_is_identity(&mol);
+            let _ = chematic_chem::rdkit_num_rings(&mol);
+        }
+        Self::bare(mol)
+    }
 }
 
 /// Pure-Rust cheminformatics — SMILES, fingerprints, 70+ descriptors, pKa, ADMET.
