@@ -376,6 +376,13 @@ fn decompose_labeled_prepared(
             rows.push(None);
         }
     }
+    Ok(finalize_labeled_rows(rows, mols))
+}
+
+fn finalize_labeled_rows(
+    rows: Vec<Option<LabeledCandidate>>,
+    mols: &[&Molecule],
+) -> Vec<Option<LabeledRGroupResult>> {
     // RDKit emits an R-group hydrogen only when another row establishes that
     // column. A lone unsubstituted core therefore has no empty R column.
     let active_labels: HashSet<u16> = rows
@@ -383,8 +390,7 @@ fn decompose_labeled_prepared(
         .flatten()
         .flat_map(|candidate| candidate.result.r_groups.keys().copied())
         .collect();
-    Ok(rows
-        .into_iter()
+    rows.into_iter()
         .map(|row| {
             row.map(|mut candidate| {
                 let mut attachments = candidate.attachments;
@@ -411,7 +417,7 @@ fn decompose_labeled_prepared(
                 candidate.result
             })
         })
-        .collect())
+        .collect()
 }
 
 // A terminal mapped wildcard describes a substituent site. Removing it from
