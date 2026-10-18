@@ -22,3 +22,5 @@ python scripts/rdkit_cleanup_source_gate.py \
 ```
 
 This is RDKit agreement for a selected source corpus, not an independent chemistry truth or a toolkit-wide accuracy comparison. Reaction and R-group source code are unchanged in this follow-up; their separate results are in the [workflow packet](2026-10-18-rdkit-workflows-followup.md).
+
+Local checks: `chematic-chem` unit tests 979 passed and 1 ignored; `chematic-smiles` unit tests 410 passed and 1 ignored. Clippy with warnings denied, rustfmt, and Python syntax checks passed. The sparse checkout omits unrelated linked documentation and validation records, so the repository-wide benchmark-index script cannot complete here; both new record links and all six recorded source hashes were checked directly.
