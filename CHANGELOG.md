@@ -22,8 +22,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - Added previous-release compatibility gates for every changed publishable
   Rust crate, Python declarations and dependency contracts, and generated
   WebAssembly TypeScript declarations.
-- Added reproducible classifiers for RDKit Cleanup/Reionize and CTfile
-  readback residuals, retaining every refusal and oracle failure.
+- Added one source-built RDKit Normalize/Cleanup/Reionize classifier and a
+  separate CTfile readback classifier, retaining every residual, refusal and
+  oracle failure with the source revision that produced it.
 
 ### Changed
 

@@ -5,42 +5,40 @@ not claim universal RDKit compatibility or toolkit-wide speed superiority.
 
 ## Identity and protocol
 
-- source commit: `f5d6cd6fae6a369585a72af0c2659c44b3e18a35`
+- current standardization source commit:
+  `3ffa03b1b9d36c5ff082d966bbdafbc8cc21ac25`
+- frozen performance/holdout candidate:
+  `f5d6cd6fae6a369585a72af0c2659c44b3e18a35`
 - comparator: RDKit `2026.09.1`
 - stress corpus: 4,072 rows, SHA-256
   `879166ab5481cac805ecd2d77f37d628383ec124085b90e2ee1659d55ce76277`
-- native extension SHA-256:
-  `100e6805b16a89b899775587de273d103c3e8d14e8693cbb064d687d0ef02cf4`
 - exact row outputs and errors are retained in
-  [`validation/results/rdkit-cleanup-current-full-2026-10-18.json`](../validation/results/rdkit-cleanup-current-full-2026-10-18.json)
+  [`validation/results/rdkit-standardization-current-source-2026-10-18.json`](../validation/results/rdkit-standardization-current-source-2026-10-18.json)
   and
   [`validation/results/rdkit-molblock-readback-current-2026-10-18.json`](../validation/results/rdkit-molblock-readback-current-2026-10-18.json).
 
-The Python extension was built from the named source on macOS arm64. The local
-linker's generated Mach-O string-table offset required alignment and ad-hoc
-re-signing before loading. The extension's code and data were otherwise
-unchanged. This is source evidence, not a claim about a registry wheel.
+The standardization record was produced by a clean, source-built Rust dump and
+classified with RDKit on macOS arm64. The CTfile and performance records use
+the separately named frozen candidate. These are source results, not claims
+about a registry wheel.
 
 ## Normalize, Reionize and Cleanup
-
-The historical 256-row selection now has 256 common inputs (two formerly
-excluded inputs are accepted). Normalize is 256/256 exact, Cleanup is 242/256,
-and Reionize is 205/256. The 14 Cleanup and 51 Reionize residuals are all
-classified in the machine record; none is silently dropped.
 
 On all 4,072 stress rows, RDKit Cleanup succeeds on 4,069 rows:
 
 | Operation | Exact | Residual boundary |
 |---|---:|---|
 | Normalize | 4,055/4,069 | 7 aromatic N-oxide kekulization, 4 functional-group normalization, 3 graph-assignment gaps |
-| Cleanup | 3,836/4,069 | 204 not implemented, 26 declared metal-stereo policy differences, 3 sulfur-oxide representation-only differences |
+| Cleanup | 3,885/4,069 | 154 not implemented, 26 declared metal-stereo policy differences, 4 representation-only differences |
 | Reionize | 3,150/4,069 | 883 intentional independent-ionization policy differences; 36 missing hydrogen, resonance or charge assignments |
 
-Cleanup's 204 unimplemented rows comprise 129 metal-disconnection, 33
-acid/base transfer, 26 metal-charge, 7 aromatic N-oxide kekulization, 4
-functional-group normalization, 3 explicit-H normalization and 2 metal-bond
-order rows. This classification is a support contract, not an assertion that
-every RDKit output is the only chemically valid answer.
+Cleanup's 154 unimplemented rows comprise 78 metal-disconnection, 33 acid/base
+transfer, 27 metal-charge, 7 aromatic N-oxide kekulization, 4 functional-group
+normalization, 3 explicit-H normalization and 2 metal-bond-order rows. One
+canonical and three sulfur-oxide rows are representation-only. Compared with
+the pre-integration candidate, 49 rows are fixed and none regressed. This
+classification is a support contract, not an assertion that every RDKit
+output is the only chemically valid answer.
 
 ## CTfile readback
 
@@ -125,9 +123,14 @@ Compatibility CI now:
 python3 scripts/check_trust_holdouts.py
 python3 scripts/check_binding_api_compat.py \
   --baseline v1.1.7 --wasm-dts demo/pkg/chematic_wasm.d.ts
-python3 scripts/rdkit_cleanup_parity.py \
-  --sample-size 10000 \
-  --output validation/results/rdkit-cleanup-current-full-2026-10-18.json
+cargo build --locked --release -p chematic-chem \
+  --example cleanup_rdkit_dump
+target/release/examples/cleanup_rdkit_dump \
+  < validation/cosmolkit_comparison/corpora/stress-v1.smi \
+  > /tmp/chematic-standardization-source.jsonl
+python3 scripts/rdkit_cleanup_source_gate.py \
+  --dump /tmp/chematic-standardization-source.jsonl \
+  --output validation/results/rdkit-standardization-current-source-2026-10-18.json
 python3 scripts/rdkit_molblock_readback_parity.py \
   --output validation/results/rdkit-molblock-readback-current-2026-10-18.json
 ```

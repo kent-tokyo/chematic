@@ -16,9 +16,10 @@ This file lists unresolved work only. Completed changes belong in the
   first-use chiral Morgan and Labute ASA deficits visible. Do not turn a hot
   cache win into a first-use or toolkit-wide claim.
 - **Standardization implementation:** every current Normalize, Reionize and
-  Cleanup residual is classified. Prioritize 36 missing Reionize assignments,
-  aromatic N-oxide kekulization and common functional groups. Independent
-  ionization and metal-stereo policy differences remain declared contracts.
+  Cleanup residual is classified from the same source revision. Prioritize 36
+  missing Reionize assignments, aromatic N-oxide kekulization and common
+  functional groups. Independent ionization and metal-stereo policy
+  differences remain declared contracts.
 - **CTfile:** current source has 4,045 exact readbacks, ten stereo-only rows,
   one chematic readback failure and 16 RDKit oracle failures. Fix the chematic
   rows without absorbing oracle failures into the success count.

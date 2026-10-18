@@ -14,7 +14,7 @@ the [complete inventory](archive-index.md) links every retained record.
 | What are the latest Python descriptor and Morgan source results? | [terminal TPSA](2026-10-18-terminal-tpsa.md) · [Morgan view/ring scratch](2026-10-18-morgan-borrowed-view-ring-scratch.md) | Source wheels on one macOS arm64 host; exact retention gates, not package or toolkit-wide superiority. |
 | What do the current first-use/reuse/RSS trust lanes show? | [trust-gate summary](2026-10-18-trust-gates-and-residuals.md) · [macOS raw JSON](2026-10-18-trust-performance-macos-arm64.json) | Frozen source candidate, 20 rotating blocks. Repeated QED is cached; first-use chiral Morgan and Labute ASA deficits remain. Linux is a separate hosted lane. |
 | How do reaction, standardization, and labelled R-group workflows compare with RDKit? | [current source check](2026-10-18-rdkit-reaction-cleanup-rgroup-source.md) · [83 reaction rows](2026-10-18-rdkit-reaction-83-source-gate.json) · [stereo safety](2026-10-18-rdkit-reaction-stereo-safety.json) · [R-group hydrogen rows](2026-10-18-rdkit-rgroup-hydrogen-source-gate.json) · [expanded workflow packet](2026-10-12-rdkit-workflows-expanded-source.md) | Bounded source results: 80/83 reaction cases have exact graph/origin/map agreement, three inputs are invalid in both engines; 4/4 R-group hydrogen pairs agree by graph and label. Broad accuracy remains open. |
-| How closely do Normalize, Reionize, Cleanup and CTfile readback match RDKit? | [current source check](2026-10-18-rdkit-reaction-cleanup-rgroup-source.md) · [4,069-row Cleanup result](2026-10-18-rdkit-cleanup-source-gate.json) · [residual classification](2026-10-18-trust-gates-and-residuals.md) · [CTfile classification](../validation/results/rdkit-molblock-readback-current-2026-10-18.json) | Latest-main Cleanup is 3,885/4,069 exact with 49 fixes and zero regressions on the same source. Normalize/Reionize classifications and the trust summary must be regenerated after integration; CTfile readback remains separately classified. |
+| How closely do Normalize, Reionize, Cleanup and CTfile readback match RDKit? | [current source classification](../validation/results/rdkit-standardization-current-source-2026-10-18.json) · [summary](2026-10-18-trust-gates-and-residuals.md) · [CTfile classification](../validation/results/rdkit-molblock-readback-current-2026-10-18.json) | Current source: Normalize 4,055/4,069, Cleanup 3,885/4,069 and Reionize 3,150/4,069 exact. Every residual is classified; Cleanup has 49 fixes and zero regressions versus the pre-integration candidate. CTfile readback is a separate source lane. |
 | How do bounded workflows compare with Indigo? | [Indigo workflow packet](2026-10-12-indigo-workflows-source.md) | One-host source lanes with 15 reactions, 39 parent decisions, and 16 labelled R-group rows. |
 | What is the current 3D/MMFF boundary? | [RDKit 2026.09 bounds](2026-10-12-a6-rdkit-2026-09-bounds-followup.md) · [gradient rescue](2026-10-13-a6-mmff-gradient-rescue-development.md) | Frozen development corpora; quality tails, fresh holdout, two-host timing, memory, and exact packages remain open. |
 | How does file interchange compare with Open Babel? | [V3000 packet](2026-10-14-openbabel-v3000-speed.md) · [SDF follow-up](2026-10-14-openbabel-sdf-read-followup.md) · [program](../docs/openbabel-file-io.md) | Semantic equality is required before speed ranking; diverse residual rows stay unranked. |
@@ -23,6 +23,14 @@ the [complete inventory](archive-index.md) links every retained record.
 | What is the broad historical Python operation matrix? | [v1.0.30 63-operation matrix](2026-10-02-v1.0.30-vs-rdkit-python-63op-paired20.json) | Historical published-wheel result against RDKit 2026.03.6. |
 
 ## Recent focused follow-ups
+
+- [RDKit Cleanup source sequence](2026-10-18-rdkit-cleanup-source.md):
+  [initial full-corpus source run](2026-10-18-rdkit-cleanup-full-corpus-source.json),
+  [intermediate source result](2026-10-18-rdkit-cleanup-source.json),
+  [pre-metal-scope baseline](2026-10-18-rdkit-cleanup-before-metal-scope.json),
+  and [integrated source gate](2026-10-18-rdkit-cleanup-source-gate.json).
+  The current three-stage classification supersedes these development epochs;
+  they remain indexed for provenance and regression accounting.
 
 - [Terminal N/O and zero-model TPSA](2026-10-18-terminal-tpsa.md):
   isolated RDKit-default TPSA source improvement on both fixed windows; all 42
