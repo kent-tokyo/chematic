@@ -29,17 +29,54 @@ def stats(a, b, seed):
 
 
 def check(packet):
-    assert packet["schema"] == "morgan-numeric-packet/v1"
+    assert packet["schema"] in (
+        "morgan-numeric-packet/v1", "morgan-numeric-packet/v2", "morgan-numeric-packet/v3")
+    target_op = "tpsa" if packet["schema"] == "morgan-numeric-packet/v3" else "morgan2_chiral"
     assert len(packet["profiles"]) == 2 and len(packet["summary"]) == 78
     assert packet["protocol"]["primary"] == [
-        "0/morgan2_chiral/first_use",
-        "5000/morgan2_chiral/first_use",
-    ]
+        f"0/{target_op}/first_use", f"5000/{target_op}/first_use"]
     saved = {
         (r["offset"], r["operation"], r["mode"], r["comparator"]): r
         for r in packet["summary"]
     }
     assert len(saved) == 78
+    if packet["schema"] in ("morgan-numeric-packet/v2", "morgan-numeric-packet/v3"):
+        scalar = packet["scalar_validation"]
+        assert scalar["source_rows_equal"] is True
+        assert type(scalar["source_exact_cells_including_refusals"]) is int
+        assert scalar["source_exact_cells_including_refusals"] == 42216
+        corpora = {"rdkit-js-browser-10k-v1.smi": 10000, "stress-v1.smi": 4072}
+        assert {h["corpus"]: h["rows"] for h in scalar["headers"]} == corpora
+        expected = {f"{arm}/{corpus}/{op}" for arm in ("candidate", "cosmolkit")
+                    for corpus in corpora for op in ("tpsa", "labute_asa", "num_rings")}
+        assert set(scalar["comparison"]) == expected
+        states = {"equal", "mismatch", "both_unavailable", "source_unavailable", "rdkit_unavailable"}
+        for key, counts in scalar["comparison"].items():
+            assert counts and set(counts) <= states
+            assert all(type(c) is int and c >= 0 for c in counts.values())
+            assert sum(counts.values()) == corpora[key.split("/")[1]]
+    if packet["schema"] == "morgan-numeric-packet/v2":
+        # These intervals are independently recomputed from every raw batch below.
+        descriptor = [r for r in packet["summary"] if r["comparator"] == "baseline"
+                      and r["operation"] in ("tpsa", "labute_asa") and r["mode"] == "first_use"]
+        assert {(r["offset"], r["operation"]) for r in descriptor} == {
+            (offset, op) for offset in (0, 5000) for op in ("tpsa", "labute_asa")}
+        assert len(descriptor) == 4
+        passed = all(r["ci95_low"] > 1 for r in descriptor)
+        extra = packet["additional_adoption"]
+        assert type(extra["descriptor_gate_passed"]) is bool
+        assert type(extra["complete_adoption_passed"]) is bool
+        assert extra == {
+            "operations": ["tpsa", "labute_asa"], "mode": "first_use", "offsets": [0, 5000],
+            "rule": "all four source CI lower bounds >1 in addition to standard Morgan adoption",
+            "descriptor_gate_passed": passed,
+            "complete_adoption_passed": packet["decision"]["source_adoption_passed"] and passed,
+        }
+    if packet["schema"] == "morgan-numeric-packet/v3":
+        assert "additional_adoption" not in packet
+        assert packet["protocol"]["minimum_primary_ns"] == 20000000
+        assert packet["protocol"]["minimum_morgan_ns"] == 50000000
+        assert packet["protocol"]["minimum_controls_ns"] == 20000000
     cells = batches = rows = journals = 0
     source = []
     primary = []
@@ -116,7 +153,7 @@ def check(packet):
                     )
                     if arm == "baseline":
                         source.append(row)
-                        if op == "morgan2_chiral" and mode == "first_use":
+                        if op == target_op and mode == "first_use":
                             primary.append(row)
     assert {p["offset"] for p in packet["profiles"]} == {0, 5000}
     assert len(source) == 42 and len(primary) == 2 and journals == 192 and cells == 2880

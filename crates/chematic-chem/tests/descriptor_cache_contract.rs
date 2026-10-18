@@ -1,12 +1,13 @@
-use chematic_chem::{labute_asa, rdkit_tpsa, tpsa};
+use chematic_chem::{labute_asa, qed, rdkit_tpsa, tpsa};
 use chematic_core::derived_cache::DerivedScalar;
 use chematic_core::{Atom, AtomIdx, BondIdx, BondOrder, Element, Molecule};
 
-fn values(mol: &Molecule) -> [u64; 3] {
+fn values(mol: &Molecule) -> [u64; 4] {
     [
         tpsa(mol).to_bits(),
         rdkit_tpsa(mol).to_bits(),
         labute_asa(mol).to_bits(),
+        qed(mol).to_bits(),
     ]
 }
 
@@ -27,6 +28,7 @@ fn descriptor_variants_remain_distinct_and_clones_start_uncached() {
         DerivedScalar::Tpsa,
         DerivedScalar::RdkitTpsa,
         DerivedScalar::LabuteAsa,
+        DerivedScalar::Qed,
     ]
     .into_iter()
     .enumerate()

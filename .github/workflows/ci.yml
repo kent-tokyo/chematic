@@ -57,6 +57,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # The frozen-holdout gate proves that its candidate commit predates
+          # external-source acquisition, so the commit object must be present.
+          fetch-depth: 0
       - uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
       - name: Cache cargo
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
@@ -106,31 +110,36 @@ jobs:
           diff -u docs/compatibility-dashboard.md /tmp/compatibility-dashboard.md
       - name: Release channel verification record
         run: python3 scripts/check_release_channel_evidence.py
+      - name: Frozen independent holdout contract
+        run: python3 scripts/check_trust_holdouts.py
+      - name: Current-source standardization evidence
+        run: python3 scripts/check_standardization_source_evidence.py
       - name: MMFF94 current-source same-coordinate evidence
         run: python3 scripts/check_mmff94_current_energy_evidence.py
       - name: MMFF94 published-wheel quality evidence
         run: python3 scripts/check_mmff94_published_quality_evidence.py
 
   rust-api-compat:
-    name: Rust API compatibility (v1.1.3 contract)
+    name: Rust API compatibility (all changed public crates)
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
-      - name: Detect chematic-mol public API changes
+      - name: Detect changed public crates
         id: changes
         shell: bash
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          if git diff --quiet "$BASE_SHA...$HEAD_SHA" -- \
-            crates/chematic-mol/src crates/chematic-mol/Cargo.toml; then
+          packages="$(python3 scripts/changed_public_crates.py --base "$BASE_SHA" --head "$HEAD_SHA")"
+          if [[ -z "$packages" ]]; then
             echo "run=false" >> "$GITHUB_OUTPUT"
           else
             echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "packages=$packages" >> "$GITHUB_OUTPUT"
           fi
       # cargo-semver-checks 0.48.0 supports rustdoc JSON through v57. Pin the
       # checker lane so a new stable rustdoc schema cannot turn an API result
@@ -142,16 +151,16 @@ jobs:
       - name: Install cargo-semver-checks
         if: steps.changes.outputs.run == 'true'
         run: cargo install cargo-semver-checks --version 0.48.0 --locked
-      - name: Check the established patch-release contract
+      - name: Check all changed public crates against v1.1.7
         if: steps.changes.outputs.run == 'true'
-        # v1.1.4 accidentally added exhaustive public error variants. This
-        # repair deliberately restores the longer-lived v1.1.3 contract.
-        run: >-
-          cargo semver-checks check-release -p chematic-mol
-          --baseline-rev v1.1.3 --release-type patch
+        run: |
+          for package in ${{ steps.changes.outputs.packages }}; do
+            cargo semver-checks check-release -p "$package" \
+              --baseline-rev v1.1.7 --release-type patch
+          done
       - name: Skip compatibility rebuild for unrelated pull requests
         if: steps.changes.outputs.run != 'true'
-        run: echo "No chematic-mol public API source changed."
+        run: echo "No publishable Rust crate API source changed."
 
   v3000-rdkit-semantic:
     name: V3000 RDKit semantic round trip
@@ -709,6 +718,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # Binding compatibility compares generated declarations with the
+          # latest published tag, which is absent from a depth-1 PR checkout.
+          fetch-depth: 0
       # Zero Rust/WASM dependency -- runs before the toolchain setup below so a
       # failure here gives the fastest possible signal.
       - name: Local Compound Explorer unit tests (pure functions, no WASM)
@@ -749,6 +762,10 @@ jobs:
       - name: Build WASM (--target web)
         working-directory: crates/chematic-wasm
         run: wasm-pack build --target web --out-dir pkg-web --release
+      - name: Python and WASM declaration compatibility
+        # The published package uses the web target. Node-target glue omits
+        # initSync/InitInput declarations by design and is not the npm API.
+        run: python3 scripts/check_binding_api_compat.py --baseline v1.1.7 --wasm-dts crates/chematic-wasm/pkg-web/chematic_wasm.d.ts
       - name: Web-target runtime smoke (via Node initSync)
         run: node crates/chematic-wasm/tests/pipeline_v2_web_target.test.mjs
       - name: Web-target package smoke (Node byte initialization)
@@ -803,6 +820,9 @@ jobs:
         run: |
           python3 scripts/check_morgan_numeric_packet.py benchmarks/2026-10-18-morgan-borrowed-view-only-numeric.json.gz
           python3 scripts/check_morgan_numeric_packet.py benchmarks/2026-10-18-morgan-borrowed-view-ring-scratch-numeric.json.gz
+          python3 scripts/check_morgan_numeric_packet.py benchmarks/2026-10-18-cosmolkit-allocation-candidate-numeric.json.gz
+          python3 scripts/check_morgan_numeric_packet.py benchmarks/2026-10-18-cosmolkit-cold-terms-candidate-numeric.json.gz
+          python3 scripts/check_morgan_numeric_packet.py benchmarks/2026-10-18-terminal-tpsa-numeric.json.gz
           python3 -m unittest scripts.tests.test_check_morgan_numeric_packet -v
       - name: Verify MOL2 timing packets and corruption controls
         run: |

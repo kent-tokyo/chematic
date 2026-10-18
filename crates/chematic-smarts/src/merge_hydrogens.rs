@@ -228,3 +228,95 @@ pub fn merge_query_hydrogens(input: &QueryMolecule) -> Result<QueryMolecule, Que
     validate(&output)?;
     Ok(output)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        A, B, BondQuery, Q, QueryHydrogenError, QueryMolecule, definitely_h, flip, has_stereo,
+        plain_h, validate, validate_graph,
+    };
+
+    #[test]
+    fn refusal_messages_are_stable() {
+        let cases = [
+            (
+                QueryHydrogenError::InvalidGraph,
+                "query has inconsistent bonds or adjacency",
+            ),
+            (
+                QueryHydrogenError::ResourceLimit,
+                "query-H folding exceeds its graph or expression limits",
+            ),
+            (
+                QueryHydrogenError::RecursiveQuery,
+                "query-H folding does not support recursive SMARTS",
+            ),
+            (
+                QueryHydrogenError::UnsupportedStereo { atom: 12 },
+                "query atom 12 needs one removable H and a complete tetrahedral frame",
+            ),
+        ];
+        for (error, expected) in cases {
+            assert_eq!(error.to_string(), expected);
+        }
+    }
+
+    #[test]
+    fn helper_boundaries_reject_malformed_or_unsupported_queries() {
+        assert!(!plain_h(&Q::Primitive(A::Wildcard)));
+        assert!(definitely_h(&Q::Primitive(A::AtomicNum(1))));
+        assert!(definitely_h(&Q::Or(
+            Box::new(Q::Primitive(A::AtomicNum(1))),
+            Box::new(Q::Primitive(A::Symbol("H".into()))),
+        )));
+
+        let mut missing_adjacency = QueryMolecule::new();
+        missing_adjacency.add_atom(Q::Primitive(A::Wildcard));
+        missing_adjacency.adj.clear();
+        assert_eq!(
+            validate_graph(&missing_adjacency),
+            Err(QueryHydrogenError::InvalidGraph)
+        );
+
+        let mut missing_bond_occurrences = QueryMolecule::new();
+        let a = missing_bond_occurrences.add_atom(Q::Primitive(A::Wildcard));
+        let b = missing_bond_occurrences.add_atom(Q::Primitive(A::Wildcard));
+        missing_bond_occurrences.add_bond(a, b, BondQuery::Any);
+        missing_bond_occurrences.adj.iter_mut().for_each(Vec::clear);
+        assert_eq!(
+            validate_graph(&missing_bond_occurrences),
+            Err(QueryHydrogenError::InvalidGraph)
+        );
+
+        let mut unsupported_stereo = QueryMolecule::new();
+        unsupported_stereo.add_atom(Q::Primitive(A::Chirality(3)));
+        assert_eq!(
+            validate(&unsupported_stereo),
+            Err(QueryHydrogenError::UnsupportedStereo { atom: 0 })
+        );
+
+        let mut compound_bond = QueryMolecule::new();
+        let a = compound_bond.add_atom(Q::Primitive(A::Wildcard));
+        let b = compound_bond.add_atom(Q::Primitive(A::Wildcard));
+        compound_bond.add_bond(
+            a,
+            b,
+            BondQuery::And(
+                Box::new(BondQuery::Not(Box::new(BondQuery::Primitive(B::Double)))),
+                Box::new(BondQuery::Or(
+                    Box::new(BondQuery::Primitive(B::Single)),
+                    Box::new(BondQuery::Primitive(B::Aromatic)),
+                )),
+            ),
+        );
+        assert!(validate(&compound_bond).is_ok());
+
+        let mut nested_stereo = Q::Not(Box::new(Q::Primitive(A::Chirality(1))));
+        assert!(has_stereo(&nested_stereo));
+        flip(&mut nested_stereo);
+        assert_eq!(
+            nested_stereo,
+            Q::Not(Box::new(Q::Primitive(A::Chirality(2))))
+        );
+    }
+}

@@ -89,6 +89,7 @@ pub enum DerivedScalar {
     Tpsa = 0,
     RdkitTpsa = 1,
     LabuteAsa = 2,
+    Qed = 3,
 }
 
 /// Stored values keep `Molecule`'s auto traits: `Send + Sync` for Rayon and
@@ -100,7 +101,7 @@ type Slot = OnceLock<Arc<Erased>>;
 
 pub(crate) struct DerivedCache {
     slots: [Slot; SLOT_COUNT],
-    scalars: [OnceLock<f64>; 3],
+    scalars: [OnceLock<f64>; 4],
     /// Kept outside the type-erased slots because this descriptor is a very
     /// hot scalar property.  Avoiding `Arc<dyn Any>` and a downcast makes a
     /// prepared ring-count lookup comparable to RDKit's native cache read.
@@ -111,7 +112,7 @@ impl Default for DerivedCache {
     fn default() -> Self {
         Self {
             slots: [const { OnceLock::new() }; SLOT_COUNT],
-            scalars: [const { OnceLock::new() }; 3],
+            scalars: [const { OnceLock::new() }; 4],
             rdkit_num_rings: AtomicUsize::new(usize::MAX),
         }
     }

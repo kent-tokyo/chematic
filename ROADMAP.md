@@ -26,6 +26,13 @@ contracts and reproducible evidence over feature-count parity.
   Source or exploratory timings are not relabelled as package evidence.
 - The processed Linux Codecov lane reports 96.93% Rust line coverage.
   Coverage proves execution, not chemical correctness.
+- Current-source RDKit 2026.09.1 classification covers every Normalize,
+  Reionize, Cleanup and CTfile stress-row residual. The remaining differences
+  are bounded support gaps or declared policy/representation differences, not
+  untracked matches.
+- Post-candidate NCI/PubChem MCS, SDF-attribute and stereo/3D holdouts are
+  frozen under a hash-checked provenance manifest. They are unscored
+  evaluation data and must not be tuned on.
 - 3D, MMFF94, pKa/ADMET screening, IUPAC naming, broad Markush/polymer
   expansion, and rich CDXML editing remain experimental or bounded.
 
@@ -37,22 +44,23 @@ in the [benchmark index](benchmarks/README.md), and unresolved work in the
 
 ### Next candidate — immediate sequence
 
-1. **Restore QED and LogP throughput.** Reproduce the reported v1.1.4 to
-   v1.1.5 slowdown under the same 21-block alternating protocol, profile the
-   equivalent-work path, and optimize without changing descriptor outputs.
-2. **Close standardization gaps.** Reproduce the 254-row Normalize, Reionize,
-   and Cleanup comparison, classify each residual as bug, semantic equivalent,
-   declared policy difference, or typed unsupported, then fix the bug class.
-3. **Expand Rust compatibility coverage.** Compile previous-release consumers
-   against every public crate and feature set; retain `cargo-semver-checks` and
-   explicit fixtures for public enums, errors, structs, and traits.
-4. **Freeze new IO/OGB/3D holdouts.** Select outcome-blind SDF/V3000 and 3D
-   quality rows before implementation changes, then measure meaning retention,
-   convergence, quality tails, time, and peak memory from exact artifacts.
+1. **Evaluate the frozen holdouts once.** Run MCS comparison, SDF attributes
+   and stereo/3D quality from a frozen release candidate; report every row and
+   do not change that candidate after inspecting results.
+2. **Implement the classified standardization gaps by value.** Prioritize the
+   36 missing Reionize assignments, aromatic N-oxide handling and common
+   functional groups. Keep 883 independent-ionization and 26 metal-stereo
+   policy differences explicit instead of copying them silently.
+3. **Close the remaining CTfile rows.** Fix the one current chematic readback
+   failure and reduce ten stereo-only rows without counting 16 RDKit oracle
+   failures against the writer.
+4. **Finish two-host performance evidence.** Repeated QED caching is complete;
+   retain first-use output identity and use the hosted Linux 20-block lane to
+   adjudicate chiral Morgan, Labute ASA and QED alongside macOS.
 
-**Exit:** the next release candidate has no descriptor-speed regression,
-standardization residuals are classified, all public crates pass compatibility
-fixtures, and new holdouts are frozen before inspection.
+**Exit:** the release candidate passes all changed-crate/binding compatibility
+gates, evaluates the frozen rows exactly once, and has separate two-host
+first-use, reuse, parse-inclusive and RSS evidence.
 
 ### P0 — Maintain evidence from exact v1.1.x artifacts
 
@@ -68,12 +76,15 @@ fixtures, and new holdouts are frozen before inspection.
 
 ### P0 — Protect API and chemistry compatibility
 
-1. Keep the v1.1.3 downstream compile fixture and `cargo-semver-checks` in
-   release CI.
+1. Run `cargo-semver-checks` against v1.1.7 for every changed publishable crate
+   and retain focused downstream compile fixtures where Rust semver tooling
+   cannot express the contract.
 2. Treat public enum variants and struct fields as semver-significant.
 3. Keep RDKit 2026.03.6 and 2026.09.1 ring-count differences versioned rather
    than selecting one oracle as universally correct.
 4. Preserve typed refusals and explicit loss reports across bindings.
+5. Reject Python removals/new required arguments/dependency narrowing and WASM
+   TypeScript declaration removals before merge.
 
 **Exit:** supported downstream fixtures compile, chemistry contracts are
 versioned, and unsupported inputs never become guessed successes.

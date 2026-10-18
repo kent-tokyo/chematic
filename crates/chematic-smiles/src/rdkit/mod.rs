@@ -1416,4 +1416,6 @@ mod model_view_contract_tests;
 mod model_view;
 #[cfg(test)]
 use model_view::rdkit_model_molecule;
-pub use model_view::{with_rdkit_model_molecule, with_rdkit_model_scalar};
+pub use model_view::{
+    with_rdkit_model_molecule, with_rdkit_model_scalar, with_rdkit_model_scalar_shortcut,
+};

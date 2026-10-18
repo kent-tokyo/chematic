@@ -309,7 +309,23 @@ pub(crate) fn set_aromaticity(mol: &mut Mol) {
                 continue;
             }
             aseen[a] = true;
-            edon[a] = get_atom_donor_type_arom(mol, a);
+            let mut donor = get_atom_donor_type_arom(mol, a);
+            let atom = &mol.atoms[a];
+            // RDKit 2026.09 treats a neutral, divalent O/S donor in a
+            // nine-membered or larger SSSR ring as an aliphatic bridge.
+            // Apply this when the atom is first seen, as ring order matters.
+            if sring.len() >= 9
+                && donor == Edon::Two
+                && matches!(atom.anum, 8 | 16)
+                && atom.charge == 0
+                && mol.degree(a) == 2
+                && mol.atom_bonds[a]
+                    .iter()
+                    .all(|&b| !matches!(mol.bonds[b].bt, BondType::Double | BondType::Triple))
+            {
+                donor = Edon::No;
+            }
+            edon[a] = donor;
             acands[a] = is_atom_cand_for_arom(mol, a, edon[a]);
             if !acands[a] {
                 all_aromatic = false;

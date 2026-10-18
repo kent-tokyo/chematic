@@ -56,6 +56,15 @@ impl Mol {
         }
     }
 
+    /// Apply the supported RDKit MolStandardize Cleanup stages.
+    ///
+    /// Unlike :meth:`standardize`, this does not choose a tautomer, neutralize
+    /// formal charges, or select a fragment. Acid/base-priority reionization
+    /// remains outside the supported Cleanup subset.
+    fn cleanup(&self) -> Mol {
+        Mol::bare(chematic_chem::cleanup(&self.inner))
+    }
+
     /// Return the fragment parent, retaining the largest chemically relevant
     /// fragment and its transformation semantics.
     fn fragment_parent(&self) -> Mol {

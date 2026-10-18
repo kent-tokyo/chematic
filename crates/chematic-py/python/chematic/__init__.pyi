@@ -1461,6 +1461,14 @@ class Mol:
 
     # -- Transformations -----------------------------------------------------
 
+    def cleanup(self) -> Mol:
+        """Apply the supported RDKit Cleanup stages and return a new molecule.
+
+        Acid/base-priority reionization and some metal coordination patterns
+        remain outside this profile.
+        """
+        ...
+
     def standardize(self, largest_fragment_only: bool = False) -> Mol:
         """Standardize the molecule; optionally retain only the largest fragment."""
         ...
