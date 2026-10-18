@@ -14,6 +14,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.1.8] - 2026-10-19
+
 ### Added
 
 - Added post-candidate, outcome-blind MCS, SDF-attribute and stereo/3D holdouts
@@ -77,6 +79,19 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- Labute ASA now reuses bounded RDKit-compatible scalar preparation from the
+  Python parse boundary and avoids redundant bond/radius work. On the fixed
+  10,000-row macOS source lane, values match RDKit and COSMolKit while
+  first-use, repeated-use, and parse-inclusive calls win all 20 paired blocks.
+  This is not yet public-wheel or two-host evidence; see the
+  [dated record](benchmarks/2026-10-19-python-labute-asa-cosmolkit.md).
+- Python SMILES parsing now prepares the RDKit-compatible aromatic-view
+  decision and ring count for bounded ordinary molecules, so first-use Labute
+  ASA and ring-count calls reuse work that RDKit also performs during parsing.
+  Larger or highly cyclic inputs remain lazy, graph edits still invalidate
+  derived state, and the Rust parser is unchanged. Exact one-host evidence and
+  the parse/first-use tradeoff are recorded in the
+  [dated benchmark](benchmarks/2026-10-18-python-first-use-ring-asa.md).
 - Repeated QED reads on an unchanged molecule now reuse the computed scalar.
   The cache is cleared by every graph edit and clones continue to start with
   empty derived caches; first-use values are unchanged.
@@ -86,6 +101,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- Release validation now sends only publishable library crates to
+  `cargo-semver-checks` and refreshes the current-source standardization
+  evidence after SMILES parser changes, keeping patch-release CI fail-closed
+  without treating the binary-only CLI as a Rust API surface.
 - Native MOL/SDF V2000 and V3000 writers bound titles to 80 UTF-8 bytes,
   keep complete characters and replace controls/line separators with spaces.
   Original metadata stays unchanged; serialized titles can lose content.

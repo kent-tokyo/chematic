@@ -10,10 +10,10 @@ support and refusal boundaries, see [compatibility scope](compatibility-scope.md
 
 ## Current measured boundary
 
-The **v1.1.7 release** retains the named RDKit 2026.03.1-compatible surface,
-adds bounded graph, fingerprint, stereo, scientific-file, and 3D utilities,
-and reduces repeated
-work in selected ring, descriptor, E/Z, and V3000 paths. In the recorded v1.0.41 source comparison, chematic matches RDKit at
+The **v1.1.8 release** retains the named RDKit 2026.03.1-compatible surface
+and reduces first-use Labute ASA and ring-count overhead for bounded ordinary
+Python molecules. The new performance record is source-only and limited to
+one macOS host. In the recorded v1.0.41 source comparison, chematic matches RDKit at
 least as often as COSMolKit 0.5.0rc15 on all 161 operations over ChEMBL 5k and
 RDKit.js 10k; the separate stress corpus retains one weaker native canonical
 SMILES round-trip result. This is source-build evidence, not a universal or
@@ -24,7 +24,7 @@ covers exact public wheels on hosted Linux x86-64, macOS arm64, macOS x86-64,
 and Windows x86-64. The v1.1.7 hosted published-wheel chemistry run also
 completed all 11 jobs, but its durable per-row packet is not checked in yet.
 These are output-validation results, not evidence for npm/WASM, crates.io, or
-v1.1.7 package performance.
+v1.1.8 package performance.
 
 | Lane | Recorded result | What it does not show |
 |---|---|---|

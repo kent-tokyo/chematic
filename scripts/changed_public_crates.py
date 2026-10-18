@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""List publishable workspace crates whose public source changed."""
+"""List publishable workspace library crates whose public API may have changed."""
 
 from __future__ import annotations
 
@@ -14,8 +14,13 @@ ROOT = Path(__file__).resolve().parents[1]
 def public_crates() -> list[tuple[str, Path]]:
     crates = []
     for manifest in sorted((ROOT / "crates").glob("*/Cargo.toml")):
-        package = tomllib.loads(manifest.read_text()).get("package", {})
-        if package and package.get("publish", True) is not False:
+        data = tomllib.loads(manifest.read_text())
+        package = data.get("package", {})
+        # cargo-semver-checks only accepts crates with a library target.  A
+        # publishable binary such as chematic-cli still belongs in the release
+        # graph, but has no Rust API surface for this particular check.
+        has_library_target = "lib" in data or (manifest.parent / "src/lib.rs").is_file()
+        if package and package.get("publish", True) is not False and has_library_target:
             crates.append((package["name"], manifest.parent.relative_to(ROOT)))
     return crates
 

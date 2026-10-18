@@ -604,12 +604,6 @@ impl Molecule {
             }
             return;
         }
-        for bond in 0..self.bonds.len() as u32 {
-            if !self.smiles_ring_closure_keys.contains_key(&bond) {
-                visit(BondIdx(bond));
-            }
-        }
-
         const INLINE_CLOSURES: usize = 8;
         if self.smiles_ring_closure_keys.len() <= INLINE_CLOSURES {
             let mut closures = [(0u64, 0u32); INLINE_CLOSURES];
@@ -620,11 +614,29 @@ impl Molecule {
                     len += 1;
                 }
             }
+            // Sort once by bond index so the main scan can advance one tiny
+            // cursor instead of linearly searching all closures for every
+            // bond. Then restore RDKit's `(key, bond)` closure order below.
+            closures[..len].sort_unstable_by_key(|&(_, bond)| bond);
+            let mut closure = 0usize;
+            for bond in 0..self.bonds.len() as u32 {
+                if closure < len && closures[closure].1 == bond {
+                    closure += 1;
+                    continue;
+                }
+                visit(BondIdx(bond));
+            }
             closures[..len].sort_unstable();
             for &(_, bond) in &closures[..len] {
                 visit(BondIdx(bond));
             }
             return;
+        }
+
+        for bond in 0..self.bonds.len() as u32 {
+            if !self.smiles_ring_closure_keys.contains_key(&bond) {
+                visit(BondIdx(bond));
+            }
         }
 
         let mut closures: Vec<(u64, u32)> = self

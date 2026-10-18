@@ -598,17 +598,16 @@ fn rb0(atom: &chematic_core::Atom) -> f64 {
 ///
 /// Shorter bonds (double, triple, aromatic) bring atoms closer, increasing
 /// surface overlap.  Single bonds have scale 0 (spheres just touching, no overlap).
-fn bond_scale(view: &Molecule, bond: chematic_core::BondIdx) -> f64 {
+fn bond_scale(order: BondOrder) -> f64 {
     // RDKit: aromatic bonds 0.1; otherwise by bond type for types < 4
     // (single 0, double 0.2, triple 0.3), nothing for any other type.
-    let b = view.bond(bond);
     // Aromaticity belongs to the bond type here. In particular, a dative
     // bond between two aromatic atoms remains dative in RDKit and must not
     // receive the 0.1 aromatic overlap adjustment.
-    if b.order == BondOrder::Aromatic {
+    if order == BondOrder::Aromatic {
         return 0.1;
     }
-    match b.order {
+    match order {
         BondOrder::Single | BondOrder::Up | BondOrder::Down => 0.0,
         BondOrder::Double => 0.2,
         BondOrder::Triple => 0.3,
@@ -635,21 +634,33 @@ fn labute_asa_core(mol: &Molecule, collect_per_atom: bool) -> (Vec<f64>, f64, f6
     }
     let view = crate::descriptors::descriptor_aromaticity(mol);
     let view: &Molecule = &view;
-    // Most drug-like molecules fit inline.  Keeping radius and overlap in one
-    // buffer avoids two heap allocations and improves locality without
-    // changing RDKit's accumulation order.
-    let mut atom_data: smallvec::SmallVec<[(f64, f64); 64]> =
-        mol.atoms().map(|(_, a)| (rb0(a), 0.0)).collect();
+    // Radius is read-only while overlap is write-heavy. Store them in two
+    // contiguous slices backed by one allocation so the bond loop neither
+    // loads an interleaved write field nor pays SmallVec's tagged indexing.
+    // RDKit accumulation order remains unchanged.
+    let mut atom_data = Vec::with_capacity(n * 2);
+    atom_data.extend(mol.atoms().map(|(_, atom)| rb0(atom)));
+    atom_data.resize(n * 2, 0.0);
+    let (radii, overlap) = atom_data.split_at_mut(n);
     let mut accumulate_bond = |bidx| {
         let bond = view.bond(bidx);
         let i = bond.atom1.0 as usize;
         let j = bond.atom2.0 as usize;
-        let (ri, rj) = (atom_data[i].0, atom_data[j].0);
-        let mut bij = ri + rj;
-        bij -= bond_scale(view, bidx);
-        let dij = (ri - rj).abs().max(bij).min(ri + rj);
-        atom_data[i].1 += rj * rj - (ri - dij) * (ri - dij) / dij;
-        atom_data[j].1 += ri * ri - (rj - dij) * (rj - dij) / dij;
+        let (ri, rj) = (radii[i], radii[j]);
+        let sum = ri + rj;
+        let scale = bond_scale(bond.order);
+        // Every positive RDKit Rb0 radius is at least 0.33 Å and the largest
+        // bond adjustment is 0.3 Å. Therefore `sum - scale` is already
+        // inside [|ri-rj|, sum] whenever both radii are present. Missing
+        // radii clamp to `sum`. This is the same result as RDKit's two clamps
+        // without three floating comparisons on every ordinary bond.
+        let dij = if ri == 0.0 || rj == 0.0 {
+            sum
+        } else {
+            sum - scale
+        };
+        overlap[i] += rj * rj - (ri - dij) * (ri - dij) / dij;
+        overlap[j] += ri * ri - (rj - dij) * (rj - dij) / dij;
     };
     // Bonds in RDKit's numbering (ring closures last), without materializing
     // the complete order vector for every molecule.
@@ -658,10 +669,11 @@ fn labute_asa_core(mol: &Molecule, collect_per_atom: bool) -> (Vec<f64>, f64, f6
     let rh = crate::descriptors::RDKIT_RB0[0];
     let mut h_contrib = 0.0f64;
     for i in 0..n {
-        let ri = atom_data[i].0;
-        let bij = ri + rh;
-        let dij = (ri - rh).abs().max(bij).min(ri + rh);
-        atom_data[i].1 += rh * rh - (ri - dij) * (ri - dij) / dij;
+        let ri = radii[i];
+        // The hydrogen adjustment is zero, so the clamped distance is
+        // exactly the radius sum, including the zero-radius fallback.
+        let dij = ri + rh;
+        overlap[i] += rh * rh - (ri - dij) * (ri - dij) / dij;
         h_contrib += ri * ri - (rh - dij) * (rh - dij) / dij;
     }
     let mut per_atom = if collect_per_atom {
@@ -671,8 +683,8 @@ fn labute_asa_core(mol: &Molecule, collect_per_atom: bool) -> (Vec<f64>, f64, f6
     };
     let mut total = 0.0;
     for i in 0..n {
-        let (ri, overlap) = atom_data[i];
-        let contribution = PI * ri * (4.0 * ri - overlap);
+        let ri = radii[i];
+        let contribution = PI * ri * (4.0 * ri - overlap[i]);
         total += contribution;
         if collect_per_atom {
             per_atom.push(contribution);

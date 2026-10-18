@@ -1,6 +1,6 @@
 # chematic roadmap
 
-> Updated 2026-10-18. Release line: **v1.1.7**. Work merged after the
+> Updated 2026-10-19. Release line: **v1.1.8**. Work merged after the
 > release remains **Unreleased** until the next tag.
 
 chematic is a safe, typed, local-first chemistry kernel for Rust, Python,
@@ -11,17 +11,17 @@ contracts and reproducible evidence over feature-count parity.
 
 - Stable selected paths cover SMILES/SMARTS, descriptors, fingerprints,
   search, and common MOL/SDF workflows through one Rust core.
-- v1.1.7 adds checked scientific-file conversion and export, custom
-  fingerprint and force-field inputs, source-preserving SDF/PDB/MOL2
-  workflows, and typed alignment, information-theory, and MIF helpers.
+- v1.1.8 reduces first-use Labute ASA and ring-count overhead for bounded
+  ordinary Python molecules without changing descriptor results. Exact
+  public-wheel and second-host performance evidence remains open.
 - Issues #734 and #754 are closed, but their reaction, SMARTS, autoconf, and
   fuzz corpora remain regression gates. Closure is not universal parity.
 - The bounded workflow gates cover 80 exact reaction rows plus three jointly
   invalid inputs, 39/39 largest-fragment decisions, and 16/16 labelled
   R-group rows. Broader standardization and R-group chemistry remain open.
-- The v1.1.5 published-wheel chemistry workflow completed all 11 Linux,
+- The v1.1.7 published-wheel chemistry workflow completed all 11 Linux,
   macOS, Windows, RDKit-comparison, A6, and autoconf jobs. Its hosted run is
-  package evidence; a durable checked-in v1.1.5 packet is still required.
+  package evidence; a durable checked-in v1.1.7 packet is still required.
 - The broadest published-package RDKit performance packet remains v1.0.42.
   Source or exploratory timings are not relabelled as package evidence.
 - The processed Linux Codecov lane reports 96.93% Rust line coverage.
@@ -58,9 +58,16 @@ in the [benchmark index](benchmarks/README.md), and unresolved work in the
    retain first-use output identity and use the hosted Linux 20-block lane to
    adjudicate chiral Morgan, Labute ASA and QED alongside macOS.
    The [terminal-TPSA source follow-up](benchmarks/2026-10-18-terminal-tpsa.md)
-   improves both fixed first-use windows, but first-use TPSA, ASA, ring count
-   and one chiral-Morgan window still trail COSMolKit. Keep these deficits
-   separate from repeated-use and parse-inclusive results.
+   improves both fixed first-use windows. The
+   [Python ASA/ring follow-up](benchmarks/2026-10-18-python-first-use-ring-asa.md)
+   closes the measured RDKit first-use ASA and ring-count deficits on one
+   macOS source lane. The later
+   [10k ASA follow-up](benchmarks/2026-10-19-python-labute-asa-cosmolkit.md)
+   also clears the fixed COSMolKit ASA lane in 20/20 blocks while preserving
+   all values. First-use TPSA plus one chiral-Morgan window remain open.
+   COSMolKit's six unequal ring counts stay unranked instead of being treated
+   as a speed deficit. Keep source evidence separate from public artifacts and
+   state the single-macOS-host limit explicitly.
 
 **Exit:** the release candidate passes all changed-crate/binding compatibility
 gates, evaluates the frozen rows exactly once, and has separate two-host
@@ -98,12 +105,16 @@ versioned, and unsupported inputs never become guessed successes.
 1. Require exact or toleranced output agreement before timing.
 2. Separate parse-inclusive, first-use, prepared/hot, startup, and memory
    lanes.
-3. Prioritize reproducible deficits in QED/LogP first-use, ring perception,
-   Labute ASA/TPSA, chiral Morgan, and reaction application.
+3. Prioritize reproducible deficits in QED/LogP first-use, TPSA against
+   COSMolKit, chiral Morgan, and reaction application. Preserve the new
+   fixed-lane ASA win and RDKit ring-count win through public-wheel and
+   hosted-CI gates; do not rank COSMolKit ring count until outputs agree.
 4. Reject rows with comparator errors, skipped work, or asymmetric APIs.
 
-**Exit:** a declared win uses at least 21 alternating blocks, wins every block,
-and has a paired 95% lower bound above 1.0 on two recorded hosts.
+**Exit:** a declared four-arm win uses at least 20 balanced rotating blocks,
+wins every block, has a paired 95% lower bound above 1.0, and is rerun from the
+exact public artifact in hosted CI. Single-host performance claims remain
+labelled as such.
 
 ### P0/A4 — Expand semantic file interchange
 

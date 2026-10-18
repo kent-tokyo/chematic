@@ -3,7 +3,6 @@ use numpy::{IntoPyArray, PyArray1, PyArray2};
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
 use rayon::prelude::*;
-use std::sync::Arc;
 
 use crate::Mol;
 
@@ -898,12 +897,7 @@ fn materialize_descriptor_columns<'py>(
 pub fn parse(smiles: Vec<String>) -> Vec<Option<Mol>> {
     parse_parallel(&smiles)
         .into_iter()
-        .map(|opt| {
-            opt.map(|mol| Mol {
-                inner: Arc::new(mol),
-                props: Default::default(),
-            })
-        })
+        .map(|opt| opt.map(Mol::from_smiles_parsed))
         .collect()
 }
 

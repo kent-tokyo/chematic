@@ -1,25 +1,29 @@
 # Open-work ledger
 
-Updated 2026-10-18 for **v1.1.7**.
+Updated 2026-10-19 for **v1.1.8**.
 This file lists unresolved work only. Completed changes belong in the
 [CHANGELOG](https://github.com/kent-tokyo/chematic/blob/main/CHANGELOG.md); measurements belong in the
 [validation report](validation.md) and [benchmark index](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/README.md).
 
 ## Active follow-up
 
-- **v1.1.7 artifact packet:** run the hosted Linux/macOS/Windows chemistry
+- **v1.1.8 artifact packet:** run the hosted Linux/macOS/Windows chemistry
   workflow after publication and check in artifact/corpus hashes and failure
-  counts. The successful v1.1.5 hosted run remains the latest complete package
+  counts. The successful v1.1.7 hosted run remains the latest complete package
   lane; npm/WASM and crates.io remain separate evidence channels.
 - **Descriptor performance:** repeated QED now has a mutation-safe cache.
   Complete the hosted Linux 20-block run, compare it with macOS, and keep
-  first-use chiral Morgan and Labute ASA deficits visible. Do not turn a hot
-  cache win into a first-use or toolkit-wide claim.
+  the first-use chiral Morgan and COSMolKit TPSA deficits visible. Do not turn
+  a hot-cache or one-host win into a toolkit-wide claim.
   The [terminal-TPSA source experiment](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-18-terminal-tpsa.md)
   improves first-use TPSA by 1.037x/1.270x on two fixed macOS windows;
-  COSMolKit deficits remain in first-use TPSA, ASA, ring count and one chiral
-  Morgan window. Re-time the integrated source and add an independent host
-  before broadening this frozen-source result.
+  the [ASA/ring follow-up](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-18-python-first-use-ring-asa.md)
+  closes the measured RDKit first-use deficits on one macOS source lane. The
+  [10k ASA follow-up](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-19-python-labute-asa-cosmolkit.md)
+  also clears the fixed COSMolKit ASA lane in all 20 blocks. COSMolKit deficits
+  remain in first-use TPSA and one chiral-Morgan window; its six unequal ring
+  counts remain unranked. Re-time exact public artifacts in hosted CI and keep
+  the single-macOS-host limitation visible before broadening these results.
 - **Standardization implementation:** every current Normalize, Reionize and
   Cleanup residual is classified from the same source revision. Prioritize 36
   missing Reionize assignments, aromatic N-oxide kekulization and common
@@ -32,8 +36,9 @@ This file lists unresolved work only. Completed changes belong in the
   and WASM declarations now have previous-release gates. Extend feature-matrix
   consumer fixtures where `cargo-semver-checks` cannot observe behavior.
 - **Equivalent-work performance:** close prepared-operation deficits without
-  moving work into parsing. Separate parse-inclusive, first-use, prepared,
-  startup, and peak-memory results; add a second host before broad claims.
+  hiding work at another boundary. Any preparation moved into parsing must be
+  bounded and reported with parse-inclusive, first-use, prepared, startup and
+  peak-memory results; add a second host before broad claims.
 - **RDKit version contract:** retain the versioned 2026.03.6/2026.09.1 ring
   disagreements and typed CIP abstentions. Do not present one oracle version
   as a universal chemical truth.

@@ -1,12 +1,14 @@
 # Validation report
 
-Updated 2026-10-18 for **v1.1.7**.
+Updated 2026-10-19 for **v1.1.8**.
 Every result is limited to its recorded artifact or source revision,
 comparator, corpus, options, platform, and failure policy.
 
 ## Evidence boundary
 
-- v1.1.7 is the current registry release.
+- v1.1.8 is the current release line.
+- The v1.1.8 source performance changes have not yet completed the hosted
+  public-wheel chemistry workflow.
 - The v1.1.7 published-wheel chemistry workflow completed all 11 hosted jobs.
   The latest durable checked-in cross-platform packet remains v1.1.3.
 - The broadest published-package RDKit performance packet is v1.0.42.
@@ -46,13 +48,14 @@ comparator, corpus, options, platform, and failure policy.
 - **3D:** typing, energy, gradient, convergence, stereo, clash, conformer
   quality, time, and memory are independent gates.
 
-## v1.1.7 safeguards
+## v1.1.8 safeguards
 
-v1.1.7 adds checked scientific-file conversion and export APIs, custom
-fingerprint and force-field inputs, source-preserving SDF/PDB/MOL2 workflows,
-and typed compatibility helpers. Required source CI and Rust coverage passed;
-the exact registry wheels completed the hosted cross-platform chemistry gate,
-while a durable checked-in per-row artifact packet remains follow-up work.
+v1.1.8 reuses bounded Python parse-time preparation for first-use Labute ASA
+and ring counts while preserving lazy handling outside the declared ordinary
+molecule boundary. Required source CI and Rust coverage must pass before the
+tag is published. Exact registry wheels then require the hosted cross-platform
+chemistry gate; until it completes, the v1.1.7 run remains the latest package
+evidence.
 
 ## How to interpret results
 
