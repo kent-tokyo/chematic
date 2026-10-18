@@ -14,6 +14,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Python `read_pdb_atom_records` exposes immutable single-model ATOM/HETATM
+  attributes, including altloc, occupancy and B factor, with source indices
+  and original text. Blank optional numbers remain distinct from explicit
+  zero. See [PDB atom attributes](docs/pdb-atom-records.md) for limits and scope.
+
 ## [1.1.7] - 2026-10-18
 
 ### Added

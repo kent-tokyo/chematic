@@ -119,6 +119,7 @@ nav:
     - Typed Binary Feature Ranking: info-bit-ranker.md
     - Chi-square Bit Ranking: chi-square-bit-ranking.md
     - PDB Model Splitting: pdb-model-splitting.md
+    - PDB Atom Attributes: pdb-atom-records.md
     - Layered Caller Counters: layered-caller-counts.md
     - XYZ Output Precision: xyz-output-precision.md
     - SDF File Partitions: sdf-file-partitions.md

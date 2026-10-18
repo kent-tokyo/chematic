@@ -1,0 +1,52 @@
+{
+  "base": "f99c7b8ab33098a2e1fd9fd568aee370bf79ab38",
+  "time_utc": "2026-10-18T06:02:59.197676+00:00",
+  "python": "3.13.6",
+  "pytest": "9.1.1",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "gemmi": "0.7.3",
+  "gemmi_native_sha256": {
+    "gemmi_ext.cpython-313-darwin.so": "69d296ff5ad596042612f4a40dd9b19f48509476f77895a31932f71a004ec363"
+  },
+  "native_fixture_commit": "ca7e14e892cab8b495183bcda4449f49471ba1b1",
+  "native_sha256": "90f81980b0fdf06c8edb616d8f8e5acd1831a9b6de404ed2b3405646cff41423",
+  "native_bytes": 85142576,
+  "native_scope": "verified existing extension; relevant strict PDB/selection sources unchanged; no current-main native build or wheel qualification",
+  "issue": {
+    "number": 2708,
+    "state": "OPEN",
+    "title": "Interoperability with MDAnalysis",
+    "updatedAt": "2025-02-18T09:29:38Z",
+    "url": "https://github.com/openbabel/openbabel/issues/2708",
+    "checked_at_utc": "2026-10-18T06:02:59.186411+00:00"
+  },
+  "source_sha256": {
+    ".gitattributes": "51b862f39b5e1cadf5d7e589a6bb805e9ec043325b5c4576517718394abb3636",
+    "CHANGELOG.md": "e7bb7b4ed401bce1d6238283b166c4ce89c5ccfa382b478508168253c97c33a2",
+    "mkdocs.yml": "9acc5787c84aeb64a6aa42f974bfe59bfcd11163f7e1637a661d5ce813ef2ebc",
+    "crates/chematic-py/python/chematic/_pdb_atom_records.py": "4469d912c8322b168982280dbcd93da06b503aae8709c7f15a0fa4f266a9233a",
+    "crates/chematic-py/python/chematic/__init__.py": "03bbcfffa85b9db72fd5717e92ac4849a3061df3a2e8497b889c2584437dca13",
+    "crates/chematic-py/python/chematic/__init__.pyi": "7b13b5dc9845d61c7556f773928153c843de8e6f7351cb1bbc7ca1fb9e01f27e",
+    "crates/chematic-py/tests/test_pdb_atom_records.py": "90fc42c490524c362c457cda1d63cb956c87896e7bbd0b4f35d1776d39fdb724",
+    "docs/pdb-atom-records.md": "f0c180d44bf3ba35f0a31456cc60590be63573b48cd4fc2b0f3236e2caed3161",
+    "docs/openbabel-open-issues-2026-10-14.md": "321bff8e3faa9b365863957b2f6e5e39ccad69f1f10a46c80dadc6fa424e1b96"
+  },
+  "evidence_sha256": {
+    "README.md": "b23a57bed65867be85b0a6185746574a3430c3be564ff63ac0fe9c9280d77a6d",
+    "attributes.pdb": "9fd738176866ff368379ebbc29bbbbabfc5b56ad598d2ca050d271844b9740fd",
+    "docs-and-typing.log": "fdab09723c61883f4042d1e8ec2db46055a749edb82d2acbd5ee7be077e5502c",
+    "mkdocs.log": "d71c34ea10d05e094f4ecfa25379068a86c83500c91f2f0efa772a7d167bb9d7",
+    "native-source-comparison.log": "4d3f473a63ec0b6e0ee310b47d3b6cf17c2a9beea00e930e90eb988218caea36",
+    "openbabel.stderr": "d62a9897953e0ca42ee2240c501d3cd421fbeb8d1e0231b81a468b3b9401abff",
+    "openbabel.stdout": "e4c2c1ebe8327c2e8ae096ccf0a9eb5a3c3257794a0ddd0da0020b879c57f43d",
+    "oracle-summary.json": "cdb9168121ede184d07fba6b71e06a3ba6c7dc800b8b78c22300652c9af9360f",
+    "oracle.log": "cdb9168121ede184d07fba6b71e06a3ba6c7dc800b8b78c22300652c9af9360f",
+    "oracle.py": "3a8f493f1966fc0973428153f046f3a4882e619f62f81135702df4358670031e",
+    "pytest.log": "42873a7c6f78125f191696adaf5a149babc5533f56e4329e4a2eee1eac4a1cf2",
+    "source-gates.log": "93c5929e06701a031d620af7c18bf7d7cd727c1b57d60a0f68d554583d065729",
+    "typing-invalid.log": "b6dd4bf7fc13e8486c2a6e4f39025b464266d340bd31ca5ccf5e708b5b0e31e1",
+    "typing-valid.log": "f9b031e5c45aa702cd4fef028d465551cb20a2c4698e0913c7b00766b20ac4d8",
+    "typing_invalid.py": "c282ca1fad3e00de88c3d363aaa959770ac7332513cf4d3ca0bec17df684e1e1",
+    "typing_valid.py": "a9cf6dd9a25750f78baafaf073eed9188133c44db5c4e99f6fd3aeeb443cecef"
+  }
+}

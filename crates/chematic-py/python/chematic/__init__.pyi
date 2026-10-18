@@ -15,6 +15,12 @@ Quick start::
 from __future__ import annotations
 from typing import Protocol, SupportsIndex
 
+from ._pdb_atom_records import (
+    PdbAtomRead as PdbAtomRead,
+    PdbAtomRecord as PdbAtomRecord,
+    read_pdb_atom_records as read_pdb_atom_records,
+)
+
 from ._pdb_models import (
     PdbModelFile as PdbModelFile,
     PdbModelSplit as PdbModelSplit,

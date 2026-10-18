@@ -1,0 +1,5 @@
+validation/results/pdb-atom-records-2026-10-18/typing_invalid.py:6: error: Argument 1 to "read_pdb_atom_records" has incompatible type "bytes"; expected "str"  [arg-type]
+validation/results/pdb-atom-records-2026-10-18/typing_invalid.py:7: error: Argument 1 to "read_pdb_atom_records" has incompatible type "Path"; expected "str"  [arg-type]
+validation/results/pdb-atom-records-2026-10-18/typing_invalid.py:8: error: Argument "max_atoms" to "read_pdb_atom_records" has incompatible type "float"; expected "SupportsIndex"  [arg-type]
+validation/results/pdb-atom-records-2026-10-18/typing_invalid.py:9: error: Argument "max_records" to "read_pdb_atom_records" has incompatible type "str"; expected "SupportsIndex"  [arg-type]
+Found 4 errors in 1 file (checked 1 source file)

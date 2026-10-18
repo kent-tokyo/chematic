@@ -687,3 +687,9 @@ from ._mcs_comparators import (
 from ._pdb_hydrogen_names import (
     PdbHydrogenName, PdbHydrogenNaming, name_pdb_hydrogens_checked,
 )
+
+from ._pdb_atom_records import (
+    PdbAtomRead as PdbAtomRead,
+    PdbAtomRecord as PdbAtomRecord,
+    read_pdb_atom_records as read_pdb_atom_records,
+)
