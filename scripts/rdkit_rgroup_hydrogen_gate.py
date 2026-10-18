@@ -26,6 +26,9 @@ CASES = [
     ("c1cc([*:1])ccc1[*:2]", "Cc1ccccc1", "Cc1ccc(CC)cc1", "R2"),
     ("c1ccncc1[*:1]", "c1ccncc1", "Cc1ccncc1", "R2"),
     ("C([*:1])([*:2])O", "CO", "CCO", "R1"),
+    ("C([*:1])([*:2])O", "CO", "CC(O)N", "R1"),
+    ("C([*:1])([*:2])O", "CO", "CC(O)Cl", "R1"),
+    ("C([*:1])([*:2])O", "CO", "CC(O)F", "R1"),
 ]
 
 
@@ -86,7 +89,7 @@ def main() -> None:
         "agreement": {"matched": sum(row["graph_and_labels_match"] for row in results),
                       "total": len(results)},
         "cases": results,
-        "limits": ["ten small mapped-atom and terminal-wildcard cases", "two molecules per core",
+        "limits": ["thirteen small mapped-atom and terminal-wildcard cases", "two molecules per core",
                    "graph and label comparison, not raw SMILES string comparison"],
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)

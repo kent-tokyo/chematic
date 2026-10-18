@@ -158,6 +158,8 @@ impl PreparedRGroupCore {
 struct LabeledCandidate {
     missing_explicit: usize,
     signature: Vec<(u16, String, usize)>,
+    attachment_elements: Vec<(u16, u8)>,
+    single_attachment_site: bool,
     rgroup_fingerprints: BTreeMap<u16, chematic_fp::BitVec2048>,
     core: HashSet<AtomIdx>,
     attachments: BTreeMap<u16, (AtomIdx, AtomIdx)>,
@@ -508,6 +510,15 @@ fn compare_labeled_candidates(
         // column yet, RDKit puts the real group in the lowest available R
         // label and leaves the later label for hydrogen.
         .then_with(|| a.attachments.keys().cmp(b.attachments.keys()))
+        // With no established column, RDKit places a heteroatom-rooted
+        // substituent before a carbon-rooted one at equivalent core sites.
+        .then_with(|| {
+            if a.single_attachment_site && b.single_attachment_site {
+                b.attachment_elements.cmp(&a.attachment_elements)
+            } else {
+                std::cmp::Ordering::Equal
+            }
+        })
         // RDKit's row scorer uses the first row to break a symmetric tie and
         // then favours agreement with established columns. Descending output
         // signatures reproduce that bounded behaviour without a GA.
@@ -700,11 +711,16 @@ fn labeled_candidate(
     let mut r_groups = BTreeMap::new();
     let mut rgroup_fingerprints = BTreeMap::new();
     let mut signature = Vec::with_capacity(attachments.len());
+    let mut attachment_elements = Vec::with_capacity(attachments.len());
+    let mut attachment_sites = attachments.values().map(|&(site, _)| site);
+    let first_site = attachment_sites.next();
+    let single_attachment_site = attachment_sites.all(|site| Some(site) == first_site);
     for (&label, &(core_atom, root)) in &attachments {
         let fragment = extract_rgroup_labeled(mol, root, &core, label);
         let smiles = canonical_smiles(&fragment);
         rgroup_fingerprints.insert(label, chematic_fp::ecfp4(&fragment));
         signature.push((label, smiles.clone(), canonical_rank[core_atom.0 as usize]));
+        attachment_elements.push((label, mol.atom(root).element.atomic_number()));
         r_groups.insert(label, smiles);
     }
     signature.sort();
@@ -732,6 +748,8 @@ fn labeled_candidate(
     Ok(Some(LabeledCandidate {
         missing_explicit,
         signature,
+        attachment_elements,
+        single_attachment_site,
         rgroup_fingerprints,
         core,
         attachments,
@@ -1117,6 +1135,23 @@ mod tests {
         }
         assert_eq!(pair[0].as_ref().unwrap().r_groups[&1], "[*:1][H]");
         assert_eq!(pair[1].as_ref().unwrap().r_groups[&1], "[*:1]C");
+
+        for (smiles, heteroatom) in [("CC(O)N", "N"), ("CC(O)Cl", "Cl"), ("CC(O)F", "F")] {
+            let single = [mol(smiles)];
+            let single_refs: Vec<&Molecule> = single.iter().collect();
+            let rows = rgroup_decompose_labeled("C([*:1])([*:2])O", &single_refs).unwrap();
+            let row = rows[0].as_ref().unwrap();
+            assert_eq!(
+                canonical_smiles(&mol(&row.r_groups[&1])),
+                canonical_smiles(&mol(&format!("{heteroatom}[*:1]"))),
+                "{smiles}"
+            );
+            assert_eq!(
+                canonical_smiles(&mol(&row.r_groups[&2])),
+                canonical_smiles(&mol("C[*:2]")),
+                "{smiles}"
+            );
+        }
     }
 
     #[test]
