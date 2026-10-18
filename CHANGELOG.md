@@ -45,6 +45,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   keyword continuations, preserving physical keyword text and the following
   title/comment lines. Signed values and quoted markers do not continue lines.
   See [continuation semantics](docs/mopac-keyword-continuation.md).
+- Python `rdkit_compat.GetAdjacencyMatrix` and `GetDistanceMatrix` expose the
+  existing bounded native graph profiles as independent NumPy arrays, with
+  strict options and refusal of atom-index changes during preparation. See
+  [NumPy graph matrices](docs/compat-graph-matrices.md) for supported weights
+  and the uncached, 1024-input-atom scope.
 
 ### Changed
 

@@ -5,6 +5,9 @@ This source candidate adds two previously absent public operations:
 same names on Python `Mol`. The earlier candidate provided distance matrices;
 its private layout/path helpers did not expose these operations.
 
+A later [NumPy facade](compat-graph-matrices.md) exposes checked adjacency
+and topological distance functions through `rdkit_compat`.
+
 The reference is [RDKit 2026.09.1's graph API](https://www.rdkit.org/docs/source/rdkit.Chem.rdmolops.html)
 and the adjacency/shortest-path routines in
 [`Release_2026_09_1` Matrices.cpp](https://github.com/rdkit/rdkit/blob/fece8caa860bdf6c9c82bdb9253f22a0cf87150c/Code/GraphMol/Matrices.cpp).
