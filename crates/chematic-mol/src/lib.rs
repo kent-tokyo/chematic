@@ -62,6 +62,7 @@ pub mod mol2_source;
 pub mod mol2_stream;
 pub mod mol2_tripos;
 pub mod mol3000;
+mod mol_header;
 pub mod moljson;
 pub mod mopac;
 pub mod mrv;

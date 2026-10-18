@@ -30,6 +30,11 @@ const MAX_BONDS: usize = 200_000;
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct MolMetadata {
     /// Molecule name from header line 1.
+    ///
+    /// MOL/SDF V2000 and V3000 writers emit a prefix of at most 80 UTF-8
+    /// bytes, replacing controls and Unicode line separators with spaces.
+    /// Serialization never changes this original value. Store the original
+    /// in a separate SD property if it must survive a file round trip.
     pub name: String,
     /// Comment string from header line 3.
     pub comment: String,

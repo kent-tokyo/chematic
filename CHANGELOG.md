@@ -14,6 +14,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+
+- Native MOL/SDF V2000 and V3000 writers bound titles to 80 UTF-8 bytes,
+  keep complete characters and replace controls/line separators with spaces.
+  Original metadata stays unchanged; serialized titles can lose content.
+  See [title policy](docs/mol-title-width.md) for preservation guidance.
+
 ## [1.1.7] - 2026-10-18
 
 ### Added
