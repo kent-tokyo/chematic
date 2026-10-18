@@ -106,6 +106,7 @@ nav:
     - Prepared MMFF Dielectric: mmff-dielectric-updates.md
     - Custom MMFF Partial Charges: mmff-partial-charges.md
   - Reliability:
+    - Checked Maestro Output: maestro-output.md
     - Distinct PDB Hydrogen Names: pdb-hydrogen-names.md
     - Checked Core Removal: checked-core-replacement.md
     - Typed MCS Comparator Modes: mcs-comparator-modes.md

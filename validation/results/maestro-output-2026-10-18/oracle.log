@@ -1,0 +1,2 @@
+[14:21:26] WARNING: not removing hydrogen atom without neighbors
+{"checked_atoms": 18959, "checked_bonds": 16216, "coordinate_edge_cases": 5, "graph_cases": 1404, "hypervalence_graph_controls": 2, "max_coordinate_error": 0.0, "molecules": 39, "oracle_sha256": "8ce6818f50ca1af837f1fbccf52304b1a2099ed46d1f2eeb2b14ce34c8c06204", "rdkit": "2026.09.1", "reader_binary_sha256": "f40bc81b0c9c7133b71944fc852d29bf0b28062cc7c304272d20aef8249f5873", "v2000_cases": 1404}
