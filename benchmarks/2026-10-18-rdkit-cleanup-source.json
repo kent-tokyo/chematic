@@ -1,0 +1,168 @@
+{
+  "source_commit": "b71fc2f6e52fb5c3d1489f0ab335d4f12cb8ecf3",
+  "source_sha256": {
+    "crates/chematic-chem/src/standardize.rs": "76aba644c6f49cdefce0a635bd10ef562b6619bb06d451525a850b168b24aecf",
+    "crates/chematic-py/src/mol_methods/transformations.rs": "dd6b111a8b242c41b58adf59d9a979ed8e320a254f82c8b2029fc1f7efbbfe5b"
+  },
+  "corpus": "validation/cosmolkit_comparison/corpora/stress-v1.smi",
+  "corpus_sha256": "879166ab5481cac805ecd2d77f37d628383ec124085b90e2ee1659d55ce76277",
+  "selection": "256 evenly spaced rows, then identical parsed RDKit-compatible SMILES",
+  "versions": {
+    "chematic": "1.1.7",
+    "rdkit": "2026.09.1"
+  },
+  "native_extension_sha256": "e18a8443b3538f91706f018793f19582233d88f56bb4f780476d36848aa0afe0",
+  "source_rows": 4072,
+  "sampled_rows": 256,
+  "input_compatible_rows": 254,
+  "compatible_rows": 254,
+  "excluded": [
+    {
+      "sample_index": 6,
+      "input": "s1cccccccccccc1",
+      "chematic": "c1ccccccsccccc1",
+      "rdkit": "C1=CC=CC=CSC=CC=CC=C1"
+    },
+    {
+      "sample_index": 57,
+      "input": "c1ccccccsccccccccc1",
+      "chematic": "c1ccccccccsccccccc1",
+      "rdkit": "C1=CC=CC=CC=CSC=CC=CC=CC=C1"
+    }
+  ],
+  "oracle_errors": [],
+  "operation_errors": [],
+  "rdkit_cleanup_changed_rows": 21,
+  "legacy_standardize_exact": 185,
+  "normalizer_only_vs_cleanup_exact": 234,
+  "normalize_stage_exact": 254,
+  "cleanup_exact": 240,
+  "mismatches": [
+    {
+      "sample_index": 29,
+      "input": "N[Pt@SP2](N)(Cl)Cl",
+      "rdkit_input": "[NH2][Pt@SP2]([NH2])([Cl])[Cl]",
+      "rdkit_cleanup": "[Cl-].[Cl-].[NH2-].[NH2-].[Pt@SP2+4]",
+      "chematic_cleanup": "[Cl-].[Cl-].[NH2-].[NH2-].[Pt+4]",
+      "chematic_error": null,
+      "category": "metal"
+    },
+    {
+      "sample_index": 30,
+      "input": "C[Fe@OH1](C)(C)(C)(C)C",
+      "rdkit_input": "[CH3][Fe@OH1]([CH3])([CH3])([CH3])([CH3])[CH3]",
+      "rdkit_cleanup": "[CH3-].[CH3-].[CH3-].[CH3-].[CH3-].[CH3-].[Fe@OH1+6]",
+      "chematic_cleanup": "[CH3-].[CH3-].[CH3-].[CH3-].[CH3-].[CH3-].[Fe+6]",
+      "chematic_error": null,
+      "category": "metal"
+    },
+    {
+      "sample_index": 62,
+      "input": "[CH3][Ru@OH10]([I])([Br])([NH2])([OH])[Cl]",
+      "rdkit_input": "[CH3][Ru@OH13]([NH2])([OH])([Cl])([Br])[I]",
+      "rdkit_cleanup": "[Br-].[CH3-].[Cl-].[I-].[NH2-].[OH-].[Ru@OH10+6]",
+      "chematic_cleanup": "[Br-].[CH3-].[Cl-].[I-].[NH2-].[OH-].[Ru+6]",
+      "chematic_error": null,
+      "category": "metal"
+    },
+    {
+      "sample_index": 68,
+      "input": "O.[CH2-]C1=CN(C(C)OCCN(C)C(=O)CBr)C(=O)NC1=O",
+      "rdkit_input": "O.[CH2-]c1cn(C(C)OCCN(C)C(=O)CBr)c(=O)[nH]c1=O",
+      "rdkit_cleanup": "Cc1cn(C(C)OCCN(C)C(=O)[CH-]Br)c(=O)[nH]c1=O.O",
+      "chematic_cleanup": "O.[CH2-]c1cn(C(C)OCCN(C)C(=O)CBr)c(=O)[nH]c1=O",
+      "chematic_error": null,
+      "category": "reionization"
+    },
+    {
+      "sample_index": 90,
+      "input": "O=C1/C(=C/C2=CC=CC(Cl)=[CH:43]2)CCC2=CC=C[CH]([Zn])C12",
+      "rdkit_input": "O=C1/C(=C/c2cccc(Cl)[cH:43]2)CCC2=CC=C[CH]([Zn])C12",
+      "rdkit_cleanup": "O=C1/C(=[C-]/c2cccc(Cl)[cH:43]2)CCC2=CC=CCC12.[Zn+]",
+      "chematic_cleanup": "O=C1/C(=C/c2cccc(Cl)[cH:43]2)CCC2=CC=C[CH-]C12.[Zn+]",
+      "chematic_error": null,
+      "category": "metal"
+    },
+    {
+      "sample_index": 106,
+      "input": "COC1=CC=C(O[C]2=[Cu][CH]=C(NC3=NCCN3)C=C2)C=C1",
+      "rdkit_input": "COc1ccc(O[C]2=[Cu][CH]=C(NC3=NCCN3)C=C2)cc1",
+      "rdkit_cleanup": "[CH]=C(C=C[C-2]Oc1ccc(OC)cc1)NC1=NCCN1.[Cu+2]",
+      "chematic_cleanup": "[CH-]=C(C=C[C-2]Oc1ccc(OC)cc1)NC1=NCCN1.[Cu+3]",
+      "chematic_error": null,
+      "category": "metal"
+    },
+    {
+      "sample_index": 123,
+      "input": "N(C(NC1SC(=NN=1)S)=O)[C@H](C(N(CC)C)=O)[CH2][Pt]1=[CH]C=CC=[CH]1",
+      "rdkit_input": "CCN(C)C(=O)[C@H]([CH2][Pt]1=[CH]C=CC=[CH]1)NC(=O)Nc1nnc(S)s1",
+      "rdkit_cleanup": "CCN(C)C(=O)[C@H](C)NC(=O)Nc1nnc([S-])s1.[CH]=CC=C[CH-2].[Pt+3]",
+      "chematic_cleanup": "[CH-2]C=CC=[CH-].[CH2-][C@H](NC(=O)Nc1nnc(S)s1)C(=O)N(C)CC.[Pt+4]",
+      "chematic_error": null,
+      "category": "metal"
+    },
+    {
+      "sample_index": 138,
+      "input": "CCO[C](=O)[Pt@@H]1[C@H](O)CC[C@@H]2CN3CCc4cc5c(cc4[C@@H]3C[C@@H]21)OCO5",
+      "rdkit_input": "CCO[C](=O)[Pt@@H]1[C@H](O)CC[C@@H]2CN3CCc4cc5c(cc4[C@@H]3C[C@@H]21)OCO5",
+      "rdkit_cleanup": "CCOC=O.[O-]CCC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[Pt+2]",
+      "chematic_cleanup": "CCO[C-]=O.O[CH-]CC[C@H]1[CH-]C[C@H]2c3cc4c(cc3CCN2C1)OCO4.[PtH+3]",
+      "chematic_error": null,
+      "category": "metal"
+    },
+    {
+      "sample_index": 149,
+      "input": "C1[C@H](C(=[O:10])O)N[CH-]C[C@@H]1/C=C/CP(O)(O)=O",
+      "rdkit_input": "O=P(O)(O)C/C=C/[C@H]1C[CH-]N[C@@H](C(O)=[O:10])C1",
+      "rdkit_cleanup": "O=P([O-])(O)C/C=C/[C@H]1CCN[C@@H](C(O)=[O:10])C1",
+      "chematic_cleanup": "O=P(O)(O)C/C=C/[C@H]1C[CH-]N[C@@H](C(O)=[O:10])C1",
+      "chematic_error": null,
+      "category": "reionization"
+    },
+    {
+      "sample_index": 163,
+      "input": "O=C(O)[C@H]1C[C@@H](C/C=C/[P](=O)(O)[Fe])CCN1",
+      "rdkit_input": "O=C(O)[C@H]1C[C@@H](C/C=C/[P](=O)(O)[Fe])CCN1",
+      "rdkit_cleanup": "O=C(O)[C@H]1C[C@@H](C/C=C/P(=O)O)CCN1.[Fe]",
+      "chematic_cleanup": "O=C(O)[C@H]1C[C@@H](C/C=C/[P](=O)O)CCN1.[Fe]",
+      "chematic_error": null,
+      "category": "metal"
+    },
+    {
+      "sample_index": 174,
+      "input": "O[CH](C1[2O]C(n2cnc3c(O)ncnc23)CC1O)[Pt]",
+      "rdkit_input": "Oc1ncnc2c1ncn2C1CC(O)C([CH](O)[Pt])[2O]1",
+      "rdkit_cleanup": "[O-]c1ncnc2c1ncn2C1CC(O)C(CO)[2O]1.[Pt+]",
+      "chematic_cleanup": "O[CH-]C1[2O]C(n2cnc3c(O)ncnc32)CC1O.[Pt+]",
+      "chematic_error": null,
+      "category": "metal"
+    },
+    {
+      "sample_index": 211,
+      "input": "C=[C](C1=CC=CC=C1OCCC1=CC=CC=C1)[Fe]1[CH]=CN=[CH]1",
+      "rdkit_input": "C=[C](c1ccccc1OCCc1ccccc1)[Fe]1[CH]=CN=[CH]1",
+      "rdkit_cleanup": "C=Cc1ccccc1OCCc1ccccc1.[CH]=CN=[CH].[Fe]",
+      "chematic_cleanup": "C=[C-]c1ccccc1OCCc1ccccc1.[CH-]=CN=[CH-].[Fe+3]",
+      "chematic_error": null,
+      "category": "metal"
+    },
+    {
+      "sample_index": 233,
+      "input": "CC[CH2][Fe][C](=O)NCCCCN1CCN(C2=CC=CC=C2OC)CC1",
+      "rdkit_input": "CC[CH2][Fe][C](=O)NCCCCN1CCN(c2ccccc2OC)CC1",
+      "rdkit_cleanup": "COc1ccccc1N1CCN(CCCCNC=O)CC1.[CH2-]CC.[Fe+]",
+      "chematic_cleanup": "COc1ccccc1N1CCN(CCCCN[C-]=O)CC1.[CH2-]CC.[Fe+2]",
+      "chematic_error": null,
+      "category": "metal"
+    },
+    {
+      "sample_index": 252,
+      "input": "[CH2-][C@@H]1C(O[C@@H](C(C)C)C(=O)N([C@@H](CC2=CC=CC=C2)[C@@H](CC(OC1)=O)OCOC)C)=O",
+      "rdkit_input": "[CH2-][C@H]1COC(=O)C[C@@H](OCOC)[C@H](Cc2ccccc2)N(C)C(=O)[C@H](C(C)C)OC1=O",
+      "rdkit_cleanup": "COCO[C@@H]1CC(=O)OC[C-](C)C(=O)O[C@@H](C(C)C)C(=O)N(C)[C@H]1Cc1ccccc1",
+      "chematic_cleanup": "[CH2-][C@H]1COC(=O)C[C@@H](OCOC)[C@H](Cc2ccccc2)N(C)C(=O)[C@H](C(C)C)OC1=O",
+      "chematic_error": null,
+      "category": "reionization"
+    }
+  ]
+}
