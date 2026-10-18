@@ -19,7 +19,7 @@ fn main() {
                 "input": smiles,
                 "rdkit_input": chematic_smiles::rdkit_canonical_smiles(&mol).map_err(|error| error.to_string()),
                 "normalize": chematic_smiles::rdkit_canonical_smiles(&normalize_groups(&mol)).map_err(|error| error.to_string()),
-                "cleanup": chematic_smiles::rdkit_canonical_smiles(&cleanup(&mol)).map_err(|error| error.to_string()),
+                "cleanup": chematic_smiles::rdkit_cleanup_canonical_smiles(&cleanup(&mol)).map_err(|error| error.to_string()),
                 "reionize": chematic_smiles::rdkit_canonical_smiles(&reionize(&mol)).map_err(|error| error.to_string()),
             }),
             Err(error) => json!({"index": index, "input": smiles, "error": error.to_string()}),
