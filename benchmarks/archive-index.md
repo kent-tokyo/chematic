@@ -7,6 +7,11 @@ package, comparator, corpus, host, runtime and operation.
 
 ## Start here
 
+- [Terminal N/O and zero-model TPSA](2026-10-18-terminal-tpsa.md):
+  isolated RDKit-default TPSA source improvement on both fixed windows; all 42
+  median floors and source-output gates pass. Two broader failed candidates,
+  remaining COSMolKit deficits and every negative lane are retained.
+
 - [V2000 zero-attribute tail](2026-10-17-openbabel-zero-fields.md):
   SDF writes improve 1.039–1.040x; all 30 source median floors pass, including
   a disclosed 0.6% 3D-write retreat. Five eligible fresh Open Babel lanes win
@@ -533,3 +538,6 @@ integrated-main or toolkit-wide superiority.
 - [Legacy stereo code projection rejected gate](2026-10-18-morgan-stereo-projection.md) ([numeric packet](2026-10-18-morgan-stereo-projection-numeric.json.gz)): offset-0 first-use chiral Morgan improves but offset-5,000 regresses; all 42 floors pass yet the two-primary adoption gate fails; all 78 comparisons and negative results retained; runtime excluded.
 
 - [Configured Morgan borrowing and single-ring scratch](2026-10-18-morgan-borrowed-view-ring-scratch.md): combined two-primary gate and all 42 source floors pass; rejected borrowing-only epoch, all 78 comparisons, ASA regression and COSMolKit non-win retained; source wheels on one host.
+
+- [Python sanitized-model aromatic-view reuse](2026-10-14-python-sanitized-view-reuse.md): historical source descriptor follow-up; first-use deficits remain.
+- [Python Morgan speed frontier](2026-10-14-python-speed-frontier.md): historical source optimization, with prepared COSMolKit deficits retained.
