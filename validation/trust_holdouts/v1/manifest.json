@@ -1,0 +1,28 @@
+{
+  "schema": "chematic.trust-holdout-manifest.v1",
+  "frozen_on": "2026-10-18",
+  "selection_policy": "SHA-256 rank of source index and input text with lane-specific fixed seed; selection does not execute chematic, RDKit, COSMolKit, or inspect outcomes",
+  "source": {
+    "path": "validation/rdkit_accuracy_split_v2/exposed_holdout.smi",
+    "sha256": "a496eeccbe54dfaf9552c5ea91bc3578ce0f111c03ad67bab97f29fd86f75972",
+    "rows": 7737
+  },
+  "lanes": {
+    "mcs-comparison.jsonl": {
+      "rows": 64,
+      "sha256": "f9574ce1467e5f3be1e3e9eefb7c242f8789683ec05e6a990ef45359ec8915dd",
+      "contains_expected_outputs": false
+    },
+    "sdf-attributes.jsonl": {
+      "rows": 64,
+      "sha256": "6ea935cc39a291f4d34feb1e2d6a4826998420871cdde0165e4edf6adac7fd02",
+      "contains_expected_outputs": false
+    },
+    "stereo-3d.jsonl": {
+      "rows": 96,
+      "sha256": "c0b879086a38159c7ebac9d38ea41a1deefc92dd9f11fbf9d7ce2ae0b2899288",
+      "contains_expected_outputs": false
+    }
+  },
+  "use_policy": "Freeze before measuring current or future candidates. Record every row; do not tune on these inputs, replace failures, or pool them with development data."
+}

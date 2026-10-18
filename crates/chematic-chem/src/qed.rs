@@ -436,7 +436,11 @@ fn qed_compute(props: [f64; 8]) -> f64 {
 /// assert!(score > 0.4 && score < 0.7, "aspirin QED={score:.3}");
 /// ```
 pub fn qed(mol: &Molecule) -> f64 {
-    qed_compute(qed_properties(mol))
+    chematic_smiles::with_rdkit_model_scalar(
+        mol,
+        chematic_core::derived_cache::DerivedScalar::Qed,
+        |base| qed_compute(qed_properties(base)),
+    )
 }
 
 /// Same value as [`qed`]. The ring bundle is no longer needed: every QED

@@ -1,0 +1,64 @@
+name: Trust performance evidence
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/trust-performance.yml'
+      - 'crates/chematic-core/**'
+      - 'crates/chematic-chem/**'
+      - 'crates/chematic-py/**'
+      - 'scripts/bench_python_speed_frontier.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  python-frontier-linux:
+    name: Python frontier (Linux x86-64)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: '3.13'
+      - name: Install pinned comparators and build tooling
+        run: python -m pip install 'maturin==1.13.3' 'numpy<3' 'rdkit==2026.9.1' 'cosmolkit==0.5.0'
+      - name: Build candidate and fetch the previous release
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/wheels/candidate" "$RUNNER_TEMP/wheels/baseline"
+          maturin build --locked --release --manifest-path crates/chematic-py/Cargo.toml \
+            --interpreter python --out "$RUNNER_TEMP/wheels/candidate"
+          python -m pip download --only-binary=:all: --no-deps \
+            --dest "$RUNNER_TEMP/wheels/baseline" 'chematic==1.1.7'
+          python - <<'PY'
+          import os, pathlib, zipfile
+          root = pathlib.Path(os.environ['RUNNER_TEMP']) / 'wheels'
+          for name in ('candidate', 'baseline'):
+              wheel = next((root / name).glob('*.whl'))
+              destination = root / f'{name}-pkg'
+              destination.mkdir()
+              with zipfile.ZipFile(wheel) as archive:
+                  archive.extractall(destination)
+          PY
+      - name: Run paired 20-block frontier
+        shell: bash
+        run: |
+          candidate_wheel="$(find "$RUNNER_TEMP/wheels/candidate" -name '*.whl' -print -quit)"
+          baseline_wheel="$(find "$RUNNER_TEMP/wheels/baseline" -name '*.whl' -print -quit)"
+          python scripts/bench_python_speed_frontier.py \
+            --corpus validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi \
+            --limit 1000 --blocks 20 \
+            --base-revision "${{ github.event.pull_request.base.sha || github.sha }}" \
+            --baseline-wheel "$baseline_wheel" \
+            --baseline-path "$RUNNER_TEMP/wheels/baseline-pkg" \
+            --candidate-wheel "$candidate_wheel" \
+            --candidate-path "$RUNNER_TEMP/wheels/candidate-pkg" \
+            --output "$RUNNER_TEMP/python-speed-frontier-linux.json"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: python-speed-frontier-linux
+          path: ${{ runner.temp }}/python-speed-frontier-linux.json
+          retention-days: 90

@@ -14,6 +14,26 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Added frozen, outcome-blind MCS, SDF-attribute and stereo/3D holdouts with
+  hash-checked manifests. CI now verifies that their rows and selection policy
+  cannot drift silently.
+- Added previous-release compatibility gates for every changed publishable
+  Rust crate, Python declarations and dependency contracts, and generated
+  WebAssembly TypeScript declarations.
+- Added reproducible classifiers for RDKit Cleanup/Reionize and CTfile
+  readback residuals, retaining every refusal and oracle failure.
+
+### Changed
+
+- Repeated QED reads on an unchanged molecule now reuse the computed scalar.
+  The cache is cleared by every graph edit and clones continue to start with
+  empty derived caches; first-use values are unchanged.
+- The Python speed-frontier protocol now measures QED and accepts explicit
+  comparator module paths while continuing to separate parse-inclusive,
+  first-use, repeated-use and peak-process-RSS evidence.
+
 ## [1.1.7] - 2026-10-18
 
 ### Added
