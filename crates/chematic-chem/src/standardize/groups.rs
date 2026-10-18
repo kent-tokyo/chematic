@@ -200,24 +200,7 @@ fn detect_pyridone(mol: &Molecule, nitrogen: AtomIdx) -> Option<PyridoneMatch> {
     {
         return None;
     }
-    let mut oxygen = None;
-    for (&carbon, &distance) in &distances {
-        if distance != 1 && distance != 3 {
-            continue;
-        }
-        for (neighbor, bond_idx) in mol.neighbors(carbon) {
-            let atom = mol.atom(neighbor);
-            if atom.element.atomic_number() == 8
-                && atom.charge == -1
-                && mol.bond(bond_idx).order == BondOrder::Single
-                && mol.neighbors(neighbor).count() == 1
-                && oxygen.replace((neighbor, bond_idx)).is_some()
-            {
-                return None;
-            }
-        }
-    }
-    let (oxygen, bond) = oxygen?;
+    let (oxygen, bond) = pyridone_oxygen(mol, &distances)?;
     let ring_bonds = mol
         .bonds()
         .filter_map(|(idx, edge)| {
@@ -233,6 +216,30 @@ fn detect_pyridone(mol: &Molecule, nitrogen: AtomIdx) -> Option<PyridoneMatch> {
         ring_atoms: distances.into_keys().collect(),
         ring_bonds,
     })
+}
+
+fn pyridone_oxygen(
+    mol: &Molecule,
+    distances: &HashMap<AtomIdx, usize>,
+) -> Option<(AtomIdx, BondIdx)> {
+    let mut oxygen = None;
+    for (&carbon, &distance) in distances {
+        if distance != 1 && distance != 3 {
+            continue;
+        }
+        for (neighbor, bond_idx) in mol.neighbors(carbon) {
+            let atom = mol.atom(neighbor);
+            if atom.element.atomic_number() == 8
+                && atom.charge == -1
+                && mol.bond(bond_idx).order == BondOrder::Single
+                && mol.neighbors(neighbor).count() == 1
+                && oxygen.replace((neighbor, bond_idx)).is_some()
+            {
+                return None;
+            }
+        }
+    }
+    oxygen
 }
 
 fn both_elements_are(mol: &Molecule, bond: &BondEntry, atomic_number: u8) -> bool {
