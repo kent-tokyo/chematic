@@ -58,6 +58,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   generators and NumPy arrays to the existing native enrichment calculator,
   with explicit binary labels, checked column selection and corrected endpoint
   behavior. See [ranked-record enrichment](docs/scoring-enrichment-facade.md).
+- Python `rdInfoTheory.InfoBitRanker` supports class-biased entropy and Pearson
+  ranking with typed, bounded, transactional `SetBiasList` inputs. Preferences
+  can be replaced without resetting votes. See
+  [class-biased ranking](docs/biased-bit-ranking.md) for semantics and scope.
 
 ### Changed
 

@@ -1,0 +1,47 @@
+{
+  "base": "540086f978612df1e21baa731c0884dea7441f46",
+  "time_utc": "2026-10-18T05:32:27.303723+00:00",
+  "python": "3.13.6",
+  "numpy": "2.5.3",
+  "pytest": "9.1.1",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "native_fixture_commit": "ca7e14e892cab8b495183bcda4449f49471ba1b1",
+  "native_sha256": "90f81980b0fdf06c8edb616d8f8e5acd1831a9b6de404ed2b3405646cff41423",
+  "native_bytes": 85142576,
+  "native_fixture_evidence": "ca7e14e8:validation/results/checked-core-removal-2026-10-17/provenance.json",
+  "native_scope": "verified existing import fixture only; no current-main native build or wheel validation",
+  "source_sha256": {
+    "CHANGELOG.md": "16146883d106f5fd9e8285261f91773aca174058b1e4a5d5acdce7c918c24678",
+    "mkdocs.yml": "93f528f5613214aa162aef86b1d04e2ddb8f8c89ed2a6d34e6943a329eb3576c",
+    "crates/chematic-py/python/chematic/_info_theory.py": "9a6f3cc1fab6259c93c0e924fd7a39f453e329f1acfec18c8d0ea9f3af56bc78",
+    "crates/chematic-py/python/chematic/rdkit_compat.py": "a99ac5342bfb66acfd719ebb424c90ec60ce4d3dc32decbef56f3e9c2c1e39d6",
+    "crates/chematic-py/python/chematic/__init__.py": "604bd2ddda88c3bb18f7e555be4b34f7d5f3bb5c6a6f201cf1f03cbe32963cac",
+    "crates/chematic-py/python/chematic/__init__.pyi": "385c6aaefe24bbd56dd15d8b3ca9a78961982e89326cf5abf246cfd013e81564",
+    "crates/chematic-py/tests/test_biased_bit_ranker.py": "a7e90be77105cc1a029251c1e26f4c658ab9bca4e6433275f1e3d70b863a92cc",
+    "crates/chematic-py/tests/test_info_bit_ranker.py": "b39c3b66c522a52caa71d4fe5f10c9e742d7d2dc80113e12f3c4f9af27b6e050",
+    "crates/chematic-py/tests/test_chi_square_bit_ranker.py": "f29776dc001f8c174380edc196d043b06b5b0bcf75a874cfa87204fa742e16c8",
+    "docs/biased-bit-ranking.md": "375bf06197ab47bb8dc99552650593daca81387007bad98729a04aafb0226ae5",
+    "docs/info-bit-ranker.md": "05c479868453ede98a4b0a3343758e7cf50d5bacc41e28dcc93661a887eef684",
+    "docs/chi-square-bit-ranking.md": "219b6ff90785131c543b04dd457d93c4ae5c8ad0cd0408fa881cf7e699476c8e",
+    "docs/rdkit-open-issues-2026-10-14.md": "42555e56f0923472acdb3102709f3acd2bc348c3587037cbf4bdf42ca85a6845"
+  },
+  "upstream_revision": "7f3d37d16b71ff8c8a6b0de82c12a8b371e0a8df",
+  "verified_upstream_blobs": {
+    "Code/ML/InfoTheory/InfoBitRanker.cpp": "81037caa45399213eaf665a405d67268e88c5523"
+  },
+  "evidence_sha256": {
+    "README.md": "c6c5167e1309a5a3f5eaf438f87c7751d7af3ac0917fc271d3af978b3bf54f82",
+    "docs-and-typing.log": "053853137626764b10e25bc28a230d6a91e33a6123e8f74825cda12ba27feea6",
+    "mkdocs.log": "a9ab31bc872c12fecfc08ef4258b3612540615b356df8eacd1d97cf6b79c18df",
+    "oracle-summary.json": "aa8747409474e4ac606cee872ecdffe1d39e05c6f6375550ea6ae734cb28772a",
+    "oracle.log": "aa8747409474e4ac606cee872ecdffe1d39e05c6f6375550ea6ae734cb28772a",
+    "oracle.py": "7795eaf090bf07f9be43a63e7437db05cb4e9b9d5d8c5da2c0ce9fab7db89b1b",
+    "pytest.log": "75baffeb0aadb69a09490b866bcbcbd77ec73c211c94c4b6c02722d886e421b7",
+    "reference-anomalies.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "source-gates.log": "9d0e9a27d9f66b7349e4a76246f7a36537e880662c6eda762bf449808342519f",
+    "typing-invalid.log": "e1177a2b6e60d02ce52fc86936b5e021608448fae127cef961d94404639a6c9b",
+    "typing-valid.log": "f9b031e5c45aa702cd4fef028d465551cb20a2c4698e0913c7b00766b20ac4d8",
+    "typing_invalid.py": "c3ac8411439424757f7c68980ba2912860a868132c478f63110efaf4a774b523",
+    "typing_valid.py": "5a4059e6d1aa94f9d7c3cb97c664fa57e953af2566ee7abeb22db405e77bb2c4"
+  }
+}

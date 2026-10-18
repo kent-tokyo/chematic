@@ -54,12 +54,12 @@ exact ranking-order parity is not promised. Empty rankers raise `ValueError`.
 After at least one observation, `GetTopN(0)` returns an empty array with the
 correct column count. Changing a returned array does not alter later results.
 
-`InfoType.ENTROPY` and [`InfoType.CHISQUARE`](chi-square-bit-ranking.md) are
-implemented. CHISQUARE returns an uncorrected Pearson statistic, not information
+`InfoType.ENTROPY`, [`InfoType.CHISQUARE`](chi-square-bit-ranking.md), and
+[class-biased variants](biased-bit-ranking.md) are implemented. CHISQUARE returns an uncorrected Pearson statistic, not information
 gain or a p-value; it uses the same count table and deterministic tie policy.
-Biased enum metrics raise `ValueError` at construction. `SetBiasList` and
-`SetMaskBits` explicitly raise `NotImplementedError`. Biased scores, masks, correlation
-matrices and file output are outside this profile. This is supervised binary
+`SetBiasList` accepts a validated iterable of preferred class IDs for
+BIASENTROPY/BIASCHISQUARE. `SetMaskBits` explicitly raises `NotImplementedError`.
+Masks, correlation matrices and file output are outside this profile. This is supervised binary
 feature ranking; it does not generate chemical fingerprints or infer activity
 labels. No speed advantage over RDKit is claimed.
 

@@ -111,9 +111,8 @@ def test_empty_top_zero_result_copy_and_unsupported_options():
     assert before.dtype == np.float64
     result.GetTopN(4)[:] = -1
     np.testing.assert_array_equal(result.GetTopN(4), before)
-    for method in (result.SetMaskBits, result.SetBiasList):
-        with pytest.raises(NotImplementedError):
-            method([0])
+    with pytest.raises(NotImplementedError):
+        result.SetMaskBits([0])
 
 
 def test_counts_beyond_uint16_remain_exact():

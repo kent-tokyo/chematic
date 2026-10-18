@@ -127,6 +127,7 @@ nav:
     - Typed Binary Feature Ranking: info-bit-ranker.md
     - Ranked-record Enrichment: scoring-enrichment-facade.md
     - Chi-square Bit Ranking: chi-square-bit-ranking.md
+    - Class-biased Bit Ranking: biased-bit-ranking.md
     - PDB Model Splitting: pdb-model-splitting.md
     - PDB Atom Attributes: pdb-atom-records.md
     - Layered Caller Counters: layered-caller-counts.md
