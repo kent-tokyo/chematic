@@ -1110,4 +1110,36 @@ mod tests {
             Err(RGroupError::NonTerminalAttachmentLabel(2))
         ));
     }
+
+    #[test]
+    fn invalid_and_ambiguous_labelled_cores_fail_closed() {
+        let mols = [mol("CC(C)(C)C")];
+        let refs: Vec<&Molecule> = mols.iter().collect();
+
+        assert!(matches!(
+            rgroup_decompose_labeled("[C:0]", &refs),
+            Err(RGroupError::InvalidLabel(0))
+        ));
+        assert!(matches!(
+            rgroup_decompose_labeled("[C;D4:1]", &refs),
+            Err(RGroupError::MultipleAttachments {
+                mol_idx: 0,
+                label: 1
+            })
+        ));
+    }
+
+    #[test]
+    fn labelled_core_refuses_when_match_cap_is_reached() {
+        let input = vec!["C"; LABELED_MATCH_LIMIT].join(".");
+        let mols = [mol(&input)];
+        let refs: Vec<&Molecule> = mols.iter().collect();
+        assert!(matches!(
+            rgroup_decompose_labeled("C", &refs),
+            Err(RGroupError::MatchLimitExceeded {
+                mol_idx: 0,
+                limit: LABELED_MATCH_LIMIT
+            })
+        ));
+    }
 }
