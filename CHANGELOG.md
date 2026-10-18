@@ -14,6 +14,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Python `rdkit_compat.rdInfoTheory.BitCorrMatGenerator` counts selected binary
+  bit-pair co-occurrences with typed explicit/sparse inputs, staged state updates,
+  bounded work and independent float64 results. See
+  [binary bit-pair co-occurrence](docs/bit-cooccurrence.md).
+
 ## [1.1.7] - 2026-10-18
 
 ### Added

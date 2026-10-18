@@ -58,8 +58,10 @@ correct column count. Changing a returned array does not alter later results.
 implemented. CHISQUARE returns an uncorrected Pearson statistic, not information
 gain or a p-value; it uses the same count table and deterministic tie policy.
 Biased enum metrics raise `ValueError` at construction. `SetBiasList` and
-`SetMaskBits` explicitly raise `NotImplementedError`. Biased scores, masks, correlation
-matrices and file output are outside this profile. This is supervised binary
+`SetMaskBits` explicitly raise `NotImplementedError`. Biased scores, masks and
+file output are outside this ranker profile. A separate
+[bit-pair co-occurrence generator](bit-cooccurrence.md) counts selected pairs.
+This is supervised binary
 feature ranking; it does not generate chemical fingerprints or infer activity
 labels. No speed advantage over RDKit is claimed.
 
