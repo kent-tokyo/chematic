@@ -1,0 +1,5 @@
+Python 3.9 source grammar: pass
+Guide example: pass
+Strict helper/public consumer: pass
+Negative public consumer: four expected errors
+Strict MkDocs and five rendered API anchors: pass

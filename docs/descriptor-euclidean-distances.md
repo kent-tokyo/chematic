@@ -60,7 +60,9 @@ Finite-precision error and sensitivity to feature scaling remain. This is
 unweighted Euclidean distance in the caller's feature space, without missing-
 value imputation, feature weighting, clustering, molecule correspondence or
 descriptor agreement claims. Existing molecular graph and 3D distance APIs
-are unchanged. No compatibility-shim alias or WASM binding is added.
+are unchanged. A later [typed metric facade](metric-matrix-facade.md) supplies
+NumPy-array results through the compatibility namespace. This native API retains
+its list return, and no WASM binding is supplied.
 
 The independent probe and dated source/native evidence are under
 `validation/rdkit_issues/descriptor_distances/` and

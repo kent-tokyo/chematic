@@ -1,0 +1,79 @@
+{
+  "base_commit": "f99c7b8ab33098a2e1fd9fd568aee370bf79ab38",
+  "created_at_utc": "2026-10-18T07:29:08.944109+00:00",
+  "issue": {
+    "number": 9601,
+    "state": "OPEN",
+    "title": "Tracking: nanobind wrapper improvements",
+    "updatedAt": "2026-09-29T16:40:13Z",
+    "url": "https://github.com/rdkit/rdkit/issues/9601",
+    "checked_at_utc": "2026-10-18T07:29:08.936240+00:00"
+  },
+  "versions": {
+    "python": "3.13.6",
+    "numpy": "2.5.3",
+    "pytest": "9.1.1",
+    "rdkit": "2026.09.1"
+  },
+  "native_fixture": {
+    "source_commit": "ca7e14e892cab8b495183bcda4449f49471ba1b1",
+    "sha256": "90f81980b0fdf06c8edb616d8f8e5acd1831a9b6de404ed2b3405646cff41423",
+    "bytes": 85142576,
+    "path": "/private/tmp/chematic-metric-python/chematic/chematic.so",
+    "source_provenance": "validation/results/checked-core-removal-2026-10-17/provenance.json"
+  },
+  "native_scope": "Reused verified extension; both native metric sources and Python bindings unchanged from fixture. No fresh current-main build, whole-extension equivalence or published-wheel claim.",
+  "rdkit_metric_module": {
+    "path": "/private/tmp/chematic-sparse-tanimoto-rdkit/rdkit/DataManip/Metric/rdMetricMatrixCalc.so",
+    "sha256": "78dc56a86e429fb3db36df4f07f7d74f5f3484c7e7de803646941e2eb9bcf4d5"
+  },
+  "source_sha256": {
+    "CHANGELOG.md": "15bf4b84e78c6d4f0beac3d034256893e4bb0c75cb75d2ac93280bb1fc351cee",
+    "mkdocs.yml": "0fdd2f2848e978bd5d0742163d3213d2fdcc42bf905746c9648e5d7e13355423",
+    "crates/chematic-py/python/chematic/_metric_matrix.py": "83b0cb6de9e0ff85b3e517b2c7859c359ebaec965d0c799c72d73c176311551a",
+    "crates/chematic-py/python/chematic/rdkit_compat.py": "adedc1ee4d2583e6b872585441757d67c33455bc86551ebbecf8067ae81e7f14",
+    "crates/chematic-py/tests/test_metric_matrix_facade.py": "b06c4e3883457c7c5424958737d846dab226407ccf50df7b000e7875b291beac",
+    "docs/metric-matrix-facade.md": "7676154a1be300ce9373d1b48412a5e651eea2a68055e58f7795e765bee2adc4",
+    "docs/rdkit-open-issues-2026-10-14.md": "d8e4909e05f11a464e810e1ad6c4355dfa9f920982c3544cce9ed8b22435ef7a",
+    "docs/descriptor-euclidean-distances.md": "611abf4ad114e41fba39e06cb545b8f5a0a9e0ea3bd95584d25477235111ebdc",
+    "docs/sparse-tanimoto-matrix.md": "c9af89f504f78cadd0b4395d3334afa56152a4514a45f9f4e5c47b8c084d8f76"
+  },
+  "evidence_sha256": {
+    "README.md": "b83d46693dbd54d6eeb0d2fe1226192eead9b0fea452bcb3f39d364b26f3fcbf",
+    "docs-and-typing.log": "3ecac9cb90d6587d43cd2837c191eedb637ae241e89f0b75e23eda32bac6ed94",
+    "mkdocs.log": "98191d87ad0b3082aa2fe0cb359d142f5933a2cea58689e43d0899334e7cba65",
+    "mypy.ini": "27699028e06a5a11d070af0e0809677e7a1be8be56342363aed4f9276fd859f3",
+    "native-source-comparison.log": "8bbf5890af848c300e602fd1f30d11f98a22080fba26b4e371651d76bf574356",
+    "oracle-summary.json": "2f91bbf62e8473d50ad822f5a460ea3ce97be859ae9e21c2f59242501961fdca",
+    "oracle.log": "2f91bbf62e8473d50ad822f5a460ea3ce97be859ae9e21c2f59242501961fdca",
+    "oracle.py": "d99e9409d332111916ee4dcbd6243a44d25681cef5e8ef9caf1c919e8ed94838",
+    "pytest.log": "98c792696361bb79e63ff8e35a23ef181b57d5bd7b298ddab3a0976e1c9f90cb",
+    "reference-diagnostics.json": "e71750509c44b74a70eb3a90ccd69e3509fae9588e97e1eb41f4caed16628b41",
+    "source-gates.log": "93c5929e06701a031d620af7c18bf7d7cd727c1b57d60a0f68d554583d065729",
+    "typing-invalid.log": "c5f2e0b525cf96cf465084f15708ba715d6ceb2a4dd930651985acdc08468542",
+    "typing-valid.log": "f9b031e5c45aa702cd4fef028d465551cb20a2c4698e0913c7b00766b20ac4d8",
+    "typing_invalid.py": "4000e55a47ae8b9d2ed932852f0bce364fdb0e862e306b6e3d18b18b97f0cdd5",
+    "typing_valid.py": "f2bf2f0c07d688901818c067afa0ec04b5b0076f6ba17da5715cd7cfe4dbf3b7"
+  },
+  "oracle_summary": {
+    "rdkit": "2026.09.1",
+    "numpy": "2.5.3",
+    "seed": 9601,
+    "euclidean_comparisons": 512,
+    "binary_comparisons": 1024,
+    "compared_pairs": 262128,
+    "max_rdkit_euclidean_error": 4.263256414560601e-14,
+    "max_math_dist_error": 2.842170943040401e-14,
+    "max_rdkit_binary_error": 0.0,
+    "diagnostics": 8,
+    "inputs_sha256": "158f3b09de3c991d232c5e47323be4850cef5eac446e7d0e1a5f28d900125b62",
+    "scope": "Ordinary namespace/output comparisons; numeric and input-profile differences are recorded separately"
+  },
+  "pytest": {
+    "total": 281,
+    "new": 46,
+    "native_sparse": 40,
+    "native_descriptor": 33,
+    "compatibility": 162
+  }
+}

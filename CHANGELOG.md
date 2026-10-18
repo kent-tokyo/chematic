@@ -14,6 +14,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Python `rdkit_compat.rdMetricMatrixCalc` provides typed Euclidean and binary
+  Tanimoto condensed matrices as owned float64 NumPy arrays. It reuses checked
+  native calculators with staged binary inputs and RDKit's empty-pair policy.
+  See [metric matrix facade](docs/metric-matrix-facade.md).
+
 ## [1.1.7] - 2026-10-18
 
 ### Added

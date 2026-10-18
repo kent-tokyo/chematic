@@ -30,7 +30,10 @@ Unsigned caller-supplied index rows support the full u32 range.
 Rust exports `chematic_fp::sparse_tanimoto_matrix_checked(&[Vec<u32>],
 SparseTanimotoMetric) -> Result<Vec<f64>, SparseMatrixError>`. Python returns
 `list[float]`; `metric` is exactly `"similarity"` or `"distance"` (default).
-No WASM or RDKit-compatibility alias is added.
+A later [typed metric facade](metric-matrix-facade.md) adds the compatibility
+namespace with checked declared widths, NumPy output and RDKit's empty-pair
+convention. This native API retains its set/empty policy and list return;
+no WASM binding is supplied.
 
 ## Contract and limits
 
