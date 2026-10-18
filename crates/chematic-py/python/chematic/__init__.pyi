@@ -15,6 +15,14 @@ Quick start::
 from __future__ import annotations
 from typing import Protocol, SupportsIndex
 
+from ._mmcif_chains import (
+    MmcifChain as MmcifChain,
+    MmcifChainAtom as MmcifChainAtom,
+    MmcifChainRead as MmcifChainRead,
+    MmcifChainResidue as MmcifChainResidue,
+    read_mmcif_chains as read_mmcif_chains,
+)
+
 from ._pdb_models import (
     PdbModelFile as PdbModelFile,
     PdbModelSplit as PdbModelSplit,

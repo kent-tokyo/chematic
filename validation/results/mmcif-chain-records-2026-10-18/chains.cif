@@ -1,0 +1,35 @@
+data_original_chains
+# original synthetic input
+_entry.id original
+loop_
+_atom_site.group_PDB
+_atom_site.id
+_atom_site.type_symbol
+_atom_site.label_atom_id
+_atom_site.label_alt_id
+_atom_site.label_comp_id
+_atom_site.label_asym_id
+_atom_site.label_entity_id
+_atom_site.label_seq_id
+_atom_site.pdbx_PDB_ins_code
+_atom_site.Cartn_x
+_atom_site.Cartn_y
+_atom_site.Cartn_z
+_atom_site.occupancy
+_atom_site.B_iso_or_equiv
+_atom_site.auth_seq_id
+_atom_site.auth_comp_id
+_atom_site.auth_asym_id
+_atom_site.auth_atom_id
+_atom_site.pdbx_PDB_model_num
+_atom_site.pdbx_formal_charge
+_atom_site.custom_payload
+ATOM 1 C CA . GLY Alpha 1 1 ? 0.125 -2.5 3.75 1 12.5 10 GLY A CA 1 ? opaque1
+ATOM 2 N N . GLY Alpha 1 1 ? 1.25 -2 4 1 13.5 10 GLY A N 1 ? opaque2
+HETATM 3 N N1 AA A1AJ1 Ligand 2 . AB 7.125 0 1 0.4 22.5 50 AUTHOR_LONG A AN1 1 1 opaque3
+HETATM 4 N N1 BB A1AJ1 Ligand 2 . AB 7.25 0 1 0.6 23.5 50 AUTHOR_LONG A AN1 1 1 opaque4
+ATOM 1 C CA . GLY Alpha 1 1 ? -1 8 2 1 12.5 10 GLY A CA 2 ? opaque5
+ATOM 2 N N . GLY Alpha 1 1 ? -2 8 3 1 13.5 10 GLY A N 2 ? opaque6
+HETATM 5 O O . HOH Solvent 3 . ? 15 20 25 1 30 70 HOH A O 2 ? opaque7
+HETATM 6 O O . HOH Solvent 3 . ? 16 21 26 1 31 71 HOH A O 2 ? opaque8
+#

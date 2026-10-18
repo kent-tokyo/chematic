@@ -689,3 +689,10 @@ from ._pdb_hydrogen_names import (
 )
 
 from ._maestro import MaeExport, write_mae_checked, v2000_to_mae_checked
+from ._mmcif_chains import (
+    MmcifChain as MmcifChain,
+    MmcifChainAtom as MmcifChainAtom,
+    MmcifChainRead as MmcifChainRead,
+    MmcifChainResidue as MmcifChainResidue,
+    read_mmcif_chains as read_mmcif_chains,
+)

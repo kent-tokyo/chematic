@@ -25,6 +25,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - Added one source-built RDKit Normalize/Cleanup/Reionize classifier and a
   separate CTfile readback classifier, retaining every residual, refusal and
   oracle failure with the source revision that produced it.
+- Python `read_mmcif_chains` returns immutable model/label-chain atom records
+  with full residue/atom aliases, source indices and original text. Explicit
+  input/work limits and native residue checks protect ambiguous reads. See
+  [mmCIF chain records](docs/mmcif-chain-records.md) for the first-loop scope.
 
 ### Changed
 
