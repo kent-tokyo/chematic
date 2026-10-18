@@ -5780,3 +5780,4 @@ from ._pdb_hydrogen_names import (
 )
 
 from ._maestro import MaeExport as MaeExport, write_mae_checked as write_mae_checked, v2000_to_mae_checked as v2000_to_mae_checked
+from ._scored_tautomer import rdkit_pick_tautomer_scored as rdkit_pick_tautomer_scored

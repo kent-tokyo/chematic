@@ -1,0 +1,4 @@
+Base commit f99c7b8ab33098a2e1fd9fd568aee370bf79ab38
+New scored-selection symbol absent from committed Python sources.
+Existing native selector signature: fn rdkit_pick_tautomer(candidates: &Bound<'_, PyAny>, max_candidates: i64) -> PyResult<Mol> {
+This is a missing capability, not an executed upstream score-callback defect.

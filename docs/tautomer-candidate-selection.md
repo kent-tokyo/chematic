@@ -58,9 +58,13 @@ RDKit-port errors. The caller retains ownership of the original molecules.
 
 ## Scope and validation
 
+[Custom integer score callbacks](scored-tautomer-selection.md) are now
+available through the separate `rdkit_pick_tautomer_scored` Python function.
+
 This selects from supplied molecules; it does not verify that they belong to
 one tautomer family or find the most stable tautomer under specific physical
-conditions. It has no custom scoring callback or direct RDKit object support.
+conditions. This default-score native API has no custom scoring callback or direct
+RDKit object support.
 The existing `canonical_tautomer`, `rdkit_canonical_tautomer` and enumeration
 APIs retain their behavior. WASM and the RDKit compatibility shim do not expose
 this new API.

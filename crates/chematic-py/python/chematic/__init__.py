@@ -703,3 +703,4 @@ from ._pdb_atom_records import (
     PdbAtomRecord as PdbAtomRecord,
     read_pdb_atom_records as read_pdb_atom_records,
 )
+from ._scored_tautomer import rdkit_pick_tautomer_scored as rdkit_pick_tautomer_scored

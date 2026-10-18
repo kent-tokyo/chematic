@@ -1,0 +1,64 @@
+{
+  "created_at_utc": "2026-10-18T09:00:02.600347+00:00",
+  "base_commit": "f99c7b8ab33098a2e1fd9fd568aee370bf79ab38",
+  "issue": {
+    "number": 9601,
+    "state": "OPEN",
+    "url": "https://github.com/rdkit/rdkit/issues/9601",
+    "scope": "Adjacent typed custom-score selection and callback ownership capability. RDKit already supports custom scoring; no nanobind or whole-issue fix claim."
+  },
+  "versions": {
+    "python": "3.13.6",
+    "numpy": "2.5.3",
+    "pytest": "9.1.1",
+    "rdkit": "2026.09.1"
+  },
+  "native_fixture": {
+    "path": "/private/tmp/chematic-tautomer-score-python/chematic/chematic.so",
+    "source_commit": "ca7e14e892cab8b495183bcda4449f49471ba1b1",
+    "sha256": "90f81980b0fdf06c8edb616d8f8e5acd1831a9b6de404ed2b3405646cff41423",
+    "bytes": 85142576,
+    "source_provenance": "validation/results/checked-core-removal-2026-10-17/provenance.json",
+    "scope": "Reused native graph/state/score/canonicalization backend; new staging and selection are Python. Current main has a macrocycle aromaticity addition, so no fresh-binary or whole-extension equivalence claim; reference families are acyclic."
+  },
+  "reference_module": {
+    "path": "/private/tmp/chematic-sparse-tanimoto-rdkit/rdkit/Chem/MolStandardize/rdMolStandardize.so",
+    "sha256": "d759cc60b5276d8e9705acdf4dbe27ba2d78a3dc1a93144d4a7fb3cbad3f14f3"
+  },
+  "source_sha256": {
+    "crates/chematic-py/python/chematic/_scored_tautomer.py": "4fdb2f5e6878206d5e2b9b4c8c9db45f83b9b65fc0e7f397f540ba9a640c1332",
+    "crates/chematic-py/python/chematic/__init__.py": "4b446a565835f59cf73116b9cac7ec351c212e14f7c04c41cc60ae5d756832e8",
+    "crates/chematic-py/python/chematic/__init__.pyi": "8386865437240684d3cf186ea9ae6759041ebd78e20e079e5cfb5b15051105bd",
+    "crates/chematic-py/tests/test_tautomer_scored.py": "b1a5282028339d7ae8940e6b76c0128cdea88377460a3e20ccf6301d62534474",
+    "docs/scored-tautomer-selection.md": "d25773af0b1fc6dda042a610bb1ff5bb202027707bf607c760c808923628bd04",
+    "docs/tautomer-candidate-selection.md": "19a2f4d4ebbe94fe913a10a24b062120104205e6d331edf41289df8558442565",
+    "docs/rdkit-open-issues-2026-10-14.md": "bf891c2dd0ad0403a448eb7e20a66ab0caaec2f379e1b0c4519024c45c55d912",
+    "CHANGELOG.md": "1d1b5eb8964db17495bd998c217184289ac73147a2d0ca68bb7b8069668bc5a1",
+    "mkdocs.yml": "d36459e976ea338a51e4f6240227adbbcc8d926a93298a21acc36b12687fe7ac"
+  },
+  "pytest": {
+    "passed": 221,
+    "new_scored_cases": 41,
+    "existing_pickle": 9,
+    "existing_tautomer": 9,
+    "existing_compatibility": 162
+  },
+  "oracle": {
+    "rdkit_version": "2026.09.1",
+    "seed": 960119,
+    "trials": 128,
+    "comparisons": 1536,
+    "callback_calls_candidate": 3456,
+    "callback_calls_reference": 3456,
+    "index_mismatches": 0,
+    "graph_mismatches": 0
+  },
+  "typing": "Strict modified helper and public consumer; four expected negative consumer errors. Legacy imports are silent; not package-wide strict verification.",
+  "limitations": [
+    "No tautomer enumeration, same-family validation or stereo cleanup.",
+    "Lexical tie policy differs from RDKit specified-stereo preference; one separate diagnostic is excluded from parity.",
+    "Native payloads are generated internally and use the existing state codec; no external pickle stream is loaded.",
+    "Snapshot byte caps are applied after native encoding; data bounds are not process-memory or caller-execution bounds.",
+    "No Rust/WASM changes, new native binary or published-wheel proof."
+  ]
+}

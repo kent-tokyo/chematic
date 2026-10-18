@@ -70,6 +70,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   masks before replacing state and limits both future on-votes and ranked
   candidates. Existing counts remain intact; skipped votes are not restored.
   See [feature mask semantics](docs/info-ranker-masks.md).
+- Python `rdkit_pick_tautomer_scored` selects supplied candidates with typed
+  integer scoring callbacks. Input snapshots and canonical keys are prepared
+  before callbacks, scoring views are isolated, and graph/state/count limits
+  refuse oversized input. See [scored selection](docs/scored-tautomer-selection.md).
 
 ### Changed
 

@@ -107,6 +107,7 @@ nav:
     - Checked PDBQT Output: pdbqt-checked-output.md
     - Language Bindings Cross-Reference: language-bindings.md
     - InfoTheory Feature Masks: info-ranker-masks.md
+    - Scored Tautomer Selection: scored-tautomer-selection.md
     - Error Handling & Limits: error-and-limits.md
     - Checked 3D Distance Matrices: rdkit-checked-3d-distance-matrix.md
     - NumPy Graph Matrices: compat-graph-matrices.md
