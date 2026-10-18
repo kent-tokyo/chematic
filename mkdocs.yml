@@ -126,6 +126,7 @@ nav:
     - GAMESS Internal Coordinates: gamess-zmat-output.md
     - Typed Binary Feature Ranking: info-bit-ranker.md
     - Ranked-record Enrichment: scoring-enrichment-facade.md
+    - Binary Bit-pair Co-occurrence: bit-cooccurrence.md
     - Chi-square Bit Ranking: chi-square-bit-ranking.md
     - Class-biased Bit Ranking: biased-bit-ranking.md
     - PDB Model Splitting: pdb-model-splitting.md

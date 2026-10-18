@@ -62,6 +62,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   ranking with typed, bounded, transactional `SetBiasList` inputs. Preferences
   can be replaced without resetting votes. See
   [class-biased ranking](docs/biased-bit-ranking.md) for semantics and scope.
+- Python `rdkit_compat.rdInfoTheory.BitCorrMatGenerator` counts selected binary
+  bit-pair co-occurrences with typed explicit/sparse inputs, staged state updates,
+  bounded work and independent float64 results. See
+  [binary bit-pair co-occurrence](docs/bit-cooccurrence.md).
 
 ### Changed
 

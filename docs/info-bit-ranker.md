@@ -59,7 +59,9 @@ correct column count. Changing a returned array does not alter later results.
 gain or a p-value; it uses the same count table and deterministic tie policy.
 `SetBiasList` accepts a validated iterable of preferred class IDs for
 BIASENTROPY/BIASCHISQUARE. `SetMaskBits` explicitly raises `NotImplementedError`.
-Masks, correlation matrices and file output are outside this profile. This is supervised binary
+Masks and file output are outside this ranker profile. A separate
+[bit-pair co-occurrence generator](bit-cooccurrence.md) counts selected pairs.
+This is supervised binary
 feature ranking; it does not generate chemical fingerprints or infer activity
 labels. No speed advantage over RDKit is claimed.
 

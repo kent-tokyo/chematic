@@ -8,6 +8,8 @@ from typing import Any, Iterable, Protocol, SupportsIndex
 
 import numpy as np
 
+from ._bit_correlation import BitCorrMatGenerator as BitCorrMatGenerator
+
 MAX_RANKER_BITS = 65_536
 MAX_RANKER_CLASSES = 256
 MAX_RANKER_ENTRIES = 1_048_576
@@ -246,7 +248,8 @@ class InfoBitRanker:
 
 
 class rdInfoTheory:
-    """Typed namespace exposing the bounded binary feature ranker."""
+    """Typed bounded bit ranking and pair co-occurrence namespace."""
 
     InfoType = InfoType
     InfoBitRanker = InfoBitRanker
+    BitCorrMatGenerator = BitCorrMatGenerator

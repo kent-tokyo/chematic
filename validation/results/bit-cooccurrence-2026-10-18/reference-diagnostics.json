@@ -1,0 +1,23 @@
+[
+  {
+    "case": "width_change_without_reset",
+    "rdkit": [
+      2.0
+    ],
+    "chematic": [
+      1.0
+    ],
+    "chematic_error": "ValueError"
+  },
+  {
+    "case": "high_signed_sparse_view",
+    "view": [
+      -2,
+      0
+    ],
+    "chematic_error": "ValueError",
+    "counts": [
+      0.0
+    ]
+  }
+]
