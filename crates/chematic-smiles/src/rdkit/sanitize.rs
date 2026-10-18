@@ -11,7 +11,24 @@ use super::rank::rank_mol_atoms;
 /// `MolOps::removeHs(mol, ps, sanitize=true)` with the parameters
 /// `MolFromSmiles` uses (defaults plus `updateExplicitCount=true`).
 pub(crate) fn remove_hs_and_sanitize(mol: &mut Mol) -> Result<(), RdkitSmilesError> {
-    remove_hs(mol, true).map(|_| ())
+    // Without graph hydrogens there is nothing to remove or renumber. The
+    // initial non-strict property-cache pass in `remove_hs_with` is needed
+    // by hydrogen removal, but `clean_up` computes the valences it reads and
+    // `sanitize_mol` refreshes every cache before the subsequent stages.
+    // Keep metal-containing input on the general path as well.
+    if mol
+        .atoms
+        .iter()
+        .all(|atom| atom.anum != 1 && !periodic::is_metal(atom.anum))
+    {
+        if !mol.atoms.is_empty() {
+            sanitize_mol(mol)?;
+            clear_excess_chiral_hs(mol)?;
+        }
+        Ok(())
+    } else {
+        remove_hs(mol, true).map(|_| ())
+    }
 }
 
 /// `MolOps::removeHs(mol, ps, sanitize=true)` with the default
@@ -48,17 +65,24 @@ pub(crate) fn remove_hs_with(
         if sanitize {
             sanitize_mol(mol)?;
         }
-        for a in 0..mol.atoms.len() {
-            if !mol.atoms[a].no_implicit
-                && mol.atoms[a].chiral != ChiralTag::Unspecified
-                && mol.atoms[a].num_explicit_hs > 1
-            {
-                mol.atoms[a].num_explicit_hs = 0;
-                mol.update_atom_property_cache(a, false)?;
-            }
-        }
+        clear_excess_chiral_hs(mol)?;
     }
     Ok((0..to_remove.len()).filter(|&i| !to_remove[i]).collect())
+}
+
+// `removeHs` clears excess explicit H counts on implicit-H chiral atoms
+// after sanitization, including when no graph hydrogen was removed.
+fn clear_excess_chiral_hs(mol: &mut Mol) -> Result<(), RdkitSmilesError> {
+    for a in 0..mol.atoms.len() {
+        if !mol.atoms[a].no_implicit
+            && mol.atoms[a].chiral != ChiralTag::Unspecified
+            && mol.atoms[a].num_explicit_hs > 1
+        {
+            mol.atoms[a].num_explicit_hs = 0;
+            mol.update_atom_property_cache(a, false)?;
+        }
+    }
+    Ok(())
 }
 
 /// `sanitizeMol` on a molecule whose hydrogen atoms all stay graph atoms
@@ -658,4 +682,98 @@ pub(crate) fn adjust_hs(mol: &mut Mol) -> Result<(), RdkitSmilesError> {
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn compare_with_general_path(input: &Mol, context: &str) {
+        let mut fast = input.clone();
+        let mut general = input.clone();
+        let actual = remove_hs_and_sanitize(&mut fast);
+        let expected = remove_hs(&mut general, true).map(|_| ());
+        assert_eq!(format!("{actual:?}"), format!("{expected:?}"), "{context}");
+        if actual.is_ok() {
+            // Include all atom/bond properties, adjacency, ring memberships,
+            // valence caches, H counts and stereo fields, not just SMILES.
+            assert_eq!(format!("{fast:?}"), format!("{general:?}"), "{context}");
+        }
+    }
+
+    #[test]
+    fn hydrogen_free_sanitization_preserves_general_path_state() {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let mut converted = 0;
+        let mut unsupported = 0;
+        let mut rows = 0;
+        for path in [
+            "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+            "validation/cosmolkit_comparison/corpora/stress-v1.smi",
+        ] {
+            let corpus = std::fs::read_to_string(root.join(path)).unwrap();
+            for line in corpus.lines().filter(|line| !line.trim().is_empty()) {
+                let smiles = line.split_whitespace().next().unwrap();
+                let molecule = crate::parse(smiles).unwrap();
+                rows += 1;
+                let Ok(input) = super::super::parse::from_chematic(&molecule) else {
+                    // Conversion refusals occur before the modified function.
+                    unsupported += 1;
+                    continue;
+                };
+                converted += 1;
+                compare_with_general_path(&input, smiles);
+                let mut prepared = input.clone();
+                if remove_hs(&mut prepared, true).is_ok() {
+                    compare_with_general_path(&prepared, smiles);
+                    // A caller's stale property caches must not affect results.
+                    for atom in &mut prepared.atoms {
+                        atom.explicit_valence = 97;
+                        atom.implicit_valence = 89;
+                    }
+                    compare_with_general_path(&prepared, smiles);
+                }
+            }
+        }
+        assert_eq!(rows, 14_072);
+        assert_eq!(converted, 14_072);
+        assert_eq!(unsupported, 0);
+    }
+
+    #[test]
+    fn hydrogen_free_sanitization_retains_errors_and_general_fallbacks() {
+        compare_with_general_path(&Mol::default(), "empty");
+        let core = crate::parse("[C@H2](F)Cl").unwrap();
+        let mut implicit_chiral = super::super::parse::from_chematic(&core).unwrap();
+        implicit_chiral.atoms[0].no_implicit = false;
+        compare_with_general_path(
+            &implicit_chiral,
+            "implicit chiral atom with two explicit Hs",
+        );
+        for smiles in [
+            "[H]O[H]",
+            "[2H]C([H])([H])[H]",
+            "[H-]",
+            "[H][H]",
+            "[H]C(F)(Cl)Br",
+            "[H]/C=C/F",
+            "C[Mg]Br",
+            "CN(C)(C)[Cu]",
+            "[Pt@SP1](Cl)(F)(Br)I",
+            "N(=O)(=O)C",
+            "CP(=O)=C",
+            "O=Cl(=O)=O",
+            "C[N](C)(C)C",
+            "C(F)(F)(F)(F)F",
+            "c1cccc1",
+            "N[C@@H](C)C(=O)O",
+            "F/C=C/F",
+            "[C@H2](F)Cl",
+            "*C",
+        ] {
+            let molecule = crate::parse(smiles).unwrap();
+            let input = super::super::parse::from_chematic(&molecule).unwrap();
+            compare_with_general_path(&input, smiles);
+        }
+    }
 }
