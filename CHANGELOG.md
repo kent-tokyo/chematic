@@ -54,6 +54,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   Tanimoto condensed matrices as owned float64 NumPy arrays. It reuses checked
   native calculators with staged binary inputs and RDKit's empty-pair policy.
   See [metric matrix facade](docs/metric-matrix-facade.md).
+- Python `rdkit_compat.Scoring.CalcEnrichment` adapts bounded ranked records,
+  generators and NumPy arrays to the existing native enrichment calculator,
+  with explicit binary labels, checked column selection and corrected endpoint
+  behavior. See [ranked-record enrichment](docs/scoring-enrichment-facade.md).
 
 ### Changed
 

@@ -52,7 +52,7 @@ __all__ = [
     "MolFromMrvBlock", "MolFromMrvFile", "MolToMrvBlock", "MolToMrvFile",
     "SDMolSupplier", "SDWriter", "SmilesMolSupplier", "SmilesWriter",
     "TDTMolSupplier", "TDTWriter",
-    "Descriptors", "rdMolDescriptors", "DataStructs", "pyAvalonTools", "rdAlignment", "rdInfoTheory", "rdMetricMatrixCalc", "MetricBitVector",
+    "Descriptors", "rdMolDescriptors", "DataStructs", "pyAvalonTools", "rdAlignment", "rdInfoTheory", "rdMetricMatrixCalc", "MetricBitVector", "Scoring", "RankedScoreRow",
 ]
 
 
@@ -65,6 +65,7 @@ from ._graph_matrices import (
     distance_matrix as _distance_matrix,
 )
 from ._metric_matrix import MetricBitVector as MetricBitVector, rdMetricMatrixCalc as rdMetricMatrixCalc
+from ._scoring_enrichment import RankedScoreRow as RankedScoreRow, Scoring as Scoring
 
 import chematic as _ch
 

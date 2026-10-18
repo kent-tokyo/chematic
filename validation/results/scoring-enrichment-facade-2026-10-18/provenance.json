@@ -1,0 +1,72 @@
+{
+  "base_commit": "f99c7b8ab33098a2e1fd9fd568aee370bf79ab38",
+  "created_at_utc": "2026-10-18T06:15:58.235882+00:00",
+  "issue": {
+    "number": 7981,
+    "state": "OPEN",
+    "title": "Enrichment factor returns empty list",
+    "updatedAt": "2026-08-17T07:24:36Z",
+    "url": "https://github.com/rdkit/rdkit/issues/7981",
+    "checked_at_utc": "2026-10-18T06:15:58.227160+00:00"
+  },
+  "versions": {
+    "python": "3.13.6",
+    "numpy": "2.5.3",
+    "pytest": "9.1.1"
+  },
+  "native_fixture": {
+    "source_commit": "ca7e14e892cab8b495183bcda4449f49471ba1b1",
+    "sha256": "90f81980b0fdf06c8edb616d8f8e5acd1831a9b6de404ed2b3405646cff41423",
+    "bytes": 85142576,
+    "path": "/private/tmp/chematic-scoring-python/chematic/chematic.so",
+    "source_provenance": "validation/results/checked-core-removal-2026-10-17/provenance.json"
+  },
+  "native_scope": "Reused verified extension; screening.rs and enrichment_factors binding unchanged from fixture. No fresh current-main build, whole-extension equivalence or published wheel claim.",
+  "source_sha256": {
+    "CHANGELOG.md": "177602b2022808bd5c6011dbd52197ea1c017b4275364f3f4bfe9938495daef0",
+    "mkdocs.yml": "d5cec7e64ce8d3c0475bad2926c813d989c1eaf494e963a6293431a43de9bf96",
+    "crates/chematic-py/python/chematic/_scoring_enrichment.py": "6b1b0fc70b0dbd9a03b1cccd86dde13d2ee19828703c6810083e03d6e7f5c078",
+    "crates/chematic-py/python/chematic/rdkit_compat.py": "464ce9c9dc188d35183216d5f9100bcc497b755241ad448670b39e57794f54eb",
+    "crates/chematic-py/tests/test_scoring_enrichment.py": "f030fdc9f9c02554ffb7ddfee46470b0bba2dd214757d05b04f7647d063280b0",
+    "docs/scoring-enrichment-facade.md": "895c54f90616128f9cb08e471afb01daba566694146b61950c0bcae6975e2173",
+    "docs/rdkit-open-issues-2026-10-14.md": "e4357e839feeebed5dac8ceed311326c044f7dfef746bee24d009895afb14c0b",
+    "docs/screening-enrichment.md": "98789f464368e5614be291505f91af997a18f5c7091c3abbd960aac6fbc7b694"
+  },
+  "evidence_sha256": {
+    "README.md": "33b583535922a1040eace2eb4b51687dd8810b02d46766e0e8de720bfab4c0be",
+    "boundary-comparisons.json": "bd24cf12d6f0fb5ab63ff6a7163ae633a4aa70198043758a97136440c1716afb",
+    "docs-and-typing.log": "56bc1b60ac71e81a50837917f7e457979e5b06a194f12fdb2826e9794a8507c3",
+    "mkdocs.log": "96c51962a662d7a0627f33c1d877d06751d89cc54b45b34c0670b4cd330c0288",
+    "native-source-comparison.log": "be6d56c14c2021546cc2a50cae175669dae3d5c1ef57fdae5f99666c0a249070",
+    "oracle-summary.json": "51a1d62f36affb4cf4a692e04a061f3ccfbe403d806980e4e5c5bd1598ab6e5d",
+    "oracle.log": "51a1d62f36affb4cf4a692e04a061f3ccfbe403d806980e4e5c5bd1598ab6e5d",
+    "oracle.py": "1300f845b1b062877718b1539365039356f15ce294acc6031f572cdfd5e94d87",
+    "pytest.log": "6f5f1057f0ece637b1aaffc342987b20dfdfee243e0e446f8e25f8d8118689a8",
+    "source-gates.log": "93c5929e06701a031d620af7c18bf7d7cd727c1b57d60a0f68d554583d065729",
+    "typing-invalid.log": "7168cc95daef9a708f0b4b8434d8dfa8df81580551a538be8dea9ceda7786f17",
+    "typing-valid.log": "f9b031e5c45aa702cd4fef028d465551cb20a2c4698e0913c7b00766b20ac4d8",
+    "typing_invalid.py": "62346956e0558032ec821672b3a59a2274ee5a4966ec311b66d611362315b4b0",
+    "typing_valid.py": "4560c88b48c661dcab8f9763422cbfb7a4e3232df2ea0761b8c43f742957f7f9"
+  },
+  "oracle_summary": {
+    "seed": 7981,
+    "rdkit": "2026.09.1",
+    "numpy": "2.5.3",
+    "ordinary_rankings": 1024,
+    "ordinary_representation_comparisons": 4096,
+    "paired_records": 137216,
+    "max_rdkit_error": 4.440892098500626e-16,
+    "max_independent_error": 4.440892098500626e-16,
+    "corrected_boundary_cases": 6,
+    "upstream_boundary_differences": 6,
+    "inputs_sha256": "0cbe1084b0868dc7e88a64b2b1830d5158ca8dd7064491e039a41098125337b4",
+    "rdkit_function_sha256": "842bdfc65daf3ac81d17f76abca2b6478320f5ffc78d7b5891faa6439f673e55",
+    "scope": "Ordinary single-cutoff parity; boundary corrections validated separately against exact count formula"
+  },
+  "pytest": {
+    "total": 242,
+    "new": 55,
+    "native_enrichment": 25,
+    "compatibility": 162
+  }
+}

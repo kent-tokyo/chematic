@@ -1,0 +1,5 @@
+Native fixture source: ca7e14e892cab8b495183bcda4449f49471ba1b1
+Candidate base: f99c7b8ab33098a2e1fd9fd568aee370bf79ab38
+Unchanged source: crates/chematic-chem/src/screening.rs
+Unchanged binding: enrichment_factors in crates/chematic-py/src/similarity.rs
+No current-main native rebuild or whole-extension equivalence claim.

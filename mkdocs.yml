@@ -125,6 +125,7 @@ nav:
     - Typed Metric Matrices: metric-matrix-facade.md
     - GAMESS Internal Coordinates: gamess-zmat-output.md
     - Typed Binary Feature Ranking: info-bit-ranker.md
+    - Ranked-record Enrichment: scoring-enrichment-facade.md
     - Chi-square Bit Ranking: chi-square-bit-ranking.md
     - PDB Model Splitting: pdb-model-splitting.md
     - PDB Atom Attributes: pdb-atom-records.md
