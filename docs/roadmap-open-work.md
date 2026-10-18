@@ -11,15 +11,20 @@ This file lists unresolved work only. Completed changes belong in the
   workflow after publication and check in artifact/corpus hashes and failure
   counts. The successful v1.1.5 hosted run remains the latest complete package
   lane; npm/WASM and crates.io remain separate evidence channels.
-- **QED and LogP performance:** reproduce the externally reported v1.1.4 to
-  v1.1.5 slowdown with 21 alternating blocks before tuning. Preserve exact
-  outputs and split parse, first-use, prepared reuse, and host conversion.
-- **Standardization:** reproduce the reported 254-row lane and classify
-  Normalize, Reionize, and Cleanup residuals as bug, semantic equivalent,
-  policy difference, or typed unsupported. Only the bug class is parity work.
-- **Rust compatibility:** extend the v1.1.3 downstream fixture and
-  `cargo-semver-checks` from selected surfaces to all 20 public crates and
-  relevant feature sets. Cover enums, error types, structs, and traits.
+- **Descriptor performance:** repeated QED now has a mutation-safe cache.
+  Complete the hosted Linux 20-block run, compare it with macOS, and keep
+  first-use chiral Morgan and Labute ASA deficits visible. Do not turn a hot
+  cache win into a first-use or toolkit-wide claim.
+- **Standardization implementation:** every current Normalize, Reionize and
+  Cleanup residual is classified. Prioritize 36 missing Reionize assignments,
+  aromatic N-oxide kekulization and common functional groups. Independent
+  ionization and metal-stereo policy differences remain declared contracts.
+- **CTfile:** current source has 4,045 exact readbacks, ten stereo-only rows,
+  one chematic readback failure and 16 RDKit oracle failures. Fix the chematic
+  rows without absorbing oracle failures into the success count.
+- **Compatibility:** changed public crates, Python declarations/dependencies
+  and WASM declarations now have previous-release gates. Extend feature-matrix
+  consumer fixtures where `cargo-semver-checks` cannot observe behavior.
 - **Equivalent-work performance:** close prepared-operation deficits without
   moving work into parsing. Separate parse-inclusive, first-use, prepared,
   startup, and peak-memory results; add a second host before broad claims.
@@ -37,10 +42,13 @@ This file lists unresolved work only. Completed changes belong in the
 - **CDK/Indigo comparison:** expand beyond the bounded 15 reaction, 39 parent,
   and 16 labelled R-group rows; add prepared-object, memory, second-host, and
   exact-package lanes.
-- **A6 quality:** topology bounds are aligned on the frozen corpus, while
-  minimization and basin-diversity tails remain. The 265-row set and holdouts
-  v1–v4 are development data. Freeze a new outcome-blind holdout before any
-  further 3D tuning and retain quality tails, convergence, time, and memory.
+- **Frozen trust holdouts:** candidate `f5d6cd6f` predates the acquired,
+  hash-pinned NCI/PubChem sources. MCS comparison (64), SDF attributes (64),
+  and stereo/3D (96) are unscored. Evaluate them once without changing the
+  candidate, and do not use their outcomes for tuning.
+- **A6 quality:** topology bounds are aligned on the development corpus, while
+  minimization and basin-diversity tails remain. Retain quality tails,
+  convergence, time, and memory when the new stereo/3D holdout is evaluated.
 - **A6 publication:** add 21 alternating blocks, a second host, peak memory,
   exact public artifacts, and an unused quality set before claiming a general
   speed-and-quality win.

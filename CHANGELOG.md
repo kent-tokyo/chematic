@@ -16,9 +16,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
-- Added frozen, outcome-blind MCS, SDF-attribute and stereo/3D holdouts with
-  hash-checked manifests. CI now verifies that their rows and selection policy
-  cannot drift silently.
+- Added post-candidate, outcome-blind MCS, SDF-attribute and stereo/3D holdouts
+  from hash-pinned NCI and PubChem sources. CI verifies acquisition ordering,
+  row hashes and selection policy so the evaluation set cannot drift silently.
 - Added previous-release compatibility gates for every changed publishable
   Rust crate, Python declarations and dependency contracts, and generated
   WebAssembly TypeScript declarations.

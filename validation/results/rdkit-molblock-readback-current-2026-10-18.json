@@ -1,0 +1,193 @@
+{
+  "schema": "chematic.rdkit-molblock-readback-parity.v1",
+  "source_commit": "f5d6cd6fae6a369585a72af0c2659c44b3e18a35",
+  "versions": {
+    "chematic": "1.1.7",
+    "rdkit": "2026.09.1"
+  },
+  "corpus": {
+    "path": "validation/cosmolkit_comparison/corpora/stress-v1.smi",
+    "rows": 4072,
+    "sha256": "879166ab5481cac805ecd2d77f37d628383ec124085b90e2ee1659d55ce76277"
+  },
+  "native_extension_sha256": "100e6805b16a89b899775587de273d103c3e8d14e8693cbb064d687d0ef02cf4",
+  "classification_counts": {
+    "exact": 4045,
+    "oracle_readback_failed": 14,
+    "oracle_write_failed": 2,
+    "readback_failed": 1,
+    "stereo_only": 10
+  },
+  "residuals": [
+    {
+      "row": 711,
+      "input": "[*+]",
+      "classification": "oracle_write_failed",
+      "error": "RuntimeError: Pre-condition Violation\n\tAtomic number not found\n\tViolation occurred on line 161 in file Code/GraphMol/PeriodicTable.h\n\tFailed Expression: atomicNumber < byanum.size()\n\tRDKIT: 2026.09.1\n\tBOOST: 1_85\n"
+    },
+    {
+      "row": 1212,
+      "input": "C[C@@H]1CC[C@H]2[C@@H](C)C(CC(COC(=O)c3ccncc3)CC3OC4O[C@]5(C)CC[C@H]6[C@H](C)CC[C@@H]([C@H]3C)C46OO5)OC3[OH+][C@]4(C)CCC1C32OO4.[Fe]",
+      "classification": "stereo_only",
+      "writer": "rdkit_mol_block_2d",
+      "chematic_readback": "C[C@@H]1CC[C@H]2[C@@H](C)C(CC(COC(=O)c3ccncc3)CC3OC4O[C@]5(C)CC[C@H]6[C@H](C)CC[C@@H]([C@H]3C)C46OO5)OC3[OH+][C@]4(C)CCC1C32OO4.[Fe]",
+      "rdkit_readback": "C[C@@H]1CC[C@H]2[C@@H](C)C(CC(COC(=O)c3ccncc3)CC3OC4OC5(C)CC[C@H]6[C@H](C)CC[C@@H]([C@H]3C)C46OO5)OC3[OH+][C@]4(C)CCC1C32OO4.[Fe]"
+    },
+    {
+      "row": 1326,
+      "input": "O=P(O)(O)CN[C@@H](CCC1=CC=CC=C1)C1=N[N+2]=NN1",
+      "classification": "oracle_write_failed",
+      "error": "KekulizeException: Can't kekulize mol.  Unkekulized atoms: 15 16 18"
+    },
+    {
+      "row": 1334,
+      "input": "O=P(O)(O)C(Cc1ccc2c(c1)OCO2)N[C@@H](Cc1cc#c(-c2ccccc2)cc1)c1nnn[nH]1",
+      "classification": "oracle_readback_failed"
+    },
+    {
+      "row": 1373,
+      "input": "COc1ccc(/C=C2\\NC(=O)NC2=O)c(OC)[c-]#1",
+      "classification": "oracle_readback_failed"
+    },
+    {
+      "row": 1400,
+      "input": "c1ccc(Oc2ccc(-c3cc[nH]n3)cc#2)cc1",
+      "classification": "oracle_readback_failed"
+    },
+    {
+      "row": 1550,
+      "input": "CCNC(C)C(O)COc1ccc(CC(N)=O)cc#1",
+      "classification": "oracle_readback_failed"
+    },
+    {
+      "row": 1904,
+      "input": "N(c1ccc(-c2ccc([O]C)#cc2)cc1)C1NCCN=1",
+      "classification": "oracle_readback_failed"
+    },
+    {
+      "row": 2029,
+      "input": "C[C@@H]1CC[C@H]2[C@@H](C)C(=O)O[C@@H]3O[C@]4(C[AsH2])CC[C@@H]1C23OO4",
+      "classification": "stereo_only",
+      "writer": "rdkit_mol_block_2d",
+      "chematic_readback": "C[C@@H]1CC[C@H]2[C@@H](C)C(=O)O[C@@H]3O[C@]4(C[AsH2])CC[C@@H]1C32OO4",
+      "rdkit_readback": "C[C@@H]1CC[C@H]2[C@@H](C)C(=O)O[C@@H]3OC4(C[AsH2])CC[C@@H]1C32OO4"
+    },
+    {
+      "row": 2099,
+      "input": "CC(O)C1/C=C/C=C\\C(=O)O[C@@H]2C[C@H]3O[C@@H]4C[C@@H](C)[C@H](O)C[C@]4(COC(=O)C(O)C(C)CCO1)[C@]2([CH]=[Cu])C31CO1",
+      "classification": "stereo_only",
+      "writer": "to_mol_block_fallback",
+      "chematic_readback": "CC(O)C1/C=C/C=C\\C(=O)O[C@@H]2C[C@H]3O[C@@H]4C[C@@H](C)[C@H](O)C[C@]4(COC(=O)C(O)C(C)CCO1)[C@]2([CH]=[Cu])C31CO1",
+      "rdkit_readback": "CC(O)C1/C=C/C=C/C(=O)O[C@@H]2C[C@H]3O[C@@H]4C[C@@H](C)[C@H](O)C[C@]4(COC(=O)C(O)C(C)CCO1)[C@]2([CH]=[Cu])C31CO1"
+    },
+    {
+      "row": 2150,
+      "input": "C[C@@H]1CC[C@H]2[C@@H](C)C(CC3(CC4OC5O[C@]6(C)CCC7[99C@H](C)CC[C@@H]([C@H]4C)C57OO6)CO3)OC3O[C@]4(C)CC[C@@H]1C32OO4",
+      "classification": "stereo_only",
+      "writer": "rdkit_mol_block_2d",
+      "chematic_readback": "C[C@@H]1CC[C@H]2[C@@H](C)C(CC3(CC4OC5O[C@]6(C)CCC7[99C@H](C)CC[C@@H]([C@H]4C)C57OO6)CO3)OC3O[C@]4(C)CC[C@@H]1C32OO4",
+      "rdkit_readback": "C[C@@H]1CC[C@H]2[C@@H](C)C(CC3(CC4OC5OC6(C)CCC7[99C@H](C)CC[C@@H]([C@H]4C)C57OO6)CO3)OC3O[C@]4(C)CC[C@@H]1C32OO4"
+    },
+    {
+      "row": 2190,
+      "input": "CC(O)C1/C=C/C=[C@H]\\C(=O)O[C@@H]2C[C@H]3O[C@@H]4[C@@H]5O[C@]5(C)CC[C@]4(COC(=O)C(O)C(C)CCO1)[C@]2(C)C31CO1",
+      "classification": "stereo_only",
+      "writer": "to_mol_block_fallback",
+      "chematic_readback": "CC(O)C1/C=C/C=C\\C(=O)O[C@@H]2C[C@H]3O[C@@H]4[C@@H]5O[C@]5(C)CC[C@]4(COC(=O)C(O)C(C)CCO1)[C@]2(C)C31CO1",
+      "rdkit_readback": "CC(O)C1/C=C\\C=C\\C(=O)O[C@@H]2C[C@H]3O[C@@H]4[C@@H]5O[C@]5(C)CC[C@]4(COC(=O)C(O)C(C)CCO1)[C@]2(C)C31CO1"
+    },
+    {
+      "row": 2253,
+      "input": "Clc1ccc(C2(Cn3ccnc3)OCC(Cc3cc#c(Br)cc3)O2)c(Cl)c1",
+      "classification": "oracle_readback_failed"
+    },
+    {
+      "row": 2449,
+      "input": "NS(=O)(=O)c1ccc(-n2nc(C(F)(F)F)cc2C2=CCCCC2)c[c-]#1",
+      "classification": "oracle_readback_failed"
+    },
+    {
+      "row": 2609,
+      "input": "CC1CCOC(=O)/C=C/C=C\\C(=O)[O][C@@H]2C[C@H]3O[C@@H]4[C@H]5O[C@@]5(C)CC[C@]4(COC(=O)C1O)[C@]2(C)C31CO1",
+      "classification": "stereo_only",
+      "writer": "to_mol_block_fallback",
+      "chematic_readback": "CC1CCOC(=O)/C=C/C=C\\C(=O)O[C@@H]2C[C@H]3O[C@@H]4[C@H]5O[C@@]5(C)CC[C@]4(COC(=O)C1O)[C@]2(C)C31CO1",
+      "rdkit_readback": "CC1CCOC(=O)/C=C\\C=C\\C(=O)O[C@@H]2C[C@H]3O[C@@H]4[C@H]5O[C@@]5(C)CC[C@]4(COC(=O)C1O)[C@]2(C)C31CO1"
+    },
+    {
+      "row": 2671,
+      "input": "CC1C[NH+](c2nc3c(c#c2F)c(=O)[c:40](C(=O)O)cn3C(C)(C)C)CCN1C",
+      "classification": "oracle_readback_failed"
+    },
+    {
+      "row": 2859,
+      "input": "c1(ccc2[nH]c([S+](Cc3cc(OC)c(C)cn3)[O-])nc2c#1)OC(C(F)F)(F)F",
+      "classification": "oracle_readback_failed"
+    },
+    {
+      "row": 3056,
+      "input": "O=C1CCCN(c2cccc(C(F)(F)F)c#2)N1",
+      "classification": "oracle_readback_failed"
+    },
+    {
+      "row": 3090,
+      "input": "COC1=CC(C(=O)/C=[200CH]/C=CC=C(C)N(C)C)=C(OC)C=C1",
+      "classification": "readback_failed",
+      "writer": "to_mol_block_fallback",
+      "block_sha256": "7d2f3105f4ecec31c095915ca9abbedded3c726ce2cb41b076e2dc8f97dadd77"
+    },
+    {
+      "row": 3127,
+      "input": "C[C@@H]1[15CH2]C[C@H]2[C@@H](C)C(CC3(CC4OC5O[C@]6(C)CC[C@H]7[C@H](C)CC[C@@H]([C@H]4C)C57OO6)CO3)OC3O[C@]4(C)CCC1C32OO4.[NaH]",
+      "classification": "stereo_only",
+      "writer": "rdkit_mol_block_2d",
+      "chematic_readback": "C[C@@H]1[15CH2]C[C@H]2[C@@H](C)C(CC3(CC4OC5O[C@]6(C)CC[C@H]7[C@H](C)CC[C@@H]([C@H]4C)C57OO6)CO3)OC3O[C@]4(C)CCC1C32OO4.[NaH]",
+      "rdkit_readback": "C[C@@H]1[15CH2]C[C@H]2[C@@H](C)C(CC3(CC4OC5OC6(C)CC[C@H]7[C@H](C)CC[C@@H]([C@H]4C)C57OO6)CO3)OC3O[C@]4(C)CCC1C32OO4.[NaH]"
+    },
+    {
+      "row": 3235,
+      "input": "Cc1cccc(Cn2:C(c3ccc(O)cc#3):c(C)c3cc(O)cc[c:42]23)c1",
+      "classification": "oracle_readback_failed"
+    },
+    {
+      "row": 3402,
+      "input": "CC(O)C1/C=C/C=C\\C(=O)O[C@@H]2C[C@H]3O[C@@H]4C[C@@H](C)[Zn@H]([OH])[CH2][C@]4(COC(=O)C(O)C(C)CCO1)[C@]2(C)C31CO1",
+      "classification": "stereo_only",
+      "writer": "to_mol_block_fallback",
+      "chematic_readback": "CC(O)C1/C=C/C=C\\C(=O)O[C@@H]2C[C@H]3O[C@@H]4C[C@@H](C)[Zn@H]([OH])[CH2][C@]4(COC(=O)C(O)C(C)CCO1)[C@]2(C)C31CO1",
+      "rdkit_readback": "CC(O)C1/C=C/C=C/C(=O)O[C@@H]2C[C@H]3O[C@@H]4C[C@@H](C)[Zn@H]([OH])[CH2][C@]4(COC(=O)C(O)C(C)CCO1)[C@]2(C)C31CO1"
+    },
+    {
+      "row": 3444,
+      "input": "C1(O[C@@H]2O[C@@]3(C)CC[C@H]4C(CC[C@H](C24OO3)[C@H]1C)C)=O",
+      "classification": "stereo_only",
+      "writer": "rdkit_mol_block_2d",
+      "chematic_readback": "CC1CC[C@H]2[C@@H](C)C(=O)O[C@@H]3O[C@@]4(C)CC[C@@H]1C32OO4",
+      "rdkit_readback": "CC1CC[C@H]2[C@@H](C)C(=O)O[C@@H]3OC4(C)CC[C@@H]1C32OO4"
+    },
+    {
+      "row": 3497,
+      "input": "COc1c#c(CCC(CCCc2ccccc2)O/C(S)=N/CCc2ccccc2)ccc1O.[KH]",
+      "classification": "oracle_readback_failed"
+    },
+    {
+      "row": 3865,
+      "input": "C=C(CC1OC2O[C@]3(C)CCC4C(C)CC[C@@H]([C@H]1C)C24OO3)CC1OC2O[C@]3(C)CC[C@H]4[C@H](C)CC[C@@H]([C@H]1C)C24OO3",
+      "classification": "stereo_only",
+      "writer": "rdkit_mol_block_2d",
+      "chematic_readback": "C=C(CC1OC2O[C@]3(C)CCC4C(C)CC[C@@H]([C@H]1C)C24OO3)CC1OC2O[C@]3(C)CC[C@H]4[C@H](C)CC[C@@H]([C@H]1C)C24OO3",
+      "rdkit_readback": "C=C(CC1OC2OC3(C)CCC4C(C)CC[C@@H]([C@H]1C)C24OO3)CC1OC2O[C@]3(C)CC[C@H]4[C@H](C)CC[C@@H]([C@H]1C)C24OO3"
+    },
+    {
+      "row": 4019,
+      "input": "CCCCCCCCCCOc1cc#c(OCC(=O)COCc2cccc(C(=O)O)c2)cc1",
+      "classification": "oracle_readback_failed"
+    },
+    {
+      "row": 4066,
+      "input": "Cc1onc(NS(->O)(=O)c2ccc(N)cc#2)c1",
+      "classification": "oracle_readback_failed"
+    }
+  ],
+  "contract": "Exact RDKit canonical-isomeric readback is agreement. Every other row is retained and classified; input/oracle failures are not charged to the writer and no row is replaced."
+}
