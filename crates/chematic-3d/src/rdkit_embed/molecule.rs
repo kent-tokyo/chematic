@@ -1017,4 +1017,111 @@ mod input_diagnostic_boundary_tests {
         );
         assert_eq!(molecule.atom_count(), 9);
     }
+
+    #[test]
+    fn embedding_error_variants_keep_actionable_context() {
+        assert_eq!(
+            RdkitEmbedError::Failed.to_string(),
+            "RDKit embedding failed (EmbedMolecule returns -1)"
+        );
+        assert_eq!(
+            RdkitEmbedError::from(BoundsInvariant("bad bounds")).to_string(),
+            "RDKit embedding: RDKit raises: bad bounds"
+        );
+        assert!(
+            RdkitEmbedError::from(EmbedError::BadDirection)
+                .to_string()
+                .contains("BadDirection")
+        );
+        assert!(
+            RdkitEmbedError::from(InternalCoordinateConstraintError::TriangleSmoothingFailed)
+                .to_string()
+                .contains("invalid internal-coordinate constraint")
+        );
+        assert_eq!(
+            RdkitEmbedMmffError::ForceField("missing parameters".into()).to_string(),
+            "RDKit-compatible MMFF94: missing parameters"
+        );
+        assert_eq!(
+            RdkitEmbedMmffError::from(RdkitEmbedError::Failed).to_string(),
+            RdkitEmbedError::Failed.to_string()
+        );
+    }
+
+    #[test]
+    fn ensemble_boundaries_do_not_construct_unrequested_conformers() {
+        let molecule = chematic_chem::add_hydrogens(&chematic_smiles::parse("CCO").unwrap());
+        let options = RdkitEmbedOptions::default();
+        assert!(
+            rdkit_embed_multiple_confs(&molecule, 0, &options)
+                .unwrap()
+                .is_empty()
+        );
+        assert!(
+            rdkit_embed_multiple_confs_mmff(&molecule, 0, &options, 50)
+                .unwrap()
+                .is_empty()
+        );
+        assert!(
+            rdkit_embed_multiple_confs_mmff_diagnostics(&molecule, 0, &options, 50)
+                .unwrap()
+                .is_empty()
+        );
+        assert!(
+            rdkit_embed_multiple_confs_mmff_adaptive(&molecule, 0, &options, 5, 5, 1)
+                .unwrap()
+                .is_empty()
+        );
+        assert!(
+            rdkit_embed_multiple_confs_mmff_rescue(&molecule, 0, &options, 5, 5, 1)
+                .unwrap()
+                .is_empty()
+        );
+        let error = rdkit_embed_multiple_confs_mmff_gradient_rescue(
+            &molecule,
+            0,
+            &options,
+            5,
+            5,
+            1,
+            f64::NAN,
+        )
+        .unwrap_err();
+        assert!(error.to_string().contains("finite and non-negative"));
+        let error =
+            rdkit_embed_multiple_confs_mmff_gradient_rescue(&molecule, 0, &options, 5, 5, 1, -0.1);
+        assert!(error.unwrap_err().to_string().contains("non-negative"));
+
+        let negative_seed = RdkitEmbedOptions {
+            random_seed: -1,
+            ..options.clone()
+        };
+        assert!(
+            rdkit_embed_molecule(&molecule, &negative_seed)
+                .unwrap_err()
+                .to_string()
+                .contains("randomSeed")
+        );
+    }
+
+    #[test]
+    fn plain_distance_geometry_and_stereo_discovery_are_explicit() {
+        let molecule =
+            chematic_chem::add_hydrogens(&chematic_smiles::parse("C[C@H](F)Cl.C=C=C").unwrap());
+        let view = chematic_smiles::rdkit_mol_view(&molecule).unwrap();
+        let (chiral, tetrahedral) = find_chiral_sets(&view);
+        assert!(!chiral.is_empty());
+        assert!(tetrahedral.is_empty());
+        let (ends, stereo) = find_double_bonds(&view);
+        assert!(!ends.is_empty());
+        assert!(stereo.is_empty());
+
+        let plain = RdkitEmbedOptions {
+            use_exp_torsion_angle_prefs: false,
+            use_basic_knowledge: false,
+            ..RdkitEmbedOptions::default()
+        };
+        let methane = chematic_chem::add_hydrogens(&chematic_smiles::parse("C").unwrap());
+        assert_eq!(rdkit_embed_molecule(&methane, &plain).unwrap().len(), 5);
+    }
 }

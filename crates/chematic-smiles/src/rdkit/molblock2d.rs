@@ -149,9 +149,6 @@ fn pick_bonds_to_wedge(mol: &Mol) -> BTreeMap<usize, usize> {
     }
     let mut wedge = BTreeMap::new();
     for idx in indices {
-        if n_chiral[idx] > NO_NBRS {
-            continue;
-        }
         if !is_tetrahedral(mol.atoms[idx].chiral) {
             break;
         }
@@ -182,10 +179,7 @@ fn determine_bond_wedge_state(mol: &Mol, bid: usize, from: usize, xy: &[[f64; 2]
         }
         let other = mol.bonds[nb].other(atom);
         let tmp_vect = direction_vector(center, xy[other])?;
-        let mut angle = signed_angle_to(ref_vect, tmp_vect);
-        if angle < 0.0 {
-            angle += 2.0 * PI;
-        }
+        let angle = signed_angle_to(ref_vect, tmp_vect);
         let mut pos = 0;
         while pos < angles.len() && angle > angles[pos] {
             pos += 1;
@@ -540,4 +534,231 @@ pub(crate) fn mol_block_2d(
     }
     out.push_str("M  END\n");
     Ok(out)
+}
+
+#[cfg(test)]
+mod boundary_contract_tests {
+    use super::super::mol::{Atom, Bond};
+    use super::*;
+
+    #[test]
+    fn geometry_helpers_handle_coincident_parallel_and_opposite_vectors() {
+        assert_eq!(direction_vector([1.0, 1.0], [1.0, 1.0]), None);
+        assert_eq!(
+            direction_vector([0.0, 0.0], [2.0, 0.0]),
+            Some([1.0, 0.0, 0.0])
+        );
+        assert_eq!(signed_angle_to([1.0, 0.0, 0.0], [1.0, 0.0, 0.0]), 0.0);
+        assert_eq!(signed_angle_to([1.0, 0.0, 0.0], [-1.0, 0.0, 0.0]), PI);
+        assert!(signed_angle_to([0.0, 1.0, 0.0], [1.0, 0.0, 0.0]) > PI);
+    }
+
+    #[test]
+    fn v3000_output_preserves_atom_and_bond_properties() {
+        let mut mol = Mol::default();
+        let mut donor = Atom::new(7);
+        donor.charge = 1;
+        donor.isotope = 15;
+        donor.radicals = 1;
+        donor.map = Some(7);
+        donor.explicit_valence = 1;
+        donor.no_implicit = true;
+        mol.add_atom(donor);
+        let mut metal = Atom::new(78);
+        metal.explicit_valence = 1;
+        mol.add_atom(metal);
+        mol.add_bond(Bond::new(0, 1, BondType::Dative));
+        let mut isolated_oxygen = Atom::new(8);
+        isolated_oxygen.no_implicit = true;
+        isolated_oxygen.explicit_valence = 0;
+        mol.add_atom(isolated_oxygen);
+        for _ in 0..2 {
+            let mut carbon = Atom::new(6);
+            carbon.no_implicit = true;
+            carbon.explicit_valence = 4;
+            mol.add_atom(carbon);
+        }
+        mol.add_bond(Bond::new(3, 4, BondType::Quadruple));
+        let block = mol_block_2d(
+            &mol,
+            &[],
+            &[[0.0, 0.0], [1.0, 0.0], [2.0, 0.0], [3.0, 0.0], [4.0, 0.0]],
+            &[false; 5],
+        )
+        .unwrap();
+        assert!(block.contains("V3000"));
+        assert!(block.contains("CHG=1"));
+        assert!(block.contains("MASS=15"));
+        assert!(block.contains("RAD=2"));
+        assert!(block.contains("VAL=-1"));
+        assert!(block.contains("M  V30 1 9 1 2"));
+        assert!(block.contains("M  V30 2 0 4 5"));
+    }
+
+    #[test]
+    fn v2000_property_records_flush_in_groups_of_eight() {
+        let mut mol = Mol::default();
+        for index in 0..9 {
+            let mut atom = Atom::new(6);
+            atom.charge = 1;
+            atom.isotope = 13;
+            atom.radicals = 1;
+            atom.no_implicit = true;
+            atom.explicit_valence = if index == 0 || index == 8 { 1 } else { 2 };
+            mol.add_atom(atom);
+            if index > 0 {
+                mol.add_bond(Bond::new(index - 1, index, BondType::Single));
+            }
+        }
+        let coords: Vec<_> = (0..9).map(|i| [i as f64, 0.0]).collect();
+        let block = mol_block_2d(&mol, &[], &coords, &[false; 9]).unwrap();
+        assert!(block.contains("M  CHG  8"));
+        assert!(block.contains("M  CHG  1"));
+        assert!(block.contains("M  RAD  8"));
+        assert!(block.contains("M  ISO  8"));
+    }
+
+    #[test]
+    fn stereo_and_valence_checks_fail_closed_at_their_boundaries() {
+        let mut single = Mol::default();
+        single.add_atom(Atom::new(6));
+        single.add_atom(Atom::new(6));
+        single.add_bond(Bond::new(0, 1, BondType::Single));
+        assert!(!is_bond_potential_stereo_bond(&single, 0));
+
+        let mut charged = Mol::default();
+        let mut atom = Atom::new(6);
+        atom.charge = 100;
+        atom.no_implicit = true;
+        atom.explicit_valence = 0;
+        charged.add_atom(atom);
+        let error = has_non_default_valence(&charged, 0, false).unwrap_err();
+        assert!(error.to_string().contains("effective atomic number"));
+    }
+
+    #[test]
+    fn wedge_selection_accounts_for_hydrogen_chiral_neighbors_and_used_bonds() {
+        let mut mol = Mol::default();
+        let mut center = Atom::new(6);
+        center.chiral = ChiralTag::Ccw;
+        mol.add_atom(center);
+        mol.add_atom(Atom::new(1));
+        let mut chiral_neighbor = Atom::new(6);
+        chiral_neighbor.chiral = ChiralTag::Cw;
+        mol.add_atom(chiral_neighbor);
+        mol.add_atom(Atom::new(8));
+        mol.add_atom(Atom::new(9));
+        let hydrogen_bond = mol.add_bond(Bond::new(1, 0, BondType::Single));
+        mol.add_bond(Bond::new(0, 2, BondType::Single));
+        mol.add_bond(Bond::new(0, 3, BondType::Single));
+        mol.add_bond(Bond::new(0, 4, BondType::Single));
+        mol.set_rings(Vec::new());
+
+        let (has_chiral, counts) = count_chiral_nbrs(&mol);
+        assert!(has_chiral);
+        assert!(counts[0] < 0);
+        assert_eq!(
+            pick_bond_to_wedge(&mol, 0, &counts, &BTreeMap::new()),
+            Some(hydrogen_bond)
+        );
+        let used = BTreeMap::from([(hydrogen_bond, 0)]);
+        assert_ne!(
+            pick_bond_to_wedge(&mol, 0, &counts, &used),
+            Some(hydrogen_bond)
+        );
+
+        let xy = [[0.0, 0.0], [1.0, 0.0], [0.0, 1.0], [-1.0, 0.0], [0.0, -1.0]];
+        assert!(determine_bond_wedge_state(&mol, hydrogen_bond, 0, &xy).is_some());
+        assert!(determine_bond_wedge_state(&mol, hydrogen_bond, 1, &xy).is_some());
+        assert_eq!(pick_bonds_to_wedge(&mol).len(), 2);
+
+        let mut v3000_xy = xy;
+        v3000_xy[1][0] = 100_000.0;
+        let block = mol_block_2d(&mol, &[], &v3000_xy, &[false; 5]).unwrap();
+        assert!(block.contains(" CFG="));
+        let mut mirror = mol.clone();
+        mirror.atoms[0].chiral = ChiralTag::Cw;
+        let mirror_block = mol_block_2d(&mirror, &[], &v3000_xy, &[false; 5]).unwrap();
+        assert_ne!(block, mirror_block);
+        assert!(block.contains("CFG="));
+        assert!(mirror_block.contains("CFG="));
+
+        let mut trigonal = Mol::default();
+        let mut trigonal_center = Atom::new(6);
+        trigonal_center.chiral = ChiralTag::Ccw;
+        trigonal.add_atom(trigonal_center);
+        for anum in [9, 17, 35] {
+            trigonal.add_atom(Atom::new(anum));
+        }
+        let reference = trigonal.add_bond(Bond::new(0, 1, BondType::Single));
+        trigonal.add_bond(Bond::new(0, 2, BondType::Single));
+        trigonal.add_bond(Bond::new(0, 3, BondType::Double));
+        trigonal.set_rings(Vec::new());
+        let (_, trigonal_counts) = count_chiral_nbrs(&trigonal);
+        assert!(pick_bond_to_wedge(&trigonal, 0, &trigonal_counts, &BTreeMap::new(),).is_some());
+        assert!(
+            determine_bond_wedge_state(
+                &trigonal,
+                reference,
+                0,
+                &[[0.0, 0.0], [1.0, 0.0], [0.0, 1.0], [0.0, -1.0]],
+            )
+            .is_some()
+        );
+    }
+
+    #[test]
+    fn double_bond_stereo_helpers_distinguish_unknown_known_and_blocked_paths() {
+        let mut mol = Mol::default();
+        for _ in 0..5 {
+            let mut atom = Atom::new(6);
+            atom.no_implicit = true;
+            atom.explicit_valence = 4;
+            atom.implicit_valence = 0;
+            mol.add_atom(atom);
+        }
+        mol.atoms[1].explicit_valence = 3;
+        let double = mol.add_bond(Bond::new(0, 1, BondType::Double));
+        mol.add_bond(Bond::new(0, 2, BondType::Single));
+        let left_extra = mol.add_bond(Bond::new(0, 3, BondType::Single));
+        mol.add_bond(Bond::new(1, 4, BondType::Single));
+        mol.set_rings(Vec::new());
+
+        mol.bonds[double].stereo = BondStereo::Any;
+        assert_eq!(double_bond_presence(&mol, 0), (1, 0, 1));
+        assert!(should_be_a_crossed_bond(&mol, double, &[0, 1, 2, 3, 4]));
+        mol.bonds[double].stereo = BondStereo::E;
+        assert_eq!(double_bond_presence(&mol, 0), (1, 1, 0));
+        assert!(!should_be_a_crossed_bond(&mol, double, &[0, 1, 2, 3, 4]));
+
+        mol.bonds[double].stereo = BondStereo::None;
+        assert!(is_bond_potential_stereo_bond(&mol, double));
+        assert!(!should_be_a_crossed_bond(
+            &mol,
+            left_extra,
+            &[0, 1, 2, 3, 4],
+        ));
+        assert!(!can_be_stereo_bond(&mol, left_extra, &[0, 1, 2, 3, 4]));
+        assert!(can_be_stereo_bond(&mol, double, &[]));
+        assert!(can_be_stereo_bond(&mol, double, &[0, 1, 2, 3, 4]));
+        assert!(should_be_a_crossed_bond(&mol, double, &[0, 1, 2, 3, 4]));
+        assert!(!can_be_stereo_bond(&mol, double, &[0, 1, 7, 7, 4]));
+        mol.bonds[left_extra].dir = BondDir::EndUpRight;
+        assert!(!can_be_stereo_bond(&mol, double, &[0, 1, 2, 3, 4]));
+        mol.bonds[left_extra].dir = BondDir::None;
+        let block = mol_block_2d(
+            &mol,
+            &[0, 1, 2, 3, 4],
+            &[
+                [100_000.0, 0.0],
+                [1.0, 0.0],
+                [0.0, 1.0],
+                [-1.0, 0.0],
+                [1.0, 1.0],
+            ],
+            &[false; 5],
+        )
+        .unwrap();
+        assert!(block.contains("CFG=2"));
+    }
 }

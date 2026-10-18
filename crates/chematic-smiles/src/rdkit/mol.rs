@@ -981,3 +981,146 @@ pub(crate) fn count_swaps(reference: &[usize], probe: &[usize]) -> usize {
     }
     n
 }
+
+#[cfg(test)]
+mod primitive_contract_tests {
+    use super::*;
+
+    fn star(center: Atom, ligands: usize) -> Mol {
+        let mut mol = Mol::default();
+        mol.add_atom(center);
+        for _ in 0..ligands {
+            let ligand = mol.add_atom(Atom::new(9));
+            mol.add_bond(Bond::new(0, ligand, BondType::Single));
+        }
+        mol
+    }
+
+    #[test]
+    fn bond_types_and_directions_keep_their_numeric_contracts() {
+        for (kind, order, twice) in [
+            (BondType::Single, 1.0, 2),
+            (BondType::Double, 2.0, 4),
+            (BondType::Triple, 3.0, 6),
+            (BondType::Quadruple, 4.0, 8),
+            (BondType::Aromatic, 1.5, 3),
+            (BondType::Dative, 1.0, 2),
+        ] {
+            assert_eq!(kind.as_double(), order);
+            assert_eq!(kind.twice(), twice);
+        }
+        assert_eq!(BondDir::EndDownRight.flipped(), BondDir::EndUpRight);
+        assert_eq!(BondDir::EndUpRight.flipped(), BondDir::EndDownRight);
+        assert_eq!(BondDir::None.flipped(), BondDir::None);
+        assert!(!BondDir::None.is_set());
+        assert!(BondDir::EndUpRight.is_set());
+
+        let dative = Bond::new(0, 1, BondType::Dative);
+        assert_eq!(dative.valence_contrib(0), 0.0);
+        assert_eq!(dative.valence_contrib(1), 1.0);
+        assert_eq!(dative.valence_contrib(2), 0.0);
+        assert!(!dative.can_have_direction());
+        assert!(dative.can_set_double_bond_stereo());
+    }
+
+    #[test]
+    fn atom_chirality_inversion_handles_every_geometry_family() {
+        let mut tetra = Atom::new(6);
+        tetra.chiral = ChiralTag::Cw;
+        tetra.invert_chirality();
+        assert_eq!(tetra.chiral, ChiralTag::Ccw);
+        tetra.invert_chirality();
+        assert_eq!(tetra.chiral, ChiralTag::Cw);
+
+        for tag in [ChiralTag::TrigonalBipyramidal, ChiralTag::Octahedral] {
+            let mut atom = Atom::new(78);
+            atom.chiral = tag;
+            atom.chiral_perm = 1;
+            atom.invert_chirality();
+            assert_ne!(atom.chiral_perm, 0);
+        }
+        let mut square = Atom::new(78);
+        square.chiral = ChiralTag::SquarePlanar;
+        square.chiral_perm = 1;
+        square.invert_chirality();
+        assert_eq!(square.chiral_perm, 1);
+    }
+
+    #[test]
+    fn implicit_valence_rejects_impossible_hydrogen_charge_and_handles_dummies() {
+        let mut hydrogen = Mol::default();
+        let mut atom = Atom::new(1);
+        atom.charge = 2;
+        atom.explicit_valence = 0;
+        hydrogen.add_atom(atom);
+        assert!(hydrogen.calc_implicit_valence_value(0, true).is_err());
+        assert_eq!(hydrogen.calc_implicit_valence_value(0, false).unwrap(), 0);
+
+        let mut dummy = Mol::default();
+        let mut atom = Atom::new(0);
+        atom.explicit_valence = 0;
+        dummy.add_atom(atom);
+        assert_eq!(dummy.calc_implicit_valence_value(0, true).unwrap(), 0);
+
+        let mut fixed = Mol::default();
+        let mut atom = Atom::new(6);
+        atom.no_implicit = true;
+        fixed.add_atom(atom);
+        assert_eq!(fixed.calc_implicit_valence_value(0, true).unwrap(), 0);
+    }
+
+    #[test]
+    fn non_tetrahedral_queries_fail_closed_and_report_ideal_angles() {
+        let ordinary = star(Atom::new(6), 4);
+        assert_eq!(ordinary.chiral_across_atom(0, 1), None);
+        assert_eq!(ordinary.ideal_angle_between_ligands(0, 1, 2), 0.0);
+        assert_eq!(ordinary.chiral_permutation(0, &[Some(0)], false), 0);
+
+        let mut square_atom = Atom::new(78);
+        square_atom.chiral = ChiralTag::SquarePlanar;
+        square_atom.chiral_perm = 1;
+        let square = star(square_atom, 4);
+        let across = square.chiral_across_atom(0, 1).unwrap();
+        assert_eq!(square.ideal_angle_between_ligands(0, 1, across), 180.0);
+        let adjacent = (1..=4)
+            .find(|&ligand| ligand != across && ligand != 1)
+            .unwrap();
+        assert_eq!(square.ideal_angle_between_ligands(0, 1, adjacent), 90.0);
+        assert_eq!(square.chiral_across_atom(0, 99), None);
+        assert_eq!(square.chiral_permutation(0, &[None; 5], false), 0);
+
+        let mut tb_atom = Atom::new(15);
+        tb_atom.chiral = ChiralTag::TrigonalBipyramidal;
+        tb_atom.chiral_perm = 1;
+        let tb = star(tb_atom, 5);
+        let axial = tb.tb_axial_atom(0, 1).unwrap();
+        let other_axial = tb.tb_axial_atom(0, -1).unwrap();
+        assert_eq!(tb.ideal_angle_between_ligands(0, axial, other_axial), 180.0);
+        let equatorial = (1..=5)
+            .find(|&ligand| ligand != axial && ligand != other_axial)
+            .unwrap();
+        assert_eq!(tb.ideal_angle_between_ligands(0, axial, equatorial), 90.0);
+        assert_eq!(
+            tb.ideal_angle_between_ligands(
+                0,
+                equatorial,
+                (1..=5)
+                    .find(|&ligand| ligand != axial
+                        && ligand != other_axial
+                        && ligand != equatorial)
+                    .unwrap()
+            ),
+            120.0
+        );
+
+        let mut first = vec![Some(4), Some(5)];
+        insert_implicit_nbors(&mut first, NonTetrahedralClass::SquarePlanar, true);
+        assert_eq!(first.len(), 4);
+        assert_eq!(first[0], None);
+        let mut later = vec![Some(4), Some(5)];
+        insert_implicit_nbors(&mut later, NonTetrahedralClass::SquarePlanar, false);
+        assert_eq!(later.len(), 4);
+        assert_eq!(later[0], Some(4));
+        assert_eq!(count_swaps(&[1, 2, 3], &[3, 2, 1]), 1);
+    }
+}

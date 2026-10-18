@@ -281,34 +281,6 @@ mod tests {
         parse(s).unwrap_or_else(|e| panic!("parse '{s}': {e}"))
     }
 
-    /// Build a known tetrahedral center manually for testing.
-    /// Center at origin; substituents placed at given positions.
-    #[allow(dead_code)]
-    fn make_coords4(
-        center: Point3,
-        s1: Point3,
-        s2: Point3,
-        s3: Point3,
-        s4: Point3,
-        n: usize,
-    ) -> Coords3D {
-        let mut c = Coords3D::new_zeroed(n);
-        c.set(AtomIdx(0), center);
-        if n > 1 {
-            c.set(AtomIdx(1), s1);
-        }
-        if n > 2 {
-            c.set(AtomIdx(2), s2);
-        }
-        if n > 3 {
-            c.set(AtomIdx(3), s3);
-        }
-        if n > 4 {
-            c.set(AtomIdx(4), s4);
-        }
-        c
-    }
-
     // -------------------------------------------------------------------------
     // signed_volume
     // -------------------------------------------------------------------------
@@ -469,5 +441,28 @@ mod tests {
             result.assignments.is_empty(),
             "benzene should have no stereo assignments"
         );
+    }
+
+    #[test]
+    fn degenerate_and_non_stereogenic_geometry_is_omitted() {
+        let methane = mol("C");
+        let methane_coords = Coords3D::new_zeroed(methane.atom_count());
+        assert!(
+            assign_stereo_from_3d(&methane, &methane_coords)
+                .assignments
+                .is_empty()
+        );
+
+        let tetra = mol("[C](F)(Cl)(Br)I");
+        let coplanar = Coords3D::new_zeroed(tetra.atom_count());
+        assert!(assign_rs(&tetra, &coplanar, AtomIdx(0)).is_none());
+
+        let ethane = mol("CC");
+        let ethane_coords = Coords3D::new_zeroed(ethane.atom_count());
+        assert!(assign_ez(&ethane, &ethane_coords, BondIdx(0)).is_none());
+
+        let terminal = mol("C=C");
+        let terminal_coords = Coords3D::new_zeroed(terminal.atom_count());
+        assert!(assign_ez(&terminal, &terminal_coords, BondIdx(0)).is_none());
     }
 }

@@ -168,6 +168,7 @@ fn apply_permutation(mol: &Molecule, permutation: &[usize]) -> Molecule {
 mod tests {
     use super::*;
     use crate::parse;
+    use chematic_core::{BondOrder, StereoGroupKind};
 
     #[test]
     fn random_smiles_keep_stereo() {
@@ -247,5 +248,47 @@ mod tests {
         // due to symmetry, so we just check they're both valid
         assert!(!s1.is_empty());
         assert!(!s2.is_empty());
+    }
+
+    #[test]
+    fn rng_and_empty_permutation_have_defined_boundaries() {
+        let mut rng = Xorshift64::new(0);
+        assert_eq!(rng.range(0), 0);
+        assert!(rng.next() != 0);
+        assert!(generate_permutation(0, 7).is_empty());
+    }
+
+    #[test]
+    fn permutation_remaps_bond_metadata_and_enhanced_stereo_groups() {
+        let mut mol = parse("F/C=C/[C@H](Cl)Br").unwrap();
+        let centre = mol
+            .atoms()
+            .find_map(|(idx, atom)| atom.chirality.is_tetrahedral().then_some(idx))
+            .unwrap();
+        let (stereo_bond, anchor) = mol
+            .bonds()
+            .next()
+            .map(|(idx, bond)| (idx, bond.atom1))
+            .unwrap();
+        mol.set_bond_direction(stereo_bond, BondOrder::Up);
+        mol.set_bond_direction_anchor(stereo_bond, anchor);
+        mol.set_stereo_groups_with_bonds(vec![(
+            StereoGroup::new(StereoGroupKind::And(7), vec![centre]),
+            vec![stereo_bond],
+        )]);
+
+        let permutation: Vec<_> = (0..mol.atom_count()).rev().collect();
+        let permuted = apply_permutation(&mol, &permutation);
+        assert_eq!(permuted.stereo_groups().len(), 1);
+        assert_eq!(permuted.stereo_groups()[0].kind, StereoGroupKind::And(7));
+        assert_eq!(permuted.stereo_group_bond_indices(0).unwrap().len(), 1);
+        assert!(permuted.bonds().any(|(idx, _)| {
+            permuted.bond_direction(idx).is_some() && permuted.bond_direction_anchor(idx).is_some()
+        }));
+        assert!(
+            permuted
+                .atoms()
+                .any(|(idx, _)| permuted.stereo_neighbor_order(idx).is_some())
+        );
     }
 }
