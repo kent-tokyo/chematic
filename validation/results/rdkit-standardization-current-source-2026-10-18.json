@@ -1,84 +1,32 @@
 {
   "profile": "source_cleanup_vs_rdkit_2026_09_1",
-  "source_commit": "3ffa03b1b9d36c5ff082d966bbdafbc8cc21ac25",
+  "source_commit": "ca8651d52549fb260222ab5c1dc42c1e04617ca7",
   "source_sha256": {
-    "crates/chematic-chem/src/standardize.rs": "b8fe08076467a597607d8dabbc856056678ebd2b0ef2674985ee2bdc6ce98d2c",
-    "crates/chematic-chem/src/standardize/cleanup.rs": "d2b4f7fb8dbbaba8c29cbe8e8dbc3ec872e54481e9d4f1c241628c458a048d87",
-    "crates/chematic-chem/src/standardize/groups.rs": "f0131fd4ec8c11b737de06de860d65babfb6b7ded4f84d9754e99e7e1418b8ae",
-    "crates/chematic-chem/examples/cleanup_rdkit_dump.rs": "b214ff0e0ea15380d28160307a3eec930e45ff3333a570044d5047b206667649"
+    "crates/chematic-chem/src/standardize.rs": "da839ca96793e0e0c8c7f1dd6c2a687332173b2fd669ebb7fe2f8ca4d796680a",
+    "crates/chematic-chem/src/standardize/cleanup.rs": "9b1db1b0742eacae43244b9486e70c8a2bd0c35aca5099a800c4bd49475785d0",
+    "crates/chematic-chem/src/standardize/groups.rs": "07e404824086f43db014318db6b842cd84c8239640607fff04334e7ad1f93b7b",
+    "crates/chematic-core/src/molecule/builder.rs": "fe305bad92c007d29abe3b23ba119dc89775ebe089111b64a40e555b0718a4b7",
+    "crates/chematic-chem/examples/cleanup_rdkit_dump.rs": "2d122b54ae4dfba2514e2c134df1abbc1fbc0a5ddabe22c3adb7e6bbf0db90db",
+    "crates/chematic-smiles/src/lib.rs": "94a9dac5a1c69c61b7f62f9bd35681ab3a132d8e8417c2bbefb5089ed587ef7e",
+    "crates/chematic-smiles/src/rdkit/mod.rs": "c246a1b27a6a151562635c806f9425e55edc007f840716a8a5f41b1b8513316a"
   },
   "corpus": "validation/cosmolkit_comparison/corpora/stress-v1.smi",
   "corpus_sha256": "879166ab5481cac805ecd2d77f37d628383ec124085b90e2ee1659d55ce76277",
-  "source_dump_sha256": "393809b96c786e92b8411be52d84288185500ee2b299aea0ac7f411ba519d4c7",
+  "source_dump_sha256": "7886af1ecf2488b518a6f5254afe22e234e8b715f52f179c3ec8b7ef64c9fe74",
   "rdkit_version": "2026.09.1",
   "source_rows": 4072,
   "compatible_rows": 4069,
   "normalize_compatible_rows": 4069,
-  "normalize_exact_rows": 4055,
+  "normalize_exact_rows": 4065,
   "normalize_oracle_errors": [],
   "normalize_classification_counts": {
-    "aromatic_n_oxide_kekulization": 7,
-    "functional_group_normalization": 4,
+    "functional_group_normalization": 1,
     "normalization_graph_assignment": 3
   },
   "normalize_support_status_counts": {
-    "not_implemented": 14
+    "not_implemented": 4
   },
   "normalize_mismatches": [
-    {
-      "index": 146,
-      "input": "c1cc[n+]([O-])cc1",
-      "rdkit_normalize": "[O-][n+]1ccccc1",
-      "chematic_normalize": null,
-      "source_error": "RDKit-compatible SMILES: sanitization failed: Can't kekulize mol.  Unkekulized atoms: 0 1 2 5 6",
-      "classification": "aromatic_n_oxide_kekulization",
-      "support_status": "not_implemented"
-    },
-    {
-      "index": 147,
-      "input": "[O-][n+]1ccccc1",
-      "rdkit_normalize": "[O-][n+]1ccccc1",
-      "chematic_normalize": null,
-      "source_error": "RDKit-compatible SMILES: sanitization failed: Can't kekulize mol.  Unkekulized atoms: 2 3 4 5 6",
-      "classification": "aromatic_n_oxide_kekulization",
-      "support_status": "not_implemented"
-    },
-    {
-      "index": 157,
-      "input": "[O-]c1cc[n+](C)cc1",
-      "rdkit_normalize": "Cn1ccc(=O)cc1",
-      "chematic_normalize": "C[n+]1ccc([O-])cc1",
-      "source_error": null,
-      "classification": "functional_group_normalization",
-      "support_status": "not_implemented"
-    },
-    {
-      "index": 178,
-      "input": "[O-]c1cccc[n+]1[O-]",
-      "rdkit_normalize": "O=c1ccccn1[O-]",
-      "chematic_normalize": null,
-      "source_error": "RDKit-compatible SMILES: sanitization failed: Can't kekulize mol.  Unkekulized atoms: 1 2 3 4 5",
-      "classification": "aromatic_n_oxide_kekulization",
-      "support_status": "not_implemented"
-    },
-    {
-      "index": 180,
-      "input": "C[N+]1=CC=C(C=C1)[O-]",
-      "rdkit_normalize": "Cn1ccc(=O)cc1",
-      "chematic_normalize": "C[n+]1ccc([O-])cc1",
-      "source_error": null,
-      "classification": "functional_group_normalization",
-      "support_status": "not_implemented"
-    },
-    {
-      "index": 929,
-      "input": "c1c([O-])cc[n+](c1)C",
-      "rdkit_normalize": "Cn1ccc(=O)cc1",
-      "chematic_normalize": "C[n+]1ccc([O-])cc1",
-      "source_error": null,
-      "classification": "functional_group_normalization",
-      "support_status": "not_implemented"
-    },
     {
       "index": 1147,
       "input": "c1(c([C@]2(OS(O[C@@H]2c2:C:cc(Cl)cc2)=O)Cn2ncnc2)ccc(c1)Cl)Cl",
@@ -95,42 +43,6 @@
       "chematic_normalize": "CC1(C)O[C@H]2[C@@H]3O[S+]([O-])O[C@@H]3CO[C@@]2(COS(N)(=O)=O)O1",
       "source_error": null,
       "classification": "normalization_graph_assignment",
-      "support_status": "not_implemented"
-    },
-    {
-      "index": 1654,
-      "input": "O=C(Cn1c(Cl)cnc(NCC(F)(F)c2cccc[n+]2[O-])c1=O)NCc1ccccc1O[C](F)(F)F",
-      "rdkit_normalize": "O=C(Cn1c(Cl)cnc(NCC(F)(F)c2cccc[n+]2[O-])c1=O)NCc1ccccc1OC(F)(F)F",
-      "chematic_normalize": null,
-      "source_error": "RDKit-compatible SMILES: sanitization failed: Can't kekulize mol.  Unkekulized atoms: 14 15 16 17 18",
-      "classification": "aromatic_n_oxide_kekulization",
-      "support_status": "not_implemented"
-    },
-    {
-      "index": 2312,
-      "input": "N(CC(F)(F)c1[n+]([O-])cccc1)c1ncc(Cl)n(c1=O)CC(=O)[NH:36]Cc1cccc(Cl)c1",
-      "rdkit_normalize": "O=C(Cn1c(Cl)cnc(NCC(F)(F)c2cccc[n+]2[O-])c1=O)[NH:36]Cc1cccc(Cl)c1",
-      "chematic_normalize": null,
-      "source_error": "RDKit-compatible SMILES: sanitization failed: Can't kekulize mol.  Unkekulized atoms: 5 8 9 10 11",
-      "classification": "aromatic_n_oxide_kekulization",
-      "support_status": "not_implemented"
-    },
-    {
-      "index": 2353,
-      "input": "c1c(n(c(c(n1)NCC(F)(F)c1[n+](cccc1)[O-])=O)CC(=O)NCc1ccccc1OC)Cl",
-      "rdkit_normalize": "COc1ccccc1CNC(=O)Cn1c(Cl)cnc(NCC(F)(F)c2cccc[n+]2[O-])c1=O",
-      "chematic_normalize": null,
-      "source_error": "RDKit-compatible SMILES: sanitization failed: Can't kekulize mol.  Unkekulized atoms: 11 13 14 15 16",
-      "classification": "aromatic_n_oxide_kekulization",
-      "support_status": "not_implemented"
-    },
-    {
-      "index": 2421,
-      "input": "c1[n+]([O-])c(C(F)(F)CNc2c(=O)n(CC(=O)[N](Cc3c(cccc3)OC(F)F)[Cu])c(cn2)Cl)ccc1",
-      "rdkit_normalize": "O=C(Cn1c(Cl)cnc(NCC(F)(F)c2cccc[n+]2[O-])c1=O)[N]([Cu])Cc1ccccc1OC(F)F",
-      "chematic_normalize": null,
-      "source_error": "RDKit-compatible SMILES: sanitization failed: Can't kekulize mol.  Unkekulized atoms: 0 3 33 34 35",
-      "classification": "aromatic_n_oxide_kekulization",
       "support_status": "not_implemented"
     },
     {
@@ -152,22 +64,21 @@
       "support_status": "not_implemented"
     }
   ],
-  "exact_rows": 3885,
+  "exact_rows": 3923,
   "classification_counts": {
     "acid_base_reionization": 33,
-    "aromatic_n_oxide_kekulization": 7,
     "canonical_representation": 1,
     "explicit_hydrogen_normalization": 3,
-    "functional_group_normalization": 4,
+    "functional_group_normalization": 1,
     "metal_bond_order_assignment": 2,
-    "metal_charge_assignment": 27,
+    "metal_charge_assignment": 24,
     "metal_disconnection_policy": 78,
-    "metal_stereo_preservation": 26,
+    "metal_stereo_preservation": 1,
     "sulfur_oxide_representation": 3
   },
   "support_status_counts": {
-    "not_implemented": 154,
-    "policy_difference": 26,
+    "not_implemented": 141,
+    "policy_difference": 1,
     "representation_only": 4
   },
   "reionize_compatible_rows": 4069,
@@ -8512,51 +8423,6 @@
       "support_status": "not_implemented"
     },
     {
-      "index": 146,
-      "input": "c1cc[n+]([O-])cc1",
-      "rdkit_cleanup": "[O-][n+]1ccccc1",
-      "chematic_cleanup": null,
-      "source_error": "RDKit-compatible SMILES: sanitization failed: Can't kekulize mol.  Unkekulized atoms: 0 1 2 5 6",
-      "classification": "aromatic_n_oxide_kekulization",
-      "support_status": "not_implemented"
-    },
-    {
-      "index": 147,
-      "input": "[O-][n+]1ccccc1",
-      "rdkit_cleanup": "[O-][n+]1ccccc1",
-      "chematic_cleanup": null,
-      "source_error": "RDKit-compatible SMILES: sanitization failed: Can't kekulize mol.  Unkekulized atoms: 2 3 4 5 6",
-      "classification": "aromatic_n_oxide_kekulization",
-      "support_status": "not_implemented"
-    },
-    {
-      "index": 157,
-      "input": "[O-]c1cc[n+](C)cc1",
-      "rdkit_cleanup": "Cn1ccc(=O)cc1",
-      "chematic_cleanup": "C[n+]1ccc([O-])cc1",
-      "source_error": null,
-      "classification": "functional_group_normalization",
-      "support_status": "not_implemented"
-    },
-    {
-      "index": 178,
-      "input": "[O-]c1cccc[n+]1[O-]",
-      "rdkit_cleanup": "O=c1ccccn1[O-]",
-      "chematic_cleanup": null,
-      "source_error": "RDKit-compatible SMILES: sanitization failed: Can't kekulize mol.  Unkekulized atoms: 1 2 3 4 5",
-      "classification": "aromatic_n_oxide_kekulization",
-      "support_status": "not_implemented"
-    },
-    {
-      "index": 180,
-      "input": "C[N+]1=CC=C(C=C1)[O-]",
-      "rdkit_cleanup": "Cn1ccc(=O)cc1",
-      "chematic_cleanup": "C[n+]1ccc([O-])cc1",
-      "source_error": null,
-      "classification": "functional_group_normalization",
-      "support_status": "not_implemented"
-    },
-    {
       "index": 403,
       "input": "C1=CC=CC1[Fe]C1C=CC=C1",
       "rdkit_cleanup": "C1=CCC=C1.[C-]1=C[CH-]C=C1.[Fe+2]",
@@ -8570,15 +8436,6 @@
       "input": "O=[Mn](=O)(=O)[O-].[K+]",
       "rdkit_cleanup": "[K+].[Mn+8].[O-2].[O-2].[O-2].[O-2]",
       "chematic_cleanup": "[K+].[Mn+7].[O-2].[O-2].[O-2].[O-2]",
-      "source_error": null,
-      "classification": "metal_charge_assignment",
-      "support_status": "not_implemented"
-    },
-    {
-      "index": 437,
-      "input": "c1cc2ccc3cccc4ccc(c1)c2c34.[Na]",
-      "rdkit_cleanup": "[Na+].c1cc2ccc3cccc4ccc(c1)c2c34",
-      "chematic_cleanup": "[Na].c1cc2ccc3cccc4ccc(c1)c2c34",
       "source_error": null,
       "classification": "metal_charge_assignment",
       "support_status": "not_implemented"
@@ -8602,87 +8459,6 @@
       "support_status": "not_implemented"
     },
     {
-      "index": 459,
-      "input": "F[Pt@SP1](Cl)(Br)I",
-      "rdkit_cleanup": "[Br-].[Cl-].[F-].[I-].[Pt@SP1+4]",
-      "chematic_cleanup": "[Br-].[Cl-].[F-].[I-].[Pt+4]",
-      "source_error": null,
-      "classification": "metal_stereo_preservation",
-      "support_status": "policy_difference"
-    },
-    {
-      "index": 460,
-      "input": "F[Pt@SP2](Cl)(Br)I",
-      "rdkit_cleanup": "[Br-].[Cl-].[F-].[I-].[Pt@SP2+4]",
-      "chematic_cleanup": "[Br-].[Cl-].[F-].[I-].[Pt+4]",
-      "source_error": null,
-      "classification": "metal_stereo_preservation",
-      "support_status": "policy_difference"
-    },
-    {
-      "index": 461,
-      "input": "F[Pt@SP3](Cl)(Br)I",
-      "rdkit_cleanup": "[Br-].[Cl-].[F-].[I-].[Pt@SP3+4]",
-      "chematic_cleanup": "[Br-].[Cl-].[F-].[I-].[Pt+4]",
-      "source_error": null,
-      "classification": "metal_stereo_preservation",
-      "support_status": "policy_difference"
-    },
-    {
-      "index": 462,
-      "input": "C[Pt@SP1](Cl)(N)N",
-      "rdkit_cleanup": "[CH3-].[Cl-].[NH2-].[NH2-].[Pt@SP1+4]",
-      "chematic_cleanup": "[CH3-].[Cl-].[NH2-].[NH2-].[Pt+4]",
-      "source_error": null,
-      "classification": "metal_stereo_preservation",
-      "support_status": "policy_difference"
-    },
-    {
-      "index": 463,
-      "input": "N[Pt@SP2](N)(Cl)Cl",
-      "rdkit_cleanup": "[Cl-].[Cl-].[NH2-].[NH2-].[Pt@SP2+4]",
-      "chematic_cleanup": "[Cl-].[Cl-].[NH2-].[NH2-].[Pt+4]",
-      "source_error": null,
-      "classification": "metal_stereo_preservation",
-      "support_status": "policy_difference"
-    },
-    {
-      "index": 464,
-      "input": "Cl[Pt@SP1](Cl)([NH3])[NH3]",
-      "rdkit_cleanup": "N.N.[Cl-].[Cl-].[Pt@SP1+2]",
-      "chematic_cleanup": "N.N.[Cl-].[Cl-].[Pt+2]",
-      "source_error": null,
-      "classification": "metal_stereo_preservation",
-      "support_status": "policy_difference"
-    },
-    {
-      "index": 472,
-      "input": "C[Co@OH1](N)(N)(N)(N)Cl",
-      "rdkit_cleanup": "[CH3-].[Cl-].[Co@OH1+6].[NH2-].[NH2-].[NH2-].[NH2-]",
-      "chematic_cleanup": "[CH3-].[Cl-].[Co+6].[NH2-].[NH2-].[NH2-].[NH2-]",
-      "source_error": null,
-      "classification": "metal_stereo_preservation",
-      "support_status": "policy_difference"
-    },
-    {
-      "index": 473,
-      "input": "C[Co@OH25](N)(O)(F)(Cl)Br",
-      "rdkit_cleanup": "[Br-].[CH3-].[Cl-].[Co@OH25+6].[F-].[NH2-].[OH-]",
-      "chematic_cleanup": "[Br-].[CH3-].[Cl-].[Co+6].[F-].[NH2-].[OH-]",
-      "source_error": null,
-      "classification": "metal_stereo_preservation",
-      "support_status": "policy_difference"
-    },
-    {
-      "index": 474,
-      "input": "N[Co@OH8](N)(N)(Cl)(Cl)Cl",
-      "rdkit_cleanup": "[Cl-].[Cl-].[Cl-].[Co@OH8+6].[NH2-].[NH2-].[NH2-]",
-      "chematic_cleanup": "[Cl-].[Cl-].[Cl-].[Co+6].[NH2-].[NH2-].[NH2-]",
-      "source_error": null,
-      "classification": "metal_stereo_preservation",
-      "support_status": "policy_difference"
-    },
-    {
       "index": 475,
       "input": "F[Pt@SP1](Cl)Br",
       "rdkit_cleanup": "[Br-].[Cl-].[F-].[Pt@SP2+3]",
@@ -8690,87 +8466,6 @@
       "source_error": null,
       "classification": "metal_stereo_preservation",
       "support_status": "policy_difference"
-    },
-    {
-      "index": 476,
-      "input": "[Pt@SP1](F)(Cl)(Br)I",
-      "rdkit_cleanup": "[Br-].[Cl-].[F-].[I-].[Pt@SP1+4]",
-      "chematic_cleanup": "[Br-].[Cl-].[F-].[I-].[Pt+4]",
-      "source_error": null,
-      "classification": "metal_stereo_preservation",
-      "support_status": "policy_difference"
-    },
-    {
-      "index": 479,
-      "input": "C[Fe@OH1](C)(C)(C)(C)C",
-      "rdkit_cleanup": "[CH3-].[CH3-].[CH3-].[CH3-].[CH3-].[CH3-].[Fe@OH1+6]",
-      "chematic_cleanup": "[CH3-].[CH3-].[CH3-].[CH3-].[CH3-].[CH3-].[Fe+6]",
-      "source_error": null,
-      "classification": "metal_stereo_preservation",
-      "support_status": "policy_difference"
-    },
-    {
-      "index": 480,
-      "input": "C[Fe@TB2](F)(Cl)(Br)I",
-      "rdkit_cleanup": "[Br-].[CH3-].[Cl-].[F-].[Fe@TB2+5].[I-]",
-      "chematic_cleanup": "[Br-].[CH3-].[Cl-].[F-].[Fe+5].[I-]",
-      "source_error": null,
-      "classification": "metal_stereo_preservation",
-      "support_status": "policy_difference"
-    },
-    {
-      "index": 481,
-      "input": "Cl[Pd@SP3](Cl)(N)N",
-      "rdkit_cleanup": "[Cl-].[Cl-].[NH2-].[NH2-].[Pd@SP3+4]",
-      "chematic_cleanup": "[Cl-].[Cl-].[NH2-].[NH2-].[Pd+4]",
-      "source_error": null,
-      "classification": "metal_stereo_preservation",
-      "support_status": "policy_difference"
-    },
-    {
-      "index": 482,
-      "input": "F[Pt@SP2](F)(Cl)Cl",
-      "rdkit_cleanup": "[Cl-].[Cl-].[F-].[F-].[Pt@SP2+4]",
-      "chematic_cleanup": "[Cl-].[Cl-].[F-].[F-].[Pt+4]",
-      "source_error": null,
-      "classification": "metal_stereo_preservation",
-      "support_status": "policy_difference"
-    },
-    {
-      "index": 483,
-      "input": "[NH3][Pt@SP1]([NH3])(Cl)Cl",
-      "rdkit_cleanup": "N.N.[Cl-].[Cl-].[Pt@SP1+2]",
-      "chematic_cleanup": "N.N.[Cl-].[Cl-].[Pt+2]",
-      "source_error": null,
-      "classification": "metal_stereo_preservation",
-      "support_status": "policy_difference"
-    },
-    {
-      "index": 484,
-      "input": "C[Ru@OH12](O)(N)(Cl)(Br)I",
-      "rdkit_cleanup": "[Br-].[CH3-].[Cl-].[I-].[NH2-].[OH-].[Ru@OH12+6]",
-      "chematic_cleanup": "[Br-].[CH3-].[Cl-].[I-].[NH2-].[OH-].[Ru+6]",
-      "source_error": null,
-      "classification": "metal_stereo_preservation",
-      "support_status": "policy_difference"
-    },
-    {
-      "index": 485,
-      "input": "F[Cr@OH30](Cl)(Br)(I)(N)O",
-      "rdkit_cleanup": "[Br-].[Cl-].[Cr@OH30+6].[F-].[I-].[NH2-].[OH-]",
-      "chematic_cleanup": "[Br-].[Cl-].[Cr+6].[F-].[I-].[NH2-].[OH-]",
-      "source_error": null,
-      "classification": "metal_stereo_preservation",
-      "support_status": "policy_difference"
-    },
-    {
-      "index": 737,
-      "input": "[Li]",
-      "rdkit_cleanup": "[Li+]",
-      "chematic_cleanup": "[Li]",
-      "source_error": null,
-      "classification": "metal_charge_assignment",
-      "support_status": "not_implemented"
     },
     {
       "index": 809,
@@ -8798,87 +8493,6 @@
       "source_error": null,
       "classification": "acid_base_reionization",
       "support_status": "not_implemented"
-    },
-    {
-      "index": 929,
-      "input": "c1c([O-])cc[n+](c1)C",
-      "rdkit_cleanup": "Cn1ccc(=O)cc1",
-      "chematic_cleanup": "C[n+]1ccc([O-])cc1",
-      "source_error": null,
-      "classification": "functional_group_normalization",
-      "support_status": "not_implemented"
-    },
-    {
-      "index": 981,
-      "input": "[Pt@SP2]([Br])([I])([Cl])[F]",
-      "rdkit_cleanup": "[Br-].[Cl-].[F-].[I-].[Pt@SP2+4]",
-      "chematic_cleanup": "[Br-].[Cl-].[F-].[I-].[Pt+4]",
-      "source_error": null,
-      "classification": "metal_stereo_preservation",
-      "support_status": "policy_difference"
-    },
-    {
-      "index": 982,
-      "input": "[Cl][Pt@SP1]([Cl])(<-[NH3])<-[NH3]",
-      "rdkit_cleanup": "N.N.[Cl-].[Cl-].[Pt@SP1+2]",
-      "chematic_cleanup": "N.N.[Cl-].[Cl-].[Pt+2]",
-      "source_error": null,
-      "classification": "metal_stereo_preservation",
-      "support_status": "policy_difference"
-    },
-    {
-      "index": 985,
-      "input": "[Co@OH27]([NH2])([NH2])([NH2])([NH2])([Cl])[CH3]",
-      "rdkit_cleanup": "[CH3-].[Cl-].[Co@OH27+6].[NH2-].[NH2-].[NH2-].[NH2-]",
-      "chematic_cleanup": "[CH3-].[Cl-].[Co+6].[NH2-].[NH2-].[NH2-].[NH2-]",
-      "source_error": null,
-      "classification": "metal_stereo_preservation",
-      "support_status": "policy_difference"
-    },
-    {
-      "index": 986,
-      "input": "[Br][Pt@SP3]([I])([Cl])[F]",
-      "rdkit_cleanup": "[Br-].[Cl-].[F-].[I-].[Pt@SP3+4]",
-      "chematic_cleanup": "[Br-].[Cl-].[F-].[I-].[Pt+4]",
-      "source_error": null,
-      "classification": "metal_stereo_preservation",
-      "support_status": "policy_difference"
-    },
-    {
-      "index": 987,
-      "input": "[CH3][Fe@OH12]([CH3])([CH3])([CH3])([CH3])[CH3]",
-      "rdkit_cleanup": "[CH3-].[CH3-].[CH3-].[CH3-].[CH3-].[CH3-].[Fe@OH12+6]",
-      "chematic_cleanup": "[CH3-].[CH3-].[CH3-].[CH3-].[CH3-].[CH3-].[Fe+6]",
-      "source_error": null,
-      "classification": "metal_stereo_preservation",
-      "support_status": "policy_difference"
-    },
-    {
-      "index": 988,
-      "input": "[F][Pt@SP3]([Cl])([Cl])[F]",
-      "rdkit_cleanup": "[Cl-].[Cl-].[F-].[F-].[Pt@SP3+4]",
-      "chematic_cleanup": "[Cl-].[Cl-].[F-].[F-].[Pt+4]",
-      "source_error": null,
-      "classification": "metal_stereo_preservation",
-      "support_status": "policy_difference"
-    },
-    {
-      "index": 989,
-      "input": "[Cl][Pt@SP2](<-[NH3])([Cl])<-[NH3]",
-      "rdkit_cleanup": "N.N.[Cl-].[Cl-].[Pt@SP2+2]",
-      "chematic_cleanup": "N.N.[Cl-].[Cl-].[Pt+2]",
-      "source_error": null,
-      "classification": "metal_stereo_preservation",
-      "support_status": "policy_difference"
-    },
-    {
-      "index": 990,
-      "input": "[CH3][Ru@OH10]([I])([Br])([NH2])([OH])[Cl]",
-      "rdkit_cleanup": "[Br-].[CH3-].[Cl-].[I-].[NH2-].[OH-].[Ru@OH10+6]",
-      "chematic_cleanup": "[Br-].[CH3-].[Cl-].[I-].[NH2-].[OH-].[Ru+6]",
-      "source_error": null,
-      "classification": "metal_stereo_preservation",
-      "support_status": "policy_difference"
     },
     {
       "index": 1086,
@@ -9142,15 +8756,6 @@
       "support_status": "not_implemented"
     },
     {
-      "index": 1654,
-      "input": "O=C(Cn1c(Cl)cnc(NCC(F)(F)c2cccc[n+]2[O-])c1=O)NCc1ccccc1O[C](F)(F)F",
-      "rdkit_cleanup": "O=C(Cn1c(Cl)cnc(NCC(F)(F)c2cccc[n+]2[O-])c1=O)NCc1ccccc1OC(F)(F)F",
-      "chematic_cleanup": null,
-      "source_error": "RDKit-compatible SMILES: sanitization failed: Can't kekulize mol.  Unkekulized atoms: 14 15 16 17 18",
-      "classification": "aromatic_n_oxide_kekulization",
-      "support_status": "not_implemented"
-    },
-    {
       "index": 1664,
       "input": "[KH].c1ccc(COc2ccc(OCCOC3C[CH2][Zn][CH2]O3)cc2)cc1",
       "rdkit_cleanup": "[CH2-]OC(CC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]",
@@ -9394,24 +8999,6 @@
       "support_status": "not_implemented"
     },
     {
-      "index": 2312,
-      "input": "N(CC(F)(F)c1[n+]([O-])cccc1)c1ncc(Cl)n(c1=O)CC(=O)[NH:36]Cc1cccc(Cl)c1",
-      "rdkit_cleanup": "O=C(Cn1c(Cl)cnc(NCC(F)(F)c2cccc[n+]2[O-])c1=O)[NH:36]Cc1cccc(Cl)c1",
-      "chematic_cleanup": null,
-      "source_error": "RDKit-compatible SMILES: sanitization failed: Can't kekulize mol.  Unkekulized atoms: 5 8 9 10 11",
-      "classification": "aromatic_n_oxide_kekulization",
-      "support_status": "not_implemented"
-    },
-    {
-      "index": 2353,
-      "input": "c1c(n(c(c(n1)NCC(F)(F)c1[n+](cccc1)[O-])=O)CC(=O)NCc1ccccc1OC)Cl",
-      "rdkit_cleanup": "COc1ccccc1CNC(=O)Cn1c(Cl)cnc(NCC(F)(F)c2cccc[n+]2[O-])c1=O",
-      "chematic_cleanup": null,
-      "source_error": "RDKit-compatible SMILES: sanitization failed: Can't kekulize mol.  Unkekulized atoms: 11 13 14 15 16",
-      "classification": "aromatic_n_oxide_kekulization",
-      "support_status": "not_implemented"
-    },
-    {
       "index": 2379,
       "input": "C1[C@H](C(=[O:10])O)N[CH-]C[C@@H]1/C=C/CP(O)(O)=O",
       "rdkit_cleanup": "O=P([O-])(O)C/C=C/[C@H]1CCN[C@@H](C(O)=[O:10])C1",
@@ -9427,15 +9014,6 @@
       "chematic_cleanup": "CC1=C(c2ccc(-c3ccc[cH:36]c3)cc2)N=[C+3]2C=CC([C-](F)F)=CC2=C1C(=O)O.[Zn+]",
       "source_error": null,
       "classification": "metal_bond_order_assignment",
-      "support_status": "not_implemented"
-    },
-    {
-      "index": 2421,
-      "input": "c1[n+]([O-])c(C(F)(F)CNc2c(=O)n(CC(=O)[N](Cc3c(cccc3)OC(F)F)[Cu])c(cn2)Cl)ccc1",
-      "rdkit_cleanup": "O=C(Cn1c(Cl)cnc(NCC(F)(F)c2cccc[n+]2[O-])c1=O)[N-]Cc1ccccc1OC(F)F.[Cu+]",
-      "chematic_cleanup": null,
-      "source_error": "RDKit-compatible SMILES: sanitization failed: Can't kekulize mol.  Unkekulized atoms: 0 3 33 34 35",
-      "classification": "aromatic_n_oxide_kekulization",
       "support_status": "not_implemented"
     },
     {
@@ -9614,15 +9192,6 @@
       "input": "COC1=CC2=[C](C=C1)[Zn]([CH3])[C](C(=O)NC1=NNN=N1)=C2OC(C)C",
       "rdkit_cleanup": "COc1cc[c]([Zn+])c(C(=CC(=O)Nc2nn[nH]n2)OC(C)C)c1.[CH3-]",
       "chematic_cleanup": "COc1cc[c]([Zn+2])c(C(=[C-]C(=O)Nc2nn[nH]n2)OC(C)C)c1.[CH3-]",
-      "source_error": null,
-      "classification": "metal_charge_assignment",
-      "support_status": "not_implemented"
-    },
-    {
-      "index": 2796,
-      "input": "CCCCc1cccc([3CH](C)C)c1O.[K]",
-      "rdkit_cleanup": "CCCCc1cccc([3CH](C)C)c1[O-].[K+]",
-      "chematic_cleanup": "CCCCc1cccc([3CH](C)C)c1O.[K]",
       "source_error": null,
       "classification": "metal_charge_assignment",
       "support_status": "not_implemented"
@@ -10135,6 +9704,11 @@
   "baseline_comparison": {
     "baseline_exact": 3836,
     "fixed_indices": [
+      146,
+      147,
+      157,
+      178,
+      180,
       393,
       394,
       395,
@@ -10144,15 +9718,44 @@
       421,
       429,
       432,
+      437,
       450,
+      459,
+      460,
+      461,
+      462,
+      463,
+      464,
+      472,
+      473,
+      474,
+      476,
+      479,
+      480,
+      481,
+      482,
+      483,
+      484,
+      485,
+      737,
+      929,
       973,
       976,
+      981,
+      982,
+      985,
+      986,
+      987,
+      988,
+      989,
+      990,
       1259,
       1271,
       1396,
       1417,
       1455,
       1495,
+      1654,
       1683,
       1897,
       2009,
@@ -10162,14 +9765,18 @@
       2125,
       2169,
       2252,
+      2312,
+      2353,
       2362,
       2403,
+      2421,
       2456,
       2496,
       2521,
       2593,
       2665,
       2767,
+      2796,
       2845,
       2876,
       3022,

@@ -6,7 +6,7 @@ not claim universal RDKit compatibility or toolkit-wide speed superiority.
 ## Identity and protocol
 
 - current standardization source commit:
-  `3ffa03b1b9d36c5ff082d966bbdafbc8cc21ac25`
+  `ca8651d52549fb260222ab5c1dc42c1e04617ca7`
 - frozen performance/holdout candidate:
   `f5d6cd6fae6a369585a72af0c2659c44b3e18a35`
 - comparator: RDKit `2026.09.1`
@@ -28,16 +28,16 @@ On all 4,072 stress rows, RDKit Cleanup succeeds on 4,069 rows:
 
 | Operation | Exact | Residual boundary |
 |---|---:|---|
-| Normalize | 4,055/4,069 | 7 aromatic N-oxide kekulization, 4 functional-group normalization, 3 graph-assignment gaps |
-| Cleanup | 3,885/4,069 | 154 not implemented, 26 declared metal-stereo policy differences, 4 representation-only differences |
+| Normalize | 4,065/4,069 | 1 functional-group normalization and 3 graph-assignment gaps |
+| Cleanup | 3,923/4,069 | 141 not implemented, 1 declared metal-stereo policy difference, 4 representation-only differences |
 | Reionize | 3,150/4,069 | 883 intentional independent-ionization policy differences; 36 missing hydrogen, resonance or charge assignments |
 
-Cleanup's 154 unimplemented rows comprise 78 metal-disconnection, 33 acid/base
-transfer, 27 metal-charge, 7 aromatic N-oxide kekulization, 4 functional-group
-normalization, 3 explicit-H normalization and 2 metal-bond-order rows. One
-canonical and three sulfur-oxide rows are representation-only. Compared with
-the pre-integration candidate, 49 rows are fixed and none regressed. This
-classification is a support contract, not an assertion that every RDKit
+Cleanup's 141 unimplemented rows comprise 78 metal-disconnection, 33 acid/base
+transfer, 24 metal-charge, 3 explicit-H normalization, 2 metal-bond-order and
+1 functional-group normalization row. One metal-stereo row is a declared policy
+difference; one canonical and three sulfur-oxide rows are representation-only.
+Compared with the pre-integration candidate, 87 rows are fixed and none
+regressed. This classification is a support contract, not an assertion that every RDKit
 output is the only chemically valid answer.
 
 ## CTfile readback
