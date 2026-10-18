@@ -1,0 +1,58 @@
+[
+  {
+    "case": "extreme_scale",
+    "scale": 1e+200,
+    "chematic": 1e+200,
+    "rdkit": "inf",
+    "independent": 1e+200
+  },
+  {
+    "case": "extreme_scale",
+    "scale": 1e-200,
+    "chematic": 1e-200,
+    "rdkit": "0.0",
+    "independent": 1e-200
+  },
+  {
+    "case": "empty_ranking",
+    "metric": "GetTanimotoSimMat",
+    "rdkit": "RuntimeError",
+    "chematic": []
+  },
+  {
+    "case": "mixed_source_types",
+    "metric": "GetTanimotoSimMat",
+    "rdkit": "ValueError",
+    "chematic": [
+      0.5
+    ]
+  },
+  {
+    "case": "empty_ranking",
+    "metric": "GetTanimotoDistMat",
+    "rdkit": "RuntimeError",
+    "chematic": []
+  },
+  {
+    "case": "mixed_source_types",
+    "metric": "GetTanimotoDistMat",
+    "rdkit": "ValueError",
+    "chematic": [
+      0.5
+    ]
+  },
+  {
+    "case": "high_signed_sparse_view",
+    "view": [
+      -2
+    ],
+    "chematic": "OverflowError"
+  },
+  {
+    "case": "unequal_widths",
+    "rdkit": [
+      0.0
+    ],
+    "chematic": "ValueError"
+  }
+]

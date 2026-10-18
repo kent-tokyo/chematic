@@ -108,8 +108,6 @@ def test_constructor_bounds(width, classes, exc):
 @pytest.mark.parametrize(
     "metric,exc",
     [
-        (I.InfoType.BIASENTROPY, ValueError),
-        (I.InfoType.BIASCHISQUARE, ValueError),
         (99, ValueError),
         (True, TypeError),
     ],
@@ -188,13 +186,10 @@ def test_invalid_top_count(num, exc):
         populated().GetTopN(num)
 
 
-def test_empty_ranker_bias_and_masks_are_explicit_errors():
+def test_empty_ranker_is_explicit_error():
     ranker = I.InfoBitRanker(4, 2)
     with pytest.raises(ValueError, match="one record"):
         ranker.GetTopN(1)
-    for method in (ranker.SetBiasList, ranker.SetMaskBits):
-        with pytest.raises(NotImplementedError):
-            method([1])
 
 
 def test_numeric_index_protocol_and_dimension_boundaries():

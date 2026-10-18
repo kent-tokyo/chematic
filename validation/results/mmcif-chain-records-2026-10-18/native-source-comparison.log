@@ -1,0 +1,10 @@
+Native fixture source commit: ca7e14e892cab8b495183bcda4449f49471ba1b1
+Candidate base: f99c7b8ab33098a2e1fd9fd568aee370bf79ab38
+Unchanged parser/binding paths:
+crates/chematic-mol/src/cif.rs
+crates/chematic-mol/src/cif
+crates/chematic-mol/src/mmcif.rs
+crates/chematic-mol/src/mmcif
+crates/chematic-py/src/formats/mmcif_residues.rs
+Unchanged materials helpers: mmcif_atom_to_pydict, unit_cell_to_pydict
+No current-main native rebuild or whole-extension equivalence claim.

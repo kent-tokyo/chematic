@@ -1,6 +1,7 @@
 # These fixed-column PDB fixtures intentionally retain blank trailing fields.
 validation/openbabel_issues/pdb-selection/*.pdb text eol=lf whitespace=-blank-at-eol
 validation/results/pdb-hydrogen-names-2026-10-18/*.pdb text eol=lf whitespace=-blank-at-eol
+validation/results/pdb-coordinate-merge-2026-10-18/*.pdb text eol=lf whitespace=-blank-at-eol
 validation/rdkit_issues/pdb-conect/*.pdb text eol=lf whitespace=-blank-at-eol
 
 # Archived patches retain Git context-line spaces for reproducibility.
@@ -15,3 +16,7 @@ py.typed text eol=lf
 
 # This source-preservation fixture deliberately retains CRLF bytes.
 validation/openbabel_issues/mol2-kekule/rich-source.mol2 -text whitespace=cr-at-eol
+
+# Fixed-column PDB evidence retains significant trailing blank fields.
+validation/results/pdb-atom-records-2026-10-18/*.pdb text eol=lf whitespace=-blank-at-eol
+validation/results/pdb-atom-records-2026-10-18/openbabel.stdout text eol=lf whitespace=-blank-at-eol

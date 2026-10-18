@@ -25,6 +25,55 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - Added one source-built RDKit Normalize/Cleanup/Reionize classifier and a
   separate CTfile readback classifier, retaining every residual, refusal and
   oracle failure with the source revision that produced it.
+- Python `read_mmcif_chains` returns immutable model/label-chain atom records
+  with full residue/atom aliases, source indices and original text. Explicit
+  input/work limits and native residue checks protect ambiguous reads. See
+  [mmCIF chain records](docs/mmcif-chain-records.md) for the first-loop scope.
+- Python `read_pdb_atom_records` exposes immutable single-model ATOM/HETATM
+  attributes, including altloc, occupancy and B factor, with source indices
+  and original text. Blank optional numbers remain distinct from explicit
+  zero. See [PDB atom attributes](docs/pdb-atom-records.md) for limits and scope.
+- Python `merge_pdb_coordinate_blocks` assembles validated PDB coordinate blocks
+  while preserving ATOM/HETATM identity and numeric fields. It explicitly maps
+  chains, remaps serial/ANISOU/CONECT references and retains source/loss sidecars.
+  See [PDB coordinate merging](docs/pdb-coordinate-merge.md).
+- Python `read_cube_datasets` reads bounded multi-field CUBE inputs, retaining
+  source text and dataset IDs. Explicit selection exports one ordinary scalar
+  CUBE with an omission sidecar and native geometry validation. See
+  [CUBE dataset selection](docs/cube-dataset-selection.md).
+- Native MOPAC Cartesian readers/writers accept bounded standalone `+`
+  keyword continuations, preserving physical keyword text and the following
+  title/comment lines. Signed values and quoted markers do not continue lines.
+  See [continuation semantics](docs/mopac-keyword-continuation.md).
+- Python `rdkit_compat.GetAdjacencyMatrix` and `GetDistanceMatrix` expose the
+  existing bounded native graph profiles as independent NumPy arrays, with
+  strict options and refusal of atom-index changes during preparation. See
+  [NumPy graph matrices](docs/compat-graph-matrices.md) for supported weights
+  and the uncached, 1024-input-atom scope.
+- Python `rdkit_compat.rdMetricMatrixCalc` provides typed Euclidean and binary
+  Tanimoto condensed matrices as owned float64 NumPy arrays. It reuses checked
+  native calculators with staged binary inputs and RDKit's empty-pair policy.
+  See [metric matrix facade](docs/metric-matrix-facade.md).
+- Python `rdkit_compat.Scoring.CalcEnrichment` adapts bounded ranked records,
+  generators and NumPy arrays to the existing native enrichment calculator,
+  with explicit binary labels, checked column selection and corrected endpoint
+  behavior. See [ranked-record enrichment](docs/scoring-enrichment-facade.md).
+- Python `rdInfoTheory.InfoBitRanker` supports class-biased entropy and Pearson
+  ranking with typed, bounded, transactional `SetBiasList` inputs. Preferences
+  can be replaced without resetting votes. See
+  [class-biased ranking](docs/biased-bit-ranking.md) for semantics and scope.
+- Python `rdkit_compat.rdInfoTheory.BitCorrMatGenerator` counts selected binary
+  bit-pair co-occurrences with typed explicit/sparse inputs, staged state updates,
+  bounded work and independent float64 results. See
+  [binary bit-pair co-occurrence](docs/bit-cooccurrence.md).
+- Python `InfoBitRanker.SetMaskBits` accepts typed integer iterables, validates
+  masks before replacing state and limits both future on-votes and ranked
+  candidates. Existing counts remain intact; skipped votes are not restored.
+  See [feature mask semantics](docs/info-ranker-masks.md).
+- Python `rdkit_pick_tautomer_scored` selects supplied candidates with typed
+  integer scoring callbacks. Input snapshots and canonical keys are prepared
+  before callbacks, scoring views are isolated, and graph/state/count limits
+  refuse oversized input. See [scored selection](docs/scored-tautomer-selection.md).
 
 ### Changed
 
@@ -34,6 +83,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - The Python speed-frontier protocol now measures QED and accepts explicit
   comparator module paths while continuing to separate parse-inclusive,
   first-use, repeated-use and peak-process-RSS evidence.
+
+### Fixed
+
+- Native MOL/SDF V2000 and V3000 writers bound titles to 80 UTF-8 bytes,
+  keep complete characters and replace controls/line separators with spaces.
+  Original metadata stays unchanged; serialized titles can lose content.
+  See [title policy](docs/mol-title-width.md) for preservation guidance.
 
 ## [1.1.7] - 2026-10-18
 

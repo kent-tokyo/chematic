@@ -190,3 +190,74 @@ fn read_v3000(lines: &[&str]) -> Option<AvalonMolecule> {
     }
     Some(AvalonMolecule { atoms, bonds })
 }
+
+#[cfg(test)]
+mod boundary_contract_tests {
+    use super::*;
+
+    #[test]
+    fn fixed_width_integer_and_charge_helpers_follow_c_scanning_rules() {
+        assert_eq!(scan_int("  -12tail"), Some(-12));
+        assert_eq!(scan_int(" +7 "), Some(7));
+        assert_eq!(scan_int(" + "), None);
+        assert_eq!(field("abc", 9, 2), "");
+        assert_eq!(field("abcdef", 2, 99), "cdef");
+        assert_eq!(split_charge_radical(0), (0, 0));
+        assert_eq!(split_charge_radical(4), (0, 2));
+        assert_eq!(split_charge_radical(1), (3, 0));
+    }
+
+    #[test]
+    fn v2000_properties_atom_text_and_group_lines_are_bounded() {
+        assert!(read_molblock("too\nshort\n").is_none());
+        let block = concat!(
+            "name\nprogram\ncomment\n",
+            "  2  1  0  0  0  0            999 V2000\n",
+            "    0.0000    0.0000    0.0000 R   0  0  0  0  0  0\n",
+            "    1.0000    0.0000    0.0000 C   0  0  0  0  0  0\n",
+            "  1  2  1\n",
+            "M  CHG  1   2  -1\n",
+            "M  RAD  1   2   2\n",
+            "A    1\n",
+            "R12\n",
+            "G    2\n",
+            "ignored group text\n",
+            "M  END\n",
+        );
+        let molecule = read_molblock(block).unwrap();
+        assert_eq!(molecule.atoms.len(), 2);
+        assert_eq!(molecule.bonds.len(), 1);
+        assert_eq!(molecule.atoms[0].atext, "R12");
+        assert_eq!(molecule.atoms[1].charge, -1);
+        assert_eq!(molecule.atoms[1].radical, 2);
+    }
+
+    #[test]
+    fn v3000_requires_complete_records_and_preserves_charge_and_radical() {
+        let valid = "name\nprogram\ncomment\n  0  0  0  0  0  0            999 V3000\n\
+M  V30 BEGIN ATOM\n\
+M  V30 1 N 0 0 0 0 CHG=1 RAD=2\n\
+M  V30 2 C 1 0 0 0\n\
+M  V30 END ATOM\n\
+M  V30 BEGIN BOND\n\
+M  V30 1 1 1 2\n\
+M  V30 END BOND\n\
+M  END\n";
+        let molecule = read_molblock(valid).unwrap();
+        assert_eq!(
+            (molecule.atoms[0].charge, molecule.atoms[0].radical),
+            (1, 2)
+        );
+        assert_eq!(molecule.bonds[0].atoms, [1, 2]);
+
+        for body in [
+            "M  V30 BEGIN ATOM\nM  V30 1 C 0 0\nM  END\n",
+            "M  V30 BEGIN BOND\nM  V30 1 1 1\nM  END\n",
+            "M  V30 BEGIN BOND\nM  V30 1 x 1 2\nM  END\n",
+        ] {
+            let block =
+                format!("name\nprogram\ncomment\n  0  0  0  0  0  0            999 V3000\n{body}");
+            assert!(read_molblock(&block).is_none(), "{body}");
+        }
+    }
+}

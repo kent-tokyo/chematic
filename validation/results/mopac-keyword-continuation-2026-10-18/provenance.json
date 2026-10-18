@@ -1,0 +1,74 @@
+{
+  "created_at_utc": "2026-10-18T08:40:01.700947+00:00",
+  "base_commit": "f99c7b8ab33098a2e1fd9fd568aee370bf79ab38",
+  "issue": {
+    "number": 1231,
+    "state": "OPEN",
+    "url": "https://github.com/openbabel/openbabel/issues/1231",
+    "title": "MOPAC Cartesian input format does not accept multiple keyword lines",
+    "checked_via": "live GitHub issue API and open issue list on 2026-10-18"
+  },
+  "specifications": [
+    "https://openmopac.net/Manual/plus.html",
+    "https://openmopac.net/Manual/plusplus.html",
+    "https://openmopac.net/Manual/ampersand.html"
+  ],
+  "versions": {
+    "rustc": "rustc 1.97.0 (2d8144b78 2026-07-07)",
+    "cargo": "cargo 1.97.0 (c980f4866 2026-06-30)",
+    "python": "3.13.6"
+  },
+  "native_artifact": {
+    "path": "/private/tmp/chematic-mopac-continuation-target/debug/deps/libchematic_mol-9d0b922b7a4ab3ae.rlib",
+    "sha256": "733ab611ab2e6c81070260c6ee8a577f746cca4a6cedc2b9544868c318ea59c5",
+    "kind": "fresh native Rust library, compiled from the current worktree"
+  },
+  "source_sha256": {
+    "crates/chematic-mol/src/mopac.rs": "d91675a023465a6dccebdcabc00e6ffe895f2ed07771bceb196d33811bb70b80",
+    "crates/chematic-mol/src/mopac/reader.rs": "d94438d2b065df0da5a0a79448f5f248c992fb0b2cfcfc77b9871ff55cacba90",
+    "crates/chematic-mol/src/mopac/header.rs": "58c476ff47553b137a73877040f3d98eba7308fe978454f33cc21ffc6dd01191",
+    "crates/chematic-mol/tests/mopac_keyword_continuation.rs": "0939ad8b890f028d0270a2dc2ac922e1802057495a1ea78b3d92ed473a8056e9",
+    "crates/chematic-mol/tests/mopac_cartesian_contract.rs": "ea3f3432e35c97417de8e186ca35831bbd5c29e36149a7a2badf72f13319838a",
+    "crates/chematic-py/tests/test_mopac_cartesian.py": "6224cb77000de7cd11a3e997ea77e65df5ae8933e01191207fa463e88d073343",
+    "crates/chematic-py/python/chematic/__init__.pyi": "2bc36905a7fe8cd35c5979bdd8550b01f5b2ee75365aa1214854db7340d55d79",
+    "docs/mopac-keyword-continuation.md": "2843b90a3d528499437f81b39d8f3af25e3b729416c3a8bc01631c7c31e10cfa",
+    "docs/openbabel-mopac-cartesian.md": "4c78822a3bf140ed61057f86ed9dd8205c6c5c6ebf72a820065489959175861a",
+    "docs/openbabel-open-issues-2026-10-14.md": "5b7edb4961a45bdf583570f0c1c7afcde454e352d891885a04dfd7bf4c40ea3c",
+    "CHANGELOG.md": "fe59eee772264873de7230a82cf7cc53700d2dea6ddd5121f256a42eb1d9381e",
+    "mkdocs.yml": "02beda5c42cc0a012af0571e68771324431931a2a0c204e38e9d3a2d8d416078"
+  },
+  "emitted_cases_log_sha256": "a3b64931295ba53f23c9b997f462877715b3136c8b5e2a5f60a1b5a91e33af61",
+  "rust_tests": {
+    "passed": 840,
+    "library": 815,
+    "archive_contract": 7,
+    "cartesian_contract": 7,
+    "new_keyword_continuation": 11
+  },
+  "build_environment": {
+    "CARGO_TARGET_DIR": "/private/tmp/chematic-mopac-continuation-target",
+    "CARGO_BUILD_JOBS": "1",
+    "CARGO_PROFILE_DEV_DEBUG": "0",
+    "CARGO_PROFILE_TEST_DEBUG": "0",
+    "CARGO_INCREMENTAL": "0"
+  },
+  "external_comparison": {
+    "cases": 36,
+    "normalized_geometry_reads": 72,
+    "coordinate_values_checked": 432,
+    "direct_ordinary_reads": 6,
+    "direct_continuation_reads": 0,
+    "direct_continuation_failures": 66,
+    "direct_continuation_failures_with_success_exit": 66,
+    "mismatches": 0,
+    "openbabel_version": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27"
+  },
+  "binding_scope": "Python binding implementation unchanged; delegates to native parse/write and passes keywords unchanged. Two new parametrized Python tests and adjusted legacy rejection fixture are committed for a rebuilt extension. No local Python binary rebuild or Python test-pass claim.",
+  "boundaries": [
+    "Standalone + only; ++ and & retain different unsupported semantics outside double quotes.",
+    "64 physical keyword lines and 65536 total LF-block bytes.",
+    "Quoted markers and signed keyword values are not continuation tokens.",
+    "Geometry/source-metadata handling only; no MOPAC computation, bonds, keyword scientific interpretation, full format, or GUI claim.",
+    "External successful geometry comparisons use explicitly normalized single-line controls; direct continuation failures are separate."
+  ]
+}

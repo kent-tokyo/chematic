@@ -1,0 +1,146 @@
+   Compiling chematic-core v1.1.7 (/private/tmp/chematic-mopac-keyword-continuation-20261018/crates/chematic-core)
+   Compiling proc-macro2 v1.0.107
+   Compiling smallvec v1.16.2
+   Compiling rustc-hash v2.1.3
+   Compiling chematic-perception v1.1.7 (/private/tmp/chematic-mopac-keyword-continuation-20261018/crates/chematic-perception)
+   Compiling quote v1.0.47
+   Compiling crossbeam-utils v0.8.23
+   Compiling unicode-ident v1.0.24
+   Compiling serde_core v1.0.229
+   Compiling crossbeam-epoch v0.9.21
+   Compiling zmij v1.0.23
+   Compiling crossbeam-deque v0.8.8
+   Compiling syn v3.0.5
+   Compiling serde v1.0.229
+   Compiling simd-adler32 v0.3.10
+   Compiling serde_json v1.0.151
+   Compiling rayon-core v1.13.0
+   Compiling serde_derive v1.0.229
+   Compiling chematic-smarts v1.1.7 (/private/tmp/chematic-mopac-keyword-continuation-20261018/crates/chematic-smarts)
+   Compiling memchr v2.8.3
+   Compiling crc32fast v1.5.1
+   Compiling adler2 v2.0.1
+   Compiling itoa v1.0.18
+   Compiling chematic-smiles v1.1.7 (/private/tmp/chematic-mopac-keyword-continuation-20261018/crates/chematic-smiles)
+   Compiling cfg-if v1.0.4
+   Compiling either v1.18.0
+   Compiling rayon v1.12.0
+   Compiling chematic-rxn v1.1.7 (/private/tmp/chematic-mopac-keyword-continuation-20261018/crates/chematic-rxn)
+   Compiling miniz_oxide v0.9.1
+   Compiling libm v0.2.16
+   Compiling flate2 v1.1.10
+   Compiling miniz_oxide v0.8.9
+   Compiling fdeflate v0.3.7
+   Compiling chematic-cip v1.1.7 (/private/tmp/chematic-mopac-keyword-continuation-20261018/crates/chematic-cip)
+   Compiling arrayref v0.3.9
+   Compiling bytemuck v1.25.2
+   Compiling bitflags v2.13.1
+   Compiling strict-num v0.1.1
+   Compiling tiny-skia-path v0.12.0
+   Compiling png v0.18.1
+   Compiling chematic-fp v1.1.7 (/private/tmp/chematic-mopac-keyword-continuation-20261018/crates/chematic-fp)
+   Compiling chematic-iupac v1.1.7 (/private/tmp/chematic-mopac-keyword-continuation-20261018/crates/chematic-iupac)
+   Compiling arrayvec v0.7.8
+   Compiling log v0.4.34
+   Compiling tiny-skia v0.12.0
+   Compiling chematic-chem v1.1.7 (/private/tmp/chematic-mopac-keyword-continuation-20261018/crates/chematic-chem)
+   Compiling chematic-ff v1.1.7 (/private/tmp/chematic-mopac-keyword-continuation-20261018/crates/chematic-ff)
+   Compiling chematic-3d v1.1.7 (/private/tmp/chematic-mopac-keyword-continuation-20261018/crates/chematic-3d)
+   Compiling chematic-depict v1.1.7 (/private/tmp/chematic-mopac-keyword-continuation-20261018/crates/chematic-depict)
+   Compiling chematic-mol v1.1.7 (/private/tmp/chematic-mopac-keyword-continuation-20261018/crates/chematic-mol)
+    Finished `test` profile [unoptimized] target(s) in 33.94s
+     Running tests/mopac_keyword_continuation.rs (/private/tmp/chematic-mopac-continuation-target/debug/deps/mopac_keyword_continuation-0bb9fd3dfeabe23a)
+
+running 11 tests
+test unsupported_variants_are_not_flattened ... FAILED
+test keyword_line_count_is_bounded ... FAILED
+test diagnostics_use_physical_source_line_numbers ... FAILED
+test two_keyword_lines_keep_description_and_geometry ... FAILED
+test blank_keyword_line_and_blank_descriptions_still_work ... FAILED
+test crlf_source_and_indentation_are_retained_appropriately ... FAILED
+test plus_may_be_in_middle_of_each_nonfinal_line ... FAILED
+test charged_keyword_and_quoted_plus_are_not_continuations ... FAILED
+test emit_reference_cases ... FAILED
+test writer_rejects_unannounced_extra_keyword_lines ... FAILED
+test keyword_bytes_and_physical_line_limits_are_bounded ... FAILED
+
+failures:
+
+---- unsupported_variants_are_not_flattened stdout ----
+
+thread 'unsupported_variants_are_not_flattened' (3332843) panicked at crates/chematic-mol/tests/mopac_keyword_continuation.rs:89:9:
+PM7 TITLE="unfinished
+
+---- keyword_line_count_is_bounded stdout ----
+
+thread 'keyword_line_count_is_bounded' (3332840) panicked at crates/chematic-mol/tests/mopac_keyword_continuation.rs:109:5:
+assertion failed: parse_mopac_cartesian(&deck(&keywords)).is_ok()
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- diagnostics_use_physical_source_line_numbers stdout ----
+
+thread 'diagnostics_use_physical_source_line_numbers' (3332837) panicked at crates/chematic-mol/tests/mopac_keyword_continuation.rs:99:5:
+assertion `left == right` failed
+  left: 4
+ right: 6
+
+---- two_keyword_lines_keep_description_and_geometry stdout ----
+
+thread 'two_keyword_lines_keep_description_and_geometry' (3332842) panicked at crates/chematic-mol/tests/mopac_keyword_continuation.rs:16:42:
+called `Result::unwrap()` on an `Err` value: MopacError { line: 4, detail: "expected x y z or x flag y flag z flag, without connectivity/extra fields" }
+
+---- blank_keyword_line_and_blank_descriptions_still_work stdout ----
+
+thread 'blank_keyword_line_and_blank_descriptions_still_work' (3332834) panicked at crates/chematic-mol/tests/mopac_keyword_continuation.rs:64:61:
+called `Result::unwrap()` on an `Err` value: MopacError { line: 5, detail: "additional sections after geometry are unsupported" }
+
+---- crlf_source_and_indentation_are_retained_appropriately stdout ----
+
+thread 'crlf_source_and_indentation_are_retained_appropriately' (3332836) panicked at crates/chematic-mol/tests/mopac_keyword_continuation.rs:54:43:
+called `Result::unwrap()` on an `Err` value: MopacError { line: 4, detail: "expected x y z or x flag y flag z flag, without connectivity/extra fields" }
+
+---- plus_may_be_in_middle_of_each_nonfinal_line stdout ----
+
+thread 'plus_may_be_in_middle_of_each_nonfinal_line' (3332841) panicked at crates/chematic-mol/tests/mopac_keyword_continuation.rs:32:85:
+called `Result::unwrap()` on an `Err` value: MopacError { line: 4, detail: "expected x y z or x flag y flag z flag, without connectivity/extra fields" }
+
+---- charged_keyword_and_quoted_plus_are_not_continuations stdout ----
+
+thread 'charged_keyword_and_quoted_plus_are_not_continuations' (3332835) panicked at crates/chematic-mol/tests/mopac_keyword_continuation.rs:45:56:
+called `Result::unwrap()` on an `Err` value: MopacError { line: 1, detail: "atomic-unit input and keyword continuations are unsupported" }
+
+---- emit_reference_cases stdout ----
+MOPAC_ORACLE {"input":"PM7 XYZ CHARGE=+1\noriginal title\nretained comment\nC(site) 0 0 0 1 0 0\nO 1.4 1 0.2 0 -0.5 1\n\n","keyword_lines":1,"keywords":"PM7 XYZ CHARGE=+1","output":"PM7 XYZ CHARGE=+1\noriginal title\nretained comment\nC(site) 0.00000000000000000e0 0 0.00000000000000000e0 1 0.00000000000000000e0 0\nO 1.39999999999999991e0 1 2.00000000000000011e-1 0 -5.00000000000000000e-1 1\n\n","plus_position":0,"positions":[[0.0,0.0,0.0],[1.4,0.2,-0.5]]}
+MOPAC_ORACLE {"input":"PM7 XYZ CHARGE=+1\noriginal title\nretained comment\nC(site) 0 0 0 1 0 0\nO 1.4 1 0.2 0 -0.5 1\n\n","keyword_lines":1,"keywords":"PM7 XYZ CHARGE=+1","output":"PM7 XYZ CHARGE=+1\noriginal title\nretained comment\nC(site) 0.00000000000000000e0 0 0.00000000000000000e0 1 0.00000000000000000e0 0\nO 1.39999999999999991e0 1 2.00000000000000011e-1 0 -5.00000000000000000e-1 1\n\n","plus_position":1,"positions":[[0.0,0.0,0.0],[1.4,0.2,-0.5]]}
+MOPAC_ORACLE {"input":"PM7 XYZ CHARGE=+1\noriginal title\nretained comment\nC(site) 0 0 0 1 0 0\nO 1.4 1 0.2 0 -0.5 1\n\n","keyword_lines":1,"keywords":"PM7 XYZ CHARGE=+1","output":"PM7 XYZ CHARGE=+1\noriginal title\nretained comment\nC(site) 0.00000000000000000e0 0 0.00000000000000000e0 1 0.00000000000000000e0 0\nO 1.39999999999999991e0 1 2.00000000000000011e-1 0 -5.00000000000000000e-1 1\n\n","plus_position":2,"positions":[[0.0,0.0,0.0],[1.4,0.2,-0.5]]}
+
+thread 'emit_reference_cases' (3332838) panicked at crates/chematic-mol/tests/mopac_keyword_continuation.rs:162:58:
+called `Result::unwrap()` on an `Err` value: MopacError { line: 4, detail: "expected x y z or x flag y flag z flag, without connectivity/extra fields" }
+
+---- writer_rejects_unannounced_extra_keyword_lines stdout ----
+
+thread 'writer_rejects_unannounced_extra_keyword_lines' (3332844) panicked at crates/chematic-mol/tests/mopac_keyword_continuation.rs:77:5:
+assertion failed: write_mopac_cartesian(&g).is_ok()
+
+---- keyword_bytes_and_physical_line_limits_are_bounded stdout ----
+
+thread 'keyword_bytes_and_physical_line_limits_are_bounded' (3332839) panicked at crates/chematic-mol/tests/mopac_keyword_continuation.rs:127:5:
+assertion failed: parse_mopac_cartesian(&deck(&keywords)).is_ok()
+
+
+failures:
+    blank_keyword_line_and_blank_descriptions_still_work
+    charged_keyword_and_quoted_plus_are_not_continuations
+    crlf_source_and_indentation_are_retained_appropriately
+    diagnostics_use_physical_source_line_numbers
+    emit_reference_cases
+    keyword_bytes_and_physical_line_limits_are_bounded
+    keyword_line_count_is_bounded
+    plus_may_be_in_middle_of_each_nonfinal_line
+    two_keyword_lines_keep_description_and_geometry
+    unsupported_variants_are_not_flattened
+    writer_rejects_unannounced_extra_keyword_lines
+
+test result: FAILED. 0 passed; 11 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p chematic-mol --test mopac_keyword_continuation`

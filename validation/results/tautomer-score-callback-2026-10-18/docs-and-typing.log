@@ -1,0 +1,4 @@
+Strict helper and public consumer mypy passed; legacy imports silent.
+Exactly four expected negative consumer errors.
+Python 3.9 AST passed.
+Public guide example executed successfully.

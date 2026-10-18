@@ -1,0 +1,5 @@
+validation/results/biased-bit-ranking-2026-10-18/typing_invalid.py:6: error: Argument 1 to "SetBiasList" of "InfoBitRanker" has incompatible type "int"; expected "Iterable[SupportsIndex]"  [arg-type]
+validation/results/biased-bit-ranking-2026-10-18/typing_invalid.py:7: error: List item 0 has incompatible type "float"; expected "SupportsIndex"  [list-item]
+validation/results/biased-bit-ranking-2026-10-18/typing_invalid.py:8: error: List item 0 has incompatible type "str"; expected "SupportsIndex"  [list-item]
+validation/results/biased-bit-ranking-2026-10-18/typing_invalid.py:9: error: Argument 1 to "AccumulateVotes" of "InfoBitRanker" has incompatible type "list[int]"; expected "BinaryBitVector"  [arg-type]
+Found 4 errors in 1 file (checked 1 source file)

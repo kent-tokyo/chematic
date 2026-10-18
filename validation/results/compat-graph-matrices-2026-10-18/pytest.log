@@ -1,0 +1,16 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.13.6, pytest-9.1.1, pluggy-1.6.0
+rootdir: /private/tmp/chematic-compat-graph-matrices-20261018/crates/chematic-py
+configfile: pytest.ini
+collected 245 items
+
+crates/chematic-py/tests/test_compat_graph_matrices.py ................. [  6%]
+...........................................                              [ 24%]
+crates/chematic-py/tests/test_rdkit_graph_queries.py ................... [ 32%]
+                                                                         [ 32%]
+crates/chematic-py/tests/test_rdkit_matrix_limits.py ....                [ 33%]
+crates/chematic-py/tests/test_rdkit_compat.py .......................... [ 44%]
+........................................................................ [ 73%]
+................................................................         [100%]
+
+============================= 245 passed in 0.48s ==============================

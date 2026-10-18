@@ -1,13 +1,23 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, VecDeque};
 
-use chematic_core::{Atom, AtomIdx, BondEntry, BondOrder, Molecule, MoleculeBuilder};
+use chematic_core::{Atom, AtomIdx, BondEntry, BondIdx, BondOrder, Molecule, MoleculeBuilder};
 
 #[derive(Default)]
 struct NormalizedGroups {
     nitro: HashSet<AtomIdx>,
-    oxide: HashSet<AtomIdx>,
     azide: HashSet<AtomIdx>,
     sulfoxide: HashSet<AtomIdx>,
+    pyridone_atoms: HashSet<AtomIdx>,
+    pyridone_bonds: HashSet<BondIdx>,
+    pyridone_ring_atoms: HashSet<AtomIdx>,
+    pyridone_ring_bonds: HashSet<BondIdx>,
+}
+
+struct PyridoneMatch {
+    oxygen: AtomIdx,
+    bond: BondIdx,
+    ring_atoms: Vec<AtomIdx>,
+    ring_bonds: Vec<BondIdx>,
 }
 
 /// Normalize chemical groups (nitro groups, etc.).
@@ -15,6 +25,7 @@ struct NormalizedGroups {
 /// Transforms:
 /// - `[N+](=O)[O-]` → `N(=O)=O` (nitro normalization: N charge 0, O- → double bond)
 /// - `R[S](=O)R` → `R[S+]([O-])R` (RDKit-compatible sulfoxide normalization)
+/// - ortho/para pyridinium phenoxide → neutral pyridone
 ///
 /// Returns a new molecule with normalized groups.
 pub fn normalize_groups(mol: &Molecule) -> Molecule {
@@ -34,8 +45,14 @@ fn detect_groups(mol: &Molecule) -> NormalizedGroups {
     let mut groups = NormalizedGroups::default();
     for (idx, atom) in mol.atoms() {
         if atom.element.atomic_number() == 7 && atom.charge == 1 {
-            detect_nitro(mol, idx, atom, &mut groups.nitro, &mut groups.oxide);
+            detect_nitro(mol, idx, &mut groups.nitro);
             detect_azide(mol, idx, &mut groups.azide);
+            if let Some(hit) = detect_pyridone(mol, idx) {
+                groups.pyridone_atoms.extend([idx, hit.oxygen]);
+                groups.pyridone_bonds.insert(hit.bond);
+                groups.pyridone_ring_atoms.extend(hit.ring_atoms);
+                groups.pyridone_ring_bonds.extend(hit.ring_bonds);
+            }
         }
         if atom.element.atomic_number() == 16 {
             detect_sulfoxide(mol, idx, &mut groups.sulfoxide);
@@ -53,6 +70,9 @@ fn copy_normalized_atoms(
     for (idx, atom) in mol.atoms() {
         let mut normalized = atom.clone();
         normalized.charge = normalized_charge(idx, atom, groups);
+        if groups.pyridone_ring_atoms.contains(&idx) {
+            normalized.aromatic = true;
+        }
         remap.insert(idx, builder.add_atom(normalized));
     }
     (builder, remap)
@@ -60,7 +80,8 @@ fn copy_normalized_atoms(
 
 fn normalized_charge(idx: AtomIdx, atom: &Atom, groups: &NormalizedGroups) -> i8 {
     let atomic_number = atom.element.atomic_number();
-    if (groups.nitro.contains(&idx) && matches!(atomic_number, 7 | 8))
+    if groups.pyridone_atoms.contains(&idx)
+        || (groups.nitro.contains(&idx) && matches!(atomic_number, 7 | 8))
         || (groups.azide.contains(&idx) && atomic_number == 7)
     {
         0
@@ -81,15 +102,26 @@ fn copy_normalized_bonds(
     remap: &HashMap<AtomIdx, AtomIdx>,
     builder: &mut MoleculeBuilder,
 ) {
-    for (_, bond) in mol.bonds() {
-        let order = normalized_bond_order(mol, bond, groups);
+    for (bond_idx, bond) in mol.bonds() {
+        let order = normalized_bond_order(mol, bond_idx, bond, groups);
         if let (Some(&atom1), Some(&atom2)) = (remap.get(&bond.atom1), remap.get(&bond.atom2)) {
             let _ = builder.add_bond(atom1, atom2, order);
         }
     }
 }
 
-fn normalized_bond_order(mol: &Molecule, bond: &BondEntry, groups: &NormalizedGroups) -> BondOrder {
+fn normalized_bond_order(
+    mol: &Molecule,
+    bond_idx: BondIdx,
+    bond: &BondEntry,
+    groups: &NormalizedGroups,
+) -> BondOrder {
+    if groups.pyridone_bonds.contains(&bond_idx) {
+        return BondOrder::Double;
+    }
+    if groups.pyridone_ring_bonds.contains(&bond_idx) {
+        return BondOrder::Aromatic;
+    }
     if groups.sulfoxide.contains(&bond.atom1)
         && groups.sulfoxide.contains(&bond.atom2)
         && bond.order == BondOrder::Double
@@ -113,6 +145,103 @@ fn normalized_bond_order(mol: &Molecule, bond: &BondEntry, groups: &NormalizedGr
     bond.order
 }
 
+/// RDKit's Cleanup neutralizes the ortho/para 1,2- and 1,4-pyridinium
+/// phenoxide resonance forms. Restrict this to an isolated six-membered
+/// aromatic C5N ring with one exocyclic O-; fused or ambiguous rings are left
+/// unchanged rather than guessing at a bond/charge assignment.
+fn detect_pyridone(mol: &Molecule, nitrogen: AtomIdx) -> Option<PyridoneMatch> {
+    if mol.neighbors(nitrogen).count() > 3
+        || mol
+            .neighbors(nitrogen)
+            .filter(|(neighbor, _)| mol.atom(*neighbor).element.atomic_number() == 6)
+            .count()
+            < 2
+        || !mol
+            .atoms()
+            .any(|(_, atom)| atom.element.atomic_number() == 8 && atom.charge == -1)
+    {
+        return None;
+    }
+    let assigned =
+        (!mol.atom(nitrogen).aromatic).then(|| chematic_perception::assign_aromaticity(mol));
+    let aromatic_atom =
+        |idx| mol.atom(idx).aromatic || assigned.as_ref().is_some_and(|m| m.is_atom_aromatic(idx));
+    let aromatic_bond = |idx| {
+        mol.bond(idx).order == BondOrder::Aromatic
+            || assigned.as_ref().is_some_and(|m| m.is_bond_aromatic(idx))
+    };
+    if !aromatic_atom(nitrogen) {
+        return None;
+    }
+    let mut distances = HashMap::from([(nitrogen, 0usize)]);
+    let mut queue = VecDeque::from([nitrogen]);
+    while let Some(current) = queue.pop_front() {
+        for (neighbor, bond_idx) in mol.neighbors(current) {
+            if !aromatic_bond(bond_idx) {
+                continue;
+            }
+            if !distances.contains_key(&neighbor) {
+                distances.insert(neighbor, distances[&current] + 1);
+                queue.push_back(neighbor);
+            }
+        }
+    }
+    if distances.len() != 6
+        || distances.iter().any(|(&idx, _)| {
+            let atom = mol.atom(idx);
+            !aromatic_atom(idx)
+                || (idx != nitrogen && atom.element.atomic_number() != 6)
+                || mol
+                    .neighbors(idx)
+                    .filter(|(_, bond)| aromatic_bond(*bond))
+                    .count()
+                    != 2
+        })
+    {
+        return None;
+    }
+    let (oxygen, bond) = pyridone_oxygen(mol, &distances)?;
+    let ring_bonds = mol
+        .bonds()
+        .filter_map(|(idx, edge)| {
+            (distances.contains_key(&edge.atom1)
+                && distances.contains_key(&edge.atom2)
+                && aromatic_bond(idx))
+            .then_some(idx)
+        })
+        .collect();
+    Some(PyridoneMatch {
+        oxygen,
+        bond,
+        ring_atoms: distances.into_keys().collect(),
+        ring_bonds,
+    })
+}
+
+fn pyridone_oxygen(
+    mol: &Molecule,
+    distances: &HashMap<AtomIdx, usize>,
+) -> Option<(AtomIdx, BondIdx)> {
+    let mut oxygen = None;
+    for (&carbon, &distance) in distances {
+        if distance != 1 && distance != 3 {
+            continue;
+        }
+        for (neighbor, bond_idx) in mol.neighbors(carbon) {
+            let atom = mol.atom(neighbor);
+            if atom.element.atomic_number() == 8
+                && atom.charge == -1
+                && mol.bond(bond_idx).order == BondOrder::Single
+                && mol.neighbors(neighbor).count() == 1
+                && oxygen.replace((neighbor, bond_idx)).is_some()
+            {
+                return None;
+            }
+        }
+    }
+    oxygen
+}
+
 fn both_elements_are(mol: &Molecule, bond: &BondEntry, atomic_number: u8) -> bool {
     mol.atom(bond.atom1).element.atomic_number() == atomic_number
         && mol.atom(bond.atom2).element.atomic_number() == atomic_number
@@ -124,14 +253,9 @@ fn is_negative_oxygen_bond(mol: &Molecule, bond: &BondEntry) -> bool {
         .any(|idx| mol.atom(idx).element.atomic_number() == 8 && mol.atom(idx).charge == -1)
 }
 
-/// Mark nitro [N+](=O)[O-] and aromatic N-oxide atoms.
-fn detect_nitro(
-    mol: &Molecule,
-    idx: AtomIdx,
-    atom: &Atom,
-    nitro_atoms: &mut HashSet<AtomIdx>,
-    oxide_atoms: &mut HashSet<AtomIdx>,
-) {
+/// Mark nitro [N+](=O)[O-] atoms. Aromatic N-oxides retain their
+/// charge-separated N+-O- bond; turning it into N=O breaks ring valence.
+fn detect_nitro(mol: &Molecule, idx: AtomIdx, nitro_atoms: &mut HashSet<AtomIdx>) {
     let oxygen_neighbors: Vec<_> = mol
         .neighbors(idx)
         .filter(|(neighbor, _)| mol.atom(*neighbor).element.atomic_number() == 8)
@@ -151,13 +275,6 @@ fn detect_nitro(
         }
         if has_double_oxygen && has_single_negative_oxygen {
             nitro_atoms.insert(idx);
-        }
-    } else if let Some((oxygen_idx, bond_idx)) = oxygen_neighbors.first() {
-        let oxygen = mol.atom(*oxygen_idx);
-        let bond = mol.bond(*bond_idx);
-        if atom.aromatic && bond.order == BondOrder::Single && oxygen.charge == -1 {
-            nitro_atoms.insert(idx);
-            oxide_atoms.insert(*oxygen_idx);
         }
     }
 }

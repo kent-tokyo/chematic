@@ -260,3 +260,100 @@ pub fn sasa_with_radii_checked(
     }
     Ok(CheckedSasa { total, per_atom })
 }
+
+#[cfg(test)]
+mod boundary_contract_tests {
+    use super::*;
+    use chematic_core::{Atom, Element, MoleculeBuilder};
+
+    fn atoms(count: usize) -> Molecule {
+        let mut builder = MoleculeBuilder::new();
+        for _ in 0..count {
+            builder.add_atom(Atom::new(Element::C));
+        }
+        builder.build()
+    }
+
+    #[test]
+    fn diagnostics_cover_every_input_contract() {
+        let one = atoms(1);
+        let cases = [
+            sasa_with_radii_checked(&one, &[], &[1.0], 0.0, 64).unwrap_err(),
+            sasa_with_radii_checked(&one, &[[0.0; 3]], &[], 0.0, 64).unwrap_err(),
+            sasa_with_radii_checked(&one, &[[f64::NAN, 0.0, 0.0]], &[1.0], 0.0, 64).unwrap_err(),
+            sasa_with_radii_checked(&one, &[[0.0; 3]], &[0.0], 0.0, 64).unwrap_err(),
+            sasa_with_radii_checked(&one, &[[0.0; 3]], &[1.0], -0.1, 64).unwrap_err(),
+            sasa_with_radii_checked(&one, &[[0.0; 3]], &[1.0], 0.0, 31).unwrap_err(),
+            sasa_with_radii_checked(&one, &[[0.0; 3]], &[1.0e-200], 0.0, 64).unwrap_err(),
+        ];
+        for error in cases {
+            assert!(!error.to_string().is_empty());
+        }
+        let too_many = atoms(2049);
+        assert_eq!(
+            sasa_with_radii_checked(&too_many, &vec![[0.0; 3]; 2049], &vec![1.0; 2049], 0.0, 64,)
+                .unwrap_err(),
+            SasaInputError::AtomLimit
+        );
+    }
+
+    #[test]
+    fn occlusion_handles_coincident_nested_disjoint_and_partial_spheres() {
+        let two = atoms(2);
+        assert!(matches!(
+            sasa_with_radii_checked(&two, &[[0.0; 3]; 2], &[1.0; 2], 0.0, 64),
+            Err(SasaInputError::Coincident {
+                first: 0,
+                second: 1
+            })
+        ));
+
+        let nested = sasa_with_radii_checked(
+            &two,
+            &[[0.0, 0.0, 0.0], [0.25, 0.0, 0.0]],
+            &[2.0, 0.5],
+            0.0,
+            128,
+        )
+        .unwrap();
+        assert_eq!(nested.per_atom[1], 0.0);
+        assert!(nested.per_atom[0] > 0.0);
+
+        let disjoint = sasa_with_radii_checked(
+            &two,
+            &[[0.0, 0.0, 0.0], [5.0, 0.0, 0.0]],
+            &[1.0, 1.0],
+            0.0,
+            128,
+        )
+        .unwrap();
+        assert!(disjoint.per_atom.iter().all(|area| *area > 12.0));
+
+        let overlap = sasa_with_radii_checked(
+            &two,
+            &[[0.0, 0.0, 0.0], [1.0, 0.0, 0.0]],
+            &[1.0, 1.0],
+            0.0,
+            128,
+        )
+        .unwrap();
+        assert!(overlap.total < disjoint.total);
+    }
+
+    #[test]
+    fn bounded_work_and_finite_sum_are_enforced() {
+        let crowded = atoms(30);
+        let coordinates: Vec<_> = (0..30).map(|i| [i as f64 * 0.01, 0.0, 0.0]).collect();
+        assert_eq!(
+            sasa_with_radii_checked(&crowded, &coordinates, &[10.0; 30], 0.0, 65_536).unwrap_err(),
+            SasaInputError::WorkLimit
+        );
+
+        let large = atoms(20);
+        let coordinates: Vec<_> = (0..20).map(|i| [i as f64 * 4.0e153, 0.0, 0.0]).collect();
+        assert_eq!(
+            sasa_with_radii_checked(&large, &coordinates, &[1.0e153; 20], 0.0, 32).unwrap_err(),
+            SasaInputError::NumericalRange
+        );
+    }
+}

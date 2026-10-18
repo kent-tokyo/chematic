@@ -2,7 +2,7 @@
 
 use std::collections::HashSet;
 
-use chematic_core::{AtomIdx, BondIdx, Molecule, MoleculeBuilder};
+use chematic_core::{AtomIdx, BondIdx, BondOrder, Molecule, MoleculeBuilder, implicit_hcount};
 
 use super::{clone_molecule, is_metal, normalize_groups};
 use crate::hydrogen::remove_hydrogens;
@@ -18,7 +18,7 @@ pub fn cleanup(mol: &Molecule) -> Molecule {
     let without_h = remove_hydrogens(mol);
     let disconnected = disconnect_metals_for_cleanup(&without_h);
     let normalized = normalize_groups(&disconnected);
-    if disconnected.bond_count() < without_h.bond_count()
+    let normalized = if disconnected.bond_count() < without_h.bond_count()
         && chematic_smiles::rdkit_smiles(
             &normalized,
             &chematic_smiles::RdkitSmilesParams::default(),
@@ -28,9 +28,77 @@ pub fn cleanup(mol: &Molecule) -> Molecule {
         // Unsupported coordination and valence patterns must not turn a
         // readable input into an invalid result. Retain the original metal
         // bonds while keeping normalization of the other functional groups.
-        return normalize_groups(&without_h);
+        normalize_groups(&without_h)
+    } else {
+        normalized
+    };
+    charge_originally_isolated_metals(&without_h, normalized)
+}
+
+/// RDKit Cleanup charges a bare Li/Na/K atom to +1 and a bare Mg/Ca atom
+/// to +2. Restrict the rule to atoms already isolated before metal-bond
+/// disconnection, so a newly detached coordinate donor is not reinterpreted.
+fn charge_originally_isolated_metals(before: &Molecule, normalized: Molecule) -> Molecule {
+    debug_assert_eq!(before.atom_count(), normalized.atom_count());
+    let changes: Vec<_> = before
+        .atoms()
+        .filter_map(|(idx, original)| {
+            let charge = match original.element.atomic_number() {
+                3 | 11 | 19 => 1,
+                12 | 20 => 2,
+                _ => return None,
+            };
+            let atom = normalized.atom(idx);
+            (before.degree(idx) == 0
+                && original.charge == 0
+                && atom.charge == 0
+                && atom.hydrogen_count.unwrap_or(0) == 0)
+                .then_some((idx, charge))
+        })
+        .collect();
+    if changes.is_empty() {
+        return normalized;
     }
-    normalized
+    // RDKit pairs one newly charged isolated alkali atom with the sole
+    // alcohol/phenol/carboxylic OH in a simple neutral mixture. Keep this
+    // bounded: multiple metal atoms, charged groups, or competing OH sites
+    // need an acid/base assignment that this Cleanup profile does not have.
+    let balancing_oxygen = if changes.len() == 1
+        && changes[0].1 == 1
+        && before.atoms().all(|(_, atom)| atom.charge == 0)
+        && matches!(
+            before.atom(changes[0].0).element.atomic_number(),
+            3 | 11 | 19
+        ) {
+        let mut candidates = normalized.atoms().filter_map(|(idx, atom)| {
+            let (_, bond_idx) = normalized.neighbors(idx).next()?;
+            (atom.element.atomic_number() == 8
+                && atom.charge == 0
+                && atom.hydrogen_count.is_none()
+                && normalized.degree(idx) == 1
+                && before.degree(idx) == 1
+                && implicit_hcount(&normalized, idx) == 1
+                && normalized.bond(bond_idx).order == BondOrder::Single
+                && normalized
+                    .neighbors(idx)
+                    .next()
+                    .is_some_and(|(neighbor, _)| {
+                        normalized.atom(neighbor).element.atomic_number() == 6
+                    }))
+            .then_some(idx)
+        });
+        candidates.next().filter(|_| candidates.next().is_none())
+    } else {
+        None
+    };
+    let mut builder = MoleculeBuilder::from_molecule(&normalized);
+    for (idx, charge) in changes {
+        builder.set_atom_charge(idx, charge);
+    }
+    if let Some(oxygen) = balancing_oxygen {
+        builder.set_atom_charge(oxygen, -1);
+    }
+    builder.build()
 }
 
 /// Disconnect a covalent metal--ligand bond by assigning its bond order to
@@ -182,4 +250,63 @@ fn rebuild_after_metal_disconnection(
         }
     }
     builder.build()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::cleanup;
+    use chematic_core::Molecule;
+    use chematic_smiles::parse;
+
+    #[test]
+    fn preserves_charge_for_permanganate_and_copper_cyanide() {
+        for (input, expected) in [
+            (
+                "O=[Mn](=O)(=O)[O-].[K+]",
+                "[K+].[Mn+7].[O-2].[O-2].[O-2].[O-2]",
+            ),
+            ("C(#N)[Cu]", "[C-]#N.[Cu+]"),
+        ] {
+            let mol = parse(input).unwrap();
+            let cleaned = cleanup(&mol);
+            let total_charge = |mol: &Molecule| {
+                mol.atoms()
+                    .map(|(_, atom)| i32::from(atom.charge))
+                    .sum::<i32>()
+            };
+            assert_eq!(total_charge(&cleaned), total_charge(&mol), "{input}");
+            assert_eq!(
+                chematic_smiles::rdkit_cleanup_canonical_smiles(&cleaned).as_deref(),
+                Ok(expected),
+                "{input}"
+            );
+        }
+    }
+
+    #[test]
+    fn balances_one_isolated_alkali_with_one_oxygen_acid() {
+        // RDKit 2026.09.1 Cleanup pairs one originally bare alkali metal
+        // with the only OH site in these simple disconnected mixtures.
+        for (input, expected) in [
+            ("[Li].CO", "C[O-].[Li+]"),
+            ("[Na].CCO", "CC[O-].[Na+]"),
+            ("[K].Oc1ccccc1", "[K+].[O-]c1ccccc1"),
+            ("[Na].CC(=O)O", "CC(=O)[O-].[Na+]"),
+            ("[Na].O", "O.[Na+]"),
+            ("[Na+].CCO", "CCO.[Na+]"),
+            ("[Na].OCCO", "OCCO.[Na+]"),
+        ] {
+            let cleaned = cleanup(&parse(input).unwrap());
+            assert_eq!(
+                chematic_smiles::rdkit_cleanup_canonical_smiles(&cleaned).as_deref(),
+                Ok(expected),
+                "{input}"
+            );
+            assert_eq!(
+                chematic_smiles::rdkit_cleanup_canonical_smiles(&cleanup(&cleaned)).as_deref(),
+                Ok(expected),
+                "second Cleanup: {input}"
+            );
+        }
+    }
 }

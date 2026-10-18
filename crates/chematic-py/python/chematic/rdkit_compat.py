@@ -47,17 +47,25 @@ __all__ = [
     "ExplicitBitVect", "LayeredFingerprint", "LayeredAtomCounts", "LayeredBitMask", "rdMIF",
     "MolFromSmiles", "MolToSmiles", "MolFromMolBlock", "MolFromMolFile",
     "MolToMolBlock", "SanitizeMol", "Kekulize", "AddHs", "RemoveHs",
-    "MolFromSmarts", "RenumberAtoms",
+    "MolFromSmarts", "RenumberAtoms", "GetAdjacencyMatrix", "GetDistanceMatrix",
     "CanonSmiles", "AllChem", "rdFingerprintGenerator",
     "MolFromMrvBlock", "MolFromMrvFile", "MolToMrvBlock", "MolToMrvFile",
     "SDMolSupplier", "SDWriter", "SmilesMolSupplier", "SmilesWriter",
     "TDTMolSupplier", "TDTWriter",
-    "Descriptors", "rdMolDescriptors", "DataStructs", "pyAvalonTools", "rdAlignment", "rdInfoTheory",
+    "Descriptors", "rdMolDescriptors", "DataStructs", "pyAvalonTools", "rdAlignment", "rdInfoTheory", "rdMetricMatrixCalc", "MetricBitVector", "Scoring", "RankedScoreRow",
 ]
 
 
 from ._point_alignment import rdAlignment
 from ._info_theory import rdInfoTheory
+from ._graph_matrices import (
+    AdjacencyMatrix as _AdjacencyMatrix,
+    DistanceMatrix as _DistanceMatrix,
+    adjacency_matrix as _adjacency_matrix,
+    distance_matrix as _distance_matrix,
+)
+from ._metric_matrix import MetricBitVector as MetricBitVector, rdMetricMatrixCalc as rdMetricMatrixCalc
+from ._scoring_enrichment import RankedScoreRow as RankedScoreRow, Scoring as Scoring
 
 import chematic as _ch
 
@@ -778,6 +786,59 @@ def RenumberAtoms(mol: Mol, newOrder) -> Mol:
     separately; this wrapper does not store conformers.
     """
     return Mol(mol._mol.renumber_atoms(newOrder))
+
+
+def GetAdjacencyMatrix(
+    mol: Mol,
+    useBO: bool = False,
+    emptyVal: SupportsIndex = 0,
+    force: bool = False,
+    prefix: str = "",
+) -> _AdjacencyMatrix:
+    """Return a checked int32 binary or float64 bond-weighted NumPy matrix.
+
+    Args:
+        mol: A compatibility Mol. Native preparation must retain its indices.
+        useBO: Use endpoint bond contributions (aromatic 1.5, dative asymmetric).
+        emptyVal: Only integer zero is supported; nonzero byte fills are refused.
+        force: Both bool values calculate a fresh independent result.
+        prefix: Only the empty string is supported; there is no matrix cache.
+
+    Raises:
+        TypeError: Wrong Mol, flag, integer or identifier types.
+        ValueError: Native unsupported graph, changed indices, nonzero fill,
+            or input beyond 1024 atoms / native adjacency bond limits.
+        NotImplementedError: Nonempty cache prefix.
+    """
+    if not isinstance(mol, Mol):
+        raise TypeError("mol must be a chematic.rdkit_compat.Mol")
+    return _adjacency_matrix(mol._mol, useBO, emptyVal, force, prefix)
+
+
+def GetDistanceMatrix(
+    mol: Mol,
+    useBO: bool = False,
+    useAtomWts: bool = False,
+    force: bool = False,
+    prefix: str = "",
+) -> _DistanceMatrix:
+    """Return a checked float64 NumPy topological distance matrix.
+
+    Args:
+        mol: A compatibility Mol. Native preparation must retain its indices.
+        useBO: Reciprocal bond-order edge lengths, aromatic edges 2/3.
+        useAtomWts: Set diagonal values to 6 / atomic number.
+        force: Both bool values calculate a fresh independent result.
+        prefix: Only the empty string is supported; there is no matrix cache.
+
+    Disconnected distances use the native RDKit profile's 1e8 sentinel.
+    Empty molecules return shape (0, 0). Native model errors or more than
+    1024 input atoms raise ValueError; unsupported cache prefixes raise
+    NotImplementedError, and wrong argument types raise TypeError.
+    """
+    if not isinstance(mol, Mol):
+        raise TypeError("mol must be a chematic.rdkit_compat.Mol")
+    return _distance_matrix(mol._mol, useBO, useAtomWts, force, prefix)
 
 
 def AddHs(mol: Mol, addCoords: bool = False) -> Mol:

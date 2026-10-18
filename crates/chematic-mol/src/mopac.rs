@@ -5,6 +5,7 @@ mod archive;
 pub use archive::{
     MopacArchive, MopacArchiveAtom, parse_mopac_archive, parse_mopac_archive_with_limits,
 };
+mod header;
 mod reader;
 mod writer;
 pub use reader::{parse_mopac_cartesian, parse_mopac_cartesian_with_limits};
@@ -90,7 +91,10 @@ pub struct MopacAtom {
 }
 #[derive(Debug, Clone, PartialEq)]
 pub struct MopacCartesianGeometry {
-    /// Raw keyword line; no charge, spin, Hamiltonian or optimizer is inferred.
+    /// Raw LF-separated keyword block. Every nonfinal line contains a
+    /// standalone '+' outside double-quoted values; the last line does not.
+    /// At most 64 physical lines and 65,536 combined bytes are supported.
+    /// No charge, spin, Hamiltonian or optimizer is inferred.
     pub keywords: String,
     pub title: String,
     pub comment: String,
@@ -104,22 +108,14 @@ impl MopacCartesianGeometry {
         self.translation_vectors.len()
     }
     pub fn validate(&self) -> Result<(), MopacError> {
-        for (i, text) in [&self.keywords, &self.title, &self.comment]
-            .iter()
-            .enumerate()
-        {
+        let keyword_lines = header::validate(&self.keywords)?;
+        for (offset, text) in [&self.title, &self.comment].iter().enumerate() {
             if text.len() > MopacParseLimits::default().max_line_len
                 || text.chars().any(|c| c.is_control() && c != '\t')
             {
-                return Err(error(i + 1, "header must fit a single supported line"));
-            }
-        }
-        for token in self.keywords.split_whitespace() {
-            let key = token.split('=').next().unwrap_or("").to_ascii_uppercase();
-            if key == "A0" || matches!(key.as_str(), "+" | "++" | "&") {
                 return Err(error(
-                    1,
-                    "atomic-unit input and keyword continuations are unsupported",
+                    keyword_lines + offset + 1,
+                    "description must fit a single supported line",
                 ));
             }
         }

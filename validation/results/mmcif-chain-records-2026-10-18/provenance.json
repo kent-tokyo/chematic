@@ -1,0 +1,49 @@
+{
+  "base": "f99c7b8ab33098a2e1fd9fd568aee370bf79ab38",
+  "time_utc": "2026-10-18T05:42:08.014987+00:00",
+  "python": "3.13.6",
+  "pytest": "9.1.1",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "gemmi": "0.7.3",
+  "gemmi_native_sha256": {
+    "gemmi_ext.cpython-313-darwin.so": "69d296ff5ad596042612f4a40dd9b19f48509476f77895a31932f71a004ec363"
+  },
+  "native_fixture_commit": "ca7e14e892cab8b495183bcda4449f49471ba1b1",
+  "native_sha256": "90f81980b0fdf06c8edb616d8f8e5acd1831a9b6de404ed2b3405646cff41423",
+  "native_bytes": 85142576,
+  "native_fixture_evidence": "ca7e14e8:validation/results/checked-core-removal-2026-10-17/provenance.json",
+  "native_scope": "verified existing extension; relevant CIF/mmCIF source and residue binding/helpers unchanged; no current-main native build or whole-extension equivalence",
+  "issue": {
+    "url": "https://github.com/openbabel/openbabel/issues/2458",
+    "state": "OPEN",
+    "checked_at_utc": "2026-10-18T05:42:08.029708+00:00"
+  },
+  "source_sha256": {
+    "CHANGELOG.md": "468e01e529d9f1fc97bfe55e0cf9b7c864364dd12bfe67bbf9146324ca802ef2",
+    "mkdocs.yml": "df7b870b34ea662bee957162970aef6c8b10e3540fb19852feda554f2734d6ae",
+    "crates/chematic-py/python/chematic/_mmcif_chains.py": "599e2e97c0758224308316a0ab8d8a326b32868498d25cdf5bfd5db7ed0efe28",
+    "crates/chematic-py/python/chematic/__init__.py": "dab450d01e76bae95ca0c4c133a7944c8994ce72e967266f87c228c19d341c55",
+    "crates/chematic-py/python/chematic/__init__.pyi": "027adbba5b9974fad74bb17a5dddd47a32e9d93a18c2409db6b995f10e600ab0",
+    "crates/chematic-py/tests/test_mmcif_chains.py": "db3eede04c62f4ce99679e697be98d19c2b4dbb03200bf45b07f634c4f7c43cb",
+    "docs/mmcif-chain-records.md": "11d44d9a87c8c92310a4c560abc4161338f7c6d4c8c358ba6d6da7aec74d56d5",
+    "docs/openbabel-open-issues-2026-10-14.md": "d262af79cef2760cd03706dbf125fc37c2c1a4b97d58bf6ff661256b97f0064d"
+  },
+  "evidence_sha256": {
+    "README.md": "3d2e8f9610f528d83bd8c3a15a1f1193dac1d1f3834db61753e6326a5d139992",
+    "chains.cif": "bf42891aa986377b15833f341f3e0f90a459832ca4bb0e7a9eabae22b0545f0d",
+    "docs-and-typing.log": "6d57aaf72d91b7a4a98786cf269fd4c4cd42c8108156d37a5c6f8e916dbf128a",
+    "mkdocs.log": "0f8e543aae1a3a51f7357638f037110093d5f1247dea4f9698f4581f6a42d900",
+    "native-source-comparison.log": "44139b410d2b7eb556d20336bdcfe2601d90a6ea9b5c6c309cf9d116bf749380",
+    "openbabel.stderr": "d62a9897953e0ca42ee2240c501d3cd421fbeb8d1e0231b81a468b3b9401abff",
+    "openbabel.stdout": "0bcf420f79f45c78c8d32f3682a43553796c5197a825b34effb43ee822068fbc",
+    "oracle-summary.json": "a96619bb96c9c829788bd14c773226fff12b6720526dd8e73422746f219fe477",
+    "oracle.log": "a96619bb96c9c829788bd14c773226fff12b6720526dd8e73422746f219fe477",
+    "oracle.py": "4bd9a7bf9c089fde05d0eb59addb4f3ca6b79ac56d67bf61376bef75c11b733c",
+    "pytest.log": "3c9d7f4dc68ef747c642c6e242e55d4c7d158c12f4024ed215a1e1a0913bc0f4",
+    "source-gates.log": "93c5929e06701a031d620af7c18bf7d7cd727c1b57d60a0f68d554583d065729",
+    "typing-invalid.log": "b48585df223e159a7934c81fde9c50b2ce327fc5dc05c1ced32c8bf1ec87ad08",
+    "typing-valid.log": "f9b031e5c45aa702cd4fef028d465551cb20a2c4698e0913c7b00766b20ac4d8",
+    "typing_invalid.py": "ac49af7ad4b2fcc155c3f10c25702c6d552df08e35bb8f9d172e7927b7fd9e58",
+    "typing_valid.py": "796f8f4bbe903b91fe657afc153ee7a39c035045111e11bc26faad28bb762453"
+  }
+}

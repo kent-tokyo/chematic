@@ -1,0 +1,184 @@
+Human-readable source comparison: blank context-line prefixes are omitted.
+crates/chematic-py/src/pickle.rs: unchanged from fixture commit; SHA256 4eb631e34f7791e45ff3a0fd2661b298735e158c9a8148958159a51cbee75d4f
+crates/chematic-py/src/mol_methods/properties.rs: unchanged from fixture commit; SHA256 c66184039fb145a1830ca6acff3da8257426984db90ecab41549a65f4fd79a75
+crates/chematic-py/src/mol_methods/identity.rs: unchanged from fixture commit; SHA256 7d09c75a86799a1ecb46e44ffcfef4cd24e65cbd936e4237d900f3354b96f3c4
+crates/chematic-py/src/mol_methods/analysis.rs: unchanged from fixture commit; SHA256 46a97ba03bb2375ff6fe71947f6fb9e8d2da447c4b18b3be727443a979bdc9b1
+crates/chematic-smiles/src/rdkit/tautomer.rs: unchanged from fixture commit; SHA256 5cc5b966c61b466815c158226d3d73b4d8a99615489c2e91dea55832f9957a56
+diff --git a/crates/chematic-smiles/src/rdkit/mod.rs b/crates/chematic-smiles/src/rdkit/mod.rs
+index 715a2381..5b7852e2 100644
+--- a/crates/chematic-smiles/src/rdkit/mod.rs
++++ b/crates/chematic-smiles/src/rdkit/mod.rs
+@@ -1416,4 +1416,6 @@ mod model_view_contract_tests;
+ mod model_view;
+ #[cfg(test)]
+ use model_view::rdkit_model_molecule;
+-pub use model_view::{with_rdkit_model_molecule, with_rdkit_model_scalar};
++pub use model_view::{
++    with_rdkit_model_molecule, with_rdkit_model_scalar, with_rdkit_model_scalar_shortcut,
++};
+diff --git a/crates/chematic-smiles/src/rdkit/aromaticity.rs b/crates/chematic-smiles/src/rdkit/aromaticity.rs
+index b1928484..82d03555 100644
+--- a/crates/chematic-smiles/src/rdkit/aromaticity.rs
++++ b/crates/chematic-smiles/src/rdkit/aromaticity.rs
+@@ -309,7 +309,23 @@ pub(crate) fn set_aromaticity(mol: &mut Mol) {
+                 continue;
+             }
+             aseen[a] = true;
+-            edon[a] = get_atom_donor_type_arom(mol, a);
++            let mut donor = get_atom_donor_type_arom(mol, a);
++            let atom = &mol.atoms[a];
++            // RDKit 2026.09 treats a neutral, divalent O/S donor in a
++            // nine-membered or larger SSSR ring as an aliphatic bridge.
++            // Apply this when the atom is first seen, as ring order matters.
++            if sring.len() >= 9
++                && donor == Edon::Two
++                && matches!(atom.anum, 8 | 16)
++                && atom.charge == 0
++                && mol.degree(a) == 2
++                && mol.atom_bonds[a]
++                    .iter()
++                    .all(|&b| !matches!(mol.bonds[b].bt, BondType::Double | BondType::Triple))
++            {
++                donor = Edon::No;
++            }
++            edon[a] = donor;
+             acands[a] = is_atom_cand_for_arom(mol, a, edon[a]);
+             if !acands[a] {
+                 all_aromatic = false;
+diff --git a/crates/chematic-smiles/src/rdkit/model_view.rs b/crates/chematic-smiles/src/rdkit/model_view.rs
+index 08013fca..baaad819 100644
+--- a/crates/chematic-smiles/src/rdkit/model_view.rs
++++ b/crates/chematic-smiles/src/rdkit/model_view.rs
+@@ -22,6 +22,26 @@ pub fn with_rdkit_model_scalar(
+     mol.derived_scalar(slot, || with_rdkit_model_molecule_impl(mol, f, true))
+ }
+
++/// Memoize a scalar with a proof-based constant shortcut on the original
++/// graph, before model preparation. `shortcut` may return a value only when
++/// it equals `f` on the sanitized/H-normalized model as well. Nested model
++/// callbacks still evaluate `f` directly, bypassing outer caches/shortcuts.
++#[doc(hidden)]
++#[inline]
++pub fn with_rdkit_model_scalar_shortcut(
++    mol: &Molecule,
++    slot: chematic_core::derived_cache::DerivedScalar,
++    shortcut: impl FnOnce(&Molecule) -> Option<f64>,
++    f: impl FnOnce(&Molecule) -> f64,
++) -> f64 {
++    if IN_RDKIT_MODEL.with(|c| c.get()) {
++        return f(mol);
++    }
++    mol.derived_scalar(slot, || {
++        shortcut(mol).unwrap_or_else(|| with_rdkit_model_molecule_impl(mol, f, true))
++    })
++}
++
+ /// Runs `f` on RDKit's own molecule for `mol` (`Chem.MolFromSmiles(s)`:
+ /// hydrogen graph atoms removed, RDKit's aromaticity, bond orders, charges
+ /// and per-atom hydrogen counts, as [`rdkit_hydrogen_suppressed`] builds it)
+@@ -112,3 +132,104 @@ pub(super) fn rdkit_model_molecule(
+     }
+     Ok(view)
+ }
++
++#[cfg(test)]
++mod shortcut_tests {
++    use super::*;
++    use chematic_core::derived_cache::DerivedScalar;
++    use std::cell::Cell;
++
++    fn no_polar_atoms(mol: &Molecule) -> bool {
++        !mol.atoms()
++            .any(|(_, atom)| matches!(atom.element.atomic_number(), 7 | 8))
++    }
++
++    #[test]
++    fn scalar_shortcut_preserves_cache_clone_and_edit_rules() {
++        let mut mol = crate::parse_template("c1ccccc1").unwrap();
++        let shortcuts = Cell::new(0);
++        let callbacks = Cell::new(0);
++        for _ in 0..2 {
++            let value = with_rdkit_model_scalar_shortcut(
++                &mol,
++                DerivedScalar::RdkitTpsa,
++                |input| {
++                    shortcuts.set(shortcuts.get() + 1);
++                    no_polar_atoms(input).then_some(0.0)
++                },
++                |input| {
++                    callbacks.set(callbacks.get() + 1);
++                    input
++                        .atoms()
++                        .filter(|(_, a)| matches!(a.element.atomic_number(), 7 | 8))
++                        .count() as f64
++                },
++            );
++            assert_eq!(value.to_bits(), 0.0f64.to_bits());
++        }
++        assert_eq!(shortcuts.get(), 1);
++        assert_eq!(callbacks.get(), 0);
++        assert!(
++            mol.derived_if_computed::<bool>(chematic_core::DerivedSlot::RdkitModelGate)
++                .is_none()
++        );
++        let cloned = mol.clone();
++        let value = with_rdkit_model_scalar_shortcut(
++            &cloned,
++            DerivedScalar::RdkitTpsa,
++            |_| {
++                shortcuts.set(shortcuts.get() + 1);
++                Some(0.0)
++            },
++            |_| panic!("zero callback"),
++        );
++        assert_eq!(value, 0.0);
++        assert_eq!(shortcuts.get(), 2);
++        let _ = mol.add_atom(chematic_core::Atom::new(chematic_core::Element::O));
++        let value = with_rdkit_model_scalar_shortcut(
++            &mol,
++            DerivedScalar::RdkitTpsa,
++            |input| {
++                shortcuts.set(shortcuts.get() + 1);
++                no_polar_atoms(input).then_some(0.0)
++            },
++            |input| {
++                callbacks.set(callbacks.get() + 1);
++                input
++                    .atoms()
++                    .filter(|(_, a)| matches!(a.element.atomic_number(), 7 | 8))
++                    .count() as f64
++            },
++        );
++        assert_eq!(value, 1.0);
++        assert_eq!(shortcuts.get(), 3);
++        assert_eq!(callbacks.get(), 1);
++    }
++
++    #[test]
++    fn nested_model_callback_bypasses_shortcut_and_outer_scalar_cache() {
++        let mol = crate::parse("C").unwrap();
++        assert_eq!(
++            with_rdkit_model_scalar_shortcut(
++                &mol,
++                DerivedScalar::RdkitTpsa,
++                |_| Some(0.0),
++                |_| panic!("shortcut")
++            ),
++            0.0
++        );
++        let previous = IN_RDKIT_MODEL.with(|cell| cell.replace(true));
++        let value = with_rdkit_model_scalar_shortcut(
++            &mol,
++            DerivedScalar::RdkitTpsa,
++            |_| panic!("nested shortcut"),
++            |_| 42.0,
++        );
++        IN_RDKIT_MODEL.with(|cell| cell.set(previous));
++        assert_eq!(value, 42.0);
++        assert_eq!(
++            mol.derived_scalar(DerivedScalar::RdkitTpsa, || panic!("outer cache")),
++            0.0
++        );
++    }
++}
+Canonical/score wrapper, state codec, properties and bond-table source are unchanged. Native graph aromaticity has an additional >=9-membered O/S ring rule; numeric reference claims are restricted to the committed acyclic families. This is not whole-extension equivalence.

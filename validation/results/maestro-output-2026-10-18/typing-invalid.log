@@ -1,0 +1,6 @@
+validation/results/maestro-output-2026-10-18/typing_invalid.py:3: error: Argument 1 to "write_mae_checked" has incompatible type "str"; expected "Mol"  [arg-type]
+validation/results/maestro-output-2026-10-18/typing_invalid.py:4: error: List item 0 has incompatible type "str"; expected "float"  [list-item]
+validation/results/maestro-output-2026-10-18/typing_invalid.py:5: error: Argument "title" to "write_mae_checked" has incompatible type "int"; expected "str | None"  [arg-type]
+validation/results/maestro-output-2026-10-18/typing_invalid.py:6: error: Argument 1 to "v2000_to_mae_checked" has incompatible type "bytes"; expected "str"  [arg-type]
+validation/results/maestro-output-2026-10-18/typing_invalid.py:8: error: Property "text" defined in "MaeExport" is read-only  [misc]
+Found 5 errors in 1 file (checked 1 source file)

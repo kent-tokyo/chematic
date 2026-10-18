@@ -1,0 +1,12 @@
+$ rustc --edition 2024 /private/tmp/chematic-mopac-keyword-guide.rs --extern chematic_mol=/private/tmp/chematic-mopac-continuation-target/debug/deps/libchematic_mol-9d0b922b7a4ab3ae.rlib -L dependency=/private/tmp/chematic-mopac-continuation-target/debug/deps -o /private/tmp/chematic-mopac-keyword-guide
+EXIT 0
+$ /private/tmp/chematic-mopac-keyword-guide
+EXIT 0
+crates/chematic-py/tests/test_mopac_cartesian.py: Python 3.9 AST passed
+crates/chematic-py/python/chematic/__init__.pyi: Python 3.9 AST passed
+Existing Python binding delegates parse/write to the changed Rust functions and passes keywords as a string unchanged. Binding implementation is unchanged.
+Two new Python parametrized cases require a freshly rebuilt extension; not executed locally.
+$ rustc --edition 2024 /private/tmp/chematic-mopac-keyword-guide.rs --extern chematic_mol=/private/tmp/chematic-mopac-continuation-target/debug/deps/libchematic_mol-9d0b922b7a4ab3ae.rlib -L dependency=/private/tmp/chematic-mopac-continuation-target/debug/deps -o /private/tmp/chematic-mopac-keyword-guide
+EXIT 0
+$ /private/tmp/chematic-mopac-keyword-guide
+EXIT 0

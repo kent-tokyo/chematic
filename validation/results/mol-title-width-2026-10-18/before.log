@@ -1,0 +1,74 @@
+   Compiling chematic-mol v1.1.7 (/private/tmp/chematic-mol-title-width-20261018/crates/chematic-mol)
+warning: function `append_title` is never used
+ --> crates/chematic-mol/src/mol_header.rs:8:15
+  |
+8 | pub(crate) fn append_title(out: &mut String, name: &str) {
+  |               ^^^^^^^^^^^^
+  |
+  = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `chematic-mol` (lib) generated 1 warning
+    Finished `test` profile [unoptimized] target(s) in 5.22s
+     Running tests/mol_title_width.rs (/private/tmp/chematic-mol-title-target/debug/deps/mol_title_width-ef58363c7d8b4e35)
+
+running 10 tests
+test reused_buffer_has_no_previous_title_tail ... ok
+test controls_cannot_inject_header_lines ... FAILED
+test utf8_is_not_split ... FAILED
+test unicode_line_separators_are_spaces ... FAILED
+test utf8_boundary_keeps_complete_prefix ... FAILED
+test long_ascii_title_is_bounded ... FAILED
+test empty_title_keeps_blank_line ... ok
+test eighty_ascii_bytes_unchanged ... ok
+test ordinary_title_unchanged ... ok
+test very_long_input_is_bounded ... FAILED
+
+failures:
+
+---- controls_cannot_inject_header_lines stdout ----
+
+thread 'controls_cannot_inject_header_lines' (3261389) panicked at crates/chematic-mol/tests/mol_title_width.rs:54:9:
+assertion `left == right` failed
+  left: "a"
+ right: "a  b c d e"
+
+---- utf8_is_not_split stdout ----
+
+thread 'utf8_is_not_split' (3261397) panicked at crates/chematic-mol/tests/mol_title_width.rs:50:9:
+title exceeds 80 bytes
+
+---- unicode_line_separators_are_spaces stdout ----
+
+thread 'unicode_line_separators_are_spaces' (3261395) panicked at crates/chematic-mol/tests/mol_title_width.rs:54:9:
+assertion `left == right` failed
+  left: "a\u{85}b\u{2028}c\u{2029}d"
+ right: "a b c d"
+
+---- utf8_boundary_keeps_complete_prefix stdout ----
+
+thread 'utf8_boundary_keeps_complete_prefix' (3261396) panicked at crates/chematic-mol/tests/mol_title_width.rs:50:9:
+title exceeds 80 bytes
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- long_ascii_title_is_bounded stdout ----
+
+thread 'long_ascii_title_is_bounded' (3261392) panicked at crates/chematic-mol/tests/mol_title_width.rs:50:9:
+title exceeds 80 bytes
+
+---- very_long_input_is_bounded stdout ----
+
+thread 'very_long_input_is_bounded' (3261398) panicked at crates/chematic-mol/tests/mol_title_width.rs:50:9:
+title exceeds 80 bytes
+
+
+failures:
+    controls_cannot_inject_header_lines
+    long_ascii_title_is_bounded
+    unicode_line_separators_are_spaces
+    utf8_boundary_keeps_complete_prefix
+    utf8_is_not_split
+    very_long_input_is_bounded
+
+test result: FAILED. 4 passed; 6 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.01s
+
+error: test failed, to rerun pass `-p chematic-mol --test mol_title_width`

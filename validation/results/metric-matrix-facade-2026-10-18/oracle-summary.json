@@ -1,0 +1,14 @@
+{
+  "rdkit": "2026.09.1",
+  "numpy": "2.5.3",
+  "seed": 9601,
+  "euclidean_comparisons": 512,
+  "binary_comparisons": 1024,
+  "compared_pairs": 262128,
+  "max_rdkit_euclidean_error": 4.263256414560601e-14,
+  "max_math_dist_error": 2.842170943040401e-14,
+  "max_rdkit_binary_error": 0.0,
+  "diagnostics": 8,
+  "inputs_sha256": "158f3b09de3c991d232c5e47323be4850cef5eac446e7d0e1a5f28d900125b62",
+  "scope": "Ordinary namespace/output comparisons; numeric and input-profile differences are recorded separately"
+}

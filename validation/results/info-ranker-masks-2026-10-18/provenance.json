@@ -1,0 +1,72 @@
+{
+  "created_at_utc": "2026-10-18T08:23:54.633463+00:00",
+  "base_commit": "f99c7b8ab33098a2e1fd9fd568aee370bf79ab38",
+  "issue": {
+    "number": 9601,
+    "state": "OPEN",
+    "url": "https://github.com/rdkit/rdkit/issues/9601",
+    "updatedAt": "2026-09-29T16:40:13Z",
+    "scope": "Adjacent typed InfoTheory functionality; no reported mask-specific defect or whole-issue resolution claim."
+  },
+  "versions": {
+    "python": "3.13.6",
+    "numpy": "2.5.3",
+    "pytest": "9.1.1",
+    "rdkit": "2026.09.1"
+  },
+  "native_fixture": {
+    "path": "/private/tmp/chematic-info-ranker-masks-python/chematic/chematic.so",
+    "source_commit": "ca7e14e892cab8b495183bcda4449f49471ba1b1",
+    "sha256": "90f81980b0fdf06c8edb616d8f8e5acd1831a9b6de404ed2b3405646cff41423",
+    "bytes": 85142576,
+    "checked_against": "validation/results/checked-core-removal-2026-10-17/provenance.json",
+    "scope": "Import/legacy regression fixture only. New mask logic runs in Python/NumPy. No fresh native build or whole-extension equivalence claim."
+  },
+  "reference_module": {
+    "path": "/private/tmp/chematic-sparse-tanimoto-rdkit/rdkit/ML/InfoTheory/rdInfoTheory.so",
+    "sha256": "d6bd02e3c4f759aaa42af12c0e4273c5de1055431d7671aa945817d11c5b4870"
+  },
+  "source_sha256": {
+    "crates/chematic-py/python/chematic/_info_theory.py": "fe834e1dc2a1f5946d3d5bda52667bfab0a7c4860bd3fc0551c46d110941e159",
+    "crates/chematic-py/tests/test_info_ranker_masks.py": "258e7e2f535116248470ebc22b370b45b8a8923828f01f5c04d38794be7a1878",
+    "crates/chematic-py/tests/test_info_bit_ranker.py": "4bd6ab25a14d9e99b04410b0abc82c567c0bb5f94c63b5749d4f36ee96c0276c",
+    "crates/chematic-py/tests/test_chi_square_bit_ranker.py": "d9adb39c3bd498ea5c77eff1618d65471b963e9127130bd2764ddb78ca099072",
+    "docs/info-ranker-masks.md": "0e61fd209eca191da60ba5a11fdd89967c1b0a595a565ed32cbf207a97fd487e",
+    "docs/info-bit-ranker.md": "6e930c812546abbeaf4e8b154b21aada13344e3179a14d0746b7d9f2a26a8e5e",
+    "docs/chi-square-bit-ranking.md": "10275f019348bf40161fe34cff26431af6aa1ebcf7e7463e88a14c9a0141d184",
+    "docs/rdkit-open-issues-2026-10-14.md": "1f8393bb9f5ded3020bc850f25a52c902312ef0fc16ae02bbef512f89444282c",
+    "CHANGELOG.md": "9370eebb44f1cd8cb3a316ea054b5569ca040b7ea685bbf74afe75741d663408",
+    "mkdocs.yml": "46ddb2f60f36d0abb76f1a4bb8e03eb03a1aaa415b3e9a05caaedde66f01a275"
+  },
+  "candidate_helper_sha256": "fe834e1dc2a1f5946d3d5bda52667bfab0a7c4860bd3fc0551c46d110941e159",
+  "source_read": {
+    "repository": "https://github.com/rdkit/rdkit",
+    "revision": "7f3d37d16b71ff8c8a6b0de82c12a8b371e0a8df",
+    "path": "Code/ML/InfoTheory/InfoBitRanker.cpp",
+    "retrieved_via": "GitHub official repository contents API; runtime reference version recorded independently."
+  },
+  "validation": {
+    "rdkit_version": "2026.09.1",
+    "seed": 960118,
+    "datasets": 96,
+    "metric_source_runs": 768,
+    "matrix_comparisons": 2064,
+    "ranked_rows": 25192,
+    "independent_checks": 2304,
+    "empty_shape_checks": 768,
+    "reference_anomalies": 240,
+    "max_score_absolute_error": 7.105427357601002e-15,
+    "count_mismatches": 0,
+    "distinct_reference_anomalies": 60
+  },
+  "pytest_passed": 251,
+  "new_mask_cases": 26,
+  "typing": "strict helper/public valid consumer; four expected negative consumer errors. Imported legacy modules are silent, not package-wide strict verification.",
+  "limitations": [
+    "ENTROPY and CHISQUARE only on this main baseline; biased metrics are in a separate open PR.",
+    "Masks apply to future on-votes and current ranking; no retroactive data recovery.",
+    "At most nBits raw IDs, excluding bool/text/packed bytes.",
+    "Reference duplicate/missing-ID outputs and isolated failure diagnostics are not counted as parity.",
+    "No published wheel, Rust/WASM changes, or hosted CI success claim."
+  ]
+}

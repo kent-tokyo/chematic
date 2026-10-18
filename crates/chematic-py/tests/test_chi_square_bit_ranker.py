@@ -101,7 +101,7 @@ def test_broken_generator_and_explicit_vector_ownership():
     np.testing.assert_array_equal(result.GetTopN(4), before)
 
 
-def test_empty_top_zero_result_copy_and_unsupported_options():
+def test_empty_top_zero_and_result_copy():
     result = I.InfoBitRanker(4, 2, np.int64(3))
     with pytest.raises(ValueError, match="one record"):
         result.GetTopN(0)
@@ -111,9 +111,6 @@ def test_empty_top_zero_result_copy_and_unsupported_options():
     assert before.dtype == np.float64
     result.GetTopN(4)[:] = -1
     np.testing.assert_array_equal(result.GetTopN(4), before)
-    for method in (result.SetMaskBits, result.SetBiasList):
-        with pytest.raises(NotImplementedError):
-            method([0])
 
 
 def test_counts_beyond_uint16_remain_exact():

@@ -1,0 +1,6 @@
+Native fixture source: ca7e14e892cab8b495183bcda4449f49471ba1b1
+Candidate base: f99c7b8ab33098a2e1fd9fd568aee370bf79ab38
+Unchanged relevant source: crates/chematic-mol/src/cube.rs
+Unchanged relevant source: crates/chematic-mol/src/volumetric.rs
+Unchanged relevant source: crates/chematic-py/src/volumetric.rs
+No fresh current-main native build or whole-extension equivalence claim.

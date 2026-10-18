@@ -312,3 +312,134 @@ pub fn parse_rdfile_with_limits(
         source_text: text.to_owned(),
     })
 }
+
+#[cfg(test)]
+mod boundary_contract_tests {
+    use super::*;
+
+    fn limits() -> RdfileParseLimits {
+        RdfileParseLimits {
+            max_input_bytes: 512,
+            max_line_len: 100,
+            max_records: 2,
+            max_fields_per_record: 1,
+            max_reaction_components: 1,
+        }
+    }
+
+    #[test]
+    fn cursor_headers_and_identifiers_preserve_rdfile_contracts() {
+        let mut cursor = Cursor {
+            text: "one\r\ntwo",
+            offset: 0,
+            line: 1,
+        };
+        assert_eq!(cursor.peek(), Some("one"));
+        assert_eq!(cursor.take().unwrap(), "one");
+        assert_eq!(cursor.take().unwrap(), "two");
+        assert!(cursor.take().unwrap_err().detail.contains("end of input"));
+
+        assert_eq!(argument("$MFMT", "$MFMT"), Some(""));
+        assert_eq!(argument("$MFMT\t$MIREG 007", "$MFMT"), Some("$MIREG 007"));
+        assert_eq!(argument("$MFMTX", "$MFMT"), None);
+        assert!(record_start("$REREG ext"));
+        assert!(!record_start("$DATM"));
+
+        let embedded = identifier("$MFMT $MIREG 007", 7).unwrap();
+        assert_eq!(embedded.kind, RdfileKind::Molecule);
+        assert_eq!(embedded.internal_registry.as_deref(), Some("007"));
+        let external = identifier("$REREG ext-1", 8).unwrap();
+        assert_eq!(external.kind, RdfileKind::Reaction);
+        assert_eq!(external.external_registry.as_deref(), Some("ext-1"));
+
+        for row in [
+            "$MFMT $UNKNOWN 1",
+            "$MFMT $MIREG 1 $MEREG 2",
+            "$MIREG abc",
+            "$MEREG",
+            "$UNKNOWN 1",
+        ] {
+            assert!(identifier(row, 9).is_err(), "{row}");
+        }
+        assert!(short_header(&"x".repeat(81), 10).is_err());
+        assert!(short_header("é", 10).is_err());
+    }
+
+    #[test]
+    fn rxn_and_data_helpers_reject_ambiguous_boundaries() {
+        for text in [
+            "$RXN\nname\nprogram\ncomment\n1 0 1\n",
+            "$RXN\nname\nprogram\ncomment\nx 0\n",
+            "$RXN\nname\nprogram\ncomment\n2 0\n",
+            "$RXN\nname\nprogram\ncomment\n1 0\n$NOPE\n",
+        ] {
+            let mut cursor = Cursor {
+                text,
+                offset: 0,
+                line: 1,
+            };
+            assert!(rxn_block(&mut cursor, &limits()).is_err(), "{text:?}");
+        }
+        let mut not_rxn = Cursor {
+            text: "$RXN V3000\n",
+            offset: 0,
+            line: 1,
+        };
+        assert!(rxn_block(&mut not_rxn, &limits()).is_err());
+
+        assert_eq!(datum_line("plain", 1).unwrap(), ("plain", false));
+        let folded = format!("{}+", "x".repeat(80));
+        assert_eq!(datum_line(&folded, 1).unwrap(), (&folded[..80], true));
+        assert!(datum_line("é", 1).is_err());
+
+        for text in [
+            "$DTYPE field\nnot-a-datum\n",
+            "$DTYPE field\n$DATUM $MFMT\n",
+            "$DTYPE field\n$DATUM value\n$UNKNOWN\n",
+            "$DTYPE field\n$DATUM value\n",
+        ] {
+            let mut cursor = Cursor {
+                text,
+                offset: 0,
+                line: 1,
+            };
+            if text.ends_with("value\n") {
+                assert_eq!(data(&mut cursor).unwrap().value, "value");
+            } else {
+                assert!(data(&mut cursor).is_err(), "{text:?}");
+            }
+        }
+
+        let joined = format!("$DTYPE f\n$DATUM {}+\ncontinued\n", "x".repeat(73));
+        let mut cursor = Cursor {
+            text: &joined,
+            offset: 0,
+            line: 1,
+        };
+        let parsed = data(&mut cursor).unwrap();
+        assert_eq!(parsed.name, "f");
+        assert!(parsed.value.ends_with("continued"));
+    }
+
+    #[test]
+    fn document_limits_fail_closed_at_each_public_boundary() {
+        let base = "$RDFILE 1\n$DATM test\n$MIREG 1\n";
+        assert_eq!(parse_rdfile(base).unwrap().records.len(), 1);
+
+        let mut constrained = limits();
+        constrained.max_input_bytes = base.len() - 1;
+        assert!(parse_rdfile_with_limits(base, &constrained).is_err());
+        constrained.max_input_bytes = 512;
+        constrained.max_line_len = 5;
+        assert!(parse_rdfile_with_limits(base, &constrained).is_err());
+        constrained.max_line_len = 100;
+        constrained.max_records = 0;
+        assert!(parse_rdfile_with_limits(base, &constrained).is_err());
+
+        let fields = "$RDFILE 1\n$DATM test\n$MIREG 1\n$DTYPE a\n$DATUM x\n$DTYPE b\n$DATUM y\n";
+        assert!(parse_rdfile_with_limits(fields, &limits()).is_err());
+        assert!(parse_rdfile("$RDFILE 1\n$DATM test\n$MIREG 1\0\n").is_err());
+        assert!(parse_rdfile("$RDFILE 2\n$DATM test\n").is_err());
+        assert!(parse_rdfile("$RDFILE 1\nnot-a-date\n").is_err());
+    }
+}

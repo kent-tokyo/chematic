@@ -668,26 +668,27 @@ This format is distinct from ChemicalJSON. See the
 ### Gaussian Cube
 
 - **Rust**: `chematic_mol::{parse_cube, parse_cube_with_limits, write_cube, CubeError, CubeFileReader, CubeParseLimits}`, plus the shared `VolumetricGrid` type.
-- **Python**: no free functions — only via the `VolumetricGrid` pyclass: `VolumetricGrid.from_cube()` (staticmethod), `.to_cube()`, `.values_3d`.
+- **Python**: scalar `VolumetricGrid.from_cube()` (staticmethod), `.to_cube()`, `.values_3d`; a separate [bounded dataset reader and explicit selection](cube-dataset-selection.md) supplies `read_cube_datasets`.
 - **WASM**: `mol_from_cube`, `cube_grid_json`, `write_cube_json`, plus typed-array `cube_values_f64`, `cube_shape_u32`.
 - **Streaming**: `CubeFileReader<R: BufRead>` streams the *input reading*
   only (reduces peak parse-time memory) — the returned
   `VolumetricGrid.values` is always one fully-materialized `Vec<f64>`. This
   is a different sense of "streaming" than `SdfFileReader`/`LammpsDumpReader`
-  (Cube is a single-dataset format, so there is nothing to iterate across).
+  (this native reader only supports one dataset).
 - **Coordinate units**: `GridUnits::{Bohr, Angstrom}` explicit tag; values
   are never silently normalized between them. The sign of the first-axis
   voxel count in the header disambiguates Bohr vs. Ångström (documented
   against a real spec source).
 - **Connectivity**: no bonds, ever. `GridAtom.charge` is effective nuclear
   charge, not partial/formal charge.
-- **Multi-dataset files**: **typed-rejected**, not silently truncated —
-  `CubeError::MultiDatasetUnsupported`. Cube is single-dataset-only in this
-  codebase today.
+- **Multi-dataset files**: native scalar readers return
+  `CubeError::MultiDatasetUnsupported`. The separate Python dataset reader
+  accepts positive NVAL and negative NATOMS inputs and explicitly exports
+  one scalar field, retaining original text/IDs and omitted positions.
 - **Round-trip**: not byte-identical (no claim of verbatim footer/comment
   preservation is made in the module docs).
-- **Lossy operations**: none named on the read/write path itself (the
-  multi-dataset case is rejected, not silently truncated).
+- **Lossy operations**: native scalar read/write does not silently truncate.
+  The Python dataset selection exports one chosen field with a source sidecar.
 - **Parse limits**: `CubeParseLimits { max_input_bytes, max_atoms, max_grid_points }`.
 
 ### OpenDX

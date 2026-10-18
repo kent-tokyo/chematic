@@ -13,11 +13,25 @@ import chematic
 from rdkit import Chem, RDLogger, rdBase
 from rdkit.Chem import rdRGroupDecomposition
 
+ROOT = Path(__file__).resolve().parents[1]
+
 CASES = [
-    ("[c:1]1ccccc1", "c1ccccc1", "Cc1ccccc1"),
-    ("[C:1]1CCCCC1", "C1CCCCC1", "CC1CCCCC1"),
-    ("[O:1]C", "CO", "COC"),
-    ("[N:1]C", "CN", "CNC"),
+    ("[c:1]1ccccc1", "c1ccccc1", "Cc1ccccc1", "R1"),
+    ("[C:1]1CCCCC1", "C1CCCCC1", "CC1CCCCC1", "R1"),
+    ("[O:1]C", "CO", "COC", "R1"),
+    ("[N:1]C", "CN", "CNC", "R1"),
+    ("c1ccccc1[*:1]", "c1ccccc1", "Cc1ccccc1", "R1"),
+    ("CC([*:1])O", "CCO", "CC(N)O", "R1"),
+    ("[C:1]([*:2])O", "CO", "CCO", "R2"),
+    ("c1cc([*:1])ccc1[*:2]", "Cc1ccccc1", "Cc1ccc(CC)cc1", "R2"),
+    ("c1ccncc1[*:1]", "c1ccncc1", "Cc1ccncc1", "R2"),
+    ("C([*:1])([*:2])O", "CO", "CCO", "R1"),
+    ("C([*:1])([*:2])O", "CO", "CC(O)N", "R1"),
+    ("C([*:1])([*:2])O", "CO", "CC(O)Cl", "R1"),
+    ("C([*:1])([*:2])O", "CO", "CC(O)F", "R1"),
+    ("C([*:1])([*:2])([*:3])O", "CO", "CC(O)N", "R1"),
+    ("C([*:1])([*:2])([*:3])O", "CCO", "CC(O)N", "R2"),
+    ("C([*:1])([*:2])([*:3])O", "CO", "CC(O)Cl", "R1"),
 ]
 
 
@@ -37,7 +51,7 @@ def main() -> None:
     RDLogger.DisableLog("rdApp.*")
 
     results = []
-    for core, no_group, group in CASES:
+    for core, no_group, group, hydrogen_column in CASES:
         rdkit_rows, unmatched = rdRGroupDecomposition.RGroupDecompose(
             [Chem.MolFromSmarts(core)],
             [Chem.MolFromSmiles(no_group), Chem.MolFromSmiles(group)],
@@ -52,14 +66,16 @@ def main() -> None:
             not unmatched
             and all(row is not None for row in source_rows)
             and all(
-                canonical(rdkit_rows[index][key]) == canonical(source_rows[index][key])
+                rdkit_rows[index].keys() == (source_rows[index].keys() - {"mol_idx"})
+                and all(canonical(value) == canonical(source_rows[index][key])
+                        for key, value in rdkit_rows[index].items())
                 for index in range(2)
-                for key in ("Core", "R1")
             )
             and single[0] is not None
-            and "R1" not in single[0]
+            and hydrogen_column not in single[0]
         )
         results.append({"core": core, "molecules": [no_group, group],
+                        "hydrogen_column": hydrogen_column,
                         "rdkit_rows": rdkit_rows, "chematic_rows": source_rows,
                         "single_unsubstituted_row": single[0], "graph_and_labels_match": exact})
 
@@ -68,10 +84,15 @@ def main() -> None:
         "profile": "source_labelled_rgroup_hydrogen_columns",
         "versions": {"chematic": chematic.__version__, "rdkit": rdBase.rdkitVersion},
         "extension_sha256": hashlib.sha256(extension.read_bytes()).hexdigest(),
+        "source_sha256": {
+            "crates/chematic-chem/src/rgroup.rs": hashlib.sha256(
+                (ROOT / "crates/chematic-chem/src/rgroup.rs").read_bytes()
+            ).hexdigest(),
+        },
         "agreement": {"matched": sum(row["graph_and_labels_match"] for row in results),
                       "total": len(results)},
         "cases": results,
-        "limits": ["one explicitly mapped core atom", "two molecules per core",
+        "limits": ["sixteen small mapped-atom and terminal-wildcard cases", "two molecules per core",
                    "graph and label comparison, not raw SMILES string comparison"],
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)

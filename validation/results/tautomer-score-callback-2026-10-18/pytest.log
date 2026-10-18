@@ -1,0 +1,15 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.13.6, pytest-9.1.1, pluggy-1.6.0
+rootdir: /private/tmp/chematic-tautomer-score-callback-20261018/crates/chematic-py
+configfile: pytest.ini
+collected 221 items
+
+crates/chematic-py/tests/test_tautomer_scored.py ....................... [ 10%]
+..................                                                       [ 18%]
+crates/chematic-py/tests/test_pickle.py .........                        [ 22%]
+crates/chematic-py/tests/test_rdkit_tautomer.py .........                [ 26%]
+crates/chematic-py/tests/test_rdkit_compat.py .......................... [ 38%]
+........................................................................ [ 71%]
+................................................................         [100%]
+
+============================= 221 passed in 1.66s ==============================

@@ -1,0 +1,68 @@
+
+[31m │  ⚠  Warning from the Material for MkDocs team[0m
+[31m │[0m
+[31m │[0m  MkDocs 2.0, the underlying framework of Material for MkDocs,
+[31m │[0m  will introduce backward-incompatible changes, including:
+[31m │[0m
+[31m │  × [0mAll plugins will stop working – the plugin system has been removed
+[31m │  × [0mAll theme overrides will break – the theming system has been rewritten
+[31m │  × [0mNo migration path exists – existing projects cannot be upgraded
+[31m │  × [0mClosed contribution model – community members can't report bugs
+[31m │  × [0mCurrently unlicensed – unsuitable for production use
+[31m │[0m
+[31m │[0m  Our full analysis:
+[31m │[0m
+[31m │[0m  [4mhttps://squidfunk.github.io/mkdocs-material/blog/2026/02/18/mkdocs-2.0/[0m
+[0m
+INFO    -  Cleaning site directory
+INFO    -  Building documentation to directory: /private/tmp/chematic-chains-site
+INFO    -  The following pages exist in the docs directory, but are not included in the "nav" configuration:
+  - atom-renumbering-stereo.md
+  - checked-stereo-groups.md
+  - cif-checked-writer.md
+  - cli.md
+  - cml-hydrogen-accounting.md
+  - code-audit-2026-09-10.md
+  - compatibility-dashboard.md
+  - contributor-corpus-policy.md
+  - correlated-stereo-group-alternatives.md
+  - cosmolkit-feature-gaps-2026-10-15.md
+  - crystal_scope.md
+  - depiction-preflight.md
+  - gro-element-resolution.md
+  - gzmat-precision.md
+  - implementation-provenance.md
+  - issue-473-rich-document-boundary.md
+  - local-cation-resonance.md
+  - meso-stereo-group-reduction.md
+  - mmcif-pdb-checked.md
+  - mmcif-residue-identity.md
+  - native-stereo-candidate-budget.md
+  - openbabel-file-io.md
+  - openbabel-interchange-plan.md
+  - openbabel-open-issues-2026-10-14.md
+  - parent-identity.md
+  - parse-morgan-performance-plan.md
+  - pqr-pdbqt-charge-preservation.md
+  - product-naming.md
+  - query-hydrogen-folding.md
+  - rdfile-records.md
+  - rdkit-distance-matrix-limits.md
+  - rdkit-layered-fingerprint-options.md
+  - rdkit-open-issues-2026-10-14.md
+  - rdkit-ring-count-profiles.md
+  - refactoring-inventory.md
+  - release-key-custody.md
+  - release-metadata.md
+  - screening-enrichment.md
+  - security-surface.md
+  - semantic-model.md
+  - smirks-apply-model.md
+  - stereo-group-inversion.md
+  - trust-release-plan.md
+  - turbomole-lattice-preservation.md
+  - upstream-issue-integration-2026-10-15.md
+  - v1.0-local-release-gate.md
+  - security-review/v0.89.0-local-review.md
+  - security-review/v1.0-independent-review-packet.md
+INFO    -  Documentation built in 2.26 seconds

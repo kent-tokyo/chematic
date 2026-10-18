@@ -207,6 +207,14 @@ impl MoleculeBuilder {
         &self.atoms[idx.0 as usize]
     }
 
+    /// Set the formal charge of an atom already added to the builder.
+    ///
+    /// # Panics
+    /// Panics if `idx` is out of range.
+    pub fn set_atom_charge(&mut self, idx: AtomIdx, charge: i8) {
+        self.atoms[idx.0 as usize].charge = charge;
+    }
+
     /// Number of atoms added so far.
     pub fn atom_count(&self) -> usize {
         self.atoms.len()

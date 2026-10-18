@@ -1,0 +1,12 @@
+[
+  {
+    "name": "specified_vs_unspecified_stereo_tie",
+    "inputs": [
+      "CC(F)O",
+      "C[C@H](F)O"
+    ],
+    "candidate": "CC(O)F",
+    "reference": "C[C@@H](O)F",
+    "counted_as_parity": false
+  }
+]

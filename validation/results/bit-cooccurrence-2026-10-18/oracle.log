@@ -1,0 +1,15 @@
+{
+  "rdkit": "2026.09.1",
+  "numpy": "2.5.3",
+  "seed": 960101,
+  "datasets": 128,
+  "final_comparisons": 512,
+  "pair_values": 22240,
+  "paired_votes": 12056,
+  "prefix_checks": 1536,
+  "metamorphic_checks": 1536,
+  "max_count_error": 0,
+  "diagnostics": 2,
+  "inputs_sha256": "90a22054f8809a74e7b73ea9b537244bc28401c5b5544e6bef62894169ea96bc",
+  "scope": "Exact selected-pair counts and lifecycle; source-profile differences separate from ordinary parity"
+}

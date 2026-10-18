@@ -1,0 +1,5 @@
+validation/results/compat-graph-matrices-2026-10-18/typing_invalid.py:7: error: Argument 1 to "GetAdjacencyMatrix" has incompatible type "str"; expected "Mol"  [arg-type]
+validation/results/compat-graph-matrices-2026-10-18/typing_invalid.py:8: error: Argument "emptyVal" to "GetAdjacencyMatrix" has incompatible type "float"; expected "SupportsIndex"  [arg-type]
+validation/results/compat-graph-matrices-2026-10-18/typing_invalid.py:9: error: Argument "prefix" to "GetDistanceMatrix" has incompatible type "bytes"; expected "str"  [arg-type]
+validation/results/compat-graph-matrices-2026-10-18/typing_invalid.py:10: error: Argument "useAtomWts" to "GetDistanceMatrix" has incompatible type "str"; expected "bool"  [arg-type]
+Found 4 errors in 1 file (checked 1 source file)

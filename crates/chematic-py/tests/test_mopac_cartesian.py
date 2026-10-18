@@ -61,7 +61,7 @@ def test_invalid_reader_input(body):
         chematic.parse_mopac_cartesian('PM7 XYZ\noriginal\n\n'+body)
 
 
-@pytest.mark.parametrize('keyword', ['A0', 'PM7 a0=1', 'PM7 +', '++', 'PM7 &'])
+@pytest.mark.parametrize('keyword', ['A0', 'PM7 a0=1', '++', 'PM7 &'])
 def test_unsupported_units_and_continuations(keyword):
     with pytest.raises(ValueError, match='line 1'):
         chematic.parse_mopac_cartesian(keyword+'\n\n\nC 0 0 0')
@@ -97,3 +97,21 @@ def test_crlf_fortran_precision_and_stub():
     p = Path(__file__).resolve().parents[1]/'python/chematic/__init__.pyi'
     names = {n.name for n in ast.parse(p.read_text(encoding="utf-8")).body if isinstance(n, ast.FunctionDef)}
     assert {'parse_mopac_cartesian', 'write_mopac_cartesian'} <= names
+
+
+@pytest.mark.parametrize("keywords", ["PM7 XYZ +\nCHARGE=+1", "PM7 + XYZ\nCHARGE=+1 +\nPRECISE"])
+def test_keyword_continuation_keeps_descriptions_and_roundtrips(keywords):
+    text = keywords + "\ntitle\ncomment\nC 0 0 0\nO 1.4 0.2 -0.5\n"
+    parsed = chematic.parse_mopac_cartesian(text)
+    assert parsed["keywords"] == keywords
+    assert parsed["title"] == "title"
+    assert parsed["comment"] == "comment"
+    assert parsed["source_text"] == text
+    assert parsed["elements"] == ["C", "O"]
+    output = chematic.write_mopac_cartesian(
+        parsed["elements"], parsed["positions_angstrom"],
+        keywords=parsed["keywords"], title=parsed["title"], comment=parsed["comment"],
+    )
+    reread = chematic.parse_mopac_cartesian(output)
+    assert reread["keywords"] == keywords
+    assert reread["positions_angstrom"] == parsed["positions_angstrom"]

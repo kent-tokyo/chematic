@@ -1881,6 +1881,91 @@ mod tests {
     }
 
     #[test]
+    fn cleanup_preserves_aromatic_n_oxide_charge_and_valence() {
+        for input in ["c1cc[n+]([O-])cc1", "[O-][n+]1ccccc1"] {
+            let cleaned = cleanup(&parse(input).unwrap());
+            assert_eq!(
+                chematic_smiles::rdkit_canonical_smiles(&cleaned).as_deref(),
+                Ok("[O-][n+]1ccccc1"),
+                "{input}"
+            );
+        }
+    }
+
+    #[test]
+    fn cleanup_neutralizes_ortho_and_para_pyridinium_phenoxide() {
+        assert_eq!(
+            chematic_perception::assign_aromaticity(&parse("C[N+]1=CC=C(C=C1)[O-]").unwrap())
+                .aromatic_atom_count(),
+            6
+        );
+        for (input, expected) in [
+            ("[O-]c1cc[n+](C)cc1", "Cn1ccc(=O)cc1"),
+            ("C[N+]1=CC=C(C=C1)[O-]", "Cn1ccc(=O)cc1"),
+            ("[O-]c1cccc[n+]1[O-]", "O=c1ccccn1[O-]"),
+            ("c1c([O-])cc[n+](c1)C", "Cn1ccc(=O)cc1"),
+            ("[O-]c1cc[nH+]cc1", "O=c1cc[nH]cc1"),
+            ("[O-]c1cccc[nH+]1", "O=c1cccc[nH]1"),
+            // The meta charge-separated form is outside this normalization.
+            ("[O-]c1ccc[n+](C)c1", "C[n+]1cccc([O-])c1"),
+            ("[O-]c1cc[n+](CC)cc1", "CCn1ccc(=O)cc1"),
+            ("[O-]c1cc[n+](C)c(F)c1", "Cn1ccc(=O)cc1F"),
+            ("[O-]c1cc[n+](C)c(Cl)c1", "Cn1ccc(=O)cc1Cl"),
+            ("[O-]c1cc[n+](C)cc1C", "Cc1cn(C)ccc1=O"),
+            // Fused systems are intentionally outside the simple-ring rule.
+            ("[O-]c1ccc2cc[n+](C)cc2c1", "C[n+]1ccc2ccc([O-])cc2c1"),
+            ("[O-]c1cc[n+](C)cc1[O-]", "Cn1ccc(=O)c([O-])c1"),
+            ("[O-]c1cc[n+](C)cc1.[Na+]", "Cn1ccc(=O)cc1.[Na+]"),
+            (
+                "[O-]c1cc[n+](C)cc1.[O-]c1cc[n+](C)cc1",
+                "Cn1ccc(=O)cc1.Cn1ccc(=O)cc1",
+            ),
+        ] {
+            let cleaned = cleanup(&parse(input).unwrap());
+            assert_eq!(
+                chematic_smiles::rdkit_cleanup_canonical_smiles(&cleaned).as_deref(),
+                Ok(expected),
+                "{input}"
+            );
+            assert_eq!(
+                chematic_smiles::rdkit_cleanup_canonical_smiles(&cleanup(&cleaned)).as_deref(),
+                Ok(expected),
+                "second Cleanup: {input}"
+            );
+        }
+    }
+
+    #[test]
+    fn cleanup_writer_keeps_isolated_metal_coordination_tag() {
+        for (input, expected) in [
+            ("F[Pt@SP1](Cl)(Br)I", "[Br-].[Cl-].[F-].[I-].[Pt@SP1+4]"),
+            ("F[Pt@SP2](Cl)(Br)I", "[Br-].[Cl-].[F-].[I-].[Pt@SP2+4]"),
+            (
+                "C[Co@OH1](N)(N)(N)(N)Cl",
+                "[CH3-].[Cl-].[Co@OH1+6].[NH2-].[NH2-].[NH2-].[NH2-]",
+            ),
+            (
+                "C[Fe@TB2](F)(Cl)(Br)I",
+                "[Br-].[CH3-].[Cl-].[F-].[Fe@TB2+5].[I-]",
+            ),
+        ] {
+            let cleaned = cleanup(&parse(input).unwrap());
+            assert_eq!(
+                chematic_smiles::rdkit_cleanup_canonical_smiles(&cleaned).as_deref(),
+                Ok(expected),
+                "{input}"
+            );
+        }
+        // A vacant coordination site changes the permutation when the ligands
+        // are removed. Until that remapping is represented, omit the tag.
+        let partial = cleanup(&parse("F[Pt@SP1](Cl)Br").unwrap());
+        assert_eq!(
+            chematic_smiles::rdkit_cleanup_canonical_smiles(&partial).as_deref(),
+            Ok("[Br-].[Cl-].[F-].[Pt+3]")
+        );
+    }
+
+    #[test]
     fn cleanup_disconnects_covalent_metal_ligands_with_charge_balance() {
         let mol = parse("Cl[Au]").unwrap();
         let cleaned = cleanup(&mol);
@@ -1912,6 +1997,41 @@ mod tests {
                 chematic_smiles::rdkit_canonical_smiles(&cleaned).as_deref(),
                 Ok(expected),
                 "{input}"
+            );
+        }
+    }
+
+    #[test]
+    fn cleanup_charges_bare_isolated_metals_like_rdkit() {
+        // RDKit 2026.09.1 Cleanup changes only the bare isolated atoms in
+        // this set. Explicit hydrides and bonded metals retain their form.
+        for (input, expected) in [
+            ("[Li]", "[Li+]"),
+            ("[Na]", "[Na+]"),
+            ("[K]", "[K+]"),
+            ("[Mg]", "[Mg+2]"),
+            ("[Ca]", "[Ca+2]"),
+            ("[Rb]", "[Rb]"),
+            ("[Cs]", "[Cs]"),
+            ("[13Na:7]", "[13Na+:7]"),
+            ("[LiH]", "[LiH]"),
+            ("[MgH2]", "[MgH2]"),
+            ("[H][Li]", "[LiH]"),
+            ("[H][Mg][H]", "[MgH2]"),
+            ("[Na]C", "[CH3][Na]"),
+            ("[Na].c1ccccc1", "[Na+].c1ccccc1"),
+            ("[Na].F[C@](Cl)(Br)I", "F[C@](Cl)(Br)I.[Na+]"),
+        ] {
+            let cleaned = cleanup(&parse(input).unwrap());
+            assert_eq!(
+                chematic_smiles::rdkit_cleanup_canonical_smiles(&cleaned).as_deref(),
+                Ok(expected),
+                "{input}"
+            );
+            assert_eq!(
+                chematic_smiles::rdkit_cleanup_canonical_smiles(&cleanup(&cleaned)).as_deref(),
+                Ok(expected),
+                "second Cleanup: {input}"
             );
         }
     }

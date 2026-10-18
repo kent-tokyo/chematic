@@ -1,0 +1,5 @@
+validation/results/metric-matrix-facade-2026-10-18/typing_invalid.py:2: error: Argument 1 has incompatible type "int"; expected "Iterable[Iterable[float]]"  [arg-type]
+validation/results/metric-matrix-facade-2026-10-18/typing_invalid.py:3: error: List item 0 has incompatible type "str"; expected "float"  [list-item]
+validation/results/metric-matrix-facade-2026-10-18/typing_invalid.py:4: error: List item 0 has incompatible type "list[int]"; expected "MetricBitVector"  [list-item]
+validation/results/metric-matrix-facade-2026-10-18/typing_invalid.py:5: error: Incompatible types in assignment (expression has type "ndarray[tuple[int], dtype[float64]]", variable has type "list[float]")  [assignment]
+Found 4 errors in 1 file (checked 1 source file)

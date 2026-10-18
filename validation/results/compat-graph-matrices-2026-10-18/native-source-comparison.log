@@ -1,0 +1,9 @@
+Native fixture source: ca7e14e892cab8b495183bcda4449f49471ba1b1
+Candidate base: f99c7b8ab33098a2e1fd9fd568aee370bf79ab38
+Unchanged source paths:
+crates/chematic-smiles/src/rdkit/graph_queries.rs
+crates/chematic-smiles/src/rdkit/matrices.rs
+crates/chematic-smiles/src/rdkit/matrices
+crates/chematic-py/src/mol_methods/graph_queries.rs
+Unchanged transformations methods: atom_count, rdkit_distance_matrix
+No current-main native rebuild or whole-extension equivalence claim.

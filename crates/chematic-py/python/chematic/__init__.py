@@ -15,6 +15,8 @@ from .chematic import *
 from ._xbs import XbsBondRule, XbsSpecies, write_xbs
 from ._xyz_atom_data import XyzAtomDataFrame, parse_xyz_atom_data
 from ._xsf import write_xsf_checked
+from ._pdb_merge import PdbMergeAtom, PdbMergeLoss, PdbMergeResult, merge_pdb_coordinate_blocks
+from ._cube_datasets import CubeDatasetDocument, CubeDatasetSelection, read_cube_datasets
 from .chematic import (
     __version__,
     Mol,
@@ -687,3 +689,18 @@ from ._mcs_comparators import (
 from ._pdb_hydrogen_names import (
     PdbHydrogenName, PdbHydrogenNaming, name_pdb_hydrogens_checked,
 )
+
+from ._maestro import MaeExport, write_mae_checked, v2000_to_mae_checked
+from ._mmcif_chains import (
+    MmcifChain as MmcifChain,
+    MmcifChainAtom as MmcifChainAtom,
+    MmcifChainRead as MmcifChainRead,
+    MmcifChainResidue as MmcifChainResidue,
+    read_mmcif_chains as read_mmcif_chains,
+)
+from ._pdb_atom_records import (
+    PdbAtomRead as PdbAtomRead,
+    PdbAtomRecord as PdbAtomRecord,
+    read_pdb_atom_records as read_pdb_atom_records,
+)
+from ._scored_tautomer import rdkit_pick_tautomer_scored as rdkit_pick_tautomer_scored

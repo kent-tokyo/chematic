@@ -1,5 +1,5 @@
 use super::*;
-use chematic_core::{Element, MoleculeBuilder};
+use chematic_core::{BondIdx, Element, MoleculeBuilder, RGroupLabel, StereoGroup, StereoGroupKind};
 
 #[test]
 fn numeric_edges_and_missing_coordinates_are_byte_identical() {
@@ -134,4 +134,107 @@ fn cfg_filter_retains_first_match_and_historical_whitespace() {
             }
         }
     }
+}
+
+#[test]
+fn reference_writer_covers_query_bonds_rgroups_and_enhanced_stereo() {
+    let mut builder = MoleculeBuilder::new();
+    let center = builder.add_atom(Atom::new(Element::C));
+    let numbered = builder.add_atom(Atom::new(Element::C));
+    builder.set_r_group(numbered, RGroupLabel::numbered(17).unwrap());
+    let unnumbered = builder.add_atom(Atom::new(Element::C));
+    builder.set_r_group(unnumbered, RGroupLabel::unnumbered());
+    let mut wildcard = Atom::new(Element::C);
+    wildcard.wildcard = true;
+    let wildcard = builder.add_atom(wildcard);
+
+    let orders = [
+        BondOrder::Zero,
+        BondOrder::Single,
+        BondOrder::Up,
+        BondOrder::Down,
+        BondOrder::Double,
+        BondOrder::Triple,
+        BondOrder::Aromatic,
+        BondOrder::Quadruple,
+        BondOrder::QuerySingleOrDouble,
+        BondOrder::QuerySingleOrAromatic,
+        BondOrder::QueryDoubleOrAromatic,
+        BondOrder::QueryAny,
+        BondOrder::Dative,
+    ];
+    let mut bonds = Vec::new();
+    for order in orders {
+        let leaf = builder.add_atom(Atom::new(Element::C));
+        bonds.push(builder.add_bond(center, leaf, order).unwrap());
+    }
+    builder.add_stereo_group_with_bonds(
+        StereoGroup::new(StereoGroupKind::Absolute, vec![numbered]),
+        vec![bonds[0]],
+    );
+    builder.add_stereo_group_with_bonds(
+        StereoGroup::new(StereoGroupKind::Or(2), vec![unnumbered]),
+        vec![bonds[1]],
+    );
+    builder.add_stereo_group_with_bonds(
+        StereoGroup::new(StereoGroupKind::And(3), vec![wildcard]),
+        vec![bonds[2]],
+    );
+    let mol = builder.build();
+    let metadata = MolMetadata {
+        v3000_sgroups: vec!["1 DAT 0 ATOMS=(1 1) FIELDNAME=source".into()],
+        v3000_atom_properties: vec![(1, "INVRET=1".into())],
+        v3000_bond_properties: vec![(1, "CFG=2 TOPO=1".into())],
+        ..Default::default()
+    };
+    let conformer = Coords3D {
+        points: (0..mol.atom_count())
+            .map(|index| Point3::new(index as f64, -(index as f64), 0.5))
+            .collect(),
+    };
+
+    let expected_2d = write_mol_v3000(&mol, &metadata, &[]);
+    let reference_2d = reference::write_mol_v3000(&mol, &metadata, &[]);
+    assert_eq!(reference_2d, expected_2d);
+    assert!(reference_2d.contains("R#"));
+    assert!(reference_2d.contains(" RGROUPS=(1 17)"));
+    assert!(reference_2d.contains(" MDLV30/STEABS ATOMS="));
+    assert!(reference_2d.contains(" MDLV30/STEBREL2 BONDS="));
+    assert!(reference_2d.contains(" MDLV30/STERAC3 ATOMS="));
+
+    assert_eq!(
+        reference::write_mol_v3000_with_conformer(&mol, &metadata, &conformer),
+        write_mol_v3000_with_conformer(&mol, &metadata, &conformer)
+    );
+}
+
+#[test]
+fn reference_writer_exercises_depiction_and_checked_failure_paths() {
+    let chiral = chematic_smiles::parse("F[C@](Cl)(Br)I").unwrap();
+    let metadata = MolMetadata::default();
+    let (reference_block, reference_loss) =
+        reference::write_mol_v3000_with_stereo_report(&chiral, &metadata, &[]);
+    let (optimized_block, optimized_loss) =
+        write_mol_v3000_with_stereo_report(&chiral, &metadata, &[]);
+    assert_eq!(reference_loss, optimized_loss);
+    assert!(reference_block.contains(" CFG="));
+    let reference_roundtrip = read_mol_v3000_with_diagnostics(&reference_block).unwrap();
+    let optimized_roundtrip = read_mol_v3000_with_diagnostics(&optimized_block).unwrap();
+    assert_eq!(reference_roundtrip.mol.atom_count(), chiral.atom_count());
+    assert_eq!(reference_roundtrip.mol.bond_count(), chiral.bond_count());
+    assert_eq!(
+        reference_roundtrip.mol.atom(AtomIdx(1)).chirality,
+        optimized_roundtrip.mol.atom(AtomIdx(1)).chirality
+    );
+
+    let square_planar = chematic_smiles::parse("[Pt@SP1](Cl)(Cl)(N)N").unwrap();
+    let empty = Coords3D::new_zeroed(0);
+    assert_eq!(
+        reference::write_mol_v3000_with_conformer_checked(&square_planar, &metadata, &empty,)
+            .unwrap_err(),
+        write_mol_v3000_with_conformer_checked(&square_planar, &metadata, &empty).unwrap_err()
+    );
+
+    // The first bond is also the first enhanced-stereo bond member above.
+    assert_eq!(BondIdx(0).0, 0);
 }

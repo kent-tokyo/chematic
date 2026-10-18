@@ -1,0 +1,79 @@
+{
+  "base_commit": "f99c7b8ab33098a2e1fd9fd568aee370bf79ab38",
+  "created_at_utc": "2026-10-18T08:01:59.087815+00:00",
+  "issue": {
+    "number": 9601,
+    "state": "OPEN",
+    "title": "Tracking: nanobind wrapper improvements",
+    "updatedAt": "2026-09-29T16:40:13Z",
+    "url": "https://github.com/rdkit/rdkit/issues/9601",
+    "checked_at_utc": "2026-10-18T08:01:59.078489+00:00"
+  },
+  "issue_scope": "Adjacent typed InfoTheory binary-source capability; no reported co-occurrence algorithm defect or whole-issue closure claim.",
+  "versions": {
+    "python": "3.13.6",
+    "numpy": "2.5.3",
+    "pytest": "9.1.1",
+    "rdkit": "2026.09.1"
+  },
+  "native_fixture": {
+    "source_commit": "ca7e14e892cab8b495183bcda4449f49471ba1b1",
+    "sha256": "90f81980b0fdf06c8edb616d8f8e5acd1831a9b6de404ed2b3405646cff41423",
+    "bytes": 85142576,
+    "path": "/private/tmp/chematic-bit-correlation-python/chematic/chematic.so",
+    "source_provenance": "validation/results/checked-core-removal-2026-10-17/provenance.json"
+  },
+  "native_scope": "The new algorithm uses Python/NumPy only. Verified old native extension is reused as an import/legacy regression fixture; no fresh current-main native build, whole-extension equivalence or published-wheel claim.",
+  "rdkit_reference_module": {
+    "path": "/private/tmp/chematic-sparse-tanimoto-rdkit/rdkit/ML/InfoTheory/rdInfoTheory.so",
+    "sha256": "d6bd02e3c4f759aaa42af12c0e4273c5de1055431d7671aa945817d11c5b4870"
+  },
+  "source_sha256": {
+    "CHANGELOG.md": "5da59c9bf72f447ab0dfbc09c0ed03a85960187e6db84f6bc6a8230ef7ed1739",
+    "mkdocs.yml": "0d7e1d7d376a77ec221d32bf8b957d8824b78c603cc92351a2c3f42205af6fa0",
+    "crates/chematic-py/python/chematic/_bit_correlation.py": "9f56fb736c1dbfb18efb081bda12c27f4de0bc729c048401178c9c527c2b1bdb",
+    "crates/chematic-py/python/chematic/_info_theory.py": "6278635aa6e86e93f2425263f809dc8be461e1ffb9fce2066ba753c7c09d6c1e",
+    "crates/chematic-py/tests/test_bit_cooccurrence.py": "58040e2c962f88bebca6e75a2ee532ad40074b520a824677ca1726e6e065b430",
+    "docs/bit-cooccurrence.md": "4a01c5102286da58e1dba15f556a15764fb1caf882eb59db5661876aab2228dc",
+    "docs/rdkit-open-issues-2026-10-14.md": "321169d52162b040dccfd8e48620acaee4dd48acbe9d18fc02b0de111ae31156",
+    "docs/info-bit-ranker.md": "269b9046086c4bbcef1749d469874889ebdad50d00c2f070fadeb0274889c77e"
+  },
+  "evidence_sha256": {
+    "README.md": "3a2eb72dafba400dd7b255b60ae6d2e6499d788c317c8191b6338c7b0e97d0e8",
+    "docs-and-typing.log": "398de30044de3d3d906f709db91daa06e758f8d5db4ef7e514973d583d2c5b43",
+    "mkdocs.log": "9caaf72c6daddb84a10d076347ffcf5985effbf68afb6f78c6f9c4b9fc4b43bd",
+    "mypy.ini": "b3c07edfe9ab1800aff27b3bf50c4caee3c87c03b4ea2d59f4231e3864140eb6",
+    "oracle-summary.json": "3fe1e5d036bbdbe0ecfad19cb0d87ee310a894467273009ff7dc65d8af783624",
+    "oracle.log": "3fe1e5d036bbdbe0ecfad19cb0d87ee310a894467273009ff7dc65d8af783624",
+    "oracle.py": "9ef6bfaf87384ea1bb7db40ee97cffe85b08b5944d6fdd98c81af492d0c8d4c0",
+    "pytest.log": "ac251fe529476c58fba18a10e540b8add19564c4bfdb560b80c85deac9f4ce12",
+    "reference-diagnostics.json": "9ba0b7f3248ca3de890cab258806464bc053c0d908a125a441f36ecedac29149",
+    "source-gates.log": "93c5929e06701a031d620af7c18bf7d7cd727c1b57d60a0f68d554583d065729",
+    "typing-invalid.log": "570613723b71303cad1f8661dea70d4e7364e1618e33c1faa158186702af77d7",
+    "typing-valid.log": "f9b031e5c45aa702cd4fef028d465551cb20a2c4698e0913c7b00766b20ac4d8",
+    "typing_invalid.py": "dd3b9286bcc0225ffa2ea13ae2ed98918384bdd4339f8c45b525b2f9b8ea6eb0",
+    "typing_valid.py": "21b4d03b19964b39127d9c65fbf716593ea5d8109535158118b8737a309e6215"
+  },
+  "oracle_summary": {
+    "rdkit": "2026.09.1",
+    "numpy": "2.5.3",
+    "seed": 960101,
+    "datasets": 128,
+    "final_comparisons": 512,
+    "pair_values": 22240,
+    "paired_votes": 12056,
+    "prefix_checks": 1536,
+    "metamorphic_checks": 1536,
+    "max_count_error": 0,
+    "diagnostics": 2,
+    "inputs_sha256": "90a22054f8809a74e7b73ea9b537244bc28401c5b5544e6bef62894169ea96bc",
+    "scope": "Exact selected-pair counts and lifecycle; source-profile differences separate from ordinary parity"
+  },
+  "pytest": {
+    "total": 262,
+    "new": 37,
+    "entropy": 44,
+    "chi_square": 19,
+    "compatibility": 162
+  }
+}

@@ -161,3 +161,36 @@ fn validate_bonds(mol: &Molecule) -> Result<(), RootedSmilesError> {
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod diagnostic_tests {
+    use super::*;
+    use std::error::Error as _;
+
+    #[test]
+    fn every_refusal_has_a_stable_human_readable_diagnostic() {
+        let cases = [
+            RootedSmilesError::InvalidRoot { root: 3, atoms: 2 },
+            RootedSmilesError::ResourceLimit {
+                atoms: 257,
+                limit: ROOTED_SMILES_MAX_ATOMS,
+            },
+            RootedSmilesError::MissingStereoFrame { atom: 1 },
+            RootedSmilesError::InvalidStereoFrame { atom: 2 },
+            RootedSmilesError::UnsupportedStereo { atom: None },
+            RootedSmilesError::UnsupportedStereo { atom: Some(4) },
+            RootedSmilesError::UnsupportedBond {
+                bond: 0,
+                order: BondOrder::QueryAny,
+            },
+            RootedSmilesError::InvalidMetadata(RenumberError::DuplicateAtom(AtomIdx(1))),
+        ];
+        for error in cases {
+            assert!(!error.to_string().is_empty());
+            assert_eq!(
+                error.source().is_some(),
+                matches!(error, RootedSmilesError::InvalidMetadata(_))
+            );
+        }
+    }
+}

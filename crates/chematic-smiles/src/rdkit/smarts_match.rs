@@ -623,3 +623,104 @@ pub(crate) fn substruct_match(q: &Query, mol: &Mol) -> Vec<Vec<usize>> {
     }
     res
 }
+
+#[cfg(test)]
+mod contract_tests {
+    use super::*;
+
+    fn model(smiles: &str) -> Mol {
+        super::super::rdkit_mol_sanitized(&crate::parse(smiles).unwrap()).unwrap()
+    }
+
+    #[test]
+    fn atom_primitives_cover_ranges_recursion_and_boolean_composition() {
+        let molecule = model("[13CH3][C@H](O)Cl.c1ncccc1.CC#N");
+        let cases = [
+            ("*", true),
+            ("[#6]", true),
+            ("[13C]", true),
+            ("[H1]", true),
+            ("[D{1-4}]", true),
+            ("[X{1-4}]", true),
+            ("[v{1-4}]", true),
+            ("[R]", true),
+            ("[r{5-6}]", true),
+            ("[z]", true),
+            ("[Z]", true),
+            ("[x]", true),
+            ("[A]", true),
+            ("[a]", true),
+            ("[+0,-1]", true),
+            ("[!#8]", true),
+            ("[$([#6]-[#8])]", true),
+            ("[Xe]", false),
+            ("[+3]", false),
+        ];
+        for (smarts, expected) in cases {
+            let query = parse(smarts);
+            assert_eq!(
+                !substruct_match(&query, &molecule).is_empty(),
+                expected,
+                "{smarts}"
+            );
+            assert_eq!(
+                first_atoms(&query, &molecule).iter().any(|&hit| hit),
+                expected
+            );
+        }
+    }
+
+    #[test]
+    fn bond_primitives_preserve_ring_and_order_semantics() {
+        let molecule = model("C1=CC=CC=C1.CC=C.CC#N.CCO");
+        for smarts in [
+            "*~*", "*-*", "*=*", "*#*", "*:*", "*@*", "*!@*", "*-,=*", "*-;!@*",
+        ] {
+            let query = parse(smarts);
+            assert!(query.num_bonds() > 0, "{smarts}");
+            assert!(!substruct_match(&query, &molecule).is_empty(), "{smarts}");
+            let (left, right) = query.bond_atoms(0);
+            assert_ne!(left, right);
+        }
+        assert!(substruct_match(&parse("[Xe]~[Xe]"), &molecule).is_empty());
+    }
+
+    #[test]
+    fn parser_and_integer_properties_cover_supported_edge_syntax() {
+        for smarts in [
+            "C%12CCCCC%12",
+            "C-&!@C",
+            "A",
+            "Cl",
+            "Br",
+            "[C&H1]",
+            "[+++]",
+            "[se]",
+            "[te]",
+            "[as]",
+            "[si]",
+            "[*]",
+            "[U]",
+        ] {
+            let query = parse(smarts);
+            assert!(!query.atoms.is_empty(), "{smarts}");
+        }
+
+        let mut parser = Parser {
+            s: b"",
+            pos: 0,
+            recursive: Vec::new(),
+        };
+        assert_eq!(parser.range(), None);
+
+        let molecule = model("C1COCC1");
+        assert_eq!(int_prop(IntProp::AliphaticHeteroNbrs, &molecule, 1), 1);
+        assert_eq!(int_prop(IntProp::RingBondCount, &molecule, 0), 2);
+
+        let mut many_atoms = Mol::default();
+        for _ in 0..1001 {
+            many_atoms.add_atom(Atom::new(6));
+        }
+        assert_eq!(substruct_match(&parse("*"), &many_atoms).len(), 1000);
+    }
+}

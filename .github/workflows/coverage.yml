@@ -117,13 +117,13 @@ jobs:
           if-no-files-found: error
           retention-days: 14
       # Save diagnostics before enforcing the threshold so a regression remains
-      # inspectable. Keep the same scope and minimum coverage as before.
+      # inspectable.
       - name: Enforce line coverage
         if: ${{ !cancelled() && steps.report.outcome == 'success' }}
         run: >-
           cargo llvm-cov report
           --ignore-filename-regex "$COVERAGE_IGNORE_REGEX"
-          --fail-under-lines 96.5
+          --fail-under-lines 96.7
       - name: Upload coverage to Codecov
         # Dependabot PRs have read-only permissions and cannot request OIDC.
         # Their measurement and downloadable reports still run above.

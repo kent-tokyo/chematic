@@ -15,6 +15,19 @@ Quick start::
 from __future__ import annotations
 from typing import Protocol, SupportsIndex
 
+from ._mmcif_chains import (
+    MmcifChain as MmcifChain,
+    MmcifChainAtom as MmcifChainAtom,
+    MmcifChainRead as MmcifChainRead,
+    MmcifChainResidue as MmcifChainResidue,
+    read_mmcif_chains as read_mmcif_chains,
+)
+from ._pdb_atom_records import (
+    PdbAtomRead as PdbAtomRead,
+    PdbAtomRecord as PdbAtomRecord,
+    read_pdb_atom_records as read_pdb_atom_records,
+)
+
 from ._pdb_models import (
     PdbModelFile as PdbModelFile,
     PdbModelSplit as PdbModelSplit,
@@ -33,6 +46,17 @@ from ._xbs import XbsBondRule as XbsBondRule, XbsSpecies as XbsSpecies, write_xb
 from ._xyz_atom_data import XyzAtomDataFrame as XyzAtomDataFrame, parse_xyz_atom_data as parse_xyz_atom_data
 
 from ._xsf import write_xsf_checked as write_xsf_checked
+from ._pdb_merge import (
+    PdbMergeAtom as PdbMergeAtom,
+    PdbMergeLoss as PdbMergeLoss,
+    PdbMergeResult as PdbMergeResult,
+    merge_pdb_coordinate_blocks as merge_pdb_coordinate_blocks,
+)
+from ._cube_datasets import (
+    CubeDatasetDocument as CubeDatasetDocument,
+    CubeDatasetSelection as CubeDatasetSelection,
+    read_cube_datasets as read_cube_datasets,
+)
 
 from typing import overload, Callable, Any, Iterable, Iterator, Literal, Optional, Sequence, TypedDict, Union
 
@@ -5552,7 +5576,7 @@ def write_fhiaims(elements: Sequence[str], coordinates: Sequence[Sequence[float]
 
 
 def parse_mopac_cartesian(text: str, *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None) -> dict[str, Any]:
-    """Read checked MOPAC Cartesian angstrom geometry, retaining labels and optional flags."""
+    """Read checked MOPAC Cartesian geometry, including bounded standalone + keyword continuations."""
     ...
 
 def write_mopac_cartesian(elements: Sequence[str], positions_angstrom: Sequence[Sequence[float]], *, keywords: str = "", title: str = "", comment: str = "", labels: Optional[Sequence[Optional[str]]] = None, optimization_flags: Optional[Sequence[Optional[Sequence[str]]]] = None, translation_vectors_angstrom: Optional[Sequence[Sequence[float]]] = None, translation_flags: Optional[Sequence[Optional[Sequence[str]]]] = None) -> str:
@@ -5754,3 +5778,6 @@ from ._pdb_hydrogen_names import (
     PdbHydrogenNaming as PdbHydrogenNaming,
     name_pdb_hydrogens_checked as name_pdb_hydrogens_checked,
 )
+
+from ._maestro import MaeExport as MaeExport, write_mae_checked as write_mae_checked, v2000_to_mae_checked as v2000_to_mae_checked
+from ._scored_tautomer import rdkit_pick_tautomer_scored as rdkit_pick_tautomer_scored

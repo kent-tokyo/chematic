@@ -23,6 +23,7 @@ operation-level measurement and unsupported states, see the
 | Fingerprints | `rdFingerprintGenerator.GetMorganGenerator(...)` | `mol.ecfp4()` or named RDKit-compatible Morgan API | Native ECFP and RDKit Morgan bit positions are different profiles. |
 | Path enumeration | `Chem.FindAllPathsOfLengthN` | `mol.rdkit_paths_of_length(length)` | Ordered atom/bond indices, rooted/H/shortest options and bounded search. See [scope](rdkit-path-enumeration.md). |
 | Atom environments | `Chem.FindAtomEnvironmentOfRadiusN` | `mol.rdkit_atom_environment(radius, rooted_at_atom)` | Ordered model bonds and atom distances; hydrogen/size flags and bounded search. See [scope](rdkit-atom-environment.md). |
+| NumPy graph matrices | `Chem.GetAdjacencyMatrix`, `Chem.GetDistanceMatrix` | Same function names on `chematic.rdkit_compat` | Bounded to 1024 input atoms, empty cache prefix and zero adjacency fill; refuses prepared-index mismatch. See [NumPy facade](compat-graph-matrices.md). |
 | Graph queries | `Chem.GetAdjacencyMatrix`, `Chem.GetShortestPath` | `mol.rdkit_adjacency_matrix()`, `mol.rdkit_shortest_path(start, end)` | Sanitized RDKit atom order; adjacency emptyVal=0 only; 1024 atom / 16384 bond input caps. See [graph-query scope](rdkit-graph-queries.md). |
 | Similarity | `DataStructs.TanimotoSimilarity(a, b)` | `chematic.tanimoto(a, b)` | Use fingerprints from the same declared profile. |
 | 2D depiction | `rdMolDraw2D.MolDraw2DSVG` | `mol._repr_svg_()`; Rust `chematic_depict::depict_svg` | SVG supported; PNG requires the optional feature. |

@@ -1,0 +1,10 @@
+{
+  "rdkit_version": "2026.09.1",
+  "seed": 960119,
+  "trials": 128,
+  "comparisons": 1536,
+  "callback_calls_candidate": 3456,
+  "callback_calls_reference": 3456,
+  "index_mismatches": 0,
+  "graph_mismatches": 0
+}

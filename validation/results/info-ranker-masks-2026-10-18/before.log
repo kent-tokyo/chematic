@@ -1,0 +1,194 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.13.6, pytest-9.1.1, pluggy-1.6.0
+rootdir: /private/tmp/chematic-info-ranker-masks-20261018/crates/chematic-py
+configfile: pytest.ini
+collected 26 items
+
+crates/chematic-py/tests/test_info_ranker_masks.py FFFFFFFFFFFFFFFFFFFFF [ 80%]
+FFFFF                                                                    [100%]
+
+=================================== FAILURES ===================================
+_______ test_mask_before_votes_limits_candidates_and_retained_counts[1] ________
+crates/chematic-py/tests/test_info_ranker_masks.py:34: in test_mask_before_votes_limits_candidates_and_retained_counts
+    r.SetMaskBits([0, 2])
+../chematic-info-ranker-masks-python/chematic/_info_theory.py:207: in SetMaskBits
+    raise NotImplementedError("bit masks are unsupported")
+E   NotImplementedError: bit masks are unsupported
+_______ test_mask_before_votes_limits_candidates_and_retained_counts[3] ________
+crates/chematic-py/tests/test_info_ranker_masks.py:34: in test_mask_before_votes_limits_candidates_and_retained_counts
+    r.SetMaskBits([0, 2])
+../chematic-info-ranker-masks-python/chematic/_info_theory.py:207: in SetMaskBits
+    raise NotImplementedError("bit masks are unsupported")
+E   NotImplementedError: bit masks are unsupported
+____________ test_mask_after_votes_does_not_erase_historical_counts ____________
+crates/chematic-py/tests/test_info_ranker_masks.py:49: in test_mask_after_votes_does_not_erase_historical_counts
+    r.SetMaskBits([0])
+../chematic-info-ranker-masks-python/chematic/_info_theory.py:207: in SetMaskBits
+    raise NotImplementedError("bit masks are unsupported")
+E   NotImplementedError: bit masks are unsupported
+__________ test_replacement_is_not_union_and_restoring_all_ids_works ___________
+crates/chematic-py/tests/test_info_ranker_masks.py:63: in test_replacement_is_not_union_and_restoring_all_ids_works
+    r.SetMaskBits([0, 1])
+../chematic-info-ranker-masks-python/chematic/_info_theory.py:207: in SetMaskBits
+    raise NotImplementedError("bit masks are unsupported")
+E   NotImplementedError: bit masks are unsupported
+________________ test_empty_mask_counts_records_but_no_on_votes ________________
+crates/chematic-py/tests/test_info_ranker_masks.py:72: in test_empty_mask_counts_records_but_no_on_votes
+    r.SetMaskBits([])
+../chematic-info-ranker-masks-python/chematic/_info_theory.py:207: in SetMaskBits
+    raise NotImplementedError("bit masks are unsupported")
+E   NotImplementedError: bit masks are unsupported
+_________ test_duplicates_normalize_and_input_order_does_not_set_ties __________
+crates/chematic-py/tests/test_info_ranker_masks.py:83: in test_duplicates_normalize_and_input_order_does_not_set_ties
+    r.SetMaskBits([3, 0, 3, 0])
+../chematic-info-ranker-masks-python/chematic/_info_theory.py:207: in SetMaskBits
+    raise NotImplementedError("bit masks are unsupported")
+E   NotImplementedError: bit masks are unsupported
+______________ test_numpy_integer_generator_and_source_ownership _______________
+crates/chematic-py/tests/test_info_ranker_masks.py:92: in test_numpy_integer_generator_and_source_ownership
+    r.SetMaskBits(x for x in source)
+../chematic-info-ranker-masks-python/chematic/_info_theory.py:207: in SetMaskBits
+    raise NotImplementedError("bit masks are unsupported")
+E   NotImplementedError: bit masks are unsupported
+_________ test_bad_mask_keeps_previous_mask_and_counts[None-TypeError] _________
+crates/chematic-py/tests/test_info_ranker_masks.py:109: in test_bad_mask_keeps_previous_mask_and_counts
+    r.SetMaskBits([0, 2])
+../chematic-info-ranker-masks-python/chematic/_info_theory.py:207: in SetMaskBits
+    raise NotImplementedError("bit masks are unsupported")
+E   NotImplementedError: bit masks are unsupported
+__________ test_bad_mask_keeps_previous_mask_and_counts[1-TypeError] ___________
+crates/chematic-py/tests/test_info_ranker_masks.py:109: in test_bad_mask_keeps_previous_mask_and_counts
+    r.SetMaskBits([0, 2])
+../chematic-info-ranker-masks-python/chematic/_info_theory.py:207: in SetMaskBits
+    raise NotImplementedError("bit masks are unsupported")
+E   NotImplementedError: bit masks are unsupported
+__________ test_bad_mask_keeps_previous_mask_and_counts[01-TypeError] __________
+crates/chematic-py/tests/test_info_ranker_masks.py:109: in test_bad_mask_keeps_previous_mask_and_counts
+    r.SetMaskBits([0, 2])
+../chematic-info-ranker-masks-python/chematic/_info_theory.py:207: in SetMaskBits
+    raise NotImplementedError("bit masks are unsupported")
+E   NotImplementedError: bit masks are unsupported
+_______ test_bad_mask_keeps_previous_mask_and_counts[\x00\x01-TypeError] _______
+crates/chematic-py/tests/test_info_ranker_masks.py:109: in test_bad_mask_keeps_previous_mask_and_counts
+    r.SetMaskBits([0, 2])
+../chematic-info-ranker-masks-python/chematic/_info_theory.py:207: in SetMaskBits
+    raise NotImplementedError("bit masks are unsupported")
+E   NotImplementedError: bit masks are unsupported
+________ test_bad_mask_keeps_previous_mask_and_counts[value4-TypeError] ________
+crates/chematic-py/tests/test_info_ranker_masks.py:109: in test_bad_mask_keeps_previous_mask_and_counts
+    r.SetMaskBits([0, 2])
+../chematic-info-ranker-masks-python/chematic/_info_theory.py:207: in SetMaskBits
+    raise NotImplementedError("bit masks are unsupported")
+E   NotImplementedError: bit masks are unsupported
+________ test_bad_mask_keeps_previous_mask_and_counts[value5-TypeError] ________
+crates/chematic-py/tests/test_info_ranker_masks.py:109: in test_bad_mask_keeps_previous_mask_and_counts
+    r.SetMaskBits([0, 2])
+../chematic-info-ranker-masks-python/chematic/_info_theory.py:207: in SetMaskBits
+    raise NotImplementedError("bit masks are unsupported")
+E   NotImplementedError: bit masks are unsupported
+________ test_bad_mask_keeps_previous_mask_and_counts[value6-TypeError] ________
+crates/chematic-py/tests/test_info_ranker_masks.py:109: in test_bad_mask_keeps_previous_mask_and_counts
+    r.SetMaskBits([0, 2])
+../chematic-info-ranker-masks-python/chematic/_info_theory.py:207: in SetMaskBits
+    raise NotImplementedError("bit masks are unsupported")
+E   NotImplementedError: bit masks are unsupported
+________ test_bad_mask_keeps_previous_mask_and_counts[value7-TypeError] ________
+crates/chematic-py/tests/test_info_ranker_masks.py:109: in test_bad_mask_keeps_previous_mask_and_counts
+    r.SetMaskBits([0, 2])
+../chematic-info-ranker-masks-python/chematic/_info_theory.py:207: in SetMaskBits
+    raise NotImplementedError("bit masks are unsupported")
+E   NotImplementedError: bit masks are unsupported
+________ test_bad_mask_keeps_previous_mask_and_counts[value8-TypeError] ________
+crates/chematic-py/tests/test_info_ranker_masks.py:109: in test_bad_mask_keeps_previous_mask_and_counts
+    r.SetMaskBits([0, 2])
+../chematic-info-ranker-masks-python/chematic/_info_theory.py:207: in SetMaskBits
+    raise NotImplementedError("bit masks are unsupported")
+E   NotImplementedError: bit masks are unsupported
+________ test_bad_mask_keeps_previous_mask_and_counts[value9-TypeError] ________
+crates/chematic-py/tests/test_info_ranker_masks.py:109: in test_bad_mask_keeps_previous_mask_and_counts
+    r.SetMaskBits([0, 2])
+../chematic-info-ranker-masks-python/chematic/_info_theory.py:207: in SetMaskBits
+    raise NotImplementedError("bit masks are unsupported")
+E   NotImplementedError: bit masks are unsupported
+_______ test_bad_mask_keeps_previous_mask_and_counts[value10-ValueError] _______
+crates/chematic-py/tests/test_info_ranker_masks.py:109: in test_bad_mask_keeps_previous_mask_and_counts
+    r.SetMaskBits([0, 2])
+../chematic-info-ranker-masks-python/chematic/_info_theory.py:207: in SetMaskBits
+    raise NotImplementedError("bit masks are unsupported")
+E   NotImplementedError: bit masks are unsupported
+_______ test_bad_mask_keeps_previous_mask_and_counts[value11-ValueError] _______
+crates/chematic-py/tests/test_info_ranker_masks.py:109: in test_bad_mask_keeps_previous_mask_and_counts
+    r.SetMaskBits([0, 2])
+../chematic-info-ranker-masks-python/chematic/_info_theory.py:207: in SetMaskBits
+    raise NotImplementedError("bit masks are unsupported")
+E   NotImplementedError: bit masks are unsupported
+_______ test_bad_mask_keeps_previous_mask_and_counts[value12-ValueError] _______
+crates/chematic-py/tests/test_info_ranker_masks.py:109: in test_bad_mask_keeps_previous_mask_and_counts
+    r.SetMaskBits([0, 2])
+../chematic-info-ranker-masks-python/chematic/_info_theory.py:207: in SetMaskBits
+    raise NotImplementedError("bit masks are unsupported")
+E   NotImplementedError: bit masks are unsupported
+_______ test_bad_mask_keeps_previous_mask_and_counts[value13-ValueError] _______
+crates/chematic-py/tests/test_info_ranker_masks.py:109: in test_bad_mask_keeps_previous_mask_and_counts
+    r.SetMaskBits([0, 2])
+../chematic-info-ranker-masks-python/chematic/_info_theory.py:207: in SetMaskBits
+    raise NotImplementedError("bit masks are unsupported")
+E   NotImplementedError: bit masks are unsupported
+______ test_iteration_failure_is_atomic_and_preserves_original_exception _______
+crates/chematic-py/tests/test_info_ranker_masks.py:118: in test_iteration_failure_is_atomic_and_preserves_original_exception
+    r.SetMaskBits([0, 2])
+../chematic-info-ranker-masks-python/chematic/_info_theory.py:207: in SetMaskBits
+    raise NotImplementedError("bit masks are unsupported")
+E   NotImplementedError: bit masks are unsupported
+_____________ test_infinite_duplicate_mask_has_bounded_consumption _____________
+crates/chematic-py/tests/test_info_ranker_masks.py:134: in test_infinite_duplicate_mask_has_bounded_consumption
+    r.SetMaskBits([0])
+../chematic-info-ranker-masks-python/chematic/_info_theory.py:207: in SetMaskBits
+    raise NotImplementedError("bit masks are unsupported")
+E   NotImplementedError: bit masks are unsupported
+_________ test_mask_does_not_hide_invalid_vector_bits_or_partial_votes _________
+crates/chematic-py/tests/test_info_ranker_masks.py:142: in test_mask_does_not_hide_invalid_vector_bits_or_partial_votes
+    r.SetMaskBits([0])
+../chematic-info-ranker-masks-python/chematic/_info_theory.py:207: in SetMaskBits
+    raise NotImplementedError("bit masks are unsupported")
+E   NotImplementedError: bit masks are unsupported
+____________________ test_explicit_vector_and_index_objects ____________________
+crates/chematic-py/tests/test_info_ranker_masks.py:156: in test_explicit_vector_and_index_objects
+    r.SetMaskBits([Index()])
+../chematic-info-ranker-masks-python/chematic/_info_theory.py:207: in SetMaskBits
+    raise NotImplementedError("bit masks are unsupported")
+E   NotImplementedError: bit masks are unsupported
+_______________ test_no_records_rule_applies_even_to_empty_mask ________________
+crates/chematic-py/tests/test_info_ranker_masks.py:165: in test_no_records_rule_applies_even_to_empty_mask
+    r.SetMaskBits([])
+../chematic-info-ranker-masks-python/chematic/_info_theory.py:207: in SetMaskBits
+    raise NotImplementedError("bit masks are unsupported")
+E   NotImplementedError: bit masks are unsupported
+=========================== short test summary info ============================
+FAILED crates/chematic-py/tests/test_info_ranker_masks.py::test_mask_before_votes_limits_candidates_and_retained_counts[1]
+FAILED crates/chematic-py/tests/test_info_ranker_masks.py::test_mask_before_votes_limits_candidates_and_retained_counts[3]
+FAILED crates/chematic-py/tests/test_info_ranker_masks.py::test_mask_after_votes_does_not_erase_historical_counts
+FAILED crates/chematic-py/tests/test_info_ranker_masks.py::test_replacement_is_not_union_and_restoring_all_ids_works
+FAILED crates/chematic-py/tests/test_info_ranker_masks.py::test_empty_mask_counts_records_but_no_on_votes
+FAILED crates/chematic-py/tests/test_info_ranker_masks.py::test_duplicates_normalize_and_input_order_does_not_set_ties
+FAILED crates/chematic-py/tests/test_info_ranker_masks.py::test_numpy_integer_generator_and_source_ownership
+FAILED crates/chematic-py/tests/test_info_ranker_masks.py::test_bad_mask_keeps_previous_mask_and_counts[None-TypeError]
+FAILED crates/chematic-py/tests/test_info_ranker_masks.py::test_bad_mask_keeps_previous_mask_and_counts[1-TypeError]
+FAILED crates/chematic-py/tests/test_info_ranker_masks.py::test_bad_mask_keeps_previous_mask_and_counts[01-TypeError]
+FAILED crates/chematic-py/tests/test_info_ranker_masks.py::test_bad_mask_keeps_previous_mask_and_counts[\x00\x01-TypeError]
+FAILED crates/chematic-py/tests/test_info_ranker_masks.py::test_bad_mask_keeps_previous_mask_and_counts[value4-TypeError]
+FAILED crates/chematic-py/tests/test_info_ranker_masks.py::test_bad_mask_keeps_previous_mask_and_counts[value5-TypeError]
+FAILED crates/chematic-py/tests/test_info_ranker_masks.py::test_bad_mask_keeps_previous_mask_and_counts[value6-TypeError]
+FAILED crates/chematic-py/tests/test_info_ranker_masks.py::test_bad_mask_keeps_previous_mask_and_counts[value7-TypeError]
+FAILED crates/chematic-py/tests/test_info_ranker_masks.py::test_bad_mask_keeps_previous_mask_and_counts[value8-TypeError]
+FAILED crates/chematic-py/tests/test_info_ranker_masks.py::test_bad_mask_keeps_previous_mask_and_counts[value9-TypeError]
+FAILED crates/chematic-py/tests/test_info_ranker_masks.py::test_bad_mask_keeps_previous_mask_and_counts[value10-ValueError]
+FAILED crates/chematic-py/tests/test_info_ranker_masks.py::test_bad_mask_keeps_previous_mask_and_counts[value11-ValueError]
+FAILED crates/chematic-py/tests/test_info_ranker_masks.py::test_bad_mask_keeps_previous_mask_and_counts[value12-ValueError]
+FAILED crates/chematic-py/tests/test_info_ranker_masks.py::test_bad_mask_keeps_previous_mask_and_counts[value13-ValueError]
+FAILED crates/chematic-py/tests/test_info_ranker_masks.py::test_iteration_failure_is_atomic_and_preserves_original_exception
+FAILED crates/chematic-py/tests/test_info_ranker_masks.py::test_infinite_duplicate_mask_has_bounded_consumption
+FAILED crates/chematic-py/tests/test_info_ranker_masks.py::test_mask_does_not_hide_invalid_vector_bits_or_partial_votes
+FAILED crates/chematic-py/tests/test_info_ranker_masks.py::test_explicit_vector_and_index_objects
+FAILED crates/chematic-py/tests/test_info_ranker_masks.py::test_no_records_rule_applies_even_to_empty_mask
+============================== 26 failed in 1.55s ==============================

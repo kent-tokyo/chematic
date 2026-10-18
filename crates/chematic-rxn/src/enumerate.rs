@@ -311,4 +311,37 @@ mod tests {
             }
         }
     }
+
+    #[test]
+    fn enumeration_failure_policy_and_error_messages_are_stable() {
+        for skip_failures in [true, false] {
+            let result = enumerate_library(
+                "not a reaction",
+                vec![vec![mol("C")]],
+                &LibraryConfig {
+                    skip_failures,
+                    max_size: None,
+                },
+            )
+            .unwrap();
+            assert!(result.is_empty());
+        }
+
+        assert_eq!(
+            LibraryError::NoFragmentSets.to_string(),
+            "no fragment sets provided"
+        );
+        assert_eq!(
+            LibraryError::EnumerationTooLarge(4, 3).to_string(),
+            "enumeration too large: 4 > 3"
+        );
+        assert_eq!(
+            LibraryError::EnumerationLimitExceeded.to_string(),
+            "enumeration iteration limit exceeded"
+        );
+        assert_eq!(
+            LibraryError::CombinationCountOverflow.to_string(),
+            "fragment combination count exceeds usize"
+        );
+    }
 }

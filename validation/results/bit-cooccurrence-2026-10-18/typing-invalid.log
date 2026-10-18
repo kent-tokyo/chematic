@@ -1,0 +1,5 @@
+validation/results/bit-cooccurrence-2026-10-18/typing_invalid.py:3: error: List item 0 has incompatible type "float"; expected "SupportsIndex"  [list-item]
+validation/results/bit-cooccurrence-2026-10-18/typing_invalid.py:4: error: Argument 1 to "SetBitList" of "BitCorrMatGenerator" has incompatible type "int"; expected "Iterable[SupportsIndex]"  [arg-type]
+validation/results/bit-cooccurrence-2026-10-18/typing_invalid.py:5: error: Argument 1 to "CollectVotes" of "BitCorrMatGenerator" has incompatible type "list[int]"; expected "_BitVectorSource"  [arg-type]
+validation/results/bit-cooccurrence-2026-10-18/typing_invalid.py:6: error: Incompatible types in assignment (expression has type "ndarray[tuple[int], dtype[float64]]", variable has type "list[float]")  [assignment]
+Found 4 errors in 1 file (checked 1 source file)

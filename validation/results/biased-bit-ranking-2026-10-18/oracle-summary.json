@@ -1,0 +1,16 @@
+{
+  "seed": 96010204,
+  "rdkit": "2026.09.1",
+  "numpy": "2.5.3",
+  "datasets": 72,
+  "attempted_rankers": 1152,
+  "complete_reference_comparisons": 1152,
+  "anomalous_reference_rankers": 0,
+  "paired_votes": 34720,
+  "independently_checked_scores": 10368,
+  "max_rdkit_score_error": 1.4210854715202004e-14,
+  "max_independent_score_error": 3.552713678800501e-15,
+  "ordering_differences": 916,
+  "inputs_sha256": "a344df8d8d974baf2d22ae205495f1cbd1f2d9ae72297f9eaa5dbe0e1bd5791d",
+  "scope": "Per-bit scores/counts; deterministic chematic ties can differ from RDKit heap order."
+}

@@ -10,6 +10,8 @@ The API selects original PDB atom records directly, reusing chematic's existing
 strict coordinate parser. It performs no residue, element, bond or hydrogen
 perception. This is an immutable single-model coordinate-selection operation,
 not an implementation of Open Babel's mutable molecule API.
+A later [coordinate-block merger](pdb-coordinate-merge.md) reuses this validator
+to assemble separate sources with explicit serial and chain mappings.
 
 ## API and example
 
