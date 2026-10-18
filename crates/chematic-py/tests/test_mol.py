@@ -249,6 +249,22 @@ def test_standardize_returns_mol(aspirin):
     assert isinstance(std, chematic.Mol)
 
 
+def test_cleanup_preserves_neutral_acid_and_disconnects_gold_chloride():
+    assert chematic.from_smiles("CC(=O)O").cleanup().rdkit_smiles == "CC(=O)O"
+    assert chematic.from_smiles("Cl[Au]").cleanup().rdkit_smiles == "[Au+].[Cl-]"
+
+
+def test_cleanup_preserves_donor_valence_after_metal_disconnection():
+    assert chematic.from_smiles("C(=[O][Li])O").cleanup().rdkit_smiles == "O=CO.[LiH]"
+
+
+def test_cleanup_keeps_unsupported_lithium_carbonyl_readable():
+    text = "C(c1c(Oc2c(C)ccc(c2)Cl)ccc(C)c1)[C]([Li])(=O)O.Cl"
+    assert chematic.from_smiles(text).cleanup().rdkit_smiles == (
+        "Cl.[Li]<-[C](=O)(O)Cc1cc(C)ccc1Oc1cc(Cl)ccc1C"
+    )
+
+
 def test_standardize_largest_fragment_profile_is_explicit():
     mol = chematic.from_smiles("CC.CCC")
     assert "." in mol.standardize().smiles

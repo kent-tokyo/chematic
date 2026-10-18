@@ -15,7 +15,9 @@ use chematic_core::{
 use crate::{hash::mol_hash, hydrogen::remove_hydrogens, tautomer::canonical_tautomer};
 use chematic_smarts::{MatchConfig, parse_smarts};
 
+mod cleanup;
 mod groups;
+pub use cleanup::cleanup;
 pub use groups::normalize_groups;
 
 /// Salt removal catalog: common salt patterns (counterions and solvates).
@@ -1868,6 +1870,31 @@ pub fn standardize(mol: &Molecule, opts: &StandardizeOptions) -> Molecule {
 mod tests {
     use super::*;
     use chematic_smiles::parse;
+
+    #[test]
+    fn cleanup_keeps_neutral_acid_and_amine_unchanged() {
+        for text in ["CC(=O)O", "CN"] {
+            let mol = parse(text).unwrap();
+            let cleaned = cleanup(&mol);
+            assert_eq!(mol_hash(&cleaned), mol_hash(&mol), "{text}");
+        }
+    }
+
+    #[test]
+    fn cleanup_disconnects_covalent_metal_ligands_with_charge_balance() {
+        let mol = parse("Cl[Au]").unwrap();
+        let cleaned = cleanup(&mol);
+        assert_eq!(cleaned.bond_count(), 0);
+        let charges: Vec<_> = cleaned.atoms().map(|(_, atom)| atom.charge).collect();
+        assert_eq!(charges, [-1, 1]);
+        assert_eq!(
+            cleaned
+                .atoms()
+                .map(|(_, atom)| i32::from(atom.charge))
+                .sum::<i32>(),
+            0
+        );
+    }
 
     #[test]
     fn largest_fragment_two_fragments_picks_larger() {
