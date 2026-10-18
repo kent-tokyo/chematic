@@ -803,6 +803,9 @@ jobs:
         run: |
           python3 scripts/check_morgan_numeric_packet.py benchmarks/2026-10-18-morgan-borrowed-view-only-numeric.json.gz
           python3 scripts/check_morgan_numeric_packet.py benchmarks/2026-10-18-morgan-borrowed-view-ring-scratch-numeric.json.gz
+          python3 scripts/check_morgan_numeric_packet.py benchmarks/2026-10-18-cosmolkit-allocation-candidate-numeric.json.gz
+          python3 scripts/check_morgan_numeric_packet.py benchmarks/2026-10-18-cosmolkit-cold-terms-candidate-numeric.json.gz
+          python3 scripts/check_morgan_numeric_packet.py benchmarks/2026-10-18-terminal-tpsa-numeric.json.gz
           python3 -m unittest scripts.tests.test_check_morgan_numeric_packet -v
       - name: Verify MOL2 timing packets and corruption controls
         run: |

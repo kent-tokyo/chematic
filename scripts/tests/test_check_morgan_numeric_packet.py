@@ -25,6 +25,9 @@ class NumericCorruptionTests(unittest.TestCase):
                 "2026-10-18-morgan-stereo-projection-numeric.json.gz",
                 "2026-10-18-morgan-borrowed-view-only-numeric.json.gz",
                 "2026-10-18-morgan-borrowed-view-ring-scratch-numeric.json.gz",
+                "2026-10-18-cosmolkit-allocation-candidate-numeric.json.gz",
+                "2026-10-18-cosmolkit-cold-terms-candidate-numeric.json.gz",
+                "2026-10-18-terminal-tpsa-numeric.json.gz",
             )
         }
 
@@ -55,6 +58,69 @@ class NumericCorruptionTests(unittest.TestCase):
                     "morgan2_chiral"
                 ]["first_use"]
                 row["output_sha256_per_batch"] = ["0" * 64] * row["batches"]
+                with self.assertRaises(AssertionError):
+                    audit.check(packet)
+
+    def test_missing_additional_gate_is_rejected(self):
+        for name, original in self.packets.items():
+            if original["schema"] != "morgan-numeric-packet/v2":
+                continue
+            with self.subTest(packet=name):
+                packet = copy.deepcopy(original)
+                del packet["additional_adoption"]
+                with self.assertRaises((AssertionError, KeyError)):
+                    audit.check(packet)
+
+    def test_changed_descriptor_gate_is_rejected(self):
+        for name, original in self.packets.items():
+            if original["schema"] != "morgan-numeric-packet/v2":
+                continue
+            with self.subTest(packet=name):
+                packet = copy.deepcopy(original)
+                field = packet["additional_adoption"]
+                field["descriptor_gate_passed"] = not field["descriptor_gate_passed"]
+                with self.assertRaises(AssertionError):
+                    audit.check(packet)
+
+    def test_changed_complete_decision_is_rejected(self):
+        for name, original in self.packets.items():
+            if original["schema"] != "morgan-numeric-packet/v2":
+                continue
+            with self.subTest(packet=name):
+                packet = copy.deepcopy(original)
+                field = packet["additional_adoption"]
+                field["complete_adoption_passed"] = not field["complete_adoption_passed"]
+                with self.assertRaises(AssertionError):
+                    audit.check(packet)
+
+    def test_changed_scalar_accounting_is_rejected(self):
+        for name, original in self.packets.items():
+            if original["schema"] == "morgan-numeric-packet/v1":
+                continue
+            with self.subTest(packet=name):
+                packet = copy.deepcopy(original)
+                packet["scalar_validation"]["source_exact_cells_including_refusals"] += 1
+                with self.assertRaises(AssertionError):
+                    audit.check(packet)
+
+    def test_changed_tpsa_primary_is_rejected(self):
+        for name, original in self.packets.items():
+            if original["schema"] != "morgan-numeric-packet/v3":
+                continue
+            with self.subTest(packet=name):
+                packet = copy.deepcopy(original)
+                packet["protocol"]["primary"] = ["0/morgan2_chiral/first_use", "5000/morgan2_chiral/first_use"]
+                with self.assertRaises(AssertionError):
+                    audit.check(packet)
+
+    def test_changed_tpsa_adoption_is_rejected(self):
+        for name, original in self.packets.items():
+            if original["schema"] != "morgan-numeric-packet/v3":
+                continue
+            with self.subTest(packet=name):
+                packet = copy.deepcopy(original)
+                field = packet["decision"]
+                field["source_adoption_passed"] = not field["source_adoption_passed"]
                 with self.assertRaises(AssertionError):
                     audit.check(packet)
 

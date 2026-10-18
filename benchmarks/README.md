@@ -11,7 +11,7 @@ the [complete inventory](archive-index.md) links every retained record.
 |---|---|---|
 | Do hosted Python packages reproduce the chemistry contract? | [v1.1.3 published artifact packet](2026-10-14-v113-published-artifact-packet.md) | Four exact PyPI wheels; npm/WASM, crates.io, and speed are separate. A complete v1.1.4 package packet is still open. |
 | What is the broadest published RDKit performance comparison? | [v1.0.42 / RDKit 2026.09.1](2026-10-11-v1042-published-rdkit-packet.md) | Exact PyPI/npm artifacts on hosted Linux x64 and macOS arm64. |
-| What are the latest Python descriptor and Morgan source results? | [sanitized-view reuse](2026-10-14-python-sanitized-view-reuse.md) · [speed frontier](2026-10-14-python-speed-frontier.md) | Source wheels on one macOS arm64 host; exact retention gates, not package or toolkit-wide superiority. |
+| What are the latest Python descriptor and Morgan source results? | [terminal TPSA](2026-10-18-terminal-tpsa.md) · [Morgan view/ring scratch](2026-10-18-morgan-borrowed-view-ring-scratch.md) | Source wheels on one macOS arm64 host; exact retention gates, not package or toolkit-wide superiority. |
 | How do reaction, standardization, and labelled R-group workflows compare with RDKit? | [expanded workflow packet](2026-10-12-rdkit-workflows-expanded-source.md) | Source-built, bounded fixtures, 21 alternating blocks; broader MolStandardize/R-group parity remains open. |
 | How closely does Cleanup match RDKit? | [Cleanup comparison](2026-10-18-rdkit-cleanup-source.md) · [254-row result](2026-10-18-rdkit-cleanup-source.json) · [full-corpus result](2026-10-18-rdkit-cleanup-full-corpus-source.json) | Source candidate: 240/254 and 3,826/4,059 exact; metal and reionization gaps remain. |
 | How do bounded workflows compare with Indigo? | [Indigo workflow packet](2026-10-12-indigo-workflows-source.md) | One-host source lanes with 15 reactions, 39 parent decisions, and 16 labelled R-group rows. |
@@ -22,6 +22,11 @@ the [complete inventory](archive-index.md) links every retained record.
 | What is the broad historical Python operation matrix? | [v1.0.30 63-operation matrix](2026-10-02-v1.0.30-vs-rdkit-python-63op-paired20.json) | Historical published-wheel result against RDKit 2026.03.6. |
 
 ## Recent focused follow-ups
+
+- [Terminal N/O and zero-model TPSA](2026-10-18-terminal-tpsa.md):
+  isolated RDKit-default TPSA source improvement on both fixed windows; all 42
+  median floors and source-output gates pass. Two broader failed candidates,
+  remaining COSMolKit deficits and every negative lane are retained.
 
 - [V2000 zero-attribute tail](2026-10-17-openbabel-zero-fields.md):
   SDF writes improve 1.039–1.040x; all 30 source median floors pass, including
