@@ -1,0 +1,6 @@
+ATOM      1  CA AALA A   7I      0.000   0.000   0.000  0.25 10.00           C1+
+ATOM      2  N   ALA A   7I      0.500  -1.250   0.125  0.50 10.50           N
+TER       3      ALA A   7I
+HETATM    4  C1  LIG L   7      20.125   0.000   1.500  0.25 10.00           C
+TER       5      LIG L   7 
+END

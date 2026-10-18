@@ -1,0 +1,91 @@
+{
+  "base_commit": "f99c7b8ab33098a2e1fd9fd568aee370bf79ab38",
+  "created_at_utc": "2026-10-18T07:45:15.286288+00:00",
+  "issue": {
+    "number": 2181,
+    "state": "OPEN",
+    "title": "Combining PDB files changes some aminoacids to HET records",
+    "updatedAt": "2022-03-14T19:46:54Z",
+    "url": "https://github.com/openbabel/openbabel/issues/2181",
+    "checked_at_utc": "2026-10-18T07:45:15.278243+00:00"
+  },
+  "versions": {
+    "python": "3.13.6",
+    "numpy": "2.5.3",
+    "pytest": "9.1.1",
+    "gemmi": "0.7.3"
+  },
+  "native_fixture": {
+    "source_commit": "ca7e14e892cab8b495183bcda4449f49471ba1b1",
+    "sha256": "90f81980b0fdf06c8edb616d8f8e5acd1831a9b6de404ed2b3405646cff41423",
+    "bytes": 85142576,
+    "path": "/private/tmp/chematic-pdb-merge-python/chematic/chematic.so",
+    "source_provenance": "validation/results/checked-core-removal-2026-10-17/provenance.json"
+  },
+  "native_scope": "Reused verified extension. Relevant native selection/PDB parser and Python binding source unchanged from fixture. No fresh current-main build, whole-extension equivalence or published-wheel claim.",
+  "gemmi_reference_sha256": {
+    "/private/tmp/chematic-mmcif-chain-oracle/gemmi/__init__.py": "16b23f99e7bc22a0afbb6e833dc69917021f440dd1220e63e107fb6b6d642576",
+    "/private/tmp/chematic-mmcif-chain-oracle/gemmi/gemmi_ext.cpython-313-darwin.so": "69d296ff5ad596042612f4a40dd9b19f48509476f77895a31932f71a004ec363"
+  },
+  "source_sha256": {
+    ".gitattributes": "ef9e45e42164b8fae52ebc4259d530fb99991aac880bf20d2ecdbc529facc72b",
+    "CHANGELOG.md": "30ed4e9e490d50c58b48c816b1cc9a66c5d8f627a72161b985afffb47effe792",
+    "mkdocs.yml": "4ef24e25e01ae87896e5f792f63429f131cb1e793fd6ecda10d01ec0bbc2da91",
+    "crates/chematic-py/python/chematic/__init__.py": "d87fb4667052f62536156d7bb55153c58526217766217ca0314fda3a474f1fea",
+    "crates/chematic-py/python/chematic/__init__.pyi": "0741d4afa5303fdad0f9e040a36838358f8b471b5c03844aedad66e4b4b38df3",
+    "crates/chematic-py/python/chematic/_pdb_merge.py": "8aed7e001e8d8e658dbd51a895db19fff92a1ec8adde1ecd638aaabe2c201aca",
+    "crates/chematic-py/tests/test_pdb_coordinate_merge.py": "77ee1171e7e2d0c40d039a6af4dfb63c94335c7cb1934f16e41c8b01f53473dd",
+    "docs/pdb-coordinate-merge.md": "011d8e1bca222166cd359857224554321caf041453c12c0dc9ffbb21a72a31c5",
+    "docs/openbabel-open-issues-2026-10-14.md": "654d05bbb736869bccf1ae526f3de0ebc1b23eff0eacb9933bf95e0fe4b2286c",
+    "docs/pdb-atom-selection.md": "69b24346dd0b5c4cca7df16fb0b20969f4562597c9ea6ac4dac7cd56a23ff24e"
+  },
+  "evidence_sha256": {
+    "README.md": "09c6e78bb529a07bdc6caa30248a52a0566d7296e387e4d9f97f9197ba59eb12",
+    "docs-and-typing.log": "398de30044de3d3d906f709db91daa06e758f8d5db4ef7e514973d583d2c5b43",
+    "ligand.pdb": "bb23277a37347006d207cc706e2e0f2460ba621d09771e6fecbf2bafa7d91d25",
+    "merged.pdb": "e462008aa02f979583fbd7a1491a518cce7e1bd169b98bd539d6b57d7bdc9c4e",
+    "mkdocs.log": "d74a5465d12aba7aa6945cad6ee766da2f96d645286b2601c3ba99895d213d8e",
+    "mypy.ini": "eb021d14844ec277cc9c37aa68d00a3098e5f77ddb225e8d88efd4051be673c9",
+    "native-source-comparison.log": "8ad73abf7663518e466b8efc988da2999339b771dd1dfe0f7f544d9241d59629",
+    "openbabel-summary.json": "8a9f360b56cc3f64b50689874d6048b2b9d37e099ce102d22fb39127c911353a",
+    "openbabel.pdb": "7b7cf5a534fc06df62f03538636b553bf8d4979de9c4b43a1b41a1bb1153ad90",
+    "openbabel.stderr": "d62a9897953e0ca42ee2240c501d3cd421fbeb8d1e0231b81a468b3b9401abff",
+    "oracle-summary.json": "cd83561253221151da4ea4e7f2b06a31fe8e49188b65d3e1a5c48d7b38420922",
+    "oracle.log": "56330645eb01df3ab98df50d9d0f404b15bd5cd6fd6b3e112fabaf243b9bae90",
+    "oracle.py": "513f6153382fe85be5be01e1d6bccacfd343803fd08ecb37db892795926b4368",
+    "protein.pdb": "e7f6af6b63d1f9ac6ba9a0371d81277a4ab01ac1b335096e98dd4029c1e99d9f",
+    "pytest.log": "dcbe9e301ed67f68e140b5a7626ec959bbad3a12cd23ceb8a72c65e4a4c86034",
+    "source-gates.log": "93c5929e06701a031d620af7c18bf7d7cd727c1b57d60a0f68d554583d065729",
+    "typing-invalid.log": "ac13c5f99425284b45596f380457957e9006642a28d736819138c2925f729cf2",
+    "typing-valid.log": "f9b031e5c45aa702cd4fef028d465551cb20a2c4698e0913c7b00766b20ac4d8",
+    "typing_invalid.py": "631a67427695350ed233d6ad3592b6cf7c33c3436b6da0de870bfb9e01d192a8",
+    "typing_valid.py": "34dee3e1d84d1b6079588a9642fb2053a89c9ff98242fe59c7dcaf9afa89641a"
+  },
+  "oracle_summary": {
+    "gemmi": "0.7.3",
+    "assemblies": 96,
+    "sources": 382,
+    "atoms": 1338,
+    "anisou_records": 382,
+    "conect_target_references": 1146,
+    "max_coordinate_error_angstrom": 0.0,
+    "inputs_sha256": "a074a16eecb9abf66f5b3119fda7bac2cd49e934afce53f8a63934751d5e234a",
+    "scope": "Synthetic source identity, numeric spelling, tensor and explicit-connectivity preservation; no chemistry/geometry alignment claim"
+  },
+  "openbabel_summary": {
+    "returncode": 0,
+    "atoms": 3,
+    "changed_record_kinds": 2,
+    "changed_residue_names": 3,
+    "changed_chains": 3,
+    "openbabel_ter_records": 0,
+    "chematic_ter_records": 2,
+    "version": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27"
+  },
+  "pytest": {
+    "total": 231,
+    "new": 43,
+    "native_selection": 26,
+    "compatibility": 162
+  }
+}

@@ -33,6 +33,12 @@ from ._xbs import XbsBondRule as XbsBondRule, XbsSpecies as XbsSpecies, write_xb
 from ._xyz_atom_data import XyzAtomDataFrame as XyzAtomDataFrame, parse_xyz_atom_data as parse_xyz_atom_data
 
 from ._xsf import write_xsf_checked as write_xsf_checked
+from ._pdb_merge import (
+    PdbMergeAtom as PdbMergeAtom,
+    PdbMergeLoss as PdbMergeLoss,
+    PdbMergeResult as PdbMergeResult,
+    merge_pdb_coordinate_blocks as merge_pdb_coordinate_blocks,
+)
 
 from typing import overload, Callable, Any, Iterable, Iterator, Literal, Optional, Sequence, TypedDict, Union
 

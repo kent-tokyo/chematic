@@ -14,6 +14,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Python `merge_pdb_coordinate_blocks` assembles validated PDB coordinate blocks
+  while preserving ATOM/HETATM identity and numeric fields. It explicitly maps
+  chains, remaps serial/ANISOU/CONECT references and retains source/loss sidecars.
+  See [PDB coordinate merging](docs/pdb-coordinate-merge.md).
+
 ## [1.1.7] - 2026-10-18
 
 ### Added
