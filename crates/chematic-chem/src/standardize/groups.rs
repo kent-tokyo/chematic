@@ -5,7 +5,6 @@ use chematic_core::{Atom, AtomIdx, BondEntry, BondOrder, Molecule, MoleculeBuild
 #[derive(Default)]
 struct NormalizedGroups {
     nitro: HashSet<AtomIdx>,
-    oxide: HashSet<AtomIdx>,
     azide: HashSet<AtomIdx>,
     sulfoxide: HashSet<AtomIdx>,
 }
@@ -34,7 +33,7 @@ fn detect_groups(mol: &Molecule) -> NormalizedGroups {
     let mut groups = NormalizedGroups::default();
     for (idx, atom) in mol.atoms() {
         if atom.element.atomic_number() == 7 && atom.charge == 1 {
-            detect_nitro(mol, idx, atom, &mut groups.nitro, &mut groups.oxide);
+            detect_nitro(mol, idx, &mut groups.nitro);
             detect_azide(mol, idx, &mut groups.azide);
         }
         if atom.element.atomic_number() == 16 {
@@ -124,14 +123,9 @@ fn is_negative_oxygen_bond(mol: &Molecule, bond: &BondEntry) -> bool {
         .any(|idx| mol.atom(idx).element.atomic_number() == 8 && mol.atom(idx).charge == -1)
 }
 
-/// Mark nitro [N+](=O)[O-] and aromatic N-oxide atoms.
-fn detect_nitro(
-    mol: &Molecule,
-    idx: AtomIdx,
-    atom: &Atom,
-    nitro_atoms: &mut HashSet<AtomIdx>,
-    oxide_atoms: &mut HashSet<AtomIdx>,
-) {
+/// Mark nitro [N+](=O)[O-] atoms. Aromatic N-oxides retain their
+/// charge-separated N+-O- bond; turning it into N=O breaks ring valence.
+fn detect_nitro(mol: &Molecule, idx: AtomIdx, nitro_atoms: &mut HashSet<AtomIdx>) {
     let oxygen_neighbors: Vec<_> = mol
         .neighbors(idx)
         .filter(|(neighbor, _)| mol.atom(*neighbor).element.atomic_number() == 8)
@@ -151,13 +145,6 @@ fn detect_nitro(
         }
         if has_double_oxygen && has_single_negative_oxygen {
             nitro_atoms.insert(idx);
-        }
-    } else if let Some((oxygen_idx, bond_idx)) = oxygen_neighbors.first() {
-        let oxygen = mol.atom(*oxygen_idx);
-        let bond = mol.bond(*bond_idx);
-        if atom.aromatic && bond.order == BondOrder::Single && oxygen.charge == -1 {
-            nitro_atoms.insert(idx);
-            oxide_atoms.insert(*oxygen_idx);
         }
     }
 }

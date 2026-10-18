@@ -36,7 +36,10 @@ def main() -> None:
     parser.add_argument("--dump", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--baseline", type=Path)
+    parser.add_argument("--previous-source", type=Path)
     args = parser.parse_args()
+    if args.baseline and args.previous_source:
+        parser.error("choose one comparison report")
     if rdBase.rdkitVersion != "2026.09.1":
         parser.error(f"expected RDKit 2026.09.1; found {rdBase.rdkitVersion}")
     RDLogger.DisableLog("rdApp.*")
@@ -105,6 +108,25 @@ def main() -> None:
             "fixed_indices": sorted(old_mismatches & exact),
             "regressed_indices": sorted((old_scored - old_mismatches) - exact),
         }
+    if args.previous_source:
+        previous = json.loads(args.previous_source.read_text())
+        if (previous["source_rows"] != len(corpus)
+                or previous["compatible_rows"] != len(compatible)
+                or previous["corpus_sha256"] != sha256(CORPUS)
+                or previous["rdkit_version"] != rdBase.rdkitVersion
+                or {row["index"] for row in previous["oracle_errors"]}
+                    != {row["index"] for row in errors}
+                or {row["index"] for row in previous["excluded"]}
+                    != {row["index"] for row in excluded}):
+            raise ValueError("previous source report uses a different corpus or oracle")
+        previous_mismatches = {row["index"] for row in previous["mismatches"]}
+        current_mismatches = {row["index"] for row in mismatches}
+        comparison = {
+            "previous_source": str(args.previous_source),
+            "previous_exact": previous["exact_rows"],
+            "fixed_indices": sorted(previous_mismatches - current_mismatches),
+            "regressed_indices": sorted(current_mismatches - previous_mismatches),
+        }
 
     report = {
         "profile": "source_cleanup_vs_rdkit_2026_09_1",
@@ -116,6 +138,7 @@ def main() -> None:
             for path in (
                 ROOT / "crates/chematic-chem/src/standardize.rs",
                 ROOT / "crates/chematic-chem/src/standardize/cleanup.rs",
+                ROOT / "crates/chematic-chem/src/standardize/groups.rs",
                 ROOT / "crates/chematic-chem/examples/cleanup_rdkit_dump.rs",
             )
         },

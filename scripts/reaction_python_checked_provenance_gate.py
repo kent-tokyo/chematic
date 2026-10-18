@@ -38,15 +38,16 @@ EXPECTED = {
 
 
 def source_artifact(chematic, wheel: Path | None) -> dict:
-    if wheel is None:
-        return {"kind": "editable_source_extension", "published": False}
-    if wheel.suffix != ".whl" or not wheel.is_file():
-        raise ValueError("--wheel must identify one existing wheel file")
     package_dir = Path(chematic.__file__).resolve().parent
     extensions = list(package_dir.glob("chematic*.so")) + list(package_dir.glob("chematic*.pyd"))
     if len(extensions) != 1:
         raise ValueError("installed chematic extension is missing or ambiguous")
     installed_digest = hashlib.sha256(extensions[0].read_bytes()).hexdigest()
+    if wheel is None:
+        return {"kind": "editable_source_extension", "published": False,
+                "extension_sha256": installed_digest}
+    if wheel.suffix != ".whl" or not wheel.is_file():
+        raise ValueError("--wheel must identify one existing wheel file")
     with ZipFile(wheel) as archive:
         entries = [name for name in archive.namelist()
                    if name.endswith("/" + extensions[0].name)]
