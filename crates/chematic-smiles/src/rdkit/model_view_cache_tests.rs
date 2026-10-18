@@ -139,6 +139,32 @@ fn model_slot_shares_only_scalar_views_and_clears_after_edits() {
 }
 
 #[test]
+fn binding_preparation_only_materializes_required_scalar_models() {
+    let slot = DerivedSlot::RdkitScalarModel;
+    let mut unusual = crate::parse("[H][C@](F)(Cl)Br").unwrap();
+    assert!(prepare_rdkit_scalar_model(&unusual));
+    assert!(
+        unusual
+            .derived_if_computed::<Option<Molecule>>(slot)
+            .is_some_and(|model| model.is_some())
+    );
+    unusual.set_element(AtomIdx(2), Element::CL);
+    assert!(
+        unusual
+            .derived_if_computed::<Option<Molecule>>(slot)
+            .is_none()
+    );
+
+    let ordinary = crate::parse("CCO").unwrap();
+    assert!(!prepare_rdkit_scalar_model(&ordinary));
+    assert!(
+        ordinary
+            .derived_if_computed::<Option<Molecule>>(slot)
+            .is_none()
+    );
+}
+
+#[test]
 fn cached_failure_falls_back_and_panic_restores_nested_scope() {
     for s in [
         "[H]O[H]",

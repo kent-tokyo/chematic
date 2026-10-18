@@ -164,19 +164,26 @@ impl Mol {
     /// `CalcNumRings` no longer pay sanitization work after parsing that
     /// RDKit already charged to parsing.
     fn from_smiles_parsed(mol: chematic_core::Molecule) -> Self {
-        // Keep the parser's resource contract for unusually large or highly
-        // cyclic inputs. Those retain the existing lazy behavior rather than
-        // making a plain parse trigger potentially expensive ring-family
-        // enumeration. The limits cover ordinary small-molecule workloads;
-        // every derived cache is still invalidated by graph mutation.
+        // Keep the parser's resource contract for unusually large inputs.
+        // RDKit and COSMolKit both materialize sanitized aromatic/ring state
+        // while parsing, so the Python compatibility boundary does the same
+        // within a fixed graph-size budget.  Ring-closure count alone is not
+        // a useful complexity proxy: compact fullerenes routinely contain
+        // 32 closures yet stay well inside the bounded relevant-cycle and
+        // aromaticity implementations.  Every derived cache is still
+        // invalidated by graph mutation.
         const MAX_EAGER_ATOMS: usize = 128;
         const MAX_EAGER_BONDS: usize = 192;
-        const MAX_EAGER_RING_CLOSURES: usize = 16;
-        if mol.atom_count() <= MAX_EAGER_ATOMS
-            && mol.bond_count() <= MAX_EAGER_BONDS
-            && mol.smiles_ring_closure_bond_count() <= MAX_EAGER_RING_CLOSURES
-        {
-            let _ = chematic_perception::rdkit_parity_view_is_identity(&mol);
+        if mol.atom_count() <= MAX_EAGER_ATOMS && mol.bond_count() <= MAX_EAGER_BONDS {
+            let model_prepared = chematic_smiles::prepare_rdkit_scalar_model(&mol);
+            if !model_prepared && !chematic_perception::rdkit_parity_view_is_identity(&mol) {
+                // Computing only the identity verdict leaves Kekule/fused
+                // systems to pay the full view construction on their first
+                // descriptor call.  Materialize the shared view now so
+                // parse and first-use comparisons account for the same work
+                // boundary as the comparator parsers.
+                let _ = chematic_perception::apply_aromaticity_rdkit_parity_shared(&mol);
+            }
             let _ = chematic_chem::rdkit_num_rings(&mol);
         }
         Self::bare(mol)

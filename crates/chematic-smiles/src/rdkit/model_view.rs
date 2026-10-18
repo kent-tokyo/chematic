@@ -53,6 +53,28 @@ pub fn with_rdkit_model_molecule<R>(mol: &Molecule, f: impl FnOnce(&Molecule) ->
     with_rdkit_model_molecule_impl(mol, f, false)
 }
 
+/// Prepare the sanitized model shared by scalar descriptor calls when the
+/// input graph needs one.
+///
+/// Returns `true` when model preparation was required (including a cached
+/// failure) and `false` when scalar descriptors can consume `mol` directly.
+/// This is a binding-level preparation hook: the low-level Rust parser stays
+/// lazy, while bindings whose parser contract includes sanitization can put
+/// that work on the parse side of a parse/descriptor boundary.
+#[doc(hidden)]
+pub fn prepare_rdkit_scalar_model(mol: &Molecule) -> bool {
+    let needed = chematic_perception::rdkit_model_may_disagree(mol)
+        || mol
+            .atoms()
+            .any(|(_, atom)| !atom.wildcard && atom.element == chematic_core::Element::H);
+    if needed {
+        let _ = mol.derived(chematic_core::DerivedSlot::RdkitScalarModel, || {
+            rdkit_model_molecule(mol, true).ok()
+        });
+    }
+    needed
+}
+
 fn with_rdkit_model_molecule_impl<R>(
     mol: &Molecule,
     f: impl FnOnce(&Molecule) -> R,
