@@ -15,6 +15,11 @@ This file lists unresolved work only. Completed changes belong in the
   Complete the hosted Linux 20-block run, compare it with macOS, and keep
   first-use chiral Morgan and Labute ASA deficits visible. Do not turn a hot
   cache win into a first-use or toolkit-wide claim.
+  The [terminal-TPSA source experiment](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-18-terminal-tpsa.md)
+  improves first-use TPSA by 1.037x/1.270x on two fixed macOS windows;
+  COSMolKit deficits remain in first-use TPSA, ASA, ring count and one chiral
+  Morgan window. Re-time the integrated source and add an independent host
+  before broadening this frozen-source result.
 - **Standardization implementation:** every current Normalize, Reionize and
   Cleanup residual is classified from the same source revision. Prioritize 36
   missing Reionize assignments, aromatic N-oxide kekulization and common
