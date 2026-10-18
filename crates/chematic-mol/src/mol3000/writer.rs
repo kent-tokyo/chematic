@@ -45,8 +45,7 @@ fn append_v3000_rgroup_property(line: &mut String, mol: &Molecule, idx: AtomIdx)
 }
 
 fn append_header(out: &mut String, mol: &Molecule, metadata: &MolMetadata, dimensional_code: &str) {
-    out.push_str(&metadata.name);
-    out.push('\n');
+    crate::mol_header::append_title(out, &metadata.name);
     out.push_str(dimensional_code);
     out.push_str(&metadata.comment);
     out.push('\n');

@@ -1,0 +1,2 @@
+$ rustfmt --edition 2024 --check --config skip_children=true crates/chematic-mol/src/lib.rs crates/chematic-mol/src/mol2000.rs crates/chematic-mol/src/mol2000/writer.rs crates/chematic-mol/src/mol3000/writer.rs crates/chematic-mol/src/mol_header.rs crates/chematic-mol/tests/mol_title_width.rs
+EXIT 0

@@ -89,6 +89,7 @@ nav:
     - Rooted SMILES Stereo: rooted-smiles-stereo.md
     - XYZ Element Symbols: xyz-element-symbols.md
     - ChemDraw Block Formats: chemdraw-block.md
+    - Bounded MOL Titles: mol-title-width.md
     - Format Capability Matrix: format-capabilities.md
     - CDXML Stereo Options: cdxml-stereo-options.md
     - Named CML Atoms: cml-named-atoms.md

@@ -1,0 +1,7 @@
+{
+  "rdkit_version": "2026.09.1",
+  "cases": 126,
+  "sdf_property_reads": 35,
+  "unchanged_non_title_bodies": 126,
+  "mismatches": []
+}

@@ -1,0 +1,48 @@
+{
+  "date": "2026-10-18",
+  "upstream_issue": "https://github.com/openbabel/openbabel/issues/2112",
+  "upstream_state": "OPEN in live gh issue list on 2026-10-18",
+  "base_commit": "f99c7b8ab33098a2e1fd9fd568aee370bf79ab38",
+  "rustc": "rustc 1.97.0 (2d8144b78 2026-07-07)",
+  "cargo": "cargo 1.97.0 (c980f4866 2026-06-30)",
+  "python": "3.13.6",
+  "native_artifact": "Freshly compiled chematic-mol Rust tests; no reused Python extension.",
+  "build_environment": {
+    "CARGO_TARGET_DIR": "/private/tmp/chematic-mol-title-target",
+    "CARGO_BUILD_JOBS": "1",
+    "CARGO_PROFILE_DEV_DEBUG": "0",
+    "CARGO_PROFILE_TEST_DEBUG": "0",
+    "CARGO_INCREMENTAL": "0"
+  },
+  "source_sha256": {
+    "crates/chematic-mol/src/lib.rs": "7d8836a85c2a89bc7a8a4d9f1c369e32ba314926bf14b7e778b59d275d930bf8",
+    "crates/chematic-mol/src/mol_header.rs": "46eb129ebac68dad01672d7a8ae041c6eef13b5aeaef7b27a1d2c1898987b564",
+    "crates/chematic-mol/src/mol2000.rs": "ad277a3bc9c14d1ce9c8a2d2119c56ad5cd27048f8a38acdd6f376615ff530f0",
+    "crates/chematic-mol/src/mol2000/writer.rs": "7f1c15e5eb68d87f839a8f7dc38f5466aec89f330e17eabf0d85619d4f904be7",
+    "crates/chematic-mol/src/mol3000/writer.rs": "7ba64b2f6f2ccc79a65cd7e1cdb4c274fd30d76d8075061bcc32d24d6aca4ae5",
+    "crates/chematic-mol/tests/mol_title_width.rs": "eeaa7e109bc70931b9add4fd3fdf068337913782383043ef4ae90f8bbad96d4a"
+  },
+  "test_count": 864,
+  "suites": {
+    "library": 815,
+    "mol_title_width": 11,
+    "sdf_unspecified_double_stereo": 2,
+    "square_planar_mol_io": 13,
+    "stereo_reader_integration": 23
+  },
+  "before": "Six of ten regression tests fail with verbatim title emission restored; one oracle-export test excluded. Unchanged title cases and buffer reuse pass. Shared module remains present, so this is a behavioral control rather than a complete baseline checkout build.",
+  "oracle": {
+    "rdkit_version": "2026.09.1",
+    "cases": 126,
+    "sdf_property_reads": 35,
+    "unchanged_non_title_bodies": 126,
+    "mismatches": []
+  },
+  "limits": [
+    "UTF-8 <=80 bytes is a conservative output profile, not a CTfile encoding specification claim.",
+    "Truncation/replacement lose serialized title content; caller metadata stays unchanged.",
+    "Comment line, SD value validation, and general CTfile compliance are outside scope.",
+    "No new Python/WASM binary was built; hosted CI is separate."
+  ],
+  "post_validation_formatting": "rustfmt moved only the private module declaration to lexical order; no implementation change."
+}

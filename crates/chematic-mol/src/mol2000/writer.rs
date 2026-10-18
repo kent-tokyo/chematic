@@ -552,8 +552,7 @@ fn write_v2000_reporting(
     out.reserve(128 + mol.atom_count() * 80 + mol.bond_count() * 16);
 
     // Header lines 1–3
-    out.push_str(&metadata.name);
-    out.push('\n');
+    crate::mol_header::append_title(out, &metadata.name);
     out.push_str("  chematic\n");
     out.push_str(&metadata.comment);
     out.push('\n');
@@ -615,8 +614,7 @@ pub fn write_mol_with_conformer(
 ) -> String {
     let mut out = String::new();
 
-    out.push_str(&metadata.name);
-    out.push('\n');
+    crate::mol_header::append_title(&mut out, &metadata.name);
     // Columns 0..10 "  chematic" match the 2D writer exactly; columns
     // 10..20 are the (blank) date field; columns 20..22 carry the "3D"
     // dimensional code -- the same column `parse_dimension_code` reads,
