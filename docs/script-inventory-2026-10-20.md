@@ -181,3 +181,8 @@ remain unchanged. The published-WASM paired driver stays at its original path:
 the active offline gate verifies its exact source SHA-256. The Python Morgan
 runner is likewise pinned by a source hash in its evidence packet. The direct
 root now has 296 files; the total remains 585 tracked scripts.
+
+After synchronizing with the newer main branch, its newly added trust-holdout
+scorer was placed in `scripts/validation/` under the same layout rule. Its
+frozen result was not regenerated. The root count remains 296 and the tracked
+`scripts/` total is 586.

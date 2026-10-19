@@ -48,6 +48,7 @@ children of this directory; `tools/check_script_layout.py` checks it in CI.
 | Published browser replication | `check_published_browser_paired.py`, `check_v1030_published_browser_morgan_rows.py`, and `check_published_linux_browser_replication.py` validate the pinned Chromium and Ubuntu three-engine records |
 | Sealed cohort | `prepare_sealed_accuracy_cohort.py` |
 | Frozen trust holdouts | `validation/trust_holdouts/freeze.py` selects outcome-blind rows from pinned sources; `check_trust_holdouts.py` verifies the committed manifest. |
+| Frozen trust holdout score | `validation/score_trust_holdouts.py`; reproduce only with the original candidate artifact and pinned manifest. |
 | V3000 external readers | `v3000_*_gate.py` |
 | Stereo gates | `stereo_torture_suite_gate.py`, `stereo_spelling_invariance_gate.py` |
 | Open Babel 0D MOL stereo source check | `compare_openbabel_0d_stereo.py` compares before and after CLI binaries on identical Open Babel-generated records; accepts JSONL or `.smi` corpora and records generation failures and source-gate exclusions |
