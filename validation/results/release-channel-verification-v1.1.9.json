@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "release": {
+    "version": "1.1.9",
+    "tag": "v1.1.9",
+    "commit": null
+  },
+  "checked_at": "2026-10-19T10:48:00Z",
+  "release_ready": false,
+  "channels": [
+    {
+      "id": "github_release",
+      "status": "not_measured",
+      "url": "https://github.com/kent-tokyo/chematic/releases/tag/v1.1.9",
+      "detail": "Pre-publication record. Verify the non-draft release, annotated tag target, generated metadata asset, and release notes after the tag workflow completes."
+    },
+    {
+      "id": "npm",
+      "status": "not_measured",
+      "url": "https://www.npmjs.com/package/@kent-tokyo/chematic/v/1.1.9",
+      "detail": "Pre-publication record. Verify registry version, gitHead, integrity, TypeScript declarations, and a clean package import after publication."
+    },
+    {
+      "id": "pypi",
+      "status": "not_measured",
+      "url": "https://pypi.org/project/chematic/1.1.9/",
+      "detail": "Pre-publication record. Verify the complete wheel and source-distribution inventory, clean imports, and published-wheel chemistry gates after publication."
+    },
+    {
+      "id": "crates_io",
+      "status": "not_measured",
+      "url": "https://crates.io/crates/chematic/1.1.9",
+      "detail": "Pre-publication record. Verify the dependency-ordered workspace publication, top-level checksum, and non-yanked status after publication."
+    },
+    {
+      "id": "docs_rs",
+      "status": "not_measured",
+      "url": "https://docs.rs/chematic/1.1.9/chematic/",
+      "detail": "Pre-publication record. Verify that the version-pinned documentation endpoint completes successfully after crates.io publication."
+    },
+    {
+      "id": "site",
+      "status": "not_measured",
+      "url": "https://kent-tokyo.github.io/chematic/",
+      "detail": "Pre-publication record. Verify the main-branch Pages deployment, version badge, browser package, and public HTTP response after merge."
+    }
+  ]
+}

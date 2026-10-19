@@ -330,7 +330,11 @@ report.save("compare.html")
 
 ---
 
-## Bonus: Natural-language summary and structural diff
+## Bonus: Rule-based summary and structural diff
+
+`describe()` formats calculated descriptors and heuristic filter outcomes as
+text. Phrases such as "likely orally bioavailable" describe rule-based checks;
+they are not experimental bioavailability, efficacy, or safety predictions.
 
 ```python
 mol = chematic.from_smiles("CC(=O)Oc1ccccc1C(=O)O")  # aspirin

@@ -1,10 +1,24 @@
 # Open Babel file-I/O comparison
 
-CheMatic does not try to beat Open Babel by counting format names. Open Babel's
+chematic does not try to beat Open Babel by counting format names. Open Babel's
 official documentation lists 146 formats, including many specialist and
-one-directional adapters. The first CheMatic target is a smaller production
+one-directional adapters. The first chematic target is a smaller production
 profile where correctness, failure accounting, safety, and speed can all be
 verified.
+
+## Evidence map
+
+| Evidence | What it supports | What it does not support |
+|---|---|---|
+| [v1.0.42 same-process record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-10-openbabel-file-io-same-process-v1.0.42.md) | Historical bounded parse/write/round-trip latency on four checked fixtures | Current-release or broad-format performance |
+| [SDF read follow-up](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-14-openbabel-sdf-read-followup.md) | Two unfiltered 1,000-record source slices with semantic and timing gates | Published-package, second-host, or all-SDF superiority |
+| [V3000 packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-14-openbabel-v3000-speed.md) | Bounded native-block and controlled-profile source measurements | A rank for diverse rows whose outputs differ |
+| [stereo-preservation record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-15-openbabel-stereo-paired.md) | Paired RDKit-written V2000/V3000 stereo round trips | Independent proof of absolute stereo correctness |
+| [latest V2000 experiment](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-18-openbabel-v2000-bond-tail.md) | Full retained evidence for a rejected source optimization and fresh Open Babel lanes | Adopted-main or release performance; the source adoption gate failed |
+
+The overview therefore reports Open Babel separately from RDKit and COSMolKit.
+File-I/O results are not used to imply descriptor, fingerprint, reaction,
+force-field, or conformer-generation superiority.
 
 ## Tier A scope
 
@@ -29,10 +43,10 @@ silently.
    [v1.0.42 record-accounting record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-10-openbabel-file-io-record-accounting-v1.0.42.json).
 2. **Semantic round trip.** Compare graph, charge, isotope, bond order,
    stereochemistry, coordinates, and format-specific metadata after
-   CheMatic→Open Babel and Open Babel→CheMatic conversion. Publish every row as
+   chematic→Open Babel and Open Babel→chematic conversion. Publish every row as
    exact, typed refusal, documented unsupported, or defect. The first bounded
    source-candidate gate observes both outputs through the same Rust reader for
-   V3000, MOL2, CML, and CDXML. On the checked-in fixtures CheMatic preserves
+   V3000, MOL2, CML, and CDXML. On the checked-in fixtures chematic preserves
    all observed fields; Open Babel 3.2.1 changes the MOL2 residue label. This is
    one small fixture per format, not broad corpus evidence. See the
    [clean-commit semantic record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-10-openbabel-file-io-semantics-v1.0.42.json).
@@ -68,7 +82,7 @@ internal timed loop. This removes executable startup and plugin discovery, but
 it remains a tiny-fixture latency test rather than a large-file throughput or
 memory measurement.
 
-The first clean-commit run used 5,000 repetitions per process. CheMatic won
+The first clean-commit run used 5,000 repetitions per process. chematic won
 all 21 blocks in all 12 lanes, with median paired speedups from 2.59x to 6.38x
 and a weakest paired 95% lower bound of 2.56x. See the
 [bounded same-process record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-10-openbabel-file-io-same-process-v1.0.42.md).
@@ -93,7 +107,7 @@ Open Babel superiority.
 
 A [paired stereo-preservation record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-15-openbabel-stereo-paired.md)
 uses the same RDKit-written V2000/V3000 file bytes for both CLIs. On 155
-stereo-sensitive corpus rows per profile, CheMatic preserves all RDKit
+stereo-sensitive corpus rows per profile, chematic preserves all RDKit
 source/reopen identities; Open Babel 3.2.1 differs on 12 V2000 and 9 V3000
 rows. Those differences represent four and three distinct source identities,
 respectively. This is a one-host source comparison under an RDKit-defined
@@ -119,7 +133,7 @@ and `write_mol2` graph-oriented APIs remain available. Partial charges are no
 longer rounded into formal charges; these are distinct MOL2 fields.
 
 Until gates 2–4 pass for a named format and exact package artifact, the valid
-claim is only that CheMatic has a bounded comparison program. It is not valid
+claim is only that chematic has a bounded comparison program. It is not valid
 to claim general Open Babel file-format superiority.
 
 ## External references

@@ -1,27 +1,16 @@
-# Use case: Cheminformatics in a Python/Jupyter notebook
+# Explore molecules in a Python or Jupyter workflow
 
 ## Problem
 
-You want to explore a compound library in a Jupyter notebook — compute descriptors, cluster by fingerprint similarity, build a quick ML model — but setting up RDKit via conda breaks your existing environment or doesn't work in Colab.
+You want to inspect a compound library, compute descriptors, build fingerprint
+features, or visualize structures from a Python notebook.
 
 ## Solution
 
-chematic installs with `pip install chematic` in any Python environment: conda-free, C++-free, Colab-ready. Descriptors run in parallel Rust under the hood; `mol` renders a 2D structure inline without extra config.
-
-## Output / What you get
-
-```
-Loaded 5 000 molecules
-2 312 / 5 000 pass Lipinski + PAINS
-CV AUC: 0.823 ± 0.041
-
-=== Compound_042 ===
-Molecular weight 312.4 Da, formula C18H20N2O3.
-LogP 2.41 (moderately lipophilic), TPSA 58.2 Å².
-HBD 1, HBA 4, 4 rotatable bonds, 2 aromatic rings.
-Drug-likeness: no Lipinski rule-of-5 violations. Likely orally bioavailable.
-QED 0.74. No structural alerts (PAINS / Brenk clean).
-```
+Published wheels install with `pip` on supported platforms and do not require a
+local C/C++ chemistry toolchain. Use checked or streaming readers when source
+row identity and rejected records matter. Descriptor and alert results are
+computed properties, not experimental efficacy or safety conclusions.
 
 ## Related APIs
 
@@ -29,7 +18,6 @@ QED 0.74. No structural alerts (PAINS / Brenk clean).
 - `chematic.bulk.ecfp4(smiles_list)` — `(N, 2048)` uint8 for sklearn / PyTorch
 - `chematic.SimilarityIndex` — LSH approximate nearest-neighbour search
 - `mol.svg()` / `chematic.depict_grid(mols, cols=3)` — SVG rendering in Jupyter
-- `mol.describe()` — natural-language summary for reports
 - [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/kent-tokyo/chematic/blob/main/notebooks/quickstart.ipynb)
 
 ## Environment
@@ -103,7 +91,6 @@ plt.show()
 ## 5. Nearest-neighbor search in a large library
 
 ```python
-# Works for hundreds of thousands of molecules
 idx = chematic.SimilarityIndex.from_smiles(df["smiles"].tolist())
 
 hits = idx.search("CC(=O)Nc1ccc(O)cc1", threshold=0.4, k=10)
@@ -127,25 +114,4 @@ display(SVG(mol.svg_highlighted(atoms, color="#FF6B6B")))
 # Grid of top hits
 top_mols = [chematic.from_smiles(df["smiles"].iloc[i]) for i, _ in hits[:6]]
 display(SVG(chematic.depict_grid(top_mols, cols=3)))
-```
-
-## 7. Natural language summary for reporting
-
-```python
-for _, row in drug_like.head(3).iterrows():
-    mol = chematic.from_smiles(row["smiles"])
-    print(f"=== {row['name']} ===")
-    print(mol.describe())
-    print()
-```
-
-Output:
-
-```
-=== Compound_042 ===
-Molecular weight 312.4 Da, formula C18H20N2O3.
-LogP 2.41 (moderately lipophilic), TPSA 58.2 Å².
-HBD 1, HBA 4, 4 rotatable bonds, 2 aromatic rings.
-Drug-likeness: no Lipinski rule-of-5 violations. Likely orally bioavailable.
-QED 0.74. No structural alerts (PAINS / Brenk clean).
 ```

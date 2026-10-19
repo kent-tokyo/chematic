@@ -33,6 +33,15 @@ package, comparator, corpus, host, runtime and operation.
 
 - [3D tetrahedral candidate guard](2026-10-17-openbabel-3d-stereo-guard.md): source-valid 21-block native comparison, all 24 floors, preserved source outputs and archived invalid build epoch.
 
+### Superseded workflow development records
+
+These records remain available for provenance but are not current summary
+claims:
+
+- [expanded RDKit workflow source report](2026-10-12-rdkit-workflows-expanded-source.md);
+- reaction/R-group development: [combined source report](2026-10-18-rdkit-reaction-cleanup-rgroup-source.md), [83-row source gate](2026-10-18-rdkit-reaction-83-source-gate.json), [stereo safety](2026-10-18-rdkit-reaction-stereo-safety.json), [R-group hydrogen gate](2026-10-18-rdkit-rgroup-hydrogen-source-gate.json), and [automatic-H follow-up](2026-10-18-rdkit-rgroup-auto-hydrogen-followup.md);
+- Cleanup development: [N-oxide result](2026-10-18-rdkit-cleanup-n-oxide-followup.json), [non-tetrahedral report](2026-10-18-rdkit-cleanup-nontetra-followup.md) and [result](2026-10-18-rdkit-cleanup-nontetra-followup.json), [pyridone report](2026-10-18-rdkit-cleanup-pyridone-followup.md) and [result](2026-10-18-rdkit-cleanup-pyridone-followup.json), and [isolated-metal report](2026-10-18-rdkit-cleanup-isolated-metals-followup.md) and [result](2026-10-18-rdkit-cleanup-isolated-metals-followup.json).
+
 | Need | Start with |
 |---|---|
 | Review requested-only V3000 loss collection | [2026-10-16-openbabel-v3000-loss-work](2026-10-16-openbabel-v3000-loss-work.md): exact outputs/reports, both primary write intervals positive, all 15 median budgets pass; parsing retreat disclosed |
