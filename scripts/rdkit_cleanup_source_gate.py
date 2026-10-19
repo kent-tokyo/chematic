@@ -3,7 +3,8 @@
 
 Generate the JSONL with ``cargo run -p chematic-chem --example
 cleanup_rdkit_dump --offline < validation/cosmolkit_comparison/corpora/stress-v1.smi``.
-Only rows whose parsed input SMILES agree are scored.
+The shared compatible subset also requires a successful RDKit Cleanup oracle.
+The separate raw Reionize count scores every source row.
 """
 
 from __future__ import annotations
@@ -246,6 +247,7 @@ def main() -> None:
                 ROOT / "crates/chematic-chem/src/standardize/groups.rs",
                 ROOT / "crates/chematic-core/src/molecule/builder.rs",
                 ROOT / "crates/chematic-chem/examples/cleanup_rdkit_dump.rs",
+                ROOT / "scripts/rdkit_cleanup_source_gate.py",
                 ROOT / "crates/chematic-smiles/src/lib.rs",
                 ROOT / "crates/chematic-smiles/src/rdkit/mod.rs",
             )
@@ -279,8 +281,8 @@ def main() -> None:
         "mismatches": mismatches,
         "baseline_comparison": comparison,
         "limits": [
-            "compatible metrics use only the same parsed inputs",
-            "raw all-row Reionize count includes differing input interpretations",
+            "shared compatible metrics require the same parsed input and a successful Cleanup oracle",
+            "raw all-row Reionize count includes rows where Cleanup fails or input interpretations differ",
             "RDKit agreement is not independent chemical truth",
         ],
     }
@@ -288,7 +290,7 @@ def main() -> None:
     args.output.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n")
     print(f"Normalize: {len(normalize_exact)}/{len(normalize_compatible)} exact")
     print(f"Cleanup: {len(exact)}/{len(compatible)} exact")
-    print(f"Reionize: {len(reionize_exact)}/{len(reionize_compatible)} exact")
+    print(f"Reionize (Cleanup-eligible rows): {len(reionize_exact)}/{len(reionize_compatible)} exact")
     print(f"Reionize raw all rows: {len(reionize_all_exact)}/{len(corpus)} exact")
     if comparison:
         print(f"Fixed: {len(comparison['fixed_indices'])}; "
