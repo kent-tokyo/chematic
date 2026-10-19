@@ -23,8 +23,8 @@ struct PyridoneMatch {
 /// Normalize chemical groups (nitro groups, etc.).
 ///
 /// Transforms:
-/// - `[N+](=O)[O-]` → `N(=O)=O` (nitro normalization: N charge 0, O- → double bond)
-/// - `R[S](=O)R` → `R[S+]([O-])R` (RDKit-compatible sulfoxide normalization)
+/// - `[N+](=O)[O-]` → `N(=O)=O` when neither oxygen is mapped
+/// - `R[S](=O)R` → `R[S+]([O-])R` when no other S-O bond is present
 /// - ortho/para pyridinium phenoxide → neutral pyridone
 ///
 /// Returns a new molecule with normalized groups.
@@ -262,6 +262,15 @@ fn detect_nitro(mol: &Molecule, idx: AtomIdx, nitro_atoms: &mut HashSet<AtomIdx>
         .collect();
 
     if oxygen_neighbors.len() == 2 {
+        // The two nitro oxygens cease to be interchangeable when either has
+        // an atom map. Retain the source charge/bond assignment so the map
+        // does not move from the anionic oxygen during serialization.
+        if oxygen_neighbors
+            .iter()
+            .any(|(oxygen_idx, _)| mol.atom(*oxygen_idx).atom_map.is_some())
+        {
+            return;
+        }
         let mut has_double_oxygen = false;
         let mut has_single_negative_oxygen = false;
         for (oxygen_idx, bond_idx) in &oxygen_neighbors {
@@ -302,7 +311,9 @@ fn detect_azide(mol: &Molecule, idx: AtomIdx, azide_atoms: &mut HashSet<AtomIdx>
     }
 }
 
-/// Mark neutral three-coordinate sulfoxide S=O atoms, but not sulfones.
+/// Mark neutral three-coordinate sulfoxide S=O atoms, but not sulfites,
+/// sulfinates, or sulfones. An additional S-O bond keeps the neutral S=O
+/// representation in RDKit Normalize.
 fn detect_sulfoxide(mol: &Molecule, idx: AtomIdx, sulfoxide_atoms: &mut HashSet<AtomIdx>) {
     let sulfur = mol.atom(idx);
     if sulfur.charge != 0 || mol.neighbors(idx).count() != 3 {
@@ -319,6 +330,11 @@ fn detect_sulfoxide(mol: &Molecule, idx: AtomIdx, sulfoxide_atoms: &mut HashSet<
         .map(|(oxygen_idx, _)| oxygen_idx)
         .collect();
     if let [oxygen] = double_oxygens.as_slice() {
+        if mol.neighbors(idx).any(|(neighbor, _)| {
+            neighbor != *oxygen && mol.atom(neighbor).element.atomic_number() == 8
+        }) {
+            return;
+        }
         sulfoxide_atoms.extend([idx, *oxygen]);
     }
 }
