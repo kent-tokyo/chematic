@@ -14,6 +14,16 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+
+- `rdkit_smiles_checked` now performs the bounded atom-order checks documented
+  for v1.1.9 in addition to its existing one-step fixed-point check. Failures
+  expose the first differing atom order and a typed reason. The bound is
+  configurable from 2 through 256 and defaults to 32.
+- Previous-release compatibility jobs now compare all changed publishable Rust
+  crates, Python declarations/dependencies and generated WebAssembly TypeScript
+  declarations against v1.1.8 instead of the older v1.1.7 baseline.
+
 ## [1.1.9] - 2026-10-19
 
 ### Added
@@ -26,9 +36,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   cut-count destinations, including reversed and strided views. Invalid layout,
   dtype or native fragmentation failures leave the destination unchanged.
 
-- Python `rdkit_smiles_checked` rejects RDKit-compatible canonical SMILES when
-  the result is not stable under bounded atom-order permutations, preserving a
-  typed reason instead of returning an unsafe identity string.
+- Python `rdkit_smiles_checked` adds a one-step textual fixed-point guard for
+  RDKit-compatible canonical SMILES. The v1.1.9 implementation did not yet run
+  the bounded atom-order permutations stated in the original release note;
+  that contract is completed under `[Unreleased]` above.
 
 ### Changed
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Record native fixed-point checks and optional RDKit #9391 reproduction."""
+"""Record bounded writer-stability checks and optional RDKit reproduction."""
 
 import argparse
 from collections import Counter
@@ -31,6 +31,7 @@ def inspect(source):
                 status=error.code,
                 first=error.first_smiles,
                 roundtrip=error.roundtrip_smiles,
+                atom_order=error.atom_order,
             )
         except (ValueError, RuntimeError) as error:
             row.update(status="writer_refused", error=str(error))
@@ -57,7 +58,10 @@ def main():
     ]
     rows = [inspect(source) for source in sources]
     evidence = {
-        "scope": "Python fixed-point guard; not a stereo identity proof or native rebuild",
+        "scope": (
+            "Python fixed-point plus 32-order bounded atom-permutation guard; "
+            "not a stereo identity proof or exhaustive canonicality proof"
+        ),
         "native_version": ch.__version__,
         "native_sha256": hashlib.sha256(Path(native.__file__).read_bytes()).hexdigest(),
         "guard_sha256": hashlib.sha256(

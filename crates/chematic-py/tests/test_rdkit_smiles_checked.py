@@ -57,6 +57,51 @@ def test_accepts_stable_outputs_without_modifying_input(source):
     assert mol.to_moljson() == before
 
 
+def test_bounded_orders_are_deterministic_unique_and_broad():
+    first = list(implementation._bounded_atom_orders(7, 32))
+    second = list(implementation._bounded_atom_orders(7, 32))
+    assert first == second
+    assert len(first) == len(set(first)) == 32
+    assert first[0] == tuple(range(7))
+    assert tuple(reversed(range(7))) in first
+    assert tuple(range(1, 7)) + (0,) in first
+    assert (0, 2, 4, 6, 1, 3, 5) in first
+
+
+def test_small_graph_stops_after_all_permutations():
+    assert set(implementation._bounded_atom_orders(2, 32)) == {(0, 1), (1, 0)}
+
+
+def test_rejects_permutation_dependent_output_with_witness(monkeypatch):
+    mol = ch.from_smiles("CCO")
+    native_write = implementation._write_permuted
+
+    def write(candidate, order):
+        if order == (2, 1, 0):
+            return "OCC"
+        return native_write(candidate, order)
+
+    monkeypatch.setattr(implementation, "_write_permuted", write)
+    with pytest.raises(ch.RdkitSmilesStabilityError) as caught:
+        ch.rdkit_smiles_checked(mol, max_permutations=2)
+    assert caught.value.code == "permutation_dependent"
+    assert caught.value.first_smiles == "CCO"
+    assert caught.value.roundtrip_smiles == "OCC"
+    assert caught.value.atom_order == (2, 1, 0)
+
+
+@pytest.mark.parametrize("value", [True, 1.5, "32", None])
+def test_permutation_limit_requires_integer(value):
+    with pytest.raises(TypeError, match="max_permutations"):
+        ch.rdkit_smiles_checked(ch.from_smiles("CCO"), max_permutations=value)
+
+
+@pytest.mark.parametrize("value", [-1, 0, 1, 257])
+def test_permutation_limit_is_bounded(value):
+    with pytest.raises(ValueError, match="between 2 and 256"):
+        ch.rdkit_smiles_checked(ch.from_smiles("CCO"), max_permutations=value)
+
+
 def test_preserves_distinct_tetrahedral_and_double_bond_isomers():
     pairs = [("N[C@H](C)C(=O)O", "N[C@@H](C)C(=O)O"), ("F/C=C/F", "F/C=C\\F")]
     for left, right in pairs:
