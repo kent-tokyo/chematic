@@ -49,32 +49,9 @@ fn transfer_simple_acid_proton(mol: &Molecule) -> Molecule {
         return clone_molecule(mol);
     };
     let anion_atom = mol.atom(*anion);
-    let carbon_anion = anion_atom.element.atomic_number() == 6
-        && anion_atom.charge == -1
-        && !anion_atom.aromatic
-        && matches!(
-            (mol.degree(*anion), anion_atom.hydrogen_count),
-            (0, Some(3)) | (1, Some(2))
-        )
-        && mol
-            .neighbors(*anion)
-            .all(|(_, bond)| mol.bond(bond).order == BondOrder::Single);
-    let alkoxide = anion_atom.element.atomic_number() == 8
-        && anion_atom.charge == -1
-        && anion_atom.hydrogen_count == Some(0)
-        && mol.degree(*anion) == 1
-        && mol.neighbors(*anion).all(|(neighbor, bond)| {
-            mol.atom(neighbor).element.atomic_number() == 6
-                && mol.bond(bond).order == BondOrder::Single
-                && !mol.neighbors(neighbor).any(|(other, carbon_bond)| {
-                    other != *anion
-                        && mol.atom(other).element.atomic_number() == 8
-                        && mol.bond(carbon_bond).order == BondOrder::Double
-                })
-        });
-    if !carbon_anion && !alkoxide {
+    let Some(carbon_anion) = supported_acid_proton_acceptor(mol, *anion) else {
         return clone_molecule(mol);
-    }
+    };
 
     let mut acids = Vec::new();
     let mut unrecognized_acid = false;
@@ -138,6 +115,36 @@ fn transfer_simple_acid_proton(mol: &Molecule) -> Molecule {
     builder.set_atom_charge(*acid, -1);
     builder.set_atom_hydrogen_count(*acid, Some(0));
     builder.build()
+}
+
+/// Whether the sole anion is a supported carbon acceptor or alkoxide.
+/// The boolean records carbon eligibility for the lower-priority alcohol acid.
+fn supported_acid_proton_acceptor(mol: &Molecule, anion: AtomIdx) -> Option<bool> {
+    let anion_atom = mol.atom(anion);
+    let carbon_anion = anion_atom.element.atomic_number() == 6
+        && anion_atom.charge == -1
+        && !anion_atom.aromatic
+        && matches!(
+            (mol.degree(anion), anion_atom.hydrogen_count),
+            (0, Some(3)) | (1, Some(2))
+        )
+        && mol
+            .neighbors(anion)
+            .all(|(_, bond)| mol.bond(bond).order == BondOrder::Single);
+    let alkoxide = anion_atom.element.atomic_number() == 8
+        && anion_atom.charge == -1
+        && anion_atom.hydrogen_count == Some(0)
+        && mol.degree(anion) == 1
+        && mol.neighbors(anion).all(|(neighbor, bond)| {
+            mol.atom(neighbor).element.atomic_number() == 6
+                && mol.bond(bond).order == BondOrder::Single
+                && !mol.neighbors(neighbor).any(|(other, carbon_bond)| {
+                    other != anion
+                        && mol.atom(other).element.atomic_number() == 8
+                        && mol.bond(carbon_bond).order == BondOrder::Double
+                })
+        });
+    (carbon_anion || alkoxide).then_some(carbon_anion)
 }
 
 /// RDKit Cleanup charges a bare Li/Na/K atom to +1 and a bare Mg/Ca atom
