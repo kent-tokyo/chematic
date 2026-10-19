@@ -1,0 +1,5 @@
+/private/tmp/chematic-xbs-input-invalid.py:2: error: Argument 1 to "read_xbs" has incompatible type "int"; expected "str | bytes"  [arg-type]
+/private/tmp/chematic-xbs-input-invalid.py:3: error: Argument 1 to "XbsScene" has incompatible type "None"; expected "str | bytes"  [arg-type]
+/private/tmp/chematic-xbs-input-invalid.py:4: error: Argument "preserve_source" to "to_xbs" of "XbsScene" has incompatible type "int"; expected "bool"  [arg-type]
+/private/tmp/chematic-xbs-input-invalid.py:5: error: Property "labels" defined in "XbsScene" is read-only  [misc]
+Found 4 errors in 1 file (checked 3 source files)

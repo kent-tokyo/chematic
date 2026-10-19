@@ -1,0 +1,26 @@
+{
+  "scope": "static gray-style XBS input; original and normalized output cross-read, no viewer execution",
+  "python": "3.13.6",
+  "numpy": "2.5.3",
+  "hofmann": "0.21.1",
+  "seed": 25761019,
+  "scenes": 144,
+  "atom_rows": 8016,
+  "independent_crossreads": 289,
+  "maximum_atom_scene": 10000,
+  "coordinate_check": "binary64 byte equality including negative zero and minimum subnormal",
+  "style_checks": 865,
+  "rule_checks": 576,
+  "packet_sha256": "ee5c4824a45cb32c0b09dbf30522a1cc540499f3d111c0ecf1ce42cde7e80c1b",
+  "source_sha256": {
+    "crates/chematic-py/python/chematic/_xbs_read.py": "01969a8a4a74d4b7f58e3cbe30c1bbc10913c3c05abca1e58b21642ac1d63138",
+    "crates/chematic-py/tests/test_xbs_input.py": "f9f45247bf7421fc4c6e2419fe5a6e6f09b2390cce121bf50e9f71071689f724",
+    "validation/validate_xbs_input.py": "d941df77e67537e5884c27d819fc2f0d1a0344ad0ff2a763d52fc905caad4b45"
+  },
+  "limitations": [
+    "strict subset, not all XBS commands",
+    "no chemistry or units inferred",
+    "no GUI/render/bond-perception validation",
+    "no native rebuild or release claim"
+  ]
+}

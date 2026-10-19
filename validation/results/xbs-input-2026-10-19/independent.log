@@ -1,0 +1,22 @@
+Matplotlib is building the font cache; this may take a moment.
+{
+  "scope": "static gray-style XBS input; original and normalized output cross-read, no viewer execution",
+  "python": "3.13.6",
+  "numpy": "2.5.3",
+  "hofmann": "0.21.1",
+  "seed": 25761019,
+  "scenes": 144,
+  "atom_rows": 8016,
+  "independent_crossreads": 289,
+  "maximum_atom_scene": 10000,
+  "coordinate_check": "binary64 byte equality including negative zero and minimum subnormal",
+  "style_checks": 865,
+  "rule_checks": 576,
+  "packet_sha256": "ee5c4824a45cb32c0b09dbf30522a1cc540499f3d111c0ecf1ce42cde7e80c1b",
+  "limitations": [
+    "strict subset, not all XBS commands",
+    "no chemistry or units inferred",
+    "no GUI/render/bond-perception validation",
+    "no native rebuild or release claim"
+  ]
+}

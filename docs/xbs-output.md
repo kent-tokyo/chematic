@@ -1,4 +1,4 @@
-# Checked XBS scene output
+# Checked XBS scene input and output
 
 Python `write_xbs` emits the static `atom`, `spec` and `bonds` records accepted
 by the XBS ball-and-stick scene format. It is inspired by
@@ -55,9 +55,85 @@ are permitted. The function returns a complete string and writes no file.
   Source sequence errors propagate. Inputs are not modified.
 
 This is a standard-library Python writer. RGB/named colors, wildcard rules,
-view commands, periodic cell metadata, movies, reading, GUI execution and
+view commands, periodic cell metadata, movies, GUI execution and
 chemical graph conversion are outside this profile. It has no Rust/WASM
 binding and does not add a format alias to `convert_format`.
+
+## Source-preserving input — October 19, 2026
+
+`read_xbs(text)` and `XbsScene(text)` read the same static gray-style subset.
+The author-supplied [XBS README](https://github.com/Montmorency/XBS#readme)
+documents `atom`, `spec`, `bonds` and whole-line `*` comments. This reader extends
+the existing output capability motivated by Open Babel #2576; it is not a fix
+to Open Babel's separate `bs` dialect.
+
+```python
+from chematic import XbsScene, read_xbs
+
+text = "* Original abstract site\r\natom Site1 -0 0 1.25\r\nspec Site1 0.5 0.75\r\n"
+scene = read_xbs(text.encode("ascii"))
+assert isinstance(scene, XbsScene)
+assert scene.labels == ("Site1",)
+assert scene.positions == ((-0.0, 0.0, 1.25),)
+assert scene.atom_lines == (2,)
+assert scene.to_xbs() == text
+normalized = scene.to_xbs(preserve_source=False)
+assert read_xbs(normalized).labels == scene.labels
+```
+
+The immutable result retains `source_text`, ordered `labels` and `positions`,
+ordered `species` styles and `bonds` drawing rules, and their 1-based physical
+`atom_lines`, `species_lines`, and `bond_lines`. Nested containers are tuples;
+styles and rules are frozen. Construction itself validates input. The compact
+representation reports counts instead of printing the complete source.
+
+`to_xbs()` returns exact decoded source, preserving comments, whitespace, CRLF,
+decimal spelling and record interleaving. `to_xbs(preserve_source=False)` uses
+the existing writer to emit LF, grouped records and 17 significant digits;
+this deliberately omits comments and original numeric spelling. Parsed binary64
+values, including negative zero and subnormal coordinates, remain unchanged.
+ASCII byte input can be reconstructed exactly from `source_text.encode("ascii")`.
+
+Reader-specific limits and behavior:
+
+- Input is `str` or immutable ASCII `bytes`, at most 4 MiB, 20,000 physical
+  lines and 4,096 bytes per physical line. LF/CRLF and space/tab separation
+  are accepted. Bare CR, other controls, non-ASCII and unsupported records fail.
+- Atoms/styles/rules retain the writer's 10,000/128/1,024 limits, label syntax,
+  numeric ranges, required styles and unique undirected pair rules. Unused styles
+  are allowed. Records may interleave and refer to styles declared later.
+- Each physical line contains one complete record, a blank line or a whole-line
+  `*` comment. Inline comments, semicolon commands, named/RGB colors, wildcard
+  rules, movies and viewer commands are refused instead of ignored.
+- Numbers use decimal syntax with optional exponent. Nonfinite numbers and
+  nonzero decimal literals that round to zero in binary64 are rejected. Other
+  decimal values use normal binary64 rounding; exact decimal arithmetic is not
+  promised. Coordinate, radius and distance units are retained without inference.
+- Wrong input types raise `TypeError`; malformed/unsupported data raise
+  `ValueError`. Record errors include the physical source line; byte/total-line
+  caps are document errors. There is no partial scene return or filesystem I/O.
+
+The reader is an explicit scene-data API. Species labels need not be chemical
+elements. Distance-based drawing rules do not encode molecular connectivity,
+bond orders, charges or periodicity; no graph or viewer is created.
+
+Local follow-up validation passed **271 tests** (62 new reader cases, 47 existing
+writer cases and 162 compatibility cases), including positive/negative resource
+boundaries. Strict mypy passed for the two XBS helpers and a public consumer;
+four invalid consumer calls produced four expected errors. The package root's
+existing generic-annotation errors were excluded from this scoped check.
+
+Independent cross-reading with **hofmann 0.21.1** covers 144 authored scenes /
+8,016 atom rows in scientific/general decimal notation, both atom orders and
+LF/CRLF. Original and normalized text both match binary64 coordinates, styles
+and rules: 288 ordinary cross-reads plus one 10,000-atom scene. Original source
+text and physical atom-line correspondence are checked independently too.
+No GUI/rendering, bond perception, fresh native build or published wheel is
+claimed. See `validation/results/xbs-input-2026-10-19/` and reproduce with:
+
+```sh
+python3.13 validation/validate_xbs_input.py --output /tmp/xbs-input-crossread.json
+```
 
 ## Sources and local validation — October 17, 2026
 

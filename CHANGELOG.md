@@ -16,6 +16,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Python `read_xbs` / `XbsScene` read bounded static gray-style XBS scenes,
+  retaining exact source, original record order and physical line numbers in
+  immutable data. Unsupported commands and unresolved references are errors;
+  drawing rules are retained without chemical bond inference.
+
 - Checked Python TURBOMOLE ⇄ POSCAR geometry conversion retains 3D lattice
   vectors, unwrapped positions and fully fixed atoms, with source text and an
   explicit atom correspondence map. Unsupported partial constraints and restart

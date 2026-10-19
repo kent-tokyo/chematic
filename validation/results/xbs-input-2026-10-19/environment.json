@@ -1,0 +1,14 @@
+{
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "python": "3.13.6",
+  "pytest": "9.1.1",
+  "mypy": "1.8.0",
+  "native_extension_sha256": "a0b579b09178fa162954719a445813d2ed48118f7e698556818ff35005e40eb6",
+  "native_scope": "previous build, reused only for full package import and unchanged compatibility tests; new reader is standard-library Python",
+  "docs": {
+    "mkdocs": "1.6.1",
+    "mkdocs-material": "9.7.7",
+    "mkdocstrings": "1.0.6",
+    "pymdown-extensions": "12.0.1"
+  }
+}

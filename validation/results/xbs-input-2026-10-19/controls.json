@@ -1,0 +1,60 @@
+{
+  "records": [
+    {
+      "license": "MIT OR Apache-2.0",
+      "provenance": "Original authored project controls, 2026-10-19; no upstream coordinates or viewer code copied",
+      "redistribution": "allowed",
+      "oracle": "hofmann 0.21.1 static file parser; pytest 9.1.1 explicit bounds/error assertions",
+      "id": "xbs-input-two-site",
+      "source_text": "* Original abstract two-site scene\r\n\t bonds Site1 H 0 2.5 0.125 .75\r\natom Site1 +1.25 -0.0 4.9406564584124654e-324\r\n\r\nspec H .5 1\r\n atom H -2.5 0 0\r\nspec Site1 1.0 .25\r\n",
+      "normalization": "exact ASCII bytes including CRLF",
+      "sha256": "2317d7c1a187834262df293f3e37101d98250d6cf82e70b66ddb1eed188292ad",
+      "minimization": "Two abstract sites, one drawing rule and two out-of-order styles cover source, interleaving, forward references, negative zero and minimum subnormal",
+      "expected": {
+        "labels": [
+          "Site1",
+          "H"
+        ],
+        "atom_lines": [
+          3,
+          6
+        ],
+        "species_lines": [
+          5,
+          7
+        ],
+        "bond_lines": [
+          2
+        ],
+        "round_trip": "exact source and binary64 positions"
+      }
+    },
+    {
+      "license": "MIT OR Apache-2.0",
+      "provenance": "Original authored project controls, 2026-10-19; no upstream coordinates or viewer code copied",
+      "redistribution": "allowed",
+      "oracle": "hofmann 0.21.1 static file parser; pytest 9.1.1 explicit bounds/error assertions",
+      "id": "xbs-input-generated-packet",
+      "recipe": "Seed 25761019; six scene sizes, three scales, two atom orders, two decimal notations, LF/CRLF; see validate_xbs_input.py",
+      "sha256": "ee5c4824a45cb32c0b09dbf30522a1cc540499f3d111c0ecf1ce42cde7e80c1b",
+      "minimization": "One short label/style table and two rules exercise all branches without chemical topology",
+      "expected": {
+        "ordinary_scenes": 144,
+        "ordinary_atom_rows": 8016,
+        "independent_crossreads": 289,
+        "maximum_atom_scene": 10000
+      }
+    },
+    {
+      "license": "MIT OR Apache-2.0",
+      "provenance": "Original authored project controls, 2026-10-19; no upstream coordinates or viewer code copied",
+      "redistribution": "allowed",
+      "oracle": "hofmann 0.21.1 static file parser; pytest 9.1.1 explicit bounds/error assertions",
+      "id": "xbs-input-boundaries-and-refusals",
+      "recipe": "Original literals and on-demand generators in test_xbs_input.py; includes exact byte/line/atom/style/rule caps and strict refusals",
+      "sha256": "f9f45247bf7421fc4c6e2419fe5a6e6f09b2390cce121bf50e9f71071689f724",
+      "minimization": "Generated padding avoids redistributing multi-megabyte files; each invalid record isolates one boundary",
+      "expected": "271 reader/writer/compatibility tests pass; malformed input raises the stated error at its physical line"
+    }
+  ]
+}
