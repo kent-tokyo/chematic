@@ -1,0 +1,26 @@
+[
+  {
+    "script": "check_python_stubs",
+    "exit_code": 0
+  },
+  {
+    "script": "check_cross_binding_manifest",
+    "exit_code": 0
+  },
+  {
+    "script": "check_binding_surface",
+    "exit_code": 0
+  },
+  {
+    "script": "check_unsafe_surface",
+    "exit_code": 0
+  },
+  {
+    "script": "check_refactor_budget",
+    "exit_code": 0
+  },
+  {
+    "script": "check_product_names",
+    "exit_code": 0
+  }
+]

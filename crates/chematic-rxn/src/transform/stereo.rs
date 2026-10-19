@@ -144,7 +144,8 @@ pub(super) fn permutation_parity(from_seq: &[u32], to_seq: &[u32]) -> Option<boo
 /// - Even parity → chirality flags must agree for same absolute configuration.
 /// - Odd parity  → chirality flags must differ for same absolute configuration.
 ///
-/// Returns `true` if all chiral centres are consistent, `false` if any mismatch.
+/// Returns `true` if all chiral centres are consistent, `false` if any mismatch
+/// or if a tetrahedral centre's neighbour order cannot be verified.
 pub(super) fn smirks_chirality_ok(
     tmpl: &Molecule,
     reactant: &Molecule,
@@ -158,12 +159,15 @@ pub(super) fn smirks_chirality_ok(
 
         // Template atom's SMILES stereo neighbour order (template atom indices).
         let Some(tmpl_order) = tmpl.stereo_neighbor_order(AtomIdx(i as u32)) else {
-            continue; // No recorded order — skip this centre.
+            if tmpl_atom.chirality.is_tetrahedral() {
+                return false;
+            }
+            continue;
         };
 
         // Corresponding matched reactant atom.
         let Some(&react_idx) = match_map.get(&i) else {
-            continue; // Template atom not in mapping (shouldn't happen for complete match).
+            return false; // A complete match must map every constrained atom.
         };
 
         let react_atom = reactant.atom(react_idx);
@@ -188,12 +192,18 @@ pub(super) fn smirks_chirality_ok(
             }
         }
         if !all_mapped {
-            continue; // Partial substructure match — cannot verify chirality.
+            if tmpl_atom.chirality.is_tetrahedral() {
+                return false; // Partial match cannot establish tetrahedral handedness.
+            }
+            continue;
         }
 
         // Reactant atom's SMILES stereo neighbour order (reactant atom indices).
         let Some(react_order) = reactant.stereo_neighbor_order(react_idx) else {
-            // No recorded order in reactant — fall back to raw flag comparison.
+            if tmpl_atom.chirality.is_tetrahedral() {
+                return false;
+            }
+            // Preserve the existing non-tetrahedral flag comparison.
             if react_atom.chirality != tmpl_atom.chirality {
                 return false;
             }
@@ -201,7 +211,10 @@ pub(super) fn smirks_chirality_ok(
         };
 
         let Some(even_parity) = permutation_parity(&mapped, react_order) else {
-            continue; // Alignment failed — skip.
+            if tmpl_atom.chirality.is_tetrahedral() {
+                return false; // Different neighbour sets cannot prove equal geometry.
+            }
+            continue;
         };
 
         // Check: even parity → flags must agree; odd parity → flags must differ.

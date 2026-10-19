@@ -6,6 +6,15 @@ sample, not an audit of every open issue. Source baseline: `ffe682c3` plus
 the pre-existing working-tree changes, including the separate RDKit MOL2
 charge work. Existing changes were retained.
 
+October 19 follow-up: [#2822](https://github.com/openbabel/openbabel/issues/2822)
+remains open. Native TURBOMOLE lattice read/write already exists. Added
+[checked bidirectional POSCAR conversion](turbomole-lattice-preservation.md#checked-poscar-conversion)
+using those native parsers/writers, with full fixed/free constraints and
+explicit output-to-source atom correspondence. Local Open Babel 3.2.1 still
+emits zero cell vectors on the TURBOMOLE-to-VASP control; its opposite writer
+direction was already working. This adds the missing chematic workflow adapter,
+not another fix to the existing lattice parser.
+
 October 19 follow-up: [#2231](https://github.com/openbabel/openbabel/issues/2231)
 remains open. Added [position-preserving Standard InChIKey batches](positioned-inchi-keys.md),
 including indexed original text and explicit failure reasons. Exact Standard

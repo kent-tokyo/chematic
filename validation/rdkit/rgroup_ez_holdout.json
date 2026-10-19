@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "core": "C=C",
+  "substituents": ["F", "Cl", "Br", "I", "C", "CO"],
+  "criterion": "Each same-constitution pair differs only in specified alkene geometry; the complete labelled decomposition must retain that distinction."
+}
