@@ -7,6 +7,8 @@ package, comparator, corpus, host, runtime and operation.
 
 ## Start here
 
+- [COSMolKit rotor and Layered speed audit](2026-10-19-rotor-layered.md): current-source screening, exact old/new outputs, all 24 formal orders and all 72 comparisons; remaining rotor and MQN boundaries are explicit.
+
 - [Morgan, TPSA and Python ring-count caches](2026-10-19-python-ring-cache.md): fifth combined source candidate passes its three primary improvements and all 21 control floors; all four rejected prior candidates and all 63 comparisons are preserved.
 
 - [Compact core cache rejected pilot](2026-10-19-morgan-tpsa-compact-cache-pilot.md): substantial scalar first-use gains remain diagnostic; ring repeated/parse-inclusive conditions prevent adoption. All eight blocks and 21 lanes retained.

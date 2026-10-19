@@ -837,6 +837,10 @@ jobs:
           python3 scripts/check_python_speed_frontier_packet.py benchmarks/2026-10-19-morgan-tpsa-hot-scalars-pilot-numeric.json.gz
           python3 scripts/check_python_speed_frontier_packet.py benchmarks/2026-10-19-morgan-tpsa-compact-cache-pilot-numeric.json.gz
           python3 -m unittest scripts.tests.test_check_python_speed_frontier_packet scripts.tests.test_bench_python_speed_frontier -v
+      - name: Verify rotor and Layered timing evidence
+        run: |
+          python3 scripts/check_python_rotor_layered_packet.py benchmarks/2026-10-19-rotor-layered-numeric.json.gz --require-adoption
+          python3 -m unittest scripts.tests.test_check_python_rotor_layered_packet scripts.tests.test_cosmolkit_bench_corpus -v
       - name: Verify MOL2 timing packets and corruption controls
         run: |
           python3 scripts/check_mol2_index_numeric_packet.py benchmarks/2026-10-18-mol2-index-only-numeric.json.gz

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Retain every TPSA/ASA/ring value or refusal from the two fixed corpora."""
+"""Retain every selected descriptor/fingerprint value or refusal on fixed corpora."""
 import argparse
 import hashlib
 import json
@@ -16,12 +16,15 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--engine', choices=('chematic','rdkit','cosmolkit'), required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--ops', default='tpsa,labute_asa,num_rings')
     args = parser.parse_args()
+    ops = args.ops.split(',')
+    if set(ops) - {'tpsa','labute_asa','num_rings','rotatable_bonds','mqn','fp_layered','qed'}:
+        parser.error('unsupported operation')
     if args.engine == 'rdkit':
         from rdkit import RDLogger
         RDLogger.DisableLog('rdApp.*')
     parse, functions = table(args.engine)
-    ops = ('tpsa','labute_asa','num_rings')
     corpora = [ROOT / 'validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi',
                ROOT / 'validation/cosmolkit_comparison/corpora/stress-v1.smi']
     with args.output.open('w') as out:
@@ -38,9 +41,18 @@ def main():
                     for op in ops:
                         try:
                             value = functions[op](molecule)
-                            if type(value) not in (int,float):raise ValueError('nonnumeric scalar')
-                            row['values'][op] = ({'value':value} if math.isfinite(value)
-                                                 else {'unavailable':'nonfinite'})
+                            if op == 'fp_layered':
+                                from bench_python_speed_frontier import normal
+                                value = normal(value, args.engine, op)
+                            if op in ('mqn','fp_layered'):
+                                if (not isinstance(value,list) or any(type(v) is not int for v in value)
+                                        or (op == 'mqn' and len(value) != 42)):
+                                    raise ValueError('noninteger vector')
+                                row['values'][op] = {'value':value}
+                            else:
+                                if type(value) not in (int,float):raise ValueError('nonnumeric scalar')
+                                row['values'][op] = ({'value':value} if math.isfinite(value)
+                                                     else {'unavailable':'nonfinite'})
                         except Exception as error:
                             row['values'][op] = {'error':type(error).__name__+': '+str(error)}
                 except Exception as error:
