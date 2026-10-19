@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 from enum import IntEnum
+import os
 import operator
-from typing import Any, Iterable, Protocol, SupportsIndex
+from typing import Any, Iterable, Protocol, SupportsIndex, Union
 
 import numpy as np
 
@@ -14,6 +15,8 @@ MAX_RANKER_BITS = 65_536
 MAX_RANKER_CLASSES = 256
 MAX_RANKER_ENTRIES = 1_048_576
 MAX_RANKER_RECORDS = 1_048_576
+
+RankerOutputPath = Union[str, bytes, os.PathLike[str], os.PathLike[bytes]]
 
 
 class BinaryBitVector(Protocol):
@@ -131,6 +134,7 @@ class InfoBitRanker:
         self._bias: tuple[int, ...] = ()
         self._records = 0
         self._mask_bits: frozenset[int] | None = None
+        self._ranked: np.ndarray[Any, np.dtype[np.float64]] | None = None
         self._class_counts: np.ndarray[Any, np.dtype[np.uint64]] = np.zeros(
             classes, dtype=np.uint64
         )
@@ -172,7 +176,8 @@ class InfoBitRanker:
         descending; exact ties use ascending bit ID, unlike RDKit's heap.
         Only currently masked-in bits are eligible; num cannot exceed their
         unique count. At least one record is required. The returned float64
-        array is a copy.
+        array is a copy. A successful call also replaces the independent
+        snapshot used by WriteTopBitsToFile; failed calls retain that snapshot.
         """
         count = _integer(num, "num")
         available = self._width if self._mask_bits is None else len(self._mask_bits)
@@ -184,6 +189,7 @@ class InfoBitRanker:
             (count, self._classes + 2), dtype=np.float64
         )
         if count == 0:
+            self._ranked = output.copy()
             return output
         totals = self._class_counts.astype(np.float64)
         on = self._on_counts.astype(np.float64)
@@ -218,7 +224,41 @@ class InfoBitRanker:
         output[:, 0] = order
         output[:, 1] = gains[order]
         output[:, 2:] = on[order]
+        self._ranked = output.copy()
         return output
+
+    def WriteTopBitsToFile(self, fileName: RankerOutputPath) -> None:
+        """Write the last successful GetTopN snapshot as an ASCII table.
+
+        Args:
+            fileName: Filesystem str, bytes or PathLike path; not a stream.
+
+        Raises:
+            TypeError: Unsupported path type.
+            ValueError: No successful GetTopN yet, or an invalid path.
+            OSError: Opening or writing the file failed.
+
+        Columns and five-significant-digit score formatting follow RDKit.
+        Tied rows retain chematic's ascending-bit-ID ordering. GetTopN(0)
+        selects a header-only table. Subsequent votes, masks, bias changes,
+        or edits to returned arrays do not change the saved snapshot.
+        The complete table is formatted before opening the destination, which
+        is overwritten. I/O failure can leave a partial file; no directories
+        are created and ranker state is never changed by this method.
+        """
+        path = os.fspath(fileName)
+        if self._ranked is None:
+            raise ValueError("WriteTopBitsToFile requires a successful GetTopN first")
+        header = f"{'Bit':>12}{'InfoContent':>12}"
+        header += "".join(f"{'class':>10}{category}" for category in range(self._classes))
+        lines = [header + "\n"]
+        for row in self._ranked:
+            line = f"{int(row[0]):>12}{float(row[1]):>12.5g}"
+            line += "".join(f"{int(value):>10}" for value in row[2:])
+            lines.append(line + "\n")
+        table = "".join(lines)
+        with open(path, "w", encoding="ascii", newline="\n") as output:
+            output.write(table)
 
     def SetBiasList(self, classList: Iterable[SupportsIndex]) -> None:
         """Replace the preferred classes after validating the complete iterable.
