@@ -1,0 +1,15 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.13.6, pytest-9.1.1, pluggy-1.6.0
+rootdir: /Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py
+configfile: pytest.ini
+collected 162 items
+
+crates/chematic-py/tests/test_periodic_geometry.py ..................... [ 12%]
+.......                                                                  [ 17%]
+crates/chematic-py/tests/test_turbomole.py ............................. [ 35%]
+.........                                                                [ 40%]
+crates/chematic-py/tests/test_crystal.py ...................             [ 52%]
+crates/chematic-py/tests/test_pymatgen_json.py ......................... [ 67%]
+....................................................                     [100%]
+
+============================= 162 passed in 0.34s ==============================

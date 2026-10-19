@@ -1,0 +1,18 @@
+{
+  "ase": "3.26.0",
+  "numpy": "2.5.3",
+  "seed": 282219,
+  "forward_cross_reads": 288,
+  "reverse_geometry_checks": 288,
+  "mismatches": 0,
+  "max_position_error_angstrom": 3.552713678800501e-15,
+  "max_lattice_component_error_angstrom": 8.881784197001252e-16,
+  "native_sha256": "02d1ba11410da59d8c202408ecb3b498955943b96b22a5d5e264dddadc51a607",
+  "openbabel_diagnostic": {
+    "version": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+    "returncode": 0,
+    "stderr": "1 molecule converted\n",
+    "vasp_output": "\n1.000 \n0.0  0.0  0.0\n0.0  0.0  0.0\n0.0  0.0  0.0\nSi  \n1   \nCartesian\n     0.0000000000000000000      0.0000000000000000000      0.0000000000000000000\n",
+    "zero_lattice": true
+  }
+}

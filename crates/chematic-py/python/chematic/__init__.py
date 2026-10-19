@@ -12,6 +12,9 @@ from ._sdf_split import (
 )
 
 from .chematic import *
+from ._periodic_geometry import (
+    PeriodicGeometryConversion, turbomole_to_poscar_checked, poscar_to_turbomole_checked,
+)
 from ._xbs import XbsBondRule, XbsSpecies, write_xbs
 from ._xyz_atom_data import XyzAtomDataFrame, parse_xyz_atom_data
 from ._xsf import write_xsf_checked

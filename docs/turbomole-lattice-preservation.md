@@ -11,6 +11,61 @@ The new Rust/Python APIs read and write standalone TURBOMOLE coordinate
 geometry while retaining the original 3D lattice basis, atom order and
 fixed-atom flags. They do not infer bonds or implicit hydrogen atoms.
 
+## Checked POSCAR conversion
+
+The Python conversion functions connect the existing native format readers and
+writers without discarding the lattice:
+
+```python
+from chematic import turbomole_to_poscar_checked, poscar_to_turbomole_checked
+
+tmol_text = """$periodic 3
+$lattice angs
+4 0.5 0
+0 5 0.75
+0.25 0 6
+$coord frac
+-0.25 0.5 1.25 o f
+0.25 0 0.125 si
+0.5 0.25 -0.5 o
+$end
+"""
+converted = turbomole_to_poscar_checked(tmol_text)
+assert converted.source_indices == (0, 2, 1)  # O, O, Si in output order
+assert converted.source_text == tmol_text
+assert "Direct\n" in converted.text
+restored = poscar_to_turbomole_checked(converted.text)
+assert "$periodic 3" in restored.text
+assert "$lattice" in restored.text
+```
+
+Both return a frozen `PeriodicGeometryConversion` with original text, converted
+`text`, source/target format names and `source_indices`. Entry `i` maps output
+atom `i` to its zero-based source coordinate row. Species are grouped in
+first-appearance order, stably within each species, for POSCAR. The reverse
+conversion uses the native POSCAR writer's same grouping; duplicate species
+groups therefore also have explicit correspondence.
+
+The lattice basis, handedness, unwrapped positions and fully fixed/free atoms
+survive within floating-point conversion error. TURBOMOLE `f` maps to POSCAR
+`F F F`; free atoms map to `T T T`. POSCAR scale factors and coordinate modes
+follow the native parser. Output is Direct-coordinate VASP 5 POSCAR or Cartesian
+bohr TURBOMOLE. Comments, original units and number spelling remain in
+`source_text`, rather than being replayed in another format.
+
+This geometry-only profile requires explicit 3D periodicity and explicit
+POSCAR species. It rejects unknown TURBOMOLE groups, external-file references,
+partial directional constraints and POSCAR velocity/predictor-corrector data.
+No cell, bonds, charges, spin, POTCAR choice or simulation settings are inferred.
+Each input is limited to 16 MiB UTF-8, 50000 atoms and 1024 bytes per line.
+POSCAR count headers are bounded before native site allocation. No files are
+written and no partial conversion is returned on failure.
+
+Validation for this adapter is recorded in
+`validation/results/periodic-geometry-conversion-2026-10-19/`: 288 ASE POSCAR
+cross-reads plus 288 reverse geometry/constraint checks. The existing native
+read/write APIs below remain independently usable.
+
 ```python
 import chematic
 
