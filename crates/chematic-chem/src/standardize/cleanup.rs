@@ -35,13 +35,16 @@ pub fn cleanup(mol: &Molecule) -> Molecule {
         normalized
     };
     let normalized = charge_originally_isolated_metals(&without_h, normalized);
-    transfer_simple_acid_proton(&normalized)
+    // A detached metal-N bond can create an anion that was not present in
+    // the input. Do not apply the added nitrogen rule to that new fragment.
+    let allow_nitrogen = !without_h.atoms().any(|(_, atom)| is_metal(atom.element));
+    transfer_simple_acid_proton(&normalized, allow_nitrogen)
 }
 
 /// Transfer one proton from the single highest-priority supported O-H site
 /// to an anion for which protonation changes no bonds. Equal-priority acid
 /// sites and unrecognized heteroatom acids are left alone.
-fn transfer_simple_acid_proton(mol: &Molecule) -> Molecule {
+fn transfer_simple_acid_proton(mol: &Molecule, allow_nitrogen: bool) -> Molecule {
     let negative: Vec<_> = mol
         .atoms()
         .filter_map(|(idx, atom)| (atom.charge < 0).then_some(idx))
@@ -50,7 +53,7 @@ fn transfer_simple_acid_proton(mol: &Molecule) -> Molecule {
         return clone_molecule(mol);
     };
     let anion_atom = mol.atom(*anion);
-    let Some(carbon_anion) = supported_acid_proton_acceptor(mol, *anion) else {
+    let Some(carbon_anion) = supported_acid_proton_acceptor(mol, *anion, allow_nitrogen) else {
         return clone_molecule(mol);
     };
 
@@ -120,7 +123,11 @@ fn transfer_simple_acid_proton(mol: &Molecule) -> Molecule {
 
 /// Whether the sole anion is a supported carbon, nitrogen or oxygen acceptor.
 /// The boolean records carbon eligibility for the lower-priority alcohol acid.
-fn supported_acid_proton_acceptor(mol: &Molecule, anion: AtomIdx) -> Option<bool> {
+fn supported_acid_proton_acceptor(
+    mol: &Molecule,
+    anion: AtomIdx,
+    allow_nitrogen: bool,
+) -> Option<bool> {
     let anion_atom = mol.atom(anion);
     let carbon_anion = anion_atom.element.atomic_number() == 6
         && anion_atom.charge == -1
@@ -145,7 +152,8 @@ fn supported_acid_proton_acceptor(mol: &Molecule, anion: AtomIdx) -> Option<bool
                         && mol.bond(carbon_bond).order == BondOrder::Double
                 })
         });
-    let nitrogen_anion = anion_atom.element.atomic_number() == 7
+    let nitrogen_anion = allow_nitrogen
+        && anion_atom.element.atomic_number() == 7
         && anion_atom.charge == -1
         && !anion_atom.aromatic
         && anion_atom.hydrogen_count == Some(1)
