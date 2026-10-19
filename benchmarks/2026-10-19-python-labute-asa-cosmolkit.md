@@ -31,9 +31,12 @@ mol = chematic.from_smiles("CC(=O)Oc1ccccc1C(=O)O")
 area = mol.labute_asa
 ```
 
-Users who need a released wheel should wait for the same test to pass against
-the published artifact. Users evaluating the source candidate can use the
-full method, hashes, and raw samples below.
+The same protocol has now been rerun against the
+[published PyPI 1.1.8 wheel](2026-10-19-v118-published-labute-asa-cosmolkit.md).
+That release artifact reproduces the RDKit wins. Its first-use comparison with
+COSMolKit is statistically tied rather than a strict win, so use the published
+record for package-selection claims and this document for source-adoption
+provenance.
 
 ## Scope and artifacts
 
