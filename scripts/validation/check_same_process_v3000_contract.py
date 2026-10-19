@@ -4,15 +4,12 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
-import json
 import time
 from pathlib import Path
-
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from benchmark_version import workspace_version
+from lib.same_process_report import make_report, write_report
 
 ROOT = Path(__file__).resolve().parents[2]
 MALFORMED = {
@@ -74,30 +71,17 @@ def main() -> int:
         malformed[case_id] = {"chematic": {"records": left[0], "failures": 1 - left[0]}, "rdkit": {"records": right[0], "failures": 1 - right[0]}}
         if left[0] != 0 or right[0] != 0:
             errors.append(f"malformed case {case_id} was accepted")
-    report = {
-        "schema_version": 1,
-        "target_version": workspace_version(ROOT),
-        "status": "local-verified" if not errors else "failed",
-        "gate": "same_process_v3000_mol_semantic_contract",
-        "fixture": {"path": str(path.relative_to(ROOT)), "bytes": len(payload), "sha256": hashlib.sha256(payload).hexdigest()},
-        "repeats": args.repeats,
-        "rows": {
+    report = make_report(
+        ROOT, path, payload, args.repeats,
+        "same_process_v3000_mol_semantic_contract",
+        rows={
             "chematic": {"records": schematic_records, "failures": args.repeats - schematic_records, "seconds": round(schematic_seconds, 6), "boundary": "schematic.from_mol_v3000 in the current process"},
             "rdkit": {"records": rdkit_records, "failures": args.repeats - rdkit_records, "seconds": round(rdkit_seconds, 6), "boundary": "RDKit MolFromMolBlock in the current process"},
         },
-        "comparison": {"expected_records": args.repeats, "canonical_smiles_mismatch_repetitions": mismatches, "malformed_cases": malformed, "speed_is_non_ranking_context": True},
-        "tool_versions": {},
-        "errors": errors,
-    }
-    from rdkit import rdBase
-
-    report["tool_versions"]["rdkit"] = rdBase.rdkitVersion
-    encoded = json.dumps(report, indent=2) + "\n"
-    if args.output:
-        target = args.output if args.output.is_absolute() else ROOT / args.output
-        target.write_text(encoded, encoding="utf-8")
-    print(encoded, end="")
-    return 1 if errors else 0
+        comparison={"expected_records": args.repeats, "canonical_smiles_mismatch_repetitions": mismatches, "malformed_cases": malformed, "speed_is_non_ranking_context": True},
+        errors=errors,
+    )
+    return write_report(ROOT, args.output, report)
 
 
 if __name__ == "__main__":

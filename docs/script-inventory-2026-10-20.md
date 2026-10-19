@@ -157,3 +157,15 @@ lives in `scripts/lib/`, and its two importers use that module. Historical
 measurement JSON and archived documents retain their original evidence.
 This pass leaves 310 direct `scripts/` files and 583 tracked files under it;
 the extra file is `scripts/lib/README.md`.
+
+## Shared same-process report writer
+
+The eight format runners now use `scripts/lib/same_process_report.py` for
+their report envelope, fixture digest, RDKit version, output path, and exit
+status. Their parsing, malformed-input expectations, and format-specific
+comparisons remain local to each runner. A one-repeat run of every format
+matched the previous report byte for byte after masking measured seconds,
+including JSON key order and the failure accounting; all eight exits were
+unchanged. A dependency-independent negative test checks that a failed report
+retains provenance and exits nonzero. This pass adds the helper and its test,
+bringing the tracked `scripts/` total to 585 while keeping 310 root files.

@@ -10,17 +10,15 @@ comparison for every accepted record.
 from __future__ import annotations
 
 import argparse
-import hashlib
 import io
 import json
 import tempfile
 import time
 from pathlib import Path
-
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from benchmark_version import workspace_version
+from lib.same_process_report import make_report, write_report
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -75,7 +73,6 @@ def main() -> int:
     path = args.sdf if args.sdf.is_absolute() else ROOT / args.sdf
     payload = path.read_bytes()
     text = payload.decode("utf-8")
-    digest = hashlib.sha256(payload).hexdigest()
 
     with tempfile.TemporaryDirectory(prefix="chematic-same-process-sdf-") as directory:
         input_path = Path(directory) / "input.sdf"
@@ -123,14 +120,10 @@ def main() -> int:
             if chematic_result[1] != rdkit_result[1]:
                 malformed_failure_count_mismatches.append(case_id)
 
-    report = {
-        "schema_version": 1,
-        "target_version": workspace_version(ROOT),
-        "status": "local-verified" if not errors else "failed",
-        "gate": "same_process_sdf_semantic_contract",
-        "fixture": {"path": str(path.relative_to(ROOT)), "bytes": len(payload), "sha256": digest},
-        "repeats": args.repeats,
-        "rows": {
+    report = make_report(
+        ROOT, path, payload, args.repeats,
+        "same_process_sdf_semantic_contract",
+        rows={
             "chematic": {
                 "records": chematic_records_total,
                 "failures": chematic_failures,
@@ -144,7 +137,7 @@ def main() -> int:
                 "boundary": "RDKit ForwardSDMolSupplier in the current process",
             },
         },
-        "comparison": {
+        comparison={
             "expected_records": expected_records,
             "canonical_smiles_mismatch_repetitions": smiles_mismatches,
             "malformed_cases": malformed,
@@ -152,21 +145,9 @@ def main() -> int:
             "malformed_rejection_contract": "zero accepted records; failure-count semantics are reported, not normalized",
             "speed_is_non_ranking_context": True,
         },
-        "tool_versions": {},
-        "errors": errors,
-    }
-    from rdkit import rdBase
-
-    report["tool_versions"]["rdkit"] = rdBase.rdkitVersion
-    encoded = json.dumps(report, indent=2) + "\n"
-    if args.output:
-        target = args.output if args.output.is_absolute() else ROOT / args.output
-        target.write_text(encoded, encoding="utf-8")
-    if errors:
-        print(encoded, end="")
-        return 1
-    print(encoded, end="")
-    return 0
+        errors=errors,
+    )
+    return write_report(ROOT, args.output, report)
 
 
 if __name__ == "__main__":
