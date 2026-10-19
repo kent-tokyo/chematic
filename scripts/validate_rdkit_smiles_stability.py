@@ -16,6 +16,7 @@ ISSUE_CASES = [
     "C[N@+]1(F)CC[C@]2(CC[C@H](Cl)CC2)CC1",
     "C[C@]1(F)CCC2(CC[C@H](Cl)CC2)CC1",
     "C[C@]1(F)CCC2(CC[C@](I)(Cl)CC2)CC1",
+    "F[Pt@SP1](Cl)(Br)I",
 ]
 
 

@@ -72,7 +72,9 @@ def _bounded_atom_orders(atom_count: int, limit: int) -> Iterator[tuple[int, ...
     # Local xorshift32 keeps this sequence stable across Python versions and
     # does not mutate the process-wide random state.
     state = (0x9E3779B9 ^ atom_count) & 0xFFFFFFFF
-    while len(yielded) < limit:
+    attempts = 0
+    while len(yielded) < limit and attempts < limit * 32:
+        attempts += 1
         order = list(identity)
         for index in range(atom_count - 1, 0, -1):
             state ^= (state << 13) & 0xFFFFFFFF
