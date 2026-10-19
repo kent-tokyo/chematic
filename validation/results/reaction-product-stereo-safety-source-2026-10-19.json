@@ -1,0 +1,48 @@
+{
+  "agreement": {
+    "safe_refusals": 2,
+    "total": 2
+  },
+  "artifact": {
+    "extension_sha256": "e72c764fbc91b05e8545fd6b78c906b32d9119d75c241e1e17909d3bdff8db45",
+    "kind": "dev_profile_source_wheel",
+    "published": false,
+    "wheel": "chematic-1.1.8-cp313-cp313-macosx_11_0_arm64.whl",
+    "wheel_sha256": "1a32bc1471b6ab75d14d0a9dd12e68c251bba2d7bc255580b26b9d48f6751d40"
+  },
+  "case_file_sha256": "907eaf0a3ff9b0afeff6d1e141196e084fb519e62dca8617148f8e770e94a385",
+  "cases": [
+    {
+      "chematic_product_sets": [],
+      "expected_chematic_product_sets": [],
+      "id": "stereo_template_rejects_opposite_enantiomer",
+      "policy": "fail_closed_on_reactant_stereo_mismatch",
+      "rdkit_run_reactants_product_set_count": 1,
+      "reactants": [
+        "N[C@H](C)C(=O)O"
+      ],
+      "safe_refusal": true,
+      "smirks": "[N:1][C@@H:2](C)C(=O)O>>[N:1][C@@H:2](C)C(=O)O"
+    },
+    {
+      "chematic_product_sets": [],
+      "expected_chematic_product_sets": [],
+      "id": "ez_template_rejects_unspecified_alkene",
+      "policy": "fail_closed_on_missing_reactant_ez",
+      "rdkit_run_reactants_product_set_count": 1,
+      "reactants": [
+        "FC=CCl"
+      ],
+      "safe_refusal": true,
+      "smirks": "[F:1]/[C:2]=[C:3]/[Cl:4]>>[F:1]/[C:2]=[C:3]/[Cl:4]"
+    }
+  ],
+  "not_claimed": [
+    "RDKit reaction-runner stereo parity",
+    "reaction yield",
+    "selectivity"
+  ],
+  "profile": "reaction_product_stereo_fail_closed",
+  "rdkit_version": "2026.09.1",
+  "schema_version": 1
+}

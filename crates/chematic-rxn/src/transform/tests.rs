@@ -2312,6 +2312,30 @@ fn ez_stereo_e_template_rejects_z_alkene() {
 }
 
 #[test]
+fn ez_stereo_e_template_rejects_unspecified_alkene() {
+    let smirks = "[F:1]/[C:2]=[C:3]/[Cl:4]>>[F:1]/[C:2]=[C:3]/[Cl:4]";
+    for input in ["FC=CCl", "F/C=CCl"] {
+        let unspecified = parse(input).unwrap();
+        assert!(
+            run_reactants(smirks, &[&unspecified]).unwrap().is_empty(),
+            "an E/Z-specific template must not invent geometry from {input}"
+        );
+    }
+    let unspecified = parse("FC=CCl").unwrap();
+    let specified = parse("F/C=C/Cl").unwrap();
+    assert!(!run_reactants(smirks, &[&specified]).unwrap().is_empty());
+    let RdkitProfileOutcome::Report(compatibility) = run_reactants_traced_rdkit_2026_03_6(
+        smirks,
+        &[&unspecified],
+        &ReactionTransformLimits::default(),
+    )
+    .unwrap() else {
+        panic!("the RDKit profile must retain its permissive matching contract");
+    };
+    assert!(!compatibility.products.is_empty());
+}
+
+#[test]
 fn ez_stereo_neutral_template_matches_both_geometries() {
     // Template without stereo: [C:1][C:2]=[C:3][C:4]>>[C:1]
     // Both E and Z alkenes should match.
@@ -2342,6 +2366,11 @@ fn ez_stereo_one_sided_template_matches_both_geometries() {
     assert!(
         !run_reactants(smirks, &[&z_alkene]).unwrap().is_empty(),
         "one-sided template must match Z-alkene"
+    );
+    let unspecified = parse("CC=CC").unwrap();
+    assert!(
+        !run_reactants(smirks, &[&unspecified]).unwrap().is_empty(),
+        "one-sided template has no E/Z constraint"
     );
 }
 
