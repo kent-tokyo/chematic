@@ -25,7 +25,8 @@
 use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
 
 use chematic_core::{
-    Atom, AtomIdx, BondIdx, BondOrder, Element, Molecule, MoleculeBuilder, implicit_hcount,
+    Atom, AtomIdx, BondIdx, BondOrder, Element, Molecule, MoleculeBuilder, STEREO_H_SENTINEL,
+    STEREO_VACANT_SENTINEL, StereoGroup, implicit_hcount,
 };
 use chematic_smarts::{
     AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, MatchConfig, QueryMolecule,
@@ -160,10 +161,12 @@ struct LabeledCandidate {
     signature: Vec<(u16, String, usize)>,
     attachment_elements: Vec<(u16, u8)>,
     single_attachment_site: bool,
+    bridged_attachment_sites: bool,
     rgroup_fingerprints: BTreeMap<u16, chematic_fp::BitVec2048>,
     core: HashSet<AtomIdx>,
     attachments: BTreeMap<u16, (AtomIdx, AtomIdx)>,
     hydrogen_sites: BTreeMap<u16, AtomIdx>,
+    core_stub_orders: BTreeMap<u16, BondOrder>,
     result: LabeledRGroupResult,
 }
 
@@ -241,16 +244,21 @@ pub fn rgroup_decompose(
             }
         }
 
-        // For each attachment point, BFS the non-core subgraph and build a fragment.
+        // A connected substituent can bridge two core sites. Each column must
+        // carry the complete fragment with all of its boundary stubs.
+        let boundaries: Vec<_> = attachment_pairs
+            .iter()
+            .map(|&(core_atom, root)| (core_atom, root, None))
+            .collect();
         let mut r_groups: HashMap<u8, String> = HashMap::new();
-        for (rg_idx, &(_core_atom, rg_root)) in attachment_pairs.iter().enumerate() {
+        for (rg_idx, &(_, rg_root)) in attachment_pairs.iter().enumerate() {
             let rg_num = (rg_idx + 1) as u8;
-            let fragment = extract_rgroup(mol, rg_root, &core, None);
+            let fragment = extract_rgroup(mol, rg_root, &core, &boundaries);
             r_groups.insert(rg_num, canonical_smiles(&fragment));
         }
 
         // Build core SMILES: copy core atoms, replacing boundary bonds with [*].
-        let core_mol = build_core_mol(mol, &core, &attachment_pairs, None);
+        let core_mol = build_core_mol(mol, &core, &attachment_pairs, None, None);
         let core_smiles = canonical_smiles(&core_mol);
 
         results.push(Some(RGroupResult {
@@ -419,6 +427,7 @@ fn finalize_labeled_rows(
                         mols[candidate.result.mol_idx],
                         &candidate.core,
                         &attachments,
+                        &candidate.core_stub_orders,
                     ));
                 }
                 candidate.result
@@ -515,6 +524,15 @@ fn compare_labeled_candidates(
         .then_with(|| {
             if a.single_attachment_site && b.single_attachment_site {
                 b.attachment_elements.cmp(&a.attachment_elements)
+            } else {
+                std::cmp::Ordering::Equal
+            }
+        })
+        // For a ring segment spanning two core sites, RDKit assigns the
+        // lower-numbered column to the carbon-rooted end before a heteroatom.
+        .then_with(|| {
+            if a.bridged_attachment_sites && b.bridged_attachment_sites {
+                a.attachment_elements.cmp(&b.attachment_elements)
             } else {
                 std::cmp::Ordering::Equal
             }
@@ -681,6 +699,19 @@ fn labeled_candidates(
     let placeholder_queries: HashSet<usize> = (0..query.atoms.len())
         .filter(|&idx| is_terminal_mapped_wildcard(query, idx))
         .collect();
+    let core_stub_orders: BTreeMap<u16, BondOrder> = placeholder_queries
+        .iter()
+        .filter_map(|&idx| {
+            let (bond_idx, _) = query.adj[idx][0];
+            let order = match query.bonds[bond_idx].query {
+                BondQuery::Primitive(BondPrimitive::Double) => BondOrder::Double,
+                BondQuery::Primitive(BondPrimitive::Triple) => BondOrder::Triple,
+                BondQuery::Primitive(BondPrimitive::Quadruple) => BondOrder::Quadruple,
+                _ => return None,
+            };
+            Some((explicit_labels[&idx], order))
+        })
+        .collect();
     let core: HashSet<AtomIdx> = mapping
         .iter()
         .filter_map(|(query_idx, atom_idx)| {
@@ -718,6 +749,7 @@ fn labeled_candidates(
                 auto_labels,
                 canonical_rank,
                 sites,
+                &core_stub_orders,
             )
         })
         .collect()
@@ -733,6 +765,7 @@ fn labeled_candidate_for_sites(
     auto_labels: &HashMap<usize, u16>,
     canonical_rank: &[usize],
     sites: PlaceholderSites,
+    core_stub_orders: &BTreeMap<u16, BondOrder>,
 ) -> Result<LabeledCandidate, RGroupError> {
     let PlaceholderSites {
         mut attachments,
@@ -763,16 +796,21 @@ fn labeled_candidate_for_sites(
     let mut attachment_sites = attachments.values().map(|&(site, _)| site);
     let first_site = attachment_sites.next();
     let single_attachment_site = attachment_sites.all(|site| Some(site) == first_site);
+    let boundaries: Vec<_> = attachments
+        .iter()
+        .map(|(&label, &(core_atom, root))| (core_atom, root, Some(label)))
+        .collect();
     for (&label, &(core_atom, root)) in &attachments {
-        let fragment = extract_rgroup_labeled(mol, root, core, label);
+        let fragment = extract_rgroup(mol, root, core, &boundaries);
         let smiles = canonical_smiles(&fragment);
         rgroup_fingerprints.insert(label, chematic_fp::ecfp4(&fragment));
         signature.push((label, smiles.clone(), canonical_rank[core_atom.0 as usize]));
         attachment_elements.push((label, mol.atom(root).element.atomic_number()));
         r_groups.insert(label, smiles);
     }
+    let bridged_attachment_sites = r_groups.values().collect::<HashSet<_>>().len() < r_groups.len();
     signature.sort();
-    let core_mol = build_core_mol_labeled(mol, core, &attachments);
+    let core_mol = build_core_mol_labeled(mol, core, &attachments, core_stub_orders);
     let core_smiles = canonical_smiles(&core_mol);
     signature.push((0, core_smiles.clone(), 0));
     let explicit_values: HashSet<u16> = explicit_labels.values().copied().collect();
@@ -798,10 +836,12 @@ fn labeled_candidate_for_sites(
         signature,
         attachment_elements,
         single_attachment_site,
+        bridged_attachment_sites,
         rgroup_fingerprints,
         core: core.clone(),
         attachments,
         hydrogen_sites,
+        core_stub_orders: core_stub_orders.clone(),
         result: LabeledRGroupResult {
             mol_idx,
             core_smiles,
@@ -832,34 +872,135 @@ fn insert_attachment(
     Ok(())
 }
 
-fn extract_rgroup_labeled(
-    mol: &Molecule,
-    root: AtomIdx,
-    core: &HashSet<AtomIdx>,
-    label: u16,
-) -> Molecule {
-    extract_rgroup(mol, root, core, Some(label))
-}
-
 fn build_core_mol_labeled(
     mol: &Molecule,
     core: &HashSet<AtomIdx>,
     attachments: &BTreeMap<u16, (AtomIdx, AtomIdx)>,
+    core_stub_orders: &BTreeMap<u16, BondOrder>,
 ) -> Molecule {
     let pairs: Vec<(AtomIdx, AtomIdx)> = attachments.values().copied().collect();
     let labels: Vec<u16> = attachments.keys().copied().collect();
-    build_core_mol(mol, core, &pairs, Some(&labels))
+    build_core_mol(mol, core, &pairs, Some(&labels), Some(core_stub_orders))
+}
+
+/// Carry stereochemical reference frames across a subgraph cut. Every removed
+/// neighbor of a retained stereocenter must be replaced by its own attachment
+/// wildcard in the original neighbor position, not just by a new bond.
+fn copy_cut_stereo(
+    mol: &Molecule,
+    builder: &mut MoleculeBuilder,
+    remap: &HashMap<AtomIdx, AtomIdx>,
+    bond_remap: &HashMap<BondIdx, BondIdx>,
+    cut_neighbors: &HashMap<(AtomIdx, AtomIdx), AtomIdx>,
+) {
+    for (&old_center, &new_center) in remap {
+        if let Some(order) = mol.stereo_neighbor_order(old_center) {
+            let mapped = order
+                .iter()
+                .map(|&neighbor| {
+                    if matches!(neighbor, STEREO_H_SENTINEL | STEREO_VACANT_SENTINEL) {
+                        Some(neighbor)
+                    } else {
+                        remap
+                            .get(&AtomIdx(neighbor))
+                            .or_else(|| cut_neighbors.get(&(old_center, AtomIdx(neighbor))))
+                            .map(|idx| idx.0)
+                    }
+                })
+                .collect::<Option<Vec<_>>>();
+            if let Some(mapped) = mapped {
+                builder.set_stereo_neighbor_order(new_center, mapped);
+            }
+        }
+        if let Some(label) = mol.r_group_label(old_center) {
+            builder.set_r_group(new_center, label);
+        }
+        if let Some(tag) = mol.atom_tag(old_center) {
+            builder.set_tag(new_center, Some(tag.get()));
+        }
+    }
+
+    for (&old_bond, &new_bond) in bond_remap {
+        if let Some(direction) = mol.bond_direction(old_bond) {
+            builder.set_bond_direction(new_bond, direction);
+        }
+        if let Some(anchor) = mol.bond_direction_anchor(old_bond)
+            && let Some(&new_anchor) = remap.get(&anchor)
+        {
+            builder.set_bond_direction_anchor(new_bond, new_anchor);
+        }
+    }
+
+    for (group_idx, group) in mol.stereo_groups().iter().enumerate() {
+        let atoms = group
+            .atom_indices
+            .iter()
+            .filter_map(|old| remap.get(old).copied())
+            .collect::<Vec<_>>();
+        let bonds = mol
+            .stereo_group_bond_indices(group_idx)
+            .unwrap_or_default()
+            .iter()
+            .filter_map(|old| bond_remap.get(old).copied())
+            .collect::<Vec<_>>();
+        if !atoms.is_empty() || !bonds.is_empty() {
+            builder.add_stereo_group_with_bonds(StereoGroup::new(group.kind.clone(), atoms), bonds);
+        }
+    }
+}
+
+/// A directional boundary bond still describes an alkene when its retained
+/// endpoint remains adjacent to the double bond after cutting.
+fn cut_bond_order(
+    mol: &Molecule,
+    bond_idx: BondIdx,
+    retained: AtomIdx,
+    retained_atoms: &HashSet<AtomIdx>,
+    preserve_multiple: bool,
+) -> BondOrder {
+    let bond = mol.bond(bond_idx);
+    if matches!(
+        bond.order,
+        BondOrder::Double | BondOrder::Triple | BondOrder::Quadruple | BondOrder::Aromatic
+    ) {
+        return if preserve_multiple {
+            bond.order
+        } else {
+            BondOrder::Single
+        };
+    }
+    let direction = mol.bond_direction(bond_idx).unwrap_or(bond.order);
+    if matches!(direction, BondOrder::Up | BondOrder::Down)
+        && mol.neighbors(retained).any(|(neighbor, bidx)| {
+            retained_atoms.contains(&neighbor)
+                && bidx != bond_idx
+                && mol.bond(bidx).order == BondOrder::Double
+        })
+    {
+        let anchor = mol.bond_direction_anchor(bond_idx).unwrap_or(bond.atom1);
+        if anchor == retained {
+            direction
+        } else if direction == BondOrder::Up {
+            BondOrder::Down
+        } else {
+            BondOrder::Up
+        }
+    } else {
+        BondOrder::Single
+    }
 }
 
 /// Extract the R-group subgraph starting at `root`, blocked by the `core` atom set.
 ///
 /// Returns a `Molecule` containing all atoms reachable from `root` through bonds
-/// that do not enter the core, plus a `[*]` wildcard stub at the attachment point.
+/// that do not enter the core, plus one wildcard for each core boundary bond
+/// incident on that component. A bridging substituent is therefore represented
+/// by the same multi-attachment fragment in all of its R-group columns.
 fn extract_rgroup(
     mol: &Molecule,
     root: AtomIdx,
     core: &HashSet<AtomIdx>,
-    wildcard_label: Option<u16>,
+    boundaries: &[(AtomIdx, AtomIdx, Option<u16>)],
 ) -> Molecule {
     // BFS to collect the R-group atom set.
     let mut rg_atoms: HashSet<AtomIdx> = HashSet::new();
@@ -879,6 +1020,8 @@ fn extract_rgroup(
     // Build subgraph molecule, remapping indices.
     let mut builder = MoleculeBuilder::new();
     let mut remap: HashMap<AtomIdx, AtomIdx> = HashMap::new();
+    let mut bond_remap = HashMap::new();
+    let mut cut_neighbors = HashMap::new();
 
     // Add root first so its index is predictable (index 0).
     let new_root = builder.add_atom(mol.atom(root).clone());
@@ -894,17 +1037,29 @@ fn extract_rgroup(
     // Add bonds within the R-group.
     for bidx in 0..mol.bond_count() {
         let bond = mol.bond(BondIdx(bidx as u32));
-        if let (Some(&new_a), Some(&new_b)) = (remap.get(&bond.atom1), remap.get(&bond.atom2)) {
-            let _ = builder.add_bond(new_a, new_b, bond.order);
+        if let (Some(&new_a), Some(&new_b)) = (remap.get(&bond.atom1), remap.get(&bond.atom2))
+            && let Ok(new_bond) = builder.add_bond(new_a, new_b, bond.order)
+        {
+            bond_remap.insert(BondIdx(bidx as u32), new_bond);
         }
     }
 
-    // Add a [*] wildcard attached to root representing the attachment to the core.
-    let mut wildcard = Atom::wildcard();
-    wildcard.atom_map = wildcard_label;
-    let wc = builder.add_atom(wildcard);
-    let _ = builder.add_bond(new_root, wc, BondOrder::Single);
+    for &(core_atom, boundary_root, label) in boundaries {
+        let Some(&new_boundary_root) = remap.get(&boundary_root) else {
+            continue;
+        };
+        let (boundary_idx, _) = mol
+            .bond_between(core_atom, boundary_root)
+            .expect("R-group boundary must be a molecular bond");
+        let stub_order = cut_bond_order(mol, boundary_idx, boundary_root, &rg_atoms, true);
+        let mut wildcard = Atom::wildcard();
+        wildcard.atom_map = label;
+        let wc = builder.add_atom(wildcard);
+        let _ = builder.add_bond(new_boundary_root, wc, stub_order);
+        cut_neighbors.insert((boundary_root, core_atom), wc);
+    }
 
+    copy_cut_stereo(mol, &mut builder, &remap, &bond_remap, &cut_neighbors);
     builder.build()
 }
 
@@ -914,9 +1069,12 @@ fn build_core_mol(
     core: &HashSet<AtomIdx>,
     attachment_pairs: &[(AtomIdx, AtomIdx)],
     labels: Option<&[u16]>,
+    core_stub_orders: Option<&BTreeMap<u16, BondOrder>>,
 ) -> Molecule {
     let mut builder = MoleculeBuilder::new();
     let mut remap: HashMap<AtomIdx, AtomIdx> = HashMap::new();
+    let mut bond_remap = HashMap::new();
+    let mut cut_neighbors = HashMap::new();
 
     // Add all core atoms (stable order).
     let mut core_sorted: Vec<AtomIdx> = core.iter().copied().collect();
@@ -929,436 +1087,38 @@ fn build_core_mol(
     // Add bonds between core atoms.
     for bidx in 0..mol.bond_count() {
         let bond = mol.bond(BondIdx(bidx as u32));
-        if let (Some(&na), Some(&nb)) = (remap.get(&bond.atom1), remap.get(&bond.atom2)) {
-            let _ = builder.add_bond(na, nb, bond.order);
+        if let (Some(&na), Some(&nb)) = (remap.get(&bond.atom1), remap.get(&bond.atom2))
+            && let Ok(new_bond) = builder.add_bond(na, nb, bond.order)
+        {
+            bond_remap.insert(BondIdx(bidx as u32), new_bond);
         }
     }
 
     // Add [*] wildcards at each attachment point.
-    for (attachment_idx, &(core_atom, _rg_root)) in attachment_pairs.iter().enumerate() {
+    for (attachment_idx, &(core_atom, rg_root)) in attachment_pairs.iter().enumerate() {
         if let Some(&new_ca) = remap.get(&core_atom) {
             let mut wildcard = Atom::wildcard();
             wildcard.atom_map = labels.map(|values| values[attachment_idx]);
             let wc = builder.add_atom(wildcard);
-            let _ = builder.add_bond(new_ca, wc, BondOrder::Single);
-        }
-    }
-
-    builder.build()
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use chematic_smiles::parse;
-
-    fn mol(s: &str) -> Molecule {
-        parse(s).unwrap_or_else(|e| panic!("parse '{s}': {e}"))
-    }
-
-    fn decompose<'a>(
-        scaffold: &str,
-        smiles: impl IntoIterator<Item = &'a str>,
-    ) -> Vec<Option<RGroupResult>> {
-        let mols: Vec<Molecule> = smiles.into_iter().map(mol).collect();
-        let refs: Vec<&Molecule> = mols.iter().collect();
-        rgroup_decompose(scaffold, &refs).expect("decompose failed")
-    }
-
-    #[test]
-    fn test_rgroup_monosubstituted_benzene() {
-        // Three alkylbenzenes — scaffold = benzene ring (6 C, no attachment markers).
-        let results = decompose("c1ccccc1", ["Cc1ccccc1", "CCc1ccccc1", "CCCc1ccccc1"]);
-        assert_eq!(results.len(), 3);
-        for (i, r) in results.iter().enumerate() {
-            let r = r.as_ref().unwrap_or_else(|| panic!("mol {i} should match"));
-            assert_eq!(r.mol_idx, i);
-            // Must have exactly one R-group (one substituted position).
-            assert_eq!(r.r_groups.len(), 1, "mol {i}: expected 1 R-group");
-            let r1 = r.r_groups.get(&1).expect("R1 missing");
-            // R1 must contain a wildcard marker and the appropriate alkyl chain.
-            assert!(
-                r1.contains('*'),
-                "R1 must contain [*] attachment, got {r1:?}"
-            );
-        }
-    }
-
-    #[test]
-    fn test_rgroup_mol_idx_preserved() {
-        let results = decompose("c1ccccc1", ["Cc1ccccc1", "CCCC", "CCCc1ccccc1"]);
-        // CCCC does not match benzene scaffold → None
-        assert!(results[0].is_some());
-        assert!(results[1].is_none());
-        assert!(results[2].is_some());
-        assert_eq!(results[0].as_ref().unwrap().mol_idx, 0);
-        assert_eq!(results[2].as_ref().unwrap().mol_idx, 2);
-    }
-
-    #[test]
-    fn test_rgroup_no_substituents() {
-        // Benzene itself: scaffold matches, zero R-groups.
-        let results = decompose("c1ccccc1", ["c1ccccc1"]);
-        let r = results[0]
-            .as_ref()
-            .expect("benzene should match its own scaffold");
-        assert_eq!(r.r_groups.len(), 0, "benzene has no R-groups vs itself");
-    }
-
-    #[test]
-    fn test_rgroup_two_substituents() {
-        // para-xylene: two methyl groups → two R-groups.
-        let results = decompose("c1ccccc1", ["Cc1ccc(C)cc1"]);
-        let r = results[0].as_ref().expect("should match");
-        assert_eq!(r.r_groups.len(), 2, "para-xylene has two R-groups");
-    }
-
-    #[test]
-    fn test_rgroup_invalid_smarts() {
-        let mols = [mol("c1ccccc1")];
-        let refs: Vec<&Molecule> = mols.iter().collect();
-        let err = rgroup_decompose("((invalid", &refs);
-        assert!(matches!(err, Err(RGroupError::InvalidSmarts(_))));
-    }
-
-    #[test]
-    fn test_rgroup_different_heteroatom_substituents() {
-        // Aniline and phenol vs benzene scaffold.
-        let results = decompose("c1ccccc1", ["Nc1ccccc1", "Oc1ccccc1"]);
-        let aniline = results[0].as_ref().expect("aniline matches");
-        let phenol = results[1].as_ref().expect("phenol matches");
-        assert_eq!(aniline.r_groups.len(), 1);
-        assert_eq!(phenol.r_groups.len(), 1);
-        // Both R1 values must start with N or O (amine / hydroxyl).
-        let r1_a = aniline.r_groups.get(&1).unwrap();
-        let r1_p = phenol.r_groups.get(&1).unwrap();
-        assert!(
-            r1_a.starts_with('N') || r1_a.contains('N'),
-            "aniline R1 should contain N, got {r1_a}"
-        );
-        assert!(
-            r1_p.starts_with('O') || r1_p.contains('O'),
-            "phenol R1 should contain O, got {r1_p}"
-        );
-    }
-
-    #[test]
-    fn labelled_dummy_atoms_align_symmetric_columns_like_rdkit() {
-        let mols = [mol("Cc1ccc(CC)cc1"), mol("CCc1ccc(N)cc1")];
-        let refs: Vec<&Molecule> = mols.iter().collect();
-        let rows = rgroup_decompose_labeled("c1cc([*:1])ccc1[*:2]", &refs)
-            .expect("labelled decomposition");
-        let first = rows[0].as_ref().expect("first molecule matches");
-        let second = rows[1].as_ref().expect("second molecule matches");
-
-        assert_eq!(first.core_smiles, second.core_smiles);
-        assert_eq!(first.r_groups.keys().copied().collect::<Vec<_>>(), [1, 2]);
-        assert!(first.r_groups[&1].contains("CC"));
-        assert!(first.r_groups[&2].contains('C'));
-        assert!(second.r_groups[&1].contains("CC"));
-        assert!(second.r_groups[&2].contains('N'));
-        assert!(first.core_smiles.contains("*:1"));
-        assert!(first.core_smiles.contains("*:2"));
-        assert!(first.r_groups[&1].contains("*:1"));
-        assert!(first.r_groups[&2].contains("*:2"));
-    }
-
-    #[test]
-    fn labelled_core_fills_hydrogen_only_for_established_columns() {
-        for (core, unsubstituted, substituted) in [
-            ("[c:1]1ccccc1", "c1ccccc1", "Cc1ccccc1"),
-            ("[C:1]1CCCCC1", "C1CCCCC1", "CC1CCCCC1"),
-            ("[O:1]C", "CO", "COC"),
-            ("[N:1]C", "CN", "CNC"),
-        ] {
-            let mols = [mol(unsubstituted), mol(substituted)];
-            let refs: Vec<&Molecule> = mols.iter().collect();
-            let rows = rgroup_decompose_labeled(core, &refs).unwrap();
-            let first = rows[0].as_ref().unwrap();
-            let second = rows[1].as_ref().unwrap();
-            assert_eq!(
-                first.r_groups.get(&1).map(String::as_str),
-                Some("[*:1][H]"),
-                "{core}"
-            );
-            assert_eq!(first.core_smiles, second.core_smiles, "{core}");
-
-            let one = rgroup_decompose_labeled(core, &refs[..1]).unwrap();
-            assert!(one[0].as_ref().unwrap().r_groups.is_empty(), "{core}");
-        }
-    }
-
-    #[test]
-    fn automatically_labelled_site_fills_hydrogen_in_established_column() {
-        let mols = [mol("c1ccncc1"), mol("Cc1ccncc1"), mol("Clc1ccncc1")];
-        let refs: Vec<&Molecule> = mols.iter().collect();
-        let core = "c1ccncc1[*:1]";
-        let rows = rgroup_decompose_labeled(core, &refs).unwrap();
-        let first = rows[0].as_ref().unwrap();
-        assert_eq!(first.r_groups.get(&2).map(String::as_str), Some("[*:2][H]"));
-        assert_eq!(first.core_smiles, rows[1].as_ref().unwrap().core_smiles);
-        assert_eq!(first.core_smiles, rows[2].as_ref().unwrap().core_smiles);
-        for (row, expected_group) in rows.iter().zip(["[H][*:2]", "C[*:2]", "Cl[*:2]"]) {
-            let row = row.as_ref().unwrap();
-            assert_eq!(
-                canonical_smiles(&mol(&row.core_smiles)),
-                canonical_smiles(&mol("c1cc([*:2])ccn1"))
-            );
-            assert_eq!(
-                canonical_smiles(&mol(&row.r_groups[&2])),
-                canonical_smiles(&mol(expected_group))
-            );
-        }
-        let alone = rgroup_decompose_labeled(core, &refs[..1]).unwrap();
-        assert!(alone[0].as_ref().unwrap().r_groups.is_empty());
-    }
-
-    #[test]
-    fn terminal_mapped_wildcard_accepts_hydrogen_only_for_established_columns() {
-        for (core, unsubstituted, substituted, label) in [
-            ("c1ccccc1[*:1]", "c1ccccc1", "Cc1ccccc1", 1),
-            ("CC([*:1])O", "CCO", "CC(N)O", 1),
-            ("[C:1]([*:2])O", "CO", "CCO", 2),
-        ] {
-            let mols = [mol(unsubstituted), mol(substituted)];
-            let refs: Vec<&Molecule> = mols.iter().collect();
-            let rows = rgroup_decompose_labeled(core, &refs).unwrap();
-            let first = rows[0].as_ref().expect("hydrogen site matches");
-            let second = rows[1].as_ref().expect("substituent matches");
-            assert_eq!(
-                first.r_groups.get(&label).map(String::as_str),
-                Some(format!("[*:{label}][H]").as_str()),
-                "{core}"
-            );
-            assert_eq!(first.core_smiles, second.core_smiles, "{core}");
-
-            let alone = rgroup_decompose_labeled(core, &refs[..1]).unwrap();
-            assert!(alone[0].as_ref().unwrap().r_groups.is_empty(), "{core}");
-        }
-    }
-
-    #[test]
-    fn two_terminal_wildcards_allow_one_hydrogen_site() {
-        let mols = [mol("Cc1ccccc1"), mol("Cc1ccc(CC)cc1")];
-        let refs: Vec<&Molecule> = mols.iter().collect();
-        let rows = rgroup_decompose_labeled("c1cc([*:1])ccc1[*:2]", &refs).unwrap();
-        let first = rows[0].as_ref().expect("one-substituent row matches");
-        let second = rows[1].as_ref().expect("two-substituent row matches");
-        assert_eq!(first.r_groups[&1], "[*:1]C");
-        assert_eq!(first.r_groups[&2], "[*:2][H]");
-        assert_eq!(first.core_smiles, second.core_smiles);
-    }
-
-    #[test]
-    fn two_terminal_wildcards_on_one_atom_align_substituent_and_hydrogen() {
-        let mols = [mol("CO"), mol("CCO"), mol("CC(O)N")];
-        let refs: Vec<&Molecule> = mols.iter().collect();
-        let rows = rgroup_decompose_labeled("C([*:1])([*:2])O", &refs).unwrap();
-        let rows: Vec<_> = rows.iter().map(|row| row.as_ref().unwrap()).collect();
-        assert!(
-            rows.iter()
-                .all(|row| row.core_smiles == rows[0].core_smiles)
-        );
-        assert_eq!(
-            canonical_smiles(&mol(&rows[0].core_smiles)),
-            canonical_smiles(&mol("OC([*:1])[*:2]"))
-        );
-        assert_eq!(rows[0].r_groups[&1], "[*:1][H]");
-        assert_eq!(rows[0].r_groups[&2], "[*:2][H]");
-        assert_eq!(rows[1].r_groups[&1], "[*:1]C");
-        assert_eq!(rows[1].r_groups[&2], "[*:2][H]");
-        assert_eq!(rows[2].r_groups[&1], "[*:1]C");
-        assert_eq!(rows[2].r_groups[&2], "N[*:2]");
-
-        let alone = rgroup_decompose_labeled("C([*:1])([*:2])O", &refs[..1]).unwrap();
-        assert!(alone[0].as_ref().unwrap().r_groups.is_empty());
-
-        let pair = rgroup_decompose_labeled("C([*:1])([*:2])O", &refs[..2]).unwrap();
-        for row in pair.iter().flatten() {
-            assert_eq!(row.r_groups.keys().copied().collect::<Vec<_>>(), [1]);
-            assert_eq!(
-                canonical_smiles(&mol(&row.core_smiles)),
-                canonical_smiles(&mol("OC[*:1]"))
-            );
-        }
-        assert_eq!(pair[0].as_ref().unwrap().r_groups[&1], "[*:1][H]");
-        assert_eq!(pair[1].as_ref().unwrap().r_groups[&1], "[*:1]C");
-
-        for (smiles, heteroatom) in [("CC(O)N", "N"), ("CC(O)Cl", "Cl"), ("CC(O)F", "F")] {
-            let single = [mol(smiles)];
-            let single_refs: Vec<&Molecule> = single.iter().collect();
-            for inputs in [&single_refs[..], &[&mols[0], &single[0]][..]] {
-                let rows = rgroup_decompose_labeled("C([*:1])([*:2])O", inputs).unwrap();
-                let row = rows.last().unwrap().as_ref().unwrap();
-                assert_eq!(
-                    canonical_smiles(&mol(&row.r_groups[&1])),
-                    canonical_smiles(&mol(&format!("{heteroatom}[*:1]"))),
-                    "{smiles} with {} rows",
-                    inputs.len()
-                );
-                assert_eq!(
-                    canonical_smiles(&mol(&row.r_groups[&2])),
-                    canonical_smiles(&mol("C[*:2]")),
-                    "{smiles} with {} rows",
-                    inputs.len()
-                );
+            let order = labels
+                .and_then(|values| core_stub_orders?.get(&values[attachment_idx]))
+                .copied()
+                .unwrap_or_else(|| {
+                    mol.bond_between(core_atom, rg_root)
+                        .map(|(bond_idx, _)| cut_bond_order(mol, bond_idx, core_atom, core, false))
+                        .unwrap_or(BondOrder::Single)
+                });
+            let _ = builder.add_bond(new_ca, wc, order);
+            if mol.bond_between(core_atom, rg_root).is_some() {
+                cut_neighbors.insert((core_atom, rg_root), wc);
             }
         }
     }
 
-    #[test]
-    fn three_terminal_wildcards_align_two_groups_and_one_hydrogen() {
-        let core = "C([*:1])([*:2])([*:3])O";
-        let mols = [mol("CO"), mol("CCO"), mol("CC(O)N")];
-        let refs: Vec<&Molecule> = mols.iter().collect();
-
-        let single = rgroup_decompose_labeled(core, &refs[2..]).unwrap();
-        let row = single[0].as_ref().unwrap();
-        assert_eq!(row.r_groups[&1], "N[*:1]");
-        assert_eq!(row.r_groups[&2], "[*:2]C");
-        assert!(!row.r_groups.contains_key(&3));
-
-        let pair = rgroup_decompose_labeled(core, &[refs[0], refs[2]]).unwrap();
-        let first = pair[0].as_ref().unwrap();
-        let second = pair[1].as_ref().unwrap();
-        assert_eq!(first.r_groups[&1], "[*:1][H]");
-        assert_eq!(first.r_groups[&2], "[*:2][H]");
-        assert_eq!(second.r_groups[&1], "N[*:1]");
-        assert_eq!(second.r_groups[&2], "[*:2]C");
-        assert!(!second.r_groups.contains_key(&3));
-
-        let carbon_first = rgroup_decompose_labeled(core, &refs[1..]).unwrap();
-        let last = carbon_first[1].as_ref().unwrap();
-        assert_eq!(last.r_groups[&1], "[*:1]C");
-        assert_eq!(last.r_groups[&2], "N[*:2]");
-
-        let established = rgroup_decompose_labeled(core, &refs).unwrap();
-        let last = established[2].as_ref().unwrap();
-        assert_eq!(last.r_groups[&1], "[*:1]C");
-        assert_eq!(last.r_groups[&2], "N[*:2]");
-        assert!(!last.r_groups.contains_key(&3));
-    }
-
-    #[test]
-    fn optional_wildcard_fallback_does_not_invent_multiple_bonded_hydrogen() {
-        let mols = [mol("C")];
-        let refs: Vec<&Molecule> = mols.iter().collect();
-        let rows = rgroup_decompose_labeled("C=[*:1]", &refs).unwrap();
-        assert!(rows[0].is_none());
-    }
-
-    #[test]
-    fn prepared_labelled_core_matches_free_function() {
-        let mols = [
-            mol("CCc1cc(O)ccc1"),
-            mol("Oc1ccc(CC)cc1"),
-            mol("Clc1ccc(CC)cc1"),
-        ];
-        let refs: Vec<&Molecule> = mols.iter().collect();
-        let core = "c1cc([*:1])ccc1[*:2]";
-
-        let expected = rgroup_decompose_labeled(core, &refs).unwrap();
-        let prepared = PreparedRGroupCore::new(core).unwrap();
-        let actual = prepared.decompose_labeled(&refs).unwrap();
-
-        assert_eq!(actual, expected);
-    }
-
-    #[test]
-    fn labelled_symmetric_columns_use_fragment_similarity_like_rdkit() {
-        // The third row has no exact payload seen in either column.  RDKit's
-        // table alignment keeps the carbon chain in R1 and the heteroatom in
-        // R2; lexical tie-breaking alone swapped those labels.
-        let mols = [
-            mol("Cc1cccc(N)c1"),
-            mol("COc1cccc(Cl)c1"),
-            mol("CCc1cccc(O)c1"),
-        ];
-        let refs: Vec<&Molecule> = mols.iter().collect();
-        let rows = rgroup_decompose_labeled("c1c([*:1])cccc1[*:2]", &refs)
-            .expect("labelled decomposition");
-        let third = rows[2].as_ref().expect("third molecule matches");
-
-        assert!(third.r_groups[&1].contains("CC"), "R1 must keep ethyl");
-        assert!(third.r_groups[&2].contains('O'), "R2 must keep hydroxyl");
-
-        let respelled = [
-            mol("Nc1cccc(C)c1"),
-            mol("Clc1cccc(OC)c1"),
-            mol("Oc1cccc(CC)c1"),
-        ];
-        let respelled_refs: Vec<&Molecule> = respelled.iter().collect();
-        let respelled_rows = rgroup_decompose_labeled("c1c([*:1])cccc1[*:2]", &respelled_refs)
-            .expect("respelled labelled decomposition");
-        for (original, respelled) in rows.iter().zip(&respelled_rows) {
-            assert_eq!(
-                original, respelled,
-                "input atom order changed the table row"
-            );
-        }
-    }
-
-    #[test]
-    fn mapped_core_atom_labels_its_substituent() {
-        let mols = [mol("Cc1ccccc1")];
-        let refs: Vec<&Molecule> = mols.iter().collect();
-        let rows =
-            rgroup_decompose_labeled("[c:7]1ccccc1", &refs).expect("mapped-core decomposition");
-        let row = rows[0].as_ref().expect("toluene matches");
-        assert_eq!(row.r_groups.keys().copied().collect::<Vec<_>>(), [7]);
-        assert!(row.core_smiles.contains("*:7"));
-        assert!(row.r_groups[&7].contains("*:7"));
-    }
-
-    #[test]
-    fn duplicate_and_nonterminal_labels_are_typed_errors() {
-        let mols = [mol("Cc1ccccc1")];
-        let refs: Vec<&Molecule> = mols.iter().collect();
-
-        let duplicate = rgroup_decompose_labeled("[c:1]1cccc[c:1]1", &refs);
-        assert!(matches!(duplicate, Err(RGroupError::DuplicateLabel(1))));
-
-        let nonterminal = rgroup_decompose_labeled("c1cc([*:2]C)ccc1", &refs);
-        assert!(matches!(
-            nonterminal,
-            Err(RGroupError::NonTerminalAttachmentLabel(2))
-        ));
-    }
-
-    #[test]
-    fn invalid_and_ambiguous_labelled_cores_fail_closed() {
-        let mols = [mol("CC(C)(C)C")];
-        let refs: Vec<&Molecule> = mols.iter().collect();
-
-        assert!(matches!(
-            rgroup_decompose_labeled("[C:0]", &refs),
-            Err(RGroupError::InvalidLabel(0))
-        ));
-        assert!(matches!(
-            rgroup_decompose_labeled("[C;D4:1]", &refs),
-            Err(RGroupError::MultipleAttachments {
-                mol_idx: 0,
-                label: 1
-            })
-        ));
-
-        let radical = [mol("[C]")];
-        let radical_refs: Vec<&Molecule> = radical.iter().collect();
-        let missing_hydrogen = rgroup_decompose_labeled("C([*:1])", &radical_refs).unwrap();
-        assert!(missing_hydrogen[0].is_none());
-    }
-
-    #[test]
-    fn labelled_core_refuses_when_match_cap_is_reached() {
-        let input = vec!["C"; LABELED_MATCH_LIMIT].join(".");
-        let mols = [mol(&input)];
-        let refs: Vec<&Molecule> = mols.iter().collect();
-        assert!(matches!(
-            rgroup_decompose_labeled("C", &refs),
-            Err(RGroupError::MatchLimitExceeded {
-                mol_idx: 0,
-                limit: LABELED_MATCH_LIMIT
-            })
-        ));
-    }
+    copy_cut_stereo(mol, &mut builder, &remap, &bond_remap, &cut_neighbors);
+    builder.build()
 }
+
+#[cfg(test)]
+#[path = "rgroup_tests.rs"]
+mod tests;
