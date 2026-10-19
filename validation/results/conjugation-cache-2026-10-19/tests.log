@@ -1,0 +1,744 @@
+    Finished `release` profile [optimized] target(s) in 0.06s
+     Running unittests src/lib.rs (/private/tmp/chematic-conjugation-target/release/deps/chematic_smiles-bcda25160b69e387)
+
+running 434 tests
+test batch::tests::stream_terminal_reason_accepts_only_declared_categories ... ok
+test batch::tests::reader_io_error_is_terminal_and_exposes_unprocessed_boundary ... ok
+test batch::tests::stream_stop_never_relabels_observed_or_unread_rows_as_success ... ok
+test batch::tests::reader_io_error_keeps_the_next_index_after_completed_records ... ok
+test batch::tests::applies_reusable_resource_limits_per_record ... ok
+test batch::tests::reader_is_lazy_and_keeps_later_records_after_parse_errors ... ok
+test batch::tests::stream_finish_accounts_for_every_observed_record ... ok
+test batch::tests::eager_result_has_complete_terminal_outcome_accounting ... ok
+test batch::tests::preserves_input_order_and_partial_errors ... ok
+test canonical::explicit_implicit_h_invariance::disconnected_structures_bracket_organic_mix ... ok
+test batch::tests::identity_index_is_deterministic_and_fail_closed ... ok
+test canonical::explicit_implicit_h_invariance::isotope_and_charge_remain_distinguishing_not_unified ... ok
+test canonical::explicit_implicit_h_invariance::bracket_vs_organic_notation_isolated_no_reaction ... ok
+test canonical::explicit_implicit_h_invariance::canonicalization_is_idempotent_for_all_bracket_organic_pairs ... ok
+test canonical::explicit_implicit_h_invariance::kekulized_ring_bracket_vs_organic_substituent ... ok
+test canonical::explicit_implicit_h_invariance::randomized_atom_relabeling_does_not_change_canonical_form ... ok
+test canonical::explicit_implicit_h_invariance::ring_closure_explicit_single_bond_between_aromatic_atoms_real_world_repro ... ok
+test canonical::explicit_implicit_h_invariance::stereocenter_canonicalization_idempotent_and_order_independent ... ok
+test canonical::explicit_implicit_h_invariance::ring_closure_explicit_bond_order_survives_reparse_for_various_orders ... ok
+test canonical::legacy_boundary_contract_tests::equivalent_atom_api_agrees_with_known_chain_and_ring_symmetries ... ok
+test canonical::tests::allene_stereo_exact_canonical_value_is_pinned ... ok
+test canonical::tests::allene_stereo_two_enantiomers_differ ... ok
+test canonical::tests::allene_stereo_round_trip_stable ... ok
+test canonical::tests::canonical_bracket_implicit_h_ammonium_charge_only ... ok
+test canonical::tests::canonical_bracket_implicit_h_atom_map_only ... ok
+test canonical::tests::canonical_bracket_implicit_h_hydroxide_charge_only ... ok
+test canonical::tests::canonical_bracket_implicit_h_isotope_and_atom_map ... ok
+test canonical::tests::canonical_bracket_implicit_h_isotope_only ... ok
+test canonical::tests::canonical_genuine_ez_directional_bond_still_written ... ok
+test canonical::tests::canonical_reorient_for_write_uses_stash_anchor ... ok
+test canonical::tests::canonical_standalone_hash_wedge_not_written_as_backslash ... ok
+test canonical::tests::canonical_standalone_solid_wedge_not_written_as_slash ... ok
+test canonical::tests::canonical_standalone_wedge_does_not_disturb_stereocenter_chirality ... ok
+test canonical::tests::canonical_standalone_wedge_on_ring_closure_bond ... ok
+test canonical::tests::canonical_wildcard_preserves_atom_map ... ok
+test canonical::legacy_boundary_contract_tests::capped_legacy_and_tied_rank_writers_preserve_graph_and_stereo ... ok
+test canonical::tests::conjugated_double_bond_ez_round_trip ... ok
+test canonical::tests::canonical_writer_round_trips_extended_ring_labels ... ok
+test canonical::tests::canonical_rejects_same_side_ring_carriers_on_fused_imine ... ok
+test canonical::tests::cyclic_imine_carrier_normalization_is_input_order_invariant ... ok
+test canonical::tests::ez_carrier_ring_closure_candidate ... ok
+test canonical::tests::canonical_atom_order_permutation_invariance_probe ... ok
+test canonical::tests::ez_canonical_smiles_is_idempotent ... ok
+test canonical::tests::coupling_components_membership_is_insertion_order_independent ... ok
+test canonical::tests::ez_e_and_z_differ_for_each_skeleton ... ok
+test canonical::tests::ez_carrier_trisub_no_ring ... ok
+test canonical::tests::ez_carrier_tetrasub_no_ring ... ok
+test canonical::tests::canonical_aromatic_stash_with_real_double_bond_still_emits_direction ... ok
+test canonical::tests::ez_geometry_preserved_through_canonicalization ... ok
+test canonical::tests::ez_simple_bond_direction_normalized_azo ... ok
+test canonical::tests::ez_simple_bond_direction_normalized_symmetric ... ok
+test canonical::tests::geometry_fingerprint_is_sensitive_to_a_real_flip ... ok
+test canonical::tests::individualized_ranks_never_tie_even_for_symmetric_molecules ... ok
+test canonical::tests::issue390_mirror_stereoisomers_stay_distinct ... ok
+test canonical::tests::issue390_witness_geometry_preserved_and_stable ... ok
+test canonical::tests::fused_aromatic_canonical_is_idempotent ... ok
+test canonical::tests::issue390_witness_has_no_valid_alternate_marking ... ok
+test canonical::tests::canonical_rejects_same_side_carriers_on_coupled_bis_imine ... ok
+test canonical::tests::ez_carrier_aromatic_stash_ring_closure ... ok
+test canonical::tests::issue390_witness_permutation_invariant ... ok
+test canonical::tests::canonical_atom_order_matches_individualized_ranks_probe ... ok
+test canonical::tests::issue503_ez_output_slots_are_spelling_invariant ... ok
+test canonical::tests::issue503_complete_slot_probe_covers_every_canonical_direction_carrier ... ok
+test canonical::tests::issue503_geometry_fingerprint_is_spelling_invariant ... ok
+test canonical::tests::issue503_directionless_canonical_text_is_spelling_invariant ... ok
+test canonical::tests::issue_9678_central_allene_tag_round_trips_and_distinguishes_enantiomers ... ok
+test canonical::tests::issue_9678_shorthand_and_atom_renumbering_preserve_allene_stereo ... ok
+test canonical::tests::morgan_ranks_partition_is_permutation_invariant ... ok
+test canonical::tests::old_design_zero_budget_silently_returns_empty_string_not_an_error ... ok
+test canonical::tests::ez_shared_carrier_held_out_residuals_converge_to_stable_keys ... ok
+test canonical::tests::ring_closure_direction_flip_real_world_repro ... ok
+test canonical::tests::ring_closure_direction_minimal_ez_agreement ... ok
+test canonical::tests::ring_digit_reuse_inside_stereocenter_branch_minimal ... ok
+test canonical::tests::ring_stereo_stable_in_fused_system ... ok
+test canonical::tests::ring_digit_reuse_inside_stereocenter_branch_real_world_repro ... ok
+test canonical::tests::size_two_component_forced_rank_tie_still_resolves_uniquely ... ok
+test canonical::tests::test_acetic_acid_canonical_same_from_different_starts ... ok
+test canonical::tests::test_acetic_acid_stable ... ok
+test canonical::tests::test_aspirin_stable ... ok
+test canonical::tests::test_benzene_stable ... ok
+test canonical::tests::stashed_directions_read_from_atom2_keep_their_geometry ... ok
+test canonical::tests::issue503_component_traversal_only_has_no_common_geometry_preserving_output ... ok
+test canonical::tests::test_caffeine_stable ... ok
+test canonical::tests::test_disconnected_stable ... ok
+test canonical::tests::test_chirality_from_different_entry_points ... ok
+test canonical::tests::test_ethane_stable ... ok
+test canonical::tests::test_ethanol_same_from_different_starts ... ok
+test canonical::tests::test_enantiomers_differ ... ok
+test canonical::tests::test_ethanol_stable ... ok
+test canonical::tests::test_ez_e_ne_z ... ok
+test canonical::tests::test_ez_fluoro_e_stable ... ok
+test canonical::tests::test_ez_e_stable ... ok
+test canonical::tests::test_ez_fluoro_z_stable ... ok
+test canonical::tests::test_ez_z_stable ... ok
+test canonical::tests::test_formic_acid_canonical_consistent ... ok
+test canonical::tests::test_isobutane_same_canonical ... ok
+test canonical::tests::test_methane_stable ... ok
+test canonical::tests::test_oxygens_in_acetic_acid_not_equivalent ... ok
+test canonical::tests::test_naphthalene_stable ... ok
+test canonical::tests::test_pyridine_stable ... ok
+test canonical::tests::test_ring_stereocentre_enantiomers_differ ... ok
+test canonical::tests::test_rdkit_agreement_alanine ... ok
+test canonical::tests::test_ring_stereocentre_stable ... ok
+test canonical::tests::test_tetrahedral_all_heavy_enantiomers_differ ... ok
+test canonical::tests::test_tetrahedral_all_heavy_substituents_stable ... ok
+test canonical::tests::test_tetrahedral_same_from_different_starts ... ok
+test canonical::tests::test_tetrahedral_stable_no_from_atom ... ok
+test canonical::tests::test_tetrahedral_stable_with_from_atom ... ok
+test canonical::tests::test_wildcard_roundtrip ... ok
+test canonical::tests::untagged_tetrahedral_center_is_never_auto_promoted ... ok
+test canonical::tests::tetrahedral_fingerprint_is_sensitive_to_a_real_flip ... ok
+test canonical_automorphism::tests::cf3_fluorines_are_automorphic ... ok
+test canonical_automorphism::tests::benzene_ring_rotation_is_automorphic ... ok
+test canonical_automorphism::tests::charge_difference_never_automorphic ... ok
+test canonical_automorphism::tests::complete_bipartite_respects_the_two_sides ... ok
+test canonical_automorphism::tests::different_cell_never_automorphic_even_if_color_matches ... ok
+test canonical_automorphism::tests::complete_graphs_up_to_6_are_fully_vertex_transitive ... ok
+test canonical_automorphism::tests::different_element_never_automorphic ... ok
+test canonical_automorphism::tests::cycles_up_to_8_are_fully_vertex_transitive ... ok
+test canonical_automorphism::tests::isotope_difference_never_automorphic ... ok
+test canonical::tests::issue503_ez_geometry_facts_are_spelling_invariant ... ok
+test canonical_automorphism::tests::non_bijective_mapping_never_accepted ... ok
+test canonical::tests::issue503_full_canonical_skeleton_is_spelling_invariant ... ok
+test canonical_automorphism::tests::out_of_range_mapping_never_panics_or_is_accepted ... ok
+test canonical_automorphism::tests::partial_mapping_never_accepted ... ok
+test canonical_automorphism::tests::stereo_difference_never_automorphic ... ok
+test canonical_automorphism::tests::triangle_and_square_same_wl_cell_different_orbits ... ok
+test canonical_partition::tests::aromatic_stash_sensitivity_follows_exocyclic_double_bond ... ok
+test canonical_partition::tests::asymmetric_chain_every_atom_its_own_class ... ok
+test canonical_partition::tests::atom_map_number_alone_does_not_split_the_class ... ok
+test canonical_partition::tests::benzene_all_one_cell_before_refine_after_refine ... ok
+test canonical_partition::tests::benzene_all_six_carbons_one_class ... ok
+test canonical_partition::tests::bracket_h_spelling_does_not_split_the_class ... ok
+test canonical_partition::tests::ez_bond_direction_marker_alone_does_not_split_the_class ... ok
+test canonical_partition::tests::ez_mark_pins_the_double_bond_neighbourhood_only ... ok
+test canonical_partition::tests::isotope_difference_splits_cell ... ok
+test canonical_partition::tests::meso_tartaric_acid_stereocenters_share_a_class_despite_opposite_tags ... ok
+test canonical_partition::tests::toluene_five_classes_ortho_and_meta_pairs_merge ... ok
+test canonical_partition::tests::wildcard_never_collides_with_a_zero_h_real_atom ... ok
+test canonical_search::tests::budget_exceeded_is_always_err_never_ok_with_wrong_string ... ok
+test canonical_search::tests::ez_pinning_does_not_disable_unrelated_cf3_pruning ... ok
+test canonical_search::tests::generous_budget_succeeds_on_benzene ... ok
+test canonical_search::tests::local_twins_are_exact_but_dative_direction_is_not_symmetric ... ok
+test canonical_search::tests::issue421_reordered_symmetric_molecule_does_not_hang ... ok
+test canonical_automorphism::tests::disconnected_graphs_match_brute_force ... ok
+test canonical_search::tests::tiny_automorphism_test_budget_fails_closed ... ok
+test canonical_search::tests::tiny_node_budget_fails_closed_not_empty_string ... ok
+test canonical_search::tests::unbounded_matches_exhaustive_oracle_on_symmetric_molecules ... ok
+test cx::tests::atomprops_with_colon_and_dot_combined_round_trip ... ok
+test cx::tests::atomprops_with_colon_in_value_round_trip ... ok
+test cx::tests::atomprops_with_dot_in_key_round_trip ... ok
+test cx::tests::atomprops_with_multiple_colon_values_round_trip ... ok
+test cx::tests::attachment_point_labels_are_complete_and_marked_points_are_wildcards ... ok
+test cx::tests::bug1_cxsmiles_double_trailing_backslash ... ok
+test cx::tests::bug1_cxsmiles_escaped_comma_with_trailing_backslash ... ok
+test cx::tests::bug1_cxsmiles_trailing_backslash_preservation ... ok
+test cx::tests::cxsmiles_no_wavy_bond_no_w_field ... ok
+test cx::tests::cxsmiles_wavy_bond_combined_with_other_fields ... ok
+test cx::tests::cxsmiles_wavy_bond_round_trip ... ok
+test cx::tests::parse_cxsmiles_atom_labels_and_props ... ok
+test cx::tests::parse_cxsmiles_radicals ... ok
+test cx::tests::parse_cxsmiles_wavy_bond_multiple ... ok
+test cx::tests::parse_cxsmiles_wavy_bond_out_of_range_ignored ... ok
+test cx::tests::parse_cxsmiles_wavy_bond_single ... ok
+test cx::tests::parse_cxsmiles_zero_bond ... ok
+test cx::tests::rdkit_attachment_point_label_fixtures_preserve_atom_map_identity ... ok
+test error::tests::every_public_error_variant_has_a_stable_diagnostic ... ok
+test error::tests::unknown_element_display_preserves_symbol_and_position ... ok
+test inchi_output_boundary_contract_tests::inchi_raw_double_bond_parity_and_high_priority_substituent_swaps_are_consistent ... ok
+test canonical_search::tests::single_position_symmetry_breaks_match_oracle ... ok
+test inchi_output_boundary_contract_tests::inchi_raw_isotope_hydrogen_and_radical_metadata_survive_conversion ... ok
+test inchi_output_boundary_contract_tests::inchi_raw_output_rejects_unknown_elements_bond_types_and_unbonded_stereo_ligands ... ok
+test inchi_output_boundary_contract_tests::inchi_raw_tetrahedral_parity_tracks_ligand_permutations_and_implicit_h ... ok
+test inchi_output_boundary_contract_tests::unusual_inchi_valence_cleanup_preserves_connectivity_and_localizes_charge ... ok
+test mol2_boundary_contract_tests::mol2_phosphate_quaternary_n_and_invalid_sybyl_types_match_native_cleanup ... ok
+test mol2_boundary_contract_tests::mol2_corina_cleanup_and_double_bond_directions_match_pinned_rdkit ... ok
+test canonical_search::tests::rank_vector_matches_exhaustive_oracle_not_just_string ... ok
+test parser::parse_error_boundary_contract_tests::actual_parse_failures_keep_positions_and_relevant_labels ... ok
+test parser::tests::acyclic_parse_seeds_empty_ring_flags ... ok
+test parser::tests::bracket_atom_reads_two_digit_charge_and_h_count ... ok
+test parser::tests::bare_wildcard_is_the_bracket_wildcard ... ok
+test parser::tests::direction_stash_branch_attachment_edge ... ok
+test parser::tests::direction_stash_ring_closure_edge ... ok
+test parser::tests::direction_stash_normal_chain_edge ... ok
+test parser::tests::parse_with_limits_reports_input_and_graph_limits ... ok
+test parser::tests::pendant_inter_ring_and_non_huckel_wildcards_remain_nonaromatic ... ok
+test parser::tests::test_branch_depth_limit_accepts_boundary ... ok
+test parser::tests::test_branch_depth_limit_rejects_too_deep_input ... ok
+test parser::tests::test_empty_smiles_error ... ok
+test parser::tests::test_malformed_bracket_atoms_return_errors ... ok
+test parser::tests::test_malformed_ring_closures_return_errors ... ok
+test parser::tests::test_parse_13c ... ok
+test parser::tests::test_parse_acetic_acid ... ok
+test parser::tests::test_parse_ammonium ... ok
+test parser::tests::test_parse_benzene_aromatic ... ok
+test parser::tests::test_parse_benzene_kekulized ... ok
+test parser::tests::test_parse_bracket_water ... ok
+test parser::tests::test_parse_chlorobenzene ... ok
+test parser::tests::test_parse_cyclohexane ... ok
+test parser::tests::test_parse_disconnected ... ok
+test parser::tests::test_parse_double_bond ... ok
+test parser::tests::test_parse_ethane ... ok
+test parser::tests::test_parse_ethanol ... ok
+test parser::tests::test_parse_extended_smiles_plus_ring_label ... ok
+test parser::tests::test_parse_isobutane ... ok
+test parser::tests::test_parse_methane ... ok
+test parser::tests::test_parse_naphthalene ... ok
+test parser::tests::test_parse_percent_ring ... ok
+test parser::tests::test_parse_propane ... ok
+test parser::tests::test_parse_pyridine ... ok
+test parser::tests::test_parse_triple_bond ... ok
+test parser::tests::test_parse_wildcard_atom_map ... ok
+test parser::tests::test_stereo_marker_between_aromatic_atoms_stays_aromatic ... ok
+test parser::tests::wildcard_in_aromatic_ring_has_aromatic_ring_bonds ... ok
+test parser::tests::wildcard_keeps_charge_isotope_and_h_count ... ok
+test canonical::tests::issue149_aromatic_stash_matches_exhaustive_oracle ... ok
+test random_smiles::tests::permutation_remaps_bond_metadata_and_enhanced_stereo_groups ... ok
+test random_smiles::tests::permutation_remaps_enhanced_stereo_atoms_and_bonds ... ok
+test random_smiles::tests::random_smiles_keep_stereo ... ok
+test random_smiles::tests::rng_and_empty_permutation_have_defined_boundaries ... ok
+test random_smiles::tests::test_permutation_deterministic ... ok
+test random_smiles::tests::test_permutation_different_seeds ... ok
+test random_smiles::tests::test_random_smiles_roundtrip ... ok
+test random_smiles::tests::test_random_smiles_single ... ok
+test random_smiles::tests::test_random_smiles_vect_generates_multiple ... ok
+test random_smiles::tests::test_random_smiles_vect_unique ... ok
+test rdkit::align::dative_alignment_boundary_tests::equivalent_ammine_ligands_are_matched_without_reversing_dative_bonds ... ok
+test rdkit::align::tests::aligning_a_rotated_copy_recovers_it ... ok
+test rdkit::align::tests::all_conformer_best_rms_reuses_matches_and_preserves_rdkit_order ... ok
+test rdkit::align::tests::all_conformer_best_rms_to_ref_is_reference_major ... ok
+test rdkit::align::tests::best_rms_tries_symmetric_matches ... ok
+test rdkit::align::tests::conformer_batches_reject_bad_coordinate_counts ... ok
+test rdkit::align::weighted_fit_boundary_tests::point_and_weight_mismatches_are_explicit_errors ... ok
+test rdkit::align::weighted_fit_boundary_tests::weighted_rigid_and_reflected_fits_recover_known_geometry ... ok
+test mol2_boundary_contract_tests::mol2_sanitization_hydrogen_and_cleanup_flags_match_pinned_rdkit ... ok
+test rdkit::api_contract_tests::chemistry_diagnostics_preserve_problem_atom_indices ... ok
+test rdkit::api_contract_tests::alignment_recovers_a_rigid_transform_and_checks_dimensions ... ok
+test rdkit::api_contract_tests::hybridization_and_pi_counts_use_original_atom_order ... ok
+test rdkit::api_contract_tests::fragment_writer_respects_selected_atoms_and_bonds ... ok
+test rdkit::api_contract_tests::hydrogen_addition_and_first_match_typing_contracts ... ok
+test rdkit::api_contract_tests::topological_and_cartesian_distance_contracts ... ok
+test rdkit::canon::tests::conjugated_and_branched_direction_conflicts_are_canonicalized ... ok
+test rdkit::canon::tests::double_bond_conflict_solver_covers_all_consistency_combinations ... ok
+test rdkit::canon::tests::low_level_direction_helpers_cover_conflict_and_cleanup_states ... ok
+test rdkit::depict::fixed_fragment_boundary_tests::fixed_fragment_rejects_coincident_vectors_with_context ... ok
+test rdkit::depict::fixed_fragment_boundary_tests::partial_fixed_fragments_keep_coordinates_and_place_remaining_ligands ... ok
+test rdkit::api_contract_tests::random_smiles_preserve_stereo_and_seed_reproducibility ... ok
+test rdkit::depict_tests::larger_molecules_match_rdkit_with_platform_tolerance ... ok
+test rdkit::depict_tests::mol_blocks_match_rdkit ... ok
+test rdkit::depict_tests::small_molecules_match_rdkit_with_platform_tolerance ... ok
+test rdkit::depict_tests::v3000_and_unsupported_inputs_are_refused ... ok
+test rdkit::embed_view::tests::embedding_ring_order_matches_ring_decomposer_convention ... ok
+test rdkit::enumerate::tests::aromatic_sulfoxide_has_two_stereoisomers ... ok
+test canonical::tests::issue503_local_traversal_and_ring_marker_side_have_no_common_output ... ok
+test rdkit::enumerate::tests::rdkit_docstring_examples ... ok
+test rdkit::enumerate::tests::salts_and_conjugated_bonds_are_enumerated ... ok
+test rdkit::format_boundary_tests::inchi_output_rejects_unmodeled_bonds_without_partial_molecules ... ok
+test rdkit::depict_contract_tests::ring_and_nontetrahedral_depictions_match_rdkit_reference ... ok
+test rdkit::format_boundary_tests::mol2_lone_pair_records_and_unknown_bonds_are_skipped_explicitly ... ok
+test rdkit::format_boundary_tests::mol2_missing_and_malformed_records_fail_with_specific_diagnostics ... ok
+test rdkit::format_boundary_tests::mol2_unity_charge_errors_do_not_silently_guess_charges ... ok
+test rdkit::inchi_read::output_tests::inchi_output_preserves_isotopes_radicals_and_stereo ... ok
+test rdkit::inchi_read::output_tests::inchi_output_rejects_bond_stereo_and_bad_tetrahedral_neighbors ... ok
+test rdkit::inchi_read::tests::alternating_path_and_substructure_helpers_are_deterministic ... ok
+test rdkit::inchi_read::tests::bond_direction_constraints_detect_conflicts ... ok
+test rdkit::inchi_read::tests::inchi_cleanup_normalizes_common_hypervalent_groups ... ok
+test rdkit::inchi_read::tests::inchi_cleanup_exercises_each_charged_valence_family ... ok
+test rdkit::matrices::tests::checked_dimensions_cover_the_rdkit_9647_boundary_without_allocating ... ok
+test rdkit::matrices::tests::nested_rows_handle_empty_and_small_matrices ... ok
+test rdkit::model_view::cache_tests::binding_preparation_only_materializes_required_scalar_models ... ok
+test rdkit::model_view::cache_tests::cached_failure_falls_back_and_panic_restores_nested_scope ... ok
+test rdkit::model_view::cache_tests::concurrent_cold_model_reads_keep_exact_results ... ok
+test rdkit::model_view::cache_tests::model_slot_shares_only_scalar_views_and_clears_after_edits ... ok
+test rdkit::model_view::shortcut_tests::nested_model_callback_bypasses_shortcut_and_outer_scalar_cache ... ok
+test rdkit::model_view::shortcut_tests::scalar_shortcut_preserves_cache_clone_and_edit_rules ... ok
+test rdkit::model_view_contract_tests::core_model_keeps_hydrogens_cleanup_and_error_boundaries ... ok
+test rdkit::model_view_contract_tests::core_model_keeps_specified_and_unspecified_stereo ... ok
+test rdkit::model_view_contract_tests::model_callbacks_keep_stereo_after_graph_edits ... ok
+test rdkit::model_view_contract_tests::sanitized_view_cache_is_not_inherited_by_clones_or_edits ... ok
+test rdkit::mol2_read::tests::carboxylate_gets_charge ... ok
+test rdkit::mol2_read::tests::corina_groups_and_3d_double_bond_stereo ... ok
+test rdkit::mol2_read::tests::premature_eof_and_bad_symbols_fail ... ok
+test rdkit::mol::primitive_contract_tests::atom_chirality_inversion_handles_every_geometry_family ... ok
+test rdkit::mol::primitive_contract_tests::bond_types_and_directions_keep_their_numeric_contracts ... ok
+test rdkit::mol::primitive_contract_tests::implicit_valence_rejects_impossible_hydrogen_charge_and_handles_dummies ... ok
+test rdkit::mol::primitive_contract_tests::non_tetrahedral_queries_fail_closed_and_report_ideal_angles ... ok
+test rdkit::molblock2d::boundary_contract_tests::double_bond_stereo_helpers_distinguish_unknown_known_and_blocked_paths ... ok
+test rdkit::molblock2d::boundary_contract_tests::geometry_helpers_handle_coincident_parallel_and_opposite_vectors ... ok
+test rdkit::molblock2d::boundary_contract_tests::stereo_and_valence_checks_fail_closed_at_their_boundaries ... ok
+test rdkit::molblock2d::boundary_contract_tests::v2000_property_records_flush_in_groups_of_eight ... ok
+test rdkit::molblock2d::boundary_contract_tests::v3000_output_preserves_atom_and_bond_properties ... ok
+test rdkit::molblock2d::boundary_contract_tests::wedge_selection_accounts_for_hydrogen_chiral_neighbors_and_used_bonds ... ok
+test rdkit::ogb::tests::aromatic_ring_and_no_bond_have_defined_shapes ... ok
+test rdkit::ogb::tests::ethanol_matches_ogb_categories_and_directed_edge_order ... ok
+test rdkit::ogb::tests::graph_hydrogen_atoms_keep_their_indices ... ok
+test rdkit::ogb::tests::radicals_tetrahedral_stereo_and_alkene_stereo_match_rdkit ... ok
+test pdb_boundary_contract_tests::pdb_coordination_geometries_and_malformed_fields_match_pinned_rdkit ... ok
+test rdkit::pdb_read::tests::conect_duplicates_give_bond_orders ... ok
+test rdkit::pdb_read::tests::conect_repetitions_reach_triple_and_quadruple_orders ... ok
+test rdkit::pdb_read::tests::malformed_pdb_fields_return_typed_errors ... ok
+test rdkit::pdb_read::tests::non_tetrahedral_geometry_classes_and_fail_closed_cases ... ok
+test rdkit::pdb_read::tests::numeric_fields_and_symbols_follow_rdkit_edge_cases ... ok
+test rdkit::pdb_read::tests::pdb_filters_and_flavor_override_are_explicit ... ok
+test rdkit::pdb_read::tests::proximity_bonding_respects_hydrogen_and_residue_rules ... ok
+test rdkit::pdb_read::tests::proximity_predicate_covers_distance_and_hydrogen_boundaries ... ok
+test rdkit::pdb_read::tests::reads_isotopes_charges_and_residue_metadata ... ok
+test rdkit::pdb_read::tests::reads_rdkit_written_ethanol ... ok
+test rdkit::pdb_read::tests::standard_residue_bond_orders_cover_protein_and_nucleic_acid_tables ... ok
+test rdkit::pdb_read::tests::three_dimensional_stereo_helpers_cover_tetrahedral_and_square_planar ... ok
+test rdkit::pdb_read::tests::xyz_block_reads_atoms_without_bonds ... ok
+test rdkit::profile_tests::rdkit_profile ... ignored
+test rdkit::pyrandom::tests::matches_cpython ... ok
+test rdkit::rxn_smarts::tests::malformed_and_unsupported_queries_are_rejected ... ok
+test rdkit::rxn_smarts::tests::query_writer_is_idempotent_across_supported_grammar ... ok
+test rdkit::rxn_smarts::tests::reaction_writer_handles_agents_groups_and_dative_arrows ... ok
+test rdkit::pdb_contract_tests::protein_and_nucleic_acid_pdb_graphs_match_rdkit_reference ... ok
+test rdkit::sanitize::conjugation_cache_tests::conjugation_cache_timing ... ignored, opt-in release timing; measures only prepared-model set_conjugation
+test parser::tests::every_two_digit_ring_label_and_reuse_preserve_graph_and_stereo ... ok
+test rdkit::sanitize::conjugation_cache_tests::predicate_is_independent_of_assigned_conjugation_flags ... ok
+test rdkit::sanitize::conjugation_cache_tests::single_bond_fast_path_keeps_existing_aromatic_flags ... ok
+test rdkit::smarts_match::contract_tests::atom_primitives_cover_ranges_recursion_and_boolean_composition ... ok
+test rdkit::smarts_match::contract_tests::bond_primitives_preserve_ring_and_order_semantics ... ok
+test rdkit::sanitize::conjugation_cache_tests::cache_spill_and_high_degree_radical_charge_controls ... ok
+test rdkit::tautomer_control::tests::tautomer_cancel_before_first_product ... ok
+test rdkit::smarts_match::contract_tests::parser_and_integer_properties_cover_supported_edge_syntax ... ok
+test rdkit::tautomer_control::tests::tautomer_limits_precede_callback ... ok
+test rdkit::tautomer_pick::tests::checked_selection_and_limits_cover_the_public_contract ... ok
+test rdkit::tautomer_pick::tests::typed_errors_have_actionable_messages ... ok
+test rdkit::tautomer_tests::adenine_nitrate ... ok
+test rdkit::tautomer_control::tests::tautomer_continue_equals_existing_path ... ok
+test rdkit::tautomer_tests::amino_acid_loses_sp3_stereo ... ok
+test rdkit::tautomer_tests::biguanide ... ok
+test rdkit::tautomer_tests::aminoisoxazolol ... ok
+test rdkit::tautomer_tests::cresol ... ok
+test rdkit::tautomer_tests::cyclic_urea_keeps_distant_stereo ... ok
+test rdkit::tautomer_tests::guanidine_bond_stereo_removed ... ok
+test rdkit::tautomer_tests::enone_phenol_with_bond_stereo ... ok
+test canonical_automorphism::tests::exhaustive_simple_graphs_n_le_5_match_brute_force ... ok
+test rdkit::tautomer_tests::phosphite_to_h_phosphonate ... ok
+test rdkit::tautomer_tests::phosphonate ... ok
+test rdkit::tautomer_tests::ring_enone_keeps_unmodified_bond_stereo ... ok
+test rdkit::tests::allene_chirality_is_read_and_dropped ... ok
+test rdkit::tests::aromatic_and_kekule_inputs ... ok
+test rdkit::tests::charges_and_cleanup ... ok
+test rdkit::tests::conjugated_double_bond_stereo ... ok
+test rdkit::tests::double_bond_stereo ... ok
+test rdkit::tests::explicit_hydrogen_atoms_are_written_like_rdkit_add_hs ... ok
+test rdkit::tests::isotopes_and_explicit_hydrogens ... ok
+test rdkit::tautomer_tests::pyridopyrazinediol ... ok
+test rdkit::tests::macrocycle_oxygen_and_sulfur_bridges_match_rdkit_2026_09 ... ok
+test rdkit::tests::mol_block_2d_writes_v3000_for_dative_bonds ... ok
+test rdkit::enumerate::tests::random_sampling_follows_cpython_random ... ok
+test rdkit::tests::multiple_fragments ... ok
+test rdkit::tests::native_canonical_smiles_is_unchanged ... ok
+test rdkit::tests::nontetrahedral_stereo_is_written_like_rdkit ... ok
+test rdkit::tests::radicals_maps_dummies_and_metals ... ok
+test rdkit::tests::rdkit_inchi_output_adapter_builds_and_validates_molecules ... ok
+test rdkit::tests::rdkit_query_and_reaction_smarts_match_rdkit ... ok
+test rdkit::tests::rdkit_rejected_inputs_are_errors ... ok
+test rdkit::tests::rdkit_writers_match_rdkit ... ok
+test rdkit::tests::ring_closures_beyond_nine ... ok
+test rdkit::tests::ring_stereo ... ok
+test rdkit::tests::rings_and_ring_closure_digits ... ok
+test rdkit::tests::stereoisomer_count_uses_find_potential_stereo ... ok
+test rdkit::tests::tetrahedral_centers ... ok
+test rdkit::tests::writer_options_match_rdkit ... ok
+test rdkit::xyz_read::tests::oversized_declared_atom_count_is_rejected_before_allocation ... ok
+test read_write_boundary_contract_tests::cleanup_reports_native_charge_bond_and_dative_donor_edits_without_mutation ... ok
+test rdkit::tests::mol_hash_matches_rdkit ... ok
+test read_write_boundary_contract_tests::pdb_fixed_width_records_and_conect_deduplication_match_native_contracts ... ok
+test read_write_boundary_contract_tests::query_boolean_precedence_ranges_and_reaction_serialization_match_native ... ok
+test rooted::diagnostic_tests::every_refusal_has_a_stable_human_readable_diagnostic ... ok
+test smi_file::tests::test_parse_invalid_smiles_is_err ... ok
+test smi_file::tests::test_parse_limits_report_file_resource_errors ... ok
+test smi_file::tests::test_parse_no_name ... ok
+test smi_file::tests::test_parse_skips_comments_and_blanks ... ok
+test smi_file::tests::test_parse_space_separated ... ok
+test smi_file::tests::test_parse_tab_separated ... ok
+test smi_file::tests::test_write_roundtrip ... ok
+test read_write_boundary_contract_tests::molecular_hashes_of_ions_radicals_and_unusual_orders_match_native_defaults ... ok
+test rdkit::tests::long_chain ... ok
+test stereo_order_boundary_contract_tests::conjugated_directional_smiles_respelling_matches_pinned_rdkit ... ok
+test rdkit::sanitize::conjugation_cache_tests::frozen_loop_matches_entire_fixture_and_records_refusals ... ok
+test stereo_order_boundary_contract_tests::disconnected_rooted_smarts_and_cx_extensions_match_pinned_rdkit ... ok
+test stereo_order_boundary_contract_tests::tetrahedral_output_preserves_each_recorded_hydrogen_slot ... ok
+test writer::tests::test_bracket_implicit_h_ammonium_charge_only ... ok
+test writer::tests::test_bracket_implicit_h_atom_map_only ... ok
+test writer::tests::test_bracket_implicit_h_hydroxide_charge_only ... ok
+test writer::tests::test_bracket_implicit_h_isotope_and_atom_map ... ok
+test writer::tests::test_bracket_implicit_h_isotope_only ... ok
+test writer::tests::test_direction_from_uses_aromatic_stash_anchor ... ok
+test writer::tests::test_genuine_ez_directional_bond_still_written ... ok
+test writer::tests::test_plain_write_reads_bond_direction_stash ... ok
+test writer::tests::test_ring_closure_directional_bond_reoriented_per_endpoint ... ok
+test writer::tests::test_roundtrip_13c ... ok
+test writer::tests::test_roundtrip_acetic_acid ... ok
+test writer::tests::test_roundtrip_ammonium ... ok
+test writer::tests::test_roundtrip_aspirin ... ok
+test writer::tests::test_roundtrip_benzene_arom ... ok
+test writer::tests::test_roundtrip_benzene_kekule ... ok
+test writer::tests::test_roundtrip_caffeine ... ok
+test writer::tests::test_roundtrip_chlorobenzene ... ok
+test writer::tests::test_roundtrip_cyclohexane ... ok
+test writer::tests::test_roundtrip_disconnected ... ok
+test writer::tests::test_roundtrip_ethanol ... ok
+test writer::tests::test_roundtrip_isobutane ... ok
+test writer::tests::test_roundtrip_naphthalene ... ok
+test writer::tests::test_roundtrip_propane ... ok
+test writer::tests::test_roundtrip_pyridine ... ok
+test writer::tests::test_standalone_hash_wedge_not_written_as_backslash ... ok
+test writer::tests::test_standalone_solid_wedge_not_written_as_slash ... ok
+test stereo_order_boundary_contract_tests::query_logical_combinations_serialize_like_pinned_rdkit ... ok
+test writer::tests::test_standalone_wedge_does_not_disturb_stereocenter_chirality ... ok
+test writer::tests::test_standalone_wedge_four_heavy_neighbors_no_h ... ok
+test writer::tests::test_standalone_wedge_on_ring_closure_bond ... ok
+test writer::tests::test_standalone_wedge_roundtrip_preserves_charge_and_isotope ... ok
+test writer::tests::test_standalone_wedge_still_suppressed_after_reorientation_helpers ... ok
+test writer::tests::test_wildcard_roundtrip_preserves_atom_and_map ... ok
+test writer::tests::test_write_ethane ... ok
+test writer::tests::test_write_methane ... ok
+test writer::tests::three_ligand_square_planar_remap_requires_same_distinct_ligands ... ok
+test writer::tests::three_ligand_square_planar_tags_survive_canonical_reordering ... ok
+test writer::tests::write_keeps_configuration_when_dfs_order_differs ... ok
+test writer::tests::writer_uses_extended_ring_labels_without_losing_closures ... ok
+test writer::tests::vacant_nontetrahedral_centers_match_pinned_rdkit_after_reordering ... ok
+test writer::two_vacant_tests::two_vacant_nontetrahedral_sites_survive_all_smiles_writers ... ok
+test stereo_order_boundary_contract_tests::census_depictions_preserve_reference_bond_lengths_and_are_deterministic ... ok
+test rdkit::tautomer_tests::max_transforms_reached ... ok
+test canonical::tests::ez_shared_carrier_fully_resolved_are_permutation_invariant ... ok
+test stereo_order_boundary_contract_tests::branched_polyene_direction_respelling_matches_native_reader_cleanup ... ok
+test canonical::tests::issue503_full_slot_polarity_space_has_common_output ... ok
+test canonical_automorphism::tests::random_colored_edge_colored_graphs_n_6_to_8_match_brute_force ... ok
+test canonical::tests::ez_shared_carrier_held_out_residuals_converge_under_relabeling ... ok
+test rdkit::model_view::cache_tests::cached_model_matches_frozen_callback_on_pinned_corpora ... ok
+
+test result: ok. 432 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 1.26s
+
+     Running tests/atom_order.rs (/private/tmp/chematic-conjugation-target/release/deps/atom_order-e13dedabd804c454)
+
+running 4 tests
+test atom_order_over_corpus_from_env ... ok
+test empty_molecule_has_empty_order ... ok
+test write_order_is_visit_order_not_canonical_rank ... ok
+test atom_order_matches_reparsed_atoms ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/atom_tag_cache.rs (/private/tmp/chematic-conjugation-target/release/deps/atom_tag_cache-0bbe8cbacda6da21)
+
+running 3 tests
+test clearing_tag_refreshes_cached_molecule ... ok
+test setting_tag_refreshes_cached_molecule ... ok
+test tags_survive_perception_and_kekulization ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/atom_tag_visit_order.rs (/private/tmp/chematic-conjugation-target/release/deps/atom_tag_visit_order-b4beffda33589249)
+
+running 8 tests
+test tags_do_not_change_atom_equality ... ok
+test tags_survive_fragments ... ok
+test write_does_not_emit_atom_tag ... ok
+test reparse_does_not_invent_tags ... ok
+test write_parse_remaps_tags_by_atom_order ... ok
+test canonical_write_parse_remaps_tags_by_atom_order ... ok
+test tags_do_not_change_write_or_canonical_across_corpus ... ok
+test tagged_molecule_atom_order_apis_match_untagged ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/canonical_ez_planner_order.rs (/private/tmp/chematic-conjugation-target/release/deps/canonical_ez_planner_order-441395fab44fa13e)
+
+running 1 test
+test planner_output_is_unchanged ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/canonical_ez_residual.rs (/private/tmp/chematic-conjugation-target/release/deps/canonical_ez_residual-d97ea69c38727340)
+
+running 5 tests
+test stable_key_fails_closed_for_coupled_ez_systems ... ok
+test stable_key_accepts_converged_ez_spelling ... ok
+test canonical_writer_keeps_ez_when_carrier_is_a_ring_edge ... ok
+test trisubstituted_ez_carrier_spelling_converges ... ok
+test aromatic_stash_residuals_converge_to_stable_keys ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/canonical_idempotency_corpus.rs (/private/tmp/chematic-conjugation-target/release/deps/canonical_idempotency_corpus-ddc7edb94a53b993)
+
+running 2 tests
+test chembl_accuracy_corpus_is_canonically_idempotent ... ok
+test descriptor_census_corpus_is_canonically_idempotent ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.25s
+
+     Running tests/canonical_robustness.rs (/private/tmp/chematic-conjugation-target/release/deps/canonical_robustness-4b21717ae7c39a5a)
+
+running 25 tests
+test platform_independence_charged_resonance_ring ... ok
+test large_fused_pah_stable ... ok
+test polyanion_and_salt_stable ... ok
+test charged_aromatics_parse_and_stable ... ok
+test coronene_canonical_known_bug ... ok
+test platform_independence_topology ... ok
+test fused_heteroaromatics_stable ... ok
+test bridged_bicyclic_with_stereo_stable ... ok
+test bridged_fused_spiro_permutation_invariance ... ok
+test rdkit_8759_charged_heteroaromatic_idempotence ... ok
+test stability_amino_acids ... ok
+test stability_complex_sugars ... ok
+test stability_ez_bonds ... ok
+test rdkit_9368_ez_fragment_no_panic ... ok
+test rdkit_8759_stereo_idempotence ... ok
+test stability_fused_ring_stereo ... ok
+test stability_bridged_bicyclics ... ok
+test issue423_coupled_ez_and_symmetric_stereo_are_stable ... ok
+test stability_ring_stereocenters ... ok
+test renkin_issue_128_exact_target_preserves_canonical_output ... ok
+test stability_fused_aromatics ... ok
+test stability_bridged_cage_and_heteroatom ... ok
+test stability_spiro ... ok
+test rdkit_8759_ez_idempotence ... ok
+test stereo_parity_gap_documentation ... ok
+
+test result: ok. 25 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/chembl_roundtrip.rs (/private/tmp/chematic-conjugation-target/release/deps/chembl_roundtrip-dc7be82930339f21)
+
+running 1 test
+test roundtrip_consistency ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/conformer_rms_contract.rs (/private/tmp/chematic-conjugation-target/release/deps/conformer_rms_contract-a19821b6ad990350)
+
+running 3 tests
+test empty_and_singleton_batches_have_no_pairs ... ok
+test batches_reject_bad_coordinates_weights_and_unmatched_graphs ... ok
+test batches_keep_documented_pair_order_and_atom_mapping ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/cross_binding_contract.rs (/private/tmp/chematic-conjugation-target/release/deps/cross_binding_contract-d1a2775fb99080b7)
+
+running 6 tests
+test shared_rdkit_path_fingerprint_contract_matches ... ok
+test shared_rdkit_rdk_fingerprint_contract_matches ... ok
+test shared_smiles_validity_contract_matches ... ok
+test shared_stream_batch_canonicalization_contract_matches ... ok
+test shared_batch_canonicalization_contract_matches ... ok
+test shared_parse_and_canonical_contract_matches ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/dative_bond_direction.rs (/private/tmp/chematic-conjugation-target/release/deps/dative_bond_direction-28cc26bed7c4330f)
+
+running 11 tests
+test parser_arrow_direction_at_ring_closure ... ok
+test parser_arrow_direction_at_ring_close_occurrence ... ok
+test parser_distinguishes_arrow_direction ... ok
+test parser_arrow_direction_in_branch ... ok
+test canonical_writer_flips_the_arrow_when_the_acceptor_is_written_first ... ok
+test canonical_writer_orders_dative_endpoints_by_current_rank ... ok
+test dative_direction_round_trips_through_both_writers ... ok
+test writers_emit_the_full_two_character_token ... ok
+test builder_first_canonicalization_matches_parser_no_shift ... ok
+test dative_ring_closure_round_trips_through_both_writers ... ok
+test canonical_smiles_is_stable_for_dative_molecules ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/error_display_contract.rs (/private/tmp/chematic-conjugation-target/release/deps/error_display_contract-c60b138d510d18b7)
+
+running 1 test
+test rdkit_smiles_errors_distinguish_scope_from_invalid_chemistry ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/issue455_explicit_h_valence.rs (/private/tmp/chematic-conjugation-target/release/deps/issue455_explicit_h_valence-e3beaf679fc5e186)
+
+running 3 tests
+test issue455_rejects_stale_h_on_neutral_ring_nitrogen ... ok
+test issue455_rejects_stale_h_radical_spelling ... ok
+test explicit_h_regressions_preserve_valid_charged_and_aromatic_atoms ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/issue769_neutral_valence.rs (/private/tmp/chematic-conjugation-target/release/deps/issue769_neutral_valence-5501f81635e8cf39)
+
+running 2 tests
+test over_valent_neutral_oxygen_and_fluorine_are_rejected ... ok
+test charged_hypervalent_and_dative_controls_still_parse ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/kekule_s0_stereo_invariance.rs (/private/tmp/chematic-conjugation-target/release/deps/kekule_s0_stereo_invariance-c996836c2e27d9e4)
+
+running 4 tests
+test enantiomer_pairs_remain_mirror_images_after_kekulization ... ok
+test real_corpus_case_survives_kekulization ... ok
+test chiral_substituent_on_aromatic_ring_survives_kekulization ... ok
+test simple_chiral_centers_survive_kekulization ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/parser_security_corpus.rs (/private/tmp/chematic-conjugation-target/release/deps/parser_security_corpus-351052b2f2783a4d)
+
+running 1 test
+test smiles_security_cases_are_bounded_and_match_the_recorded_disposition ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/rdkit_atom_environment.rs (/private/tmp/chematic-conjugation-target/release/deps/rdkit_atom_environment-ea2d8120cdee64f8)
+
+running 8 tests
+test hydrogen_filter_checks_neighbor_and_not_root_element ... ok
+test radius_zero_and_linear_exhaustion_have_distinct_maps ... ok
+test frontier_and_visit_budgets_fail_without_partial_results ... ok
+test dative_and_disconnected_components_follow_graph_semantics ... ok
+test invalid_roots_query_bonds_and_empty_molecules_fail_explicitly ... ok
+test pending_ring_duplicates_preserve_upstream_enforce_size_behavior ... ok
+test exact_atom_cap_and_huge_radius_are_bounded_by_graph_exhaustion ... ok
+test limits_precede_preparation_and_h_removal ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/rdkit_canonical_smiles.rs (/private/tmp/chematic-conjugation-target/release/deps/rdkit_canonical_smiles-abcfbbb4523e8381)
+
+running 1 test
+test matches_rdkit_on_fixture_corpus ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/rdkit_graph_queries.rs (/private/tmp/chematic-conjugation-target/release/deps/rdkit_graph_queries-dd5178bdea469e0c)
+
+running 8 tests
+test unsupported_bond_types_and_self_bonds_fail_explicitly ... ok
+test disconnected_is_empty_invalid_or_equal_is_error ... ok
+test binary_and_bond_order_matrices_are_distinct ... ok
+test aromaticity_h_removal_and_empty_graphs_use_existing_model ... ok
+test tied_paths_follow_bond_insertion_order_in_both_directions ... ok
+test dative_valence_is_asymmetric_while_paths_are_undirected ... ok
+test input_limits_precede_preparation_and_hydrogen_removal ... ok
+test exact_cap_supports_dense_and_linear_queries ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/rdkit_matrix_3d_checked.rs (/private/tmp/chematic-conjugation-target/release/deps/rdkit_matrix_3d_checked-e2609df717d3c244)
+
+running 9 tests
+test weighted_dummy_diagonals_are_explicitly_undefined ... ok
+test truly_unrepresentable_distances_refuse_without_a_partial_result ... ok
+test legacy_api_is_not_silently_changed ... ok
+test nonfinite_coordinates_refuse_even_for_single_atom_diagonals ... ok
+test representable_large_and_tiny_distances_are_recovered ... ok
+test coordinate_count_matches_prepared_atom_order_after_hydrogen_removal ... ok
+test ordinary_distances_and_atomic_weight_diagonals_are_exactly_compatible ... ok
+test oversized_native_inputs_refuse_before_preparation_or_coordinate_inspection ... ok
+test exact_atom_cap_is_accepted ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/rdkit_matrix_limits.rs (/private/tmp/chematic-conjugation-target/release/deps/rdkit_matrix_limits-87563a58d01c55dd)
+
+running 4 tests
+test input_cap_is_explicitly_checked_before_hydrogen_removal ... ok
+test small_matrix_weights_fragment_sentinel_and_h_removal_are_unchanged ... ok
+test excessive_native_graphs_fail_before_rdkit_preparation ... ok
+test exact_input_cap_still_supports_cartesian_distances ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/rdkit_path_enumeration.rs (/private/tmp/chematic-conjugation-target/release/deps/rdkit_path_enumeration-3c78b7f7b292c856)
+
+running 7 tests
+test limits_precede_hydrogen_suppression_and_source_is_immutable ... ok
+test empty_zero_impossible_and_outside_roots ... ok
+test shortest_paths_exclude_ring_detours ... ok
+test ordered_atom_expansion_and_bond_set_deduplication ... ok
+test budgets_are_exact_and_do_not_return_truncated_data ... ok
+test hydrogen_singletons_and_shortest_mode_follow_upstream ... ok
+test final_step_closes_ring_at_an_interior_atom ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/rdkit_public_api_stress.rs (/private/tmp/chematic-conjugation-target/release/deps/rdkit_public_api_stress-aec550fee96a98e2)
+
+running 2 tests
+test canonical_writer_handles_the_full_browser_corpus_in_multiple_profiles ... ok
+test rdkit_compatible_public_surface_is_panic_free_on_stress_corpus ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.49s
+
+     Running tests/rooted_stereo.rs (/private/tmp/chematic-conjugation-target/release/deps/rooted_stereo-ed296fc60f9a9a96)
+
+running 6 tests
+test refusal_messages_and_sources_are_stable ... ok
+test missing_duplicate_foreign_and_missing_h_frames_are_refused ... ok
+test other_stereo_and_query_chemistry_are_refused_without_guessing ... ok
+test invalid_roots_and_atom_limits_refuse_before_traversal ... ok
+test parsed_centers_isotopes_disconnected_components_and_ez_keep_their_atoms ... ok
+test constructed_implicit_h_bridgeheads_preserve_frames_at_every_root ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/square_planar_stereo.rs (/private/tmp/chematic-conjugation-target/release/deps/square_planar_stereo-00b90f7628e33e6a)
+
+running 9 tests
+test remap_square_planar_tag_matches_oracle_table_directly ... ok
+test malformed_duplicate_neighbor_order_drops_to_unspecified ... ok
+test untagged_four_coordinate_pt_is_never_auto_promoted ... ok
+test different_tags_same_order_stay_distinct ... ok
+test reordered_and_retagged_smiles_for_same_arrangement_reach_same_identity ... ok
+test chelate_ring_closure_shaped_fixture_round_trips ... ok
+test canonicalization_is_idempotent_for_square_planar_fixtures ... ok
+test cisplatin_and_transplatin_have_distinct_canonical_identity ... ok
+test oracle_verified_permutation_table_matches_end_to_end ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/tautomer_pick.rs (/private/tmp/chematic-conjugation-target/release/deps/tautomer_pick-412a38fb11138b34)
+
+running 5 tests
+test empty_inputs_and_invalid_limits ... ok
+test overflow_consumes_one_extra_and_never_returns_a_partial_winner ... ok
+test score_precedes_lexical_order_without_enumeration ... ok
+test lexical_ties_and_exact_ties ... ok
+test invalid_candidate_is_indexed_even_when_it_cannot_win ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/writer_atom_order.rs (/private/tmp/chematic-conjugation-target/release/deps/writer_atom_order-713edc8b57b021ea)
+
+running 2 tests
+test emitted_order_tracks_reordered_branches_without_changing_spelling ... ok
+test empty_rings_and_fragments_have_one_mapping_per_emitted_atom ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

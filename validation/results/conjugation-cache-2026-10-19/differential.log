@@ -1,0 +1,20 @@
+   Compiling chematic-smiles v1.1.9 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-smiles)
+    Finished `release` profile [optimized] target(s) in 22.79s
+     Running unittests src/lib.rs (/private/tmp/chematic-conjugation-target/release/deps/chematic_smiles-bcda25160b69e387)
+
+running 5 tests
+test rdkit::sanitize::conjugation_cache_tests::conjugation_cache_timing ... ignored, opt-in release timing; measures only prepared-model set_conjugation
+test rdkit::sanitize::conjugation_cache_tests::single_bond_fast_path_keeps_existing_aromatic_flags ... ok
+test rdkit::sanitize::conjugation_cache_tests::predicate_is_independent_of_assigned_conjugation_flags ... ok
+test rdkit::sanitize::conjugation_cache_tests::cache_spill_and_high_degree_radical_charge_controls ... ok
+conjugation differential: 1125 prepared, 6 refused
+refused C/C=C/1CCCCC1.F1: unmatched ring closure 1 at position 16
+refused C[N@@]12CC[C@H](CC1)C2: RDKit-compatible SMILES: sanitization failed: Explicit valence for atom # 1 N, 4, is greater than permitted
+refused c1ccc[s+]1: RDKit-compatible SMILES: sanitization failed: Can't kekulize mol.  Unkekulized atoms: 0 1 2 3 4
+refused [s+]1cccc1: RDKit-compatible SMILES: sanitization failed: Can't kekulize mol.  Unkekulized atoms: 0 1 2 3 4
+refused c1cccccccc1: RDKit-compatible SMILES: sanitization failed: Can't kekulize mol.  Unkekulized atoms: 0 1 2 3 4 5 6 7 8
+refused c1cc1: RDKit-compatible SMILES: sanitization failed: Can't kekulize mol.  Unkekulized atoms: 0 1 2
+test rdkit::sanitize::conjugation_cache_tests::frozen_loop_matches_entire_fixture_and_records_refusals ... ok
+
+test result: ok. 4 passed; 0 failed; 1 ignored; 0 measured; 429 filtered out; finished in 0.08s
+
