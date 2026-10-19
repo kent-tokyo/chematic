@@ -72,6 +72,47 @@ mod io;
 struct Mol {
     inner: Arc<chematic_core::Molecule>,
     props: PropertyStore,
+    num_rings_cache: CachedRingCount,
+}
+
+/// The graph behind `Mol.inner` is immutable. Keep its numeric ring count
+/// beside the Python wrapper, avoiding another pointer chase on hot reads.
+/// New graph-producing constructors start cold; `Mol::clone` shares the same
+/// graph, so it can safely copy the numeric value. Property edits do not edit it.
+struct CachedRingCount(std::sync::atomic::AtomicUsize);
+
+impl CachedRingCount {
+    fn new(value: usize) -> Self {
+        Self(std::sync::atomic::AtomicUsize::new(value))
+    }
+
+    #[inline(always)]
+    fn get_or_compute(&self, compute: impl FnOnce() -> usize) -> usize {
+        use std::sync::atomic::Ordering;
+        let value = self.0.load(Ordering::Relaxed);
+        if value != usize::MAX {
+            value
+        } else {
+            let value = compute();
+            debug_assert_ne!(value, usize::MAX);
+            // No pointer or other data is published; concurrent cold readers
+            // may compute the same deterministic scalar, as in the core cache.
+            self.0.store(value, Ordering::Relaxed);
+            value
+        }
+    }
+}
+
+impl Default for CachedRingCount {
+    fn default() -> Self {
+        Self::new(usize::MAX)
+    }
+}
+
+impl Clone for CachedRingCount {
+    fn clone(&self) -> Self {
+        Self::new(self.0.load(std::sync::atomic::Ordering::Relaxed))
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -150,6 +191,7 @@ impl DerefMut for PropertyStore {
 impl Mol {
     fn bare(mol: chematic_core::Molecule) -> Self {
         Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(mol),
             props: Default::default(),
         }
@@ -174,6 +216,7 @@ impl Mol {
         // invalidated by graph mutation.
         const MAX_EAGER_ATOMS: usize = 128;
         const MAX_EAGER_BONDS: usize = 192;
+        let mut prepared_rings = usize::MAX;
         if mol.atom_count() <= MAX_EAGER_ATOMS && mol.bond_count() <= MAX_EAGER_BONDS {
             let model_prepared = chematic_smiles::prepare_rdkit_scalar_model(&mol);
             if !model_prepared && !chematic_perception::rdkit_parity_view_is_identity(&mol) {
@@ -184,9 +227,13 @@ impl Mol {
                 // boundary as the comparator parsers.
                 let _ = chematic_perception::apply_aromaticity_rdkit_parity_shared(&mol);
             }
-            let _ = chematic_chem::rdkit_num_rings(&mol);
+            prepared_rings = chematic_chem::rdkit_num_rings(&mol);
         }
-        Self::bare(mol)
+        Mol {
+            inner: Arc::new(mol),
+            props: Default::default(),
+            num_rings_cache: CachedRingCount::new(prepared_rings),
+        }
     }
 }
 
@@ -248,4 +295,30 @@ fn chematic(m: &Bound<'_, PyModule>) -> PyResult<()> {
     lammps::register(m)?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod python_ring_cache_tests {
+    use super::CachedRingCount;
+
+    #[test]
+    fn cold_values_are_computed_and_clones_keep_the_same_numeric_value() {
+        let cache = CachedRingCount::default();
+        assert_eq!(cache.get_or_compute(|| 6), 6);
+        assert_eq!(cache.get_or_compute(|| panic!("cached")), 6);
+        assert_eq!(cache.clone().get_or_compute(|| panic!("cloned")), 6);
+        assert_eq!(CachedRingCount::default().get_or_compute(|| 0), 0);
+    }
+
+    #[test]
+    fn concurrent_cold_readers_publish_only_the_numeric_value() {
+        let cache = CachedRingCount::default();
+        std::thread::scope(|scope| {
+            for _ in 0..8 {
+                let cache = &cache;
+                scope.spawn(move || assert_eq!(cache.get_or_compute(|| 6), 6));
+            }
+        });
+        assert_eq!(cache.get_or_compute(|| panic!("cached")), 6);
+    }
 }

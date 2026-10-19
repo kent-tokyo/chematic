@@ -34,6 +34,7 @@ impl Mol {
             .renumber_atoms(&order)
             .map_err(|e| PyValueError::new_err(e.to_string()))?;
         Ok(Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(molecule),
             props: self.props.clone(),
         })
@@ -51,6 +52,7 @@ impl Mol {
             ..Default::default()
         };
         Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(chematic_chem::standardize(&self.inner, &opts)),
             props: Default::default(),
         }
@@ -90,6 +92,7 @@ impl Mol {
     /// Return the Murcko scaffold as a new Mol.
     fn scaffold(&self) -> Mol {
         Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(chematic_chem::murcko_scaffold(&self.inner)),
             props: Default::default(),
         }
@@ -98,6 +101,7 @@ impl Mol {
     /// Return the canonical tautomer as a new Mol.
     fn canonical_tautomer(&self) -> Mol {
         Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(chematic_chem::canonical_tautomer(&self.inner)),
             props: Default::default(),
         }
@@ -274,6 +278,7 @@ impl Mol {
         chematic_chem::enumerate_stereoisomers(&self.inner)
             .into_iter()
             .map(|inner| Mol {
+                num_rings_cache: Default::default(),
                 inner: Arc::new(inner),
                 props: self.props.clone(),
             })
@@ -769,6 +774,7 @@ impl Mol {
     /// Return a copy with all implicit hydrogens made explicit.
     fn add_hydrogens(&self) -> Mol {
         Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(chematic_chem::add_hydrogens(&self.inner)),
             props: Default::default(),
         }
@@ -792,6 +798,7 @@ impl Mol {
             && let Some(m) = chematic_smiles::rdkit_added_hs_molecule(&self.inner)
         {
             return Mol {
+                num_rings_cache: Default::default(),
                 inner: Arc::new(m),
                 props: Default::default(),
             };
@@ -799,6 +806,7 @@ impl Mol {
         let base = chematic_smiles::rdkit_parsed_molecule(&self.inner);
         let base = base.as_ref().unwrap_or(&self.inner);
         Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(chematic_chem::add_hydrogens(base)),
             props: Default::default(),
         }
@@ -817,6 +825,7 @@ impl Mol {
             None => Arc::clone(&self.inner),
         };
         Mol {
+            num_rings_cache: Default::default(),
             inner,
             props: Default::default(),
         }
@@ -825,6 +834,7 @@ impl Mol {
     /// Return a copy with all explicit hydrogen atoms removed.
     fn remove_hydrogens(&self) -> Mol {
         Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(chematic_chem::remove_hydrogens(&self.inner)),
             props: Default::default(),
         }
@@ -833,6 +843,7 @@ impl Mol {
     /// Return a copy with all stereochemistry assignments removed.
     fn remove_stereo(&self) -> Mol {
         Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(chematic_chem::remove_stereo(&self.inner)),
             props: Default::default(),
         }
@@ -841,6 +852,7 @@ impl Mol {
     /// Return a copy with all isotope labels removed.
     fn remove_isotopes(&self) -> Mol {
         Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(chematic_chem::remove_isotopes(&self.inner)),
             props: Default::default(),
         }
@@ -849,6 +861,7 @@ impl Mol {
     /// Return the largest covalently connected fragment.
     fn largest_fragment(&self) -> Mol {
         Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(chematic_chem::largest_fragment(&self.inner)),
             props: Default::default(),
         }
@@ -906,6 +919,7 @@ impl Mol {
     /// Return a charge-neutralized copy.
     fn neutralize(&self) -> Mol {
         Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(chematic_chem::neutralize_charges(&self.inner)),
             props: Default::default(),
         }
@@ -914,6 +928,7 @@ impl Mol {
     /// Return the generic Murcko scaffold (all atoms replaced with carbons, all bonds single).
     fn generic_scaffold(&self) -> Mol {
         Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(chematic_chem::generic_murcko_scaffold(&self.inner)),
             props: Default::default(),
         }

@@ -13,6 +13,7 @@ pub(super) fn from_xyz(xyz_str: &str) -> PyResult<(Mol, Vec<Vec<f64>>)> {
     let coords = c3d.points.iter().map(|p| vec![p.x, p.y, p.z]).collect();
     Ok((
         Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(mol),
             props: Default::default(),
         },
@@ -27,6 +28,7 @@ pub(crate) fn extxyz_frame_to_pydict<'py>(
     frame: &chematic_mol::XyzFrame,
 ) -> PyResult<Bound<'py, PyDict>> {
     let mol = Mol {
+        num_rings_cache: Default::default(),
         inner: Arc::new(frame.to_molecule()),
         props: Default::default(),
     };

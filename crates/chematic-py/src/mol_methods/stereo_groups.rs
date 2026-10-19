@@ -96,6 +96,7 @@ impl Mol {
             .with_checked_stereo_groups(groups)
             .map_err(|e| PyValueError::new_err(e.to_string()))?;
         Ok(Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(inner),
             props: self.props.clone(),
         })
@@ -108,6 +109,7 @@ impl Mol {
         let inner = chematic_chem::invert_stereo_group(&self.inner, index)
             .map_err(|e| PyValueError::new_err(e.to_string()))?;
         Ok(Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(inner),
             props: self.props.clone(),
         })
@@ -129,6 +131,7 @@ impl Mol {
             .molecules
             .into_iter()
             .map(|inner| Mol {
+                num_rings_cache: Default::default(),
                 inner: Arc::new(inner),
                 props: self.props.clone(),
             })
@@ -153,6 +156,7 @@ impl Mol {
         out.set_item(
             "molecule",
             Mol {
+                num_rings_cache: Default::default(),
                 inner: Arc::new(report.molecule),
                 props: self.props.clone(),
             },

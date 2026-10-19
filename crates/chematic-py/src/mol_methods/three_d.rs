@@ -796,6 +796,7 @@ impl Mol {
     /// Returns a new :class:`Mol` with normalized groups.
     fn normalize_groups(&self) -> Mol {
         Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(chematic_chem::normalize_groups(&self.inner)),
             props: Default::default(),
         }
@@ -806,6 +807,7 @@ impl Mol {
     /// Useful after salt removal when the largest fragment is the drug molecule.
     fn prefer_organic(&self) -> Mol {
         Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(chematic_chem::prefer_organic(&self.inner)),
             props: Default::default(),
         }
@@ -816,6 +818,7 @@ impl Mol {
     /// Transfers protons to maximize negative charge on the strongest acids.
     fn reionize(&self) -> Mol {
         Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(chematic_chem::reionize(&self.inner)),
             props: Default::default(),
         }
@@ -824,6 +827,7 @@ impl Mol {
     /// Remove all formal charges (set every atom to neutral).
     fn uncharge(&self) -> Mol {
         Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(chematic_chem::uncharge(&self.inner)),
             props: Default::default(),
         }

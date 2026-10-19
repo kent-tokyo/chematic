@@ -25,6 +25,7 @@ pub(super) fn from_cjson(cjson_str: &str) -> PyResult<(Mol, Vec<Vec<f64>>)> {
     let py_coords = coords.iter().map(|&(x, y, z)| vec![x, y, z]).collect();
     Ok((
         Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(mol),
             props: Default::default(),
         },

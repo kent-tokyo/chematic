@@ -10,6 +10,20 @@ SPEC.loader.exec_module(frontier)
 
 
 class SpeedFrontierTests(unittest.TestCase):
+    def test_balanced_permutations_cover_positions_and_pair_precedence(self):
+        names = ("baseline", "candidate", "rdkit", "cosmolkit")
+        orders = frontier.block_orders(names, 24, True)
+        self.assertEqual(len(set(orders)), 24)
+        self.assertEqual(orders, frontier.block_orders(names, 24, True))
+        for name in names:
+            for position in range(4):
+                self.assertEqual(sum(order[position] == name for order in orders), 6)
+            for other in names:
+                if other != name:
+                    self.assertEqual(sum(order.index(name) < order.index(other) for order in orders), 12)
+        with self.assertRaises(ValueError):
+            frontier.block_orders(names, 20, True)
+
     def test_fixed_slice_preserves_rows_and_does_not_filter_failures(self):
         data = b"CC first\n\ninvalid second\nO third\n"
         self.assertEqual(frontier.corpus_rows(data, 1, 2), ["invalid", "O"])

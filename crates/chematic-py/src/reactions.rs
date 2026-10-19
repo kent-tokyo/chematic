@@ -1088,6 +1088,7 @@ fn qmol_to_mol(qmol: &chematic_smarts::QueryMolecule) -> Option<Mol> {
         }
     }
     Some(Mol {
+        num_rings_cache: Default::default(),
         inner: Arc::new(builder.build()),
         props: Default::default(),
     })

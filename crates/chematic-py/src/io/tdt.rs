@@ -59,6 +59,7 @@ impl PyTdtMolSupplier {
                     props.insert("_Name".to_string(), rec.name);
                 }
                 let mol = Mol {
+                    num_rings_cache: Default::default(),
                     inner: Arc::new(rec.mol),
                     props: props.into(),
                 };

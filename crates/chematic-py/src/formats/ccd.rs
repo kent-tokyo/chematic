@@ -48,6 +48,7 @@ pub(super) fn from_ccd(text: &str, allow_stereo_loss: bool) -> PyResult<Mol> {
     let record = chematic_mol::parse_ccd_component(text).map_err(error)?;
     let inner = record.to_molecule(allow_stereo_loss).map_err(error)?;
     Ok(Mol {
+        num_rings_cache: Default::default(),
         inner: Arc::new(inner),
         props: Default::default(),
     })
