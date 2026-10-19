@@ -14,6 +14,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Checked Python TURBOMOLE ⇄ POSCAR geometry conversion retains 3D lattice
+  vectors, unwrapped positions and fully fixed atoms, with source text and an
+  explicit atom correspondence map. Unsupported partial constraints and restart
+  data are rejected instead of silently discarded.
+
 ### Changed
 
 - Python SMILES parsing no longer computes descriptor-model, aromatic-view or
