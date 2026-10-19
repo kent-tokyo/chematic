@@ -45,6 +45,7 @@ if TYPE_CHECKING:
 __all__ = [
     "Mol", "Atom", "Bond", "BondType", "RingInfo", "RWMol",
     "ExplicitBitVect", "LayeredFingerprint", "LayeredAtomCounts", "LayeredBitMask", "rdMIF",
+    "PatternFingerprint", "PatternAtomCounts", "PatternBitMask",
     "MolFromSmiles", "MolToSmiles", "MolFromMolBlock", "MolFromMolFile",
     "MolToMolBlock", "SanitizeMol", "Kekulize", "AddHs", "RemoveHs",
     "MolFromSmarts", "RenumberAtoms", "GetAdjacencyMatrix", "GetDistanceMatrix",
@@ -78,6 +79,11 @@ from ._layered_counts import (
 )
 from ._coulomb_field import Coulomb as _Coulomb
 from ._coulomb_dielectric import CoulombDielectric as _CoulombDielectric
+from ._pattern_inputs import (
+    PatternAtomCounts as PatternAtomCounts,
+    PatternBitMask as PatternBitMask,
+    prepare as _prepare_pattern,
+)
 
 
 _MISSING = object()
@@ -186,6 +192,48 @@ def LayeredFingerprint(
     fingerprint = ExplicitBitVect._from_bytes(result["bits"], options["nbits"])
     counters.commit(result["atom_counts"])
     return fingerprint
+
+
+def PatternFingerprint(
+    mol: Mol,
+    fpSize: SupportsIndex = 2048,
+    atomCounts: Optional[PatternAtomCounts] = None,
+    setOnlyBits: Optional[PatternBitMask] = None,
+    tautomerFingerprints: bool = False,
+) -> ExplicitBitVect:
+    """Return the native Pattern fingerprint with checked compatibility inputs.
+
+    Args:
+        mol: A concrete compatibility Mol, at most 1024 atoms/4096 bonds.
+        fpSize: Power of two from 1 through 2048. Smaller widths fold the native
+            2048-bit hashes exactly. Other widths are rejected.
+        atomCounts: Optional plain u32-valued list or writable non-overlapping
+            1D uint32 ndarray covering all atoms (an empty destination is also
+            accepted). Validated but unchanged, matching pinned RDKit behavior.
+        setOnlyBits: Optional structural binary vector of fpSize bits. Validated
+            but does not filter output, matching pinned RDKit behavior.
+        tautomerFingerprints: Only False is supported by the native algorithm.
+
+    Returns:
+        An independent ExplicitBitVect. The existing concrete-molecule native
+        Pattern algorithm and its chemistry compatibility limits are retained.
+
+    Raises:
+        TypeError: Invalid molecule, option, vector or counter type.
+        ValueError: Unsupported width/mode, bad counts/mask or graph size limit.
+
+    All options are validated before native calculation. This does not create
+    atom contribution counts; use LayeredFingerprint for its documented counter
+    behavior. Query molecules and MolBundle overloads are outside this profile.
+    """
+    if not isinstance(mol, Mol):
+        raise TypeError("mol must be a concrete chematic.rdkit_compat.Mol")
+    width = _prepare_pattern(
+        mol.GetNumAtoms(), mol.GetNumBonds(), fpSize, atomCounts,
+        setOnlyBits, tautomerFingerprints,
+    )
+    raw = mol._mol.rdkit_pattern_fp()
+    return _fold_bits(raw, width)
 
 
 def _fp_bytes(fp) -> bytes:

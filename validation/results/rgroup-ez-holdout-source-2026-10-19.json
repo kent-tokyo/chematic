@@ -1,0 +1,779 @@
+{
+  "schema_version": 1,
+  "profile": "source_rgroup_alkene_core_ez_holdout",
+  "source_commit": "c7c060c5c5ad45a1c13ff77c32f4a19c90dbc0a1",
+  "rdkit_version": "2026.09.1",
+  "source_file_sha256": {
+    "crates/chematic-chem/src/rgroup.rs": "bc4a4682ff4de011e6bf260330c1604287307fdb35dc8eae28722b273ac6d361",
+    "crates/chematic-chem/src/rgroup_tests.rs": "cb6c9cca86ec8f5be87440a85e4804413104af31f8edc1a08b6a84ba3fa2929a",
+    "crates/chematic-chem/examples/rgroup_ez_dump.rs": "ff22590001bd14a4cab3f23090c9d99bff3e5d24a064afd768c508a998924d79",
+    "scripts/rdkit_rgroup_ez_source_gate.py": "49e720ed77798567a7fc97608c4f7f2aacb838d3f14b83043e1d781fcb7bdb81",
+    "validation/rdkit/rgroup_ez_holdout.json": "07d4a938807ca6398b4ef630f71a12fcd1f51d23a2ac70292c73d84e6ffe7086"
+  },
+  "source_dump_sha256": "e1753aea5ed54437478361a2c6f0471efb9c2d6f4740b0360cf46d078428a5d6",
+  "criterion": "Each same-constitution pair differs only in specified alkene geometry; the complete labelled decomposition must retain that distinction.",
+  "counts": {
+    "total_pairs": 15,
+    "stereo_only_inputs": 15,
+    "chematic_preserves_geometry": 15,
+    "rdkit_default_preserves_geometry": 0,
+    "rdkit_default_rows_identical": 15
+  },
+  "cases": [
+    {
+      "substituents": [
+        "F",
+        "Cl"
+      ],
+      "inputs": [
+        "F/C=C/Cl",
+        "F/C=C\\Cl"
+      ],
+      "input_isomers": [
+        "F/C=C/Cl",
+        "F/C=C\\Cl"
+      ],
+      "input_stereo_only": true,
+      "chematic_rows": [
+        {
+          "Core": "C(=C/[*:1])\\[*:2]",
+          "R": {
+            "1": "F[*:1]",
+            "2": "Cl[*:2]"
+          }
+        },
+        {
+          "Core": "C(=C/[*:1])/[*:2]",
+          "R": {
+            "1": "F[*:1]",
+            "2": "Cl[*:2]"
+          }
+        }
+      ],
+      "chematic_core_isomers": [
+        "C(=C\\[*:2])/[*:1]",
+        "C(=C/[*:2])/[*:1]"
+      ],
+      "chematic_preserves_geometry": true,
+      "rdkit_default_rows": [
+        {
+          "Core": "C(=C[*:2])[*:1]",
+          "R1": "F[*:1]",
+          "R2": "Cl[*:2]"
+        },
+        {
+          "Core": "C(=C[*:2])[*:1]",
+          "R1": "F[*:1]",
+          "R2": "Cl[*:2]"
+        }
+      ],
+      "rdkit_default_rows_identical": true,
+      "rdkit_preserves_geometry": false
+    },
+    {
+      "substituents": [
+        "F",
+        "Br"
+      ],
+      "inputs": [
+        "F/C=C/Br",
+        "F/C=C\\Br"
+      ],
+      "input_isomers": [
+        "F/C=C/Br",
+        "F/C=C\\Br"
+      ],
+      "input_stereo_only": true,
+      "chematic_rows": [
+        {
+          "Core": "C(=C/[*:1])\\[*:2]",
+          "R": {
+            "1": "[*:1]Br",
+            "2": "F[*:2]"
+          }
+        },
+        {
+          "Core": "C(=C/[*:1])/[*:2]",
+          "R": {
+            "1": "[*:1]Br",
+            "2": "F[*:2]"
+          }
+        }
+      ],
+      "chematic_core_isomers": [
+        "C(=C\\[*:2])/[*:1]",
+        "C(=C/[*:2])/[*:1]"
+      ],
+      "chematic_preserves_geometry": true,
+      "rdkit_default_rows": [
+        {
+          "Core": "C(=C[*:2])[*:1]",
+          "R1": "F[*:1]",
+          "R2": "Br[*:2]"
+        },
+        {
+          "Core": "C(=C[*:2])[*:1]",
+          "R1": "F[*:1]",
+          "R2": "Br[*:2]"
+        }
+      ],
+      "rdkit_default_rows_identical": true,
+      "rdkit_preserves_geometry": false
+    },
+    {
+      "substituents": [
+        "F",
+        "I"
+      ],
+      "inputs": [
+        "F/C=C/I",
+        "F/C=C\\I"
+      ],
+      "input_isomers": [
+        "F/C=C/I",
+        "F/C=C\\I"
+      ],
+      "input_stereo_only": true,
+      "chematic_rows": [
+        {
+          "Core": "C(=C/[*:1])\\[*:2]",
+          "R": {
+            "1": "I[*:1]",
+            "2": "F[*:2]"
+          }
+        },
+        {
+          "Core": "C(=C/[*:1])/[*:2]",
+          "R": {
+            "1": "I[*:1]",
+            "2": "F[*:2]"
+          }
+        }
+      ],
+      "chematic_core_isomers": [
+        "C(=C\\[*:2])/[*:1]",
+        "C(=C/[*:2])/[*:1]"
+      ],
+      "chematic_preserves_geometry": true,
+      "rdkit_default_rows": [
+        {
+          "Core": "C(=C[*:2])[*:1]",
+          "R1": "F[*:1]",
+          "R2": "I[*:2]"
+        },
+        {
+          "Core": "C(=C[*:2])[*:1]",
+          "R1": "F[*:1]",
+          "R2": "I[*:2]"
+        }
+      ],
+      "rdkit_default_rows_identical": true,
+      "rdkit_preserves_geometry": false
+    },
+    {
+      "substituents": [
+        "F",
+        "C"
+      ],
+      "inputs": [
+        "F/C=C/C",
+        "F/C=C\\C"
+      ],
+      "input_isomers": [
+        "C/C=C/F",
+        "C/C=C\\F"
+      ],
+      "input_stereo_only": true,
+      "chematic_rows": [
+        {
+          "Core": "C(=C/[*:1])\\[*:2]",
+          "R": {
+            "1": "[*:1]C",
+            "2": "F[*:2]"
+          }
+        },
+        {
+          "Core": "C(=C/[*:1])/[*:2]",
+          "R": {
+            "1": "[*:1]C",
+            "2": "F[*:2]"
+          }
+        }
+      ],
+      "chematic_core_isomers": [
+        "C(=C\\[*:2])/[*:1]",
+        "C(=C/[*:2])/[*:1]"
+      ],
+      "chematic_preserves_geometry": true,
+      "rdkit_default_rows": [
+        {
+          "Core": "C(=C[*:2])[*:1]",
+          "R1": "F[*:1]",
+          "R2": "C[*:2]"
+        },
+        {
+          "Core": "C(=C[*:2])[*:1]",
+          "R1": "F[*:1]",
+          "R2": "C[*:2]"
+        }
+      ],
+      "rdkit_default_rows_identical": true,
+      "rdkit_preserves_geometry": false
+    },
+    {
+      "substituents": [
+        "F",
+        "CO"
+      ],
+      "inputs": [
+        "F/C=C/CO",
+        "F/C=C\\CO"
+      ],
+      "input_isomers": [
+        "OC/C=C/F",
+        "OC/C=C\\F"
+      ],
+      "input_stereo_only": true,
+      "chematic_rows": [
+        {
+          "Core": "C(=C/[*:1])\\[*:2]",
+          "R": {
+            "1": "F[*:1]",
+            "2": "C(O)[*:2]"
+          }
+        },
+        {
+          "Core": "C(=C/[*:1])/[*:2]",
+          "R": {
+            "1": "F[*:1]",
+            "2": "C(O)[*:2]"
+          }
+        }
+      ],
+      "chematic_core_isomers": [
+        "C(=C\\[*:2])/[*:1]",
+        "C(=C/[*:2])/[*:1]"
+      ],
+      "chematic_preserves_geometry": true,
+      "rdkit_default_rows": [
+        {
+          "Core": "C(=C[*:2])[*:1]",
+          "R1": "F[*:1]",
+          "R2": "OC[*:2]"
+        },
+        {
+          "Core": "C(=C[*:2])[*:1]",
+          "R1": "F[*:1]",
+          "R2": "OC[*:2]"
+        }
+      ],
+      "rdkit_default_rows_identical": true,
+      "rdkit_preserves_geometry": false
+    },
+    {
+      "substituents": [
+        "Cl",
+        "Br"
+      ],
+      "inputs": [
+        "Cl/C=C/Br",
+        "Cl/C=C\\Br"
+      ],
+      "input_isomers": [
+        "Cl/C=C/Br",
+        "Cl/C=C\\Br"
+      ],
+      "input_stereo_only": true,
+      "chematic_rows": [
+        {
+          "Core": "C(=C/[*:1])\\[*:2]",
+          "R": {
+            "1": "[*:1]Br",
+            "2": "Cl[*:2]"
+          }
+        },
+        {
+          "Core": "C(=C/[*:1])/[*:2]",
+          "R": {
+            "1": "[*:1]Br",
+            "2": "Cl[*:2]"
+          }
+        }
+      ],
+      "chematic_core_isomers": [
+        "C(=C\\[*:2])/[*:1]",
+        "C(=C/[*:2])/[*:1]"
+      ],
+      "chematic_preserves_geometry": true,
+      "rdkit_default_rows": [
+        {
+          "Core": "C(=C[*:2])[*:1]",
+          "R1": "Cl[*:1]",
+          "R2": "Br[*:2]"
+        },
+        {
+          "Core": "C(=C[*:2])[*:1]",
+          "R1": "Cl[*:1]",
+          "R2": "Br[*:2]"
+        }
+      ],
+      "rdkit_default_rows_identical": true,
+      "rdkit_preserves_geometry": false
+    },
+    {
+      "substituents": [
+        "Cl",
+        "I"
+      ],
+      "inputs": [
+        "Cl/C=C/I",
+        "Cl/C=C\\I"
+      ],
+      "input_isomers": [
+        "Cl/C=C/I",
+        "Cl/C=C\\I"
+      ],
+      "input_stereo_only": true,
+      "chematic_rows": [
+        {
+          "Core": "C(=C/[*:1])\\[*:2]",
+          "R": {
+            "1": "I[*:1]",
+            "2": "Cl[*:2]"
+          }
+        },
+        {
+          "Core": "C(=C/[*:1])/[*:2]",
+          "R": {
+            "1": "I[*:1]",
+            "2": "Cl[*:2]"
+          }
+        }
+      ],
+      "chematic_core_isomers": [
+        "C(=C\\[*:2])/[*:1]",
+        "C(=C/[*:2])/[*:1]"
+      ],
+      "chematic_preserves_geometry": true,
+      "rdkit_default_rows": [
+        {
+          "Core": "C(=C[*:2])[*:1]",
+          "R1": "Cl[*:1]",
+          "R2": "I[*:2]"
+        },
+        {
+          "Core": "C(=C[*:2])[*:1]",
+          "R1": "Cl[*:1]",
+          "R2": "I[*:2]"
+        }
+      ],
+      "rdkit_default_rows_identical": true,
+      "rdkit_preserves_geometry": false
+    },
+    {
+      "substituents": [
+        "Cl",
+        "C"
+      ],
+      "inputs": [
+        "Cl/C=C/C",
+        "Cl/C=C\\C"
+      ],
+      "input_isomers": [
+        "C/C=C/Cl",
+        "C/C=C\\Cl"
+      ],
+      "input_stereo_only": true,
+      "chematic_rows": [
+        {
+          "Core": "C(=C/[*:1])\\[*:2]",
+          "R": {
+            "1": "[*:1]C",
+            "2": "Cl[*:2]"
+          }
+        },
+        {
+          "Core": "C(=C/[*:1])/[*:2]",
+          "R": {
+            "1": "[*:1]C",
+            "2": "Cl[*:2]"
+          }
+        }
+      ],
+      "chematic_core_isomers": [
+        "C(=C\\[*:2])/[*:1]",
+        "C(=C/[*:2])/[*:1]"
+      ],
+      "chematic_preserves_geometry": true,
+      "rdkit_default_rows": [
+        {
+          "Core": "C(=C[*:2])[*:1]",
+          "R1": "Cl[*:1]",
+          "R2": "C[*:2]"
+        },
+        {
+          "Core": "C(=C[*:2])[*:1]",
+          "R1": "Cl[*:1]",
+          "R2": "C[*:2]"
+        }
+      ],
+      "rdkit_default_rows_identical": true,
+      "rdkit_preserves_geometry": false
+    },
+    {
+      "substituents": [
+        "Cl",
+        "CO"
+      ],
+      "inputs": [
+        "Cl/C=C/CO",
+        "Cl/C=C\\CO"
+      ],
+      "input_isomers": [
+        "OC/C=C/Cl",
+        "OC/C=C\\Cl"
+      ],
+      "input_stereo_only": true,
+      "chematic_rows": [
+        {
+          "Core": "C(=C/[*:1])\\[*:2]",
+          "R": {
+            "1": "Cl[*:1]",
+            "2": "C(O)[*:2]"
+          }
+        },
+        {
+          "Core": "C(=C/[*:1])/[*:2]",
+          "R": {
+            "1": "Cl[*:1]",
+            "2": "C(O)[*:2]"
+          }
+        }
+      ],
+      "chematic_core_isomers": [
+        "C(=C\\[*:2])/[*:1]",
+        "C(=C/[*:2])/[*:1]"
+      ],
+      "chematic_preserves_geometry": true,
+      "rdkit_default_rows": [
+        {
+          "Core": "C(=C[*:2])[*:1]",
+          "R1": "Cl[*:1]",
+          "R2": "OC[*:2]"
+        },
+        {
+          "Core": "C(=C[*:2])[*:1]",
+          "R1": "Cl[*:1]",
+          "R2": "OC[*:2]"
+        }
+      ],
+      "rdkit_default_rows_identical": true,
+      "rdkit_preserves_geometry": false
+    },
+    {
+      "substituents": [
+        "Br",
+        "I"
+      ],
+      "inputs": [
+        "Br/C=C/I",
+        "Br/C=C\\I"
+      ],
+      "input_isomers": [
+        "Br/C=C/I",
+        "Br/C=C\\I"
+      ],
+      "input_stereo_only": true,
+      "chematic_rows": [
+        {
+          "Core": "C(=C/[*:1])\\[*:2]",
+          "R": {
+            "1": "[*:1]Br",
+            "2": "I[*:2]"
+          }
+        },
+        {
+          "Core": "C(=C/[*:1])/[*:2]",
+          "R": {
+            "1": "[*:1]Br",
+            "2": "I[*:2]"
+          }
+        }
+      ],
+      "chematic_core_isomers": [
+        "C(=C\\[*:2])/[*:1]",
+        "C(=C/[*:2])/[*:1]"
+      ],
+      "chematic_preserves_geometry": true,
+      "rdkit_default_rows": [
+        {
+          "Core": "C(=C[*:2])[*:1]",
+          "R1": "Br[*:1]",
+          "R2": "I[*:2]"
+        },
+        {
+          "Core": "C(=C[*:2])[*:1]",
+          "R1": "Br[*:1]",
+          "R2": "I[*:2]"
+        }
+      ],
+      "rdkit_default_rows_identical": true,
+      "rdkit_preserves_geometry": false
+    },
+    {
+      "substituents": [
+        "Br",
+        "C"
+      ],
+      "inputs": [
+        "Br/C=C/C",
+        "Br/C=C\\C"
+      ],
+      "input_isomers": [
+        "C/C=C/Br",
+        "C/C=C\\Br"
+      ],
+      "input_stereo_only": true,
+      "chematic_rows": [
+        {
+          "Core": "C(=C/[*:1])\\[*:2]",
+          "R": {
+            "1": "[*:1]C",
+            "2": "[*:2]Br"
+          }
+        },
+        {
+          "Core": "C(=C/[*:1])/[*:2]",
+          "R": {
+            "1": "[*:1]C",
+            "2": "[*:2]Br"
+          }
+        }
+      ],
+      "chematic_core_isomers": [
+        "C(=C\\[*:2])/[*:1]",
+        "C(=C/[*:2])/[*:1]"
+      ],
+      "chematic_preserves_geometry": true,
+      "rdkit_default_rows": [
+        {
+          "Core": "C(=C[*:2])[*:1]",
+          "R1": "Br[*:1]",
+          "R2": "C[*:2]"
+        },
+        {
+          "Core": "C(=C[*:2])[*:1]",
+          "R1": "Br[*:1]",
+          "R2": "C[*:2]"
+        }
+      ],
+      "rdkit_default_rows_identical": true,
+      "rdkit_preserves_geometry": false
+    },
+    {
+      "substituents": [
+        "Br",
+        "CO"
+      ],
+      "inputs": [
+        "Br/C=C/CO",
+        "Br/C=C\\CO"
+      ],
+      "input_isomers": [
+        "OC/C=C/Br",
+        "OC/C=C\\Br"
+      ],
+      "input_stereo_only": true,
+      "chematic_rows": [
+        {
+          "Core": "C(=C/[*:1])\\[*:2]",
+          "R": {
+            "1": "[*:1]Br",
+            "2": "C(O)[*:2]"
+          }
+        },
+        {
+          "Core": "C(=C/[*:1])/[*:2]",
+          "R": {
+            "1": "[*:1]Br",
+            "2": "C(O)[*:2]"
+          }
+        }
+      ],
+      "chematic_core_isomers": [
+        "C(=C\\[*:2])/[*:1]",
+        "C(=C/[*:2])/[*:1]"
+      ],
+      "chematic_preserves_geometry": true,
+      "rdkit_default_rows": [
+        {
+          "Core": "C(=C[*:2])[*:1]",
+          "R1": "Br[*:1]",
+          "R2": "OC[*:2]"
+        },
+        {
+          "Core": "C(=C[*:2])[*:1]",
+          "R1": "Br[*:1]",
+          "R2": "OC[*:2]"
+        }
+      ],
+      "rdkit_default_rows_identical": true,
+      "rdkit_preserves_geometry": false
+    },
+    {
+      "substituents": [
+        "I",
+        "C"
+      ],
+      "inputs": [
+        "I/C=C/C",
+        "I/C=C\\C"
+      ],
+      "input_isomers": [
+        "C/C=C/I",
+        "C/C=C\\I"
+      ],
+      "input_stereo_only": true,
+      "chematic_rows": [
+        {
+          "Core": "C(=C/[*:1])\\[*:2]",
+          "R": {
+            "1": "[*:1]C",
+            "2": "I[*:2]"
+          }
+        },
+        {
+          "Core": "C(=C/[*:1])/[*:2]",
+          "R": {
+            "1": "[*:1]C",
+            "2": "I[*:2]"
+          }
+        }
+      ],
+      "chematic_core_isomers": [
+        "C(=C\\[*:2])/[*:1]",
+        "C(=C/[*:2])/[*:1]"
+      ],
+      "chematic_preserves_geometry": true,
+      "rdkit_default_rows": [
+        {
+          "Core": "C(=C[*:2])[*:1]",
+          "R1": "I[*:1]",
+          "R2": "C[*:2]"
+        },
+        {
+          "Core": "C(=C[*:2])[*:1]",
+          "R1": "I[*:1]",
+          "R2": "C[*:2]"
+        }
+      ],
+      "rdkit_default_rows_identical": true,
+      "rdkit_preserves_geometry": false
+    },
+    {
+      "substituents": [
+        "I",
+        "CO"
+      ],
+      "inputs": [
+        "I/C=C/CO",
+        "I/C=C\\CO"
+      ],
+      "input_isomers": [
+        "OC/C=C/I",
+        "OC/C=C\\I"
+      ],
+      "input_stereo_only": true,
+      "chematic_rows": [
+        {
+          "Core": "C(=C/[*:1])\\[*:2]",
+          "R": {
+            "1": "I[*:1]",
+            "2": "C(O)[*:2]"
+          }
+        },
+        {
+          "Core": "C(=C/[*:1])/[*:2]",
+          "R": {
+            "1": "I[*:1]",
+            "2": "C(O)[*:2]"
+          }
+        }
+      ],
+      "chematic_core_isomers": [
+        "C(=C\\[*:2])/[*:1]",
+        "C(=C/[*:2])/[*:1]"
+      ],
+      "chematic_preserves_geometry": true,
+      "rdkit_default_rows": [
+        {
+          "Core": "C(=C[*:2])[*:1]",
+          "R1": "I[*:1]",
+          "R2": "OC[*:2]"
+        },
+        {
+          "Core": "C(=C[*:2])[*:1]",
+          "R1": "I[*:1]",
+          "R2": "OC[*:2]"
+        }
+      ],
+      "rdkit_default_rows_identical": true,
+      "rdkit_preserves_geometry": false
+    },
+    {
+      "substituents": [
+        "C",
+        "CO"
+      ],
+      "inputs": [
+        "C/C=C/CO",
+        "C/C=C\\CO"
+      ],
+      "input_isomers": [
+        "C/C=C/CO",
+        "C/C=C\\CO"
+      ],
+      "input_stereo_only": true,
+      "chematic_rows": [
+        {
+          "Core": "C(=C/[*:1])\\[*:2]",
+          "R": {
+            "1": "[*:1]C",
+            "2": "C(O)[*:2]"
+          }
+        },
+        {
+          "Core": "C(=C/[*:1])/[*:2]",
+          "R": {
+            "1": "[*:1]C",
+            "2": "C(O)[*:2]"
+          }
+        }
+      ],
+      "chematic_core_isomers": [
+        "C(=C\\[*:2])/[*:1]",
+        "C(=C/[*:2])/[*:1]"
+      ],
+      "chematic_preserves_geometry": true,
+      "rdkit_default_rows": [
+        {
+          "Core": "C(=C[*:2])[*:1]",
+          "R1": "C[*:1]",
+          "R2": "OC[*:2]"
+        },
+        {
+          "Core": "C(=C[*:2])[*:1]",
+          "R1": "C[*:1]",
+          "R2": "OC[*:2]"
+        }
+      ],
+      "rdkit_default_rows_identical": true,
+      "rdkit_preserves_geometry": false
+    }
+  ],
+  "limits": [
+    "15 systematic pairs from six substituents around one C=C core",
+    "RDKit RGroupDecompose default arguments with asSmiles=True and asRows=True",
+    "This measures retention of specified alkene geometry, not overall R-group accuracy."
+  ]
+}
