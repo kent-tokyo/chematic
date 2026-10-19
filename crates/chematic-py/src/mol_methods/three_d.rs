@@ -237,14 +237,21 @@ impl Mol {
         };
         // E/Z entries are keyed by the double bond's first atom; attach the
         // bond itself so callers need not guess which bond is meant (#634).
-        let mut ez_bonds = chematic_chem::assign_ez_bonds_with_mode(
-            &self.inner,
-            if mode == "accurate" {
-                chematic_chem::CipMode::Accurate
-            } else {
-                chematic_chem::CipMode::LegacyFast
-            },
-        );
+        let mut ez_bonds = if assignments
+            .iter()
+            .any(|(_, code)| matches!(code, CipCode::E | CipCode::Z))
+        {
+            chematic_chem::assign_ez_bonds_with_mode(
+                &self.inner,
+                if mode == "accurate" {
+                    chematic_chem::CipMode::Accurate
+                } else {
+                    chematic_chem::CipMode::LegacyFast
+                },
+            )
+        } else {
+            Vec::new()
+        };
         assignments
             .iter()
             .map(|(idx, code)| {

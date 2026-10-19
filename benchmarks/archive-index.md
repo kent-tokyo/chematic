@@ -7,6 +7,8 @@ package, comparator, corpus, host, runtime and operation.
 
 ## Start here
 
+- [RDKit CIP speed audit](2026-10-19-cip-lazy-preparation.md): complete CIP output retention, all 24 formal blocks and 42 comparisons, with standalone gaps and stress mismatches explicit.
+
 - [COSMolKit rotor and Layered speed audit](2026-10-19-rotor-layered.md): current-source screening, exact old/new outputs, all 24 formal orders and all 72 comparisons; remaining rotor and MQN boundaries are explicit.
 
 - [Morgan, TPSA and Python ring-count caches](2026-10-19-python-ring-cache.md): fifth combined source candidate passes its three primary improvements and all 21 control floors; all four rejected prior candidates and all 63 comparisons are preserved.
