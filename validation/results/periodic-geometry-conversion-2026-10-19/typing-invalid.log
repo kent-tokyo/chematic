@@ -1,0 +1,3 @@
+validation/results/periodic-geometry-conversion-2026-10-19/typing_invalid.py:3: error: Argument 1 to "turbomole_to_poscar_checked" has incompatible type "bytes"; expected "str"  [arg-type]
+validation/results/periodic-geometry-conversion-2026-10-19/typing_invalid.py:4: error: Argument 1 to "poscar_to_turbomole_checked" has incompatible type "int"; expected "str"  [arg-type]
+Found 2 errors in 1 file (checked 1 source file)
