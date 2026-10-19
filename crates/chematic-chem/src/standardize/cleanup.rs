@@ -13,7 +13,7 @@ use crate::hydrogen::remove_hydrogens;
 /// The input is stripped of removable explicit hydrogens, metal--ligand bonds
 /// are disconnected with their bond-order charge transfer, and functional
 /// groups are normalized. A bounded acid/base proton transfer handles a
-/// single simple carbanion or alkoxide with a single eligible oxygen acid;
+/// single simple carbanion or alkoxide with one highest-priority oxygen acid;
 /// RDKit's full acid/base-priority reionization is not yet implemented.
 pub fn cleanup(mol: &Molecule) -> Molecule {
     let without_h = remove_hydrogens(mol);
@@ -37,9 +37,9 @@ pub fn cleanup(mol: &Molecule) -> Molecule {
     transfer_simple_acid_proton(&normalized)
 }
 
-/// Transfer one proton from an unambiguous O-H site to an anion for which
-/// protonation is represented without changing any bonds. This is a strict
-/// subset of RDKit's reionization: competing acids or anions are left alone.
+/// Transfer one proton from the single highest-priority supported O-H site
+/// to an anion for which protonation changes no bonds. Equal-priority acid
+/// sites and unrecognized heteroatom acids are left alone.
 fn transfer_simple_acid_proton(mol: &Molecule) -> Molecule {
     let negative: Vec<_> = mol
         .atoms()
@@ -76,31 +76,60 @@ fn transfer_simple_acid_proton(mol: &Molecule) -> Molecule {
         return clone_molecule(mol);
     }
 
-    let acids: Vec<_> = mol
-        .atoms()
-        .filter_map(|(idx, atom)| {
-            if atom.element.atomic_number() != 8
-                || atom.charge != 0
-                || mol.degree(idx) != 1
-                || implicit_hcount(mol, idx) != 1
-            {
-                return None;
+    let mut acids = Vec::new();
+    let mut unrecognized_acid = false;
+    for (idx, atom) in mol.atoms() {
+        if atom.element.atomic_number() != 8
+            || atom.charge != 0
+            || mol.degree(idx) != 1
+            || implicit_hcount(mol, idx) != 1
+        {
+            continue;
+        }
+        let Some((neighbor, bond)) = mol.neighbors(idx).next() else {
+            continue;
+        };
+        if mol.bond(bond).order != BondOrder::Single {
+            unrecognized_acid = true;
+            continue;
+        }
+        let double_oxygen_count = mol
+            .neighbors(neighbor)
+            .filter(|&(other, other_bond)| {
+                other != idx
+                    && mol.atom(other).element.atomic_number() == 8
+                    && mol.bond(other_bond).order == BondOrder::Double
+            })
+            .count();
+        // Priority follows the pinned RDKit 2026.09.1 acid ordering for
+        // these bounded structural classes. An ordinary alcohol is eligible
+        // only when the acceptor is a carbanion.
+        let priority = match mol.atom(neighbor).element.atomic_number() {
+            16 if double_oxygen_count >= 2 => Some(4), // sulfonic acid
+            6 if double_oxygen_count >= 1 => Some(3),  // carboxylic acid
+            6 if mol.atom(neighbor).aromatic => Some(2),
+            6 if carbon_anion => Some(1),
+            6 => None, // alcohol cannot protonate an alkoxide in this profile
+            _ => {
+                unrecognized_acid = true;
+                None
             }
-            let (carbon, bond) = mol.neighbors(idx).next()?;
-            if mol.bond(bond).order != BondOrder::Single
-                || mol.atom(carbon).element.atomic_number() != 6
-            {
-                return None;
-            }
-            let is_carboxyl = mol.neighbors(carbon).any(|(neighbor, other)| {
-                neighbor != idx
-                    && mol.atom(neighbor).element.atomic_number() == 8
-                    && mol.bond(other).order == BondOrder::Double
-            });
-            (is_carboxyl || mol.atom(carbon).aromatic || carbon_anion).then_some(idx)
-        })
+        };
+        if let Some(priority) = priority {
+            acids.push((idx, priority));
+        }
+    }
+    if unrecognized_acid {
+        return clone_molecule(mol);
+    }
+    let Some(highest_priority) = acids.iter().map(|&(_, priority)| priority).max() else {
+        return clone_molecule(mol);
+    };
+    let strongest: Vec<_> = acids
+        .into_iter()
+        .filter_map(|(idx, priority)| (priority == highest_priority).then_some(idx))
         .collect();
-    let [acid] = acids.as_slice() else {
+    let [acid] = strongest.as_slice() else {
         return clone_molecule(mol);
     };
     let mut builder = MoleculeBuilder::from_molecule(mol);
@@ -396,6 +425,10 @@ mod tests {
             ("[O-]c1ccccc1.CC(=O)O", "CC(=O)[O-].Oc1ccccc1"),
             ("[CH3-].Oc1ccccc1", "C.[O-]c1ccccc1"),
             ("[CH3-].CCO", "C.CC[O-]"),
+            ("[CH3-].Oc1ccccc1.CCO", "C.CCO.[O-]c1ccccc1"),
+            ("[CH3-].CC(=O)O.Oc1ccccc1", "C.CC(=O)[O-].Oc1ccccc1"),
+            ("[CH3-].O=S(=O)(O)C", "C.CS(=O)(=O)[O-]"),
+            ("[CH3-].Oc1ccccc1.CS(=O)(=O)O", "C.CS(=O)(=O)[O-].Oc1ccccc1"),
         ] {
             let before = parse(input).unwrap();
             let after = cleanup(&before);
@@ -427,11 +460,13 @@ mod tests {
     #[test]
     fn leaves_ambiguous_or_unsupported_proton_transfers_alone() {
         for input in [
-            "[CH3-].O",               // water is outside the oxygen-acid rule
-            "[CH3-].OCCO",            // two equivalent alcohol sites
-            "[CH3-].CC(=O)O.CC(=O)O", // two carboxylic acid sites
-            "[NH2-].CC(=O)O",         // amide anion has different RDKit rules
-            "CC(=O)[O-].CC(=O)O",     // carboxylate is not an alkoxide
+            "[CH3-].O",                  // water is outside the oxygen-acid rule
+            "[CH3-].OCCO",               // two equivalent alcohol sites
+            "[CH3-].CC(=O)O.CC(=O)O",    // two carboxylic acid sites
+            "[NH2-].CC(=O)O",            // amide anion has different RDKit rules
+            "CC(=O)[O-].CC(=O)O",        // carboxylate is not an alkoxide
+            "[CH3-].CCP(C)(=O)O",        // phosphinic acid is outside this rule
+            "[CH3-].Oc1ccccc1.B(O)(O)C", // unrecognized boronic acid competes
         ] {
             let before = parse(input).unwrap();
             let after = cleanup(&before);
