@@ -1,0 +1,5724 @@
+{
+  "scope": "Python fixed-point guard; not a stereo identity proof or native rebuild",
+  "native_version": "1.1.8",
+  "native_sha256": "ed5a04679987ee9b0a0a99daadca9f7a907b7af00e9e0c4180eaf49b9dbfcc55",
+  "guard_sha256": "31dd7f4e192765f18232a6e3632fa7dcf9d2a73652c2ac2a4a29bc5325cbbdec",
+  "corpus_sha256": "eada65d7bdf246c904d6d3bbd22c660d06403cff83ab33ffb2f3763f4f1a967d",
+  "counts": {
+    "stable": 1125,
+    "input_refused": 1,
+    "writer_refused": 5
+  },
+  "issue_cases": [
+    {
+      "source": "C[N@+]1(F)CCC2(CC[C@H](Cl)CC2)CC1",
+      "status": "non_idempotent",
+      "first": "C[N@+]1(F)CCC2(CC[C@@H](Cl)CC2)CC1",
+      "roundtrip": "C[N@+]1(F)CCC2(CC[C@H](Cl)CC2)CC1"
+    },
+    {
+      "source": "C[N@+]1(F)CC[C@]2(CC[C@H](Cl)CC2)CC1",
+      "status": "non_idempotent",
+      "first": "C[N@+]1(F)CCC2(CC[C@@H](Cl)CC2)CC1",
+      "roundtrip": "C[N@+]1(F)CCC2(CC[C@H](Cl)CC2)CC1"
+    },
+    {
+      "source": "C[C@]1(F)CCC2(CC[C@H](Cl)CC2)CC1",
+      "status": "non_idempotent",
+      "first": "C[C@]1(F)CCC2(CC[C@@H](Cl)CC2)CC1",
+      "roundtrip": "C[C@]1(F)CCC2(CC[C@H](Cl)CC2)CC1"
+    },
+    {
+      "source": "C[C@]1(F)CCC2(CC[C@](I)(Cl)CC2)CC1",
+      "status": "stable",
+      "output": "C[C@]1(F)CCC2(CC1)CC[C@](Cl)(I)CC2"
+    }
+  ],
+  "corpus": [
+    {
+      "source": "[H]C([H])([H])C",
+      "status": "stable",
+      "output": "CC"
+    },
+    {
+      "source": "[2H]C([2H])([2H])O",
+      "status": "stable",
+      "output": "[2H]C([2H])([2H])O"
+    },
+    {
+      "source": "[H][C@](F)(Cl)Br",
+      "status": "stable",
+      "output": "F[C@@H](Cl)Br"
+    },
+    {
+      "source": "F[C@@H](Cl)Br",
+      "status": "stable",
+      "output": "F[C@@H](Cl)Br"
+    },
+    {
+      "source": "[C@@H](F)(Cl)Br",
+      "status": "stable",
+      "output": "F[C@H](Cl)Br"
+    },
+    {
+      "source": "Br[C@H](F)Cl",
+      "status": "stable",
+      "output": "F[C@H](Cl)Br"
+    },
+    {
+      "source": "C[C@H]1CC[C@@H](C)CC1",
+      "status": "stable",
+      "output": "C[C@H]1CC[C@@H](C)CC1"
+    },
+    {
+      "source": "C[C@H]1CC[C@H](C)CC1",
+      "status": "stable",
+      "output": "C[C@H]1CC[C@H](C)CC1"
+    },
+    {
+      "source": "C[C@@H]1CCCC[C@H]1C",
+      "status": "stable",
+      "output": "C[C@@H]1CCCC[C@H]1C"
+    },
+    {
+      "source": "O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@@H]1O",
+      "status": "stable",
+      "output": "O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@@H]1O"
+    },
+    {
+      "source": "C1CC[C@H]2CCCC[C@@H]2C1",
+      "status": "stable",
+      "output": "C1CC[C@H]2CCCC[C@@H]2C1"
+    },
+    {
+      "source": "C/C=C/C",
+      "status": "stable",
+      "output": "C/C=C/C"
+    },
+    {
+      "source": "C/C=C\\C",
+      "status": "stable",
+      "output": "C/C=C\\C"
+    },
+    {
+      "source": "F/C=C/C=C/F",
+      "status": "stable",
+      "output": "F/C=C/C=C/F"
+    },
+    {
+      "source": "F/C=C\\C=C/C=C\\F",
+      "status": "stable",
+      "output": "F\\C=C/C=C\\C=C/F"
+    },
+    {
+      "source": "CC/C(C)=C(/C)CC",
+      "status": "stable",
+      "output": "CC/C(C)=C(/C)CC"
+    },
+    {
+      "source": "C/C=C/C=C/C=C/C",
+      "status": "stable",
+      "output": "C/C=C/C=C/C=C/C"
+    },
+    {
+      "source": "O/N=C/c1ccccc1",
+      "status": "stable",
+      "output": "O/N=C/c1ccccc1"
+    },
+    {
+      "source": "C1=CCCCCCC/C=C\\1",
+      "status": "stable",
+      "output": "C1=CCCCCCC/C=C\\1"
+    },
+    {
+      "source": "C1CCCC/C=C/CCC1",
+      "status": "stable",
+      "output": "C1=C/CCCCCCCC/1"
+    },
+    {
+      "source": "C/1=C/CCCCCC1",
+      "status": "stable",
+      "output": "C1=C\\CCCCCC/1"
+    },
+    {
+      "source": "OC(=O)/C=C\\C(=O)O",
+      "status": "stable",
+      "output": "O=C(O)/C=C\\C(=O)O"
+    },
+    {
+      "source": "[O-][N+](=O)c1ccccc1",
+      "status": "stable",
+      "output": "O=[N+]([O-])c1ccccc1"
+    },
+    {
+      "source": "CN(=O)=O",
+      "status": "stable",
+      "output": "C[N+](=O)[O-]"
+    },
+    {
+      "source": "O=n1ccccc1",
+      "status": "stable",
+      "output": "[O-][n+]1ccccc1"
+    },
+    {
+      "source": "c1cc[nH]c1",
+      "status": "stable",
+      "output": "c1cc[nH]c1"
+    },
+    {
+      "source": "[nH]1cccc1",
+      "status": "stable",
+      "output": "c1cc[nH]c1"
+    },
+    {
+      "source": "Cn1cccc1",
+      "status": "stable",
+      "output": "Cn1cccc1"
+    },
+    {
+      "source": "c1ccc2[nH]ccc2c1",
+      "status": "stable",
+      "output": "c1ccc2[nH]ccc2c1"
+    },
+    {
+      "source": "c1ccc2ccccc2c1",
+      "status": "stable",
+      "output": "c1ccc2ccccc2c1"
+    },
+    {
+      "source": "c1cc2cccc3c4cccc5cccc(c(c1)c23)c54",
+      "status": "stable",
+      "output": "c1cc2cccc3c4cccc5cccc(c(c1)c23)c54"
+    },
+    {
+      "source": "c1ccc2cc3ccccc3cc2c1",
+      "status": "stable",
+      "output": "c1ccc2cc3ccccc3cc2c1"
+    },
+    {
+      "source": "C1=CC=C2C=CC=CC2=C1",
+      "status": "stable",
+      "output": "c1ccc2ccccc2c1"
+    },
+    {
+      "source": "c1ccc-2c(c1)-c1ccccc-21",
+      "status": "stable",
+      "output": "c1ccc2c(c1)-c1ccccc1-2"
+    },
+    {
+      "source": "O=c1cccc[nH]1",
+      "status": "stable",
+      "output": "O=c1cccc[nH]1"
+    },
+    {
+      "source": "Oc1ncccc1",
+      "status": "stable",
+      "output": "Oc1ccccn1"
+    },
+    {
+      "source": "[CH2]",
+      "status": "stable",
+      "output": "[CH2]"
+    },
+    {
+      "source": "[CH3]",
+      "status": "stable",
+      "output": "[CH3]"
+    },
+    {
+      "source": "[C]",
+      "status": "stable",
+      "output": "[C]"
+    },
+    {
+      "source": "[O]",
+      "status": "stable",
+      "output": "[O]"
+    },
+    {
+      "source": "[OH]",
+      "status": "stable",
+      "output": "[OH]"
+    },
+    {
+      "source": "[Na+].[Cl-]",
+      "status": "stable",
+      "output": "[Cl-].[Na+]"
+    },
+    {
+      "source": "[Na+].[Na+].[O-]S([O-])(=O)=O",
+      "status": "stable",
+      "output": "O=S(=O)([O-])[O-].[Na+].[Na+]"
+    },
+    {
+      "source": "CC(=O)[O-].CC(=O)[O-].[Ca+2]",
+      "status": "stable",
+      "output": "CC(=O)[O-].CC(=O)[O-].[Ca+2]"
+    },
+    {
+      "source": "[Fe+2].[Cl-].[Cl-].O.O.O.O",
+      "status": "stable",
+      "output": "O.O.O.O.[Cl-].[Cl-].[Fe+2]"
+    },
+    {
+      "source": "c1ccccc1.c1ccccc1.C.C.O",
+      "status": "stable",
+      "output": "C.C.O.c1ccccc1.c1ccccc1"
+    },
+    {
+      "source": "[Cu+2].[O-]C(=O)C.[O-]C(=O)C",
+      "status": "stable",
+      "output": "CC(=O)[O-].CC(=O)[O-].[Cu+2]"
+    },
+    {
+      "source": "C1CC2CCC1C2",
+      "status": "stable",
+      "output": "C1CC2CCC1C2"
+    },
+    {
+      "source": "C12C3C4C1C5C2C3C45",
+      "status": "stable",
+      "output": "C12C3C4C1C1C2C3C41"
+    },
+    {
+      "source": "CC1(C)C2CCC1(C)C(=O)C2",
+      "status": "stable",
+      "output": "CC12CCC(CC1=O)C2(C)C"
+    },
+    {
+      "source": "c1ccc2c(c1)ccc1ccccc12",
+      "status": "stable",
+      "output": "c1ccc2c(c1)ccc1ccccc12"
+    },
+    {
+      "source": "C[S@](=O)c1ccccc1",
+      "status": "stable",
+      "output": "C[S@](=O)c1ccccc1"
+    },
+    {
+      "source": "C[S@@+]([O-])c1ccccc1",
+      "status": "stable",
+      "output": "C[S@@+]([O-])c1ccccc1"
+    },
+    {
+      "source": "C[P@](=O)(O)c1ccccc1",
+      "status": "stable",
+      "output": "C[P@](=O)(O)c1ccccc1"
+    },
+    {
+      "source": "C[N@]1CC1C",
+      "status": "stable",
+      "output": "CC1C[N@@]1C"
+    },
+    {
+      "source": "N[C@@H](C)C(=O)O",
+      "status": "stable",
+      "output": "C[C@H](N)C(=O)O"
+    },
+    {
+      "source": "N[C@H](C(=O)O)C",
+      "status": "stable",
+      "output": "C[C@H](N)C(=O)O"
+    },
+    {
+      "source": "[NH3+][C@@H](C)C(=O)[O-]",
+      "status": "stable",
+      "output": "C[C@H]([NH3+])C(=O)[O-]"
+    },
+    {
+      "source": "C1CC1C1CC1C1CC1C1CC1C1CC1C1CC1C1CC1C1CC1C1CC1C1CC1C1CC1C1CC1",
+      "status": "stable",
+      "output": "C1CC1C1CC1C1CC1C1CC1C1CC1C1CC1C1CC1C1CC1C1CC1C1CC1C1CC1C1CC1"
+    },
+    {
+      "source": "C1CCC2(CC1)CCC1(CC2)CCC2(CC1)CCC1(CC2)CCC2(CC1)CCC1(CC2)CCC2(CC1)CCC1(CC2)CCC2(CC1)CCC1(CC2)CCCCC1",
+      "status": "stable",
+      "output": "C1CCC2(CC1)CCC1(CC2)CCC2(CC1)CCC1(CC2)CCC2(CC1)CCC1(CCC3(CCC4(CCC5(CCC6(CCCCC6)CC5)CC4)CC3)CC1)CC2"
+    },
+    {
+      "source": "C%10CCCCC%10",
+      "status": "stable",
+      "output": "C1CCCCC1"
+    },
+    {
+      "source": "C%(100)CC%(100)",
+      "status": "stable",
+      "output": "C1CC1"
+    },
+    {
+      "source": "[13CH4]",
+      "status": "stable",
+      "output": "[13CH4]"
+    },
+    {
+      "source": "[13C@@H](F)(Cl)Br",
+      "status": "stable",
+      "output": "F[13C@H](Cl)Br"
+    },
+    {
+      "source": "[CH3:1][OH:2]",
+      "status": "stable",
+      "output": "[CH3:1][OH:2]"
+    },
+    {
+      "source": "[*]C",
+      "status": "stable",
+      "output": "*C"
+    },
+    {
+      "source": "*c1ccccc1",
+      "status": "stable",
+      "output": "*c1ccccc1"
+    },
+    {
+      "source": "[1*]CC[2*]",
+      "status": "stable",
+      "output": "[1*]CC[2*]"
+    },
+    {
+      "source": "C[N+](C)(C)C",
+      "status": "stable",
+      "output": "C[N+](C)(C)C"
+    },
+    {
+      "source": "[NH4+]",
+      "status": "stable",
+      "output": "[NH4+]"
+    },
+    {
+      "source": "[O-]",
+      "status": "stable",
+      "output": "[O-]"
+    },
+    {
+      "source": "[OH-]",
+      "status": "stable",
+      "output": "[OH-]"
+    },
+    {
+      "source": "[H+]",
+      "status": "stable",
+      "output": "[H+]"
+    },
+    {
+      "source": "[H-]",
+      "status": "stable",
+      "output": "[H-]"
+    },
+    {
+      "source": "[H][H]",
+      "status": "stable",
+      "output": "[H][H]"
+    },
+    {
+      "source": "[2H][2H]",
+      "status": "stable",
+      "output": "[2H][2H]"
+    },
+    {
+      "source": "[HH]",
+      "status": "stable",
+      "output": "[HH]"
+    },
+    {
+      "source": "CC#N",
+      "status": "stable",
+      "output": "CC#N"
+    },
+    {
+      "source": "C#C",
+      "status": "stable",
+      "output": "C#C"
+    },
+    {
+      "source": "C=C=C",
+      "status": "stable",
+      "output": "C=C=C"
+    },
+    {
+      "source": "CC=C=CC",
+      "status": "stable",
+      "output": "CC=C=CC"
+    },
+    {
+      "source": "C[C@@H]=C=CC",
+      "status": "stable",
+      "output": "CC=C=CC"
+    },
+    {
+      "source": "C=[N+]=[N-]",
+      "status": "stable",
+      "output": "C=[N+]=[N-]"
+    },
+    {
+      "source": "CN=[N+]=[N-]",
+      "status": "stable",
+      "output": "CN=[N+]=[N-]"
+    },
+    {
+      "source": "[N-]=[N+]=NC",
+      "status": "stable",
+      "output": "CN=[N+]=[N-]"
+    },
+    {
+      "source": "O=S(=O)(O)O",
+      "status": "stable",
+      "output": "O=S(=O)(O)O"
+    },
+    {
+      "source": "OS(=O)(=O)O",
+      "status": "stable",
+      "output": "O=S(=O)(O)O"
+    },
+    {
+      "source": "O=P(O)(O)O",
+      "status": "stable",
+      "output": "O=P(O)(O)O"
+    },
+    {
+      "source": "F[P-](F)(F)(F)(F)F",
+      "status": "stable",
+      "output": "F[P-](F)(F)(F)(F)F"
+    },
+    {
+      "source": "F[B-](F)(F)F",
+      "status": "stable",
+      "output": "F[B-](F)(F)F"
+    },
+    {
+      "source": "OB(O)c1ccccc1",
+      "status": "stable",
+      "output": "OB(O)c1ccccc1"
+    },
+    {
+      "source": "c1ccccc1[Se]C",
+      "status": "stable",
+      "output": "C[Se]c1ccccc1"
+    },
+    {
+      "source": "c1cc[se]c1",
+      "status": "stable",
+      "output": "c1cc[se]c1"
+    },
+    {
+      "source": "c1cc[te]c1",
+      "status": "stable",
+      "output": "c1cc[te]c1"
+    },
+    {
+      "source": "c1ccoc1",
+      "status": "stable",
+      "output": "c1ccoc1"
+    },
+    {
+      "source": "c1ccsc1",
+      "status": "stable",
+      "output": "c1ccsc1"
+    },
+    {
+      "source": "c1cnoc1",
+      "status": "stable",
+      "output": "c1cnoc1"
+    },
+    {
+      "source": "n1ccncc1",
+      "status": "stable",
+      "output": "c1cnccn1"
+    },
+    {
+      "source": "c1nc[nH]n1",
+      "status": "stable",
+      "output": "c1nc[nH]n1"
+    },
+    {
+      "source": "Cc1nnc(C)o1",
+      "status": "stable",
+      "output": "Cc1nnc(C)o1"
+    },
+    {
+      "source": "O=C1C=CC(=O)C=C1",
+      "status": "stable",
+      "output": "O=C1C=CC(=O)C=C1"
+    },
+    {
+      "source": "C1=CC(=O)C=CC1=O",
+      "status": "stable",
+      "output": "O=C1C=CC(=O)C=C1"
+    },
+    {
+      "source": "CC1=CC(=O)C=CC1=O",
+      "status": "stable",
+      "output": "CC1=CC(=O)C=CC1=O"
+    },
+    {
+      "source": "O=C(O)c1ccccc1O",
+      "status": "stable",
+      "output": "O=C(O)c1ccccc1O"
+    },
+    {
+      "source": "C1=CC=CC=C1",
+      "status": "stable",
+      "output": "c1ccccc1"
+    },
+    {
+      "source": "B1=CC=CC=C1",
+      "status": "stable",
+      "output": "b1ccccc1"
+    },
+    {
+      "source": "c1ccbcc1",
+      "status": "stable",
+      "output": "b1ccccc1"
+    },
+    {
+      "source": "[cH-]1cccc1",
+      "status": "stable",
+      "output": "c1cc[cH-]c1"
+    },
+    {
+      "source": "[Fe].c1cc[cH-]c1.c1cc[cH-]c1",
+      "status": "stable",
+      "output": "[Fe].c1cc[cH-]c1.c1cc[cH-]c1"
+    },
+    {
+      "source": "[Fe+2].c1cc[cH-]c1.c1cc[cH-]c1",
+      "status": "stable",
+      "output": "[Fe+2].c1cc[cH-]c1.c1cc[cH-]c1"
+    },
+    {
+      "source": "CC(C)(C)[Si](C)(C)OC",
+      "status": "stable",
+      "output": "CO[Si](C)(C)C(C)(C)C"
+    },
+    {
+      "source": "[SiH4]",
+      "status": "stable",
+      "output": "[SiH4]"
+    },
+    {
+      "source": "[SiH3]C",
+      "status": "stable",
+      "output": "C[SiH3]"
+    },
+    {
+      "source": "C[Sn](C)(C)C",
+      "status": "stable",
+      "output": "[CH3][Sn]([CH3])([CH3])[CH3]"
+    },
+    {
+      "source": "[Li]C",
+      "status": "stable",
+      "output": "[Li][CH3]"
+    },
+    {
+      "source": "C[Mg]Br",
+      "status": "stable",
+      "output": "[CH3][Mg][Br]"
+    },
+    {
+      "source": "CCO[Ti](OCC)(OCC)OCC",
+      "status": "stable",
+      "output": "CC[O][Ti]([O]CC)([O]CC)[O]CC"
+    },
+    {
+      "source": "[Pt](Cl)(Cl)(N)N",
+      "status": "stable",
+      "output": "[NH2][Pt]([NH2])([Cl])[Cl]"
+    },
+    {
+      "source": "N->[Pt](<-N)(Cl)Cl",
+      "status": "stable",
+      "output": "[NH3]->[Pt](<-[NH3])([Cl])[Cl]"
+    },
+    {
+      "source": "c1ccc2c(c1)[n+]1ccccc1[Cu]2",
+      "status": "stable",
+      "output": "c1ccc2[c](c1)[Cu][c]1cccc[n+]1-2"
+    },
+    {
+      "source": "O=C1c2ccccc2C(=O)N1/N=C/c1ccccc1",
+      "status": "stable",
+      "output": "O=C1c2ccccc2C(=O)N1/N=C/c1ccccc1"
+    },
+    {
+      "source": "C/C(=N/O)c1ccccc1",
+      "status": "stable",
+      "output": "C/C(=N/O)c1ccccc1"
+    },
+    {
+      "source": "CC(C)=NO",
+      "status": "stable",
+      "output": "CC(C)=NO"
+    },
+    {
+      "source": "C/N=C/C",
+      "status": "stable",
+      "output": "C/C=N/C"
+    },
+    {
+      "source": "CN=C(C)C",
+      "status": "stable",
+      "output": "CN=C(C)C"
+    },
+    {
+      "source": "O=C(/C=C/c1ccccc1)O",
+      "status": "stable",
+      "output": "O=C(O)/C=C/c1ccccc1"
+    },
+    {
+      "source": "C(/C=C/c1ccccc1)(=O)O",
+      "status": "stable",
+      "output": "O=C(O)/C=C/c1ccccc1"
+    },
+    {
+      "source": "F/C(Cl)=C(\\F)Cl",
+      "status": "stable",
+      "output": "F/C(Cl)=C(\\F)Cl"
+    },
+    {
+      "source": "F/C(Cl)=C(/F)Cl",
+      "status": "stable",
+      "output": "F/C(Cl)=C(/F)Cl"
+    },
+    {
+      "source": "Cl\\C=C/Cl",
+      "status": "stable",
+      "output": "Cl/C=C\\Cl"
+    },
+    {
+      "source": "Cl/C=C/Cl",
+      "status": "stable",
+      "output": "Cl/C=C/Cl"
+    },
+    {
+      "source": "C(\\Cl)=C/Cl",
+      "status": "stable",
+      "output": "Cl/C=C/Cl"
+    },
+    {
+      "source": "C1CC/C=C/CC1",
+      "status": "stable",
+      "output": "C1=CCCCCC1"
+    },
+    {
+      "source": "C1CCC/C=C/CCC1",
+      "status": "stable",
+      "output": "C1=C/CCCCCCC/1"
+    },
+    {
+      "source": "C1CCCC/C=C/CCCC1",
+      "status": "stable",
+      "output": "C1=C/CCCCCCCCC/1"
+    },
+    {
+      "source": "OC1CCCCC1",
+      "status": "stable",
+      "output": "OC1CCCCC1"
+    },
+    {
+      "source": "O[C@H]1CC[C@H](CC1)O",
+      "status": "stable",
+      "output": "O[C@H]1CC[C@@H](O)CC1"
+    },
+    {
+      "source": "O[C@H]1CC[C@@H](CC1)O",
+      "status": "stable",
+      "output": "O[C@H]1CC[C@H](O)CC1"
+    },
+    {
+      "source": "C[C@]12CC[C@H]3[C@@H](CC=C4C[C@@H](O)CC[C@@]43C)[C@@H]1CC[C@@H]2O",
+      "status": "stable",
+      "output": "C[C@]12CC[C@H]3[C@@H](CC=C4C[C@@H](O)CC[C@@]43C)[C@@H]1CC[C@@H]2O"
+    },
+    {
+      "source": "CC(C)[C@@H]1CC[C@@H](C)C[C@H]1O",
+      "status": "stable",
+      "output": "CC(C)[C@@H]1CC[C@@H](C)C[C@H]1O"
+    },
+    {
+      "source": "[H]/C(C)=C/C",
+      "status": "stable",
+      "output": "C/C=C\\C"
+    },
+    {
+      "source": "[H]/C(C)=C(/[H])C",
+      "status": "stable",
+      "output": "C/C=C/C"
+    },
+    {
+      "source": "C/C=C(/[H])C",
+      "status": "stable",
+      "output": "C/C=C\\C"
+    },
+    {
+      "source": "[H]/N=C/C",
+      "status": "stable",
+      "output": "[H]/N=C/C"
+    },
+    {
+      "source": "F/C=C/1.C1",
+      "status": "stable",
+      "output": "C/C=C/F"
+    },
+    {
+      "source": "C/C=C/1CCCCC1.F1",
+      "status": "input_refused",
+      "error": "unmatched ring closure 1 at position 16"
+    },
+    {
+      "source": "C1CCCCC/C=C/1",
+      "status": "stable",
+      "output": "C1=C/CCCCCC/1"
+    },
+    {
+      "source": "C/1=C/CCCC/C=C/CCC1",
+      "status": "stable",
+      "output": "C1=C\\CCCC/C=C/CCC/1"
+    },
+    {
+      "source": "F/C=C1\\CCCCC1",
+      "status": "stable",
+      "output": "FC=C1CCCCC1"
+    },
+    {
+      "source": "F/C=C\\1CCCCC1",
+      "status": "stable",
+      "output": "FC=C1CCCCC1"
+    },
+    {
+      "source": "CC1=C(C)/C(=C/c2ccccc2)CC1",
+      "status": "stable",
+      "output": "CC1=C(C)/C(=C/c2ccccc2)CC1"
+    },
+    {
+      "source": "C\\C=C\\1/C=C1",
+      "status": "stable",
+      "output": "CC=C1C=C1"
+    },
+    {
+      "source": "O=C1N/C(=C\\c2ccccc2)C(=O)N1",
+      "status": "stable",
+      "output": "O=C1NC(=O)/C(=C/c2ccccc2)N1"
+    },
+    {
+      "source": "c1ccccc1/C=C/C=C/C=O",
+      "status": "stable",
+      "output": "O=C/C=C/C=C/c1ccccc1"
+    },
+    {
+      "source": "C(=C/C)\\C",
+      "status": "stable",
+      "output": "C/C=C/C"
+    },
+    {
+      "source": "[C@@H]1(F)CCCC1Cl",
+      "status": "stable",
+      "output": "F[C@@H]1CCCC1Cl"
+    },
+    {
+      "source": "[C@]1(F)(Cl)CCC1",
+      "status": "stable",
+      "output": "FC1(Cl)CCC1"
+    },
+    {
+      "source": "C1CC[C@]1(F)Cl",
+      "status": "stable",
+      "output": "FC1(Cl)CCC1"
+    },
+    {
+      "source": "F[C@]1(Cl)CCC1",
+      "status": "stable",
+      "output": "FC1(Cl)CCC1"
+    },
+    {
+      "source": "F[C@@]12CCC1CC2",
+      "status": "stable",
+      "output": "FC12CCC1CC2"
+    },
+    {
+      "source": "C[C@@]12CCCC[C@H]1CCCC2",
+      "status": "stable",
+      "output": "C[C@]12CCCC[C@@H]1CCCC2"
+    },
+    {
+      "source": "[C@H]12CC[C@H](CC1)C2",
+      "status": "stable",
+      "output": "C1C[C@H]2CC[C@@H]1C2"
+    },
+    {
+      "source": "N1CC[C@@H]2CC[C@H]1C2",
+      "status": "stable",
+      "output": "C1C[C@@H]2CC[C@@H](C2)N1"
+    },
+    {
+      "source": "C[N@@]12CC[C@H](CC1)C2",
+      "status": "writer_refused",
+      "error": "RDKit-compatible SMILES: sanitization failed: Explicit valence for atom # 1 N, 4, is greater than permitted"
+    },
+    {
+      "source": "C1C[N@]2CC[C@H]1C2",
+      "status": "stable",
+      "output": "C1C[N@]2CC[C@H]1C2"
+    },
+    {
+      "source": "c1ccc(cc1)[C@@H]([2H])O",
+      "status": "stable",
+      "output": "[2H][C@@H](O)c1ccccc1"
+    },
+    {
+      "source": "[2H][C@](C)(O)c1ccccc1",
+      "status": "stable",
+      "output": "[2H][C@](C)(O)c1ccccc1"
+    },
+    {
+      "source": "C[C@H](N)[C@@H](C)O",
+      "status": "stable",
+      "output": "C[C@H](N)[C@@H](C)O"
+    },
+    {
+      "source": "C[C@@H]1O[C@H](C)O[C@@H](C)O1",
+      "status": "stable",
+      "output": "C[C@H]1O[C@H](C)O[C@@H](C)O1"
+    },
+    {
+      "source": "C[C@H]1C[C@@H](C)C[C@H](C)C1",
+      "status": "stable",
+      "output": "C[C@H]1C[C@H](C)C[C@@H](C)C1"
+    },
+    {
+      "source": "O[C@@H]1[C@@H](O)[C@H](O)[C@@H](O)[C@H](O)[C@H]1O",
+      "status": "stable",
+      "output": "O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@@H]1O"
+    },
+    {
+      "source": "CC(=O)O[C@@H]1C[C@@H]2CC[C@H]1C2",
+      "status": "stable",
+      "output": "CC(=O)O[C@@H]1C[C@@H]2CC[C@H]1C2"
+    },
+    {
+      "source": "C1=CC2=CC=C1C=C2",
+      "status": "stable",
+      "output": "c1cc2ccc1cc2"
+    },
+    {
+      "source": "C1=CC=C2C(=C1)C=CC=C2",
+      "status": "stable",
+      "output": "c1ccc2ccccc2c1"
+    },
+    {
+      "source": "c1cc2ccc3ccc4ccc1c1c2c3c4cc1",
+      "status": "stable",
+      "output": "c1cc2ccc3ccc4ccc1c1ccc2c3c41"
+    },
+    {
+      "source": "O=C1C=CC=CC1=O",
+      "status": "stable",
+      "output": "O=C1C=CC=CC1=O"
+    },
+    {
+      "source": "Oc1c(O)cccc1",
+      "status": "stable",
+      "output": "Oc1ccccc1O"
+    },
+    {
+      "source": "c1ccc[n+](c1)[O-]",
+      "status": "stable",
+      "output": "[O-][n+]1ccccc1"
+    },
+    {
+      "source": "[O-][n+]1ccccc1",
+      "status": "stable",
+      "output": "[O-][n+]1ccccc1"
+    },
+    {
+      "source": "O=[N+]([O-])c1ccc(cc1)/N=N/c1ccccc1",
+      "status": "stable",
+      "output": "O=[N+]([O-])c1ccc(/N=N/c2ccccc2)cc1"
+    },
+    {
+      "source": "CC(C)(C)OC(=O)N[C@@H](Cc1ccccc1)C(=O)O",
+      "status": "stable",
+      "output": "CC(C)(C)OC(=O)N[C@@H](Cc1ccccc1)C(=O)O"
+    },
+    {
+      "source": "CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(=O)([O-])OCC[N+](C)(C)C)OC(=O)CCCCCCC/C=C\\CCCCCCCC",
+      "status": "stable",
+      "output": "CCCCCCCC/C=C\\CCCCCCCC(=O)O[C@H](COC(=O)CCCCCCCCCCCCCCC)COP(=O)([O-])OCC[N+](C)(C)C"
+    },
+    {
+      "source": "[NH2+]=C(N)N",
+      "status": "stable",
+      "output": "NC(N)=[NH2+]"
+    },
+    {
+      "source": "NC(=[NH2+])N",
+      "status": "stable",
+      "output": "NC(N)=[NH2+]"
+    },
+    {
+      "source": "C[n+]1ccccc1",
+      "status": "stable",
+      "output": "C[n+]1ccccc1"
+    },
+    {
+      "source": "c1cc[n+](C)cc1",
+      "status": "stable",
+      "output": "C[n+]1ccccc1"
+    },
+    {
+      "source": "[nH+]1ccccc1",
+      "status": "stable",
+      "output": "c1cc[nH+]cc1"
+    },
+    {
+      "source": "c1cc[o+]cc1",
+      "status": "stable",
+      "output": "c1cc[o+]cc1"
+    },
+    {
+      "source": "c1ccc[s+]1",
+      "status": "writer_refused",
+      "error": "RDKit-compatible SMILES: sanitization failed: Can't kekulize mol.  Unkekulized atoms: 0 1 2 3 4"
+    },
+    {
+      "source": "[s+]1cccc1",
+      "status": "writer_refused",
+      "error": "RDKit-compatible SMILES: sanitization failed: Can't kekulize mol.  Unkekulized atoms: 0 1 2 3 4"
+    },
+    {
+      "source": "C[Si]1(C)c2ccccc2-c2ccccc21",
+      "status": "stable",
+      "output": "C[Si]1(C)c2ccccc2-c2ccccc21"
+    },
+    {
+      "source": "B1c2ccccc2-c2ccccc12",
+      "status": "stable",
+      "output": "B1c2ccccc2-c2ccccc21"
+    },
+    {
+      "source": "OB1OCC(C)(C)CO1",
+      "status": "stable",
+      "output": "CC1(C)COB(O)OC1"
+    },
+    {
+      "source": "O=[Mn](=O)(=O)[O-].[K+]",
+      "status": "stable",
+      "output": "[K+].[O]=[Mn](=[O])(=[O])[O-]"
+    },
+    {
+      "source": "[Cl-].[Cl-].[Zn+2]",
+      "status": "stable",
+      "output": "[Cl-].[Cl-].[Zn+2]"
+    },
+    {
+      "source": "Cl[Zn]Cl",
+      "status": "stable",
+      "output": "[Cl][Zn][Cl]"
+    },
+    {
+      "source": "[Zn](Cl)Cl",
+      "status": "stable",
+      "output": "[Cl][Zn][Cl]"
+    },
+    {
+      "source": "CC(=O)O[Pb](OC(C)=O)(OC(C)=O)OC(C)=O",
+      "status": "stable",
+      "output": "CC(=O)[O][Pb]([O]C(C)=O)([O]C(C)=O)[O]C(C)=O"
+    },
+    {
+      "source": "c1ccc(cc1)P(c1ccccc1)(c1ccccc1)=[Pd]",
+      "status": "stable",
+      "output": "[Pd]=[P](c1ccccc1)(c1ccccc1)c1ccccc1"
+    },
+    {
+      "source": "[Co+3].[NH3].[NH3].[NH3].[NH3].[NH3].[NH3]",
+      "status": "stable",
+      "output": "N.N.N.N.N.N.[Co+3]"
+    },
+    {
+      "source": "[Gd+3].[O-]C(=O)C.[O-]C(=O)C.[O-]C(=O)C",
+      "status": "stable",
+      "output": "CC(=O)[O-].CC(=O)[O-].CC(=O)[O-].[Gd+3]"
+    },
+    {
+      "source": "O.O.O.[Na+].[Na+].[O-]C(=O)C(=O)[O-]",
+      "status": "stable",
+      "output": "O.O.O.O=C([O-])C(=O)[O-].[Na+].[Na+]"
+    },
+    {
+      "source": "[Na]",
+      "status": "stable",
+      "output": "[Na]"
+    },
+    {
+      "source": "[K]",
+      "status": "stable",
+      "output": "[K]"
+    },
+    {
+      "source": "[Na]Cl",
+      "status": "stable",
+      "output": "[Na][Cl]"
+    },
+    {
+      "source": "[Na]OC(=O)C",
+      "status": "stable",
+      "output": "CC(=O)[O][Na]"
+    },
+    {
+      "source": "CC[N+](CC)(CC)CC.[I-]",
+      "status": "stable",
+      "output": "CC[N+](CC)(CC)CC.[I-]"
+    },
+    {
+      "source": "I[I-]I",
+      "status": "stable",
+      "output": "I[I-]I"
+    },
+    {
+      "source": "[I-].[I-].[I-]",
+      "status": "stable",
+      "output": "[I-].[I-].[I-]"
+    },
+    {
+      "source": "F[Xe]F",
+      "status": "stable",
+      "output": "F[Xe]F"
+    },
+    {
+      "source": "[He]",
+      "status": "stable",
+      "output": "[He]"
+    },
+    {
+      "source": "[Ar]",
+      "status": "stable",
+      "output": "[Ar]"
+    },
+    {
+      "source": "[U]",
+      "status": "stable",
+      "output": "[U]"
+    },
+    {
+      "source": "[Rf]",
+      "status": "stable",
+      "output": "[Rf]"
+    },
+    {
+      "source": "C1CCCCCCCCCC1",
+      "status": "stable",
+      "output": "C1CCCCCCCCCC1"
+    },
+    {
+      "source": "C1=CC=CC=CC=C1",
+      "status": "stable",
+      "output": "C1=CC=CC=CC=C1"
+    },
+    {
+      "source": "c1ccccccc1",
+      "status": "stable",
+      "output": "C1=CC=CC=CC=C1"
+    },
+    {
+      "source": "c1cccccccc1",
+      "status": "writer_refused",
+      "error": "RDKit-compatible SMILES: sanitization failed: Can't kekulize mol.  Unkekulized atoms: 0 1 2 3 4 5 6 7 8"
+    },
+    {
+      "source": "C1=CC=CC=CC=CC=C1",
+      "status": "stable",
+      "output": "c1ccccccccc1"
+    },
+    {
+      "source": "c1ccccc1-c1ccccc1",
+      "status": "stable",
+      "output": "c1ccc(-c2ccccc2)cc1"
+    },
+    {
+      "source": "c1ccccc1c1ccccc1",
+      "status": "stable",
+      "output": "c1ccc(-c2ccccc2)cc1"
+    },
+    {
+      "source": "C1CC1",
+      "status": "stable",
+      "output": "C1CC1"
+    },
+    {
+      "source": "c1cc1",
+      "status": "writer_refused",
+      "error": "RDKit-compatible SMILES: sanitization failed: Can't kekulize mol.  Unkekulized atoms: 0 1 2"
+    },
+    {
+      "source": "[cH+]1cc1",
+      "status": "stable",
+      "output": "c1c[cH+]1"
+    },
+    {
+      "source": "C1=CC=1",
+      "status": "stable",
+      "output": "C1=CC=1"
+    },
+    {
+      "source": "C=1CC=1",
+      "status": "stable",
+      "output": "C1=CC1"
+    },
+    {
+      "source": "C1CC2(CC1)CC2",
+      "status": "stable",
+      "output": "C1CCC2(C1)CC2"
+    },
+    {
+      "source": "OCC(O)CO.OCC(O)CO",
+      "status": "stable",
+      "output": "OCC(O)CO.OCC(O)CO"
+    },
+    {
+      "source": "C.C.C.C.C",
+      "status": "stable",
+      "output": "C.C.C.C.C"
+    },
+    {
+      "source": "CC.CC.CC.CC.O.O",
+      "status": "stable",
+      "output": "CC.CC.CC.CC.O.O"
+    },
+    {
+      "source": "[Na+].[Na+].[Na+].[Na+].[O-]P([O-])([O-])=O.[O-]C=O",
+      "status": "stable",
+      "output": "O=C[O-].O=P([O-])([O-])[O-].[Na+].[Na+].[Na+].[Na+]"
+    },
+    {
+      "source": "CC",
+      "status": "stable",
+      "output": "CC"
+    },
+    {
+      "source": "CC",
+      "status": "stable",
+      "output": "CC"
+    },
+    {
+      "source": "CC",
+      "status": "stable",
+      "output": "CC"
+    },
+    {
+      "source": "[2H]C([2H])(O)[2H]",
+      "status": "stable",
+      "output": "[2H]C([2H])([2H])O"
+    },
+    {
+      "source": "C([2H])([2H])([2H])O",
+      "status": "stable",
+      "output": "[2H]C([2H])([2H])O"
+    },
+    {
+      "source": "[2H]C(O)([2H])[2H]",
+      "status": "stable",
+      "output": "[2H]C([2H])([2H])O"
+    },
+    {
+      "source": "F[C@H](Br)Cl",
+      "status": "stable",
+      "output": "F[C@@H](Cl)Br"
+    },
+    {
+      "source": "Cl[C@@H](Br)F",
+      "status": "stable",
+      "output": "F[C@@H](Cl)Br"
+    },
+    {
+      "source": "[C@H](F)(Cl)Br",
+      "status": "stable",
+      "output": "F[C@@H](Cl)Br"
+    },
+    {
+      "source": "[C@H](Br)(F)Cl",
+      "status": "stable",
+      "output": "F[C@@H](Cl)Br"
+    },
+    {
+      "source": "F[C@H](Br)Cl",
+      "status": "stable",
+      "output": "F[C@@H](Cl)Br"
+    },
+    {
+      "source": "Cl[C@@H](Br)F",
+      "status": "stable",
+      "output": "F[C@@H](Cl)Br"
+    },
+    {
+      "source": "F[C@@H](Br)Cl",
+      "status": "stable",
+      "output": "F[C@H](Cl)Br"
+    },
+    {
+      "source": "[C@@H](F)(Cl)Br",
+      "status": "stable",
+      "output": "F[C@H](Cl)Br"
+    },
+    {
+      "source": "[C@@H](Br)(F)Cl",
+      "status": "stable",
+      "output": "F[C@H](Cl)Br"
+    },
+    {
+      "source": "F[C@H](Cl)Br",
+      "status": "stable",
+      "output": "F[C@H](Cl)Br"
+    },
+    {
+      "source": "[C@H](Br)(Cl)F",
+      "status": "stable",
+      "output": "F[C@H](Cl)Br"
+    },
+    {
+      "source": "F[C@H](Cl)Br",
+      "status": "stable",
+      "output": "F[C@H](Cl)Br"
+    },
+    {
+      "source": "C1[C@H](C)CC[C@H](C)C1",
+      "status": "stable",
+      "output": "C[C@H]1CC[C@@H](C)CC1"
+    },
+    {
+      "source": "C1[C@H](C)CC[C@@H](C1)C",
+      "status": "stable",
+      "output": "C[C@H]1CC[C@@H](C)CC1"
+    },
+    {
+      "source": "C1[C@H](CC[C@H](C1)C)C",
+      "status": "stable",
+      "output": "C[C@H]1CC[C@@H](C)CC1"
+    },
+    {
+      "source": "C1[C@H](C)CC[C@@H](C)C1",
+      "status": "stable",
+      "output": "C[C@H]1CC[C@H](C)CC1"
+    },
+    {
+      "source": "C[C@H]1CC[C@H](C)CC1",
+      "status": "stable",
+      "output": "C[C@H]1CC[C@H](C)CC1"
+    },
+    {
+      "source": "[C@H]1(C)CC[C@@H](CC1)C",
+      "status": "stable",
+      "output": "C[C@H]1CC[C@H](C)CC1"
+    },
+    {
+      "source": "C1[C@@H](C)[C@@H](CCC1)C",
+      "status": "stable",
+      "output": "C[C@@H]1CCCC[C@H]1C"
+    },
+    {
+      "source": "C1C[C@@H](C)[C@@H](CC1)C",
+      "status": "stable",
+      "output": "C[C@@H]1CCCC[C@H]1C"
+    },
+    {
+      "source": "C[C@H]1[C@H](C)CCCC1",
+      "status": "stable",
+      "output": "C[C@@H]1CCCC[C@H]1C"
+    },
+    {
+      "source": "O[C@H]1[C@H](O)[C@H]([C@@H]([C@@H](O)[C@@H]1O)O)O",
+      "status": "stable",
+      "output": "O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@@H]1O"
+    },
+    {
+      "source": "[C@H]1(O)[C@@H]([C@H]([C@@H]([C@@H](O)[C@@H]1O)O)O)O",
+      "status": "stable",
+      "output": "O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@@H]1O"
+    },
+    {
+      "source": "O[C@H]1[C@H](O)[C@H]([C@@H]([C@@H](O)[C@@H]1O)O)O",
+      "status": "stable",
+      "output": "O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@@H]1O"
+    },
+    {
+      "source": "C1CC[C@H]2[C@H](C1)CCCC2",
+      "status": "stable",
+      "output": "C1CC[C@H]2CCCC[C@@H]2C1"
+    },
+    {
+      "source": "[C@H]12CCCC[C@H]2CCCC1",
+      "status": "stable",
+      "output": "C1CC[C@H]2CCCC[C@@H]2C1"
+    },
+    {
+      "source": "C1CCC[C@H]2[C@H]1CCCC2",
+      "status": "stable",
+      "output": "C1CC[C@H]2CCCC[C@@H]2C1"
+    },
+    {
+      "source": "C(=C\\C)/C",
+      "status": "stable",
+      "output": "C/C=C/C"
+    },
+    {
+      "source": "C/C=C/C",
+      "status": "stable",
+      "output": "C/C=C/C"
+    },
+    {
+      "source": "C/C=C/C",
+      "status": "stable",
+      "output": "C/C=C/C"
+    },
+    {
+      "source": "C/C=C\\C",
+      "status": "stable",
+      "output": "C/C=C\\C"
+    },
+    {
+      "source": "C(/C)=C/C",
+      "status": "stable",
+      "output": "C/C=C\\C"
+    },
+    {
+      "source": "C(=C/C)/C",
+      "status": "stable",
+      "output": "C/C=C\\C"
+    },
+    {
+      "source": "C(=C\\F)/C=C/F",
+      "status": "stable",
+      "output": "F/C=C/C=C/F"
+    },
+    {
+      "source": "C(/C=C/F)=C\\F",
+      "status": "stable",
+      "output": "F/C=C/C=C/F"
+    },
+    {
+      "source": "C(/C=C/F)=C\\F",
+      "status": "stable",
+      "output": "F/C=C/C=C/F"
+    },
+    {
+      "source": "F\\C=C/C=C\\C=C/F",
+      "status": "stable",
+      "output": "F\\C=C/C=C\\C=C/F"
+    },
+    {
+      "source": "F\\C=C/C=C\\C=C/F",
+      "status": "stable",
+      "output": "F\\C=C/C=C\\C=C/F"
+    },
+    {
+      "source": "F\\C=C/C=C\\C=C/F",
+      "status": "stable",
+      "output": "F\\C=C/C=C\\C=C/F"
+    },
+    {
+      "source": "C(/C(C)=C(\\CC)C)C",
+      "status": "stable",
+      "output": "CC/C(C)=C(/C)CC"
+    },
+    {
+      "source": "C(C)/C(=C(/C)CC)C",
+      "status": "stable",
+      "output": "CC/C(C)=C(/C)CC"
+    },
+    {
+      "source": "C(C)/C(=C(/C)CC)C",
+      "status": "stable",
+      "output": "CC/C(C)=C(/C)CC"
+    },
+    {
+      "source": "C/C=C/C=C/C=C/C",
+      "status": "stable",
+      "output": "C/C=C/C=C/C=C/C"
+    },
+    {
+      "source": "C(=C\\C=C\\C)/C=C/C",
+      "status": "stable",
+      "output": "C/C=C/C=C/C=C/C"
+    },
+    {
+      "source": "C(=C/C=C/C=C/C)\\C",
+      "status": "stable",
+      "output": "C/C=C/C=C/C=C/C"
+    },
+    {
+      "source": "O/N=C/c1ccccc1",
+      "status": "stable",
+      "output": "O/N=C/c1ccccc1"
+    },
+    {
+      "source": "c1(/C=N/O)ccccc1",
+      "status": "stable",
+      "output": "O/N=C/c1ccccc1"
+    },
+    {
+      "source": "c1cccc(c1)/C=N/O",
+      "status": "stable",
+      "output": "O/N=C/c1ccccc1"
+    },
+    {
+      "source": "C1/C=C\\C=CCCCCC1",
+      "status": "stable",
+      "output": "C1=CCCCCCC/C=C\\1"
+    },
+    {
+      "source": "C1C/C=C\\C=CCCCC1",
+      "status": "stable",
+      "output": "C1=CCCCCCC/C=C\\1"
+    },
+    {
+      "source": "C1/C=CCCCCCC\\C=1",
+      "status": "stable",
+      "output": "C1=CCCCCCC/C=C\\1"
+    },
+    {
+      "source": "C1=C/CCCCCCCC/1",
+      "status": "stable",
+      "output": "C1=C/CCCCCCCC/1"
+    },
+    {
+      "source": "C1/CCCCCCCC/C=1",
+      "status": "stable",
+      "output": "C1=C/CCCCCCCC/1"
+    },
+    {
+      "source": "C1C/C=C/CCCCCC1",
+      "status": "stable",
+      "output": "C1=C/CCCCCCCC/1"
+    },
+    {
+      "source": "C1CCC/C=C\\CC1",
+      "status": "stable",
+      "output": "C1=C\\CCCCCC/1"
+    },
+    {
+      "source": "C1/CCCCCC\\C=1",
+      "status": "stable",
+      "output": "C1=C\\CCCCCC/1"
+    },
+    {
+      "source": "C1C/C=C\\CCCC1",
+      "status": "stable",
+      "output": "C1=C\\CCCCCC/1"
+    },
+    {
+      "source": "O=C(O)/C=C\\C(=O)O",
+      "status": "stable",
+      "output": "O=C(O)/C=C\\C(=O)O"
+    },
+    {
+      "source": "C(/C(O)=O)=C/C(=O)O",
+      "status": "stable",
+      "output": "O=C(O)/C=C\\C(=O)O"
+    },
+    {
+      "source": "O=C(/C=C\\C(=O)O)O",
+      "status": "stable",
+      "output": "O=C(O)/C=C\\C(=O)O"
+    },
+    {
+      "source": "c1(ccccc1)[N+]([O-])=O",
+      "status": "stable",
+      "output": "O=[N+]([O-])c1ccccc1"
+    },
+    {
+      "source": "[N+](c1ccccc1)([O-])=O",
+      "status": "stable",
+      "output": "O=[N+]([O-])c1ccccc1"
+    },
+    {
+      "source": "c1cccc([N+](=O)[O-])c1",
+      "status": "stable",
+      "output": "O=[N+]([O-])c1ccccc1"
+    },
+    {
+      "source": "O=[N+](C)[O-]",
+      "status": "stable",
+      "output": "C[N+](=O)[O-]"
+    },
+    {
+      "source": "[N+]([O-])(C)=O",
+      "status": "stable",
+      "output": "C[N+](=O)[O-]"
+    },
+    {
+      "source": "[O-][N+](C)=O",
+      "status": "stable",
+      "output": "C[N+](=O)[O-]"
+    },
+    {
+      "source": "c1c[n+](ccc1)[O-]",
+      "status": "stable",
+      "output": "[O-][n+]1ccccc1"
+    },
+    {
+      "source": "c1[n+]([O-])cccc1",
+      "status": "stable",
+      "output": "[O-][n+]1ccccc1"
+    },
+    {
+      "source": "c1cc[n+]([O-])cc1",
+      "status": "stable",
+      "output": "[O-][n+]1ccccc1"
+    },
+    {
+      "source": "c1ccc[nH]1",
+      "status": "stable",
+      "output": "c1cc[nH]c1"
+    },
+    {
+      "source": "c1[nH]ccc1",
+      "status": "stable",
+      "output": "c1cc[nH]c1"
+    },
+    {
+      "source": "c1cc[nH]c1",
+      "status": "stable",
+      "output": "c1cc[nH]c1"
+    },
+    {
+      "source": "c1[nH]ccc1",
+      "status": "stable",
+      "output": "c1cc[nH]c1"
+    },
+    {
+      "source": "c1c[nH]cc1",
+      "status": "stable",
+      "output": "c1cc[nH]c1"
+    },
+    {
+      "source": "c1cc[nH]c1",
+      "status": "stable",
+      "output": "c1cc[nH]c1"
+    },
+    {
+      "source": "n1(C)cccc1",
+      "status": "stable",
+      "output": "Cn1cccc1"
+    },
+    {
+      "source": "c1cccn1C",
+      "status": "stable",
+      "output": "Cn1cccc1"
+    },
+    {
+      "source": "c1cn(cc1)C",
+      "status": "stable",
+      "output": "Cn1cccc1"
+    },
+    {
+      "source": "c1cc2c(cc[nH]2)cc1",
+      "status": "stable",
+      "output": "c1ccc2[nH]ccc2c1"
+    },
+    {
+      "source": "c1[nH]c2ccccc2c1",
+      "status": "stable",
+      "output": "c1ccc2[nH]ccc2c1"
+    },
+    {
+      "source": "c1cccc2[nH]ccc12",
+      "status": "stable",
+      "output": "c1ccc2[nH]ccc2c1"
+    },
+    {
+      "source": "c1cc2c(cccc2)cc1",
+      "status": "stable",
+      "output": "c1ccc2ccccc2c1"
+    },
+    {
+      "source": "c1ccc2ccccc2c1",
+      "status": "stable",
+      "output": "c1ccc2ccccc2c1"
+    },
+    {
+      "source": "c12c(cccc2)cccc1",
+      "status": "stable",
+      "output": "c1ccc2ccccc2c1"
+    },
+    {
+      "source": "c1c2c3c4c(c5c2c(cc1)ccc5)cccc4ccc3",
+      "status": "stable",
+      "output": "c1cc2cccc3c4cccc5cccc(c(c1)c23)c54"
+    },
+    {
+      "source": "c1ccc2c3c(c4c5c(cccc5ccc4)c13)ccc2",
+      "status": "stable",
+      "output": "c1cc2cccc3c4cccc5cccc(c(c1)c23)c54"
+    },
+    {
+      "source": "c1c2c3c(c4cccc5c4c(ccc5)c3ccc2)cc1",
+      "status": "stable",
+      "output": "c1cc2cccc3c4cccc5cccc(c(c1)c23)c54"
+    },
+    {
+      "source": "c1cccc2c1cc1ccccc1c2",
+      "status": "stable",
+      "output": "c1ccc2cc3ccccc3cc2c1"
+    },
+    {
+      "source": "c12ccccc1cc1c(cccc1)c2",
+      "status": "stable",
+      "output": "c1ccc2cc3ccccc3cc2c1"
+    },
+    {
+      "source": "c1ccc2c(cc3ccccc3c2)c1",
+      "status": "stable",
+      "output": "c1ccc2cc3ccccc3cc2c1"
+    },
+    {
+      "source": "c1cccc2c1cccc2",
+      "status": "stable",
+      "output": "c1ccc2ccccc2c1"
+    },
+    {
+      "source": "c1ccc2c(cccc2)c1",
+      "status": "stable",
+      "output": "c1ccc2ccccc2c1"
+    },
+    {
+      "source": "c1cccc2c1cccc2",
+      "status": "stable",
+      "output": "c1ccc2ccccc2c1"
+    },
+    {
+      "source": "c1ccc2-c3c(-c2c1)cccc3",
+      "status": "stable",
+      "output": "c1ccc2c(c1)-c1ccccc1-2"
+    },
+    {
+      "source": "c1cccc2c1-c1ccccc1-2",
+      "status": "stable",
+      "output": "c1ccc2c(c1)-c1ccccc1-2"
+    },
+    {
+      "source": "c1cccc2c1-c1ccccc1-2",
+      "status": "stable",
+      "output": "c1ccc2c(c1)-c1ccccc1-2"
+    },
+    {
+      "source": "c1[nH]c(=O)ccc1",
+      "status": "stable",
+      "output": "O=c1cccc[nH]1"
+    },
+    {
+      "source": "c1cc([nH]cc1)=O",
+      "status": "stable",
+      "output": "O=c1cccc[nH]1"
+    },
+    {
+      "source": "c1cc[nH]c(c1)=O",
+      "status": "stable",
+      "output": "O=c1cccc[nH]1"
+    },
+    {
+      "source": "Oc1ccccn1",
+      "status": "stable",
+      "output": "Oc1ccccn1"
+    },
+    {
+      "source": "c1cc(ncc1)O",
+      "status": "stable",
+      "output": "Oc1ccccn1"
+    },
+    {
+      "source": "c1(O)ncccc1",
+      "status": "stable",
+      "output": "Oc1ccccn1"
+    },
+    {
+      "source": "[CH2]",
+      "status": "stable",
+      "output": "[CH2]"
+    },
+    {
+      "source": "[CH2]",
+      "status": "stable",
+      "output": "[CH2]"
+    },
+    {
+      "source": "[CH2]",
+      "status": "stable",
+      "output": "[CH2]"
+    },
+    {
+      "source": "[CH3]",
+      "status": "stable",
+      "output": "[CH3]"
+    },
+    {
+      "source": "[CH3]",
+      "status": "stable",
+      "output": "[CH3]"
+    },
+    {
+      "source": "[CH3]",
+      "status": "stable",
+      "output": "[CH3]"
+    },
+    {
+      "source": "[C]",
+      "status": "stable",
+      "output": "[C]"
+    },
+    {
+      "source": "[C]",
+      "status": "stable",
+      "output": "[C]"
+    },
+    {
+      "source": "[C]",
+      "status": "stable",
+      "output": "[C]"
+    },
+    {
+      "source": "[O]",
+      "status": "stable",
+      "output": "[O]"
+    },
+    {
+      "source": "[O]",
+      "status": "stable",
+      "output": "[O]"
+    },
+    {
+      "source": "[O]",
+      "status": "stable",
+      "output": "[O]"
+    },
+    {
+      "source": "[OH]",
+      "status": "stable",
+      "output": "[OH]"
+    },
+    {
+      "source": "[OH]",
+      "status": "stable",
+      "output": "[OH]"
+    },
+    {
+      "source": "[OH]",
+      "status": "stable",
+      "output": "[OH]"
+    },
+    {
+      "source": "[Na+].[Cl-]",
+      "status": "stable",
+      "output": "[Cl-].[Na+]"
+    },
+    {
+      "source": "[Na+].[Cl-]",
+      "status": "stable",
+      "output": "[Cl-].[Na+]"
+    },
+    {
+      "source": "[Na+].[Cl-]",
+      "status": "stable",
+      "output": "[Cl-].[Na+]"
+    },
+    {
+      "source": "[Na+].[Na+].[O-]S(=O)(=O)[O-]",
+      "status": "stable",
+      "output": "O=S(=O)([O-])[O-].[Na+].[Na+]"
+    },
+    {
+      "source": "[Na+].[Na+].S([O-])(=O)(=O)[O-]",
+      "status": "stable",
+      "output": "O=S(=O)([O-])[O-].[Na+].[Na+]"
+    },
+    {
+      "source": "[Na+].[Na+].S(=O)(=O)([O-])[O-]",
+      "status": "stable",
+      "output": "O=S(=O)([O-])[O-].[Na+].[Na+]"
+    },
+    {
+      "source": "C(=O)([O-])C.CC(=O)[O-].[Ca+2]",
+      "status": "stable",
+      "output": "CC(=O)[O-].CC(=O)[O-].[Ca+2]"
+    },
+    {
+      "source": "CC([O-])=O.O=C(C)[O-].[Ca+2]",
+      "status": "stable",
+      "output": "CC(=O)[O-].CC(=O)[O-].[Ca+2]"
+    },
+    {
+      "source": "C(=O)(C)[O-].C(=O)([O-])C.[Ca+2]",
+      "status": "stable",
+      "output": "CC(=O)[O-].CC(=O)[O-].[Ca+2]"
+    },
+    {
+      "source": "[Fe+2].[Cl-].[Cl-].O.O.O.O",
+      "status": "stable",
+      "output": "O.O.O.O.[Cl-].[Cl-].[Fe+2]"
+    },
+    {
+      "source": "[Fe+2].[Cl-].[Cl-].O.O.O.O",
+      "status": "stable",
+      "output": "O.O.O.O.[Cl-].[Cl-].[Fe+2]"
+    },
+    {
+      "source": "[Fe+2].[Cl-].[Cl-].O.O.O.O",
+      "status": "stable",
+      "output": "O.O.O.O.[Cl-].[Cl-].[Fe+2]"
+    },
+    {
+      "source": "c1ccccc1.c1ccccc1.C.C.O",
+      "status": "stable",
+      "output": "C.C.O.c1ccccc1.c1ccccc1"
+    },
+    {
+      "source": "c1ccccc1.c1ccccc1.C.C.O",
+      "status": "stable",
+      "output": "C.C.O.c1ccccc1.c1ccccc1"
+    },
+    {
+      "source": "c1ccccc1.c1ccccc1.C.C.O",
+      "status": "stable",
+      "output": "C.C.O.c1ccccc1.c1ccccc1"
+    },
+    {
+      "source": "[Cu+2].[O-]C(=O)C.CC([O-])=O",
+      "status": "stable",
+      "output": "CC(=O)[O-].CC(=O)[O-].[Cu+2]"
+    },
+    {
+      "source": "[Cu+2].CC([O-])=O.[O-]C(C)=O",
+      "status": "stable",
+      "output": "CC(=O)[O-].CC(=O)[O-].[Cu+2]"
+    },
+    {
+      "source": "[Cu+2].CC([O-])=O.CC([O-])=O",
+      "status": "stable",
+      "output": "CC(=O)[O-].CC(=O)[O-].[Cu+2]"
+    },
+    {
+      "source": "C1CC2CC1CC2",
+      "status": "stable",
+      "output": "C1CC2CCC1C2"
+    },
+    {
+      "source": "C1C2CC(CC2)C1",
+      "status": "stable",
+      "output": "C1CC2CCC1C2"
+    },
+    {
+      "source": "C1CC2CCC1C2",
+      "status": "stable",
+      "output": "C1CC2CCC1C2"
+    },
+    {
+      "source": "C12C3C4C2C2C1C3C24",
+      "status": "stable",
+      "output": "C12C3C4C1C1C2C3C41"
+    },
+    {
+      "source": "C12C3C4C2C2C4C3C21",
+      "status": "stable",
+      "output": "C12C3C4C1C1C2C3C41"
+    },
+    {
+      "source": "C12C3C4C1C1C4C3C21",
+      "status": "stable",
+      "output": "C12C3C4C1C1C2C3C41"
+    },
+    {
+      "source": "C1C2C(C)(C)C(C1)(C)C(=O)C2",
+      "status": "stable",
+      "output": "CC12CCC(CC1=O)C2(C)C"
+    },
+    {
+      "source": "C1CC2CC(=O)C1(C)C2(C)C",
+      "status": "stable",
+      "output": "CC12CCC(CC1=O)C2(C)C"
+    },
+    {
+      "source": "C1(C)(C)C2CC(=O)C1(C)CC2",
+      "status": "stable",
+      "output": "CC12CCC(CC1=O)C2(C)C"
+    },
+    {
+      "source": "c12ccc3ccccc3c1cccc2",
+      "status": "stable",
+      "output": "c1ccc2c(c1)ccc1ccccc12"
+    },
+    {
+      "source": "c1cccc2ccc3c(c21)cccc3",
+      "status": "stable",
+      "output": "c1ccc2c(c1)ccc1ccccc12"
+    },
+    {
+      "source": "c1c2c3ccccc3ccc2ccc1",
+      "status": "stable",
+      "output": "c1ccc2c(c1)ccc1ccccc12"
+    },
+    {
+      "source": "c1cccc(c1)[S@](C)=O",
+      "status": "stable",
+      "output": "C[S@](=O)c1ccccc1"
+    },
+    {
+      "source": "c1ccccc1[S@](C)=O",
+      "status": "stable",
+      "output": "C[S@](=O)c1ccccc1"
+    },
+    {
+      "source": "c1cc([S@](C)=O)ccc1",
+      "status": "stable",
+      "output": "C[S@](=O)c1ccccc1"
+    },
+    {
+      "source": "c1cc(ccc1)[S@+]([O-])C",
+      "status": "stable",
+      "output": "C[S@@+]([O-])c1ccccc1"
+    },
+    {
+      "source": "c1ccc([S@+]([O-])C)cc1",
+      "status": "stable",
+      "output": "C[S@@+]([O-])c1ccccc1"
+    },
+    {
+      "source": "C[S@@+]([O-])c1ccccc1",
+      "status": "stable",
+      "output": "C[S@@+]([O-])c1ccccc1"
+    },
+    {
+      "source": "c1ccc(cc1)[P@](O)(=O)C",
+      "status": "stable",
+      "output": "C[P@](=O)(O)c1ccccc1"
+    },
+    {
+      "source": "c1cc(ccc1)[P@](C)(O)=O",
+      "status": "stable",
+      "output": "C[P@](=O)(O)c1ccccc1"
+    },
+    {
+      "source": "c1cc(ccc1)[P@](C)(O)=O",
+      "status": "stable",
+      "output": "C[P@](=O)(O)c1ccccc1"
+    },
+    {
+      "source": "C1(C[N@@]1C)C",
+      "status": "stable",
+      "output": "CC1C[N@@]1C"
+    },
+    {
+      "source": "[N@@]1(C)CC1C",
+      "status": "stable",
+      "output": "CC1C[N@@]1C"
+    },
+    {
+      "source": "C[N@]1CC1C",
+      "status": "stable",
+      "output": "CC1C[N@@]1C"
+    },
+    {
+      "source": "[C@H](C)(C(=O)O)N",
+      "status": "stable",
+      "output": "C[C@H](N)C(=O)O"
+    },
+    {
+      "source": "OC(=O)[C@H](C)N",
+      "status": "stable",
+      "output": "C[C@H](N)C(=O)O"
+    },
+    {
+      "source": "C[C@@H](C(O)=O)N",
+      "status": "stable",
+      "output": "C[C@H](N)C(=O)O"
+    },
+    {
+      "source": "C(O)(=O)[C@H](C)N",
+      "status": "stable",
+      "output": "C[C@H](N)C(=O)O"
+    },
+    {
+      "source": "OC(=O)[C@H](C)N",
+      "status": "stable",
+      "output": "C[C@H](N)C(=O)O"
+    },
+    {
+      "source": "C([C@@H](N)C)(O)=O",
+      "status": "stable",
+      "output": "C[C@H](N)C(=O)O"
+    },
+    {
+      "source": "[NH3+][C@@H](C)C([O-])=O",
+      "status": "stable",
+      "output": "C[C@H]([NH3+])C(=O)[O-]"
+    },
+    {
+      "source": "C[C@@H](C(=O)[O-])[NH3+]",
+      "status": "stable",
+      "output": "C[C@H]([NH3+])C(=O)[O-]"
+    },
+    {
+      "source": "O=C([C@@H]([NH3+])C)[O-]",
+      "status": "stable",
+      "output": "C[C@H]([NH3+])C(=O)[O-]"
+    },
+    {
+      "source": "C1(CC1C1C(C2C(C3CC3C3C(C4C(C5CC5C5CC5C5CC5C5CC5)C4)C3)C2)C1)C1C(C1)C1CC1",
+      "status": "stable",
+      "output": "C1CC1C1CC1C1CC1C1CC1C1CC1C1CC1C1CC1C1CC1C1CC1C1CC1C1CC1C1CC1"
+    },
+    {
+      "source": "C1C(C1C1CC1C1C(C1)C1C(C1)C1CC1C1CC1)C1C(C2CC2C2C(C2)C2CC2C2C(C2)C2CC2)C1",
+      "status": "stable",
+      "output": "C1CC1C1CC1C1CC1C1CC1C1CC1C1CC1C1CC1C1CC1C1CC1C1CC1C1CC1C1CC1"
+    },
+    {
+      "source": "C1CC1C1CC1C1CC1C1CC1C1CC1C1C(C1)C1CC1C1C(C1)C1C(C1)C1CC1C1C(C1)C1CC1",
+      "status": "stable",
+      "output": "C1CC1C1CC1C1CC1C1CC1C1CC1C1CC1C1CC1C1CC1C1CC1C1CC1C1CC1C1CC1"
+    },
+    {
+      "source": "C1C2(CCC3(C1)CCC1(CC3)CCC3(CC1)CCC1(CCC4(CCC5(CC4)CCC4(CC5)CCC5(CC4)CCCCC5)CC1)CC3)CCC1(CC2)CCCCC1",
+      "status": "stable",
+      "output": "C1CCC2(CC1)CCC1(CC2)CCC2(CC1)CCC1(CC2)CCC2(CC1)CCC1(CCC3(CCC4(CCC5(CCC6(CCCCC6)CC5)CC4)CC3)CC1)CC2"
+    },
+    {
+      "source": "C1CCCCC12CCC1(CCC3(CC1)CCC1(CC3)CCC3(CCC4(CCC5(CC4)CCC4(CCC6(CC4)CCC4(CC6)CCCCC4)CC5)CC3)CC1)CC2",
+      "status": "stable",
+      "output": "C1CCC2(CC1)CCC1(CC2)CCC2(CC1)CCC1(CC2)CCC2(CC1)CCC1(CCC3(CCC4(CCC5(CCC6(CCCCC6)CC5)CC4)CC3)CC1)CC2"
+    },
+    {
+      "source": "C1C2(CCC3(CCC4(CC3)CCC3(CCC5(CC3)CCC3(CCC6(CC3)CCC3(CCC7(CC3)CCCCC7)CC6)CC5)CC4)CC2)CCC2(C1)CCCCC2",
+      "status": "stable",
+      "output": "C1CCC2(CC1)CCC1(CC2)CCC2(CC1)CCC1(CC2)CCC2(CC1)CCC1(CCC3(CCC4(CCC5(CCC6(CCCCC6)CC5)CC4)CC3)CC1)CC2"
+    },
+    {
+      "source": "C1CCCCC1",
+      "status": "stable",
+      "output": "C1CCCCC1"
+    },
+    {
+      "source": "C1CCCCC1",
+      "status": "stable",
+      "output": "C1CCCCC1"
+    },
+    {
+      "source": "C1CCCCC1",
+      "status": "stable",
+      "output": "C1CCCCC1"
+    },
+    {
+      "source": "C1CC1",
+      "status": "stable",
+      "output": "C1CC1"
+    },
+    {
+      "source": "C1CC1",
+      "status": "stable",
+      "output": "C1CC1"
+    },
+    {
+      "source": "C1CC1",
+      "status": "stable",
+      "output": "C1CC1"
+    },
+    {
+      "source": "[13CH4]",
+      "status": "stable",
+      "output": "[13CH4]"
+    },
+    {
+      "source": "[13CH4]",
+      "status": "stable",
+      "output": "[13CH4]"
+    },
+    {
+      "source": "[13CH4]",
+      "status": "stable",
+      "output": "[13CH4]"
+    },
+    {
+      "source": "Cl[13C@@H](F)Br",
+      "status": "stable",
+      "output": "F[13C@H](Cl)Br"
+    },
+    {
+      "source": "[13C@H](Br)(Cl)F",
+      "status": "stable",
+      "output": "F[13C@H](Cl)Br"
+    },
+    {
+      "source": "F[13C@@H](Br)Cl",
+      "status": "stable",
+      "output": "F[13C@H](Cl)Br"
+    },
+    {
+      "source": "[CH3:1][OH:2]",
+      "status": "stable",
+      "output": "[CH3:1][OH:2]"
+    },
+    {
+      "source": "[CH3:1][OH:2]",
+      "status": "stable",
+      "output": "[CH3:1][OH:2]"
+    },
+    {
+      "source": "[CH3:1][OH:2]",
+      "status": "stable",
+      "output": "[CH3:1][OH:2]"
+    },
+    {
+      "source": "*C",
+      "status": "stable",
+      "output": "*C"
+    },
+    {
+      "source": "*C",
+      "status": "stable",
+      "output": "*C"
+    },
+    {
+      "source": "C*",
+      "status": "stable",
+      "output": "*C"
+    },
+    {
+      "source": "c1cc(ccc1)*",
+      "status": "stable",
+      "output": "*c1ccccc1"
+    },
+    {
+      "source": "c1ccccc1*",
+      "status": "stable",
+      "output": "*c1ccccc1"
+    },
+    {
+      "source": "c1ccc(*)cc1",
+      "status": "stable",
+      "output": "*c1ccccc1"
+    },
+    {
+      "source": "C([2*])C[1*]",
+      "status": "stable",
+      "output": "[1*]CC[2*]"
+    },
+    {
+      "source": "C(C[2*])[1*]",
+      "status": "stable",
+      "output": "[1*]CC[2*]"
+    },
+    {
+      "source": "C(C[1*])[2*]",
+      "status": "stable",
+      "output": "[1*]CC[2*]"
+    },
+    {
+      "source": "C[N+](C)(C)C",
+      "status": "stable",
+      "output": "C[N+](C)(C)C"
+    },
+    {
+      "source": "C[N+](C)(C)C",
+      "status": "stable",
+      "output": "C[N+](C)(C)C"
+    },
+    {
+      "source": "C[N+](C)(C)C",
+      "status": "stable",
+      "output": "C[N+](C)(C)C"
+    },
+    {
+      "source": "[NH4+]",
+      "status": "stable",
+      "output": "[NH4+]"
+    },
+    {
+      "source": "[NH4+]",
+      "status": "stable",
+      "output": "[NH4+]"
+    },
+    {
+      "source": "[NH4+]",
+      "status": "stable",
+      "output": "[NH4+]"
+    },
+    {
+      "source": "[O-]",
+      "status": "stable",
+      "output": "[O-]"
+    },
+    {
+      "source": "[O-]",
+      "status": "stable",
+      "output": "[O-]"
+    },
+    {
+      "source": "[O-]",
+      "status": "stable",
+      "output": "[O-]"
+    },
+    {
+      "source": "[OH-]",
+      "status": "stable",
+      "output": "[OH-]"
+    },
+    {
+      "source": "[OH-]",
+      "status": "stable",
+      "output": "[OH-]"
+    },
+    {
+      "source": "[OH-]",
+      "status": "stable",
+      "output": "[OH-]"
+    },
+    {
+      "source": "[H+]",
+      "status": "stable",
+      "output": "[H+]"
+    },
+    {
+      "source": "[H+]",
+      "status": "stable",
+      "output": "[H+]"
+    },
+    {
+      "source": "[H+]",
+      "status": "stable",
+      "output": "[H+]"
+    },
+    {
+      "source": "[H-]",
+      "status": "stable",
+      "output": "[H-]"
+    },
+    {
+      "source": "[H-]",
+      "status": "stable",
+      "output": "[H-]"
+    },
+    {
+      "source": "[H-]",
+      "status": "stable",
+      "output": "[H-]"
+    },
+    {
+      "source": "[H][H]",
+      "status": "stable",
+      "output": "[H][H]"
+    },
+    {
+      "source": "[H][H]",
+      "status": "stable",
+      "output": "[H][H]"
+    },
+    {
+      "source": "[H][H]",
+      "status": "stable",
+      "output": "[H][H]"
+    },
+    {
+      "source": "[2H][2H]",
+      "status": "stable",
+      "output": "[2H][2H]"
+    },
+    {
+      "source": "[2H][2H]",
+      "status": "stable",
+      "output": "[2H][2H]"
+    },
+    {
+      "source": "[2H][2H]",
+      "status": "stable",
+      "output": "[2H][2H]"
+    },
+    {
+      "source": "[HH]",
+      "status": "stable",
+      "output": "[HH]"
+    },
+    {
+      "source": "[HH]",
+      "status": "stable",
+      "output": "[HH]"
+    },
+    {
+      "source": "[HH]",
+      "status": "stable",
+      "output": "[HH]"
+    },
+    {
+      "source": "CC#N",
+      "status": "stable",
+      "output": "CC#N"
+    },
+    {
+      "source": "C(#N)C",
+      "status": "stable",
+      "output": "CC#N"
+    },
+    {
+      "source": "CC#N",
+      "status": "stable",
+      "output": "CC#N"
+    },
+    {
+      "source": "C#C",
+      "status": "stable",
+      "output": "C#C"
+    },
+    {
+      "source": "C#C",
+      "status": "stable",
+      "output": "C#C"
+    },
+    {
+      "source": "C#C",
+      "status": "stable",
+      "output": "C#C"
+    },
+    {
+      "source": "C=C=C",
+      "status": "stable",
+      "output": "C=C=C"
+    },
+    {
+      "source": "C=C=C",
+      "status": "stable",
+      "output": "C=C=C"
+    },
+    {
+      "source": "C=C=C",
+      "status": "stable",
+      "output": "C=C=C"
+    },
+    {
+      "source": "CC=C=CC",
+      "status": "stable",
+      "output": "CC=C=CC"
+    },
+    {
+      "source": "C(C)=C=CC",
+      "status": "stable",
+      "output": "CC=C=CC"
+    },
+    {
+      "source": "CC=C=CC",
+      "status": "stable",
+      "output": "CC=C=CC"
+    },
+    {
+      "source": "CC=C=CC",
+      "status": "stable",
+      "output": "CC=C=CC"
+    },
+    {
+      "source": "CC=C=CC",
+      "status": "stable",
+      "output": "CC=C=CC"
+    },
+    {
+      "source": "C(=C=CC)C",
+      "status": "stable",
+      "output": "CC=C=CC"
+    },
+    {
+      "source": "[N-]=[N+]=C",
+      "status": "stable",
+      "output": "C=[N+]=[N-]"
+    },
+    {
+      "source": "C=[N+]=[N-]",
+      "status": "stable",
+      "output": "C=[N+]=[N-]"
+    },
+    {
+      "source": "C=[N+]=[N-]",
+      "status": "stable",
+      "output": "C=[N+]=[N-]"
+    },
+    {
+      "source": "CN=[N+]=[N-]",
+      "status": "stable",
+      "output": "CN=[N+]=[N-]"
+    },
+    {
+      "source": "[N-]=[N+]=NC",
+      "status": "stable",
+      "output": "CN=[N+]=[N-]"
+    },
+    {
+      "source": "CN=[N+]=[N-]",
+      "status": "stable",
+      "output": "CN=[N+]=[N-]"
+    },
+    {
+      "source": "[N-]=[N+]=NC",
+      "status": "stable",
+      "output": "CN=[N+]=[N-]"
+    },
+    {
+      "source": "CN=[N+]=[N-]",
+      "status": "stable",
+      "output": "CN=[N+]=[N-]"
+    },
+    {
+      "source": "[N+](=NC)=[N-]",
+      "status": "stable",
+      "output": "CN=[N+]=[N-]"
+    },
+    {
+      "source": "O=S(O)(O)=O",
+      "status": "stable",
+      "output": "O=S(=O)(O)O"
+    },
+    {
+      "source": "O=S(O)(=O)O",
+      "status": "stable",
+      "output": "O=S(=O)(O)O"
+    },
+    {
+      "source": "OS(=O)(=O)O",
+      "status": "stable",
+      "output": "O=S(=O)(O)O"
+    },
+    {
+      "source": "OS(=O)(=O)O",
+      "status": "stable",
+      "output": "O=S(=O)(O)O"
+    },
+    {
+      "source": "O=S(=O)(O)O",
+      "status": "stable",
+      "output": "O=S(=O)(O)O"
+    },
+    {
+      "source": "O=S(=O)(O)O",
+      "status": "stable",
+      "output": "O=S(=O)(O)O"
+    },
+    {
+      "source": "OP(O)(=O)O",
+      "status": "stable",
+      "output": "O=P(O)(O)O"
+    },
+    {
+      "source": "O=P(O)(O)O",
+      "status": "stable",
+      "output": "O=P(O)(O)O"
+    },
+    {
+      "source": "OP(=O)(O)O",
+      "status": "stable",
+      "output": "O=P(O)(O)O"
+    },
+    {
+      "source": "[P-](F)(F)(F)(F)(F)F",
+      "status": "stable",
+      "output": "F[P-](F)(F)(F)(F)F"
+    },
+    {
+      "source": "F[P-](F)(F)(F)(F)F",
+      "status": "stable",
+      "output": "F[P-](F)(F)(F)(F)F"
+    },
+    {
+      "source": "F[P-](F)(F)(F)(F)F",
+      "status": "stable",
+      "output": "F[P-](F)(F)(F)(F)F"
+    },
+    {
+      "source": "F[B-](F)(F)F",
+      "status": "stable",
+      "output": "F[B-](F)(F)F"
+    },
+    {
+      "source": "F[B-](F)(F)F",
+      "status": "stable",
+      "output": "F[B-](F)(F)F"
+    },
+    {
+      "source": "F[B-](F)(F)F",
+      "status": "stable",
+      "output": "F[B-](F)(F)F"
+    },
+    {
+      "source": "B(c1ccccc1)(O)O",
+      "status": "stable",
+      "output": "OB(O)c1ccccc1"
+    },
+    {
+      "source": "c1cc(ccc1)B(O)O",
+      "status": "stable",
+      "output": "OB(O)c1ccccc1"
+    },
+    {
+      "source": "OB(O)c1ccccc1",
+      "status": "stable",
+      "output": "OB(O)c1ccccc1"
+    },
+    {
+      "source": "C[Se]c1ccccc1",
+      "status": "stable",
+      "output": "C[Se]c1ccccc1"
+    },
+    {
+      "source": "c1cccc([Se]C)c1",
+      "status": "stable",
+      "output": "C[Se]c1ccccc1"
+    },
+    {
+      "source": "C[Se]c1ccccc1",
+      "status": "stable",
+      "output": "C[Se]c1ccccc1"
+    },
+    {
+      "source": "c1cc[se]c1",
+      "status": "stable",
+      "output": "c1cc[se]c1"
+    },
+    {
+      "source": "c1c[se]cc1",
+      "status": "stable",
+      "output": "c1cc[se]c1"
+    },
+    {
+      "source": "c1ccc[se]1",
+      "status": "stable",
+      "output": "c1cc[se]c1"
+    },
+    {
+      "source": "c1cc[te]c1",
+      "status": "stable",
+      "output": "c1cc[te]c1"
+    },
+    {
+      "source": "c1cc[te]c1",
+      "status": "stable",
+      "output": "c1cc[te]c1"
+    },
+    {
+      "source": "[te]1cccc1",
+      "status": "stable",
+      "output": "c1cc[te]c1"
+    },
+    {
+      "source": "c1ccco1",
+      "status": "stable",
+      "output": "c1ccoc1"
+    },
+    {
+      "source": "c1ccco1",
+      "status": "stable",
+      "output": "c1ccoc1"
+    },
+    {
+      "source": "c1ccoc1",
+      "status": "stable",
+      "output": "c1ccoc1"
+    },
+    {
+      "source": "c1cccs1",
+      "status": "stable",
+      "output": "c1ccsc1"
+    },
+    {
+      "source": "c1ccsc1",
+      "status": "stable",
+      "output": "c1ccsc1"
+    },
+    {
+      "source": "s1cccc1",
+      "status": "stable",
+      "output": "c1ccsc1"
+    },
+    {
+      "source": "c1oncc1",
+      "status": "stable",
+      "output": "c1cnoc1"
+    },
+    {
+      "source": "n1occc1",
+      "status": "stable",
+      "output": "c1cnoc1"
+    },
+    {
+      "source": "c1cnoc1",
+      "status": "stable",
+      "output": "c1cnoc1"
+    },
+    {
+      "source": "n1ccncc1",
+      "status": "stable",
+      "output": "c1cnccn1"
+    },
+    {
+      "source": "c1cnccn1",
+      "status": "stable",
+      "output": "c1cnccn1"
+    },
+    {
+      "source": "n1ccncc1",
+      "status": "stable",
+      "output": "c1cnccn1"
+    },
+    {
+      "source": "c1nc[nH]n1",
+      "status": "stable",
+      "output": "c1nc[nH]n1"
+    },
+    {
+      "source": "n1cnc[nH]1",
+      "status": "stable",
+      "output": "c1nc[nH]n1"
+    },
+    {
+      "source": "c1nc[nH]n1",
+      "status": "stable",
+      "output": "c1nc[nH]n1"
+    },
+    {
+      "source": "Cc1nnc(o1)C",
+      "status": "stable",
+      "output": "Cc1nnc(C)o1"
+    },
+    {
+      "source": "o1c(nnc1C)C",
+      "status": "stable",
+      "output": "Cc1nnc(C)o1"
+    },
+    {
+      "source": "n1c(oc(n1)C)C",
+      "status": "stable",
+      "output": "Cc1nnc(C)o1"
+    },
+    {
+      "source": "C1=CC(C=CC1=O)=O",
+      "status": "stable",
+      "output": "O=C1C=CC(=O)C=C1"
+    },
+    {
+      "source": "C1(C=CC(=O)C=C1)=O",
+      "status": "stable",
+      "output": "O=C1C=CC(=O)C=C1"
+    },
+    {
+      "source": "O=C1C=CC(=O)C=C1",
+      "status": "stable",
+      "output": "O=C1C=CC(=O)C=C1"
+    },
+    {
+      "source": "O=C1C=CC(C=C1)=O",
+      "status": "stable",
+      "output": "O=C1C=CC(=O)C=C1"
+    },
+    {
+      "source": "C1C(C=CC(=O)C=1)=O",
+      "status": "stable",
+      "output": "O=C1C=CC(=O)C=C1"
+    },
+    {
+      "source": "O=C1C=CC(C=C1)=O",
+      "status": "stable",
+      "output": "O=C1C=CC(=O)C=C1"
+    },
+    {
+      "source": "O=C1C=CC(C=C1C)=O",
+      "status": "stable",
+      "output": "CC1=CC(=O)C=CC1=O"
+    },
+    {
+      "source": "C1(=CC(=O)C=CC1=O)C",
+      "status": "stable",
+      "output": "CC1=CC(=O)C=CC1=O"
+    },
+    {
+      "source": "CC1=CC(=O)C=CC1=O",
+      "status": "stable",
+      "output": "CC1=CC(=O)C=CC1=O"
+    },
+    {
+      "source": "c1(c(O)cccc1)C(O)=O",
+      "status": "stable",
+      "output": "O=C(O)c1ccccc1O"
+    },
+    {
+      "source": "c1cccc(O)c1C(=O)O",
+      "status": "stable",
+      "output": "O=C(O)c1ccccc1O"
+    },
+    {
+      "source": "c1cccc(C(O)=O)c1O",
+      "status": "stable",
+      "output": "O=C(O)c1ccccc1O"
+    },
+    {
+      "source": "c1ccccc1",
+      "status": "stable",
+      "output": "c1ccccc1"
+    },
+    {
+      "source": "c1ccccc1",
+      "status": "stable",
+      "output": "c1ccccc1"
+    },
+    {
+      "source": "c1ccccc1",
+      "status": "stable",
+      "output": "c1ccccc1"
+    },
+    {
+      "source": "b1ccccc1",
+      "status": "stable",
+      "output": "b1ccccc1"
+    },
+    {
+      "source": "c1cbccc1",
+      "status": "stable",
+      "output": "b1ccccc1"
+    },
+    {
+      "source": "c1cccbc1",
+      "status": "stable",
+      "output": "b1ccccc1"
+    },
+    {
+      "source": "c1ccccb1",
+      "status": "stable",
+      "output": "b1ccccc1"
+    },
+    {
+      "source": "c1ccbcc1",
+      "status": "stable",
+      "output": "b1ccccc1"
+    },
+    {
+      "source": "c1bcccc1",
+      "status": "stable",
+      "output": "b1ccccc1"
+    },
+    {
+      "source": "[cH-]1cccc1",
+      "status": "stable",
+      "output": "c1cc[cH-]c1"
+    },
+    {
+      "source": "c1c[cH-]cc1",
+      "status": "stable",
+      "output": "c1cc[cH-]c1"
+    },
+    {
+      "source": "c1ccc[cH-]1",
+      "status": "stable",
+      "output": "c1cc[cH-]c1"
+    },
+    {
+      "source": "[Fe].c1[cH-]ccc1.[cH-]1cccc1",
+      "status": "stable",
+      "output": "[Fe].c1cc[cH-]c1.c1cc[cH-]c1"
+    },
+    {
+      "source": "[Fe].c1ccc[cH-]1.c1[cH-]ccc1",
+      "status": "stable",
+      "output": "[Fe].c1cc[cH-]c1.c1cc[cH-]c1"
+    },
+    {
+      "source": "[Fe].c1cc[cH-]c1.c1cc[cH-]c1",
+      "status": "stable",
+      "output": "[Fe].c1cc[cH-]c1.c1cc[cH-]c1"
+    },
+    {
+      "source": "[Fe+2].c1ccc[cH-]1.c1ccc[cH-]1",
+      "status": "stable",
+      "output": "[Fe+2].c1cc[cH-]c1.c1cc[cH-]c1"
+    },
+    {
+      "source": "[Fe+2].c1ccc[cH-]1.c1[cH-]ccc1",
+      "status": "stable",
+      "output": "[Fe+2].c1cc[cH-]c1.c1cc[cH-]c1"
+    },
+    {
+      "source": "[Fe+2].c1cc[cH-]c1.[cH-]1cccc1",
+      "status": "stable",
+      "output": "[Fe+2].c1cc[cH-]c1.c1cc[cH-]c1"
+    },
+    {
+      "source": "C[Si](C)(OC)C(C)(C)C",
+      "status": "stable",
+      "output": "CO[Si](C)(C)C(C)(C)C"
+    },
+    {
+      "source": "CC(C)(C)[Si](C)(OC)C",
+      "status": "stable",
+      "output": "CO[Si](C)(C)C(C)(C)C"
+    },
+    {
+      "source": "C(C)(C)([Si](OC)(C)C)C",
+      "status": "stable",
+      "output": "CO[Si](C)(C)C(C)(C)C"
+    },
+    {
+      "source": "[SiH4]",
+      "status": "stable",
+      "output": "[SiH4]"
+    },
+    {
+      "source": "[SiH4]",
+      "status": "stable",
+      "output": "[SiH4]"
+    },
+    {
+      "source": "[SiH4]",
+      "status": "stable",
+      "output": "[SiH4]"
+    },
+    {
+      "source": "C[SiH3]",
+      "status": "stable",
+      "output": "C[SiH3]"
+    },
+    {
+      "source": "[SiH3]C",
+      "status": "stable",
+      "output": "C[SiH3]"
+    },
+    {
+      "source": "[SiH3]C",
+      "status": "stable",
+      "output": "C[SiH3]"
+    },
+    {
+      "source": "[CH3][Sn]([CH3])([CH3])[CH3]",
+      "status": "stable",
+      "output": "[CH3][Sn]([CH3])([CH3])[CH3]"
+    },
+    {
+      "source": "[CH3][Sn]([CH3])([CH3])[CH3]",
+      "status": "stable",
+      "output": "[CH3][Sn]([CH3])([CH3])[CH3]"
+    },
+    {
+      "source": "[CH3][Sn]([CH3])([CH3])[CH3]",
+      "status": "stable",
+      "output": "[CH3][Sn]([CH3])([CH3])[CH3]"
+    },
+    {
+      "source": "[Li][CH3]",
+      "status": "stable",
+      "output": "[Li][CH3]"
+    },
+    {
+      "source": "[Li][CH3]",
+      "status": "stable",
+      "output": "[Li][CH3]"
+    },
+    {
+      "source": "[Li][CH3]",
+      "status": "stable",
+      "output": "[Li][CH3]"
+    },
+    {
+      "source": "[Mg]([Br])[CH3]",
+      "status": "stable",
+      "output": "[CH3][Mg][Br]"
+    },
+    {
+      "source": "[Mg]([CH3])[Br]",
+      "status": "stable",
+      "output": "[CH3][Mg][Br]"
+    },
+    {
+      "source": "[Br][Mg][CH3]",
+      "status": "stable",
+      "output": "[CH3][Mg][Br]"
+    },
+    {
+      "source": "CC[O][Ti]([O]CC)([O]CC)[O]CC",
+      "status": "stable",
+      "output": "CC[O][Ti]([O]CC)([O]CC)[O]CC"
+    },
+    {
+      "source": "C([O][Ti]([O]CC)([O]CC)[O]CC)C",
+      "status": "stable",
+      "output": "CC[O][Ti]([O]CC)([O]CC)[O]CC"
+    },
+    {
+      "source": "[O](CC)[Ti]([O]CC)([O]CC)[O]CC",
+      "status": "stable",
+      "output": "CC[O][Ti]([O]CC)([O]CC)[O]CC"
+    },
+    {
+      "source": "[Pt]([NH2])([NH2])([Cl])[Cl]",
+      "status": "stable",
+      "output": "[NH2][Pt]([NH2])([Cl])[Cl]"
+    },
+    {
+      "source": "[Cl][Pt]([NH2])([NH2])[Cl]",
+      "status": "stable",
+      "output": "[NH2][Pt]([NH2])([Cl])[Cl]"
+    },
+    {
+      "source": "[NH2][Pt]([Cl])([Cl])[NH2]",
+      "status": "stable",
+      "output": "[NH2][Pt]([NH2])([Cl])[Cl]"
+    },
+    {
+      "source": "[Pt](<-[NH3])([Cl])([Cl])<-[NH3]",
+      "status": "stable",
+      "output": "[NH3]->[Pt](<-[NH3])([Cl])[Cl]"
+    },
+    {
+      "source": "[NH3]->[Pt]([Cl])([Cl])<-[NH3]",
+      "status": "stable",
+      "output": "[NH3]->[Pt](<-[NH3])([Cl])[Cl]"
+    },
+    {
+      "source": "[Cl][Pt]([Cl])(<-[NH3])<-[NH3]",
+      "status": "stable",
+      "output": "[NH3]->[Pt](<-[NH3])([Cl])[Cl]"
+    },
+    {
+      "source": "c1ccc[n+]2-c3cccc[c]3[Cu][c]12",
+      "status": "stable",
+      "output": "c1ccc2[c](c1)[Cu][c]1cccc[n+]1-2"
+    },
+    {
+      "source": "c1ccc2-[n+]3[c]([Cu][c]2c1)cccc3",
+      "status": "stable",
+      "output": "c1ccc2[c](c1)[Cu][c]1cccc[n+]1-2"
+    },
+    {
+      "source": "c1c[c]2c(cc1)-[n+]1[c](cccc1)[Cu]2",
+      "status": "stable",
+      "output": "c1ccc2[c](c1)[Cu][c]1cccc[n+]1-2"
+    },
+    {
+      "source": "C1(=O)c2c(C(=O)N1/N=C/c1ccccc1)cccc2",
+      "status": "stable",
+      "output": "O=C1c2ccccc2C(=O)N1/N=C/c1ccccc1"
+    },
+    {
+      "source": "c1cc2C(=O)N(C(=O)c2cc1)/N=C/c1ccccc1",
+      "status": "stable",
+      "output": "O=C1c2ccccc2C(=O)N1/N=C/c1ccccc1"
+    },
+    {
+      "source": "N1(/N=C/c2ccccc2)C(c2c(cccc2)C1=O)=O",
+      "status": "stable",
+      "output": "O=C1c2ccccc2C(=O)N1/N=C/c1ccccc1"
+    },
+    {
+      "source": "c1cccc(c1)/C(=N\\O)C",
+      "status": "stable",
+      "output": "C/C(=N/O)c1ccccc1"
+    },
+    {
+      "source": "c1ccc(cc1)/C(C)=N\\O",
+      "status": "stable",
+      "output": "C/C(=N/O)c1ccccc1"
+    },
+    {
+      "source": "c1c(/C(=N\\O)C)cccc1",
+      "status": "stable",
+      "output": "C/C(=N/O)c1ccccc1"
+    },
+    {
+      "source": "CC(=NO)C",
+      "status": "stable",
+      "output": "CC(C)=NO"
+    },
+    {
+      "source": "ON=C(C)C",
+      "status": "stable",
+      "output": "CC(C)=NO"
+    },
+    {
+      "source": "ON=C(C)C",
+      "status": "stable",
+      "output": "CC(C)=NO"
+    },
+    {
+      "source": "C/N=C/C",
+      "status": "stable",
+      "output": "C/C=N/C"
+    },
+    {
+      "source": "C/C=N/C",
+      "status": "stable",
+      "output": "C/C=N/C"
+    },
+    {
+      "source": "C/N=C/C",
+      "status": "stable",
+      "output": "C/C=N/C"
+    },
+    {
+      "source": "N(C)=C(C)C",
+      "status": "stable",
+      "output": "CN=C(C)C"
+    },
+    {
+      "source": "CC(=NC)C",
+      "status": "stable",
+      "output": "CN=C(C)C"
+    },
+    {
+      "source": "CC(=NC)C",
+      "status": "stable",
+      "output": "CN=C(C)C"
+    },
+    {
+      "source": "c1c(/C=C/C(=O)O)cccc1",
+      "status": "stable",
+      "output": "O=C(O)/C=C/c1ccccc1"
+    },
+    {
+      "source": "C(/c1ccccc1)=C\\C(=O)O",
+      "status": "stable",
+      "output": "O=C(O)/C=C/c1ccccc1"
+    },
+    {
+      "source": "c1cc(ccc1)/C=C/C(O)=O",
+      "status": "stable",
+      "output": "O=C(O)/C=C/c1ccccc1"
+    },
+    {
+      "source": "C(=C\\c1ccccc1)/C(=O)O",
+      "status": "stable",
+      "output": "O=C(O)/C=C/c1ccccc1"
+    },
+    {
+      "source": "c1cccc(/C=C/C(O)=O)c1",
+      "status": "stable",
+      "output": "O=C(O)/C=C/c1ccccc1"
+    },
+    {
+      "source": "c1ccc(cc1)/C=C/C(=O)O",
+      "status": "stable",
+      "output": "O=C(O)/C=C/c1ccccc1"
+    },
+    {
+      "source": "F/C(=C(\\F)Cl)Cl",
+      "status": "stable",
+      "output": "F/C(Cl)=C(\\F)Cl"
+    },
+    {
+      "source": "C(/Cl)(F)=C(\\F)Cl",
+      "status": "stable",
+      "output": "F/C(Cl)=C(\\F)Cl"
+    },
+    {
+      "source": "Cl/C(F)=C(/F)Cl",
+      "status": "stable",
+      "output": "F/C(Cl)=C(\\F)Cl"
+    },
+    {
+      "source": "Cl/C(F)=C(\\F)Cl",
+      "status": "stable",
+      "output": "F/C(Cl)=C(/F)Cl"
+    },
+    {
+      "source": "Cl/C(F)=C(/Cl)F",
+      "status": "stable",
+      "output": "F/C(Cl)=C(/F)Cl"
+    },
+    {
+      "source": "Cl/C(F)=C(/Cl)F",
+      "status": "stable",
+      "output": "F/C(Cl)=C(/F)Cl"
+    },
+    {
+      "source": "C(=C/Cl)/Cl",
+      "status": "stable",
+      "output": "Cl/C=C\\Cl"
+    },
+    {
+      "source": "C(/Cl)=C/Cl",
+      "status": "stable",
+      "output": "Cl/C=C\\Cl"
+    },
+    {
+      "source": "C(/Cl)=C/Cl",
+      "status": "stable",
+      "output": "Cl/C=C\\Cl"
+    },
+    {
+      "source": "Cl/C=C/Cl",
+      "status": "stable",
+      "output": "Cl/C=C/Cl"
+    },
+    {
+      "source": "C(/Cl)=C\\Cl",
+      "status": "stable",
+      "output": "Cl/C=C/Cl"
+    },
+    {
+      "source": "Cl/C=C/Cl",
+      "status": "stable",
+      "output": "Cl/C=C/Cl"
+    },
+    {
+      "source": "C(=C\\Cl)/Cl",
+      "status": "stable",
+      "output": "Cl/C=C/Cl"
+    },
+    {
+      "source": "Cl/C=C/Cl",
+      "status": "stable",
+      "output": "Cl/C=C/Cl"
+    },
+    {
+      "source": "C(=C\\Cl)/Cl",
+      "status": "stable",
+      "output": "Cl/C=C/Cl"
+    },
+    {
+      "source": "C1C=CCCCC1",
+      "status": "stable",
+      "output": "C1=CCCCCC1"
+    },
+    {
+      "source": "C1C=CCCCC1",
+      "status": "stable",
+      "output": "C1=CCCCCC1"
+    },
+    {
+      "source": "C1C=CCCCC1",
+      "status": "stable",
+      "output": "C1=CCCCCC1"
+    },
+    {
+      "source": "C1CCCC/C=C/CC1",
+      "status": "stable",
+      "output": "C1=C/CCCCCCC/1"
+    },
+    {
+      "source": "C1CCC/C=C/CCC1",
+      "status": "stable",
+      "output": "C1=C/CCCCCCC/1"
+    },
+    {
+      "source": "C1=C/CCCCCCC/1",
+      "status": "stable",
+      "output": "C1=C/CCCCCCC/1"
+    },
+    {
+      "source": "C1CCCCCC/C=C/CC1",
+      "status": "stable",
+      "output": "C1=C/CCCCCCCCC/1"
+    },
+    {
+      "source": "C1/CCCCCCCCC/C=1",
+      "status": "stable",
+      "output": "C1=C/CCCCCCCCC/1"
+    },
+    {
+      "source": "C1CCCCCC/C=C/CC1",
+      "status": "stable",
+      "output": "C1=C/CCCCCCCCC/1"
+    },
+    {
+      "source": "C1(CCCCC1)O",
+      "status": "stable",
+      "output": "OC1CCCCC1"
+    },
+    {
+      "source": "C1CCCC(C1)O",
+      "status": "stable",
+      "output": "OC1CCCCC1"
+    },
+    {
+      "source": "C1CCCC(O)C1",
+      "status": "stable",
+      "output": "OC1CCCCC1"
+    },
+    {
+      "source": "C1[C@H](O)CC[C@H](O)C1",
+      "status": "stable",
+      "output": "O[C@H]1CC[C@@H](O)CC1"
+    },
+    {
+      "source": "C1C[C@H](CC[C@H]1O)O",
+      "status": "stable",
+      "output": "O[C@H]1CC[C@@H](O)CC1"
+    },
+    {
+      "source": "[C@H]1(O)CC[C@H](CC1)O",
+      "status": "stable",
+      "output": "O[C@H]1CC[C@@H](O)CC1"
+    },
+    {
+      "source": "C1[C@H](O)CC[C@H](C1)O",
+      "status": "stable",
+      "output": "O[C@H]1CC[C@H](O)CC1"
+    },
+    {
+      "source": "C1C[C@H](CC[C@@H]1O)O",
+      "status": "stable",
+      "output": "O[C@H]1CC[C@H](O)CC1"
+    },
+    {
+      "source": "C1C[C@H](CC[C@@H]1O)O",
+      "status": "stable",
+      "output": "O[C@H]1CC[C@H](O)CC1"
+    },
+    {
+      "source": "C[C@@]12[C@@H](CC[C@@H]2O)[C@H]2[C@@H]([C@@]3(C(C[C@H](CC3)O)=CC2)C)CC1",
+      "status": "stable",
+      "output": "C[C@]12CC[C@H]3[C@@H](CC=C4C[C@@H](O)CC[C@@]43C)[C@@H]1CC[C@@H]2O"
+    },
+    {
+      "source": "[C@@H]12[C@]([C@@H](O)CC2)(C)CC[C@H]2[C@H]1CC=C1C[C@@H](O)CC[C@@]12C",
+      "status": "stable",
+      "output": "C[C@]12CC[C@H]3[C@@H](CC=C4C[C@@H](O)CC[C@@]43C)[C@@H]1CC[C@@H]2O"
+    },
+    {
+      "source": "C[C@]12CC[C@@H](CC1=CC[C@@H]1[C@@H]2CC[C@@]2(C)[C@H]1CC[C@@H]2O)O",
+      "status": "stable",
+      "output": "C[C@]12CC[C@H]3[C@@H](CC=C4C[C@@H](O)CC[C@@]43C)[C@@H]1CC[C@@H]2O"
+    },
+    {
+      "source": "C1[C@H]([C@H](C(C)C)CC[C@H]1C)O",
+      "status": "stable",
+      "output": "CC(C)[C@@H]1CC[C@@H](C)C[C@H]1O"
+    },
+    {
+      "source": "[C@H]1(CC[C@@H](C)C[C@H]1O)C(C)C",
+      "status": "stable",
+      "output": "CC(C)[C@@H]1CC[C@@H](C)C[C@H]1O"
+    },
+    {
+      "source": "C([C@H]1[C@@H](C[C@@H](CC1)C)O)(C)C",
+      "status": "stable",
+      "output": "CC(C)[C@@H]1CC[C@@H](C)C[C@H]1O"
+    },
+    {
+      "source": "C(=C/C)/C",
+      "status": "stable",
+      "output": "C/C=C\\C"
+    },
+    {
+      "source": "C/C=C\\C",
+      "status": "stable",
+      "output": "C/C=C\\C"
+    },
+    {
+      "source": "C/C=C\\C",
+      "status": "stable",
+      "output": "C/C=C\\C"
+    },
+    {
+      "source": "C(=C\\C)/C",
+      "status": "stable",
+      "output": "C/C=C/C"
+    },
+    {
+      "source": "C(=C\\C)/C",
+      "status": "stable",
+      "output": "C/C=C/C"
+    },
+    {
+      "source": "C(=C\\C)/C",
+      "status": "stable",
+      "output": "C/C=C/C"
+    },
+    {
+      "source": "C(=C/C)/C",
+      "status": "stable",
+      "output": "C/C=C\\C"
+    },
+    {
+      "source": "C/C=C\\C",
+      "status": "stable",
+      "output": "C/C=C\\C"
+    },
+    {
+      "source": "C/C=C\\C",
+      "status": "stable",
+      "output": "C/C=C\\C"
+    },
+    {
+      "source": "[H]/N=C/C",
+      "status": "stable",
+      "output": "[H]/N=C/C"
+    },
+    {
+      "source": "C/C=N/[H]",
+      "status": "stable",
+      "output": "[H]/N=C/C"
+    },
+    {
+      "source": "C/C=N/[H]",
+      "status": "stable",
+      "output": "[H]/N=C/C"
+    },
+    {
+      "source": "C/C=C/F",
+      "status": "stable",
+      "output": "C/C=C/F"
+    },
+    {
+      "source": "C/C=C/F",
+      "status": "stable",
+      "output": "C/C=C/F"
+    },
+    {
+      "source": "C/C=C/F",
+      "status": "stable",
+      "output": "C/C=C/F"
+    },
+    {
+      "source": "C1C/C=C/CCCC1",
+      "status": "stable",
+      "output": "C1=C/CCCCCC/1"
+    },
+    {
+      "source": "C1CC/C=C/CCC1",
+      "status": "stable",
+      "output": "C1=C/CCCCCC/1"
+    },
+    {
+      "source": "C1CCC/C=C/CC1",
+      "status": "stable",
+      "output": "C1=C/CCCCCC/1"
+    },
+    {
+      "source": "C1CC/C=C\\CCC/C=C/C1",
+      "status": "stable",
+      "output": "C1=C\\CCCC/C=C/CCC/1"
+    },
+    {
+      "source": "C1CCC/C=C\\CCC/C=C/1",
+      "status": "stable",
+      "output": "C1=C\\CCCC/C=C/CCC/1"
+    },
+    {
+      "source": "C1/CCCC/C=C/CCC\\C=1",
+      "status": "stable",
+      "output": "C1=C\\CCCC/C=C/CCC/1"
+    },
+    {
+      "source": "C1CCC(=CF)CC1",
+      "status": "stable",
+      "output": "FC=C1CCCCC1"
+    },
+    {
+      "source": "C1CCC(CC1)=CF",
+      "status": "stable",
+      "output": "FC=C1CCCCC1"
+    },
+    {
+      "source": "C1CCC(CC1)=CF",
+      "status": "stable",
+      "output": "FC=C1CCCCC1"
+    },
+    {
+      "source": "C1C(=CF)CCCC1",
+      "status": "stable",
+      "output": "FC=C1CCCCC1"
+    },
+    {
+      "source": "C1CCCC(C1)=CF",
+      "status": "stable",
+      "output": "FC=C1CCCCC1"
+    },
+    {
+      "source": "C1(CCCCC1)=CF",
+      "status": "stable",
+      "output": "FC=C1CCCCC1"
+    },
+    {
+      "source": "c1cc(/C=C2/C(=C(CC2)C)C)ccc1",
+      "status": "stable",
+      "output": "CC1=C(C)/C(=C/c2ccccc2)CC1"
+    },
+    {
+      "source": "C1(C)=C(/C(=C/c2ccccc2)CC1)C",
+      "status": "stable",
+      "output": "CC1=C(C)/C(=C/c2ccccc2)CC1"
+    },
+    {
+      "source": "C1(=C(C)CC/C1=C\\c1ccccc1)C",
+      "status": "stable",
+      "output": "CC1=C(C)/C(=C/c2ccccc2)CC1"
+    },
+    {
+      "source": "C1(=CC)C=C1",
+      "status": "stable",
+      "output": "CC=C1C=C1"
+    },
+    {
+      "source": "C1=CC1=CC",
+      "status": "stable",
+      "output": "CC=C1C=C1"
+    },
+    {
+      "source": "C1=CC1=CC",
+      "status": "stable",
+      "output": "CC=C1C=C1"
+    },
+    {
+      "source": "O=C1NC(=O)/C(N1)=C/c1ccccc1",
+      "status": "stable",
+      "output": "O=C1NC(=O)/C(=C/c2ccccc2)N1"
+    },
+    {
+      "source": "C(=C1/NC(=O)NC1=O)/c1ccccc1",
+      "status": "stable",
+      "output": "O=C1NC(=O)/C(=C/c2ccccc2)N1"
+    },
+    {
+      "source": "N1C(=O)/C(=C/c2ccccc2)NC1=O",
+      "status": "stable",
+      "output": "O=C1NC(=O)/C(=C/c2ccccc2)N1"
+    },
+    {
+      "source": "C(=C\\c1ccccc1)/C=C/C=O",
+      "status": "stable",
+      "output": "O=C/C=C/C=C/c1ccccc1"
+    },
+    {
+      "source": "O=C/C=C/C=C/c1ccccc1",
+      "status": "stable",
+      "output": "O=C/C=C/C=C/c1ccccc1"
+    },
+    {
+      "source": "C(/c1ccccc1)=C\\C=C\\C=O",
+      "status": "stable",
+      "output": "O=C/C=C/C=C/c1ccccc1"
+    },
+    {
+      "source": "C(/C)=C\\C",
+      "status": "stable",
+      "output": "C/C=C/C"
+    },
+    {
+      "source": "C/C=C/C",
+      "status": "stable",
+      "output": "C/C=C/C"
+    },
+    {
+      "source": "C(=C\\C)/C",
+      "status": "stable",
+      "output": "C/C=C/C"
+    },
+    {
+      "source": "[C@@H]1(C(CCC1)Cl)F",
+      "status": "stable",
+      "output": "F[C@@H]1CCCC1Cl"
+    },
+    {
+      "source": "C1CC[C@H](C1Cl)F",
+      "status": "stable",
+      "output": "F[C@@H]1CCCC1Cl"
+    },
+    {
+      "source": "ClC1[C@@H](CCC1)F",
+      "status": "stable",
+      "output": "F[C@@H]1CCCC1Cl"
+    },
+    {
+      "source": "ClC1(F)CCC1",
+      "status": "stable",
+      "output": "FC1(Cl)CCC1"
+    },
+    {
+      "source": "C1C(CC1)(F)Cl",
+      "status": "stable",
+      "output": "FC1(Cl)CCC1"
+    },
+    {
+      "source": "ClC1(CCC1)F",
+      "status": "stable",
+      "output": "FC1(Cl)CCC1"
+    },
+    {
+      "source": "C1(F)(CCC1)Cl",
+      "status": "stable",
+      "output": "FC1(Cl)CCC1"
+    },
+    {
+      "source": "ClC1(CCC1)F",
+      "status": "stable",
+      "output": "FC1(Cl)CCC1"
+    },
+    {
+      "source": "C1C(F)(Cl)CC1",
+      "status": "stable",
+      "output": "FC1(Cl)CCC1"
+    },
+    {
+      "source": "C1C(Cl)(F)CC1",
+      "status": "stable",
+      "output": "FC1(Cl)CCC1"
+    },
+    {
+      "source": "C1(F)(CCC1)Cl",
+      "status": "stable",
+      "output": "FC1(Cl)CCC1"
+    },
+    {
+      "source": "C1CCC1(F)Cl",
+      "status": "stable",
+      "output": "FC1(Cl)CCC1"
+    },
+    {
+      "source": "FC12C(CC1)CC2",
+      "status": "stable",
+      "output": "FC12CCC1CC2"
+    },
+    {
+      "source": "C1C2C(C1)(CC2)F",
+      "status": "stable",
+      "output": "FC12CCC1CC2"
+    },
+    {
+      "source": "C12C(CC1)(F)CC2",
+      "status": "stable",
+      "output": "FC12CCC1CC2"
+    },
+    {
+      "source": "C1C[C@]2(C)[C@@H](CC1)CCCC2",
+      "status": "stable",
+      "output": "C[C@]12CCCC[C@@H]1CCCC2"
+    },
+    {
+      "source": "C1CC[C@]2([C@H](C1)CCCC2)C",
+      "status": "stable",
+      "output": "C[C@]12CCCC[C@@H]1CCCC2"
+    },
+    {
+      "source": "C1[C@H]2CCCC[C@@]2(CCC1)C",
+      "status": "stable",
+      "output": "C[C@]12CCCC[C@@H]1CCCC2"
+    },
+    {
+      "source": "C1C[C@H]2C[C@@H]1CC2",
+      "status": "stable",
+      "output": "C1C[C@H]2CC[C@@H]1C2"
+    },
+    {
+      "source": "[C@H]12CC[C@@H](CC2)C1",
+      "status": "stable",
+      "output": "C1C[C@H]2CC[C@@H]1C2"
+    },
+    {
+      "source": "C1C[C@H]2C[C@@H]1CC2",
+      "status": "stable",
+      "output": "C1C[C@H]2CC[C@@H]1C2"
+    },
+    {
+      "source": "[C@H]12C[C@H](CCN1)CC2",
+      "status": "stable",
+      "output": "C1C[C@@H]2CC[C@@H](C2)N1"
+    },
+    {
+      "source": "C1C[C@@H]2NCC[C@H]1C2",
+      "status": "stable",
+      "output": "C1C[C@@H]2CC[C@@H](C2)N1"
+    },
+    {
+      "source": "[C@@H]12NCC[C@H](CC2)C1",
+      "status": "stable",
+      "output": "C1C[C@@H]2CC[C@@H](C2)N1"
+    },
+    {
+      "source": "C1C[N@]2C[C@H]1CC2",
+      "status": "stable",
+      "output": "C1C[N@]2CC[C@H]1C2"
+    },
+    {
+      "source": "[C@H]12CC[N@@](C2)CC1",
+      "status": "stable",
+      "output": "C1C[N@]2CC[C@H]1C2"
+    },
+    {
+      "source": "[N@]12CC[C@H](C2)CC1",
+      "status": "stable",
+      "output": "C1C[N@]2CC[C@H]1C2"
+    },
+    {
+      "source": "c1ccc([C@@H]([2H])O)cc1",
+      "status": "stable",
+      "output": "[2H][C@@H](O)c1ccccc1"
+    },
+    {
+      "source": "[2H][C@@H](O)c1ccccc1",
+      "status": "stable",
+      "output": "[2H][C@@H](O)c1ccccc1"
+    },
+    {
+      "source": "c1c([C@H](O)[2H])cccc1",
+      "status": "stable",
+      "output": "[2H][C@@H](O)c1ccccc1"
+    },
+    {
+      "source": "[C@](O)(c1ccccc1)([2H])C",
+      "status": "stable",
+      "output": "[2H][C@](C)(O)c1ccccc1"
+    },
+    {
+      "source": "C[C@]([2H])(c1ccccc1)O",
+      "status": "stable",
+      "output": "[2H][C@](C)(O)c1ccccc1"
+    },
+    {
+      "source": "c1cccc(c1)[C@@](O)([2H])C",
+      "status": "stable",
+      "output": "[2H][C@](C)(O)c1ccccc1"
+    },
+    {
+      "source": "O[C@H](C)[C@H](C)N",
+      "status": "stable",
+      "output": "C[C@H](N)[C@@H](C)O"
+    },
+    {
+      "source": "O[C@H](C)[C@@H](N)C",
+      "status": "stable",
+      "output": "C[C@H](N)[C@@H](C)O"
+    },
+    {
+      "source": "C[C@H]([C@H](C)N)O",
+      "status": "stable",
+      "output": "C[C@H](N)[C@@H](C)O"
+    },
+    {
+      "source": "O1[C@H](C)O[C@@H](O[C@H]1C)C",
+      "status": "stable",
+      "output": "C[C@H]1O[C@H](C)O[C@@H](C)O1"
+    },
+    {
+      "source": "[C@H]1(O[C@@H](C)O[C@H](O1)C)C",
+      "status": "stable",
+      "output": "C[C@H]1O[C@H](C)O[C@@H](C)O1"
+    },
+    {
+      "source": "O1[C@H](C)O[C@@H](C)O[C@H]1C",
+      "status": "stable",
+      "output": "C[C@H]1O[C@H](C)O[C@@H](C)O1"
+    },
+    {
+      "source": "C[C@H]1C[C@@H](C)C[C@@H](C1)C",
+      "status": "stable",
+      "output": "C[C@H]1C[C@H](C)C[C@@H](C)C1"
+    },
+    {
+      "source": "[C@H]1(C[C@H](C[C@H](C)C1)C)C",
+      "status": "stable",
+      "output": "C[C@H]1C[C@H](C)C[C@@H](C)C1"
+    },
+    {
+      "source": "[C@H]1(C[C@H](C[C@@H](C)C1)C)C",
+      "status": "stable",
+      "output": "C[C@H]1C[C@H](C)C[C@@H](C)C1"
+    },
+    {
+      "source": "O[C@H]1[C@@H]([C@@H](O)[C@@H]([C@H]([C@@H]1O)O)O)O",
+      "status": "stable",
+      "output": "O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@@H]1O"
+    },
+    {
+      "source": "[C@H]1([C@H]([C@@H]([C@H]([C@H](O)[C@H]1O)O)O)O)O",
+      "status": "stable",
+      "output": "O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@@H]1O"
+    },
+    {
+      "source": "O[C@H]1[C@@H]([C@H]([C@@H]([C@H]([C@@H]1O)O)O)O)O",
+      "status": "stable",
+      "output": "O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@@H]1O"
+    },
+    {
+      "source": "C1[C@H]2C[C@H]([C@@H](C1)C2)OC(C)=O",
+      "status": "stable",
+      "output": "CC(=O)O[C@@H]1C[C@@H]2CC[C@H]1C2"
+    },
+    {
+      "source": "C1[C@@H](OC(=O)C)[C@@H]2C[C@H]1CC2",
+      "status": "stable",
+      "output": "CC(=O)O[C@@H]1C[C@@H]2CC[C@H]1C2"
+    },
+    {
+      "source": "C(=O)(C)O[C@H]1[C@H]2CC[C@@H](C1)C2",
+      "status": "stable",
+      "output": "CC(=O)O[C@@H]1C[C@@H]2CC[C@H]1C2"
+    },
+    {
+      "source": "c1cc2ccc1cc2",
+      "status": "stable",
+      "output": "c1cc2ccc1cc2"
+    },
+    {
+      "source": "c1c2ccc(cc2)c1",
+      "status": "stable",
+      "output": "c1cc2ccc1cc2"
+    },
+    {
+      "source": "c1c2ccc(cc2)c1",
+      "status": "stable",
+      "output": "c1cc2ccc1cc2"
+    },
+    {
+      "source": "c1cc2ccccc2cc1",
+      "status": "stable",
+      "output": "c1ccc2ccccc2c1"
+    },
+    {
+      "source": "c1ccc2ccccc2c1",
+      "status": "stable",
+      "output": "c1ccc2ccccc2c1"
+    },
+    {
+      "source": "c1cccc2c1cccc2",
+      "status": "stable",
+      "output": "c1ccc2ccccc2c1"
+    },
+    {
+      "source": "c1c2c3c4ccc5ccc(c(c35)c1)ccc2cc4",
+      "status": "stable",
+      "output": "c1cc2ccc3ccc4ccc1c1ccc2c3c41"
+    },
+    {
+      "source": "c1cc2ccc3c4c5c(ccc1c(c42)cc5)cc3",
+      "status": "stable",
+      "output": "c1cc2ccc3ccc4ccc1c1ccc2c3c41"
+    },
+    {
+      "source": "c1c2c3c4c5ccc3c(c1)ccc5ccc4cc2",
+      "status": "stable",
+      "output": "c1cc2ccc3ccc4ccc1c1ccc2c3c41"
+    },
+    {
+      "source": "O=C1C=CC=CC1=O",
+      "status": "stable",
+      "output": "O=C1C=CC=CC1=O"
+    },
+    {
+      "source": "C1=CC=CC(C1=O)=O",
+      "status": "stable",
+      "output": "O=C1C=CC=CC1=O"
+    },
+    {
+      "source": "O=C1C=CC=CC1=O",
+      "status": "stable",
+      "output": "O=C1C=CC=CC1=O"
+    },
+    {
+      "source": "Oc1ccccc1O",
+      "status": "stable",
+      "output": "Oc1ccccc1O"
+    },
+    {
+      "source": "c1cc(O)c(cc1)O",
+      "status": "stable",
+      "output": "Oc1ccccc1O"
+    },
+    {
+      "source": "Oc1c(O)cccc1",
+      "status": "stable",
+      "output": "Oc1ccccc1O"
+    },
+    {
+      "source": "c1cccc[n+]1[O-]",
+      "status": "stable",
+      "output": "[O-][n+]1ccccc1"
+    },
+    {
+      "source": "c1c[n+](ccc1)[O-]",
+      "status": "stable",
+      "output": "[O-][n+]1ccccc1"
+    },
+    {
+      "source": "[n+]1([O-])ccccc1",
+      "status": "stable",
+      "output": "[O-][n+]1ccccc1"
+    },
+    {
+      "source": "c1ccc[n+]([O-])c1",
+      "status": "stable",
+      "output": "[O-][n+]1ccccc1"
+    },
+    {
+      "source": "[O-][n+]1ccccc1",
+      "status": "stable",
+      "output": "[O-][n+]1ccccc1"
+    },
+    {
+      "source": "[n+]1(ccccc1)[O-]",
+      "status": "stable",
+      "output": "[O-][n+]1ccccc1"
+    },
+    {
+      "source": "c1(ccccc1)/N=N/c1ccc(cc1)[N+]([O-])=O",
+      "status": "stable",
+      "output": "O=[N+]([O-])c1ccc(/N=N/c2ccccc2)cc1"
+    },
+    {
+      "source": "N(/c1ccc([N+]([O-])=O)cc1)=N\\c1ccccc1",
+      "status": "stable",
+      "output": "O=[N+]([O-])c1ccc(/N=N/c2ccccc2)cc1"
+    },
+    {
+      "source": "c1cccc(/N=N/c2ccc([N+](=O)[O-])cc2)c1",
+      "status": "stable",
+      "output": "O=[N+]([O-])c1ccc(/N=N/c2ccccc2)cc1"
+    },
+    {
+      "source": "c1ccc(C[C@@H](C(=O)O)NC(=O)OC(C)(C)C)cc1",
+      "status": "stable",
+      "output": "CC(C)(C)OC(=O)N[C@@H](Cc1ccccc1)C(=O)O"
+    },
+    {
+      "source": "C(OC(=O)N[C@@H](Cc1ccccc1)C(O)=O)(C)(C)C",
+      "status": "stable",
+      "output": "CC(C)(C)OC(=O)N[C@@H](Cc1ccccc1)C(=O)O"
+    },
+    {
+      "source": "CC(C)(C)OC(=O)N[C@H](C(=O)O)Cc1ccccc1",
+      "status": "stable",
+      "output": "CC(C)(C)OC(=O)N[C@@H](Cc1ccccc1)C(=O)O"
+    },
+    {
+      "source": "C[N+](CCOP([O-])(=O)OC[C@@H](COC(=O)CCCCCCCCCCCCCCC)OC(CCCCCCC/C=C\\CCCCCCCC)=O)(C)C",
+      "status": "stable",
+      "output": "CCCCCCCC/C=C\\CCCCCCCC(=O)O[C@H](COC(=O)CCCCCCCCCCCCCCC)COP(=O)([O-])OCC[N+](C)(C)C"
+    },
+    {
+      "source": "C([C@@H](COC(=O)CCCCCCCCCCCCCCC)OC(CCCCCCC/C=C\\CCCCCCCC)=O)OP(OCC[N+](C)(C)C)([O-])=O",
+      "status": "stable",
+      "output": "CCCCCCCC/C=C\\CCCCCCCC(=O)O[C@H](COC(=O)CCCCCCCCCCCCCCC)COP(=O)([O-])OCC[N+](C)(C)C"
+    },
+    {
+      "source": "C(CCCCCC)C/C=C\\CCCCCCCC(O[C@H](COC(CCCCCCCCCCCCCCC)=O)COP(=O)(OCC[N+](C)(C)C)[O-])=O",
+      "status": "stable",
+      "output": "CCCCCCCC/C=C\\CCCCCCCC(=O)O[C@H](COC(=O)CCCCCCCCCCCCCCC)COP(=O)([O-])OCC[N+](C)(C)C"
+    },
+    {
+      "source": "NC(=[NH2+])N",
+      "status": "stable",
+      "output": "NC(N)=[NH2+]"
+    },
+    {
+      "source": "[NH2+]=C(N)N",
+      "status": "stable",
+      "output": "NC(N)=[NH2+]"
+    },
+    {
+      "source": "C(N)(=[NH2+])N",
+      "status": "stable",
+      "output": "NC(N)=[NH2+]"
+    },
+    {
+      "source": "[NH2+]=C(N)N",
+      "status": "stable",
+      "output": "NC(N)=[NH2+]"
+    },
+    {
+      "source": "[NH2+]=C(N)N",
+      "status": "stable",
+      "output": "NC(N)=[NH2+]"
+    },
+    {
+      "source": "NC(=[NH2+])N",
+      "status": "stable",
+      "output": "NC(N)=[NH2+]"
+    },
+    {
+      "source": "c1ccc[n+](c1)C",
+      "status": "stable",
+      "output": "C[n+]1ccccc1"
+    },
+    {
+      "source": "c1ccc[n+](c1)C",
+      "status": "stable",
+      "output": "C[n+]1ccccc1"
+    },
+    {
+      "source": "c1cc[n+](cc1)C",
+      "status": "stable",
+      "output": "C[n+]1ccccc1"
+    },
+    {
+      "source": "c1[n+](cccc1)C",
+      "status": "stable",
+      "output": "C[n+]1ccccc1"
+    },
+    {
+      "source": "c1cc[n+](C)cc1",
+      "status": "stable",
+      "output": "C[n+]1ccccc1"
+    },
+    {
+      "source": "c1cc[n+](cc1)C",
+      "status": "stable",
+      "output": "C[n+]1ccccc1"
+    },
+    {
+      "source": "c1ccc[nH+]c1",
+      "status": "stable",
+      "output": "c1cc[nH+]cc1"
+    },
+    {
+      "source": "c1cccc[nH+]1",
+      "status": "stable",
+      "output": "c1cc[nH+]cc1"
+    },
+    {
+      "source": "c1[nH+]cccc1",
+      "status": "stable",
+      "output": "c1cc[nH+]cc1"
+    },
+    {
+      "source": "[o+]1ccccc1",
+      "status": "stable",
+      "output": "c1cc[o+]cc1"
+    },
+    {
+      "source": "c1ccc[o+]c1",
+      "status": "stable",
+      "output": "c1cc[o+]cc1"
+    },
+    {
+      "source": "c1ccc[o+]c1",
+      "status": "stable",
+      "output": "c1cc[o+]cc1"
+    },
+    {
+      "source": "c1ccc2c([Si](C)(C)c3c-2cccc3)c1",
+      "status": "stable",
+      "output": "C[Si]1(C)c2ccccc2-c2ccccc21"
+    },
+    {
+      "source": "c12c(cccc1)-c1c(cccc1)[Si]2(C)C",
+      "status": "stable",
+      "output": "C[Si]1(C)c2ccccc2-c2ccccc21"
+    },
+    {
+      "source": "[Si]1(c2ccccc2-c2c1cccc2)(C)C",
+      "status": "stable",
+      "output": "C[Si]1(C)c2ccccc2-c2ccccc21"
+    },
+    {
+      "source": "c1ccc2-c3c(cccc3)Bc2c1",
+      "status": "stable",
+      "output": "B1c2ccccc2-c2ccccc21"
+    },
+    {
+      "source": "c12-c3ccccc3Bc1cccc2",
+      "status": "stable",
+      "output": "B1c2ccccc2-c2ccccc21"
+    },
+    {
+      "source": "c12-c3c(Bc2cccc1)cccc3",
+      "status": "stable",
+      "output": "B1c2ccccc2-c2ccccc21"
+    },
+    {
+      "source": "C1(C)(COB(OC1)O)C",
+      "status": "stable",
+      "output": "CC1(C)COB(O)OC1"
+    },
+    {
+      "source": "CC1(COB(OC1)O)C",
+      "status": "stable",
+      "output": "CC1(C)COB(O)OC1"
+    },
+    {
+      "source": "C1(C)(COB(OC1)O)C",
+      "status": "stable",
+      "output": "CC1(C)COB(O)OC1"
+    },
+    {
+      "source": "[O]=[Mn](=[O])([O-])=[O].[K+]",
+      "status": "stable",
+      "output": "[K+].[O]=[Mn](=[O])(=[O])[O-]"
+    },
+    {
+      "source": "[O]=[Mn]([O-])(=[O])=[O].[K+]",
+      "status": "stable",
+      "output": "[K+].[O]=[Mn](=[O])(=[O])[O-]"
+    },
+    {
+      "source": "[O]=[Mn](=[O])(=[O])[O-].[K+]",
+      "status": "stable",
+      "output": "[K+].[O]=[Mn](=[O])(=[O])[O-]"
+    },
+    {
+      "source": "[Cl-].[Cl-].[Zn+2]",
+      "status": "stable",
+      "output": "[Cl-].[Cl-].[Zn+2]"
+    },
+    {
+      "source": "[Cl-].[Cl-].[Zn+2]",
+      "status": "stable",
+      "output": "[Cl-].[Cl-].[Zn+2]"
+    },
+    {
+      "source": "[Cl-].[Cl-].[Zn+2]",
+      "status": "stable",
+      "output": "[Cl-].[Cl-].[Zn+2]"
+    },
+    {
+      "source": "[Cl][Zn][Cl]",
+      "status": "stable",
+      "output": "[Cl][Zn][Cl]"
+    },
+    {
+      "source": "[Cl][Zn][Cl]",
+      "status": "stable",
+      "output": "[Cl][Zn][Cl]"
+    },
+    {
+      "source": "[Cl][Zn][Cl]",
+      "status": "stable",
+      "output": "[Cl][Zn][Cl]"
+    },
+    {
+      "source": "[Cl][Zn][Cl]",
+      "status": "stable",
+      "output": "[Cl][Zn][Cl]"
+    },
+    {
+      "source": "[Cl][Zn][Cl]",
+      "status": "stable",
+      "output": "[Cl][Zn][Cl]"
+    },
+    {
+      "source": "[Cl][Zn][Cl]",
+      "status": "stable",
+      "output": "[Cl][Zn][Cl]"
+    },
+    {
+      "source": "CC([O][Pb]([O]C(C)=O)([O]C(=O)C)[O]C(=O)C)=O",
+      "status": "stable",
+      "output": "CC(=O)[O][Pb]([O]C(C)=O)([O]C(C)=O)[O]C(C)=O"
+    },
+    {
+      "source": "CC([O][Pb]([O]C(=O)C)([O]C(C)=O)[O]C(C)=O)=O",
+      "status": "stable",
+      "output": "CC(=O)[O][Pb]([O]C(C)=O)([O]C(C)=O)[O]C(C)=O"
+    },
+    {
+      "source": "[O](C(=O)C)[Pb]([O]C(C)=O)([O]C(=O)C)[O]C(C)=O",
+      "status": "stable",
+      "output": "CC(=O)[O][Pb]([O]C(C)=O)([O]C(C)=O)[O]C(C)=O"
+    },
+    {
+      "source": "[Pd]=[P](c1ccccc1)(c1ccccc1)c1ccccc1",
+      "status": "stable",
+      "output": "[Pd]=[P](c1ccccc1)(c1ccccc1)c1ccccc1"
+    },
+    {
+      "source": "c1ccccc1[P](c1ccccc1)(c1ccccc1)=[Pd]",
+      "status": "stable",
+      "output": "[Pd]=[P](c1ccccc1)(c1ccccc1)c1ccccc1"
+    },
+    {
+      "source": "c1ccccc1[P](c1ccccc1)(c1ccccc1)=[Pd]",
+      "status": "stable",
+      "output": "[Pd]=[P](c1ccccc1)(c1ccccc1)c1ccccc1"
+    },
+    {
+      "source": "[Co+3].N.N.N.N.N.N",
+      "status": "stable",
+      "output": "N.N.N.N.N.N.[Co+3]"
+    },
+    {
+      "source": "[Co+3].N.N.N.N.N.N",
+      "status": "stable",
+      "output": "N.N.N.N.N.N.[Co+3]"
+    },
+    {
+      "source": "[Co+3].N.N.N.N.N.N",
+      "status": "stable",
+      "output": "N.N.N.N.N.N.[Co+3]"
+    },
+    {
+      "source": "[Gd+3].O=C(C)[O-].C(C)([O-])=O.[O-]C(=O)C",
+      "status": "stable",
+      "output": "CC(=O)[O-].CC(=O)[O-].CC(=O)[O-].[Gd+3]"
+    },
+    {
+      "source": "[Gd+3].CC(=O)[O-].O=C([O-])C.O=C([O-])C",
+      "status": "stable",
+      "output": "CC(=O)[O-].CC(=O)[O-].CC(=O)[O-].[Gd+3]"
+    },
+    {
+      "source": "[Gd+3].O=C([O-])C.[O-]C(=O)C.[O-]C(C)=O",
+      "status": "stable",
+      "output": "CC(=O)[O-].CC(=O)[O-].CC(=O)[O-].[Gd+3]"
+    },
+    {
+      "source": "O.O.O.[Na+].[Na+].[O-]C(C([O-])=O)=O",
+      "status": "stable",
+      "output": "O.O.O.O=C([O-])C(=O)[O-].[Na+].[Na+]"
+    },
+    {
+      "source": "O.O.O.[Na+].[Na+].C(C([O-])=O)([O-])=O",
+      "status": "stable",
+      "output": "O.O.O.O=C([O-])C(=O)[O-].[Na+].[Na+]"
+    },
+    {
+      "source": "O.O.O.[Na+].[Na+].[O-]C(=O)C(=O)[O-]",
+      "status": "stable",
+      "output": "O.O.O.O=C([O-])C(=O)[O-].[Na+].[Na+]"
+    },
+    {
+      "source": "[Na]",
+      "status": "stable",
+      "output": "[Na]"
+    },
+    {
+      "source": "[Na]",
+      "status": "stable",
+      "output": "[Na]"
+    },
+    {
+      "source": "[Na]",
+      "status": "stable",
+      "output": "[Na]"
+    },
+    {
+      "source": "[K]",
+      "status": "stable",
+      "output": "[K]"
+    },
+    {
+      "source": "[K]",
+      "status": "stable",
+      "output": "[K]"
+    },
+    {
+      "source": "[K]",
+      "status": "stable",
+      "output": "[K]"
+    },
+    {
+      "source": "[Na][Cl]",
+      "status": "stable",
+      "output": "[Na][Cl]"
+    },
+    {
+      "source": "[Na][Cl]",
+      "status": "stable",
+      "output": "[Na][Cl]"
+    },
+    {
+      "source": "[Cl][Na]",
+      "status": "stable",
+      "output": "[Na][Cl]"
+    },
+    {
+      "source": "C([O][Na])(=O)C",
+      "status": "stable",
+      "output": "CC(=O)[O][Na]"
+    },
+    {
+      "source": "[O]([Na])C(=O)C",
+      "status": "stable",
+      "output": "CC(=O)[O][Na]"
+    },
+    {
+      "source": "O=C(C)[O][Na]",
+      "status": "stable",
+      "output": "CC(=O)[O][Na]"
+    },
+    {
+      "source": "C(C)[N+](CC)(CC)CC.[I-]",
+      "status": "stable",
+      "output": "CC[N+](CC)(CC)CC.[I-]"
+    },
+    {
+      "source": "C(C)[N+](CC)(CC)CC.[I-]",
+      "status": "stable",
+      "output": "CC[N+](CC)(CC)CC.[I-]"
+    },
+    {
+      "source": "C([N+](CC)(CC)CC)C.[I-]",
+      "status": "stable",
+      "output": "CC[N+](CC)(CC)CC.[I-]"
+    },
+    {
+      "source": "I[I-]I",
+      "status": "stable",
+      "output": "I[I-]I"
+    },
+    {
+      "source": "I[I-]I",
+      "status": "stable",
+      "output": "I[I-]I"
+    },
+    {
+      "source": "[I-](I)I",
+      "status": "stable",
+      "output": "I[I-]I"
+    },
+    {
+      "source": "[I-].[I-].[I-]",
+      "status": "stable",
+      "output": "[I-].[I-].[I-]"
+    },
+    {
+      "source": "[I-].[I-].[I-]",
+      "status": "stable",
+      "output": "[I-].[I-].[I-]"
+    },
+    {
+      "source": "[I-].[I-].[I-]",
+      "status": "stable",
+      "output": "[I-].[I-].[I-]"
+    },
+    {
+      "source": "[Xe](F)F",
+      "status": "stable",
+      "output": "F[Xe]F"
+    },
+    {
+      "source": "[Xe](F)F",
+      "status": "stable",
+      "output": "F[Xe]F"
+    },
+    {
+      "source": "[Xe](F)F",
+      "status": "stable",
+      "output": "F[Xe]F"
+    },
+    {
+      "source": "[He]",
+      "status": "stable",
+      "output": "[He]"
+    },
+    {
+      "source": "[He]",
+      "status": "stable",
+      "output": "[He]"
+    },
+    {
+      "source": "[He]",
+      "status": "stable",
+      "output": "[He]"
+    },
+    {
+      "source": "[Ar]",
+      "status": "stable",
+      "output": "[Ar]"
+    },
+    {
+      "source": "[Ar]",
+      "status": "stable",
+      "output": "[Ar]"
+    },
+    {
+      "source": "[Ar]",
+      "status": "stable",
+      "output": "[Ar]"
+    },
+    {
+      "source": "[U]",
+      "status": "stable",
+      "output": "[U]"
+    },
+    {
+      "source": "[U]",
+      "status": "stable",
+      "output": "[U]"
+    },
+    {
+      "source": "[U]",
+      "status": "stable",
+      "output": "[U]"
+    },
+    {
+      "source": "[Rf]",
+      "status": "stable",
+      "output": "[Rf]"
+    },
+    {
+      "source": "[Rf]",
+      "status": "stable",
+      "output": "[Rf]"
+    },
+    {
+      "source": "[Rf]",
+      "status": "stable",
+      "output": "[Rf]"
+    },
+    {
+      "source": "C1CCCCCCCCCC1",
+      "status": "stable",
+      "output": "C1CCCCCCCCCC1"
+    },
+    {
+      "source": "C1CCCCCCCCCC1",
+      "status": "stable",
+      "output": "C1CCCCCCCCCC1"
+    },
+    {
+      "source": "C1CCCCCCCCCC1",
+      "status": "stable",
+      "output": "C1CCCCCCCCCC1"
+    },
+    {
+      "source": "C1C=CC=CC=CC=1",
+      "status": "stable",
+      "output": "C1=CC=CC=CC=C1"
+    },
+    {
+      "source": "C1C=CC=CC=CC=1",
+      "status": "stable",
+      "output": "C1=CC=CC=CC=C1"
+    },
+    {
+      "source": "C1=CC=CC=CC=C1",
+      "status": "stable",
+      "output": "C1=CC=CC=CC=C1"
+    },
+    {
+      "source": "C1=CC=CC=CC=C1",
+      "status": "stable",
+      "output": "C1=CC=CC=CC=C1"
+    },
+    {
+      "source": "C1=CC=CC=CC=C1",
+      "status": "stable",
+      "output": "C1=CC=CC=CC=C1"
+    },
+    {
+      "source": "C1C=CC=CC=CC=1",
+      "status": "stable",
+      "output": "C1=CC=CC=CC=C1"
+    },
+    {
+      "source": "c1ccccccccc1",
+      "status": "stable",
+      "output": "c1ccccccccc1"
+    },
+    {
+      "source": "c1ccccccccc1",
+      "status": "stable",
+      "output": "c1ccccccccc1"
+    },
+    {
+      "source": "c1ccccccccc1",
+      "status": "stable",
+      "output": "c1ccccccccc1"
+    },
+    {
+      "source": "c1ccc(-c2ccccc2)cc1",
+      "status": "stable",
+      "output": "c1ccc(-c2ccccc2)cc1"
+    },
+    {
+      "source": "c1ccccc1-c1ccccc1",
+      "status": "stable",
+      "output": "c1ccc(-c2ccccc2)cc1"
+    },
+    {
+      "source": "c1c(-c2ccccc2)cccc1",
+      "status": "stable",
+      "output": "c1ccc(-c2ccccc2)cc1"
+    },
+    {
+      "source": "c1cc(-c2ccccc2)ccc1",
+      "status": "stable",
+      "output": "c1ccc(-c2ccccc2)cc1"
+    },
+    {
+      "source": "c1cccc(-c2ccccc2)c1",
+      "status": "stable",
+      "output": "c1ccc(-c2ccccc2)cc1"
+    },
+    {
+      "source": "c1cc(-c2ccccc2)ccc1",
+      "status": "stable",
+      "output": "c1ccc(-c2ccccc2)cc1"
+    },
+    {
+      "source": "C1CC1",
+      "status": "stable",
+      "output": "C1CC1"
+    },
+    {
+      "source": "C1CC1",
+      "status": "stable",
+      "output": "C1CC1"
+    },
+    {
+      "source": "C1CC1",
+      "status": "stable",
+      "output": "C1CC1"
+    },
+    {
+      "source": "c1[cH+]c1",
+      "status": "stable",
+      "output": "c1c[cH+]1"
+    },
+    {
+      "source": "c1[cH+]c1",
+      "status": "stable",
+      "output": "c1c[cH+]1"
+    },
+    {
+      "source": "[cH+]1cc1",
+      "status": "stable",
+      "output": "c1c[cH+]1"
+    },
+    {
+      "source": "C1=C=C1",
+      "status": "stable",
+      "output": "C1=CC=1"
+    },
+    {
+      "source": "C1=C=C1",
+      "status": "stable",
+      "output": "C1=CC=1"
+    },
+    {
+      "source": "C1=C=C1",
+      "status": "stable",
+      "output": "C1=CC=1"
+    },
+    {
+      "source": "C1C=C1",
+      "status": "stable",
+      "output": "C1=CC1"
+    },
+    {
+      "source": "C1=CC1",
+      "status": "stable",
+      "output": "C1=CC1"
+    },
+    {
+      "source": "C1C=C1",
+      "status": "stable",
+      "output": "C1=CC1"
+    },
+    {
+      "source": "C1CCC2(CC2)C1",
+      "status": "stable",
+      "output": "C1CCC2(C1)CC2"
+    },
+    {
+      "source": "C1CC2(CC2)CC1",
+      "status": "stable",
+      "output": "C1CCC2(C1)CC2"
+    },
+    {
+      "source": "C1CCC2(C1)CC2",
+      "status": "stable",
+      "output": "C1CCC2(C1)CC2"
+    },
+    {
+      "source": "C(O)C(CO)O.OC(CO)CO",
+      "status": "stable",
+      "output": "OCC(O)CO.OCC(O)CO"
+    },
+    {
+      "source": "OCC(CO)O.OCC(O)CO",
+      "status": "stable",
+      "output": "OCC(O)CO.OCC(O)CO"
+    },
+    {
+      "source": "OCC(O)CO.OCC(CO)O",
+      "status": "stable",
+      "output": "OCC(O)CO.OCC(O)CO"
+    },
+    {
+      "source": "C.C.C.C.C",
+      "status": "stable",
+      "output": "C.C.C.C.C"
+    },
+    {
+      "source": "C.C.C.C.C",
+      "status": "stable",
+      "output": "C.C.C.C.C"
+    },
+    {
+      "source": "C.C.C.C.C",
+      "status": "stable",
+      "output": "C.C.C.C.C"
+    },
+    {
+      "source": "CC.CC.CC.CC.O.O",
+      "status": "stable",
+      "output": "CC.CC.CC.CC.O.O"
+    },
+    {
+      "source": "CC.CC.CC.CC.O.O",
+      "status": "stable",
+      "output": "CC.CC.CC.CC.O.O"
+    },
+    {
+      "source": "CC.CC.CC.CC.O.O",
+      "status": "stable",
+      "output": "CC.CC.CC.CC.O.O"
+    },
+    {
+      "source": "[Na+].[Na+].[Na+].[Na+].O=P([O-])([O-])[O-].[O-]C=O",
+      "status": "stable",
+      "output": "O=C[O-].O=P([O-])([O-])[O-].[Na+].[Na+].[Na+].[Na+]"
+    },
+    {
+      "source": "[Na+].[Na+].[Na+].[Na+].P([O-])([O-])(=O)[O-].C(=O)[O-]",
+      "status": "stable",
+      "output": "O=C[O-].O=P([O-])([O-])[O-].[Na+].[Na+].[Na+].[Na+]"
+    },
+    {
+      "source": "[Na+].[Na+].[Na+].[Na+].P([O-])([O-])([O-])=O.O=C[O-]",
+      "status": "stable",
+      "output": "O=C[O-].O=P([O-])([O-])[O-].[Na+].[Na+].[Na+].[Na+]"
+    },
+    {
+      "source": "CC",
+      "status": "stable",
+      "output": "CC"
+    },
+    {
+      "source": "[2H]C([2H])(O)[2H]",
+      "status": "stable",
+      "output": "[2H]C([2H])([2H])O"
+    },
+    {
+      "source": "F[C@@H](Cl)Br",
+      "status": "stable",
+      "output": "F[C@@H](Cl)Br"
+    },
+    {
+      "source": "[C@H](F)(Cl)Br",
+      "status": "stable",
+      "output": "F[C@@H](Cl)Br"
+    },
+    {
+      "source": "Cl[C@@H](F)Br",
+      "status": "stable",
+      "output": "F[C@H](Cl)Br"
+    },
+    {
+      "source": "Cl[C@@H](F)Br",
+      "status": "stable",
+      "output": "F[C@H](Cl)Br"
+    },
+    {
+      "source": "C1C[C@H](CC[C@H]1C)C",
+      "status": "stable",
+      "output": "C[C@H]1CC[C@@H](C)CC1"
+    },
+    {
+      "source": "[C@H]1(C)CC[C@H](C)CC1",
+      "status": "stable",
+      "output": "C[C@H]1CC[C@H](C)CC1"
+    },
+    {
+      "source": "C[C@H]1[C@H](C)CCCC1",
+      "status": "stable",
+      "output": "C[C@@H]1CCCC[C@H]1C"
+    },
+    {
+      "source": "O[C@H]1[C@@H]([C@@H](O)[C@@H]([C@H]([C@@H]1O)O)O)O",
+      "status": "stable",
+      "output": "O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@@H]1O"
+    },
+    {
+      "source": "C1CC[C@H]2CCCC[C@@H]2C1",
+      "status": "stable",
+      "output": "C1CC[C@H]2CCCC[C@@H]2C1"
+    },
+    {
+      "source": "C(=C\\C)/C",
+      "status": "stable",
+      "output": "C/C=C/C"
+    },
+    {
+      "source": "C/C=C\\C",
+      "status": "stable",
+      "output": "C/C=C\\C"
+    },
+    {
+      "source": "C(=C\\C=C\\F)/F",
+      "status": "stable",
+      "output": "F/C=C/C=C/F"
+    },
+    {
+      "source": "F\\C=C/C=C\\C=C/F",
+      "status": "stable",
+      "output": "F\\C=C/C=C\\C=C/F"
+    },
+    {
+      "source": "C/C(CC)=C(\\C)CC",
+      "status": "stable",
+      "output": "CC/C(C)=C(/C)CC"
+    },
+    {
+      "source": "C(=C\\C=C\\C)/C=C/C",
+      "status": "stable",
+      "output": "C/C=C/C=C/C=C/C"
+    },
+    {
+      "source": "N(=C\\C1C=CC=CC=1)/O",
+      "status": "stable",
+      "output": "O/N=C/c1ccccc1"
+    },
+    {
+      "source": "C1CCCCCC=C/C=C\\1",
+      "status": "stable",
+      "output": "C1=CCCCCCC/C=C\\1"
+    },
+    {
+      "source": "C1CCCCCC/C=C/C1",
+      "status": "stable",
+      "output": "C1=C/CCCCCCCC/1"
+    },
+    {
+      "source": "C1/CCCCCC\\C=1",
+      "status": "stable",
+      "output": "C1=C\\CCCCCC/1"
+    },
+    {
+      "source": "C(/C(=O)O)=C/C(O)=O",
+      "status": "stable",
+      "output": "O=C(O)/C=C\\C(=O)O"
+    },
+    {
+      "source": "C1C=CC=CC=1[N+]([O-])=O",
+      "status": "stable",
+      "output": "O=[N+]([O-])c1ccccc1"
+    },
+    {
+      "source": "C[N+]([O-])=O",
+      "status": "stable",
+      "output": "C[N+](=O)[O-]"
+    },
+    {
+      "source": "C1C=CC=C[N+]=1[O-]",
+      "status": "stable",
+      "output": "[O-][n+]1ccccc1"
+    },
+    {
+      "source": "C1=CC=CN1",
+      "status": "stable",
+      "output": "c1cc[nH]c1"
+    },
+    {
+      "source": "N1C=CC=C1",
+      "status": "stable",
+      "output": "c1cc[nH]c1"
+    },
+    {
+      "source": "C1N(C=CC=1)C",
+      "status": "stable",
+      "output": "Cn1cccc1"
+    },
+    {
+      "source": "C1C2=CC=CC=C2NC=1",
+      "status": "stable",
+      "output": "c1ccc2[nH]ccc2c1"
+    },
+    {
+      "source": "C1=C2C(=CC=C1)C=CC=C2",
+      "status": "stable",
+      "output": "c1ccc2ccccc2c1"
+    },
+    {
+      "source": "C12C3C4=CC=CC5C4=C(C=CC=5)C1=CC=CC=2C=CC=3",
+      "status": "stable",
+      "output": "c1cc2cccc3c4cccc5cccc(c(c1)c23)c54"
+    },
+    {
+      "source": "C1C=CC2=CC3C(C=C2C=1)=CC=CC=3",
+      "status": "stable",
+      "output": "c1ccc2cc3ccccc3cc2c1"
+    },
+    {
+      "source": "C12C=CC=CC1=CC=CC=2",
+      "status": "stable",
+      "output": "c1ccc2ccccc2c1"
+    },
+    {
+      "source": "C12=CC=CC=C2C2=CC=CC=C12",
+      "status": "stable",
+      "output": "c1ccc2c(c1)-c1ccccc1-2"
+    },
+    {
+      "source": "C1=CC=CNC1=O",
+      "status": "stable",
+      "output": "O=c1cccc[nH]1"
+    },
+    {
+      "source": "C1(O)=CC=CC=N1",
+      "status": "stable",
+      "output": "Oc1ccccn1"
+    },
+    {
+      "source": "[CH2]",
+      "status": "stable",
+      "output": "[CH2]"
+    },
+    {
+      "source": "[CH3]",
+      "status": "stable",
+      "output": "[CH3]"
+    },
+    {
+      "source": "[C]",
+      "status": "stable",
+      "output": "[C]"
+    },
+    {
+      "source": "[O]",
+      "status": "stable",
+      "output": "[O]"
+    },
+    {
+      "source": "[OH]",
+      "status": "stable",
+      "output": "[OH]"
+    },
+    {
+      "source": "[Na+].[Cl-]",
+      "status": "stable",
+      "output": "[Cl-].[Na+]"
+    },
+    {
+      "source": "[Na+].[Na+].O=S([O-])([O-])=O",
+      "status": "stable",
+      "output": "O=S(=O)([O-])[O-].[Na+].[Na+]"
+    },
+    {
+      "source": "O=C(C)[O-].O=C([O-])C.[Ca+2]",
+      "status": "stable",
+      "output": "CC(=O)[O-].CC(=O)[O-].[Ca+2]"
+    },
+    {
+      "source": "[Fe+2].[Cl-].[Cl-].O.O.O.O",
+      "status": "stable",
+      "output": "O.O.O.O.[Cl-].[Cl-].[Fe+2]"
+    },
+    {
+      "source": "C1=CC=CC=C1.C1C=CC=CC=1.C.C.O",
+      "status": "stable",
+      "output": "C.C.O.c1ccccc1.c1ccccc1"
+    },
+    {
+      "source": "[Cu+2].O=C([O-])C.[O-]C(C)=O",
+      "status": "stable",
+      "output": "CC(=O)[O-].CC(=O)[O-].[Cu+2]"
+    },
+    {
+      "source": "C1C2CC(C1)CC2",
+      "status": "stable",
+      "output": "C1CC2CCC1C2"
+    },
+    {
+      "source": "C12C3C4C2C2C1C3C24",
+      "status": "stable",
+      "output": "C12C3C4C1C1C2C3C41"
+    },
+    {
+      "source": "C12C(C)(C(C(C1)=O)(C)CC2)C",
+      "status": "stable",
+      "output": "CC12CCC(CC1=O)C2(C)C"
+    },
+    {
+      "source": "C1=C2C(C3=CC=CC=C3C=C2)=CC=C1",
+      "status": "stable",
+      "output": "c1ccc2c(c1)ccc1ccccc12"
+    },
+    {
+      "source": "C1C=CC([S@@](=O)C)=CC=1",
+      "status": "stable",
+      "output": "C[S@](=O)c1ccccc1"
+    },
+    {
+      "source": "C1C([S@+]([O-])C)=CC=CC=1",
+      "status": "stable",
+      "output": "C[S@@+]([O-])c1ccccc1"
+    },
+    {
+      "source": "C1=CC=CC([P@](=O)(C)O)=C1",
+      "status": "stable",
+      "output": "C[P@](=O)(O)c1ccccc1"
+    },
+    {
+      "source": "[N@]1(CC1C)C",
+      "status": "stable",
+      "output": "CC1C[N@@]1C"
+    },
+    {
+      "source": "[C@@H](N)(C(=O)O)C",
+      "status": "stable",
+      "output": "C[C@H](N)C(=O)O"
+    },
+    {
+      "source": "C(=O)(O)[C@@H](N)C",
+      "status": "stable",
+      "output": "C[C@H](N)C(=O)O"
+    },
+    {
+      "source": "C[C@@H](C(=O)[O-])[NH3+]",
+      "status": "stable",
+      "output": "C[C@H]([NH3+])C(=O)[O-]"
+    },
+    {
+      "source": "C1C(C1C1C(C2C(C3CC3C3C(C4CC4C4CC4C4CC4)C3)C2)C1)C1CC1C1CC1C1CC1C1CC1",
+      "status": "stable",
+      "output": "C1CC1C1CC1C1CC1C1CC1C1CC1C1CC1C1CC1C1CC1C1CC1C1CC1C1CC1C1CC1"
+    },
+    {
+      "source": "C1CC2(CCC13CCC1(CC3)CCCCC1)CCC1(CC2)CCC2(CC1)CCC1(CC2)CCC2(CCC3(CCC4(CC3)CCC3(CC4)CCCCC3)CC2)CC1",
+      "status": "stable",
+      "output": "C1CCC2(CC1)CCC1(CC2)CCC2(CC1)CCC1(CC2)CCC2(CC1)CCC1(CCC3(CCC4(CCC5(CCC6(CCCCC6)CC5)CC4)CC3)CC1)CC2"
+    },
+    {
+      "source": "C1CCCCC1",
+      "status": "stable",
+      "output": "C1CCCCC1"
+    },
+    {
+      "source": "C1CC1",
+      "status": "stable",
+      "output": "C1CC1"
+    },
+    {
+      "source": "[13CH4]",
+      "status": "stable",
+      "output": "[13CH4]"
+    },
+    {
+      "source": "Cl[13C@H](Br)F",
+      "status": "stable",
+      "output": "F[13C@H](Cl)Br"
+    },
+    {
+      "source": "[CH3:1][OH:2]",
+      "status": "stable",
+      "output": "[CH3:1][OH:2]"
+    },
+    {
+      "source": "*C",
+      "status": "stable",
+      "output": "*C"
+    },
+    {
+      "source": "C1C=CC=C(*)C=1",
+      "status": "stable",
+      "output": "*c1ccccc1"
+    },
+    {
+      "source": "[1*]CC[2*]",
+      "status": "stable",
+      "output": "[1*]CC[2*]"
+    },
+    {
+      "source": "C[N+](C)(C)C",
+      "status": "stable",
+      "output": "C[N+](C)(C)C"
+    },
+    {
+      "source": "[NH4+]",
+      "status": "stable",
+      "output": "[NH4+]"
+    },
+    {
+      "source": "[O-]",
+      "status": "stable",
+      "output": "[O-]"
+    },
+    {
+      "source": "[OH-]",
+      "status": "stable",
+      "output": "[OH-]"
+    },
+    {
+      "source": "[H+]",
+      "status": "stable",
+      "output": "[H+]"
+    },
+    {
+      "source": "[H-]",
+      "status": "stable",
+      "output": "[H-]"
+    },
+    {
+      "source": "[H][H]",
+      "status": "stable",
+      "output": "[H][H]"
+    },
+    {
+      "source": "[2H][2H]",
+      "status": "stable",
+      "output": "[2H][2H]"
+    },
+    {
+      "source": "[HH]",
+      "status": "stable",
+      "output": "[HH]"
+    },
+    {
+      "source": "C(#N)C",
+      "status": "stable",
+      "output": "CC#N"
+    },
+    {
+      "source": "C#C",
+      "status": "stable",
+      "output": "C#C"
+    },
+    {
+      "source": "C(=C)=C",
+      "status": "stable",
+      "output": "C=C=C"
+    },
+    {
+      "source": "C(=C=CC)C",
+      "status": "stable",
+      "output": "CC=C=CC"
+    },
+    {
+      "source": "C(=CC)=CC",
+      "status": "stable",
+      "output": "CC=C=CC"
+    },
+    {
+      "source": "C=[N+]=[N-]",
+      "status": "stable",
+      "output": "C=[N+]=[N-]"
+    },
+    {
+      "source": "[N-]=[N+]=NC",
+      "status": "stable",
+      "output": "CN=[N+]=[N-]"
+    },
+    {
+      "source": "[N-]=[N+]=NC",
+      "status": "stable",
+      "output": "CN=[N+]=[N-]"
+    },
+    {
+      "source": "S(O)(=O)(=O)O",
+      "status": "stable",
+      "output": "O=S(=O)(O)O"
+    },
+    {
+      "source": "OS(O)(=O)=O",
+      "status": "stable",
+      "output": "O=S(=O)(O)O"
+    },
+    {
+      "source": "P(O)(O)(=O)O",
+      "status": "stable",
+      "output": "O=P(O)(O)O"
+    },
+    {
+      "source": "[P-](F)(F)(F)(F)(F)F",
+      "status": "stable",
+      "output": "F[P-](F)(F)(F)(F)F"
+    },
+    {
+      "source": "F[B-](F)(F)F",
+      "status": "stable",
+      "output": "F[B-](F)(F)F"
+    },
+    {
+      "source": "B(O)(O)C1=CC=CC=C1",
+      "status": "stable",
+      "output": "OB(O)c1ccccc1"
+    },
+    {
+      "source": "C1C=CC=C(C=1)[Se]C",
+      "status": "stable",
+      "output": "C[Se]c1ccccc1"
+    },
+    {
+      "source": "C1C=C[Se]C=1",
+      "status": "stable",
+      "output": "c1cc[se]c1"
+    },
+    {
+      "source": "C1[Te]C=CC=1",
+      "status": "stable",
+      "output": "c1cc[te]c1"
+    },
+    {
+      "source": "O1C=CC=C1",
+      "status": "stable",
+      "output": "c1ccoc1"
+    },
+    {
+      "source": "C1=CC=CS1",
+      "status": "stable",
+      "output": "c1ccsc1"
+    },
+    {
+      "source": "C1C=NOC=1",
+      "status": "stable",
+      "output": "c1cnoc1"
+    },
+    {
+      "source": "C1N=CC=NC=1",
+      "status": "stable",
+      "output": "c1cnccn1"
+    },
+    {
+      "source": "C1=NC=NN1",
+      "status": "stable",
+      "output": "c1nc[nH]n1"
+    },
+    {
+      "source": "C1(C)OC(=NN=1)C",
+      "status": "stable",
+      "output": "Cc1nnc(C)o1"
+    },
+    {
+      "source": "C1=CC(=O)C=CC1=O",
+      "status": "stable",
+      "output": "O=C1C=CC(=O)C=C1"
+    },
+    {
+      "source": "C1=CC(=O)C=CC1=O",
+      "status": "stable",
+      "output": "O=C1C=CC(=O)C=C1"
+    },
+    {
+      "source": "O=C1C=CC(C(=C1)C)=O",
+      "status": "stable",
+      "output": "CC1=CC(=O)C=CC1=O"
+    },
+    {
+      "source": "C1C=C(C(=O)O)C(=CC=1)O",
+      "status": "stable",
+      "output": "O=C(O)c1ccccc1O"
+    },
+    {
+      "source": "C1=CC=CC=C1",
+      "status": "stable",
+      "output": "c1ccccc1"
+    },
+    {
+      "source": "C1=CC=BC=C1",
+      "status": "stable",
+      "output": "b1ccccc1"
+    },
+    {
+      "source": "C1=CC=BC=C1",
+      "status": "stable",
+      "output": "b1ccccc1"
+    },
+    {
+      "source": "[CH-]1C=CC=C1",
+      "status": "stable",
+      "output": "c1cc[cH-]c1"
+    },
+    {
+      "source": "[Fe].C1C=C[CH-]C=1.C1=CC=C[CH-]1",
+      "status": "stable",
+      "output": "[Fe].c1cc[cH-]c1.c1cc[cH-]c1"
+    },
+    {
+      "source": "[Fe+2].C1=CC=C[CH-]1.[CH-]1C=CC=C1",
+      "status": "stable",
+      "output": "[Fe+2].c1cc[cH-]c1.c1cc[cH-]c1"
+    },
+    {
+      "source": "CO[Si](C)(C)C(C)(C)C",
+      "status": "stable",
+      "output": "CO[Si](C)(C)C(C)(C)C"
+    },
+    {
+      "source": "[SiH4]",
+      "status": "stable",
+      "output": "[SiH4]"
+    },
+    {
+      "source": "[SiH3]C",
+      "status": "stable",
+      "output": "C[SiH3]"
+    },
+    {
+      "source": "[CH3][Sn]([CH3])([CH3])[CH3]",
+      "status": "stable",
+      "output": "[CH3][Sn]([CH3])([CH3])[CH3]"
+    },
+    {
+      "source": "[Li][CH3]",
+      "status": "stable",
+      "output": "[Li][CH3]"
+    },
+    {
+      "source": "[Br][Mg][CH3]",
+      "status": "stable",
+      "output": "[CH3][Mg][Br]"
+    },
+    {
+      "source": "C(C)[O][Ti]([O]CC)([O]CC)[O]CC",
+      "status": "stable",
+      "output": "CC[O][Ti]([O]CC)([O]CC)[O]CC"
+    },
+    {
+      "source": "[Pt]([Cl])([NH2])([NH2])[Cl]",
+      "status": "stable",
+      "output": "[NH2][Pt]([NH2])([Cl])[Cl]"
+    },
+    {
+      "source": "[NH3]->[Pt]([Cl])([Cl])<-[NH3]",
+      "status": "stable",
+      "output": "[NH3]->[Pt](<-[NH3])([Cl])[Cl]"
+    },
+    {
+      "source": "C1=[C]2C([N+]3[C](=CC=CC=3)[Cu]2)=CC=C1",
+      "status": "stable",
+      "output": "c1ccc2[c](c1)[Cu][c]1cccc[n+]1-2"
+    },
+    {
+      "source": "O=C1C2C(C(=O)N1/N=C/C1=CC=CC=C1)=CC=CC=2",
+      "status": "stable",
+      "output": "O=C1c2ccccc2C(=O)N1/N=C/c1ccccc1"
+    },
+    {
+      "source": "N(/O)=C(\\C)C1C=CC=CC=1",
+      "status": "stable",
+      "output": "C/C(=N/O)c1ccccc1"
+    },
+    {
+      "source": "C(C)(C)=NO",
+      "status": "stable",
+      "output": "CC(C)=NO"
+    },
+    {
+      "source": "C/C=N/C",
+      "status": "stable",
+      "output": "C/C=N/C"
+    },
+    {
+      "source": "C(=NC)(C)C",
+      "status": "stable",
+      "output": "CN=C(C)C"
+    },
+    {
+      "source": "C1C=CC=C(/C=C/C(=O)O)C=1",
+      "status": "stable",
+      "output": "O=C(O)/C=C/c1ccccc1"
+    },
+    {
+      "source": "C1=CC=CC(/C=C/C(O)=O)=C1",
+      "status": "stable",
+      "output": "O=C(O)/C=C/c1ccccc1"
+    },
+    {
+      "source": "C(=C(\\Cl)F)(/F)Cl",
+      "status": "stable",
+      "output": "F/C(Cl)=C(\\F)Cl"
+    },
+    {
+      "source": "F/C(Cl)=C(/F)Cl",
+      "status": "stable",
+      "output": "F/C(Cl)=C(/F)Cl"
+    },
+    {
+      "source": "Cl/C=C\\Cl",
+      "status": "stable",
+      "output": "Cl/C=C\\Cl"
+    },
+    {
+      "source": "C(/Cl)=C\\Cl",
+      "status": "stable",
+      "output": "Cl/C=C/Cl"
+    },
+    {
+      "source": "C(/Cl)=C\\Cl",
+      "status": "stable",
+      "output": "Cl/C=C/Cl"
+    },
+    {
+      "source": "C1CCCCC=C1",
+      "status": "stable",
+      "output": "C1=CCCCCC1"
+    },
+    {
+      "source": "C1CCCCC/C=C/C1",
+      "status": "stable",
+      "output": "C1=C/CCCCCCC/1"
+    },
+    {
+      "source": "C1CCCCCCCC/C=C/1",
+      "status": "stable",
+      "output": "C1=C/CCCCCCCCC/1"
+    },
+    {
+      "source": "C1CCC(O)CC1",
+      "status": "stable",
+      "output": "OC1CCCCC1"
+    },
+    {
+      "source": "C1[C@H](O)CC[C@@H](C1)O",
+      "status": "stable",
+      "output": "O[C@H]1CC[C@@H](O)CC1"
+    },
+    {
+      "source": "[C@H]1(O)CC[C@@H](CC1)O",
+      "status": "stable",
+      "output": "O[C@H]1CC[C@H](O)CC1"
+    },
+    {
+      "source": "C1C2[C@]([C@@H]3[C@H]([C@@H]4CC[C@H](O)[C@@]4(C)CC3)CC=2)(C)CC[C@@H]1O",
+      "status": "stable",
+      "output": "C[C@]12CC[C@H]3[C@@H](CC=C4C[C@@H](O)CC[C@@]43C)[C@@H]1CC[C@@H]2O"
+    },
+    {
+      "source": "C(C)([C@@H]1CC[C@H](C[C@H]1O)C)C",
+      "status": "stable",
+      "output": "CC(C)[C@@H]1CC[C@@H](C)C[C@H]1O"
+    },
+    {
+      "source": "C(/C)=C/C",
+      "status": "stable",
+      "output": "C/C=C\\C"
+    },
+    {
+      "source": "C/C=C/C",
+      "status": "stable",
+      "output": "C/C=C/C"
+    },
+    {
+      "source": "C/C=C\\C",
+      "status": "stable",
+      "output": "C/C=C\\C"
+    },
+    {
+      "source": "C(/C)=N\\[H]",
+      "status": "stable",
+      "output": "[H]/N=C/C"
+    },
+    {
+      "source": "F/C=C/C",
+      "status": "stable",
+      "output": "C/C=C/F"
+    },
+    {
+      "source": "C1CCC/C=C/CC1",
+      "status": "stable",
+      "output": "C1=C/CCCCCC/1"
+    },
+    {
+      "source": "C1/CCC/C=C\\CCCC/C=1",
+      "status": "stable",
+      "output": "C1=C\\CCCC/C=C/CCC/1"
+    },
+    {
+      "source": "C1CCCC(C1)=CF",
+      "status": "stable",
+      "output": "FC=C1CCCCC1"
+    },
+    {
+      "source": "C1CCC(=CF)CC1",
+      "status": "stable",
+      "output": "FC=C1CCCCC1"
+    },
+    {
+      "source": "C1=CC=C(/C=C2\\CCC(=C2C)C)C=C1",
+      "status": "stable",
+      "output": "CC1=C(C)/C(=C/c2ccccc2)CC1"
+    },
+    {
+      "source": "C1=CC1=CC",
+      "status": "stable",
+      "output": "CC=C1C=C1"
+    },
+    {
+      "source": "C1=CC=CC=C1/C=C1\\NC(=O)NC1=O",
+      "status": "stable",
+      "output": "O=C1NC(=O)/C(=C/c2ccccc2)N1"
+    },
+    {
+      "source": "C1=CC=CC(/C=C/C=C/C=O)=C1",
+      "status": "stable",
+      "output": "O=C/C=C/C=C/c1ccccc1"
+    },
+    {
+      "source": "C(=C\\C)/C",
+      "status": "stable",
+      "output": "C/C=C/C"
+    },
+    {
+      "source": "F[C@@H]1CCCC1Cl",
+      "status": "stable",
+      "output": "F[C@@H]1CCCC1Cl"
+    },
+    {
+      "source": "C1C(CC1)(Cl)F",
+      "status": "stable",
+      "output": "FC1(Cl)CCC1"
+    },
+    {
+      "source": "C1(F)(Cl)CCC1",
+      "status": "stable",
+      "output": "FC1(Cl)CCC1"
+    },
+    {
+      "source": "C1CC(Cl)(F)C1",
+      "status": "stable",
+      "output": "FC1(Cl)CCC1"
+    },
+    {
+      "source": "C1CC2(F)C1CC2",
+      "status": "stable",
+      "output": "FC12CCC1CC2"
+    },
+    {
+      "source": "[C@]12(C)CCCC[C@@H]1CCCC2",
+      "status": "stable",
+      "output": "C[C@]12CCCC[C@@H]1CCCC2"
+    },
+    {
+      "source": "C1[C@H]2C[C@H](CC2)C1",
+      "status": "stable",
+      "output": "C1C[C@H]2CC[C@@H]1C2"
+    },
+    {
+      "source": "C1N[C@@H]2C[C@H](C1)CC2",
+      "status": "stable",
+      "output": "C1C[C@@H]2CC[C@@H](C2)N1"
+    },
+    {
+      "source": "C1[C@H]2CC[N@]1CC2",
+      "status": "stable",
+      "output": "C1C[N@]2CC[C@H]1C2"
+    },
+    {
+      "source": "C1C(=CC=CC=1)[C@@H]([2H])O",
+      "status": "stable",
+      "output": "[2H][C@@H](O)c1ccccc1"
+    },
+    {
+      "source": "O[C@]([2H])(C)C1C=CC=CC=1",
+      "status": "stable",
+      "output": "[2H][C@](C)(O)c1ccccc1"
+    },
+    {
+      "source": "C[C@H](N)[C@H](O)C",
+      "status": "stable",
+      "output": "C[C@H](N)[C@@H](C)O"
+    },
+    {
+      "source": "C[C@H]1O[C@@H](C)O[C@H](C)O1",
+      "status": "stable",
+      "output": "C[C@H]1O[C@H](C)O[C@@H](C)O1"
+    },
+    {
+      "source": "[C@H]1(C)C[C@H](C)C[C@H](C1)C",
+      "status": "stable",
+      "output": "C[C@H]1C[C@H](C)C[C@@H](C)C1"
+    },
+    {
+      "source": "O[C@H]1[C@H](O)[C@H]([C@H](O)[C@H]([C@@H]1O)O)O",
+      "status": "stable",
+      "output": "O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@@H]1O"
+    },
+    {
+      "source": "[C@@H]12[C@@H](C[C@@H](C1)CC2)OC(=O)C",
+      "status": "stable",
+      "output": "CC(=O)O[C@@H]1C[C@@H]2CC[C@H]1C2"
+    },
+    {
+      "source": "C1=CC2=CC=C1C=C2",
+      "status": "stable",
+      "output": "c1cc2ccc1cc2"
+    },
+    {
+      "source": "C1=C2C=CC=CC2=CC=C1",
+      "status": "stable",
+      "output": "c1ccc2ccccc2c1"
+    },
+    {
+      "source": "C1C=C2C=CC3C4=CC=C2C2C=1C=CC(=CC=3)C=24",
+      "status": "stable",
+      "output": "c1cc2ccc3ccc4ccc1c1ccc2c3c41"
+    },
+    {
+      "source": "C1(=O)C(C=CC=C1)=O",
+      "status": "stable",
+      "output": "O=C1C=CC=CC1=O"
+    },
+    {
+      "source": "OC1=CC=CC=C1O",
+      "status": "stable",
+      "output": "Oc1ccccc1O"
+    },
+    {
+      "source": "[N+]1(C=CC=CC=1)[O-]",
+      "status": "stable",
+      "output": "[O-][n+]1ccccc1"
+    },
+    {
+      "source": "[N+]1(=CC=CC=C1)[O-]",
+      "status": "stable",
+      "output": "[O-][n+]1ccccc1"
+    },
+    {
+      "source": "C1C=CC=C(/N=N/C2=CC=C([N+](=O)[O-])C=C2)C=1",
+      "status": "stable",
+      "output": "O=[N+]([O-])c1ccc(/N=N/c2ccccc2)cc1"
+    },
+    {
+      "source": "C1C=CC(=CC=1)C[C@@H](C(=O)O)NC(OC(C)(C)C)=O",
+      "status": "stable",
+      "output": "CC(C)(C)OC(=O)N[C@@H](Cc1ccccc1)C(=O)O"
+    },
+    {
+      "source": "C(C[N+](C)(C)C)OP([O-])(=O)OC[C@H](OC(CCCCCCC/C=C\\CCCCCCCC)=O)COC(=O)CCCCCCCCCCCCCCC",
+      "status": "stable",
+      "output": "CCCCCCCC/C=C\\CCCCCCCC(=O)O[C@H](COC(=O)CCCCCCCCCCCCCCC)COP(=O)([O-])OCC[N+](C)(C)C"
+    },
+    {
+      "source": "NC(N)=[NH2+]",
+      "status": "stable",
+      "output": "NC(N)=[NH2+]"
+    },
+    {
+      "source": "[NH2+]=C(N)N",
+      "status": "stable",
+      "output": "NC(N)=[NH2+]"
+    },
+    {
+      "source": "[N+]1(=CC=CC=C1)C",
+      "status": "stable",
+      "output": "C[n+]1ccccc1"
+    },
+    {
+      "source": "C1C=[N+](C)C=CC=1",
+      "status": "stable",
+      "output": "C[n+]1ccccc1"
+    },
+    {
+      "source": "C1C=CC=C[NH+]=1",
+      "status": "stable",
+      "output": "c1cc[nH+]cc1"
+    },
+    {
+      "source": "C1=C[O+]=CC=C1",
+      "status": "stable",
+      "output": "c1cc[o+]cc1"
+    },
+    {
+      "source": "C1C=C2C(=CC=1)C1=CC=CC=C1[Si]2(C)C",
+      "status": "stable",
+      "output": "C[Si]1(C)c2ccccc2-c2ccccc21"
+    },
+    {
+      "source": "C12C(=CC=CC=2)C2C(B1)=CC=CC=2",
+      "status": "stable",
+      "output": "B1c2ccccc2-c2ccccc21"
+    },
+    {
+      "source": "O1CC(COB1O)(C)C",
+      "status": "stable",
+      "output": "CC1(C)COB(O)OC1"
+    },
+    {
+      "source": "[O]=[Mn](=[O])([O-])=[O].[K+]",
+      "status": "stable",
+      "output": "[K+].[O]=[Mn](=[O])(=[O])[O-]"
+    },
+    {
+      "source": "[Cl-].[Cl-].[Zn+2]",
+      "status": "stable",
+      "output": "[Cl-].[Cl-].[Zn+2]"
+    },
+    {
+      "source": "[Zn]([Cl])[Cl]",
+      "status": "stable",
+      "output": "[Cl][Zn][Cl]"
+    },
+    {
+      "source": "[Cl][Zn][Cl]",
+      "status": "stable",
+      "output": "[Cl][Zn][Cl]"
+    },
+    {
+      "source": "C([O][Pb]([O]C(C)=O)([O]C(=O)C)[O]C(C)=O)(=O)C",
+      "status": "stable",
+      "output": "CC(=O)[O][Pb]([O]C(C)=O)([O]C(C)=O)[O]C(C)=O"
+    },
+    {
+      "source": "C1=CC=C([P](C2C=CC=CC=2)(C2C=CC=CC=2)=[Pd])C=C1",
+      "status": "stable",
+      "output": "[Pd]=[P](c1ccccc1)(c1ccccc1)c1ccccc1"
+    },
+    {
+      "source": "[Co+3].N.N.N.N.N.N",
+      "status": "stable",
+      "output": "N.N.N.N.N.N.[Co+3]"
+    },
+    {
+      "source": "[Gd+3].O=C([O-])C.O=C(C)[O-].O=C(C)[O-]",
+      "status": "stable",
+      "output": "CC(=O)[O-].CC(=O)[O-].CC(=O)[O-].[Gd+3]"
+    },
+    {
+      "source": "O.O.O.[Na+].[Na+].[O-]C(C([O-])=O)=O",
+      "status": "stable",
+      "output": "O.O.O.O=C([O-])C(=O)[O-].[Na+].[Na+]"
+    },
+    {
+      "source": "[Na]",
+      "status": "stable",
+      "output": "[Na]"
+    },
+    {
+      "source": "[K]",
+      "status": "stable",
+      "output": "[K]"
+    },
+    {
+      "source": "[Na][Cl]",
+      "status": "stable",
+      "output": "[Na][Cl]"
+    },
+    {
+      "source": "CC(=O)[O][Na]",
+      "status": "stable",
+      "output": "CC(=O)[O][Na]"
+    },
+    {
+      "source": "CC[N+](CC)(CC)CC.[I-]",
+      "status": "stable",
+      "output": "CC[N+](CC)(CC)CC.[I-]"
+    },
+    {
+      "source": "[I-](I)I",
+      "status": "stable",
+      "output": "I[I-]I"
+    },
+    {
+      "source": "[I-].[I-].[I-]",
+      "status": "stable",
+      "output": "[I-].[I-].[I-]"
+    },
+    {
+      "source": "F[Xe]F",
+      "status": "stable",
+      "output": "F[Xe]F"
+    },
+    {
+      "source": "[He]",
+      "status": "stable",
+      "output": "[He]"
+    },
+    {
+      "source": "[Ar]",
+      "status": "stable",
+      "output": "[Ar]"
+    },
+    {
+      "source": "[U]",
+      "status": "stable",
+      "output": "[U]"
+    },
+    {
+      "source": "[Rf]",
+      "status": "stable",
+      "output": "[Rf]"
+    },
+    {
+      "source": "C1CCCCCCCCCC1",
+      "status": "stable",
+      "output": "C1CCCCCCCCCC1"
+    },
+    {
+      "source": "C1C=CC=CC=CC=1",
+      "status": "stable",
+      "output": "C1=CC=CC=CC=C1"
+    },
+    {
+      "source": "C1C=CC=CC=CC=1",
+      "status": "stable",
+      "output": "C1=CC=CC=CC=C1"
+    },
+    {
+      "source": "C1C=CC=CC=CC=CC=1",
+      "status": "stable",
+      "output": "c1ccccccccc1"
+    },
+    {
+      "source": "C1C=C(C2=CC=CC=C2)C=CC=1",
+      "status": "stable",
+      "output": "c1ccc(-c2ccccc2)cc1"
+    },
+    {
+      "source": "C1=CC(=CC=C1)C1C=CC=CC=1",
+      "status": "stable",
+      "output": "c1ccc(-c2ccccc2)cc1"
+    },
+    {
+      "source": "C1CC1",
+      "status": "stable",
+      "output": "C1CC1"
+    },
+    {
+      "source": "C1=C[CH+]1",
+      "status": "stable",
+      "output": "c1c[cH+]1"
+    },
+    {
+      "source": "C1=CC=1",
+      "status": "stable",
+      "output": "C1=CC=1"
+    },
+    {
+      "source": "C1=CC1",
+      "status": "stable",
+      "output": "C1=CC1"
+    },
+    {
+      "source": "C1CCC2(C1)CC2",
+      "status": "stable",
+      "output": "C1CCC2(C1)CC2"
+    },
+    {
+      "source": "C(C(O)CO)O.OCC(O)CO",
+      "status": "stable",
+      "output": "OCC(O)CO.OCC(O)CO"
+    },
+    {
+      "source": "C.C.C.C.C",
+      "status": "stable",
+      "output": "C.C.C.C.C"
+    },
+    {
+      "source": "CC.CC.CC.CC.O.O",
+      "status": "stable",
+      "output": "CC.CC.CC.CC.O.O"
+    },
+    {
+      "source": "[Na+].[Na+].[Na+].[Na+].[O-]P(=O)([O-])[O-].O=C[O-]",
+      "status": "stable",
+      "output": "O=C[O-].O=P([O-])([O-])[O-].[Na+].[Na+].[Na+].[Na+]"
+    }
+  ],
+  "reference": {
+    "version": "2026.09.1",
+    "legacy_stereo": true,
+    "cases": [
+      {
+        "source": "C[N@+]1(F)CCC2(CC[C@H](Cl)CC2)CC1",
+        "first": "C[N@+]1(F)CCC2(CC[C@@H](Cl)CC2)CC1",
+        "roundtrip": "C[N@+]1(F)CCC2(CC[C@H](Cl)CC2)CC1",
+        "stable": false
+      },
+      {
+        "source": "C[N@+]1(F)CC[C@]2(CC[C@H](Cl)CC2)CC1",
+        "first": "C[N@+]1(F)CCC2(CC[C@@H](Cl)CC2)CC1",
+        "roundtrip": "C[N@+]1(F)CCC2(CC[C@H](Cl)CC2)CC1",
+        "stable": false
+      },
+      {
+        "source": "C[C@]1(F)CCC2(CC[C@H](Cl)CC2)CC1",
+        "first": "C[C@]1(F)CCC2(CC[C@@H](Cl)CC2)CC1",
+        "roundtrip": "C[C@]1(F)CCC2(CC[C@H](Cl)CC2)CC1",
+        "stable": false
+      },
+      {
+        "source": "C[C@]1(F)CCC2(CC[C@](I)(Cl)CC2)CC1",
+        "first": "C[C@]1(F)CCC2(CC1)CC[C@](Cl)(I)CC2",
+        "roundtrip": "C[C@]1(F)CCC2(CC1)CC[C@](Cl)(I)CC2",
+        "stable": true
+      }
+    ]
+  }
+}
