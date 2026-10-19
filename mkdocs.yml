@@ -167,6 +167,7 @@ nav:
     - Position-Preserving InChIKey Batches: positioned-inchi-keys.md
     - Alkene Path Stereo: alkene-path-stereo.md
     - MOL2 Section Order: mol2-section-order.md
+    - MOL2 Hydrogen Row Order: mol2-hydrogen-order.md
     - ChemDoodle JSON: chemdoodle-json.md
     - Fingerprint Target Density: fingerprint-target-density.md
     - Bounded Native Distance Matrices: native-distance-matrix-limits.md
