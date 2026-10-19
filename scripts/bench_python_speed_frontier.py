@@ -10,6 +10,8 @@ not evidence of toolkit-wide superiority.
 from __future__ import annotations
 
 import argparse
+import itertools
+import random
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -31,6 +33,9 @@ OPS = (
     "tpsa", "labute_asa", "qed", "num_rings", "morgan2_2048",
     "morgan2_chiral", "morgan3_2048", "maccs",
 )
+EXTRA_OPS = ("rotatable_bonds", "mqn", "hba", "hbd", "formula", "mol_wt",
+             "exact_mw", "chi1v", "kappa2", "logp", "slogp_vsa",
+             "fp_atom_pair", "fp_torsion", "fp_pattern", "fp_layered", "fp_rdkit")
 MODES = ("first_use", "repeated_use", "parse_inclusive")
 
 
@@ -48,7 +53,7 @@ def corpus_rows(data: bytes, offset: int, limit: int) -> list[str]:
 
 
 def normal(value, engine: str, op: str):
-    if "morgan" in op or op == "maccs":
+    if "morgan" in op or op == "maccs" or op.startswith("fp_"):
         if engine == "chematic":
             offset = int(op == "maccs")
             bits = []
@@ -144,10 +149,21 @@ def comparable(checks: dict, competitor: str) -> bool:
     return checks["candidate_vs_rdkit"]["passed"] and checks[competitor + "_vs_rdkit"]["passed"]
 
 
+def block_orders(names, blocks: int, balanced: bool = False):
+    if balanced:
+        permutations = list(itertools.permutations(names))
+        if blocks % len(permutations):
+            raise ValueError("balanced permutation blocks must be a multiple of 24")
+        random.Random(20261019).shuffle(permutations)
+        return [permutations[i % len(permutations)] for i in range(blocks)]
+    return [names[i % len(names):] + names[:i % len(names)] for i in range(blocks)]
+
+
 def parent(args) -> None:
     if args.blocks < 20 or args.limit < 1:
         raise ValueError("at least 20 blocks and a positive limit required")
     names = ("baseline", "candidate", "rdkit", "cosmolkit")
+    orders = block_orders(names, args.blocks, args.balanced_permutations)
     wheels = {name: getattr(args, name + "_wheel") for name in names[:2]}
     installed_extensions = {}
     for name, path in wheels.items():
@@ -167,7 +183,8 @@ def parent(args) -> None:
         },
         "corpus": {"path": str(args.corpus), "sha256": sha(args.corpus.read_bytes()),
                    "offset": args.offset, "limit": args.limit},
-        "protocol": {"blocks": args.blocks, "order": "four rotating fresh-process arms, sequential",
+        "protocol": {"blocks": args.blocks, "order": ("seeded full permutations (20261019), fresh-process sequential arms"
+                               if args.balanced_permutations else "four rotating fresh-process arms, sequential"),
                      "timing": "native return objects retained; normalization outside timing",
                      "first_use": "fresh parsed molecules; eager/lazy perception differs",
                      "repeated_use": "one untimed operation on every fresh molecule",
@@ -199,7 +216,7 @@ def parent(args) -> None:
     # saved samples. Validation-only workers do not add timing observations.
     blocks = ([-1] if args.resume else []) + list(range(len(report["blocks"]), args.blocks))
     for block in blocks:
-        order = names[block % 4:] + names[:block % 4]
+        order = orders[block]
         record = {"order": order, "load_average_start": list(os.getloadavg())}
         for name in order:
             env = os.environ.copy()
@@ -266,6 +283,7 @@ def main():
     parser.add_argument("--limit", type=int, default=1000)
     parser.add_argument("--offset", type=int, default=0, help="zero-based nonempty SMILES row offset")
     parser.add_argument("--blocks", type=int, default=20)
+    parser.add_argument("--balanced-permutations", action="store_true", help="run every four-arm order once per 24 blocks")
     parser.add_argument("--ops", default=",".join(OPS))
     parser.add_argument("--base-revision")
     parser.add_argument("--source-manifest", type=Path)
@@ -277,7 +295,7 @@ def main():
     parser.add_argument("--rdkit-path", type=Path)
     parser.add_argument("--cosmolkit-path", type=Path)
     args = parser.parse_args()
-    if set(args.ops.split(",")) - set(OPS):
+    if set(args.ops.split(",")) - set(OPS + EXTRA_OPS):
         parser.error("unsupported operation")
     if args.worker:
         print(json.dumps(worker(args)))

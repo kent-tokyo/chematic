@@ -12,7 +12,7 @@ WebAssembly, without a chematic backend.</p>
   <a class="chm-btn chm-btn-secondary" href="getting_started/installation/">Install chematic</a>
 </div>
 
-<p class="chm-links-row">Current release: <strong>v1.1.8</strong> · <a href="changelog/">release notes</a></p>
+<p class="chm-links-row">Current release: <strong>v1.1.9</strong> · <a href="changelog/">release notes</a></p>
 
 </div>
 
@@ -21,7 +21,7 @@ WebAssembly, without a chematic backend.</p>
 [![crates.io](https://img.shields.io/crates/v/chematic)](https://crates.io/crates/chematic)
 [![npm](https://img.shields.io/npm/v/@kent-tokyo/chematic)](https://www.npmjs.com/package/@kent-tokyo/chematic)
 
-## Why chematic
+## Choose chematic when local execution and explicit boundaries matter
 
 - **Local-first:** parsing, descriptors, fingerprints, similarity search, and
   2D depiction can run in the browser. The Explorer and Playground are static
@@ -32,6 +32,11 @@ WebAssembly, without a chematic backend.</p>
   and resource limits are explicit outcomes.
 - **Reproducible claims:** compatibility and performance results identify the
   version, corpus, operation, options, and failure policy.
+
+RDKit remains the better default for maximum chemistry and ecosystem breadth.
+Open Babel remains a strong choice for broad command-line format conversion.
+Use the [selection guide](choosing-chematic.md) to compare deployment,
+failure handling, supported chemistry, and evidence before choosing a toolkit.
 
 ## Quick start
 
@@ -80,14 +85,15 @@ Installation: `pip install chematic`, `cargo add chematic`, or
 
 ## Current evidence boundary
 
-v1.1.8 reduces first-use Labute ASA and ring-count overhead for bounded
-ordinary Python molecules without changing descriptor results. Its 10,000-row
-source comparison is one-host development evidence, not public-wheel or
-multi-host evidence. The v1.1.7 published-wheel chemistry gate remains the
-latest completed hosted package lane until the v1.1.8 run finishes. The
-broadest published-package RDKit performance packet remains v1.0.42. The
-83-row reaction gate remains 80 exact graph/origin/map rows and three inputs
-invalid in both engines.
+v1.1.9 adds checked position-preserving InChIKey batches, fail-closed
+RDKit-compatible SMILES stability checks, and stricter reaction stereo safety.
+Its performance changes are source evidence until exact artifacts are measured.
+The public v1.1.8 macOS arm64 wheel remains the latest exact one-operation
+performance record. The v1.1.7 hosted
+chemistry workflow remains the latest broad package lane, the latest durable
+cross-platform packet remains v1.1.3, and the broadest published-package RDKit
+performance packet remains v1.0.42. The 83-row reaction gate remains 80 exact
+graph/origin/map rows and three inputs invalid in both engines.
 
 Each result applies only to its named artifact, corpus, options, and failure
 policy. Release availability is not accuracy evidence, source results are not
@@ -108,9 +114,6 @@ Rust/Python/Node/WASM bindings.
 editing, and the RDKit-style API are experimental or intentionally bounded.
 `canonical_smiles()` is not always a safe identity key; use the fail-closed
 `canonical_smiles_stable_key()` where the documented domain is sufficient.
-
-RDKit remains the better choice for maximum ecosystem coverage, broader 3D
-workflows, or APIs that chematic marks unsupported.
 
 Rust line coverage is measured separately from chemistry validation. The
 processed Linux Codecov lane reports 96.93%; it shows which code

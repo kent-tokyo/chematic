@@ -17,6 +17,7 @@ use std::sync::Arc;
 pub(super) fn from_cml(#[pyo3(from_py_with = serialized_text)] cml_str: &str) -> PyResult<Mol> {
     chematic_mol::parse_cml(cml_str)
         .map(|(mol, _coords)| Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(mol),
             props: Default::default(),
         })
@@ -35,6 +36,7 @@ pub(super) fn from_cml_strict(
 ) -> PyResult<Mol> {
     chematic_mol::parse_cml_strict(cml_str)
         .map(|(mol, _coords)| Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(mol),
             props: Default::default(),
         })

@@ -321,6 +321,7 @@ impl PyVolumetricGrid {
         let py_coords = coords.iter().map(|&(x, y, z)| vec![x, y, z]).collect();
         (
             Mol {
+                num_rings_cache: Default::default(),
                 inner: Arc::new(mol),
                 props: Default::default(),
             },

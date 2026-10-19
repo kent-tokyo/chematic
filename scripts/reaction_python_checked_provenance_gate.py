@@ -37,7 +37,7 @@ EXPECTED = {
 }
 
 
-def source_artifact(chematic, wheel: Path | None) -> dict:
+def source_artifact(chematic, wheel: Path | None, build_profile: str = "release") -> dict:
     package_dir = Path(chematic.__file__).resolve().parent
     extensions = list(package_dir.glob("chematic*.so")) + list(package_dir.glob("chematic*.pyd"))
     if len(extensions) != 1:
@@ -56,7 +56,7 @@ def source_artifact(chematic, wheel: Path | None) -> dict:
         wheel_extension_digest = hashlib.sha256(archive.read(entries[0])).hexdigest()
     if installed_digest != wheel_extension_digest:
         raise ValueError("installed extension does not match the supplied wheel")
-    return {"kind": "release_profile_source_wheel", "published": False,
+    return {"kind": f"{build_profile}_profile_source_wheel", "published": False,
             "wheel": wheel.name, "wheel_sha256": hashlib.sha256(wheel.read_bytes()).hexdigest(),
             "extension_sha256": installed_digest}
 
@@ -122,7 +122,9 @@ def main() -> int:
     parser.add_argument("--strata", type=Path, default=ROOT / "validation/reaction_product_parity_strata_v2.json")
     parser.add_argument("--output", type=Path)
     parser.add_argument("--wheel", type=Path,
-                        help="release-profile source wheel installed in this interpreter")
+                        help="source wheel installed in this interpreter")
+    parser.add_argument("--build-profile", choices=("release", "dev"), default="release",
+                        help="Cargo profile used to build --wheel (default: release)")
     parser.add_argument("--candidates", type=Path,
                         help="rows from reaction_python_checked_candidates.py (another interpreter)")
     parser.add_argument("--expected-rdkit", default="2026.03.6")
@@ -140,7 +142,7 @@ def main() -> int:
     else:
         import chematic
 
-        artifact = source_artifact(chematic, args.wheel)
+        artifact = source_artifact(chematic, args.wheel, args.build_profile)
         candidates = [python_row(chematic, case) for case in cases]
     rows = [classify(case, candidate) for case, candidate in zip(cases, candidates)]
     counts = dict(sorted(Counter(row["outcome"] for row in rows).items()))

@@ -20,6 +20,7 @@ pub(super) fn from_pdb_conect<'py>(
     out.set_item(
         "mol",
         Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(frame.molecule),
             props: Default::default(),
         },

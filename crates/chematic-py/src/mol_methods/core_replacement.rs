@@ -37,6 +37,7 @@ impl Mol {
             .collect();
         Ok((
             Mol {
+                num_rings_cache: Default::default(),
                 inner: Arc::new(result.molecule),
                 props: self.props.clone(),
             },

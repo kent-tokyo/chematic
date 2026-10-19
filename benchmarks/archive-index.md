@@ -7,6 +7,20 @@ package, comparator, corpus, host, runtime and operation.
 
 ## Start here
 
+- [RDKit CIP speed audit](2026-10-19-cip-lazy-preparation.md): complete CIP output retention, all 24 formal blocks and 42 comparisons, with standalone gaps and stress mismatches explicit.
+
+- [COSMolKit rotor and Layered speed audit](2026-10-19-rotor-layered.md): current-source screening, exact old/new outputs, all 24 formal orders and all 72 comparisons; remaining rotor and MQN boundaries are explicit.
+
+- [Morgan, TPSA and Python ring-count caches](2026-10-19-python-ring-cache.md): fifth combined source candidate passes its three primary improvements and all 21 control floors; all four rejected prior candidates and all 63 comparisons are preserved.
+
+- [Compact core cache rejected pilot](2026-10-19-morgan-tpsa-compact-cache-pilot.md): substantial scalar first-use gains remain diagnostic; ring repeated/parse-inclusive conditions prevent adoption. All eight blocks and 21 lanes retained.
+
+- [Numeric cache placement rejected pilot](2026-10-19-morgan-tpsa-hot-scalars-pilot.md): all eight diagnostic blocks and 21 lanes retained; TPSA/ring repeated-use regressions prevented formal adoption.
+
+- [Morgan hashing and TPSA environment typing](2026-10-19-morgan-tpsa-environments.md): combined source gates fail; both first-use primaries, all 21 source floors, all 63 comparisons and the rejected standalone epoch remain auditable.
+
+- [Direct Morgan connectivity hashing](2026-10-19-morgan-direct-connectivity.md): source adoption fails on the full 10,000-row corpus; all 63 comparisons, source floors, external non-wins and raw numeric accounting retained.
+
 - [Terminal N/O and zero-model TPSA](2026-10-18-terminal-tpsa.md):
   isolated RDKit-default TPSA source improvement on both fixed windows; all 42
   median floors and source-output gates pass. Two broader failed candidates,
@@ -18,6 +32,15 @@ package, comparator, corpus, host, runtime and operation.
   24/24; first-slice parse remains unranked. One-host source evidence.
 
 - [3D tetrahedral candidate guard](2026-10-17-openbabel-3d-stereo-guard.md): source-valid 21-block native comparison, all 24 floors, preserved source outputs and archived invalid build epoch.
+
+### Superseded workflow development records
+
+These records remain available for provenance but are not current summary
+claims:
+
+- [expanded RDKit workflow source report](2026-10-12-rdkit-workflows-expanded-source.md);
+- reaction/R-group development: [combined source report](2026-10-18-rdkit-reaction-cleanup-rgroup-source.md), [83-row source gate](2026-10-18-rdkit-reaction-83-source-gate.json), [stereo safety](2026-10-18-rdkit-reaction-stereo-safety.json), [R-group hydrogen gate](2026-10-18-rdkit-rgroup-hydrogen-source-gate.json), and [automatic-H follow-up](2026-10-18-rdkit-rgroup-auto-hydrogen-followup.md);
+- Cleanup development: [N-oxide result](2026-10-18-rdkit-cleanup-n-oxide-followup.json), [non-tetrahedral report](2026-10-18-rdkit-cleanup-nontetra-followup.md) and [result](2026-10-18-rdkit-cleanup-nontetra-followup.json), [pyridone report](2026-10-18-rdkit-cleanup-pyridone-followup.md) and [result](2026-10-18-rdkit-cleanup-pyridone-followup.json), and [isolated-metal report](2026-10-18-rdkit-cleanup-isolated-metals-followup.md) and [result](2026-10-18-rdkit-cleanup-isolated-metals-followup.json).
 
 | Need | Start with |
 |---|---|

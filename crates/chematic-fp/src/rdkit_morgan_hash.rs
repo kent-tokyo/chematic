@@ -135,21 +135,24 @@ pub(crate) fn hash_vec(values: &[u32]) -> u32 {
 /// own doc comment) — only the assembly and hash function differ here.
 fn connectivity_invariant(mol: &Molecule, idx: AtomIdx, ring_atoms: &[bool]) -> u32 {
     let atom = mol.atom(idx);
-    let mut components: SmallVec<[u32; 6]> = SmallVec::new();
-    // Dummy atoms have atomic number 0 (chematic stores them as C).
-    components.push(if atom.wildcard {
-        0
-    } else {
-        atom.element.atomic_number() as u32
-    });
-    components.push(rdkit_total_degree(mol, idx) as u32);
-    components.push(rdkit_total_h_count(mol, idx) as u32);
-    components.push((atom.charge as i32) as u32);
-    components.push(rdkit_isotope_delta(mol, idx) as u32);
+    // Hash the fixed prefix directly. Building a SmallVec for each atom
+    // only to traverse it once adds no information to this ordered fold.
+    let mut hash = hash_combine(
+        0,
+        if atom.wildcard {
+            0
+        } else {
+            atom.element.atomic_number() as u32
+        },
+    );
+    hash = hash_combine(hash, rdkit_total_degree(mol, idx) as u32);
+    hash = hash_combine(hash, rdkit_total_h_count(mol, idx) as u32);
+    hash = hash_combine(hash, (atom.charge as i32) as u32);
+    hash = hash_combine(hash, rdkit_isotope_delta(mol, idx) as u32);
     if ring_atoms.get(idx.0 as usize).copied().unwrap_or(false) {
-        components.push(1);
+        hash = hash_combine(hash, 1);
     }
-    hash_vec(&components)
+    hash
 }
 
 /// `MorganBondInvGenerator::getBondInvariants`, `useBondTypes=true,
@@ -919,5 +922,62 @@ mod rdkit_ground_truth_radius0 {
             .collect();
         ids.sort_unstable();
         ids
+    }
+}
+
+#[cfg(test)]
+mod direct_connectivity_hash_tests {
+    use super::*;
+
+    fn frozen_connectivity_invariant(mol: &Molecule, idx: AtomIdx, ring_atoms: &[bool]) -> u32 {
+        let atom = mol.atom(idx);
+        let mut components: SmallVec<[u32; 6]> = SmallVec::new();
+        // Dummy atoms have atomic number 0 (chematic stores them as C).
+        components.push(if atom.wildcard {
+            0
+        } else {
+            atom.element.atomic_number() as u32
+        });
+        components.push(rdkit_total_degree(mol, idx) as u32);
+        components.push(rdkit_total_h_count(mol, idx) as u32);
+        components.push((atom.charge as i32) as u32);
+        components.push(rdkit_isotope_delta(mol, idx) as u32);
+        if ring_atoms.get(idx.0 as usize).copied().unwrap_or(false) {
+            components.push(1);
+        }
+        hash_vec(&components)
+    }
+
+    #[test]
+    fn direct_hash_matches_component_vector_on_normal_and_stress_atoms() {
+        let corpora = [
+            include_str!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../../validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi"
+            )),
+            include_str!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../../validation/cosmolkit_comparison/corpora/stress-v1.smi"
+            )),
+        ];
+        let mut rows = 0;
+        for corpus in corpora {
+            for line in corpus.lines().filter(|line| !line.trim().is_empty()) {
+                let mol = chematic_smiles::parse_template(line.split_whitespace().next().unwrap())
+                    .unwrap();
+                let rings = ring_atom_flags(&mol);
+                for (idx, _) in mol.atoms() {
+                    for flags in [&rings[..], &[][..]] {
+                        assert_eq!(
+                            connectivity_invariant(&mol, idx, flags),
+                            frozen_connectivity_invariant(&mol, idx, flags),
+                            "row {rows}, atom {idx:?}"
+                        );
+                    }
+                }
+                rows += 1;
+            }
+        }
+        assert_eq!(rows, 14072);
     }
 }

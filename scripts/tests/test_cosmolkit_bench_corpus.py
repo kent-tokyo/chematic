@@ -1,6 +1,7 @@
 import unittest
 
 from validation.cosmolkit_comparison.bench_corpus import (
+    _cosmolkit_fingerprint_method,
     operation_succeeded,
     paired_median_ratio_ci,
     pipeline_seconds,
@@ -9,6 +10,24 @@ from validation.cosmolkit_comparison.bench_corpus import (
 
 
 class CosmolkitBenchmarkReportTests(unittest.TestCase):
+    def test_final_and_rc_fingerprint_names_resolve_before_measurement(self):
+        class Final:
+            def fingerprint_pattern(self):
+                return "final"
+
+            def pattern_fingerprint(self):
+                raise AssertionError("final API must take precedence")
+
+        class ReleaseCandidate:
+            def pattern_fingerprint(self):
+                return "rc"
+
+        for cls, expected in ((Final, "final"), (ReleaseCandidate, "rc")):
+            method = _cosmolkit_fingerprint_method(cls, "fingerprint_pattern", "pattern_fingerprint")
+            self.assertEqual(method(cls()), expected)
+        with self.assertRaises(AttributeError):
+            _cosmolkit_fingerprint_method(object, "fingerprint_pattern", "pattern_fingerprint")
+
     def test_pipeline_time_includes_parse_or_3d_preparation(self):
         self.assertEqual(pipeline_seconds({"parse": 2.0}, "parse"), 2.0)
         self.assertEqual(

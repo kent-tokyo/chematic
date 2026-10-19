@@ -1,6 +1,39 @@
 //! Immediate-baseline TPSA oracle on existing pinned input corpora.
 use super::*;
 
+fn frozen_tpsa_environment(mol: &Molecule, idx: AtomIdx, hydrogens: u8) -> TpsaEnvironment {
+    let mut environment = TpsaEnvironment {
+        hydrogens,
+        charge: mol.atom(idx).charge,
+        ..TpsaEnvironment::default()
+    };
+    let mut heavy_neighbors = smallvec::SmallVec::<[AtomIdx; 4]>::new();
+    for (neighbor, bond_idx) in mol.neighbors(idx) {
+        if mol.atom(neighbor).element.atomic_number() == 1 {
+            continue;
+        }
+        environment.neighbors = environment.neighbors.saturating_add(1);
+        heavy_neighbors.push(neighbor);
+        match mol.bond(bond_idx).order {
+            BondOrder::Single | BondOrder::Up | BondOrder::Down => {
+                environment.single = environment.single.saturating_add(1);
+            }
+            BondOrder::Double => environment.double = environment.double.saturating_add(1),
+            BondOrder::Triple => environment.triple = environment.triple.saturating_add(1),
+            BondOrder::Aromatic => {
+                environment.aromatic = environment.aromatic.saturating_add(1);
+            }
+            _ => {}
+        }
+    }
+    environment.in_three_membered_ring = heavy_neighbors.iter().enumerate().any(|(i, &left)| {
+        heavy_neighbors[i + 1..]
+            .iter()
+            .any(|&right| mol.bond_between(left, right).is_some())
+    });
+    environment
+}
+
 fn frozen_default_tpsa(mol: &Molecule) -> f64 {
     let mol_arom = descriptor_aromaticity(mol);
     // RDKit's default excludes S/P. Compute only N/O instead of allocating a
@@ -16,11 +49,11 @@ fn frozen_default_tpsa(mol: &Molecule) -> f64 {
                 } else {
                     mol
                 };
-                tpsa_nitrogen(tpsa_environment(environment_mol, idx, hydrogens))
+                tpsa_nitrogen(frozen_tpsa_environment(environment_mol, idx, hydrogens))
             }
             8 => {
                 let hydrogens = descriptor_attached_hcount(&mol_arom, idx);
-                tpsa_oxygen(tpsa_environment(&mol_arom, idx, hydrogens))
+                tpsa_oxygen(frozen_tpsa_environment(&mol_arom, idx, hydrogens))
             }
             _ => 0.0,
         };
@@ -90,5 +123,41 @@ fn default_zero_and_late_nitrogen_keep_original_float_bits() {
     ] {
         let input = chematic_smiles::parse_template(smiles).unwrap();
         compare(&input);
+    }
+}
+
+#[test]
+fn polar_types_match_frozen_ring_typing() {
+    for input in [
+        "N1CC1",
+        "CN1CC1",
+        "O1CC1",
+        "[NH2+]1CC1",
+        "[O+]1CC1",
+        "n1ccccc1",
+        "o1cccc1",
+        "N1CCC1",
+        "CCN(C)C",
+        "P1CC1",
+        "S1CC1",
+        "P(=O)(O)(O)O",
+        "S(=O)(=O)(O)O",
+        "[2H]N1CC1",
+        "[3H]O[2H]",
+    ] {
+        let mol = chematic_smiles::parse_template(input).unwrap();
+        for (idx, atom) in mol.atoms() {
+            let h = descriptor_attached_hcount(&mol, idx);
+            let old = frozen_tpsa_environment(&mol, idx, h);
+            let new = tpsa_environment(&mol, idx, h);
+            let (a, b) = match atom.element.atomic_number() {
+                7 => (tpsa_nitrogen(old), tpsa_nitrogen(new)),
+                8 => (tpsa_oxygen(old), tpsa_oxygen(new)),
+                15 => (tpsa_phosphorus(old), tpsa_phosphorus(new)),
+                16 => (tpsa_sulfur(old), tpsa_sulfur(new)),
+                _ => continue,
+            };
+            assert_eq!(a.to_bits(), b.to_bits(), "{input} {idx:?}");
+        }
     }
 }

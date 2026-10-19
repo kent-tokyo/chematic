@@ -1,0 +1,3 @@
+validation/results/fragment-numpy-counts-2026-10-19/typing_invalid.py:7: error: Argument "cuts_per_atom" to "fragment_on_bonds_checked" has incompatible type "ndarray[Any, dtype[float64]]"; expected "list[int] | ndarray[Any, dtype[unsignedinteger[_32Bit]]] | None"  [arg-type]
+validation/results/fragment-numpy-counts-2026-10-19/typing_invalid.py:8: error: Argument "cuts_per_atom" to "fragment_on_bonds_checked" has incompatible type "tuple[int, int]"; expected "list[int] | ndarray[Any, dtype[unsignedinteger[_32Bit]]] | None"  [arg-type]
+Found 2 errors in 1 file (checked 1 source file)

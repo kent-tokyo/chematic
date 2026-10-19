@@ -1,7 +1,7 @@
 # Checked bond fragmentation and cut counters
 
 `fragment_on_bonds_checked` replaces selected bridge single bonds with paired
-isotope-labelled dummy atoms. Its `cuts_per_atom: list[int]` argument is checked
+isotope-labelled dummy atoms. Its `cuts_per_atom` argument is checked
 before editing, then overwritten with one cut count per original atom on success.
 This implements a bounded part of the mutable-output typing work tracked in
 [RDKit #9601](https://github.com/rdkit/rdkit/issues/9601).
@@ -40,9 +40,31 @@ assert [a.isotope for a in result.attachments] == [7, 9, 0, 65535, 55, 55]
 
 The frozen `BondFragmentation` and `FragmentAttachment` records expose immutable
 counts and provenance. The returned `Mol` remains an ordinary molecule object.
-An optional counter must be an exact plain `list[int]`, with one entry per source
-atom. Initial counter values are ignored. Invalid inputs leave the list and
-source molecule unchanged; counters are replaced, never accumulated.
+An optional counter must be an exact plain `list[int]` or a writable,
+one-dimensional NumPy `uint32` array, with one entry per source atom.
+`FragmentCutCounts` exports this union for type annotations. Array views may
+have positive or negative strides and either byte order; their elements must
+not overlap. Array subclasses, other dtypes, read-only arrays and wrong lengths
+are rejected before native fragmentation. Initial counter values are ignored.
+Invalid inputs leave the counter and source molecule unchanged; counters are
+replaced, never accumulated. The result retains an independent immutable tuple.
+
+```python
+import numpy as np
+
+source = ch.from_smiles("CC(C)O")
+storage = np.full(8, 77, dtype=np.uint32)
+counts = storage[::2]
+result = ch.fragment_on_bonds_checked(source, [0, 1], cuts_per_atom=counts)
+assert counts.tolist() == [1, 2, 1, 0]
+assert storage[1::2].tolist() == [77, 77, 77, 77]
+assert result.cuts_per_atom == (1, 2, 1, 0)
+```
+
+Validation and conversion finish before the output assignment. This does not
+provide synchronization with concurrent caller writes or roll back side effects
+from user-defined input sequences. The NumPy output form is a chematic extension;
+RDKit reference comparisons use its list output.
 
 ```python
 source = ch.from_smiles("CCO")

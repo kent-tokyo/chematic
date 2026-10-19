@@ -132,6 +132,7 @@ impl RWMol {
     /// Further edits to this `RWMol` do not affect the returned `Mol`.
     fn GetMol(&self) -> Mol {
         Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(MoleculeBuilder::from_molecule(&self.inner).build()),
             props: self.props.clone(),
         }

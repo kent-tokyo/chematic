@@ -130,7 +130,8 @@ impl Mol {
     #[getter]
     #[inline(always)]
     fn num_rings(&self) -> usize {
-        chematic_chem::rdkit_num_rings(&self.inner)
+        self.num_rings_cache
+            .get_or_compute(|| chematic_chem::rdkit_num_rings(&self.inner))
     }
 
     /// Number of distinct connected ring systems.
@@ -211,6 +212,7 @@ impl Mol {
         };
         let new_mol = chematic_perception::apply_aromaticity_ex(&self.inner, algo);
         Ok(Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(new_mol),
             props: Default::default(),
         })

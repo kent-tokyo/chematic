@@ -12,6 +12,8 @@ from ._sdf_split import (
 )
 
 from .chematic import *
+from ._inchi_batch import InchiKeyRecord, InchiKeyStatus, inchi_keys_checked
+from ._rdkit_smiles_checked import RdkitSmilesStabilityError, rdkit_smiles_checked
 from ._xbs import XbsBondRule, XbsSpecies, write_xbs
 from ._xyz_atom_data import XyzAtomDataFrame, parse_xyz_atom_data
 from ._xsf import write_xsf_checked
@@ -677,7 +679,7 @@ from ._tautomer_control import (
 from ._crystal_obj import ObjMeshExport, write_crystal_obj_checked
 from ._crystal_stl import StlMeshExport, write_crystal_stl_checked
 from ._parent_types import ParentStage, SuperParentReport
-from ._bond_fragment import BondFragmentation, FragmentAttachment, fragment_on_bonds_checked
+from ._bond_fragment import BondFragmentation, FragmentAttachment, FragmentCutCounts, fragment_on_bonds_checked
 from ._core_replacement import CoreAttachment, CoreReplacement, replace_core_checked
 from ._mcs_comparators import (
     McsAtomCompare,

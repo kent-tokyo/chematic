@@ -37,7 +37,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! chematic = { version = "0.4", features = ["full"] }
+//! chematic = { version = "1.1.9", features = ["full"] }
 //! ```
 //!
 //! Parse a molecule and compute properties:

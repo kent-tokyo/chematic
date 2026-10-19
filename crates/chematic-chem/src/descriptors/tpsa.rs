@@ -23,13 +23,11 @@ fn tpsa_environment(mol: &Molecule, idx: AtomIdx, hydrogens: u8) -> TpsaEnvironm
         charge: mol.atom(idx).charge,
         ..TpsaEnvironment::default()
     };
-    let mut heavy_neighbors = smallvec::SmallVec::<[AtomIdx; 4]>::new();
     for (neighbor, bond_idx) in mol.neighbors(idx) {
         if mol.atom(neighbor).element.atomic_number() == 1 {
             continue;
         }
         environment.neighbors = environment.neighbors.saturating_add(1);
-        heavy_neighbors.push(neighbor);
         match mol.bond(bond_idx).order {
             BondOrder::Single | BondOrder::Up | BondOrder::Down => {
                 environment.single = environment.single.saturating_add(1);
@@ -42,11 +40,34 @@ fn tpsa_environment(mol: &Molecule, idx: AtomIdx, hydrogens: u8) -> TpsaEnvironm
             _ => {}
         }
     }
-    environment.in_three_membered_ring = heavy_neighbors.iter().enumerate().any(|(i, &left)| {
-        heavy_neighbors[i + 1..]
-            .iter()
-            .any(|&right| mol.bond_between(left, right).is_some())
-    });
+    // Only these neutral amine/ether types distinguish three-membered
+    // rings. Every other table entry and fallback ignores this flag.
+    if matches!(
+        (
+            mol.atom(idx).element.atomic_number(),
+            environment.neighbors,
+            environment.hydrogens,
+            environment.charge,
+            environment.single,
+            environment.double,
+            environment.triple,
+            environment.aromatic
+        ),
+        (7, 2, 1, 0, 2, 0, 0, 0) | (7, 3, 0, 0, 3, 0, 0, 0) | (8, 2, 0, 0, 2, 0, 0, 0)
+    ) {
+        let heavy_neighbors: smallvec::SmallVec<[AtomIdx; 3]> = mol
+            .neighbors(idx)
+            .filter_map(|(neighbor, _)| {
+                (mol.atom(neighbor).element.atomic_number() != 1).then_some(neighbor)
+            })
+            .collect();
+        environment.in_three_membered_ring =
+            heavy_neighbors.iter().enumerate().any(|(i, &left)| {
+                heavy_neighbors[i + 1..]
+                    .iter()
+                    .any(|&right| mol.bond_between(left, right).is_some())
+            });
+    }
     environment
 }
 

@@ -1,21 +1,18 @@
-# Use case: Large-scale batch analysis
+# Batch descriptors and filtering with explicit row outcomes
 
 ## Problem
 
-You have a SMILES list or SDF file with thousands of compounds and need to compute descriptors, generate fingerprints, or filter by drug-likeness criteria — fast, without spinning up a conda environment or waiting minutes for RDKit to process serially.
+You have a SMILES list or SDF file and need descriptors, fingerprints, or
+substructure filters without losing the identity of rejected records.
 
 ## Solution
 
-chematic's `bulk.*` API uses Rayon internally to parallelise work across all CPU cores. A 10 k-molecule SDF → CSV pipeline runs in under a second on modern hardware. Install with `pip install chematic`; no C++ toolchain needed.
-
-## Output / What you get
-
-```
-$ python batch.py library.sdf
-Computed 10 000 molecules, 72 descriptors each → descriptors.csv
-3 847 / 10 000 pass Lipinski + PAINS
-Done in 0.84 s
-```
+Use streaming SDF APIs when names, properties, source order, and parse failures
+must be preserved. Use `bulk.*` for an in-memory SMILES collection. The bulk
+paths use parallel Rust implementations where the operation supports them;
+actual throughput depends on the operation, host, thread count, input, and
+failure policy. Current bulk descriptor and array APIs skip invalid SMILES, so
+validate first when source-row accounting matters.
 
 ## SDF → filtered CSV
 
@@ -23,18 +20,37 @@ Done in 0.84 s
 import chematic
 import csv
 
-# Stream through SDF without loading all molecules into memory at once
+# Stream without loading the whole file; keep one output row per source record.
 with open("filtered.csv", "w", newline="") as f:
-    writer = csv.DictWriter(f, fieldnames=["name", "smiles", "mw", "logp", "tpsa", "qed"])
+    fields = [
+        "source_index", "status", "error", "name", "smiles",
+        "mw", "logp", "tpsa", "qed",
+    ]
+    writer = csv.DictWriter(f, fieldnames=fields)
     writer.writeheader()
 
-    for rec in chematic.iter_sdf("library.sdf"):
+    for source_index, rec, error in chematic.iter_sdf_checked("library.sdf"):
+        if error is not None:
+            writer.writerow({
+                "source_index": source_index,
+                "status": "invalid",
+                "error": error,
+            })
+            continue
+
         mol = rec.mol
-        if not mol.lipinski_passes:
+        if not mol.lipinski_passes or not mol.pains_passes:
+            writer.writerow({
+                "source_index": source_index,
+                "status": "filtered",
+                "name": rec.name,
+                "smiles": mol.smiles,
+            })
             continue
-        if not mol.pains_passes:
-            continue
+
         writer.writerow({
+            "source_index": source_index,
+            "status": "accepted",
             "name":  rec.name,
             "smiles": mol.smiles,
             "mw":    round(mol.mw, 2),
@@ -46,24 +62,39 @@ with open("filtered.csv", "w", newline="") as f:
 print("Done")
 ```
 
-## Parallel descriptors for a SMILES list
+## Parallel descriptors after input validation
 
 ```python
 import chematic
 import pandas as pd
 
-smiles = open("smiles.txt").read().splitlines()
+source_smiles = open("smiles.txt").read().splitlines()
+valid = []
+rejected = []
 
-# Parallelised across all CPU cores; returns list[dict]
-df = pd.DataFrame(chematic.bulk.descriptors(smiles))
+for source_index, smiles in enumerate(source_smiles):
+    try:
+        chematic.from_smiles(smiles)
+    except chematic.ChematicInputError as error:
+        rejected.append({
+            "source_index": source_index,
+            "smiles": smiles,
+            "error": str(error),
+        })
+    else:
+        valid.append((source_index, smiles))
+
+# The bulk call now receives only validated rows, preserving positional mapping.
+df = pd.DataFrame(chematic.bulk.descriptors([smiles for _, smiles in valid]))
+df.insert(0, "source_index", [source_index for source_index, _ in valid])
 df.to_csv("descriptors.csv", index=False)
-print(f"Computed {len(df)} molecules, {df.columns.size} descriptors each")
+pd.DataFrame(rejected).to_csv("descriptor_errors.csv", index=False)
 ```
 
 ## Excel workbook → XLSX report
 
 When a compound table is maintained in Excel, use ElixCee for workbook I/O and
-Chematic for molecular parsing and descriptors. This keeps XLSX/XLSM concerns
+chematic for molecular parsing and descriptors. This keeps XLSX/XLSM concerns
 out of the chemistry core while avoiding an openpyxl-specific integration.
 
 ```bash
@@ -79,6 +110,10 @@ uses different names. Excel I/O is provided by
 [ElixCee](https://github.com/kent-tokyo/elixcee); it is an optional dependency.
 
 ## Parallel fingerprint matrix for clustering
+
+The remaining bulk examples assume every input has already passed the same
+validation step. Otherwise, preserve a source-index sidecar before calling a
+bulk API that skips invalid SMILES.
 
 ```python
 import chematic
@@ -107,7 +142,7 @@ import chematic
 
 raw_smiles = open("raw.smi").read().splitlines()
 
-# Removes salts, neutralises charges, canonicalises tautomers — all in parallel
+# Uses chematic's documented bounded standardization profile
 clean_mols = chematic.bulk.standardize(raw_smiles)
 
 for mol in clean_mols:
@@ -144,16 +179,14 @@ hits = [s for s, match in zip(smiles, has_carboxylic) if match]
 print(f"{len(hits)} molecules contain a carboxylic acid")
 ```
 
-## Performance reference
+## Measure the operation you will deploy
 
-| Task | 10 k molecules | 100 k molecules |
-|------|---------------|-----------------|
-| ECFP4 fingerprints | ~36 ms | ~360 ms |
-| 70-descriptor batch | ~80 ms | ~800 ms |
-| Tanimoto matrix (N×N) | ~200 ms | — |
-| Standardisation | ~120 ms | ~1.2 s |
-
-Measured on 8-core Apple M2. All tasks scale linearly with core count.
+Do not estimate production throughput from an unrelated descriptor or from a
+different package version. The [benchmark method](../benchmark.md) separates
+parsing, first use, prepared reuse, serialization, and memory, while the
+[record index](https://github.com/kent-tokyo/chematic/tree/main/benchmarks)
+retains dated raw results. Re-run the same operation on your corpus and keep
+invalid, unsupported, and refused rows in the denominator.
 
 ## Related APIs
 

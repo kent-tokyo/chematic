@@ -663,6 +663,7 @@ pub(crate) fn decode(payload: &[u8]) -> Result<Mol, String> {
     let props = decode_properties(&mut reader, counts.properties, counts.version)?;
     reader.finish()?;
     Ok(Mol {
+        num_rings_cache: Default::default(),
         inner: Arc::new(builder.build()),
         props,
     })
@@ -705,6 +706,7 @@ mod tests {
             vec![bond],
         );
         Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(builder.build()),
             props: HashMap::from([
                 ("name".into(), "molecule".into()),

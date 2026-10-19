@@ -1,5 +1,6 @@
 //! Shared feature hashing, retaining the existing six-layer bit contract.
 use super::*;
+use smallvec::SmallVec;
 
 pub(super) struct Prepared<'a> {
     mol: &'a Molecule,
@@ -10,7 +11,7 @@ pub(super) struct Prepared<'a> {
 }
 pub(super) struct Hashes {
     pub seeds: [Option<u32>; NUM_LAYERS],
-    pub atoms: Vec<usize>,
+    pub atoms: SmallVec<[usize; 14]>,
 }
 impl<'a> Prepared<'a> {
     pub fn new(mol: &'a Molecule, trust_view: bool) -> Self {
@@ -37,13 +38,15 @@ impl<'a> Prepared<'a> {
     }
     pub fn hashes(&self, path: &[u32]) -> Hashes {
         let (degrees, atoms, bond_nbrs) = path_info(self.mol, path);
-        let mut layers: [Vec<u32>; NUM_LAYERS] = Default::default();
+        // Default paths have at most seven bonds; configured longer paths spill.
+        let mut layers: [SmallVec<[u32; 9]>; NUM_LAYERS] = Default::default();
         for (i, &bidx) in path.iter().enumerate() {
             let bond = self.mol.bond(BondIdx(bidx));
             let a = bond.atom1.0;
             let b = bond.atom2.0;
-            let d1 = degrees[&a];
-            let d2 = degrees[&b];
+            let degree = |atom| degrees.iter().find(|&&(a, _)| a == atom).unwrap().1;
+            let d1 = degree(a);
+            let d2 = degree(b);
             let n = bond_nbrs[i];
             layers[0].push(topology(d1, d2, n));
             let code = if is_bond_aromatic(self.mol, self.aromaticity.as_ref(), BondIdx(bidx)) {
@@ -82,18 +85,24 @@ impl<'a> Prepared<'a> {
         Hashes { seeds, atoms }
     }
 }
-type PathInfo = (FxHashMap<u32, u32>, Vec<usize>, Vec<u32>);
+type PathInfo = (
+    SmallVec<[(u32, u32); 14]>,
+    SmallVec<[usize; 14]>,
+    SmallVec<[u32; 7]>,
+);
 fn path_info(mol: &Molecule, path: &[u32]) -> PathInfo {
-    let mut degrees = FxHashMap::default();
-    let mut atoms = std::collections::BTreeSet::new();
+    let mut degrees: SmallVec<[(u32, u32); 14]> = SmallVec::new();
     for &idx in path {
         let b = mol.bond(BondIdx(idx));
-        *degrees.entry(b.atom1.0).or_insert(0) += 1;
-        *degrees.entry(b.atom2.0).or_insert(0) += 1;
-        atoms.insert(b.atom1.0 as usize);
-        atoms.insert(b.atom2.0 as usize);
+        for atom in [b.atom1.0, b.atom2.0] {
+            if let Some((_, count)) = degrees.iter_mut().find(|(a, _)| *a == atom) {
+                *count += 1;
+            } else {
+                degrees.push((atom, 1));
+            }
+        }
     }
-    let mut nbrs = vec![0; path.len()];
+    let mut nbrs: SmallVec<[u32; 7]> = std::iter::repeat_n(0, path.len()).collect();
     for i in 0..path.len() {
         let a = mol.bond(BondIdx(path[i]));
         for j in i + 1..path.len() {
@@ -105,7 +114,9 @@ fn path_info(mol: &Molecule, path: &[u32]) -> PathInfo {
             }
         }
     }
-    (degrees, atoms.into_iter().collect(), nbrs)
+    let mut atoms: SmallVec<[usize; 14]> = degrees.iter().map(|&(a, _)| a as usize).collect();
+    atoms.sort_unstable();
+    (degrees, atoms, nbrs)
 }
 fn topology(mut a: u32, mut b: u32, n: u32) -> u32 {
     if a < b {
@@ -134,3 +145,6 @@ fn aromaticity(mut a: bool, mut b: bool, n: u32) -> u32 {
     }
     (a as u32) | ((b as u32) << 1) | ((n % 8) << 5)
 }
+
+#[cfg(test)]
+mod oracle_tests;

@@ -7,6 +7,7 @@ pub(super) fn from_hin(text: &str) -> PyResult<Mol> {
     let record = chematic_mol::parse_hin_record(text)
         .map_err(|error| PyValueError::new_err(error.to_string()))?;
     Ok(Mol {
+        num_rings_cache: Default::default(),
         inner: Arc::new(record.to_molecule()),
         props: Default::default(),
     })

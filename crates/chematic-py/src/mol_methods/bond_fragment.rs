@@ -26,6 +26,7 @@ impl Mol {
             .map(|a| (a.source_bond.0, a.anchor.0, a.dummy.0, a.isotope))
             .collect();
         let molecule = Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(result.molecule),
             props: self.props.clone(),
         };

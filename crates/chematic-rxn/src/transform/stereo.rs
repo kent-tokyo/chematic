@@ -269,16 +269,16 @@ pub(super) fn ez_stereo_outward(
 /// the double bond (see [`ez_stereo_outward`]).  Two outward directions that are
 /// equal → same-side (Z/cis); directions that differ → opposite-side (E/trans).
 ///
-/// If only one side of a template double bond has a stereo bond (or the
-/// reactant doesn't annotate stereo at all), the constraint is skipped — this
-/// matches the behaviour of SMIRKS templates extracted from rdchiral where a
-/// single-sided annotation is common.
+/// A one-sided template has no E/Z constraint. For a fully specified
+/// template, native matching refuses reactants without complete E/Z evidence;
+/// the RDKit compatibility profile retains the runner's permissive behavior.
 ///
 /// Returns `true` if all constrained double bonds are consistent.
 pub(super) fn smirks_ez_stereo_ok(
     tmpl: &Molecule,
     reactant: &Molecule,
     match_map: &FxHashMap<usize, AtomIdx>,
+    require_reactant_stereo: bool,
 ) -> bool {
     for (_, bond) in tmpl.bonds() {
         if bond.order != BondOrder::Double {
@@ -309,9 +309,11 @@ pub(super) fn smirks_ez_stereo_ok(
         let ma = ez_stereo_outward(reactant, ra, rb);
         let mb = ez_stereo_outward(reactant, rb, ra);
 
-        // If the reactant doesn't encode stereo on either end, skip (don't reject).
+        // A missing direction cannot establish the requested E/Z geometry.
+        // Only the compatibility profile allows this RDKit runner behavior.
         let (ma, mb) = match (ma, mb) {
             (Some(a), Some(b)) => (a, b),
+            _ if require_reactant_stereo => return false,
             _ => continue,
         };
 

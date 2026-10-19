@@ -79,8 +79,11 @@ before distance-matrix smoothing. Rust uses typed
 `InternalCoordinateConstraints`; Python and WASM accept the same JSON object
 through `rdkit_bounds_matrix_with_constraints` and
 `rdkit_embed_with_constraints`. Invalid indices, cross-fragment constraints,
-and triangle-inconsistent combinations fail explicitly. API availability in
-v1.1.4 is separate from the still-open complete cross-platform artifact packet.
+and triangle-inconsistent combinations fail explicitly. The API landed in
+v1.1.4, but availability alone is not package validation;
+use the current [validation report](validation.md) and
+[benchmark index](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/README.md)
+for artifact evidence.
 
 ---
 

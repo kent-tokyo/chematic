@@ -240,6 +240,11 @@ def table(engine: str):
     }
 
 
+def _cosmolkit_fingerprint_method(molecule, current, previous):
+    method = getattr(molecule, current, None)
+    return method if method is not None else getattr(molecule, previous)
+
+
 def _cosmolkit_05_table(ck):
     """COSMolKit 0.5's reworked API (generator fingerprints, *_with_params)."""
     from corpus_engines import SMARTS_QUERIES
@@ -254,6 +259,17 @@ def _cosmolkit_05_table(ck):
     rxn = ck.parse_smirks(RXN_AMIDE)
     acid = ck.Molecule.from_smiles("CC(=O)O")
     run_params = ck.ReactionRunParams()
+
+    # The final 0.5 wheel renamed these rc22 methods. Resolve the method
+    # once, outside timing; never time AttributeError as a fingerprint call.
+    def fingerprint_method(current, previous):
+        return _cosmolkit_fingerprint_method(ck.Molecule, current, previous)
+
+    atom_pair = fingerprint_method("fingerprint_atom_pair", "atom_pair_fingerprint")
+    torsion = fingerprint_method("fingerprint_topological_torsion_legacy", "legacy_topological_torsion_fingerprint")
+    pattern = fingerprint_method("fingerprint_pattern", "pattern_fingerprint")
+    layered = fingerprint_method("fingerprint_layered", "layered_fingerprint")
+    topological = fingerprint_method("fingerprint_topological", "topological_fingerprint")
 
     def mmff(m):
         g = m.mmff_energy_gradient()
@@ -275,10 +291,9 @@ def _cosmolkit_05_table(ck):
         "morgan3_2048": lambda m: m.fingerprint_morgan_with_generator(gens["m3"]),
         "morgan2_chiral": lambda m: m.fingerprint_morgan_with_generator(gens["m2c"]),
         "maccs": lambda m: m.fingerprint_maccs(),
-        "fp_atom_pair": lambda m: m.atom_pair_fingerprint(),
-        "fp_torsion": lambda m: m.legacy_topological_torsion_fingerprint(),
-        "fp_pattern": lambda m: m.pattern_fingerprint(), "fp_layered": lambda m: m.layered_fingerprint(),
-        "fp_rdkit": lambda m: m.topological_fingerprint(),
+        "fp_atom_pair": atom_pair, "fp_torsion": torsion,
+        "fp_pattern": pattern, "fp_layered": layered,
+        "fp_rdkit": topological,
         "cip": lambda m: m.with_cip_labels(),
         "smarts_31": lambda m: [m.substruct_matches(q) for q in qs],
         "molblock": lambda m: m.to_sdf_2d(), "smarts_write": lambda m: m.to_smarts(),

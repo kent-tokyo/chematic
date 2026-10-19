@@ -237,14 +237,21 @@ impl Mol {
         };
         // E/Z entries are keyed by the double bond's first atom; attach the
         // bond itself so callers need not guess which bond is meant (#634).
-        let mut ez_bonds = chematic_chem::assign_ez_bonds_with_mode(
-            &self.inner,
-            if mode == "accurate" {
-                chematic_chem::CipMode::Accurate
-            } else {
-                chematic_chem::CipMode::LegacyFast
-            },
-        );
+        let mut ez_bonds = if assignments
+            .iter()
+            .any(|(_, code)| matches!(code, CipCode::E | CipCode::Z))
+        {
+            chematic_chem::assign_ez_bonds_with_mode(
+                &self.inner,
+                if mode == "accurate" {
+                    chematic_chem::CipMode::Accurate
+                } else {
+                    chematic_chem::CipMode::LegacyFast
+                },
+            )
+        } else {
+            Vec::new()
+        };
         assignments
             .iter()
             .map(|(idx, code)| {
@@ -796,6 +803,7 @@ impl Mol {
     /// Returns a new :class:`Mol` with normalized groups.
     fn normalize_groups(&self) -> Mol {
         Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(chematic_chem::normalize_groups(&self.inner)),
             props: Default::default(),
         }
@@ -806,6 +814,7 @@ impl Mol {
     /// Useful after salt removal when the largest fragment is the drug molecule.
     fn prefer_organic(&self) -> Mol {
         Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(chematic_chem::prefer_organic(&self.inner)),
             props: Default::default(),
         }
@@ -816,6 +825,7 @@ impl Mol {
     /// Transfers protons to maximize negative charge on the strongest acids.
     fn reionize(&self) -> Mol {
         Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(chematic_chem::reionize(&self.inner)),
             props: Default::default(),
         }
@@ -824,6 +834,7 @@ impl Mol {
     /// Remove all formal charges (set every atom to neutral).
     fn uncharge(&self) -> Mol {
         Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(chematic_chem::uncharge(&self.inner)),
             props: Default::default(),
         }

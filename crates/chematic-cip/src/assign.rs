@@ -153,7 +153,8 @@ pub struct AccurateCipAssignment {
 /// resolve. See module docs for scope and the positions-vs-ranks distinction.
 ///
 /// Computes `mol`'s Kekulé-form clone and [`MancudeContext`] **once**, before the
-/// per-atom loop, and shares both across every stereocenter's digraph -- never
+/// per-atom loop when a tetrahedral annotation exists, and shares both across
+/// every stereocenter's digraph -- never
 /// recomputed per atom or per subtree expansion (a whole-molecule quantity). If Kekulé
 /// form can't be computed at all for `mol` (rare -- e.g. a non-bipartite aromatic system
 /// `chematic_core::kekulization::kekulize` can't resolve), falls back to the plain,
@@ -165,6 +166,11 @@ pub fn assign_cip_accurate_experimental(
     mol: &Molecule,
     budget: CipBudget,
 ) -> Result<AccurateCipAssignment, CipCompareError> {
+    // Every assignment/skipped entry begins with a tetrahedral annotation.
+    // With no such atom all three passes are empty, independent of budget.
+    if !mol.atoms().any(|(_, atom)| atom.chirality.is_tetrahedral()) {
+        return Ok(AccurateCipAssignment::default());
+    }
     let kekule = prepare_kekule_form(mol).ok();
     let pass1 = assign_all(mol, budget, kekule.as_ref())?;
     // Rule 4b (Milestone 4B-2) must run before Rule 5 -- CIP rule order. Rule 5's own
@@ -899,3 +905,7 @@ mod tests {
         );
     }
 }
+
+#[cfg(test)]
+#[path = "assignment_preparation_tests.rs"]
+mod preparation_tests;

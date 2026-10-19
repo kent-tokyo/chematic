@@ -13,6 +13,12 @@ validates their typed inputs and retains that no-op behavior; no invented
 contribution counts or mask filtering is added. Only exact power-of-two folding
 through 2048 bits is supported; this is a bounded #9601 slice.
 
+October 19 follow-up: #9601 remains open. The existing
+[`cutsPerAtom` counterpart](checked-bond-fragmentation.md) now accepts typed
+NumPy `uint32` output views as well as plain lists, with preflight layout checks
+and staged conversion before writes. This extends chematic's bounded bridge
+single-bond API; it does not implement nanobind or close the tracking issue.
+
 | RDKit issue | Source finding | Decision |
 | --- | --- | --- |
 | [#9601: metric matrix facade](https://github.com/rdkit/rdkit/issues/9601) | Native supplied-descriptor and sparse-set calculators existed; the typed `rdMetricMatrixCalc` namespace and NumPy return contract were missing. | [Added typed metric adapters](metric-matrix-facade.md), structural explicit/sparse sources, staged validation, owned arrays and RDKit empty-pair policy. 512 Euclidean and 1,024 binary calls compare with RDKit; numeric/input-profile differences are separate controls. |

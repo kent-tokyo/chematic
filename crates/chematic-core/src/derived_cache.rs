@@ -99,19 +99,23 @@ type Erased = dyn Any + Send + Sync + RefUnwindSafe + UnwindSafe;
 
 type Slot = OnceLock<Arc<Erased>>;
 
+// Keep numeric cache reads inside the molecule. Allocate the larger
+// type-erased payload array separately on its first use, so those slots do
+// not enlarge every molecule or separate its hot fields in memory.
+#[repr(C)]
 pub(crate) struct DerivedCache {
-    slots: [Slot; SLOT_COUNT],
     scalars: [OnceLock<f64>; 4],
     /// Kept outside the type-erased slots because this descriptor is a very
     /// hot scalar property.  Avoiding `Arc<dyn Any>` and a downcast makes a
     /// prepared ring-count lookup comparable to RDKit's native cache read.
     rdkit_num_rings: AtomicUsize,
+    slots: OnceLock<Box<[Slot; SLOT_COUNT]>>,
 }
 
 impl Default for DerivedCache {
     fn default() -> Self {
         Self {
-            slots: [const { OnceLock::new() }; SLOT_COUNT],
+            slots: OnceLock::new(),
             scalars: [const { OnceLock::new() }; 4],
             rdkit_num_rings: AtomicUsize::new(usize::MAX),
         }
@@ -126,6 +130,13 @@ impl Clone for DerivedCache {
 }
 
 impl DerivedCache {
+    fn slots(&self) -> &[Slot; SLOT_COUNT] {
+        // Initialization only allocates empty cells; perception still runs
+        // outside OnceLock initializers and may recursively consult slots.
+        self.slots
+            .get_or_init(|| Box::new([const { OnceLock::new() }; SLOT_COUNT]))
+    }
+
     #[inline(always)]
     pub(crate) fn scalar(&self, slot: DerivedScalar, compute: impl FnOnce() -> f64) -> f64 {
         let cell = &self.scalars[slot as usize];
@@ -163,7 +174,7 @@ impl DerivedCache {
         T: Any + Send + Sync + RefUnwindSafe + UnwindSafe,
         F: FnOnce() -> T,
     {
-        let cell = &self.slots[slot as usize];
+        let cell = &self.slots()[slot as usize];
         if let Some(existing) = cell.get() {
             let any: Arc<dyn Any + Send + Sync> = Arc::<Erased>::clone(existing);
             if let Ok(value) = any.downcast::<T>() {
@@ -187,7 +198,7 @@ impl DerivedCache {
         T: Any + Send + Sync + RefUnwindSafe + UnwindSafe,
     {
         let erased: Arc<Erased> = value;
-        let _ = self.slots[slot as usize].set(erased);
+        let _ = self.slots()[slot as usize].set(erased);
     }
 
     /// The value already memoized for `slot`, if any (never computes).
@@ -195,8 +206,63 @@ impl DerivedCache {
     where
         T: Any + Send + Sync + RefUnwindSafe + UnwindSafe,
     {
-        let existing = self.slots[slot as usize].get()?;
+        let existing = self.slots.get()?[slot as usize].get()?;
         let any: Arc<dyn Any + Send + Sync> = Arc::<Erased>::clone(existing);
         any.downcast::<T>().ok()
+    }
+}
+
+#[cfg(test)]
+mod layout_tests {
+    use super::*;
+    use std::mem::{offset_of, size_of};
+
+    #[test]
+    fn hot_numeric_values_precede_type_erased_payloads() {
+        assert!(size_of::<DerivedCache>() < size_of::<[Slot; SLOT_COUNT]>());
+        assert_eq!(offset_of!(DerivedCache, scalars), 0);
+        assert_eq!(
+            offset_of!(DerivedCache, rdkit_num_rings),
+            size_of::<[OnceLock<f64>; 4]>()
+        );
+        assert!(
+            offset_of!(DerivedCache, slots)
+                >= offset_of!(DerivedCache, rdkit_num_rings) + size_of::<AtomicUsize>()
+        );
+    }
+}
+
+#[cfg(test)]
+mod storage_tests {
+    use super::*;
+
+    #[test]
+    fn scalar_reads_and_peeks_do_not_allocate_payload_storage() {
+        let cache = DerivedCache::default();
+        assert_eq!(cache.scalar(DerivedScalar::Tpsa, || 12.5), 12.5);
+        assert_eq!(cache.rdkit_num_rings(|| 3), 3);
+        assert!(cache.peek::<usize>(DerivedSlot::Sssr).is_none());
+        assert!(cache.slots.get().is_none());
+        let value = cache.get_or_compute(DerivedSlot::Sssr, || 42_usize);
+        assert!(Arc::ptr_eq(&value, &cache.peek(DerivedSlot::Sssr).unwrap()));
+        assert!(cache.clone().slots.get().is_none());
+    }
+
+    #[test]
+    fn concurrent_first_payload_reads_preserve_published_values() {
+        let cache = DerivedCache::default();
+        std::thread::scope(|scope| {
+            for _ in 0..8 {
+                let cache = &cache;
+                scope.spawn(move || {
+                    assert_eq!(*cache.get_or_compute(DerivedSlot::Sssr, || 42_usize), 42);
+                    assert_eq!(cache.rdkit_num_rings(|| 3), 3);
+                });
+            }
+        });
+        assert_eq!(*cache.peek::<usize>(DerivedSlot::Sssr).unwrap(), 42);
+        let seeded = Arc::new(99_usize);
+        cache.seed(DerivedSlot::Sssr, seeded);
+        assert_eq!(*cache.peek::<usize>(DerivedSlot::Sssr).unwrap(), 42);
     }
 }
