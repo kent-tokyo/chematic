@@ -9,7 +9,7 @@ import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-RECORD = ROOT / "validation/results/rdkit-standardization-current-source-2026-10-19.json"
+RECORD = ROOT / "validation/results/rdkit-standardization-current-source-2026-10-20.json"
 
 
 def digest(path: Path) -> str:

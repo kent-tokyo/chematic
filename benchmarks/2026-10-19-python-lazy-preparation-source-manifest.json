@@ -1,0 +1,11 @@
+{
+  "schema": "chematic-local-source-manifest/v1",
+  "base_commit": "00596fb1ea5397524f98e3789c41f17ee8616fdc",
+  "candidate_change": "lazy Python SMILES descriptor preparation",
+  "baseline_wheel_sha256": "7dc15a10323ded4644291e530f559c4c84f2529f6fe6c05f0dce3b8fe09c2d5e",
+  "candidate_wheel_sha256": "1b61bc909b132fd2bda6e17049a28a7df560b392f780ad70f480e5913770ce9f",
+  "candidate_python_source_sha256": "e4c14dba50bfb477c756faa0c173facecffe175c1d46853451713889c4c5688e",
+  "benchmark_script_sha256": "4842f4d1967223347c3bff4c8475d282f3b05445e9ab848d0f7063bbbfdce48a",
+  "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+  "local_artifact_note": "The candidate Mach-O was re-signed after inserting four bytes of LINKEDIT alignment padding required by the local macOS linker output; executable code was unchanged."
+}
