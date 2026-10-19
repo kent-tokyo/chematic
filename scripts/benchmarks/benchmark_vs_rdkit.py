@@ -4,11 +4,11 @@ Benchmark: chematic vs RDKit — batch ECFP4 fingerprint generation.
 
 Usage:
     # chematic only (no RDKit needed):
-    python scripts/benchmark_vs_rdkit.py
+    python scripts/benchmarks/benchmark_vs_rdkit.py
 
     # With RDKit comparison:
     pip install rdkit
-    python scripts/benchmark_vs_rdkit.py --rdkit
+    python scripts/benchmarks/benchmark_vs_rdkit.py --rdkit
 """
 
 import sys

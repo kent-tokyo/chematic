@@ -144,9 +144,9 @@ chematic stereocenters is calibrated between legacy ({nsc_leg['agreement_pct']:.
 
 ```bash
 # Requires RDKit; corpus is committed at scripts/chembl_accuracy_corpus_4999.smi
-.venv/bin/python scripts/bench5k.py scripts/chembl_accuracy_corpus_4999.smi
-.venv/bin/python scripts/bench5k.py scripts/chembl_accuracy_corpus_4999.smi --detail
-.venv/bin/python scripts/bench5k.py scripts/chembl_accuracy_corpus_4999.smi --json validation/results/bench5k_latest.json
+.venv/bin/python scripts/benchmarks/bench5k.py scripts/chembl_accuracy_corpus_4999.smi
+.venv/bin/python scripts/benchmarks/bench5k.py scripts/chembl_accuracy_corpus_4999.smi --detail
+.venv/bin/python scripts/benchmarks/bench5k.py scripts/chembl_accuracy_corpus_4999.smi --json validation/results/bench5k_latest.json
 python3 scripts/generators/gen_validation_report.py validation/results/bench5k_latest.json
 ```
 

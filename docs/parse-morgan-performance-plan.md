@@ -105,7 +105,7 @@ Parse + compatible Morgan advantage, not to optimize indefinitely.
 
 ## Maintained entry points
 
-- browser runner: `scripts/bench_browser_wasm_vs_rdkit_isolated.py`
+- browser runner: `scripts/benchmarks/bench_browser_wasm_vs_rdkit_isolated.py`
 - speed checker: `scripts/check_parse_morgan_rdkit_speed_gate.py`
 - bit parity: `scripts/check_browser_rdkit_ecfp4_parity.py`
 - cross-binding parity: `scripts/validation/check_fingerprint_cross_binding.py --profile rdkit-ecfp4 --output <new-report.json>`

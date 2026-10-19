@@ -6,10 +6,10 @@ Uses a built-in 20-molecule corpus (simple → drug-like → stereo → large)
 or a user-supplied CSV file.  Repeats the corpus to reach --n total parses.
 
 Usage:
-    python scripts/bench_smiles_parse.py
-    python scripts/bench_smiles_parse.py --rdkit
-    python scripts/bench_smiles_parse.py --n 10000 --rdkit
-    python scripts/bench_smiles_parse.py ~/Downloads/SMILES.csv --n 5000 --rdkit --json
+    python scripts/benchmarks/bench_smiles_parse.py
+    python scripts/benchmarks/bench_smiles_parse.py --rdkit
+    python scripts/benchmarks/bench_smiles_parse.py --n 10000 --rdkit
+    python scripts/benchmarks/bench_smiles_parse.py ~/Downloads/SMILES.csv --n 5000 --rdkit --json
 """
 
 import argparse

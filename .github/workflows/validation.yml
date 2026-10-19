@@ -71,7 +71,7 @@ jobs:
         run: |
           if [ -s bench_corpus.csv ]; then
             mkdir -p validation/results
-            python3 scripts/bench5k.py bench_corpus.csv \
+            python3 scripts/benchmarks/bench5k.py bench_corpus.csv \
               --json validation/results/latest.json
           else
             echo "No corpus available, skipping benchmark"

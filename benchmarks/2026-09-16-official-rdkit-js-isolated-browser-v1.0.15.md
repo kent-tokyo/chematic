@@ -245,7 +245,7 @@ and
 ## Reproduction
 
 ```sh
-python3 scripts/bench_browser_wasm_vs_rdkit_isolated.py \
+python3 scripts/benchmarks/bench_browser_wasm_vs_rdkit_isolated.py \
   --rdkit-package /path/to/node_modules/@rdkit/rdkit \
   --browser "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
   --corpus validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi \

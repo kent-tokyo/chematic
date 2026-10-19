@@ -8,7 +8,7 @@ the third also constructs the OGB NumPy arrays. All stages reopen the same SDF.
 
 Example:
   PYTHONPATH=/path/to/chematic:/path/to/sdfrust python3 \
-    scripts/bench_ogb_sdf_pipeline.py --output /tmp/ogb-pipeline.json
+    scripts/benchmarks/bench_ogb_sdf_pipeline.py --output /tmp/ogb-pipeline.json
 """
 
 from __future__ import annotations

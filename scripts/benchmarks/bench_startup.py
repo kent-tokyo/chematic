@@ -6,10 +6,10 @@ Measures clean-process import latency using subprocess isolation so that
 Python's module cache does not skew results.
 
 Usage:
-    python scripts/bench_startup.py
-    python scripts/bench_startup.py --rdkit    # also time RDKit
-    python scripts/bench_startup.py --json     # machine-readable output
-    python scripts/bench_startup.py --runs 10  # more samples (default: 5)
+    python scripts/benchmarks/bench_startup.py
+    python scripts/benchmarks/bench_startup.py --rdkit    # also time RDKit
+    python scripts/benchmarks/bench_startup.py --json     # machine-readable output
+    python scripts/benchmarks/bench_startup.py --runs 10  # more samples (default: 5)
 """
 
 import argparse

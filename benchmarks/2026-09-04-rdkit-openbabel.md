@@ -69,7 +69,7 @@ python3 -c 'import chematic, rdkit; print(chematic.__version__, rdkit.__version_
 obabel -V
 
 # chematic/RDKit in-process lanes
-python3 scripts/bench_smiles_parse.py scripts/descriptor_census_corpus.smi --rdkit --n 1000 --json
+python3 scripts/benchmarks/bench_smiles_parse.py scripts/descriptor_census_corpus.smi --rdkit --n 1000 --json
 python3 scripts/benchmarks/bench_canonical.py scripts/descriptor_census_corpus.smi --rdkit --n 1000 --json
 TMPDIR=/private/tmp python3 scripts/benchmarks/bench_sdf.py --rdkit --json
 

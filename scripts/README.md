@@ -44,7 +44,7 @@ children of this directory; `tools/check_script_layout.py` checks it in CI.
 | Open Babel 3D MOL2 identity | `compare_openbabel_mol2_3d_stress.py` gates RDKit V2000 identity, feeds identical Open Babel-written MOL2 to both readers, and records per-row stereo identity. See the [measured report](../validation/openbabel_comparison/mol2-3d-stereo-2026-10-17.md). |
 | Open Babel unmarked 3D SDF identity | `validation/openbabel_comparison/check_unmarked_3d_stereo.py` scores the same V2000/V3000 conformers in CheMatic and Open Babel; the [disjoint ChEMBL follow-up](../validation/openbabel_comparison/unmarked-3d-chembl-disjoint-2026-10-17.md) retains exact inputs, row outcomes, and a remaining Open Babel-only cage. |
 | Parser security | `run_isolated_parser_security.py` |
-| Browser comparison | `bench_browser_wasm_vs_rdkit_isolated.py` |
+| Browser comparison | `benchmarks/bench_browser_wasm_vs_rdkit_isolated.py` |
 | Published browser replication | `check_published_browser_paired.py`, `check_v1030_published_browser_morgan_rows.py`, and `check_published_linux_browser_replication.py` validate the pinned Chromium and Ubuntu three-engine records |
 | Sealed cohort | `prepare_sealed_accuracy_cohort.py` |
 | Frozen trust holdouts | `validation/trust_holdouts/freeze.py` selects outcome-blind rows from pinned sources; `check_trust_holdouts.py` verifies the committed manifest. |
@@ -56,9 +56,9 @@ children of this directory; `tools/check_script_layout.py` checks it in CI.
 | A6 platform gate (#739) | `pipeline_v2_vs_rdkit_common_scorer` scores one platform's 265 rows; `a6_platform_gate.py` requires 265 successes, all independently sound, stereo-clean and clash-free, and reports whether the coordinates equal another platform's row by row |
 | Cross-binding Node dump | `binding_dump.mjs <mode>` |
 | Published v1.0.30 artifact packet | `check_v1030_artifact_packet.py`, `check_v1030_published_chemistry_residuals.py`, `emit_rdkit_smarts_oracle.py`, `run_published_npm_chemistry_lane.mjs`, `run_published_npm_63op_outputs.mjs`, `run_reaction_compatibility_v2.py`, `reaction_template_map_gate.py`, `check_published_rust_63op_outputs.py`, and the version-pinned `tools/published_rust_gate*` lockfiles |
-| Published-wheel output and speed comparison | `bench_python_op_matrix_vs_rdkit.py --outputs-only/--paired`, `check_published_python_version_outputs.py`, `bench_published_python_versions.py` |
-| Isolated Python speed and process RSS | `bench_published_python_isolated_paired.py` (20 fresh-process AB/BA blocks), `check_published_python_isolated_paired.py` (archived six-lane integrity gate) |
-| Isolated published-Rust speed and process RSS | `bench_published_rust_isolated_paired.py` builds two `--locked` crates.io graphs and runs fresh-process AB/BA blocks; `check_published_rust_isolated_paired.py` verifies archived outputs, paired intervals and RSS |
+| Published-wheel output and speed comparison | `bench_python_op_matrix_vs_rdkit.py --outputs-only/--paired`, `check_published_python_version_outputs.py`, `benchmarks/bench_published_python_versions.py` |
+| Isolated Python speed and process RSS | `benchmarks/bench_published_python_isolated_paired.py` (20 fresh-process AB/BA blocks), `check_published_python_isolated_paired.py` (archived six-lane integrity gate) |
+| Isolated published-Rust speed and process RSS | `benchmarks/bench_published_rust_isolated_paired.py` builds two `--locked` crates.io graphs and runs fresh-process AB/BA blocks; `check_published_rust_isolated_paired.py` verifies archived outputs, paired intervals and RSS |
 | Isolated published npm/WASM speed and process RSS | `bench_published_wasm_paired.mjs` pins v1.0.29/v1.0.30/RDKit.js tarballs and runs 20 fresh-process ABBA/BAAB blocks; `check_published_wasm_paired.py` verifies the archived output gate, raw block accounting, intervals and whole-process RSS |
 
 ## Organization rule

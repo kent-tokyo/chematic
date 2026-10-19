@@ -23,7 +23,7 @@ if __package__:
 else:
     from bench_published_python_isolated_paired import ci, reference_digest, sha256
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 CORPUS_SHA256 = "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e"
 VERSIONS = {
     "1.0.29": {

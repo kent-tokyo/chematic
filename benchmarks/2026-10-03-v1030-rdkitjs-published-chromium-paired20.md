@@ -50,7 +50,7 @@ validates all 40 raw runs, fingerprint digests, package hashes and memory
 observations. The v1.0.30 artifact-packet checker pins both records.
 
 ```sh
-python3 scripts/bench_browser_wasm_vs_rdkit_isolated.py \
+python3 scripts/benchmarks/bench_browser_wasm_vs_rdkit_isolated.py \
   --rdkit-package OUT/rdkit/package \
   --schematic-dir OUT/v30/package \
   --schematic-tarball OUT/v30/kent-tokyo-chematic-1.0.30.tgz \

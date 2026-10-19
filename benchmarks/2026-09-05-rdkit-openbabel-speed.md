@@ -49,7 +49,7 @@ Reproduction:
 
 ```text
 TMPDIR=/private/tmp /private/tmp/chematic-speed-venv-2/bin/python \
-  scripts/bench_smiles_parse.py scripts/chembl_accuracy_corpus_4999.smi \
+  scripts/benchmarks/bench_smiles_parse.py scripts/chembl_accuracy_corpus_4999.smi \
   --rdkit --n 5000 --json
 TMPDIR=/private/tmp /private/tmp/chematic-speed-venv-2/bin/python \
   scripts/benchmarks/bench_canonical.py scripts/chembl_accuracy_corpus_4999.smi \

@@ -4,7 +4,7 @@ Benchmark chematic descriptors against the 5,000-molecule SMILES corpus,
 using RDKit as ground truth.
 
 Usage:
-    python3 scripts/bench5k.py ~/Downloads/SMILES.csv
+    python3 scripts/benchmarks/bench5k.py ~/Downloads/SMILES.csv
 
 Requires:  pip install rdkit
 """

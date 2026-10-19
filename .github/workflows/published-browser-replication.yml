@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/published-browser-replication.yml'
-      - 'scripts/bench_browser_wasm_vs_rdkit_isolated.py'
+      - 'scripts/benchmarks/bench_browser_wasm_vs_rdkit_isolated.py'
       - 'scripts/check_published_browser_paired.py'
   workflow_dispatch:
 
@@ -59,7 +59,7 @@ jobs:
             browser_bin="$(python3 -c 'from playwright.sync_api import sync_playwright; p=sync_playwright().start(); print(p.chromium.executable_path); p.stop()')"
             browser_arg=(--browser "$browser_bin")
           fi
-          python3 scripts/bench_browser_wasm_vs_rdkit_isolated.py \
+          python3 scripts/benchmarks/bench_browser_wasm_vs_rdkit_isolated.py \
             --rdkit-package /tmp/rdkit/node_modules/@rdkit/rdkit \
             --schematic-dir /tmp/chematic-published/package \
             --schematic-tarball /tmp/chematic-package/kent-tokyo-chematic-1.0.30.tgz \

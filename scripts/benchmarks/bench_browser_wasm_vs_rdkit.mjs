@@ -9,7 +9,7 @@ import { basename, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 
-const ROOT = resolve(join(resolve(fileURLToPath(import.meta.url), ".."), ".."));
+const ROOT = resolve(join(resolve(fileURLToPath(import.meta.url), ".."), "..", ".."));
 const DEFAULT_CORPUS = join(ROOT, "scripts", "descriptor_census_corpus.smi");
 const DEFAULT_CHROMIUM_CANDIDATES = [
   "/opt/homebrew/bin/chromium",
@@ -296,7 +296,7 @@ function runBrowser(chromium, args, timeoutMs) {
 async function main() {
   const args = process.argv.slice(2);
   if (args.includes("--help") || args.includes("-h")) {
-    console.log("Usage: node scripts/bench_browser_wasm_vs_rdkit.mjs --rdkit-package PATH --output PATH [--rows N] [--warmup N] [--chromium PATH] [--browser-timeout-ms N]");
+    console.log("Usage: node scripts/benchmarks/bench_browser_wasm_vs_rdkit.mjs --rdkit-package PATH --output PATH [--rows N] [--warmup N] [--chromium PATH] [--browser-timeout-ms N]");
     return;
   }
   const corpusPath = resolve(option(args, "--corpus", DEFAULT_CORPUS));

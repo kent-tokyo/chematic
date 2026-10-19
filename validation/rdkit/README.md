@@ -71,5 +71,5 @@ python scripts/generators/gen_rdkit_reference.py   # writes validation/rdkit/rdk
 python scripts/rdkit_benchmark.py
 
 # Side-by-side diff with mismatch details
-python scripts/bench5k.py ~/Downloads/SMILES.csv --detail
+python scripts/benchmarks/bench5k.py ~/Downloads/SMILES.csv --detail
 ```

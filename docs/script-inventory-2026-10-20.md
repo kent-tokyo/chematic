@@ -169,3 +169,15 @@ including JSON key order and the failure accounting; all eight exits were
 unchanged. A dependency-independent negative test checks that a failed report
 retains provenance and exits nonzero. This pass adds the helper and its test,
 bringing the tracked `scripts/` total to 585 while keeping 310 root files.
+
+## Additional benchmark drivers
+
+Fourteen more benchmark entry points, including the current startup and
+SMILES CI benchmarks, browser/WASM drivers, published Python/Rust comparisons,
+and streaming-matrix runners, now live in `scripts/benchmarks/`. Current
+workflow commands, result checkers, source examples, and reproduction commands
+use their new paths. Historical source-hash JSON and archived documentation
+remain unchanged. The published-WASM paired driver stays at its original path:
+the active offline gate verifies its exact source SHA-256. The Python Morgan
+runner is likewise pinned by a source hash in its evidence packet. The direct
+root now has 296 files; the total remains 585 tracked scripts.

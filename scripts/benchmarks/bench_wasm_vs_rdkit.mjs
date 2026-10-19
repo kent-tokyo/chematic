@@ -16,7 +16,7 @@ import { basename, dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { performance } from "node:perf_hooks";
 
-const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const DEFAULT_CORPUS = join(ROOT, "scripts", "descriptor_census_corpus.smi");
 
 function option(args, name, fallback = undefined) {
@@ -241,7 +241,7 @@ async function child(args) {
 async function main() {
   const args = process.argv.slice(2);
   if (args.includes("--help") || args.includes("-h")) {
-    console.log("Usage: node scripts/bench_wasm_vs_rdkit.mjs --rdkit-package PATH --output PATH [--rows N] [--warmup N] [--corpus PATH] [--schematic-dir PATH] [--same-process]");
+    console.log("Usage: node scripts/benchmarks/bench_wasm_vs_rdkit.mjs --rdkit-package PATH --output PATH [--rows N] [--warmup N] [--corpus PATH] [--schematic-dir PATH] [--same-process]");
     return;
   }
   if (args.includes("--child")) return child(args);
