@@ -25,6 +25,17 @@ oracle test modules. Compiler, release flags, wheels and imported native
 module hashes are in the packet. Both builds enable native InChI and use
 one build job, no incremental compilation, release debug 0, and no stripping.
 
+The first hosted Test check rejected file/function growth under the existing
+refactor-budget ratchet. Final source moves the existing inline tests to
+`cip_tests.rs` and moves fallback explanation into API documentation, without
+changing executable logic or loosening limits. A subsequent release build is
+recorded under `post_measurement_build`: its native extension and every Python
+runtime wheel member are byte-identical to the measured wheel. Only CycloneDX
+SBOM metadata and its RECORD checksum changed. The checker validates both source
+inventories and the runtime equivalence; the original measurement plan and all
+elapsed observations remain unchanged. The final source revision is recorded
+in that attestation. Refactor-budget and all 1,081 Rust tests pass locally.
+
 ## Protocol and output gates
 
 Fresh sequential processes run baseline, candidate and RDKit in all six
@@ -110,7 +121,7 @@ further work; this change addresses CIP's redundant computation.
 - Independent eager references cover 14,072 low-level assignments, E/Z on raw and Kekulé forms, and the complete accurate-mode fallback merge; tiny budgets, noncarbon centres and lazy initialization have dedicated controls.
 - Python: 417 existing tests passed against the isolated candidate wheel.
 - Clippy with warnings denied and formatting passed.
-- The packet checker recalculates every interval and validates all orders and identities. Nine corruption/control tests reject changed timing, partial runs, dropped correctness rows, stale identity, invented speedups and ranking of unequal stress results. Hosted CI runs these checks on the full checkout.
+- The packet checker recalculates every interval and validates all orders and identities. Twelve corruption/control tests reject changed timing, partial runs, dropped correctness rows, stale identity, invented speedups ranking of unequal stress results, and a changed rebuilt runtime. Hosted CI runs these checks on the full checkout.
 
 The unchanged ordinary/edge-case chemistry results and substantial CIP gain
 justify this bounded source change. Published artifacts, other hardware and

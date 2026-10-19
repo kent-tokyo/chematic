@@ -51,8 +51,30 @@ def check(packet, *, verify_current_source=False):
         for name, value in identity['source_files'].items():
             assert not name.startswith('/') and '..' not in name.split('/')
             assert re.fullmatch('[0-9a-f]{64}', value)
-            if arm == 'candidate' and verify_current_source:
+            if arm == 'candidate' and verify_current_source and 'post_measurement_build' not in packet:
                 assert digest((ROOT / name).read_bytes()) == value, name
+    post = packet['post_measurement_build']
+    identity = post['identity']
+    assert post['runtime_byte_identical'] is True
+    assert identity['native_sha256'] == plan['identities']['candidate']['native_sha256']
+    assert post['measured_wheel_sha256'] == plan['wheel_sha256']['candidate']
+    assert identity['flags'] == plan['identities']['candidate']['flags']
+    assert identity['compiler'] == plan['identities']['candidate']['compiler']
+    assert digest(json.dumps(identity['source_files'], sort_keys=True).encode()) == identity['source_sha256']
+    for name, value in identity['source_files'].items():
+        assert not name.startswith('/') and '..' not in name.split('/')
+        assert re.fullmatch('[0-9a-f]{64}', value)
+        if verify_current_source:
+            assert digest((ROOT / name).read_bytes()) == value, name
+    before, after = post['measured_wheel_members'], post['rebuilt_wheel_members']
+    assert set(before) == set(after)
+    changed = sorted(n for n in before if before[n] != after[n])
+    assert changed == post['changed_members'] == [
+        'chematic-1.1.8.dist-info/RECORD',
+        'chematic-1.1.8.dist-info/sboms/chematic-py.cyclonedx.json']
+    assert all(before[n] == after[n] for n in before if '.dist-info/' not in n)
+    native = {Path(n).name: h for n, h in after.items() if n.endswith('.so')}
+    assert native == identity['native_sha256']
     for i, block in enumerate(report['blocks']):
         assert block['order'] == list(expected_orders[i])
         for arm in ARMS:
@@ -86,6 +108,7 @@ def check(packet, *, verify_current_source=False):
     assert correctness['stress_rdkit_model_matches'] == 4070
     assert correctness['stress_ranked'] is False
     assert correctness['raw_file_sha256']['baseline'] == correctness['raw_file_sha256']['candidate']
+    assert post['cip_output_sha256'] == correctness['raw_file_sha256']['candidate']
     for name, value in correctness['corpus_sha256'].items():
         assert digest((ROOT / name).read_bytes()) == value
     for op in OPS:

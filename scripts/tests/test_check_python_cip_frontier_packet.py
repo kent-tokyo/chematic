@@ -48,6 +48,15 @@ class CipPacketTests(unittest.TestCase):
     def test_invented_speedup(self):
         self.reject(lambda p: p['measurement']['summary']['cip/first_use']['rdkit'].update(median=999))
 
+    def test_rebuilt_native_must_match_measured_binary(self):
+        self.reject(lambda p: p['post_measurement_build']['identity'].update(native_sha256={}))
+
+    def test_rebuilt_runtime_member_may_not_change(self):
+        self.reject(lambda p: p['post_measurement_build']['rebuilt_wheel_members'].update({'chematic/__init__.py': '0'*64}))
+
+    def test_rebuilt_source_inventory_must_remain_consistent(self):
+        self.reject(lambda p: p['post_measurement_build']['identity']['source_files'].update({'Cargo.toml': '0'*64}))
+
 
 if __name__ == '__main__':
     unittest.main()
