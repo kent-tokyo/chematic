@@ -33,6 +33,9 @@ OPS = (
     "tpsa", "labute_asa", "qed", "num_rings", "morgan2_2048",
     "morgan2_chiral", "morgan3_2048", "maccs",
 )
+EXTRA_OPS = ("rotatable_bonds", "mqn", "hba", "hbd", "formula", "mol_wt",
+             "exact_mw", "chi1v", "kappa2", "logp", "slogp_vsa",
+             "fp_atom_pair", "fp_torsion", "fp_pattern", "fp_layered", "fp_rdkit")
 MODES = ("first_use", "repeated_use", "parse_inclusive")
 
 
@@ -50,7 +53,7 @@ def corpus_rows(data: bytes, offset: int, limit: int) -> list[str]:
 
 
 def normal(value, engine: str, op: str):
-    if "morgan" in op or op == "maccs":
+    if "morgan" in op or op == "maccs" or op.startswith("fp_"):
         if engine == "chematic":
             offset = int(op == "maccs")
             bits = []
@@ -292,7 +295,7 @@ def main():
     parser.add_argument("--rdkit-path", type=Path)
     parser.add_argument("--cosmolkit-path", type=Path)
     args = parser.parse_args()
-    if set(args.ops.split(",")) - set(OPS):
+    if set(args.ops.split(",")) - set(OPS + EXTRA_OPS):
         parser.error("unsupported operation")
     if args.worker:
         print(json.dumps(worker(args)))
