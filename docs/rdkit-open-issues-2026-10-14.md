@@ -5,6 +5,14 @@ Inspected 45 open issues returned by GitHub's
 chematic source at `ffe682c3` plus the existing working-tree changes.
 Issue state is a snapshot; an open issue can already have a proposed upstream fix.
 
+October 19 follow-up: [typed Pattern fingerprint inputs](pattern-fingerprint-adapter.md)
+expose the native concrete-molecule calculator under RDKit-style names. Live
+RDKit 2026.09.1 and source inspection confirm that its `atomCounts` and
+`setOnlyBits` arguments are currently unused after size validation. The adapter
+validates their typed inputs and retains that no-op behavior; no invented
+contribution counts or mask filtering is added. Only exact power-of-two folding
+through 2048 bits is supported; this is a bounded #9601 slice.
+
 October 19 follow-up: #9601 remains open. The existing
 [`cutsPerAtom` counterpart](checked-bond-fragmentation.md) now accepts typed
 NumPy `uint32` output views as well as plain lists, with preflight layout checks
@@ -14,6 +22,7 @@ single-bond API; it does not implement nanobind or close the tracking issue.
 | RDKit issue | Source finding | Decision |
 | --- | --- | --- |
 | [#9475: incremental sanitization speedups](https://github.com/rdkit/rdkit/issues/9475) | Native cleanup allocated per-atom flags, rescanned all atoms and cloned candidate adjacency lists. | [Added sparse inline cleanup candidates](rdkit-cleanup-candidates.md), preserving both nitrogen passes and complete internal state against the frozen former function. Same-binary stage-only time fell 56.77% on 1,130 existing raw models; no end-to-end or RDKit speed claim. |
+| [#9601: InfoTheory ranking file output](https://github.com/rdkit/rdkit/issues/9601) | The typed ranker lacked RDKit's `WriteTopBitsToFile`. This is an adjacent existing RDKit capability, not an algorithm defect asserted by the tracking issue. | [Added typed table export](info-ranker-export.md) with owned last-ranking snapshots, filesystem paths and explicit state/I/O errors. 512 paired runs verify formatting and snapshot lifecycle; ranking/roundoff differences and reference nonpermutations are retained separately. |
 | [#9601: metric matrix facade](https://github.com/rdkit/rdkit/issues/9601) | Native supplied-descriptor and sparse-set calculators existed; the typed `rdMetricMatrixCalc` namespace and NumPy return contract were missing. | [Added typed metric adapters](metric-matrix-facade.md), structural explicit/sparse sources, staged validation, owned arrays and RDKit empty-pair policy. 512 Euclidean and 1,024 binary calls compare with RDKit; numeric/input-profile differences are separate controls. |
 | [#9601: typed InfoTheory co-occurrence sources](https://github.com/rdkit/rdkit/issues/9601) | The typed ranker exists, but the adjacent BitCorrMatGenerator API is absent. RDKit already provides this count operation; no upstream algorithm defect is asserted. | [Added bounded Python bit-pair counts](bit-cooccurrence.md): ordered selected IDs, explicit/sparse/lazy vectors, transactional votes/reset and owned results. 512 final matrices match RDKit and exact counts; source-profile differences are separate. |
 | [#9601: typed candidate selection and callback ownership](https://github.com/rdkit/rdkit/issues/9601) | The native supplied-candidate selector supports only its default score. | [Added custom scored selection](scored-tautomer-selection.md) in Python, with typed integer callbacks, preflight snapshots, isolated callback views and bounded graph/state storage. RDKit already supports custom scoring. Lexical ties remain the native port's documented policy; this is a 2026-10-18 adjacent capability, not a whole-issue resolution. |

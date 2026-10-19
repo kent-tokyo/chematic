@@ -166,3 +166,8 @@ moving "current" command in this index.
 - Do not infer universal accuracy or speed from one corpus, host, or API lane.
 
 - [2026-10-17: Open Babel substituent stack-buffer source experiment](2026-10-17-openbabel-substituent-pair.md) ([numeric packet](2026-10-17-openbabel-substituent-pair.json))
+
+- [2026-10-19: RDKit Cleanup acid-anion transfer charge audit](2026-10-19-rdkit-cleanup-acid-anion-charge-audit.json)
+  and [follow-up packet](2026-10-19-rdkit-cleanup-acid-anion-followup.json);
+  [acid-priority charge audit](2026-10-19-rdkit-cleanup-acid-priority-charge-audit.json)
+  and [follow-up packet](2026-10-19-rdkit-cleanup-acid-priority-followup.json).

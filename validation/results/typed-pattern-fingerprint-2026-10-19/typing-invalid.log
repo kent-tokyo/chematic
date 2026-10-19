@@ -1,0 +1,5 @@
+validation/results/typed-pattern-fingerprint-2026-10-19/typing_invalid.py:7: error: Argument "atomCounts" to "PatternFingerprint" has incompatible type "ndarray[Any, dtype[float64]]"; expected "list[int] | ndarray[Any, dtype[unsignedinteger[_32Bit]]] | None"  [arg-type]
+validation/results/typed-pattern-fingerprint-2026-10-19/typing_invalid.py:8: error: Argument "fpSize" to "PatternFingerprint" has incompatible type "float"; expected "SupportsIndex"  [arg-type]
+validation/results/typed-pattern-fingerprint-2026-10-19/typing_invalid.py:9: error: Argument "setOnlyBits" to "PatternFingerprint" has incompatible type "object"; expected "LayeredBitMask | None"  [arg-type]
+validation/results/typed-pattern-fingerprint-2026-10-19/typing_invalid.py:10: error: Argument "tautomerFingerprints" to "PatternFingerprint" has incompatible type "str"; expected "bool"  [arg-type]
+Found 4 errors in 1 file (checked 1 source file)
