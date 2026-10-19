@@ -1,0 +1,8 @@
+{
+  "rdkit": "2026.09.1",
+  "numpy": "2.5.4",
+  "molecules": 10,
+  "nonempty_comparisons": 260,
+  "mismatches": 0,
+  "native_sha256": "02d1ba11410da59d8c202408ecb3b498955943b96b22a5d5e264dddadc51a607"
+}

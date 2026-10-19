@@ -4,12 +4,35 @@ from __future__ import annotations
 
 from collections.abc import Sequence as RuntimeSequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, List, Optional, Sequence, Tuple
+from typing import TYPE_CHECKING, Any, List, Optional, Sequence, Tuple, Union
+
+import numpy as np
 
 if TYPE_CHECKING:
     from . import Mol
 else:
     from .chematic import Mol
+
+FragmentCutCounts = Union[List[int], np.ndarray[Any, np.dtype[np.uint32]]]
+
+
+def _validate_counts(value: FragmentCutCounts, atoms: int) -> None:
+    if type(value) is list:
+        if len(value) != atoms:
+            raise ValueError("cuts_per_atom must have one entry per original atom")
+        if any(type(entry) is not int for entry in value):
+            raise TypeError("cuts_per_atom entries must be integers, not bool")
+    elif type(value) is np.ndarray:
+        if value.ndim != 1 or value.dtype.kind != "u" or value.dtype.itemsize != 4:
+            raise TypeError("cuts_per_atom requires a one-dimensional uint32 ndarray")
+        if not value.flags.writeable:
+            raise ValueError("cuts_per_atom array must be writable")
+        if len(value) > 1 and abs(value.strides[0]) < value.dtype.itemsize:
+            raise ValueError("cuts_per_atom array elements must not overlap")
+    else:
+        raise TypeError("cuts_per_atom must be a plain list or uint32 ndarray")
+    if len(value) != atoms:
+        raise ValueError("cuts_per_atom must have one entry per original atom")
 
 
 @dataclass(frozen=True)
@@ -51,7 +74,7 @@ def fragment_on_bonds_checked(
     bond_indices: Sequence[int],
     *,
     dummy_labels: Optional[Sequence[Tuple[int, int]]] = None,
-    cuts_per_atom: Optional[List[int]] = None,
+    cuts_per_atom: Optional[FragmentCutCounts] = None,
 ) -> BondFragmentation:
     """Cut bridge single bonds and append two isotope-labelled dummy atoms each.
 
@@ -63,8 +86,10 @@ def fragment_on_bonds_checked(
             The begin label's dummy attaches to the original end atom, and the
             end label's dummy to the begin atom. Defaults to their atom indices.
             Zero means an unlabelled dummy.
-        cuts_per_atom: Optional plain list[int], exactly one entry per original
-            atom. Entries must be integers (not bool); initial values are ignored.
+        cuts_per_atom: Optional plain list[int] or writable one-dimensional
+            uint32 ndarray, exactly one entry per original atom. Array elements
+            must not overlap; strided and reversed views are supported. List
+            entries must be integers (not bool); initial values are ignored.
             Replaced with counts only after all validation and fragmentation
             succeed. Native/type errors leave it unchanged.
 
@@ -117,12 +142,7 @@ def fragment_on_bonds_checked(
                 )
             )
     if cuts_per_atom is not None:
-        if type(cuts_per_atom) is not list:
-            raise TypeError("cuts_per_atom must be a plain list[int]")
-        if len(cuts_per_atom) != mol.atom_count:
-            raise ValueError("cuts_per_atom must have one entry per original atom")
-        if any(type(value) is not int for value in cuts_per_atom):
-            raise TypeError("cuts_per_atom entries must be integers, not bool")
+        _validate_counts(cuts_per_atom, mol.atom_count)
     molecule, counts, raw_attachments = mol._fragment_single_bonds_checked(
         indices, labels
     )
@@ -130,5 +150,11 @@ def fragment_on_bonds_checked(
         molecule, tuple(counts), tuple(FragmentAttachment(*a) for a in raw_attachments)
     )
     if cuts_per_atom is not None:
-        cuts_per_atom[:] = counts
+        _validate_counts(cuts_per_atom, mol.atom_count)
+        if type(cuts_per_atom) is list:
+            cuts_per_atom[:] = counts
+        else:
+            # Finish conversion before touching the caller's plain ndarray.
+            staged = np.asarray(counts, dtype=np.uint32)
+            cuts_per_atom[:] = staged
     return result

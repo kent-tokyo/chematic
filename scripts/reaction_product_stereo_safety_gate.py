@@ -18,6 +18,11 @@ from pathlib import Path
 from rdkit import Chem, rdBase
 from rdkit.Chem import AllChem
 
+if __package__:
+    from .reaction_python_checked_provenance_gate import source_artifact
+else:
+    from reaction_python_checked_provenance_gate import source_artifact
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -29,6 +34,8 @@ def main() -> int:
         default=ROOT / "validation/reaction_product_stereo_safety_cases.json",
     )
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--wheel", type=Path)
+    parser.add_argument("--build-profile", choices=("release", "dev"), default="release")
     args = parser.parse_args()
 
     import chematic
@@ -64,6 +71,7 @@ def main() -> int:
         "profile": "reaction_product_stereo_fail_closed",
         "rdkit_version": rdBase.rdkitVersion,
         "case_file_sha256": hashlib.sha256(args.cases.read_bytes()).hexdigest(),
+        "artifact": source_artifact(chematic, args.wheel, args.build_profile),
         "cases": rows,
         "agreement": {
             "safe_refusals": sum(row["safe_refusal"] for row in rows),

@@ -51,7 +51,7 @@ pub(super) fn find_matches_profile(
         if !combo_chirality_ok(prepared, reactants, &combo, profile) {
             continue;
         }
-        if !combo_ez_ok(prepared, reactants, &combo) {
+        if !combo_ez_ok(prepared, reactants, &combo, profile) {
             ez_rejected = true;
             continue;
         }
@@ -187,14 +187,26 @@ fn combo_chirality_ok(
             .all(|(index, template)| smirks_chirality_ok(template, reactants[index], &combo[index]))
 }
 
-fn combo_ez_ok(prepared: &PreparedReaction, reactants: &[&Molecule], combo: &[AtomMatch]) -> bool {
+fn combo_ez_ok(
+    prepared: &PreparedReaction,
+    reactants: &[&Molecule],
+    combo: &[AtomMatch],
+    profile: Profile,
+) -> bool {
     !prepared.has_ez_stereo
         || prepared
             .rxn
             .reactants
             .iter()
             .enumerate()
-            .all(|(index, template)| smirks_ez_stereo_ok(template, reactants[index], &combo[index]))
+            .all(|(index, template)| {
+                smirks_ez_stereo_ok(
+                    template,
+                    reactants[index],
+                    &combo[index],
+                    profile == Profile::Native,
+                )
+            })
 }
 
 /// Whether RDKit's ring models give the same rings as the SSSR for `mol`

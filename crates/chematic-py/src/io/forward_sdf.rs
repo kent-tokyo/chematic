@@ -130,6 +130,7 @@ impl ForwardSdMolSupplier {
                     props.insert("_Name".into(), record.meta.name);
                 }
                 let mol = crate::Mol {
+                    num_rings_cache: Default::default(),
                     inner: Arc::new(record.mol),
                     props: props.into(),
                 };

@@ -4,14 +4,31 @@ chematic benchmarks are specific to a package or source revision, comparator,
 corpus, host, runtime, options, and timed operation. A speed result counts only
 when the stated work and outputs are equivalent.
 
-The current release is **v1.1.8**. Its Labute ASA and first-use ring
-measurements are source-build, one-host results. The v1.1.7 published-wheel
-chemistry workflow remains the latest completed hosted package lane; the latest durable checked-in
-cross-platform packet remains v1.1.3. The broadest published-package RDKit
-performance packet is v1.0.42. The v1.1.7 hosted run remains correctness and
-failure-accounting evidence, not a v1.1.8 performance packet. See the
-[record index](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/README.md) for current entry points
-and the [complete inventory](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/archive-index.md) for all history.
+The current release is **v1.1.9**. Its performance changes remain source
+evidence until the exact public artifacts are measured. The latest exact
+public-artifact performance record is the one-host macOS arm64 v1.1.8 Labute
+ASA comparison. The latest broad,
+checked-in cross-platform public-wheel chemistry packet remains v1.1.3, and
+the broadest published-package RDKit performance packet remains v1.0.42.
+Newer source records do not inherit either package claim. See the
+[record index](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/README.md)
+for current entry points and the
+[complete inventory](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/archive-index.md)
+for retained history.
+
+## Current evidence map
+
+| Question | Best current entry | Evidence boundary |
+|---|---|---|
+| Does a current public wheel reproduce a measured speed result? | [v1.1.8 Labute ASA](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-19-v118-published-labute-asa-cosmolkit.md) | One macOS arm64 wheel, one host, one descriptor |
+| What is the broadest public-wheel chemistry packet? | [v1.1.3 artifact packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-14-v113-published-artifact-packet.md) | Four Python wheels; not v1.1.9 performance evidence |
+| What is the broadest published RDKit performance packet? | [v1.0.42 comparison](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-11-v1042-published-rdkit-packet.md) | Historical exact artifacts; do not transfer results to newer releases |
+| What is the Open Babel comparison boundary? | [file-I/O program](openbabel-file-io.md) | File interchange only; source and historical package records are separate |
+| Where are current source experiments? | [benchmark record index](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/README.md) | Development evidence unless an exact public artifact is named |
+
+`current release`, `latest source`, and `broadest public packet` therefore
+refer to different artifacts. Overview pages must not collapse them into one
+claim.
 
 ## Required provenance
 
@@ -90,16 +107,27 @@ properties, and format metadata before throughput. For batch readers, require:
 Keep cold start, first record, steady-state throughput, round trip, large-file
 behavior, and peak memory separate.
 
-## Focused source example
+### Open Babel comparison scope
 
-The [terminal-TPSA record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-18-terminal-tpsa.md) compares
-frozen source `f8e9d7de` with `add2b6b4` on two macOS windows. First-use TPSA
-improves 1.037x and 1.270x under its predeclared source-adoption rule; all 42
-source median ratios meet the 0.99 floor. The largest observed speed decrease
-is 0.845%, and every negative lane is retained. This bounded adoption decision
-is separate from the every-block external-win rule above. Later main
-integration was checked for correctness but not re-timed; it does not inherit
-the frozen tree's measured ratios as a new experiment.
+Open Babel is included as the principal file-interchange comparator. It is
+most useful for SDF/MOL, V3000, MOL2, CML, CDXML, PDB, mmCIF, and related
+streaming or round-trip work. It is not inserted into descriptor, fingerprint,
+reaction, or 3D tables unless the two libraries expose equivalent operations
+and their outputs pass a declared equality gate.
+
+The current Open Babel evidence has two distinct boundaries:
+
+- the v1.0.42 records are historical, immutable package/source-era baselines;
+- newer V2000, V3000, SDF, and stereo records are one-host source comparisons
+  against Open Babel 3.2.1 and do not inherit published-package status.
+
+Only rows with equivalent semantic graph, charge, isotope, bond order, stereo,
+coordinates, properties, and required format metadata receive a speed rank.
+Rows with output differences remain visible and unranked. Start with the
+[Open Babel comparison program](openbabel-file-io.md) and the
+[record index](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/README.md);
+do not combine ratios from different
+revisions, corpora, formats, or timing boundaries.
 
 ## Repository checks
 

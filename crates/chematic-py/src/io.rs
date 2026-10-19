@@ -159,6 +159,7 @@ fn parse_to_iter(content: &str) -> SdfIter {
         .filter_map(|r| r.ok())
         .map(|rec| PySdfRecord {
             mol: Mol {
+                num_rings_cache: Default::default(),
                 inner: Arc::new(rec.mol),
                 props: Default::default(),
             },
@@ -176,6 +177,7 @@ fn parse_to_iter(content: &str) -> SdfIter {
 fn py_sdf_record(rec: chematic_mol::SdfRecord) -> PySdfRecord {
     PySdfRecord {
         mol: Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(rec.mol),
             props: Default::default(),
         },
@@ -446,6 +448,7 @@ impl SdfFileIter {
                 Some(Ok(rec)) => {
                     return Ok(Some(PySdfRecord {
                         mol: Mol {
+                            num_rings_cache: Default::default(),
                             inner: Arc::new(rec.mol),
                             props: Default::default(),
                         },
@@ -544,6 +547,7 @@ impl SdfBatchIter {
                     self.records_seen += 1;
                     batch.push(PySdfRecord {
                         mol: Mol {
+                            num_rings_cache: Default::default(),
                             inner: Arc::new(rec.mol),
                             props: Default::default(),
                         },
@@ -891,6 +895,7 @@ impl SdMolSupplier {
                     props.insert("_Name".to_string(), rec.meta.name);
                 }
                 let mol = Mol {
+                    num_rings_cache: Default::default(),
                     inner: std::sync::Arc::new(rec.mol),
                     props: props.into(),
                 };
@@ -1165,6 +1170,7 @@ impl PySmilesMolSupplier {
                     props.insert("_Name".to_string(), rec.name);
                 }
                 let mol = Mol {
+                    num_rings_cache: Default::default(),
                     inner: Arc::new(rec.mol),
                     props: props.into(),
                 };

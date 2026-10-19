@@ -22,6 +22,7 @@ def test_source_artifact_checks_installed_extension_bytes(tmp_path):
 
     artifact = source_artifact(module, wheel)
     assert artifact["kind"] == "release_profile_source_wheel"
+    assert source_artifact(module, wheel, "dev")["kind"] == "dev_profile_source_wheel"
     assert artifact["published"] is False
     assert artifact["wheel"] == wheel.name
     assert len(artifact["wheel_sha256"]) == 64

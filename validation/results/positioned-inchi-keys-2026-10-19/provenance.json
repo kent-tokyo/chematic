@@ -1,0 +1,9 @@
+{
+  "package_version": "1.1.8",
+  "wheel_filename": "chematic-1.1.8-cp313-cp313-macosx_11_0_arm64.whl",
+  "wheel_sha256": "7dc15a10323ded4644291e530f559c4c84f2529f6fe6c05f0dce3b8fe09c2d5e",
+  "pypi_sha256_verified": true,
+  "pypi_url": "https://files.pythonhosted.org/packages/70/c6/a7469ae7e844cbd382807d89a96ce91ad08d333a3c25ecf3c61a7388eb33/chematic-1.1.8-cp313-cp313-macosx_11_0_arm64.whl",
+  "native_sha256": "ed5a04679987ee9b0a0a99daadca9f7a907b7af00e9e0c4180eaf49b9dbfcc55",
+  "scope": "published native extension with candidate Python sources; not an unmodified wheel test"
+}

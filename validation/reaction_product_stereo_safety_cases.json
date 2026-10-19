@@ -5,5 +5,12 @@
     "reactants": ["N[C@H](C)C(=O)O"],
     "expected_chematic_product_sets": [],
     "policy": "fail_closed_on_reactant_stereo_mismatch"
+  },
+  {
+    "id": "ez_template_rejects_unspecified_alkene",
+    "smirks": "[F:1]/[C:2]=[C:3]/[Cl:4]>>[F:1]/[C:2]=[C:3]/[Cl:4]",
+    "reactants": ["FC=CCl"],
+    "expected_chematic_product_sets": [],
+    "policy": "fail_closed_on_missing_reactant_ez"
   }
 ]

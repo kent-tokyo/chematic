@@ -27,8 +27,8 @@ python3 scripts/check_release_channel_evidence.py
 ```
 
 The channel record is version-specific. It distinguishes `verified`,
-`mismatch`, `unreachable`, and `not_measured`; a partial record is useful
-evidence, but it is not release-ready.
+`partial`, `mismatch`, `unreachable`, and `not_measured`. A partially
+published channel is useful evidence, but it is not release-ready.
 
 Operation-level comparison scorecards are separately validated by the
 dependency-free `scripts/validate_scorecard.py`; it rejects stale target

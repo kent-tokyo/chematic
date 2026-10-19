@@ -23,6 +23,7 @@ pub(super) fn parse_cif<'py>(
     let result =
         chematic_mol::parse_cif(cif_str).map_err(|e| PyValueError::new_err(e.to_string()))?;
     let mol = Mol {
+        num_rings_cache: Default::default(),
         inner: Arc::new(result.mol),
         props: Default::default(),
     };

@@ -3,7 +3,7 @@
 [English](README.md) | [中文](README_zh.md)
 
 [![CI](https://github.com/kent-tokyo/chematic/actions/workflows/ci.yml/badge.svg)](https://github.com/kent-tokyo/chematic/actions/workflows/ci.yml)
-[![Docs](https://img.shields.io/github/actions/workflow/status/kent-tokyo/chematic/pages.yml?branch=main&label=docs)](https://github.com/kent-tokyo/chematic/actions/workflows/pages.yml)
+[![Docs](https://img.shields.io/github/deployments/kent-tokyo/chematic/github-pages?label=docs)](https://kent-tokyo.github.io/chematic/)
 [![Coverage](https://github.com/kent-tokyo/chematic/actions/workflows/coverage.yml/badge.svg)](https://github.com/kent-tokyo/chematic/actions/workflows/coverage.yml)
 [![codecov](https://codecov.io/gh/kent-tokyo/chematic/branch/main/graph/badge.svg)](https://app.codecov.io/github/kent-tokyo/chematic)
 [![PyPI](https://img.shields.io/pypi/v/chematic?logo=pypi)](https://pypi.org/project/chematic/)
@@ -12,8 +12,8 @@
 [![ライセンス](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue)](LICENSE-MIT)
 [![Ask DeepWiki](docs/assets/ask-deepwiki.svg)](https://deepwiki.com/kent-tokyo/chematic)
 
-Python、Rust、ブラウザ向けのPure Rustケモインフォマティクスです。ローカルで動作し、
-入力上限と型付きエラーにより、未対応の化学表現を曖昧に処理しません。
+分子データを外部へ送らず、未対応の化学表現を曖昧に処理したくない場面に向けた、
+Python・Rust・ブラウザ対応のPure Rustケモインフォマティクスです。
 
 [公式サイト](https://chematic.io/) · [ドキュメント](https://kent-tokyo.github.io/chematic/) · [Playground](https://kent-tokyo.github.io/chematic/playground/)
 
@@ -27,17 +27,26 @@ npm install @kent-tokyo/chematic
 
 Python wheelはC/C++コンパイラを必要とせず、各バインディングは同じRustコアを使います。
 
-### v1.1.8 の対応範囲
+### v1.1.9 の対応範囲
 
-v1.1.8では、Pythonで有界な通常分子を扱う際の初回Labute ASAと環数計算を高速化しました。
-記述子の値は維持し、大きな分子や環の多い分子は従来どおり遅延計算します。
-測定結果は記録したソースビルド、コーパス、オプション、macOSホストに限定され、
-公開wheelや複数ホストでの証拠ではありません。従来の1.1.7では、科学計算ファイルの検証付き変換・出力、指紋と力場へのカスタム入力、
-SDF・PDB・MOL2のsource-preserving処理を拡充しました。alignment、information theory、
-MIFの型付き互換APIも追加し、芳香族性・立体化学・Morgan・MOL2・PDBの境界例を修正しています。
-各APIはresource limitと失敗理由を明示します。性能と互換性の主張は、記録に明記した
-artifact・corpus・option・hostの範囲に限ります。詳しくは
-[検証報告](docs/validation.md)と[CHANGELOG](CHANGELOG.md)を参照してください。
+v1.1.9では、入力位置を保持するchecked InChIKey batch、RDKit互換SMILESの
+fail-closedな安定性検査、反応で未指定のアルケン立体を拒否する安全策、出力を
+変えない指紋・記述子・CIPの高速化を追加しました。公開wheelの最新性能証拠は
+v1.1.8のLabute ASA限定レーンです。source上の改善を公開packageの結果としては
+扱いません。広範なhosted chemistryはv1.1.7、永続化済みのcross-platform packetはv1.1.3です。
+詳しくは[検証報告](docs/validation.md)、[ベンチマーク](benchmarks/README.md)、
+[CHANGELOG](CHANGELOG.md)を参照してください。
+
+## chematicが向いている場面
+
+- ブラウザ内またはRustアプリ内で化学処理を完結させたい
+- Python・Rust・Node・WebAssemblyで同じ実装を使いたい
+- 入力拒否、resource limit、変換時の情報損失を結果として扱いたい
+- バージョン付きの検証結果を確認してから採用したい
+
+機能範囲とエコシステムの広さを優先するならRDKit、幅広いコマンドライン形式変換を
+優先するならOpen Babelが第一候補です。選定条件と未対応範囲は
+[選定ガイド](docs/choosing-chematic.md)にまとめています。
 
 ## 使い方
 
@@ -76,6 +85,7 @@ fail-closedに動作する`canonical_smiles_stable_key()`を使用してくだ�
 
 ## ガイド
 
+- [選定ガイド](docs/choosing-chematic.md)
 - [導入とCookbook](https://kent-tokyo.github.io/chematic/)
 - [互換性範囲](docs/compatibility-scope.md)・[RDKit移行](docs/rdkit-migration.md)
 - [検証](docs/validation.md)・[ベンチマーク方法](docs/benchmark.md)

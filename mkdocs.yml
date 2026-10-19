@@ -1,5 +1,5 @@
 site_name: chematic
-site_description: A compact Rust and WebAssembly chemistry engine for interactive tools, local analysis, and serverless applications — plus native Rust and Python bindings.
+site_description: Pure-Rust cheminformatics for local browser, Python, Rust, and Node workflows, with typed limits and explicit unsupported chemistry.
 site_url: https://kent-tokyo.github.io/chematic/
 repo_url: https://github.com/kent-tokyo/chematic
 repo_name: kent-tokyo/chematic
@@ -62,6 +62,7 @@ extra_css:
 
 nav:
   - Home: index.md
+  - When to choose chematic: choosing-chematic.md
   - Local Compound Explorer: https://kent-tokyo.github.io/chematic/explorer/
   - Getting Started:
     - Installation: getting_started/installation.md
@@ -76,7 +77,9 @@ nav:
   - MCP Protocol Reference: mcp-protocol-reference.md
   - Cookbook (EN): cookbook.md
   - Cookbook (日本語): cookbook_ja.md
-  - Benchmark: benchmark.md
+  - Benchmarks:
+    - Method and evidence map: benchmark.md
+    - Open Babel file I/O: openbabel-file-io.md
   - Formats & Bindings:
     - CCD Molecular Templates: ccd-components.md
     - CIF Molecular Bonds: cif-molecular-bonds.md
@@ -87,6 +90,7 @@ nav:
     - CUBE Dataset Selection: cube-dataset-selection.md
     - Crystal OBJ Atom Meshes: crystal-obj-mesh.md
     - Rooted SMILES Stereo: rooted-smiles-stereo.md
+    - RDKit SMILES Stability: rdkit-smiles-stability.md
     - XYZ Element Symbols: xyz-element-symbols.md
     - ChemDraw Block Formats: chemdraw-block.md
     - Bounded MOL Titles: mol-title-width.md
@@ -157,6 +161,7 @@ nav:
     - MOL2 Kekulé Bond Output: mol2-kekule-bond-output.md
     - Python Serialized Input Types: python-serialized-input.md
     - All-reference MOL2 RMSD: mol2-reference-rmsd.md
+    - Position-Preserving InChIKey Batches: positioned-inchi-keys.md
     - Alkene Path Stereo: alkene-path-stereo.md
     - MOL2 Section Order: mol2-section-order.md
     - ChemDoodle JSON: chemdoodle-json.md

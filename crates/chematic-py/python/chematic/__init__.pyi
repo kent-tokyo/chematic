@@ -15,6 +15,11 @@ Quick start::
 from __future__ import annotations
 from typing import Protocol, SupportsIndex
 
+from ._rdkit_smiles_checked import (
+    RdkitSmilesStabilityError as RdkitSmilesStabilityError,
+    rdkit_smiles_checked as rdkit_smiles_checked,
+)
+
 from ._mmcif_chains import (
     MmcifChain as MmcifChain,
     MmcifChainAtom as MmcifChainAtom,
@@ -5753,6 +5758,7 @@ from ._parent_types import (
 from ._bond_fragment import (
     BondFragmentation as BondFragmentation,
     FragmentAttachment as FragmentAttachment,
+    FragmentCutCounts as FragmentCutCounts,
     fragment_on_bonds_checked as fragment_on_bonds_checked,
 )
 
@@ -5760,6 +5766,12 @@ from ._periodic_geometry import (
     PeriodicGeometryConversion as PeriodicGeometryConversion,
     turbomole_to_poscar_checked as turbomole_to_poscar_checked,
     poscar_to_turbomole_checked as poscar_to_turbomole_checked,
+)
+
+from ._inchi_batch import (
+    InchiKeyRecord as InchiKeyRecord,
+    InchiKeyStatus as InchiKeyStatus,
+    inchi_keys_checked as inchi_keys_checked,
 )
 
 from ._core_replacement import (

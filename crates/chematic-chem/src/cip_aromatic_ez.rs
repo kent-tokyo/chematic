@@ -16,7 +16,6 @@ pub(super) fn try_assign(mol: &Molecule, bond_idx: BondIdx) -> Option<(AtomIdx, 
     if !aromatic_substituent {
         return None;
     }
-    let ranker =
-        chematic_cip::SubstituentRanker::new(mol, chematic_cip::CipBudget::default_budget());
+    let ranker = super::LazyEzRanker::new(mol, chematic_cip::CipBudget::default_budget());
     super::assign_ez_accurate(mol, bond_idx, &ranker)
 }

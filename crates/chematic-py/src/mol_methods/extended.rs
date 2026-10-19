@@ -521,6 +521,7 @@ impl Mol {
     ///     neutral = mol.normalize_zwitterion()
     fn normalize_zwitterion(&self) -> Mol {
         Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(chematic_chem::normalize_zwitterion(&self.inner)),
             props: Default::default(),
         }
@@ -534,6 +535,7 @@ impl Mol {
     ///     desalted = chematic.from_smiles("CC(=O)[O-].[Na+]").remove_salts()
     fn remove_salts(&self) -> Mol {
         Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(chematic_chem::standardize::remove_salts(&self.inner)),
             props: Default::default(),
         }
@@ -549,6 +551,7 @@ impl Mol {
     fn invert_stereocenter(&self, atom_idx: usize) -> Mol {
         let idx = chematic_core::AtomIdx(atom_idx as u32);
         Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(chematic_chem::invert_stereocenter(&self.inner, idx)),
             props: Default::default(),
         }
