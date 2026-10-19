@@ -131,6 +131,7 @@ nav:
     - Typed Metric Matrices: metric-matrix-facade.md
     - GAMESS Internal Coordinates: gamess-zmat-output.md
     - Typed Binary Feature Ranking: info-bit-ranker.md
+    - InfoTheory Ranking Export: info-ranker-export.md
     - Ranked-record Enrichment: scoring-enrichment-facade.md
     - Binary Bit-pair Co-occurrence: bit-cooccurrence.md
     - Chi-square Bit Ranking: chi-square-bit-ranking.md
