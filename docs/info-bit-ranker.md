@@ -61,7 +61,8 @@ gain or a p-value; it uses the same count table and deterministic tie policy.
 BIASENTROPY/BIASCHISQUARE.
 [Typed feature masks](info-ranker-masks.md) are supported. A separate
 [bit-pair co-occurrence generator](bit-cooccurrence.md) counts selected pairs.
-Correlation matrices and file output remain outside this profile. This is supervised binary
+[Ranked table export](info-ranker-export.md) saves the last successful result.
+Pearson correlation coefficients remain outside this profile. This is supervised binary
 feature ranking; it does not generate chemical fingerprints or infer activity
 labels. No speed advantage over RDKit is claimed.
 
