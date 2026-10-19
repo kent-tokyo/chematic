@@ -7,6 +7,8 @@ package, comparator, corpus, host, runtime and operation.
 
 ## Start here
 
+- [Direct Morgan connectivity hashing](2026-10-19-morgan-direct-connectivity.md): source adoption fails on the full 10,000-row corpus; all 63 comparisons, source floors, external non-wins and raw numeric accounting retained.
+
 - [Terminal N/O and zero-model TPSA](2026-10-18-terminal-tpsa.md):
   isolated RDKit-default TPSA source improvement on both fixed windows; all 42
   median floors and source-output gates pass. Two broader failed candidates,

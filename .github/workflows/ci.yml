@@ -829,6 +829,10 @@ jobs:
           python3 scripts/check_morgan_numeric_packet.py benchmarks/2026-10-18-cosmolkit-cold-terms-candidate-numeric.json.gz
           python3 scripts/check_morgan_numeric_packet.py benchmarks/2026-10-18-terminal-tpsa-numeric.json.gz
           python3 -m unittest scripts.tests.test_check_morgan_numeric_packet -v
+      - name: Verify full-corpus Morgan timings and balanced ordering
+        run: |
+          python3 scripts/check_python_speed_frontier_packet.py benchmarks/2026-10-19-morgan-direct-connectivity-numeric.json.gz
+          python3 -m unittest scripts.tests.test_check_python_speed_frontier_packet scripts.tests.test_bench_python_speed_frontier -v
       - name: Verify MOL2 timing packets and corruption controls
         run: |
           python3 scripts/check_mol2_index_numeric_packet.py benchmarks/2026-10-18-mol2-index-only-numeric.json.gz
