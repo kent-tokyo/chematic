@@ -67,9 +67,10 @@ def main() -> None:
 
     compatible, exact, changed = set(), set(), set()
     normalize_compatible, normalize_exact = set(), set()
-    reionize_compatible, reionize_exact = set(), set()
+    reionize_compatible, reionize_exact, reionize_all_exact = set(), set(), set()
     excluded, errors, mismatches = [], [], []
     normalize_oracle_errors, reionize_oracle_errors = [], []
+    reionize_all_oracle_errors = []
     normalize_mismatches, reionize_mismatches = [], []
     cleanup_classes: Counter[str] = Counter()
     cleanup_statuses: Counter[str] = Counter()
@@ -84,6 +85,19 @@ def main() -> None:
             Chem.MolToSmiles(rdkit_mol, canonical=True, isomericSmiles=True)
             if rdkit_mol is not None else None
         )
+        try:
+            expected_reionize_all = Chem.MolToSmiles(
+                rdMolStandardize.Reionize(rdkit_mol), canonical=True, isomericSmiles=True
+            ) if rdkit_mol is not None else None
+        except Exception as exc:
+            expected_reionize_all = None
+            reionize_all_oracle_errors.append({
+                "index": index, "input": input_text,
+                "oracle_error": f"{type(exc).__name__}: {exc}",
+            })
+        actual_reionize_all, _ = value(source.get("reionize", {}))
+        if expected_reionize_all is not None and actual_reionize_all == expected_reionize_all:
+            reionize_all_exact.add(index)
         source_input, parse_error = value(source.get("rdkit_input", {}))
         if parse_error is not None or source_input != rdkit_input:
             excluded.append({"index": index, "input": input_text,
@@ -110,17 +124,15 @@ def main() -> None:
                 "input": input_text,
                 "oracle_error": f"{type(exc).__name__}: {exc}",
             })
-        try:
-            expected_reionize = Chem.MolToSmiles(
-                rdMolStandardize.Reionize(rdkit_mol), canonical=True, isomericSmiles=True
-            )
+        if expected_reionize_all is not None:
+            expected_reionize = expected_reionize_all
             reionize_compatible.add(index)
-        except Exception as exc:
+        else:
             expected_reionize = None
             reionize_oracle_errors.append({
                 "index": index,
                 "input": input_text,
-                "oracle_error": f"{type(exc).__name__}: {exc}",
+                "oracle_error": "Reionize oracle failed or input could not be parsed",
             })
         actual_normalize, normalize_error = value(source.get("normalize", {}))
         actual, source_error = value(source.get("cleanup", {}))
@@ -229,6 +241,7 @@ def main() -> None:
             str(path.relative_to(ROOT)): sha256(path)
             for path in (
                 ROOT / "crates/chematic-chem/src/standardize.rs",
+                ROOT / "crates/chematic-chem/src/standardize/reionize.rs",
                 ROOT / "crates/chematic-chem/src/standardize/cleanup.rs",
                 ROOT / "crates/chematic-chem/src/standardize/groups.rs",
                 ROOT / "crates/chematic-core/src/molecule/builder.rs",
@@ -254,6 +267,8 @@ def main() -> None:
         "support_status_counts": dict(sorted(cleanup_statuses.items())),
         "reionize_compatible_rows": len(reionize_compatible),
         "reionize_exact_rows": len(reionize_exact),
+        "reionize_all_rows_exact": len(reionize_all_exact),
+        "reionize_all_rows_oracle_errors": reionize_all_oracle_errors,
         "reionize_oracle_errors": reionize_oracle_errors,
         "reionize_classification_counts": dict(sorted(reionize_classes.items())),
         "reionize_support_status_counts": dict(sorted(reionize_statuses.items())),
@@ -263,13 +278,18 @@ def main() -> None:
         "oracle_errors": errors,
         "mismatches": mismatches,
         "baseline_comparison": comparison,
-        "limits": ["same parsed inputs only", "RDKit agreement is not independent chemical truth"],
+        "limits": [
+            "compatible metrics use only the same parsed inputs",
+            "raw all-row Reionize count includes differing input interpretations",
+            "RDKit agreement is not independent chemical truth",
+        ],
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n")
     print(f"Normalize: {len(normalize_exact)}/{len(normalize_compatible)} exact")
     print(f"Cleanup: {len(exact)}/{len(compatible)} exact")
     print(f"Reionize: {len(reionize_exact)}/{len(reionize_compatible)} exact")
+    print(f"Reionize raw all rows: {len(reionize_all_exact)}/{len(corpus)} exact")
     if comparison:
         print(f"Fixed: {len(comparison['fixed_indices'])}; "
               f"regressed: {len(comparison['regressed_indices'])}")
