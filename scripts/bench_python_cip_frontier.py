@@ -12,6 +12,7 @@ import argparse
 from datetime import datetime, timezone
 import hashlib
 import itertools
+import importlib
 import json
 import os
 from pathlib import Path
@@ -87,8 +88,13 @@ def worker(a):
             del retained, molecules
         result['operations'][op] = {**times, 'values': reference}
     module = __import__(engine)
-    result.update(version=module.__version__, extension_sha256={
-        p.name: sha(p.read_bytes()) for p in Path(module.__file__).parent.glob('*.so')},
+    native = {p.name: sha(p.read_bytes()) for p in Path(module.__file__).parent.glob('*.so')}
+    if engine == 'rdkit':
+        native = {name: sha(Path(importlib.import_module(name).__file__).read_bytes())
+                  for name in ('rdkit.rdBase', 'rdkit.Chem.rdCIPLabeler', 'rdkit.Chem.rdchem',
+                               'rdkit.Chem.rdmolfiles', 'rdkit.Chem.rdMolDescriptors',
+                               'rdkit.Chem.rdFingerprintGenerator')}
+    result.update(version=module.__version__, extension_sha256=native,
         peak_process_rss_bytes=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
         * (1 if sys.platform == 'darwin' else 1024))
     return result
@@ -126,6 +132,12 @@ def main():
             'corpus_sha256': sha(a.corpus.read_bytes()),
             'identities': {arm: json.loads(getattr(a, arm+'_identity').read_text()) for arm in ARMS[:2]},
             'wheel_sha256': {arm: sha(getattr(a, arm+'_wheel').read_bytes()) for arm in ARMS[:2]},
+            'script_sha256': {name: sha((Path(__file__).parent.parent / name).read_bytes())
+                              for name in ('scripts/bench_python_cip_frontier.py',
+                                           'scripts/bench_python_speed_frontier.py',
+                                           'scripts/verify_python_cip_frontier.py',
+                                           'validation/cosmolkit_comparison/bench_corpus.py')},
+            'adoption_policy': 'Exact old/new CIP dictionaries and unresolved results on all 14072 rows; source CIP first-use and parse-inclusive CI95 lower bounds above one. Retain and disclose every control lane and every comparator mismatch; no toolkit-wide speed claim.',
             'protocol': __doc__, 'created_utc': datetime.now(timezone.utc).isoformat(),
             'host': {'platform': platform.platform(), 'python': sys.version, 'cpus': os.cpu_count()}}
     plan_path = a.output.with_suffix('.plan.json')
