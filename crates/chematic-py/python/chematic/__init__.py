@@ -12,6 +12,7 @@ from ._sdf_split import (
 )
 
 from .chematic import *
+from ._mol2_hydrogen_order import Mol2HydrogenOrder, order_mol2_hydrogens_checked
 from ._inchi_batch import InchiKeyRecord, InchiKeyStatus, inchi_keys_checked
 from ._rdkit_smiles_checked import RdkitSmilesStabilityError, rdkit_smiles_checked
 from ._xbs import XbsBondRule, XbsSpecies, write_xbs
