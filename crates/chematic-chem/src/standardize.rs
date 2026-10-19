@@ -2546,6 +2546,23 @@ mod tests {
     }
 
     #[test]
+    fn normalize_groups_preserves_labelled_nitro_oxygen() {
+        for smiles in [
+            "c1ccccc1[N+](=O)[O-:28]",
+            "c1ccccc1[N+]([O-])=[O:28]",
+            "c1ccccc1[N+](=O)[18O-]",
+            "C[N+]([O-])C",
+        ] {
+            let mol = parse(smiles).unwrap();
+            assert_eq!(
+                chematic_smiles::rdkit_canonical_smiles(&normalize_groups(&mol)).unwrap(),
+                chematic_smiles::rdkit_canonical_smiles(&mol).unwrap(),
+                "{smiles}"
+            );
+        }
+    }
+
+    #[test]
     fn normalize_groups_azide() {
         // Azide: [N-][N+]#N
         let mol = parse("[N-][N+]#N").unwrap();
@@ -2606,6 +2623,18 @@ mod tests {
             chematic_smiles::canonical_smiles(&normalize_groups(&sulfone)),
             chematic_smiles::canonical_smiles(&sulfone)
         );
+    }
+
+    #[test]
+    fn normalize_groups_preserves_oxygen_substituted_sulfur() {
+        for smiles in ["O=S1OCCO1", "COS(=O)OC", "CS(=O)O", "CS(=O)[O-]"] {
+            let mol = parse(smiles).unwrap();
+            assert_eq!(
+                chematic_smiles::rdkit_canonical_smiles(&normalize_groups(&mol)).unwrap(),
+                chematic_smiles::rdkit_canonical_smiles(&mol).unwrap(),
+                "{smiles}"
+            );
+        }
     }
 
     // ── RDKit PR #9051: StereoGroup cleanup for non-chiral atoms ────────────

@@ -23,8 +23,8 @@ struct PyridoneMatch {
 /// Normalize chemical groups (nitro groups, etc.).
 ///
 /// Transforms:
-/// - `[N+](=O)[O-]` → `N(=O)=O` (nitro normalization: N charge 0, O- → double bond)
-/// - `R[S](=O)R` → `R[S+]([O-])R` (RDKit-compatible sulfoxide normalization)
+/// - Unlabelled `[N+](=O)[O-]` → `N(=O)=O` (N charge 0, O- → double bond)
+/// - Three-coordinate S=O without an O substituent → charge-separated S+-O-
 /// - ortho/para pyridinium phenoxide → neutral pyridone
 ///
 /// Returns a new molecule with normalized groups.
@@ -262,19 +262,27 @@ fn detect_nitro(mol: &Molecule, idx: AtomIdx, nitro_atoms: &mut HashSet<AtomIdx>
         .collect();
 
     if oxygen_neighbors.len() == 2 {
+        // The two oxygens cease to be interchangeable when either carries
+        // an atom map or an isotope. RDKit keeps the charged nitro form, so
+        // leave its bond and charge assignment attached to the labelled atom.
+        if oxygen_neighbors.iter().any(|(oxygen_idx, _)| {
+            let oxygen = mol.atom(*oxygen_idx);
+            oxygen.atom_map.is_some() || oxygen.isotope.is_some()
+        }) {
+            return;
+        }
         let mut has_double_oxygen = false;
-        let mut has_single_negative_oxygen = false;
+        let mut single_negative_oxygen = None;
         for (oxygen_idx, bond_idx) in &oxygen_neighbors {
             let oxygen = mol.atom(*oxygen_idx);
             let bond = mol.bond(*bond_idx);
             has_double_oxygen |= bond.order == BondOrder::Double && oxygen.charge == 0;
             if bond.order == BondOrder::Single && oxygen.charge == -1 {
-                has_single_negative_oxygen = true;
-                nitro_atoms.insert(*oxygen_idx);
+                single_negative_oxygen = Some(*oxygen_idx);
             }
         }
-        if has_double_oxygen && has_single_negative_oxygen {
-            nitro_atoms.insert(idx);
+        if has_double_oxygen && let Some(oxygen_idx) = single_negative_oxygen {
+            nitro_atoms.extend([idx, oxygen_idx]);
         }
     }
 }
@@ -302,10 +310,17 @@ fn detect_azide(mol: &Molecule, idx: AtomIdx, azide_atoms: &mut HashSet<AtomIdx>
     }
 }
 
-/// Mark neutral three-coordinate sulfoxide S=O atoms, but not sulfones.
+/// Mark neutral three-coordinate sulfoxide S=O atoms, excluding sulfones and
+/// oxygen-substituted sulfur groups that RDKit leaves in their S=O form.
 fn detect_sulfoxide(mol: &Molecule, idx: AtomIdx, sulfoxide_atoms: &mut HashSet<AtomIdx>) {
     let sulfur = mol.atom(idx);
-    if sulfur.charge != 0 || mol.neighbors(idx).count() != 3 {
+    if sulfur.charge != 0
+        || mol.neighbors(idx).count() != 3
+        || mol.neighbors(idx).any(|(neighbor, bond_idx)| {
+            mol.atom(neighbor).element.atomic_number() == 8
+                && mol.bond(bond_idx).order == BondOrder::Single
+        })
+    {
         return;
     }
     let double_oxygens: Vec<_> = mol
