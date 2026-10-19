@@ -6,28 +6,28 @@ comparator, corpus, options, platform, and failure policy.
 
 ## Evidence boundary
 
-- v1.1.9 is the current release line. Its exact public-artifact chemistry and
-  performance gates must complete before source results are quoted as package
-  results.
+- v1.1.9 is the current release line. Its public-wheel chemistry workflow
+  completed all 11 hosted jobs on Linux, macOS and Windows. That hosted result
+  does not turn later source measurements into package evidence.
 - One public v1.1.8 macOS arm64 wheel has completed the 10,000-row Labute ASA
   correctness and performance lane. Other operations and platforms do not
   inherit that result.
 - The v1.1.8 release has not completed an equivalent broad, cross-platform
   public-wheel chemistry packet.
-- The v1.1.7 published-wheel chemistry workflow completed all 11 hosted jobs.
+- The v1.1.9 published-wheel chemistry workflow completed all 11 hosted jobs.
   The latest durable checked-in cross-platform packet remains v1.1.3.
 - The broadest published-package RDKit performance packet is v1.0.42.
 - Source and earlier package records are useful development evidence, but they
-  are not relabelled as v1.1.7 package results.
+  are not relabelled as v1.1.9 package results.
 - Typed refusals and abstentions stay in the denominator and are not matches.
 
 ## Current evidence
 
 | Area | Result and limit | Record |
 |---|---|---|
-| Hosted Python artifacts | Exact v1.1.7 PyPI wheels completed 11 Linux, macOS, Windows, RDKit-comparison, A6, and autoconf jobs. The hosted run establishes pass/fail evidence; its durable hashes and counts still need a checked-in packet. npm/WASM and crates.io remain separate evidence. | [v1.1.7 hosted run](https://github.com/kent-tokyo/chematic/actions/runs/39078219154) · [v1.1.3 checked-in packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-14-v113-published-artifact-packet.md) |
+| Hosted Python artifacts | Exact v1.1.9 PyPI wheels completed 11 Linux, macOS, Windows, RDKit-comparison, A6, and autoconf jobs. The hosted run establishes pass/fail evidence; its durable hashes and per-row counts still need a checked-in packet. npm/WASM and crates.io remain separate evidence. | [v1.1.9 hosted run](https://github.com/kent-tokyo/chematic/actions/runs/39249060732) · [v1.1.3 checked-in packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-14-v113-published-artifact-packet.md) |
 | Current public performance | One exact v1.1.8 macOS arm64 wheel matches all 10,000 RDKit and COSMolKit Labute ASA values. It wins all 20 paired blocks over RDKit for first use, repeated use and parse-inclusive use; COSMolKit first use is a statistical tie. This is one host, wheel and operation. | [v1.1.8 public-wheel record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-19-v118-published-labute-asa-cosmolkit.md) |
-| Unusual-input descriptors | The checked-in v1.1.3 packet confirms HBD on 4,072/4,072 rows and QED on all 4,071 comparable rows; RDKit rejects the remaining QED input. v1.1.7 completed its hosted cross-platform gate, but exact durable per-row counts should be quoted from a checked-in packet rather than inferred from workflow success. | [v1.1.7 hosted run](https://github.com/kent-tokyo/chematic/actions/runs/39078219154) · [v1.1.3 packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-14-v113-published-artifact-packet.md) |
+| Unusual-input descriptors | The checked-in v1.1.3 packet confirms HBD on 4,072/4,072 rows and QED on all 4,071 comparable rows; RDKit rejects the remaining QED input. v1.1.9 completed its hosted cross-platform gate, but exact durable per-row counts should be quoted from a checked-in packet rather than inferred from workflow success. | [v1.1.9 hosted run](https://github.com/kent-tokyo/chematic/actions/runs/39249060732) · [v1.1.3 packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-14-v113-published-artifact-packet.md) |
 | RDKit performance | Exact v1.0.42 CPython 3.13 wheels on hosted Linux x64 and macOS arm64 pass 10k TPSA, Labute ASA, and chiral-Morgan output gates. Parse-inclusive intervals favor chematic on both hosts; prepared macOS Labute loses and prepared Morgan crosses parity. | [published packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-11-v1042-published-rdkit-packet.md) |
 | Reactions and workflows | The 83-row gate has 80 exact product graph/origin/map rows and three inputs invalid in both engines. The bounded RDKit workflow packet also has 39/39 largest-fragment, 254/254 Normalize after common-input filtering, and 16/16 labelled R-group rows. These are bounded fixtures, not universal parity. | [reaction follow-up](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-10-v1042-regression-followups.md) · [workflow packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-12-rdkit-workflows-expanded-source.md) |
 | Current standardization source | Against RDKit 2026.09.1 on 4,069 comparable stress rows, current source has Normalize 4,065 exact, Cleanup 3,933 exact and Reionize 3,150 exact. The latest Cleanup follow-up fixes ten rows with zero regressions. Every retained residual is classified rather than promoted to a match. | [machine record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-19-rdkit-cleanup-acid-metal-followup.json) · [summary](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-19-rdkit-cleanup-acid-metal-followup.md) |
@@ -54,14 +54,13 @@ comparator, corpus, options, platform, and failure policy.
 - **3D:** typing, energy, gradient, convergence, stereo, clash, conformer
   quality, time, and memory are independent gates.
 
-## v1.1.8 safeguards
+## v1.1.9 package evidence and v1.1.8 performance
 
-v1.1.8 reuses bounded Python parse-time preparation for first-use Labute ASA
-and ring counts while preserving lazy handling outside the declared ordinary
-molecule boundary. The public macOS arm64 wheel has a completed Labute ASA
-lane. Until an equivalent cross-platform chemistry packet completes, the
-v1.1.7 hosted workflow remains the latest broad package evidence and the
-v1.1.3 packet remains the latest durable cross-platform record.
+The v1.1.9 public-wheel workflow is the latest broad hosted package evidence.
+The exact v1.1.8 macOS arm64 wheel remains the latest recorded public-package
+performance lane for Labute ASA. Neither result supersedes the latest durable
+cross-platform per-row packet at v1.1.3, and the current source candidate must
+still earn its own clean-wheel evidence.
 
 ## How to interpret results
 

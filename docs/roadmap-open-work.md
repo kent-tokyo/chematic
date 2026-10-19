@@ -1,8 +1,10 @@
 # Open-work ledger
 
 Updated 2026-10-19 for **v1.1.9 plus Unreleased source work**. Completed work
-belongs in the [CHANGELOG](../CHANGELOG.md); dated evidence belongs in the
-[benchmark index](../benchmarks/README.md).
+belongs in the
+[CHANGELOG](https://github.com/kent-tokyo/chematic/blob/main/CHANGELOG.md);
+dated evidence belongs in the
+[benchmark index](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/README.md).
 
 ## Release and compatibility
 
@@ -64,3 +66,35 @@ regression tests; closure does not broaden the supported domain.
 - Re-run the official RDKit.js comparison when its pinned package changes.
 - Re-run public-package chemistry gates for every release candidate.
 - Update competitor-watch claims only from pinned primary sources.
+
+## Dependency classes
+
+- **`local-open`:** implementation, regression tests, documentation and source
+  gates that can be completed in this repository.
+- **`toolchain-open`:** cross-platform wheels, npm/WASM builds and browser
+  runners that require hosted toolchains.
+- **`external-open`:** comparator packages, upstream review and independent
+  adjudication.
+- **`data-sealed`:** one-time evaluation data; inspected rows cannot become a
+  sealed set again.
+- **`historical`:** retained provenance that does not establish current
+  behavior.
+
+## Accuracy packages
+
+| Package | State |
+|---|---|
+| A0 Evaluation contract | Complete |
+| A1 Perception and descriptors | Active |
+| A2 Stereo and identity | Active |
+| A3 Fingerprints and retrieval | Maintenance |
+| A4 Workflows and interchange | Active |
+| A5 Independent adjudication | External |
+| A6 3D and force fields | Experimental |
+
+## Completion rule
+
+Every gate records its support domain, versions, corpus, options, failure
+policy and counts for success, failure, refusal, unsupported and skipped
+inputs. A refusal is not a match, source evidence is not package evidence and
+registry availability is not chemistry validation.
