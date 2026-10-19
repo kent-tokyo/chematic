@@ -1928,6 +1928,31 @@ class Mol:
         """
         ...
 
+    def check_geometry(self, coordinates: Iterable[Sequence[float]], *, bond_relative_tolerance: float = 0.5, nonbonded_min_distance: float = 1.2) -> dict[str, Any]:
+        """Screen supplied atom-order Cartesian coordinates in Angstrom, read-only.
+
+        Returns atom_count, thresholds used, bonds_checked, skipped_bonds,
+        max_relative_bond_deviation (None without supported bonds),
+        bond_violations (bond/atoms/distance/reference_length/relative_deviation),
+        nonbonded_clashes (atoms/distance), stereo_groups_not_evaluated, and
+        stereo (tetrahedral/double_bond rows plus n_declared/n_satisfied/
+        n_violations/n_unevaluable). Stereo rows retain status/rejection_reason
+        and original atom or bond indices. There is no universal validity flag.
+
+        Bond reference lengths reuse the embedding model's covalent radii and
+        bond-order scales. Dative/zero/quadruple/query bonds or wildcard endpoints
+        are skipped explicitly. All graph bonds exclude nonbonded comparisons;
+        1-3 pairs and separate fragments are included. Declared tetrahedral/E/Z
+        stereo only; enhanced group semantics are counted as unchecked.
+        Unspecified stereo, valence, angles, torsions and energies are not checked.
+
+        Requires 1..2048 atoms, one finite triple per atom, each component within
+        +/-1e6 Angstrom, finite bond tolerance in [0,1) and positive finite clash
+        cutoff. Bad inputs raise ValueError; wrong types may raise TypeError.
+        Iterables consume at most atom_count + 1 rows; source errors propagate.
+        O(N^2) time/output; no embedding, minimization, atom sorting or mutation.
+        """
+
     def sasa_with_radii_checked(self, coordinates: Iterable[Sequence[float]], radii: Iterable[float], *, probe_radius: float = 1.4, sphere_points: int = 960) -> dict[str, Any]:
         """Native Shrake-Rupley total/per_atom SASA with explicit coordinates/radii.
 

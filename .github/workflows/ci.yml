@@ -255,6 +255,7 @@ jobs:
           - { package: chematic-3d, target: g1_regression_byte_identical }
           - { package: chematic-3d, target: rdkit_g1_parity }
           - { package: chematic-3d, target: torsion_knowledge_negative_controls }
+          - { package: chematic-3d, target: geometry_check }
           - { package: chematic-chem, target: canonical_idempotency_corpus_standardized }
           - { package: chematic-chem, target: canonical_stereo_d0_cip_multiset_invariance }
           - { package: chematic-chem, target: issue415_fused_heteroaromatic_holdout }
