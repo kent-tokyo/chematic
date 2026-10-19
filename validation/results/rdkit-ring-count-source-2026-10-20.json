@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "profile": "source_rdkit_2026_09_1_num_rings",
+  "source_commit": "a84151b1224d2c1499360b014ec6e761779fc7e4",
+  "rdkit_version": "2026.09.1",
+  "source_file_sha256": {
+    "crates/chematic-chem/src/descriptors/rings_and_filters.rs": "6d1f15d343c3cf6231986a17fb0b48b706ff1de08395e82997d1aae83de320ad",
+    "crates/chematic-chem/src/descriptors/ring_component_count_tests.rs": "3880d64d4e441af14ffe60f3dc32e86f388b9f261ed5365d3347417acf7d8dac",
+    "crates/chematic-chem/src/descriptors_tests.rs": "ad38ecfe6a5aeac382d7356b4a826aa350a433ea8a27b3f9e87fab53d91fefb6",
+    "crates/chematic-chem/examples/ring_count_stress_dump.rs": "00d4a79464daf9e097211c2824b069bc079b31ccf0063a5bbf7f643ece5d3eac",
+    "scripts/rdkit_ring_count_source_gate.py": "34e920c8b561756d98811e1adf654f1653b82543b2a58aac83b954521365a5b3"
+  },
+  "corpora": {
+    "stress": {
+      "path": "validation/cosmolkit_comparison/corpora/stress-v1.smi",
+      "corpus_sha256": "879166ab5481cac805ecd2d77f37d628383ec124085b90e2ee1659d55ce76277",
+      "source_dump_sha256": "f5bd3c55942909cca934299760e971cd8ab5313a0995171e8c812023b1cd3b65",
+      "rows": 4072,
+      "exact": 4072,
+      "mismatches": [],
+      "baseline": {
+        "source_commit": "b7004777daf39a5f6cef03f56c4dcb68c12433f3",
+        "source_dump_sha256": "9d538b5997eac58780b50c2423cee6acde9c077e9f31c370afffdd94c8d23609",
+        "exact": 4068,
+        "mismatch_indices": [
+          605,
+          608,
+          1014,
+          3774
+        ]
+      },
+      "fixed_cases": [
+        {
+          "index": 605,
+          "smiles": "OC[C@H]1O[C@@H]2O[C@H]3[C@H](O)[C@@H](O)[C@@H](O[C@@H]3CO)O[C@H]3[C@H](O)[C@@H](O)[C@@H](O[C@@H]3CO)O[C@H]3[C@H](O)[C@@H](O)[C@@H](O[C@@H]3CO)O[C@H]3[C@H](O)[C@@H](O)[C@@H](O[C@@H]3CO)O[C@H]3[C@H](O)[C@@H](O)[C@@H](O[C@@H]3CO)O[C@H]1[C@H](O)[C@H]2O",
+          "baseline": 22,
+          "source": 70,
+          "rdkit": 70
+        },
+        {
+          "index": 608,
+          "smiles": "c1cc2ccc1-c1ccc(cc1)-c1ccc-2cc1",
+          "baseline": 10,
+          "source": 11,
+          "rdkit": 11
+        },
+        {
+          "index": 1014,
+          "smiles": "[C@@H]12[C@H](O)[C@H]([C@@H]([C@@H](CO)O2)O[C@H]2[C@@H]([C@@H](O)[C@@H]([C@@H](CO)O2)O[C@H]2[C@@H]([C@@H](O)[C@H](O[C@@H]3O[C@@H]([C@H]([C@H](O)[C@H]3O)O[C@H]3[C@H](O)[C@H]([C@H](O[C@H]4O[C@@H]([C@@H](O1)[C@@H]([C@H]4O)O)CO)[C@H](O3)CO)O)CO)[C@H](O2)CO)O)O)O",
+          "baseline": 16,
+          "source": 70,
+          "rdkit": 70
+        },
+        {
+          "index": 3774,
+          "smiles": "O1C2C3[C@H]4c5c6O[C@@H]([C@@H](O)Cc6c(O)[c@@H]c5OC54C(C(c4c(C1=O)c(-c1c(c(O)c(O)cc1C(OC1COC(=O)c6c(c(O)c(c(O)c6)O)-c6c(cc(O)c(c6O)O)C(OC12)=O)=O)O)c(c(c4O)O)O)=C(C5=O)O)C(O3)=O)[c@@]1cc(c(cc1)O)O",
+          "baseline": 13,
+          "source": 14,
+          "rdkit": 14
+        }
+      ]
+    },
+    "exposed_10k": {
+      "path": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+      "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+      "source_dump_sha256": "f2d306eccc89c370048cd662da38ae01670a02afef0762918a20183a3eb3fa5f",
+      "rows": 10000,
+      "exact": 10000,
+      "mismatches": []
+    }
+  },
+  "limits": [
+    "Counts compare two fixed SMILES corpora with RDKit 2026.09.1 CalcNumRings.",
+    "Exact agreement on these corpora does not prove agreement for every molecular graph.",
+    "The source-built Rust example, not a published package, produced CheMatic rows."
+  ]
+}
