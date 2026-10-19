@@ -5767,6 +5767,12 @@ from ._bond_fragment import (
     fragment_on_bonds_checked as fragment_on_bonds_checked,
 )
 
+from ._periodic_geometry import (
+    PeriodicGeometryConversion as PeriodicGeometryConversion,
+    turbomole_to_poscar_checked as turbomole_to_poscar_checked,
+    poscar_to_turbomole_checked as poscar_to_turbomole_checked,
+)
+
 from ._inchi_batch import (
     InchiKeyRecord as InchiKeyRecord,
     InchiKeyStatus as InchiKeyStatus,
