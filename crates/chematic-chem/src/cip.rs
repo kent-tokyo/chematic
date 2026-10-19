@@ -264,10 +264,9 @@ pub fn assign_cip_with_mode(
     mol: &Molecule,
     mode: CipMode,
 ) -> Result<CipModeAssignment, CipModeError> {
-    let legacy = assign_cip(mol);
     match mode {
         CipMode::LegacyFast => Ok(CipModeAssignment {
-            assignments: legacy.assignments,
+            assignments: assign_cip(mol).assignments,
             unresolved: Vec::new(),
         }),
         CipMode::Accurate => {
@@ -307,13 +306,32 @@ pub fn assign_cip_with_mode(
             let legacy_ez: Vec<(AtomIdx, CipCode)> = (0..mol.bond_count())
                 .filter_map(|j| assign_ez(mol, BondIdx(j as u32)))
                 .collect();
+            // An accurate answer or explicit abstention supersedes the legacy
+            // tetrahedral result. Do not rank those same ligands twice. Keep
+            // every legacy fallback and its original tetrahedral/EZ/allene order.
+            let mut legacy_assignments: Vec<_> = (0..mol.atom_count())
+                .map(|i| AtomIdx(i as u32))
+                .filter(|idx| {
+                    mol.atom(*idx).chirality.is_tetrahedral()
+                        && !accurate_idx.contains(idx)
+                        && !unresolved_idx.contains(idx)
+                })
+                .filter_map(|idx| assign_tetrahedral(mol, idx).map(|code| (idx, code)))
+                .collect();
+            legacy_assignments.extend(legacy_ez.iter().copied());
+            legacy_assignments.extend((0..mol.atom_count()).filter_map(|i| {
+                let idx = AtomIdx(i as u32);
+                is_allene_central(mol, idx)
+                    .then(|| assign_allene(mol, idx))
+                    .flatten()
+            }));
             let ranker = LazyEzRanker::new(mol, budget);
             let accurate_ez: Vec<(AtomIdx, CipCode)> = (0..mol.bond_count())
                 .filter_map(|j| assign_ez_accurate(mol, BondIdx(j as u32), &ranker))
                 .collect();
             let mut legacy_ez_left = legacy_ez.len();
             let mut assignments: Vec<(AtomIdx, CipCode)> = Vec::new();
-            for (idx, code) in legacy.assignments {
+            for (idx, code) in legacy_assignments {
                 // assign_cip emits tetrahedral, then double-bond E/Z (in bond
                 // order), then allene entries; the E/Z block is exactly
                 // `legacy_ez`.

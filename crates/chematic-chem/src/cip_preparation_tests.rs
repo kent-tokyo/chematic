@@ -122,3 +122,128 @@ fn ranker_initializes_only_when_two_explicit_substituents_need_comparison() {
         assert_eq!(ranker.value.get().is_some(), initialized, "{smiles}");
     }
 }
+
+fn eager_assign_cip_with_mode(
+    mol: &Molecule,
+    mode: CipMode,
+) -> Result<CipModeAssignment, CipModeError> {
+    let legacy = assign_cip(mol);
+    match mode {
+        CipMode::LegacyFast => Ok(CipModeAssignment {
+            assignments: legacy.assignments,
+            unresolved: Vec::new(),
+        }),
+        CipMode::Accurate => {
+            let budget = chematic_cip::CipBudget::default_budget();
+            let accurate = chematic_cip::assign_cip_accurate_experimental(mol, budget)
+                .map_err(CipModeError::Accurate)?;
+
+            let unresolved_idx: HashSet<AtomIdx> = accurate
+                .skipped
+                .iter()
+                .filter(|(_, r)| {
+                    matches!(
+                        r,
+                        chematic_cip::SkipReason::Tied
+                            | chematic_cip::SkipReason::BudgetExceeded
+                            | chematic_cip::SkipReason::OracleUnstable
+                            | chematic_cip::SkipReason::LonePairCenter
+                    )
+                })
+                .map(|(idx, _)| *idx)
+                .collect();
+            let accurate_idx: HashSet<AtomIdx> =
+                accurate.assignments.iter().map(|(idx, _)| *idx).collect();
+
+            // Legacy covers E/Z + allene (accurate has neither) and any atom accurate
+            // never touched at all; accurate's own tetrahedral answers override
+            // legacy's wherever both apply; accurate's explicit ties/budget-outs are
+            // dropped from `assignments` entirely (never legacy's guess) and surfaced
+            // via `unresolved` instead.
+            //
+            // Double-bond E/Z uses the accurate engine's substituent ranking too
+            // (#634): the legacy sphere comparison adds no duplicate atoms for
+            // aromatic bonds, so an aryl substituent could lose to tert-butyl.
+            // Legacy E/Z entries are replaced one-for-one (same atom1 keying,
+            // same bond order); an end the accurate ranking cannot order drops
+            // its label rather than keeping legacy's guess.
+            let legacy_ez: Vec<(AtomIdx, CipCode)> = (0..mol.bond_count())
+                .filter_map(|j| assign_ez(mol, BondIdx(j as u32)))
+                .collect();
+            let ranker = chematic_cip::SubstituentRanker::new(mol, budget);
+            let accurate_ez: Vec<(AtomIdx, CipCode)> = (0..mol.bond_count())
+                .filter_map(|j| eager_assign_ez(mol, BondIdx(j as u32), &ranker))
+                .collect();
+            let mut legacy_ez_left = legacy_ez.len();
+            let mut assignments: Vec<(AtomIdx, CipCode)> = Vec::new();
+            for (idx, code) in legacy.assignments {
+                // assign_cip emits tetrahedral, then double-bond E/Z (in bond
+                // order), then allene entries; the E/Z block is exactly
+                // `legacy_ez`.
+                let is_ez_block = legacy_ez_left > 0
+                    && matches!(code, CipCode::E | CipCode::Z)
+                    && legacy_ez[legacy_ez.len() - legacy_ez_left] == (idx, code);
+                if is_ez_block {
+                    legacy_ez_left -= 1;
+                    if legacy_ez_left == 0 {
+                        assignments.extend(accurate_ez.iter().copied().filter(|(i, _)| {
+                            !accurate_idx.contains(i) && !unresolved_idx.contains(i)
+                        }));
+                    }
+                    continue;
+                }
+                if !accurate_idx.contains(&idx) && !unresolved_idx.contains(&idx) {
+                    assignments.push((idx, code));
+                }
+            }
+            if legacy_ez.is_empty() {
+                // No legacy E/Z block to replace; append any accurate labels.
+                assignments.extend(
+                    accurate_ez
+                        .iter()
+                        .copied()
+                        .filter(|(i, _)| !accurate_idx.contains(i) && !unresolved_idx.contains(i)),
+                );
+            }
+            assignments.extend(accurate.assignments);
+
+            let unresolved = accurate
+                .skipped
+                .into_iter()
+                .filter_map(|(idx, reason)| match reason {
+                    chematic_cip::SkipReason::Tied => Some((idx, CipUnresolvedReason::Tied)),
+                    chematic_cip::SkipReason::BudgetExceeded => {
+                        Some((idx, CipUnresolvedReason::BudgetExceeded))
+                    }
+                    chematic_cip::SkipReason::OracleUnstable => {
+                        Some((idx, CipUnresolvedReason::OracleUnstable))
+                    }
+                    chematic_cip::SkipReason::LonePairCenter => {
+                        Some((idx, CipUnresolvedReason::LonePairCenter))
+                    }
+                    chematic_cip::SkipReason::NotFourSubstituents => None,
+                })
+                .collect();
+
+            Ok(CipModeAssignment {
+                assignments,
+                unresolved,
+            })
+        }
+    }
+}
+
+#[test]
+fn accurate_fallback_skips_only_discarded_legacy_work() {
+    for text in CORPORA {
+        for line in text.lines().filter(|l| !l.trim().is_empty()) {
+            let smiles = line.split_whitespace().next().unwrap();
+            let m = chematic_smiles::parse(smiles).unwrap();
+            assert_eq!(
+                format!("{:?}", assign_cip_with_mode(&m, CipMode::Accurate)),
+                format!("{:?}", eager_assign_cip_with_mode(&m, CipMode::Accurate)),
+                "{smiles}"
+            );
+        }
+    }
+}
