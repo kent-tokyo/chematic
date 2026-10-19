@@ -160,6 +160,7 @@ struct LabeledCandidate {
     signature: Vec<(u16, String, usize)>,
     attachment_elements: Vec<(u16, u8)>,
     single_attachment_site: bool,
+    bridged_attachment_sites: bool,
     rgroup_fingerprints: BTreeMap<u16, chematic_fp::BitVec2048>,
     core: HashSet<AtomIdx>,
     attachments: BTreeMap<u16, (AtomIdx, AtomIdx)>,
@@ -242,11 +243,16 @@ pub fn rgroup_decompose(
             }
         }
 
-        // For each attachment point, BFS the non-core subgraph and build a fragment.
+        // A connected substituent can bridge two core sites. Each column must
+        // carry the complete fragment with all of its boundary stubs.
+        let boundaries: Vec<_> = attachment_pairs
+            .iter()
+            .map(|&(core_atom, root)| (core_atom, root, None))
+            .collect();
         let mut r_groups: HashMap<u8, String> = HashMap::new();
-        for (rg_idx, &(core_atom, rg_root)) in attachment_pairs.iter().enumerate() {
+        for (rg_idx, &(_, rg_root)) in attachment_pairs.iter().enumerate() {
             let rg_num = (rg_idx + 1) as u8;
-            let fragment = extract_rgroup(mol, core_atom, rg_root, &core, None);
+            let fragment = extract_rgroup(mol, rg_root, &core, &boundaries);
             r_groups.insert(rg_num, canonical_smiles(&fragment));
         }
 
@@ -521,6 +527,15 @@ fn compare_labeled_candidates(
                 std::cmp::Ordering::Equal
             }
         })
+        // For a ring segment spanning two core sites, RDKit assigns the
+        // lower-numbered column to the carbon-rooted end before a heteroatom.
+        .then_with(|| {
+            if a.bridged_attachment_sites && b.bridged_attachment_sites {
+                a.attachment_elements.cmp(&b.attachment_elements)
+            } else {
+                std::cmp::Ordering::Equal
+            }
+        })
         // RDKit's row scorer uses the first row to break a symmetric tie and
         // then favours agreement with established columns. Descending output
         // signatures reproduce that bounded behaviour without a GA.
@@ -780,14 +795,19 @@ fn labeled_candidate_for_sites(
     let mut attachment_sites = attachments.values().map(|&(site, _)| site);
     let first_site = attachment_sites.next();
     let single_attachment_site = attachment_sites.all(|site| Some(site) == first_site);
+    let boundaries: Vec<_> = attachments
+        .iter()
+        .map(|(&label, &(core_atom, root))| (core_atom, root, Some(label)))
+        .collect();
     for (&label, &(core_atom, root)) in &attachments {
-        let fragment = extract_rgroup_labeled(mol, core_atom, root, core, label);
+        let fragment = extract_rgroup(mol, root, core, &boundaries);
         let smiles = canonical_smiles(&fragment);
         rgroup_fingerprints.insert(label, chematic_fp::ecfp4(&fragment));
         signature.push((label, smiles.clone(), canonical_rank[core_atom.0 as usize]));
         attachment_elements.push((label, mol.atom(root).element.atomic_number()));
         r_groups.insert(label, smiles);
     }
+    let bridged_attachment_sites = r_groups.values().collect::<HashSet<_>>().len() < r_groups.len();
     signature.sort();
     let core_mol = build_core_mol_labeled(mol, core, &attachments, core_stub_orders);
     let core_smiles = canonical_smiles(&core_mol);
@@ -815,6 +835,7 @@ fn labeled_candidate_for_sites(
         signature,
         attachment_elements,
         single_attachment_site,
+        bridged_attachment_sites,
         rgroup_fingerprints,
         core: core.clone(),
         attachments,
@@ -850,16 +871,6 @@ fn insert_attachment(
     Ok(())
 }
 
-fn extract_rgroup_labeled(
-    mol: &Molecule,
-    core_atom: AtomIdx,
-    root: AtomIdx,
-    core: &HashSet<AtomIdx>,
-    label: u16,
-) -> Molecule {
-    extract_rgroup(mol, core_atom, root, core, Some(label))
-}
-
 fn build_core_mol_labeled(
     mol: &Molecule,
     core: &HashSet<AtomIdx>,
@@ -874,13 +885,14 @@ fn build_core_mol_labeled(
 /// Extract the R-group subgraph starting at `root`, blocked by the `core` atom set.
 ///
 /// Returns a `Molecule` containing all atoms reachable from `root` through bonds
-/// that do not enter the core, plus a `[*]` wildcard stub at the attachment point.
+/// that do not enter the core, plus one wildcard for each core boundary bond
+/// incident on that component. A bridging substituent is therefore represented
+/// by the same multi-attachment fragment in all of its R-group columns.
 fn extract_rgroup(
     mol: &Molecule,
-    core_atom: AtomIdx,
     root: AtomIdx,
     core: &HashSet<AtomIdx>,
-    wildcard_label: Option<u16>,
+    boundaries: &[(AtomIdx, AtomIdx, Option<u16>)],
 ) -> Molecule {
     // BFS to collect the R-group atom set.
     let mut rg_atoms: HashSet<AtomIdx> = HashSet::new();
@@ -920,24 +932,29 @@ fn extract_rgroup(
         }
     }
 
-    // The R-group side of a multiple-bond cut must retain its bond order.
-    // Otherwise a carbonyl oxygen becomes a hydroxyl group and a nitrile
-    // nitrogen becomes an amine in the exported fragment. Directional and
-    // aromatic cuts use the existing single-bond placeholder convention.
-    let boundary_order = mol
-        .bond_between(core_atom, root)
-        .expect("R-group root must be bonded to its core atom")
-        .1
-        .order;
-    let stub_order = match boundary_order {
-        BondOrder::Double | BondOrder::Triple | BondOrder::Quadruple => boundary_order,
-        _ => BondOrder::Single,
-    };
-    // Add a [*] wildcard attached to root representing the attachment to the core.
-    let mut wildcard = Atom::wildcard();
-    wildcard.atom_map = wildcard_label;
-    let wc = builder.add_atom(wildcard);
-    let _ = builder.add_bond(new_root, wc, stub_order);
+    for &(core_atom, boundary_root, label) in boundaries {
+        let Some(&new_boundary_root) = remap.get(&boundary_root) else {
+            continue;
+        };
+        // Keep the cut order on the substituent side, including aromatic
+        // bonds in fused rings. Directional bonds still use a single stub:
+        // copying / or \\ without the original double-bond context is unsafe.
+        let boundary_order = mol
+            .bond_between(core_atom, boundary_root)
+            .expect("R-group boundary must be a molecular bond")
+            .1
+            .order;
+        let stub_order = match boundary_order {
+            BondOrder::Double | BondOrder::Triple | BondOrder::Quadruple | BondOrder::Aromatic => {
+                boundary_order
+            }
+            _ => BondOrder::Single,
+        };
+        let mut wildcard = Atom::wildcard();
+        wildcard.atom_map = label;
+        let wc = builder.add_atom(wildcard);
+        let _ = builder.add_bond(new_boundary_root, wc, stub_order);
+    }
 
     builder.build()
 }
@@ -1129,6 +1146,45 @@ mod tests {
             assert!(core.bonds().any(|(_, bond)| bond.order == order));
             assert_eq!(rgroup.bond(BondIdx(0)).order, order);
         }
+    }
+
+    #[test]
+    fn bridged_rgroups_keep_both_core_attachments() {
+        // RDKit 2026.09.1 emits the same two-label fragment in R1 and R2.
+        for (target, expected) in [
+            ("c1ccc2c(c1)CCC2", "C(C[*:1])C[*:2]"),
+            ("c1ccc2c(c1)OCC2", "C(C[*:1])O[*:2]"),
+            ("c1ccc2ccccc2c1", "c(ccc:[*:2]):[*:1]"),
+        ] {
+            let molecule = mol(target);
+            let rows = rgroup_decompose_labeled("c1ccccc1", &[&molecule]).unwrap();
+            let row = rows[0].as_ref().expect("fused core should match");
+            let expected = canonical_smiles(&mol(expected));
+            assert_eq!(row.r_groups.len(), 2);
+            assert_eq!(row.r_groups[&1], expected);
+            assert_eq!(row.r_groups[&2], expected);
+            assert!(row.core_smiles.contains("*:1"));
+            assert!(row.core_smiles.contains("*:2"));
+        }
+    }
+
+    #[test]
+    fn unlabeled_bridged_rgroups_keep_two_attachment_stubs() {
+        let rows = decompose("c1ccccc1", ["c1ccc2c(c1)CCC2"]);
+        let row = rows[0].as_ref().expect("fused core should match");
+        assert_eq!(row.r_groups.len(), 2);
+        for fragment in row.r_groups.values() {
+            assert_eq!(fragment.matches('*').count(), 2);
+        }
+    }
+
+    #[test]
+    fn bridged_rgroup_labels_ignore_input_atom_order() {
+        let original = mol("c1ccc2c(c1)OCC2");
+        let respelled = mol("c1ccc2OCCc2c1");
+        let first = rgroup_decompose_labeled("c1ccccc1", &[&original]).unwrap();
+        let second = rgroup_decompose_labeled("c1ccccc1", &[&respelled]).unwrap();
+        assert_eq!(first, second);
     }
 
     #[test]
