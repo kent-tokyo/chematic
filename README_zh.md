@@ -3,7 +3,7 @@
 [English](README.md) | [日本語](README_ja.md)
 
 [![CI](https://github.com/kent-tokyo/chematic/actions/workflows/ci.yml/badge.svg)](https://github.com/kent-tokyo/chematic/actions/workflows/ci.yml)
-[![Docs](https://img.shields.io/github/actions/workflow/status/kent-tokyo/chematic/pages.yml?branch=main&label=docs)](https://github.com/kent-tokyo/chematic/actions/workflows/pages.yml)
+[![Docs](https://img.shields.io/github/deployments/kent-tokyo/chematic/github-pages?label=docs)](https://kent-tokyo.github.io/chematic/)
 [![Coverage](https://github.com/kent-tokyo/chematic/actions/workflows/coverage.yml/badge.svg)](https://github.com/kent-tokyo/chematic/actions/workflows/coverage.yml)
 [![codecov](https://codecov.io/gh/kent-tokyo/chematic/branch/main/graph/badge.svg)](https://app.codecov.io/github/kent-tokyo/chematic)
 [![PyPI](https://img.shields.io/pypi/v/chematic?logo=pypi)](https://pypi.org/project/chematic/)
@@ -12,8 +12,8 @@
 [![许可证](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue)](LICENSE-MIT)
 [![Ask DeepWiki](docs/assets/ask-deepwiki.svg)](https://deepwiki.com/kent-tokyo/chematic)
 
-面向 Python、Rust 和浏览器的纯 Rust 化学信息学工具包：本地优先、输入受限，并为不支持的
-化学表达提供明确错误。
+适用于分子数据必须保留在本地、且不支持的化学表达必须明确失败的场景。
+支持 Python、Rust、Node 和浏览器，并共享同一 Rust 内核。
 
 [官方网站](https://chematic.io/) · [文档](https://kent-tokyo.github.io/chematic/) · [Playground](https://kent-tokyo.github.io/chematic/playground/)
 
@@ -35,6 +35,17 @@ v1.1.8 在保持描述符结果不变的前提下，降低了首次 Labute ASA �
 证据仍对应 v1.1.7，已归档的跨平台证据包仍对应 v1.1.3。详情见
 [验证报告](docs/validation.md)、[基准索引](benchmarks/README.md)和
 [CHANGELOG](CHANGELOG.md)。
+
+## 适合选择 chematic 的场景
+
+- 化学处理必须在浏览器或 Rust 应用中本地完成
+- Python、Rust、Node 和 WebAssembly 需要共享同一实现
+- 拒绝的输入、资源限制和有损转换必须可追踪
+- 采用前需要查看版本化验证与基准记录
+
+如果优先考虑最广的化学功能和生态系统，请先评估 RDKit；如果优先考虑广泛的命令行
+格式转换，请先评估 Open Babel。详细选择条件见
+[选择指南](docs/choosing-chematic.md)。
 
 ## 使用
 
@@ -73,6 +84,7 @@ Rust/Python/Node/WASM 绑定属于稳定范围。3D、pKa/ADMET、IUPAC、Markus
 
 ## 指南
 
+- [选择指南](docs/choosing-chematic.md)
 - [入门与 Cookbook](https://kent-tokyo.github.io/chematic/)
 - [兼容性范围](docs/compatibility-scope.md) 与 [RDKit 迁移](docs/rdkit-migration.md)
 - [验证](docs/validation.md) 与 [基准方法](docs/benchmark.md)

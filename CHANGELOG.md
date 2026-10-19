@@ -37,6 +37,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - ROADMAP and the open-work ledger now separate strategy from operational
   denominators. The English, Japanese, and Chinese READMEs and current install
   examples use the v1.1.8 release boundary without rewriting dated evidence.
+- Added a toolkit-selection guide and clearer use-case entry points for local
+  browser chemistry, Rust embedding, Python batch work, MCP, and bounded RDKit
+  migration. Removed unpinned throughput claims and examples that discarded
+  failed SDF rows or implied experimental property conclusions.
 
 ## [1.1.8] - 2026-10-19
 

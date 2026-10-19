@@ -6,6 +6,12 @@ the same core implementation can be used in a local analysis, a Python
 pipeline, and a browser or agent-facing tool while preserving explicit limits
 and typed failures.
 
+It is a good fit when the same bounded operation must run in a Python
+pipeline, a Rust application, and a local browser tool. It is not a substitute
+for every RDKit API or for experimentally validated property models. Start
+with [When to choose chematic](choosing-chematic.md) if toolkit selection is
+still open.
+
 ## Start with one reproducible result
 
 ```bash

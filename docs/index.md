@@ -21,7 +21,7 @@ WebAssembly, without a chematic backend.</p>
 [![crates.io](https://img.shields.io/crates/v/chematic)](https://crates.io/crates/chematic)
 [![npm](https://img.shields.io/npm/v/@kent-tokyo/chematic)](https://www.npmjs.com/package/@kent-tokyo/chematic)
 
-## Why chematic
+## Choose chematic when local execution and explicit boundaries matter
 
 - **Local-first:** parsing, descriptors, fingerprints, similarity search, and
   2D depiction can run in the browser. The Explorer and Playground are static
@@ -32,6 +32,11 @@ WebAssembly, without a chematic backend.</p>
   and resource limits are explicit outcomes.
 - **Reproducible claims:** compatibility and performance results identify the
   version, corpus, operation, options, and failure policy.
+
+RDKit remains the better default for maximum chemistry and ecosystem breadth.
+Open Babel remains a strong choice for broad command-line format conversion.
+Use the [selection guide](choosing-chematic.md) to compare deployment,
+failure handling, supported chemistry, and evidence before choosing a toolkit.
 
 ## Quick start
 
@@ -108,9 +113,6 @@ Rust/Python/Node/WASM bindings.
 editing, and the RDKit-style API are experimental or intentionally bounded.
 `canonical_smiles()` is not always a safe identity key; use the fail-closed
 `canonical_smiles_stable_key()` where the documented domain is sufficient.
-
-RDKit remains the better choice for maximum ecosystem coverage, broader 3D
-workflows, or APIs that chematic marks unsupported.
 
 Rust line coverage is measured separately from chemistry validation. The
 processed Linux Codecov lane reports 96.93%; it shows which code

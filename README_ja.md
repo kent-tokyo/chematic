@@ -3,7 +3,7 @@
 [English](README.md) | [中文](README_zh.md)
 
 [![CI](https://github.com/kent-tokyo/chematic/actions/workflows/ci.yml/badge.svg)](https://github.com/kent-tokyo/chematic/actions/workflows/ci.yml)
-[![Docs](https://img.shields.io/github/actions/workflow/status/kent-tokyo/chematic/pages.yml?branch=main&label=docs)](https://github.com/kent-tokyo/chematic/actions/workflows/pages.yml)
+[![Docs](https://img.shields.io/github/deployments/kent-tokyo/chematic/github-pages?label=docs)](https://kent-tokyo.github.io/chematic/)
 [![Coverage](https://github.com/kent-tokyo/chematic/actions/workflows/coverage.yml/badge.svg)](https://github.com/kent-tokyo/chematic/actions/workflows/coverage.yml)
 [![codecov](https://codecov.io/gh/kent-tokyo/chematic/branch/main/graph/badge.svg)](https://app.codecov.io/github/kent-tokyo/chematic)
 [![PyPI](https://img.shields.io/pypi/v/chematic?logo=pypi)](https://pypi.org/project/chematic/)
@@ -12,8 +12,8 @@
 [![ライセンス](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue)](LICENSE-MIT)
 [![Ask DeepWiki](docs/assets/ask-deepwiki.svg)](https://deepwiki.com/kent-tokyo/chematic)
 
-Python、Rust、ブラウザ向けのPure Rustケモインフォマティクスです。ローカルで動作し、
-入力上限と型付きエラーにより、未対応の化学表現を曖昧に処理しません。
+分子データを外部へ送らず、未対応の化学表現を曖昧に処理したくない場面に向けた、
+Python・Rust・ブラウザ対応のPure Rustケモインフォマティクスです。
 
 [公式サイト](https://chematic.io/) · [ドキュメント](https://kent-tokyo.github.io/chematic/) · [Playground](https://kent-tokyo.github.io/chematic/playground/)
 
@@ -31,10 +31,21 @@ Python wheelはC/C++コンパイラを必要とせず、各バインディング
 
 v1.1.8では、記述子の値を変えずに初回Labute ASAと環数計算を高速化しました。
 公開macOS arm64 wheelでも、1ホスト・10,000件のLabute ASA結果を再現しています。
-これは1操作に限定した証拠であり、複数OSやライブラリ全体での優位を示すものではありません。
+検証したのは1ホスト・1操作だけです。複数OSやライブラリ全体での優位までは確認していません。
 広範なhosted chemistryはv1.1.7、永続化済みのcross-platform packetはv1.1.3です。
 詳しくは[検証報告](docs/validation.md)、[ベンチマーク](benchmarks/README.md)、
 [CHANGELOG](CHANGELOG.md)を参照してください。
+
+## chematicが向いている場面
+
+- ブラウザ内またはRustアプリ内で化学処理を完結させたい
+- Python・Rust・Node・WebAssemblyで同じ実装を使いたい
+- 入力拒否、resource limit、変換時の情報損失を結果として扱いたい
+- バージョン付きの検証結果を確認してから採用したい
+
+機能範囲とエコシステムの広さを優先するならRDKit、幅広いコマンドライン形式変換を
+優先するならOpen Babelが第一候補です。選定条件と未対応範囲は
+[選定ガイド](docs/choosing-chematic.md)にまとめています。
 
 ## 使い方
 
@@ -73,6 +84,7 @@ fail-closedに動作する`canonical_smiles_stable_key()`を使用してくだ�
 
 ## ガイド
 
+- [選定ガイド](docs/choosing-chematic.md)
 - [導入とCookbook](https://kent-tokyo.github.io/chematic/)
 - [互換性範囲](docs/compatibility-scope.md)・[RDKit移行](docs/rdkit-migration.md)
 - [検証](docs/validation.md)・[ベンチマーク方法](docs/benchmark.md)

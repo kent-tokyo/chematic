@@ -10,8 +10,8 @@
 [![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue)](LICENSE-MIT)
 [![Ask DeepWiki](docs/assets/ask-deepwiki.svg)](https://deepwiki.com/kent-tokyo/chematic)
 
-Pure-Rust cheminformatics for Python, Rust, and the browser: local-first,
-bounded, and explicit about unsupported chemistry.
+Pure-Rust cheminformatics for Python, Rust, and the browser when molecular data
+must stay local and unsupported chemistry must fail explicitly.
 
 [日本語](README_ja.md) · [中文](README_zh.md) · [Documentation](https://kent-tokyo.github.io/chematic/) · [Playground](https://kent-tokyo.github.io/chematic/playground/)
 
@@ -34,6 +34,18 @@ cross-platform or toolkit-wide superiority claim. Broad hosted chemistry
 remains v1.1.7; the durable cross-platform packet remains v1.1.3. See
 [validation](docs/validation.md), [benchmarks](benchmarks/README.md), and the
 [CHANGELOG](CHANGELOG.md).
+
+## Choose chematic when
+
+- chemistry must run locally in a browser or inside a Rust application;
+- Python, Rust, Node, and WebAssembly should share one implementation;
+- rejected inputs, resource limits, and lossy conversions must stay visible;
+- adoption claims must point to versioned validation and benchmark records.
+
+Choose RDKit for maximum ecosystem and chemistry breadth, and Open Babel for
+broad command-line format conversion. Compare pure-Rust alternatives on your
+own corpus and exact operation. See [When to choose chematic](docs/choosing-chematic.md)
+for the decision guide and current limits.
 
 ## Use it
 
@@ -75,6 +87,7 @@ rich CDXML editing, and RDKit-style APIs remain experimental or bounded.
 
 ## Find the right guide
 
+- [When to choose chematic](docs/choosing-chematic.md)
 - [Getting started and cookbook](https://kent-tokyo.github.io/chematic/)
 - [Compatibility scope](docs/compatibility-scope.md) and [RDKit migration](docs/rdkit-migration.md)
 - [Validation](docs/validation.md) and [benchmark methodology](docs/benchmark.md)
