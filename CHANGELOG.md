@@ -24,6 +24,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   cut-count destinations, including reversed and strided views. Invalid layout,
   dtype or native fragmentation failures leave the destination unchanged.
 
+### Changed
+
+- Benchmark guidance now includes Open Babel as a separate file-interchange
+  comparator, with semantic-equality gates and explicit boundaries between
+  historical v1.0.42 evidence, newer one-host source records, and current
+  published-package claims.
+
 ## [1.1.8] - 2026-10-19
 
 ### Added

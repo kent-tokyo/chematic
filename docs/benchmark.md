@@ -90,6 +90,28 @@ properties, and format metadata before throughput. For batch readers, require:
 Keep cold start, first record, steady-state throughput, round trip, large-file
 behavior, and peak memory separate.
 
+### Open Babel comparison scope
+
+Open Babel is included as the principal file-interchange comparator. It is
+most useful for SDF/MOL, V3000, MOL2, CML, CDXML, PDB, mmCIF, and related
+streaming or round-trip work. It is not inserted into descriptor, fingerprint,
+reaction, or 3D tables unless the two libraries expose equivalent operations
+and their outputs pass a declared equality gate.
+
+The current Open Babel evidence has two distinct boundaries:
+
+- the v1.0.42 records are historical, immutable package/source-era baselines;
+- newer V2000, V3000, SDF, and stereo records are one-host source comparisons
+  against Open Babel 3.2.1 and do not inherit published-package status.
+
+Only rows with equivalent semantic graph, charge, isotope, bond order, stereo,
+coordinates, properties, and required format metadata receive a speed rank.
+Rows with output differences remain visible and unranked. Start with the
+[Open Babel comparison program](openbabel-file-io.md) and the
+[record index](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/README.md);
+do not combine ratios from different
+revisions, corpora, formats, or timing boundaries.
+
 ## Focused source example
 
 The [terminal-TPSA record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-18-terminal-tpsa.md) compares
