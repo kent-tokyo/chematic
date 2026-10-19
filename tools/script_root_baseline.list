@@ -9,12 +9,10 @@ scripts/a6_quality_matrix.py
 scripts/a6_rdkit_bounds_matrix_parity.py
 scripts/a6_rdkit_compatible_etkdg_mmff.py
 scripts/acquire_pubchem_trust_source.py
-scripts/analyze_logp_mismatches.py
 scripts/aromaticity_a1_0_diagnosis.py
 scripts/aromaticity_a1_1b_0_full_corpus_gate.py
 scripts/aromaticity_a1_1b_0_gate.py
 scripts/aromaticity_atom_parity.py
-scripts/aromaticity_mechanism_probe.py
 scripts/aromaticity_rdkit_parity_diagnosis.py
 scripts/bench5k.py
 scripts/bench_browser_wasm_vs_rdkit.mjs
@@ -91,7 +89,6 @@ scripts/check_descriptor_promotion_gate.py
 scripts/check_descriptor_raw_accounting.py
 scripts/check_descriptor_rdkit_holdout.py
 scripts/check_ez_residual_evidence.py
-scripts/check_generated_v3000_roundtrip.mjs
 scripts/check_indigo_workflow_evidence.py
 scripts/check_interchange_cross_read.py
 scripts/check_interchange_preservation.py
