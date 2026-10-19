@@ -7,6 +7,12 @@ package, comparator, corpus, host, runtime and operation.
 
 ## Start here
 
+- [Morgan, TPSA and Python ring-count caches](2026-10-19-python-ring-cache.md): fifth combined source candidate passes its three primary improvements and all 21 control floors; all four rejected prior candidates and all 63 comparisons are preserved.
+
+- [Compact core cache rejected pilot](2026-10-19-morgan-tpsa-compact-cache-pilot.md): substantial scalar first-use gains remain diagnostic; ring repeated/parse-inclusive conditions prevent adoption. All eight blocks and 21 lanes retained.
+
+- [Numeric cache placement rejected pilot](2026-10-19-morgan-tpsa-hot-scalars-pilot.md): all eight diagnostic blocks and 21 lanes retained; TPSA/ring repeated-use regressions prevented formal adoption.
+
 - [Morgan hashing and TPSA environment typing](2026-10-19-morgan-tpsa-environments.md): combined source gates fail; both first-use primaries, all 21 source floors, all 63 comparisons and the rejected standalone epoch remain auditable.
 
 - [Direct Morgan connectivity hashing](2026-10-19-morgan-direct-connectivity.md): source adoption fails on the full 10,000-row corpus; all 63 comparisons, source floors, external non-wins and raw numeric accounting retained.

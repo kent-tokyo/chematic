@@ -40,6 +40,19 @@ class NumericPacketTests(unittest.TestCase):
         hashes[next(iter(hashes))] = '0' * 64
         with self.assertRaises(AssertionError): audit.check(packet)
 
+    def test_source_hash_tampering_is_rejected(self):
+        packet = copy.deepcopy(self.original)
+        packet['build']['candidate']['source_sha256'] = '0' * 64
+        with self.assertRaises(AssertionError): audit.check(packet)
+
+    def test_plan_hash_must_match_the_measured_manifest(self):
+        import hashlib
+        packet = copy.deepcopy(self.original)
+        packet['measurement_plan']['hypothesis'] += ' modified after measurement'
+        packet['measurement_plan_sha256'] = hashlib.sha256(
+            (json.dumps(packet['measurement_plan'], indent=2)+'\n').encode()).hexdigest()
+        with self.assertRaises(AssertionError): audit.check(packet)
+
     def test_nonpositive_duration_is_rejected(self):
         packet = copy.deepcopy(self.original)
         packet['benchmark']['blocks'][0]['candidate']['operations']['morgan2_chiral']['first_use'] = 0
@@ -68,6 +81,7 @@ class NumericPacketV2Tests(NumericPacketTests):
         packet['measurement_plan']['primary'].pop()
         packet['measurement_plan_sha256'] = hashlib.sha256(
             (json.dumps(packet['measurement_plan'], indent=2)+'\n').encode()).hexdigest()
+        packet['benchmark']['source_manifest']['measurement_plan_sha256'] = packet['measurement_plan_sha256']
         with self.assertRaises(AssertionError): audit.check(packet)
 
     def test_pilot_observations_do_not_decide_formal_adoption(self):
@@ -79,6 +93,52 @@ class NumericPacketV2Tests(NumericPacketTests):
             v['baseline']['operations']['tpsa']['first_use'] / v['candidate']['operations']['tpsa']['first_use']
             for v in packet['pilot']['blocks'])
         self.assertEqual(audit.check(packet)['source_adoption_passed'], self.original['source_adoption_passed'])
+
+
+class NumericPacketV3Tests(NumericPacketV2Tests):
+    @classmethod
+    def setUpClass(cls):
+        path = Path(__file__).parents[2] / 'benchmarks/2026-10-19-python-ring-cache-numeric.json.gz'
+        cls.original = json.loads(gzip.decompress(path.read_bytes()))
+
+
+class RejectedPilotTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        path = Path(__file__).parents[2] / 'benchmarks/2026-10-19-morgan-tpsa-hot-scalars-pilot-numeric.json.gz'
+        cls.original = json.loads(gzip.decompress(path.read_bytes()))
+
+    def test_stopped_pilot_is_never_adopted(self):
+        self.assertFalse(audit.check(self.original)['source_adoption_passed'])
+        packet = copy.deepcopy(self.original)
+        packet['source_adoption_passed'] = True
+        with self.assertRaises(AssertionError): audit.check(packet)
+
+    def test_changed_pilot_duration_is_rejected(self):
+        packet = copy.deepcopy(self.original)
+        packet['pilot']['blocks'][0]['candidate']['operations']['tpsa']['first_use'] *= 100
+        with self.assertRaises(AssertionError): audit.check(packet)
+
+
+class RejectedCompactPilotTests(RejectedPilotTests):
+    @classmethod
+    def setUpClass(cls):
+        path = Path(__file__).parents[2] / 'benchmarks/2026-10-19-morgan-tpsa-compact-cache-pilot-numeric.json.gz'
+        cls.original = json.loads(gzip.decompress(path.read_bytes()))
+
+
+class AdoptionCliTests(unittest.TestCase):
+    def test_rejected_source_cannot_pass_required_adoption_cli(self):
+        import subprocess
+        import sys
+        root = Path(__file__).parents[2]
+        result = subprocess.run([
+            sys.executable, str(root/'scripts/check_python_speed_frontier_packet.py'),
+            str(root/'benchmarks/2026-10-19-morgan-direct-connectivity-numeric.json.gz'),
+            '--require-adoption',
+        ], capture_output=True, text=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('source adoption gate failed', result.stderr)
 
 
 if __name__ == '__main__': unittest.main()

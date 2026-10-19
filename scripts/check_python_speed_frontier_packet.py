@@ -45,16 +45,61 @@ def source_gate(primary, controls):
                 and all(r and r['median'] >= 0.99 for r in controls))
 
 
+def check_rejected_pilot(packet):
+    """Verify a stopped diagnostic without treating it as formal evidence."""
+    assert packet['source_adoption_passed'] is False
+    assert packet['proceeded_to_formal'] is False
+    plan = packet['measurement_plan']
+    assert hashlib.sha256((json.dumps(plan, indent=2)+'\n').encode()).hexdigest() == packet['measurement_plan_sha256']
+    assert plan['python_hash_seed'] == 20261019
+    assert plan['primary'] == ['full-10000/morgan2_chiral/first_use',
+                               'full-10000/tpsa/first_use',
+                               'full-10000/num_rings/repeated_use']
+    pilot = packet['pilot']
+    assert pilot['diagnostic_only'] is True and pilot['not_adoption_evidence'] is True
+    assert len(pilot['blocks']) == 8
+    assert sum(b['order'] == ['baseline','candidate'] for b in pilot['blocks']) == 4
+    assert sum(b['order'] == ['candidate','baseline'] for b in pilot['blocks']) == 4
+    ops = ('tpsa','labute_asa','num_rings','morgan2_2048','morgan2_chiral','morgan3_2048','maccs')
+    modes = ('first_use','repeated_use','parse_inclusive')
+    for block in pilot['blocks']:
+        for arm in ('baseline','candidate'):
+            data = block[arm]
+            assert data['extension_sha256'] == {Path(k).name:v for k,v in packet['build'][arm]['native_sha256'].items()}
+            assert data['output_sha256'] == pilot['blocks'][0]['baseline']['output_sha256']
+            assert set(data['operations']) == set(ops)
+            for op in ops:
+                assert set(data['operations'][op]) == set(modes)
+                assert all(type(data['operations'][op][m]) is int and data['operations'][op][m] > 0 for m in modes)
+    expected = {op+'/'+mode: statistics.median(
+        b['baseline']['operations'][op][mode]/b['candidate']['operations'][op][mode]
+        for b in pilot['blocks']) for op in ops for mode in modes}
+    assert pilot['source_medians'] == expected
+    assert any(value < 0.99 for value in expected.values())
+    assert packet['validation']['source_and_rdkit_exact_cells'] == 56288
+    assert packet['scalar_validation']['source_exact_cells_including_refusals'] == 42216
+    return {'source_adoption_passed':False,'proceeded_to_formal':False,'pilot_blocks':8,'source_lanes':21}
+
+
 def check(packet):
-    assert packet['schema'] in ('python-speed-frontier-numeric/v1', 'python-speed-frontier-numeric/v2')
+    if packet['schema'] == 'python-speed-frontier-pilot/v1':
+        return check_rejected_pilot(packet)
+    assert packet['schema'] in ('python-speed-frontier-numeric/v1', 'python-speed-frontier-numeric/v2', 'python-speed-frontier-numeric/v3')
     report = packet['benchmark']
     plan = packet['measurement_plan']
     assert hashlib.sha256((json.dumps(plan,indent=2)+'\n').encode()).hexdigest() == packet['measurement_plan_sha256']
     primary_lanes = ['morgan2_chiral/first_use'] if packet['schema'].endswith('/v1') else ['morgan2_chiral/first_use','tpsa/first_use']
+    if packet['schema'].endswith('/v3'):
+        primary_lanes.append('num_rings/repeated_use')
     assert plan['primary'] == ['full-10000/'+lane for lane in primary_lanes]
-    if packet['schema'].endswith('/v2'):
+    if not packet['schema'].endswith('/v1'):
         assert plan['python_hash_seed'] == 20261019
         assert report['source_manifest']['python_hash_seed'] == 20261019
+    measured = report['source_manifest']
+    assert measured['measurement_plan_sha256'] == packet['measurement_plan_sha256']
+    for arm in ('baseline','candidate'):
+        assert measured[arm+'_core_source_sha256'] == packet['build'][arm]['source_sha256']
+    assert report['protocol']['blocks'] == 24
     assert plan['base'] == report['base_revision']
     assert report['complete'] is True
     assert report['corpus']['limit'] == 10000 and report['corpus']['offset'] == 0
@@ -97,11 +142,15 @@ def check(packet):
                 rounded = ({**interval, 'median': round(interval['median'], 3), 'ci95': [round(v,3) for v in interval['ci95']]} if interval else None)
                 assert saved[name] == {'speedup':rounded,'demonstrated_win': bool(rounded and rounded['ci95'][0]>1 and rounded['winning_blocks']==24)}
                 if name == 'baseline':source.append(interval)
+    normal_header = next(h for h in packet['validation']['headers']
+                         if h['corpus'] == 'rdkit-js-browser-10k-v1.smi')
+    assert normal_header['rows'] == 10000
+    assert normal_header['sha256'] == report['corpus']['sha256']
     assert packet['validation']['rows'] == 14072
     assert packet['validation']['source_and_rdkit_exact_cells'] == 56288
     assert packet['validation']['refusals'] == 0
     adopted = all(source_gate(exact[lane]['baseline']['speedup'], source) for lane in primary_lanes)
-    if packet['schema'].endswith('/v2'):
+    if not packet['schema'].endswith('/v1'):
         scalar = packet['scalar_validation']
         assert scalar['source_rows_equal'] is True
         assert scalar['source_exact_cells_including_refusals'] == 42216
@@ -123,7 +172,7 @@ def check(packet):
         assert len(pilot['blocks']) == 8
         assert sum(v['order'] == ['baseline','candidate'] for v in pilot['blocks']) == 4
         assert sum(v['order'] == ['candidate','baseline'] for v in pilot['blocks']) == 4
-        pilot_ops = ('tpsa','morgan2_chiral')
+        pilot_ops = ops if packet['schema'].endswith('/v3') else ('tpsa','morgan2_chiral')
         for block in pilot['blocks']:
             for arm in ('baseline','candidate'):
                 data = block[arm]
@@ -144,10 +193,14 @@ def check(packet):
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('packet',type=Path)
+    parser.add_argument('--require-adoption',action='store_true',help='fail unless the measured source candidate passes its registered gates')
     args=parser.parse_args()
     raw=args.packet.read_bytes()
     if args.packet.suffix == '.gz':raw=gzip.decompress(raw)
-    print(json.dumps(check(json.loads(raw)),indent=2))
+    result = check(json.loads(raw))
+    print(json.dumps(result,indent=2))
+    if args.require_adoption and not result['source_adoption_passed']:
+        parser.error('source adoption gate failed')
 
 
 if __name__ == '__main__':main()

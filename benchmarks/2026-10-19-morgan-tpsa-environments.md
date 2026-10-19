@@ -104,3 +104,5 @@ env PYTHONHASHSEED=20261019 python scripts/bench_python_speed_frontier.py \
 python scripts/check_python_speed_frontier_packet.py \
   benchmarks/2026-10-19-morgan-tpsa-environments-numeric.json.gz
 ```
+
+A later [combined source candidate](2026-10-19-python-ring-cache.md) passes its own registered gates after additional runtime changes. This earlier record remains rejected; its elapsed observations are not pooled into the later result.
