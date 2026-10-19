@@ -14,9 +14,12 @@ import math
 import time
 from pathlib import Path
 
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from benchmark_version import workspace_version
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 MALFORMED = {
     "missing_atom": "2\nmissing second atom\nC 0 0 0\n",
     "bad_coordinate": "1\nnon-numeric coordinate\nC nope 0 0\n",

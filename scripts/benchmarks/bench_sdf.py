@@ -10,9 +10,9 @@ Read:  chematic.iter_sdf(path)       vs RDKit Chem.SDMolSupplier(path)
 Write: chematic.SDWriter(path)       vs RDKit Chem.SDWriter(path)
 
 Usage:
-    python scripts/bench_sdf.py
-    python scripts/bench_sdf.py --rdkit
-    python scripts/bench_sdf.py path/to/other.sdf --rdkit --json
+    python scripts/benchmarks/bench_sdf.py
+    python scripts/benchmarks/bench_sdf.py --rdkit
+    python scripts/benchmarks/bench_sdf.py path/to/other.sdf --rdkit --json
 """
 
 import argparse
@@ -147,7 +147,7 @@ def main() -> None:
     if path is None or not os.path.exists(path):
         raise SystemExit(
             "No SDF corpus found. Pass one explicitly, e.g.\n"
-            "  python scripts/bench_sdf.py path/to/some.sdf"
+            "  python scripts/benchmarks/bench_sdf.py path/to/some.sdf"
         )
 
     results: dict[str, object] = {"source": path}

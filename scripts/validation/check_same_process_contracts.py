@@ -16,10 +16,11 @@ import math
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from benchmark_version import workspace_version
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 EXPECTED_GATES = {
     "sdf": "same_process_sdf_semantic_contract",
     "v2000": "same_process_v2000_mol_semantic_contract",

@@ -9,9 +9,9 @@ a simple ring query and a recursive SMARTS query. Repeats a 10-molecule
 corpus to reach --n total matches per query.
 
 Usage:
-    python scripts/bench_smarts.py
-    python scripts/bench_smarts.py --rdkit
-    python scripts/bench_smarts.py --n 5000 --rdkit --json
+    python scripts/benchmarks/bench_smarts.py
+    python scripts/benchmarks/bench_smarts.py --rdkit
+    python scripts/benchmarks/bench_smarts.py --n 5000 --rdkit --json
 """
 
 import argparse

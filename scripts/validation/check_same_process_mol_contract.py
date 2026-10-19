@@ -14,9 +14,12 @@ import json
 import time
 from pathlib import Path
 
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from benchmark_version import workspace_version
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 MALFORMED = {
     "bad_atom_line": "broken\n  chematic\n\n  1  0  0  0  0  0            999 V2000\nnot an atom line\nM  END\n",
     "bad_coordinate": "broken\n  chematic\n\n  1  0  0  0  0  0            999 V2000\n  nope 0.0 0.0 C  0  0  0  0  0  0  0  0  0  0\nM  END\n",

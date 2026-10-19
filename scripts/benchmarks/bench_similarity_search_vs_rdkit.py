@@ -11,7 +11,7 @@ import statistics
 import time
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CORPUS = ROOT / "scripts" / "descriptor_census_corpus.smi"
 
 

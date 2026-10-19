@@ -15,10 +15,13 @@ import math
 import time
 from pathlib import Path
 
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from benchmark_version import workspace_version
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 MALFORMED = {
     "unknown_element": '<CDXML><page><fragment><n id="1" p="0 0" Element="999"/></fragment></page></CDXML>',
     "truncated_fragment": "<CDXML><page><fragment><n id=\"1\"",

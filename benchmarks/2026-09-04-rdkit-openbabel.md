@@ -70,8 +70,8 @@ obabel -V
 
 # chematic/RDKit in-process lanes
 python3 scripts/bench_smiles_parse.py scripts/descriptor_census_corpus.smi --rdkit --n 1000 --json
-python3 scripts/bench_canonical.py scripts/descriptor_census_corpus.smi --rdkit --n 1000 --json
-TMPDIR=/private/tmp python3 scripts/bench_sdf.py --rdkit --json
+python3 scripts/benchmarks/bench_canonical.py scripts/descriptor_census_corpus.smi --rdkit --n 1000 --json
+TMPDIR=/private/tmp python3 scripts/benchmarks/bench_sdf.py --rdkit --json
 
 # Same-process SDF writer A/B (old implementation is embedded as the baseline)
 cargo run --release -p chematic-mol --example sdf_writer_ab -- /path/to/egfr.sdf

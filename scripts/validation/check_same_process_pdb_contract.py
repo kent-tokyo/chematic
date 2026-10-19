@@ -10,9 +10,12 @@ import math
 import time
 from pathlib import Path
 
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from benchmark_version import workspace_version
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 MALFORMED = {
     "bad_atom": "ATOM      1  BAD\n",
     "bad_coordinate": "ATOM      1  CA  ALA A   1       nope   0.000   0.000\n",

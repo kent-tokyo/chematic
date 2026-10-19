@@ -9,9 +9,12 @@ import json
 import time
 from pathlib import Path
 
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from benchmark_version import workspace_version
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 MALFORMED = {
     "bad_counts": "bad\n  chematic\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS not-numbers\nM  V30 END CTAB\nM  END\n",
     "bad_atom": "bad\n  chematic\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 1 0 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 Xx 0 0 0 0\nM  V30 END ATOM\nM  V30 END CTAB\nM  END\n",

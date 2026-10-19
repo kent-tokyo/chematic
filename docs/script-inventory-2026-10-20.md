@@ -145,3 +145,15 @@ gate, the single kekulization-gap row is present in the retained corpus and
 fixture generator, and the old polyene list has no current reader or linked
 measurement. Their original revisions remain in Git history. This leaves
 328 direct `scripts/` files and 582 tracked files under `scripts/`.
+
+## Format-contract and benchmark layout
+
+Nine same-process format contract checks now live in `scripts/validation/`.
+The bundle gate in `scripts/check.sh` and the dated reproduction commands use
+their new locations. Eight older benchmark runners now live in
+`scripts/benchmarks/`; their call sites, command examples, and the hotpath unit
+test follow them. The shared RDKit standardization residual classifier now
+lives in `scripts/lib/`, and its two importers use that module. Historical
+measurement JSON and archived documents retain their original evidence.
+This pass leaves 310 direct `scripts/` files and 583 tracked files under it;
+the extra file is `scripts/lib/README.md`.

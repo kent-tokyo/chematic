@@ -6,6 +6,12 @@ the linked `docs/` or repository-root `validation/` material. Run them from
 the repository root. This directory holds executable checks; the top-level
 `validation/` directory holds evidence and fixtures.
 
+The `check_same_process_*_contract.py` runners validate individual format
+contracts. `check_same_process_contracts.py` checks their retained eight-format
+bundle and is called by `scripts/check.sh`. Their historical result JSON files
+remain in `benchmarks/`; run the checks from the repository root with the
+version and inputs specified by the dated benchmark records.
+
 `check_fingerprint_cross_binding.py` replaces nine older one-operation
 fingerprint parity drivers. Select `--profile` and a new `--output` path for
 Rust/Python/Node-WASM comparison. It retains each operation's data field and

@@ -15,6 +15,8 @@ current issue or benchmark links to them.
 | Fixture generation | `generate_*`, `gen_*`, or `build_*` entry points; committed fixture data belongs under `validation/` or a test fixture directory. |
 | Boundary fixture regeneration | `generators/generate_*_boundary_fixtures.py`; use the pinned RDKit version in the corresponding `validation/` record. |
 | Historical diagnostics | `diagnostics/` contains retained reproductions with checked-in results or active references. |
+| Same-process format contracts | `validation/check_same_process_*_contract.py`; the bundle gate is `validation/check_same_process_contracts.py`. |
+| Earlier benchmark runners | `benchmarks/bench_*.py`; use the dated record for corpus and engine versions. |
 | Shared code and tests | Importing scripts and `scripts/tests/`. A filename without a path reference may still be an imported helper or a discovered test. |
 
 The [dated inventory](../docs/script-inventory-2026-10-20.md) records the
@@ -26,9 +28,9 @@ children of this directory; `tools/check_script_layout.py` checks it in CI.
 | Purpose | Entry point |
 |---|---|
 | MOL2 Kekule bond output | `validation/validate_mol2_kekule.py` checks exact token changes, Rust/Python/WASM outputs, RDKit identity and explicit valence, and Open Babel cross-reads for [#2668](https://github.com/openbabel/openbabel/issues/2668). See the [reproduction instructions](../docs/mol2-kekule-bond-output.md). |
-| Explicit PDB CONECT graph | `validate_pdb_conect.py --wasm-module <node-module> --output <directory> [--issue-pdb <original-9581.pdb>]` compares indexed graphs/charges/XYZ/serials against RDKit 2026.09.1 with proximity disabled, using a newly built Python module and Node WASM. `validation/validate_pdb_conect_node.mjs` is its batch driver; see [the accepted profile](../docs/pdb-conect-graph.md). |
-| Prepared MMFF dielectric updates | `validate_mmff_dielectric.py --openbabel-probe <executable> --output <directory>` rechecks 56 pinned RDKit goldens, compares new conformers across screening changes and minimization, and records the original Open Babel #2811 stale-cache probe. See [the numerical contract](../docs/mmff-dielectric-updates.md). |
-| ChemDraw byte-block dispatch | `generators/generate_chemdraw_fixtures.py` writes authored CDX/CDXML pairs; `validate_chemdraw_block.py --wasm-module <module> --output <directory>` compares Python and Node/WASM graphs to RDKit 2026.09.1 XML reads and reproduces #9604. `validation/validate_chemdraw_block_node.mjs` is its Node driver; see [the profile](../docs/chemdraw-block.md). |
+| Explicit PDB CONECT graph | `validation/validate_pdb_conect.py --wasm-module <node-module> --output <directory> [--issue-pdb <original-9581.pdb>]` compares indexed graphs/charges/XYZ/serials against RDKit 2026.09.1 with proximity disabled, using a newly built Python module and Node WASM. `validation/validate_pdb_conect_node.mjs` is its batch driver; see [the accepted profile](../docs/pdb-conect-graph.md). |
+| Prepared MMFF dielectric updates | `validation/validate_mmff_dielectric.py --openbabel-probe <executable> --output <directory>` rechecks 56 pinned RDKit goldens, compares new conformers across screening changes and minimization, and records the original Open Babel #2811 stale-cache probe. See [the numerical contract](../docs/mmff-dielectric-updates.md). |
+| ChemDraw byte-block dispatch | `generators/generate_chemdraw_fixtures.py` writes authored CDX/CDXML pairs; `validation/validate_chemdraw_block.py --wasm-module <module> --output <directory>` compares Python and Node/WASM graphs to RDKit 2026.09.1 XML reads and reproduces #9604. `validation/validate_chemdraw_block_node.mjs` is its Node driver; see [the profile](../docs/chemdraw-block.md). |
 | Open Babel SDF batch throughput | `build_openbabel_sdf_speed_corpus.py --offset` generates fixed unfiltered V2000 slices and refuses format changes; `benchmarks/bench_openbabel_sdf_throughput.py` validates parse and rewrite semantics separately and records 21 native timing/RSS blocks. See [the original packet](../benchmarks/2026-10-14-openbabel-sdf-speed.md) and [the reader follow-up](../benchmarks/2026-10-14-openbabel-sdf-read-followup.md). |
 | Open Babel V3000 block throughput | `generators/build_openbabel_v3000_speed_corpus.py` retains unfiltered force-V3000 slices; `benchmarks/bench_openbabel_v3000_throughput.py` compares pre-split native MOL API batches in 21 rotating blocks. Rejected outputs keep their row positions and fail the semantic gate. The [packet](../benchmarks/2026-10-14-openbabel-v3000-speed.md) separates diverse chemistry from controlled chain-size scaling. |
 | Python speed frontier | `bench_python_speed_frontier.py` compares exact wheels, RDKit, and COSMolKit across first-use, repeated-use, and parse-inclusive loops; `--offset` selects a fixed corpus slice. `verify_python_descriptor_frontier.py` and `verify_python_morgan_frontier.py` retain float bits, errors, and fingerprints. See the [base packet](../benchmarks/2026-10-14-python-speed-frontier.md), [scalar/stereo follow-up](../benchmarks/2026-10-14-python-scalar-stereo.md), [core-model preparation](../benchmarks/2026-10-14-python-model-view-speed.md), and [sanitized-view reuse](../benchmarks/2026-10-14-python-sanitized-view-reuse.md). |
@@ -97,7 +99,7 @@ chemical equivalence or performance.
 
 ### CCD molecular templates
 
-`validate_ccd.py --download` caches eight official RCSB component files, compares
+`validation/validate_ccd.py --download` caches eight official RCSB component files, compares
 CCD atom/bond/coordinate fields against pinned Gemmi 0.7.5, and records the local
 Open Babel CIF/mmCIF diagnostic. It needs a source-built Python extension and
 Gemmi in the oracle environment. Result hashes identify the downloaded bytes;
@@ -118,7 +120,7 @@ boundary and the distinction between Open Babel's `-ag` and `-xg` options.
 
 ## Rooted SMILES stereo
 
-`validate_rooted_stereo.py --cases /tmp/rooted-cases.json` compares original
+`validation/validate_rooted_stereo.py --cases /tmp/rooted-cases.json` compares original
 constructed bridgehead configurations with RDKit 2026.09.1's accurate CIP
 labeler. Generate cases with
 `cargo run -p chematic-smiles --example rooted_stereo_probe`. Provide the
@@ -165,7 +167,7 @@ importing native modules, requires the typed marker and compares all package
 stub bytes with source. An unmatched wheel pattern is a failure. JSON reports
 are optional via `--report`. See `docs/python-stub-packaging-gate.md` for scope.
 
-`validate_python_stub_gate.py --wheel /path/to/chematic.whl` checks the real CLI
+`validation/validate_python_stub_gate.py --wheel /path/to/chematic.whl` checks the real CLI
 against an existing wheel and eight temporary negative mutations. Optional
 `--rdkit-stubs` and `--rdkit-version` record a read-only upstream syntax audit.
 ### Proof-backed tetrahedral cleanup

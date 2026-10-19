@@ -38,7 +38,7 @@ were observed. See the machine-readable record for the complete lists.
 .venv-v1gate/bin/pip install rdkit
 .venv-v1gate/bin/maturin build --release -m crates/chematic-py/Cargo.toml --offline -o target/chematic-wheels
 .venv-v1gate/bin/pip install --force-reinstall target/chematic-wheels/chematic-1.0.12-*.whl
-.venv-v1gate/bin/python scripts/bench_similarity_search_vs_rdkit.py \
+.venv-v1gate/bin/python scripts/benchmarks/bench_similarity_search_vs_rdkit.py \
   --output benchmarks/2026-09-11-similarity-search-v1.0.12.json
 ```
 

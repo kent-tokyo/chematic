@@ -15,9 +15,12 @@ import json
 import time
 from pathlib import Path
 
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from benchmark_version import workspace_version
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 MALFORMED = {
     "missing_sections": "@<TRIPOS>MOLECULE\nname\n1 1 0 0 0\n",
     "bad_atom": "@<TRIPOS>MOLECULE\nname\n1 0 0 0 0\n@<TRIPOS>ATOM\n1 Xx 0 0 0\n",

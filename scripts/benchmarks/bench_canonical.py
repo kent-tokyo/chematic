@@ -8,10 +8,10 @@ Repeats the corpus to reach --n total canonicalizations. Parsing is
 done once up front and excluded from the timed region.
 
 Usage:
-    python scripts/bench_canonical.py
-    python scripts/bench_canonical.py --rdkit
-    python scripts/bench_canonical.py --n 10000 --rdkit
-    python scripts/bench_canonical.py ~/Downloads/SMILES.csv --n 5000 --rdkit --json
+    python scripts/benchmarks/bench_canonical.py
+    python scripts/benchmarks/bench_canonical.py --rdkit
+    python scripts/benchmarks/bench_canonical.py --n 10000 --rdkit
+    python scripts/benchmarks/bench_canonical.py ~/Downloads/SMILES.csv --n 5000 --rdkit --json
 """
 
 import argparse
