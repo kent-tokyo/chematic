@@ -3,46 +3,52 @@
   "release": {
     "version": "1.1.9",
     "tag": "v1.1.9",
-    "commit": null
+    "commit": "c2e17447e0c19fcee3a5861a6aa5ebfdc4e71303"
   },
-  "checked_at": "2026-10-19T10:48:00Z",
-  "release_ready": false,
+  "checked_at": "2026-10-19T12:18:41Z",
+  "release_ready": true,
   "channels": [
     {
       "id": "github_release",
-      "status": "not_measured",
+      "status": "verified",
+      "observed_version": "1.1.9",
       "url": "https://github.com/kent-tokyo/chematic/releases/tag/v1.1.9",
-      "detail": "Pre-publication record. Verify the non-draft release, annotated tag target, generated metadata asset, and release notes after the tag workflow completes."
+      "detail": "Published, non-draft, non-prerelease release. Annotated tag object 9a37f87c0edd3c8ab1965044470785989c41899b peels to c2e17447e0c19fcee3a5861a6aa5ebfdc4e71303. The 2448-byte generated metadata asset has SHA-256 6ad6fba820094b8968538d75841eee729afb82a88c64fb118463e6f0d904b061."
     },
     {
       "id": "npm",
-      "status": "not_measured",
+      "status": "verified",
+      "observed_version": "1.1.9",
       "url": "https://www.npmjs.com/package/@kent-tokyo/chematic/v/1.1.9",
-      "detail": "Pre-publication record. Verify registry version, gitHead, integrity, TypeScript declarations, and a clean package import after publication."
+      "detail": "Registry metadata reports version 1.1.9, gitHead c2e17447e0c19fcee3a5861a6aa5ebfdc4e71303, and integrity sha512-RmPW/WugtSw+/rSD0fpDWZm264xFzYnvHzdb8AnL4B5LQ7e+vfsoF5Old5qSepRZOJBbxohQWiekw30aRjSILg==. The tag publish workflow passed."
     },
     {
       "id": "pypi",
-      "status": "not_measured",
+      "status": "verified",
+      "observed_version": "1.1.9",
       "url": "https://pypi.org/project/chematic/1.1.9/",
-      "detail": "Pre-publication record. Verify the complete wheel and source-distribution inventory, clean imports, and published-wheel chemistry gates after publication."
+      "detail": "PyPI contains 25 wheels plus one source distribution, covering CPython 3.9-3.13 on Linux x86_64/aarch64, macOS x86_64/arm64, and Windows x86_64. Published-wheel chemistry run https://github.com/kent-tokyo/chematic/actions/runs/39249060732 passed all 11 jobs, including fixed-RDKit comparisons, A6 independent scoring, and autoconf lanes."
     },
     {
       "id": "crates_io",
-      "status": "not_measured",
+      "status": "verified",
+      "observed_version": "1.1.9",
       "url": "https://crates.io/crates/chematic/1.1.9",
-      "detail": "Pre-publication record. Verify the dependency-ordered workspace publication, top-level checksum, and non-yanked status after publication."
+      "detail": "The top-level crate is published and not yanked. crates.io reports checksum a7a9b7dbaa307ead8830d14f852ae15ee2ce9fdca21a1250902b4a1859491e66 and crate size 10631 bytes; the dependency-ordered workspace publication workflow passed."
     },
     {
       "id": "docs_rs",
-      "status": "not_measured",
+      "status": "verified",
+      "observed_version": "1.1.9",
       "url": "https://docs.rs/chematic/1.1.9/chematic/",
-      "detail": "Pre-publication record. Verify that the version-pinned documentation endpoint completes successfully after crates.io publication."
+      "detail": "The version-pinned documentation endpoint returned HTTP 200."
     },
     {
       "id": "site",
-      "status": "not_measured",
+      "status": "verified",
+      "observed_version": "1.1.9",
       "url": "https://kent-tokyo.github.io/chematic/",
-      "detail": "Pre-publication record. Verify the main-branch Pages deployment, version badge, browser package, and public HTTP response after merge."
+      "detail": "The v1.1.9 main-branch Pages deployment workflow completed successfully, the deployed site returned HTTP 200, and the page exposes the v1.1.9 version label."
     }
   ]
 }
