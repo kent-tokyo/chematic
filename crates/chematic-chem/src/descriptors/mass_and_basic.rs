@@ -539,11 +539,12 @@ fn rdkit_hba_count_impl(mol: &Molecule) -> usize {
 /// RDKit 2026.03 also excludes `[CH3]` on both ends: a methyl written with
 /// explicit isotopic hydrogens (`[2H]C([2H])([2H])N`) has degree 4 but is
 /// still not a rotor.
-const STRICT_ROTATABLE_SMARTS: &str = "[!$(*#*)&!D1&!$(C(F)(F)F)&!$(C(Cl)(Cl)Cl)&!$(C(Br)(Br)Br)\
-&!$(C([CH3])([CH3])[CH3])&!$([CH3])&!$([CD3](=[N,O,S])-!@[#7,O,S!D1])\
+// Test degree and methyl exclusions before recursive multi-atom patterns.
+// Every term is still the same conjunction, with the same endpoint order.
+const STRICT_ROTATABLE_SMARTS: &str = "[!D1&!$([CH3])&!$(*#*)&!$(C(F)(F)F)&!$(C(Cl)(Cl)Cl)&!$(C(Br)(Br)Br)\
+&!$(C([CH3])([CH3])[CH3])&!$([CD3](=[N,O,S])-!@[#7,O,S!D1])\
 &!$([#7,O,S!D1]-!@[CD3]=[N,O,S])&!$([CD3](=[N+])-!@[#7!D1])&!$([#7!D1]-!@[CD3]=[N+])]\
--,:;!@[!$(*#*)&!D1&!$(C(F)(F)F)&!$(C(Cl)(Cl)Cl)&!$(C(Br)(Br)Br)&!$(C([CH3])([CH3])[CH3])\
-&!$([CH3])]";
+-,:;!@[!D1&!$([CH3])&!$(*#*)&!$(C(F)(F)F)&!$(C(Cl)(Cl)Cl)&!$(C(Br)(Br)Br)&!$(C([CH3])([CH3])[CH3])]";
 
 fn strict_rotatable_query() -> &'static chematic_smarts::QueryMolecule {
     static QUERY: std::sync::OnceLock<chematic_smarts::QueryMolecule> = std::sync::OnceLock::new();

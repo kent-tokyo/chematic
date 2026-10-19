@@ -22,3 +22,7 @@ include!("descriptors/information_and_bcut.rs");
 
 #[cfg(test)]
 include!("descriptors_tests.rs");
+
+#[cfg(test)]
+#[path = "descriptors/rotor_order_tests.rs"]
+mod rotor_order_tests;

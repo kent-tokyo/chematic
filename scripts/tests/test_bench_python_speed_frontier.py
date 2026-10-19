@@ -56,6 +56,25 @@ class SpeedFrontierTests(unittest.TestCase):
         self.assertEqual(frontier.normal(bytes([129, 1]), "chematic", "morgan2_chiral"), [0, 7, 8])
         self.assertEqual(frontier.normal(bytes([129, 1]), "chematic", "maccs"), [1, 8, 9])
 
+    def test_extended_fingerprints_keep_the_same_bit_numbering(self):
+        class Bits:
+            def GetOnBits(self):
+                return [0, 7, 8]
+
+            def on_bits(self):
+                return [8, 0, 7]
+
+        for op in ("fp_atom_pair", "fp_torsion", "fp_pattern", "fp_layered", "fp_rdkit"):
+            self.assertEqual(frontier.normal(bytes([129, 1]), "chematic", op), [0, 7, 8])
+            for engine in ("rdkit", "cosmolkit"):
+                self.assertEqual(frontier.normal(Bits(), engine, op), [0, 7, 8])
+
+    def test_mqn_requires_the_complete_ordered_vector(self):
+        reference = [list(range(42))]
+        self.assertTrue(frontier.agreement(reference, reference, exact=True)["passed"])
+        for value in ([list(range(41))], [list(reversed(range(42)))]):
+            self.assertFalse(frontier.agreement(reference, value, exact=False)["passed"])
+
 
 if __name__ == "__main__":
     unittest.main()
