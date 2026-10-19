@@ -5,6 +5,14 @@ Inspected 45 open issues returned by GitHub's
 chematic source at `ffe682c3` plus the existing working-tree changes.
 Issue state is a snapshot; an open issue can already have a proposed upstream fix.
 
+October 19 follow-up: [typed Pattern fingerprint inputs](pattern-fingerprint-adapter.md)
+expose the native concrete-molecule calculator under RDKit-style names. Live
+RDKit 2026.09.1 and source inspection confirm that its `atomCounts` and
+`setOnlyBits` arguments are currently unused after size validation. The adapter
+validates their typed inputs and retains that no-op behavior; no invented
+contribution counts or mask filtering is added. Only exact power-of-two folding
+through 2048 bits is supported; this is a bounded #9601 slice.
+
 October 19 follow-up: #9601 remains open. The existing
 [`cutsPerAtom` counterpart](checked-bond-fragmentation.md) now accepts typed
 NumPy `uint32` output views as well as plain lists, with preflight layout checks
