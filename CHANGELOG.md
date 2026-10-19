@@ -14,6 +14,12 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- `fragment_on_bonds_checked` accepts writable one-dimensional NumPy `uint32`
+  cut-count destinations, including reversed and strided views. Invalid layout,
+  dtype or native fragmentation failures leave the destination unchanged.
+
 ## [1.1.8] - 2026-10-19
 
 ### Added
