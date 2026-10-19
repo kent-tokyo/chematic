@@ -21,6 +21,12 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   explicit atom correspondence map. Unsupported partial constraints and restart
   data are rejected instead of silently discarded.
 
+### Changed
+
+- Native RDKit-compatible cleanup uses sparse inline candidate indices and
+  borrowed adjacency, preserving correction order and internal molecule state
+  while avoiding a molecule-sized flag allocation and redundant scan.
+
 ## [1.1.9] - 2026-10-19
 
 ### Added

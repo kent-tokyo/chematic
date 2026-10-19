@@ -1,0 +1,347 @@
+{
+  "normalization": "UTF-8 SMILES plus LF",
+  "records": [
+    {
+      "id": "cleanup-control-01",
+      "smiles": "CN(=O)=O",
+      "provenance": "Original authored dispatch/scheduling control, 2026-10-19; no external molecule data imported",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project test expression",
+      "minimization": "Small local motif exercises nitrogen/heteroatom cleanup or metadata retention; not a physical-validity assertion",
+      "oracle": {
+        "implementation": "frozen clean_up at b7004777daf39a5f6cef03f56c4dcb68c12433f3",
+        "compiler": "rustc 1.97.0",
+        "invocation": "cargo test -p chematic-smiles --offline --release --lib cleanup_candidate"
+      },
+      "expected": "Equal Result and full internal model after each of two calls; repeat with toggled aromatic flags and cleared explicit-valence fields",
+      "sha256": "8fa83f44b510f4d0180089742c60e33c7fb72c5f201772ffff84fee79be3da25"
+    },
+    {
+      "id": "cleanup-control-02",
+      "smiles": "N(=O)#N",
+      "provenance": "Original authored dispatch/scheduling control, 2026-10-19; no external molecule data imported",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project test expression",
+      "minimization": "Small local motif exercises nitrogen/heteroatom cleanup or metadata retention; not a physical-validity assertion",
+      "oracle": {
+        "implementation": "frozen clean_up at b7004777daf39a5f6cef03f56c4dcb68c12433f3",
+        "compiler": "rustc 1.97.0",
+        "invocation": "cargo test -p chematic-smiles --offline --release --lib cleanup_candidate"
+      },
+      "expected": "Equal Result and full internal model after each of two calls; repeat with toggled aromatic flags and cleared explicit-valence fields",
+      "sha256": "3334a4941e57bc02a4ee218eeac6bea6434b09b2931445b8bffcece6811b1b20"
+    },
+    {
+      "id": "cleanup-control-03",
+      "smiles": "N#N=N",
+      "provenance": "Original authored dispatch/scheduling control, 2026-10-19; no external molecule data imported",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project test expression",
+      "minimization": "Small local motif exercises nitrogen/heteroatom cleanup or metadata retention; not a physical-validity assertion",
+      "oracle": {
+        "implementation": "frozen clean_up at b7004777daf39a5f6cef03f56c4dcb68c12433f3",
+        "compiler": "rustc 1.97.0",
+        "invocation": "cargo test -p chematic-smiles --offline --release --lib cleanup_candidate"
+      },
+      "expected": "Equal Result and full internal model after each of two calls; repeat with toggled aromatic flags and cleared explicit-valence fields",
+      "sha256": "ab5b6cfdb5c7898631c52ad27ab6fa402a6c173fe353177e2b0f5bb64730ce54"
+    },
+    {
+      "id": "cleanup-control-04",
+      "smiles": "O=N(=O)N(=O)=O",
+      "provenance": "Original authored dispatch/scheduling control, 2026-10-19; no external molecule data imported",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project test expression",
+      "minimization": "Small local motif exercises nitrogen/heteroatom cleanup or metadata retention; not a physical-validity assertion",
+      "oracle": {
+        "implementation": "frozen clean_up at b7004777daf39a5f6cef03f56c4dcb68c12433f3",
+        "compiler": "rustc 1.97.0",
+        "invocation": "cargo test -p chematic-smiles --offline --release --lib cleanup_candidate"
+      },
+      "expected": "Equal Result and full internal model after each of two calls; repeat with toggled aromatic flags and cleared explicit-valence fields",
+      "sha256": "5be315c374b579753a16600b8a92b3eb3a80b7a942b811ca3fbaf51705eec045"
+    },
+    {
+      "id": "cleanup-control-05",
+      "smiles": "C[N+](=O)[O-]",
+      "provenance": "Original authored dispatch/scheduling control, 2026-10-19; no external molecule data imported",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project test expression",
+      "minimization": "Small local motif exercises nitrogen/heteroatom cleanup or metadata retention; not a physical-validity assertion",
+      "oracle": {
+        "implementation": "frozen clean_up at b7004777daf39a5f6cef03f56c4dcb68c12433f3",
+        "compiler": "rustc 1.97.0",
+        "invocation": "cargo test -p chematic-smiles --offline --release --lib cleanup_candidate"
+      },
+      "expected": "Equal Result and full internal model after each of two calls; repeat with toggled aromatic flags and cleared explicit-valence fields",
+      "sha256": "85c763e59d519ac608b989c7e7367907fd675b8e8482a028eee647344571f0a3"
+    },
+    {
+      "id": "cleanup-control-06",
+      "smiles": "C[N-]N",
+      "provenance": "Original authored dispatch/scheduling control, 2026-10-19; no external molecule data imported",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project test expression",
+      "minimization": "Small local motif exercises nitrogen/heteroatom cleanup or metadata retention; not a physical-validity assertion",
+      "oracle": {
+        "implementation": "frozen clean_up at b7004777daf39a5f6cef03f56c4dcb68c12433f3",
+        "compiler": "rustc 1.97.0",
+        "invocation": "cargo test -p chematic-smiles --offline --release --lib cleanup_candidate"
+      },
+      "expected": "Equal Result and full internal model after each of two calls; repeat with toggled aromatic flags and cleared explicit-valence fields",
+      "sha256": "26a04cfe3cfe10c910afb104d8a168a39dd596e86f08908a369ce2728d61e529"
+    },
+    {
+      "id": "cleanup-control-07",
+      "smiles": "N",
+      "provenance": "Original authored dispatch/scheduling control, 2026-10-19; no external molecule data imported",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project test expression",
+      "minimization": "Small local motif exercises nitrogen/heteroatom cleanup or metadata retention; not a physical-validity assertion",
+      "oracle": {
+        "implementation": "frozen clean_up at b7004777daf39a5f6cef03f56c4dcb68c12433f3",
+        "compiler": "rustc 1.97.0",
+        "invocation": "cargo test -p chematic-smiles --offline --release --lib cleanup_candidate"
+      },
+      "expected": "Equal Result and full internal model after each of two calls; repeat with toggled aromatic flags and cleared explicit-valence fields",
+      "sha256": "28312e346b76a3f91e8283519baab5f103d79547dedff5fb7ccc0dc3c5119bbe"
+    },
+    {
+      "id": "cleanup-control-08",
+      "smiles": "[NH4+]",
+      "provenance": "Original authored dispatch/scheduling control, 2026-10-19; no external molecule data imported",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project test expression",
+      "minimization": "Small local motif exercises nitrogen/heteroatom cleanup or metadata retention; not a physical-validity assertion",
+      "oracle": {
+        "implementation": "frozen clean_up at b7004777daf39a5f6cef03f56c4dcb68c12433f3",
+        "compiler": "rustc 1.97.0",
+        "invocation": "cargo test -p chematic-smiles --offline --release --lib cleanup_candidate"
+      },
+      "expected": "Equal Result and full internal model after each of two calls; repeat with toggled aromatic flags and cleared explicit-valence fields",
+      "sha256": "086db03d44a5f13e628d6b18a1f2a13cc414bc56a13820bd4f581e00ce3ec0ab"
+    },
+    {
+      "id": "cleanup-control-09",
+      "smiles": "n1ccccc1",
+      "provenance": "Original authored dispatch/scheduling control, 2026-10-19; no external molecule data imported",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project test expression",
+      "minimization": "Small local motif exercises nitrogen/heteroatom cleanup or metadata retention; not a physical-validity assertion",
+      "oracle": {
+        "implementation": "frozen clean_up at b7004777daf39a5f6cef03f56c4dcb68c12433f3",
+        "compiler": "rustc 1.97.0",
+        "invocation": "cargo test -p chematic-smiles --offline --release --lib cleanup_candidate"
+      },
+      "expected": "Equal Result and full internal model after each of two calls; repeat with toggled aromatic flags and cleared explicit-valence fields",
+      "sha256": "796d30038aeea576106852f82e064b2d01722a7d7dabd260302e684251c98991"
+    },
+    {
+      "id": "cleanup-control-10",
+      "smiles": "[nH]1cccc1",
+      "provenance": "Original authored dispatch/scheduling control, 2026-10-19; no external molecule data imported",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project test expression",
+      "minimization": "Small local motif exercises nitrogen/heteroatom cleanup or metadata retention; not a physical-validity assertion",
+      "oracle": {
+        "implementation": "frozen clean_up at b7004777daf39a5f6cef03f56c4dcb68c12433f3",
+        "compiler": "rustc 1.97.0",
+        "invocation": "cargo test -p chematic-smiles --offline --release --lib cleanup_candidate"
+      },
+      "expected": "Equal Result and full internal model after each of two calls; repeat with toggled aromatic flags and cleared explicit-valence fields",
+      "sha256": "0099904f9f0c9246564d66f90c1ba3a4ab1a87648e322f48dc6e9aeceaaf5765"
+    },
+    {
+      "id": "cleanup-control-11",
+      "smiles": "CP(=O)=C",
+      "provenance": "Original authored dispatch/scheduling control, 2026-10-19; no external molecule data imported",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project test expression",
+      "minimization": "Small local motif exercises nitrogen/heteroatom cleanup or metadata retention; not a physical-validity assertion",
+      "oracle": {
+        "implementation": "frozen clean_up at b7004777daf39a5f6cef03f56c4dcb68c12433f3",
+        "compiler": "rustc 1.97.0",
+        "invocation": "cargo test -p chematic-smiles --offline --release --lib cleanup_candidate"
+      },
+      "expected": "Equal Result and full internal model after each of two calls; repeat with toggled aromatic flags and cleared explicit-valence fields",
+      "sha256": "a22fbdfc512e5072789d835d0821191cf75d39df877ffac065f9010c64d6817d"
+    },
+    {
+      "id": "cleanup-control-12",
+      "smiles": "NP(=O)=N",
+      "provenance": "Original authored dispatch/scheduling control, 2026-10-19; no external molecule data imported",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project test expression",
+      "minimization": "Small local motif exercises nitrogen/heteroatom cleanup or metadata retention; not a physical-validity assertion",
+      "oracle": {
+        "implementation": "frozen clean_up at b7004777daf39a5f6cef03f56c4dcb68c12433f3",
+        "compiler": "rustc 1.97.0",
+        "invocation": "cargo test -p chematic-smiles --offline --release --lib cleanup_candidate"
+      },
+      "expected": "Equal Result and full internal model after each of two calls; repeat with toggled aromatic flags and cleared explicit-valence fields",
+      "sha256": "74da3542e18d7a17dc4bf4e94c4548a312cb7e1d7fa982dca3050e6e4cd9ae24"
+    },
+    {
+      "id": "cleanup-control-13",
+      "smiles": "O=Cl(=O)O",
+      "provenance": "Original authored dispatch/scheduling control, 2026-10-19; no external molecule data imported",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project test expression",
+      "minimization": "Small local motif exercises nitrogen/heteroatom cleanup or metadata retention; not a physical-validity assertion",
+      "oracle": {
+        "implementation": "frozen clean_up at b7004777daf39a5f6cef03f56c4dcb68c12433f3",
+        "compiler": "rustc 1.97.0",
+        "invocation": "cargo test -p chematic-smiles --offline --release --lib cleanup_candidate"
+      },
+      "expected": "Equal Result and full internal model after each of two calls; repeat with toggled aromatic flags and cleared explicit-valence fields",
+      "sha256": "9b2ac99b3ed72748683122c1c0c35eb9dd734a7ca5ac2b13c8512e13788a86f0"
+    },
+    {
+      "id": "cleanup-control-14",
+      "smiles": "O=Br(=O)O",
+      "provenance": "Original authored dispatch/scheduling control, 2026-10-19; no external molecule data imported",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project test expression",
+      "minimization": "Small local motif exercises nitrogen/heteroatom cleanup or metadata retention; not a physical-validity assertion",
+      "oracle": {
+        "implementation": "frozen clean_up at b7004777daf39a5f6cef03f56c4dcb68c12433f3",
+        "compiler": "rustc 1.97.0",
+        "invocation": "cargo test -p chematic-smiles --offline --release --lib cleanup_candidate"
+      },
+      "expected": "Equal Result and full internal model after each of two calls; repeat with toggled aromatic flags and cleared explicit-valence fields",
+      "sha256": "3af8d7c05468d3bb27b27481ef39dd79203debf8bc5f6d488ee4aa71858a19de"
+    },
+    {
+      "id": "cleanup-control-15",
+      "smiles": "O=I(=O)O",
+      "provenance": "Original authored dispatch/scheduling control, 2026-10-19; no external molecule data imported",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project test expression",
+      "minimization": "Small local motif exercises nitrogen/heteroatom cleanup or metadata retention; not a physical-validity assertion",
+      "oracle": {
+        "implementation": "frozen clean_up at b7004777daf39a5f6cef03f56c4dcb68c12433f3",
+        "compiler": "rustc 1.97.0",
+        "invocation": "cargo test -p chematic-smiles --offline --release --lib cleanup_candidate"
+      },
+      "expected": "Equal Result and full internal model after each of two calls; repeat with toggled aromatic flags and cleared explicit-valence fields",
+      "sha256": "65549ecd0447908d69adbe0f187ba22ffb42c8189ddf4e2dd98f457f29e28424"
+    },
+    {
+      "id": "cleanup-control-16",
+      "smiles": "[13CH3]N(=O)=O",
+      "provenance": "Original authored dispatch/scheduling control, 2026-10-19; no external molecule data imported",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project test expression",
+      "minimization": "Small local motif exercises nitrogen/heteroatom cleanup or metadata retention; not a physical-validity assertion",
+      "oracle": {
+        "implementation": "frozen clean_up at b7004777daf39a5f6cef03f56c4dcb68c12433f3",
+        "compiler": "rustc 1.97.0",
+        "invocation": "cargo test -p chematic-smiles --offline --release --lib cleanup_candidate"
+      },
+      "expected": "Equal Result and full internal model after each of two calls; repeat with toggled aromatic flags and cleared explicit-valence fields",
+      "sha256": "346e8d98329e90974e1dfd326c64be57409f6d606e808d1367d2f2ddf3c4b5eb"
+    },
+    {
+      "id": "cleanup-control-17",
+      "smiles": "F[C@H](Cl)CN(=O)=O",
+      "provenance": "Original authored dispatch/scheduling control, 2026-10-19; no external molecule data imported",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project test expression",
+      "minimization": "Small local motif exercises nitrogen/heteroatom cleanup or metadata retention; not a physical-validity assertion",
+      "oracle": {
+        "implementation": "frozen clean_up at b7004777daf39a5f6cef03f56c4dcb68c12433f3",
+        "compiler": "rustc 1.97.0",
+        "invocation": "cargo test -p chematic-smiles --offline --release --lib cleanup_candidate"
+      },
+      "expected": "Equal Result and full internal model after each of two calls; repeat with toggled aromatic flags and cleared explicit-valence fields",
+      "sha256": "e5c5bff12ba7cb4d4cc405af4b919117565e56b738cd4bfd53dc3e76f5808037"
+    },
+    {
+      "id": "cleanup-control-18",
+      "smiles": "[H]N(=O)=O",
+      "provenance": "Original authored dispatch/scheduling control, 2026-10-19; no external molecule data imported",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project test expression",
+      "minimization": "Small local motif exercises nitrogen/heteroatom cleanup or metadata retention; not a physical-validity assertion",
+      "oracle": {
+        "implementation": "frozen clean_up at b7004777daf39a5f6cef03f56c4dcb68c12433f3",
+        "compiler": "rustc 1.97.0",
+        "invocation": "cargo test -p chematic-smiles --offline --release --lib cleanup_candidate"
+      },
+      "expected": "Equal Result and full internal model after each of two calls; repeat with toggled aromatic flags and cleared explicit-valence fields",
+      "sha256": "da24d3989fabef5d0077d7d5d001185625e03d265ed4d18785bb06ebace2b1fa"
+    },
+    {
+      "id": "cleanup-control-19",
+      "smiles": "[2H]N(=O)=O",
+      "provenance": "Original authored dispatch/scheduling control, 2026-10-19; no external molecule data imported",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project test expression",
+      "minimization": "Small local motif exercises nitrogen/heteroatom cleanup or metadata retention; not a physical-validity assertion",
+      "oracle": {
+        "implementation": "frozen clean_up at b7004777daf39a5f6cef03f56c4dcb68c12433f3",
+        "compiler": "rustc 1.97.0",
+        "invocation": "cargo test -p chematic-smiles --offline --release --lib cleanup_candidate"
+      },
+      "expected": "Equal Result and full internal model after each of two calls; repeat with toggled aromatic flags and cleared explicit-valence fields",
+      "sha256": "f22937a6e6fc893b50e71ed556fe7a18693aa0fdd73211f920a662a135c9539f"
+    },
+    {
+      "id": "cleanup-control-20",
+      "smiles": "[Cu]N(=O)=O",
+      "provenance": "Original authored dispatch/scheduling control, 2026-10-19; no external molecule data imported",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project test expression",
+      "minimization": "Small local motif exercises nitrogen/heteroatom cleanup or metadata retention; not a physical-validity assertion",
+      "oracle": {
+        "implementation": "frozen clean_up at b7004777daf39a5f6cef03f56c4dcb68c12433f3",
+        "compiler": "rustc 1.97.0",
+        "invocation": "cargo test -p chematic-smiles --offline --release --lib cleanup_candidate"
+      },
+      "expected": "Equal Result and full internal model after each of two calls; repeat with toggled aromatic flags and cleared explicit-valence fields",
+      "sha256": "79b5861a2740bb87831f82e692e81b07ceedea6b005fe52f0a6d713985a0bcc1"
+    },
+    {
+      "id": "cleanup-control-21",
+      "smiles": "N->[Cu+2]",
+      "provenance": "Original authored dispatch/scheduling control, 2026-10-19; no external molecule data imported",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project test expression",
+      "minimization": "Small local motif exercises nitrogen/heteroatom cleanup or metadata retention; not a physical-validity assertion",
+      "oracle": {
+        "implementation": "frozen clean_up at b7004777daf39a5f6cef03f56c4dcb68c12433f3",
+        "compiler": "rustc 1.97.0",
+        "invocation": "cargo test -p chematic-smiles --offline --release --lib cleanup_candidate"
+      },
+      "expected": "Equal Result and full internal model after each of two calls; repeat with toggled aromatic flags and cleared explicit-valence fields",
+      "sha256": "bb59ba09d57daa760b1569bc998167463491cc9cdf69989505b340281eee6dfe"
+    },
+    {
+      "id": "cleanup-control-22",
+      "smiles": "*N(=O)=O",
+      "provenance": "Original authored dispatch/scheduling control, 2026-10-19; no external molecule data imported",
+      "license": "MIT OR Apache-2.0",
+      "redistribution": "allowed; original project test expression",
+      "minimization": "Small local motif exercises nitrogen/heteroatom cleanup or metadata retention; not a physical-validity assertion",
+      "oracle": {
+        "implementation": "frozen clean_up at b7004777daf39a5f6cef03f56c4dcb68c12433f3",
+        "compiler": "rustc 1.97.0",
+        "invocation": "cargo test -p chematic-smiles --offline --release --lib cleanup_candidate"
+      },
+      "expected": "Equal Result and full internal model after each of two calls; repeat with toggled aromatic flags and cleared explicit-valence fields",
+      "sha256": "07cab8b2ed102ddcdfa7e8eeb104ebe97541cd00e0340f002f9ea8ec7bfeaccd"
+    }
+  ],
+  "generated_boundary_controls": {
+    "recipe": "Empty model; 0/1/7/8/9/64 disconnected N(=O)#N motifs; C chains of 64/256/2048 atoms plus one N(=O)#N motif",
+    "purpose": "Inline capacity/spill, candidate order and sparse large inputs",
+    "provenance": "Original authored generator in the same test file",
+    "license": "MIT OR Apache-2.0",
+    "redistribution": "allowed",
+    "oracle": "Same frozen cleanup function and two-call full-state comparison",
+    "sha256_test_file": "22dc84443eaf731d62d1454a7ce7c5d9cbd311edd81b6b1fdd1587991e0c4c3b",
+    "minimization": "Only counts at/beyond inline capacity and one sparse terminal motif are generated; no bulk external structures",
+    "expected": "Same Result and full model as frozen reference after each of two calls",
+    "sha256": "50130d15913ebfd1656206a6fbad1d179f0be162d22acbd2664ec17ddd388386"
+  }
+}
