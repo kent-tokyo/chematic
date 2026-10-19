@@ -20,7 +20,7 @@ import re
 import subprocess
 import sys
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "validation/cosmolkit_comparison"))
 from bench_corpus import paired_median_ratio_ci  # noqa: E402
 

@@ -20,13 +20,6 @@ scripts/bench_canonical.py
 scripts/bench_descriptor_scaling.py
 scripts/bench_hotpath_pair.py
 scripts/bench_ogb_sdf_pipeline.py
-scripts/bench_openbabel_cli.py
-scripts/bench_openbabel_file_io_paired.py
-scripts/bench_openbabel_file_io_same_process.py
-scripts/bench_openbabel_mol2_index.py
-scripts/bench_openbabel_sdf_throughput.py
-scripts/bench_openbabel_steady_throughput.py
-scripts/bench_openbabel_v3000_throughput.py
 scripts/bench_published_python_isolated_paired.py
 scripts/bench_published_python_versions.py
 scripts/bench_published_rust_isolated_paired.py
@@ -170,7 +163,6 @@ scripts/check_v1029_accuracy_packet.py
 scripts/check_v1030_artifact_packet.py
 scripts/check_v1030_published_browser_morgan_rows.py
 scripts/check_v1030_published_chemistry_residuals.py
-scripts/check_wasm_artifact_surface.py
 scripts/check_workflow_pins.py
 scripts/chematic_chemistry_dump.py
 scripts/chematic_reaction_worker.py
@@ -330,9 +322,7 @@ scripts/summarize_public_package_3d.py
 scripts/summarize_rdkit_native_rebaseline.py
 scripts/summarize_rdkit_ring_backend.py
 scripts/tdt_io_parity.py
-scripts/test_accuracy_gate.py
 scripts/test_criterion_gate.sh
-scripts/test_scalar_bundle_gate.py
 scripts/topo_path_cross_binding_parity.py
 scripts/torsion_cross_binding_parity.py
 scripts/tpsa_public_corpus_parity.py

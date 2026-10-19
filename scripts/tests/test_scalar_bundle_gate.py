@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 """Semantic claim gates for the two-descriptor benchmark."""
 import math
+import sys
 import unittest
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from bench_python_scalar_bundle import agreement, comparable
 
 class BundleGateTests(unittest.TestCase):

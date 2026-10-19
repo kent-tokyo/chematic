@@ -8,18 +8,17 @@ import json
 import math
 import statistics
 import subprocess
+import sys
 import tempfile
 import time
 from pathlib import Path
 from typing import Any
 
-try:
-    from benchmark_version import workspace_version
-except ModuleNotFoundError:  # imported as scripts.* by pytest
-    from scripts.benchmark_version import workspace_version
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from benchmark_version import workspace_version
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 FIXTURES = {
     "v3000": ROOT / "benchmarks/fixtures/ethanol.v3000",
     "mol2": ROOT / "benchmarks/fixtures/ethanol.mol2",

@@ -4,7 +4,7 @@ from pathlib import Path
 import argparse, datetime, gzip, hashlib, itertools, json, os, random, shutil, statistics, subprocess
 
 E = Path(os.environ.get("CHEMATIC_MOL2_EVIDENCE", ".")).resolve()
-R = Path(__file__).resolve().parents[1]
+R = Path(__file__).resolve().parents[2]
 MODES = ("parse", "write", "roundtrip")
 os.environ.update(
     CHEMATIC_BENCH_WARMUP_NS="250000000",
