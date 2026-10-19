@@ -275,6 +275,7 @@ pub(super) fn parse_mmcif<'py>(
     d.set_item(
         "mol",
         Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(mol),
             props: Default::default(),
         },
@@ -453,6 +454,7 @@ pub(super) fn parse_pqr<'py>(
     d.set_item(
         "mol",
         Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(mol),
             props: Default::default(),
         },
@@ -808,6 +810,7 @@ pub(super) fn parse_orca_output<'py>(py: Python<'py>, text: &str) -> PyResult<Bo
             fd.set_item(
                 "mol",
                 Mol {
+                    num_rings_cache: Default::default(),
                     inner: Arc::new(f.mol),
                     props: Default::default(),
                 },
@@ -896,6 +899,7 @@ pub(super) fn qc_view_into_py(view: chematic_mol::ChematicMoleculeView) -> (Mol,
         .map(|p| vec![p.x, p.y, p.z])
         .collect();
     let mol = Mol {
+        num_rings_cache: Default::default(),
         inner: Arc::new(view.molecule),
         props: Default::default(),
     };

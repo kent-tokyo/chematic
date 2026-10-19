@@ -289,6 +289,7 @@ fn from_cxsmiles<'py>(
 
     Ok((
         Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(cx.mol),
             props: Default::default(),
         },
@@ -314,6 +315,7 @@ fn from_cxsmiles<'py>(
 #[pyfunction]
 fn from_condensed(formula: &str) -> Option<Mol> {
     chematic_chem::parse_condensed(formula).ok().map(|mol| Mol {
+        num_rings_cache: Default::default(),
         inner: Arc::new(mol),
         props: Default::default(),
     })
@@ -326,6 +328,7 @@ fn from_condensed(formula: &str) -> Option<Mol> {
 fn from_mol_block(#[pyo3(from_py_with = serialized_text)] block: &str) -> PyResult<Mol> {
     chematic_mol::parse_mol(block)
         .map(|(mol, _meta)| Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(mol),
             props: Default::default(),
         })
@@ -359,6 +362,7 @@ fn from_mol_block_with_coords(
             let py_coords: Vec<Vec<f64>> = coords.iter().map(|(x, y)| vec![*x, *y]).collect();
             (
                 Mol {
+                    num_rings_cache: Default::default(),
                     inner: Arc::new(mol),
                     props: Default::default(),
                 },
@@ -400,6 +404,7 @@ fn from_mol_block_with_diagnostics<'py>(
     let diagnostics = stereo_diagnostics_to_py(py, &report.stereo_diagnostics)?;
     Ok((
         Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(report.mol),
             props: Default::default(),
         },
@@ -452,6 +457,7 @@ fn parse_sdf_with_coords(text: &str) -> PyResult<SdfWithCoords> {
             let py_coords: Vec<Vec<f64>> = rec.coords.iter().map(|(x, y)| vec![*x, *y]).collect();
             (
                 Mol {
+                    num_rings_cache: Default::default(),
                     inner: Arc::new(rec.mol),
                     props: Default::default(),
                 },
@@ -493,6 +499,7 @@ fn from_mrv_block_with_coords(mrv_str: &str) -> PyResult<(Mol, Vec<Vec<f64>>, Ve
                 .collect();
             (
                 Mol {
+                    num_rings_cache: Default::default(),
                     inner: Arc::new(rec.mol),
                     props: Default::default(),
                 },
@@ -517,6 +524,7 @@ fn from_mrv_block_with_coords(mrv_str: &str) -> PyResult<(Mol, Vec<Vec<f64>>, Ve
 fn from_mrv_block(mrv_str: &str) -> PyResult<Mol> {
     chematic_mol::parse_mrv(mrv_str)
         .map(|rec| Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(rec.mol),
             props: Default::default(),
         })
@@ -538,6 +546,7 @@ fn from_mrv_block(mrv_str: &str) -> PyResult<Mol> {
 fn from_moljson(json_str: &str) -> PyResult<Mol> {
     chematic_mol::parse_moljson(json_str)
         .map(|mol| Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(mol),
             props: Default::default(),
         })
@@ -558,6 +567,7 @@ fn from_cdxml(cdxml_str: &str, infer_nondirectional_stereo: bool) -> PyResult<Mo
         },
     )
     .map(|(mol, _coords)| Mol {
+        num_rings_cache: Default::default(),
         inner: Arc::new(mol),
         props: Default::default(),
     })
@@ -661,6 +671,7 @@ fn semantic_expand_json_with_limits(
 fn from_mol_v3000(#[pyo3(from_py_with = serialized_text)] block: &str) -> PyResult<Mol> {
     chematic_mol::parse_mol_v3000(block)
         .map(|(mol, _meta)| Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(mol),
             props: Default::default(),
         })
@@ -687,6 +698,7 @@ fn from_mol_v3000_with_coords(
             let py_coords: Vec<Vec<f64>> = coords.iter().map(|(x, y)| vec![*x, *y]).collect();
             (
                 Mol {
+                    num_rings_cache: Default::default(),
                     inner: Arc::new(mol),
                     props: Default::default(),
                 },
@@ -718,6 +730,7 @@ fn from_mol_v3000_with_diagnostics<'py>(
     let diagnostics = stereo_diagnostics_to_py(py, &report.stereo_diagnostics)?;
     Ok((
         Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(report.mol),
             props: Default::default(),
         },
@@ -742,6 +755,7 @@ fn from_mol_v3000_with_diagnostics<'py>(
 fn from_mol2(#[pyo3(from_py_with = serialized_text)] mol2_str: &str) -> PyResult<Mol> {
     chematic_mol::parse_mol2(mol2_str)
         .map(|(mol, _coords)| Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(mol),
             props: Default::default(),
         })
@@ -766,6 +780,7 @@ fn from_mol2(#[pyo3(from_py_with = serialized_text)] mol2_str: &str) -> PyResult
 fn from_pdbqt(pdbqt_str: &str) -> PyResult<Mol> {
     chematic_mol::parse_pdbqt(pdbqt_str)
         .map(|(mol, _coords, _charges)| Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(mol),
             props: Default::default(),
         })
@@ -784,6 +799,7 @@ fn from_pdbqt(pdbqt_str: &str) -> PyResult<Mol> {
 fn from_gjf(gjf_str: &str) -> PyResult<Mol> {
     chematic_mol::parse_gjf(gjf_str)
         .map(|(mol, _coords, _charge, _mult)| Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(mol),
             props: Default::default(),
         })
@@ -806,6 +822,7 @@ fn parse_gaussian_log<'py>(
     let result = chematic_mol::parse_gaussian_log(log_str)
         .map_err(|e| PyValueError::new_err(e.to_string()))?;
     let mol = Mol {
+        num_rings_cache: Default::default(),
         inner: Arc::new(result.mol),
         props: Default::default(),
     };
@@ -886,12 +903,14 @@ fn from_inchi(inchi: &str) -> PyResult<Mol> {
     #[cfg(feature = "native-inchi")]
     if let Ok(mol) = chematic_inchi::rdkit_mol_from_inchi(inchi) {
         return Ok(Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(mol),
             props: Default::default(),
         });
     }
     chematic_inchi::parse_inchi(inchi)
         .map(|mol| Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(mol),
             props: Default::default(),
         })
@@ -916,6 +935,7 @@ fn from_pdb(pdb_str: &str) -> PyResult<(Mol, Vec<Vec<f64>>)> {
     let coords = c3d.points.iter().map(|p| vec![p.x, p.y, p.z]).collect();
     Ok((
         Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(mol),
             props: Default::default(),
         },
@@ -956,6 +976,7 @@ fn rdkit_from_pdb_block(
     Ok(res.map(|r| {
         (
             Mol {
+                num_rings_cache: Default::default(),
                 inner: Arc::new(r.molecule),
                 props: Default::default(),
             },
@@ -972,6 +993,7 @@ fn rdkit_from_xyz_block(text: &str) -> PyResult<Option<(Mol, Vec<[f64; 3]>)>> {
     match chematic_smiles::rdkit_mol_from_xyz_block(text) {
         Ok((m, coords)) => Ok(Some((
             Mol {
+                num_rings_cache: Default::default(),
                 inner: Arc::new(m),
                 props: Default::default(),
             },
@@ -1007,6 +1029,7 @@ fn rdkit_from_mol2_block(
     ) {
         Ok(r) => Ok(Some((
             Mol {
+                num_rings_cache: Default::default(),
                 inner: Arc::new(r.molecule),
                 props: Default::default(),
             },
@@ -1076,6 +1099,7 @@ fn from_pdb_strict(pdb_str: &str) -> PyResult<(Mol, Vec<Vec<f64>>)> {
     let coords = c3d.points.iter().map(|p| vec![p.x, p.y, p.z]).collect();
     Ok((
         Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(mol),
             props: Default::default(),
         },
@@ -1263,6 +1287,7 @@ fn parse_smi_file(content: &str) -> PyResult<Vec<(Mol, String)>> {
         records.push({
             (
                 Mol {
+                    num_rings_cache: Default::default(),
                     inner: Arc::new(mol),
                     props: Default::default(),
                 },

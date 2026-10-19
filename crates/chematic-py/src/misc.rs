@@ -294,6 +294,7 @@ fn abbreviations<'py>(py: Python<'py>) -> PyResult<Bound<'py, pyo3::types::PyDic
 #[pyfunction]
 fn expand_abbreviation(symbol: &str) -> Option<Mol> {
     chematic_chem::expand_abbreviation(symbol).map(|mol| Mol {
+        num_rings_cache: Default::default(),
         inner: Arc::new(mol),
         props: Default::default(),
     })

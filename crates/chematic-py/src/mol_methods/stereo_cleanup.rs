@@ -35,6 +35,7 @@ impl Mol {
         out.set_item(
             "molecule",
             Mol {
+                num_rings_cache: Default::default(),
                 inner: Arc::new(r.molecule),
                 props: self.props.clone(),
             },

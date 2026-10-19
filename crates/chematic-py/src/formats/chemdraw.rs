@@ -28,6 +28,7 @@ pub(super) fn from_chemdraw_block<'py>(
     let mut coordinates = Vec::new();
     for (m, c) in block.molecules {
         molecules.push(Mol {
+            num_rings_cache: Default::default(),
             inner: Arc::new(m),
             props: Default::default(),
         });
