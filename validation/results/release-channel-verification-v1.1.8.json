@@ -10,13 +10,15 @@
   "channels": [
     {
       "id": "github_release",
-      "status": "passed",
+      "status": "verified",
+      "observed_version": "1.1.8",
       "url": "https://github.com/kent-tokyo/chematic/releases/tag/v1.1.8",
       "detail": "Published, non-draft, non-prerelease release. The metadata asset is present with SHA-256 07d2130afe84839ba4b5a9c135324eb08fe634fa9f7d86707a9a047ffc89495e."
     },
     {
       "id": "npm",
-      "status": "passed",
+      "status": "verified",
+      "observed_version": "1.1.8",
       "url": "https://www.npmjs.com/package/@kent-tokyo/chematic/v/1.1.8",
       "detail": "Registry metadata reports version 1.1.8, gitHead 00596fb1ea5397524f98e3789c41f17ee8616fdc, and integrity sha512-cUYv2/1jHWCr2iyYuCLlPznYkfixEQd22GzxBARta6QTHOnpD5aBX/4gFSLSkcDTmkrflJaxahoUkBn1cFGhdA==."
     },
@@ -28,19 +30,22 @@
     },
     {
       "id": "crates_io",
-      "status": "passed",
+      "status": "verified",
+      "observed_version": "1.1.8",
       "url": "https://crates.io/crates/chematic/1.1.8",
       "detail": "The top-level crate is published and not yanked. crates.io reports checksum caeb7eb0918b2e83e43d2d2bab3c74f08da9961e9333e37593534e11a6d3e570; the dependency-ordered workspace publication workflow passed."
     },
     {
       "id": "docs_rs",
-      "status": "passed",
+      "status": "verified",
+      "observed_version": "1.1.8",
       "url": "https://docs.rs/chematic/1.1.8/chematic/",
       "detail": "The version-pinned documentation endpoint returned HTTP 200."
     },
     {
       "id": "site",
-      "status": "passed",
+      "status": "verified",
+      "observed_version": "1.1.8",
       "url": "https://kent-tokyo.github.io/chematic/",
       "detail": "The v1.1.8 main-branch Pages deployment workflow completed successfully and the deployed site returned HTTP 200."
     }
