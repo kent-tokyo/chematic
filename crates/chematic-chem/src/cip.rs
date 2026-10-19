@@ -99,6 +99,30 @@ pub fn assign_cip(mol: &Molecule) -> CipAssignment {
     CipAssignment { assignments }
 }
 
+// Only two explicitly present substituents require digraph ranking. Most
+// molecules have no marked E/Z bond, and a single heavy substituent can be
+// read directly from its direction without preparing Kekule/MANCUDE data.
+struct LazyEzRanker<'a> {
+    mol: &'a Molecule,
+    budget: chematic_cip::CipBudget,
+    value: std::cell::OnceCell<chematic_cip::SubstituentRanker>,
+}
+
+impl<'a> LazyEzRanker<'a> {
+    fn new(mol: &'a Molecule, budget: chematic_cip::CipBudget) -> Self {
+        Self {
+            mol,
+            budget,
+            value: std::cell::OnceCell::new(),
+        }
+    }
+
+    fn get(&self) -> &chematic_cip::SubstituentRanker {
+        self.value
+            .get_or_init(|| chematic_cip::SubstituentRanker::new(self.mol, self.budget))
+    }
+}
+
 /// E/Z labels keyed by the double bond they describe.
 ///
 /// [`assign_cip`] (and the E/Z part of [`assign_cip_with_mode`]) report each
@@ -121,10 +145,7 @@ pub fn assign_ez_bonds_with_mode(mol: &Molecule, mode: CipMode) -> Vec<(BondIdx,
             })
             .collect(),
         CipMode::Accurate => {
-            let ranker = chematic_cip::SubstituentRanker::new(
-                mol,
-                chematic_cip::CipBudget::default_budget(),
-            );
+            let ranker = LazyEzRanker::new(mol, chematic_cip::CipBudget::default_budget());
             (0..mol.bond_count())
                 .filter_map(|j| {
                     let bidx = BondIdx(j as u32);
@@ -286,7 +307,7 @@ pub fn assign_cip_with_mode(
             let legacy_ez: Vec<(AtomIdx, CipCode)> = (0..mol.bond_count())
                 .filter_map(|j| assign_ez(mol, BondIdx(j as u32)))
                 .collect();
-            let ranker = chematic_cip::SubstituentRanker::new(mol, budget);
+            let ranker = LazyEzRanker::new(mol, budget);
             let accurate_ez: Vec<(AtomIdx, CipCode)> = (0..mol.bond_count())
                 .filter_map(|j| assign_ez_accurate(mol, BondIdx(j as u32), &ranker))
                 .collect();
@@ -1327,7 +1348,7 @@ fn highest_stereo_sub(
 fn assign_ez_accurate(
     mol: &Molecule,
     bond_idx: BondIdx,
-    ranker: &chematic_cip::SubstituentRanker,
+    ranker: &LazyEzRanker<'_>,
 ) -> Option<(AtomIdx, CipCode)> {
     let bond = mol.bond(bond_idx);
     // A ring of fewer than eight atoms holds its double bond cis: no E/Z
@@ -1368,7 +1389,7 @@ fn highest_stereo_sub_accurate(
     mol: &Molecule,
     alkene_end: AtomIdx,
     subs: &[AtomIdx],
-    ranker: &chematic_cip::SubstituentRanker,
+    ranker: &LazyEzRanker<'_>,
 ) -> Option<(AtomIdx, bool)> {
     // No marker on either substituent: nothing to read (see
     // `highest_stereo_sub`).
@@ -1380,7 +1401,7 @@ fn highest_stereo_sub_accurate(
     }
     let (top, other) = match subs {
         [only] => (*only, None),
-        [a, b] => match ranker.compare(mol, alkene_end, *a, *b).ok()?? {
+        [a, b] => match ranker.get().compare(mol, alkene_end, *a, *b).ok()?? {
             std::cmp::Ordering::Greater => (*a, Some(*b)),
             std::cmp::Ordering::Less => (*b, Some(*a)),
             std::cmp::Ordering::Equal => return None,
@@ -2758,3 +2779,7 @@ mod tests {
 #[cfg(test)]
 #[path = "cip_square_planar_tests.rs"]
 mod square_planar_tests;
+
+#[cfg(test)]
+#[path = "cip_preparation_tests.rs"]
+mod preparation_tests;
