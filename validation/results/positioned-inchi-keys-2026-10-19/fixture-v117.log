@@ -1,0 +1,35 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.13.6, pytest-9.1.1, pluggy-1.6.0
+rootdir: /Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py
+configfile: pytest.ini
+collected 187 items
+
+crates/chematic-py/tests/test_inchi_batch.py ........................... [ 14%]
+........                                                                 [ 18%]
+crates/chematic-py/tests/test_input_errors.py .....................      [ 29%]
+crates/chematic-py/tests/test_module_functions.py ...................... [ 41%]
+..............................................                           [ 66%]
+crates/chematic-py/tests/test_mol.py ................................... [ 85%]
+...FFF......................                                             [100%]
+
+=================================== FAILURES ===================================
+______ test_cleanup_preserves_neutral_acid_and_disconnects_gold_chloride _______
+crates/chematic-py/tests/test_mol.py:253: in test_cleanup_preserves_neutral_acid_and_disconnects_gold_chloride
+    assert chematic.from_smiles("CC(=O)O").cleanup().rdkit_smiles == "CC(=O)O"
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'builtins.Mol' object has no attribute 'cleanup'
+________ test_cleanup_preserves_donor_valence_after_metal_disconnection ________
+crates/chematic-py/tests/test_mol.py:258: in test_cleanup_preserves_donor_valence_after_metal_disconnection
+    assert chematic.from_smiles("C(=[O][Li])O").cleanup().rdkit_smiles == "O=CO.[LiH]"
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'builtins.Mol' object has no attribute 'cleanup'
+___________ test_cleanup_keeps_unsupported_lithium_carbonyl_readable ___________
+crates/chematic-py/tests/test_mol.py:263: in test_cleanup_keeps_unsupported_lithium_carbonyl_readable
+    assert chematic.from_smiles(text).cleanup().rdkit_smiles == (
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'builtins.Mol' object has no attribute 'cleanup'
+=========================== short test summary info ============================
+FAILED crates/chematic-py/tests/test_mol.py::test_cleanup_preserves_neutral_acid_and_disconnects_gold_chloride
+FAILED crates/chematic-py/tests/test_mol.py::test_cleanup_preserves_donor_valence_after_metal_disconnection
+FAILED crates/chematic-py/tests/test_mol.py::test_cleanup_keeps_unsupported_lithium_carbonyl_readable
+======================== 3 failed, 184 passed in 0.28s =========================
