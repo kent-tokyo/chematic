@@ -144,6 +144,32 @@ fn alkene_stereo_survives_a_cut_on_the_core_side() {
 }
 
 #[test]
+fn alkene_core_distinguishes_ez_isomers_across_substituent_pairs() {
+    // Every pair has the same constitution and two independently specified
+    // alkene geometries. R-group extraction must retain that distinction.
+    let substituents = ["F", "Cl", "Br", "I", "C", "CO"];
+    for (left_index, left) in substituents.iter().enumerate() {
+        for right in &substituents[left_index + 1..] {
+            let first = format!("{left}/C=C/{right}");
+            let second = format!("{left}/C=C\\{right}");
+            let molecules = [mol(&first), mol(&second)];
+            let refs = molecules.iter().collect::<Vec<_>>();
+            let rows = rgroup_decompose_labeled("C=C", &refs).unwrap();
+            let first_row = rows[0].as_ref().expect("first geometry must match");
+            let second_row = rows[1].as_ref().expect("second geometry must match");
+            assert_eq!(
+                first_row.r_groups, second_row.r_groups,
+                "{first} / {second}"
+            );
+            assert_ne!(
+                first_row.core_smiles, second_row.core_smiles,
+                "{first} / {second}"
+            );
+        }
+    }
+}
+
+#[test]
 fn tetrahedral_stereo_keeps_its_neighbor_frame_after_cutting() {
     // A stereocenter need not touch the boundary to change handedness if
     // its parser-side neighbor frame is discarded during atom renumbering.
