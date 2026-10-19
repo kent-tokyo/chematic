@@ -104,6 +104,12 @@ Source parse-only paired ratio: 0.998572591, pointwise 95% CI [0.980755845, 1.00
 - Paired pointwise 95% bootstrap intervals use 10,000 fixed-seed resamples. The three primaries and all 21 floors use unrounded numbers. Host activity is not isolated; block-start load averages are retained. No failure, slow block or unfavorable observation is filtered.
 - Source and benchmark-script hashes are checked before and after timing. Local wheels, full Morgan/scalar correctness streams, source manifests and complete logs remain private. Public export is limited to numeric timings/accounting, digests and selected provenance. CI recomputes exact decisions and exercises corruption controls (39 local method/audit tests pass); the final packet uses `--require-adoption`, while archived rejected epochs do not. CI does not repeat the local timing experiment.
 
+## Integration boundary
+
+After this source-wheel epoch, main `5bd2d99c90a39ebac3c5131497061f8c249d92bf` was merged as `67878c937d2d8158b16de3de2702db17f7a02a10`. It brings NumPy fragment-counter support, published-package/channel records and dependency updates to smallvec 1.16.3, cc 1.8.0 and serde_json 1.0.154. The integrated source passes 1,516 local library tests (one existing chemistry ignore), modified-library Clippy with warnings denied and formatting. The index is checked against all 533 tracked benchmark records using path placeholders for sparse files; hosted CI checks the full checkout separately.
+
+The integrated combination has not been timed again. All speed ratios, confidence intervals and adoption floors above belong to the frozen `00596fb1` / `4560db00` wheel pair, not the later main combination or a published package. The 173 focused Python tests also refer to the frozen candidate wheel; hosted Python CI validates the integrated source separately.
+
 ## Reproduction
 
 Run `scripts/bench_python_speed_frontier.py` with the frozen source wheels, all seven operations, --limit 10000 --blocks 24 --balanced-permutations and PYTHONHASHSEED=20261019, as in the preceding combined experiment. Validate the public packet with `python scripts/check_python_speed_frontier_packet.py benchmarks/2026-10-19-python-ring-cache-numeric.json.gz --require-adoption`.
