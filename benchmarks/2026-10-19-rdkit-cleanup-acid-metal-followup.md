@@ -12,6 +12,12 @@ This follow-up improves exact Cleanup agreement from **3,923 to 3,933/4,069
 (96.66%)**. Ten rows improve and zero regress against the immediately previous
 source result.
 
+After integration with the separate acid-anion change, the
+[current-source record](../validation/results/rdkit-standardization-current-source-2026-10-20.json)
+reports **3,931/4,069** exact rows. It fixes three metal rows and regresses
+none against the integrated October 19 source record (3,928/4,069). The
+earlier 3,933 figure describes this branch before integration.
+
 | Class | Fixed rows | Remaining rows |
 |---|---:|---:|
 | Existing-anion acid/base transfer | 7 | 26 |
@@ -46,4 +52,3 @@ python scripts/rdkit_cleanup_source_gate.py \
 
 Focused Cleanup tests pass. The full changed-crate and repository checks are
 reported with the change rather than inferred from this comparison.
-
