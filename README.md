@@ -25,13 +25,15 @@ npm install @kent-tokyo/chematic
 
 Python wheels need no C/C++ compiler. All bindings share the Rust core.
 
-### v1.1.8 release boundary
+### v1.1.9 release boundary
 
-v1.1.8 reduces first-use Labute ASA and ring-count overhead while preserving
-descriptor results. Its public macOS arm64 wheel reproduces the 10,000-row
-Labute ASA result on one host. That is one-operation evidence, not a
-cross-platform or toolkit-wide superiority claim. Broad hosted chemistry
-remains v1.1.7; the durable cross-platform packet remains v1.1.3. See
+v1.1.9 adds position-preserving checked InChIKey batches, fail-closed
+RDKit-compatible SMILES stability checks, stricter alkene-stereo reaction
+handling, and output-preserving fingerprint, descriptor, and CIP speedups.
+The latest exact public-wheel performance record remains the bounded v1.1.8
+Labute ASA lane; source improvements are not relabelled as package evidence.
+Broad hosted chemistry remains v1.1.7, and the durable cross-platform packet
+remains v1.1.3. See
 [validation](docs/validation.md), [benchmarks](benchmarks/README.md), and the
 [CHANGELOG](CHANGELOG.md).
 

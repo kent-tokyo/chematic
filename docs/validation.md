@@ -1,12 +1,14 @@
 # Validation report
 
-Updated 2026-10-19 for **v1.1.8**.
+Updated 2026-10-19 for **v1.1.9**.
 Every result is limited to its recorded artifact or source revision,
 comparator, corpus, options, platform, and failure policy.
 
 ## Evidence boundary
 
-- v1.1.8 is the current release line.
+- v1.1.9 is the current release line. Its exact public-artifact chemistry and
+  performance gates must complete before source results are quoted as package
+  results.
 - One public v1.1.8 macOS arm64 wheel has completed the 10,000-row Labute ASA
   correctness and performance lane. Other operations and platforms do not
   inherit that result.

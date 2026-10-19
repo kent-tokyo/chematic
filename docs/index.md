@@ -12,7 +12,7 @@ WebAssembly, without a chematic backend.</p>
   <a class="chm-btn chm-btn-secondary" href="getting_started/installation/">Install chematic</a>
 </div>
 
-<p class="chm-links-row">Current release: <strong>v1.1.8</strong> · <a href="changelog/">release notes</a></p>
+<p class="chm-links-row">Current release: <strong>v1.1.9</strong> · <a href="changelog/">release notes</a></p>
 
 </div>
 
@@ -85,10 +85,11 @@ Installation: `pip install chematic`, `cargo add chematic`, or
 
 ## Current evidence boundary
 
-v1.1.8 reduces first-use Labute ASA and ring-count overhead for bounded
-ordinary Python molecules without changing descriptor results. Its public
-macOS arm64 wheel reproduces the 10,000-row Labute ASA result on one host; this
-is one operation, not a cross-platform chemistry packet. The v1.1.7 hosted
+v1.1.9 adds checked position-preserving InChIKey batches, fail-closed
+RDKit-compatible SMILES stability checks, and stricter reaction stereo safety.
+Its performance changes are source evidence until exact artifacts are measured.
+The public v1.1.8 macOS arm64 wheel remains the latest exact one-operation
+performance record. The v1.1.7 hosted
 chemistry workflow remains the latest broad package lane, the latest durable
 cross-platform packet remains v1.1.3, and the broadest published-package RDKit
 performance packet remains v1.0.42. The 83-row reaction gate remains 80 exact

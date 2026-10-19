@@ -14,6 +14,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.1.9] - 2026-10-19
+
 ### Added
 
 - `inchi_keys_checked` preserves every accepted batch input position with an
@@ -23,6 +25,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - `fragment_on_bonds_checked` accepts writable one-dimensional NumPy `uint32`
   cut-count destinations, including reversed and strided views. Invalid layout,
   dtype or native fragmentation failures leave the destination unchanged.
+
+- Python `rdkit_smiles_checked` rejects RDKit-compatible canonical SMILES when
+  the result is not stable under bounded atom-order permutations, preserving a
+  typed reason instead of returning an unsafe identity string.
 
 ### Changed
 
@@ -36,11 +42,18 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   cross-platform packet, current source experiments, and historical results.
 - ROADMAP and the open-work ledger now separate strategy from operational
   denominators. The English, Japanese, and Chinese READMEs and current install
-  examples use the v1.1.8 release boundary without rewriting dated evidence.
+  examples distinguish the v1.1.9 release boundary from dated v1.1.8 evidence.
 - Added a toolkit-selection guide and clearer use-case entry points for local
   browser chemistry, Rust embedding, Python batch work, MCP, and bounded RDKit
   migration. Removed unpinned throughput claims and examples that discarded
   failed SDF rows or implied experimental property conclusions.
+
+- Morgan hashing, numeric descriptor reads, strict-rotor predicates, Layered
+  fingerprints, and CIP assignment avoid redundant preparation while retaining
+  their recorded output contracts.
+
+- Native stereo-aware reaction application now rejects alkene templates whose
+  product geometry is unspecified instead of silently selecting one outcome.
 
 ## [1.1.8] - 2026-10-19
 

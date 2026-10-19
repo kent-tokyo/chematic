@@ -55,7 +55,7 @@ experimental chemistry. Dated records are retained in the
 ## Minimal Python check
 
 ```bash
-pip install chematic==1.1.8
+pip install chematic==1.1.9
 ```
 
 ```python

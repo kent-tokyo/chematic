@@ -1,6 +1,6 @@
 # Open-work ledger
 
-Updated 2026-10-19 for **v1.1.8**. This file contains unresolved work and
+Updated 2026-10-19 for **v1.1.9**. This file contains unresolved work and
 current denominators only. Completed changes belong in the
 [CHANGELOG](https://github.com/kent-tokyo/chematic/blob/main/CHANGELOG.md);
 dated measurements belong in the

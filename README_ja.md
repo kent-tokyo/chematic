@@ -27,12 +27,13 @@ npm install @kent-tokyo/chematic
 
 Python wheelはC/C++コンパイラを必要とせず、各バインディングは同じRustコアを使います。
 
-### v1.1.8 の対応範囲
+### v1.1.9 の対応範囲
 
-v1.1.8では、記述子の値を変えずに初回Labute ASAと環数計算を高速化しました。
-公開macOS arm64 wheelでも、1ホスト・10,000件のLabute ASA結果を再現しています。
-検証したのは1ホスト・1操作だけです。複数OSやライブラリ全体での優位までは確認していません。
-広範なhosted chemistryはv1.1.7、永続化済みのcross-platform packetはv1.1.3です。
+v1.1.9では、入力位置を保持するchecked InChIKey batch、RDKit互換SMILESの
+fail-closedな安定性検査、反応で未指定のアルケン立体を拒否する安全策、出力を
+変えない指紋・記述子・CIPの高速化を追加しました。公開wheelの最新性能証拠は
+v1.1.8のLabute ASA限定レーンです。source上の改善を公開packageの結果としては
+扱いません。広範なhosted chemistryはv1.1.7、永続化済みのcross-platform packetはv1.1.3です。
 詳しくは[検証報告](docs/validation.md)、[ベンチマーク](benchmarks/README.md)、
 [CHANGELOG](CHANGELOG.md)を参照してください。
 

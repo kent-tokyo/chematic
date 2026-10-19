@@ -1,6 +1,6 @@
 # chematic roadmap
 
-> Updated 2026-10-19. Release line: **v1.1.8**. Work merged after the
+> Updated 2026-10-19. Release line: **v1.1.9**. Work merged after the
 > release remains **Unreleased** until the next tag.
 
 chematic is a safe, typed, local-first chemistry kernel for Rust, Python,

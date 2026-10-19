@@ -4,8 +4,10 @@ chematic benchmarks are specific to a package or source revision, comparator,
 corpus, host, runtime, options, and timed operation. A speed result counts only
 when the stated work and outputs are equivalent.
 
-The current release is **v1.1.8**. Its latest exact public-artifact performance
-record is the one-host macOS arm64 Labute ASA comparison. The latest broad,
+The current release is **v1.1.9**. Its performance changes remain source
+evidence until the exact public artifacts are measured. The latest exact
+public-artifact performance record is the one-host macOS arm64 v1.1.8 Labute
+ASA comparison. The latest broad,
 checked-in cross-platform public-wheel chemistry packet remains v1.1.3, and
 the broadest published-package RDKit performance packet remains v1.0.42.
 Newer source records do not inherit either package claim. See the
@@ -19,7 +21,7 @@ for retained history.
 | Question | Best current entry | Evidence boundary |
 |---|---|---|
 | Does a current public wheel reproduce a measured speed result? | [v1.1.8 Labute ASA](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-19-v118-published-labute-asa-cosmolkit.md) | One macOS arm64 wheel, one host, one descriptor |
-| What is the broadest public-wheel chemistry packet? | [v1.1.3 artifact packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-14-v113-published-artifact-packet.md) | Four Python wheels; not v1.1.8 performance evidence |
+| What is the broadest public-wheel chemistry packet? | [v1.1.3 artifact packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-14-v113-published-artifact-packet.md) | Four Python wheels; not v1.1.9 performance evidence |
 | What is the broadest published RDKit performance packet? | [v1.0.42 comparison](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-11-v1042-published-rdkit-packet.md) | Historical exact artifacts; do not transfer results to newer releases |
 | What is the Open Babel comparison boundary? | [file-I/O program](openbabel-file-io.md) | File interchange only; source and historical package records are separate |
 | Where are current source experiments? | [benchmark record index](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/README.md) | Development evidence unless an exact public artifact is named |
