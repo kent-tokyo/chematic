@@ -81,13 +81,13 @@ Installation: `pip install chematic`, `cargo add chematic`, or
 ## Current evidence boundary
 
 v1.1.8 reduces first-use Labute ASA and ring-count overhead for bounded
-ordinary Python molecules without changing descriptor results. Its 10,000-row
-source comparison is one-host development evidence, not public-wheel or
-multi-host evidence. The v1.1.7 published-wheel chemistry gate remains the
-latest completed hosted package lane until the v1.1.8 run finishes. The
-broadest published-package RDKit performance packet remains v1.0.42. The
-83-row reaction gate remains 80 exact graph/origin/map rows and three inputs
-invalid in both engines.
+ordinary Python molecules without changing descriptor results. Its public
+macOS arm64 wheel reproduces the 10,000-row Labute ASA result on one host; this
+is one operation, not a cross-platform chemistry packet. The v1.1.7 hosted
+chemistry workflow remains the latest broad package lane, the latest durable
+cross-platform packet remains v1.1.3, and the broadest published-package RDKit
+performance packet remains v1.0.42. The 83-row reaction gate remains 80 exact
+graph/origin/map rows and three inputs invalid in both engines.
 
 Each result applies only to its named artifact, corpus, options, and failure
 policy. Release availability is not accuracy evidence, source results are not

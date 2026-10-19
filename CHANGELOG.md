@@ -29,7 +29,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - Benchmark guidance now includes Open Babel as a separate file-interchange
   comparator, with semantic-equality gates and explicit boundaries between
   historical v1.0.42 evidence, newer one-host source records, and current
-  published-package claims.
+  published-package claims. The comparison is now directly available from the
+  documentation navigation.
+- Benchmark and validation overviews now distinguish the v1.1.8 one-operation
+  public-wheel result, the v1.1.7 hosted chemistry workflow, the v1.1.3 durable
+  cross-platform packet, current source experiments, and historical results.
 
 ## [1.1.8] - 2026-10-19
 

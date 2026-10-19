@@ -76,7 +76,9 @@ nav:
   - MCP Protocol Reference: mcp-protocol-reference.md
   - Cookbook (EN): cookbook.md
   - Cookbook (日本語): cookbook_ja.md
-  - Benchmark: benchmark.md
+  - Benchmarks:
+    - Method and evidence map: benchmark.md
+    - Open Babel file I/O: openbabel-file-io.md
   - Formats & Bindings:
     - CCD Molecular Templates: ccd-components.md
     - CIF Molecular Bonds: cif-molecular-bonds.md
