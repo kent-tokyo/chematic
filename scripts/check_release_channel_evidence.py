@@ -11,7 +11,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 EXPECTED_CHANNELS = {"github_release", "npm", "pypi", "crates_io", "docs_rs", "site"}
-STATUSES = {"verified", "mismatch", "unreachable", "not_measured"}
+STATUSES = {"verified", "partial", "mismatch", "unreachable", "not_measured"}
 
 
 def main() -> int:
