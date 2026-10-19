@@ -132,7 +132,7 @@ The minimal corpus has four one-atom valid records (including V3000) and one
 malformed record, plus SD fields. It does not reuse a competitor example or
 third-party molecular dataset.
 
-`python scripts/validate_sdf_selections.py` compares the public COSMolKit
+`python scripts/validation/validate_sdf_selections.py` compares the public COSMolKit
 wheel with this extension across LF/CRLF and terminated/unterminated variants.
 It exhausts the chosen slice grid, short integer-list products, all boolean
 masks and all five-record permutations. Python list/slice semantics and the
@@ -167,7 +167,7 @@ cargo test -p chematic-mol --lib --test sdf_selections \
 cargo clippy -p chematic-mol -p chematic-py --all-targets --offline --no-deps -- -D warnings
 cargo fmt --all -- --check
 python -m pytest crates/chematic-py/tests/test_sdf_selections.py crates/chematic-py/tests/test_io.py -q
-python scripts/validate_sdf_selections.py
+python scripts/validation/validate_sdf_selections.py
 python scripts/check_refactor_budget.py
 python scripts/check_binding_surface.py
 python scripts/check_product_names.py

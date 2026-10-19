@@ -61,7 +61,7 @@ Impact on practical drug-like compounds: negligible (100% agreement on 175-mol c
 
 ```bash
 # Regenerate RDKit reference data
-python scripts/gen_rdkit_reference.py   # writes scripts/rdkit_ref_properties.tsv
+python scripts/generators/gen_rdkit_reference.py   # writes scripts/rdkit_ref_properties.tsv
 
 # Run comparison and print per-descriptor agreement
 python scripts/rdkit_benchmark.py

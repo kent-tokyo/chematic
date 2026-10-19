@@ -180,7 +180,7 @@ python -m pytest crates/chematic-py/tests/test_pdb_selection.py
 c++ -std=c++17 -O1 \
   validation/openbabel_issues/pdb-selection/openbabel_delete_probe.cpp \
   $(pkg-config --cflags --libs openbabel-3) -o /tmp/ob2481-probe
-python scripts/validate_pdb_selection.py --probe /tmp/ob2481-probe
+python scripts/validation/validate_pdb_selection.py --probe /tmp/ob2481-probe
 ```
 
 Install the candidate Python extension and pinned RDKit first. The C++ helper

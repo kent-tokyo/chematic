@@ -8,6 +8,6 @@ or its linked record. Outputs belong under `validation/` or a temporary
 directory, never beside the script.
 
 The `stereo2d_*` scripts form one fixture family; the `aromaticity_*`,
-`canonical_*`, and `ez_*` scripts cover separate mechanisms. A one-time
+`canonical_*`, `ez_*`, and `mmff94_*` scripts cover separate mechanisms. A one-time
 experiment with no retained result or current reference should be removed
 after its finding is recorded.

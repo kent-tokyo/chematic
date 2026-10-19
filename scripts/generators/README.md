@@ -1,7 +1,7 @@
-# Boundary fixture generators
+# Fixture and report generators
 
-`generate_*_boundary_fixtures.py` writes the committed RDKit reference
-fixtures under `validation/`. Use the exact RDKit version and input noted
-in the corresponding validation record. Run a generator from the repository
-root, then review the fixture diff before committing it. Moving these
-generators did not regenerate or alter any fixture.
+`generate_*_boundary_fixtures.py` and the `gen_*` and `build_*` entry points
+write committed reference fixtures, corpora, or reports. Use the exact input
+and dependency versions noted in the corresponding validation or benchmark
+record. Run generators from the repository root and review output diffs
+before committing them. The directory moves did not regenerate any fixture.

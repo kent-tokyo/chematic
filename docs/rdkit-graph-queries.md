@@ -107,7 +107,7 @@ there is no shared matrix cache and no `force`/`prefix` parameter.
 
 ## Validation and regeneration
 
-`scripts/validate_rdkit_graph_queries.py` pins RDKit **2026.09.1** and verifies
+`scripts/validation/validate_rdkit_graph_queries.py` pins RDKit **2026.09.1** and verifies
 the checked-in manifest hash. It uses 27 original minimal structures under
 `MIT OR Apache-2.0`; no external molecular dataset is redistributed. Each
 fixture records provenance, license, minimization, oracle/settings, expected
@@ -139,7 +139,7 @@ ignored. Python graph-query tests pass 19 cases; with existing matrix,
 renumbering and EXYZ regressions the scoped Python run passes 94 cases.
 
 ```sh
-python scripts/validate_rdkit_graph_queries.py
+python scripts/validation/validate_rdkit_graph_queries.py
 cargo test -p chematic-smiles --lib --test rdkit_graph_queries --test rdkit_matrix_limits
 ```
 

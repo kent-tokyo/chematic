@@ -62,7 +62,7 @@ wildcards, aromatic molecules, component/atom-order changes and selected
 ordinary add-H/remove-H representation controls. These do not extend the
 supported domains of the hydrogen transformation APIs.
 
-`scripts/validate_hydrogen_count_contract.py` uses RDKit 2026.09.1 as an
+`scripts/validation/validate_hydrogen_count_contract.py` uses RDKit 2026.09.1 as an
 independent graph reference. It retains H nodes (`removeHs=False`) and uses
 an unsanitized graph plus a non-strict property cache for unusual examples.
 The molecular oracle counts real H nodes and each atom's attached bracket/

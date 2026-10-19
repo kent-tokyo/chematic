@@ -1,7 +1,7 @@
 //! Issue #227 Phase 0.4: dumps chematic's post-Phase-0.1/0.2/0.3
 //! `compute_mmff94_aromatic_view` atom + bond aromaticity flags for every
 //! heavy atom/bond of the 265-molecule Wave 1 corpus, for cross-checking
-//! against `scripts/mmff94_aromaticity_corpus_parity_227.py`'s RDKit
+//! against `scripts/diagnostics/mmff94_aromaticity_corpus_parity_227.py`'s RDKit
 //! oracle. Atom-index-aligned per PR #226's already-verified mapping.
 //!
 //! Run: `cargo run --release -p chematic-3d --example \

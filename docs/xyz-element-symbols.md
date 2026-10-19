@@ -59,7 +59,7 @@ The original five-atom fixture is
 all 118 elements in two casing modes, streaming, canonical writing, metadata,
 strict invalid-token handling and the core/SMILES boundary.
 
-`scripts/validate_xyz_symbol_case.py` uses RDKit 2026.09.1's independent
+`scripts/validation/validate_xyz_symbol_case.py` uses RDKit 2026.09.1's independent
 periodic table for 236 element/casing cases (222 distinct species tokens).
 It checks Python and optional real Node/WASM, diagnoses Open Babel with
 canonical and uppercase controls, and optionally records a retained pre-fix

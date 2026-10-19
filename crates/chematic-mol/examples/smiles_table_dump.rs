@@ -1,9 +1,9 @@
 //! IO-1 acceptance-gate dump: runs `SmilesRecordReader` over every scenario
-//! file named in `scripts/gen_smiles_table_fixtures.py`'s manifest, using
+//! file named in `scripts/generators/gen_smiles_table_fixtures.py`'s manifest, using
 //! that scenario's own configured options, and dumps each row's extracted
 //! `(status, name, properties, chematic_canonical_smiles)` as JSONL for
 //! comparison against a real RDKit oracle
-//! (`scripts/gen_rdkit_smiles_table_oracle.py`).
+//! (`scripts/generators/gen_rdkit_smiles_table_oracle.py`).
 //!
 //! Usage:
 //! ```text

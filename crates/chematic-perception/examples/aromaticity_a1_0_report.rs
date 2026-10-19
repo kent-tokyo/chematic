@@ -3,7 +3,7 @@
 //! Diagnostic only -- does not change `assign_aromaticity_ex`'s behavior.
 //! Reads `validation/aromaticity_a1_0_corpus.jsonl` (three buckets:
 //! `false_positive`, `false_negative`, `negative_control` -- see
-//! `scripts/gen_aromaticity_a1_0_corpus.py` for provenance), and for every
+//! `scripts/generators/gen_aromaticity_a1_0_corpus.py` for provenance), and for every
 //! molecule:
 //!
 //! 1. builds fused candidate components from the *augmented* ring list

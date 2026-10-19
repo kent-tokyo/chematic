@@ -160,7 +160,7 @@ aromatic/Kekulé inputs, charges, explicit/isotopic H and dummy atoms. The empty
 native graph is constructed with `RWMol().GetMol()` because empty SMILES input
 is rejected by chematic's parser.
 
-`python scripts/validate_layered_config.py` compares all output bits and
+`python scripts/validation/validate_layered_config.py` compares all output bits and
 accumulated counters exactly. It covers every active-layer subset, all 78
 supported path ranges, odd and maximum bit lengths, masks, counter seeds and
 wrapping, repeated/endpoint roots, range-dependent closures and atom
@@ -191,7 +191,7 @@ cargo test -p chematic-fp --lib --test rdkit_layered_config --offline --quiet
 cargo clippy -p chematic-fp -p chematic-py --all-targets --offline --no-deps -- -D warnings
 cargo fmt --all -- --check
 python -m pytest crates/chematic-py/tests/test_layered_config.py -q
-python scripts/validate_layered_config.py
+python scripts/validation/validate_layered_config.py
 python scripts/check_refactor_budget.py
 python scripts/check_binding_surface.py
 python scripts/check_product_names.py

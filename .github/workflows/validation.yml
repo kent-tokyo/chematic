@@ -79,7 +79,7 @@ jobs:
 
       - name: Generate validation.md
         if: hashFiles('validation/results/latest.json') != ''
-        run: python3 scripts/gen_validation_report.py validation/results/latest.json
+        run: python3 scripts/generators/gen_validation_report.py validation/results/latest.json
 
       - name: Append accuracy drift report (veridict)
         if: hashFiles('validation/results/latest.json') != ''

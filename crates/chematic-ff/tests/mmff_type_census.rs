@@ -5,7 +5,7 @@ use chematic_ff::assign_mmff94_numeric_types;
 use chematic_smiles::parse;
 
 // Hermetic integration gate. Regenerate the committed reference with
-// scripts/mmff94_atom_type_oracle_tsv.py and RDKit 2026.03.6.
+// scripts/diagnostics/mmff94_atom_type_oracle_tsv.py and RDKit 2026.03.6.
 #[test]
 fn compare_full_corpus_to_pinned_rdkit_oracle() {
     let corpus = include_str!("../../../validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi");

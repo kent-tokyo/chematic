@@ -30,7 +30,7 @@ planar, 120 trigonal bipyramidal, and 720 octahedral ligand permutations.
 Regenerate the MMFF94 atom-type census with RDKit **2026.03.6**:
 
 ```sh
-python scripts/mmff94_atom_type_oracle_tsv.py \
+python scripts/diagnostics/mmff94_atom_type_oracle_tsv.py \
   --corpus validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi \
   --output validation/rdkit-2026.03.6-mmff-type-census.tsv
 ```

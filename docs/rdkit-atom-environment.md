@@ -113,7 +113,7 @@ and Python methods; it does not extend WASM or the `rdkit_compat` facade.
 
 ## Validation
 
-`scripts/validate_rdkit_atom_environment.py` pins RDKit 2026.09.1 and verifies
+`scripts/validation/validate_rdkit_atom_environment.py` pins RDKit 2026.09.1 and verifies
 the manifest and individual normalized UTF-8 SMILES hashes. Its 30 original
 minimal project structures are recorded with provenance, license,
 redistribution, minimization, oracle settings and expectations in
@@ -146,7 +146,7 @@ budgets for radius zero. The prepared-model and ordinary distance/graph APIs
 share the existing code rather than a new chemistry interpretation.
 
 ```sh
-python scripts/validate_rdkit_atom_environment.py
+python scripts/validation/validate_rdkit_atom_environment.py
 cargo test -p chematic-smiles --lib --test rdkit_atom_environment \
   --test rdkit_graph_queries --test rdkit_matrix_limits
 ```

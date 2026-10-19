@@ -103,7 +103,7 @@ Limits and malformed/unsupported input return errors without a partial result.
 
 ## Evidence
 
-`scripts/generate_chemdraw_fixtures.py` creates 56 original binary recipes with
+`scripts/generators/generate_chemdraw_fixtures.py` creates 56 original binary recipes with
 independently assembled CDXML counterparts: seven molecular profiles, two
 header lengths, reversed property ordering and optional presentation data.
 They include charged/isotopic atoms, explicit H counts, aromaticity, E/Z,
@@ -112,7 +112,7 @@ multiple fragments and reused local IDs across fragments.
 Rust/Python/real Node-WASM tests cover dispatch, source bytes, coordinates,
 metadata consent, unsupported-chemistry refusal, every truncated prefix,
 extended lengths, references, duplicate IDs/properties and resource boundaries.
-`scripts/validate_chemdraw_block.py` uses RDKit 2026.09.1's independent XML
+`scripts/validation/validate_chemdraw_block.py` uses RDKit 2026.09.1's independent XML
 reader as the graph oracle and retains all inputs/outputs plus source/runtime
 hashes. It compares binary and XML AUTO/explicit modes, including indexed atom
 identities, charge, isotope, H count, bonds and canonical isomeric identity.

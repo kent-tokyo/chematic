@@ -46,7 +46,7 @@ Inputs:
     JSONL (requires the `diagnostics` feature), one row per molecule:
     {row_id, smiles, parse_ok, atom_count,
     emitted: [[atom_idx, radius, raw_environment_id], ...]}.
-  - RDKit side: `scripts/gen_ecfp_rdkit_environment_oracle.py`'s existing,
+  - RDKit side: `scripts/generators/gen_ecfp_rdkit_environment_oracle.py`'s existing,
     UNMODIFIED oracle JSONL (same script PR #120 used) -- this script reads
     `row["default"]["sparse_bit_info"]` (raw-hash -> [[atom,radius],...]) for
     the pair-set comparison, and `row["default"]["sparse_counts"]`

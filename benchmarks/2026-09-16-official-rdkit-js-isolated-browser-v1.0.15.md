@@ -58,7 +58,7 @@ bits) is **5,000/5,000 exact**. Its raw record is
 It covers that fingerprint configuration and corpus only.
 
 The follow-up uses a **fixed 10,000-row common-parse corpus**, not duplicated
-5k rows. `scripts/build_browser_rdkit_comparison_corpus.py` pins three exposed
+5k rows. `scripts/generators/build_browser_rdkit_comparison_corpus.py` pins three exposed
 source hashes into a 12,000-row candidate set; `scripts/qualify_browser_rdkit_common_corpus.py`
 then retains the first 10,000 inputs accepted by both browser-resident engines.
 The resulting corpus hash is
