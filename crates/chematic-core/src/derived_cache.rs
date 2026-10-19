@@ -99,13 +99,17 @@ type Erased = dyn Any + Send + Sync + RefUnwindSafe + UnwindSafe;
 
 type Slot = OnceLock<Arc<Erased>>;
 
+// Keep the frequently read numeric values together before the larger,
+// type-erased payload array. Rust's default layout put the ring count after
+// that array; an explicit private layout keeps this hot read near the scalars.
+#[repr(C)]
 pub(crate) struct DerivedCache {
-    slots: [Slot; SLOT_COUNT],
     scalars: [OnceLock<f64>; 4],
     /// Kept outside the type-erased slots because this descriptor is a very
     /// hot scalar property.  Avoiding `Arc<dyn Any>` and a downcast makes a
     /// prepared ring-count lookup comparable to RDKit's native cache read.
     rdkit_num_rings: AtomicUsize,
+    slots: [Slot; SLOT_COUNT],
 }
 
 impl Default for DerivedCache {
@@ -198,5 +202,24 @@ impl DerivedCache {
         let existing = self.slots[slot as usize].get()?;
         let any: Arc<dyn Any + Send + Sync> = Arc::<Erased>::clone(existing);
         any.downcast::<T>().ok()
+    }
+}
+
+#[cfg(test)]
+mod layout_tests {
+    use super::*;
+    use std::mem::{offset_of, size_of};
+
+    #[test]
+    fn hot_numeric_values_precede_type_erased_payloads() {
+        assert_eq!(offset_of!(DerivedCache, scalars), 0);
+        assert_eq!(
+            offset_of!(DerivedCache, rdkit_num_rings),
+            size_of::<[OnceLock<f64>; 4]>()
+        );
+        assert!(
+            offset_of!(DerivedCache, slots)
+                >= offset_of!(DerivedCache, rdkit_num_rings) + size_of::<AtomicUsize>()
+        );
     }
 }
