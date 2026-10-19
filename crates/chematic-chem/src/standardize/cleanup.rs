@@ -12,8 +12,9 @@ use crate::hydrogen::remove_hydrogens;
 ///
 /// The input is stripped of removable explicit hydrogens, metal--ligand bonds
 /// are disconnected with their bond-order charge transfer, and functional
-/// groups are normalized. RDKit's acid/base-priority reionization is not yet
-/// implemented here; molecules requiring that transfer can still differ.
+/// groups are normalized. A bounded acid/base proton transfer handles a
+/// single simple carbanion or alkoxide with a single eligible oxygen acid;
+/// RDKit's full acid/base-priority reionization is not yet implemented.
 pub fn cleanup(mol: &Molecule) -> Molecule {
     let without_h = remove_hydrogens(mol);
     let disconnected = disconnect_metals_for_cleanup(&without_h);
@@ -32,7 +33,82 @@ pub fn cleanup(mol: &Molecule) -> Molecule {
     } else {
         normalized
     };
-    charge_originally_isolated_metals(&without_h, normalized)
+    let normalized = charge_originally_isolated_metals(&without_h, normalized);
+    transfer_simple_acid_proton(&normalized)
+}
+
+/// Transfer one proton from an unambiguous O-H site to an anion for which
+/// protonation is represented without changing any bonds. This is a strict
+/// subset of RDKit's reionization: competing acids or anions are left alone.
+fn transfer_simple_acid_proton(mol: &Molecule) -> Molecule {
+    let negative: Vec<_> = mol
+        .atoms()
+        .filter_map(|(idx, atom)| (atom.charge < 0).then_some(idx))
+        .collect();
+    let [anion] = negative.as_slice() else {
+        return clone_molecule(mol);
+    };
+    let anion_atom = mol.atom(*anion);
+    let carbon_anion = anion_atom.element.atomic_number() == 6
+        && anion_atom.charge == -1
+        && !anion_atom.aromatic
+        && matches!(
+            (mol.degree(*anion), anion_atom.hydrogen_count),
+            (0, Some(3)) | (1, Some(2))
+        )
+        && mol
+            .neighbors(*anion)
+            .all(|(_, bond)| mol.bond(bond).order == BondOrder::Single);
+    let alkoxide = anion_atom.element.atomic_number() == 8
+        && anion_atom.charge == -1
+        && anion_atom.hydrogen_count == Some(0)
+        && mol.degree(*anion) == 1
+        && mol.neighbors(*anion).all(|(neighbor, bond)| {
+            mol.atom(neighbor).element.atomic_number() == 6
+                && mol.bond(bond).order == BondOrder::Single
+                && !mol.neighbors(neighbor).any(|(other, carbon_bond)| {
+                    other != *anion
+                        && mol.atom(other).element.atomic_number() == 8
+                        && mol.bond(carbon_bond).order == BondOrder::Double
+                })
+        });
+    if !carbon_anion && !alkoxide {
+        return clone_molecule(mol);
+    }
+
+    let acids: Vec<_> = mol
+        .atoms()
+        .filter_map(|(idx, atom)| {
+            if atom.element.atomic_number() != 8
+                || atom.charge != 0
+                || mol.degree(idx) != 1
+                || implicit_hcount(mol, idx) != 1
+            {
+                return None;
+            }
+            let (carbon, bond) = mol.neighbors(idx).next()?;
+            if mol.bond(bond).order != BondOrder::Single
+                || mol.atom(carbon).element.atomic_number() != 6
+            {
+                return None;
+            }
+            let is_carboxyl = mol.neighbors(carbon).any(|(neighbor, other)| {
+                neighbor != idx
+                    && mol.atom(neighbor).element.atomic_number() == 8
+                    && mol.bond(other).order == BondOrder::Double
+            });
+            (is_carboxyl || mol.atom(carbon).aromatic || carbon_anion).then_some(idx)
+        })
+        .collect();
+    let [acid] = acids.as_slice() else {
+        return clone_molecule(mol);
+    };
+    let mut builder = MoleculeBuilder::from_molecule(mol);
+    builder.set_atom_charge(*anion, 0);
+    builder.set_atom_hydrogen_count(*anion, Some(anion_atom.hydrogen_count.unwrap_or(0) + 1));
+    builder.set_atom_charge(*acid, -1);
+    builder.set_atom_hydrogen_count(*acid, Some(0));
+    builder.build()
 }
 
 /// RDKit Cleanup charges a bare Li/Na/K atom to +1 and a bare Mg/Ca atom
@@ -255,7 +331,7 @@ fn rebuild_after_metal_disconnection(
 #[cfg(test)]
 mod tests {
     use super::cleanup;
-    use chematic_core::Molecule;
+    use chematic_core::{Molecule, implicit_hcount};
     use chematic_smiles::parse;
 
     #[test]
@@ -306,6 +382,63 @@ mod tests {
                 chematic_smiles::rdkit_cleanup_canonical_smiles(&cleanup(&cleaned)).as_deref(),
                 Ok(expected),
                 "second Cleanup: {input}"
+            );
+        }
+    }
+
+    #[test]
+    fn transfers_one_acid_proton_to_simple_carbanions_and_alkoxide() {
+        // Expected structures were pinned against RDKit 2026.09.1 Cleanup.
+        for (input, expected) in [
+            ("[CH3-].CC(=O)O", "C.CC(=O)[O-]"),
+            ("[CH2-]C.CC(=O)O", "CC.CC(=O)[O-]"),
+            ("[O-]C.CC(=O)O", "CC(=O)[O-].CO"),
+            ("[O-]c1ccccc1.CC(=O)O", "CC(=O)[O-].Oc1ccccc1"),
+            ("[CH3-].Oc1ccccc1", "C.[O-]c1ccccc1"),
+            ("[CH3-].CCO", "C.CC[O-]"),
+        ] {
+            let before = parse(input).unwrap();
+            let after = cleanup(&before);
+            let charge = |m: &Molecule| {
+                m.atoms()
+                    .map(|(_, atom)| i32::from(atom.charge))
+                    .sum::<i32>()
+            };
+            let hydrogen = |m: &Molecule| {
+                m.atoms()
+                    .map(|(idx, _)| u32::from(implicit_hcount(m, idx)))
+                    .sum::<u32>()
+            };
+            assert_eq!(charge(&after), charge(&before), "{input}");
+            assert_eq!(hydrogen(&after), hydrogen(&before), "{input}");
+            assert_eq!(
+                chematic_smiles::rdkit_cleanup_canonical_smiles(&after).as_deref(),
+                Ok(expected),
+                "{input}"
+            );
+            assert_eq!(
+                chematic_smiles::rdkit_cleanup_canonical_smiles(&cleanup(&after)).as_deref(),
+                Ok(expected),
+                "second Cleanup: {input}"
+            );
+        }
+    }
+
+    #[test]
+    fn leaves_ambiguous_or_unsupported_proton_transfers_alone() {
+        for input in [
+            "[CH3-].O",               // water is outside the oxygen-acid rule
+            "[CH3-].OCCO",            // two equivalent alcohol sites
+            "[CH3-].CC(=O)O.CC(=O)O", // two carboxylic acid sites
+            "[NH2-].CC(=O)O",         // amide anion has different RDKit rules
+            "CC(=O)[O-].CC(=O)O",     // carboxylate is not an alkoxide
+        ] {
+            let before = parse(input).unwrap();
+            let after = cleanup(&before);
+            assert_eq!(
+                chematic_smiles::rdkit_cleanup_canonical_smiles(&after),
+                chematic_smiles::rdkit_cleanup_canonical_smiles(&before),
+                "{input}"
             );
         }
     }

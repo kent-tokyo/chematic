@@ -215,6 +215,17 @@ impl MoleculeBuilder {
         self.atoms[idx.0 as usize].charge = charge;
     }
 
+    /// Set the hydrogen count stored on an atom, preserving its other fields.
+    ///
+    /// `None` leaves the count to valence inference; `Some` records the
+    /// bracket-atom hydrogen count explicitly.
+    ///
+    /// # Panics
+    /// Panics if `idx` is out of range.
+    pub fn set_atom_hydrogen_count(&mut self, idx: AtomIdx, count: Option<u8>) {
+        self.atoms[idx.0 as usize].hydrogen_count = count;
+    }
+
     /// Number of atoms added so far.
     pub fn atom_count(&self) -> usize {
         self.atoms.len()
