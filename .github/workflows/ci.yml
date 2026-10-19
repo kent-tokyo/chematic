@@ -182,7 +182,7 @@ jobs:
         run: |
           cargo build --locked -p chematic-cli
           python3 scripts/v3000_rdkit_semantic_gate.py --output /tmp/v3000-rdkit-semantic.json
-          python3 scripts/tpsa_functional_group_probe.py \
+          python3 scripts/diagnostics/tpsa_functional_group_probe.py \
             --cli target/debug/chematic \
             --output /tmp/tpsa-functional-group-probe.json
           python3 scripts/descriptor_functional_group_classification.py \

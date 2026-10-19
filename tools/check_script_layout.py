@@ -10,7 +10,7 @@ from pathlib import Path, PurePosixPath
 ROOT = Path(__file__).resolve().parents[1]
 BASELINE = ROOT / "tools/script_root_baseline.list"
 ALLOWED_DIRECTORIES = frozenset(
-    {"benchmarks", "checks", "generators", "lib", "release", "tests", "validation"}
+    {"benchmarks", "checks", "diagnostics", "generators", "lib", "release", "tests", "validation"}
 )
 
 

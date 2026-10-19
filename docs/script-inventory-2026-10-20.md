@@ -57,3 +57,21 @@ purpose-by-purpose review before deletion. The direct-child list is frozen in
 unlisted direct children and unknown subdirectories. New scripts go into a
 purpose-specific subdirectory. Moving a retained script requires updating its
 CI and documentation references, imports, and repository-root resolution.
+
+## Follow-up organization
+
+The subsequent cleanup moves all 28 `generate_*_boundary_fixtures.py` scripts
+to `scripts/generators/` and 21 retained diagnosis, probe, and audit scripts to
+`scripts/diagnostics/`. Their output destinations remain under `validation/`;
+the pinned fixture data and frozen benchmark JSON were not regenerated.
+Current CI, source-example, benchmark, and validation instructions use the new
+paths. The Python test importing `probe_rdkit_python_contract.py` and the
+descriptor classifier importing `tpsa_functional_group_probe.py` now use the
+new module locations.
+
+`mmff94_macrocycle_type_audit.py` was a one-off stdout-only comparison with
+no current reference or retained output. The broader
+`mmff94_atom_type_census.py` remains available for row-accounted RDKit atom
+type comparisons, and dedicated MMFF regression tests remain in place. The
+root baseline falls from 512 to 462 files. With two directory READMEs and
+that deletion, `scripts/` now contains 594 tracked files after this follow-up.

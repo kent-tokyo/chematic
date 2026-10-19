@@ -13,6 +13,8 @@ current issue or benchmark links to them.
 | Evidence reproduction | Search `docs/`, `benchmarks/`, and `validation/` for the script path or basename. The linked record defines inputs and expected outputs. |
 | Benchmarks | `bench_*` entry points and their dated records in `benchmarks/`. |
 | Fixture generation | `generate_*`, `gen_*`, or `build_*` entry points; committed fixture data belongs under `validation/` or a test fixture directory. |
+| Boundary fixture regeneration | `generators/generate_*_boundary_fixtures.py`; use the pinned RDKit version in the corresponding `validation/` record. |
+| Historical diagnostics | `diagnostics/` contains retained reproductions with checked-in results or active references. |
 | Shared code and tests | Importing scripts and `scripts/tests/`. A filename without a path reference may still be an imported helper or a discovered test. |
 
 The [dated inventory](../docs/script-inventory-2026-10-20.md) records the
@@ -61,7 +63,7 @@ children of this directory; `tools/check_script_layout.py` checks it in CI.
 ## Organization rule
 
 - Put new scripts in `scripts/checks/`, `scripts/validation/`,
-  `scripts/benchmarks/`, `scripts/generators/`, `scripts/release/`, or
+  `scripts/benchmarks/`, `scripts/diagnostics/`, `scripts/generators/`, `scripts/release/`, or
   `scripts/lib/` according to purpose; put their tests in
   `scripts/tests/`. The `scripts/` root is a legacy path list, not the default
   destination for new scripts.

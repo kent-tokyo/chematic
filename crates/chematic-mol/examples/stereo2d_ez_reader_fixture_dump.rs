@@ -8,7 +8,7 @@
 //! fixed-width text" convention, this time for double-bond E/Z.
 //!
 //! Emits one JSON object per fixture line to stdout. Cross-referenced
-//! against RDKit by `scripts/stereo2d_ez_reader_diagnosis.py`.
+//! against RDKit by `scripts/diagnostics/stereo2d_ez_reader_diagnosis.py`.
 //!
 //! Run:
 //! ```text

@@ -21,7 +21,7 @@
 //!
 //! Emits one JSONL row per (molecule, ring, atom) to stdout. RDKit's own
 //! per-atom aromatic verdict is *not* added here (RDKit bindings are
-//! Python-only in this project) -- `scripts/aromaticity_a1_0_diagnosis.py`
+//! Python-only in this project) -- `scripts/diagnostics/aromaticity_a1_0_diagnosis.py`
 //! joins this output against RDKit and runs the false-positive/
 //! false-negative polarization check.
 //!
