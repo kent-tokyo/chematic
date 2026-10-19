@@ -34,6 +34,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - Benchmark and validation overviews now distinguish the v1.1.8 one-operation
   public-wheel result, the v1.1.7 hosted chemistry workflow, the v1.1.3 durable
   cross-platform packet, current source experiments, and historical results.
+- ROADMAP and the open-work ledger now separate strategy from operational
+  denominators. The English, Japanese, and Chinese READMEs and current install
+  examples use the v1.1.8 release boundary without rewriting dated evidence.
 
 ## [1.1.8] - 2026-10-19
 

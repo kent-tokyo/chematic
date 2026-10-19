@@ -29,13 +29,11 @@ Python wheel 无需 C/C++ 编译器；各绑定共享同一 Rust 内核。
 
 ### v1.1.8 范围
 
-v1.1.8 降低了 Python 中有界普通分子首次计算 Labute ASA 和环数的开销，同时保持描述符结果不变；
-较大或高度成环的输入仍按需计算。性能结论仅适用于记录中的源码构建、语料、选项和 macOS 主机，
-尚不代表公开 wheel 或多主机证据。此前 v1.1.7 扩展了受检的科学文件转换与输出、自定义指纹和力场输入，以及保留来源信息的
-SDF、PDB 和 MOL2 工作流。版本还增加了 alignment、information theory 与 MIF 的类型化兼容
-API，并修正了芳香性、立体化学、Morgan、MOL2 和 PDB 的边界情况。各 API 明确报告资源限制和失败原因。
-性能与兼容性结论仅适用于记录中注明的 artifact、corpus、option 和 host。详情见
-[验证报告](docs/validation.md)和
+v1.1.8 在保持描述符结果不变的前提下，降低了首次 Labute ASA 和环数计算的开销。
+公开的 macOS arm64 wheel 也在单台主机上复现了 10,000 条 Labute ASA 结果。
+这只是单项操作证据，不代表跨平台或整个工具包都更快。广泛的 hosted chemistry
+证据仍对应 v1.1.7，已归档的跨平台证据包仍对应 v1.1.3。详情见
+[验证报告](docs/validation.md)、[基准索引](benchmarks/README.md)和
 [CHANGELOG](CHANGELOG.md)。
 
 ## 使用

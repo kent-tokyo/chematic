@@ -11,29 +11,18 @@ contracts and reproducible evidence over feature-count parity.
 
 - Stable selected paths cover SMILES/SMARTS, descriptors, fingerprints,
   search, and common MOL/SDF workflows through one Rust core.
-- v1.1.8 reduces first-use Labute ASA and ring-count overhead for bounded
-  ordinary Python molecules without changing descriptor results. Exact
-  public-wheel and second-host performance evidence remains open.
-- Issues #734 and #754 are closed, but their reaction, SMARTS, autoconf, and
-  fuzz corpora remain regression gates. Closure is not universal parity.
-- The bounded workflow gates cover 80 exact reaction rows plus three jointly
-  invalid inputs, 39/39 largest-fragment decisions, and 16/16 labelled
-  R-group rows. Broader standardization and R-group chemistry remain open.
-- The v1.1.7 published-wheel chemistry workflow completed all 11 Linux,
-  macOS, Windows, RDKit-comparison, A6, and autoconf jobs. Its hosted run is
-  package evidence; a durable checked-in v1.1.7 packet is still required.
-- The broadest published-package RDKit performance packet remains v1.0.42.
-  Source or exploratory timings are not relabelled as package evidence.
-- The processed Linux Codecov lane reports 96.93% Rust line coverage.
-  Coverage proves execution, not chemical correctness.
-- Current-source RDKit 2026.09.1 classification covers every Normalize,
-  Reionize, Cleanup and CTfile stress-row residual. The remaining differences
-  are bounded support gaps or declared policy/representation differences, not
-  untracked matches.
-- Post-candidate NCI/PubChem MCS, SDF-attribute and stereo/3D holdouts are
-  frozen under a hash-checked provenance manifest. They are unscored
-  evaluation data and must not be tuned on.
-- 3D, MMFF94, pKa/ADMET screening, IUPAC naming, broad Markush/polymer
+- The public v1.1.8 macOS arm64 wheel reproduces the 10,000-row Labute ASA
+  result on one host. This is one-operation evidence, not a cross-platform or
+  toolkit-wide superiority claim.
+- Broad hosted package chemistry is established for v1.1.7; the durable
+  checked-in cross-platform packet remains v1.1.3; the broadest published
+  RDKit package benchmark remains v1.0.42.
+- Reaction, SMARTS, fragment, and labelled R-group results are bounded by
+  declared corpora. Standardization and CTfile residuals are classified but
+  not fully closed.
+- Hash-pinned MCS, SDF-attribute, and stereo/3D holdouts are frozen and
+  unscored. They must not be used for tuning before their one-time evaluation.
+- 3D/MMFF94, pKa/ADMET screening, IUPAC naming, broad Markush/polymer
   expansion, and rich CDXML editing remain experimental or bounded.
 
 Exact denominators belong in [validation](docs/validation.md), dated results
@@ -42,131 +31,65 @@ in the [benchmark index](benchmarks/README.md), and unresolved work in the
 
 ## Priority order
 
-### Next candidate — immediate sequence
+### 1. Finish release-grade evidence
 
-1. **Evaluate the frozen holdouts once.** Run MCS comparison, SDF attributes
-   and stereo/3D quality from a frozen release candidate; report every row and
-   do not change that candidate after inspecting results.
-2. **Implement the classified standardization gaps by value.** Prioritize the
-   36 missing Reionize assignments, aromatic N-oxide handling and common
-   functional groups. Keep 883 independent-ionization and 26 metal-stereo
-   policy differences explicit instead of copying them silently.
-3. **Close the remaining CTfile rows.** Fix the one current chematic readback
-   failure and reduce ten stereo-only rows without counting 16 RDKit oracle
-   failures against the writer.
-4. **Finish two-host performance evidence.** Repeated QED caching is complete;
-   retain first-use output identity and use the hosted Linux 20-block lane to
-   adjudicate chiral Morgan, Labute ASA and QED alongside macOS.
-   The [terminal-TPSA source follow-up](benchmarks/2026-10-18-terminal-tpsa.md)
-   improves both fixed first-use windows. The
-   [Python ASA/ring follow-up](benchmarks/2026-10-18-python-first-use-ring-asa.md)
-   closes the measured RDKit first-use ASA and ring-count deficits on one
-   macOS source lane. The later
-   [10k ASA follow-up](benchmarks/2026-10-19-python-labute-asa-cosmolkit.md)
-   also clears the fixed COSMolKit ASA lane in 20/20 blocks while preserving
-   all values. First-use TPSA plus one chiral-Morgan window remain open.
-   COSMolKit's six unequal ring counts stay unranked instead of being treated
-   as a speed deficit. Keep source evidence separate from public artifacts and
-   state the single-macOS-host limit explicitly.
+- Evaluate the frozen holdouts once from a fixed candidate.
+- Re-run relevant chemistry gates from exact PyPI, npm, and crates.io
+  artifacts; keep source, package, browser, and platform lanes separate.
+- Record versions, hashes, corpora, options, host, and all failure classes.
+- Extend semver, downstream-consumer, Python stub, and WASM declaration gates
+  to every changed public surface.
 
-**Exit:** the release candidate passes all changed-crate/binding compatibility
-gates, evaluates the frozen rows exactly once, and has separate two-host
-first-use, reuse, parse-inclusive and RSS evidence.
+**Exit:** every public claim points to a reproducible artifact record, and the
+frozen holdout candidate is unchanged after results are inspected.
 
-### P0 — Maintain evidence from exact v1.1.x artifacts
+### 2. Close correctness residuals
 
-1. Preserve the successful v1.1.5 published-wheel chemistry run and check in
-   its versions, hashes, counts, and failure accounting as a durable packet.
-2. Run reaction, SMARTS, fingerprint, format, browser, and A6 gates from exact
-   PyPI, npm, and crates.io artifacts when a claim depends on that channel.
-3. Record artifact and corpus hashes, comparator builds, options, platform,
-   and failure accounting.
-4. Keep Linux, macOS, Windows, browser, and native results separate.
+- Implement high-value standardization gaps without silently adopting
+  comparator-specific policy differences.
+- Fix chematic CTfile readback failures and reduce stereo-only differences;
+  keep comparator oracle failures separate.
+- Maintain reaction, SMARTS, autoconf, fuzz, CIP-abstention, and identity
+  regression gates across Rust, Python, and WASM.
+- Preserve typed refusals and loss reports instead of guessed successes.
 
-**Exit:** every public claim points to a reproducible artifact record.
+**Exit:** each residual is an exact match, a documented policy difference, a
+typed unsupported case, or a reproducible bug with an owner.
 
-### P0 — Protect API and chemistry compatibility
+### 3. Prove equivalent-work performance
 
-1. Run `cargo-semver-checks` against v1.1.7 for every changed publishable crate
-   and retain focused downstream compile fixtures where Rust semver tooling
-   cannot express the contract.
-2. Treat public enum variants and struct fields as semver-significant.
-3. Keep RDKit 2026.03.6 and 2026.09.1 ring-count differences versioned rather
-   than selecting one oracle as universally correct.
-4. Preserve typed refusals and explicit loss reports across bindings.
-5. Reject Python removals/new required arguments/dependency narrowing and WASM
-   TypeScript declaration removals before merge.
+- Require exact or toleranced output agreement before timing.
+- Separate parse-inclusive, first-use, prepared/hot, startup, RSS, and batch
+  lanes; reject skipped or asymmetric work.
+- Re-run current ASA, TPSA, chiral Morgan, QED, and reaction findings on a
+  second host and exact public artifacts.
+- Do not rank operations whose outputs differ.
 
-**Exit:** supported downstream fixtures compile, chemistry contracts are
-versioned, and unsupported inputs never become guessed successes.
+**Exit:** a performance claim uses balanced repeated blocks, paired confidence
+bounds, equivalent outputs, exact artifacts, and an explicit host scope.
 
-### P0 — Close equivalent-work performance deficits
+### 4. Expand workflows and file interchange
 
-1. Require exact or toleranced output agreement before timing.
-2. Separate parse-inclusive, first-use, prepared/hot, startup, and memory
-   lanes.
-3. Prioritize reproducible deficits in QED/LogP first-use, TPSA against
-   COSMolKit, chiral Morgan, and reaction application. Preserve the new
-   fixed-lane ASA win and RDKit ring-count win through public-wheel and
-   hosted-CI gates; do not rank COSMolKit ring count until outputs agree.
-4. Reject rows with comparator errors, skipped work, or asymmetric APIs.
+- Extend V3000, MOL2, CML, CIF, SDF, CDXML, standardization, reaction, and
+  R-group tests to stratified real-world corpora.
+- Compare graph, charge, isotope, bond order, stereo, coordinates, properties,
+  and metadata before speed.
+- Preserve batch accounting:
+  `input = success + refusal + unsupported + invalid + internal_error`.
 
-**Exit:** a declared four-arm win uses at least 20 balanced rotating blocks,
-wins every block, has a paired 95% lower bound above 1.0, and is rerun from the
-exact public artifact in hosted CI. Single-host performance claims remain
-labelled as such.
+**Exit:** every supported row preserves its declared semantics or returns a
+typed loss/refusal. See the [Open Babel plan](docs/openbabel-interchange-plan.md).
 
-### P0/A4 — Expand semantic file interchange
+### 5. Improve 3D and product surfaces
 
-1. Extend the V3000, MOL2, CML, CIF, SDF, and CDXML comparison to stratified
-   corpora.
-2. Compare graph, charge, isotope, bond order, stereo, coordinates,
-   properties, and format metadata before speed.
-3. Preserve batch accounting:
-   `input = success + refusal + unsupported + invalid + internal_error`.
-4. Keep cold start, parse, write, round trip, peak RSS, and large-file
-   throughput separate.
-
-**Exit:** every supported cell round-trips under its declared observer or
-returns a typed loss/refusal. See the [Open Babel plan](docs/openbabel-interchange-plan.md).
-
-### P1 — Maintain reaction, SMARTS, standardization, and R-group contracts
-
-1. Keep the 83-row reaction gate, 310,000-cell SMARTS gate, autoconf probes,
-   BioTransformer-derived cases, and property-fuzz minimizers in CI.
-2. Test product graph, atom origin, maps, explicit H, stereo, and rejection
-   diagnostics independently.
-3. Expand standardization and labelled R-group corpora with atom-order
-   invariant fixtures and typed refusals.
-4. Add second-host and exact-package reruns before promoting source timing
-   results against RDKit or Indigo.
-
-**Exit:** supported rows are deterministic across Rust, Python, and WASM;
-unsupported chemistry remains observable.
-
-### P1/A2/A6 — Maintain stereo, identity, and 3D quality
-
-1. Retain permutation, spelling, round-trip, CIP-abstention, MOL stereo, and
-   stable-key gates.
-2. Measure typing, energy, gradient, convergence, stereo, clash, conformer
-   quality, time, and memory separately.
-3. Treat the 265-row A6 set and inspected holdouts v1–v4 as development data.
-4. Diagnose remaining minimization and basin-diversity tails without tuning
-   on inspected holdouts; freeze a candidate before selecting new data.
-5. Promote prepared force fields and parallel conformer generation only after
-   two-host, 21-block, peak-memory, exact-artifact, and no-regression gates.
-
-**Exit:** no known wrong-confident result remains in the declared domain. A
-speed claim also requires equal acceptable quality and published artifacts.
-
-### P2 — Product and ecosystem work
-
+- Measure typing, energy, gradient, convergence, stereo, clash, conformer
+  quality, time, and memory separately on unused data.
 - Keep browser workflows local-first, cancellable, resource-bounded, and
   explicit about failure.
-- Maintain shared semantics across Python, Rust, Node/WASM, CLI, and MCP
-  without forcing identical host-language API shapes.
-- Add requested workflow features only with a documented support boundary,
-  fixtures, and maintenance owner.
+- Add features only with a support boundary, fixtures, and maintenance owner.
+
+**Exit:** no known wrong-confident result remains in the declared domain; any
+speed claim also meets the published quality gate.
 
 ## Product phases
 
@@ -198,7 +121,7 @@ speed claim also requires equal acceptable quality and published artifacts.
 - Count success, failure, refusal, unsupported, and skipped inputs separately.
 - A typed refusal is safer than a wrong answer, but it is not a match.
 - A source pass is not a published-package result.
-- Performance requires equivalent work and equivalent acceptable output.
+- Performance requires equivalent work and acceptable output.
 - Coverage, availability, and feature presence are not chemistry validation.
 - Sealed data is evaluated once; inspected rows cannot become sealed again.
 

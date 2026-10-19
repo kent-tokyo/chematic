@@ -1,87 +1,75 @@
 # Open-work ledger
 
-Updated 2026-10-19 for **v1.1.8**.
-This file lists unresolved work only. Completed changes belong in the
-[CHANGELOG](https://github.com/kent-tokyo/chematic/blob/main/CHANGELOG.md); measurements belong in the
-[validation report](validation.md) and [benchmark index](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/README.md).
+Updated 2026-10-19 for **v1.1.8**. This file contains unresolved work and
+current denominators only. Completed changes belong in the
+[CHANGELOG](https://github.com/kent-tokyo/chematic/blob/main/CHANGELOG.md);
+dated measurements belong in the
+[benchmark index](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/README.md).
 
-## Active follow-up
+## Release and compatibility
 
-- **v1.1.8 artifact packet:** run the hosted Linux/macOS/Windows chemistry
-  workflow after publication and check in artifact/corpus hashes and failure
-  counts. The successful v1.1.7 hosted run remains the latest complete package
-  lane; npm/WASM and crates.io remain separate evidence channels.
-- **Descriptor performance:** repeated QED now has a mutation-safe cache.
-  Complete the hosted Linux 20-block run, compare it with macOS, and keep
-  the first-use chiral Morgan and COSMolKit TPSA deficits visible. Do not turn
-  a hot-cache or one-host win into a toolkit-wide claim.
-  The [terminal-TPSA source experiment](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-18-terminal-tpsa.md)
-  improves first-use TPSA by 1.037x/1.270x on two fixed macOS windows;
-  the [ASA/ring follow-up](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-18-python-first-use-ring-asa.md)
-  closes the measured RDKit first-use deficits on one macOS source lane. The
-  [10k ASA follow-up](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-19-python-labute-asa-cosmolkit.md)
-  also clears the fixed COSMolKit ASA lane in all 20 blocks. COSMolKit deficits
-  remain in first-use TPSA and one chiral-Morgan window; its six unequal ring
-  counts remain unranked. Re-time exact public artifacts in hosted CI and keep
-  the single-macOS-host limitation visible before broadening these results.
-- **Standardization implementation:** every current Normalize, Reionize and
-  Cleanup residual is classified from the same source revision. Prioritize 36
-  missing Reionize assignments, aromatic N-oxide kekulization and common
-  functional groups. Independent ionization and metal-stereo policy
-  differences remain declared contracts.
-- **CTfile:** current source has 4,045 exact readbacks, ten stereo-only rows,
-  one chematic readback failure and 16 RDKit oracle failures. Fix the chematic
-  rows without absorbing oracle failures into the success count.
-- **Compatibility:** changed public crates, Python declarations/dependencies
-  and WASM declarations now have previous-release gates. Extend feature-matrix
-  consumer fixtures where `cargo-semver-checks` cannot observe behavior.
-- **Equivalent-work performance:** close prepared-operation deficits without
-  hiding work at another boundary. Any preparation moved into parsing must be
-  bounded and reported with parse-inclusive, first-use, prepared, startup and
-  peak-memory results; add a second host before broad claims.
-- **RDKit version contract:** retain the versioned 2026.03.6/2026.09.1 ring
-  disagreements and typed CIP abstentions. Do not present one oracle version
-  as a universal chemical truth.
-- **File interchange:** expand V3000, MOL2, CML, CIF, SDF, and CDXML semantic
-  tests to stratified real-file corpora before broad Open Babel claims.
-- **Reaction and standardization:** keep the 83-row reaction and fuzz gates,
-  then expand multi-reactant, explicit-H, radical, charge, stereo, and
-  rejection strata. Broader Cleanup parity remains open.
-- **R-group:** maintain the terminal-wildcard subset across Rust, Python, and
-  WASM. Multi-core, MCS alignment, tautomer/core enumeration, and non-terminal
+- The public v1.1.8 macOS arm64 wheel completed the 10,000-row Labute ASA
+  lane on one host. A broad cross-platform v1.1.8 artifact packet is still
+  open; v1.1.7 remains the latest complete hosted chemistry workflow.
+- Keep PyPI, npm/WASM, crates.io, browser, source, and operating-system results
+  separate. Extend previous-release consumer tests where semver tooling cannot
+  observe behavioral contracts.
+- Preserve the versioned RDKit 2026.03.6/2026.09.1 ring disagreements and
+  typed CIP abstentions instead of selecting one oracle as universal truth.
+
+## Chemistry correctness
+
+- **Standardization:** current source matches RDKit 2026.09.1 on Normalize
+  4,065/4,069, Cleanup 3,923/4,069, and Reionize 3,150/4,069 rows. Implement
+  high-value missing assignments and functional groups; keep independent
+  ionization and metal-stereo policy differences explicit.
+- **CTfile:** one chematic readback failure and ten stereo-only rows remain;
+  16 RDKit oracle failures stay outside the chematic failure count.
+- **Reaction/SMARTS:** retain the 80 exact reaction rows plus three jointly
+  invalid inputs, the 310,000-cell SMARTS gate, autoconf probes,
+  BioTransformer-derived cases, and minimized fuzz regressions.
+- **R-group:** the terminal-wildcard subset is covered across bindings.
+  Multi-core, MCS alignment, tautomer/core enumeration, and non-terminal
   R-groups remain outside the current contract.
-- **CDK/Indigo comparison:** expand beyond the bounded 15 reaction, 39 parent,
-  and 16 labelled R-group rows; add prepared-object, memory, second-host, and
-  exact-package lanes.
-- **Frozen trust holdouts:** candidate `f5d6cd6f` predates the acquired,
-  hash-pinned NCI/PubChem sources. MCS comparison (64), SDF attributes (64),
-  and stereo/3D (96) are unscored. Evaluate them once without changing the
-  candidate, and do not use their outcomes for tuning.
-- **A6 quality:** topology bounds are aligned on the development corpus, while
-  minimization and basin-diversity tails remain. Retain quality tails,
-  convergence, time, and memory when the new stereo/3D holdout is evaluated.
-- **A6 publication:** add 21 alternating blocks, a second host, peak memory,
-  exact public artifacts, and an unused quality set before claiming a general
-  speed-and-quality win.
-- **Independent workflow corpora:** add multi-reactant reactions, multi-core
-  R-groups, and unseen SDF/V3000/MOL2/CJSON/CIF files while retaining refusals
-  and semantic losses in the denominator. Extend the OGB lane beyond the known
-  EGFR sample before making a broad throughput claim.
+- **File interchange:** extend V3000, MOL2, CML, CIF, SDF, CDXML, and related
+  semantic tests to stratified real files before broad competitor claims.
 
-Issues #734 and #754 are closed, as are #739, #769, #779, and #785. Their
-fixtures remain regression tests; closed status does not broaden the supported
-domain.
+Issues #734, #754, #739, #769, #779, and #785 are closed. Their fixtures
+remain regression tests; closure does not broaden the supported domain.
+
+## Performance and memory
+
+- The public v1.1.8 ASA lane establishes exact output agreement and a bounded
+  one-host result. COSMolKit first-use ASA is a tie; repeated and
+  parse-inclusive lanes favor chematic. Six unequal COSMolKit ring-count rows
+  remain unranked.
+- Re-run ASA, TPSA, chiral Morgan, QED, and reaction findings from exact public
+  artifacts on a second host. Split parsing, first use, prepared reuse,
+  startup, throughput, and peak RSS.
+- Do not hide preparation at another boundary or rank rows with unequal
+  outputs, comparator errors, skips, or unsupported work.
+
+## Independent and 3D evaluation
+
+- Candidate `f5d6cd6f` predates the hash-pinned NCI/PubChem sources. MCS
+  comparison (64), SDF attributes (64), and stereo/3D (96) are frozen and
+  unscored. Evaluate once without changing the candidate; never tune on the
+  observed outcomes.
+- Retain typing, energy, gradient, convergence, stereo, clash, conformer
+  quality, time, and memory. Development sets and inspected holdouts cannot be
+  promoted to independent evidence.
+- Add 21 alternating blocks, a second host, peak memory, exact public
+  artifacts, and unused quality data before a general 3D speed-and-quality
+  claim.
 
 ## Recurring evidence refreshes
 
-- Rerun chemistry, reaction, SMARTS, CIP, fingerprint, format, and 3D gates
-  from exact registry artifacts on their declared platforms.
-- Compare equal work and equal acceptable outputs in alternating repeated
-  blocks; split parsing, perception, prepared reuse, and memory.
-- Pin new comparator artifacts and hashes. Keep source, package, and browser
-  lanes separate.
-- Retain strict/reporting paths for lossy MOL, V3000, CDXML, Markush/polymer,
+- Re-run relevant chemistry gates from exact registry artifacts.
+- Pin comparator versions and hashes; report every failure class.
+- Keep strict/reporting paths for lossy MOL, V3000, CDXML, Markush/polymer,
   Standard InChI, and canonical identity.
+- Expand independent corpora for multi-reactant reactions, multi-core
+  R-groups, unseen file formats, and OGB workflows.
 
 ## Dependency classes
 

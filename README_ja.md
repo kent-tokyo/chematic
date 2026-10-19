@@ -29,15 +29,12 @@ Python wheelはC/C++コンパイラを必要とせず、各バインディング
 
 ### v1.1.8 の対応範囲
 
-v1.1.8では、Pythonで有界な通常分子を扱う際の初回Labute ASAと環数計算を高速化しました。
-記述子の値は維持し、大きな分子や環の多い分子は従来どおり遅延計算します。
-測定結果は記録したソースビルド、コーパス、オプション、macOSホストに限定され、
-公開wheelや複数ホストでの証拠ではありません。従来の1.1.7では、科学計算ファイルの検証付き変換・出力、指紋と力場へのカスタム入力、
-SDF・PDB・MOL2のsource-preserving処理を拡充しました。alignment、information theory、
-MIFの型付き互換APIも追加し、芳香族性・立体化学・Morgan・MOL2・PDBの境界例を修正しています。
-各APIはresource limitと失敗理由を明示します。性能と互換性の主張は、記録に明記した
-artifact・corpus・option・hostの範囲に限ります。詳しくは
-[検証報告](docs/validation.md)と[CHANGELOG](CHANGELOG.md)を参照してください。
+v1.1.8では、記述子の値を変えずに初回Labute ASAと環数計算を高速化しました。
+公開macOS arm64 wheelでも、1ホスト・10,000件のLabute ASA結果を再現しています。
+これは1操作に限定した証拠であり、複数OSやライブラリ全体での優位を示すものではありません。
+広範なhosted chemistryはv1.1.7、永続化済みのcross-platform packetはv1.1.3です。
+詳しくは[検証報告](docs/validation.md)、[ベンチマーク](benchmarks/README.md)、
+[CHANGELOG](CHANGELOG.md)を参照してください。
 
 ## 使い方
 
