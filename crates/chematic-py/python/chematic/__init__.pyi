@@ -5753,6 +5753,7 @@ from ._parent_types import (
 from ._bond_fragment import (
     BondFragmentation as BondFragmentation,
     FragmentAttachment as FragmentAttachment,
+    FragmentCutCounts as FragmentCutCounts,
     fragment_on_bonds_checked as fragment_on_bonds_checked,
 )
 
