@@ -51,4 +51,34 @@ class NumericPacketTests(unittest.TestCase):
         with self.assertRaises(AssertionError): audit.check(packet)
 
 
+class NumericPacketV2Tests(NumericPacketTests):
+    @classmethod
+    def setUpClass(cls):
+        path = Path(__file__).parents[2] / 'benchmarks/2026-10-19-morgan-tpsa-environments-numeric.json.gz'
+        cls.original = json.loads(gzip.decompress(path.read_bytes()))
+
+    def test_scalar_accounting_corruption_is_rejected(self):
+        packet = copy.deepcopy(self.original)
+        packet['scalar_validation']['source_exact_cells_including_refusals'] += 1
+        with self.assertRaises(AssertionError): audit.check(packet)
+
+    def test_second_primary_cannot_be_removed(self):
+        import hashlib
+        packet = copy.deepcopy(self.original)
+        packet['measurement_plan']['primary'].pop()
+        packet['measurement_plan_sha256'] = hashlib.sha256(
+            (json.dumps(packet['measurement_plan'], indent=2)+'\n').encode()).hexdigest()
+        with self.assertRaises(AssertionError): audit.check(packet)
+
+    def test_pilot_observations_do_not_decide_formal_adoption(self):
+        import statistics
+        packet = copy.deepcopy(self.original)
+        for block in packet['pilot']['blocks']:
+            block['candidate']['operations']['tpsa']['first_use'] *= 100
+        packet['pilot']['source_medians']['tpsa/first_use'] = statistics.median(
+            v['baseline']['operations']['tpsa']['first_use'] / v['candidate']['operations']['tpsa']['first_use']
+            for v in packet['pilot']['blocks'])
+        self.assertEqual(audit.check(packet)['source_adoption_passed'], self.original['source_adoption_passed'])
+
+
 if __name__ == '__main__': unittest.main()

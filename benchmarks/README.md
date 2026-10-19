@@ -26,6 +26,8 @@ the [complete inventory](archive-index.md) links every retained record.
 
 ## Recent focused follow-ups
 
+- [Morgan hashing and TPSA environment typing](2026-10-19-morgan-tpsa-environments.md): combined source gates fail; both first-use primaries, all 21 source floors, all 63 comparisons and the rejected standalone epoch remain auditable.
+
 - [Direct Morgan connectivity hashing](2026-10-19-morgan-direct-connectivity.md): source adoption fails on the full 10,000-row corpus; all 63 comparisons, source floors, external non-wins and raw numeric accounting retained.
 
 - [10k Labute ASA versus RDKit and COSMolKit](2026-10-19-python-labute-asa-cosmolkit.md)

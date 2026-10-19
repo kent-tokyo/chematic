@@ -46,11 +46,15 @@ def source_gate(primary, controls):
 
 
 def check(packet):
-    assert packet['schema'] == 'python-speed-frontier-numeric/v1'
+    assert packet['schema'] in ('python-speed-frontier-numeric/v1', 'python-speed-frontier-numeric/v2')
     report = packet['benchmark']
     plan = packet['measurement_plan']
     assert hashlib.sha256((json.dumps(plan,indent=2)+'\n').encode()).hexdigest() == packet['measurement_plan_sha256']
-    assert plan['primary'] == ['full-10000/morgan2_chiral/first_use']
+    primary_lanes = ['morgan2_chiral/first_use'] if packet['schema'].endswith('/v1') else ['morgan2_chiral/first_use','tpsa/first_use']
+    assert plan['primary'] == ['full-10000/'+lane for lane in primary_lanes]
+    if packet['schema'].endswith('/v2'):
+        assert plan['python_hash_seed'] == 20261019
+        assert report['source_manifest']['python_hash_seed'] == 20261019
     assert plan['base'] == report['base_revision']
     assert report['complete'] is True
     assert report['corpus']['limit'] == 10000 and report['corpus']['offset'] == 0
@@ -96,8 +100,43 @@ def check(packet):
     assert packet['validation']['rows'] == 14072
     assert packet['validation']['source_and_rdkit_exact_cells'] == 56288
     assert packet['validation']['refusals'] == 0
-    primary = exact['morgan2_chiral/first_use']['baseline']['speedup']
-    adopted = source_gate(primary, source)
+    adopted = all(source_gate(exact[lane]['baseline']['speedup'], source) for lane in primary_lanes)
+    if packet['schema'].endswith('/v2'):
+        scalar = packet['scalar_validation']
+        assert scalar['source_rows_equal'] is True
+        assert scalar['source_exact_cells_including_refusals'] == 42216
+        assert scalar['headers'] == packet['validation']['headers']
+        corpora = {'rdkit-js-browser-10k-v1.smi': 10000, 'stress-v1.smi': 4072}
+        assert {h['corpus']:h['rows'] for h in scalar['headers']} == corpora
+        expected = {f'{arm}/{corpus}/{op}' for arm in ('candidate','cosmolkit')
+                    for corpus in corpora for op in ('tpsa','labute_asa','num_rings')}
+        assert set(scalar['comparison']) == expected
+        states = {'equal','mismatch','both_unavailable','source_unavailable','rdkit_unavailable'}
+        for key, counts in scalar['comparison'].items():
+            assert counts and set(counts) <= states
+            assert all(type(v) is int and v >= 0 for v in counts.values())
+            assert sum(counts.values()) == corpora[key.split('/')[1]]
+        for corpus, rows in corpora.items():
+            assert scalar['comparison'][f'candidate/{corpus}/tpsa'] == {'equal': rows}
+        pilot = packet['pilot']
+        assert pilot['diagnostic_only'] is True and pilot['not_adoption_evidence'] is True
+        assert len(pilot['blocks']) == 8
+        assert sum(v['order'] == ['baseline','candidate'] for v in pilot['blocks']) == 4
+        assert sum(v['order'] == ['candidate','baseline'] for v in pilot['blocks']) == 4
+        pilot_ops = ('tpsa','morgan2_chiral')
+        for block in pilot['blocks']:
+            for arm in ('baseline','candidate'):
+                data = block[arm]
+                assert data['extension_sha256'] == first[arm]['extension_sha256']
+                assert data['output_sha256'] == pilot['blocks'][0]['baseline']['output_sha256']
+                assert set(data['operations']) == set(pilot_ops)
+                for op in pilot_ops:
+                    assert set(data['operations'][op]) == set(modes)
+                    assert all(type(data['operations'][op][m]) is int and data['operations'][op][m] > 0 for m in modes)
+        expected_pilot = {op+'/'+mode: statistics.median(
+            v['baseline']['operations'][op][mode] / v['candidate']['operations'][op][mode]
+            for v in pilot['blocks']) for op in pilot_ops for mode in modes}
+        assert pilot['source_medians'] == expected_pilot
     assert packet['source_adoption_passed'] is adopted
     return {'source_adoption_passed':adopted,'blocks':24,'source_lanes':21,'comparisons':63,'exact_cells':56288}
 
