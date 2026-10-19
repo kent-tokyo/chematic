@@ -25,7 +25,8 @@
 use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
 
 use chematic_core::{
-    Atom, AtomIdx, BondIdx, BondOrder, Element, Molecule, MoleculeBuilder, implicit_hcount,
+    Atom, AtomIdx, BondIdx, BondOrder, Element, Molecule, MoleculeBuilder, STEREO_H_SENTINEL,
+    STEREO_VACANT_SENTINEL, StereoGroup, implicit_hcount,
 };
 use chematic_smarts::{
     AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, MatchConfig, QueryMolecule,
@@ -882,6 +883,113 @@ fn build_core_mol_labeled(
     build_core_mol(mol, core, &pairs, Some(&labels), Some(core_stub_orders))
 }
 
+/// Carry stereochemical reference frames across a subgraph cut. Every removed
+/// neighbor of a retained stereocenter must be replaced by its own attachment
+/// wildcard in the original neighbor position, not just by a new bond.
+fn copy_cut_stereo(
+    mol: &Molecule,
+    builder: &mut MoleculeBuilder,
+    remap: &HashMap<AtomIdx, AtomIdx>,
+    bond_remap: &HashMap<BondIdx, BondIdx>,
+    cut_neighbors: &HashMap<(AtomIdx, AtomIdx), AtomIdx>,
+) {
+    for (&old_center, &new_center) in remap {
+        if let Some(order) = mol.stereo_neighbor_order(old_center) {
+            let mapped = order
+                .iter()
+                .map(|&neighbor| {
+                    if matches!(neighbor, STEREO_H_SENTINEL | STEREO_VACANT_SENTINEL) {
+                        Some(neighbor)
+                    } else {
+                        remap
+                            .get(&AtomIdx(neighbor))
+                            .or_else(|| cut_neighbors.get(&(old_center, AtomIdx(neighbor))))
+                            .map(|idx| idx.0)
+                    }
+                })
+                .collect::<Option<Vec<_>>>();
+            if let Some(mapped) = mapped {
+                builder.set_stereo_neighbor_order(new_center, mapped);
+            }
+        }
+        if let Some(label) = mol.r_group_label(old_center) {
+            builder.set_r_group(new_center, label);
+        }
+        if let Some(tag) = mol.atom_tag(old_center) {
+            builder.set_tag(new_center, Some(tag.get()));
+        }
+    }
+
+    for (&old_bond, &new_bond) in bond_remap {
+        if let Some(direction) = mol.bond_direction(old_bond) {
+            builder.set_bond_direction(new_bond, direction);
+        }
+        if let Some(anchor) = mol.bond_direction_anchor(old_bond)
+            && let Some(&new_anchor) = remap.get(&anchor)
+        {
+            builder.set_bond_direction_anchor(new_bond, new_anchor);
+        }
+    }
+
+    for (group_idx, group) in mol.stereo_groups().iter().enumerate() {
+        let atoms = group
+            .atom_indices
+            .iter()
+            .filter_map(|old| remap.get(old).copied())
+            .collect::<Vec<_>>();
+        let bonds = mol
+            .stereo_group_bond_indices(group_idx)
+            .unwrap_or_default()
+            .iter()
+            .filter_map(|old| bond_remap.get(old).copied())
+            .collect::<Vec<_>>();
+        if !atoms.is_empty() || !bonds.is_empty() {
+            builder.add_stereo_group_with_bonds(StereoGroup::new(group.kind.clone(), atoms), bonds);
+        }
+    }
+}
+
+/// A directional boundary bond still describes an alkene when its retained
+/// endpoint remains adjacent to the double bond after cutting.
+fn cut_bond_order(
+    mol: &Molecule,
+    bond_idx: BondIdx,
+    retained: AtomIdx,
+    retained_atoms: &HashSet<AtomIdx>,
+    preserve_multiple: bool,
+) -> BondOrder {
+    let bond = mol.bond(bond_idx);
+    if matches!(
+        bond.order,
+        BondOrder::Double | BondOrder::Triple | BondOrder::Quadruple | BondOrder::Aromatic
+    ) {
+        return if preserve_multiple {
+            bond.order
+        } else {
+            BondOrder::Single
+        };
+    }
+    let direction = mol.bond_direction(bond_idx).unwrap_or(bond.order);
+    if matches!(direction, BondOrder::Up | BondOrder::Down)
+        && mol.neighbors(retained).any(|(neighbor, bidx)| {
+            retained_atoms.contains(&neighbor)
+                && bidx != bond_idx
+                && mol.bond(bidx).order == BondOrder::Double
+        })
+    {
+        let anchor = mol.bond_direction_anchor(bond_idx).unwrap_or(bond.atom1);
+        if anchor == retained {
+            direction
+        } else if direction == BondOrder::Up {
+            BondOrder::Down
+        } else {
+            BondOrder::Up
+        }
+    } else {
+        BondOrder::Single
+    }
+}
+
 /// Extract the R-group subgraph starting at `root`, blocked by the `core` atom set.
 ///
 /// Returns a `Molecule` containing all atoms reachable from `root` through bonds
@@ -912,6 +1020,8 @@ fn extract_rgroup(
     // Build subgraph molecule, remapping indices.
     let mut builder = MoleculeBuilder::new();
     let mut remap: HashMap<AtomIdx, AtomIdx> = HashMap::new();
+    let mut bond_remap = HashMap::new();
+    let mut cut_neighbors = HashMap::new();
 
     // Add root first so its index is predictable (index 0).
     let new_root = builder.add_atom(mol.atom(root).clone());
@@ -927,8 +1037,10 @@ fn extract_rgroup(
     // Add bonds within the R-group.
     for bidx in 0..mol.bond_count() {
         let bond = mol.bond(BondIdx(bidx as u32));
-        if let (Some(&new_a), Some(&new_b)) = (remap.get(&bond.atom1), remap.get(&bond.atom2)) {
-            let _ = builder.add_bond(new_a, new_b, bond.order);
+        if let (Some(&new_a), Some(&new_b)) = (remap.get(&bond.atom1), remap.get(&bond.atom2))
+            && let Ok(new_bond) = builder.add_bond(new_a, new_b, bond.order)
+        {
+            bond_remap.insert(BondIdx(bidx as u32), new_bond);
         }
     }
 
@@ -936,26 +1048,18 @@ fn extract_rgroup(
         let Some(&new_boundary_root) = remap.get(&boundary_root) else {
             continue;
         };
-        // Keep the cut order on the substituent side, including aromatic
-        // bonds in fused rings. Directional bonds still use a single stub:
-        // copying / or \\ without the original double-bond context is unsafe.
-        let boundary_order = mol
+        let (boundary_idx, _) = mol
             .bond_between(core_atom, boundary_root)
-            .expect("R-group boundary must be a molecular bond")
-            .1
-            .order;
-        let stub_order = match boundary_order {
-            BondOrder::Double | BondOrder::Triple | BondOrder::Quadruple | BondOrder::Aromatic => {
-                boundary_order
-            }
-            _ => BondOrder::Single,
-        };
+            .expect("R-group boundary must be a molecular bond");
+        let stub_order = cut_bond_order(mol, boundary_idx, boundary_root, &rg_atoms, true);
         let mut wildcard = Atom::wildcard();
         wildcard.atom_map = label;
         let wc = builder.add_atom(wildcard);
         let _ = builder.add_bond(new_boundary_root, wc, stub_order);
+        cut_neighbors.insert((boundary_root, core_atom), wc);
     }
 
+    copy_cut_stereo(mol, &mut builder, &remap, &bond_remap, &cut_neighbors);
     builder.build()
 }
 
@@ -969,6 +1073,8 @@ fn build_core_mol(
 ) -> Molecule {
     let mut builder = MoleculeBuilder::new();
     let mut remap: HashMap<AtomIdx, AtomIdx> = HashMap::new();
+    let mut bond_remap = HashMap::new();
+    let mut cut_neighbors = HashMap::new();
 
     // Add all core atoms (stable order).
     let mut core_sorted: Vec<AtomIdx> = core.iter().copied().collect();
@@ -981,13 +1087,15 @@ fn build_core_mol(
     // Add bonds between core atoms.
     for bidx in 0..mol.bond_count() {
         let bond = mol.bond(BondIdx(bidx as u32));
-        if let (Some(&na), Some(&nb)) = (remap.get(&bond.atom1), remap.get(&bond.atom2)) {
-            let _ = builder.add_bond(na, nb, bond.order);
+        if let (Some(&na), Some(&nb)) = (remap.get(&bond.atom1), remap.get(&bond.atom2))
+            && let Ok(new_bond) = builder.add_bond(na, nb, bond.order)
+        {
+            bond_remap.insert(BondIdx(bidx as u32), new_bond);
         }
     }
 
     // Add [*] wildcards at each attachment point.
-    for (attachment_idx, &(core_atom, _rg_root)) in attachment_pairs.iter().enumerate() {
+    for (attachment_idx, &(core_atom, rg_root)) in attachment_pairs.iter().enumerate() {
         if let Some(&new_ca) = remap.get(&core_atom) {
             let mut wildcard = Atom::wildcard();
             wildcard.atom_map = labels.map(|values| values[attachment_idx]);
@@ -995,18 +1103,26 @@ fn build_core_mol(
             let order = labels
                 .and_then(|values| core_stub_orders?.get(&values[attachment_idx]))
                 .copied()
-                .unwrap_or(BondOrder::Single);
+                .unwrap_or_else(|| {
+                    mol.bond_between(core_atom, rg_root)
+                        .map(|(bond_idx, _)| cut_bond_order(mol, bond_idx, core_atom, core, false))
+                        .unwrap_or(BondOrder::Single)
+                });
             let _ = builder.add_bond(new_ca, wc, order);
+            if mol.bond_between(core_atom, rg_root).is_some() {
+                cut_neighbors.insert((core_atom, rg_root), wc);
+            }
         }
     }
 
+    copy_cut_stereo(mol, &mut builder, &remap, &bond_remap, &cut_neighbors);
     builder.build()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chematic_smiles::parse;
+    use chematic_smiles::{parse, random_smiles};
 
     fn mol(s: &str) -> Molecule {
         parse(s).unwrap_or_else(|e| panic!("parse '{s}': {e}"))
@@ -1115,6 +1231,76 @@ mod tests {
         for (row, expected_order) in unlabeled.iter().zip([BondOrder::Double, BondOrder::Triple]) {
             let fragment = mol(&row.as_ref().unwrap().r_groups[&1]);
             assert_eq!(fragment.bond(BondIdx(0)).order, expected_order);
+        }
+    }
+
+    #[test]
+    fn alkene_stereo_survives_a_cut_on_the_rgroup_side() {
+        // Source-built RDKit 2026.09.1 emits these same R1 structures. The
+        // boundary slash is needed to distinguish the two alkene isomers.
+        for (target, expected) in [
+            ("c1ccccc1/C=C/Cl", "Cl/C=C/[*:1]"),
+            ("c1ccccc1/C=C\\Cl", "Cl/C=C\\[*:1]"),
+        ] {
+            let target = mol(target);
+            let rows = rgroup_decompose_labeled("c1ccccc1", &[&target]).unwrap();
+            assert_eq!(
+                rows[0].as_ref().unwrap().r_groups[&1],
+                expected,
+                "R-group alkene geometry must survive the cut"
+            );
+        }
+    }
+
+    #[test]
+    fn alkene_stereo_survives_a_cut_on_the_core_side() {
+        // Both alkene substituents are outside the C=C query. Their boundary
+        // directions are still required to identify the core's E/Z geometry.
+        let mut core_smiles = Vec::new();
+        for target in ["F/C=C/Cl", "F/C=C\\Cl"] {
+            let target = mol(target);
+            let rows = rgroup_decompose_labeled("C=C", &[&target]).unwrap();
+            core_smiles.push(rows[0].as_ref().unwrap().core_smiles.clone());
+        }
+        assert_ne!(core_smiles[0], core_smiles[1]);
+        assert!(core_smiles.iter().all(|smiles| smiles.contains('/')));
+    }
+
+    #[test]
+    fn tetrahedral_stereo_keeps_its_neighbor_frame_after_cutting() {
+        // A stereocenter need not touch the boundary to change handedness if
+        // its parser-side neighbor frame is discarded during atom renumbering.
+        for (target, expected) in [
+            ("CC[C@H](F)c1ccccc1", "CC[C@H](F)[*:1]"),
+            ("CC[C@@H](F)c1ccccc1", "CC[C@@H](F)[*:1]"),
+            ("C[C@H](F)CCc1ccccc1", "C[C@H](F)CC[*:1]"),
+        ] {
+            let target = mol(target);
+            let rows = rgroup_decompose_labeled("c1ccccc1", &[&target]).unwrap();
+            let fragment = &rows[0].as_ref().unwrap().r_groups[&1];
+            assert_eq!(
+                canonical_smiles(&mol(fragment)),
+                canonical_smiles(&mol(expected))
+            );
+        }
+    }
+
+    #[test]
+    fn stereo_rgroups_are_stable_under_input_atom_order() {
+        for (target, expected) in [
+            ("c1ccccc1/C=C/Cl", "Cl/C=C/[*:1]"),
+            ("c1ccccc1/C=C\\Cl", "Cl/C=C\\[*:1]"),
+            ("CC[C@H](F)c1ccccc1", "CC[C@H](F)[*:1]"),
+            ("C[C@H](F)CCc1ccccc1", "C[C@H](F)CC[*:1]"),
+        ] {
+            let target = mol(target);
+            let expected = canonical_smiles(&mol(expected));
+            for seed in 0..12 {
+                let reordered = mol(&random_smiles(&target, seed));
+                let rows = rgroup_decompose_labeled("c1ccccc1", &[&reordered]).unwrap();
+                let fragment = &rows[0].as_ref().unwrap().r_groups[&1];
+                assert_eq!(canonical_smiles(&mol(fragment)), expected, "seed {seed}");
+            }
         }
     }
 

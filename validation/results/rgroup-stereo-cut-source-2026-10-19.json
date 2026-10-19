@@ -1,0 +1,57 @@
+{
+  "reference": {
+    "tool": "RDKit",
+    "version": "2026.09.1",
+    "provenance": "source-built local Python environment",
+    "api": "rdkit.Chem.rdRGroupDecomposition.RGroupDecompose(asSmiles=True)"
+  },
+  "candidate": {
+    "tool": "CheMatic",
+    "api": "rgroup_decompose_labeled"
+  },
+  "benzene_core_cases": [
+    {
+      "input": "c1ccccc1/C=C/Cl",
+      "rdkit_r1": "Cl/C=C/[*:1]",
+      "chematic_r1": "Cl/C=C/[*:1]"
+    },
+    {
+      "input": "c1ccccc1/C=C\\Cl",
+      "rdkit_r1": "Cl/C=C\\[*:1]",
+      "chematic_r1": "Cl/C=C\\[*:1]"
+    },
+    {
+      "input": "CC[C@H](F)c1ccccc1",
+      "rdkit_r1": "CC[C@H](F)[*:1]",
+      "chematic_r1": "[*:1][C@H](CC)F",
+      "comparison": "RDKit canonicalizes both to CC[C@H](F)[*:1]"
+    },
+    {
+      "input": "CC[C@@H](F)c1ccccc1",
+      "rdkit_r1": "CC[C@@H](F)[*:1]",
+      "chematic_r1": "[*:1][C@@H](CC)F",
+      "comparison": "RDKit canonicalizes both to CC[C@@H](F)[*:1]"
+    },
+    {
+      "input": "C[C@H](F)CCc1ccccc1",
+      "rdkit_r1": "C[C@H](F)CC[*:1]",
+      "chematic_r1": "C[C@@H](CC[*:1])F",
+      "comparison": "RDKit canonicalizes both to C[C@H](F)CC[*:1]"
+    }
+  ],
+  "alkene_core_cases": [
+    {
+      "scaffold": "C=C",
+      "input": "F/C=C/Cl",
+      "rdkit_core": "C(=C[*:2])[*:1]",
+      "chematic_core": "C(=C/[*:1])\\[*:2]"
+    },
+    {
+      "scaffold": "C=C",
+      "input": "F/C=C\\Cl",
+      "rdkit_core": "C(=C[*:2])[*:1]",
+      "chematic_core": "C(=C/[*:1])/[*:2]"
+    }
+  ],
+  "scope": "Five benzene-core stereo cases and two C=C-core cases only; this is not a broad accuracy ranking."
+}
