@@ -6,8 +6,8 @@ Computes MW, LogP, TPSA, heavy_atom_count for 200 diverse molecules,
 and pairwise ECFP4 Tanimoto for a 50-mol subset.
 
 Output files:
-  scripts/rdkit_ref_properties.tsv   — per-molecule MW/LogP/TPSA/HAC
-  scripts/rdkit_ref_tanimoto.tsv     — pairwise Tanimoto (50×50 upper triangle)
+  validation/rdkit/rdkit_ref_properties.tsv   — per-molecule MW/LogP/TPSA/HAC
+  validation/rdkit/rdkit_ref_tanimoto.tsv     — pairwise Tanimoto (50×50 upper triangle)
 """
 
 from rdkit import Chem
@@ -242,25 +242,25 @@ for name, smi, mol in valid:
     hba   = rdMolDescriptors.CalcNumHBA(mol)
     rows.append((name, smi, mw, logp, tpsa, hac, hbd, hba))
 
-with open("scripts/rdkit_ref_properties.tsv", "w") as f:
+with open("validation/rdkit/rdkit_ref_properties.tsv", "w") as f:
     f.write("name\tsmiles\tmw\tlogp\ttpsa\thac\thbd\thba\n")
     for name, smi, mw, logp, tpsa, hac, hbd, hba in rows:
         f.write(f"{name}\t{smi}\t{mw:.4f}\t{logp:.4f}\t{tpsa:.4f}\t{hac}\t{hbd}\t{hba}\n")
 
-print(f"Written {len(rows)} rows to scripts/rdkit_ref_properties.tsv", file=sys.stderr)
+print(f"Written {len(rows)} rows to validation/rdkit/rdkit_ref_properties.tsv", file=sys.stderr)
 
 # ---- ECFP4 Tanimoto (first 50) ----
 fp_mols = valid[:50]
 fps = [AllChem.GetMorganFingerprintAsBitVect(mol, radius=2, nBits=2048) for _, _, mol in fp_mols]
 
-with open("scripts/rdkit_ref_tanimoto.tsv", "w") as f:
+with open("validation/rdkit/rdkit_ref_tanimoto.tsv", "w") as f:
     names_header = "\t".join(n for n, _, _ in fp_mols)
     f.write(f"name\t{names_header}\n")
     for i, (name_i, _, _) in enumerate(fp_mols):
         sims = [DataStructs.TanimotoSimilarity(fps[i], fps[j]) for j in range(len(fp_mols))]
         f.write(name_i + "\t" + "\t".join(f"{s:.6f}" for s in sims) + "\n")
 
-print(f"Written {len(fp_mols)}×{len(fp_mols)} Tanimoto matrix to scripts/rdkit_ref_tanimoto.tsv", file=sys.stderr)
+print(f"Written {len(fp_mols)}×{len(fp_mols)} Tanimoto matrix to validation/rdkit/rdkit_ref_tanimoto.tsv", file=sys.stderr)
 
 # ---- Summary statistics preview ----
 mws   = [r[2] for r in rows]

@@ -119,3 +119,29 @@ that is not checked in. The active source-surface check remains
 `check_binding_surface.py`. The root baseline is now 343 files; the new
 benchmark README offsets the deletion, leaving 595 tracked files under
 `scripts/`.
+
+## Consolidated fingerprint parity checks
+
+Nine old cross-binding fingerprint drivers shared the same corpus read,
+Rust/Python/Node execution, row accounting, pairwise comparison, and report
+writer. None is called by a current workflow or non-data reproduction command.
+`scripts/validation/check_fingerprint_cross_binding.py` replaces them with
+nine explicit profiles for native/RDKit-compatible ECFP4, folded/raw bitInfo,
+sparse ECFP4 counts, RDKit path/torsion, and native path/torsion. It checks row identity before comparison,
+preserves the native full-row versus RDKit-compatible status/value boundaries,
+and requires a named output so a new run cannot overwrite archived results by
+accident. It also rejects stale Python or generated Node package versions.
+Five dependency-independent contract tests run in CI. The old source
+remains in Git history; no saved measurement or source-hash record was changed.
+The direct root now contains 334 files, and `scripts/` has 588 tracked files.
+
+## Data files
+
+The three old RDKit comparison TSVs now live beside their historical
+explanation in `validation/rdkit/`; their bytes are unchanged, and the
+generator writes to that directory. Three unreferenced CSVs are removed:
+the four representative-swap rows are already embedded in the active parity
+gate, the single kekulization-gap row is present in the retained corpus and
+fixture generator, and the old polyene list has no current reader or linked
+measurement. Their original revisions remain in Git history. This leaves
+328 direct `scripts/` files and 582 tracked files under `scripts/`.

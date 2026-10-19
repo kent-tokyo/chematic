@@ -36,6 +36,7 @@ children of this directory; `tools/check_script_layout.py` checks it in CI.
 | Release/version checks | `check_release_*.py`, `check_publish_graph.py`, `bump_version.py` |
 | Compatibility dashboard | `check_compatibility_profiles.py`, `generators/generate_compatibility_dashboard.py` |
 | Benchmark index | `check_benchmark_index.py` |
+| Fingerprint cross-binding parity | `validation/check_fingerprint_cross_binding.py --profile <operation> --output <new-report.json>` compares Rust, Python, and Node/WASM; select one of nine named profiles. Historical results remain under `validation/results/`. |
 | Refactoring debt ratchet | `check_refactor_budget.py` checks `validation/refactor_budget_v1.json`; `--print-baseline` prints a reviewed replacement without writing files |
 | Open Babel file-I/O comparison | `check_openbabel_file_io_contract.py`, `check_openbabel_file_io_gate.py`, `check_openbabel_file_io_semantics.py`, `benchmarks/bench_openbabel_file_io_paired.py`, `benchmarks/bench_openbabel_file_io_same_process.py`, and `check_openbabel_file_io_evidence.py` |
 | Open Babel 3D MOL2 identity | `compare_openbabel_mol2_3d_stress.py` gates RDKit V2000 identity, feeds identical Open Babel-written MOL2 to both readers, and records per-row stereo identity. See the [measured report](../validation/openbabel_comparison/mol2-3d-stereo-2026-10-17.md). |
