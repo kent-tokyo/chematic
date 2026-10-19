@@ -2019,6 +2019,35 @@ fn stereo_filter_rejects_wrong_enantiomer() {
 }
 
 #[test]
+fn incomplete_tetrahedral_template_cannot_verify_handedness() {
+    // The reactant's Br substituent is absent from the chiral template.
+    // Its local neighbour orders cannot be aligned, so accepting either
+    // enantiomer would silently discard the template's stereo constraint.
+    let template = parse("[C@H](F)Cl").unwrap();
+    assert!(template.stereo_neighbor_order(AtomIdx(0)).is_some());
+    for input in ["Br[C@H](F)Cl", "Br[C@@H](F)Cl"] {
+        let reactant = parse(input).unwrap();
+        let mut mapping = FxHashMap::default();
+        mapping.insert(0, AtomIdx(1));
+        mapping.insert(1, AtomIdx(2));
+        mapping.insert(2, AtomIdx(3));
+        assert!(reactant.stereo_neighbor_order(AtomIdx(1)).is_some());
+        let products = run_reactants("[C@H:1](F)Cl>>[C@H:1](F)Cl", &[&reactant]).unwrap();
+        assert!(
+            products.is_empty(),
+            "must not invent handedness for {input}"
+        );
+        assert!(!smirks_chirality_ok(&template, &reactant, &mapping));
+        assert!(
+            !rdkit_profile("[C@H:1](F)Cl>>[C@H:1](F)Cl", &[input])
+                .unwrap()
+                .is_empty(),
+            "the RDKit compatibility profile stays permissive for {input}"
+        );
+    }
+}
+
+#[test]
 fn stereo_neutral_smirks_matches_both_enantiomers() {
     // SMIRKS without @/@@ must still match both enantiomers (backward compat).
     let l_ala = parse("N[C@@H](C)C(=O)O").unwrap();
