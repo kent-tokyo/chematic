@@ -13,6 +13,7 @@ from ._sdf_split import (
 
 from .chematic import *
 from ._inchi_batch import InchiKeyRecord, InchiKeyStatus, inchi_keys_checked
+from ._rdkit_smiles_checked import RdkitSmilesStabilityError, rdkit_smiles_checked
 from ._xbs import XbsBondRule, XbsSpecies, write_xbs
 from ._xyz_atom_data import XyzAtomDataFrame, parse_xyz_atom_data
 from ._xsf import write_xsf_checked

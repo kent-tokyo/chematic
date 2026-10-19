@@ -15,6 +15,11 @@ Quick start::
 from __future__ import annotations
 from typing import Protocol, SupportsIndex
 
+from ._rdkit_smiles_checked import (
+    RdkitSmilesStabilityError as RdkitSmilesStabilityError,
+    rdkit_smiles_checked as rdkit_smiles_checked,
+)
+
 from ._mmcif_chains import (
     MmcifChain as MmcifChain,
     MmcifChainAtom as MmcifChainAtom,
