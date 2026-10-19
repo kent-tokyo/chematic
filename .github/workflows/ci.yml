@@ -61,6 +61,10 @@ jobs:
           # The frozen-holdout gate proves that its candidate commit predates
           # external-source acquisition, so the commit object must be present.
           fetch-depth: 0
+      - name: Script layout and harness tests
+        run: |
+          python3 tools/check_script_layout.py
+          python3 -m unittest scripts.tests.test_bench_python_morgan_linear scripts.tests.test_changed_public_crates
       - uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
       - name: Cache cargo
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6

@@ -1,19 +1,29 @@
 # Maintenance scripts
 
-`validate_mol2_kekule.py` checks exact MOL2 token changes, actual Rust/Python/WASM
-outputs, RDKit identity and explicit valence, and Open Babel cross-reads for
-[#2668](https://github.com/openbabel/openbabel/issues/2668). See the
-[bounded API and reproduction instructions](../docs/mol2-kekule-bond-output.md).
-
 Scripts are retained when they are used by CI, reproduce a checked-in evidence
 record, generate a committed fixture, or provide a documented release operation.
 One-off diagnostics should be removed after their result is captured unless a
 current issue or benchmark links to them.
 
+## Find a script
+
+| Task | Start here |
+|---|---|
+| CI and release gates | Search `.github/workflows/` for the script path; most gate entry points start with `check_`. |
+| Evidence reproduction | Search `docs/`, `benchmarks/`, and `validation/` for the script path or basename. The linked record defines inputs and expected outputs. |
+| Benchmarks | `bench_*` entry points and their dated records in `benchmarks/`. |
+| Fixture generation | `generate_*`, `gen_*`, or `build_*` entry points; committed fixture data belongs under `validation/` or a test fixture directory. |
+| Shared code and tests | Importing scripts and `scripts/tests/`. A filename without a path reference may still be an imported helper or a discovered test. |
+
+The [dated inventory](../docs/script-inventory-2026-10-20.md) records the
+reference audit. `tools/script_root_baseline.list` lists the existing direct
+children of this directory; `tools/check_script_layout.py` checks it in CI.
+
 ## Main entry points
 
 | Purpose | Entry point |
 |---|---|
+| MOL2 Kekule bond output | `validate_mol2_kekule.py` checks exact token changes, Rust/Python/WASM outputs, RDKit identity and explicit valence, and Open Babel cross-reads for [#2668](https://github.com/openbabel/openbabel/issues/2668). See the [reproduction instructions](../docs/mol2-kekule-bond-output.md). |
 | Explicit PDB CONECT graph | `validate_pdb_conect.py --wasm-module <node-module> --output <directory> [--issue-pdb <original-9581.pdb>]` compares indexed graphs/charges/XYZ/serials against RDKit 2026.09.1 with proximity disabled, using a newly built Python module and Node WASM. `validate_pdb_conect_node.mjs` is its batch driver; see [the accepted profile](../docs/pdb-conect-graph.md). |
 | Prepared MMFF dielectric updates | `validate_mmff_dielectric.py --openbabel-probe <executable> --output <directory>` rechecks 56 pinned RDKit goldens, compares new conformers across screening changes and minimization, and records the original Open Babel #2811 stale-cache probe. See [the numerical contract](../docs/mmff-dielectric-updates.md). |
 | ChemDraw byte-block dispatch | `generate_chemdraw_fixtures.py` writes authored CDX/CDXML pairs; `validate_chemdraw_block.py --wasm-module <module> --output <directory>` compares Python and Node/WASM graphs to RDKit 2026.09.1 XML reads and reproduces #9604. `validate_chemdraw_block_node.mjs` is its Node driver; see [the profile](../docs/chemdraw-block.md). |
@@ -30,13 +40,11 @@ current issue or benchmark links to them.
 | Open Babel file-I/O comparison | `check_openbabel_file_io_contract.py`, `check_openbabel_file_io_gate.py`, `check_openbabel_file_io_semantics.py`, `bench_openbabel_file_io_paired.py`, `bench_openbabel_file_io_same_process.py`, and `check_openbabel_file_io_evidence.py` |
 | Open Babel 3D MOL2 identity | `compare_openbabel_mol2_3d_stress.py` gates RDKit V2000 identity, feeds identical Open Babel-written MOL2 to both readers, and records per-row stereo identity. See the [measured report](../validation/openbabel_comparison/mol2-3d-stereo-2026-10-17.md). |
 | Open Babel unmarked 3D SDF identity | `validation/openbabel_comparison/check_unmarked_3d_stereo.py` scores the same V2000/V3000 conformers in CheMatic and Open Babel; the [disjoint ChEMBL follow-up](../validation/openbabel_comparison/unmarked-3d-chembl-disjoint-2026-10-17.md) retains exact inputs, row outcomes, and a remaining Open Babel-only cage. |
-| Open Babel SDF batch throughput | `build_openbabel_sdf_speed_corpus.py --offset` generates fixed unfiltered V2000 slices and refuses format changes; `bench_openbabel_sdf_throughput.py` validates parse and rewrite semantics separately and records 21 native timing/RSS blocks. See [the original packet](../benchmarks/2026-10-14-openbabel-sdf-speed.md) and [the reader follow-up](../benchmarks/2026-10-14-openbabel-sdf-read-followup.md). |
-| Open Babel V3000 block throughput | `build_openbabel_v3000_speed_corpus.py` retains unfiltered force-V3000 slices; `bench_openbabel_v3000_throughput.py` compares pre-split native MOL API batches in 21 rotating blocks. Rejected outputs keep their row positions and fail the semantic gate. The [packet](../benchmarks/2026-10-14-openbabel-v3000-speed.md) separates diverse chemistry from controlled chain-size scaling. |
-| Python descriptor/fingerprint speed | `bench_python_speed_frontier.py` compares exact source wheels, RDKit and COSMolKit across first-use, repeated-use and actual parse-inclusive loops. `verify_python_descriptor_frontier.py` and `verify_python_morgan_frontier.py` retain float bits, errors and fingerprints. See the [core-model preparation follow-up](../benchmarks/2026-10-14-python-model-view-speed.md) and [sanitized-view reuse](../benchmarks/2026-10-14-python-sanitized-view-reuse.md). |
 | Parser security | `run_isolated_parser_security.py` |
 | Browser comparison | `bench_browser_wasm_vs_rdkit_isolated.py` |
 | Published browser replication | `check_published_browser_paired.py`, `check_v1030_published_browser_morgan_rows.py`, and `check_published_linux_browser_replication.py` validate the pinned Chromium and Ubuntu three-engine records |
 | Sealed cohort | `prepare_sealed_accuracy_cohort.py` |
+| Frozen trust holdouts | `validation/trust_holdouts/freeze.py` selects outcome-blind rows from pinned sources; `check_trust_holdouts.py` verifies the committed manifest. |
 | V3000 external readers | `v3000_*_gate.py` |
 | Stereo gates | `stereo_torture_suite_gate.py`, `stereo_spelling_invariance_gate.py` |
 | Open Babel 0D MOL stereo source check | `compare_openbabel_0d_stereo.py` compares before and after CLI binaries on identical Open Babel-generated records; accepts JSONL or `.smi` corpora and records generation failures and source-gate exclusions |
@@ -47,14 +55,19 @@ current issue or benchmark links to them.
 | Published v1.0.30 artifact packet | `check_v1030_artifact_packet.py`, `check_v1030_published_chemistry_residuals.py`, `emit_rdkit_smarts_oracle.py`, `run_published_npm_chemistry_lane.mjs`, `run_published_npm_63op_outputs.mjs`, `run_reaction_compatibility_v2.py`, `reaction_template_map_gate.py`, `check_published_rust_63op_outputs.py`, and the version-pinned `tools/published_rust_gate*` lockfiles |
 | Published-wheel output and speed comparison | `bench_python_op_matrix_vs_rdkit.py --outputs-only/--paired`, `check_published_python_version_outputs.py`, `bench_published_python_versions.py` |
 | Isolated Python speed and process RSS | `bench_published_python_isolated_paired.py` (20 fresh-process AB/BA blocks), `check_published_python_isolated_paired.py` (archived six-lane integrity gate) |
-| Source Python speed frontier | `bench_python_speed_frontier.py` compares baseline/candidate wheels, RDKit and COSMolKit with first-use, repeated-use and parse-inclusive boundaries; `verify_python_morgan_frontier.py` dumps the fixed 14,072-input Morgan parity corpus. See [the dated packet](../benchmarks/2026-10-14-python-speed-frontier.md). |
-| Scalar/stereo speed follow-up | `bench_python_speed_frontier.py --offset` selects a fixed corpus slice; `verify_python_descriptor_frontier.py` preserves first/repeated float bits, errors and nonfinite values for four descriptors. See [the scalar/stereo packet](../benchmarks/2026-10-14-python-scalar-stereo.md) and [the first-use perception follow-up](../benchmarks/2026-10-14-python-first-use-followup.md). |
-| Long scalar reuse batches | `bench_python_scalar_reuse.py` retains and validates every result of one million prepared TPSA/ASA calls per arm, independently of the short-batch frontier protocol. Both original and additional protocols are in [the follow-up packet](../benchmarks/2026-10-14-python-scalar-stereo.md). |
 | Isolated published-Rust speed and process RSS | `bench_published_rust_isolated_paired.py` builds two `--locked` crates.io graphs and runs fresh-process AB/BA blocks; `check_published_rust_isolated_paired.py` verifies archived outputs, paired intervals and RSS |
 | Isolated published npm/WASM speed and process RSS | `bench_published_wasm_paired.mjs` pins v1.0.29/v1.0.30/RDKit.js tarballs and runs 20 fresh-process ABBA/BAAB blocks; `check_published_wasm_paired.py` verifies the archived output gate, raw block accounting, intervals and whole-process RSS |
 
 ## Organization rule
 
+- Put new scripts in `scripts/checks/`, `scripts/validation/`,
+  `scripts/benchmarks/`, `scripts/generators/`, `scripts/release/`, or
+  `scripts/lib/` according to purpose; put their tests in
+  `scripts/tests/`. The `scripts/` root is a legacy path list, not the default
+  destination for new scripts.
+- When moving a legacy script, update every CI and documentation path, check
+  imports and `__file__`-based repository paths, and remove its entry from
+  `tools/script_root_baseline.list`. Do not rewrite archived measurements.
 - Shared mechanics belong in one helper; callers select a named profile/mode.
 - Evidence scripts write versioned JSON and keep raw failures visible.
 - Historical measurements keep their original script contract in Git history.

@@ -14,7 +14,7 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "validation/trust_holdouts/v1"
 NCI_SHA256 = "031736b438a9596d89cf11802fa97934c3878ebbf021924c417a57e02c7930cd"
 NCI_ARCHIVE_SHA256 = "3da792f624dc94caa9a3e9967fc7b1eed0ca79e0bd2d044f808cf916680a17ad"
