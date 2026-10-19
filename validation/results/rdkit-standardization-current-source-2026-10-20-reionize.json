@@ -1,10 +1,10 @@
 {
   "profile": "source_cleanup_vs_rdkit_2026_09_1",
-  "source_commit": "d613b637ff6c4e542fdd6c7bfecf136eb2613785",
+  "source_commit": "7adbd7aec2a3b75b5a942fbbd6310dbdeea14195",
   "source_sha256": {
     "crates/chematic-chem/src/standardize.rs": "5b3c82d8b16a454f595a9d9e2fa9c316923bd6b6588b1b3536fa054af3702295",
     "crates/chematic-chem/src/standardize/reionize.rs": "e8ce99c064568b186fc2b23736ef1f686b3ad6a63fcc85e40d204d6e2f5fbb8d",
-    "crates/chematic-chem/src/standardize/cleanup.rs": "5589d752d6647c31ba8f283a778fa576eff8e5d57ece69ddf1195cac6db1e03e",
+    "crates/chematic-chem/src/standardize/cleanup.rs": "5def87a05f64634dc161e3f411c5a2c8de8f2f49d376db983428b2fe1afb5b69",
     "crates/chematic-chem/src/standardize/groups.rs": "07e404824086f43db014318db6b842cd84c8239640607fff04334e7ad1f93b7b",
     "crates/chematic-core/src/molecule/builder.rs": "bd9d97573ab4779b71fad0265f0688378fa47c20c19875ba4f4a46003c7f7058",
     "crates/chematic-chem/examples/cleanup_rdkit_dump.rs": "2d122b54ae4dfba2514e2c134df1abbc1fbc0a5ddabe22c3adb7e6bbf0db90db",
@@ -14,7 +14,7 @@
   },
   "corpus": "validation/cosmolkit_comparison/corpora/stress-v1.smi",
   "corpus_sha256": "879166ab5481cac805ecd2d77f37d628383ec124085b90e2ee1659d55ce76277",
-  "source_dump_sha256": "41106187f606d15886d0b3105c5874ed2c85bee6bdd8a90ed281a301294eac63",
+  "source_dump_sha256": "1193de341bf95548a4fc48c5d0ca2ed730362907ebb3ddd6f57f5dedae05cc76",
   "rdkit_version": "2026.09.1",
   "source_rows": 4072,
   "compatible_rows": 4069,
@@ -66,20 +66,20 @@
       "support_status": "not_implemented"
     }
   ],
-  "exact_rows": 3928,
+  "exact_rows": 3931,
   "classification_counts": {
     "acid_base_reionization": 30,
     "canonical_representation": 1,
     "explicit_hydrogen_normalization": 3,
     "functional_group_normalization": 1,
     "metal_bond_order_assignment": 1,
-    "metal_charge_assignment": 24,
-    "metal_disconnection_policy": 77,
+    "metal_charge_assignment": 22,
+    "metal_disconnection_policy": 76,
     "metal_stereo_preservation": 1,
     "sulfur_oxide_representation": 3
   },
   "support_status_counts": {
-    "not_implemented": 136,
+    "not_implemented": 133,
     "policy_difference": 1,
     "representation_only": 4
   },
@@ -428,33 +428,6 @@
       "input": "C1=CC=CC1[Fe]C1C=CC=C1",
       "rdkit_cleanup": "C1=CCC=C1.[C-]1=C[CH-]C=C1.[Fe+2]",
       "chematic_cleanup": "[Fe+2].c1cc[cH-]c1.c1cc[cH-]c1",
-      "source_error": null,
-      "classification": "metal_disconnection_policy",
-      "support_status": "not_implemented"
-    },
-    {
-      "index": 410,
-      "input": "O=[Mn](=O)(=O)[O-].[K+]",
-      "rdkit_cleanup": "[K+].[Mn+8].[O-2].[O-2].[O-2].[O-2]",
-      "chematic_cleanup": "[K+].[Mn+7].[O-2].[O-2].[O-2].[O-2]",
-      "source_error": null,
-      "classification": "metal_charge_assignment",
-      "support_status": "not_implemented"
-    },
-    {
-      "index": 455,
-      "input": "C(#N)[Cu]",
-      "rdkit_cleanup": "[C-]#N.[Cu]",
-      "chematic_cleanup": "[C-]#N.[Cu+]",
-      "source_error": null,
-      "classification": "metal_charge_assignment",
-      "support_status": "not_implemented"
-    },
-    {
-      "index": 457,
-      "input": "O->[Mg](<-O)(<-O)<-O",
-      "rdkit_cleanup": "O.O.O.O.[MgH2]",
-      "chematic_cleanup": "O.O.O.O.[Mg]",
       "source_error": null,
       "classification": "metal_disconnection_policy",
       "support_status": "not_implemented"
@@ -1658,8 +1631,8 @@
     }
   ],
   "baseline_comparison": {
-    "previous_source": "validation/results/rdkit-standardization-current-source-2026-10-19.json",
-    "previous_exact": 3928,
+    "previous_source": "validation/results/rdkit-standardization-current-source-2026-10-20.json",
+    "previous_exact": 3931,
     "fixed_indices": [],
     "regressed_indices": []
   },
