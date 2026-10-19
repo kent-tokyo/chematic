@@ -38,6 +38,6 @@
       "LFQSCWFLJHTTHZ-UHFFFAOYSA-N"
     ],
     "returncode": 0,
-    "stderr": "2 molecules converted\n"
+    "stderr": "==============================\n*** Open Babel Error  in InChI code\n  Reading InChI failed\n2 molecules converted\n"
   }
 }

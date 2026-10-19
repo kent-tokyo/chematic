@@ -199,6 +199,33 @@ def test_native_error_message_is_bounded(monkeypatch):
     assert row.message == "x" * 1024
 
 
+def test_malformed_middle_identifier_does_not_hide_later_success():
+    rows = ch.inchi_keys_checked([WATER, "InChI=1S/not-a-formula", ETHANOL])
+    assert [row.status for row in rows] == ["ok", "invalid", "ok"]
+    assert rows[2].key == "LFQSCWFLJHTTHZ-UHFFFAOYSA-N"
+
+
+@pytest.mark.parametrize(
+    "category,status",
+    [
+        ("resource_limit", "resource_limit"),
+        ("unsupported", "unsupported"),
+        ("ambiguous", "unsupported"),
+    ],
+)
+def test_native_input_categories_are_not_mislabeled(category, status, monkeypatch):
+    error = ch.ChematicInputError("declined")
+    error.category = category
+    error.code = "specific_native_reason"
+
+    def fail(text):
+        raise error
+
+    monkeypatch.setattr(implementation, "from_inchi", fail)
+    (row,) = ch.inchi_keys_checked([WATER])
+    assert (row.status, row.code) == (status, "specific_native_reason")
+
+
 @pytest.mark.parametrize("formula", ["C0", "0H2O", "H" + "0" * 5000])
 def test_zero_and_long_zero_formula_fields_stay_record_errors(formula):
     (row,) = ch.inchi_keys_checked(["InChI=1S/" + formula])

@@ -179,7 +179,7 @@ def inchi_keys_checked(
             consumes one extra item. No partial tuple is returned.
 
     Individual oversize/numeric/formula errors are resource_limit rows. Other
-    parser errors are invalid; changed canonical identity is unsupported, not
+    parser categories remain distinct; changed identity is unsupported, not
     proof of invalid input. MemoryError and unexpected exceptions propagate.
     Iterator exceptions propagate and native work has not started at that point.
     Caller iterator side effects are not rolled back. No files are written.
@@ -211,7 +211,22 @@ def inchi_keys_checked(
                 continue
             key = molecule.standard_inchikey
         except ChematicInputError as error:
-            output.append(_failure(index, text, "invalid", "inchi_parse", str(error)))
+            category = getattr(error, "category", "malformed")
+            status: InchiKeyStatus = "invalid"
+            if category == "resource_limit":
+                status = "resource_limit"
+            elif category in ("unsupported", "ambiguous"):
+                status = "unsupported"
+            code = getattr(error, "code", "inchi_parse")
+            output.append(
+                _failure(
+                    index,
+                    text,
+                    status,
+                    code if isinstance(code, str) else "inchi_parse",
+                    str(error),
+                )
+            )
             continue
         except RuntimeError as error:
             output.append(

@@ -30,7 +30,7 @@ applications can explicitly render `None` as `NA` while retaining status/code.
 | --- | --- |
 | `ok` | Exact Standard InChI readback and native IUPAC key generation succeeded. |
 | `invalid` | The identifier fails the accepted text/formula checks or the native parser reports an input error. |
-| `unsupported` | Nonstandard identifiers or changed readback; not a declaration that the source is chemically invalid. |
+| `unsupported` | Nonstandard identifiers, changed readback or native unsupported/ambiguous input; not a declaration that the source is chemically invalid. |
 | `resource_limit` | The individual identifier exceeds byte, numeric or formula limits. |
 | `conversion_error` | Native InChI generation/key output failed or the feature is unavailable. |
 
@@ -72,6 +72,7 @@ The mixed reference packet preserves all 219 positions. Of 144 valid identifier
 rows, 142 produce keys matching RDKit 2026.09.1's direct `InchiToInchiKey` call.
 Two rows, duplicates of one source, are refused because readback changed.
 All failures remain in the denominator. The separate Open Babel 3.2.1 control
-emits two keys for three input lines, reproducing the positional-loss behavior.
-187 Python tests pass, including 35 new batch tests. Reproduction and artifact
+emits two keys for three input lines even with `-e` to continue after the
+malformed identifier, reproducing the positional-loss behavior.
+191 Python tests pass, including 39 new batch tests. Reproduction and artifact
 boundaries are in `validation/results/positioned-inchi-keys-2026-10-19/`.

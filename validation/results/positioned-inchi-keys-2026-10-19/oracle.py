@@ -75,13 +75,14 @@ def main():
         assert records[index].key == records[index + 2].key
         assert records[index + 1].status == "invalid"
     water, ethanol = "InChI=1S/H2O/h1H2", "InChI=1S/C2H6O/c1-2-3/h3H,2H2,1H3"
-    diagnostic_inputs = [water, "not-an-inchi", ethanol]
+    diagnostic_inputs = [water, "InChI=1S/not-a-formula", ethanol]
     probe = subprocess.run(
-        ["obabel", "-iinchi", "-oinchikey"],
+        ["obabel", "-iinchi", "-oinchikey", "-e"],
         input="\n".join(diagnostic_inputs) + "\n",
         capture_output=True,
         text=True,
         check=False,
+        timeout=15,
     )
     summary = {
         "rdkit": rdkit.__version__,
