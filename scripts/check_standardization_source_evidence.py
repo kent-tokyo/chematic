@@ -9,7 +9,7 @@ import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-RECORD = ROOT / "validation/results/rdkit-standardization-current-source-2026-10-19.json"
+RECORD = ROOT / "validation/results/rdkit-standardization-current-source-2026-10-20-reionize.json"
 
 
 def digest(path: Path) -> str:
@@ -52,8 +52,13 @@ def main() -> None:
     check_lane(cleanup, "cleanup_", "exact_rows")
     check_lane(record, "reionize_", "reionize_exact_rows")
 
-    assert record["baseline_comparison"]["fixed_indices"]
     assert not record["baseline_comparison"]["regressed_indices"]
+    previous = json.loads((ROOT / record["baseline_comparison"]["previous_source"]).read_text())
+    old_reionize = {row["index"] for row in previous["reionize_mismatches"]}
+    new_reionize = {row["index"] for row in record["reionize_mismatches"]}
+    assert old_reionize - new_reionize
+    assert not new_reionize - old_reionize
+    assert record["reionize_exact_rows"] > previous["reionize_exact_rows"]
     print("Current-source standardization evidence passed")
 
 
