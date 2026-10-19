@@ -198,3 +198,13 @@ def test_single_atom_has_no_claim_of_stereo_or_bond_validation():
     assert r["max_relative_bond_deviation"] is None
     assert r["stereo"]["n_declared"] == 0
     assert r["stereo_groups_not_evaluated"] == 0
+
+
+def test_tiny_finite_distances_are_not_rounded_to_coincident_atoms():
+    coords = [[0, 0, 0], [1e-200, 0, 0]]
+    bonded = chematic.from_smiles("CC").check_geometry(coords)
+    assert bonded["bond_violations"][0]["distance"] == 1e-200
+    separate = chematic.from_smiles("C.C").check_geometry(
+        coords, nonbonded_min_distance=1e-250
+    )
+    assert separate["nonbonded_clashes"] == []

@@ -5,7 +5,7 @@
 //! lengths reuse the embedding model; clashes use a caller-selected absolute
 //! cutoff, including pairs in separate fragments. No coordinates are generated.
 
-use chematic_core::{AtomIdx, BondIdx, BondOrder, Coords3D, Molecule};
+use chematic_core::{AtomIdx, BondIdx, BondOrder, Coords3D, Molecule, Point3};
 
 use crate::dg_fft::ideal_bond_length;
 use crate::stereo_constraints::{StereoVerification, verify_stereo};
@@ -72,6 +72,12 @@ impl std::fmt::Display for GeometryCheckError {
 }
 
 impl std::error::Error for GeometryCheckError {}
+
+fn distance(a: Point3, b: Point3) -> f64 {
+    // Squaring tiny finite deltas can underflow to zero and falsely report a
+    // clash for a still smaller caller cutoff. Scaled hypot retains the norm.
+    libm::hypot(libm::hypot(a.x - b.x, a.y - b.y), a.z - b.z)
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct BondGeometryViolation {
@@ -189,7 +195,7 @@ pub fn check_geometry(
             continue;
         }
         let reference_length = ideal_bond_length(mol, a, b);
-        let distance = coords.get(a).distance(&coords.get(b));
+        let distance = distance(coords.get(a), coords.get(b));
         let relative_deviation = (distance - reference_length).abs() / reference_length;
         report.bonds_checked += 1;
         report.max_relative_bond_deviation = Some(
@@ -214,7 +220,7 @@ pub fn check_geometry(
                 continue;
             }
             let atoms = [AtomIdx(i as u32), AtomIdx(j as u32)];
-            let distance = coords.get(atoms[0]).distance(&coords.get(atoms[1]));
+            let distance = distance(coords.get(atoms[0]), coords.get(atoms[1]));
             if distance < config.nonbonded_min_distance {
                 report
                     .nonbonded_clashes

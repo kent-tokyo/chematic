@@ -8,10 +8,10 @@ not evidence of a published artifact.
 
 ## Results
 
-- Rust `chematic-3d --lib --tests`: **763 passed, 0 failed, 4 ignored**, across
-  12 test binaries, including all 12 new `geometry_check` tests.
-- Python geometry screen + existing checked-SASA suite: **77 passed**
-  (34 new geometry-screen cases, 43 existing SASA cases).
+- Rust `chematic-3d --lib --tests`: **764 passed, 0 failed, 4 ignored**, across
+  12 test binaries, including all 13 new `geometry_check` tests.
+- Python geometry screen + existing checked-SASA suite: **78 passed**
+  (35 new geometry-screen cases, 43 existing SASA cases).
 - Release `cargo clippy` for `chematic-3d` and `chematic-py`, all targets,
   `-D warnings`: passed.
 - Whole-workspace format check, Python Black on both new Python files, source

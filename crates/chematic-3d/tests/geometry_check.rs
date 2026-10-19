@@ -36,6 +36,19 @@ fn finite_but_collapsed_or_stretched_bonds_are_reported() {
 }
 
 #[test]
+fn tiny_finite_distances_do_not_underflow_into_false_coincidences() {
+    let r = screen("CC", &[[0.; 3], [1e-200, 0., 0.]]);
+    assert_eq!(r.bond_violations[0].distance, 1e-200);
+    let mol = chematic_smiles::parse("C.C").unwrap();
+    let config = GeometryCheckConfig {
+        nonbonded_min_distance: 1e-250,
+        ..GeometryCheckConfig::default()
+    };
+    let r = check_geometry(&mol, &coords(&[[0.; 3], [1e-200, 0., 0.]]), &config).unwrap();
+    assert!(r.nonbonded_clashes.is_empty());
+}
+
+#[test]
 fn covalent_order_scales_are_not_flat_single_bond_defaults() {
     for (s, expected) in [
         ("CC", 1.54),
