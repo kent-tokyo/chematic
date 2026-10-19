@@ -1,0 +1,16 @@
+{
+  "rdkit": "2026.09.1",
+  "numpy": "2.5.4",
+  "samples": 76,
+  "widths": 12,
+  "input_profiles": 3,
+  "bit_vector_comparisons": 2736,
+  "no_op_option_checks": 1824,
+  "mismatch_count": 0,
+  "mismatches": [],
+  "corpus_sha256": {
+    "scripts/descriptor_census_corpus.smi": "d6f2ba3f128296f935007f0b0813aa97b6ebcc2457e014ddca2213ddd655276c",
+    "scripts/chembl_accuracy_corpus_4999.smi": "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e"
+  },
+  "native_sha256": "02d1ba11410da59d8c202408ecb3b498955943b96b22a5d5e264dddadc51a607"
+}

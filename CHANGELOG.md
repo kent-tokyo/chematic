@@ -14,6 +14,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Typed `rdkit_compat.PatternFingerprint` facade for the native Pattern
+  calculator, with exact folding to power-of-two widths through 2048 and checked
+  structural mask/list/NumPy counter inputs. Counter and mask arguments remain
+  compatibility no-ops, matching the pinned RDKit implementation.
+
 ## [1.1.8] - 2026-10-19
 
 ### Added
