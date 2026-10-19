@@ -31,7 +31,7 @@ Fresh sequential processes run baseline, candidate and RDKit in all six
 orders four times each, shuffled with seed 20261019. The plan, including
 script hashes, identities, scope and adoption policy, was saved before the
 first formal observation. No blocks or input rows were removed. Three earlier
-two-engine screening blocks cover thirteen additional operations; these are
+two-engine screening blocks cover thirteen operations; these are
 diagnostics without a complete output gate and are retained separately.
 
 Formal input is exactly rows 0–999 of the 10,000-row normal v1 corpus.
