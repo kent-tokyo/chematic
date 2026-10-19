@@ -1,0 +1,79 @@
+{
+  "profile": "cleanup_formal_charge_preservation",
+  "cleanup_oracle_version": "2026.09.1",
+  "formal_charge_parser_version": "2026.09.1",
+  "comparison_sha256": "3781c4e9456e4f57f21f771566bacaa00e47d6aa196d300a91a17c1023ddb7f8",
+  "source_dump_sha256": "69e1565bbc3de1c4fd6b62d5e95ce0ff8a7d7fb192bc5ae746b7a7e179d1b859",
+  "compatible_rows": 4069,
+  "counts": {
+    "both_preserve": 4061,
+    "source_only_preserves": 3,
+    "rdkit_only_preserves": 0,
+    "neither_preserves": 2
+  },
+  "parser_failures": [
+    {
+      "index": 1497,
+      "charges": {
+        "input": 0,
+        "source": 0,
+        "rdkit": null
+      }
+    },
+    {
+      "index": 1630,
+      "charges": {
+        "input": -1,
+        "source": -1,
+        "rdkit": null
+      }
+    },
+    {
+      "index": 2677,
+      "charges": {
+        "input": 0,
+        "source": 0,
+        "rdkit": null
+      }
+    }
+  ],
+  "asymmetric_rows": [
+    {
+      "index": 410,
+      "input": "O=[Mn](=O)(=O)[O-].[K+]",
+      "charges": {
+        "input": 0,
+        "source": 0,
+        "rdkit": 1
+      },
+      "source_output": "[K+].[Mn+7].[O-2].[O-2].[O-2].[O-2]",
+      "rdkit_output": "[K+].[Mn+8].[O-2].[O-2].[O-2].[O-2]"
+    },
+    {
+      "index": 455,
+      "input": "C(#N)[Cu]",
+      "charges": {
+        "input": 0,
+        "source": 0,
+        "rdkit": -1
+      },
+      "source_output": "[C-]#N.[Cu+]",
+      "rdkit_output": "[C-]#N.[Cu]"
+    },
+    {
+      "index": 3514,
+      "input": "COC1=C(OC)[C](C[S+]([O-])C2=NC3=C(C=C4OC(F)(F)OC4=C3)N2)=[Zn][C]#C1",
+      "charges": {
+        "input": 0,
+        "source": 0,
+        "rdkit": -1
+      },
+      "source_output": "[C-]#CC(OC)=C([C-2]C[S+]([O-])c1nc2cc3c(cc2[nH]1)OC(F)(F)O3)OC.[Zn+3]",
+      "rdkit_output": "C#CC(OC)=C([C-2]C[S+]([O-])c1nc2cc3c(cc2[n-]1)OC(F)(F)O3)OC.[Zn+2]"
+    }
+  ],
+  "limits": [
+    "selected stress corpus",
+    "formal charge preservation alone does not prove chemical correctness"
+  ]
+}
