@@ -164,6 +164,7 @@ struct LabeledCandidate {
     core: HashSet<AtomIdx>,
     attachments: BTreeMap<u16, (AtomIdx, AtomIdx)>,
     hydrogen_sites: BTreeMap<u16, AtomIdx>,
+    core_stub_orders: BTreeMap<u16, BondOrder>,
     result: LabeledRGroupResult,
 }
 
@@ -243,14 +244,14 @@ pub fn rgroup_decompose(
 
         // For each attachment point, BFS the non-core subgraph and build a fragment.
         let mut r_groups: HashMap<u8, String> = HashMap::new();
-        for (rg_idx, &(_core_atom, rg_root)) in attachment_pairs.iter().enumerate() {
+        for (rg_idx, &(core_atom, rg_root)) in attachment_pairs.iter().enumerate() {
             let rg_num = (rg_idx + 1) as u8;
-            let fragment = extract_rgroup(mol, rg_root, &core, None);
+            let fragment = extract_rgroup(mol, core_atom, rg_root, &core, None);
             r_groups.insert(rg_num, canonical_smiles(&fragment));
         }
 
         // Build core SMILES: copy core atoms, replacing boundary bonds with [*].
-        let core_mol = build_core_mol(mol, &core, &attachment_pairs, None);
+        let core_mol = build_core_mol(mol, &core, &attachment_pairs, None, None);
         let core_smiles = canonical_smiles(&core_mol);
 
         results.push(Some(RGroupResult {
@@ -419,6 +420,7 @@ fn finalize_labeled_rows(
                         mols[candidate.result.mol_idx],
                         &candidate.core,
                         &attachments,
+                        &candidate.core_stub_orders,
                     ));
                 }
                 candidate.result
@@ -681,6 +683,19 @@ fn labeled_candidates(
     let placeholder_queries: HashSet<usize> = (0..query.atoms.len())
         .filter(|&idx| is_terminal_mapped_wildcard(query, idx))
         .collect();
+    let core_stub_orders: BTreeMap<u16, BondOrder> = placeholder_queries
+        .iter()
+        .filter_map(|&idx| {
+            let (bond_idx, _) = query.adj[idx][0];
+            let order = match query.bonds[bond_idx].query {
+                BondQuery::Primitive(BondPrimitive::Double) => BondOrder::Double,
+                BondQuery::Primitive(BondPrimitive::Triple) => BondOrder::Triple,
+                BondQuery::Primitive(BondPrimitive::Quadruple) => BondOrder::Quadruple,
+                _ => return None,
+            };
+            Some((explicit_labels[&idx], order))
+        })
+        .collect();
     let core: HashSet<AtomIdx> = mapping
         .iter()
         .filter_map(|(query_idx, atom_idx)| {
@@ -718,6 +733,7 @@ fn labeled_candidates(
                 auto_labels,
                 canonical_rank,
                 sites,
+                &core_stub_orders,
             )
         })
         .collect()
@@ -733,6 +749,7 @@ fn labeled_candidate_for_sites(
     auto_labels: &HashMap<usize, u16>,
     canonical_rank: &[usize],
     sites: PlaceholderSites,
+    core_stub_orders: &BTreeMap<u16, BondOrder>,
 ) -> Result<LabeledCandidate, RGroupError> {
     let PlaceholderSites {
         mut attachments,
@@ -764,7 +781,7 @@ fn labeled_candidate_for_sites(
     let first_site = attachment_sites.next();
     let single_attachment_site = attachment_sites.all(|site| Some(site) == first_site);
     for (&label, &(core_atom, root)) in &attachments {
-        let fragment = extract_rgroup_labeled(mol, root, core, label);
+        let fragment = extract_rgroup_labeled(mol, core_atom, root, core, label);
         let smiles = canonical_smiles(&fragment);
         rgroup_fingerprints.insert(label, chematic_fp::ecfp4(&fragment));
         signature.push((label, smiles.clone(), canonical_rank[core_atom.0 as usize]));
@@ -772,7 +789,7 @@ fn labeled_candidate_for_sites(
         r_groups.insert(label, smiles);
     }
     signature.sort();
-    let core_mol = build_core_mol_labeled(mol, core, &attachments);
+    let core_mol = build_core_mol_labeled(mol, core, &attachments, core_stub_orders);
     let core_smiles = canonical_smiles(&core_mol);
     signature.push((0, core_smiles.clone(), 0));
     let explicit_values: HashSet<u16> = explicit_labels.values().copied().collect();
@@ -802,6 +819,7 @@ fn labeled_candidate_for_sites(
         core: core.clone(),
         attachments,
         hydrogen_sites,
+        core_stub_orders: core_stub_orders.clone(),
         result: LabeledRGroupResult {
             mol_idx,
             core_smiles,
@@ -834,21 +852,23 @@ fn insert_attachment(
 
 fn extract_rgroup_labeled(
     mol: &Molecule,
+    core_atom: AtomIdx,
     root: AtomIdx,
     core: &HashSet<AtomIdx>,
     label: u16,
 ) -> Molecule {
-    extract_rgroup(mol, root, core, Some(label))
+    extract_rgroup(mol, core_atom, root, core, Some(label))
 }
 
 fn build_core_mol_labeled(
     mol: &Molecule,
     core: &HashSet<AtomIdx>,
     attachments: &BTreeMap<u16, (AtomIdx, AtomIdx)>,
+    core_stub_orders: &BTreeMap<u16, BondOrder>,
 ) -> Molecule {
     let pairs: Vec<(AtomIdx, AtomIdx)> = attachments.values().copied().collect();
     let labels: Vec<u16> = attachments.keys().copied().collect();
-    build_core_mol(mol, core, &pairs, Some(&labels))
+    build_core_mol(mol, core, &pairs, Some(&labels), Some(core_stub_orders))
 }
 
 /// Extract the R-group subgraph starting at `root`, blocked by the `core` atom set.
@@ -857,6 +877,7 @@ fn build_core_mol_labeled(
 /// that do not enter the core, plus a `[*]` wildcard stub at the attachment point.
 fn extract_rgroup(
     mol: &Molecule,
+    core_atom: AtomIdx,
     root: AtomIdx,
     core: &HashSet<AtomIdx>,
     wildcard_label: Option<u16>,
@@ -899,11 +920,24 @@ fn extract_rgroup(
         }
     }
 
+    // The R-group side of a multiple-bond cut must retain its bond order.
+    // Otherwise a carbonyl oxygen becomes a hydroxyl group and a nitrile
+    // nitrogen becomes an amine in the exported fragment. Directional and
+    // aromatic cuts use the existing single-bond placeholder convention.
+    let boundary_order = mol
+        .bond_between(core_atom, root)
+        .expect("R-group root must be bonded to its core atom")
+        .1
+        .order;
+    let stub_order = match boundary_order {
+        BondOrder::Double | BondOrder::Triple | BondOrder::Quadruple => boundary_order,
+        _ => BondOrder::Single,
+    };
     // Add a [*] wildcard attached to root representing the attachment to the core.
     let mut wildcard = Atom::wildcard();
     wildcard.atom_map = wildcard_label;
     let wc = builder.add_atom(wildcard);
-    let _ = builder.add_bond(new_root, wc, BondOrder::Single);
+    let _ = builder.add_bond(new_root, wc, stub_order);
 
     builder.build()
 }
@@ -914,6 +948,7 @@ fn build_core_mol(
     core: &HashSet<AtomIdx>,
     attachment_pairs: &[(AtomIdx, AtomIdx)],
     labels: Option<&[u16]>,
+    core_stub_orders: Option<&BTreeMap<u16, BondOrder>>,
 ) -> Molecule {
     let mut builder = MoleculeBuilder::new();
     let mut remap: HashMap<AtomIdx, AtomIdx> = HashMap::new();
@@ -940,7 +975,11 @@ fn build_core_mol(
             let mut wildcard = Atom::wildcard();
             wildcard.atom_map = labels.map(|values| values[attachment_idx]);
             let wc = builder.add_atom(wildcard);
-            let _ = builder.add_bond(new_ca, wc, BondOrder::Single);
+            let order = labels
+                .and_then(|values| core_stub_orders?.get(&values[attachment_idx]))
+                .copied()
+                .unwrap_or(BondOrder::Single);
+            let _ = builder.add_bond(new_ca, wc, order);
         }
     }
 
@@ -1040,6 +1079,56 @@ mod tests {
             r1_p.starts_with('O') || r1_p.contains('O'),
             "phenol R1 should contain O, got {r1_p}"
         );
+    }
+
+    #[test]
+    fn multiple_bond_rgroups_retain_the_cut_bond_order() {
+        // R-group strings and core graphs checked against RDKit 2026.09.1.
+        let mols = [mol("O=Cc1ccccc1"), mol("N#Cc1ccccc1")];
+        let refs: Vec<&Molecule> = mols.iter().collect();
+
+        let labeled = rgroup_decompose_labeled("c1ccccc1[C:1]", &refs).unwrap();
+        let expected_core = canonical_smiles(&mol("c1ccc(C[*:1])cc1"));
+        assert_eq!(labeled[0].as_ref().unwrap().core_smiles, expected_core);
+        assert_eq!(labeled[1].as_ref().unwrap().core_smiles, expected_core);
+        assert_eq!(labeled[0].as_ref().unwrap().r_groups[&1], "O=[*:1]");
+        assert_eq!(labeled[1].as_ref().unwrap().r_groups[&1], "N#[*:1]");
+
+        let unlabeled = rgroup_decompose("c1ccccc1C", &refs).unwrap();
+        for (row, expected_order) in unlabeled.iter().zip([BondOrder::Double, BondOrder::Triple]) {
+            let fragment = mol(&row.as_ref().unwrap().r_groups[&1]);
+            assert_eq!(fragment.bond(BondIdx(0)).order, expected_order);
+        }
+    }
+
+    #[test]
+    fn explicit_multiple_bond_placeholder_keeps_core_and_rgroup_orders() {
+        for (scaffold, target, order, expected_core, expected_rgroup) in [
+            (
+                "c1ccccc1C=[*:1]",
+                "O=Cc1ccccc1",
+                BondOrder::Double,
+                "C(c1ccccc1)=[*:1]",
+                "O=[*:1]",
+            ),
+            (
+                "c1ccccc1C#[*:1]",
+                "N#Cc1ccccc1",
+                BondOrder::Triple,
+                "C(c1ccccc1)#[*:1]",
+                "N#[*:1]",
+            ),
+        ] {
+            let molecule = mol(target);
+            let rows = rgroup_decompose_labeled(scaffold, &[&molecule]).unwrap();
+            let row = rows[0].as_ref().expect("multiple-bond core should match");
+            assert_eq!(row.core_smiles, canonical_smiles(&mol(expected_core)));
+            assert_eq!(row.r_groups[&1], expected_rgroup);
+            let core = mol(&row.core_smiles);
+            let rgroup = mol(&row.r_groups[&1]);
+            assert!(core.bonds().any(|(_, bond)| bond.order == order));
+            assert_eq!(rgroup.bond(BondIdx(0)).order, order);
+        }
     }
 
     #[test]
