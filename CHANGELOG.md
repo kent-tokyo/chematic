@@ -14,6 +14,15 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+
+- Python SMILES parsing no longer computes descriptor-model, aromatic-view or
+  ring caches eagerly. The first consumer populates the same invalidated
+  caches. On the fixed 1,000-row macOS source lane this reduces parse time
+  from 5.715 ms to 3.185 ms and improves parse-plus-operation lanes while
+  moving preparation cost into first use; prepared reuse is essentially
+  unchanged. See the [dated record](benchmarks/2026-10-19-python-lazy-preparation.md).
+
 ### Fixed
 
 - `rdkit_smiles_checked` now performs the bounded atom-order checks documented
@@ -23,6 +32,16 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - Previous-release compatibility jobs now compare all changed publishable Rust
   crates, Python declarations/dependencies and generated WebAssembly TypeScript
   declarations against v1.1.8 instead of the older v1.1.7 baseline.
+- RDKit-compatible Cleanup now handles three bounded metal representations
+  and seven existing-anion acid/base transfers. Exact agreement on the pinned
+  stress corpus rises from 3,923 to 3,933/4,069 with zero regressions. Generic
+  Reionize remains separate because applying it unconditionally regresses
+  neutral Cleanup rows. See the
+  [dated record](benchmarks/2026-10-19-rdkit-cleanup-acid-metal-followup.md).
+- Added a one-shot scorer and immutable row-level result for the frozen MCS,
+  SDF-attribute and stereo/3D holdouts. The score keeps success, mismatch,
+  refusal, invalid input and internal error separate and is retained as
+  historical evidence rather than tuning data.
 
 ## [1.1.9] - 2026-10-19
 

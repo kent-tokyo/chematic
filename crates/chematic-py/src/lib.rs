@@ -197,43 +197,15 @@ impl Mol {
         }
     }
 
-    /// Wrap a molecule parsed from SMILES after preparing the same two
-    /// perception results RDKit materializes during `MolFromSmiles`.
+    /// Wrap a molecule parsed from SMILES without forcing descriptor work.
     ///
-    /// Keeping this at the Python boundary preserves the deliberately lean
-    /// Rust SMILES parser while making Python parse/descriptor comparisons
-    /// symmetric: aromaticity-dependent scalar descriptors and
-    /// `CalcNumRings` no longer pay sanitization work after parsing that
-    /// RDKit already charged to parsing.
+    /// Descriptor-model, aromaticity and ring caches are populated by their
+    /// first consumers and then reused. This keeps one-shot parse workloads
+    /// lean while preserving the amortized path for descriptor bundles and
+    /// repeated calls. Benchmark reports must therefore keep parse-only,
+    /// first-use and repeated-use lanes separate.
     fn from_smiles_parsed(mol: chematic_core::Molecule) -> Self {
-        // Keep the parser's resource contract for unusually large inputs.
-        // RDKit and COSMolKit both materialize sanitized aromatic/ring state
-        // while parsing, so the Python compatibility boundary does the same
-        // within a fixed graph-size budget.  Ring-closure count alone is not
-        // a useful complexity proxy: compact fullerenes routinely contain
-        // 32 closures yet stay well inside the bounded relevant-cycle and
-        // aromaticity implementations.  Every derived cache is still
-        // invalidated by graph mutation.
-        const MAX_EAGER_ATOMS: usize = 128;
-        const MAX_EAGER_BONDS: usize = 192;
-        let mut prepared_rings = usize::MAX;
-        if mol.atom_count() <= MAX_EAGER_ATOMS && mol.bond_count() <= MAX_EAGER_BONDS {
-            let model_prepared = chematic_smiles::prepare_rdkit_scalar_model(&mol);
-            if !model_prepared && !chematic_perception::rdkit_parity_view_is_identity(&mol) {
-                // Computing only the identity verdict leaves Kekule/fused
-                // systems to pay the full view construction on their first
-                // descriptor call.  Materialize the shared view now so
-                // parse and first-use comparisons account for the same work
-                // boundary as the comparator parsers.
-                let _ = chematic_perception::apply_aromaticity_rdkit_parity_shared(&mol);
-            }
-            prepared_rings = chematic_chem::rdkit_num_rings(&mol);
-        }
-        Mol {
-            inner: Arc::new(mol),
-            props: Default::default(),
-            num_rings_cache: CachedRingCount::new(prepared_rings),
-        }
+        Self::bare(mol)
     }
 }
 

@@ -11,18 +11,22 @@ contracts and reproducible evidence over feature-count parity.
 
 - Stable selected paths cover SMILES/SMARTS, descriptors, fingerprints,
   search, and common MOL/SDF workflows through one Rust core.
-- The public v1.1.8 macOS arm64 wheel reproduces the 10,000-row Labute ASA
-  result on one host. This is one-operation evidence, not a cross-platform or
-  toolkit-wide superiority claim.
-- Broad hosted package chemistry is established for v1.1.7; the durable
-  checked-in cross-platform packet remains v1.1.3; the broadest published
-  RDKit package benchmark remains v1.0.42.
-- Reaction, SMARTS, fragment, and labelled R-group results are bounded by
-  declared corpora. Standardization and CTfile residuals are classified but
-  not fully closed.
-- Hash-pinned MCS, SDF-attribute, and stereo/3D holdouts are frozen and
-  unscored. They must not be used for tuning before their one-time evaluation.
-- 3D/MMFF94, pKa/ADMET screening, IUPAC naming, broad Markush/polymer
+- The v1.1.9 published-wheel chemistry workflow completed all 11 package jobs.
+  Durable row-level packets, browser artifacts and source experiments remain
+  separate evidence channels.
+- A source candidate moves descriptor, aromatic-view and ring preparation from
+  parsing to first consumers. Parse-inclusive single and two-descriptor lanes
+  improve while prepared reuse is approximately flat; hosted clean-wheel and
+  second-host evidence remain open.
+- Reaction, SMARTS, fragment and labelled R-group results remain bounded by
+  declared corpora. Cleanup now matches 3,933/4,069 pinned stress rows; other
+  standardization and CTfile residuals remain classified but not fully closed.
+- The frozen post-candidate NCI/PubChem holdouts have been scored once against
+  immutable v1.1.8. SDF graph/title/property/stereo columns are 64/64; MCS
+  atom/bond counts are 31/64; 3D embed status/stereo graph are 96/96,
+  conformer count is 95/96 and strict pair-distance coordinates are 4/96.
+  These inspected rows are historical evaluation evidence, not tuning data.
+- 3D, MMFF94, pKa/ADMET screening, IUPAC naming, broad Markush/polymer
   expansion, and rich CDXML editing remain experimental or bounded.
 
 Exact denominators belong in [validation](docs/validation.md), dated results
@@ -33,15 +37,35 @@ in the [benchmark index](benchmarks/README.md), and unresolved work in the
 
 ### 1. Finish release-grade evidence
 
-- Evaluate the frozen holdouts once from a fixed candidate.
-- Re-run relevant chemistry gates from exact PyPI, npm, and crates.io
-  artifacts; keep source, package, browser, and platform lanes separate.
-- Record versions, hashes, corpora, options, host, and all failure classes.
-- Extend semver, downstream-consumer, Python stub, and WASM declaration gates
-  to every changed public surface.
+1. **Develop against new data, preserving the frozen score.** Investigate MCS
+   and multi-conformer 3D residual classes on newly selected development rows;
+   never rewrite or tune against the inspected holdout-v1 result.
+2. **Implement classified standardization gaps by value.** Cleanup is now
+   3,933/4,069 after ten further fixes with zero regressions. Prioritize the
+   remaining 26 bounded acid/base rows and 101 metal disconnection/charge/
+   bond/stereo rows. Keep independent-ionization and representation/policy
+   differences explicit instead of copying them silently.
+3. **Close the remaining CTfile rows.** Fix the one current chematic readback
+   failure and reduce ten stereo-only rows without counting 16 RDKit oracle
+   failures against the writer.
+4. **Finish two-host performance evidence.** Repeated QED caching is complete;
+   retain first-use output identity and use the hosted Linux 20-block lane to
+   adjudicate chiral Morgan, Labute ASA and QED alongside macOS.
+   The [terminal-TPSA source follow-up](benchmarks/2026-10-18-terminal-tpsa.md)
+   improves both fixed first-use windows. The
+   [Python ASA/ring follow-up](benchmarks/2026-10-18-python-first-use-ring-asa.md)
+   closes the measured RDKit first-use ASA and ring-count deficits on one
+   macOS source lane. The later
+   [10k ASA follow-up](benchmarks/2026-10-19-python-labute-asa-cosmolkit.md)
+   also clears the fixed COSMolKit ASA lane in 20/20 blocks while preserving
+   all values. First-use TPSA plus one chiral-Morgan window remain open.
+   COSMolKit's six unequal ring counts stay unranked instead of being treated
+   as a speed deficit. Keep source evidence separate from public artifacts and
+   state the single-macOS-host limit explicitly.
 
-**Exit:** every public claim points to a reproducible artifact record, and the
-frozen holdout candidate is unchanged after results are inspected.
+**Exit:** the release candidate passes all changed-crate/binding compatibility
+gates, preserves the immutable frozen score, and has separate two-host
+first-use, reuse, parse-inclusive and RSS evidence.
 
 ### 2. Close correctness residuals
 
