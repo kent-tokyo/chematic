@@ -1,0 +1,15 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.13.6, pytest-9.1.1, pluggy-1.6.0
+rootdir: /Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py
+configfile: pytest.ini
+collected 271 items
+
+crates/chematic-py/tests/test_xbs_input.py ............................. [ 10%]
+.................................                                        [ 22%]
+crates/chematic-py/tests/test_xbs_output.py ............................ [ 33%]
+...................                                                      [ 40%]
+crates/chematic-py/tests/test_rdkit_compat.py .......................... [ 49%]
+........................................................................ [ 76%]
+................................................................         [100%]
+
+============================= 271 passed in 0.43s ==============================

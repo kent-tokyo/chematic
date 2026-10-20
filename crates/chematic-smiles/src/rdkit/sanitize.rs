@@ -227,7 +227,10 @@ pub(crate) fn sanitize_mol_with(
 /// `cleanUp`: nitro-like nitrogens, P(=O)=C/N, halogen oxides.
 pub(crate) fn clean_up(mol: &mut Mol) -> Result<(), RdkitSmilesError> {
     // nitrogensCleanup
-    let mut to_consider = vec![false; mol.atoms.len()];
+    // Preserve first-pass discovery order and membership even when that pass
+    // changes charges/bond orders. Usually there are no valence-five nitrogens;
+    // a sparse inline list avoids a molecule-sized allocation and second scan.
+    let mut to_consider = smallvec::SmallVec::<[usize; 8]>::new();
     for a in 0..mol.atoms.len() {
         if mol.atoms[a].anum != 7 || mol.atoms[a].charge != 0 {
             continue;
@@ -235,11 +238,11 @@ pub(crate) fn clean_up(mol: &mut Mol) -> Result<(), RdkitSmilesError> {
         if mol.calc_explicit_valence(a, false)? != 5 {
             continue;
         }
-        to_consider[a] = true;
+        to_consider.push(a);
         let arom = mol.atoms[a].aromatic;
         mol.atoms[a].aromatic = false;
         let mut update = false;
-        for b in mol.atom_bonds[a].clone() {
+        for &b in &mol.atom_bonds[a] {
             let nbr = mol.bonds[b].other(a);
             if mol.atoms[nbr].anum == 8
                 && mol.atoms[nbr].charge == 0
@@ -257,14 +260,11 @@ pub(crate) fn clean_up(mol: &mut Mol) -> Result<(), RdkitSmilesError> {
             mol.calc_explicit_valence(a, false)?;
         }
     }
-    for a in 0..mol.atoms.len() {
-        if !to_consider[a] {
-            continue;
-        }
+    for a in to_consider {
         let arom = mol.atoms[a].aromatic;
         mol.atoms[a].aromatic = false;
         let mut update = false;
-        for b in mol.atom_bonds[a].clone() {
+        for &b in &mol.atom_bonds[a] {
             let nbr = mol.bonds[b].other(a);
             if mol.atoms[nbr].anum == 7
                 && mol.atoms[nbr].charge == 0
@@ -674,3 +674,7 @@ pub(crate) fn adjust_hs(mol: &mut Mol) -> Result<(), RdkitSmilesError> {
     }
     Ok(())
 }
+
+#[cfg(test)]
+#[path = "sanitize/cleanup_candidate_tests.rs"]
+mod cleanup_candidate_tests;

@@ -19,6 +19,7 @@ from ._periodic_geometry import (
 from ._inchi_batch import InchiKeyRecord, InchiKeyStatus, inchi_keys_checked
 from ._rdkit_smiles_checked import RdkitSmilesStabilityError, rdkit_smiles_checked
 from ._xbs import XbsBondRule, XbsSpecies, write_xbs
+from ._xbs_read import XbsScene, read_xbs
 from ._xyz_atom_data import XyzAtomDataFrame, parse_xyz_atom_data
 from ._xsf import write_xsf_checked
 from ._pdb_merge import PdbMergeAtom, PdbMergeLoss, PdbMergeResult, merge_pdb_coordinate_blocks

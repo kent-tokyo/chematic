@@ -1,0 +1,13 @@
+   Compiling chematic-smiles v1.1.9 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-smiles)
+    Finished `release` profile [optimized] target(s) in 15.97s
+     Running unittests src/lib.rs (/private/tmp/chematic-conjugation-target/release/deps/chematic_smiles-bcda25160b69e387)
+
+running 4 tests
+test rdkit::sanitize::cleanup_candidate_tests::cleanup_candidates_timing ... ignored, opt-in prepared-cleanup timing; not an end-to-end benchmark
+test rdkit::sanitize::cleanup_candidate_tests::charged_aromatic_stereo_isotope_and_neighbour_order_controls ... ok
+test rdkit::sanitize::cleanup_candidate_tests::inline_spill_and_large_sparse_molecules_preserve_order ... ok
+cleanup differential: 1130 prepared, 1 refused
+refused C/C=C/1CCCCC1.F1: unmatched ring closure 1 at position 16
+test rdkit::sanitize::cleanup_candidate_tests::frozen_cleanup_matches_all_fixture_models_and_retains_refusals ... ok
+
+test result: ok. 3 passed; 0 failed; 1 ignored; 0 measured; 429 filtered out; finished in 0.03s

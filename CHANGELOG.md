@@ -16,6 +16,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Python `read_xbs` / `XbsScene` read bounded static gray-style XBS scenes,
+  retaining exact source, original record order and physical line numbers in
+  immutable data. Unsupported commands and unresolved references are errors;
+  drawing rules are retained without chemical bond inference.
 - Rust `check_geometry` and Python `Mol.check_geometry` inspect supplied 3D
   coordinates without mutation, reporting bond-length outliers, nonbonded
   clashes, skipped references and declared-stereo outcomes independently.
@@ -31,6 +35,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- Native RDKit-compatible cleanup uses sparse inline candidate indices and
+  borrowed adjacency, preserving correction order and internal molecule state
+  while avoiding a molecule-sized flag allocation and redundant scan.
 - Python SMILES parsing no longer computes descriptor-model, aromatic-view or
   ring caches eagerly. The first consumer populates the same invalidated
   caches. On the fixed 1,000-row macOS source lane this reduces parse time

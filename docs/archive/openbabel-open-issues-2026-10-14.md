@@ -179,6 +179,13 @@ adds the requested dialect without treating the existing `bs` output as a
 broken implementation of XBS. RGB, wildcard rules, movies and GUI validation
 remain outside this profile.
 
+October 19 follow-up: [source-preserving static XBS input](xbs-output.md#source-preserving-input-october-19-2026)
+now completes the corresponding read workflow: immutable ordered scene data,
+exact source/physical-line retention and strict refusal of unsupported commands.
+Independent hofmann 0.21.1 cross-reading agrees on 144 original and normalized
+scenes plus a 10,000-atom boundary scene. Drawing rules remain separate from
+chemical graph inference; the Open Babel `bs` format is unchanged.
+
 ## October 17 follow-up: headerless XYZ per-atom data
 
 [#1703](https://github.com/openbabel/openbabel/issues/1703) requests access to

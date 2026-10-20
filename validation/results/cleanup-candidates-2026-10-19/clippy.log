@@ -1,0 +1,7 @@
+    Checking chematic-perception v1.1.9 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-perception)
+    Checking chematic-smiles v1.1.9 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-smiles)
+    Checking chematic-smarts v1.1.9 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-smarts)
+    Checking chematic-cip v1.1.9 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-cip)
+    Checking chematic-rxn v1.1.9 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-rxn)
+    Checking chematic-fp v1.1.9 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-fp)
+    Finished `release` profile [optimized] target(s) in 5.19s
