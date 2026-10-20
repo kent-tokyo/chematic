@@ -1,0 +1,38 @@
+    Finished `release` profile [optimized] target(s) in 0.10s
+     Running unittests src/lib.rs (/private/tmp/chematic-conjugation-target/release/deps/chematic_smiles-bcda25160b69e387)
+
+running 1 test
+timing corpus: 1125 prepared, 6 refused
+conjugation_group	fixture	1125
+conjugation_timing	fixture	0	0.052994250	0.022954500
+conjugation_timing	fixture	1	0.051871334	0.022815208
+conjugation_timing	fixture	2	0.051784833	0.023216750
+conjugation_timing	fixture	3	0.052714542	0.023075958
+conjugation_timing	fixture	4	0.052828083	0.023215958
+conjugation_timing	fixture	5	0.052607208	0.023106583
+conjugation_timing	fixture	6	0.052517041	0.023024000
+conjugation_timing	fixture	7	0.052758792	0.023362333
+conjugation_timing	fixture	8	0.053247416	0.023781708
+conjugation_group	single_only	445
+conjugation_timing	single_only	0	0.005100917	0.000691625
+conjugation_timing	single_only	1	0.005043084	0.000692750
+conjugation_timing	single_only	2	0.005064166	0.000690417
+conjugation_timing	single_only	3	0.005035792	0.000689334
+conjugation_timing	single_only	4	0.005062833	0.000703333
+conjugation_timing	single_only	5	0.005052542	0.000697500
+conjugation_timing	single_only	6	0.005055875	0.000688583
+conjugation_timing	single_only	7	0.005037459	0.000706166
+conjugation_timing	single_only	8	0.005070834	0.000688000
+conjugation_group	multiple	680
+conjugation_timing	multiple	0	0.048151500	0.023215209
+conjugation_timing	multiple	1	0.047949625	0.023127875
+conjugation_timing	multiple	2	0.048085209	0.023028292
+conjugation_timing	multiple	3	0.047212500	0.022789000
+conjugation_timing	multiple	4	0.047225917	0.022639292
+conjugation_timing	multiple	5	0.046735209	0.022317209
+conjugation_timing	multiple	6	0.046805542	0.022173375
+conjugation_timing	multiple	7	0.046683417	0.022330542
+conjugation_timing	multiple	8	0.046464125	0.022282334
+test rdkit::sanitize::conjugation_cache_tests::conjugation_cache_timing ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 433 filtered out; finished in 1.39s
