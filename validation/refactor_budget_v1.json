@@ -170,10 +170,6 @@
       "decisions": 51,
       "lines": 327
     },
-    "crates/chematic-perception/src/rdkit_model_hook.rs::rdkit_model_may_disagree_uncached#1": {
-      "decisions": 40,
-      "lines": 115
-    },
     "crates/chematic-perception/src/rdkit_sssr_order.rs::libstdcxx_sort#1": {
       "decisions": 30,
       "lines": 153
@@ -205,10 +201,6 @@
     "crates/chematic-smarts/src/rdkit_parity_match.rs::run_rdkit_parity#1": {
       "decisions": 33,
       "lines": 171
-    },
-    "crates/chematic-smarts/src/rdkit_ring_model.rs::build_rdkit_parity_ring_model#1": {
-      "decisions": 47,
-      "lines": 292
     },
     "crates/chematic-smiles/src/canonical_search.rs::exact_orbit_representatives#1": {
       "decisions": 17,

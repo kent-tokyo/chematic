@@ -58,6 +58,10 @@ allowances are removed; chemistry ordering and public results are unchanged.
 R13 separates CJSON conversion policy from loss reporting and EPS orchestration
 from viewport, highlight, bond, and label emission. The two former function
 allowances are removed; conversion reports and EPS byte ordering are unchanged.
+R14 gives the RDKit ring-compatibility search one explicit state owner for its
+candidate cache, budget, and fallback stages, and separates the molecule-owned
+RDKit-model cache gate from per-atom compatibility rules. Two more function
+allowances are removed without changing parity or budget-exhaustion results.
 
 Notable outcomes include a bounded reaction module tree, separated
 lexical/semantic format stages, API-domain binding modules, bounded descriptor

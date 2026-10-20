@@ -53,109 +53,13 @@ pub fn rdkit_model_may_disagree(mol: &Molecule) -> bool {
 }
 
 fn rdkit_model_may_disagree_uncached(mol: &Molecule) -> bool {
-    let n = mol.atom_count();
     let mut has_aromatic_atom = false;
-    for i in 0..n {
-        let idx = AtomIdx(i as u32);
-        let atom = mol.atom(idx);
-        if atom.wildcard {
+    for raw in 0..mol.atom_count() {
+        let (aromatic, may_disagree) = atom_may_disagree(mol, AtomIdx(raw as u32));
+        if may_disagree {
             return true;
         }
-        let el = atom.element;
-        let charge = i32::from(atom.charge);
-        // Twice the bond-order sum (aromatic bonds count 1.5).
-        let mut twice = 0u32;
-        let mut aromatic_bonds = 0;
-        for &(nb, b) in mol.neighbor_slice(idx) {
-            let order = mol.bond(b).order;
-            let Some(t) = twice_order(order) else {
-                return true;
-            };
-            twice += t;
-            if order == BondOrder::Aromatic {
-                aromatic_bonds += 1;
-            }
-            if atom.aromatic
-                && mol.atom(nb).aromatic
-                && matches!(order, BondOrder::Double | BondOrder::Triple)
-            {
-                return true;
-            }
-        }
-        let bracket = atom.hydrogen_count.is_some();
-        let hs = u32::from(atom.hydrogen_count.unwrap_or(0));
-        if atom.aromatic {
-            has_aromatic_atom = true;
-            if aromatic_bonds < 2 {
-                return true;
-            }
-            if bracket {
-                let conn = mol.degree(idx) + hs as usize;
-                let ok = match (el, charge) {
-                    (Element::C, 0) | (Element::B, 0) => conn == 3,
-                    (Element::N | Element::P, 0) => conn == 2 || conn == 3,
-                    (Element::N | Element::P, 1) => conn == 3 || conn == 2,
-                    (Element::N | Element::P, -1) => conn == 2,
-                    (Element::O | Element::S | Element::SE, 0 | 1) => conn == 2,
-                    _ => false,
-                };
-                if !ok {
-                    return true;
-                }
-            }
-            if !matches!(
-                el,
-                Element::C
-                    | Element::N
-                    | Element::O
-                    | Element::S
-                    | Element::P
-                    | Element::SE
-                    | Element::B
-            ) {
-                return true;
-            }
-            continue;
-        }
-        if aromatic_bonds > 0 {
-            return true;
-        }
-        let val = (twice / 2 + hs) as i32;
-        match el {
-            Element::C => {
-                if charge != 0 || (bracket && val < 4) || val > 4 {
-                    return true;
-                }
-            }
-            Element::B => {
-                if charge != 0 || (bracket && val < 3) || val > 3 {
-                    return true;
-                }
-            }
-            Element::N | Element::P => {
-                let base = 3 + charge;
-                if (bracket && val < base) || (el == Element::N && val > base) {
-                    return true;
-                }
-            }
-            Element::O | Element::S | Element::SE => {
-                let base = 2 + charge;
-                if (bracket && val < base) || (el == Element::O && val > base) {
-                    return true;
-                }
-            }
-            Element::F | Element::CL | Element::BR | Element::I => {
-                if (bracket && val < 1 + charge) || val > 1 + charge.max(0) {
-                    return true;
-                }
-            }
-            Element::H | Element::SI => {
-                if charge != 0 {
-                    return true;
-                }
-            }
-            _ => return true,
-        }
+        has_aromatic_atom |= aromatic;
     }
     // A ring triple bond (`C1=CSC#C1`): RDKit may flag it aromatic while
     // keeping its type, which the parity view does not model.
@@ -165,6 +69,103 @@ fn rdkit_model_may_disagree_uncached(mol: &Molecule) -> bool {
     // With no aromatic atoms there is no aromatic component to check.
     // The atom/valence and cyclic-triple checks above still run unchanged.
     has_aromatic_atom && !aromatic_systems_are_huckel(mol)
+}
+
+fn atom_may_disagree(mol: &Molecule, idx: AtomIdx) -> (bool, bool) {
+    let atom = mol.atom(idx);
+    if atom.wildcard {
+        return (atom.aromatic, true);
+    }
+    let mut twice_bond_order = 0u32;
+    let mut aromatic_bonds = 0;
+    for &(neighbor, bond) in mol.neighbor_slice(idx) {
+        let order = mol.bond(bond).order;
+        let Some(twice) = twice_order(order) else {
+            return (atom.aromatic, true);
+        };
+        twice_bond_order += twice;
+        aromatic_bonds += usize::from(order == BondOrder::Aromatic);
+        if atom.aromatic
+            && mol.atom(neighbor).aromatic
+            && matches!(order, BondOrder::Double | BondOrder::Triple)
+        {
+            return (true, true);
+        }
+    }
+    let explicit_hydrogens = atom.hydrogen_count.is_some();
+    let hydrogens = u32::from(atom.hydrogen_count.unwrap_or(0));
+    let disagrees = if atom.aromatic {
+        aromatic_atom_may_disagree(
+            atom.element,
+            i32::from(atom.charge),
+            mol.degree(idx) + hydrogens as usize,
+            explicit_hydrogens,
+            aromatic_bonds,
+        )
+    } else {
+        aliphatic_atom_may_disagree(
+            atom.element,
+            i32::from(atom.charge),
+            (twice_bond_order / 2 + hydrogens) as i32,
+            explicit_hydrogens,
+            aromatic_bonds,
+        )
+    };
+    (atom.aromatic, disagrees)
+}
+
+fn aromatic_atom_may_disagree(
+    element: Element,
+    charge: i32,
+    connectivity: usize,
+    bracketed: bool,
+    aromatic_bonds: usize,
+) -> bool {
+    if aromatic_bonds < 2 {
+        return true;
+    }
+    let supported = matches!(
+        element,
+        Element::C | Element::N | Element::O | Element::S | Element::P | Element::SE | Element::B
+    );
+    let valid_bracket_valence = !bracketed
+        || match (element, charge) {
+            (Element::C, 0) | (Element::B, 0) => connectivity == 3,
+            (Element::N | Element::P, 0 | 1) => connectivity == 2 || connectivity == 3,
+            (Element::N | Element::P, -1) => connectivity == 2,
+            (Element::O | Element::S | Element::SE, 0 | 1) => connectivity == 2,
+            _ => false,
+        };
+    !supported || !valid_bracket_valence
+}
+
+fn aliphatic_atom_may_disagree(
+    element: Element,
+    charge: i32,
+    valence: i32,
+    bracketed: bool,
+    aromatic_bonds: usize,
+) -> bool {
+    if aromatic_bonds > 0 {
+        return true;
+    }
+    match element {
+        Element::C => charge != 0 || (bracketed && valence < 4) || valence > 4,
+        Element::B => charge != 0 || (bracketed && valence < 3) || valence > 3,
+        Element::N | Element::P => {
+            let base = 3 + charge;
+            (bracketed && valence < base) || (element == Element::N && valence > base)
+        }
+        Element::O | Element::S | Element::SE => {
+            let base = 2 + charge;
+            (bracketed && valence < base) || (element == Element::O && valence > base)
+        }
+        Element::F | Element::CL | Element::BR | Element::I => {
+            (bracketed && valence < 1 + charge) || valence > 1 + charge.max(0)
+        }
+        Element::H | Element::SI => charge != 0,
+        _ => true,
+    }
 }
 
 fn has_cyclic_triple_bond(mol: &Molecule) -> bool {
