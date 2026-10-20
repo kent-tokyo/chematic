@@ -775,7 +775,8 @@ jobs:
       - test-native-inchi
       - test-python
       - test-hba-wheel-macos
-      - test-source-wheel-windows
+      # Windows source-wheel and A6 cross-platform checks still run in full CI
+      # and release qualification, without extending the PR merge gate.
       - test-wasm
       - clippy
       - msrv
