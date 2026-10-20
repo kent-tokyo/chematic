@@ -198,8 +198,9 @@ chematic convert-with-report --input-format mol2 --output-format smiles \
   carry source IDs and zero-based source/candidate indices only if this check
   passes. These mappings refer to the candidate even when strict policy
   refuses to emit it. `verification_scope` defines the checked fields.
-- MOL2 formal-charge interpretation beyond `N.4` and source implicit-hydrogen
-  assignment remain unverified. Noncoplanar 3D tetrahedral stereo is perceived
+- MOL2 explicit UNITY charges and the `N.4` fallback are projected. General
+  formal-charge inference from types and source implicit-hydrogen assignment
+  remain unverified. Noncoplanar 3D tetrahedral stereo is perceived
   in graph reads, but checked conversion does not verify stereo; other
   coordinate/extension stereo remains unverified. SMILES hydrogen
   counts are explicitly inferred under the graph valence model; CJSON does
@@ -293,11 +294,14 @@ records refused by this adapter.
 
 MOL2 atom IDs/names, element-only types and `SMALL` header are generated;
 charged atom rows use placeholder substructure `1 LIG`. Hybridization and
-force-field types are not inferred from chemistry. The sole nonzero formal
-charge representation is +1 nitrogen via `N.4`. Other nonzero formal charges
-and all specified isotopes are reported dropped; they disable projected graph
-verification and candidate mappings. Partial charges are never substituted for
-formal charges. Aromatic bond tokens retain the local projection, without
+force-field types are not inferred from chemistry. Nonzero formal charges are
+written as explicit `UNITY_ATOM_ATTR` charge attributes before BOND, so Open
+Babel 3.2.1 can also read them. Nitrogen +1 retains its `N.4` type. The
+`formal_charges` observation requires exact reparsed charges through verified
+graph correspondence; partial-charge columns and method labels remain separate.
+All specified isotopes are reported dropped and disable projected graph
+verification, candidate mappings and per-atom charge/coordinate verification.
+Aromatic bond tokens retain the local projection, without
 perceiving atom aromaticity. Opaque fields and stereo remain lost/unverified.
 Strict policy refuses this cross-format route even when the candidate verifies.
 
@@ -341,8 +345,9 @@ source-preserving APIs retain the original order.
   Duplicate IDs/edges, self bonds, dangling references, mismatched counts,
   nonfinite numbers, and multiple records/duplicate core sections reject.
 - **Immutable source-profile charges**: partial charges are validated separately from formal charge.
-  The graph recognizes `N.4` as +1; it does not round partial charges or
-  implement general formal-charge inference/UNITY semantics. Optional charge
+  The graph recognizes explicit integer UNITY `charge` attributes, with `N.4`
+  as a +1 fallback. It does not round partial charges or infer general formal
+  charges from atom types. Unknown UNITY attributes remain opaque. Optional charge
   columns remain optional in the record API, with the source charge-method
   header retained. `NO_CHARGES` means numerical columns are not a claim of
   assigned partial charges.

@@ -88,7 +88,7 @@ def main():
         value["partialCharges"]["USER_CHARGES"][0] = n
         value["atoms"]["coords"]["3d"][0] = n
         cases.append((f"cjson-mol2-float-{n}", json.dumps(value), "cjson", "mol2", "allow_loss", False))
-    for mode in ["multiple", "missing-coordinates", "name-newline", "method-whitespace", "absent-dataset", "isotope-loss", "formal-charge-loss"]:
+    for mode in ["multiple", "missing-coordinates", "name-newline", "method-whitespace", "absent-dataset", "isotope-loss", "signed-formal-charge"]:
         value = json.loads(partial)
         if mode == "multiple": value["partialCharges"]["SECOND"] = [0] * 4
         elif mode == "missing-coordinates": del value["atoms"]["coords"]

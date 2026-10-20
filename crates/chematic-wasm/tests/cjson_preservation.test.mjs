@@ -86,4 +86,17 @@ for (const bad of [null, [], {method:[]}, {method:[0,0,0]}, {method:[0,0,0,"NaN"
   assert.throws(() => wasm.roundtrip_cjson_record(text));
   assert.throws(() => wasm.convert_with_report_json(text, "cjson", "mol2", "allow_loss"));
 }
+// Original synthetic NaCl representation under the project license.
+const ionic = JSON.stringify({atoms: {elements: {number: [11,17]},
+  formalCharges: [1,-1], coords: {"3d": [0,0,0,3,0,0]}},
+  partialCharges: {USER_CHARGES: [0.8,-0.8]}});
+const ionicReport = JSON.parse(wasm.convert_with_report_json(ionic, "cjson", "mol2", "allow_loss"));
+assert.equal(ionicReport.candidate_graph_verified, true);
+const ionicFields = Object.fromEntries(ionicReport.observations.map(o => [o.field, o.status]));
+assert.equal(ionicFields.formal_charges, "preserved");
+assert.equal(ionicFields.partial_charges, "preserved");
+const ionicAfter = JSON.parse(wasm.parse_mol2_record_json(ionicReport.output));
+assert.deepEqual(ionicAfter.formal_charges, [1,-1]);
+assert.deepEqual(ionicAfter.atoms.map(a => a.partial_charge), [0.8,-0.8]);
+assert.equal(JSON.parse(wasm.convert_with_report_json(ionic, "cjson", "mol2", "strict")).output, null);
 console.log("CJSON source retention, strict validation, isotopes and checked conversion passed");

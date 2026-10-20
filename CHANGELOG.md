@@ -14,6 +14,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+
+- Checked CJSON → MOL2 now retains signed formal charges in explicit UNITY
+  attributes, independently of partial charges. Candidate charge verification
+  requires exact graph correspondence. UNITY precedes BOND for Open Babel
+  3.2.1 readback; isotope/stereo limitations and strict refusal remain explicit.
+
 ## [1.2.0] - 2026-10-21
 
 ### Added

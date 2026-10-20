@@ -7,6 +7,20 @@ import chematic
 SOURCE = (Path(__file__).resolve().parents[3] / "validation/cjson_preservation/charged.cjson").read_text()
 PARTIAL = (Path(__file__).resolve().parents[3] / "validation/cjson_preservation/partial-charges.cjson").read_text()
 
+def test_ionic_mol2_formal_charges_are_separate_from_partial_charges():
+    # Original synthetic NaCl representation under the project license.
+    source = json.dumps({"atoms": {"elements": {"number": [11, 17]},
+        "formalCharges": [1, -1], "coords": {"3d": [0, 0, 0, 3, 0, 0]}},
+        "partialCharges": {"USER_CHARGES": [0.8, -0.8]}})
+    report = chematic.convert_with_report(source, "cjson", "mol2", policy="allow_loss")
+    assert report["candidate_graph_verified"] is True
+    fields = {o["field"]: o["status"] for o in report["observations"]}
+    assert fields["formal_charges"] == fields["partial_charges"] == "preserved"
+    after = json.loads(chematic.parse_mol2_record_json(report["output"]))
+    assert after["formal_charges"] == [1, -1]
+    assert [a["partial_charge"] for a in after["atoms"]] == [0.8, -0.8]
+    assert chematic.convert_with_report(source, "cjson", "mol2")["output"] is None
+
 @pytest.mark.parametrize("source", [SOURCE, SOURCE.replace("\n", "\r\n")])
 def test_exact_record_and_inspection(source):
     assert chematic.roundtrip_cjson_record(source) == source

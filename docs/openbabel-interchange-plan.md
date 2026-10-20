@@ -7,6 +7,19 @@ the chemical and document information retained through conversion. Establish
 measured preservation on common workflows first, then expand coverage using
 the same acceptance contract for each new adapter.
 
+## October 21 formal-charge preservation
+
+Checked CJSON → MOL2 now writes signed formal charges as explicit UNITY
+attributes before BOND, separately from partial-charge columns. The shared
+candidate verifier checks exact charges through graph correspondence; isotope
+loss still disables correspondence and strict cross-format conversion still
+refuses. On six original development inputs, the specified graph/charge and
+numeric fields are preserved in 6/6 candidates, versus 1/6 on both the previous
+chematic adapter and default Open Babel 3.2.1. Open Babel also reads all six
+emitted graphs and charges correctly. This packet is development evidence for
+one route, not an independent holdout or a completed superiority gate. See the
+[scope, raw results and reproduction commands](benchmarks/2026-10-21-cjson-mol2-formal-charges.md).
+
 ## October 11 implementation progress
 
 The first IO1 slice is implemented in the local source candidate:

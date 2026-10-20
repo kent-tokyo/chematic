@@ -33,6 +33,21 @@ fn checked(report: &mut ConversionReport, field: &'static str, equal: bool, reas
     );
 }
 
+fn write_formal_charges(record: &CjsonRecord, candidate: &mut String) {
+    // UNITY carries formal charge independently of the optional ATOM partial
+    // charge. Open Babel 3.2.1 skips trailing UNITY, so call this before BOND.
+    if record.molecule().atoms().any(|(_, atom)| atom.charge != 0) {
+        candidate.push_str("@<TRIPOS>UNITY_ATOM_ATTR\n");
+        for (idx, atom) in record
+            .molecule()
+            .atoms()
+            .filter(|(_, atom)| atom.charge != 0)
+        {
+            writeln!(candidate, "{} 1\ncharge {}", idx.0 + 1, atom.charge).unwrap();
+        }
+    }
+}
+
 pub(super) fn convert(
     record: &CjsonRecord,
     mut report: ConversionReport,
@@ -118,20 +133,6 @@ pub(super) fn convert(
             "This MOL2 adapter has no isotope representation; isotope loss also prevents full projected graph verification.",
         );
     }
-    if record
-        .molecule()
-        .atoms()
-        .any(|(_, a)| a.charge != 0 && !(a.element.symbol() == "N" && a.charge == 1))
-    {
-        note(
-            &mut report,
-            "formal_charges",
-            PreservationStatus::Dropped,
-            "write",
-            "Only +1 nitrogen is represented by N.4 in this local adapter. Other nonzero formal charges are omitted; partial charges remain separate and are never substituted.",
-        );
-    }
-
     // Never guess a charge dataset, invent geometry, trim names, or allow a
     // source string to inject a new MOL2 line/section. Same-format retention
     // remains available for every valid CJSON record rejected here.
@@ -227,6 +228,7 @@ pub(super) fn convert(
         }
         candidate.push('\n');
     }
+    write_formal_charges(record, &mut candidate);
     candidate.push_str("@<TRIPOS>BOND\n");
     for (idx, bond) in record.molecule().bonds() {
         let order = match bond.order {
@@ -270,6 +272,13 @@ pub(super) fn convert(
         "Candidate MOL2 reparsed; verification requires mapped counts, elements, aromatic flags, formal charges, isotopes and bond orders. Failed graph verification exposes no correspondence; source IDs are CJSON zero-based array indices.",
     );
     let after = parsed.as_ref();
+    checked(
+        &mut report,
+        "formal_charges",
+        // verify_graph includes exact formal-charge equality at every mapped atom.
+        verified.is_some(),
+        "Explicit UNITY charge attributes (zero when absent) must reparse exactly through verified atom correspondence. Partial-charge values and method labels do not determine formal charge.",
+    );
     checked(
         &mut report,
         "coordinates",
