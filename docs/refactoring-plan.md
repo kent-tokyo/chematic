@@ -1,7 +1,8 @@
 # Refactoring plan
 
-The structural-debt program is complete for its declared R0-R8 scope. This
-page records the guardrails that remain active; implementation history belongs
+The original structural-debt program is complete for its declared R0-R8
+scope. A second pass, R9-R16, is now reducing the remaining checked-in debt
+without changing chemistry or public contracts. Implementation history belongs
 in the changelog and [inventory](refactoring-inventory.md).
 
 ## Active guardrails
@@ -31,6 +32,23 @@ contracts, output digests, and paired performance gates remain authoritative.
 | R6 | Canonicalization, rings, aromaticity | Complete |
 | R7 | MMFF/UFF and 3D pipeline | Complete |
 | R8 | Dead code, dependency, and helper audit | Complete |
+
+## Current phases
+
+| Phase | Scope | Exit condition |
+|---|---|---|
+| R9 | Open-PR convergence and baseline pin | Queue empty; latest `main` is the only refactoring base |
+| R10 | Test extraction and file-budget reduction | Large inline tests moved out of production files; resolved allowances removed |
+| R11 | Python, WASM, CLI, and MCP boundaries | Binding declarations and adapters have bounded domain modules |
+| R12 | Chemistry hot spots | Standardization, SMARTS/VF2, and reaction orchestration have staged helpers |
+| R13 | I/O and depiction | Format and depiction orchestration are split from policy-free mechanics |
+| R14 | Cache and compatibility algorithms | Cache ownership is explicit; generated/declarative algorithms are isolated |
+| R15 | Scripts and CI | Repeated harness setup is consolidated without reducing gates |
+| R16 | Final ratchet and verification | Debt baseline shrinks, full required checks pass, remaining exceptions are classified |
+
+R9 completed on 2026-10-20 with an empty pull-request queue at `9945f1ed`.
+R10 removes the CLI and SVG file allowances by moving their inline unit tests
+to dedicated test modules; no production logic or public API changes.
 
 Notable outcomes include a bounded reaction module tree, separated
 lexical/semantic format stages, API-domain binding modules, bounded descriptor
