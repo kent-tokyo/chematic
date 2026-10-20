@@ -310,12 +310,12 @@ fn doctor(py: Python<'_>) {
 
 /// Generate a self-contained HTML report for a list of molecules.
 ///
-/// Returns an HTML string. If ``output`` is given, also writes the file.
+/// Returns a Report object. If ``output`` is given, also writes the file.
 /// Cards are sorted by QED descending (most drug-like first).
 ///
 /// ```python
 /// mols = [chematic.from_smiles(s) for s in ["CC(=O)Oc1ccccc1C(=O)O", "Cn1cnc2c1c(=O)n(C)c(=O)n2C"]]
-/// html = chematic.report(mols, names=["aspirin", "caffeine"], output="report.html")
+/// report = chematic.report(mols, names=["aspirin", "caffeine"], output="report.html")
 /// ```
 #[pyfunction]
 #[pyo3(signature = (mols, names=None, title="chematic report", output=None))]

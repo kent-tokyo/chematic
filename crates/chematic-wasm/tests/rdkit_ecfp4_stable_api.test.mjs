@@ -5,7 +5,7 @@
 // Reads the SAME `validation/ecfp4_rdkit_stable_api_fixtures.json` file the Rust test
 // (`crates/chematic-fp/tests/rdkit_morgan_stable_api_fixtures.rs`) and the Python test
 // (`crates/chematic-py/tests/test_rdkit_ecfp4_stable_api.py`) read -- generated once
-// from a live RDKit oracle by `scripts/gen_ecfp4_rdkit_stable_api_fixtures.py` (RDKit
+// from a live RDKit oracle by `scripts/generators/gen_ecfp4_rdkit_stable_api_fixtures.py` (RDKit
 // version/commit recorded in the file itself).
 //
 // Not wired into any CI workflow (this repo has no WASM-test CI job at all -- the

@@ -5,7 +5,7 @@
 //! retain RDKit's integer mass-number fallback in the caller.
 //!
 //! DO NOT EDIT MANUALLY.
-//! Generator: scripts/gen_rdkit_isotope_mass_table.py, RDKit 2025.09.3
+//! Generator: scripts/generators/gen_rdkit_isotope_mass_table.py, RDKit 2025.09.3
 
 /// `(atomic_number, mass_number, nuclide_mass_da)`, sorted for binary search.
 #[allow(clippy::large_const_arrays)]

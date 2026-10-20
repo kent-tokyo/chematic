@@ -19,7 +19,7 @@
 //! - **Tier C (external corpus, optional)**: one SMILES per line via
 //!   `CANONICAL_ORBIT_PERF_CORPUS=/path/to/file.smi`. Never required to be
 //!   present in this repository -- point it at, e.g., `~/Downloads/SMILES.csv`
-//!   (the project's 5,000-molecule benchmark corpus, see `scripts/bench5k.py`)
+//!   (the project's 5,000-molecule benchmark corpus, see `scripts/benchmarks/bench5k.py`)
 //!   or any other externally supplied file.
 //!
 //! Correctness differential (old string == new string) is a hard gate on

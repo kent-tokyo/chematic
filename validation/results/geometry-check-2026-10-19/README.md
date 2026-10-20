@@ -66,7 +66,7 @@ there is no published-wheel bootstrap or mocked native implementation.
 
 ```sh
 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=/private/tmp/chematic-geometry-check-python python3.13 -m pytest -p no:cacheprovider -q crates/chematic-py/tests/test_geometry_check.py crates/chematic-py/tests/test_sasa_checked.py
-PYTHONPATH=/private/tmp/chematic-geometry-check-python:/private/tmp/chematic-rdkit-2026091/lib/python3.13/site-packages python3.13 scripts/validate_geometry_check.py
+PYTHONPATH=/private/tmp/chematic-geometry-check-python:/private/tmp/chematic-rdkit-2026091/lib/python3.13/site-packages python3.13 scripts/validation/validate_geometry_check.py
 python3.13 -m mkdocs build --strict --site-dir /private/tmp/chematic-geometry-check-docs
 ```
 

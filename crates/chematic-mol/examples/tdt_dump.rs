@@ -1,8 +1,8 @@
 //! IO-2 acceptance-gate dump: runs `TdtRecordReader` over every scenario
-//! file named in `scripts/gen_tdt_fixtures.py`'s manifest and dumps each
+//! file named in `scripts/generators/gen_tdt_fixtures.py`'s manifest and dumps each
 //! row's extracted `(status, name, properties, coordinates)` as JSONL for
 //! comparison against a real RDKit oracle
-//! (`scripts/gen_rdkit_tdt_oracle.py`).
+//! (`scripts/generators/gen_rdkit_tdt_oracle.py`).
 //!
 //! Usage:
 //! ```text

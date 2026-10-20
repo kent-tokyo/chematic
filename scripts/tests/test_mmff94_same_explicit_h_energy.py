@@ -1,6 +1,6 @@
 import pytest
 
-from scripts.mmff94_same_explicit_h_energy import (
+from scripts.diagnostics.mmff94_same_explicit_h_energy import (
     evaluate,
     gradient_diagnostic,
     percentile_nearest_rank,

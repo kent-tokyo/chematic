@@ -157,7 +157,7 @@ strict MkDocs are also checked; no allowances were added.
 Regenerate the independent evidence with the candidate extension on `PYTHONPATH`:
 
 ```sh
-python scripts/validate_rdfile_records.py --obabel /path/to/obabel
+python scripts/validation/validate_rdfile_records.py --obabel /path/to/obabel
 ```
 
 This is a local, uncommitted, unpublished source candidate in

@@ -135,7 +135,7 @@ payload hash. No upstream attachments or proprietary corpus were copied.
 Regenerate the source/fixture/compiled-extension evidence with:
 
 ```sh
-python scripts/validate_stereo_group_alternatives.py
+python scripts/validation/validate_stereo_group_alternatives.py
 ```
 
 The implementation is a local, uncommitted, unpublished source candidate in

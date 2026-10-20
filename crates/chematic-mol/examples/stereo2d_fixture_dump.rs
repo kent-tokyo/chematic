@@ -9,9 +9,9 @@
 //! and reviewable in this file.
 //!
 //! Emits one JSON object per fixture line to stdout. Cross-referenced against
-//! RDKit by `scripts/stereo2d_diagnosis.py`, which re-parses each fixture's raw
+//! RDKit by `scripts/diagnostics/stereo2d_diagnosis.py`, which re-parses each fixture's raw
 //! MOL block with RDKit and joins the two results into a failure-bucket summary.
-//! `scripts/stereo2d_diagnosis.py` also hard-checks the fixture ID set below
+//! `scripts/diagnostics/stereo2d_diagnosis.py` also hard-checks the fixture ID set below
 //! against its own `EXPECTED_FIXTURE_IDS` -- if you add/rename/remove a fixture,
 //! update that set too, or the diagnosis script fails closed on purpose.
 //!

@@ -19,7 +19,7 @@ disagrees) -- this is what avoids any SMILES-based join ambiguity, since
 duplicate/symmetric SMILES are still each their own row_id:
   - chematic trace: `cargo run -p chematic-fp --release --features diagnostics
     --example morgan_rdkit_environment_trace -- <combined.csv> <out.jsonl>`
-  - RDKit oracle: `python scripts/gen_ecfp_rdkit_environment_oracle.py
+  - RDKit oracle: `python scripts/generators/gen_ecfp_rdkit_environment_oracle.py
     --corpus <corpus.csv> --fixtures <f1.csv> <f2.csv> --rows-out <out.jsonl>`
     (its internal source order is corpus-then-fixtures-in-argument-order,
     identical to how <combined.csv> above must be built: cat corpus then each

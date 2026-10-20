@@ -1,5 +1,5 @@
 //! IO-3 acceptance-gate dump: parses every fixture named in
-//! `scripts/gen_rdkit_mrv_oracle.py`'s manifest with chematic's own
+//! `scripts/generators/gen_rdkit_mrv_oracle.py`'s manifest with chematic's own
 //! `parse_mrv`, dumps each fixture's extracted atoms/bonds/coordinates plus
 //! chematic's own isomeric SMILES output as JSONL for
 //! `scripts/mrv_io_parity.py`, which re-canonicalizes both chematic's and

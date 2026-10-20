@@ -173,7 +173,7 @@ No hosted CI or publication is claimed by these local results.
 cargo test -p chematic-smiles --lib --test rdkit_path_enumeration \
   --test rdkit_graph_queries --test rdkit_atom_environment
 python -m pytest crates/chematic-py/tests/test_rdkit_path_enumeration.py
-python scripts/validate_rdkit_paths.py
+python scripts/validation/validate_rdkit_paths.py
 ```
 
 Build/install the candidate Python extension first. The oracle script requires

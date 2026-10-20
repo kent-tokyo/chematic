@@ -107,7 +107,7 @@ same RDKit version pinned before final results were generated.
 ```sh
 cargo test -p chematic-chem -p chematic-smiles --lib --test stereo_candidate_budget --offline
 python -m pytest crates/chematic-py/tests/test_stereo_candidate_budget.py crates/chematic-py/tests/test_mol.py crates/chematic-py/tests/test_rdkit_stereoisomers.py
-python scripts/validate_stereo_candidate_budget.py
+python scripts/validation/validate_stereo_candidate_budget.py
 ```
 
 Rust passed 1,347 tests (948 chemical-library, 386 SMILES-library, 13 new

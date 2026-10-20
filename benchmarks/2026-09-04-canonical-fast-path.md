@@ -60,11 +60,11 @@ maturin build --manifest-path crates/chematic-py/Cargo.toml --release --locked \
 python3 -m pip install --force-reinstall --no-deps \
   /private/tmp/chematic-wheels/chematic-1.0.2-*.whl
 for i in 1 2 3 4 5 6 7; do
-  python3 scripts/bench_canonical.py scripts/descriptor_census_corpus.smi \
+  python3 scripts/benchmarks/bench_canonical.py scripts/descriptor_census_corpus.smi \
     --rdkit --n 5000 --json
 done
 for i in 1 2 3 4 5; do
-  python3 scripts/bench_canonical.py scripts/chembl_accuracy_corpus_4999.smi \
+  python3 scripts/benchmarks/bench_canonical.py scripts/chembl_accuracy_corpus_4999.smi \
     --rdkit --n 5000 --json
 done
 ```

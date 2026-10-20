@@ -1,6 +1,6 @@
 """Reject malformed annotated-tag output in release metadata timestamps."""
 
-from scripts.generate_release_metadata import valid_released_at
+from scripts.release.generate_release_metadata import valid_released_at
 
 
 def test_tag_datetime_is_accepted():

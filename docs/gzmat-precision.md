@@ -154,7 +154,7 @@ cargo test -p chematic-mol --lib --test gzmat_precision --offline --quiet
 cargo clippy -p chematic-mol -p chematic-py --all-targets --offline --no-deps -- -D warnings
 cargo fmt --all -- --check
 python -m pytest crates/chematic-py/tests/test_gzmat_precision.py -q
-python scripts/validate_gzmat_precision.py
+python scripts/validation/validate_gzmat_precision.py
 python scripts/check_refactor_budget.py
 python scripts/check_binding_surface.py
 python scripts/check_product_names.py
