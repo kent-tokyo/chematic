@@ -74,7 +74,7 @@ Infinity literals.
 cargo test -p chematic-smiles --lib --test rdkit_matrix_3d_checked --test rdkit_matrix_limits --offline --quiet
 python3 -m pytest -q crates/chematic-py/tests/test_rdkit_matrix_3d_checked.py
 node crates/chematic-wasm/tests/checked_3d_matrix.test.mjs
-python3 scripts/validate_checked_3d_matrix.py
+python3 scripts/validation/validate_checked_3d_matrix.py
 ```
 
 Local validation on main `2c3ff6ff` plus this change passed **406 Rust tests**

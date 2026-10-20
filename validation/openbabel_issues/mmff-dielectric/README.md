@@ -17,7 +17,7 @@ From the repository root, with the newly built chematic Python module and
 RDKit 2026.09.1 on `PYTHONPATH`:
 
 ```sh
-python3 scripts/validate_mmff_dielectric.py --openbabel-probe /tmp/openbabel-dielectric-probe --output /tmp/mmff-dielectric-evidence
+python3 scripts/validation/validate_mmff_dielectric.py --openbabel-probe /tmp/openbabel-dielectric-probe --output /tmp/mmff-dielectric-evidence
 ```
 
 The raw packet separates the stale-cache Open Babel diagnostic from the

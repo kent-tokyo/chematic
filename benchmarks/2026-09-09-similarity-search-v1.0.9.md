@@ -44,7 +44,7 @@ without changing the split or tie-breaking rule.
 
 ```bash
 /tmp/chematic-sim-bench-venv/bin/python \
-  scripts/bench_similarity_search_vs_rdkit.py \
+  scripts/benchmarks/bench_similarity_search_vs_rdkit.py \
   --output benchmarks/2026-09-09-similarity-search-v1.0.9.json
 ```
 

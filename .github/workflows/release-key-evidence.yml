@@ -22,8 +22,8 @@ jobs:
         run: |
           source_epoch="$(git show -s --format=%ct HEAD)"
           export SOURCE_DATE_EPOCH="$source_epoch"
-          python3 scripts/generate_sbom.py --output target/sbom/chematic.spdx.json
-          python3 scripts/generate_provenance.py \
+          python3 scripts/release/generate_sbom.py --output target/sbom/chematic.spdx.json
+          python3 scripts/release/generate_provenance.py \
             --output target/sbom/chematic.provenance.json \
             --artifact target/sbom/chematic.spdx.json
       - name: Sign and verify with protected release key

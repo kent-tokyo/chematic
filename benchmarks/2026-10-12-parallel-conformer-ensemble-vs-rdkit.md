@@ -62,7 +62,7 @@ and every output coordinate are identical.
 SCHEMATIC_BENCH_REPEATS=21 cargo run --release -p chematic-3d \
   --example conformer_ensemble_parallel_bench
 
-python scripts/bench_rdkit_conformer_ensemble.py --repeats 21
+python scripts/benchmarks/bench_rdkit_conformer_ensemble.py --repeats 21
 ```
 
 The next acceptance packet will add the frozen A6 corpus plus an independent

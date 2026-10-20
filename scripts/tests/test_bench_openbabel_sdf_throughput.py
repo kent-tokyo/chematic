@@ -7,7 +7,7 @@ import unittest
 from unittest.mock import patch
 
 SPEC = importlib.util.spec_from_file_location(
-    "sdf_throughput", Path(__file__).parents[1] / "bench_openbabel_sdf_throughput.py")
+    "sdf_throughput", Path(__file__).parents[1] / "benchmarks/bench_openbabel_sdf_throughput.py")
 bench = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(bench)
 

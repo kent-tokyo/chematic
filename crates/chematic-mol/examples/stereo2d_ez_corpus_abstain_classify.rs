@@ -1,6 +1,6 @@
 //! Reconciles the "RDKit-resolved but chematic-abstained" bond population
 //! (the 346 bonds in `bond_chematic_abstained`, from
-//! `scripts/stereo2d_ez_corpus_diagnosis.py`'s InChI `/b`-layer per-bond
+//! `scripts/diagnostics/stereo2d_ez_corpus_diagnosis.py`'s InChI `/b`-layer per-bond
 //! comparison over the standard 4,999-molecule corpus) against chematic's
 //! own internal per-bond classification, so the abstention reasons can be
 //! reported with a real denominator instead of assumed.
@@ -64,7 +64,7 @@ fn main() {
     let text = fs::read_to_string(summary_path).unwrap_or_else(|e| {
         panic!(
             "failed to read {summary_path}: {e} -- run \
-             scripts/stereo2d_ez_corpus_diagnosis.py first"
+             scripts/diagnostics/stereo2d_ez_corpus_diagnosis.py first"
         )
     });
     let root: Value = serde_json::from_str(&text).expect("parse summary json");
@@ -201,7 +201,7 @@ fn main() {
 
     println!(
         "RDKit-resolved but chematic-abstained (population: chematic_abstained_detail from \
-         scripts/stereo2d_ez_corpus_diagnosis.py's bond_chematic_abstained, i.e. rv real sign, \
+         scripts/diagnostics/stereo2d_ez_corpus_diagnosis.py's bond_chematic_abstained, i.e. rv real sign, \
          cv is None/\"?\"): {total}"
     );
     let mut sorted_reasons: Vec<(&String, &usize)> = reason_counts.iter().collect();

@@ -41,7 +41,7 @@ chemistry-accuracy claim.
 ```sh
 npm install --prefix /tmp/chematic-rdkit-gate --ignore-scripts --no-package-lock \
   @rdkit/rdkit@2025.3.4-1.0.0
-node scripts/bench_wasm_vs_rdkit.mjs \
+node scripts/benchmarks/bench_wasm_vs_rdkit.mjs \
   --rdkit-package /tmp/chematic-rdkit-gate/node_modules/@rdkit/rdkit \
   --rows 1000 --warmup 20 \
   --output /tmp/chematic-wasm-rdkit-gate.json

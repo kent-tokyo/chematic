@@ -64,7 +64,7 @@ The implementation is Python/NumPy and requires no RDKit runtime. Tests cover
 literal file bytes, typed/non-ASCII paths, small-score scientific notation,
 multiclass headers, snapshot ownership and failed ranking/I/O behavior.
 
-`scripts/validate_info_ranker_export.py` runs 64 datasets through four metrics
+`scripts/validation/validate_info_ranker_export.py` runs 64 datasets through four metrics
 and explicit/sparse source variants: 512 paired exports. All 1,024 per-runtime
 format checks and all 1,024 saved-snapshot checks pass against RDKit 2026.09.1.
 Whole files match in 98 cases. Other files can differ because their ranking

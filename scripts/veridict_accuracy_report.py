@@ -2,7 +2,7 @@
 """Append a veridict drift-detection section to docs/validation.md.
 
 Compares per-molecule |chematic - RDKit| error between a previous and the
-current scripts/bench5k.py --json run (see the "deltas" field added there),
+current scripts/benchmarks/bench5k.py --json run (see the "deltas" field added there),
 using veridict's mean-diff bootstrap. This flags cases where individual
 molecules stay within their assert tolerance but the *average* error has
 drifted since the last recorded run — not a per-PR gate (see the plan for

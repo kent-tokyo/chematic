@@ -34,7 +34,10 @@ FIELDNAMES = [
 
 
 def process(name: str, smiles: str) -> dict | None:
-    mol = chematic.from_smiles(smiles)
+    try:
+        mol = chematic.from_smiles(smiles)
+    except ValueError:
+        return None
     if mol is None:
         return None
     admet = mol.admet()

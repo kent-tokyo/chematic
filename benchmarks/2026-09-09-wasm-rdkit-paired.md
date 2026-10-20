@@ -25,7 +25,7 @@ follow-up gates.
 Reproduce with:
 
 ```sh
-node scripts/bench_wasm_vs_rdkit.mjs --same-process \
+node scripts/benchmarks/bench_wasm_vs_rdkit.mjs --same-process \
   --rdkit-package /tmp/chematic-rdkit-gate/node_modules/@rdkit/rdkit \
   --rows 1000 --warmup 20 \
   --output /tmp/chematic-wasm-rdkit-paired.json

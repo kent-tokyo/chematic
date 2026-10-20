@@ -90,7 +90,7 @@ Gemmi is an isolated validation dependency, not a product dependency.
 ```sh
 cargo test -p chematic-mol --lib --test ccd_contract --test hin_contract --test public_api_compat_v1_1_3 --offline --quiet
 python3 -m pytest -q crates/chematic-py/tests/test_ccd.py crates/chematic-py/tests/test_hin.py crates/chematic-py/tests/test_new_formats.py
-python3 scripts/validate_ccd.py --download
+python3 scripts/validation/validate_ccd.py --download
 node crates/chematic-wasm/tests/ccd.test.mjs
 ```
 

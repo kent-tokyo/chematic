@@ -768,7 +768,7 @@ mod tests {
         // [carboxylate/oxide-like O]) has no direct table row -- RDKit falls
         // to eq. 18-19 (no Bond eqLevel ladder exists at all, confirmed by
         // direct source read of `MMFFBondCollection::operator()`).
-        // Oracle-confirmed via `scripts/mmff94_angle_bond_gap_classify.py`
+        // Oracle-confirmed via `scripts/diagnostics/mmff94_angle_bond_gap_classify.py`
         // against a real charge-separated sulfoxide (S+/O-) molecule
         // (`CON(C)C(=O)/C=C/CC1C(=O)N2[C@@H]1[S+]([O-])C(C)(C)[C@@H]2C(=O)O`).
         assert!(

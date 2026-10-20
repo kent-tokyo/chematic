@@ -1,7 +1,7 @@
 //! Phase B acceptance-gate dump: `rdkit_morgan_ecfp4_experimental`'s real
 //! output on the M4-A0 5,048-input corpus, for comparison against the same
 //! RDKit oracle rows M4-A0 itself validated against
-//! (`scripts/gen_ecfp_rdkit_environment_oracle.py`'s `default`
+//! (`scripts/generators/gen_ecfp_rdkit_environment_oracle.py`'s `default`
 //! (`includeRedundantEnvironments=false`) lifecycle -- the only lifecycle
 //! this production API ever computes).
 //!

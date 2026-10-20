@@ -79,7 +79,7 @@ Validated the uncommitted source working tree on 2026-10-14:
 - Clippy for `chematic-mol` and `chematic-py`, all targets, passed with warnings
   denied. Changed Rust files passed rustfmt, and `git diff --check` passed.
 
-The reproducible probe script is `scripts/validate_openbabel_cif_checked.py`;
+The reproducible probe script is `scripts/validation/validate_openbabel_cif_checked.py`;
 its JSON evidence is `validation/results/openbabel-cif-checked-2026-10-14.json`.
 It records fixture, source and loaded-extension hashes, 36 invalid-cell
 rejections, four local round trips and bounded external probes.

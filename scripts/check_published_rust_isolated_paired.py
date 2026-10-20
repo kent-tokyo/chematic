@@ -8,11 +8,11 @@ import math
 from pathlib import Path
 
 if __package__:
-    from .bench_published_python_isolated_paired import ci, reference_digest, sha256
-    from .bench_published_rust_isolated_paired import CORPUS_SHA256, MODES, ROOT, VERSIONS, validate_graph
+    from .benchmarks.bench_published_python_isolated_paired import ci, reference_digest, sha256
+    from .benchmarks.bench_published_rust_isolated_paired import CORPUS_SHA256, MODES, ROOT, VERSIONS, validate_graph
 else:
-    from bench_published_python_isolated_paired import ci, reference_digest, sha256
-    from bench_published_rust_isolated_paired import CORPUS_SHA256, MODES, ROOT, VERSIONS, validate_graph
+    from benchmarks.bench_published_python_isolated_paired import ci, reference_digest, sha256
+    from benchmarks.bench_published_rust_isolated_paired import CORPUS_SHA256, MODES, ROOT, VERSIONS, validate_graph
 
 PREFIX = "2026-10-03-rust-v1029-v1030"
 BINARIES = {

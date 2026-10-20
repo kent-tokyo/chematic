@@ -38,7 +38,7 @@ Reproduce with the pinned wheel and RDKit imports in an isolated Python 3.13
 environment:
 
 ```sh
-python scripts/mmff94_atom_type_census.py \
+python scripts/diagnostics/mmff94_atom_type_census.py \
   --corpus validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi \
   --output /tmp/mmff94-atom-type-census-v1031.json
 ```
@@ -70,7 +70,7 @@ complete cause for all 1,322 differences. The diagnostic test was removed
 after the experiment, so production behavior is unchanged.
 
 ```sh
-python scripts/mmff94_atom_type_census.py \
+python scripts/diagnostics/mmff94_atom_type_census.py \
   --corpus validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi \
   --output /tmp/mmff94-v1031-type37-context.json --type37-context
 ```

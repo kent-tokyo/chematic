@@ -1,7 +1,7 @@
 //! Cross-language shared-corpus test for the promoted RDKit-exact Morgan/ECFP API.
 //!
 //! Reads `validation/ecfp4_rdkit_stable_api_fixtures.json` -- generated once from a
-//! live RDKit oracle by `scripts/gen_ecfp4_rdkit_stable_api_fixtures.py` (RDKit
+//! live RDKit oracle by `scripts/generators/gen_ecfp4_rdkit_stable_api_fixtures.py` (RDKit
 //! version/commit recorded in the file itself) -- and checks
 //! `rdkit_morgan_ecfp4_experimental`/`rdkit_morgan_fingerprint`'s output against it
 //! exactly. The Python (`crates/chematic-py/tests/test_rdkit_ecfp4_stable_api.py`) and

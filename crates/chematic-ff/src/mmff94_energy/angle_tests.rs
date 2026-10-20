@@ -25,7 +25,7 @@ mod tests {
         // exact-type row, but type 6's eqLevel table ([6, 6, 6, 0]) and
         // type 37's ([37, 2, 1, 0]) meet at stage 1 (level3: 6 and 2) --
         // live-RDKit-oracle-confirmed via
-        // `scripts/mmff94_angle_bond_gap_classify.py` against
+        // `scripts/diagnostics/mmff94_angle_bond_gap_classify.py` against
         // `chembl_tier_b_0164`'s real O-N(aromatic)-C(aromatic) triple.
         let p = mmff94_angle_energy(0, 6, 40, 37).expect("eqLevel ladder must resolve this");
         assert!((p.ka - 1.316).abs() < 1e-6, "ka={} should be 1.316", p.ka);
@@ -41,7 +41,7 @@ mod tests {
     #[test]
     fn angle_empirical_reuses_wildcard_theta0_for_halogen_and_amine_c_substituents() {
         // angle_type=0, center=type1 (sp3 C, crd=4). All 7 confirmed against
-        // the live RDKit oracle by `scripts/mmff94_angle_bond_gap_classify.py`
+        // the live RDKit oracle by `scripts/diagnostics/mmff94_angle_bond_gap_classify.py`
         // (issue #227 Stage C's own diagnosed table_gap residual). Each hits
         // the eqLevel ladder's level5 (0,0) substitution and lands on the
         // restored wildcard row `(0, 0, 1, 0)` -> theta0=108.9, ka=0.0
