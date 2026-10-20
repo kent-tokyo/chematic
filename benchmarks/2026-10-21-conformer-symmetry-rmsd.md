@@ -14,6 +14,8 @@ minimization, or the A6 conformer-quality counts.
   Acetate and nitro now agree under the default terminal-group
   symmetrization. The isotope-labelled isobutane probe remains distinct
   (`0.164695 Å` in both implementations).
+- On the same acetate input, the previous main returned `0.356340 Å`;
+  the candidate and RDKit return approximately zero.
 - Rust library tests: 706 passed, 4 ignored, 0 failed.
 
 The fixed coordinates and molecular graphs are exposed development cases,
