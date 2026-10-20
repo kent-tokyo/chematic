@@ -31,7 +31,7 @@ The channel record is version-specific. It distinguishes `verified`,
 published channel is useful evidence, but it is not release-ready.
 
 Operation-level comparison scorecards are separately validated by the
-dependency-free `scripts/validate_scorecard.py`; it rejects stale target
+dependency-free `scripts/validation/validate_scorecard.py`; it rejects stale target
 versions, missing corpus/engine provenance, and claims based on unsupported,
 failed, missing, or not-measured rows. Claims must identify an engine with a
 positive status row, and scorecards must include positive corpus-record and
@@ -41,7 +41,7 @@ Generate a release asset manually (the workflow supplies these values from the
 tag):
 
 ```bash
-python3 scripts/generate_release_metadata.py \
+python3 scripts/release/generate_release_metadata.py \
   --version <version> \
   --commit "$(git rev-list -1 v<version>)" \
   --released-at "$(git show -s --format=%cI v<version>)" \

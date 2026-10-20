@@ -88,7 +88,7 @@ and a nearby isolated explicit H. Rust, Python and real Node/WASM contract
 tests cover graph/coordinate order, reciprocal/continuation declarations,
 extended-slot opt-in, malformed inputs and resource fences.
 
-`scripts/validate_pdb_conect.py` compares indexed atoms, formal charges,
+`scripts/validation/validate_pdb_conect.py` compares indexed atoms, formal charges,
 single/double/triple edges, source coordinates and serials against pinned
 RDKit 2026.09.1 with `sanitize=False, removeHs=False, proximityBonding=False`.
 It checks Python, WASM frame JSON, and the WASM molecule handle through a

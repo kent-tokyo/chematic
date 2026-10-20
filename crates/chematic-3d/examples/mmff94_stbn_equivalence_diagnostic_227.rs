@@ -100,7 +100,7 @@
 //! `(stretchBendType, kbaIJK, kbaKJI)` or `None`, and
 //! `GetMMFFBondStretchParams`/`GetMMFFAngleBendParams` do the analogous
 //! thing for bond/angle terms -- found by enumerating `dir()` on the
-//! `MMFFMolProperties` object, not assumed. `scripts/mmff94_stbn_oracle_validate_227.py`
+//! `MMFFMolProperties` object, not assumed. `scripts/diagnostics/mmff94_stbn_oracle_validate_227.py`
 //! (same pinned RDKit build) reads this file's own JSONL output and calls
 //! `GetMMFFStretchBendParams` for every one of the 427 candidates, using
 //! the SAME molecule/atom-index triple. Result, run against the actual
@@ -189,7 +189,7 @@
 //! ```
 //! Oracle validation:
 //! ```text
-//! .venv/bin/python scripts/mmff94_stbn_oracle_validate_227.py \
+//! .venv/bin/python scripts/diagnostics/mmff94_stbn_oracle_validate_227.py \
 //!   validation/results/mmff94_stbn_equivalence_diagnostic_227.jsonl
 //! ```
 

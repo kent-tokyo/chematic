@@ -5,7 +5,7 @@ import json
 
 import pytest
 
-from scripts.bench_published_python_isolated_paired import ci, digest, reference_digest
+from scripts.benchmarks.bench_published_python_isolated_paired import ci, digest, reference_digest
 from scripts.check_published_python_isolated_paired import RECORDS, ROOT, check_one, expected_outcome
 
 

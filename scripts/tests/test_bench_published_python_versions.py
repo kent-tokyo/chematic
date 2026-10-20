@@ -4,7 +4,7 @@ import importlib.util
 from pathlib import Path
 
 
-SCRIPT = Path(__file__).resolve().parents[1] / "bench_published_python_versions.py"
+SCRIPT = Path(__file__).resolve().parents[1] / "benchmarks/bench_published_python_versions.py"
 SPEC = importlib.util.spec_from_file_location("bench_published_python_versions", SCRIPT)
 assert SPEC and SPEC.loader
 MODULE = importlib.util.module_from_spec(SPEC)

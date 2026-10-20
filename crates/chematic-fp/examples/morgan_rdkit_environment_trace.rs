@@ -6,7 +6,7 @@
 //!
 //! Uses `EcfpInvariantMode::RdkitMorgan`, radius 2, 2048 bits, chirality
 //! off -- matching the RDKit oracle's pinned Morgan options (see
-//! `scripts/gen_ecfp_rdkit_environment_oracle.py`).
+//! `scripts/generators/gen_ecfp_rdkit_environment_oracle.py`).
 //!
 //! A SMILES chematic fails to parse gets a `parse_ok: false` row instead of
 //! being silently dropped.

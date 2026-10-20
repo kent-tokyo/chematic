@@ -9,7 +9,7 @@
 //! this is the regression backstop, not a new measurement).
 //!
 //! `SMILES.csv` is not checked into this repo (same convention as
-//! `scripts/bench5k.py`/`corpus_snapshot.rs`) -- supply your own corpus file.
+//! `scripts/benchmarks/bench5k.py`/`corpus_snapshot.rs`) -- supply your own corpus file.
 //!
 //! Usage: cargo run -p chematic-cip --release --example mode_stabilization_report -- <SMILES.csv>
 

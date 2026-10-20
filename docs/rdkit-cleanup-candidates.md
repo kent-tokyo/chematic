@@ -58,7 +58,7 @@ speed superiority, Enamine REAL representativeness or a released-package result.
 Reproduce from the candidate checkout:
 
 ```sh
-python3 scripts/measure_cleanup_candidates.py \
+python3 scripts/benchmarks/measure_cleanup_candidates.py \
   --target-dir /private/tmp/chematic-cleanup-target \
   --output /private/tmp/chematic-cleanup-results
 ```

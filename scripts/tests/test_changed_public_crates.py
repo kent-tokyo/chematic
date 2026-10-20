@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import unittest
 from pathlib import Path
 
 
@@ -16,14 +17,15 @@ def load_module():
     return module
 
 
-def test_public_crates_only_returns_library_targets() -> None:
-    module = load_module()
-    crates = dict(module.public_crates())
+class PublicCratesTests(unittest.TestCase):
+    def test_public_crates_only_returns_library_targets(self) -> None:
+        module = load_module()
+        crates = dict(module.public_crates())
 
-    assert "chematic-cli" not in crates
-    assert "chematic-core" in crates
-    for path in crates.values():
-        manifest = ROOT / path / "Cargo.toml"
-        source = ROOT / path / "src/lib.rs"
-        data = module.tomllib.loads(manifest.read_text())
-        assert "lib" in data or source.is_file()
+        self.assertNotIn("chematic-cli", crates)
+        self.assertIn("chematic-core", crates)
+        for path in crates.values():
+            manifest = ROOT / path / "Cargo.toml"
+            source = ROOT / path / "src/lib.rs"
+            data = module.tomllib.loads(manifest.read_text())
+            self.assertTrue("lib" in data or source.is_file())

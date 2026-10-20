@@ -75,7 +75,7 @@ Per-term absolute deltas (rows above 0.1 / rows above 1 kcal/mol / maximum):
 
 ## Atom-type census (10k exposed corpus)
 
-`scripts/mmff94_atom_type_census.py` compares every atom's MMFF94 type with
+`scripts/diagnostics/mmff94_atom_type_census.py` compares every atom's MMFF94 type with
 RDKit on `validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi`. That is
 9,774 comparable molecules: 214,990 heavy atoms and 190,737 hydrogens. 22
 CheMatic typed refusals and 204 molecules RDKit cannot set up for MMFF are
@@ -160,14 +160,14 @@ Commands:
 git checkout 13d70a2e
 maturin build --release -i python3 -m crates/chematic-py/Cargo.toml -o <wheels>
 pip install <wheels>/chematic-1.0.25-cp311-cp311-manylinux_2_35_x86_64.whl
-python3 scripts/mmff94_same_explicit_h_energy.py \
+python3 scripts/diagnostics/mmff94_same_explicit_h_energy.py \
   --output <rows.jsonl> --summary <summary.json> \
   --rdkit-artifact <rdkit wheel> --schematic-artifact <chematic wheel> \
   --expected-rdkit 2026.03.6 --expected-schematic 1.0.25 \
   --gradient-input-index 166 --gradient-input-index 231 --gradient-input-index 178
-python3 scripts/mmff94_same_explicit_h_energy.py ... \
+python3 scripts/diagnostics/mmff94_same_explicit_h_energy.py ... \
   --gradient-input-index 178 --gradient-delta 1e-6
-python3 scripts/mmff94_atom_type_census.py \
+python3 scripts/diagnostics/mmff94_atom_type_census.py \
   --corpus validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi --output <census.json>
 ```
 

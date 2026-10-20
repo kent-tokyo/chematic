@@ -12,6 +12,7 @@ from ._sdf_split import (
 )
 
 from .chematic import *
+from ._mol2_hydrogen_order import Mol2HydrogenOrder, order_mol2_hydrogens_checked
 from ._periodic_geometry import (
     PeriodicGeometryConversion, turbomole_to_poscar_checked, poscar_to_turbomole_checked,
 )

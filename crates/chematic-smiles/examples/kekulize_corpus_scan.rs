@@ -4,7 +4,7 @@
 //! Used to produce a before/after diff for the `fix/kekulize-charge-aware-k1`
 //! change to `atom_must_be_matched` (crates/chematic-core/src/kekulization.rs)
 //! against the project's standard 5,000-molecule SMILES corpus
-//! (`~/Downloads/SMILES.csv`, referenced in CLAUDE.md / scripts/bench5k.py).
+//! (`~/Downloads/SMILES.csv`, referenced in CLAUDE.md / scripts/benchmarks/bench5k.py).
 //! Diagnostic only -- does not modify any production module.
 //!
 //! Run:

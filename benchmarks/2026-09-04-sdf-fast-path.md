@@ -40,6 +40,6 @@ to beat RDKit. Reproduce with:
 ```bash
 for i in 1 2 3 4 5 6 7; do
   TMPDIR=/private/tmp/chematic-bench \
-    python3 scripts/bench_sdf.py --rdkit --json
+    python3 scripts/benchmarks/bench_sdf.py --rdkit --json
 done
 ```

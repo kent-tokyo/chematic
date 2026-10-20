@@ -204,7 +204,7 @@ Local checks:
 Regenerate the independent record with the candidate extension on `PYTHONPATH`:
 
 ```sh
-python scripts/validate_turbomole_lattice.py --obabel /path/to/obabel
+python scripts/validation/validate_turbomole_lattice.py --obabel /path/to/obabel
 ```
 
 The result JSON records fixture/source/extension hashes and oracle settings.

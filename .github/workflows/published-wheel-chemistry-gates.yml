@@ -16,6 +16,15 @@ name: Published wheel chemistry gates
 # wheel for the CPython 3.9 ABI used by chematic's published Linux wheel.
 
 on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+      biotransformer_corpus:
+        required: false
+        default: true
+        type: boolean
   workflow_dispatch:
     inputs:
       version:

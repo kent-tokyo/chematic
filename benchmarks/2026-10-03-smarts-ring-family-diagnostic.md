@@ -44,7 +44,7 @@ Reproduce from this source revision with RDKit 2026.03.6 installed:
 set -o pipefail
 cargo run -p chematic-smarts --example ring_refusal_probe --locked -- \
   validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi \
-  | python scripts/check_smarts_ring_refusal_probe.py --permutations 1000
+  | python scripts/diagnostics/check_smarts_ring_refusal_probe.py --permutations 1000
 ```
 
 The Rust probe is diagnostic-only and does not expose atom-map or production

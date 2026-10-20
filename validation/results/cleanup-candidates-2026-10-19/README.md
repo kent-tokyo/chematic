@@ -50,7 +50,7 @@ chemistry validation or published-package result is claimed.
 ## Reproduction
 
 ```sh
-python3 scripts/measure_cleanup_candidates.py \
+python3 scripts/benchmarks/measure_cleanup_candidates.py \
   --target-dir /private/tmp/chematic-conjugation-target \
   --output /private/tmp/chematic-cleanup-reproduction
 ```

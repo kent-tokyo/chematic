@@ -2,7 +2,7 @@
 """Morgan M4-A0: numeric raw-identifier parity between chematic's RDKit-exact
 hash port (`crates/chematic-fp/src/rdkit_morgan_hash.rs`,
 `examples/rdkit_morgan_hash_dump.rs`) and a real RDKit oracle
-(`scripts/gen_ecfp_rdkit_environment_oracle.py`).
+(`scripts/generators/gen_ecfp_rdkit_environment_oracle.py`).
 
 Unlike PR #120/#123's scripts, which compare *partitions* (which atoms are
 chemically equivalent) and *emission lifecycle* (who wins/dies), this script

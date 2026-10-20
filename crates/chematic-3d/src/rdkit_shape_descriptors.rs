@@ -181,7 +181,7 @@ const SHAPE_EPS: f64 = 1e-4;
 /// `rdkit.Chem.GetPeriodicTable().GetAtomicWeight(z)` against
 /// `rdkit==2026.03.3` — not from chematic-core's `Element::atomic_mass()`,
 /// which is the *monoisotopic* mass (see module docs). Regenerate via the
-/// one-liner documented in `scripts/gen_rdkit_3d_g1_fixtures.py`.
+/// one-liner documented in `scripts/generators/gen_rdkit_3d_g1_fixtures.py`.
 #[rustfmt::skip]
 static RDKIT_ATOMIC_WEIGHTS: [f64; 118] = [
     1.008, 4.003, 6.941, 9.012, 10.812, 12.011, 14.007, 15.999, 18.998, 20.180,

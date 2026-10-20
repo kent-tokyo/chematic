@@ -957,7 +957,7 @@ mod tests {
 
     // ── Issue #227: nitrile/sulfonamide/nitro/azide/charged-sulfoxide
     // typing gaps (5 small pre-existing gaps named in PR #239's own
-    // summary, root-caused via `scripts/mmff94_angle_bond_gap_classify.py`'s
+    // summary, root-caused via `scripts/diagnostics/mmff94_angle_bond_gap_classify.py`'s
     // live-RDKit-oracle atom-type cross-check on the failing mmff94_strict
     // corpus). All 5 expected types verified against a live RDKit 2026.03.3
     // oracle (`AllChem.MMFFGetMoleculeProperties`), not hand-derived.
@@ -1925,7 +1925,7 @@ mod tests {
         // (see `caffeine_matches_rdkit_mmff_aromaticity_per_atom` above) before
         // trusting it for the other 11. Values copied verbatim from
         // `validation/results/mmff94_aromaticity_bond_parity_227_oracle.json`
-        // (generator: `scripts/mmff94_aromaticity_bond_parity_227.py`), not
+        // (generator: `scripts/diagnostics/mmff94_aromaticity_bond_parity_227.py`), not
         // derived from this fix's own output. Fixtures chosen to stress the
         // exact fused-ring bond-promotion hazard Phase 0.2 fixes: tetralin
         // (fused aromatic+non-aromatic), a spiro system, and a bridged
@@ -2351,7 +2351,7 @@ mod tests {
         // `MMFFGetMoleculeProperties(mol, mmffVariant="MMFF94")` on the
         // implicit-H `Chem.MolFromSmiles` result -- MMFF atom
         // typing/charges are purely topological, no embedding needed, same
-        // precedent as `scripts/mmff94_bci_charges_oracle_227.py`).
+        // precedent as `scripts/diagnostics/mmff94_bci_charges_oracle_227.py`).
         let m = mol("CC#C");
         let types = assign_mmff94_numeric_types(&m).unwrap();
         assert_eq!(types, vec![1, 4, 4]);

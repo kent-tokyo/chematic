@@ -1,8 +1,6 @@
 name: Benchmarks
 
 on:
-  push:
-    branches: [main]
   schedule:
     - cron: '0 3 * * 1'   # weekly, Monday 03:00 UTC
   workflow_dispatch:
@@ -46,10 +44,10 @@ jobs:
         run: pip install chematic --quiet
 
       - name: Startup time benchmark
-        run: python scripts/bench_startup.py --runs 5 --json | tee bench_startup.json
+        run: python scripts/benchmarks/bench_startup.py --runs 5 --json | tee bench_startup.json
 
       - name: SMILES parse throughput benchmark
-        run: python scripts/bench_smiles_parse.py --n 5000 --json | tee bench_parse.json
+        run: python scripts/benchmarks/bench_smiles_parse.py --n 5000 --json | tee bench_parse.json
 
       - name: Show results
         run: |
