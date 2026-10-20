@@ -1213,6 +1213,7 @@ fn to_rxn_document_json(document_json: &str) -> PyResult<String> {
 /// reused across multiple queries (fingerprints computed only once).
 /// A fingerprint length mismatch raises ``ValueError``. Two all-zero
 /// fingerprints compare as identical (1.0), matching the Rust API.
+/// Zero-score candidates remain eligible, with ties ordered by input index.
 ///
 ///     db_fps = [mol.ecfp4() for mol in library]   # compute once
 ///     for query in queries:
@@ -1251,7 +1252,6 @@ fn nearest_neighbors_from_fp(
             })
         })
         .collect::<PyResult<_>>()?;
-    scores.retain(|(_, score)| *score > 0.0);
     scores.sort_unstable_by(|a, b| b.1.total_cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
     scores.truncate(k);
     Ok(scores)

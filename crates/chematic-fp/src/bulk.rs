@@ -90,7 +90,8 @@ pub fn tanimoto_matrix_parallel(queries: &[BitVec2048], db: &[BitVec2048]) -> Ve
 /// Return the `k` most similar entries in `db` to `query`, sorted by descending Tanimoto.
 ///
 /// Returns `Vec<(usize, f32)>` of `(db_index, tanimoto)` pairs.
-/// Returns `min(k, db.len())` results — **no zero-filtering** (unlike `nearest_neighbors_from_fp`).
+/// Returns `min(k, db.len())` results, including zero-score entries.
+/// Equal scores are ordered by ascending database index.
 /// Returns `[]` if `k == 0` or `db` is empty.
 ///
 /// # Complexity
@@ -104,11 +105,14 @@ pub fn top_k_similar(query: &BitVec2048, db: &[BitVec2048], k: usize) -> Vec<(us
     let mut indexed: Vec<(usize, f32)> = scores.into_iter().enumerate().collect();
 
     // Partial selection: move top-k to front in O(N) average
-    indexed.select_nth_unstable_by(k - 1, |a, b| {
-        b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal)
-    });
+    let compare_rank = |a: &(usize, f32), b: &(usize, f32)| {
+        b.1.partial_cmp(&a.1)
+            .unwrap_or(std::cmp::Ordering::Equal)
+            .then_with(|| a.0.cmp(&b.0))
+    };
+    indexed.select_nth_unstable_by(k - 1, compare_rank);
     indexed.truncate(k);
-    indexed.sort_unstable_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+    indexed.sort_unstable_by(compare_rank);
     indexed
 }
 
@@ -262,6 +266,19 @@ mod tests {
         let db = vec![fp("CCC"), fp("CCCC")];
         let hits = top_k_similar(&query, &db, 100);
         assert_eq!(hits.len(), db.len(), "returns all when k > db.len()");
+    }
+
+    #[test]
+    fn test_top_k_similar_breaks_zero_score_ties_by_index() {
+        let mut query = BitVec2048::new();
+        query.set(1);
+        let mut disjoint = BitVec2048::new();
+        disjoint.set(2);
+        let db = [disjoint.clone(), query.clone(), disjoint, BitVec2048::new()];
+        assert_eq!(
+            top_k_similar(&query, &db, 3),
+            vec![(1, 1.0), (0, 0.0), (2, 0.0)]
+        );
     }
 
     #[test]
