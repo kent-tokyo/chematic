@@ -194,7 +194,7 @@ limits are documented in [Semantic model API](semantic-model.md).
 
 ### Abstention matrix (audited 2026-10-08)
 
-`scripts/typed_abstention_audit.py` and `scripts/typed_abstention_audit.mjs`
+`scripts/diagnostics/typed_abstention_audit.py` and `scripts/diagnostics/typed_abstention_audit.mjs`
 run one probe per operation family and abstention category on the Python
 binding and the WASM package
 (`validation/results/typed-abstention-audit-*-2026-10-08.json`):

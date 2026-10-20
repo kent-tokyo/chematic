@@ -10,7 +10,7 @@ from unittest.mock import patch
 
 
 SPEC = importlib.util.spec_from_file_location(
-    "bench_hotpath_pair", Path(__file__).parents[1] / "bench_hotpath_pair.py"
+    "bench_hotpath_pair", Path(__file__).parents[1] / "benchmarks" / "bench_hotpath_pair.py"
 )
 BENCH = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(BENCH)

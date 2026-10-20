@@ -1,7 +1,7 @@
 //! Diag/aromaticity-rdkit-parity: dump chematic's aromaticity/kekulization
 //! output for a frozen, deliberately-constructed SMILES fixture corpus, one
 //! JSON row per fixture, for cross-checking against RDKit in
-//! `scripts/aromaticity_rdkit_parity_diagnosis.py`.
+//! `scripts/diagnostics/aromaticity_rdkit_parity_diagnosis.py`.
 //!
 //! Diagnostic only. Calls only existing public APIs
 //! (`chematic_smiles::parse`, `chematic_core::kekulize`/`apply_kekule`,
@@ -25,7 +25,7 @@
 //! ```text
 //! cargo run -p chematic-perception --example aromaticity_rdkit_parity_dump \
 //!     > validation/results/aromaticity_rdkit_parity_fixture_dump.jsonl
-//! .venv/bin/python scripts/aromaticity_rdkit_parity_diagnosis.py
+//! .venv/bin/python scripts/diagnostics/aromaticity_rdkit_parity_diagnosis.py
 //! ```
 
 use chematic_perception::{

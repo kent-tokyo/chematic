@@ -94,7 +94,7 @@ This checks coordinate interoperability, not inferred connectivity.
 Reproduce with the built Python extension on `PYTHONPATH`:
 
 ```sh
-python scripts/validate_mmcif_pdb_checked.py --obabel /opt/homebrew/bin/obabel
+python scripts/validation/validate_mmcif_pdb_checked.py --obabel /opt/homebrew/bin/obabel
 cargo test -p chematic-mol --lib --test mmcif_pdb_checked \
   --test mmcif_residue_contract --test mmcif_pqr_integration --offline --quiet
 python -m pytest crates/chematic-py/tests/test_mmcif_pdb_checked.py \

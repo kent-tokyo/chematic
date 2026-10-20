@@ -98,7 +98,7 @@ corpus, source code or attachment was copied.
 cargo test -p chematic-core -p chematic-chem -p chematic-smiles -p chematic-smarts --lib --offline
 cargo test -p chematic-chem --test renumber_stereo_contract --offline
 python -m pytest crates/chematic-py/tests/test_renumber_atoms.py crates/chematic-py/tests/test_rdkit_compat.py
-python scripts/validate_atom_renumbering.py
+python scripts/validation/validate_atom_renumbering.py
 ```
 
 Rust passed 1,721 tests (1,709 library plus 12 new contracts), with two

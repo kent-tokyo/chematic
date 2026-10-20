@@ -158,7 +158,7 @@ pinned settings and payload hash are in
 or proprietary coordinates were copied. Regenerate the hashed evidence with:
 
 ```sh
-python scripts/validate_meso_stereo_groups.py
+python scripts/validation/validate_meso_stereo_groups.py
 ```
 
 This is a local, uncommitted, unpublished source candidate in

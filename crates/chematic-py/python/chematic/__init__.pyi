@@ -15,6 +15,11 @@ Quick start::
 from __future__ import annotations
 from typing import Protocol, SupportsIndex
 
+from ._mol2_hydrogen_order import (
+    Mol2HydrogenOrder as Mol2HydrogenOrder,
+    order_mol2_hydrogens_checked as order_mol2_hydrogens_checked,
+)
+
 from ._rdkit_smiles_checked import (
     RdkitSmilesStabilityError as RdkitSmilesStabilityError,
     rdkit_smiles_checked as rdkit_smiles_checked,

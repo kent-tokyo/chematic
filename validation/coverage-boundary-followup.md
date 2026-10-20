@@ -13,8 +13,8 @@ External fixtures remain pinned to RDKit 2026.03.1. Bounds matrices expand from 
 Regenerate with an environment containing exactly RDKit 2026.03.1:
 
 ```sh
-python scripts/generate_bounds_boundary_fixtures.py
-python scripts/generate_pdb_boundary_fixtures.py
+python scripts/generators/generate_bounds_boundary_fixtures.py
+python scripts/generators/generate_pdb_boundary_fixtures.py
 ```
 
 Validate with the unchanged command in `.github/workflows/coverage.yml`, `cargo clippy --workspace --all-targets -- -D warnings`, and `cargo fmt --all -- --check`. MCP HTTP integration needs a permitted loopback socket. Coverage demonstrates execution; it does not establish complete chemical correctness or full RDKit compatibility.

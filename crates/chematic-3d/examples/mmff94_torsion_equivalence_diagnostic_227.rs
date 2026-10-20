@@ -80,7 +80,7 @@
 //! but the live oracle still returns a nonzero torsion term, that is direct
 //! evidence RDKit's empirical rule produced it; if the oracle ALSO returns
 //! `None`, that is a genuine residual gap even under RDKit's complete
-//! algorithm. `scripts/mmff94_torsion_oracle_validate_227.py` performs this
+//! algorithm. `scripts/diagnostics/mmff94_torsion_oracle_validate_227.py` performs this
 //! relabeling and writes the fully-enriched final JSONL (with
 //! `used_exact`/`used_equivalence`/`used_empirical`/`used_unresolved`) as a
 //! separate file, `..._oracle_enriched.jsonl` -- kept distinct from this
@@ -240,7 +240,7 @@
 //! Oracle validation (writes the enriched final JSONL + prints the headline
 //! resolution counts):
 //! ```text
-//! .venv/bin/python scripts/mmff94_torsion_oracle_validate_227.py \
+//! .venv/bin/python scripts/diagnostics/mmff94_torsion_oracle_validate_227.py \
 //!   validation/results/mmff94_torsion_equivalence_diagnostic_227.jsonl
 //! ```
 
@@ -811,7 +811,7 @@ fn main() {
                         },
                         // "raw_" prefix: this file's OWN self-port ladder
                         // result, BEFORE the oracle-informed relabeling
-                        // scripts/mmff94_torsion_oracle_validate_227.py does
+                        // scripts/diagnostics/mmff94_torsion_oracle_validate_227.py does
                         // (which splits "raw_ladder_kind == exact/
                         // equivalence_level_N" into the oracle-validated
                         // "valid non-zero table resolution" (851) vs.
@@ -828,7 +828,7 @@ fn main() {
                         "forced_recheck_applied": res_rdkit_code.forced_recheck_applied,
                         "used_exact": used_exact,
                         "used_equivalence": used_equivalence,
-                        "used_empirical": Value::Null, // determined only by scripts/mmff94_torsion_oracle_validate_227.py (see file doc comment)
+                        "used_empirical": Value::Null, // determined only by scripts/diagnostics/mmff94_torsion_oracle_validate_227.py (see file doc comment)
                         "used_unresolved": used_unresolved,
                         "note": match res_rdkit_code.kind {
                             "exact" => "RDKit's real algorithm hits the atom-type-exact row at its own (possibly different-from-chematic's) classification code.",
@@ -854,7 +854,7 @@ fn main() {
         "eq_level_fallback_count (atom type not found in def table, self-fallback used) = {eq_level_fallback_count}"
     );
     eprintln!(
-        "--- raw_ladder_kind counts (THIS FILE'S OWN, PRE-ORACLE self-port ladder result -- NOT the final five-number breakdown; run scripts/mmff94_torsion_oracle_validate_227.py for that, it splits raw_ladder_kind's exact/equivalence_level_N bucket into oracle-validated 'valid non-zero table resolution' (851) vs 'explicit-zero row dropped' (2), and table_unresolved into 'empirical-rule resolution' (254) vs 'final unresolved/no-term' (0)) ---"
+        "--- raw_ladder_kind counts (THIS FILE'S OWN, PRE-ORACLE self-port ladder result -- NOT the final five-number breakdown; run scripts/diagnostics/mmff94_torsion_oracle_validate_227.py for that, it splits raw_ladder_kind's exact/equivalence_level_N bucket into oracle-validated 'valid non-zero table resolution' (851) vs 'explicit-zero row dropped' (2), and table_unresolved into 'empirical-rule resolution' (254) vs 'final unresolved/no-term' (0)) ---"
     );
     for (k, v) in &kind_counts {
         eprintln!("  raw_ladder_kind[{k}] = {v}  (self-port, pre-oracle)");

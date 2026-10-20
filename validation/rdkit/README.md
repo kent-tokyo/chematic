@@ -9,7 +9,7 @@
 
 Reference tool: **RDKit 2026.03.3**  
 Historical chematic version: **v0.4.20**
-Corpus: `scripts/rdkit_ref_properties.tsv` (175 drug-like molecules)  
+Corpus: `validation/rdkit/rdkit_ref_properties.tsv` (175 drug-like molecules)
 Full accuracy history: [benchmarks/](../../benchmarks/)
 
 ---
@@ -53,19 +53,23 @@ Impact on practical drug-like compounds: negligible (100% agreement on 175-mol c
 
 | File | Contents | Rows |
 |------|----------|------|
-| `../../scripts/rdkit_ref_properties.tsv` | MW, LogP, TPSA, HAC, HBD, HBA per molecule | 175 |
-| `../../scripts/rdkit_ref_tanimoto.tsv` | Tanimoto similarity matrix (subset) | 51 |
-| `../../scripts/chematic_vs_rdkit.tsv` | Side-by-side comparison (rdXXX vs chXXX columns) | 175 |
+| `rdkit_ref_properties.tsv` | MW, LogP, TPSA, HAC, HBD, HBA per molecule | 175 |
+| `rdkit_ref_tanimoto.tsv` | Tanimoto similarity matrix (subset) | 51 |
+| `chematic_vs_rdkit.tsv` | Side-by-side comparison (rdXXX vs chXXX columns) | 175 |
+
+These TSVs were moved here from `scripts/` without changing their bytes.
+Historical benchmark commands and source manifests still name the original
+paths from their own revisions.
 
 ## Reproduce
 
 ```bash
 # Regenerate RDKit reference data
-python scripts/gen_rdkit_reference.py   # writes scripts/rdkit_ref_properties.tsv
+python scripts/generators/gen_rdkit_reference.py   # writes validation/rdkit/rdkit_ref_properties.tsv
 
 # Run comparison and print per-descriptor agreement
 python scripts/rdkit_benchmark.py
 
 # Side-by-side diff with mismatch details
-python scripts/bench5k.py ~/Downloads/SMILES.csv --detail
+python scripts/benchmarks/bench5k.py ~/Downloads/SMILES.csv --detail
 ```

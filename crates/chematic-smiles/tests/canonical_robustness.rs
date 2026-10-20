@@ -237,7 +237,7 @@ fn platform_independence_charged_resonance_ring() {
 /// spellings share the same InChI — see the comment above each pair) to
 /// encode the same molecule, and both spellings were generated via RDKit
 /// `RenumberAtoms` (a real atom relabeling, not hand-guessed), matching the
-/// methodology `scripts/canonical_residual_diagnosis.py` uses for its
+/// methodology `scripts/diagnostics/canonical_residual_diagnosis.py` uses for its
 /// corpus-level permutation-invariance check. All 8 converge under the
 /// current writer — hardening against a regression, since a targeted
 /// 22-molecule probe (bridged bicyclics, spiro, fused, and cage systems,

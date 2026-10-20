@@ -194,7 +194,7 @@ whitespace errors.
 - [0 exact corpus](../validation/benchmark_corpora/openbabel-v3000-speed-slice0-1000-v1.molblocks.gz)
 - [5000 exact corpus](../validation/benchmark_corpora/openbabel-v3000-speed-slice5000-1000-v1.molblocks.gz)
 - [chains exact corpus](../validation/benchmark_corpora/openbabel-v3000-speed-chains64-v1.molblocks.gz)
-- [Rust native harness](../crates/chematic-mol/examples/openbabel_v3000_throughput.rs), [Open Babel native harness](../tools/openbabel_v3000_throughput.cpp), [runner](../scripts/bench_openbabel_v3000_throughput.py), and [generator](../scripts/build_openbabel_v3000_speed_corpus.py)
+- [Rust native harness](../crates/chematic-mol/examples/openbabel_v3000_throughput.rs), [Open Babel native harness](../tools/openbabel_v3000_throughput.cpp), [runner](../scripts/bench_openbabel_v3000_throughput.py), and [generator](../scripts/generators/build_openbabel_v3000_speed_corpus.py)
 
 Reproduce from the pinned base plus the three prerequisite patches and one alternative patch. Build the unchanged example with the recorded toolchain, compile the C++ harness using the installed `pkg-config openbabel-3` flags, and decompress the exact profile. Run the V3000 runner with `--blocks 21 --repeats 5`, `--records 1000` or `64`, the exact three executables and the source manifest. The retained wrapper adds frozen-build checks around the same runner. Raw snapshots/rewrites, full mismatch indices, CLI reproduction and build/test logs are losslessly archived. Archival fields do not change timing rows.
 

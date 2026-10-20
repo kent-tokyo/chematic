@@ -302,23 +302,23 @@ fn initial_metric_embedding_matches_rdkit_2026_09_boundary() {
     );
 }
 
-/// Bit-identical on the recorded Linux x86-64 comparison lane; elsewhere the
-/// platform libm's last-bit differences are allowed to accumulate through
-/// the minimizations, so coordinates are compared within 5e-4 Å. The wider
-/// bound is required on macOS arm64, where the accumulated libm difference in
-/// this fixture reaches about 1.3e-4 Å.
+/// The same fixed seed must repeat bit-for-bit within one build. The recorded
+/// RDKit first-atom oracle is compared to 1e-12 Å on ordinary Linux x86-64
+/// builds to allow last-bit codegen differences. Other platforms and LLVM
+/// coverage builds use 5e-4 Å: macOS arm64 has accumulated libm differences
+/// of about 1.3e-4 Å on this fixture.
 #[test]
 #[allow(unexpected_cfgs)]
 fn etkdg_2026_09_seed_is_deterministic_and_ethanol_matches_oracle() {
-    // LLVM coverage instrumentation perturbs the accumulated floating-point
-    // result by a few ULPs even on the pinned Linux x86-64 lane. Keep exact
-    // comparison for ordinary release/test builds and use the documented
-    // cross-platform tolerance for instrumented coverage builds.
-    let exact = cfg!(all(
+    let oracle_tolerance = if cfg!(all(
         target_os = "linux",
         target_arch = "x86_64",
         not(coverage)
-    ));
+    )) {
+        1e-12
+    } else {
+        5e-4
+    };
     for &(smi, legacy_expected) in CASES {
         let mh = chematic_chem::add_hydrogens(&chematic_smiles::parse(smi).unwrap());
         let got = rdkit_embed_molecule(&mh, &RdkitEmbedOptions::default())
@@ -332,16 +332,13 @@ fn etkdg_2026_09_seed_is_deterministic_and_ethanol_matches_oracle() {
         );
         if smi == "CCO" {
             for coordinate in 0..3 {
-                if exact {
-                    assert_eq!(got[0][coordinate], ETHANOL_FIRST_ATOM_2026_09_1[coordinate]);
-                } else {
-                    assert!(
-                        (got[0][coordinate] - ETHANOL_FIRST_ATOM_2026_09_1[coordinate]).abs()
-                            <= 5e-4,
-                        "{smi}: {:?} vs RDKit first atom {ETHANOL_FIRST_ATOM_2026_09_1:?}",
-                        got[0]
-                    );
-                }
+                let delta = (got[0][coordinate] - ETHANOL_FIRST_ATOM_2026_09_1[coordinate]).abs();
+                assert!(
+                    delta <= oracle_tolerance,
+                    "{smi}: coordinate {coordinate} delta {delta} exceeds {oracle_tolerance}; \
+                     {:?} vs RDKit first atom {ETHANOL_FIRST_ATOM_2026_09_1:?}",
+                    got[0]
+                );
             }
         }
     }

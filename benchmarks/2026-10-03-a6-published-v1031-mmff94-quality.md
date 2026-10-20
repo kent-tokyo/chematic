@@ -41,7 +41,7 @@ retains the digests and counts.
 
 ## Same explicit-H coordinates, separate from 3D generation
 
-`scripts/mmff94_same_explicit_h_energy.py` was also run with the same
+`scripts/diagnostics/mmff94_same_explicit_h_energy.py` was also run with the same
 published v1.0.31 wheel and pinned RDKit 2026.03.6. RDKit generated a single
 explicit-H coordinate set per row; both engines evaluated that exact set.
 Statuses were 262 comparable, two RDKit embedding failures and one declared
@@ -63,7 +63,7 @@ The energy command used the isolated published-wheel Python environment with
 RDKit 2026.03.6 on its import path:
 
 ```sh
-python3 scripts/mmff94_same_explicit_h_energy.py \
+python3 scripts/diagnostics/mmff94_same_explicit_h_energy.py \
   --output /tmp/mmff94-same-coordinates.jsonl --seed 20260913 \
   --gradient-input-index 166 --gradient-input-index 231 \
   --gradient-delta 1e-5

@@ -48,7 +48,7 @@ memory win follows from those ratios. This is one host and one exposed corpus.
 
 ## Reproduction and limitations
 
-Run `scripts/bench_published_rust_isolated_paired.py` for each operation and
+Run `scripts/benchmarks/bench_published_rust_isolated_paired.py` for each operation and
 mode, then `python3 scripts/check_published_rust_isolated_paired.py`. The
 checker revalidates pinned crate graphs and output archives, all 20 block
 orders and 5,000-output digests, and recomputes both intervals and outcome

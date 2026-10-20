@@ -7,7 +7,7 @@ Reads the SAME Tier A/B corpus manifests the Rust chematic dump
 independently, never consuming chematic's own output. Neither side feeds the
 other: both read the same fixed manifest files, producing two independently
 generated JSONL files that the aggregation script (
-`scripts/gen_pipeline_v2_vs_rdkit_report.py`) cross-references afterward.
+`scripts/generators/gen_pipeline_v2_vs_rdkit_report.py`) cross-references afterward.
 
 Four arms, matching the benchmark spec:
   - etkdgv3_raw: ETKDGv3 embedding only, no force-field optimization.

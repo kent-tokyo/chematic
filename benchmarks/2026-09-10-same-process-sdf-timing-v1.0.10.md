@@ -26,7 +26,7 @@ python3 -m venv --system-site-packages /private/tmp/chematic-timing-venv
 /private/tmp/chematic-timing-venv/bin/python -m pip install --no-deps \
   /private/tmp/chematic-wheel-v1.0.10/*.whl
 PYTHONPATH=scripts /private/tmp/chematic-timing-venv/bin/python \
-  scripts/benchmark_same_process_sdf_timing.py \
+  scripts/benchmarks/benchmark_same_process_sdf_timing.py \
   --output benchmarks/2026-09-10-same-process-sdf-timing-v1.0.10.json
 ```
 

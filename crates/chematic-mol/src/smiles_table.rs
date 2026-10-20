@@ -50,7 +50,7 @@
 //! - No name column (`name_column: None`, RDKit's `nameColumn=-1`): RDKit's
 //!   `SmilesMolSupplier` falls back to the running *physical line number* as
 //!   `_Name` in this case (source-confirmed and independently reproduced
-//!   against a live RDKit oracle this session, `scripts/gen_rdkit_smiles_table_oracle.py`).
+//!   against a live RDKit oracle this session, `scripts/generators/gen_rdkit_smiles_table_oracle.py`).
 //!   [`MoleculeRecord::name`] is simply empty in this case instead —
 //!   replicating a line-number-as-name fallback was judged a low-value,
 //!   surprising RDKit implementation detail not worth reproducing.

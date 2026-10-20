@@ -27,7 +27,7 @@ reported as compatibility data rather than a single accuracy score.
 ## Reproduction
 
 ```bash
-python3 scripts/validate_competitive_benchmark_manifest.py
+python3 scripts/validation/validate_competitive_benchmark_manifest.py
 python3 scripts/run_competitive_benchmark.py \
   --result-dir validation/results/competitive-benchmark-v1.0.1-2026-09-03
 ```

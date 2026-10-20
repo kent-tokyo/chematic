@@ -5,9 +5,9 @@ import sys
 import unittest
 from unittest.mock import patch
 
-sys.path.insert(0, str(Path(__file__).parents[1]))
+sys.path.insert(0, str(Path(__file__).parents[1] / "benchmarks"))
 SPEC = importlib.util.spec_from_file_location(
-    "v3000_throughput", Path(__file__).parents[1] / "bench_openbabel_v3000_throughput.py")
+    "v3000_throughput", Path(__file__).parents[1] / "benchmarks/bench_openbabel_v3000_throughput.py")
 bench = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(bench)
 

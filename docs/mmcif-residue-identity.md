@@ -114,7 +114,7 @@ normalized permutation-case hash in
 ```sh
 cargo test -p chematic-mol --lib --test mmcif_residue_contract --test mmcif_pqr_integration --offline
 python -m pytest crates/chematic-py/tests/test_mmcif_residues.py crates/chematic-py/tests/test_new_formats.py crates/chematic-py/tests/test_input_errors.py
-python scripts/validate_mmcif_residues.py
+python scripts/validation/validate_mmcif_residues.py
 ```
 
 Rust passed 772 tests (753 library, 15 new contracts, four existing mmCIF/PQR

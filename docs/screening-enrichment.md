@@ -75,7 +75,7 @@ The Python suite `crates/chematic-py/tests/test_screening_enrichment.py` adds
 locally compiled source extension. Clippy for `chematic-chem` and `chematic-py`
 passed with warnings denied.
 
-`scripts/validate_rdkit_enrichment.py` ran 3,048 ordinary single-cutoff
+`scripts/validation/validate_rdkit_enrichment.py` ran 3,048 ordinary single-cutoff
 comparisons against both live RDKit 2026.09.1 and an independent count formula.
 The maximum absolute error was `2.220446049250313e-16`. Four separate boundary
 cases validate the corrected behavior, and five undefined-input probes record

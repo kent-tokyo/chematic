@@ -7,11 +7,11 @@ import json
 from pathlib import Path
 
 if __package__:
-    from .bench_published_python_isolated_paired import (
+    from .benchmarks.bench_published_python_isolated_paired import (
         ARTIFACT_SHA256, REFERENCE_SHA256, ci, reference_digest, sha256,
     )
 else:
-    from bench_published_python_isolated_paired import (
+    from benchmarks.bench_published_python_isolated_paired import (
         ARTIFACT_SHA256, REFERENCE_SHA256, ci, reference_digest, sha256,
     )
 

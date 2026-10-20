@@ -11,7 +11,7 @@
 //! toward zero, matching Rust's `f64 as i32` cast semantics.)
 //!
 //! DO NOT EDIT MANUALLY.
-//! Generator: scripts/gen_rdkit_isotope_delta_table.py, RDKit 2026.03.3
+//! Generator: scripts/generators/gen_rdkit_isotope_delta_table.py, RDKit 2026.03.3
 
 /// `(atomic_number, mass_number, delta)`, sorted by `(atomic_number, mass_number)`
 /// for binary search.
