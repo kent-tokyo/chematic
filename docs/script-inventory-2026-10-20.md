@@ -199,3 +199,34 @@ cleanup. Two committed Normalize evidence reports identify its original path
 and source hashes. Keep that script at its recorded path and include it in the
 reviewed root list; moving it would change the evidence provenance. The root
 now contains 299 files, with 587 tracked under `scripts/`.
+
+## Retired v1.0.8 holdout runner
+
+The standalone `standardization_holdout.py` runner for v1.0.8 has no current
+caller or documentation command. Its ten-row result remains at
+`validation/results/standardization-phase1-holdout-1.0.8.json`, with the input
+holdout preserved under `validation/`. The runner is removed from the active
+script tree and the root baseline; Git history retains the exact source used
+for that historical result.
+
+## Historical diagnostic follow-up
+
+`v0_14_0_ez_bound_release_gate_report.py` now lives in `scripts/diagnostics/`
+beside the other retained reproductions. Its v0.13.0 and v0.14.0 input rows
+are checked in; the command's output and failing exit status are unchanged.
+`aromaticity_a1_1b_0_full_corpus_gate.py` and `ez_stash_gap_report.py` are
+removed. Neither has a current caller or a checked-in input packet needed to
+repeat its one-time comparison. Historical source-hash inventories remain
+untouched, and the scripts remain available in Git history. The root list now
+has 296 files, with 585 tracked under `scripts/`.
+
+## Manual validation entry points
+
+Six manually run checks moved from the root into `scripts/validation/`:
+checked conversion reports, descriptor RDKit holdout, MCP runtime inventory,
+native descriptor regression, gzip/Open Babel accounting, and a pinned RDKit.js
+reaction-run comparison. Their repository
+root resolution now follows the new location. No active workflow or test
+imports these entry points, and the frozen benchmark source-hash records stay
+unchanged. The direct-root list falls from 296 to 290 files; the total remains
+585 tracked scripts.

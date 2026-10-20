@@ -9,7 +9,6 @@ scripts/a6_quality_matrix.py
 scripts/a6_rdkit_bounds_matrix_parity.py
 scripts/a6_rdkit_compatible_etkdg_mmff.py
 scripts/acquire_pubchem_trust_source.py
-scripts/aromaticity_a1_1b_0_full_corpus_gate.py
 scripts/aromaticity_a1_1b_0_gate.py
 scripts/aromaticity_atom_parity.py
 scripts/bench_browser_wasm_vs_rdkit_isolated.py
@@ -44,25 +43,21 @@ scripts/check_binding_surface.py
 scripts/check_browser_rdkit_ecfp4_parity.py
 scripts/check_cargo_deny_local.sh
 scripts/check_compatibility_profiles.py
-scripts/check_conversion_report_parity.py
 scripts/check_criterion_gate_calibration.py
 scripts/check_cross_binding_manifest.py
 scripts/check_descriptor_baseline_candidate.py
 scripts/check_descriptor_promotion_gate.py
 scripts/check_descriptor_raw_accounting.py
-scripts/check_descriptor_rdkit_holdout.py
 scripts/check_ez_residual_evidence.py
 scripts/check_indigo_workflow_evidence.py
 scripts/check_interchange_cross_read.py
 scripts/check_interchange_preservation.py
-scripts/check_mcp_runtime_inventory.py
 scripts/check_mmff94_current_energy_evidence.py
 scripts/check_mmff94_issue337_determinism_evidence.py
 scripts/check_mmff94_published_quality_evidence.py
 scripts/check_mmff94_rdkit_availability_oracle.py
 scripts/check_mol2_index_numeric_packet.py
 scripts/check_morgan_numeric_packet.py
-scripts/check_native_descriptor_regression.py
 scripts/check_openbabel_file_io_contract.py
 scripts/check_openbabel_file_io_evidence.py
 scripts/check_openbabel_file_io_gate.py
@@ -122,7 +117,6 @@ scripts/check_streaming_failure_taxonomy.py
 scripts/check_streaming_failure_taxonomy_evidence.py
 scripts/check_streaming_format_limits.py
 scripts/check_streaming_gzip_contract.py
-scripts/check_streaming_gzip_openbabel.py
 scripts/check_streaming_parser_entry_evidence.py
 scripts/check_streaming_safety_evidence.py
 scripts/check_tfd_oracle_evidence.py
@@ -151,7 +145,6 @@ scripts/compare_openbabel_mol2_3d_stress.py
 scripts/compare_openbabel_stereo_formats.py
 scripts/compare_openbabel_v3000_stereo.py
 scripts/compare_rdkit_cosmolkit_v3000.py
-scripts/compare_rdkitjs_reaction_runs.py
 scripts/compare_rdkitjs_release_chemistry.cjs
 scripts/criterion_gate.sh
 scripts/depiction_speed_vs_rdkit.py
@@ -191,7 +184,6 @@ scripts/explorer_sdf_worker_smoke.py
 scripts/explorer_worker_10k_smoke.mjs
 scripts/explorer_worker_10k_smoke.py
 scripts/exyz_openbabel_gate.py
-scripts/ez_stash_gap_report.py
 scripts/fetch_biotransformer_rules.py
 scripts/fetch_chembl_sealed_candidate.py
 scripts/install_pinned_rdkit.py
@@ -271,7 +263,6 @@ scripts/smoke_npm_package.mjs
 scripts/smoke_npm_types.mjs
 scripts/square_planar_permutation_oracle.py
 scripts/standardization_cross_binding_parity.py
-scripts/standardization_holdout.py
 scripts/stereo_format_roundtrip_gate.py
 scripts/stereo_spelling_invariance_gate.py
 scripts/stereo_torture_suite_gate.py
@@ -283,7 +274,6 @@ scripts/tdt_io_parity.py
 scripts/test_criterion_gate.sh
 scripts/tpsa_public_corpus_parity.py
 scripts/train_solubility_mlp.py
-scripts/v0_14_0_ez_bound_release_gate_report.py
 scripts/v3000_indigo_ez_query_truth_table.py
 scripts/v3000_indigo_semantic_gate.py
 scripts/v3000_rdkit_semantic_gate.py

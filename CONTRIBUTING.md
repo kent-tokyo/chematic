@@ -70,13 +70,25 @@ pinned oracle version are not eligible for checked-in validation.
 
 - Full-workspace doc build sanity check: `cargo doc --workspace --all-features --no-deps --exclude chematic-py`. Plain `cargo doc --workspace --all-features --no-deps` fails — `chematic-py`'s compiled lib is also named `chematic` (needed so it imports as `import chematic` from Python), which collides with the `chematic` facade crate's own rustdoc output path.
 
-## Main branch protection (recommended settings)
+## Main branch protection and release flow
 
-GitHub → Settings → Branches → Add rule for `main`:
+The required `CI gate` check combines the Rust unit and integration tests,
+Python and WASM runtime tests, semantic interoperability checks, API
+compatibility, and MSRV. Rust integration tests are assigned to four jobs by
+`scripts/checks/ci_integration_shard.py`; new test targets are discovered through Cargo
+metadata without editing the workflow matrix. The longer Windows source-wheel
+and A6 cross-platform checks run on main, manual CI, and release tags; PR CI
+finishes after its `CI gate` and the other fast lanes. `Test`, `Clippy`,
+`Format Check`, and `Build Check` remain required checks. Keep the PR branch up to date with `main` before
+merging, so the tested merge includes the current base.
 
-- [x] Require a pull request before merging
-- [x] Require status checks: `Test`, `Clippy`, `Format Check`, `Build Check`
-- [x] Do not allow bypassing the above settings
+Stable release tags must point to a version-matching commit on `main`. The
+`publish-pypi.yml` Release workflow remains the PyPI Trusted Publisher entry
+point. It reruns full CI, Coverage, and Security on that exact tag before
+publishing crates.io, npm, or PyPI packages. It checks the published PyPI
+wheel matrix and hashes, runs published-wheel smoke and chemistry validation,
+and creates the GitHub Release only after those jobs pass. A failed release can
+be rerun at the same tag; publishing jobs handle already published packages.
 
 ## Development workflow
 
@@ -94,15 +106,14 @@ cargo test -p chematic-inchi --features native-inchi --lib --quiet
 ## Code coverage
 
 The [Coverage workflow](https://github.com/kent-tokyo/chematic/actions/workflows/coverage.yml)
-measures Rust library and binary unit tests with `cargo-llvm-cov` and uploads
+measures Rust library, binary, and integration tests with `cargo-llvm-cov` and uploads
 LCOV to [Codecov](https://app.codecov.io/github/kent-tokyo/chematic). It also saves
 LCOV and an HTML report as the `rust-unit-coverage` Actions artifact.
 
 The scope uses default features plus `chematic-inchi/native-inchi`, and excludes
 `chematic-py`, `chematic-wasm`, the offline `gen-sa-table` tool, and a manual
-ignored differential-evaluation harness. It includes the named Rust integration
-contracts in the command below; other integration tests, Python/WASM runtime
-tests, doctests, and optional-feature lanes are not part of this percentage.
+ignored differential-evaluation harness. Python/WASM runtime tests, doctests,
+and optional-feature lanes are not part of this percentage.
 Coverage describes executed code; chemistry correctness and cross-engine
 compatibility still depend on their separate validation gates.
 
@@ -112,40 +123,8 @@ To reproduce locally:
 rustup component add llvm-tools-preview
 cargo install cargo-llvm-cov --version 0.8.7 --locked
 mkdir -p target/coverage
-cargo llvm-cov --locked --workspace --lib --bins \
+cargo llvm-cov --locked --workspace --lib --bins --tests \
   --features chematic-inchi/native-inchi \
-  --test qcschema --test nucleic_acid_contract --test v3000_semantic_interop \
-  --test rdkit_embed --test streamable_http \
-  --test format_binding_parity --test conformer_3d_io --test schema_conformance \
-  --test rdkit_g1_parity --test issue739_platform_stereo \
-  --test rdkit_count_and_chiral_fps --test rdkit_morgan_stable_api_fixtures \
-  --test rdkit_2026_09_1_ring_count --test issue769_template_valence \
-  --test rdkit_inchi_read --test rdkit_canonical_smiles \
-  --test stereo2d_ez_reader_integration --test stereo_reader_integration \
-  --test mmff94_rdkit_per_term_energy --test mmff94_rdkit_residuals_734 \
-  --test prepared_cache --test lowercase_symbol_primitives \
-  --test rdkit_tpsa_sign --test rdkit_canonical_ranks_ez \
-  --test atom_order --test pseudoatom_roundtrip \
-  --test canonical_smiles_reaction_product_order --test cross_binding_contract \
-  --test issue455_explicit_h_valence --test issue769_neutral_valence \
-  --test cip_lone_pair_ring_centre_rdkit_reading \
-  --test cross_binding_adversarial --test mmcif_pqr_integration \
-  --test square_planar_mol_io --test atom_tag_cache --test atom_tag_visit_order \
-  --test dative_bond_direction --test square_planar_stereo \
-  --test explicit_h_stereo --test ez_stash_stereo0d \
-  --test indexed_graph_relation --test invert_stereocenter_p0_stereo_invariance \
-  --test accurate_cip_preflight --test dedup_fixtures --test standard_inchi \
-  --test descriptor_contract --test rdkit_reference --test metal_disconnect_holdout \
-  --test standardize_stereo_table_preservation --test aromaticity_edge_gate \
-  --test issue415_fused_heteroaromatic_holdout \
-  --test mmff94_rdkit_bfgs_trajectory \
-  --test g1_regression_byte_identical --test torsion_knowledge_negative_controls \
-  --test canonical_stereo_d0_cip_multiset_invariance \
-  --test neighbor --test periodicity \
-  --test canonical_ez_planner_order --test canonical_ez_residual \
-  --test canonical_robustness \
-  --test chembl_roundtrip --test canonical_idempotency_corpus \
-  --test canonical_idempotency_corpus_standardized \
   --exclude chematic-py --exclude chematic-wasm --exclude gen-sa-table \
   --no-report
 cargo llvm-cov report \
