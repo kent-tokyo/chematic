@@ -9,13 +9,9 @@ molecule: SMILES + two heavy-atom-only conformers + chematic's own
 symmetry-aware RMSD via RDKit's `rdMolAlign.GetBestRMS`, the function
 chematic's `rmsd_symmetric` was ported from.
 
-`rmsd_symmetric`'s own doc comment already discloses one known gap: RDKit's
-`GetBestRMS` additionally runs `symmetrizeConjugatedTerminalGroups` (treats
-carboxylate/nitro-style terminal O's as interchangeable regardless of formal
-bond order), which chematic does not port. The acetate case in the dump
-exists specifically to demonstrate this gap -- a disagreement there is
-EXPECTED, not a bug, and is reported as such rather than flagged as a
-mismatch.
+The comparison uses RDKit's default terminal-group symmetrization. Acetate
+and nitro exercise interchange of formally different terminal oxygens;
+isotopically labelled isobutane checks that distinct labels stay distinct.
 
 Run:
     cargo run --release -p chematic-3d --example rmsd_symmetric_oracle_dump \
@@ -31,7 +27,6 @@ from rdkit import Chem
 from rdkit.Chem import rdMolAlign
 from rdkit.Geometry import Point3D
 
-KNOWN_SYMMETRIZATION_GAP = {"acetate"}
 AGREE_TOL = 1e-3  # Å; two independent Kabsch/automorphism-search implementations
 
 
@@ -65,9 +60,7 @@ def main():
         chematic_rmsd = row["chematic_rmsd_symmetric"]
         diff = abs(chematic_rmsd - rdkit_rmsd)
 
-        if name in KNOWN_SYMMETRIZATION_GAP:
-            status = "KNOWN GAP (symmetrizeConjugatedTerminalGroups not ported)"
-        elif diff <= AGREE_TOL:
+        if diff <= AGREE_TOL:
             status = "OK"
         else:
             status = "MISMATCH"
@@ -78,8 +71,7 @@ def main():
     if mismatches:
         print(f"\n{len(mismatches)} unexplained mismatch(es): {mismatches}", file=sys.stderr)
         sys.exit(1)
-    print("\nAll non-known-gap cases agree with RDKit within "
-          f"{AGREE_TOL} Å.")
+    print(f"\nAll {len(rows)} cases agree with RDKit within {AGREE_TOL} Å.")
 
 
 if __name__ == "__main__":

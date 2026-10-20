@@ -1,7 +1,7 @@
 //! Dumps conformer pairs + chematic's `rmsd_symmetric` result for a handful
 //! of molecules chosen to exercise graph-automorphism symmetry (terminal
-//! -CF3, neopentane's 4 methyls, benzene's ring, a carboxylate to
-//! demonstrate the documented `symmetrizeConjugatedTerminalGroups` gap) plus
+//! -CF3, neopentane's 4 methyls, benzene's ring, conjugated terminal groups,
+//! and isotope-distinct methyls) plus
 //! one plain drug-like molecule with no interesting symmetry as a control.
 //!
 //! One conformer is `dg::generate_coords`'s output; the second is that same
@@ -34,6 +34,8 @@ const CASES: &[Case] = &[
     ("neopentane", "CC(C)(C)C", Some((0, 2))), // two of the four methyl carbons
     ("benzene", "c1ccccc1", Some((0, 3))),     // two para ring carbons
     ("acetate", "CC(=O)[O-]", Some((2, 3))),   // the two formally-different O's
+    ("nitro", "C[N+](=O)[O-]", Some((2, 3))),  // terminal oxygens
+    ("labeled_isobutane", "[13CH3]C(C)C", Some((0, 2))), // isotope-distinct methyls
     ("ibuprofen", "CC(C)Cc1ccc(cc1)C(C)C(=O)O", None), // no interesting symmetry, control
 ];
 
@@ -62,7 +64,23 @@ fn main() {
     for (name, smiles, swap) in CASES {
         let mol = chematic_smiles::parse(smiles).unwrap();
         let n = mol.atom_count();
-        let base = generate_coords(&mol);
+        let mut base = generate_coords(&mol);
+        if *name == "labeled_isobutane" {
+            // The generic DG coordinates can make the two-arm exchange a
+            // rigid rotation. Use asymmetric 3D points to test that an
+            // isotope-distinct exchange really stays nonzero.
+            for (i, [x, y, z]) in [
+                [1.0, 1.0, 1.0],
+                [0.0, 0.0, 0.0],
+                [-1.4, -0.8, 1.2],
+                [-1.2, 1.1, -0.9],
+            ]
+            .into_iter()
+            .enumerate()
+            {
+                base.set(AtomIdx(i as u32), Point3::new(x, y, z));
+            }
+        }
         let mut moved = rotate_translate(&base);
         if let Some((i, j)) = swap {
             let (ai, aj) = (AtomIdx(*i as u32), AtomIdx(*j as u32));

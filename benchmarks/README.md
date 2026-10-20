@@ -32,6 +32,10 @@ not a statement about v1.1.8.
 
 ## Recent focused follow-ups
 
+- [Conformer symmetry RMSD correction](2026-10-21-conformer-symmetry-rmsd.md):
+  terminal-group and isotope matching agree with RDKit on eight exposed cases;
+  3D geometry and MMFF94 energy quality are separate gates.
+
 - [Python lazy preparation boundary](2026-10-19-python-lazy-preparation.md):
   [single-operation JSON](2026-10-19-python-lazy-preparation-frontier.json),
   [two-descriptor JSON](2026-10-19-python-lazy-preparation-bundle.json),
