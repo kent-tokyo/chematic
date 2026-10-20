@@ -2,7 +2,7 @@
 
 CheMatic is not a drop-in RDKit replacement. Choose a declared operation
 profile, preserve unsupported inputs, and compare results on your own data
-before changing a production workflow. The current release is **v1.1.9**;
+before changing a production workflow. The current release is **v1.2.0**;
 the latest complete hosted Python chemistry run is **v1.1.7**, the latest
 durable checked-in cross-platform packet is **v1.1.3**, and the
 broadest published-package RDKit performance packet is **v1.0.42**.

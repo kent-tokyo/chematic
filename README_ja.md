@@ -27,13 +27,13 @@ npm install @kent-tokyo/chematic
 
 Python wheelはC/C++コンパイラを必要とせず、各バインディングは同じRustコアを使います。
 
-### v1.1.9 の対応範囲
+### v1.2.0 の対応範囲
 
-v1.1.9では、入力位置を保持するchecked InChIKey batch、RDKit互換SMILESの
-fail-closedな安定性検査、反応で未指定のアルケン立体を拒否する安全策、出力を
-変えない指紋・記述子・CIPの高速化を追加しました。公開wheelの最新性能証拠は
-v1.1.8のLabute ASA限定レーンです。source上の改善を公開packageの結果としては
-扱いません。広範なhosted chemistryはv1.1.7、永続化済みのcross-platform packetはv1.1.3です。
+v1.2.0では、checked XBS・TURBOMOLE/POSCAR入出力、型付きPattern指紋、
+boundedな3D構造診断、canonical SMILES・反応・R-group・標準化のfail-closed
+処理を強化しました。化学処理、I/O、CLI、検証コードを分割しましたが、公開1.x
+APIを意図的に壊す変更はありません。精度・性能の主張は引き続き、日付と成果物を
+固定した記録に限定し、source上の改善を公開packageの結果として扱いません。
 詳しくは[検証報告](docs/validation.md)、[ベンチマーク](benchmarks/README.md)、
 [CHANGELOG](CHANGELOG.md)を参照してください。
 

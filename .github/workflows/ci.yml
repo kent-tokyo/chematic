@@ -148,12 +148,12 @@ jobs:
       - name: Install cargo-semver-checks
         if: steps.changes.outputs.run == 'true'
         run: cargo install cargo-semver-checks --version 0.48.0 --locked
-      - name: Check all changed public crates against v1.1.8
+      - name: Check all changed public crates against v1.1.9
         if: steps.changes.outputs.run == 'true'
         run: |
           for package in ${{ steps.changes.outputs.packages }}; do
             cargo semver-checks check-release -p "$package" \
-              --baseline-rev v1.1.8 --release-type patch
+              --baseline-rev v1.1.9 --release-type minor
           done
       - name: Skip compatibility rebuild for unrelated pull requests
         if: steps.changes.outputs.run != 'true'
@@ -681,7 +681,7 @@ jobs:
       - name: Python and WASM declaration compatibility
         # The published package uses the web target. Node-target glue omits
         # initSync/InitInput declarations by design and is not the npm API.
-        run: python3 scripts/check_binding_api_compat.py --baseline v1.1.8 --wasm-dts crates/chematic-wasm/pkg-web/chematic_wasm.d.ts
+        run: python3 scripts/check_binding_api_compat.py --baseline v1.1.9 --wasm-dts crates/chematic-wasm/pkg-web/chematic_wasm.d.ts
       - name: Web-target runtime smoke (via Node initSync)
         run: node crates/chematic-wasm/tests/pipeline_v2_web_target.test.mjs
       - name: Web-target package smoke (Node byte initialization)

@@ -25,15 +25,15 @@ npm install @kent-tokyo/chematic
 
 Python wheels need no C/C++ compiler. All bindings share the Rust core.
 
-### v1.1.9 release boundary
+### v1.2.0 release boundary
 
-v1.1.9 adds position-preserving checked InChIKey batches, fail-closed
-RDKit-compatible SMILES stability checks, stricter alkene-stereo reaction
-handling, and output-preserving fingerprint, descriptor, and CIP speedups.
-The latest exact public-wheel performance record remains the bounded v1.1.8
-Labute ASA lane; source improvements are not relabelled as package evidence.
-Broad hosted chemistry remains v1.1.7, and the durable cross-platform packet
-remains v1.1.3. See
+v1.2.0 adds checked XBS and TURBOMOLE/POSCAR input paths, typed Pattern
+fingerprints, bounded 3D geometry diagnostics, and stronger fail-closed
+canonical-SMILES, reaction, R-group, and standardization handling. Internal
+chemistry, I/O, CLI, and evidence modules were split without intentionally
+breaking the public 1.x API. Exact performance and compatibility claims remain
+tied to their dated artifacts; source improvements are not relabelled as
+published-package evidence. See
 [validation](docs/validation.md), [benchmarks](benchmarks/README.md), and the
 [CHANGELOG](CHANGELOG.md).
 

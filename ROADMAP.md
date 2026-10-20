@@ -1,6 +1,6 @@
 # chematic roadmap
 
-> Updated 2026-10-19. Release line: **v1.1.9**. Work merged after the
+> Updated 2026-10-21. Release line: **v1.2.0**. Work merged after the
 > release remains **Unreleased** until the next tag.
 
 chematic is a safe, typed, local-first chemistry kernel for Rust, Python,
@@ -11,13 +11,10 @@ contracts and reproducible evidence over feature-count parity.
 
 - Stable selected paths cover SMILES/SMARTS, descriptors, fingerprints,
   search, and common MOL/SDF workflows through one Rust core.
-- The v1.1.9 published-wheel chemistry workflow completed all 11 package jobs.
-  Durable row-level packets, browser artifacts and source experiments remain
-  separate evidence channels.
-- A source candidate moves descriptor, aromatic-view and ring preparation from
-  parsing to first consumers. Parse-inclusive single and two-descriptor lanes
-  improve while prepared reuse is approximately flat; hosted clean-wheel and
-  second-host evidence remain open.
+- The v1.2.0 candidate adds checked format and geometry surfaces, stronger
+  fail-closed chemistry paths, and output-preserving module refactors. It must
+  earn its own published-wheel evidence after tagging; older package, browser,
+  holdout and source records remain separate evidence channels.
 - Reaction, SMARTS, fragment and labelled R-group results remain bounded by
   declared corpora. Cleanup now matches 3,933/4,069 pinned stress rows; other
   standardization and CTfile residuals remain classified but not fully closed.

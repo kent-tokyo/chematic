@@ -1,14 +1,14 @@
 # Validation report
 
-Updated 2026-10-19 for **v1.1.9**.
+Updated 2026-10-21 for the **v1.2.0 release candidate**.
 Every result is limited to its recorded artifact or source revision,
 comparator, corpus, options, platform, and failure policy.
 
 ## Evidence boundary
 
-- v1.1.9 is the current release line. Its public-wheel chemistry workflow
-  completed all 11 hosted jobs on Linux, macOS and Windows. That hosted result
-  does not turn later source measurements into package evidence.
+- v1.2.0 is the current release candidate. Its source checks do not become
+  published-package evidence until the tagged artifacts complete the hosted
+  Linux, macOS and Windows chemistry workflow.
 - One public v1.1.8 macOS arm64 wheel has completed the 10,000-row Labute ASA
   correctness and performance lane. Other operations and platforms do not
   inherit that result.
@@ -18,7 +18,7 @@ comparator, corpus, options, platform, and failure policy.
   The latest durable checked-in cross-platform packet remains v1.1.3.
 - The broadest published-package RDKit performance packet is v1.0.42.
 - Source and earlier package records are useful development evidence, but they
-  are not relabelled as v1.1.9 package results.
+  are not relabelled as v1.2.0 package results.
 - Typed refusals and abstentions stay in the denominator and are not matches.
 
 ## Current evidence
@@ -54,9 +54,10 @@ comparator, corpus, options, platform, and failure policy.
 - **3D:** typing, energy, gradient, convergence, stereo, clash, conformer
   quality, time, and memory are independent gates.
 
-## v1.1.9 package evidence and v1.1.8 performance
+## v1.2.0 candidate and retained package evidence
 
-The v1.1.9 public-wheel workflow is the latest broad hosted package evidence.
+The v1.2.0 release must earn its own public-wheel evidence. Until that workflow
+finishes, the v1.1.9 public-wheel workflow remains the latest broad hosted package evidence.
 The exact v1.1.8 macOS arm64 wheel remains the latest recorded public-package
 performance lane for Labute ASA. Neither result supersedes the latest durable
 cross-platform per-row packet at v1.1.3, and the current source candidate must

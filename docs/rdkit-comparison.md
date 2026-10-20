@@ -10,10 +10,11 @@ support and refusal boundaries, see [compatibility scope](compatibility-scope.md
 
 ## Current measured boundary
 
-The **v1.1.9 release** retains the named RDKit 2026.03.1-compatible surface,
-adds fail-closed canonical-SMILES stability checks, and preserves the v1.1.8
-Labute ASA and ring-count behavior. New v1.1.9 performance changes remain
-source-only until exact public artifacts are measured. In the recorded v1.0.41 source comparison, chematic matches RDKit at
+The **v1.2.0 release candidate** retains the named RDKit-compatible surfaces,
+adds stronger fail-closed canonical-SMILES, reaction, R-group and
+standardization handling, and preserves dated evidence under its original
+version. New v1.2.0 performance results remain source-only until exact public
+artifacts are measured. In the recorded v1.0.41 source comparison, chematic matches RDKit at
 least as often as COSMolKit 0.5.0rc15 on all 161 operations over ChEMBL 5k and
 RDKit.js 10k; the separate stress corpus retains one weaker native canonical
 SMILES round-trip result. This is source-build evidence, not a universal or
@@ -24,7 +25,7 @@ covers exact public wheels on hosted Linux x86-64, macOS arm64, macOS x86-64,
 and Windows x86-64. The v1.1.7 hosted published-wheel chemistry run also
 completed all 11 jobs, but its durable per-row packet is not checked in yet.
 These are output-validation results, not evidence for npm/WASM, crates.io, or
-v1.1.9 package performance.
+v1.2.0 package performance.
 
 | Lane | Recorded result | What it does not show |
 |---|---|---|

@@ -233,7 +233,7 @@ checksum = "9330f8b2ff13f34540b44e946ef35111825727b38d33286ef986142615121801"
 
 [[package]]
 name = "chematic"
-version = "1.1.9"
+version = "1.2.0"
 dependencies = [
  "chematic-3d",
  "chematic-chem",
@@ -252,7 +252,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-3d"
-version = "1.1.9"
+version = "1.2.0"
 dependencies = [
  "chematic-chem",
  "chematic-core",
@@ -270,7 +270,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-chem"
-version = "1.1.9"
+version = "1.2.0"
 dependencies = [
  "chematic-cip",
  "chematic-core",
@@ -288,7 +288,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-cip"
-version = "1.1.9"
+version = "1.2.0"
 dependencies = [
  "chematic-chem",
  "chematic-core",
@@ -300,7 +300,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-cli"
-version = "1.1.9"
+version = "1.2.0"
 dependencies = [
  "chematic-chem",
  "chematic-core",
@@ -316,11 +316,11 @@ dependencies = [
 
 [[package]]
 name = "chematic-core"
-version = "1.1.9"
+version = "1.2.0"
 
 [[package]]
 name = "chematic-crystal"
-version = "1.1.9"
+version = "1.2.0"
 dependencies = [
  "chematic-core",
  "criterion",
@@ -330,7 +330,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-depict"
-version = "1.1.9"
+version = "1.2.0"
 dependencies = [
  "chematic-core",
  "chematic-perception",
@@ -345,11 +345,11 @@ dependencies = [
 
 [[package]]
 name = "chematic-ewald"
-version = "1.1.9"
+version = "1.2.0"
 
 [[package]]
 name = "chematic-ff"
-version = "1.1.9"
+version = "1.2.0"
 dependencies = [
  "chematic-chem",
  "chematic-core",
@@ -365,7 +365,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-fp"
-version = "1.1.9"
+version = "1.2.0"
 dependencies = [
  "chematic-cip",
  "chematic-core",
@@ -382,7 +382,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-inchi"
-version = "1.1.9"
+version = "1.2.0"
 dependencies = [
  "cc",
  "chematic-chem",
@@ -394,7 +394,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-iupac"
-version = "1.1.9"
+version = "1.2.0"
 dependencies = [
  "chematic-core",
  "chematic-perception",
@@ -403,7 +403,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-mcp"
-version = "1.1.9"
+version = "1.2.0"
 dependencies = [
  "chematic-3d",
  "chematic-chem",
@@ -421,7 +421,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-mol"
-version = "1.1.9"
+version = "1.2.0"
 dependencies = [
  "chematic-3d",
  "chematic-chem",
@@ -441,7 +441,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-perception"
-version = "1.1.9"
+version = "1.2.0"
 dependencies = [
  "chematic-core",
  "chematic-smiles",
@@ -453,7 +453,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-py"
-version = "1.1.9"
+version = "1.2.0"
 dependencies = [
  "chematic-3d",
  "chematic-chem",
@@ -479,7 +479,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-rxn"
-version = "1.1.9"
+version = "1.2.0"
 dependencies = [
  "chematic-chem",
  "chematic-core",
@@ -494,7 +494,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-smarts"
-version = "1.1.9"
+version = "1.2.0"
 dependencies = [
  "chematic-core",
  "chematic-perception",
@@ -507,7 +507,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-smiles"
-version = "1.1.9"
+version = "1.2.0"
 dependencies = [
  "chematic-core",
  "chematic-fp",
@@ -519,7 +519,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-wasm"
-version = "1.1.9"
+version = "1.2.0"
 dependencies = [
  "chematic-3d",
  "chematic-chem",
@@ -1776,9 +1776,9 @@ dependencies = [
 
 [[package]]
 name = "rustls-webpki"
-version = "0.103.15"
+version = "0.103.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f3c3cf1d8b1e7d4927e2d154c3fcb02979afb9939629c62cd9048d4f07b60ac2"
+checksum = "4443b1b6d39d7c663139942cc4558262562d2c84123bb6282ef177009ca8b281"
 dependencies = [
  "ring",
  "rustls-pki-types",
@@ -2365,9 +2365,9 @@ dependencies = [
 
 [[package]]
 name = "webpki-roots"
-version = "1.0.9"
+version = "1.0.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7dcd9d09a39985f5344844e66b0c530a33843579125f23e21e9f0f220850f22a"
+checksum = "1c1c8e20c8a38fc7d65abfe74eb7280e4aa667e8eec8bc84996d2874810748d9"
 dependencies = [
  "rustls-pki-types",
 ]

@@ -27,13 +27,13 @@ npm install @kent-tokyo/chematic
 
 Python wheel 无需 C/C++ 编译器；各绑定共享同一 Rust 内核。
 
-### v1.1.9 范围
+### v1.2.0 范围
 
-v1.1.9 增加了保留输入位置的 checked InChIKey 批处理、fail-closed 的 RDKit
-兼容 SMILES 稳定性检查、更严格的烯烃立体反应处理，以及不改变输出的指纹、
-描述符和 CIP 加速。最新的公开 wheel 性能证据仍是 v1.1.8 的有限 Labute ASA
-测试；源码改进不会被当作公开包结果。广泛的 hosted chemistry 证据仍对应
-v1.1.7，已归档的跨平台证据包仍对应 v1.1.3。详情见
+v1.2.0 增加了 checked XBS 与 TURBOMOLE/POSCAR 输入输出、类型化 Pattern
+指纹、受限的 3D 几何诊断，并加强了 canonical SMILES、反应、R-group 和标准化
+的 fail-closed 处理。化学、I/O、CLI 和验证模块经过拆分，但没有刻意破坏公开的
+1.x API。精度与性能声明仍只适用于注明日期和构件的记录；源码改进不会被当作
+公开包结果。详情见
 [验证报告](docs/validation.md)、[基准索引](benchmarks/README.md)和
 [CHANGELOG](CHANGELOG.md)。
 
