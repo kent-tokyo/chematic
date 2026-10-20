@@ -23,3 +23,13 @@ hashes.
 `score_trust_holdouts.py` retains the one-shot scorer for the frozen v1 trust
 holdouts. Its published row-level score is historical evidence; use the exact
 candidate artifact and manifest described in the dated benchmark record.
+
+Manual parity and runtime probes also live here: `check_conversion_report_parity.py`,
+`check_descriptor_rdkit_holdout.py`, `check_mcp_runtime_inventory.py`,
+`check_native_descriptor_regression.py`, and `check_streaming_gzip_openbabel.py`.
+They have no current CI caller; supply the source-built package, external tools,
+and input paths required by each command's `--help` before using its output as
+new evidence.
+
+`compare_rdkitjs_reaction_runs.py` compares two pinned RDKit.js reaction runs.
+Its existing differential report remains under `validation/results/`.

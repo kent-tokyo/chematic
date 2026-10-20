@@ -210,3 +210,14 @@ removed. Neither has a current caller or a checked-in input packet needed to
 repeat its one-time comparison. Historical source-hash inventories remain
 untouched, and the scripts remain available in Git history. The root list now
 has 296 files, with 585 tracked under `scripts/`.
+
+## Manual validation entry points
+
+Six manually run checks moved from the root into `scripts/validation/`:
+checked conversion reports, descriptor RDKit holdout, MCP runtime inventory,
+native descriptor regression, gzip/Open Babel accounting, and a pinned RDKit.js
+reaction-run comparison. Their repository
+root resolution now follows the new location. No active workflow or test
+imports these entry points, and the frozen benchmark source-hash records stay
+unchanged. The direct-root list falls from 296 to 290 files; the total remains
+585 tracked scripts.
