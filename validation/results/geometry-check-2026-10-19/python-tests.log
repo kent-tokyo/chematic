@@ -1,0 +1,12 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.13.6, pytest-9.1.1, pluggy-1.6.0
+rootdir: /Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py
+configfile: pytest.ini
+collected 78 items
+
+crates/chematic-py/tests/test_geometry_check.py ........................ [ 30%]
+...........                                                              [ 44%]
+crates/chematic-py/tests/test_sasa_checked.py .......................... [ 78%]
+.................                                                        [100%]
+
+============================== 78 passed in 0.70s ==============================
