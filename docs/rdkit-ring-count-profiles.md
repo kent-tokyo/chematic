@@ -11,9 +11,9 @@ It records each input, both oracle values, the current chematic default, and the
 classification `oracle_version_difference`. CI recomputes the chematic value
 from the stored SMILES and rejects accidental drift.
 
-The current default deliberately retains a bounded fallback for highly
-repetitive cyclic oligosaccharides. Therefore it agrees with the 2026.03.6
-values on these four boundary cases and must not be described as universal
-2026.09.1 `CalcNumRings` parity. Reports must name the RDKit version and keep
-version differences separate from parser rejection, typed abstention, notation
-difference, and ordinary numeric mismatch.
+The current default uses relevant-cycle families for these four boundary cases
+and agrees with the pinned 2026.09.1 values. It still has a bounded fallback
+when the family calculation cannot complete; these four cases do not establish
+universal 2026.09.1 `CalcNumRings` parity. Reports must name the RDKit version
+and keep version differences separate from parser rejection, typed abstention,
+notation difference, and ordinary numeric mismatch.

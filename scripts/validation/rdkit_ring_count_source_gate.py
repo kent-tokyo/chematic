@@ -12,7 +12,7 @@ from pathlib import Path
 from rdkit import Chem, RDLogger, rdBase
 from rdkit.Chem import rdMolDescriptors
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 RDKIT_VERSION = "2026.09.1"
 CORPORA = (
     ("stress", "validation/cosmolkit_comparison/corpora/stress-v1.smi", 4072),
@@ -113,7 +113,7 @@ def main() -> int:
         "crates/chematic-chem/src/descriptors/ring_component_count_tests.rs",
         "crates/chematic-chem/src/descriptors_tests.rs",
         "crates/chematic-chem/examples/ring_count_stress_dump.rs",
-        "scripts/rdkit_ring_count_source_gate.py",
+        "scripts/validation/rdkit_ring_count_source_gate.py",
     ]
     report = {
         "schema_version": 1,
