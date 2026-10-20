@@ -392,6 +392,14 @@ pub fn remove_hydrogens(mol: &Molecule) -> Molecule {
     // way `corrected_chirality` does for tetrahedral centers without
     // `stereo_neighbor_order` (see that fix above).
     for (&old_bidx, &new_bidx) in &bond_remap {
+        if let Some((label, occurrence, begins_at_open)) =
+            mol.smiles_ring_closure_metadata(old_bidx)
+        {
+            builder.set_smiles_ring_closure(new_bidx, label, occurrence);
+            if let Some(at_open) = begins_at_open {
+                builder.set_smiles_ring_closure_begins_at_open(new_bidx, at_open);
+            }
+        }
         if let Some(direction) = mol.bond_direction(old_bidx) {
             builder.set_bond_direction(new_bidx, direction);
         }

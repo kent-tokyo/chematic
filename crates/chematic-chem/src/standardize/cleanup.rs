@@ -393,6 +393,16 @@ mod tests {
     }
 
     #[test]
+    fn cleanup_preserves_bridgehead_nitrogen_stereo() {
+        let input = "Cn1cc(C2=NC[C@@]3(C[N@@]4CC[C@@H]3C4)O2)c2ccccc21";
+        let cleaned = cleanup(&parse(input).unwrap());
+        assert_eq!(
+            chematic_smiles::rdkit_cleanup_canonical_smiles(&cleaned).as_deref(),
+            Ok(input)
+        );
+    }
+
+    #[test]
     fn cleanup_recomputes_hydrogens_on_disconnected_metals() {
         for (input, expected) in [
             ("O->[Mg](<-O)(<-O)<-O", "O.O.O.O.[MgH2]"),
