@@ -485,7 +485,7 @@ jobs:
   test-source-wheel-windows:
     name: Source wheel (Windows x86-64)
     runs-on: windows-latest
-    timeout-minutes: 35
+    timeout-minutes: 30
     defaults:
       run:
         shell: bash
@@ -506,11 +506,11 @@ jobs:
           .venv/Scripts/python -m pip install --no-deps dist/source-wheel/chematic-*.whl
       - name: Run pytest (chematic-py)
         run: |
-          # pytest-timeout can itself stall when native code holds the GIL.
-          # A separate parent process enforces a wall-clock limit even then.
-          .venv/Scripts/python scripts/checks/run_bounded_command.py --timeout-seconds 720 -- \
+          # pytest-timeout did not stop a Windows stall in CI. A separate
+          # parent process enforces the limit and kills the process tree.
+          .venv/Scripts/python scripts/checks/run_bounded_command.py --timeout-seconds 600 -- \
             .venv/Scripts/python -m pytest crates/chematic-py/tests/ -v \
-            --timeout=300 --timeout-method=thread --session-timeout=600
+            --timeout=180 --timeout-method=thread --session-timeout=480
           # The differential suite intentionally rewrites its checked-in
           # report. Keep the source checkout pristine for the A6 provenance
           # assertion; the platform-specific test result is already visible
