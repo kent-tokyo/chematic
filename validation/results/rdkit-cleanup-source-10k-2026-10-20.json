@@ -1,13 +1,13 @@
 {
   "profile": "source_cleanup_vs_rdkit_2026_09_1",
   "detail_scope": "cleanup",
-  "source_commit": "bdff846290f61e62ffb83ed26e945b06901f1952",
+  "source_commit": "91b74b543727be612abf546c5db36adaa94f3d09",
   "source_sha256": {
-    "crates/chematic-chem/src/standardize.rs": "233cf86a949354e7404a1b0947dd627a0257f9fef02752575026e23461c8bab2",
-    "crates/chematic-chem/src/standardize/cleanup.rs": "15be30e06ef16c86a39668faebbfae266eec4494eceed3655def34dbe991cd81",
+    "crates/chematic-chem/src/standardize.rs": "da839ca96793e0e0c8c7f1dd6c2a687332173b2fd669ebb7fe2f8ca4d796680a",
+    "crates/chematic-chem/src/standardize/cleanup.rs": "489948798322a3f0d33c460032ee82b4c7738b119a1f2756b7a7d47fab7aac69",
     "crates/chematic-chem/src/standardize/cleanup/acid_base.rs": "0fc4846762ba55f9be349c0b72112873ad8b622b2def1074551df396778764d8",
-    "crates/chematic-chem/src/hydrogen.rs": "22ca0f91e85e084b50ca20581f48ddc4280fae77c0ece945d236df427ae1af25",
-    "crates/chematic-chem/src/standardize/groups.rs": "ea24e2d5981646a6015bd3424f4865d60fcef2ac1b31c497480f47ec3deea3d0",
+    "crates/chematic-chem/src/hydrogen.rs": "aec88111ce1afff2d70a43dee2385adbb13d16eda76e2c81a6cd156da542c374",
+    "crates/chematic-chem/src/standardize/groups.rs": "4e9cb9df29ba89f5fac99f3f2102cd90129ee391bda6ad37b783118ec3011a53",
     "crates/chematic-core/src/molecule/builder.rs": "bd9d97573ab4779b71fad0265f0688378fa47c20c19875ba4f4a46003c7f7058",
     "crates/chematic-chem/examples/cleanup_rdkit_dump.rs": "2d122b54ae4dfba2514e2c134df1abbc1fbc0a5ddabe22c3adb7e6bbf0db90db",
     "crates/chematic-smiles/src/lib.rs": "a0c9bd8864d8cd9bbe9d5ef8302080fa469ec5b5b0c3974501acc05def01f0cf",
