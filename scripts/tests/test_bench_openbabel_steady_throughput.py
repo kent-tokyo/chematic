@@ -3,7 +3,7 @@ import importlib.util
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-spec = importlib.util.spec_from_file_location("steady_native", ROOT / "bench_openbabel_steady_throughput.py")
+spec = importlib.util.spec_from_file_location("steady_native", ROOT / "benchmarks/bench_openbabel_steady_throughput.py")
 steady = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(steady)
 

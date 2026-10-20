@@ -66,12 +66,12 @@ jobs:
       - name: Run benchmark
         run: |
           mkdir -p validation/results
-          python3 scripts/bench5k.py bench_corpus.csv \
+          python3 scripts/benchmarks/bench5k.py bench_corpus.csv \
             --json validation/results/latest.json
 
       - name: Generate validation.md
         if: hashFiles('validation/results/latest.json') != ''
-        run: python3 scripts/gen_validation_report.py validation/results/latest.json
+        run: python3 scripts/generators/gen_validation_report.py validation/results/latest.json
 
       - name: Append accuracy drift report (veridict)
         if: hashFiles('validation/results/latest.json') != ''

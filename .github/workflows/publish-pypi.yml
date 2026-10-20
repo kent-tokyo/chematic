@@ -31,7 +31,7 @@ jobs:
       - name: Verify exact source revision and publish graph
         id: tag
         run: |
-          version="$(python3 scripts/check_release_tag.py --tag "$GITHUB_REF_NAME")"
+          version="$(python3 scripts/release/check_release_tag.py --tag "$GITHUB_REF_NAME")"
           echo "version=$version" >> "$GITHUB_OUTPUT"
           test -f "validation/published-wheel-chemistry-gates-expected-v${version}.json"
           python3 scripts/check_publish_graph.py
@@ -208,13 +208,13 @@ jobs:
           path: dist
       - name: Validate complete distribution matrix and wheel stubs
         run: |
-          python scripts/check_pypi_dist.py --dist dist --version "${GITHUB_REF_NAME#v}"
+          python scripts/release/check_pypi_dist.py --dist dist --version "${GITHUB_REF_NAME#v}"
           python scripts/check_python_stubs.py --wheel "dist/chematic-*.whl"
       - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1
         with:
           skip-existing: true
       - name: Verify published file hashes against the built distributions
-        run: python scripts/check_pypi_dist.py --dist dist --version "${GITHUB_REF_NAME#v}" --verify-published
+        run: python scripts/release/check_pypi_dist.py --dist dist --version "${GITHUB_REF_NAME#v}" --verify-published
 
   published-wheel-smoke:
     name: Verify published wheels
@@ -259,7 +259,7 @@ jobs:
           if [ -z "$RELEASED_AT" ]; then
             RELEASED_AT="$(git log -1 --format=%cI "${GITHUB_REF_NAME}^{commit}")"
           fi
-          python3 scripts/generate_release_metadata.py \
+          python3 scripts/release/generate_release_metadata.py \
             --version "$VERSION" \
             --commit "$COMMIT" \
             --released-at "$RELEASED_AT" \

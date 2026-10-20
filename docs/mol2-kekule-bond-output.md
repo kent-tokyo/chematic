@@ -98,7 +98,7 @@ as an upstream diagnostic, not used as the transformation oracle.
 
 ```sh
 cargo build -p chematic-mol --example mol2_kekule_dump
-python scripts/validate_mol2_kekule.py \
+python scripts/validation/validate_mol2_kekule.py \
   --native-dump target/debug/examples/mol2_kekule_dump \
   --wasm-module /path/to/node-package/chematic_wasm.js
 ```

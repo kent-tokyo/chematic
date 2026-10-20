@@ -1,6 +1,8 @@
 use std::collections::{HashMap, HashSet, VecDeque};
 
-use chematic_core::{Atom, AtomIdx, BondEntry, BondIdx, BondOrder, Molecule, MoleculeBuilder};
+use chematic_core::{
+    Atom, AtomIdx, BondEntry, BondIdx, BondOrder, Molecule, MoleculeBuilder, implicit_hcount,
+};
 
 #[derive(Default)]
 struct NormalizedGroups {
@@ -23,9 +25,10 @@ struct PyridoneMatch {
 /// Normalize chemical groups (nitro groups, etc.).
 ///
 /// Transforms:
-/// - `[N+](=O)[O-]` → `N(=O)=O` (nitro normalization: N charge 0, O- → double bond)
-/// - `R[S](=O)R` → `R[S+]([O-])R` (RDKit-compatible sulfoxide normalization)
+/// - Unlabelled `[N+](=O)[O-]` → `N(=O)=O` (N charge 0, O- → double bond)
+/// - Three-coordinate S=O without an O substituent → charge-separated S+-O-
 /// - ortho/para pyridinium phenoxide → neutral pyridone
+/// - Bounded aromatic charge recombination and 1,5-conjugated iminium shifts
 ///
 /// Returns a new molecule with normalized groups.
 pub fn normalize_groups(mol: &Molecule) -> Molecule {
@@ -38,7 +41,166 @@ pub fn normalize_groups(mol: &Molecule) -> Molecule {
     builder.copy_stereo_from(mol);
     builder.copy_bond_directions_from(mol);
     builder.copy_stereo_groups_from(mol);
-    builder.build()
+    normalize_charge_patterns(builder.build())
+}
+
+/// Apply two RDKit Normalize charge rules after the existing group rewrites.
+/// Each application removes a matching anion/cation pair or moves a cation
+/// from a terminal iminium N to an NH. Both patterns are deliberately limited
+/// to unlabelled atoms and a unique match in the molecule.
+fn normalize_charge_patterns(mut mol: Molecule) -> Molecule {
+    for _ in 0..mol.atom_count() {
+        if let Some((anion, cation, bond)) = aromatic_sulfur_charge_pair(&mol) {
+            mol.set_charge(anion, 0);
+            mol.set_charge(cation, 0);
+            mol.set_bond_order(bond, BondOrder::Double);
+            continue;
+        }
+        if let Some((neutral_n, iminium_n, bonds)) = conjugated_iminium_path(&mol) {
+            mol.set_charge(neutral_n, 1);
+            mol.set_charge(iminium_n, 0);
+            for (bond, order) in bonds.into_iter().zip([
+                BondOrder::Double,
+                BondOrder::Single,
+                BondOrder::Double,
+                BondOrder::Single,
+            ]) {
+                mol.set_bond_order(bond, order);
+            }
+            continue;
+        }
+        break;
+    }
+    mol
+}
+
+fn unlabelled(atom: &Atom) -> bool {
+    atom.atom_map.is_none() && atom.isotope.is_none()
+}
+
+fn has_directions_at(mol: &Molecule, atoms: &[AtomIdx]) -> bool {
+    mol.bonds().any(|(bond_idx, bond)| {
+        mol.bond_direction(bond_idx).is_some()
+            && (atoms.contains(&bond.atom1) || atoms.contains(&bond.atom2))
+    })
+}
+
+/// [S-]-c:[n+] -> S=c:n, a bounded instance of RDKit's aromatic
+/// 1,3-separated charge recombination rule.
+fn aromatic_sulfur_charge_pair(mol: &Molecule) -> Option<(AtomIdx, AtomIdx, BondIdx)> {
+    let mut found = None;
+    for (sulfur, atom) in mol.atoms() {
+        if atom.element.atomic_number() != 16
+            || atom.charge != -1
+            || atom.aromatic
+            || !unlabelled(atom)
+            || mol.degree(sulfur) != 1
+            || implicit_hcount(mol, sulfur) != 0
+        {
+            continue;
+        }
+        let Some((carbon, sulfur_bond)) = mol.neighbors(sulfur).next() else {
+            continue;
+        };
+        let carbon_atom = mol.atom(carbon);
+        if mol.bond(sulfur_bond).order != BondOrder::Single
+            || carbon_atom.element.atomic_number() != 6
+            || carbon_atom.charge != 0
+            || !carbon_atom.aromatic
+            || !unlabelled(carbon_atom)
+        {
+            continue;
+        }
+        for (nitrogen, aromatic_bond) in mol.neighbors(carbon) {
+            let nitrogen_atom = mol.atom(nitrogen);
+            if mol.bond(aromatic_bond).order != BondOrder::Aromatic
+                || nitrogen_atom.element.atomic_number() != 7
+                || nitrogen_atom.charge != 1
+                || !nitrogen_atom.aromatic
+                || !unlabelled(nitrogen_atom)
+                || mol.degree(nitrogen) != 3
+                || implicit_hcount(mol, nitrogen) != 0
+                || has_directions_at(mol, &[sulfur, carbon, nitrogen])
+            {
+                continue;
+            }
+            if found.replace((sulfur, nitrogen, sulfur_bond)).is_some() {
+                return None;
+            }
+        }
+    }
+    found
+}
+
+fn neutral_chain_carbon(mol: &Molecule, idx: AtomIdx) -> bool {
+    let atom = mol.atom(idx);
+    atom.element.atomic_number() == 6 && atom.charge == 0 && !atom.aromatic && unlabelled(atom)
+}
+
+fn supported_iminium_end(
+    mol: &Molecule,
+    path: [AtomIdx; 4],
+    iminium_n: AtomIdx,
+    bond: BondIdx,
+) -> bool {
+    let end = mol.atom(iminium_n);
+    mol.bond(bond).order == BondOrder::Double
+        && end.element.atomic_number() == 7
+        && end.charge == 1
+        && !end.aromatic
+        && unlabelled(end)
+        && mol.degree(iminium_n) == 3
+        && implicit_hcount(mol, iminium_n) == 0
+        && !has_directions_at(mol, &[path[0], path[1], path[2], path[3], iminium_n])
+        && !mol.neighbors(iminium_n).any(|(neighbor, _)| {
+            let atom = mol.atom(neighbor);
+            atom.charge == -1 && matches!(atom.element.atomic_number(), 7 | 8 | 15 | 16)
+        })
+}
+
+/// NH-C=C-C=N+ -> [NH+]=C-C=C-N, the unlabelled N/C subset of RDKit's
+/// 1,5-conjugated cation rule. Require one unique path to avoid choosing an
+/// arbitrary resonance assignment in a multiply conjugated system.
+fn conjugated_iminium_path(mol: &Molecule) -> Option<(AtomIdx, AtomIdx, [BondIdx; 4])> {
+    let mut found = None;
+    for (neutral_n, atom) in mol.atoms() {
+        if atom.element.atomic_number() != 7
+            || atom.charge != 0
+            || atom.aromatic
+            || !unlabelled(atom)
+            || mol.degree(neutral_n) != 2
+            || implicit_hcount(mol, neutral_n) != 1
+        {
+            continue;
+        }
+        for (c1, b1) in mol.neighbors(neutral_n) {
+            if mol.bond(b1).order != BondOrder::Single || !neutral_chain_carbon(mol, c1) {
+                continue;
+            }
+            for (c2, b2) in mol.neighbors(c1) {
+                if mol.bond(b2).order != BondOrder::Double || !neutral_chain_carbon(mol, c2) {
+                    continue;
+                }
+                for (c3, b3) in mol.neighbors(c2) {
+                    if mol.bond(b3).order != BondOrder::Single || !neutral_chain_carbon(mol, c3) {
+                        continue;
+                    }
+                    for (iminium_n, b4) in mol.neighbors(c3) {
+                        if !supported_iminium_end(mol, [neutral_n, c1, c2, c3], iminium_n, b4) {
+                            continue;
+                        }
+                        if found
+                            .replace((neutral_n, iminium_n, [b1, b2, b3, b4]))
+                            .is_some()
+                        {
+                            return None;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    found
 }
 
 fn detect_groups(mol: &Molecule) -> NormalizedGroups {
@@ -262,19 +424,27 @@ fn detect_nitro(mol: &Molecule, idx: AtomIdx, nitro_atoms: &mut HashSet<AtomIdx>
         .collect();
 
     if oxygen_neighbors.len() == 2 {
+        // The two oxygens cease to be interchangeable when either carries
+        // an atom map or an isotope. RDKit keeps the charged nitro form, so
+        // leave its bond and charge assignment attached to the labelled atom.
+        if oxygen_neighbors.iter().any(|(oxygen_idx, _)| {
+            let oxygen = mol.atom(*oxygen_idx);
+            oxygen.atom_map.is_some() || oxygen.isotope.is_some()
+        }) {
+            return;
+        }
         let mut has_double_oxygen = false;
-        let mut has_single_negative_oxygen = false;
+        let mut single_negative_oxygen = None;
         for (oxygen_idx, bond_idx) in &oxygen_neighbors {
             let oxygen = mol.atom(*oxygen_idx);
             let bond = mol.bond(*bond_idx);
             has_double_oxygen |= bond.order == BondOrder::Double && oxygen.charge == 0;
             if bond.order == BondOrder::Single && oxygen.charge == -1 {
-                has_single_negative_oxygen = true;
-                nitro_atoms.insert(*oxygen_idx);
+                single_negative_oxygen = Some(*oxygen_idx);
             }
         }
-        if has_double_oxygen && has_single_negative_oxygen {
-            nitro_atoms.insert(idx);
+        if has_double_oxygen && let Some(oxygen_idx) = single_negative_oxygen {
+            nitro_atoms.extend([idx, oxygen_idx]);
         }
     }
 }
@@ -302,10 +472,17 @@ fn detect_azide(mol: &Molecule, idx: AtomIdx, azide_atoms: &mut HashSet<AtomIdx>
     }
 }
 
-/// Mark neutral three-coordinate sulfoxide S=O atoms, but not sulfones.
+/// Mark neutral three-coordinate sulfoxide S=O atoms, excluding sulfones and
+/// oxygen-substituted sulfur groups that RDKit leaves in their S=O form.
 fn detect_sulfoxide(mol: &Molecule, idx: AtomIdx, sulfoxide_atoms: &mut HashSet<AtomIdx>) {
     let sulfur = mol.atom(idx);
-    if sulfur.charge != 0 || mol.neighbors(idx).count() != 3 {
+    if sulfur.charge != 0
+        || mol.neighbors(idx).count() != 3
+        || mol.neighbors(idx).any(|(neighbor, bond_idx)| {
+            mol.atom(neighbor).element.atomic_number() == 8
+                && mol.bond(bond_idx).order == BondOrder::Single
+        })
+    {
         return;
     }
     let double_oxygens: Vec<_> = mol

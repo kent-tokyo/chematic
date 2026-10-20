@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).parents[2]
-SCRIPT = ROOT / "scripts/generate_rdkit_identity_audit.py"
+SCRIPT = ROOT / "scripts/generators/generate_rdkit_identity_audit.py"
 
 
 def test_fragment_parent_ring_cache_is_initialized_before_scaffold_generation(tmp_path):

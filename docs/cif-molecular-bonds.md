@@ -54,7 +54,7 @@ edgeless/disconnected graphs, cell-independent distances, extreme representable
 norms, invalid inputs and unsupported orders. The v1.1.3 exhaustive public
 error contract is retained by using a separate non-exhaustive writer error.
 
-`scripts/validate_cif_bonds.py` parses the output independently with Gemmi
+`scripts/validation/validate_cif_bonds.py` parses the output independently with Gemmi
 0.7.5, checking atom references, coordinate conversion, edge sets, bond types,
 symmetry markers and Cartesian distances. It also records bounded Open Babel
 CLI probes with both `-ag` and `-xg`; CIF read timeouts are reported separately.

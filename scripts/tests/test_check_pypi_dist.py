@@ -2,7 +2,7 @@
 
 import unittest
 
-from scripts.check_pypi_dist import PLATFORMS, PYTHONS, check_layout
+from scripts.release.check_pypi_dist import PLATFORMS, PYTHONS, check_layout
 
 
 class DistributionTests(unittest.TestCase):

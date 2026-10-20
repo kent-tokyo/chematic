@@ -511,7 +511,7 @@ documentation, and required measurement agree.
   `scripts/`.
 - [x] Add a scorecard validator that rejects stale release versions, missing
   corpus/configuration metadata, and claims derived from unsupported rows;
-  `scripts/validate_scorecard.py` is dependency-free and fail-closed.
+  `scripts/validation/validate_scorecard.py` is dependency-free and fail-closed.
 
 ## P1 — Interchange throughput and safety
 
@@ -744,7 +744,7 @@ documentation, and required measurement agree.
 - [x] Add held-out parity reports for Morgan/ECFP, MACCS, topological,
   torsion, descriptors, and standardization across Rust/Python/WASM. The
   v1.0.8 coverage ledger remains validated by
-  `scripts/validate_held_out_parity_manifest.py`, including report-internal
+  `scripts/validation/validate_held_out_parity_manifest.py`, including report-internal
   row/count arithmetic: Morgan/ECFP and the five core descriptors have named
   reports, and MACCS now has a Rust-CLI report
   (4,714/5,000 exact bit-set matches, 94.28%). The RDKit-compatible

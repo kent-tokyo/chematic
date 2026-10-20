@@ -75,7 +75,7 @@ pinned oracle version are not eligible for checked-in validation.
 The required `CI gate` check combines the Rust unit and integration tests,
 Python and WASM runtime tests, semantic interoperability checks, API
 compatibility, and MSRV. Rust integration tests are assigned to four jobs by
-`scripts/ci_integration_shard.py`; new test targets are discovered through Cargo
+`scripts/checks/ci_integration_shard.py`; new test targets are discovered through Cargo
 metadata without editing the workflow matrix. The longer Windows source-wheel
 and A6 cross-platform checks still run in full CI and on release tags, outside
 the PR `CI gate` critical path. `Test`, `Clippy`, `Format Check`, and `Build Check`

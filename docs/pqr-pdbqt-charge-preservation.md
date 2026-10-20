@@ -81,7 +81,7 @@ PQR field spacing also triggers that reader's parsing errors.
 ```sh
 cargo test -p chematic-mol --lib --test pqr_pdbqt_contract --test mmcif_pqr_integration --offline
 python -m pytest crates/chematic-py/tests/test_pqr_pdbqt.py crates/chematic-py/tests/test_module_functions.py
-python scripts/validate_pqr_pdbqt.py
+python scripts/validation/validate_pqr_pdbqt.py
 ```
 
 The script requires Open Babel 3.2.1 and an extension built from this source.

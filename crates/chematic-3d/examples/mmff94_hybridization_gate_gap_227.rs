@@ -3,7 +3,7 @@
 //! for cross-checking against RDKit's real `atom->getHybridization() !=
 //! Atom::SP2` gate (`Code/GraphMol/Aromaticity.cpp` line 1023, pinned commit
 //! -- see `scripts/mmff94_provenance/PROVENANCE.md`) via
-//! `scripts/mmff94_hybridization_gate_gap_227.py`. Atom-index-aligned with
+//! `scripts/diagnostics/mmff94_hybridization_gate_gap_227.py`. Atom-index-aligned with
 //! RDKit's own parser per PR #226's already-verified 265/265 mapping.
 //!
 //! Mirrors `compute_mmff94_aromatic_view`'s own Kekulization step exactly

@@ -2,7 +2,7 @@
 
 import unittest
 
-from scripts.check_release_tag import version_from_tag
+from scripts.release.check_release_tag import version_from_tag
 
 
 class ReleaseTagTests(unittest.TestCase):

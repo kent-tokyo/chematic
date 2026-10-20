@@ -98,7 +98,7 @@ extension and Node module built from this source:
 clang++ -std=c++17 \
   validation/openbabel_issues/pdbqt-checked/openbabel_read_probe.cpp \
   $(pkg-config --cflags --libs openbabel-3) -o /tmp/pdbqt-read-probe
-python scripts/validate_pdbqt_checked.py \
+python scripts/validation/validate_pdbqt_checked.py \
   --wasm-module /path/to/node/chematic_wasm.js \
   --openbabel-probe /tmp/pdbqt-read-probe
 cargo test -p chematic-mol --test pdbqt_checked_contract \

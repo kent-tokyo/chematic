@@ -29,7 +29,7 @@ comparison.
 ```text
 cargo run --release -p chematic-mol --example streaming_benchmark --offline -- \
   --format sdf --path benchmarks/fixtures/streaming.sdf --repeats 20
-python3 scripts/bench_streaming_formats.py --mode file-backed \
+python3 scripts/benchmarks/bench_streaming_formats.py --mode file-backed \
   --sdf benchmarks/fixtures/streaming.sdf --repeats 20 \
   --openbabel /opt/homebrew/bin/obabel
 ```

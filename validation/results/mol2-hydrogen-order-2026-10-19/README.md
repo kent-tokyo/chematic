@@ -60,7 +60,7 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -p no:cacheprovider -q \
   crates/chematic-py/tests/test_mol2_stream_rmsd.py \
   crates/chematic-py/tests/test_mol2_section_order.py \
   crates/chematic-py/tests/test_mol2_preservation.py
-python3 scripts/validate_mol2_hydrogen_order.py \
+python3 scripts/validation/validate_mol2_hydrogen_order.py \
   --obabel /opt/homebrew/bin/obabel --output /tmp/mol2-hydrogen-order.json
 ```
 

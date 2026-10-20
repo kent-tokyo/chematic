@@ -2,7 +2,7 @@
 
 import unittest
 
-from scripts.ci_integration_shard import assign_packages
+from scripts.checks.ci_integration_shard import assign_packages
 
 
 class ShardTests(unittest.TestCase):

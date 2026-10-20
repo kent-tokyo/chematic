@@ -14,8 +14,8 @@ This follow-up extends the tests merged in #809 (processed PR coverage 94.49%). 
 Regenerate both external fixtures with exactly RDKit 2026.03.1:
 
 ```sh
-python scripts/generate_ranking_boundary_fixtures.py
-python scripts/generate_canonical_direction_boundary_fixtures.py
+python scripts/generators/generate_ranking_boundary_fixtures.py
+python scripts/generators/generate_canonical_direction_boundary_fixtures.py
 ```
 
 Both regenerated files matched byte for byte. Validate with the existing coverage workflow command, workspace all-target Clippy, rustfmt, and `git diff --check`. Coverage measures execution; it does not establish complete chemical correctness or full RDKit compatibility.

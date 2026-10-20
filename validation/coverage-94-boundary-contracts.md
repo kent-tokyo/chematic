@@ -13,12 +13,12 @@ CI reads the committed fixtures and does not require Python or RDKit.
 Regenerate the following fixtures with RDKit **2026.03.1**:
 
 ```sh
-python scripts/generate_avalon_molblock_boundary_fixtures.py
-python scripts/generate_canonical_direction_boundary_fixtures.py
-python scripts/generate_potential_stereo_boundary_fixtures.py
-python scripts/generate_serialization_geometry_boundary_fixtures.py
-python scripts/generate_pdb_boundary_fixtures.py
-python scripts/generate_mol2_boundary_fixtures.py
+python scripts/generators/generate_avalon_molblock_boundary_fixtures.py
+python scripts/generators/generate_canonical_direction_boundary_fixtures.py
+python scripts/generators/generate_potential_stereo_boundary_fixtures.py
+python scripts/generators/generate_serialization_geometry_boundary_fixtures.py
+python scripts/generators/generate_pdb_boundary_fixtures.py
+python scripts/generators/generate_mol2_boundary_fixtures.py
 ```
 
 The generators check the installed RDKit version. Their references cover 14
@@ -30,7 +30,7 @@ planar, 120 trigonal bipyramidal, and 720 octahedral ligand permutations.
 Regenerate the MMFF94 atom-type census with RDKit **2026.03.6**:
 
 ```sh
-python scripts/mmff94_atom_type_oracle_tsv.py \
+python scripts/diagnostics/mmff94_atom_type_oracle_tsv.py \
   --corpus validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi \
   --output validation/rdkit-2026.03.6-mmff-type-census.tsv
 ```
