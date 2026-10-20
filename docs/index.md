@@ -87,10 +87,11 @@ Installation: `pip install chematic`, `cargo add chematic`, or
 
 v1.2.0 adds checked XBS and TURBOMOLE/POSCAR paths, typed Pattern
 fingerprints, bounded 3D geometry diagnostics, stronger canonical-SMILES and
-reaction safety, and output-preserving internal refactors. Its new source
-results are not package evidence until the v1.2.0 artifacts complete their
-hosted gates. Earlier package and holdout records retain their original
-versions and denominators.
+reaction safety, and output-preserving internal refactors. Its exact public
+wheels passed the hosted three-platform runtime smoke and 11-job chemistry
+gates. Source-only timing remains source evidence until the same public
+artifacts are measured. Earlier package and holdout records retain their
+original versions and denominators.
 
 Each result applies only to its named artifact, corpus, options, and failure
 policy. Release availability is not accuracy evidence, source results are not
