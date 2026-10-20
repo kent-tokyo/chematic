@@ -18,7 +18,7 @@ Run:
     cargo run -p chematic-perception --release --example aromaticity_a1_1b_0_report \
         -- validation/aromaticity_a1_0_corpus.jsonl \
         > validation/results/aromaticity_a1_1b_0_trace.jsonl
-    python3 scripts/aromaticity_a1_1b_0_gate.py
+    python3 scripts/diagnostics/aromaticity_a1_1b_0_gate.py
 """
 import json
 import sys
@@ -33,7 +33,7 @@ except ImportError:
     print("  pip install rdkit")
     sys.exit(1)
 
-REPO = Path(__file__).resolve().parent.parent
+REPO = Path(__file__).resolve().parents[2]
 TRACE_IN = REPO / "validation" / "results" / "aromaticity_a1_1b_0_trace.jsonl"
 OUT = REPO / "validation" / "results" / "aromaticity_a1_1b_0_gate.jsonl"
 

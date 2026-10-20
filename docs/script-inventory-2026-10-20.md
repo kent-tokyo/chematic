@@ -230,3 +230,26 @@ root resolution now follows the new location. No active workflow or test
 imports these entry points, and the frozen benchmark source-hash records stay
 unchanged. The direct-root list falls from 296 to 290 files; the total remains
 585 tracked scripts.
+
+## 2026-10-21 maintenance
+
+Eight retained, manually run parity or diagnostic drivers now live in
+`scripts/diagnostics/`: the A1 aromaticity join, canonical cross-engine
+comparison, descriptor cross-binding and rotatable-bond comparisons, MACCS and
+RDK fingerprint comparisons, reaction quality comparison, and TDT parity gate.
+Five evidence/contract checks now live in `scripts/validation/`: A5 adjudication,
+Criterion calibration, E/Z residual, reaction application, and strict PDB
+binding. Their repository-root lookup and self-reported commands follow the new
+paths; the four checks called by `scripts/check.sh` use those paths too.
+
+The 813-line `ecfp4_agreement.py` Round 1 exploratory probe is retired. It
+required a local `~/Downloads/SMILES.csv`, was not called by CI or a current
+reproduction instruction, and has no committed report of its own. The later
+fingerprint reference retains the comparison boundary and identifies its
+original r=0.94 figure as historical. The exact retired source remains in Git
+at `e598d4a4:scripts/ecfp4_agreement.py`. Frozen benchmark source-hash maps
+and measured results were not rewritten.
+
+The legacy root list falls from 289 to 275 files. The tracked `scripts/`
+total falls from 599 to 598; the moved scripts account for the unchanged
+remainder.

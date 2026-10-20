@@ -11,7 +11,7 @@ echo "=== fmt ===" && cargo fmt --all -- --check
 echo "=== unsafe surface ===" && python3 scripts/check_unsafe_surface.py
 echo "=== refactor debt ratchet ===" && python3 scripts/check_refactor_budget.py
 echo "=== shared cross-binding manifest ===" && python3 scripts/check_cross_binding_manifest.py
-echo "=== strict PDB binding contract ===" && python3 scripts/check_pdb_strict_binding_contract.py
+echo "=== strict PDB binding contract ===" && python3 scripts/validation/check_pdb_strict_binding_contract.py
 echo "=== static binding surface ===" && python3 scripts/check_binding_surface.py >/dev/null
 echo "=== benchmark record index ===" && python3 scripts/check_benchmark_index.py
 echo "=== Open Babel file-I/O evidence ===" && python3 scripts/check_openbabel_file_io_evidence.py
@@ -20,7 +20,7 @@ echo "=== same-process contract bundle ===" && SCHEMATIC_BENCHMARK_VERSION="$STR
 echo "=== 3D quality evidence bundle ===" && SCHEMATIC_BENCHMARK_VERSION="$HISTORICAL_VERSION" python3 scripts/check_3d_quality_evidence.py
 echo "=== MMFF94 RDKit availability oracle ===" && SCHEMATIC_BENCHMARK_VERSION="$HISTORICAL_VERSION" python3 scripts/check_mmff94_rdkit_availability_oracle.py
 echo "=== reaction SMARTS contract evidence ===" && SCHEMATIC_BENCHMARK_VERSION="$HISTORICAL_VERSION" python3 scripts/check_reaction_smarts_contract_evidence.py
-echo "=== reaction application evidence ===" && SCHEMATIC_BENCHMARK_VERSION="$HISTORICAL_VERSION" python3 scripts/check_reaction_application_evidence.py
+echo "=== reaction application evidence ===" && SCHEMATIC_BENCHMARK_VERSION="$HISTORICAL_VERSION" python3 scripts/validation/check_reaction_application_evidence.py
 echo "=== Python binding contract evidence ===" && SCHEMATIC_BENCHMARK_VERSION="$HISTORICAL_VERSION" python3 scripts/check_python_binding_contract_evidence.py
 echo "=== streaming safety manifest ===" && python3 scripts/check_streaming_format_limits.py --validate-only
 echo "=== streaming safety evidence ===" && SCHEMATIC_BENCHMARK_VERSION="$STREAMING_EVIDENCE_VERSION" python3 scripts/check_streaming_safety_evidence.py
@@ -28,8 +28,8 @@ echo "=== streaming parser-entry evidence ===" && SCHEMATIC_BENCHMARK_VERSION="$
 echo "=== streaming failure taxonomy evidence ===" && SCHEMATIC_BENCHMARK_VERSION="$STREAMING_EVIDENCE_VERSION" python3 scripts/check_streaming_failure_taxonomy_evidence.py
 echo "=== triclinic neighbor evidence ===" && SCHEMATIC_BENCHMARK_VERSION="$HISTORICAL_VERSION" python3 scripts/check_triclinic_neighbor_evidence.py
 echo "=== MMFF94 issue #337 determinism evidence ===" && SCHEMATIC_BENCHMARK_VERSION="$HISTORICAL_VERSION" python3 scripts/check_mmff94_issue337_determinism_evidence.py
-echo "=== Issue #503 E/Z residual evidence ===" && python3 scripts/check_ez_residual_evidence.py
-echo "=== Criterion calibration contract ===" && python3 scripts/check_criterion_gate_calibration.py
+echo "=== Issue #503 E/Z residual evidence ===" && python3 scripts/validation/check_ez_residual_evidence.py
+echo "=== Criterion calibration contract ===" && python3 scripts/validation/check_criterion_gate_calibration.py
 if [ -f validation/results/rdkit-search-oracle-current-rerun.json ] \
     && [ -f validation/results/rdkit-search-threshold-gate-v1.0.13.json ] \
     && [ -f validation/results/rdkit-search-cross-binding-parity-v1.0.13.json ]; then

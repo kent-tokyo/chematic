@@ -69,6 +69,12 @@ R16 closes the ratchet at 14 file and 76 function allowances, classifies the
 remaining debt in the inventory, and verifies the stacked result with the
 workspace, binding, budget, and hosted-CI gates.
 
+The 2026-10-21 maintenance pass retires one unreferenced exploratory probe and
+places 13 retained evidence scripts under diagnostics or validation. It does
+not change production chemistry or the R16 debt-ratchet baseline; see the
+[script inventory](script-inventory-2026-10-20.md) for paths and retention
+reasons.
+
 Notable outcomes include a bounded reaction module tree, separated
 lexical/semantic format stages, API-domain binding modules, bounded descriptor
 and tautomer helpers, split canonical/ring/aromaticity algorithms, staged

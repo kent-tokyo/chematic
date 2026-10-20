@@ -14,7 +14,7 @@ from pathlib import Path
 
 from rdkit import Chem, rdBase
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 CASES = ROOT / "validation/reaction_rdkit_quality_cases.json"
 REPORT = ROOT / "validation/results/reaction-rdkit-quality-v1.0.13.json"
 CLI = ROOT / "target/debug/chematic"

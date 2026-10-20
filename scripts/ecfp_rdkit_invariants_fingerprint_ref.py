@@ -6,12 +6,12 @@ Reference (NON-GATING) fingerprint-level measurements for
 These numbers are recorded for context, not as an acceptance gate: chematic
 still hashes with FNV-1a (RDKit uses its own hash), so raw bit-vector
 identity was never a goal of this milestone -- only the atom invariant
-PARTITION (scripts/ecfp_rdkit_invariant_parity.py) is the gate. Same
-methodology as the existing tier3/tier0 measurements in
-scripts/ecfp4_agreement.py (Pearson correlation of pairwise Tanimoto
-similarity, same default sample size), so the "before" (chematic's default,
-aromaticity-inclusive invariant, r=0.94) and "after" (RdkitMorgan atom
-invariant) numbers are directly comparable.
+PARTITION (scripts/ecfp_rdkit_invariant_parity.py) is the gate. The
+methodology matches the historical Round 1 probe at
+`e598d4a4:scripts/ecfp4_agreement.py`: Pearson correlation of pairwise
+Tanimoto similarity with the same default sample size. The "before"
+(chematic's default, aromaticity-inclusive invariant, r=0.94) and "after"
+(RdkitMorgan atom invariant) numbers are directly comparable.
 
 Consumes the TSV from `cargo run -p chematic-fp --release --example
 ecfp4_rdkit_invariants_bits -- <SMILES.csv> <out.tsv>` (`smiles\\tbit,bit,...`).
@@ -99,7 +99,7 @@ def main():
     print(f"n_molecules (sample): {n}")
     print(f"n_pairs: {len(chem_sims)}")
     print(f"pearson_correlation vs RDKit GetMorganFingerprintAsBitVect(radius=2): {corr:.4f}" if corr is not None else "pearson_correlation: n/a")
-    print(f"  reference: chematic's default (Chematic mode) tier3 correlation is r=0.94 (scripts/ecfp4_agreement.py)")
+    print("  reference: chematic's default (Chematic mode) tier3 correlation is r=0.94 (historical Round 1 probe)")
     print(f"mean_abs_tanimoto_diff: {mean_abs_diff:.4f}" if mean_abs_diff is not None else "mean_abs_tanimoto_diff: n/a")
     print()
     print(f"bit density (full corpus, {len(all_bit_counts)} molecules):")

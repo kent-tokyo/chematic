@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CORPUS = ROOT / "scripts" / "chembl_accuracy_corpus_4999.smi"
 DEFAULT_REPORT = ROOT / "validation" / "results" / "descriptor-cross-binding-parity-5000-v1.0.13.json"
 FIELDS = (
