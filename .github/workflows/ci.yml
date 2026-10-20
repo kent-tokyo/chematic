@@ -496,13 +496,15 @@ jobs:
       - name: Build and install the release-profile wheel
         run: |
           python -m venv .venv
-          .venv/Scripts/python -m pip install maturin 'pytest<9' 'pytest-asyncio>=0.23,<1' numpy 'rdkit==2026.3.6' --quiet
+          .venv/Scripts/python -m pip install maturin 'pytest<9' 'pytest-asyncio>=0.23,<1' 'pytest-timeout==2.4.0' numpy 'rdkit==2026.3.6' --quiet
           .venv/Scripts/maturin build --locked --release -m crates/chematic-py/Cargo.toml --interpreter .venv/Scripts/python.exe --out dist/source-wheel
           .venv/Scripts/python scripts/check_python_stubs.py --wheel "dist/source-wheel/chematic-*.whl"
           .venv/Scripts/python -m pip install --no-deps dist/source-wheel/chematic-*.whl
       - name: Run pytest (chematic-py)
         run: |
-          .venv/Scripts/python -m pytest crates/chematic-py/tests/ -q
+          # Dump the active test and thread stacks if Windows stalls, rather
+          # than consuming the whole 60-minute job timeout without evidence.
+          .venv/Scripts/python -m pytest crates/chematic-py/tests/ -v --timeout=300 --timeout-method=thread --session-timeout=900
           # The differential suite intentionally rewrites its checked-in
           # report. Keep the source checkout pristine for the A6 provenance
           # assertion; the platform-specific test result is already visible
