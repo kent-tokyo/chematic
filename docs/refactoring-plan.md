@@ -49,6 +49,9 @@ contracts, output digests, and paired performance gates remain authoritative.
 R9 completed on 2026-10-20 with an empty pull-request queue at `9945f1ed`.
 R10 removes the CLI and SVG file allowances by moving their inline unit tests
 to dedicated test modules; no production logic or public API changes.
+R11 groups CLI dispatch into conversion, molecule, reaction, and batch
+boundaries. The public command surface is unchanged, and the former 166-line
+dispatcher allowance is removed.
 
 Notable outcomes include a bounded reaction module tree, separated
 lexical/semantic format stages, API-domain binding modules, bounded descriptor
