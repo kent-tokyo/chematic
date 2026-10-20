@@ -193,3 +193,9 @@ its pinned digest. `probe_rdkit_python_contract.py` and
 command catalog remains byte-for-byte unchanged. This brings the root count to
 298 without adding scripts. The Rust RDKit reference tests and comparison
 example now read their three unchanged TSVs from `validation/rdkit/`.
+
+The next main merge added `scripts/rdkit_normalize_source_gate.py` after this
+cleanup. Two committed Normalize evidence reports identify its original path
+and source hashes. Keep that script at its recorded path and include it in the
+reviewed root list; moving it would change the evidence provenance. The root
+now contains 299 files, with 587 tracked under `scripts/`.
