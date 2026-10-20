@@ -1,8 +1,19 @@
 """Published wheels must cover the declared Python and platform matrix."""
 
+import io
+import json
 import unittest
+from pathlib import Path
+from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
-from scripts.release.check_pypi_dist import PLATFORMS, PYTHONS, check_layout
+from scripts.release.check_pypi_dist import (
+    PLATFORMS,
+    PYTHONS,
+    check_layout,
+    local_hashes,
+    published_hashes,
+)
 
 
 class DistributionTests(unittest.TestCase):
@@ -30,6 +41,41 @@ class DistributionTests(unittest.TestCase):
     def test_wrong_release_fails(self):
         with self.assertRaises(ValueError):
             check_layout(self.names, "1.2.4")
+
+    def test_publish_attestations_are_not_distributions(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            distribution = root / "chematic-1.2.3.tar.gz"
+            distribution.write_bytes(b"sdist")
+            (root / f"{distribution.name}.publish.attestation").write_text("signed")
+            self.assertEqual(set(local_hashes(root)), {distribution.name})
+
+    def test_orphaned_publish_attestation_fails(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "missing.whl.publish.attestation").write_text("signed")
+            with self.assertRaisesRegex(ValueError, "orphaned"):
+                local_hashes(root)
+
+    def test_unknown_release_file_fails(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "notes.txt").write_text("unexpected")
+            with self.assertRaisesRegex(ValueError, "unexpected"):
+                local_hashes(root)
+
+    def test_published_hashes_bypasses_stale_cdn_entries(self):
+        payload = {
+            "urls": [{"filename": "chematic.whl", "digests": {"sha256": "abc"}}]
+        }
+        response = io.BytesIO(json.dumps(payload).encode())
+        with patch(
+            "scripts.release.check_pypi_dist.urllib.request.urlopen", return_value=response
+        ) as urlopen:
+            self.assertEqual(published_hashes("1.2.3"), {"chematic.whl": "abc"})
+        request = urlopen.call_args.args[0]
+        self.assertIn("?release-verification=", request.full_url)
+        self.assertEqual(request.get_header("Cache-control"), "no-cache")
 
 
 if __name__ == "__main__":
