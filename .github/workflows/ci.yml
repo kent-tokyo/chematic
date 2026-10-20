@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_call:
 
 concurrency:
   # Keep PR supersession, but let each main push finish for an honest status badge.
@@ -72,6 +73,11 @@ jobs:
           key: ${{ runner.os }}-cargo-test-${{ hashFiles('Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-test-
+      - name: Verify integration shard inventory and workflow pins
+        run: |
+          python3 scripts/ci_integration_shard.py --shards 4
+          python3 -m unittest scripts.tests.test_ci_integration_shard scripts.tests.test_check_workflow_pins -v
+          python3 scripts/check_workflow_pins.py
       - name: Unit tests
         # The Python extension uses PyO3's non-linking extension-module mode.
         # Its Rust unit tests run in the Python job with that feature disabled.
@@ -244,121 +250,13 @@ jobs:
           python3 scripts/stereo_spelling_invariance_gate.py --output /tmp/stereo-spelling-invariance.json
 
   test-integration:
-    name: Integration tests (${{ matrix.package }} / ${{ matrix.target }})
+    name: Integration tests (shard ${{ matrix.shard }})
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - { package: chematic-ff, target: mmff_dielectric }
-          - { package: chematic-mol, target: chemdraw_block_contract }
-          - { package: chematic-3d, target: g1_regression_byte_identical }
-          - { package: chematic-3d, target: rdkit_g1_parity }
-          - { package: chematic-3d, target: torsion_knowledge_negative_controls }
-          - { package: chematic-chem, target: canonical_idempotency_corpus_standardized }
-          - { package: chematic-chem, target: canonical_stereo_d0_cip_multiset_invariance }
-          - { package: chematic-chem, target: issue415_fused_heteroaromatic_holdout }
-          - { package: chematic-chem, target: metal_disconnect_holdout }
-          - { package: chematic-chem, target: local_cation_resonance }
-          - { package: chematic-chem, target: screening_enrichment }
-          - { package: chematic-chem, target: hydrogen_count_contract }
-          - { package: chematic-chem, target: native_distance_matrix }
-          - { package: chematic-fp, target: fold_density }
-          - { package: chematic-mol, target: cdjson_contract }
-          - { package: chematic-mol, target: cif_checked_writer }
-          - { package: chematic-mol, target: cif_bond_writer }
-          - { package: chematic-mol, target: xyz_symbol_case }
-          - { package: chematic-mol, target: cdxml_stereo_semantics }
-          - { package: chematic-mol, target: pqr_pdbqt_contract }
-          - { package: chematic-mol, target: pdbqt_checked_contract }
-          - { package: chematic-chem, target: renumber_stereo_contract }
-          - { package: chematic-chem, target: stereo_candidate_budget }
-          - { package: chematic-mol, target: cif_coordinate_contract }
-          - { package: chematic-mol, target: cml_hydrogen_contract }
-          - { package: chematic-mol, target: hin_contract }
-          - { package: chematic-mol, target: coverage_boundaries }
-          - { package: chematic-mol, target: mol2_unity_charge }
-          - { package: chematic-mol, target: mol2_atom_index }
-          - { package: chematic-mol, target: mol2_fixed4_writer }
-          - { package: chematic-mol, target: mol2_kekule_contract }
-          - { package: chematic-mol, target: public_api_compat_v1_1_3 }
-          - { package: chematic-mol, target: ccd_contract }
-          - { package: chematic-smiles, target: rdkit_matrix_limits }
-          - { package: chematic-smiles, target: rooted_stereo }
-          - { package: chematic-smiles, target: rdkit_matrix_3d_checked }
-          - { package: chematic-chem, target: rdkit_reference }
-          - { package: chematic-chem, target: rdkit_ring_version_contract }
-          - { package: chematic-chem, target: descriptor_contract }
-          - { package: chematic-chem, target: standardize_stereo_table_preservation }
-          - { package: chematic-cip, target: corpus_report }
-          - { package: chematic-cip, target: corpus_smoke }
-          - { package: chematic-cip, target: kekule_s0_stereo_invariance }
-          - { package: chematic-cip, target: mancude_context }
-          - { package: chematic-cip, target: mancude_corpus_classification }
-          - { package: chematic-cip, target: mancude_decision_regression }
-          - { package: chematic-cip, target: mancude_digraph_diff }
-          - { package: chematic-cip, target: rule4b_production_parity }
-          - { package: chematic-cip, target: uncharacterized_diagnosis }
-          - { package: chematic-crystal, target: neighbor }
-          - { package: chematic-crystal, target: periodicity }
-          - { package: chematic-crystal, target: serde_roundtrip }
-          - { package: chematic-fp, target: rdkit_morgan_stable_api_fixtures }
-          - { package: chematic-fp, target: rdkit_layered_config }
-          - { package: chematic-inchi, target: accurate_cip_preflight }
-          - { package: chematic-inchi, target: dedup_fixtures }
-          - { package: chematic-inchi, target: explicit_h_stereo }
-          - { package: chematic-inchi, target: ez_stash_stereo0d }
-          - { package: chematic-inchi, target: indexed_graph_relation }
-          - { package: chematic-inchi, target: invert_stereocenter_p0_stereo_invariance }
-          - { package: chematic-inchi, target: kekule_s0_stereo_invariance }
-          - { package: chematic-inchi, target: standard_inchi }
-          - { package: chematic-mcp, target: schema_conformance }
-          - { package: chematic-mol, target: conformer_3d_io }
-          - { package: chematic-mol, target: cross_binding_adversarial }
-          - { package: chematic-mol, target: format_binding_parity }
-          - { package: chematic-mol, target: mmcif_pqr_integration }
-          - { package: chematic-mol, target: mmcif_residue_contract }
-          - { package: chematic-mol, target: mmcif_pdb_checked }
-          - { package: chematic-core, target: checked_stereo_groups }
-          - { package: chematic-chem, target: stereo_group_inversion }
-          - { package: chematic-chem, target: stereo_group_alternatives }
-          - { package: chematic-chem, target: meso_stereo_group }
-          - { package: chematic-chem, target: tetrahedral_cleanup }
-          - { package: chematic-mol, target: gro_contract }
-          - { package: chematic-mol, target: turbomole_contract }
-          - { package: chematic-mol, target: exyz_contract }
-          - { package: chematic-mol, target: fhiaims_contract }
-          - { package: chematic-mol, target: mopac_cartesian_contract }
-          - { package: chematic-mol, target: mopac_archive_contract }
-          - { package: chematic-mol, target: dmol3_contract }
-          - { package: chematic-mol, target: pdb_selection_contract }
-          - { package: chematic-mol, target: pdb_conect_contract }
-          - { package: chematic-smiles, target: rdkit_graph_queries }
-          - { package: chematic-smiles, target: rdkit_atom_environment }
-          - { package: chematic-smiles, target: rdkit_path_enumeration }
-          - { package: chematic-mol, target: reaction_cdxml }
-          - { package: chematic-mol, target: rdfile_contract }
-          - { package: chematic-mol, target: gzmat_precision }
-          - { package: chematic-mol, target: gamess_zmat_contract }
-          - { package: chematic-mol, target: xyz_precision }
-          - { package: chematic-mol, target: sdf_selections }
-          - { package: chematic-mol, target: qcschema }
-          - { package: chematic-mol, target: sdf_v3000_recognition }
-          - { package: chematic-mol, target: square_planar_mol_io }
-          - { package: chematic-mol, target: stereo2d_ez_reader_integration }
-          - { package: chematic-mol, target: stereo_reader_integration }
-          - { package: chematic-perception, target: aromaticity_edge_gate }
-          - { package: chematic-smarts, target: merge_query_hydrogens }
-          - { package: chematic-smiles, target: canonical_idempotency_corpus }
-          - { package: chematic-smiles, target: atom_tag_visit_order }
-          - { package: chematic-smiles, target: atom_tag_cache }
-          - { package: chematic-smiles, target: canonical_ez_residual }
-          - { package: chematic-smiles, target: cross_binding_contract }
-          - { package: chematic-smiles, target: canonical_robustness }
-          - { package: chematic-smiles, target: chembl_roundtrip }
-          - { package: chematic-smiles, target: dative_bond_direction }
-          - { package: chematic-smiles, target: kekule_s0_stereo_invariance }
-          - { package: chematic-smiles, target: square_planar_stereo }
+        shard: [0, 1, 2, 3]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
@@ -369,16 +267,11 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: ${{ runner.os }}-cargo-test-integration-${{ hashFiles('Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-test-integration-${{ matrix.shard }}-${{ hashFiles('Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-cargo-test-integration-
-      - name: Integration tests
-        run: |
-          if [[ "${{ matrix.package }}" == "chematic-crystal" && "${{ matrix.target }}" == "serde_roundtrip" ]]; then
-            cargo test -p "${{ matrix.package }}" --test "${{ matrix.target }}" --features serde --quiet
-          else
-            cargo test -p "${{ matrix.package }}" --test "${{ matrix.target }}" --quiet
-          fi
+            ${{ runner.os }}-cargo-test-integration-${{ matrix.shard }}-
+      - name: Run all integration tests assigned to this shard
+        run: python3 scripts/ci_integration_shard.py --shards 4 --shard "${{ matrix.shard }}" --run
 
   test-native-inchi:
     name: Test (native-inchi)
@@ -860,3 +753,54 @@ jobs:
         run: python3 scripts/check_published_python_isolated_paired.py
       - name: Verify isolated published-Rust timing and RSS records
         run: python3 scripts/check_published_rust_isolated_paired.py
+
+  ci-gate:
+    name: CI gate
+    # Keep one stable required check while the implementation jobs evolve.
+    # Release qualification waits for the entire called CI workflow, including
+    # the slower artifact and cross-platform lanes below.
+    if: ${{ always() }}
+    needs:
+      - test-python-stubs
+      - test-parent-api-docs
+      - test
+      - rust-api-compat
+      - v3000-rdkit-semantic
+      - cxsmiles-rdkit-attachment-semantic
+      - v3000-indigo-semantic
+      - stereo-torture-suite
+      - test-integration
+      - test-native-inchi
+      - test-python
+      - test-hba-wheel-macos
+      - test-source-wheel-windows
+      - test-wasm
+      - clippy
+      - msrv
+      - validate-citation
+      - validate-benchmark-index
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every fast contract lane to succeed
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          python3 - <<'PYCODE'
+          import json
+          import os
+          import sys
+
+          needs = json.loads(os.environ["NEEDS_JSON"])
+          allowed_skips = {"rust-api-compat"} if os.environ["EVENT_NAME"] != "pull_request" else set()
+          failures = {
+              name: job["result"] for name, job in needs.items()
+              if job["result"] != "success"
+              and not (name in allowed_skips and job["result"] == "skipped")
+          }
+          for name, job in sorted(needs.items()):
+              print(f"{name}: {job['result']}")
+          if failures:
+              print(f"Required CI lanes did not pass: {failures}", file=sys.stderr)
+              sys.exit(1)
+          PYCODE

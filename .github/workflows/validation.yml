@@ -5,11 +5,10 @@ on:
     inputs:
       corpus_url:
         description: "URL to SMILES CSV corpus (column: smiles)"
-        required: false
-        default: ""
-  schedule:
-    # Weekly on Tuesday 04:00 UTC
-    - cron: '0 4 * * 2'
+        required: true
+
+# A corpus URL is required for a meaningful run. The old scheduled run used
+# the empty default and completed without validating any molecules.
 
 jobs:
   rdkit-parity:
@@ -58,24 +57,17 @@ jobs:
 
       - name: Download SMILES corpus
         env:
-          CORPUS_URL: ${{ github.event.inputs.corpus_url }}
+          CORPUS_URL: ${{ inputs.corpus_url }}
         run: |
-          if [ -n "$CORPUS_URL" ]; then
-            curl -fL "$CORPUS_URL" -o bench_corpus.csv || touch bench_corpus.csv
-          else
-            echo "No corpus_url provided — skipping benchmark (trigger with corpus_url input)"
-            touch bench_corpus.csv
-          fi
+          test -n "$CORPUS_URL"
+          curl -fLsS "$CORPUS_URL" -o bench_corpus.csv
+          test -s bench_corpus.csv
 
       - name: Run benchmark
         run: |
-          if [ -s bench_corpus.csv ]; then
-            mkdir -p validation/results
-            python3 scripts/bench5k.py bench_corpus.csv \
-              --json validation/results/latest.json
-          else
-            echo "No corpus available, skipping benchmark"
-          fi
+          mkdir -p validation/results
+          python3 scripts/bench5k.py bench_corpus.csv \
+            --json validation/results/latest.json
 
       - name: Generate validation.md
         if: hashFiles('validation/results/latest.json') != ''

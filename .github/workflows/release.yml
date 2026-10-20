@@ -4,27 +4,110 @@ on:
   push:
     tags: ['v[0-9]*.[0-9]*.[0-9]*']
 
+# Called workflows narrow these permissions for their own jobs.
 permissions:
   contents: write
+  id-token: write
+
+concurrency:
+  group: release-${{ github.ref_name }}
+  cancel-in-progress: false
 
 jobs:
-  release:
-    name: Create GitHub Release
-    # Release candidates are validation-only tags.  The tag glob above cannot
-    # express SemVer prerelease exclusion, so keep the public-release boundary
-    # explicit at the side-effecting job.
-    if: ${{ !contains(github.ref_name, '-') }}
+  preflight:
+    name: Verify release tag
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.tag.outputs.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.12"
+      - name: Verify exact source revision and publish graph
+        id: tag
+        run: |
+          version="$(python3 scripts/check_release_tag.py --tag "$GITHUB_REF_NAME")"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          test -f "validation/published-wheel-chemistry-gates-expected-v${version}.json"
+          python3 scripts/check_publish_graph.py
+          python3 -m unittest scripts.tests.test_check_release_tag -v
 
+  qualification:
+    name: Qualify release source
+    needs: preflight
+    uses: ./.github/workflows/ci.yml
+
+  coverage:
+    name: Qualify coverage
+    needs: preflight
+    uses: ./.github/workflows/coverage.yml
+
+  security:
+    name: Qualify security
+    needs: preflight
+    uses: ./.github/workflows/security.yml
+
+  publish-crates:
+    name: Publish crates.io
+    if: ${{ !contains(github.ref_name, '-') }}
+    needs: [preflight, qualification, coverage, security]
+    uses: ./.github/workflows/publish-crates.yml
+    secrets: inherit
+
+  publish-npm:
+    name: Publish npm
+    if: ${{ !contains(github.ref_name, '-') }}
+    needs: [preflight, qualification, coverage, security]
+    uses: ./.github/workflows/publish-npm.yml
+    secrets: inherit
+
+  publish-pypi:
+    name: Publish PyPI
+    if: ${{ !contains(github.ref_name, '-') }}
+    needs: [preflight, qualification, coverage, security]
+    uses: ./.github/workflows/publish-pypi.yml
+    secrets: inherit
+
+  published-wheel-smoke:
+    name: Verify published wheels
+    needs: [preflight, publish-pypi]
+    uses: ./.github/workflows/release-package-smoke.yml
+    with:
+      version: ${{ needs.preflight.outputs.version }}
+
+  published-wheel-chemistry:
+    name: Verify published chemistry
+    needs: [preflight, publish-pypi]
+    uses: ./.github/workflows/published-wheel-chemistry-gates.yml
+    with:
+      version: ${{ needs.preflight.outputs.version }}
+      biotransformer_corpus: true
+
+  release:
+    name: Create GitHub Release
+    needs:
+      - preflight
+      - publish-crates
+      - publish-npm
+      - publish-pypi
+      - published-wheel-smoke
+      - published-wheel-chemistry
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
       - name: Extract release notes
         run: |
           OLD=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null | sed 's/^v//' || echo '0.0.0')
           python3 scripts/make_release_notes.py --old "$OLD" --notes-file /tmp/release_notes.md
-
       - name: Generate machine-readable release metadata
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
@@ -38,7 +121,6 @@ jobs:
             --commit "$COMMIT" \
             --released-at "$RELEASED_AT" \
             --output "/tmp/chematic-release-metadata-${VERSION}.json"
-
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
