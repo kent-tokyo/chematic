@@ -1,0 +1,27 @@
+    Finished `release` profile [optimized] target(s) in 0.04s
+     Running unittests src/lib.rs (/private/tmp/chematic-conjugation-target/release/deps/chematic_smiles-bcda25160b69e387)
+
+running 1 test
+cleanup_group	fixture	1130
+cleanup_timing	fixture	0	0.011201698	0.004888199
+cleanup_timing	fixture	1	0.011280535	0.004836338
+cleanup_timing	fixture	2	0.011387376	0.004794162
+cleanup_timing	fixture	3	0.011138377	0.004671873
+cleanup_timing	fixture	4	0.011133955	0.004856039
+cleanup_timing	fixture	5	0.011137711	0.004822589
+cleanup_timing	fixture	6	0.011111653	0.004814780
+cleanup_timing	fixture	7	0.011063077	0.004786670
+cleanup_timing	fixture	8	0.011176220	0.004750156
+cleanup_group	controls	22
+cleanup_timing	controls	0	0.000409134	0.000174133
+cleanup_timing	controls	1	0.000405829	0.000175412
+cleanup_timing	controls	2	0.000405923	0.000174416
+cleanup_timing	controls	3	0.000404371	0.000175923
+cleanup_timing	controls	4	0.000407744	0.000173078
+cleanup_timing	controls	5	0.000405545	0.000174056
+cleanup_timing	controls	6	0.000405584	0.000175775
+cleanup_timing	controls	7	0.000477589	0.000180953
+cleanup_timing	controls	8	0.000413755	0.000176097
+test rdkit::sanitize::cleanup_candidate_tests::cleanup_candidates_timing ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 432 filtered out; finished in 1.80s

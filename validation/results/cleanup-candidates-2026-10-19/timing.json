@@ -1,0 +1,149 @@
+{
+  "scope": "clean_up on raw internal models only; not parsing/sanitization end-to-end or a release benchmark",
+  "baseline": "frozen pre-change loop in the same test binary",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "rustc": "rustc 1.97.0 (2d8144b78 2026-07-07)",
+  "cargo_settings": {
+    "CARGO_TARGET_DIR": "/private/tmp/chematic-conjugation-target",
+    "CARGO_BUILD_JOBS": "2",
+    "CARGO_PROFILE_RELEASE_DEBUG": "0",
+    "CARGO_PROFILE_RELEASE_LTO": "false",
+    "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "16",
+    "CARGO_INCREMENTAL": "0"
+  },
+  "source_sha256": {
+    "crates/chematic-smiles/src/rdkit/sanitize.rs": "2088b7bcf90b988a03ab33e84c210a1aa1e2e1e0fd0cd73e3b6407f5518eafd8",
+    "crates/chematic-smiles/src/rdkit/sanitize/cleanup_candidate_tests.rs": "22dc84443eaf731d62d1454a7ce7c5d9cbd311edd81b6b1fdd1587991e0c4c3b",
+    "crates/chematic-smiles/tests/data/rdkit_canonical_smiles.tsv": "eada65d7bdf246c904d6d3bbd22c660d06403cff83ab33ffb2f3763f4f1a967d",
+    "Cargo.lock": "ad20bfd842f9dbfdaee9c10ed2f79ba3598d4b22414b5783d6fecd3c215efa5e"
+  },
+  "checkout_head": "b7004777daf39a5f6cef03f56c4dcb68c12433f3",
+  "prepared_models": 1130,
+  "refused_models": 1,
+  "passes_per_round": 300,
+  "rounds": [
+    {
+      "group": "fixture",
+      "round": 0,
+      "reference_seconds": 0.011201698,
+      "candidate_seconds": 0.004888199
+    },
+    {
+      "group": "fixture",
+      "round": 1,
+      "reference_seconds": 0.011280535,
+      "candidate_seconds": 0.004836338
+    },
+    {
+      "group": "fixture",
+      "round": 2,
+      "reference_seconds": 0.011387376,
+      "candidate_seconds": 0.004794162
+    },
+    {
+      "group": "fixture",
+      "round": 3,
+      "reference_seconds": 0.011138377,
+      "candidate_seconds": 0.004671873
+    },
+    {
+      "group": "fixture",
+      "round": 4,
+      "reference_seconds": 0.011133955,
+      "candidate_seconds": 0.004856039
+    },
+    {
+      "group": "fixture",
+      "round": 5,
+      "reference_seconds": 0.011137711,
+      "candidate_seconds": 0.004822589
+    },
+    {
+      "group": "fixture",
+      "round": 6,
+      "reference_seconds": 0.011111653,
+      "candidate_seconds": 0.00481478
+    },
+    {
+      "group": "fixture",
+      "round": 7,
+      "reference_seconds": 0.011063077,
+      "candidate_seconds": 0.00478667
+    },
+    {
+      "group": "fixture",
+      "round": 8,
+      "reference_seconds": 0.01117622,
+      "candidate_seconds": 0.004750156
+    },
+    {
+      "group": "controls",
+      "round": 0,
+      "reference_seconds": 0.000409134,
+      "candidate_seconds": 0.000174133
+    },
+    {
+      "group": "controls",
+      "round": 1,
+      "reference_seconds": 0.000405829,
+      "candidate_seconds": 0.000175412
+    },
+    {
+      "group": "controls",
+      "round": 2,
+      "reference_seconds": 0.000405923,
+      "candidate_seconds": 0.000174416
+    },
+    {
+      "group": "controls",
+      "round": 3,
+      "reference_seconds": 0.000404371,
+      "candidate_seconds": 0.000175923
+    },
+    {
+      "group": "controls",
+      "round": 4,
+      "reference_seconds": 0.000407744,
+      "candidate_seconds": 0.000173078
+    },
+    {
+      "group": "controls",
+      "round": 5,
+      "reference_seconds": 0.000405545,
+      "candidate_seconds": 0.000174056
+    },
+    {
+      "group": "controls",
+      "round": 6,
+      "reference_seconds": 0.000405584,
+      "candidate_seconds": 0.000175775
+    },
+    {
+      "group": "controls",
+      "round": 7,
+      "reference_seconds": 0.000477589,
+      "candidate_seconds": 0.000180953
+    },
+    {
+      "group": "controls",
+      "round": 8,
+      "reference_seconds": 0.000413755,
+      "candidate_seconds": 0.000176097
+    }
+  ],
+  "summaries": {
+    "fixture": {
+      "models": 1130,
+      "median_reference_seconds": 0.011138377,
+      "median_candidate_seconds": 0.00481478,
+      "median_reduction_percent": 56.7730558949477
+    },
+    "controls": {
+      "models": 22,
+      "median_reference_seconds": 0.000405923,
+      "median_candidate_seconds": 0.000175412,
+      "median_reduction_percent": 56.78687829957898
+    }
+  }
+}
