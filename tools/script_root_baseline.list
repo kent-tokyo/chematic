@@ -263,7 +263,6 @@ scripts/smoke_npm_package.mjs
 scripts/smoke_npm_types.mjs
 scripts/square_planar_permutation_oracle.py
 scripts/standardization_cross_binding_parity.py
-scripts/standardization_holdout.py
 scripts/stereo_format_roundtrip_gate.py
 scripts/stereo_spelling_invariance_gate.py
 scripts/stereo_torture_suite_gate.py
