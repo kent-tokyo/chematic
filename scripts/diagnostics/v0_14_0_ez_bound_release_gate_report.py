@@ -21,7 +21,7 @@ InvalidConfiguration gate). This script only ever diffs same-run arm pairs or th
 same arm across two runs -- never cross-arm-and-cross-run at once.
 
 Usage:
-    python3 scripts/v0_14_0_ez_bound_release_gate_report.py \\
+    python3 scripts/diagnostics/v0_14_0_ez_bound_release_gate_report.py \\
         --new validation/results/pipeline_v2_vs_rdkit_v0_14_0_chematic_rows.jsonl \\
         --historical validation/results/pipeline_v2_vs_rdkit_v0_13_0_chematic_rows.jsonl
 """
