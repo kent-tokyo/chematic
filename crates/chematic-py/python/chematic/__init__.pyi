@@ -52,6 +52,7 @@ from ._sdf_split import (
 )
 
 from ._xbs import XbsBondRule as XbsBondRule, XbsSpecies as XbsSpecies, write_xbs as write_xbs
+from ._xbs_read import XbsScene as XbsScene, read_xbs as read_xbs
 
 from ._xyz_atom_data import XyzAtomDataFrame as XyzAtomDataFrame, parse_xyz_atom_data as parse_xyz_atom_data
 

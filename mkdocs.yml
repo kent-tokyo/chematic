@@ -145,7 +145,7 @@ nav:
     - SDF File Partitions: sdf-file-partitions.md
     - Explicit-Charge Coulomb Field: coulomb-interaction-field.md
     - Local-Solvation Coulomb Field: coulomb-dielectric-field.md
-    - Checked XBS Scene Output: xbs-output.md
+    - Checked XBS Scenes: xbs-output.md
     - Checked XYZ Per-Atom Data: xyz-atom-data.md
     - Checked CIF-to-XSF Geometry: cif-xsf-output.md
     - Checked Bond Fragmentation: checked-bond-fragmentation.md
