@@ -13,7 +13,11 @@ fuzz_target!(|data: &[u8]| {
     let Ok(input) = std::str::from_utf8(payload) else {
         return;
     };
-    let input = &input[..input.len().min(1 << 20)];
+    let mut end = input.len().min(1 << 20);
+    while !input.is_char_boundary(end) {
+        end -= 1;
+    }
+    let input = &input[..end];
 
     match selector % 26 {
         0 => { let _ = chematic_chem::parse_formula(input); }
