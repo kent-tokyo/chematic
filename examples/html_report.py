@@ -27,35 +27,33 @@ DEMO = [
 
 
 def main() -> None:
-    out_path = "report.html"
+    out_path = sys.argv[2] if len(sys.argv) > 2 else "report.html"
 
-    if len(sys.argv) == 1:
-        pairs = DEMO
-    elif len(sys.argv) == 2:
+    if len(sys.argv) > 1:
         with open(sys.argv[1]) as f:
             lines = [l.strip() for l in f if l.strip()]
         pairs = [(f"mol_{i}", smi) for i, smi in enumerate(lines, 1)]
     else:
-        with open(sys.argv[1]) as f:
-            lines = [l.strip() for l in f if l.strip()]
-        pairs = [(f"mol_{i}", smi) for i, smi in enumerate(lines, 1)]
-        out_path = sys.argv[2]
+        pairs = DEMO
 
-    mols = [chematic.from_smiles(smi) for _, smi in pairs]
-    names = [name for name, _ in pairs]
+    mols = []
+    names = []
+    for name, smi in pairs:
+        try:
+            mol = chematic.from_smiles(smi)
+        except ValueError:
+            continue
+        if mol is not None:
+            mols.append(mol)
+            names.append(name)
 
-    # Filter out None (invalid SMILES)
-    valid = [(m, n) for m, n in zip(mols, names) if m is not None]
-    mols_clean = [m for m, _ in valid]
-    names_clean = [n for _, n in valid]
-
-    html = chematic.report(
-        mols_clean,
-        names=names_clean,
-        title=f"chematic report — {len(mols_clean)} molecules",
+    chematic.report(
+        mols,
+        names=names,
+        title=f"chematic report — {len(mols)} molecules",
         output=out_path,
     )
-    print(f"Wrote {len(html):,} bytes → {out_path}")
+    print(f"Wrote {len(mols)} molecules → {out_path}")
     print(f"Open in browser: open {out_path}")
 
 
