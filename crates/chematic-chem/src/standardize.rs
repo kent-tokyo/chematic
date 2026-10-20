@@ -17,6 +17,7 @@ use chematic_smarts::{MatchConfig, parse_smarts};
 
 mod cleanup;
 mod groups;
+mod reionize;
 pub use cleanup::cleanup;
 pub use groups::normalize_groups;
 
@@ -1133,93 +1134,14 @@ pub fn prefer_organic(mol: &Molecule) -> Molecule {
     }
 }
 
-/// Reionize a molecule by adjusting protonation to favored forms.
+/// Move an existing negative charge to a stronger acid site when the acid/base
+/// classes are supported. Neutral acids and bases are not independently ionized.
 ///
-/// Simple heuristic approach that adjusts charges on common acidic and basic groups:
-/// - Carboxylic acids with OH: deprotonate to COO- (carboxylate)
-/// - Phenols: deprotonate to phenoxide (O-)
-/// - Primary amines: protonate to ammonium (NH3+)
-/// - Imidazoles: protonate to imidazolium (N+)
-///
-/// This is a simplified version suitable for typical organic molecules.
+/// This bounded RDKit-compatible operation currently handles a single simple
+/// carbanion or oxygen anion and unique oxygen-acid donors. Other charge and
+/// resonance patterns are returned unchanged, with their stereo metadata intact.
 pub fn reionize(mol: &Molecule) -> Molecule {
-    let mut builder = MoleculeBuilder::new();
-    let mut remap: HashMap<AtomIdx, AtomIdx> = HashMap::new();
-
-    // Copy all atoms, adjusting charges
-    for i in 0..mol.atom_count() {
-        let idx = AtomIdx(i as u32);
-        let mut atom = mol.atom(idx).clone();
-        let an = atom.element.atomic_number();
-
-        // Check for carboxylic acid or phenol: C=O with O-H or Ar-O-H. Only
-        // an O that has an H and a single carbon neighbour (an ether or ester
-        // O was charged with two bonds before, depending on atom order).
-        let oh_carbon = (an == 8
-            && atom.charge == 0
-            && chematic_core::implicit_hcount(mol, idx) > 0
-            && mol.degree(idx) == 1)
-            .then(|| mol.neighbors(idx).next())
-            .flatten()
-            .filter(|&(neighbor, bond_idx)| {
-                mol.bond(bond_idx).order == chematic_core::BondOrder::Single
-                    && mol.atom(neighbor).element.atomic_number() == 6
-            });
-        if let Some((c_idx, _)) = oh_carbon {
-            // Check if C is aromatic (phenol) or has a double-bonded O (carboxylic acid)
-            let is_aromatic = mol.atom(c_idx).aromatic;
-            let has_double_bonded_o = mol.neighbors(c_idx).any(|(other, bond_idx)| {
-                mol.bond(bond_idx).order == chematic_core::BondOrder::Double
-                    && mol.atom(other).element.atomic_number() == 8
-                    && other != idx
-            });
-
-            // Only deprotonate if it's a phenol or carboxylic acid, not aliphatic OH
-            if is_aromatic || has_double_bonded_o {
-                atom.charge -= 1; // Deprotonate: OH → O-
-                if let Some(h) = atom.hydrogen_count {
-                    atom.hydrogen_count = Some(h.saturating_sub(1));
-                }
-            }
-        }
-
-        // Check for primary/secondary amines (but NOT amides)
-        if an == 7 && !atom.aromatic && atom.charge == 0 {
-            // A primary/secondary aliphatic amine: single bonds only, no
-            // aromatic neighbour (aniline), and no neighbour doubly bonded
-            // to O/S (amide, thioamide, sulfonamide, carbamate).
-            let all_single = mol
-                .neighbors(idx)
-                .all(|(_, b)| mol.bond(b).order == chematic_core::BondOrder::Single);
-            let conjugated = mol.neighbors(idx).any(|(neighbor, _)| {
-                mol.atom(neighbor).aromatic
-                    || mol.neighbors(neighbor).any(|(o_neighbor, o_bond)| {
-                        o_neighbor != idx
-                            && matches!(
-                                mol.bond(o_bond).order,
-                                chematic_core::BondOrder::Double | chematic_core::BondOrder::Triple
-                            )
-                    })
-            });
-            let h_count = chematic_core::implicit_hcount(mol, idx);
-            if all_single && !conjugated && (h_count == 2 || h_count == 1) {
-                atom.charge += 1; // Protonate: NH2 → NH3+
-                if let Some(h) = atom.hydrogen_count {
-                    atom.hydrogen_count = Some(h + 1);
-                }
-            }
-        }
-
-        let new_idx = builder.add_atom(atom);
-        remap.insert(idx, new_idx);
-    }
-
-    copy_bonds(mol, &mut builder, &remap);
-    // Identity-preserving rebuild -- see issue #399.
-    builder.copy_stereo_from(mol);
-    builder.copy_bond_directions_from(mol);
-    builder.copy_stereo_groups_from(mol);
-    builder.build()
+    reionize::reionize(mol)
 }
 
 /// Remove formal charges by protonation/deprotonation, as RDKit's
@@ -2441,32 +2363,32 @@ mod tests {
         }
         let canon = |s: &str| chematic_smiles::canonical_smiles(&parse(s).unwrap());
         let run = |s: &str| chematic_smiles::canonical_smiles(&reionize(&parse(s).unwrap()));
-        assert_eq!(run("OC(=O)CCN"), canon("[O-]C(=O)CC[NH3+]"));
-        // Anilines and sulfonamides are not protonated.
+        assert_eq!(run("OC(=O)CCN"), canon("OC(=O)CCN"));
+        // Neutral acid/base groups do not ionize independently.
         assert_eq!(run("Nc1ccccc1"), canon("Nc1ccccc1"));
         assert_eq!(run("CS(=O)(=O)NC"), canon("CS(=O)(=O)NC"));
     }
 
     #[test]
-    fn reionize_deprotonates_carboxylic_acids() {
+    fn reionize_keeps_neutral_carboxylic_acids() {
         // "CC(=O)O" — acetic acid
         let mol = parse("CC(=O)O").unwrap();
 
         let result = reionize(&mol);
 
-        // Should have a negatively charged oxygen (carboxylate anion)
+        // A neutral acid does not create an anion without an existing base.
         let has_negative_oxygen = result
             .atoms()
             .any(|(_, a)| a.element.atomic_number() == 8 && a.charge < 0);
 
         assert!(
-            has_negative_oxygen,
-            "reionize should deprotonate carboxylic acids"
+            !has_negative_oxygen,
+            "reionize must not independently deprotonate carboxylic acids"
         );
     }
 
     #[test]
-    fn reionize_protonates_amines() {
+    fn reionize_keeps_neutral_amines() {
         // "CC(N)C" — secondary amine
         let mol = parse("CC(N)C").unwrap();
 
@@ -2477,7 +2399,10 @@ mod tests {
             .atoms()
             .any(|(_, a)| a.element.atomic_number() == 7 && a.charge > 0);
 
-        assert!(has_positive_nitrogen, "reionize should protonate amines");
+        assert!(
+            !has_positive_nitrogen,
+            "reionize must not independently protonate amines"
+        );
     }
 
     #[test]
