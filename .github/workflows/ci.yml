@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
   workflow_call:
 
 concurrency:
@@ -378,6 +379,8 @@ jobs:
 
   test-a6-paired-linux-cp39:
     name: A6 published/source wheel retention (Linux Python 3.9)
+    # Full platform qualification runs on main, manual runs, and release tags.
+    if: ${{ github.event_name != 'pull_request' }}
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
@@ -484,6 +487,8 @@ jobs:
 
   test-source-wheel-windows:
     name: Source wheel (Windows x86-64)
+    # Full platform qualification runs on main, manual runs, and release tags.
+    if: ${{ github.event_name != 'pull_request' }}
     runs-on: windows-latest
     timeout-minutes: 30
     defaults:
@@ -545,6 +550,8 @@ jobs:
 
   test-a6-published-macos-cp39:
     name: A6 published wheel (macOS Python 3.9)
+    # Full platform qualification runs on main, manual runs, and release tags.
+    if: ${{ github.event_name != 'pull_request' }}
     runs-on: macos-latest
     timeout-minutes: 20
     steps:
@@ -581,7 +588,7 @@ jobs:
   a6-cross-platform:
     name: A6 coordinates across platforms (#739)
     needs: [test-python, test-hba-wheel-macos, test-source-wheel-windows, test-a6-paired-linux-cp39, test-a6-published-macos-cp39]
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && github.event_name != 'pull_request' && needs.test-source-wheel-windows.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

@@ -77,9 +77,9 @@ Python and WASM runtime tests, semantic interoperability checks, API
 compatibility, and MSRV. Rust integration tests are assigned to four jobs by
 `scripts/checks/ci_integration_shard.py`; new test targets are discovered through Cargo
 metadata without editing the workflow matrix. The longer Windows source-wheel
-and A6 cross-platform checks still run in full CI and on release tags, outside
-the PR `CI gate` critical path. `Test`, `Clippy`, `Format Check`, and `Build Check`
-remain required checks. Keep the PR branch up to date with `main` before
+and A6 cross-platform checks run on main, manual CI, and release tags; PR CI
+finishes after its `CI gate` and the other fast lanes. `Test`, `Clippy`,
+`Format Check`, and `Build Check` remain required checks. Keep the PR branch up to date with `main` before
 merging, so the tested merge includes the current base.
 
 Stable release tags must point to a version-matching commit on `main`. The
