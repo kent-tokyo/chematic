@@ -1867,10 +1867,6 @@ pub fn standardize(mol: &Molecule, opts: &StandardizeOptions) -> Molecule {
 }
 
 #[cfg(test)]
-#[path = "standardize/normalize_tests.rs"]
-mod normalize_tests;
-
-#[cfg(test)]
 mod tests {
     use super::*;
     use chematic_smiles::parse;

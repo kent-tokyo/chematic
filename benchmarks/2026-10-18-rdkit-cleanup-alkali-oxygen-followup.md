@@ -64,7 +64,7 @@ examples above, not a complete correctness metric.
 After generating the source dump with the command above, reproduce the audit:
 
 ```sh
-python scripts/rdkit_cleanup_charge_invariant_audit.py \
+python scripts/diagnostics/rdkit_cleanup_charge_invariant_audit.py \
   --dump /tmp/chematic-cleanup-alkali-oxygen.jsonl \
   --comparison benchmarks/2026-10-18-rdkit-cleanup-alkali-oxygen-followup.json \
   --output /tmp/chematic-cleanup-charge-audit.json

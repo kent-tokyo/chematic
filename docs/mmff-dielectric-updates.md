@@ -69,7 +69,7 @@ restoration, rejected updates, finite-difference gradients, unaffected other
 terms, coordinate changes and minimizer reuse. Default MMFF regression tests
 remain separate from these new-setting checks.
 
-`scripts/validate_mmff_dielectric.py` rechecks those goldens with pinned RDKit,
+`scripts/validation/validate_mmff_dielectric.py` rechecks those goldens with pinned RDKit,
 then compares fresh seed-7/19/71 conformers and displaced ionic pairs. Each
 native field is reused across dielectric changes; independent RDKit reference
 fields are constructed with `SetMMFFDielectricModel(1)` and the requested

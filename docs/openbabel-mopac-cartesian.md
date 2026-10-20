@@ -169,12 +169,12 @@ The original fixture manifest is
 `validation/openbabel_issues/mopac/contract-fixtures.json`. It records
 provenance, license, redistribution, minimization, oracle settings, expected
 values and a normalized UTF-8/LF SHA-256. Generated recipes and their input
-hashes are recorded by `scripts/validate_mopac_cartesian.py`.
+hashes are recorded by `scripts/validation/validate_mopac_cartesian.py`.
 
 ```sh
 cargo test -p chematic-mol --lib --test mopac_cartesian_contract --test fhiaims_contract
 python -m pytest crates/chematic-py/tests/test_mopac_cartesian.py
-python scripts/validate_mopac_cartesian.py --obabel /opt/homebrew/bin/obabel
+python scripts/validation/validate_mopac_cartesian.py --obabel /opt/homebrew/bin/obabel
 ```
 
 Build/install the candidate Python extension before the Python commands.

@@ -66,7 +66,7 @@ handling differences.
 cargo test -p chematic-mol --lib --test hin_contract --offline --quiet
 python3 -m pytest -q crates/chematic-py/tests/test_hin.py
 node crates/chematic-wasm/tests/hin.test.mjs
-python3 scripts/validate_openbabel_hin.py
+python3 scripts/validation/validate_openbabel_hin.py
 ```
 
 Python needs the extension built from this source. Node defaults to `pkg-node`

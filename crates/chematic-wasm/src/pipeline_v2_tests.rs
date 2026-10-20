@@ -656,7 +656,7 @@ mod tests {
     // -----------------------------------------------------------------------
     // Cross-binding parity: validation/pipeline_v2_wasm_parity_fixtures.json
     //
-    // Generated once by scripts/gen_pipeline_v2_wasm_parity_fixtures.py via the
+    // Generated once by scripts/generators/gen_pipeline_v2_wasm_parity_fixtures.py via the
     // Python binding (crates/chematic-py/src/pipeline_v2.rs). Both the WASM
     // binding under test here and Python ultimately call the exact same
     // `chematic_3d::pipeline_v2::embed_pipeline_v2` -- so this is less "does the

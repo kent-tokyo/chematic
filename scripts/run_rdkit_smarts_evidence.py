@@ -166,7 +166,7 @@ def main() -> int:
         subprocess.run(
             [
                 sys.executable,
-                str(ROOT / "scripts" / "rdkit_ring_parity_diagnosis.py"),
+                str(ROOT / "scripts" / "diagnostics" / "rdkit_ring_parity_diagnosis.py"),
                 "--dump", str(dump_path),
                 "--summary", str(summary_path),
                 "--expected-rdkit-version", args.expected_rdkit_version,

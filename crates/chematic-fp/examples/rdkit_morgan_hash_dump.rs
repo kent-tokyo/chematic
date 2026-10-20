@@ -17,7 +17,7 @@
 //! `row["default"]["sparse_bit_info"]`/`["sparse_counts"]`/
 //! `["folded_on_bits"]`/`["folded_bit_info"]` (representative-selection,
 //! sparse-count, folded-bit, bitInfo parity) from
-//! `scripts/gen_ecfp_rdkit_environment_oracle.py`'s oracle rows.
+//! `scripts/generators/gen_ecfp_rdkit_environment_oracle.py`'s oracle rows.
 //!
 //! Diagnostic only. Requires the `diagnostics` feature:
 //! ```text

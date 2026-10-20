@@ -74,7 +74,7 @@ cargo build --release -p chematic-mol --example file_io_semantic_probe
 c++ -std=c++17 -O3 $(pkg-config --cflags openbabel-3) \
   tools/openbabel_file_io_harness.cpp $(pkg-config --libs openbabel-3) \
   -o target/release/openbabel_file_io_harness
-python3 scripts/bench_openbabel_file_io_same_process.py --blocks 21 --repeats 1000
+python3 scripts/benchmarks/bench_openbabel_file_io_same_process.py --blocks 21 --repeats 1000
 ```
 
 Each process parses or writes the same fixture repeatedly and reports only the

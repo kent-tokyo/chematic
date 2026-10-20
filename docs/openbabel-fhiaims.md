@@ -110,7 +110,7 @@ mutable public data before serialization.
 
 ## Validation
 
-`scripts/validate_fhiaims.py` generates 192 original synthetic documents from
+`scripts/validation/validate_fhiaims.py` generates 192 original synthetic documents from
 eight small geometry recipes, six dimensionality/frame choices, metadata
 on/off and LF/CRLF. Every structured field must match the original input
 arrays, and every document must retain its fields through an exact internal
@@ -158,7 +158,7 @@ settings, expectations and normalized LF UTF-8 hashes. The static contract
 fixture is in `validation/openbabel_issues/fhiaims/contract-fixtures.json`.
 
 ```sh
-python scripts/validate_fhiaims.py --obabel /path/to/obabel
+python scripts/validation/validate_fhiaims.py --obabel /path/to/obabel
 cargo test -p chematic-mol --lib --test fhiaims_contract --test exyz_contract
 ```
 

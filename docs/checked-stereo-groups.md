@@ -116,7 +116,7 @@ cargo test -p chematic-mol --lib --test v3000_semantic_interop --offline --quiet
 python -m pytest crates/chematic-py/tests/test_stereo_groups.py \
   crates/chematic-py/tests/test_pickle.py \
   crates/chematic-py/tests/test_stereo_candidate_budget.py -q
-python scripts/validate_checked_stereo_groups.py
+python scripts/validation/validate_checked_stereo_groups.py
 ```
 
 Tests cover graph metadata and warm/cold caches, detached inspection, atomic

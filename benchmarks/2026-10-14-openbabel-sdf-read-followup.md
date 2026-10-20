@@ -166,7 +166,7 @@ to the reports do not change raw timing rows.
 - [Native Rust harness](../crates/chematic-mol/examples/openbabel_sdf_throughput.rs),
   [native Open Babel harness](../tools/openbabel_sdf_throughput.cpp),
   [runner](../scripts/bench_openbabel_sdf_throughput.py), and
-  [corpus generator](../scripts/build_openbabel_sdf_speed_corpus.py)
+  [corpus generator](../scripts/generators/build_openbabel_sdf_speed_corpus.py)
 
 This packet establishes the listed native 2D V2000 SDF wins. Other formats,
 larger and fresh corpora, malformed inputs, cold startup, Python/CLI overhead,

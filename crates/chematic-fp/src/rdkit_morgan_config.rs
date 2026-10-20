@@ -3,7 +3,7 @@
 //! Generalizes [`crate::rdkit_morgan_ecfp4::rdkit_morgan_ecfp4_experimental`]'s single
 //! fixed point (radius=2/ECFP4, 2048 bits) to the small, closed set of `(radius,
 //! fp_size)` combinations independently re-verified against a live RDKit oracle --
-//! see `scripts/gen_ecfp4_rdkit_stable_api_fixtures.py` and
+//! see `scripts/generators/gen_ecfp4_rdkit_stable_api_fixtures.py` and
 //! `validation/ecfp4_rdkit_stable_api_fixtures.json` (RDKit 2026.03.3, pinned commit
 //! `8afba32ec539dcb2369bc84549d802aca3f7eb39`, same pin as
 //! [`crate::rdkit_morgan_hash`]).

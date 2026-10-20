@@ -133,7 +133,7 @@ def check_wasm(candidate: Path) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--baseline", default="v1.1.7")
+    parser.add_argument("--baseline", default="v1.1.8")
     parser.add_argument("--wasm-dts", type=Path)
     args = parser.parse_args()
     check_python(args.baseline)

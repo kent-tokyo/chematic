@@ -26,7 +26,7 @@ cargo run -p chematic-mol --example streaming_benchmark --release --offline -- -
 
 ## RDKit block-parser reference
 
-`python3 scripts/bench_streaming_formats.py --repeats 200` produced:
+`python3 scripts/benchmarks/bench_streaming_formats.py --repeats 200` produced:
 
 | Format | Records | Failures | Records/s | Bytes/s |
 | --- | ---: | ---: | ---: | ---: |

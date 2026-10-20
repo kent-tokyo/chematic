@@ -20,12 +20,12 @@ Reproduction:
 ```sh
 wasm-pack build crates/chematic-wasm --target web \
   --out-dir /private/tmp/chematic-wasm-v1.0.11-browser-gate --mode no-install
-node scripts/bench_browser_wasm_vs_rdkit.mjs \
+node scripts/benchmarks/bench_browser_wasm_vs_rdkit.mjs \
   --rdkit-package /private/tmp/chematic-rdkitjs-gate/node_modules/@rdkit/rdkit \
   --output /private/tmp/ignored-browser-result.json \
   --html-output /private/tmp/chematic-browser-generated-gate-1000.html \
   --rows 1000 --warmup 20 --init-timeout-ms 10000
-python3 scripts/bench_browser_wasm_vs_rdkit_playwright.py \
+python3 scripts/benchmarks/bench_browser_wasm_vs_rdkit_playwright.py \
   --html /private/tmp/chematic-browser-generated-gate-1000.html \
   --output validation/results/competitive-browser-rdkitjs-generated-2026-09-10-v1.0.11.json \
   --schematic-dir /private/tmp/chematic-wasm-v1.0.11-browser-gate \

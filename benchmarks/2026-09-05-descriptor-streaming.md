@@ -54,5 +54,5 @@ Commands:
 cargo run -p chematic-mol --example streaming_benchmark --release --offline -- --format sdf --path benchmarks/fixtures/streaming.sdf --repeats 2000
 cargo run -p chematic-mol --example streaming_benchmark --release --offline -- --format mol --path benchmarks/fixtures/streaming.sdf --repeats 2000
 cargo run -p chematic-mol --example streaming_benchmark --release --offline -- --format xyz --path benchmarks/fixtures/streaming.xyz --repeats 2000
-TMPDIR=/private/tmp python3 scripts/bench_streaming_formats.py --repeats 2000
+TMPDIR=/private/tmp python3 scripts/benchmarks/bench_streaming_formats.py --repeats 2000
 ```

@@ -93,7 +93,7 @@ def main() -> int:
     )
     comparator_command = [
         "python3",
-        "scripts/bench_streaming_formats.py",
+        "scripts/benchmarks/bench_streaming_formats.py",
         "--mode",
         "file-backed" if args.format == "sdf" else ("mol-block" if args.format == "mol" else ("v3000-block" if args.format == "v3000" else ("mol2-block" if args.format == "mol2" else ("extxyz-file-backed" if args.format == "extxyz" else "xyz-file-backed")))),
         "--sdf" if args.format in ("sdf", "mol", "v3000") else ("--sdf" if args.format == "mol2" else ("--extxyz" if args.format == "extxyz" else "--xyz")),

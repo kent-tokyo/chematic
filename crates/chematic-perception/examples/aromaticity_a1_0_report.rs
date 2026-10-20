@@ -3,7 +3,7 @@
 //! Diagnostic only -- does not change `assign_aromaticity_ex`'s behavior.
 //! Reads `validation/aromaticity_a1_0_corpus.jsonl` (three buckets:
 //! `false_positive`, `false_negative`, `negative_control` -- see
-//! `scripts/gen_aromaticity_a1_0_corpus.py` for provenance), and for every
+//! `scripts/generators/gen_aromaticity_a1_0_corpus.py` for provenance), and for every
 //! molecule:
 //!
 //! 1. builds fused candidate components from the *augmented* ring list
@@ -21,7 +21,7 @@
 //!
 //! Emits one JSONL row per (molecule, ring, atom) to stdout. RDKit's own
 //! per-atom aromatic verdict is *not* added here (RDKit bindings are
-//! Python-only in this project) -- `scripts/aromaticity_a1_0_diagnosis.py`
+//! Python-only in this project) -- `scripts/diagnostics/aromaticity_a1_0_diagnosis.py`
 //! joins this output against RDKit and runs the false-positive/
 //! false-negative polarization check.
 //!

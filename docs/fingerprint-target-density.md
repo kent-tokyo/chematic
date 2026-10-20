@@ -134,7 +134,7 @@ Each small fixture records provenance, license, redistribution, minimization,
 pinned oracle, expected units/tolerance and normalized payload SHA-256.
 Generated case IDs and their compact normalized inputs/outputs feed a packet
 SHA-256; the checked-in recipe regenerates that packet without external data.
-`scripts/validate_fold_density.py` saves counts, the installed wrapper's source
+`scripts/validation/validate_fold_density.py` saves counts, the installed wrapper's source
 hash, upstream repro results and packet hash in
 `validation/results/rdkit-fold-density-2026-10-15.json`.
 
@@ -142,7 +142,7 @@ hash, upstream repro results and packet hash in
 cargo test -p chematic-fp --lib --test fold_density --offline --quiet
 cargo clippy -p chematic-fp -p chematic-py --all-targets --offline --no-deps -- -D warnings
 python3 -m pytest crates/chematic-py/tests/test_fold_density.py crates/chematic-py/tests/test_rdkit_compat.py -q
-python3 scripts/validate_fold_density.py
+python3 scripts/validation/validate_fold_density.py
 ```
 
 Formatting, static binding inventory, refactor budget, Python stub syntax,

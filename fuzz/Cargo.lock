@@ -64,7 +64,7 @@ checksum = "9330f8b2ff13f34540b44e946ef35111825727b38d33286ef986142615121801"
 
 [[package]]
 name = "chematic-3d"
-version = "1.1.0"
+version = "1.1.9"
 dependencies = [
  "chematic-chem",
  "chematic-core",
@@ -74,13 +74,14 @@ dependencies = [
  "chematic-smarts",
  "chematic-smiles",
  "libm",
+ "rayon",
  "serde_json",
  "web-time",
 ]
 
 [[package]]
 name = "chematic-chem"
-version = "1.1.0"
+version = "1.1.9"
 dependencies = [
  "chematic-cip",
  "chematic-core",
@@ -95,7 +96,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-cip"
-version = "1.1.0"
+version = "1.1.9"
 dependencies = [
  "chematic-core",
  "chematic-perception",
@@ -103,11 +104,11 @@ dependencies = [
 
 [[package]]
 name = "chematic-core"
-version = "1.1.0"
+version = "1.1.9"
 
 [[package]]
 name = "chematic-depict"
-version = "1.1.0"
+version = "1.1.9"
 dependencies = [
  "chematic-core",
  "chematic-perception",
@@ -121,7 +122,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-ff"
-version = "1.1.0"
+version = "1.1.9"
 dependencies = [
  "chematic-core",
  "chematic-perception",
@@ -133,7 +134,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-fp"
-version = "1.1.0"
+version = "1.1.9"
 dependencies = [
  "chematic-cip",
  "chematic-core",
@@ -161,7 +162,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-iupac"
-version = "1.1.0"
+version = "1.1.9"
 dependencies = [
  "chematic-core",
  "chematic-perception",
@@ -169,7 +170,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-mol"
-version = "1.1.0"
+version = "1.1.9"
 dependencies = [
  "chematic-3d",
  "chematic-chem",
@@ -178,13 +179,15 @@ dependencies = [
  "chematic-perception",
  "chematic-rxn",
  "chematic-smiles",
+ "flate2",
+ "memchr",
  "serde",
  "serde_json",
 ]
 
 [[package]]
 name = "chematic-perception"
-version = "1.1.0"
+version = "1.1.9"
 dependencies = [
  "chematic-core",
  "rustc-hash",
@@ -193,7 +196,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-rxn"
-version = "1.1.0"
+version = "1.1.9"
 dependencies = [
  "chematic-core",
  "chematic-perception",
@@ -206,7 +209,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-smarts"
-version = "1.1.0"
+version = "1.1.9"
 dependencies = [
  "chematic-core",
  "chematic-perception",
@@ -216,7 +219,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-smiles"
-version = "1.1.0"
+version = "1.1.9"
 dependencies = [
  "chematic-core",
  "chematic-perception",

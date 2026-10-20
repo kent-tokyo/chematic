@@ -134,7 +134,7 @@ lanes exclude preparation from the timed operation; RSS was not measured.
 - Runners: `scripts/compare_rdkitjs_release_chemistry.cjs`,
   `scripts/check_rdkitjs_cip_parity.cjs`, `scripts/check_rdkitjs_smarts_parity.cjs`,
   `scripts/check_browser_rdkit_ecfp4_parity.py`,
-  `scripts/bench_browser_wasm_vs_rdkit_isolated.py`, and the argv-safe
+  `scripts/benchmarks/bench_browser_wasm_vs_rdkit_isolated.py`, and the argv-safe
   `validation/rdkit_rebaseline_execution.json` command catalog.
 
 Install exact npm versions into separate scratch prefixes, then invoke the

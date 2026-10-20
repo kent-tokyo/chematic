@@ -3,7 +3,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).parents[2]
-SPEC = importlib.util.spec_from_file_location("validate_scorecard", ROOT / "scripts/validate_scorecard.py")
+SPEC = importlib.util.spec_from_file_location("validate_scorecard", ROOT / "scripts/validation/validate_scorecard.py")
 MODULE = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None
 SPEC.loader.exec_module(MODULE)
