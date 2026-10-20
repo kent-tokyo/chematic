@@ -53,23 +53,25 @@ mod tests {
     }
 
     #[test]
-    fn rdkit_num_rings_bounds_relevant_family_expansion() {
-        // Every repeated sugar unit contributes equal shortest paths.  The
-        // generic relevant-cycle enumerator expands all combinations to 70;
-        // RDKit 2026.09 reports the independent ring families (22 and 16).
-        let fixtures = [
-            (
-                "OC[C@H]1O[C@@H]2O[C@H]3[C@H](O)[C@@H](O)[C@@H](O[C@@H]3CO)O[C@H]3[C@H](O)[C@@H](O)[C@@H](O[C@@H]3CO)O[C@H]3[C@H](O)[C@@H](O)[C@@H](O[C@@H]3CO)O[C@H]3[C@H](O)[C@@H](O)[C@@H](O[C@@H]3CO)O[C@H]3[C@H](O)[C@@H](O)[C@@H](O[C@@H]3CO)O[C@H]1[C@H](O)[C@H]2O",
-                22,
-            ),
-            (
-                "[C@@H]12[C@H](O)[C@H]([C@@H]([C@@H](CO)O2)O[C@H]2[C@@H]([C@@H](O)[C@@H]([C@@H](CO)O2)O[C@H]2[C@@H]([C@@H](O)[C@H](O[C@@H]3O[C@@H]([C@H]([C@H](O)[C@H]3O)O[C@H]3[C@H](O)[C@H]([C@H](O[C@H]4O[C@@H]([C@@H](O1)[C@@H]([C@H]4O)O)CO)[C@H](O3)CO)O)CO)[C@H](O2)CO)O)O)O",
-                16,
-            ),
-        ];
-        for (smiles, expected) in fixtures {
-            assert_eq!(rdkit_num_rings(&mol(smiles)), expected, "{smiles}");
+    fn rdkit_num_rings_keeps_all_relevant_families_in_stress_corpus() {
+        // RDKit 2026.09.1 CalcNumRings reports all 70 relevant cycles for
+        // both repetitive sugar graphs, plus one extra family in each of the
+        // smaller 11- and 12-member ring systems.
+        let corpus = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../validation/cosmolkit_comparison/corpora/stress-v1.smi"
+        ));
+        let rows: Vec<&str> = corpus.lines().collect();
+        assert_eq!(rows.len(), 4072);
+        for (index, expected) in [(605, 70), (608, 11), (1014, 70), (3774, 14)] {
+            assert_eq!(rdkit_num_rings(&mol(rows[index])), expected, "row {index}");
         }
+    }
+
+    #[test]
+    fn rdkit_num_rings_keeps_organometallic_dative_exception() {
+        let m = mol("CN(C)C[C-]12C3=C4C5=C1[Fe++]23456789[C-]%10C6=C7C8=C9%10");
+        assert_eq!(rdkit_num_rings(&m), 9);
     }
 
     /// RDKit sanitization rewrites perchloric acid as
