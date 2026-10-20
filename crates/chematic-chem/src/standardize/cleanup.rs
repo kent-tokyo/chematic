@@ -254,6 +254,17 @@ fn transfer_metal_ligand_charge(
     {
         return;
     }
+    assign_valence_aware_metal_charge(mol, atoms, metal, ligand, bond_order);
+}
+
+fn assign_valence_aware_metal_charge(
+    mol: &Molecule,
+    atoms: &mut [chematic_core::Atom],
+    metal: usize,
+    ligand: usize,
+    bond_order: BondOrder,
+) {
+    let ligand_atom = mol.atom(AtomIdx(ligand as u32));
     let order = i8::try_from(bond_order.order_int()).unwrap_or(0);
     let ligand_idx = AtomIdx(ligand as u32);
     let cut_metal_bonds = mol

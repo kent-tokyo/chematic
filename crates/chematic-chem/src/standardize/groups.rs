@@ -137,6 +137,27 @@ fn neutral_chain_carbon(mol: &Molecule, idx: AtomIdx) -> bool {
     atom.element.atomic_number() == 6 && atom.charge == 0 && !atom.aromatic && unlabelled(atom)
 }
 
+fn supported_iminium_end(
+    mol: &Molecule,
+    path: [AtomIdx; 4],
+    iminium_n: AtomIdx,
+    bond: BondIdx,
+) -> bool {
+    let end = mol.atom(iminium_n);
+    mol.bond(bond).order == BondOrder::Double
+        && end.element.atomic_number() == 7
+        && end.charge == 1
+        && !end.aromatic
+        && unlabelled(end)
+        && mol.degree(iminium_n) == 3
+        && implicit_hcount(mol, iminium_n) == 0
+        && !has_directions_at(mol, &[path[0], path[1], path[2], path[3], iminium_n])
+        && !mol.neighbors(iminium_n).any(|(neighbor, _)| {
+            let atom = mol.atom(neighbor);
+            atom.charge == -1 && matches!(atom.element.atomic_number(), 7 | 8 | 15 | 16)
+        })
+}
+
 /// NH-C=C-C=N+ -> [NH+]=C-C=C-N, the unlabelled N/C subset of RDKit's
 /// 1,5-conjugated cation rule. Require one unique path to avoid choosing an
 /// arbitrary resonance assignment in a multiply conjugated system.
@@ -165,21 +186,7 @@ fn conjugated_iminium_path(mol: &Molecule) -> Option<(AtomIdx, AtomIdx, [BondIdx
                         continue;
                     }
                     for (iminium_n, b4) in mol.neighbors(c3) {
-                        let end = mol.atom(iminium_n);
-                        if mol.bond(b4).order != BondOrder::Double
-                            || end.element.atomic_number() != 7
-                            || end.charge != 1
-                            || end.aromatic
-                            || !unlabelled(end)
-                            || mol.degree(iminium_n) != 3
-                            || implicit_hcount(mol, iminium_n) != 0
-                            || has_directions_at(mol, &[neutral_n, c1, c2, c3, iminium_n])
-                            || mol.neighbors(iminium_n).any(|(neighbor, _)| {
-                                let atom = mol.atom(neighbor);
-                                atom.charge == -1
-                                    && matches!(atom.element.atomic_number(), 7 | 8 | 15 | 16)
-                            })
-                        {
+                        if !supported_iminium_end(mol, [neutral_n, c1, c2, c3], iminium_n, b4) {
                             continue;
                         }
                         if found
