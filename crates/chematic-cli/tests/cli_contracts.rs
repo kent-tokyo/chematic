@@ -1,6 +1,6 @@
 //! Exercise the executable boundary, including stdin, stdout, files and errors.
 use serde_json::{Value, json};
-use std::io::Write;
+use std::io::{ErrorKind, Write};
 use std::process::{Command, Output, Stdio};
 
 fn invoke(args: &[&str], stdin: &str) -> Output {
@@ -15,8 +15,15 @@ fn invoke_bytes(args: &[&str], stdin: &[u8]) -> Output {
         .stderr(Stdio::piped())
         .spawn()
         .unwrap();
-    child.stdin.take().unwrap().write_all(stdin).unwrap();
-    child.wait_with_output().unwrap()
+    let write_result = child.stdin.take().unwrap().write_all(stdin);
+    let output = child.wait_with_output().unwrap();
+    match write_result {
+        Ok(()) => {}
+        // Invalid arguments can make the CLI exit before it reads stdin.
+        Err(error) if error.kind() == ErrorKind::BrokenPipe && !output.status.success() => {}
+        Err(error) => panic!("failed to send CLI input: {error}"),
+    }
+    output
 }
 
 #[test]
