@@ -1,4 +1,4 @@
-use std::io::Write;
+use std::io::{ErrorKind, Write};
 use std::process::{Command, Output, Stdio};
 
 const SOURCE: &str = include_str!("../../../validation/mol2_preservation/amide.mol2");
@@ -18,13 +18,15 @@ fn run_formats(input: &str, source: &str, target: &str, args: &[&str]) -> Output
         .stderr(Stdio::piped())
         .spawn()
         .unwrap();
-    child
-        .stdin
-        .take()
-        .unwrap()
-        .write_all(input.as_bytes())
-        .unwrap();
-    child.wait_with_output().unwrap()
+    let write_result = child.stdin.take().unwrap().write_all(input.as_bytes());
+    let output = child.wait_with_output().unwrap();
+    match write_result {
+        Ok(()) => {}
+        // Invalid arguments can make the CLI exit before it reads stdin.
+        Err(error) if error.kind() == ErrorKind::BrokenPipe && !output.status.success() => {}
+        Err(error) => panic!("failed to send CLI input: {error}"),
+    }
+    output
 }
 
 fn run_to(input: &str, target: &str, args: &[&str]) -> Output {
