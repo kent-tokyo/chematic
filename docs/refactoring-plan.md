@@ -62,6 +62,9 @@ R14 gives the RDKit ring-compatibility search one explicit state owner for its
 candidate cache, budget, and fallback stages, and separates the molecule-owned
 RDKit-model cache gate from per-atom compatibility rules. Two more function
 allowances are removed without changing parity or budget-exhaustion results.
+R15 consolidates JSON, compressed-row, digest, and failure handling shared by
+four RDKit evidence gates. Every original checker still runs independently;
+the refactor removes duplicated harness mechanics without weakening a gate.
 
 Notable outcomes include a bounded reaction module tree, separated
 lexical/semantic format stages, API-domain binding modules, bounded descriptor

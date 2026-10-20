@@ -3,12 +3,18 @@
 
 from __future__ import annotations
 
-import gzip
-import hashlib
 import json
 from pathlib import Path
 
-from scripts.summarize_rdkit_ring_backend import compare_triplet
+try:
+    from scripts.summarize_rdkit_ring_backend import compare_triplet
+except ModuleNotFoundError:  # direct execution from the scripts directory
+    from summarize_rdkit_ring_backend import compare_triplet
+
+try:
+    from scripts.evidence_io import read_gzip_jsonl, require, sha256_bytes as sha256
+except ModuleNotFoundError:  # direct execution from the scripts directory
+    from evidence_io import read_gzip_jsonl, require, sha256_bytes as sha256
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -17,18 +23,8 @@ NATIVE_PREFIX = "rdkit-native-rebaseline-2026-03-6-to-2026-09-1-2026-10-04"
 RING_PREFIX = "rdkit-native-ring-backend-2026-09-1-legacy-2026-10-04"
 
 
-def require(condition: bool, message: str) -> None:
-    if not condition:
-        raise ValueError(message)
-
-
-def sha256(data: bytes) -> str:
-    return hashlib.sha256(data).hexdigest()
-
-
 def rows(path: Path) -> tuple[bytes, list[dict]]:
-    body = gzip.decompress(path.read_bytes())
-    return body, [json.loads(line) for line in body.splitlines()]
+    return read_gzip_jsonl(path)
 
 
 def check() -> None:

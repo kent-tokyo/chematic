@@ -3,12 +3,19 @@
 
 from __future__ import annotations
 
-import gzip
-import hashlib
 import json
 from pathlib import Path
 
 from summarize_rdkit_native_rebaseline import summarize, verify_python_baseline
+
+try:
+    from scripts.evidence_io import (
+        read_gzip_jsonl_with_sha,
+        require,
+        sha256_bytes as digest,
+    )
+except ModuleNotFoundError:  # direct execution from the scripts directory
+    from evidence_io import read_gzip_jsonl_with_sha, require, sha256_bytes as digest
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -22,18 +29,8 @@ PYTHON_BASELINE = RESULTS / (
 )
 
 
-def digest(data: bytes) -> str:
-    return hashlib.sha256(data).hexdigest()
-
-
-def require(condition: bool, message: str) -> None:
-    if not condition:
-        raise ValueError(message)
-
-
 def load_gzip_jsonl(path: Path) -> tuple[list[dict], str]:
-    body = gzip.decompress(path.read_bytes())
-    return [json.loads(line) for line in body.splitlines()], digest(body)
+    return read_gzip_jsonl_with_sha(path)
 
 
 def normalize_atom_sets(value: list) -> list[tuple[int, ...]]:
