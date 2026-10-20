@@ -63,10 +63,6 @@
       "decisions": 17,
       "lines": 148
     },
-    "crates/chematic-cli/src/main.rs::run#1": {
-      "decisions": 37,
-      "lines": 166
-    },
     "crates/chematic-core/src/element.rs::from_symbol#1": {
       "decisions": 1,
       "lines": 123
