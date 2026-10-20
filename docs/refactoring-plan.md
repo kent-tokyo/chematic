@@ -33,18 +33,18 @@ contracts, output digests, and paired performance gates remain authoritative.
 | R7 | MMFF/UFF and 3D pipeline | Complete |
 | R8 | Dead code, dependency, and helper audit | Complete |
 
-## Current phases
+## Completed second pass
 
-| Phase | Scope | Exit condition |
+| Phase | Scope | Result |
 |---|---|---|
-| R9 | Open-PR convergence and baseline pin | Queue empty; latest `main` is the only refactoring base |
-| R10 | Test extraction and file-budget reduction | Large inline tests moved out of production files; resolved allowances removed |
-| R11 | Python, WASM, CLI, and MCP boundaries | Binding declarations and adapters have bounded domain modules |
-| R12 | Chemistry hot spots | Standardization, SMARTS/VF2, and reaction orchestration have staged helpers |
-| R13 | I/O and depiction | Format and depiction orchestration are split from policy-free mechanics |
-| R14 | Cache and compatibility algorithms | Cache ownership is explicit; generated/declarative algorithms are isolated |
-| R15 | Scripts and CI | Repeated harness setup is consolidated without reducing gates |
-| R16 | Final ratchet and verification | Debt baseline shrinks, full required checks pass, remaining exceptions are classified |
+| R9 | Open-PR convergence and baseline pin | Complete |
+| R10 | Test extraction and file-budget reduction | Complete |
+| R11 | Python, WASM, CLI, and MCP boundaries | Complete |
+| R12 | Chemistry hot spots | Complete |
+| R13 | I/O and depiction | Complete |
+| R14 | Cache and compatibility algorithms | Complete |
+| R15 | Scripts and CI | Complete |
+| R16 | Final ratchet and verification | Complete |
 
 R9 completed on 2026-10-20 with an empty pull-request queue at `9945f1ed`.
 R10 removes the CLI and SVG file allowances by moving their inline unit tests
@@ -65,6 +65,9 @@ allowances are removed without changing parity or budget-exhaustion results.
 R15 consolidates JSON, compressed-row, digest, and failure handling shared by
 four RDKit evidence gates. Every original checker still runs independently;
 the refactor removes duplicated harness mechanics without weakening a gate.
+R16 closes the ratchet at 14 file and 76 function allowances, classifies the
+remaining debt in the inventory, and verifies the stacked result with the
+workspace, binding, budget, and hosted-CI gates.
 
 Notable outcomes include a bounded reaction module tree, separated
 lexical/semantic format stages, API-domain binding modules, bounded descriptor
