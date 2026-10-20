@@ -741,4 +741,3 @@ test emitted_order_tracks_reordered_branches_without_changing_spelling ... ok
 test empty_rings_and_fragments_have_one_mapping_per_emitted_atom ... ok
 
 test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
-
