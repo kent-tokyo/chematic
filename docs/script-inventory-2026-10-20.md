@@ -210,3 +210,10 @@ removed. Neither has a current caller or a checked-in input packet needed to
 repeat its one-time comparison. Historical source-hash inventories remain
 untouched, and the scripts remain available in Git history. The root list now
 has 296 files, with 585 tracked under `scripts/`.
+
+The standalone `standardization_holdout.py` runner for v1.0.8 has no current
+caller or documentation command. Its ten-row result remains at
+`validation/results/standardization-phase1-holdout-1.0.8.json`, with the input
+holdout preserved under `validation/`. The runner is removed from the active
+script tree and the root baseline; Git history retains the exact source used
+for that historical result.
