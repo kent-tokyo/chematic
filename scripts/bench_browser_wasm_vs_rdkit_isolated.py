@@ -25,7 +25,7 @@ from urllib.parse import parse_qs, urlparse
 from urllib.request import urlopen
 
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[1]
 
 # Measured by the direct browser bit-parity gate. RDKit sanitizes this exact
 # Fe(II) degree-10, anionic-carbon coordination graph into directed coordinate

@@ -44,7 +44,7 @@ children of this directory; `tools/check_script_layout.py` checks it in CI.
 | Open Babel 3D MOL2 identity | `compare_openbabel_mol2_3d_stress.py` gates RDKit V2000 identity, feeds identical Open Babel-written MOL2 to both readers, and records per-row stereo identity. See the [measured report](../validation/openbabel_comparison/mol2-3d-stereo-2026-10-17.md). |
 | Open Babel unmarked 3D SDF identity | `validation/openbabel_comparison/check_unmarked_3d_stereo.py` scores the same V2000/V3000 conformers in CheMatic and Open Babel; the [disjoint ChEMBL follow-up](../validation/openbabel_comparison/unmarked-3d-chembl-disjoint-2026-10-17.md) retains exact inputs, row outcomes, and a remaining Open Babel-only cage. |
 | Parser security | `run_isolated_parser_security.py` |
-| Browser comparison | `benchmarks/bench_browser_wasm_vs_rdkit_isolated.py` |
+| Browser comparison | `bench_browser_wasm_vs_rdkit_isolated.py` (pinned by the RDKit rebaseline execution catalog) |
 | Published browser replication | `check_published_browser_paired.py`, `check_v1030_published_browser_morgan_rows.py`, and `check_published_linux_browser_replication.py` validate the pinned Chromium and Ubuntu three-engine records |
 | Sealed cohort | `prepare_sealed_accuracy_cohort.py` |
 | Frozen trust holdouts | `validation/trust_holdouts/freeze.py` selects outcome-blind rows from pinned sources; `check_trust_holdouts.py` verifies the committed manifest. |

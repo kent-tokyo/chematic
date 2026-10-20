@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from scripts.diagnostics.probe_rdkit_python_contract import (
+from scripts.probe_rdkit_python_contract import (
     backend_record,
     load_smiles,
     observe,

@@ -1170,7 +1170,7 @@ fn tpsa_all_tsv_reference() {
         .unwrap()
         .parent()
         .unwrap()
-        .join("scripts/rdkit_ref_properties.tsv");
+        .join("validation/rdkit/rdkit_ref_properties.tsv");
 
     let content = std::fs::read_to_string(&tsv)
         .unwrap_or_else(|e| panic!("cannot read {}: {}", tsv.display(), e));
@@ -1223,7 +1223,7 @@ fn logp_all_tsv_reference() {
         .unwrap()
         .parent()
         .unwrap()
-        .join("scripts/rdkit_ref_properties.tsv");
+        .join("validation/rdkit/rdkit_ref_properties.tsv");
 
     let content = std::fs::read_to_string(&tsv)
         .unwrap_or_else(|e| panic!("cannot read {}: {}", tsv.display(), e));
@@ -1270,7 +1270,7 @@ fn read_tsv() -> String {
         .unwrap()
         .parent()
         .unwrap()
-        .join("scripts/rdkit_ref_properties.tsv");
+        .join("validation/rdkit/rdkit_ref_properties.tsv");
     std::fs::read_to_string(&tsv).unwrap_or_else(|e| panic!("cannot read {}: {}", tsv.display(), e))
 }
 

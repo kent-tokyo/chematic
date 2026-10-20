@@ -186,3 +186,10 @@ After synchronizing with the newer main branch, its newly added trust-holdout
 scorer was placed in `scripts/validation/` under the same layout rule. Its
 frozen result was not regenerated. The root count remains 296 and the tracked
 `scripts/` total is 586.
+
+CI exposed two paths captured by the RDKit rebaseline execution catalog and
+its pinned digest. `probe_rdkit_python_contract.py` and
+`bench_browser_wasm_vs_rdkit_isolated.py` stay in the root so the historical
+command catalog remains byte-for-byte unchanged. This brings the root count to
+298 without adding scripts. The Rust RDKit reference tests and comparison
+example now read their three unchanged TSVs from `validation/rdkit/`.

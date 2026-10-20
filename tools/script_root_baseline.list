@@ -12,6 +12,7 @@ scripts/acquire_pubchem_trust_source.py
 scripts/aromaticity_a1_1b_0_full_corpus_gate.py
 scripts/aromaticity_a1_1b_0_gate.py
 scripts/aromaticity_atom_parity.py
+scripts/bench_browser_wasm_vs_rdkit_isolated.py
 scripts/bench_published_wasm_paired.mjs
 scripts/bench_python_cip_frontier.py
 scripts/bench_python_morgan_linear.py
@@ -212,6 +213,7 @@ scripts/pipeline_v2_vs_rdkit_tfd_227.py
 scripts/platinum_compare_chematic_rdkit.py
 scripts/platinum_rdkit_oracle.py
 scripts/prepare_sealed_accuracy_cohort.py
+scripts/probe_rdkit_python_contract.py
 scripts/public_package_3d_chematic.py
 scripts/public_package_3d_rdkit.py
 scripts/published_wheel_chemistry_gates.py
