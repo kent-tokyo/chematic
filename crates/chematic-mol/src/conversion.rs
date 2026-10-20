@@ -543,23 +543,8 @@ pub fn convert_with_report_with_limits(
     Ok(report)
 }
 
-fn convert_cjson(
-    text: &str,
-    target: &str,
-    policy: ConversionPolicy,
-    limits: &ConversionLimits,
-) -> Result<ConversionReport, ConversionError> {
-    let record = crate::parse_cjson_record_with_limits(
-        text,
-        &crate::CjsonParseLimits {
-            max_input_bytes: limits.mol2.max_input_bytes,
-            max_atoms: limits.mol2.max_atoms,
-            max_bonds: limits.mol2.max_bonds,
-            ..Default::default()
-        },
-    )
-    .map_err(ConversionError::CjsonParse)?;
-    let mut report = ConversionReport {
+fn cjson_conversion_report(target: &str, policy: ConversionPolicy) -> ConversionReport {
+    ConversionReport {
         schema: "chematic.conversion-report.v1",
         input_format: "cjson",
         output_format: match target {
@@ -576,130 +561,159 @@ fn convert_cjson(
         observations: Vec::new(),
         candidate_atom_mapping: Vec::new(),
         candidate_bond_mapping: Vec::new(),
-    };
-    let mut note = |field, status, stage, reason| {
-        report.observations.push(ConversionObservation {
-            field,
-            status,
-            stage,
-            reason,
-        })
-    };
-    if target == "cjson" {
-        let output = crate::write_cjson_record(&record);
-        if output.len() > limits.max_output_bytes {
-            return Err(ConversionError::ResourceLimit("output bytes"));
-        }
-        note(
-            "source_text",
-            PreservationStatus::Preserved,
-            "source_retention",
-            "Exact UTF-8 input retained after bounded validation of the local CJSON profile; no edits promised.",
-        );
-        note(
-            "source_semantics",
-            PreservationStatus::OpaqueRetained,
-            "source_retention",
-            "Unknown fields, decimal spellings and source representations retained verbatim; opaque chemistry and geometry stereo are not interpreted.",
-        );
-        report.output = Some(output);
-        return Ok(report);
     }
-    if target == "mol2" {
-        return cjson_mol2::convert(&record, report, limits);
+}
+
+fn observe(
+    report: &mut ConversionReport,
+    field: &'static str,
+    status: PreservationStatus,
+    stage: &'static str,
+    reason: &'static str,
+) {
+    report.observations.push(ConversionObservation {
+        field,
+        status,
+        stage,
+        reason,
+    });
+}
+
+fn retain_cjson_source(
+    record: &crate::CjsonRecord,
+    report: &mut ConversionReport,
+    limits: &ConversionLimits,
+) -> Result<(), ConversionError> {
+    let output = crate::write_cjson_record(record);
+    if output.len() > limits.max_output_bytes {
+        return Err(ConversionError::ResourceLimit("output bytes"));
     }
-    note(
+    observe(
+        report,
+        "source_text",
+        PreservationStatus::Preserved,
+        "source_retention",
+        "Exact UTF-8 input retained after bounded validation of the local CJSON profile; no edits promised.",
+    );
+    observe(
+        report,
+        "source_semantics",
+        PreservationStatus::OpaqueRetained,
+        "source_retention",
+        "Unknown fields, decimal spellings and source representations retained verbatim; opaque chemistry and geometry stereo are not interpreted.",
+    );
+    report.output = Some(output);
+    Ok(())
+}
+
+fn record_cjson_smiles_losses(record: &crate::CjsonRecord, report: &mut ConversionReport) {
+    observe(
+        report,
         "source_text",
         PreservationStatus::Dropped,
         "write",
         "CJSON layout, version declaration and array representation are not emitted in SMILES.",
     );
-    if !record.opaque_fields().is_empty() {
-        note(
+    let conditional = [
+        (
+            !record.opaque_fields().is_empty(),
             "opaque_fields",
             PreservationStatus::Dropped,
             "projection",
             "Fields listed by the CJSON record inspection API are retained in the source record only and omitted from SMILES; their semantics are not interpreted.",
-        );
-    }
-    if record.name().is_some() {
-        note(
+        ),
+        (
+            record.name().is_some(),
             "molecule_name",
             PreservationStatus::Dropped,
             "write",
             "Plain SMILES omits source properties.name.",
-        );
+        ),
+        (
+            record.coordinates_present(),
+            "coordinates",
+            PreservationStatus::Dropped,
+            "write",
+            "Plain SMILES has no source coordinates; geometry stereochemistry is not interpreted.",
+        ),
+        (
+            !record.formal_charges_explicit(),
+            "formal_charge_defaults",
+            PreservationStatus::Inferred,
+            "projection",
+            "Absent formalCharges entries default to zero in the local CJSON graph projection.",
+        ),
+        (
+            !record.isotopes_explicit(),
+            "isotope_defaults",
+            PreservationStatus::Inferred,
+            "projection",
+            "Absent isotope entries default to unspecified isotope in the local CJSON graph projection.",
+        ),
+        (
+            !record.bond_orders_explicit() && record.molecule().bond_count() > 0,
+            "bond_order_defaults",
+            PreservationStatus::Inferred,
+            "projection",
+            "Absent bond orders default to single bonds in the local CJSON graph projection.",
+        ),
+    ];
+    for (present, field, status, stage, reason) in conditional {
+        if present {
+            observe(report, field, status, stage, reason);
+        }
     }
     if !record.partial_charge_datasets().is_empty() {
-        note(
+        observe(
+            report,
             "partial_charges",
             PreservationStatus::Dropped,
             "write",
             "Plain SMILES omits source partial-charge datasets; partial charges are not converted into formal charges.",
         );
-        note(
+        observe(
+            report,
             "charge_method",
             PreservationStatus::Dropped,
             "write",
             "Plain SMILES omits partial-charge method labels.",
         );
     }
-    if record.coordinates_present() {
-        note(
-            "coordinates",
-            PreservationStatus::Dropped,
-            "write",
-            "Plain SMILES has no source coordinates; geometry stereochemistry is not interpreted.",
-        );
-    }
-    if !record.formal_charges_explicit() {
-        note(
-            "formal_charge_defaults",
-            PreservationStatus::Inferred,
-            "projection",
-            "Absent formalCharges entries default to zero in the local CJSON graph projection.",
-        );
-    }
-    if !record.isotopes_explicit() {
-        note(
-            "isotope_defaults",
-            PreservationStatus::Inferred,
-            "projection",
-            "Absent isotope entries default to unspecified isotope in the local CJSON graph projection.",
-        );
-    }
-    if !record.bond_orders_explicit() && record.molecule().bond_count() > 0 {
-        note(
-            "bond_order_defaults",
-            PreservationStatus::Inferred,
-            "projection",
-            "Absent bond orders default to single bonds in the local CJSON graph projection.",
-        );
-    }
     if record
         .molecule()
         .bonds()
-        .any(|(_, b)| b.order == chematic_core::BondOrder::Aromatic)
+        .any(|(_, bond)| bond.order == chematic_core::BondOrder::Aromatic)
     {
-        note(
+        observe(
+            report,
             "aromaticity_interpretation",
             PreservationStatus::Unverified,
             "projection",
             "Orders 1.5 and 4 project to aromatic bonds; atom aromaticity is not perceived. Chemical aromaticity is outside candidate verification.",
         );
     }
-    note(
+    observe(
+        report,
         "implicit_hydrogens",
         PreservationStatus::Inferred,
         "write",
         "SMILES hydrogen counts follow graph valence rules; source CJSON hydrogen assignments outside explicit atoms are not interpreted.",
     );
-    note(
+    observe(
+        report,
         "stereochemistry",
         PreservationStatus::Unverified,
         "projection",
         "Coordinate-derived and opaque extension stereochemistry are not interpreted or verified.",
     );
+}
+
+fn finalize_cjson_smiles(
+    record: &crate::CjsonRecord,
+    mut report: ConversionReport,
+    policy: ConversionPolicy,
+    limits: &ConversionLimits,
+) -> Result<ConversionReport, ConversionError> {
     if record.molecule().atom_count() > 512 {
         return Err(ConversionError::ResourceLimit(
             "SMILES projection atoms (512)",
@@ -712,20 +726,25 @@ fn convert_cjson(
     let parsed = chematic_smiles::parse(&candidate).ok();
     let verified = parsed
         .as_ref()
-        .and_then(|mol| verify_graph(record.molecule(), mol, &order));
+        .and_then(|molecule| verify_graph(record.molecule(), molecule, &order));
     report.verification_scope =
         "candidate_elements_aromaticity_formal_charges_isotopes_bond_orders";
     report.candidate_graph_verified = verified.is_some();
-    report.observations.push(ConversionObservation {
-        field: "projected_graph",
-        status: if verified.is_some() { PreservationStatus::Preserved } else { PreservationStatus::Unverified },
-        stage: "candidate_verification",
-        reason: if verified.is_some() {
+    observe(
+        &mut report,
+        "projected_graph",
+        if verified.is_some() {
+            PreservationStatus::Preserved
+        } else {
+            PreservationStatus::Unverified
+        },
+        "candidate_verification",
+        if verified.is_some() {
             "Candidate reparsed; atom counts, mapped elements/aromaticity/formal charges/isotopes and bond orders agree. CJSON source IDs in mappings are zero-based array indices, not opaque user metadata. Implicit hydrogens and source chemistry are outside this check."
         } else {
             "Candidate graph could not be verified against the source projection; no correspondence is claimed."
         },
-    });
+    );
     if let Some(bonds) = verified {
         report.candidate_atom_mapping = order
             .iter()
@@ -746,8 +765,6 @@ fn convert_cjson(
             })
             .collect();
     }
-    // Cross-format conversion always loses the CJSON representation and uses
-    // inferred SMILES hydrogen counts. Keep strict refusal explicit.
     if policy == ConversionPolicy::Strict || parsed.is_none() {
         report.status = "refused";
     } else {
@@ -755,6 +772,34 @@ fn convert_cjson(
         report.output = Some(candidate);
     }
     Ok(report)
+}
+
+fn convert_cjson(
+    text: &str,
+    target: &str,
+    policy: ConversionPolicy,
+    limits: &ConversionLimits,
+) -> Result<ConversionReport, ConversionError> {
+    let record = crate::parse_cjson_record_with_limits(
+        text,
+        &crate::CjsonParseLimits {
+            max_input_bytes: limits.mol2.max_input_bytes,
+            max_atoms: limits.mol2.max_atoms,
+            max_bonds: limits.mol2.max_bonds,
+            ..Default::default()
+        },
+    )
+    .map_err(ConversionError::CjsonParse)?;
+    let mut report = cjson_conversion_report(target, policy);
+    if target == "cjson" {
+        retain_cjson_source(&record, &mut report, limits)?;
+        return Ok(report);
+    }
+    if target == "mol2" {
+        return cjson_mol2::convert(&record, report, limits);
+    }
+    record_cjson_smiles_losses(&record, &mut report);
+    finalize_cjson_smiles(&record, report, policy, limits)
 }
 
 /// Check through emitted atom correspondence, including branches, rings and

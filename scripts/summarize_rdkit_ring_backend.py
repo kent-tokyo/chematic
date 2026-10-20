@@ -7,7 +7,10 @@ import json
 from pathlib import Path
 from typing import Any
 
-from scripts.summarize_rdkit_native_rebaseline import digest, read_rows, summarize
+try:
+    from scripts.summarize_rdkit_native_rebaseline import digest, read_rows, summarize
+except ModuleNotFoundError:  # direct execution from the scripts directory
+    from summarize_rdkit_native_rebaseline import digest, read_rows, summarize
 
 
 def compare_triplet(

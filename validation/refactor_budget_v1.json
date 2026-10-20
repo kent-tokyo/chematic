@@ -18,7 +18,6 @@
     "crates/chematic-fp/src/rdkit_avalon/fingerprint.rs": 2092,
     "crates/chematic-inchi/src/dedup.rs": 2079,
     "crates/chematic-rxn/src/query.rs": 1969,
-    "crates/chematic-rxn/src/rdkit_stereo.rs": 1626,
     "crates/chematic-smarts/src/match_vf2.rs": 1877,
     "crates/chematic-smarts/src/mcs.rs": 1645,
     "crates/chematic-smarts/src/parser.rs": 2259,
@@ -51,10 +50,6 @@
       "decisions": 12,
       "lines": 166
     },
-    "crates/chematic-chem/src/standardize.rs::select_fragment#1": {
-      "decisions": 9,
-      "lines": 160
-    },
     "crates/chematic-cip/src/assign.rs::assign_one_with_rule5#1": {
       "decisions": 24,
       "lines": 148
@@ -78,10 +73,6 @@
     "crates/chematic-crystal/src/poscar.rs::write_poscar#1": {
       "decisions": 25,
       "lines": 143
-    },
-    "crates/chematic-depict/src/eps.rs::render_eps_opts#1": {
-      "decisions": 13,
-      "lines": 145
     },
     "crates/chematic-depict/src/layout.rs::compute_layout#1": {
       "decisions": 25,
@@ -167,10 +158,6 @@
       "decisions": 47,
       "lines": 105
     },
-    "crates/chematic-mol/src/conversion.rs::convert_cjson#1": {
-      "decisions": 21,
-      "lines": 213
-    },
     "crates/chematic-mol/src/conversion.rs::convert_with_report_with_limits#1": {
       "decisions": 54,
       "lines": 375
@@ -183,10 +170,6 @@
       "decisions": 51,
       "lines": 327
     },
-    "crates/chematic-perception/src/rdkit_model_hook.rs::rdkit_model_may_disagree_uncached#1": {
-      "decisions": 40,
-      "lines": 115
-    },
     "crates/chematic-perception/src/rdkit_sssr_order.rs::libstdcxx_sort#1": {
       "decisions": 30,
       "lines": 153
@@ -194,10 +177,6 @@
     "crates/chematic-rxn/src/document.rs::validate#1": {
       "decisions": 26,
       "lines": 101
-    },
-    "crates/chematic-rxn/src/rdkit_stereo.rs::apply_product_stereo#1": {
-      "decisions": 60,
-      "lines": 312
     },
     "crates/chematic-rxn/src/rdkit_stereo.rs::chirality_cleanup_with_perception#1": {
       "decisions": 41,
@@ -219,17 +198,9 @@
       "decisions": 19,
       "lines": 141
     },
-    "crates/chematic-smarts/src/parser.rs::parse_primitive#1": {
-      "decisions": 46,
-      "lines": 341
-    },
     "crates/chematic-smarts/src/rdkit_parity_match.rs::run_rdkit_parity#1": {
       "decisions": 33,
       "lines": 171
-    },
-    "crates/chematic-smarts/src/rdkit_ring_model.rs::build_rdkit_parity_ring_model#1": {
-      "decisions": 47,
-      "lines": 292
     },
     "crates/chematic-smiles/src/canonical_search.rs::exact_orbit_representatives#1": {
       "decisions": 17,

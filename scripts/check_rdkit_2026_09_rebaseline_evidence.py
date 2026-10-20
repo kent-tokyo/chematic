@@ -7,10 +7,14 @@ This does not turn the missing 2026.09.1 Python/native lanes into successes.
 from __future__ import annotations
 
 import gzip
-import hashlib
 import json
 from collections import Counter
 from pathlib import Path
+
+try:
+    from scripts.lib.evidence_io import read_json, require, sha256_bytes as sha256
+except ModuleNotFoundError:  # direct execution from the scripts directory
+    from lib.evidence_io import read_json, require, sha256_bytes as sha256
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -23,16 +27,7 @@ VERSIONS = ("2026.03.6", "2026.09.1")
 
 
 def load(name: str) -> dict:
-    return json.loads((RESULTS / name).read_text(encoding="utf-8"))
-
-
-def sha256(data: bytes) -> str:
-    return hashlib.sha256(data).hexdigest()
-
-
-def require(condition: bool, message: str) -> None:
-    if not condition:
-        raise ValueError(message)
+    return read_json(RESULTS / name)
 
 
 def check_python_baseline(corpus_hash: str) -> None:

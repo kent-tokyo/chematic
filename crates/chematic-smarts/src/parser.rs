@@ -777,344 +777,256 @@ impl<'a> Parser<'a> {
         self.parse_primitive()
     }
 
+    fn parse_recursive_primitive(&mut self, pos: usize) -> Result<AtomQuery, SmartsError> {
+        self.advance();
+        if self.peek() != Some(b'(') {
+            return Err(SmartsError::UnexpectedChar('$', pos));
+        }
+        self.advance();
+        let start = self.pos;
+        let mut depth = 1usize;
+        let mut end = start;
+        while end < self.src.len() {
+            match self.src[end] {
+                b'(' => depth += 1,
+                b')' => {
+                    depth -= 1;
+                    if depth == 0 {
+                        break;
+                    }
+                }
+                _ => {}
+            }
+            end += 1;
+        }
+        if depth != 0 {
+            return Err(SmartsError::UnexpectedEnd);
+        }
+        let inner =
+            std::str::from_utf8(&self.src[start..end]).map_err(|_| SmartsError::UnexpectedEnd)?;
+        if self.recursion_depth >= self.max_recursion_depth {
+            return Err(SmartsError::RecursionDepthExceeded);
+        }
+        let inner_mol = Parser {
+            src: inner.as_bytes(),
+            pos: 0,
+            recursion_depth: self.recursion_depth + 1,
+            max_recursion_depth: self.max_recursion_depth,
+        }
+        .parse()?;
+        self.pos = end + 1;
+        Ok(AtomQuery::Primitive(AtomPrimitive::Recursive(Box::new(
+            inner_mol,
+        ))))
+    }
+
+    fn parse_charge_primitive(&mut self, sign: u8) -> Result<AtomQuery, SmartsError> {
+        self.advance();
+        let direction = if sign == b'+' { 1 } else { -1 };
+        if let Some((lo, hi)) = self.parse_range()? {
+            return Ok(charge_range(lo, hi, direction));
+        }
+        let magnitude = self.parse_charge_magnitude(sign);
+        Ok(AtomQuery::Primitive(AtomPrimitive::Charge(
+            direction * magnitude,
+        )))
+    }
+
+    fn element_follows(&self, first: char) -> bool {
+        self.src
+            .get(self.pos + 1)
+            .copied()
+            .filter(u8::is_ascii_lowercase)
+            .is_some_and(|second| {
+                chematic_core::Element::from_symbol(&format!("{first}{}", second as char)).is_some()
+            })
+    }
+
+    fn parse_smallest_ring_primitive(&mut self) -> Result<AtomQuery, SmartsError> {
+        self.advance();
+        if let Some((lo, hi)) = self.parse_range()? {
+            return Ok(range_query(lo, hi, min_ring_size));
+        }
+        Ok(match self.parse_ring_size_number() {
+            Some(n) => AtomQuery::Primitive(min_ring_size(n)),
+            None => AtomQuery::Primitive(AtomPrimitive::RingMembership(true)),
+        })
+    }
+
+    fn parse_any_ring_primitive(&mut self) -> Result<AtomQuery, SmartsError> {
+        self.advance();
+        if let Some((lo, hi)) = self.parse_range()? {
+            return Ok(AtomQuery::And(
+                Box::new(AtomQuery::Primitive(AtomPrimitive::RingMembership(true))),
+                Box::new(range_query(lo, hi, AtomPrimitive::RingSize)),
+            ));
+        }
+        Ok(match self.parse_count_number() {
+            Some(0) => AtomQuery::Primitive(AtomPrimitive::Wildcard),
+            Some(n) => AtomQuery::Primitive(AtomPrimitive::RingSize(n)),
+            None => AtomQuery::Primitive(AtomPrimitive::RingMembership(true)),
+        })
+    }
+
+    fn parse_ring_membership_primitive(&mut self) -> Result<AtomQuery, SmartsError> {
+        if self.element_follows('R') {
+            return self.parse_element_primitive();
+        }
+        self.advance();
+        if let Some((lo, hi)) = self.parse_range()? {
+            return Ok(range_query(lo, hi, AtomPrimitive::RingCount));
+        }
+        Ok(match self.parse_count_number() {
+            Some(n) => AtomQuery::Primitive(AtomPrimitive::RingCount(n)),
+            None => AtomQuery::Primitive(AtomPrimitive::RingMembership(true)),
+        })
+    }
+
+    fn parse_isotope_primitive(&mut self) -> Result<AtomQuery, SmartsError> {
+        let mut mass: u16 = 0;
+        while let Some(d) = self.peek().filter(u8::is_ascii_digit) {
+            self.advance();
+            mass = mass
+                .checked_mul(10)
+                .and_then(|value| value.checked_add((d - b'0') as u16))
+                .ok_or_else(|| SmartsError::UnexpectedChar(d as char, self.pos - 1))?;
+        }
+        Ok(AtomQuery::Primitive(AtomPrimitive::Isotope(mass)))
+    }
+
+    fn parse_chirality_primitive(&mut self) -> Result<AtomQuery, SmartsError> {
+        self.advance();
+        let kind = if self.peek() == Some(b'@') {
+            self.advance();
+            2u8
+        } else {
+            1u8
+        };
+        if kind == 1 {
+            let rest = &self.src[self.pos..];
+            if let Some(class) = [b"TH", b"AL", b"SP", b"TB", b"OH"]
+                .into_iter()
+                .find(|class| rest.starts_with(*class))
+            {
+                self.pos += 2;
+                let n = self.parse_digits_u8().ok_or(SmartsError::UnexpectedEnd)?;
+                let max = match class {
+                    b"TH" | b"AL" => 2,
+                    b"SP" => 3,
+                    b"TB" => 20,
+                    _ => 30,
+                };
+                if n == 0 || n > max {
+                    return Err(SmartsError::UnexpectedChar(
+                        (b'0' + n.min(9)) as char,
+                        self.pos - 1,
+                    ));
+                }
+                return Ok(AtomQuery::Primitive(AtomPrimitive::Chirality(
+                    if class == b"TH" { n } else { 3 },
+                )));
+            }
+        }
+        Ok(AtomQuery::Primitive(AtomPrimitive::Chirality(kind)))
+    }
+
+    fn parse_hybridization_primitive(&mut self) -> Result<AtomQuery, SmartsError> {
+        self.advance();
+        let n = self
+            .parse_single_digit()
+            .ok_or(SmartsError::UnexpectedEnd)?;
+        if n > 5 {
+            return Err(SmartsError::UnexpectedChar(
+                (b'0' + n) as char,
+                self.pos - 1,
+            ));
+        }
+        Ok(AtomQuery::Primitive(AtomPrimitive::Hybridization(n)))
+    }
+
     /// Parse one primitive expression.
     fn parse_primitive(&mut self) -> Result<AtomQuery, SmartsError> {
         let pos = self.pos;
         match self.peek() {
-            // Wildcard
             Some(b'*') => {
                 self.advance();
                 Ok(AtomQuery::Primitive(AtomPrimitive::Wildcard))
             }
-
-            // Recursive SMARTS: `$(inner_smarts)`.
-            Some(b'$') => {
-                self.advance(); // consume '$'
-                if self.peek() != Some(b'(') {
-                    return Err(SmartsError::UnexpectedChar('$', pos));
-                }
-                self.advance(); // consume '('
-                // Scan forward to find the matching ')', counting nesting depth.
-                let start = self.pos;
-                let mut depth = 1usize;
-                let mut end = start;
-                while end < self.src.len() {
-                    match self.src[end] {
-                        b'(' => depth += 1,
-                        b')' => {
-                            depth -= 1;
-                            if depth == 0 {
-                                break;
-                            }
-                        }
-                        _ => {}
-                    }
-                    end += 1;
-                }
-                if depth != 0 {
-                    return Err(SmartsError::UnexpectedEnd);
-                }
-                let inner_str = std::str::from_utf8(&self.src[start..end])
-                    .map_err(|_| SmartsError::UnexpectedEnd)?;
-                if self.recursion_depth >= self.max_recursion_depth {
-                    return Err(SmartsError::RecursionDepthExceeded);
-                }
-                let mut inner_parser = Parser {
-                    src: inner_str.as_bytes(),
-                    pos: 0,
-                    recursion_depth: self.recursion_depth + 1,
-                    max_recursion_depth: self.max_recursion_depth,
-                };
-                let inner_mol = inner_parser.parse()?;
-                self.pos = end + 1; // advance past the closing ')'
-                Ok(AtomQuery::Primitive(AtomPrimitive::Recursive(Box::new(
-                    inner_mol,
-                ))))
-            }
-
-            // Aromatic (`a`) — must be checked BEFORE element symbol parsing.
+            Some(b'$') => self.parse_recursive_primitive(pos),
+            // Keep aromatic/aliphatic primitives before element parsing.
             Some(b'a') => {
                 self.advance();
                 Ok(AtomQuery::Primitive(AtomPrimitive::Aromatic(true)))
             }
-
-            // Aliphatic (`A`) — but if followed by a lowercase letter that forms a valid
-            // two-character element symbol (Ac, Ag, Al, Am, Ar, As, At, Au), parse as element.
             Some(b'A') => {
-                let next = self.src.get(self.pos + 1).copied();
-                if next.is_some_and(|c| c.is_ascii_lowercase()) {
-                    let candidate = format!("A{}", next.unwrap() as char);
-                    if chematic_core::Element::from_symbol(&candidate).is_some() {
-                        return self.parse_element_primitive();
-                    }
+                if self.element_follows('A') {
+                    return self.parse_element_primitive();
                 }
                 self.advance();
                 Ok(AtomQuery::Primitive(AtomPrimitive::Aromatic(false)))
             }
-
-            // Atomic number `#N`
             Some(b'#') => {
-                self.advance(); // consume '#'
+                self.advance();
                 let n = self.parse_digits_u8().ok_or(SmartsError::UnexpectedEnd)?;
                 Ok(AtomQuery::Primitive(AtomPrimitive::AtomicNum(n)))
             }
-
-            // Charge `+N`, `+` or `++…` (charge = +N, +1 or the number of
-            // repeated signs; `+0` = explicit neutral). Daylight / OpenSMARTS:
-            // successive signs accumulate into one charge value (`++` is +2),
-            // never an AND of two ±1 primitives (issue #680).
-            Some(b'+') => {
-                self.advance(); // consume '+'
-                if let Some((lo, hi)) = self.parse_range()? {
-                    // `+{a-b}` (RDKit range): charge +a..=+b.
-                    return Ok(charge_range(lo, hi, 1));
-                }
-                let n = self.parse_charge_magnitude(b'+');
-                Ok(AtomQuery::Primitive(AtomPrimitive::Charge(n)))
-            }
-
-            // Charge `-N`, `-` or `--…` (charge = -N, -1 or minus the number of
-            // repeated signs; `-0` = explicit neutral)
-            Some(b'-') => {
-                self.advance(); // consume '-'
-                if let Some((lo, hi)) = self.parse_range()? {
-                    // `-{a-b}` (RDKit range): charge -a..=-b.
-                    return Ok(charge_range(lo, hi, -1));
-                }
-                let n = self.parse_charge_magnitude(b'-');
-                Ok(AtomQuery::Primitive(AtomPrimitive::Charge(-n)))
-            }
-
-            // H count `HN` or `H` (total hcount = N or 1; explicit + implicit)
-            // Exception: if followed by a lowercase letter forming a valid element (Hg, Ho, Hs),
-            // treat as element symbol instead.
+            Some(b'+') => self.parse_charge_primitive(b'+'),
+            Some(b'-') => self.parse_charge_primitive(b'-'),
             Some(b'H') => {
-                let next = self.src.get(self.pos + 1).copied();
-                if next.is_some_and(|c| c.is_ascii_lowercase()) {
-                    let candidate = format!("H{}", next.unwrap() as char);
-                    if chematic_core::Element::from_symbol(&candidate).is_some() {
-                        return self.parse_element_primitive();
-                    }
+                if self.element_follows('H') {
+                    return self.parse_element_primitive();
                 }
-                self.advance(); // consume 'H'
+                self.advance();
                 self.count_primitive(Some(1), AtomPrimitive::HCount)
             }
-
-            // Implicit H count `hN` or `h` (implicit hcount only = N or 1)
             Some(b'h') => {
-                self.advance(); // consume 'h'
-                // Bare `h` is "at least one implicit H" (RDKit).
+                self.advance();
                 self.neighbor_count_primitive(AtomPrimitive::ImplicitHCount)
             }
-
-            // Degree `DN`
-            // Exception: if followed by a lowercase letter forming a valid element (Dy, Db, Ds),
-            // treat as element symbol instead.
             Some(b'D') => {
-                let next = self.src.get(self.pos + 1).copied();
-                if next.is_some_and(|c| c.is_ascii_lowercase()) {
-                    let candidate = format!("D{}", next.unwrap() as char);
-                    if chematic_core::Element::from_symbol(&candidate).is_some() {
-                        return self.parse_element_primitive();
-                    }
+                if self.element_follows('D') {
+                    return self.parse_element_primitive();
                 }
-                self.advance(); // consume 'D'
-                // Bare `D` is `D1` (Daylight/RDKit).
+                self.advance();
                 self.count_primitive(Some(1), AtomPrimitive::Degree)
             }
-
-            // Smallest-ring size `rN` — must be checked BEFORE element parsing.
-            // RDKit's `[rN]` means "the SMALLEST ring containing this atom has exactly
-            // N members" -- NOT "the atom belongs to any N-membered ring" (that's
-            // `[kN]`, below). These are genuinely different predicates: on a fusion
-            // atom shared between a 5-ring and a 6-ring, RDKit's `[k6]` matches but
-            // `[r6]` does not, since that atom's smallest ring is the 5-ring. Verified
-            // against real RDKit and measured recoverable across a full 5,000-molecule
-            // corpus (70.95% -> 100.00%) -- see `docs/rdkit_compat.md`'s
-            // "SMARTS-R0"/"SMARTS-R1" entries. Previously (incorrectly) aliased to the
-            // same `RingSize` primitive as `[kN]`.
-            Some(b'r') => {
-                self.advance(); // consume 'r'
-                if let Some((lo, hi)) = self.parse_range()? {
-                    return Ok(range_query(lo, hi, min_ring_size));
-                }
-                // Bare `r` (Daylight/RDKit): "in a ring", same predicate as `R`.
-                // `rN` accepts multi-digit sizes (`[r12]`), as RDKit does.
-                match self.parse_ring_size_number() {
-                    Some(n) => Ok(AtomQuery::Primitive(min_ring_size(n))),
-                    None => Ok(AtomQuery::Primitive(AtomPrimitive::RingMembership(true))),
-                }
-            }
-
-            // Any-ring size `[kN]` — RDKit PR #9172. Means "this atom belongs to *some*
-            // perceived ring of exactly N members" -- unlike `[rN]` above, this is
-            // NOT restricted to the atom's smallest ring. Confirmed empirically
-            // distinct from `[rN]` (see above); do not merge these two primitives.
-            Some(b'k') => {
-                self.advance(); // consume 'k'
-                if let Some((lo, hi)) = self.parse_range()? {
-                    // RDKit: a `k` range never matches an acyclic atom.
-                    return Ok(AtomQuery::And(
-                        Box::new(AtomQuery::Primitive(AtomPrimitive::RingMembership(true))),
-                        Box::new(range_query(lo, hi, AtomPrimitive::RingSize)),
-                    ));
-                }
-                // RDKit: bare `k` is "in a ring", and `k0` matches every
-                // atom (its ring-of-size-0 test is always true; ranges use a
-                // different test, above).
-                match self.parse_count_number() {
-                    Some(0) => Ok(AtomQuery::Primitive(AtomPrimitive::Wildcard)),
-                    Some(n) => Ok(AtomQuery::Primitive(AtomPrimitive::RingSize(n))),
-                    None => Ok(AtomQuery::Primitive(AtomPrimitive::RingMembership(true))),
-                }
-            }
-
-            // Ring membership `R` or ring count `RN` (N = 0, 1, 2, …).
-            // `[R]`  = in any ring (RingMembership(true))
-            // `[R0]` = not in any ring (RingCount(0))
-            // `[R1]` = in exactly 1 ring, etc.
-            // Exception: if followed by a lowercase letter forming a valid element (Ra, Rb, Re,
-            // Rf, Rg, Rh, Rn, Ru), treat as element symbol instead.
-            Some(b'R') => {
-                let next = self.src.get(self.pos + 1).copied();
-                if next.is_some_and(|c| c.is_ascii_lowercase()) {
-                    let candidate = format!("R{}", next.unwrap() as char);
-                    if chematic_core::Element::from_symbol(&candidate).is_some() {
-                        return self.parse_element_primitive();
-                    }
-                }
-                self.advance(); // consume 'R'
-                if let Some((lo, hi)) = self.parse_range()? {
-                    return Ok(range_query(lo, hi, AtomPrimitive::RingCount));
-                }
-                if let Some(n) = self.parse_count_number() {
-                    Ok(AtomQuery::Primitive(AtomPrimitive::RingCount(n)))
-                } else {
-                    Ok(AtomQuery::Primitive(AtomPrimitive::RingMembership(true)))
-                }
-            }
-
-            // Valence `[vN]` — total valence (bond orders + implicit H).
+            Some(b'r') => self.parse_smallest_ring_primitive(),
+            Some(b'k') => self.parse_any_ring_primitive(),
+            Some(b'R') => self.parse_ring_membership_primitive(),
             Some(b'v') => {
-                self.advance(); // consume 'v'
-                // Bare `v` is `v1` (Daylight/RDKit).
+                self.advance();
                 self.count_primitive(Some(1), AtomPrimitive::Valence)
             }
-
-            // Ring-bond count `[xN]` — bonds where both endpoints share a ring.
             Some(b'x') => {
-                self.advance(); // consume 'x'
-                // Bare `x` is "at least one ring bond" (RDKit).
+                self.advance();
                 self.neighbor_count_primitive(AtomPrimitive::RingBondCount)
             }
-
-            // Hybridization `[^N]` — 0=s, 1=sp, 2=sp2, 3=sp3, 4=sp3d,
-            // 5=sp3d2 (RDKit); other digits are errors.
-            Some(b'^') => {
-                self.advance(); // consume '^'
-                let n = self
-                    .parse_single_digit()
-                    .ok_or(SmartsError::UnexpectedEnd)?;
-                if n > 5 {
-                    return Err(SmartsError::UnexpectedChar(
-                        (b'0' + n) as char,
-                        self.pos - 1,
-                    ));
-                }
-                Ok(AtomQuery::Primitive(AtomPrimitive::Hybridization(n)))
-            }
-
-            // Total connectivity `[XN]` — heavy-atom degree + implicit H count.
-            // `XN` total connectivity (not `Xe`).
+            Some(b'^') => self.parse_hybridization_primitive(),
+            // `X` is connectivity unless it starts xenon.
             Some(b'X') if self.src.get(self.pos + 1) != Some(&b'e') => {
-                self.advance(); // consume 'X'
-                // Bare `X` is `X1` (Daylight/RDKit).
+                self.advance();
                 self.count_primitive(Some(1), AtomPrimitive::TotalConnectivity)
             }
-
-            // RDKit extensions: `zN` heteroatom neighbours, `dN` non-H degree.
             Some(b'z') => {
-                self.advance(); // consume 'z'
+                self.advance();
                 self.neighbor_count_primitive(AtomPrimitive::HeteroNeighborCount)
             }
             Some(b'd') => {
-                self.advance(); // consume 'd'
+                self.advance();
                 self.count_primitive(Some(1), AtomPrimitive::HeavyDegree)
             }
-            // `ZN` aliphatic heteroatom neighbours (not `Zn`/`Zr`).
             Some(b'Z')
                 if !self
                     .src
                     .get(self.pos + 1)
                     .is_some_and(|c| matches!(c, b'n' | b'r')) =>
             {
-                self.advance(); // consume 'Z'
+                self.advance();
                 self.neighbor_count_primitive(AtomPrimitive::AliphaticHeteroNeighborCount)
             }
-
-            // Isotope mass number: `[13C]`, `[2H]`, etc.
-            // Digits are consumed, then the element symbol follows via juxtaposition AND.
-            Some(c) if c.is_ascii_digit() => {
-                let mut mass: u16 = 0;
-                while let Some(d) = self.peek().filter(|b| b.is_ascii_digit()) {
-                    self.advance();
-                    let Some(next) = mass
-                        .checked_mul(10)
-                        .and_then(|value| value.checked_add((d - b'0') as u16))
-                    else {
-                        return Err(SmartsError::UnexpectedChar(d as char, self.pos - 1));
-                    };
-                    mass = next;
-                }
-                Ok(AtomQuery::Primitive(AtomPrimitive::Isotope(mass)))
-            }
-
-            // Chirality `[@]` (CCW, value 1) or `[@@]` (CW, value 2).
-            Some(b'@') => {
-                self.advance(); // consume first '@'
-                let kind = if self.peek() == Some(b'@') {
-                    self.advance(); // consume second '@'
-                    2u8 // clockwise (@@)
-                } else {
-                    1u8 // counterclockwise (@)
-                };
-                // Chirality classes `@TH1`, `@AL2`, `@SP3`, `@TB12`, `@OH30`
-                // (RDKit). `@TH1`/`@TH2` are `@`/`@@`; the others are kept as
-                // "some chirality", which like `@`/`@@` does not constrain a
-                // match unless `use_chirality` is set.
-                if kind == 1 {
-                    let rest = &self.src[self.pos..];
-                    let class = [b"TH", b"AL", b"SP", b"TB", b"OH"]
-                        .into_iter()
-                        .find(|c| rest.starts_with(*c));
-                    if let Some(class) = class {
-                        self.pos += 2;
-                        let n = self.parse_digits_u8().ok_or(SmartsError::UnexpectedEnd)?;
-                        let max = match class {
-                            b"TH" | b"AL" => 2,
-                            b"SP" => 3,
-                            b"TB" => 20,
-                            _ => 30,
-                        };
-                        if n == 0 || n > max {
-                            return Err(SmartsError::UnexpectedChar(
-                                (b'0' + n.min(9)) as char,
-                                self.pos - 1,
-                            ));
-                        }
-                        let kind = match (class, n) {
-                            (b"TH", n) => n,
-                            _ => 3,
-                        };
-                        return Ok(AtomQuery::Primitive(AtomPrimitive::Chirality(kind)));
-                    }
-                }
-                Ok(AtomQuery::Primitive(AtomPrimitive::Chirality(kind)))
-            }
-
-            // Element symbol (uppercase or lowercase start).
+            Some(c) if c.is_ascii_digit() => self.parse_isotope_primitive(),
+            Some(b'@') => self.parse_chirality_primitive(),
             Some(c) if c.is_ascii_alphabetic() => self.parse_element_primitive(),
-
             Some(c) => Err(SmartsError::UnexpectedChar(c as char, pos)),
             None => Err(SmartsError::UnexpectedEnd),
         }

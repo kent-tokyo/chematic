@@ -18,149 +18,169 @@ pub fn render_eps(mol: &Molecule, layout: &Layout) -> String {
     render_eps_opts(mol, layout, &RenderOptions::default())
 }
 
-/// Compute 2D layout and render as EPS with full style control.
-pub fn render_eps_opts(mol: &Molecule, layout: &Layout, opts: &RenderOptions) -> String {
-    let padding = opts.padding;
-    let (min_x, min_y, max_x, max_y) = layout.bounding_box();
+struct EpsViewport {
+    view_x: f64,
+    view_y: f64,
+    view_h: f64,
+    width: f64,
+    height: f64,
+    bond_color: (f64, f64, f64),
+    background: Option<(f64, f64, f64)>,
+}
 
-    let raw_w = (max_x - min_x).max(BOND_LEN);
-    let raw_h = (max_y - min_y).max(BOND_LEN);
+impl EpsViewport {
+    fn new(layout: &Layout, opts: &RenderOptions) -> Self {
+        let (min_x, min_y, max_x, max_y) = layout.bounding_box();
+        let raw_w = (max_x - min_x).max(BOND_LEN);
+        let raw_h = (max_y - min_y).max(BOND_LEN);
+        let view_w = raw_w + 2.0 * opts.padding;
+        let view_h = raw_h + 2.0 * opts.padding;
+        Self {
+            view_x: min_x - opts.padding,
+            view_y: min_y - opts.padding,
+            view_h,
+            width: opts.width.unwrap_or(view_w.round() as u32) as f64,
+            height: opts.height.unwrap_or(view_h.round() as u32) as f64,
+            bond_color: if opts.dark {
+                (1.0, 1.0, 1.0)
+            } else {
+                (0.0, 0.0, 0.0)
+            },
+            background: (opts.background != "transparent")
+                .then(|| parse_color_or(&opts.background, (1.0, 1.0, 1.0))),
+        }
+    }
 
-    let view_x = min_x - padding;
-    let view_y = min_y - padding;
-    let view_w = raw_w + 2.0 * padding;
-    let view_h = raw_h + 2.0 * padding;
+    fn point(&self, point: Point) -> Point {
+        Point::new(point.x - self.view_x, self.view_h - (point.y - self.view_y))
+    }
+}
 
-    // Map SVG coordinate to EPS coordinate (flip Y axis).
-    let tx = |x: f64| x - view_x;
-    let ty = |y: f64| view_h - (y - view_y);
-    let tp = |p: Point| (tx(p.x), ty(p.y));
-
-    let w = opts.width.unwrap_or(view_w.round() as u32) as f64;
-    let h = opts.height.unwrap_or(view_h.round() as u32) as f64;
-
-    let bond_color = if opts.dark {
-        (1.0, 1.0, 1.0)
-    } else {
-        (0.0, 0.0, 0.0)
-    };
-    let bg_color: Option<(f64, f64, f64)> = if opts.background == "transparent" {
-        None
-    } else {
-        Some(parse_color_or(&opts.background, (1.0, 1.0, 1.0)))
-    };
-
-    let mut out = String::with_capacity(8192);
-
-    // EPS header
+fn write_eps_header(out: &mut String, viewport: &EpsViewport) {
     out.push_str("%!PS-Adobe-3.0 EPSF-3.0\n");
     out.push_str(&format!(
         "%%BoundingBox: 0 0 {} {}\n",
-        w.ceil() as u32,
-        h.ceil() as u32
+        viewport.width.ceil() as u32,
+        viewport.height.ceil() as u32
     ));
     out.push_str("%%EndComments\n");
     out.push_str("/Helvetica findfont 12 scalefont setfont\n");
     out.push_str("1 setlinecap\n1 setlinejoin\n");
-
-    // Background
-    if let Some((r, g, b)) = bg_color {
-        out.push_str(&format!("{:.4} {:.4} {:.4} setrgbcolor\n", r, g, b));
-        out.push_str(&format!("0 0 {:.2} {:.2} rectfill\n", w, h));
+    if let Some((r, g, b)) = viewport.background {
+        out.push_str(&format!("{r:.4} {g:.4} {b:.4} setrgbcolor\n"));
+        out.push_str(&format!(
+            "0 0 {:.2} {:.2} rectfill\n",
+            viewport.width, viewport.height
+        ));
     }
+}
 
-    // Highlight circles (drawn beneath bonds)
-    let atom_count = mol.atom_count();
-    let default_hc = parse_color_or(&opts.highlight_color, (1.0, 1.0, 0.0));
-    for idx in &opts.highlight_atoms {
-        if idx.0 as usize >= atom_count {
+fn write_eps_highlights(
+    out: &mut String,
+    mol: &Molecule,
+    layout: &Layout,
+    opts: &RenderOptions,
+    viewport: &EpsViewport,
+) {
+    let default_color = parse_color_or(&opts.highlight_color, (1.0, 1.0, 0.0));
+    for atom in &opts.highlight_atoms {
+        if atom.0 as usize >= mol.atom_count() {
             continue;
         }
-        let p = layout.get(*idx);
-        let (ex, ey) = tp(p);
+        let point = viewport.point(layout.get(*atom));
         let (r, g, b) = opts
             .atom_color_map
-            .get(idx)
-            .map(|c| parse_color_or(c, default_hc))
-            .unwrap_or(default_hc);
-        out.push_str(&format!("{:.4} {:.4} {:.4} setrgbcolor\n", r, g, b));
-        // Filled circle
-        out.push_str(&format!("{:.2} {:.2} 16 0 360 arc fill\n", ex, ey));
+            .get(atom)
+            .map(|color| parse_color_or(color, default_color))
+            .unwrap_or(default_color);
+        out.push_str(&format!("{r:.4} {g:.4} {b:.4} setrgbcolor\n"));
+        out.push_str(&format!(
+            "{:.2} {:.2} 16 0 360 arc fill\n",
+            point.x, point.y
+        ));
     }
+}
 
-    // Bonds
-    set_color(&mut out, bond_color);
-    for (bond_idx, bond) in mol.bonds() {
-        let (p1, p2) =
+fn write_eps_bonds(
+    out: &mut String,
+    mol: &Molecule,
+    layout: &Layout,
+    opts: &RenderOptions,
+    viewport: &EpsViewport,
+) {
+    set_color(out, viewport.bond_color);
+    for (bond_index, bond) in mol.bonds() {
+        let (start, end) =
             crate::svg::linear_carbon::bond_endpoints(mol, layout, bond.atom1, bond.atom2);
-        let (bx1, by1) = tp(p1);
-        let (bx2, by2) = tp(p2);
-        let bond_col = if opts.highlight_bonds.contains(&bond_idx) {
-            (1.0_f64, 0.549, 0.0) // #FF8C00 orange
+        let color = if opts.highlight_bonds.contains(&bond_index) {
+            (1.0_f64, 0.549, 0.0)
         } else {
-            bond_color
-        };
-        set_color(&mut out, bond_col);
-        let bond_w = if opts.highlight_bonds.contains(&bond_idx) {
-            4.0
-        } else {
-            1.5
+            viewport.bond_color
         };
         render_bond_eps(
-            &mut out,
+            out,
             bond.order,
-            Point::new(bx1, by1),
-            Point::new(bx2, by2),
-            bond_col,
-            bond_w,
+            viewport.point(start),
+            viewport.point(end),
+            color,
+            if opts.highlight_bonds.contains(&bond_index) {
+                4.0
+            } else {
+                1.5
+            },
         );
     }
+}
 
-    // Atom labels
-    for (idx, atom) in mol.atoms() {
-        let label_raw = atom_display_label(mol, idx);
-        if label_raw.is_empty() {
+fn write_eps_labels(
+    out: &mut String,
+    mol: &Molecule,
+    layout: &Layout,
+    opts: &RenderOptions,
+    viewport: &EpsViewport,
+) {
+    for (atom_index, atom) in mol.atoms() {
+        let raw_label = atom_display_label(mol, atom_index);
+        if raw_label.is_empty() {
             continue;
         }
-        // Strip Unicode subscripts → ASCII digits for PostScript
-        let label = unicode_subscripts_to_ascii(&label_raw);
-        let p = layout.get(idx);
-        let (ex, ey) = tp(p);
-
-        let label_half_w = 8.0_f64;
-        let label_half_h = 7.0_f64;
-
-        // Background rectangle
-        if bg_color.is_some() {
-            let (r, g, b) = bg_color.unwrap_or((1.0, 1.0, 1.0));
-            out.push_str(&format!("{:.4} {:.4} {:.4} setrgbcolor\n", r, g, b));
+        let label = unicode_subscripts_to_ascii(&raw_label);
+        let point = viewport.point(layout.get(atom_index));
+        if let Some((r, g, b)) = viewport.background {
+            out.push_str(&format!("{r:.4} {g:.4} {b:.4} setrgbcolor\n"));
             out.push_str(&format!(
                 "{:.2} {:.2} {:.2} {:.2} rectfill\n",
-                ex - label_half_w,
-                ey - label_half_h,
-                label_half_w * 2.0,
-                label_half_h * 2.0,
+                point.x - 8.0,
+                point.y - 7.0,
+                16.0,
+                14.0,
             ));
         }
-
-        // Text
         let text_color = if opts.dark && atom.element.atomic_number() == 6 {
             (1.0_f64, 1.0, 1.0)
         } else {
             let [r, g, b] = atom_color_rgb(atom.element.atomic_number());
             (r as f64 / 255.0, g as f64 / 255.0, b as f64 / 255.0)
         };
-        set_color(&mut out, text_color);
-        // Center text: estimate offset (half string width ≈ 3.5 × char_count)
-        let approx_w = label.chars().count() as f64 * 3.5;
+        set_color(out, text_color);
+        let approximate_width = label.chars().count() as f64 * 3.5;
         out.push_str(&format!(
             "{:.2} {:.2} moveto ({}) show\n",
-            ex - approx_w,
-            ey - 4.0,
+            point.x - approximate_width,
+            point.y - 4.0,
             escape_ps(&label),
         ));
     }
+}
 
+/// Compute 2D layout and render as EPS with full style control.
+pub fn render_eps_opts(mol: &Molecule, layout: &Layout, opts: &RenderOptions) -> String {
+    let viewport = EpsViewport::new(layout, opts);
+    let mut out = String::with_capacity(8192);
+    write_eps_header(&mut out, &viewport);
+    write_eps_highlights(&mut out, mol, layout, opts, &viewport);
+    write_eps_bonds(&mut out, mol, layout, opts, &viewport);
+    write_eps_labels(&mut out, mol, layout, opts, &viewport);
     out.push_str("showpage\n%%EOF\n");
     out
 }

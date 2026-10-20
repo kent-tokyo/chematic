@@ -10,6 +10,11 @@ import sys
 from collections import Counter
 from pathlib import Path
 
+try:
+    from scripts.lib.evidence_io import collect_error as require, read_json
+except ModuleNotFoundError:  # direct execution from the scripts directory
+    from lib.evidence_io import collect_error as require, read_json
+
 
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS = ROOT / "validation" / "results"
@@ -45,12 +50,7 @@ ALLOWED_CLASSES = {
 
 
 def load(name: str) -> dict:
-    return json.loads((RESULTS / name).read_text(encoding="utf-8"))
-
-
-def require(condition: bool, message: str, errors: list[str]) -> None:
-    if not condition:
-        errors.append(message)
+    return read_json(RESULTS / name)
 
 
 def first_lane(document: dict, name: str, errors: list[str]) -> dict:
