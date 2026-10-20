@@ -9,7 +9,6 @@ scripts/a6_quality_matrix.py
 scripts/a6_rdkit_bounds_matrix_parity.py
 scripts/a6_rdkit_compatible_etkdg_mmff.py
 scripts/acquire_pubchem_trust_source.py
-scripts/aromaticity_a1_1b_0_full_corpus_gate.py
 scripts/aromaticity_a1_1b_0_gate.py
 scripts/aromaticity_atom_parity.py
 scripts/bench_browser_wasm_vs_rdkit_isolated.py
@@ -191,7 +190,6 @@ scripts/explorer_sdf_worker_smoke.py
 scripts/explorer_worker_10k_smoke.mjs
 scripts/explorer_worker_10k_smoke.py
 scripts/exyz_openbabel_gate.py
-scripts/ez_stash_gap_report.py
 scripts/fetch_biotransformer_rules.py
 scripts/fetch_chembl_sealed_candidate.py
 scripts/install_pinned_rdkit.py
@@ -283,7 +281,6 @@ scripts/tdt_io_parity.py
 scripts/test_criterion_gate.sh
 scripts/tpsa_public_corpus_parity.py
 scripts/train_solubility_mlp.py
-scripts/v0_14_0_ez_bound_release_gate_report.py
 scripts/v3000_indigo_ez_query_truth_table.py
 scripts/v3000_indigo_semantic_gate.py
 scripts/v3000_rdkit_semantic_gate.py
