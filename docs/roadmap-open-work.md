@@ -1,6 +1,6 @@
 # Open-work ledger
 
-Updated 2026-10-19 for **v1.1.9 plus Unreleased source work**. Completed work
+Updated 2026-10-21 for **v1.2.0**. Completed work
 belongs in the
 [CHANGELOG](https://github.com/kent-tokyo/chematic/blob/main/CHANGELOG.md);
 dated evidence belongs in the
@@ -11,7 +11,7 @@ dated evidence belongs in the
 - Re-run changed chemistry lanes from exact PyPI, npm/WASM and crates.io
   artifacts. Keep source, package, browser and operating-system evidence
   separate.
-- Previous-release gates now use v1.1.8 for changed public Rust crates, Python
+- Previous-release gates now use v1.1.9 for changed public Rust crates, Python
   declarations/dependencies and generated WASM declarations. Add consumer
   fixtures where static semver tools cannot observe behavior.
 - Preserve RDKit 2026.03.6/2026.09.1 ring differences and typed CIP

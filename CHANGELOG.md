@@ -14,6 +14,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-21
+
 ### Added
 
 - Python `read_xbs` / `XbsScene` read bounded static gray-style XBS scenes,
@@ -35,6 +37,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- Route macOS symbol stripping through Apple's linker so source-built Python
+  extensions remain loadable under macOS 27's stricter Mach-O `LINKEDIT`
+  alignment checks.
+- Split oversized chemistry, reaction-stereo, standardization, CLI, CJSON,
+  depiction, cache-state and evidence helpers into focused modules. The
+  refactor is intended to preserve the public 1.x API and is guarded by the
+  Rust, Python and WebAssembly compatibility lanes.
 - Native RDKit-compatible cleanup uses sparse inline candidate indices and
   borrowed adjacency, preserving correction order and internal molecule state
   while avoiding a molecule-sized flag allocation and redundant scan.
@@ -53,7 +62,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   configurable from 2 through 256 and defaults to 32.
 - Previous-release compatibility jobs now compare all changed publishable Rust
   crates, Python declarations/dependencies and generated WebAssembly TypeScript
-  declarations against v1.1.8 instead of the older v1.1.7 baseline.
+  declarations against v1.1.9. Rust semver checks use the 1.2.0 minor-release
+  policy while still rejecting breaking public API changes.
 - RDKit-compatible Cleanup now handles three bounded metal representations
   and seven existing-anion acid/base transfers. Exact agreement on the pinned
   stress corpus rises from 3,923 to 3,933/4,069 with zero regressions. Generic

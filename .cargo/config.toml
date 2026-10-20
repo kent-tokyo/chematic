@@ -1,0 +1,5 @@
+[target.'cfg(target_os = "macos")']
+# rustc's post-link Mach-O stripping can leave the LINKEDIT string table
+# four-byte aligned. dyld on macOS 27 rejects those extension modules. Keep
+# stripping in Apple's linker, which preserves the required alignment.
+rustflags = ["-C", "strip=none", "-C", "link-arg=-Wl,-x"]
