@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 MANIFEST = ROOT / "validation" / "criterion-gate-calibration.json"
 HOSTED_EVIDENCE = ROOT / "validation" / "results" / "criterion-gate-hosted-calibration-2026-09-22.json"
 WORKFLOW = ROOT / ".github" / "workflows" / "bench-pr-gate.yml"

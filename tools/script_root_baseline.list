@@ -9,7 +9,6 @@ scripts/a6_quality_matrix.py
 scripts/a6_rdkit_bounds_matrix_parity.py
 scripts/a6_rdkit_compatible_etkdg_mmff.py
 scripts/acquire_pubchem_trust_source.py
-scripts/aromaticity_a1_1b_0_gate.py
 scripts/aromaticity_atom_parity.py
 scripts/bench_browser_wasm_vs_rdkit_isolated.py
 scripts/bench_published_wasm_paired.mjs
@@ -28,7 +27,6 @@ scripts/biotransformer_rule_corpus.py
 scripts/biotransformer_rules.py
 scripts/browser_smoke.mjs
 scripts/bump_version.py
-scripts/canonical_cross_engine.py
 scripts/canonical_diff.py
 scripts/canonical_structural_correctness.py
 scripts/changed_public_crates.py
@@ -36,19 +34,16 @@ scripts/check.sh
 scripts/check_3d_quality_evidence.py
 scripts/check_a0_core_eight_sealed.py
 scripts/check_a0_development_packet.py
-scripts/check_a5_adjudication_manifest.py
 scripts/check_benchmark_index.py
 scripts/check_binding_api_compat.py
 scripts/check_binding_surface.py
 scripts/check_browser_rdkit_ecfp4_parity.py
 scripts/check_cargo_deny_local.sh
 scripts/check_compatibility_profiles.py
-scripts/check_criterion_gate_calibration.py
 scripts/check_cross_binding_manifest.py
 scripts/check_descriptor_baseline_candidate.py
 scripts/check_descriptor_promotion_gate.py
 scripts/check_descriptor_raw_accounting.py
-scripts/check_ez_residual_evidence.py
 scripts/check_indigo_workflow_evidence.py
 scripts/check_interchange_cross_read.py
 scripts/check_interchange_preservation.py
@@ -65,7 +60,6 @@ scripts/check_openbabel_file_io_semantics.py
 scripts/check_openbabel_numeric_packet.py
 scripts/check_parent_api_docs.py
 scripts/check_parse_morgan_rdkit_speed_gate.py
-scripts/check_pdb_strict_binding_contract.py
 scripts/check_product_names.py
 scripts/check_publish_graph.py
 scripts/check_published_browser_paired.py
@@ -99,7 +93,6 @@ scripts/check_rdkit_search_reports.py
 scripts/check_rdkit_smarts_evidence.py
 scripts/check_rdkitjs_cip_parity.cjs
 scripts/check_rdkitjs_smarts_parity.cjs
-scripts/check_reaction_application_evidence.py
 scripts/check_reaction_smarts_contract_evidence.py
 scripts/check_refactor_budget.py
 scripts/check_release_channel_evidence.py
@@ -152,12 +145,9 @@ scripts/depiction_stereo_vs_rdkit.py
 scripts/descriptor_census.py
 scripts/descriptor_census_corpus.smi
 scripts/descriptor_core_parity.py
-scripts/descriptor_cross_binding_parity.py
 scripts/descriptor_functional_group_classification.py
-scripts/descriptor_rotatable_rdkit_parity.py
 scripts/descriptor_stereocenter_rdkit_parity.py
 scripts/download_chembl_smiles.py
-scripts/ecfp4_agreement.py
 scripts/ecfp4_bitexact_matrix_fixtures.csv
 scripts/ecfp_rdkit_edge_fixtures.csv
 scripts/ecfp_rdkit_environment_parity.py
@@ -190,7 +180,6 @@ scripts/install_pinned_rdkit.py
 scripts/iupac_snapshot_diff.py
 scripts/layout_2d_quality_vs_rdkit.py
 scripts/maccs_cross_binding_parity.py
-scripts/maccs_parity.py
 scripts/make_release_notes.py
 scripts/mrv_io_parity.py
 scripts/mrv_kekulize_stereo_check.py
@@ -218,7 +207,6 @@ scripts/rdkit_compat_diff.py
 scripts/rdkit_molblock_readback_parity.py
 scripts/rdkit_normalize_source_gate.py
 scripts/rdkit_rdk_cross_binding_parity.py
-scripts/rdkit_rdk_parity.py
 scripts/rdkit_rgroup_ez_source_gate.py
 scripts/rdkit_rgroup_hydrogen_gate.py
 scripts/rdkit_search_cross_binding_parity.py
@@ -234,7 +222,6 @@ scripts/reaction_product_parity_gate.py
 scripts/reaction_product_stereo_safety_gate.py
 scripts/reaction_python_checked_candidates.py
 scripts/reaction_python_checked_provenance_gate.py
-scripts/reaction_rdkit_quality_gate.py
 scripts/reaction_template_map_gate.py
 scripts/record_sealed_cohort_preflight.py
 scripts/release_package_smoke.py
@@ -270,7 +257,6 @@ scripts/summarize_a6_mmff94_termination.py
 scripts/summarize_public_package_3d.py
 scripts/summarize_rdkit_native_rebaseline.py
 scripts/summarize_rdkit_ring_backend.py
-scripts/tdt_io_parity.py
 scripts/test_criterion_gate.sh
 scripts/tpsa_public_corpus_parity.py
 scripts/train_solubility_mlp.py

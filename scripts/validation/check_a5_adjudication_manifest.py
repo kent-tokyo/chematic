@@ -14,7 +14,7 @@ import re
 from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 MANIFEST = ROOT / "validation/manifests/rdkit_accuracy_adjudication_v1.json"
 
 

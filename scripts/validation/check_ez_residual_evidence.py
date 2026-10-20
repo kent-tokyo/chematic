@@ -18,7 +18,7 @@ import argparse
 from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 AUDIT = ROOT / "validation" / "results" / "ez_shared_carrier_coupling_mechanism_audit_1024_2026-09-11.json"
 EXPERIMENT = ROOT / "validation" / "results" / "ez_shared_carrier_coupling_mechanism_close_side_experiment_2026-09-11.json"
 CURRENT_SUMMARY = ROOT / "validation" / "results" / "ez_shared_carrier_coupling_mechanism_audit_summary_1024_2026-09-25.json"

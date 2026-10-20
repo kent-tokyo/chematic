@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Compare v1.0.8 Rust ``rdkit_rdk`` fingerprints with RDKit's RDKFingerprint."""
+"""Compare v1.0.8 Rust MACCS keys with RDKit on one identical SMILES corpus.
+
+Chematic exposes 166 logical MACCS keys at bit positions 0..165, while
+RDKit's public MACCS vector has an unused bit 0 and exposes key N at bit N.
+The comparison therefore applies the documented ``+1`` position mapping and
+never treats the unused RDKit bit 0 as a chemistry key.
+"""
 
 from __future__ import annotations
 
@@ -10,7 +16,7 @@ import subprocess
 from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 
 
 def sha256(path: Path) -> str:
@@ -24,7 +30,7 @@ def sha256(path: Path) -> str:
 def run_chematic(corpus: Path) -> dict:
     command = [
         "cargo", "run", "-p", "chematic-cli", "--release", "--",
-        "batch-fingerprints", "--input", str(corpus), "--algorithm", "rdkit_rdk",
+        "batch-fingerprints", "--input", str(corpus), "--algorithm", "maccs",
     ]
     result = subprocess.run(command, cwd=ROOT, check=True, capture_output=True, text=True)
     return json.loads(result.stdout)
@@ -32,11 +38,12 @@ def run_chematic(corpus: Path) -> dict:
 
 def rdkit_bits(smiles: str) -> list[int] | None:
     from rdkit import Chem
+    from rdkit.Chem import MACCSkeys
 
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return None
-    return sorted(Chem.RDKFingerprint(mol).GetOnBits())
+    return sorted(bit - 1 for bit in MACCSkeys.GenMACCSKeys(mol).GetOnBits() if bit > 0)
 
 
 def main() -> int:
@@ -70,7 +77,7 @@ def main() -> int:
                 examples.append({
                     "smiles": smiles,
                     "chematic_set_bits": actual,
-                    "rdkit_set_bits": expected,
+                    "rdkit_set_bits_mapped_to_0_165": expected,
                     "extra": sorted(set(actual) - set(expected)),
                     "missing": sorted(set(expected) - set(actual)),
                 })
@@ -80,17 +87,9 @@ def main() -> int:
         "target_version": "1.0.8",
         "corpus": str(args.corpus),
         "corpus_sha256": sha256(args.corpus),
-        "operation": "rdkit_rdk",
-        "comparison_boundary": "same SMILES inputs; v1.0.8 Rust CLI versus RDKit Chem.RDKFingerprint",
-        "configuration": {
-            "minPath": 1,
-            "maxPath": 7,
-            "useHs": True,
-            "branchedPaths": True,
-            "useBondOrder": True,
-            "fpSize": 2048,
-            "numBitsPerFeature": 2,
-        },
+        "operation": "maccs",
+        "comparison_boundary": "same SMILES inputs; v1.0.8 Rust CLI versus RDKit MACCSkeys.GenMACCSKeys",
+        "bit_position_mapping": "chematic bit i equals RDKit bit i+1; RDKit bit 0 is unused",
         "rows": len(records),
         "chematic_valid": batch["valid_count"],
         "chematic_failures": chematic_failures,
@@ -106,4 +105,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()

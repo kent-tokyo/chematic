@@ -20,11 +20,11 @@ own oracle runs, not assumed):
   for this specific scenario are not gated.
 
 Usage:
-    python scripts/tdt_io_parity.py --chematic <chematic_tdt_dump.jsonl> \\
+    python scripts/diagnostics/tdt_io_parity.py --chematic <chematic_tdt_dump.jsonl> \\
         --rdkit-oracle <rdkit_tdt_oracle.jsonl> --manifest <manifest.json> \\
         --summary-out <out.json>
 
-    python scripts/tdt_io_parity.py --self-test
+    python scripts/diagnostics/tdt_io_parity.py --self-test
 """
 
 from __future__ import annotations

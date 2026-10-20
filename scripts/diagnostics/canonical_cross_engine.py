@@ -21,7 +21,7 @@ from rdkit import Chem, RDLogger
 from rdkit import rdBase
 
 RDLogger.DisableLog("rdApp.*")
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 def obabel_canonical_many(smiles_list: list[str], executable: str) -> list[str | None]:
