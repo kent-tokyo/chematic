@@ -40,6 +40,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - Route macOS symbol stripping through Apple's linker so source-built Python
   extensions remain loadable under macOS 27's stricter Mach-O `LINKEDIT`
   alignment checks.
+- Update the MCP HTTP client's certificate-path validator and bundled root
+  store to the releases that remove the distrusted emSign chain.
 - Split oversized chemistry, reaction-stereo, standardization, CLI, CJSON,
   depiction, cache-state and evidence helpers into focused modules. The
   refactor is intended to preserve the public 1.x API and is guarded by the
