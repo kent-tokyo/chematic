@@ -1,7 +1,7 @@
 {
   "profile": "source_cleanup_vs_rdkit_2026_09_1",
   "detail_scope": "cleanup",
-  "source_commit": "7114d9e3fd353066c7c96760bd78a28e9cf60a0f",
+  "source_commit": "0f41ec96052d0b628574a5e884749842ba804d70",
   "source_sha256": {
     "crates/chematic-chem/src/standardize.rs": "233cf86a949354e7404a1b0947dd627a0257f9fef02752575026e23461c8bab2",
     "crates/chematic-chem/src/standardize/cleanup.rs": "d8e4968ee2c8dd2a89b5f7204fb511863f5f30cd1da9f899b0fb7ed2b617d725",
@@ -12,7 +12,7 @@
     "crates/chematic-chem/examples/cleanup_rdkit_dump.rs": "2d122b54ae4dfba2514e2c134df1abbc1fbc0a5ddabe22c3adb7e6bbf0db90db",
     "crates/chematic-smiles/src/lib.rs": "a0c9bd8864d8cd9bbe9d5ef8302080fa469ec5b5b0c3974501acc05def01f0cf",
     "crates/chematic-smiles/src/rdkit/mod.rs": "7bab575d6fd57c7cd21ef7acdbf2b2382dfe037ca88889f298a3e3f52248ecb5",
-    "scripts/rdkit_cleanup_source_gate.py": "7470452fb8810f8724e76edab625b01e277e3d5f39db0006bdce581ce4c4fc37"
+    "scripts/rdkit_cleanup_source_gate.py": "5fb5417595b095e35628a28fc2a08708b9ffd82d01eb0f725366cea401c84285"
   },
   "corpus": "validation/cosmolkit_comparison/corpora/stress-v1.smi",
   "corpus_sha256": "879166ab5481cac805ecd2d77f37d628383ec124085b90e2ee1659d55ce76277",
@@ -53,6 +53,12 @@
   },
   "reionize_mismatches": null,
   "rdkit_changed_rows": 254,
+  "oracle_nonreparseable_indices": [
+    1497,
+    1630,
+    2677
+  ],
+  "source_nonreparseable_indices": [],
   "excluded": [],
   "oracle_errors": [
     {
