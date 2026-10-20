@@ -639,7 +639,7 @@ fn stereo_status_dict<'py>(
     Ok(d)
 }
 
-fn stereo_verification_dict<'py>(
+pub(crate) fn stereo_verification_dict<'py>(
     py: Python<'py>,
     v: &chematic_3d::stereo_constraints::StereoVerification,
 ) -> PyResult<Bound<'py, PyDict>> {

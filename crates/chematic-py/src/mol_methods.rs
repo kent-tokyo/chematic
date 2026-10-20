@@ -26,6 +26,7 @@ mod core_replacement;
 mod descriptors;
 mod extended;
 mod fingerprints;
+mod geometry_check;
 mod graph_queries;
 mod identity;
 mod layered_config;

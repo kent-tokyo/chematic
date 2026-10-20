@@ -16,6 +16,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Rust `check_geometry` and Python `Mol.check_geometry` inspect supplied 3D
+  coordinates without mutation, reporting bond-length outliers, nonbonded
+  clashes, skipped references and declared-stereo outcomes independently.
 - Typed `rdkit_compat.PatternFingerprint` facade for the native Pattern
   calculator, with exact folding to power-of-two widths through 2048 and checked
   structural mask/list/NumPy counter inputs. Counter and mask arguments remain

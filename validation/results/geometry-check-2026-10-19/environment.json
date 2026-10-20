@@ -1,0 +1,13 @@
+{
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "python": "3.13.6",
+  "rust": "1.97.0",
+  "base_commit": "b7004777",
+  "extension_source": "current source, freshly built cdylib; full package initializer",
+  "extension_sha256": "a0b579b09178fa162954719a445813d2ed48118f7e698556818ff35005e40eb6",
+  "source_sha256": {
+    "crates/chematic-3d/src/geometry_check.rs": "f5e0298a0cca239d3da42237e088d551af510f91c5df4274e74f0f9b5e18b009",
+    "crates/chematic-py/src/mol_methods/geometry_check.rs": "78aa825d004c8289253cce11ab9ae6318ea2bfc369c843e610eba8a5772cda33",
+    "scripts/validate_geometry_check.py": "a78fb50e518cf6ad312ce72f96cbfa7305dd1ab243ca29e967bd3b29c14dfcf3"
+  }
+}

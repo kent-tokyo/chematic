@@ -1,0 +1,6 @@
+{
+  "rdkit": "2026.09.1",
+  "native_version": "1.1.9",
+  "indexed_distance_reports": 360,
+  "tetrahedral_stereo_reports": 192
+}

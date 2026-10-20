@@ -118,6 +118,7 @@ nav:
     - Prepared MMFF Dielectric: mmff-dielectric-updates.md
     - Custom MMFF Partial Charges: mmff-partial-charges.md
   - Reliability:
+    - Supplied Geometry Checks: supplied-geometry-check.md
     - Checked Maestro Output: maestro-output.md
     - Distinct PDB Hydrogen Names: pdb-hydrogen-names.md
     - Checked Core Removal: checked-core-replacement.md
