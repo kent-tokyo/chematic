@@ -40,20 +40,6 @@ jobs:
           python scripts/check_parent_api_docs.py
           python -m unittest scripts.tests.test_check_python_stubs -v
 
-  test-parent-api-docs:
-    name: Parent API documentation
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
-        with:
-          python-version: "3.11"
-      - name: Build and verify generated Parent reference
-        run: |
-          pip install -r requirements-docs.txt
-          mkdocs build --strict --site-dir _parent_docs_site
-          python scripts/check_parent_api_docs.py --site-dir _parent_docs_site
-
   test:
     name: Test
     runs-on: ubuntu-latest
@@ -81,7 +67,7 @@ jobs:
       - name: Verify integration shard inventory and workflow pins
         run: |
           python3 scripts/checks/ci_integration_shard.py --shards 4
-          python3 -m unittest scripts.tests.test_ci_integration_shard scripts.tests.test_check_workflow_pins -v
+          python3 -m unittest scripts.tests.test_ci_integration_shard scripts.tests.test_check_workflow_pins scripts.tests.test_run_pytest_batches scripts.tests.test_run_bounded_command -v
           python3 scripts/check_workflow_pins.py
       - name: Unit tests
         # The Python extension uses PyO3's non-linking extension-module mode.
@@ -173,8 +159,8 @@ jobs:
         if: steps.changes.outputs.run != 'true'
         run: echo "No publishable Rust crate API source changed."
 
-  v3000-rdkit-semantic:
-    name: V3000 RDKit semantic round trip
+  semantic-interoperability:
+    name: Semantic interoperability
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -183,11 +169,12 @@ jobs:
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
           python-version: "3.12"
-      - name: Install pinned RDKit lane
-        run: python3 -m pip install 'rdkit==2025.9.3'
-      - name: Build current CLI and verify ordinary V3000 round trip
+      - name: Install pinned external readers
+        run: python3 -m pip install 'epam.indigo==1.46.0' 'rdkit==2025.9.3'
+      - name: Build current CLI
+        run: cargo build --locked -p chematic-cli
+      - name: Verify ordinary V3000 round trip
         run: |
-          cargo build --locked -p chematic-cli
           python3 scripts/v3000_rdkit_semantic_gate.py --output /tmp/v3000-rdkit-semantic.json
           python3 scripts/diagnostics/tpsa_functional_group_probe.py \
             --cli target/debug/chematic \
@@ -196,61 +183,21 @@ jobs:
             --cli target/debug/chematic \
             --output /tmp/descriptor-functional-group-classification.json
 
-  cxsmiles-rdkit-attachment-semantic:
-    name: CXSMILES RDKit attachment semantic round trip
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
-      - name: Set up Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
-        with:
-          python-version: "3.12"
-      - name: Install pinned RDKit lane
-        run: python3 -m pip install 'rdkit==2025.9.3'
       - name: Verify mapped wildcard attachment labels
         run: |
-          cargo build --locked -p chematic-cli
           python3 scripts/rdkit_attachment_point_semantic_gate.py \
             --cli target/debug/chematic \
             --output /tmp/rdkit-attachment-point-semantic.json
-
-  v3000-indigo-semantic:
-    name: V3000 Indigo semantic round trip
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
-      - name: Set up Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
-        with:
-          python-version: "3.12"
-      - name: Install pinned Indigo and RDKit lanes
-        run: python3 -m pip install 'epam.indigo==1.46.0' 'rdkit==2025.9.3'
-      - name: Build current CLI and verify Indigo V3000 contracts
+      - name: Verify Indigo V3000 contracts
         run: |
-          cargo build --locked -p chematic-cli
           python3 scripts/v3000_indigo_semantic_gate.py --output /tmp/v3000-indigo-semantic.json
           python3 scripts/v3000_sgroup_external_reader_gate.py --output /tmp/v3000-sgroup-external-reader.json
           python3 scripts/v3000_relative_stereo_gate.py --output /tmp/v3000-relative-stereo.json
           python3 scripts/v3000_indigo_ez_query_truth_table.py --output /tmp/v3000-indigo-ez-query.json
 
-  stereo-torture-suite:
-    name: Stereo Torture Suite
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
-      - name: Set up Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
-        with:
-          python-version: "3.12"
-      - name: Install pinned RDKit lane
-        run: python3 -m pip install 'rdkit==2025.9.3'
       - name: Verify fixed development suite and canonicalization contract
         run: |
           python3 scripts/generators/build_stereo_torture_suite.py --check
-          cargo build --locked -p chematic-cli
           python3 scripts/stereo_torture_suite_gate.py --output /tmp/stereo-torture-suite.json
           python3 scripts/stereo_spelling_invariance_gate.py --output /tmp/stereo-spelling-invariance.json
 
@@ -490,7 +437,7 @@ jobs:
     # Full platform qualification runs on main, manual runs, and release tags.
     if: ${{ github.event_name != 'pull_request' }}
     runs-on: windows-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     defaults:
       run:
         shell: bash
@@ -511,11 +458,15 @@ jobs:
           .venv/Scripts/python -m pip install --no-deps dist/source-wheel/chematic-*.whl
       - name: Run pytest (chematic-py)
         run: |
-          # pytest-timeout did not stop a Windows stall in CI. A separate
-          # parent process enforces the limit and kills the process tree.
-          .venv/Scripts/python scripts/checks/run_bounded_command.py --timeout-seconds 600 -- \
-            .venv/Scripts/python -m pytest crates/chematic-py/tests/ -v \
-            --timeout=180 --timeout-method=thread --session-timeout=480
+          # Each batch identifies the test files involved and has a separate
+          # parent deadline. Keep the full suite, including new test files.
+          .venv/Scripts/python scripts/checks/run_pytest_batches.py \
+            --tests-dir crates/chematic-py/tests \
+            --report-dir dist/windows-pytest \
+            --batch-size 20 \
+            --batch-timeout-seconds 240 \
+            --pytest-timeout-seconds 90 \
+            --session-timeout-seconds 180
           # The differential suite intentionally rewrites its checked-in
           # report. Keep the source checkout pristine for the A6 provenance
           # assertion; the platform-specific test result is already visible
@@ -539,6 +490,7 @@ jobs:
         with:
           name: source-wheel-windows
           path: |
+            dist/windows-pytest/batch-*.xml
             validation/results/reaction-checked-source-wheel-83-windows.json
             validation/results/smarts-checked-source-wheel-310k-windows.json
             validation/results/a6-source-265-windows.jsonl
@@ -709,26 +661,25 @@ jobs:
           toolchain: "1.88"
       - run: cargo check --workspace --all-features
 
-  validate-citation:
-    name: Validate CITATION.cff
+  repository-contracts:
+    name: Repository contracts
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
           python-version: "3.12"
-      - run: pip install cffconvert --quiet
-      - run: cffconvert --validate
-
-  validate-benchmark-index:
-    name: Validate benchmark index
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
-        with:
-          python-version: "3.12"
-      - run: python3 scripts/check_benchmark_index.py
+      - name: Build and verify generated Parent reference
+        run: |
+          pip install -r requirements-docs.txt
+          mkdocs build --strict --site-dir _parent_docs_site
+          python scripts/check_parent_api_docs.py --site-dir _parent_docs_site
+      - name: Validate CITATION.cff
+        run: |
+          pip install cffconvert --quiet
+          cffconvert --validate
+      - name: Validate benchmark index
+        run: python3 scripts/check_benchmark_index.py
       - name: Verify Morgan timing packets and corruption controls
         run: |
           python3 scripts/check_morgan_numeric_packet.py benchmarks/2026-10-18-morgan-borrowed-view-only-numeric.json.gz
@@ -777,13 +728,9 @@ jobs:
     if: ${{ always() }}
     needs:
       - test-python-stubs
-      - test-parent-api-docs
       - test
       - rust-api-compat
-      - v3000-rdkit-semantic
-      - cxsmiles-rdkit-attachment-semantic
-      - v3000-indigo-semantic
-      - stereo-torture-suite
+      - semantic-interoperability
       - test-integration
       - test-native-inchi
       - test-python
@@ -793,8 +740,7 @@ jobs:
       - test-wasm
       - clippy
       - msrv
-      - validate-citation
-      - validate-benchmark-index
+      - repository-contracts
     runs-on: ubuntu-latest
     steps:
       - name: Require every fast contract lane to succeed
