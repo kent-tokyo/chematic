@@ -52,6 +52,9 @@ to dedicated test modules; no production logic or public API changes.
 R11 groups CLI dispatch into conversion, molecule, reaction, and batch
 boundaries. The public command surface is unchanged, and the former 166-line
 dispatcher allowance is removed.
+R12 separates fragment scoring, SMARTS primitive families, and RDKit-compatible
+reaction stereo application into named stages. The three former function
+allowances are removed; chemistry ordering and public results are unchanged.
 
 Notable outcomes include a bounded reaction module tree, separated
 lexical/semantic format stages, API-domain binding modules, bounded descriptor

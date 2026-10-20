@@ -18,7 +18,6 @@
     "crates/chematic-fp/src/rdkit_avalon/fingerprint.rs": 2092,
     "crates/chematic-inchi/src/dedup.rs": 2079,
     "crates/chematic-rxn/src/query.rs": 1969,
-    "crates/chematic-rxn/src/rdkit_stereo.rs": 1626,
     "crates/chematic-smarts/src/match_vf2.rs": 1877,
     "crates/chematic-smarts/src/mcs.rs": 1645,
     "crates/chematic-smarts/src/parser.rs": 2259,
@@ -50,10 +49,6 @@
     "crates/chematic-chem/src/scaffold.rs::schuffenhauer_remove_ring#1": {
       "decisions": 12,
       "lines": 166
-    },
-    "crates/chematic-chem/src/standardize.rs::select_fragment#1": {
-      "decisions": 9,
-      "lines": 160
     },
     "crates/chematic-cip/src/assign.rs::assign_one_with_rule5#1": {
       "decisions": 24,
@@ -195,10 +190,6 @@
       "decisions": 26,
       "lines": 101
     },
-    "crates/chematic-rxn/src/rdkit_stereo.rs::apply_product_stereo#1": {
-      "decisions": 60,
-      "lines": 312
-    },
     "crates/chematic-rxn/src/rdkit_stereo.rs::chirality_cleanup_with_perception#1": {
       "decisions": 41,
       "lines": 175
@@ -218,10 +209,6 @@
     "crates/chematic-rxn/src/stoichiometry.rs::analyze_components#1": {
       "decisions": 19,
       "lines": 141
-    },
-    "crates/chematic-smarts/src/parser.rs::parse_primitive#1": {
-      "decisions": 46,
-      "lines": 341
     },
     "crates/chematic-smarts/src/rdkit_parity_match.rs::run_rdkit_parity#1": {
       "decisions": 33,

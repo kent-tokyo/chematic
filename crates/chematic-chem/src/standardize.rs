@@ -513,6 +513,127 @@ enum FragmentClass {
     StructuralSalt,
 }
 
+struct ScoredFragment {
+    heavy: usize,
+    rank_size: usize,
+    has_carbon: bool,
+    canon: String,
+    class: FragmentClass,
+}
+
+fn score_fragments(frags: &[Molecule], policy: &FragmentPolicy) -> Vec<ScoredFragment> {
+    frags
+        .iter()
+        .map(|fragment| {
+            let heavy = heavy_atom_count(fragment);
+            ScoredFragment {
+                heavy,
+                rank_size: if policy.count_heavy_atoms_only {
+                    heavy
+                } else {
+                    fragment.atom_count()
+                },
+                has_carbon: fragment_has_carbon(fragment),
+                canon: chematic_smiles::canonical_smiles(fragment),
+                class: classify_fragment(fragment, policy),
+            }
+        })
+        .collect()
+}
+
+fn fragment_rank_key<'a>(
+    score: &'a ScoredFragment,
+    policy: &FragmentPolicy,
+) -> (usize, bool, std::cmp::Reverse<&'a str>) {
+    (
+        score.rank_size,
+        policy.prefer_organic && score.has_carbon,
+        std::cmp::Reverse(score.canon.as_str()),
+    )
+}
+
+fn select_fragment_winner(
+    scored: &[ScoredFragment],
+    policy: &FragmentPolicy,
+) -> (usize, Option<String>) {
+    let kept = (0..scored.len()).filter(|&i| scored[i].class == FragmentClass::Kept);
+    if let Some(winner) = kept.max_by_key(|&i| fragment_rank_key(&scored[i], policy)) {
+        return (winner, None);
+    }
+
+    let winner = (0..scored.len())
+        .max_by_key(|&i| fragment_rank_key(&scored[i], policy))
+        .expect("non-empty molecule has at least one fragment");
+    let reason = format!(
+        "no_fragment_classified_kept: all {} fragment(s) matched a salt/ion/water \
+         classification rule; falling back to the size-ranked choice among them",
+        scored.len()
+    );
+    (winner, Some(reason))
+}
+
+fn removed_fragment_decision(score: &ScoredFragment) -> FragmentDecision {
+    let (rule_id, reason) = match score.class {
+        FragmentClass::AlwaysStripWater => (
+            "water_always_strip",
+            "single neutral oxygen fragment (water)".to_string(),
+        ),
+        FragmentClass::AlwaysStripIon => (
+            "monatomic_always_strip_ion",
+            "single charged atom on the fixed always-strip element list".to_string(),
+        ),
+        FragmentClass::StructuralSalt => (
+            "structural_no_carbon_small_fragment",
+            format!("no carbon and <= {MAX_SALT_HEAVY_ATOMS_NO_CARBON} heavy atoms"),
+        ),
+        FragmentClass::Kept => (
+            "ranked_out_by_size",
+            "outranked by the kept fragment under the fragment policy".to_string(),
+        ),
+    };
+    FragmentDecision::Removed {
+        rule_id: rule_id.to_string(),
+        reason,
+    }
+}
+
+fn fragment_records(
+    frags: &[Molecule],
+    scored: &[ScoredFragment],
+    winner: usize,
+) -> Vec<FragmentRecord> {
+    let winner_canon = &scored[winner].canon;
+    frags
+        .iter()
+        .enumerate()
+        .map(|(i, fragment)| {
+            let snapshot = FragmentSnapshot {
+                atom_count: fragment.atom_count(),
+                heavy_atom_count: scored[i].heavy,
+                formula: fragment.formula(),
+                canonical_smiles: scored[i].canon.clone(),
+            };
+            let decision = if i == winner {
+                FragmentDecision::Kept {
+                    rank_key: format!(
+                        "rank_size={}, has_carbon={}, canonical_smiles={}",
+                        scored[i].rank_size, scored[i].has_carbon, scored[i].canon
+                    ),
+                }
+            } else if scored[i].canon == *winner_canon {
+                FragmentDecision::Removed {
+                    rule_id: "duplicate_of_kept_fragment".to_string(),
+                    reason: "identical structure to the kept fragment (same canonical SMILES)"
+                        .to_string(),
+                }
+            } else {
+                removed_fragment_decision(&scored[i])
+            };
+            FragmentRecord { snapshot, decision }
+        })
+        .collect()
+}
+
 fn classify_fragment(frag: &Molecule, policy: &FragmentPolicy) -> FragmentClass {
     if policy.preserve_isotopes && fragment_has_isotope(frag) {
         return FragmentClass::Kept;
@@ -565,62 +686,8 @@ pub fn select_fragment(
         .map(|c| extract_fragment(mol, c))
         .collect();
 
-    struct Scored {
-        heavy: usize,
-        rank_size: usize,
-        has_carbon: bool,
-        canon: String,
-        class: FragmentClass,
-    }
-
-    let scored: Vec<Scored> = frags
-        .iter()
-        .map(|f| {
-            let heavy = heavy_atom_count(f);
-            let rank_size = if policy.count_heavy_atoms_only {
-                heavy
-            } else {
-                f.atom_count()
-            };
-            Scored {
-                heavy,
-                rank_size,
-                has_carbon: fragment_has_carbon(f),
-                canon: chematic_smiles::canonical_smiles(f),
-                class: classify_fragment(f, policy),
-            }
-        })
-        .collect();
-
-    let rank_key = |i: usize| -> (usize, bool, std::cmp::Reverse<String>) {
-        let s = &scored[i];
-        let carbon_key = policy.prefer_organic && s.has_carbon;
-        (s.rank_size, carbon_key, std::cmp::Reverse(s.canon.clone()))
-    };
-
-    let kept_candidates: Vec<usize> = (0..frags.len())
-        .filter(|&i| scored[i].class == FragmentClass::Kept)
-        .collect();
-
-    let (winner, abstained) = if kept_candidates.is_empty() {
-        let w = (0..frags.len()).max_by_key(|&i| rank_key(i)).unwrap();
-        (
-            w,
-            Some(format!(
-                "no_fragment_classified_kept: all {} fragment(s) matched a salt/ion/water \
-                 classification rule; falling back to the size-ranked choice among them",
-                frags.len()
-            )),
-        )
-    } else {
-        let w = *kept_candidates
-            .iter()
-            .max_by_key(|&&i| rank_key(i))
-            .unwrap();
-        (w, None)
-    };
-
-    let winner_canon = scored[winner].canon.clone();
+    let scored = score_fragments(&frags, policy);
+    let (winner, abstained) = select_fragment_winner(&scored, policy);
     let mut warnings = Vec::new();
     if let Some(reason) = &abstained {
         warnings.push(StandardizationWarning::new(
@@ -629,56 +696,7 @@ pub fn select_fragment(
         ));
     }
 
-    let fragments: Vec<FragmentRecord> = frags
-        .iter()
-        .enumerate()
-        .map(|(i, f)| {
-            let snapshot = FragmentSnapshot {
-                atom_count: f.atom_count(),
-                heavy_atom_count: scored[i].heavy,
-                formula: f.formula(),
-                canonical_smiles: scored[i].canon.clone(),
-            };
-            let decision = if i == winner {
-                FragmentDecision::Kept {
-                    rank_key: format!(
-                        "rank_size={}, has_carbon={}, canonical_smiles={}",
-                        scored[i].rank_size, scored[i].has_carbon, scored[i].canon
-                    ),
-                }
-            } else if scored[i].canon == winner_canon {
-                FragmentDecision::Removed {
-                    rule_id: "duplicate_of_kept_fragment".to_string(),
-                    reason: "identical structure to the kept fragment (same canonical SMILES)"
-                        .to_string(),
-                }
-            } else {
-                let (rule_id, reason) = match scored[i].class {
-                    FragmentClass::AlwaysStripWater => (
-                        "water_always_strip",
-                        "single neutral oxygen fragment (water)".to_string(),
-                    ),
-                    FragmentClass::AlwaysStripIon => (
-                        "monatomic_always_strip_ion",
-                        "single charged atom on the fixed always-strip element list".to_string(),
-                    ),
-                    FragmentClass::StructuralSalt => (
-                        "structural_no_carbon_small_fragment",
-                        format!("no carbon and <= {MAX_SALT_HEAVY_ATOMS_NO_CARBON} heavy atoms"),
-                    ),
-                    FragmentClass::Kept => (
-                        "ranked_out_by_size",
-                        "outranked by the kept fragment under the fragment policy".to_string(),
-                    ),
-                };
-                FragmentDecision::Removed {
-                    rule_id: rule_id.to_string(),
-                    reason,
-                }
-            };
-            FragmentRecord { snapshot, decision }
-        })
-        .collect();
+    let fragments = fragment_records(&frags, &scored, winner);
 
     let output = frags[winner].clone();
     let after = MoleculeSnapshot::from_mol(&output);
