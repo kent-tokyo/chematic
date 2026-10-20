@@ -74,10 +74,6 @@
       "decisions": 25,
       "lines": 143
     },
-    "crates/chematic-depict/src/eps.rs::render_eps_opts#1": {
-      "decisions": 13,
-      "lines": 145
-    },
     "crates/chematic-depict/src/layout.rs::compute_layout#1": {
       "decisions": 25,
       "lines": 211
@@ -161,10 +157,6 @@
     "crates/chematic-mol/src/cjson_record.rs::validate_projection#1": {
       "decisions": 47,
       "lines": 105
-    },
-    "crates/chematic-mol/src/conversion.rs::convert_cjson#1": {
-      "decisions": 21,
-      "lines": 213
     },
     "crates/chematic-mol/src/conversion.rs::convert_with_report_with_limits#1": {
       "decisions": 54,

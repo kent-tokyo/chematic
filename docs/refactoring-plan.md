@@ -55,6 +55,9 @@ dispatcher allowance is removed.
 R12 separates fragment scoring, SMARTS primitive families, and RDKit-compatible
 reaction stereo application into named stages. The three former function
 allowances are removed; chemistry ordering and public results are unchanged.
+R13 separates CJSON conversion policy from loss reporting and EPS orchestration
+from viewport, highlight, bond, and label emission. The two former function
+allowances are removed; conversion reports and EPS byte ordering are unchanged.
 
 Notable outcomes include a bounded reaction module tree, separated
 lexical/semantic format stages, API-domain binding modules, bounded descriptor
