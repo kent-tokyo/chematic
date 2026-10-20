@@ -18,12 +18,15 @@ fn run_formats(input: &str, source: &str, target: &str, args: &[&str]) -> Output
         .stderr(Stdio::piped())
         .spawn()
         .unwrap();
-    child
-        .stdin
-        .take()
-        .unwrap()
-        .write_all(input.as_bytes())
-        .unwrap();
+    let mut child_stdin = child.stdin.take().unwrap();
+    if let Err(error) = child_stdin.write_all(input.as_bytes()) {
+        assert_eq!(
+            error.kind(),
+            std::io::ErrorKind::BrokenPipe,
+            "failed to write child stdin: {error}"
+        );
+    }
+    drop(child_stdin);
     child.wait_with_output().unwrap()
 }
 

@@ -15,7 +15,15 @@ fn invoke_bytes(args: &[&str], stdin: &[u8]) -> Output {
         .stderr(Stdio::piped())
         .spawn()
         .unwrap();
-    child.stdin.take().unwrap().write_all(stdin).unwrap();
+    let mut child_stdin = child.stdin.take().unwrap();
+    if let Err(error) = child_stdin.write_all(stdin) {
+        assert_eq!(
+            error.kind(),
+            std::io::ErrorKind::BrokenPipe,
+            "failed to write child stdin: {error}"
+        );
+    }
+    drop(child_stdin);
     child.wait_with_output().unwrap()
 }
 
