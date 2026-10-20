@@ -33,7 +33,9 @@ for ($index = 0; $index -lt $batchCount; $index++) {
         [void]$startInfo.ArgumentList.Add($file.FullName)
     }
     $report = Join-Path $ReportDir ('batch-{0:D2}.xml' -f ($index + 1))
-    foreach ($argument in @('-v', '-x', '--timeout=90', '--timeout-method=thread', '--session-timeout=240', "--junitxml=$report")) {
+    # Limit runner output to reduce console backpressure on the supervisor.
+    # JUnit retains the test-level results for each batch.
+    foreach ($argument in @('-q', '-x', '--tb=short', '--timeout=90', '--timeout-method=thread', '--session-timeout=240', "--junitxml=$report")) {
         [void]$startInfo.ArgumentList.Add($argument)
     }
     $process = [System.Diagnostics.Process]::new()
@@ -44,7 +46,6 @@ for ($index = 0; $index -lt $batchCount; $index++) {
     $start = [DateTime]::UtcNow
     while (-not $process.WaitForExit(30000)) {
         $elapsed = [int]([DateTime]::UtcNow - $start).TotalSeconds
-        Write-Host "pytest batch $($index + 1) still running after ${elapsed}s (PID $($process.Id))"
         if ($elapsed -ge $BatchTimeoutSeconds) {
             try {
                 $process.Kill($true)
@@ -54,9 +55,11 @@ for ($index = 0; $index -lt $batchCount; $index++) {
             }
             throw "pytest batch $($index + 1) exceeded ${BatchTimeoutSeconds}s."
         }
+        Write-Host "pytest batch $($index + 1) still running after ${elapsed}s (PID $($process.Id))"
     }
     if ($process.ExitCode -ne 0) {
         throw "pytest batch $($index + 1) failed with exit code $($process.ExitCode)."
     }
+    Write-Host "pytest batch $($index + 1)/${batchCount} passed."
 }
 Write-Host "All $($files.Count) Python binding test files passed."
