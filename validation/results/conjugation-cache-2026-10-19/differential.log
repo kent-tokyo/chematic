@@ -1,7 +1,6 @@
    Compiling chematic-smiles v1.1.9 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-smiles)
     Finished `release` profile [optimized] target(s) in 22.79s
      Running unittests src/lib.rs (/private/tmp/chematic-conjugation-target/release/deps/chematic_smiles-bcda25160b69e387)
-
 running 5 tests
 test rdkit::sanitize::conjugation_cache_tests::conjugation_cache_timing ... ignored, opt-in release timing; measures only prepared-model set_conjugation
 test rdkit::sanitize::conjugation_cache_tests::single_bond_fast_path_keeps_existing_aromatic_flags ... ok
@@ -17,4 +16,3 @@ refused c1cc1: RDKit-compatible SMILES: sanitization failed: Can't kekulize mol.
 test rdkit::sanitize::conjugation_cache_tests::frozen_loop_matches_entire_fixture_and_records_refusals ... ok
 
 test result: ok. 4 passed; 0 failed; 1 ignored; 0 measured; 429 filtered out; finished in 0.08s
-
