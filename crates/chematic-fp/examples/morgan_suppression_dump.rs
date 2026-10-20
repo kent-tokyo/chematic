@@ -13,7 +13,7 @@
 //! same bit. Compared by `scripts/ecfp_rdkit_suppression_parity.py` against
 //! `row["default"]["sparse_bit_info"]` (pair-set match) and
 //! `row["default"]["sparse_counts"]` (count-multiset shape match) from
-//! `scripts/gen_ecfp_rdkit_environment_oracle.py`'s oracle rows.
+//! `scripts/generators/gen_ecfp_rdkit_environment_oracle.py`'s oracle rows.
 //!
 //! Usage:
 //! ```text

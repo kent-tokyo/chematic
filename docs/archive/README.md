@@ -14,6 +14,11 @@ index.
 | [`rdkit-comparison-through-v1.0.4.md`](rdkit-comparison-through-v1.0.4.md) | Previous long-form RDKit comparison |
 | [`changelog-through-v1.0.41.md`](changelog-through-v1.0.41.md) | Full public release notes and development detail through v1.0.41 |
 | [`changelog-through-v1.0.25.md`](changelog-through-v1.0.25.md) | Earlier compact archive through v1.0.25 |
+| [`code-audit-2026-09-10.md`](code-audit-2026-09-10.md) | Point-in-time source and gate audit |
+| [`rdkit-open-issues-2026-10-14.md`](rdkit-open-issues-2026-10-14.md) | Dated RDKit issue and implementation survey |
+| [`openbabel-open-issues-2026-10-14.md`](openbabel-open-issues-2026-10-14.md) | Dated Open Babel issue and implementation survey |
+| [`cosmolkit-feature-gaps-2026-10-15.md`](cosmolkit-feature-gaps-2026-10-15.md) | Dated COSMolKit workflow comparison |
+| [`upstream-issue-integration-2026-10-15.md`](upstream-issue-integration-2026-10-15.md) | Integration record for the issue-driven candidate batch |
 
 Use the root [`CHANGELOG.md`](../../CHANGELOG.md), [`ROADMAP.md`](../../ROADMAP.md),
 and [`SECURITY.md`](../../SECURITY.md), plus the current

@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from scripts.bench_openbabel_file_io_paired import ci95_lower
-from scripts.bench_openbabel_file_io_same_process import ci95_lower as same_process_ci95_lower
+from scripts.benchmarks.bench_openbabel_file_io_paired import ci95_lower
+from scripts.benchmarks.bench_openbabel_file_io_same_process import ci95_lower as same_process_ci95_lower
 from scripts.check_openbabel_file_io_semantics import compare, coordinate_comparison
 
 

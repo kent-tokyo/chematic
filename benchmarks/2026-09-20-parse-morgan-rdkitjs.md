@@ -67,6 +67,6 @@ package. The CI workflow is the canonical three-browser command set:
 [`parse-morgan-rdkitjs-gate.yml`](../.github/workflows/parse-morgan-rdkitjs-gate.yml).
 
 For a local JSON record, use
-[`scripts/bench_browser_wasm_vs_rdkit_isolated.py`](../scripts/bench_browser_wasm_vs_rdkit_isolated.py)
+[`scripts/benchmarks/bench_browser_wasm_vs_rdkit_isolated.py`](../scripts/benchmarks/bench_browser_wasm_vs_rdkit_isolated.py)
 with the fixed `rdkit-js-browser-10k-v1.smi` corpus, then validate it with
 `python3 scripts/check_parse_morgan_rdkit_speed_gate.py --input RESULT.json`.

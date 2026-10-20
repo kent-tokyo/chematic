@@ -61,8 +61,9 @@ impl Mol {
     /// Apply the supported RDKit MolStandardize Cleanup stages.
     ///
     /// Unlike :meth:`standardize`, this does not choose a tautomer, neutralize
-    /// formal charges, or select a fragment. Acid/base-priority reionization
-    /// remains outside the supported Cleanup subset.
+    /// formal charges, or select a fragment. Cleanup includes the bounded
+    /// existing-anion acid/base transfers documented by the Rust core; the
+    /// complete RDKit acid/base-priority table remains outside this subset.
     fn cleanup(&self) -> Mol {
         Mol::bare(chematic_chem::cleanup(&self.inner))
     }

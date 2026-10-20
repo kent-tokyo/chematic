@@ -1,0 +1,232 @@
+{
+  "schema_version": 2,
+  "profile": "source_rdkit_2026_09_1_normalize",
+  "source_commit": "56f9d1dc093bd05fd263fc14eef3ee5a7b644972",
+  "baseline_source_commit": "e842ae41a2201dcdc2970e02915a22b1fd3925c8",
+  "previous_source_commit": "40b0830a35cf61caafcbf12d73619e778b278c5c",
+  "rdkit_version": "2026.09.1",
+  "source_file_sha256": {
+    "crates/chematic-chem/src/standardize/groups.rs": "ea24e2d5981646a6015bd3424f4865d60fcef2ac1b31c497480f47ec3deea3d0",
+    "crates/chematic-chem/src/standardize.rs": "233cf86a949354e7404a1b0947dd627a0257f9fef02752575026e23461c8bab2",
+    "crates/chematic-chem/examples/cleanup_rdkit_dump.rs": "2d122b54ae4dfba2514e2c134df1abbc1fbc0a5ddabe22c3adb7e6bbf0db90db",
+    "scripts/rdkit_normalize_source_gate.py": "38dcbcc097004d3ba00c538d05cad392c6bedb763997d71bdecdd67db6bef1a8"
+  },
+  "corpora": {
+    "stress": {
+      "path": "validation/cosmolkit_comparison/corpora/stress-v1.smi",
+      "corpus_sha256": "879166ab5481cac805ecd2d77f37d628383ec124085b90e2ee1659d55ce76277",
+      "baseline_dump_sha256": "69e1565bbc3de1c4fd6b62d5e95ce0ff8a7d7fb192bc5ae746b7a7e179d1b859",
+      "source_dump_sha256": "26b0ccc976801b8b8bc3bf2d9988abc03e7c764c4646766bb8009a31f27723c8",
+      "rows": 4072,
+      "input_canonical_mismatch_indices": [],
+      "baseline_exact": 4068,
+      "source_exact": 4072,
+      "baseline_mismatch_indices": [
+        1147,
+        1459,
+        3584,
+        3801
+      ],
+      "source_mismatch_indices": [],
+      "fixed_indices": [
+        1147,
+        1459,
+        3584,
+        3801
+      ],
+      "regressed_indices": [],
+      "normalize_changed_indices": [
+        1147,
+        1459,
+        3584,
+        3801
+      ],
+      "cleanup_changed_indices": [
+        1147,
+        1459,
+        3584,
+        3801
+      ],
+      "reionize_changed_indices": [],
+      "fixed_cases": [
+        {
+          "index": 1147,
+          "input": "c1(c([C@]2(OS(O[C@@H]2c2:C:cc(Cl)cc2)=O)Cn2ncnc2)ccc(c1)Cl)Cl",
+          "baseline": "[O-][S+]1O[C@H](c2ccc(Cl)cc2)[C@@](Cn2cncn2)(c2ccc(Cl)cc2Cl)O1",
+          "previous": "O=S1O[C@H](c2ccc(Cl)cc2)[C@@](Cn2cncn2)(c2ccc(Cl)cc2Cl)O1",
+          "source": "O=S1O[C@H](c2ccc(Cl)cc2)[C@@](Cn2cncn2)(c2ccc(Cl)cc2Cl)O1",
+          "rdkit": "O=S1O[C@H](c2ccc(Cl)cc2)[C@@](Cn2cncn2)(c2ccc(Cl)cc2Cl)O1"
+        },
+        {
+          "index": 1459,
+          "input": "CC1(C)O[C@H]2[C@@H]3OS(=O)O[C@@H]3CO[C@@]2(COS(N)(=O)=O)O1",
+          "baseline": "CC1(C)O[C@H]2[C@@H]3O[S+]([O-])O[C@@H]3CO[C@@]2(COS(N)(=O)=O)O1",
+          "previous": "CC1(C)O[C@H]2[C@@H]3OS(=O)O[C@@H]3CO[C@@]2(COS(N)(=O)=O)O1",
+          "source": "CC1(C)O[C@H]2[C@@H]3OS(=O)O[C@@H]3CO[C@@]2(COS(N)(=O)=O)O1",
+          "rdkit": "CC1(C)O[C@H]2[C@@H]3OS(=O)O[C@@H]3CO[C@@]2(COS(N)(=O)=O)O1"
+        },
+        {
+          "index": 3584,
+          "input": "O=S1O[C@H](c2ccc(Cl)cc2)[C@@](Cn2cncn2)(c2cc[c](Cl)cc2Cl)O1",
+          "baseline": "[O-][S+]1O[C@H](c2ccc(Cl)cc2)[C@@](Cn2cncn2)(c2ccc(Cl)cc2Cl)O1",
+          "previous": "O=S1O[C@H](c2ccc(Cl)cc2)[C@@](Cn2cncn2)(c2ccc(Cl)cc2Cl)O1",
+          "source": "O=S1O[C@H](c2ccc(Cl)cc2)[C@@](Cn2cncn2)(c2ccc(Cl)cc2Cl)O1",
+          "rdkit": "O=S1O[C@H](c2ccc(Cl)cc2)[C@@](Cn2cncn2)(c2ccc(Cl)cc2Cl)O1"
+        },
+        {
+          "index": 3801,
+          "input": "COC1=CC=CC=C1N1CC[N:34](CCCCNC2=CC=C([N+](=O)[O-:28])C3=NON=[C:7]23)CC1",
+          "baseline": "COc1ccccc1N1CC[N:34](CCCCNc2ccc([N+]([O-])=[O:28])c3non[c:7]23)CC1",
+          "previous": "COc1ccccc1N1CC[N:34](CCCCNc2ccc([N+](=O)[O-:28])c3non[c:7]23)CC1",
+          "source": "COc1ccccc1N1CC[N:34](CCCCNc2ccc([N+](=O)[O-:28])c3non[c:7]23)CC1",
+          "rdkit": "COc1ccccc1N1CC[N:34](CCCCNc2ccc([N+](=O)[O-:28])c3non[c:7]23)CC1"
+        }
+      ],
+      "previous": {
+        "source_dump_sha256": "26b0ccc976801b8b8bc3bf2d9988abc03e7c764c4646766bb8009a31f27723c8",
+        "exact": 4072,
+        "mismatch_indices": [],
+        "fixed_indices": [],
+        "regressed_indices": [],
+        "normalize_changed_indices": [],
+        "cleanup_changed_indices": [],
+        "reionize_changed_indices": []
+      }
+    },
+    "exposed_10k": {
+      "path": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+      "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+      "baseline_dump_sha256": "7fbede794e0c9ef77f02352eddf73d4dc4a4e1257c5ee13b7858fa0fcb0c62be",
+      "source_dump_sha256": "6bae0ca74d52bdf1467a390e850b1e59be83abc007fc0d1ed2f2a8cd78a72f28",
+      "rows": 10000,
+      "input_canonical_mismatch_indices": [],
+      "baseline_exact": 9993,
+      "source_exact": 10000,
+      "baseline_mismatch_indices": [
+        1230,
+        7529,
+        8150,
+        8256,
+        9473,
+        9680,
+        9703
+      ],
+      "source_mismatch_indices": [],
+      "fixed_indices": [
+        1230,
+        7529,
+        8150,
+        8256,
+        9473,
+        9680,
+        9703
+      ],
+      "regressed_indices": [],
+      "normalize_changed_indices": [
+        1230,
+        7529,
+        8150,
+        8256,
+        9473,
+        9680,
+        9703
+      ],
+      "cleanup_changed_indices": [
+        1230,
+        7529,
+        8150,
+        8256,
+        9473,
+        9680,
+        9703
+      ],
+      "reionize_changed_indices": [],
+      "fixed_cases": [
+        {
+          "index": 1230,
+          "input": "[S-]c1nc2ccccc2c2cccc[n+]12",
+          "baseline": "[S-]c1nc2ccccc2c2cccc[n+]12",
+          "previous": "[S-]c1nc2ccccc2c2cccc[n+]12",
+          "source": "S=c1nc2ccccc2c2ccccn12",
+          "rdkit": "S=c1nc2ccccc2c2ccccn12"
+        },
+        {
+          "index": 7529,
+          "input": "CCCCOS(=O)OCCCC",
+          "baseline": "CCCCO[S+]([O-])OCCCC",
+          "previous": "CCCCOS(=O)OCCCC",
+          "source": "CCCCOS(=O)OCCCC",
+          "rdkit": "CCCCOS(=O)OCCCC"
+        },
+        {
+          "index": 8150,
+          "input": "O=S1OCCO1",
+          "baseline": "[O-][S+]1OCCO1",
+          "previous": "O=S1OCCO1",
+          "source": "O=S1OCCO1",
+          "rdkit": "O=S1OCCO1"
+        },
+        {
+          "index": 8256,
+          "input": "COC1=CC(=C(NC=CC2=[N+](C)C3=C(C=CC=C3)C2(C)C)C=C1)OC",
+          "baseline": "COc1ccc(NC=CC2=[N+](C)c3ccccc3C2(C)C)c(OC)c1",
+          "previous": "COc1ccc(NC=CC2=[N+](C)c3ccccc3C2(C)C)c(OC)c1",
+          "source": "COc1ccc([NH+]=CC=C2N(C)c3ccccc3C2(C)C)c(OC)c1",
+          "rdkit": "COc1ccc([NH+]=CC=C2N(C)c3ccccc3C2(C)C)c(OC)c1"
+        },
+        {
+          "index": 9473,
+          "input": "CC(C)(C)COS(=O)OCC(C)(C)C",
+          "baseline": "CC(C)(C)CO[S+]([O-])OCC(C)(C)C",
+          "previous": "CC(C)(C)COS(=O)OCC(C)(C)C",
+          "source": "CC(C)(C)COS(=O)OCC(C)(C)C",
+          "rdkit": "CC(C)(C)COS(=O)OCC(C)(C)C"
+        },
+        {
+          "index": 9680,
+          "input": "OC[S](O)=O",
+          "baseline": "[O-][S+](O)CO",
+          "previous": "O=S(O)CO",
+          "source": "O=S(O)CO",
+          "rdkit": "O=S(O)CO"
+        },
+        {
+          "index": 9703,
+          "input": "CC1=CC=C(C=C1)[S](O)=O",
+          "baseline": "Cc1ccc([S+]([O-])O)cc1",
+          "previous": "Cc1ccc(S(=O)O)cc1",
+          "source": "Cc1ccc(S(=O)O)cc1",
+          "rdkit": "Cc1ccc(S(=O)O)cc1"
+        }
+      ],
+      "previous": {
+        "source_dump_sha256": "31e531f8bd45eadb27978282314de37305ae613d878da5c2af3217b76ff35f85",
+        "exact": 9998,
+        "mismatch_indices": [
+          1230,
+          8256
+        ],
+        "fixed_indices": [
+          1230,
+          8256
+        ],
+        "regressed_indices": [],
+        "normalize_changed_indices": [
+          1230,
+          8256
+        ],
+        "cleanup_changed_indices": [
+          1230,
+          8256
+        ],
+        "reionize_changed_indices": []
+      }
+    }
+  },
+  "limits": [
+    "Exact canonical isomeric SMILES agreement on two fixed corpora only.",
+    "All input SMILES are parsed independently by RDKit and CheMatic.",
+    "Input canonical forms agree on both corpora in this source comparison.",
+    "The CheMatic results come from source builds, not published packages."
+  ]
+}

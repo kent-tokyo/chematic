@@ -75,7 +75,7 @@ certify every SMARTS stereo class or the separate RDKit-parity matcher.
   and ring-opening/closure order.
 - Python: 22 new cases and 68 existing module-function cases passed using the
   locally compiled source extension.
-- `scripts/validate_query_hydrogens.py` generates 48 acyclic patterns from all
+- `scripts/validation/validate_query_hydrogens.py` generates 48 acyclic patterns from all
   four-neighbour permutations and both tags, tested on four target spellings,
   plus six ring cases. All 198 folded chematic results match unmerged RDKit
   queries against explicit-H targets. RDKit 2026.09.1's folded queries differ

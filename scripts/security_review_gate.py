@@ -55,8 +55,8 @@ def main() -> int:
         "crates/chematic-wasm/tests/cross_binding_contract.test.mjs",
         ".github/workflows/miri.yml",
         ".github/workflows/sanitizers.yml",
-        "scripts/generate_sbom.py",
-        "scripts/generate_provenance.py",
+        "scripts/release/generate_sbom.py",
+        "scripts/release/generate_provenance.py",
         "scripts/check_workflow_pins.py",
     ]
     missing = [path for path in required if not (root / path).is_file()]

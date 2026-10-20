@@ -40,12 +40,12 @@ peak-RSS lane. The artifact and package digests are retained in
 Reproduction:
 
 ```sh
-node scripts/bench_wasm_vs_rdkit.mjs \
+node scripts/benchmarks/bench_wasm_vs_rdkit.mjs \
   --rdkit-package /private/tmp/chematic-rdkitjs-gate/node_modules/@rdkit/rdkit \
   --output /private/tmp/browser-html-generation-placeholder.json \
   --html-output /private/tmp/chematic-browser-gate-1000.html \
   --rows 1000 --warmup 20 --init-timeout-ms 10000
-python3 scripts/bench_browser_wasm_vs_rdkit_playwright.py \
+python3 scripts/benchmarks/bench_browser_wasm_vs_rdkit_playwright.py \
   --html /private/tmp/chematic-browser-gate-1000.html \
   --output validation/results/competitive-browser-rdkitjs-2026-09-10-v1.0.11.json \
   --schematic-dir demo/pkg \

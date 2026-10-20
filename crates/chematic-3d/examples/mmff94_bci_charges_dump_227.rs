@@ -2,8 +2,8 @@
 //! UNMODIFIED `chematic_ff::mmff94_charges_numeric` output per heavy atom
 //! for every molecule in the 265-molecule Wave 1 corpus. Measurement-only --
 //! no chematic-ff production code is touched by this file. Compared
-//! downstream (`scripts/mmff94_bci_charges_compare_227.py`) against a live
-//! RDKit oracle (`scripts/mmff94_bci_charges_oracle_227.py`) to establish
+//! downstream (`scripts/diagnostics/mmff94_bci_charges_compare_227.py`) against a live
+//! RDKit oracle (`scripts/diagnostics/mmff94_bci_charges_oracle_227.py`) to establish
 //! whether a real gap exists BEFORE any production fix is written, per the
 //! issue #227 Phase 2 directive's falsify-before-fix requirement.
 //!

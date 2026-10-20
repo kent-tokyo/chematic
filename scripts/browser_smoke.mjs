@@ -47,8 +47,16 @@ try {
   await page.goto("http://127.0.0.1:8765/index.html?browser-smoke=0.89", {
     waitUntil: "networkidle",
   });
+  assert.equal(
+    await page.locator("body").evaluate((body) => getComputedStyle(body).backgroundColor),
+    "rgb(15, 17, 23)",
+    "Playground stylesheet must load",
+  );
   await page.locator("#version-badge").waitFor({ state: "visible" });
   assert.equal(await page.locator("#version-badge").innerText(), expectedVersionBadge);
+  await page.locator('[data-lang="ja"]').click();
+  assert.equal(await page.locator("#tagline").innerText(), "ブラウザで動く純Rust化学情報処理ライブラリ");
+  await page.locator('[data-lang="en"]').click();
   assert.ok(wasmAssetVersions.length >= 2, "page must request both WASM assets");
   assert.ok(
     wasmAssetVersions.every((version) => version === workspaceVersion),

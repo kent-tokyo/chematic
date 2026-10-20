@@ -69,7 +69,7 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q \
   crates/chematic-py/tests/test_chi_square_bit_ranker.py \
   crates/chematic-py/tests/test_biased_bit_ranker.py \
   crates/chematic-py/tests/test_rdkit_compat.py
-python3 scripts/validate_info_ranker_export.py --output /tmp/ranker-export.json
+python3 scripts/validation/validate_info_ranker_export.py --output /tmp/ranker-export.json
 ```
 
 Existing ranker limits remain: at most 65,536 features, 256 classes and

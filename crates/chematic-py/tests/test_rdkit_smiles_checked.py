@@ -45,7 +45,6 @@ def test_9391_rejects_oscillating_spiro_output(source):
         "C1CCC2(CC1)CCCCC2",
         "C1C2CC3CC1CC(C2)C3",
         "C[C@]1(F)CCC2(CC[C@](I)(Cl)CC2)CC1",
-        "F[Pt@SP1](Cl)(Br)I",
     ],
 )
 def test_accepts_stable_outputs_without_modifying_input(source):
@@ -55,6 +54,76 @@ def test_accepts_stable_outputs_without_modifying_input(source):
     assert ch.rdkit_smiles_checked(mol) == expected
     assert ch.rdkit_smiles_checked(ch.from_smiles(expected)) == expected
     assert mol.to_moljson() == before
+
+
+def test_bounded_orders_are_deterministic_unique_and_broad():
+    first = list(implementation._bounded_atom_orders(7, 32))
+    second = list(implementation._bounded_atom_orders(7, 32))
+    assert first == second
+    assert len(first) == len(set(first)) == 32
+    assert first[0] == tuple(range(7))
+    assert tuple(reversed(range(7))) in first
+    assert tuple(range(1, 7)) + (0,) in first
+    assert (0, 2, 4, 6, 1, 3, 5) in first
+
+
+def test_rejects_real_square_planar_permutation_dependence():
+    mol = ch.from_smiles("F[Pt@SP1](Cl)(Br)I")
+    with pytest.raises(ch.RdkitSmilesStabilityError) as caught:
+        ch.rdkit_smiles_checked(mol)
+    assert caught.value.code == "permutation_dependent"
+    assert caught.value.first_smiles == "[F][Pt@SP1]([Cl])([Br])[I]"
+    assert caught.value.roundtrip_smiles == "[F][Pt@SP3]([Cl])([Br])[I]"
+    assert caught.value.atom_order == (0, 2, 4, 1, 3)
+
+
+def test_small_graph_stops_after_all_permutations():
+    assert set(implementation._bounded_atom_orders(2, 32)) == {(0, 1), (1, 0)}
+
+
+def test_rejects_permutation_dependent_output_with_witness(monkeypatch):
+    mol = ch.from_smiles("CCO")
+    native_write = implementation._write_permuted
+
+    def write(candidate, order):
+        if order == (2, 1, 0):
+            return "OCC"
+        return native_write(candidate, order)
+
+    monkeypatch.setattr(implementation, "_write_permuted", write)
+    with pytest.raises(ch.RdkitSmilesStabilityError) as caught:
+        ch.rdkit_smiles_checked(mol, max_permutations=2)
+    assert caught.value.code == "permutation_dependent"
+    assert caught.value.first_smiles == "CCO"
+    assert caught.value.roundtrip_smiles == "OCC"
+    assert caught.value.atom_order == (2, 1, 0)
+
+
+def test_permutation_writer_failure_keeps_order_and_cause(monkeypatch):
+    failure = RuntimeError("cannot write permutation")
+
+    def fail(candidate, order):
+        raise failure
+
+    monkeypatch.setattr(implementation, "_write_permuted", fail)
+    with pytest.raises(ch.RdkitSmilesStabilityError) as caught:
+        ch.rdkit_smiles_checked(ch.from_smiles("CCO"), max_permutations=2)
+    assert caught.value.code == "permutation_write_failed"
+    assert caught.value.roundtrip_smiles is None
+    assert caught.value.atom_order == (2, 1, 0)
+    assert caught.value.__cause__ is failure
+
+
+@pytest.mark.parametrize("value", [True, 1.5, "32", None])
+def test_permutation_limit_requires_integer(value):
+    with pytest.raises(TypeError, match="max_permutations"):
+        ch.rdkit_smiles_checked(ch.from_smiles("CCO"), max_permutations=value)
+
+
+@pytest.mark.parametrize("value", [-1, 0, 1, 257])
+def test_permutation_limit_is_bounded(value):
+    with pytest.raises(ValueError, match="between 2 and 256"):
+        ch.rdkit_smiles_checked(ch.from_smiles("CCO"), max_permutations=value)
 
 
 def test_preserves_distinct_tetrahedral_and_double_bond_isomers():

@@ -50,7 +50,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from gen_pipeline_v2_vs_rdkit_report import (  # noqa: E402
+from generators.gen_pipeline_v2_vs_rdkit_report import (  # noqa: E402
     GATE_WIDENING_EXPLANATIONS,
     TOTAL_TIMEOUT_MS,
     _verify_identical_coverage_timing_variance,

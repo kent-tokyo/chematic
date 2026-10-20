@@ -35,7 +35,7 @@ class NumericPacketTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             with patch.dict(os.environ, {"CHEMATIC_MOL2_EVIDENCE": directory}):
                 spec = importlib.util.spec_from_file_location(
-                    "mol2_reproduction", ROOT / "scripts/bench_openbabel_mol2_index.py"
+                    "mol2_reproduction", ROOT / "scripts/benchmarks/bench_openbabel_mol2_index.py"
                 )
                 runner = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(runner)

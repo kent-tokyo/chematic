@@ -143,7 +143,7 @@ def main() -> int:
             rdkit_rows = run_json(
                 [
                     "python3",
-                    "scripts/bench_streaming_formats.py",
+                    "scripts/benchmarks/bench_streaming_formats.py",
                     "--mode",
                     mode_name,
                     mode_path,

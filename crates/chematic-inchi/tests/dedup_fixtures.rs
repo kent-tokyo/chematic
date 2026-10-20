@@ -322,7 +322,7 @@ fn disconnected_salt_fragment_order_is_verified_duplicate() {
 // Re-verified again after rebasing onto `main` past PR #160/#157 (neither
 // touches canonical_smiles or the aromaticity/SMILES-writer code this
 // residual depends on): re-running
-// `scripts/canonical_residual_diagnosis.py` produced byte-identical
+// `scripts/diagnostics/canonical_residual_diagnosis.py` produced byte-identical
 // `validation/results/canonical_residual_diagnosis*.{jsonl,json}` output --
 // same 96/5,000 (78+18+0) split, not a stale carried-forward number.
 
@@ -386,7 +386,7 @@ fn residual_row_idempotence_only_reconciled_via_native_inchi() {
     // unrelated mechanisms and still exercise `CanonicalSplit`.
     //
     // Not re-verified against the full 5,000-molecule differential corpus
-    // (`scripts/canonical_residual_diagnosis.py` requires RDKit and the
+    // (`scripts/diagnostics/canonical_residual_diagnosis.py` requires RDKit and the
     // original `~/Downloads/SMILES.csv`, unavailable in this environment) --
     // a maintainer should re-run that script post-merge to find a fresh
     // still-residual "Root Cause 3" example if dedicated coverage for that

@@ -11,7 +11,7 @@ This follows #812, whose processed main Codecov result is 95.43%. Coverage scope
 - Alignment: recover a known rigid or reflected tetrahedron with uniform and nonuniform positive weights. Independently sum weighted residuals and check the transform determinant (1 for rotation, -1 for reflection). Reject point/weight count mismatches and nonpositive weights. RDKit's Jacobi stopping tolerance gives maximum coordinate errors about 2.85e-7 (uniform weights) and 1.21e-6 (nonuniform weights) on these exact cases, so coordinate assertions allow 2e-6 rather than assuming an exact fit; the SSR checks use 1e-9.
 - MMFF bond fallback: six real interhalogens (ClBr, ClI, BrI, FCl, FBr, FI) have no direct bond-parameter row. Assigned atom types and Herschbach–Laurie empirical `kb/r0` match RDKit 2026.03.1, including reversed endpoint order and the reported empirical resolution mechanism.
 
-Regenerate the bounds reference with `scripts/generate_bounds_boundary_fixtures.py` using exactly RDKit 2026.03.1. Its SHA-256 is `c65bbda00872d54b5af0b58a8804ce141ef938b6175ca66b8eebb24dad4e1471`.
+Regenerate the bounds reference with `scripts/generators/generate_bounds_boundary_fixtures.py` using exactly RDKit 2026.03.1. Its SHA-256 is `c65bbda00872d54b5af0b58a8804ce141ef938b6175ca66b8eebb24dad4e1471`.
 
 The inline interhalogen values are reproduced with `AllChem.MMFFGetMoleculeProperties(Chem.AddHs(Chem.MolFromSmiles(smiles)))`, then `GetMMFFAtomType(i)` and `GetMMFFBondStretchParams(mol, 0, 1)`.
 

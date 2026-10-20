@@ -96,7 +96,7 @@ cargo test -p chematic-mol --lib --test gro_contract \
 python -m pytest crates/chematic-py/tests/test_gro.py \
   crates/chematic-py/tests/test_new_formats.py \
   crates/chematic-py/tests/test_input_errors.py -q
-python scripts/validate_gro_elements.py --obabel /opt/homebrew/bin/obabel
+python scripts/validation/validate_gro_elements.py --obabel /opt/homebrew/bin/obabel
 ```
 
 Local verification passed 772 Rust tests (15 new GRO contracts), 114 Python

@@ -34,7 +34,7 @@ jobs:
           maturin build --locked --release --manifest-path crates/chematic-py/Cargo.toml \
             --interpreter python --out "$RUNNER_TEMP/wheels/candidate"
           python -m pip download --only-binary=:all: --no-deps \
-            --dest "$RUNNER_TEMP/wheels/baseline" 'chematic==1.1.7'
+            --dest "$RUNNER_TEMP/wheels/baseline" 'chematic==1.1.8'
           python - <<'PY'
           import os, pathlib, zipfile
           root = pathlib.Path(os.environ['RUNNER_TEMP']) / 'wheels'

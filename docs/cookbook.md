@@ -309,7 +309,7 @@ smiles_list = [
 mols = [chematic.from_smiles(s) for s in smiles_list]
 names = ["aspirin", "ibuprofen", "caffeine"]
 
-# Returns self-contained HTML string; also writes to file if output= given
+# Returns a Report object; call save() to write the self-contained HTML file
 report = chematic.report(mols, names=names, title="My compounds")
 report.save("report.html")     # write to disk
 # display(report)              # Jupyter: renders inline automatically

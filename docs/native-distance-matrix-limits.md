@@ -131,13 +131,13 @@ Synthetic recipes, original licensing, normalization and oracle settings are in
 `validation/rdkit_issues/native-distance/fixtures.json`. Each generated record's
 input and expected-matrix SHA-256 are saved in
 `validation/results/native-distance-matrix-2026-10-15.json`.
-The validator is `scripts/validate_native_distance_matrix.py`.
+The validator is `scripts/validation/validate_native_distance_matrix.py`.
 
 ```sh
 cargo test -p chematic-chem --lib --test native_distance_matrix --offline --quiet
 cargo clippy -p chematic-chem -p chematic-py --all-targets --offline --no-deps -- -D warnings
 python3 -m pytest crates/chematic-py/tests/test_native_distance_matrix.py crates/chematic-py/tests/test_rdkit_matrix_limits.py crates/chematic-py/tests/test_rdkit_graph_queries.py -q
-python3 scripts/validate_native_distance_matrix.py
+python3 scripts/validation/validate_native_distance_matrix.py
 ```
 
 The candidate is `/private/tmp/chematic-native-matrix`, inherited from

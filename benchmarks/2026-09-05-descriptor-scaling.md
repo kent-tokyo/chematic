@@ -5,7 +5,7 @@ No version, tag, or published-artifact claim is made here.
 
 ## Contract checked
 
-`scripts/bench_descriptor_scaling.py` exercises the public
+`scripts/benchmarks/bench_descriptor_scaling.py` exercises the public
 `chematic.bulk.descriptors_array` API with 3, 8, and all 60 supported columns.
 For every lane it verifies:
 
@@ -43,7 +43,7 @@ Reproduce:
 
 ```text
 /private/tmp/chematic-speed-venv-2/bin/python \
-  scripts/bench_descriptor_scaling.py \
+  scripts/benchmarks/bench_descriptor_scaling.py \
   scripts/chembl_accuracy_corpus_4999.smi \
   --limit 250 --repeats 1
 ```

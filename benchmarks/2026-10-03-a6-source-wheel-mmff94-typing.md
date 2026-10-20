@@ -31,7 +31,7 @@ It is a temporary measurement, not a checked-in package artifact. Recreate it
 using a freshly installed source wheel and RDKit 2026.03.6:
 
 ```sh
-python scripts/mmff94_atom_type_census.py \
+python scripts/diagnostics/mmff94_atom_type_census.py \
   --corpus validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi \
   --output validation/results/mmff94-type-source-wheel-10k-local.json \
   --wheel dist/hba-wheel/chematic-*.whl --module-root .venv \
