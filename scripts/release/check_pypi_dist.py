@@ -13,6 +13,7 @@ from pathlib import Path
 
 PYTHONS = ("39", "310", "311", "312", "313")
 PLATFORMS = ("linux-x86_64", "linux-aarch64", "macos-x86_64", "macos-arm64", "windows-amd64")
+ATTESTATION_SUFFIX = ".publish.attestation"
 
 
 def platform_for(tag: str) -> str:
@@ -49,13 +50,32 @@ def check_layout(names: set[str], version: str) -> None:
 
 
 def local_hashes(directory: Path) -> dict[str, str]:
-    return {path.name: hashlib.sha256(path.read_bytes()).hexdigest()
-            for path in directory.iterdir() if path.is_file()}
+    files = {path.name: path for path in directory.iterdir() if path.is_file()}
+    distributions = {
+        name: path for name, path in files.items() if name.endswith((".whl", ".tar.gz"))
+    }
+    attestations = {name for name in files if name.endswith(ATTESTATION_SUFFIX)}
+    unexpected = set(files) - set(distributions) - attestations
+    if unexpected:
+        raise ValueError(f"unexpected release files: {sorted(unexpected)}")
+    orphaned = {
+        name for name in attestations if name.removesuffix(ATTESTATION_SUFFIX) not in distributions
+    }
+    if orphaned:
+        raise ValueError(f"orphaned publish attestations: {sorted(orphaned)}")
+    return {
+        name: hashlib.sha256(path.read_bytes()).hexdigest()
+        for name, path in distributions.items()
+    }
 
 
 def published_hashes(version: str) -> dict[str, str]:
-    url = f"https://pypi.org/pypi/chematic/{version}/json"
-    with urllib.request.urlopen(url, timeout=20) as response:
+    url = (
+        f"https://pypi.org/pypi/chematic/{version}/json"
+        f"?release-verification={time.time_ns()}"
+    )
+    request = urllib.request.Request(url, headers={"Cache-Control": "no-cache"})
+    with urllib.request.urlopen(request, timeout=20) as response:
         payload = json.load(response)
     return {entry["filename"]: entry["digests"]["sha256"] for entry in payload["urls"]}
 
