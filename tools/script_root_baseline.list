@@ -224,6 +224,7 @@ scripts/rdkit_cleanup_parity.py
 scripts/rdkit_cleanup_source_gate.py
 scripts/rdkit_compat_diff.py
 scripts/rdkit_molblock_readback_parity.py
+scripts/rdkit_normalize_source_gate.py
 scripts/rdkit_rdk_cross_binding_parity.py
 scripts/rdkit_rdk_parity.py
 scripts/rdkit_rgroup_ez_source_gate.py
