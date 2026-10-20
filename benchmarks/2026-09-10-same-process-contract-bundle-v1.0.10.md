@@ -32,7 +32,7 @@ so the normal user-site installation is not modified:
 
 ```sh
 PYTHONPATH=/private/tmp/chematic-py-target-reaction-map-v3 \
-  python3 scripts/check_same_process_sdf_contract.py --repeats 20 \
+  python3 scripts/validation/check_same_process_sdf_contract.py --repeats 20 \
   --output benchmarks/2026-09-10-same-process-sdf-contract-v1.0.10.json
 ```
 
@@ -40,7 +40,7 @@ Repeat the same command with the seven other format-specific runners and output
 paths listed above. The checked-in bundle gate then verifies all eight reports:
 
 ```sh
-python3 scripts/check_same_process_contracts.py
+python3 scripts/validation/check_same_process_contracts.py
 ```
 
 The gate requires current-version metadata, malformed-case reporting, and an

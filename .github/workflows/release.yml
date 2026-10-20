@@ -33,7 +33,7 @@ jobs:
           if [ -z "$RELEASED_AT" ]; then
             RELEASED_AT="$(git log -1 --format=%cI "${GITHUB_REF_NAME}^{commit}")"
           fi
-          python3 scripts/generate_release_metadata.py \
+          python3 scripts/release/generate_release_metadata.py \
             --version "$VERSION" \
             --commit "$COMMIT" \
             --released-at "$RELEASED_AT" \

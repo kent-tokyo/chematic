@@ -4,7 +4,7 @@
 // Reads the same validation/pipeline_v2_wasm_parity_fixtures.json the Rust test
 // suite's wasm_binding_matches_python_reference_fixtures /
 // raw_rust_api_matches_python_reference_fixtures read -- generated once via
-// scripts/gen_pipeline_v2_wasm_parity_fixtures.py against the Python binding.
+// scripts/generators/gen_pipeline_v2_wasm_parity_fixtures.py against the Python binding.
 //
 // Previously blocked by issue #219 (std::time::Instant::now() panicking under
 // real wasm32-unknown-unknown); fixed in #222 via chematic-3d's crate::clock

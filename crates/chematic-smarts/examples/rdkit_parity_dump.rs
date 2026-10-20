@@ -1,7 +1,7 @@
 //! SMARTS-R2: dump chematic's default AND opt-in RDKit-parity SMARTS
 //! match-sets across a molecule corpus, one JSON row per molecule, for
 //! cross-checking against a live RDKit oracle in
-//! `scripts/rdkit_ring_parity_diagnosis.py`.
+//! `scripts/diagnostics/rdkit_ring_parity_diagnosis.py`.
 //!
 //! Diagnostic only. Calls only this crate's existing public API
 //! (`chematic_smarts::{find_matches, find_matches_rdkit_parity, parse_smarts}`)
@@ -15,7 +15,7 @@
 //! ```text
 //! cargo run -p chematic-smarts --release --example rdkit_parity_dump -- \
 //!     ~/Downloads/SMILES.csv > validation/results/rdkit_ring_parity_dump.jsonl
-//! /tmp/chematic-smartsC-venv/bin/python scripts/rdkit_ring_parity_diagnosis.py
+//! /tmp/chematic-smartsC-venv/bin/python scripts/diagnostics/rdkit_ring_parity_diagnosis.py
 //! ```
 
 use chematic_smarts::perceived::is_aromaticity_insensitive;
@@ -76,7 +76,7 @@ const PATTERNS: &[&str] = &[
 /// bridgehead-N reproducer, SMARTS-R0/R2's adamantane-type cage class).
 /// (id, smiles). SMILES for the cages are literature/PubChem canonical
 /// forms, independently re-verified against a live RDKit oracle (see
-/// `scripts/rdkit_ring_parity_diagnosis.py`'s alignment check, which would
+/// `scripts/diagnostics/rdkit_ring_parity_diagnosis.py`'s alignment check, which would
 /// fail loudly if any of these didn't round-trip).
 const HAND_CORPUS: &[(&str, &str)] = &[
     ("benzene", "c1ccccc1"),

@@ -14,7 +14,7 @@ Reproduction:
 
 ```text
 PYTHONPATH=crates/chematic-py/python:/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages \
-  python3 scripts/check_same_process_xyz_contract.py \
+  python3 scripts/validation/check_same_process_xyz_contract.py \
   --output benchmarks/2026-09-09-same-process-xyz-contract-v1.0.10.json
 ```
 

@@ -63,7 +63,7 @@ real Node/WASM regressions cover default compatibility, opposite configurations,
 B/E reversal, ambiguity, missing geometry, first-fragment behavior and errors.
 WASM additionally checks batch output and unchanged safety limits.
 
-`scripts/validate_cdxml_stereo_options.py` uses RDKit 2026.09.1 as an independent
+`scripts/validation/validate_cdxml_stereo_options.py` uses RDKit 2026.09.1 as an independent
 reference for 216 drawings: three displays, two B/E orders, six rotations,
 two mirror states and three node permutations. Each intended configuration
 is expressed as an unambiguous directional CDXML control with the unique
@@ -82,7 +82,7 @@ not a released-wheel or general ChemDraw compatibility result.
 
 ```sh
 PYTHONPATH=/path/to/source/runtime:/path/to/pinned/rdkit \
-  python3 scripts/validate_cdxml_stereo_options.py \
+  python3 scripts/validation/validate_cdxml_stereo_options.py \
   --wasm-module /path/to/node/chematic_wasm.js \
   --baseline-pythonpath /path/to/earlier/source/runtime
 ```

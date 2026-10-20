@@ -692,9 +692,9 @@ local macOS/ASan evidence; Linux sanitizer and Miri evidence remain separate.
 - [x] The audit's unmaintained `rustybuzz`/`ttf-parser` finding is documented
   as an explicit residual-risk acceptance with a re-evaluation trigger; the
   transitive duplicate versions remain tracked for future dependency cleanup.
-- [x] `scripts/generate_sbom.py` produces a 310-package SPDX 2.3 SBOM from
+- [x] `scripts/release/generate_sbom.py` produces a 310-package SPDX 2.3 SBOM from
   `cargo metadata --locked`.
-- [x] `scripts/generate_provenance.py` records source revision and SHA-256
+- [x] `scripts/release/generate_provenance.py` records source revision and SHA-256
   hashes for the SBOM, WASM artifact, and Python wheel; OpenSSL detached
   signing and verification were exercised successfully with a disposable
   local key.

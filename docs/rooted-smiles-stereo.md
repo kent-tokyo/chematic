@@ -78,7 +78,7 @@ independent invalid-input and scope controls.
 cargo test -p chematic-smiles --test rooted_stereo
 cargo run -p chematic-smiles --example rooted_stereo_probe > /tmp/rooted-cases.json
 # Provide a freshly compiled chematic extension and RDKit 2026.09.1 on PYTHONPATH.
-python3 scripts/validate_rooted_stereo.py --cases /tmp/rooted-cases.json
+python3 scripts/validation/validate_rooted_stereo.py --cases /tmp/rooted-cases.json
 ```
 
 The oracle runner constructs the reference graph independently, assigns

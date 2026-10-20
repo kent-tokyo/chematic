@@ -51,7 +51,7 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q \
   crates/chematic-py/tests/test_rdkit_smiles_checked.py \
   crates/chematic-py/tests/test_rdkit_smiles.py \
   crates/chematic-py/tests/test_rdkit_writers.py
-python3 scripts/validate_rdkit_smiles_stability.py --reference \
+python3 scripts/validation/validate_rdkit_smiles_stability.py --reference \
   --output /tmp/rdkit-smiles-stability.json
 ```
 

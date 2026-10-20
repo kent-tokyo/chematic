@@ -89,7 +89,7 @@ the declared corpus and operation, not universal per-molecule dominance.
 The post-freeze lane can be rerun with:
 
 ```bash
-python scripts/gen_mmff94_stereo_safe_holdout_manifest.py \
+python scripts/generators/gen_mmff94_stereo_safe_holdout_manifest.py \
   --candidate-commit e9f178fa7e9d969f594a6ace0a8712d3b0f472e2 \
   --source scripts/chembl_accuracy_corpus_4999.smi \
   --output validation/manifests/mmff94_stereo_safe_post_freeze_holdout_v2.json \

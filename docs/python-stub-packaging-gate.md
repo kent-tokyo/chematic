@@ -84,7 +84,7 @@ a pinned installed RDKit stub directory:
 
 ```sh
 python -m unittest scripts.tests.test_check_python_stubs -v
-python scripts/validate_python_stub_gate.py \
+python scripts/validation/validate_python_stub_gate.py \
   --wheel /path/to/chematic-1.1.5-platform.whl \
   --rdkit-stubs /path/to/rdkit-stubs --rdkit-version 2026.09.1
 ```

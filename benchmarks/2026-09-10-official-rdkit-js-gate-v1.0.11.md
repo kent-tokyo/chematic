@@ -32,7 +32,7 @@ command are in
 `validation/results/competitive-benchmark-rdkitjs-2026-09-10-v1.0.11.json`:
 
 ```sh
-node scripts/bench_wasm_vs_rdkit.mjs \
+node scripts/benchmarks/bench_wasm_vs_rdkit.mjs \
   --rdkit-package /private/tmp/chematic-rdkitjs-gate/node_modules/@rdkit/rdkit \
   --output validation/results/competitive-benchmark-rdkitjs-2026-09-10-v1.0.11.json \
   --rows 1000 --warmup 20 --same-process

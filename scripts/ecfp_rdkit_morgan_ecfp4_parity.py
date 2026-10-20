@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Phase B acceptance gate: `rdkit_morgan_ecfp4_experimental` (the production,
 fallible, RDKit-bit-exact ECFP4 API in `crates/chematic-fp/src/rdkit_morgan_ecfp4.rs`)
-vs the real RDKit oracle (`scripts/gen_ecfp_rdkit_environment_oracle.py`).
+vs the real RDKit oracle (`scripts/generators/gen_ecfp_rdkit_environment_oracle.py`).
 
 Unlike `ecfp_rdkit_raw_identifier_parity.py`'s `classify()`, this script never
 touches RDKit's `includeRedundantEnvironments=True` ("full") lifecycle --

@@ -23,7 +23,7 @@ Reproduction:
 ```sh
 npm install --prefix /private/tmp/chematic-rdkitjs-v1.0.12 \
   --ignore-scripts --no-package-lock @rdkit/rdkit@2025.3.4-1.0.0
-node scripts/bench_wasm_vs_rdkit.mjs \
+node scripts/benchmarks/bench_wasm_vs_rdkit.mjs \
   --rdkit-package /private/tmp/chematic-rdkitjs-v1.0.12/node_modules/@rdkit/rdkit \
   --schematic-dir crates/chematic-wasm/pkg-node \
   --output /private/tmp/chematic-rdkitjs-v1.0.12/compare.json \

@@ -5,7 +5,7 @@
 Reads the SAME `validation/ecfp4_rdkit_stable_api_fixtures.json` file the Rust test
 (`crates/chematic-fp/tests/rdkit_morgan_stable_api_fixtures.rs`) and the WASM test
 (`crates/chematic-wasm/tests/rdkit_ecfp4_stable_api.test.mjs`) read -- generated once
-from a live RDKit oracle by `scripts/gen_ecfp4_rdkit_stable_api_fixtures.py` (RDKit
+from a live RDKit oracle by `scripts/generators/gen_ecfp4_rdkit_stable_api_fixtures.py` (RDKit
 version/commit recorded in the file itself). Does not import RDKit itself -- the
 oracle values are already baked into the JSON, so this test has no RDKit dependency
 and always runs (unlike the `pytest.importorskip("rdkit")`-gated differential tests

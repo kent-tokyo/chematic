@@ -117,7 +117,7 @@ cargo test -p chematic-chem --lib --test stereo_group_inversion --offline --quie
 python -m pytest crates/chematic-py/tests/test_stereo_group_inversion.py \
   crates/chematic-py/tests/test_stereo_groups.py \
   crates/chematic-py/tests/test_stereo_candidate_budget.py -q
-python scripts/validate_stereo_group_inversion.py
+python scripts/validation/validate_stereo_group_inversion.py
 ```
 
 Local validation passed 963 Rust tests, with one pre-existing real-budget VF2

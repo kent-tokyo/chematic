@@ -77,9 +77,9 @@ jobs:
           python -m venv .venv
           .venv/bin/pip install maturin --quiet
           .venv/bin/maturin develop --release -m crates/chematic-py/Cargo.toml
-          .venv/bin/python scripts/bench_startup.py --runs 5 --json > ../baseline_startup.json
+          .venv/bin/python scripts/benchmarks/bench_startup.py --runs 5 --json > ../baseline_startup.json
           for _ in 1 2 3 4 5; do
-            .venv/bin/python scripts/bench_smiles_parse.py --n 5000 --json | jq -c .
+            .venv/bin/python scripts/benchmarks/bench_smiles_parse.py --n 5000 --json | jq -c .
           done > ../baseline_parse.jsonl
 
       - name: Build & benchmark PR branch (candidate)
@@ -88,9 +88,9 @@ jobs:
           python -m venv .venv
           .venv/bin/pip install maturin --quiet
           .venv/bin/maturin develop --release -m crates/chematic-py/Cargo.toml
-          .venv/bin/python scripts/bench_startup.py --runs 5 --json > ../candidate_startup.json
+          .venv/bin/python scripts/benchmarks/bench_startup.py --runs 5 --json > ../candidate_startup.json
           for _ in 1 2 3 4 5; do
-            .venv/bin/python scripts/bench_smiles_parse.py --n 5000 --json | jq -c .
+            .venv/bin/python scripts/benchmarks/bench_smiles_parse.py --n 5000 --json | jq -c .
           done > ../candidate_parse.jsonl
 
       - name: Pair baseline vs candidate samples

@@ -25,8 +25,8 @@ environment with `pip install --no-deps`.
 maturin build --release --offline -m crates/chematic-py/Cargo.toml -o /tmp/chematic-wheel-next
 python3 -m venv /tmp/chematic-clean-venv
 /tmp/chematic-clean-venv/bin/pip install --no-deps /tmp/chematic-wheel-next/chematic-1.0.10-cp313-cp313-macosx_11_0_arm64.whl
-/tmp/chematic-clean-venv/bin/python scripts/bench_startup.py --json --runs 10
-/tmp/chematic-clean-venv/bin/python scripts/bench_smiles_parse.py scripts/descriptor_census_corpus.smi --n 5000 --json
+/tmp/chematic-clean-venv/bin/python scripts/benchmarks/bench_startup.py --json --runs 10
+/tmp/chematic-clean-venv/bin/python scripts/benchmarks/bench_smiles_parse.py scripts/descriptor_census_corpus.smi --n 5000 --json
 /tmp/chematic-clean-venv/bin/python -c 'import chematic,resource; [chematic.from_smiles("CC(=O)Oc1ccccc1C(=O)O") for _ in range(5000)]; print(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)'
 PYTHONPATH=/tmp/chematic-clean-venv/lib/python3.13/site-packages:/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages /tmp/chematic-clean-venv/bin/python -m pytest -p no:asyncio crates/chematic-py/tests --tb=short
 ```
