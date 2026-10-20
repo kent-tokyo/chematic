@@ -20,27 +20,69 @@ fuzz_target!(|data: &[u8]| {
     let input = &input[..end];
 
     match selector % 26 {
-        0 => { let _ = chematic_chem::parse_formula(input); }
-        1 => { let _ = chematic_chem::parse_condensed(input); }
-        2 => { let _ = chematic_smarts::parse_smarts(input); }
-        3 => { let _ = chematic_smarts::parse_cxsmarts(input); }
-        4 => { let _ = chematic_rxn::parse_reaction(input); }
-        5 => { let _ = chematic_rxn::parse_reaction_query(input); }
-        6 => { let _ = chematic_mol::parse_cml(input); }
-        7 => { let _ = chematic_mol::parse_cif(input); }
-        8 => { let _ = chematic_mol::parse_cjson(input); }
-        9 => { let _ = chematic_mol::parse_cube(input); }
-        10 => { let _ = chematic_mol::parse_ket(input); }
-        11 => { let _ = chematic_mol::parse_pdbqt(input); }
-        12 => { let _ = chematic_mol::parse_pqr(input); }
-        13 => { let _ = chematic_mol::parse_gjf(input); }
-        14 => { let _ = chematic_mol::parse_gaussian_log(input); }
-        15 => { let _ = chematic_mol::parse_mmcif(input); }
-        16 => { let _ = chematic_mol::parse_mol2(input); }
-        17 => { let _ = chematic_mol::parse_mrv(input); }
-        18 => { let _ = chematic_mol::parse_opendx(input); }
-        19 => { let _ = chematic_mol::parse_orca_input(input); }
-        20 => { let _ = chematic_mol::parse_orca_output(input); }
+        0 => {
+            let _ = chematic_chem::parse_formula(input);
+        }
+        1 => {
+            let _ = chematic_chem::parse_condensed(input);
+        }
+        2 => {
+            let _ = chematic_smarts::parse_smarts(input);
+        }
+        3 => {
+            let _ = chematic_smarts::parse_cxsmarts(input);
+        }
+        4 => {
+            let _ = chematic_rxn::parse_reaction(input);
+        }
+        5 => {
+            let _ = chematic_rxn::parse_reaction_query(input);
+        }
+        6 => {
+            let _ = chematic_mol::parse_cml(input);
+        }
+        7 => {
+            let _ = chematic_mol::parse_cif(input);
+        }
+        8 => {
+            let _ = chematic_mol::parse_cjson(input);
+        }
+        9 => {
+            let _ = chematic_mol::parse_cube(input);
+        }
+        10 => {
+            let _ = chematic_mol::parse_ket(input);
+        }
+        11 => {
+            let _ = chematic_mol::parse_pdbqt(input);
+        }
+        12 => {
+            let _ = chematic_mol::parse_pqr(input);
+        }
+        13 => {
+            let _ = chematic_mol::parse_gjf(input);
+        }
+        14 => {
+            let _ = chematic_mol::parse_gaussian_log(input);
+        }
+        15 => {
+            let _ = chematic_mol::parse_mmcif(input);
+        }
+        16 => {
+            let _ = chematic_mol::parse_mol2(input);
+        }
+        17 => {
+            let _ = chematic_mol::parse_mrv(input);
+        }
+        18 => {
+            let _ = chematic_mol::parse_opendx(input);
+        }
+        19 => {
+            let _ = chematic_mol::parse_orca_input(input);
+        }
+        20 => {
+            let _ = chematic_mol::parse_orca_output(input);
+        }
         21 => {
             let _ = chematic_3d::parse_pdb_atoms_with_limits(
                 input,
