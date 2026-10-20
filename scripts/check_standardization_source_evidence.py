@@ -10,6 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 RECORD = ROOT / "validation/results/rdkit-standardization-current-source-2026-10-20-reionize.json"
+PREVIOUS_RECORD = ROOT / "validation/results/rdkit-standardization-current-source-2026-10-20.json"
 
 
 def digest(path: Path) -> str:
@@ -53,7 +54,10 @@ def main() -> None:
     check_lane(record, "reionize_", "reionize_exact_rows")
 
     assert not record["baseline_comparison"]["regressed_indices"]
-    previous = json.loads((ROOT / record["baseline_comparison"]["previous_source"]).read_text())
+    comparison = record["baseline_comparison"]
+    assert digest(PREVIOUS_RECORD) == comparison["previous_report_sha256"]
+    previous = json.loads(PREVIOUS_RECORD.read_text())
+    assert previous["source_commit"] == comparison["previous_source_commit"]
     old_reionize = {row["index"] for row in previous["reionize_mismatches"]}
     new_reionize = {row["index"] for row in record["reionize_mismatches"]}
     assert old_reionize - new_reionize
