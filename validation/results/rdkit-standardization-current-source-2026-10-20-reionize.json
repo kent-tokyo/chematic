@@ -3,7 +3,7 @@
   "detail_scope": "all",
   "source_commit": "45bc569adf41435b035f562bb7d064a6229a230f",
   "source_sha256": {
-    "crates/chematic-chem/src/standardize.rs": "5b3c82d8b16a454f595a9d9e2fa9c316923bd6b6588b1b3536fa054af3702295",
+    "crates/chematic-chem/src/standardize.rs": "2a6372fb090eb2bd1c1a4d25f23ca75b4db8ce44802f90f20d433d8581ee6fa2",
     "crates/chematic-chem/src/standardize/reionize.rs": "e8ce99c064568b186fc2b23736ef1f686b3ad6a63fcc85e40d204d6e2f5fbb8d",
     "crates/chematic-chem/src/standardize/cleanup.rs": "489948798322a3f0d33c460032ee82b4c7738b119a1f2756b7a7d47fab7aac69",
     "crates/chematic-chem/src/standardize/cleanup/acid_base.rs": "0fc4846762ba55f9be349c0b72112873ad8b622b2def1074551df396778764d8",
