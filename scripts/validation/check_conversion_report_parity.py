@@ -10,6 +10,8 @@ from pathlib import Path
 import subprocess
 import sys
 
+ROOT = Path(__file__).resolve().parents[2]
+
 PYTHON_CALL = 'import chematic,sys; print(chematic.convert_with_report_json(sys.stdin.buffer.read().decode("utf-8"), *sys.argv[1:]))'
 NODE_CALL = """
 import {readFileSync} from 'node:fs';
@@ -25,7 +27,7 @@ def main():
     parser.add_argument("--python", default=sys.executable)
     parser.add_argument("--node", default="node")
     parser.add_argument("--wasm-module", type=Path, required=True)
-    parser.add_argument("--source", type=Path, default=Path(__file__).resolve().parents[1] / "validation/mol2_preservation/amide.mol2")
+    parser.add_argument("--source", type=Path, default=ROOT / "validation/mol2_preservation/amide.mol2")
     args = parser.parse_args()
     source = args.source.read_text()
     cases = []
@@ -53,7 +55,7 @@ def main():
         cases.append((f"cjson-partial-charge-{value}", source.replace("ACM 0.70", f"ACM {value}"), "mol2", "cjson", "allow_loss", False))
     for name, text in [("missing", source.replace("ACM 0.70", "ACM")), ("undeclared", source.replace("USER_CHARGES", "NO_CHARGES"))]:
         cases.append((f"cjson-partial-charge-{name}", text, "mol2", "cjson", "allow_loss", False))
-    cjson = (Path(__file__).resolve().parents[1] / "validation/cjson_preservation/charged.cjson").read_text()
+    cjson = (ROOT / "validation/cjson_preservation/charged.cjson").read_text()
     for variant, text in [("lf", cjson), ("crlf", cjson.replace("\n", "\r\n"))]:
         for target, policies in [("cjson", ["strict", "allow_loss", "preserve_source"]), ("smiles", ["strict", "allow_loss"])]:
             for policy in policies:
@@ -77,7 +79,7 @@ def main():
         ("cross-preserve", cjson, "smiles", "preserve_source"),
     ]:
         cases.append((f"cjson-input-{name}", text, "cjson", target, policy, True))
-    partial = (Path(__file__).resolve().parents[1] / "validation/cjson_preservation/partial-charges.cjson").read_text()
+    partial = (ROOT / "validation/cjson_preservation/partial-charges.cjson").read_text()
     for variant, text in [("lf", partial), ("crlf", partial.replace("\n", "\r\n"))]:
         for policy in ["strict", "allow_loss"]:
             cases.append((f"cjson-mol2-{variant}-{policy}", text, "cjson", "mol2", policy, False))
