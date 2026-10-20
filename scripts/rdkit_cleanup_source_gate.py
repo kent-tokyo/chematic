@@ -91,6 +91,7 @@ def main() -> None:
     normalize_compatible, normalize_exact = set(), set()
     reionize_compatible, reionize_exact = set(), set()
     excluded, errors, mismatches = [], [], []
+    oracle_nonreparseable, source_nonreparseable = [], []
     normalize_oracle_errors, reionize_oracle_errors = [], []
     normalize_mismatches, reionize_mismatches = [], []
     cleanup_classes: Counter[str] = Counter()
@@ -149,6 +150,10 @@ def main() -> None:
         actual_normalize, normalize_error = value(source.get("normalize", {}))
         actual, source_error = value(source.get("cleanup", {}))
         actual_reionize, reionize_error = value(source.get("reionize", {}))
+        if Chem.MolFromSmiles(expected) is None:
+            oracle_nonreparseable.append(index)
+        if actual is not None and Chem.MolFromSmiles(actual) is None:
+            source_nonreparseable.append(index)
         if index not in normalize_compatible:
             pass
         elif actual_normalize == expected_normalize:
@@ -296,6 +301,8 @@ def main() -> None:
         "reionize_support_status_counts": dict(sorted(reionize_statuses.items())),
         "reionize_mismatches": None if args.cleanup_only else reionize_mismatches,
         "rdkit_changed_rows": len(changed),
+        "oracle_nonreparseable_indices": oracle_nonreparseable,
+        "source_nonreparseable_indices": source_nonreparseable,
         "excluded": excluded,
         "oracle_errors": errors,
         "mismatches": mismatches,
