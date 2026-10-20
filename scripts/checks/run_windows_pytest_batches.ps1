@@ -21,7 +21,7 @@ for ($index = 0; $index -lt $batchCount; $index++) {
     $first = $index * $BatchSize
     $last = [Math]::Min($first + $BatchSize - 1, $files.Count - 1)
     $batch = @($files[$first..$last])
-    Write-Host "pytest batch $($index + 1)/$batchCount: $($batch.Count) files ($($batch[0].Name) through $($batch[-1].Name))"
+    Write-Host "pytest batch $($index + 1)/${batchCount}: $($batch.Count) files ($($batch[0].Name) through $($batch[-1].Name))"
 
     $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
     $startInfo.FileName = $python
