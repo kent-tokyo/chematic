@@ -78,7 +78,7 @@ cells exact; the 10 differ on Zn/Hg dithiocarbamate complexes.
 
 ## MMFF94 atom types
 
-`scripts/mmff94_atom_type_census.py` (heavy atoms typed differently from
+`scripts/diagnostics/mmff94_atom_type_census.py` (heavy atoms typed differently from
 RDKit `MMFFGetMMFFAtomType`):
 
 | Corpus | Before this batch | Source |

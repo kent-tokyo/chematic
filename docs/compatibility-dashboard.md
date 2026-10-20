@@ -1,6 +1,6 @@
 # Compatibility dashboard
 
-Generated from checked-in manifests by `python3 scripts/generate_compatibility_dashboard.py`.
+Generated from checked-in manifests by `python3 scripts/generators/generate_compatibility_dashboard.py`.
 This is a compatibility-contract dashboard, not a universal RDKit parity or speed claim.
 
 - Target version: `1.1.9`

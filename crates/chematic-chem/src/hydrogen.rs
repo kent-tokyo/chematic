@@ -254,6 +254,43 @@ pub(crate) fn is_removable_explicit_h(mol: &Molecule, idx: AtomIdx) -> bool {
     }
 }
 
+fn copy_surviving_ring_closures(
+    mol: &Molecule,
+    bond_remap: &HashMap<BondIdx, BondIdx>,
+    builder: &mut MoleculeBuilder,
+) {
+    for (&old_bond, &new_bond) in bond_remap {
+        if let Some((label, occurrence, begins_at_open)) =
+            mol.smiles_ring_closure_metadata(old_bond)
+        {
+            builder.set_smiles_ring_closure(new_bond, label, occurrence);
+            if let Some(at_open) = begins_at_open {
+                builder.set_smiles_ring_closure_begins_at_open(new_bond, at_open);
+            }
+        }
+    }
+}
+
+fn removed_hydrogen_target(
+    mol: &Molecule,
+    output: &Molecule,
+    old_atom: AtomIdx,
+    new_atom: AtomIdx,
+    removed: &[(AtomIdx, BondIdx)],
+) -> u8 {
+    let original = implicit_hcount(mol, old_atom).saturating_add(removed.len() as u8);
+    // RDKit treats a formally double-bonded H as one removable proton.
+    // The lost bond order can also permit an extra inferred H.
+    if removed
+        .iter()
+        .any(|&(_, bond)| mol.bond(bond).order == BondOrder::Double)
+    {
+        original.max(implicit_hcount(output, new_atom))
+    } else {
+        original
+    }
+}
+
 /// Return a new molecule in which removable explicit H atom nodes (see
 /// [`is_removable_explicit_h`]) are removed and their bonds are converted
 /// back to implicit hydrogens.
@@ -391,6 +428,7 @@ pub fn remove_hydrogens(mol: &Molecule) -> Molecule {
     // to carry this), and silently drops or guesses E/Z geometry the same
     // way `corrected_chirality` does for tetrahedral centers without
     // `stereo_neighbor_order` (see that fix above).
+    copy_surviving_ring_closures(mol, &bond_remap, &mut builder);
     for (&old_bidx, &new_bidx) in &bond_remap {
         if let Some(direction) = mol.bond_direction(old_bidx) {
             builder.set_bond_direction(new_bidx, direction);
@@ -463,13 +501,15 @@ pub fn remove_hydrogens(mol: &Molecule) -> Molecule {
         .filter_map(|i| {
             let old_idx = AtomIdx(i as u32);
             let &new_idx = remap.get(&old_idx)?;
-            let removed = mol
+            let removed: Vec<_> = mol
                 .neighbors(old_idx)
                 .filter(|&(nb, _)| is_removed(nb))
-                .count() as u8;
-            (removed > 0).then(|| {
-                let total = chematic_core::implicit_hcount(mol, old_idx).saturating_add(removed);
-                (new_idx, total)
+                .collect();
+            (!removed.is_empty()).then(|| {
+                (
+                    new_idx,
+                    removed_hydrogen_target(mol, &out, old_idx, new_idx, &removed),
+                )
             })
         })
         .collect();

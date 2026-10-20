@@ -6,7 +6,7 @@
 //! CIP gate (Milestone 4 included) needs the same rigor again.
 //!
 //! `SMILES.csv` itself is not checked into this repo (same convention as
-//! `scripts/bench5k.py`/`scripts/cip_ground_truth.py`) -- this is a `cargo run --example`
+//! `scripts/benchmarks/bench5k.py`/`scripts/cip_ground_truth.py`) -- this is a `cargo run --example`
 //! tool for local, on-demand use against a corpus file the user supplies, not a
 //! `scripts/check.sh`/CI step.
 //!

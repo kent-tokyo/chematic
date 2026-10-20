@@ -24,7 +24,7 @@ as source-level before/after comparisons rather than as a rebuilt wheel run.
 Validate the current protocol offline with:
 
 ```bash
-python3 scripts/validate_competitive_benchmark_manifest.py
+python3 scripts/validation/validate_competitive_benchmark_manifest.py
 ```
 
 An advantage claim is publishable only when the result includes the exact
@@ -396,7 +396,7 @@ python scripts/benchmark_vs_rdkit.py --rdkit --corpus scripts/descriptor_census_
 
 # Descriptor accuracy (4,999-mol ChEMBL corpus)
 python scripts/bench5k.py scripts/chembl_accuracy_corpus_4999.smi --json validation/results/bench5k_latest.json
-python3 scripts/gen_validation_report.py validation/results/bench5k_latest.json
+python3 scripts/generators/gen_validation_report.py validation/results/bench5k_latest.json
 
 # CIP R/S/E/Z label agreement
 cargo run -p chematic-cip --release --example corpus_snapshot -- \

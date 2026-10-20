@@ -16,6 +16,6 @@ This follows #810 without changing coverage scope or exclusions. The processed L
 
 Targeted contract tests and workspace all-target Clippy pass. A fresh run of the existing full coverage command passed 5,333 tests with nine ignored, including native InChI and the loopback HTTP transport tests. The three final changed libraries were also remeasured after formatting. The final report uses the original exclusions and covers 340 files, with a local result of 95.27% (153,377/160,993 lines). Local measurements are not processed Codecov claims. CI's newer Clippy requested `as_chunks` in two gradient-sum assertions; that test-only iterator change retains the same three-coordinate groups.
 
-Regenerate the MOL2 reference with `python scripts/generate_mol2_boundary_fixtures.py` under RDKit 2026.03.1; the second regeneration matched byte for byte (SHA256 `6d7d9f2d5e894d726e9f8b0b68b05e429b006aeeadeb85a0ed3e019cd84f2248`).
+Regenerate the MOL2 reference with `python scripts/generators/generate_mol2_boundary_fixtures.py` under RDKit 2026.03.1; the second regeneration matched byte for byte (SHA256 `6d7d9f2d5e894d726e9f8b0b68b05e429b006aeeadeb85a0ed3e019cd84f2248`).
 
 Coverage measures execution. These checks establish the named numerical and boundary contracts, not complete chemistry correctness or general RDKit equivalence.

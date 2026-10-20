@@ -146,13 +146,13 @@ ChemDoodle code or external molecule corpus are copied. Runtime oracle versions,
 normalized variant packet hash, every known external difference, source-lane
 hashes and checks are saved in
 `validation/results/openbabel-cdjson-2026-10-15.json`.
-The reproducible oracle runner is `scripts/validate_cdjson.py`.
+The reproducible oracle runner is `scripts/validation/validate_cdjson.py`.
 
 ```sh
 cargo test -p chematic-mol --lib --test cdjson_contract --offline --quiet
 cargo clippy -p chematic-mol -p chematic-py --all-targets --offline --no-deps -- -D warnings
 python3 -m pytest crates/chematic-py/tests/test_cdjson.py crates/chematic-py/tests/test_cjson_preservation.py -q
-python3 scripts/validate_cdjson.py
+python3 scripts/validation/validate_cdjson.py
 ```
 
 Formatting, binding inventory, refactor budget, product naming, stub syntax and

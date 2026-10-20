@@ -181,7 +181,7 @@ pub(crate) fn rdkit_total_h_count(mol: &Molecule, idx: AtomIdx) -> u8 {
 /// Exact `deltaMass` for a given `(atomic_number, mass_number)` isotope, via
 /// binary search over [`crate::rdkit_isotope_delta_table::RDKIT_ISOTOPE_DELTA_TABLE`] --
 /// a table generated directly from RDKit's own `PeriodicTable`
-/// (`scripts/gen_rdkit_isotope_delta_table.py`), covering every isotope
+/// (`scripts/generators/gen_rdkit_isotope_delta_table.py`), covering every isotope
 /// RDKit's `GetMassForIsotope` recognizes for every element, not a
 /// hand-picked subset. `None` means `(atomic_number, mass_number)` isn't a
 /// real isotope RDKit itself recognizes either.

@@ -13,7 +13,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
-from bench_streaming_formats import measure, sdf_blocks, xyz_frames  # noqa: E402
+from benchmarks.bench_streaming_formats import measure, sdf_blocks, xyz_frames  # noqa: E402
 
 
 def main() -> int:

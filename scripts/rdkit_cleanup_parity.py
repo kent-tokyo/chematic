@@ -21,7 +21,7 @@ import rdkit
 from rdkit import Chem, RDLogger
 from rdkit.Chem.MolStandardize import rdMolStandardize
 
-from rdkit_standardization_classification import (
+from lib.rdkit_standardization_classification import (
     classify_cleanup_mismatch,
     classify_normalize_mismatch,
     classify_reionize_mismatch,

@@ -1,6 +1,6 @@
 //! Phase 1A audit for issue #227: dumps chematic's `assign_mmff94_numeric_types`
 //! output for every heavy atom of the 265-molecule Wave 1 corpus, for
-//! cross-checking against an RDKit oracle (`scripts/mmff94_rdkit_type_oracle.py`)
+//! cross-checking against an RDKit oracle (`scripts/diagnostics/mmff94_rdkit_type_oracle.py`)
 //! atom-index-aligned (both parsers preserve SMILES left-to-right atom order,
 //! per PR #226's already-verified 265/265 atom mapping).
 //!

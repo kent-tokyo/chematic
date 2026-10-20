@@ -32,7 +32,7 @@ prevents those regressions on this corpus.
 Reproduce in an environment with RDKit 2026.03.6:
 
 ```sh
-python scripts/mmff94_atom_type_oracle_tsv.py \
+python scripts/diagnostics/mmff94_atom_type_oracle_tsv.py \
   --corpus validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi \
   --output /tmp/chematic-mmff94-oracle.tsv
 SCHEMATIC_MMFF94_ORACLE_TSV=/tmp/chematic-mmff94-oracle.tsv \

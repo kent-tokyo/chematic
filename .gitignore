@@ -11,8 +11,11 @@ AGENTS.md
 
 # Rust / Cargo
 /target
+/fuzz/target/
 **/*.rs.bk
-rust_out/
+/rust_out
+/admet_report.csv
+/report.html
 
 # Python
 .venv/

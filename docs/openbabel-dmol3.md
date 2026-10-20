@@ -165,7 +165,7 @@ DMol3 support, scientific validity, hosted CI or a published release.
 cargo test -p chematic-mol --lib --test dmol3_contract \
   --test mopac_cartesian_contract --test fhiaims_contract
 python -m pytest crates/chematic-py/tests/test_dmol3.py
-python scripts/validate_dmol3.py --obabel /opt/homebrew/bin/obabel
+python scripts/validation/validate_dmol3.py --obabel /opt/homebrew/bin/obabel
 ```
 
 Build/install the candidate extension before running Python. The oracle

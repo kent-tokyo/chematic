@@ -60,7 +60,7 @@ LTO is disabled and codegen units set to 16; other profiles/hardware can differ.
 ## Reproduce
 
 ```sh
-python3 scripts/measure_conjugation_cache.py \
+python3 scripts/benchmarks/measure_conjugation_cache.py \
   --target-dir /tmp/chematic-conjugation-target \
   --output /tmp/chematic-conjugation-evidence
 ```

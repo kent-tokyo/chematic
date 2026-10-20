@@ -18,7 +18,7 @@
 //! fixed-width text), so every MOL block is byte-valid by construction.
 //!
 //! Emits one JSON object per fixture line to stdout. Cross-referenced
-//! against RDKit by `scripts/stereo2d_reader_diagnosis.py`.
+//! against RDKit by `scripts/diagnostics/stereo2d_reader_diagnosis.py`.
 //!
 //! Run:
 //! ```text

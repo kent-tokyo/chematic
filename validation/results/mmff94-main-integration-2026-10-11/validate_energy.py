@@ -20,7 +20,7 @@ def main():
     env = dict(os.environ, PYTHONPATH=str(ROOT / "target/integration-python") + os.pathsep + str(ROOT))
     before = {str(path): sha(path) for path in (EXT, RDKIT)}
     command = [
-        sys.executable, "-B", "scripts/mmff94_same_explicit_h_energy.py",
+        sys.executable, "-B", "scripts/diagnostics/mmff94_same_explicit_h_energy.py",
         "--output", str(OUT / "energy.jsonl"),
         "--summary", str(OUT / "energy-summary.json"),
         "--expected-schematic", "1.1.0", "--expected-rdkit", "2026.03.6",

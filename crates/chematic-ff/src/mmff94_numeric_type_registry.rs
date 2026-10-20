@@ -1,6 +1,6 @@
 //! GENERATED FILE -- DO NOT EDIT.
 //!
-//! Regenerate with `python3 scripts/gen_mmff94_numeric_type_registry.py`.
+//! Regenerate with `python3 scripts/generators/gen_mmff94_numeric_type_registry.py`.
 //! Source: RDKit `Code/ForceField/MMFF/Params.cpp` (`defaultMMFFDef` + `defaultMMFFProp`), tag `Release_2026_03_3`,
 //! commit `e74e7b0a5a2fc4e7f77c04ec26a61d4b8edbf22f`. Full provenance: `scripts/mmff94_provenance/PROVENANCE.md`.
 //!

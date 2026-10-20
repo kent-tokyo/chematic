@@ -134,7 +134,7 @@ Regenerate the proof packet with built native, Python and WASM modules:
 
 ```sh
 cargo build -p chematic-chem --example tetrahedral_cleanup_dump
-python scripts/validate_tetrahedral_cleanup.py \
+python scripts/validation/validate_tetrahedral_cleanup.py \
   --native-dump target/debug/examples/tetrahedral_cleanup_dump \
   --wasm-module /path/to/node-package/chematic_wasm.js
 ```

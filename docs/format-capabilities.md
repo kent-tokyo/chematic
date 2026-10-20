@@ -315,6 +315,10 @@ use the record or checked API for source retention.
 
 ### MOL2 (Tripos)
 
+Python also provides [checked explicit-H row grouping](mol2-hydrogen-order.md),
+with original/output correspondence and updated bond/root/charge-attribute
+references. It is an opt-in source edit with a bounded section profile.
+
 - **Multiple records / RMSD (Rust/Python)**: `Mol2SourceReader` lazily parses
   bounded records from an in-memory string; Python `parse_mol2_records_json`
   retains each source. `mol2_reference_rmsds` / Python

@@ -47,8 +47,7 @@ Two oracles, deliberately not conflated:
 
 Correspondence note: this compares the ORIGINAL (non-respelled) SMILES only,
 so RDKit and chematic atom indices align directly (both parse the same
-string in the same atom order -- verified elsewhere this project,
-scripts/aromaticity_mechanism_probe.py). No respelling/correspondence
+string in the same atom order). No respelling/correspondence
 mapping is needed or performed here.
 
 Every mismatch (vs the modern oracle) is written to a frozen, deterministic
