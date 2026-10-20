@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "operation": "CalcNumRings",
-  "chematic_default": "bounded_hybrid_v1",
+  "chematic_default": "bounded_relevant_families_v2",
   "oracles": {
     "rdkit_2026_03_6": "published CPython wheel",
     "rdkit_2026_09_1": "published CPython wheel"
@@ -11,25 +11,25 @@
     {
       "id": "stress_605_cyclic_oligosaccharide",
       "smiles": "OC[C@H]1O[C@@H]2O[C@H]3[C@H](O)[C@@H](O)[C@@H](O[C@@H]3CO)O[C@H]3[C@H](O)[C@@H](O)[C@@H](O[C@@H]3CO)O[C@H]3[C@H](O)[C@@H](O)[C@@H](O[C@@H]3CO)O[C@H]3[C@H](O)[C@@H](O)[C@@H](O[C@@H]3CO)O[C@H]3[C@H](O)[C@@H](O)[C@@H](O[C@@H]3CO)O[C@H]1[C@H](O)[C@H]2O",
-      "expected": {"chematic_default": 22, "rdkit_2026_03_6": 22, "rdkit_2026_09_1": 70},
+      "expected": {"chematic_default": 70, "rdkit_2026_03_6": 22, "rdkit_2026_09_1": 70},
       "classification": "oracle_version_difference"
     },
     {
       "id": "stress_608_fused_aromatic",
       "smiles": "c1cc2ccc1-c1ccc(cc1)-c1ccc-2cc1",
-      "expected": {"chematic_default": 10, "rdkit_2026_03_6": 10, "rdkit_2026_09_1": 11},
+      "expected": {"chematic_default": 11, "rdkit_2026_03_6": 10, "rdkit_2026_09_1": 11},
       "classification": "oracle_version_difference"
     },
     {
       "id": "stress_1014_cyclic_oligosaccharide",
       "smiles": "[C@@H]12[C@H](O)[C@H]([C@@H]([C@@H](CO)O2)O[C@H]2[C@@H]([C@@H](O)[C@@H]([C@@H](CO)O2)O[C@H]2[C@@H]([C@@H](O)[C@H](O[C@@H]3O[C@@H]([C@H]([C@H](O)[C@H]3O)O[C@H]3[C@H](O)[C@H]([C@H](O[C@H]4O[C@@H]([C@@H](O1)[C@@H]([C@H]4O)O)CO)[C@H](O3)CO)O)CO)[C@H](O2)CO)O)O)O",
-      "expected": {"chematic_default": 16, "rdkit_2026_03_6": 16, "rdkit_2026_09_1": 70},
+      "expected": {"chematic_default": 70, "rdkit_2026_03_6": 16, "rdkit_2026_09_1": 70},
       "classification": "oracle_version_difference"
     },
     {
       "id": "stress_3774_polycyclic_natural_product",
       "smiles": "O1C2C3[C@H]4c5c6O[C@@H]([C@@H](O)Cc6c(O)[c@@H]c5OC54C(C(c4c(C1=O)c(-c1c(c(O)c(O)cc1C(OC1COC(=O)c6c(c(O)c(c(O)c6)O)-c6c(cc(O)c(c6O)O)C(OC12)=O)=O)O)c(c(c4O)O)O)=C(C5=O)O)C(O3)=O)[c@@]1cc(c(cc1)O)O",
-      "expected": {"chematic_default": 13, "rdkit_2026_03_6": 13, "rdkit_2026_09_1": 14},
+      "expected": {"chematic_default": 14, "rdkit_2026_03_6": 13, "rdkit_2026_09_1": 14},
       "classification": "oracle_version_difference"
     }
   ]
