@@ -153,7 +153,11 @@ def test_unsupported_or_invalid_sources_refuse(change):
         ch.order_mol2_hydrogens_checked(change(ethanol()))
 
 
-@pytest.mark.parametrize("source", ["", "not mol2", "\ud800", "a" * ((16 << 20) + 1)])
+@pytest.mark.parametrize(
+    "source",
+    ["", "not mol2", "\ud800", "a" * ((16 << 20) + 1)],
+    ids=["empty", "invalid-mol2", "unpaired-surrogate", "oversize"],
+)
 def test_bad_text_or_byte_limits(source):
     with pytest.raises(ValueError):
         ch.order_mol2_hydrogens_checked(source)
