@@ -9,13 +9,13 @@ from pathlib import Path
 from summarize_rdkit_native_rebaseline import summarize, verify_python_baseline
 
 try:
-    from scripts.evidence_io import (
+    from scripts.lib.evidence_io import (
         read_gzip_jsonl_with_sha,
         require,
         sha256_bytes as digest,
     )
 except ModuleNotFoundError:  # direct execution from the scripts directory
-    from evidence_io import read_gzip_jsonl_with_sha, require, sha256_bytes as digest
+    from lib.evidence_io import read_gzip_jsonl_with_sha, require, sha256_bytes as digest
 
 
 ROOT = Path(__file__).resolve().parents[1]

@@ -12,9 +12,9 @@ except ModuleNotFoundError:  # direct execution from the scripts directory
     from summarize_rdkit_ring_backend import compare_triplet
 
 try:
-    from scripts.evidence_io import read_gzip_jsonl, require, sha256_bytes as sha256
+    from scripts.lib.evidence_io import read_gzip_jsonl, require, sha256_bytes as sha256
 except ModuleNotFoundError:  # direct execution from the scripts directory
-    from evidence_io import read_gzip_jsonl, require, sha256_bytes as sha256
+    from lib.evidence_io import read_gzip_jsonl, require, sha256_bytes as sha256
 
 
 ROOT = Path(__file__).resolve().parents[1]

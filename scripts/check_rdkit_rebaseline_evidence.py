@@ -11,9 +11,9 @@ from collections import Counter
 from pathlib import Path
 
 try:
-    from scripts.evidence_io import collect_error as require, read_json
+    from scripts.lib.evidence_io import collect_error as require, read_json
 except ModuleNotFoundError:  # direct execution from the scripts directory
-    from evidence_io import collect_error as require, read_json
+    from lib.evidence_io import collect_error as require, read_json
 
 
 ROOT = Path(__file__).resolve().parents[1]

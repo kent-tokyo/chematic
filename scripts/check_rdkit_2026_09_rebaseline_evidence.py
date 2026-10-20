@@ -12,9 +12,9 @@ from collections import Counter
 from pathlib import Path
 
 try:
-    from scripts.evidence_io import read_json, require, sha256_bytes as sha256
+    from scripts.lib.evidence_io import read_json, require, sha256_bytes as sha256
 except ModuleNotFoundError:  # direct execution from the scripts directory
-    from evidence_io import read_json, require, sha256_bytes as sha256
+    from lib.evidence_io import read_json, require, sha256_bytes as sha256
 
 
 ROOT = Path(__file__).resolve().parents[1]

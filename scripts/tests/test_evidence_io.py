@@ -3,7 +3,7 @@ import json
 
 import pytest
 
-from scripts.evidence_io import (
+from scripts.lib.evidence_io import (
     collect_error,
     read_gzip_jsonl,
     read_gzip_jsonl_with_sha,
