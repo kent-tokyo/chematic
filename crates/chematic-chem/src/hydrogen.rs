@@ -463,12 +463,24 @@ pub fn remove_hydrogens(mol: &Molecule) -> Molecule {
         .filter_map(|i| {
             let old_idx = AtomIdx(i as u32);
             let &new_idx = remap.get(&old_idx)?;
-            let removed = mol
+            let removed: Vec<_> = mol
                 .neighbors(old_idx)
                 .filter(|&(nb, _)| is_removed(nb))
-                .count() as u8;
-            (removed > 0).then(|| {
-                let total = chematic_core::implicit_hcount(mol, old_idx).saturating_add(removed);
+                .collect();
+            (!removed.is_empty()).then(|| {
+                let original = chematic_core::implicit_hcount(mol, old_idx)
+                    .saturating_add(removed.len() as u8);
+                // RDKit treats a formally double-bonded H as one removable
+                // proton. In an ordinary carbon, the lost bond order also
+                // permits an extra inferred H; on a ring carbon it may not.
+                let total = if removed
+                    .iter()
+                    .any(|&(_, bond)| mol.bond(bond).order == BondOrder::Double)
+                {
+                    original.max(chematic_core::implicit_hcount(&out, new_idx))
+                } else {
+                    original
+                };
                 (new_idx, total)
             })
         })
