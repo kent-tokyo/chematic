@@ -118,6 +118,7 @@ nav:
     - Prepared MMFF Dielectric: mmff-dielectric-updates.md
     - Custom MMFF Partial Charges: mmff-partial-charges.md
   - Reliability:
+    - Supplied Geometry Checks: supplied-geometry-check.md
     - Checked Maestro Output: maestro-output.md
     - Distinct PDB Hydrogen Names: pdb-hydrogen-names.md
     - Checked Core Removal: checked-core-replacement.md
@@ -179,6 +180,7 @@ nav:
     - RDKit Accuracy Plan: rdkit-accuracy-plan.md
     - Canonical E/Z Plan: canonical-ez-plan.md
     - RDKit Issue Lessons: rdkit_issue_lessons.md
+    - RDKit Conjugation Performance: rdkit-conjugation-cache.md
   - RDKit Migration Guide: rdkit_cheatsheet.md
   - RDKit Feature Support Matrix: rdkit-migration.md
   - API Reference:
