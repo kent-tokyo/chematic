@@ -67,7 +67,7 @@ jobs:
       - name: Verify integration shard inventory and workflow pins
         run: |
           python3 scripts/checks/ci_integration_shard.py --shards 4
-          python3 -m unittest scripts.tests.test_ci_integration_shard scripts.tests.test_check_workflow_pins -v
+          python3 -m unittest scripts.tests.test_ci_integration_shard scripts.tests.test_check_workflow_pins scripts.tests.test_run_windows_pytest_batches -v
           python3 scripts/check_workflow_pins.py
       - name: Unit tests
         # The Python extension uses PyO3's non-linking extension-module mode.
@@ -485,15 +485,20 @@ jobs:
           .venv/Scripts/python -m pip install 'pytest<9' 'pytest-asyncio>=0.23,<1' 'pytest-timeout==2.4.0' numpy 'rdkit==2026.3.6' --quiet
           .venv/Scripts/python -m pip install --no-deps dist/source-wheel/chematic-*.whl
       - name: Run every Python binding test in bounded batches
-        shell: pwsh
         run: |
-          ./scripts/checks/run_windows_pytest_batches.ps1 -TestsDir crates/chematic-py/tests -ReportDir dist/windows-pytest -BatchSize 20 -BatchTimeoutSeconds 300
+          .venv/Scripts/python scripts/checks/run_windows_pytest_batches.py \
+            --tests-dir crates/chematic-py/tests \
+            --report-dir dist/windows-pytest \
+            --batch-size 20 \
+            --batch-timeout-seconds 300
       - name: Retain Windows pytest outcomes
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: source-wheel-windows-pytest
-          path: dist/windows-pytest/batch-*.xml
+          path: |
+            dist/windows-pytest/batch-*.xml
+            dist/windows-pytest/batch-*.log
           if-no-files-found: ignore
 
   windows-chemistry:
