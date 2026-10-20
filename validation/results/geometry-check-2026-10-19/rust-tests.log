@@ -839,4 +839,3 @@ test standard_tier_never_fires_on_aromatic_ring_bonds_across_fixtures ... ok
 test disabled_flags_report_is_empty_on_a_realistic_molecule ... ok
 
 test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
-
