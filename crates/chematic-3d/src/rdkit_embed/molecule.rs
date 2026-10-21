@@ -4,6 +4,9 @@
 use chematic_core::Molecule;
 use chematic_smiles::RdkitMolView;
 
+mod quality_retry;
+use quality_retry::rescue_quality_without_convergence;
+
 #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
 use rayon::prelude::*;
 
@@ -458,8 +461,11 @@ pub fn etkdg_embed_multiple_confs_mmff_corrected(
 /// the same candidates. Keep the lowest finite-energy candidate across both
 /// ensembles, then fill the remaining slots with converged candidates before
 /// unfinished ones, ordered by energy. At most `num_confs` conformers are
-/// returned. The profile spends roughly twice the embedding and MMFF work of
-/// the compatibility API.
+/// returned. If none of the candidates converged, the lowest finite-energy
+/// candidate gets one additional MMFF pass of at most twice `max_iters` steps.
+/// Only a converged, non-higher-energy and stereo-safe retry is retained.
+/// The profile spends roughly twice the embedding and MMFF work of the
+/// compatibility API, plus that optional retry.
 pub fn etkdg_embed_multiple_confs_mmff_best_gradient(
     mh: &Molecule,
     num_confs: usize,
@@ -486,7 +492,11 @@ pub fn etkdg_embed_multiple_confs_mmff_best_gradient(
                 .and_then(|count| o.random_seed.checked_mul(count))
                 .is_none())
     {
-        return Ok(compatibility);
+        return Ok(rescue_quality_without_convergence(
+            mh,
+            compatibility,
+            max_iters,
+        ));
     }
     let alternative = embed_prepared_multiple_confs(
         &prepared,
@@ -497,18 +507,30 @@ pub fn etkdg_embed_multiple_confs_mmff_best_gradient(
     );
     let alternative = match alternative {
         Ok(conformers) => conformers,
-        Err(_) if !gradient_differs => return Ok(compatibility),
+        Err(_) if !gradient_differs => {
+            return Ok(rescue_quality_without_convergence(
+                mh,
+                compatibility,
+                max_iters,
+            ));
+        }
         Err(error) => return Err(error.into()),
     };
     let alternative = match optimize_mmff_molecule(mh, alternative, max_iters) {
         Ok(conformers) => conformers,
-        Err(_) if !gradient_differs => return Ok(compatibility),
+        Err(_) if !gradient_differs => {
+            return Ok(rescue_quality_without_convergence(
+                mh,
+                compatibility,
+                max_iters,
+            ));
+        }
         Err(error) => return Err(error),
     };
-    Ok(select_quality_candidates(
-        compatibility,
-        alternative,
-        num_confs,
+    Ok(rescue_quality_without_convergence(
+        mh,
+        select_quality_candidates(compatibility, alternative, num_confs),
+        max_iters,
     ))
 }
 
@@ -1169,6 +1191,8 @@ pub fn rdkit_bounds_matrix_with_constraints(
 #[cfg(test)]
 mod corrected_ensemble_tests {
     use super::*;
+    use crate::stereo_constraints::verify_stereo;
+    use chematic_core::{Coords3D, Point3};
 
     #[test]
     fn quality_profile_uses_new_seeds_when_gradients_match() {
@@ -1203,6 +1227,38 @@ mod corrected_ensemble_tests {
                 .chain(&next)
                 .any(|original| chosen.coords == original.coords)
         }));
+    }
+
+    #[test]
+    fn quality_profile_retries_best_unconverged_candidate() {
+        let molecule = chematic_chem::add_hydrogens(
+            &chematic_smiles::parse("COc1cc(N2CCN(c3cc(OC)c(OC)c(OC)c3)CC2)cc(OC)c1OC").unwrap(),
+        );
+        let options = RdkitEmbedOptions::default();
+        let initial = rdkit_embed_multiple_confs_mmff(&molecule, 40, &options, 200).unwrap();
+        assert_eq!(initial.len(), 40);
+        assert!(initial.iter().all(|candidate| candidate.status != 0));
+        let best_initial = initial
+            .iter()
+            .map(|candidate| candidate.energy)
+            .min_by(f64::total_cmp)
+            .unwrap();
+
+        let selected =
+            etkdg_embed_multiple_confs_mmff_best_gradient(&molecule, 20, &options, 200).unwrap();
+        assert_eq!(selected.len(), 20);
+        assert_eq!(selected[0].status, 0);
+        assert!(selected[0].energy <= best_initial);
+        let coordinates = Coords3D {
+            points: selected[0]
+                .coords
+                .iter()
+                .map(|&[x, y, z]| Point3::new(x, y, z))
+                .collect(),
+        };
+        let stereo = verify_stereo(&molecule, &coordinates);
+        assert_eq!(stereo.n_violations(), 0);
+        assert_eq!(stereo.n_unevaluable(), 0);
     }
 
     #[test]
