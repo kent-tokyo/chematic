@@ -404,6 +404,19 @@ class Mol:
         extra force-field evaluation."""
         ...
 
+    def etkdg_embed_multiple_confs_mmff_best_gradient(
+        self,
+        num_confs: int,
+        *,
+        random_seed: int = 42,
+        max_iterations: int = 0,
+        max_mmff_iters: int = 200,
+    ) -> list[tuple[int, float, list[list[float]]]]:
+        """Return the lower-best-energy ensemble from compatibility and
+        corrected ETKDG sixth-order gradients. Uses twice the candidate work.
+        """
+        ...
+
     def rdkit_embed_multiple_confs_mmff_gradient_rescue(
         self,
         num_confs: int,

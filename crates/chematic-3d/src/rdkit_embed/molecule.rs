@@ -347,6 +347,29 @@ pub fn rdkit_embed_multiple_confs(
     num_confs: usize,
     o: &RdkitEmbedOptions,
 ) -> Result<Vec<Vec<[f64; 3]>>, RdkitEmbedError> {
+    embed_multiple_confs_with_mode(mh, num_confs, o, false)
+}
+
+/// Generate an ETKDG ensemble with the exact sixth-order experimental torsion
+/// gradient used by [`etkdg_embed_molecule_corrected`]. Seeds, candidate order,
+/// and failure handling match [`rdkit_embed_multiple_confs`]. This is an
+/// opt-in exact-gradient mode; its coordinates need not match RDKit 2026.09.1
+/// when a sixth-order torsion is present, and downstream MMFF energy can move
+/// in either direction.
+pub fn etkdg_embed_multiple_confs_corrected(
+    mh: &Molecule,
+    num_confs: usize,
+    o: &RdkitEmbedOptions,
+) -> Result<Vec<Vec<[f64; 3]>>, RdkitEmbedError> {
+    embed_multiple_confs_with_mode(mh, num_confs, o, true)
+}
+
+fn embed_multiple_confs_with_mode(
+    mh: &Molecule,
+    num_confs: usize,
+    o: &RdkitEmbedOptions,
+    corrected_torsion_gradient: bool,
+) -> Result<Vec<Vec<[f64; 3]>>, RdkitEmbedError> {
     validate_options(mh, o)?;
     if num_confs == 0 {
         return Ok(Vec::new());
@@ -359,11 +382,11 @@ pub fn rdkit_embed_multiple_confs(
     #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
     let attempts: Vec<_> = (0..num_confs)
         .into_par_iter()
-        .map(|index| embed_conformer_attempt(&prepared, o, index))
+        .map(|index| embed_conformer_attempt(&prepared, o, index, corrected_torsion_gradient))
         .collect();
     #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
     let attempts: Vec<_> = (0..num_confs)
-        .map(|index| embed_conformer_attempt(&prepared, o, index))
+        .map(|index| embed_conformer_attempt(&prepared, o, index, corrected_torsion_gradient))
         .collect();
 
     let mut conformers = Vec::with_capacity(num_confs);
@@ -395,6 +418,55 @@ pub fn rdkit_embed_multiple_confs_mmff(
         .map_err(|error| RdkitEmbedMmffError::ForceField(error.to_string()))?;
 
     Ok(optimize_mmff_conformers(&field, conformers, max_iters))
+}
+
+/// Optimize a corrected ETKDG ensemble with the same MMFF94 implementation and
+/// iteration budget as [`rdkit_embed_multiple_confs_mmff`]. Only the ETKDG
+/// sixth-order torsion gradient differs; MMFF parameters are unchanged.
+pub fn etkdg_embed_multiple_confs_mmff_corrected(
+    mh: &Molecule,
+    num_confs: usize,
+    o: &RdkitEmbedOptions,
+    max_iters: u32,
+) -> Result<Vec<RdkitMmffConformer>, RdkitEmbedMmffError> {
+    let conformers = etkdg_embed_multiple_confs_corrected(mh, num_confs, o)?;
+    let Some(first) = conformers.first() else {
+        return Ok(Vec::new());
+    };
+    let field = chematic_ff::rdkit_mmff::RdkitMmffField::new(mh, first, 100.0, true)
+        .map_err(|error| RdkitEmbedMmffError::ForceField(error.to_string()))?;
+    Ok(optimize_mmff_conformers(&field, conformers, max_iters))
+}
+
+/// Quality-oriented ETKDG/MMFF94 profile: optimize both the RDKit-compatible
+/// and exact sixth-order-gradient ensembles, then return the complete ensemble
+/// with the lower finite best energy. The returned ensemble contains at most
+/// `num_confs` conformers in seed order and is never worse on this one energy
+/// metric than either input ensemble. This performs roughly twice the
+/// embedding and MMFF work; it is not a same-budget speed comparison.
+pub fn etkdg_embed_multiple_confs_mmff_best_gradient(
+    mh: &Molecule,
+    num_confs: usize,
+    o: &RdkitEmbedOptions,
+    max_iters: u32,
+) -> Result<Vec<RdkitMmffConformer>, RdkitEmbedMmffError> {
+    let compatibility = rdkit_embed_multiple_confs_mmff(mh, num_confs, o, max_iters)?;
+    let corrected = etkdg_embed_multiple_confs_mmff_corrected(mh, num_confs, o, max_iters)?;
+    let best_energy = |ensemble: &[RdkitMmffConformer]| {
+        ensemble
+            .iter()
+            .map(|candidate| candidate.energy)
+            .filter(|energy| energy.is_finite())
+            .min_by(f64::total_cmp)
+    };
+    if best_energy(&corrected).is_some_and(|corrected_best| {
+        best_energy(&compatibility)
+            .is_none_or(|compatibility_best| corrected_best < compatibility_best)
+    }) {
+        Ok(corrected)
+    } else {
+        Ok(compatibility)
+    }
 }
 
 /// [`rdkit_embed_multiple_confs_mmff`] with per-conformer convergence
@@ -702,6 +774,7 @@ fn embed_conformer_attempt(
     prepared: &[PreparedFragment],
     o: &RdkitEmbedOptions,
     index: usize,
+    corrected_torsion_gradient: bool,
 ) -> Result<Option<Vec<[f64; 3]>>, RdkitEmbedError> {
     let multiplier = i32::try_from(index + 1).map_err(|_| {
         RdkitEmbedError::Unsupported("numConfs exceeds the reproducible seed range".into())
@@ -709,7 +782,7 @@ fn embed_conformer_attempt(
     let seed = o.random_seed.checked_mul(multiplier).ok_or_else(|| {
         RdkitEmbedError::Unsupported("conformer seed overflows a signed 32-bit integer".into())
     })?;
-    match embed_prepared_fragments(prepared, o, seed) {
+    match embed_prepared_fragments_with(prepared, o, seed, false, corrected_torsion_gradient) {
         Ok(coords) => Ok(Some(coords)),
         Err(RdkitEmbedError::Failed) => Ok(None),
         Err(error) => Err(error),
@@ -988,6 +1061,50 @@ pub fn rdkit_bounds_matrix_with_constraints(
     Ok((0..n)
         .map(|row| raw[row * n..(row + 1) * n].to_vec())
         .collect())
+}
+
+#[cfg(test)]
+mod corrected_ensemble_tests {
+    use super::*;
+
+    #[test]
+    fn corrected_ensemble_preserves_single_seed_and_opt_in_boundary() {
+        let molecule =
+            chematic_chem::add_hydrogens(&chematic_smiles::parse("CS(=O)(=O)NCC").unwrap());
+        let options = RdkitEmbedOptions::default();
+        let single = etkdg_embed_molecule_corrected(&molecule, &options).unwrap();
+        let corrected = etkdg_embed_multiple_confs_corrected(&molecule, 2, &options).unwrap();
+        let compatibility = rdkit_embed_multiple_confs(&molecule, 2, &options).unwrap();
+        assert_eq!(corrected.len(), 2);
+        assert_eq!(compatibility.len(), 2);
+        assert_eq!(corrected[0], single);
+        assert!(
+            corrected[0]
+                .iter()
+                .zip(&compatibility[0])
+                .any(|(a, b)| a.iter().zip(b).any(|(x, y)| (x - y).abs() > 1e-8))
+        );
+        let optimized =
+            etkdg_embed_multiple_confs_mmff_corrected(&molecule, 2, &options, 200).unwrap();
+        assert_eq!(optimized.len(), 2);
+        assert!(
+            optimized
+                .iter()
+                .all(|candidate| candidate.energy.is_finite())
+        );
+        let selected =
+            etkdg_embed_multiple_confs_mmff_best_gradient(&molecule, 2, &options, 200).unwrap();
+        let compatibility = rdkit_embed_multiple_confs_mmff(&molecule, 2, &options, 200).unwrap();
+        let best = |ensemble: &[RdkitMmffConformer]| {
+            ensemble
+                .iter()
+                .map(|candidate| candidate.energy)
+                .fold(f64::INFINITY, f64::min)
+        };
+        assert_eq!(selected.len(), 2);
+        assert!(best(&selected) <= best(&compatibility));
+        assert!(best(&selected) <= best(&optimized));
+    }
 }
 
 #[cfg(test)]
