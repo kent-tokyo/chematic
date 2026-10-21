@@ -1,0 +1,123 @@
+{
+  "source_commit": "8e4898c7d2db3a74a516d182a2259d87b06eaa28",
+  "source_sha256": {
+    "crates/chematic-chem/src/standardize.rs": "4301b503a5a316bfbddabce96875c19fcdf681691e862d357fd28286a4c1d49e",
+    "crates/chematic-chem/src/standardize/cleanup.rs": "abe4c6ada6bffbb293dbce80c317fbeb1826ab03b47f8cdc2fd69e35116c34ad",
+    "crates/chematic-chem/src/standardize/cleanup/acid_base.rs": "0ac9321b9c45aa41f46e62c00f45559f11cba61846e04e5dbd2453a386c973bb",
+    "crates/chematic-chem/src/standardize/groups.rs": "4e9cb9df29ba89f5fac99f3f2102cd90129ee391bda6ad37b783118ec3011a53",
+    "crates/chematic-smiles/src/rdkit/mod.rs": "fead42f7d0f6760ec588c9c94fad8a326d3873c60751f1de76a4c7e29c49274c",
+    "crates/chematic-py/src/mol_methods/transformations.rs": "800976117588309a8fad36de350e68336d060c6ffc590b5625bfcf55c5c996dd"
+  },
+  "corpus": "validation/cosmolkit_comparison/corpora/stress-v1.smi",
+  "corpus_sha256": "879166ab5481cac805ecd2d77f37d628383ec124085b90e2ee1659d55ce76277",
+  "selection": "4072 evenly spaced rows, then identical parsed RDKit-compatible SMILES",
+  "versions": {
+    "chematic": "1.2.0",
+    "rdkit": "2026.09.1"
+  },
+  "native_extension_sha256": "07eef83237b92da7c122dec10037373bb7e648e8fa2f54c7c7ce259e405b21d3",
+  "source_rows": 4072,
+  "sampled_rows": 4072,
+  "input_compatible_rows": 4072,
+  "compatible_rows": 4069,
+  "excluded": [],
+  "oracle_errors": [
+    {
+      "sample_index": 427,
+      "input": "[C-]#[O+]->[Ni](<-[C-]#[O+])(<-[C-]#[O+])<-[C-]#[O+]",
+      "error": "AtomValenceException: Explicit valence for atom # 1 O, 3, is greater than permitted"
+    },
+    {
+      "sample_index": 975,
+      "input": "[O+]#[C-]->[Ni](<-[C-]#[O+])(<-[C-]#[O+])<-[O+]#[C-]",
+      "error": "AtomValenceException: Explicit valence for atom # 7 O, 3, is greater than permitted"
+    },
+    {
+      "sample_index": 1326,
+      "input": "O=P(O)(O)CN[C@@H](CCC1=CC=CC=C1)C1=N[N+2]=NN1",
+      "error": "KekulizeException: Can't kekulize mol.  Unkekulized atoms: 15 16 18"
+    }
+  ],
+  "operation_errors": [
+    {
+      "sample_index": 2013,
+      "operation": "standardize",
+      "error": "ValueError: RDKit-compatible SMILES: sanitization failed: non-ring atom 20 marked aromatic"
+    },
+    {
+      "sample_index": 2334,
+      "operation": "standardize",
+      "error": "ValueError: RDKit-compatible SMILES: sanitization failed: Can't kekulize mol.  Unkekulized atoms: 1 2 3 12 13 14 15 16 17 19 20 21 22 23 26"
+    },
+    {
+      "sample_index": 3238,
+      "operation": "standardize",
+      "error": "ValueError: RDKit-compatible SMILES: sanitization failed: non-ring atom 4 marked aromatic"
+    }
+  ],
+  "rdkit_cleanup_changed_rows": 254,
+  "legacy_standardize_exact": 3032,
+  "normalizer_only_vs_cleanup_exact": 3824,
+  "normalize_stage_exact": 4069,
+  "normalize_classification_counts": {},
+  "normalize_support_status_counts": {},
+  "normalize_mismatches": [],
+  "cleanup_exact": 4069,
+  "classification_counts": {},
+  "support_status_counts": {},
+  "mismatches": [],
+  "reionize_exact": 4064,
+  "reionize_classification_counts": {
+    "in_memory_stereo_serialization": 5
+  },
+  "reionize_support_status_counts": {
+    "representation_only": 5
+  },
+  "reionize_mismatches": [
+    {
+      "sample_index": 1432,
+      "input": "CC1=C2OC3=C(C)C(OC(=O)C45CC6CC(CC(C6)C4)C5)=CC(C(=O)N[C@@H]4C(=O)N[C@H](C(C)C)C(=O)N5[CH-]CC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)=C3N=C2C(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)=C(N)C1=O",
+      "rdkit_reionize": "Cc1c2oc3c(C)c(OC(=O)C45CC6CC(CC(C6)C4)C5)cc(C(=O)N[C@@H]4C(=O)N[C@-](C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)c3nc-2c(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c(N)c1=O",
+      "chematic_reionize": "Cc1c2oc3c(C)c(OC(=O)C45CC6CC(CC(C6)C4)C5)cc(C(=O)N[C@@H]4C(=O)N[C-](C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)c3nc-2c(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c(N)c1=O",
+      "chematic_error": null,
+      "classification": "in_memory_stereo_serialization",
+      "support_status": "representation_only"
+    },
+    {
+      "sample_index": 1878,
+      "input": "O=C(OCCCl)NNC([C@H]([CH-]c1ccccc1)NC(=O)C)=O",
+      "rdkit_reionize": "CC(=O)N[C@-](Cc1ccccc1)C(=O)NNC(=O)OCCCl",
+      "chematic_reionize": "CC(=O)N[C-](Cc1ccccc1)C(=O)NNC(=O)OCCCl",
+      "chematic_error": null,
+      "classification": "in_memory_stereo_serialization",
+      "support_status": "representation_only"
+    },
+    {
+      "sample_index": 2914,
+      "input": "C1=c(C=CC(OC(NNC([C@@H](NC(=O)C)[CH-]C2[CH:38]=CC=CC=2)=O)=O)=C1)[N+](=O)[O-]",
+      "rdkit_reionize": "CC(=O)N[C@@-](Cc1cccc[cH:38]1)C(=O)NNC(=O)Oc1ccc([N+](=O)[O-])cc1",
+      "chematic_reionize": "CC(=O)N[C-](Cc1cccc[cH:38]1)C(=O)NNC(=O)Oc1ccc([N+](=O)[O-])cc1",
+      "chematic_error": null,
+      "classification": "in_memory_stereo_serialization",
+      "support_status": "representation_only"
+    },
+    {
+      "sample_index": 3153,
+      "input": "O1[C@H](C(N(C)[C@H]([C@H](OCOC)C[15C](=O)OC[C@@H](C1=O)C)[CH-]C1=CC=CC=C1)=O)C(C)C",
+      "rdkit_reionize": "COCO[C@@H]1C[15C](=O)OC[C@@-](C)C(=O)O[C@@H](C(C)C)C(=O)N(C)[C@H]1Cc1ccccc1",
+      "chematic_reionize": "COCO[C@@H]1C[15C](=O)OC[C-](C)C(=O)O[C@@H](C(C)C)C(=O)N(C)[C@H]1Cc1ccccc1",
+      "chematic_error": null,
+      "classification": "in_memory_stereo_serialization",
+      "support_status": "representation_only"
+    },
+    {
+      "sample_index": 4023,
+      "input": "[CH2-][C@@H]1C(O[C@@H](C(C)C)C(=O)N([C@@H](CC2=CC=CC=C2)[C@@H](CC(OC1)=O)OCOC)C)=O",
+      "rdkit_reionize": "COCO[C@@H]1CC(=O)OC[C@-](C)C(=O)O[C@@H](C(C)C)C(=O)N(C)[C@H]1Cc1ccccc1",
+      "chematic_reionize": "COCO[C@@H]1CC(=O)OC[C-](C)C(=O)O[C@@H](C(C)C)C(=O)N(C)[C@H]1Cc1ccccc1",
+      "chematic_error": null,
+      "classification": "in_memory_stereo_serialization",
+      "support_status": "representation_only"
+    }
+  ]
+}
