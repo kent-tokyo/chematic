@@ -262,6 +262,22 @@ def main() -> None:
             "fixed_indices": sorted(previous_mismatches - current_mismatches),
             "regressed_indices": sorted(current_mismatches - previous_mismatches),
         }
+        if previous.get("reionize_mismatches") is not None:
+            previous_reionize_mismatches = {
+                row["index"] for row in previous["reionize_mismatches"]
+            }
+            current_reionize_mismatches = {
+                row["index"] for row in reionize_mismatches
+            }
+            comparison.update({
+                "previous_reionize_exact": previous["reionize_exact_rows"],
+                "reionize_fixed_indices": sorted(
+                    previous_reionize_mismatches - current_reionize_mismatches
+                ),
+                "reionize_regressed_indices": sorted(
+                    current_reionize_mismatches - previous_reionize_mismatches
+                ),
+            })
     if args.previous_dump:
         comparison = {
             "previous_source_commit": args.previous_commit,
