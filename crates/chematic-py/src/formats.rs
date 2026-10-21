@@ -1408,6 +1408,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         mol2_reference_rmsds_json,
         convert_with_report_json,
         roundtrip_mol2_record,
+        project_mol2_to_cjson,
         kekulize_mol2_record,
         from_pdbqt,
         from_gjf,

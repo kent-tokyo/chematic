@@ -3488,6 +3488,17 @@ def parse_mol2_record_json(text: str) -> str:
     """Return source metadata and bounded graph interpretation as MOL2 record JSON."""
     ...
 
+def project_mol2_to_cjson(text: str | bytes) -> str:
+    """Project selected MOL2 fields to CJSON with mapped reparse checks.
+
+    Retains xyz, parsed name, projected graph and complete declared partial
+    charges. Incomplete/undeclared charge columns fail. Other metadata and
+    stereo are not retained or verified; use convert_with_report for losses.
+    NO_CHARGES zero placeholders are omitted as explicitly unassigned values.
+    Native conversion limits apply (16 MiB input/output, 10,000 atoms).
+    """
+    ...
+
 def roundtrip_mol2_record(text: str) -> str:
     """Validate one MOL2 record and preserve its exact source."""
     ...

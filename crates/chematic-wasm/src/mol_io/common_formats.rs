@@ -171,7 +171,12 @@ fn parse_common_format(text: &str, format: &str) -> Result<chematic_core::Molecu
 ///
 /// This is the WASM counterpart of Python's `convert_format`. It supports
 /// SMILES, MOL/SDF, MOL V3000, MOL2, CML, ChemicalJSON, MolJSON, and CDXML.
-/// MOL2-to-MOL2 validates and retains the exact source. Other conversions use
+/// MOL2-to-MOL2 validates and retains the exact source. MOL2-to-CJSON checks
+/// graph/xyz/name/complete declared partial charges on reparse and refuses
+/// incomplete or undeclared charge columns. Other MOL2 metadata and stereo
+/// are not retained or verified; use convert_with_report_json for losses.
+/// NO_CHARGES zero placeholders are omitted as explicitly unassigned values.
+/// Other conversions use
 /// the topology-only bridge and do not carry format-specific metadata.
 #[wasm_bindgen]
 pub fn convert_common_format(
@@ -193,6 +198,20 @@ pub fn convert_common_format(
     })?;
     if input == "mol2" && output == "mol2" {
         return roundtrip_mol2_record(text);
+    }
+    if input == "mol2" && output == "cjson" {
+        return chematic_mol::project_mol2_to_cjson_with_limits(
+            text,
+            &chematic_mol::ConversionLimits {
+                mol2: chematic_mol::Mol2ParseLimits {
+                    max_input_bytes: WASM_MAX_INPUT_BYTES,
+                    max_atoms: WASM_MAX_ATOMS,
+                    ..Default::default()
+                },
+                max_output_bytes: WASM_MAX_OUTPUT_BYTES,
+            },
+        )
+        .map_err(|error| JsValue::from_str(&error.to_string()));
     }
     let mol = parse_common_format(text, &input).map_err(|e| JsValue::from_str(&e))?;
     if mol.atom_count() > WASM_MAX_ATOMS {
