@@ -14,6 +14,7 @@ not a statement about v1.1.8.
 
 | Question | Current record | Boundary |
 |---|---|---|
+| Do XML reference spellings change CML chemistry? | [CML character-reference repair](../docs/benchmarks/2026-10-22-cml-character-references.md) | Original 14-input source packet: seven valid field-preserving outputs and seven explicit rejections. Valid coverage matches Open Babel 3.2.1; rejections are not successful coverage or broad superiority. |
 | Is MCS input-order independent and are incomplete searches explicit? | [MCS non-induced/status follow-up](2026-10-21-mcs-non-induced-order-status.md) | Unreleased source at a pinned commit/wheel. The ring/chain regression is fixed and resource limits are typed; full FMCS parity, a new frozen holdout and broad performance evidence remain open. |
 | Where does source CIP still trail RDKit? | [CIP lazy-preparation audit](2026-10-19-cip-lazy-preparation.md) | 24 balanced blocks; source CIP first-use 1.74× and parse-inclusive 1.62× faster. Standalone CIP/SMILES/SMARTS gaps remain; stress mismatches stay unranked. |
 | What is the broadest cross-platform public-wheel chemistry packet? | [v1.1.3 published artifact packet](2026-10-14-v113-published-artifact-packet.md) | Four exact PyPI wheels; npm/WASM, crates.io, speed, and newer releases are separate. |

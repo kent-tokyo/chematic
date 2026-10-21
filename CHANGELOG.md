@@ -16,6 +16,12 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- CML readers now decode decimal/hex XML character references and reject
+  malformed charge/isotope/2D-coordinate values, conflicting isotope aliases
+  and duplicate decoded atom IDs instead of silently changing the graph.
+  Shared XML attribute decoding also avoids double-decoding literal entity
+  spellings in CDXML/MRV attributes.
+
 - Accurate CIP assignment now reports `oracle_unstable` when replacing a
   wildcard with carbon reverses a distant tetrahedral R/S label, rather than
   returning a confident label for an unspecified atom.
