@@ -13,12 +13,6 @@ use crate::bitvec::BitVec2048;
 use crate::ecfp::{EcfpConfig, ecfp};
 use crate::rdkit_morgan_ecfp4::{RdkitMorganError, rdkit_morgan_ecfp4_bitvec};
 
-/// Numerical slack used only when deciding whether a computed rational
-/// Tanimoto score is equal to a caller-provided floating-point threshold.
-/// Scores and ordering remain unmodified. This covers one-ulp differences
-/// between language runtimes for values such as 17/42.
-const TANIMOTO_THRESHOLD_EPSILON: f64 = 1e-15;
-
 // ---------------------------------------------------------------------------
 // Fingerprint type selector
 // ---------------------------------------------------------------------------
@@ -340,9 +334,7 @@ fn nearest_neighbors_from_prepared_fp_threshold(
                 query_fp.tanimoto_with_counts_f64(fp, query_popcount, popcount),
             )
         })
-        .filter(|(_, score)| {
-            *score >= threshold || (*score - threshold).abs() <= TANIMOTO_THRESHOLD_EPSILON
-        })
+        .filter(|(_, score)| *score >= threshold)
         .collect();
     rank_top_k(&mut scores, k);
     scores
@@ -526,6 +518,25 @@ mod tests {
         assert_eq!(zero.len(), 3);
         assert_eq!(zero[0].0, 1);
         assert!(zero[1].1 >= zero[2].1);
+    }
+
+    #[test]
+    fn threshold_search_excludes_a_score_one_ulp_below_the_cutoff() {
+        // RDKit 2026.09.1: a two-bit query and one-bit candidate have
+        // Tanimoto 0.5, which must fail a threshold of nextafter(0.5, 1.0).
+        let mut query = BitVec2048::new();
+        query.set(1);
+        query.set(2);
+        let mut candidate = BitVec2048::new();
+        candidate.set(1);
+        let index = PreparedFingerprintIndex {
+            fp_type: FpType::Ecfp4,
+            fingerprints: vec![candidate],
+            popcounts: vec![1],
+        };
+        let cutoff = f64::from_bits(0.5_f64.to_bits() + 1);
+        assert_eq!(index.search_fp_threshold(&query, 0.5, 1), vec![(0, 0.5)]);
+        assert!(index.search_fp_threshold(&query, cutoff, 1).is_empty());
     }
 
     #[test]

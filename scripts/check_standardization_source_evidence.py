@@ -9,8 +9,8 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-RECORD = ROOT / "validation/results/rdkit-standardization-source-2026-10-21-reionize-catalog.json"
-PREVIOUS_RECORD = ROOT / "validation/results/rdkit-standardization-current-source-2026-10-20-reionize.json"
+RECORD = ROOT / "validation/results/rdkit-standardization-source-2026-10-22-zinc-radical.json"
+PREVIOUS_RECORD = ROOT / "validation/results/rdkit-standardization-source-2026-10-21-reionize-catalog.json"
 
 
 def digest(path: Path) -> str:
@@ -52,19 +52,26 @@ def main() -> None:
     check_lane(cleanup, "cleanup_", "exact_rows")
     check_lane(record, "reionize_", "reionize_exact_rows")
 
-    assert not record["baseline_comparison"]["regressed_indices"]
     comparison = record["baseline_comparison"]
+    assert not comparison["regressed_indices"]
     assert digest(PREVIOUS_RECORD) == comparison["previous_report_sha256"]
     previous = json.loads(PREVIOUS_RECORD.read_text())
     assert previous["source_commit"] == comparison["previous_source_commit"]
+    old_cleanup = {row["index"] for row in previous["mismatches"]}
+    new_cleanup = {row["index"] for row in record["mismatches"]}
+    assert comparison["fixed_indices"] == sorted(old_cleanup - new_cleanup)
+    assert comparison["regressed_indices"] == sorted(new_cleanup - old_cleanup)
+    assert comparison["previous_exact"] == previous["exact_rows"]
+    assert comparison["fixed_indices"] == [3078]
+    assert record["exact_rows"] > previous["exact_rows"]
     old_reionize = {row["index"] for row in previous["reionize_mismatches"]}
     new_reionize = {row["index"] for row in record["reionize_mismatches"]}
     assert comparison["reionize_fixed_indices"] == sorted(old_reionize - new_reionize)
     assert comparison["reionize_regressed_indices"] == sorted(new_reionize - old_reionize)
     assert comparison["previous_reionize_exact"] == previous["reionize_exact_rows"]
-    assert old_reionize - new_reionize
     assert not new_reionize - old_reionize
-    assert record["reionize_exact_rows"] > previous["reionize_exact_rows"]
+    assert record["reionize_exact_rows"] == previous["reionize_exact_rows"]
+    assert record["normalize_exact_rows"] == previous["normalize_exact_rows"]
     print("Current-source standardization evidence passed")
 
 
