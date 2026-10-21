@@ -43,7 +43,7 @@ kcal/mol. All 240 returned conformers passed the input CIP and double-bond
 stereo checks. Independent RDKit MMFF94 scoring of the same atom-indexed
 coordinates differed by at most 9.95e-14 kcal/mol after graph and bond-order
 checks. The [machine record](../validation/results/etkdg-quality-convergence-retry-2026-10-22.json)
-pins the source, binary, script, manifest, and prior report hashes.
+pins both source files, the binary, script, manifest, and prior report hashes.
 
 ## Reproduce and limits
 

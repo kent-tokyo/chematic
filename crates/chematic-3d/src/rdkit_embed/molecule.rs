@@ -1,10 +1,11 @@
 //! `DGeomHelpers::EmbedMultipleConfs` for one conformer of an
 //! explicit-hydrogen molecule (`AllChem.EmbedMolecule(AddHs(m), ...)`).
 
-use chematic_core::{Coords3D, Molecule, Point3};
+use chematic_core::Molecule;
 use chematic_smiles::RdkitMolView;
 
-use crate::stereo_constraints::verify_stereo;
+mod quality_retry;
+use quality_retry::rescue_quality_without_convergence;
 
 #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
 use rayon::prelude::*;
@@ -531,48 +532,6 @@ pub fn etkdg_embed_multiple_confs_mmff_best_gradient(
         select_quality_candidates(compatibility, alternative, num_confs),
         max_iters,
     ))
-}
-
-fn rescue_quality_without_convergence(
-    mh: &Molecule,
-    mut candidates: Vec<RdkitMmffConformer>,
-    max_iters: u32,
-) -> Vec<RdkitMmffConformer> {
-    let retry_iters = max_iters.saturating_mul(2);
-    if retry_iters == 0 || candidates.iter().any(|candidate| candidate.status == 0) {
-        return candidates;
-    }
-    let Some((best_index, best)) = candidates
-        .iter()
-        .enumerate()
-        .filter(|(_, candidate)| candidate.energy.is_finite())
-        .min_by(|(_, left), (_, right)| left.energy.total_cmp(&right.energy))
-    else {
-        return candidates;
-    };
-    let Ok(field) = chematic_ff::rdkit_mmff::RdkitMmffField::new(mh, &best.coords, 100.0, true)
-    else {
-        return candidates;
-    };
-    let retry = optimize_mmff_conformer(&field, best.coords.clone(), retry_iters);
-    if retry.status == 0
-        && retry.energy.is_finite()
-        && retry.energy <= best.energy
-        && retry.coords.iter().flatten().all(|value| value.is_finite())
-    {
-        let coords = Coords3D {
-            points: retry
-                .coords
-                .iter()
-                .map(|&[x, y, z]| Point3::new(x, y, z))
-                .collect(),
-        };
-        let stereo = verify_stereo(mh, &coords);
-        if stereo.n_violations() == 0 && stereo.n_unevaluable() == 0 {
-            candidates[best_index] = retry;
-        }
-    }
-    candidates
 }
 
 fn select_quality_candidates(
@@ -1232,6 +1191,8 @@ pub fn rdkit_bounds_matrix_with_constraints(
 #[cfg(test)]
 mod corrected_ensemble_tests {
     use super::*;
+    use crate::stereo_constraints::verify_stereo;
+    use chematic_core::{Coords3D, Point3};
 
     #[test]
     fn quality_profile_uses_new_seeds_when_gradients_match() {

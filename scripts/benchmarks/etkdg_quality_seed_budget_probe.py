@@ -226,6 +226,7 @@ def main() -> None:
             cwd=ROOT, text=True,
         ).strip()),
         "source_sha256": hashlib.sha256((ROOT / "crates/chematic-3d/src/rdkit_embed/molecule.rs").read_bytes()).hexdigest(),
+        "quality_retry_source_sha256": hashlib.sha256((ROOT / "crates/chematic-3d/src/rdkit_embed/molecule/quality_retry.rs").read_bytes()).hexdigest(),
         "probe_script_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         "rust_binary_sha256": hashlib.sha256(args.binary.read_bytes()).hexdigest(),
         "manifest": str(MANIFEST.relative_to(ROOT)),
