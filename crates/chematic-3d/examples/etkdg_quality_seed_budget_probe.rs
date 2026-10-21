@@ -15,11 +15,17 @@ fn summary(conformers: &[RdkitMmffConformer]) -> Value {
         .iter()
         .filter(|conformer| conformer.energy.is_finite())
         .min_by(|a, b| a.energy.total_cmp(&b.energy));
+    let best_converged = conformers
+        .iter()
+        .filter(|conformer| conformer.status == 0 && conformer.energy.is_finite())
+        .min_by(|a, b| a.energy.total_cmp(&b.energy));
     json!({
         "generated": conformers.len(),
         "converged": conformers.iter().filter(|conformer| conformer.status == 0).count(),
         "best_energy": best.map(|conformer| conformer.energy),
         "best_coords": best.map(|conformer| &conformer.coords),
+        "best_converged_energy": best_converged.map(|conformer| conformer.energy),
+        "best_converged_coords": best_converged.map(|conformer| &conformer.coords),
     })
 }
 
@@ -71,6 +77,11 @@ fn main() {
                 "bonds": bonds,
                 "compatibility": summary(&compatibility),
                 "quality": summary(&quality),
+                "quality_candidates": quality.iter().map(|conformer| json!({
+                    "status": conformer.status,
+                    "energy": conformer.energy,
+                    "coords": &conformer.coords,
+                })).collect::<Vec<_>>(),
             })
         );
     }

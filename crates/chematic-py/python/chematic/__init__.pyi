@@ -412,9 +412,9 @@ class Mol:
         max_iterations: int = 0,
         max_mmff_iters: int = 200,
     ) -> list[tuple[int, float, list[list[float]]]]:
-        """Return the lower-best-energy ETKDG/MMFF94 ensemble from two runs.
-        The second uses the corrected gradient when relevant, or new seeds
-        when both gradient modes are identical. Uses twice the candidate work.
+        """Keep the lowest-energy candidate, then converged conformers from
+        both ETKDG/MMFF94 runs. The second uses the corrected gradient when
+        relevant, or new seeds otherwise. Uses twice the candidate work.
         """
         ...
 
