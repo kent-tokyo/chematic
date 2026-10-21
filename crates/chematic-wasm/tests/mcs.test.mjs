@@ -27,12 +27,24 @@ const { mcs_smiles_json, mcs_smiles_json_with_config } = wasm;
   const bare = mcs_smiles_json(smiles);
   assert.equal(full.smiles, bare);
   assert.equal(full.wasTimedOut, false);
+  assert.equal(full.wasResourceLimited, false);
   // Regression test: qmol_to_molecule once matched only the bare
   // AtomQuery::Primitive(AtomicNum(n)) case, but at the time find_mcs's query
   // atoms were always the compound And(AtomicNum(n), Aromatic(bool)) -- so
   // every atom silently fell through to carbon. Aspirin/paracetamol's shared
   // hydroxyphenyl MCS must keep its oxygen atom.
   assert.match(full.smiles, /[Oo]/, `MCS lost its oxygen atom: ${full.smiles}`);
+}
+
+// Resource limits are distinct from timeouts and cannot be mistaken for an
+// exhaustive result.
+{
+  const smiles = JSON.stringify(["CCC", "CCC"]);
+  const result = JSON.parse(
+    mcs_smiles_json_with_config(smiles, JSON.stringify({ maxSearchNodes: 0 }))
+  );
+  assert.equal(result.wasTimedOut, false);
+  assert.equal(result.wasResourceLimited, true);
 }
 
 // No common substructure -> smiles: null, not an error.

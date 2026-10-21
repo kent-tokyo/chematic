@@ -3,46 +3,52 @@
   "release": {
     "version": "1.2.0",
     "tag": "v1.2.0",
-    "commit": "pending-release-tag"
+    "commit": "e7c651d5f290173b4ab054e2778ff66569373937"
   },
-  "checked_at": "2026-10-20T21:27:55Z",
-  "release_ready": false,
+  "checked_at": "2026-10-20T23:18:29Z",
+  "release_ready": true,
   "channels": [
     {
       "id": "github_release",
-      "status": "not_measured",
+      "status": "verified",
+      "observed_version": "1.2.0",
       "url": "https://github.com/kent-tokyo/chematic/releases/tag/v1.2.0",
-      "detail": "Pre-release candidate record. Verify the annotated tag, release state, assets, and provenance after publication."
+      "detail": "Non-draft, non-prerelease release points to the annotated v1.2.0 tag. The attached release metadata records commit e7c651d5f290173b4ab054e2778ff66569373937 and has SHA-256 9b6b68c74e21f2249beaf0d71008bb10f1afe6b820de7ab73b5e816bbee0379e."
     },
     {
       "id": "npm",
-      "status": "not_measured",
+      "status": "verified",
+      "observed_version": "1.2.0",
       "url": "https://www.npmjs.com/package/@kent-tokyo/chematic/v/1.2.0",
-      "detail": "Pre-release candidate record. Verify registry version, integrity, and gitHead after publication."
+      "detail": "Registry version is 1.2.0, gitHead is e7c651d5f290173b4ab054e2778ff66569373937, and the published package integrity is sha512-2W5kilaKECrZ5IxBdTOb7c3cV8ebzIafO6jsY67MtzQmsOdfJv/kUrWe3xTdifIjYxiJF8K4I+oFuHSEXUysnw==."
     },
     {
       "id": "pypi",
-      "status": "not_measured",
+      "status": "verified",
+      "observed_version": "1.2.0",
       "url": "https://pypi.org/project/chematic/1.2.0/",
-      "detail": "Pre-release candidate record. Verify every expected wheel and source distribution, then run the public-wheel chemistry gates."
+      "detail": "The sdist and all 25 expected CPython 3.9-3.13 wheels are present. Every published SHA-256 matches the corresponding Actions-built distribution; the three-platform runtime smoke run 39511354658 and 11-job chemistry run 39511354905 succeeded."
     },
     {
       "id": "crates_io",
-      "status": "not_measured",
+      "status": "verified",
+      "observed_version": "1.2.0",
       "url": "https://crates.io/crates/chematic/1.2.0",
-      "detail": "Pre-release candidate record. Verify the dependency-ordered workspace publication and top-level crate checksum after publication."
+      "detail": "Every crate in the checked publish graph, including the top-level chematic crate, is available from crates.io at version 1.2.0."
     },
     {
       "id": "docs_rs",
-      "status": "not_measured",
+      "status": "verified",
+      "observed_version": "1.2.0",
       "url": "https://docs.rs/chematic/1.2.0/chematic/",
-      "detail": "Pre-release candidate record. Verify the version-pinned documentation endpoint after docs.rs finishes building."
+      "detail": "The version-pinned docs.rs endpoint returns HTTP 200 and identifies chematic 1.2.0."
     },
     {
       "id": "site",
-      "status": "not_measured",
+      "status": "verified",
+      "observed_version": "1.2.0",
       "url": "https://kent-tokyo.github.io/chematic/",
-      "detail": "Pre-release candidate record. Verify the Pages deployment and v1.2.0 version label after the release commit reaches main."
+      "detail": "GitHub Pages run 39503858149 succeeded; the deployed site returns HTTP 200 and displays v1.2.0 as the current release."
     }
   ]
 }

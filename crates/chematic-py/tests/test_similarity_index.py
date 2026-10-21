@@ -89,6 +89,14 @@ def test_prepared_fingerprint_index_supports_rdkit_compatible_profile():
     assert results[0][1] == pytest.approx(1.0)
 
 
+def test_exact_top_k_keeps_disjoint_rdkit_morgan_rows():
+    # RDKit 2026.09.1 Morgan radius=2, size=2048: C/C=1; C/N, C/O, C/CC=0.
+    db = ["N", "C", "O", "CC"]
+    expected = [(1, 1.0), (0, 0.0), (2, 0.0), (3, 0.0)]
+    index = chematic.PreparedFingerprintIndex.from_smiles(db, fp="rdkit_ecfp4")
+    assert index.search("C", k=4) == expected
+
+
 def test_prepared_fingerprint_index_rejects_unknown_fp():
     with pytest.raises(ValueError, match="unknown fingerprint type"):
         chematic.PreparedFingerprintIndex.from_smiles(SMILES_LIST, fp="unknown")

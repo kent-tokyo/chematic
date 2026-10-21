@@ -460,13 +460,14 @@ pub fn mcs_smiles_json_with_ring_config(
 /// `matchBonds`, `minAtoms`, `timeoutMs`, `ringMatchesRingOnly`,
 /// `completeRingsOnly`, `atomCompare` (`"elements"` | `"any_heavy_atom"` |
 /// `"any"`), `bondCompare` (`"order_or_aromatic"` | `"any"`),
-/// `matchChiralTag`, `matchCharge`, `matchIsotope`, `maximizeBonds`.
+/// `matchChiralTag`, `matchCharge`, `matchIsotope`, `maximizeBonds`, and
+/// `maxSearchNodes`.
 ///
-/// Returns a JSON object `{"smiles": string|null, "wasTimedOut": bool}` --
-/// `smiles` is `null` when there is no common substructure; `wasTimedOut` is
-/// `true` if `timeoutMs` was reached before the search finished exhaustively
-/// (the returned `smiles`, if any, is then the best result found so far, not
-/// proven optimal).
+/// Returns a JSON object with `smiles`, `wasTimedOut`, and
+/// `wasResourceLimited`. `smiles` is `null` when there is no common
+/// substructure; the two status fields distinguish deadline expiry from a
+/// configured input/search limit. A returned partial result is not proven
+/// optimal when either status is true.
 #[wasm_bindgen]
 pub fn mcs_smiles_json_with_config(
     smiles_json: &str,
@@ -481,6 +482,7 @@ pub fn mcs_smiles_json_with_config(
     let mol_refs: Vec<&chematic_core::Molecule> = mols.iter().collect();
     let outcome = chematic_smarts::find_mcs_with_config_checked(&mol_refs, &config);
     let was_timed_out = outcome.was_timed_out();
+    let was_resource_limited = outcome.was_resource_limited();
     let qmol = outcome.into_query();
 
     let smiles_json_value = if qmol.atoms.is_empty() {
@@ -492,7 +494,7 @@ pub fn mcs_smiles_json_with_config(
         )
     };
     Ok(format!(
-        r#"{{"smiles":{smiles_json_value},"wasTimedOut":{was_timed_out}}}"#
+        r#"{{"smiles":{smiles_json_value},"wasTimedOut":{was_timed_out},"wasResourceLimited":{was_resource_limited}}}"#
     ))
 }
 

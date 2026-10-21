@@ -404,6 +404,19 @@ class Mol:
         extra force-field evaluation."""
         ...
 
+    def etkdg_embed_multiple_confs_mmff_best_gradient(
+        self,
+        num_confs: int,
+        *,
+        random_seed: int = 42,
+        max_iterations: int = 0,
+        max_mmff_iters: int = 200,
+    ) -> list[tuple[int, float, list[list[float]]]]:
+        """Return the lower-best-energy ensemble from compatibility and
+        corrected ETKDG sixth-order gradients. Uses twice the candidate work.
+        """
+        ...
+
     def rdkit_embed_multiple_confs_mmff_gradient_rescue(
         self,
         num_confs: int,
@@ -3060,7 +3073,8 @@ def nearest_neighbors_from_fp(
     More efficient than :func:`top_k_similar_fp` when ``db_fps`` is reused
     across multiple queries (fingerprints computed only once).
 
-    Returns list of ``(index, tanimoto_score)`` tuples, descending by score.
+    Returns up to ``k`` ``(index, tanimoto_score)`` tuples, descending by score
+    and ascending by index for ties. Zero-score entries are included.
     Two all-zero fingerprints have similarity 1.0.
 
     Raises:
@@ -4626,6 +4640,7 @@ def find_mcs_checked(
     match_charge: bool = False,
     match_isotope: bool = False,
     maximize_bonds: bool = True,
+    max_search_nodes: Optional[int] = None,
 ) -> tuple[Optional[Mol], bool]:
     """Like :func:`find_mcs`, but also reports whether ``timeout_ms`` was reached
     before the search finished exhaustively.
@@ -4635,7 +4650,10 @@ def find_mcs_checked(
 
     Returns ``(mcs, was_timed_out)``: ``mcs`` is the MCS as a :class:`Mol` (or ``None``
     if there is no common substructure), and ``was_timed_out`` is ``True`` if the search
-    was cut off before proving ``mcs`` optimal.
+    was cut off by the deadline before proving ``mcs`` optimal. If the input-size
+    or search-node limit is reached, raises ``ChematicInputError`` with category
+    ``"resource_limit"`` and code ``"mcs_resource_limit"`` instead of returning
+    ``was_timed_out=False``. ``max_search_nodes`` overrides the native default when set.
 
     Example::
 

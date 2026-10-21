@@ -16,6 +16,10 @@ use crate::query::{AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, QueryMole
 mod bounds;
 use bounds::{upper_bound_additional, upper_bound_for_seeds};
 
+#[path = "mcs_frontier.rs"]
+mod frontier;
+use frontier::{extend_frontier_atom, mapped_rows_share_common_bond};
+
 #[cfg(test)]
 #[path = "mcs_comparator_tests.rs"]
 mod comparator_tests;
@@ -237,7 +241,7 @@ pub fn find_mcs_with_config_checked(mols: &[&Molecule], config: &McsConfig) -> M
     };
 
     'outer: for a0 in 0..n0 {
-        if state.timed_out {
+        if state.timed_out || state.resource_limited {
             break;
         }
         if let Some(d) = state.deadline
@@ -253,7 +257,7 @@ pub fn find_mcs_with_config_checked(mols: &[&Molecule], config: &McsConfig) -> M
 
         // Iterate the Cartesian product of candidate lists.
         for seed in CartesianProduct::new(&seed_candidates) {
-            if state.timed_out {
+            if state.timed_out || state.resource_limited {
                 break 'outer;
             }
             if let Some(d) = state.deadline
@@ -280,7 +284,7 @@ pub fn find_mcs_with_config_checked(mols: &[&Molecule], config: &McsConfig) -> M
 
     // Apply complete_rings_only post-processing: remove partially-covered rings.
     if config.complete_rings_only && !state.ring_sets.is_empty() {
-        prune_partial_rings(mols, &mut state.best, &state.ring_sets);
+        prune_partial_rings(mols, &mut state.best, &state.ring_sets, config);
     }
 
     // Apply min_atoms filter.
@@ -294,7 +298,7 @@ pub fn find_mcs_with_config_checked(mols: &[&Molecule], config: &McsConfig) -> M
         };
     }
 
-    let result = build_query(mols[0], &state.best, config);
+    let result = build_query(mols, &state.best, config);
     if state.resource_limited {
         McsOutcome::ResourceLimited(result)
     } else if state.timed_out {
@@ -468,7 +472,7 @@ fn grow(state: &mut McsState<'_>, mapping: &mut PartialMapping) {
         state.timed_out = true;
         return;
     }
-    if state.timed_out {
+    if state.timed_out || state.resource_limited {
         return;
     }
 
@@ -514,130 +518,16 @@ fn grow(state: &mut McsState<'_>, mapping: &mut PartialMapping) {
     // scratch_repro_frontier0_only_incompleteness.
     let n0 = frontier[0];
 
-    // Branch 1: include n0. For each other molecule, find compatible unmapped atoms
-    // that are:
-    // 1. Atom-compatible with n0
-    // 2. Adjacent to every mol[i]-atom that corresponds to a mapped neighbor of n0 in mol[0]
-    // 3. Bond-compatible with each such adjacency
-    let candidates_per_mol =
-        build_frontier_candidates(state.mols, mapping, n0, state.config, &state.ring_sets);
-
-    // Cartesian product across molecules 1..n.
-    for tuple in CartesianProduct::new(&candidates_per_mol) {
-        if state.timed_out {
-            return;
-        }
-
-        // Build the full atom tuple: [n0, tuple[0], tuple[1], ...]
-        let mut atoms: Vec<AtomIdx> = Vec::with_capacity(state.mols.len());
-        atoms.push(n0);
-        atoms.extend_from_slice(&tuple);
-
-        // Count new bonds (to already-mapped atoms in mol[0]) for bookkeeping.
-        let extra_bonds = count_new_bonds(mol0, mapping, n0);
-
-        mapping.extend(&atoms, extra_bonds);
-        grow(state, mapping);
-        mapping.retract(&atoms, extra_bonds);
-    }
+    extend_frontier_atom(state, mapping, n0);
 
     // Branch 2: exclude n0 from this branch and recurse so the next frontier atom
     // gets a turn. Reset on the way back out -- exclusion only applies within this
     // subtree, not to sibling branches elsewhere in the search.
-    if !state.timed_out {
+    if !state.timed_out && !state.resource_limited {
         state.excluded[n0.0 as usize] = true;
         grow(state, mapping);
         state.excluded[n0.0 as usize] = false;
     }
-}
-
-// ---------------------------------------------------------------------------
-// Frontier candidate generation
-// ---------------------------------------------------------------------------
-
-/// For each molecule i >= 1, collect the atoms that can be paired with `n0` from mol[0]
-/// to extend the mapping.
-///
-/// A candidate atom `ni` in mol[i] is valid if:
-/// - It is not yet mapped.
-/// - It is atom-compatible with `n0`.
-/// - For every already-mapped neighbor `m0` of `n0` in mol[0], atom `ni` is bonded to
-///   `mapping.query_to_mol[q_m][i]` in mol[i] with a compatible bond order (when
-///   `match_bonds=true`).
-fn build_frontier_candidates(
-    mols: &[&Molecule],
-    mapping: &PartialMapping,
-    n0: AtomIdx,
-    config: &McsConfig,
-    ring_sets: &[RingSet],
-) -> Vec<Vec<AtomIdx>> {
-    let mol0 = mols[0];
-    let atom0 = mol0.atom(n0);
-    let n0_in_ring = !ring_sets.is_empty() && ring_sets[0].contains_atom(n0);
-
-    // Collect mapped neighbors of n0 in mol[0] along with the bond order.
-    let mut mapped_neighbors: Vec<(usize, AtomIdx, BondOrder)> = Vec::new();
-    for (nb, bidx) in mol0.neighbors(n0) {
-        if let Some(q) = mapping.query_idx_of(0, nb) {
-            let bond = mol0.bond(bidx);
-            mapped_neighbors.push((q, nb, bond.order));
-        }
-    }
-
-    let mut result: Vec<Vec<AtomIdx>> = Vec::with_capacity(mols.len() - 1);
-
-    for mi in 1..mols.len() {
-        let mol_i = mols[mi];
-        let mut candidates: Vec<AtomIdx> = Vec::new();
-
-        'atom: for (ai, atom_i) in mol_i.atoms() {
-            // Must not be mapped.
-            if mapping.is_mapped(mi, ai) {
-                continue;
-            }
-            // Must be atom-compatible.
-            if !atoms_compatible(
-                atom0,
-                atom_i,
-                &config.atom_compare,
-                config.match_chiral_tag,
-                config.match_charge,
-                config.match_isotope,
-            ) {
-                continue;
-            }
-            // ring_matches_ring_only: ring atoms must match ring atoms only.
-            if config.ring_matches_ring_only {
-                let ai_in_ring = ring_sets[mi].contains_atom(ai);
-                if n0_in_ring != ai_in_ring {
-                    continue;
-                }
-            }
-            // Must be bonded to every corresponding mapped neighbor with compatible bond.
-            for &(q, _m0, bond_order_0) in &mapped_neighbors {
-                let m_i = mapping.query_to_mol[q][mi];
-                match mol_i.bond_between(ai, m_i) {
-                    None => continue 'atom,
-                    Some((_bidx, bond_entry)) => {
-                        if config.match_bonds
-                            && !bonds_compatible(
-                                bond_order_0,
-                                bond_entry.order,
-                                &config.bond_compare,
-                            )
-                        {
-                            continue 'atom;
-                        }
-                    }
-                }
-            }
-            candidates.push(ai);
-        }
-
-        result.push(candidates);
-    }
-
-    result
 }
 
 // ---------------------------------------------------------------------------
@@ -733,17 +623,6 @@ fn normalize_bond(o: BondOrder) -> BondOrder {
 }
 
 // ---------------------------------------------------------------------------
-// Bond counting helper
-// ---------------------------------------------------------------------------
-
-/// Count the number of already-mapped neighbors of `n0` in mol[0].
-fn count_new_bonds(mol0: &Molecule, mapping: &PartialMapping, n0: AtomIdx) -> usize {
-    mol0.neighbors(n0)
-        .filter(|(nb, _)| mapping.is_mapped(0, *nb))
-        .count()
-}
-
-// ---------------------------------------------------------------------------
 // complete_rings_only post-processing
 // ---------------------------------------------------------------------------
 
@@ -752,7 +631,12 @@ fn count_new_bonds(mol0: &Molecule, mapping: &PartialMapping, n0: AtomIdx) -> us
 /// A ring is "partially covered" if at least one but not all of its atoms appear in the
 /// mapping.  Removing those atoms can expose further partial rings, so the pruning
 /// iterates until convergence.
-fn prune_partial_rings(mols: &[&Molecule], mapping: &mut PartialMapping, ring_sets: &[RingSet]) {
+fn prune_partial_rings(
+    mols: &[&Molecule],
+    mapping: &mut PartialMapping,
+    ring_sets: &[RingSet],
+    config: &McsConfig,
+) {
     loop {
         // Collect query indices that must be removed.
         let mut to_remove: Vec<usize> = Vec::new();
@@ -770,7 +654,21 @@ fn prune_partial_rings(mols: &[&Molecule], mapping: &mut PartialMapping, ring_se
                 .collect();
 
             // Partial coverage: some but not all ring atoms are mapped.
-            if !mapped_in_ring.is_empty() && mapped_in_ring.len() < ring.len() {
+            let ring_bonds_are_common = mapped_in_ring.len() == ring.len()
+                && ring.iter().enumerate().all(|(index, &left)| {
+                    let right = ring[(index + 1) % ring.len()];
+                    let Some(q1) = mapping.query_idx_of(0, left) else {
+                        return false;
+                    };
+                    let Some(q2) = mapping.query_idx_of(0, right) else {
+                        return false;
+                    };
+                    mapped_rows_share_common_bond(mols, mapping, q1, q2, config)
+                });
+
+            if !mapped_in_ring.is_empty()
+                && (mapped_in_ring.len() < ring.len() || !ring_bonds_are_common)
+            {
                 for ai in mapped_in_ring {
                     if let Some(qi) = mapping.query_idx_of(0, ai)
                         && !to_remove.contains(&qi)
@@ -814,8 +712,9 @@ fn prune_partial_rings(mols: &[&Molecule], mapping: &mut PartialMapping, ring_se
 // Build output QueryMolecule
 // ---------------------------------------------------------------------------
 
-fn build_query(mol0: &Molecule, mapping: &PartialMapping, config: &McsConfig) -> QueryMolecule {
+fn build_query(mols: &[&Molecule], mapping: &PartialMapping, config: &McsConfig) -> QueryMolecule {
     let mut qmol = QueryMolecule::new();
+    let mol0 = mols[0];
 
     // Add one query atom per mapped position. Aromaticity is deliberately NOT
     // encoded here as a per-atom constraint (matches RDKit's own `CompareElements`
@@ -833,7 +732,8 @@ fn build_query(mol0: &Molecule, mapping: &PartialMapping, config: &McsConfig) ->
         qmol.add_atom(query);
     }
 
-    // Add bonds between mapped atoms (based on mol[0] topology).
+    // Add only bonds present in every input.  Extra edges in any one input
+    // are intentionally omitted: MCS is non-induced subgraph matching.
     for (q1, row1) in mapping.query_to_mol.iter().enumerate() {
         let a1 = row1[0];
         for (q2, row2) in mapping.query_to_mol.iter().enumerate() {
@@ -841,7 +741,9 @@ fn build_query(mol0: &Molecule, mapping: &PartialMapping, config: &McsConfig) ->
                 continue;
             }
             let a2 = row2[0];
-            if let Some((_bidx, bond_entry)) = mol0.bond_between(a1, a2) {
+            if let Some((_bidx, bond_entry)) = mol0.bond_between(a1, a2)
+                && mapped_rows_share_common_bond(mols, mapping, q1, q2, config)
+            {
                 let bq = bond_order_to_query(bond_entry.order, config.match_bonds);
                 qmol.add_bond(q1, q2, bq);
             }
@@ -1568,6 +1470,49 @@ mod tests {
             "expected true MCS (C(N)(N), 3 atoms = all of mol1), got {}",
             result.atom_count()
         );
+    }
+
+    #[test]
+    fn non_induced_mcs_is_input_order_independent_for_ring_and_chain() {
+        let ring = parse("C1CC1").unwrap();
+        let chain = parse("CCC").unwrap();
+
+        let ring_first = find_mcs(&[&ring, &chain]);
+        let chain_first = find_mcs(&[&chain, &ring]);
+
+        assert_eq!(ring_first.atom_count(), 3);
+        assert_eq!(ring_first.bonds.len(), 2);
+        assert_eq!(chain_first.atom_count(), 3);
+        assert_eq!(chain_first.bonds.len(), 2);
+
+        let complete_rings = McsConfig {
+            complete_rings_only: true,
+            ..McsConfig::default()
+        };
+        let ring_constrained = find_mcs_with_config(&[&ring, &chain], &complete_rings);
+        assert_eq!(ring_constrained.atom_count(), 0);
+    }
+
+    #[test]
+    fn mcs_size_is_input_order_independent_across_mixed_topologies() {
+        let molecules: Vec<Molecule> = [
+            "CCC", "C1CC1", "C1CCC1", "CCCC", "c1ccccc1", "CC=CC", "CC#N", "CCO", "NCCN",
+        ]
+        .into_iter()
+        .map(|smiles| parse(smiles).unwrap())
+        .collect();
+
+        for left in 0..molecules.len() {
+            for right in (left + 1)..molecules.len() {
+                let forward = find_mcs(&[&molecules[left], &molecules[right]]);
+                let reverse = find_mcs(&[&molecules[right], &molecules[left]]);
+                assert_eq!(
+                    (forward.atom_count(), forward.bonds.len()),
+                    (reverse.atom_count(), reverse.bonds.len()),
+                    "MCS size changed when inputs {left} and {right} were reversed"
+                );
+            }
+        }
     }
 
     #[test]

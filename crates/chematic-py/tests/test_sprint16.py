@@ -560,8 +560,11 @@ def test_byte_tanimoto_contract_is_consistent():
     assert chematic.tanimoto_slice(b"", [b""]) == [1.0]
     assert chematic.tanimoto_matrix([b""], [b""]) == [[1.0]]
     assert chematic.nearest_neighbors_from_fp(b"\x00", [b"\x00", b"\x01"], k=2) == [
-        (0, 1.0)
+        (0, 1.0), (1, 0.0)
     ]
+    assert chematic.nearest_neighbors_from_fp(
+        b"\x01", [b"\x02", b"\x01", b"\x04"], k=2
+    ) == [(1, 1.0), (0, 0.0)]
     assert chematic.nearest_neighbors_from_fp(b"\x00", [b"\x00\x00"], k=0) == []
 
     with pytest.raises(ValueError, match="same length"):

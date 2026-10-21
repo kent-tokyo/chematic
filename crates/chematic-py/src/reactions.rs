@@ -1162,7 +1162,10 @@ fn find_mcs(
 ///
 /// Returns a tuple ``(mcs, was_timed_out)``: ``mcs`` is the MCS as a Mol (or
 /// ``None`` if there is no common substructure), and ``was_timed_out`` is
-/// ``True`` if the search was cut off before proving ``mcs`` optimal.
+/// ``True`` if the deadline stopped the search before proving ``mcs``
+/// optimal.  A search-node or input-size limit raises a typed
+/// ``ChematicInputError(category="resource_limit", code="mcs_resource_limit")``
+/// instead of being reported as ``was_timed_out=False``.
 ///
 ///     mcs, timed_out = chematic.find_mcs_checked(mols, timeout_ms=500)
 ///     if timed_out:
@@ -1181,6 +1184,7 @@ fn find_mcs(
     match_charge=false,
     match_isotope=false,
     maximize_bonds=true,
+    max_search_nodes=None,
 ))]
 #[allow(clippy::too_many_arguments)]
 fn find_mcs_checked(
@@ -1196,8 +1200,9 @@ fn find_mcs_checked(
     match_charge: bool,
     match_isotope: bool,
     maximize_bonds: bool,
+    max_search_nodes: Option<usize>,
 ) -> PyResult<(Option<Mol>, bool)> {
-    let config = build_mcs_config(
+    let mut config = build_mcs_config(
         match_bonds,
         min_atoms,
         timeout_ms,
@@ -1210,11 +1215,22 @@ fn find_mcs_checked(
         match_isotope,
         maximize_bonds,
     )?;
+    if let Some(limit) = max_search_nodes {
+        config.max_search_nodes = Some(limit);
+    }
     let refs: Vec<&chematic_core::Molecule> = mols.iter().map(|m| m.inner.as_ref()).collect();
     let outcome = chematic_smarts::find_mcs_with_config_checked(&refs, &config);
-    let was_timed_out = outcome.was_timed_out();
-    let qmol = outcome.into_query();
-    Ok((qmol_to_mol(&qmol), was_timed_out))
+    match outcome {
+        chematic_smarts::McsOutcome::Exhaustive(qmol) => Ok((qmol_to_mol(&qmol), false)),
+        chematic_smarts::McsOutcome::TimedOut(qmol) => Ok((qmol_to_mol(&qmol), true)),
+        chematic_smarts::McsOutcome::ResourceLimited(_) => Err(crate::errors::input_error(
+            "resource_limit",
+            "mcs_resource_limit",
+            "mcs",
+            "MCS search reached its configured resource limit before proving the result optimal"
+                .to_string(),
+        )),
+    }
 }
 
 // ---------------------------------------------------------------------------

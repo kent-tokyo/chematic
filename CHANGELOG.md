@@ -20,6 +20,12 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   attributes, independently of partial charges. Candidate charge verification
   requires exact graph correspondence. UNITY precedes BOND for Open Babel
   3.2.1 readback; isotope/stereo limitations and strict refusal remain explicit.
+- MCS now constructs a common non-induced subgraph, so extra closure bonds in
+  one input no longer make the maximum depend on input order (`C1CC1` versus
+  `CCC` now returns three atoms and two bonds in either order). Python
+  `find_mcs_checked` raises a typed `mcs_resource_limit` error when a search
+  limit is reached instead of returning `was_timed_out=False`; WASM reports the
+  distinct `wasResourceLimited` state.
 
 ## [1.2.0] - 2026-10-21
 
