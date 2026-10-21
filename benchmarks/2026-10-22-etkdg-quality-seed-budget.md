@@ -10,7 +10,8 @@ The quality profile formerly embedded the same `num_confs` seeds twice when
 there were no fifth- or sixth-order experimental torsion coefficients. Its
 compatibility and corrected gradient paths are identical in that case. It now
 uses seeds `1..N` and `N+1..2N`, optimizes both ensembles with MMFF94, and
-returns the complete `N`-conformer ensemble with the lower finite best energy.
+returns the selected batch of up to `N` conformers with the lower finite best
+energy.
 For a molecule with fifth- or sixth-order coefficients, it still compares the
 two gradient paths on the same seeds. The public compatibility and corrected
 APIs retain their existing behavior. For the identical-gradient case, a zero
