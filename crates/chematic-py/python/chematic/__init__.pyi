@@ -3347,6 +3347,15 @@ def from_mol_v3000(block: str | bytes) -> Mol:
     """
     ...
 
+def from_mol_v3000_with_coords_3d(block: str | bytes) -> tuple[Mol, str, list[list[float]]]:
+    """Return Mol, name and source-order x/y/z in Angstrom, including tiny z.
+
+    Independent of dimension headers/perception tolerance; finite f64 values
+    and signed zero survive. Input is bounded to 16 MiB. Opaque metadata is
+    not returned; existing graph/stereo interpretation is unchanged.
+    """
+    ...
+
 def from_mol_v3000_with_coords(block: str | bytes) -> tuple[Mol, str, list[list[float]]]:
     """Parse a MDL MOL V3000 block and return the molecule with its 2D layout coordinates.
 

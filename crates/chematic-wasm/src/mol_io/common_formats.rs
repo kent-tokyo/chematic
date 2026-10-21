@@ -171,7 +171,9 @@ fn parse_common_format(text: &str, format: &str) -> Result<chematic_core::Molecu
 ///
 /// This is the WASM counterpart of Python's `convert_format`. It supports
 /// SMILES, MOL/SDF, MOL V3000, MOL2, CML, ChemicalJSON, MolJSON, and CDXML.
-/// MOL2-to-MOL2 validates and retains the exact source. Other conversions use
+/// MOL2-to-MOL2 validates and retains the exact source. V3000-to-CJSON also
+/// carries source-order x/y/z values; it does not retain opaque metadata or
+/// verify cross-format stereo. Other conversions use
 /// the topology-only bridge and do not carry format-specific metadata.
 #[wasm_bindgen]
 pub fn convert_common_format(
@@ -194,7 +196,16 @@ pub fn convert_common_format(
     if input == "mol2" && output == "mol2" {
         return roundtrip_mol2_record(text);
     }
-    let mol = parse_common_format(text, &input).map_err(|e| JsValue::from_str(&e))?;
+    let (mol, coords) = if input == "mol_v3000" && output == "cjson" {
+        let (mol, _, coords) = chematic_mol::parse_mol_v3000_with_coords_3d(text)
+            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+        (mol, coords)
+    } else {
+        (
+            parse_common_format(text, &input).map_err(|e| JsValue::from_str(&e))?,
+            Vec::new(),
+        )
+    };
     if mol.atom_count() > WASM_MAX_ATOMS {
         return Err(JsValue::from_str(&format!(
             "format input exceeds maximum atom count ({WASM_MAX_ATOMS})"
@@ -208,7 +219,7 @@ pub fn convert_common_format(
         }
         "mol2" => chematic_mol::write_mol2(&mol, &[]),
         "cml" => chematic_mol::write_cml(&mol, None),
-        "cjson" => chematic_mol::write_cjson(&mol, &[]),
+        "cjson" => chematic_mol::write_cjson(&mol, &coords),
         "moljson" => chematic_mol::write_moljson(&mol),
         "cdxml" => chematic_mol::write_cdxml(&mol, &[]),
         _ => {

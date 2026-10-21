@@ -28,6 +28,12 @@ MOL V3000, MOL2, CML, ChemicalJSON, MolJSON, and CDXML) so that JavaScript
 and Python share a predictable core contract. Use the existing coordinate APIs
 for PDB/XYZ/PDBQT in browser workflows.
 
+V3000 → CJSON is a coordinate-carrying exception in both common bridges:
+source-order x/y/z values survive independently of dimension headers and stereo
+perception tolerances. Python also supplies these values to PDB/XYZ/PDBQT
+writers unless `coords` is explicitly provided; those writers retain their
+precision and metadata limits. See the [projection comparison](benchmarks/2026-10-22-v3000-coordinate-projection.md).
+
 This is intentionally a bounded interoperability layer, not a claim of broad
 Open Babel replacement. The format-specific APIs remain available when
 coordinates, metadata, multiple records, or domain-specific options must be
@@ -427,6 +433,13 @@ source-preserving APIs retain the original order.
   memory). Python exposes file-backed `iter_sdf` and bounded
   `iter_sdf_batched`; WASM bindings still materialize SDF input.
 - **Coordinate units**: Ångström, per the Ctab standard.
+- **V3000 source coordinates**: Rust `parse_mol_v3000_with_coords_3d` and
+  Python `from_mol_v3000_with_coords_3d` return all source x/y/z values as finite
+  f64s, including signed zero and tiny z, with a 16 MiB input cap and the
+  existing native graph/count limits. The existing `*_with_coords` APIs keep
+  their 2D shape. A perception conformer may be absent for nearly flat input;
+  it is not the coordinate-retention source. This does not establish
+  cross-format stereo, opaque-metadata or source-byte preservation.
 - **Connectivity**: native Ctab bond table.
 - **Round-trip**: semantic, not byte-identical — `write_mol` regenerates a
   Ctab from the `Molecule`'s own perceived bonds/coordinates, not a copy of

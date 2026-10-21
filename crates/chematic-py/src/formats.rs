@@ -71,6 +71,9 @@ use xyz::*;
 
 type SdfWithCoords = Vec<(Mol, String, Vec<Vec<f64>>)>;
 
+mod v3000_coordinates;
+use v3000_coordinates::*;
+
 // ---------------------------------------------------------------------------
 // Helper: convert MoleculeReport to Python dict
 // ---------------------------------------------------------------------------
@@ -1396,6 +1399,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         semantic_expand_json_with_limits,
         from_mol_v3000,
         from_mol_v3000_with_coords,
+        from_mol_v3000_with_coords_3d,
         from_mol_v3000_with_diagnostics,
         from_mol2,
         from_hin,
