@@ -146,8 +146,18 @@ Notes on the cells above that need qualification:
 ### PDBQT
 
 - **Rust**: `chematic_mol::{parse_pdbqt, parse_pdbqt_with_limits, write_pdbqt, PdbqtError, PdbqtParseLimits}`.
+- **Numeric data bindings**: Python `from_pdbqt_with_data` returns
+  `(mol, coords, partial_charges)`; WASM `pdbqt_atom_data_json` returns indexed
+  atomic numbers, coordinates and partial charges. Both retain parsed finite
+  binary64 values without output rounding. The older graph readers discard
+  these arrays. See [PDBQT numeric data](pdbqt-atom-data.md).
 - **Coordinate units**: Ångström.
 - **Connectivity**: no bond perception; rigid-body PDBQT only.
+- **Python bridge**: PDBQT input supplies coordinates for PDB/XYZ/PDBQT output
+  and partial charges for PDBQT output, unless overridden. That PDBQT output
+  checks counts/field widths and uses three decimal places. AutoDock types,
+  atom identity and torsion trees are not preserved. Other target formats in
+  this bridge do not carry its partial charges.
 - **Required atom fields**: each ATOM/HETATM record must include an explicit
   partial charge and AutoDock atom type. The parser retains charges wider than
   the usual fixed-width field when separated from the atom type by whitespace.

@@ -1,0 +1,502 @@
+{
+  "schema": "chematic.pdbqt-atom-data-validation.v1",
+  "baseline": true,
+  "python": "3.13.6 (v3.13.6:4e665351082, Aug  6 2025, 11:22:35) [Clang 16.0.0 (clang-1600.0.26.6)]",
+  "packet": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/pdbqt_atom_data/cases.json",
+    "sha256": "00fbfb3a5f676a61528c777b8f3a1f99f410f81c4d9ed533eaf8269dd2624c76",
+    "size_bytes": 6630
+  },
+  "package": {
+    "path": "/private/tmp/chematic-sdf-fields-baseline-python-20261022/chematic/__init__.py",
+    "sha256": "fa171425f542041f4449489cfb87c2752e73b613840d7f5d26e1a4b09749f384",
+    "size_bytes": 25696
+  },
+  "extension": {
+    "path": "/private/tmp/chematic-sdf-fields-baseline-python-20261022/chematic/chematic.cpython-313-darwin.so",
+    "sha256": "5e1bc2dbe4f0dda290afaa8cf51419e42cd4c36700bc8bd4c555078bf74a57f5",
+    "size_bytes": 44590384
+  },
+  "cases": [
+    {
+      "id": "mixed_types",
+      "profile": "fixed-column PDBQT atom records",
+      "expected": {
+        "atomic_numbers": [
+          6,
+          7,
+          8,
+          16,
+          1,
+          17
+        ],
+        "coords": [
+          [
+            0,
+            0,
+            -0.0
+          ],
+          [
+            1.25,
+            -2.5,
+            3.75
+          ],
+          [
+            -0.001,
+            4.321,
+            8.765
+          ],
+          [
+            20,
+            -30,
+            40
+          ],
+          [
+            1,
+            1,
+            1
+          ],
+          [
+            -9,
+            2,
+            5
+          ]
+        ],
+        "partial_charges": [
+          -0.123,
+          0.456,
+          -0.789,
+          0.0,
+          0.111,
+          -1.0
+        ]
+      },
+      "python_data": {
+        "error": "module 'chematic' has no attribute 'from_pdbqt_with_data'"
+      },
+      "python_data_exact": false,
+      "bridge": {
+        "error": "PDBQT output requires coords=[[x, y, z], ...]"
+      },
+      "bridge_preserved": false,
+      "bridge_with_coords_charges": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "6\n6 0 0 -0 -0.123\n7 1.25 -2.5 3.75 0.45600000000000002\n8 -0.001 4.3209999999999997 8.7650000000000006 -0.78900000000000003\n16 20 -30 40 0\n1 1 1 1 0.111\n17 -9 2 5 -1\n",
+        "stderr": "",
+        "data": {
+          "atomic_numbers": [
+            6,
+            7,
+            8,
+            16,
+            1,
+            17
+          ],
+          "coords": [
+            [
+              0.0,
+              0.0,
+              -0.0
+            ],
+            [
+              1.25,
+              -2.5,
+              3.75
+            ],
+            [
+              -0.001,
+              4.321,
+              8.765
+            ],
+            [
+              20.0,
+              -30.0,
+              40.0
+            ],
+            [
+              1.0,
+              1.0,
+              1.0
+            ],
+            [
+              -9.0,
+              2.0,
+              5.0
+            ]
+          ],
+          "partial_charges": [
+            -0.123,
+            0.456,
+            -0.789,
+            0.0,
+            0.111,
+            -1.0
+          ]
+        }
+      },
+      "openbabel_data_exact": true
+    },
+    {
+      "id": "wide_charge",
+      "profile": "whitespace-separated widened-charge extension",
+      "expected": {
+        "atomic_numbers": [
+          30,
+          6
+        ],
+        "coords": [
+          [
+            12.345,
+            -9.876,
+            0.125
+          ],
+          [
+            1,
+            2,
+            3
+          ]
+        ],
+        "partial_charges": [
+          0.123456789012345,
+          -1e-14
+        ]
+      },
+      "python_data": {
+        "error": "module 'chematic' has no attribute 'from_pdbqt_with_data'"
+      },
+      "python_data_exact": false,
+      "bridge": {
+        "error": "PDBQT output requires coords=[[x, y, z], ...]"
+      },
+      "bridge_preserved": false,
+      "bridge_with_coords_charges": [
+        0.0,
+        0.0
+      ],
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 3,
+        "stdout": "",
+        "stderr": "==============================\n*** Open Babel Error  in parseAtomRecord\n  WARNING: Problems reading a PDBQT file\n  Problems reading a HETATM or ATOM record.\n  According to the PDBQT specification,\n  columns 78-79 should contain the element symbol of an atom.\n  but OpenBabel found '56' (atom 1)\n==============================\n*** Open Babel Error  in ReadMolecule\n  WARNING: Problems reading a PDBQT file\n  Problems reading a ATOM/HETATM record.\n\nATOM      7  Q   LIG Z   7      12.345  -9.876   0.125  1.00  0.00    +0.123456789012345 Zn\n\n==============================\n*** Open Babel Error  in parseAtomRecord\n  WARNING: Problems reading a PDBQT file\n  Problems reading a HETATM or ATOM record.\n  According to the PDBQT specification,\n  columns 78-79 should contain the element symbol of an atom.\n  but OpenBabel found '00' (atom 1)\n==============================\n*** Open Babel Error  in ReadMolecule\n  WARNING: Problems reading a PDBQT file\n  Problems reading a ATOM/HETATM record.\n\nHETATM   10  Q   LIG Z   7       1.000   2.000   3.000  1.00  0.00    -0.00000000000001 C\n\n"
+      },
+      "openbabel_data_exact": false
+    },
+    {
+      "id": "charge_not_formal",
+      "profile": "fixed-column PDBQT atom records",
+      "expected": {
+        "atomic_numbers": [
+          30,
+          17
+        ],
+        "coords": [
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            8,
+            0,
+            0
+          ]
+        ],
+        "partial_charges": [
+          2.0,
+          -1.0
+        ]
+      },
+      "python_data": {
+        "error": "module 'chematic' has no attribute 'from_pdbqt_with_data'"
+      },
+      "python_data_exact": false,
+      "bridge": {
+        "error": "PDBQT output requires coords=[[x, y, z], ...]"
+      },
+      "bridge_preserved": false,
+      "bridge_with_coords_charges": [
+        0.0,
+        0.0
+      ],
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "2\n30 0 0 0 2\n17 8 0 0 -1\n",
+        "stderr": "",
+        "data": {
+          "atomic_numbers": [
+            30,
+            17
+          ],
+          "coords": [
+            [
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              8.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "partial_charges": [
+            2.0,
+            -1.0
+          ]
+        }
+      },
+      "openbabel_data_exact": true
+    },
+    {
+      "id": "explicit_hydrogens",
+      "profile": "fixed-column PDBQT atom records",
+      "expected": {
+        "atomic_numbers": [
+          6,
+          1,
+          1,
+          8
+        ],
+        "coords": [
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            1,
+            0,
+            0
+          ],
+          [
+            2,
+            0,
+            0
+          ],
+          [
+            3,
+            0,
+            0
+          ]
+        ],
+        "partial_charges": [
+          -0.125,
+          0.125,
+          0.25,
+          -0.25
+        ]
+      },
+      "python_data": {
+        "error": "module 'chematic' has no attribute 'from_pdbqt_with_data'"
+      },
+      "python_data_exact": false,
+      "bridge": {
+        "error": "PDBQT output requires coords=[[x, y, z], ...]"
+      },
+      "bridge_preserved": false,
+      "bridge_with_coords_charges": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "4\n6 0 0 0 -0.125\n1 1 0 0 0.125\n1 2 0 0 0.25\n8 3 0 0 -0.25\n",
+        "stderr": "",
+        "data": {
+          "atomic_numbers": [
+            6,
+            1,
+            1,
+            8
+          ],
+          "coords": [
+            [
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              2.0,
+              0.0,
+              0.0
+            ],
+            [
+              3.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "partial_charges": [
+            -0.125,
+            0.125,
+            0.25,
+            -0.25
+          ]
+        }
+      },
+      "openbabel_data_exact": true
+    },
+    {
+      "id": "coordinate_edges",
+      "profile": "fixed-column PDBQT atom records",
+      "expected": {
+        "atomic_numbers": [
+          6,
+          35
+        ],
+        "coords": [
+          [
+            9999.999,
+            -999.999,
+            -0.001
+          ],
+          [
+            -0.125,
+            0.25,
+            2.5
+          ]
+        ],
+        "partial_charges": [
+          99.999,
+          -9.999
+        ]
+      },
+      "python_data": {
+        "error": "module 'chematic' has no attribute 'from_pdbqt_with_data'"
+      },
+      "python_data_exact": false,
+      "bridge": {
+        "error": "PDBQT output requires coords=[[x, y, z], ...]"
+      },
+      "bridge_preserved": false,
+      "bridge_with_coords_charges": [
+        0.0,
+        0.0
+      ],
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "2\n6 9999.9989999999998 -999.99900000000002 -0.001 99.998999999999995\n35 -0.125 0.25 2.5 -9.9990000000000006\n",
+        "stderr": "",
+        "data": {
+          "atomic_numbers": [
+            6,
+            35
+          ],
+          "coords": [
+            [
+              9999.999,
+              -999.999,
+              -0.001
+            ],
+            [
+              -0.125,
+              0.25,
+              2.5
+            ]
+          ],
+          "partial_charges": [
+            99.999,
+            -9.999
+          ]
+        }
+      },
+      "openbabel_data_exact": true
+    },
+    {
+      "id": "crlf_no_final_newline",
+      "profile": "fixed-column PDBQT atom records",
+      "expected": {
+        "atomic_numbers": [
+          7,
+          9
+        ],
+        "coords": [
+          [
+            1.111,
+            2.222,
+            3.333
+          ],
+          [
+            -4.444,
+            5.555,
+            -6.666
+          ]
+        ],
+        "partial_charges": [
+          -0.4,
+          0.4
+        ]
+      },
+      "python_data": {
+        "error": "module 'chematic' has no attribute 'from_pdbqt_with_data'"
+      },
+      "python_data_exact": false,
+      "bridge": {
+        "error": "PDBQT output requires coords=[[x, y, z], ...]"
+      },
+      "bridge_preserved": false,
+      "bridge_with_coords_charges": [
+        0.0,
+        0.0
+      ],
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "2\n7 1.111 2.222 3.3330000000000002 -0.40000000000000002\n9 -4.444 5.5549999999999997 -6.6660000000000004 0.40000000000000002\n",
+        "stderr": "",
+        "data": {
+          "atomic_numbers": [
+            7,
+            9
+          ],
+          "coords": [
+            [
+              1.111,
+              2.222,
+              3.333
+            ],
+            [
+              -4.444,
+              5.555,
+              -6.666
+            ]
+          ],
+          "partial_charges": [
+            -0.4,
+            0.4
+          ]
+        }
+      },
+      "openbabel_data_exact": true
+    }
+  ],
+  "openbabel_probe": {
+    "path": "/private/tmp/chematic-pdbqt-data-openbabel-probe-20261022",
+    "sha256": "c5afaab84e7d6a400a45f934b9432bc54bd35763d84c5a81f34d3a5c2b09eb63",
+    "size_bytes": 50336
+  },
+  "summary": {
+    "cases": 6,
+    "python_data_exact": 0,
+    "bridge_preserved": 0
+  }
+}
