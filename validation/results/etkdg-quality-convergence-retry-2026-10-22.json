@@ -1,0 +1,487 @@
+{
+  "profile": "etkdg_quality_pooled_development_v3",
+  "candidate_base_commit": "d4208b9df9086b25df3e449d5f5ca6f8a32ad406",
+  "candidate_dirty": true,
+  "source_sha256": "97444d23d62bc2786e09ed34f42609871cb2513a6fb76b95156be9f6b782f1b3",
+  "probe_script_sha256": "76dd799b3f3187a7df87d4a72740c68cd987a24e5464bc0413daee3bb1c4ba68",
+  "rust_binary_sha256": "1b5375f00e5adbbd4878c332023047f631a44d2b31764f68dc3a7c4b8bdf4af3",
+  "manifest": "validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_b.json",
+  "manifest_sha256": "ec93ac160aa91c3c4416d57d3000d6e344e0b75cdf5c122211364c7495dce239",
+  "prior_report": "validation/results/etkdg-quality-pooled-2026-10-22.json",
+  "prior_report_sha256": "0b987eb6d2d08748a71682b009b2b29f9ca8b5864ca272c235d7fbdeb9a25685",
+  "selection": "single-fragment non-macrocycles, <=30 heavy atoms, 3-10 RDKit rotatable bonds, MMFF parameters available, no ETKDG V5/V6 coefficients; sort by SHA-256(SMILES), take first 12",
+  "rdkit_version": "2026.09.1",
+  "candidate_budget": "CheMatic quality: 20 + 20 distinct seeds, MMFF94 up to 200 iterations per candidate; if none converges, up to 400 extra iterations for the lowest finite-energy candidate; RDKit: 40 seeds, MMFF94 up to 200 iterations per candidate",
+  "results": [
+    {
+      "name": "chembl_tier_b_0192",
+      "smiles": "CC1(C)[C@H](C(=O)O)N2C(=O)C(C/C=C/C#N)[C@@H]2S1(=O)=O",
+      "declared_stereo_centers": 2,
+      "declared_stereo_double_bonds": 1,
+      "compatibility": {
+        "generated": 20,
+        "converged": 18,
+        "best_energy": -5.352821017135099,
+        "same_coordinate_energy_error": -1.0658141036401503e-14,
+        "best_converged_energy": -5.352821017135099,
+        "tetrahedral_cip_matches_input": true,
+        "double_bond_stereo_matches_input": true
+      },
+      "quality": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -6.341635737437933,
+        "same_coordinate_energy_error": -4.618527782440651e-14,
+        "best_converged_energy": -6.341635737437933,
+        "tetrahedral_cip_matches_input": true,
+        "double_bond_stereo_matches_input": true
+      },
+      "rdkit_40": {
+        "generated": 40,
+        "converged": 40,
+        "best_energy": -6.341635736580034,
+        "best_converged_energy": -6.341635736580034
+      },
+      "quality_minus_rdkit": -8.578986410157086e-10,
+      "quality_minus_compatibility": -0.9888147203028339,
+      "prior_quality_converged": 20,
+      "prior_quality_best_energy": -6.341635737437933,
+      "all_candidate_cip_violations": 0,
+      "all_candidate_double_bond_violations": 0,
+      "all_candidate_max_same_coordinate_energy_error": 4.618527782440651e-14
+    },
+    {
+      "name": "chembl_tier_b_0177",
+      "smiles": "CN1CCN(c2c(F)cc3c(=O)c(C(=O)O)cn(CCF)c3c2F)CC1",
+      "declared_stereo_centers": 0,
+      "declared_stereo_double_bonds": 0,
+      "compatibility": {
+        "generated": 20,
+        "converged": 13,
+        "best_energy": 156.99380229190658,
+        "same_coordinate_energy_error": 2.842170943040401e-14,
+        "best_converged_energy": 156.99380229190658,
+        "tetrahedral_cip_matches_input": true,
+        "double_bond_stereo_matches_input": true
+      },
+      "quality": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 156.99380229190658,
+        "same_coordinate_energy_error": 2.842170943040401e-14,
+        "best_converged_energy": 156.99380229190658,
+        "tetrahedral_cip_matches_input": true,
+        "double_bond_stereo_matches_input": true
+      },
+      "rdkit_40": {
+        "generated": 40,
+        "converged": 30,
+        "best_energy": 156.99380301219094,
+        "best_converged_energy": 156.99380301219094
+      },
+      "quality_minus_rdkit": -7.202843619324995e-07,
+      "quality_minus_compatibility": 0.0,
+      "prior_quality_converged": 20,
+      "prior_quality_best_energy": 156.99380229190658,
+      "all_candidate_cip_violations": 0,
+      "all_candidate_double_bond_violations": 0,
+      "all_candidate_max_same_coordinate_energy_error": 8.526512829121202e-14
+    },
+    {
+      "name": "chembl_tier_b_0051",
+      "smiles": "COc1cc2nc(N3CCN(/C(S)=N/c4ccccc4)CC3)nc(N)c2cc1OC",
+      "declared_stereo_centers": 0,
+      "declared_stereo_double_bonds": 1,
+      "compatibility": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -46.60279431076941,
+        "same_coordinate_energy_error": 4.973799150320701e-14,
+        "best_converged_energy": null,
+        "tetrahedral_cip_matches_input": true,
+        "double_bond_stereo_matches_input": true
+      },
+      "quality": {
+        "generated": 20,
+        "converged": 1,
+        "best_energy": -46.60279431076941,
+        "same_coordinate_energy_error": 4.973799150320701e-14,
+        "best_converged_energy": -43.18404776339172,
+        "tetrahedral_cip_matches_input": true,
+        "double_bond_stereo_matches_input": true
+      },
+      "rdkit_40": {
+        "generated": 40,
+        "converged": 1,
+        "best_energy": -46.609267116186615,
+        "best_converged_energy": -43.184047780128644
+      },
+      "quality_minus_rdkit": 0.006472805417203631,
+      "quality_minus_compatibility": 0.0,
+      "prior_quality_converged": 1,
+      "prior_quality_best_energy": -46.60279431076941,
+      "all_candidate_cip_violations": 0,
+      "all_candidate_double_bond_violations": 0,
+      "all_candidate_max_same_coordinate_energy_error": 9.947598300641403e-14
+    },
+    {
+      "name": "chembl_tier_b_0159",
+      "smiles": "N[C@@H](CCC(=O)Nc1ccc([N+](=O)[O-])cc1)C(=O)O",
+      "declared_stereo_centers": 1,
+      "declared_stereo_double_bonds": 0,
+      "compatibility": {
+        "generated": 20,
+        "converged": 17,
+        "best_energy": 47.99373167251508,
+        "same_coordinate_energy_error": 7.105427357601002e-15,
+        "best_converged_energy": 47.99373167251508,
+        "tetrahedral_cip_matches_input": true,
+        "double_bond_stereo_matches_input": true
+      },
+      "quality": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 47.99373167251508,
+        "same_coordinate_energy_error": 7.105427357601002e-15,
+        "best_converged_energy": 47.99373167251508,
+        "tetrahedral_cip_matches_input": true,
+        "double_bond_stereo_matches_input": true
+      },
+      "rdkit_40": {
+        "generated": 40,
+        "converged": 30,
+        "best_energy": 47.993731658588665,
+        "best_converged_energy": 47.993731658588665
+      },
+      "quality_minus_rdkit": 1.3926417352649878e-08,
+      "quality_minus_compatibility": 0.0,
+      "prior_quality_converged": 20,
+      "prior_quality_best_energy": 47.99373167251508,
+      "all_candidate_cip_violations": 0,
+      "all_candidate_double_bond_violations": 0,
+      "all_candidate_max_same_coordinate_energy_error": 4.973799150320701e-14
+    },
+    {
+      "name": "chembl_tier_b_0174",
+      "smiles": "C[C@]1(Cn2ccnn2)[C@H](C(=O)O)N2C(=O)C[C@H]2S1(=O)=O",
+      "declared_stereo_centers": 3,
+      "declared_stereo_double_bonds": 0,
+      "compatibility": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -60.92106844512175,
+        "same_coordinate_energy_error": 1.4210854715202004e-14,
+        "best_converged_energy": -60.92106844512175,
+        "tetrahedral_cip_matches_input": true,
+        "double_bond_stereo_matches_input": true
+      },
+      "quality": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -60.92106844540237,
+        "same_coordinate_energy_error": 3.552713678800501e-14,
+        "best_converged_energy": -60.92106844540237,
+        "tetrahedral_cip_matches_input": true,
+        "double_bond_stereo_matches_input": true
+      },
+      "rdkit_40": {
+        "generated": 40,
+        "converged": 40,
+        "best_energy": -60.9210684251245,
+        "best_converged_energy": -60.9210684251245
+      },
+      "quality_minus_rdkit": -2.0277866497053765e-08,
+      "quality_minus_compatibility": -2.8062174806109397e-10,
+      "prior_quality_converged": 20,
+      "prior_quality_best_energy": -60.92106844540237,
+      "all_candidate_cip_violations": 0,
+      "all_candidate_double_bond_violations": 0,
+      "all_candidate_max_same_coordinate_energy_error": 5.684341886080802e-14
+    },
+    {
+      "name": "chembl_tier_b_0146",
+      "smiles": "O=C(C1CCCCN1)N1CCN(Cc2ccncc2)CC1",
+      "declared_stereo_centers": 0,
+      "declared_stereo_double_bonds": 0,
+      "compatibility": {
+        "generated": 20,
+        "converged": 14,
+        "best_energy": 97.00111256432542,
+        "same_coordinate_energy_error": -1.4210854715202004e-14,
+        "best_converged_energy": 97.00111256432542,
+        "tetrahedral_cip_matches_input": true,
+        "double_bond_stereo_matches_input": true
+      },
+      "quality": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 95.2462184910576,
+        "same_coordinate_energy_error": -1.4210854715202004e-14,
+        "best_converged_energy": 95.2462184910576,
+        "tetrahedral_cip_matches_input": true,
+        "double_bond_stereo_matches_input": true
+      },
+      "rdkit_40": {
+        "generated": 40,
+        "converged": 26,
+        "best_energy": 94.93815332777828,
+        "best_converged_energy": 94.93815332777828
+      },
+      "quality_minus_rdkit": 0.30806516327932343,
+      "quality_minus_compatibility": -1.7548940732678204,
+      "prior_quality_converged": 20,
+      "prior_quality_best_energy": 95.2462184910576,
+      "all_candidate_cip_violations": 0,
+      "all_candidate_double_bond_violations": 0,
+      "all_candidate_max_same_coordinate_energy_error": 5.684341886080802e-14
+    },
+    {
+      "name": "chembl_tier_b_0126",
+      "smiles": "CC(=O)/C=C/CC1C(=O)N2[C@@H](C(=O)O)C(C)(C)S(=O)(=O)[C@@H]12",
+      "declared_stereo_centers": 2,
+      "declared_stereo_double_bonds": 1,
+      "compatibility": {
+        "generated": 20,
+        "converged": 13,
+        "best_energy": -2.0409996597657063,
+        "same_coordinate_energy_error": 1.4210854715202004e-14,
+        "best_converged_energy": -2.0409996597657063,
+        "tetrahedral_cip_matches_input": true,
+        "double_bond_stereo_matches_input": true
+      },
+      "quality": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -2.8458222922396104,
+        "same_coordinate_energy_error": -7.105427357601002e-15,
+        "best_converged_energy": -2.8458222922396104,
+        "tetrahedral_cip_matches_input": true,
+        "double_bond_stereo_matches_input": true
+      },
+      "rdkit_40": {
+        "generated": 40,
+        "converged": 29,
+        "best_energy": -2.845822292178113,
+        "best_converged_energy": -2.845822292178113
+      },
+      "quality_minus_rdkit": -6.149747378003667e-11,
+      "quality_minus_compatibility": -0.8048226324739041,
+      "prior_quality_converged": 20,
+      "prior_quality_best_energy": -2.8458222922396104,
+      "all_candidate_cip_violations": 0,
+      "all_candidate_double_bond_violations": 0,
+      "all_candidate_max_same_coordinate_energy_error": 3.552713678800501e-14
+    },
+    {
+      "name": "chembl_tier_b_0000",
+      "smiles": "Cc1cc(-n2ncc(=O)[nH]c2=O)ccc1C(=O)c1ccccc1Cl",
+      "declared_stereo_centers": 0,
+      "declared_stereo_double_bonds": 0,
+      "compatibility": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 86.06355241394598,
+        "same_coordinate_energy_error": 0.0,
+        "best_converged_energy": 86.06355241394598,
+        "tetrahedral_cip_matches_input": true,
+        "double_bond_stereo_matches_input": true
+      },
+      "quality": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 86.06355237804905,
+        "same_coordinate_energy_error": 0.0,
+        "best_converged_energy": 86.06355237804905,
+        "tetrahedral_cip_matches_input": true,
+        "double_bond_stereo_matches_input": true
+      },
+      "rdkit_40": {
+        "generated": 40,
+        "converged": 39,
+        "best_energy": 86.06355235713173,
+        "best_converged_energy": 86.06355235713173
+      },
+      "quality_minus_rdkit": 2.0917326537528425e-08,
+      "quality_minus_compatibility": -3.5896931649403996e-08,
+      "prior_quality_converged": 20,
+      "prior_quality_best_energy": 86.06355237804905,
+      "all_candidate_cip_violations": 0,
+      "all_candidate_double_bond_violations": 0,
+      "all_candidate_max_same_coordinate_energy_error": 4.263256414560601e-14
+    },
+    {
+      "name": "chembl_tier_b_0095",
+      "smiles": "O=C(C1CCCCN1)N1CCN(Cc2cccnc2)CC1",
+      "declared_stereo_centers": 0,
+      "declared_stereo_double_bonds": 0,
+      "compatibility": {
+        "generated": 20,
+        "converged": 11,
+        "best_energy": 102.08778521944102,
+        "same_coordinate_energy_error": 1.4210854715202004e-14,
+        "best_converged_energy": 102.59075533730608,
+        "tetrahedral_cip_matches_input": true,
+        "double_bond_stereo_matches_input": true
+      },
+      "quality": {
+        "generated": 20,
+        "converged": 19,
+        "best_energy": 102.08778521944102,
+        "same_coordinate_energy_error": 1.4210854715202004e-14,
+        "best_converged_energy": 102.59075533730608,
+        "tetrahedral_cip_matches_input": true,
+        "double_bond_stereo_matches_input": true
+      },
+      "rdkit_40": {
+        "generated": 40,
+        "converged": 27,
+        "best_energy": 102.07767979429622,
+        "best_converged_energy": 102.5907556638234
+      },
+      "quality_minus_rdkit": 0.010105425144800506,
+      "quality_minus_compatibility": 0.0,
+      "prior_quality_converged": 19,
+      "prior_quality_best_energy": 102.08778521944102,
+      "all_candidate_cip_violations": 0,
+      "all_candidate_double_bond_violations": 0,
+      "all_candidate_max_same_coordinate_energy_error": 5.684341886080802e-14
+    },
+    {
+      "name": "chembl_tier_b_0169",
+      "smiles": "COC(=O)/C=C/CC1C(=O)N2[C@@H](C(=O)O)C(C)(C)S(=O)(=O)[C@H]12",
+      "declared_stereo_centers": 2,
+      "declared_stereo_double_bonds": 1,
+      "compatibility": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -19.722275290823987,
+        "same_coordinate_energy_error": -2.842170943040401e-14,
+        "best_converged_energy": -19.722275290823987,
+        "tetrahedral_cip_matches_input": true,
+        "double_bond_stereo_matches_input": true
+      },
+      "quality": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -19.722275290823987,
+        "same_coordinate_energy_error": -2.842170943040401e-14,
+        "best_converged_energy": -19.722275290823987,
+        "tetrahedral_cip_matches_input": true,
+        "double_bond_stereo_matches_input": true
+      },
+      "rdkit_40": {
+        "generated": 40,
+        "converged": 38,
+        "best_energy": -19.72227529003287,
+        "best_converged_energy": -19.72227529003287
+      },
+      "quality_minus_rdkit": -7.911182819952955e-10,
+      "quality_minus_compatibility": 0.0,
+      "prior_quality_converged": 20,
+      "prior_quality_best_energy": -19.722275290823987,
+      "all_candidate_cip_violations": 0,
+      "all_candidate_double_bond_violations": 0,
+      "all_candidate_max_same_coordinate_energy_error": 6.394884621840902e-14
+    },
+    {
+      "name": "chembl_tier_b_0191",
+      "smiles": "CC1(C)[C@H](C(=O)O)N2C(=O)[C@@H](Cc3cn(-c4ccccc4)nn3)[C@H]2S1(=O)=O",
+      "declared_stereo_centers": 3,
+      "declared_stereo_double_bonds": 0,
+      "compatibility": {
+        "generated": 20,
+        "converged": 6,
+        "best_energy": 2.726637529779932,
+        "same_coordinate_energy_error": 9.592326932761353e-14,
+        "best_converged_energy": 2.726637529779932,
+        "tetrahedral_cip_matches_input": true,
+        "double_bond_stereo_matches_input": true
+      },
+      "quality": {
+        "generated": 20,
+        "converged": 7,
+        "best_energy": 2.7266375293441847,
+        "same_coordinate_energy_error": 6.750155989720952e-14,
+        "best_converged_energy": 2.7266375293441847,
+        "tetrahedral_cip_matches_input": true,
+        "double_bond_stereo_matches_input": true
+      },
+      "rdkit_40": {
+        "generated": 40,
+        "converged": 7,
+        "best_energy": 2.7266375298588095,
+        "best_converged_energy": 2.7266375298588095
+      },
+      "quality_minus_rdkit": -5.146247872289678e-10,
+      "quality_minus_compatibility": -4.3574743813223904e-10,
+      "prior_quality_converged": 7,
+      "prior_quality_best_energy": 2.7266375293441847,
+      "all_candidate_cip_violations": 0,
+      "all_candidate_double_bond_violations": 0,
+      "all_candidate_max_same_coordinate_energy_error": 9.592326932761353e-14
+    },
+    {
+      "name": "chembl_tier_b_0154",
+      "smiles": "COc1cc(N2CCN(c3cc(OC)c(OC)c(OC)c3)CC2)cc(OC)c1OC",
+      "declared_stereo_centers": 0,
+      "declared_stereo_double_bonds": 0,
+      "compatibility": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 201.43251279256356,
+        "same_coordinate_energy_error": 0.0,
+        "best_converged_energy": null,
+        "tetrahedral_cip_matches_input": true,
+        "double_bond_stereo_matches_input": true
+      },
+      "quality": {
+        "generated": 20,
+        "converged": 1,
+        "best_energy": 198.2658221769331,
+        "same_coordinate_energy_error": 2.842170943040401e-14,
+        "best_converged_energy": 198.2658221769331,
+        "tetrahedral_cip_matches_input": true,
+        "double_bond_stereo_matches_input": true
+      },
+      "rdkit_40": {
+        "generated": 40,
+        "converged": 0,
+        "best_energy": 201.43111846790478,
+        "best_converged_energy": null
+      },
+      "quality_minus_rdkit": -3.1652962909716678,
+      "quality_minus_compatibility": -3.1666906156304435,
+      "prior_quality_converged": 0,
+      "prior_quality_best_energy": 200.9037540430765,
+      "all_candidate_cip_violations": 0,
+      "all_candidate_double_bond_violations": 0,
+      "all_candidate_max_same_coordinate_energy_error": 8.526512829121202e-14
+    }
+  ],
+  "summary": {
+    "rows": 12,
+    "quality_improved_vs_compatibility": 4,
+    "quality_regressed_vs_compatibility": 0,
+    "quality_improved_vs_prior_profile": 1,
+    "quality_at_or_below_rdkit": 9,
+    "median_quality_minus_rdkit": -2.880611305045022e-10,
+    "max_quality_minus_rdkit": 0.30806516327932343,
+    "quality_more_converged_than_prior": 1,
+    "quality_fewer_converged_than_prior": 0,
+    "quality_best_energy_regressed_vs_prior": 0,
+    "quality_better_converged_energy_than_rdkit": 0,
+    "quality_converged_when_rdkit_did_not": 1,
+    "tetrahedral_cip_violations": 0,
+    "double_bond_stereo_violations": 0,
+    "all_candidate_cip_violations": 0,
+    "all_candidate_double_bond_violations": 0,
+    "max_all_candidate_same_coordinate_energy_error": 9.947598300641403e-14,
+    "max_same_coordinate_energy_error": 9.592326932761353e-14
+  },
+  "limits": [
+    "The Tier B corpus was used in earlier development and is not an untouched holdout.",
+    "Lowest MMFF94 energy is one quality metric, not experimental conformer accuracy or population.",
+    "This run does not measure elapsed time, memory, conformer diversity, or public release artifacts.",
+    "The optional MMFF retry adds work, so its convergence result is not an equal-compute comparison."
+  ]
+}
