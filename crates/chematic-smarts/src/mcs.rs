@@ -16,6 +16,10 @@ use crate::query::{AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, QueryMole
 mod bounds;
 use bounds::{upper_bound_additional, upper_bound_for_seeds};
 
+#[path = "mcs_frontier.rs"]
+mod frontier;
+use frontier::{extend_frontier_atom, mapped_rows_share_common_bond};
+
 #[cfg(test)]
 #[path = "mcs_comparator_tests.rs"]
 mod comparator_tests;
@@ -514,53 +518,7 @@ fn grow(state: &mut McsState<'_>, mapping: &mut PartialMapping) {
     // scratch_repro_frontier0_only_incompleteness.
     let n0 = frontier[0];
 
-    // Branch 1: include n0. Enumerate tuples through a shared mapped parent,
-    // instead of taking the Cartesian product of broad per-molecule unions.
-    // The latter is complete but spends most of its time constructing tuples
-    // whose edge intersection is empty on ring/chain comparisons.
-    let mapped_parents: Vec<(usize, BondOrder)> = mol0
-        .neighbors(n0)
-        .filter_map(|(neighbor, bond_idx)| {
-            mapping
-                .query_idx_of(0, neighbor)
-                .map(|q| (q, mol0.bond(bond_idx).order))
-        })
-        .collect();
-    let mut seen_tuples = std::collections::HashSet::new();
-    for (parent_q, parent_bond_order) in mapped_parents {
-        let candidates_per_mol = build_frontier_candidates_for_parent(
-            state.mols,
-            mapping,
-            n0,
-            parent_q,
-            parent_bond_order,
-            state.config,
-            &state.ring_sets,
-        );
-
-        for tuple in CartesianProduct::new(&candidates_per_mol) {
-            if state.timed_out || state.resource_limited {
-                return;
-            }
-            if !seen_tuples.insert(tuple.clone()) {
-                continue;
-            }
-
-            // Build the full atom tuple: [n0, tuple[0], tuple[1], ...]
-            let mut atoms: Vec<AtomIdx> = Vec::with_capacity(state.mols.len());
-            atoms.push(n0);
-            atoms.extend_from_slice(&tuple);
-
-            // Keep only edges present (and, when requested, bond-compatible)
-            // in every molecule. MCS is a common non-induced subgraph.
-            let extra_bonds = count_common_new_bonds(state.mols, mapping, n0, &tuple, state.config);
-            debug_assert!(extra_bonds > 0);
-
-            mapping.extend(&atoms, extra_bonds);
-            grow(state, mapping);
-            mapping.retract(&atoms, extra_bonds);
-        }
-    }
+    extend_frontier_atom(state, mapping, n0);
 
     // Branch 2: exclude n0 from this branch and recurse so the next frontier atom
     // gets a turn. Reset on the way back out -- exclusion only applies within this
@@ -570,78 +528,6 @@ fn grow(state: &mut McsState<'_>, mapping: &mut PartialMapping) {
         grow(state, mapping);
         state.excluded[n0.0 as usize] = false;
     }
-}
-
-// ---------------------------------------------------------------------------
-// Frontier candidate generation
-// ---------------------------------------------------------------------------
-
-/// For each molecule i >= 1, collect the atoms that can be paired with `n0` from mol[0]
-/// to extend the mapping.
-///
-/// A candidate atom `ni` in mol[i] is valid if:
-/// - It is not yet mapped.
-/// - It is atom-compatible with `n0`.
-/// - It is bonded to the selected mapped parent in every molecule, with a
-///   compatible bond order when `match_bonds=true`.
-fn build_frontier_candidates_for_parent(
-    mols: &[&Molecule],
-    mapping: &PartialMapping,
-    n0: AtomIdx,
-    parent_q: usize,
-    parent_bond_order: BondOrder,
-    config: &McsConfig,
-    ring_sets: &[RingSet],
-) -> Vec<Vec<AtomIdx>> {
-    let mol0 = mols[0];
-    let atom0 = mol0.atom(n0);
-    let n0_in_ring = !ring_sets.is_empty() && ring_sets[0].contains_atom(n0);
-
-    let mut result: Vec<Vec<AtomIdx>> = Vec::with_capacity(mols.len() - 1);
-
-    for mi in 1..mols.len() {
-        let mol_i = mols[mi];
-        let mut candidates: Vec<AtomIdx> = Vec::new();
-
-        'atom: for (ai, atom_i) in mol_i.atoms() {
-            // Must not be mapped.
-            if mapping.is_mapped(mi, ai) {
-                continue;
-            }
-            // Must be atom-compatible.
-            if !atoms_compatible(
-                atom0,
-                atom_i,
-                &config.atom_compare,
-                config.match_chiral_tag,
-                config.match_charge,
-                config.match_isotope,
-            ) {
-                continue;
-            }
-            // ring_matches_ring_only: ring atoms must match ring atoms only.
-            if config.ring_matches_ring_only {
-                let ai_in_ring = ring_sets[mi].contains_atom(ai);
-                if n0_in_ring != ai_in_ring {
-                    continue;
-                }
-            }
-            let parent_i = mapping.query_to_mol[parent_q][mi];
-            let Some((_bond_idx, bond_entry)) = mol_i.bond_between(ai, parent_i) else {
-                continue 'atom;
-            };
-            if config.match_bonds
-                && !bonds_compatible(parent_bond_order, bond_entry.order, &config.bond_compare)
-            {
-                continue 'atom;
-            }
-            candidates.push(ai);
-        }
-
-        result.push(candidates);
-    }
-
-    result
 }
 
 // ---------------------------------------------------------------------------
@@ -737,38 +623,6 @@ fn normalize_bond(o: BondOrder) -> BondOrder {
 }
 
 // ---------------------------------------------------------------------------
-// Bond counting helper
-// ---------------------------------------------------------------------------
-
-/// Count edges from a proposed new atom that are present in every molecule.
-fn count_common_new_bonds(
-    mols: &[&Molecule],
-    mapping: &PartialMapping,
-    n0: AtomIdx,
-    tuple: &[AtomIdx],
-    config: &McsConfig,
-) -> usize {
-    mapping
-        .query_to_mol
-        .iter()
-        .filter(|row| {
-            let Some((_bond_idx, bond0)) = mols[0].bond_between(n0, row[0]) else {
-                return false;
-            };
-            tuple.iter().enumerate().all(|(offset, &candidate)| {
-                let mi = offset + 1;
-                mols[mi]
-                    .bond_between(candidate, row[mi])
-                    .is_some_and(|(_, bond)| {
-                        !config.match_bonds
-                            || bonds_compatible(bond0.order, bond.order, &config.bond_compare)
-                    })
-            })
-        })
-        .count()
-}
-
-// ---------------------------------------------------------------------------
 // complete_rings_only post-processing
 // ---------------------------------------------------------------------------
 
@@ -852,27 +706,6 @@ fn prune_partial_rings(
         mapping.mol_map = new_mol_map;
         mapping.size = mapping.query_to_mol.len();
     }
-}
-
-fn mapped_rows_share_common_bond(
-    mols: &[&Molecule],
-    mapping: &PartialMapping,
-    q1: usize,
-    q2: usize,
-    config: &McsConfig,
-) -> bool {
-    let row1 = &mapping.query_to_mol[q1];
-    let row2 = &mapping.query_to_mol[q2];
-    let Some((_bond_idx, bond0)) = mols[0].bond_between(row1[0], row2[0]) else {
-        return false;
-    };
-    mols.iter().enumerate().skip(1).all(|(mi, mol)| {
-        mol.bond_between(row1[mi], row2[mi])
-            .is_some_and(|(_, bond)| {
-                !config.match_bonds
-                    || bonds_compatible(bond0.order, bond.order, &config.bond_compare)
-            })
-    })
 }
 
 // ---------------------------------------------------------------------------
