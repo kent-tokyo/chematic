@@ -246,7 +246,8 @@ immutable: opaque references are retained without editing or interpretation.
 
 The strict local profile accepts absent `chemicalJson` or integer version 1,
 atomic numbers, optional formal charges/isotopes/3D coordinates, bond
-indices/orders, `properties.name` and root `partialCharges` datasets. Present arrays must have matching lengths and correct types.
+indices/orders, standard root `name` (or legacy `properties.name`) and root
+`partialCharges` datasets. Present arrays must have matching lengths and correct types.
 Duplicate decoded JSON keys, self/duplicate bonds, dangling indices and
 unsupported orders are rejected. Supported order values are exactly 1, 1.5,
 2, 3 and 4; 4 is an explicit local alias for aromatic bond 1.5. Atom aromaticity
@@ -256,10 +257,20 @@ its permissive behavior; strict validation is additive.
 Root `partialCharges` must be an object of complete finite numeric arrays, one
 value per atom; `properties` must be an object and its optional `name` a string.
 These fields are validated even during same-format retention. The inspection
-API exposes `name` and `partial_charge_datasets`; Rust has corresponding getters.
+API exposes `name`, `name_conflict` and `partial_charge_datasets`; Rust has
+corresponding getters, including `CjsonRecord::has_conflicting_names`.
 Method keys remain source declarations, with no charge calculation or model
 validation. `atoms.partialCharges` remains opaque and is not conflated with the
 root dataset representation.
+
+Root `name` must also be a string. A single name or two identical declarations
+resolve verbatim; conflicting root/legacy names set `name_conflict: true` and
+resolve to `name: null`. Both declarations still survive exact source retention,
+while CJSON → MOL2 refuses even under `allow_loss`. Empty names, boundary
+whitespace and line/section injection remain outside that adapter's title
+profile. MOL2 → CJSON emits the standard root field and a matching legacy alias;
+both are checked on reparse. See the
+[name-preservation development record](benchmarks/2026-10-21-cjson-name-preservation.md).
 
 Unknown fields, including other properties and stereo extensions, are listed
 as sorted JSON Pointer paths in `opaque_fields`. Whole opaque subtrees are
@@ -284,7 +295,7 @@ lossy = chematic.convert_with_report(source, "cjson", "smiles", policy="allow_lo
 Checked CJSON → MOL2 accepts explicit 3D coordinates and at most one declared
 partial-charge dataset. It writes shortest round-trip decimal coordinates and
 charges, reparses the candidate and checks exact f64 bits (including signed
-zero/subnormals) through verified graph correspondence. `properties.name` and
+zero/subnormals) through verified graph correspondence. The resolved name and
 the charge-method label are checked separately on reparse. Missing datasets
 emit `NO_CHARGES` with no partial-charge columns; missing coordinates are never
 filled. Multiple datasets, unrepresentable method tokens and names with

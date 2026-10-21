@@ -12,7 +12,9 @@ for (const input of [source, source.replaceAll("\n", "\r\n")]) {
   assert.equal(record.source, input);
   assert.deepEqual(record.formal_charges, [0, 1, -1, 0]);
   assert.deepEqual(record.isotopes, [13, 15, null, 2]);
-  assert.deepEqual(record.opaque_fields, ["/atoms/coords/2d", "/atoms/elements/symbol", "/atoms/partialCharges", "/name", "/vendor~1a~0b"]);
+  assert.deepEqual(record.opaque_fields, ["/atoms/coords/2d", "/atoms/elements/symbol", "/atoms/partialCharges", "/vendor~1a~0b"]);
+  assert.equal(record.name, "isotope and charge fixture");
+  assert.equal(record.name_conflict, false);
   assert.ok(Object.is(record.coordinates[0][0], -1.4175225513503917));
   assert.ok(Object.is(record.coordinates[0][1], -0));
   assert.equal(record.coordinates[0][2], Number.MIN_VALUE);
@@ -99,4 +101,28 @@ const ionicAfter = JSON.parse(wasm.parse_mol2_record_json(ionicReport.output));
 assert.deepEqual(ionicAfter.formal_charges, [1,-1]);
 assert.deepEqual(ionicAfter.atoms.map(a => a.partial_charge), [0.8,-0.8]);
 assert.equal(JSON.parse(wasm.convert_with_report_json(ionic, "cjson", "mol2", "strict")).output, null);
+for (const [root, legacy] of [["ヘリウム β", null], [null, "legacy"], ["same", "same"]]) {
+  const value = {atoms: {elements: {number: [2]}, coords: {"3d": [0,0,0]}}};
+  if (root !== null) value.name = root;
+  if (legacy !== null) value.properties = {name: legacy};
+  const text = JSON.stringify(value);
+  const expected = root ?? legacy;
+  const record = JSON.parse(wasm.parse_cjson_record_json(text));
+  assert.equal(record.name, expected);
+  assert.equal(record.name_conflict, false);
+  const mol2 = JSON.parse(wasm.convert_with_report_json(text, "cjson", "mol2", "allow_loss")).output;
+  const after = JSON.parse(JSON.parse(wasm.convert_with_report_json(mol2, "mol2", "cjson", "allow_loss")).output);
+  assert.equal(after.name, expected);
+  assert.equal(after.properties.name, expected);
+}
+const conflict = JSON.stringify({atoms: {elements: {number: [2]}, coords: {"3d": [0,0,0]}},
+  name: "root", properties: {name: "legacy"}});
+const conflictRecord = JSON.parse(wasm.parse_cjson_record_json(conflict));
+assert.equal(conflictRecord.name, null);
+assert.equal(conflictRecord.name_conflict, true);
+assert.equal(wasm.roundtrip_cjson_record(conflict), conflict);
+const refusedName = JSON.parse(wasm.convert_with_report_json(conflict, "cjson", "mol2", "allow_loss"));
+assert.equal(refusedName.status, "refused");
+assert.equal(refusedName.output, null);
+assert.deepEqual(refusedName.candidate_atom_mapping, []);
 console.log("CJSON source retention, strict validation, isotopes and checked conversion passed");

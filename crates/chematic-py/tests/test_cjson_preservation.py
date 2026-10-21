@@ -7,6 +7,30 @@ import chematic
 SOURCE = (Path(__file__).resolve().parents[3] / "validation/cjson_preservation/charged.cjson").read_text()
 PARTIAL = (Path(__file__).resolve().parents[3] / "validation/cjson_preservation/partial-charges.cjson").read_text()
 
+@pytest.mark.parametrize("root,legacy", [("ヘリウム β", None), (None, "legacy"), ("same", "same")])
+def test_root_and_legacy_names_survive_both_conversion_directions(root, legacy):
+    # Original synthetic title-only fixture under the project license.
+    value = {"atoms": {"elements": {"number": [2]}, "coords": {"3d": [0,0,0]}}}
+    if root is not None: value["name"] = root
+    if legacy is not None: value["properties"] = {"name": legacy}
+    source = json.dumps(value)
+    expected = root if root is not None else legacy
+    record = json.loads(chematic.parse_cjson_record_json(source))
+    assert record["name"] == expected and record["name_conflict"] is False
+    mol2 = chematic.convert_with_report(source, "cjson", "mol2", policy="allow_loss")["output"]
+    after = json.loads(chematic.convert_with_report(mol2, "mol2", "cjson", policy="allow_loss")["output"])
+    assert after["name"] == after["properties"]["name"] == expected
+
+def test_conflicting_names_are_retained_without_selecting_a_mol2_title():
+    source = json.dumps({"atoms": {"elements": {"number": [2]}, "coords": {"3d": [0,0,0]}},
+                         "name": "root", "properties": {"name": "legacy"}})
+    record = json.loads(chematic.parse_cjson_record_json(source))
+    assert record["name"] is None and record["name_conflict"] is True
+    assert chematic.roundtrip_cjson_record(source) == source
+    report = chematic.convert_with_report(source, "cjson", "mol2", policy="allow_loss")
+    assert report["status"] == "refused" and report["output"] is None
+    assert report["candidate_atom_mapping"] == []
+
 def test_ionic_mol2_formal_charges_are_separate_from_partial_charges():
     # Original synthetic NaCl representation under the project license.
     source = json.dumps({"atoms": {"elements": {"number": [11, 17]},
@@ -29,7 +53,9 @@ def test_exact_record_and_inspection(source):
     assert record["source"] == source
     assert record["formal_charges"] == [0, 1, -1, 0]
     assert record["isotopes"] == [13, 15, None, 2]
-    assert record["opaque_fields"] == ["/atoms/coords/2d", "/atoms/elements/symbol", "/atoms/partialCharges", "/name", "/vendor~1a~0b"]
+    assert record["opaque_fields"] == ["/atoms/coords/2d", "/atoms/elements/symbol", "/atoms/partialCharges", "/vendor~1a~0b"]
+    assert record["name"] == "isotope and charge fixture"
+    assert record["name_conflict"] is False
     assert struct.pack(">d", record["coordinates"][0][0]) == struct.pack(">d", -1.4175225513503917)
     assert struct.pack(">d", record["coordinates"][0][1]) == struct.pack(">d", -0.0)
     assert struct.pack(">d", record["coordinates"][0][2]) == bytes.fromhex("0000000000000001")

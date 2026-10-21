@@ -9,6 +9,12 @@ the same acceptance contract for each new adapter.
 
 ## October 21 formal-charge preservation
 
+The subsequent [name-preservation follow-up](benchmarks/2026-10-21-cjson-name-preservation.md)
+recognizes standard CJSON root names alongside the legacy alias, emits both
+on MOL2 → CJSON, and refuses conflicting declarations without losing the
+immutable source. Its eleven-input development packet records seven preserved
+outputs and four explicit refusals; refusals are not successful coverage.
+
 Checked CJSON → MOL2 now writes signed formal charges as explicit UNITY
 attributes before BOND, separately from partial-charge columns. The shared
 candidate verifier checks exact charges through graph correspondence; isotope

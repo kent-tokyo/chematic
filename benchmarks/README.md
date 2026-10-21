@@ -14,6 +14,7 @@ not a statement about v1.1.8.
 
 | Question | Current record | Boundary |
 |---|---|---|
+| Are standard CJSON names and conflicting declarations handled explicitly? | [CJSON ⇄ MOL2 name preservation](../docs/benchmarks/2026-10-21-cjson-name-preservation.md) | Authored source development packet: seven retained outputs and four explicit refusals. Legacy names count as retained meaning; no independent holdout or broad superiority claim. |
 | Is MCS input-order independent and are incomplete searches explicit? | [MCS non-induced/status follow-up](2026-10-21-mcs-non-induced-order-status.md) | Unreleased source at a pinned commit/wheel. The ring/chain regression is fixed and resource limits are typed; full FMCS parity, a new frozen holdout and broad performance evidence remain open. |
 | Where does source CIP still trail RDKit? | [CIP lazy-preparation audit](2026-10-19-cip-lazy-preparation.md) | 24 balanced blocks; source CIP first-use 1.74× and parse-inclusive 1.62× faster. Standalone CIP/SMILES/SMARTS gaps remain; stress mismatches stay unranked. |
 | What is the broadest cross-platform public-wheel chemistry packet? | [v1.1.3 published artifact packet](2026-10-14-v113-published-artifact-packet.md) | Four exact PyPI wheels; npm/WASM, crates.io, speed, and newer releases are separate. |

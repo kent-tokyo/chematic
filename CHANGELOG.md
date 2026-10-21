@@ -16,6 +16,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- Checked CJSON conversion now preserves standard root molecule names as well
+  as the legacy `properties.name` alias. Conflicting names remain in exact
+  source records but refuse MOL2 conversion instead of selecting a title.
+  MOL2 → CJSON emits and verifies both matching name fields.
+
 - Checked CJSON → MOL2 now retains signed formal charges in explicit UNITY
   attributes, independently of partial charges. Candidate charge verification
   requires exact graph correspondence. UNITY precedes BOND for Open Babel

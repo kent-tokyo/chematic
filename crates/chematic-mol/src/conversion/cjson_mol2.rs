@@ -148,12 +148,13 @@ pub(super) fn convert(
             || method.chars().any(|c| c.is_whitespace() || c.is_control())
             || method.to_ascii_uppercase().contains("@<TRIPOS>")
     });
-    let invalid_name = record.name().is_some_and(|name| {
-        name.is_empty()
-            || name != name.trim()
-            || name.chars().any(char::is_control)
-            || name.to_ascii_uppercase().contains("@<TRIPOS>")
-    });
+    let invalid_name = record.has_conflicting_names()
+        || record.name().is_some_and(|name| {
+            name.is_empty()
+                || name != name.trim()
+                || name.chars().any(char::is_control)
+                || name.to_ascii_uppercase().contains("@<TRIPOS>")
+        });
     let mut refuse = false;
     if sets.len() > 1 || invalid_method {
         note(
@@ -171,7 +172,7 @@ pub(super) fn convert(
             "molecule_name",
             PreservationStatus::Unverified,
             "write",
-            "Source name is empty, has boundary whitespace/control characters or a section marker; this adapter refuses rather than trim or inject MOL2 syntax.",
+            "Root name and legacy properties.name conflict, or the source name is empty, has boundary whitespace/control characters or a section marker. No title is selected or rewritten; this adapter refuses. Exact source retention remains available.",
         );
         refuse = true;
     }
@@ -195,7 +196,7 @@ pub(super) fn convert(
             "molecule_name",
             PreservationStatus::Inferred,
             "write",
-            "Absent properties.name uses the placeholder molecule name chematic.",
+            "Absent root name and legacy properties.name use the placeholder molecule name chematic.",
         );
     }
     let name = record.name().unwrap_or("chematic");
@@ -302,7 +303,7 @@ pub(super) fn convert(
             &mut report,
             "molecule_name",
             after.is_some_and(|after| after.name() == Some(name)),
-            "Reparsed MOL2 molecule name equals source properties.name verbatim; no trimming or placeholder substitution.",
+            "Reparsed MOL2 molecule name equals the unambiguous source root name or legacy properties.name verbatim; no trimming or placeholder substitution.",
         );
     }
     if let Some((method, values)) = partial {
