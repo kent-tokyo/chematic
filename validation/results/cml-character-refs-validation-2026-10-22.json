@@ -135,7 +135,12 @@
     "mkdocs_strict": "passed",
     "format": "passed",
     "product_names": "passed",
-    "refactor_budget": "passed"
+    "refactor_budget": "passed",
+    "rust_mol_main_full": {
+      "passed": 1483,
+      "failed": 0,
+      "summaries": 79
+    }
   },
   "known_unrelated_wasm_failure": {
     "suite": "cross_binding_contract.test.mjs",
@@ -234,6 +239,26 @@
       "path": "validation/results/cml-character-refs-2026-10-22/docs.log.gz",
       "sha256": "894cea8f05a3e55634309b8ee289f2b980d22f5b094ae6b6912efa752ff1bbc7",
       "size_bytes": 1255
+    },
+    {
+      "path": "validation/results/cml-character-refs-2026-10-22/main-focused.log.gz",
+      "sha256": "857fefd2a80a38dc696ad3bca2fecdb2c4c2f1de1ac2f9785e92c66b3e1c3da5",
+      "size_bytes": 940
+    },
+    {
+      "path": "validation/results/cml-character-refs-2026-10-22/main-full.log.gz",
+      "sha256": "4dfa9ce4376bc1d1dec023d65e11fd3652dc49f5aa96ddb2d244e7a0dac16bdd",
+      "size_bytes": 27275
+    },
+    {
+      "path": "validation/results/cml-character-refs-2026-10-22/main-clippy.log.gz",
+      "sha256": "7c59e7cf4527dc2d8fd9b2e76c613ed851d09a724aba978633a6bcce0e28897f",
+      "size_bytes": 181
+    },
+    {
+      "path": "validation/results/cml-character-refs-2026-10-22/main-docs.log.gz",
+      "sha256": "f33ac7e4600c6cc042b137e11786b06db5f22910daa1099f3239bdd1de1f521e",
+      "size_bytes": 1226
     }
   ],
   "boundaries": [
@@ -242,5 +267,7 @@
     "Legacy four-decimal CML writer is unchanged; supplied dyadic coordinates avoid rounding.",
     "Unknown/custom DTD entities remain outside the lightweight scanner profile.",
     "Hosted CI and published-package acceptance remain separate."
-  ]
+  ],
+  "integration_base_revision": "d288f6027d71f21130dd119f7cc7df8d58ab8daf",
+  "integration_note": "CML-only commit rebased independently onto main. Baseline and integration-base CML blobs are identical. Full Rust suite, focused CML tests, Clippy and strict docs rerun after rebase; earlier Python/WASM artifacts identify the pre-rebase source build with the same CML repair."
 }
