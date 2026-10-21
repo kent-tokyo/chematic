@@ -16,6 +16,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- CML 2D coordinate output now retains supplied finite binary64 values instead
+  of rounding to four decimal places, preserving positions through a rewrite.
 - Accurate CIP assignment now reports `oracle_unstable` when replacing a
   wildcard with carbon reverses a distant tetrahedral R/S label, rather than
   returning a confident label for an unspecified atom.

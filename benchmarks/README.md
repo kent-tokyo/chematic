@@ -33,6 +33,11 @@ not a statement about v1.1.8.
 
 ## Recent focused follow-ups
 
+- [CML supplied 2D coordinate precision](../docs/benchmarks/2026-10-22-cml-coordinate-precision.md):
+  eight original drawing layouts; source reader/writer preserves 8/8 within
+  1e-10 Å absolute, versus 2/8 before and 3/8 with Open Babel 3.2.1 defaults.
+  Numeric preservation evidence, not geometry accuracy or toolkit-wide parity.
+
 - [Distinct-seed ETKDG quality profile](2026-10-22-etkdg-quality-seed-budget.md):
   uses the second candidate batch for new seeds when corrected and compatibility
   gradients coincide; 4/12 lower-energy results versus the prior profile, 0
