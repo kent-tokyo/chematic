@@ -35,6 +35,14 @@ fn main() {
         let smiles = row["smiles"].as_str().expect("smiles");
         let molecule =
             chematic_chem::add_hydrogens(&chematic_smiles::parse(smiles).expect("SMILES"));
+        let view = chematic_smiles::rdkit_mol_view(&molecule).expect("RDKit atom view");
+        let torsions = chematic_3d::rdkit_embed::etk::get_experimental_torsions(
+            &view, true, false, true, true, 2,
+        );
+        let high_order_gradient_terms = torsions
+            .exp_torsion_angles
+            .iter()
+            .any(|(_, constants)| constants[4] != 0.0 || constants[5] != 0.0);
         let atoms: Vec<_> = molecule
             .atoms()
             .map(|(_, atom)| atom.element.atomic_number())
@@ -58,6 +66,7 @@ fn main() {
             json!({
                 "name": name,
                 "smiles": smiles,
+                "high_order_gradient_terms": high_order_gradient_terms,
                 "atomic_numbers": atoms,
                 "bonds": bonds,
                 "compatibility": summary(&compatibility),

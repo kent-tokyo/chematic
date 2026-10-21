@@ -60,7 +60,9 @@ def check_graph(source: dict, mol: Chem.Mol) -> None:
     assert rust_bonds == rdkit_bonds, source["name"]
 
 
-def score_coords(mol: Chem.Mol, coords: list[list[float]]) -> tuple[float, dict[int, str]]:
+def score_coords(
+    mol: Chem.Mol, coords: list[list[float]]
+) -> tuple[float, dict[int, str], dict[int, str]]:
     scored = Chem.Mol(mol)
     assert len(coords) == scored.GetNumAtoms()
     conformer = Chem.Conformer(scored.GetNumAtoms())
@@ -80,7 +82,12 @@ def score_coords(mol: Chem.Mol, coords: list[list[float]]) -> tuple[float, dict[
         for atom in scored.GetAtoms()
         if atom.HasProp("_CIPCode")
     }
-    return energy, cip
+    bond_stereo = {
+        bond.GetIdx(): str(bond.GetStereo())
+        for bond in scored.GetBonds()
+        if bond.GetStereo() != Chem.BondStereo.STEREONONE
+    }
+    return energy, cip, bond_stereo
 
 
 def rdkit_40(source: Chem.Mol) -> dict[str, float | int | None]:
@@ -119,6 +126,7 @@ def main() -> None:
     results = []
     for expected_row, rust in zip(selected, rust_rows):
         assert expected_row["name"] == rust["name"]
+        assert rust["high_order_gradient_terms"] is False, rust["name"]
         mol = Chem.AddHs(Chem.MolFromSmiles(rust["smiles"]))
         check_graph(rust, mol)
         input_mol = Chem.MolFromSmiles(rust["smiles"])
@@ -128,18 +136,29 @@ def main() -> None:
             for atom in input_mol.GetAtoms()
             if atom.HasProp("_CIPCode")
         }
+        expected_bond_stereo = {
+            bond.GetIdx(): str(bond.GetStereo())
+            for bond in input_mol.GetBonds()
+            if bond.GetStereo() != Chem.BondStereo.STEREONONE
+        }
         scored = {}
         for arm in ("compatibility", "quality"):
             result = rust[arm]
             assert result["best_energy"] is not None, (rust["name"], arm)
-            independent_energy, cip = score_coords(mol, result["best_coords"])
+            independent_energy, cip, bond_stereo = score_coords(mol, result["best_coords"])
             assert abs(independent_energy - result["best_energy"]) < 1e-6
             scored[arm] = {
                 "generated": result["generated"],
                 "converged": result["converged"],
                 "best_energy": result["best_energy"],
                 "same_coordinate_energy_error": independent_energy - result["best_energy"],
-                "stereo_matches_input": all(cip.get(i) == code for i, code in expected_cip.items()),
+                "tetrahedral_cip_matches_input": all(
+                    cip.get(i) == code for i, code in expected_cip.items()
+                ),
+                "double_bond_stereo_matches_input": all(
+                    bond_stereo.get(i) == stereo
+                    for i, stereo in expected_bond_stereo.items()
+                ),
             }
         oracle = rdkit_40(mol)
         assert oracle["best_energy"] is not None
@@ -147,6 +166,7 @@ def main() -> None:
         results.append({
             **expected_row,
             "declared_stereo_centers": len(expected_cip),
+            "declared_stereo_double_bonds": len(expected_bond_stereo),
             "compatibility": scored["compatibility"],
             "quality": scored["quality"],
             "rdkit_40": oracle,
@@ -172,7 +192,12 @@ def main() -> None:
             "quality_at_or_below_rdkit": sum(delta <= 1e-6 for delta in deltas),
             "median_quality_minus_rdkit": statistics.median(deltas),
             "max_quality_minus_rdkit": max(deltas),
-            "stereo_violations": sum(not row["quality"]["stereo_matches_input"] for row in results),
+            "tetrahedral_cip_violations": sum(
+                not row["quality"]["tetrahedral_cip_matches_input"] for row in results
+            ),
+            "double_bond_stereo_violations": sum(
+                not row["quality"]["double_bond_stereo_matches_input"] for row in results
+            ),
             "max_same_coordinate_energy_error": max(
                 abs(row[arm]["same_coordinate_energy_error"])
                 for row in results for arm in ("compatibility", "quality")
