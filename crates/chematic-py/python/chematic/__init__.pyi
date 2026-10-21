@@ -3339,6 +3339,14 @@ def nucleic_acid_apply_json_command(document_json: str, command_json: str) -> st
     """
     ...
 
+def roundtrip_mol_v3000_source(text: str | bytes) -> str:
+    """Validate one V3000 MOL block and return the exact UTF-8 source.
+
+    Retains coordinate tokens and opaque fields without editing or verification
+    of opaque chemistry/stereo; rejects multiple CTABs and invalid core syntax.
+    """
+    ...
+
 def from_mol_v3000(block: str | bytes) -> Mol:
     """Parse an MDL MOL V3000 block and return a :class:`Mol`.
 

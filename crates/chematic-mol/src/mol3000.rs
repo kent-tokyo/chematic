@@ -24,6 +24,11 @@ use crate::mol2000::{
 /// Prefix that marks every V3000 continuation line.
 const V30_PREFIX: &str = "M  V30 ";
 
+mod source;
+pub use source::{
+    V3000SourceLimits, roundtrip_mol_v3000_source, roundtrip_mol_v3000_source_with_limits,
+};
+
 /// Return a `V3000ParseError` for the given 1-based line number and message.
 #[inline]
 fn v3k_err(line: usize, msg: impl Into<String>) -> MolParseError {
