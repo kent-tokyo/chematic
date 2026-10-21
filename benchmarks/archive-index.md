@@ -7,6 +7,10 @@ package, comparator, corpus, host, runtime and operation.
 
 ## Start here
 
+- [Distinct-seed ETKDG quality profile](2026-10-22-etkdg-quality-seed-budget.md):
+  12-molecule source development comparison with the RDKit 2026.09.1 candidate
+  budget, explicit convergence counts, stereo checks, and remaining deficits.
+
 - [RDKit CIP speed audit](2026-10-19-cip-lazy-preparation.md): complete CIP output retention, all 24 formal blocks and 42 comparisons, with standalone gaps and stress mismatches explicit.
 
 - [COSMolKit rotor and Layered speed audit](2026-10-19-rotor-layered.md): current-source screening, exact old/new outputs, all 24 formal orders and all 72 comparisons; remaining rotor and MQN boundaries are explicit.

@@ -401,9 +401,9 @@ impl Mol {
         .map_err(|error| PyValueError::new_err(error.to_string()))
     }
 
-    /// Optimize both ETKDG sixth-order-gradient modes and retain the complete
-    /// ensemble with the lower finite best MMFF94 energy. This quality mode
-    /// spends roughly twice the embedding and optimization work.
+    /// Compare two ETKDG/MMFF94 ensembles and retain the one with the lower
+    /// finite best energy. The second uses the corrected gradient when relevant;
+    /// otherwise it uses new seeds. This spends roughly twice the candidate work.
     #[pyo3(signature = (num_confs, *, random_seed = 42, max_iterations = 0,
                         max_mmff_iters = 200))]
     fn etkdg_embed_multiple_confs_mmff_best_gradient(
