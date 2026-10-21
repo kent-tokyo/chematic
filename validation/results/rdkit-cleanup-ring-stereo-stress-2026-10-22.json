@@ -1,7 +1,7 @@
 {
   "profile": "source_cleanup_vs_rdkit_2026_09_1",
-  "detail_scope": "cleanup",
-  "source_commit": "3910c49750279f817ffaab42b7360afa2bfe6634",
+  "detail_scope": "all",
+  "source_commit": "1e4cfc659a3e17af6f8c54a368711d6f3550a15f",
   "source_sha256": {
     "crates/chematic-chem/src/standardize.rs": "2a6372fb090eb2bd1c1a4d25f23ca75b4db8ce44802f90f20d433d8581ee6fa2",
     "crates/chematic-chem/src/standardize/reionize.rs": "1065373412a47a3c8496b2ba4d44085855ed1a2c0e290ef98dd44bfa22d03104",
@@ -26,7 +26,7 @@
   "normalize_oracle_errors": [],
   "normalize_classification_counts": {},
   "normalize_support_status_counts": {},
-  "normalize_mismatches": null,
+  "normalize_mismatches": [],
   "exact_rows": 4055,
   "classification_counts": {
     "acid_base_reionization": 3,
@@ -51,7 +51,53 @@
   "reionize_support_status_counts": {
     "representation_only": 5
   },
-  "reionize_mismatches": null,
+  "reionize_mismatches": [
+    {
+      "index": 1432,
+      "input": "CC1=C2OC3=C(C)C(OC(=O)C45CC6CC(CC(C6)C4)C5)=CC(C(=O)N[C@@H]4C(=O)N[C@H](C(C)C)C(=O)N5[CH-]CC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)=C3N=C2C(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)=C(N)C1=O",
+      "rdkit_reionize": "Cc1c2oc3c(C)c(OC(=O)C45CC6CC(CC(C6)C4)C5)cc(C(=O)N[C@@H]4C(=O)N[C@-](C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)c3nc-2c(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c(N)c1=O",
+      "chematic_reionize": "Cc1c2oc3c(C)c(OC(=O)C45CC6CC(CC(C6)C4)C5)cc(C(=O)N[C@@H]4C(=O)N[C-](C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)c3nc-2c(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c(N)c1=O",
+      "source_error": null,
+      "classification": "in_memory_stereo_serialization",
+      "support_status": "representation_only"
+    },
+    {
+      "index": 1878,
+      "input": "O=C(OCCCl)NNC([C@H]([CH-]c1ccccc1)NC(=O)C)=O",
+      "rdkit_reionize": "CC(=O)N[C@-](Cc1ccccc1)C(=O)NNC(=O)OCCCl",
+      "chematic_reionize": "CC(=O)N[C-](Cc1ccccc1)C(=O)NNC(=O)OCCCl",
+      "source_error": null,
+      "classification": "in_memory_stereo_serialization",
+      "support_status": "representation_only"
+    },
+    {
+      "index": 2914,
+      "input": "C1=c(C=CC(OC(NNC([C@@H](NC(=O)C)[CH-]C2[CH:38]=CC=CC=2)=O)=O)=C1)[N+](=O)[O-]",
+      "rdkit_reionize": "CC(=O)N[C@@-](Cc1cccc[cH:38]1)C(=O)NNC(=O)Oc1ccc([N+](=O)[O-])cc1",
+      "chematic_reionize": "CC(=O)N[C-](Cc1cccc[cH:38]1)C(=O)NNC(=O)Oc1ccc([N+](=O)[O-])cc1",
+      "source_error": null,
+      "classification": "in_memory_stereo_serialization",
+      "support_status": "representation_only"
+    },
+    {
+      "index": 3153,
+      "input": "O1[C@H](C(N(C)[C@H]([C@H](OCOC)C[15C](=O)OC[C@@H](C1=O)C)[CH-]C1=CC=CC=C1)=O)C(C)C",
+      "rdkit_reionize": "COCO[C@@H]1C[15C](=O)OC[C@@-](C)C(=O)O[C@@H](C(C)C)C(=O)N(C)[C@H]1Cc1ccccc1",
+      "chematic_reionize": "COCO[C@@H]1C[15C](=O)OC[C-](C)C(=O)O[C@@H](C(C)C)C(=O)N(C)[C@H]1Cc1ccccc1",
+      "source_error": null,
+      "classification": "in_memory_stereo_serialization",
+      "support_status": "representation_only"
+    },
+    {
+      "index": 4023,
+      "input": "[CH2-][C@@H]1C(O[C@@H](C(C)C)C(=O)N([C@@H](CC2=CC=CC=C2)[C@@H](CC(OC1)=O)OCOC)C)=O",
+      "rdkit_reionize": "COCO[C@@H]1CC(=O)OC[C@-](C)C(=O)O[C@@H](C(C)C)C(=O)N(C)[C@H]1Cc1ccccc1",
+      "chematic_reionize": "COCO[C@@H]1CC(=O)OC[C-](C)C(=O)O[C@@H](C(C)C)C(=O)N(C)[C@H]1Cc1ccccc1",
+      "source_error": null,
+      "classification": "in_memory_stereo_serialization",
+      "support_status": "representation_only"
+    }
+  ],
   "rdkit_changed_rows": 254,
   "oracle_nonreparseable_indices": [
     1497,
