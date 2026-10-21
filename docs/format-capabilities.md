@@ -162,7 +162,7 @@ Rust `convert_with_report` / `convert_with_report_with_limits`, Python
 `convert_with_report` (dict) / `convert_with_report_json` (JSON string), WASM
 `convert_with_report_json`, and CLI `convert-with-report` share
 `chematic.conversion-report.v1`. Supported routes are MOL2 → MOL2/SMILES/CJSON
-and CJSON → CJSON/SMILES/MOL2 (`smi` aliases plain SMILES). Existing conversion
+and CJSON → CJSON/SMILES/MOL2, plus CML → CML (`smi` aliases plain SMILES). Existing conversion
 APIs keep their graph/metadata contracts.
 
 ```python
@@ -184,10 +184,26 @@ chematic convert-with-report --input-format mol2 --output-format smiles \
 - `allow_loss` returns parseable candidate output with detected losses and
   uncertainty. A graph mismatch is `unverified`; it cannot claim preservation.
   A candidate that fails to parse is refused even under this policy.
-- `preserve_source` requires MOL2 → MOL2 or CJSON → CJSON. All three policies
+- `preserve_source` requires MOL2 → MOL2, CJSON → CJSON or CML → CML. All three policies
   retain exact source bytes on these routes after bounded structural validation. The scope
   is `exact_source_bytes`; `source_semantics: opaque_retained` explicitly
   excludes interpreted/editable chemical semantics. It is not a graph gate.
+- **CML source profile**: one `molecule` root in the
+  `http://www.xml-cml.org/schema` namespace, UTF-8 text, optional XML 1.0
+  declaration (`UTF-8` or ASCII encoding), no DTD or nested CML molecules.
+  The full source survives, including 2D/3D coordinate spellings, atom IDs,
+  properties, comments, namespaces and unknown extensions. Empty molecules
+  and opaque/uninterpretable chemistry are retained; this validates XML
+  framing, not the CML schema, atom/bond references, numeric chemistry or
+  stereo. `candidate_graph_verified` stays false and mappings stay empty.
+  Collections and CML cross-format projections are unsupported by this route.
+  Existing graph-only conversion APIs keep their previous behavior.
+- CML uses roxmltree 0.20.0 with DTD disabled and a 200,000-node parse budget;
+  element depth is checked against 64 after parsing. The shared
+  `ConversionLimits.mol2` input bytes, line bytes/count and atom/bond element
+  limits also apply. Array members and opaque chemistry are not counted as
+  graph atoms. The source and escaped JSON envelope each have an output-size
+  check; CLI/Python defaults are 16 MiB and WASM uses its existing lower caps.
 - Observations identify a source field group, status, stage and reason in
   source record zero. Coordinate/partial-charge/type/name/substructure/bond
   metadata losses and opaque sections are reported before graph projection.

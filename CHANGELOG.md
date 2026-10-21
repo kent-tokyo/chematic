@@ -16,6 +16,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- Checked CML → CML conversion now retains the exact XML source, including
+  both coordinate sets, properties and unknown extensions, with an explicit
+  opaque-semantics report shared by Rust, CLI, Python and WASM.
 - Accurate CIP assignment now reports `oracle_unstable` when replacing a
   wildcard with carbon reverses a distant tetrahedral R/S label, rather than
   returning a confident label for an unspecified atom.

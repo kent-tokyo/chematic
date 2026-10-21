@@ -33,6 +33,11 @@ not a statement about v1.1.8.
 
 ## Recent focused follow-ups
 
+- [Checked CML source retention](../docs/benchmarks/2026-10-22-cml-source-conversion.md):
+  six original documents, 6/6 declared source-field preservation versus 3/6
+  for Open Babel 3.2.1 defaults and 3/6 with property/metadata output enabled.
+  Exact source retention is opaque; interpreted chemistry is not verified.
+
 - [Distinct-seed ETKDG quality profile](2026-10-22-etkdg-quality-seed-budget.md):
   uses the second candidate batch for new seeds when corrected and compatibility
   gradients coincide; 4/12 lower-energy results versus the prior profile, 0

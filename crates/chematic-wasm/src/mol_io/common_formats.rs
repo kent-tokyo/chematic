@@ -81,7 +81,7 @@ pub fn roundtrip_cjson_record(text: &str) -> Result<String, JsValue> {
         .map_err(|error| JsValue::from_str(&error))
 }
 
-/// Checked MOL2/CJSON conversion using the shared report schema.
+/// Checked MOL2/CJSON/CML conversion using the shared report schema.
 #[wasm_bindgen]
 pub fn convert_with_report_json(
     text: &str,

@@ -51,7 +51,7 @@ impl Default for BatchLimits {
 
 #[derive(Subcommand, Debug)]
 enum Command {
-    /// Emit a checked conversion report (MOL2 or CJSON input).
+    /// Emit a checked conversion report (MOL2, CJSON, or same-format CML input).
     ConvertWithReport {
         #[arg(long)]
         input_format: String,
