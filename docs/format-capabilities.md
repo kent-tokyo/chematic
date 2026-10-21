@@ -291,6 +291,15 @@ boundary whitespace, control characters, empty text or section markers refuse
 even under `allow_loss`. Exact CJSON retention remains available for valid
 records refused by this adapter.
 
+Nonzero CJSON formal charges emit as `UNITY_ATOM_ATTR` charge attributes before
+the BOND section, separately from ATOM partial-charge columns. The existing
+`N.4` spelling for +1 nitrogen is retained. `formal_charges: preserved` requires
+verified graph correspondence after reparsing; isotope loss still prevents
+that claim and exposes no atom mapping. The full report remains lossy and
+`strict` refuses cross-format output. See the
+[indexed charge validation](benchmarks/2026-10-22-cjson-mol2-formal-charges.md)
+for external-reader checks and section-order compatibility limits.
+
 MOL2 atom IDs/names, element-only types and `SMALL` header are generated;
 charged atom rows use placeholder substructure `1 LIG`. Hybridization and
 force-field types are not inferred from chemistry. The sole nonzero formal
