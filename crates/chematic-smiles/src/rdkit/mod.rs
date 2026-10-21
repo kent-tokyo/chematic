@@ -137,6 +137,15 @@ pub fn rdkit_canonical_smiles(mol: &Molecule) -> Result<String, RdkitSmilesError
 /// parse; this function preserves the tag of a fully occupied isolated Cleanup
 /// product. A vacant coordination site needs a separate permutation remap.
 pub fn rdkit_cleanup_canonical_smiles(mol: &Molecule) -> Result<String, RdkitSmilesError> {
+    rdkit_cleanup_smiles(mol, &RdkitSmilesParams::default())
+}
+
+/// Write an already-cleaned molecule with RDKit SMILES options while retaining
+/// the in-memory tag of a fully occupied isolated metal center.
+pub fn rdkit_cleanup_smiles(
+    mol: &Molecule,
+    params: &RdkitSmilesParams,
+) -> Result<String, RdkitSmilesError> {
     let mut model = parse::from_chematic(mol)?;
     let initial_atom_count = model.atoms.len();
     let isolated_tags: Vec<_> = model
@@ -166,7 +175,7 @@ pub fn rdkit_cleanup_canonical_smiles(mol: &Molecule) -> Result<String, RdkitSmi
             model.atoms[idx].chiral_perm = permutation;
         }
     }
-    write::mol_to_smiles_owned(model, &RdkitSmilesParams::default())
+    write::mol_to_smiles_owned(model, params)
 }
 
 /// RDKit's `SmilesWriteParams` as `Chem.MolToSmiles` exposes them

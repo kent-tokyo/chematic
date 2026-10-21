@@ -296,8 +296,10 @@ class Mol:
     def rdkit_smiles(self) -> str:
         """Canonical SMILES exactly as RDKit 2026.03.1 writes it
         (``Chem.MolToSmiles(Chem.MolFromSmiles(s))`` for a molecule read with
-        :func:`from_smiles`). Raises ``ValueError`` for unsupported inputs or
-        molecules RDKit's sanitization rejects; never returns a wrong string."""
+        :func:`from_smiles`). On a Cleanup result, retains the in-memory
+        non-tetrahedral tag of a fully disconnected metal. Raises
+        ``ValueError`` for unsupported inputs or molecules RDKit's
+        sanitization rejects; never returns a wrong string."""
         ...
 
     def rdkit_smiles_with(

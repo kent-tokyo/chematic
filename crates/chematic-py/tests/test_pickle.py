@@ -49,6 +49,13 @@ def test_mol_pickle_is_deterministic_for_property_insertion_order():
     assert pickle.dumps(left, protocol=5) == pickle.dumps(right, protocol=5)
 
 
+def test_cleanup_metal_stereo_survives_pickle():
+    cleaned = chematic.from_smiles("F[Pt@SP1](Cl)(Br)I").cleanup()
+    restored = pickle.loads(pickle.dumps(cleaned, protocol=5))
+    assert restored.rdkit_smiles == cleaned.rdkit_smiles
+    assert restored.rdkit_smiles == "[Br-].[Cl-].[F-].[I-].[Pt@SP1+4]"
+
+
 def test_private_pickle_restore_rejects_malformed_state():
     with pytest.raises(ValueError, match="header|truncated"):
         chematic._restore_mol_pickle(b"not a molecule")

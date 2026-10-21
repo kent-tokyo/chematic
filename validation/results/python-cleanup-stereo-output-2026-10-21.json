@@ -1,0 +1,217 @@
+{
+  "profile": "python_cleanup_vs_rdkit_2026_09_1",
+  "scope": "source-built CPython 3.13 wheels, exact canonical RDKit SMILES on the pinned stress corpus",
+  "baseline_commit": "26043220b3626bfa1c108bb2668d66edcb86ac8c",
+  "corpus": "validation/cosmolkit_comparison/corpora/stress-v1.smi",
+  "corpus_sha256": "879166ab5481cac805ecd2d77f37d628383ec124085b90e2ee1659d55ce76277",
+  "source_rows": 4072,
+  "compatible_rows": 4069,
+  "rdkit_version": "2026.09.1",
+  "wheel_sha256": {
+    "baseline": "1ba83303220ee1e7059cbdaa9dbbb18592601bd3e25e3227ef32284b414a22eb",
+    "candidate": "d94b9f395bd7480e0ff0b970735eec6e3b3a4fb7e35f625305ed8952e52a63fe"
+  },
+  "baseline_exact_rows": 4028,
+  "candidate_exact_rows": 4053,
+  "fixed_indices": [
+    459,
+    460,
+    461,
+    462,
+    463,
+    464,
+    472,
+    473,
+    474,
+    476,
+    479,
+    480,
+    481,
+    482,
+    483,
+    484,
+    485,
+    981,
+    982,
+    985,
+    986,
+    987,
+    988,
+    989,
+    990
+  ],
+  "regressed_indices": [],
+  "residual_classification_counts": {
+    "acid_base_reionization": 3,
+    "canonical_representation": 2,
+    "metal_charge_assignment": 2,
+    "metal_disconnection_policy": 8,
+    "metal_stereo_preservation": 1
+  },
+  "residual_mismatches": [
+    {
+      "sample_index": 403,
+      "input": "C1=CC=CC1[Fe]C1C=CC=C1",
+      "rdkit_input": "C1=C[CH]([Fe][CH]2C=CC=C2)C=C1",
+      "rdkit_cleanup": "C1=CCC=C1.[C-]1=C[CH-]C=C1.[Fe+2]",
+      "chematic_cleanup": "[Fe+2].c1cc[cH-]c1.c1cc[cH-]c1",
+      "chematic_error": null,
+      "classification": "metal_disconnection_policy",
+      "support_status": "not_implemented"
+    },
+    {
+      "sample_index": 475,
+      "input": "F[Pt@SP1](Cl)Br",
+      "rdkit_input": "[F][Pt@SP1]([Cl])[Br]",
+      "rdkit_cleanup": "[Br-].[Cl-].[F-].[Pt@SP2+3]",
+      "chematic_cleanup": "[Br-].[Cl-].[F-].[Pt+3]",
+      "chematic_error": null,
+      "classification": "metal_stereo_preservation",
+      "support_status": "policy_difference"
+    },
+    {
+      "sample_index": 1471,
+      "input": "O[C]1=[Fe]2[C](=CC=C1)CCC(NCCCC1=CC=CC=C1)[CH2]2",
+      "rdkit_input": "O[C]1=[Fe]2[CH2]C(NCCCc3ccccc3)CC[C]2=CC=C1",
+      "rdkit_cleanup": "CC(CCC=CC=[C-][C-2]O)NCCCc1ccccc1.[Fe+3]",
+      "chematic_cleanup": "CC(CCC=[C-]C=C[C-2]O)NCCCc1ccccc1.[Fe+3]",
+      "chematic_error": null,
+      "classification": "metal_charge_assignment",
+      "support_status": "not_implemented"
+    },
+    {
+      "sample_index": 1497,
+      "input": "CC1=CN2C(=N1)N=C1C(=C2[O-])N(C)C=[N+]1C[200O]CCO",
+      "rdkit_input": "Cc1cn2c([O-])c3c(nc2n1)[n+](C[200O]CCO)cn3C",
+      "rdkit_cleanup": "Cc1cn2c(=O)c3c(nc2n1)n(C[200O]CCO)cn3C",
+      "chematic_cleanup": "Cc1cn2c([O-])c3c(nc2n1)[n+](C[200O]CCO)cn3C",
+      "chematic_error": null,
+      "classification": "acid_base_reionization",
+      "support_status": "not_implemented"
+    },
+    {
+      "sample_index": 1630,
+      "input": "OC[CH-]OC[n+]1c2nc3nc(cn3c([O-])c2n(C)c1)[CH]",
+      "rdkit_input": "[CH]c1cn2c([O-])c3c(nc2n1)[n+](CO[CH-]CO)cn3C",
+      "rdkit_cleanup": "[CH]c1cn2c(=O)c3c(nc2n1)n(COCC[O-])cn3C",
+      "chematic_cleanup": "[CH]c1cn2c([O-])c3c(nc2n1)[n+](COCC[O-])cn3C",
+      "chematic_error": null,
+      "classification": "acid_base_reionization",
+      "support_status": "not_implemented"
+    },
+    {
+      "sample_index": 1686,
+      "input": "Cc1c[c]([Pt])c(Oc2ccc(O)cc2CC(=O)O)s(Cl)c1",
+      "rdkit_input": "CC1=C[C]([Pt])=C(Oc2ccc(O)cc2CC(=O)O)S(Cl)=C1",
+      "rdkit_cleanup": "CC1=CC=C(Oc2ccc(O)cc2CC(=O)O)S(Cl)=C1.[Pt]",
+      "chematic_cleanup": "CC1=C[C]([Pt])=C(Oc2ccc(O)cc2CC(=O)O)S(Cl)=C1",
+      "chematic_error": null,
+      "classification": "metal_disconnection_policy",
+      "support_status": "not_implemented"
+    },
+    {
+      "sample_index": 2133,
+      "input": "C1CC2CN3CCc4cc5c(OCO5)cc4[C@@H]3C[C@H]2([Zn])C[C@@H]1O",
+      "rdkit_input": "O[C@@H]1CCC2CN3CCc4cc5c(cc4[C@@H]3C[C@H]2(->[Zn])C1)OCO5",
+      "rdkit_cleanup": "O[C@@H]1CCC2CN3CCc4cc5c(cc4[C@@H]3C[C@@H]2C1)OCO5.[Zn]",
+      "chematic_cleanup": "O[C@@H]1CCC2CN3CCc4cc5c(cc4[C@@H]3C[C@H]2C1)OCO5.[Zn]",
+      "chematic_error": null,
+      "classification": "canonical_representation",
+      "support_status": "representation_only"
+    },
+    {
+      "sample_index": 2478,
+      "input": "ClC1=CC=C(C2=CC3=CC=CC=C3C3=NC[CH2][Li][N]23)C=C1",
+      "rdkit_input": "Clc1ccc(C2=Cc3ccccc3C3=NC[CH2][Li][N]23)cc1",
+      "rdkit_cleanup": "[Li+][CH2]CN=C1[N-]C(c2ccc(Cl)cc2)=Cc2ccccc21",
+      "chematic_cleanup": "[Li+][CH2]CN=c1[n-]c(-c2ccc(Cl)cc2)cc2ccccc12",
+      "chematic_error": null,
+      "classification": "canonical_representation",
+      "support_status": "representation_only"
+    },
+    {
+      "sample_index": 2602,
+      "input": "O=C(O)[C@H]1C[C@@H](C/C=C/[P](=O)(O)[Fe])CCN1",
+      "rdkit_input": "O=C(O)[C@H]1C[C@@H](C/C=C/[P](=O)(O)[Fe])CCN1",
+      "rdkit_cleanup": "O=C(O)[C@H]1C[C@@H](C/C=C/P(=O)O)CCN1.[Fe]",
+      "chematic_cleanup": "O=C(O)[C@H]1C[C@@H](C/C=C/[P](=O)O)CCN1.[Fe]",
+      "chematic_error": null,
+      "classification": "metal_disconnection_policy",
+      "support_status": "not_implemented"
+    },
+    {
+      "sample_index": 2677,
+      "input": "Cc1:C:n2c([O-])c3c(nc2n1)[n+](COCCO)cn3C",
+      "rdkit_input": "Cc1cn2c([O-])c3c(nc2n1)[n+](COCCO)cn3C",
+      "rdkit_cleanup": "Cc1cn2c(=O)c3c(nc2n1)n(COCCO)cn3C",
+      "chematic_cleanup": "Cc1cn2c([O-])c3c(nc2n1)[n+](COCCO)cn3C",
+      "chematic_error": null,
+      "classification": "acid_base_reionization",
+      "support_status": "not_implemented"
+    },
+    {
+      "sample_index": 2787,
+      "input": "COC1=CC2=[C](C=C1)[Zn]([CH3])[C](C(=O)NC1=NNN=N1)=C2OC(C)C",
+      "rdkit_input": "COc1cc[c]2c(c1)C(OC(C)C)=[C](C(=O)Nc1nn[nH]n1)[Zn]2[CH3]",
+      "rdkit_cleanup": "COc1cc[c]([Zn+])c(C(=CC(=O)Nc2nn[nH]n2)OC(C)C)c1.[CH3-]",
+      "chematic_cleanup": "C.COc1cc[c]([Zn+])c(C(=[C-]C(=O)Nc2nn[nH]n2)OC(C)C)c1",
+      "chematic_error": null,
+      "classification": "metal_disconnection_policy",
+      "support_status": "not_implemented"
+    },
+    {
+      "sample_index": 3078,
+      "input": "COc1cccc2c1C[C]([Zn]([CH3])[CH2]C)CC2.c1ccccc1",
+      "rdkit_input": "C[CH2][Zn]([CH3])[C]1CCc2cccc(OC)c2C1.c1ccccc1",
+      "rdkit_cleanup": "C.CC.COc1cccc2c1[CH-][C]C[CH-]2.[Zn+2].c1ccccc1",
+      "chematic_cleanup": "C.CC.COc1cccc2c1[CH-][C]C[CH-]2.[Zn+3].c1ccccc1",
+      "chematic_error": null,
+      "classification": "metal_charge_assignment",
+      "support_status": "not_implemented"
+    },
+    {
+      "sample_index": 3154,
+      "input": "CC1=C(CCOC2=CC=C(C[C]3([Zn])OC(=O)NC3=O)C=C2)N=C(C2=C[C+]=CO2)O1",
+      "rdkit_input": "Cc1oc(C2=C[C+]=CO2)nc1CCOc1ccc(C[C]2([Zn])OC(=O)NC2=O)cc1",
+      "rdkit_cleanup": "Cc1oc(C2=C[C+]=CO2)nc1[CH-]COc1ccc(CC2OC(=O)NC2=O)cc1.[Zn+]",
+      "chematic_cleanup": "Cc1oc(C2=C[C+]=CO2)nc1CCOc1ccc(C[c-]2oc(=O)[nH]c2=O)cc1.[Zn+]",
+      "chematic_error": null,
+      "classification": "metal_disconnection_policy",
+      "support_status": "not_implemented"
+    },
+    {
+      "sample_index": 3238,
+      "input": "O=[C](O)[Li]1[c](-c2ccc3c(c2)OCO3)[c]2cc(OCc3ccccc3)c[cH][Na]2[n]1Cc1ccc2c(c1)OCO2",
+      "rdkit_input": "O=[C](O)[Li]1[C](c2ccc3c(c2)OCO3)=[C]2C=C(OCc3ccccc3)C=[CH][Na]2[N]1Cc1ccc2c(c1)OCO2",
+      "rdkit_cleanup": "O=[C](O)[Li+][C](=[C]1C=C(OCc2ccccc2)C=[CH][Na+]1)c1ccc2c(c1)OCO2.[N-2]Cc1ccc2c(c1)OCO2",
+      "chematic_cleanup": "O=[C](O)[Li]1[C](c2ccc3c(c2)OCO3)=[C]2C=C(OCc3ccccc3)C=[CH][Na]2[N]1Cc1ccc2c(c1)OCO2",
+      "chematic_error": null,
+      "classification": "metal_disconnection_policy",
+      "support_status": "not_implemented"
+    },
+    {
+      "sample_index": 3501,
+      "input": "CCN(CC)[CH2][Fe]1=[CH]C(NC2=C3C=CC(Cl)=CC3=NC=C2)=C(F)C(F)=[C]1O",
+      "rdkit_input": "CCN(CC)[CH2][Fe]1=[CH]C(Nc2ccnc3cc(Cl)ccc23)=C(F)C(F)=[C]1O",
+      "rdkit_cleanup": "[CH-2]C(Nc1ccnc2cc(Cl)ccc12)=C(F)C(F)=CO.[CH2-]N(CC)CC.[Fe+3]",
+      "chematic_cleanup": "CCN(C)CC.[CH-2]C(Nc1ccnc2cc(Cl)ccc12)=C(F)C(F)=[C-]O.[Fe+3]",
+      "chematic_error": null,
+      "classification": "metal_disconnection_policy",
+      "support_status": "not_implemented"
+    },
+    {
+      "sample_index": 3737,
+      "input": "N(CCCN(C)CCCNC(C1C2C(C=C(Cl)C=1)=NC1C(=CC=CC=1)N=2)=O)C(C1C2[C](=[Zn][C]3=CC=CC=C3N=2)C=C(Cl)C=1)=O",
+      "rdkit_input": "CN(CCCNC(=O)c1cc(Cl)c[c]2c1=Nc1cccc[c]1[Zn]=2)CCCNC(=O)c1cc(Cl)cc2nc3ccccc3nc12",
+      "rdkit_cleanup": "CN(CCCNC(=O)c1cc(Cl)c[c]2c1=Nc1cccc[c]1[Zn]=2)CCCNC(=O)c1cc(Cl)cc2nc3ccccc3nc12",
+      "chematic_cleanup": "CN(CCCNC(=O)c1cc(Cl)c[c-2]c1=Nc1cccc[c]1[Zn+2])CCCNC(=O)c1cc(Cl)cc2nc3ccccc3nc12",
+      "chematic_error": null,
+      "classification": "metal_disconnection_policy",
+      "support_status": "not_implemented"
+    }
+  ],
+  "limits": [
+    "The result is a source-wheel comparison, not a published package result.",
+    "Sixteen Rust core Cleanup differences remain, including a vacant-site metal stereo policy difference."
+  ]
+}
