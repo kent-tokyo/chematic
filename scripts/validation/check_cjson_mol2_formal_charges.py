@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Authored CJSON → MOL2 charge development packet, never a holdout or ranking.
 
-Run with python3 -m scripts.check_cjson_mol2_formal_charges --probe BINARY
+Run with python3 -m scripts.validation.check_cjson_mol2_formal_charges --probe BINARY
 --obabel /opt/homebrew/bin/obabel --output NEW.json. The probe is the
 chematic-mol cjson_mol2_report example. Both commands receive identical bytes.
 """

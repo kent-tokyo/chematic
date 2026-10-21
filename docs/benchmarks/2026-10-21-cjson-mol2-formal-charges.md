@@ -68,7 +68,7 @@ signed zero, one-ULP differences and malformed UNITY/SDF references.
 ```sh
 cargo test --locked -p chematic-mol --test cjson_mol2_conversion
 cargo build --locked -p chematic-mol --example cjson_mol2_report
-python3 -m scripts.check_cjson_mol2_formal_charges \
+python3 -m scripts.validation.check_cjson_mol2_formal_charges \
   --probe target/debug/examples/cjson_mol2_report \
   --obabel /opt/homebrew/bin/obabel --output /tmp/cjson-mol2-charge-new.json
 python3 -m pytest -q scripts/tests/test_cjson_mol2_formal_charges.py \

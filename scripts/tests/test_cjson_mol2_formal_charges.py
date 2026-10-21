@@ -1,7 +1,7 @@
 import copy
 import unittest
 
-from scripts.check_cjson_mol2_formal_charges import (
+from scripts.validation.check_cjson_mol2_formal_charges import (
     evaluate, mol2_snapshot, packet, same_bits, sdf_graph,
 )
 
