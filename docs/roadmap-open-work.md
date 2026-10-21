@@ -19,6 +19,11 @@ dated evidence belongs in the
 
 ## Chemistry correctness
 
+- **MCS:** the source candidate fixes the v1.2.0 ring/chain input-order
+  regression and exposes native search limits distinctly from timeouts across
+  Python and WASM. Full FMCS feature/output parity, generalized SMARTS output,
+  the existing explicit-H policy difference and a newly selected independent
+  holdout remain open.
 - **Standardization:** current source matches RDKit 2026.09.1 on Normalize
   4,069/4,069, Cleanup 4,053/4,069 and Reionize 4,064/4,069 rows. Prioritize
   the remaining metal disconnection/charge/bond/stereo rows and the five
@@ -57,7 +62,9 @@ regression tests; closure does not broaden the supported domain.
   and strict pair-distance coordinates 4/96.
 - Treat those inspected rows as historical evaluation data. Use newly selected
   development rows for MCS and multi-conformer improvements; never rewrite the
-  frozen score.
+  frozen score. The current MCS candidate was diagnosed against these inspected
+  rows only after implementation, so its 34/64 exact rows and five typed
+  resource limits are not a new sealed score.
 - Retain typing, energy, gradient, convergence, stereo, clash, conformer
   quality, time and memory. Add alternating blocks, a second host, exact
   public artifacts and unused quality data before general 3D claims.

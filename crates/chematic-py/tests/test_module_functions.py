@@ -532,6 +532,29 @@ def test_find_mcs_checked_none_result_shape():
     assert isinstance(was_timed_out, bool)
 
 
+def test_find_mcs_is_input_order_independent_for_ring_and_chain():
+    ring = chematic.from_smiles("C1CC1")
+    chain = chematic.from_smiles("CCC")
+
+    ring_first = chematic.find_mcs([ring, chain])
+    chain_first = chematic.find_mcs([chain, ring])
+
+    assert ring_first is not None and ring_first.heavy_atoms == 3
+    assert chain_first is not None and chain_first.heavy_atoms == 3
+
+
+def test_find_mcs_checked_reports_resource_limit_as_typed_error():
+    m1 = chematic.from_smiles("CCC")
+    m2 = chematic.from_smiles("CCC")
+
+    with pytest.raises(chematic.ChematicInputError) as caught:
+        chematic.find_mcs_checked([m1, m2], max_search_nodes=0)
+
+    assert caught.value.category == "resource_limit"
+    assert caught.value.code == "mcs_resource_limit"
+    assert caught.value.format == "mcs"
+
+
 # ---------------------------------------------------------------------------
 # B7: Reaction SMARTS matching
 # ---------------------------------------------------------------------------

@@ -119,7 +119,8 @@ resource-limit failures are typed refusals; a combination above 1,024
 accepted matches fails closed rather than returning partial products. This
 SMILES-level API does not yet expose atom origins or template-map identities.
 WASM MCS configuration JSON is also limited to the 1 MiB binding input
-boundary before deserialization.
+boundary before deserialization. Its result distinguishes `wasTimedOut` from
+`wasResourceLimited`; `maxSearchNodes` can set an explicit search budget.
 WASM R-group decomposition applies the same 1 MiB input limit to its
 `core_smarts` query before compilation.
 WASM MMP pair output is capped at 1,024 pairs before JSON materialization;

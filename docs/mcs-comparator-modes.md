@@ -68,12 +68,20 @@ compatibility checks still enforce them during matching. Search-node and time
 limits remain in place. Searches allowing more atom pairings may explore more
 branches; this change makes no performance claim.
 
+The MCS topology is a common non-induced subgraph: an extra closure bond in one
+input is omitted when it is absent from another input. Thus `C1CC1` and `CCC`
+produce the same three-atom, two-bond MCS in either input order.
+
 The Python return remains a concrete `Mol` projected from the first input side.
 It is not a generalized SMARTS query encoding every permitted atom/bond choice
 and must not be assumed to match every input after reparsing its SMILES. This
 change validates MCS **size/counts**, not generalized query output, atom mappings,
-canonical winners, or full RDKit FMCS equivalence. The existing checked boolean
-reports timeouts; it does not report the native Rust resource-limit outcome.
+canonical winners, or full RDKit FMCS equivalence. The checked boolean reports
+deadline timeouts. A native input-size or search-node limit raises typed
+`ChematicInputError(category="resource_limit", code="mcs_resource_limit")`, so
+an incomplete search cannot be mistaken for an exhaustive
+`was_timed_out=False` result. `max_search_nodes` can be set explicitly for
+bounded service use.
 
 The Rust comparison modes are `chematic_smarts::AtomCompare` and `BondCompare`.
 `find_mcs_with_config_checked` retains the separate `McsOutcome` variants for
