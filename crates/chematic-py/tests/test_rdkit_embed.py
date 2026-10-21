@@ -139,6 +139,18 @@ def test_rdkit_embed_multiple_confs_mmff_matches_individual_optimizer():
     assert optimized[0][2] == coords
 
 
+def test_etkdg_best_gradient_quality_mode_exposes_bounded_energy():
+    mol = chematic.from_smiles("CS(=O)(=O)NCCF").add_hydrogens()
+    compatibility = mol.rdkit_embed_multiple_confs_mmff(20)
+    selected = mol.etkdg_embed_multiple_confs_mmff_best_gradient(20)
+    assert len(selected) == len(compatibility) == 20
+    assert all(status == 0 for status, _, _ in selected)
+    assert min(energy for _, energy, _ in selected) < (
+        min(energy for _, energy, _ in compatibility) - 0.5
+    )
+    assert mol.etkdg_embed_multiple_confs_mmff_best_gradient(0) == []
+
+
 def test_rdkit_embed_multiple_confs_mmff_diagnostics_preserve_results():
     mol = chematic.from_smiles("CCCO").add_hydrogens()
     compact = mol.rdkit_embed_multiple_confs_mmff(4, max_mmff_iters=2)
