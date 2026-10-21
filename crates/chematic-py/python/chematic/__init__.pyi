@@ -5463,7 +5463,14 @@ def convert_format(
     charges: Optional[list[float]] = None,
     name: str = "LIG",
     comment: str = "",
-) -> str: ...
+) -> str:
+    """Convert formats; same-format MOL2/CJSON validate and retain exact source.
+
+    Coordinate, charge, name and comment overrides are refused on those paths.
+    CJSON source retention validates the immutable local record profile;
+    opaque fields are retained without interpreting their chemistry.
+    """
+    ...
 
 def descriptors_df(smiles: Iterable[str]) -> Any:
     """Compute 55+ descriptors for a list of SMILES and return a DataFrame.
