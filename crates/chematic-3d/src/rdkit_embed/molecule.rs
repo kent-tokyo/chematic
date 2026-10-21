@@ -455,9 +455,11 @@ pub fn etkdg_embed_multiple_confs_mmff_corrected(
 /// and exact sixth-order-gradient ensembles when the molecule has a fifth- or
 /// sixth-order torsion coefficient. Otherwise both gradient modes are identical,
 /// so the second ensemble uses the next `num_confs` seeds instead of repeating
-/// the same candidates. Return the complete ensemble with the lower finite best
-/// energy. At most `num_confs` conformers are returned in seed order. The profile
-/// spends roughly twice the embedding and MMFF work of the compatibility API.
+/// the same candidates. Keep the lowest finite-energy candidate across both
+/// ensembles, then fill the remaining slots with converged candidates before
+/// unfinished ones, ordered by energy. At most `num_confs` conformers are
+/// returned. The profile spends roughly twice the embedding and MMFF work of
+/// the compatibility API.
 pub fn etkdg_embed_multiple_confs_mmff_best_gradient(
     mh: &Molecule,
     num_confs: usize,
@@ -503,21 +505,47 @@ pub fn etkdg_embed_multiple_confs_mmff_best_gradient(
         Err(_) if !gradient_differs => return Ok(compatibility),
         Err(error) => return Err(error),
     };
-    let best_energy = |ensemble: &[RdkitMmffConformer]| {
-        ensemble
-            .iter()
-            .map(|candidate| candidate.energy)
-            .filter(|energy| energy.is_finite())
-            .min_by(f64::total_cmp)
-    };
-    if best_energy(&alternative).is_some_and(|alternative_best| {
-        best_energy(&compatibility)
-            .is_none_or(|compatibility_best| alternative_best < compatibility_best)
-    }) {
-        Ok(alternative)
-    } else {
-        Ok(compatibility)
+    Ok(select_quality_candidates(
+        compatibility,
+        alternative,
+        num_confs,
+    ))
+}
+
+fn select_quality_candidates(
+    compatibility: Vec<RdkitMmffConformer>,
+    alternative: Vec<RdkitMmffConformer>,
+    limit: usize,
+) -> Vec<RdkitMmffConformer> {
+    if limit == 0 {
+        return Vec::new();
     }
+    let mut candidates = compatibility;
+    candidates.extend(alternative);
+    let Some(best_index) = candidates
+        .iter()
+        .enumerate()
+        .filter(|(_, candidate)| candidate.energy.is_finite())
+        .min_by(|(_, left), (_, right)| left.energy.total_cmp(&right.energy))
+        .map(|(index, _)| index)
+    else {
+        candidates.truncate(limit);
+        return candidates;
+    };
+    let best = candidates.remove(best_index);
+    // Stable sorting keeps seed order for exact ties. A candidate stopped at
+    // the iteration limit may be useful, but a converged geometry is a more
+    // reliable member of the returned ensemble.
+    candidates.sort_by(|left, right| {
+        (!left.energy.is_finite())
+            .cmp(&!right.energy.is_finite())
+            .then_with(|| (left.status != 0).cmp(&(right.status != 0)))
+            .then_with(|| left.energy.total_cmp(&right.energy))
+    });
+    let mut selected = Vec::with_capacity(limit.min(candidates.len() + 1));
+    selected.push(best);
+    selected.extend(candidates.into_iter().take(limit.saturating_sub(1)));
+    selected
 }
 
 fn corrected_torsion_gradient_can_differ(prepared: &[PreparedFragment]) -> bool {
@@ -1169,15 +1197,46 @@ mod corrected_ensemble_tests {
         };
         assert_eq!(selected.len(), 4);
         assert_eq!(best(&selected), best(&first).min(best(&next)));
-        assert!(
+        assert!(selected.iter().all(|chosen| {
+            first
+                .iter()
+                .chain(&next)
+                .any(|original| chosen.coords == original.coords)
+        }));
+    }
+
+    #[test]
+    fn quality_pool_retains_best_energy_and_converged_candidates_from_both_batches() {
+        let candidate = |energy, status, marker| RdkitMmffConformer {
+            coords: vec![[marker, 0.0, 0.0]],
+            status,
+            energy,
+        };
+        let compatibility = vec![
+            candidate(-8.0, 0, 1.0),
+            candidate(-7.0, 0, 2.0),
+            candidate(-6.0, 1, 3.0),
+        ];
+        let alternative = vec![
+            candidate(-10.0, 1, 4.0),
+            candidate(-9.0, 1, 5.0),
+            candidate(-5.0, 1, 6.0),
+        ];
+        let selected = select_quality_candidates(compatibility, alternative, 3);
+        assert_eq!(selected.len(), 3);
+        assert_eq!(
             selected
                 .iter()
-                .zip(&first)
-                .all(|(chosen, original)| chosen.coords == original.coords)
-                || selected
-                    .iter()
-                    .zip(&next)
-                    .all(|(chosen, original)| chosen.coords == original.coords)
+                .map(|candidate| candidate.energy)
+                .collect::<Vec<_>>(),
+            vec![-10.0, -8.0, -7.0]
+        );
+        assert_eq!(
+            selected
+                .iter()
+                .filter(|candidate| candidate.status == 0)
+                .count(),
+            2
         );
     }
 
