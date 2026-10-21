@@ -25,9 +25,10 @@ dated evidence belongs in the
   the existing explicit-H policy difference and a newly selected independent
   holdout remain open.
 - **Standardization:** current source matches RDKit 2026.09.1 on Normalize
-  4,065/4,069, Cleanup 3,933/4,069 and Reionize 3,150/4,069 rows. Prioritize
-  the remaining bounded acid/base and metal disconnection/charge/bond/stereo
-  rows; keep policy and representation differences explicit.
+  4,069/4,069, Cleanup 4,053/4,069 and Reionize 4,064/4,069 rows. Prioritize
+  the remaining metal disconnection/charge/bond/stereo rows and the five
+  Reionize in-memory stereo serialization differences. Keep representation
+  differences outside exact-output matches.
 - **CTfile:** one chematic readback failure and ten stereo-only rows remain;
   16 RDKit oracle failures stay outside the chematic failure count.
 - **Reaction/SMARTS:** retain the 80 exact reaction rows plus three jointly

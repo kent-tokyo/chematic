@@ -3060,7 +3060,8 @@ def nearest_neighbors_from_fp(
     More efficient than :func:`top_k_similar_fp` when ``db_fps`` is reused
     across multiple queries (fingerprints computed only once).
 
-    Returns list of ``(index, tanimoto_score)`` tuples, descending by score.
+    Returns up to ``k`` ``(index, tanimoto_score)`` tuples, descending by score
+    and ascending by index for ties. Zero-score entries are included.
     Two all-zero fingerprints have similarity 1.0.
 
     Raises:

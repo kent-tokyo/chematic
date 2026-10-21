@@ -1,4 +1,4 @@
-//! Bounded acid-priority reionization without independent ionization.
+//! RDKit-profile reionization with the same ordered acid/base catalog as Cleanup.
 
 use chematic_core::{AtomIdx, BondOrder, Molecule, implicit_hcount};
 
@@ -25,28 +25,6 @@ fn oxygen_acid_priority(mol: &Molecule, oxygen: AtomIdx) -> Option<u8> {
         6 if double_oxygens >= 1 => Some(3),  // carboxylic acid
         6 if mol.atom(neighbor).aromatic => Some(2),
         6 => Some(1), // alcohol
-        _ => None,
-    }
-}
-
-fn ionized_priority(mol: &Molecule, idx: AtomIdx) -> Option<u8> {
-    let atom = mol.atom(idx);
-    if atom.charge != -1 {
-        return None;
-    }
-    match atom.element.atomic_number() {
-        8 if atom.hydrogen_count.unwrap_or(0) == 0 => oxygen_acid_priority(mol, idx),
-        6 if !atom.aromatic
-            && matches!(
-                (mol.degree(idx), atom.hydrogen_count),
-                (0, Some(3)) | (1, Some(2))
-            )
-            && mol
-                .neighbors(idx)
-                .all(|(_, bond)| mol.bond(bond).order == BondOrder::Single) =>
-        {
-            Some(0)
-        }
         _ => None,
     }
 }
@@ -109,36 +87,7 @@ pub(super) fn reionize(mol: &Molecule) -> Molecule {
         }
     }
 
-    let mol = &corrected;
-    let anions = mol
-        .atoms()
-        .filter_map(|(idx, atom)| (atom.charge < 0).then_some(idx))
-        .collect::<Vec<_>>();
-    let [anion] = anions.as_slice() else {
-        return clone_molecule(mol);
-    };
-    let Some(anion_priority) = ionized_priority(mol, *anion) else {
-        return clone_molecule(mol);
-    };
-
-    let Some(donor) = strongest_donor(mol, anion_priority) else {
-        return clone_molecule(mol);
-    };
-
-    let mut output = clone_molecule(mol);
-    output.set_charge(donor, -1);
-    output.set_hydrogen_count(donor, Some(0));
-    output.set_charge(*anion, 0);
-    output.set_hydrogen_count(
-        *anion,
-        Some(
-            mol.atom(*anion)
-                .hydrogen_count
-                .unwrap_or(0)
-                .saturating_add(1),
-        ),
-    );
-    output
+    super::cleanup::reionize_with_catalog(&corrected)
 }
 
 #[cfg(test)]
@@ -184,14 +133,33 @@ mod tests {
 
     #[test]
     fn weaker_or_ambiguous_donors_do_not_move_protons() {
-        for input in [
-            "Oc1ccccc1.CC(=O)[O-]",
-            "CC(=O)O.CC(=O)O.[CH3-]",
-            "O=P(O)(O)C.CC(=O)[O-]",
-            "[O-]C(=O)C.[NH3+]C",
-        ] {
+        for input in ["Oc1ccccc1.CC(=O)[O-]", "[O-]C(=O)C.[NH3+]C"] {
             assert_eq!(output(input), expected(input), "{input}");
         }
+    }
+
+    #[test]
+    fn ordered_catalog_handles_benzylic_amine_and_phosphonic_transfers() {
+        for (input, product) in [
+            ("[CH2-]c1ccccc1.Oc1ccccc1", "Cc1ccccc1.[O-]c1ccccc1"),
+            ("[NH-]C(C)C(=O)O", "CC(N)C(=O)[O-]"),
+            ("O=P(O)(O)C.CC(=O)[O-]", "CC(=O)O.CP(=O)([O-])O"),
+            ("CC(=O)O.CC(=O)O.[CH3-]", "C.CC(=O)O.CC(=O)[O-]"),
+        ] {
+            assert_eq!(output(input), expected(product), "{input}");
+        }
+    }
+
+    #[test]
+    fn carbon_anion_transfer_keeps_the_in_memory_stereo_tag() {
+        let source = parse("O=C(OCCCl)NNC([C@H]([CH-]c1ccccc1)NC(=O)C)=O").unwrap();
+        let result = reionize(&source);
+        assert!(canonical_smiles(&result).contains("[C@-]"));
+        assert!(result.atoms().any(|(_, atom)| {
+            atom.element.atomic_number() == 6
+                && atom.charge == -1
+                && atom.chirality.is_tetrahedral()
+        }));
     }
 
     #[test]

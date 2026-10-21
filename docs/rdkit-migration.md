@@ -62,7 +62,10 @@ read/write coverage rather than assuming every RDKit format is supported.
   spelling is interchangeable across engines.
 - **Fingerprints:** native `ecfp4()` uses its own hashing. Use the named
   RDKit-compatible Morgan API when comparing RDKit bits or rebuilding an
-  existing search index; never mix the two profiles in one index.
+  existing search index; never mix the two profiles in one index. Exact top-k
+  fingerprint searches include zero-similarity rows when needed to fill `k`,
+  with equal scores ordered by input index. Use a positive threshold if those
+  rows should be excluded.
 - **InChI:** the default pure-Rust `mol.inchi`/`mol.inchikey` path is not
   Standard InChI. `mol.standard_inchi`/`standard_inchikey` require the
   optional `native-inchi` feature and its C library.

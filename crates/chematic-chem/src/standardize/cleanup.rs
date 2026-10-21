@@ -9,6 +9,10 @@ use chematic_core::{AtomIdx, BondIdx, BondOrder, Molecule, MoleculeBuilder, impl
 use super::{clone_molecule, is_metal, normalize_groups};
 use crate::hydrogen::remove_hydrogens;
 
+pub(super) fn reionize_with_catalog(mol: &Molecule) -> Molecule {
+    acid_base::reionize_for_cleanup(mol)
+}
+
 /// Apply the supported RDKit `MolStandardize.Cleanup` stages without changing
 /// the broader [`super::standardize`] profile.
 ///
