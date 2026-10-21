@@ -193,8 +193,9 @@ pub enum CipUnresolvedReason {
     Tied,
     /// The digraph/comparator exceeded its size or recursion budget for this atom.
     BudgetExceeded,
-    /// No chemically stable label is available. For example, a wildcard/dummy
-    /// ligand does not name an element whose CIP priority could be assigned.
+    /// No chemically stable label is available. A wildcard/dummy atom can
+    /// leave a direct ligand's priority unknown or reverse a more distant
+    /// center's R/S label when its element is specified.
     OracleUnstable,
     /// A stereo-tagged centre with three explicit ligands whose fourth ligand
     /// would be a lone pair (a bridgehead amine, a sulfoxide); lone pairs are

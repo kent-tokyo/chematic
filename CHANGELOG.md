@@ -16,6 +16,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- Accurate CIP assignment now reports `oracle_unstable` when replacing a
+  wildcard with carbon reverses a distant tetrahedral R/S label, rather than
+  returning a confident label for an unspecified atom.
 - Fingerprint similarity search now applies inclusive Tanimoto thresholds
   exactly; a candidate just below the requested threshold is excluded.
 - Cleanup no longer adds a spurious positive charge to a metal when a
