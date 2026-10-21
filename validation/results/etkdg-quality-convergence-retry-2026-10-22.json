@@ -1,10 +1,10 @@
 {
   "profile": "etkdg_quality_pooled_development_v3",
-  "candidate_base_commit": "d4208b9df9086b25df3e449d5f5ca6f8a32ad406",
+  "candidate_base_commit": "4df525df98c70cff6aa9d1ec55df751e8af3b3da",
   "candidate_dirty": true,
-  "source_sha256": "97444d23d62bc2786e09ed34f42609871cb2513a6fb76b95156be9f6b782f1b3",
+  "source_sha256": "c0e4a0cfdf002f4666f62387e39f225aa0622595d9feba84c22e21c4d9ea07f8",
   "probe_script_sha256": "76dd799b3f3187a7df87d4a72740c68cd987a24e5464bc0413daee3bb1c4ba68",
-  "rust_binary_sha256": "1b5375f00e5adbbd4878c332023047f631a44d2b31764f68dc3a7c4b8bdf4af3",
+  "rust_binary_sha256": "2867ab44c2af911ae50dc4560f0fd6d89f18a37fc6b5fc1a2bd942df01512cc6",
   "manifest": "validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_b.json",
   "manifest_sha256": "ec93ac160aa91c3c4416d57d3000d6e344e0b75cdf5c122211364c7495dce239",
   "prior_report": "validation/results/etkdg-quality-pooled-2026-10-22.json",

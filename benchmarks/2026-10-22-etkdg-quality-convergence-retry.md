@@ -1,6 +1,6 @@
 # ETKDG quality profile: bounded convergence retry
 
-Date: 2026-10-22. This is a local source candidate on an already used
+Date: 2026-10-22. This is a local macOS arm64 source candidate on an already used
 12-molecule development slice, not a held-out or released-package result.
 
 ## Change
@@ -59,5 +59,5 @@ cargo build --locked -p chematic-3d --example etkdg_quality_seed_budget_probe
 Rust 3D library tests: 710 passed, 4 ignored. Clippy and formatting passed.
 This report does not measure
 elapsed time, memory, conformer diversity, experimental geometry or
-populations, a fresh held-out corpus, or public artifacts. The Python binding
-was not rebuilt in this measurement.
+populations, cross-platform numeric agreement, a fresh held-out corpus, or
+public artifacts. The Python binding was not rebuilt in this measurement.

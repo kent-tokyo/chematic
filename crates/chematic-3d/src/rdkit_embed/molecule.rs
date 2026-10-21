@@ -1277,12 +1277,17 @@ mod corrected_ensemble_tests {
         let initial = rdkit_embed_multiple_confs_mmff(&molecule, 40, &options, 200).unwrap();
         assert_eq!(initial.len(), 40);
         assert!(initial.iter().all(|candidate| candidate.status != 0));
+        let best_initial = initial
+            .iter()
+            .map(|candidate| candidate.energy)
+            .min_by(f64::total_cmp)
+            .unwrap();
 
         let selected =
             etkdg_embed_multiple_confs_mmff_best_gradient(&molecule, 20, &options, 200).unwrap();
         assert_eq!(selected.len(), 20);
         assert_eq!(selected[0].status, 0);
-        assert!(selected[0].energy < 199.0);
+        assert!(selected[0].energy <= best_initial);
         let coordinates = Coords3D {
             points: selected[0]
                 .coords
