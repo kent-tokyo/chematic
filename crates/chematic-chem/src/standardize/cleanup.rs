@@ -4,7 +4,9 @@ mod acid_base;
 
 use std::collections::HashSet;
 
-use chematic_core::{AtomIdx, BondIdx, BondOrder, Molecule, MoleculeBuilder, implicit_hcount};
+use chematic_core::{
+    AtomIdx, BondIdx, BondOrder, Chirality, Molecule, MoleculeBuilder, implicit_hcount,
+};
 
 use super::{clone_molecule, is_metal, normalize_groups};
 use crate::hydrogen::remove_hydrogens;
@@ -335,9 +337,35 @@ fn assign_valence_aware_metal_charge(
 
 fn rebuild_cleanup_graph(
     mol: &Molecule,
-    atoms: Vec<chematic_core::Atom>,
+    mut atoms: Vec<chematic_core::Atom>,
     removed: &HashSet<BondIdx>,
 ) -> Molecule {
+    for (idx, atom) in atoms.iter_mut().enumerate() {
+        let center = AtomIdx(idx as u32);
+        if atom.hydrogen_count != Some(1)
+            || mol.degree(center) != 4
+            || mol.smiles_ring_closure_count(center) != 1
+        {
+            continue;
+        }
+        let cut_metal_bonds = mol
+            .neighbors(center)
+            .filter(|(neighbor, bond)| {
+                removed.contains(bond) && is_metal(mol.atom(*neighbor).element)
+            })
+            .count();
+        if cut_metal_bonds == 1 {
+            // The SMILES chiral tag keeps its winding when RDKit removes a
+            // metal bond. A ring-closure ligand is ordered after the chain
+            // ligands by RDKit's parser; removing the metal changes that
+            // permutation by one swap. The acyclic case has no such swap.
+            atom.chirality = match atom.chirality {
+                Chirality::Clockwise => Chirality::CounterClockwise,
+                Chirality::CounterClockwise => Chirality::Clockwise,
+                other => other,
+            };
+        }
+    }
     let mut builder = MoleculeBuilder::new();
     for atom in atoms {
         builder.add_atom(atom);
@@ -346,9 +374,18 @@ fn rebuild_cleanup_graph(
         if removed.contains(&bond_idx) {
             continue;
         }
-        if let Ok(new_bond_idx) = builder.add_bond(bond.atom1, bond.atom2, bond.order)
-            && let Some(direction) = mol.bond_direction(bond_idx)
+        let Ok(new_bond_idx) = builder.add_bond(bond.atom1, bond.atom2, bond.order) else {
+            continue;
+        };
+        if let Some((label, occurrence, begins_at_open)) =
+            mol.smiles_ring_closure_metadata(bond_idx)
         {
+            builder.set_smiles_ring_closure(new_bond_idx, label, occurrence);
+            if let Some(begins_at_open) = begins_at_open {
+                builder.set_smiles_ring_closure_begins_at_open(new_bond_idx, begins_at_open);
+            }
+        }
+        if let Some(direction) = mol.bond_direction(bond_idx) {
             builder.set_bond_direction(new_bond_idx, direction);
             if let Some(anchor) = mol.bond_direction_anchor(bond_idx) {
                 builder.set_bond_direction_anchor(new_bond_idx, anchor);
@@ -593,6 +630,39 @@ mod tests {
                 chematic_smiles::rdkit_cleanup_canonical_smiles(&after).as_deref(),
                 Ok(expected),
                 "{input}"
+            );
+        }
+    }
+
+    #[test]
+    fn disconnecting_metal_preserves_ring_closure_stereo_winding() {
+        // RDKit 2026.09.1 keeps the atom's tetrahedral tag when the metal
+        // bond is cut. Both enantiomers must remain distinct and reparseable.
+        for (input, expected) in [
+            ("F[C@H]1([Zn])CC(C)CCC1", "CC1CCC[C@H](F)C1.[Zn]"),
+            ("F[C@@H]1([Zn])CC(C)CCC1", "CC1CCC[C@@H](F)C1.[Zn]"),
+            (
+                "C1CC2CN3CCc4cc5c(OCO5)cc4[C@@H]3C[C@H]2([Zn])C[C@@H]1O",
+                "O[C@@H]1CCC2CN3CCc4cc5c(cc4[C@@H]3C[C@@H]2C1)OCO5.[Zn]",
+            ),
+            (
+                "C1CC2CN3CCc4cc5c(OCO5)cc4[C@@H]3C[C@@H]2([Zn])C[C@@H]1O",
+                "O[C@@H]1CCC2CN3CCc4cc5c(cc4[C@@H]3C[C@H]2C1)OCO5.[Zn]",
+            ),
+            // The acyclic case already has the right winding.
+            ("F[C@H]([Zn])(Cl)Br", "F[C@H](Cl)Br.[Zn]"),
+        ] {
+            let cleaned = cleanup(&parse(input).unwrap());
+            let actual = chematic_smiles::rdkit_cleanup_canonical_smiles(&cleaned).unwrap();
+            assert_eq!(actual, expected, "{input}");
+            assert!(
+                parse(&actual).is_ok(),
+                "Cleanup output must reparse: {input}"
+            );
+            assert_eq!(
+                chematic_smiles::rdkit_cleanup_canonical_smiles(&cleanup(&cleaned)).as_deref(),
+                Ok(expected),
+                "second Cleanup: {input}"
             );
         }
     }

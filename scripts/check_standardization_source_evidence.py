@@ -9,8 +9,8 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-RECORD = ROOT / "validation/results/rdkit-standardization-source-2026-10-22-zinc-radical.json"
-PREVIOUS_RECORD = ROOT / "validation/results/rdkit-standardization-source-2026-10-21-reionize-catalog.json"
+RECORD = ROOT / "validation/results/rdkit-cleanup-ring-stereo-stress-2026-10-22.json"
+PREVIOUS_RECORD = ROOT / "validation/results/rdkit-standardization-source-2026-10-22-zinc-radical.json"
 
 
 def digest(path: Path) -> str:
@@ -62,7 +62,7 @@ def main() -> None:
     assert comparison["fixed_indices"] == sorted(old_cleanup - new_cleanup)
     assert comparison["regressed_indices"] == sorted(new_cleanup - old_cleanup)
     assert comparison["previous_exact"] == previous["exact_rows"]
-    assert comparison["fixed_indices"] == [3078]
+    assert comparison["fixed_indices"] == [2133]
     assert record["exact_rows"] > previous["exact_rows"]
     old_reionize = {row["index"] for row in previous["reionize_mismatches"]}
     new_reionize = {row["index"] for row in record["reionize_mismatches"]}
