@@ -1,5 +1,6 @@
 //! Exposed development probe for molecules with a nonzero sixth-order ETKDG
-//! torsion coefficient. Compare with `scripts/etkdg_sixfold_ensemble_probe.py`.
+//! torsion coefficient. Compare with
+//! `scripts/benchmarks/etkdg_sixfold_ensemble_probe.py`.
 
 use chematic_3d::rdkit_embed::{
     RdkitEmbedOptions, etkdg_embed_multiple_confs_mmff_corrected, rdkit_embed_multiple_confs_mmff,

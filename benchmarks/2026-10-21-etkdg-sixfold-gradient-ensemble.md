@@ -53,7 +53,7 @@ gates and comparison against the exact published artifacts.
 
 ```sh
 cargo run --release -p chematic-3d --example etkdg_sixfold_ensemble_probe > /tmp/etkdg-sixfold.jsonl
-python scripts/etkdg_sixfold_ensemble_probe.py /tmp/etkdg-sixfold.jsonl
+python scripts/benchmarks/etkdg_sixfold_ensemble_probe.py /tmp/etkdg-sixfold.jsonl
 ```
 
 The Python script requires RDKit 2026.09.1. The Rust example emits every
