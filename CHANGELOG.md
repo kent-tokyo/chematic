@@ -16,6 +16,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- Fingerprint similarity search now applies inclusive Tanimoto thresholds
+  exactly; a candidate just below the requested threshold is excluded.
 - Cleanup no longer adds a spurious positive charge to a metal when a
   disconnected bracket carbon radical remains neutral, including mixed
   organozinc compounds.
