@@ -50,10 +50,13 @@ def test_mol_pickle_is_deterministic_for_property_insertion_order():
 
 
 def test_cleanup_metal_stereo_survives_pickle():
-    cleaned = chematic.from_smiles("F[Pt@SP1](Cl)(Br)I").cleanup()
-    restored = pickle.loads(pickle.dumps(cleaned, protocol=5))
-    assert restored.rdkit_smiles == cleaned.rdkit_smiles
-    assert restored.rdkit_smiles == "[Br-].[Cl-].[F-].[I-].[Pt@SP1+4]"
+    for source, expected in [
+        ("F[Pt@SP1](Cl)(Br)I", "[Br-].[Cl-].[F-].[I-].[Pt@SP1+4]"),
+        ("F[Pt@SP1](Cl)Br", "[Br-].[Cl-].[F-].[Pt@SP2+3]"),
+    ]:
+        cleaned = chematic.from_smiles(source).cleanup()
+        restored = pickle.loads(pickle.dumps(cleaned, protocol=5))
+        assert restored.rdkit_smiles == cleaned.rdkit_smiles == expected
 
 
 def test_private_pickle_restore_rejects_malformed_state():

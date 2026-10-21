@@ -71,7 +71,9 @@ def main() -> None:
             for path in (
                 ROOT / "crates/chematic-chem/src/standardize.rs",
                 ROOT / "crates/chematic-chem/src/standardize/cleanup.rs",
+                ROOT / "crates/chematic-chem/src/standardize/cleanup/acid_base.rs",
                 ROOT / "crates/chematic-chem/src/standardize/groups.rs",
+                ROOT / "crates/chematic-smiles/src/rdkit/mod.rs",
                 ROOT / "crates/chematic-py/src/mol_methods/transformations.rs",
             )
         },

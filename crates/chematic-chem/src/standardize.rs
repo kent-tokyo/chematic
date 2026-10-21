@@ -1897,11 +1897,11 @@ mod tests {
             );
         }
         // A vacant coordination site changes the permutation when the ligands
-        // are removed. Until that remapping is represented, omit the tag.
+        // are removed; Cleanup preserves the remapped isolated tag.
         let partial = cleanup(&parse("F[Pt@SP1](Cl)Br").unwrap());
         assert_eq!(
             chematic_smiles::rdkit_cleanup_canonical_smiles(&partial).as_deref(),
-            Ok("[Br-].[Cl-].[F-].[Pt+3]")
+            Ok("[Br-].[Cl-].[F-].[Pt@SP2+3]")
         );
     }
 

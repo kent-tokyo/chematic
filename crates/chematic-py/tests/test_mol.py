@@ -270,6 +270,9 @@ def test_cleanup_rdkit_smiles_preserves_in_memory_metal_stereo():
     assert chematic.from_smiles("C[Co@OH1](N)(N)(N)(N)Cl").cleanup().rdkit_smiles == (
         "[CH3-].[Cl-].[Co@OH1+6].[NH2-].[NH2-].[NH2-].[NH2-]"
     )
+    partial = chematic.from_smiles("F[Pt@SP1](Cl)Br").cleanup()
+    assert partial.rdkit_smiles == "[Br-].[Cl-].[F-].[Pt@SP2+3]"
+    assert partial.rdkit_smiles_with(isomeric=False) == "[Br-].[Cl-].[F-].[Pt+3]"
 
 
 def test_cleanup_keeps_unsupported_lithium_carbonyl_readable():
