@@ -33,6 +33,11 @@ not a statement about v1.1.8.
 
 ## Recent focused follow-ups
 
+- [SDF named field preservation](../docs/benchmarks/2026-10-22-sdf-data-item-framing.md):
+  12 original field cases in 48 format/line-ending variants; exact field strings
+  retained on 48/48 versus 20/48 before and 36/48 with Open Babel 3.2.1 defaults.
+  Named-field projection only; property order/header metadata remain outside scope.
+
 - [Distinct-seed ETKDG quality profile](2026-10-22-etkdg-quality-seed-budget.md):
   uses the second candidate batch for new seeds when corrected and compatibility
   gradients coincide; 4/12 lower-energy results versus the prior profile, 0

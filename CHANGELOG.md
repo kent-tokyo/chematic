@@ -16,6 +16,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- SDF named properties now accept registry information before the field name
+  and retain header-shaped lines inside values. Only an empty line ends a data
+  item; headers without that separator are no longer guessed as new fields.
 - Accurate CIP assignment now reports `oracle_unstable` when replacing a
   wildcard with carbon reverses a distant tetrahedral R/S label, rather than
   returning a confident label for an unspecified atom.

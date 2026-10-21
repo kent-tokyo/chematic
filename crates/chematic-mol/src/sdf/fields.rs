@@ -13,13 +13,7 @@ pub(super) fn parse_sd_fields(data: &str) -> std::collections::HashMap<String, S
     for raw_line in data.lines() {
         let line = raw_line.trim_end_matches('\r');
 
-        if let Some(key) = parse_sd_field_header(line) {
-            // Flush previous field.
-            if let Some(k) = current_key.take() {
-                fields.insert(k, std::mem::take(&mut current_value));
-            }
-            current_key = Some(key);
-        } else if line.is_empty() {
+        if line.is_empty() {
             // Blank line ends the current field's value.
             if let Some(k) = current_key.take() {
                 fields.insert(k, std::mem::take(&mut current_value));
@@ -29,6 +23,8 @@ pub(super) fn parse_sd_fields(data: &str) -> std::collections::HashMap<String, S
                 current_value.push('\n');
             }
             current_value.push_str(line);
+        } else if let Some(key) = parse_sd_field_header(line) {
+            current_key = Some(key);
         }
     }
     // Flush trailing field with no blank line.
@@ -39,15 +35,15 @@ pub(super) fn parse_sd_fields(data: &str) -> std::collections::HashMap<String, S
     fields
 }
 
-/// Parse `> <FieldName>` header lines, returning the field name or `None`.
+/// Parse named headers with optional information before/after `<FieldName>`.
 fn parse_sd_field_header(line: &str) -> Option<String> {
-    // SDF spec: field headers start with "> " and contain the name in `<...>`.
-    // We accept "> <Name>" and also ">  <Name>" (extra spaces).
+    // Registry information can precede the field name (CTfile chapter 6).
     let rest = line.strip_prefix('>')?;
     let rest = rest.trim();
     // RDKit's SDWriter appends a record identifier, e.g. `> <Name> (1)`.
     // Header information after the first closing bracket is not field data.
-    let (inner, _) = rest.strip_prefix('<')?.split_once('>')?;
+    let (_, named) = rest.split_once('<')?;
+    let (inner, _) = named.split_once('>')?;
     Some(inner.to_string())
 }
 
