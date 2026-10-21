@@ -101,6 +101,8 @@ struct McsConfigJson {
     #[serde(default)]
     timeout_ms: Option<u64>,
     #[serde(default)]
+    max_search_nodes: Option<usize>,
+    #[serde(default)]
     ring_matches_ring_only: bool,
     #[serde(default)]
     complete_rings_only: bool,
@@ -120,7 +122,7 @@ struct McsConfigJson {
 
 impl McsConfigJson {
     fn into_mcs_config(self) -> chematic_smarts::McsConfig {
-        chematic_smarts::McsConfig {
+        let mut config = chematic_smarts::McsConfig {
             match_bonds: self.match_bonds,
             min_atoms: self.min_atoms,
             timeout_ms: self.timeout_ms,
@@ -133,7 +135,11 @@ impl McsConfigJson {
             match_isotope: self.match_isotope,
             maximize_bonds: self.maximize_bonds,
             ..chematic_smarts::McsConfig::default()
+        };
+        if let Some(limit) = self.max_search_nodes {
+            config.max_search_nodes = Some(limit);
         }
+        config
     }
 }
 

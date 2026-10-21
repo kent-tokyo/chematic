@@ -4626,6 +4626,7 @@ def find_mcs_checked(
     match_charge: bool = False,
     match_isotope: bool = False,
     maximize_bonds: bool = True,
+    max_search_nodes: Optional[int] = None,
 ) -> tuple[Optional[Mol], bool]:
     """Like :func:`find_mcs`, but also reports whether ``timeout_ms`` was reached
     before the search finished exhaustively.
@@ -4635,7 +4636,10 @@ def find_mcs_checked(
 
     Returns ``(mcs, was_timed_out)``: ``mcs`` is the MCS as a :class:`Mol` (or ``None``
     if there is no common substructure), and ``was_timed_out`` is ``True`` if the search
-    was cut off before proving ``mcs`` optimal.
+    was cut off by the deadline before proving ``mcs`` optimal. If the input-size
+    or search-node limit is reached, raises ``ChematicInputError`` with category
+    ``"resource_limit"`` and code ``"mcs_resource_limit"`` instead of returning
+    ``was_timed_out=False``. ``max_search_nodes`` overrides the native default when set.
 
     Example::
 

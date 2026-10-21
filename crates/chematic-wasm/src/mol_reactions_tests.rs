@@ -47,6 +47,7 @@ mod mcs_config_tests {
         let value: serde_json::Value = serde_json::from_str(&full).unwrap();
         assert_eq!(value["smiles"], serde_json::Value::String(bare));
         assert_eq!(value["wasTimedOut"], false);
+        assert_eq!(value["wasResourceLimited"], false);
     }
 
     #[test]
@@ -57,6 +58,7 @@ mod mcs_config_tests {
         let value: serde_json::Value = serde_json::from_str(&result).unwrap();
         assert_eq!(value["smiles"], serde_json::Value::Null);
         assert_eq!(value["wasTimedOut"], false);
+        assert_eq!(value["wasResourceLimited"], false);
     }
 
     #[test]
@@ -94,6 +96,17 @@ mod mcs_config_tests {
         let result = mcs_smiles_json_with_config(smiles, r#"{"timeoutMs":0}"#).unwrap();
         let value: serde_json::Value = serde_json::from_str(&result).unwrap();
         assert_eq!(value["wasTimedOut"], true);
+        assert_eq!(value["wasResourceLimited"], false);
+    }
+
+    #[test]
+    fn search_node_limit_is_reported_separately_from_timeout() {
+        let smiles = r#"["CCC","CCC"]"#;
+        let result =
+            mcs_smiles_json_with_config(smiles, r#"{"maxSearchNodes":0}"#).unwrap();
+        let value: serde_json::Value = serde_json::from_str(&result).unwrap();
+        assert_eq!(value["wasTimedOut"], false);
+        assert_eq!(value["wasResourceLimited"], true);
     }
 
     // Error paths that surface as a real thrown `JsValue` are only safely
