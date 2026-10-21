@@ -7,6 +7,11 @@ package, comparator, corpus, host, runtime and operation.
 
 ## Start here
 
+- [Pooled ETKDG quality return set](2026-10-22-etkdg-quality-pooled.md):
+  12-molecule source development comparison with 149 to 187 converged
+  returned conformers, all-candidate stereo and energy checks, and the
+  remaining RDKit converged-energy deficit.
+
 - [Distinct-seed ETKDG quality profile](2026-10-22-etkdg-quality-seed-budget.md):
   12-molecule source development comparison with the RDKit 2026.09.1 candidate
   budget, explicit convergence counts, stereo checks, and remaining deficits.
