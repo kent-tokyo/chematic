@@ -33,7 +33,7 @@ operation-level measurement and unsupported states, see the
 | Molecule name | `mol.GetName()`, `mol.SetName(name)` | Same names on native and `rdkit_compat` `Mol`/`RWMol` | Uses the conventional `_Name` property. An unset name returns an empty string; SDF writers place it in the MOL header rather than an SD data field. |
 | Reactions | `AllChem.ReactionFromSmarts(...).RunReactants(...)` | `chematic.run_smirks(...)` | Bounded template application, not full SMIRKS parity. Reactant templates are SMARTS queries (`X`, `D`, `;`, `,`, `!`, `$()`); product templates follow RDKit's product semantics (query-only features dropped, element changes applied, unspelled charge and H kept from the reactant) and products must pass RDKit's sanitize valence rules. Canonical SMILES spelling differs from RDKit's; compare by InChIKey or re-canonicalize. |
 | Tautomers | `rdMolStandardize.TautomerEnumerator` | `mol.rdkit_canonical_tautomer()`, `mol.rdkit_tautomers()` | Named RDKit 2026.03.1-compatible profile; preserve refusals and compare on your corpus. |
-| MCS | `rdFMCS.FindMCS(mols)` | `chematic.find_mcs(...)` / `find_mcs_checked(...)` | Check timeout separately from no match. |
+| MCS | `rdFMCS.FindMCS(mols)` | `chematic.find_mcs(...)` / `find_mcs_checked(...)` | Check timeout separately from no match; checked resource-limit exhaustion raises a typed error. |
 | Batch processing | Python loops / `BulkTanimotoSimilarity` | `chematic.bulk.*`, `descriptors_df(...)` | Preserve original input index and all failure outcomes. |
 | Browser | `@rdkit/rdkit` | `@kent-tokyo/chematic` | Compare the published packages on the same operation and host. |
 

@@ -34,9 +34,11 @@ in the [benchmark index](benchmarks/README.md), and unresolved work in the
 
 ### 1. Finish release-grade evidence
 
-1. **Develop against new data, preserving the frozen score.** Investigate MCS
-   and multi-conformer 3D residual classes on newly selected development rows;
-   never rewrite or tune against the inspected holdout-v1 result.
+1. **Freeze a new independent MCS evaluation after the correctness fix.** The
+   source candidate now returns three atoms/two bonds for `C1CC1` versus `CCC`
+   in either input order and reports search-node limits explicitly. Keep the
+   inspected holdout-v1 result historical, develop on newly selected rows, and
+   freeze a disjoint atom/bond/status corpus only after the candidate is fixed.
 2. **Implement classified standardization gaps by value.** Cleanup is now
    3,933/4,069 after ten further fixes with zero regressions. Prioritize the
    remaining 26 bounded acid/base rows and 101 metal disconnection/charge/
