@@ -103,6 +103,13 @@ def classify_reionize_mismatch(
         return "operation_error", "unsupported_or_invalid_output"
     if expected == source:
         return "independent_ionization_policy", "policy_difference"
+    if expected is not None:
+        reparsed = Chem.MolFromSmiles(expected)
+        if reparsed is not None and smiles(reparsed) == actual:
+            # RDKit can retain a tetrahedral tag on a three-coordinate
+            # carbanion after Reionize, although parsing its SMILES anew
+            # removes that tag. Keep the exact-output mismatch visible.
+            return "in_memory_stereo_serialization", "representation_only"
     topology = graph_key(actual, keep_charge=False, keep_bond_order=False)
     expected_topology = graph_key(expected, keep_charge=False, keep_bond_order=False)
     if topology is not None and topology == expected_topology:
