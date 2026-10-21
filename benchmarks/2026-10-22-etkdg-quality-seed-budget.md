@@ -13,8 +13,8 @@ uses seeds `1..N` and `N+1..2N`, optimizes both ensembles with MMFF94, and
 returns the complete `N`-conformer ensemble with the lower finite best energy.
 For a molecule with fifth- or sixth-order coefficients, it still compares the
 two gradient paths on the same seeds. The public compatibility and corrected
-APIs retain their existing behavior. A zero seed or seed-range overflow falls
-back to the initial ensemble.
+APIs retain their existing behavior. For the identical-gradient case, a zero
+seed or seed-range overflow falls back to the initial ensemble.
 
 This profile performs about twice the embedding and optimization work of the
 20-conformer compatibility call. It retains only 20 conformers even when it
