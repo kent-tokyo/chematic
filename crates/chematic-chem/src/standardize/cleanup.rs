@@ -298,10 +298,11 @@ fn assign_valence_aware_metal_charge(
             .find(|&value| value >= valence_after)
             .unwrap_or_else(|| i16::from(*valences.last().unwrap()));
         let mut ligand_charge = valence_after.min(allowed) - allowed;
-        let mut lone_electrons = 0;
         if radical_before % 2 == 1 && ligand_charge < 0 {
+            // The electron left on a bracket radical belongs to the ligand.
+            // It cancels a proposed ligand anion; it does not oxidize the
+            // disconnected metal (for example, C[C]([Zn])C -> C[C]C.[Zn]).
             ligand_charge += 1;
-            lone_electrons = 1;
         }
         let total_degree_after = i16::try_from(mol.degree(ligand_idx) - 1).unwrap_or(0) + h;
         if ligand_charge == -1 && valence_after == total_degree_after + 1 {
@@ -313,7 +314,7 @@ fn assign_valence_aware_metal_charge(
         {
             0
         } else {
-            (-ligand_charge + lone_electrons).max(0)
+            (-ligand_charge).max(0)
         };
         atoms[ligand].charge = i8::try_from(ligand_charge).unwrap_or(original.charge);
         if matches!(ligand_atom.element.atomic_number(), 6 | 7)
@@ -383,6 +384,34 @@ mod tests {
     use super::cleanup;
     use chematic_core::{Molecule, implicit_hcount};
     use chematic_smiles::parse;
+
+    #[test]
+    fn disconnecting_radical_carbon_does_not_overcharge_zinc() {
+        for (input, expected) in [
+            ("C[C]([Zn])C", "C[C]C.[Zn]"),
+            (
+                "[Zn]([CH3])([CH2]C)[C]1CCCC1",
+                "[CH2-]C.[CH3-].[C]1CCCC1.[Zn+2]",
+            ),
+            (
+                "COc1cccc2c1C[C]([Zn]([CH3])[CH2]C)CC2.c1ccccc1",
+                "C.CC.COc1cccc2c1[CH-][C]C[CH-]2.[Zn+2].c1ccccc1",
+            ),
+        ] {
+            let before = parse(input).unwrap();
+            let cleaned = cleanup(&before);
+            assert_eq!(
+                chematic_smiles::rdkit_cleanup_canonical_smiles(&cleaned).as_deref(),
+                Ok(expected),
+                "{input}"
+            );
+            assert_eq!(
+                chematic_smiles::rdkit_cleanup_canonical_smiles(&cleanup(&cleaned)).as_deref(),
+                Ok(expected),
+                "second Cleanup: {input}"
+            );
+        }
+    }
 
     #[test]
     fn cleanup_removes_formally_double_bonded_hydrogen_like_rdkit() {

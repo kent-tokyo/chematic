@@ -16,6 +16,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- Cleanup no longer adds a spurious positive charge to a metal when a
+  disconnected bracket carbon radical remains neutral, including mixed
+  organozinc compounds.
 - MCS now constructs a common non-induced subgraph, so extra closure bonds in
   one input no longer make the maximum depend on input order (`C1CC1` versus
   `CCC` now returns three atoms and two bonds in either order). Python
