@@ -32,6 +32,8 @@ def select_rows() -> list[dict[str, str]]:
         mol = Chem.MolFromSmiles(row["smiles"])
         if mol is None or not 3 <= rdMolDescriptors.CalcNumRotatableBonds(mol) <= 10:
             continue
+        if len(Chem.GetMolFrags(mol)) != 1:
+            continue
         with_h = Chem.AddHs(mol)
         if not AllChem.MMFFHasAllMoleculeParams(with_h):
             continue
