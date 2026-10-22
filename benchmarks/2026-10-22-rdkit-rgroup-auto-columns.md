@@ -1,6 +1,6 @@
 # RDKit automatic R-group columns and shared-site fragments
 
-Date: 2026-10-22. This is a source-built Python extension based on `654993b8`, compared with RDKit 2026.09.1 on macOS arm64. The exact source hash, extension hash, inputs, and both output tables are in the [machine record](2026-10-22-rdkit-rgroup-auto-columns.json). The comparator is [`scripts/rdkit_rgroup_auto_label_gate.py`](../scripts/rdkit_rgroup_auto_label_gate.py).
+Date: 2026-10-22. This is a source-built Python extension based on `654993b8`, compared with RDKit 2026.09.1 on macOS arm64. The exact source hash, extension hash, inputs, and both output tables are in the [machine record](2026-10-22-rdkit-rgroup-auto-columns.json). The comparator is [`scripts/validation/rdkit_rgroup_auto_label_gate.py`](../scripts/validation/rdkit_rgroup_auto_label_gate.py).
 
 ## Result
 
@@ -14,7 +14,7 @@ The change numbers only automatic sites established by the batch, in reverse cor
 cd crates/chematic-py
 CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/private/tmp/chematic-rgroup-target maturin build --profile dev --no-default-features --features extension-module --interpreter python3 --offline
 cd ../..
-PYTHONPATH=<source-wheel-install>:<RDKit-2026.09.1-install> python3 scripts/rdkit_rgroup_auto_label_gate.py --output /private/tmp/rgroup-auto-columns.json
+PYTHONPATH=<source-wheel-install>:<RDKit-2026.09.1-install> python3 scripts/validation/rdkit_rgroup_auto_label_gate.py --output /private/tmp/rgroup-auto-columns.json
 PYTHONPATH=<source-wheel-install>:<RDKit-2026.09.1-install> python3 scripts/rdkit_rgroup_hydrogen_gate.py --output /private/tmp/rgroup-hydrogen.json
 ```
 

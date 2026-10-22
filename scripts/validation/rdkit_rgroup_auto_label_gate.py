@@ -13,7 +13,7 @@ import chematic
 from rdkit import Chem, RDLogger, rdBase
 from rdkit.Chem import rdRGroupDecomposition
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 CASES = [
     ("benzene_positions", "c1ccccc1", [
         "c1ccccc1", "Cc1ccccc1", "Cc1ccccc1C", "Cc1cccc(C)c1", "Cc1ccc(C)cc1",
