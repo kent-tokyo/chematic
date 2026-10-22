@@ -7,7 +7,7 @@ import pytest
 import chematic
 
 ROOT = Path(__file__).parents[3]
-CASES = json.loads((ROOT / 'validation/gjf-document-2026-10-22/cases.json').read_text())['cases']
+CASES = json.loads((ROOT / 'validation/gjf-document-2026-10-22/cases.json').read_text(encoding="utf-8"))['cases']
 SOURCE = (ROOT / 'validation/gjf-document-2026-10-22/two-jobs.gjf').read_bytes().decode()
 
 
@@ -78,7 +78,7 @@ def test_atom_budget_counts_across_jobs():
         chematic.roundtrip_gjf_document(source.rstrip('\n')+'\nHe 0 0 0\n\n')
 
 
-@pytest.mark.parametrize('case', json.loads((ROOT / 'validation/gjf-cartesian-2026-10-22/source-cases.json').read_text())['cases'], ids=lambda c: c['id'])
+@pytest.mark.parametrize('case', json.loads((ROOT / 'validation/gjf-cartesian-2026-10-22/source-cases.json').read_text(encoding="utf-8"))['cases'], ids=lambda c: c['id'])
 def test_existing_source_packet_under_explicit_document_profile(case):
     supported = case['expected'] == 'retain' or case['id'].startswith('multiple-jobs-')
     if supported:

@@ -9,7 +9,7 @@ import chematic
 
 
 _FIXTURE_PATH = Path(__file__).parents[3] / "validation" / "cross_binding_contract.json"
-_PDB_STRICT_CONTRACT = json.loads(_FIXTURE_PATH.read_text())["pdb_strict_contract"]
+_PDB_STRICT_CONTRACT = json.loads(_FIXTURE_PATH.read_text(encoding="utf-8"))["pdb_strict_contract"]
 
 
 def test_convert_graph_formats_round_trip():

@@ -6,7 +6,10 @@ from pathlib import Path
 import pytest
 import chematic
 
-PACKET = json.loads((Path(__file__).parents[3] / 'validation/cjson_source_conversion/cases.json').read_text())
+PACKET = json.loads(
+    (Path(__file__).parents[3] / 'validation/cjson_source_conversion/cases.json')
+    .read_text(encoding='utf-8')
+)
 CASES = PACKET['cases']
 
 

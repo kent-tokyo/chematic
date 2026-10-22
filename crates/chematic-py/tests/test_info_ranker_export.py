@@ -53,7 +53,7 @@ def test_before_ranking_refuses_without_touching_destination(tmp_path, with_vote
     path.write_text("keep")
     with pytest.raises(ValueError, match="successful GetTopN"):
         ranker.WriteTopBitsToFile(path)
-    assert path.read_text() == "keep"
+    assert path.read_text(encoding="utf-8") == "keep"
     path.unlink()
     with pytest.raises(ValueError, match="successful GetTopN"):
         ranker.WriteTopBitsToFile(path)
@@ -69,11 +69,11 @@ def test_ranking_snapshot_survives_votes_mask_bias_and_return_array_edits(tmp_pa
     ranker.SetBiasList([1])
     path = tmp_path / "snapshot.txt"
     ranker.WriteTopBitsToFile(path)
-    assert path.read_text() == EXPECTED
+    assert path.read_text(encoding="utf-8") == EXPECTED
     reranked = ranker.GetTopN(1)
     ranker.WriteTopBitsToFile(path)
-    assert len(path.read_text().splitlines()) == 2
-    assert int(path.read_text().splitlines()[1].split()[0]) == int(reranked[0, 0]) == 2
+    assert len(path.read_text(encoding="utf-8").splitlines()) == 2
+    assert int(path.read_text(encoding="utf-8").splitlines()[1].split()[0]) == int(reranked[0, 0]) == 2
 
 
 def test_zero_ranking_replaces_snapshot_with_header_only(tmp_path):
@@ -82,7 +82,7 @@ def test_zero_ranking_replaces_snapshot_with_header_only(tmp_path):
     ranker.GetTopN(0)
     path = tmp_path / "empty.txt"
     ranker.WriteTopBitsToFile(path)
-    assert path.read_text() == EXPECTED.splitlines(keepends=True)[0]
+    assert path.read_text(encoding="utf-8") == EXPECTED.splitlines(keepends=True)[0]
 
 
 @pytest.mark.parametrize("bad", [-1, 5, True, 1.5, "2"])
@@ -93,7 +93,7 @@ def test_failed_ranking_preserves_previous_snapshot(tmp_path, bad):
         ranker.GetTopN(bad)
     path = tmp_path / "unchanged.txt"
     ranker.WriteTopBitsToFile(path)
-    assert path.read_text() == EXPECTED
+    assert path.read_text(encoding="utf-8") == EXPECTED
 
 
 @pytest.mark.parametrize("bad", [None, 42, True, io.StringIO(), bytearray(b"x")])
@@ -116,7 +116,7 @@ def test_io_failure_preserves_ranked_data_and_snapshot(tmp_path):
         ranker.WriteTopBitsToFile("bad\x00name")
     path = tmp_path / "valid.txt"
     ranker.WriteTopBitsToFile(path)
-    assert path.read_text() == EXPECTED
+    assert path.read_text(encoding="utf-8") == EXPECTED
     np.testing.assert_array_equal(ranker.GetTopN(4), expected)
 
 
@@ -129,7 +129,7 @@ def test_multiclass_header_count_precision(tmp_path):
     rows = ranker.GetTopN(2)
     path = tmp_path / "classes.txt"
     ranker.WriteTopBitsToFile(path)
-    lines = path.read_text().splitlines()
+    lines = path.read_text(encoding="utf-8").splitlines()
     assert lines[0].endswith("     class10     class11")
     for row, line in zip(rows, lines[1:]):
         tokens = line.split()
@@ -151,8 +151,8 @@ def test_five_significant_digits_including_small_scores(tmp_path):
     assert 0 < score < 0.0001
     path = tmp_path / "small.txt"
     ranker.WriteTopBitsToFile(path)
-    assert path.read_text().splitlines()[1].split()[1] == format(score, ".5g")
-    assert "e-" in path.read_text()
+    assert path.read_text(encoding="utf-8").splitlines()[1].split()[1] == format(score, ".5g")
+    assert "e-" in path.read_text(encoding="utf-8")
 
 
 def test_pathlike_exception_propagates_and_snapshot_is_retained(tmp_path):
@@ -169,4 +169,4 @@ def test_pathlike_exception_propagates_and_snapshot_is_retained(tmp_path):
     assert caught.value is failure
     path = tmp_path / "valid.txt"
     ranker.WriteTopBitsToFile(path)
-    assert path.read_text() == EXPECTED
+    assert path.read_text(encoding="utf-8") == EXPECTED

@@ -5,8 +5,8 @@ import pytest
 import chematic
 
 _ROOT=Path(__file__).parents[3]
-_CASES=json.loads((_ROOT/'validation/gjf-cartesian-2026-10-22/source-cases.json').read_text())['cases']
-_SOURCE=(_ROOT/'validation/gjf-cartesian-2026-10-22/configured-source.gjf').read_text()
+_CASES=json.loads((_ROOT/'validation/gjf-cartesian-2026-10-22/source-cases.json').read_text(encoding="utf-8"))['cases']
+_SOURCE=(_ROOT/'validation/gjf-cartesian-2026-10-22/configured-source.gjf').read_text(encoding="utf-8")
 
 
 @pytest.mark.parametrize('case',_CASES,ids=lambda case:case['id'])

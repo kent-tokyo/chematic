@@ -4,7 +4,7 @@ import struct
 import pytest
 import chematic
 
-PACKET = json.loads((Path(__file__).resolve().parents[3] / 'validation/cml_3d/cases.json').read_text())
+PACKET = json.loads((Path(__file__).resolve().parents[3] / 'validation/cml_3d/cases.json').read_text(encoding="utf-8"))
 def variants(case):
     text = case['input']
     return [text, text.replace('\n', '\r\n'), ''.join(line.strip() for line in text.splitlines())]

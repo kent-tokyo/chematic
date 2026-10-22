@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 import chematic
 
-PACKET = json.loads((Path(__file__).parents[3] / 'validation/pdbqt_atom_data/cases.json').read_text())
+PACKET = json.loads((Path(__file__).parents[3] / 'validation/pdbqt_atom_data/cases.json').read_text(encoding="utf-8"))
 CASES = PACKET['cases']
 
 
