@@ -48,6 +48,8 @@ use chemdraw::*;
 mod mol2_ensemble;
 use mol2_ensemble::*;
 mod materials;
+mod pqr_checked;
+use pqr_checked::write_pqr_checked;
 mod mmcif_pdb;
 mod pdb_conect;
 use pdb_conect::*;
@@ -1409,6 +1411,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         mol2_reference_rmsds_json,
         convert_with_report_json,
         roundtrip_mol2_record,
+        project_mol2_to_cjson,
         kekulize_mol2_record,
         from_pdbqt,
         from_gjf,
@@ -1457,6 +1460,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         write_mmcif,
         parse_pqr,
         write_pqr,
+        write_pqr_checked,
         pqr_to_pdbqt,
         write_pdbqt_checked,
         infer_element,

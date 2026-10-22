@@ -413,8 +413,10 @@ class Mol:
         max_mmff_iters: int = 200,
     ) -> list[tuple[int, float, list[list[float]]]]:
         """Keep the lowest-energy candidate, then converged conformers from
-        both ETKDG/MMFF94 runs. The second uses the corrected gradient when
-        relevant, or new seeds otherwise. Uses twice the candidate work.
+        ETKDG/MMFF94 runs. The second uses the corrected gradient when
+        relevant; otherwise two additional runs use new seeds. Uses twice or
+        three times the candidate work, respectively, plus up to one or two
+        optional MMFF retries.
         """
         ...
 
@@ -540,6 +542,13 @@ class Mol:
         weights: list[float] | None = None,
     ) -> list[float]:
         """RDKit ``GetAllConformerBestRMS`` in ``(1,0), (2,0), (2,1), ...`` order."""
+        ...
+    def cluster_conformers_by_rms_symmetric(
+        self,
+        conformers: list[list[list[float]]],
+        rmsd_threshold: float = 0.5,
+    ) -> list[int]:
+        """Greedy symmetry-aware RMSD clusters; returns leader input indices."""
         ...
     def rdkit_all_conformer_best_rms_to_reference(
         self,
@@ -3498,6 +3507,17 @@ def parse_mol2_record_json(text: str) -> str:
     """Return source metadata and bounded graph interpretation as MOL2 record JSON."""
     ...
 
+def project_mol2_to_cjson(text: str | bytes) -> str:
+    """Project selected MOL2 fields to CJSON with mapped reparse checks.
+
+    Retains xyz, parsed name, projected graph and complete declared partial
+    charges. Incomplete/undeclared charge columns fail. Other metadata and
+    stereo are not retained or verified; use convert_with_report for losses.
+    NO_CHARGES zero placeholders are omitted as explicitly unassigned values.
+    Native conversion limits apply (16 MiB input/output, 10,000 atoms).
+    """
+    ...
+
 def roundtrip_mol2_record(text: str) -> str:
     """Validate one MOL2 record and preserve its exact source."""
     ...
@@ -3894,6 +3914,17 @@ def write_pqr(atoms: list[dict]) -> str:
     """Write a PQR file from atom records (same dict shape as
     :func:`parse_pqr`'s ``"atoms"``); ``element`` is inferred via
     :func:`infer_element` when omitted.
+    """
+    ...
+
+
+def write_pqr_checked(atoms: Iterable[dict], *, max_output_bytes: int = 67_108_864) -> str:
+    """Write ordered PQR atom fields with exact finite f64 values, without rounding.
+
+    Requires group_pdb/serial/atom_name/res_name/res_seq/x/y/z/charge/radius.
+    Optional chain_id/icode/element; rejects unknown fields, bool values,
+    negative radii and incompatible inferred elements. At most 100000 atoms,
+    64 MiB output. Non-atom source records/formatting are not represented.
     """
     ...
 
@@ -5474,7 +5505,14 @@ def convert_format(
     charges: Optional[list[float]] = None,
     name: str = "LIG",
     comment: str = "",
-) -> str: ...
+) -> str:
+    """Convert formats; same-format MOL2/CJSON validate and retain exact source.
+
+    Coordinate, charge, name and comment overrides are refused on those paths.
+    CJSON source retention validates the immutable local record profile;
+    opaque fields are retained without interpreting their chemistry.
+    """
+    ...
 
 def descriptors_df(smiles: Iterable[str]) -> Any:
     """Compute 55+ descriptors for a list of SMILES and return a DataFrame.

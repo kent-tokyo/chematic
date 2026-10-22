@@ -96,6 +96,7 @@ pub use conversion::{
     ConversionAtomMapping, ConversionBondMapping, ConversionError, ConversionLimits,
     ConversionObservation, ConversionPolicy, ConversionReport, PreservationStatus,
     convert_with_report, convert_with_report_json, convert_with_report_with_limits,
+    project_mol2_to_cjson, project_mol2_to_cjson_with_limits,
 };
 pub use error::MolParseError;
 pub use reaction_cdxml::{ReactionCdxmlError, write_reaction_cdxml_checked};
@@ -239,8 +240,9 @@ pub use pdbqt::{
     parse_pdbqt_with_limits, write_pdbqt, write_pdbqt_checked,
 };
 pub use pqr::{
-    PqrAtomRecord, PqrError, PqrParseLimits, PqrResult, infer_element, parse_pqr,
-    parse_pqr_with_limits, write_pqr,
+    PqrAtomRecord, PqrError, PqrParseLimits, PqrResult, PqrWriteError, PqrWriteLimits,
+    infer_element, parse_pqr, parse_pqr_with_limits, write_pqr, write_pqr_checked,
+    write_pqr_checked_with_limits,
 };
 pub use protein::{
     ProteinAtom, ProteinChain, ProteinProjection, ProteinProjectionError, ProteinResidue,
