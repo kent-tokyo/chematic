@@ -1,5 +1,17 @@
 use super::*;
 
+/// Project MOL2 to CJSON with checked graph/xyz/name/declared partial charges.
+/// Incomplete or undeclared charge columns fail; no values are computed/filled.
+/// Other MOL2 metadata and stereo are not retained or verified. Use
+/// convert_with_report for a complete loss report. Native conversion limits apply.
+#[pyfunction]
+pub(super) fn project_mol2_to_cjson(
+    #[pyo3(from_py_with = serialized_text)] text: &str,
+) -> PyResult<String> {
+    chematic_mol::project_mol2_to_cjson(text)
+        .map_err(|error| PyValueError::new_err(error.to_string()))
+}
+
 /// Replace only MOL2 ar bond tokens with explicit single/double orders.
 /// Bounded neutral C/N/O/S profile; other source bytes stay unchanged.
 #[pyfunction]
@@ -40,7 +52,7 @@ pub(super) fn roundtrip_cjson_record(text: &str) -> PyResult<String> {
         .map_err(|error| PyValueError::new_err(error.to_string()))
 }
 
-/// Checked MOL2/CJSON conversion with a shared machine-readable report.
+/// Checked MOL2/CJSON/CML conversion with a shared machine-readable report.
 #[pyfunction]
 #[pyo3(signature = (text, input_format, output_format, policy="strict"))]
 pub(super) fn convert_with_report_json(

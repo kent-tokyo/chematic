@@ -1,0 +1,1948 @@
+   Compiling chematic-mol v1.2.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol)
+    Finished `test` profile [unoptimized] target(s) in 13.15s
+     Running unittests src/lib.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/chematic_mol-ac676e43a8d88264)
+
+running 820 tests
+test cdxml::tests::bounded_parser_rejects_input_line_and_atom_limits ... ok
+test cdxml::tests::parse_cdxml_aromatic_bond_order_1_5 ... ok
+test cdxml::tests::parse_cdxml_bold_bond_is_wedge_up ... ok
+test cdxml::tests::bold_bond_between_two_stereocenters_abstains_both_sides ... ok
+test cdxml::tests::parse_cdxml_all_first_fragment_co ... ok
+test cdxml::tests::bounded_parser_rejects_bond_and_fragment_limits ... ok
+test cdxml::tests::parse_cdxml_benzene_all_aromatic_bonds ... ok
+test cdxml::tests::parse_cdxml_all_second_fragment_ncc ... ok
+test cdxml::tests::parse_cdxml_all_two_fragments_count ... ok
+test cdxml::tests::parse_cdxml_all_coords_independent ... ok
+test cdxml::tests::parse_cdxml_bold_addition_does_not_change_other_display_values ... ok
+test cdxml::tests::parse_cdxml_bold_bond_matches_wedge_begin ... ok
+test cdxml::tests::parse_cdxml_carbon_element_6 ... ok
+test cdxml::tests::parse_cdxml_charge ... ok
+test cdxml::tests::parse_cdxml_element_above_255_is_rejected ... ok
+test cdxml::tests::parse_cdxml_empty_doc_returns_empty_vec ... ok
+test cdxml::tests::parse_cdxml_double_bond ... ok
+test cdxml::tests::parse_cdxml_ethanol_atom_count ... ok
+test cdxml::tests::parse_cdxml_ethanol_coords ... ok
+test cdxml::tests::parse_cdxml_unknown_atomic_number_returns_err ... ok
+test cdxml::tests::parse_cdxml_ethanol_elements ... ok
+test cdxml::tests::rdkit_9359_hash_default_does_not_perceive_chirality ... ok
+test cdxml::tests::rdkit_9359_hash_perceives_chirality_when_opted_in ... ok
+test cdxml::tests::rdkit_9359_bold_default_does_not_perceive_chirality ... ok
+test cdxml::tests::rdkit_9359_bold_perceives_chirality_when_opted_in ... ok
+test cdxml::tests::rdkit_9359_bold_be_reversed_preserves_configuration ... ok
+test cdxml::tests::rdkit_9359_bold_and_hash_are_opposite_configurations ... ok
+test cdxml::tests::write_cdxml_roundtrip_charge_isotope_hcount ... ok
+test cdxml::tests::rdkit_9359_bold_matches_wedge_begin_configuration ... ok
+test cdxml::tests::rdkit_9359_wedge_begin_default_perceives_chirality ... ok
+test cdxml::tests::rdkit_9359_hash_be_reversed_preserves_configuration ... ok
+test cdxml::tests::rdkit_9359_wedge_end_does_not_assign_the_wide_endpoint ... ok
+test cdxml::tests::wedge_begin_between_two_stereocenters_is_not_ambiguous ... ok
+test cdxml::tests::rdkit_9359_no_display_has_no_chirality ... ok
+test cdxml::tests::rdkit_9359_bold_reflection_inverts_rotation_translation_preserves ... ok
+test cdxml::tests::write_cdxml_roundtrip_double_bond ... ok
+test cdxml::tests::write_cdxml_roundtrip_wedge_bond ... ok
+test cdxml_document::tests::accepts_empty_document_with_exact_root_name ... ok
+test cdxml::tests::write_cdxml_roundtrip_ethanol ... ok
+test cdxml_document::tests::accepts_self_closing_empty_page ... ok
+test cdxml_document::tests::edits_reject_ambiguous_page_ids ... ok
+test cdxml_document::tests::edits_minified_cdxml_without_expanding_its_layout ... ok
+test cdxml_document::tests::extracts_pages_from_minified_cdxml_without_changing_source ... ok
+test cdxml_document::tests::edits_reuse_the_document_resource_limits ... ok
+test cdxml_document::tests::edits_preserve_line_ending_and_trailing_newline_style ... ok
+test cdxml_document::tests::reads_typed_page_bounding_box_and_rejects_invalid_shape ... ok
+test cdxml_document::tests::rejects_attribute_budget ... ok
+test cdxml_document::tests::rejects_invalid_attribute_names_in_edits ... ok
+test cdxml_document::tests::reads_typed_text_style_and_rejects_invalid_size ... ok
+test cdxml_boundary_contract_tests::cdxml_typed_presentation_requires_finite_correctly_shaped_values ... ok
+test cdxml_document::tests::reads_typed_transform_and_z_order_without_guessing ... ok
+test cdxml_document::tests::rejects_malformed_page_nesting ... ok
+test cdxml_document::tests::preserves_pages_objects_and_unknown_attributes ... ok
+test cdxml_document::tests::rejects_missing_or_ambiguous_document_root ... ok
+test cdxml_document::tests::applies_json_command_across_multiple_pages ... ok
+test cdxml_document::tests::rejects_non_element_object_edits ... ok
+test cdxml_document::tests::rejects_page_budget ... ok
+test cdxml_document::tests::applies_page_and_object_edits_without_losing_unknown_data ... ok
+test cdxml_boundary_contract_tests::cdxml_document_structure_and_edit_errors_are_atomic ... ok
+test cdxml_document::tests::replaces_nested_object_by_loss_preserving_path ... ok
+test cif::tests::frac_to_cart_cubic_roundtrip ... ok
+test cif::tests::bounded_parser_rejects_oversized_input ... ok
+test cif::tests::bounded_parser_rejects_long_lines_before_tokenizing ... ok
+test cdxml_document::tests::reports_unknown_presentation_objects_without_dropping_them ... ok
+test cif::tests::parse_esd_stripped ... ok
+test cif::tests::bounded_parser_rejects_token_and_atom_budgets ... ok
+test cif::tests::parse_nacl_atom_count ... ok
+test cif::tests::parse_nacl_cl_at_body_center ... ok
+test cif::tests::parse_nacl_na_at_origin ... ok
+test cif::tests::parse_nacl_cell_params ... ok
+test cif::tests::unit_cell_volume_cubic ... ok
+test cjson::tests::bond_order_roundtrip ... ok
+test cif::tests::write_cif_roundtrip ... ok
+test cjson::tests::error_missing_atoms ... ok
+test cjson::tests::bounded_parser_rejects_input_and_record_limits ... ok
+test cjson::tests::error_unknown_atomic_number ... ok
+test cjson::tests::parse_with_charge ... ok
+test cjson::tests::parse_ethanol ... ok
+test cjson::tests::parse_benzene_aromatic_bonds ... ok
+test cjson::tests::parse_with_isotope ... ok
+test cjson::tests::parser_rejects_numeric_truncation_and_wrong_types ... ok
+test cjson::tests::roundtrip_with_coords ... ok
+test cml::tests::bounded_parser_rejects_input_and_line_limits ... ok
+test cml::tests::lenient_cml_boundary_remains_compatible ... ok
+test cjson::tests::write_no_coords ... ok
+test cml::tests::parse_cml_double_bond ... ok
+test cml::tests::bounded_parser_rejects_atom_and_bond_limits ... ok
+test cml::tests::parse_cml_ethanol_elements ... ok
+test cml::tests::parse_cml_ethanol_coords ... ok
+test cml::tests::parse_cml_ethanol_atom_count ... ok
+test cml::tests::parse_cml_formal_charge ... ok
+test cml::tests::parse_cml_unknown_element_returns_err ... ok
+test cml::tests::strict_cml_accepts_compact_xml ... ok
+test cml::tests::strict_cml_rejects_empty_and_unbalanced_documents ... ok
+test cml::tests::strict_cml_rejects_multiple_root_elements ... ok
+test cml::tests::strict_cml_does_not_parse_markup_inside_comment_or_cdata ... ok
+test cml::tests::strict_cml_rejects_unterminated_comment_and_cdata ... ok
+test cml::tests::strict_cml_accepts_writer_output ... ok
+test cml::tests::strict_cml_scanner_keeps_greater_than_inside_quoted_attribute ... ok
+test cml::tests::strict_cml_scanner_rejects_unterminated_quoted_attribute ... ok
+test cml::tests::write_cml_no_coords ... ok
+test cml::tests::write_cml_roundtrip ... ok
+test cube::tests::malformed_count_line_field_count_is_typed_error ... ok
+test cube::tests::negative_natoms_multi_dataset_is_typed_rejected ... ok
+test cube::tests::nan_voxel_value_is_typed_rejected ... ok
+test cube::tests::infinite_origin_is_typed_rejected ... ok
+test cube::tests::negative_ny_axis_count_is_typed_rejected ... ok
+test cube::tests::parse_hand_written_2x2x2_fixture ... ok
+test cube::tests::pathological_header_overflow_is_typed_error ... ok
+test cube::tests::pathological_header_within_usize_but_over_cap_is_typed_error ... ok
+test cube::tests::positive_natoms_with_nval_multi_dataset_is_typed_rejected ... ok
+test conversion::tests::candidate_isotope_or_charge_change_prevents_verified_correspondence ... ok
+test cube::tests::round_trip_2x2x2 ... ok
+test cube::tests::round_trip_3x2x4_non_cubic_shape ... ok
+test cube::tests::round_trip_angstrom_units_negative_axis_sign ... ok
+test cube::tests::round_trip_non_orthogonal_axes ... ok
+test cube::tests::streaming_reader_enforces_byte_limit ... ok
+test cube::tests::too_few_values_is_typed_mismatch ... ok
+test cube::tests::too_many_atoms_is_typed_error ... ok
+test cube::tests::streaming_reader_matches_whole_string_parse ... ok
+test cube::tests::too_many_values_is_typed_trailing_data_error ... ok
+test cube::tests::truncated_input_is_typed_error_not_panic ... ok
+test cube::tests::unknown_atomic_number_is_typed_rejected ... ok
+test cube::tests::write_rejects_dimension_exceeding_i64_max ... ok
+test cube::tests::write_rejects_nan_via_validate ... ok
+test cjson::tests::shared_cjson_contract_rejects_malformed_input ... ok
+test cube::tests::write_rejects_zero_dimension_shape ... ok
+test docking_boundary_contract_tests::docking_malformed_numeric_fields_and_limits_are_errors ... ok
+test cml::tests::shared_cml_roundtrip_contract_matches ... ok
+test format_bridge_boundary_contract_tests::cdxml_empty_fragments_default_coordinates_and_missing_pseudoatom_names_are_explicit ... ok
+test docking_boundary_contract_tests::docking_types_preserve_elements_coordinates_and_partial_charges ... ok
+test format_bridge_boundary_contract_tests::cdxml_comments_cdata_and_multiline_attributes_do_not_create_phantom_atoms ... ok
+test format_bridge_boundary_contract_tests::cjson_default_bonds_negative_indices_and_string_budgets_are_explicit ... ok
+test cjson::tests::shared_cjson_roundtrip_contract_matches ... ok
+test format_bridge_boundary_contract_tests::lammps_velocities_and_image_flags_survive_writer_round_trip ... ok
+test format_bridge_boundary_contract_tests::mrv_writer_reports_unkekulizable_aromatic_input_without_changing_it ... ok
+test format_bridge_boundary_contract_tests::mol2_boundary_malformed_attribute_records_report_the_actual_field ... ok
+test format_bridge_boundary_contract_tests::qcschema_raw_conversion_errors_preserve_the_input_and_report_indices ... ok
+test format_bridge_boundary_contract_tests::qcschema_numeric_bond_orders_round_trip_with_bohr_coordinates ... ok
+test format_bridge_boundary_contract_tests::mol2_boundary_charge_edits_keep_status_bits_and_opaque_metadata ... ok
+test format_bridge_boundary_contract_tests::xyz_boundary_batches_finish_and_cancel_without_reading_another_frame ... ok
+test format_bridge_boundary_contract_tests::xyz_boundary_typed_properties_and_terminal_stream_errors ... ok
+test format_limit_contract_tests::cif_cartesian_rows_ignore_other_loops_and_preserve_quoted_metadata ... ok
+test format_bridge_boundary_contract_tests::mrv_missing_atom_refs_and_escaped_stereo_values_return_actionable_errors ... ok
+test format_limit_contract_tests::cif_missing_columns_cells_and_degenerate_geometry_return_typed_diagnostics ... ok
+test docking_boundary_contract_tests::tripos_atom_and_bond_failures_report_the_record_location ... ok
+test format_limit_contract_tests::conformer_mol_writer_preserves_3d_header_and_coordinate_precision ... ok
+test format_limit_contract_tests::gaussian_input_diagnostics_preserve_bad_tokens_and_limits ... ok
+test format_limit_contract_tests::orca_external_and_internal_coordinates_round_trip_without_interpreting_the_payload ... ok
+test format_limit_contract_tests::json_graph_errors_identify_the_missing_field_or_reference ... ok
+test format_limit_contract_tests::mrv_writer_preserves_three_dimensional_coordinates_and_atom_metadata ... ok
+test format_limit_contract_tests::mrv_stereo_encodings_and_coordination_conventions_have_typed_boundaries ... ok
+test format_limit_contract_tests::orca_input_limits_accept_exact_sizes_and_reject_the_next_item ... ok
+test format_bridge_boundary_contract_tests::cdxml_minification_preserves_fragment_order_attributes_and_physical_budgets ... ok
+test format_limit_contract_tests::orca_output_limits_bound_geometry_trajectories_and_frequencies ... ok
+test format_limit_contract_tests::cml_preserves_each_supported_bond_and_explicit_atom_annotation ... ok
+test format_limit_contract_tests::pqr_field_errors_keep_the_line_and_original_token ... ok
+test format_limit_contract_tests::mmcif_missing_columns_and_invalid_numbers_are_actionable ... ok
+test format_limit_contract_tests::volumetric_writers_reject_nonfinite_and_inconsistent_public_grids ... ok
+test format_limit_contract_tests::sdf_string_readers_handle_terminal_delimiters_fields_and_each_record_budget ... ok
+test format_limit_contract_tests::smiles_table_diagnostics_keep_physical_lines_and_record_ordinals ... ok
+test format_limit_contract_tests::tdt_diagnostics_keep_tag_names_and_record_context ... ok
+test gaussian::tests::bounded_gaussian_parsers_reject_atom_limit ... ok
+test format_limit_contract_tests::rxn_file_failures_keep_component_counts_and_nested_mol_context ... ok
+test format_limit_contract_tests::xyz_and_extxyz_diagnostics_identify_bad_coordinates_and_properties ... ok
+test gaussian::tests::bounded_gaussian_parsers_reject_input_and_line_limits ... ok
+test gaussian::tests::parse_gjf_charged_molecule ... ok
+test format_bridge_boundary_contract_tests::v3000_boundary_query_bonds_and_rgroup_spellings_round_trip ... ok
+test gaussian::tests::parse_gjf_first_coord ... ok
+test gaussian::tests::parse_gjf_atom_count ... ok
+test format_limit_contract_tests::qcschema_rejections_identify_the_invalid_field_or_graph_structure ... ok
+test gaussian::tests::parse_log_geometry ... ok
+test gaussian::tests::parse_log_energy ... ok
+test gaussian::tests::parse_log_last_orientation ... ok
+test gaussian::tests::write_gjf_roundtrip ... ok
+test ket::tests::parse_ket_charged_atom ... ok
+test ket::tests::parse_ket_bad_bond_index_errors ... ok
+test ket::tests::parse_ket_ethanol_nested ... ok
+test ket::tests::ket_round_trip_ethanol ... ok
+test ket::tests::parse_ket_limits_are_typed_and_shared_by_2d_and_3d_paths ... ok
+test format_limit_contract_tests::json_format_budgets_report_the_resource_and_boundary ... ok
+test ket::tests::parse_ket_unknown_element_errors ... ok
+test ket::tests::parse_ket_benzene_flat ... ok
+test ket::tests::parse_ket_stereo_bonds ... ok
+test lammps_boundary_contract_tests::lammps_boxes_reject_nonfinite_bounds_and_tilts ... ok
+test ket::tests::write_ket_produces_valid_json ... ok
+test lammps_data::tests::atom_count_mismatch_is_typed_error ... ok
+test lammps_data::tests::bounded_parser_rejects_input_and_line_limits ... ok
+test lammps_data::tests::bounded_parser_rejects_typed_section_rows ... ok
+test lammps_boundary_contract_tests::all_lammps_resource_limits_apply_to_their_sections ... ok
+test lammps_data::tests::bond_referencing_unknown_atom_is_typed_error ... ok
+test lammps_data::tests::malformed_header_is_typed_error ... ok
+test lammps_data::tests::duplicate_atom_id_is_typed_error ... ok
+test lammps_data::tests::invalid_box_is_typed_error ... ok
+test lammps_data::tests::non_finite_value_is_typed_error ... ok
+test lammps_data::tests::opaque_sections_round_trip_as_exact_fixed_point ... ok
+test lammps_data::tests::parses_atomic_fixture ... ok
+test lammps_data::tests::round_trip_full_style_with_image_flags ... ok
+test lammps_data::tests::round_trip_atomic_style ... ok
+test lammps_data::tests::unsupported_atom_style_is_typed_error ... ok
+test lammps_data::tests::trailing_comments_are_stripped_on_typed_rows ... ok
+test lammps_data::tests::type_labels_framework_is_rejected_not_misparsed ... ok
+test lammps_data::tests::round_trip_charge_style ... ok
+test lammps_data::tests::round_trip_triclinic_box ... ok
+test lammps_data::tests::round_trip_molecular_style ... ok
+test lammps_data::tests::zero_row_opaque_section_is_a_fixed_point ... ok
+test lammps_dump::tests::atom_count_mismatch_is_typed_error_not_corruption ... ok
+test lammps_dump::tests::bounded_frame_parser_rejects_input_and_line_limits ... ok
+test lammps_dump::tests::bounded_frame_parser_rejects_atom_and_column_limits ... ok
+test lammps_dump::tests::bounded_reader_rejects_a_frame_beyond_frame_budget ... ok
+test lammps_dump::tests::cartesian_positions_none_for_unwrapped_only_columns ... ok
+test lammps_dump::tests::box_bounds_column_count_disagrees_with_header_flag_is_typed_error ... ok
+test lammps_dump::tests::cartesian_positions_passes_through_x_y_z ... ok
+test lammps_dump::tests::column_count_mismatch_is_typed_error ... ok
+test lammps_boundary_contract_tests::malformed_lammps_sections_have_useful_diagnostics ... ok
+test lammps_dump::tests::empty_input_is_truncated_input_not_panic ... ok
+test lammps_dump::tests::custom_column_names_round_trip ... ok
+test lammps_dump::tests::non_finite_value_is_typed_error ... ok
+test lammps_dump::tests::multi_frame_streaming_round_trip ... ok
+test lammps_dump::tests::scaled_coordinates_orthogonal_hand_computed ... ok
+test lammps_dump::tests::round_trip_orthogonal_frame ... ok
+test lammps_dump::tests::scaled_coordinates_triclinic_hand_computed ... ok
+test lammps_dump::tests::triclinic_bound_conversion_matches_hand_computed_absolute_values ... ok
+test lammps_dump::tests::round_trip_triclinic_frame ... ok
+test lammps_dump::tests::triclinic_bound_true_bound_identity_over_several_tilts ... ok
+test lammps_dump::tests::truncated_input_is_typed_error_not_panic ... ok
+test lammps_dump::tests::unexpected_item_is_typed_error ... ok
+test lammps_dump::tests::zero_atom_frame_does_not_panic_or_error ... ok
+test mmcif::tests::all_caps_type_symbol_still_resolves ... ok
+test mmcif::tests::both_auth_and_label_as_placeholder_does_not_leak_the_dot_into_stored_data ... ok
+test mmcif::tests::infinity_coordinate_is_rejected ... ok
+test mmcif::tests::input_too_large_is_rejected ... ok
+test mmcif::tests::atom_name_with_quote_character_round_trips ... ok
+test mmcif::tests::legacy_postfix_sign_formal_charge_is_accepted ... ok
+test mmcif::tests::line_too_long_is_rejected ... ok
+test mmcif::tests::missing_atom_site_loop_is_typed_error_not_panic ... ok
+test mmcif::tests::insertion_code_placeholder_is_none ... ok
+test mmcif::tests::missing_coordinate_columns_is_typed_error ... ok
+test mmcif::tests::nan_coordinate_is_rejected ... ok
+test mmcif::tests::oracle_two_atom_water_like_fragment ... ok
+test mmcif::tests::entity_id_round_trips ... ok
+test mmcif::tests::quote_cif_value_quotes_values_with_whitespace ... ok
+test mmcif::tests::malformed_input_never_panics ... ok
+test mmcif::tests::label_seq_id_is_not_fabricated_for_hetatm_on_write ... ok
+test mmcif::tests::unhandled_columns_reports_unmapped_tag ... ok
+test mmcif::tests::unknown_element_is_typed_error_not_panic ... ok
+test mmcif::tests::unhandled_columns_is_empty_for_fully_modeled_fixture ... ok
+test mmcif::tests::parses_cell_and_symmetry ... ok
+test mmcif::tests::parses_atom_count_and_models ... ok
+test mmcif::tests::round_trip_preserves_metadata ... ok
+test mmcif::tests::parses_chain_residue_altloc_and_charge ... ok
+test mmcif::tests::to_molecule_builds_atoms_with_no_bonds ... ok
+test mmcif::tests::too_many_atoms_is_rejected ... ok
+test mol2000::square_planar_tests::classify_rejects_ambiguous_geometry_with_no_trans_pair ... ok
+test mol2000::square_planar_tests::classify_recovers_all_three_tags_from_ideal_geometry ... ok
+test mol2000::square_planar_tests::classify_rejects_degenerate_coincident_neighbor ... ok
+test mol2000::square_planar_tests::classify_rejects_genuinely_tetrahedral_geometry_as_not_coplanar ... ok
+test mol2000::square_planar_tests::perceive_never_tags_an_element_with_a_defined_valence ... ok
+test mol2000::square_planar_tests::perceive_assigns_all_three_tags_for_an_undefined_valence_element ... ok
+test mol2000::square_planar_tests::perceive_reports_a_diagnostic_for_coplanar_but_ambiguous_geometry ... ok
+test mol2000::square_planar_tests::validate_is_a_no_op_for_a_molecule_with_no_square_planar_atom ... ok
+test mol2000::square_planar_tests::validate_accepts_matching_geometry_and_checked_writer_produces_output ... ok
+test mol2000::square_planar_tests::validate_rejects_geometry_tag_mismatch ... ok
+test mol2000::square_planar_tests::validate_rejects_implicit_hydrogen_neighbor_slot ... ok
+test mol2000::square_planar_tests::validate_rejects_no_conformer_supplied ... ok
+test mol2000::square_planar_tests::validate_rejects_whole_molecule_flat_conformer ... ok
+test mol2000::square_planar_tests::wedge_vs_3d_conflicts_skips_square_planar_chirality ... ok
+test mol2000::tests::atom_map_round_trips_through_v2000 ... ok
+test mol2000::stereo3d_ring::partner_tests::a_distinct_ring_ch_partner_is_retained ... ok
+test mol2000::tests::ctfile_default_valence_retains_nonorganic_hydrogens ... ok
+test mol2000::stereo3d_ring::partner_tests::a_ring_ch_cannot_be_its_own_paired_center ... ok
+test mol2000::stereo_loss_message_boundary_tests::actual_degenerate_layout_loss_reports_the_unexpressed_stereo_identity ... ok
+test mol2000::tests::isotope_mass_difference_round_trips_through_v2000_and_sdf ... ok
+test mol2000::tests::m_chg_property_overrides_fixed_width_charge_in_all_reader_paths ... ok
+test mol2000::tests::fixed_width_integer_writers_match_rust_formatting ... ok
+test mol2000::tests::m_iso_property_overrides_fixed_width_mass_in_all_reader_paths ... ok
+test mol2000::tests::malformed_m_iso_is_a_typed_property_error ... ok
+test mol2000::large_collinear_coordinate_cloud_is_coplanar ... ok
+test mol2000::tests::reusable_sdf_buffer_is_byte_identical_and_cleared ... ok
+test mol2000::tests::single_hash_centre_with_unequal_flat_bonds_reads_rdkit_parity ... ok
+test mol2000::tests::test_charged_atom_writes_implicit_h_in_smiles ... ok
+test mol2000::tests::test_declared_max_atom_count_truncated_input_errors ... ok
+test mol2000::tests::test_declared_large_bond_count_truncated_input_errors ... ok
+test mol2000::tests::rdkit_2d_mol_roundtrip_preserves_alkene_stereo_and_isotope ... ok
+test mol2000::tests::test_error_invalid_counts_line ... ok
+test mol2000::tests::test_error_missing_v2000 ... ok
+test mol2000::tests::test_error_truncated_input ... ok
+test mol2000::tests::test_molmetadata_builder ... ok
+test mol2000::tests::test_molmetadata_with_name_roundtrip ... ok
+test mol2000::tests::test_parse_bond_type_9_is_dative ... ok
+test mol2000::tests::test_parse_bond_types ... ok
+test mol2000::tests::aromatic_bond_atoms_read_as_aromatic ... ok
+test mol2000::tests::test_parse_elements ... ok
+test mol2000::tests::test_parse_charge ... ok
+test mol2000::tests::test_parse_ethanol_counts ... ok
+test mol2000::tests::test_parse_query_bond_types_preserved ... ok
+test mol2000::tests::test_parse_negative_charge ... ok
+test mol2000::tests::test_parse_sdf_with_coords_blank_name_middle_record ... ok
+test mol2000::tests::test_parse_stereo_down_bond ... ok
+test mol2000::tests::test_parse_stereo_up_bond ... ok
+test mol2000::tests::test_parse_stereo_either_bond_code4_not_treated_as_wedge ... ok
+test mol2000::tests::test_read_sdf_with_diagnostics_blank_name_last_record ... ok
+test mol2000::tests::test_read_sdf_with_diagnostics_blank_name_crlf ... ok
+test mol2000::tests::test_read_sdf_with_diagnostics_blank_name_middle_record ... ok
+test mol2000::tests::test_read_sdf_with_diagnostics_blank_name_single_record ... ok
+test mol2000::tests::test_read_sdf_with_diagnostics_blank_name_first_record ... ok
+test mol2000::tests::test_read_sdf_with_diagnostics_malformed_input_recovery_unaffected ... ok
+test mol2000::tests::test_write_contains_v2000 ... ok
+test mol2000::tests::test_round_trip ... ok
+test mol2000::tests::test_round_trip_elements_preserved ... ok
+test mol2000::tests::test_write_contains_m_end ... ok
+test mol2000::tests::shared_mol_v2000_roundtrip_contract_matches ... ok
+test mol2000::tests::test_write_sdf_record_props_roundtrip ... ok
+test mol2000::tests::unmarked_3d_imino_phosphorus_keeps_tetrahedral_stereo ... ok
+test mol2000::tests::unmarked_3d_ring_ch_and_quaternary_partner_keep_relative_stereo ... ok
+test mol2000::tests::valence_field_keeps_hydrogen_counts_bonds_do_not_give ... ok
+test mol2000::tests::unmarked_3d_ring_with_three_ch_partners_keeps_all_four_tags ... ok
+test mol2000::writer::sd_field_tests::sd_field_bytes_match_original_for_hidden_unicode_and_literal_values ... ok
+test mol2000::writer::zero_atom_fields_tests::r_group_symbols_keep_labels_and_exact_field_offsets ... ok
+test mol2_source::tests::amide_bonds_are_single_not_aromatic ... ok
+test mol2_source::tests::bounded_parser_rejects_atom_and_bond_limits ... ok
+test mol2_source::tests::bounded_parser_rejects_input_and_line_limits ... ok
+test mol2_source::tests::graph_writer_does_not_claim_computed_partial_charges ... ok
+test mol2_source::tests::partial_charges_are_not_formal_charges ... ok
+test mol2_source::tests::shared_mol2_roundtrip_contract_matches ... ok
+test mol2_source::tests::test_aromatic_bond_type ... ok
+test mol2_source::tests::test_missing_atom_section ... ok
+test mol2_source::tests::test_parse_mol2_atom_count ... ok
+test mol2_source::tests::test_parse_mol2_coords ... ok
+test mol2_source::tests::test_parse_mol2_elements ... ok
+test mol2_source::tests::test_write_mol2_roundtrip ... ok
+test mol2_source::tests::unknown_bond_type_does_not_silently_become_single ... ok
+test mol2000::v3000_integer_tests::decimal_table_and_fallback_match_integer_formatter ... ok
+test mol2_tripos::tests::amide_bond_type_is_single_and_keeps_its_source_token ... ok
+test mol2_tripos::tests::aromatic_atom_type_sets_aromatic_atom_state ... ok
+test mol2_tripos::tests::bounded_parser_rejects_atom_and_bond_limits ... ok
+test mol2_tripos::tests::bounded_parser_rejects_input_and_line_limits ... ok
+test mol2_tripos::tests::duplicate_bond_rows_are_retained_for_same_format_rewrite ... ok
+test mol2_tripos::tests::multi_molecule_stream_is_a_typed_refusal ... ok
+test mol2_tripos::tests::partial_charge_is_not_guessed_as_formal_charge ... ok
+test mol2_tripos::tests::record_roundtrip_preserves_interchange_fields ... ok
+test mol2_tripos::tests::shared_mol2_roundtrip_contract_matches ... ok
+test mol2_tripos::tests::test_aromatic_bond_type ... ok
+test mol2_tripos::tests::test_missing_atom_section ... ok
+test mol2_tripos::tests::test_parse_mol2_atom_count ... ok
+test mol2_tripos::tests::test_parse_mol2_coords ... ok
+test mol2_tripos::tests::test_parse_mol2_elements ... ok
+test mol2_tripos::tests::test_write_mol2_roundtrip ... ok
+test mol2_tripos::tests::unity_formal_charge_is_distinct_from_partial_charge ... ok
+test mol2000::reader::stereo3d_guard_tests::candidate_boundaries_lone_pairs_rings_and_existing_stereo_are_preserved ... ok
+test mol3000::attribute_tail_tests::moved_endpoint_properties_match_the_complete_original_string_transform ... ok
+test mol3000::attribute_tail_tests::absent_cfg_opaque_sparse_and_malformed_attributes_keep_reports_and_errors ... ok
+test mol3000::count_capacity_tests::allocation_waits_for_atom_block_and_is_bounded_by_real_rows ... ok
+test mol2_tripos::atom_index::tests::prepared_lookup_matches_frozen_first_match_for_every_id ... ok
+test mol3000::count_capacity_tests::incomplete_counts_and_block_markers_match_original ... ok
+test mol3000::count_capacity_tests::rounded_capacity_matches_original_growth_with_sufficient_row_budget ... ok
+test mol3000::tests::aromatic_ring_wildcard_uses_kekule_bonds_in_v3000 ... ok
+test mol3000::tests::bracket_atom_valence_and_radicals_survive_v3000_writing ... ok
+test mol3000::tests::charged_atoms_retain_needed_hcount_and_omit_redundant_hcount ... ok
+test mol3000::tests::dative_bonds_do_not_hide_unspecified_double_bond_stereo ... ok
+test mol3000::tests::dative_carbonyl_does_not_emit_fictitious_ez_direction ... ok
+test mol3000::tests::decorated_wildcards_keep_their_identity_in_v3000 ... ok
+test mol3000::tests::highly_charged_carbon_keeps_explicit_valence_in_v3000 ... ok
+test mol3000::tests::neutral_phosphorus_omits_only_inferred_hcount_in_v3000 ... ok
+test mol3000::tests::rejects_malformed_coordinates_and_records_after_terminator ... ok
+test mol3000::tests::shared_mol_v3000_roundtrip_contract_matches ... ok
+test mol3000::tests::test_aromatic_bond ... ok
+test mol3000::tests::test_atom_map ... ok
+test mol3000::tests::test_dative_bond_type_9_round_trips ... ok
+test mol3000::tests::test_double_bond ... ok
+test mol3000::tests::test_ethanol_bond_0_1_single ... ok
+test mol3000::tests::test_ethanol_bond_1_2_single ... ok
+test mol2000::writer::zero_atom_fields_tests::atom_field_boundaries_preserve_zero_nonzero_and_overflow_bytes ... ok
+test mol3000::tests::test_ethanol_counts ... ok
+test mol3000::tests::test_ethanol_elements ... ok
+test mol3000::tests::test_isotope ... ok
+test mol3000::tests::test_line_continuation ... ok
+test mol3000::tests::test_metadata ... ok
+test mol3000::tests::test_methane_counts ... ok
+test mol3000::tests::test_missing_end_atom_is_error ... ok
+test mol3000::tests::test_negative_charge ... ok
+test mol3000::tests::test_positive_charge ... ok
+test mol3000::tests::test_query_bond_types_preserved ... ok
+test mol3000::tests::test_triple_bond ... ok
+test mol3000::tests::unusual_explicit_hydrogen_valence_is_written_for_non_organic_atoms ... ok
+test mol3000::tests::v3000_source_radical_attributes_are_not_duplicated ... ok
+test mol3000::tests::three_coordinate_sulfur_stereo_survives_v3000 ... ok
+test mol3000::token_buffer_tests::attributes_and_bad_numbers_keep_first_match_and_line_errors ... ok
+test mol3000::count_capacity_tests::count_transitions_errors_and_allocation_bounds_match_original ... ok
+test mol3000::writer::coordinate_format_tests::complete_3d_rows_preserve_f64_edges_and_map_boundaries ... ok
+test mol3000::token_buffer_tests::long_short_empty_and_continued_rows_keep_full_reports ... ok
+test mol3000::writer::coordinate_format_tests::growing_atom_ids_and_pseudoatoms_match_original ... ok
+test mol3000::token_buffer_tests::malformed_physical_and_logical_rows_keep_error_details ... ok
+test mol3000::writer::loss_collection_tests::reporting_api_keeps_losses_and_groups_with_empty_and_supplied_coordinates ... ok
+test mol2000::tests::push_fixed4_matches_the_float_formatter ... ok
+test mol3000::writer::speed_tests::cfg_filter_retains_first_match_and_historical_whitespace ... ok
+test mol3000::writer::speed_tests::growing_records_and_opaque_properties_are_byte_identical ... ok
+test mol3000::writer::speed_tests::numeric_edges_and_missing_coordinates_are_byte_identical ... ok
+test mol3000::writer::speed_tests::reference_writer_covers_query_bonds_rgroups_and_enhanced_stereo ... ok
+test mol3000::writer::speed_tests::reference_writer_exercises_depiction_and_checked_failure_paths ... ok
+test mol3000::writer::write_tests::test_stereo_group_duplicate_atoms_deduplicated ... ok
+test mol3000::writer::write_tests::v3000_sgroup_has_strict_typed_view_without_losing_source_line ... ok
+test mol3000::writer::write_tests::v3000_sgroup_is_preserved_as_opaque_metadata ... ok
+test mol3000::writer::write_tests::v3000_sgroup_typed_view_rejects_count_and_id_errors ... ok
+test mol3000::writer::write_tests::write_v3000_contains_v3000_tag ... ok
+test mol3000::writer::write_tests::write_v3000_roundtrip_ethanol ... ok
+test mol3000::writer::write_tests::write_v3000_stereo_group_roundtrip ... ok
+test mol3000::zero_z_tests::deterministic_f64_fallback_and_signed_zero_match_original ... ok
+test mol3000::zero_z_tests::zero_spellings_and_failure_precedence_match_original ... ok
+test mol_boundary_contract_tests::chemical_json_reports_invalid_values_at_the_corresponding_field ... ok
+test mol_boundary_contract_tests::mol2000_rejects_invalid_atom_and_bond_records ... ok
+test mol_boundary_contract_tests::mol2000_rejects_malformed_charges_and_rgroup_properties ... ok
+test mol_boundary_contract_tests::mol3000_rejects_invalid_atoms_and_unresolvable_bond_endpoints ... ok
+test moljson::tests::atom_ids_sequential ... ok
+test moljson::tests::bounded_parser_rejects_atom_and_bond_limits ... ok
+test moljson::tests::bounded_parser_rejects_input_and_json_limits ... ok
+test moljson::tests::hydrogens_count_in_output ... ok
+test moljson::tests::parse_rejects_bad_bond_ref ... ok
+test moljson::tests::parse_rejects_invalid_json ... ok
+test moljson::tests::parse_rejects_unknown_element ... ok
+test moljson::tests::roundtrip_aromatic_nh ... ok
+test moljson::tests::roundtrip_aspirin ... ok
+test moljson::tests::roundtrip_benzene ... ok
+test moljson::tests::roundtrip_charged ... ok
+test moljson::tests::roundtrip_charged_carbon ... ok
+test moljson::tests::roundtrip_ethanol ... ok
+test moljson::tests::roundtrip_isotope ... ok
+test moljson::tests::shared_moljson_roundtrip_contract_matches ... ok
+test mrv::adversarial_tests::billion_laughs_style_entity_chain_rejected_outright ... ok
+test mrv::adversarial_tests::deeply_nested_elements_hit_depth_limit_not_stack_overflow ... ok
+test mrv::adversarial_tests::empty_input_is_explicit_error_not_panic ... ok
+test mol2000::writer::sd_field_tests::plain_bytes_and_reporting_losses_match_frozen_writer_on_pinned_records ... ok
+test mrv::adversarial_tests::invalid_utf8_boundary_input_does_not_panic ... ok
+test mrv::adversarial_tests::nan_infinity_coordinate_values_do_not_panic ... ok
+test mrv::adversarial_tests::oversized_attribute_is_explicit_error_not_panic ... ok
+test mrv::adversarial_tests::oversized_input_is_explicit_error_not_panic ... ok
+test mrv::adversarial_tests::random_mutation_corpus_never_panics ... ok
+test mrv::adversarial_tests::truncated_input_no_panic ... ok
+test mrv::adversarial_tests::xxe_local_file_reference_rejected_outright ... ok
+test mrv::tests::aromatic_bond_marks_both_atoms_aromatic ... ok
+test mrv::tests::cml_with_no_molecule_is_lenient_empty_result ... ok
+test mrv::tests::disconnected_fragments_share_one_atom_bond_array ... ok
+test mrv::tests::doctype_declaration_is_rejected ... ok
+test mrv::tests::duplicate_atom_id_is_error ... ok
+test mrv::tests::enhanced_stereo_group_is_unsupported_feature ... ok
+test mrv::tests::entity_declaration_is_rejected ... ok
+test mrv::tests::missing_cml_root_is_error ... ok
+test mrv::tests::parses_basic_molecule_with_2d_coords ... ok
+test mrv::tests::parses_charge_isotope_atom_map ... ok
+test mrv::tests::query_bond_is_unsupported_feature ... ok
+test mrv::tests::reaction_list_is_unsupported_feature ... ok
+test mrv::tests::rgroup_placeholder_atom_is_unsupported_feature ... ok
+test mrv::tests::round_trip_write_then_read_preserves_atoms_and_bonds ... ok
+test mrv::tests::sgroup_nested_molecule_is_unsupported_feature ... ok
+test mrv::tests::two_d_coords_perceive_ez_direction ... ok
+test mrv::tests::unknown_atom_ref_in_bond_is_error ... ok
+test mrv::tests::unknown_element_symbol_is_error ... ok
+test mrv::tests::unsupported_bond_order_writer_error ... ok
+test mrv::tests::unterminated_tag_is_malformed_xml_error ... ok
+test mrv::tests::wedge_2d_perceives_tetrahedral_chirality ... ok
+test mrv::tests::wedge_and_dash_bond_stereo_round_trip ... ok
+test mrv::tests::writer_kekulizes_benzene_by_default ... ok
+test nucleic_acid::tests::ambiguous_atom_mapping_is_typed ... ok
+test nucleic_acid::tests::annotation_edit_preserves_topology ... ok
+test nucleic_acid::tests::input_limit_is_typed_before_parsing ... ok
+test nucleic_acid::tests::unknown_modification_is_typed ... ok
+test nucleic_acid::tests::valid_document_roundtrips_without_loss ... ok
+test nucleic_acid_boundary_tests::each_nucleic_acid_resource_limit_is_enforced ... ok
+test nucleic_acid_boundary_tests::failed_nucleic_acid_edits_preserve_the_document_and_report_missing_targets ... ok
+test nucleic_acid_boundary_tests::invalid_nucleic_acid_topology_reports_the_source_path ... ok
+test nucleic_acid_boundary_tests::nucleic_acid_diagnostics_keep_machine_codes_and_source_paths ... ok
+test opendx::tests::footer_is_not_required_to_round_trip ... ok
+test opendx::tests::gridconnections_mismatch_is_typed_error ... ok
+test opendx::tests::infinite_origin_is_typed_rejected ... ok
+test opendx::tests::items_count_mismatch_is_typed_error ... ok
+test opendx::tests::nan_data_value_is_typed_rejected ... ok
+test opendx::tests::parse_hand_written_2x2x2_fixture_with_leading_comments ... ok
+test opendx::tests::pathological_header_overflow_is_typed_error ... ok
+test opendx::tests::pathological_header_within_usize_but_over_cap_is_typed_error ... ok
+test opendx::tests::round_trip_2x2x2 ... ok
+test opendx::tests::round_trip_3x2x4_non_cubic_shape ... ok
+test opendx::tests::round_trip_non_orthogonal_delta_vectors ... ok
+test opendx::tests::too_few_values_is_typed_mismatch ... ok
+test opendx::tests::too_many_values_is_typed_trailing_data_error ... ok
+test opendx::tests::truncated_input_is_typed_error_not_panic ... ok
+test opendx::tests::unsupported_rank_is_typed_rejected ... ok
+test opendx::tests::write_lossy_converts_bohr_origin_and_axes_but_not_values ... ok
+test opendx::tests::write_lossy_still_rejects_atoms ... ok
+test opendx::tests::write_rejects_bohr_units_rather_than_silently_reinterpreting ... ok
+test opendx::tests::write_rejects_nan_via_validate ... ok
+test opendx::tests::write_rejects_nonempty_atoms ... ok
+test opendx::tests::write_rejects_zero_dimension_shape ... ok
+test orca::tests::bounded_input_parser_rejects_coordinate_atom_limit ... ok
+test orca::tests::bounded_input_parser_rejects_input_and_line_limits ... ok
+test orca::tests::input_block_with_nested_end_round_trips ... ok
+test orca::tests::input_empty_string_parses_to_empty_struct ... ok
+test orca::tests::input_garbage_top_level_line_is_typed_error_not_panic ... ok
+test orca::tests::input_int_variant_preserves_raw_zmatrix ... ok
+test orca::tests::input_malformed_charge_multiplicity_is_typed_error ... ok
+test orca::tests::input_nan_infinity_coordinate_rejected ... ok
+test orca::tests::input_no_end_directive_followed_by_multiline_block ... ok
+test orca::tests::input_no_end_single_line_directive_round_trips ... ok
+test orca::tests::input_round_trip_frozen_coordinate_marker ... ok
+test orca::tests::input_round_trip_semantic_equality ... ok
+test orca::tests::input_round_trip_unknown_block_survives_verbatim ... ok
+test orca::tests::input_single_line_block_round_trips ... ok
+test orca::tests::input_unknown_element_is_typed_error ... ok
+test orca::tests::input_unterminated_block_is_typed_error_not_panic ... ok
+test orca::tests::input_unterminated_coord_block_is_typed_error ... ok
+test orca::tests::input_xyzfile_variant ... ok
+test orca::tests::output_charge_and_multiplicity ... ok
+test orca::tests::output_empty_input_is_incomplete_not_panic ... ok
+test orca::tests::output_error_termination_detected ... ok
+test orca::tests::output_explicit_limits_reject_geometry_and_frequency_growth ... ok
+test orca::tests::output_explicit_limits_reject_line_and_frame_growth ... ok
+test orca::tests::output_final_energy ... ok
+test orca::tests::output_final_geometry_and_trajectory ... ok
+test orca::tests::output_frequencies ... ok
+test orca::tests::output_garbage_input_does_not_panic ... ok
+test orca::tests::output_nan_infinity_coordinate_rejected ... ok
+test orca::tests::output_nan_infinity_energy_rejected ... ok
+test orca::tests::output_nan_infinity_frequency_rejected ... ok
+test orca::tests::output_no_optimization_job_is_not_requested ... ok
+test orca::tests::output_optimization_not_converged ... ok
+test mrv::adversarial_tests::excessive_atom_count_does_not_panic_or_hang ... ok
+test orca::tests::output_termination_and_convergence ... ok
+test orca::tests::output_truncated_mid_optimization_is_incomplete_not_error ... ok
+test orca::tests::output_unrecognized_fragment_is_incomplete_result ... ok
+test orca::tests::parse_input_basic_fixture ... ok
+test orca::tests::parse_input_keywords_concatenated_across_lines ... ok
+test orca_boundary_tests::malformed_orca_input_reports_the_failing_construct ... ok
+test orca_boundary_tests::orca_coordinate_forms_roundtrip_without_reading_external_files ... ok
+test pdbqt::tests::bounded_parser_rejects_atom_limit ... ok
+test pdbqt::tests::bounded_parser_rejects_input_and_line_limits ... ok
+test pdbqt::tests::malformed_utf8_column_alignment_is_rejected_without_panicking ... ok
+test pdbqt::tests::missing_charge_or_atom_type_is_rejected ... ok
+test pdbqt::tests::roundtrip_coordinates ... ok
+test pdbqt::tests::widened_charge_preserves_precision_and_two_letter_atom_type ... ok
+test pdbqt::tests::write_pdbqt_aromatic_carbon_gets_type_a ... ok
+test pdbqt::tests::write_pdbqt_ethanol ... ok
+test pqr::tests::backbone_atom_names_resolve_to_correct_elements_not_ambiguous_metals ... ok
+test pqr::tests::hetatm_monatomic_ion_resolves_via_residue_name ... ok
+test pqr::tests::hetatm_two_letter_ligand_atom_name_resolves ... ok
+test pqr::tests::infinity_radius_is_rejected ... ok
+test pqr::tests::input_too_large_is_rejected ... ok
+test pqr::tests::insertion_code_round_trips ... ok
+test pqr::tests::line_too_long_is_rejected ... ok
+test pqr::tests::malformed_input_never_panics ... ok
+test pqr::tests::nan_charge_is_rejected ... ok
+test pqr::tests::no_atom_records_is_typed_error ... ok
+test pqr::tests::oracle_single_ion_atom ... ok
+test pqr::tests::parses_no_chain_fixture ... ok
+test pqr::tests::parses_with_chain_fixture ... ok
+test pqr::tests::quote_free_atom_names_do_not_need_escaping ... ok
+test pqr::tests::round_trip_no_chain_preserves_all_fields ... ok
+test pqr::tests::round_trip_with_chain_preserves_all_fields ... ok
+test pqr::tests::to_molecule_has_no_bonds ... ok
+test pqr::tests::too_many_atoms_is_rejected ... ok
+test pqr::tests::wrong_field_count_is_typed_error_not_panic ... ok
+test protein::tests::helper_and_error_paths_are_typed_and_descriptive ... ok
+test protein::tests::invalid_explicit_pdb_element_is_rejected_instead_of_becoming_carbon ... ok
+test protein::tests::ligand_only_input_returns_an_empty_projection ... ok
+test protein::tests::mmcif_projection_excludes_water_and_nucleic_acids ... ok
+test protein::tests::pdb_projection_keeps_models_chains_modifications_and_altloc ... ok
+test protein::tests::residue_table_covers_the_documented_standard_and_modified_names ... ok
+test qcschema::tests::bounded_atomic_parsers_apply_json_limits_before_schema_validation ... ok
+test qcschema::tests::bounded_molecule_parser_rejects_oversized_arrays ... ok
+test qcschema::tests::bounded_molecule_parser_rejects_oversized_input ... ok
+test rdfile::reader::boundary_contract_tests::cursor_headers_and_identifiers_preserve_rdfile_contracts ... ok
+test rdfile::reader::boundary_contract_tests::document_limits_fail_closed_at_each_public_boundary ... ok
+test rdfile::reader::boundary_contract_tests::rxn_and_data_helpers_reject_ambiguous_boundaries ... ok
+test rxn::loss_boundary_contract_tests::rxn_writer_reports_all_unrepresentable_document_fields ... ok
+test rxn::tests::rxn_document_adapter_preserves_atom_map_identities ... ok
+test rxn::tests::rxn_document_adapter_round_trips_through_upstream_parser ... ok
+test rxn::tests::rxn_document_rejects_agents_instead_of_dropping_them ... ok
+test rxn::tests::rxn_document_rejects_v2000_atom_map_overflow ... ok
+test rxn::tests::rxn_rejects_declared_block_count_mismatch ... ok
+test rxn::tests::rxn_rejects_malformed_or_negative_counts ... ok
+test rxn::tests::test_parse_rxn_file_accepts_crlf_markers ... ok
+test rxn::tests::test_parse_rxn_file_counts ... ok
+test rxn::tests::test_parse_rxn_missing_header ... ok
+test rxn::tests::test_parse_rxn_resource_limits ... ok
+test rxn::tests::test_write_rxn_file_roundtrip ... ok
+test mol3000::writer::loss_collection_tests::v2000_read_graphs_keep_v3000_plain_bytes_and_full_loss_reports ... ok
+test orca::tests::output_size_limit_enforced ... ok
+test sdf::buffer::tests::buffer_boundary_and_resource_limit_cases_use_original_fallback ... ok
+test sdf::buffer::tests::complete_records_borrow_without_filling_owned_block ... ok
+test mol2000::tests::three_column_parser_matches_legacy_spelling_contract ... ok
+test sdf::buffer::tests::boundaries_limits_errors_and_source_position_match_line_reader ... ok
+test sdf::fields::tests::non_headers_and_field_like_value_content_keep_their_meaning ... ok
+test sdf::fields::tests::optional_header_information_does_not_drop_or_rename_fields ... ok
+test sdf::tests::dataset_tests::empty_dataset_and_raw_record_access_are_explicit ... ok
+test sdf::tests::dataset_tests::indexes_metadata_and_reads_records_in_any_order ... ok
+test sdf::tests::dataset_tests::indexing_enforces_record_and_count_limits ... ok
+test sdf::tests::dataset_tests::keeps_malformed_record_index_and_allows_later_access ... ok
+test sdf::tests::dataset_tests::opening_and_indexing_report_io_encoding_and_size_failures ... ok
+test sdf::tests::dataset_tests::range_reads_are_bounded_and_preserve_parse_failures ... ok
+test sdf::tests::dataset_tests::supports_crlf_unterminated_last_record_and_skips_empty_records ... ok
+test sdf::tests::fast_sdf_file_reader_keeps_strict_z_validation ... ok
+test sdf::tests::file_backed_reader_matches_in_memory_parse_contract ... ok
+test sdf::tests::file_reader_direct_append_preserves_chunk_and_delimiter_boundaries ... ok
+test sdf::tests::reader_limit_tests::delimiter_without_trailing_newline_is_skipped_iteratively ... ok
+test sdf::tests::reader_limit_tests::empty_input_yields_no_records ... ok
+test sdf::tests::reader_limit_tests::explicit_record_limit_is_enforced ... ok
+test sdf::tests::reader_limit_tests::in_memory_reader_enforces_input_line_and_record_limits ... ok
+test sdf::tests::reader_limit_tests::many_empty_records_do_not_recurse ... ok
+test sdf::tests::reader_limit_tests::single_molecule_without_delimiter_is_valid ... ok
+test sdf::tests::sdf_batch_reader_cancels_at_batch_boundary ... ok
+test sdf::tests::sdf_batch_reader_preserves_order_and_progress ... ok
+test sdf::tests::sdf_batch_reader_retains_rejected_record_positions ... ok
+test sdf::tests::sdf_file_reader_diagnostics_match_direct_parse ... ok
+test sdf::tests::sdf_file_reader_rejects_invalid_utf8_record ... ok
+test sdf::tests::sdf_record_reader_contradictory_wedge_diagnostic_matches_direct_parse ... ok
+test sdf::tests::sdf_record_reader_valid_wedge_matches_direct_parse ... ok
+test sdf::tests::test_parse_sdf_all ... ok
+test sdf::tests::test_parse_sdf_with_limits_uses_bounded_record_path ... ok
+test sdf::tests::test_sdf_file_reader_enforces_resource_limits ... ok
+test sdf::tests::test_sdf_file_reader_malformed_record_yields_err ... ok
+test sdf::tests::test_sdf_file_reader_skips_empty_block ... ok
+test sdf::tests::test_sdf_file_reader_streaming ... ok
+test sdf::tests::test_sdf_reader_blank_name_crlf ... ok
+test sdf::tests::test_sdf_reader_blank_name_first_record ... ok
+test sdf::tests::test_sdf_reader_blank_name_last_record ... ok
+test sdf::tests::test_sdf_reader_blank_name_middle_record ... ok
+test sdf::tests::test_sdf_reader_malformed_input_recovery_unaffected ... ok
+test sdf::tests::test_sdf_reader_names_preserved ... ok
+test sdf::tests::test_sdf_reader_reports_truncated_large_count_record ... ok
+test sdf::tests::test_sdf_reader_stops_on_error ... ok
+test sdf::tests::test_sdf_reader_two_molecules ... ok
+test sdf::tests::test_sdf_record_reader_blank_name_first_middle_last ... ok
+test sdf::tests::test_sdf_record_reader_enforces_limits_without_recursive_skip ... ok
+test sdf::tests::test_sdf_with_data_fields ... ok
+test semantic::expansion_boundary_contract_tests::capped_repeat_expansion_preserves_identity_mapping_at_exact_atom_limits ... ok
+test semantic::expansion_boundary_contract_tests::malformed_repeat_and_cap_topologies_fail_before_returning_a_graph ... ok
+test semantic::expansion_boundary_contract_tests::selected_r_group_alternatives_require_an_unambiguous_linkage ... ok
+test semantic::tests::command_clears_polymer_repeat_count_for_lossless_contraction ... ok
+test semantic::tests::command_clears_r_group_selection_for_lossless_contraction ... ok
+test semantic::tests::command_replaces_allowed_r_group_set_and_clears_selection ... ok
+test semantic::tests::command_selects_explicit_r_group_and_expands_with_mapping ... ok
+test semantic::tests::command_selects_polymer_repeat_count_from_unselected_json_state ... ok
+test semantic::tests::expands_explicit_polymer_endpoints_without_placeholders ... ok
+test semantic::tests::expands_explicit_two_ended_polymer_repeat ... ok
+test semantic::tests::expands_markush_with_multiple_attachment_points_in_marker_order ... ok
+test semantic::tests::expands_polymer_end_groups_with_stable_mapping ... ok
+test semantic::tests::expands_typed_polymer_end_groups_with_named_provenance ... ok
+test semantic::tests::json_contract_round_trips_and_expands_selected_markush ... ok
+test semantic::tests::nested_markush_round_trips_selects_and_expands_deterministically ... ok
+test semantic::tests::rejects_atom_expansion_over_budget_before_mutation ... ok
+test semantic::tests::rejects_base_molecule_over_budget_without_semantic_additions ... ok
+test semantic::tests::rejects_dangling_and_ambiguous_constructs ... ok
+test semantic::tests::rejects_json_repeat_count_that_exceeds_u32 ... ok
+test semantic::tests::rejects_json_repeat_endpoint_that_exceeds_u32 ... ok
+test semantic::tests::rejects_repeat_expansion_over_explicit_budget_before_allocating ... ok
+test semantic::tests::rejects_unimplemented_biomolecule_json_explicitly ... ok
+test semantic::tests::rejects_zero_repeat_count ... ok
+test semantic::tests::typed_s_group_linkage_round_trips_and_validates_references ... ok
+test semantic::tests::validates_r_group_references_and_serializes_schema ... ok
+test semantic_contract_tests::edits_of_missing_objects_are_atomic ... ok
+test semantic_contract_tests::expansion_checks_resource_limits_before_modifying_the_base ... ok
+test semantic_contract_tests::malformed_semantic_json_has_field_specific_diagnostics ... ok
+test semantic_contract_tests::nested_r_groups_and_typed_end_groups_reject_ambiguous_or_duplicate_ids ... ok
+test semantic_contract_tests::polymer_expansion_requires_explicit_valid_linkages_and_end_groups ... ok
+test semantic_contract_tests::semantic_references_and_polymer_topology_are_validated ... ok
+test semantic_contract_tests::unresolved_or_invalid_semantic_fragments_do_not_change_the_base ... ok
+test smiles_table::adversarial_tests::empty_input_no_panic ... ok
+test smiles_table::adversarial_tests::excessive_column_count_does_not_panic ... ok
+test smiles_table::adversarial_tests::huge_line_is_explicit_error_not_panic_or_oom ... ok
+test sdf::buffer::tests::io_failures_and_interruption_match_line_reader ... ok
+test smiles_table::adversarial_tests::invalid_utf8_byte_path_yields_io_error_not_panic ... ok
+test smiles_table::adversarial_tests::huge_property_value_within_limit_does_not_panic ... ok
+test smiles_table::adversarial_tests::truncated_input_mid_quote_no_panic ... ok
+test smiles_table::adversarial_tests::truncated_input_no_trailing_newline_no_panic ... ok
+test smiles_table::adversarial_tests::very_large_molecule_smiles_does_not_panic ... ok
+test smiles_table::tests::comma_csv_doubled_quote_escape ... ok
+test smiles_table::tests::comma_csv_unterminated_quote_is_lax_recoverable ... ok
+test smiles_table::tests::comma_csv_with_quoted_embedded_comma ... ok
+test smiles_table::tests::comment_and_blank_lines_skipped ... ok
+test smiles_table::tests::csv_write_quotes_field_containing_comma ... ok
+test smiles_table::tests::lax_parsing_continues_after_error ... ok
+test smiles_table::tests::line_too_long_is_explicit_error_not_panic ... ok
+test smiles_table::tests::missing_smiles_column_is_explicit_error ... ok
+test smiles_table::tests::no_name_column_yields_empty_name ... ok
+test smiles_table::tests::no_title_line_uses_stable_column_names ... ok
+test smiles_table::tests::record_and_field_limits_are_explicit_errors ... ok
+test smiles_table::tests::strict_parsing_stops_after_first_error ... ok
+test smiles_table::tests::tab_delimiter_does_not_collapse_empty_fields ... ok
+test smiles_table::tests::title_line_supplies_property_names ... ok
+test smiles_table::tests::whitespace_delimiter_basic ... ok
+test smiles_table::tests::writer_default_roundtrip ... ok
+test smiles_table::tests::writer_missing_property_writes_empty_field ... ok
+test smiles_table::tests::writer_no_name_header_omits_name_field ... ok
+test smiles_table::tests::writer_selected_properties_in_order ... ok
+test stereo_depiction::layout_boundary_contract_tests::arbitrary_size_permutation_parity_agrees_with_inversion_count ... ok
+test stereo_depiction::layout_boundary_contract_tests::draw_callback_can_round_trip_the_supplied_stereo_depiction ... ok
+test stereo_depiction::layout_boundary_contract_tests::reverse_order_layout_preserves_original_atom_and_bond_geometry ... ok
+test stereo_depiction::tests::bridgehead_nitrogen_is_wedged ... ok
+test stereo_depiction::tests::conjugated_and_branched_ez_round_trip ... ok
+test stereo_depiction::tests::depiction_shows_declared_stereo ... ok
+test stereo_depiction::tests::laid_out_molecule_without_stereo_marks_undeclared_double_bonds_either ... ok
+test smiles_table::adversarial_tests::seeded_random_mutation_corpus_never_panics ... ok
+test stereo_depiction::tests::one_wedge_per_centre_and_no_wedge_codes_for_ez ... ok
+test stereo_depiction::tests::ring_double_bond_stereo_is_written_as_either_not_guessed ... ok
+test stereo_depiction::tests::stereo_depiction_does_not_stack_atoms ... ok
+test mol3000::writer::coordinate_format_tests::deterministic_float_bits_and_rounding_ties_match_original ... ok
+test stereo_depiction::tests::unspecified_stereo_double_bond_is_written_as_either ... ok
+test stereo_depiction::unspecified::reference_tests::bounded_storage_preserves_high_degree_dative_and_cumulated_eligibility ... ok
+test stereo_depiction::tests::mol_blocks_without_coords_keep_tetrahedral_and_ez_stereo ... ok
+test stream_boundary_contract_tests::cube_required_fields_report_specific_error_categories ... ok
+test stream_boundary_contract_tests::fast_sdf_batches_track_progress_and_cancellation ... ok
+test stream_boundary_contract_tests::lammps_dump_invalid_fields_and_stream_limits_are_reported ... ok
+test stream_boundary_contract_tests::opendx_required_fields_and_grid_consistency_have_diagnostics ... ok
+test stream_boundary_contract_tests::sdf_writer_variants_preserve_record_boundaries_and_visible_properties ... ok
+test stream_boundary_contract_tests::streaming_readers_propagate_io_errors_at_each_record_boundary ... ok
+test stream_boundary_contract_tests::tdt_coordinates_property_selection_and_writer_failures ... ok
+test stream_boundary_contract_tests::tdt_malformed_coordinate_diagnostics_and_strict_stopping ... ok
+test stream_boundary_contract_tests::v3000_conformer_writer_preserves_coordinates_attributes_and_enhanced_stereo_groups ... ok
+test stream_boundary_contract_tests::v3000_count_block_and_collection_errors_fail_before_returning_a_graph ... ok
+test tdt::adversarial_tests::coordinate_list_never_terminated_does_not_hang ... ok
+test tdt::adversarial_tests::empty_input_no_panic ... ok
+test stereo_depiction::tests::stereo_report_lists_what_a_block_cannot_carry ... ok
+test tdt::adversarial_tests::excessive_property_count_does_not_panic ... ok
+test tdt::adversarial_tests::huge_property_value_within_limit_does_not_panic ... ok
+test tdt::adversarial_tests::invalid_utf8_byte_path_yields_io_error_not_panic ... ok
+test tdt::adversarial_tests::malformed_coordinate_list_does_not_panic ... ok
+test tdt::adversarial_tests::record_and_tag_limits_are_explicit_errors ... ok
+test tdt::adversarial_tests::seeded_random_mutation_corpus_never_panics ... ok
+test tdt::adversarial_tests::truncated_input_at_dollar_sign_only_no_panic ... ok
+test tdt::adversarial_tests::truncated_input_mid_smi_tag_no_panic ... ok
+test tdt::adversarial_tests::very_large_molecule_smiles_does_not_panic ... ok
+test tdt::tests::basic_record_with_name_and_property ... ok
+test tdt::tests::coordinate_2d_opt_in_parses_full_list_no_last_atom_drop ... ok
+test tdt::tests::coordinate_3d_opt_in_parses_full_list ... ok
+test tdt::tests::coordinate_tag_without_opt_in_stored_as_raw_property ... ok
+test tdt::tests::empty_value_tag_is_stored_as_empty_string ... ok
+test tdt::tests::eof_mid_record_no_terminator_still_succeeds ... ok
+test tdt::tests::missing_smi_tag_is_explicit_error ... ok
+test tdt::tests::multiline_coordinate_list_spanning_lines ... ok
+test tdt::tests::multiple_records ... ok
+test tdt::tests::repeated_tag_last_wins_same_position ... ok
+test tdt::tests::strict_parsing_stops_after_first_error ... ok
+test tdt::tests::unknown_tags_stored_as_generic_properties ... ok
+test tdt::tests::unterminated_generic_tag_recovers_to_next_record ... ok
+test tdt::tests::writer_default_roundtrip_preserves_name ... ok
+test tdt::tests::writer_embedded_newline_in_property_replaced_with_space ... ok
+test tdt::tests::writer_multiple_records_terminator_placement ... ok
+test tdt::tests::writer_properties_none_writes_all ... ok
+test tdt::tests::writer_properties_selected_subset_and_order ... ok
+test volumetric::tests::get_on_overflowing_shape_returns_none_not_panic ... ok
+test volumetric::tests::index_matches_third_axis_fastest_ordering ... ok
+test volumetric::tests::point_count_overflow_is_typed_error ... ok
+test volumetric::tests::validate_passes_for_well_formed_grid ... ok
+test volumetric::tests::validate_rejects_infinite_origin ... ok
+test volumetric::tests::validate_rejects_nan_value ... ok
+test tdt::adversarial_tests::huge_line_is_explicit_error_not_panic_or_oom ... ok
+test volumetric::tests::validate_rejects_value_count_mismatch ... ok
+test volumetric::tests::validate_rejects_zero_dimension ... ok
+test xml_boundary_tests::cml_limits_apply_before_graph_construction ... ok
+test xml_boundary_tests::cdxml_rejects_invalid_atom_coordinates_and_bond_endpoints ... ok
+test xml_boundary_tests::mrv_rejects_queries_and_ambiguous_atom_or_bond_records ... ok
+test xml_boundary_tests::strict_cml_rejects_invalid_references_coordinates_and_xml ... ok
+test xyz::tests::bare_info_key_defaults_to_true_flag ... ok
+test xyz::tests::empty_comment_line_is_preserved ... ok
+test xyz::tests::extxyz_defaults_properties_to_species_pos_when_absent ... ok
+test xyz::tests::extxyz_batch_reader_preserves_order_and_cancellation ... ok
+test xyz::tests::extxyz_file_reader_matches_in_memory_reader ... ok
+test xyz::tests::extxyz_multi_frame_reader_matches_parse_extxyz_all ... ok
+test xyz::tests::extxyz_zero_atom_frame_is_legal ... ok
+test xyz::tests::fails_closed_on_atom_count_mismatch ... ok
+test xyz::tests::extxyz_roundtrip_preserves_lattice_properties_and_info ... ok
+test xyz::tests::fails_closed_on_atom_count_mismatch_zero_rows ... ok
+test xyz::tests::fails_closed_on_duplicate_info_key ... ok
+test xyz::tests::fails_closed_on_empty_info_key ... ok
+test xyz::tests::fails_closed_on_invalid_lattice_count ... ok
+test xyz::tests::fails_closed_on_invalid_logical_value ... ok
+test xyz::tests::fails_closed_on_non_finite_coordinate ... ok
+test xyz::tests::fails_closed_on_non_finite_property_value ... ok
+test xyz::tests::fails_closed_on_properties_not_starting_with_species_pos ... ok
+test xyz::tests::fails_closed_on_property_column_mismatch ... ok
+test xyz::tests::fails_closed_on_unknown_element ... ok
+test xyz::tests::fails_closed_on_unterminated_quote ... ok
+test xyz::tests::file_reader_enforces_frame_limit ... ok
+test xyz::tests::in_memory_extxyz_reader_enforces_input_and_frame_limits ... ok
+test xyz::tests::file_reader_matches_in_memory_reader ... ok
+test xyz::tests::in_memory_extxyz_reader_rejects_oversized_declared_frame ... ok
+test xyz::tests::in_memory_xyz_reader_enforces_frame_limit_after_valid_prefix ... ok
+test xyz::tests::in_memory_xyz_reader_enforces_input_limits ... ok
+test xyz::tests::in_memory_xyz_reader_rejects_oversized_declared_frame ... ok
+test xyz::tests::multi_frame_parsing ... ok
+test xyz::tests::multi_frame_reader_matches_parse_xyz_all ... ok
+test xyz::tests::multi_frame_survives_crlf_and_missing_final_newline ... ok
+test xyz::tests::parse_methane_fixture ... ok
+test xyz::tests::parse_water_fixture ... ok
+test xyz::tests::parse_xyz_ignores_trailing_frames ... ok
+test xyz::tests::parses_logical_property_values ... ok
+test xyz::tests::parses_lattice_properties_and_info ... ok
+test xyz::tests::plain_xyz_roundtrips_unchanged_through_extxyz_path ... ok
+test xyz::tests::roundtrip_methane ... ok
+test xyz::tests::roundtrip_parse_write_parse ... ok
+test xyz::tests::write_extxyz_accepts_info_value_with_whitespace_but_no_quote ... ok
+test xyz::tests::write_extxyz_escapes_and_round_trips_quote_and_backslash_in_info_value ... ok
+test xyz::tests::write_extxyz_rejects_colon_in_property_name ... ok
+test xyz::tests::write_extxyz_rejects_embedded_newline_in_info_value ... ok
+test xyz::tests::write_extxyz_rejects_info_key_colliding_with_lattice_or_properties ... ok
+test xyz::tests::write_extxyz_rejects_zero_count_property ... ok
+test xyz::tests::xyz_batch_reader_cancels_at_batch_boundary ... ok
+test xyz::tests::xyz_batch_reader_preserves_order_and_progress ... ok
+test xyz::tests::xyz_parse_limits_reject_input_atoms_lines_and_frames ... ok
+test xyz::tests::zero_atom_frame_is_legal ... ok
+test xyz::tests::xyz_writer_multi_frame_roundtrips ... ok
+test xyz_contract_tests::io_failures_are_distinguished_from_end_of_stream ... ok
+test xyz_contract_tests::xyz_streams_fail_closed_on_truncation_and_limits ... ok
+test xyz_contract_tests::malformed_extxyz_fields_report_the_rejected_field ... ok
+test mol3000::writer::loss_collection_tests::plain_v3000_bytes_and_reported_losses_match_on_all_pinned_profiles ... ok
+test mol3000::attribute_tail_tests::pinned_v3000_reports_and_rewrite_bytes_match_the_frozen_bond_reader ... ok
+test mol2000::writer::zero_atom_fields_tests::every_atom_of_normal_and_unusual_corpora_keeps_its_complete_row ... ok
+test stereo_depiction::unspecified::reference_tests::whole_classifier_matches_frozen_code_on_all_corpora ... ok
+test mol2000::reader::stereo3d_guard_tests::all_five_vertex_graphs_and_reflections_keep_original_assignments ... ok
+test sdf::buffer::tests::actual_bufreader_refills_match_line_reader ... ok
+test sdf::buffer::tests::pinned_sdf_batches_match_reference_at_buffer_boundaries ... ok
+test mol2000::reader::stereo3d_guard_tests::only_imino_phosphorus_additions_change_pinned_14072_graphs ... ok
+
+test result: ok. 820 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 22.02s
+
+     Running tests/canonical_smiles_reaction_product_order.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/canonical_smiles_reaction_product_order-c13e027efb934ad9)
+
+running 1 test
+test product_order_and_smiles_order_give_one_canonical_smiles ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/ccd_contract.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/ccd_contract-2b71a16e32ac67b3)
+
+running 12 tests
+test explicit_graph_coordinates_identifiers_and_extra_fields_survive ... ok
+test singletons_charges_and_isotopes_do_not_gain_inferred_hydrogens ... ok
+test unknown_charge_survives_in_record_but_is_not_imputed_in_graph ... ok
+test aromatic_annotation_projects_aromatic_bonds_but_retains_source_orders ... ok
+test public_diagnostics_explain_refusals_and_cif_table_ambiguities ... ok
+test stereo_labels_are_retained_and_graph_loss_requires_consent ... ok
+test limits_cover_input_tokens_atoms_and_bonds_including_singletons ... ok
+test uppercase_two_letter_symbols_are_elements_not_atom_name_guesses ... ok
+test coordinates_refuse_nonfinite_or_incomplete_triples ... ok
+test lexical_boundaries_quotes_comments_case_and_crlf ... ok
+test validates_loop_shape_and_graph_identity_without_partial_results ... ok
+test long_repeated_column_names_refuse_before_row_expansion ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/cdjson_contract.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/cdjson_contract-c45320a0f8f5d009)
+
+running 12 tests
+test caller_limits_cover_bytes_and_aggregate_counts ... ok
+test omitted_carbon_label_and_hydrogen_use_native_inference ... ok
+test all_content_molecules_are_returned_and_empty_content_is_valid ... ok
+test explicit_zero_hydrogens_are_distinct_from_default_and_minus_one ... ok
+test source_ids_charge_isotope_and_coordinates_are_preserved ... ok
+test bond_indices_defaults_and_ids_are_checked ... ok
+test malformed_atoms_and_duplicate_decoded_json_keys_are_rejected ... ok
+test graph_writer_refuses_stereo_aromaticity_maps_and_bad_coordinates ... ok
+test unsupported_chemistry_and_unknown_fields_never_disappear_silently ... ok
+test graph_writer_roundtrips_elements_isotopes_charge_and_hydrogens ... ok
+test hard_caps_cannot_be_raised_and_are_checked_before_atom_projection ... ok
+test exact_atom_and_molecule_caps_are_accepted ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.28s
+
+     Running tests/cdxml_stereo_semantics.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/cdxml_stereo_semantics-86ced4a9b8a59f1a)
+
+running 4 tests
+test directional_bond_does_not_assign_its_wide_endpoint ... ok
+test bold_on_a_multiple_bond_does_not_become_a_stereo_marker ... ok
+test directional_end_glyphs_belong_to_the_narrow_endpoint ... ok
+test screen_y_and_solid_hashed_sense_match_directional_reference_cip ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/chemdraw_block_contract.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/chemdraw_block_contract-62d3e18414f28c27)
+
+running 9 tests
+test malformed_records_and_every_truncation_are_errors ... ok
+test groups_empty_documents_required_fields_and_text_omissions ... ok
+test unsupported_chemistry_still_refuses_with_metadata_consent ... ok
+test absent_element_defaults_to_carbon_and_format_names_are_explicit ... ok
+test extended_lengths_references_and_xml_structure_are_checked ... ok
+test metadata_is_never_silently_omitted ... ok
+test limits_cover_binary_and_delegated_xml_resources ... ok
+test new_projection_retains_alkene_direction_metadata ... ok
+test all_authored_formats_preserve_indexed_graphs_and_coordinates ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests/cif_bond_writer.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/cif_bond_writer-130a6ddedafec77f)
+
+running 8 tests
+test atom_and_cell_validation_is_shared_with_existing_checked_writer ... ok
+test nonfinite_and_zero_bond_distances_refuse ... ok
+test cells_change_coordinate_columns_but_not_bond_distance_or_images ... ok
+test single_double_triple_aromatic_are_distinct ... ok
+test empty_and_disconnected_graphs_do_not_gain_bonds ... ok
+test unsupported_orders_never_become_single_bonds ... ok
+test water_labels_endpoints_and_cartesian_distances ... ok
+test stable_norm_does_not_overflow_or_underflow_when_distance_is_representable ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/cif_checked_writer.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/cif_checked_writer-57180ce8ca53abb5)
+
+running 8 tests
+test coplanar_impossible_and_numerically_singular_angles_are_rejected ... ok
+test singular_poscar_equivalent_cell_is_rejected ... ok
+test no_cell_keeps_full_precision_cartesian_coordinates ... ok
+test missing_and_excess_coordinates_are_rejected ... ok
+test nonfinite_input_and_conversion_overflow_are_rejected ... ok
+test fractional_reader_uses_same_cell_validation ... ok
+test checked_writer_round_trips_orthogonal_triclinic_and_small_cells ... ok
+test invalid_cell_lengths_and_angles_are_rejected ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/cif_coordinate_contract.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/cif_coordinate_contract-e014f9058a2a9747)
+
+running 5 tests
+test complete_cartesian_family_wins_over_stray_fractional_column ... ok
+test mixed_incomplete_coordinate_families_are_rejected ... ok
+test openbabel_2995_no_cell_writer_emits_cartesian_and_round_trips ... ok
+test cell_writer_keeps_fractional_values_for_orthogonal_and_triclinic_cells ... ok
+test nonfinite_coordinates_are_rejected_in_either_family ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/cjson_coordinate_precision.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/cjson_coordinate_precision-45b5394fad92ec32)
+
+running 2 tests
+test integral_bond_orders_are_json_integers_and_aromatic_orders_remain_fractional ... ok
+test finite_coordinate_roundtrips_preserve_all_bits ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+
+     Running tests/cjson_mol2_conversion.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/cjson_mol2_conversion-2ae9e37583a36e64)
+
+running 9 tests
+test typed_metadata_has_exact_values_and_nested_opaque_paths ... ok
+test missing_geometry_or_ambiguous_dataset_refuses_even_allow_loss ... ok
+test n4_formal_charge_is_separate_from_partial_and_other_losses_disable_mapping ... ok
+test output_limits_and_smiles_metadata_losses_are_explicit ... ok
+test no_partial_dataset_does_not_create_charge_columns ... ok
+test mol2_candidate_preserves_graph_name_charge_method_and_all_float_bits ... ok
+test malformed_known_metadata_is_rejected_but_legacy_reader_remains_compatible ... ok
+test unrepresentable_names_and_method_tokens_never_inject_mol2_syntax ... ok
+test partial_and_coordinate_precision_cover_finite_exponents ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+
+     Running tests/cjson_preservation.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/cjson_preservation-5abb6f896201ee79)
+
+running 10 tests
+test duplicate_decoded_keys_are_rejected_recursively ... ok
+test legacy_reader_remains_permissive ... ok
+test absent_optional_fields_and_local_aromatic_alias ... ok
+test record_limits_cover_opaque_fields_and_graph ... ok
+test checked_errors_and_output_envelope_limits ... ok
+test exact_source_and_inspected_projection ... ok
+test checked_self_copy_is_exact_for_every_policy ... ok
+test branch_mapping_follows_emitted_order_and_reports_missing_defaults ... ok
+test smiles_charge_isotope_mapping_and_loss_accounting ... ok
+test invalid_known_fields_are_never_silently_repaired ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/cml_3d.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/cml_3d-c77d822f94018bb1)
+
+running 5 tests
+test named_writer_three_dimensional_output_can_be_read_back ... ok
+test bounds_are_inclusive_on_physical_input_and_normalized_projection ... ok
+test absent_geometry_stays_absent_and_legacy_2d_stays_compatible ... ok
+test invalid_geometry_and_ambiguous_correspondence_refuse ... ok
+test source_order_and_cartesian_bits_survive_all_layouts ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/cml_hydrogen_contract.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/cml_hydrogen_contract-7d16b1fdbf981643)
+
+running 8 tests
+test hydrogen_reconciliation_is_independent_of_atom_insertion_order ... ok
+test total_count_can_exceed_u8_when_explicit_neighbors_cover_the_difference ... ok
+test implicit_only_input_retains_normal_valence_inference ... ok
+test isotopic_hydrogens_count_as_explicit_neighbors_and_keep_labels ... ok
+test openbabel_2655_explicit_ch2_does_not_become_methane ... ok
+test total_hydrogen_count_subtracts_explicit_neighbors ... ok
+test malformed_or_contradictory_counts_are_rejected ... ok
+test writer_keeps_explicit_and_implicit_h_mixtures_and_zero_h_counts ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/cml_named.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/cml_named-f719cb61ae811d0d)
+
+running 6 tests
+test invalid_and_duplicate_ids_are_errors ... ok
+test coordinate_contract ... ok
+test graph_and_id_size_limits ... ok
+test stereo_maps_and_nonmolecular_bonds_are_refused ... ok
+test names_and_references_are_written_without_replacement ... ok
+test charges_isotopes_aromaticity_and_explicit_hydrogens_round_trip ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/conformer_3d_io.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/conformer_3d_io-b0492cd20ff893c2)
+
+running 27 tests
+test declared_2d_but_nonzero_z_is_diagnosed ... ok
+test declared_3d_but_every_z_exactly_zero_is_diagnosed_as_flatzero ... ok
+test geometry_rank_coplanar_for_a_real_but_flat_3d_embedding ... ok
+test sdf_conformer_ensemble_groups_repeated_records_of_same_molecule ... ok
+test sdf_conformer_ensemble_omits_records_with_no_conformer ... ok
+test v2000_2d_flagged_file_has_no_conformer_and_flatzero_rank ... ok
+test ez_fixtures_parse_with_real_conformer_and_no_tetrahedral_false_positive ... ok
+test v2000_3d_flagged_file_populates_conformer_with_real_z ... ok
+test geometry_rank_threed_for_nonplanar_molecule ... ok
+test implicit_h_stereocenter_wedge_agrees_with_3d_geometry_l_alanine ... ok
+test v2000_garbled_z_text_is_a_typed_error ... ok
+test v2000_blank_z_field_still_defaults_to_zero_not_an_error ... ok
+test v2000_2d_writer_is_completely_unaffected_by_3d_additions ... ok
+test implicit_h_stereocenter_wedge_disagrees_conflict_fires ... ok
+test v2000_infinite_z_from_overflow_is_a_typed_error ... ok
+test v2000_nan_z_is_a_typed_error_not_silent_default ... ok
+test enhanced_stereo_group_coexists_with_3d_conformer ... ok
+test implicit_h_stereocenter_d_alanine_also_self_consistent ... ok
+test v3000_garbled_z_is_a_typed_error ... ok
+test v3000_nan_z_is_a_typed_error ... ok
+test v3000_3d_flagged_file_populates_conformer_with_real_z ... ok
+test v3000_wedge_agrees_with_3d_geometry_no_conflict ... ok
+test v3000_wedge_disagrees_with_3d_geometry_conflict_fires ... ok
+test v2000_write_mol_with_conformer_round_trips_as_threed ... ok
+test wedge_agrees_with_3d_geometry_for_real_rdkit_output_no_conflict ... ok
+test wedge_disagrees_with_3d_geometry_conflict_fires ... ok
+test v3000_write_mol_v3000_with_conformer_round_trips_as_threed ... ok
+
+test result: ok. 27 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/conversion_report.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/conversion_report-4c46d7e28fc0c8c1)
+
+running 16 tests
+test allow_loss_keeps_neutral_amide_and_exposes_source_correspondence ... ok
+test both_input_and_escaped_report_sizes_are_bounded ... ok
+test cjson_strict_still_refuses_other_source_losses_and_preserve_source_is_same_format_only ... ok
+test missing_charge_column_does_not_invent_partial_charge_loss ... ok
+test cjson_retains_xyz_geometry_and_projected_formal_charges_without_partial_charge_rounding ... ok
+test cjson_zero_and_query_bond_changes_do_not_claim_graph_preservation ... ok
+test branch_ring_and_disconnected_correspondence_covers_every_atom_and_bond ... ok
+test cjson_partial_charges_keep_method_name_and_f64_bits_separate_from_formal_charges ... ok
+test cjson_does_not_fill_partial_charges_or_claim_undeclared_charge_methods ... ok
+test strict_refuses_without_molecule_output_but_supplies_loss_reasons ... ok
+test same_format_all_policies_retain_exact_bytes_without_claiming_interpretation ... ok
+test unsupported_routes_policies_and_invalid_source_are_errors ... ok
+test zero_bond_projection_change_is_detected_not_reported_preserved ... ok
+test cjson_coordinate_check_covers_f64_precision_and_signed_zero ... ok
+test cjson_uses_reader_atom_budget_instead_of_recursive_smiles_budget ... ok
+test recursive_projection_has_an_independent_atom_budget ... ok
+
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/coverage_boundaries.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/coverage_boundaries-6a663980cfc5d9bd)
+
+running 8 tests
+test strict_cml_rejects_empty_and_unbalanced_documents ... ok
+test mol2_error_details_remain_typed_and_actionable ... ok
+test cjson_projection_rejects_container_type_confusion ... ok
+test cml_writer_spells_quadruple_bonds_without_downgrading_them ... ok
+test cjson_unique_value_visitor_accepts_opaque_json_scalar_kinds ... ok
+test graph_writer_covers_lossy_bond_order_spellings_explicitly ... ok
+test strict_cml_keeps_special_xml_sections_outside_the_molecule_graph ... ok
+test malformed_mol2_fields_are_rejected_at_their_boundary ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/cross_binding_adversarial.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/cross_binding_adversarial-c8b400796b1213c2)
+
+running 4 tests
+test extxyz_binding_contract_matches_shared_fixture ... ok
+test extxyz_writer_binding_contract_roundtrips_shared_fixture ... ok
+test every_common_topology_parser_rejects_shared_adversarial_inputs ... ok
+test semantic_expansion_binding_contract_matches_shared_fixture ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/dmol3_contract.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/dmol3_contract-0efdd0c85822da7f)
+
+running 7 tests
+test precision_crlf_blank_lines_and_fortran_exponents ... ok
+test malformed_unknown_and_multiple_sections_fail ... ok
+test writer_and_projections_validate_mutated_data ... ok
+test invalid_and_nearly_dependent_cells_are_refused ... ok
+test caller_limits_and_physical_lines ... ok
+test raw_bohr_basis_orientation_and_projection ... ok
+test all_canonical_elements_and_nonperiodic_documents ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/error_display_contract.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/error_display_contract-9eb7cbcf6ce0c2d3)
+
+running 2 tests
+test geometry_and_selection_errors_keep_source_context ... ok
+test interchange_errors_have_stable_actionable_messages ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/exyz_contract.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/exyz_contract-9a6b7c1a4aefb45f)
+
+running 9 tests
+test plain_xyz_subset_crlf_and_final_newline_are_supported ... ok
+test errors_identify_rejected_source_line ... ok
+test complete_geometry_preserves_basis_offset_flags_and_text ... ok
+test unsupported_headers_and_atom_fields_fail ... ok
+test writer_uses_structured_data_after_edits ... ok
+test count_preflight_and_caller_limits_fail_before_allocation ... ok
+test mutable_invalid_geometry_cannot_be_written ... ok
+test strict_cell_block_rejects_incomplete_reordered_or_unflagged_data ... ok
+test all_elements_and_finite_extremes_roundtrip_exactly ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/fhiaims_contract.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/fhiaims_contract-3014adcaad44d2f4)
+
+running 8 tests
+test limits_and_source_lines_are_explicit ... ok
+test invalid_cell_and_fractional_overflow_fail ... ok
+test writing_current_data_validates_and_never_replays_source ... ok
+test fractional_basis_and_metadata_are_preserved ... ok
+test numbers_comments_crlf_and_out_of_order_lattice ... ok
+test malformed_unsupported_and_detached_metadata_fail ... ok
+test all_constraint_masks_and_zero_vs_absent_initial_values ... ok
+test zero_to_three_periodic_directions_keep_exact_basis ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/format_binding_parity.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/format_binding_parity-b66e30c0630a1acf)
+
+running 4 tests
+test lammps_dump_triclinic_fixture_summary ... ok
+test cube_fixture_summary ... ok
+test opendx_fixture_summary ... ok
+test mmcif_fixture_summary ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/format_roundtrip_stress.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/format_roundtrip_stress-22bddaa6971b9626)
+
+running 1 test
+test stress_corpus_writes_and_reparses_every_general_molecular_format ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 7.14s
+
+     Running tests/fuzz_corpus_regression.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/fuzz_corpus_regression-271ea3383b26df18)
+
+running 4 tests
+test xyz_corpus_is_panic_free ... ok
+test moljson_corpus_is_panic_free ... ok
+test formats_corpus_is_panic_free ... ok
+test smiles_corpus_is_panic_free_and_canonical_output_reparses ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.05s
+
+     Running tests/gamess_zmat_contract.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/gamess_zmat_contract-ee0a636003dcabb8)
+
+running 9 tests
+test current_coordinates_and_references_are_validated ... ok
+test xyz_adapter_refuses_extra_columns_and_key_value_metadata ... ok
+test rejects_invalid_options_and_header_injection ... ok
+test card_overflow_and_atom_limits_fail_explicitly ... ok
+test one_and_two_atom_cases_have_the_correct_nzvar ... ok
+test preserves_frame_and_emits_explicit_internal_definitions ... ok
+test exact_cartesian_f64_round_trip_and_signed_zero ... ok
+test rounded_cartesian_coordinates_must_keep_reference_frames_defined ... ok
+test direct_xyz_conversion_retains_hydrogen_and_rejects_additional_frames ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/gro_contract.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/gro_contract-64b936280deb1087)
+
+running 15 tests
+test input_atom_and_line_limits_are_enforced ... ok
+test ca_is_not_silently_assumed_carbon_or_calcium ... ok
+test crlf_unicode_title_and_trailing_blank_lines_keep_exact_source ... ok
+test one_decimal_coordinate_fields_are_supported ... ok
+test names_are_preserved_without_first_letter_element_inference ... ok
+test declared_counts_and_missing_lines_fail_before_large_reservations ... ok
+test additional_frames_and_nonblank_trailing_data_are_rejected ... ok
+test nine_box_values_map_to_row_vectors_in_documented_order ... ok
+test malformed_short_nonascii_or_name_fields_fail_without_panics ... ok
+test malformed_decimal_precision_partial_velocities_and_bad_box_fail ... ok
+test supplied_elements_resolve_two_letter_species_on_independent_copy ... ok
+test optional_velocities_keep_nm_per_ps_without_unit_rescaling ... ok
+test wrapped_identifiers_are_literal_not_unique_row_keys ... ok
+test zero_box_does_not_invent_a_periodic_cell_and_empty_frame_is_retained ... ok
+test positive_decimal_precision_is_inferred_from_adjacent_decimal_points ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/gro_lammps.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/gro_lammps-9d1c8ed92c9b3321)
+
+running 5 tests
+test triclinic_box_retains_true_edges_and_tilt_not_enclosing_bounds ... ok
+test assignments_masses_and_mixed_velocities_are_refused ... ok
+test orthogonal_geometry_and_velocities_use_consistent_units ... ok
+test invalid_or_unsupported_boxes_are_refused ... ok
+test empty_frame_and_large_input_limits_are_explicit ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/gzmat_precision.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/gzmat_precision-9c0e82e9e476532e)
+
+running 13 tests
+test analytic_lengths_angles_and_signed_torsions ... ok
+test references_are_checked_before_access ... ok
+test reconstruction_preserves_distances_and_handedness_with_nonchain_refs ... ok
+test monatomic_diatomic_and_tiny_distances ... ok
+test requested_significant_digits_affect_each_value ... ok
+test missing_nonfinite_and_overflowing_coordinates_fail ... ok
+test coincident_and_linear_frames_fail_without_invented_torsions ... ok
+test mutable_rows_fail_closed ... ok
+test options_validate_precision_headers_and_spin ... ok
+test rounding_must_not_create_a_linear_angle ... ok
+test rounding_must_not_collapse_an_earlier_reference_plane ... ok
+test seventeen_digits_round_trip_every_computed_scalar ... ok
+test large_atom_count_is_rejected_before_other_shapes ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/hin_contract.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/hin_contract-c20f1b0de87e63a7)
+
+running 11 tests
+test numeric_spelling_and_signed_zero_do_not_force_source_reformatting ... ok
+test unknown_or_nonfinite_fields_refuse_with_line_context ... ok
+test dangling_self_duplicate_and_nonreciprocal_connectivity_refuse ... ok
+test malformed_identity_and_record_boundaries_refuse ... ok
+test both_line_endings_and_missing_terminal_newline_preserve_exact_bytes ... ok
+test disconnected_atoms_and_explicit_hydrogen_nodes_are_not_discarded ... ok
+test all_supported_bond_types_and_elements_use_literal_source_order ... ok
+test limits_are_exact_inclusive_boundaries ... ok
+test unsupported_hin_directives_are_not_silently_lost ... ok
+test source_identity_charge_and_coordinate_precision_are_retained ... ok
+test issue3000_hin_aromatic_bonds_write_as_mdl_type4 ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/mmcif_pdb_checked.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/mmcif_pdb_checked-9291a584af02834c)
+
+running 12 tests
+test refuses_five_character_names_even_with_metadata_loss_consent ... ok
+test inconsistent_public_documents_and_unsupported_models_fail_safely ... ok
+test fixed_columns_preserve_altloc_insertion_charge_and_two_letter_element ... ok
+test reports_coordinate_occupancy_and_temperature_rounding ... ok
+test alias_collisions_cannot_merge_residues_or_atoms ... ok
+test loss_requires_explicit_consent ... ok
+test label_namespace_is_explicit_and_missing_labels_are_not_fabricated ... ok
+test preserves_three_glycan_residues_serials_elements_and_positions ... ok
+test source_metadata_omissions_are_reported ... ok
+test nonfinite_and_rounding_overflow_are_errors ... ok
+test serials_and_formal_charges_are_not_clamped_or_renumbered ... ok
+test guards_widths_ascii_and_identifier_normalization ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/mmcif_pqr_integration.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/mmcif_pqr_integration-5b9cd1d5a1083ac0)
+
+running 4 tests
+test multi_chain_pqr_fixture_parses_and_round_trips ... ok
+test shared_tokenizer_behavior_agrees_with_small_molecule_cif_reader_on_esd_and_quoting ... ok
+test multi_chain_model_altloc_fixture_parses_correctly ... ok
+test multi_chain_model_altloc_fixture_round_trips_through_write_read ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/mmcif_residue_contract.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/mmcif_residue_contract-9a31632cfc62c89a)
+
+running 15 tests
+test keeps_both_chain_namespaces_when_author_chain_collides ... ok
+test duplicate_atom_names_are_not_silently_merged ... ok
+test leading_zero_author_identifiers_remain_distinct ... ok
+test alternate_locations_stay_atoms_of_the_same_residue_and_keep_full_codes ... ok
+test incomplete_rows_and_empty_loops_are_errors ... ok
+test long_component_names_and_atom_aliases_are_preserved ... ok
+test author_and_label_fallbacks_are_explicit_in_identity ... ok
+test limits_apply_before_atom_or_token_growth ... ok
+test nonpolymer_sequence_placeholders_do_not_merge_three_sugars ... ok
+test preserves_cell_space_group_and_reports_unhandled_columns ... ok
+test missing_identity_errors_and_explicit_author_zero_remains_valid ... ok
+test model_range_is_checked_instead_of_wrapping ... ok
+test unsupported_author_strings_and_invalid_numbers_fail_explicitly ... ok
+test model_entity_insertion_and_components_are_distinct_identity_fields ... ok
+test all_720_row_permutations_keep_partition_and_source_mapping ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+
+     Running tests/mol2_3d_stereo.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/mol2_3d_stereo-5d277e60fcffb680)
+
+running 10 tests
+test mol2_rejects_nonfinite_coordinates_before_stereo_perception ... ok
+test mol2_3d_phosphorus_with_duplicate_ligands_remains_untagged ... ok
+test mol2_alkene_geometry_must_have_a_defined_side ... ok
+test mol2_3d_single_methyl_ring_remains_untagged ... ok
+test mol2_3d_tetrahedral_coordinates_recover_stereo_in_both_readers ... ok
+test mol2_3d_terminal_nh_imine_geometries_remain_distinct ... ok
+test mol2_3d_alkenes_recover_ez_in_both_readers_and_after_rotation ... ok
+test mol2_3d_bridgeheads_with_explicit_hydrogens_recover_stereo ... ok
+test mol2_3d_symmetric_multibridgehead_cage_remains_untagged ... ok
+test mol2_3d_recovers_paired_ring_and_phosphorus_centers ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+
+     Running tests/mol2_atom_index.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/mol2_atom_index-c2edefdff0d62b29)
+
+running 3 tests
+test missing_endpoint_keeps_original_error_line_and_precedence ... ok
+test duplicate_and_zero_ids_keep_the_first_source_atom ... ok
+test sparse_reverse_ids_keep_atom_order_metadata_and_bond_endpoints ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/mol2_carboxylate.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/mol2_carboxylate-1129a36c26456dde)
+
+running 2 tests
+test typed_carboxylate_resonance_projects_to_formal_single_and_double_bonds ... ok
+test ambiguous_or_untyped_oxygen_bonds_are_not_assigned_a_carboxylate_order ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/mol2_explicit_h_inventory.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/mol2_explicit_h_inventory-356993644040c846)
+
+running 2 tests
+test no_explicit_h_atoms_retains_normal_valence_inference ... ok
+test explicit_h_atoms_define_the_hydrogen_inventory_for_both_mol2_readers ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/mol2_fixed4_writer.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/mol2_fixed4_writer-735b92d9ecf9ba86)
+
+running 2 tests
+test split_fields_keep_unicode_padding_oversize_names_and_optional_metadata ... ok
+test atom_rows_match_original_float_formatter_including_ieee_boundaries ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.46s
+
+     Running tests/mol2_kekule_contract.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/mol2_kekule_contract-fb87be057ef4f660)
+
+running 11 tests
+test malformed_ids_and_multiple_records_are_rejected ... ok
+test acyclic_aromatic_bonds_and_query_zero_bonds_are_refused ... ok
+test charged_and_outside_element_profile_are_refused ... ok
+test implicit_pyrrole_h_is_not_guessed ... ok
+test lower_case_headers_tabs_crlf_and_no_final_newline_are_preserved ... ok
+test failed_matching_returns_an_error_without_partial_text ... ok
+test sparse_ids_comments_and_rich_metadata_are_retained_without_retyping ... ok
+test antiaromatic_and_saturated_donor_cycles_are_not_silently_written ... ok
+test explicit_assignment_has_expected_double_bonds_for_pyridine ... ok
+test graph_and_input_byte_caps_are_enforced ... ok
+test neutral_controls_change_only_ar_bond_tokens_and_keep_source_immutable ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/mol2_preservation.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/mol2_preservation-89d5ae1e7cac9830)
+
+running 12 tests
+test source_retention_obeys_input_limits ... ok
+test n4_formal_charge_comes_from_type_not_partial_charge ... ok
+test absent_partial_charge_remains_absent ... ok
+test source_writer_retains_crlf_and_empty_title ... ok
+test lowercase_section_markers_follow_the_same_limits_and_projection ... ok
+test record_preserves_charges_types_ids_and_opaque_source ... ok
+test inspection_schema_separates_partial_formal_and_opaque_information ... ok
+test regenerated_graph_output_declares_absent_partial_charges ... ok
+test duplicate_ids_edges_self_bonds_and_dangling_references_are_rejected ... ok
+test truncation_and_multiple_records_cannot_succeed_as_one_molecule ... ok
+test malformed_charges_and_nonfinite_geometry_are_rejected ... ok
+test bond_tokens_keep_distinct_source_meaning ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/mol2_section_order.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/mol2_section_order-9fa0ee66e57a14f5)
+
+running 4 tests
+test immutable_source_writer_does_not_reorder_original_text ... ok
+test neutral_graph_writer_bytes_are_unchanged ... ok
+test editable_record_retains_attributes_ids_and_partial_charges ... ok
+test charged_graph_writers_emit_atom_bond_then_unity_even_with_no_bonds ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/mol2_stream_rmsd.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/mol2_stream_rmsd-51477366ad8c093e)
+
+running 20 tests
+test empty_input_and_nonempty_missing_header_are_distinct ... ok
+test embedded_marker_text_does_not_split_a_record ... ok
+test hydrogen_coordinates_do_not_contribute_to_the_metric ... ok
+test malformed_middle_record_is_reported_and_next_boundary_is_available ... ok
+test alignment_does_not_reflect_a_nonplanar_heavy_atom_set ... ok
+test bond_row_order_and_endpoint_spelling_may_differ ... ok
+test every_record_retains_source_metadata_and_coordinates ... ok
+test malformed_or_mismatched_later_reference_aborts_the_whole_result ... ok
+test finite_input_overflow_never_returns_infinite_rmsd ... ok
+test one_probe_empty_reference_and_hydrogen_only_are_explicit_contracts ... ok
+test per_record_limits_are_enforced_with_record_index ... ok
+test reordering_identical_elements_requires_an_explicit_mapping ... ok
+test record_count_limit_never_silently_truncates ... ok
+test single_record_apis_still_reject_concatenation ... ok
+test preamble_crlf_case_and_no_final_newline_are_retained ... ok
+test all_five_raw_rmsds_match_hand_derived_translations ... ok
+test rmsd_enforces_limits_on_both_inputs ... ok
+test whole_input_byte_limit_is_exact_and_fatal ... ok
+test optional_alignment_removes_translations_and_proper_rotation ... ok
+test identity_and_indexed_bonds_are_checked_instead_of_element_sequence_only ... ok
+
+test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/mol2_unity_charge.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/mol2_unity_charge-804bfa5120297a81)
+
+running 7 tests
+test unknown_attributes_remain_opaque_and_source_text_is_exact ... ok
+test graph_writer_preserves_both_signs_without_inventing_partial_charges ... ok
+test malformed_or_ambiguous_unity_attributes_are_rejected ... ok
+test unity_uses_source_ids_and_keeps_partial_charges_separate ... ok
+test mol2_to_cjson_keeps_both_kinds_of_charge_through_verified_mapping ... ok
+test rdkit_6716_ammonium_charge_survives_both_readers_and_writers ... ok
+test explicit_zero_overrides_type_and_absence_uses_n4_fallback ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/mol_title_width.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/mol_title_width-61ed32f546a1479e)
+
+running 11 tests
+test reused_buffer_has_no_previous_title_tail ... ok
+test eighty_ascii_bytes_unchanged ... ok
+test long_ascii_title_is_bounded ... ok
+test utf8_boundary_keeps_complete_prefix ... ok
+test utf8_is_not_split ... ok
+test very_long_input_is_bounded ... ok
+test empty_title_keeps_blank_line ... ok
+test ordinary_title_unchanged ... ok
+test unicode_line_separators_are_spaces ... ok
+test controls_cannot_inject_header_lines ... ok
+test emit_independent_reader_cases ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/mopac_archive_contract.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/mopac_archive_contract-e391bc668d0d0a59)
+
+running 7 tests
+test archive_error_uses_original_line_number ... ok
+test cartesian_values_are_not_labeled_internal ... ok
+test supports_crlf_fortran_exponents_labels_and_atomic_numbers ... ok
+test all_limits_are_enforced_on_the_whole_archive ... ok
+test internal_values_references_and_ancillary_sections_are_preserved ... ok
+test charge_column_requires_announcement_and_is_finite ... ok
+test malformed_or_ambiguous_archives_fail_without_partial_results ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/mopac_cartesian_contract.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/mopac_cartesian_contract-a1347913238a5295)
+
+running 7 tests
+test limits_and_line_numbers ... ok
+test precision_and_crlf_are_preserved ... ok
+test degenerate_translation_vectors_fail ... ok
+test flags_labels_headers_and_vectors_roundtrip ... ok
+test writer_validates_current_data_instead_of_replaying_source ... ok
+test unsupported_geometry_cannot_be_silently_reinterpreted ... ok
+test mixed_flags_absence_partial_periodicity_and_no_terminator ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/mopac_keyword_continuation.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/mopac_keyword_continuation-339557f0607dfcc8)
+
+running 11 tests
+test blank_keyword_line_and_blank_descriptions_still_work ... ok
+test crlf_source_and_indentation_are_retained_appropriately ... ok
+test unsupported_variants_are_not_flattened ... ok
+test two_keyword_lines_keep_description_and_geometry ... ok
+test charged_keyword_and_quoted_plus_are_not_continuations ... ok
+test plus_may_be_in_middle_of_each_nonfinal_line ... ok
+test diagnostics_use_physical_source_line_numbers ... ok
+test keyword_line_count_is_bounded ... ok
+test writer_rejects_unannounced_extra_keyword_lines ... ok
+test emit_reference_cases ... ok
+test keyword_bytes_and_physical_line_limits_are_bounded ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/nucleic_acid_contract.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/nucleic_acid_contract-c70f0df51e8d4261)
+
+running 4 tests
+test collection_limit_is_enforced_before_acceptance ... ok
+test rust_contract_reports_the_expected_typed_rejections ... ok
+test rust_contract_roundtrips_and_edits_valid_documents ... ok
+test edit_sequences_reload_and_keep_atom_ownership ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/openbabel_3d_wedge_conflict.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/openbabel_3d_wedge_conflict-0fcab481bb388e8c)
+
+running 1 test
+test real_3d_geometry_resolves_conflicting_openbabel_wedges ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests/openbabel_v3000_radicals.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/openbabel_v3000_radicals-1e43dffbf33018b8)
+
+running 1 test
+test v3000_radical_attributes_prevent_spurious_implicit_hydrogens ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/parser_security_corpus.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/parser_security_corpus-e3b42d5a7d728275)
+
+running 1 test
+test mol_and_sdf_security_cases_match_the_recorded_disposition_without_panicking ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/pdb_conect_contract.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/pdb_conect_contract-268f6e66b723fcd3)
+
+running 8 tests
+test sulfur_has_order_sum_six_without_proximity_bonds ... ok
+test empty_and_crlf_are_deterministic ... ok
+test bounded_input_atoms_lines_bonds_and_targets ... ok
+test extended_targets_require_explicit_opt_in ... ok
+test no_conect_means_no_edges_and_coordinates_do_not_create_edges ... ok
+test invalid_references_and_multiplicities_are_errors ... ok
+test explicit_elements_charges_and_single_location_profile ... ok
+test one_way_reciprocal_and_continuation_multiplicities ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/pdb_selection_contract.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/pdb_selection_contract-8c1490b922c30f4e)
+
+running 10 tests
+test ter_collision_is_an_error_instead_of_renumbering_atoms ... ok
+test malformed_atom_and_anisou_fields_fail_with_physical_line_numbers ... ok
+test partial_conect_target_filter_retains_order_and_multiplicity ... ok
+test removing_ligand_keeps_protein_identity_and_exact_records ... ok
+test resource_limits_are_checked_and_cannot_raise_hard_caps ... ok
+test explicit_single_model_crlf_and_empty_selection ... ok
+test metadata_loss_requires_consent_and_keeps_source_sidecar ... ok
+test all_records_and_duplicate_connectivity_multiplicity_are_preserved ... ok
+test unordered_selection_retains_source_order_and_retargets_ter ... ok
+test invalid_indices_and_reference_fields_fail_before_output ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/pdbqt_checked_contract.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/pdbqt_checked_contract-21a95a9d5b014f12)
+
+running 8 tests
+test typed_errors_have_field_and_atom_diagnostics ... ok
+test overflow_is_checked_after_rounding_in_every_numeric_field ... ok
+test counts_include_explicit_hydrogens_and_do_not_default_or_drop_values ... ok
+test names_cannot_inject_records_and_unknown_types_are_rejected ... ok
+test nonfinite_numbers_never_reach_the_formatter ... ok
+test representable_edges_and_negative_zero_keep_their_columns ... ok
+test ordinary_output_keeps_legacy_bytes_and_fixed_columns ... ok
+test serial_boundary_is_bounded_without_expanding_the_field ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s
+
+     Running tests/pqr_pdbqt_contract.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/pqr_pdbqt_contract-20a4e67fd838f65d)
+
+running 10 tests
+test radius_loss_requires_explicit_consent ... ok
+test empty_source_and_type_count_are_errors ... ok
+test rejects_silent_metadata_truncation_and_record_injection ... ok
+test sidecar_reports_original_values_and_measured_rounding ... ok
+test rejects_numeric_overflow_including_rounding_across_field_edge ... ok
+test types_must_be_known_and_match_source_elements ... ok
+test charges_coords_and_identity_survive_in_source_order ... ok
+test serial_and_residue_boundaries_are_checked ... ok
+test rejects_directly_constructed_nonfinite_values_and_negative_radii ... ok
+test all_supported_types_roundtrip_with_matching_element ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/pseudoatom_roundtrip.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/pseudoatom_roundtrip-9c04c7444ec47d03)
+
+running 6 tests
+test unsupported_cdxml_pseudoatom_fails_closed ... ok
+test v2000_preserves_carbon_wildcard_and_r_groups ... ok
+test cdxml_preserves_carbon_wildcard_and_r_groups ... ok
+test v3000_preserves_carbon_wildcard_and_r_groups ... ok
+test sdf_preserves_carbon_wildcard_and_r_groups ... ok
+test r_prefixed_elements_remain_real_elements_in_mol_formats ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/public_api_compat_v1_1_3.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/public_api_compat_v1_1_3-20b1dfe148d3e7cd)
+
+running 1 test
+test v1_1_3_error_enum_matches_remain_exhaustive ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/public_api_stress.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/public_api_stress-ad2e85ace4e39baf)
+
+running 1 test
+test mol_writers_and_readers_are_panic_free_on_special_chemistry ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+
+     Running tests/qcschema.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/qcschema-76d73b056ad9461c)
+
+running 35 tests
+test bohr_to_angstrom_constant_is_codata_2018 ... ok
+test chematic_to_qc_atom_count_mismatch_is_rejected ... ok
+test bond_orders_survive_the_round_trip_through_qcschema_connectivity ... ok
+test connectivity_self_bond_rejected ... ok
+test connectivity_duplicate_bond_rejected_regardless_of_atom_order ... ok
+test connectivity_out_of_range_index_rejected ... ok
+test chematic_to_qc_conversion_is_the_exact_inverse_division ... ok
+test atomic_result_success_true_without_return_result_is_rejected ... ok
+test atomic_result_success_false_without_error_is_rejected ... ok
+test geometry_length_mismatch_is_rejected ... ok
+test invalid_driver_enum_value_rejected ... ok
+test extensible_field_preservation ... ok
+test invalid_schema_name_is_rejected ... ok
+test atomic_result_gradient_flattens_nested_array_and_is_idempotent ... ok
+test malformed_json_does_not_panic ... ok
+test malformed_fragments_are_rejected_before_acceptance ... ok
+test mass_number_maps_to_isotope_both_directions ... ok
+test missing_required_field_is_typed_error ... ok
+test atomic_objects_reject_wrong_schema_and_model_types ... ok
+test malformed_connectivity_reports_nested_field_paths ... ok
+test molecule_legacy_underscored_schema_name_accepted_and_preserved ... ok
+test invalid_result_values_report_the_precise_path ... ok
+test molecule_minimal_input_applies_spec_defaults ... ok
+test overflowing_json_number_fails_closed_not_open ... ok
+test qc_to_chematic_conversion_yields_correct_angstrom_geometry ... ok
+test qc_to_chematic_unknown_element_is_rejected ... ok
+test per_atom_metadata_requires_one_entry_per_atom ... ok
+test malformed_molecule_fields_report_the_offending_field ... ok
+test optional_molecule_metadata_and_fragments_survive_round_trip ... ok
+test roundtrip_atomic_input ... ok
+test properties_results_preserve_wavefunction_and_native_files ... ok
+test roundtrip_atomic_result_failure ... ok
+test roundtrip_qcmolecule_water ... ok
+test roundtrip_atomic_result_success_energy ... ok
+test atomic_input_drivers_and_structured_basis_preserve_extensions ... ok
+
+test result: ok. 35 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/rdfile_contract.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/rdfile_contract-212419da41a9857e)
+
+running 18 tests
+test empty_library_and_empty_datum_are_valid ... ok
+test malformed_headers_identifiers_and_missing_data_fail ... ok
+test malformed_embedded_payloads_and_counts_fail ... ok
+test graph_projection_preserves_reference_positions_and_reaction_roles ... ok
+test mixed_records_keep_order_registry_spelling_and_duplicate_fields ... ok
+test missing_final_lf_is_accepted_and_writer_adds_it ... ok
+test explicit_unwrapped_profile_preserves_long_plain_data ... ok
+test all_reader_resource_limits_apply ... ok
+test canonical_write_reparse_retains_records_and_raw_structures ... ok
+test keyword_shaped_mol_title_is_not_a_record_boundary ... ok
+test unsupported_embedded_data_and_keyword_continuations_fail ... ok
+test crlf_source_and_structure_bytes_remain_exact ... ok
+test registry_only_documents_are_not_resolved_or_discarded ... ok
+test column_81_plus_joins_wrapped_data_without_losing_newlines ... ok
+test writer_refuses_structure_boundary_injection ... ok
+test writer_refuses_delimiter_injection_and_ambiguous_fields ... ok
+test writing_mutated_fields_does_not_replay_stale_source ... ok
+test writer_record_limit_and_ambiguous_literal_continuation_are_checked ... ok
+
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/reaction_cdxml.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/reaction_cdxml-432f5edae805ef44)
+
+running 10 tests
+test missing_sides_and_empty_components_are_refused ... ok
+test exact_coordinate_shapes_and_finite_bounds ... ok
+test component_cap_exact_and_next_item ... ok
+test unsupported_bond_types_and_stereo_groups_never_become_plain_bonds ... ok
+test unsupported_annotations_and_nonterminal_double_bonds_fail ... ok
+test duplicate_components_and_empty_agents_are_retained ... ok
+test terminal_double_bonds_do_not_invent_geometric_stereo ... ok
+test charge_isotope_explicit_hydrogen_and_triple_bonds ... ok
+test explicit_roles_arrow_and_global_ids ... ok
+test atom_caps_exact_and_next_atom ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/sdf_compression.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/sdf_compression-4b70f1aa96afdaae)
+
+running 9 tests
+test auto_probe_failures_propagate_without_reclassifying_input ... ok
+test empty_and_single_byte_auto_inputs_are_not_consumed_or_reclassified ... ok
+test plain_is_an_explicit_no_decompression_policy ... ok
+test resource_limits_count_decoded_bytes_and_preserve_native_error_type ... ok
+test gzip_malformed_records_keep_positions_and_later_valid_records ... ok
+test corrupt_truncated_or_junk_suffixed_gzip_reports_terminal_io_error ... ok
+test short_nonseekable_reads_and_interrupted_probe_replay_all_bytes ... ok
+test concatenated_members_can_split_a_record_inside_a_physical_line ... ok
+test auto_selection_is_independent_after_full_partial_and_failed_inputs ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/sdf_overlapping_flat_neighbors.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/sdf_overlapping_flat_neighbors-40f61825f7fd7de3)
+
+running 1 test
+test sdf_frontier_row_745_retains_other_stereo_but_rejects_the_overlapping_center ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/sdf_selections.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/sdf_selections-3b89343df1a3b2cd)
+
+running 10 tests
+test index_validation_happens_before_reading_any_record ... ok
+test byte_validation_precedes_reads_and_io_errors_abort ... ok
+test empty_selection_and_all_bad_selection ... ok
+test record_and_cumulative_byte_caps_include_duplicate_reads ... ok
+test ordered_duplicate_records_and_errors_keep_their_positions ... ok
+test v2000_permissive_terminator_still_keeps_data_fields ... ok
+test exact_m_end_title_or_comment_is_not_a_ctab_terminator ... ok
+test all_sdf_record_readers_dispatch_mixed_ctab_versions ... ok
+test selected_reads_match_scalar_reads_after_crlf_and_unterminated_input ... ok
+test concurrent_selections_do_not_share_seek_positions ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/sdf_unspecified_double_stereo.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/sdf_unspecified_double_stereo-ddbf54d846a6e8e4)
+
+running 2 tests
+test sdf_with_supplied_coordinates_does_not_invent_unspecified_azo_stereo ... ok
+test sdf_keeps_declared_double_bond_stereo_and_supplied_coordinates ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/sdf_v3000_recognition.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/sdf_v3000_recognition-b6348ac6d0f03121)
+
+running 7 tests
+test malformed_v3000_is_not_accepted_by_falling_back_to_v2000 ... ok
+test v3000_conformers_are_recognized_and_grouped ... ok
+test v3000_total_valence_excludes_dative_bond_on_donor ... ok
+test v3000_incoming_wedge_does_not_conflict_with_centres_own_wedge ... ok
+test every_sdf_reader_recognizes_mixed_v2000_v3000_and_fields ... ok
+test v3000_tricoordinate_sulfoxide_wedge_retains_stereochemistry ... ok
+test v3000_ring_constrained_nitrogen_retains_lone_pair_stereochemistry ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/square_planar_mol_io.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/square_planar_mol_io-ee92d1ed196c2b04)
+
+running 13 tests
+test flat_z_conformer_is_a_documented_round_trip_limitation ... ok
+test five_coordinate_center_is_never_perceived_as_square_planar ... ok
+test degenerate_and_truncated_conformers_never_panic ... ok
+test moderately_distorted_geometry_still_recovers_the_correct_tag ... ok
+test cisplatin_transplatin_v2000_round_trip_recovers_distinct_tags ... ok
+test three_coordinate_center_is_never_perceived_as_square_planar ... ok
+test sdf_multi_record_round_trip_no_cross_contamination ... ok
+test three_plus_one_duplicate_ligand_composition_round_trips ... ok
+test truncated_v3000_coordinate_block_is_a_typed_error_not_a_panic ... ok
+test write_read_write_is_stable ... ok
+test all_four_ligands_distinct_round_trips_all_three_tags ... ok
+test atom_renumbering_preserves_square_planar_configuration ... ok
+test cisplatin_transplatin_v3000_round_trip_recovers_distinct_tags ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/stereo2d_ez_reader_integration.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/stereo2d_ez_reader_integration-641cc2370f7d58ca)
+
+running 31 tests
+test ez_stage_does_not_modify_raw_wedge ... ok
+test negative_17_terminal_alkene ... ok
+test negative_18_equivalent_substituents ... ok
+test negative_19_carbonyl ... ok
+test negative_20_collinear_substituent ... ok
+test negative_21_zero_length_double_bond ... ok
+test invariance_14_rotation ... ok
+test invariance_11_atom_renumbering ... ok
+test invariance_16_mirror_reflection ... ok
+test invariance_12_bond_declaration_order_reversed ... ok
+test negative_22_missing_coordinate_via_api_misuse ... ok
+test fixture_26_shared_carrier_values_are_reconciled ... ok
+test negative_23_nan_coordinate_via_real_file ... ok
+test invariance_13_double_bond_atom_order_reversed ... ok
+test invariance_15_translation ... ok
+test negative_25_cumulene_allene ... ok
+test negative_27_wedge_only_no_ez ... ok
+test negative_28_no_double_bond_control ... ok
+test negative_24_explicit_unknown_either_stereo ... ok
+test positive_04_trisubstituted_alkene ... ok
+test positive_05_tetrasubstituted_alkene ... ok
+test positive_03_e_and_z_2butene_v3000 ... ok
+test positive_06_conjugated_diene_two_centers ... ok
+test positive_08_isotopic_substituent ... ok
+test positive_07_exocyclic_double_bond ... ok
+test positive_10_wedge_adjacent_to_double_bond ... ok
+test pr154_tetrahedral_only_fixture_unaffected ... ok
+test positive_09_wedge_and_ez_coexist_same_molecule ... ok
+test sdf_inherits_ez_direction_from_v2000_core ... ok
+test positive_01_02_e_and_z_2butene_v2000 ... ok
+test wedge_bond_carries_adjacent_ez_direction ... ok
+
+test result: ok. 31 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/stereo_reader_integration.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/stereo_reader_integration-98b2e08f15cc52c4)
+
+running 23 tests
+test bond_declaration_order_reversal_preserves_parity ... ok
+test atom_parity_does_not_invent_chirality_with_duplicate_substituents ... ok
+test contradictory_wedge_from_mol_yields_no_chirality_and_a_diagnostic ... ok
+test atom_parity_is_not_inferred_from_nonzero_coordinates ... ok
+test mol_sourced_wedge_survives_to_canonical_smiles_without_meaningless_slash ... ok
+test atom_renumbering_preserves_physical_stereo ... ok
+test openbabel_0d_atom_parity_places_explicit_hydrogen_last ... ok
+test openbabel_0d_atom_parity_preserves_both_enantiomers ... ok
+test atom_parity_does_not_override_2d_wedge_geometry ... ok
+test openbabel_0d_atom_parity_with_implicit_hydrogen ... ok
+test openbabel_0d_atom_parity_preserves_sulfoxide_stereo ... ok
+test openbabel_0d_multiple_markers_at_one_double_bond_end ... ok
+test openbabel_0d_alkene_directions_preserve_e_and_z ... ok
+test reflection_flips_parity ... ok
+test rdkit_bridged_ring_implicit_h_wedge_is_perceived_before_smiles_writing ... ok
+test rotation_and_translation_preserve_parity ... ok
+test rdkit_v2000_implicit_h_wedge_keeps_semantic_smiles_parity ... ok
+test v3000_either_cfg_does_not_produce_a_defined_wedge ... ok
+test v2000_v3000_same_drawing_yield_identical_parity ... ok
+test v2000_writer_roundtrip_preserves_chirality ... ok
+test v3000_writer_roundtrip_preserves_chirality ... ok
+test openbabel_0d_shared_direction_between_double_bonds_is_reversed ... ok
+test openbabel_0d_alkene_directions_ignore_carbonyl_and_aromatic_doubles ... ok
+
+test result: ok. 23 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/sulfoxide_wedge_rdkit.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/sulfoxide_wedge_rdkit-bd15ebfbe5744b2e)
+
+running 2 tests
+test openbabel_wedge_on_nonstereogenic_selenium_does_not_create_a_chiral_center ... ok
+test sulfoxide_wedge_stereo_survives_both_mol_formats_and_smiles_writers ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/turbomole_contract.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/turbomole_contract-21cc984f44bfea21)
+
+running 14 tests
+test fractional_uses_rows_without_wrapping_or_basis_rotation ... ok
+test header_order_and_comment_line_endings_are_independent ... ok
+test preserves_oriented_left_handed_lattice_and_atom_order ... ok
+test refuses_missing_periodicity_and_conflicting_cell_forms ... ok
+test input_line_and_atom_limits_are_applied ... ok
+test default_bohr_and_fortran_exponents ... ok
+test cell_width_angles_and_lengths_are_checked ... ok
+test row_field_counts_and_external_cell_options_are_checked ... ok
+test refuses_singular_near_singular_and_nonfinite_cells ... ok
+test triclinic_cell_reuses_validated_unit_cell_conversion ... ok
+test rejects_ambiguous_or_unsupported_documents ... ok
+test writer_refuses_unrepresentable_bohr_coordinate ... ok
+test write_read_keeps_all_coordinates_flags_and_lattice_components ... ok
+test writer_validates_mutated_geometry_instead_of_replaying_source ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/unmarked_3d_stereo.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/unmarked_3d_stereo-fda3df74fea26a1c)
+
+running 7 tests
+test a_2d_declaration_does_not_infer_stereo_from_nonzero_z ... ok
+test equivalent_substituents_do_not_gain_3d_stereo ... ok
+test reflecting_coordinates_reverses_the_inferred_enantiomer ... ok
+test one_substituted_ring_center_does_not_gain_stereo ... ok
+test nearly_planar_three_bond_carbons_remain_unspecified ... ok
+test symmetric_multibridgehead_cage_does_not_gain_stereo ... ok
+test unmarked_3d_geometry_recovers_stereo ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s
+
+     Running tests/v3000_bracket_valence.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/v3000_bracket_valence-921b19809d508d16)
+
+running 2 tests
+test isolated_neutral_atoms_and_noncarbon_radicals_have_ctfile_valence ... ok
+test ordinary_valence_and_aromatic_centers_are_not_marked_as_radicals ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/v3000_lookup_contract.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/v3000_lookup_contract-8654166b0ad5d28c)
+
+running 8 tests
+test duplicate_atom_ids_keep_the_historical_first_match ... ok
+test duplicate_bond_ids_and_missing_endpoints_still_fail ... ok
+test continued_atom_properties_keep_typed_and_opaque_fields ... ok
+test dense_sparse_permuted_and_zero_ids_resolve_to_source_order ... ok
+test total_valence_overrides_do_not_invent_implicit_hydrogens ... ok
+test sulfur_radical_total_valence_is_retained ... ok
+test iodine_radical_total_valence_is_retained ... ok
+test unspecified_azo_stays_unspecified_after_v3000_rewriting ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/v3000_semantic_interop.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/v3000_semantic_interop-52c048c2ecbbab51)
+
+running 16 tests
+test declared_bonds_require_a_bond_block ... ok
+test bond_count_must_match_the_counts_record ... ok
+test malformed_known_collection_atom_count_is_rejected ... ok
+test known_collection_unknown_atom_is_rejected ... ok
+test duplicate_known_sgroup_ids_are_rejected ... ok
+test known_sgroup_unknown_atom_is_rejected ... ok
+test known_collection_unknown_bond_is_rejected ... ok
+test sgroup_count_must_match_the_counts_record ... ok
+test unknown_sgroup_kind_remains_opaque ... ok
+test opaque_v3000_attributes_follow_writer_order_for_noncontiguous_source_ids ... ok
+test indigo_style_deuterium_and_atom_cfg_survive_v3000_round_trip ... ok
+test opaque_bond_attributes_survive_v3000_round_trip ... ok
+test all_ctfile_2026_bond_collection_kinds_round_trip ... ok
+test both_v3000_block_orders_have_the_same_semantic_projection ... ok
+test v3000_bond_stereo_collections_round_trip_and_merge_with_atom_members ... ok
+test v3000_concrete_atoms_omit_redundant_query_hcount ... ok
+
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/xyz_precision.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/xyz_precision-732965e3c7959e6b)
+
+running 10 tests
+test nonfinite_coordinates_are_rejected_in_every_axis ... ok
+test comments_and_options_cannot_inject_frames_or_extxyz ... ok
+test aggregate_output_cap_includes_padding_headers_and_exact_endpoint ... ok
+test seventeen_significant_scientific_digits_roundtrip_finite_binary_values ... ok
+test large_fixed_values_expand_and_tokens_stay_separate ... ok
+test requested_fixed_format_has_exact_fraction_and_minimum_width ... ok
+test rounded_scientific_overflow_is_refused ... ok
+test all_elements_and_explicit_atom_order_survive ... ok
+test deterministic_finite_bit_patterns_roundtrip_in_native_reader ... ok
+test atom_cap_is_checked ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.13s
+
+     Running tests/xyz_symbol_case.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/xyz_symbol_case-889fb2341043b1c4)
+
+running 7 tests
+test trajectory_and_buffered_readers_share_the_species_rules ... ok
+test explicit_hydrogens_and_missing_connectivity_keep_existing_semantics ... ok
+test invalid_tokens_are_not_prefix_guessed_or_changed_to_dummy_atoms ... ok
+test core_symbols_and_smiles_are_still_case_sensitive ... ok
+test only_species_is_normalized_not_comments_or_string_properties ... ok
+test writers_emit_canonical_symbols_and_preserve_coordinate_order ... ok
+test all_118_elements_have_the_same_identity_in_both_cases_and_native_readers ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

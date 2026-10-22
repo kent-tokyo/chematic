@@ -36,6 +36,7 @@ chematic-crystal     = { path = "../chematic-crystal",     version = "1.2.0", op
 serde_json           = { version = "1.0", features = ["float_roundtrip"] }
 serde                = { version = "1.0", features = ["derive"] }
 memchr               = "2.8"
+roxmltree            = "0.20.0"
 flate2 = { version = "1.1.10", default-features = false, features = ["rust_backend"] }
 
 [dev-dependencies]
