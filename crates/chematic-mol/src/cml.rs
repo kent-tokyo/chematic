@@ -658,7 +658,7 @@ fn is_element_tag(line: &str, name: &str) -> bool {
 
 /// Serialise a molecule to a CML string.
 ///
-/// `coords` — optional slice of `(x, y)` pairs in atom-insertion order.
+/// `coords` — optional `(x, y)` pairs in atom order; finite values retain binary64 precision.
 /// If `None`, no coordinate attributes are written.
 /// Every atom receives a total `hydrogenCount`, combining non-node H with
 /// explicit H neighbors, so the reader never adds or drops H through inference.
@@ -677,8 +677,8 @@ pub fn write_cml(mol: &Molecule, coords: Option<&[(f64, f64)]>) -> String {
         if let Some(cs) = coords
             && let Some(&(x, y)) = cs.get(i)
         {
-            parts.push(format!("x2=\"{x:.4}\""));
-            parts.push(format!("y2=\"{y:.4}\""));
+            parts.push(format!("x2=\"{x}\""));
+            parts.push(format!("y2=\"{y}\""));
         }
         if atom.charge != 0 {
             parts.push(format!("formalCharge=\"{}\"", atom.charge));
