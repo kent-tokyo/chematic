@@ -9,11 +9,15 @@ use std::sync::Arc;
 mod helpers;
 pub(crate) use helpers::*;
 
+mod gaussian;
+use gaussian::*;
+
 mod cml;
 use cml::*;
 
 mod serialized_input;
 use serialized_input::serialized_text;
+mod registration;
 
 mod hin;
 use hin::*;
@@ -1402,9 +1406,6 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         kekulize_mol2_record,
         from_pdbqt,
         from_pdbqt_with_data,
-        from_gjf,
-        parse_gaussian_log,
-        write_gjf,
         parse_cif,
         write_cif_checked,
         write_cif_with_bonds_checked,
@@ -1452,17 +1453,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         pqr_to_pdbqt,
         write_pdbqt_checked,
         infer_element,
-        parse_orca_input,
-        write_orca_input,
-        parse_orca_output,
-        parse_qcschema_molecule,
-        write_qcschema_molecule,
-        chematic_to_qc_molecule,
-        qc_molecule_to_chematic,
-        parse_atomic_input,
-        write_atomic_input,
-        parse_atomic_result,
-        write_atomic_result,
     )?;
+    registration::register_quantum_formats(m)?;
     register_reaction_formats(m)
 }

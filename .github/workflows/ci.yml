@@ -277,6 +277,8 @@ jobs:
           .venv/bin/maturin develop --release -m crates/chematic-py/Cargo.toml
       - name: Rust unit tests (chematic-py)
         run: cargo test -p chematic-py --lib --no-default-features --quiet
+      - name: Verify GJF comparison observations
+        run: python3 -m unittest discover -s scripts/tests -p 'test_gjf_cartesian_validation.py' -v
       - name: V3000 coordinate projection observer
         run: .venv/bin/python -m unittest scripts.tests.test_v3000_coordinate_projection -q
       - name: V3000 source coordinate observer
