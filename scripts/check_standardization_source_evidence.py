@@ -9,11 +9,12 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-RECORD = ROOT / "validation/results/rdkit-cleanup-square-planar-stress-2026-10-22.json"
-PREVIOUS_RECORD = ROOT / "validation/results/rdkit-reionize-in-memory-stereo-2026-10-22.json"
-OLDER_RECORD = ROOT / "validation/results/rdkit-cleanup-ring-stereo-stress-2026-10-22.json"
-TEN_K_RECORD = ROOT / "validation/results/rdkit-cleanup-square-planar-10k-2026-10-22.json"
-TEN_K_PREVIOUS = ROOT / "validation/results/rdkit-cleanup-ring-stereo-10k-2026-10-22.json"
+RECORD = ROOT / "validation/results/rdkit-cleanup-metal-aromaticity-stress-2026-10-22.json"
+PREVIOUS_RECORD = ROOT / "validation/results/rdkit-cleanup-square-planar-stress-2026-10-22.json"
+TEN_K_RECORD = ROOT / "validation/results/rdkit-cleanup-metal-aromaticity-10k-2026-10-22.json"
+TEN_K_PREVIOUS = ROOT / "validation/results/rdkit-cleanup-square-planar-10k-2026-10-22.json"
+REIONIZE_RECORD = ROOT / "validation/results/rdkit-reionize-in-memory-stereo-2026-10-22.json"
+REIONIZE_PREVIOUS = ROOT / "validation/results/rdkit-cleanup-ring-stereo-stress-2026-10-22.json"
 SUMMARY = ROOT / "benchmarks/2026-10-22-rdkit-reionize-in-memory-stereo.json"
 
 
@@ -86,7 +87,7 @@ def main() -> None:
     previous = json.loads(PREVIOUS_RECORD.read_text())
     check_current_record(record)
     check_comparison(record, previous, PREVIOUS_RECORD)
-    assert record["baseline_comparison"]["fixed_indices"] == [475]
+    assert record["baseline_comparison"]["fixed_indices"] == [1686]
     assert record["baseline_comparison"]["reionize_fixed_indices"] == []
     assert record["reionize_exact_rows"] == previous["reionize_exact_rows"] == 4069
     assert record["normalize_exact_rows"] == previous["normalize_exact_rows"] == 4069
@@ -102,9 +103,10 @@ def main() -> None:
 
     # Keep the earlier Reionize evidence frozen while current source hashes
     # are checked against the new Cleanup report above.
-    older = json.loads(OLDER_RECORD.read_text())
-    historical = previous["baseline_comparison"]
-    assert digest(OLDER_RECORD) == historical["previous_report_sha256"]
+    reionize = json.loads(REIONIZE_RECORD.read_text())
+    older = json.loads(REIONIZE_PREVIOUS.read_text())
+    historical = reionize["baseline_comparison"]
+    assert digest(REIONIZE_PREVIOUS) == historical["previous_report_sha256"]
     assert older["source_commit"] == historical["previous_source_commit"]
     assert historical["fixed_indices"] == historical["regressed_indices"] == []
     assert historical["reionize_fixed_indices"] == [1432, 1878, 2914, 3153, 4023]
@@ -112,12 +114,12 @@ def main() -> None:
     summary = json.loads(SUMMARY.read_text())
     assert summary["baseline_source_record_sha256"] == historical["previous_report_sha256"]
     assert summary["baseline_dump_sha256"] == older["source_dump_sha256"]
-    assert summary["candidate_dump_sha256"] == previous["source_dump_sha256"]
+    assert summary["candidate_dump_sha256"] == reionize["source_dump_sha256"]
     assert summary["changed_indices"] == historical["reionize_fixed_indices"]
     assert summary["baseline_reionize_exact_rows"] == older["reionize_exact_rows"]
-    assert summary["candidate_reionize_exact_rows"] == previous["reionize_exact_rows"]
-    assert summary["candidate_cleanup_exact_rows"] == previous["exact_rows"]
-    assert summary["candidate_normalize_exact_rows"] == previous["normalize_exact_rows"]
+    assert summary["candidate_reionize_exact_rows"] == reionize["reionize_exact_rows"]
+    assert summary["candidate_cleanup_exact_rows"] == reionize["exact_rows"]
+    assert summary["candidate_normalize_exact_rows"] == reionize["normalize_exact_rows"]
     print("Current-source standardization evidence passed")
 
 

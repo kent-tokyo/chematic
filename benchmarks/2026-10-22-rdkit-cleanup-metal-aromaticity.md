@@ -11,4 +11,6 @@ Normalize and Reionize remain exact on all comparable rows in both corpora. The 
 
 Evidence: [stress machine report](../validation/results/rdkit-cleanup-metal-aromaticity-stress-2026-10-22.json) and [10k machine report](../validation/results/rdkit-cleanup-metal-aromaticity-10k-2026-10-22.json). Generate each source dump with `cargo run --locked --offline -q -p chematic-chem --example cleanup_rdkit_dump < CORPUS > DUMP`, then run `scripts/rdkit_cleanup_source_gate.py --dump DUMP --output REPORT --previous-source PREVIOUS_REPORT` using the pinned RDKit 2026.09.1 environment. Pass `--corpus validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi` for the 10k comparison.
 
+`python3 scripts/check_standardization_source_evidence.py`, `cargo test --locked -p chematic-chem`, `cargo clippy --locked -p chematic-chem --all-targets -- -D warnings`, and `cargo fmt --all -- --check` passed locally.
+
 The reaction and R-group comparison boundaries remain as described in [the workflow packet](2026-10-18-rdkit-workflows-followup.md). This result does not establish overall superiority to RDKit.
