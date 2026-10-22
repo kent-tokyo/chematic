@@ -265,6 +265,15 @@ def test_cleanup_keeps_unsupported_lithium_carbonyl_readable():
     )
 
 
+def test_reionize_writes_in_memory_carbanion_stereo():
+    source = "O=C(OCCCl)NNC([C@H]([CH-]c1ccccc1)NC(=O)C)=O"
+    product = chematic.from_smiles(source).reionize().rdkit_smiles
+    assert product == "CC(=O)N[C@-](Cc1ccccc1)C(=O)NNC(=O)OCCCl"
+    assert chematic.from_smiles(product).rdkit_smiles == (
+        "CC(=O)N[C-](Cc1ccccc1)C(=O)NNC(=O)OCCCl"
+    )
+
+
 def test_standardize_largest_fragment_profile_is_explicit():
     mol = chematic.from_smiles("CC.CCC")
     assert "." in mol.standardize().smiles

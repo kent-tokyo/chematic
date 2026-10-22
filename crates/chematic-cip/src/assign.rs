@@ -214,13 +214,14 @@ fn guard_wildcard_uncertainty(
 
     // A wildcard can affect the order of branches several bonds away. Detect
     // a concrete counterexample to an apparently stable label by replacing
-    // each wildcard, one at a time, with carbon. Compare only labels obtained
-    // at the same center; an unresolved probe proves no label change. This
-    // witness is deliberately narrow: it does not claim stability against
-    // every possible wildcard instantiation.
-    const MAX_WILDCARD_PROBES: usize = 16;
+    // each wildcard, one at a time, with carbon and fluorine. Carbon alone
+    // misses cases where two carbon branches remain tied but a more distant
+    // high-priority atom reverses their order. Compare only labels obtained
+    // at the same center; an unresolved probe is not a reversal witness.
+    // These probes do not establish stability for every possible element.
+    const MAX_WILDCARDS: usize = 16;
     let mut unstable = HashSet::new();
-    if wildcards.len() > MAX_WILDCARD_PROBES {
+    if wildcards.len() > MAX_WILDCARDS {
         // Bound the work for query-like inputs with many placeholders. Their
         // connected centers have unspecified priorities, so abstain rather
         // than publish an untested label.
@@ -233,17 +234,19 @@ fn guard_wildcard_uncertainty(
         );
     } else {
         for wildcard in wildcards {
-            let concrete = mol.with_atom_element(wildcard, Element::C);
-            let Ok(probe) = probe_assignment(&concrete, budget) else {
-                continue;
-            };
-            let probe_labels: HashMap<_, _> = probe.assignments.into_iter().collect();
-            for &(center, label) in &result.assignments {
-                if probe_labels
-                    .get(&center)
-                    .is_some_and(|&concrete_label| concrete_label != label)
-                {
-                    unstable.insert(center);
+            for element in [Element::C, Element::F] {
+                let concrete = mol.with_atom_element(wildcard, element);
+                let Ok(probe) = probe_assignment(&concrete, budget) else {
+                    continue;
+                };
+                let probe_labels: HashMap<_, _> = probe.assignments.into_iter().collect();
+                for &(center, label) in &result.assignments {
+                    if probe_labels
+                        .get(&center)
+                        .is_some_and(|&concrete_label| concrete_label != label)
+                    {
+                        unstable.insert(center);
+                    }
                 }
             }
         }
