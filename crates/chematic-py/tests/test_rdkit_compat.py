@@ -254,7 +254,7 @@ def test_sdf_name_in_header_not_sd_field(tmp_path):
     with Chem.SDWriter(str(out)) as w:
         w.write(mol)
 
-    raw = out.read_text()
+    raw = out.read_text(encoding="utf-8")
     assert "ethanol" in raw              # name in MOL header
     assert "> <_Name>" not in raw        # must not appear as SD field
     assert "> <Activity>" in raw
@@ -306,7 +306,7 @@ def test_setprops_filters_output(tmp_path):
     w.write(mol)
     w.close()
 
-    raw = out.read_text()
+    raw = out.read_text(encoding="utf-8")
     assert "> <ID>" in raw
     assert "> <MW>" in raw
     assert "> <Source>" not in raw
@@ -322,7 +322,7 @@ def test_setprops_empty_writes_no_sd_fields(tmp_path):
     w.write(mol)
     w.close()
 
-    raw = out.read_text()
+    raw = out.read_text(encoding="utf-8")
     assert "> <ID>" not in raw
     assert "$$$$" in raw
 
@@ -378,7 +378,7 @@ def test_force_v3000_writes_v3000_block(tmp_path):
     w.SetForceV3000(True)
     w.write(Chem.MolFromSmiles("c1ccccc1"))
     w.close()
-    text = out.read_text()
+    text = out.read_text(encoding="utf-8")
     assert "V3000" in text
     assert "$$$$" in text
 
@@ -1102,7 +1102,7 @@ def test_smiles_writer_no_name_header_omits_name_column(tmp_path):
         m = Chem.MolFromSmiles("CC")
         m.SetProp("_Name", "ethane")
         w.write(m)
-    text = out.read_text()
+    text = out.read_text(encoding="utf-8")
     assert "ethane" not in text
 
 

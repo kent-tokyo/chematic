@@ -1,0 +1,251 @@
+{
+  "schema": "chematic.sdf-data-item-framing-validation.v1",
+  "date": "2026-10-22",
+  "source_base": "a83ed2653037a7b17033e03ee22501a1ddda8bb9",
+  "baseline_field_parser_sha256": "3839910c8e3089e34b29197b83e2d920f0b2b423314fcde00a457b7c678cc7dd",
+  "scope": "12 original field cases in 48 V2000/V3000 LF/CRLF development variants. Exact named field strings and simple C/O graph only; header annotations, order, repeated-key retention, full CTAB chemistry, independent holdout, timing and release claims excluded.",
+  "compatibility_change": "Only an empty line or record end terminates a value; missing-separator recovery by header guessing is removed. The initial Rust run failed one resource-test fixture with a missing separator. That fixture gained the intended blank line, preserving its existing field assertions and budget checks. Final full suite passes.",
+  "sources": {
+    "crates/chematic-mol/src/sdf/fields.rs": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol/src/sdf/fields.rs",
+      "sha256": "c122305b83b6d22d1d51c7c67d07e0122bbbfeb03d2789729e4f01b70db6e527",
+      "size_bytes": 2938
+    },
+    "crates/chematic-mol/src/format_limit_contract_tests.rs": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol/src/format_limit_contract_tests.rs",
+      "sha256": "014aed004c2ece7f55339b551b7b56c3e70b0361462e3bb536dbe06e5efc6acf",
+      "size_bytes": 39312
+    },
+    "crates/chematic-mol/tests/sdf_data_item_framing.rs": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol/tests/sdf_data_item_framing.rs",
+      "sha256": "545af44f49c9c3a0def50733602c0bedf98d2fa33bbd216c51192ebb4393a1b5",
+      "size_bytes": 3243
+    },
+    "crates/chematic-py/tests/test_sdf_data_item_framing.py": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py/tests/test_sdf_data_item_framing.py",
+      "sha256": "db808435e0e17545e9acaf253136eb76d78dcd511960cd2aedc0b6b343d06203",
+      "size_bytes": 1730
+    },
+    "crates/chematic-wasm/tests/sdf_data_item_framing.test.mjs": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-wasm/tests/sdf_data_item_framing.test.mjs",
+      "sha256": "830f2c31d47b2cef24fe7f50e8ef5d3240e209fd14b6613cecb4e69246018949",
+      "size_bytes": 1158
+    },
+    "scripts/validation/check_sdf_data_item_framing.py": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/scripts/validation/check_sdf_data_item_framing.py",
+      "sha256": "2643f87f7f38f195ae9b7105524f0dc47d96e88ef044a42dbdd997033d8af63b",
+      "size_bytes": 7230
+    },
+    "scripts/tests/test_sdf_data_item_framing.py": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/scripts/tests/test_sdf_data_item_framing.py",
+      "sha256": "d0e8027bbc5ea3979420839b38b9699e14aacde15e0190075fc7ceccfaa3795c",
+      "size_bytes": 1727
+    },
+    "scripts/check_interchange_preservation.py": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/scripts/check_interchange_preservation.py",
+      "sha256": "df7aec9cf2bc8adfcd56fe005e84b23ad38ba3c5cef63cc8b8089ab980b58fac",
+      "size_bytes": 28676
+    },
+    ".github/workflows/ci.yml": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.github/workflows/ci.yml",
+      "sha256": "db9dcceb386f08e67a07566425917eb62dafe61a4db90621f33d7f0476e9815b",
+      "size_bytes": 51503
+    },
+    "validation/sdf_data_item_framing/cases.json": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/sdf_data_item_framing/cases.json",
+      "sha256": "ed52dec6c80adeb3c1f9e7024558c307a3147553edcf4bdd28af22ed42206d10",
+      "size_bytes": 5448
+    },
+    "docs/format-capabilities.md": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/docs/format-capabilities.md",
+      "sha256": "7a83858f54588f255f48c9556252d28d9e91b5bd00dc731f737c3411f8d8a153",
+      "size_bytes": 54044
+    },
+    "docs/benchmarks/2026-10-22-sdf-data-item-framing.md": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/docs/benchmarks/2026-10-22-sdf-data-item-framing.md",
+      "sha256": "63a6462ee95a6335fa8ef23144c75ed1531cd6570490f30c97772336da9763a5",
+      "size_bytes": 6444
+    }
+  },
+  "reports": {
+    "baseline": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/sdf-data-item-framing-baseline-2026-10-22.json",
+      "sha256": "c1f595f18fc364b958e363c334838362a97efac56090d5effb9985956db332d3",
+      "size_bytes": 184047
+    },
+    "candidate": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/sdf-data-item-framing-candidate-2026-10-22.json",
+      "sha256": "2f8bcc84175bbc88cda2b543de365918ba6adc65b0f2e3404c68be2c88f2a902",
+      "size_bytes": 186338
+    }
+  },
+  "counts": {
+    "baseline": {
+      "chematic": {
+        "fields_preserved": 20,
+        "field_loss": 28
+      },
+      "openbabel": {
+        "fields_preserved": 36,
+        "field_loss": 12
+      }
+    },
+    "candidate": {
+      "chematic": {
+        "fields_preserved": 48
+      },
+      "openbabel": {
+        "fields_preserved": 36,
+        "field_loss": 12
+      }
+    }
+  },
+  "validation": {
+    "rust": {
+      "passed": 1478,
+      "failed": 0,
+      "ignored": 0,
+      "summaries": 79,
+      "scope": "full MOL unit/integration/doc suite"
+    },
+    "python": {
+      "passed": 287,
+      "failed": 0,
+      "new_cases": 120,
+      "scope": "source-built Python extension; native/compat forward suppliers and writer read-back, existing forward/io/compression/selection suites"
+    },
+    "wasm": {
+      "variants": 48,
+      "surfaces": [
+        "sdf_to_records_json",
+        "sdf_records_batch_json"
+      ],
+      "profile": "source-built debug wasm32, wasm-bindgen nodejs"
+    },
+    "scripts": {
+      "passed": 38,
+      "failed": 0
+    },
+    "checks": [
+      "all-target MOL clippy -D warnings",
+      "cargo fmt --all -- --check",
+      "git diff --check",
+      "script layout",
+      "refactor budget",
+      "product names",
+      "mkdocs build --strict"
+    ]
+  },
+  "host": {
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "python": "3.13.6",
+    "rustc": "rustc 1.97.0 (2d8144b78 2026-07-07)\nbinary: rustc\ncommit-hash: 2d8144b7880597b6e6d3dfd63a9a9efae3f533d3\ncommit-date: 2026-07-07\nhost: aarch64-apple-darwin\nrelease: 1.97.0\nLLVM version: 22.1.6\n",
+    "node": "v24.5.0"
+  },
+  "artifacts": {
+    "baseline_python": {
+      "path": "/private/tmp/chematic-sdf-fields-baseline-python-20261022/chematic/chematic.cpython-313-darwin.so",
+      "sha256": "5e1bc2dbe4f0dda290afaa8cf51419e42cd4c36700bc8bd4c555078bf74a57f5",
+      "size_bytes": 44590384
+    },
+    "candidate_python": {
+      "path": "/private/tmp/chematic-sdf-fields-python-20261022/chematic/chematic.cpython-313-darwin.so",
+      "sha256": "92883e162d660035586ab58640b07f4fb99935e5937aaa408d2f6994c05ebe5d",
+      "size_bytes": 44590384
+    },
+    "wasm_js": {
+      "path": "/private/tmp/chematic-sdf-fields-wasm-20261022/chematic_wasm.js",
+      "sha256": "d199187076e14a0d74ed202af81ae9fe3b9eecb75c74e008dce05010e50450fa",
+      "size_bytes": 366801
+    },
+    "wasm_binary": {
+      "path": "/private/tmp/chematic-sdf-fields-wasm-20261022/chematic_wasm_bg.wasm",
+      "sha256": "728651c4db82c7029f70420f9521fdd382fc4ba0ea953a1bbadea0cdfc68cb20",
+      "size_bytes": 44852636
+    }
+  },
+  "openbabel_files": {
+    "/opt/homebrew/bin/obabel": {
+      "path": "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+      "sha256": "733b2c925d60b17a5c9d8ce9ec841e918cc20c7634301e23f9008a187d1d9bc5",
+      "size_bytes": 75728
+    },
+    "/opt/homebrew/Cellar/open-babel/3.2.1/lib/libopenbabel.8.dylib": {
+      "path": "/opt/homebrew/Cellar/open-babel/3.2.1/lib/libopenbabel.8.0.0.dylib",
+      "sha256": "9c0e023919fca6656f686b3903c10d438c0003a1d07e721a850cff9ff495c93a",
+      "size_bytes": 2794816
+    },
+    "/opt/homebrew/Cellar/open-babel/3.2.1/lib/openbabel/3.2.1/mdlformat.so": {
+      "path": "/opt/homebrew/Cellar/open-babel/3.2.1/lib/openbabel/3.2.1/mdlformat.so",
+      "sha256": "63afe091d19268a0c6d5514b81ce5b9018c0334d9a0108b0fbfbb920b587999b",
+      "size_bytes": 166528
+    }
+  },
+  "logs": {
+    "baseline-build": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/sdf-data-item-framing-2026-10-22/baseline-build.log.gz",
+      "sha256": "0cc9d1d0cb0f633ea7e7ca026a6337074035457ae3330f1286619f88caed743b",
+      "size_bytes": 219
+    },
+    "baseline-paired": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/sdf-data-item-framing-2026-10-22/baseline-paired.log.gz",
+      "sha256": "c1711173e3adf343795353483be4d0bb03d6c684cc722fdfacd037777c4b63a4",
+      "size_bytes": 89
+    },
+    "rust": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/sdf-data-item-framing-2026-10-22/rust.log.gz",
+      "sha256": "d3f0fc839703fc9dbc02679216c73635337b3e07e782ca16ecee6f757d837720",
+      "size_bytes": 13088
+    },
+    "rust-final": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/sdf-data-item-framing-2026-10-22/rust-final.log.gz",
+      "sha256": "732faad53a46f490b95d4618aff19403234d78ad845a2e23093c41e8d1d78979",
+      "size_bytes": 27145
+    },
+    "python-build": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/sdf-data-item-framing-2026-10-22/python-build.log.gz",
+      "sha256": "dda4f0d3c4b8ab7a101b4dc8078a60be00893f0b460c5522f8338086a556f4ad",
+      "size_bytes": 160
+    },
+    "python-tests": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/sdf-data-item-framing-2026-10-22/python-tests.log.gz",
+      "sha256": "1cdfcb00649a624bd810c1ebe0a8c16d24e942a2f9a5ba79bad61d7f6e126723",
+      "size_bytes": 336
+    },
+    "wasm-build": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/sdf-data-item-framing-2026-10-22/wasm-build.log.gz",
+      "sha256": "514ddbde4e4cea14927c9688721c40c4d3f5c4cb93e643459bbc4e33b38d2090",
+      "size_bytes": 187
+    },
+    "wasm-tests": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/sdf-data-item-framing-2026-10-22/wasm-tests.log.gz",
+      "sha256": "5d37594b8b6c623bf52affe5f2e1483725b0188190cef20768c4696a28c05894",
+      "size_bytes": 77
+    },
+    "candidate-paired": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/sdf-data-item-framing-2026-10-22/candidate-paired.log.gz",
+      "sha256": "8bce8271749b59b61dfcb0ac302342aec35a81c20e9302ff6dfc034909f3a498",
+      "size_bytes": 87
+    },
+    "script-tests": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/sdf-data-item-framing-2026-10-22/script-tests.log.gz",
+      "sha256": "a5946f5f2ce60d9d486ea266acd9c7c4dbf7ea7ef1a2ae0a00dcff1b102a50f0",
+      "size_bytes": 52
+    },
+    "clippy": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/sdf-data-item-framing-2026-10-22/clippy.log.gz",
+      "sha256": "210daaecbaf976c6540858a86b3d94a33c61448194312c0f800ee9e514f61998",
+      "size_bytes": 167
+    },
+    "docs": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/sdf-data-item-framing-2026-10-22/docs.log.gz",
+      "sha256": "6530a9445d1bd7e860cb872f2e9e0c9d9f732b01ebcbe62c4867e9fdb789edc4",
+      "size_bytes": 1226
+    },
+    "obabel-options": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/sdf-data-item-framing-2026-10-22/obabel-options.log.gz",
+      "sha256": "81e2748cbcfe55bbd7fe13d5dad3b6aed3d2ba3291cb63598c902a93425fdf8a",
+      "size_bytes": 1068
+    }
+  }
+}

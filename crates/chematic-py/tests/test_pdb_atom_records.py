@@ -152,7 +152,7 @@ def test_existing_anisou_ter_and_conect_source_is_retained():
         Path(__file__).resolve().parents[3]
         / "validation/openbabel_issues/pdb-selection/rich.pdb"
     )
-    text = path.read_text()
+    text = path.read_text(encoding="utf-8")
     result = C.read_pdb_atom_records(text)
     assert result.source_text == text
     assert len(result.atoms) == 6

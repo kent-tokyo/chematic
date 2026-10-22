@@ -52,6 +52,9 @@ jobs:
       - name: Script layout and harness tests
         run: |
           python3 tools/check_script_layout.py
+          python3 -m unittest scripts.tests.test_sdf_data_item_framing
+          python3 -m unittest scripts.tests.test_cml_source_conversion
+          python3 -m unittest scripts.tests.test_cml_coordinate_precision
           python3 -m unittest scripts.tests.test_bench_python_morgan_linear scripts.tests.test_changed_public_crates scripts.tests.test_accuracy_gate scripts.tests.test_scalar_bundle_gate scripts.tests.test_fingerprint_cross_binding scripts.tests.test_same_process_report
       - uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
       - name: Cache cargo
@@ -274,8 +277,30 @@ jobs:
           .venv/bin/maturin develop --release -m crates/chematic-py/Cargo.toml
       - name: Rust unit tests (chematic-py)
         run: cargo test -p chematic-py --lib --no-default-features --quiet
+      - name: Verify GJF comparison observations
+        run: python3 -m unittest discover -s scripts/tests -p 'test_gjf_cartesian_validation.py' -v
+      - name: V3000 coordinate projection observer
+        run: .venv/bin/python -m unittest scripts.tests.test_v3000_coordinate_projection -q
+      - name: V3000 source coordinate observer
+        run: .venv/bin/python -m unittest scripts.tests.test_v3000_source_roundtrip -q
+      - name: SDF document framing observer
+        run: .venv/bin/python -m unittest scripts.tests.test_sdf_source_document -q
+      - name: CML Cartesian preservation observer
+        run: .venv/bin/python -m unittest scripts.tests.test_cml_3d_observer -q
+      - name: CJSON checked-input observer
+        run: .venv/bin/python -m unittest scripts.tests.test_cjson_checked_observer -q
+      - name: MOL2 CJSON projection observer
+        run: .venv/bin/python -m unittest scripts.tests.test_mol2_cjson_common -q
+      - name: CJSON/MOL2 indexed charge observer
+        run: .venv/bin/python -m unittest scripts.tests.test_cjson_mol2_formal_charges -q
+      - name: CJSON source-field observer contract
+        run: .venv/bin/python -m unittest scripts.tests.test_cjson_source_conversion -q
       - name: Run pytest (chematic-py)
         run: .venv/bin/python -m pytest crates/chematic-py/tests/ -q
+      - name: PDBQT numeric preservation contract
+        run: |
+          .venv/bin/python -m unittest scripts.tests.test_pdbqt_atom_data -q
+          .venv/bin/python scripts/validation/check_pdbqt_atom_data.py --output /tmp/pdbqt-atom-data.json
       - name: RDKit 2026 HBA parity from installed source wheel
         run: |
           .venv/bin/pip install 'rdkit==2026.3.6' --quiet
