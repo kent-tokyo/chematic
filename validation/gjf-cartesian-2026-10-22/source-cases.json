@@ -1,0 +1,558 @@
+{
+  "schema": "chematic.gjf-source-fixtures.v1",
+  "provenance": "Original synthetic source-retention controls, CC0-1.0. Opaque and UTF-8/framing controls are not asserted to be executable Gaussian jobs.",
+  "cases": [
+    {
+      "id": "plain-LF",
+      "category": "cartesian-source",
+      "source": "# HF/STO-3G\n\nOriginal geometry\n\n0 1\nC 0 0 0\nO 1.25 2.5 3.75\n\n",
+      "expected": "retain"
+    },
+    {
+      "id": "plain-CRLF",
+      "category": "cartesian-source",
+      "source": "# HF/STO-3G\r\n\r\nOriginal geometry\r\n\r\n0 1\r\nC 0 0 0\r\nO 1.25 2.5 3.75\r\n\r\n",
+      "expected": "retain"
+    },
+    {
+      "id": "configured-LF",
+      "category": "cartesian-source",
+      "source": "%chk=original.chk\n%mem=512MB\n%nprocshared=2\n#p HF/Gen\n Units=AU Opt=ModRedundant\n\nOriginal Cartesian job\nsecond title line\n\n-1,2 ! electronic state\nC1  -1 +0.000000000000000000 -0.0 1.234567890123456789012345\nO2   0 2.500000000000000000 0.0 0.0 ! freeze flag\n\nB 1 2 F\n\nC O 0\nSTO-3G\n****\n\n",
+      "expected": "retain"
+    },
+    {
+      "id": "configured-CRLF",
+      "category": "cartesian-source",
+      "source": "%chk=original.chk\r\n%mem=512MB\r\n%nprocshared=2\r\n#p HF/Gen\r\n Units=AU Opt=ModRedundant\r\n\r\nOriginal Cartesian job\r\nsecond title line\r\n\r\n-1,2 ! electronic state\r\nC1  -1 +0.000000000000000000 -0.0 1.234567890123456789012345\r\nO2   0 2.500000000000000000 0.0 0.0 ! freeze flag\r\n\r\nB 1 2 F\r\n\r\nC O 0\r\nSTO-3G\r\n****\r\n\r\n",
+      "expected": "retain"
+    },
+    {
+      "id": "multiline-title-LF",
+      "category": "cartesian-source",
+      "source": "# HF/STO-3G\n\nTitle one\nTitle two\nTitle three\n\n0 1\nC 0 0 0\nO 1.25 2.5 3.75\n\n",
+      "expected": "retain"
+    },
+    {
+      "id": "multiline-title-CRLF",
+      "category": "cartesian-source",
+      "source": "# HF/STO-3G\r\n\r\nTitle one\r\nTitle two\r\nTitle three\r\n\r\n0 1\r\nC 0 0 0\r\nO 1.25 2.5 3.75\r\n\r\n",
+      "expected": "retain"
+    },
+    {
+      "id": "comments-LF",
+      "category": "cartesian-source",
+      "source": "# HF/STO-3G\n\nOriginal geometry\n\n0 1\n! atom comment\nC 0 0 0 ! inline\n! another comment\nO 1.25 2.5 3.75\n\n",
+      "expected": "retain"
+    },
+    {
+      "id": "comments-CRLF",
+      "category": "cartesian-source",
+      "source": "# HF/STO-3G\r\n\r\nOriginal geometry\r\n\r\n0 1\r\n! atom comment\r\nC 0 0 0 ! inline\r\n! another comment\r\nO 1.25 2.5 3.75\r\n\r\n",
+      "expected": "retain"
+    },
+    {
+      "id": "opaque-basis-LF",
+      "category": "opaque-profile",
+      "source": "# HF/Gen\n\nOriginal geometry\n\n0 1\nC 0 0 0\nO 1.25 2.5 3.75\n\nC O 0\nS 1 1.0\n  1.234567890123456789 0.99999999999999999\n****\n\n",
+      "expected": "retain"
+    },
+    {
+      "id": "opaque-basis-CRLF",
+      "category": "opaque-profile",
+      "source": "# HF/Gen\r\n\r\nOriginal geometry\r\n\r\n0 1\r\nC 0 0 0\r\nO 1.25 2.5 3.75\r\n\r\nC O 0\r\nS 1 1.0\r\n  1.234567890123456789 0.99999999999999999\r\n****\r\n\r\n",
+      "expected": "retain"
+    },
+    {
+      "id": "external-reference-LF",
+      "category": "opaque-profile",
+      "source": "# HF/Gen\n\nOriginal geometry\n\n0 1\nC 0 0 0\nO 1.25 2.5 3.75\n\n@file-not-opened-by-chematic.gbs\n\n",
+      "expected": "retain"
+    },
+    {
+      "id": "external-reference-CRLF",
+      "category": "opaque-profile",
+      "source": "# HF/Gen\r\n\r\nOriginal geometry\r\n\r\n0 1\r\nC 0 0 0\r\nO 1.25 2.5 3.75\r\n\r\n@file-not-opened-by-chematic.gbs\r\n\r\n",
+      "expected": "retain"
+    },
+    {
+      "id": "precision-spelling-LF",
+      "category": "cartesian-source",
+      "source": "# HF/STO-3G\n\nOriginal geometry\n\n0 1\nC1 -0.000000000000000000 +0.000000000000000000 4.9406564584124654417656879286822e-324\nO 1.25 2.5 3.75\n\n",
+      "expected": "retain"
+    },
+    {
+      "id": "precision-spelling-CRLF",
+      "category": "cartesian-source",
+      "source": "# HF/STO-3G\r\n\r\nOriginal geometry\r\n\r\n0 1\r\nC1 -0.000000000000000000 +0.000000000000000000 4.9406564584124654417656879286822e-324\r\nO 1.25 2.5 3.75\r\n\r\n",
+      "expected": "retain"
+    },
+    {
+      "id": "utf8-control-LF",
+      "category": "text-profile-control",
+      "source": "# HF/STO-3G\n\n\u539f\u6587\u4fdd\u6301 e\u0301 \u00e9\n\n0 1\nC 0 0 0\nO 1.25 2.5 3.75\n\n",
+      "expected": "retain"
+    },
+    {
+      "id": "utf8-control-CRLF",
+      "category": "text-profile-control",
+      "source": "# HF/STO-3G\r\n\r\n\u539f\u6587\u4fdd\u6301 e\u0301 \u00e9\r\n\r\n0 1\r\nC 0 0 0\r\nO 1.25 2.5 3.75\r\n\r\n",
+      "expected": "retain"
+    },
+    {
+      "id": "bom-control-LF",
+      "category": "text-profile-control",
+      "source": "\ufeff# HF/STO-3G\n\nOriginal geometry\n\n0 1\nC 0 0 0\nO 1.25 2.5 3.75\n\n",
+      "expected": "retain"
+    },
+    {
+      "id": "bom-control-CRLF",
+      "category": "text-profile-control",
+      "source": "\ufeff# HF/STO-3G\r\n\r\nOriginal geometry\r\n\r\n0 1\r\nC 0 0 0\r\nO 1.25 2.5 3.75\r\n\r\n",
+      "expected": "retain"
+    },
+    {
+      "id": "no-final-newline-LF",
+      "category": "text-profile-control",
+      "source": "# HF/STO-3G\n\nOriginal geometry\n\n0 1\nC 0 0 0\nO 1.25 2.5 3.75",
+      "expected": "retain"
+    },
+    {
+      "id": "no-final-newline-CRLF",
+      "category": "text-profile-control",
+      "source": "# HF/STO-3G\r\n\r\nOriginal geometry\r\n\r\n0 1\r\nC 0 0 0\r\nO 1.25 2.5 3.75",
+      "expected": "retain"
+    },
+    {
+      "id": "mixed-newlines",
+      "category": "text-profile-control",
+      "source": "%chk=original.chk\n%mem=512MB\r\n%nprocshared=2\n#p HF/Gen\n Units=AU Opt=ModRedundant\n\nOriginal Cartesian job\nsecond title line\n\n-1,2 ! electronic state\nC1  -1 +0.000000000000000000 -0.0 1.234567890123456789012345\nO2   0 2.500000000000000000 0.0 0.0 ! freeze flag\n\nB 1 2 F\n\nC O 0\nSTO-3G\n****\n\n",
+      "expected": "retain"
+    },
+    {
+      "id": "malformed-0-first-LF",
+      "category": "malformed",
+      "source": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nH\nC 0 0 0\n\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-0-first-CRLF",
+      "category": "malformed",
+      "source": "%chk=original.chk\r\n# HF/STO-3G\r\n\r\nOriginal geometry control\r\n\r\n-1 2\r\nH\r\nC 0 0 0\r\n\r\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-0-last-LF",
+      "category": "malformed",
+      "source": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nC 0 0 0\nH\n\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-0-last-CRLF",
+      "category": "malformed",
+      "source": "%chk=original.chk\r\n# HF/STO-3G\r\n\r\nOriginal geometry control\r\n\r\n-1 2\r\nC 0 0 0\r\nH\r\n\r\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-1-first-LF",
+      "category": "malformed",
+      "source": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nH 1\nC 0 0 0\n\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-1-first-CRLF",
+      "category": "malformed",
+      "source": "%chk=original.chk\r\n# HF/STO-3G\r\n\r\nOriginal geometry control\r\n\r\n-1 2\r\nH 1\r\nC 0 0 0\r\n\r\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-1-last-LF",
+      "category": "malformed",
+      "source": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nC 0 0 0\nH 1\n\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-1-last-CRLF",
+      "category": "malformed",
+      "source": "%chk=original.chk\r\n# HF/STO-3G\r\n\r\nOriginal geometry control\r\n\r\n-1 2\r\nC 0 0 0\r\nH 1\r\n\r\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-2-first-LF",
+      "category": "malformed",
+      "source": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nH 1 2\nC 0 0 0\n\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-2-first-CRLF",
+      "category": "malformed",
+      "source": "%chk=original.chk\r\n# HF/STO-3G\r\n\r\nOriginal geometry control\r\n\r\n-1 2\r\nH 1 2\r\nC 0 0 0\r\n\r\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-2-last-LF",
+      "category": "malformed",
+      "source": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nC 0 0 0\nH 1 2\n\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-2-last-CRLF",
+      "category": "malformed",
+      "source": "%chk=original.chk\r\n# HF/STO-3G\r\n\r\nOriginal geometry control\r\n\r\n-1 2\r\nC 0 0 0\r\nH 1 2\r\n\r\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-3-first-LF",
+      "category": "malformed",
+      "source": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nH -1 1 2 3 4\nC 0 0 0\n\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-3-first-CRLF",
+      "category": "malformed",
+      "source": "%chk=original.chk\r\n# HF/STO-3G\r\n\r\nOriginal geometry control\r\n\r\n-1 2\r\nH -1 1 2 3 4\r\nC 0 0 0\r\n\r\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-3-last-LF",
+      "category": "malformed",
+      "source": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nC 0 0 0\nH -1 1 2 3 4\n\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-3-last-CRLF",
+      "category": "malformed",
+      "source": "%chk=original.chk\r\n# HF/STO-3G\r\n\r\nOriginal geometry control\r\n\r\n-1 2\r\nC 0 0 0\r\nH -1 1 2 3 4\r\n\r\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-4-first-LF",
+      "category": "malformed",
+      "source": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nH 0.5 1 2 3\nC 0 0 0\n\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-4-first-CRLF",
+      "category": "malformed",
+      "source": "%chk=original.chk\r\n# HF/STO-3G\r\n\r\nOriginal geometry control\r\n\r\n-1 2\r\nH 0.5 1 2 3\r\nC 0 0 0\r\n\r\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-4-last-LF",
+      "category": "malformed",
+      "source": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nC 0 0 0\nH 0.5 1 2 3\n\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-4-last-CRLF",
+      "category": "malformed",
+      "source": "%chk=original.chk\r\n# HF/STO-3G\r\n\r\nOriginal geometry control\r\n\r\n-1 2\r\nC 0 0 0\r\nH 0.5 1 2 3\r\n\r\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-5-first-LF",
+      "category": "malformed",
+      "source": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nH x 1 2 3\nC 0 0 0\n\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-5-first-CRLF",
+      "category": "malformed",
+      "source": "%chk=original.chk\r\n# HF/STO-3G\r\n\r\nOriginal geometry control\r\n\r\n-1 2\r\nH x 1 2 3\r\nC 0 0 0\r\n\r\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-5-last-LF",
+      "category": "malformed",
+      "source": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nC 0 0 0\nH x 1 2 3\n\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-5-last-CRLF",
+      "category": "malformed",
+      "source": "%chk=original.chk\r\n# HF/STO-3G\r\n\r\nOriginal geometry control\r\n\r\n-1 2\r\nC 0 0 0\r\nH x 1 2 3\r\n\r\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-6-first-LF",
+      "category": "malformed",
+      "source": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nH 2147483648 1 2 3\nC 0 0 0\n\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-6-first-CRLF",
+      "category": "malformed",
+      "source": "%chk=original.chk\r\n# HF/STO-3G\r\n\r\nOriginal geometry control\r\n\r\n-1 2\r\nH 2147483648 1 2 3\r\nC 0 0 0\r\n\r\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-6-last-LF",
+      "category": "malformed",
+      "source": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nC 0 0 0\nH 2147483648 1 2 3\n\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-6-last-CRLF",
+      "category": "malformed",
+      "source": "%chk=original.chk\r\n# HF/STO-3G\r\n\r\nOriginal geometry control\r\n\r\n-1 2\r\nC 0 0 0\r\nH 2147483648 1 2 3\r\n\r\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-7-first-LF",
+      "category": "malformed",
+      "source": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nH -1 NaN 2 3\nC 0 0 0\n\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-7-first-CRLF",
+      "category": "malformed",
+      "source": "%chk=original.chk\r\n# HF/STO-3G\r\n\r\nOriginal geometry control\r\n\r\n-1 2\r\nH -1 NaN 2 3\r\nC 0 0 0\r\n\r\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-7-last-LF",
+      "category": "malformed",
+      "source": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nC 0 0 0\nH -1 NaN 2 3\n\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-7-last-CRLF",
+      "category": "malformed",
+      "source": "%chk=original.chk\r\n# HF/STO-3G\r\n\r\nOriginal geometry control\r\n\r\n-1 2\r\nC 0 0 0\r\nH -1 NaN 2 3\r\n\r\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-8-first-LF",
+      "category": "malformed",
+      "source": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nH -1 1 inf 3\nC 0 0 0\n\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-8-first-CRLF",
+      "category": "malformed",
+      "source": "%chk=original.chk\r\n# HF/STO-3G\r\n\r\nOriginal geometry control\r\n\r\n-1 2\r\nH -1 1 inf 3\r\nC 0 0 0\r\n\r\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-8-last-LF",
+      "category": "malformed",
+      "source": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nC 0 0 0\nH -1 1 inf 3\n\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-8-last-CRLF",
+      "category": "malformed",
+      "source": "%chk=original.chk\r\n# HF/STO-3G\r\n\r\nOriginal geometry control\r\n\r\n-1 2\r\nC 0 0 0\r\nH -1 1 inf 3\r\n\r\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-9-first-LF",
+      "category": "malformed",
+      "source": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nH -1 1 2 -inf\nC 0 0 0\n\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-9-first-CRLF",
+      "category": "malformed",
+      "source": "%chk=original.chk\r\n# HF/STO-3G\r\n\r\nOriginal geometry control\r\n\r\n-1 2\r\nH -1 1 2 -inf\r\nC 0 0 0\r\n\r\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-9-last-LF",
+      "category": "malformed",
+      "source": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nC 0 0 0\nH -1 1 2 -inf\n\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-9-last-CRLF",
+      "category": "malformed",
+      "source": "%chk=original.chk\r\n# HF/STO-3G\r\n\r\nOriginal geometry control\r\n\r\n-1 2\r\nC 0 0 0\r\nH -1 1 2 -inf\r\n\r\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-10-first-LF",
+      "category": "malformed",
+      "source": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nH -1 1 2 1e999\nC 0 0 0\n\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-10-first-CRLF",
+      "category": "malformed",
+      "source": "%chk=original.chk\r\n# HF/STO-3G\r\n\r\nOriginal geometry control\r\n\r\n-1 2\r\nH -1 1 2 1e999\r\nC 0 0 0\r\n\r\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-10-last-LF",
+      "category": "malformed",
+      "source": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nC 0 0 0\nH -1 1 2 1e999\n\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-10-last-CRLF",
+      "category": "malformed",
+      "source": "%chk=original.chk\r\n# HF/STO-3G\r\n\r\nOriginal geometry control\r\n\r\n-1 2\r\nC 0 0 0\r\nH -1 1 2 1e999\r\n\r\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-11-first-LF",
+      "category": "malformed",
+      "source": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nH 1 2 NaN\nC 0 0 0\n\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-11-first-CRLF",
+      "category": "malformed",
+      "source": "%chk=original.chk\r\n# HF/STO-3G\r\n\r\nOriginal geometry control\r\n\r\n-1 2\r\nH 1 2 NaN\r\nC 0 0 0\r\n\r\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-11-last-LF",
+      "category": "malformed",
+      "source": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nC 0 0 0\nH 1 2 NaN\n\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-11-last-CRLF",
+      "category": "malformed",
+      "source": "%chk=original.chk\r\n# HF/STO-3G\r\n\r\nOriginal geometry control\r\n\r\n-1 2\r\nC 0 0 0\r\nH 1 2 NaN\r\n\r\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-12-first-LF",
+      "category": "malformed",
+      "source": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nXx 1 2 3\nC 0 0 0\n\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-12-first-CRLF",
+      "category": "malformed",
+      "source": "%chk=original.chk\r\n# HF/STO-3G\r\n\r\nOriginal geometry control\r\n\r\n-1 2\r\nXx 1 2 3\r\nC 0 0 0\r\n\r\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-12-last-LF",
+      "category": "malformed",
+      "source": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nC 0 0 0\nXx 1 2 3\n\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "malformed-12-last-CRLF",
+      "category": "malformed",
+      "source": "%chk=original.chk\r\n# HF/STO-3G\r\n\r\nOriginal geometry control\r\n\r\n-1 2\r\nC 0 0 0\r\nXx 1 2 3\r\n\r\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "variables-LF",
+      "category": "outside-profile",
+      "source": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nC 0 0 0\nVariables:\nx=1\n\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "variables-CRLF",
+      "category": "outside-profile",
+      "source": "%chk=original.chk\r\n# HF/STO-3G\r\n\r\nOriginal geometry control\r\n\r\n-1 2\r\nC 0 0 0\r\nVariables:\r\nx=1\r\n\r\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "constants-LF",
+      "category": "outside-profile",
+      "source": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nC 0 0 0\nConstants:\nx=1\n\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "constants-CRLF",
+      "category": "outside-profile",
+      "source": "%chk=original.chk\r\n# HF/STO-3G\r\n\r\nOriginal geometry control\r\n\r\n-1 2\r\nC 0 0 0\r\nConstants:\r\nx=1\r\n\r\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "zmat-LF",
+      "category": "outside-profile",
+      "source": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nC\nH 1 1.1\n\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "zmat-CRLF",
+      "category": "outside-profile",
+      "source": "%chk=original.chk\r\n# HF/STO-3G\r\n\r\nOriginal geometry control\r\n\r\n-1 2\r\nC\r\nH 1 1.1\r\n\r\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "oniom-LF",
+      "category": "outside-profile",
+      "source": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nC 0 1 2 3 H\n\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "oniom-CRLF",
+      "category": "outside-profile",
+      "source": "%chk=original.chk\r\n# HF/STO-3G\r\n\r\nOriginal geometry control\r\n\r\n-1 2\r\nC 0 1 2 3 H\r\n\r\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "fragment-spin-LF",
+      "category": "outside-profile",
+      "source": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n0 1 0 1\nC 1 2 3\n\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "fragment-spin-CRLF",
+      "category": "outside-profile",
+      "source": "%chk=original.chk\r\n# HF/STO-3G\r\n\r\nOriginal geometry control\r\n\r\n0 1 0 1\r\nC 1 2 3\r\n\r\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "multiple-jobs-LF",
+      "category": "outside-profile",
+      "source": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nC 1 2 3\n\n--Link1--\n%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nH 4 5 6\n\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "multiple-jobs-CRLF",
+      "category": "outside-profile",
+      "source": "%chk=original.chk\r\n# HF/STO-3G\r\n\r\nOriginal geometry control\r\n\r\n-1 2\r\nC 1 2 3\r\n\r\n--Link1--\r\n%chk=original.chk\r\n# HF/STO-3G\r\n\r\nOriginal geometry control\r\n\r\n-1 2\r\nH 4 5 6\r\n\r\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "zero-multiplicity-LF",
+      "category": "malformed",
+      "source": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n0 0\nC 1 2 3\n\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "zero-multiplicity-CRLF",
+      "category": "malformed",
+      "source": "%chk=original.chk\r\n# HF/STO-3G\r\n\r\nOriginal geometry control\r\n\r\n0 0\r\nC 1 2 3\r\n\r\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "nul",
+      "category": "source-framing",
+      "source": "# HF/STO-3G\n\nOriginal geometry\n\n0 1\nC 0 0 0\nH 1.25 2.5 3.75\n\n! opaque\u0000section\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "bare-cr",
+      "category": "source-framing",
+      "source": "# HF/STO-3G\n\nOriginal geometry\n\n0 1\nC 0 0 0\nH 1.25 2.5 3.75\n\n! opaque\rsection\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "vertical-tab",
+      "category": "source-framing",
+      "source": "# HF/STO-3G\n\nOriginal geometry\n\n0 1\nC 0 0 0\nH 1.25 2.5 3.75\n\n! opaque\u000bsection\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "unicode-line",
+      "category": "source-framing",
+      "source": "# HF/STO-3G\n\nOriginal geometry\n\n0 1\nC 0 0 0\nH 1.25 2.5 3.75\n\n! opaque\u2028section\n",
+      "expected": "refuse"
+    },
+    {
+      "id": "unicode-paragraph",
+      "category": "source-framing",
+      "source": "# HF/STO-3G\n\nOriginal geometry\n\n0 1\nC 0 0 0\nH 1.25 2.5 3.75\n\n! opaque\u2029section\n",
+      "expected": "refuse"
+    }
+  ]
+}

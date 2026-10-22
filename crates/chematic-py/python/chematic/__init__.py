@@ -166,8 +166,8 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
     Supported inputs are SMILES, MOL/SDF (V2000), MOL V3000, MOL2, CML,
     ChemicalJSON, MolJSON, CDXML, PDB, XYZ, PDBQT, and Gaussian input.
     Supported outputs are SMILES, MOL V2000, MOL V3000, MOL2, CML,
-    ChemicalJSON, MolJSON, CDXML, PDB, XYZ, and PDBQT. PDB, XYZ, and PDBQT
-    output require ``coords=[[x, y, z], ...]`` unless the input provides them.
+    ChemicalJSON, MolJSON, CDXML, PDB, XYZ, PDBQT, and same-format GJF/COM
+    source retention. PDB, XYZ, and PDBQT output require ``coords=[[x, y, z], ...]`` unless the input provides them.
 
     The molecular graph and supported stereochemistry are preserved. Format-
     specific metadata is not promised to survive conversion. PDBQT input supplies
@@ -178,6 +178,9 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
     use from_pdbqt_with_data() when those values are needed without rounding.
     MOL2 to MOL2 and CJSON to CJSON validate and retain the exact source; coordinate,
     charge, name, and comment overrides are rejected on that path.
+    GJF/COM to GJF/COM retains exact source for one Cartesian job, including
+    opaque job sections; overrides are rejected. Other GJF output routes
+    require the explicit geometry writer.
     V3000 input supplies source x/y/z for CJSON, PDB, XYZ and PDBQT output
     unless coords is explicitly provided. Each writer's precision and metadata
     limits still apply; this does not verify cross-format stereochemistry.
@@ -243,6 +246,12 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
         if coords is not None or charges is not None or name != "LIG" or comment:
             raise ValueError("CJSON source-preserving conversion does not accept overrides")
         return roundtrip_cjson_record(text)
+    if source == target == "gjf":
+        if coords is not None or charges is not None or name != "LIG" or comment != "":
+            raise ValueError("GJF source-preserving conversion does not accept overrides")
+        return roundtrip_gjf_record(text)
+    if target == "gjf":
+        raise ValueError("GJF output supports source-preserving GJF/COM input only; use write_gjf_cartesian for explicit geometry")
     if source == "smiles":
         mol = from_smiles(text)
     elif source == "mol":

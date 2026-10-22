@@ -808,8 +808,33 @@ disambiguate by crate, not by name alone:
 - **Rust**: `chematic_mol::{parse_gjf, parse_gjf_with_limits, write_gjf, parse_gaussian_log, parse_gaussian_log_with_limits, GaussianLogResult, GaussianParseLimits, GaussianError}`.
 - **Parse limits**: `GaussianParseLimits` bounds input bytes, physical line
   length/count, section count, and atom count for both GJF and log parsing.
-- **Coordinate units**: Ångström.
+- **Geometry API**: Rust `GjfGeometry`, `parse_gjf_geometry` and
+  `parse_gjf_geometry_with_limits`; Python `parse_gjf_geometry` returns a dict
+  with `elements`, `mol`, `coords`, `freeze_codes`, `charge` and `multiplicity`.
+- **Checked geometry writer**: Rust/Python `write_gjf_cartesian` retains finite
+  f64 values and freeze codes, emits explicit Angstrom/Bohr units, and refuses
+  invalid counts, values and headers. It takes geometry arrays, not a graph.
+  Rust options are `GjfWriteOptions` / `GjfCoordinateUnits`, errors `GjfWriteError`.
+- **Coordinate units**: GJF returns input numeric units without interpreting
+  route-unit keywords; log standard-orientation coordinates are Ångström.
+- **Integrity**: optional integer freeze codes do not shift coordinates;
+  malformed/unsupported atom rows, fragment spin pairs and multiple Link1 jobs
+  are refused. This is a Cartesian projection, not complete job preservation.
 - **Connectivity**: no bond table is inferred.
+- **Exact source**: Rust `GjfSourceRecord`, `parse_gjf_source_record[_with_limits]`
+  and `write_gjf_source_record`; Python/WASM `roundtrip_gjf_record` and common
+  GJF/COM self conversion; CLI GJF/COM self conversion. This retains opaque job
+  sections as received, with checked leading Cartesian geometry and source
+  framing. It is not full-job validation or external-resource bundling.
+- **Explicit multi-job source**: Rust `GjfSourceDocument` /
+  `parse_gjf_source_document[_with_limits]` / `write_gjf_source_document`,
+  Python/WASM `roundtrip_gjf_document` / `parse_gjf_document_json`, and CLI
+  `gjf-document [--inspect]` validate every explicit Cartesian Link1 job before
+  returning any output. Exact source and ordered per-job geometry/UTF-8 ranges
+  are available separately. Job/atom/byte budgets count the whole document;
+  checkpoint-only geometry is unsupported. Opaque sections and references are
+  retained without interpretation. Single-job/common routes keep refusing Link1.
+- **Details and comparison**: [GJF Cartesian geometry integrity](gjf-cartesian-integrity.md).
 
 ### ChemDoodle JSON
 

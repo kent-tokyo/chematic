@@ -5952,3 +5952,71 @@ from ._pdb_hydrogen_names import (
 
 from ._maestro import MaeExport as MaeExport, write_mae_checked as write_mae_checked, v2000_to_mae_checked as v2000_to_mae_checked
 from ._scored_tautomer import rdkit_pick_tautomer_scored as rdkit_pick_tautomer_scored
+
+class GjfGeometry(TypedDict):
+    elements: list[str]
+    mol: Mol
+    coords: list[list[float]]
+    freeze_codes: list[int | None]
+    charge: int
+    multiplicity: int
+
+def parse_gjf_geometry(
+    text: str, *, max_input_bytes: int = 16_777_216, max_atoms: int = 100_000,
+) -> GjfGeometry:
+    """Read Cartesian input values and freeze codes; route units are not converted.
+
+    This geometry projection omits route/title/basis sets and infers no bonds
+    or atom formal charges. Unsupported and malformed geometries raise ValueError.
+    """
+    ...
+
+
+def write_gjf_cartesian(
+    elements: Iterable[str], coords: Iterable[Iterable[float]], *,
+    charge: int, multiplicity: int, units: Literal["angstrom", "bohr"],
+    freeze_codes: Iterable[int | None] | None = None,
+    title: str = "chematic Cartesian geometry", route: str = "#",
+) -> str:
+    """Write explicit geometry with exact f64 values and optional freeze codes.
+
+    Values retain their numeric units, explicitly emitted as Units=Ang/AU.
+    Refuses invalid counts, nonfinite values, header injection and unit overrides.
+    Bounded to 100000 atoms; this does not serialize a graph or complete source job.
+    """
+    ...
+
+
+def roundtrip_gjf_record(
+    text: str, *, max_input_bytes: int = 16_777_216, max_atoms: int = 100_000,
+) -> str:
+    """Retain exact single Cartesian GJF source; opaque job sections are not validated.
+
+    Refuses malformed/unsupported geometry, multiple Link1 jobs, invalid text
+    framing and resource limits. Accepts LF/CRLF and an optional leading BOM.
+    """
+    ...
+
+
+def roundtrip_gjf_document(
+    text: str, *, max_input_bytes: int = 16_777_216, max_atoms: int = 100_000,
+    max_jobs: int = 128,
+) -> str:
+    """Retain all explicit Cartesian Link1 jobs and delimiters as exact UTF-8.
+
+    Budgets count the whole document. Refuses empty, unsupported or malformed
+    jobs; no checkpoint resources are opened. Single-job APIs still reject Link1.
+    """
+    ...
+
+
+def parse_gjf_document_json(
+    text: str, *, max_input_bytes: int = 16_777_216, max_atoms: int = 100_000,
+    max_jobs: int = 128,
+) -> str:
+    """Inspect ordered Cartesian jobs and UTF-8 source ranges as JSON.
+
+    Opaque sections/route keywords are not validated; coordinate units are not
+    converted and no bonds are inferred. JSON output is capped at 16 MiB.
+    """
+    ...

@@ -220,3 +220,33 @@ retaining its existing top-level operation fields. The envelope contains
 with their index and error. `status: "complete"` means processing completed
 within the declared bounds; cancellation and backpressure are separate future
 streaming gates and are not implied by this envelope.
+
+
+### Retain Gaussian job source
+
+GJF/COM same-format conversion retains the exact UTF-8 source, including
+Link0 directives, comments, basis sections, BOM and line endings. The leading
+Cartesian molecule specification and text framing are checked; opaque sections
+and external file references are retained without being interpreted or opened.
+
+```sh
+chematic convert --input-format com --output-format gjf --input original.com --output retained.gjf
+```
+
+GJF/COM is supported here only for source-preserving self conversion. See the
+[GJF source profile and measured limits](gjf-cartesian-integrity.md#exact-source-retention).
+
+For multiple explicit Cartesian jobs separated by `--Link1--`, use the
+dedicated document command. It validates every job and retains the complete
+source; `--inspect` emits ordered geometry and UTF-8 byte ranges as JSON.
+
+```sh
+chematic gjf-document --input jobs.com --output retained.gjf
+chematic gjf-document --inspect --input jobs.com --output jobs.json
+```
+
+The command caps the whole document at 10,000 atoms, 128 jobs and 64 MiB input.
+`--max-jobs` and `--max-input-bytes` can impose smaller bounds. A malformed or
+unsupported job refuses the whole document before writing output. Checkpoint-only
+geometry is unsupported; opaque sections and external references are not
+interpreted. See the [document contract](gjf-cartesian-integrity.md#explicit-link1-document-retention).

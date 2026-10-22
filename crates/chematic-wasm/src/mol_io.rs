@@ -10,6 +10,8 @@ use wasm_bindgen::prelude::*;
 
 mod common_formats;
 pub use common_formats::*;
+mod gjf_document;
+pub use gjf_document::*;
 mod sdf_source;
 pub use sdf_source::roundtrip_sdf_source;
 
