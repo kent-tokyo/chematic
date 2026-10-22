@@ -1,0 +1,1565 @@
+{
+  "schema": "chematic.cjson-source-conversion-validation.v1",
+  "baseline": false,
+  "packet": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/cjson_source_conversion/cases.json",
+    "sha256": "a3183245a3eeba79e7288f896aa0616baa1f5d3f89e4f3f352b619b59b4cc992",
+    "size_bytes": 5870
+  },
+  "python_package": {
+    "path": "/private/tmp/chematic-cjson-source-integrated-python-20261022/chematic/__init__.py",
+    "sha256": "203bc341841fd70b28bcc193eb019b5debfb9f5099d89c7a310996641086f995",
+    "size_bytes": 25960
+  },
+  "python_extension": {
+    "path": "/private/tmp/chematic-cjson-source-integrated-python-20261022/chematic/chematic.cpython-313-darwin.so",
+    "sha256": "4208d5677ac7bf4cb1c5961ddbc7236c3b7ad83f65b8f74fcbd1dadaeb51587d",
+    "size_bytes": 44623488
+  },
+  "wasm_module": {
+    "path": "/private/tmp/chematic-cjson-source-integrated-wasm-20261022/chematic_wasm.js",
+    "sha256": "0435d3d28f9f65c803bbefad9c6cc04ef5b8ada74b2d92d67b098cd4c9027cf0",
+    "size_bytes": 366818
+  },
+  "wasm_binary": {
+    "path": "/private/tmp/chematic-cjson-source-integrated-wasm-20261022/chematic_wasm_bg.wasm",
+    "sha256": "054bd13bd17e2ad95fe651fed08d1a021a443c0bd81b2402858c8cf1751b5f3a",
+    "size_bytes": 44853145
+  },
+  "openbabel": {
+    "path": "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+    "sha256": "733b2c925d60b17a5c9d8ce9ec841e918cc20c7634301e23f9008a187d1d9bc5",
+    "size_bytes": 75728
+  },
+  "openbabel_version": {
+    "resource_status": "completed",
+    "exit_code": 0,
+    "stdout": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27\n",
+    "stderr": ""
+  },
+  "node_process": {
+    "resource_status": "completed",
+    "exit_code": 0,
+    "stdout": "[{\"id\":\"partial_charge/lf\",\"output\":\"{\\n  \\\"chemicalJson\\\": 1,\\n  \\\"atoms\\\": {\\n    \\\"elements\\\": {\\n      \\\"number\\\": [\\n        6,\\n        8\\n      ]\\n    },\\n    \\\"coords\\\": {\\n      \\\"3d\\\": [\\n        0.0,\\n        0.0,\\n        0.0,\\n        1.25,\\n        -2.5,\\n        3.75\\n      ]\\n    }\\n  },\\n  \\\"bonds\\\": {\\n    \\\"connections\\\": {\\n      \\\"index\\\": [\\n        0,\\n        1\\n      ]\\n    },\\n    \\\"order\\\": [\\n      1\\n    ]\\n  },\\n  \\\"properties\\\": {\\n    \\\"name\\\": \\\"partial charge source\\\"\\n  },\\n  \\\"partialCharges\\\": {\\n    \\\"USER_CHARGES\\\": [\\n      -0.123456789012345,\\n      0.123456789012345\\n    ]\\n  }\\n}\\n\"},{\"id\":\"partial_charge/crlf\",\"output\":\"{\\r\\n  \\\"chemicalJson\\\": 1,\\r\\n  \\\"atoms\\\": {\\r\\n    \\\"elements\\\": {\\r\\n      \\\"number\\\": [\\r\\n        6,\\r\\n        8\\r\\n      ]\\r\\n    },\\r\\n    \\\"coords\\\": {\\r\\n      \\\"3d\\\": [\\r\\n        0.0,\\r\\n        0.0,\\r\\n        0.0,\\r\\n        1.25,\\r\\n        -2.5,\\r\\n        3.75\\r\\n      ]\\r\\n    }\\r\\n  },\\r\\n  \\\"bonds\\\": {\\r\\n    \\\"connections\\\": {\\r\\n      \\\"index\\\": [\\r\\n        0,\\r\\n        1\\r\\n      ]\\r\\n    },\\r\\n    \\\"order\\\": [\\r\\n      1\\r\\n    ]\\r\\n  },\\r\\n  \\\"properties\\\": {\\r\\n    \\\"name\\\": \\\"partial charge source\\\"\\r\\n  },\\r\\n  \\\"partialCharges\\\": {\\r\\n    \\\"USER_CHARGES\\\": [\\r\\n      -0.123456789012345,\\r\\n      0.123456789012345\\r\\n    ]\\r\\n  }\\r\\n}\\r\\n\"},{\"id\":\"partial_charge/minified\",\"output\":\"{\\\"chemicalJson\\\":1,\\\"atoms\\\":{\\\"elements\\\":{\\\"number\\\":[6,8]},\\\"coords\\\":{\\\"3d\\\":[0.0,0.0,0.0,1.25,-2.5,3.75]}},\\\"bonds\\\":{\\\"connections\\\":{\\\"index\\\":[0,1]},\\\"order\\\":[1]},\\\"properties\\\":{\\\"name\\\":\\\"partial charge source\\\"},\\\"partialCharges\\\":{\\\"USER_CHARGES\\\":[-0.123456789012345,0.123456789012345]}}\"},{\"id\":\"isotope_formal_charge/lf\",\"output\":\"{\\n  \\\"chemicalJson\\\": 1,\\n  \\\"atoms\\\": {\\n    \\\"elements\\\": {\\n      \\\"number\\\": [\\n        7,\\n        17\\n      ]\\n    },\\n    \\\"coords\\\": {\\n      \\\"3d\\\": [\\n        0.0,\\n        0.0,\\n        0.0,\\n        1.25,\\n        -2.5,\\n        3.75\\n      ]\\n    },\\n    \\\"formalCharges\\\": [\\n      1,\\n      -1\\n    ],\\n    \\\"isotopes\\\": [\\n      15,\\n      37\\n    ]\\n  },\\n  \\\"bonds\\\": {\\n    \\\"connections\\\": {\\n      \\\"index\\\": []\\n    },\\n    \\\"order\\\": []\\n  },\\n  \\\"properties\\\": {\\n    \\\"name\\\": \\\"isotope ions\\\"\\n  }\\n}\\n\"},{\"id\":\"isotope_formal_charge/crlf\",\"output\":\"{\\r\\n  \\\"chemicalJson\\\": 1,\\r\\n  \\\"atoms\\\": {\\r\\n    \\\"elements\\\": {\\r\\n      \\\"number\\\": [\\r\\n        7,\\r\\n        17\\r\\n      ]\\r\\n    },\\r\\n    \\\"coords\\\": {\\r\\n      \\\"3d\\\": [\\r\\n        0.0,\\r\\n        0.0,\\r\\n        0.0,\\r\\n        1.25,\\r\\n        -2.5,\\r\\n        3.75\\r\\n      ]\\r\\n    },\\r\\n    \\\"formalCharges\\\": [\\r\\n      1,\\r\\n      -1\\r\\n    ],\\r\\n    \\\"isotopes\\\": [\\r\\n      15,\\r\\n      37\\r\\n    ]\\r\\n  },\\r\\n  \\\"bonds\\\": {\\r\\n    \\\"connections\\\": {\\r\\n      \\\"index\\\": []\\r\\n    },\\r\\n    \\\"order\\\": []\\r\\n  },\\r\\n  \\\"properties\\\": {\\r\\n    \\\"name\\\": \\\"isotope ions\\\"\\r\\n  }\\r\\n}\\r\\n\"},{\"id\":\"isotope_formal_charge/minified\",\"output\":\"{\\\"chemicalJson\\\":1,\\\"atoms\\\":{\\\"elements\\\":{\\\"number\\\":[7,17]},\\\"coords\\\":{\\\"3d\\\":[0.0,0.0,0.0,1.25,-2.5,3.75]},\\\"formalCharges\\\":[1,-1],\\\"isotopes\\\":[15,37]},\\\"bonds\\\":{\\\"connections\\\":{\\\"index\\\":[]},\\\"order\\\":[]},\\\"properties\\\":{\\\"name\\\":\\\"isotope ions\\\"}}\"},{\"id\":\"multiple_charge_sets/lf\",\"output\":\"{\\n  \\\"chemicalJson\\\": 1,\\n  \\\"atoms\\\": {\\n    \\\"elements\\\": {\\n      \\\"number\\\": [\\n        6,\\n        8\\n      ]\\n    },\\n    \\\"coords\\\": {\\n      \\\"3d\\\": [\\n        0.0,\\n        0.0,\\n        0.0,\\n        1.25,\\n        -2.5,\\n        3.75\\n      ]\\n    }\\n  },\\n  \\\"bonds\\\": {\\n    \\\"connections\\\": {\\n      \\\"index\\\": [\\n        0,\\n        1\\n      ]\\n    },\\n    \\\"order\\\": [\\n      1\\n    ]\\n  },\\n  \\\"partialCharges\\\": {\\n    \\\"method A\\\": [\\n      -0.25,\\n      0.25\\n    ],\\n    \\\"測定値\\\": [\\n      0.123,\\n      -0.123\\n    ]\\n  },\\n  \\\"properties\\\": {\\n    \\\"name\\\": \\\"two charge datasets\\\"\\n  }\\n}\\n\"},{\"id\":\"multiple_charge_sets/crlf\",\"output\":\"{\\r\\n  \\\"chemicalJson\\\": 1,\\r\\n  \\\"atoms\\\": {\\r\\n    \\\"elements\\\": {\\r\\n      \\\"number\\\": [\\r\\n        6,\\r\\n        8\\r\\n      ]\\r\\n    },\\r\\n    \\\"coords\\\": {\\r\\n      \\\"3d\\\": [\\r\\n        0.0,\\r\\n        0.0,\\r\\n        0.0,\\r\\n        1.25,\\r\\n        -2.5,\\r\\n        3.75\\r\\n      ]\\r\\n    }\\r\\n  },\\r\\n  \\\"bonds\\\": {\\r\\n    \\\"connections\\\": {\\r\\n      \\\"index\\\": [\\r\\n        0,\\r\\n        1\\r\\n      ]\\r\\n    },\\r\\n    \\\"order\\\": [\\r\\n      1\\r\\n    ]\\r\\n  },\\r\\n  \\\"partialCharges\\\": {\\r\\n    \\\"method A\\\": [\\r\\n      -0.25,\\r\\n      0.25\\r\\n    ],\\r\\n    \\\"測定値\\\": [\\r\\n      0.123,\\r\\n      -0.123\\r\\n    ]\\r\\n  },\\r\\n  \\\"properties\\\": {\\r\\n    \\\"name\\\": \\\"two charge datasets\\\"\\r\\n  }\\r\\n}\\r\\n\"},{\"id\":\"multiple_charge_sets/minified\",\"output\":\"{\\\"chemicalJson\\\":1,\\\"atoms\\\":{\\\"elements\\\":{\\\"number\\\":[6,8]},\\\"coords\\\":{\\\"3d\\\":[0.0,0.0,0.0,1.25,-2.5,3.75]}},\\\"bonds\\\":{\\\"connections\\\":{\\\"index\\\":[0,1]},\\\"order\\\":[1]},\\\"partialCharges\\\":{\\\"method A\\\":[-0.25,0.25],\\\"\\\\u6e2c\\\\u5b9a\\\\u5024\\\":[0.123,-0.123]},\\\"properties\\\":{\\\"name\\\":\\\"two charge datasets\\\"}}\"},{\"id\":\"alternate_geometry/lf\",\"output\":\"{\\n  \\\"chemicalJson\\\": 1,\\n  \\\"atoms\\\": {\\n    \\\"elements\\\": {\\n      \\\"number\\\": [\\n        6,\\n        8\\n      ]\\n    },\\n    \\\"coords\\\": {\\n      \\\"3d\\\": [\\n        0.0,\\n        0.0,\\n        0.0,\\n        1.25,\\n        -2.5,\\n        3.75\\n      ],\\n      \\\"2d\\\": [\\n        0,\\n        0,\\n        1,\\n        0\\n      ],\\n      \\\"3dSets\\\": [\\n        [\\n          0,\\n          0,\\n          0,\\n          1,\\n          0,\\n          0\\n        ],\\n        [\\n          0,\\n          1,\\n          0,\\n          1,\\n          1,\\n          0\\n        ]\\n      ]\\n    }\\n  },\\n  \\\"bonds\\\": {\\n    \\\"connections\\\": {\\n      \\\"index\\\": [\\n        0,\\n        1\\n      ]\\n    },\\n    \\\"order\\\": [\\n      1\\n    ],\\n    \\\"vendorStereo\\\": {\\n      \\\"annotation\\\": \\\"retained, not interpreted\\\"\\n    }\\n  }\\n}\\n\"},{\"id\":\"alternate_geometry/crlf\",\"output\":\"{\\r\\n  \\\"chemicalJson\\\": 1,\\r\\n  \\\"atoms\\\": {\\r\\n    \\\"elements\\\": {\\r\\n      \\\"number\\\": [\\r\\n        6,\\r\\n        8\\r\\n      ]\\r\\n    },\\r\\n    \\\"coords\\\": {\\r\\n      \\\"3d\\\": [\\r\\n        0.0,\\r\\n        0.0,\\r\\n        0.0,\\r\\n        1.25,\\r\\n        -2.5,\\r\\n        3.75\\r\\n      ],\\r\\n      \\\"2d\\\": [\\r\\n        0,\\r\\n        0,\\r\\n        1,\\r\\n        0\\r\\n      ],\\r\\n      \\\"3dSets\\\": [\\r\\n        [\\r\\n          0,\\r\\n          0,\\r\\n          0,\\r\\n          1,\\r\\n          0,\\r\\n          0\\r\\n        ],\\r\\n        [\\r\\n          0,\\r\\n          1,\\r\\n          0,\\r\\n          1,\\r\\n          1,\\r\\n          0\\r\\n        ]\\r\\n      ]\\r\\n    }\\r\\n  },\\r\\n  \\\"bonds\\\": {\\r\\n    \\\"connections\\\": {\\r\\n      \\\"index\\\": [\\r\\n        0,\\r\\n        1\\r\\n      ]\\r\\n    },\\r\\n    \\\"order\\\": [\\r\\n      1\\r\\n    ],\\r\\n    \\\"vendorStereo\\\": {\\r\\n      \\\"annotation\\\": \\\"retained, not interpreted\\\"\\r\\n    }\\r\\n  }\\r\\n}\\r\\n\"},{\"id\":\"alternate_geometry/minified\",\"output\":\"{\\\"chemicalJson\\\":1,\\\"atoms\\\":{\\\"elements\\\":{\\\"number\\\":[6,8]},\\\"coords\\\":{\\\"3d\\\":[0.0,0.0,0.0,1.25,-2.5,3.75],\\\"2d\\\":[0,0,1,0],\\\"3dSets\\\":[[0,0,0,1,0,0],[0,1,0,1,1,0]]}},\\\"bonds\\\":{\\\"connections\\\":{\\\"index\\\":[0,1]},\\\"order\\\":[1],\\\"vendorStereo\\\":{\\\"annotation\\\":\\\"retained, not interpreted\\\"}}}\"},{\"id\":\"opaque_references/lf\",\"output\":\"{\\n  \\\"chemicalJson\\\": 1,\\n  \\\"atoms\\\": {\\n    \\\"elements\\\": {\\n      \\\"number\\\": [\\n        6,\\n        8\\n      ]\\n    },\\n    \\\"coords\\\": {\\n      \\\"3d\\\": [\\n        0.0,\\n        0.0,\\n        0.0,\\n        1.25,\\n        -2.5,\\n        3.75\\n      ]\\n    },\\n    \\\"vendorRefs\\\": [\\n      {\\n        \\\"id\\\": \\\"x/1\\\"\\n      },\\n      {\\n        \\\"id\\\": \\\"x~2\\\"\\n      }\\n    ]\\n  },\\n  \\\"bonds\\\": {\\n    \\\"connections\\\": {\\n      \\\"index\\\": [\\n        0,\\n        1\\n      ]\\n    },\\n    \\\"order\\\": [\\n      1\\n    ]\\n  },\\n  \\\"properties\\\": {\\n    \\\"name\\\": \\\"原文 🧪 <&>\\\",\\n    \\\"vendor/a~b\\\": {\\n      \\\"reference\\\": 9007199254740993,\\n      \\\"annotation\\\": \\\"\\\\\\\\u003c is literal text\\\",\\n      \\\"enabled\\\": true\\n    }\\n  }\\n}\\n\"},{\"id\":\"opaque_references/crlf\",\"output\":\"{\\r\\n  \\\"chemicalJson\\\": 1,\\r\\n  \\\"atoms\\\": {\\r\\n    \\\"elements\\\": {\\r\\n      \\\"number\\\": [\\r\\n        6,\\r\\n        8\\r\\n      ]\\r\\n    },\\r\\n    \\\"coords\\\": {\\r\\n      \\\"3d\\\": [\\r\\n        0.0,\\r\\n        0.0,\\r\\n        0.0,\\r\\n        1.25,\\r\\n        -2.5,\\r\\n        3.75\\r\\n      ]\\r\\n    },\\r\\n    \\\"vendorRefs\\\": [\\r\\n      {\\r\\n        \\\"id\\\": \\\"x/1\\\"\\r\\n      },\\r\\n      {\\r\\n        \\\"id\\\": \\\"x~2\\\"\\r\\n      }\\r\\n    ]\\r\\n  },\\r\\n  \\\"bonds\\\": {\\r\\n    \\\"connections\\\": {\\r\\n      \\\"index\\\": [\\r\\n        0,\\r\\n        1\\r\\n      ]\\r\\n    },\\r\\n    \\\"order\\\": [\\r\\n      1\\r\\n    ]\\r\\n  },\\r\\n  \\\"properties\\\": {\\r\\n    \\\"name\\\": \\\"原文 🧪 <&>\\\",\\r\\n    \\\"vendor/a~b\\\": {\\r\\n      \\\"reference\\\": 9007199254740993,\\r\\n      \\\"annotation\\\": \\\"\\\\\\\\u003c is literal text\\\",\\r\\n      \\\"enabled\\\": true\\r\\n    }\\r\\n  }\\r\\n}\\r\\n\"},{\"id\":\"opaque_references/minified\",\"output\":\"{\\\"chemicalJson\\\":1,\\\"atoms\\\":{\\\"elements\\\":{\\\"number\\\":[6,8]},\\\"coords\\\":{\\\"3d\\\":[0.0,0.0,0.0,1.25,-2.5,3.75]},\\\"vendorRefs\\\":[{\\\"id\\\":\\\"x/1\\\"},{\\\"id\\\":\\\"x~2\\\"}]},\\\"bonds\\\":{\\\"connections\\\":{\\\"index\\\":[0,1]},\\\"order\\\":[1]},\\\"properties\\\":{\\\"name\\\":\\\"\\\\u539f\\\\u6587 \\\\ud83e\\\\uddea <&>\\\",\\\"vendor/a~b\\\":{\\\"reference\\\":9007199254740993,\\\"annotation\\\":\\\"\\\\\\\\u003c is literal text\\\",\\\"enabled\\\":true}}}\"},{\"id\":\"numeric_precision/lf\",\"output\":\"{\\n  \\\"chemicalJson\\\": 1,\\n  \\\"atoms\\\": {\\n    \\\"elements\\\": {\\n      \\\"number\\\": [\\n        6,\\n        8\\n      ]\\n    },\\n    \\\"coords\\\": {\\n      \\\"3d\\\": [\\n        -1.4175225513503917,\\n        -0.0,\\n        5e-324,\\n        1.7976931348623157e+308,\\n        -1.25,\\n        0.125\\n      ]\\n    }\\n  },\\n  \\\"bonds\\\": {\\n    \\\"connections\\\": {\\n      \\\"index\\\": [\\n        0,\\n        1\\n      ]\\n    },\\n    \\\"order\\\": [\\n      1\\n    ]\\n  },\\n  \\\"properties\\\": {\\n    \\\"name\\\": \\\"full precision\\\",\\n    \\\"vendorEnergy\\\": -1.2345678901234567\\n  }\\n}\\n\"},{\"id\":\"numeric_precision/crlf\",\"output\":\"{\\r\\n  \\\"chemicalJson\\\": 1,\\r\\n  \\\"atoms\\\": {\\r\\n    \\\"elements\\\": {\\r\\n      \\\"number\\\": [\\r\\n        6,\\r\\n        8\\r\\n      ]\\r\\n    },\\r\\n    \\\"coords\\\": {\\r\\n      \\\"3d\\\": [\\r\\n        -1.4175225513503917,\\r\\n        -0.0,\\r\\n        5e-324,\\r\\n        1.7976931348623157e+308,\\r\\n        -1.25,\\r\\n        0.125\\r\\n      ]\\r\\n    }\\r\\n  },\\r\\n  \\\"bonds\\\": {\\r\\n    \\\"connections\\\": {\\r\\n      \\\"index\\\": [\\r\\n        0,\\r\\n        1\\r\\n      ]\\r\\n    },\\r\\n    \\\"order\\\": [\\r\\n      1\\r\\n    ]\\r\\n  },\\r\\n  \\\"properties\\\": {\\r\\n    \\\"name\\\": \\\"full precision\\\",\\r\\n    \\\"vendorEnergy\\\": -1.2345678901234567\\r\\n  }\\r\\n}\\r\\n\"},{\"id\":\"numeric_precision/minified\",\"output\":\"{\\\"chemicalJson\\\":1,\\\"atoms\\\":{\\\"elements\\\":{\\\"number\\\":[6,8]},\\\"coords\\\":{\\\"3d\\\":[-1.4175225513503917,-0.0,5e-324,1.7976931348623157e+308,-1.25,0.125]}},\\\"bonds\\\":{\\\"connections\\\":{\\\"index\\\":[0,1]},\\\"order\\\":[1]},\\\"properties\\\":{\\\"name\\\":\\\"full precision\\\",\\\"vendorEnergy\\\":-1.2345678901234567}}\"}]",
+    "stderr": ""
+  },
+  "case_count": 18,
+  "summary": {
+    "python": {
+      "exact_source": 18,
+      "source_fields_retained": 18
+    },
+    "wasm": {
+      "exact_source": 18,
+      "source_fields_retained": 18
+    },
+    "openbabel_default": {
+      "exact_source": 0,
+      "source_fields_retained": 0
+    },
+    "openbabel_minified": {
+      "exact_source": 0,
+      "source_fields_retained": 0
+    },
+    "openbabel_verbose": {
+      "exact_source": 0,
+      "source_fields_retained": 0
+    }
+  },
+  "cases": [
+    {
+      "id": "partial_charge/lf",
+      "input_sha256": "359735ceda4b86c19552e04fda726d599f7cf8d0e5708f74f6a21382c9f8a1fd",
+      "python": {
+        "output": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0.0,\n        1.25,\n        -2.5,\n        3.75\n      ]\n    }\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"properties\": {\n    \"name\": \"partial charge source\"\n  },\n  \"partialCharges\": {\n    \"USER_CHARGES\": [\n      -0.123456789012345,\n      0.123456789012345\n    ]\n  }\n}\n",
+        "observation": {
+          "exact_source": true,
+          "source_fields_retained": true,
+          "changed_source_paths": []
+        }
+      },
+      "wasm": {
+        "id": "partial_charge/lf",
+        "output": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0.0,\n        1.25,\n        -2.5,\n        3.75\n      ]\n    }\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"properties\": {\n    \"name\": \"partial charge source\"\n  },\n  \"partialCharges\": {\n    \"USER_CHARGES\": [\n      -0.123456789012345,\n      0.123456789012345\n    ]\n  }\n}\n",
+        "observation": {
+          "exact_source": true,
+          "source_fields_retained": true,
+          "changed_source_paths": []
+        }
+      },
+      "openbabel_default": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0.0,\n        1.25,\n        -2.5,\n        3.75\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.21748719006663937,\n      -0.21748719006663937\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"properties\": {\n    \"name\": \"\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/properties/name",
+            "/partialCharges/USER_CHARGES"
+          ]
+        }
+      },
+      "openbabel_minified": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\"chemicalJson\":1,\"atoms\":{\"coords\":{\"3d\":[0.0,0.0,0.0,1.25,-2.5,3.75]},\"elements\":{\"number\":[6,8]},\"formalCharges\":[0,0]},\"partialCharges\":{\"Gasteiger\":[0.21748719006663937,-0.21748719006663937]},\"bonds\":{\"connections\":{\"index\":[0,1]},\"order\":[1]},\"properties\":{\"name\":\"\",\"totalCharge\":0,\"totalSpinMultiplicity\":1,\"totalEnergy\":0.0}}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson",
+          "-xm"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/properties/name",
+            "/partialCharges/USER_CHARGES"
+          ]
+        }
+      },
+      "openbabel_verbose": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0.0,\n        1.25,\n        -2.5,\n        3.75\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.21748719006663937,\n      -0.21748719006663937\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"properties\": {\n    \"name\": \"\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson",
+          "-xv"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/properties/name",
+            "/partialCharges/USER_CHARGES"
+          ]
+        }
+      }
+    },
+    {
+      "id": "partial_charge/crlf",
+      "input_sha256": "beb34ada7a4f5fd5c7dc23ed2294b23d2f2acad67040f2da527506afa49527ff",
+      "python": {
+        "output": "{\r\n  \"chemicalJson\": 1,\r\n  \"atoms\": {\r\n    \"elements\": {\r\n      \"number\": [\r\n        6,\r\n        8\r\n      ]\r\n    },\r\n    \"coords\": {\r\n      \"3d\": [\r\n        0.0,\r\n        0.0,\r\n        0.0,\r\n        1.25,\r\n        -2.5,\r\n        3.75\r\n      ]\r\n    }\r\n  },\r\n  \"bonds\": {\r\n    \"connections\": {\r\n      \"index\": [\r\n        0,\r\n        1\r\n      ]\r\n    },\r\n    \"order\": [\r\n      1\r\n    ]\r\n  },\r\n  \"properties\": {\r\n    \"name\": \"partial charge source\"\r\n  },\r\n  \"partialCharges\": {\r\n    \"USER_CHARGES\": [\r\n      -0.123456789012345,\r\n      0.123456789012345\r\n    ]\r\n  }\r\n}\r\n",
+        "observation": {
+          "exact_source": true,
+          "source_fields_retained": true,
+          "changed_source_paths": []
+        }
+      },
+      "wasm": {
+        "id": "partial_charge/crlf",
+        "output": "{\r\n  \"chemicalJson\": 1,\r\n  \"atoms\": {\r\n    \"elements\": {\r\n      \"number\": [\r\n        6,\r\n        8\r\n      ]\r\n    },\r\n    \"coords\": {\r\n      \"3d\": [\r\n        0.0,\r\n        0.0,\r\n        0.0,\r\n        1.25,\r\n        -2.5,\r\n        3.75\r\n      ]\r\n    }\r\n  },\r\n  \"bonds\": {\r\n    \"connections\": {\r\n      \"index\": [\r\n        0,\r\n        1\r\n      ]\r\n    },\r\n    \"order\": [\r\n      1\r\n    ]\r\n  },\r\n  \"properties\": {\r\n    \"name\": \"partial charge source\"\r\n  },\r\n  \"partialCharges\": {\r\n    \"USER_CHARGES\": [\r\n      -0.123456789012345,\r\n      0.123456789012345\r\n    ]\r\n  }\r\n}\r\n",
+        "observation": {
+          "exact_source": true,
+          "source_fields_retained": true,
+          "changed_source_paths": []
+        }
+      },
+      "openbabel_default": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0.0,\n        1.25,\n        -2.5,\n        3.75\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.21748719006663937,\n      -0.21748719006663937\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"properties\": {\n    \"name\": \"\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/properties/name",
+            "/partialCharges/USER_CHARGES"
+          ]
+        }
+      },
+      "openbabel_minified": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\"chemicalJson\":1,\"atoms\":{\"coords\":{\"3d\":[0.0,0.0,0.0,1.25,-2.5,3.75]},\"elements\":{\"number\":[6,8]},\"formalCharges\":[0,0]},\"partialCharges\":{\"Gasteiger\":[0.21748719006663937,-0.21748719006663937]},\"bonds\":{\"connections\":{\"index\":[0,1]},\"order\":[1]},\"properties\":{\"name\":\"\",\"totalCharge\":0,\"totalSpinMultiplicity\":1,\"totalEnergy\":0.0}}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson",
+          "-xm"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/properties/name",
+            "/partialCharges/USER_CHARGES"
+          ]
+        }
+      },
+      "openbabel_verbose": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0.0,\n        1.25,\n        -2.5,\n        3.75\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.21748719006663937,\n      -0.21748719006663937\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"properties\": {\n    \"name\": \"\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson",
+          "-xv"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/properties/name",
+            "/partialCharges/USER_CHARGES"
+          ]
+        }
+      }
+    },
+    {
+      "id": "partial_charge/minified",
+      "input_sha256": "533cc29e6d6e1ca6cb3ecfe9b1ff99b83b1bdcbad498bec2c965c309c39c00be",
+      "python": {
+        "output": "{\"chemicalJson\":1,\"atoms\":{\"elements\":{\"number\":[6,8]},\"coords\":{\"3d\":[0.0,0.0,0.0,1.25,-2.5,3.75]}},\"bonds\":{\"connections\":{\"index\":[0,1]},\"order\":[1]},\"properties\":{\"name\":\"partial charge source\"},\"partialCharges\":{\"USER_CHARGES\":[-0.123456789012345,0.123456789012345]}}",
+        "observation": {
+          "exact_source": true,
+          "source_fields_retained": true,
+          "changed_source_paths": []
+        }
+      },
+      "wasm": {
+        "id": "partial_charge/minified",
+        "output": "{\"chemicalJson\":1,\"atoms\":{\"elements\":{\"number\":[6,8]},\"coords\":{\"3d\":[0.0,0.0,0.0,1.25,-2.5,3.75]}},\"bonds\":{\"connections\":{\"index\":[0,1]},\"order\":[1]},\"properties\":{\"name\":\"partial charge source\"},\"partialCharges\":{\"USER_CHARGES\":[-0.123456789012345,0.123456789012345]}}",
+        "observation": {
+          "exact_source": true,
+          "source_fields_retained": true,
+          "changed_source_paths": []
+        }
+      },
+      "openbabel_default": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0.0,\n        1.25,\n        -2.5,\n        3.75\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.21748719006663937,\n      -0.21748719006663937\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"properties\": {\n    \"name\": \"\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/properties/name",
+            "/partialCharges/USER_CHARGES"
+          ]
+        }
+      },
+      "openbabel_minified": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\"chemicalJson\":1,\"atoms\":{\"coords\":{\"3d\":[0.0,0.0,0.0,1.25,-2.5,3.75]},\"elements\":{\"number\":[6,8]},\"formalCharges\":[0,0]},\"partialCharges\":{\"Gasteiger\":[0.21748719006663937,-0.21748719006663937]},\"bonds\":{\"connections\":{\"index\":[0,1]},\"order\":[1]},\"properties\":{\"name\":\"\",\"totalCharge\":0,\"totalSpinMultiplicity\":1,\"totalEnergy\":0.0}}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson",
+          "-xm"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/properties/name",
+            "/partialCharges/USER_CHARGES"
+          ]
+        }
+      },
+      "openbabel_verbose": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0.0,\n        1.25,\n        -2.5,\n        3.75\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.21748719006663937,\n      -0.21748719006663937\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"properties\": {\n    \"name\": \"\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson",
+          "-xv"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/properties/name",
+            "/partialCharges/USER_CHARGES"
+          ]
+        }
+      }
+    },
+    {
+      "id": "isotope_formal_charge/lf",
+      "input_sha256": "a5f6d427d2726a87bde7d32482781fc40a5694ecb9e602abf5511f532b423472",
+      "python": {
+        "output": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        7,\n        17\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0.0,\n        1.25,\n        -2.5,\n        3.75\n      ]\n    },\n    \"formalCharges\": [\n      1,\n      -1\n    ],\n    \"isotopes\": [\n      15,\n      37\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": []\n    },\n    \"order\": []\n  },\n  \"properties\": {\n    \"name\": \"isotope ions\"\n  }\n}\n",
+        "observation": {
+          "exact_source": true,
+          "source_fields_retained": true,
+          "changed_source_paths": []
+        }
+      },
+      "wasm": {
+        "id": "isotope_formal_charge/lf",
+        "output": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        7,\n        17\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0.0,\n        1.25,\n        -2.5,\n        3.75\n      ]\n    },\n    \"formalCharges\": [\n      1,\n      -1\n    ],\n    \"isotopes\": [\n      15,\n      37\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": []\n    },\n    \"order\": []\n  },\n  \"properties\": {\n    \"name\": \"isotope ions\"\n  }\n}\n",
+        "observation": {
+          "exact_source": true,
+          "source_fields_retained": true,
+          "changed_source_paths": []
+        }
+      },
+      "openbabel_default": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0.0,\n        1.25,\n        -2.5,\n        3.75\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        7,\n        17\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.0,\n      0.0\n    ]\n  },\n  \"properties\": {\n    \"name\": \"\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/atoms/formalCharges",
+            "/atoms/isotopes",
+            "/bonds",
+            "/properties/name"
+          ]
+        }
+      },
+      "openbabel_minified": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\"chemicalJson\":1,\"atoms\":{\"coords\":{\"3d\":[0.0,0.0,0.0,1.25,-2.5,3.75]},\"elements\":{\"number\":[7,17]},\"formalCharges\":[0,0]},\"partialCharges\":{\"Gasteiger\":[0.0,0.0]},\"properties\":{\"name\":\"\",\"totalCharge\":0,\"totalSpinMultiplicity\":1,\"totalEnergy\":0.0}}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson",
+          "-xm"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/atoms/formalCharges",
+            "/atoms/isotopes",
+            "/bonds",
+            "/properties/name"
+          ]
+        }
+      },
+      "openbabel_verbose": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0.0,\n        1.25,\n        -2.5,\n        3.75\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        7,\n        17\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.0,\n      0.0\n    ]\n  },\n  \"properties\": {\n    \"name\": \"\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson",
+          "-xv"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/atoms/formalCharges",
+            "/atoms/isotopes",
+            "/bonds",
+            "/properties/name"
+          ]
+        }
+      }
+    },
+    {
+      "id": "isotope_formal_charge/crlf",
+      "input_sha256": "a58839b064e4a19b39c7b0c06fa344b60b696b15faff611e54ff044a2e535f21",
+      "python": {
+        "output": "{\r\n  \"chemicalJson\": 1,\r\n  \"atoms\": {\r\n    \"elements\": {\r\n      \"number\": [\r\n        7,\r\n        17\r\n      ]\r\n    },\r\n    \"coords\": {\r\n      \"3d\": [\r\n        0.0,\r\n        0.0,\r\n        0.0,\r\n        1.25,\r\n        -2.5,\r\n        3.75\r\n      ]\r\n    },\r\n    \"formalCharges\": [\r\n      1,\r\n      -1\r\n    ],\r\n    \"isotopes\": [\r\n      15,\r\n      37\r\n    ]\r\n  },\r\n  \"bonds\": {\r\n    \"connections\": {\r\n      \"index\": []\r\n    },\r\n    \"order\": []\r\n  },\r\n  \"properties\": {\r\n    \"name\": \"isotope ions\"\r\n  }\r\n}\r\n",
+        "observation": {
+          "exact_source": true,
+          "source_fields_retained": true,
+          "changed_source_paths": []
+        }
+      },
+      "wasm": {
+        "id": "isotope_formal_charge/crlf",
+        "output": "{\r\n  \"chemicalJson\": 1,\r\n  \"atoms\": {\r\n    \"elements\": {\r\n      \"number\": [\r\n        7,\r\n        17\r\n      ]\r\n    },\r\n    \"coords\": {\r\n      \"3d\": [\r\n        0.0,\r\n        0.0,\r\n        0.0,\r\n        1.25,\r\n        -2.5,\r\n        3.75\r\n      ]\r\n    },\r\n    \"formalCharges\": [\r\n      1,\r\n      -1\r\n    ],\r\n    \"isotopes\": [\r\n      15,\r\n      37\r\n    ]\r\n  },\r\n  \"bonds\": {\r\n    \"connections\": {\r\n      \"index\": []\r\n    },\r\n    \"order\": []\r\n  },\r\n  \"properties\": {\r\n    \"name\": \"isotope ions\"\r\n  }\r\n}\r\n",
+        "observation": {
+          "exact_source": true,
+          "source_fields_retained": true,
+          "changed_source_paths": []
+        }
+      },
+      "openbabel_default": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0.0,\n        1.25,\n        -2.5,\n        3.75\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        7,\n        17\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.0,\n      0.0\n    ]\n  },\n  \"properties\": {\n    \"name\": \"\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/atoms/formalCharges",
+            "/atoms/isotopes",
+            "/bonds",
+            "/properties/name"
+          ]
+        }
+      },
+      "openbabel_minified": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\"chemicalJson\":1,\"atoms\":{\"coords\":{\"3d\":[0.0,0.0,0.0,1.25,-2.5,3.75]},\"elements\":{\"number\":[7,17]},\"formalCharges\":[0,0]},\"partialCharges\":{\"Gasteiger\":[0.0,0.0]},\"properties\":{\"name\":\"\",\"totalCharge\":0,\"totalSpinMultiplicity\":1,\"totalEnergy\":0.0}}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson",
+          "-xm"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/atoms/formalCharges",
+            "/atoms/isotopes",
+            "/bonds",
+            "/properties/name"
+          ]
+        }
+      },
+      "openbabel_verbose": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0.0,\n        1.25,\n        -2.5,\n        3.75\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        7,\n        17\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.0,\n      0.0\n    ]\n  },\n  \"properties\": {\n    \"name\": \"\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson",
+          "-xv"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/atoms/formalCharges",
+            "/atoms/isotopes",
+            "/bonds",
+            "/properties/name"
+          ]
+        }
+      }
+    },
+    {
+      "id": "isotope_formal_charge/minified",
+      "input_sha256": "91459d646528e3c9065cebb0128d10bb3aee4aad8cd8cc98be528bddfab428b0",
+      "python": {
+        "output": "{\"chemicalJson\":1,\"atoms\":{\"elements\":{\"number\":[7,17]},\"coords\":{\"3d\":[0.0,0.0,0.0,1.25,-2.5,3.75]},\"formalCharges\":[1,-1],\"isotopes\":[15,37]},\"bonds\":{\"connections\":{\"index\":[]},\"order\":[]},\"properties\":{\"name\":\"isotope ions\"}}",
+        "observation": {
+          "exact_source": true,
+          "source_fields_retained": true,
+          "changed_source_paths": []
+        }
+      },
+      "wasm": {
+        "id": "isotope_formal_charge/minified",
+        "output": "{\"chemicalJson\":1,\"atoms\":{\"elements\":{\"number\":[7,17]},\"coords\":{\"3d\":[0.0,0.0,0.0,1.25,-2.5,3.75]},\"formalCharges\":[1,-1],\"isotopes\":[15,37]},\"bonds\":{\"connections\":{\"index\":[]},\"order\":[]},\"properties\":{\"name\":\"isotope ions\"}}",
+        "observation": {
+          "exact_source": true,
+          "source_fields_retained": true,
+          "changed_source_paths": []
+        }
+      },
+      "openbabel_default": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0.0,\n        1.25,\n        -2.5,\n        3.75\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        7,\n        17\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.0,\n      0.0\n    ]\n  },\n  \"properties\": {\n    \"name\": \"\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/atoms/formalCharges",
+            "/atoms/isotopes",
+            "/bonds",
+            "/properties/name"
+          ]
+        }
+      },
+      "openbabel_minified": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\"chemicalJson\":1,\"atoms\":{\"coords\":{\"3d\":[0.0,0.0,0.0,1.25,-2.5,3.75]},\"elements\":{\"number\":[7,17]},\"formalCharges\":[0,0]},\"partialCharges\":{\"Gasteiger\":[0.0,0.0]},\"properties\":{\"name\":\"\",\"totalCharge\":0,\"totalSpinMultiplicity\":1,\"totalEnergy\":0.0}}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson",
+          "-xm"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/atoms/formalCharges",
+            "/atoms/isotopes",
+            "/bonds",
+            "/properties/name"
+          ]
+        }
+      },
+      "openbabel_verbose": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0.0,\n        1.25,\n        -2.5,\n        3.75\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        7,\n        17\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.0,\n      0.0\n    ]\n  },\n  \"properties\": {\n    \"name\": \"\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson",
+          "-xv"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/atoms/formalCharges",
+            "/atoms/isotopes",
+            "/bonds",
+            "/properties/name"
+          ]
+        }
+      }
+    },
+    {
+      "id": "multiple_charge_sets/lf",
+      "input_sha256": "07af7d93cafc50154d9027ebc6d25ca35e071832b9081161e4545279f4d3d03e",
+      "python": {
+        "output": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0.0,\n        1.25,\n        -2.5,\n        3.75\n      ]\n    }\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"partialCharges\": {\n    \"method A\": [\n      -0.25,\n      0.25\n    ],\n    \"測定値\": [\n      0.123,\n      -0.123\n    ]\n  },\n  \"properties\": {\n    \"name\": \"two charge datasets\"\n  }\n}\n",
+        "observation": {
+          "exact_source": true,
+          "source_fields_retained": true,
+          "changed_source_paths": []
+        }
+      },
+      "wasm": {
+        "id": "multiple_charge_sets/lf",
+        "output": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0.0,\n        1.25,\n        -2.5,\n        3.75\n      ]\n    }\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"partialCharges\": {\n    \"method A\": [\n      -0.25,\n      0.25\n    ],\n    \"測定値\": [\n      0.123,\n      -0.123\n    ]\n  },\n  \"properties\": {\n    \"name\": \"two charge datasets\"\n  }\n}\n",
+        "observation": {
+          "exact_source": true,
+          "source_fields_retained": true,
+          "changed_source_paths": []
+        }
+      },
+      "openbabel_default": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0.0,\n        1.25,\n        -2.5,\n        3.75\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.21748719006663937,\n      -0.21748719006663937\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"properties\": {\n    \"name\": \"\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/partialCharges/method A",
+            "/partialCharges/測定値",
+            "/properties/name"
+          ]
+        }
+      },
+      "openbabel_minified": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\"chemicalJson\":1,\"atoms\":{\"coords\":{\"3d\":[0.0,0.0,0.0,1.25,-2.5,3.75]},\"elements\":{\"number\":[6,8]},\"formalCharges\":[0,0]},\"partialCharges\":{\"Gasteiger\":[0.21748719006663937,-0.21748719006663937]},\"bonds\":{\"connections\":{\"index\":[0,1]},\"order\":[1]},\"properties\":{\"name\":\"\",\"totalCharge\":0,\"totalSpinMultiplicity\":1,\"totalEnergy\":0.0}}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson",
+          "-xm"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/partialCharges/method A",
+            "/partialCharges/測定値",
+            "/properties/name"
+          ]
+        }
+      },
+      "openbabel_verbose": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0.0,\n        1.25,\n        -2.5,\n        3.75\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.21748719006663937,\n      -0.21748719006663937\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"properties\": {\n    \"name\": \"\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson",
+          "-xv"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/partialCharges/method A",
+            "/partialCharges/測定値",
+            "/properties/name"
+          ]
+        }
+      }
+    },
+    {
+      "id": "multiple_charge_sets/crlf",
+      "input_sha256": "6afcd30d0643c74bb2096dfafea73dd2c439425c277bec9e45b9d6f9d22f505f",
+      "python": {
+        "output": "{\r\n  \"chemicalJson\": 1,\r\n  \"atoms\": {\r\n    \"elements\": {\r\n      \"number\": [\r\n        6,\r\n        8\r\n      ]\r\n    },\r\n    \"coords\": {\r\n      \"3d\": [\r\n        0.0,\r\n        0.0,\r\n        0.0,\r\n        1.25,\r\n        -2.5,\r\n        3.75\r\n      ]\r\n    }\r\n  },\r\n  \"bonds\": {\r\n    \"connections\": {\r\n      \"index\": [\r\n        0,\r\n        1\r\n      ]\r\n    },\r\n    \"order\": [\r\n      1\r\n    ]\r\n  },\r\n  \"partialCharges\": {\r\n    \"method A\": [\r\n      -0.25,\r\n      0.25\r\n    ],\r\n    \"測定値\": [\r\n      0.123,\r\n      -0.123\r\n    ]\r\n  },\r\n  \"properties\": {\r\n    \"name\": \"two charge datasets\"\r\n  }\r\n}\r\n",
+        "observation": {
+          "exact_source": true,
+          "source_fields_retained": true,
+          "changed_source_paths": []
+        }
+      },
+      "wasm": {
+        "id": "multiple_charge_sets/crlf",
+        "output": "{\r\n  \"chemicalJson\": 1,\r\n  \"atoms\": {\r\n    \"elements\": {\r\n      \"number\": [\r\n        6,\r\n        8\r\n      ]\r\n    },\r\n    \"coords\": {\r\n      \"3d\": [\r\n        0.0,\r\n        0.0,\r\n        0.0,\r\n        1.25,\r\n        -2.5,\r\n        3.75\r\n      ]\r\n    }\r\n  },\r\n  \"bonds\": {\r\n    \"connections\": {\r\n      \"index\": [\r\n        0,\r\n        1\r\n      ]\r\n    },\r\n    \"order\": [\r\n      1\r\n    ]\r\n  },\r\n  \"partialCharges\": {\r\n    \"method A\": [\r\n      -0.25,\r\n      0.25\r\n    ],\r\n    \"測定値\": [\r\n      0.123,\r\n      -0.123\r\n    ]\r\n  },\r\n  \"properties\": {\r\n    \"name\": \"two charge datasets\"\r\n  }\r\n}\r\n",
+        "observation": {
+          "exact_source": true,
+          "source_fields_retained": true,
+          "changed_source_paths": []
+        }
+      },
+      "openbabel_default": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0.0,\n        1.25,\n        -2.5,\n        3.75\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.21748719006663937,\n      -0.21748719006663937\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"properties\": {\n    \"name\": \"\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/partialCharges/method A",
+            "/partialCharges/測定値",
+            "/properties/name"
+          ]
+        }
+      },
+      "openbabel_minified": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\"chemicalJson\":1,\"atoms\":{\"coords\":{\"3d\":[0.0,0.0,0.0,1.25,-2.5,3.75]},\"elements\":{\"number\":[6,8]},\"formalCharges\":[0,0]},\"partialCharges\":{\"Gasteiger\":[0.21748719006663937,-0.21748719006663937]},\"bonds\":{\"connections\":{\"index\":[0,1]},\"order\":[1]},\"properties\":{\"name\":\"\",\"totalCharge\":0,\"totalSpinMultiplicity\":1,\"totalEnergy\":0.0}}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson",
+          "-xm"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/partialCharges/method A",
+            "/partialCharges/測定値",
+            "/properties/name"
+          ]
+        }
+      },
+      "openbabel_verbose": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0.0,\n        1.25,\n        -2.5,\n        3.75\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.21748719006663937,\n      -0.21748719006663937\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"properties\": {\n    \"name\": \"\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson",
+          "-xv"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/partialCharges/method A",
+            "/partialCharges/測定値",
+            "/properties/name"
+          ]
+        }
+      }
+    },
+    {
+      "id": "multiple_charge_sets/minified",
+      "input_sha256": "f7262cddc4d7b3129a070ffdefae522412d22984efbb8f46cce0521eb0e53d3c",
+      "python": {
+        "output": "{\"chemicalJson\":1,\"atoms\":{\"elements\":{\"number\":[6,8]},\"coords\":{\"3d\":[0.0,0.0,0.0,1.25,-2.5,3.75]}},\"bonds\":{\"connections\":{\"index\":[0,1]},\"order\":[1]},\"partialCharges\":{\"method A\":[-0.25,0.25],\"\\u6e2c\\u5b9a\\u5024\":[0.123,-0.123]},\"properties\":{\"name\":\"two charge datasets\"}}",
+        "observation": {
+          "exact_source": true,
+          "source_fields_retained": true,
+          "changed_source_paths": []
+        }
+      },
+      "wasm": {
+        "id": "multiple_charge_sets/minified",
+        "output": "{\"chemicalJson\":1,\"atoms\":{\"elements\":{\"number\":[6,8]},\"coords\":{\"3d\":[0.0,0.0,0.0,1.25,-2.5,3.75]}},\"bonds\":{\"connections\":{\"index\":[0,1]},\"order\":[1]},\"partialCharges\":{\"method A\":[-0.25,0.25],\"\\u6e2c\\u5b9a\\u5024\":[0.123,-0.123]},\"properties\":{\"name\":\"two charge datasets\"}}",
+        "observation": {
+          "exact_source": true,
+          "source_fields_retained": true,
+          "changed_source_paths": []
+        }
+      },
+      "openbabel_default": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0.0,\n        1.25,\n        -2.5,\n        3.75\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.21748719006663937,\n      -0.21748719006663937\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"properties\": {\n    \"name\": \"\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/partialCharges/method A",
+            "/partialCharges/測定値",
+            "/properties/name"
+          ]
+        }
+      },
+      "openbabel_minified": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\"chemicalJson\":1,\"atoms\":{\"coords\":{\"3d\":[0.0,0.0,0.0,1.25,-2.5,3.75]},\"elements\":{\"number\":[6,8]},\"formalCharges\":[0,0]},\"partialCharges\":{\"Gasteiger\":[0.21748719006663937,-0.21748719006663937]},\"bonds\":{\"connections\":{\"index\":[0,1]},\"order\":[1]},\"properties\":{\"name\":\"\",\"totalCharge\":0,\"totalSpinMultiplicity\":1,\"totalEnergy\":0.0}}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson",
+          "-xm"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/partialCharges/method A",
+            "/partialCharges/測定値",
+            "/properties/name"
+          ]
+        }
+      },
+      "openbabel_verbose": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0.0,\n        1.25,\n        -2.5,\n        3.75\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.21748719006663937,\n      -0.21748719006663937\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"properties\": {\n    \"name\": \"\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson",
+          "-xv"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/partialCharges/method A",
+            "/partialCharges/測定値",
+            "/properties/name"
+          ]
+        }
+      }
+    },
+    {
+      "id": "alternate_geometry/lf",
+      "input_sha256": "1d6bdcfc77d2bef3afe45b657456d6ecf9008def697b38e750d271cdb228fbff",
+      "python": {
+        "output": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0.0,\n        1.25,\n        -2.5,\n        3.75\n      ],\n      \"2d\": [\n        0,\n        0,\n        1,\n        0\n      ],\n      \"3dSets\": [\n        [\n          0,\n          0,\n          0,\n          1,\n          0,\n          0\n        ],\n        [\n          0,\n          1,\n          0,\n          1,\n          1,\n          0\n        ]\n      ]\n    }\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ],\n    \"vendorStereo\": {\n      \"annotation\": \"retained, not interpreted\"\n    }\n  }\n}\n",
+        "observation": {
+          "exact_source": true,
+          "source_fields_retained": true,
+          "changed_source_paths": []
+        }
+      },
+      "wasm": {
+        "id": "alternate_geometry/lf",
+        "output": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0.0,\n        1.25,\n        -2.5,\n        3.75\n      ],\n      \"2d\": [\n        0,\n        0,\n        1,\n        0\n      ],\n      \"3dSets\": [\n        [\n          0,\n          0,\n          0,\n          1,\n          0,\n          0\n        ],\n        [\n          0,\n          1,\n          0,\n          1,\n          1,\n          0\n        ]\n      ]\n    }\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ],\n    \"vendorStereo\": {\n      \"annotation\": \"retained, not interpreted\"\n    }\n  }\n}\n",
+        "observation": {
+          "exact_source": true,
+          "source_fields_retained": true,
+          "changed_source_paths": []
+        }
+      },
+      "openbabel_default": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0.0,\n        1.25,\n        -2.5,\n        3.75\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.21748719006663937,\n      -0.21748719006663937\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"properties\": {\n    \"name\": \"\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/atoms/coords/2d",
+            "/atoms/coords/3dSets",
+            "/bonds/vendorStereo"
+          ]
+        }
+      },
+      "openbabel_minified": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\"chemicalJson\":1,\"atoms\":{\"coords\":{\"3d\":[0.0,0.0,0.0,1.25,-2.5,3.75]},\"elements\":{\"number\":[6,8]},\"formalCharges\":[0,0]},\"partialCharges\":{\"Gasteiger\":[0.21748719006663937,-0.21748719006663937]},\"bonds\":{\"connections\":{\"index\":[0,1]},\"order\":[1]},\"properties\":{\"name\":\"\",\"totalCharge\":0,\"totalSpinMultiplicity\":1,\"totalEnergy\":0.0}}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson",
+          "-xm"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/atoms/coords/2d",
+            "/atoms/coords/3dSets",
+            "/bonds/vendorStereo"
+          ]
+        }
+      },
+      "openbabel_verbose": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0.0,\n        1.25,\n        -2.5,\n        3.75\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.21748719006663937,\n      -0.21748719006663937\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"properties\": {\n    \"name\": \"\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson",
+          "-xv"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/atoms/coords/2d",
+            "/atoms/coords/3dSets",
+            "/bonds/vendorStereo"
+          ]
+        }
+      }
+    },
+    {
+      "id": "alternate_geometry/crlf",
+      "input_sha256": "67ac753182086194625ac20cd83f28d6c65a7873ae3a1d7453b2348f84ba9e84",
+      "python": {
+        "output": "{\r\n  \"chemicalJson\": 1,\r\n  \"atoms\": {\r\n    \"elements\": {\r\n      \"number\": [\r\n        6,\r\n        8\r\n      ]\r\n    },\r\n    \"coords\": {\r\n      \"3d\": [\r\n        0.0,\r\n        0.0,\r\n        0.0,\r\n        1.25,\r\n        -2.5,\r\n        3.75\r\n      ],\r\n      \"2d\": [\r\n        0,\r\n        0,\r\n        1,\r\n        0\r\n      ],\r\n      \"3dSets\": [\r\n        [\r\n          0,\r\n          0,\r\n          0,\r\n          1,\r\n          0,\r\n          0\r\n        ],\r\n        [\r\n          0,\r\n          1,\r\n          0,\r\n          1,\r\n          1,\r\n          0\r\n        ]\r\n      ]\r\n    }\r\n  },\r\n  \"bonds\": {\r\n    \"connections\": {\r\n      \"index\": [\r\n        0,\r\n        1\r\n      ]\r\n    },\r\n    \"order\": [\r\n      1\r\n    ],\r\n    \"vendorStereo\": {\r\n      \"annotation\": \"retained, not interpreted\"\r\n    }\r\n  }\r\n}\r\n",
+        "observation": {
+          "exact_source": true,
+          "source_fields_retained": true,
+          "changed_source_paths": []
+        }
+      },
+      "wasm": {
+        "id": "alternate_geometry/crlf",
+        "output": "{\r\n  \"chemicalJson\": 1,\r\n  \"atoms\": {\r\n    \"elements\": {\r\n      \"number\": [\r\n        6,\r\n        8\r\n      ]\r\n    },\r\n    \"coords\": {\r\n      \"3d\": [\r\n        0.0,\r\n        0.0,\r\n        0.0,\r\n        1.25,\r\n        -2.5,\r\n        3.75\r\n      ],\r\n      \"2d\": [\r\n        0,\r\n        0,\r\n        1,\r\n        0\r\n      ],\r\n      \"3dSets\": [\r\n        [\r\n          0,\r\n          0,\r\n          0,\r\n          1,\r\n          0,\r\n          0\r\n        ],\r\n        [\r\n          0,\r\n          1,\r\n          0,\r\n          1,\r\n          1,\r\n          0\r\n        ]\r\n      ]\r\n    }\r\n  },\r\n  \"bonds\": {\r\n    \"connections\": {\r\n      \"index\": [\r\n        0,\r\n        1\r\n      ]\r\n    },\r\n    \"order\": [\r\n      1\r\n    ],\r\n    \"vendorStereo\": {\r\n      \"annotation\": \"retained, not interpreted\"\r\n    }\r\n  }\r\n}\r\n",
+        "observation": {
+          "exact_source": true,
+          "source_fields_retained": true,
+          "changed_source_paths": []
+        }
+      },
+      "openbabel_default": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0.0,\n        1.25,\n        -2.5,\n        3.75\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.21748719006663937,\n      -0.21748719006663937\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"properties\": {\n    \"name\": \"\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/atoms/coords/2d",
+            "/atoms/coords/3dSets",
+            "/bonds/vendorStereo"
+          ]
+        }
+      },
+      "openbabel_minified": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\"chemicalJson\":1,\"atoms\":{\"coords\":{\"3d\":[0.0,0.0,0.0,1.25,-2.5,3.75]},\"elements\":{\"number\":[6,8]},\"formalCharges\":[0,0]},\"partialCharges\":{\"Gasteiger\":[0.21748719006663937,-0.21748719006663937]},\"bonds\":{\"connections\":{\"index\":[0,1]},\"order\":[1]},\"properties\":{\"name\":\"\",\"totalCharge\":0,\"totalSpinMultiplicity\":1,\"totalEnergy\":0.0}}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson",
+          "-xm"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/atoms/coords/2d",
+            "/atoms/coords/3dSets",
+            "/bonds/vendorStereo"
+          ]
+        }
+      },
+      "openbabel_verbose": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0.0,\n        1.25,\n        -2.5,\n        3.75\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.21748719006663937,\n      -0.21748719006663937\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"properties\": {\n    \"name\": \"\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson",
+          "-xv"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/atoms/coords/2d",
+            "/atoms/coords/3dSets",
+            "/bonds/vendorStereo"
+          ]
+        }
+      }
+    },
+    {
+      "id": "alternate_geometry/minified",
+      "input_sha256": "4ed5003d9d48bb3d23fde0d0e5fc96f29c65f3cf7a4f832cdd90608c9850d070",
+      "python": {
+        "output": "{\"chemicalJson\":1,\"atoms\":{\"elements\":{\"number\":[6,8]},\"coords\":{\"3d\":[0.0,0.0,0.0,1.25,-2.5,3.75],\"2d\":[0,0,1,0],\"3dSets\":[[0,0,0,1,0,0],[0,1,0,1,1,0]]}},\"bonds\":{\"connections\":{\"index\":[0,1]},\"order\":[1],\"vendorStereo\":{\"annotation\":\"retained, not interpreted\"}}}",
+        "observation": {
+          "exact_source": true,
+          "source_fields_retained": true,
+          "changed_source_paths": []
+        }
+      },
+      "wasm": {
+        "id": "alternate_geometry/minified",
+        "output": "{\"chemicalJson\":1,\"atoms\":{\"elements\":{\"number\":[6,8]},\"coords\":{\"3d\":[0.0,0.0,0.0,1.25,-2.5,3.75],\"2d\":[0,0,1,0],\"3dSets\":[[0,0,0,1,0,0],[0,1,0,1,1,0]]}},\"bonds\":{\"connections\":{\"index\":[0,1]},\"order\":[1],\"vendorStereo\":{\"annotation\":\"retained, not interpreted\"}}}",
+        "observation": {
+          "exact_source": true,
+          "source_fields_retained": true,
+          "changed_source_paths": []
+        }
+      },
+      "openbabel_default": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0.0,\n        1.25,\n        -2.5,\n        3.75\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.21748719006663937,\n      -0.21748719006663937\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"properties\": {\n    \"name\": \"\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/atoms/coords/2d",
+            "/atoms/coords/3dSets",
+            "/bonds/vendorStereo"
+          ]
+        }
+      },
+      "openbabel_minified": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\"chemicalJson\":1,\"atoms\":{\"coords\":{\"3d\":[0.0,0.0,0.0,1.25,-2.5,3.75]},\"elements\":{\"number\":[6,8]},\"formalCharges\":[0,0]},\"partialCharges\":{\"Gasteiger\":[0.21748719006663937,-0.21748719006663937]},\"bonds\":{\"connections\":{\"index\":[0,1]},\"order\":[1]},\"properties\":{\"name\":\"\",\"totalCharge\":0,\"totalSpinMultiplicity\":1,\"totalEnergy\":0.0}}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson",
+          "-xm"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/atoms/coords/2d",
+            "/atoms/coords/3dSets",
+            "/bonds/vendorStereo"
+          ]
+        }
+      },
+      "openbabel_verbose": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0.0,\n        1.25,\n        -2.5,\n        3.75\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.21748719006663937,\n      -0.21748719006663937\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"properties\": {\n    \"name\": \"\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson",
+          "-xv"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/atoms/coords/2d",
+            "/atoms/coords/3dSets",
+            "/bonds/vendorStereo"
+          ]
+        }
+      }
+    },
+    {
+      "id": "opaque_references/lf",
+      "input_sha256": "24f554a4c831a05cc0529847fe607ca60814161bf9ddf0080697643a998b6b6c",
+      "python": {
+        "output": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0.0,\n        1.25,\n        -2.5,\n        3.75\n      ]\n    },\n    \"vendorRefs\": [\n      {\n        \"id\": \"x/1\"\n      },\n      {\n        \"id\": \"x~2\"\n      }\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"properties\": {\n    \"name\": \"原文 🧪 <&>\",\n    \"vendor/a~b\": {\n      \"reference\": 9007199254740993,\n      \"annotation\": \"\\\\u003c is literal text\",\n      \"enabled\": true\n    }\n  }\n}\n",
+        "observation": {
+          "exact_source": true,
+          "source_fields_retained": true,
+          "changed_source_paths": []
+        }
+      },
+      "wasm": {
+        "id": "opaque_references/lf",
+        "output": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0.0,\n        1.25,\n        -2.5,\n        3.75\n      ]\n    },\n    \"vendorRefs\": [\n      {\n        \"id\": \"x/1\"\n      },\n      {\n        \"id\": \"x~2\"\n      }\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"properties\": {\n    \"name\": \"原文 🧪 <&>\",\n    \"vendor/a~b\": {\n      \"reference\": 9007199254740993,\n      \"annotation\": \"\\\\u003c is literal text\",\n      \"enabled\": true\n    }\n  }\n}\n",
+        "observation": {
+          "exact_source": true,
+          "source_fields_retained": true,
+          "changed_source_paths": []
+        }
+      },
+      "openbabel_default": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0.0,\n        1.25,\n        -2.5,\n        3.75\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.21748719006663937,\n      -0.21748719006663937\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"properties\": {\n    \"name\": \"\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/atoms/vendorRefs",
+            "/properties/name",
+            "/properties/vendor~1a~0b"
+          ]
+        }
+      },
+      "openbabel_minified": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\"chemicalJson\":1,\"atoms\":{\"coords\":{\"3d\":[0.0,0.0,0.0,1.25,-2.5,3.75]},\"elements\":{\"number\":[6,8]},\"formalCharges\":[0,0]},\"partialCharges\":{\"Gasteiger\":[0.21748719006663937,-0.21748719006663937]},\"bonds\":{\"connections\":{\"index\":[0,1]},\"order\":[1]},\"properties\":{\"name\":\"\",\"totalCharge\":0,\"totalSpinMultiplicity\":1,\"totalEnergy\":0.0}}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson",
+          "-xm"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/atoms/vendorRefs",
+            "/properties/name",
+            "/properties/vendor~1a~0b"
+          ]
+        }
+      },
+      "openbabel_verbose": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0.0,\n        1.25,\n        -2.5,\n        3.75\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.21748719006663937,\n      -0.21748719006663937\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"properties\": {\n    \"name\": \"\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson",
+          "-xv"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/atoms/vendorRefs",
+            "/properties/name",
+            "/properties/vendor~1a~0b"
+          ]
+        }
+      }
+    },
+    {
+      "id": "opaque_references/crlf",
+      "input_sha256": "1c27d04b5715c4d067100ebd0bb46013a82238bab60677cbdf5debb1d3a6b917",
+      "python": {
+        "output": "{\r\n  \"chemicalJson\": 1,\r\n  \"atoms\": {\r\n    \"elements\": {\r\n      \"number\": [\r\n        6,\r\n        8\r\n      ]\r\n    },\r\n    \"coords\": {\r\n      \"3d\": [\r\n        0.0,\r\n        0.0,\r\n        0.0,\r\n        1.25,\r\n        -2.5,\r\n        3.75\r\n      ]\r\n    },\r\n    \"vendorRefs\": [\r\n      {\r\n        \"id\": \"x/1\"\r\n      },\r\n      {\r\n        \"id\": \"x~2\"\r\n      }\r\n    ]\r\n  },\r\n  \"bonds\": {\r\n    \"connections\": {\r\n      \"index\": [\r\n        0,\r\n        1\r\n      ]\r\n    },\r\n    \"order\": [\r\n      1\r\n    ]\r\n  },\r\n  \"properties\": {\r\n    \"name\": \"原文 🧪 <&>\",\r\n    \"vendor/a~b\": {\r\n      \"reference\": 9007199254740993,\r\n      \"annotation\": \"\\\\u003c is literal text\",\r\n      \"enabled\": true\r\n    }\r\n  }\r\n}\r\n",
+        "observation": {
+          "exact_source": true,
+          "source_fields_retained": true,
+          "changed_source_paths": []
+        }
+      },
+      "wasm": {
+        "id": "opaque_references/crlf",
+        "output": "{\r\n  \"chemicalJson\": 1,\r\n  \"atoms\": {\r\n    \"elements\": {\r\n      \"number\": [\r\n        6,\r\n        8\r\n      ]\r\n    },\r\n    \"coords\": {\r\n      \"3d\": [\r\n        0.0,\r\n        0.0,\r\n        0.0,\r\n        1.25,\r\n        -2.5,\r\n        3.75\r\n      ]\r\n    },\r\n    \"vendorRefs\": [\r\n      {\r\n        \"id\": \"x/1\"\r\n      },\r\n      {\r\n        \"id\": \"x~2\"\r\n      }\r\n    ]\r\n  },\r\n  \"bonds\": {\r\n    \"connections\": {\r\n      \"index\": [\r\n        0,\r\n        1\r\n      ]\r\n    },\r\n    \"order\": [\r\n      1\r\n    ]\r\n  },\r\n  \"properties\": {\r\n    \"name\": \"原文 🧪 <&>\",\r\n    \"vendor/a~b\": {\r\n      \"reference\": 9007199254740993,\r\n      \"annotation\": \"\\\\u003c is literal text\",\r\n      \"enabled\": true\r\n    }\r\n  }\r\n}\r\n",
+        "observation": {
+          "exact_source": true,
+          "source_fields_retained": true,
+          "changed_source_paths": []
+        }
+      },
+      "openbabel_default": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0.0,\n        1.25,\n        -2.5,\n        3.75\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.21748719006663937,\n      -0.21748719006663937\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"properties\": {\n    \"name\": \"\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/atoms/vendorRefs",
+            "/properties/name",
+            "/properties/vendor~1a~0b"
+          ]
+        }
+      },
+      "openbabel_minified": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\"chemicalJson\":1,\"atoms\":{\"coords\":{\"3d\":[0.0,0.0,0.0,1.25,-2.5,3.75]},\"elements\":{\"number\":[6,8]},\"formalCharges\":[0,0]},\"partialCharges\":{\"Gasteiger\":[0.21748719006663937,-0.21748719006663937]},\"bonds\":{\"connections\":{\"index\":[0,1]},\"order\":[1]},\"properties\":{\"name\":\"\",\"totalCharge\":0,\"totalSpinMultiplicity\":1,\"totalEnergy\":0.0}}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson",
+          "-xm"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/atoms/vendorRefs",
+            "/properties/name",
+            "/properties/vendor~1a~0b"
+          ]
+        }
+      },
+      "openbabel_verbose": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0.0,\n        1.25,\n        -2.5,\n        3.75\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.21748719006663937,\n      -0.21748719006663937\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"properties\": {\n    \"name\": \"\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson",
+          "-xv"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/atoms/vendorRefs",
+            "/properties/name",
+            "/properties/vendor~1a~0b"
+          ]
+        }
+      }
+    },
+    {
+      "id": "opaque_references/minified",
+      "input_sha256": "48c72ee478f74378ff161db9b428b9dc562a1c81e37ba21b6f94ea3b5a971258",
+      "python": {
+        "output": "{\"chemicalJson\":1,\"atoms\":{\"elements\":{\"number\":[6,8]},\"coords\":{\"3d\":[0.0,0.0,0.0,1.25,-2.5,3.75]},\"vendorRefs\":[{\"id\":\"x/1\"},{\"id\":\"x~2\"}]},\"bonds\":{\"connections\":{\"index\":[0,1]},\"order\":[1]},\"properties\":{\"name\":\"\\u539f\\u6587 \\ud83e\\uddea <&>\",\"vendor/a~b\":{\"reference\":9007199254740993,\"annotation\":\"\\\\u003c is literal text\",\"enabled\":true}}}",
+        "observation": {
+          "exact_source": true,
+          "source_fields_retained": true,
+          "changed_source_paths": []
+        }
+      },
+      "wasm": {
+        "id": "opaque_references/minified",
+        "output": "{\"chemicalJson\":1,\"atoms\":{\"elements\":{\"number\":[6,8]},\"coords\":{\"3d\":[0.0,0.0,0.0,1.25,-2.5,3.75]},\"vendorRefs\":[{\"id\":\"x/1\"},{\"id\":\"x~2\"}]},\"bonds\":{\"connections\":{\"index\":[0,1]},\"order\":[1]},\"properties\":{\"name\":\"\\u539f\\u6587 \\ud83e\\uddea <&>\",\"vendor/a~b\":{\"reference\":9007199254740993,\"annotation\":\"\\\\u003c is literal text\",\"enabled\":true}}}",
+        "observation": {
+          "exact_source": true,
+          "source_fields_retained": true,
+          "changed_source_paths": []
+        }
+      },
+      "openbabel_default": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0.0,\n        1.25,\n        -2.5,\n        3.75\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.21748719006663937,\n      -0.21748719006663937\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"properties\": {\n    \"name\": \"\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/atoms/vendorRefs",
+            "/properties/name",
+            "/properties/vendor~1a~0b"
+          ]
+        }
+      },
+      "openbabel_minified": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\"chemicalJson\":1,\"atoms\":{\"coords\":{\"3d\":[0.0,0.0,0.0,1.25,-2.5,3.75]},\"elements\":{\"number\":[6,8]},\"formalCharges\":[0,0]},\"partialCharges\":{\"Gasteiger\":[0.21748719006663937,-0.21748719006663937]},\"bonds\":{\"connections\":{\"index\":[0,1]},\"order\":[1]},\"properties\":{\"name\":\"\",\"totalCharge\":0,\"totalSpinMultiplicity\":1,\"totalEnergy\":0.0}}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson",
+          "-xm"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/atoms/vendorRefs",
+            "/properties/name",
+            "/properties/vendor~1a~0b"
+          ]
+        }
+      },
+      "openbabel_verbose": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0.0,\n        1.25,\n        -2.5,\n        3.75\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.21748719006663937,\n      -0.21748719006663937\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"properties\": {\n    \"name\": \"\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson",
+          "-xv"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/atoms/vendorRefs",
+            "/properties/name",
+            "/properties/vendor~1a~0b"
+          ]
+        }
+      }
+    },
+    {
+      "id": "numeric_precision/lf",
+      "input_sha256": "6c5316d580f623eaae9b1d80c9c0aa28e800c76b401c8058b7b4e2ee10f3a0af",
+      "python": {
+        "output": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        -1.4175225513503917,\n        -0.0,\n        5e-324,\n        1.7976931348623157e+308,\n        -1.25,\n        0.125\n      ]\n    }\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"properties\": {\n    \"name\": \"full precision\",\n    \"vendorEnergy\": -1.2345678901234567\n  }\n}\n",
+        "observation": {
+          "exact_source": true,
+          "source_fields_retained": true,
+          "changed_source_paths": []
+        }
+      },
+      "wasm": {
+        "id": "numeric_precision/lf",
+        "output": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        -1.4175225513503917,\n        -0.0,\n        5e-324,\n        1.7976931348623157e+308,\n        -1.25,\n        0.125\n      ]\n    }\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"properties\": {\n    \"name\": \"full precision\",\n    \"vendorEnergy\": -1.2345678901234567\n  }\n}\n",
+        "observation": {
+          "exact_source": true,
+          "source_fields_retained": true,
+          "changed_source_paths": []
+        }
+      },
+      "openbabel_default": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        -1.4175225513503916,\n        -0.0,\n        5e-324,\n        1.7976931348623157e308,\n        -1.25,\n        0.125\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.21748719006663937,\n      -0.21748719006663937\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"properties\": {\n    \"name\": \"\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/atoms/coords/3d",
+            "/properties/name",
+            "/properties/vendorEnergy"
+          ]
+        }
+      },
+      "openbabel_minified": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\"chemicalJson\":1,\"atoms\":{\"coords\":{\"3d\":[-1.4175225513503916,-0.0,5e-324,1.7976931348623157e308,-1.25,0.125]},\"elements\":{\"number\":[6,8]},\"formalCharges\":[0,0]},\"partialCharges\":{\"Gasteiger\":[0.21748719006663937,-0.21748719006663937]},\"bonds\":{\"connections\":{\"index\":[0,1]},\"order\":[1]},\"properties\":{\"name\":\"\",\"totalCharge\":0,\"totalSpinMultiplicity\":1,\"totalEnergy\":0.0}}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson",
+          "-xm"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/atoms/coords/3d",
+            "/properties/name",
+            "/properties/vendorEnergy"
+          ]
+        }
+      },
+      "openbabel_verbose": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        -1.4175225513503916,\n        -0.0,\n        5e-324,\n        1.7976931348623157e308,\n        -1.25,\n        0.125\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.21748719006663937,\n      -0.21748719006663937\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"properties\": {\n    \"name\": \"\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson",
+          "-xv"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/atoms/coords/3d",
+            "/properties/name",
+            "/properties/vendorEnergy"
+          ]
+        }
+      }
+    },
+    {
+      "id": "numeric_precision/crlf",
+      "input_sha256": "5d48238891600e4a7c60f67151040043f447aa298adba15d5202dca45324cf34",
+      "python": {
+        "output": "{\r\n  \"chemicalJson\": 1,\r\n  \"atoms\": {\r\n    \"elements\": {\r\n      \"number\": [\r\n        6,\r\n        8\r\n      ]\r\n    },\r\n    \"coords\": {\r\n      \"3d\": [\r\n        -1.4175225513503917,\r\n        -0.0,\r\n        5e-324,\r\n        1.7976931348623157e+308,\r\n        -1.25,\r\n        0.125\r\n      ]\r\n    }\r\n  },\r\n  \"bonds\": {\r\n    \"connections\": {\r\n      \"index\": [\r\n        0,\r\n        1\r\n      ]\r\n    },\r\n    \"order\": [\r\n      1\r\n    ]\r\n  },\r\n  \"properties\": {\r\n    \"name\": \"full precision\",\r\n    \"vendorEnergy\": -1.2345678901234567\r\n  }\r\n}\r\n",
+        "observation": {
+          "exact_source": true,
+          "source_fields_retained": true,
+          "changed_source_paths": []
+        }
+      },
+      "wasm": {
+        "id": "numeric_precision/crlf",
+        "output": "{\r\n  \"chemicalJson\": 1,\r\n  \"atoms\": {\r\n    \"elements\": {\r\n      \"number\": [\r\n        6,\r\n        8\r\n      ]\r\n    },\r\n    \"coords\": {\r\n      \"3d\": [\r\n        -1.4175225513503917,\r\n        -0.0,\r\n        5e-324,\r\n        1.7976931348623157e+308,\r\n        -1.25,\r\n        0.125\r\n      ]\r\n    }\r\n  },\r\n  \"bonds\": {\r\n    \"connections\": {\r\n      \"index\": [\r\n        0,\r\n        1\r\n      ]\r\n    },\r\n    \"order\": [\r\n      1\r\n    ]\r\n  },\r\n  \"properties\": {\r\n    \"name\": \"full precision\",\r\n    \"vendorEnergy\": -1.2345678901234567\r\n  }\r\n}\r\n",
+        "observation": {
+          "exact_source": true,
+          "source_fields_retained": true,
+          "changed_source_paths": []
+        }
+      },
+      "openbabel_default": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        -1.4175225513503916,\n        -0.0,\n        5e-324,\n        1.7976931348623157e308,\n        -1.25,\n        0.125\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.21748719006663937,\n      -0.21748719006663937\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"properties\": {\n    \"name\": \"\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/atoms/coords/3d",
+            "/properties/name",
+            "/properties/vendorEnergy"
+          ]
+        }
+      },
+      "openbabel_minified": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\"chemicalJson\":1,\"atoms\":{\"coords\":{\"3d\":[-1.4175225513503916,-0.0,5e-324,1.7976931348623157e308,-1.25,0.125]},\"elements\":{\"number\":[6,8]},\"formalCharges\":[0,0]},\"partialCharges\":{\"Gasteiger\":[0.21748719006663937,-0.21748719006663937]},\"bonds\":{\"connections\":{\"index\":[0,1]},\"order\":[1]},\"properties\":{\"name\":\"\",\"totalCharge\":0,\"totalSpinMultiplicity\":1,\"totalEnergy\":0.0}}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson",
+          "-xm"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/atoms/coords/3d",
+            "/properties/name",
+            "/properties/vendorEnergy"
+          ]
+        }
+      },
+      "openbabel_verbose": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        -1.4175225513503916,\n        -0.0,\n        5e-324,\n        1.7976931348623157e308,\n        -1.25,\n        0.125\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.21748719006663937,\n      -0.21748719006663937\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"properties\": {\n    \"name\": \"\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson",
+          "-xv"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/atoms/coords/3d",
+            "/properties/name",
+            "/properties/vendorEnergy"
+          ]
+        }
+      }
+    },
+    {
+      "id": "numeric_precision/minified",
+      "input_sha256": "ac13299f991e1a77890d070f927b2313f3ed4fdadba09d0901f200fd8b310332",
+      "python": {
+        "output": "{\"chemicalJson\":1,\"atoms\":{\"elements\":{\"number\":[6,8]},\"coords\":{\"3d\":[-1.4175225513503917,-0.0,5e-324,1.7976931348623157e+308,-1.25,0.125]}},\"bonds\":{\"connections\":{\"index\":[0,1]},\"order\":[1]},\"properties\":{\"name\":\"full precision\",\"vendorEnergy\":-1.2345678901234567}}",
+        "observation": {
+          "exact_source": true,
+          "source_fields_retained": true,
+          "changed_source_paths": []
+        }
+      },
+      "wasm": {
+        "id": "numeric_precision/minified",
+        "output": "{\"chemicalJson\":1,\"atoms\":{\"elements\":{\"number\":[6,8]},\"coords\":{\"3d\":[-1.4175225513503917,-0.0,5e-324,1.7976931348623157e+308,-1.25,0.125]}},\"bonds\":{\"connections\":{\"index\":[0,1]},\"order\":[1]},\"properties\":{\"name\":\"full precision\",\"vendorEnergy\":-1.2345678901234567}}",
+        "observation": {
+          "exact_source": true,
+          "source_fields_retained": true,
+          "changed_source_paths": []
+        }
+      },
+      "openbabel_default": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        -1.4175225513503916,\n        -0.0,\n        5e-324,\n        1.7976931348623157e308,\n        -1.25,\n        0.125\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.21748719006663937,\n      -0.21748719006663937\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"properties\": {\n    \"name\": \"\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/atoms/coords/3d",
+            "/properties/name",
+            "/properties/vendorEnergy"
+          ]
+        }
+      },
+      "openbabel_minified": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\"chemicalJson\":1,\"atoms\":{\"coords\":{\"3d\":[-1.4175225513503916,-0.0,5e-324,1.7976931348623157e308,-1.25,0.125]},\"elements\":{\"number\":[6,8]},\"formalCharges\":[0,0]},\"partialCharges\":{\"Gasteiger\":[0.21748719006663937,-0.21748719006663937]},\"bonds\":{\"connections\":{\"index\":[0,1]},\"order\":[1]},\"properties\":{\"name\":\"\",\"totalCharge\":0,\"totalSpinMultiplicity\":1,\"totalEnergy\":0.0}}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson",
+          "-xm"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/atoms/coords/3d",
+            "/properties/name",
+            "/properties/vendorEnergy"
+          ]
+        }
+      },
+      "openbabel_verbose": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        -1.4175225513503916,\n        -0.0,\n        5e-324,\n        1.7976931348623157e308,\n        -1.25,\n        0.125\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.21748719006663937,\n      -0.21748719006663937\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"properties\": {\n    \"name\": \"\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "stderr": "1 molecule converted\n",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-icjson",
+          "-ocjson",
+          "-xv"
+        ],
+        "observation": {
+          "exact_source": false,
+          "source_fields_retained": false,
+          "changed_source_paths": [
+            "/atoms/coords/3d",
+            "/properties/name",
+            "/properties/vendorEnergy"
+          ]
+        }
+      }
+    }
+  ]
+}

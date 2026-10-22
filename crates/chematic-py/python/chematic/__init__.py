@@ -170,7 +170,7 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
 
     The molecular graph and supported stereochemistry are preserved. Format-
     specific metadata is not promised to survive conversion.
-    MOL2 to MOL2 instead validates and retains the exact source; coordinate,
+    MOL2 to MOL2 and CJSON to CJSON validate and retain the exact source; coordinate,
     charge, name, and comment overrides are rejected on that path.
     V3000 to V3000 also validates and retains one exact source block, including
     3D coordinate tokens and opaque metadata; these overrides are rejected.
@@ -205,6 +205,10 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
         if coords is not None or charges is not None or name != "LIG" or comment:
             raise ValueError("V3000 source-preserving conversion does not accept overrides")
         return roundtrip_mol_v3000_source(text)
+    if source == target == "cjson":
+        if coords is not None or charges is not None or name != "LIG" or comment:
+            raise ValueError("CJSON source-preserving conversion does not accept overrides")
+        return roundtrip_cjson_record(text)
     if source == "smiles":
         mol = from_smiles(text)
     elif source == "mol":

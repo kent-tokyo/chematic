@@ -14,6 +14,8 @@ not a statement about v1.1.8.
 
 | Question | Current record | Boundary |
 |---|---|---|
+| Do XML reference spellings change CML chemistry? | [CML character-reference repair](../docs/benchmarks/2026-10-22-cml-character-references.md) | Original 14-input source packet: seven valid field-preserving outputs and seven explicit rejections. Valid coverage matches Open Babel 3.2.1; rejections are not successful coverage or broad superiority. |
+| Are standard CJSON names and conflicting declarations handled explicitly? | [CJSON ⇄ MOL2 name preservation](../docs/benchmarks/2026-10-21-cjson-name-preservation.md) | Authored source development packet: seven retained outputs and four explicit refusals. Legacy names count as retained meaning; no independent holdout or broad superiority claim. |
 | How are symmetric unlabelled R-group sites aligned? | [source comparison](2026-10-22-rdkit-rgroup-symmetric-columns.md) | A first-row tie correction brings one exposed 11-batch graph-and-label panel to 11/11 against RDKit 2026.09.1. The separate 20-row symmetric-ring residual and broader R-group accuracy remain open. |
 | Is MCS input-order independent and are incomplete searches explicit? | [complete-ring valid-best correction](2026-10-22-mcs-complete-rings-valid-best.md) · [equal-atom bond-count correction](2026-10-22-mcs-equal-atom-bond-count.md) · [MCS non-induced/status follow-up](2026-10-21-mcs-non-induced-order-status.md) | Source fixes recover a valid common chain under complete-ring constraints, an equal-atom higher-bond tie, and the earlier ring/chain case. Resource limits are typed; full FMCS parity, a new frozen holdout and broad performance evidence remain open. |
 | Where does source CIP still trail RDKit? | [CIP lazy-preparation audit](2026-10-19-cip-lazy-preparation.md) | 24 balanced blocks; source CIP first-use 1.74× and parse-inclusive 1.62× faster. Standalone CIP/SMILES/SMARTS gaps remain; stress mismatches stay unranked. |
@@ -33,6 +35,11 @@ not a statement about v1.1.8.
 | What is the broad historical Python operation matrix? | [v1.0.30 63-operation matrix](2026-10-02-v1.0.30-vs-rdkit-python-63op-paired20.json) | Historical published-wheel result against RDKit 2026.03.6. |
 
 ## Recent focused follow-ups
+
+- [CML supplied 2D coordinate precision](../docs/benchmarks/2026-10-22-cml-coordinate-precision.md):
+  eight original drawing layouts; source reader/writer preserves 8/8 within
+  1e-10 Å absolute, versus 2/8 before and 3/8 with Open Babel 3.2.1 defaults.
+  Numeric preservation evidence, not geometry accuracy or toolkit-wide parity.
 
 - [Symmetry-aware conformer clustering](2026-10-22-conformer-symmetric-clustering.md):
   merges atom-permutation-only duplicates in focused CF3, acetate and nitro
