@@ -1,0 +1,253 @@
+{
+  "schema": "chematic.cjson-name-validation.v1",
+  "date": "2026-10-21",
+  "scope": "Unreleased source development on macOS arm64, bounded CJSON\u21c4MOL2 names; not released-package, holdout, general CJSON conformance or toolkit superiority proof.",
+  "production_baseline_revision": "bb682cbdb1ac932cde27d4f1e79780b94c607ec7",
+  "tested_main_base": "26043220b3626bfa1c108bb2668d66edcb86ac8c",
+  "source_files": [
+    {
+      "path": "crates/chematic-mol/src/cjson_record.rs",
+      "sha256": "692f41b89786473366cff594a233d6ee8268ec72894c622ec73243f73e74d9dd",
+      "size_bytes": 14493
+    },
+    {
+      "path": "crates/chematic-mol/src/conversion.rs",
+      "sha256": "9624d5ef2a92ae66f9bdf299d22261a411b4532294f48b66e61c754db45bb5ba",
+      "size_bytes": 32448
+    },
+    {
+      "path": "crates/chematic-mol/src/conversion/cjson_mol2.rs",
+      "sha256": "2e9509948a40fc49ce27a86f749c630a466b8b0646a55f35e02f1e075385f0f7",
+      "size_bytes": 13162
+    },
+    {
+      "path": "crates/chematic-mol/tests/cjson_names.rs",
+      "sha256": "3d0cafd2bcaa62e5cad4567b0d8e15ba5274d0acabbbecc956f3b81e0546a7f2",
+      "size_bytes": 5642
+    },
+    {
+      "path": "crates/chematic-mol/tests/cjson_preservation.rs",
+      "sha256": "81fa844d47977ff71d68e4b4c4950cd2b69ae3a69a65d85d6aa0994deea29a30",
+      "size_bytes": 10562
+    },
+    {
+      "path": "crates/chematic-cli/tests/conversion_report.rs",
+      "sha256": "4152808ee5eb358d6d2528ee69eea36dd975e2ca95c6bdedb2b2c16070955622",
+      "size_bytes": 9203
+    },
+    {
+      "path": "crates/chematic-py/tests/test_cjson_preservation.py",
+      "sha256": "71655d92a0072e554b8e6ef52dd9fdbe8c9b4f396aee9cfc490811f4965f896a",
+      "size_bytes": 8396
+    },
+    {
+      "path": "crates/chematic-wasm/tests/cjson_preservation.test.mjs",
+      "sha256": "0ab8ba42507d485d7d80799d4d19e507c193b0a7246cdd0fe6e96782bf15945b",
+      "size_bytes": 7839
+    },
+    {
+      "path": "scripts/validation/check_cjson_names.py",
+      "sha256": "fdcc3dd78883e89a0f796f5aa17e8b70515766209f04a67960671c475468f3c8",
+      "size_bytes": 7725
+    },
+    {
+      "path": "scripts/validation/check_cjson_mol2_formal_charges.py",
+      "sha256": "ad87b74c67ac3306f1aeb593a07f526b18a2a30c0e1e6cfc77aa905b3843dcd9",
+      "size_bytes": 12993
+    },
+    {
+      "path": "scripts/validation/check_conversion_report_parity.py",
+      "sha256": "f7a30513ebd762b752814b492220fc1f19fd43f21d72c86e8121914dd98e7190",
+      "size_bytes": 9385
+    },
+    {
+      "path": "scripts/tests/test_cjson_names.py",
+      "sha256": "1550f3b78aa67a8ea8fc0f9ab7ded8d1434657ff1a73a1f3dad58fc61d636503",
+      "size_bytes": 1642
+    }
+  ],
+  "paired_reports": [
+    {
+      "path": "validation/results/cjson-names-baseline-2026-10-21.json",
+      "sha256": "4b6178f8a69a60f5bf9693ccbd8ce4783e286b8469bfdb2c2df4eb54fd66bf4f",
+      "size_bytes": 52241
+    },
+    {
+      "path": "validation/results/cjson-names-candidate-2026-10-21.json",
+      "sha256": "a8fccf057a6eec12e97b6e76b72e981d2b72639ff8b4a7a1d1e72f5575898eaf",
+      "size_bytes": 47082
+    }
+  ],
+  "comparator_runtime_artifacts": [
+    {
+      "path": "/opt/homebrew/bin/obabel",
+      "sha256": "733b2c925d60b17a5c9d8ce9ec841e918cc20c7634301e23f9008a187d1d9bc5",
+      "size_bytes": 75728
+    },
+    {
+      "path": "/opt/homebrew/Cellar/open-babel/3.2.1/lib/libopenbabel.8.dylib",
+      "sha256": "9c0e023919fca6656f686b3903c10d438c0003a1d07e721a850cff9ff495c93a",
+      "size_bytes": 2794816
+    },
+    {
+      "path": "/opt/homebrew/Cellar/open-babel/3.2.1/lib/openbabel/3.2.1/chemicaljsonformat.so",
+      "sha256": "39be1877bf787d7594058ca76173e3c7b418607bf1b7c1aaba5d96539571b6f2",
+      "size_bytes": 132736
+    },
+    {
+      "path": "/opt/homebrew/Cellar/open-babel/3.2.1/lib/openbabel/3.2.1/mol2format.so",
+      "sha256": "d2d49ba300e14eedad7705018e0ec8bd30580081674eb1aa5bd4825cd8655b4f",
+      "size_bytes": 105856
+    }
+  ],
+  "candidate_artifacts": [
+    {
+      "path": "/private/tmp/chematic-io-target-20261021/debug/chematic",
+      "sha256": "09180636798e0a8901d11f32213ba124052f59d65259ee3d1c85779cd94b6552",
+      "size_bytes": 24086936
+    },
+    {
+      "path": "/private/tmp/chematic-cjson-names-python/chematic/chematic.cpython-313-darwin.so",
+      "sha256": "d2a6e4e23e3a71e7ea837169206f9261f96aee4181118709a656fe7251c4a6b0",
+      "size_bytes": 44557136
+    },
+    {
+      "path": "/private/tmp/chematic-cjson-names-wasm/chematic_wasm_bg.wasm",
+      "sha256": "da6f287c396016a106807bf0ca6bdbb243eaf0ce0db13183a1896b0a1f435850",
+      "size_bytes": 44746784
+    },
+    {
+      "path": "/private/tmp/chematic-cjson-names-wasm/chematic_wasm.js",
+      "sha256": "d199187076e14a0d74ed202af81ae9fe3b9eecb75c74e008dce05010e50450fa",
+      "size_bytes": 366801
+    }
+  ],
+  "runtime": {
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "python": "3.13.6",
+    "node": "v24.5.0",
+    "rustc": "rustc 1.97.0 (2d8144b78 2026-07-07)"
+  },
+  "validation": {
+    "rust_mol_cli_full": {
+      "passed": 1545,
+      "failed": 0,
+      "summaries": 82,
+      "note": "Full run includes eight CLI conversion tests; the subsequently added root-name CLI case is included in the separate final nine-test CLI run."
+    },
+    "rust_name_final": {
+      "passed": 5
+    },
+    "cli_final": {
+      "passed": 9
+    },
+    "python_fresh_source": {
+      "passed": 67
+    },
+    "wasm_fresh_source": {
+      "passed_suites": [
+        "cjson_preservation",
+        "conversion_report",
+        "mol2_preservation",
+        "mol2_section_order"
+      ]
+    },
+    "binding_parity": {
+      "passed": 85
+    },
+    "script_oracle_and_runner": {
+      "passed": 40
+    },
+    "charge_regression": {
+      "preserved_outputs": 6,
+      "external_graph_charge_readbacks": 6,
+      "evidence": {
+        "path": "validation/results/cjson-names-2026-10-21/charge-regression.json.gz",
+        "sha256": "aea645f40f9dd3202625d1c6e44d882bf4f95a6e9602419586cde1d5d5fc7834",
+        "size_bytes": 4720
+      }
+    },
+    "clippy_mol_cli_all_targets": "passed with warnings denied",
+    "cargo_fmt": "passed",
+    "product_names": "passed",
+    "refactor_budget": "passed",
+    "mkdocs_strict": "passed"
+  },
+  "reproduction": {
+    "cargo_env": {
+      "CARGO_TARGET_DIR": "/private/tmp/chematic-io-target-20261021",
+      "CARGO_BUILD_JOBS": "2",
+      "CARGO_PROFILE_DEV_DEBUG": "0",
+      "CARGO_INCREMENTAL": "0"
+    },
+    "native_python_build": "PYO3_PYTHON=python3 cargo rustc --locked -p chematic-py --lib -- -C link-arg=-undefined -C link-arg=dynamic_lookup; copy current Python package and dylib with interpreter EXT_SUFFIX into an isolated package. Native InChI is outside this lane.",
+    "wasm_build": "cargo build --locked -p chematic-wasm --target wasm32-unknown-unknown; wasm-bindgen 0.2.129 --target nodejs",
+    "packet": "python3 -m scripts.validation.check_cjson_names --cli CLI --obabel OBABEL --output NEW.json"
+  },
+  "ci_followup": {
+    "previous_pr": 1116,
+    "failed_run": 39516342019,
+    "cause": "Test stopped at tools/check_script_layout.py because the new charge script was placed at scripts/ root; no Rust test ran in that failed job.",
+    "repair_commit": "bb682cbd",
+    "repair": "Moved the script into scripts/validation and updated imports/reproduction docs; historical measurement records remain unchanged."
+  },
+  "logs": [
+    {
+      "path": "validation/results/cjson-names-2026-10-21/rust-full.log.gz",
+      "sha256": "b54e30a89cc37221dfe6de8e010e8e1097eceb27e50122b51f9c83f75bc7d6e6",
+      "size_bytes": 28345
+    },
+    {
+      "path": "validation/results/cjson-names-2026-10-21/rust-focused.log.gz",
+      "sha256": "62a2a0f955465fd293167f0aebeb5fa3f8e152bf97af0f4d60b9ea6aa9e87ef7",
+      "size_bytes": 1521
+    },
+    {
+      "path": "validation/results/cjson-names-2026-10-21/final-tests.log.gz",
+      "sha256": "dc790346d9eac16eae874aa5da5e4effba9b28de4895e56736bfd45229dfa5da",
+      "size_bytes": 463
+    },
+    {
+      "path": "validation/results/cjson-names-2026-10-21/cli-tests.log.gz",
+      "sha256": "101d8c695c1aae18c429190138591c41a39560abb7aea3496e9189dbfae86842",
+      "size_bytes": 538
+    },
+    {
+      "path": "validation/results/cjson-names-2026-10-21/python-tests.log.gz",
+      "sha256": "a2bc912cf07a062b80df520136bda65f622aecf6d8f91573c947134719112790",
+      "size_bytes": 290
+    },
+    {
+      "path": "validation/results/cjson-names-2026-10-21/wasm-tests.log.gz",
+      "sha256": "c1714c6a0e44011caa276d6578feed7fb5b1f5f817f7dcccfccb27bc5c1d3065",
+      "size_bytes": 227
+    },
+    {
+      "path": "validation/results/cjson-names-2026-10-21/script-tests.log.gz",
+      "sha256": "cb238c950a0a922840759e3011fdc4d172add4d33a1471d0b92af73f156c59ee",
+      "size_bytes": 52
+    },
+    {
+      "path": "validation/results/cjson-names-2026-10-21/clippy.log.gz",
+      "sha256": "357fb16739afb0c1e8eb6e4fb042a52773ead0586b224cf06cc044a895b12651",
+      "size_bytes": 326
+    },
+    {
+      "path": "validation/results/cjson-names-2026-10-21/docs.log.gz",
+      "sha256": "414bd35ac419762e364bcf6e0ce7d5e6f94b49c0484bced6873a511f3b4f2a9a",
+      "size_bytes": 1232
+    },
+    {
+      "path": "validation/results/cjson-names-2026-10-21/binding-parity.json",
+      "sha256": "53ebae443893c184a69d0a218c74ab5bcf6bf03f7508e5e684700b7356aa5342",
+      "size_bytes": 7767
+    }
+  ],
+  "boundaries": [
+    "Eleven inputs and both engines have terminal rows. Four refusals are not successful conversions.",
+    "Legacy properties.name storage counts as preserved title meaning, including comparator reverse conversions.",
+    "Unnamed control has no source title to preserve.",
+    "An authored packet covering the motivating failures is development data, never a sealed holdout.",
+    "Published packages, full chemistry meaning and hosted CI remain separate gates."
+  ]
+}

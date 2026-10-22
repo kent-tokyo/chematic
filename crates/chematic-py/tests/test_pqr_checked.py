@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 import chematic
 
-PACKET=json.loads((Path(__file__).parents[3]/'validation/pqr-checked-2026-10-22/cases.json').read_text())
+PACKET=json.loads((Path(__file__).parents[3]/'validation/pqr-checked-2026-10-22/cases.json').read_text(encoding="utf-8"))
 CASES=[c for c in PACKET['cases'] if c.get('surfaces',['python','wasm'])!=['wasm']]
 ERRORS=(ValueError,TypeError,OverflowError)
 

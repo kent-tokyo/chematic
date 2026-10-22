@@ -58,7 +58,7 @@ def test_v3000_sdf_record_retains_unknown_double_bond_stereo(tmp_path):
     indexed = chematic.SdfDataset.open(str(path))[0]
     assert indexed.get("Activity") == "7.1"
     assert indexed.ogb_graph_features()["edge_feat"][2, 1] == 5
-    assert next(iter(chematic.iter_sdf_str(path.read_text()))).get("Activity") == "7.1"
+    assert next(iter(chematic.iter_sdf_str(path.read_text(encoding="utf-8")))).get("Activity") == "7.1"
     assert next(iter(chematic.SDMolSupplier(str(path)))) is not None
 
 

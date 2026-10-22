@@ -1,0 +1,52 @@
+{
+  "provenance": "Original synthetic V3000 documents authored for chematic on 2026-10-22; no third-party payload copied.",
+  "license": "MIT",
+  "redistribution": "allowed: original project data",
+  "minimization": "Six one/two-atom documents isolate tiny/nonzero z, binary64 precision, offset planes, sparse source IDs, isotope/formal charge, standard RAD/VAL attributes, SGROUP/COLLECTION and token-boundary continuation. No geometry/stereo quality oracle.",
+  "oracle": {
+    "engine": "Authored source retention contract",
+    "version": "v3000-source-roundtrip-v1",
+    "expected": "Exact UTF-8 source for LF/CRLF/no-final-newline variants; independently decoded indexed coordinate triples must retain all binary64 values. Opaque fields are retained without interpretation.",
+    "units": {
+      "coordinates": "angstrom"
+    },
+    "tolerance": "exact source and coordinate bits"
+  },
+  "variants": [
+    "lf",
+    "crlf",
+    "no-final-newline"
+  ],
+  "cases": [
+    {
+      "id": "tiny_z",
+      "input": "tiny z\n  synthetic         3D\noriginal source\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.123456789012345 -0.00000000000001 0.000012345678901 0\nM  V30 2 O 1.234567890123456 -2.345678901234567 -0.000023456789012 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n",
+      "sha256": "fa41e71f23c99cd56d593e9644d189ee8902fac90767eb8d54e0652fdeb524ce"
+    },
+    {
+      "id": "full_3d",
+      "input": "full 3d\n  synthetic         3D\noriginal source\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.123456789012345 -0.234567890123456 0.345678901234567 0\nM  V30 2 O 1.234567890123456 -2.345678901234567 3.456789012345678 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n",
+      "sha256": "52ab0057225b7b263f4ec6f0761e8567c3cf91aeb1634bd8e6d4730ffe661525"
+    },
+    {
+      "id": "coplanar_offset",
+      "input": "offset\n  synthetic         3D\noriginal source\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 0 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 N 0 0 2.125 0 CHG=1\nM  V30 2 Cl 3 0 2.125 0 CHG=-1\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n",
+      "sha256": "78cef254f6347f3ee5ff986090b8f957a5ed16ffaacd4571c865ccd55da20148"
+    },
+    {
+      "id": "source_ids_and_groups",
+      "input": "sparse IDs\n  synthetic         3D\noriginal source\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 1 0 0\nM  V30 BEGIN ATOM\nM  V30 7 C 0.123456789012345 0 1.234567890123456 77 MASS=13\nM  V30 23 O 1.5 0 -2.345678901234567 88\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 51 1 7 23\nM  V30 END BOND\nM  V30 BEGIN COLLECTION\nM  V30 MDLV30/STEABS ATOMS=(1 7)\nM  V30 END COLLECTION\nM  V30 BEGIN SGROUP\nM  V30 1 SUP 0 ATOMS=(2 7 23) LABEL=sample\nM  V30 END SGROUP\nM  V30 END CTAB\nM  END\n",
+      "sha256": "c8cd00f7babbf6e101db8c3cb88e8ff6c712569d616a320bb9ab82e9902c9775"
+    },
+    {
+      "id": "atom_attributes",
+      "input": "radical attrs\n  synthetic         2D\noriginal source\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 1 0 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.000000123456789 -0.0 0.0 11 RAD=2 VAL=3\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n",
+      "sha256": "0f72b1fb92ac470a7b073e15f405ec205fee50892783d7d9becdefd6f2368dd5"
+    },
+    {
+      "id": "continuation",
+      "input": "continued\n  synthetic         3D\noriginal source\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.123456789012345 0.234567890123456 -\nM  V30 0.345678901234567 0\nM  V30 2 O 1.234567890123456 2.345678901234567 3.456789012345678 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n",
+      "sha256": "3f9b4b1878aa186a7d638f562857b03a142736adbc9b2ff0fcaa78460b921ca5"
+    }
+  ]
+}

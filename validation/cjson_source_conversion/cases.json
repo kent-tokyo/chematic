@@ -1,0 +1,54 @@
+{
+  "provenance": "Original synthetic CJSON documents authored for chematic on 2026-10-22; no third-party payload copied.",
+  "license": "MIT",
+  "redistribution": "allowed: original project data",
+  "minimization": "Two atom records per document isolate source fields omitted by the ordinary same-format bridge. Opaque extensions are retention tests only.",
+  "oracle": {
+    "name": "Authored indexed CJSON source-field contract",
+    "version": "cjson-source-conversion-v1",
+    "settings": "Same-format output must retain exact UTF-8 input. Independent recursive source-field observer ignores candidate-added object fields, but requires source values/list order/length; signed zero and all parsed finite binary64 numeric values preserved. No chemical interpretation of opaque fields.",
+    "units": {
+      "coordinates": "angstrom",
+      "partial_charges": "elementary charge",
+      "formal_charges": "elementary charge"
+    }
+  },
+  "normalization": "UTF-8 and LF, JSON indent=2 with literal Unicode and final newline; per-input SHA-256",
+  "variants": [
+    "lf",
+    "crlf",
+    "minified"
+  ],
+  "cases": [
+    {
+      "id": "partial_charge",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0.0,\n        1.25,\n        -2.5,\n        3.75\n      ]\n    }\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"properties\": {\n    \"name\": \"partial charge source\"\n  },\n  \"partialCharges\": {\n    \"USER_CHARGES\": [\n      -0.123456789012345,\n      0.123456789012345\n    ]\n  }\n}\n",
+      "sha256": "359735ceda4b86c19552e04fda726d599f7cf8d0e5708f74f6a21382c9f8a1fd"
+    },
+    {
+      "id": "isotope_formal_charge",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        7,\n        17\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0.0,\n        1.25,\n        -2.5,\n        3.75\n      ]\n    },\n    \"formalCharges\": [\n      1,\n      -1\n    ],\n    \"isotopes\": [\n      15,\n      37\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": []\n    },\n    \"order\": []\n  },\n  \"properties\": {\n    \"name\": \"isotope ions\"\n  }\n}\n",
+      "sha256": "a5f6d427d2726a87bde7d32482781fc40a5694ecb9e602abf5511f532b423472"
+    },
+    {
+      "id": "multiple_charge_sets",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0.0,\n        1.25,\n        -2.5,\n        3.75\n      ]\n    }\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"partialCharges\": {\n    \"method A\": [\n      -0.25,\n      0.25\n    ],\n    \"測定値\": [\n      0.123,\n      -0.123\n    ]\n  },\n  \"properties\": {\n    \"name\": \"two charge datasets\"\n  }\n}\n",
+      "sha256": "07af7d93cafc50154d9027ebc6d25ca35e071832b9081161e4545279f4d3d03e"
+    },
+    {
+      "id": "alternate_geometry",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0.0,\n        1.25,\n        -2.5,\n        3.75\n      ],\n      \"2d\": [\n        0,\n        0,\n        1,\n        0\n      ],\n      \"3dSets\": [\n        [\n          0,\n          0,\n          0,\n          1,\n          0,\n          0\n        ],\n        [\n          0,\n          1,\n          0,\n          1,\n          1,\n          0\n        ]\n      ]\n    }\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ],\n    \"vendorStereo\": {\n      \"annotation\": \"retained, not interpreted\"\n    }\n  }\n}\n",
+      "sha256": "1d6bdcfc77d2bef3afe45b657456d6ecf9008def697b38e750d271cdb228fbff"
+    },
+    {
+      "id": "opaque_references",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0.0,\n        1.25,\n        -2.5,\n        3.75\n      ]\n    },\n    \"vendorRefs\": [\n      {\n        \"id\": \"x/1\"\n      },\n      {\n        \"id\": \"x~2\"\n      }\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"properties\": {\n    \"name\": \"原文 🧪 <&>\",\n    \"vendor/a~b\": {\n      \"reference\": 9007199254740993,\n      \"annotation\": \"\\\\u003c is literal text\",\n      \"enabled\": true\n    }\n  }\n}\n",
+      "sha256": "24f554a4c831a05cc0529847fe607ca60814161bf9ddf0080697643a998b6b6c"
+    },
+    {
+      "id": "numeric_precision",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        -1.4175225513503917,\n        -0.0,\n        5e-324,\n        1.7976931348623157e+308,\n        -1.25,\n        0.125\n      ]\n    }\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"properties\": {\n    \"name\": \"full precision\",\n    \"vendorEnergy\": -1.2345678901234567\n  }\n}\n",
+      "sha256": "6c5316d580f623eaae9b1d80c9c0aa28e800c76b401c8058b7b4e2ee10f3a0af"
+    }
+  ]
+}

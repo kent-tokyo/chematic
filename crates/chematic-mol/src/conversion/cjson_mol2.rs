@@ -35,6 +35,21 @@ fn checked(report: &mut ConversionReport, field: &'static str, equal: bool, reas
     );
 }
 
+fn write_formal_charges(record: &CjsonRecord, candidate: &mut String) {
+    // UNITY carries formal charge independently of the optional ATOM partial
+    // charge. Open Babel 3.2.1 skips trailing UNITY, so call this before BOND.
+    if record.molecule().atoms().any(|(_, atom)| atom.charge != 0) {
+        candidate.push_str("@<TRIPOS>UNITY_ATOM_ATTR\n");
+        for (idx, atom) in record
+            .molecule()
+            .atoms()
+            .filter(|(_, atom)| atom.charge != 0)
+        {
+            writeln!(candidate, "{} 1\ncharge {}", idx.0 + 1, atom.charge).unwrap();
+        }
+    }
+}
+
 fn record_projection_contract(record: &CjsonRecord, report: &mut ConversionReport) {
     report.verification_scope = "candidate_elements_aromaticity_formal_charges_isotopes_bond_orders_coordinates_emitted_metadata";
     note(
@@ -129,25 +144,15 @@ fn record_unrepresentable_fields(record: &CjsonRecord, report: &mut ConversionRe
             "This MOL2 adapter has no isotope representation; isotope loss also prevents full projected graph verification.",
         );
     }
-    if record
-        .molecule()
-        .atoms()
-        .any(|(_, atom)| atom.charge != 0 && !(atom.element.symbol() == "N" && atom.charge == 1))
-    {
-        note(
-            report,
-            "formal_charges",
-            PreservationStatus::Dropped,
-            "write",
-            "Only +1 nitrogen is represented by N.4 in this local adapter. Other nonzero formal charges are omitted; partial charges remain separate and are never substituted.",
-        );
-    }
 }
 
 fn projection_inputs<'a>(
     record: &'a CjsonRecord,
     report: &mut ConversionReport,
 ) -> Option<(&'a str, PartialDataset<'a>)> {
+    // Never guess a charge dataset, invent geometry, trim names, or allow a
+    // source string to inject a new MOL2 line/section. Same-format retention
+    // remains available for every valid CJSON record rejected here.
     let sets = record.partial_charge_datasets();
     let partial = (sets.len() == 1).then(|| sets.iter().next()).flatten();
     let invalid_method = partial.is_some_and(|(method, _)| {
@@ -156,12 +161,13 @@ fn projection_inputs<'a>(
             || method.chars().any(|c| c.is_whitespace() || c.is_control())
             || method.to_ascii_uppercase().contains("@<TRIPOS>")
     });
-    let invalid_name = record.name().is_some_and(|name| {
-        name.is_empty()
-            || name != name.trim()
-            || name.chars().any(char::is_control)
-            || name.to_ascii_uppercase().contains("@<TRIPOS>")
-    });
+    let invalid_name = record.has_conflicting_names()
+        || record.name().is_some_and(|name| {
+            name.is_empty()
+                || name != name.trim()
+                || name.chars().any(char::is_control)
+                || name.to_ascii_uppercase().contains("@<TRIPOS>")
+        });
     if sets.len() > 1 || invalid_method {
         note(
             report,
@@ -177,7 +183,7 @@ fn projection_inputs<'a>(
             "molecule_name",
             PreservationStatus::Unverified,
             "write",
-            "Source name is empty, has boundary whitespace/control characters or a section marker; this adapter refuses rather than trim or inject MOL2 syntax.",
+            "Root name and legacy properties.name conflict, or the source name is empty, has boundary whitespace/control characters or a section marker. No title is selected or rewritten; this adapter refuses. Exact source retention remains available.",
         );
     }
     let invalid_geometry = !record.coordinates_present() || record.molecule().atom_count() == 0;
@@ -200,7 +206,7 @@ fn projection_inputs<'a>(
             "molecule_name",
             PreservationStatus::Inferred,
             "write",
-            "Absent properties.name uses the placeholder molecule name chematic.",
+            "Absent root name and legacy properties.name use the placeholder molecule name chematic.",
         );
     }
     Some((record.name().unwrap_or("chematic"), partial))
@@ -239,6 +245,7 @@ fn write_candidate(
         }
         candidate.push('\n');
     }
+    write_formal_charges(record, &mut candidate);
     candidate.push_str("@<TRIPOS>BOND\n");
     for (idx, bond) in record.molecule().bonds() {
         let order = match bond.order {
@@ -272,6 +279,12 @@ fn verify_metadata(
 ) {
     checked(
         report,
+        "formal_charges",
+        graph_verified,
+        "Explicit UNITY charge attributes (zero when absent) must reparse exactly through verified atom correspondence. Partial-charge values and method labels do not determine formal charge.",
+    );
+    checked(
+        report,
         "coordinates",
         graph_verified
             && parsed.is_some_and(|after| {
@@ -293,7 +306,7 @@ fn verify_metadata(
             report,
             "molecule_name",
             parsed.is_some_and(|after| after.name() == Some(name)),
-            "Reparsed MOL2 molecule name equals source properties.name verbatim; no trimming or placeholder substitution.",
+            "Reparsed MOL2 molecule name equals the unambiguous source root name or legacy properties.name verbatim; no trimming or placeholder substitution.",
         );
     }
     if let Some((method, values)) = partial {
