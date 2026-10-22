@@ -86,8 +86,8 @@ not an acceptable completion condition.
 | R17 | Converge the open format-I/O pull-request stacks | Parent-to-child CI is green, merged state is reproducible, baseline is frozen | Complete |
 | R18 | MOL2/CJSON checked-conversion orchestration | Candidate generation, loss accounting and verification are separate; two function allowances removed | Complete |
 | R19 | Standardization and chemistry transforms | Long orchestration functions split with unchanged typed outcomes | Complete |
-| R20 | Depiction and layout | Layout stages bounded; image and coordinate fixtures unchanged | Ready for review |
-| R21 | Search, SMARTS and reaction internals | Search state and reaction projection stages have explicit owners | Planned |
+| R20 | Depiction and layout | Layout stages bounded; image and coordinate fixtures unchanged | Complete |
+| R21 | Search, SMARTS and reaction internals | Search state and reaction projection stages have explicit owners | Ready for review |
 | R22 | Compatibility-heavy RDKit tables and adapters | Declarative data separated from control flow; parity fixtures unchanged | Planned |
 | R23 | Python, WASM, CLI and MCP boundaries | Binding registration and transport glue remain thin and cross-checked | Planned |
 | R24 | Validation scripts, CI and documentation | Shared harnesses replace duplication without weakening gates | Planned |
@@ -104,12 +104,19 @@ tests behind dedicated module boundaries. `standardize.rs` falls from 3,446 to
 idempotency, metal-disconnection, stereo-preservation and shared-contract suites
 must preserve stage order, warnings and typed outcomes.
 
-The stacked R20 candidate assigns ring placement, acyclic growth and clash
+R20 assigns ring placement, acyclic growth and clash
 relief to separate modules, leaving the public layout facade at 397 lines.
 Two one-stage placement functions are brought below the function limits, so the
 ratchet reaches 12 file and 72 function allowances. The complete depiction
 crate (107 unit tests, 3 public stress tests and doctests) preserves the
 coordinate, crossing, SVG, PNG and EPS contracts.
+
+The R21 candidate separates reaction-query, VF2, MCS and SMARTS-parser tests
+from production ownership and gives the VF2 size/element prefilter its own
+module. The four production files are each below 1,500 lines, reducing the
+ratchet to 8 file and 72 function allowances without changing public search or
+reaction behavior. The complete `chematic-smarts` and `chematic-rxn` suites,
+their doctests, and warnings-as-errors clippy checks pass.
 
 Notable outcomes include a bounded reaction module tree, separated
 lexical/semantic format stages, API-domain binding modules, bounded descriptor
