@@ -87,7 +87,7 @@ not an acceptable completion condition.
 | R18 | MOL2/CJSON checked-conversion orchestration | Candidate generation, loss accounting and verification are separate; two function allowances removed | Ready for review |
 | R19 | Standardization and chemistry transforms | Long orchestration functions split with unchanged typed outcomes | Ready for review |
 | R20 | Depiction and layout | Layout stages bounded; image and coordinate fixtures unchanged | Ready for review |
-| R21 | Search, SMARTS and reaction internals | Search state and reaction projection stages have explicit owners | Planned |
+| R21 | Search, SMARTS and reaction internals | Search state and reaction projection stages have explicit owners | Ready for review |
 | R22 | Compatibility-heavy RDKit tables and adapters | Declarative data separated from control flow; parity fixtures unchanged | Planned |
 | R23 | Python, WASM, CLI and MCP boundaries | Binding registration and transport glue remain thin and cross-checked | Planned |
 | R24 | Validation scripts, CI and documentation | Shared harnesses replace duplication without weakening gates | Planned |
@@ -111,6 +111,13 @@ Two one-stage placement functions are brought below the function limits, so the
 ratchet reaches 12 file and 72 function allowances. The complete depiction
 crate (107 unit tests, 3 public stress tests and doctests) preserves the
 coordinate, crossing, SVG, PNG and EPS contracts.
+
+The stacked R21 candidate separates reaction-query, VF2, MCS and SMARTS-parser
+tests from production ownership and gives the VF2 size/element prefilter its
+own module. The four production files are each below 1,500 lines, reducing the
+ratchet to 8 file and 72 function allowances without changing public search or
+reaction behavior. The complete `chematic-smarts` and `chematic-rxn` suites,
+their doctests, and warnings-as-errors clippy checks pass.
 
 Notable outcomes include a bounded reaction module tree, separated
 lexical/semantic format stages, API-domain binding modules, bounded descriptor
