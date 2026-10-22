@@ -1,0 +1,1114 @@
+{
+  "schema": "chematic.pqr-checked-cases.v1",
+  "scope": "Original development controls; numerical boundaries are synthetic, not independent chemistry holdouts",
+  "cases": [
+    {
+      "id": "integer-control",
+      "category": "paired",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"x\":1.0,\"y\":2.0,\"z\":3.0,\"charge\":0.0,\"radius\":0.0,\"element\":\"C\"}]",
+      "expected": "write",
+      "pqr_input": "ATOM 1 CA ALA A 1 1.0 2.0 3.0 0.0 0.0\n",
+      "fields": [
+        {
+          "group_pdb": "ATOM",
+          "serial": "1",
+          "atom_name": "CA",
+          "res_name": "ALA",
+          "chain_id": "A",
+          "res_seq": "1",
+          "icode": null,
+          "element": "C",
+          "bits": {
+            "x": "3ff0000000000000",
+            "y": "4000000000000000",
+            "z": "4008000000000000",
+            "charge": "0000000000000000",
+            "radius": "0000000000000000"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ordinary-control",
+      "category": "paired",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"x\":-0.966,\"y\":1.523,\"z\":1.412,\"charge\":-0.4,\"radius\":1.5,\"element\":\"C\"}]",
+      "expected": "write",
+      "pqr_input": "ATOM 1 CA ALA A 1 -0.966 1.523 1.412 -0.4 1.5\n",
+      "fields": [
+        {
+          "group_pdb": "ATOM",
+          "serial": "1",
+          "atom_name": "CA",
+          "res_name": "ALA",
+          "chain_id": "A",
+          "res_seq": "1",
+          "icode": null,
+          "element": "C",
+          "bits": {
+            "x": "bfeee978d4fdf3b6",
+            "y": "3ff85e353f7ced91",
+            "z": "3ff6978d4fdf3b64",
+            "charge": "bfd999999999999a",
+            "radius": "3ff8000000000000"
+          }
+        }
+      ]
+    },
+    {
+      "id": "signed-zero",
+      "category": "paired",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"x\":-0.0,\"y\":0.0,\"z\":-0.0,\"charge\":-0.0,\"radius\":-0.0,\"element\":\"C\"}]",
+      "expected": "write",
+      "pqr_input": "ATOM 1 CA ALA A 1 -0.0 0.0 -0.0 -0.0 -0.0\n",
+      "fields": [
+        {
+          "group_pdb": "ATOM",
+          "serial": "1",
+          "atom_name": "CA",
+          "res_name": "ALA",
+          "chain_id": "A",
+          "res_seq": "1",
+          "icode": null,
+          "element": "C",
+          "bits": {
+            "x": "8000000000000000",
+            "y": "0000000000000000",
+            "z": "8000000000000000",
+            "charge": "8000000000000000",
+            "radius": "8000000000000000"
+          }
+        }
+      ]
+    },
+    {
+      "id": "coordinate-digits",
+      "category": "paired",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"x\":1.2345678901234567,\"y\":-2.345678901234567,\"z\":3.456789012345678,\"charge\":0.0,\"radius\":1.5,\"element\":\"C\"}]",
+      "expected": "write",
+      "pqr_input": "ATOM 1 CA ALA A 1 1.2345678901234567 -2.345678901234567 3.456789012345678 0.0 1.5\n",
+      "fields": [
+        {
+          "group_pdb": "ATOM",
+          "serial": "1",
+          "atom_name": "CA",
+          "res_name": "ALA",
+          "chain_id": "A",
+          "res_seq": "1",
+          "icode": null,
+          "element": "C",
+          "bits": {
+            "x": "3ff3c0ca428c59fb",
+            "y": "c002c3f34cbdc1e7",
+            "z": "400ba780ff69931a",
+            "charge": "0000000000000000",
+            "radius": "3ff8000000000000"
+          }
+        }
+      ]
+    },
+    {
+      "id": "small-coordinates",
+      "category": "paired",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"x\":1.23456789e-09,\"y\":-2.3456789e-08,\"z\":3.456789e-07,\"charge\":0.0,\"radius\":1.5,\"element\":\"C\"}]",
+      "expected": "write",
+      "pqr_input": "ATOM 1 CA ALA A 1 1.23456789e-09 -2.3456789e-08 3.456789e-07 0.0 1.5\n",
+      "fields": [
+        {
+          "group_pdb": "ATOM",
+          "serial": "1",
+          "atom_name": "CA",
+          "res_name": "ALA",
+          "chain_id": "A",
+          "res_seq": "1",
+          "icode": null,
+          "element": "C",
+          "bits": {
+            "x": "3e1535afdf51cc65",
+            "y": "be592fc0c8cc8058",
+            "z": "3e9732b7e14eb5bf",
+            "charge": "0000000000000000",
+            "radius": "3ff8000000000000"
+          }
+        }
+      ]
+    },
+    {
+      "id": "charge-digits",
+      "category": "paired",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"x\":0.0,\"y\":0.0,\"z\":0.0,\"charge\":-0.12345678901234566,\"radius\":1.5,\"element\":\"C\"}]",
+      "expected": "write",
+      "pqr_input": "ATOM 1 CA ALA A 1 0.0 0.0 0.0 -0.12345678901234566 1.5\n",
+      "fields": [
+        {
+          "group_pdb": "ATOM",
+          "serial": "1",
+          "atom_name": "CA",
+          "res_name": "ALA",
+          "chain_id": "A",
+          "res_seq": "1",
+          "icode": null,
+          "element": "C",
+          "bits": {
+            "x": "0000000000000000",
+            "y": "0000000000000000",
+            "z": "0000000000000000",
+            "charge": "bfbf9add3746f65e",
+            "radius": "3ff8000000000000"
+          }
+        }
+      ]
+    },
+    {
+      "id": "radius-digits",
+      "category": "paired",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"x\":0.0,\"y\":0.0,\"z\":0.0,\"charge\":0.0,\"radius\":1.2345678901234567,\"element\":\"C\"}]",
+      "expected": "write",
+      "pqr_input": "ATOM 1 CA ALA A 1 0.0 0.0 0.0 0.0 1.2345678901234567\n",
+      "fields": [
+        {
+          "group_pdb": "ATOM",
+          "serial": "1",
+          "atom_name": "CA",
+          "res_name": "ALA",
+          "chain_id": "A",
+          "res_seq": "1",
+          "icode": null,
+          "element": "C",
+          "bits": {
+            "x": "0000000000000000",
+            "y": "0000000000000000",
+            "z": "0000000000000000",
+            "charge": "0000000000000000",
+            "radius": "3ff3c0ca428c59fb"
+          }
+        }
+      ]
+    },
+    {
+      "id": "all-fields",
+      "category": "paired",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"x\":1.2345678901234567,\"y\":-2.345678901234567,\"z\":3.456789012345678,\"charge\":-0.12345678901234566,\"radius\":1.2345678901234567,\"element\":\"C\"}]",
+      "expected": "write",
+      "pqr_input": "ATOM 1 CA ALA A 1 1.2345678901234567 -2.345678901234567 3.456789012345678 -0.12345678901234566 1.2345678901234567\n",
+      "fields": [
+        {
+          "group_pdb": "ATOM",
+          "serial": "1",
+          "atom_name": "CA",
+          "res_name": "ALA",
+          "chain_id": "A",
+          "res_seq": "1",
+          "icode": null,
+          "element": "C",
+          "bits": {
+            "x": "3ff3c0ca428c59fb",
+            "y": "c002c3f34cbdc1e7",
+            "z": "400ba780ff69931a",
+            "charge": "bfbf9add3746f65e",
+            "radius": "3ff3c0ca428c59fb"
+          }
+        }
+      ]
+    },
+    {
+      "id": "no-chain",
+      "category": "paired",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":null,\"res_seq\":1,\"icode\":null,\"x\":0.12345678901234566,\"y\":0.0,\"z\":0.0,\"charge\":0.3141592653589793,\"radius\":1.4142135623730951,\"element\":\"C\"}]",
+      "expected": "write",
+      "pqr_input": "ATOM 1 CA ALA 1 0.12345678901234566 0.0 0.0 0.3141592653589793 1.4142135623730951\n",
+      "fields": [
+        {
+          "group_pdb": "ATOM",
+          "serial": "1",
+          "atom_name": "CA",
+          "res_name": "ALA",
+          "chain_id": null,
+          "res_seq": "1",
+          "icode": null,
+          "element": "C",
+          "bits": {
+            "x": "3fbf9add3746f65e",
+            "y": "0000000000000000",
+            "z": "0000000000000000",
+            "charge": "3fd41b2f769cf0e0",
+            "radius": "3ff6a09e667f3bcd"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ion-zinc",
+      "category": "paired",
+      "records_json": "[{\"group_pdb\":\"HETATM\",\"serial\":1,\"atom_name\":\"ZN\",\"res_name\":\"ZN\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"x\":5.123456789,\"y\":0.0,\"z\":0.0,\"charge\":2.0,\"radius\":1.09,\"element\":\"Zn\"}]",
+      "expected": "write",
+      "pqr_input": "HETATM 1 ZN ZN A 1 5.123456789 0.0 0.0 2.0 1.09\n",
+      "fields": [
+        {
+          "group_pdb": "HETATM",
+          "serial": "1",
+          "atom_name": "ZN",
+          "res_name": "ZN",
+          "chain_id": "A",
+          "res_seq": "1",
+          "icode": null,
+          "element": "Zn",
+          "bits": {
+            "x": "40147e6b74dce58d",
+            "y": "0000000000000000",
+            "z": "0000000000000000",
+            "charge": "4000000000000000",
+            "radius": "3ff170a3d70a3d71"
+          }
+        }
+      ]
+    },
+    {
+      "id": "near-one",
+      "category": "paired",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"x\":1.0000000000000002,\"y\":0.0,\"z\":0.0,\"charge\":-0.10000000000000002,\"radius\":2.0000000000000004,\"element\":\"C\"}]",
+      "expected": "write",
+      "pqr_input": "ATOM 1 CA ALA A 1 1.0000000000000002 0.0 0.0 -0.10000000000000002 2.0000000000000004\n",
+      "fields": [
+        {
+          "group_pdb": "ATOM",
+          "serial": "1",
+          "atom_name": "CA",
+          "res_name": "ALA",
+          "chain_id": "A",
+          "res_seq": "1",
+          "icode": null,
+          "element": "C",
+          "bits": {
+            "x": "3ff0000000000001",
+            "y": "0000000000000000",
+            "z": "0000000000000000",
+            "charge": "bfb999999999999b",
+            "radius": "4000000000000001"
+          }
+        }
+      ]
+    },
+    {
+      "id": "mixed-chain",
+      "category": "paired",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"x\":-12.34567890123456,\"y\":0.0,\"z\":0.0,\"charge\":-0.4567890123456789,\"radius\":1.9876543210987654,\"element\":\"C\"},{\"group_pdb\":\"ATOM\",\"serial\":4,\"atom_name\":\"N\",\"res_name\":\"ALA\",\"chain_id\":null,\"res_seq\":-3,\"icode\":null,\"x\":9.876543210987654,\"y\":-0.0,\"z\":0.0,\"charge\":0.3333333333333333,\"radius\":1.2345678901234567,\"element\":\"N\"}]",
+      "expected": "write",
+      "pqr_input": "ATOM 1 CA ALA A 1 -12.34567890123456 0.0 0.0 -0.4567890123456789 1.9876543210987654\nATOM 4 N ALA -3 9.876543210987654 -0.0 0.0 0.3333333333333333 1.2345678901234567\n",
+      "fields": [
+        {
+          "group_pdb": "ATOM",
+          "serial": "1",
+          "atom_name": "CA",
+          "res_name": "ALA",
+          "chain_id": "A",
+          "res_seq": "1",
+          "icode": null,
+          "element": "C",
+          "bits": {
+            "x": "c028b0fcd32f7076",
+            "y": "0000000000000000",
+            "z": "0000000000000000",
+            "charge": "bfdd3c07fb4c98e2",
+            "radius": "3fffcd6e9e0df4dc"
+          }
+        },
+        {
+          "group_pdb": "ATOM",
+          "serial": "4",
+          "atom_name": "N",
+          "res_name": "ALA",
+          "chain_id": null,
+          "res_seq": "-3",
+          "icode": null,
+          "element": "N",
+          "bits": {
+            "x": "4023c0ca45917213",
+            "y": "8000000000000000",
+            "z": "0000000000000000",
+            "charge": "3fd5555555555555",
+            "radius": "3ff3c0ca428c59fb"
+          }
+        }
+      ]
+    },
+    {
+      "id": "min-subnormal",
+      "category": "numeric-boundary",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"x\":5e-324,\"y\":-5e-324,\"z\":5e-324,\"charge\":5e-324,\"radius\":5e-324,\"element\":\"C\"}]",
+      "expected": "write",
+      "fields": [
+        {
+          "group_pdb": "ATOM",
+          "serial": "1",
+          "atom_name": "CA",
+          "res_name": "ALA",
+          "chain_id": "A",
+          "res_seq": "1",
+          "icode": null,
+          "element": "C",
+          "bits": {
+            "x": "0000000000000001",
+            "y": "8000000000000001",
+            "z": "0000000000000001",
+            "charge": "0000000000000001",
+            "radius": "0000000000000001"
+          }
+        }
+      ]
+    },
+    {
+      "id": "negative-min-subnormal",
+      "category": "numeric-boundary",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"x\":-5e-324,\"y\":5e-324,\"z\":-5e-324,\"charge\":-5e-324,\"radius\":5e-324,\"element\":\"C\"}]",
+      "expected": "write",
+      "fields": [
+        {
+          "group_pdb": "ATOM",
+          "serial": "1",
+          "atom_name": "CA",
+          "res_name": "ALA",
+          "chain_id": "A",
+          "res_seq": "1",
+          "icode": null,
+          "element": "C",
+          "bits": {
+            "x": "8000000000000001",
+            "y": "0000000000000001",
+            "z": "8000000000000001",
+            "charge": "8000000000000001",
+            "radius": "0000000000000001"
+          }
+        }
+      ]
+    },
+    {
+      "id": "min-normal",
+      "category": "numeric-boundary",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"x\":2.2250738585072014e-308,\"y\":-2.2250738585072014e-308,\"z\":2.2250738585072014e-308,\"charge\":2.2250738585072014e-308,\"radius\":2.2250738585072014e-308,\"element\":\"C\"}]",
+      "expected": "write",
+      "fields": [
+        {
+          "group_pdb": "ATOM",
+          "serial": "1",
+          "atom_name": "CA",
+          "res_name": "ALA",
+          "chain_id": "A",
+          "res_seq": "1",
+          "icode": null,
+          "element": "C",
+          "bits": {
+            "x": "0010000000000000",
+            "y": "8010000000000000",
+            "z": "0010000000000000",
+            "charge": "0010000000000000",
+            "radius": "0010000000000000"
+          }
+        }
+      ]
+    },
+    {
+      "id": "max-finite",
+      "category": "numeric-boundary",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"x\":1.7976931348623157e+308,\"y\":-1.7976931348623157e+308,\"z\":1.7976931348623157e+308,\"charge\":1.7976931348623157e+308,\"radius\":1.7976931348623157e+308,\"element\":\"C\"}]",
+      "expected": "write",
+      "fields": [
+        {
+          "group_pdb": "ATOM",
+          "serial": "1",
+          "atom_name": "CA",
+          "res_name": "ALA",
+          "chain_id": "A",
+          "res_seq": "1",
+          "icode": null,
+          "element": "C",
+          "bits": {
+            "x": "7fefffffffffffff",
+            "y": "ffefffffffffffff",
+            "z": "7fefffffffffffff",
+            "charge": "7fefffffffffffff",
+            "radius": "7fefffffffffffff"
+          }
+        }
+      ]
+    },
+    {
+      "id": "negative-max-finite",
+      "category": "numeric-boundary",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"x\":-1.7976931348623157e+308,\"y\":1.7976931348623157e+308,\"z\":-1.7976931348623157e+308,\"charge\":-1.7976931348623157e+308,\"radius\":1.7976931348623157e+308,\"element\":\"C\"}]",
+      "expected": "write",
+      "fields": [
+        {
+          "group_pdb": "ATOM",
+          "serial": "1",
+          "atom_name": "CA",
+          "res_name": "ALA",
+          "chain_id": "A",
+          "res_seq": "1",
+          "icode": null,
+          "element": "C",
+          "bits": {
+            "x": "ffefffffffffffff",
+            "y": "7fefffffffffffff",
+            "z": "ffefffffffffffff",
+            "charge": "ffefffffffffffff",
+            "radius": "7fefffffffffffff"
+          }
+        }
+      ]
+    },
+    {
+      "id": "large",
+      "category": "numeric-boundary",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"x\":1.2345678901234567e+200,\"y\":-1.2345678901234567e+200,\"z\":1.2345678901234567e+200,\"charge\":1.2345678901234567e+200,\"radius\":1.2345678901234567e+200,\"element\":\"C\"}]",
+      "expected": "write",
+      "fields": [
+        {
+          "group_pdb": "ATOM",
+          "serial": "1",
+          "atom_name": "CA",
+          "res_name": "ALA",
+          "chain_id": "A",
+          "res_seq": "1",
+          "icode": null,
+          "element": "C",
+          "bits": {
+            "x": "6979ce4ae6f82488",
+            "y": "e979ce4ae6f82488",
+            "z": "6979ce4ae6f82488",
+            "charge": "6979ce4ae6f82488",
+            "radius": "6979ce4ae6f82488"
+          }
+        }
+      ]
+    },
+    {
+      "id": "small",
+      "category": "numeric-boundary",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"x\":1.2345678901234567e-200,\"y\":-1.2345678901234567e-200,\"z\":1.2345678901234567e-200,\"charge\":1.2345678901234567e-200,\"radius\":1.2345678901234567e-200,\"element\":\"C\"}]",
+      "expected": "write",
+      "fields": [
+        {
+          "group_pdb": "ATOM",
+          "serial": "1",
+          "atom_name": "CA",
+          "res_name": "ALA",
+          "chain_id": "A",
+          "res_seq": "1",
+          "icode": null,
+          "element": "C",
+          "bits": {
+            "x": "166e3d71f622be94",
+            "y": "966e3d71f622be94",
+            "z": "166e3d71f622be94",
+            "charge": "166e3d71f622be94",
+            "radius": "166e3d71f622be94"
+          }
+        }
+      ]
+    },
+    {
+      "id": "negative-zero",
+      "category": "numeric-boundary",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"x\":-0.0,\"y\":0.0,\"z\":-0.0,\"charge\":-0.0,\"radius\":0.0,\"element\":\"C\"}]",
+      "expected": "write",
+      "fields": [
+        {
+          "group_pdb": "ATOM",
+          "serial": "1",
+          "atom_name": "CA",
+          "res_name": "ALA",
+          "chain_id": "A",
+          "res_seq": "1",
+          "icode": null,
+          "element": "C",
+          "bits": {
+            "x": "8000000000000000",
+            "y": "0000000000000000",
+            "z": "8000000000000000",
+            "charge": "8000000000000000",
+            "radius": "0000000000000000"
+          }
+        }
+      ]
+    },
+    {
+      "id": "insertion-code",
+      "category": "metadata",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":-123,\"icode\":\"Z\",\"x\":0.0,\"y\":0.0,\"z\":0.0,\"charge\":0.0,\"radius\":1.5,\"element\":\"C\"}]",
+      "expected": "write",
+      "fields": [
+        {
+          "group_pdb": "ATOM",
+          "serial": "1",
+          "atom_name": "CA",
+          "res_name": "ALA",
+          "chain_id": "A",
+          "res_seq": "-123",
+          "icode": "Z",
+          "element": "C",
+          "bits": {
+            "x": "0000000000000000",
+            "y": "0000000000000000",
+            "z": "0000000000000000",
+            "charge": "0000000000000000",
+            "radius": "3ff8000000000000"
+          }
+        }
+      ]
+    },
+    {
+      "id": "large-integer-ids",
+      "category": "metadata",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":9223372036854775807,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":-9223372036854775808,\"icode\":\"A\",\"x\":0.0,\"y\":0.0,\"z\":0.0,\"charge\":0.0,\"radius\":1.5,\"element\":\"C\"}]",
+      "expected": "write",
+      "fields": [
+        {
+          "group_pdb": "ATOM",
+          "serial": "9223372036854775807",
+          "atom_name": "CA",
+          "res_name": "ALA",
+          "chain_id": "A",
+          "res_seq": "-9223372036854775808",
+          "icode": "A",
+          "element": "C",
+          "bits": {
+            "x": "0000000000000000",
+            "y": "0000000000000000",
+            "z": "0000000000000000",
+            "charge": "0000000000000000",
+            "radius": "3ff8000000000000"
+          }
+        }
+      ]
+    },
+    {
+      "id": "multi-character-chain",
+      "category": "metadata",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"CHAIN_123\",\"res_seq\":1,\"icode\":null,\"x\":0.0,\"y\":0.0,\"z\":0.0,\"charge\":0.0,\"radius\":1.5,\"element\":\"C\"}]",
+      "expected": "write",
+      "fields": [
+        {
+          "group_pdb": "ATOM",
+          "serial": "1",
+          "atom_name": "CA",
+          "res_name": "ALA",
+          "chain_id": "CHAIN_123",
+          "res_seq": "1",
+          "icode": null,
+          "element": "C",
+          "bits": {
+            "x": "0000000000000000",
+            "y": "0000000000000000",
+            "z": "0000000000000000",
+            "charge": "0000000000000000",
+            "radius": "3ff8000000000000"
+          }
+        }
+      ]
+    },
+    {
+      "id": "long-tokens",
+      "category": "metadata",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"C111111111111111111111111111111111111111111111111111111111111111\",\"res_name\":\"RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR\",\"chain_id\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"res_seq\":1,\"icode\":null,\"x\":0.0,\"y\":0.0,\"z\":0.0,\"charge\":0.0,\"radius\":1.5,\"element\":\"C\"}]",
+      "expected": "write",
+      "fields": [
+        {
+          "group_pdb": "ATOM",
+          "serial": "1",
+          "atom_name": "C111111111111111111111111111111111111111111111111111111111111111",
+          "res_name": "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+          "chain_id": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "res_seq": "1",
+          "icode": null,
+          "element": "C",
+          "bits": {
+            "x": "0000000000000000",
+            "y": "0000000000000000",
+            "z": "0000000000000000",
+            "charge": "0000000000000000",
+            "radius": "3ff8000000000000"
+          }
+        }
+      ]
+    },
+    {
+      "id": "digit-prefix-name",
+      "category": "metadata",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"1HG\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"x\":0.0,\"y\":0.0,\"z\":0.0,\"charge\":0.0,\"radius\":1.5,\"element\":\"H\"}]",
+      "expected": "write",
+      "fields": [
+        {
+          "group_pdb": "ATOM",
+          "serial": "1",
+          "atom_name": "1HG",
+          "res_name": "ALA",
+          "chain_id": "A",
+          "res_seq": "1",
+          "icode": null,
+          "element": "H",
+          "bits": {
+            "x": "0000000000000000",
+            "y": "0000000000000000",
+            "z": "0000000000000000",
+            "charge": "0000000000000000",
+            "radius": "3ff8000000000000"
+          }
+        }
+      ]
+    },
+    {
+      "id": "missing-optional-fields",
+      "category": "metadata",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"res_seq\":1,\"x\":0.0,\"y\":0.0,\"z\":0.0,\"charge\":0.0,\"radius\":1.5}]",
+      "expected": "write",
+      "fields": [
+        {
+          "group_pdb": "ATOM",
+          "serial": "1",
+          "atom_name": "CA",
+          "res_name": "ALA",
+          "chain_id": null,
+          "res_seq": "1",
+          "icode": null,
+          "element": "C",
+          "bits": {
+            "x": "0000000000000000",
+            "y": "0000000000000000",
+            "z": "0000000000000000",
+            "charge": "0000000000000000",
+            "radius": "3ff8000000000000"
+          }
+        }
+      ]
+    },
+    {
+      "id": "invalid-group_pdb-26",
+      "category": "invalid",
+      "records_json": "[{\"group_pdb\":\"MODEL\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"x\":0.0,\"y\":0.0,\"z\":0.0,\"charge\":0.0,\"radius\":1.5,\"element\":\"C\"}]",
+      "expected": "refuse"
+    },
+    {
+      "id": "invalid-atom_name-27",
+      "category": "invalid",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"x\":0.0,\"y\":0.0,\"z\":0.0,\"charge\":0.0,\"radius\":1.5,\"element\":\"C\"}]",
+      "expected": "refuse"
+    },
+    {
+      "id": "invalid-atom_name-28",
+      "category": "invalid",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"C H\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"x\":0.0,\"y\":0.0,\"z\":0.0,\"charge\":0.0,\"radius\":1.5,\"element\":\"C\"}]",
+      "expected": "refuse"
+    },
+    {
+      "id": "invalid-atom_name-29",
+      "category": "invalid",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"C\\nATOM\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"x\":0.0,\"y\":0.0,\"z\":0.0,\"charge\":0.0,\"radius\":1.5,\"element\":\"C\"}]",
+      "expected": "refuse"
+    },
+    {
+      "id": "invalid-atom_name-30",
+      "category": "invalid",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"x\":0.0,\"y\":0.0,\"z\":0.0,\"charge\":0.0,\"radius\":1.5,\"element\":\"C\"}]",
+      "expected": "refuse"
+    },
+    {
+      "id": "invalid-res_name-31",
+      "category": "invalid",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"A B\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"x\":0.0,\"y\":0.0,\"z\":0.0,\"charge\":0.0,\"radius\":1.5,\"element\":\"C\"}]",
+      "expected": "refuse"
+    },
+    {
+      "id": "invalid-chain_id-32",
+      "category": "invalid",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"\",\"res_seq\":1,\"icode\":null,\"x\":0.0,\"y\":0.0,\"z\":0.0,\"charge\":0.0,\"radius\":1.5,\"element\":\"C\"}]",
+      "expected": "refuse"
+    },
+    {
+      "id": "invalid-chain_id-33",
+      "category": "invalid",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A B\",\"res_seq\":1,\"icode\":null,\"x\":0.0,\"y\":0.0,\"z\":0.0,\"charge\":0.0,\"radius\":1.5,\"element\":\"C\"}]",
+      "expected": "refuse"
+    },
+    {
+      "id": "invalid-chain_id-34",
+      "category": "invalid",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"res_seq\":1,\"icode\":null,\"x\":0.0,\"y\":0.0,\"z\":0.0,\"charge\":0.0,\"radius\":1.5,\"element\":\"C\"}]",
+      "expected": "refuse"
+    },
+    {
+      "id": "invalid-chain_id-35",
+      "category": "invalid",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":3,\"res_seq\":1,\"icode\":null,\"x\":0.0,\"y\":0.0,\"z\":0.0,\"charge\":0.0,\"radius\":1.5,\"element\":\"C\"}]",
+      "expected": "refuse"
+    },
+    {
+      "id": "invalid-icode-36",
+      "category": "invalid",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":\"\",\"x\":0.0,\"y\":0.0,\"z\":0.0,\"charge\":0.0,\"radius\":1.5,\"element\":\"C\"}]",
+      "expected": "refuse"
+    },
+    {
+      "id": "invalid-icode-37",
+      "category": "invalid",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":\"AB\",\"x\":0.0,\"y\":0.0,\"z\":0.0,\"charge\":0.0,\"radius\":1.5,\"element\":\"C\"}]",
+      "expected": "refuse"
+    },
+    {
+      "id": "invalid-icode-38",
+      "category": "invalid",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":\"1\",\"x\":0.0,\"y\":0.0,\"z\":0.0,\"charge\":0.0,\"radius\":1.5,\"element\":\"C\"}]",
+      "expected": "refuse"
+    },
+    {
+      "id": "invalid-icode-39",
+      "category": "invalid",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":\"\\u00e9\",\"x\":0.0,\"y\":0.0,\"z\":0.0,\"charge\":0.0,\"radius\":1.5,\"element\":\"C\"}]",
+      "expected": "refuse"
+    },
+    {
+      "id": "invalid-element-40",
+      "category": "invalid",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"x\":0.0,\"y\":0.0,\"z\":0.0,\"charge\":0.0,\"radius\":1.5,\"element\":\"Ca\"}]",
+      "expected": "refuse"
+    },
+    {
+      "id": "invalid-radius-41",
+      "category": "invalid",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"x\":0.0,\"y\":0.0,\"z\":0.0,\"charge\":0.0,\"radius\":-1.0,\"element\":\"C\"}]",
+      "expected": "refuse"
+    },
+    {
+      "id": "invalid-x-42",
+      "category": "invalid",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"x\":\"NaN\",\"y\":0.0,\"z\":0.0,\"charge\":0.0,\"radius\":1.5,\"element\":\"C\"}]",
+      "expected": "refuse"
+    },
+    {
+      "id": "invalid-charge-43",
+      "category": "invalid",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"x\":0.0,\"y\":0.0,\"z\":0.0,\"charge\":\"Infinity\",\"radius\":1.5,\"element\":\"C\"}]",
+      "expected": "refuse"
+    },
+    {
+      "id": "invalid-serial-44",
+      "category": "invalid",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1.5,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"x\":0.0,\"y\":0.0,\"z\":0.0,\"charge\":0.0,\"radius\":1.5,\"element\":\"C\"}]",
+      "expected": "refuse"
+    },
+    {
+      "id": "invalid-res_seq-45",
+      "category": "invalid",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1.5,\"icode\":null,\"x\":0.0,\"y\":0.0,\"z\":0.0,\"charge\":0.0,\"radius\":1.5,\"element\":\"C\"}]",
+      "expected": "refuse"
+    },
+    {
+      "id": "invalid-serial-46",
+      "category": "invalid",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":9223372036854775808,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"x\":0.0,\"y\":0.0,\"z\":0.0,\"charge\":0.0,\"radius\":1.5,\"element\":\"C\"}]",
+      "expected": "refuse"
+    },
+    {
+      "id": "bool-x",
+      "category": "invalid",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"x\":true,\"y\":0.0,\"z\":0.0,\"charge\":0.0,\"radius\":1.5,\"element\":\"C\"}]",
+      "expected": "refuse"
+    },
+    {
+      "id": "bool-y",
+      "category": "invalid",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"x\":0.0,\"y\":true,\"z\":0.0,\"charge\":0.0,\"radius\":1.5,\"element\":\"C\"}]",
+      "expected": "refuse"
+    },
+    {
+      "id": "bool-z",
+      "category": "invalid",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"x\":0.0,\"y\":0.0,\"z\":true,\"charge\":0.0,\"radius\":1.5,\"element\":\"C\"}]",
+      "expected": "refuse"
+    },
+    {
+      "id": "bool-charge",
+      "category": "invalid",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"x\":0.0,\"y\":0.0,\"z\":0.0,\"charge\":true,\"radius\":1.5,\"element\":\"C\"}]",
+      "expected": "refuse"
+    },
+    {
+      "id": "bool-radius",
+      "category": "invalid",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"x\":0.0,\"y\":0.0,\"z\":0.0,\"charge\":0.0,\"radius\":true,\"element\":\"C\"}]",
+      "expected": "refuse"
+    },
+    {
+      "id": "bool-serial",
+      "category": "invalid",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":true,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"x\":0.0,\"y\":0.0,\"z\":0.0,\"charge\":0.0,\"radius\":1.5,\"element\":\"C\"}]",
+      "expected": "refuse"
+    },
+    {
+      "id": "bool-res_seq",
+      "category": "invalid",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":true,\"icode\":null,\"x\":0.0,\"y\":0.0,\"z\":0.0,\"charge\":0.0,\"radius\":1.5,\"element\":\"C\"}]",
+      "expected": "refuse"
+    },
+    {
+      "id": "missing-group_pdb",
+      "category": "invalid",
+      "records_json": "[{\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"x\":0.0,\"y\":0.0,\"z\":0.0,\"charge\":0.0,\"radius\":1.5,\"element\":\"C\"}]",
+      "expected": "refuse"
+    },
+    {
+      "id": "missing-serial",
+      "category": "invalid",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"x\":0.0,\"y\":0.0,\"z\":0.0,\"charge\":0.0,\"radius\":1.5,\"element\":\"C\"}]",
+      "expected": "refuse"
+    },
+    {
+      "id": "missing-atom_name",
+      "category": "invalid",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"x\":0.0,\"y\":0.0,\"z\":0.0,\"charge\":0.0,\"radius\":1.5,\"element\":\"C\"}]",
+      "expected": "refuse"
+    },
+    {
+      "id": "missing-res_name",
+      "category": "invalid",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"x\":0.0,\"y\":0.0,\"z\":0.0,\"charge\":0.0,\"radius\":1.5,\"element\":\"C\"}]",
+      "expected": "refuse"
+    },
+    {
+      "id": "missing-res_seq",
+      "category": "invalid",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"icode\":null,\"x\":0.0,\"y\":0.0,\"z\":0.0,\"charge\":0.0,\"radius\":1.5,\"element\":\"C\"}]",
+      "expected": "refuse"
+    },
+    {
+      "id": "missing-x",
+      "category": "invalid",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"y\":0.0,\"z\":0.0,\"charge\":0.0,\"radius\":1.5,\"element\":\"C\"}]",
+      "expected": "refuse"
+    },
+    {
+      "id": "missing-y",
+      "category": "invalid",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"x\":0.0,\"z\":0.0,\"charge\":0.0,\"radius\":1.5,\"element\":\"C\"}]",
+      "expected": "refuse"
+    },
+    {
+      "id": "missing-z",
+      "category": "invalid",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"x\":0.0,\"y\":0.0,\"charge\":0.0,\"radius\":1.5,\"element\":\"C\"}]",
+      "expected": "refuse"
+    },
+    {
+      "id": "missing-charge",
+      "category": "invalid",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"x\":0.0,\"y\":0.0,\"z\":0.0,\"radius\":1.5,\"element\":\"C\"}]",
+      "expected": "refuse"
+    },
+    {
+      "id": "missing-radius",
+      "category": "invalid",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"x\":0.0,\"y\":0.0,\"z\":0.0,\"charge\":0.0,\"element\":\"C\"}]",
+      "expected": "refuse"
+    },
+    {
+      "id": "unknown-field",
+      "category": "invalid",
+      "records_json": "[{\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":\"A\",\"res_seq\":1,\"icode\":null,\"x\":0.0,\"y\":0.0,\"z\":0.0,\"charge\":0.0,\"radius\":1.5,\"element\":\"C\",\"unknown_metadata\":\"must not disappear\"}]",
+      "expected": "refuse"
+    },
+    {
+      "id": "empty-array",
+      "category": "invalid",
+      "records_json": "[]",
+      "expected": "refuse"
+    },
+    {
+      "id": "duplicate-x",
+      "category": "json-framing",
+      "records_json": "[{\"x\":0,\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":null,\"res_seq\":1,\"icode\":null,\"x\":1.0,\"y\":2.0,\"z\":3.0,\"charge\":0.0,\"radius\":0.0,\"element\":\"C\"}]",
+      "expected": "refuse",
+      "surfaces": [
+        "wasm"
+      ]
+    },
+    {
+      "id": "escaped-duplicate-x",
+      "category": "json-framing",
+      "records_json": "[{\"\\u0078\":0,\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":null,\"res_seq\":1,\"icode\":null,\"x\":1.0,\"y\":2.0,\"z\":3.0,\"charge\":0.0,\"radius\":0.0,\"element\":\"C\"}]",
+      "expected": "refuse",
+      "surfaces": [
+        "wasm"
+      ]
+    },
+    {
+      "id": "duplicate-null-chain",
+      "category": "json-framing",
+      "records_json": "[{\"chain_id\":null,\"group_pdb\":\"ATOM\",\"serial\":1,\"atom_name\":\"CA\",\"res_name\":\"ALA\",\"chain_id\":null,\"res_seq\":1,\"icode\":null,\"x\":1.0,\"y\":2.0,\"z\":3.0,\"charge\":0.0,\"radius\":0.0,\"element\":\"C\"}]",
+      "expected": "refuse",
+      "surfaces": [
+        "wasm"
+      ]
+    }
+  ],
+  "openbabel_element_extension_controls": [
+    {
+      "id": "element-extension-0",
+      "atoms": [
+        {
+          "group_pdb": "ATOM",
+          "serial": 1,
+          "atom_name": "CA",
+          "res_name": "ALA",
+          "chain_id": "A",
+          "res_seq": 1,
+          "icode": null,
+          "x": 1.23456,
+          "y": 0.0,
+          "z": 1e-08,
+          "charge": -0.12345678901234566,
+          "radius": 1.2345678901234567,
+          "element": "C"
+        }
+      ],
+      "source": "ATOM      1  CA  ALA A   1     1.23456     0.0   1e-08 -0.12345678901234566 1.2345678901234567 C\n",
+      "fields": [
+        {
+          "group_pdb": "ATOM",
+          "serial": "1",
+          "atom_name": "CA",
+          "res_name": "ALA",
+          "chain_id": "A",
+          "res_seq": "1",
+          "icode": null,
+          "element": "C",
+          "bits": {
+            "x": "3ff3c0c1fc8f3238",
+            "y": "0000000000000000",
+            "z": "3e45798ee2308c3a",
+            "charge": "bfbf9add3746f65e",
+            "radius": "3ff3c0ca428c59fb"
+          }
+        }
+      ]
+    },
+    {
+      "id": "element-extension-1",
+      "atoms": [
+        {
+          "group_pdb": "ATOM",
+          "serial": 1,
+          "atom_name": "CA",
+          "res_name": "ALA",
+          "chain_id": null,
+          "res_seq": 1,
+          "icode": null,
+          "x": -0.12345,
+          "y": 0.0,
+          "z": 1e-08,
+          "charge": 0.3141592653589793,
+          "radius": 1.4142135623730951,
+          "element": "C"
+        }
+      ],
+      "source": "ATOM      1  CA  ALA     1    -0.12345     0.0   1e-08 0.3141592653589793 1.4142135623730951 C\n",
+      "fields": [
+        {
+          "group_pdb": "ATOM",
+          "serial": "1",
+          "atom_name": "CA",
+          "res_name": "ALA",
+          "chain_id": null,
+          "res_seq": "1",
+          "icode": null,
+          "element": "C",
+          "bits": {
+            "x": "bfbf9a6b50b0f27c",
+            "y": "0000000000000000",
+            "z": "3e45798ee2308c3a",
+            "charge": "3fd41b2f769cf0e0",
+            "radius": "3ff6a09e667f3bcd"
+          }
+        }
+      ]
+    },
+    {
+      "id": "element-extension-2",
+      "atoms": [
+        {
+          "group_pdb": "ATOM",
+          "serial": 1,
+          "atom_name": "CA",
+          "res_name": "ALA",
+          "chain_id": "B",
+          "res_seq": 1,
+          "icode": null,
+          "x": 12.3456,
+          "y": 0.0,
+          "z": 1e-08,
+          "charge": -0.4567890123456789,
+          "radius": 1.9876543210987654,
+          "element": "C"
+        }
+      ],
+      "source": "ATOM      1  CA  ALA B   1     12.3456     0.0   1e-08 -0.4567890123456789 1.9876543210987654 C\n",
+      "fields": [
+        {
+          "group_pdb": "ATOM",
+          "serial": "1",
+          "atom_name": "CA",
+          "res_name": "ALA",
+          "chain_id": "B",
+          "res_seq": "1",
+          "icode": null,
+          "element": "C",
+          "bits": {
+            "x": "4028b0f27bb2fec5",
+            "y": "0000000000000000",
+            "z": "3e45798ee2308c3a",
+            "charge": "bfdd3c07fb4c98e2",
+            "radius": "3fffcd6e9e0df4dc"
+          }
+        }
+      ]
+    },
+    {
+      "id": "element-extension-3",
+      "atoms": [
+        {
+          "group_pdb": "ATOM",
+          "serial": 1,
+          "atom_name": "CA",
+          "res_name": "ALA",
+          "chain_id": "A",
+          "res_seq": 1,
+          "icode": null,
+          "x": 0.0,
+          "y": 0.0,
+          "z": 1e-08,
+          "charge": 0.0,
+          "radius": 1.5,
+          "element": "C"
+        }
+      ],
+      "source": "ATOM      1  CA  ALA A   1         0.0     0.0   1e-08 0.0 1.5 C\n",
+      "fields": [
+        {
+          "group_pdb": "ATOM",
+          "serial": "1",
+          "atom_name": "CA",
+          "res_name": "ALA",
+          "chain_id": "A",
+          "res_seq": "1",
+          "icode": null,
+          "element": "C",
+          "bits": {
+            "x": "0000000000000000",
+            "y": "0000000000000000",
+            "z": "3e45798ee2308c3a",
+            "charge": "0000000000000000",
+            "radius": "3ff8000000000000"
+          }
+        }
+      ]
+    }
+  ]
+}

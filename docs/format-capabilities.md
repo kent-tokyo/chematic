@@ -556,9 +556,16 @@ source-preserving APIs retain the original order.
 - **Element**: PQR has no element column in the format; `Element` is
   inferred from the atom name via `infer_element`, a documented heuristic
   matching classic PDB-parser convention for blank element columns.
-- **Round-trip**: not characterized beyond the element-inference note above.
-- **Lossy operations**: none named beyond element inference (which is a
-  read-side reconstruction, not a write-side loss).
+- **Checked atom output**: Rust `write_pqr_checked[_with_limits]`, Python
+  `write_pqr_checked` and WASM `write_pqr_json_checked` retain supplied
+  coordinates, partial charges and radii bit for bit with ordered identity
+  fields. Incompatible inferred elements, nonfinite values, negative radii,
+  invalid tokens and limits are refused. Python/WASM require explicit numeric
+  fields and reject unknown fields. This is atom output, not source retention.
+- **Lossy legacy output**: `write_pqr` / `write_pqr_json` retain their existing
+  coordinate rounding (3 decimal places) and charge/radius rounding (4).
+  Non-atom source records and formatting are not represented by atom writers.
+- **Details and measurements**: [PQR atom-field integrity](pqr-numeric-integrity.md).
 - **Parse limits**: `PqrParseLimits { max_input_bytes, max_atoms, max_line_len }`.
 
 ### XYZ / Extended XYZ
