@@ -9,11 +9,15 @@ use std::sync::Arc;
 mod helpers;
 pub(crate) use helpers::*;
 
+mod gaussian;
+use gaussian::*;
+
 mod cml;
 use cml::*;
 
 mod serialized_input;
 use serialized_input::serialized_text;
+mod registration;
 
 mod hin;
 use hin::*;
@@ -58,8 +62,8 @@ use pdb_selection::*;
 mod mmcif_residues;
 use mmcif_pdb::*;
 use mmcif_residues::*;
-mod pdbqt_checked;
-use pdbqt_checked::*;
+mod pdbqt;
+use pdbqt::*;
 mod pqr_pdbqt;
 use pqr_pdbqt::*;
 mod gro_lammps;
@@ -72,6 +76,13 @@ pub(crate) use xyz::extxyz_frame_to_pydict;
 use xyz::*;
 
 type SdfWithCoords = Vec<(Mol, String, Vec<Vec<f64>>)>;
+
+mod v3000_coordinates;
+use v3000_coordinates::*;
+mod v3000_source;
+use v3000_source::*;
+mod sdf_source;
+use sdf_source::*;
 
 // ---------------------------------------------------------------------------
 // Helper: convert MoleculeReport to Python dict
@@ -764,31 +775,6 @@ fn from_mol2(#[pyo3(from_py_with = serialized_text)] mol2_str: &str) -> PyResult
         .map_err(|e| PyValueError::new_err(e.to_string()))
 }
 
-/// Parse an AutoDock PDBQT string and return a :class:`Mol`.
-///
-/// Only the molecular graph (elements and bonds) is extracted; 3D coordinates
-/// and partial charges are discarded.  To retain them, use the lower-level
-/// :func:`chematic_mol.parse_pdbqt` Rust API directly.
-///
-/// Raises:
-///     ValueError: on parse failure.
-///
-/// Example::
-///
-///     with open("ligand.pdbqt") as f:
-///         mol = chematic.from_pdbqt(f.read())
-///     print(mol.mw)
-#[pyfunction]
-fn from_pdbqt(pdbqt_str: &str) -> PyResult<Mol> {
-    chematic_mol::parse_pdbqt(pdbqt_str)
-        .map(|(mol, _coords, _charges)| Mol {
-            num_rings_cache: Default::default(),
-            inner: Arc::new(mol),
-            props: Default::default(),
-        })
-        .map_err(|e| PyValueError::new_err(e.to_string()))
-}
-
 /// Parse a Gaussian input file (`.gjf` / `.com`) and return a :class:`Mol`.
 ///
 /// Raises:
@@ -1383,10 +1369,12 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         from_mol_block_with_diagnostics,
         parse_sdf_with_coords,
         from_cml,
+        from_cml_with_3d,
         from_cml_strict,
         from_mrv_block,
         from_mrv_block_with_coords,
         from_cjson,
+        from_cjson_checked,
         from_moljson,
         from_cdxml,
         from_chemdraw_block,
@@ -1397,7 +1385,9 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         semantic_expand_json,
         semantic_expand_json_with_limits,
         from_mol_v3000,
+        roundtrip_mol_v3000_source,
         from_mol_v3000_with_coords,
+        from_mol_v3000_with_coords_3d,
         from_mol_v3000_with_diagnostics,
         from_mol2,
         from_hin,
@@ -1410,11 +1400,12 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         mol2_reference_rmsds_json,
         convert_with_report_json,
         roundtrip_mol2_record,
+        roundtrip_sdf_source,
+        single_sdf_mol_block,
+        project_mol2_to_cjson,
         kekulize_mol2_record,
         from_pdbqt,
-        from_gjf,
-        parse_gaussian_log,
-        write_gjf,
+        from_pdbqt_with_data,
         parse_cif,
         write_cif_checked,
         write_cif_with_bonds_checked,
@@ -1462,17 +1453,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         pqr_to_pdbqt,
         write_pdbqt_checked,
         infer_element,
-        parse_orca_input,
-        write_orca_input,
-        parse_orca_output,
-        parse_qcschema_molecule,
-        write_qcschema_molecule,
-        chematic_to_qc_molecule,
-        qc_molecule_to_chematic,
-        parse_atomic_input,
-        write_atomic_input,
-        parse_atomic_result,
-        write_atomic_result,
     )?;
+    registration::register_quantum_formats(m)?;
     register_reaction_formats(m)
 }

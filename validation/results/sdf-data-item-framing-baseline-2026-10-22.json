@@ -1,0 +1,2617 @@
+{
+  "schema": "chematic.sdf-data-item-framing-development.v1",
+  "scope": "48 original V2000/V3000 LF/CRLF read/write variants, unique field names and exact values plus explicit C/O graph only. No header metadata/order/repeated-key, full CTAB chemistry, independent holdout, timing or toolkit-wide claim. Failures are not coverage.",
+  "manifest": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/sdf_data_item_framing/cases.json",
+    "sha256": "ed52dec6c80adeb3c1f9e7024558c307a3147553edcf4bdd28af22ed42206d10",
+    "size_bytes": 5448
+  },
+  "fixture_metadata": {
+    "id": "sdf-data-item-framing-v1",
+    "provenance": "Original two-atom methanol structure and authored data fields, 2026-10-22. CTABs serialized with source-built chematic at a83ed265; no upstream fixture/attachment or sealed input copied.",
+    "license": "MIT OR Apache-2.0",
+    "redistribution": "allowed: original synthetic structures and text",
+    "minimization": "Two distinct atoms and one bond exercise graph continuity; short independent field values isolate optional header information, literal header-shaped value lines and significant whitespace.",
+    "oracle": {
+      "name": "Authored unique-field strings and independent blank-separated data-item observer",
+      "version": "Python 3.13.6; MDL CTfile Formats October 2003 chapter 6 pages 39-40",
+      "specification": "https://www.daylight.com/meetings/mug05/Kappler/ctfile.pdf",
+      "comparator": "Open Babel 3.2.1 -isdf -osdf, default options"
+    },
+    "expected": {
+      "graph": "two neutral C/O atoms with one single bond",
+      "properties": "per-case exact strings, including leading/trailing spaces and tabs; no tolerance",
+      "scope": "Field-name/value projection only. Header registry metadata, field order, genuine repeated-key retention, complete CTAB chemistry and missing-separator recovery are not scored."
+    },
+    "sha256": "cf9c5c696df6629af3683e1e9be96ba26d087e90cd3fb7e1a251801e6694dca0"
+  },
+  "oracle": {
+    "name": "Authored strings plus independent blank-separated block observer",
+    "version": "3.13.6",
+    "script": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/scripts/validation/check_sdf_data_item_framing.py",
+      "sha256": "2643f87f7f38f195ae9b7105524f0dc47d96e88ef044a42dbdd997033d8af63b",
+      "size_bytes": 7230
+    },
+    "tolerance": "exact field strings, no whitespace trimming"
+  },
+  "engines": {
+    "chematic_extension": {
+      "path": "/private/tmp/chematic-sdf-fields-baseline-python-20261022/chematic/chematic.cpython-313-darwin.so",
+      "sha256": "5e1bc2dbe4f0dda290afaa8cf51419e42cd4c36700bc8bd4c555078bf74a57f5",
+      "size_bytes": 44590384
+    },
+    "openbabel": {
+      "path": "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+      "sha256": "733b2c925d60b17a5c9d8ce9ec841e918cc20c7634301e23f9008a187d1d9bc5",
+      "size_bytes": 75728
+    }
+  },
+  "openbabel_version": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+  "cases": [
+    {
+      "id": "v2000/lf/plain",
+      "source": "\n  chematic\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n> <NOTE>\ncontrol\n\n> <CHECK>\nend\n\n$$$$\n",
+      "expected_properties": {
+        "NOTE": "control",
+        "CHECK": "end"
+      }
+    },
+    {
+      "id": "v2000/lf/internal-registry",
+      "source": "\n  chematic\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n> 17 <NOTE>\noriginal\n\n> <CHECK>\nend\n\n$$$$\n",
+      "expected_properties": {
+        "NOTE": "original",
+        "CHECK": "end"
+      }
+    },
+    {
+      "id": "v2000/lf/external-registry",
+      "source": "\n  chematic\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n> (SRC-27) <NOTE>\noriginal\n\n> <CHECK>\nend\n\n$$$$\n",
+      "expected_properties": {
+        "NOTE": "original",
+        "CHECK": "end"
+      }
+    },
+    {
+      "id": "v2000/lf/combined-header",
+      "source": "\n  chematic\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n> 17 (SRC-27) <NOTE> DT12\noriginal\n\n> <CHECK>\nend\n\n$$$$\n",
+      "expected_properties": {
+        "NOTE": "original",
+        "CHECK": "end"
+      }
+    },
+    {
+      "id": "v2000/lf/prefix-and-suffix",
+      "source": "\n  chematic\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n> (SRC-27) <NOTE> origin=original\noriginal\n\n> <CHECK>\nend\n\n$$$$\n",
+      "expected_properties": {
+        "NOTE": "original",
+        "CHECK": "end"
+      }
+    },
+    {
+      "id": "v2000/lf/literal-first",
+      "source": "\n  chematic\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n> <NOTE>\n> <LITERAL>\nlast\n\n> <CHECK>\nend\n\n$$$$\n",
+      "expected_properties": {
+        "NOTE": "> <LITERAL>\nlast",
+        "CHECK": "end"
+      }
+    },
+    {
+      "id": "v2000/lf/literal-middle",
+      "source": "\n  chematic\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n> <NOTE>\nfirst\n> <LITERAL>\nlast\n\n> <CHECK>\nend\n\n$$$$\n",
+      "expected_properties": {
+        "NOTE": "first\n> <LITERAL>\nlast",
+        "CHECK": "end"
+      }
+    },
+    {
+      "id": "v2000/lf/literal-registry",
+      "source": "\n  chematic\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n> <NOTE>\nfirst\n> 19 <LITERAL>\nlast\n\n> <CHECK>\nend\n\n$$$$\n",
+      "expected_properties": {
+        "NOTE": "first\n> 19 <LITERAL>\nlast",
+        "CHECK": "end"
+      }
+    },
+    {
+      "id": "v2000/lf/literal-self",
+      "source": "\n  chematic\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n> <NOTE>\nfirst\n> <NOTE>\nlast\n\n> <CHECK>\nend\n\n$$$$\n",
+      "expected_properties": {
+        "NOTE": "first\n> <NOTE>\nlast",
+        "CHECK": "end"
+      }
+    },
+    {
+      "id": "v2000/lf/padded-text",
+      "source": "\n  chematic\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n> <NOTE>\n  leading and trailing  \n\n> <CHECK>\nend\n\n$$$$\n",
+      "expected_properties": {
+        "NOTE": "  leading and trailing  ",
+        "CHECK": "end"
+      }
+    },
+    {
+      "id": "v2000/lf/padded-multiline",
+      "source": "\n  chematic\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n> <NOTE>\nfirst\n  second line  \n\n> <CHECK>\nend\n\n$$$$\n",
+      "expected_properties": {
+        "NOTE": "first\n  second line  ",
+        "CHECK": "end"
+      }
+    },
+    {
+      "id": "v2000/lf/tabs",
+      "source": "\n  chematic\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n> <NOTE>\n\tvalue\t\n\n> <CHECK>\nend\n\n$$$$\n",
+      "expected_properties": {
+        "NOTE": "\tvalue\t",
+        "CHECK": "end"
+      }
+    },
+    {
+      "id": "v2000/crlf/plain",
+      "source": "\r\n  chematic\r\n\r\n  2  1  0  0  0  0  0  0  0  0999 V2000\r\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\r\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\r\n  1  2  1  0\r\nM  END\r\n> <NOTE>\r\ncontrol\r\n\r\n> <CHECK>\r\nend\r\n\r\n$$$$\r\n",
+      "expected_properties": {
+        "NOTE": "control",
+        "CHECK": "end"
+      }
+    },
+    {
+      "id": "v2000/crlf/internal-registry",
+      "source": "\r\n  chematic\r\n\r\n  2  1  0  0  0  0  0  0  0  0999 V2000\r\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\r\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\r\n  1  2  1  0\r\nM  END\r\n> 17 <NOTE>\r\noriginal\r\n\r\n> <CHECK>\r\nend\r\n\r\n$$$$\r\n",
+      "expected_properties": {
+        "NOTE": "original",
+        "CHECK": "end"
+      }
+    },
+    {
+      "id": "v2000/crlf/external-registry",
+      "source": "\r\n  chematic\r\n\r\n  2  1  0  0  0  0  0  0  0  0999 V2000\r\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\r\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\r\n  1  2  1  0\r\nM  END\r\n> (SRC-27) <NOTE>\r\noriginal\r\n\r\n> <CHECK>\r\nend\r\n\r\n$$$$\r\n",
+      "expected_properties": {
+        "NOTE": "original",
+        "CHECK": "end"
+      }
+    },
+    {
+      "id": "v2000/crlf/combined-header",
+      "source": "\r\n  chematic\r\n\r\n  2  1  0  0  0  0  0  0  0  0999 V2000\r\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\r\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\r\n  1  2  1  0\r\nM  END\r\n> 17 (SRC-27) <NOTE> DT12\r\noriginal\r\n\r\n> <CHECK>\r\nend\r\n\r\n$$$$\r\n",
+      "expected_properties": {
+        "NOTE": "original",
+        "CHECK": "end"
+      }
+    },
+    {
+      "id": "v2000/crlf/prefix-and-suffix",
+      "source": "\r\n  chematic\r\n\r\n  2  1  0  0  0  0  0  0  0  0999 V2000\r\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\r\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\r\n  1  2  1  0\r\nM  END\r\n> (SRC-27) <NOTE> origin=original\r\noriginal\r\n\r\n> <CHECK>\r\nend\r\n\r\n$$$$\r\n",
+      "expected_properties": {
+        "NOTE": "original",
+        "CHECK": "end"
+      }
+    },
+    {
+      "id": "v2000/crlf/literal-first",
+      "source": "\r\n  chematic\r\n\r\n  2  1  0  0  0  0  0  0  0  0999 V2000\r\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\r\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\r\n  1  2  1  0\r\nM  END\r\n> <NOTE>\r\n> <LITERAL>\r\nlast\r\n\r\n> <CHECK>\r\nend\r\n\r\n$$$$\r\n",
+      "expected_properties": {
+        "NOTE": "> <LITERAL>\nlast",
+        "CHECK": "end"
+      }
+    },
+    {
+      "id": "v2000/crlf/literal-middle",
+      "source": "\r\n  chematic\r\n\r\n  2  1  0  0  0  0  0  0  0  0999 V2000\r\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\r\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\r\n  1  2  1  0\r\nM  END\r\n> <NOTE>\r\nfirst\r\n> <LITERAL>\r\nlast\r\n\r\n> <CHECK>\r\nend\r\n\r\n$$$$\r\n",
+      "expected_properties": {
+        "NOTE": "first\n> <LITERAL>\nlast",
+        "CHECK": "end"
+      }
+    },
+    {
+      "id": "v2000/crlf/literal-registry",
+      "source": "\r\n  chematic\r\n\r\n  2  1  0  0  0  0  0  0  0  0999 V2000\r\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\r\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\r\n  1  2  1  0\r\nM  END\r\n> <NOTE>\r\nfirst\r\n> 19 <LITERAL>\r\nlast\r\n\r\n> <CHECK>\r\nend\r\n\r\n$$$$\r\n",
+      "expected_properties": {
+        "NOTE": "first\n> 19 <LITERAL>\nlast",
+        "CHECK": "end"
+      }
+    },
+    {
+      "id": "v2000/crlf/literal-self",
+      "source": "\r\n  chematic\r\n\r\n  2  1  0  0  0  0  0  0  0  0999 V2000\r\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\r\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\r\n  1  2  1  0\r\nM  END\r\n> <NOTE>\r\nfirst\r\n> <NOTE>\r\nlast\r\n\r\n> <CHECK>\r\nend\r\n\r\n$$$$\r\n",
+      "expected_properties": {
+        "NOTE": "first\n> <NOTE>\nlast",
+        "CHECK": "end"
+      }
+    },
+    {
+      "id": "v2000/crlf/padded-text",
+      "source": "\r\n  chematic\r\n\r\n  2  1  0  0  0  0  0  0  0  0999 V2000\r\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\r\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\r\n  1  2  1  0\r\nM  END\r\n> <NOTE>\r\n  leading and trailing  \r\n\r\n> <CHECK>\r\nend\r\n\r\n$$$$\r\n",
+      "expected_properties": {
+        "NOTE": "  leading and trailing  ",
+        "CHECK": "end"
+      }
+    },
+    {
+      "id": "v2000/crlf/padded-multiline",
+      "source": "\r\n  chematic\r\n\r\n  2  1  0  0  0  0  0  0  0  0999 V2000\r\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\r\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\r\n  1  2  1  0\r\nM  END\r\n> <NOTE>\r\nfirst\r\n  second line  \r\n\r\n> <CHECK>\r\nend\r\n\r\n$$$$\r\n",
+      "expected_properties": {
+        "NOTE": "first\n  second line  ",
+        "CHECK": "end"
+      }
+    },
+    {
+      "id": "v2000/crlf/tabs",
+      "source": "\r\n  chematic\r\n\r\n  2  1  0  0  0  0  0  0  0  0999 V2000\r\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\r\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\r\n  1  2  1  0\r\nM  END\r\n> <NOTE>\r\n\tvalue\t\r\n\r\n> <CHECK>\r\nend\r\n\r\n$$$$\r\n",
+      "expected_properties": {
+        "NOTE": "\tvalue\t",
+        "CHECK": "end"
+      }
+    },
+    {
+      "id": "v3000/lf/plain",
+      "source": "\n  chematic\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n> <NOTE>\ncontrol\n\n> <CHECK>\nend\n\n$$$$\n",
+      "expected_properties": {
+        "NOTE": "control",
+        "CHECK": "end"
+      }
+    },
+    {
+      "id": "v3000/lf/internal-registry",
+      "source": "\n  chematic\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n> 17 <NOTE>\noriginal\n\n> <CHECK>\nend\n\n$$$$\n",
+      "expected_properties": {
+        "NOTE": "original",
+        "CHECK": "end"
+      }
+    },
+    {
+      "id": "v3000/lf/external-registry",
+      "source": "\n  chematic\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n> (SRC-27) <NOTE>\noriginal\n\n> <CHECK>\nend\n\n$$$$\n",
+      "expected_properties": {
+        "NOTE": "original",
+        "CHECK": "end"
+      }
+    },
+    {
+      "id": "v3000/lf/combined-header",
+      "source": "\n  chematic\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n> 17 (SRC-27) <NOTE> DT12\noriginal\n\n> <CHECK>\nend\n\n$$$$\n",
+      "expected_properties": {
+        "NOTE": "original",
+        "CHECK": "end"
+      }
+    },
+    {
+      "id": "v3000/lf/prefix-and-suffix",
+      "source": "\n  chematic\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n> (SRC-27) <NOTE> origin=original\noriginal\n\n> <CHECK>\nend\n\n$$$$\n",
+      "expected_properties": {
+        "NOTE": "original",
+        "CHECK": "end"
+      }
+    },
+    {
+      "id": "v3000/lf/literal-first",
+      "source": "\n  chematic\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n> <NOTE>\n> <LITERAL>\nlast\n\n> <CHECK>\nend\n\n$$$$\n",
+      "expected_properties": {
+        "NOTE": "> <LITERAL>\nlast",
+        "CHECK": "end"
+      }
+    },
+    {
+      "id": "v3000/lf/literal-middle",
+      "source": "\n  chematic\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n> <NOTE>\nfirst\n> <LITERAL>\nlast\n\n> <CHECK>\nend\n\n$$$$\n",
+      "expected_properties": {
+        "NOTE": "first\n> <LITERAL>\nlast",
+        "CHECK": "end"
+      }
+    },
+    {
+      "id": "v3000/lf/literal-registry",
+      "source": "\n  chematic\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n> <NOTE>\nfirst\n> 19 <LITERAL>\nlast\n\n> <CHECK>\nend\n\n$$$$\n",
+      "expected_properties": {
+        "NOTE": "first\n> 19 <LITERAL>\nlast",
+        "CHECK": "end"
+      }
+    },
+    {
+      "id": "v3000/lf/literal-self",
+      "source": "\n  chematic\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n> <NOTE>\nfirst\n> <NOTE>\nlast\n\n> <CHECK>\nend\n\n$$$$\n",
+      "expected_properties": {
+        "NOTE": "first\n> <NOTE>\nlast",
+        "CHECK": "end"
+      }
+    },
+    {
+      "id": "v3000/lf/padded-text",
+      "source": "\n  chematic\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n> <NOTE>\n  leading and trailing  \n\n> <CHECK>\nend\n\n$$$$\n",
+      "expected_properties": {
+        "NOTE": "  leading and trailing  ",
+        "CHECK": "end"
+      }
+    },
+    {
+      "id": "v3000/lf/padded-multiline",
+      "source": "\n  chematic\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n> <NOTE>\nfirst\n  second line  \n\n> <CHECK>\nend\n\n$$$$\n",
+      "expected_properties": {
+        "NOTE": "first\n  second line  ",
+        "CHECK": "end"
+      }
+    },
+    {
+      "id": "v3000/lf/tabs",
+      "source": "\n  chematic\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n> <NOTE>\n\tvalue\t\n\n> <CHECK>\nend\n\n$$$$\n",
+      "expected_properties": {
+        "NOTE": "\tvalue\t",
+        "CHECK": "end"
+      }
+    },
+    {
+      "id": "v3000/crlf/plain",
+      "source": "\r\n  chematic\r\n\r\n  0  0  0  0  0  0  0  0  0  0999 V3000\r\nM  V30 BEGIN CTAB\r\nM  V30 COUNTS 2 1 0 0 0\r\nM  V30 BEGIN ATOM\r\nM  V30 1 C 0.0000 0.0000 0.0000 0\r\nM  V30 2 O 0.0000 0.0000 0.0000 0\r\nM  V30 END ATOM\r\nM  V30 BEGIN BOND\r\nM  V30 1 1 1 2\r\nM  V30 END BOND\r\nM  V30 END CTAB\r\nM  END\r\n> <NOTE>\r\ncontrol\r\n\r\n> <CHECK>\r\nend\r\n\r\n$$$$\r\n",
+      "expected_properties": {
+        "NOTE": "control",
+        "CHECK": "end"
+      }
+    },
+    {
+      "id": "v3000/crlf/internal-registry",
+      "source": "\r\n  chematic\r\n\r\n  0  0  0  0  0  0  0  0  0  0999 V3000\r\nM  V30 BEGIN CTAB\r\nM  V30 COUNTS 2 1 0 0 0\r\nM  V30 BEGIN ATOM\r\nM  V30 1 C 0.0000 0.0000 0.0000 0\r\nM  V30 2 O 0.0000 0.0000 0.0000 0\r\nM  V30 END ATOM\r\nM  V30 BEGIN BOND\r\nM  V30 1 1 1 2\r\nM  V30 END BOND\r\nM  V30 END CTAB\r\nM  END\r\n> 17 <NOTE>\r\noriginal\r\n\r\n> <CHECK>\r\nend\r\n\r\n$$$$\r\n",
+      "expected_properties": {
+        "NOTE": "original",
+        "CHECK": "end"
+      }
+    },
+    {
+      "id": "v3000/crlf/external-registry",
+      "source": "\r\n  chematic\r\n\r\n  0  0  0  0  0  0  0  0  0  0999 V3000\r\nM  V30 BEGIN CTAB\r\nM  V30 COUNTS 2 1 0 0 0\r\nM  V30 BEGIN ATOM\r\nM  V30 1 C 0.0000 0.0000 0.0000 0\r\nM  V30 2 O 0.0000 0.0000 0.0000 0\r\nM  V30 END ATOM\r\nM  V30 BEGIN BOND\r\nM  V30 1 1 1 2\r\nM  V30 END BOND\r\nM  V30 END CTAB\r\nM  END\r\n> (SRC-27) <NOTE>\r\noriginal\r\n\r\n> <CHECK>\r\nend\r\n\r\n$$$$\r\n",
+      "expected_properties": {
+        "NOTE": "original",
+        "CHECK": "end"
+      }
+    },
+    {
+      "id": "v3000/crlf/combined-header",
+      "source": "\r\n  chematic\r\n\r\n  0  0  0  0  0  0  0  0  0  0999 V3000\r\nM  V30 BEGIN CTAB\r\nM  V30 COUNTS 2 1 0 0 0\r\nM  V30 BEGIN ATOM\r\nM  V30 1 C 0.0000 0.0000 0.0000 0\r\nM  V30 2 O 0.0000 0.0000 0.0000 0\r\nM  V30 END ATOM\r\nM  V30 BEGIN BOND\r\nM  V30 1 1 1 2\r\nM  V30 END BOND\r\nM  V30 END CTAB\r\nM  END\r\n> 17 (SRC-27) <NOTE> DT12\r\noriginal\r\n\r\n> <CHECK>\r\nend\r\n\r\n$$$$\r\n",
+      "expected_properties": {
+        "NOTE": "original",
+        "CHECK": "end"
+      }
+    },
+    {
+      "id": "v3000/crlf/prefix-and-suffix",
+      "source": "\r\n  chematic\r\n\r\n  0  0  0  0  0  0  0  0  0  0999 V3000\r\nM  V30 BEGIN CTAB\r\nM  V30 COUNTS 2 1 0 0 0\r\nM  V30 BEGIN ATOM\r\nM  V30 1 C 0.0000 0.0000 0.0000 0\r\nM  V30 2 O 0.0000 0.0000 0.0000 0\r\nM  V30 END ATOM\r\nM  V30 BEGIN BOND\r\nM  V30 1 1 1 2\r\nM  V30 END BOND\r\nM  V30 END CTAB\r\nM  END\r\n> (SRC-27) <NOTE> origin=original\r\noriginal\r\n\r\n> <CHECK>\r\nend\r\n\r\n$$$$\r\n",
+      "expected_properties": {
+        "NOTE": "original",
+        "CHECK": "end"
+      }
+    },
+    {
+      "id": "v3000/crlf/literal-first",
+      "source": "\r\n  chematic\r\n\r\n  0  0  0  0  0  0  0  0  0  0999 V3000\r\nM  V30 BEGIN CTAB\r\nM  V30 COUNTS 2 1 0 0 0\r\nM  V30 BEGIN ATOM\r\nM  V30 1 C 0.0000 0.0000 0.0000 0\r\nM  V30 2 O 0.0000 0.0000 0.0000 0\r\nM  V30 END ATOM\r\nM  V30 BEGIN BOND\r\nM  V30 1 1 1 2\r\nM  V30 END BOND\r\nM  V30 END CTAB\r\nM  END\r\n> <NOTE>\r\n> <LITERAL>\r\nlast\r\n\r\n> <CHECK>\r\nend\r\n\r\n$$$$\r\n",
+      "expected_properties": {
+        "NOTE": "> <LITERAL>\nlast",
+        "CHECK": "end"
+      }
+    },
+    {
+      "id": "v3000/crlf/literal-middle",
+      "source": "\r\n  chematic\r\n\r\n  0  0  0  0  0  0  0  0  0  0999 V3000\r\nM  V30 BEGIN CTAB\r\nM  V30 COUNTS 2 1 0 0 0\r\nM  V30 BEGIN ATOM\r\nM  V30 1 C 0.0000 0.0000 0.0000 0\r\nM  V30 2 O 0.0000 0.0000 0.0000 0\r\nM  V30 END ATOM\r\nM  V30 BEGIN BOND\r\nM  V30 1 1 1 2\r\nM  V30 END BOND\r\nM  V30 END CTAB\r\nM  END\r\n> <NOTE>\r\nfirst\r\n> <LITERAL>\r\nlast\r\n\r\n> <CHECK>\r\nend\r\n\r\n$$$$\r\n",
+      "expected_properties": {
+        "NOTE": "first\n> <LITERAL>\nlast",
+        "CHECK": "end"
+      }
+    },
+    {
+      "id": "v3000/crlf/literal-registry",
+      "source": "\r\n  chematic\r\n\r\n  0  0  0  0  0  0  0  0  0  0999 V3000\r\nM  V30 BEGIN CTAB\r\nM  V30 COUNTS 2 1 0 0 0\r\nM  V30 BEGIN ATOM\r\nM  V30 1 C 0.0000 0.0000 0.0000 0\r\nM  V30 2 O 0.0000 0.0000 0.0000 0\r\nM  V30 END ATOM\r\nM  V30 BEGIN BOND\r\nM  V30 1 1 1 2\r\nM  V30 END BOND\r\nM  V30 END CTAB\r\nM  END\r\n> <NOTE>\r\nfirst\r\n> 19 <LITERAL>\r\nlast\r\n\r\n> <CHECK>\r\nend\r\n\r\n$$$$\r\n",
+      "expected_properties": {
+        "NOTE": "first\n> 19 <LITERAL>\nlast",
+        "CHECK": "end"
+      }
+    },
+    {
+      "id": "v3000/crlf/literal-self",
+      "source": "\r\n  chematic\r\n\r\n  0  0  0  0  0  0  0  0  0  0999 V3000\r\nM  V30 BEGIN CTAB\r\nM  V30 COUNTS 2 1 0 0 0\r\nM  V30 BEGIN ATOM\r\nM  V30 1 C 0.0000 0.0000 0.0000 0\r\nM  V30 2 O 0.0000 0.0000 0.0000 0\r\nM  V30 END ATOM\r\nM  V30 BEGIN BOND\r\nM  V30 1 1 1 2\r\nM  V30 END BOND\r\nM  V30 END CTAB\r\nM  END\r\n> <NOTE>\r\nfirst\r\n> <NOTE>\r\nlast\r\n\r\n> <CHECK>\r\nend\r\n\r\n$$$$\r\n",
+      "expected_properties": {
+        "NOTE": "first\n> <NOTE>\nlast",
+        "CHECK": "end"
+      }
+    },
+    {
+      "id": "v3000/crlf/padded-text",
+      "source": "\r\n  chematic\r\n\r\n  0  0  0  0  0  0  0  0  0  0999 V3000\r\nM  V30 BEGIN CTAB\r\nM  V30 COUNTS 2 1 0 0 0\r\nM  V30 BEGIN ATOM\r\nM  V30 1 C 0.0000 0.0000 0.0000 0\r\nM  V30 2 O 0.0000 0.0000 0.0000 0\r\nM  V30 END ATOM\r\nM  V30 BEGIN BOND\r\nM  V30 1 1 1 2\r\nM  V30 END BOND\r\nM  V30 END CTAB\r\nM  END\r\n> <NOTE>\r\n  leading and trailing  \r\n\r\n> <CHECK>\r\nend\r\n\r\n$$$$\r\n",
+      "expected_properties": {
+        "NOTE": "  leading and trailing  ",
+        "CHECK": "end"
+      }
+    },
+    {
+      "id": "v3000/crlf/padded-multiline",
+      "source": "\r\n  chematic\r\n\r\n  0  0  0  0  0  0  0  0  0  0999 V3000\r\nM  V30 BEGIN CTAB\r\nM  V30 COUNTS 2 1 0 0 0\r\nM  V30 BEGIN ATOM\r\nM  V30 1 C 0.0000 0.0000 0.0000 0\r\nM  V30 2 O 0.0000 0.0000 0.0000 0\r\nM  V30 END ATOM\r\nM  V30 BEGIN BOND\r\nM  V30 1 1 1 2\r\nM  V30 END BOND\r\nM  V30 END CTAB\r\nM  END\r\n> <NOTE>\r\nfirst\r\n  second line  \r\n\r\n> <CHECK>\r\nend\r\n\r\n$$$$\r\n",
+      "expected_properties": {
+        "NOTE": "first\n  second line  ",
+        "CHECK": "end"
+      }
+    },
+    {
+      "id": "v3000/crlf/tabs",
+      "source": "\r\n  chematic\r\n\r\n  0  0  0  0  0  0  0  0  0  0999 V3000\r\nM  V30 BEGIN CTAB\r\nM  V30 COUNTS 2 1 0 0 0\r\nM  V30 BEGIN ATOM\r\nM  V30 1 C 0.0000 0.0000 0.0000 0\r\nM  V30 2 O 0.0000 0.0000 0.0000 0\r\nM  V30 END ATOM\r\nM  V30 BEGIN BOND\r\nM  V30 1 1 1 2\r\nM  V30 END BOND\r\nM  V30 END CTAB\r\nM  END\r\n> <NOTE>\r\n\tvalue\t\r\n\r\n> <CHECK>\r\nend\r\n\r\n$$$$\r\n",
+      "expected_properties": {
+        "NOTE": "\tvalue\t",
+        "CHECK": "end"
+      }
+    }
+  ],
+  "rows": [
+    {
+      "case": "v2000/lf/plain",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v2000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"NOTE\": \"control\", \"CHECK\": \"end\"}, \"output\": \"\\n  chematic\\n\\n  2  1  0  0  0  0  0  0  0  0999 V2000\\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\\n  1  2  1  0\\nM  END\\n> <NOTE>\\ncontrol\\n\\n> <CHECK>\\nend\\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "fields_preserved",
+      "parsed_properties": {
+        "NOTE": "control",
+        "CHECK": "end"
+      },
+      "output": "\n  chematic\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n> <NOTE>\ncontrol\n\n> <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "control",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v2000/lf/plain",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\ncontrol\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "1 molecule converted\n",
+      "terminal": "fields_preserved",
+      "output": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\ncontrol\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "control",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v2000/lf/internal-registry",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v2000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"CHECK\": \"end\"}, \"output\": \"\\n  chematic\\n\\n  2  1  0  0  0  0  0  0  0  0999 V2000\\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\\n  1  2  1  0\\nM  END\\n> <CHECK>\\nend\\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "field_loss",
+      "parsed_properties": {
+        "CHECK": "end"
+      },
+      "output": "\n  chematic\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n> <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v2000/lf/internal-registry",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\noriginal\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "1 molecule converted\n",
+      "terminal": "fields_preserved",
+      "output": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\noriginal\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "original",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v2000/lf/external-registry",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v2000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"CHECK\": \"end\"}, \"output\": \"\\n  chematic\\n\\n  2  1  0  0  0  0  0  0  0  0999 V2000\\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\\n  1  2  1  0\\nM  END\\n> <CHECK>\\nend\\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "field_loss",
+      "parsed_properties": {
+        "CHECK": "end"
+      },
+      "output": "\n  chematic\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n> <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v2000/lf/external-registry",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\noriginal\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "1 molecule converted\n",
+      "terminal": "fields_preserved",
+      "output": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\noriginal\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "original",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v2000/lf/combined-header",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v2000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"CHECK\": \"end\"}, \"output\": \"\\n  chematic\\n\\n  2  1  0  0  0  0  0  0  0  0999 V2000\\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\\n  1  2  1  0\\nM  END\\n> <CHECK>\\nend\\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "field_loss",
+      "parsed_properties": {
+        "CHECK": "end"
+      },
+      "output": "\n  chematic\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n> <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v2000/lf/combined-header",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\noriginal\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "1 molecule converted\n",
+      "terminal": "fields_preserved",
+      "output": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\noriginal\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "original",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v2000/lf/prefix-and-suffix",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v2000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"CHECK\": \"end\"}, \"output\": \"\\n  chematic\\n\\n  2  1  0  0  0  0  0  0  0  0999 V2000\\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\\n  1  2  1  0\\nM  END\\n> <CHECK>\\nend\\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "field_loss",
+      "parsed_properties": {
+        "CHECK": "end"
+      },
+      "output": "\n  chematic\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n> <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v2000/lf/prefix-and-suffix",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\noriginal\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "1 molecule converted\n",
+      "terminal": "fields_preserved",
+      "output": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\noriginal\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "original",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v2000/lf/literal-first",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v2000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"CHECK\": \"end\", \"NOTE\": \"\", \"LITERAL\": \"last\"}, \"output\": \"\\n  chematic\\n\\n  2  1  0  0  0  0  0  0  0  0999 V2000\\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\\n  1  2  1  0\\nM  END\\n> <CHECK>\\nend\\n\\n> <NOTE>\\n\\n\\n> <LITERAL>\\nlast\\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "field_loss",
+      "parsed_properties": {
+        "CHECK": "end",
+        "NOTE": "",
+        "LITERAL": "last"
+      },
+      "output": "\n  chematic\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n> <CHECK>\nend\n\n> <NOTE>\n\n\n> <LITERAL>\nlast\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "CHECK": "end",
+        "NOTE": "",
+        "LITERAL": "last"
+      }
+    },
+    {
+      "case": "v2000/lf/literal-first",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\n> <LITERAL>\nlast\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "1 molecule converted\n",
+      "terminal": "fields_preserved",
+      "output": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\n> <LITERAL>\nlast\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "> <LITERAL>\nlast",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v2000/lf/literal-middle",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v2000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"LITERAL\": \"last\", \"NOTE\": \"first\", \"CHECK\": \"end\"}, \"output\": \"\\n  chematic\\n\\n  2  1  0  0  0  0  0  0  0  0999 V2000\\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\\n  1  2  1  0\\nM  END\\n> <LITERAL>\\nlast\\n\\n> <NOTE>\\nfirst\\n\\n> <CHECK>\\nend\\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "field_loss",
+      "parsed_properties": {
+        "LITERAL": "last",
+        "NOTE": "first",
+        "CHECK": "end"
+      },
+      "output": "\n  chematic\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n> <LITERAL>\nlast\n\n> <NOTE>\nfirst\n\n> <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "LITERAL": "last",
+        "NOTE": "first",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v2000/lf/literal-middle",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\nfirst\n> <LITERAL>\nlast\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "1 molecule converted\n",
+      "terminal": "fields_preserved",
+      "output": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\nfirst\n> <LITERAL>\nlast\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "first\n> <LITERAL>\nlast",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v2000/lf/literal-registry",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v2000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"NOTE\": \"first\\n> 19 <LITERAL>\\nlast\", \"CHECK\": \"end\"}, \"output\": \"\\n  chematic\\n\\n  2  1  0  0  0  0  0  0  0  0999 V2000\\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\\n  1  2  1  0\\nM  END\\n> <NOTE>\\nfirst\\n> 19 <LITERAL>\\nlast\\n\\n> <CHECK>\\nend\\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "fields_preserved",
+      "parsed_properties": {
+        "NOTE": "first\n> 19 <LITERAL>\nlast",
+        "CHECK": "end"
+      },
+      "output": "\n  chematic\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n> <NOTE>\nfirst\n> 19 <LITERAL>\nlast\n\n> <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "first\n> 19 <LITERAL>\nlast",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v2000/lf/literal-registry",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\nfirst\n> 19 <LITERAL>\nlast\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "1 molecule converted\n",
+      "terminal": "fields_preserved",
+      "output": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\nfirst\n> 19 <LITERAL>\nlast\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "first\n> 19 <LITERAL>\nlast",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v2000/lf/literal-self",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v2000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"CHECK\": \"end\", \"NOTE\": \"last\"}, \"output\": \"\\n  chematic\\n\\n  2  1  0  0  0  0  0  0  0  0999 V2000\\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\\n  1  2  1  0\\nM  END\\n> <CHECK>\\nend\\n\\n> <NOTE>\\nlast\\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "field_loss",
+      "parsed_properties": {
+        "CHECK": "end",
+        "NOTE": "last"
+      },
+      "output": "\n  chematic\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n> <CHECK>\nend\n\n> <NOTE>\nlast\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "CHECK": "end",
+        "NOTE": "last"
+      }
+    },
+    {
+      "case": "v2000/lf/literal-self",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\nfirst\n> <NOTE>\nlast\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "1 molecule converted\n",
+      "terminal": "fields_preserved",
+      "output": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\nfirst\n> <NOTE>\nlast\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "first\n> <NOTE>\nlast",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v2000/lf/padded-text",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v2000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"CHECK\": \"end\", \"NOTE\": \"  leading and trailing  \"}, \"output\": \"\\n  chematic\\n\\n  2  1  0  0  0  0  0  0  0  0999 V2000\\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\\n  1  2  1  0\\nM  END\\n> <CHECK>\\nend\\n\\n> <NOTE>\\n  leading and trailing  \\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "fields_preserved",
+      "parsed_properties": {
+        "CHECK": "end",
+        "NOTE": "  leading and trailing  "
+      },
+      "output": "\n  chematic\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n> <CHECK>\nend\n\n> <NOTE>\n  leading and trailing  \n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "CHECK": "end",
+        "NOTE": "  leading and trailing  "
+      }
+    },
+    {
+      "case": "v2000/lf/padded-text",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\nleading and trailing\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "1 molecule converted\n",
+      "terminal": "field_loss",
+      "output": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\nleading and trailing\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "leading and trailing",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v2000/lf/padded-multiline",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v2000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"CHECK\": \"end\", \"NOTE\": \"first\\n  second line  \"}, \"output\": \"\\n  chematic\\n\\n  2  1  0  0  0  0  0  0  0  0999 V2000\\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\\n  1  2  1  0\\nM  END\\n> <CHECK>\\nend\\n\\n> <NOTE>\\nfirst\\n  second line  \\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "fields_preserved",
+      "parsed_properties": {
+        "CHECK": "end",
+        "NOTE": "first\n  second line  "
+      },
+      "output": "\n  chematic\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n> <CHECK>\nend\n\n> <NOTE>\nfirst\n  second line  \n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "CHECK": "end",
+        "NOTE": "first\n  second line  "
+      }
+    },
+    {
+      "case": "v2000/lf/padded-multiline",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\nfirst\nsecond line\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "1 molecule converted\n",
+      "terminal": "field_loss",
+      "output": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\nfirst\nsecond line\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "first\nsecond line",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v2000/lf/tabs",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v2000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"CHECK\": \"end\", \"NOTE\": \"\\tvalue\\t\"}, \"output\": \"\\n  chematic\\n\\n  2  1  0  0  0  0  0  0  0  0999 V2000\\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\\n  1  2  1  0\\nM  END\\n> <CHECK>\\nend\\n\\n> <NOTE>\\n\\tvalue\\t\\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "fields_preserved",
+      "parsed_properties": {
+        "CHECK": "end",
+        "NOTE": "\tvalue\t"
+      },
+      "output": "\n  chematic\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n> <CHECK>\nend\n\n> <NOTE>\n\tvalue\t\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "CHECK": "end",
+        "NOTE": "\tvalue\t"
+      }
+    },
+    {
+      "case": "v2000/lf/tabs",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\nvalue\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "1 molecule converted\n",
+      "terminal": "field_loss",
+      "output": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\nvalue\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "value",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v2000/crlf/plain",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v2000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"CHECK\": \"end\", \"NOTE\": \"control\"}, \"output\": \"\\n  chematic\\n\\n  2  1  0  0  0  0  0  0  0  0999 V2000\\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\\n  1  2  1  0\\nM  END\\n> <CHECK>\\nend\\n\\n> <NOTE>\\ncontrol\\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "fields_preserved",
+      "parsed_properties": {
+        "CHECK": "end",
+        "NOTE": "control"
+      },
+      "output": "\n  chematic\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n> <CHECK>\nend\n\n> <NOTE>\ncontrol\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "CHECK": "end",
+        "NOTE": "control"
+      }
+    },
+    {
+      "case": "v2000/crlf/plain",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\ncontrol\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "1 molecule converted\n",
+      "terminal": "fields_preserved",
+      "output": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\ncontrol\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "control",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v2000/crlf/internal-registry",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v2000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"CHECK\": \"end\"}, \"output\": \"\\n  chematic\\n\\n  2  1  0  0  0  0  0  0  0  0999 V2000\\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\\n  1  2  1  0\\nM  END\\n> <CHECK>\\nend\\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "field_loss",
+      "parsed_properties": {
+        "CHECK": "end"
+      },
+      "output": "\n  chematic\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n> <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v2000/crlf/internal-registry",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\noriginal\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "1 molecule converted\n",
+      "terminal": "fields_preserved",
+      "output": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\noriginal\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "original",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v2000/crlf/external-registry",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v2000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"CHECK\": \"end\"}, \"output\": \"\\n  chematic\\n\\n  2  1  0  0  0  0  0  0  0  0999 V2000\\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\\n  1  2  1  0\\nM  END\\n> <CHECK>\\nend\\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "field_loss",
+      "parsed_properties": {
+        "CHECK": "end"
+      },
+      "output": "\n  chematic\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n> <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v2000/crlf/external-registry",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\noriginal\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "1 molecule converted\n",
+      "terminal": "fields_preserved",
+      "output": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\noriginal\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "original",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v2000/crlf/combined-header",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v2000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"CHECK\": \"end\"}, \"output\": \"\\n  chematic\\n\\n  2  1  0  0  0  0  0  0  0  0999 V2000\\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\\n  1  2  1  0\\nM  END\\n> <CHECK>\\nend\\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "field_loss",
+      "parsed_properties": {
+        "CHECK": "end"
+      },
+      "output": "\n  chematic\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n> <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v2000/crlf/combined-header",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\noriginal\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "1 molecule converted\n",
+      "terminal": "fields_preserved",
+      "output": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\noriginal\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "original",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v2000/crlf/prefix-and-suffix",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v2000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"CHECK\": \"end\"}, \"output\": \"\\n  chematic\\n\\n  2  1  0  0  0  0  0  0  0  0999 V2000\\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\\n  1  2  1  0\\nM  END\\n> <CHECK>\\nend\\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "field_loss",
+      "parsed_properties": {
+        "CHECK": "end"
+      },
+      "output": "\n  chematic\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n> <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v2000/crlf/prefix-and-suffix",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\noriginal\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "1 molecule converted\n",
+      "terminal": "fields_preserved",
+      "output": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\noriginal\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "original",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v2000/crlf/literal-first",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v2000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"NOTE\": \"\", \"LITERAL\": \"last\", \"CHECK\": \"end\"}, \"output\": \"\\n  chematic\\n\\n  2  1  0  0  0  0  0  0  0  0999 V2000\\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\\n  1  2  1  0\\nM  END\\n> <NOTE>\\n\\n\\n> <LITERAL>\\nlast\\n\\n> <CHECK>\\nend\\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "field_loss",
+      "parsed_properties": {
+        "NOTE": "",
+        "LITERAL": "last",
+        "CHECK": "end"
+      },
+      "output": "\n  chematic\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n> <NOTE>\n\n\n> <LITERAL>\nlast\n\n> <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "",
+        "LITERAL": "last",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v2000/crlf/literal-first",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\n> <LITERAL>\nlast\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "1 molecule converted\n",
+      "terminal": "fields_preserved",
+      "output": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\n> <LITERAL>\nlast\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "> <LITERAL>\nlast",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v2000/crlf/literal-middle",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v2000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"NOTE\": \"first\", \"LITERAL\": \"last\", \"CHECK\": \"end\"}, \"output\": \"\\n  chematic\\n\\n  2  1  0  0  0  0  0  0  0  0999 V2000\\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\\n  1  2  1  0\\nM  END\\n> <NOTE>\\nfirst\\n\\n> <LITERAL>\\nlast\\n\\n> <CHECK>\\nend\\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "field_loss",
+      "parsed_properties": {
+        "NOTE": "first",
+        "LITERAL": "last",
+        "CHECK": "end"
+      },
+      "output": "\n  chematic\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n> <NOTE>\nfirst\n\n> <LITERAL>\nlast\n\n> <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "first",
+        "LITERAL": "last",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v2000/crlf/literal-middle",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\nfirst\n> <LITERAL>\nlast\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "1 molecule converted\n",
+      "terminal": "fields_preserved",
+      "output": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\nfirst\n> <LITERAL>\nlast\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "first\n> <LITERAL>\nlast",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v2000/crlf/literal-registry",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v2000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"CHECK\": \"end\", \"NOTE\": \"first\\n> 19 <LITERAL>\\nlast\"}, \"output\": \"\\n  chematic\\n\\n  2  1  0  0  0  0  0  0  0  0999 V2000\\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\\n  1  2  1  0\\nM  END\\n> <CHECK>\\nend\\n\\n> <NOTE>\\nfirst\\n> 19 <LITERAL>\\nlast\\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "fields_preserved",
+      "parsed_properties": {
+        "CHECK": "end",
+        "NOTE": "first\n> 19 <LITERAL>\nlast"
+      },
+      "output": "\n  chematic\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n> <CHECK>\nend\n\n> <NOTE>\nfirst\n> 19 <LITERAL>\nlast\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "CHECK": "end",
+        "NOTE": "first\n> 19 <LITERAL>\nlast"
+      }
+    },
+    {
+      "case": "v2000/crlf/literal-registry",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\nfirst\n> 19 <LITERAL>\nlast\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "1 molecule converted\n",
+      "terminal": "fields_preserved",
+      "output": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\nfirst\n> 19 <LITERAL>\nlast\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "first\n> 19 <LITERAL>\nlast",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v2000/crlf/literal-self",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v2000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"NOTE\": \"last\", \"CHECK\": \"end\"}, \"output\": \"\\n  chematic\\n\\n  2  1  0  0  0  0  0  0  0  0999 V2000\\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\\n  1  2  1  0\\nM  END\\n> <NOTE>\\nlast\\n\\n> <CHECK>\\nend\\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "field_loss",
+      "parsed_properties": {
+        "NOTE": "last",
+        "CHECK": "end"
+      },
+      "output": "\n  chematic\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n> <NOTE>\nlast\n\n> <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "last",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v2000/crlf/literal-self",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\nfirst\n> <NOTE>\nlast\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "1 molecule converted\n",
+      "terminal": "fields_preserved",
+      "output": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\nfirst\n> <NOTE>\nlast\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "first\n> <NOTE>\nlast",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v2000/crlf/padded-text",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v2000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"NOTE\": \"  leading and trailing  \", \"CHECK\": \"end\"}, \"output\": \"\\n  chematic\\n\\n  2  1  0  0  0  0  0  0  0  0999 V2000\\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\\n  1  2  1  0\\nM  END\\n> <NOTE>\\n  leading and trailing  \\n\\n> <CHECK>\\nend\\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "fields_preserved",
+      "parsed_properties": {
+        "NOTE": "  leading and trailing  ",
+        "CHECK": "end"
+      },
+      "output": "\n  chematic\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n> <NOTE>\n  leading and trailing  \n\n> <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "  leading and trailing  ",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v2000/crlf/padded-text",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\nleading and trailing\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "1 molecule converted\n",
+      "terminal": "field_loss",
+      "output": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\nleading and trailing\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "leading and trailing",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v2000/crlf/padded-multiline",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v2000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"CHECK\": \"end\", \"NOTE\": \"first\\n  second line  \"}, \"output\": \"\\n  chematic\\n\\n  2  1  0  0  0  0  0  0  0  0999 V2000\\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\\n  1  2  1  0\\nM  END\\n> <CHECK>\\nend\\n\\n> <NOTE>\\nfirst\\n  second line  \\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "fields_preserved",
+      "parsed_properties": {
+        "CHECK": "end",
+        "NOTE": "first\n  second line  "
+      },
+      "output": "\n  chematic\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n> <CHECK>\nend\n\n> <NOTE>\nfirst\n  second line  \n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "CHECK": "end",
+        "NOTE": "first\n  second line  "
+      }
+    },
+    {
+      "case": "v2000/crlf/padded-multiline",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\nfirst\nsecond line\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "1 molecule converted\n",
+      "terminal": "field_loss",
+      "output": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\nfirst\nsecond line\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "first\nsecond line",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v2000/crlf/tabs",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v2000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"NOTE\": \"\\tvalue\\t\", \"CHECK\": \"end\"}, \"output\": \"\\n  chematic\\n\\n  2  1  0  0  0  0  0  0  0  0999 V2000\\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\\n  1  2  1  0\\nM  END\\n> <NOTE>\\n\\tvalue\\t\\n\\n> <CHECK>\\nend\\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "fields_preserved",
+      "parsed_properties": {
+        "NOTE": "\tvalue\t",
+        "CHECK": "end"
+      },
+      "output": "\n  chematic\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n> <NOTE>\n\tvalue\t\n\n> <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "\tvalue\t",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v2000/crlf/tabs",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\nvalue\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "1 molecule converted\n",
+      "terminal": "field_loss",
+      "output": "\n OpenBabel10222606482D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n>  <NOTE>\nvalue\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "value",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v3000/lf/plain",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v3000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"NOTE\": \"control\", \"CHECK\": \"end\"}, \"output\": \"\\n  chematic\\n\\n  0  0  0  0  0  0  0  0  0  0999 V3000\\nM  V30 BEGIN CTAB\\nM  V30 COUNTS 2 1 0 0 0\\nM  V30 BEGIN ATOM\\nM  V30 1 C 0.0000 0.0000 0.0000 0\\nM  V30 2 O 0.0000 0.0000 0.0000 0\\nM  V30 END ATOM\\nM  V30 BEGIN BOND\\nM  V30 1 1 1 2\\nM  V30 END BOND\\nM  V30 END CTAB\\nM  END\\n> <NOTE>\\ncontrol\\n\\n> <CHECK>\\nend\\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "fields_preserved",
+      "parsed_properties": {
+        "NOTE": "control",
+        "CHECK": "end"
+      },
+      "output": "\n  chematic\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n> <NOTE>\ncontrol\n\n> <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "control",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v3000/lf/plain",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf",
+        "-x3"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\ncontrol\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "==============================\n*** Open Babel Warning  in WriteMolecule\n  No 2D or 3D coordinates exist. Stereochemical information will be stored using an Open Babel extension. To generate 2D or 3D coordinates instead use --gen2D or --gen3D.\n1 molecule converted\n",
+      "terminal": "fields_preserved",
+      "output": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\ncontrol\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "control",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v3000/lf/internal-registry",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v3000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"CHECK\": \"end\"}, \"output\": \"\\n  chematic\\n\\n  0  0  0  0  0  0  0  0  0  0999 V3000\\nM  V30 BEGIN CTAB\\nM  V30 COUNTS 2 1 0 0 0\\nM  V30 BEGIN ATOM\\nM  V30 1 C 0.0000 0.0000 0.0000 0\\nM  V30 2 O 0.0000 0.0000 0.0000 0\\nM  V30 END ATOM\\nM  V30 BEGIN BOND\\nM  V30 1 1 1 2\\nM  V30 END BOND\\nM  V30 END CTAB\\nM  END\\n> <CHECK>\\nend\\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "field_loss",
+      "parsed_properties": {
+        "CHECK": "end"
+      },
+      "output": "\n  chematic\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n> <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v3000/lf/internal-registry",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf",
+        "-x3"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\noriginal\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "==============================\n*** Open Babel Warning  in WriteMolecule\n  No 2D or 3D coordinates exist. Stereochemical information will be stored using an Open Babel extension. To generate 2D or 3D coordinates instead use --gen2D or --gen3D.\n1 molecule converted\n",
+      "terminal": "fields_preserved",
+      "output": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\noriginal\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "original",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v3000/lf/external-registry",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v3000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"CHECK\": \"end\"}, \"output\": \"\\n  chematic\\n\\n  0  0  0  0  0  0  0  0  0  0999 V3000\\nM  V30 BEGIN CTAB\\nM  V30 COUNTS 2 1 0 0 0\\nM  V30 BEGIN ATOM\\nM  V30 1 C 0.0000 0.0000 0.0000 0\\nM  V30 2 O 0.0000 0.0000 0.0000 0\\nM  V30 END ATOM\\nM  V30 BEGIN BOND\\nM  V30 1 1 1 2\\nM  V30 END BOND\\nM  V30 END CTAB\\nM  END\\n> <CHECK>\\nend\\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "field_loss",
+      "parsed_properties": {
+        "CHECK": "end"
+      },
+      "output": "\n  chematic\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n> <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v3000/lf/external-registry",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf",
+        "-x3"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\noriginal\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "==============================\n*** Open Babel Warning  in WriteMolecule\n  No 2D or 3D coordinates exist. Stereochemical information will be stored using an Open Babel extension. To generate 2D or 3D coordinates instead use --gen2D or --gen3D.\n1 molecule converted\n",
+      "terminal": "fields_preserved",
+      "output": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\noriginal\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "original",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v3000/lf/combined-header",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v3000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"CHECK\": \"end\"}, \"output\": \"\\n  chematic\\n\\n  0  0  0  0  0  0  0  0  0  0999 V3000\\nM  V30 BEGIN CTAB\\nM  V30 COUNTS 2 1 0 0 0\\nM  V30 BEGIN ATOM\\nM  V30 1 C 0.0000 0.0000 0.0000 0\\nM  V30 2 O 0.0000 0.0000 0.0000 0\\nM  V30 END ATOM\\nM  V30 BEGIN BOND\\nM  V30 1 1 1 2\\nM  V30 END BOND\\nM  V30 END CTAB\\nM  END\\n> <CHECK>\\nend\\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "field_loss",
+      "parsed_properties": {
+        "CHECK": "end"
+      },
+      "output": "\n  chematic\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n> <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v3000/lf/combined-header",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf",
+        "-x3"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\noriginal\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "==============================\n*** Open Babel Warning  in WriteMolecule\n  No 2D or 3D coordinates exist. Stereochemical information will be stored using an Open Babel extension. To generate 2D or 3D coordinates instead use --gen2D or --gen3D.\n1 molecule converted\n",
+      "terminal": "fields_preserved",
+      "output": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\noriginal\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "original",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v3000/lf/prefix-and-suffix",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v3000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"CHECK\": \"end\"}, \"output\": \"\\n  chematic\\n\\n  0  0  0  0  0  0  0  0  0  0999 V3000\\nM  V30 BEGIN CTAB\\nM  V30 COUNTS 2 1 0 0 0\\nM  V30 BEGIN ATOM\\nM  V30 1 C 0.0000 0.0000 0.0000 0\\nM  V30 2 O 0.0000 0.0000 0.0000 0\\nM  V30 END ATOM\\nM  V30 BEGIN BOND\\nM  V30 1 1 1 2\\nM  V30 END BOND\\nM  V30 END CTAB\\nM  END\\n> <CHECK>\\nend\\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "field_loss",
+      "parsed_properties": {
+        "CHECK": "end"
+      },
+      "output": "\n  chematic\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n> <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v3000/lf/prefix-and-suffix",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf",
+        "-x3"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\noriginal\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "==============================\n*** Open Babel Warning  in WriteMolecule\n  No 2D or 3D coordinates exist. Stereochemical information will be stored using an Open Babel extension. To generate 2D or 3D coordinates instead use --gen2D or --gen3D.\n1 molecule converted\n",
+      "terminal": "fields_preserved",
+      "output": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\noriginal\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "original",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v3000/lf/literal-first",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v3000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"LITERAL\": \"last\", \"NOTE\": \"\", \"CHECK\": \"end\"}, \"output\": \"\\n  chematic\\n\\n  0  0  0  0  0  0  0  0  0  0999 V3000\\nM  V30 BEGIN CTAB\\nM  V30 COUNTS 2 1 0 0 0\\nM  V30 BEGIN ATOM\\nM  V30 1 C 0.0000 0.0000 0.0000 0\\nM  V30 2 O 0.0000 0.0000 0.0000 0\\nM  V30 END ATOM\\nM  V30 BEGIN BOND\\nM  V30 1 1 1 2\\nM  V30 END BOND\\nM  V30 END CTAB\\nM  END\\n> <LITERAL>\\nlast\\n\\n> <NOTE>\\n\\n\\n> <CHECK>\\nend\\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "field_loss",
+      "parsed_properties": {
+        "LITERAL": "last",
+        "NOTE": "",
+        "CHECK": "end"
+      },
+      "output": "\n  chematic\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n> <LITERAL>\nlast\n\n> <NOTE>\n\n\n> <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "LITERAL": "last",
+        "NOTE": "",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v3000/lf/literal-first",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf",
+        "-x3"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\n> <LITERAL>\nlast\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "==============================\n*** Open Babel Warning  in WriteMolecule\n  No 2D or 3D coordinates exist. Stereochemical information will be stored using an Open Babel extension. To generate 2D or 3D coordinates instead use --gen2D or --gen3D.\n1 molecule converted\n",
+      "terminal": "fields_preserved",
+      "output": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\n> <LITERAL>\nlast\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "> <LITERAL>\nlast",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v3000/lf/literal-middle",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v3000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"CHECK\": \"end\", \"LITERAL\": \"last\", \"NOTE\": \"first\"}, \"output\": \"\\n  chematic\\n\\n  0  0  0  0  0  0  0  0  0  0999 V3000\\nM  V30 BEGIN CTAB\\nM  V30 COUNTS 2 1 0 0 0\\nM  V30 BEGIN ATOM\\nM  V30 1 C 0.0000 0.0000 0.0000 0\\nM  V30 2 O 0.0000 0.0000 0.0000 0\\nM  V30 END ATOM\\nM  V30 BEGIN BOND\\nM  V30 1 1 1 2\\nM  V30 END BOND\\nM  V30 END CTAB\\nM  END\\n> <CHECK>\\nend\\n\\n> <LITERAL>\\nlast\\n\\n> <NOTE>\\nfirst\\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "field_loss",
+      "parsed_properties": {
+        "CHECK": "end",
+        "LITERAL": "last",
+        "NOTE": "first"
+      },
+      "output": "\n  chematic\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n> <CHECK>\nend\n\n> <LITERAL>\nlast\n\n> <NOTE>\nfirst\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "CHECK": "end",
+        "LITERAL": "last",
+        "NOTE": "first"
+      }
+    },
+    {
+      "case": "v3000/lf/literal-middle",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf",
+        "-x3"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\nfirst\n> <LITERAL>\nlast\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "==============================\n*** Open Babel Warning  in WriteMolecule\n  No 2D or 3D coordinates exist. Stereochemical information will be stored using an Open Babel extension. To generate 2D or 3D coordinates instead use --gen2D or --gen3D.\n1 molecule converted\n",
+      "terminal": "fields_preserved",
+      "output": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\nfirst\n> <LITERAL>\nlast\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "first\n> <LITERAL>\nlast",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v3000/lf/literal-registry",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v3000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"CHECK\": \"end\", \"NOTE\": \"first\\n> 19 <LITERAL>\\nlast\"}, \"output\": \"\\n  chematic\\n\\n  0  0  0  0  0  0  0  0  0  0999 V3000\\nM  V30 BEGIN CTAB\\nM  V30 COUNTS 2 1 0 0 0\\nM  V30 BEGIN ATOM\\nM  V30 1 C 0.0000 0.0000 0.0000 0\\nM  V30 2 O 0.0000 0.0000 0.0000 0\\nM  V30 END ATOM\\nM  V30 BEGIN BOND\\nM  V30 1 1 1 2\\nM  V30 END BOND\\nM  V30 END CTAB\\nM  END\\n> <CHECK>\\nend\\n\\n> <NOTE>\\nfirst\\n> 19 <LITERAL>\\nlast\\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "fields_preserved",
+      "parsed_properties": {
+        "CHECK": "end",
+        "NOTE": "first\n> 19 <LITERAL>\nlast"
+      },
+      "output": "\n  chematic\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n> <CHECK>\nend\n\n> <NOTE>\nfirst\n> 19 <LITERAL>\nlast\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "CHECK": "end",
+        "NOTE": "first\n> 19 <LITERAL>\nlast"
+      }
+    },
+    {
+      "case": "v3000/lf/literal-registry",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf",
+        "-x3"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\nfirst\n> 19 <LITERAL>\nlast\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "==============================\n*** Open Babel Warning  in WriteMolecule\n  No 2D or 3D coordinates exist. Stereochemical information will be stored using an Open Babel extension. To generate 2D or 3D coordinates instead use --gen2D or --gen3D.\n1 molecule converted\n",
+      "terminal": "fields_preserved",
+      "output": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\nfirst\n> 19 <LITERAL>\nlast\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "first\n> 19 <LITERAL>\nlast",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v3000/lf/literal-self",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v3000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"CHECK\": \"end\", \"NOTE\": \"last\"}, \"output\": \"\\n  chematic\\n\\n  0  0  0  0  0  0  0  0  0  0999 V3000\\nM  V30 BEGIN CTAB\\nM  V30 COUNTS 2 1 0 0 0\\nM  V30 BEGIN ATOM\\nM  V30 1 C 0.0000 0.0000 0.0000 0\\nM  V30 2 O 0.0000 0.0000 0.0000 0\\nM  V30 END ATOM\\nM  V30 BEGIN BOND\\nM  V30 1 1 1 2\\nM  V30 END BOND\\nM  V30 END CTAB\\nM  END\\n> <CHECK>\\nend\\n\\n> <NOTE>\\nlast\\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "field_loss",
+      "parsed_properties": {
+        "CHECK": "end",
+        "NOTE": "last"
+      },
+      "output": "\n  chematic\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n> <CHECK>\nend\n\n> <NOTE>\nlast\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "CHECK": "end",
+        "NOTE": "last"
+      }
+    },
+    {
+      "case": "v3000/lf/literal-self",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf",
+        "-x3"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\nfirst\n> <NOTE>\nlast\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "==============================\n*** Open Babel Warning  in WriteMolecule\n  No 2D or 3D coordinates exist. Stereochemical information will be stored using an Open Babel extension. To generate 2D or 3D coordinates instead use --gen2D or --gen3D.\n1 molecule converted\n",
+      "terminal": "fields_preserved",
+      "output": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\nfirst\n> <NOTE>\nlast\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "first\n> <NOTE>\nlast",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v3000/lf/padded-text",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v3000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"NOTE\": \"  leading and trailing  \", \"CHECK\": \"end\"}, \"output\": \"\\n  chematic\\n\\n  0  0  0  0  0  0  0  0  0  0999 V3000\\nM  V30 BEGIN CTAB\\nM  V30 COUNTS 2 1 0 0 0\\nM  V30 BEGIN ATOM\\nM  V30 1 C 0.0000 0.0000 0.0000 0\\nM  V30 2 O 0.0000 0.0000 0.0000 0\\nM  V30 END ATOM\\nM  V30 BEGIN BOND\\nM  V30 1 1 1 2\\nM  V30 END BOND\\nM  V30 END CTAB\\nM  END\\n> <NOTE>\\n  leading and trailing  \\n\\n> <CHECK>\\nend\\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "fields_preserved",
+      "parsed_properties": {
+        "NOTE": "  leading and trailing  ",
+        "CHECK": "end"
+      },
+      "output": "\n  chematic\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n> <NOTE>\n  leading and trailing  \n\n> <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "  leading and trailing  ",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v3000/lf/padded-text",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf",
+        "-x3"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\nleading and trailing\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "==============================\n*** Open Babel Warning  in WriteMolecule\n  No 2D or 3D coordinates exist. Stereochemical information will be stored using an Open Babel extension. To generate 2D or 3D coordinates instead use --gen2D or --gen3D.\n1 molecule converted\n",
+      "terminal": "field_loss",
+      "output": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\nleading and trailing\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "leading and trailing",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v3000/lf/padded-multiline",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v3000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"NOTE\": \"first\\n  second line  \", \"CHECK\": \"end\"}, \"output\": \"\\n  chematic\\n\\n  0  0  0  0  0  0  0  0  0  0999 V3000\\nM  V30 BEGIN CTAB\\nM  V30 COUNTS 2 1 0 0 0\\nM  V30 BEGIN ATOM\\nM  V30 1 C 0.0000 0.0000 0.0000 0\\nM  V30 2 O 0.0000 0.0000 0.0000 0\\nM  V30 END ATOM\\nM  V30 BEGIN BOND\\nM  V30 1 1 1 2\\nM  V30 END BOND\\nM  V30 END CTAB\\nM  END\\n> <NOTE>\\nfirst\\n  second line  \\n\\n> <CHECK>\\nend\\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "fields_preserved",
+      "parsed_properties": {
+        "NOTE": "first\n  second line  ",
+        "CHECK": "end"
+      },
+      "output": "\n  chematic\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n> <NOTE>\nfirst\n  second line  \n\n> <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "first\n  second line  ",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v3000/lf/padded-multiline",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf",
+        "-x3"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\nfirst\nsecond line\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "==============================\n*** Open Babel Warning  in WriteMolecule\n  No 2D or 3D coordinates exist. Stereochemical information will be stored using an Open Babel extension. To generate 2D or 3D coordinates instead use --gen2D or --gen3D.\n1 molecule converted\n",
+      "terminal": "field_loss",
+      "output": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\nfirst\nsecond line\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "first\nsecond line",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v3000/lf/tabs",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v3000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"NOTE\": \"\\tvalue\\t\", \"CHECK\": \"end\"}, \"output\": \"\\n  chematic\\n\\n  0  0  0  0  0  0  0  0  0  0999 V3000\\nM  V30 BEGIN CTAB\\nM  V30 COUNTS 2 1 0 0 0\\nM  V30 BEGIN ATOM\\nM  V30 1 C 0.0000 0.0000 0.0000 0\\nM  V30 2 O 0.0000 0.0000 0.0000 0\\nM  V30 END ATOM\\nM  V30 BEGIN BOND\\nM  V30 1 1 1 2\\nM  V30 END BOND\\nM  V30 END CTAB\\nM  END\\n> <NOTE>\\n\\tvalue\\t\\n\\n> <CHECK>\\nend\\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "fields_preserved",
+      "parsed_properties": {
+        "NOTE": "\tvalue\t",
+        "CHECK": "end"
+      },
+      "output": "\n  chematic\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n> <NOTE>\n\tvalue\t\n\n> <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "\tvalue\t",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v3000/lf/tabs",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf",
+        "-x3"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\nvalue\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "==============================\n*** Open Babel Warning  in WriteMolecule\n  No 2D or 3D coordinates exist. Stereochemical information will be stored using an Open Babel extension. To generate 2D or 3D coordinates instead use --gen2D or --gen3D.\n1 molecule converted\n",
+      "terminal": "field_loss",
+      "output": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\nvalue\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "value",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v3000/crlf/plain",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v3000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"NOTE\": \"control\", \"CHECK\": \"end\"}, \"output\": \"\\n  chematic\\n\\n  0  0  0  0  0  0  0  0  0  0999 V3000\\nM  V30 BEGIN CTAB\\nM  V30 COUNTS 2 1 0 0 0\\nM  V30 BEGIN ATOM\\nM  V30 1 C 0.0000 0.0000 0.0000 0\\nM  V30 2 O 0.0000 0.0000 0.0000 0\\nM  V30 END ATOM\\nM  V30 BEGIN BOND\\nM  V30 1 1 1 2\\nM  V30 END BOND\\nM  V30 END CTAB\\nM  END\\n> <NOTE>\\ncontrol\\n\\n> <CHECK>\\nend\\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "fields_preserved",
+      "parsed_properties": {
+        "NOTE": "control",
+        "CHECK": "end"
+      },
+      "output": "\n  chematic\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n> <NOTE>\ncontrol\n\n> <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "control",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v3000/crlf/plain",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf",
+        "-x3"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\ncontrol\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "==============================\n*** Open Babel Warning  in WriteMolecule\n  No 2D or 3D coordinates exist. Stereochemical information will be stored using an Open Babel extension. To generate 2D or 3D coordinates instead use --gen2D or --gen3D.\n1 molecule converted\n",
+      "terminal": "fields_preserved",
+      "output": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\ncontrol\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "control",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v3000/crlf/internal-registry",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v3000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"CHECK\": \"end\"}, \"output\": \"\\n  chematic\\n\\n  0  0  0  0  0  0  0  0  0  0999 V3000\\nM  V30 BEGIN CTAB\\nM  V30 COUNTS 2 1 0 0 0\\nM  V30 BEGIN ATOM\\nM  V30 1 C 0.0000 0.0000 0.0000 0\\nM  V30 2 O 0.0000 0.0000 0.0000 0\\nM  V30 END ATOM\\nM  V30 BEGIN BOND\\nM  V30 1 1 1 2\\nM  V30 END BOND\\nM  V30 END CTAB\\nM  END\\n> <CHECK>\\nend\\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "field_loss",
+      "parsed_properties": {
+        "CHECK": "end"
+      },
+      "output": "\n  chematic\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n> <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v3000/crlf/internal-registry",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf",
+        "-x3"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\noriginal\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "==============================\n*** Open Babel Warning  in WriteMolecule\n  No 2D or 3D coordinates exist. Stereochemical information will be stored using an Open Babel extension. To generate 2D or 3D coordinates instead use --gen2D or --gen3D.\n1 molecule converted\n",
+      "terminal": "fields_preserved",
+      "output": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\noriginal\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "original",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v3000/crlf/external-registry",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v3000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"CHECK\": \"end\"}, \"output\": \"\\n  chematic\\n\\n  0  0  0  0  0  0  0  0  0  0999 V3000\\nM  V30 BEGIN CTAB\\nM  V30 COUNTS 2 1 0 0 0\\nM  V30 BEGIN ATOM\\nM  V30 1 C 0.0000 0.0000 0.0000 0\\nM  V30 2 O 0.0000 0.0000 0.0000 0\\nM  V30 END ATOM\\nM  V30 BEGIN BOND\\nM  V30 1 1 1 2\\nM  V30 END BOND\\nM  V30 END CTAB\\nM  END\\n> <CHECK>\\nend\\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "field_loss",
+      "parsed_properties": {
+        "CHECK": "end"
+      },
+      "output": "\n  chematic\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n> <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v3000/crlf/external-registry",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf",
+        "-x3"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\noriginal\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "==============================\n*** Open Babel Warning  in WriteMolecule\n  No 2D or 3D coordinates exist. Stereochemical information will be stored using an Open Babel extension. To generate 2D or 3D coordinates instead use --gen2D or --gen3D.\n1 molecule converted\n",
+      "terminal": "fields_preserved",
+      "output": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\noriginal\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "original",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v3000/crlf/combined-header",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v3000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"CHECK\": \"end\"}, \"output\": \"\\n  chematic\\n\\n  0  0  0  0  0  0  0  0  0  0999 V3000\\nM  V30 BEGIN CTAB\\nM  V30 COUNTS 2 1 0 0 0\\nM  V30 BEGIN ATOM\\nM  V30 1 C 0.0000 0.0000 0.0000 0\\nM  V30 2 O 0.0000 0.0000 0.0000 0\\nM  V30 END ATOM\\nM  V30 BEGIN BOND\\nM  V30 1 1 1 2\\nM  V30 END BOND\\nM  V30 END CTAB\\nM  END\\n> <CHECK>\\nend\\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "field_loss",
+      "parsed_properties": {
+        "CHECK": "end"
+      },
+      "output": "\n  chematic\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n> <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v3000/crlf/combined-header",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf",
+        "-x3"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\noriginal\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "==============================\n*** Open Babel Warning  in WriteMolecule\n  No 2D or 3D coordinates exist. Stereochemical information will be stored using an Open Babel extension. To generate 2D or 3D coordinates instead use --gen2D or --gen3D.\n1 molecule converted\n",
+      "terminal": "fields_preserved",
+      "output": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\noriginal\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "original",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v3000/crlf/prefix-and-suffix",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v3000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"CHECK\": \"end\"}, \"output\": \"\\n  chematic\\n\\n  0  0  0  0  0  0  0  0  0  0999 V3000\\nM  V30 BEGIN CTAB\\nM  V30 COUNTS 2 1 0 0 0\\nM  V30 BEGIN ATOM\\nM  V30 1 C 0.0000 0.0000 0.0000 0\\nM  V30 2 O 0.0000 0.0000 0.0000 0\\nM  V30 END ATOM\\nM  V30 BEGIN BOND\\nM  V30 1 1 1 2\\nM  V30 END BOND\\nM  V30 END CTAB\\nM  END\\n> <CHECK>\\nend\\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "field_loss",
+      "parsed_properties": {
+        "CHECK": "end"
+      },
+      "output": "\n  chematic\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n> <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v3000/crlf/prefix-and-suffix",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf",
+        "-x3"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\noriginal\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "==============================\n*** Open Babel Warning  in WriteMolecule\n  No 2D or 3D coordinates exist. Stereochemical information will be stored using an Open Babel extension. To generate 2D or 3D coordinates instead use --gen2D or --gen3D.\n1 molecule converted\n",
+      "terminal": "fields_preserved",
+      "output": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\noriginal\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "original",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v3000/crlf/literal-first",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v3000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"CHECK\": \"end\", \"NOTE\": \"\", \"LITERAL\": \"last\"}, \"output\": \"\\n  chematic\\n\\n  0  0  0  0  0  0  0  0  0  0999 V3000\\nM  V30 BEGIN CTAB\\nM  V30 COUNTS 2 1 0 0 0\\nM  V30 BEGIN ATOM\\nM  V30 1 C 0.0000 0.0000 0.0000 0\\nM  V30 2 O 0.0000 0.0000 0.0000 0\\nM  V30 END ATOM\\nM  V30 BEGIN BOND\\nM  V30 1 1 1 2\\nM  V30 END BOND\\nM  V30 END CTAB\\nM  END\\n> <CHECK>\\nend\\n\\n> <NOTE>\\n\\n\\n> <LITERAL>\\nlast\\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "field_loss",
+      "parsed_properties": {
+        "CHECK": "end",
+        "NOTE": "",
+        "LITERAL": "last"
+      },
+      "output": "\n  chematic\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n> <CHECK>\nend\n\n> <NOTE>\n\n\n> <LITERAL>\nlast\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "CHECK": "end",
+        "NOTE": "",
+        "LITERAL": "last"
+      }
+    },
+    {
+      "case": "v3000/crlf/literal-first",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf",
+        "-x3"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\n> <LITERAL>\nlast\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "==============================\n*** Open Babel Warning  in WriteMolecule\n  No 2D or 3D coordinates exist. Stereochemical information will be stored using an Open Babel extension. To generate 2D or 3D coordinates instead use --gen2D or --gen3D.\n1 molecule converted\n",
+      "terminal": "fields_preserved",
+      "output": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\n> <LITERAL>\nlast\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "> <LITERAL>\nlast",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v3000/crlf/literal-middle",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v3000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"LITERAL\": \"last\", \"CHECK\": \"end\", \"NOTE\": \"first\"}, \"output\": \"\\n  chematic\\n\\n  0  0  0  0  0  0  0  0  0  0999 V3000\\nM  V30 BEGIN CTAB\\nM  V30 COUNTS 2 1 0 0 0\\nM  V30 BEGIN ATOM\\nM  V30 1 C 0.0000 0.0000 0.0000 0\\nM  V30 2 O 0.0000 0.0000 0.0000 0\\nM  V30 END ATOM\\nM  V30 BEGIN BOND\\nM  V30 1 1 1 2\\nM  V30 END BOND\\nM  V30 END CTAB\\nM  END\\n> <LITERAL>\\nlast\\n\\n> <CHECK>\\nend\\n\\n> <NOTE>\\nfirst\\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "field_loss",
+      "parsed_properties": {
+        "LITERAL": "last",
+        "CHECK": "end",
+        "NOTE": "first"
+      },
+      "output": "\n  chematic\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n> <LITERAL>\nlast\n\n> <CHECK>\nend\n\n> <NOTE>\nfirst\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "LITERAL": "last",
+        "CHECK": "end",
+        "NOTE": "first"
+      }
+    },
+    {
+      "case": "v3000/crlf/literal-middle",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf",
+        "-x3"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\nfirst\n> <LITERAL>\nlast\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "==============================\n*** Open Babel Warning  in WriteMolecule\n  No 2D or 3D coordinates exist. Stereochemical information will be stored using an Open Babel extension. To generate 2D or 3D coordinates instead use --gen2D or --gen3D.\n1 molecule converted\n",
+      "terminal": "fields_preserved",
+      "output": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\nfirst\n> <LITERAL>\nlast\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "first\n> <LITERAL>\nlast",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v3000/crlf/literal-registry",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v3000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"NOTE\": \"first\\n> 19 <LITERAL>\\nlast\", \"CHECK\": \"end\"}, \"output\": \"\\n  chematic\\n\\n  0  0  0  0  0  0  0  0  0  0999 V3000\\nM  V30 BEGIN CTAB\\nM  V30 COUNTS 2 1 0 0 0\\nM  V30 BEGIN ATOM\\nM  V30 1 C 0.0000 0.0000 0.0000 0\\nM  V30 2 O 0.0000 0.0000 0.0000 0\\nM  V30 END ATOM\\nM  V30 BEGIN BOND\\nM  V30 1 1 1 2\\nM  V30 END BOND\\nM  V30 END CTAB\\nM  END\\n> <NOTE>\\nfirst\\n> 19 <LITERAL>\\nlast\\n\\n> <CHECK>\\nend\\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "fields_preserved",
+      "parsed_properties": {
+        "NOTE": "first\n> 19 <LITERAL>\nlast",
+        "CHECK": "end"
+      },
+      "output": "\n  chematic\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n> <NOTE>\nfirst\n> 19 <LITERAL>\nlast\n\n> <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "first\n> 19 <LITERAL>\nlast",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v3000/crlf/literal-registry",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf",
+        "-x3"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\nfirst\n> 19 <LITERAL>\nlast\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "==============================\n*** Open Babel Warning  in WriteMolecule\n  No 2D or 3D coordinates exist. Stereochemical information will be stored using an Open Babel extension. To generate 2D or 3D coordinates instead use --gen2D or --gen3D.\n1 molecule converted\n",
+      "terminal": "fields_preserved",
+      "output": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\nfirst\n> 19 <LITERAL>\nlast\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "first\n> 19 <LITERAL>\nlast",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v3000/crlf/literal-self",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v3000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"NOTE\": \"last\", \"CHECK\": \"end\"}, \"output\": \"\\n  chematic\\n\\n  0  0  0  0  0  0  0  0  0  0999 V3000\\nM  V30 BEGIN CTAB\\nM  V30 COUNTS 2 1 0 0 0\\nM  V30 BEGIN ATOM\\nM  V30 1 C 0.0000 0.0000 0.0000 0\\nM  V30 2 O 0.0000 0.0000 0.0000 0\\nM  V30 END ATOM\\nM  V30 BEGIN BOND\\nM  V30 1 1 1 2\\nM  V30 END BOND\\nM  V30 END CTAB\\nM  END\\n> <NOTE>\\nlast\\n\\n> <CHECK>\\nend\\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "field_loss",
+      "parsed_properties": {
+        "NOTE": "last",
+        "CHECK": "end"
+      },
+      "output": "\n  chematic\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n> <NOTE>\nlast\n\n> <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "last",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v3000/crlf/literal-self",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf",
+        "-x3"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\nfirst\n> <NOTE>\nlast\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "==============================\n*** Open Babel Warning  in WriteMolecule\n  No 2D or 3D coordinates exist. Stereochemical information will be stored using an Open Babel extension. To generate 2D or 3D coordinates instead use --gen2D or --gen3D.\n1 molecule converted\n",
+      "terminal": "fields_preserved",
+      "output": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\nfirst\n> <NOTE>\nlast\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "first\n> <NOTE>\nlast",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v3000/crlf/padded-text",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v3000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"CHECK\": \"end\", \"NOTE\": \"  leading and trailing  \"}, \"output\": \"\\n  chematic\\n\\n  0  0  0  0  0  0  0  0  0  0999 V3000\\nM  V30 BEGIN CTAB\\nM  V30 COUNTS 2 1 0 0 0\\nM  V30 BEGIN ATOM\\nM  V30 1 C 0.0000 0.0000 0.0000 0\\nM  V30 2 O 0.0000 0.0000 0.0000 0\\nM  V30 END ATOM\\nM  V30 BEGIN BOND\\nM  V30 1 1 1 2\\nM  V30 END BOND\\nM  V30 END CTAB\\nM  END\\n> <CHECK>\\nend\\n\\n> <NOTE>\\n  leading and trailing  \\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "fields_preserved",
+      "parsed_properties": {
+        "CHECK": "end",
+        "NOTE": "  leading and trailing  "
+      },
+      "output": "\n  chematic\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n> <CHECK>\nend\n\n> <NOTE>\n  leading and trailing  \n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "CHECK": "end",
+        "NOTE": "  leading and trailing  "
+      }
+    },
+    {
+      "case": "v3000/crlf/padded-text",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf",
+        "-x3"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\nleading and trailing\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "==============================\n*** Open Babel Warning  in WriteMolecule\n  No 2D or 3D coordinates exist. Stereochemical information will be stored using an Open Babel extension. To generate 2D or 3D coordinates instead use --gen2D or --gen3D.\n1 molecule converted\n",
+      "terminal": "field_loss",
+      "output": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\nleading and trailing\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "leading and trailing",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v3000/crlf/padded-multiline",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v3000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"NOTE\": \"first\\n  second line  \", \"CHECK\": \"end\"}, \"output\": \"\\n  chematic\\n\\n  0  0  0  0  0  0  0  0  0  0999 V3000\\nM  V30 BEGIN CTAB\\nM  V30 COUNTS 2 1 0 0 0\\nM  V30 BEGIN ATOM\\nM  V30 1 C 0.0000 0.0000 0.0000 0\\nM  V30 2 O 0.0000 0.0000 0.0000 0\\nM  V30 END ATOM\\nM  V30 BEGIN BOND\\nM  V30 1 1 1 2\\nM  V30 END BOND\\nM  V30 END CTAB\\nM  END\\n> <NOTE>\\nfirst\\n  second line  \\n\\n> <CHECK>\\nend\\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "fields_preserved",
+      "parsed_properties": {
+        "NOTE": "first\n  second line  ",
+        "CHECK": "end"
+      },
+      "output": "\n  chematic\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n> <NOTE>\nfirst\n  second line  \n\n> <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "first\n  second line  ",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v3000/crlf/padded-multiline",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf",
+        "-x3"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\nfirst\nsecond line\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "==============================\n*** Open Babel Warning  in WriteMolecule\n  No 2D or 3D coordinates exist. Stereochemical information will be stored using an Open Babel extension. To generate 2D or 3D coordinates instead use --gen2D or --gen3D.\n1 molecule converted\n",
+      "terminal": "field_loss",
+      "output": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\nfirst\nsecond line\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "first\nsecond line",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v3000/crlf/tabs",
+      "engine": "chematic",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "-c",
+        "import io,json,pathlib,sys,tempfile\nimport chematic\ndata=sys.stdin.buffer.read()\nrecords=list(chematic.ForwardSDMolSupplier(io.BytesIO(data)))\nif len(records)!=1 or records[0] is None: raise ValueError('expected one record')\nmol=records[0]\nprops={k:mol.GetProp(k) for k in mol.GetPropNames() if not k.startswith('_')}\nwith tempfile.TemporaryDirectory(prefix='chematic-sdf-fields-') as directory:\n path=pathlib.Path(directory)/'output.sdf'\n writer=chematic.SDWriter(path,compute2d=False)\n writer.SetForceV3000(sys.argv[1]=='v3000')\n writer.write(mol);writer.close()\n output=path.read_text()\nprint(json.dumps({'parsed_properties':props,'output':output}))",
+        "v3000"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"parsed_properties\": {\"NOTE\": \"\\tvalue\\t\", \"CHECK\": \"end\"}, \"output\": \"\\n  chematic\\n\\n  0  0  0  0  0  0  0  0  0  0999 V3000\\nM  V30 BEGIN CTAB\\nM  V30 COUNTS 2 1 0 0 0\\nM  V30 BEGIN ATOM\\nM  V30 1 C 0.0000 0.0000 0.0000 0\\nM  V30 2 O 0.0000 0.0000 0.0000 0\\nM  V30 END ATOM\\nM  V30 BEGIN BOND\\nM  V30 1 1 1 2\\nM  V30 END BOND\\nM  V30 END CTAB\\nM  END\\n> <NOTE>\\n\\tvalue\\t\\n\\n> <CHECK>\\nend\\n\\n$$$$\\n\"}\n",
+      "stderr": "",
+      "terminal": "fields_preserved",
+      "parsed_properties": {
+        "NOTE": "\tvalue\t",
+        "CHECK": "end"
+      },
+      "output": "\n  chematic\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n> <NOTE>\n\tvalue\t\n\n> <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "\tvalue\t",
+        "CHECK": "end"
+      }
+    },
+    {
+      "case": "v3000/crlf/tabs",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-isdf",
+        "-osdf",
+        "-x3"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\nvalue\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "stderr": "==============================\n*** Open Babel Warning  in WriteMolecule\n  No 2D or 3D coordinates exist. Stereochemical information will be stored using an Open Babel extension. To generate 2D or 3D coordinates instead use --gen2D or --gen3D.\n1 molecule converted\n",
+      "terminal": "field_loss",
+      "output": "\n OpenBabel10222606482D\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\nvalue\n\n>  <CHECK>\nend\n\n$$$$\n",
+      "graph": "C-O single bond, neutral unspecified isotopes",
+      "output_properties": {
+        "NOTE": "value",
+        "CHECK": "end"
+      }
+    }
+  ],
+  "counts": {
+    "chematic": {
+      "fields_preserved": 20,
+      "field_loss": 28
+    },
+    "openbabel": {
+      "fields_preserved": 36,
+      "field_loss": 12
+    }
+  }
+}

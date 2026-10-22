@@ -9,7 +9,7 @@ import chematic
 
 
 _FIXTURE_PATH = Path(__file__).parents[3] / "validation" / "cross_binding_contract.json"
-_DOCUMENT = json.loads(_FIXTURE_PATH.read_text())
+_DOCUMENT = json.loads(_FIXTURE_PATH.read_text(encoding="utf-8"))
 
 
 def test_shared_fixture_schema_is_stable():

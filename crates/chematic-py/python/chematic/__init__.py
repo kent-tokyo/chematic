@@ -125,7 +125,7 @@ def from_smiles_list(smiles, /, *, skip_invalid=True):
 
 
 _FORMAT_ALIASES = {
-    "smi": "smiles", "smiles": "smiles", "mol": "mol", "sdf": "mol",
+    "smi": "smiles", "smiles": "smiles", "mol": "mol", "sdf": "sdf",
     "mol_v3000": "mol_v3000", "v3000": "mol_v3000", "mol2": "mol2",
     "cml": "cml", "cjson": "cjson", "moljson": "moljson", "cdxml": "cdxml",
     "pdb": "pdb", "xyz": "xyz", "pdbqt": "pdbqt", "gjf": "gjf", "com": "gjf",
@@ -145,13 +145,14 @@ def _materialize_smiles_batch(smiles):
 
 
 def convert_with_report(text, input_format, output_format, /, *, policy="strict"):
-    """Return a checked MOL2/CJSON conversion report as a dict.
+    """Return a checked MOL2/CJSON/CML conversion report as a dict.
 
     Strict refusals return ``status="refused"`` and ``output=None``. Use
     ``allow_loss`` to receive a candidate with explicit losses, or
     ``preserve_source`` for exact same-format source retention. Candidate
     graph verification does not verify source chemistry or stereo rules.
     CJSON input supports exact retention and checked SMILES/MOL2 projection.
+    CML supports exact XML source retention only, with opaque chemistry.
     Unsupported routes/policies, malformed input and limits raise ValueError.
     """
     import json
@@ -165,13 +166,40 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
     Supported inputs are SMILES, MOL/SDF (V2000), MOL V3000, MOL2, CML,
     ChemicalJSON, MolJSON, CDXML, PDB, XYZ, PDBQT, and Gaussian input.
     Supported outputs are SMILES, MOL V2000, MOL V3000, MOL2, CML,
-    ChemicalJSON, MolJSON, CDXML, PDB, XYZ, and PDBQT. PDB, XYZ, and PDBQT
-    output require ``coords=[[x, y, z], ...]`` unless the input provides them.
+    ChemicalJSON, MolJSON, CDXML, PDB, XYZ, PDBQT, and same-format GJF/COM
+    source retention. PDB, XYZ, and PDBQT output require ``coords=[[x, y, z], ...]`` unless the input provides them.
 
     The molecular graph and supported stereochemistry are preserved. Format-
-    specific metadata is not promised to survive conversion.
-    MOL2 to MOL2 instead validates and retains the exact source; coordinate,
+    specific metadata is not promised to survive conversion. PDBQT input supplies
+    coordinates and partial charges unless explicitly overridden; PDBQT output
+    from that input uses checked field widths and rounds to three decimals.
+    Its bonds are not inferred and source AutoDock types, identities and torsion
+    trees are not retained. Other output formats do not retain partial charges;
+    use from_pdbqt_with_data() when those values are needed without rounding.
+    MOL2 to MOL2 and CJSON to CJSON validate and retain the exact source; coordinate,
     charge, name, and comment overrides are rejected on that path.
+    GJF/COM to GJF/COM retains exact source for one Cartesian job, including
+    opaque job sections; overrides are rejected. Other GJF output routes
+    require the explicit geometry writer.
+    V3000 input supplies source x/y/z for CJSON, PDB, XYZ and PDBQT output
+    unless coords is explicitly provided. Each writer's precision and metadata
+    limits still apply; this does not verify cross-format stereochemistry.
+    V3000 to V3000 also validates and retains one exact source block, including
+    3D coordinate tokens and opaque metadata; these overrides are rejected.
+    SDF to SDF validates every record and retains the complete source document;
+    overrides are rejected. Other MOL/SDF inputs require exactly one record
+    and omit its SD fields before graph conversion. Use the SDF iterators for
+    batch conversion. SDF output from other formats is one framed record.
+    CML to CJSON carries complete source x3/y3/z3 coordinates. Missing 3D
+    stays missing; partial/malformed 3D and multiple molecules are refused.
+    This route requires unique atom IDs; 2D layout and metadata are omitted.
+    CJSON inputs use the checked record profile: malformed known arrays,
+    duplicate keys/bonds and unsupported bond-order tokens are refused.
+    MOL2 to CJSON checks the projected graph, source xyz, parsed name and
+    complete declared partial charges on reparse. Incomplete/undeclared charge
+    columns and overrides are rejected. Other MOL2 metadata and stereo are
+    not retained or verified; use convert_with_report to inspect those losses.
+    NO_CHARGES zero placeholders are omitted as unassigned values.
     """
     def normalize(value):
         if not isinstance(value, str):
@@ -195,22 +223,54 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
             f"{_CONVERT_MAX_INPUT_BYTES} bytes)"
         )
     # A same-format MOL2 pass must not erase source typing, charges, or geometry.
+    if source == target == "sdf":
+        if coords is not None or charges is not None or name != "LIG" or comment:
+            raise ValueError("SDF source-preserving conversion does not accept overrides")
+        return roundtrip_sdf_source(text)
+    if source in {"mol", "sdf"}:
+        text = single_sdf_mol_block(text)
+        source = "mol_v3000" if text.split("\n", 4)[3].rstrip().endswith("V3000") else "mol"
     if source == target == "mol2":
         if coords is not None or charges is not None or name != "LIG" or comment:
             raise ValueError("MOL2 source-preserving conversion does not accept overrides")
         return roundtrip_mol2_record(text)
+    if source == target == "mol_v3000":
+        if coords is not None or charges is not None or name != "LIG" or comment:
+            raise ValueError("V3000 source-preserving conversion does not accept overrides")
+        return roundtrip_mol_v3000_source(text)
+    if source == "mol2" and target == "cjson":
+        if coords is not None or charges is not None or name != "LIG" or comment:
+            raise ValueError("MOL2 to CJSON preserving projection does not accept overrides")
+        return project_mol2_to_cjson(text)
+    if source == target == "cjson":
+        if coords is not None or charges is not None or name != "LIG" or comment:
+            raise ValueError("CJSON source-preserving conversion does not accept overrides")
+        return roundtrip_cjson_record(text)
+    if source == target == "gjf":
+        if coords is not None or charges is not None or name != "LIG" or comment != "":
+            raise ValueError("GJF source-preserving conversion does not accept overrides")
+        return roundtrip_gjf_record(text)
+    if target == "gjf":
+        raise ValueError("GJF output supports source-preserving GJF/COM input only; use write_gjf_cartesian for explicit geometry")
     if source == "smiles":
         mol = from_smiles(text)
     elif source == "mol":
         mol = from_mol_block(text)
     elif source == "mol_v3000":
-        mol = from_mol_v3000(text)
+        mol, _, parsed_coords = from_mol_v3000_with_coords_3d(text)
+        if coords is None:
+            coords = parsed_coords
     elif source == "mol2":
         mol = from_mol2(text)
     elif source == "cml":
-        mol = from_cml(text)
+        if target == "cjson":
+            mol, parsed_coords = from_cml_with_3d(text)
+            if coords is None:
+                coords = parsed_coords
+        else:
+            mol = from_cml(text)
     elif source == "cjson":
-        mol, parsed_coords = from_cjson(text)
+        mol, parsed_coords = from_cjson_checked(text)
         if coords is None and parsed_coords:
             coords = parsed_coords
     elif source == "moljson":
@@ -226,7 +286,11 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
         if coords is None:
             coords = parsed_coords
     elif source == "pdbqt":
-        mol = from_pdbqt(text)
+        mol, parsed_coords, parsed_charges = from_pdbqt_with_data(text)
+        if coords is None:
+            coords = parsed_coords
+        if charges is None:
+            charges = parsed_charges
     elif source == "gjf":
         mol = from_gjf(text)
     else:  # pragma: no cover
@@ -236,6 +300,8 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
         return mol.smiles
     if target == "mol":
         return mol.to_mol_block()
+    if target == "sdf":
+        return mol.to_mol_block() + "$$$$\n"
     if target == "mol_v3000":
         return mol.to_mol_v3000([], name=name)
     if target == "mol2":
@@ -259,6 +325,8 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
             charges = [0.0] * len(coords)
         if len(charges) != len(coords):
             raise ValueError("charges must have the same length as coords")
+        if source == "pdbqt":
+            return write_pdbqt_checked(mol, coords, charges, name)
         return mol.to_pdbqt([tuple(point) for point in coords], charges, name)
     raise ValueError(f"unsupported output format: {target}")
 

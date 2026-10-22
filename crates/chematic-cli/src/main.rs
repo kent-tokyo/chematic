@@ -51,7 +51,22 @@ impl Default for BatchLimits {
 
 #[derive(Subcommand, Debug)]
 enum Command {
-    /// Emit a checked conversion report (MOL2 or CJSON input).
+    /// Retain all explicit Cartesian GJF/COM Link1 jobs, or inspect them as JSON.
+    GjfDocument {
+        #[arg(short, long)]
+        input: Option<PathBuf>,
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+        /// Emit ordered geometry/source ranges instead of exact source text.
+        #[arg(long)]
+        inspect: bool,
+        #[arg(long, default_value_t = 64 * 1024 * 1024)]
+        max_input_bytes: usize,
+        /// Whole-document job limit, at most 128 (atom limit: 10000 total).
+        #[arg(long, default_value_t = 128)]
+        max_jobs: usize,
+    },
+    /// Emit a checked conversion report (MOL2, CJSON, or same-format CML input).
     ConvertWithReport {
         #[arg(long)]
         input_format: String,
@@ -68,12 +83,12 @@ enum Command {
         #[arg(long, default_value_t = 16 * 1024 * 1024)]
         max_input_bytes: usize,
     },
-    /// Convert a topology-bearing molecule between common text formats.
+    /// Convert common text formats; GJF/COM supports same-format source retention.
     Convert {
-        /// Input format: smiles, mol, mol_v3000, mol2, cml, cjson, moljson, or cdxml.
+        /// Input format: smiles, mol, mol_v3000, mol2, cml, cjson, moljson, cdxml; gjf/com for same-format source retention.
         #[arg(long)]
         input_format: String,
-        /// Output format: smiles, mol, mol_v3000, mol2, cml, cjson, moljson, or cdxml.
+        /// Output format: smiles, mol, mol_v3000, mol2, cml, cjson, moljson, cdxml; gjf/com for same-format source retention.
         #[arg(long)]
         output_format: String,
         /// Read from this file instead of stdin.
@@ -252,6 +267,9 @@ fn convert_text(text: &str, input_format: &str, output_format: &str) -> Result<S
     let output = conversion_format::format_name(output_format)
         .ok_or_else(|| format!("unsupported output format: {output_format}"))?;
 
+    if let Some(result) = conversion_format::gjf_source_conversion(text, &input, &output) {
+        return result;
+    }
     if input == "mol2" && output == "mol2" {
         let record = chematic_mol::parse_mol2_source_record_with_limits(
             text,
@@ -300,9 +318,15 @@ fn convert_text(text: &str, input_format: &str, output_format: &str) -> Result<S
         "cml" => chematic_mol::parse_cml(text)
             .map(|(mol, _)| mol)
             .map_err(|e| e.to_string())?,
-        "cjson" => chematic_mol::parse_cjson(text)
-            .map(|(mol, _)| mol)
-            .map_err(|e| e.to_string())?,
+        "cjson" => chematic_mol::parse_cjson_checked_with_limits(
+            text,
+            &chematic_mol::CjsonParseLimits {
+                max_atoms: MAX_SMILES_ATOMS,
+                ..Default::default()
+            },
+        )
+        .map(|(mol, _)| mol)
+        .map_err(|e| e.to_string())?,
         "moljson" => chematic_mol::parse_moljson(text).map_err(|e| e.to_string())?,
         "cdxml" => chematic_mol::parse_cdxml(text)
             .map(|(mol, _)| mol)

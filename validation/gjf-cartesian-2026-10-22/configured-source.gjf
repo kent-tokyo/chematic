@@ -1,0 +1,18 @@
+%chk=original.chk
+%mem=512MB
+%nprocshared=2
+#p HF/Gen
+ Units=AU Opt=ModRedundant
+
+Original Cartesian job
+second title line
+
+-1,2 ! electronic state
+C1  -1 +0.000000000000000000 -0.0 1.234567890123456789012345
+O2   0 2.500000000000000000 0.0 0.0 ! freeze flag
+
+B 1 2 F
+
+C O 0
+STO-3G
+****
