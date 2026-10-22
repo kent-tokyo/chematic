@@ -22,10 +22,23 @@
 //! H   ...
 //! ```
 //!
-//! Coordinates are returned as `Vec<(f64, f64, f64)>` (Ångströms, same
-//! convention as `chematic-mol`'s other parsers).
+//! GJF Cartesian coordinates retain their input numeric units; route keywords
+//! such as `Units=Bohr` are not interpreted. Log coordinates are in Ångströms.
 
 use chematic_core::{Atom, AtomIdx, Element, Molecule, MoleculeBuilder};
+
+mod document;
+mod source;
+pub use document::{
+    GjfDocumentLimits, GjfSourceDocument, GjfSourceJob, parse_gjf_source_document,
+    parse_gjf_source_document_with_limits, write_gjf_source_document,
+};
+pub use source::{
+    GjfSourceRecord, parse_gjf_source_record, parse_gjf_source_record_with_limits,
+    write_gjf_source_record,
+};
+mod writer;
+pub use writer::{GjfCoordinateUnits, GjfWriteError, GjfWriteOptions, write_gjf_cartesian};
 
 /// Return type shared by the GJF parser and its coordinate helper:
 /// `(Molecule, coords, charge, multiplicity)`.
@@ -66,7 +79,7 @@ pub enum GaussianError {
     NoAtoms,
     /// An element symbol or atomic number was not recognised.
     UnknownElement(String),
-    /// A coordinate value could not be parsed as a float.
+    /// A coordinate value or Cartesian geometry could not be parsed.
     InvalidCoordinate(String),
     /// The log file contained no `Standard orientation:` block.
     NoStandardOrientation,
@@ -118,6 +131,24 @@ pub struct GaussianLogResult {
     pub scf_energy: Option<f64>,
 }
 
+/// Cartesian geometry and job charge/spin extracted from Gaussian input.
+///
+/// This is a geometry projection, not a complete Gaussian job representation.
+/// Route options, title, basis sets and other job sections are not retained.
+/// Freeze codes are retained as supplied, without interpreting their semantics.
+pub struct GjfGeometry {
+    /// Atoms in input order, without inferred bonds or assigned formal charges.
+    pub mol: Molecule,
+    /// Cartesian values in input units (normally Å); route units are not interpreted.
+    pub coords: Vec<(f64, f64, f64)>,
+    /// Optional integer freeze code for each atom, distinguishing absent from zero.
+    pub freeze_codes: Vec<Option<i32>>,
+    /// Job-level charge, not per-atom formal charge.
+    pub charge: i32,
+    /// Job-level positive spin multiplicity.
+    pub multiplicity: u32,
+}
+
 // ---------------------------------------------------------------------------
 // GJF parser
 // ---------------------------------------------------------------------------
@@ -125,7 +156,10 @@ pub struct GaussianLogResult {
 /// Parse a Gaussian input file (`.gjf` / `.com`).
 ///
 /// Returns `(Molecule, coords, charge, multiplicity)`.
-/// `coords` is a `Vec<(f64, f64, f64)>` in Ångströms.
+/// `coords` retains the input numeric units; `Units=Bohr` is not converted.
+/// Freeze codes are read correctly but omitted from this legacy tuple. Use
+/// [`parse_gjf_geometry`] to retain them. Unsupported/malformed atom rows and
+/// multiple Link1 jobs are refused instead of returning a partial geometry.
 /// The `Molecule` has no bonds; use `determine_bonds` to infer connectivity.
 pub fn parse_gjf(input: &str) -> Result<GjfResult, GaussianError> {
     parse_gjf_with_limits(input, &GaussianParseLimits::default())
@@ -136,7 +170,40 @@ pub fn parse_gjf_with_limits(
     input: &str,
     limits: &GaussianParseLimits,
 ) -> Result<GjfResult, GaussianError> {
+    let geometry = parse_gjf_geometry_with_limits(input, limits)?;
+    Ok((
+        geometry.mol,
+        geometry.coords,
+        geometry.charge,
+        geometry.multiplicity,
+    ))
+}
+
+/// Read Cartesian geometry, job charge/spin, and optional per-atom freeze codes.
+///
+/// Accepts whitespace/comma-separated rows with exactly `element x y z` or
+/// `element integer-freeze-code x y z`. Symbols with numeric labels and atomic
+/// numbers are supported. Z-matrices, ONIOM suffixes, fragment charge/spin pairs,
+/// and multiple Link1 jobs are refused. Remaining job sections are not retained.
+/// Numeric coordinate units are unchanged; no route-unit conversion is performed.
+pub fn parse_gjf_geometry(input: &str) -> Result<GjfGeometry, GaussianError> {
+    parse_gjf_geometry_with_limits(input, &GaussianParseLimits::default())
+}
+
+/// Read Cartesian GJF geometry with explicit resource limits.
+pub fn parse_gjf_geometry_with_limits(
+    input: &str,
+    limits: &GaussianParseLimits,
+) -> Result<GjfGeometry, GaussianError> {
     check_input_limits(input, limits)?;
+    if input
+        .lines()
+        .any(|line| line.trim().eq_ignore_ascii_case("--link1--"))
+    {
+        return Err(GaussianError::InvalidCoordinate(
+            "unsupported GJF geometry: multiple Link1 jobs".into(),
+        ));
+    }
     // Split into sections at blank lines.
     let sections: Vec<Vec<&str>> = {
         let mut secs: Vec<Vec<&str>> = Vec::new();
@@ -145,8 +212,7 @@ pub fn parse_gjf_with_limits(
             let trimmed = line.trim();
             if trimmed.is_empty() {
                 if !current.is_empty() {
-                    secs.push(current.clone());
-                    current.clear();
+                    secs.push(std::mem::take(&mut current));
                 }
             } else {
                 current.push(trimmed);
@@ -170,17 +236,23 @@ pub fn parse_gjf_with_limits(
     if cm_idx >= sections.len() {
         return Err(GaussianError::MissingChargeMultiplicity);
     }
-    // Verify the section looks like a charge/multiplicity line.
-    {
-        let parts: Vec<&str> = sections[cm_idx][0].split_whitespace().collect();
-        if parts.len() < 2 || parts[0].parse::<i32>().is_err() || parts[1].parse::<u32>().is_err() {
-            return Err(GaussianError::MissingChargeMultiplicity);
-        }
+    let parts = gjf_fields(sections[cm_idx][0]);
+    if parts.len() > 2 {
+        return Err(GaussianError::InvalidCoordinate(
+            "unsupported GJF geometry: fragment charge/spin pairs".into(),
+        ));
     }
-
-    let parts: Vec<&str> = sections[cm_idx][0].split_whitespace().collect();
-    let charge: i32 = parts[0].parse().unwrap();
-    let multiplicity: u32 = parts[1].parse().unwrap();
+    let [charge, multiplicity] = parts.as_slice() else {
+        return Err(GaussianError::MissingChargeMultiplicity);
+    };
+    let charge = charge
+        .parse::<i32>()
+        .map_err(|_| GaussianError::MissingChargeMultiplicity)?;
+    let multiplicity = multiplicity
+        .parse::<u32>()
+        .ok()
+        .filter(|&value| value > 0)
+        .ok_or(GaussianError::MissingChargeMultiplicity)?;
 
     // Coordinates follow the charge line in the same or next section.
     let coord_lines: &[&str] = if sections[cm_idx].len() > 1 {
@@ -201,27 +273,44 @@ pub fn parse_gjf_with_limits(
     parse_atom_coords(coord_lines, charge, multiplicity, limits.max_atoms)
 }
 
+fn gjf_fields(line: &str) -> Vec<&str> {
+    line.split_once('!')
+        .map_or(line, |(content, _)| content)
+        .split(|c: char| c.is_ascii_whitespace() || c == ',')
+        .filter(|field| !field.is_empty())
+        .collect()
+}
+
 fn parse_atom_coords(
     lines: &[&str],
     charge: i32,
     multiplicity: u32,
     max_atoms: usize,
-) -> Result<GjfResult, GaussianError> {
+) -> Result<GjfGeometry, GaussianError> {
     let mut builder = MoleculeBuilder::new();
     let mut coords: Vec<(f64, f64, f64)> = Vec::new();
+    let mut freeze_codes = Vec::new();
 
     for line in lines {
         let line = line.trim();
         if line.is_empty() || line.starts_with('!') {
             continue;
         }
-        if line.starts_with("Variables:") || line.starts_with("Constants:") {
-            break;
-        }
-        let parts: Vec<&str> = line.split_whitespace().collect();
-        if parts.len() < 4 {
-            continue;
-        }
+        let parts = gjf_fields(line);
+        let (freeze_code, values) = match parts.as_slice() {
+            [_, x, y, z] => (None, [*x, *y, *z]),
+            [_, code, x, y, z] => {
+                let code = code.parse::<i32>().map_err(|_| {
+                    GaussianError::InvalidCoordinate(format!("invalid Cartesian atom row: {line}"))
+                })?;
+                (Some(code), [*x, *y, *z])
+            }
+            _ => {
+                return Err(GaussianError::InvalidCoordinate(format!(
+                    "invalid Cartesian atom row: {line}"
+                )));
+            }
+        };
         let raw_sym = parts[0].trim_end_matches(|c: char| c.is_ascii_digit());
         let elem = if raw_sym.is_empty() {
             // Bare atomic number (e.g. "6" for carbon — valid Gaussian input).
@@ -235,23 +324,23 @@ fn parse_atom_coords(
                 .ok_or_else(|| GaussianError::UnknownElement(raw_sym.to_string()))?
         };
 
-        let x: f64 = parts[1]
+        let x: f64 = values[0]
             .parse()
-            .map_err(|_| GaussianError::InvalidCoordinate(parts[1].to_string()))?;
-        let y: f64 = parts[2]
+            .map_err(|_| GaussianError::InvalidCoordinate(values[0].to_string()))?;
+        let y: f64 = values[1]
             .parse()
-            .map_err(|_| GaussianError::InvalidCoordinate(parts[2].to_string()))?;
-        let z: f64 = parts[3]
+            .map_err(|_| GaussianError::InvalidCoordinate(values[1].to_string()))?;
+        let z: f64 = values[2]
             .parse()
-            .map_err(|_| GaussianError::InvalidCoordinate(parts[3].to_string()))?;
+            .map_err(|_| GaussianError::InvalidCoordinate(values[2].to_string()))?;
         if !x.is_finite() {
-            return Err(GaussianError::NonFiniteCoordinate(parts[1].to_string()));
+            return Err(GaussianError::NonFiniteCoordinate(values[0].to_string()));
         }
         if !y.is_finite() {
-            return Err(GaussianError::NonFiniteCoordinate(parts[2].to_string()));
+            return Err(GaussianError::NonFiniteCoordinate(values[1].to_string()));
         }
         if !z.is_finite() {
-            return Err(GaussianError::NonFiniteCoordinate(parts[3].to_string()));
+            return Err(GaussianError::NonFiniteCoordinate(values[2].to_string()));
         }
         if coords.len() >= max_atoms {
             return Err(GaussianError::ResourceLimit {
@@ -263,13 +352,20 @@ fn parse_atom_coords(
 
         builder.add_atom(Atom::new(elem));
         coords.push((x, y, z));
+        freeze_codes.push(freeze_code);
     }
 
     if coords.is_empty() {
         return Err(GaussianError::NoAtoms);
     }
 
-    Ok((builder.build(), coords, charge, multiplicity))
+    Ok(GjfGeometry {
+        mol: builder.build(),
+        coords,
+        freeze_codes,
+        charge,
+        multiplicity,
+    })
 }
 
 // ---------------------------------------------------------------------------

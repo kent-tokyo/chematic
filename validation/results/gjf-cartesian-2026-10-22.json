@@ -1,0 +1,122 @@
+{
+  "schema": "chematic.gjf-cartesian-validation.v1",
+  "utc": "2026-10-22T09:29:46.784559+00:00",
+  "scope": "Local source candidate, Cartesian geometry projection. Not complete job retention, Gaussian execution, or toolkit-wide superiority.",
+  "baseline_commit": "7c34941f52c5e795fd3ca93b075aa31bc9fa748f",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "baseline_gaussian_source_sha256": "ffbf8c89870c5598fc853a647a8f23841e5736e6f7a7ab4e7ea08d4317c6562e",
+  "probe_build": "cargo build --offline --locked -p chematic-mol, CARGO_PROFILE_DEV_DEBUG=0 CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=2; rustc --edition 2024 probe.rs --extern chematic_mol=<target>/debug/libchematic_mol.rlib -L dependency=<target>/debug/deps -o <probe>",
+  "rustc": {
+    "resource_status": "completed",
+    "exit_code": 0,
+    "stdout": "rustc 1.97.0 (2d8144b78 2026-07-07)\n",
+    "stderr": ""
+  },
+  "fixture": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/gjf-cartesian-2026-10-22/cases.json",
+    "sha256": "26c1429c4c6f4f30f434f5086d39934c0531aa383189c30afd51e8c2f957e999",
+    "size_bytes": 13289
+  },
+  "packet": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/gjf-cartesian-2026-10-22.packet.json.gz",
+    "sha256": "f36b6d301f5150974166abcd42de4730b02c93e9aa3693b7a4def45e253badcf",
+    "size_bytes": 2442
+  },
+  "counts": {
+    "baseline.cartesian.emitted_mismatch": 16,
+    "baseline.cartesian.match": 2,
+    "baseline.cartesian.refused": 2,
+    "baseline.malformed.emitted_mismatch": 34,
+    "baseline.malformed.refused": 20,
+    "baseline.numeric-profile-control.emitted_mismatch": 4,
+    "baseline.outside-profile.emitted_mismatch": 10,
+    "baseline.outside-profile.refused": 2,
+    "candidate_native.cartesian.match": 20,
+    "candidate_native.malformed.refused": 54,
+    "candidate_native.numeric-profile-control.match": 4,
+    "candidate_native.outside-profile.refused": 12,
+    "candidate_python.cartesian.match": 20,
+    "candidate_python.malformed.refused": 54,
+    "candidate_python.numeric-profile-control.match": 4,
+    "candidate_python.outside-profile.refused": 12
+  },
+  "cases": 45,
+  "newline_variants": [
+    "LF",
+    "CRLF"
+  ],
+  "artifacts": {
+    "baseline_probe": {
+      "path": "/private/tmp/chematic-gjf-cartesian-20261022/baseline-probe",
+      "sha256": "636d21aa2d9a5838198558b62c3f3a919f85fd61ecfbf160b8800d9032d212d2",
+      "size_bytes": 735280
+    },
+    "candidate_probe": {
+      "path": "/private/tmp/chematic-gjf-cartesian-20261022/candidate-probe",
+      "sha256": "cf4aac340341eb3b56f33db897ed21b6a3e34d6c75051070ed5c1f4255c6b424",
+      "size_bytes": 763472
+    },
+    "probe_source": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/gjf-cartesian-2026-10-22/probe.rs",
+      "sha256": "354700c965ef8c1abb41e2cd3a2de3e7981e31448f9bcb6a241d13b55b2087de",
+      "size_bytes": 477
+    },
+    "python_extension": {
+      "path": "/private/tmp/chematic-gjf-source-python-20261022/chematic/chematic.cpython-313-darwin.so",
+      "sha256": "ab5b998bcdc0810f6104831da0e09e6fd64ecbc2d8aec3a7ef9e0ed8b49c49fd",
+      "size_bytes": 44723136
+    },
+    "openbabel": {
+      "path": "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+      "sha256": "733b2c925d60b17a5c9d8ce9ec841e918cc20c7634301e23f9008a187d1d9bc5",
+      "size_bytes": 75728
+    }
+  },
+  "source": [
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol/src/gaussian.rs",
+      "sha256": "42254847bce1501cc0d8c83a5ce147aad206e057195625d8d85cf23ae243d5f2",
+      "size_bytes": 24473
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol/src/lib.rs",
+      "sha256": "de53f335a32eaf82ef48dd6b279853485a70982b5d98d0339d080aa9b16d66c0",
+      "size_bytes": 14288
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py/src/formats/gaussian.rs",
+      "sha256": "6247adc6e719eca524174ebb6e129831e0bce752dadb0d6f7b4a944941a94698",
+      "size_bytes": 3036
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py/src/formats.rs",
+      "sha256": "84cde6d4fd8a64ba0774c0497fc62d3915d06dce6ec7750c3dadc37aba937a1c",
+      "size_bytes": 53573
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/scripts/validation/validate_gjf_cartesian.py",
+      "sha256": "dfd06e8a97322457f3f0bd5fe3fb86c651a16ff82f84ff69b7a18c6da2cdacdf",
+      "size_bytes": 9215
+    }
+  ],
+  "openbabel_version": {
+    "resource_status": "completed",
+    "exit_code": 0,
+    "stdout": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27\n",
+    "stderr": ""
+  },
+  "openbabel_gjf_read": "write-only catalog and invalid-input-format error confirmed; stdout contains usage text, not molecular output; not scored as a validation lane",
+  "openbabel_writer_controls": {
+    "cases": 10,
+    "max_coordinate_error": 3.2109876535457715e-06,
+    "scope": "XYZ -> GJF -> candidate geometry reader; species/order and five-decimal writer rounding only. No source freeze/charge/spin retention claim."
+  },
+  "measurement_notes": [
+    "Pilot incorrectly expected empty stdout for an unsupported Open Babel input format. It failed before writing a report; inspection found exit 1, Invalid input format on stderr, and usage text on stdout. Final comparison checks the explicit capability error and archives both pipes."
+  ],
+  "process_limits": {
+    "timeout_seconds": 10,
+    "stdout_plus_stderr_bytes": 1048576,
+    "memory_limit": "not imposed"
+  }
+}

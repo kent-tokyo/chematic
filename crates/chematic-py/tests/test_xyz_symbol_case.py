@@ -38,7 +38,7 @@ def test_only_species_changes_not_extra_string_fields():
 
 def test_original_explicit_h_fixture_keeps_all_atoms():
     path = Path(__file__).resolve().parents[3] / "validation/openbabel_issues/xyz-elements/chloromethane-uppercase.xyz"
-    mol, coords = chematic.from_xyz(path.read_text())
+    mol, coords = chematic.from_xyz(path.read_text(encoding="utf-8"))
     assert mol.atom_count == 5
     assert len(coords) == 5
     assert [r.split()[0] for r in mol.to_xyz(coords).splitlines()[2:]] == ["C","Cl","H","H","H"]

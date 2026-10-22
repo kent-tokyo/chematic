@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 import chematic
 
-SOURCE = (Path(__file__).parents[3] / "validation/mol2_preservation/amide.mol2").read_text()
+SOURCE = (Path(__file__).parents[3] / "validation/mol2_preservation/amide.mol2").read_text(encoding="utf-8")
 
 @pytest.mark.parametrize("policy,status", [("strict", "refused"), ("allow_loss", "completed_with_loss")])
 def test_checked_cross_format(policy, status):

@@ -11,7 +11,7 @@ import chematic
 RICH = (
     Path(__file__).resolve().parents[3]
     / "validation/openbabel_issues/pdb-selection/rich.pdb"
-).read_text()
+).read_text(encoding="utf-8")
 ROWS = (
     "\n".join(
         line

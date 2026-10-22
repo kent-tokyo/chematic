@@ -37,7 +37,7 @@ def test_sdwriter_writes_angstrom_coordinates_and_ez(tmp_path):
     path = tmp_path / "out.sdf"
     with chematic.SDWriter(str(path)) as w:
         w.write(chematic.from_smiles("F/C=C\\F"))
-    block = path.read_text()
+    block = path.read_text(encoding="utf-8")
     atom_lines = block.splitlines()[4:8]
     xs = [float(line.split()[0]) for line in atom_lines]
     ys = [float(line.split()[1]) for line in atom_lines]

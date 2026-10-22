@@ -1,0 +1,810 @@
+{
+  "schema": "chematic.gjf-document-cases.v1",
+  "scope": "Original development controls; not executable-job validation",
+  "cases": [
+    {
+      "id": "two-jobs-LF",
+      "expected": "retain",
+      "source": "%chk=first.chk\n# HF/STO-3G Units=AU\n\nHydrogen doublet\n\n0 2\nH1 -1 -0.0000000000000000 1.2345678901234567 5e-324\n\n--Link1--\n%oldchk=first.chk\n%chk=second.chk\n# HF/STO-3G Units=Ang\n\nHelium singlet\n\n0 1\nHe 0 4 5 6 ! explicit Cartesian\n\n",
+      "jobs": [
+        {
+          "source_start": 0,
+          "source_end": 112,
+          "elements": [
+            "H"
+          ],
+          "coords": [
+            [
+              -0.0,
+              1.2345678901234567,
+              5e-324
+            ]
+          ],
+          "freeze_codes": [
+            -1
+          ],
+          "charge": 0,
+          "multiplicity": 2
+        },
+        {
+          "source_start": 122,
+          "source_end": 232,
+          "elements": [
+            "He"
+          ],
+          "coords": [
+            [
+              4.0,
+              5.0,
+              6.0
+            ]
+          ],
+          "freeze_codes": [
+            0
+          ],
+          "charge": 0,
+          "multiplicity": 1
+        }
+      ]
+    },
+    {
+      "id": "two-jobs-CRLF",
+      "expected": "retain",
+      "source": "%chk=first.chk\r\n# HF/STO-3G Units=AU\r\n\r\nHydrogen doublet\r\n\r\n0 2\r\nH1 -1 -0.0000000000000000 1.2345678901234567 5e-324\r\n\r\n--Link1--\r\n%oldchk=first.chk\r\n%chk=second.chk\r\n# HF/STO-3G Units=Ang\r\n\r\nHelium singlet\r\n\r\n0 1\r\nHe 0 4 5 6 ! explicit Cartesian\r\n\r\n",
+      "jobs": [
+        {
+          "source_start": 0,
+          "source_end": 120,
+          "elements": [
+            "H"
+          ],
+          "coords": [
+            [
+              -0.0,
+              1.2345678901234567,
+              5e-324
+            ]
+          ],
+          "freeze_codes": [
+            -1
+          ],
+          "charge": 0,
+          "multiplicity": 2
+        },
+        {
+          "source_start": 131,
+          "source_end": 250,
+          "elements": [
+            "He"
+          ],
+          "coords": [
+            [
+              4.0,
+              5.0,
+              6.0
+            ]
+          ],
+          "freeze_codes": [
+            0
+          ],
+          "charge": 0,
+          "multiplicity": 1
+        }
+      ]
+    },
+    {
+      "id": "three-states-LF",
+      "expected": "retain",
+      "source": "%chk=first.chk\n# HF/STO-3G Units=AU\n\nHydrogen doublet\n\n0 2\nH1 -1 -0.0000000000000000 1.2345678901234567 5e-324\n\n--Link1--\n%oldchk=first.chk\n%chk=second.chk\n# HF/STO-3G Units=Ang\n\nHelium singlet\n\n0 1\nHe 0 4 5 6 ! explicit Cartesian\n\n--Link1--\n# HF/Gen\n\nCarbon anion\n\n-1 2\nC 7 8 9\n\nC 0\nSTO-3G\n****\n\n",
+      "jobs": [
+        {
+          "source_start": 0,
+          "source_end": 112,
+          "elements": [
+            "H"
+          ],
+          "coords": [
+            [
+              -0.0,
+              1.2345678901234567,
+              5e-324
+            ]
+          ],
+          "freeze_codes": [
+            -1
+          ],
+          "charge": 0,
+          "multiplicity": 2
+        },
+        {
+          "source_start": 122,
+          "source_end": 232,
+          "elements": [
+            "He"
+          ],
+          "coords": [
+            [
+              4.0,
+              5.0,
+              6.0
+            ]
+          ],
+          "freeze_codes": [
+            0
+          ],
+          "charge": 0,
+          "multiplicity": 1
+        },
+        {
+          "source_start": 242,
+          "source_end": 297,
+          "elements": [
+            "C"
+          ],
+          "coords": [
+            [
+              7.0,
+              8.0,
+              9.0
+            ]
+          ],
+          "freeze_codes": [
+            null
+          ],
+          "charge": -1,
+          "multiplicity": 2
+        }
+      ]
+    },
+    {
+      "id": "three-states-CRLF",
+      "expected": "retain",
+      "source": "%chk=first.chk\r\n# HF/STO-3G Units=AU\r\n\r\nHydrogen doublet\r\n\r\n0 2\r\nH1 -1 -0.0000000000000000 1.2345678901234567 5e-324\r\n\r\n--Link1--\r\n%oldchk=first.chk\r\n%chk=second.chk\r\n# HF/STO-3G Units=Ang\r\n\r\nHelium singlet\r\n\r\n0 1\r\nHe 0 4 5 6 ! explicit Cartesian\r\n\r\n--Link1--\r\n# HF/Gen\r\n\r\nCarbon anion\r\n\r\n-1 2\r\nC 7 8 9\r\n\r\nC 0\r\nSTO-3G\r\n****\r\n\r\n",
+      "jobs": [
+        {
+          "source_start": 0,
+          "source_end": 120,
+          "elements": [
+            "H"
+          ],
+          "coords": [
+            [
+              -0.0,
+              1.2345678901234567,
+              5e-324
+            ]
+          ],
+          "freeze_codes": [
+            -1
+          ],
+          "charge": 0,
+          "multiplicity": 2
+        },
+        {
+          "source_start": 131,
+          "source_end": 250,
+          "elements": [
+            "He"
+          ],
+          "coords": [
+            [
+              4.0,
+              5.0,
+              6.0
+            ]
+          ],
+          "freeze_codes": [
+            0
+          ],
+          "charge": 0,
+          "multiplicity": 1
+        },
+        {
+          "source_start": 261,
+          "source_end": 327,
+          "elements": [
+            "C"
+          ],
+          "coords": [
+            [
+              7.0,
+              8.0,
+              9.0
+            ]
+          ],
+          "freeze_codes": [
+            null
+          ],
+          "charge": -1,
+          "multiplicity": 2
+        }
+      ]
+    },
+    {
+      "id": "opaque-basis-LF",
+      "expected": "retain",
+      "source": "# HF/Gen\n\nCarbon anion\n\n-1 2\nC 7 8 9\n\nC 0\nSTO-3G\n****\n\n--Link1--\n%oldchk=first.chk\n%chk=second.chk\n# HF/STO-3G Units=Ang\n\nHelium singlet\n\n0 1\nHe 0 4 5 6 ! explicit Cartesian\n\n",
+      "jobs": [
+        {
+          "source_start": 0,
+          "source_end": 55,
+          "elements": [
+            "C"
+          ],
+          "coords": [
+            [
+              7.0,
+              8.0,
+              9.0
+            ]
+          ],
+          "freeze_codes": [
+            null
+          ],
+          "charge": -1,
+          "multiplicity": 2
+        },
+        {
+          "source_start": 65,
+          "source_end": 175,
+          "elements": [
+            "He"
+          ],
+          "coords": [
+            [
+              4.0,
+              5.0,
+              6.0
+            ]
+          ],
+          "freeze_codes": [
+            0
+          ],
+          "charge": 0,
+          "multiplicity": 1
+        }
+      ]
+    },
+    {
+      "id": "opaque-basis-CRLF",
+      "expected": "retain",
+      "source": "# HF/Gen\r\n\r\nCarbon anion\r\n\r\n-1 2\r\nC 7 8 9\r\n\r\nC 0\r\nSTO-3G\r\n****\r\n\r\n--Link1--\r\n%oldchk=first.chk\r\n%chk=second.chk\r\n# HF/STO-3G Units=Ang\r\n\r\nHelium singlet\r\n\r\n0 1\r\nHe 0 4 5 6 ! explicit Cartesian\r\n\r\n",
+      "jobs": [
+        {
+          "source_start": 0,
+          "source_end": 66,
+          "elements": [
+            "C"
+          ],
+          "coords": [
+            [
+              7.0,
+              8.0,
+              9.0
+            ]
+          ],
+          "freeze_codes": [
+            null
+          ],
+          "charge": -1,
+          "multiplicity": 2
+        },
+        {
+          "source_start": 77,
+          "source_end": 196,
+          "elements": [
+            "He"
+          ],
+          "coords": [
+            [
+              4.0,
+              5.0,
+              6.0
+            ]
+          ],
+          "freeze_codes": [
+            0
+          ],
+          "charge": 0,
+          "multiplicity": 1
+        }
+      ]
+    },
+    {
+      "id": "delimiter-spelling-LF",
+      "expected": "retain",
+      "source": "%chk=first.chk\n# HF/STO-3G Units=AU\n\nHydrogen doublet\n\n0 2\nH1 -1 -0.0000000000000000 1.2345678901234567 5e-324\n\n \t--lInK1-- \t\n%oldchk=first.chk\n%chk=second.chk\n# HF/STO-3G Units=Ang\n\nHelium singlet\n\n0 1\nHe 0 4 5 6 ! explicit Cartesian\n\n",
+      "jobs": [
+        {
+          "source_start": 0,
+          "source_end": 112,
+          "elements": [
+            "H"
+          ],
+          "coords": [
+            [
+              -0.0,
+              1.2345678901234567,
+              5e-324
+            ]
+          ],
+          "freeze_codes": [
+            -1
+          ],
+          "charge": 0,
+          "multiplicity": 2
+        },
+        {
+          "source_start": 126,
+          "source_end": 236,
+          "elements": [
+            "He"
+          ],
+          "coords": [
+            [
+              4.0,
+              5.0,
+              6.0
+            ]
+          ],
+          "freeze_codes": [
+            0
+          ],
+          "charge": 0,
+          "multiplicity": 1
+        }
+      ]
+    },
+    {
+      "id": "delimiter-spelling-CRLF",
+      "expected": "retain",
+      "source": "%chk=first.chk\r\n# HF/STO-3G Units=AU\r\n\r\nHydrogen doublet\r\n\r\n0 2\r\nH1 -1 -0.0000000000000000 1.2345678901234567 5e-324\r\n\r\n \t--lInK1-- \t\r\n%oldchk=first.chk\r\n%chk=second.chk\r\n# HF/STO-3G Units=Ang\r\n\r\nHelium singlet\r\n\r\n0 1\r\nHe 0 4 5 6 ! explicit Cartesian\r\n\r\n",
+      "jobs": [
+        {
+          "source_start": 0,
+          "source_end": 120,
+          "elements": [
+            "H"
+          ],
+          "coords": [
+            [
+              -0.0,
+              1.2345678901234567,
+              5e-324
+            ]
+          ],
+          "freeze_codes": [
+            -1
+          ],
+          "charge": 0,
+          "multiplicity": 2
+        },
+        {
+          "source_start": 135,
+          "source_end": 254,
+          "elements": [
+            "He"
+          ],
+          "coords": [
+            [
+              4.0,
+              5.0,
+              6.0
+            ]
+          ],
+          "freeze_codes": [
+            0
+          ],
+          "charge": 0,
+          "multiplicity": 1
+        }
+      ]
+    },
+    {
+      "id": "utf8-ranges-LF",
+      "expected": "retain",
+      "source": "%chk=first.chk\n# HF/STO-3G Units=AU\n\n水素 é doublet\n\n0 2\nH1 -1 -0.0000000000000000 1.2345678901234567 5e-324\n\n--Link1--\n%oldchk=first.chk\n%chk=second.chk\n# HF/STO-3G Units=Ang\n\nヘリウム é singlet\n\n0 1\nHe 0 4 5 6 ! explicit Cartesian\n\n",
+      "jobs": [
+        {
+          "source_start": 0,
+          "source_end": 114,
+          "elements": [
+            "H"
+          ],
+          "coords": [
+            [
+              -0.0,
+              1.2345678901234567,
+              5e-324
+            ]
+          ],
+          "freeze_codes": [
+            -1
+          ],
+          "charge": 0,
+          "multiplicity": 2
+        },
+        {
+          "source_start": 124,
+          "source_end": 243,
+          "elements": [
+            "He"
+          ],
+          "coords": [
+            [
+              4.0,
+              5.0,
+              6.0
+            ]
+          ],
+          "freeze_codes": [
+            0
+          ],
+          "charge": 0,
+          "multiplicity": 1
+        }
+      ]
+    },
+    {
+      "id": "utf8-ranges-CRLF",
+      "expected": "retain",
+      "source": "%chk=first.chk\r\n# HF/STO-3G Units=AU\r\n\r\n水素 é doublet\r\n\r\n0 2\r\nH1 -1 -0.0000000000000000 1.2345678901234567 5e-324\r\n\r\n--Link1--\r\n%oldchk=first.chk\r\n%chk=second.chk\r\n# HF/STO-3G Units=Ang\r\n\r\nヘリウム é singlet\r\n\r\n0 1\r\nHe 0 4 5 6 ! explicit Cartesian\r\n\r\n",
+      "jobs": [
+        {
+          "source_start": 0,
+          "source_end": 122,
+          "elements": [
+            "H"
+          ],
+          "coords": [
+            [
+              -0.0,
+              1.2345678901234567,
+              5e-324
+            ]
+          ],
+          "freeze_codes": [
+            -1
+          ],
+          "charge": 0,
+          "multiplicity": 2
+        },
+        {
+          "source_start": 133,
+          "source_end": 261,
+          "elements": [
+            "He"
+          ],
+          "coords": [
+            [
+              4.0,
+              5.0,
+              6.0
+            ]
+          ],
+          "freeze_codes": [
+            0
+          ],
+          "charge": 0,
+          "multiplicity": 1
+        }
+      ]
+    },
+    {
+      "id": "bom-LF",
+      "expected": "retain",
+      "source": "﻿%chk=first.chk\n# HF/STO-3G Units=AU\n\nHydrogen doublet\n\n0 2\nH1 -1 -0.0000000000000000 1.2345678901234567 5e-324\n\n--Link1--\n%oldchk=first.chk\n%chk=second.chk\n# HF/STO-3G Units=Ang\n\nHelium singlet\n\n0 1\nHe 0 4 5 6 ! explicit Cartesian\n\n",
+      "jobs": [
+        {
+          "source_start": 0,
+          "source_end": 115,
+          "elements": [
+            "H"
+          ],
+          "coords": [
+            [
+              -0.0,
+              1.2345678901234567,
+              5e-324
+            ]
+          ],
+          "freeze_codes": [
+            -1
+          ],
+          "charge": 0,
+          "multiplicity": 2
+        },
+        {
+          "source_start": 125,
+          "source_end": 235,
+          "elements": [
+            "He"
+          ],
+          "coords": [
+            [
+              4.0,
+              5.0,
+              6.0
+            ]
+          ],
+          "freeze_codes": [
+            0
+          ],
+          "charge": 0,
+          "multiplicity": 1
+        }
+      ]
+    },
+    {
+      "id": "bom-CRLF",
+      "expected": "retain",
+      "source": "﻿%chk=first.chk\r\n# HF/STO-3G Units=AU\r\n\r\nHydrogen doublet\r\n\r\n0 2\r\nH1 -1 -0.0000000000000000 1.2345678901234567 5e-324\r\n\r\n--Link1--\r\n%oldchk=first.chk\r\n%chk=second.chk\r\n# HF/STO-3G Units=Ang\r\n\r\nHelium singlet\r\n\r\n0 1\r\nHe 0 4 5 6 ! explicit Cartesian\r\n\r\n",
+      "jobs": [
+        {
+          "source_start": 0,
+          "source_end": 123,
+          "elements": [
+            "H"
+          ],
+          "coords": [
+            [
+              -0.0,
+              1.2345678901234567,
+              5e-324
+            ]
+          ],
+          "freeze_codes": [
+            -1
+          ],
+          "charge": 0,
+          "multiplicity": 2
+        },
+        {
+          "source_start": 134,
+          "source_end": 253,
+          "elements": [
+            "He"
+          ],
+          "coords": [
+            [
+              4.0,
+              5.0,
+              6.0
+            ]
+          ],
+          "freeze_codes": [
+            0
+          ],
+          "charge": 0,
+          "multiplicity": 1
+        }
+      ]
+    },
+    {
+      "id": "mixed-endings",
+      "expected": "retain",
+      "source": "%chk=first.chk\n# HF/STO-3G Units=AU\n\nHydrogen doublet\n\n0 2\nH1 -1 -0.0000000000000000 1.2345678901234567 5e-324\n\n--Link1--\n%oldchk=first.chk\r\n%chk=second.chk\r\n# HF/STO-3G Units=Ang\r\n\r\nHelium singlet\r\n\r\n0 1\r\nHe 0 4 5 6 ! explicit Cartesian\r\n\r\n",
+      "jobs": [
+        {
+          "source_start": 0,
+          "source_end": 112,
+          "elements": [
+            "H"
+          ],
+          "coords": [
+            [
+              -0.0,
+              1.2345678901234567,
+              5e-324
+            ]
+          ],
+          "freeze_codes": [
+            -1
+          ],
+          "charge": 0,
+          "multiplicity": 2
+        },
+        {
+          "source_start": 122,
+          "source_end": 241,
+          "elements": [
+            "He"
+          ],
+          "coords": [
+            [
+              4.0,
+              5.0,
+              6.0
+            ]
+          ],
+          "freeze_codes": [
+            0
+          ],
+          "charge": 0,
+          "multiplicity": 1
+        }
+      ]
+    },
+    {
+      "id": "no-final-newline",
+      "expected": "retain",
+      "source": "%chk=first.chk\n# HF/STO-3G Units=AU\n\nHydrogen doublet\n\n0 2\nH1 -1 -0.0000000000000000 1.2345678901234567 5e-324\n\n--Link1--\n%oldchk=first.chk\n%chk=second.chk\n# HF/STO-3G Units=Ang\n\nHelium singlet\n\n0 1\nHe 0 4 5 6 ! explicit Cartesian",
+      "jobs": [
+        {
+          "source_start": 0,
+          "source_end": 112,
+          "elements": [
+            "H"
+          ],
+          "coords": [
+            [
+              -0.0,
+              1.2345678901234567,
+              5e-324
+            ]
+          ],
+          "freeze_codes": [
+            -1
+          ],
+          "charge": 0,
+          "multiplicity": 2
+        },
+        {
+          "source_start": 122,
+          "source_end": 230,
+          "elements": [
+            "He"
+          ],
+          "coords": [
+            [
+              4.0,
+              5.0,
+              6.0
+            ]
+          ],
+          "freeze_codes": [
+            0
+          ],
+          "charge": 0,
+          "multiplicity": 1
+        }
+      ]
+    },
+    {
+      "id": "single-job",
+      "expected": "retain",
+      "source": "%chk=first.chk\n# HF/STO-3G Units=AU\n\nHydrogen doublet\n\n0 2\nH1 -1 -0.0000000000000000 1.2345678901234567 5e-324\n\n",
+      "jobs": [
+        {
+          "source_start": 0,
+          "source_end": 112,
+          "elements": [
+            "H"
+          ],
+          "coords": [
+            [
+              -0.0,
+              1.2345678901234567,
+              5e-324
+            ]
+          ],
+          "freeze_codes": [
+            -1
+          ],
+          "charge": 0,
+          "multiplicity": 2
+        }
+      ]
+    },
+    {
+      "id": "leading-delimiter",
+      "expected": "refuse",
+      "source": "--Link1--\n%chk=first.chk\n# HF/STO-3G Units=AU\n\nHydrogen doublet\n\n0 2\nH1 -1 -0.0000000000000000 1.2345678901234567 5e-324\n\n"
+    },
+    {
+      "id": "trailing-delimiter",
+      "expected": "refuse",
+      "source": "%chk=first.chk\n# HF/STO-3G Units=AU\n\nHydrogen doublet\n\n0 2\nH1 -1 -0.0000000000000000 1.2345678901234567 5e-324\n\n--Link1--\n"
+    },
+    {
+      "id": "repeated-delimiter",
+      "expected": "refuse",
+      "source": "%chk=first.chk\n# HF/STO-3G Units=AU\n\nHydrogen doublet\n\n0 2\nH1 -1 -0.0000000000000000 1.2345678901234567 5e-324\n\n--Link1--\n\n--Link1--\n%oldchk=first.chk\n%chk=second.chk\n# HF/STO-3G Units=Ang\n\nHelium singlet\n\n0 1\nHe 0 4 5 6 ! explicit Cartesian\n\n"
+    },
+    {
+      "id": "no-blank-before-delimiter",
+      "expected": "refuse",
+      "source": "%chk=first.chk\n# HF/STO-3G Units=AU\n\nHydrogen doublet\n\n0 2\nH1 -1 -0.0000000000000000 1.2345678901234567 5e-324\n--Link1--\n%oldchk=first.chk\n%chk=second.chk\n# HF/STO-3G Units=Ang\n\nHelium singlet\n\n0 1\nHe 0 4 5 6 ! explicit Cartesian\n\n"
+    },
+    {
+      "id": "comment-on-delimiter",
+      "expected": "refuse",
+      "source": "%chk=first.chk\n# HF/STO-3G Units=AU\n\nHydrogen doublet\n\n0 2\nH1 -1 -0.0000000000000000 1.2345678901234567 5e-324\n\n--Link1-- ! next\n%oldchk=first.chk\n%chk=second.chk\n# HF/STO-3G Units=Ang\n\nHelium singlet\n\n0 1\nHe 0 4 5 6 ! explicit Cartesian\n\n"
+    },
+    {
+      "id": "misspelled-delimiter",
+      "expected": "refuse",
+      "source": "%chk=first.chk\n# HF/STO-3G Units=AU\n\nHydrogen doublet\n\n0 2\nH1 -1 -0.0000000000000000 1.2345678901234567 5e-324\n\n--Link1-\n%oldchk=first.chk\n%chk=second.chk\n# HF/STO-3G Units=Ang\n\nHelium singlet\n\n0 1\nHe 0 4 5 6 ! explicit Cartesian\n\n"
+    },
+    {
+      "id": "short-later-row",
+      "expected": "refuse",
+      "source": "%chk=first.chk\n# HF/STO-3G Units=AU\n\nHydrogen doublet\n\n0 2\nH1 -1 -0.0000000000000000 1.2345678901234567 5e-324\n\n--Link1--\n%oldchk=first.chk\n%chk=second.chk\n# HF/STO-3G Units=Ang\n\nHelium singlet\n\n0 1\nHe 4 5\n\n"
+    },
+    {
+      "id": "nonfinite-later-row",
+      "expected": "refuse",
+      "source": "%chk=first.chk\n# HF/STO-3G Units=AU\n\nHydrogen doublet\n\n0 2\nH1 -1 -0.0000000000000000 1.2345678901234567 5e-324\n\n--Link1--\n%oldchk=first.chk\n%chk=second.chk\n# HF/STO-3G Units=Ang\n\nHelium singlet\n\n0 1\nHe 0 NaN 5 6 ! explicit Cartesian\n\n"
+    },
+    {
+      "id": "bad-freeze-later-row",
+      "expected": "refuse",
+      "source": "%chk=first.chk\n# HF/STO-3G Units=AU\n\nHydrogen doublet\n\n0 2\nH1 -1 -0.0000000000000000 1.2345678901234567 5e-324\n\n--Link1--\n%oldchk=first.chk\n%chk=second.chk\n# HF/STO-3G Units=Ang\n\nHelium singlet\n\n0 1\nHe 0.5 4 5 6 ! explicit Cartesian\n\n"
+    },
+    {
+      "id": "zmatrix-later",
+      "expected": "refuse",
+      "source": "%chk=first.chk\n# HF/STO-3G Units=AU\n\nHydrogen doublet\n\n0 2\nH1 -1 -0.0000000000000000 1.2345678901234567 5e-324\n\n--Link1--\n# HF/STO-3G\n\nZ matrix\n\n0 2\nH\n\n"
+    },
+    {
+      "id": "empty-geometry-later",
+      "expected": "refuse",
+      "source": "%chk=first.chk\n# HF/STO-3G Units=AU\n\nHydrogen doublet\n\n0 2\nH1 -1 -0.0000000000000000 1.2345678901234567 5e-324\n\n--Link1--\n# HF/STO-3G\n\nEmpty\n\n0 1\n\n"
+    },
+    {
+      "id": "checkpoint-only-later",
+      "expected": "refuse",
+      "source": "%chk=first.chk\n# HF/STO-3G Units=AU\n\nHydrogen doublet\n\n0 2\nH1 -1 -0.0000000000000000 1.2345678901234567 5e-324\n\n--Link1--\n%chk=first.chk\n# HF/STO-3G Geom=AllCheck Guess=Read\n\n"
+    },
+    {
+      "id": "checkpoint-check-later",
+      "expected": "refuse",
+      "source": "%chk=first.chk\n# HF/STO-3G Units=AU\n\nHydrogen doublet\n\n0 2\nH1 -1 -0.0000000000000000 1.2345678901234567 5e-324\n\n--Link1--\n%chk=first.chk\n# HF/STO-3G Geom=Check\n\nRead checkpoint\n\n0 2\n\n"
+    },
+    {
+      "id": "bad-spin-later",
+      "expected": "refuse",
+      "source": "%chk=first.chk\n# HF/STO-3G Units=AU\n\nHydrogen doublet\n\n0 2\nH1 -1 -0.0000000000000000 1.2345678901234567 5e-324\n\n--Link1--\n%oldchk=first.chk\n%chk=second.chk\n# HF/STO-3G Units=Ang\n\nHelium singlet\n\n0 0\nHe 0 4 5 6 ! explicit Cartesian\n\n"
+    },
+    {
+      "id": "unknown-element-later",
+      "expected": "refuse",
+      "source": "%chk=first.chk\n# HF/STO-3G Units=AU\n\nHydrogen doublet\n\n0 2\nH1 -1 -0.0000000000000000 1.2345678901234567 5e-324\n\n--Link1--\n%oldchk=first.chk\n%chk=second.chk\n# HF/STO-3G Units=Ang\n\nHelium singlet\n\n0 1\nXxx 0 4 5 6 ! explicit Cartesian\n\n"
+    },
+    {
+      "id": "text-only-later",
+      "expected": "refuse",
+      "source": "%chk=first.chk\n# HF/STO-3G Units=AU\n\nHydrogen doublet\n\n0 2\nH1 -1 -0.0000000000000000 1.2345678901234567 5e-324\n\n--Link1--\nnot a job\n"
+    },
+    {
+      "id": "second-bom",
+      "expected": "refuse",
+      "source": "%chk=first.chk\n# HF/STO-3G Units=AU\n\nHydrogen doublet\n\n0 2\nH1 -1 -0.0000000000000000 1.2345678901234567 5e-324\n\n--Link1--\n﻿%oldchk=first.chk\n%chk=second.chk\n# HF/STO-3G Units=Ang\n\nHelium singlet\n\n0 1\nHe 0 4 5 6 ! explicit Cartesian\n\n"
+    },
+    {
+      "id": "nul-later",
+      "expected": "refuse",
+      "source": "%chk=first.chk\n# HF/STO-3G Units=AU\n\nHydrogen doublet\n\n0 2\nH1 -1 -0.0000000000000000 1.2345678901234567 5e-324\n\n--Link1--\n%oldchk=first.chk\n%chk=second.chk\n# HF/STO-3G Units=Ang\n\nHelium singlet\n\n0 1\nHe 0 4 5 6 ! explicit Cartesian\n\n!\u0000\n"
+    },
+    {
+      "id": "bare-cr-later",
+      "expected": "refuse",
+      "source": "%chk=first.chk\n# HF/STO-3G Units=AU\n\nHydrogen doublet\n\n0 2\nH1 -1 -0.0000000000000000 1.2345678901234567 5e-324\n\n--Link1--\n%oldchk=first.chk\n%chk=second.chk\n# HF/STO-3G Units=Ang\n\nHelium singlet\n\n0 1\nHe 0 4 5 6 ! explicit Cartesian\n\n!\rpayload\n"
+    },
+    {
+      "id": "unicode-line-separator-later",
+      "expected": "refuse",
+      "source": "%chk=first.chk\n# HF/STO-3G Units=AU\n\nHydrogen doublet\n\n0 2\nH1 -1 -0.0000000000000000 1.2345678901234567 5e-324\n\n--Link1--\n%oldchk=first.chk\n%chk=second.chk\n# HF/STO-3G Units=Ang\n\nHelium singlet\n\n0 1\nHe 0 4 5 6 ! explicit Cartesian\n\n! payload\n"
+    },
+    {
+      "id": "bad-first-good-last",
+      "expected": "refuse",
+      "source": "%chk=first.chk\n# HF/STO-3G Units=AU\n\nHydrogen doublet\n\n0 2\nH1 0 0\n\n--Link1--\n%oldchk=first.chk\n%chk=second.chk\n# HF/STO-3G Units=Ang\n\nHelium singlet\n\n0 1\nHe 0 4 5 6 ! explicit Cartesian\n\n"
+    },
+    {
+      "id": "bad-middle-good-last",
+      "expected": "refuse",
+      "source": "%chk=first.chk\n# HF/STO-3G Units=AU\n\nHydrogen doublet\n\n0 2\nH1 -1 -0.0000000000000000 1.2345678901234567 5e-324\n\n--Link1--\n%oldchk=first.chk\n%chk=second.chk\n# HF/STO-3G Units=Ang\n\nHelium singlet\n\n0 1\nHe 0 4 ! explicit Cartesian\n\n--Link1--\n# HF/Gen\n\nCarbon anion\n\n-1 2\nC 7 8 9\n\nC 0\nSTO-3G\n****\n\n"
+    }
+  ]
+}

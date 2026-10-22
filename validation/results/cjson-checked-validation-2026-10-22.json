@@ -1,0 +1,595 @@
+{
+  "schema": "chematic.cjson-checked-validation-index.v1",
+  "date": "2026-10-22",
+  "source_base": "9b085d59965a5bb918a0b38d9b66bfd59e3fb7cb",
+  "candidate_dirty": true,
+  "scope": "Strict CJSON common input validation, using the existing immutable-record profile. Final paired route CJSON-to-CML: 18 common, 27 separately declared compatibility and 105 malformed/outside-profile exposed development inputs. Source-indexed atomic numbers, formal charges, isotopes and bond endpoints/orders only. No holdout, full CJSON/schema/chemical validation, graph-isomorphism, coordinate/stereo/metadata fidelity, timing, release or toolkit-wide superiority claim.",
+  "compatibility_change": "CLI/Python/WASM common CJSON input uses strict typed-field/unique-key/record-version checks before graph conversion. Additive parse_cjson_checked[_with_limits] and Python from_cjson_checked return owned graph/coordinates without source copies/opaque-path collection. Legacy native parse_cjson, Python from_cjson and low-level WASM readers remain permissive; absent optional fields retain defaults. Output retains existing per-format graph/coordinate/metadata limits. Value 4 remains a declared local aromatic alias, and integer token/storage rules remain local.",
+  "limits": {
+    "native": {
+      "input_bytes": 268435456,
+      "json_depth": 128,
+      "array_items": 10000000,
+      "string_or_key_bytes": 16777216,
+      "atoms": 1000000,
+      "bonds": 2000000
+    },
+    "python": {
+      "input_bytes": 16777216,
+      "atoms": 100000
+    },
+    "wasm": {
+      "input_bytes": 1000000,
+      "atoms": 10000
+    },
+    "cli": {
+      "external_default_input_bytes": 67108864,
+      "native_input_bytes": 268435456,
+      "atoms": 10000
+    },
+    "note": "Remaining native defaults apply. Byte limit precedes unique-key JSON parsing. Serde recursion guard also applies. Tree caps after parsing, atom/bond caps during native projection; no output on failure."
+  },
+  "baseline_attestation": {
+    "commit": "c713b21af3125c4289c2829794e11ce8efc4f25f",
+    "path": "validation/results/cjson-source-conversion-validation-2026-10-22.json",
+    "sha256": "9e31ba1377fe40e3abae7f8abbb90f740d0b80617af8f0fa893067aa1c3c220a",
+    "assertions": [
+      "Python package SHA equals b9412a06 source",
+      "Native extension and WASM JS/binary SHA match c713b21a attestation",
+      "Relevant native CJSON/CML, Python reader/wrapper and common WASM paths unchanged b9412a06..candidate base",
+      "c713b21a WASM self-retention branch is unrelated to final CJSON-to-CML route"
+    ],
+    "note": "No CLI baseline attestation in this packet. Earlier unmerged source-retention/CML/SDF work is not a candidate dependency."
+  },
+  "integration_snapshot": {
+    "origin_main_at_final_fetch": "7c34941f52c5e795fd3ca93b075aa31bc9fa748f",
+    "commits_after_candidate_base": [
+      "7c34941f Fix MCS bond-count ties at equal atom bounds (#1145)"
+    ],
+    "changed_paths_after_candidate_base": [
+      "benchmarks/2026-10-22-mcs-equal-atom-bond-count.md",
+      "benchmarks/README.md",
+      "crates/chematic-smarts/src/mcs.rs",
+      "crates/chematic-smarts/src/mcs_comparator_tests.rs"
+    ],
+    "note": "Unrelated MCS bond-count tie fix landed on main during validation; measured binaries remain pinned to candidate source base plus indexed changes. Hosted PR CI will verify integration."
+  },
+  "toolchain": {
+    "rust": "rustc 1.97.0 (2d8144b78 2026-07-07)",
+    "python": "3.13.6 (v3.13.6:4e665351082, Aug  6 2025, 11:22:35) [Clang 16.0.0 (clang-1600.0.26.6)]",
+    "node": "v24.5.0",
+    "wasm_bindgen": {
+      "path": "/private/tmp/chematic-io-tools-20261021/wasm-bindgen-0.2.129-aarch64-apple-darwin/wasm-bindgen",
+      "sha256": "6ad2f953d8abcb36d6b084df221fb2f0716217854c1b8df938aa2f5678d1b948",
+      "size_bytes": 6921856
+    },
+    "openbabel": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27"
+  },
+  "checks": {
+    "rust": "1540 passed: chematic-mol lib/tests 1477 and chematic-cli unit/integration 63, including new checked projection and seven-output CLI refusals",
+    "python": "66 passed: new checked CJSON and existing common conversion suites",
+    "observer": "40 passed: 7 new observer plus 33 existing bounded interchange tests",
+    "wasm": "Real Node/WASM: 18 common + 27 compatibility graphs, 105 invalid input layouts across seven targets, 1MB byte and 10000/10001 atom limits passed. Existing common graph/alias native WASM unit test passed.",
+    "build": "Fresh Python extension, CLI and wasm32 module; four-crate Cargo check passed",
+    "clippy": "All four changed crates, all-targets, warnings denied passed",
+    "static": "fmt, binding inventory/stubs, parent API docs, naming, workflow pins, Open Babel file IO contract, benchmark index, refactor budget and post-stage script layout passed",
+    "docs": "Strict MkDocs build passed"
+  },
+  "commands": {
+    "build_env": "CARGO_TARGET_DIR=/private/tmp/chematic-cml-refs-target-20261022 CARGO_BUILD_JOBS=2 CARGO_PROFILE_DEV_DEBUG=0 CARGO_INCREMENTAL=0 PYO3_PYTHON=python3",
+    "python_build": "cargo rustc --offline --locked -p chematic-py --lib -- -C link-arg=-undefined -C link-arg=dynamic_lookup",
+    "cli_build": "cargo build --offline --locked -p chematic-cli --bin chematic",
+    "wasm_build": "cargo build --offline --locked -p chematic-wasm --target wasm32-unknown-unknown; wasm-bindgen --target nodejs --out-dir /private/tmp/chematic-cjson-checked-wasm-20261022 /private/tmp/chematic-cml-refs-target-20261022/wasm32-unknown-unknown/debug/chematic_wasm.wasm",
+    "rust_tests": "cargo test --offline --locked -p chematic-mol -p chematic-cli --lib --tests",
+    "python_tests": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=/private/tmp/chematic-cjson-checked-python-20261022 python3 -m pytest crates/chematic-py/tests/test_cjson_checked.py crates/chematic-py/tests/test_format_convert.py -q",
+    "observer": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest scripts/tests/test_cjson_checked_observer.py scripts/tests/test_interchange_preservation.py -q",
+    "node": "node crates/chematic-wasm/tests/cjson_checked.test.mjs /private/tmp/chematic-cjson-checked-wasm-20261022/chematic_wasm.js",
+    "candidate": "PYTHONPATH=/private/tmp/chematic-cjson-checked-python-20261022 python3 scripts/validation/check_cjson_checked.py --wasm-module /private/tmp/chematic-cjson-checked-wasm-20261022/chematic_wasm.js --cli /private/tmp/chematic-cjson-checked-cli-20261022 --output /private/tmp/chematic-cjson-checked-candidate.json",
+    "baseline": "PYTHONPATH=/private/tmp/chematic-cjson-unity-baseline-python-20261022 python3 scripts/validation/check_cjson_checked.py --baseline --wasm-module /private/tmp/chematic-cjson-source-integrated-wasm-20261022/chematic_wasm.js --output /private/tmp/chematic-cjson-checked-baseline.json"
+  },
+  "sources": {
+    ".github/workflows/ci.yml": {
+      "path": ".github/workflows/ci.yml",
+      "sha256": "04a07fd61dbb2368b4f640df255ce69b5876f9043ce0e9dcd8115ca01ac7d1ac",
+      "size_bytes": 51562
+    },
+    "crates/chematic-cli/src/main.rs": {
+      "path": "crates/chematic-cli/src/main.rs",
+      "sha256": "77a6b473f4e2a734fc7f858efbaad1b51132acb59b58061728245bf860bd8539",
+      "size_bytes": 42894
+    },
+    "crates/chematic-cli/tests/cjson_checked.rs": {
+      "path": "crates/chematic-cli/tests/cjson_checked.rs",
+      "sha256": "f56468f2b300d5ccb29e8c7ea303299d38ba9ca0649d076a24f5ee46da431410",
+      "size_bytes": 2037
+    },
+    "crates/chematic-mol/src/cjson_record.rs": {
+      "path": "crates/chematic-mol/src/cjson_record.rs",
+      "sha256": "ae7653177a61641a2a219e9c1c9048991a801e3e7514de3c6ecd832e233349d5",
+      "size_bytes": 14947
+    },
+    "crates/chematic-mol/src/lib.rs": {
+      "path": "crates/chematic-mol/src/lib.rs",
+      "sha256": "6e431c784a50cf8ba3579c69776f56f7a795cf616a94ab2d09890779300b68ac",
+      "size_bytes": 14109
+    },
+    "crates/chematic-mol/tests/cjson_checked.rs": {
+      "path": "crates/chematic-mol/tests/cjson_checked.rs",
+      "sha256": "f9743677ad8580320262339c0255416df03cc34e983efbedc665ab56f4d41505",
+      "size_bytes": 5340
+    },
+    "crates/chematic-py/python/chematic/__init__.py": {
+      "path": "crates/chematic-py/python/chematic/__init__.py",
+      "sha256": "b2a1a21a7f22fe702261546d5fd4dbf83ba6730cd5cfe8320f584222e39fea30",
+      "size_bytes": 25849
+    },
+    "crates/chematic-py/python/chematic/__init__.pyi": {
+      "path": "crates/chematic-py/python/chematic/__init__.pyi",
+      "sha256": "d4153a0112b12d2b8205c14544c5b5822916c8c65248d7705211e65cc5e2002e",
+      "size_bytes": 211973
+    },
+    "crates/chematic-py/src/formats.rs": {
+      "path": "crates/chematic-py/src/formats.rs",
+      "sha256": "bf57409be7e7c501a495683fc9756e9681bc6699ab9b74b3123ce3ff3f86b2a3",
+      "size_bytes": 53482
+    },
+    "crates/chematic-py/src/formats/cjson.rs": {
+      "path": "crates/chematic-py/src/formats/cjson.rs",
+      "sha256": "91e33d95534f13c58312ff9e392d4d59f200d9abd69ad8c9f5ea487bf3fa18b1",
+      "size_bytes": 2159
+    },
+    "crates/chematic-py/tests/test_cjson_checked.py": {
+      "path": "crates/chematic-py/tests/test_cjson_checked.py",
+      "sha256": "147e788bbd56500ef4d3013d976d48ab0706c014d9e21f2312e964c6683cacd1",
+      "size_bytes": 2559
+    },
+    "crates/chematic-wasm/src/mol_io/common_formats.rs": {
+      "path": "crates/chematic-wasm/src/mol_io/common_formats.rs",
+      "sha256": "aa0497b8b0bb12df012716ead8f2afb697859f69dc763a5887c86f87b0bea37a",
+      "size_bytes": 11440
+    },
+    "crates/chematic-wasm/tests/cjson_checked.test.mjs": {
+      "path": "crates/chematic-wasm/tests/cjson_checked.test.mjs",
+      "sha256": "6ec8362cb19ff505fea5c114e96a7cdc4187112b29e38b0d1fc180165eab7faa",
+      "size_bytes": 2141
+    },
+    "docs/benchmarks/2026-10-22-cjson-checked-input.md": {
+      "path": "docs/benchmarks/2026-10-22-cjson-checked-input.md",
+      "sha256": "be67d16f3aba21ced4693251c4692200b9de772082924b4650c9d015eddf23fb",
+      "size_bytes": 10126
+    },
+    "docs/format-capabilities.md": {
+      "path": "docs/format-capabilities.md",
+      "sha256": "db0053e4f1cb0d8add3addf58187d35cab6abcb7262a22c02884d462002897aa",
+      "size_bytes": 53948
+    },
+    "scripts/tests/test_cjson_checked_observer.py": {
+      "path": "scripts/tests/test_cjson_checked_observer.py",
+      "sha256": "c06f43e2c5d6516c5365e7fdda064a3e499e1b5227f40fd8e1d83054ba6ce21a",
+      "size_bytes": 3669
+    },
+    "scripts/validation/check_cjson_checked.py": {
+      "path": "scripts/validation/check_cjson_checked.py",
+      "sha256": "57983ca5c90260dd3190e480787e391afb64566e4749bb15a7ce94cac186ff8c",
+      "size_bytes": 10461
+    },
+    "validation/cjson_checked/cases.json": {
+      "path": "validation/cjson_checked/cases.json",
+      "sha256": "1e78a8672b936fc4ca6cd9a424c7ebb3d5bfff000842f94ab2483c17decb44d1",
+      "size_bytes": 34890
+    },
+    "validation/results/binding_surface_inventory-current.json": {
+      "path": "validation/results/binding_surface_inventory-current.json",
+      "sha256": "bba764f659ebfc930062d428d97c15a84c9968748fc08b1e856c7a2179d95c86",
+      "size_bytes": 562
+    },
+    "Cargo.lock": {
+      "path": "Cargo.lock",
+      "sha256": "0231180e5d1c885bb6ccf6555a17064b57ff5e4d69b1aca573c209eb0433d502",
+      "size_bytes": 63558
+    },
+    "crates/chematic-mol/src/cjson.rs": {
+      "path": "crates/chematic-mol/src/cjson.rs",
+      "sha256": "f9097bf0f97596223f3941bcfdaf3d9f8ac8a8d6596284e47f0724e3e6d72d87",
+      "size_bytes": 25462
+    },
+    "crates/chematic-mol/src/cml.rs": {
+      "path": "crates/chematic-mol/src/cml.rs",
+      "sha256": "d82493532127d9c38d52961577b19c1acd85bed0a958ad7b1a310fca99f80758",
+      "size_bytes": 37861
+    },
+    "scripts/check_interchange_preservation.py": {
+      "path": "scripts/check_interchange_preservation.py",
+      "sha256": "df7aec9cf2bc8adfcd56fe005e84b23ad38ba3c5cef63cc8b8089ab980b58fac",
+      "size_bytes": 28676
+    }
+  },
+  "baseline_artifacts": {
+    "python_package": {
+      "path": "/private/tmp/chematic-cjson-unity-baseline-python-20261022/chematic/__init__.py",
+      "sha256": "fa171425f542041f4449489cfb87c2752e73b613840d7f5d26e1a4b09749f384",
+      "size_bytes": 25696
+    },
+    "python_extension": {
+      "path": "/private/tmp/chematic-cjson-unity-baseline-python-20261022/chematic/chematic.cpython-313-darwin.so",
+      "sha256": "4208d5677ac7bf4cb1c5961ddbc7236c3b7ad83f65b8f74fcbd1dadaeb51587d",
+      "size_bytes": 44623488
+    },
+    "wasm_module": {
+      "path": "/private/tmp/chematic-cjson-source-integrated-wasm-20261022/chematic_wasm.js",
+      "sha256": "0435d3d28f9f65c803bbefad9c6cc04ef5b8ada74b2d92d67b098cd4c9027cf0",
+      "size_bytes": 366818
+    },
+    "wasm_binary": {
+      "path": "/private/tmp/chematic-cjson-source-integrated-wasm-20261022/chematic_wasm_bg.wasm",
+      "sha256": "054bd13bd17e2ad95fe651fed08d1a021a443c0bd81b2402858c8cf1751b5f3a",
+      "size_bytes": 44853145
+    }
+  },
+  "candidate_artifacts": {
+    "python_package": {
+      "path": "/private/tmp/chematic-cjson-checked-python-20261022/chematic/__init__.py",
+      "sha256": "b2a1a21a7f22fe702261546d5fd4dbf83ba6730cd5cfe8320f584222e39fea30",
+      "size_bytes": 25849
+    },
+    "python_extension": {
+      "path": "/private/tmp/chematic-cjson-checked-python-20261022/chematic/chematic.cpython-313-darwin.so",
+      "sha256": "cb8196134e93799b0bf8bbdf71166af6ddb2df0d8c5e9820258478d51cdae50a",
+      "size_bytes": 44656720
+    },
+    "wasm_module": {
+      "path": "/private/tmp/chematic-cjson-checked-wasm-20261022/chematic_wasm.js",
+      "sha256": "66d6004b5794943819df69c4b8874fd2e1374fea04c75821e14ff3cf3d5c989e",
+      "size_bytes": 366831
+    },
+    "wasm_binary": {
+      "path": "/private/tmp/chematic-cjson-checked-wasm-20261022/chematic_wasm_bg.wasm",
+      "sha256": "131f6feb5dd54fe0be54f7d65f7f058152e18c5b1134e0d691a408ef47d468ff",
+      "size_bytes": 44879403
+    },
+    "cli": {
+      "path": "/private/tmp/chematic-cjson-checked-cli-20261022",
+      "sha256": "68e8ea8717de447fc017a9dcea1cce56cab652e16033ee94a0668786f1f6257b",
+      "size_bytes": 24079720
+    }
+  },
+  "openbabel_files": {
+    "/opt/homebrew/bin/obabel": {
+      "path": "/opt/homebrew/bin/obabel",
+      "sha256": "733b2c925d60b17a5c9d8ce9ec841e918cc20c7634301e23f9008a187d1d9bc5",
+      "size_bytes": 75728
+    },
+    "/opt/homebrew/lib/libopenbabel.8.dylib": {
+      "path": "/opt/homebrew/lib/libopenbabel.8.dylib",
+      "sha256": "9c0e023919fca6656f686b3903c10d438c0003a1d07e721a850cff9ff495c93a",
+      "size_bytes": 2794816
+    },
+    "/opt/homebrew/lib/openbabel/3.2.1/xmlformat.so": {
+      "path": "/opt/homebrew/lib/openbabel/3.2.1/xmlformat.so",
+      "sha256": "f385429c0e01df9eb63255b2dcfcd0b652248a7f14f353b63fd0ef38761c79fa",
+      "size_bytes": 84128
+    },
+    "/opt/homebrew/lib/openbabel/3.2.1/chemicaljsonformat.so": {
+      "path": "/opt/homebrew/lib/openbabel/3.2.1/chemicaljsonformat.so",
+      "sha256": "39be1877bf787d7594058ca76173e3c7b418607bf1b7c1aaba5d96539571b6f2",
+      "size_bytes": 132736
+    }
+  },
+  "outcomes": {
+    "baseline": {
+      "path": "validation/results/cjson-checked-baseline-2026-10-22.json.gz",
+      "sha256": "3bd2ae4b350f63b8e6c522042feb60a5b1a55c1ee01da1020be1122391d4a6b1",
+      "size_bytes": 14381,
+      "uncompressed_sha256": "4feec5f279582023d02acd381cddc0245a637d36d3458d4741fc51266987ed84",
+      "encoding": "gzip UTF-8 JSON"
+    },
+    "candidate": {
+      "path": "validation/results/cjson-checked-candidate-2026-10-22.json.gz",
+      "sha256": "081f3b52e5d44073a83d9d03c9e10bf991b5263ea30d777e914b8fae378ad752",
+      "size_bytes": 14907,
+      "uncompressed_sha256": "5ecd1cfb77989b52cb2c8797022a5c2848f782fe86ae5d8894b1882a1b74ab73",
+      "encoding": "gzip UTF-8 JSON"
+    }
+  },
+  "summary": {
+    "baseline": {
+      "python": {
+        "valid": {
+          "cases": 18,
+          "selected_graph": 18,
+          "outcomes": {
+            "graph_match": 18
+          }
+        },
+        "compatibility": {
+          "cases": 27,
+          "selected_graph": 27,
+          "outcomes": {
+            "graph_match": 27
+          }
+        },
+        "invalid": {
+          "cases": 105,
+          "selected_graph": 0,
+          "outcomes": {
+            "accepted_outside_profile": 66,
+            "refused_no_output": 39
+          }
+        }
+      },
+      "wasm": {
+        "valid": {
+          "cases": 18,
+          "selected_graph": 18,
+          "outcomes": {
+            "graph_match": 18
+          }
+        },
+        "compatibility": {
+          "cases": 27,
+          "selected_graph": 27,
+          "outcomes": {
+            "graph_match": 27
+          }
+        },
+        "invalid": {
+          "cases": 105,
+          "selected_graph": 0,
+          "outcomes": {
+            "accepted_outside_profile": 66,
+            "refused_no_output": 39
+          }
+        }
+      },
+      "openbabel": {
+        "valid": {
+          "cases": 18,
+          "selected_graph": 9,
+          "outcomes": {
+            "graph_match": 9,
+            "graph_mismatch": 9
+          }
+        },
+        "compatibility": {
+          "cases": 27,
+          "selected_graph": 6,
+          "outcomes": {
+            "empty_output": 6,
+            "graph_match": 6,
+            "graph_mismatch": 15
+          }
+        },
+        "invalid": {
+          "cases": 105,
+          "selected_graph": 0,
+          "outcomes": {
+            "accepted_outside_profile": 87,
+            "empty_output": 18
+          }
+        }
+      }
+    },
+    "candidate": {
+      "python": {
+        "valid": {
+          "cases": 18,
+          "selected_graph": 18,
+          "outcomes": {
+            "graph_match": 18
+          }
+        },
+        "compatibility": {
+          "cases": 27,
+          "selected_graph": 27,
+          "outcomes": {
+            "graph_match": 27
+          }
+        },
+        "invalid": {
+          "cases": 105,
+          "selected_graph": 0,
+          "outcomes": {
+            "refused_no_output": 105
+          }
+        }
+      },
+      "wasm": {
+        "valid": {
+          "cases": 18,
+          "selected_graph": 18,
+          "outcomes": {
+            "graph_match": 18
+          }
+        },
+        "compatibility": {
+          "cases": 27,
+          "selected_graph": 27,
+          "outcomes": {
+            "graph_match": 27
+          }
+        },
+        "invalid": {
+          "cases": 105,
+          "selected_graph": 0,
+          "outcomes": {
+            "refused_no_output": 105
+          }
+        }
+      },
+      "openbabel": {
+        "valid": {
+          "cases": 18,
+          "selected_graph": 9,
+          "outcomes": {
+            "graph_match": 9,
+            "graph_mismatch": 9
+          }
+        },
+        "compatibility": {
+          "cases": 27,
+          "selected_graph": 6,
+          "outcomes": {
+            "empty_output": 6,
+            "graph_match": 6,
+            "graph_mismatch": 15
+          }
+        },
+        "invalid": {
+          "cases": 105,
+          "selected_graph": 0,
+          "outcomes": {
+            "accepted_outside_profile": 87,
+            "empty_output": 18
+          }
+        }
+      },
+      "cli": {
+        "valid": {
+          "cases": 18,
+          "selected_graph": 18,
+          "outcomes": {
+            "graph_match": 18
+          }
+        },
+        "compatibility": {
+          "cases": 27,
+          "selected_graph": 27,
+          "outcomes": {
+            "graph_match": 27
+          }
+        },
+        "invalid": {
+          "cases": 105,
+          "selected_graph": 0,
+          "outcomes": {
+            "refused_no_output": 105
+          }
+        }
+      }
+    }
+  },
+  "interpretation": "Positive selected graphs already matched on baseline; the change improves invalid/outside-profile handling from 39 to 105 output-free refusals per Python/WASM route. Candidate CLI also refuses all 105. Open Babel matches 9/18 common and 6/27 compatibility graphs in measured CJSON-to-CML; charged controls lose formal charge, extensions/storage semantics differ. It emits XML for 87/105 malformed/outside-profile and empty exit-zero output for 18. These are local profile/workflow observations, not full schema/chemical validity. Numeric order 0 is recognized as a differing value, not an XML parse failure. Some invalid-input numeric outputs vary across runs; no stable-value claim.",
+  "development_pilots": {
+    "path": "validation/results/cjson-checked-development-pilots-2026-10-22.json.gz",
+    "sha256": "0ded736515b7f76fe10061974abed40170d8d7bb6bf3e6062e0019bc6ba5d3cd",
+    "size_bytes": 67488,
+    "note": "Contains initial self-route pilot (baseline WASM includes unrelated unmerged self-retention), and earlier CML observer stage which did not recognize zero order and conflated emitted XML with typed graph readability. Full runners and raw reports retained; final product fixtures unchanged."
+  },
+  "logs": {
+    "python-build": {
+      "path": "validation/results/cjson-checked-2026-10-22/python-build.log",
+      "sha256": "e70e08c1ffc20e0d0b48278aa04aeb2f67563aae8f2df7a2541312faa5618d5b",
+      "size_bytes": 276
+    },
+    "wasm-build": {
+      "path": "validation/results/cjson-checked-2026-10-22/wasm-build.log",
+      "sha256": "efa40605c607d33706946e41ea39b6d32ecb663961ea9411015ec2be7c6157c1",
+      "size_bytes": 335
+    },
+    "cli-build": {
+      "path": "validation/results/cjson-checked-2026-10-22/cli-build.log",
+      "sha256": "4762c77dd12e416f5048ff9cea66dca40a0b875f4a372ebd54f51463c9da6a0f",
+      "size_bytes": 333
+    },
+    "rust-tests": {
+      "path": "validation/results/cjson-checked-2026-10-22/rust-tests.log",
+      "sha256": "e775377b6df2eb1f463ab4acf101e702c0b6e17eb25552446d441f8b8d2b2524",
+      "size_bytes": 128431
+    },
+    "python-tests": {
+      "path": "validation/results/cjson-checked-2026-10-22/python-tests.log",
+      "sha256": "0cbb7cd02be235b90ed94139f37e2c8a6783fcb8ffd93a547a6ae4d7b4695c5d",
+      "size_bytes": 589
+    },
+    "node-tests": {
+      "path": "validation/results/cjson-checked-2026-10-22/node-tests.log",
+      "sha256": "4d813424016f683463109b68ae0c125db00f794e6b7fa988915bea5c5d43b037",
+      "size_bytes": 120
+    },
+    "observer-tests": {
+      "path": "validation/results/cjson-checked-2026-10-22/observer-tests.log",
+      "sha256": "cdc3879c6a17fd157411d386d405261345fee5509c1d9cb3c1d31ed63148bed7",
+      "size_bytes": 99
+    },
+    "baseline": {
+      "path": "validation/results/cjson-checked-2026-10-22/baseline.log",
+      "sha256": "e70036b34c56d5463af3a2555a9e6a9d74901081c8364c0e6c5716c12fcb9482",
+      "size_bytes": 946
+    },
+    "candidate": {
+      "path": "validation/results/cjson-checked-2026-10-22/candidate.log",
+      "sha256": "eed8bf28709496e7d00f926356b327a056e268331a2f07ba589478315ee5c128",
+      "size_bytes": 1147
+    },
+    "clippy": {
+      "path": "validation/results/cjson-checked-2026-10-22/clippy.log",
+      "sha256": "5c011a8c85d529b0211a6cd17c2ab6a83f1a3778d79041582153aee7e580879a",
+      "size_bytes": 551
+    },
+    "check": {
+      "path": "validation/results/cjson-checked-2026-10-22/check.log",
+      "sha256": "c1f3ea71d8d1bd008de88917f5f842fd0742bd62c40d4d8cdb2c335edd151fc2",
+      "size_bytes": 496
+    },
+    "wasm-native": {
+      "path": "validation/results/cjson-checked-2026-10-22/wasm-native.log",
+      "sha256": "2fd0e8c278309f4275c30ae382a9b425466077043343cb5eec7554bc2c22fbc4",
+      "size_bytes": 1267
+    },
+    "fmt": {
+      "path": "validation/results/cjson-checked-2026-10-22/fmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    "bindings": {
+      "path": "validation/results/cjson-checked-2026-10-22/bindings.log",
+      "sha256": "f5581fc77017882c9ff1ac51b48dffea02073c640dc7adfdd55a1e9505c69805",
+      "size_bytes": 20541
+    },
+    "stubs": {
+      "path": "validation/results/cjson-checked-2026-10-22/stubs.log",
+      "sha256": "98945ec702355b897670c54011fed035f73047ad280da66e6125fea56162ec13",
+      "size_bytes": 50
+    },
+    "parent-api": {
+      "path": "validation/results/cjson-checked-2026-10-22/parent-api.log",
+      "sha256": "026f6d2da0ef02b218c3b44546eda64d24b7042bd3f41c9d39d755942a8561f1",
+      "size_bytes": 63
+    },
+    "naming": {
+      "path": "validation/results/cjson-checked-2026-10-22/naming.log",
+      "sha256": "d1f6921742a3cbe1b0c2309ebb06b159c1b9d3120a07fb4041c5db2c2a043e51",
+      "size_bytes": 66
+    },
+    "workflow-pins": {
+      "path": "validation/results/cjson-checked-2026-10-22/workflow-pins.log",
+      "sha256": "487f9131fb571b886134dc20a91c114f58c6175d50b85cf6a258a251544d8d90",
+      "size_bytes": 71
+    },
+    "file-io-contract": {
+      "path": "validation/results/cjson-checked-2026-10-22/file-io-contract.log",
+      "sha256": "6cd4b43f8407860055e672ed728806eb9abe736d9191ef0a68e8a7006187dfc7",
+      "size_bytes": 88
+    },
+    "benchmark-index": {
+      "path": "validation/results/cjson-checked-2026-10-22/benchmark-index.log",
+      "sha256": "3003c57c68d40436f6862611f0cae7faeec070523b0a388f410646d90293cacd",
+      "size_bytes": 52
+    },
+    "docs": {
+      "path": "validation/results/cjson-checked-2026-10-22/docs.log",
+      "sha256": "3ddf148100e6ee888fcd278e929b266b15775ce99aef31d8d22e958c43e9b205",
+      "size_bytes": 2721
+    },
+    "refactor": {
+      "path": "validation/results/cjson-checked-2026-10-22/refactor.log",
+      "sha256": "94e84362f6af2c9b54c45d371d8c7c732f0a98b79ad445c76b61cccc708e8c92",
+      "size_bytes": 106
+    },
+    "script-layout": {
+      "path": "validation/results/cjson-checked-2026-10-22/script-layout.log",
+      "sha256": "552028e216bc5bc00277707740021dc1f7100a720852583ed9279e4355f0c6bc",
+      "size_bytes": 61
+    }
+  }
+}

@@ -1,0 +1,582 @@
+{
+  "schema": "chematic.cml-3d-validation-index.v1",
+  "date": "2026-10-22",
+  "source_base": "b7817c64dc01c85abe4f1096b55ec4ecaabeed54",
+  "candidate_dirty": true,
+  "scope": "Bounded CML Cartesian projection through native/Python APIs and common Python/WASM CML-to-CJSON. Original exposed development inputs: 24 complete, 6 absent, 42 malformed/outside-profile. Coordinate IEEE-754 bits and source-ordered selected graph only. No full XML/CML validation, graph-isomorphism, interpreted stereo/opaque metadata, raw-source retention, speed, holdout, release or toolkit-wide superiority claim.",
+  "compatibility_change": "Only common CML-to-CJSON changes acceptance: one nonempty molecule, unique nonempty atom IDs, unique quoted atom attributes, complete finite x3/y3/z3 on all atoms or absent on all; packed/fractional coordinates refuse. Compact XML normalized. No zero filling/promotion/generation. Python explicit coordinate override remains after validation. Existing legacy graph/2D readers and other common routes unchanged.",
+  "limits": {
+    "native": {
+      "input_bytes": 268435456,
+      "line_bytes": 1048576,
+      "lines": 1000000,
+      "atoms": 1000000,
+      "bonds": 2000000,
+      "xml_elements": 2000000
+    },
+    "python": {
+      "input_bytes": 16777216,
+      "atoms": 100000
+    },
+    "wasm": {
+      "input_bytes": 1000000,
+      "atoms": 10000
+    },
+    "note": "Python/WASM use remaining native defaults. Source input byte/line checks precede normalization. Inserted tag separators are excluded from source-byte budget; normalized line/element caps still apply. Atom cap before point accumulation, graph atom/bond caps before graph construction."
+  },
+  "baseline_attestation": {
+    "commit": "c713b21af3125c4289c2829794e11ce8efc4f25f",
+    "path": "validation/results/cjson-source-conversion-validation-2026-10-22.json",
+    "sha256": "9e31ba1377fe40e3abae7f8abbb90f740d0b80617af8f0fa893067aa1c3c220a",
+    "assertions": [
+      "Python package SHA equals b9412a06 source",
+      "Native extension and WASM JS/binary SHA match c713b21a candidate attestation",
+      "Relevant CML/native/CJSON/common paths unchanged b9412a06..candidate base",
+      "c713b21a WASM differs only in unrelated CJSON self-route; CML branch matches main"
+    ],
+    "note": "Earlier unmerged I/O PRs, including prior SDF work, are not dependencies."
+  },
+  "toolchain": {
+    "rust": "rustc 1.97.0 (2d8144b78 2026-07-07)",
+    "python": "3.13.6 (v3.13.6:4e665351082, Aug  6 2025, 11:22:35) [Clang 16.0.0 (clang-1600.0.26.6)]",
+    "node": "v24.5.0",
+    "wasm_bindgen": {
+      "path": "/private/tmp/chematic-io-tools-20261021/wasm-bindgen-0.2.129-aarch64-apple-darwin/wasm-bindgen",
+      "sha256": "6ad2f953d8abcb36d6b084df221fb2f0716217854c1b8df938aa2f5678d1b948",
+      "size_bytes": 6921856
+    },
+    "openbabel": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27"
+  },
+  "checks": {
+    "native": "1478 passed, chematic-mol lib/tests including 5 new CML Cartesian tests",
+    "python": "104 passed: new CML Cartesian plus existing common conversion, named CML and hydrogen contract suites",
+    "observer": "40 passed: 7 new independent observer tests plus 33 existing bounded interchange tests",
+    "wasm": "Real Node/WASM: 24 complete, 6 absent, 42 invalid/outside-profile, charge/isotope, 1MB byte and 10000/10001 atom boundaries passed. Existing common graph/alias native WASM unit test passed.",
+    "build": "Fresh native extension and wasm32 module rebuilt with locked dependencies; cargo check for all three changed crates passed",
+    "clippy": "All three changed crates, all-targets, warnings denied passed",
+    "static": "fmt, binding inventory/stubs, parent API docs, names, workflow pins, Open Babel file IO contract, benchmark index, refactor budget and post-stage script layout passed",
+    "docs": "Strict MkDocs build passed"
+  },
+  "commands": {
+    "build_env": "CARGO_TARGET_DIR=/private/tmp/chematic-cml-refs-target-20261022 CARGO_BUILD_JOBS=2 CARGO_PROFILE_DEV_DEBUG=0 CARGO_INCREMENTAL=0 PYO3_PYTHON=python3",
+    "python_build": "cargo rustc --offline --locked -p chematic-py --lib -- -C link-arg=-undefined -C link-arg=dynamic_lookup",
+    "wasm_build": "cargo build --offline --locked -p chematic-wasm --target wasm32-unknown-unknown; wasm-bindgen --target nodejs --out-dir /private/tmp/chematic-cml-3d-wasm-20261022 /private/tmp/chematic-cml-refs-target-20261022/wasm32-unknown-unknown/debug/chematic_wasm.wasm",
+    "native_tests": "cargo test --offline --locked -p chematic-mol --lib --tests",
+    "python_tests": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=/private/tmp/chematic-cml-3d-python-20261022 python3 -m pytest crates/chematic-py/tests/test_cml_3d.py crates/chematic-py/tests/test_format_convert.py crates/chematic-py/tests/test_cml_named.py crates/chematic-py/tests/test_cml_hydrogen_contract.py -q",
+    "observer": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest scripts/tests/test_cml_3d_observer.py scripts/tests/test_interchange_preservation.py -q",
+    "node": "node crates/chematic-wasm/tests/cml_3d.test.mjs /private/tmp/chematic-cml-3d-wasm-20261022/chematic_wasm.js",
+    "candidate": "PYTHONPATH=/private/tmp/chematic-cml-3d-python-20261022 python3 scripts/validation/check_cml_3d.py --wasm-module /private/tmp/chematic-cml-3d-wasm-20261022/chematic_wasm.js --output /private/tmp/chematic-cml-3d-candidate.json",
+    "baseline": "PYTHONPATH=/private/tmp/chematic-cjson-unity-baseline-python-20261022 python3 scripts/validation/check_cml_3d.py --baseline --wasm-module /private/tmp/chematic-cjson-source-integrated-wasm-20261022/chematic_wasm.js --output /private/tmp/chematic-cml-3d-baseline.json"
+  },
+  "sources": {
+    ".github/workflows/ci.yml": {
+      "path": ".github/workflows/ci.yml",
+      "sha256": "1360e3983f35a210da83fd2f06d4cd868c4c648acd23fb8500ae42f4b832690f",
+      "size_bytes": 51562
+    },
+    "crates/chematic-mol/src/cml.rs": {
+      "path": "crates/chematic-mol/src/cml.rs",
+      "sha256": "21e13e778afbc51a9e3568cc0dccd1949297dc7efd5123085e85f76d11334374",
+      "size_bytes": 38046
+    },
+    "crates/chematic-mol/src/cml/geometry.rs": {
+      "path": "crates/chematic-mol/src/cml/geometry.rs",
+      "sha256": "f62ae57a01aceaea019d9ab4320080d4570f507394684f25c3ff26de012d5c7c",
+      "size_bytes": 6463
+    },
+    "crates/chematic-mol/src/lib.rs": {
+      "path": "crates/chematic-mol/src/lib.rs",
+      "sha256": "29632ee455efd8829a3dfc4b734e701858a6614b583c15fcc9915d361c6e0a15",
+      "size_bytes": 14095
+    },
+    "crates/chematic-mol/tests/cml_3d.rs": {
+      "path": "crates/chematic-mol/tests/cml_3d.rs",
+      "sha256": "65746b7f6ffb67a2944d8a96edc8dbae68dd33d564252fc8fcbb42357a7d5007",
+      "size_bytes": 5394
+    },
+    "crates/chematic-py/python/chematic/__init__.py": {
+      "path": "crates/chematic-py/python/chematic/__init__.py",
+      "sha256": "dea63663f184ce3e72fb19f067f119cb42741ab52cef88fb650aec521cd547a7",
+      "size_bytes": 26097
+    },
+    "crates/chematic-py/python/chematic/__init__.pyi": {
+      "path": "crates/chematic-py/python/chematic/__init__.pyi",
+      "sha256": "02dd9631ea53804771b925839dc9ee0c72e599e0a31fe29ee50e9275a792ed15",
+      "size_bytes": 211978
+    },
+    "crates/chematic-py/src/formats.rs": {
+      "path": "crates/chematic-py/src/formats.rs",
+      "sha256": "d73c687d543f07c426c99d4b73be3eb0f64e55de5b35e19f40296b108226e46f",
+      "size_bytes": 53480
+    },
+    "crates/chematic-py/src/formats/cml.rs": {
+      "path": "crates/chematic-py/src/formats/cml.rs",
+      "sha256": "48f42f571966818f6c58b780a3fa06d52fc71fbacbf833bb74597452e0c15086",
+      "size_bytes": 2702
+    },
+    "crates/chematic-py/tests/test_cml_3d.py": {
+      "path": "crates/chematic-py/tests/test_cml_3d.py",
+      "sha256": "6a343dfd5816f804fd4c26ef9c9997f8dde53128b567a602b60bfa9751a1f820",
+      "size_bytes": 2667
+    },
+    "crates/chematic-wasm/src/mol_io/common_formats.rs": {
+      "path": "crates/chematic-wasm/src/mol_io/common_formats.rs",
+      "sha256": "76ee5ca89df22ab63ec17d95f7c8c7be7716b5b68f24b7911847acc89f3539ba",
+      "size_bytes": 11978
+    },
+    "crates/chematic-wasm/tests/cml_3d.test.mjs": {
+      "path": "crates/chematic-wasm/tests/cml_3d.test.mjs",
+      "sha256": "9be8472bb52c538051f19fc93c439a200336868be0ea493cc6555c47151c91a8",
+      "size_bytes": 2176
+    },
+    "docs/benchmarks/2026-10-22-cml-3d-coordinates.md": {
+      "path": "docs/benchmarks/2026-10-22-cml-3d-coordinates.md",
+      "sha256": "c170ee4b676699defe70a567b0987982bbe89801c903bfdb57aaa13a83341ea0",
+      "size_bytes": 8622
+    },
+    "docs/format-capabilities.md": {
+      "path": "docs/format-capabilities.md",
+      "sha256": "0e284904cc2f7a2120d09ed24c09fb0714b2880373110b88039fa8c80f715f66",
+      "size_bytes": 53774
+    },
+    "scripts/tests/test_cml_3d_observer.py": {
+      "path": "scripts/tests/test_cml_3d_observer.py",
+      "sha256": "e5880f4f8e31f00d8d3741c01b4cbb8e573a74133bf59c53725702f272e28a0e",
+      "size_bytes": 2828
+    },
+    "scripts/validation/check_cml_3d.py": {
+      "path": "scripts/validation/check_cml_3d.py",
+      "sha256": "6e8c23be8a8f5465e23e524f65f70db5287dfc9a92f289a179dc8667aba58745",
+      "size_bytes": 7353
+    },
+    "validation/cml_3d/cases.json": {
+      "path": "validation/cml_3d/cases.json",
+      "sha256": "8471255607f15ead432feb14463f9d459d8ef9b0c6a8ed38786e80474acd5146",
+      "size_bytes": 11489
+    },
+    "validation/results/binding_surface_inventory-current.json": {
+      "path": "validation/results/binding_surface_inventory-current.json",
+      "sha256": "7f4f711f97d206378f3a4daf98805a4b15c1e416b8c521336594bed74b849703",
+      "size_bytes": 562
+    },
+    "Cargo.lock": {
+      "path": "Cargo.lock",
+      "sha256": "0231180e5d1c885bb6ccf6555a17064b57ff5e4d69b1aca573c209eb0433d502",
+      "size_bytes": 63558
+    },
+    "crates/chematic-mol/src/cml_named.rs": {
+      "path": "crates/chematic-mol/src/cml_named.rs",
+      "sha256": "e2ce65be3106777ed065a2316576efc2117e2ac0a6680a16d4a9773ad3756966",
+      "size_bytes": 6703
+    },
+    "crates/chematic-mol/src/cjson.rs": {
+      "path": "crates/chematic-mol/src/cjson.rs",
+      "sha256": "f9097bf0f97596223f3941bcfdaf3d9f8ac8a8d6596284e47f0724e3e6d72d87",
+      "size_bytes": 25462
+    },
+    "scripts/check_interchange_preservation.py": {
+      "path": "scripts/check_interchange_preservation.py",
+      "sha256": "df7aec9cf2bc8adfcd56fe005e84b23ad38ba3c5cef63cc8b8089ab980b58fac",
+      "size_bytes": 28676
+    }
+  },
+  "baseline_artifacts": {
+    "python_package": {
+      "path": "/private/tmp/chematic-cjson-unity-baseline-python-20261022/chematic/__init__.py",
+      "sha256": "fa171425f542041f4449489cfb87c2752e73b613840d7f5d26e1a4b09749f384",
+      "size_bytes": 25696
+    },
+    "python_extension": {
+      "path": "/private/tmp/chematic-cjson-unity-baseline-python-20261022/chematic/chematic.cpython-313-darwin.so",
+      "sha256": "4208d5677ac7bf4cb1c5961ddbc7236c3b7ad83f65b8f74fcbd1dadaeb51587d",
+      "size_bytes": 44623488
+    },
+    "wasm_module": {
+      "path": "/private/tmp/chematic-cjson-source-integrated-wasm-20261022/chematic_wasm.js",
+      "sha256": "0435d3d28f9f65c803bbefad9c6cc04ef5b8ada74b2d92d67b098cd4c9027cf0",
+      "size_bytes": 366818
+    },
+    "wasm_binary": {
+      "path": "/private/tmp/chematic-cjson-source-integrated-wasm-20261022/chematic_wasm_bg.wasm",
+      "sha256": "054bd13bd17e2ad95fe651fed08d1a021a443c0bd81b2402858c8cf1751b5f3a",
+      "size_bytes": 44853145
+    }
+  },
+  "candidate_artifacts": {
+    "python_package": {
+      "path": "/private/tmp/chematic-cml-3d-python-20261022/chematic/__init__.py",
+      "sha256": "dea63663f184ce3e72fb19f067f119cb42741ab52cef88fb650aec521cd547a7",
+      "size_bytes": 26097
+    },
+    "python_extension": {
+      "path": "/private/tmp/chematic-cml-3d-python-20261022/chematic/chematic.cpython-313-darwin.so",
+      "sha256": "326eba4c91e947cad4adbbba712c0955c92336b0d676bbaf82ea0e342b6d6090",
+      "size_bytes": 44673456
+    },
+    "wasm_module": {
+      "path": "/private/tmp/chematic-cml-3d-wasm-20261022/chematic_wasm.js",
+      "sha256": "9fba1e262880ef12b821e5952c021d1ea8f5e5eb5f1d387133ccca47e0973caf",
+      "size_bytes": 366991
+    },
+    "wasm_binary": {
+      "path": "/private/tmp/chematic-cml-3d-wasm-20261022/chematic_wasm_bg.wasm",
+      "sha256": "7412de46fef1e3b0636a1eec8f54826bafcf4998bd1c53d577ff5c65da31b1ce",
+      "size_bytes": 44923458
+    }
+  },
+  "openbabel_files": {
+    "/opt/homebrew/bin/obabel": {
+      "path": "/opt/homebrew/bin/obabel",
+      "sha256": "733b2c925d60b17a5c9d8ce9ec841e918cc20c7634301e23f9008a187d1d9bc5",
+      "size_bytes": 75728
+    },
+    "/opt/homebrew/lib/libopenbabel.8.dylib": {
+      "path": "/opt/homebrew/lib/libopenbabel.8.dylib",
+      "sha256": "9c0e023919fca6656f686b3903c10d438c0003a1d07e721a850cff9ff495c93a",
+      "size_bytes": 2794816
+    },
+    "/opt/homebrew/lib/openbabel/3.2.1/xmlformat.so": {
+      "path": "/opt/homebrew/lib/openbabel/3.2.1/xmlformat.so",
+      "sha256": "f385429c0e01df9eb63255b2dcfcd0b652248a7f14f353b63fd0ef38761c79fa",
+      "size_bytes": 84128
+    },
+    "/opt/homebrew/lib/openbabel/3.2.1/chemicaljsonformat.so": {
+      "path": "/opt/homebrew/lib/openbabel/3.2.1/chemicaljsonformat.so",
+      "sha256": "39be1877bf787d7594058ca76173e3c7b418607bf1b7c1aaba5d96539571b6f2",
+      "size_bytes": 132736
+    }
+  },
+  "outcomes": {
+    "baseline": {
+      "path": "validation/results/cml-3d-baseline-2026-10-22.json.gz",
+      "sha256": "70b3950dc88eeb6c4b8a4956640e75f8ee2a1ec4e7fb3bb97d770f2c39d08f9f",
+      "size_bytes": 8251,
+      "uncompressed_sha256": "36cc62f3264fce735eef19a3276f6ee9889f83ab7d6c507cfb396020abcfea26",
+      "encoding": "gzip UTF-8 JSON"
+    },
+    "candidate": {
+      "path": "validation/results/cml-3d-candidate-2026-10-22.json.gz",
+      "sha256": "8f9a47ffac1d712d6f38c2f8a11f99d4e0f6be0f8f7af24fef9aa633a778dfea",
+      "size_bytes": 8895,
+      "uncompressed_sha256": "dad563c16c4f290c5530435300478611f9ce8b6cdc7c899a12d14a8153a70f4f",
+      "encoding": "gzip UTF-8 JSON"
+    }
+  },
+  "summary": {
+    "baseline": {
+      "python": {
+        "valid": {
+          "cases": 24,
+          "coordinate_bits": 0,
+          "selected_graph": 16,
+          "absence_retained": 24,
+          "error_status": 0,
+          "outcomes": {
+            "json_output": 24
+          }
+        },
+        "absent": {
+          "cases": 6,
+          "coordinate_bits": 0,
+          "selected_graph": 4,
+          "absence_retained": 6,
+          "error_status": 0,
+          "outcomes": {
+            "json_output": 6
+          }
+        },
+        "invalid": {
+          "cases": 42,
+          "coordinate_bits": 0,
+          "selected_graph": 0,
+          "absence_retained": 0,
+          "error_status": 2,
+          "outcomes": {
+            "accepted_outside_profile": 40,
+            "no_output": 2
+          }
+        }
+      },
+      "wasm": {
+        "valid": {
+          "cases": 24,
+          "coordinate_bits": 0,
+          "selected_graph": 16,
+          "absence_retained": 24,
+          "error_status": 0,
+          "outcomes": {
+            "json_output": 24
+          }
+        },
+        "absent": {
+          "cases": 6,
+          "coordinate_bits": 0,
+          "selected_graph": 4,
+          "absence_retained": 6,
+          "error_status": 0,
+          "outcomes": {
+            "json_output": 6
+          }
+        },
+        "invalid": {
+          "cases": 42,
+          "coordinate_bits": 0,
+          "selected_graph": 0,
+          "absence_retained": 0,
+          "error_status": 2,
+          "outcomes": {
+            "accepted_outside_profile": 40,
+            "no_output": 2
+          }
+        }
+      },
+      "openbabel": {
+        "valid": {
+          "cases": 24,
+          "coordinate_bits": 24,
+          "selected_graph": 24,
+          "absence_retained": 0,
+          "error_status": 0,
+          "outcomes": {
+            "json_output": 24
+          }
+        },
+        "absent": {
+          "cases": 6,
+          "coordinate_bits": 0,
+          "selected_graph": 0,
+          "absence_retained": 0,
+          "error_status": 0,
+          "outcomes": {
+            "no_output": 6
+          }
+        },
+        "invalid": {
+          "cases": 42,
+          "coordinate_bits": 0,
+          "selected_graph": 0,
+          "absence_retained": 0,
+          "error_status": 0,
+          "outcomes": {
+            "accepted_outside_profile": 19,
+            "invalid_output": 9,
+            "no_output": 14
+          }
+        }
+      }
+    },
+    "candidate": {
+      "python": {
+        "valid": {
+          "cases": 24,
+          "coordinate_bits": 24,
+          "selected_graph": 24,
+          "absence_retained": 0,
+          "error_status": 0,
+          "outcomes": {
+            "json_output": 24
+          }
+        },
+        "absent": {
+          "cases": 6,
+          "coordinate_bits": 0,
+          "selected_graph": 6,
+          "absence_retained": 6,
+          "error_status": 0,
+          "outcomes": {
+            "json_output": 6
+          }
+        },
+        "invalid": {
+          "cases": 42,
+          "coordinate_bits": 0,
+          "selected_graph": 0,
+          "absence_retained": 0,
+          "error_status": 42,
+          "outcomes": {
+            "no_output": 42
+          }
+        }
+      },
+      "wasm": {
+        "valid": {
+          "cases": 24,
+          "coordinate_bits": 24,
+          "selected_graph": 24,
+          "absence_retained": 0,
+          "error_status": 0,
+          "outcomes": {
+            "json_output": 24
+          }
+        },
+        "absent": {
+          "cases": 6,
+          "coordinate_bits": 0,
+          "selected_graph": 6,
+          "absence_retained": 6,
+          "error_status": 0,
+          "outcomes": {
+            "json_output": 6
+          }
+        },
+        "invalid": {
+          "cases": 42,
+          "coordinate_bits": 0,
+          "selected_graph": 0,
+          "absence_retained": 0,
+          "error_status": 42,
+          "outcomes": {
+            "no_output": 42
+          }
+        }
+      },
+      "openbabel": {
+        "valid": {
+          "cases": 24,
+          "coordinate_bits": 24,
+          "selected_graph": 24,
+          "absence_retained": 0,
+          "error_status": 0,
+          "outcomes": {
+            "json_output": 24
+          }
+        },
+        "absent": {
+          "cases": 6,
+          "coordinate_bits": 0,
+          "selected_graph": 0,
+          "absence_retained": 0,
+          "error_status": 0,
+          "outcomes": {
+            "no_output": 6
+          }
+        },
+        "invalid": {
+          "cases": 42,
+          "coordinate_bits": 0,
+          "selected_graph": 0,
+          "absence_retained": 0,
+          "error_status": 0,
+          "outcomes": {
+            "accepted_outside_profile": 19,
+            "invalid_output": 9,
+            "no_output": 14
+          }
+        }
+      }
+    }
+  },
+  "interpretation": "Open Babel matches all 24 complete coordinate and selected graph cases. It emits no output for all 6 absent/2D-only controls. In malformed/outside-profile controls it emits valid JSON for 19, truncated JSON for 9 and no output for 14; all exit zero, stderr diagnostics retained separately. error_status denotes API exception/nonzero process exit only. Packed Cartesian and multiple-molecule controls are outside this local profile, not necessarily invalid CML. Refusals are not preservation successes.",
+  "logs": {
+    "python-build": {
+      "path": "validation/results/cml-3d-2026-10-22/python-build.log",
+      "sha256": "de53495c20460a5e918b8682b144b1b660de858bc34192bd2170a750c5e08c07",
+      "size_bytes": 331
+    },
+    "wasm-build": {
+      "path": "validation/results/cml-3d-2026-10-22/wasm-build.log",
+      "sha256": "004f147451f516b4f0cf8e1a619b816cdc795f4d66eef2180c257f41fa5cab3f",
+      "size_bytes": 280
+    },
+    "native-tests": {
+      "path": "validation/results/cml-3d-2026-10-22/native-tests.log",
+      "sha256": "e015e30c4262d2a0ac3b786bb37e45f766518302caed992aabb10a2c56fb9e1c",
+      "size_bytes": 123147
+    },
+    "python-tests": {
+      "path": "validation/results/cml-3d-2026-10-22/python-tests.log",
+      "sha256": "c46b64544378e92d7e488d3092463e359664a9ccc979900a0c8c7389e6dd2f4c",
+      "size_bytes": 830
+    },
+    "node-tests": {
+      "path": "validation/results/cml-3d-2026-10-22/node-tests.log",
+      "sha256": "15bf23c0644e93181144d8a7a2cea72690a42369e5166b969a0c2d3d553d2f7a",
+      "size_bytes": 120
+    },
+    "observer-tests": {
+      "path": "validation/results/cml-3d-2026-10-22/observer-tests.log",
+      "sha256": "57f349ccc61d88b4d124a9fbe61599da3c02265ec21265c669af0e83c9004b63",
+      "size_bytes": 99
+    },
+    "baseline": {
+      "path": "validation/results/cml-3d-2026-10-22/baseline.log",
+      "sha256": "1dd0febe85751ad82d66e4ba859e43b99eb68705a7ff70860bcfe040a230523d",
+      "size_bytes": 1432
+    },
+    "candidate": {
+      "path": "validation/results/cml-3d-2026-10-22/candidate.log",
+      "sha256": "aa5acbdc2daa557400be36342696ccfa65a7f14c5e2202f8fc735edb33beedbf",
+      "size_bytes": 1372
+    },
+    "clippy": {
+      "path": "validation/results/cml-3d-2026-10-22/clippy.log",
+      "sha256": "9866e6b9a4b40d5d1f930d1dafdefdbb13a38ea32c474989128b642dacdfaed5",
+      "size_bytes": 442
+    },
+    "check": {
+      "path": "validation/results/cml-3d-2026-10-22/check.log",
+      "sha256": "469e601adda537a7c8806d529307828e369024a48579fc0eaae2b698383f997d",
+      "size_bytes": 387
+    },
+    "wasm-native": {
+      "path": "validation/results/cml-3d-2026-10-22/wasm-native.log",
+      "sha256": "d8c9c6874ccdd3af294a22222ee210eb6c089667933eec16295be545e02fc602",
+      "size_bytes": 717
+    },
+    "fmt": {
+      "path": "validation/results/cml-3d-2026-10-22/fmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    "bindings": {
+      "path": "validation/results/cml-3d-2026-10-22/bindings.log",
+      "sha256": "fbec77416d904bea92947e91b2ebda569a43bc63444f49632fcfa9cab2e87c1b",
+      "size_bytes": 20537
+    },
+    "stubs": {
+      "path": "validation/results/cml-3d-2026-10-22/stubs.log",
+      "sha256": "98945ec702355b897670c54011fed035f73047ad280da66e6125fea56162ec13",
+      "size_bytes": 50
+    },
+    "parent-api": {
+      "path": "validation/results/cml-3d-2026-10-22/parent-api.log",
+      "sha256": "026f6d2da0ef02b218c3b44546eda64d24b7042bd3f41c9d39d755942a8561f1",
+      "size_bytes": 63
+    },
+    "naming": {
+      "path": "validation/results/cml-3d-2026-10-22/naming.log",
+      "sha256": "d1f6921742a3cbe1b0c2309ebb06b159c1b9d3120a07fb4041c5db2c2a043e51",
+      "size_bytes": 66
+    },
+    "workflow-pins": {
+      "path": "validation/results/cml-3d-2026-10-22/workflow-pins.log",
+      "sha256": "487f9131fb571b886134dc20a91c114f58c6175d50b85cf6a258a251544d8d90",
+      "size_bytes": 71
+    },
+    "file-io-contract": {
+      "path": "validation/results/cml-3d-2026-10-22/file-io-contract.log",
+      "sha256": "6cd4b43f8407860055e672ed728806eb9abe736d9191ef0a68e8a7006187dfc7",
+      "size_bytes": 88
+    },
+    "benchmark-index": {
+      "path": "validation/results/cml-3d-2026-10-22/benchmark-index.log",
+      "sha256": "f218283730ced9616e6c8b76c37df58957f029fe738d1ff43fe4403cac13c574",
+      "size_bytes": 52
+    },
+    "docs": {
+      "path": "validation/results/cml-3d-2026-10-22/docs.log",
+      "sha256": "cd80bf0d83d30e2885a4db78fa2f653a0b3b544a4026fa90c80fbd5a80ed8a6e",
+      "size_bytes": 2713
+    },
+    "refactor": {
+      "path": "validation/results/cml-3d-2026-10-22/refactor.log",
+      "sha256": "5bca27d09d63d57d988aab74805ab2e1187fd7862d3774254d55c3dd1c594e75",
+      "size_bytes": 106
+    },
+    "script-layout": {
+      "path": "validation/results/cml-3d-2026-10-22/script-layout.log",
+      "sha256": "552028e216bc5bc00277707740021dc1f7100a720852583ed9279e4355f0c6bc",
+      "size_bytes": 61
+    }
+  }
+}

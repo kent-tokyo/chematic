@@ -435,6 +435,7 @@ dependencies = [
  "chematic-smiles",
  "flate2",
  "memchr",
+ "roxmltree",
  "serde",
  "serde_json",
 ]
