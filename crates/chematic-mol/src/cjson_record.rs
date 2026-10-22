@@ -93,14 +93,33 @@ impl CjsonRecord {
     }
 }
 
-pub fn parse_cjson_record(input: &str) -> Result<CjsonRecord, CjsonError> {
-    parse_cjson_record_with_limits(input, &CjsonParseLimits::default())
+/// A source-ordered graph and optional Cartesian coordinate rows in Angstrom.
+/// Coordinates are empty for absent 3D data and for zero-atom projections.
+pub type CjsonProjection = (Molecule, Vec<(f64, f64, f64)>);
+
+/// Parse the existing immutable-record profile into an owned graph/coordinate
+/// projection without copying source text or collecting opaque-field paths.
+/// Optional known arrays must have exact sizes/types; duplicate keys,
+/// versions, self/duplicate bonds and unsupported order tokens follow the
+/// record reader's policy. Unknown field semantics are not interpreted.
+/// Legacy `parse_cjson` remains available with its permissive behavior.
+pub fn parse_cjson_checked(input: &str) -> Result<CjsonProjection, CjsonError> {
+    parse_cjson_checked_with_limits(input, &CjsonParseLimits::default())
 }
 
-pub fn parse_cjson_record_with_limits(
+/// Apply CJSON byte/tree/atom/bond limits and strict typed-field validation.
+pub fn parse_cjson_checked_with_limits(
     input: &str,
     limits: &CjsonParseLimits,
-) -> Result<CjsonRecord, CjsonError> {
+) -> Result<CjsonProjection, CjsonError> {
+    let (_, projection) = read_projection(input, limits)?;
+    Ok(projection)
+}
+
+fn read_projection(
+    input: &str,
+    limits: &CjsonParseLimits,
+) -> Result<(Value, CjsonProjection), CjsonError> {
     if input.len() > limits.max_input_bytes {
         return Err(CjsonError::ResourceLimit {
             resource: "input bytes",
@@ -116,6 +135,18 @@ pub fn parse_cjson_record_with_limits(
     check_json_limits(&value, 0, limits)?;
     validate_projection(&value)?;
     let (molecule, coordinates) = parse_cjson_value(&value, limits)?;
+    Ok((value, (molecule, coordinates)))
+}
+
+pub fn parse_cjson_record(input: &str) -> Result<CjsonRecord, CjsonError> {
+    parse_cjson_record_with_limits(input, &CjsonParseLimits::default())
+}
+
+pub fn parse_cjson_record_with_limits(
+    input: &str,
+    limits: &CjsonParseLimits,
+) -> Result<CjsonRecord, CjsonError> {
+    let (value, (molecule, coordinates)) = read_projection(input, limits)?;
     let mut opaque_fields = Vec::new();
     collect_opaque(&value, "", &mut opaque_fields);
     opaque_fields.sort();

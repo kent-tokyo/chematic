@@ -156,9 +156,16 @@ fn parse_common_format(text: &str, format: &str) -> Result<chematic_core::Molecu
         "cml" => chematic_mol::parse_cml(text)
             .map(|(mol, _)| mol)
             .map_err(|e| e.to_string()),
-        "cjson" => chematic_mol::parse_cjson(text)
-            .map(|(mol, _)| mol)
-            .map_err(|e| e.to_string()),
+        "cjson" => chematic_mol::parse_cjson_checked_with_limits(
+            text,
+            &chematic_mol::CjsonParseLimits {
+                max_input_bytes: WASM_MAX_INPUT_BYTES,
+                max_atoms: WASM_MAX_ATOMS,
+                ..Default::default()
+            },
+        )
+        .map(|(mol, _)| mol)
+        .map_err(|e| e.to_string()),
         "moljson" => chematic_mol::parse_moljson(text).map_err(|e| e.to_string()),
         "cdxml" => chematic_mol::parse_cdxml(text)
             .map(|(mol, _)| mol)

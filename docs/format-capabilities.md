@@ -40,6 +40,17 @@ charges, typing, comments, and opaque sections. Python rejects coordinate,
 charge, name, or comment overrides on this path. Cross-format conversion
 continues to use the bounded graph/coordinate bridge described above.
 
+CJSON input to the CLI/Python/WASM common bridges uses the existing strict
+record profile before graph conversion. Present known arrays must have exact
+sizes/types; duplicate decoded keys, self/duplicate bonds and unsupported
+order tokens refuse without candidate output. Rust
+`parse_cjson_checked[_with_limits]` and Python `from_cjson_checked` expose the
+same owned graph/coordinate projection. Absent optional fields keep their
+documented defaults. Output keeps each format's existing graph/coordinate/
+metadata limits; source retention and loss reports use the record/checked
+conversion APIs. The [CJSON validation comparison](benchmarks/2026-10-22-cjson-checked-input.md)
+describes compatibility changes, limits and the measured scope.
+
 ---
 
 ## Support matrix
