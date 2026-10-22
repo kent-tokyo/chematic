@@ -172,6 +172,8 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
     specific metadata is not promised to survive conversion.
     MOL2 to MOL2 and CJSON to CJSON validate and retain the exact source; coordinate,
     charge, name, and comment overrides are rejected on that path.
+    CJSON inputs use the checked record profile: malformed known arrays,
+    duplicate keys/bonds and unsupported bond-order tokens are refused.
     MOL2 to CJSON checks the projected graph, source xyz, parsed name and
     complete declared partial charges on reparse. Incomplete/undeclared charge
     columns and overrides are rejected. Other MOL2 metadata and stereo are
@@ -223,7 +225,7 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
     elif source == "cml":
         mol = from_cml(text)
     elif source == "cjson":
-        mol, parsed_coords = from_cjson(text)
+        mol, parsed_coords = from_cjson_checked(text)
         if coords is None and parsed_coords:
             coords = parsed_coords
     elif source == "moljson":

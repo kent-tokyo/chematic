@@ -127,7 +127,8 @@ pub use cif::{
 };
 pub use cjson::{CjsonError, CjsonParseLimits, parse_cjson, parse_cjson_with_limits, write_cjson};
 pub use cjson_record::{
-    CjsonRecord, parse_cjson_record, parse_cjson_record_with_limits, write_cjson_record,
+    CjsonProjection, CjsonRecord, parse_cjson_checked, parse_cjson_checked_with_limits,
+    parse_cjson_record, parse_cjson_record_with_limits, write_cjson_record,
 };
 pub use cml::{
     CmlError, CmlParseLimits, parse_cml, parse_cml_strict, parse_cml_strict_with_limits,

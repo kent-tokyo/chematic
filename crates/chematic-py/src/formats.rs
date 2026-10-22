@@ -1387,6 +1387,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         from_mrv_block,
         from_mrv_block_with_coords,
         from_cjson,
+        from_cjson_checked,
         from_moljson,
         from_cdxml,
         from_chemdraw_block,
