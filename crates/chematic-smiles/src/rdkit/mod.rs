@@ -134,8 +134,8 @@ pub fn rdkit_canonical_smiles(mol: &Molecule) -> Result<String, RdkitSmilesError
 /// tag from the input complex. RDKit's Cleanup retains that tag on the
 /// resulting molecule, although parsing the isolated ion as a *new* SMILES
 /// would discard it. This function preserves the tag of a fully occupied
-/// isolated Cleanup product. A vacant coordination site needs a separate
-/// permutation remap.
+/// isolated Cleanup product. The Cleanup graph remaps the permutation first
+/// when an isolated center had a vacant coordination site.
 pub fn rdkit_cleanup_canonical_smiles(mol: &Molecule) -> Result<String, RdkitSmilesError> {
     let mut model = parse::from_chematic(mol)?;
     let initial_atom_count = model.atoms.len();
