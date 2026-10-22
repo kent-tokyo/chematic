@@ -1038,4 +1038,63 @@ mod tests {
             }
         }
     }
+
+    #[test]
+    fn rdkit_embedded_pxylene_correspondence_survives_renumbering() {
+        // Heavy-atom coordinates from RDKit 2026.09.1 ETKDGv3, seed 42.
+        // RDKit GetO3A itself returns different atom maps for this molecule
+        // after probe atom reversal; this checks the same fixed input geometry.
+        let molecule = parse("Cc1ccc(C)cc1").unwrap();
+        let reference = vec![
+            [
+                2.87688384965826,
+                -0.002092989212400923,
+                -0.08653065571627763,
+            ],
+            [
+                1.375506197969415,
+                0.031376908900133456,
+                -0.04181616373635037,
+            ],
+            [0.6837946804515053, 1.2162483338831502, 0.11090569228195972],
+            [-0.6968589029854234, 1.1964285865863726, 0.14633051634528366],
+            [
+                -1.3672286381292256,
+                -0.007579808880645602,
+                0.028604200033073776,
+            ],
+            [
+                -2.8659967768237866,
+                0.004430820785118485,
+                0.07084524663778523,
+            ],
+            [
+                -0.6983511002657733,
+                -1.2008939331499826,
+                -0.12445273185002001,
+            ],
+            [
+                0.6864109596823279,
+                -1.1682896941005392,
+                -0.15854404629064228,
+            ],
+        ];
+        let probe = reference
+            .iter()
+            .map(|&[x, y, z]| [y + 1.0, -x + 2.0, z + 3.0])
+            .collect::<Vec<_>>();
+        let mut baseline = correspondence_search(&molecule, &reference, &molecule, &probe).unwrap();
+        baseline.sort_unstable();
+        let permutation = (0..molecule.atom_count()).rev().collect::<Vec<_>>();
+        let (reversed_molecule, reversed_probe) =
+            permute_mol_and_coords(&molecule, &probe, &permutation);
+        let mut reversed =
+            correspondence_search(&molecule, &reference, &reversed_molecule, &reversed_probe)
+                .unwrap()
+                .into_iter()
+                .map(|(i, j)| (i, permutation[j]))
+                .collect::<Vec<_>>();
+        reversed.sort_unstable();
+        assert_eq!(baseline, reversed);
+    }
 }
