@@ -7,7 +7,7 @@ import pytest
 import chematic
 from chematic import rdkit_compat as Chem
 
-PACKET = json.loads((Path(__file__).parents[3]/'validation/sdf_data_item_framing/cases.json').read_text())
+PACKET = json.loads((Path(__file__).parents[3]/'validation/sdf_data_item_framing/cases.json').read_text(encoding="utf-8"))
 
 
 @pytest.mark.parametrize('case', PACKET['cases'], ids=lambda c:c['id'])

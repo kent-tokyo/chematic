@@ -7,8 +7,8 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[3]
 FIXTURES = ROOT / "validation/openbabel_issues/mol2-rmsd"
-REFERENCES = (FIXTURES / "references.mol2").read_text()
-PROBE = (FIXTURES / "probe.mol2").read_text()
+REFERENCES = (FIXTURES / "references.mol2").read_text(encoding="utf-8")
+PROBE = (FIXTURES / "probe.mol2").read_text(encoding="utf-8")
 
 
 def records(text, **kwargs):

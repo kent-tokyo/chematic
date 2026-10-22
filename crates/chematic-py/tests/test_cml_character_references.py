@@ -7,7 +7,7 @@ import pytest
 import chematic
 
 PACKET = json.loads((Path(__file__).resolve().parents[3] /
-                     "validation/cml_character_references/cases.json").read_text())
+                     "validation/cml_character_references/cases.json").read_text(encoding="utf-8"))
 
 
 @pytest.mark.parametrize("reader", [chematic.from_cml, chematic.from_cml_strict])

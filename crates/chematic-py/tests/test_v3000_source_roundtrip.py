@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 import chematic
 
-PACKET=json.loads((Path(__file__).parents[3]/'validation/v3000_source_roundtrip/cases.json').read_text())
+PACKET=json.loads((Path(__file__).parents[3]/'validation/v3000_source_roundtrip/cases.json').read_text(encoding="utf-8"))
 
 
 def variant(text,layout):
