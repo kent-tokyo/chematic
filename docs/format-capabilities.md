@@ -414,6 +414,12 @@ source-preserving APIs retain the original order.
   DTD entity expansion and full XML/CML conformance are outside this profile.
   See the [CML character-reference development record](benchmarks/2026-10-22-cml-character-references.md).
 - **Coordinate units**: Ångström in returned 2D coordinates.
+- **Coordinate precision**: `write_cml` emits finite supplied 2D values with
+  enough decimal digits to recover the same binary64 value on read-back,
+  including signed zero and subnormal values. It does not round to a fixed
+  decimal grid. This applies to supplied coordinates in Rust and Python
+  `Mol.to_cml(coords)`; graph-only readers and generated WASM layouts do not
+  retain source positions. See the [paired CML precision record](benchmarks/2026-10-22-cml-coordinate-precision.md).
 - **Connectivity**: native CML bond elements.
 - **Parse limits**: `CmlParseLimits` bounds input bytes, physical line
   length/count, XML element count, and atom/bond elements. The existing parser

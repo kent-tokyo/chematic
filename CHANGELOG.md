@@ -16,6 +16,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- CML 2D coordinate output now retains supplied finite binary64 values instead
+  of rounding to four decimal places, preserving positions through a rewrite.
 - CML readers now decode decimal/hex XML character references and reject
   malformed charge/isotope/2D-coordinate values, conflicting isotope aliases
   and duplicate decoded atom IDs instead of silently changing the graph.
