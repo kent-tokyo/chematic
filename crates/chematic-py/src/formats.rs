@@ -73,6 +73,8 @@ use xyz::*;
 
 type SdfWithCoords = Vec<(Mol, String, Vec<Vec<f64>>)>;
 
+mod v3000_coordinates;
+use v3000_coordinates::*;
 mod v3000_source;
 use v3000_source::*;
 mod sdf_source;
@@ -1406,6 +1408,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         from_mol_v3000,
         roundtrip_mol_v3000_source,
         from_mol_v3000_with_coords,
+        from_mol_v3000_with_coords_3d,
         from_mol_v3000_with_diagnostics,
         from_mol2,
         from_hin,

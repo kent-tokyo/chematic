@@ -173,6 +173,9 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
     specific metadata is not promised to survive conversion.
     MOL2 to MOL2 and CJSON to CJSON validate and retain the exact source; coordinate,
     charge, name, and comment overrides are rejected on that path.
+    V3000 input supplies source x/y/z for CJSON, PDB, XYZ and PDBQT output
+    unless coords is explicitly provided. Each writer's precision and metadata
+    limits still apply; this does not verify cross-format stereochemistry.
     V3000 to V3000 also validates and retains one exact source block, including
     3D coordinate tokens and opaque metadata; these overrides are rejected.
     SDF to SDF validates every record and retains the complete source document;
@@ -240,7 +243,9 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
     elif source == "mol":
         mol = from_mol_block(text)
     elif source == "mol_v3000":
-        mol = from_mol_v3000(text)
+        mol, _, parsed_coords = from_mol_v3000_with_coords_3d(text)
+        if coords is None:
+            coords = parsed_coords
     elif source == "mol2":
         mol = from_mol2(text)
     elif source == "cml":
