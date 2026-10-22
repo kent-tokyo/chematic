@@ -278,6 +278,14 @@ jobs:
         run: cargo test -p chematic-py --lib --no-default-features --quiet
       - name: CML Cartesian preservation observer
         run: .venv/bin/python -m unittest scripts.tests.test_cml_3d_observer -q
+      - name: CJSON checked-input observer
+        run: .venv/bin/python -m unittest scripts.tests.test_cjson_checked_observer -q
+      - name: MOL2 CJSON projection observer
+        run: .venv/bin/python -m unittest scripts.tests.test_mol2_cjson_common -q
+      - name: CJSON/MOL2 indexed charge observer
+        run: .venv/bin/python -m unittest scripts.tests.test_cjson_mol2_formal_charges -q
+      - name: CJSON source-field observer contract
+        run: .venv/bin/python -m unittest scripts.tests.test_cjson_source_conversion -q
       - name: Run pytest (chematic-py)
         run: .venv/bin/python -m pytest crates/chematic-py/tests/ -q
       - name: RDKit 2026 HBA parity from installed source wheel

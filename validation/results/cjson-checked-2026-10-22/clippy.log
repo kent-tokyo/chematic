@@ -1,0 +1,6 @@
+    Blocking waiting for file lock on build directory
+    Checking chematic-mol v1.2.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol)
+    Checking chematic-cli v1.2.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-cli)
+    Checking chematic-py v1.2.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py)
+    Checking chematic-wasm v1.2.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-wasm)
+    Finished `dev` profile [unoptimized] target(s) in 22.51s

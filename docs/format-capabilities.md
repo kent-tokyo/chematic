@@ -23,6 +23,13 @@ example `.mol2`, `smi`, and `com`). PDB/XYZ/PDBQT output requires 3D
 coordinates; graph-only conversions do not claim to preserve format-specific
 metadata. Unsupported formats fail before conversion with a `ValueError`.
 
+Same-format MOL2 and CJSON conversion validates and returns the exact source
+instead of reconstructing a molecule. Python rejects coordinate, charge, name
+and comment overrides on these paths. CJSON uses the immutable local record
+profile: duplicate keys and unsupported typed fields fail; unknown fields are
+retained without interpreting their chemistry. See the
+[CJSON source conversion validation](benchmarks/2026-10-22-cjson-source-conversion.md).
+
 The WASM bridge intentionally exposes the topology-only subset (SMILES, MOL,
 MOL V3000, MOL2, CML, ChemicalJSON, MolJSON, and CDXML) so that JavaScript
 and Python share a predictable core contract. Use the existing coordinate APIs
@@ -47,6 +54,28 @@ Rust `parse_cml_with_3d[_with_limits]` and Python `from_cml_with_3d` expose this
 single-molecule profile directly. Legacy graph/2D readers keep their behavior;
 2D layout, source IDs and other CML metadata are still omitted from common
 CJSON output. See the [profile and measured comparison](benchmarks/2026-10-22-cml-3d-coordinates.md).
+
+CJSON input to the CLI/Python/WASM common bridges uses the existing strict
+record profile before graph conversion. Present known arrays must have exact
+sizes/types; duplicate decoded keys, self/duplicate bonds and unsupported
+order tokens refuse without candidate output. Rust
+`parse_cjson_checked[_with_limits]` and Python `from_cjson_checked` expose the
+same owned graph/coordinate projection. Absent optional fields keep their
+documented defaults. Output keeps each format's existing graph/coordinate/
+metadata limits; source retention and loss reports use the record/checked
+conversion APIs. The [CJSON validation comparison](benchmarks/2026-10-22-cjson-checked-input.md)
+describes compatibility changes, limits and the measured scope.
+
+MOL2 → CJSON in Python/WASM uses the shared selected-field projection:
+mapped graph, source xyz, parsed molecule name and complete declared partial
+charges are checked on reparse. Incomplete datasets and numeric columns without
+an assigned method fail, except `NO_CHARGES` zero placeholders, which are omitted
+as unassigned. Python rejects
+overrides on this route. Default Rust/Python limits are 16 MiB input/output and
+10,000 atoms; WASM retains its 1,000,000-byte input cap. Other MOL2 metadata and
+stereo remain outside preservation. Use `convert_with_report` for the full
+loss report and explicit `allow_loss` behavior. See the
+[common-route contract and comparison](benchmarks/2026-10-22-mol2-cjson-common.md).
 
 ---
 
@@ -242,6 +271,9 @@ chematic convert-with-report --input-format mol2 --output-format smiles \
   missing. Empty/`NO_CHARGES` method declarations do not produce a dataset.
   The parsed molecule name emits as `properties.name` and is checked on
   reparse. The source method label is retained without verifying its chemistry.
+  A declared method without source values is now explicitly `unverified` for
+  `partial_charges`. Omitted raw zero columns under `NO_CHARGES` are reported
+  as `unassigned_zero_columns: dropped`, without inventing a charge dataset.
   Atom names/types/IDs and unsupported metadata remain losses.
 - Invalid input, unsupported routes/policies and limits are errors (Python
   `ValueError`, WASM throw, CLI nonzero without a report). CLI `--output` is
@@ -326,6 +358,15 @@ filled. Multiple datasets, unrepresentable method tokens and names with
 boundary whitespace, control characters, empty text or section markers refuse
 even under `allow_loss`. Exact CJSON retention remains available for valid
 records refused by this adapter.
+
+Nonzero CJSON formal charges emit as `UNITY_ATOM_ATTR` charge attributes before
+the BOND section, separately from ATOM partial-charge columns. The existing
+`N.4` spelling for +1 nitrogen is retained. `formal_charges: preserved` requires
+verified graph correspondence after reparsing; isotope loss still prevents
+that claim and exposes no atom mapping. The full report remains lossy and
+`strict` refuses cross-format output. See the
+[indexed charge validation](benchmarks/2026-10-22-cjson-mol2-formal-charges.md)
+for external-reader checks and section-order compatibility limits.
 
 MOL2 atom IDs/names, element-only types and `SMALL` header are generated;
 charged atom rows use placeholder substructure `1 LIG`. Hybridization and

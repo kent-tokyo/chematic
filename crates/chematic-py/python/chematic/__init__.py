@@ -171,11 +171,18 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
 
     The molecular graph and supported stereochemistry are preserved. Format-
     specific metadata is not promised to survive conversion.
-    MOL2 to MOL2 instead validates and retains the exact source; coordinate,
+    MOL2 to MOL2 and CJSON to CJSON validate and retain the exact source; coordinate,
     charge, name, and comment overrides are rejected on that path.
     CML to CJSON carries complete source x3/y3/z3 coordinates. Missing 3D
     stays missing; partial/malformed 3D and multiple molecules are refused.
     This route requires unique atom IDs; 2D layout and metadata are omitted.
+    CJSON inputs use the checked record profile: malformed known arrays,
+    duplicate keys/bonds and unsupported bond-order tokens are refused.
+    MOL2 to CJSON checks the projected graph, source xyz, parsed name and
+    complete declared partial charges on reparse. Incomplete/undeclared charge
+    columns and overrides are rejected. Other MOL2 metadata and stereo are
+    not retained or verified; use convert_with_report to inspect those losses.
+    NO_CHARGES zero placeholders are omitted as unassigned values.
     """
     def normalize(value):
         if not isinstance(value, str):
@@ -203,6 +210,14 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
         if coords is not None or charges is not None or name != "LIG" or comment:
             raise ValueError("MOL2 source-preserving conversion does not accept overrides")
         return roundtrip_mol2_record(text)
+    if source == "mol2" and target == "cjson":
+        if coords is not None or charges is not None or name != "LIG" or comment:
+            raise ValueError("MOL2 to CJSON preserving projection does not accept overrides")
+        return project_mol2_to_cjson(text)
+    if source == target == "cjson":
+        if coords is not None or charges is not None or name != "LIG" or comment:
+            raise ValueError("CJSON source-preserving conversion does not accept overrides")
+        return roundtrip_cjson_record(text)
     if source == "smiles":
         mol = from_smiles(text)
     elif source == "mol":
@@ -219,7 +234,7 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
         else:
             mol = from_cml(text)
     elif source == "cjson":
-        mol, parsed_coords = from_cjson(text)
+        mol, parsed_coords = from_cjson_checked(text)
         if coords is None and parsed_coords:
             coords = parsed_coords
     elif source == "moljson":
