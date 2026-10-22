@@ -91,6 +91,29 @@ mod mcs_config_tests {
     }
 
     #[test]
+    fn rdkit_heavy_comparator_keeps_explicit_hydrogen_pairs() {
+        let smiles = r#"["[2H]O[2H]","[H]OC"]"#;
+        let legacy = mcs_smiles_json_with_config(
+            smiles,
+            r#"{"atomCompare":"any_heavy_atom"}"#,
+        )
+        .unwrap();
+        let rdkit = mcs_smiles_json_with_config(
+            smiles,
+            r#"{"atomCompare":"rdkit_any_heavy_atom"}"#,
+        )
+        .unwrap();
+        let legacy: serde_json::Value = serde_json::from_str(&legacy).unwrap();
+        let rdkit: serde_json::Value = serde_json::from_str(&rdkit).unwrap();
+        let legacy_smiles = legacy["smiles"].as_str().unwrap();
+        let rdkit_smiles = rdkit["smiles"].as_str().unwrap();
+        assert_eq!(chematic_smiles::parse(legacy_smiles).unwrap().atom_count(), 1);
+        assert_eq!(chematic_smiles::parse(rdkit_smiles).unwrap().atom_count(), 2);
+        assert_eq!(rdkit["wasTimedOut"], false);
+        assert_eq!(rdkit["wasResourceLimited"], false);
+    }
+
+    #[test]
     fn timeout_zero_is_reported_as_timed_out() {
         let smiles = r#"["CC(=O)Oc1ccccc1C(=O)O","CC(=O)Nc1ccc(O)cc1"]"#;
         let result = mcs_smiles_json_with_config(smiles, r#"{"timeoutMs":0}"#).unwrap();

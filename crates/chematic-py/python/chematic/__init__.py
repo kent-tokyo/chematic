@@ -175,6 +175,8 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
     V3000 input supplies source x/y/z for CJSON, PDB, XYZ and PDBQT output
     unless coords is explicitly provided. Each writer's precision and metadata
     limits still apply; this does not verify cross-format stereochemistry.
+    V3000 to V3000 also validates and retains one exact source block, including
+    3D coordinate tokens and opaque metadata; these overrides are rejected.
     """
     def normalize(value):
         if not isinstance(value, str):
@@ -202,6 +204,10 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
         if coords is not None or charges is not None or name != "LIG" or comment:
             raise ValueError("MOL2 source-preserving conversion does not accept overrides")
         return roundtrip_mol2_record(text)
+    if source == target == "mol_v3000":
+        if coords is not None or charges is not None or name != "LIG" or comment:
+            raise ValueError("V3000 source-preserving conversion does not accept overrides")
+        return roundtrip_mol_v3000_source(text)
     if source == "smiles":
         mol = from_smiles(text)
     elif source == "mol":

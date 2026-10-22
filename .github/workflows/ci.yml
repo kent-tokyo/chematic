@@ -85,6 +85,8 @@ jobs:
         run: python3 scripts/check_a0_core_eight_sealed.py
       - name: Static binding surface inventory
         run: python3 scripts/check_binding_surface.py > /dev/null
+      - name: PQR preservation observer controls
+        run: python3 -m unittest discover -s scripts/tests -p 'test_pqr_checked_validation.py' -v
       - name: Release documentation consistency
         run: |
           python3 scripts/check_product_names.py
@@ -274,6 +276,8 @@ jobs:
         run: cargo test -p chematic-py --lib --no-default-features --quiet
       - name: V3000 coordinate projection observer
         run: .venv/bin/python -m unittest scripts.tests.test_v3000_coordinate_projection -q
+      - name: V3000 source coordinate observer
+        run: .venv/bin/python -m unittest scripts.tests.test_v3000_source_roundtrip -q
       - name: Run pytest (chematic-py)
         run: .venv/bin/python -m pytest crates/chematic-py/tests/ -q
       - name: RDKit 2026 HBA parity from installed source wheel

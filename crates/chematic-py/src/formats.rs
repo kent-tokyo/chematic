@@ -48,6 +48,8 @@ use chemdraw::*;
 mod mol2_ensemble;
 use mol2_ensemble::*;
 mod materials;
+mod pqr_checked;
+use pqr_checked::write_pqr_checked;
 mod mmcif_pdb;
 mod pdb_conect;
 use pdb_conect::*;
@@ -73,6 +75,8 @@ type SdfWithCoords = Vec<(Mol, String, Vec<Vec<f64>>)>;
 
 mod v3000_coordinates;
 use v3000_coordinates::*;
+mod v3000_source;
+use v3000_source::*;
 
 // ---------------------------------------------------------------------------
 // Helper: convert MoleculeReport to Python dict
@@ -1398,6 +1402,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         semantic_expand_json,
         semantic_expand_json_with_limits,
         from_mol_v3000,
+        roundtrip_mol_v3000_source,
         from_mol_v3000_with_coords,
         from_mol_v3000_with_coords_3d,
         from_mol_v3000_with_diagnostics,
@@ -1460,6 +1465,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         write_mmcif,
         parse_pqr,
         write_pqr,
+        write_pqr_checked,
         pqr_to_pdbqt,
         write_pdbqt_checked,
         infer_element,

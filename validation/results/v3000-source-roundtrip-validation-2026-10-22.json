@@ -1,0 +1,486 @@
+{
+  "schema": "chematic.v3000-source-roundtrip-evidence.v1",
+  "date": "2026-10-22",
+  "source_base": "d4208b9df9086b25df3e449d5f5ca6f8a32ad406",
+  "baseline_source_base": "b9412a06a09955874e3067c44cc2315406840340",
+  "scope": "Immutable single V3000 source retention; source coordinate bits, IDs and exact text. Opaque chemistry is retained, not edited or verified. No cross-format, toolkit-wide, speed, release or stereo fidelity claim.",
+  "compatibility_change": "WASM explicit roundtrip returns exact source instead of normalized 2D-writer output; Python same-format V3000 conversion rejects nondefault overrides.",
+  "baseline_attestation": {
+    "commit": "c713b21af3125c4289c2829794e11ce8efc4f25f",
+    "path": "validation/results/cjson-source-conversion-validation-2026-10-22.json",
+    "verified_artifact_hashes": [
+      "python_extension",
+      "wasm_module",
+      "wasm_binary"
+    ],
+    "verified_path_identity": [
+      "Native MOL and Python Rust source equal b9412a06..c713b21a",
+      "Baseline Python package equals b9412a06",
+      "WASM explicit V3000 path equals b9412a06; common-format difference is unrelated CJSON branch",
+      "V3000 parser and WASM I/O paths unchanged by d4208b9d CIP integration"
+    ]
+  },
+  "toolchain": {
+    "rust": "rustc 1.97.0 (2d8144b78 2026-07-07)",
+    "node": "v24.5.0",
+    "python": "3.13.6 (v3.13.6:4e665351082, Aug  6 2025, 11:22:35) [Clang 16.0.0 (clang-1600.0.26.6)]",
+    "wasm_bindgen": "0.2.129, nodejs target",
+    "openbabel": {
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27\n",
+      "stderr": ""
+    }
+  },
+  "checks": {
+    "rust": "1476 chematic-mol lib/integration tests passed",
+    "python": "170 passed",
+    "wasm": "18 variants in both real Node/WASM APIs; malformed inputs and 10000/10001-atom boundary passed",
+    "wasm_native": "1 existing metadata roundtrip regression passed",
+    "script": "36 observer/interchange harness tests passed",
+    "clippy": "chematic-mol, chematic-py, chematic-wasm all-targets with -D warnings passed",
+    "docs": "mkdocs --strict passed",
+    "static": "fmt, refactor budget, binding inventory, Python stubs, parent API docs, product naming, workflow pins, file-IO contract and benchmark index passed; script layout checked after staging"
+  },
+  "sources": {
+    ".github/workflows/ci.yml": {
+      "path": ".github/workflows/ci.yml",
+      "sha256": "b7cc6bd8ca4d38ed3db8edb05832410020da13a317913a8a59ad7591afadcdd4",
+      "size_bytes": 51566
+    },
+    "crates/chematic-mol/src/lib.rs": {
+      "path": "crates/chematic-mol/src/lib.rs",
+      "sha256": "c61aca2235f01b5c246ded7e0814fa7af4ae137a4701672d0b86f9a69f027495",
+      "size_bytes": 14121
+    },
+    "crates/chematic-mol/src/mol3000.rs": {
+      "path": "crates/chematic-mol/src/mol3000.rs",
+      "sha256": "17ec53282529f705d25add16a786ab53546a49283093c3e51db5896fefd4bb4a",
+      "size_bytes": 51852
+    },
+    "crates/chematic-mol/src/mol3000/source.rs": {
+      "path": "crates/chematic-mol/src/mol3000/source.rs",
+      "sha256": "40632264dd78d24bb70b7cf94a6941f3f0bf10c325db4cffa37087c3db91641f",
+      "size_bytes": 4741
+    },
+    "crates/chematic-mol/tests/v3000_source_roundtrip.rs": {
+      "path": "crates/chematic-mol/tests/v3000_source_roundtrip.rs",
+      "sha256": "4a7422971f1de5fd6cf371bc29afaa5d381f2572bdec369bdceec39c0c523d43",
+      "size_bytes": 2847
+    },
+    "crates/chematic-py/python/chematic/__init__.py": {
+      "path": "crates/chematic-py/python/chematic/__init__.py",
+      "sha256": "cf2899cdca3bf5622d7972a2050ad7c34e724dedd248d84433b1513cd2b19108",
+      "size_bytes": 26115
+    },
+    "crates/chematic-py/python/chematic/__init__.pyi": {
+      "path": "crates/chematic-py/python/chematic/__init__.pyi",
+      "sha256": "b25a638bb56859ec33c08fc32ce62827c90983c5059462014ea7ddc4c705a934",
+      "size_bytes": 211766
+    },
+    "crates/chematic-py/src/formats.rs": {
+      "path": "crates/chematic-py/src/formats.rs",
+      "sha256": "85a88f40ab3f9addfd2cba0283b13479cbb8ebdee0c411fe5152afc168177786",
+      "size_bytes": 53530
+    },
+    "crates/chematic-py/src/formats/v3000_source.rs": {
+      "path": "crates/chematic-py/src/formats/v3000_source.rs",
+      "sha256": "2656df54689250104f83c295867dce7fba0f583e694ffca7df7b45780c2f0d4d",
+      "size_bytes": 567
+    },
+    "crates/chematic-py/tests/test_v3000_source_roundtrip.py": {
+      "path": "crates/chematic-py/tests/test_v3000_source_roundtrip.py",
+      "sha256": "3a39a1731911302e3f4c833e3f155c7d22f9e0764d70d713d1bfa439338d6406",
+      "size_bytes": 2390
+    },
+    "crates/chematic-wasm/src/mol_io.rs": {
+      "path": "crates/chematic-wasm/src/mol_io.rs",
+      "sha256": "a5f91b27f2d0b118320918d51836251e5799f1cd90fcc6201eecf398cf4cc50f",
+      "size_bytes": 54819
+    },
+    "crates/chematic-wasm/src/mol_io/common_formats.rs": {
+      "path": "crates/chematic-wasm/src/mol_io/common_formats.rs",
+      "sha256": "8438cf6d8eefa85f7059dd015fd8330d97fdf06d9d369813ac5db1f432472d38",
+      "size_bytes": 11338
+    },
+    "crates/chematic-wasm/src/tests.rs": {
+      "path": "crates/chematic-wasm/src/tests.rs",
+      "sha256": "c762798844fd8c8e210a98b64c43dec17493274efa1c3d3ed4a2a13fe9526a7f",
+      "size_bytes": 145347
+    },
+    "crates/chematic-wasm/tests/v3000_source_roundtrip.test.mjs": {
+      "path": "crates/chematic-wasm/tests/v3000_source_roundtrip.test.mjs",
+      "sha256": "e7b63dd79b189c69e6f44e991f17aead03d889e6fae07e968646705be614ede2",
+      "size_bytes": 2066
+    },
+    "docs/benchmarks/2026-10-22-v3000-source-roundtrip.md": {
+      "path": "docs/benchmarks/2026-10-22-v3000-source-roundtrip.md",
+      "sha256": "9ca73f48bb7cb442cbbf2123a1b571dbb00410ea9004f3e6ef49861b861175cb",
+      "size_bytes": 7226
+    },
+    "docs/format-capabilities.md": {
+      "path": "docs/format-capabilities.md",
+      "sha256": "2c758e10faa727f68c931ff21f0c94a5ee9f27956173459ee36728c10b0e615a",
+      "size_bytes": 53701
+    },
+    "scripts/tests/test_v3000_source_roundtrip.py": {
+      "path": "scripts/tests/test_v3000_source_roundtrip.py",
+      "sha256": "ec26907e32518038f2820c9098302b333db81e0447a2ef499fdcc934144fa506",
+      "size_bytes": 1286
+    },
+    "scripts/validation/check_v3000_source_roundtrip.py": {
+      "path": "scripts/validation/check_v3000_source_roundtrip.py",
+      "sha256": "9c9aeb8d1f1f494399bab04e29e6fb622ff8fc866162e2e9c5e543d5941aca87",
+      "size_bytes": 7065
+    },
+    "validation/results/binding_surface_inventory-current.json": {
+      "path": "validation/results/binding_surface_inventory-current.json",
+      "sha256": "0a021d961f9d909edb7b3dcb6cae4269850f52b8ac90bb5785010bfbd2887a4e",
+      "size_bytes": 562
+    },
+    "validation/v3000_source_roundtrip/cases.json": {
+      "path": "validation/v3000_source_roundtrip/cases.json",
+      "sha256": "6a861d274d879a8c670a46483eeb363cb7b34fb99749ad98334349615d7963d3",
+      "size_bytes": 4112
+    }
+  },
+  "baseline_artifacts": {
+    "python_package": {
+      "path": "/private/tmp/chematic-cjson-unity-baseline-python-20261022/chematic/__init__.py",
+      "sha256": "fa171425f542041f4449489cfb87c2752e73b613840d7f5d26e1a4b09749f384",
+      "size_bytes": 25696
+    },
+    "python_extension": {
+      "path": "/private/tmp/chematic-cjson-unity-baseline-python-20261022/chematic/chematic.cpython-313-darwin.so",
+      "sha256": "4208d5677ac7bf4cb1c5961ddbc7236c3b7ad83f65b8f74fcbd1dadaeb51587d",
+      "size_bytes": 44623488
+    },
+    "wasm_module": {
+      "path": "/private/tmp/chematic-cjson-source-integrated-wasm-20261022/chematic_wasm.js",
+      "sha256": "0435d3d28f9f65c803bbefad9c6cc04ef5b8ada74b2d92d67b098cd4c9027cf0",
+      "size_bytes": 366818
+    },
+    "wasm_binary": {
+      "path": "/private/tmp/chematic-cjson-source-integrated-wasm-20261022/chematic_wasm_bg.wasm",
+      "sha256": "054bd13bd17e2ad95fe651fed08d1a021a443c0bd81b2402858c8cf1751b5f3a",
+      "size_bytes": 44853145
+    }
+  },
+  "candidate_artifacts": {
+    "python_package": {
+      "path": "/private/tmp/chematic-v3000-source-integrated-python-20261022/chematic/__init__.py",
+      "sha256": "cf2899cdca3bf5622d7972a2050ad7c34e724dedd248d84433b1513cd2b19108",
+      "size_bytes": 26115
+    },
+    "python_extension": {
+      "path": "/private/tmp/chematic-v3000-source-integrated-python-20261022/chematic/chematic.cpython-313-darwin.so",
+      "sha256": "c082453c9d9b7a092d11549665b0543ac9eaed31df02fecd65db9fd6c3e53e13",
+      "size_bytes": 44640112
+    },
+    "wasm_module": {
+      "path": "/private/tmp/chematic-v3000-source-integrated-wasm-20261022/chematic_wasm.js",
+      "sha256": "b723d78b547c238ded50e31b51d76215f07e657ec0a0a8985034bd92a437c3f1",
+      "size_bytes": 366830
+    },
+    "wasm_binary": {
+      "path": "/private/tmp/chematic-v3000-source-integrated-wasm-20261022/chematic_wasm_bg.wasm",
+      "sha256": "6011126bbbce684e8dc8a8060746778d4f9ce9f3128078d1a7cf3b10028b6b6a",
+      "size_bytes": 44889211
+    }
+  },
+  "openbabel_files": [
+    {
+      "path": "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+      "sha256": "733b2c925d60b17a5c9d8ce9ec841e918cc20c7634301e23f9008a187d1d9bc5",
+      "size_bytes": 75728
+    },
+    {
+      "path": "/opt/homebrew/Cellar/open-babel/3.2.1/lib/libopenbabel.8.0.0.dylib",
+      "sha256": "9c0e023919fca6656f686b3903c10d438c0003a1d07e721a850cff9ff495c93a",
+      "size_bytes": 2794816
+    },
+    {
+      "path": "/opt/homebrew/Cellar/open-babel/3.2.1/lib/openbabel/3.2.1/mdlformat.so",
+      "sha256": "63afe091d19268a0c6d5514b81ce5b9018c0334d9a0108b0fbfbb920b587999b",
+      "size_bytes": 166528
+    },
+    {
+      "path": "/opt/homebrew/Cellar/open-babel/3.2.1/lib/openbabel/3.2.1/copyformat.so",
+      "sha256": "99ec801181c30ff6f6f4d70a6941ccff64ab70b6cc01524e863a22969d718172",
+      "size_bytes": 57488
+    }
+  ],
+  "summary": {
+    "baseline": {
+      "python": {
+        "atom_table_observed": 18,
+        "exact_source": 0,
+        "coordinates_exact": 0,
+        "source_ids": 15
+      },
+      "wasm_common": {
+        "atom_table_observed": 18,
+        "exact_source": 0,
+        "coordinates_exact": 0,
+        "source_ids": 15
+      },
+      "wasm_roundtrip": {
+        "atom_table_observed": 18,
+        "exact_source": 0,
+        "coordinates_exact": 0,
+        "source_ids": 15
+      },
+      "openbabel": {
+        "atom_table_observed": 17,
+        "exact_source": 0,
+        "coordinates_exact": 3,
+        "source_ids": 14
+      },
+      "openbabel_atomclass": {
+        "atom_table_observed": 17,
+        "exact_source": 0,
+        "coordinates_exact": 3,
+        "source_ids": 14
+      },
+      "openbabel_copy_sdf": {
+        "atom_table_observed": 18,
+        "exact_source": 12,
+        "coordinates_exact": 18,
+        "source_ids": 18
+      }
+    },
+    "candidate": {
+      "python": {
+        "atom_table_observed": 18,
+        "exact_source": 18,
+        "coordinates_exact": 18,
+        "source_ids": 18
+      },
+      "wasm_common": {
+        "atom_table_observed": 18,
+        "exact_source": 18,
+        "coordinates_exact": 18,
+        "source_ids": 18
+      },
+      "wasm_roundtrip": {
+        "atom_table_observed": 18,
+        "exact_source": 18,
+        "coordinates_exact": 18,
+        "source_ids": 18
+      },
+      "openbabel": {
+        "atom_table_observed": 17,
+        "exact_source": 0,
+        "coordinates_exact": 3,
+        "source_ids": 14
+      },
+      "openbabel_atomclass": {
+        "atom_table_observed": 17,
+        "exact_source": 0,
+        "coordinates_exact": 3,
+        "source_ids": 14
+      },
+      "openbabel_copy_sdf": {
+        "atom_table_observed": 18,
+        "exact_source": 12,
+        "coordinates_exact": 18,
+        "source_ids": 18
+      }
+    }
+  },
+  "outcomes": {
+    "baseline": {
+      "path": "validation/results/v3000-source-roundtrip-baseline-2026-10-22.json.gz",
+      "sha256": "43f911a60b00ab7ada579136282567ee9f2b81a0b161762b9f0ad66a4e3b5fcc",
+      "size_bytes": 4605,
+      "decompressed_sha256": "fc891e6d17add0a8f149f0a8f71c05d05486993ed97772766093162bb352e1d5",
+      "decompressed_size_bytes": 105540
+    },
+    "candidate": {
+      "path": "validation/results/v3000-source-roundtrip-candidate-2026-10-22.json.gz",
+      "sha256": "f9e52a43e6c0358e16ecb8a977fd22343307e453597d505d008dd4a5b1f48ee0",
+      "size_bytes": 4701,
+      "decompressed_sha256": "9030a5d5f278bc20f4337717b808bcb60da94003e833d636332e8c80b6397717",
+      "decompressed_size_bytes": 109792
+    }
+  },
+  "development_revision": {
+    "path": "validation/results/v3000-source-roundtrip-development-v1-2026-10-22.json.gz",
+    "sha256": "ebb341699a0149eacc2a74eb343a5d797a1a24544924bdbb081ea1f1a21128a8",
+    "size_bytes": 7375
+  },
+  "logs": {
+    "rust-integrated-tests": {
+      "path": "validation/results/v3000-source-roundtrip-2026-10-22/rust-integrated-tests.log.gz",
+      "sha256": "d0b21b83abbd763ea840f4115800869ff2a14c66b51aee9c4191a98f002000f1",
+      "size_bytes": 26999,
+      "decompressed_sha256": "07cb487e2c410b2f27d95e21f5cf5016b943609b42886676efb905404cd1f78f",
+      "decompressed_size_bytes": 123470
+    },
+    "python-integrated-tests": {
+      "path": "validation/results/v3000-source-roundtrip-2026-10-22/python-integrated-tests.log.gz",
+      "sha256": "215fe4b648f1193de865644014e41d8af5d9b418f36c98077c1fd87f1c0788b1",
+      "size_bytes": 319,
+      "decompressed_sha256": "8b582622852fa081964fca56511ca6a4ca9739dbfb4a067ecda0a9f648fa0747",
+      "decompressed_size_bytes": 910
+    },
+    "wasm-integrated-tests": {
+      "path": "validation/results/v3000-source-roundtrip-2026-10-22/wasm-integrated-tests.log.gz",
+      "sha256": "b295c431e5523d692d0262ba334d5090b5ee238434a374544af2f298d148482c",
+      "size_bytes": 94,
+      "decompressed_sha256": "f434cc46d5c149c3ce2fbb5a9c213d5989e336e9d388f7fa510fde7914053208",
+      "decompressed_size_bytes": 82
+    },
+    "wasm-native-integrated": {
+      "path": "validation/results/v3000-source-roundtrip-2026-10-22/wasm-native-integrated.log.gz",
+      "sha256": "07bb773c883a428934c57784f606b896f2f98137b36d6904450542576a333884",
+      "size_bytes": 410,
+      "decompressed_sha256": "af70051066292c2a1fab68afddd4752a554becc9a136d21226ae6f8018d3d47c",
+      "decompressed_size_bytes": 1084
+    },
+    "python-integrated-build": {
+      "path": "validation/results/v3000-source-roundtrip-2026-10-22/python-integrated-build.log.gz",
+      "sha256": "d2cf496096b10e18a0789acdf1830e5ddd8308135def1bb839302eceb776a974",
+      "size_bytes": 235,
+      "decompressed_sha256": "b8cfbb4355e6d8ed72b9cd2d28a504c6eea7f0b95d6e5b42a78a644491cb57f5",
+      "decompressed_size_bytes": 907
+    },
+    "wasm-integrated-build": {
+      "path": "validation/results/v3000-source-roundtrip-2026-10-22/wasm-integrated-build.log.gz",
+      "sha256": "58c5c86d95f69ba62aa72e25b46fbe491916c9500491e968132fd40a4d8f2fdf",
+      "size_bytes": 236,
+      "decompressed_sha256": "d95d4764f05f461da1a0c59d7a154b85e36242291fe8735491376efa281fe848",
+      "decompressed_size_bytes": 882
+    },
+    "clippy-integrated": {
+      "path": "validation/results/v3000-source-roundtrip-2026-10-22/clippy-integrated.log.gz",
+      "sha256": "9167dc43392bc4a13d51d1e6c415828adb70e38dc82de187370ed06d2bbe7aa6",
+      "size_bytes": 276,
+      "decompressed_sha256": "c8c1a78ad9c47c7eb1eb69da58fd1f2227c880b1c19e798fcb0aad44f098ac2a",
+      "decompressed_size_bytes": 1072
+    },
+    "docs": {
+      "path": "validation/results/v3000-source-roundtrip-2026-10-22/docs.log.gz",
+      "sha256": "1e55cd8052ab4d774c4f992c6c26cf60a138a1558fc55c8986e0890fe194ace9",
+      "size_bytes": 1227,
+      "decompressed_sha256": "57e0fd917501f8b0c98321f4b117231f4cafe95dd315eab295f04305e1d4c3d0",
+      "decompressed_size_bytes": 2723
+    },
+    "script-tests": {
+      "path": "validation/results/v3000-source-roundtrip-2026-10-22/script-tests.log.gz",
+      "sha256": "c9fbe59e28d9fce583226bfdf5a92faf2df869e0019fb6e63077525bd2473066",
+      "size_bytes": 52,
+      "decompressed_sha256": "c3549ba781c904997ae7f37b45270cd4b404ac755aec312a6fdb0e9334ae19ab",
+      "decompressed_size_bytes": 99
+    },
+    "binding-surface": {
+      "path": "validation/results/v3000-source-roundtrip-2026-10-22/binding-surface.log.gz",
+      "sha256": "1c174ace4ff416c5874727f4b9d07eb7d4371e29a8424ec1da101477ebfea40c",
+      "size_bytes": 3507,
+      "decompressed_sha256": "5ffbba12fe751756f30225ff8ea70fb2a3da98cf028fe99889b0574ccd54aab1",
+      "decompressed_size_bytes": 20557
+    },
+    "stubs": {
+      "path": "validation/results/v3000-source-roundtrip-2026-10-22/stubs.log.gz",
+      "sha256": "534ac335bd997502ee31460e7b21c3ff0472d0a0402eeb52348d80dae8fbf48b",
+      "size_bytes": 67,
+      "decompressed_sha256": "98945ec702355b897670c54011fed035f73047ad280da66e6125fea56162ec13",
+      "decompressed_size_bytes": 50
+    },
+    "refactor": {
+      "path": "validation/results/v3000-source-roundtrip-2026-10-22/refactor.log.gz",
+      "sha256": "82d15a010dd0473eb589d13a75054a2b61421d3a9c6699a51736da7b938bc2ce",
+      "size_bytes": 100,
+      "decompressed_sha256": "205410b572cc35112cd597b32d18a0ae31d97cc16744562c1db12cbb20b67b9d",
+      "decompressed_size_bytes": 106
+    },
+    "fmt": {
+      "path": "validation/results/v3000-source-roundtrip-2026-10-22/fmt.log.gz",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "size_bytes": 20,
+      "decompressed_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "decompressed_size_bytes": 0
+    },
+    "parent-api": {
+      "path": "validation/results/v3000-source-roundtrip-2026-10-22/parent-api.log.gz",
+      "sha256": "469a11d048bd701dadd25baf9cb70419c33bc07ca43e7f9397e062969b203eba",
+      "size_bytes": 83,
+      "decompressed_sha256": "026f6d2da0ef02b218c3b44546eda64d24b7042bd3f41c9d39d755942a8561f1",
+      "decompressed_size_bytes": 63
+    },
+    "naming": {
+      "path": "validation/results/v3000-source-roundtrip-2026-10-22/naming.log.gz",
+      "sha256": "b4f379b8903ddc162104c439c4692ffaaf6573906a0c906df0126c7d013c5c75",
+      "size_bytes": 76,
+      "decompressed_sha256": "d1f6921742a3cbe1b0c2309ebb06b159c1b9d3120a07fb4041c5db2c2a043e51",
+      "decompressed_size_bytes": 66
+    },
+    "workflow-pins": {
+      "path": "validation/results/v3000-source-roundtrip-2026-10-22/workflow-pins.log.gz",
+      "sha256": "37714b46c19445e1d1f910e9733efe682d6d3997dfd055af9f52ec80fa675108",
+      "size_bytes": 87,
+      "decompressed_sha256": "487f9131fb571b886134dc20a91c114f58c6175d50b85cf6a258a251544d8d90",
+      "decompressed_size_bytes": 71
+    },
+    "file-io-contract": {
+      "path": "validation/results/v3000-source-roundtrip-2026-10-22/file-io-contract.log.gz",
+      "sha256": "62e8579acacc7bddad8eecf9f1ed7df820a106f32ad67d909d55f12a7e4a61b8",
+      "size_bytes": 102,
+      "decompressed_sha256": "6cd4b43f8407860055e672ed728806eb9abe736d9191ef0a68e8a7006187dfc7",
+      "decompressed_size_bytes": 88
+    },
+    "benchmark-index": {
+      "path": "validation/results/v3000-source-roundtrip-2026-10-22/benchmark-index.log.gz",
+      "sha256": "d17c9ac07675c74605fc4aaa7dbe019fd38d61f3ecc669015d35daa124983b0e",
+      "size_bytes": 67,
+      "decompressed_sha256": "15d4d8766f2538a147591f9444d8d461a99faa62f4f8d0575496aec0f87fba98",
+      "decompressed_size_bytes": 52
+    },
+    "openbabel-mol-help": {
+      "path": "validation/results/v3000-source-roundtrip-2026-10-22/openbabel-mol-help.log.gz",
+      "sha256": "68cba69975c0e982864aaec34b12032fc8ac8aab1863c52fd21d95212938d8e1",
+      "size_bytes": 1070,
+      "decompressed_sha256": "e40a7e73ba3fc82f4753265ed105acc9909f7592736c5e0cad2eaef7da65f55e",
+      "decompressed_size_bytes": 2303
+    },
+    "openbabel-copy-help": {
+      "path": "validation/results/v3000-source-roundtrip-2026-10-22/openbabel-copy-help.log.gz",
+      "sha256": "68c9d56ff0af84d3662b63142bc1ee10db66936b6626e0a9b5e54f145d54bfce",
+      "size_bytes": 430,
+      "decompressed_sha256": "7c0e3dedd470d288ead86ddffb452408a254248e4efb0902ce29e18cdab14e55",
+      "decompressed_size_bytes": 685
+    },
+    "baseline-paired": {
+      "path": "validation/results/v3000-source-roundtrip-2026-10-22/baseline-paired.log.gz",
+      "sha256": "8d92ab0b0a36143ccbdc6edccad29e83fc678331aec900ad43b39d539a7318f0",
+      "size_bytes": 171,
+      "decompressed_sha256": "2e434fb8bbd14bac36955f301e65e0f14fd6a484e126a667e01d94dbece00a4f",
+      "decompressed_size_bytes": 644
+    },
+    "candidate-paired": {
+      "path": "validation/results/v3000-source-roundtrip-2026-10-22/candidate-paired.log.gz",
+      "sha256": "70fb141b283ee3737f2306f4c69a5a20350415fd88ec2751f78fcab57ca1c994",
+      "size_bytes": 165,
+      "decompressed_sha256": "544ecce05fab954b2ae6af857395e44a2e556931bee57c4b990d8828561ea313",
+      "decompressed_size_bytes": 650
+    },
+    "script-layout": {
+      "path": "validation/results/v3000-source-roundtrip-2026-10-22/script-layout.log.gz",
+      "sha256": "7a4ba55839417ab5a382fd544dafef5b4e4e6a7542d66254d158bdc8985826db",
+      "size_bytes": 78,
+      "decompressed_sha256": "552028e216bc5bc00277707740021dc1f7100a720852583ed9279e4355f0c6bc",
+      "decompressed_size_bytes": 61
+    }
+  },
+  "build_environment": {
+    "CARGO_TARGET_DIR": "/private/tmp/chematic-cml-refs-target-20261022",
+    "CARGO_BUILD_JOBS": "2",
+    "CARGO_PROFILE_DEV_DEBUG": "0",
+    "CARGO_INCREMENTAL": "0",
+    "PYO3_PYTHON": "python3"
+  },
+  "build_commands": {
+    "python": "cargo rustc --locked -p chematic-py --lib -- -C link-arg=-undefined -C link-arg=dynamic_lookup",
+    "wasm": "cargo build --locked -p chematic-wasm --target wasm32-unknown-unknown; wasm-bindgen 0.2.129 --target nodejs"
+  }
+}

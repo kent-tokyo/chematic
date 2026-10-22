@@ -171,7 +171,8 @@ fn parse_common_format(text: &str, format: &str) -> Result<chematic_core::Molecu
 ///
 /// This is the WASM counterpart of Python's `convert_format`. It supports
 /// SMILES, MOL/SDF, MOL V3000, MOL2, CML, ChemicalJSON, MolJSON, and CDXML.
-/// MOL2-to-MOL2 validates and retains the exact source. V3000-to-CJSON also
+/// MOL2-to-MOL2 and V3000-to-V3000 validate and retain exact source.
+/// V3000-to-CJSON also
 /// carries source-order x/y/z values; it does not retain opaque metadata or
 /// verify cross-format stereo. Other conversions use
 /// the topology-only bridge and do not carry format-specific metadata.
@@ -195,6 +196,9 @@ pub fn convert_common_format(
     })?;
     if input == "mol2" && output == "mol2" {
         return roundtrip_mol2_record(text);
+    }
+    if input == "mol_v3000" && output == "mol_v3000" {
+        return super::roundtrip_mol_v3000_block(text);
     }
     let (mol, coords) = if input == "mol_v3000" && output == "cjson" {
         let (mol, _, coords) = chematic_mol::parse_mol_v3000_with_coords_3d(text)

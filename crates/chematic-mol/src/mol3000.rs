@@ -26,6 +26,10 @@ const V30_PREFIX: &str = "M  V30 ";
 
 mod coordinates;
 pub use coordinates::parse_mol_v3000_with_coords_3d;
+mod source;
+pub use source::{
+    V3000SourceLimits, roundtrip_mol_v3000_source, roundtrip_mol_v3000_source_with_limits,
+};
 
 /// Return a `V3000ParseError` for the given 1-based line number and message.
 #[inline]

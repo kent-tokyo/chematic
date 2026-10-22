@@ -196,9 +196,10 @@ pub use mol2000::{
     write_sdf_with_charges,
 };
 pub use mol3000::{
-    V3000SGroup, V3000SGroupKind, parse_mol_v3000, parse_mol_v3000_with_coords,
+    V3000SGroup, V3000SGroupKind, V3000SourceLimits, parse_mol_v3000, parse_mol_v3000_with_coords,
     parse_mol_v3000_with_coords_3d, parse_v3000_sgroup_line, read_mol_v3000_with_diagnostics,
-    write_mol_v3000, write_mol_v3000_with_conformer, write_mol_v3000_with_conformer_checked,
+    roundtrip_mol_v3000_source, roundtrip_mol_v3000_source_with_limits, write_mol_v3000,
+    write_mol_v3000_with_conformer, write_mol_v3000_with_conformer_checked,
     write_mol_v3000_with_stereo_report,
 };
 pub use moljson::{
@@ -238,8 +239,9 @@ pub use pdbqt::{
     parse_pdbqt_with_limits, write_pdbqt, write_pdbqt_checked,
 };
 pub use pqr::{
-    PqrAtomRecord, PqrError, PqrParseLimits, PqrResult, infer_element, parse_pqr,
-    parse_pqr_with_limits, write_pqr,
+    PqrAtomRecord, PqrError, PqrParseLimits, PqrResult, PqrWriteError, PqrWriteLimits,
+    infer_element, parse_pqr, parse_pqr_with_limits, write_pqr, write_pqr_checked,
+    write_pqr_checked_with_limits,
 };
 pub use protein::{
     ProteinAtom, ProteinChain, ProteinProjection, ProteinProjectionError, ProteinResidue,
