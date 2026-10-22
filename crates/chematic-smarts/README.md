@@ -50,6 +50,15 @@ for m in matches {
 - `mcs(mol1: &Molecule, mol2: &Molecule) -> McsResult` — find largest common subgraph
 - Result includes atom/bond mappings and fragment count
 
+`McsConfig::atom_compare` offers two heavy-atom policies. `AnyHeavyAtom`
+excludes explicit hydrogen from the result. `RdkitAnyHeavyAtom` follows
+RDKit's `CompareAnyHeavyAtom`: heavy atoms match each other, explicit hydrogen
+matches explicit hydrogen, and wildcard atoms match wildcard atoms. Python and
+WASM accept `"rdkit_any_heavy_atom"`. The new mode matches the atom and bond
+counts in all 660 applicable rows of the saved
+[RDKit 2026.09.1 MCS comparator fixture](../../validation/results/mcs-comparator-bounds-2026-10-17/oracle.jsonl);
+this does not establish full FMCS parity.
+
 ### Configuration
 
 ```rust

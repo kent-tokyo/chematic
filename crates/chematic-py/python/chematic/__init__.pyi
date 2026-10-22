@@ -4612,7 +4612,8 @@ def find_mcs(
     found so far -- indistinguishable here from an exhaustive result; use
     :func:`find_mcs_checked` when that distinction matters.
 
-    ``atom_compare`` is one of ``"elements"`` (default), ``"any_heavy_atom"``, or ``"any"``.
+    ``atom_compare`` is one of ``"elements"`` (default), ``"any_heavy_atom"``,
+    ``"rdkit_any_heavy_atom"``, or ``"any"``.
     ``bond_compare`` is one of ``"order_or_aromatic"`` (default) or ``"any"``.
     Typed choices are :class:`McsAtomCompare` and :class:`McsBondCompare`.
     The result is a first-input-side concrete projection, not generalized SMARTS.

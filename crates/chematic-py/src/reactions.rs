@@ -993,10 +993,11 @@ fn build_mcs_config(
     let atom_compare = match atom_compare {
         "elements" => AtomCompare::Elements,
         "any_heavy_atom" => AtomCompare::AnyHeavyAtom,
+        "rdkit_any_heavy_atom" => AtomCompare::RdkitAnyHeavyAtom,
         "any" => AtomCompare::Any,
         other => {
             return Err(PyValueError::new_err(format!(
-                "invalid atom_compare {other:?}: expected \"elements\", \"any_heavy_atom\", or \"any\""
+                "invalid atom_compare {other:?}: expected \"elements\", \"any_heavy_atom\", \"rdkit_any_heavy_atom\", or \"any\""
             )));
         }
     };

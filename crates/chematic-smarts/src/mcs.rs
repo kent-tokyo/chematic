@@ -41,6 +41,11 @@ pub enum AtomCompare {
     /// Any heavy atom (atomic number > 1) matches any other heavy atom, regardless of
     /// element.  Useful for scaffold hopping across heterocycle series (C↔N, C↔O, etc.).
     AnyHeavyAtom,
+    /// RDKit's `CompareAnyHeavyAtom` semantics: heavy atoms match each other,
+    /// and explicit hydrogen atoms match each other (including isotopes unless
+    /// `match_isotope` is enabled). Hydrogen never matches a heavy atom;
+    /// wildcard atoms only match wildcard atoms.
+    RdkitAnyHeavyAtom,
     /// Any atom matches any other atom, including hydrogen.
     Any,
 }
@@ -577,6 +582,14 @@ fn collect_seed_candidates(
 // Compatibility helpers
 // ---------------------------------------------------------------------------
 
+fn rdkit_heavy_atom_class(atom: &chematic_core::Atom) -> u8 {
+    match (atom.wildcard, atom.element.atomic_number()) {
+        (true, _) => 0,
+        (false, 1) => 1,
+        _ => 2,
+    }
+}
+
 /// Atom compatibility according to `compare` mode.
 fn atoms_compatible(
     a: &chematic_core::Atom,
@@ -589,6 +602,7 @@ fn atoms_compatible(
     let base = match compare {
         AtomCompare::Elements => a.element.atomic_number() == b.element.atomic_number(),
         AtomCompare::AnyHeavyAtom => a.element.atomic_number() > 1 && b.element.atomic_number() > 1,
+        AtomCompare::RdkitAnyHeavyAtom => rdkit_heavy_atom_class(a) == rdkit_heavy_atom_class(b),
         AtomCompare::Any => true,
     };
     if !base {

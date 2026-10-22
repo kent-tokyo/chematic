@@ -1,13 +1,14 @@
 //! Conservative remaining-atom bounds under the selected atom comparator.
 use std::collections::HashMap;
 
-use super::{AtomCompare, AtomIdx, Molecule, PartialMapping};
+use super::{AtomCompare, AtomIdx, Molecule, PartialMapping, rdkit_heavy_atom_class};
 
 fn atom_class(atom: &chematic_core::Atom, compare: &AtomCompare) -> Option<u8> {
     match compare {
         AtomCompare::Elements => Some(atom.element.atomic_number()),
         AtomCompare::Any => Some(0),
         AtomCompare::AnyHeavyAtom => (atom.element.atomic_number() > 1).then_some(0),
+        AtomCompare::RdkitAnyHeavyAtom => Some(rdkit_heavy_atom_class(atom)),
     }
 }
 

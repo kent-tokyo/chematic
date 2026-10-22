@@ -459,6 +459,7 @@ pub fn mcs_smiles_json_with_ring_config(
 /// (camelCase keys, all optional, defaulting to `McsConfig::default()`):
 /// `matchBonds`, `minAtoms`, `timeoutMs`, `ringMatchesRingOnly`,
 /// `completeRingsOnly`, `atomCompare` (`"elements"` | `"any_heavy_atom"` |
+/// `"rdkit_any_heavy_atom"` |
 /// `"any"`), `bondCompare` (`"order_or_aromatic"` | `"any"`),
 /// `matchChiralTag`, `matchCharge`, `matchIsotope`, `maximizeBonds`, and
 /// `maxSearchNodes`.
