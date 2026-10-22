@@ -7,6 +7,10 @@ package, comparator, corpus, host, runtime and operation.
 
 ## Start here
 
+- [Third ETKDG seed batch](2026-10-22-etkdg-third-seed-batch.md):
+  source-built 12-molecule development comparison with 60 RDKit candidates,
+  explicit extra MMFF retry work, and a closed 0.308 kcal/mol gap.
+
 - [Symmetric R-group column alignment](2026-10-22-rdkit-rgroup-symmetric-columns.md):
   source-built 11-batch graph and label comparison with RDKit 2026.09.1;
   the exposed first-row symmetry tie is corrected.

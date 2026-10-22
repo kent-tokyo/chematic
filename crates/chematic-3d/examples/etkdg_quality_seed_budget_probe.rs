@@ -39,6 +39,8 @@ fn main() {
         let row: Value = serde_json::from_str(&line).expect("JSON input row");
         let name = row["name"].as_str().expect("name");
         let smiles = row["smiles"].as_str().expect("smiles");
+        let num_confs = row["num_confs"].as_u64().unwrap_or(20) as usize;
+        let max_iters = row["max_iters"].as_u64().unwrap_or(200) as u32;
         let molecule =
             chematic_chem::add_hydrogens(&chematic_smiles::parse(smiles).expect("SMILES"));
         let view = chematic_smiles::rdkit_mol_view(&molecule).expect("RDKit atom view");
@@ -63,10 +65,13 @@ fn main() {
                 ])
             })
             .collect();
-        let compatibility = rdkit_embed_multiple_confs_mmff(&molecule, 20, &options, 200)
-            .expect("compatibility ensemble");
-        let quality = etkdg_embed_multiple_confs_mmff_best_gradient(&molecule, 20, &options, 200)
-            .expect("quality ensemble");
+        let compatibility =
+            rdkit_embed_multiple_confs_mmff(&molecule, num_confs, &options, max_iters)
+                .expect("compatibility ensemble");
+        let quality = etkdg_embed_multiple_confs_mmff_best_gradient(
+            &molecule, num_confs, &options, max_iters,
+        )
+        .expect("quality ensemble");
         println!(
             "{}",
             json!({

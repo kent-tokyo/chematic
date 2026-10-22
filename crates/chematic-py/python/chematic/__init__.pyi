@@ -413,8 +413,10 @@ class Mol:
         max_mmff_iters: int = 200,
     ) -> list[tuple[int, float, list[list[float]]]]:
         """Keep the lowest-energy candidate, then converged conformers from
-        both ETKDG/MMFF94 runs. The second uses the corrected gradient when
-        relevant, or new seeds otherwise. Uses twice the candidate work.
+        ETKDG/MMFF94 runs. The second uses the corrected gradient when
+        relevant; otherwise two additional runs use new seeds. Uses twice or
+        three times the candidate work, respectively, plus up to one or two
+        optional MMFF retries.
         """
         ...
 
