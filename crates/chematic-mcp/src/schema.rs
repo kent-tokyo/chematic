@@ -74,74 +74,89 @@ fn walk(schema: &Value, data: &Value, depth: usize) -> Result<(), String> {
     }
 
     match data {
-        Value::String(s) => {
-            let len = s.chars().count() as u64;
-            if let Some(min) = schema.get("minLength").and_then(|v| v.as_u64())
-                && len < min
-            {
-                return Err(format!("string shorter than minLength {min}"));
-            }
-            if let Some(max) = schema.get("maxLength").and_then(|v| v.as_u64())
-                && len > max
-            {
-                return Err(format!("string longer than maxLength {max}"));
-            }
-        }
-        Value::Array(items) => {
-            let len = items.len() as u64;
-            if let Some(min) = schema.get("minItems").and_then(|v| v.as_u64())
-                && len < min
-            {
-                return Err(format!("array shorter than minItems {min}"));
-            }
-            if let Some(max) = schema.get("maxItems").and_then(|v| v.as_u64())
-                && len > max
-            {
-                return Err(format!("array longer than maxItems {max}"));
-            }
-            if let Some(item_schema) = schema.get("items") {
-                for item in items {
-                    walk(item_schema, item, depth + 1)?;
-                }
-            }
-        }
-        Value::Number(n) => {
-            if let Some(min) = schema.get("minimum").and_then(|v| v.as_f64())
-                && n.as_f64().unwrap_or(f64::NAN) < min
-            {
-                return Err(format!("number less than minimum {min}"));
-            }
-            if let Some(max) = schema.get("maximum").and_then(|v| v.as_f64())
-                && n.as_f64().unwrap_or(f64::NAN) > max
-            {
-                return Err(format!("number greater than maximum {max}"));
-            }
-        }
-        Value::Object(map) => {
-            if let Some(required) = schema.get("required").and_then(|v| v.as_array()) {
-                for r in required {
-                    let key = r.as_str().unwrap_or_default();
-                    if !map.contains_key(key) {
-                        return Err(format!("missing required property: {key}"));
-                    }
-                }
-            }
-            let props = schema.get("properties").and_then(|v| v.as_object());
-            let additional_ok =
-                !matches!(schema.get("additionalProperties"), Some(Value::Bool(false)));
-            for (k, v) in map {
-                match props.and_then(|p| p.get(k)) {
-                    Some(sub_schema) => walk(sub_schema, v, depth + 1)?,
-                    None if !additional_ok => {
-                        return Err(format!("unexpected property: {k}"));
-                    }
-                    None => {}
-                }
-            }
-        }
+        Value::String(value) => check_string(schema, value)?,
+        Value::Array(items) => check_array(schema, items, depth)?,
+        Value::Number(number) => check_number(schema, number)?,
+        Value::Object(map) => check_object(schema, map, depth)?,
         _ => {}
     }
 
+    Ok(())
+}
+
+fn check_string(schema: &Value, value: &str) -> Result<(), String> {
+    let length = value.chars().count() as u64;
+    if let Some(minimum) = schema.get("minLength").and_then(Value::as_u64)
+        && length < minimum
+    {
+        return Err(format!("string shorter than minLength {minimum}"));
+    }
+    if let Some(maximum) = schema.get("maxLength").and_then(Value::as_u64)
+        && length > maximum
+    {
+        return Err(format!("string longer than maxLength {maximum}"));
+    }
+    Ok(())
+}
+
+fn check_array(schema: &Value, items: &[Value], depth: usize) -> Result<(), String> {
+    let length = items.len() as u64;
+    if let Some(minimum) = schema.get("minItems").and_then(Value::as_u64)
+        && length < minimum
+    {
+        return Err(format!("array shorter than minItems {minimum}"));
+    }
+    if let Some(maximum) = schema.get("maxItems").and_then(Value::as_u64)
+        && length > maximum
+    {
+        return Err(format!("array longer than maxItems {maximum}"));
+    }
+    if let Some(item_schema) = schema.get("items") {
+        for item in items {
+            walk(item_schema, item, depth + 1)?;
+        }
+    }
+    Ok(())
+}
+
+fn check_number(schema: &Value, number: &serde_json::Number) -> Result<(), String> {
+    let value = number.as_f64().unwrap_or(f64::NAN);
+    if let Some(minimum) = schema.get("minimum").and_then(Value::as_f64)
+        && value < minimum
+    {
+        return Err(format!("number less than minimum {minimum}"));
+    }
+    if let Some(maximum) = schema.get("maximum").and_then(Value::as_f64)
+        && value > maximum
+    {
+        return Err(format!("number greater than maximum {maximum}"));
+    }
+    Ok(())
+}
+
+fn check_object(
+    schema: &Value,
+    map: &serde_json::Map<String, Value>,
+    depth: usize,
+) -> Result<(), String> {
+    if let Some(required) = schema.get("required").and_then(Value::as_array) {
+        for property in required {
+            let key = property.as_str().unwrap_or_default();
+            if !map.contains_key(key) {
+                return Err(format!("missing required property: {key}"));
+            }
+        }
+    }
+    let properties = schema.get("properties").and_then(Value::as_object);
+    let additional_allowed =
+        !matches!(schema.get("additionalProperties"), Some(Value::Bool(false)));
+    for (key, value) in map {
+        match properties.and_then(|known| known.get(key)) {
+            Some(sub_schema) => walk(sub_schema, value, depth + 1)?,
+            None if !additional_allowed => return Err(format!("unexpected property: {key}")),
+            None => {}
+        }
+    }
     Ok(())
 }
 

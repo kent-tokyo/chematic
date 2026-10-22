@@ -124,18 +124,6 @@
       "decisions": 39,
       "lines": 166
     },
-    "crates/chematic-mcp/src/http.rs::read_request#1": {
-      "decisions": 24,
-      "lines": 121
-    },
-    "crates/chematic-mcp/src/schema.rs::walk#1": {
-      "decisions": 33,
-      "lines": 110
-    },
-    "crates/chematic-mcp/src/transport.rs::handle_line#1": {
-      "decisions": 15,
-      "lines": 130
-    },
     "crates/chematic-mol/src/cjson_record.rs::validate_projection#1": {
       "decisions": 47,
       "lines": 105
