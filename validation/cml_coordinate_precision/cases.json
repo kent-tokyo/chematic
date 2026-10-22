@@ -1,0 +1,143 @@
+{
+  "id": "cml-coordinate-precision-development-v1",
+  "provenance": "Original authored CML layouts, 2026-10-22, recipe packet() in scripts/validation/check_cml_coordinate_precision.py; no third-party or sealed corpus.",
+  "license": "MIT OR Apache-2.0",
+  "redistribution": "allowed: original synthetic inputs",
+  "minimization": "Two distinct atoms C/O and one single bond; preserves unambiguous correspondence with no symmetry or stereo. Numeric representation boundary values are separate unit tests, not physically meaningful geometries.",
+  "oracle": {
+    "name": "Python ElementTree and authored finite binary64 values; Rust parse_cml and parse_cml_strict unit checks are bitwise",
+    "version": "Python 3.13.6; rustc 1.97.0 (2d8144b78 2026-07-07)",
+    "comparison": "absolute tolerance 1e-10 angstrom, no relative tolerance, no alignment; exact equality diagnostic separate",
+    "comparator": "Open Babel 3.2.1, -icml -ocml, default writer"
+  },
+  "expected": {
+    "all_cases": "Two neutral non-isotopic atoms C/O with one single bond; supplied 2D positions within absolute tolerance 1e-10",
+    "unit_tests": "Finite binary64 values including signed zero, smallest subnormal, normal boundary, maximum magnitude and floats adjacent to one retain all bits after both readers; no scientific geometry claim."
+  },
+  "units": {
+    "coordinates": "angstrom"
+  },
+  "sha256": "87bc5a5e790d67d4fc84f0b22e6a1f45a0e793476f8e553d3dfc2bb4c5770535",
+  "cases": [
+    {
+      "id": "dyadic-control",
+      "source": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"C\" x2=\"1.25\" y2=\"-2.5\"/>\n<atom id=\"a2\" elementType=\"O\" x2=\"2.75\" y2=\"-2.5\"/>\n</atomArray>\n<bondArray>\n<bond atomRefs2=\"a1 a2\" order=\"1\"/>\n</bondArray>\n</molecule>\n",
+      "expected_coordinates": [
+        [
+          1.25,
+          -2.5
+        ],
+        [
+          2.75,
+          -2.5
+        ]
+      ],
+      "sha256": "93bd5178387faf5277970cdeda00f1b1bae6b70f4f6d1d3b48a42d00c0b23a9e"
+    },
+    {
+      "id": "decimal-control",
+      "source": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"C\" x2=\"0.1\" y2=\"-0.2\"/>\n<atom id=\"a2\" elementType=\"O\" x2=\"1.5\" y2=\"-0.2\"/>\n</atomArray>\n<bondArray>\n<bond atomRefs2=\"a1 a2\" order=\"1\"/>\n</bondArray>\n</molecule>\n",
+      "expected_coordinates": [
+        [
+          0.1,
+          -0.2
+        ],
+        [
+          1.5,
+          -0.2
+        ]
+      ],
+      "sha256": "3d06e095d9ce277e6aa00947411d888483c6dd58ff3f757fc10132d3af26bff7"
+    },
+    {
+      "id": "fractional-layout",
+      "source": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"C\" x2=\"0.123456789012345\" y2=\"0.234567890123456\"/>\n<atom id=\"a2\" elementType=\"O\" x2=\"1.523456789012345\" y2=\"0.334567890123456\"/>\n</atomArray>\n<bondArray>\n<bond atomRefs2=\"a1 a2\" order=\"1\"/>\n</bondArray>\n</molecule>\n",
+      "expected_coordinates": [
+        [
+          0.123456789012345,
+          0.234567890123456
+        ],
+        [
+          1.523456789012345,
+          0.334567890123456
+        ]
+      ],
+      "sha256": "cd83de35a1f335438403389cfe8c6268049dc9f5b28aa4aab629d63975dea836"
+    },
+    {
+      "id": "opposite-signs",
+      "source": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"C\" x2=\"-1.23456789012345\" y2=\"2.34567890123456\"/>\n<atom id=\"a2\" elementType=\"O\" x2=\"0.16543210987655\" y2=\"2.44567890123456\"/>\n</atomArray>\n<bondArray>\n<bond atomRefs2=\"a1 a2\" order=\"1\"/>\n</bondArray>\n</molecule>\n",
+      "expected_coordinates": [
+        [
+          -1.23456789012345,
+          2.34567890123456
+        ],
+        [
+          0.16543210987655,
+          2.44567890123456
+        ]
+      ],
+      "sha256": "34d4ee374554a1b0665a7dcccad9ff94dbd26cd57ed0cc00bf8a12e81f2743e0"
+    },
+    {
+      "id": "near-origin",
+      "source": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"C\" x2=\"1.23456789012345e-08\" y2=\"-2.34567890123456e-08\"/>\n<atom id=\"a2\" elementType=\"O\" x2=\"1.400000012345679\" y2=\"0.099999976543211\"/>\n</atomArray>\n<bondArray>\n<bond atomRefs2=\"a1 a2\" order=\"1\"/>\n</bondArray>\n</molecule>\n",
+      "expected_coordinates": [
+        [
+          1.23456789012345e-08,
+          -2.34567890123456e-08
+        ],
+        [
+          1.400000012345679,
+          0.099999976543211
+        ]
+      ],
+      "sha256": "82a7c1f80a769b263870c724616781f817c6d9e0f81bccef7c0bc487bfcaec93"
+    },
+    {
+      "id": "translated-layout",
+      "source": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"C\" x2=\"1000000.123456789\" y2=\"-1000000.234567891\"/>\n<atom id=\"a2\" elementType=\"O\" x2=\"1000001.523456789\" y2=\"-1000000.134567891\"/>\n</atomArray>\n<bondArray>\n<bond atomRefs2=\"a1 a2\" order=\"1\"/>\n</bondArray>\n</molecule>\n",
+      "expected_coordinates": [
+        [
+          1000000.123456789,
+          -1000000.234567891
+        ],
+        [
+          1000001.523456789,
+          -1000000.134567891
+        ]
+      ],
+      "sha256": "9b7ee3e1f59d07321a87b426355c9f09b785a7f4d6edc3676156c0bf3e23a2a6"
+    },
+    {
+      "id": "near-rounding-boundary",
+      "source": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"C\" x2=\"4.9999999999e-05\" y2=\"-5.0000000001e-05\"/>\n<atom id=\"a2\" elementType=\"O\" x2=\"1.400049999999999\" y2=\"0.099949999999999\"/>\n</atomArray>\n<bondArray>\n<bond atomRefs2=\"a1 a2\" order=\"1\"/>\n</bondArray>\n</molecule>\n",
+      "expected_coordinates": [
+        [
+          4.9999999999e-05,
+          -5.0000000001e-05
+        ],
+        [
+          1.400049999999999,
+          0.099949999999999
+        ]
+      ],
+      "sha256": "a04c764d952b7cfaf9458bc72a9bf9cf842d6371ae5c81ea2062a914191c7364"
+    },
+    {
+      "id": "long-decimals",
+      "source": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"C\" x2=\"0.3333333333333333\" y2=\"-0.6666666666666666\"/>\n<atom id=\"a2\" elementType=\"O\" x2=\"1.7333333333333334\" y2=\"-0.5666666666666667\"/>\n</atomArray>\n<bondArray>\n<bond atomRefs2=\"a1 a2\" order=\"1\"/>\n</bondArray>\n</molecule>\n",
+      "expected_coordinates": [
+        [
+          0.3333333333333333,
+          -0.6666666666666666
+        ],
+        [
+          1.7333333333333334,
+          -0.5666666666666667
+        ]
+      ],
+      "sha256": "990e7d73cd21f3c47ddf2bfe6fbfe02056315ffcce0c07febfeaa6f20288a612"
+    }
+  ]
+}

@@ -41,6 +41,11 @@ not a statement about v1.1.8.
   retained on 48/48 versus 20/48 before and 36/48 with Open Babel 3.2.1 defaults.
   Named-field projection only; property order/header metadata remain outside scope.
 
+- [CML supplied 2D coordinate precision](../docs/benchmarks/2026-10-22-cml-coordinate-precision.md):
+  eight original drawing layouts; source reader/writer preserves 8/8 within
+  1e-10 Å absolute, versus 2/8 before and 3/8 with Open Babel 3.2.1 defaults.
+  Numeric preservation evidence, not geometry accuracy or toolkit-wide parity.
+
 - [Symmetry-aware conformer clustering](2026-10-22-conformer-symmetric-clustering.md):
   merges atom-permutation-only duplicates in focused CF3, acetate and nitro
   fixtures while retaining a distinct geometry; RDKit 2026.09.1 agrees on the
