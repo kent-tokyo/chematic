@@ -129,8 +129,8 @@ pub use cjson_record::{
     CjsonRecord, parse_cjson_record, parse_cjson_record_with_limits, write_cjson_record,
 };
 pub use cml::{
-    CmlError, CmlParseLimits, parse_cml, parse_cml_strict, parse_cml_strict_with_limits,
-    parse_cml_with_limits, write_cml,
+    CmlError, CmlParseLimits, CmlWith3d, parse_cml, parse_cml_strict, parse_cml_strict_with_limits,
+    parse_cml_with_3d, parse_cml_with_3d_with_limits, parse_cml_with_limits, write_cml,
 };
 pub use cube::{
     CubeError, CubeFileReader, CubeParseLimits, parse_cube, parse_cube_with_limits, write_cube,

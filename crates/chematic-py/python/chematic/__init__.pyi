@@ -3299,6 +3299,16 @@ def from_cml_strict(cml_str: str | bytes) -> Mol:
     """Parse structurally valid, non-empty CML; reject malformed XML."""
     ...
 
+def from_cml_with_3d(cml_str: str | bytes) -> tuple[Mol, list[list[float]] | None]:
+    """Read one CML molecule with complete finite Cartesian Angstrom coordinates.
+
+    Returns source atom order; absent 3D coordinates return None. Requires
+    unique nonempty atom IDs and refuses partial triplets/mixed presence.
+    Limits: 16 MiB input, 100000 atoms plus native CML line/element/bond caps.
+    Metadata, namespaces/schema and coordinate stereo are not interpreted.
+    """
+    ...
+
 def from_chemdraw_block(data: bytes, *, format: str = "AUTO", allow_metadata_loss: bool = False) -> dict[str, Any]:
     """Project CDX or UTF-8 CDXML into source-ordered molecules/coordinates.
 

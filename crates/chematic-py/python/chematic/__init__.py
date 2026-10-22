@@ -172,6 +172,9 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
     specific metadata is not promised to survive conversion.
     MOL2 to MOL2 instead validates and retains the exact source; coordinate,
     charge, name, and comment overrides are rejected on that path.
+    CML to CJSON carries complete source x3/y3/z3 coordinates. Missing 3D
+    stays missing; partial/malformed 3D and multiple molecules are refused.
+    This route requires unique atom IDs; 2D layout and metadata are omitted.
     """
     def normalize(value):
         if not isinstance(value, str):
@@ -208,7 +211,12 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
     elif source == "mol2":
         mol = from_mol2(text)
     elif source == "cml":
-        mol = from_cml(text)
+        if target == "cjson":
+            mol, parsed_coords = from_cml_with_3d(text)
+            if coords is None:
+                coords = parsed_coords
+        else:
+            mol = from_cml(text)
     elif source == "cjson":
         mol, parsed_coords = from_cjson(text)
         if coords is None and parsed_coords:

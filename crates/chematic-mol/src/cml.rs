@@ -25,7 +25,8 @@
 //!
 //! # Limitations
 //!
-//! - 3D coordinates (x3/y3/z3) are parsed but not returned (only 2D x2/y2).
+//! - Legacy readers ignore 3D coordinates. `parse_cml_with_3d` returns complete
+//!   finite x3/y3/z3 triplets through an additive, bounded single-molecule profile.
 //! - Aromatic bonds ("A") are stored as alternating single/double bonds (no
 //!   special aromatic bond order in the core model).
 //! - Stereochemistry attributes are ignored.
@@ -34,6 +35,9 @@
 use std::collections::HashMap;
 
 use chematic_core::{Atom, BondOrder, Element, Molecule, MoleculeBuilder, implicit_hcount};
+
+mod geometry;
+pub use geometry::{CmlWith3d, parse_cml_with_3d, parse_cml_with_3d_with_limits};
 
 /// Resource limits for the lightweight CML parser.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
