@@ -14,6 +14,7 @@ not a statement about v1.1.8.
 
 | Question | Current record | Boundary |
 |---|---|---|
+| How are symmetric unlabelled R-group sites aligned? | [source comparison](2026-10-22-rdkit-rgroup-symmetric-columns.md) | A first-row tie correction brings one exposed 11-batch graph-and-label panel to 11/11 against RDKit 2026.09.1. The separate 20-row symmetric-ring residual and broader R-group accuracy remain open. |
 | Is MCS input-order independent and are incomplete searches explicit? | [complete-ring valid-best correction](2026-10-22-mcs-complete-rings-valid-best.md) · [equal-atom bond-count correction](2026-10-22-mcs-equal-atom-bond-count.md) · [MCS non-induced/status follow-up](2026-10-21-mcs-non-induced-order-status.md) | Source fixes recover a valid common chain under complete-ring constraints, an equal-atom higher-bond tie, and the earlier ring/chain case. Resource limits are typed; full FMCS parity, a new frozen holdout and broad performance evidence remain open. |
 | Where does source CIP still trail RDKit? | [CIP lazy-preparation audit](2026-10-19-cip-lazy-preparation.md) | 24 balanced blocks; source CIP first-use 1.74× and parse-inclusive 1.62× faster. Standalone CIP/SMILES/SMARTS gaps remain; stress mismatches stay unranked. |
 | What is the broadest cross-platform public-wheel chemistry packet? | [v1.1.3 published artifact packet](2026-10-14-v113-published-artifact-packet.md) | Four exact PyPI wheels; npm/WASM, crates.io, speed, and newer releases are separate. |
