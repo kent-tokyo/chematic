@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "rdkit_version": "2026.09.1",
+  "rdkit_api": "rdFMCS.FindMCS",
+  "rdkit_option": "AtomCompareParameters.MatchChiralTag=True",
+  "base_commit": "978669e4264683bb73f5a7a3389a945b5fdf2b87",
+  "measurement": "[numAtoms,numBonds]",
+  "pairs": [
+    {"left": "F[C@H](Cl)Br", "right": "Cl[C@@H](F)Br", "expected": [4, 3]},
+    {"left": "F[C@H](Cl)Br", "right": "Cl[C@H](F)Br", "expected": [3, 2]},
+    {"left": "F[C@H](Cl)Br", "right": "Br[C@@H](Cl)F", "expected": [4, 3]},
+    {"left": "F[C@](Cl)(Br)I", "right": "Cl[C@@](F)(Br)I", "expected": [5, 4]},
+    {"left": "F[C@](Cl)(Br)I", "right": "Cl[C@](F)(Br)I", "expected": [4, 3]},
+    {"left": "N[C@@H](C)C(=O)O", "right": "N[C@H](C)C(=O)O", "expected": [5, 4]},
+    {"left": "N[C@@H](C)C(=O)O", "right": "C[C@H](N)C(=O)O", "expected": [6, 5]}
+  ],
+  "three_input_same": {
+    "inputs": ["F[C@H](Cl)Br", "Cl[C@@H](F)Br", "Br[C@@H](Cl)F"],
+    "expected": [4, 3]
+  },
+  "three_input_difference": {
+    "inputs": ["F[C@H](Cl)Br", "Cl[C@@H](F)Br", "Cl[C@H](F)Br"],
+    "rdkit": [2, 1],
+    "chematic": [3, 2],
+    "status": "unresolved"
+  }
+}

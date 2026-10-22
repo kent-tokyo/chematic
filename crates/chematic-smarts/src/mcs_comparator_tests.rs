@@ -7,22 +7,27 @@ fn chiral_mcs_uses_mapped_neighbor_parity_not_smiles_tag_spelling() {
         match_chiral_tag: true,
         ..Default::default()
     };
-    for (left, right, expected) in [
-        ("F[C@H](Cl)Br", "Cl[C@@H](F)Br", [4, 3]),
-        ("F[C@H](Cl)Br", "Cl[C@H](F)Br", [3, 2]),
-        ("F[C@H](Cl)Br", "Br[C@@H](Cl)F", [4, 3]),
-        ("F[C@](Cl)(Br)I", "Cl[C@@](F)(Br)I", [5, 4]),
-        ("F[C@](Cl)(Br)I", "Cl[C@](F)(Br)I", [4, 3]),
-        ("N[C@@H](C)C(=O)O", "N[C@H](C)C(=O)O", [5, 4]),
-        ("N[C@@H](C)C(=O)O", "C[C@H](N)C(=O)O", [6, 5]),
-    ] {
-        let left = parse(left).unwrap();
-        let right = parse(right).unwrap();
+    let record: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../benchmarks/2026-10-22-mcs-stereo-neighbor-parity.json"
+    ))
+    .unwrap();
+    let pairs = record["pairs"].as_array().unwrap();
+    assert_eq!(pairs.len(), 7);
+    for pair in pairs {
+        let left = parse(pair["left"].as_str().unwrap()).unwrap();
+        let right = parse(pair["right"].as_str().unwrap()).unwrap();
         for refs in [[&left, &right], [&right, &left]] {
             let outcome = find_mcs_with_config_checked(&refs, &config);
             assert!(matches!(outcome, McsOutcome::Exhaustive(_)));
             let query = outcome.into_query();
-            assert_eq!([query.atom_count(), query.bonds.len()], expected);
+            assert_eq!(
+                query.atom_count(),
+                pair["expected"][0].as_u64().unwrap() as usize
+            );
+            assert_eq!(
+                query.bonds.len(),
+                pair["expected"][1].as_u64().unwrap() as usize
+            );
         }
     }
 }

@@ -10,6 +10,11 @@
   searches were exhaustive.
 - Measurement: query atom and bond counts. This is a correctness comparison,
   not a runtime benchmark.
+- [Machine-readable counts](2026-10-22-mcs-stereo-neighbor-parity.json) are
+  consumed by the Rust regression test. To rerun the oracle, parse each JSON
+  pair with `Chem.MolFromSmiles`, set `MCSParameters().AtomCompareParameters.MatchChiralTag=True`,
+  and call `rdFMCS.FindMCS` with the two molecules. The Rust check is
+  `cargo test --locked -p chematic-smarts chiral_mcs`.
 
 | Inputs | RDKit atoms/bonds | CheMatic before | CheMatic after |
 | --- | ---: | ---: | ---: |
