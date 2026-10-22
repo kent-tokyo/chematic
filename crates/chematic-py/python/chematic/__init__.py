@@ -170,7 +170,12 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
     output require ``coords=[[x, y, z], ...]`` unless the input provides them.
 
     The molecular graph and supported stereochemistry are preserved. Format-
-    specific metadata is not promised to survive conversion.
+    specific metadata is not promised to survive conversion. PDBQT input supplies
+    coordinates and partial charges unless explicitly overridden; PDBQT output
+    from that input uses checked field widths and rounds to three decimals.
+    Its bonds are not inferred and source AutoDock types, identities and torsion
+    trees are not retained. Other output formats do not retain partial charges;
+    use from_pdbqt_with_data() when those values are needed without rounding.
     MOL2 to MOL2 and CJSON to CJSON validate and retain the exact source; coordinate,
     charge, name, and comment overrides are rejected on that path.
     V3000 input supplies source x/y/z for CJSON, PDB, XYZ and PDBQT output
@@ -272,7 +277,11 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
         if coords is None:
             coords = parsed_coords
     elif source == "pdbqt":
-        mol = from_pdbqt(text)
+        mol, parsed_coords, parsed_charges = from_pdbqt_with_data(text)
+        if coords is None:
+            coords = parsed_coords
+        if charges is None:
+            charges = parsed_charges
     elif source == "gjf":
         mol = from_gjf(text)
     else:  # pragma: no cover
@@ -307,6 +316,8 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
             charges = [0.0] * len(coords)
         if len(charges) != len(coords):
             raise ValueError("charges must have the same length as coords")
+        if source == "pdbqt":
+            return write_pdbqt_checked(mol, coords, charges, name)
         return mol.to_pdbqt([tuple(point) for point in coords], charges, name)
     raise ValueError(f"unsupported output format: {target}")
 

@@ -110,6 +110,7 @@ nav:
     - PDB Coordinate Merging: pdb-coordinate-merge.md
     - Explicit PDB CONECT Graph: pdb-conect-graph.md
     - Checked PDBQT Output: pdbqt-checked-output.md
+    - PDBQT Numeric Data: pdbqt-atom-data.md
     - Language Bindings Cross-Reference: language-bindings.md
     - InfoTheory Feature Masks: info-ranker-masks.md
     - Scored Tautomer Selection: scored-tautomer-selection.md
