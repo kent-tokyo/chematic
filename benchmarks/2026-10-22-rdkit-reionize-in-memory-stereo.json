@@ -1,7 +1,7 @@
 {
   "profile": "rdkit_reionize_in_memory_stereo_source_2026_10_22",
   "candidate_base_commit": "296c6dc7ad53855147f9e162cc09a38beb30ea77",
-  "comparator": "RDKit 2026.09.1 outputs from validation/results/rdkit-standardization-source-2026-10-21-reionize-catalog.json",
+  "comparator": "RDKit 2026.09.1 outputs from validation/results/rdkit-cleanup-ring-stereo-stress-2026-10-22.json",
   "corpus": "validation/cosmolkit_comparison/corpora/stress-v1.smi",
   "corpus_sha256": "879166ab5481cac805ecd2d77f37d628383ec124085b90e2ee1659d55ce76277",
   "source_rows": 4072,
@@ -22,5 +22,11 @@
   "unchanged_rows": 4067,
   "baseline_dump_sha256": "2514d64f2de81ca3f5894444453bc7ad8fb6e93da91d9259d62a7150722eb6b3",
   "candidate_dump_sha256": "dbba4cebd746f2274712523c6b740c3cb15e15f68b4af3d5d53d684991993ab4",
-  "limits": "Source-only exact-output comparison against previously recorded RDKit 2026.09.1 outputs. The candidate was not run against a fresh RDKit 2026.09.1 installation in this check. Reaction and R-group accuracy are not assessed."
+  "limits": "Source-only exact-output comparison against the latest saved RDKit 2026.09.1 outputs. The candidate was not run against a fresh RDKit 2026.09.1 installation in this check. Reaction and R-group accuracy are not assessed.",
+  "baseline_source_record_sha256": "2f1304a68d9194c37d44cfea9fe00b1c0422a8160ee5d859c5245c724efffbf4",
+  "baseline_cleanup_exact_rows": 4055,
+  "candidate_cleanup_exact_rows": 4055,
+  "baseline_normalize_exact_rows": 4069,
+  "candidate_normalize_exact_rows": 4069,
+  "current_source_record": "validation/results/rdkit-reionize-in-memory-stereo-2026-10-22.json"
 }
