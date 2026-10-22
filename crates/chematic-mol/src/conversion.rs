@@ -94,7 +94,6 @@ pub enum ConversionError {
     Unsupported(String),
     Parse(Mol2Error),
     CjsonParse(crate::CjsonError),
-    CmlParse(crate::CmlError),
     ResourceLimit(&'static str),
 }
 
@@ -104,7 +103,6 @@ impl std::fmt::Display for ConversionError {
             Self::Unsupported(message) => f.write_str(message),
             Self::Parse(error) => error.fmt(f),
             Self::CjsonParse(error) => error.fmt(f),
-            Self::CmlParse(error) => error.fmt(f),
             Self::ResourceLimit(resource) => write!(f, "conversion exceeds {resource} limit"),
         }
     }

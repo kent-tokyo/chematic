@@ -6,7 +6,7 @@ const MAX_XML_NODES: u32 = 200_000;
 const MAX_XML_DEPTH: usize = 64;
 
 fn malformed(message: impl Into<String>) -> ConversionError {
-    ConversionError::CmlParse(crate::CmlError::MalformedXml(message.into()))
+    ConversionError::Unsupported(format!("invalid CML source: {}", message.into()))
 }
 
 // Inspect only the prolog, skipping comments/PIs instead of matching XML-like
