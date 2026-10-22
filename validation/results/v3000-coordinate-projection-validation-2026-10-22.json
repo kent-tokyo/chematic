@@ -1,0 +1,473 @@
+{
+  "schema": "chematic.v3000-coordinate-projection-evidence.v1",
+  "date": "2026-10-22",
+  "source_base": "d4208b9df9086b25df3e449d5f5ca6f8a32ad406",
+  "baseline_source_base": "b9412a06a09955874e3067c44cc2315406840340",
+  "scope": "Source V3000 numeric x/y/z into existing CJSON typed graph projection through Python and WASM. Eight synthetic development fixtures x three layouts. Not a holdout, toolkit-wide, speed, release, source-byte, query/polymer, implicit-hydrogen or stereochemical fidelity claim.",
+  "compatibility": "New native/Python 3D coordinate API; legacy 2D shapes and stereo perception unchanged. Python explicit coords take precedence; coordinate writers keep their existing precision/metadata behavior.",
+  "oracle": "Source-row atomic numbers, formal charges, simple indexed bonds, existing local isotope extension and coordinate decimal tokens are declared independently of toolkit output. Empty bond sections normalize to no bonds. No atom-order-independent isomorphism or stereo gate.",
+  "baseline_attestation": {
+    "commit": "c713b21af3125c4289c2829794e11ce8efc4f25f",
+    "path": "validation/results/cjson-source-conversion-validation-2026-10-22.json",
+    "verified_artifact_hashes": [
+      "python_extension",
+      "wasm_module",
+      "wasm_binary"
+    ],
+    "verified_source_identity": [
+      "Baseline Python package equals b9412a06",
+      "Native MOL and Python Rust source equal b9412a06..c713b21a",
+      "WASM c713b21a differs only in an unrelated CJSON-source branch; V3000 -> CJSON branch unchanged",
+      "V3000 parser/common bindings unchanged by intervening d4208b9d CIP guard"
+    ]
+  },
+  "sources": {
+    ".github/workflows/ci.yml": {
+      "path": ".github/workflows/ci.yml",
+      "sha256": "8fefc9513ca41dcc0f513205cd94bd85af635f68e49a963c69054f7cf3969522",
+      "size_bytes": 51575
+    },
+    "crates/chematic-mol/src/lib.rs": {
+      "path": "crates/chematic-mol/src/lib.rs",
+      "sha256": "d1780b100ef064d5fd38cc0e3d32f5a5da1ca37979c5ee75600214426800acf6",
+      "size_bytes": 14066
+    },
+    "crates/chematic-mol/src/mol3000.rs": {
+      "path": "crates/chematic-mol/src/mol3000.rs",
+      "sha256": "5cd8bd162735d48bc175f7c42c4036e75d44243f21a21f13a9690782e7bc8789",
+      "size_bytes": 52151
+    },
+    "crates/chematic-mol/src/mol3000/attribute_tail_tests.rs": {
+      "path": "crates/chematic-mol/src/mol3000/attribute_tail_tests.rs",
+      "sha256": "f215eaa2f4eeda28298309c0b29ec4c934336e5608098c6fa50ac6a19d7e5c71",
+      "size_bytes": 14836
+    },
+    "crates/chematic-mol/src/mol3000/coordinates.rs": {
+      "path": "crates/chematic-mol/src/mol3000/coordinates.rs",
+      "sha256": "ce23fc7c4b0f74dbe54b7eb5d0c0a32ae4a21767067193854a9df811a1e30705",
+      "size_bytes": 1146
+    },
+    "crates/chematic-mol/src/mol3000/token_buffer_tests.rs": {
+      "path": "crates/chematic-mol/src/mol3000/token_buffer_tests.rs",
+      "sha256": "26b1b0eb7c2ee8e8f45c896fe751dc0b8a9059f459a95dfbd43fe211fa8d3ffd",
+      "size_bytes": 6500
+    },
+    "crates/chematic-mol/tests/v3000_coordinate_projection.rs": {
+      "path": "crates/chematic-mol/tests/v3000_coordinate_projection.rs",
+      "sha256": "47a03c332d114318ac64963e1d41959d8521f0044f77de7aaa36c39e05f0b4d5",
+      "size_bytes": 4421
+    },
+    "crates/chematic-py/python/chematic/__init__.py": {
+      "path": "crates/chematic-py/python/chematic/__init__.py",
+      "sha256": "bd0f5a152086a1a0fb9bfcbb53b619a64c621913bab420018e30f0e511f95182",
+      "size_bytes": 26020
+    },
+    "crates/chematic-py/python/chematic/__init__.pyi": {
+      "path": "crates/chematic-py/python/chematic/__init__.pyi",
+      "sha256": "ac893178cd2a831ac162e97c82d197ec205b541299291bdd219fb4a794a3e29e",
+      "size_bytes": 211870
+    },
+    "crates/chematic-py/src/formats.rs": {
+      "path": "crates/chematic-py/src/formats.rs",
+      "sha256": "4e43bec44ae4b814448cd1d3ccd3a62e8ba3f5718a44dcb8aca433de384342f2",
+      "size_bytes": 53543
+    },
+    "crates/chematic-py/src/formats/v3000_coordinates.rs": {
+      "path": "crates/chematic-py/src/formats/v3000_coordinates.rs",
+      "sha256": "ef19a11b3a50ae75f3edb00d4b3ca2e352fa6f1779c6facee0bf3ceb3aefc786",
+      "size_bytes": 1046
+    },
+    "crates/chematic-py/tests/test_v3000_coordinate_projection.py": {
+      "path": "crates/chematic-py/tests/test_v3000_coordinate_projection.py",
+      "sha256": "5fe6153b0c2f3af1681aa980e0e469a0280dc8fc32419cadf7d2075c6498c4db",
+      "size_bytes": 3165
+    },
+    "crates/chematic-wasm/src/mol_io/common_formats.rs": {
+      "path": "crates/chematic-wasm/src/mol_io/common_formats.rs",
+      "sha256": "a88f9cb66e0807d7f56faa9a48ba36c0ef65f233c31803a1bb68a63deca5646d",
+      "size_bytes": 11641
+    },
+    "crates/chematic-wasm/tests/v3000_coordinate_projection.test.mjs": {
+      "path": "crates/chematic-wasm/tests/v3000_coordinate_projection.test.mjs",
+      "sha256": "109f511c0822cbdacaddd9ba7dc7f51ec0f9ab6babd7e198c373f579ec01946b",
+      "size_bytes": 2181
+    },
+    "docs/benchmarks/2026-10-22-v3000-coordinate-projection.md": {
+      "path": "docs/benchmarks/2026-10-22-v3000-coordinate-projection.md",
+      "sha256": "51018d22be1fb3e93a73bae6fe0cbefe5aebc7e42b877a44bc26ba5c25d35958",
+      "size_bytes": 6905
+    },
+    "docs/format-capabilities.md": {
+      "path": "docs/format-capabilities.md",
+      "sha256": "d48dcf06392566d161d5b310382e953a1db4b3bf0ddb3befac3537266942e40a",
+      "size_bytes": 54152
+    },
+    "scripts/tests/test_v3000_coordinate_projection.py": {
+      "path": "scripts/tests/test_v3000_coordinate_projection.py",
+      "sha256": "17913485778a49a63589ec5ac291720f4df0efeb6d3c8a3f319c6aa7c983e4bb",
+      "size_bytes": 3198
+    },
+    "scripts/validation/check_v3000_coordinate_projection.py": {
+      "path": "scripts/validation/check_v3000_coordinate_projection.py",
+      "sha256": "07bcb7bc7ec9aeab34dcb4aa98c8f08dd74de75ffdbf748ca791199a20c218bf",
+      "size_bytes": 6338
+    },
+    "validation/results/binding_surface_inventory-current.json": {
+      "path": "validation/results/binding_surface_inventory-current.json",
+      "sha256": "ee242cd7b44c95834598ac5bbcdb65c146f09b8076e4b3acb5326a5247d1708d",
+      "size_bytes": 562
+    },
+    "validation/v3000_coordinate_projection/cases.json": {
+      "path": "validation/v3000_coordinate_projection/cases.json",
+      "sha256": "27372cd34cd698947f7d2e180db1c972b962d4b4549b2bac637e8aaaca5e1efc",
+      "size_bytes": 10005
+    }
+  },
+  "baseline_artifacts": {
+    "python_package": {
+      "path": "/private/tmp/chematic-cjson-unity-baseline-python-20261022/chematic/__init__.py",
+      "sha256": "fa171425f542041f4449489cfb87c2752e73b613840d7f5d26e1a4b09749f384",
+      "size_bytes": 25696
+    },
+    "python_extension": {
+      "path": "/private/tmp/chematic-cjson-unity-baseline-python-20261022/chematic/chematic.cpython-313-darwin.so",
+      "sha256": "4208d5677ac7bf4cb1c5961ddbc7236c3b7ad83f65b8f74fcbd1dadaeb51587d",
+      "size_bytes": 44623488
+    },
+    "wasm_module": {
+      "path": "/private/tmp/chematic-cjson-source-integrated-wasm-20261022/chematic_wasm.js",
+      "sha256": "0435d3d28f9f65c803bbefad9c6cc04ef5b8ada74b2d92d67b098cd4c9027cf0",
+      "size_bytes": 366818
+    },
+    "wasm_binary": {
+      "path": "/private/tmp/chematic-cjson-source-integrated-wasm-20261022/chematic_wasm_bg.wasm",
+      "sha256": "054bd13bd17e2ad95fe651fed08d1a021a443c0bd81b2402858c8cf1751b5f3a",
+      "size_bytes": 44853145
+    }
+  },
+  "candidate_artifacts": {
+    "python_package": {
+      "path": "/private/tmp/chematic-v3000-3d-python-20261022/chematic/__init__.py",
+      "sha256": "bd0f5a152086a1a0fb9bfcbb53b619a64c621913bab420018e30f0e511f95182",
+      "size_bytes": 26020
+    },
+    "python_extension": {
+      "path": "/private/tmp/chematic-v3000-3d-python-20261022/chematic/chematic.cpython-313-darwin.so",
+      "sha256": "62e8444927ba625897faab0afd213c901a8f3394537823062885977caff81cc2",
+      "size_bytes": 44640064
+    },
+    "wasm_module": {
+      "path": "/private/tmp/chematic-v3000-3d-wasm-20261022/chematic_wasm.js",
+      "sha256": "d199187076e14a0d74ed202af81ae9fe3b9eecb75c74e008dce05010e50450fa",
+      "size_bytes": 366801
+    },
+    "wasm_binary": {
+      "path": "/private/tmp/chematic-v3000-3d-wasm-20261022/chematic_wasm_bg.wasm",
+      "sha256": "b16bc35f709324d1255d344f5b543310e55e3b82a082aa4e6d17af7ff2057b24",
+      "size_bytes": 44874022
+    }
+  },
+  "openbabel_files": [
+    {
+      "path": "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+      "sha256": "733b2c925d60b17a5c9d8ce9ec841e918cc20c7634301e23f9008a187d1d9bc5",
+      "size_bytes": 75728
+    },
+    {
+      "path": "/opt/homebrew/Cellar/open-babel/3.2.1/lib/libopenbabel.8.0.0.dylib",
+      "sha256": "9c0e023919fca6656f686b3903c10d438c0003a1d07e721a850cff9ff495c93a",
+      "size_bytes": 2794816
+    },
+    {
+      "path": "/opt/homebrew/Cellar/open-babel/3.2.1/lib/openbabel/3.2.1/mdlformat.so",
+      "sha256": "63afe091d19268a0c6d5514b81ce5b9018c0334d9a0108b0fbfbb920b587999b",
+      "size_bytes": 166528
+    },
+    {
+      "path": "/opt/homebrew/Cellar/open-babel/3.2.1/lib/openbabel/3.2.1/chemicaljsonformat.so",
+      "sha256": "39be1877bf787d7594058ca76173e3c7b418607bf1b7c1aaba5d96539571b6f2",
+      "size_bytes": 132736
+    }
+  ],
+  "toolchain": {
+    "rust": "rustc 1.97.0 (2d8144b78 2026-07-07)",
+    "node": "v24.5.0",
+    "python": "3.13.6 (v3.13.6:4e665351082, Aug  6 2025, 11:22:35) [Clang 16.0.0 (clang-1600.0.26.6)]",
+    "wasm_bindgen": "0.2.129 nodejs target",
+    "openbabel": {
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27\n",
+      "stderr": ""
+    }
+  },
+  "summary": {
+    "baseline": {
+      "python": {
+        "json_object": 24,
+        "indexed_graph": 24,
+        "coordinates_present": 0,
+        "coordinate_bits": 0,
+        "isotopes": 24
+      },
+      "wasm": {
+        "json_object": 24,
+        "indexed_graph": 24,
+        "coordinates_present": 0,
+        "coordinate_bits": 0,
+        "isotopes": 24
+      },
+      "openbabel": {
+        "json_object": 15,
+        "indexed_graph": 15,
+        "coordinates_present": 15,
+        "coordinate_bits": 15,
+        "isotopes": 12
+      },
+      "openbabel_single": {
+        "json_object": 15,
+        "indexed_graph": 15,
+        "coordinates_present": 15,
+        "coordinate_bits": 15,
+        "isotopes": 12
+      }
+    },
+    "candidate": {
+      "python": {
+        "json_object": 24,
+        "indexed_graph": 24,
+        "coordinates_present": 24,
+        "coordinate_bits": 24,
+        "isotopes": 24
+      },
+      "wasm": {
+        "json_object": 24,
+        "indexed_graph": 24,
+        "coordinates_present": 24,
+        "coordinate_bits": 24,
+        "isotopes": 24
+      },
+      "openbabel": {
+        "json_object": 15,
+        "indexed_graph": 15,
+        "coordinates_present": 15,
+        "coordinate_bits": 15,
+        "isotopes": 12
+      },
+      "openbabel_single": {
+        "json_object": 15,
+        "indexed_graph": 15,
+        "coordinates_present": 15,
+        "coordinate_bits": 15,
+        "isotopes": 12
+      }
+    }
+  },
+  "outcomes": {
+    "baseline": {
+      "path": "validation/results/v3000-coordinate-projection-baseline-2026-10-22.json.gz",
+      "sha256": "3e08b860e0748c2f0384c5b8c89e9b96b0e5b8f2b8ea12623401c78268399a09",
+      "size_bytes": 4271,
+      "decompressed_sha256": "7636045777178dc5e89e99e0a44b72b20b503daacc24f80e34408d6e8077d9fd",
+      "decompressed_size_bytes": 113932
+    },
+    "candidate": {
+      "path": "validation/results/v3000-coordinate-projection-candidate-2026-10-22.json.gz",
+      "sha256": "5a62d0fa12ea575958f6e818d529f1858c02fafd9352ab302928f5cddb800ed2",
+      "size_bytes": 4383,
+      "decompressed_sha256": "9765ad78a7947ae99789894b89aa46dbc96c3da3a4f7a772a9ad59dde52a7edc",
+      "decompressed_size_bytes": 118839
+    },
+    "diagnostics": {
+      "path": "validation/results/v3000-coordinate-projection-diagnostics-2026-10-22.json.gz",
+      "sha256": "550abea6daa2027d64c86e7e544ef9232c042dfb212f1103995e9061e4417d25",
+      "size_bytes": 876,
+      "decompressed_sha256": "9ec8f6cda3c486bd9e18e95b263c798072d452a71b6eb337f481c505e437bbe5",
+      "decompressed_size_bytes": 3372
+    }
+  },
+  "logs": {
+    "check": {
+      "path": "validation/results/v3000-coordinate-projection-2026-10-22/check.log.gz",
+      "sha256": "d3e683608358df2343f348d31cee0c6475122bfa293d87c81d633e5a6cfc0902",
+      "size_bytes": 320,
+      "decompressed_sha256": "f1238d7e080aa042c97b712904b062a7c7d9c6b35a9762da8afd04c6ee40adc2",
+      "decompressed_size_bytes": 1931
+    },
+    "python-build": {
+      "path": "validation/results/v3000-coordinate-projection-2026-10-22/python-build.log.gz",
+      "sha256": "6f0e55bb30954617b64c3923c0cae2ce47c13a70e01cee4164008362e98a8976",
+      "size_bytes": 200,
+      "decompressed_sha256": "94539d15a5e552f938963604395353c1570fa83cb37bb74ce594c06d13541bfd",
+      "decompressed_size_bytes": 473
+    },
+    "wasm-build": {
+      "path": "validation/results/v3000-coordinate-projection-2026-10-22/wasm-build.log.gz",
+      "sha256": "b8537cd7cca7aca3e1270479e089bec656f77960ae141127027fb8d9aa94a03f",
+      "size_bytes": 196,
+      "decompressed_sha256": "5c3e6ca171965466fdbd4448310ea35d4fcedddbaf43bbec9736ce7706fbce21",
+      "decompressed_size_bytes": 335
+    },
+    "python-tests": {
+      "path": "validation/results/v3000-coordinate-projection-2026-10-22/python-tests.log.gz",
+      "sha256": "9ce2727d9c315136332b769f46c923f6bba1054c487dc68fa107dcab46eecb41",
+      "size_bytes": 323,
+      "decompressed_sha256": "e38091ef8f6f4fd80ba92825c583500eace0c8261f6b9231f693079fb8318f5a",
+      "decompressed_size_bytes": 910
+    },
+    "rust-tests": {
+      "path": "validation/results/v3000-coordinate-projection-2026-10-22/rust-tests.log.gz",
+      "sha256": "c926fce6a8d5770b6d3fe0d3ed2f564ddb2b01fa15f7161f2017cc3b1431a44a",
+      "size_bytes": 27000,
+      "decompressed_sha256": "1633db69413b7cb6febfffefcc1bb21f72d89cba9b8d4462d9c103b716dc04c5",
+      "decompressed_size_bytes": 123028
+    },
+    "node-tests": {
+      "path": "validation/results/v3000-coordinate-projection-2026-10-22/node-tests.log.gz",
+      "sha256": "905c1e10ca85c0304769be40a75c631d58dcb1b9e56d80d7cf5d04a377232877",
+      "size_bytes": 108,
+      "decompressed_sha256": "3d06955f54932023182f157594dcdc81431d6adc104ab3a4d6e92bcfc06634d7",
+      "decompressed_size_bytes": 104
+    },
+    "observer-tests": {
+      "path": "validation/results/v3000-coordinate-projection-2026-10-22/observer-tests.log.gz",
+      "sha256": "b01ae9f7074584b1063b73869cbf694273fc17508eda1d8d668a19f68a275c58",
+      "size_bytes": 52,
+      "decompressed_sha256": "360066524deb5db5c96b632c2d1e6dc55ad954c35a19c1f21f33c7ad4f81db10",
+      "decompressed_size_bytes": 99
+    },
+    "wasm-native": {
+      "path": "validation/results/v3000-coordinate-projection-2026-10-22/wasm-native.log.gz",
+      "sha256": "4f74936e88e6b9fd3a6d889487a784d2c1c65056e6edb40750d060ae93a93f8e",
+      "size_bytes": 363,
+      "decompressed_sha256": "525c409807237ea1104c730bcaffcae274630a4f96acfcf52bc4ee890d9a9c99",
+      "decompressed_size_bytes": 717
+    },
+    "clippy": {
+      "path": "validation/results/v3000-coordinate-projection-2026-10-22/clippy.log.gz",
+      "sha256": "5712001e31e7f0b5285de344571a6b2dfe8b62c4b22d511d2fd78c52787ab7c2",
+      "size_bytes": 199,
+      "decompressed_sha256": "291b2fbf91a1c73b9f3e24c45198db8d0a0a85c0312b126311928329b6b76ad1",
+      "decompressed_size_bytes": 471
+    },
+    "bindings": {
+      "path": "validation/results/v3000-coordinate-projection-2026-10-22/bindings.log.gz",
+      "sha256": "ba5ff4ce0c1ac3a7d0064ea8ea60dd7ac67f56b42eb4eee65bfaf6461dc44ff3",
+      "size_bytes": 3503,
+      "decompressed_sha256": "a456a5703f6aaa8cd2dc421898132a82dde6dd49cb01e02a814d47c173bc9ef1",
+      "decompressed_size_bytes": 20563
+    },
+    "stubs": {
+      "path": "validation/results/v3000-coordinate-projection-2026-10-22/stubs.log.gz",
+      "sha256": "534ac335bd997502ee31460e7b21c3ff0472d0a0402eeb52348d80dae8fbf48b",
+      "size_bytes": 67,
+      "decompressed_sha256": "98945ec702355b897670c54011fed035f73047ad280da66e6125fea56162ec13",
+      "decompressed_size_bytes": 50
+    },
+    "refactor": {
+      "path": "validation/results/v3000-coordinate-projection-2026-10-22/refactor.log.gz",
+      "sha256": "45ea2b6665751162f112f6072865e8d4e3248f3f9c454e39c733d22d16ddc62d",
+      "size_bytes": 100,
+      "decompressed_sha256": "56f2b145d5f37ba384ef68b1f7ae31c6981f7af4c9fa6deebda29ade6171dfcd",
+      "decompressed_size_bytes": 106
+    },
+    "fmt": {
+      "path": "validation/results/v3000-coordinate-projection-2026-10-22/fmt.log.gz",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "size_bytes": 20,
+      "decompressed_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "decompressed_size_bytes": 0
+    },
+    "parent-api": {
+      "path": "validation/results/v3000-coordinate-projection-2026-10-22/parent-api.log.gz",
+      "sha256": "469a11d048bd701dadd25baf9cb70419c33bc07ca43e7f9397e062969b203eba",
+      "size_bytes": 83,
+      "decompressed_sha256": "026f6d2da0ef02b218c3b44546eda64d24b7042bd3f41c9d39d755942a8561f1",
+      "decompressed_size_bytes": 63
+    },
+    "naming": {
+      "path": "validation/results/v3000-coordinate-projection-2026-10-22/naming.log.gz",
+      "sha256": "b4f379b8903ddc162104c439c4692ffaaf6573906a0c906df0126c7d013c5c75",
+      "size_bytes": 76,
+      "decompressed_sha256": "d1f6921742a3cbe1b0c2309ebb06b159c1b9d3120a07fb4041c5db2c2a043e51",
+      "decompressed_size_bytes": 66
+    },
+    "workflow-pins": {
+      "path": "validation/results/v3000-coordinate-projection-2026-10-22/workflow-pins.log.gz",
+      "sha256": "37714b46c19445e1d1f910e9733efe682d6d3997dfd055af9f52ec80fa675108",
+      "size_bytes": 87,
+      "decompressed_sha256": "487f9131fb571b886134dc20a91c114f58c6175d50b85cf6a258a251544d8d90",
+      "decompressed_size_bytes": 71
+    },
+    "file-io-contract": {
+      "path": "validation/results/v3000-coordinate-projection-2026-10-22/file-io-contract.log.gz",
+      "sha256": "62e8579acacc7bddad8eecf9f1ed7df820a106f32ad67d909d55f12a7e4a61b8",
+      "size_bytes": 102,
+      "decompressed_sha256": "6cd4b43f8407860055e672ed728806eb9abe736d9191ef0a68e8a7006187dfc7",
+      "decompressed_size_bytes": 88
+    },
+    "benchmark-index": {
+      "path": "validation/results/v3000-coordinate-projection-2026-10-22/benchmark-index.log.gz",
+      "sha256": "d17c9ac07675c74605fc4aaa7dbe019fd38d61f3ecc669015d35daa124983b0e",
+      "size_bytes": 67,
+      "decompressed_sha256": "15d4d8766f2538a147591f9444d8d461a99faa62f4f8d0575496aec0f87fba98",
+      "decompressed_size_bytes": 52
+    },
+    "docs": {
+      "path": "validation/results/v3000-coordinate-projection-2026-10-22/docs.log.gz",
+      "sha256": "90022c4088c883b99b21a2b8538d46bc3813932d5f87a7995462e9225c060591",
+      "size_bytes": 1229,
+      "decompressed_sha256": "5cdb0e25b573d8965af619483ec9ab7a43fd072d1482dd1fc09397b727ce75e5",
+      "decompressed_size_bytes": 2724
+    },
+    "baseline": {
+      "path": "validation/results/v3000-coordinate-projection-2026-10-22/baseline.log.gz",
+      "sha256": "8b8926fb4264847dcf3b82b2a07a79762d1d84b572f1de269b9d38f780718828",
+      "size_bytes": 152,
+      "decompressed_sha256": "46a632538947b34597a57bf5f8e4928d1eeaa2872dbd7f226eb3248ab34c19c0",
+      "decompressed_size_bytes": 480
+    },
+    "candidate": {
+      "path": "validation/results/v3000-coordinate-projection-2026-10-22/candidate.log.gz",
+      "sha256": "80440f6406818869429a195e07a23263411e52abc3cecd2935ed61dff9f521dd",
+      "size_bytes": 148,
+      "decompressed_sha256": "8c6f8862df36f7211f437d55ec9f7d7d30c76e389e2c7ff594f44fcfecd81ecd",
+      "decompressed_size_bytes": 484
+    },
+    "mol-help": {
+      "path": "validation/results/v3000-coordinate-projection-2026-10-22/mol-help.log.gz",
+      "sha256": "68cba69975c0e982864aaec34b12032fc8ac8aab1863c52fd21d95212938d8e1",
+      "size_bytes": 1070,
+      "decompressed_sha256": "e40a7e73ba3fc82f4753265ed105acc9909f7592736c5e0cad2eaef7da65f55e",
+      "decompressed_size_bytes": 2303
+    },
+    "script-layout": {
+      "path": "validation/results/v3000-coordinate-projection-2026-10-22/script-layout.log.gz",
+      "sha256": "7a4ba55839417ab5a382fd544dafef5b4e4e6a7542d66254d158bdc8985826db",
+      "size_bytes": 78,
+      "decompressed_sha256": "552028e216bc5bc00277707740021dc1f7100a720852583ed9279e4355f0c6bc",
+      "decompressed_size_bytes": 61
+    }
+  },
+  "checks": {
+    "rust": "1476 chematic-mol lib/integration tests passed",
+    "python": "164 passed, plugin autoload disabled because the host pytest-asyncio is incompatible with host pytest 9",
+    "observer": "40 passed including shared bounded-process harness tests",
+    "wasm": "Real Node/WASM: 24 coordinate/graph projections, malformed input, byte and 10000/10001-atom boundaries passed",
+    "wasm_native": "1 existing common-format alias/graph regression passed",
+    "clippy": "chematic-mol/py/wasm all-targets -D warnings passed",
+    "docs": "Strict MkDocs passed",
+    "static": "fmt, binding inventory, Python stubs, refactor, parent API docs, naming, workflow pins, file-IO contract, benchmark index passed; script layout checked after staging"
+  },
+  "build_environment": {
+    "CARGO_TARGET_DIR": "/private/tmp/chematic-cml-refs-target-20261022",
+    "CARGO_BUILD_JOBS": "2",
+    "CARGO_PROFILE_DEV_DEBUG": "0",
+    "CARGO_INCREMENTAL": "0",
+    "PYO3_PYTHON": "python3"
+  },
+  "build_commands": {
+    "python": "cargo rustc --locked -p chematic-py --lib -- -C link-arg=-undefined -C link-arg=dynamic_lookup",
+    "wasm": "cargo build --locked -p chematic-wasm --target wasm32-unknown-unknown; wasm-bindgen --target nodejs"
+  }
+}

@@ -1,0 +1,27 @@
+   Compiling serde v1.0.229
+   Compiling slab v0.4.12
+   Compiling futures-task v0.3.34
+   Compiling chematic-rxn v1.2.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-rxn)
+   Compiling futures-core v0.3.34
+   Compiling once_cell v1.21.4
+   Compiling pin-project-lite v0.2.17
+   Compiling futures-util v0.3.34
+   Compiling wasm-bindgen v0.2.129
+   Compiling chematic-fp v1.2.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-fp)
+   Compiling chematic-depict v1.2.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-depict)
+   Compiling chematic-chem v1.2.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-chem)
+   Compiling js-sys v0.3.106
+   Compiling chematic-3d v1.2.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-3d)
+   Compiling chematic-inchi v1.2.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-inchi)
+   Compiling web-sys v0.3.106
+   Compiling chematic-mol v1.2.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol)
+   Compiling chematic-crystal v1.2.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-crystal)
+   Compiling chematic-wasm v1.2.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-wasm)
+    Finished `test` profile [unoptimized] target(s) in 12.55s
+     Running unittests src/lib.rs (/private/tmp/chematic-cml-refs-target-20261022/debug/deps/chematic_wasm-7a54235f02fd5756)
+
+running 1 test
+test tests::common_format_conversion_uses_shared_aliases_and_preserves_graph ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 396 filtered out; finished in 0.01s
+

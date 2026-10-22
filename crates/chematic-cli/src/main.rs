@@ -66,7 +66,7 @@ enum Command {
         #[arg(long, default_value_t = 128)]
         max_jobs: usize,
     },
-    /// Emit a checked conversion report (MOL2 or CJSON input).
+    /// Emit a checked conversion report (MOL2, CJSON, or same-format CML input).
     ConvertWithReport {
         #[arg(long)]
         input_format: String,
@@ -318,9 +318,15 @@ fn convert_text(text: &str, input_format: &str, output_format: &str) -> Result<S
         "cml" => chematic_mol::parse_cml(text)
             .map(|(mol, _)| mol)
             .map_err(|e| e.to_string())?,
-        "cjson" => chematic_mol::parse_cjson(text)
-            .map(|(mol, _)| mol)
-            .map_err(|e| e.to_string())?,
+        "cjson" => chematic_mol::parse_cjson_checked_with_limits(
+            text,
+            &chematic_mol::CjsonParseLimits {
+                max_atoms: MAX_SMILES_ATOMS,
+                ..Default::default()
+            },
+        )
+        .map(|(mol, _)| mol)
+        .map_err(|e| e.to_string())?,
         "moljson" => chematic_mol::parse_moljson(text).map_err(|e| e.to_string())?,
         "cdxml" => chematic_mol::parse_cdxml(text)
             .map(|(mol, _)| mol)

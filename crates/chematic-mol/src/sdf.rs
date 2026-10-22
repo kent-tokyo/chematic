@@ -18,11 +18,16 @@ mod dataset;
 mod ensemble;
 mod fields;
 mod selection;
+mod source;
 pub use compression::{SdfCompression, SdfInput};
 pub use dataset::{SdfDataset, SdfRecordMetadata};
 pub use ensemble::{ConformerEnsemble, read_sdf_conformer_ensembles};
 use fields::parse_sd_fields;
 pub use selection::{SdfIndexedBatch, SdfSelectionError, SdfSelectionLimits};
+pub use source::{
+    SdfSourceLimits, SdfSourceSummary, roundtrip_sdf_source, roundtrip_sdf_source_with_limits,
+    single_sdf_mol_block, single_sdf_mol_block_with_limits, validate_sdf_source_with_limits,
+};
 
 fn is_v3000_record(block: &str) -> bool {
     block

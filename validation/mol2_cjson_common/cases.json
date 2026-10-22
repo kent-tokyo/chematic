@@ -1,0 +1,429 @@
+{
+  "schema": "chematic.mol2-cjson-common-packet.v1",
+  "license": "MIT",
+  "provenance": "Original synthetic development fixtures; no toolkit output is an oracle. Not a holdout or upstream issue reproduction.",
+  "units": {
+    "coordinates": "Angstrom",
+    "partial_charges": "source numeric partial-charge columns; labels retained without recomputation or validation of the declared method"
+  },
+  "oracle": "Declared source-row elements, formal charge from N.4 only, simple indexed bond, coordinate decimal tokens, parsed name and method/charge decimal tokens. Refusals are incomplete/unassigned/undeclared charge data; malformed sources are separate. Opaque metadata, source type/name/IDs, hydrogen and stereo equivalence are outside projection scope.",
+  "variants": [
+    "lf",
+    "crlf",
+    "no-final-newline"
+  ],
+  "cases": [
+    {
+      "id": "complete_user",
+      "input": "@<TRIPOS>MOLECULE\ncomplete_user\n2 1 0 0 0\nSMALL\nUSER_CHARGES\n\n@<TRIPOS>ATOM\n50 C1 0.123456789012345 -0.0 0.345678901234567 C.3 1 LIG 0.7123456789012345\n7 O2 1.234567890123456 2.0 -3.456789012345678 O.3 1 LIG -0.7123456789012345\n@<TRIPOS>BOND\n31 50 7 1\n",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "formal_charges": [
+          0,
+          0
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ],
+        "coordinates": [
+          [
+            "0.123456789012345",
+            "-0.0",
+            "0.345678901234567"
+          ],
+          [
+            "1.234567890123456",
+            "2.0",
+            "-3.456789012345678"
+          ]
+        ],
+        "name": "complete_user",
+        "method": "USER_CHARGES",
+        "partial_charges": [
+          "0.7123456789012345",
+          "-0.7123456789012345"
+        ]
+      },
+      "outcome": "preserved",
+      "sha256": "50f762e3cc6c6f95ea168b44076cf239e2bba0ba62cd4431d28b2aac14de1cb9"
+    },
+    {
+      "id": "complete_gasteiger",
+      "input": "@<TRIPOS>MOLECULE\ncomplete_gasteiger\n2 1 0 0 0\nSMALL\nGASTEIGER\n\n@<TRIPOS>ATOM\n50 C1 0.123456789012345 -0.0 0.345678901234567 C.3 1 LIG 0.7123456789012345\n7 O2 1.234567890123456 2.0 -3.456789012345678 O.3 1 LIG -0.7123456789012345\n@<TRIPOS>BOND\n31 50 7 1\n",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "formal_charges": [
+          0,
+          0
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ],
+        "coordinates": [
+          [
+            "0.123456789012345",
+            "-0.0",
+            "0.345678901234567"
+          ],
+          [
+            "1.234567890123456",
+            "2.0",
+            "-3.456789012345678"
+          ]
+        ],
+        "name": "complete_gasteiger",
+        "method": "GASTEIGER",
+        "partial_charges": [
+          "0.7123456789012345",
+          "-0.7123456789012345"
+        ]
+      },
+      "outcome": "preserved",
+      "sha256": "adf56a004faff2106002379203082b8723b7546ce356fe6c9542de2f8c14f324"
+    },
+    {
+      "id": "negative_partial_positive_formal",
+      "input": "@<TRIPOS>MOLECULE\nnegative_partial_positive_formal\n2 1 0 0 0\nSMALL\nUSER_CHARGES\n\n@<TRIPOS>ATOM\n50 C1 0.123456789012345 -0.0 0.345678901234567 C.3 1 LIG 0.7\n7 N2 1.234567890123456 2.0 -3.456789012345678 N.4 1 LIG -0.7\n@<TRIPOS>BOND\n31 50 7 1\n",
+      "expected": {
+        "numbers": [
+          6,
+          7
+        ],
+        "formal_charges": [
+          0,
+          1
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ],
+        "coordinates": [
+          [
+            "0.123456789012345",
+            "-0.0",
+            "0.345678901234567"
+          ],
+          [
+            "1.234567890123456",
+            "2.0",
+            "-3.456789012345678"
+          ]
+        ],
+        "name": "negative_partial_positive_formal",
+        "method": "USER_CHARGES",
+        "partial_charges": [
+          "0.7",
+          "-0.7"
+        ]
+      },
+      "outcome": "preserved",
+      "sha256": "48c8f637e72f3c4a7faa8d6cc7123c3b0e4cd18e4c0fbd2604880e63d7e91983"
+    },
+    {
+      "id": "unicode_name",
+      "input": "@<TRIPOS>MOLECULE\nligand α 日本語\n2 1 0 0 0\nSMALL\nUSER_CHARGES\n\n@<TRIPOS>ATOM\n50 C1 0.123456789012345 -0.0 0.345678901234567 C.3 1 LIG 0.7123456789012345\n7 O2 1.234567890123456 2.0 -3.456789012345678 O.3 1 LIG -0.7123456789012345\n@<TRIPOS>BOND\n31 50 7 1\n",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "formal_charges": [
+          0,
+          0
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ],
+        "coordinates": [
+          [
+            "0.123456789012345",
+            "-0.0",
+            "0.345678901234567"
+          ],
+          [
+            "1.234567890123456",
+            "2.0",
+            "-3.456789012345678"
+          ]
+        ],
+        "name": "ligand α 日本語",
+        "method": "USER_CHARGES",
+        "partial_charges": [
+          "0.7123456789012345",
+          "-0.7123456789012345"
+        ]
+      },
+      "outcome": "preserved",
+      "sha256": "5164adc5b70665c7b173c5220b81d863ffa48716b1ea35f72b4c8077306b3dfc"
+    },
+    {
+      "id": "no_assigned_charges",
+      "input": "@<TRIPOS>MOLECULE\nno_assigned_charges\n2 1 0 0 0\nSMALL\nNO_CHARGES\n\n@<TRIPOS>ATOM\n50 C1 0.123456789012345 -0.0 0.345678901234567 C.3 1 LIG\n7 O2 1.234567890123456 2.0 -3.456789012345678 O.3 1 LIG\n@<TRIPOS>BOND\n31 50 7 1\n",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "formal_charges": [
+          0,
+          0
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ],
+        "coordinates": [
+          [
+            "0.123456789012345",
+            "-0.0",
+            "0.345678901234567"
+          ],
+          [
+            "1.234567890123456",
+            "2.0",
+            "-3.456789012345678"
+          ]
+        ],
+        "name": "no_assigned_charges",
+        "method": null,
+        "partial_charges": null
+      },
+      "outcome": "preserved",
+      "sha256": "6c7983adc6733afd2cb2baedae7020972d341ffdd2a74e7c11d6691f6b914d78"
+    },
+    {
+      "id": "tiny_values",
+      "input": "@<TRIPOS>MOLECULE\ntiny_values\n2 1 0 0 0\nSMALL\nUSER_CHARGES\n\n@<TRIPOS>ATOM\n50 C1 1.234567890123456e-100 -0.0 0.000012345678901 C.3 1 LIG 1.234567890123456e-200\n7 O2 1.0 2.0 3.0 O.3 1 LIG -1.234567890123456e-200\n@<TRIPOS>BOND\n31 50 7 1\n",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "formal_charges": [
+          0,
+          0
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ],
+        "coordinates": [
+          [
+            "1.234567890123456e-100",
+            "-0.0",
+            "0.000012345678901"
+          ],
+          [
+            "1.0",
+            "2.0",
+            "3.0"
+          ]
+        ],
+        "name": "tiny_values",
+        "method": "USER_CHARGES",
+        "partial_charges": [
+          "1.234567890123456e-200",
+          "-1.234567890123456e-200"
+        ]
+      },
+      "outcome": "preserved",
+      "sha256": "01e21b07b060bccd45379666a3242e4d6c6a8ed45678c1700dd557f0b5830fe4"
+    },
+    {
+      "id": "signed_zero",
+      "input": "@<TRIPOS>MOLECULE\nsigned_zero\n2 1 0 0 0\nSMALL\nUSER_CHARGES\n\n@<TRIPOS>ATOM\n50 C1 -0.0 0.0 -0.0 C.3 1 LIG -0.0\n7 O2 1.0 2.0 3.0 O.3 1 LIG 0.0\n@<TRIPOS>BOND\n31 50 7 1\n",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "formal_charges": [
+          0,
+          0
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ],
+        "coordinates": [
+          [
+            "-0.0",
+            "0.0",
+            "-0.0"
+          ],
+          [
+            "1.0",
+            "2.0",
+            "3.0"
+          ]
+        ],
+        "name": "signed_zero",
+        "method": "USER_CHARGES",
+        "partial_charges": [
+          "-0.0",
+          "0.0"
+        ]
+      },
+      "outcome": "preserved",
+      "sha256": "dfc05714ae2451e05ed2d1bee94bbb517deddc1b0accd6c7192780002c8d43fd"
+    },
+    {
+      "id": "opaque_metadata",
+      "input": "@<TRIPOS>MOLECULE\nopaque_metadata\n2 1 0 0 0\nSMALL\nUSER_CHARGES\n\n@<TRIPOS>ATOM\n50 C1 0.123456789012345 -0.0 0.345678901234567 C.3 1 LIG 0.7123456789012345\n7 O2 1.234567890123456 2.0 -3.456789012345678 O.3 1 LIG -0.7123456789012345\n@<TRIPOS>BOND\n31 50 7 1\n@<TRIPOS>VENDOR_DATA\nopaque value intentionally outside selected projection\n",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "formal_charges": [
+          0,
+          0
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ],
+        "coordinates": [
+          [
+            "0.123456789012345",
+            "-0.0",
+            "0.345678901234567"
+          ],
+          [
+            "1.234567890123456",
+            "2.0",
+            "-3.456789012345678"
+          ]
+        ],
+        "name": "opaque_metadata",
+        "method": "USER_CHARGES",
+        "partial_charges": [
+          "0.7123456789012345",
+          "-0.7123456789012345"
+        ]
+      },
+      "outcome": "preserved",
+      "sha256": "7ae0dbf97568e37ee775280023013e2f9b9a2281fb36aa52aa1c2a1f37a9442e"
+    },
+    {
+      "id": "unassigned_zero_placeholders",
+      "input": "@<TRIPOS>MOLECULE\nunassigned_zero_placeholders\n2 1 0 0 0\nSMALL\nNO_CHARGES\n\n@<TRIPOS>ATOM\n50 C1 0.123456789012345 -0.0 0.345678901234567 C.3 1 LIG 0.0\n7 O2 1.234567890123456 2.0 -3.456789012345678 O.3 1 LIG -0.0\n@<TRIPOS>BOND\n31 50 7 1\n",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "formal_charges": [
+          0,
+          0
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ],
+        "coordinates": [
+          [
+            "0.123456789012345",
+            "-0.0",
+            "0.345678901234567"
+          ],
+          [
+            "1.234567890123456",
+            "2.0",
+            "-3.456789012345678"
+          ]
+        ],
+        "name": "unassigned_zero_placeholders",
+        "method": null,
+        "partial_charges": null
+      },
+      "outcome": "preserved",
+      "sha256": "fa41efdfb2656a6c2fabfb02ff73a286fef1475568e6cfaf1b867cd2abb8792e"
+    },
+    {
+      "id": "one_missing",
+      "input": "@<TRIPOS>MOLECULE\none_missing\n2 1 0 0 0\nSMALL\nUSER_CHARGES\n\n@<TRIPOS>ATOM\n50 C1 0.123456789012345 -0.0 0.345678901234567 C.3 1 LIG 0.7\n7 O2 1.234567890123456 2.0 -3.456789012345678 O.3 1 LIG\n@<TRIPOS>BOND\n31 50 7 1\n",
+      "expected": null,
+      "outcome": "refused",
+      "sha256": "a9b05b0ee6676264a6c134188b5fd3525d1942f7769f05a0caba755988072912"
+    },
+    {
+      "id": "all_missing",
+      "input": "@<TRIPOS>MOLECULE\nall_missing\n2 1 0 0 0\nSMALL\nUSER_CHARGES\n\n@<TRIPOS>ATOM\n50 C1 0.123456789012345 -0.0 0.345678901234567 C.3 1 LIG\n7 O2 1.234567890123456 2.0 -3.456789012345678 O.3 1 LIG\n@<TRIPOS>BOND\n31 50 7 1\n",
+      "expected": null,
+      "outcome": "refused",
+      "sha256": "26d9bb846f54bccce3f92b127ef6e5d9cbce174303ad5f19582c8f739b47555f"
+    },
+    {
+      "id": "unassigned_columns",
+      "input": "@<TRIPOS>MOLECULE\nunassigned_columns\n2 1 0 0 0\nSMALL\nNO_CHARGES\n\n@<TRIPOS>ATOM\n50 C1 0.123456789012345 -0.0 0.345678901234567 C.3 1 LIG 0.7\n7 O2 1.234567890123456 2.0 -3.456789012345678 O.3 1 LIG -0.7\n@<TRIPOS>BOND\n31 50 7 1\n",
+      "expected": null,
+      "outcome": "refused",
+      "sha256": "47fe50d5f62d8f8abae6331632c318eb6ec1cf0b6489c7344faa3bc97afd886c"
+    },
+    {
+      "id": "undeclared_columns",
+      "input": "@<TRIPOS>MOLECULE\nundeclared_columns\n2 1 0 0 0\nSMALL\n\n\n@<TRIPOS>ATOM\n50 C1 0.123456789012345 -0.0 0.345678901234567 C.3 1 LIG 0.7\n7 O2 1.234567890123456 2.0 -3.456789012345678 O.3 1 LIG -0.7\n@<TRIPOS>BOND\n31 50 7 1\n",
+      "expected": null,
+      "outcome": "refused",
+      "sha256": "940f762f8d4852fd76c6a104f3ed73fa18730032d4727f0b57e1d9d082fa1972"
+    },
+    {
+      "id": "nonfinite",
+      "input": "@<TRIPOS>MOLECULE\ncomplete_user\n2 1 0 0 0\nSMALL\nUSER_CHARGES\n\n@<TRIPOS>ATOM\n50 C1 0.123456789012345 -0.0 0.345678901234567 C.3 1 LIG NaN\n7 O2 1.234567890123456 2.0 -3.456789012345678 O.3 1 LIG -0.7123456789012345\n@<TRIPOS>BOND\n31 50 7 1\n",
+      "expected": null,
+      "outcome": "invalid",
+      "sha256": "7c84fdedadba05b119bf20f1cb8a579b89119de750216b3c99ef7550268f6b93"
+    },
+    {
+      "id": "duplicate_atom_id",
+      "input": "@<TRIPOS>MOLECULE\ncomplete_user\n2 1 0 0 0\nSMALL\nUSER_CHARGES\n\n@<TRIPOS>ATOM\n50 C1 0.123456789012345 -0.0 0.345678901234567 C.3 1 LIG 0.7123456789012345\n50 O2 1.234567890123456 2.0 -3.456789012345678 O.3 1 LIG -0.7123456789012345\n@<TRIPOS>BOND\n31 50 7 1\n",
+      "expected": null,
+      "outcome": "invalid",
+      "sha256": "74b6f3bdaac8c76f2ecb56f84a767a6e69a919f57a95a9d694b82894c2dc42a7"
+    },
+    {
+      "id": "multiple_records",
+      "input": "@<TRIPOS>MOLECULE\ncomplete_user\n2 1 0 0 0\nSMALL\nUSER_CHARGES\n\n@<TRIPOS>ATOM\n50 C1 0.123456789012345 -0.0 0.345678901234567 C.3 1 LIG 0.7123456789012345\n7 O2 1.234567890123456 2.0 -3.456789012345678 O.3 1 LIG -0.7123456789012345\n@<TRIPOS>BOND\n31 50 7 1\n@<TRIPOS>MOLECULE\ncomplete_user\n2 1 0 0 0\nSMALL\nUSER_CHARGES\n\n@<TRIPOS>ATOM\n50 C1 0.123456789012345 -0.0 0.345678901234567 C.3 1 LIG 0.7123456789012345\n7 O2 1.234567890123456 2.0 -3.456789012345678 O.3 1 LIG -0.7123456789012345\n@<TRIPOS>BOND\n31 50 7 1\n",
+      "expected": null,
+      "outcome": "invalid",
+      "sha256": "35c69b9622ac438496290c7411b781ef23c68cdfb5403ee3c1e20c319218be20"
+    }
+  ]
+}

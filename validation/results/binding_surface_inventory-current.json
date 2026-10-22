@@ -6,10 +6,10 @@
   "execution": "python3 scripts/check_binding_surface.py",
   "scope": "Rust source declarations only; this is not semantic parity evidence",
   "results": {
-    "wasm_export_count": 321,
-    "python_pyfunction_count": 229,
-    "python_registered_count": 229,
+    "wasm_export_count": 322,
+    "python_pyfunction_count": 236,
+    "python_registered_count": 236,
     "python_declared_without_registration": [],
-    "surface_sha256": "97821bcae0f14328369c77d2f996c104eeee0c723ca918d816c4c353ed50ac68"
+    "surface_sha256": "e97c2e46e266298a6d37cab8c660743a75cc7dc6d19bd50c25e0c43a54064b95"
   }
 }
