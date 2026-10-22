@@ -412,9 +412,11 @@ class Mol:
         max_iterations: int = 0,
         max_mmff_iters: int = 200,
     ) -> list[tuple[int, float, list[list[float]]]]:
-        """Return the lower-best-energy ETKDG/MMFF94 ensemble from two runs.
-        The second uses the corrected gradient when relevant, or new seeds
-        when both gradient modes are identical. Uses twice the candidate work.
+        """Keep the lowest-energy candidate, then converged conformers from
+        ETKDG/MMFF94 runs. The second uses the corrected gradient when
+        relevant; otherwise two additional runs use new seeds. Uses twice or
+        three times the candidate work, respectively, plus up to one or two
+        optional MMFF retries.
         """
         ...
 
@@ -540,6 +542,13 @@ class Mol:
         weights: list[float] | None = None,
     ) -> list[float]:
         """RDKit ``GetAllConformerBestRMS`` in ``(1,0), (2,0), (2,1), ...`` order."""
+        ...
+    def cluster_conformers_by_rms_symmetric(
+        self,
+        conformers: list[list[list[float]]],
+        rmsd_threshold: float = 0.5,
+    ) -> list[int]:
+        """Greedy symmetry-aware RMSD clusters; returns leader input indices."""
         ...
     def rdkit_all_conformer_best_rms_to_reference(
         self,
@@ -3887,6 +3896,17 @@ def write_pqr(atoms: list[dict]) -> str:
     """
     ...
 
+
+def write_pqr_checked(atoms: Iterable[dict], *, max_output_bytes: int = 67_108_864) -> str:
+    """Write ordered PQR atom fields with exact finite f64 values, without rounding.
+
+    Requires group_pdb/serial/atom_name/res_name/res_seq/x/y/z/charge/radius.
+    Optional chain_id/icode/element; rejects unknown fields, bool values,
+    negative radii and incompatible inferred elements. At most 100000 atoms,
+    64 MiB output. Non-atom source records/formatting are not represented.
+    """
+    ...
+
 def infer_element(group_pdb: str, res_name: str, atom_name: str) -> Optional[str]:
     """Infer an element symbol from a PQR/PDB atom name."""
     ...
@@ -4612,7 +4632,8 @@ def find_mcs(
     found so far -- indistinguishable here from an exhaustive result; use
     :func:`find_mcs_checked` when that distinction matters.
 
-    ``atom_compare`` is one of ``"elements"`` (default), ``"any_heavy_atom"``, or ``"any"``.
+    ``atom_compare`` is one of ``"elements"`` (default), ``"any_heavy_atom"``,
+    ``"rdkit_any_heavy_atom"``, or ``"any"``.
     ``bond_compare`` is one of ``"order_or_aromatic"`` (default) or ``"any"``.
     Typed choices are :class:`McsAtomCompare` and :class:`McsBondCompare`.
     The result is a first-input-side concrete projection, not generalized SMARTS.
