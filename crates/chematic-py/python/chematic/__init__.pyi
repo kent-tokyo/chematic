@@ -3894,6 +3894,17 @@ def write_pqr(atoms: list[dict]) -> str:
     """
     ...
 
+
+def write_pqr_checked(atoms: Iterable[dict], *, max_output_bytes: int = 67_108_864) -> str:
+    """Write ordered PQR atom fields with exact finite f64 values, without rounding.
+
+    Requires group_pdb/serial/atom_name/res_name/res_seq/x/y/z/charge/radius.
+    Optional chain_id/icode/element; rejects unknown fields, bool values,
+    negative radii and incompatible inferred elements. At most 100000 atoms,
+    64 MiB output. Non-atom source records/formatting are not represented.
+    """
+    ...
+
 def infer_element(group_pdb: str, res_name: str, atom_name: str) -> Optional[str]:
     """Infer an element symbol from a PQR/PDB atom name."""
     ...

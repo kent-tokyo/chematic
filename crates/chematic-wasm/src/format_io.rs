@@ -930,6 +930,9 @@ pub fn write_mmcif_json(
 // PQR
 // ===========================================================================
 
+mod pqr_checked;
+pub use pqr_checked::*;
+
 fn pqr_atom_to_json(a: &chematic_mol::PqrAtomRecord) -> serde_json::Value {
     serde_json::json!({
         "group_pdb": a.group_pdb,

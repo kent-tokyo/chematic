@@ -1,0 +1,208 @@
+{
+  "schema": "chematic.pqr-checked-validation.v1",
+  "utc": "2026-10-22T12:09:50.243937+00:00",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "python_version": "3.13.6 (v3.13.6:4e665351082, Aug  6 2025, 11:22:35) [Clang 16.0.0 (clang-1600.0.26.6)]",
+  "node_version": {
+    "resource_status": "completed",
+    "exit_code": 0,
+    "stdout": "v24.5.0\n",
+    "stderr": ""
+  },
+  "rust_version": {
+    "resource_status": "completed",
+    "exit_code": 0,
+    "stdout": "rustc 1.97.0 (2d8144b78 2026-07-07)\n",
+    "stderr": ""
+  },
+  "scope": "Ordered explicit PQR atom fields. Writer-only checked/legacy API comparison; separate Open Babel read/write pipeline lanes. No original-document, charge-calculation or toolkit-wide superiority claim.",
+  "candidate": {
+    "base_commit": "e9e578e242729636535d8f701328fddbab3737c7",
+    "source_state": "Working tree with checked PQR output at measurement time; not a published release"
+  },
+  "counts": {
+    "openbabel.apbs_pipeline.unreadable": 12,
+    "openbabel.element_extension_pipeline.numeric_mismatch": 4,
+    "python.checked.element-extension-control.numeric_match": 4,
+    "python.checked.invalid.refused": 40,
+    "python.checked.metadata.numeric_match": 6,
+    "python.checked.numeric-boundary.numeric_match": 8,
+    "python.checked.paired.numeric_match": 12,
+    "python.legacy.element-extension-control.numeric_mismatch": 4,
+    "python.legacy.metadata.numeric_match": 6,
+    "python.legacy.numeric-boundary.numeric_match": 4,
+    "python.legacy.numeric-boundary.numeric_mismatch": 4,
+    "python.legacy.paired.numeric_match": 3,
+    "python.legacy.paired.numeric_mismatch": 9,
+    "wasm.checked.element-extension-control.numeric_match": 4,
+    "wasm.checked.invalid.refused": 40,
+    "wasm.checked.json-framing.refused": 3,
+    "wasm.checked.metadata.numeric_match": 6,
+    "wasm.checked.numeric-boundary.numeric_match": 8,
+    "wasm.checked.paired.numeric_match": 12,
+    "wasm.legacy.element-extension-control.numeric_mismatch": 4,
+    "wasm.legacy.metadata.numeric_match": 5,
+    "wasm.legacy.metadata.refused": 1,
+    "wasm.legacy.numeric-boundary.numeric_match": 4,
+    "wasm.legacy.numeric-boundary.numeric_mismatch": 4,
+    "wasm.legacy.paired.numeric_match": 3,
+    "wasm.legacy.paired.numeric_mismatch": 9
+  },
+  "paired_writer_summary": {
+    "python.checked": {
+      "numeric_match": 12,
+      "cases": 12,
+      "metadata_match": 12,
+      "max_absolute_error": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0,
+        "charge": 0.0,
+        "radius": 0.0
+      }
+    },
+    "python.legacy": {
+      "numeric_match": 3,
+      "cases": 12,
+      "metadata_match": 12,
+      "max_absolute_error": {
+        "x": 0.00045678901234680325,
+        "y": 0.00032109876543318094,
+        "z": 0.0002109876543219258,
+        "charge": 4.3210987654335176e-05,
+        "radius": 4.5678901234635916e-05
+      }
+    },
+    "wasm.checked": {
+      "numeric_match": 12,
+      "cases": 12,
+      "metadata_match": 12,
+      "max_absolute_error": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0,
+        "charge": 0.0,
+        "radius": 0.0
+      }
+    },
+    "wasm.legacy": {
+      "numeric_match": 3,
+      "cases": 12,
+      "metadata_match": 12,
+      "max_absolute_error": {
+        "x": 0.00045678901234680325,
+        "y": 0.00032109876543318094,
+        "z": 0.0002109876543219258,
+        "charge": 4.3210987654335176e-05,
+        "radius": 4.5678901234635916e-05
+      }
+    }
+  },
+  "fixture": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/pqr-checked-2026-10-22/cases.json",
+    "sha256": "f44698e06eda18841196885cc75f5a83fec7b244fafd5136c0e883be4ad24a96",
+    "size_bytes": 43404
+  },
+  "packet": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/pqr-checked-2026-10-22.packet.json.gz",
+    "sha256": "4807020b2eb131cb252025b71d803658b67ce2b9446a4f2d84819283bef3f2b3",
+    "size_bytes": 9808
+  },
+  "sources": [
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol/src/pqr/checked.rs",
+      "sha256": "7f827850dc3d3dfead1284bff44e4376c2ac692af3fb686bd893fa400bc25d84",
+      "size_bytes": 5060
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol/src/pqr.rs",
+      "sha256": "01e3c98217e2551aad0bd9018be13ec1f88ebff3053b8485a3c8e60acbc9bc97",
+      "size_bytes": 26130
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol/src/lib.rs",
+      "sha256": "4051ab21bc55bcaf858f23d4fe12f1c1bdd41abd152f726fb6bd105c216e50f1",
+      "size_bytes": 14119
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py/src/formats/pqr_checked.rs",
+      "sha256": "8531fa77181dd90eccadd29cfbbd934182bc66ada143be2d5fcaf60bca933490",
+      "size_bytes": 3760
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py/src/formats/materials.rs",
+      "sha256": "513a659d70fa5dc8afa692057dc9236bd8736e707b92f6d828cc6d73d922c5f9",
+      "size_bytes": 43668
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py/src/formats.rs",
+      "sha256": "2ebff94f4d7c4d291cdba5f86ae1e8633a37eb10c37fde4ad96b3512c8270a33",
+      "size_bytes": 53534
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-wasm/src/format_io/pqr_checked.rs",
+      "sha256": "7d10d882bea46e94e128029f67ab14957064eea6f7e7a6312d64701ac94b7d8a",
+      "size_bytes": 2267
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-wasm/src/format_io.rs",
+      "sha256": "5575017d6173ba057ee62efa44311f200082637d7397249c27e1c71157e2c1a1",
+      "size_bytes": 57362
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/scripts/validation/validate_pqr_checked.py",
+      "sha256": "9eba4d7a2b839cda894f29eb5eba7b0b5d3cd8e5ee79f99c49f5b3275195adfe",
+      "size_bytes": 10715
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/scripts/validation/validate_pqr_checked_node.mjs",
+      "sha256": "fcd6a9405e3212aede8a36231476f479c50bde0556f41a51ebe45ad694bc5566",
+      "size_bytes": 538
+    }
+  ],
+  "artifacts": {
+    "python_extension": {
+      "path": "/private/tmp/chematic-pqr-checked-python-20261022/chematic/chematic.cpython-313-darwin.so",
+      "sha256": "60ab09fef0d61a16ee08c37b48f3479ee56b0558c6e5130cc9e1ee0f40a5af43",
+      "size_bytes": 44905584
+    },
+    "python_wrapper": {
+      "path": "/private/tmp/chematic-pqr-checked-python-20261022/chematic/__init__.py",
+      "sha256": "fa171425f542041f4449489cfb87c2752e73b613840d7f5d26e1a4b09749f384",
+      "size_bytes": 25696
+    },
+    "wasm_js": {
+      "path": "/private/tmp/chematic-pqr-checked-wasm-20261022/chematic_wasm.js",
+      "sha256": "ba2d4272561c76c9f4b0f2e6668805430114f597095f2de024c1a95b76e4c7b4",
+      "size_bytes": 367835
+    },
+    "wasm_binary": {
+      "path": "/private/tmp/chematic-pqr-checked-wasm-20261022/chematic_wasm_bg.wasm",
+      "sha256": "04e354f46c58ed8d81097f76d228661c08cfc7b4e7e43e14f88cf93f46bc726e",
+      "size_bytes": 45392248
+    },
+    "openbabel": {
+      "path": "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+      "sha256": "733b2c925d60b17a5c9d8ce9ec841e918cc20c7634301e23f9008a187d1d9bc5",
+      "size_bytes": 75728
+    }
+  },
+  "legacy_control": {
+    "main_commit": "e9e578e242729636535d8f701328fddbab3737c7",
+    "scope": "Legacy API in the same candidate runtime; Rust function body verified equal to pinned main, not a separately rebuilt main/release."
+  },
+  "openbabel": {
+    "version": {
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27\n",
+      "stderr": ""
+    },
+    "scope": "Same APBS-whitespace input read/write pipeline; element-column dialect controls are separate. Reader and writer effects are not separated. No invalid-input ranking."
+  },
+  "process_limits": {
+    "seconds": 30,
+    "combined_pipe_bytes": 1048576,
+    "memory": "not imposed"
+  }
+}
