@@ -100,10 +100,6 @@
       "decisions": 26,
       "lines": 167
     },
-    "crates/chematic-ff/src/mmff94_energy/torsion.rs::torsion_empirical#1": {
-      "decisions": 51,
-      "lines": 99
-    },
     "crates/chematic-fp/src/rdkit_avalon/fingerprint.rs::count_fingerprint_patterns#1": {
       "decisions": 375,
       "lines": 1485
@@ -204,29 +200,9 @@
       "decisions": 29,
       "lines": 134
     },
-    "crates/chematic-smiles/src/rdkit/depict.rs::merge_with_common#1": {
-      "decisions": 29,
-      "lines": 69
-    },
-    "crates/chematic-smiles/src/rdkit/depict.rs::open_angles#1": {
-      "decisions": 26,
-      "lines": 55
-    },
     "crates/chematic-smiles/src/rdkit/depict.rs::remove_collisions_shorten_bonds#1": {
       "decisions": 28,
       "lines": 83
-    },
-    "crates/chematic-smiles/src/rdkit/findstereo.rs::flag_ring_stereo#1": {
-      "decisions": 26,
-      "lines": 80
-    },
-    "crates/chematic-smiles/src/rdkit/findstereo.rs::update_atoms#1": {
-      "decisions": 26,
-      "lines": 97
-    },
-    "crates/chematic-smiles/src/rdkit/inchi_read.rs::inchi_clean_up#1": {
-      "decisions": 35,
-      "lines": 74
     },
     "crates/chematic-smiles/src/rdkit/inchi_read.rs::rdkit_molecule_from_inchi_output#1": {
       "decisions": 52,
@@ -235,10 +211,6 @@
     "crates/chematic-smiles/src/rdkit/kekulize.rs::mark_dbond_cands#1": {
       "decisions": 40,
       "lines": 115
-    },
-    "crates/chematic-smiles/src/rdkit/mol.rs::calc_implicit_valence_value#1": {
-      "decisions": 30,
-      "lines": 100
     },
     "crates/chematic-smiles/src/rdkit/mol2_read.rs::clean_up_mol2_substructures#1": {
       "decisions": 41,
@@ -280,10 +252,6 @@
       "decisions": 29,
       "lines": 117
     },
-    "crates/chematic-smiles/src/rdkit/pdb_read.rs::standard_double_bond#1": {
-      "decisions": 29,
-      "lines": 54
-    },
     "crates/chematic-smiles/src/rdkit/pdb_read.rs::to_chematic#1": {
       "decisions": 33,
       "lines": 136
@@ -299,10 +267,6 @@
     "crates/chematic-smiles/src/rdkit/rxn_smarts.rs::rdkit_mol_of#1": {
       "decisions": 30,
       "lines": 101
-    },
-    "crates/chematic-smiles/src/rdkit/stereo.rs::find_chiral_atom_special_cases#1": {
-      "decisions": 27,
-      "lines": 104
     },
     "crates/chematic-smiles/src/rdkit/stereo.rs::legacy_stereo_perception_impl#1": {
       "decisions": 67,

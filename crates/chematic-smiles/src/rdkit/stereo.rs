@@ -644,6 +644,38 @@ fn atom_is_candidate_for_ring_stereochem(mol: &mut Mol, a: usize, ranks: &[u32])
 }
 
 /// `findChiralAtomSpecialCases`.
+fn link_ring_stereo_atoms(mol: &mut Mol, root: usize, entries: &[i32]) {
+    mol.atoms[root].ring_stereo_atoms = Some(entries.to_vec());
+    let atom_index = |entry: i32| -> usize { (entry.unsigned_abs() - 1) as usize };
+    for (position, &entry) in entries.iter().enumerate() {
+        let index = atom_index(entry);
+        let mut links = mol.atoms[index]
+            .ring_stereo_atoms
+            .clone()
+            .unwrap_or_default();
+        for &other_entry in &entries[position + 1..] {
+            let other = atom_index(other_entry);
+            let different = (entry < 0) ^ (other_entry < 0);
+            links.push(if different {
+                -(other as i32 + 1)
+            } else {
+                other as i32 + 1
+            });
+            let mut other_links = mol.atoms[other]
+                .ring_stereo_atoms
+                .clone()
+                .unwrap_or_default();
+            other_links.push(if different {
+                -(index as i32 + 1)
+            } else {
+                index as i32 + 1
+            });
+            mol.atoms[other].ring_stereo_atoms = Some(other_links);
+        }
+        mol.atoms[index].ring_stereo_atoms = Some(links);
+    }
+}
+
 fn find_chiral_atom_special_cases(mol: &mut Mol, ranks: &[u32]) -> Vec<bool> {
     let n = mol.atoms.len();
     let mut possible = vec![false; n];
@@ -712,35 +744,7 @@ fn find_chiral_atom_special_cases(mol: &mut Mol, ranks: &[u32]) -> Vec<bool> {
             }
         }
         if !ring_stereo_atoms.is_empty() {
-            mol.atoms[a].ring_stereo_atoms = Some(ring_stereo_atoms.clone());
-            let idx_of = |e: i32| -> usize { (e.unsigned_abs() - 1) as usize };
-            for (k, &entry) in ring_stereo_atoms.iter().enumerate() {
-                let ridx = idx_of(entry);
-                let mut lring = mol.atoms[ridx]
-                    .ring_stereo_atoms
-                    .clone()
-                    .unwrap_or_default();
-                for &oentry in &ring_stereo_atoms[k + 1..] {
-                    let oidx = idx_of(oentry);
-                    let different = (entry < 0) ^ (oentry < 0);
-                    lring.push(if different {
-                        -(oidx as i32 + 1)
-                    } else {
-                        oidx as i32 + 1
-                    });
-                    let mut olring = mol.atoms[oidx]
-                        .ring_stereo_atoms
-                        .clone()
-                        .unwrap_or_default();
-                    olring.push(if different {
-                        -(ridx as i32 + 1)
-                    } else {
-                        ridx as i32 + 1
-                    });
-                    mol.atoms[oidx].ring_stereo_atoms = Some(olring);
-                }
-                mol.atoms[ridx].ring_stereo_atoms = Some(lring);
-            }
+            link_ring_stereo_atoms(mol, a, &ring_stereo_atoms);
         } else {
             possible[a] = false;
         }

@@ -88,7 +88,7 @@ not an acceptable completion condition.
 | R19 | Standardization and chemistry transforms | Long orchestration functions split with unchanged typed outcomes | Ready for review |
 | R20 | Depiction and layout | Layout stages bounded; image and coordinate fixtures unchanged | Ready for review |
 | R21 | Search, SMARTS and reaction internals | Search state and reaction projection stages have explicit owners | Ready for review |
-| R22 | Compatibility-heavy RDKit tables and adapters | Declarative data separated from control flow; parity fixtures unchanged | Planned |
+| R22 | Compatibility-heavy RDKit tables and adapters | Declarative data separated from control flow; parity fixtures unchanged | Ready for review |
 | R23 | Python, WASM, CLI and MCP boundaries | Binding registration and transport glue remain thin and cross-checked | Planned |
 | R24 | Validation scripts, CI and documentation | Shared harnesses replace duplication without weakening gates | Planned |
 | R25 | Final ratchet and release-grade verification | At most 8 file and 50 function allowances; full applicable gates pass | Planned |
@@ -118,6 +118,13 @@ own module. The four production files are each below 1,500 lines, reducing the
 ratchet to 8 file and 72 function allowances without changing public search or
 reaction behavior. The complete `chematic-smarts` and `chematic-rxn` suites,
 their doctests, and warnings-as-errors clippy checks pass.
+
+The stacked R22 candidate separates ordered MMFF torsion cases, InChI cleanup
+families, PDB residue bond rules, implicit-valence branches, ring-stereo
+bookkeeping and depiction merge operations. Nine compatibility-port functions
+now fit the normal limits, reducing the ratchet to 8 file and 63 function
+allowances. Full `chematic-smiles` and `chematic-ff` tests preserve the pinned
+PDB, InChI, stereo, depiction and force-field contracts.
 
 Notable outcomes include a bounded reaction module tree, separated
 lexical/semantic format stages, API-domain binding modules, bounded descriptor
