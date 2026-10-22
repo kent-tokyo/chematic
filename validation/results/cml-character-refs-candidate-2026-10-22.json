@@ -1,0 +1,1339 @@
+{
+  "schema": "chematic.cml-character-reference-development.v1",
+  "scope": "Original CML\u2192CML development packet: indexed elements, charges, isotopes, total H counts, 2D coordinates and explicit bonds only. No full XML/CML conformance, source metadata, stereo, 3D, independent holdout or toolkit-wide superiority claim. Rejections are not successful coverage.",
+  "provenance": "Original minimal ammonium/deuterium structures, 2026-10-22, recipe packet(); no third-party or sealed corpus input.",
+  "license": "MIT OR Apache-2.0",
+  "redistribution": "allowed: original inputs",
+  "minimization": "Two atoms isolate XML lexical changes; an extra duplicate ID tests ambiguity. Positions are supplied angstrom coordinates, not optimized geometries.",
+  "oracle": {
+    "name": "Python ElementTree plus authored typed-field expectations",
+    "version": "3.13.6",
+    "script": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/scripts/validation/check_cml_character_references.py",
+      "sha256": "c82670c6eeb1e5b0a14be6022aeb570fcb287066dbaeb14284d47c53f43d95da",
+      "size_bytes": 8289
+    },
+    "expected": {
+      "atoms": [
+        {
+          "element": "N",
+          "charge": 1,
+          "isotope": 15,
+          "hydrogens": 4,
+          "coordinates": [
+            1.25,
+            -2.5
+          ]
+        },
+        {
+          "element": "H",
+          "charge": 0,
+          "isotope": 2,
+          "hydrogens": 0,
+          "coordinates": [
+            2.25,
+            -2.5
+          ]
+        }
+      ],
+      "bonds": [
+        [
+          0,
+          1,
+          1
+        ]
+      ]
+    },
+    "tolerance": "exact integers and supplied dyadic 2D floats; no tolerance"
+  },
+  "engines": {
+    "chematic": {
+      "path": "/private/tmp/chematic-cml-refs-target-20261022/debug/examples/file_io_semantic_probe",
+      "sha256": "dc952633c98e966648465828edb30c5bb84a52087134c33e14f0f79620b5a8ea",
+      "size_bytes": 14020200
+    },
+    "openbabel": {
+      "path": "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+      "sha256": "733b2c925d60b17a5c9d8ce9ec841e918cc20c7634301e23f9008a187d1d9bc5",
+      "size_bytes": 75728
+    }
+  },
+  "openbabel_version": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+  "cases": [
+    {
+      "id": "literal-control",
+      "source": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"N\" formalCharge=\"1\" isotopeNumber=\"15\" hydrogenCount=\"4\" x2=\"1.25\" y2=\"-2.5\"/>\n<atom id=\"h1\" elementType=\"H\" isotopeNumber=\"2\" hydrogenCount=\"0\" x2=\"2.25\" y2=\"-2.5\"/>\n</atomArray>\n<bondArray>\n<bond atomRefs2=\"a1 h1\" order=\"1\"/>\n</bondArray>\n</molecule>\n",
+      "expected_refusal": false,
+      "sha256": "dc87518d42d1079420116836188f87ac8b37e10dce7ecac923360974a76a5215"
+    },
+    {
+      "id": "decimal-charge",
+      "source": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"N\" formalCharge=\"&#49;\" isotopeNumber=\"15\" hydrogenCount=\"4\" x2=\"1.25\" y2=\"-2.5\"/>\n<atom id=\"h1\" elementType=\"H\" isotopeNumber=\"2\" hydrogenCount=\"0\" x2=\"2.25\" y2=\"-2.5\"/>\n</atomArray>\n<bondArray>\n<bond atomRefs2=\"a1 h1\" order=\"1\"/>\n</bondArray>\n</molecule>\n",
+      "expected_refusal": false,
+      "sha256": "03a285250dde7127d13ee9efee789d8ccb026b0687ce591bc2f4dce388d23fed"
+    },
+    {
+      "id": "hex-isotope",
+      "source": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"N\" formalCharge=\"1\" isotopeNumber=\"&#x31;&#x35;\" hydrogenCount=\"4\" x2=\"1.25\" y2=\"-2.5\"/>\n<atom id=\"h1\" elementType=\"H\" isotopeNumber=\"2\" hydrogenCount=\"0\" x2=\"2.25\" y2=\"-2.5\"/>\n</atomArray>\n<bondArray>\n<bond atomRefs2=\"a1 h1\" order=\"1\"/>\n</bondArray>\n</molecule>\n",
+      "expected_refusal": false,
+      "sha256": "885ac8e9f1374465db2d29cb70aa7030d1b188cdd83850e161e8a3d3e76f3104"
+    },
+    {
+      "id": "decimal-element",
+      "source": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"&#78;\" formalCharge=\"1\" isotopeNumber=\"15\" hydrogenCount=\"4\" x2=\"1.25\" y2=\"-2.5\"/>\n<atom id=\"h1\" elementType=\"H\" isotopeNumber=\"2\" hydrogenCount=\"0\" x2=\"2.25\" y2=\"-2.5\"/>\n</atomArray>\n<bondArray>\n<bond atomRefs2=\"a1 h1\" order=\"1\"/>\n</bondArray>\n</molecule>\n",
+      "expected_refusal": false,
+      "sha256": "f6f08cedf44b79d03cbef1302f16de9f55fce842cbe550d68147f6e116f6053a"
+    },
+    {
+      "id": "decimal-coordinate",
+      "source": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"N\" formalCharge=\"1\" isotopeNumber=\"15\" hydrogenCount=\"4\" x2=\"&#49;.25\" y2=\"-2.5\"/>\n<atom id=\"h1\" elementType=\"H\" isotopeNumber=\"2\" hydrogenCount=\"0\" x2=\"2.25\" y2=\"-2.5\"/>\n</atomArray>\n<bondArray>\n<bond atomRefs2=\"a1 h1\" order=\"1\"/>\n</bondArray>\n</molecule>\n",
+      "expected_refusal": false,
+      "sha256": "428e9c1d5455d80b8c8ebeb2d727246d78407dbcf447119ea51a23e0dbec23d5"
+    },
+    {
+      "id": "hex-atom-id",
+      "source": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a&#x31;\" elementType=\"N\" formalCharge=\"1\" isotopeNumber=\"15\" hydrogenCount=\"4\" x2=\"1.25\" y2=\"-2.5\"/>\n<atom id=\"h1\" elementType=\"H\" isotopeNumber=\"2\" hydrogenCount=\"0\" x2=\"2.25\" y2=\"-2.5\"/>\n</atomArray>\n<bondArray>\n<bond atomRefs2=\"a1 h1\" order=\"1\"/>\n</bondArray>\n</molecule>\n",
+      "expected_refusal": false,
+      "sha256": "27d050290bd648b97f55f38f815cf5bf397626e35dee52b7ec2fcc8e8f064f30"
+    },
+    {
+      "id": "hex-bond-order",
+      "source": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"N\" formalCharge=\"1\" isotopeNumber=\"15\" hydrogenCount=\"4\" x2=\"1.25\" y2=\"-2.5\"/>\n<atom id=\"h1\" elementType=\"H\" isotopeNumber=\"2\" hydrogenCount=\"0\" x2=\"2.25\" y2=\"-2.5\"/>\n</atomArray>\n<bondArray>\n<bond atomRefs2=\"a1 h1\" order=\"&#x31;\"/>\n</bondArray>\n</molecule>\n",
+      "expected_refusal": false,
+      "sha256": "36cf3092d9ede3f2622bdc9064e0dfa6bd6801c70f2948948f021709682fbdab"
+    },
+    {
+      "id": "invalid-charge",
+      "source": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"N\" formalCharge=\"oops\" isotopeNumber=\"15\" hydrogenCount=\"4\" x2=\"1.25\" y2=\"-2.5\"/>\n<atom id=\"h1\" elementType=\"H\" isotopeNumber=\"2\" hydrogenCount=\"0\" x2=\"2.25\" y2=\"-2.5\"/>\n</atomArray>\n<bondArray>\n<bond atomRefs2=\"a1 h1\" order=\"1\"/>\n</bondArray>\n</molecule>\n",
+      "expected_refusal": true,
+      "sha256": "273d80b1c929d50ccdbbd86388e101be459969801d1f9df1797cb710aafd7034"
+    },
+    {
+      "id": "invalid-isotope",
+      "source": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"N\" formalCharge=\"1\" isotopeNumber=\"oops\" hydrogenCount=\"4\" x2=\"1.25\" y2=\"-2.5\"/>\n<atom id=\"h1\" elementType=\"H\" isotopeNumber=\"2\" hydrogenCount=\"0\" x2=\"2.25\" y2=\"-2.5\"/>\n</atomArray>\n<bondArray>\n<bond atomRefs2=\"a1 h1\" order=\"1\"/>\n</bondArray>\n</molecule>\n",
+      "expected_refusal": true,
+      "sha256": "8a919e1eb7d7c1137aca7979c29c169e5bd3a441f578d68cb296fba9c596d6f2"
+    },
+    {
+      "id": "invalid-coordinate",
+      "source": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"N\" formalCharge=\"1\" isotopeNumber=\"15\" hydrogenCount=\"4\" x2=\"oops\" y2=\"-2.5\"/>\n<atom id=\"h1\" elementType=\"H\" isotopeNumber=\"2\" hydrogenCount=\"0\" x2=\"2.25\" y2=\"-2.5\"/>\n</atomArray>\n<bondArray>\n<bond atomRefs2=\"a1 h1\" order=\"1\"/>\n</bondArray>\n</molecule>\n",
+      "expected_refusal": true,
+      "sha256": "66a827eea78c700a8d99977a1e108ccb4a64e16d4702d24b2266921b612e4318"
+    },
+    {
+      "id": "isotope-alias-conflict",
+      "source": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"N\" formalCharge=\"1\" isotope=\"14\" isotopeNumber=\"15\" hydrogenCount=\"4\" x2=\"1.25\" y2=\"-2.5\"/>\n<atom id=\"h1\" elementType=\"H\" isotopeNumber=\"2\" hydrogenCount=\"0\" x2=\"2.25\" y2=\"-2.5\"/>\n</atomArray>\n<bondArray>\n<bond atomRefs2=\"a1 h1\" order=\"1\"/>\n</bondArray>\n</molecule>\n",
+      "expected_refusal": true,
+      "sha256": "1f21248502d34d479bcb5e48d9c17823d76a704cd7a11d8b706f16147e0aba7a"
+    },
+    {
+      "id": "duplicate-decoded-id",
+      "source": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"N\" formalCharge=\"1\" isotopeNumber=\"15\" hydrogenCount=\"4\" x2=\"1.25\" y2=\"-2.5\"/>\n<atom id=\"a&#49;\" elementType=\"C\"/>\n<atom id=\"h1\" elementType=\"H\" isotopeNumber=\"2\" hydrogenCount=\"0\" x2=\"2.25\" y2=\"-2.5\"/>\n</atomArray>\n<bondArray>\n<bond atomRefs2=\"a1 h1\" order=\"1\"/>\n</bondArray>\n</molecule>\n",
+      "expected_refusal": true,
+      "sha256": "c9c75fadba594a4b76c2ccdb72a96dff232a0e09e479993dd686f3c1825405b9"
+    },
+    {
+      "id": "invalid-xml-character",
+      "source": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"N\" formalCharge=\"&#0;\" isotopeNumber=\"15\" hydrogenCount=\"4\" x2=\"1.25\" y2=\"-2.5\"/>\n<atom id=\"h1\" elementType=\"H\" isotopeNumber=\"2\" hydrogenCount=\"0\" x2=\"2.25\" y2=\"-2.5\"/>\n</atomArray>\n<bondArray>\n<bond atomRefs2=\"a1 h1\" order=\"1\"/>\n</bondArray>\n</molecule>\n",
+      "expected_refusal": true,
+      "sha256": "ea6c8e41042543f0907c987e4b21a6708a26b67a26ce3995455d8096622de5b7"
+    },
+    {
+      "id": "escaped-reference-is-literal",
+      "source": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"N\" formalCharge=\"&amp;#49;\" isotopeNumber=\"15\" hydrogenCount=\"4\" x2=\"1.25\" y2=\"-2.5\"/>\n<atom id=\"h1\" elementType=\"H\" isotopeNumber=\"2\" hydrogenCount=\"0\" x2=\"2.25\" y2=\"-2.5\"/>\n</atomArray>\n<bondArray>\n<bond atomRefs2=\"a1 h1\" order=\"1\"/>\n</bondArray>\n</molecule>\n",
+      "expected_refusal": true,
+      "sha256": "0546bbcbb1654079d3e23e5a0355ecd5a85c7fb9629fdd4967ccc1fda4817f26"
+    }
+  ],
+  "rows": [
+    {
+      "case": "literal-control",
+      "engine": "chematic",
+      "command": [
+        "/private/tmp/chematic-cml-refs-target-20261022/debug/examples/file_io_semantic_probe",
+        "--format",
+        "cml",
+        "--path",
+        "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-cml-ref-9rdbovs5/input.cml",
+        "--rewrite-output",
+        "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-cml-ref-9rdbovs5/output.cml"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "terminal": "packet_fields_preserved",
+      "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<molecule xmlns=\"http://www.xml-cml.org/schema\">\n  <atomArray>\n    <atom id=\"a1\" elementType=\"N\" x2=\"1.2500\" y2=\"-2.5000\" formalCharge=\"1\" isotopeNumber=\"15\" hydrogenCount=\"4\"/>\n    <atom id=\"a2\" elementType=\"H\" x2=\"2.2500\" y2=\"-2.5000\" isotopeNumber=\"2\" hydrogenCount=\"0\"/>\n  </atomArray>\n  <bondArray>\n    <bond atomRefs2=\"a1 a2\" order=\"1\"/>\n  </bondArray>\n</molecule>\n",
+      "snapshot": {
+        "atoms": [
+          {
+            "element": "N",
+            "charge": 1,
+            "isotope": 15,
+            "hydrogens": 4,
+            "coordinates": [
+              1.25,
+              -2.5
+            ]
+          },
+          {
+            "element": "H",
+            "charge": 0,
+            "isotope": 2,
+            "hydrogens": 0,
+            "coordinates": [
+              2.25,
+              -2.5
+            ]
+          }
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ]
+      },
+      "fields": {
+        "atoms": true,
+        "bonds": true
+      }
+    },
+    {
+      "case": "literal-control",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-icml",
+        "-ocml"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "<?xml version=\"1.0\"?>\n<molecule formalCharge=\"1\" spinMultiplicity=\"2\" xmlns=\"http://www.xml-cml.org/schema\">\n <atomArray>\n  <atom id=\"a1\" elementType=\"N\" isotope=\"15\" formalCharge=\"1\" hydrogenCount=\"4\" x2=\"1.250000\" y2=\"-2.500000\"/>\n  <atom id=\"a2\" elementType=\"H\" isotope=\"2\" hydrogenCount=\"0\" x2=\"2.250000\" y2=\"-2.500000\"/>\n </atomArray>\n <bondArray>\n  <bond atomRefs2=\"a1 a2\" order=\"1\"/>\n </bondArray>\n</molecule>\n",
+      "stderr": "1 molecule converted\n",
+      "terminal": "packet_fields_preserved",
+      "output": "<?xml version=\"1.0\"?>\n<molecule formalCharge=\"1\" spinMultiplicity=\"2\" xmlns=\"http://www.xml-cml.org/schema\">\n <atomArray>\n  <atom id=\"a1\" elementType=\"N\" isotope=\"15\" formalCharge=\"1\" hydrogenCount=\"4\" x2=\"1.250000\" y2=\"-2.500000\"/>\n  <atom id=\"a2\" elementType=\"H\" isotope=\"2\" hydrogenCount=\"0\" x2=\"2.250000\" y2=\"-2.500000\"/>\n </atomArray>\n <bondArray>\n  <bond atomRefs2=\"a1 a2\" order=\"1\"/>\n </bondArray>\n</molecule>\n",
+      "snapshot": {
+        "atoms": [
+          {
+            "element": "N",
+            "charge": 1,
+            "isotope": 15,
+            "hydrogens": 4,
+            "coordinates": [
+              1.25,
+              -2.5
+            ]
+          },
+          {
+            "element": "H",
+            "charge": 0,
+            "isotope": 2,
+            "hydrogens": 0,
+            "coordinates": [
+              2.25,
+              -2.5
+            ]
+          }
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ]
+      },
+      "fields": {
+        "atoms": true,
+        "bonds": true
+      }
+    },
+    {
+      "case": "decimal-charge",
+      "engine": "chematic",
+      "command": [
+        "/private/tmp/chematic-cml-refs-target-20261022/debug/examples/file_io_semantic_probe",
+        "--format",
+        "cml",
+        "--path",
+        "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-cml-ref-9rdbovs5/input.cml",
+        "--rewrite-output",
+        "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-cml-ref-9rdbovs5/output.cml"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "terminal": "packet_fields_preserved",
+      "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<molecule xmlns=\"http://www.xml-cml.org/schema\">\n  <atomArray>\n    <atom id=\"a1\" elementType=\"N\" x2=\"1.2500\" y2=\"-2.5000\" formalCharge=\"1\" isotopeNumber=\"15\" hydrogenCount=\"4\"/>\n    <atom id=\"a2\" elementType=\"H\" x2=\"2.2500\" y2=\"-2.5000\" isotopeNumber=\"2\" hydrogenCount=\"0\"/>\n  </atomArray>\n  <bondArray>\n    <bond atomRefs2=\"a1 a2\" order=\"1\"/>\n  </bondArray>\n</molecule>\n",
+      "snapshot": {
+        "atoms": [
+          {
+            "element": "N",
+            "charge": 1,
+            "isotope": 15,
+            "hydrogens": 4,
+            "coordinates": [
+              1.25,
+              -2.5
+            ]
+          },
+          {
+            "element": "H",
+            "charge": 0,
+            "isotope": 2,
+            "hydrogens": 0,
+            "coordinates": [
+              2.25,
+              -2.5
+            ]
+          }
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ]
+      },
+      "fields": {
+        "atoms": true,
+        "bonds": true
+      }
+    },
+    {
+      "case": "decimal-charge",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-icml",
+        "-ocml"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "<?xml version=\"1.0\"?>\n<molecule formalCharge=\"1\" spinMultiplicity=\"2\" xmlns=\"http://www.xml-cml.org/schema\">\n <atomArray>\n  <atom id=\"a1\" elementType=\"N\" isotope=\"15\" formalCharge=\"1\" hydrogenCount=\"4\" x2=\"1.250000\" y2=\"-2.500000\"/>\n  <atom id=\"a2\" elementType=\"H\" isotope=\"2\" hydrogenCount=\"0\" x2=\"2.250000\" y2=\"-2.500000\"/>\n </atomArray>\n <bondArray>\n  <bond atomRefs2=\"a1 a2\" order=\"1\"/>\n </bondArray>\n</molecule>\n",
+      "stderr": "1 molecule converted\n",
+      "terminal": "packet_fields_preserved",
+      "output": "<?xml version=\"1.0\"?>\n<molecule formalCharge=\"1\" spinMultiplicity=\"2\" xmlns=\"http://www.xml-cml.org/schema\">\n <atomArray>\n  <atom id=\"a1\" elementType=\"N\" isotope=\"15\" formalCharge=\"1\" hydrogenCount=\"4\" x2=\"1.250000\" y2=\"-2.500000\"/>\n  <atom id=\"a2\" elementType=\"H\" isotope=\"2\" hydrogenCount=\"0\" x2=\"2.250000\" y2=\"-2.500000\"/>\n </atomArray>\n <bondArray>\n  <bond atomRefs2=\"a1 a2\" order=\"1\"/>\n </bondArray>\n</molecule>\n",
+      "snapshot": {
+        "atoms": [
+          {
+            "element": "N",
+            "charge": 1,
+            "isotope": 15,
+            "hydrogens": 4,
+            "coordinates": [
+              1.25,
+              -2.5
+            ]
+          },
+          {
+            "element": "H",
+            "charge": 0,
+            "isotope": 2,
+            "hydrogens": 0,
+            "coordinates": [
+              2.25,
+              -2.5
+            ]
+          }
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ]
+      },
+      "fields": {
+        "atoms": true,
+        "bonds": true
+      }
+    },
+    {
+      "case": "hex-isotope",
+      "engine": "chematic",
+      "command": [
+        "/private/tmp/chematic-cml-refs-target-20261022/debug/examples/file_io_semantic_probe",
+        "--format",
+        "cml",
+        "--path",
+        "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-cml-ref-9rdbovs5/input.cml",
+        "--rewrite-output",
+        "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-cml-ref-9rdbovs5/output.cml"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "terminal": "packet_fields_preserved",
+      "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<molecule xmlns=\"http://www.xml-cml.org/schema\">\n  <atomArray>\n    <atom id=\"a1\" elementType=\"N\" x2=\"1.2500\" y2=\"-2.5000\" formalCharge=\"1\" isotopeNumber=\"15\" hydrogenCount=\"4\"/>\n    <atom id=\"a2\" elementType=\"H\" x2=\"2.2500\" y2=\"-2.5000\" isotopeNumber=\"2\" hydrogenCount=\"0\"/>\n  </atomArray>\n  <bondArray>\n    <bond atomRefs2=\"a1 a2\" order=\"1\"/>\n  </bondArray>\n</molecule>\n",
+      "snapshot": {
+        "atoms": [
+          {
+            "element": "N",
+            "charge": 1,
+            "isotope": 15,
+            "hydrogens": 4,
+            "coordinates": [
+              1.25,
+              -2.5
+            ]
+          },
+          {
+            "element": "H",
+            "charge": 0,
+            "isotope": 2,
+            "hydrogens": 0,
+            "coordinates": [
+              2.25,
+              -2.5
+            ]
+          }
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ]
+      },
+      "fields": {
+        "atoms": true,
+        "bonds": true
+      }
+    },
+    {
+      "case": "hex-isotope",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-icml",
+        "-ocml"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "<?xml version=\"1.0\"?>\n<molecule formalCharge=\"1\" spinMultiplicity=\"2\" xmlns=\"http://www.xml-cml.org/schema\">\n <atomArray>\n  <atom id=\"a1\" elementType=\"N\" isotope=\"15\" formalCharge=\"1\" hydrogenCount=\"4\" x2=\"1.250000\" y2=\"-2.500000\"/>\n  <atom id=\"a2\" elementType=\"H\" isotope=\"2\" hydrogenCount=\"0\" x2=\"2.250000\" y2=\"-2.500000\"/>\n </atomArray>\n <bondArray>\n  <bond atomRefs2=\"a1 a2\" order=\"1\"/>\n </bondArray>\n</molecule>\n",
+      "stderr": "1 molecule converted\n",
+      "terminal": "packet_fields_preserved",
+      "output": "<?xml version=\"1.0\"?>\n<molecule formalCharge=\"1\" spinMultiplicity=\"2\" xmlns=\"http://www.xml-cml.org/schema\">\n <atomArray>\n  <atom id=\"a1\" elementType=\"N\" isotope=\"15\" formalCharge=\"1\" hydrogenCount=\"4\" x2=\"1.250000\" y2=\"-2.500000\"/>\n  <atom id=\"a2\" elementType=\"H\" isotope=\"2\" hydrogenCount=\"0\" x2=\"2.250000\" y2=\"-2.500000\"/>\n </atomArray>\n <bondArray>\n  <bond atomRefs2=\"a1 a2\" order=\"1\"/>\n </bondArray>\n</molecule>\n",
+      "snapshot": {
+        "atoms": [
+          {
+            "element": "N",
+            "charge": 1,
+            "isotope": 15,
+            "hydrogens": 4,
+            "coordinates": [
+              1.25,
+              -2.5
+            ]
+          },
+          {
+            "element": "H",
+            "charge": 0,
+            "isotope": 2,
+            "hydrogens": 0,
+            "coordinates": [
+              2.25,
+              -2.5
+            ]
+          }
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ]
+      },
+      "fields": {
+        "atoms": true,
+        "bonds": true
+      }
+    },
+    {
+      "case": "decimal-element",
+      "engine": "chematic",
+      "command": [
+        "/private/tmp/chematic-cml-refs-target-20261022/debug/examples/file_io_semantic_probe",
+        "--format",
+        "cml",
+        "--path",
+        "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-cml-ref-9rdbovs5/input.cml",
+        "--rewrite-output",
+        "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-cml-ref-9rdbovs5/output.cml"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "terminal": "packet_fields_preserved",
+      "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<molecule xmlns=\"http://www.xml-cml.org/schema\">\n  <atomArray>\n    <atom id=\"a1\" elementType=\"N\" x2=\"1.2500\" y2=\"-2.5000\" formalCharge=\"1\" isotopeNumber=\"15\" hydrogenCount=\"4\"/>\n    <atom id=\"a2\" elementType=\"H\" x2=\"2.2500\" y2=\"-2.5000\" isotopeNumber=\"2\" hydrogenCount=\"0\"/>\n  </atomArray>\n  <bondArray>\n    <bond atomRefs2=\"a1 a2\" order=\"1\"/>\n  </bondArray>\n</molecule>\n",
+      "snapshot": {
+        "atoms": [
+          {
+            "element": "N",
+            "charge": 1,
+            "isotope": 15,
+            "hydrogens": 4,
+            "coordinates": [
+              1.25,
+              -2.5
+            ]
+          },
+          {
+            "element": "H",
+            "charge": 0,
+            "isotope": 2,
+            "hydrogens": 0,
+            "coordinates": [
+              2.25,
+              -2.5
+            ]
+          }
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ]
+      },
+      "fields": {
+        "atoms": true,
+        "bonds": true
+      }
+    },
+    {
+      "case": "decimal-element",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-icml",
+        "-ocml"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "<?xml version=\"1.0\"?>\n<molecule formalCharge=\"1\" spinMultiplicity=\"2\" xmlns=\"http://www.xml-cml.org/schema\">\n <atomArray>\n  <atom id=\"a1\" elementType=\"N\" isotope=\"15\" formalCharge=\"1\" hydrogenCount=\"4\" x2=\"1.250000\" y2=\"-2.500000\"/>\n  <atom id=\"a2\" elementType=\"H\" isotope=\"2\" hydrogenCount=\"0\" x2=\"2.250000\" y2=\"-2.500000\"/>\n </atomArray>\n <bondArray>\n  <bond atomRefs2=\"a1 a2\" order=\"1\"/>\n </bondArray>\n</molecule>\n",
+      "stderr": "1 molecule converted\n",
+      "terminal": "packet_fields_preserved",
+      "output": "<?xml version=\"1.0\"?>\n<molecule formalCharge=\"1\" spinMultiplicity=\"2\" xmlns=\"http://www.xml-cml.org/schema\">\n <atomArray>\n  <atom id=\"a1\" elementType=\"N\" isotope=\"15\" formalCharge=\"1\" hydrogenCount=\"4\" x2=\"1.250000\" y2=\"-2.500000\"/>\n  <atom id=\"a2\" elementType=\"H\" isotope=\"2\" hydrogenCount=\"0\" x2=\"2.250000\" y2=\"-2.500000\"/>\n </atomArray>\n <bondArray>\n  <bond atomRefs2=\"a1 a2\" order=\"1\"/>\n </bondArray>\n</molecule>\n",
+      "snapshot": {
+        "atoms": [
+          {
+            "element": "N",
+            "charge": 1,
+            "isotope": 15,
+            "hydrogens": 4,
+            "coordinates": [
+              1.25,
+              -2.5
+            ]
+          },
+          {
+            "element": "H",
+            "charge": 0,
+            "isotope": 2,
+            "hydrogens": 0,
+            "coordinates": [
+              2.25,
+              -2.5
+            ]
+          }
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ]
+      },
+      "fields": {
+        "atoms": true,
+        "bonds": true
+      }
+    },
+    {
+      "case": "decimal-coordinate",
+      "engine": "chematic",
+      "command": [
+        "/private/tmp/chematic-cml-refs-target-20261022/debug/examples/file_io_semantic_probe",
+        "--format",
+        "cml",
+        "--path",
+        "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-cml-ref-9rdbovs5/input.cml",
+        "--rewrite-output",
+        "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-cml-ref-9rdbovs5/output.cml"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "terminal": "packet_fields_preserved",
+      "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<molecule xmlns=\"http://www.xml-cml.org/schema\">\n  <atomArray>\n    <atom id=\"a1\" elementType=\"N\" x2=\"1.2500\" y2=\"-2.5000\" formalCharge=\"1\" isotopeNumber=\"15\" hydrogenCount=\"4\"/>\n    <atom id=\"a2\" elementType=\"H\" x2=\"2.2500\" y2=\"-2.5000\" isotopeNumber=\"2\" hydrogenCount=\"0\"/>\n  </atomArray>\n  <bondArray>\n    <bond atomRefs2=\"a1 a2\" order=\"1\"/>\n  </bondArray>\n</molecule>\n",
+      "snapshot": {
+        "atoms": [
+          {
+            "element": "N",
+            "charge": 1,
+            "isotope": 15,
+            "hydrogens": 4,
+            "coordinates": [
+              1.25,
+              -2.5
+            ]
+          },
+          {
+            "element": "H",
+            "charge": 0,
+            "isotope": 2,
+            "hydrogens": 0,
+            "coordinates": [
+              2.25,
+              -2.5
+            ]
+          }
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ]
+      },
+      "fields": {
+        "atoms": true,
+        "bonds": true
+      }
+    },
+    {
+      "case": "decimal-coordinate",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-icml",
+        "-ocml"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "<?xml version=\"1.0\"?>\n<molecule formalCharge=\"1\" spinMultiplicity=\"2\" xmlns=\"http://www.xml-cml.org/schema\">\n <atomArray>\n  <atom id=\"a1\" elementType=\"N\" isotope=\"15\" formalCharge=\"1\" hydrogenCount=\"4\" x2=\"1.250000\" y2=\"-2.500000\"/>\n  <atom id=\"a2\" elementType=\"H\" isotope=\"2\" hydrogenCount=\"0\" x2=\"2.250000\" y2=\"-2.500000\"/>\n </atomArray>\n <bondArray>\n  <bond atomRefs2=\"a1 a2\" order=\"1\"/>\n </bondArray>\n</molecule>\n",
+      "stderr": "1 molecule converted\n",
+      "terminal": "packet_fields_preserved",
+      "output": "<?xml version=\"1.0\"?>\n<molecule formalCharge=\"1\" spinMultiplicity=\"2\" xmlns=\"http://www.xml-cml.org/schema\">\n <atomArray>\n  <atom id=\"a1\" elementType=\"N\" isotope=\"15\" formalCharge=\"1\" hydrogenCount=\"4\" x2=\"1.250000\" y2=\"-2.500000\"/>\n  <atom id=\"a2\" elementType=\"H\" isotope=\"2\" hydrogenCount=\"0\" x2=\"2.250000\" y2=\"-2.500000\"/>\n </atomArray>\n <bondArray>\n  <bond atomRefs2=\"a1 a2\" order=\"1\"/>\n </bondArray>\n</molecule>\n",
+      "snapshot": {
+        "atoms": [
+          {
+            "element": "N",
+            "charge": 1,
+            "isotope": 15,
+            "hydrogens": 4,
+            "coordinates": [
+              1.25,
+              -2.5
+            ]
+          },
+          {
+            "element": "H",
+            "charge": 0,
+            "isotope": 2,
+            "hydrogens": 0,
+            "coordinates": [
+              2.25,
+              -2.5
+            ]
+          }
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ]
+      },
+      "fields": {
+        "atoms": true,
+        "bonds": true
+      }
+    },
+    {
+      "case": "hex-atom-id",
+      "engine": "chematic",
+      "command": [
+        "/private/tmp/chematic-cml-refs-target-20261022/debug/examples/file_io_semantic_probe",
+        "--format",
+        "cml",
+        "--path",
+        "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-cml-ref-9rdbovs5/input.cml",
+        "--rewrite-output",
+        "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-cml-ref-9rdbovs5/output.cml"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "terminal": "packet_fields_preserved",
+      "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<molecule xmlns=\"http://www.xml-cml.org/schema\">\n  <atomArray>\n    <atom id=\"a1\" elementType=\"N\" x2=\"1.2500\" y2=\"-2.5000\" formalCharge=\"1\" isotopeNumber=\"15\" hydrogenCount=\"4\"/>\n    <atom id=\"a2\" elementType=\"H\" x2=\"2.2500\" y2=\"-2.5000\" isotopeNumber=\"2\" hydrogenCount=\"0\"/>\n  </atomArray>\n  <bondArray>\n    <bond atomRefs2=\"a1 a2\" order=\"1\"/>\n  </bondArray>\n</molecule>\n",
+      "snapshot": {
+        "atoms": [
+          {
+            "element": "N",
+            "charge": 1,
+            "isotope": 15,
+            "hydrogens": 4,
+            "coordinates": [
+              1.25,
+              -2.5
+            ]
+          },
+          {
+            "element": "H",
+            "charge": 0,
+            "isotope": 2,
+            "hydrogens": 0,
+            "coordinates": [
+              2.25,
+              -2.5
+            ]
+          }
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ]
+      },
+      "fields": {
+        "atoms": true,
+        "bonds": true
+      }
+    },
+    {
+      "case": "hex-atom-id",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-icml",
+        "-ocml"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "<?xml version=\"1.0\"?>\n<molecule formalCharge=\"1\" spinMultiplicity=\"2\" xmlns=\"http://www.xml-cml.org/schema\">\n <atomArray>\n  <atom id=\"a1\" elementType=\"N\" isotope=\"15\" formalCharge=\"1\" hydrogenCount=\"4\" x2=\"1.250000\" y2=\"-2.500000\"/>\n  <atom id=\"a2\" elementType=\"H\" isotope=\"2\" hydrogenCount=\"0\" x2=\"2.250000\" y2=\"-2.500000\"/>\n </atomArray>\n <bondArray>\n  <bond atomRefs2=\"a1 a2\" order=\"1\"/>\n </bondArray>\n</molecule>\n",
+      "stderr": "1 molecule converted\n",
+      "terminal": "packet_fields_preserved",
+      "output": "<?xml version=\"1.0\"?>\n<molecule formalCharge=\"1\" spinMultiplicity=\"2\" xmlns=\"http://www.xml-cml.org/schema\">\n <atomArray>\n  <atom id=\"a1\" elementType=\"N\" isotope=\"15\" formalCharge=\"1\" hydrogenCount=\"4\" x2=\"1.250000\" y2=\"-2.500000\"/>\n  <atom id=\"a2\" elementType=\"H\" isotope=\"2\" hydrogenCount=\"0\" x2=\"2.250000\" y2=\"-2.500000\"/>\n </atomArray>\n <bondArray>\n  <bond atomRefs2=\"a1 a2\" order=\"1\"/>\n </bondArray>\n</molecule>\n",
+      "snapshot": {
+        "atoms": [
+          {
+            "element": "N",
+            "charge": 1,
+            "isotope": 15,
+            "hydrogens": 4,
+            "coordinates": [
+              1.25,
+              -2.5
+            ]
+          },
+          {
+            "element": "H",
+            "charge": 0,
+            "isotope": 2,
+            "hydrogens": 0,
+            "coordinates": [
+              2.25,
+              -2.5
+            ]
+          }
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ]
+      },
+      "fields": {
+        "atoms": true,
+        "bonds": true
+      }
+    },
+    {
+      "case": "hex-bond-order",
+      "engine": "chematic",
+      "command": [
+        "/private/tmp/chematic-cml-refs-target-20261022/debug/examples/file_io_semantic_probe",
+        "--format",
+        "cml",
+        "--path",
+        "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-cml-ref-9rdbovs5/input.cml",
+        "--rewrite-output",
+        "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-cml-ref-9rdbovs5/output.cml"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "terminal": "packet_fields_preserved",
+      "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<molecule xmlns=\"http://www.xml-cml.org/schema\">\n  <atomArray>\n    <atom id=\"a1\" elementType=\"N\" x2=\"1.2500\" y2=\"-2.5000\" formalCharge=\"1\" isotopeNumber=\"15\" hydrogenCount=\"4\"/>\n    <atom id=\"a2\" elementType=\"H\" x2=\"2.2500\" y2=\"-2.5000\" isotopeNumber=\"2\" hydrogenCount=\"0\"/>\n  </atomArray>\n  <bondArray>\n    <bond atomRefs2=\"a1 a2\" order=\"1\"/>\n  </bondArray>\n</molecule>\n",
+      "snapshot": {
+        "atoms": [
+          {
+            "element": "N",
+            "charge": 1,
+            "isotope": 15,
+            "hydrogens": 4,
+            "coordinates": [
+              1.25,
+              -2.5
+            ]
+          },
+          {
+            "element": "H",
+            "charge": 0,
+            "isotope": 2,
+            "hydrogens": 0,
+            "coordinates": [
+              2.25,
+              -2.5
+            ]
+          }
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ]
+      },
+      "fields": {
+        "atoms": true,
+        "bonds": true
+      }
+    },
+    {
+      "case": "hex-bond-order",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-icml",
+        "-ocml"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "<?xml version=\"1.0\"?>\n<molecule formalCharge=\"1\" spinMultiplicity=\"2\" xmlns=\"http://www.xml-cml.org/schema\">\n <atomArray>\n  <atom id=\"a1\" elementType=\"N\" isotope=\"15\" formalCharge=\"1\" hydrogenCount=\"4\" x2=\"1.250000\" y2=\"-2.500000\"/>\n  <atom id=\"a2\" elementType=\"H\" isotope=\"2\" hydrogenCount=\"0\" x2=\"2.250000\" y2=\"-2.500000\"/>\n </atomArray>\n <bondArray>\n  <bond atomRefs2=\"a1 a2\" order=\"1\"/>\n </bondArray>\n</molecule>\n",
+      "stderr": "1 molecule converted\n",
+      "terminal": "packet_fields_preserved",
+      "output": "<?xml version=\"1.0\"?>\n<molecule formalCharge=\"1\" spinMultiplicity=\"2\" xmlns=\"http://www.xml-cml.org/schema\">\n <atomArray>\n  <atom id=\"a1\" elementType=\"N\" isotope=\"15\" formalCharge=\"1\" hydrogenCount=\"4\" x2=\"1.250000\" y2=\"-2.500000\"/>\n  <atom id=\"a2\" elementType=\"H\" isotope=\"2\" hydrogenCount=\"0\" x2=\"2.250000\" y2=\"-2.500000\"/>\n </atomArray>\n <bondArray>\n  <bond atomRefs2=\"a1 a2\" order=\"1\"/>\n </bondArray>\n</molecule>\n",
+      "snapshot": {
+        "atoms": [
+          {
+            "element": "N",
+            "charge": 1,
+            "isotope": 15,
+            "hydrogens": 4,
+            "coordinates": [
+              1.25,
+              -2.5
+            ]
+          },
+          {
+            "element": "H",
+            "charge": 0,
+            "isotope": 2,
+            "hydrogens": 0,
+            "coordinates": [
+              2.25,
+              -2.5
+            ]
+          }
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ]
+      },
+      "fields": {
+        "atoms": true,
+        "bonds": true
+      }
+    },
+    {
+      "case": "invalid-charge",
+      "engine": "chematic",
+      "command": [
+        "/private/tmp/chematic-cml-refs-target-20261022/debug/examples/file_io_semantic_probe",
+        "--format",
+        "cml",
+        "--path",
+        "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-cml-ref-9rdbovs5/input.cml",
+        "--rewrite-output",
+        "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-cml-ref-9rdbovs5/output.cml"
+      ],
+      "resource_status": "completed",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "Error: MalformedXml(\"invalid CML formalCharge: oops\")\n",
+      "terminal": "rejected"
+    },
+    {
+      "case": "invalid-charge",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-icml",
+        "-ocml"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "<?xml version=\"1.0\"?>\n<molecule xmlns=\"http://www.xml-cml.org/schema\">\n <atomArray>\n  <atom id=\"a1\" elementType=\"N\" isotope=\"15\" hydrogenCount=\"4\" x2=\"1.250000\" y2=\"-2.500000\"/>\n  <atom id=\"a2\" elementType=\"H\" isotope=\"2\" hydrogenCount=\"0\" x2=\"2.250000\" y2=\"-2.500000\"/>\n </atomArray>\n <bondArray>\n  <bond atomRefs2=\"a1 a2\" order=\"1\"/>\n </bondArray>\n</molecule>\n",
+      "stderr": "1 molecule converted\n",
+      "terminal": "output_on_ambiguous_or_invalid_source",
+      "output": "<?xml version=\"1.0\"?>\n<molecule xmlns=\"http://www.xml-cml.org/schema\">\n <atomArray>\n  <atom id=\"a1\" elementType=\"N\" isotope=\"15\" hydrogenCount=\"4\" x2=\"1.250000\" y2=\"-2.500000\"/>\n  <atom id=\"a2\" elementType=\"H\" isotope=\"2\" hydrogenCount=\"0\" x2=\"2.250000\" y2=\"-2.500000\"/>\n </atomArray>\n <bondArray>\n  <bond atomRefs2=\"a1 a2\" order=\"1\"/>\n </bondArray>\n</molecule>\n",
+      "snapshot": {
+        "atoms": [
+          {
+            "element": "N",
+            "charge": 0,
+            "isotope": 15,
+            "hydrogens": 4,
+            "coordinates": [
+              1.25,
+              -2.5
+            ]
+          },
+          {
+            "element": "H",
+            "charge": 0,
+            "isotope": 2,
+            "hydrogens": 0,
+            "coordinates": [
+              2.25,
+              -2.5
+            ]
+          }
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ]
+      },
+      "fields": {
+        "atoms": false,
+        "bonds": true
+      }
+    },
+    {
+      "case": "invalid-isotope",
+      "engine": "chematic",
+      "command": [
+        "/private/tmp/chematic-cml-refs-target-20261022/debug/examples/file_io_semantic_probe",
+        "--format",
+        "cml",
+        "--path",
+        "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-cml-ref-9rdbovs5/input.cml",
+        "--rewrite-output",
+        "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-cml-ref-9rdbovs5/output.cml"
+      ],
+      "resource_status": "completed",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "Error: MalformedXml(\"invalid CML isotopeNumber: oops\")\n",
+      "terminal": "rejected"
+    },
+    {
+      "case": "invalid-isotope",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-icml",
+        "-ocml"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "<?xml version=\"1.0\"?>\n<molecule formalCharge=\"1\" spinMultiplicity=\"2\" xmlns=\"http://www.xml-cml.org/schema\">\n <atomArray>\n  <atom id=\"a1\" elementType=\"N\" formalCharge=\"1\" hydrogenCount=\"4\" x2=\"1.250000\" y2=\"-2.500000\"/>\n  <atom id=\"a2\" elementType=\"H\" isotope=\"2\" hydrogenCount=\"0\" x2=\"2.250000\" y2=\"-2.500000\"/>\n </atomArray>\n <bondArray>\n  <bond atomRefs2=\"a1 a2\" order=\"1\"/>\n </bondArray>\n</molecule>\n",
+      "stderr": "1 molecule converted\n",
+      "terminal": "output_on_ambiguous_or_invalid_source",
+      "output": "<?xml version=\"1.0\"?>\n<molecule formalCharge=\"1\" spinMultiplicity=\"2\" xmlns=\"http://www.xml-cml.org/schema\">\n <atomArray>\n  <atom id=\"a1\" elementType=\"N\" formalCharge=\"1\" hydrogenCount=\"4\" x2=\"1.250000\" y2=\"-2.500000\"/>\n  <atom id=\"a2\" elementType=\"H\" isotope=\"2\" hydrogenCount=\"0\" x2=\"2.250000\" y2=\"-2.500000\"/>\n </atomArray>\n <bondArray>\n  <bond atomRefs2=\"a1 a2\" order=\"1\"/>\n </bondArray>\n</molecule>\n",
+      "snapshot": {
+        "atoms": [
+          {
+            "element": "N",
+            "charge": 1,
+            "isotope": 0,
+            "hydrogens": 4,
+            "coordinates": [
+              1.25,
+              -2.5
+            ]
+          },
+          {
+            "element": "H",
+            "charge": 0,
+            "isotope": 2,
+            "hydrogens": 0,
+            "coordinates": [
+              2.25,
+              -2.5
+            ]
+          }
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ]
+      },
+      "fields": {
+        "atoms": false,
+        "bonds": true
+      }
+    },
+    {
+      "case": "invalid-coordinate",
+      "engine": "chematic",
+      "command": [
+        "/private/tmp/chematic-cml-refs-target-20261022/debug/examples/file_io_semantic_probe",
+        "--format",
+        "cml",
+        "--path",
+        "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-cml-ref-9rdbovs5/input.cml",
+        "--rewrite-output",
+        "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-cml-ref-9rdbovs5/output.cml"
+      ],
+      "resource_status": "completed",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "Error: MalformedXml(\"invalid CML x2: oops\")\n",
+      "terminal": "rejected"
+    },
+    {
+      "case": "invalid-coordinate",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-icml",
+        "-ocml"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "<?xml version=\"1.0\"?>\n<molecule formalCharge=\"1\" spinMultiplicity=\"2\" xmlns=\"http://www.xml-cml.org/schema\">\n <atomArray>\n  <atom id=\"a1\" elementType=\"N\" isotope=\"15\" formalCharge=\"1\" hydrogenCount=\"4\" x2=\"0.000000\" y2=\"-2.500000\"/>\n  <atom id=\"a2\" elementType=\"H\" isotope=\"2\" hydrogenCount=\"0\" x2=\"2.250000\" y2=\"-2.500000\"/>\n </atomArray>\n <bondArray>\n  <bond atomRefs2=\"a1 a2\" order=\"1\"/>\n </bondArray>\n</molecule>\n",
+      "stderr": "1 molecule converted\n",
+      "terminal": "output_on_ambiguous_or_invalid_source",
+      "output": "<?xml version=\"1.0\"?>\n<molecule formalCharge=\"1\" spinMultiplicity=\"2\" xmlns=\"http://www.xml-cml.org/schema\">\n <atomArray>\n  <atom id=\"a1\" elementType=\"N\" isotope=\"15\" formalCharge=\"1\" hydrogenCount=\"4\" x2=\"0.000000\" y2=\"-2.500000\"/>\n  <atom id=\"a2\" elementType=\"H\" isotope=\"2\" hydrogenCount=\"0\" x2=\"2.250000\" y2=\"-2.500000\"/>\n </atomArray>\n <bondArray>\n  <bond atomRefs2=\"a1 a2\" order=\"1\"/>\n </bondArray>\n</molecule>\n",
+      "snapshot": {
+        "atoms": [
+          {
+            "element": "N",
+            "charge": 1,
+            "isotope": 15,
+            "hydrogens": 4,
+            "coordinates": [
+              0.0,
+              -2.5
+            ]
+          },
+          {
+            "element": "H",
+            "charge": 0,
+            "isotope": 2,
+            "hydrogens": 0,
+            "coordinates": [
+              2.25,
+              -2.5
+            ]
+          }
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ]
+      },
+      "fields": {
+        "atoms": false,
+        "bonds": true
+      }
+    },
+    {
+      "case": "isotope-alias-conflict",
+      "engine": "chematic",
+      "command": [
+        "/private/tmp/chematic-cml-refs-target-20261022/debug/examples/file_io_semantic_probe",
+        "--format",
+        "cml",
+        "--path",
+        "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-cml-ref-9rdbovs5/input.cml",
+        "--rewrite-output",
+        "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-cml-ref-9rdbovs5/output.cml"
+      ],
+      "resource_status": "completed",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "Error: MalformedXml(\"conflicting CML isotope and isotopeNumber\")\n",
+      "terminal": "rejected"
+    },
+    {
+      "case": "isotope-alias-conflict",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-icml",
+        "-ocml"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "<?xml version=\"1.0\"?>\n<molecule formalCharge=\"1\" spinMultiplicity=\"2\" xmlns=\"http://www.xml-cml.org/schema\">\n <atomArray>\n  <atom id=\"a1\" elementType=\"N\" isotope=\"15\" formalCharge=\"1\" hydrogenCount=\"4\" x2=\"1.250000\" y2=\"-2.500000\"/>\n  <atom id=\"a2\" elementType=\"H\" isotope=\"2\" hydrogenCount=\"0\" x2=\"2.250000\" y2=\"-2.500000\"/>\n </atomArray>\n <bondArray>\n  <bond atomRefs2=\"a1 a2\" order=\"1\"/>\n </bondArray>\n</molecule>\n",
+      "stderr": "1 molecule converted\n",
+      "terminal": "output_on_ambiguous_or_invalid_source",
+      "output": "<?xml version=\"1.0\"?>\n<molecule formalCharge=\"1\" spinMultiplicity=\"2\" xmlns=\"http://www.xml-cml.org/schema\">\n <atomArray>\n  <atom id=\"a1\" elementType=\"N\" isotope=\"15\" formalCharge=\"1\" hydrogenCount=\"4\" x2=\"1.250000\" y2=\"-2.500000\"/>\n  <atom id=\"a2\" elementType=\"H\" isotope=\"2\" hydrogenCount=\"0\" x2=\"2.250000\" y2=\"-2.500000\"/>\n </atomArray>\n <bondArray>\n  <bond atomRefs2=\"a1 a2\" order=\"1\"/>\n </bondArray>\n</molecule>\n",
+      "snapshot": {
+        "atoms": [
+          {
+            "element": "N",
+            "charge": 1,
+            "isotope": 15,
+            "hydrogens": 4,
+            "coordinates": [
+              1.25,
+              -2.5
+            ]
+          },
+          {
+            "element": "H",
+            "charge": 0,
+            "isotope": 2,
+            "hydrogens": 0,
+            "coordinates": [
+              2.25,
+              -2.5
+            ]
+          }
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ]
+      },
+      "fields": {
+        "atoms": true,
+        "bonds": true
+      }
+    },
+    {
+      "case": "duplicate-decoded-id",
+      "engine": "chematic",
+      "command": [
+        "/private/tmp/chematic-cml-refs-target-20261022/debug/examples/file_io_semantic_probe",
+        "--format",
+        "cml",
+        "--path",
+        "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-cml-ref-9rdbovs5/input.cml",
+        "--rewrite-output",
+        "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-cml-ref-9rdbovs5/output.cml"
+      ],
+      "resource_status": "completed",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "Error: MalformedXml(\"duplicate CML atom id: a1\")\n",
+      "terminal": "rejected"
+    },
+    {
+      "case": "duplicate-decoded-id",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-icml",
+        "-ocml"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "<?xml version=\"1.0\"?>\n<molecule formalCharge=\"1\" spinMultiplicity=\"2\" xmlns=\"http://www.xml-cml.org/schema\">\n <atomArray>\n  <atom id=\"a1\" elementType=\"N\" isotope=\"15\" formalCharge=\"1\" hydrogenCount=\"4\" x2=\"1.250000\" y2=\"-2.500000\"/>\n  <atom id=\"a2\" elementType=\"C\" hydrogenCount=\"4\" x2=\"0.000000\" y2=\"0.000000\"/>\n  <atom id=\"a3\" elementType=\"H\" isotope=\"2\" hydrogenCount=\"0\" x2=\"2.250000\" y2=\"-2.500000\"/>\n </atomArray>\n <bondArray>\n  <bond atomRefs2=\"a2 a3\" order=\"1\"/>\n </bondArray>\n</molecule>\n",
+      "stderr": "==============================\n*** Open Babel Warning  in Mol #1 (in )\n  The atom id a1 is not unique\n1 molecule converted\n",
+      "terminal": "output_on_ambiguous_or_invalid_source",
+      "output": "<?xml version=\"1.0\"?>\n<molecule formalCharge=\"1\" spinMultiplicity=\"2\" xmlns=\"http://www.xml-cml.org/schema\">\n <atomArray>\n  <atom id=\"a1\" elementType=\"N\" isotope=\"15\" formalCharge=\"1\" hydrogenCount=\"4\" x2=\"1.250000\" y2=\"-2.500000\"/>\n  <atom id=\"a2\" elementType=\"C\" hydrogenCount=\"4\" x2=\"0.000000\" y2=\"0.000000\"/>\n  <atom id=\"a3\" elementType=\"H\" isotope=\"2\" hydrogenCount=\"0\" x2=\"2.250000\" y2=\"-2.500000\"/>\n </atomArray>\n <bondArray>\n  <bond atomRefs2=\"a2 a3\" order=\"1\"/>\n </bondArray>\n</molecule>\n",
+      "snapshot": {
+        "atoms": [
+          {
+            "element": "N",
+            "charge": 1,
+            "isotope": 15,
+            "hydrogens": 4,
+            "coordinates": [
+              1.25,
+              -2.5
+            ]
+          },
+          {
+            "element": "C",
+            "charge": 0,
+            "isotope": 0,
+            "hydrogens": 4,
+            "coordinates": [
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "element": "H",
+            "charge": 0,
+            "isotope": 2,
+            "hydrogens": 0,
+            "coordinates": [
+              2.25,
+              -2.5
+            ]
+          }
+        ],
+        "bonds": [
+          [
+            1,
+            2,
+            1
+          ]
+        ]
+      },
+      "fields": {
+        "atoms": false,
+        "bonds": false
+      }
+    },
+    {
+      "case": "invalid-xml-character",
+      "engine": "chematic",
+      "command": [
+        "/private/tmp/chematic-cml-refs-target-20261022/debug/examples/file_io_semantic_probe",
+        "--format",
+        "cml",
+        "--path",
+        "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-cml-ref-9rdbovs5/input.cml",
+        "--rewrite-output",
+        "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-cml-ref-9rdbovs5/output.cml"
+      ],
+      "resource_status": "completed",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "Error: MalformedXml(\"invalid CML formalCharge: &#0;\")\n",
+      "terminal": "rejected"
+    },
+    {
+      "case": "invalid-xml-character",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-icml",
+        "-ocml"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ":1: parser error : xmlParseCharRef: invalid xmlChar value 0\n.xml-cml.org/schema\"><atomArray><atom id=\"a1\" elementType=\"N\" formalCharge=\"&#0;\n                                                                               ^\n==============================\n*** Open Babel Error  in XML Parser \n  xmlParseCharRef: invalid xmlChar value 0\n\n0 molecules converted\n",
+      "terminal": "rejected"
+    },
+    {
+      "case": "escaped-reference-is-literal",
+      "engine": "chematic",
+      "command": [
+        "/private/tmp/chematic-cml-refs-target-20261022/debug/examples/file_io_semantic_probe",
+        "--format",
+        "cml",
+        "--path",
+        "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-cml-ref-9rdbovs5/input.cml",
+        "--rewrite-output",
+        "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-cml-ref-9rdbovs5/output.cml"
+      ],
+      "resource_status": "completed",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "Error: MalformedXml(\"invalid CML formalCharge: &#49;\")\n",
+      "terminal": "rejected"
+    },
+    {
+      "case": "escaped-reference-is-literal",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-icml",
+        "-ocml"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "<?xml version=\"1.0\"?>\n<molecule xmlns=\"http://www.xml-cml.org/schema\">\n <atomArray>\n  <atom id=\"a1\" elementType=\"N\" isotope=\"15\" hydrogenCount=\"4\" x2=\"1.250000\" y2=\"-2.500000\"/>\n  <atom id=\"a2\" elementType=\"H\" isotope=\"2\" hydrogenCount=\"0\" x2=\"2.250000\" y2=\"-2.500000\"/>\n </atomArray>\n <bondArray>\n  <bond atomRefs2=\"a1 a2\" order=\"1\"/>\n </bondArray>\n</molecule>\n",
+      "stderr": "1 molecule converted\n",
+      "terminal": "output_on_ambiguous_or_invalid_source",
+      "output": "<?xml version=\"1.0\"?>\n<molecule xmlns=\"http://www.xml-cml.org/schema\">\n <atomArray>\n  <atom id=\"a1\" elementType=\"N\" isotope=\"15\" hydrogenCount=\"4\" x2=\"1.250000\" y2=\"-2.500000\"/>\n  <atom id=\"a2\" elementType=\"H\" isotope=\"2\" hydrogenCount=\"0\" x2=\"2.250000\" y2=\"-2.500000\"/>\n </atomArray>\n <bondArray>\n  <bond atomRefs2=\"a1 a2\" order=\"1\"/>\n </bondArray>\n</molecule>\n",
+      "snapshot": {
+        "atoms": [
+          {
+            "element": "N",
+            "charge": 0,
+            "isotope": 15,
+            "hydrogens": 4,
+            "coordinates": [
+              1.25,
+              -2.5
+            ]
+          },
+          {
+            "element": "H",
+            "charge": 0,
+            "isotope": 2,
+            "hydrogens": 0,
+            "coordinates": [
+              2.25,
+              -2.5
+            ]
+          }
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ]
+      },
+      "fields": {
+        "atoms": false,
+        "bonds": true
+      }
+    }
+  ],
+  "counts": {
+    "chematic": {
+      "packet_fields_preserved": 7,
+      "rejected": 7
+    },
+    "openbabel": {
+      "packet_fields_preserved": 7,
+      "output_on_ambiguous_or_invalid_source": 6,
+      "rejected": 1
+    }
+  }
+}

@@ -402,7 +402,17 @@ source-preserving APIs retain the original order.
   molecule, balanced XML-ish elements, exactly one root element, and rejects
   unterminated quoted attributes, comments, CDATA sections, and processing
   instructions. The historical `parse_cml` path remains lenient for
-  compatibility.
+  document-framing compatibility. Both readers reject malformed/out-of-range
+  formal charges, isotopes and supplied 2D coordinates rather than substituting
+  neutral charge, unspecified isotope or origin coordinates. Missing fields
+  retain their existing defaults. Atom IDs must be unique after decoding;
+  `isotope` and `isotopeNumber`, when both present, must agree numerically.
+- **XML attribute references**: the five predefined entities and valid XML 1.0
+  decimal/hex character references decode once, including atom IDs/references
+  and typed fields. Escaped literal entity spellings are not decoded twice.
+  The shared CDXML/MRV attribute scanner benefits from the same repair. Custom
+  DTD entity expansion and full XML/CML conformance are outside this profile.
+  See the [CML character-reference development record](benchmarks/2026-10-22-cml-character-references.md).
 - **Coordinate units**: Ångström in returned 2D coordinates.
 - **Connectivity**: native CML bond elements.
 - **Parse limits**: `CmlParseLimits` bounds input bytes, physical line
