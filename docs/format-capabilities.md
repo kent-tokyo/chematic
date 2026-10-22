@@ -509,6 +509,18 @@ source-preserving APIs retain the original order.
 
 ### MOL/SDF
 
+- **SD data items**: record readers extract names from `<FieldName>` after the
+  leading `>`, including headers with preceding registry information and
+  trailing annotations. A value continues until an empty physical line or the
+  record end; lines such as `> <other>` inside it remain literal text. Leading
+  and trailing spaces/tabs are retained and logical multiline values use `\n`.
+  This replaces the previous missing-blank-line recovery that guessed a new
+  field whenever a value line resembled a header. The dictionary projection
+  still keeps the last value for a genuinely repeated key; header metadata,
+  property order and field-number-only `DTn` headers are outside this named-field
+  contract. The shared parser is used by native string/file/fast record readers,
+  Python forward suppliers and WASM record JSON outputs.
+
 - **Rust read**: `parse_mol`, `parse_mol_with_coords`, `read_mol_with_diagnostics`, `parse_mol_v3000*`, `SdfReader`, `SdfFileReader`, `SdfRecordReader`, `SdfDataset`.
 - **Rust write**: `write_mol`, `write_mol_with_conformer[_checked]`, `write_sdf*`, `write_mol_v3000*`.
 - **Python**: `from_mol_block`, `from_mol_block_with_coords`, `from_mol_block_with_diagnostics`, `parse_sdf_with_coords`, `from_mol_v3000[_with_coords|_with_diagnostics]`, `iter_sdf`, `iter_sdf_batched`, and `SdfDataset`.

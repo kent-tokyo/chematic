@@ -16,6 +16,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- SDF named properties now accept registry information before the field name
+  and retain header-shaped lines inside values. Only an empty line ends a data
+  item; headers without that separator are no longer guessed as new fields.
 - Checked CML → CML conversion now retains the exact XML source, including
   both coordinate sets, properties and unknown extensions, with an explicit
   opaque-semantics report shared by Rust, CLI, Python and WASM.
