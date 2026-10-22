@@ -47,6 +47,17 @@ charges, typing, comments, and opaque sections. Python rejects coordinate,
 charge, name, or comment overrides on this path. Cross-format conversion
 continues to use the bounded graph/coordinate bridge described above.
 
+MOL2 → CJSON in Python/WASM now uses the shared selected-field projection:
+mapped graph, source xyz, parsed molecule name and complete declared partial
+charges are checked on reparse. Incomplete datasets and numeric columns without
+an assigned method fail, except `NO_CHARGES` zero placeholders, which are omitted
+as unassigned. Python rejects
+overrides on this route. Default Rust/Python limits are 16 MiB input/output and
+10,000 atoms; WASM retains its 1,000,000-byte input cap. Other MOL2 metadata and
+stereo remain outside preservation. Use `convert_with_report` for the full
+loss report and explicit `allow_loss` behavior. See the
+[common-route contract and comparison](benchmarks/2026-10-22-mol2-cjson-common.md).
+
 ---
 
 ## Support matrix
@@ -225,6 +236,9 @@ chematic convert-with-report --input-format mol2 --output-format smiles \
   missing. Empty/`NO_CHARGES` method declarations do not produce a dataset.
   The parsed molecule name emits as `properties.name` and is checked on
   reparse. The source method label is retained without verifying its chemistry.
+  A declared method without source values is now explicitly `unverified` for
+  `partial_charges`. Omitted raw zero columns under `NO_CHARGES` are reported
+  as `unassigned_zero_columns: dropped`, without inventing a charge dataset.
   Atom names/types/IDs and unsupported metadata remain losses.
 - Invalid input, unsupported routes/policies and limits are errors (Python
   `ValueError`, WASM throw, CLI nonzero without a report). CLI `--output` is
