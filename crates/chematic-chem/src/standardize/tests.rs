@@ -1,6 +1,6 @@
-    use super::*;
-    use crate::hash::mol_hash;
-    use chematic_smiles::parse;
+use super::*;
+use crate::hash::mol_hash;
+use chematic_smiles::parse;
 
 #[test]
 fn cleanup_keeps_neutral_acid_and_amine_unchanged() {
