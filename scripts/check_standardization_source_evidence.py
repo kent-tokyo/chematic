@@ -9,8 +9,9 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-RECORD = ROOT / "validation/results/rdkit-cleanup-ring-stereo-stress-2026-10-22.json"
-PREVIOUS_RECORD = ROOT / "validation/results/rdkit-standardization-source-2026-10-22-zinc-radical.json"
+RECORD = ROOT / "validation/results/rdkit-reionize-in-memory-stereo-2026-10-22.json"
+PREVIOUS_RECORD = ROOT / "validation/results/rdkit-cleanup-ring-stereo-stress-2026-10-22.json"
+SUMMARY = ROOT / "benchmarks/2026-10-22-rdkit-reionize-in-memory-stereo.json"
 
 
 def digest(path: Path) -> str:
@@ -33,7 +34,7 @@ def check_lane(record: dict, prefix: str, exact_key: str) -> None:
 
 def main() -> None:
     record = json.loads(RECORD.read_text())
-    assert record["profile"] == "source_cleanup_vs_rdkit_2026_09_1"
+    assert record["profile"] == "source_standardization_vs_rdkit_2026_09_1"
     assert record["rdkit_version"] == "2026.09.1"
     # The measured commit may be absent from a PR checkout after a squash merge.
     # Current-source hashes below still fail closed on any source drift.
@@ -62,16 +63,27 @@ def main() -> None:
     assert comparison["fixed_indices"] == sorted(old_cleanup - new_cleanup)
     assert comparison["regressed_indices"] == sorted(new_cleanup - old_cleanup)
     assert comparison["previous_exact"] == previous["exact_rows"]
-    assert comparison["fixed_indices"] == [2133]
-    assert record["exact_rows"] > previous["exact_rows"]
+    assert not comparison["fixed_indices"]
+    assert record["exact_rows"] == previous["exact_rows"]
     old_reionize = {row["index"] for row in previous["reionize_mismatches"]}
     new_reionize = {row["index"] for row in record["reionize_mismatches"]}
     assert comparison["reionize_fixed_indices"] == sorted(old_reionize - new_reionize)
     assert comparison["reionize_regressed_indices"] == sorted(new_reionize - old_reionize)
     assert comparison["previous_reionize_exact"] == previous["reionize_exact_rows"]
     assert not new_reionize - old_reionize
-    assert record["reionize_exact_rows"] == previous["reionize_exact_rows"]
+    assert comparison["reionize_fixed_indices"] == [1432, 1878, 2914, 3153, 4023]
+    assert record["reionize_exact_rows"] == previous["reionize_exact_rows"] + len(old_reionize)
+    assert record["reionize_exact_rows"] == record["reionize_compatible_rows"]
     assert record["normalize_exact_rows"] == previous["normalize_exact_rows"]
+    summary = json.loads(SUMMARY.read_text())
+    assert summary["baseline_source_record_sha256"] == comparison["previous_report_sha256"]
+    assert summary["baseline_dump_sha256"] == previous["source_dump_sha256"]
+    assert summary["candidate_dump_sha256"] == record["source_dump_sha256"]
+    assert summary["changed_indices"] == comparison["reionize_fixed_indices"]
+    assert summary["baseline_reionize_exact_rows"] == previous["reionize_exact_rows"]
+    assert summary["candidate_reionize_exact_rows"] == record["reionize_exact_rows"]
+    assert summary["candidate_cleanup_exact_rows"] == record["exact_rows"]
+    assert summary["candidate_normalize_exact_rows"] == record["normalize_exact_rows"]
     print("Current-source standardization evidence passed")
 
 
