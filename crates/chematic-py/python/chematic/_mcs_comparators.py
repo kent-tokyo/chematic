@@ -8,12 +8,14 @@ class McsAtomCompare(str, Enum):
 
     ELEMENTS requires the same atomic number. ANY_HEAVY_ATOM ignores element
     identity but excludes hydrogen. ANY allows all atoms, including hydrogen.
-    RDKit's similarly named heavy mode also permits H-to-H matches. These are
-    chematic modes, not RDKit comparator subclass adapters.
+    RDKIT_ANY_HEAVY_ATOM also permits explicit H-to-H matches, following
+    RDKit's CompareAnyHeavyAtom. These are native comparator choices, not
+    RDKit comparator subclass adapters.
     """
 
     ELEMENTS = "elements"
     ANY_HEAVY_ATOM = "any_heavy_atom"
+    RDKIT_ANY_HEAVY_ATOM = "rdkit_any_heavy_atom"
     ANY = "any"
 
 
@@ -28,5 +30,8 @@ class McsBondCompare(str, Enum):
     ANY = "any"
 
 
-McsAtomComparison = Union[McsAtomCompare, Literal["elements", "any_heavy_atom", "any"]]
+McsAtomComparison = Union[
+    McsAtomCompare,
+    Literal["elements", "any_heavy_atom", "rdkit_any_heavy_atom", "any"],
+]
 McsBondComparison = Union[McsBondCompare, Literal["order_or_aromatic", "any"]]

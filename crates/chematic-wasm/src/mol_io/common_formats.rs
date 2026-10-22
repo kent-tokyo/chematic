@@ -176,7 +176,7 @@ fn parse_common_format(text: &str, format: &str) -> Result<chematic_core::Molecu
 /// incomplete or undeclared charge columns. Other MOL2 metadata and stereo
 /// are not retained or verified; use convert_with_report_json for losses.
 /// NO_CHARGES zero placeholders are omitted as explicitly unassigned values.
-/// Other conversions use
+/// CJSON-to-CJSON also validates and retains the exact source. Other conversions use
 /// the topology-only bridge and do not carry format-specific metadata.
 #[wasm_bindgen]
 pub fn convert_common_format(
@@ -212,6 +212,9 @@ pub fn convert_common_format(
             },
         )
         .map_err(|error| JsValue::from_str(&error.to_string()));
+    }
+    if input == "cjson" && output == "cjson" {
+        return roundtrip_cjson_record(text);
     }
     let mol = parse_common_format(text, &input).map_err(|e| JsValue::from_str(&e))?;
     if mol.atom_count() > WASM_MAX_ATOMS {

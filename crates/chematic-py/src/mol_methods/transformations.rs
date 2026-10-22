@@ -416,6 +416,47 @@ impl Mol {
         .map_err(|e| PyValueError::new_err(e.to_string()))
     }
 
+    /// Greedy conformer clustering by symmetry-aware aligned RMSD.
+    /// Returns the input indices of cluster leaders in ascending order.
+    /// Topologically equivalent atom permutations share a cluster; each
+    /// candidate is compared with the first member of each existing cluster.
+    /// A nonpositive threshold disables pruning.
+    #[pyo3(signature = (conformers, rmsd_threshold = 0.5))]
+    fn cluster_conformers_by_rms_symmetric(
+        &self,
+        conformers: Vec<Vec<[f64; 3]>>,
+        rmsd_threshold: f64,
+    ) -> PyResult<Vec<usize>> {
+        if !rmsd_threshold.is_finite() {
+            return Err(PyValueError::new_err("rmsd_threshold must be finite"));
+        }
+        let atom_count = self.inner.atom_count();
+        let mut ensemble = chematic_3d::ConformerEnsemble::new(self.inner.as_ref().clone());
+        for (index, conformer) in conformers.into_iter().enumerate() {
+            if conformer.len() != atom_count {
+                return Err(PyValueError::new_err(format!(
+                    "conformer {index} has {} positions for {atom_count} atoms",
+                    conformer.len()
+                )));
+            }
+            if !conformer.iter().flatten().all(|value| value.is_finite()) {
+                return Err(PyValueError::new_err(format!(
+                    "conformer {index} contains non-finite coordinates"
+                )));
+            }
+            let coords = chematic_3d::Coords3D {
+                points: conformer
+                    .into_iter()
+                    .map(|[x, y, z]| chematic_3d::Point3::new(x, y, z))
+                    .collect(),
+            };
+            ensemble
+                .add_conformer(coords)
+                .map_err(|error| PyValueError::new_err(error.to_string()))?;
+        }
+        Ok(ensemble.cluster_conformers_by_rms_symmetric(rmsd_threshold))
+    }
+
     /// RDKit 2026.09.1 ``rdMolAlign.GetAllConformerBestRMSToRef``: best-fit
     /// RMSDs from every conformer of this probe molecule to every conformer
     /// of ``reference``. Results are reference-major:

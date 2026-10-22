@@ -71,7 +71,7 @@ mod tautomer_pick;
 mod write;
 mod xyz_read;
 
-use chematic_core::Molecule;
+use chematic_core::{Molecule, STEREO_H_SENTINEL};
 
 pub use embed_view::*;
 pub use inchi_read::{InchiOutputAtom, InchiOutputStereo0D, rdkit_molecule_from_inchi_output};
@@ -133,9 +133,9 @@ pub fn rdkit_canonical_smiles(mol: &Molecule) -> Result<String, RdkitSmilesError
 /// Metal disconnection can leave an isolated ion carrying a non-tetrahedral
 /// tag from the input complex. RDKit's Cleanup retains that tag on the
 /// resulting molecule, although parsing the isolated ion as a *new* SMILES
-/// would discard it. The ordinary [`rdkit_canonical_smiles`] models that new
-/// parse; this function preserves the tag of a fully occupied isolated Cleanup
-/// product. A vacant coordination site needs a separate permutation remap.
+/// would discard it. This function preserves the tag of a fully occupied
+/// isolated Cleanup product. The Cleanup graph remaps the permutation first
+/// when an isolated center had a vacant coordination site.
 pub fn rdkit_cleanup_canonical_smiles(mol: &Molecule) -> Result<String, RdkitSmilesError> {
     let mut model = parse::from_chematic(mol)?;
     let initial_atom_count = model.atoms.len();
@@ -201,18 +201,48 @@ impl Default for RdkitSmilesParams {
 }
 
 /// `Chem.MolToSmiles(Chem.MolFromSmiles(s), **params)` for the SMILES `s`
-/// chematic parsed `mol` from (RDKit 2026.03.1).
+/// chematic parsed `mol` from (RDKit 2026.03.1). For an in-memory edited
+/// molecule, a deprotonated carbon may retain its original tetrahedral tag
+/// until it is serialized and parsed again.
 pub fn rdkit_smiles(
     mol: &Molecule,
     params: &RdkitSmilesParams,
 ) -> Result<String, RdkitSmilesError> {
     let mut m = parse::from_chematic(mol)?;
+    let initial_atom_count = m.atoms.len();
+    // Reionize can deprotonate a tagged carbon without replacing its atom.
+    // RDKit retains that in-memory tag in MolToSmiles, even when the resulting
+    // three-coordinate carbanion would lose the tag if parsed from SMILES.
+    // The recorded H ligand distinguishes the edited center from a newly
+    // parsed [C@-] atom, whose ordinary sanitization must still clear it.
+    let deprotonated_tags: Vec<_> = mol
+        .atoms()
+        .filter(|(idx, atom)| {
+            !atom.wildcard
+                && atom.element.atomic_number() == 6
+                && atom.charge == -1
+                && atom.hydrogen_count == Some(0)
+                && atom.chirality.is_tetrahedral()
+                && mol.degree(*idx) == 3
+                && mol
+                    .stereo_neighbor_order(*idx)
+                    .is_some_and(|order| order.contains(&STEREO_H_SENTINEL))
+        })
+        .map(|(idx, _)| (idx.0 as usize, m.atoms[idx.0 as usize].chiral))
+        .collect();
     if has_added_hydrogens(mol) {
         sanitize::sanitize_keeping_hs(&mut m)?;
     } else {
         sanitize::remove_hs_and_sanitize(&mut m)?;
     }
     stereo::legacy_stereo_perception_unflagged(&mut m);
+    // removeHs can renumber atoms. Without a stable index correspondence,
+    // keep the normal sanitized representation.
+    if m.atoms.len() == initial_atom_count {
+        for (idx, tag) in deprotonated_tags {
+            m.atoms[idx].chiral = tag;
+        }
+    }
     write::mol_to_smiles_owned(m, params)
 }
 

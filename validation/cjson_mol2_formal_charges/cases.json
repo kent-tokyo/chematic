@@ -1,0 +1,325 @@
+{
+  "provenance": "Original synthetic inputs authored for chematic on 2026-10-22; no external payload copied.",
+  "license": "MIT",
+  "redistribution": "allowed: original project-authored data",
+  "minimization": "Eight small indexed graphs isolate formal-charge sign/magnitude, charged metals and salts, a bonded anion, explicit H and neutral control. Geometry is synthetic and is not a docking geometry.",
+  "oracle": {
+    "engine": "Authored indexed CJSON field contract",
+    "version": "cjson-mol2-unity-v1",
+    "settings": "Exact indexed atomic numbers, formal charges and bond endpoints/orders. Native coordinates and partial charges must reparse to the same binary64 values. External Open Babel reader: formal charges exact; coordinate/partial-charge binary64 arrays checked separately.",
+    "units": {
+      "coordinates": "angstrom",
+      "partial_charges": "elementary charge",
+      "formal_charges": "elementary charge"
+    }
+  },
+  "cases": [
+    {
+      "id": "oxygen_anion",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"properties\": {\n    \"name\": \"oxygen_anion\"\n  },\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        8\n      ]\n    },\n    \"formalCharges\": [\n      -1\n    ],\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.0,\n        0.125\n      ]\n    }\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": []\n    },\n    \"order\": []\n  },\n  \"partialCharges\": {\n    \"USER_CHARGES\": [\n      0.75\n    ]\n  }\n}\n",
+      "sha256": "4ef3949e650476b8952b84be509d84e4997ed8978cf3c3b148225430f4c03d4f",
+      "expected": {
+        "atomic_numbers": [
+          8
+        ],
+        "formal_charges": [
+          -1
+        ],
+        "partial_charges": [
+          0.75
+        ],
+        "coords": [
+          [
+            0.0,
+            -0.0,
+            0.125
+          ]
+        ],
+        "bonds": []
+      }
+    },
+    {
+      "id": "oxide_dianion",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"properties\": {\n    \"name\": \"oxide_dianion\"\n  },\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        8\n      ]\n    },\n    \"formalCharges\": [\n      -2\n    ],\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.0,\n        0.125\n      ]\n    }\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": []\n    },\n    \"order\": []\n  },\n  \"partialCharges\": {\n    \"USER_CHARGES\": [\n      -0.125\n    ]\n  }\n}\n",
+      "sha256": "e72becbfbf12d1c4cbbcad78bdbdc6c8cf77a78dbf77f5c7be12ad11758ea3ab",
+      "expected": {
+        "atomic_numbers": [
+          8
+        ],
+        "formal_charges": [
+          -2
+        ],
+        "partial_charges": [
+          -0.125
+        ],
+        "coords": [
+          [
+            0.0,
+            -0.0,
+            0.125
+          ]
+        ],
+        "bonds": []
+      }
+    },
+    {
+      "id": "nitrogen_cation",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"properties\": {\n    \"name\": \"nitrogen_cation\"\n  },\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        7\n      ]\n    },\n    \"formalCharges\": [\n      1\n    ],\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.0,\n        0.125\n      ]\n    }\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": []\n    },\n    \"order\": []\n  },\n  \"partialCharges\": {\n    \"USER_CHARGES\": [\n      -0.375\n    ]\n  }\n}\n",
+      "sha256": "6030018fcafbedd5ed650f8a89c344c0491548f97e4877dffe7dfbc7179982c9",
+      "expected": {
+        "atomic_numbers": [
+          7
+        ],
+        "formal_charges": [
+          1
+        ],
+        "partial_charges": [
+          -0.375
+        ],
+        "coords": [
+          [
+            0.0,
+            -0.0,
+            0.125
+          ]
+        ],
+        "bonds": []
+      }
+    },
+    {
+      "id": "zinc_dication",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"properties\": {\n    \"name\": \"zinc_dication\"\n  },\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        30\n      ]\n    },\n    \"formalCharges\": [\n      2\n    ],\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.0,\n        0.125\n      ]\n    }\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": []\n    },\n    \"order\": []\n  },\n  \"partialCharges\": {\n    \"USER_CHARGES\": [\n      -0.625\n    ]\n  }\n}\n",
+      "sha256": "f323479224210420c15bbe17b2dfaf88626420c5c9a1b15ed164cfcd05fe1273",
+      "expected": {
+        "atomic_numbers": [
+          30
+        ],
+        "formal_charges": [
+          2
+        ],
+        "partial_charges": [
+          -0.625
+        ],
+        "coords": [
+          [
+            0.0,
+            -0.0,
+            0.125
+          ]
+        ],
+        "bonds": []
+      }
+    },
+    {
+      "id": "sodium_chloride",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"properties\": {\n    \"name\": \"sodium_chloride\"\n  },\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        11,\n        17\n      ]\n    },\n    \"formalCharges\": [\n      1,\n      -1\n    ],\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.0,\n        0.125,\n        1.25,\n        -0.5,\n        0.125\n      ]\n    }\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": []\n    },\n    \"order\": []\n  },\n  \"partialCharges\": {\n    \"USER_CHARGES\": [\n      -0.25,\n      0.25\n    ]\n  }\n}\n",
+      "sha256": "d81759e5a67f6ca7bf487a75a5f770998166738e2bb20faad7c140cd43d424ec",
+      "expected": {
+        "atomic_numbers": [
+          11,
+          17
+        ],
+        "formal_charges": [
+          1,
+          -1
+        ],
+        "partial_charges": [
+          -0.25,
+          0.25
+        ],
+        "coords": [
+          [
+            0.0,
+            -0.0,
+            0.125
+          ],
+          [
+            1.25,
+            -0.5,
+            0.125
+          ]
+        ],
+        "bonds": []
+      }
+    },
+    {
+      "id": "carboxylate",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"properties\": {\n    \"name\": \"carboxylate\"\n  },\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8,\n        8\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0,\n      -1\n    ],\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.0,\n        0.125,\n        1.25,\n        -0.5,\n        0.125,\n        2.5,\n        -1.0,\n        0.125\n      ]\n    }\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1,\n        0,\n        2\n      ]\n    },\n    \"order\": [\n      2,\n      1\n    ]\n  },\n  \"partialCharges\": {\n    \"USER_CHARGES\": [\n      -0.25,\n      -0.625,\n      0.875\n    ]\n  }\n}\n",
+      "sha256": "cae15abd77b42c1f42722f0cbb1cc48ffadc9d9737a489e50e864faac99074bf",
+      "expected": {
+        "atomic_numbers": [
+          6,
+          8,
+          8
+        ],
+        "formal_charges": [
+          0,
+          0,
+          -1
+        ],
+        "partial_charges": [
+          -0.25,
+          -0.625,
+          0.875
+        ],
+        "coords": [
+          [
+            0.0,
+            -0.0,
+            0.125
+          ],
+          [
+            1.25,
+            -0.5,
+            0.125
+          ],
+          [
+            2.5,
+            -1.0,
+            0.125
+          ]
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            2
+          ],
+          [
+            0,
+            2,
+            1
+          ]
+        ]
+      }
+    },
+    {
+      "id": "explicit_h_ammonium",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"properties\": {\n    \"name\": \"explicit_h_ammonium\"\n  },\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        7,\n        1,\n        1,\n        1,\n        1\n      ]\n    },\n    \"formalCharges\": [\n      1,\n      0,\n      0,\n      0,\n      0\n    ],\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.0,\n        0.125,\n        1.25,\n        -0.5,\n        0.125,\n        2.5,\n        -1.0,\n        0.125,\n        3.75,\n        -1.5,\n        0.125,\n        5.0,\n        -2.0,\n        0.125\n      ]\n    }\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1,\n        0,\n        2,\n        0,\n        3,\n        0,\n        4\n      ]\n    },\n    \"order\": [\n      1,\n      1,\n      1,\n      1\n    ]\n  },\n  \"partialCharges\": {\n    \"USER_CHARGES\": [\n      0.7,\n      -0.1,\n      -0.2,\n      -0.3,\n      -0.1\n    ]\n  }\n}\n",
+      "sha256": "fe49eb82d7c02369831d7079213c1dfece4394f03ac676b77a2436333fa0cc3f",
+      "expected": {
+        "atomic_numbers": [
+          7,
+          1,
+          1,
+          1,
+          1
+        ],
+        "formal_charges": [
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        "partial_charges": [
+          0.7,
+          -0.1,
+          -0.2,
+          -0.3,
+          -0.1
+        ],
+        "coords": [
+          [
+            0.0,
+            -0.0,
+            0.125
+          ],
+          [
+            1.25,
+            -0.5,
+            0.125
+          ],
+          [
+            2.5,
+            -1.0,
+            0.125
+          ],
+          [
+            3.75,
+            -1.5,
+            0.125
+          ],
+          [
+            5.0,
+            -2.0,
+            0.125
+          ]
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ],
+          [
+            0,
+            2,
+            1
+          ],
+          [
+            0,
+            3,
+            1
+          ],
+          [
+            0,
+            4,
+            1
+          ]
+        ]
+      }
+    },
+    {
+      "id": "neutral_control",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"properties\": {\n    \"name\": \"neutral_control\"\n  },\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        7,\n        6,\n        8\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0,\n      0\n    ],\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.0,\n        0.125,\n        1.25,\n        -0.5,\n        0.125,\n        2.5,\n        -1.0,\n        0.125\n      ]\n    }\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1,\n        1,\n        2\n      ]\n    },\n    \"order\": [\n      1,\n      2\n    ]\n  },\n  \"partialCharges\": {\n    \"USER_CHARGES\": [\n      -0.7,\n      0.5,\n      0.2\n    ]\n  }\n}\n",
+      "sha256": "961e103824d5441d33a25082e5257e599b6cd1b2ad5a47403822371b48a6b1b7",
+      "expected": {
+        "atomic_numbers": [
+          7,
+          6,
+          8
+        ],
+        "formal_charges": [
+          0,
+          0,
+          0
+        ],
+        "partial_charges": [
+          -0.7,
+          0.5,
+          0.2
+        ],
+        "coords": [
+          [
+            0.0,
+            -0.0,
+            0.125
+          ],
+          [
+            1.25,
+            -0.5,
+            0.125
+          ],
+          [
+            2.5,
+            -1.0,
+            0.125
+          ]
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ],
+          [
+            1,
+            2,
+            2
+          ]
+        ]
+      }
+    }
+  ]
+}

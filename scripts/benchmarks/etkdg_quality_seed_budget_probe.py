@@ -92,12 +92,12 @@ def score_coords(
     return energy, cip, bond_stereo
 
 
-def rdkit_40(source: Chem.Mol) -> dict[str, float | int | None]:
+def rdkit_ensemble(source: Chem.Mol, num_confs: int) -> dict[str, float | int | None]:
     mol = Chem.Mol(source)
     params = AllChem.ETKDGv3()
     params.randomSeed = 42
     params.numThreads = 0
-    ids = AllChem.EmbedMultipleConfs(mol, numConfs=40, params=params)
+    ids = AllChem.EmbedMultipleConfs(mol, numConfs=num_confs, params=params)
     optimized = AllChem.MMFFOptimizeMoleculeConfs(mol, numThreads=0, maxIters=200)
     assert len(ids) == len(optimized)
     energies = [energy for _, energy in optimized if math.isfinite(energy)]
@@ -117,7 +117,19 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--binary", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument(
+        "--prior-report", type=Path,
+        default=ROOT / "validation/results/etkdg-quality-seed-budget-2026-10-22.json",
+    )
+    parser.add_argument("--profile", default="etkdg_quality_pooled_development_v2")
+    parser.add_argument("--rdkit-confs", type=int, default=40)
     args = parser.parse_args()
+    if args.rdkit_confs <= 0:
+        parser.error("--rdkit-confs must be positive")
+    if args.profile.endswith("_v6") and args.rdkit_confs != 60:
+        parser.error("the v6 comparison uses 60 RDKit candidates")
+    rdkit_key = f"rdkit_{args.rdkit_confs}"
+    prior_path = args.prior_report.resolve()
     if rdBase.rdkitVersion != "2026.09.1":
         parser.error(f"expected RDKit 2026.09.1, found {rdBase.rdkitVersion}")
     RDLogger.DisableLog("rdApp.*")
@@ -131,7 +143,7 @@ def main() -> None:
     rust_rows = [json.loads(line) for line in run.stdout.splitlines()]
     assert len(rust_rows) == len(selected)
     results = []
-    prior = json.loads((ROOT / "validation/results/etkdg-quality-seed-budget-2026-10-22.json").read_text())
+    prior = json.loads(prior_path.read_text())
     prior_rows = {row["name"]: row for row in prior["results"]}
     for expected_row, rust in zip(selected, rust_rows):
         assert expected_row["name"] == rust["name"]
@@ -173,7 +185,7 @@ def main() -> None:
             if result["best_converged_coords"] is not None:
                 converged_energy, _, _ = score_coords(mol, result["best_converged_coords"])
                 assert abs(converged_energy - result["best_converged_energy"]) < 1e-6
-        oracle = rdkit_40(mol)
+        oracle = rdkit_ensemble(mol, args.rdkit_confs)
         assert oracle["best_energy"] is not None
         assert scored["quality"]["best_energy"] <= scored["compatibility"]["best_energy"] + 1e-6
         candidate_checks = [
@@ -202,7 +214,7 @@ def main() -> None:
             "declared_stereo_double_bonds": len(expected_bond_stereo),
             "compatibility": scored["compatibility"],
             "quality": scored["quality"],
-            "rdkit_40": oracle,
+            rdkit_key: oracle,
             "quality_minus_rdkit": scored["quality"]["best_energy"] - oracle["best_energy"],
             "quality_minus_compatibility": scored["quality"]["best_energy"] - scored["compatibility"]["best_energy"],
             "prior_quality_converged": previous["converged"],
@@ -213,26 +225,57 @@ def main() -> None:
         })
     deltas = [row["quality_minus_rdkit"] for row in results]
     report = {
-        "profile": "etkdg_quality_pooled_development_v2",
+        "profile": args.profile,
         "candidate_base_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
         "candidate_dirty": bool(subprocess.check_output(
             ["git", "status", "--porcelain", "--", "crates/chematic-3d", "scripts/benchmarks/etkdg_quality_seed_budget_probe.py"],
             cwd=ROOT, text=True,
         ).strip()),
         "source_sha256": hashlib.sha256((ROOT / "crates/chematic-3d/src/rdkit_embed/molecule.rs").read_bytes()).hexdigest(),
+        "quality_retry_source_sha256": hashlib.sha256((ROOT / "crates/chematic-3d/src/rdkit_embed/molecule/quality_retry.rs").read_bytes()).hexdigest(),
         "probe_script_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         "rust_binary_sha256": hashlib.sha256(args.binary.read_bytes()).hexdigest(),
         "manifest": str(MANIFEST.relative_to(ROOT)),
         "manifest_sha256": hashlib.sha256(MANIFEST.read_bytes()).hexdigest(),
-        "prior_report_sha256": hashlib.sha256((ROOT / "validation/results/etkdg-quality-seed-budget-2026-10-22.json").read_bytes()).hexdigest(),
+        "prior_report": str(prior_path.relative_to(ROOT)),
+        "prior_report_sha256": hashlib.sha256(prior_path.read_bytes()).hexdigest(),
         "selection": "single-fragment non-macrocycles, <=30 heavy atoms, 3-10 RDKit rotatable bonds, MMFF parameters available, no ETKDG V5/V6 coefficients; sort by SHA-256(SMILES), take first 12",
         "rdkit_version": rdBase.rdkitVersion,
-        "candidate_budget": "CheMatic quality: 20 + 20 distinct seeds; RDKit: 40; MMFF94 up to 200 iterations per candidate",
+        "rdkit_conformers": args.rdkit_confs,
+        "candidate_budget": (
+            "CheMatic quality: 20 + 20 + 20 distinct seeds when gradients match, "
+            "MMFF94 up to 200 iterations per candidate; up to two 400-iteration "
+            "retries for the lowest finite-energy unfinished returned candidate, "
+            "retained only if converged and stereo-safe; RDKit: 60 seeds, "
+            "MMFF94 up to 200 iterations per candidate"
+            if args.profile.endswith("_v6") else
+            "CheMatic quality: 20 + 20 distinct seeds, MMFF94 up to 200 iterations per "
+            "candidate; up to 400 extra iterations for the lowest finite-energy "
+            "unfinished returned candidate even if the overall minimum converged; "
+            "RDKit: 40 seeds, MMFF94 up to 200 iterations per candidate"
+            if args.profile.endswith("_v5") else
+            "CheMatic quality: 20 + 20 distinct seeds, MMFF94 up to 200 iterations per "
+            "candidate; if the lowest-energy candidate did not converge, up to 400 "
+            "extra iterations for that candidate; RDKit: 40 seeds, MMFF94 up to "
+            "200 iterations per candidate"
+            if args.profile.endswith("_v4") else
+            "CheMatic quality: 20 + 20 distinct seeds, MMFF94 up to 200 iterations per "
+            "candidate; if none converges, up to 400 extra iterations for the lowest "
+            "finite-energy candidate; RDKit: 40 seeds, MMFF94 up to 200 iterations "
+            "per candidate"
+            if args.profile.endswith("_v3") else
+            "CheMatic quality: 20 + 20 distinct seeds; RDKit: 40; MMFF94 up to "
+            "200 iterations per candidate"
+        ),
         "results": results,
         "summary": {
             "rows": len(results),
-            "quality_improved_vs_prior_profile": sum(row["quality_minus_compatibility"] < -1e-6 for row in results),
-            "quality_regressed_vs_prior_profile": sum(row["quality_minus_compatibility"] > 1e-6 for row in results),
+            "quality_improved_vs_compatibility": sum(row["quality_minus_compatibility"] < -1e-6 for row in results),
+            "quality_regressed_vs_compatibility": sum(row["quality_minus_compatibility"] > 1e-6 for row in results),
+            "quality_improved_vs_prior_profile": sum(
+                row["quality"]["best_energy"] < row["prior_quality_best_energy"] - 1e-6
+                for row in results
+            ),
             "quality_at_or_below_rdkit": sum(delta <= 1e-6 for delta in deltas),
             "median_quality_minus_rdkit": statistics.median(deltas),
             "max_quality_minus_rdkit": max(deltas),
@@ -248,9 +291,14 @@ def main() -> None:
             ),
             "quality_better_converged_energy_than_rdkit": sum(
                 row["quality"]["best_converged_energy"] is not None
-                and row["rdkit_40"]["best_converged_energy"] is not None
+                and row[rdkit_key]["best_converged_energy"] is not None
                 and row["quality"]["best_converged_energy"]
-                < row["rdkit_40"]["best_converged_energy"] - 1e-6
+                < row[rdkit_key]["best_converged_energy"] - 1e-6
+                for row in results
+            ),
+            "quality_converged_when_rdkit_did_not": sum(
+                row["quality"]["best_converged_energy"] is not None
+                and row[rdkit_key]["best_converged_energy"] is None
                 for row in results
             ),
             "tetrahedral_cip_violations": sum(
@@ -277,6 +325,7 @@ def main() -> None:
             "The Tier B corpus was used in earlier development and is not an untouched holdout.",
             "Lowest MMFF94 energy is one quality metric, not experimental conformer accuracy or population.",
             "This run does not measure elapsed time, memory, conformer diversity, or public release artifacts.",
+            "The optional MMFF retry adds work, so its convergence result is not an equal-compute comparison.",
         ],
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
