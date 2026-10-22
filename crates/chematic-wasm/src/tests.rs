@@ -2386,7 +2386,7 @@ M  V30 END CTAB\nM  END\n";
     let rewritten =
         crate::mol_io::roundtrip_mol_v3000_block_inner(block).expect("V3000 round trip");
     assert!(rewritten.contains("M  V30 1 SUP 0 ATOMS=(2 1 2)"));
-    assert!(rewritten.find("BEGIN SGROUP") < rewritten.find("BEGIN COLLECTION"));
+    assert_eq!(rewritten, block);
 }
 
 #[test]

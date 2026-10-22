@@ -73,6 +73,8 @@ use xyz::*;
 
 type SdfWithCoords = Vec<(Mol, String, Vec<Vec<f64>>)>;
 
+mod v3000_source;
+use v3000_source::*;
 mod sdf_source;
 use sdf_source::*;
 
@@ -1402,6 +1404,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         semantic_expand_json,
         semantic_expand_json_with_limits,
         from_mol_v3000,
+        roundtrip_mol_v3000_source,
         from_mol_v3000_with_coords,
         from_mol_v3000_with_diagnostics,
         from_mol2,

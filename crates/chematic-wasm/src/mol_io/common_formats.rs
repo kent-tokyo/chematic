@@ -179,12 +179,13 @@ fn parse_common_format(text: &str, format: &str) -> Result<chematic_core::Molecu
 ///
 /// This is the WASM counterpart of Python's `convert_format`. It supports
 /// SMILES, MOL/SDF, MOL V3000, MOL2, CML, ChemicalJSON, MolJSON, and CDXML.
-/// MOL2-to-MOL2 validates and retains the exact source. MOL2-to-CJSON checks
+/// MOL2-to-MOL2, CJSON-to-CJSON, and V3000-to-V3000 validate and retain exact source.
+/// MOL2-to-CJSON checks
 /// graph/xyz/name/complete declared partial charges on reparse and refuses
 /// incomplete or undeclared charge columns. Other MOL2 metadata and stereo
 /// are not retained or verified; use convert_with_report_json for losses.
 /// NO_CHARGES zero placeholders are omitted as explicitly unassigned values.
-/// CJSON-to-CJSON also validates and retains the exact source. Other conversions use
+/// Other conversions use
 /// the topology-only bridge and do not carry format-specific metadata.
 /// SDF-to-SDF retains every validated source record. Other MOL/SDF input routes
 /// require exactly one CTAB and omit SD fields; SDF output is one framed record.
@@ -231,6 +232,9 @@ pub fn convert_common_format(
     };
     if input == "mol2" && output == "mol2" {
         return roundtrip_mol2_record(text);
+    }
+    if input == "mol_v3000" && output == "mol_v3000" {
+        return super::roundtrip_mol_v3000_block(text);
     }
     if input == "cml" && output == "cjson" {
         let limits = chematic_mol::CmlParseLimits {

@@ -173,6 +173,8 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
     specific metadata is not promised to survive conversion.
     MOL2 to MOL2 and CJSON to CJSON validate and retain the exact source; coordinate,
     charge, name, and comment overrides are rejected on that path.
+    V3000 to V3000 also validates and retains one exact source block, including
+    3D coordinate tokens and opaque metadata; these overrides are rejected.
     SDF to SDF validates every record and retains the complete source document;
     overrides are rejected. Other MOL/SDF inputs require exactly one record
     and omit its SD fields before graph conversion. Use the SDF iterators for
@@ -221,6 +223,10 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
         if coords is not None or charges is not None or name != "LIG" or comment:
             raise ValueError("MOL2 source-preserving conversion does not accept overrides")
         return roundtrip_mol2_record(text)
+    if source == target == "mol_v3000":
+        if coords is not None or charges is not None or name != "LIG" or comment:
+            raise ValueError("V3000 source-preserving conversion does not accept overrides")
+        return roundtrip_mol_v3000_source(text)
     if source == "mol2" and target == "cjson":
         if coords is not None or charges is not None or name != "LIG" or comment:
             raise ValueError("MOL2 to CJSON preserving projection does not accept overrides")
