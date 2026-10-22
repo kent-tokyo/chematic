@@ -130,7 +130,8 @@ pub(crate) fn common_format_name(format: &str) -> Option<String> {
         .as_str()
     {
         "smi" | "smiles" => Some("smiles".to_string()),
-        "mol" | "sdf" => Some("mol".to_string()),
+        "mol" => Some("mol".to_string()),
+        "sdf" => Some("sdf".to_string()),
         "v3000" | "mol_v3000" => Some("mol_v3000".to_string()),
         "mol2" => Some("mol2".to_string()),
         "cml" => Some("cml".to_string()),
@@ -173,6 +174,8 @@ fn parse_common_format(text: &str, format: &str) -> Result<chematic_core::Molecu
 /// SMILES, MOL/SDF, MOL V3000, MOL2, CML, ChemicalJSON, MolJSON, and CDXML.
 /// MOL2-to-MOL2 validates and retains the exact source. Other conversions use
 /// the topology-only bridge and do not carry format-specific metadata.
+/// SDF-to-SDF retains every validated source record. Other MOL/SDF input routes
+/// require exactly one CTAB and omit SD fields; SDF output is one framed record.
 #[wasm_bindgen]
 pub fn convert_common_format(
     text: &str,
@@ -191,6 +194,27 @@ pub fn convert_common_format(
     let output = common_format_name(output_format).ok_or_else(|| {
         JsValue::from_str(&format!("unsupported molecular format: {output_format}"))
     })?;
+    if input == "sdf" && output == "sdf" {
+        return roundtrip_sdf_source(text);
+    }
+    let text = if matches!(input.as_str(), "mol" | "sdf") {
+        super::sdf_source::single_block(text)?
+    } else {
+        text
+    };
+    let input = if matches!(input.as_str(), "mol" | "sdf") {
+        if text
+            .lines()
+            .nth(3)
+            .is_some_and(|line| line.trim_end().ends_with("V3000"))
+        {
+            "mol_v3000".to_owned()
+        } else {
+            "mol".to_owned()
+        }
+    } else {
+        input
+    };
     if input == "mol2" && output == "mol2" {
         return roundtrip_mol2_record(text);
     }
@@ -203,6 +227,10 @@ pub fn convert_common_format(
     let result = match output.as_str() {
         "smiles" => chematic_smiles::canonical_smiles(&mol),
         "mol" => chematic_mol::write_mol(&mol, &chematic_mol::MolMetadata::default()),
+        "sdf" => format!(
+            "{}$$$$\n",
+            chematic_mol::write_mol(&mol, &chematic_mol::MolMetadata::default())
+        ),
         "mol_v3000" => {
             chematic_mol::write_mol_v3000(&mol, &chematic_mol::MolMetadata::default(), &[])
         }

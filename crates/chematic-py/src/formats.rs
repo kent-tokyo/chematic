@@ -71,6 +71,9 @@ use xyz::*;
 
 type SdfWithCoords = Vec<(Mol, String, Vec<Vec<f64>>)>;
 
+mod sdf_source;
+use sdf_source::*;
+
 // ---------------------------------------------------------------------------
 // Helper: convert MoleculeReport to Python dict
 // ---------------------------------------------------------------------------
@@ -1408,6 +1411,8 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         mol2_reference_rmsds_json,
         convert_with_report_json,
         roundtrip_mol2_record,
+        roundtrip_sdf_source,
+        single_sdf_mol_block,
         kekulize_mol2_record,
         from_pdbqt,
         from_gjf,

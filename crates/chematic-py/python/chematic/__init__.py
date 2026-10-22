@@ -125,7 +125,7 @@ def from_smiles_list(smiles, /, *, skip_invalid=True):
 
 
 _FORMAT_ALIASES = {
-    "smi": "smiles", "smiles": "smiles", "mol": "mol", "sdf": "mol",
+    "smi": "smiles", "smiles": "smiles", "mol": "mol", "sdf": "sdf",
     "mol_v3000": "mol_v3000", "v3000": "mol_v3000", "mol2": "mol2",
     "cml": "cml", "cjson": "cjson", "moljson": "moljson", "cdxml": "cdxml",
     "pdb": "pdb", "xyz": "xyz", "pdbqt": "pdbqt", "gjf": "gjf", "com": "gjf",
@@ -172,6 +172,10 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
     specific metadata is not promised to survive conversion.
     MOL2 to MOL2 instead validates and retains the exact source; coordinate,
     charge, name, and comment overrides are rejected on that path.
+    SDF to SDF validates every record and retains the complete source document;
+    overrides are rejected. Other MOL/SDF inputs require exactly one record
+    and omit its SD fields before graph conversion. Use the SDF iterators for
+    batch conversion. SDF output from other formats is one framed record.
     """
     def normalize(value):
         if not isinstance(value, str):
@@ -195,6 +199,13 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
             f"{_CONVERT_MAX_INPUT_BYTES} bytes)"
         )
     # A same-format MOL2 pass must not erase source typing, charges, or geometry.
+    if source == target == "sdf":
+        if coords is not None or charges is not None or name != "LIG" or comment:
+            raise ValueError("SDF source-preserving conversion does not accept overrides")
+        return roundtrip_sdf_source(text)
+    if source in {"mol", "sdf"}:
+        text = single_sdf_mol_block(text)
+        source = "mol_v3000" if text.split("\n", 4)[3].rstrip().endswith("V3000") else "mol"
     if source == target == "mol2":
         if coords is not None or charges is not None or name != "LIG" or comment:
             raise ValueError("MOL2 source-preserving conversion does not accept overrides")
@@ -236,6 +247,8 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
         return mol.smiles
     if target == "mol":
         return mol.to_mol_block()
+    if target == "sdf":
+        return mol.to_mol_block() + "$$$$\n"
     if target == "mol_v3000":
         return mol.to_mol_v3000([], name=name)
     if target == "mol2":

@@ -262,8 +262,10 @@ pub use rxn::{
 pub use sdf::{
     ConformerEnsemble, SdfBatch, SdfBatchProgress, SdfBatchReader, SdfCompression, SdfDataset,
     SdfFileReader, SdfIndexedBatch, SdfInput, SdfParseLimits, SdfReader, SdfRecord,
-    SdfRecordMetadata, SdfRecordReader, SdfSelectionError, SdfSelectionLimits,
-    parse_sdf_with_limits, read_sdf_conformer_ensembles,
+    SdfRecordMetadata, SdfRecordReader, SdfSelectionError, SdfSelectionLimits, SdfSourceLimits,
+    SdfSourceSummary, parse_sdf_with_limits, read_sdf_conformer_ensembles, roundtrip_sdf_source,
+    roundtrip_sdf_source_with_limits, single_sdf_mol_block, single_sdf_mol_block_with_limits,
+    validate_sdf_source_with_limits,
 };
 pub use semantic::{
     AtomRef, ExpandedSemantic, PolymerEndGroup, PolymerLinkage, PolymerRepeatUnit,
