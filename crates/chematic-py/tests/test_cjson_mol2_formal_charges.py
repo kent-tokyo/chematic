@@ -7,7 +7,7 @@ import struct
 import pytest
 import chematic
 
-PACKET = json.loads((Path(__file__).parents[3] / 'validation/cjson_mol2_formal_charges/cases.json').read_text())
+PACKET = json.loads((Path(__file__).parents[3] / 'validation/cjson_mol2_formal_charges/cases.json').read_text(encoding="utf-8"))
 
 
 @pytest.mark.parametrize('case', PACKET['cases'], ids=lambda c:c['id'])

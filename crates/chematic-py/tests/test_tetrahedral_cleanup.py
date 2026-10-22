@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 import chematic
 
-CASES=json.loads((Path(__file__).resolve().parents[3]/'validation/rdkit_issues/tetrahedral-cleanup/cases.json').read_text())['cases']
+CASES=json.loads((Path(__file__).resolve().parents[3]/'validation/rdkit_issues/tetrahedral-cleanup/cases.json').read_text(encoding="utf-8"))['cases']
 
 def mirror(s):
     return s.replace('@@','TEMP').replace('@','@@').replace('TEMP','@')

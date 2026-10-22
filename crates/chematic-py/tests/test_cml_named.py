@@ -12,7 +12,7 @@ FIXTURE = Path(__file__).resolve().parents[3] / 'validation/openbabel_issues/cml
 
 
 def test_mol2_names_and_xyz_export():
-    text = FIXTURE.read_text()
+    text = FIXTURE.read_text(encoding="utf-8")
     record = json.loads(c.parse_mol2_record_json(text))
     mol = c.from_mol2(text)
     names = [a['name'] for a in record['atoms']]

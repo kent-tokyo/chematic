@@ -7,7 +7,7 @@ import chematic
 import pytest
 
 
-SOURCE = (Path(__file__).parents[3] / "validation/mol2_preservation/amide.mol2").read_text()
+SOURCE = (Path(__file__).parents[3] / "validation/mol2_preservation/amide.mol2").read_text(encoding="utf-8")
 
 
 def test_mol2_record_metadata_and_source():

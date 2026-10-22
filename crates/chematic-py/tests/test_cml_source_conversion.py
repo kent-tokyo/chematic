@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 import chematic
 
-PACKET = json.loads((Path(__file__).parents[3] / 'validation/cml_source_preservation/cases.json').read_text())['cases']
+PACKET = json.loads((Path(__file__).parents[3] / 'validation/cml_source_preservation/cases.json').read_text(encoding="utf-8"))['cases']
 
 
 @pytest.mark.parametrize('case', PACKET, ids=lambda c: c['id'])

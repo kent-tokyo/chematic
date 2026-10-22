@@ -4,7 +4,7 @@ import struct
 import pytest
 import chematic
 
-PACKET=json.loads((Path(__file__).resolve().parents[3]/'validation/cjson_checked/cases.json').read_text())
+PACKET=json.loads((Path(__file__).resolve().parents[3]/'validation/cjson_checked/cases.json').read_text(encoding="utf-8"))
 def compact(text):
     result=[];quoted=False;escaped=False
     for c in text:

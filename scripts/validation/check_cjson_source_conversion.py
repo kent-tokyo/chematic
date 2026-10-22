@@ -94,7 +94,7 @@ def main():
     import chematic
     extension = importlib.import_module('chematic.chematic')
     packet_path = ROOT / 'validation/cjson_source_conversion/cases.json'
-    cases = list(variants(strict_json(packet_path.read_text())))
+    cases = list(variants(strict_json(packet_path.read_text(encoding='utf-8'))))
     raw = bounded_run(['node', '-e', NODE, str(args.wasm_module.resolve())], json.dumps(cases).encode())
     require(raw['resource_status'] == 'completed' and raw['exit_code'] == 0, 'WASM process failed')
     wasm = strict_json(raw['stdout'])

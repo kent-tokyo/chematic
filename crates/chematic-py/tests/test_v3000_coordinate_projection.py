@@ -5,7 +5,7 @@ import struct
 import pytest
 import chematic
 
-PACKET = json.loads((Path(__file__).parents[3] / 'validation/v3000_coordinate_projection/cases.json').read_text())
+PACKET = json.loads((Path(__file__).parents[3] / 'validation/v3000_coordinate_projection/cases.json').read_text(encoding="utf-8"))
 
 def bits(rows):
     return [struct.pack('>d', float(v)) for row in rows for v in row]

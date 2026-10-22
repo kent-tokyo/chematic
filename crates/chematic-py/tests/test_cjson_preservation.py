@@ -4,8 +4,8 @@ import struct
 from pathlib import Path
 import pytest
 import chematic
-SOURCE = (Path(__file__).resolve().parents[3] / "validation/cjson_preservation/charged.cjson").read_text()
-PARTIAL = (Path(__file__).resolve().parents[3] / "validation/cjson_preservation/partial-charges.cjson").read_text()
+SOURCE = (Path(__file__).resolve().parents[3] / "validation/cjson_preservation/charged.cjson").read_text(encoding="utf-8")
+PARTIAL = (Path(__file__).resolve().parents[3] / "validation/cjson_preservation/partial-charges.cjson").read_text(encoding="utf-8")
 
 @pytest.mark.parametrize("root,legacy", [("ヘリウム β", None), (None, "legacy"), ("same", "same")])
 def test_root_and_legacy_names_survive_both_conversion_directions(root, legacy):

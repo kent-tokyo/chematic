@@ -140,7 +140,7 @@ def test_duplex_overhang_register_offset_and_multiple_independent_strands():
 def test_modifications_and_full_document_metadata_are_not_flattened():
     root_path = Path(__file__).resolve().parents[3]
     fixture = json.loads(
-        (root_path / "validation/nucleic_acid_document_contract.json").read_text()
+        (root_path / "validation/nucleic_acid_document_contract.json").read_text(encoding="utf-8")
     )
     for case in fixture["valid_cases"]:
         source = json.dumps(case["document"], indent=2)
@@ -239,7 +239,7 @@ def test_invalid_json_schema_and_encoding(text):
 def test_existing_document_invalid_cases_remain_invalid():
     root_path = Path(__file__).resolve().parents[3]
     fixture = json.loads(
-        (root_path / "validation/nucleic_acid_document_contract.json").read_text()
+        (root_path / "validation/nucleic_acid_document_contract.json").read_text(encoding="utf-8")
     )
     for case in fixture["invalid_cases"]:
         with pytest.raises(ValueError, match=case["expected_code"]):
