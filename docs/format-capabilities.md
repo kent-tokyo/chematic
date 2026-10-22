@@ -421,6 +421,18 @@ source-preserving APIs retain the original order.
 
 ### MOL/SDF
 
+- **SD data items**: record readers extract names from `<FieldName>` after the
+  leading `>`, including headers with preceding registry information and
+  trailing annotations. A value continues until an empty physical line or the
+  record end; lines such as `> <other>` inside it remain literal text. Leading
+  and trailing spaces/tabs are retained and logical multiline values use `\n`.
+  This replaces the previous missing-blank-line recovery that guessed a new
+  field whenever a value line resembled a header. The dictionary projection
+  still keeps the last value for a genuinely repeated key; header metadata,
+  property order and field-number-only `DTn` headers are outside this named-field
+  contract. The shared parser is used by native string/file/fast record readers,
+  Python forward suppliers and WASM record JSON outputs.
+
 - **Rust read**: `parse_mol`, `parse_mol_with_coords`, `read_mol_with_diagnostics`, `parse_mol_v3000*`, `SdfReader`, `SdfFileReader`, `SdfRecordReader`, `SdfDataset`.
 - **Rust write**: `write_mol`, `write_mol_with_conformer[_checked]`, `write_sdf*`, `write_mol_v3000*`.
 - **Python**: `from_mol_block`, `from_mol_block_with_coords`, `from_mol_block_with_diagnostics`, `parse_sdf_with_coords`, `from_mol_v3000[_with_coords|_with_diagnostics]`, `iter_sdf`, `iter_sdf_batched`, and `SdfDataset`.
@@ -553,9 +565,16 @@ source-preserving APIs retain the original order.
 - **Element**: PQR has no element column in the format; `Element` is
   inferred from the atom name via `infer_element`, a documented heuristic
   matching classic PDB-parser convention for blank element columns.
-- **Round-trip**: not characterized beyond the element-inference note above.
-- **Lossy operations**: none named beyond element inference (which is a
-  read-side reconstruction, not a write-side loss).
+- **Checked atom output**: Rust `write_pqr_checked[_with_limits]`, Python
+  `write_pqr_checked` and WASM `write_pqr_json_checked` retain supplied
+  coordinates, partial charges and radii bit for bit with ordered identity
+  fields. Incompatible inferred elements, nonfinite values, negative radii,
+  invalid tokens and limits are refused. Python/WASM require explicit numeric
+  fields and reject unknown fields. This is atom output, not source retention.
+- **Lossy legacy output**: `write_pqr` / `write_pqr_json` retain their existing
+  coordinate rounding (3 decimal places) and charge/radius rounding (4).
+  Non-atom source records and formatting are not represented by atom writers.
+- **Details and measurements**: [PQR atom-field integrity](pqr-numeric-integrity.md).
 - **Parse limits**: `PqrParseLimits { max_input_bytes, max_atoms, max_line_len }`.
 
 ### XYZ / Extended XYZ
