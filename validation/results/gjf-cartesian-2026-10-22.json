@@ -1,6 +1,6 @@
 {
   "schema": "chematic.gjf-cartesian-validation.v1",
-  "utc": "2026-10-22T08:00:44.256023+00:00",
+  "utc": "2026-10-22T08:09:20.863904+00:00",
   "scope": "Local source candidate, Cartesian geometry projection. Not complete job retention, Gaussian execution, or toolkit-wide superiority.",
   "baseline_commit": "7c34941f52c5e795fd3ca93b075aa31bc9fa748f",
   "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
@@ -19,8 +19,8 @@
   },
   "packet": {
     "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/gjf-cartesian-2026-10-22.packet.json.gz",
-    "sha256": "2dcb7c13f947ed6a6580cfb8ce2c2909f6b49b254499454a3ff0003db7a5c14a",
-    "size_bytes": 2435
+    "sha256": "f36b6d301f5150974166abcd42de4730b02c93e9aa3693b7a4def45e253badcf",
+    "size_bytes": 2442
   },
   "counts": {
     "baseline.cartesian.emitted_mismatch": 16,
@@ -53,8 +53,8 @@
     },
     "candidate_probe": {
       "path": "/private/tmp/chematic-gjf-cartesian-20261022/candidate-probe",
-      "sha256": "30b4a962d493184533dae7869c397120d91b8dc2e460ba70577c0ae16198056a",
-      "size_bytes": 744352
+      "sha256": "b6d3f4b14e66f7025f1491bc4e585e8796457c99b8cc5dff9611e29e69a78474",
+      "size_bytes": 763456
     },
     "probe_source": {
       "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/gjf-cartesian-2026-10-22/probe.rs",
@@ -63,8 +63,8 @@
     },
     "python_extension": {
       "path": "/private/tmp/chematic-gjf-cartesian-python-20261022/chematic/chematic.cpython-313-darwin.so",
-      "sha256": "731c33108b5c37bc2e0664fbae255fa9443c83ee978e5921fd7ad1c8bb11b690",
-      "size_bytes": 44673408
+      "sha256": "9e15e337e10fff276e44b09d0d3b00bb8035614324dde77d78490d60e5177521",
+      "size_bytes": 44673424
     },
     "openbabel": {
       "path": "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
@@ -75,8 +75,8 @@
   "source": [
     {
       "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol/src/gaussian.rs",
-      "sha256": "c2c30145920ca828b0d766f6371de3df40887cb2bed07bef9fc6ed6019690047",
-      "size_bytes": 24422
+      "sha256": "44a045a65b84795779a5ef15f40759188d4b5005d50e5ad984f344b1201cda51",
+      "size_bytes": 24224
     },
     {
       "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol/src/lib.rs",

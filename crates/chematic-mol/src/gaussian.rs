@@ -66,12 +66,8 @@ pub enum GaussianError {
     NoAtoms,
     /// An element symbol or atomic number was not recognised.
     UnknownElement(String),
-    /// A coordinate value could not be parsed as a float.
+    /// A coordinate value or Cartesian geometry could not be parsed.
     InvalidCoordinate(String),
-    /// A Cartesian atom row has missing or extra fields, or an invalid freeze code.
-    InvalidAtomRow(String),
-    /// The input requires a geometry representation this reader cannot retain.
-    UnsupportedGeometry(String),
     /// The log file contained no `Standard orientation:` block.
     NoStandardOrientation,
     /// A parsed coordinate was NaN or infinite.
@@ -93,8 +89,6 @@ impl core::fmt::Display for GaussianError {
             Self::NoAtoms => write!(f, "no atom coordinates found in file"),
             Self::UnknownElement(s) => write!(f, "unknown element '{s}'"),
             Self::InvalidCoordinate(s) => write!(f, "invalid coordinate value '{s}'"),
-            Self::InvalidAtomRow(s) => write!(f, "invalid Cartesian atom row: {s}"),
-            Self::UnsupportedGeometry(s) => write!(f, "unsupported GJF geometry: {s}"),
             Self::NoStandardOrientation => {
                 write!(f, "no 'Standard orientation' block found in Gaussian log")
             }
@@ -193,8 +187,8 @@ pub fn parse_gjf_geometry_with_limits(
         .lines()
         .any(|line| line.trim().eq_ignore_ascii_case("--link1--"))
     {
-        return Err(GaussianError::UnsupportedGeometry(
-            "multiple Link1 jobs".into(),
+        return Err(GaussianError::InvalidCoordinate(
+            "unsupported GJF geometry: multiple Link1 jobs".into(),
         ));
     }
     // Split into sections at blank lines.
@@ -231,8 +225,8 @@ pub fn parse_gjf_geometry_with_limits(
     }
     let parts = gjf_fields(sections[cm_idx][0]);
     if parts.len() > 2 {
-        return Err(GaussianError::UnsupportedGeometry(
-            "fragment charge/spin pairs".into(),
+        return Err(GaussianError::InvalidCoordinate(
+            "unsupported GJF geometry: fragment charge/spin pairs".into(),
         ));
     }
     let [charge, multiplicity] = parts.as_slice() else {
@@ -293,12 +287,16 @@ fn parse_atom_coords(
         let (freeze_code, values) = match parts.as_slice() {
             [_, x, y, z] => (None, [*x, *y, *z]),
             [_, code, x, y, z] => {
-                let code = code
-                    .parse::<i32>()
-                    .map_err(|_| GaussianError::InvalidAtomRow(line.into()))?;
+                let code = code.parse::<i32>().map_err(|_| {
+                    GaussianError::InvalidCoordinate(format!("invalid Cartesian atom row: {line}"))
+                })?;
                 (Some(code), [*x, *y, *z])
             }
-            _ => return Err(GaussianError::InvalidAtomRow(line.into())),
+            _ => {
+                return Err(GaussianError::InvalidCoordinate(format!(
+                    "invalid Cartesian atom row: {line}"
+                )));
+            }
         };
         let raw_sym = parts[0].trim_end_matches(|c: char| c.is_ascii_digit());
         let elem = if raw_sym.is_empty() {
