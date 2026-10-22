@@ -1,0 +1,216 @@
+{
+  "schema": "chematic.cml-coordinate-precision-validation.v1",
+  "date": "2026-10-22",
+  "source_base": "d288f6027d71f21130dd119f7cc7df8d58ab8daf",
+  "baseline_cml_source_sha256": "d82493532127d9c38d52961577b19c1acd85bed0a958ad7b1a310fca99f80758",
+  "scope": "Finite supplied 2D CML writer values; original development packet and source artifacts, not a release or toolkit-wide claim. No generic CLI coordinate-retention or Python/WASM graph-handle source-coordinate-retention claim.",
+  "sources": {
+    "crates/chematic-mol/src/cml.rs": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol/src/cml.rs",
+      "sha256": "90464948e9b5004b84cda2acce8c637a4b1d8bf9bd914e907c8e8c9b5e1db5bf",
+      "size_bytes": 37877
+    },
+    "crates/chematic-mol/examples/file_io_semantic_probe.rs": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol/examples/file_io_semantic_probe.rs",
+      "sha256": "b5a70292556c36156ba9a3d2b53df76c9004eb714547ac7fd8b1b81f710e512a",
+      "size_bytes": 10023
+    },
+    "crates/chematic-mol/tests/cml_coordinate_precision.rs": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol/tests/cml_coordinate_precision.rs",
+      "sha256": "6826b27d6b6440f40c83b69be9241b3c5ca49eab2e5817e8a8d5c3df5291ee78",
+      "size_bytes": 1949
+    },
+    "crates/chematic-py/src/mol_methods/identity.rs": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py/src/mol_methods/identity.rs",
+      "sha256": "ad32dc32695817ec909971b2422c4285c36cd64a17468ab56b4a60f19f8b6a2d",
+      "size_bytes": 59433
+    },
+    "crates/chematic-py/tests/test_cml_coordinate_precision.py": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py/tests/test_cml_coordinate_precision.py",
+      "sha256": "ebb837d1f3210aca2fab99d3a1013b2c22e37bdb2d63279c7c6b348e1c38f506",
+      "size_bytes": 1257
+    },
+    "scripts/validation/check_cml_coordinate_precision.py": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/scripts/validation/check_cml_coordinate_precision.py",
+      "sha256": "47aa265ad97e8f610a99ee6faceeda7c4cdf1fb7eabdd4d0cbb55ae90417478b",
+      "size_bytes": 8613
+    },
+    "scripts/tests/test_cml_coordinate_precision.py": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/scripts/tests/test_cml_coordinate_precision.py",
+      "sha256": "a92019fbbab26228640d3116235ffe929dba4b8b3be764923cfd6f1c0450b426",
+      "size_bytes": 1723
+    },
+    "scripts/check_interchange_preservation.py": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/scripts/check_interchange_preservation.py",
+      "sha256": "df7aec9cf2bc8adfcd56fe005e84b23ad38ba3c5cef63cc8b8089ab980b58fac",
+      "size_bytes": 28676
+    },
+    ".github/workflows/ci.yml": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.github/workflows/ci.yml",
+      "sha256": "f6c3899ff5c44d98ff896f74297249521eccb2e07956ed42603c6fb485c4c3ce",
+      "size_bytes": 51506
+    },
+    "validation/cml_coordinate_precision/cases.json": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/cml_coordinate_precision/cases.json",
+      "sha256": "5b7755910a8a135d2e0833ae1fda10409a01bfc6672a4054040520afd3e4d4ba",
+      "size_bytes": 6699
+    },
+    "docs/benchmarks/2026-10-22-cml-coordinate-precision.md": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/docs/benchmarks/2026-10-22-cml-coordinate-precision.md",
+      "sha256": "8f9b71285079f169e06926f235328db705397da6013770b4bf8177a8cf15b2ad",
+      "size_bytes": 5891
+    }
+  },
+  "reports": {
+    "cml-coordinate-precision-baseline-2026-10-22.json": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/cml-coordinate-precision-baseline-2026-10-22.json",
+      "sha256": "fce7d9201bbf9df9ad7128e90800b06f4f23f1bf198d471e067812d6862d26c4",
+      "size_bytes": 31962
+    },
+    "cml-coordinate-precision-candidate-2026-10-22.json": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/cml-coordinate-precision-candidate-2026-10-22.json",
+      "sha256": "220cfc470a1390f0deb43f23fe7cb6cdab6666791c2821315418058875fefc60",
+      "size_bytes": 32277
+    }
+  },
+  "counts": {
+    "baseline": {
+      "chematic": {
+        "preserved": 2,
+        "coordinate_loss": 6
+      },
+      "openbabel": {
+        "preserved": 3,
+        "coordinate_loss": 5
+      }
+    },
+    "candidate": {
+      "chematic": {
+        "preserved": 8
+      },
+      "openbabel": {
+        "preserved": 3,
+        "coordinate_loss": 5
+      }
+    }
+  },
+  "validation": {
+    "rust": {
+      "passed": 1478,
+      "failed": 0,
+      "ignored": 0,
+      "summary_count": 79,
+      "new_test_functions": 2
+    },
+    "python": {
+      "passed": 143,
+      "failed": 0,
+      "new_cases": 13,
+      "artifact": "source-built CPython 3.13 extension; native InChI not enabled"
+    },
+    "scripts": {
+      "passed": 38,
+      "failed": 0
+    },
+    "expected_baseline_regression_tests": {
+      "failed": 2,
+      "passed": 0,
+      "interpretation": "red regression run, not a candidate failure"
+    },
+    "checks": [
+      "all-target chematic-mol clippy -D warnings",
+      "cargo fmt --all -- --check",
+      "git diff --check",
+      "script layout",
+      "refactor budget",
+      "product names",
+      "mkdocs build --strict"
+    ]
+  },
+  "host": {
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "python": "3.13.6",
+    "rustc": "rustc 1.97.0 (2d8144b78 2026-07-07)\nbinary: rustc\ncommit-hash: 2d8144b7880597b6e6d3dfd63a9a9efae3f533d3\ncommit-date: 2026-07-07\nhost: aarch64-apple-darwin\nrelease: 1.97.0\nLLVM version: 22.1.6\n"
+  },
+  "openbabel_dependencies": {
+    "/opt/homebrew/Cellar/open-babel/3.2.1/lib/libopenbabel.8.dylib": {
+      "path": "/opt/homebrew/Cellar/open-babel/3.2.1/lib/libopenbabel.8.0.0.dylib",
+      "sha256": "9c0e023919fca6656f686b3903c10d438c0003a1d07e721a850cff9ff495c93a",
+      "size_bytes": 2794816
+    },
+    "/opt/homebrew/Cellar/open-babel/3.2.1/lib/openbabel/3.2.1/cmlformat.so": {
+      "path": "/opt/homebrew/Cellar/open-babel/3.2.1/lib/openbabel/3.2.1/cmlformat.so",
+      "sha256": "158c92d196dff88aee868a060d00bb1536d00aa27968d04c6747fc41e68b416a",
+      "size_bytes": 194832
+    }
+  },
+  "candidate_artifacts": {
+    "probe": {
+      "path": "/private/tmp/chematic-cml-refs-target-20261022/debug/examples/file_io_semantic_probe",
+      "sha256": "d48f864bd5fc2500114b31394399a61d5ff93160af0e34a3494d6cd6af17a97c",
+      "size_bytes": 14021224
+    },
+    "python_extension": {
+      "path": "/private/tmp/chematic-cml-refs-target-20261022/debug/libchematic.dylib",
+      "sha256": "6030a75b88d8ad03e2767d4a3b78ce9b25feb4b46cd6c4e096064efa6da770c5",
+      "size_bytes": 44590352
+    }
+  },
+  "logs": {
+    "baseline-build": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/cml-coordinate-precision-2026-10-22/baseline-build.log.gz",
+      "sha256": "494da9e43ced91bc22ef8895e7bce49e38938769784a9c239fcf702c12db39af",
+      "size_bytes": 149
+    },
+    "red": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/cml-coordinate-precision-2026-10-22/red.log.gz",
+      "sha256": "92e95c82ea3fbf74eb9d95d766bba764bf5f5cf90aa3d69e7b7720f0c73bbd15",
+      "size_bytes": 652
+    },
+    "candidate-build": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/cml-coordinate-precision-2026-10-22/candidate-build.log.gz",
+      "sha256": "40907234c4452a85eac81766dbd60d24f5c7e9854bc690d5bdc6624512187abb",
+      "size_bytes": 149
+    },
+    "green": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/cml-coordinate-precision-2026-10-22/green.log.gz",
+      "sha256": "3a74bfa597ce4782bcbe8e9360ad7b625e70215081fb82b11e22eaa9aa371907",
+      "size_bytes": 378
+    },
+    "full": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/cml-coordinate-precision-2026-10-22/full.log.gz",
+      "sha256": "cf3848e9fab9f22c3bb9ed6b890ecae15b3e02191949c84a3bc13aa2c56693fb",
+      "size_bytes": 27132
+    },
+    "python-build": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/cml-coordinate-precision-2026-10-22/python-build.log.gz",
+      "sha256": "40ac10a0aafaa94d925a779d9e547684270b7c723b8bc5ab85397c7cf34d4709",
+      "size_bytes": 198
+    },
+    "python-tests": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/cml-coordinate-precision-2026-10-22/python-tests.log.gz",
+      "sha256": "8e464ca8ad4c9805d7a3caeca8b65c5e610fe154f11934c04bbeb27cf9620f7e",
+      "size_bytes": 319
+    },
+    "oracle-tests": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/cml-coordinate-precision-2026-10-22/oracle-tests.log.gz",
+      "sha256": "ec2629adc2bab5cddc0a782acf707d3489dff9ec318cb4181c7058b48d398887",
+      "size_bytes": 54
+    },
+    "script-tests": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/cml-coordinate-precision-2026-10-22/script-tests.log.gz",
+      "sha256": "1523fe93dd4791ec794af146e3e5075b58822776cbe1a6ab50e093b0cd99a928",
+      "size_bytes": 52
+    },
+    "clippy": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/cml-coordinate-precision-2026-10-22/clippy.log.gz",
+      "sha256": "667dcfe2cf397b2961e218da76cc6260ff132b3804d8698d57a24eb761f87738",
+      "size_bytes": 150
+    },
+    "docs": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/cml-coordinate-precision-2026-10-22/docs.log.gz",
+      "sha256": "1a8f6b5b71697d0af6b7e418ee27b1b51a6996a47bc2471bd229816468c7c089",
+      "size_bytes": 1223
+    }
+  }
+}

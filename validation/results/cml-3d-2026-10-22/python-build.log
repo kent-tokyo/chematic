@@ -1,0 +1,4 @@
+    Blocking waiting for file lock on build directory
+   Compiling chematic-mol v1.2.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol)
+   Compiling chematic-py v1.2.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py)
+    Finished `dev` profile [unoptimized] target(s) in 16.35s

@@ -1,4 +1,4 @@
-//! Checked conversion: MOL2/CJSON source retention and bounded graph projection.
+//! Checked conversion: MOL2/CJSON/CML retention and bounded graph projection.
 //!
 //! Reports account for source information before graph projection. Candidate
 //! verification covers the declared graph fields only, not MOL2 chemistry in
@@ -10,6 +10,9 @@ use serde::Serialize;
 use std::collections::HashMap;
 
 mod cjson_mol2;
+mod cml_source;
+mod mol2_cjson_projection;
+pub use mol2_cjson_projection::{project_mol2_to_cjson, project_mol2_to_cjson_with_limits};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -109,7 +112,7 @@ impl std::error::Error for ConversionError {}
 /// Bounded defaults; existing graph-only conversion APIs are unchanged.
 #[derive(Debug, Clone, Copy)]
 pub struct ConversionLimits {
-    /// Shared input byte/atom/bond caps, also applied to CJSON input.
+    /// Shared input/element caps, also used by CJSON and the CML XML profile.
     pub mol2: Mol2ParseLimits,
     /// Applies to the molecule output and the serialized report separately.
     pub max_output_bytes: usize,
@@ -174,22 +177,18 @@ pub fn convert_with_report_with_limits(
     policy: ConversionPolicy,
     limits: &ConversionLimits,
 ) -> Result<ConversionReport, ConversionError> {
-    let source = input_format
-        .trim()
-        .trim_start_matches('.')
-        .to_ascii_lowercase();
-    let target = output_format
-        .trim()
-        .trim_start_matches('.')
-        .to_ascii_lowercase();
+    let normalize = |s: &str| s.trim().trim_start_matches('.').to_ascii_lowercase();
+    let source = normalize(input_format);
+    let target = normalize(output_format);
     let supported = match source.as_str() {
         "mol2" => matches!(target.as_str(), "mol2" | "smiles" | "smi" | "cjson"),
         "cjson" => matches!(target.as_str(), "cjson" | "smiles" | "smi" | "mol2"),
+        "cml" => target == "cml",
         _ => false,
     };
     if !supported {
         return Err(ConversionError::Unsupported(
-            "checked conversion supports MOL2 → MOL2/SMILES/CJSON and CJSON → CJSON/SMILES/MOL2"
+            "checked conversion supports MOL2 → MOL2/SMILES/CJSON, CJSON → CJSON/SMILES/MOL2 and CML → CML"
                 .into(),
         ));
     }
@@ -198,8 +197,10 @@ pub fn convert_with_report_with_limits(
             "preserve_source requires same-format conversion".into(),
         ));
     }
-    if source == "cjson" {
-        return convert_cjson(text, &target, policy, limits);
+    match source.as_str() {
+        "cjson" => return convert_cjson(text, &target, policy, limits),
+        "cml" => return cml_source::convert(text, policy, limits),
+        _ => {}
     }
     let record =
         parse_mol2_source_record_with_limits(text, &limits.mol2).map_err(ConversionError::Parse)?;
@@ -303,21 +304,17 @@ pub fn convert_with_report_with_limits(
             "Source atom substructure ownership and names are not emitted.",
         );
     }
-    if record
-        .atoms()
-        .iter()
-        .any(|atom| atom.partial_charge.is_some())
-        && !emit_partial
-    {
+    if let Some(observation) = mol2_cjson_projection::unemitted_charge_observation(
+        &record,
+        &target,
+        emit_partial,
+        partial_method.is_some(),
+    ) {
         note(
-            "partial_charges",
-            PreservationStatus::Dropped,
-            "write",
-            if target == "cjson" {
-                "Partial charges require a non-NO_CHARGES method label and one value for every atom; missing values are not filled and undeclared charge columns are not labeled as a computed dataset."
-            } else {
-                "Source charge-column values are not formal charges; the candidate writer does not emit them as partial charges."
-            },
+            observation.field,
+            observation.status,
+            observation.stage,
+            observation.reason,
         );
     }
     if target != "cjson" && !record.coordinates().is_empty() {
@@ -363,6 +360,7 @@ pub fn convert_with_report_with_limits(
             serde_json::from_str(&crate::write_cjson(record.molecule(), record.coordinates()))
                 .expect("CJSON writer emits valid JSON");
         if let Some(name) = record.name() {
+            json["name"] = serde_json::json!(name);
             json["properties"] = serde_json::json!({"name": name});
         }
         if emit_partial {
@@ -453,15 +451,12 @@ pub fn convert_with_report_with_limits(
         let metadata: serde_json::Value =
             serde_json::from_str(&candidate).expect("CJSON candidate already parsed");
         if let Some(name) = record.name() {
-            let equal = metadata
-                .pointer("/properties/name")
-                .and_then(serde_json::Value::as_str)
-                == Some(name);
+            let equal = cjson_names_match(&metadata, name);
             report.observations.push(ConversionObservation {
                 field: "molecule_name",
                 status: if equal { PreservationStatus::Preserved } else { PreservationStatus::Unverified },
                 stage: "candidate_verification",
-                reason: "Reparsed properties.name equals the parsed (trimmed) source molecule name; original header whitespace is accounted for by source_text loss.",
+                reason: "Reparsed standard root name and legacy properties.name both equal the parsed (trimmed) source molecule name; original header whitespace is accounted for by source_text loss.",
             });
         }
         if emit_partial {
@@ -623,11 +618,11 @@ fn record_cjson_smiles_losses(record: &crate::CjsonRecord, report: &mut Conversi
             "Fields listed by the CJSON record inspection API are retained in the source record only and omitted from SMILES; their semantics are not interpreted.",
         ),
         (
-            record.name().is_some(),
+            record.has_name_declarations(),
             "molecule_name",
             PreservationStatus::Dropped,
             "write",
-            "Plain SMILES omits source properties.name.",
+            "Plain SMILES omits source root name and legacy properties.name, including conflicting declarations.",
         ),
         (
             record.coordinates_present(),
@@ -800,6 +795,10 @@ fn convert_cjson(
     }
     record_cjson_smiles_losses(&record, &mut report);
     finalize_cjson_smiles(&record, report, policy, limits)
+}
+
+fn cjson_names_match(metadata: &serde_json::Value, name: &str) -> bool {
+    metadata["name"] == name && metadata["properties"]["name"] == name
 }
 
 /// Check through emitted atom correspondence, including branches, rings and
