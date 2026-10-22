@@ -28,7 +28,7 @@ returns 0.2562223321058943 Å for each terminal-oxygen fixture. The original
 `rmsd_symmetric` tests also check that isotope labels are respected.
 
 Verification: all 43 `conformer::tests` passed; the locally built Python wheel
-passed all 5 tests in `test_rdkit_conformer_rms.py`; `cargo check -p chematic-py`,
+passed all 6 tests in `test_rdkit_conformer_rms.py`; `cargo check -p chematic-py`,
 targeted Clippy with warnings denied, formatting, and the refactor budget gate
 passed. These fixtures do not measure performance, geometry against experiment,
 minimum MMFF energy, conformer populations or the published package. The

@@ -1,3 +1,6 @@
+import ast
+from pathlib import Path
+
 import pytest
 
 import chematic
@@ -75,3 +78,15 @@ def test_symmetric_clustering_rejects_bad_coordinates_and_threshold():
         )
     with pytest.raises(ValueError, match="rmsd_threshold must be finite"):
         mol.cluster_conformers_by_rms_symmetric([], float("nan"))
+
+
+def test_symmetric_clustering_is_declared_on_mol_stub():
+    stub = Path(__file__).resolve().parents[1] / "python/chematic/__init__.pyi"
+    module = ast.parse(stub.read_text(encoding="utf-8"))
+    mol = next(
+        node for node in module.body if isinstance(node, ast.ClassDef) and node.name == "Mol"
+    )
+    assert any(
+        isinstance(node, ast.FunctionDef) and node.name == "cluster_conformers_by_rms_symmetric"
+        for node in mol.body
+    )
