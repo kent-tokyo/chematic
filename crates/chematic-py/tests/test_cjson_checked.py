@@ -17,6 +17,9 @@ def compact(text):
         elif c not in ' \t\r\n':result.append(c)
     return ''.join(result)
 def variants(c):return [c['input'],c['input'].replace('\n','\r\n'),compact(c['input'])]
+def common_bridge_graph(text):
+    cml=chematic.convert_format(text,'.CJSON','cml')
+    return json.loads(chematic.convert_format(cml,'cml','cjson'))
 def checked_graph(data,expected):
     atoms=data['atoms'];n=len(expected['numbers']);bonds=data['bonds']
     assert atoms['elements']['number']==expected['numbers']
@@ -30,7 +33,8 @@ def test_checked_graph_and_common_bridge(case):
     for text in variants(case):
         mol,coords=chematic.from_cjson_checked(text)
         checked_graph(json.loads(mol.to_cjson(coords)),case['expected'])
-        checked_graph(json.loads(chematic.convert_format(text,'.CJSON','cjson')),case['expected'])
+        checked_graph(common_bridge_graph(text),case['expected'])
+        assert chematic.convert_format(text,'.CJSON','cjson')==text
 
 @pytest.mark.parametrize('case',PACKET['invalid'],ids=lambda c:c['id'])
 def test_invalid_input_is_refused_before_any_common_output(case):

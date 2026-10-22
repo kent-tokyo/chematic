@@ -8,12 +8,14 @@ const packet=JSON.parse(readFileSync(new URL('../../../validation/cjson_checked/
 function compact(s){let result='',quoted=false,escaped=false;for(const c of s){if(quoted){result+=c;if(escaped)escaped=false;else if(c==='\\')escaped=true;else if(c==='"')quoted=false;}else if(c==='"'){quoted=true;result+=c;}else if(!' \t\r\n'.includes(c))result+=c;}return result;}
 const variants=c=>[c.input,c.input.replaceAll('\n','\r\n'),compact(c.input)];
 for(const c of [...packet.valid,...packet.compatibility])for(const source of variants(c)){
- const data=JSON.parse(wasm.convert_common_format(source,'.CJSON','cjson')),n=c.expected.numbers.length;
+ const cml=wasm.convert_common_format(source,'.CJSON','cml');
+ const data=JSON.parse(wasm.convert_common_format(cml,'cml','cjson')),n=c.expected.numbers.length;
  assert.deepEqual(data.atoms.elements.number,c.expected.numbers,c.id);
  assert.deepEqual(data.atoms.formalCharges??Array(n).fill(0),c.expected.charges,c.id);
  assert.deepEqual(data.atoms.isotopes??Array(n).fill(0),c.expected.isotopes,c.id);
  assert.deepEqual(data.bonds.connections.index,c.expected.indices,c.id);
  assert.deepEqual(data.bonds.order,c.expected.orders,c.id);
+ assert.equal(wasm.convert_common_format(source,'.CJSON','cjson'),source,c.id);
 }
 for(const c of packet.invalid)for(const source of variants(c))for(const target of ['smiles','mol','mol_v3000','mol2','cml','cjson','moljson'])assert.throws(()=>wasm.convert_common_format(source,'cjson',target),undefined,c.id);
 const many=n=>JSON.stringify({atoms:{elements:{number:Array(n).fill(6)}}});
