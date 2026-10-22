@@ -9,7 +9,8 @@ use std::collections::{BTreeMap, HashSet};
 /// A validated ChemicalJSON source with a bounded graph projection.
 ///
 /// The local profile accepts version 1 (or an absent version), atomic numbers,
-/// formal charges, isotopes, 3D coordinates, bond indices/orders, properties.name
+/// formal charges, isotopes, 3D coordinates, bond indices/orders, root name
+/// (or the legacy properties.name alias)
 /// and root partialCharges datasets. Other fields are retained opaquely,
 /// including stereo extensions. No edits or interpretation of opaque references are
 /// promised. [`write_cjson_record`] returns the exact original UTF-8 source.
@@ -25,6 +26,7 @@ pub struct CjsonRecord {
     isotopes_explicit: bool,
     bond_orders_explicit: bool,
     name: Option<String>,
+    name_conflict: bool,
     partial_charge_datasets: BTreeMap<String, Vec<f64>>,
 }
 
@@ -58,9 +60,16 @@ impl CjsonRecord {
     pub fn bond_orders_explicit(&self) -> bool {
         self.bond_orders_explicit
     }
-    /// Source properties.name, without trimming or chemical interpretation.
+    /// Root name or legacy properties.name, verbatim; None if they conflict.
     pub fn name(&self) -> Option<&str> {
         self.name.as_deref()
+    }
+    /// Both source name declarations exist and disagree; neither is selected.
+    pub fn has_conflicting_names(&self) -> bool {
+        self.name_conflict
+    }
+    pub(crate) fn has_name_declarations(&self) -> bool {
+        self.name.is_some() || self.name_conflict
     }
     /// Complete finite per-atom datasets, keyed by the source method label.
     /// Labels are declarations only; no charge calculation is performed.
@@ -79,6 +88,7 @@ impl CjsonRecord {
             "isotopes": self.molecule.atoms().map(|(_, a)| a.isotope).collect::<Vec<_>>(),
             "opaque_fields": self.opaque_fields,
             "name": self.name,
+            "name_conflict": self.name_conflict,
             "partial_charge_datasets": self.partial_charge_datasets,
             "graph_projection": {
                 "formal_charges_explicit": self.formal_charges_explicit,
@@ -93,14 +103,33 @@ impl CjsonRecord {
     }
 }
 
-pub fn parse_cjson_record(input: &str) -> Result<CjsonRecord, CjsonError> {
-    parse_cjson_record_with_limits(input, &CjsonParseLimits::default())
+/// A source-ordered graph and optional Cartesian coordinate rows in Angstrom.
+/// Coordinates are empty for absent 3D data and for zero-atom projections.
+pub type CjsonProjection = (Molecule, Vec<(f64, f64, f64)>);
+
+/// Parse the existing immutable-record profile into an owned graph/coordinate
+/// projection without copying source text or collecting opaque-field paths.
+/// Optional known arrays must have exact sizes/types; duplicate keys,
+/// versions, self/duplicate bonds and unsupported order tokens follow the
+/// record reader's policy. Unknown field semantics are not interpreted.
+/// Legacy `parse_cjson` remains available with its permissive behavior.
+pub fn parse_cjson_checked(input: &str) -> Result<CjsonProjection, CjsonError> {
+    parse_cjson_checked_with_limits(input, &CjsonParseLimits::default())
 }
 
-pub fn parse_cjson_record_with_limits(
+/// Apply CJSON byte/tree/atom/bond limits and strict typed-field validation.
+pub fn parse_cjson_checked_with_limits(
     input: &str,
     limits: &CjsonParseLimits,
-) -> Result<CjsonRecord, CjsonError> {
+) -> Result<CjsonProjection, CjsonError> {
+    let (_, projection) = read_projection(input, limits)?;
+    Ok(projection)
+}
+
+fn read_projection(
+    input: &str,
+    limits: &CjsonParseLimits,
+) -> Result<(Value, CjsonProjection), CjsonError> {
     if input.len() > limits.max_input_bytes {
         return Err(CjsonError::ResourceLimit {
             resource: "input bytes",
@@ -116,6 +145,19 @@ pub fn parse_cjson_record_with_limits(
     check_json_limits(&value, 0, limits)?;
     validate_projection(&value)?;
     let (molecule, coordinates) = parse_cjson_value(&value, limits)?;
+    Ok((value, (molecule, coordinates)))
+}
+
+pub fn parse_cjson_record(input: &str) -> Result<CjsonRecord, CjsonError> {
+    parse_cjson_record_with_limits(input, &CjsonParseLimits::default())
+}
+
+pub fn parse_cjson_record_with_limits(
+    input: &str,
+    limits: &CjsonParseLimits,
+) -> Result<CjsonRecord, CjsonError> {
+    let (value, (molecule, coordinates)) = read_projection(input, limits)?;
+    let (name, name_conflict) = project_name(&value)?;
     let mut opaque_fields = Vec::new();
     collect_opaque(&value, "", &mut opaque_fields);
     opaque_fields.sort();
@@ -129,10 +171,8 @@ pub fn parse_cjson_record_with_limits(
         formal_charges_explicit: value.pointer("/atoms/formalCharges").is_some(),
         isotopes_explicit: value.pointer("/atoms/isotopes").is_some(),
         bond_orders_explicit: value.pointer("/bonds/order").is_some(),
-        name: value
-            .pointer("/properties/name")
-            .and_then(Value::as_str)
-            .map(str::to_owned),
+        name: name.map(str::to_owned),
+        name_conflict,
         partial_charge_datasets: value
             .get("partialCharges")
             .and_then(Value::as_object)
@@ -161,6 +201,16 @@ pub fn write_cjson_record(record: &CjsonRecord) -> String {
 
 fn invalid(field: &'static str) -> CjsonError {
     CjsonError::InvalidValue { field }
+}
+fn project_name(value: &Value) -> Result<(Option<&str>, bool), CjsonError> {
+    let root = value
+        .get("name")
+        .map(|value| value.as_str().ok_or_else(|| invalid("name")))
+        .transpose()?;
+    // validate_projection already checks the legacy property's object/type.
+    let legacy = value.pointer("/properties/name").and_then(Value::as_str);
+    let conflict = matches!((root, legacy), (Some(a), Some(b)) if a != b);
+    Ok((if conflict { None } else { root.or(legacy) }, conflict))
 }
 fn object<'a>(value: &'a Value, field: &'static str) -> Result<&'a Map<String, Value>, CjsonError> {
     value.as_object().ok_or_else(|| invalid(field))
@@ -278,6 +328,7 @@ fn collect_opaque(value: &Value, path: &str, out: &mut Vec<String>) {
     let known: &[&str] = match path {
         "" => &[
             "chemicalJson",
+            "name",
             "atoms",
             "bonds",
             "properties",

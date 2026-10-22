@@ -23,6 +23,13 @@ example `.mol2`, `smi`, and `com`). PDB/XYZ/PDBQT output requires 3D
 coordinates; graph-only conversions do not claim to preserve format-specific
 metadata. Unsupported formats fail before conversion with a `ValueError`.
 
+Same-format MOL2 and CJSON conversion validates and returns the exact source
+instead of reconstructing a molecule. Python rejects coordinate, charge, name
+and comment overrides on these paths. CJSON uses the immutable local record
+profile: duplicate keys and unsupported typed fields fail; unknown fields are
+retained without interpreting their chemistry. See the
+[CJSON source conversion validation](benchmarks/2026-10-22-cjson-source-conversion.md).
+
 The WASM bridge intentionally exposes the topology-only subset (SMILES, MOL,
 MOL V3000, MOL2, CML, ChemicalJSON, MolJSON, and CDXML) so that JavaScript
 and Python share a predictable core contract. Use the existing coordinate APIs
@@ -45,6 +52,45 @@ one validated record is returned exactly, including coordinates, partial
 charges, typing, comments, and opaque sections. Python rejects coordinate,
 charge, name, or comment overrides on this path. Cross-format conversion
 continues to use the bounded graph/coordinate bridge described above.
+
+SDF → SDF is a complete-document source-retention route in Python/WASM, distinct
+from MOL. It validates every local-profile record and retains all original UTF-8
+bytes, including record order, SD fields and line endings. Other MOL/SDF bridge
+inputs require exactly one record; multiple records now fail instead of silently
+selecting the first. Their SD fields are omitted before graph conversion, with
+V2000/V3000 dispatch based on physical header lines. Non-SDF → SDF emits one
+framed record. Use SDF iterators for batch graph conversion. Default bounds and
+compatibility changes are in the [SDF document contract](benchmarks/2026-10-22-sdf-source-document.md).
+
+CML → CJSON in Python/WASM additionally carries complete finite source
+`x3/y3/z3` coordinates in Angstrom. Missing 3D stays absent; partial triplets,
+mixed presence, duplicate atom attributes/IDs and multiple molecules refuse.
+Rust `parse_cml_with_3d[_with_limits]` and Python `from_cml_with_3d` expose this
+single-molecule profile directly. Legacy graph/2D readers keep their behavior;
+2D layout, source IDs and other CML metadata are still omitted from common
+CJSON output. See the [profile and measured comparison](benchmarks/2026-10-22-cml-3d-coordinates.md).
+
+CJSON input to the CLI/Python/WASM common bridges uses the existing strict
+record profile before graph conversion. Present known arrays must have exact
+sizes/types; duplicate decoded keys, self/duplicate bonds and unsupported
+order tokens refuse without candidate output. Rust
+`parse_cjson_checked[_with_limits]` and Python `from_cjson_checked` expose the
+same owned graph/coordinate projection. Absent optional fields keep their
+documented defaults. Output keeps each format's existing graph/coordinate/
+metadata limits; source retention and loss reports use the record/checked
+conversion APIs. The [CJSON validation comparison](benchmarks/2026-10-22-cjson-checked-input.md)
+describes compatibility changes, limits and the measured scope.
+
+MOL2 → CJSON in Python/WASM uses the shared selected-field projection:
+mapped graph, source xyz, parsed molecule name and complete declared partial
+charges are checked on reparse. Incomplete datasets and numeric columns without
+an assigned method fail, except `NO_CHARGES` zero placeholders, which are omitted
+as unassigned. Python rejects
+overrides on this route. Default Rust/Python limits are 16 MiB input/output and
+10,000 atoms; WASM retains its 1,000,000-byte input cap. Other MOL2 metadata and
+stereo remain outside preservation. Use `convert_with_report` for the full
+loss report and explicit `allow_loss` behavior. See the
+[common-route contract and comparison](benchmarks/2026-10-22-mol2-cjson-common.md).
 
 ---
 
@@ -168,7 +214,7 @@ Rust `convert_with_report` / `convert_with_report_with_limits`, Python
 `convert_with_report` (dict) / `convert_with_report_json` (JSON string), WASM
 `convert_with_report_json`, and CLI `convert-with-report` share
 `chematic.conversion-report.v1`. Supported routes are MOL2 → MOL2/SMILES/CJSON
-and CJSON → CJSON/SMILES/MOL2 (`smi` aliases plain SMILES). Existing conversion
+and CJSON → CJSON/SMILES/MOL2, plus CML → CML (`smi` aliases plain SMILES). Existing conversion
 APIs keep their graph/metadata contracts.
 
 ```python
@@ -190,10 +236,26 @@ chematic convert-with-report --input-format mol2 --output-format smiles \
 - `allow_loss` returns parseable candidate output with detected losses and
   uncertainty. A graph mismatch is `unverified`; it cannot claim preservation.
   A candidate that fails to parse is refused even under this policy.
-- `preserve_source` requires MOL2 → MOL2 or CJSON → CJSON. All three policies
+- `preserve_source` requires MOL2 → MOL2, CJSON → CJSON or CML → CML. All three policies
   retain exact source bytes on these routes after bounded structural validation. The scope
   is `exact_source_bytes`; `source_semantics: opaque_retained` explicitly
   excludes interpreted/editable chemical semantics. It is not a graph gate.
+- **CML source profile**: one `molecule` root in the
+  `http://www.xml-cml.org/schema` namespace, UTF-8 text, optional XML 1.0
+  declaration (`UTF-8` or ASCII encoding), no DTD or nested CML molecules.
+  The full source survives, including 2D/3D coordinate spellings, atom IDs,
+  properties, comments, namespaces and unknown extensions. Empty molecules
+  and opaque/uninterpretable chemistry are retained; this validates XML
+  framing, not the CML schema, atom/bond references, numeric chemistry or
+  stereo. `candidate_graph_verified` stays false and mappings stay empty.
+  Collections and CML cross-format projections are unsupported by this route.
+  Existing graph-only conversion APIs keep their previous behavior.
+- CML uses roxmltree 0.20.0 with DTD disabled and a 200,000-node parse budget;
+  element depth is checked against 64 after parsing. The shared
+  `ConversionLimits.mol2` input bytes, line bytes/count and atom/bond element
+  limits also apply. Array members and opaque chemistry are not counted as
+  graph atoms. The source and escaped JSON envelope each have an output-size
+  check; CLI/Python defaults are 16 MiB and WASM uses its existing lower caps.
 - Observations identify a source field group, status, stage and reason in
   source record zero. Coordinate/partial-charge/type/name/substructure/bond
   metadata losses and opaque sections are reported before graph projection.
@@ -204,8 +266,9 @@ chematic convert-with-report --input-format mol2 --output-format smiles \
   carry source IDs and zero-based source/candidate indices only if this check
   passes. These mappings refer to the candidate even when strict policy
   refuses to emit it. `verification_scope` defines the checked fields.
-- MOL2 formal-charge interpretation beyond `N.4` and source implicit-hydrogen
-  assignment remain unverified. Noncoplanar 3D tetrahedral stereo is perceived
+- MOL2 explicit UNITY charges and the `N.4` fallback are projected. General
+  formal-charge inference from types and source implicit-hydrogen assignment
+  remain unverified. Noncoplanar 3D tetrahedral stereo is perceived
   in graph reads, but checked conversion does not verify stereo; other
   coordinate/extension stereo remains unverified. SMILES hydrogen
   counts are explicitly inferred under the graph valence model; CJSON does
@@ -223,6 +286,9 @@ chematic convert-with-report --input-format mol2 --output-format smiles \
   missing. Empty/`NO_CHARGES` method declarations do not produce a dataset.
   The parsed molecule name emits as `properties.name` and is checked on
   reparse. The source method label is retained without verifying its chemistry.
+  A declared method without source values is now explicitly `unverified` for
+  `partial_charges`. Omitted raw zero columns under `NO_CHARGES` are reported
+  as `unassigned_zero_columns: dropped`, without inventing a charge dataset.
   Atom names/types/IDs and unsupported metadata remain losses.
 - Invalid input, unsupported routes/policies and limits are errors (Python
   `ValueError`, WASM throw, CLI nonzero without a report). CLI `--output` is
@@ -251,7 +317,8 @@ immutable: opaque references are retained without editing or interpretation.
 
 The strict local profile accepts absent `chemicalJson` or integer version 1,
 atomic numbers, optional formal charges/isotopes/3D coordinates, bond
-indices/orders, `properties.name` and root `partialCharges` datasets. Present arrays must have matching lengths and correct types.
+indices/orders, standard root `name` (or legacy `properties.name`) and root
+`partialCharges` datasets. Present arrays must have matching lengths and correct types.
 Duplicate decoded JSON keys, self/duplicate bonds, dangling indices and
 unsupported orders are rejected. Supported order values are exactly 1, 1.5,
 2, 3 and 4; 4 is an explicit local alias for aromatic bond 1.5. Atom aromaticity
@@ -261,10 +328,20 @@ its permissive behavior; strict validation is additive.
 Root `partialCharges` must be an object of complete finite numeric arrays, one
 value per atom; `properties` must be an object and its optional `name` a string.
 These fields are validated even during same-format retention. The inspection
-API exposes `name` and `partial_charge_datasets`; Rust has corresponding getters.
+API exposes `name`, `name_conflict` and `partial_charge_datasets`; Rust has
+corresponding getters, including `CjsonRecord::has_conflicting_names`.
 Method keys remain source declarations, with no charge calculation or model
 validation. `atoms.partialCharges` remains opaque and is not conflated with the
 root dataset representation.
+
+Root `name` must also be a string. A single name or two identical declarations
+resolve verbatim; conflicting root/legacy names set `name_conflict: true` and
+resolve to `name: null`. Both declarations still survive exact source retention,
+while CJSON → MOL2 refuses even under `allow_loss`. Empty names, boundary
+whitespace and line/section injection remain outside that adapter's title
+profile. MOL2 → CJSON emits the standard root field and a matching legacy alias;
+both are checked on reparse. See the
+[name-preservation development record](benchmarks/2026-10-21-cjson-name-preservation.md).
 
 Unknown fields, including other properties and stereo extensions, are listed
 as sorted JSON Pointer paths in `opaque_fields`. Whole opaque subtrees are
@@ -289,7 +366,7 @@ lossy = chematic.convert_with_report(source, "cjson", "smiles", policy="allow_lo
 Checked CJSON → MOL2 accepts explicit 3D coordinates and at most one declared
 partial-charge dataset. It writes shortest round-trip decimal coordinates and
 charges, reparses the candidate and checks exact f64 bits (including signed
-zero/subnormals) through verified graph correspondence. `properties.name` and
+zero/subnormals) through verified graph correspondence. The resolved name and
 the charge-method label are checked separately on reparse. Missing datasets
 emit `NO_CHARGES` with no partial-charge columns; missing coordinates are never
 filled. Multiple datasets, unrepresentable method tokens and names with
@@ -297,13 +374,25 @@ boundary whitespace, control characters, empty text or section markers refuse
 even under `allow_loss`. Exact CJSON retention remains available for valid
 records refused by this adapter.
 
+Nonzero CJSON formal charges emit as `UNITY_ATOM_ATTR` charge attributes before
+the BOND section, separately from ATOM partial-charge columns. The existing
+`N.4` spelling for +1 nitrogen is retained. `formal_charges: preserved` requires
+verified graph correspondence after reparsing; isotope loss still prevents
+that claim and exposes no atom mapping. The full report remains lossy and
+`strict` refuses cross-format output. See the
+[indexed charge validation](benchmarks/2026-10-22-cjson-mol2-formal-charges.md)
+for external-reader checks and section-order compatibility limits.
+
 MOL2 atom IDs/names, element-only types and `SMALL` header are generated;
 charged atom rows use placeholder substructure `1 LIG`. Hybridization and
-force-field types are not inferred from chemistry. The sole nonzero formal
-charge representation is +1 nitrogen via `N.4`. Other nonzero formal charges
-and all specified isotopes are reported dropped; they disable projected graph
-verification and candidate mappings. Partial charges are never substituted for
-formal charges. Aromatic bond tokens retain the local projection, without
+force-field types are not inferred from chemistry. Nonzero formal charges are
+written as explicit `UNITY_ATOM_ATTR` charge attributes before BOND, so Open
+Babel 3.2.1 can also read them. Nitrogen +1 retains its `N.4` type. The
+`formal_charges` observation requires exact reparsed charges through verified
+graph correspondence; partial-charge columns and method labels remain separate.
+All specified isotopes are reported dropped and disable projected graph
+verification, candidate mappings and per-atom charge/coordinate verification.
+Aromatic bond tokens retain the local projection, without
 perceiving atom aromaticity. Opaque fields and stereo remain lost/unverified.
 Strict policy refuses this cross-format route even when the candidate verifies.
 
@@ -347,8 +436,9 @@ source-preserving APIs retain the original order.
   Duplicate IDs/edges, self bonds, dangling references, mismatched counts,
   nonfinite numbers, and multiple records/duplicate core sections reject.
 - **Immutable source-profile charges**: partial charges are validated separately from formal charge.
-  The graph recognizes `N.4` as +1; it does not round partial charges or
-  implement general formal-charge inference/UNITY semantics. Optional charge
+  The graph recognizes explicit integer UNITY `charge` attributes, with `N.4`
+  as a +1 fallback. It does not round partial charges or infer general formal
+  charges from atom types. Unknown UNITY attributes remain opaque. Optional charge
   columns remain optional in the record API, with the source charge-method
   header retained. `NO_CHARGES` means numerical columns are not a claim of
   assigned partial charges.
@@ -376,8 +466,24 @@ source-preserving APIs retain the original order.
   molecule, balanced XML-ish elements, exactly one root element, and rejects
   unterminated quoted attributes, comments, CDATA sections, and processing
   instructions. The historical `parse_cml` path remains lenient for
-  compatibility.
+  document-framing compatibility. Both readers reject malformed/out-of-range
+  formal charges, isotopes and supplied 2D coordinates rather than substituting
+  neutral charge, unspecified isotope or origin coordinates. Missing fields
+  retain their existing defaults. Atom IDs must be unique after decoding;
+  `isotope` and `isotopeNumber`, when both present, must agree numerically.
+- **XML attribute references**: the five predefined entities and valid XML 1.0
+  decimal/hex character references decode once, including atom IDs/references
+  and typed fields. Escaped literal entity spellings are not decoded twice.
+  The shared CDXML/MRV attribute scanner benefits from the same repair. Custom
+  DTD entity expansion and full XML/CML conformance are outside this profile.
+  See the [CML character-reference development record](benchmarks/2026-10-22-cml-character-references.md).
 - **Coordinate units**: Ångström in returned 2D coordinates.
+- **Coordinate precision**: `write_cml` emits finite supplied 2D values with
+  enough decimal digits to recover the same binary64 value on read-back,
+  including signed zero and subnormal values. It does not round to a fixed
+  decimal grid. This applies to supplied coordinates in Rust and Python
+  `Mol.to_cml(coords)`; graph-only readers and generated WASM layouts do not
+  retain source positions. See the [paired CML precision record](benchmarks/2026-10-22-cml-coordinate-precision.md).
 - **Connectivity**: native CML bond elements.
 - **Parse limits**: `CmlParseLimits` bounds input bytes, physical line
   length/count, XML element count, and atom/bond elements. The existing parser
@@ -417,6 +523,18 @@ source-preserving APIs retain the original order.
   `parse_cdxml_all_with_options_and_limits`.
 
 ### MOL/SDF
+
+- **SD data items**: record readers extract names from `<FieldName>` after the
+  leading `>`, including headers with preceding registry information and
+  trailing annotations. A value continues until an empty physical line or the
+  record end; lines such as `> <other>` inside it remain literal text. Leading
+  and trailing spaces/tabs are retained and logical multiline values use `\n`.
+  This replaces the previous missing-blank-line recovery that guessed a new
+  field whenever a value line resembled a header. The dictionary projection
+  still keeps the last value for a genuinely repeated key; header metadata,
+  property order and field-number-only `DTn` headers are outside this named-field
+  contract. The shared parser is used by native string/file/fast record readers,
+  Python forward suppliers and WASM record JSON outputs.
 
 - **Rust read**: `parse_mol`, `parse_mol_with_coords`, `read_mol_with_diagnostics`, `parse_mol_v3000*`, `SdfReader`, `SdfFileReader`, `SdfRecordReader`, `SdfDataset`.
 - **Rust write**: `write_mol`, `write_mol_with_conformer[_checked]`, `write_sdf*`, `write_mol_v3000*`.
