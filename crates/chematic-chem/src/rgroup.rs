@@ -916,27 +916,8 @@ fn labeled_candidate_for_sites(
             .map(|&(label, (core_atom, root))| (core_atom, root, Some(label))),
     );
     for (&label, &(core_atom, root)) in &attachments {
-        let mut roots = vec![root];
-        roots.extend(additional_attachments.iter().filter_map(
-            |&(other_label, (_, other_root))| (other_label == label).then_some(other_root),
-        ));
-        let mut visited = HashSet::new();
-        let mut fragments = Vec::new();
-        for component_root in roots {
-            if visited.contains(&component_root) {
-                continue;
-            }
-            visited.extend(outside_component(mol, component_root, core));
-            fragments.push(canonical_smiles(&extract_rgroup(
-                mol,
-                component_root,
-                core,
-                &boundaries,
-            )));
-        }
-        fragments.sort();
-        let fragment = parse(&fragments.join("."))
-            .map_err(|err| RGroupError::Canonicalization(err.to_string()))?;
+        let fragment =
+            fragment_for_label(mol, core, label, root, &additional_attachments, &boundaries)?;
         let smiles = canonical_smiles(&fragment);
         rgroup_fingerprints.insert(label, chematic_fp::ecfp4(&fragment));
         signature.push((label, smiles.clone(), canonical_rank[core_atom.0 as usize]));
@@ -983,6 +964,40 @@ fn labeled_candidate_for_sites(
             r_groups,
         },
     })
+}
+
+fn fragment_for_label(
+    mol: &Molecule,
+    core: &HashSet<AtomIdx>,
+    label: u16,
+    root: AtomIdx,
+    additional: &[(u16, (AtomIdx, AtomIdx))],
+    boundaries: &[(AtomIdx, AtomIdx, Option<u16>)],
+) -> Result<Molecule, RGroupError> {
+    let mut roots = vec![root];
+    roots.extend(
+        additional
+            .iter()
+            .filter_map(|&(other_label, (_, other_root))| {
+                (other_label == label).then_some(other_root)
+            }),
+    );
+    let mut visited = HashSet::new();
+    let mut fragments = Vec::new();
+    for component_root in roots {
+        if visited.contains(&component_root) {
+            continue;
+        }
+        visited.extend(outside_component(mol, component_root, core));
+        fragments.push(canonical_smiles(&extract_rgroup(
+            mol,
+            component_root,
+            core,
+            boundaries,
+        )));
+    }
+    fragments.sort();
+    parse(&fragments.join(".")).map_err(|err| RGroupError::Canonicalization(err.to_string()))
 }
 
 fn outside_component(mol: &Molecule, root: AtomIdx, core: &HashSet<AtomIdx>) -> HashSet<AtomIdx> {

@@ -4,9 +4,9 @@
     "chematic": "1.2.0",
     "rdkit": "2026.09.1"
   },
-  "extension_sha256": "f2058acb43ae17f8cfe011216ae6c73ccde5e4e20ceecd91d69a394e70b7850a",
+  "extension_sha256": "54189e0729a357fcf67a1d136ef65b1150804d8314022a67d9091a516578e058",
   "source_sha256": {
-    "crates/chematic-chem/src/rgroup.rs": "046f0550057e3e4c0611c1cd5c65f8bbffad4956bf80da1f0861bcaa83e043c2"
+    "crates/chematic-chem/src/rgroup.rs": "9537a72a5487a42453f95150bc22892f5ba5d7b92a1bdcd21ded16a1248916fc"
   },
   "agreement": {
     "matched": 16,
