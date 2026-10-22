@@ -459,6 +459,7 @@ pub fn mcs_smiles_json_with_ring_config(
 /// (camelCase keys, all optional, defaulting to `McsConfig::default()`):
 /// `matchBonds`, `minAtoms`, `timeoutMs`, `ringMatchesRingOnly`,
 /// `completeRingsOnly`, `atomCompare` (`"elements"` | `"any_heavy_atom"` |
+/// `"rdkit_any_heavy_atom"` |
 /// `"any"`), `bondCompare` (`"order_or_aromatic"` | `"any"`),
 /// `matchChiralTag`, `matchCharge`, `matchIsotope`, `maximizeBonds`, and
 /// `maxSearchNodes`.
@@ -477,10 +478,15 @@ pub fn mcs_smiles_json_with_config(
     let mols = parse_mcs_input(smiles_json, "mcs_smiles_json_with_config")?;
     let config: McsConfigJson =
         serde_json::from_str(config_json).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let rdkit_heavy = matches!(config.atom_compare, AtomCompareJson::RdkitAnyHeavyAtom);
     let config = config.into_mcs_config();
 
     let mol_refs: Vec<&chematic_core::Molecule> = mols.iter().collect();
-    let outcome = chematic_smarts::find_mcs_with_config_checked(&mol_refs, &config);
+    let outcome = if rdkit_heavy {
+        chematic_smarts::find_mcs_with_rdkit_any_heavy_checked(&mol_refs, &config)
+    } else {
+        chematic_smarts::find_mcs_with_config_checked(&mol_refs, &config)
+    };
     let was_timed_out = outcome.was_timed_out();
     let was_resource_limited = outcome.was_resource_limited();
     let qmol = outcome.into_query();

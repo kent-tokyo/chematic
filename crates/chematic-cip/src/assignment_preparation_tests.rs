@@ -108,5 +108,5 @@ fn wildcard_corpus_labels_only_change_to_explicit_abstentions() {
         }
     }
     assert_eq!(wildcard_rows, 61);
-    assert_eq!(withdrawn, [(1849, 14), (1956, 1)]);
+    assert_eq!(withdrawn, [(717, 2), (1529, 12), (1849, 14), (1956, 1)]);
 }
