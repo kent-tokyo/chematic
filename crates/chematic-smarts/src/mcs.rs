@@ -294,7 +294,7 @@ fn find_mcs_impl(mols: &[&Molecule], config: &McsConfig, rdkit_heavy: bool) -> M
                 &config.atom_compare,
                 rdkit_heavy,
             );
-            if ub <= state.best.size {
+            if ub < state.best.size {
                 continue;
             }
 
@@ -509,7 +509,10 @@ fn grow(state: &mut McsState<'_>, mapping: &mut PartialMapping) {
         &state.config.atom_compare,
         state.rdkit_heavy,
     );
-    if mapping.size + additional_ub <= state.best.size {
+    // Atom-only bounds cannot prove that a tied-size branch has no better
+    // bond count. In particular, a chain found before a triangle must not
+    // prevent the latter from becoming the best MCS.
+    if mapping.size + additional_ub < state.best.size {
         return;
     }
 
@@ -1534,6 +1537,17 @@ mod tests {
         };
         let ring_constrained = find_mcs_with_config(&[&ring, &chain], &complete_rings);
         assert_eq!(ring_constrained.atom_count(), 0);
+    }
+
+    #[test]
+    fn equal_atom_seed_can_improve_bond_count() {
+        let chain_and_ring = parse("CCC.C1CC1").unwrap();
+        let ring = parse("C1CC1").unwrap();
+        for refs in [[&chain_and_ring, &ring], [&ring, &chain_and_ring]] {
+            let result = find_mcs(&refs);
+            assert_eq!(result.atom_count(), 3);
+            assert_eq!(result.bonds.len(), 3, "the cyclopropane beats the chain");
+        }
     }
 
     #[test]
