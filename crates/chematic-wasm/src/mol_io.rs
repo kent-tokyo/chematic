@@ -1388,9 +1388,9 @@ pub fn mol_from_pdb_strict(pdb: &str) -> Result<MolHandle, JsValue> {
 
 /// Parse an AutoDock PDBQT block into a topology handle.
 ///
-/// Coordinates and partial charges are intentionally discarded, matching the
-/// Python `from_pdbqt` binding; use the Rust parser when those arrays are
-/// needed. Invalid records return a JS error instead of a partial molecule.
+/// Coordinates and partial charges are discarded; use `pdbqt_atom_data_json`
+/// when those arrays are needed. No bonds are inferred. Invalid records
+/// return a JS error instead of a partial molecule.
 #[wasm_bindgen]
 pub fn mol_from_pdbqt(pdbqt: &str) -> Result<MolHandle, JsValue> {
     if pdbqt.len() > WASM_MAX_INPUT_BYTES {

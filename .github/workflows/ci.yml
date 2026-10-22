@@ -297,6 +297,10 @@ jobs:
         run: .venv/bin/python -m unittest scripts.tests.test_cjson_source_conversion -q
       - name: Run pytest (chematic-py)
         run: .venv/bin/python -m pytest crates/chematic-py/tests/ -q
+      - name: PDBQT numeric preservation contract
+        run: |
+          .venv/bin/python -m unittest scripts.tests.test_pdbqt_atom_data -q
+          .venv/bin/python scripts/validation/check_pdbqt_atom_data.py --output /tmp/pdbqt-atom-data.json
       - name: RDKit 2026 HBA parity from installed source wheel
         run: |
           .venv/bin/pip install 'rdkit==2026.3.6' --quiet

@@ -62,8 +62,8 @@ use pdb_selection::*;
 mod mmcif_residues;
 use mmcif_pdb::*;
 use mmcif_residues::*;
-mod pdbqt_checked;
-use pdbqt_checked::*;
+mod pdbqt;
+use pdbqt::*;
 mod pqr_pdbqt;
 use pqr_pdbqt::*;
 mod gro_lammps;
@@ -775,31 +775,6 @@ fn from_mol2(#[pyo3(from_py_with = serialized_text)] mol2_str: &str) -> PyResult
         .map_err(|e| PyValueError::new_err(e.to_string()))
 }
 
-/// Parse an AutoDock PDBQT string and return a :class:`Mol`.
-///
-/// Only the molecular graph (elements and bonds) is extracted; 3D coordinates
-/// and partial charges are discarded.  To retain them, use the lower-level
-/// :func:`chematic_mol.parse_pdbqt` Rust API directly.
-///
-/// Raises:
-///     ValueError: on parse failure.
-///
-/// Example::
-///
-///     with open("ligand.pdbqt") as f:
-///         mol = chematic.from_pdbqt(f.read())
-///     print(mol.mw)
-#[pyfunction]
-fn from_pdbqt(pdbqt_str: &str) -> PyResult<Mol> {
-    chematic_mol::parse_pdbqt(pdbqt_str)
-        .map(|(mol, _coords, _charges)| Mol {
-            num_rings_cache: Default::default(),
-            inner: Arc::new(mol),
-            props: Default::default(),
-        })
-        .map_err(|e| PyValueError::new_err(e.to_string()))
-}
-
 /// Parse a Gaussian input file (`.gjf` / `.com`) and return a :class:`Mol`.
 ///
 /// Raises:
@@ -1430,6 +1405,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         project_mol2_to_cjson,
         kekulize_mol2_record,
         from_pdbqt,
+        from_pdbqt_with_data,
         parse_cif,
         write_cif_checked,
         write_cif_with_bonds_checked,

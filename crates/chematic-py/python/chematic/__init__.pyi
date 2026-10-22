@@ -3608,8 +3608,8 @@ def from_mol2(mol2_str: str | bytes) -> Mol:
 def from_pdbqt(pdbqt_str: str) -> Mol:
     """Parse an AutoDock PDBQT string and return a :class:`Mol`.
 
-    Only the molecular graph is extracted; 3D coordinates and partial charges
-    are discarded.
+    Only atom elements are extracted; no bonds are inferred. 3D coordinates
+    and partial charges are discarded; use from_pdbqt_with_data to retain them.
 
     Raises:
         ValueError: on parse failure.
@@ -3619,6 +3619,16 @@ def from_pdbqt(pdbqt_str: str) -> Mol:
         with open("ligand.pdbqt") as f:
             mol = chematic.from_pdbqt(f.read())
         print(mol.mw)
+    """
+    ...
+
+def from_pdbqt_with_data(
+    pdbqt_str: str | bytes,
+) -> tuple[Mol, list[list[float]], list[float]]:
+    """Return (mol, coords in Å, partial charges in e), in source atom order.
+
+    Retains parsed finite binary64 values. No bonds or formal charges are
+    inferred. Source atom identities, AutoDock types and torsion trees are lost.
     """
     ...
 
