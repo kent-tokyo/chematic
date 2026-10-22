@@ -5852,6 +5852,7 @@ from ._maestro import MaeExport as MaeExport, write_mae_checked as write_mae_che
 from ._scored_tautomer import rdkit_pick_tautomer_scored as rdkit_pick_tautomer_scored
 
 class GjfGeometry(TypedDict):
+    elements: list[str]
     mol: Mol
     coords: list[list[float]]
     freeze_codes: list[int | None]
@@ -5865,5 +5866,20 @@ def parse_gjf_geometry(
 
     This geometry projection omits route/title/basis sets and infers no bonds
     or atom formal charges. Unsupported and malformed geometries raise ValueError.
+    """
+    ...
+
+
+def write_gjf_cartesian(
+    elements: Iterable[str], coords: Iterable[Iterable[float]], *,
+    charge: int, multiplicity: int, units: Literal["angstrom", "bohr"],
+    freeze_codes: Iterable[int | None] | None = None,
+    title: str = "chematic Cartesian geometry", route: str = "#",
+) -> str:
+    """Write explicit geometry with exact f64 values and optional freeze codes.
+
+    Values retain their numeric units, explicitly emitted as Units=Ang/AU.
+    Refuses invalid counts, nonfinite values, header injection and unit overrides.
+    Bounded to 100000 atoms; this does not serialize a graph or complete source job.
     """
     ...

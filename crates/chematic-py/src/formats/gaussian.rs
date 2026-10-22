@@ -4,10 +4,12 @@ use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
 use std::sync::Arc;
+mod writer;
+pub(super) use writer::write_gjf_cartesian;
 
 /// Read a Cartesian GJF geometry, preserving input coordinate values and freeze codes.
 ///
-/// Returns a dict with ``mol``, ``coords``, ``freeze_codes``, ``charge`` and
+/// Returns a dict with ``elements``, ``mol``, ``coords``, ``freeze_codes``, ``charge`` and
 /// ``multiplicity``. Coordinates retain input numeric units: ``Units=Bohr``
 /// is not converted. No bonds or atom formal charges are inferred. This is
 /// not a complete job reader: route/title/basis sets are not retained.
@@ -32,6 +34,14 @@ pub(super) fn parse_gjf_geometry<'py>(
     )
     .map_err(|error| PyValueError::new_err(error.to_string()))?;
     let result = PyDict::new(py);
+    result.set_item(
+        "elements",
+        geometry
+            .mol
+            .atoms()
+            .map(|(_, atom)| atom.element.symbol())
+            .collect::<Vec<_>>(),
+    )?;
     result.set_item(
         "mol",
         Mol {

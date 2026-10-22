@@ -1,0 +1,83 @@
+{
+  "schema": "chematic.gjf-write-validation.v1",
+  "utc": "2026-10-22T08:33:05.753577+00:00",
+  "scope": "Local candidate geometry writing. Not graph/job/source preservation, Gaussian execution, or toolkit-wide superiority.",
+  "counts": {
+    "checked.common.bitwise_match": 12,
+    "legacy_api.common.bitwise_match": 3,
+    "openbabel.common.bitwise_match": 3,
+    "legacy_api.common.rounded": 9,
+    "openbabel.common.rounded": 9,
+    "checked.numeric_profile.bitwise_match": 8,
+    "checked.metadata_profile.match": 8,
+    "checked.invalid.refused": 10
+  },
+  "max_coordinate_error": {
+    "checked": 0,
+    "legacy_api": 3.456790111933117e-07,
+    "openbabel": 4.679135802376777e-06
+  },
+  "fixture": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/gjf-cartesian-2026-10-22/write-cases.json",
+    "sha256": "154fcec644c812ae69c246d39c299da555a6b9e204f2807fbd62e34485f2f41b",
+    "size_bytes": 5260
+  },
+  "packet": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/gjf-write-2026-10-22.packet.json.gz",
+    "sha256": "ce214bef7d44b629727a90e9f49e693aea545e7894ab6fa1111776d2b502e782",
+    "size_bytes": 2741
+  },
+  "legacy_control": {
+    "scope": "Unchanged legacy writer API in candidate runtime; function bodies equal source main, not a separate main binary.",
+    "source_main": "654993b832f1431ce4137675102368340b049981",
+    "function_body_sha256": {
+      "crates/chematic-mol/src/gaussian.rs": "cbd0405bab5d38f60d32b7e7c25100ebdb32f2f8dcbf4fa8781b5680768191ba",
+      "crates/chematic-py/src/formats.rs": "3b7464d334a0a1c391624ea7558d2c17a2fd40c7e70c525e488a5a02ffea1f97"
+    }
+  },
+  "artifacts": {
+    "extension": {
+      "path": "/private/tmp/chematic-gjf-write-python-20261022/chematic/chematic.cpython-313-darwin.so",
+      "sha256": "a6edbf9e8612a4585774b236d2ebe3481a5f6db748e2512be8eba38c3b695286",
+      "size_bytes": 44723120
+    },
+    "openbabel": {
+      "path": "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+      "sha256": "733b2c925d60b17a5c9d8ce9ec841e918cc20c7634301e23f9008a187d1d9bc5",
+      "size_bytes": 75728
+    }
+  },
+  "sources": [
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol/src/gaussian/writer.rs",
+      "sha256": "77fe41c3a7d397daa5f7cb92f1adc56ffca2b5218cb9a0e675db0ce93a12c6c3",
+      "size_bytes": 5306
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py/src/formats/gaussian/writer.rs",
+      "sha256": "ac31bf5a812bd91892f0cda0f48a51a73646cc63e061aef93e91aa6c1ac87511",
+      "size_bytes": 5135
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/scripts/validation/validate_gjf_write.py",
+      "sha256": "78c71e8f0bc39f30a34abac89e3dd9e1a61677729b66ea68eb8c59a22c5690e9",
+      "size_bytes": 9979
+    }
+  ],
+  "openbabel_version": {
+    "resource_status": "completed",
+    "exit_code": 0,
+    "stdout": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27\n",
+    "stderr": ""
+  },
+  "limits": {
+    "external_seconds": 10,
+    "combined_pipe_bytes": 1048576,
+    "memory": "not imposed"
+  },
+  "comparison_notes": [
+    "Common lane uses identical ordered elements/coordinate values and angstrom units; legacy/Open Babel precision differences are observed independently.",
+    "Freeze/unit/signed-zero/subnormal controls are separate candidate-only profile lanes; not scored as Open Babel source-retention failures.",
+    "Malformed input is a candidate-only refusal lane. Open Babel is not used as the semantic oracle."
+  ]
+}

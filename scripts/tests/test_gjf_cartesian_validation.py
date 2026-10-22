@@ -26,5 +26,30 @@ class ProbeObservation(unittest.TestCase):
         self.assertEqual(validation.probe_result({"stdout": output, "exit_code": 0}, None), "emitted_mismatch")
 
 
+writer_spec = importlib.util.spec_from_file_location("gjf_write_validation", Path(__file__).parents[1] / "validation/validate_gjf_write.py")
+writer = importlib.util.module_from_spec(writer_spec)
+writer_spec.loader.exec_module(writer)
+
+
+class WriteObservation(unittest.TestCase):
+    def test_five_fields_are_observed_as_flag_and_three_coordinates(self):
+        text = "# HF Units=Ang\n\noriginal\n\n-1 2\nC -1 1.25 2.5 3.75\n\n"
+        result = writer.observe(text)
+        self.assertEqual(result["coords"], [[1.25, 2.5, 3.75]])
+        self.assertEqual(result["freeze_codes"], [-1])
+
+    def test_corrupted_or_partial_output_cannot_be_a_geometry_match(self):
+        base = "# HF Units=Ang\n\noriginal\n\n0 1\nC 1 2 3\n\n"
+        for bad in [base.replace("C 1 2 3", "C 1 2"), base.replace("C 1 2 3", "C -1 1 2 3 H"),
+                    base.replace("C 1 2 3", "C 1 2 NaN"), base.replace("0 1", "0 0"),
+                    base + base, base.replace("Units=Ang", "Units=Unknown"),
+                    base.replace("Units=Ang", "Units=Ang Units=AU")]:
+            with self.assertRaises(ValueError): writer.observe(bad)
+
+    def test_signed_zero_cannot_hide_as_a_bitwise_match(self):
+        self.assertFalse(writer.same_numbers([[0.,0.,0.]], [[-0.,0.,0.]]))
+        self.assertFalse(writer.same_numbers([[1.,2.,3.]], [[1.,2.,3.],[4.,5.,6.]]))
+
+
 if __name__ == "__main__":
     unittest.main()

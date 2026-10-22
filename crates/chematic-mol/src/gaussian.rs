@@ -27,6 +27,9 @@
 
 use chematic_core::{Atom, AtomIdx, Element, Molecule, MoleculeBuilder};
 
+mod writer;
+pub use writer::{GjfCoordinateUnits, GjfWriteError, GjfWriteOptions, write_gjf_cartesian};
+
 /// Return type shared by the GJF parser and its coordinate helper:
 /// `(Molecule, coords, charge, multiplicity)`.
 type GjfResult = (Molecule, Vec<(f64, f64, f64)>, i32, u32);

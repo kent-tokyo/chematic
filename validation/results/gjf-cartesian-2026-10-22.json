@@ -1,6 +1,6 @@
 {
   "schema": "chematic.gjf-cartesian-validation.v1",
-  "utc": "2026-10-22T08:09:20.863904+00:00",
+  "utc": "2026-10-22T08:33:07.850322+00:00",
   "scope": "Local source candidate, Cartesian geometry projection. Not complete job retention, Gaussian execution, or toolkit-wide superiority.",
   "baseline_commit": "7c34941f52c5e795fd3ca93b075aa31bc9fa748f",
   "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
@@ -53,8 +53,8 @@
     },
     "candidate_probe": {
       "path": "/private/tmp/chematic-gjf-cartesian-20261022/candidate-probe",
-      "sha256": "b6d3f4b14e66f7025f1491bc4e585e8796457c99b8cc5dff9611e29e69a78474",
-      "size_bytes": 763456
+      "sha256": "cf4aac340341eb3b56f33db897ed21b6a3e34d6c75051070ed5c1f4255c6b424",
+      "size_bytes": 763472
     },
     "probe_source": {
       "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/gjf-cartesian-2026-10-22/probe.rs",
@@ -62,9 +62,9 @@
       "size_bytes": 477
     },
     "python_extension": {
-      "path": "/private/tmp/chematic-gjf-cartesian-python-20261022/chematic/chematic.cpython-313-darwin.so",
-      "sha256": "9e15e337e10fff276e44b09d0d3b00bb8035614324dde77d78490d60e5177521",
-      "size_bytes": 44673424
+      "path": "/private/tmp/chematic-gjf-write-python-20261022/chematic/chematic.cpython-313-darwin.so",
+      "sha256": "a6edbf9e8612a4585774b236d2ebe3481a5f6db748e2512be8eba38c3b695286",
+      "size_bytes": 44723120
     },
     "openbabel": {
       "path": "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
@@ -75,23 +75,23 @@
   "source": [
     {
       "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol/src/gaussian.rs",
-      "sha256": "44a045a65b84795779a5ef15f40759188d4b5005d50e5ad984f344b1201cda51",
-      "size_bytes": 24224
+      "sha256": "ed65c917cdf4dbee2540ec83f566bfcac065a2d050ca47c88d4c7b06adff75e9",
+      "size_bytes": 24328
     },
     {
       "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol/src/lib.rs",
-      "sha256": "3bd6336f8a2c811a922254c557eeb2fca0af0531b7a2812a5ca019f39189b483",
-      "size_bytes": 14103
+      "sha256": "3c4debf7b3d8d8a12a567fcbd1e18f03141bcef27a85f5e89c8e124b6b8858d1",
+      "size_bytes": 14180
     },
     {
       "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py/src/formats/gaussian.rs",
-      "sha256": "a65b8b741e85f92c59fe05c42830cfbbf5d1e4c4f76231a6db3d8a328fd2d83e",
-      "size_bytes": 1972
+      "sha256": "8fa385265019b112635fc15ac022fe1d7f497260ba6fd655226919f7ffd7603d",
+      "size_bytes": 2232
     },
     {
       "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py/src/formats.rs",
-      "sha256": "7fdc522d686b343e9fa8722170db295c677f0493b531d8d2f50163a73cf89ef0",
-      "size_bytes": 53514
+      "sha256": "7490c9c6844a420dd01886fa8bddb50914f669d26b5691e52dd84f84dfebe747",
+      "size_bytes": 53543
     },
     {
       "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/scripts/validation/validate_gjf_cartesian.py",

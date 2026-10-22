@@ -6,8 +6,8 @@ last coordinate disappeared. Short rows could also be skipped while a partial
 molecule was returned. Both behaviors are corrected in the native parser and
 its existing Python `from_gjf`/common-conversion callers.
 
-This source candidate adds a geometry API that exposes values previously
-hidden by Python's atoms-only reader. It is a geometry projection, not a
+This source candidate adds geometry reading and checked Cartesian writing APIs.
+The reader exposes values previously hidden by Python's atoms-only reader. It is a geometry projection, not a
 complete Gaussian job representation or a released-package comparison.
 
 ## APIs
@@ -23,7 +23,8 @@ Rust exports `GjfGeometry`, `parse_gjf_geometry` and
 The existing `parse_gjf` tuple API shares the corrected parser. Its tuple omits
 freeze codes; use the new result type when they must be retained.
 
-Python exposes the same fields in a dictionary:
+Python exposes the same fields in a dictionary, plus an ordered `elements` list
+for passing geometry to the checked writer:
 
 ```python
 import chematic
@@ -68,12 +69,112 @@ with `max_input_bytes`/`max_atoms` overrides and the remaining native limits.
 Route options, title, basis sets, connectivity sections, original labels,
 comments and other job sections are not returned. No coordinates or bonds are
 generated. The existing GJF writer still omits freeze codes, rounds coordinates
-to six decimals and fills missing coordinates with zero. This change does not
-claim source round trips or checked writing. The Python common conversion
+to six decimals and fills missing coordinates with zero. The checked writer described below is a separate API; the legacy writer
+keeps its existing behavior. The Python common conversion
 bridge still uses the atoms-only GJF input reader: use `parse_gjf_geometry`
 explicitly to obtain coordinates and job metadata. No new CLI/WASM API is added.
 
-## Validation and Open Babel scope
+## Checked Cartesian writing
+
+Rust exports `write_gjf_cartesian(elements, coords, freeze_codes, options)`,
+`GjfWriteOptions`, `GjfCoordinateUnits::{Angstrom, Bohr}` and `GjfWriteError`.
+The input consists of explicit geometry arrays, not a molecular graph.
+`GjfWriteOptions::new(charge, multiplicity, units)` requires the electronic
+state and units. `title` and `route` can be set on the options. The default
+route is a template (`#`), not a validated calculation setup.
+
+Python provides the equivalent bounded interface:
+
+```python
+# The visible input above uses angstroms. The reader does not infer route units.
+output = chematic.write_gjf_cartesian(
+    g["elements"], g["coords"],
+    charge=g["charge"], multiplicity=g["multiplicity"],
+    units="angstrom", freeze_codes=g["freeze_codes"],
+    route="# HF/STO-3G", title="Explicit Cartesian geometry",
+)
+back = chematic.parse_gjf_geometry(output)
+assert back["freeze_codes"] == g["freeze_codes"]
+```
+
+Every coordinate is written in scientific notation with 17 significant digits.
+The native writer checks that parsing each scalar reproduces its f64 bits.
+Signed zero and finite subnormal values retain their bits. Counts must match
+exactly, and missing coordinates are never replaced by zeros. Native callers
+provide one optional freeze code per atom; Python's omitted `freeze_codes`
+means no atom has an explicit flag. Explicit `None`, `0` and `-1` remain distinct.
+
+The selected units describe the supplied numbers. They are emitted as exactly
+one `Units=Ang` or `Units=AU` keyword, without numerical rescaling, following the
+[Gaussian Units convention](https://www.conflex.co.jp/gaussian_support/units.php).
+The reader still returns input numeric units without interpreting the route:
+callers must choose the matching writer unit. No source-unit inference or
+arbitrary Gaussian job conversion is claimed.
+
+The writer refuses empty/over-limit element arrays, non-elemental symbols,
+missing/extra coordinate or flag rows, non-finite coordinates, zero multiplicity,
+and headers containing controls or Unicode line/paragraph separators. Headers
+are capped at 1024 UTF-8 bytes. Routes must be ASCII, start with one `#` and
+contain no `!` comments. A conservative lexical check rejects Units keywords
+and their alphabetic prefixes so the route cannot supply a second ordinary
+unit declaration. This is not a Gaussian route parser: it does not establish
+that arbitrary keywords describe a valid calculation or that the coordinates
+will be used by the requested calculation.
+
+The hard limit is 100,000 atoms; the resulting text is under 16 MiB. Python
+bounds element/coordinate/flag iterators before materializing them, checks
+exactly three coordinate values per row, and rejects bool for numeric
+coordinates and integer state/flag fields. Input arrays are not modified.
+Route/title/source formatting, basis-set sections, connectivity, isotopes,
+fragment and ONIOM metadata are outside this explicit geometry representation.
+No default conversion route is changed, and no new CLI/WASM writer is added.
+
+### Paired writer comparison
+
+`validation/gjf-cartesian-2026-10-22/write-cases.json` defines 12 original
+geometry controls: four base geometries with three deterministic transforms.
+The common lane supplies the same ordered species, coordinate numbers and
+angstrom units to the checked API, unchanged legacy `write_gjf` API, and
+Open Babel 3.2.1's XYZ → GJF route with bonding disabled. Python's standard
+float parser independently observes the decimal output; chematic is not the
+comparison's semantic oracle.
+
+| Common writer lane | Bitwise coordinate matches | Maximum absolute coordinate error (Å) |
+| --- | ---: | ---: |
+| Checked API | 12/12 | 0 |
+| Legacy API | 3/12 | 3.456790111933117e-7 |
+| Open Babel 3.2.1 | 3/12 | 4.679135802376777e-6 |
+
+Ordered elements match in all common outputs. This measures the selected
+writing workflow, not a graph or full-job round trip. The legacy control uses
+the current candidate runtime; the report verifies that its native/Python
+writer function bodies equal main `654993b832f1431ce4137675102368340b049981`.
+It is not described as a separately rebuilt main executable.
+
+Separate candidate-only lanes pass eight numerical boundary controls, eight
+freeze-code/state/unit controls with independent observation and public API
+readback, and ten output-free refusals. These lanes are not counted as Open
+Babel source-retention failures. Native property checks also cover 4096
+deterministic bit patterns (excluding non-finite values) plus explicit numeric
+boundaries, and the exact 100,000/100,001 atom boundary.
+
+The writer report and raw outputs are
+`validation/results/gjf-write-2026-10-22.json` and `.packet.json.gz`.
+They include the fixture, source, extension and binary hashes. Observer controls
+reject truncated/extra atom rows, non-finite output, duplicate/unsupported units,
+zero multiplicity and multiple documents, and distinguish signed zero. Run with:
+
+```sh
+python3 scripts/validation/validate_gjf_write.py --obabel /path/to/obabel
+cargo test -p chematic-mol --test gjf_cartesian_write
+python3 -m pytest crates/chematic-py/tests/test_gjf_cartesian_write.py
+```
+
+Gaussian execution, arbitrary job validity, and toolkit-wide superiority have
+not been tested. Numerical extremes and transformed geometries are developer
+controls, not an independent chemistry holdout.
+
+## Reader validation and Open Babel scope
 
 The original CC0 fixtures are in
 `validation/gjf-cartesian-2026-10-22/cases.json`. Forty-five cases each run with

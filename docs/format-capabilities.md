@@ -656,7 +656,11 @@ disambiguate by crate, not by name alone:
   length/count, section count, and atom count for both GJF and log parsing.
 - **Geometry API**: Rust `GjfGeometry`, `parse_gjf_geometry` and
   `parse_gjf_geometry_with_limits`; Python `parse_gjf_geometry` returns a dict
-  with `mol`, `coords`, `freeze_codes`, `charge` and `multiplicity`.
+  with `elements`, `mol`, `coords`, `freeze_codes`, `charge` and `multiplicity`.
+- **Checked geometry writer**: Rust/Python `write_gjf_cartesian` retains finite
+  f64 values and freeze codes, emits explicit Angstrom/Bohr units, and refuses
+  invalid counts, values and headers. It takes geometry arrays, not a graph.
+  Rust options are `GjfWriteOptions` / `GjfCoordinateUnits`, errors `GjfWriteError`.
 - **Coordinate units**: GJF returns input numeric units without interpreting
   route-unit keywords; log standard-orientation coordinates are Ångström.
 - **Integrity**: optional integer freeze codes do not shift coordinates;
