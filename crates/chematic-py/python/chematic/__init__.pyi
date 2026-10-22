@@ -413,8 +413,10 @@ class Mol:
         max_mmff_iters: int = 200,
     ) -> list[tuple[int, float, list[list[float]]]]:
         """Keep the lowest-energy candidate, then converged conformers from
-        both ETKDG/MMFF94 runs. The second uses the corrected gradient when
-        relevant, or new seeds otherwise. Uses twice the candidate work.
+        ETKDG/MMFF94 runs. The second uses the corrected gradient when
+        relevant; otherwise two additional runs use new seeds. Uses twice or
+        three times the candidate work, respectively, plus up to one or two
+        optional MMFF retries.
         """
         ...
 
@@ -540,6 +542,13 @@ class Mol:
         weights: list[float] | None = None,
     ) -> list[float]:
         """RDKit ``GetAllConformerBestRMS`` in ``(1,0), (2,0), (2,1), ...`` order."""
+        ...
+    def cluster_conformers_by_rms_symmetric(
+        self,
+        conformers: list[list[list[float]]],
+        rmsd_threshold: float = 0.5,
+    ) -> list[int]:
+        """Greedy symmetry-aware RMSD clusters; returns leader input indices."""
         ...
     def rdkit_all_conformer_best_rms_to_reference(
         self,
@@ -3458,11 +3467,11 @@ def parse_sdf_with_coords(text: str) -> list[tuple[Mol, str, list[list[float]]]]
     ...
 
 def convert_with_report_json(text: str, input_format: str, output_format: str, policy: str = "strict") -> str:
-    """Checked MOL2/CJSON conversion; refusal is a report with null output."""
+    """Checked MOL2/CJSON/CML conversion; refusal is a report with null output."""
     ...
 
 def convert_with_report(text: str, input_format: str, output_format: str, /, *, policy: str = "strict") -> dict[str, object]:
-    """Return the shared checked MOL2/CJSON conversion report as a dictionary."""
+    """Return the shared checked MOL2/CJSON/CML conversion report as a dictionary."""
     ...
 
 def parse_cjson_record_json(text: str) -> str:
@@ -3894,6 +3903,17 @@ def write_pqr(atoms: list[dict]) -> str:
     """Write a PQR file from atom records (same dict shape as
     :func:`parse_pqr`'s ``"atoms"``); ``element`` is inferred via
     :func:`infer_element` when omitted.
+    """
+    ...
+
+
+def write_pqr_checked(atoms: Iterable[dict], *, max_output_bytes: int = 67_108_864) -> str:
+    """Write ordered PQR atom fields with exact finite f64 values, without rounding.
+
+    Requires group_pdb/serial/atom_name/res_name/res_seq/x/y/z/charge/radius.
+    Optional chain_id/icode/element; rejects unknown fields, bool values,
+    negative radii and incompatible inferred elements. At most 100000 atoms,
+    64 MiB output. Non-atom source records/formatting are not represented.
     """
     ...
 

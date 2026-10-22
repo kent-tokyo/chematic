@@ -154,6 +154,50 @@ fn rdkit_heavy_mode_matches_pinned_mcs_count_oracle() {
 }
 
 #[test]
+fn pinned_mcs_profile_counts_remain_exact() {
+    let rows =
+        include_str!("../../../validation/results/mcs-comparator-bounds-2026-10-17/oracle.jsonl");
+    let mut comparisons = 0;
+    for line in rows.lines() {
+        let row: serde_json::Value = serde_json::from_str(line).unwrap();
+        let inputs: Vec<_> = row["inputs"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|value| parse(value.as_str().unwrap()).unwrap())
+            .collect();
+        let refs: Vec<_> = inputs.iter().collect();
+        let config = McsConfig {
+            atom_compare: match row["atom_mode"].as_str().unwrap() {
+                "elements" => AtomCompare::Elements,
+                "any" => AtomCompare::Any,
+                "any_heavy_atom" => AtomCompare::AnyHeavyAtom,
+                other => panic!("unexpected atom mode {other}"),
+            },
+            bond_compare: match row["bond_mode"].as_str().unwrap() {
+                "order_or_aromatic" => BondCompare::OrderOrAromatic,
+                "any" => BondCompare::Any,
+                other => panic!("unexpected bond mode {other}"),
+            },
+            ..Default::default()
+        };
+        let outcome = find_mcs_with_config_checked(&refs, &config);
+        assert!(matches!(outcome, McsOutcome::Exhaustive(_)), "{line}");
+        let query = outcome.into_query();
+        assert_eq!(
+            [query.atom_count(), query.bonds.len()],
+            [
+                row["native_profile_expected"][0].as_u64().unwrap() as usize,
+                row["native_profile_expected"][1].as_u64().unwrap() as usize,
+            ],
+            "{line}"
+        );
+        comparisons += 1;
+    }
+    assert_eq!(comparisons, 1980);
+}
+
+#[test]
 fn comparator_search_budget_still_reports_resource_limit() {
     let a = parse("CCCC").unwrap();
     let b = parse("NNNN").unwrap();
@@ -166,4 +210,26 @@ fn comparator_search_budget_still_reports_resource_limit() {
         find_mcs_with_config_checked(&[&a, &b], &config),
         McsOutcome::ResourceLimited(_)
     ));
+}
+
+#[test]
+fn complete_rings_only_keeps_smaller_valid_chain_after_larger_partial_ring() {
+    let six_ring_and_chain = parse("C1CCCCC1.CCCC").unwrap();
+    let five_ring_and_chain = parse("C1CCCC1.CCCC").unwrap();
+    let config = McsConfig {
+        complete_rings_only: true,
+        ..Default::default()
+    };
+    for refs in [
+        [&six_ring_and_chain, &five_ring_and_chain],
+        [&five_ring_and_chain, &six_ring_and_chain],
+    ] {
+        let outcome = find_mcs_with_config_checked(&refs, &config);
+        assert!(matches!(outcome, McsOutcome::Exhaustive(_)));
+        let query = outcome.into_query();
+        assert_eq!(query.atom_count(), 4);
+        assert_eq!(query.bonds.len(), 3);
+        assert!(!crate::find_matches(&query, refs[0]).is_empty());
+        assert!(!crate::find_matches(&query, refs[1]).is_empty());
+    }
 }

@@ -1,4 +1,4 @@
-//! Checked conversion: MOL2/CJSON source retention and bounded graph projection.
+//! Checked conversion: MOL2/CJSON/CML retention and bounded graph projection.
 //!
 //! Reports account for source information before graph projection. Candidate
 //! verification covers the declared graph fields only, not MOL2 chemistry in
@@ -10,6 +10,7 @@ use serde::Serialize;
 use std::collections::HashMap;
 
 mod cjson_mol2;
+mod cml_source;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -91,6 +92,7 @@ pub enum ConversionError {
     Unsupported(String),
     Parse(Mol2Error),
     CjsonParse(crate::CjsonError),
+    CmlParse(crate::CmlError),
     ResourceLimit(&'static str),
 }
 
@@ -100,6 +102,7 @@ impl std::fmt::Display for ConversionError {
             Self::Unsupported(message) => f.write_str(message),
             Self::Parse(error) => error.fmt(f),
             Self::CjsonParse(error) => error.fmt(f),
+            Self::CmlParse(error) => error.fmt(f),
             Self::ResourceLimit(resource) => write!(f, "conversion exceeds {resource} limit"),
         }
     }
@@ -109,7 +112,7 @@ impl std::error::Error for ConversionError {}
 /// Bounded defaults; existing graph-only conversion APIs are unchanged.
 #[derive(Debug, Clone, Copy)]
 pub struct ConversionLimits {
-    /// Shared input byte/atom/bond caps, also applied to CJSON input.
+    /// Shared input/element caps, also used by CJSON and the CML XML profile.
     pub mol2: Mol2ParseLimits,
     /// Applies to the molecule output and the serialized report separately.
     pub max_output_bytes: usize,
@@ -174,22 +177,18 @@ pub fn convert_with_report_with_limits(
     policy: ConversionPolicy,
     limits: &ConversionLimits,
 ) -> Result<ConversionReport, ConversionError> {
-    let source = input_format
-        .trim()
-        .trim_start_matches('.')
-        .to_ascii_lowercase();
-    let target = output_format
-        .trim()
-        .trim_start_matches('.')
-        .to_ascii_lowercase();
+    let normalize = |s: &str| s.trim().trim_start_matches('.').to_ascii_lowercase();
+    let source = normalize(input_format);
+    let target = normalize(output_format);
     let supported = match source.as_str() {
         "mol2" => matches!(target.as_str(), "mol2" | "smiles" | "smi" | "cjson"),
         "cjson" => matches!(target.as_str(), "cjson" | "smiles" | "smi" | "mol2"),
+        "cml" => target == "cml",
         _ => false,
     };
     if !supported {
         return Err(ConversionError::Unsupported(
-            "checked conversion supports MOL2 → MOL2/SMILES/CJSON and CJSON → CJSON/SMILES/MOL2"
+            "checked conversion supports MOL2 → MOL2/SMILES/CJSON, CJSON → CJSON/SMILES/MOL2 and CML → CML"
                 .into(),
         ));
     }
@@ -198,8 +197,10 @@ pub fn convert_with_report_with_limits(
             "preserve_source requires same-format conversion".into(),
         ));
     }
-    if source == "cjson" {
-        return convert_cjson(text, &target, policy, limits);
+    match source.as_str() {
+        "cjson" => return convert_cjson(text, &target, policy, limits),
+        "cml" => return cml_source::convert(text, policy, limits),
+        _ => {}
     }
     let record =
         parse_mol2_source_record_with_limits(text, &limits.mol2).map_err(ConversionError::Parse)?;

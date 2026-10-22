@@ -170,7 +170,7 @@ Rust `convert_with_report` / `convert_with_report_with_limits`, Python
 `convert_with_report` (dict) / `convert_with_report_json` (JSON string), WASM
 `convert_with_report_json`, and CLI `convert-with-report` share
 `chematic.conversion-report.v1`. Supported routes are MOL2 → MOL2/SMILES/CJSON
-and CJSON → CJSON/SMILES/MOL2 (`smi` aliases plain SMILES). Existing conversion
+and CJSON → CJSON/SMILES/MOL2, plus CML → CML (`smi` aliases plain SMILES). Existing conversion
 APIs keep their graph/metadata contracts.
 
 ```python
@@ -192,10 +192,26 @@ chematic convert-with-report --input-format mol2 --output-format smiles \
 - `allow_loss` returns parseable candidate output with detected losses and
   uncertainty. A graph mismatch is `unverified`; it cannot claim preservation.
   A candidate that fails to parse is refused even under this policy.
-- `preserve_source` requires MOL2 → MOL2 or CJSON → CJSON. All three policies
+- `preserve_source` requires MOL2 → MOL2, CJSON → CJSON or CML → CML. All three policies
   retain exact source bytes on these routes after bounded structural validation. The scope
   is `exact_source_bytes`; `source_semantics: opaque_retained` explicitly
   excludes interpreted/editable chemical semantics. It is not a graph gate.
+- **CML source profile**: one `molecule` root in the
+  `http://www.xml-cml.org/schema` namespace, UTF-8 text, optional XML 1.0
+  declaration (`UTF-8` or ASCII encoding), no DTD or nested CML molecules.
+  The full source survives, including 2D/3D coordinate spellings, atom IDs,
+  properties, comments, namespaces and unknown extensions. Empty molecules
+  and opaque/uninterpretable chemistry are retained; this validates XML
+  framing, not the CML schema, atom/bond references, numeric chemistry or
+  stereo. `candidate_graph_verified` stays false and mappings stay empty.
+  Collections and CML cross-format projections are unsupported by this route.
+  Existing graph-only conversion APIs keep their previous behavior.
+- CML uses roxmltree 0.20.0 with DTD disabled and a 200,000-node parse budget;
+  element depth is checked against 64 after parsing. The shared
+  `ConversionLimits.mol2` input bytes, line bytes/count and atom/bond element
+  limits also apply. Array members and opaque chemistry are not counted as
+  graph atoms. The source and escaped JSON envelope each have an output-size
+  check; CLI/Python defaults are 16 MiB and WASM uses its existing lower caps.
 - Observations identify a source field group, status, stage and reason in
   source record zero. Coordinate/partial-charge/type/name/substructure/bond
   metadata losses and opaque sections are reported before graph projection.
@@ -378,8 +394,24 @@ source-preserving APIs retain the original order.
   molecule, balanced XML-ish elements, exactly one root element, and rejects
   unterminated quoted attributes, comments, CDATA sections, and processing
   instructions. The historical `parse_cml` path remains lenient for
-  compatibility.
+  document-framing compatibility. Both readers reject malformed/out-of-range
+  formal charges, isotopes and supplied 2D coordinates rather than substituting
+  neutral charge, unspecified isotope or origin coordinates. Missing fields
+  retain their existing defaults. Atom IDs must be unique after decoding;
+  `isotope` and `isotopeNumber`, when both present, must agree numerically.
+- **XML attribute references**: the five predefined entities and valid XML 1.0
+  decimal/hex character references decode once, including atom IDs/references
+  and typed fields. Escaped literal entity spellings are not decoded twice.
+  The shared CDXML/MRV attribute scanner benefits from the same repair. Custom
+  DTD entity expansion and full XML/CML conformance are outside this profile.
+  See the [CML character-reference development record](benchmarks/2026-10-22-cml-character-references.md).
 - **Coordinate units**: Ångström in returned 2D coordinates.
+- **Coordinate precision**: `write_cml` emits finite supplied 2D values with
+  enough decimal digits to recover the same binary64 value on read-back,
+  including signed zero and subnormal values. It does not round to a fixed
+  decimal grid. This applies to supplied coordinates in Rust and Python
+  `Mol.to_cml(coords)`; graph-only readers and generated WASM layouts do not
+  retain source positions. See the [paired CML precision record](benchmarks/2026-10-22-cml-coordinate-precision.md).
 - **Connectivity**: native CML bond elements.
 - **Parse limits**: `CmlParseLimits` bounds input bytes, physical line
   length/count, XML element count, and atom/bond elements. The existing parser
@@ -552,9 +584,16 @@ source-preserving APIs retain the original order.
 - **Element**: PQR has no element column in the format; `Element` is
   inferred from the atom name via `infer_element`, a documented heuristic
   matching classic PDB-parser convention for blank element columns.
-- **Round-trip**: not characterized beyond the element-inference note above.
-- **Lossy operations**: none named beyond element inference (which is a
-  read-side reconstruction, not a write-side loss).
+- **Checked atom output**: Rust `write_pqr_checked[_with_limits]`, Python
+  `write_pqr_checked` and WASM `write_pqr_json_checked` retain supplied
+  coordinates, partial charges and radii bit for bit with ordered identity
+  fields. Incompatible inferred elements, nonfinite values, negative radii,
+  invalid tokens and limits are refused. Python/WASM require explicit numeric
+  fields and reject unknown fields. This is atom output, not source retention.
+- **Lossy legacy output**: `write_pqr` / `write_pqr_json` retain their existing
+  coordinate rounding (3 decimal places) and charge/radius rounding (4).
+  Non-atom source records and formatting are not represented by atom writers.
+- **Details and measurements**: [PQR atom-field integrity](pqr-numeric-integrity.md).
 - **Parse limits**: `PqrParseLimits { max_input_bytes, max_atoms, max_line_len }`.
 
 ### XYZ / Extended XYZ
