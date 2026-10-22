@@ -78,8 +78,8 @@ pub struct McsConfig {
     /// If `true`, ring atoms can only be matched to ring atoms, and non-ring atoms only
     /// to non-ring atoms.  Prevents chemically meaningless matches across ring boundaries.
     pub ring_matches_ring_only: bool,
-    /// If `true`, the MCS result must not contain a partial ring.  Any ring that is only
-    /// partially present in the MCS is removed entirely (iterative post-processing).
+    /// If `true`, a candidate is accepted only when every ring it touches in the
+    /// first molecule is complete in the common subgraph.
     pub complete_rings_only: bool,
     /// Atom-level comparison strategy.  Defaults to [`AtomCompare::Elements`].
     pub atom_compare: AtomCompare,
@@ -307,11 +307,6 @@ fn find_mcs_impl(mols: &[&Molecule], config: &McsConfig, rdkit_heavy: bool) -> M
         }
     }
 
-    // Apply complete_rings_only post-processing: remove partially-covered rings.
-    if config.complete_rings_only && !state.ring_sets.is_empty() {
-        prune_partial_rings(mols, &mut state.best, &state.ring_sets, config);
-    }
-
     // Apply min_atoms filter.
     if state.best.size < config.min_atoms {
         return if state.resource_limited {
@@ -486,7 +481,13 @@ fn grow(state: &mut McsState<'_>, mapping: &mut PartialMapping) {
                 || ((!state.config.maximize_bonds
                     || mapping.bond_count == state.best.bond_count)
                     && mcs_tiebreak_key(mapping) < mcs_tiebreak_key(&state.best))));
-    if is_better {
+    // Pruning only the unconstrained winner after the search can discard a
+    // smaller, valid candidate found earlier (for example a common chain next
+    // to two incompatible rings). Keep the best *valid* mapping instead.
+    if is_better
+        && (!state.config.complete_rings_only
+            || mapping_has_complete_rings(state.mols, mapping, &state.ring_sets, state.config))
+    {
         state.best = mapping.clone();
     }
 
@@ -669,38 +670,21 @@ fn normalize_bond(o: BondOrder) -> BondOrder {
 }
 
 // ---------------------------------------------------------------------------
-// complete_rings_only post-processing
+// complete_rings_only candidate validation
 // ---------------------------------------------------------------------------
 
-/// Remove atoms from `mapping` that would leave a ring partially covered.
-///
-/// A ring is "partially covered" if at least one but not all of its atoms appear in the
-/// mapping.  Removing those atoms can expose further partial rings, so the pruning
-/// iterates until convergence.
-fn prune_partial_rings(
+/// A candidate touching a ring must contain all its atoms and common bonds.
+/// Rings are checked on mol[0], which defines the query subgraph.
+fn mapping_has_complete_rings(
     mols: &[&Molecule],
-    mapping: &mut PartialMapping,
+    mapping: &PartialMapping,
     ring_sets: &[RingSet],
     config: &McsConfig,
-) {
-    loop {
-        // Collect query indices that must be removed.
-        let mut to_remove: Vec<usize> = Vec::new();
-
-        // Only check mol[0]'s rings. The MCS is represented as a subgraph of mol[0],
-        // so ring completeness is determined by mol[0]'s ring structure, not by how
-        // the mapping happens to cover rings in the other (possibly larger) molecules.
-        let ring_set = &ring_sets[0];
-        for ring in ring_set.rings() {
-            // Determine which ring atoms are currently mapped in mol[0].
-            let mapped_in_ring: Vec<AtomIdx> = ring
-                .iter()
-                .copied()
-                .filter(|&ai| mapping.is_mapped(0, ai))
-                .collect();
-
-            // Partial coverage: some but not all ring atoms are mapped.
-            let ring_bonds_are_common = mapped_in_ring.len() == ring.len()
+) -> bool {
+    ring_sets[0].rings().iter().all(|ring| {
+        let mapped = ring.iter().filter(|&&ai| mapping.is_mapped(0, ai)).count();
+        mapped == 0
+            || (mapped == ring.len()
                 && ring.iter().enumerate().all(|(index, &left)| {
                     let right = ring[(index + 1) % ring.len()];
                     let Some(q1) = mapping.query_idx_of(0, left) else {
@@ -710,48 +694,8 @@ fn prune_partial_rings(
                         return false;
                     };
                     mapped_rows_share_common_bond(mols, mapping, q1, q2, config)
-                });
-
-            if !mapped_in_ring.is_empty()
-                && (mapped_in_ring.len() < ring.len() || !ring_bonds_are_common)
-            {
-                for ai in mapped_in_ring {
-                    if let Some(qi) = mapping.query_idx_of(0, ai)
-                        && !to_remove.contains(&qi)
-                    {
-                        to_remove.push(qi);
-                    }
-                }
-            }
-        }
-
-        if to_remove.is_empty() {
-            break;
-        }
-
-        // Remove by rebuilding the mapping without the marked query indices.
-        // Build a new query_to_mol (renumbered) and matching mol_maps.
-        let n_mols = mols.len();
-        let mut new_query_to_mol: Vec<Vec<AtomIdx>> = Vec::new();
-        let mut new_mol_map: Vec<Vec<Option<usize>>> =
-            mols.iter().map(|m| vec![None; m.atom_count()]).collect();
-
-        for (old_qi, row) in mapping.query_to_mol.iter().enumerate() {
-            if to_remove.contains(&old_qi) {
-                continue;
-            }
-            let new_qi = new_query_to_mol.len();
-            new_query_to_mol.push(row.clone());
-            for mi in 0..n_mols {
-                let ai = row[mi];
-                new_mol_map[mi][ai.0 as usize] = Some(new_qi);
-            }
-        }
-
-        mapping.query_to_mol = new_query_to_mol;
-        mapping.mol_map = new_mol_map;
-        mapping.size = mapping.query_to_mol.len();
-    }
+                }))
+    })
 }
 
 // ---------------------------------------------------------------------------

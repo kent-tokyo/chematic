@@ -32,7 +32,7 @@ use chematic_smarts::{
     AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, MatchConfig, QueryMolecule,
     find_matches_with_config, parse_smarts,
 };
-use chematic_smiles::{canonical_smiles, canonical_smiles_with_atom_order};
+use chematic_smiles::{canonical_smiles, canonical_smiles_with_atom_order, parse};
 
 /// Error type for R-group decomposition.
 #[derive(Debug, Clone, PartialEq)]
@@ -108,7 +108,7 @@ pub struct RGroupResult {
 /// Labels come from atom-map numbers on the core SMARTS. A terminal mapped
 /// wildcard (for example ``[*:2]``) labels its attachment, while a mapped core
 /// atom labels substituents attached to that atom. Unlabelled attachment sites
-/// receive deterministic labels based on query-atom order.
+/// receive consecutive labels after the batch establishes its columns.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LabeledRGroupResult {
     /// Index of the molecule in the input slice.
@@ -286,10 +286,12 @@ pub fn rgroup_decompose(
 /// canonical target-atom order is used before comparing output signatures, so
 /// reordering the input molecule does not change the selected row.
 ///
-/// Unlabelled attachment sites are assigned stable labels from query-atom
-/// order, skipping explicit labels. A molecule that does not match the core is
-/// returned as ``None``. Ambiguous multiple substituents for one label and
-/// queries that hit the bounded match limit are refused with typed errors.
+/// Unlabelled attachment sites are assigned consecutive labels after the
+/// batch establishes its columns, skipping explicit labels. A molecule that
+/// does not match the core is returned as ``None``. Multiple substituents at
+/// an unlabelled site share a column; ambiguous cuts at explicitly labelled
+/// or stereogenic sites and queries that hit the bounded match limit are
+/// refused with typed errors.
 pub fn rgroup_decompose_labeled(
     scaffold_smarts: &str,
     mols: &[&Molecule],
@@ -368,8 +370,15 @@ fn decompose_labeled_prepared(
             };
         }
 
-        candidates
-            .sort_by(|a, b| compare_labeled_candidates(a, b, &column_counts, &column_fingerprints));
+        candidates.sort_by(|a, b| {
+            compare_labeled_candidates(
+                a,
+                b,
+                &column_counts,
+                &column_fingerprints,
+                labels.is_empty(),
+            )
+        });
         if let Some(candidate) = candidates.into_iter().next() {
             for (&label, smiles) in &candidate.result.r_groups {
                 *column_counts
@@ -391,7 +400,101 @@ fn decompose_labeled_prepared(
             rows.push(None);
         }
     }
+    compact_auto_labels(&mut rows, labels, auto_labels)?;
     Ok(finalize_labeled_rows(rows, mols))
+}
+
+// On the pinned default-mode comparator batches, RDKit numbers established
+// automatic sites in reverse core-query order; unused sites take no final R
+// number. Keep query-order labels while selecting embeddings, then compact
+// the established columns before filling hydrogens.
+fn compact_auto_labels(
+    rows: &mut [Option<LabeledCandidate>],
+    explicit_labels: &HashMap<usize, u16>,
+    auto_labels: &HashMap<usize, u16>,
+) -> Result<(), RGroupError> {
+    // A bridge has the same fragment in multiple columns. Relabelling its
+    // ends also requires choosing a different core embedding; keep the
+    // existing, RDKit-aligned bridge labels until that alignment is solved.
+    if rows
+        .iter()
+        .flatten()
+        .any(|candidate| candidate.bridged_attachment_sites)
+    {
+        return Ok(());
+    }
+    let active: HashSet<u16> = rows
+        .iter()
+        .flatten()
+        .flat_map(|candidate| candidate.result.r_groups.keys().copied())
+        .collect();
+    let mut sites: Vec<_> = auto_labels.iter().collect();
+    sites.sort_by_key(|(query_idx, _)| std::cmp::Reverse(**query_idx));
+    sites.sort_by_key(|(_, label)| !active.contains(label));
+    let mut used: HashSet<u16> = explicit_labels.values().copied().collect();
+    let mut next = 1u16;
+    let mut remap = HashMap::new();
+    for (_, &old_label) in sites {
+        while used.contains(&next) {
+            next = next.saturating_add(1);
+        }
+        remap.insert(old_label, next);
+        used.insert(next);
+        next = next.saturating_add(1);
+    }
+    if remap.iter().all(|(old, new)| old == new) {
+        return Ok(());
+    }
+    for candidate in rows.iter_mut().flatten() {
+        candidate.attachments = remap_keys(std::mem::take(&mut candidate.attachments), &remap);
+        candidate.hydrogen_sites =
+            remap_keys(std::mem::take(&mut candidate.hydrogen_sites), &remap);
+        candidate.core_stub_orders =
+            remap_keys(std::mem::take(&mut candidate.core_stub_orders), &remap);
+        candidate.result.core_smiles = remap_smiles(&candidate.result.core_smiles, &remap)?;
+        candidate.result.r_groups = std::mem::take(&mut candidate.result.r_groups)
+            .into_iter()
+            .map(|(label, smiles)| {
+                Ok((
+                    *remap.get(&label).unwrap_or(&label),
+                    remap_smiles(&smiles, &remap)?,
+                ))
+            })
+            .collect::<Result<_, RGroupError>>()?;
+    }
+    Ok(())
+}
+
+fn remap_keys<T>(values: BTreeMap<u16, T>, remap: &HashMap<u16, u16>) -> BTreeMap<u16, T> {
+    values
+        .into_iter()
+        .map(|(label, value)| (*remap.get(&label).unwrap_or(&label), value))
+        .collect()
+}
+
+fn remap_smiles(smiles: &str, remap: &HashMap<u16, u16>) -> Result<String, RGroupError> {
+    let mut rewritten = String::with_capacity(smiles.len());
+    let mut cursor = 0;
+    while let Some(offset) = smiles[cursor..].find("[*:") {
+        let start = cursor + offset;
+        rewritten.push_str(&smiles[cursor..start]);
+        let end = smiles[start..]
+            .find(']')
+            .expect("generated wildcard is closed")
+            + start;
+        let old_label: u16 = smiles[start + 3..end]
+            .parse()
+            .expect("generated wildcard label is numeric");
+        rewritten.push_str(&format!(
+            "[*:{}]",
+            remap.get(&old_label).unwrap_or(&old_label)
+        ));
+        cursor = end + 1;
+    }
+    rewritten.push_str(&smiles[cursor..]);
+    let molecule =
+        parse(&rewritten).map_err(|err| RGroupError::Canonicalization(err.to_string()))?;
+    Ok(canonical_smiles(&molecule))
 }
 
 fn finalize_labeled_rows(
@@ -479,6 +582,7 @@ fn compare_labeled_candidates(
     b: &LabeledCandidate,
     column_counts: &BTreeMap<u16, HashMap<String, usize>>,
     column_fingerprints: &BTreeMap<u16, Vec<chematic_fp::BitVec2048>>,
+    automatic_only: bool,
 ) -> std::cmp::Ordering {
     let alignment_score = |candidate: &LabeledCandidate| {
         candidate
@@ -533,6 +637,23 @@ fn compare_labeled_candidates(
         .then_with(|| {
             if a.bridged_attachment_sites && b.bridged_attachment_sites {
                 a.attachment_elements.cmp(&b.attachment_elements)
+            } else {
+                std::cmp::Ordering::Equal
+            }
+        })
+        // Before any automatic column is established, align the heavier
+        // root to the earlier site on a symmetric core. Subsequent rows
+        // then use the established fragment and similarity scores.
+        .then_with(|| {
+            if automatic_only
+                && column_counts.is_empty()
+                && !a.single_attachment_site
+                && !b.single_attachment_site
+            {
+                b.attachment_elements
+                    .iter()
+                    .map(|(_, element)| element)
+                    .cmp(a.attachment_elements.iter().map(|(_, element)| element))
             } else {
                 std::cmp::Ordering::Equal
             }
@@ -771,6 +892,7 @@ fn labeled_candidate_for_sites(
         mut attachments,
         mut hydrogen_sites,
     } = sites;
+    let mut additional_attachments = Vec::new();
     let placeholder_pairs: HashSet<(AtomIdx, AtomIdx)> = attachments.values().copied().collect();
     for &core_atom in core {
         let Some(&query_idx) = target_to_query.get(&core_atom) else {
@@ -785,7 +907,20 @@ fn labeled_candidate_for_sites(
             if core.contains(&neighbor) || placeholder_pairs.contains(&(core_atom, neighbor)) {
                 continue;
             }
-            insert_attachment(&mut attachments, mol_idx, label, (core_atom, neighbor))?;
+            if attachments.contains_key(&label) {
+                // Several external components can share one R column. RDKit
+                // writes them as dot-separated fragments carrying the same
+                // wildcard label. A single core stub cannot preserve the
+                // frame of a stereogenic core atom after multiple cuts.
+                if explicit_labels.contains_key(&query_idx)
+                    || mol.stereo_neighbor_order(core_atom).is_some()
+                {
+                    return Err(RGroupError::MultipleAttachments { mol_idx, label });
+                }
+                additional_attachments.push((label, (core_atom, neighbor)));
+            } else {
+                insert_attachment(&mut attachments, mol_idx, label, (core_atom, neighbor))?;
+            }
         }
     }
 
@@ -796,12 +931,18 @@ fn labeled_candidate_for_sites(
     let mut attachment_sites = attachments.values().map(|&(site, _)| site);
     let first_site = attachment_sites.next();
     let single_attachment_site = attachment_sites.all(|site| Some(site) == first_site);
-    let boundaries: Vec<_> = attachments
+    let mut boundaries: Vec<_> = attachments
         .iter()
         .map(|(&label, &(core_atom, root))| (core_atom, root, Some(label)))
         .collect();
+    boundaries.extend(
+        additional_attachments
+            .iter()
+            .map(|&(label, (core_atom, root))| (core_atom, root, Some(label))),
+    );
     for (&label, &(core_atom, root)) in &attachments {
-        let fragment = extract_rgroup(mol, root, core, &boundaries);
+        let fragment =
+            fragment_for_label(mol, core, label, root, &additional_attachments, &boundaries)?;
         let smiles = canonical_smiles(&fragment);
         rgroup_fingerprints.insert(label, chematic_fp::ecfp4(&fragment));
         signature.push((label, smiles.clone(), canonical_rank[core_atom.0 as usize]));
@@ -848,6 +989,53 @@ fn labeled_candidate_for_sites(
             r_groups,
         },
     })
+}
+
+fn fragment_for_label(
+    mol: &Molecule,
+    core: &HashSet<AtomIdx>,
+    label: u16,
+    root: AtomIdx,
+    additional: &[(u16, (AtomIdx, AtomIdx))],
+    boundaries: &[(AtomIdx, AtomIdx, Option<u16>)],
+) -> Result<Molecule, RGroupError> {
+    let mut roots = vec![root];
+    roots.extend(
+        additional
+            .iter()
+            .filter_map(|&(other_label, (_, other_root))| {
+                (other_label == label).then_some(other_root)
+            }),
+    );
+    let mut visited = HashSet::new();
+    let mut fragments = Vec::new();
+    for component_root in roots {
+        if visited.contains(&component_root) {
+            continue;
+        }
+        visited.extend(outside_component(mol, component_root, core));
+        fragments.push(canonical_smiles(&extract_rgroup(
+            mol,
+            component_root,
+            core,
+            boundaries,
+        )));
+    }
+    fragments.sort();
+    parse(&fragments.join(".")).map_err(|err| RGroupError::Canonicalization(err.to_string()))
+}
+
+fn outside_component(mol: &Molecule, root: AtomIdx, core: &HashSet<AtomIdx>) -> HashSet<AtomIdx> {
+    let mut visited = HashSet::from([root]);
+    let mut queue = VecDeque::from([root]);
+    while let Some(atom) = queue.pop_front() {
+        for (neighbor, _) in mol.neighbors(atom) {
+            if !core.contains(&neighbor) && visited.insert(neighbor) {
+                queue.push_back(neighbor);
+            }
+        }
+    }
+    visited
 }
 
 fn hydrogen_rgroup(label: u16) -> Molecule {
