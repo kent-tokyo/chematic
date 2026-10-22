@@ -3308,6 +3308,26 @@ def from_cml_strict(cml_str: str | bytes) -> Mol:
     """Parse structurally valid, non-empty CML; reject malformed XML."""
     ...
 
+def from_cml_with_3d(cml_str: str | bytes) -> tuple[Mol, list[list[float]] | None]:
+    """Read one CML molecule with complete finite Cartesian Angstrom coordinates.
+
+    Returns source atom order; absent 3D coordinates return None. Requires
+    unique nonempty atom IDs and refuses partial triplets/mixed presence.
+    Limits: 16 MiB input, 100000 atoms plus native CML line/element/bond caps.
+    Metadata, namespaces/schema and coordinate stereo are not interpreted.
+    """
+    ...
+
+def from_cjson_checked(cjson_str: str) -> tuple[Mol, list[list[float]]]:
+    """Read the strict CJSON record profile into a graph and Cartesian rows.
+
+    Reject duplicate decoded JSON keys, malformed known arrays, duplicate/self
+    bonds and unsupported bond orders. Absent optional arrays use the existing
+    local defaults. Unknown metadata and stereo semantics are not interpreted.
+    Limits: 16 MiB input and 100000 atoms plus native JSON tree/bond limits.
+    """
+    ...
+
 def from_chemdraw_block(data: bytes, *, format: str = "AUTO", allow_metadata_loss: bool = False) -> dict[str, Any]:
     """Project CDX or UTF-8 CDXML into source-ordered molecules/coordinates.
 
@@ -3457,11 +3477,11 @@ def parse_sdf_with_coords(text: str) -> list[tuple[Mol, str, list[list[float]]]]
     ...
 
 def convert_with_report_json(text: str, input_format: str, output_format: str, policy: str = "strict") -> str:
-    """Checked MOL2/CJSON conversion; refusal is a report with null output."""
+    """Checked MOL2/CJSON/CML conversion; refusal is a report with null output."""
     ...
 
 def convert_with_report(text: str, input_format: str, output_format: str, /, *, policy: str = "strict") -> dict[str, object]:
-    """Return the shared checked MOL2/CJSON conversion report as a dictionary."""
+    """Return the shared checked MOL2/CJSON/CML conversion report as a dictionary."""
     ...
 
 def parse_cjson_record_json(text: str) -> str:
@@ -3495,6 +3515,17 @@ def mol2_reference_rmsds_json(
 
 def parse_mol2_record_json(text: str) -> str:
     """Return source metadata and bounded graph interpretation as MOL2 record JSON."""
+    ...
+
+def project_mol2_to_cjson(text: str | bytes) -> str:
+    """Project selected MOL2 fields to CJSON with mapped reparse checks.
+
+    Retains xyz, parsed name, projected graph and complete declared partial
+    charges. Incomplete/undeclared charge columns fail. Other metadata and
+    stereo are not retained or verified; use convert_with_report for losses.
+    NO_CHARGES zero placeholders are omitted as explicitly unassigned values.
+    Native conversion limits apply (16 MiB input/output, 10,000 atoms).
+    """
     ...
 
 def roundtrip_mol2_record(text: str) -> str:

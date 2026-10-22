@@ -96,6 +96,7 @@ pub use conversion::{
     ConversionAtomMapping, ConversionBondMapping, ConversionError, ConversionLimits,
     ConversionObservation, ConversionPolicy, ConversionReport, PreservationStatus,
     convert_with_report, convert_with_report_json, convert_with_report_with_limits,
+    project_mol2_to_cjson, project_mol2_to_cjson_with_limits,
 };
 pub use error::MolParseError;
 pub use reaction_cdxml::{ReactionCdxmlError, write_reaction_cdxml_checked};
@@ -126,11 +127,12 @@ pub use cif::{
 };
 pub use cjson::{CjsonError, CjsonParseLimits, parse_cjson, parse_cjson_with_limits, write_cjson};
 pub use cjson_record::{
-    CjsonRecord, parse_cjson_record, parse_cjson_record_with_limits, write_cjson_record,
+    CjsonProjection, CjsonRecord, parse_cjson_checked, parse_cjson_checked_with_limits,
+    parse_cjson_record, parse_cjson_record_with_limits, write_cjson_record,
 };
 pub use cml::{
-    CmlError, CmlParseLimits, parse_cml, parse_cml_strict, parse_cml_strict_with_limits,
-    parse_cml_with_limits, write_cml,
+    CmlError, CmlParseLimits, CmlWith3d, parse_cml, parse_cml_strict, parse_cml_strict_with_limits,
+    parse_cml_with_3d, parse_cml_with_3d_with_limits, parse_cml_with_limits, write_cml,
 };
 pub use cube::{
     CubeError, CubeFileReader, CubeParseLimits, parse_cube, parse_cube_with_limits, write_cube,
