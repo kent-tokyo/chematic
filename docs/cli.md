@@ -220,3 +220,18 @@ retaining its existing top-level operation fields. The envelope contains
 with their index and error. `status: "complete"` means processing completed
 within the declared bounds; cancellation and backpressure are separate future
 streaming gates and are not implied by this envelope.
+
+
+### Retain Gaussian job source
+
+GJF/COM same-format conversion retains the exact UTF-8 source, including
+Link0 directives, comments, basis sections, BOM and line endings. The leading
+Cartesian molecule specification and text framing are checked; opaque sections
+and external file references are retained without being interpreted or opened.
+
+```sh
+chematic convert --input-format com --output-format gjf --input original.com --output retained.gjf
+```
+
+GJF/COM is supported here only for source-preserving self conversion. See the
+[GJF source profile and measured limits](gjf-cartesian-integrity.md#exact-source-retention).

@@ -72,7 +72,8 @@ generated. The existing GJF writer still omits freeze codes, rounds coordinates
 to six decimals and fills missing coordinates with zero. The checked writer described below is a separate API; the legacy writer
 keeps its existing behavior. The Python common conversion
 bridge still uses the atoms-only GJF input reader: use `parse_gjf_geometry`
-explicitly to obtain coordinates and job metadata. No new CLI/WASM API is added.
+explicitly to obtain coordinates and job metadata. Same-format source retention
+is also available in CLI/WASM, as described below.
 
 ## Checked Cartesian writing
 
@@ -127,7 +128,7 @@ exactly three coordinate values per row, and rejects bool for numeric
 coordinates and integer state/flag fields. Input arrays are not modified.
 Route/title/source formatting, basis-set sections, connectivity, isotopes,
 fragment and ONIOM metadata are outside this explicit geometry representation.
-No default conversion route is changed, and no new CLI/WASM writer is added.
+The explicit Cartesian writer is available in Rust and Python.
 
 ### Paired writer comparison
 
@@ -173,6 +174,101 @@ python3 -m pytest crates/chematic-py/tests/test_gjf_cartesian_write.py
 Gaussian execution, arbitrary job validity, and toolkit-wide superiority have
 not been tested. Numerical extremes and transformed geometries are developer
 controls, not an independent chemistry holdout.
+
+## Exact source retention
+
+`GjfSourceRecord` pairs the complete immutable source with the reader's
+Cartesian geometry projection. Rust exports `parse_gjf_source_record`,
+`parse_gjf_source_record_with_limits` and `write_gjf_source_record`.
+`source_text()` and `geometry()` expose shared references; no edit operation
+can silently pair a modified geometry with old source. The writer returns the
+original UTF-8 text rather than rebuilding the job from interpreted fields.
+
+Python and WASM expose `roundtrip_gjf_record(text)`. Python
+`convert_format(text, "gjf", "com")`, WASM
+`convert_common_format(text, "com", "gjf")` and CLI `convert` use this path for
+GJF/COM self conversion, including case/dot aliases. Python refuses coordinate,
+charge, name and comment overrides on this path. New cross-format GJF output
+requires the explicit Cartesian writer; CLI/WASM accept GJF/COM only for
+same-format source retention.
+
+```python
+retained = chematic.convert_format(text, ".GJF", "com")
+assert retained.encode("utf-8") == text.encode("utf-8")
+```
+
+```sh
+chematic convert --input-format com --output-format gjf \
+  --input original.com --output retained.gjf
+```
+
+Link0 directives, wrapped route lines, multiline titles, atom labels, number
+spelling, comments, inline basis/constraint sections and trailing whitespace
+are retained as received. LF, CRLF, mixed LF/CRLF, optional leading UTF-8 BOM
+and absent final newline retain their exact bytes. UTF-8/control fixtures test
+text transport; they are not asserted to be executable Gaussian jobs.
+
+The leading Cartesian molecule specification uses the checked geometry reader.
+Z-matrices, unsupported atom annotations/fragment state, malformed atom rows,
+non-finite coordinates and multiple Link1 jobs are refused. Source framing also
+refuses bare CR, NUL/other controls except TAB/LF/CRLF, and Unicode line/paragraph
+separators. The original BOM participates in byte and line limits before being
+removed for geometry interpretation.
+
+Following job sections and arbitrary route keywords are opaque. They are
+copied without validating calculation settings, parsing every job section,
+opening referenced external files or bundling external resources. This is
+source identity, not complete Gaussian job validation. It does not certify
+that an unchanged job or its external references will execute successfully.
+The [Gaussian input documentation](https://www.conflex.co.jp/gaussian_support/input.php)
+describes the Link0/route/title/molecule/additional-section structure.
+
+| Surface | Input bytes | Atoms | Output |
+| --- | ---: | ---: | --- |
+| Rust default | 64 MiB | 1,000,000 | exact retained source |
+| Python direct/common default | 16 MiB | 100,000 | exact retained source |
+| CLI default | 64 MiB | 10,000 | existing 64 MiB output cap |
+| WASM direct/common | 1,000,000 | 10,000 | exact retained source |
+
+Native limits also bound physical lines, line bytes and section count. Python
+direct calls accept byte/atom overrides; the common route keeps its defaults.
+The CLI's input option may impose a smaller budget. These are per-operation
+limits, not a process memory cap.
+
+### Source transport verification
+
+`source-cases.json` contains 21 retention controls and 71 malformed,
+unsupported or framing refusals. Fresh Python and real Node/WASM pass the
+entire packet through both direct and common APIs. The real CLI passes it
+through stdin/stdout, and all 21 positive files also retain exact bytes with
+`--input`/`--output`. Validation and input-budget failures leave an existing
+output file untouched. Native/Python/Node tests cover atom limits; Node also
+checks exactly 1,000,000 bytes, one byte above, and a UTF-8 overflow whose JS
+string length is below the byte cap.
+
+The retained previous PR candidate `9c391f60` has no GJF same-format path:
+its Python common API returns no source for all 21 positives. The baseline's
+wrapper is verified against that commit, and its extension against the binary
+hash in that commit's writer report. This is a previous-candidate coverage
+comparison, not a release/main rebuild or malformed-input quality score.
+
+The local Open Babel 3.2.1 binary likewise rejects GJF input before reading
+molecules. Its catalog and invalid-input-format process outputs are archived;
+usage text on stdout is not scored as molecular output. No per-field loss or
+malformed-job validation ranking is inferred from unsupported input.
+
+Results, binary/source hashes and complete process outputs are saved in
+`validation/results/gjf-source-2026-10-22.json` and `.packet.json.gz`. The
+observer compares decoded UTF-8 bytes, distinguishing line endings, BOM,
+Unicode normalization and final newlines, and refuses successful/failed
+worker envelopes with missing or contradictory output fields. Reproduce with:
+
+```sh
+python3 scripts/validation/validate_gjf_source.py \
+  --python-root /path/to/new-package-root \
+  --baseline-python-root /path/to/retained-9c391f60-package-root \
+  --wasm-module /path/to/chematic_wasm.js --cli /path/to/chematic
+```
 
 ## Reader validation and Open Babel scope
 

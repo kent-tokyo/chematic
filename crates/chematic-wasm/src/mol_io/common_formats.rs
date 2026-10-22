@@ -132,6 +132,7 @@ pub(crate) fn common_format_name(format: &str) -> Option<String> {
         "smi" | "smiles" => Some("smiles".to_string()),
         "mol" | "sdf" => Some("mol".to_string()),
         "v3000" | "mol_v3000" => Some("mol_v3000".to_string()),
+        "gjf" | "com" => Some("gjf".to_string()),
         "mol2" => Some("mol2".to_string()),
         "cml" => Some("cml".to_string()),
         "cjson" => Some("cjson".to_string()),
@@ -171,7 +172,9 @@ fn parse_common_format(text: &str, format: &str) -> Result<chematic_core::Molecu
 ///
 /// This is the WASM counterpart of Python's `convert_format`. It supports
 /// SMILES, MOL/SDF, MOL V3000, MOL2, CML, ChemicalJSON, MolJSON, and CDXML.
-/// MOL2-to-MOL2 validates and retains the exact source. Other conversions use
+/// MOL2-to-MOL2 validates and retains the exact source. GJF/COM supports only
+/// same-format retention of a bounded single Cartesian job, including opaque
+/// job sections (not a Gaussian job validator). Other conversions use
 /// the topology-only bridge and do not carry format-specific metadata.
 #[wasm_bindgen]
 pub fn convert_common_format(
@@ -191,6 +194,14 @@ pub fn convert_common_format(
     let output = common_format_name(output_format).ok_or_else(|| {
         JsValue::from_str(&format!("unsupported molecular format: {output_format}"))
     })?;
+    if input == "gjf" || output == "gjf" {
+        if input != output {
+            return Err(JsValue::from_str(
+                "GJF/COM conversion supports same-format source retention only",
+            ));
+        }
+        return roundtrip_gjf_record(text);
+    }
     if input == "mol2" && output == "mol2" {
         return roundtrip_mol2_record(text);
     }
@@ -291,4 +302,20 @@ pub fn inchikey_from_smiles(smiles: &str) -> String {
         Ok(_) => format!("error:SMILES exceeds maximum atom count ({WASM_MAX_ATOMS})"),
         Err(e) => format!("error:{e}"),
     }
+}
+
+/// Retain exact single Cartesian GJF source without regenerating job sections.
+/// Opaque sections are not interpreted; no external files are opened.
+#[wasm_bindgen]
+pub fn roundtrip_gjf_record(text: &str) -> Result<String, JsValue> {
+    let record = chematic_mol::parse_gjf_source_record_with_limits(
+        text,
+        &chematic_mol::GaussianParseLimits {
+            max_input_bytes: WASM_MAX_INPUT_BYTES,
+            max_atoms: WASM_MAX_ATOMS,
+            ..Default::default()
+        },
+    )
+    .map_err(|error| JsValue::from_str(&error.to_string()))?;
+    Ok(chematic_mol::write_gjf_source_record(&record))
 }

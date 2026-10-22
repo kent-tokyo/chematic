@@ -165,13 +165,16 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
     Supported inputs are SMILES, MOL/SDF (V2000), MOL V3000, MOL2, CML,
     ChemicalJSON, MolJSON, CDXML, PDB, XYZ, PDBQT, and Gaussian input.
     Supported outputs are SMILES, MOL V2000, MOL V3000, MOL2, CML,
-    ChemicalJSON, MolJSON, CDXML, PDB, XYZ, and PDBQT. PDB, XYZ, and PDBQT
-    output require ``coords=[[x, y, z], ...]`` unless the input provides them.
+    ChemicalJSON, MolJSON, CDXML, PDB, XYZ, PDBQT, and same-format GJF/COM
+    source retention. PDB, XYZ, and PDBQT output require ``coords=[[x, y, z], ...]`` unless the input provides them.
 
     The molecular graph and supported stereochemistry are preserved. Format-
     specific metadata is not promised to survive conversion.
     MOL2 to MOL2 instead validates and retains the exact source; coordinate,
     charge, name, and comment overrides are rejected on that path.
+    GJF/COM to GJF/COM retains exact source for one Cartesian job, including
+    opaque job sections; overrides are rejected. Other GJF output routes
+    require the explicit geometry writer.
     """
     def normalize(value):
         if not isinstance(value, str):
@@ -199,6 +202,12 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
         if coords is not None or charges is not None or name != "LIG" or comment:
             raise ValueError("MOL2 source-preserving conversion does not accept overrides")
         return roundtrip_mol2_record(text)
+    if source == target == "gjf":
+        if coords is not None or charges is not None or name != "LIG" or comment != "":
+            raise ValueError("GJF source-preserving conversion does not accept overrides")
+        return roundtrip_gjf_record(text)
+    if target == "gjf":
+        raise ValueError("GJF output supports source-preserving GJF/COM input only; use write_gjf_cartesian for explicit geometry")
     if source == "smiles":
         mol = from_smiles(text)
     elif source == "mol":

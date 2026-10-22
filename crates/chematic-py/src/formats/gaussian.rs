@@ -61,3 +61,25 @@ pub(super) fn parse_gjf_geometry<'py>(
     result.set_item("multiplicity", geometry.multiplicity)?;
     Ok(result)
 }
+
+/// Retain a bounded single Cartesian GJF job as exact UTF-8 source.
+/// Opaque job sections are preserved, not interpreted. No external files are read.
+/// This is source retention, not job execution or complete Gaussian validation.
+#[pyfunction]
+#[pyo3(signature = (text, *, max_input_bytes=16_777_216, max_atoms=100_000))]
+pub(super) fn roundtrip_gjf_record(
+    text: &str,
+    max_input_bytes: usize,
+    max_atoms: usize,
+) -> PyResult<String> {
+    let record = chematic_mol::parse_gjf_source_record_with_limits(
+        text,
+        &chematic_mol::GaussianParseLimits {
+            max_input_bytes,
+            max_atoms,
+            ..Default::default()
+        },
+    )
+    .map_err(|error| PyValueError::new_err(error.to_string()))?;
+    Ok(chematic_mol::write_gjf_source_record(&record))
+}

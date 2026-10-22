@@ -27,6 +27,11 @@
 
 use chematic_core::{Atom, AtomIdx, Element, Molecule, MoleculeBuilder};
 
+mod source;
+pub use source::{
+    GjfSourceRecord, parse_gjf_source_record, parse_gjf_source_record_with_limits,
+    write_gjf_source_record,
+};
 mod writer;
 pub use writer::{GjfCoordinateUnits, GjfWriteError, GjfWriteOptions, write_gjf_cartesian};
 

@@ -5883,3 +5883,14 @@ def write_gjf_cartesian(
     Bounded to 100000 atoms; this does not serialize a graph or complete source job.
     """
     ...
+
+
+def roundtrip_gjf_record(
+    text: str, *, max_input_bytes: int = 16_777_216, max_atoms: int = 100_000,
+) -> str:
+    """Retain exact single Cartesian GJF source; opaque job sections are not validated.
+
+    Refuses malformed/unsupported geometry, multiple Link1 jobs, invalid text
+    framing and resource limits. Accepts LF/CRLF and an optional leading BOM.
+    """
+    ...

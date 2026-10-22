@@ -667,6 +667,11 @@ disambiguate by crate, not by name alone:
   malformed/unsupported atom rows, fragment spin pairs and multiple Link1 jobs
   are refused. This is a Cartesian projection, not complete job preservation.
 - **Connectivity**: no bond table is inferred.
+- **Exact source**: Rust `GjfSourceRecord`, `parse_gjf_source_record[_with_limits]`
+  and `write_gjf_source_record`; Python/WASM `roundtrip_gjf_record` and common
+  GJF/COM self conversion; CLI GJF/COM self conversion. This retains opaque job
+  sections as received, with checked leading Cartesian geometry and source
+  framing. It is not full-job validation or external-resource bundling.
 - **Details and comparison**: [GJF Cartesian geometry integrity](gjf-cartesian-integrity.md).
 
 ### ChemDoodle JSON

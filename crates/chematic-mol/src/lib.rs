@@ -150,9 +150,10 @@ pub use fhiaims::{
 };
 pub use gaussian::{
     GaussianError, GaussianLogResult, GaussianParseLimits, GjfCoordinateUnits, GjfGeometry,
-    GjfWriteError, GjfWriteOptions, parse_gaussian_log, parse_gaussian_log_with_limits, parse_gjf,
-    parse_gjf_geometry, parse_gjf_geometry_with_limits, parse_gjf_with_limits, write_gjf,
-    write_gjf_cartesian,
+    GjfSourceRecord, GjfWriteError, GjfWriteOptions, parse_gaussian_log,
+    parse_gaussian_log_with_limits, parse_gjf, parse_gjf_geometry, parse_gjf_geometry_with_limits,
+    parse_gjf_source_record, parse_gjf_source_record_with_limits, parse_gjf_with_limits, write_gjf,
+    write_gjf_cartesian, write_gjf_source_record,
 };
 pub use gzmat::{
     GzmatWriteOptions, ZMatrixError, ZMatrixRow, cartesian_to_zmatrix, validate_zmatrix,

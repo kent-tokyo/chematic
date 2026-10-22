@@ -1,6 +1,6 @@
 {
   "schema": "chematic.gjf-write-validation.v1",
-  "utc": "2026-10-22T08:33:05.753577+00:00",
+  "utc": "2026-10-22T09:29:48.614959+00:00",
   "scope": "Local candidate geometry writing. Not graph/job/source preservation, Gaussian execution, or toolkit-wide superiority.",
   "counts": {
     "checked.common.bitwise_match": 12,
@@ -37,9 +37,9 @@
   },
   "artifacts": {
     "extension": {
-      "path": "/private/tmp/chematic-gjf-write-python-20261022/chematic/chematic.cpython-313-darwin.so",
-      "sha256": "a6edbf9e8612a4585774b236d2ebe3481a5f6db748e2512be8eba38c3b695286",
-      "size_bytes": 44723120
+      "path": "/private/tmp/chematic-gjf-source-python-20261022/chematic/chematic.cpython-313-darwin.so",
+      "sha256": "ab5b998bcdc0810f6104831da0e09e6fd64ecbc2d8aec3a7ef9e0ed8b49c49fd",
+      "size_bytes": 44723136
     },
     "openbabel": {
       "path": "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",

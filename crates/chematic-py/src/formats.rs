@@ -1415,6 +1415,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         from_pdbqt,
         from_gjf,
         parse_gjf_geometry,
+        roundtrip_gjf_record,
         write_gjf_cartesian,
         parse_gaussian_log,
         write_gjf,

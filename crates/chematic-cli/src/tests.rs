@@ -536,3 +536,34 @@ fn output_limit_is_explicit_and_bounded() {
             .contains("maximum size")
     );
 }
+
+#[test]
+fn gjf_common_route_retains_source_and_refuses_cross_format_projection() {
+    let packet: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../validation/gjf-cartesian-2026-10-22/source-cases.json"
+    ))
+    .unwrap();
+    for case in packet["cases"].as_array().unwrap() {
+        let source = case["source"].as_str().unwrap();
+        for (input, output) in [("gjf", "gjf"), (".COM", ".GJF"), ("gjf", "com")] {
+            let result = convert_text(source, input, output);
+            if case["expected"] == "retain" {
+                assert_eq!(result.unwrap().as_bytes(), source.as_bytes());
+            } else {
+                assert!(result.is_err(), "{}", case["id"]);
+            }
+        }
+    }
+    assert!(
+        convert_text("C", "smiles", "gjf")
+            .unwrap_err()
+            .contains("same-format")
+    );
+    assert!(
+        convert_text("irrelevant", "gjf", "smiles")
+            .unwrap_err()
+            .contains("same-format")
+    );
+    let source = format!("# HF\n\nlimit\n\n0 1\n{}\n", "H 0 0 0\n".repeat(10_001));
+    assert!(convert_text(&source, "gjf", "com").is_err());
+}

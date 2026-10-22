@@ -51,5 +51,23 @@ class WriteObservation(unittest.TestCase):
         self.assertFalse(writer.same_numbers([[1.,2.,3.]], [[1.,2.,3.],[4.,5.,6.]]))
 
 
+source_spec = importlib.util.spec_from_file_location("gjf_source_validation", Path(__file__).parents[1] / "validation/validate_gjf_source.py")
+source = importlib.util.module_from_spec(source_spec)
+source_spec.loader.exec_module(source)
+
+
+class SourceObservation(unittest.TestCase):
+    def test_identity_is_bytes_including_line_endings_and_bom(self):
+        original = "\ufeff# HF\r\nraw e\u0301\r\n"
+        self.assertEqual(source.source_result(original, {"ok": True, "output": original}), "identical")
+        for changed in [original.replace("\r\n", "\n"), original.lstrip("\ufeff"), original.replace("e\u0301", "é"), original+"\n"]:
+            self.assertEqual(source.source_result(original, {"ok": True, "output": changed}), "altered")
+
+    def test_no_output_is_required_for_a_refusal(self):
+        self.assertEqual(source.source_result("input", {"ok": False, "error": "refused"}), "refused")
+        for result in [{"ok": False, "error": "refused", "output": "partial"}, {"ok": True}, {"ok": 1, "output": "input"}]:
+            with self.assertRaises(ValueError): source.source_result("input", result)
+
+
 if __name__ == "__main__":
     unittest.main()

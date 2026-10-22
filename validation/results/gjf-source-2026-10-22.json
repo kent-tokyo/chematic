@@ -1,0 +1,181 @@
+{
+  "schema": "chematic.gjf-source-validation.v1",
+  "utc": "2026-10-22T09:29:43.978472+00:00",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "python_version": "3.13.6 (v3.13.6:4e665351082, Aug  6 2025, 11:22:35) [Clang 16.0.0 (clang-1600.0.26.6)]",
+  "node_version": {
+    "resource_status": "completed",
+    "exit_code": 0,
+    "stdout": "v24.5.0\n",
+    "stderr": ""
+  },
+  "rust_version": {
+    "resource_status": "completed",
+    "exit_code": 0,
+    "stdout": "rustc 1.97.0 (2d8144b78 2026-07-07)\n",
+    "stderr": ""
+  },
+  "scope": "Exact source retention for the bounded single leading-Cartesian job profile. Opaque sections are not validated; no Gaussian execution or toolkit-wide superiority claim.",
+  "counts": {
+    "baseline_python.common.refused": 21,
+    "candidate_cli.common.identical": 21,
+    "candidate_cli.common.refused": 71,
+    "candidate_python.common.identical": 21,
+    "candidate_python.common.refused": 71,
+    "candidate_python.direct.identical": 21,
+    "candidate_python.direct.refused": 71,
+    "candidate_wasm.common.identical": 21,
+    "candidate_wasm.common.refused": 71,
+    "candidate_wasm.direct.identical": 21,
+    "candidate_wasm.direct.refused": 71
+  },
+  "fixture": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/gjf-cartesian-2026-10-22/source-cases.json",
+    "sha256": "d7f343d15e077976568543ed45705e78369c92792c57d0c8b08481d122756788",
+    "size_bytes": 22110
+  },
+  "packet": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/gjf-source-2026-10-22.packet.json.gz",
+    "sha256": "01f7f53b9bbd24cf1e72734507209f3293b8d8968646204ef6957fbd10b0fe3f",
+    "size_bytes": 6415
+  },
+  "baseline": {
+    "commit": "9c391f606a84e8cbab8fa11c93f7336c1a2a46bc",
+    "scope": "Retained previous PR candidate, not main or a release. Baseline positives only measure unavailable same-format coverage.",
+    "wrapper": {
+      "path": "/private/tmp/chematic-gjf-write-python-20261022/chematic/__init__.py",
+      "sha256": "fa171425f542041f4449489cfb87c2752e73b613840d7f5d26e1a4b09749f384",
+      "size_bytes": 25696
+    },
+    "extension": {
+      "path": "/private/tmp/chematic-gjf-write-python-20261022/chematic/chematic.cpython-313-darwin.so",
+      "sha256": "a6edbf9e8612a4585774b236d2ebe3481a5f6db748e2512be8eba38c3b695286",
+      "size_bytes": 44723120
+    },
+    "attestation": "9c391f606a84e8cbab8fa11c93f7336c1a2a46bc:validation/results/gjf-write-2026-10-22.json"
+  },
+  "artifacts": {
+    "python_extension": {
+      "path": "/private/tmp/chematic-gjf-source-python-20261022/chematic/chematic.cpython-313-darwin.so",
+      "sha256": "ab5b998bcdc0810f6104831da0e09e6fd64ecbc2d8aec3a7ef9e0ed8b49c49fd",
+      "size_bytes": 44723136
+    },
+    "python_wrapper": {
+      "path": "/private/tmp/chematic-gjf-source-python-20261022/chematic/__init__.py",
+      "sha256": "3817e193d2640efeb7eafd7b43eda36c81a962659f24d26db9b470151e8e014f",
+      "size_bytes": 26337
+    },
+    "wasm_js": {
+      "path": "/private/tmp/chematic-gjf-source-wasm-20261022/chematic_wasm.js",
+      "sha256": "609be43f0e61405b04eb10d0c38eee934894139146b02718b7b86e37b5009167",
+      "size_bytes": 367871
+    },
+    "wasm_binary": {
+      "path": "/private/tmp/chematic-gjf-source-wasm-20261022/chematic_wasm_bg.wasm",
+      "sha256": "d9d6b749daed23cd8329ef76da0ec9d5615e5e86a1ecfbd80d9a6a81b98c3aef",
+      "size_bytes": 44916609
+    },
+    "cli": {
+      "path": "/private/tmp/chematic-cml-refs-target-20261022/debug/chematic",
+      "sha256": "12d5e7352d909b4580f4ff3673f9ac526b69b8d32d26a36beb660872d1d5e85d",
+      "size_bytes": 24139064
+    },
+    "openbabel": {
+      "path": "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+      "sha256": "733b2c925d60b17a5c9d8ce9ec841e918cc20c7634301e23f9008a187d1d9bc5",
+      "size_bytes": 75728
+    }
+  },
+  "sources": [
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol/src/gaussian/source.rs",
+      "sha256": "8b9de38fce223a91c4b1bef2bae3882750a7057541f7263ed9c1cc488213fd7d",
+      "size_bytes": 2754
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol/src/gaussian.rs",
+      "sha256": "42254847bce1501cc0d8c83a5ce147aad206e057195625d8d85cf23ae243d5f2",
+      "size_bytes": 24473
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol/src/lib.rs",
+      "sha256": "de53f335a32eaf82ef48dd6b279853485a70982b5d98d0339d080aa9b16d66c0",
+      "size_bytes": 14288
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py/src/formats/gaussian.rs",
+      "sha256": "6247adc6e719eca524174ebb6e129831e0bce752dadb0d6f7b4a944941a94698",
+      "size_bytes": 3036
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py/python/chematic/__init__.py",
+      "sha256": "3817e193d2640efeb7eafd7b43eda36c81a962659f24d26db9b470151e8e014f",
+      "size_bytes": 26337
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-wasm/src/mol_io/common_formats.rs",
+      "sha256": "2b6e5c53d541831fee6039cf3f56ffb9f6ac94e129465366e6981d6e0e02e494",
+      "size_bytes": 12301
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-cli/src/main.rs",
+      "sha256": "1c4c830a101754d47f6f51074532c9460911e3197c30fe4b6c002352f7030663",
+      "size_bytes": 42926
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-cli/src/conversion_format.rs",
+      "sha256": "ff0d25f8c2f9de3ee5f947aa2409527ad4751f8cd24b09670041a94aea0f3113",
+      "size_bytes": 1524
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/scripts/validation/validate_gjf_source.py",
+      "sha256": "2ff2dfcb98ad39122ec82c4c7e5260905ac4722f854dbbb6af152fb6690c8101",
+      "size_bytes": 9328
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/scripts/validation/validate_gjf_source_node.mjs",
+      "sha256": "aebaeb93713b6cbcf760aefc34d09f804284db63626518ae2ff2dad9adb30111",
+      "size_bytes": 577
+    }
+  ],
+  "openbabel": {
+    "version": {
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27\n",
+      "stderr": ""
+    },
+    "comparison": "GJF input unsupported: a coverage difference, not a per-field preservation or malformed-input validation score. Usage text on stdout is not molecule output."
+  },
+  "process_limits": {
+    "seconds": 30,
+    "combined_pipe_bytes": 1048576,
+    "memory": "not imposed"
+  },
+  "files": [
+    {
+      "check": "all 21 fixture files retain exact UTF-8 bytes",
+      "passed": true
+    },
+    {
+      "check": "failure leaves prior output untouched",
+      "process": {
+        "resource_status": "completed",
+        "exit_code": 2,
+        "stdout": "",
+        "stderr": "chematic: charge/multiplicity line not found in GJF\n"
+      },
+      "passed": true
+    },
+    {
+      "check": "failure leaves prior output untouched",
+      "process": {
+        "resource_status": "completed",
+        "exit_code": 2,
+        "stdout": "",
+        "stderr": "chematic: input exceeds --max-input-bytes (8)\n"
+      },
+      "passed": true
+    }
+  ]
+}
