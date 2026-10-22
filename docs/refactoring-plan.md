@@ -85,7 +85,7 @@ not an acceptable completion condition.
 |---|---|---|---|
 | R17 | Converge the open format-I/O pull-request stacks | Parent-to-child CI is green, merged state is reproducible, baseline is frozen | Complete |
 | R18 | MOL2/CJSON checked-conversion orchestration | Candidate generation, loss accounting and verification are separate; two function allowances removed | Complete |
-| R19 | Standardization and chemistry transforms | Long orchestration functions split with unchanged typed outcomes | Ready for review |
+| R19 | Standardization and chemistry transforms | Long orchestration functions split with unchanged typed outcomes | Complete |
 | R20 | Depiction and layout | Layout stages bounded; image and coordinate fixtures unchanged | Ready for review |
 | R21 | Search, SMARTS and reaction internals | Search state and reaction projection stages have explicit owners | Planned |
 | R22 | Compatibility-heavy RDKit tables and adapters | Declarative data separated from control flow; parity fixtures unchanged | Planned |
