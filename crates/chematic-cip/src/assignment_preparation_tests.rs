@@ -6,6 +6,19 @@ const CORPORA: [&str; 2] = [
 ];
 
 fn eager(mol: &Molecule, budget: CipBudget) -> Result<AccurateCipAssignment, CipCompareError> {
+    let result = eager_without_wildcard_probe(mol, budget)?;
+    Ok(guard_wildcard_uncertainty(
+        mol,
+        budget,
+        result,
+        eager_without_wildcard_probe,
+    ))
+}
+
+fn eager_without_wildcard_probe(
+    mol: &Molecule,
+    budget: CipBudget,
+) -> Result<AccurateCipAssignment, CipCompareError> {
     let kekule = prepare_kekule_form(mol).ok();
     let pass1 = assign_all(mol, budget, kekule.as_ref())?;
     let pass2 = crate::resolver::apply_rule4b_pass(mol, budget, kekule.as_ref(), pass1);
@@ -67,4 +80,33 @@ fn preparation_guard_preserves_tiny_budgets_and_noncarbon_centres() {
             compare(smiles, budget);
         }
     }
+}
+
+#[test]
+fn wildcard_corpus_labels_only_change_to_explicit_abstentions() {
+    let mut wildcard_rows = 0;
+    let mut withdrawn = Vec::new();
+    for (row, line) in CORPORA[1].lines().enumerate() {
+        let smiles = line.split_whitespace().next().unwrap();
+        let mol = chematic_smiles::parse(smiles).unwrap();
+        if !mol.atoms().any(|(_, atom)| atom.wildcard) {
+            continue;
+        }
+        wildcard_rows += 1;
+        let budget = CipBudget::default_budget();
+        let before = assign_cip_without_wildcard_probe(&mol, budget).unwrap();
+        let after = assign_cip_accurate_experimental(&mol, budget).unwrap();
+        for (center, label) in before.assignments {
+            if !after.assignments.contains(&(center, label)) {
+                assert!(
+                    after
+                        .skipped
+                        .contains(&(center, SkipReason::OracleUnstable))
+                );
+                withdrawn.push((row, center.0));
+            }
+        }
+    }
+    assert_eq!(wildcard_rows, 61);
+    assert_eq!(withdrawn, [(717, 2), (1529, 12), (1849, 14), (1956, 1)]);
 }

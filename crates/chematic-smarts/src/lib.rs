@@ -31,7 +31,7 @@ pub use match_vf2::{
 };
 pub use mcs::{
     AtomCompare, BondCompare, McsConfig, McsOutcome, find_mcs, find_mcs_with_config,
-    find_mcs_with_config_checked,
+    find_mcs_with_config_checked, find_mcs_with_rdkit_any_heavy_checked,
 };
 pub use merge_hydrogens::{QueryHydrogenError, merge_query_hydrogens};
 pub use parser::{SmartsError, parse_smarts};

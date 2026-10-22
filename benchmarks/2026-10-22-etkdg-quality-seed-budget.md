@@ -75,6 +75,9 @@ comparison is specific to the installed 2026.09.1 release.
 
 ## Reproduce and limits
 
+Check out the pinned `10346020` source candidate before running this v1
+command. Later source uses the same probe entry point for the pooled v2 report.
+
 ```sh
 cargo build --release -p chematic-3d --example etkdg_quality_seed_budget_probe --locked
 PYTHONPATH=/path/to/rdkit-2026.09.1 python3 scripts/benchmarks/etkdg_quality_seed_budget_probe.py \

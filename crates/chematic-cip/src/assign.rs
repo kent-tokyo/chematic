@@ -131,9 +131,9 @@ pub enum SkipReason {
     Tied,
     /// The underlying digraph or comparator exceeded its budget for this atom.
     BudgetExceeded,
-    /// No chemically stable label is available for this stereocenter. This is
-    /// currently used when one of the four positions is a wildcard/dummy atom:
-    /// a concrete R/S label would assign a priority to an unspecified element.
+    /// No chemically stable label is available for this stereocenter. A
+    /// wildcard/dummy ligand has no specified elemental priority; a more
+    /// distant wildcard can also change the label when instantiated.
     OracleUnstable,
     /// The centre carries a tetrahedral stereo tag but has only three explicit
     /// ligands (e.g. a bridgehead amine `[N@@]`, a sulfoxide `[S@](=O)`): its
@@ -163,6 +163,109 @@ pub struct AccurateCipAssignment {
 /// assignment -- exactly today's behavior for such a molecule, since it never had a
 /// MANCUDE-fractional path to lose.
 pub fn assign_cip_accurate_experimental(
+    mol: &Molecule,
+    budget: CipBudget,
+) -> Result<AccurateCipAssignment, CipCompareError> {
+    let result = assign_cip_without_wildcard_probe(mol, budget)?;
+    Ok(guard_wildcard_uncertainty(
+        mol,
+        budget,
+        result,
+        assign_cip_without_wildcard_probe,
+    ))
+}
+
+fn guard_wildcard_uncertainty(
+    mol: &Molecule,
+    budget: CipBudget,
+    mut result: AccurateCipAssignment,
+    probe_assignment: impl Fn(&Molecule, CipBudget) -> Result<AccurateCipAssignment, CipCompareError>,
+) -> AccurateCipAssignment {
+    if result.assignments.is_empty() {
+        return result;
+    }
+
+    let wildcards: Vec<_> = mol
+        .atoms()
+        .filter_map(|(idx, atom)| atom.wildcard.then_some(idx))
+        .collect();
+    if wildcards.is_empty() {
+        return result;
+    }
+
+    // CIP priorities cannot cross disconnected components. This also keeps
+    // a separate wildcard reagent from affecting a fully specified center.
+    let mut connected_to_wildcard = vec![false; mol.atom_count()];
+    let mut stack = wildcards.clone();
+    while let Some(idx) = stack.pop() {
+        if connected_to_wildcard[idx.0 as usize] {
+            continue;
+        }
+        connected_to_wildcard[idx.0 as usize] = true;
+        stack.extend(mol.neighbors(idx).map(|(neighbor, _)| neighbor));
+    }
+    if !result
+        .assignments
+        .iter()
+        .any(|(center, _)| connected_to_wildcard[center.0 as usize])
+    {
+        return result;
+    }
+
+    // A wildcard can affect the order of branches several bonds away. Detect
+    // a concrete counterexample to an apparently stable label by replacing
+    // each wildcard, one at a time, with carbon and fluorine. Carbon alone
+    // misses cases where two carbon branches remain tied but a more distant
+    // high-priority atom reverses their order. Compare only labels obtained
+    // at the same center; an unresolved probe is not a reversal witness.
+    // These probes do not establish stability for every possible element.
+    const MAX_WILDCARDS: usize = 16;
+    let mut unstable = HashSet::new();
+    if wildcards.len() > MAX_WILDCARDS {
+        // Bound the work for query-like inputs with many placeholders. Their
+        // connected centers have unspecified priorities, so abstain rather
+        // than publish an untested label.
+        unstable.extend(
+            result
+                .assignments
+                .iter()
+                .filter(|(center, _)| connected_to_wildcard[center.0 as usize])
+                .map(|(center, _)| *center),
+        );
+    } else {
+        for wildcard in wildcards {
+            for element in [Element::C, Element::F] {
+                let concrete = mol.with_atom_element(wildcard, element);
+                let Ok(probe) = probe_assignment(&concrete, budget) else {
+                    continue;
+                };
+                let probe_labels: HashMap<_, _> = probe.assignments.into_iter().collect();
+                for &(center, label) in &result.assignments {
+                    if probe_labels
+                        .get(&center)
+                        .is_some_and(|&concrete_label| concrete_label != label)
+                    {
+                        unstable.insert(center);
+                    }
+                }
+            }
+        }
+    }
+    if !unstable.is_empty() {
+        result
+            .assignments
+            .retain(|(center, _)| !unstable.contains(center));
+        result.skipped.extend(
+            unstable
+                .into_iter()
+                .map(|center| (center, SkipReason::OracleUnstable)),
+        );
+        result.skipped.sort_by_key(|(center, _)| center.0);
+    }
+    result
+}
+
+fn assign_cip_without_wildcard_probe(
     mol: &Molecule,
     budget: CipBudget,
 ) -> Result<AccurateCipAssignment, CipCompareError> {

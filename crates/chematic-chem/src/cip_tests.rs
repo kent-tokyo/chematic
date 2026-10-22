@@ -870,6 +870,136 @@ fn cip_mode_legacy_fast_matches_assign_cip_byte_for_byte() {
 }
 
 #[test]
+fn accurate_cip_abstains_when_distant_wildcard_changes_priority() {
+    // Stress corpus row 1956. The wildcard is not a direct ligand of atom 1,
+    // yet instantiating it as carbon changes that center's R/S priority.
+    // A concrete label for the unspecified molecule is therefore unsafe.
+    let mol = chematic_smiles::parse("C[C@]12CC/C(=N\\N=C(N)N)C=C1C*[C@@H]2/C=C/[N+](=O)[O-]")
+        .expect("valid wildcard molecule");
+    let wildcard = mol
+        .atoms()
+        .find(|(_, atom)| atom.wildcard)
+        .map(|(idx, _)| idx)
+        .expect("fixture has a wildcard");
+    let center = AtomIdx(1);
+    assert!(mol.neighbors(center).all(|(idx, _)| idx != wildcard));
+
+    let concrete = mol.with_atom_element(wildcard, Element::C);
+    let concrete_result = assign_cip_with_mode(&concrete, CipMode::Accurate).unwrap();
+    assert_eq!(concrete_result.get(center), Some(CipCode::R));
+
+    let result = assign_cip_with_mode(&mol, CipMode::Accurate).unwrap();
+    assert_eq!(result.get(center), None);
+    assert!(
+        result
+            .unresolved
+            .contains(&(center, CipUnresolvedReason::OracleUnstable))
+    );
+}
+
+#[test]
+fn accurate_cip_abstains_when_wildcard_changes_isotope_branch_priority() {
+    // Stress corpus row 1849: the wildcard is on an aromatic side branch.
+    // Both engines label atom 14 as R with '*' and S with carbon, showing
+    // that an unspecified element does not support a definite R label.
+    let mol = chematic_smiles::parse("CCCCCCCOC1=CC=C(*C[C@](C)([200NH2])CO)C=C1").unwrap();
+    let wildcard = mol
+        .atoms()
+        .find(|(_, atom)| atom.wildcard)
+        .map(|(idx, _)| idx)
+        .unwrap();
+    let center = AtomIdx(14);
+    assert!(mol.neighbors(center).all(|(idx, _)| idx != wildcard));
+
+    let concrete = mol.with_atom_element(wildcard, Element::C);
+    assert_eq!(
+        assign_cip_with_mode(&concrete, CipMode::Accurate)
+            .unwrap()
+            .get(center),
+        Some(CipCode::S)
+    );
+    let result = assign_cip_with_mode(&mol, CipMode::Accurate).unwrap();
+    assert_eq!(result.get(center), None);
+    assert!(
+        result
+            .unresolved
+            .contains(&(center, CipUnresolvedReason::OracleUnstable))
+    );
+}
+
+#[test]
+fn accurate_cip_abstains_when_fluorine_changes_distant_priority() {
+    // RDKit 2026.09.1 stress rows 717 and 1529 keep S for '*', but report R
+    // when that wildcard is instantiated as fluorine. Carbon leaves S intact.
+    let rows = [
+        ("[*]C[C@H](N)C(=O)O", AtomIdx(2)),
+        (
+            "C(N)(CNC([C@H](CC(=O)O)NC([C@@H](NC(=O)[C@H](C(C)C)NC(=O)[C@H](CC1=CC=CC=C1)NC(=O)[C@H](C)NC(=O)[C@H](CC1=CC=C(C=C1)O)N)C(C)*)=O)=O)=O",
+            AtomIdx(12),
+        ),
+    ];
+    for (smiles, center) in rows {
+        let mol = chematic_smiles::parse(smiles).unwrap();
+        let wildcard = mol.atoms().find(|(_, atom)| atom.wildcard).unwrap().0;
+        assert_eq!(
+            assign_cip_with_mode(
+                &mol.with_atom_element(wildcard, Element::C),
+                CipMode::Accurate
+            )
+            .unwrap()
+            .get(center),
+            Some(CipCode::S),
+        );
+        assert_eq!(
+            assign_cip_with_mode(
+                &mol.with_atom_element(wildcard, Element::F),
+                CipMode::Accurate
+            )
+            .unwrap()
+            .get(center),
+            Some(CipCode::R),
+        );
+        let result = assign_cip_with_mode(&mol, CipMode::Accurate).unwrap();
+        assert_eq!(result.get(center), None, "{smiles}");
+        assert!(
+            result
+                .unresolved
+                .contains(&(center, CipUnresolvedReason::OracleUnstable)),
+            "{smiles}"
+        );
+    }
+}
+
+#[test]
+fn accurate_cip_keeps_label_when_wildcard_is_disconnected() {
+    let mol = chematic_smiles::parse("C[C@H](F)Cl.*").unwrap();
+    let result = assign_cip_with_mode(&mol, CipMode::Accurate).unwrap();
+    let without_wildcard = chematic_smiles::parse("C[C@H](F)Cl").unwrap();
+    let baseline = assign_cip_with_mode(&without_wildcard, CipMode::Accurate).unwrap();
+    assert_eq!(result.get(AtomIdx(1)), baseline.get(AtomIdx(1)));
+    assert!(result.unresolved.is_empty());
+}
+
+#[test]
+fn accurate_cip_bounds_many_wildcard_probes_by_component() {
+    let smiles = format!("C[C@H](F)C{}.[C@H](F)(Cl)Br", "*".repeat(17));
+    let mol = chematic_smiles::parse(&smiles).unwrap();
+    let distant_center = mol
+        .atoms()
+        .find(|(idx, atom)| *idx != AtomIdx(1) && atom.chirality.is_tetrahedral())
+        .map(|(idx, _)| idx)
+        .unwrap();
+    let result = assign_cip_with_mode(&mol, CipMode::Accurate).unwrap();
+    assert_eq!(result.get(AtomIdx(1)), None);
+    assert!(
+        result
+            .unresolved
+            .contains(&(AtomIdx(1), CipUnresolvedReason::OracleUnstable))
+    );
+    assert!(result.get(distant_center).is_some());
+}
+
+#[test]
 fn cip_mode_accurate_labels_phosphorus_ties_like_rdkit() {
     // docs/rfcs/cip_accurate_rfc.md Milestone 4C-1: atoms 6/19 of this
     // cyclophosphazene were reported unresolved because neither RDKit CIP
