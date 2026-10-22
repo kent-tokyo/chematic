@@ -672,6 +672,14 @@ disambiguate by crate, not by name alone:
   GJF/COM self conversion; CLI GJF/COM self conversion. This retains opaque job
   sections as received, with checked leading Cartesian geometry and source
   framing. It is not full-job validation or external-resource bundling.
+- **Explicit multi-job source**: Rust `GjfSourceDocument` /
+  `parse_gjf_source_document[_with_limits]` / `write_gjf_source_document`,
+  Python/WASM `roundtrip_gjf_document` / `parse_gjf_document_json`, and CLI
+  `gjf-document [--inspect]` validate every explicit Cartesian Link1 job before
+  returning any output. Exact source and ordered per-job geometry/UTF-8 ranges
+  are available separately. Job/atom/byte budgets count the whole document;
+  checkpoint-only geometry is unsupported. Opaque sections and references are
+  retained without interpretation. Single-job/common routes keep refusing Link1.
 - **Details and comparison**: [GJF Cartesian geometry integrity](gjf-cartesian-integrity.md).
 
 ### ChemDoodle JSON

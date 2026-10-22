@@ -45,3 +45,25 @@ pub(super) fn gjf_source_conversion(
         .map_err(|error| error.to_string()),
     )
 }
+
+pub(super) fn gjf_document(text: &str, inspect: bool, max_jobs: usize) -> Result<String, String> {
+    if max_jobs > 128 {
+        return Err("GJF document job limit must not exceed 128".into());
+    }
+    let document = chematic_mol::parse_gjf_source_document_with_limits(
+        text,
+        &chematic_mol::GjfDocumentLimits {
+            gaussian: chematic_mol::GaussianParseLimits {
+                max_atoms: super::MAX_SMILES_ATOMS,
+                ..Default::default()
+            },
+            max_jobs,
+        },
+    )
+    .map_err(|error| error.to_string())?;
+    Ok(if inspect {
+        format!("{}\n", document.to_json())
+    } else {
+        chematic_mol::write_gjf_source_document(&document)
+    })
+}

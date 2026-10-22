@@ -83,3 +83,58 @@ pub(super) fn roundtrip_gjf_record(
     .map_err(|error| PyValueError::new_err(error.to_string()))?;
     Ok(chematic_mol::write_gjf_source_record(&record))
 }
+
+fn gjf_document(
+    text: &str,
+    max_input_bytes: usize,
+    max_atoms: usize,
+    max_jobs: usize,
+) -> PyResult<chematic_mol::GjfSourceDocument> {
+    chematic_mol::parse_gjf_source_document_with_limits(
+        text,
+        &chematic_mol::GjfDocumentLimits {
+            gaussian: chematic_mol::GaussianParseLimits {
+                max_input_bytes,
+                max_atoms,
+                ..Default::default()
+            },
+            max_jobs,
+        },
+    )
+    .map_err(|error| PyValueError::new_err(error.to_string()))
+}
+
+/// Retain every explicit Cartesian Link1 job; never select the first or last.
+/// Atom/byte budgets cover the whole document. Opaque sections are not validated.
+#[pyfunction]
+#[pyo3(signature = (text, *, max_input_bytes=16_777_216, max_atoms=100_000, max_jobs=128))]
+pub(super) fn roundtrip_gjf_document(
+    text: &str,
+    max_input_bytes: usize,
+    max_atoms: usize,
+    max_jobs: usize,
+) -> PyResult<String> {
+    gjf_document(text, max_input_bytes, max_atoms, max_jobs)
+        .map(|document| chematic_mol::write_gjf_source_document(&document))
+}
+
+/// Inspect all explicit Cartesian jobs with ordered geometry and UTF-8 source ranges.
+/// No bonds, coordinate-unit conversion or external resources are inferred.
+#[pyfunction]
+#[pyo3(signature = (text, *, max_input_bytes=16_777_216, max_atoms=100_000, max_jobs=128))]
+pub(super) fn parse_gjf_document_json(
+    text: &str,
+    max_input_bytes: usize,
+    max_atoms: usize,
+    max_jobs: usize,
+) -> PyResult<String> {
+    let json = gjf_document(text, max_input_bytes, max_atoms, max_jobs)?
+        .to_json()
+        .to_string();
+    if json.len() > 16_777_216 {
+        return Err(PyValueError::new_err(
+            "GJF document JSON exceeds maximum output size",
+        ));
+    }
+    Ok(json)
+}

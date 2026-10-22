@@ -567,3 +567,35 @@ fn gjf_common_route_retains_source_and_refuses_cross_format_projection() {
     let source = format!("# HF\n\nlimit\n\n0 1\n{}\n", "H 0 0 0\n".repeat(10_001));
     assert!(convert_text(&source, "gjf", "com").is_err());
 }
+#[test]
+fn gjf_document_checks_every_job_without_changing_single_job_conversion() {
+    let packet: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../validation/gjf-document-2026-10-22/cases.json"
+    ))
+    .unwrap();
+    for case in packet["cases"].as_array().unwrap() {
+        let source = case["source"].as_str().unwrap();
+        let result = crate::conversion_format::gjf_document(source, false, 128);
+        if case["expected"] == "retain" {
+            assert_eq!(result.unwrap(), source);
+            let inspected: serde_json::Value = serde_json::from_str(
+                &crate::conversion_format::gjf_document(source, true, 128).unwrap(),
+            )
+            .unwrap();
+            assert_eq!(
+                inspected["jobs"].as_array().unwrap().len(),
+                case["jobs"].as_array().unwrap().len()
+            );
+            if case["jobs"].as_array().unwrap().len() > 1 {
+                assert!(convert_text(source, "gjf", "gjf").is_err());
+            }
+        } else {
+            assert!(result.is_err(), "{}", case["id"]);
+            assert!(crate::conversion_format::gjf_document(source, true, 128).is_err());
+        }
+    }
+    let source = include_str!("../../../validation/gjf-document-2026-10-22/two-jobs.gjf");
+    for cap in [0, 1, 129] {
+        assert!(crate::conversion_format::gjf_document(source, false, cap).is_err());
+    }
+}

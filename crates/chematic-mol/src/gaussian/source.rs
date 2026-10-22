@@ -43,6 +43,16 @@ pub fn parse_gjf_source_record_with_limits(
 ) -> Result<GjfSourceRecord, GaussianError> {
     // Include the BOM in the byte/line limits before removing it for parsing.
     check_input_limits(input, limits)?;
+    check_source_framing(input)?;
+    let geometry =
+        parse_gjf_geometry_with_limits(input.strip_prefix('\u{feff}').unwrap_or(input), limits)?;
+    Ok(GjfSourceRecord {
+        source: input.to_owned(),
+        geometry,
+    })
+}
+
+pub(super) fn check_source_framing(input: &str) -> Result<(), GaussianError> {
     for (offset, c) in input.char_indices() {
         if (c == '\r' && !input[offset..].starts_with("\r\n"))
             || (c.is_control() && !matches!(c, '\t' | '\n' | '\r'))
@@ -53,12 +63,7 @@ pub fn parse_gjf_source_record_with_limits(
             ));
         }
     }
-    let geometry =
-        parse_gjf_geometry_with_limits(input.strip_prefix('\u{feff}').unwrap_or(input), limits)?;
-    Ok(GjfSourceRecord {
-        source: input.to_owned(),
-        geometry,
-    })
+    Ok(())
 }
 
 /// Return the exact immutable source; no geometry or job data is regenerated.

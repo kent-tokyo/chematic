@@ -51,6 +51,21 @@ impl Default for BatchLimits {
 
 #[derive(Subcommand, Debug)]
 enum Command {
+    /// Retain all explicit Cartesian GJF/COM Link1 jobs, or inspect them as JSON.
+    GjfDocument {
+        #[arg(short, long)]
+        input: Option<PathBuf>,
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+        /// Emit ordered geometry/source ranges instead of exact source text.
+        #[arg(long)]
+        inspect: bool,
+        #[arg(long, default_value_t = 64 * 1024 * 1024)]
+        max_input_bytes: usize,
+        /// Whole-document job limit, at most 128 (atom limit: 10000 total).
+        #[arg(long, default_value_t = 128)]
+        max_jobs: usize,
+    },
     /// Emit a checked conversion report (MOL2 or CJSON input).
     ConvertWithReport {
         #[arg(long)]

@@ -270,6 +270,108 @@ python3 scripts/validation/validate_gjf_source.py \
   --wasm-module /path/to/chematic_wasm.js --cli /path/to/chematic
 ```
 
+## Explicit Link1 document retention
+
+`GjfSourceDocument` checks **every** job before returning a complete immutable
+document. It supports one or more jobs with explicit Cartesian coordinates,
+separated by standalone `--Link1--` lines. The delimiter is case insensitive,
+may have surrounding whitespace and requires a preceding blank line, following
+the [Gaussian input structure](https://www.conflex.co.jp/gaussian_support/input.php).
+The entire source is returned unchanged, including delimiters and all whitespace.
+
+Rust exports `parse_gjf_source_document`,
+`parse_gjf_source_document_with_limits`, `GjfDocumentLimits` and
+`write_gjf_source_document`. `jobs()` exposes ordered immutable `GjfSourceJob`
+values; each has `geometry()` and `source_range()`. The range indexes the
+original UTF-8 bytes, includes job whitespace and excludes the following
+delimiter. An initial BOM belongs to job zero's range. Coordinates retain
+their input numeric units; route unit declarations are not converted.
+
+Python and WASM expose `roundtrip_gjf_document(text)` and
+`parse_gjf_document_json(text)`. Inspection uses `chematic.gjf-document.v1`
+with ordered zero-based job indices, source byte ranges, elements, coordinates,
+freeze codes, charge and multiplicity. Inspection does not infer bonds,
+per-atom formal charges or relationships between jobs.
+
+```python
+import json
+retained = chematic.roundtrip_gjf_document(text)
+assert retained.encode("utf-8") == text.encode("utf-8")
+jobs = json.loads(chematic.parse_gjf_document_json(text))["jobs"]
+for job in jobs:
+    original_job = text.encode("utf-8")[job["source_start"]:job["source_end"]]
+    print(job["index"], job["charge"], job["multiplicity"])
+```
+
+```sh
+chematic gjf-document --input jobs.com --output retained.gjf
+chematic gjf-document --inspect --input jobs.com --output jobs.json
+```
+
+Empty jobs, malformed delimiter lines or missing required blank lines, malformed geometry anywhere in the
+document, checkpoint-only geometry (`Geom=Check`/`AllCheck` without explicit
+Cartesian rows), Z-matrices, unsupported atom syntax and invalid source framing
+are refused. No earlier job is returned as partial success. Existing geometry,
+single-record and common-conversion APIs continue to refuse multiple jobs;
+callers must explicitly choose the document API. Opaque sections, job keywords
+and checkpoint references remain uninterpreted. External resources are never
+opened or bundled. An unchanged source is not a certificate of executable
+Gaussian calculations or correct inter-job dependencies.
+
+| Surface | Input bytes | Total atoms | Jobs | Inspection output |
+| --- | ---: | ---: | ---: | ---: |
+| Rust default | 64 MiB | 1,000,000 | 128 | caller-managed |
+| Python default | 16 MiB | 100,000 | 128 | 16 MiB |
+| CLI | 64 MiB | 10,000 | 128 | 64 MiB |
+| WASM | 1,000,000 | 10,000 | 128 | 16 MiB |
+
+Byte, line, section and atom budgets cover the whole document; Link1 does not
+reset them. Native `GjfDocumentLimits` configures these bounds. Python accepts
+byte/atom/job overrides. CLI accepts a smaller `--max-input-bytes` or
+`--max-jobs` (at most 128); WASM uses fixed bounds. These are operation limits,
+not a process memory cap.
+
+### Document verification
+
+Original development fixtures in `validation/gjf-document-2026-10-22/cases.json`
+contain 15 retention/inspection controls and 22 refusals. Fresh Python, actual
+Node/WASM and the CLI pass all controls. Positive cases cover two/three jobs,
+different charge/spin and numeric units, inline basis data, freeze flags,
+signed zero/subnormal values, Unicode byte ranges, LF/CRLF/mixed endings, BOM
+and final-newline absence. Every job is checked against fixture-authored values.
+All 15 actual input/output files retain exact bytes; all 22 parse refusals and
+two requested-limit failures leave existing destination files untouched.
+
+The retained previous PR candidate `296ddd3f` has only the single-job common
+route: Python/CLI retain 1/15 controls and refuse the 14 multi-job controls.
+Its wrapper and binary hashes are attested against that commit's source report.
+This compares workflow coverage with a previous candidate, not a release/main
+rebuild or a malformed-job quality ranking. Local Open Babel 3.2.1 still refuses
+GJF input; no per-field loss score is assigned to that unsupported direction.
+
+Additional tests apply the explicit document profile to the previous 92-case
+source packet: 23 sources retain exactly (including the two Link1 controls),
+69 are refused. The single-record/common routes keep their original 21/71
+behavior. Tests exercise cumulative atom and 128/129-job boundaries; actual
+WASM also checks the exact byte cap and UTF-8 overflow. Independent observer
+controls detect missing/later-job mutations, wrong ranges/types, partial output
+and loss of signed zero during JSON transport. Raw inspection JSON is retained
+across the Node worker because re-stringifying parsed JS numbers changes `-0`
+to `0`.
+
+The report and complete process outputs are
+`validation/results/gjf-document-2026-10-22.json` and `.packet.json.gz`.
+Earlier reader/writer/source reports remain snapshots of their recorded builds.
+Reproduce the new document measurement with:
+
+```sh
+python3 scripts/validation/validate_gjf_document.py \
+  --python-root /path/to/new-package-root \
+  --wasm-module /path/to/chematic_wasm.js --cli /path/to/chematic \
+  --baseline-python-root /path/to/retained-296ddd3f-package-root \
+  --baseline-cli /path/to/retained-296ddd3f-chematic
+```
+
 ## Reader validation and Open Babel scope
 
 The original CC0 fixtures are in

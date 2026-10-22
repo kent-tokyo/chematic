@@ -69,5 +69,51 @@ class SourceObservation(unittest.TestCase):
             with self.assertRaises(ValueError): source.source_result("input", result)
 
 
+document_spec = importlib.util.spec_from_file_location("gjf_document_validation", Path(__file__).parents[1] / "validation/validate_gjf_document.py")
+document = importlib.util.module_from_spec(document_spec)
+document_spec.loader.exec_module(document)
+
+
+class DocumentObservation(unittest.TestCase):
+    def sample(self):
+        import copy
+        import json
+        case = json.loads((Path(__file__).parents[2] / "validation/gjf-document-2026-10-22/cases.json").read_text())["cases"][0]
+        result = {"ok": True, "output": case["source"], "inspection": {
+            "schema": "chematic.gjf-document.v1", "jobs": [dict(index=i, **copy.deepcopy(job)) for i, job in enumerate(case["jobs"])]}}
+        return case, result
+
+    def test_later_job_mutations_and_implicit_selection_are_not_matches(self):
+        case, result = self.sample()
+        self.assertEqual(document.document_result(case, result), "identical_verified")
+        result["inspection"]["jobs"][1]["charge"] = 1
+        self.assertEqual(document.document_result(case, result), "mismatched")
+        result["inspection"]["jobs"] = result["inspection"]["jobs"][:1]
+        self.assertEqual(document.document_result(case, result), "mismatched")
+
+    def test_signed_zero_offsets_and_wrong_scalar_types_are_not_matches(self):
+        for key, value in [("source_start", 1), ("charge", False), ("freeze_codes", [False])]:
+            case, result = self.sample()
+            result["inspection"]["jobs"][0][key] = value
+            self.assertEqual(document.document_result(case, result), "mismatched")
+        case, result = self.sample()
+        result["inspection"]["jobs"][0]["coords"][0][0] = 0.0
+        self.assertEqual(document.document_result(case, result), "mismatched")
+
+    def test_refusal_cannot_carry_partial_jobs_and_success_needs_inspection(self):
+        case, result = self.sample()
+        with self.assertRaises(ValueError): document.document_result(case, {"ok": False, "error": "later job failed", "inspection": {"jobs": []}})
+        del result["inspection"]
+        with self.assertRaises(ValueError): document.document_result(case, result)
+
+    def test_raw_json_transport_preserves_negative_zero_for_the_observer(self):
+        import json
+        case, result = self.sample()
+        result["inspection"] = json.dumps(result["inspection"])
+        self.assertEqual(document.document_result(case, result), "identical_verified")
+        result["inspection"] = result["inspection"].replace("-0.0", "0.0")
+        self.assertEqual(document.document_result(case, result), "mismatched")
+
+
 if __name__ == "__main__":
     unittest.main()

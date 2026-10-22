@@ -5894,3 +5894,27 @@ def roundtrip_gjf_record(
     framing and resource limits. Accepts LF/CRLF and an optional leading BOM.
     """
     ...
+
+
+def roundtrip_gjf_document(
+    text: str, *, max_input_bytes: int = 16_777_216, max_atoms: int = 100_000,
+    max_jobs: int = 128,
+) -> str:
+    """Retain all explicit Cartesian Link1 jobs and delimiters as exact UTF-8.
+
+    Budgets count the whole document. Refuses empty, unsupported or malformed
+    jobs; no checkpoint resources are opened. Single-job APIs still reject Link1.
+    """
+    ...
+
+
+def parse_gjf_document_json(
+    text: str, *, max_input_bytes: int = 16_777_216, max_atoms: int = 100_000,
+    max_jobs: int = 128,
+) -> str:
+    """Inspect ordered Cartesian jobs and UTF-8 source ranges as JSON.
+
+    Opaque sections/route keywords are not validated; coordinate units are not
+    converted and no bonds are inferred. JSON output is capped at 16 MiB.
+    """
+    ...
