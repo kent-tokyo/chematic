@@ -158,14 +158,6 @@
       "decisions": 47,
       "lines": 105
     },
-    "crates/chematic-mol/src/conversion.rs::convert_with_report_with_limits#1": {
-      "decisions": 54,
-      "lines": 375
-    },
-    "crates/chematic-mol/src/conversion/cjson_mol2.rs::convert#1": {
-      "decisions": 43,
-      "lines": 311
-    },
     "crates/chematic-mol/src/mol2_source.rs::parse_mol2_impl#1": {
       "decisions": 51,
       "lines": 327
