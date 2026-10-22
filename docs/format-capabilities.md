@@ -23,6 +23,13 @@ example `.mol2`, `smi`, and `com`). PDB/XYZ/PDBQT output requires 3D
 coordinates; graph-only conversions do not claim to preserve format-specific
 metadata. Unsupported formats fail before conversion with a `ValueError`.
 
+Same-format MOL2 and CJSON conversion validates and returns the exact source
+instead of reconstructing a molecule. Python rejects coordinate, charge, name
+and comment overrides on these paths. CJSON uses the immutable local record
+profile: duplicate keys and unsupported typed fields fail; unknown fields are
+retained without interpreting their chemistry. See the
+[CJSON source conversion validation](benchmarks/2026-10-22-cjson-source-conversion.md).
+
 The WASM bridge intentionally exposes the topology-only subset (SMILES, MOL,
 MOL V3000, MOL2, CML, ChemicalJSON, MolJSON, and CDXML) so that JavaScript
 and Python share a predictable core contract. Use the existing coordinate APIs
