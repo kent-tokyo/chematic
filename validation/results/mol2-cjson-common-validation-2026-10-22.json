@@ -1,0 +1,582 @@
+{
+  "schema": "chematic.mol2-cjson-common-evidence.v1",
+  "date": "2026-10-22",
+  "source_base": "d4208b9df9086b25df3e449d5f5ca6f8a32ad406",
+  "baseline_source_base": "b9412a06a09955874e3067c44cc2315406840340",
+  "scope": "Ordinary MOL2 -> CJSON selected-field projection and refusal of ambiguous charge data. 27 projection inputs, 12 ambiguous-charge controls, 9 one-record invalid/out-of-domain controls. Development packet, not a holdout, toolkit-wide/speed/release/complete-chemistry claim.",
+  "compatibility": "Python rejects overrides and uses bounded 10000-atom projection. NO_CHARGES raw zero placeholders are omitted as explicitly unassigned; USER_CHARGES signed zeros are assigned values and retained. The existing strict/allow_loss policies remain available; selected projection is not strict preservation.",
+  "oracle": "Declared source-ID-to-row graph, N.4 projected formal charge, coordinate decimal tokens, name, partial values/absence and method/absence. No stereo/hydrogen equivalence. All scored sources have sparse IDs; sequential-ID diagnostics retained separately. Nonempty competitor text is not necessarily valid JSON. Multiple source records are out of domain for one-record APIs, not universally invalid MOL2.",
+  "baseline_attestation": {
+    "commit": "c713b21af3125c4289c2829794e11ce8efc4f25f",
+    "path": "validation/results/cjson-source-conversion-validation-2026-10-22.json",
+    "verified_artifact_hashes": [
+      "python_extension",
+      "wasm_module",
+      "wasm_binary"
+    ],
+    "verified_source_identity": [
+      "Baseline Python package equals b9412a06",
+      "Native MOL and Python Rust source equal b9412a06..c713b21a",
+      "WASM c713b21a changes an unrelated CJSON-source common branch; MOL2 -> CJSON branch unchanged",
+      "Selected conversion/parser paths unchanged by intervening d4208b9d CIP guard"
+    ]
+  },
+  "sources": {
+    ".github/workflows/ci.yml": {
+      "path": ".github/workflows/ci.yml",
+      "sha256": "6c6ba7db4a3e3c9dff4f59954455ad2e4b58700a9476a6de082f1a6a2b931e85",
+      "size_bytes": 51559
+    },
+    "crates/chematic-mol/src/conversion.rs": {
+      "path": "crates/chematic-mol/src/conversion.rs",
+      "sha256": "1b943cabf73a19db5ad945ee60b52538283473aa666f907cf62462ea16fa3211",
+      "size_bytes": 32055
+    },
+    "crates/chematic-mol/src/conversion/mol2_cjson_projection.rs": {
+      "path": "crates/chematic-mol/src/conversion/mol2_cjson_projection.rs",
+      "sha256": "0fbcced864231037f8902802a3194fd02c1bee71bfe56662daccd86e1101dd71",
+      "size_bytes": 4004
+    },
+    "crates/chematic-mol/src/lib.rs": {
+      "path": "crates/chematic-mol/src/lib.rs",
+      "sha256": "de1ade52ce3d9f1c5766ad60cd2c0c65d51a16e39bcfd5207583f816756dfa54",
+      "size_bytes": 14096
+    },
+    "crates/chematic-mol/tests/mol2_cjson_common.rs": {
+      "path": "crates/chematic-mol/tests/mol2_cjson_common.rs",
+      "sha256": "ec3423157ec25c44064a50f739fc70b15e296bdbfe6bd2947b18ead0e6f26664",
+      "size_bytes": 5802
+    },
+    "crates/chematic-py/python/chematic/__init__.py": {
+      "path": "crates/chematic-py/python/chematic/__init__.py",
+      "sha256": "c306b1252086c1124b245a4698174ddfdb2860de3adc74c71217b3fe299658f5",
+      "size_bytes": 26336
+    },
+    "crates/chematic-py/python/chematic/__init__.pyi": {
+      "path": "crates/chematic-py/python/chematic/__init__.pyi",
+      "sha256": "6b47f6158213972e644a70153a2a9ce844dfb6cc0191d70dc90394f014de9285",
+      "size_bytes": 211981
+    },
+    "crates/chematic-py/src/formats.rs": {
+      "path": "crates/chematic-py/src/formats.rs",
+      "sha256": "f26e0a3a60bfe66560b225763b67ffed5d6233a2dd3c96af730932067258324a",
+      "size_bytes": 53485
+    },
+    "crates/chematic-py/src/formats/interchange.rs": {
+      "path": "crates/chematic-py/src/formats/interchange.rs",
+      "sha256": "ca2e8e034f6080892d68a5d86dc377f259520a9af9d96be3ad79c28cf1643efa",
+      "size_bytes": 2780
+    },
+    "crates/chematic-py/tests/test_mol2_cjson_common.py": {
+      "path": "crates/chematic-py/tests/test_mol2_cjson_common.py",
+      "sha256": "49768c4bf29e9783721a684c15bc11d7c58a4e7dd693138a041a44bdd5aea37d",
+      "size_bytes": 2808
+    },
+    "crates/chematic-wasm/src/mol_io/common_formats.rs": {
+      "path": "crates/chematic-wasm/src/mol_io/common_formats.rs",
+      "sha256": "9a269876969f20c001870ee4d269e43fe5026fb4b5541cdb4ad97a0c11d1716a",
+      "size_bytes": 12086
+    },
+    "crates/chematic-wasm/tests/mol2_cjson_common.test.mjs": {
+      "path": "crates/chematic-wasm/tests/mol2_cjson_common.test.mjs",
+      "sha256": "647f84e55a87ee8d533f07cbeb32435a1d2b9c6aa4f7e598ebdb6121eb335797",
+      "size_bytes": 2349
+    },
+    "docs/benchmarks/2026-10-22-mol2-cjson-common.md": {
+      "path": "docs/benchmarks/2026-10-22-mol2-cjson-common.md",
+      "sha256": "9c3120a531f2a4504bb5d4f00e6c686e0de2fa6a003e5dc34cecc805ae4c1dc8",
+      "size_bytes": 8891
+    },
+    "docs/format-capabilities.md": {
+      "path": "docs/format-capabilities.md",
+      "sha256": "dd22e99684a30da630b3fdd18e0ed3799a8800d306b993aad3b41aa671228d91",
+      "size_bytes": 54162
+    },
+    "scripts/tests/test_mol2_cjson_common.py": {
+      "path": "scripts/tests/test_mol2_cjson_common.py",
+      "sha256": "721d3813b097d455949fef6e92c91e1b993c1c39a6aea53523addd59e270f782",
+      "size_bytes": 3435
+    },
+    "scripts/validation/check_mol2_cjson_common.py": {
+      "path": "scripts/validation/check_mol2_cjson_common.py",
+      "sha256": "58c863ea3ae13b8cafdb1a3dcbb20f73273ad9b18414da6fb0a05b377d0e48a2",
+      "size_bytes": 6800
+    },
+    "validation/mol2_cjson_common/cases.json": {
+      "path": "validation/mol2_cjson_common/cases.json",
+      "sha256": "321e93947b863ec2c9a9c61859487ef5866d0e76e84d78c8238634345aacf509",
+      "size_bytes": 13876
+    },
+    "validation/results/binding_surface_inventory-current.json": {
+      "path": "validation/results/binding_surface_inventory-current.json",
+      "sha256": "636d332ac0a700ef1e80b37d0d4d18a65b9438ca825676463015365b3ed04c08",
+      "size_bytes": 562
+    }
+  },
+  "baseline_artifacts": {
+    "python_package": {
+      "path": "/private/tmp/chematic-cjson-unity-baseline-python-20261022/chematic/__init__.py",
+      "sha256": "fa171425f542041f4449489cfb87c2752e73b613840d7f5d26e1a4b09749f384",
+      "size_bytes": 25696
+    },
+    "python_extension": {
+      "path": "/private/tmp/chematic-cjson-unity-baseline-python-20261022/chematic/chematic.cpython-313-darwin.so",
+      "sha256": "4208d5677ac7bf4cb1c5961ddbc7236c3b7ad83f65b8f74fcbd1dadaeb51587d",
+      "size_bytes": 44623488
+    },
+    "wasm_module": {
+      "path": "/private/tmp/chematic-cjson-source-integrated-wasm-20261022/chematic_wasm.js",
+      "sha256": "0435d3d28f9f65c803bbefad9c6cc04ef5b8ada74b2d92d67b098cd4c9027cf0",
+      "size_bytes": 366818
+    },
+    "wasm_binary": {
+      "path": "/private/tmp/chematic-cjson-source-integrated-wasm-20261022/chematic_wasm_bg.wasm",
+      "sha256": "054bd13bd17e2ad95fe651fed08d1a021a443c0bd81b2402858c8cf1751b5f3a",
+      "size_bytes": 44853145
+    }
+  },
+  "candidate_artifacts": {
+    "python_package": {
+      "path": "/private/tmp/chematic-mol2-common-python-20261022/chematic/__init__.py",
+      "sha256": "c306b1252086c1124b245a4698174ddfdb2860de3adc74c71217b3fe299658f5",
+      "size_bytes": 26336
+    },
+    "python_extension": {
+      "path": "/private/tmp/chematic-mol2-common-python-20261022/chematic/chematic.cpython-313-darwin.so",
+      "sha256": "1af49e7a36b51275325e560288dcd318ab4feabadc495b4953b43706437c66e3",
+      "size_bytes": 44623536
+    },
+    "wasm_module": {
+      "path": "/private/tmp/chematic-mol2-common-wasm-20261022/chematic_wasm.js",
+      "sha256": "8d4a76db6cd55d41fbaa56482500a021e89b48fb8a543b86f53c7b3096dae1a9",
+      "size_bytes": 367126
+    },
+    "wasm_binary": {
+      "path": "/private/tmp/chematic-mol2-common-wasm-20261022/chematic_wasm_bg.wasm",
+      "sha256": "4bfc1c08f6e403184bd33662398bf5bbbf2d26f8d44c10831e995184c98c5cca",
+      "size_bytes": 44863836
+    }
+  },
+  "openbabel_files": [
+    {
+      "path": "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+      "sha256": "733b2c925d60b17a5c9d8ce9ec841e918cc20c7634301e23f9008a187d1d9bc5",
+      "size_bytes": 75728
+    },
+    {
+      "path": "/opt/homebrew/Cellar/open-babel/3.2.1/lib/libopenbabel.8.0.0.dylib",
+      "sha256": "9c0e023919fca6656f686b3903c10d438c0003a1d07e721a850cff9ff495c93a",
+      "size_bytes": 2794816
+    },
+    {
+      "path": "/opt/homebrew/Cellar/open-babel/3.2.1/lib/openbabel/3.2.1/mol2format.so",
+      "sha256": "d2d49ba300e14eedad7705018e0ec8bd30580081674eb1aa5bd4825cd8655b4f",
+      "size_bytes": 105856
+    },
+    {
+      "path": "/opt/homebrew/Cellar/open-babel/3.2.1/lib/openbabel/3.2.1/chemicaljsonformat.so",
+      "sha256": "39be1877bf787d7594058ca76173e3c7b418607bf1b7c1aaba5d96539571b6f2",
+      "size_bytes": 132736
+    }
+  ],
+  "toolchain": {
+    "rust": "rustc 1.97.0 (2d8144b78 2026-07-07)",
+    "node": "v24.5.0",
+    "python": "3.13.6 (v3.13.6:4e665351082, Aug  6 2025, 11:22:35) [Clang 16.0.0 (clang-1600.0.26.6)]",
+    "wasm_bindgen": "0.2.129 nodejs target",
+    "openbabel": {
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27\n",
+      "stderr": ""
+    }
+  },
+  "summary": {
+    "baseline": {
+      "python": {
+        "preserved_input_count": 27,
+        "selected_fields": {
+          "json_object": 27,
+          "indexed_graph": 27,
+          "coordinates": 0,
+          "name": 0,
+          "partial_values": 6,
+          "charge_method": 6
+        },
+        "refusals": {
+          "refused": {
+            "input_count": 12,
+            "no_output": 0
+          },
+          "invalid": {
+            "input_count": 9,
+            "no_output": 6
+          }
+        }
+      },
+      "wasm": {
+        "preserved_input_count": 27,
+        "selected_fields": {
+          "json_object": 27,
+          "indexed_graph": 27,
+          "coordinates": 0,
+          "name": 0,
+          "partial_values": 6,
+          "charge_method": 6
+        },
+        "refusals": {
+          "refused": {
+            "input_count": 12,
+            "no_output": 0
+          },
+          "invalid": {
+            "input_count": 9,
+            "no_output": 6
+          }
+        }
+      },
+      "openbabel": {
+        "preserved_input_count": 27,
+        "selected_fields": {
+          "json_object": 18,
+          "indexed_graph": 0,
+          "coordinates": 18,
+          "name": 18,
+          "partial_values": 14,
+          "charge_method": 14
+        },
+        "refusals": {
+          "refused": {
+            "input_count": 12,
+            "no_output": 4
+          },
+          "invalid": {
+            "input_count": 9,
+            "no_output": 5
+          }
+        }
+      },
+      "openbabel_single": {
+        "preserved_input_count": 27,
+        "selected_fields": {
+          "json_object": 18,
+          "indexed_graph": 0,
+          "coordinates": 18,
+          "name": 18,
+          "partial_values": 14,
+          "charge_method": 14
+        },
+        "refusals": {
+          "refused": {
+            "input_count": 12,
+            "no_output": 4
+          },
+          "invalid": {
+            "input_count": 9,
+            "no_output": 5
+          }
+        }
+      }
+    },
+    "candidate": {
+      "python": {
+        "preserved_input_count": 27,
+        "selected_fields": {
+          "json_object": 27,
+          "indexed_graph": 27,
+          "coordinates": 27,
+          "name": 27,
+          "partial_values": 27,
+          "charge_method": 27
+        },
+        "refusals": {
+          "refused": {
+            "input_count": 12,
+            "no_output": 12
+          },
+          "invalid": {
+            "input_count": 9,
+            "no_output": 9
+          }
+        }
+      },
+      "wasm": {
+        "preserved_input_count": 27,
+        "selected_fields": {
+          "json_object": 27,
+          "indexed_graph": 27,
+          "coordinates": 27,
+          "name": 27,
+          "partial_values": 27,
+          "charge_method": 27
+        },
+        "refusals": {
+          "refused": {
+            "input_count": 12,
+            "no_output": 12
+          },
+          "invalid": {
+            "input_count": 9,
+            "no_output": 9
+          }
+        }
+      },
+      "openbabel": {
+        "preserved_input_count": 27,
+        "selected_fields": {
+          "json_object": 18,
+          "indexed_graph": 0,
+          "coordinates": 18,
+          "name": 18,
+          "partial_values": 14,
+          "charge_method": 14
+        },
+        "refusals": {
+          "refused": {
+            "input_count": 12,
+            "no_output": 4
+          },
+          "invalid": {
+            "input_count": 9,
+            "no_output": 5
+          }
+        }
+      },
+      "openbabel_single": {
+        "preserved_input_count": 27,
+        "selected_fields": {
+          "json_object": 18,
+          "indexed_graph": 0,
+          "coordinates": 18,
+          "name": 18,
+          "partial_values": 14,
+          "charge_method": 14
+        },
+        "refusals": {
+          "refused": {
+            "input_count": 12,
+            "no_output": 4
+          },
+          "invalid": {
+            "input_count": 9,
+            "no_output": 5
+          }
+        }
+      }
+    }
+  },
+  "outcomes": {
+    "baseline": {
+      "path": "validation/results/mol2-cjson-common-baseline-2026-10-22.json.gz",
+      "sha256": "d7f0347fb1e89ae7c3e7bdb38cb5dce02656fac5c4e2a5e2fd1a54d0fddf0895",
+      "size_bytes": 6086,
+      "decompressed_sha256": "f56dcf7c9b0fd6fddf652727a0839f68f20954f7e73ee560b7b30530ab54450f",
+      "decompressed_size_bytes": 168202
+    },
+    "candidate": {
+      "path": "validation/results/mol2-cjson-common-candidate-2026-10-22.json.gz",
+      "sha256": "55611c1c7a28d9f3503b91ba0d1b96f986ab07d3566eb01d2a36ec0640273aa5",
+      "size_bytes": 6422,
+      "decompressed_sha256": "c5c1b5232b9c5f8cc020f8ffa67b1ee9fdc5b5cd816d64bf93aafc5ce8231aee",
+      "decompressed_size_bytes": 177819
+    },
+    "diagnostics": {
+      "path": "validation/results/mol2-cjson-common-diagnostics-2026-10-22.json.gz",
+      "sha256": "5d8d0cfbfd093e3128802c5a9726c5cce7b081cb5fb959b7683241de1fb5d04e",
+      "size_bytes": 1155,
+      "decompressed_sha256": "6dfd5e2956adef1652f30388787249c6d545712218ec65f48f82551d1d14cf8b",
+      "decompressed_size_bytes": 6368
+    }
+  },
+  "logs": {
+    "check": {
+      "path": "validation/results/mol2-cjson-common-2026-10-22/check.log.gz",
+      "sha256": "ae66f5bfc8310da906bcf29adf7f5092ca6ef678dc8207e20b38e2671e49ebb0",
+      "size_bytes": 204,
+      "decompressed_sha256": "b342b5c0abb42d59ee92c8c70b91d53f95e45166d2bb52d84e58d18f03317291",
+      "decompressed_size_bytes": 470
+    },
+    "python-build": {
+      "path": "validation/results/mol2-cjson-common-2026-10-22/python-build.log.gz",
+      "sha256": "8fab1b8dad1cc133dc27a5c1ae7c02380cee7f068ce4a07ccf285139d0e4c209",
+      "size_bytes": 161,
+      "decompressed_sha256": "c835341cc852afa91c6831d03ecfde0312ecdb74f6854fa08c13189ee827f729",
+      "decompressed_size_bytes": 276
+    },
+    "wasm-build": {
+      "path": "validation/results/mol2-cjson-common-2026-10-22/wasm-build.log.gz",
+      "sha256": "e98f4f314a526dcf16015def35c2bbcdb12fda3e884c39ae2be7b1f6c4b325c7",
+      "size_bytes": 196,
+      "decompressed_sha256": "e845775abc5f4b19176b3d53dd0d17f8c5714168651ec7aaaacecc172c0434fc",
+      "decompressed_size_bytes": 335
+    },
+    "python-tests": {
+      "path": "validation/results/mol2-cjson-common-2026-10-22/python-tests.log.gz",
+      "sha256": "38e24b8c8c6e137143a0a66c828e634a0a75ce91ba414e5bee78f9c2b178d4e9",
+      "size_bytes": 307,
+      "decompressed_sha256": "df67bd5d40d30a1731c7d64f14b646a48f17513608134d3fd96fb22d7a38ad4e",
+      "decompressed_size_bytes": 830
+    },
+    "rust-tests": {
+      "path": "validation/results/mol2-cjson-common-2026-10-22/rust-tests.log.gz",
+      "sha256": "0a53d52a18f99b39c5050f3ee6aeeaa97f5da8b1a6239f41f7fd5cc0eef084d9",
+      "size_bytes": 27032,
+      "decompressed_sha256": "713ea72c259ca1be4f3047e8afe8f83b9fde4b74850512832dfb186d2fa33eb4",
+      "decompressed_size_bytes": 123104
+    },
+    "node-tests": {
+      "path": "validation/results/mol2-cjson-common-2026-10-22/node-tests.log.gz",
+      "sha256": "ab005453325267af6d455b66a4aa40cee1855ac1edeec304639e005b3b6ae2bf",
+      "size_bytes": 118,
+      "decompressed_sha256": "1f3ce891e2ec373e5add7cad697e76e98eaefe4f9c3d807e683afe16433d3265",
+      "decompressed_size_bytes": 104
+    },
+    "node-preservation": {
+      "path": "validation/results/mol2-cjson-common-2026-10-22/node-preservation.log.gz",
+      "sha256": "f406b7fb5cfc07ab430080053a79747c474d9a1ae8d8d3859e84008663e75792",
+      "size_bytes": 71,
+      "decompressed_sha256": "c0a86dcef02ed65070c202e8df9bf817d2fee029e039aa4a006e3078109d1511",
+      "decompressed_size_bytes": 55
+    },
+    "node-reports": {
+      "path": "validation/results/mol2-cjson-common-2026-10-22/node-reports.log.gz",
+      "sha256": "5c7462be75f659a82cd396826b0a99d44ca5415b66e65bac23793b04a17c75d0",
+      "size_bytes": 156,
+      "decompressed_sha256": "fc5ea92c10443facf37d16ae95a9b027b617181bfd6fa44793fa3b83321ddae3",
+      "decompressed_size_bytes": 231
+    },
+    "observer-tests": {
+      "path": "validation/results/mol2-cjson-common-2026-10-22/observer-tests.log.gz",
+      "sha256": "136eef28325177dddfd9ff90292c23a9181ec23145de4d91f3733af590ee2198",
+      "size_bytes": 52,
+      "decompressed_sha256": "56e20796868da6db0d4db83cb09a7271e28814c958b51297071723c0df94c772",
+      "decompressed_size_bytes": 99
+    },
+    "wasm-native": {
+      "path": "validation/results/mol2-cjson-common-2026-10-22/wasm-native.log.gz",
+      "sha256": "0b6a1e43ca7b735368cfbc31e390d6049809aa1d27033b4668399788cb5bf125",
+      "size_bytes": 362,
+      "decompressed_sha256": "39e53f68cf45586c83a8bdc0ea72b82028514106c1ce0e11799e43c12e849738",
+      "decompressed_size_bytes": 717
+    },
+    "clippy": {
+      "path": "validation/results/mol2-cjson-common-2026-10-22/clippy.log.gz",
+      "sha256": "a98ce77c00e06e09b5e8a2f2d07d8336a3d40dd98a9a75184b4132d0567a7b98",
+      "size_bytes": 168,
+      "decompressed_sha256": "91ce735caa75b82203c2b0ed36ef1a898b040c139da8ff27c5a90c34fa296e32",
+      "decompressed_size_bytes": 388
+    },
+    "bindings": {
+      "path": "validation/results/mol2-cjson-common-2026-10-22/bindings.log.gz",
+      "sha256": "bae0bfb97bbc7a494c93b018b8bc33b21de66d06db2b6bbd2102adc96eb18ec4",
+      "size_bytes": 3510,
+      "decompressed_sha256": "bf9cd04fa4850abec6c4303335902cfcdc0e5ff3bf770f979962f6bac5e1f92a",
+      "decompressed_size_bytes": 20547
+    },
+    "stubs": {
+      "path": "validation/results/mol2-cjson-common-2026-10-22/stubs.log.gz",
+      "sha256": "534ac335bd997502ee31460e7b21c3ff0472d0a0402eeb52348d80dae8fbf48b",
+      "size_bytes": 67,
+      "decompressed_sha256": "98945ec702355b897670c54011fed035f73047ad280da66e6125fea56162ec13",
+      "decompressed_size_bytes": 50
+    },
+    "refactor": {
+      "path": "validation/results/mol2-cjson-common-2026-10-22/refactor.log.gz",
+      "sha256": "57d514faf4624ed843a6a3fabc06d5cac222db39c2d2299161cbc6d1244bda22",
+      "size_bytes": 100,
+      "decompressed_sha256": "5195cb6f49516bac242f111f70d9b47e0f13e25448d51849835ebb79702e360b",
+      "decompressed_size_bytes": 106
+    },
+    "fmt": {
+      "path": "validation/results/mol2-cjson-common-2026-10-22/fmt.log.gz",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "size_bytes": 20,
+      "decompressed_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "decompressed_size_bytes": 0
+    },
+    "parent-api": {
+      "path": "validation/results/mol2-cjson-common-2026-10-22/parent-api.log.gz",
+      "sha256": "469a11d048bd701dadd25baf9cb70419c33bc07ca43e7f9397e062969b203eba",
+      "size_bytes": 83,
+      "decompressed_sha256": "026f6d2da0ef02b218c3b44546eda64d24b7042bd3f41c9d39d755942a8561f1",
+      "decompressed_size_bytes": 63
+    },
+    "naming": {
+      "path": "validation/results/mol2-cjson-common-2026-10-22/naming.log.gz",
+      "sha256": "b4f379b8903ddc162104c439c4692ffaaf6573906a0c906df0126c7d013c5c75",
+      "size_bytes": 76,
+      "decompressed_sha256": "d1f6921742a3cbe1b0c2309ebb06b159c1b9d3120a07fb4041c5db2c2a043e51",
+      "decompressed_size_bytes": 66
+    },
+    "workflow-pins": {
+      "path": "validation/results/mol2-cjson-common-2026-10-22/workflow-pins.log.gz",
+      "sha256": "37714b46c19445e1d1f910e9733efe682d6d3997dfd055af9f52ec80fa675108",
+      "size_bytes": 87,
+      "decompressed_sha256": "487f9131fb571b886134dc20a91c114f58c6175d50b85cf6a258a251544d8d90",
+      "decompressed_size_bytes": 71
+    },
+    "file-io-contract": {
+      "path": "validation/results/mol2-cjson-common-2026-10-22/file-io-contract.log.gz",
+      "sha256": "62e8579acacc7bddad8eecf9f1ed7df820a106f32ad67d909d55f12a7e4a61b8",
+      "size_bytes": 102,
+      "decompressed_sha256": "6cd4b43f8407860055e672ed728806eb9abe736d9191ef0a68e8a7006187dfc7",
+      "decompressed_size_bytes": 88
+    },
+    "benchmark-index": {
+      "path": "validation/results/mol2-cjson-common-2026-10-22/benchmark-index.log.gz",
+      "sha256": "d17c9ac07675c74605fc4aaa7dbe019fd38d61f3ecc669015d35daa124983b0e",
+      "size_bytes": 67,
+      "decompressed_sha256": "15d4d8766f2538a147591f9444d8d461a99faa62f4f8d0575496aec0f87fba98",
+      "decompressed_size_bytes": 52
+    },
+    "docs": {
+      "path": "validation/results/mol2-cjson-common-2026-10-22/docs.log.gz",
+      "sha256": "546c149412ce4502e54c6a68e98e4d8dd07f8ecfa5e928b49e371028d7b83d38",
+      "size_bytes": 1225,
+      "decompressed_sha256": "ee2670439a4c1dde06aabd6df738959a5a805ea9a21d42668a344fafdabba16f",
+      "decompressed_size_bytes": 2717
+    },
+    "baseline": {
+      "path": "validation/results/mol2-cjson-common-2026-10-22/baseline.log.gz",
+      "sha256": "a74868b3d4fd756af22d9785a45f31d1333cab0061b97591c43afffcd7d91a56",
+      "size_bytes": 243,
+      "decompressed_sha256": "6d1d93d05bf76648fdc9fe41a94a0f3974f38d8d1b0793e52c2ac027554ae673",
+      "decompressed_size_bytes": 1142
+    },
+    "candidate": {
+      "path": "validation/results/mol2-cjson-common-2026-10-22/candidate.log.gz",
+      "sha256": "d9548681426a6b6b7fcda68c7d65e0ce420901a7b861669f010d460fca9ca756",
+      "size_bytes": 240,
+      "decompressed_sha256": "463c1a5fc2c10a6c761af659f9393fd46a43d112303fedd083b94edc700070de",
+      "decompressed_size_bytes": 1152
+    },
+    "script-layout": {
+      "path": "validation/results/mol2-cjson-common-2026-10-22/script-layout.log.gz",
+      "sha256": "7a4ba55839417ab5a382fd544dafef5b4e4e6a7542d66254d158bdc8985826db",
+      "size_bytes": 78,
+      "decompressed_sha256": "552028e216bc5bc00277707740021dc1f7100a720852583ed9279e4355f0c6bc",
+      "decompressed_size_bytes": 61
+    }
+  },
+  "checks": {
+    "rust": "1476 chematic-mol lib/integration tests passed",
+    "python": "108 passed; host plugin autoload disabled for incompatible host pytest-asyncio/pytest 9",
+    "observer": "40 passed including shared bounded-process harness tests",
+    "wasm": "Real Node/WASM: 27 projections, 12 ambiguous-charge and 9 one-record invalid/out-of-domain refusals, generated zero-placeholder workflow, byte and 10000/10001-atom bounds; existing MOL2 preservation and conversion-report suites passed",
+    "wasm_native": "1 existing common-conversion alias/graph regression passed",
+    "clippy": "chematic-mol/py/wasm all-targets -D warnings passed",
+    "docs": "Strict MkDocs passed",
+    "static": "fmt, binding inventory, stubs, refactor budget, parent API docs, naming, workflow pins, file-IO contract, benchmark index passed; script layout checked after staging"
+  },
+  "build_environment": {
+    "CARGO_TARGET_DIR": "/private/tmp/chematic-cml-refs-target-20261022",
+    "CARGO_BUILD_JOBS": "2",
+    "CARGO_PROFILE_DEV_DEBUG": "0",
+    "CARGO_INCREMENTAL": "0",
+    "PYO3_PYTHON": "python3"
+  },
+  "build_commands": {
+    "python": "cargo rustc --locked -p chematic-py --lib -- -C link-arg=-undefined -C link-arg=dynamic_lookup",
+    "wasm": "cargo build --locked -p chematic-wasm --target wasm32-unknown-unknown; wasm-bindgen --target nodejs"
+  }
+}

@@ -10,7 +10,7 @@ fn frozen_per_line_tokens(input: &str) -> Result<MolReadReport, MolParseError> {
         let tokens = line.payload.split_whitespace().collect::<Vec<_>>();
         parser.consume(line, &tokens)?;
     }
-    finish_v3000_report(parser, metadata, line2)
+    finish_v3000_report(parser, metadata, line2).map(|(report, _)| report)
 }
 
 fn compare(input: &str) -> bool {

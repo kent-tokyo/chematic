@@ -1,0 +1,489 @@
+{
+  "schema": "chematic.gjf-cartesian-fixtures.v1",
+  "provenance": "Original synthetic fixtures authored for this repository; CC0-1.0. No issue attachments or third-party fixtures copied.",
+  "cases": [
+    {
+      "id": "plain",
+      "category": "cartesian",
+      "input": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nC 1.25 2.5 3.75\n\n",
+      "expected": {
+        "elements": [
+          "C"
+        ],
+        "coords": [
+          [
+            1.25,
+            2.5,
+            3.75
+          ]
+        ],
+        "freeze_codes": [
+          null
+        ],
+        "charge": -1,
+        "multiplicity": 2
+      }
+    },
+    {
+      "id": "frozen",
+      "category": "cartesian",
+      "input": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nC -1 1.25 2.5 3.75\n\n",
+      "expected": {
+        "elements": [
+          "C"
+        ],
+        "coords": [
+          [
+            1.25,
+            2.5,
+            3.75
+          ]
+        ],
+        "freeze_codes": [
+          -1
+        ],
+        "charge": -1,
+        "multiplicity": 2
+      }
+    },
+    {
+      "id": "explicit-free",
+      "category": "cartesian",
+      "input": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nC 0 1.25 2.5 3.75\n\n",
+      "expected": {
+        "elements": [
+          "C"
+        ],
+        "coords": [
+          [
+            1.25,
+            2.5,
+            3.75
+          ]
+        ],
+        "freeze_codes": [
+          0
+        ],
+        "charge": -1,
+        "multiplicity": 2
+      }
+    },
+    {
+      "id": "mixed",
+      "category": "cartesian",
+      "input": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nC -1 1.25 2.5 3.75\nO 0 -4.5 5.25 -6.75\nH 7.25 -8.5 9.75\n\n",
+      "expected": {
+        "elements": [
+          "C",
+          "O",
+          "H"
+        ],
+        "coords": [
+          [
+            1.25,
+            2.5,
+            3.75
+          ],
+          [
+            -4.5,
+            5.25,
+            -6.75
+          ],
+          [
+            7.25,
+            -8.5,
+            9.75
+          ]
+        ],
+        "freeze_codes": [
+          -1,
+          0,
+          null
+        ],
+        "charge": -1,
+        "multiplicity": 2
+      }
+    },
+    {
+      "id": "atomic-numbers",
+      "category": "cartesian",
+      "input": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\n6 -1 1.25 2.5 3.75\n8 -4.5 5.25 -6.75\n\n",
+      "expected": {
+        "elements": [
+          "C",
+          "O"
+        ],
+        "coords": [
+          [
+            1.25,
+            2.5,
+            3.75
+          ],
+          [
+            -4.5,
+            5.25,
+            -6.75
+          ]
+        ],
+        "freeze_codes": [
+          -1,
+          null
+        ],
+        "charge": -1,
+        "multiplicity": 2
+      }
+    },
+    {
+      "id": "numbered-symbols",
+      "category": "cartesian",
+      "input": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nCl12 -1 1.25 2.5 3.75\n\n",
+      "expected": {
+        "elements": [
+          "Cl"
+        ],
+        "coords": [
+          [
+            1.25,
+            2.5,
+            3.75
+          ]
+        ],
+        "freeze_codes": [
+          -1
+        ],
+        "charge": -1,
+        "multiplicity": 2
+      }
+    },
+    {
+      "id": "comma-delimited",
+      "category": "cartesian",
+      "input": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1,2\nC,-1,1.25,2.5,3.75\n\n",
+      "expected": {
+        "elements": [
+          "C"
+        ],
+        "coords": [
+          [
+            1.25,
+            2.5,
+            3.75
+          ]
+        ],
+        "freeze_codes": [
+          -1
+        ],
+        "charge": -1,
+        "multiplicity": 2
+      }
+    },
+    {
+      "id": "comments",
+      "category": "cartesian",
+      "input": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2 ! job\n! atom comment\nC -1 1.25 2.5 3.75 ! frozen\n\n",
+      "expected": {
+        "elements": [
+          "C"
+        ],
+        "coords": [
+          [
+            1.25,
+            2.5,
+            3.75
+          ]
+        ],
+        "freeze_codes": [
+          -1
+        ],
+        "charge": -1,
+        "multiplicity": 2
+      }
+    },
+    {
+      "id": "precision",
+      "category": "cartesian",
+      "input": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nC -1 1.2345678901234567 -2.5e-20 9.876543210987654\n\n",
+      "expected": {
+        "elements": [
+          "C"
+        ],
+        "coords": [
+          [
+            1.2345678901234567,
+            -2.5e-20,
+            9.876543210987654
+          ]
+        ],
+        "freeze_codes": [
+          -1
+        ],
+        "charge": -1,
+        "multiplicity": 2
+      }
+    },
+    {
+      "id": "separate-geometry-section",
+      "category": "cartesian",
+      "input": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\n\nC -1 1.25 2.5 3.75\n\n",
+      "expected": {
+        "elements": [
+          "C"
+        ],
+        "coords": [
+          [
+            1.25,
+            2.5,
+            3.75
+          ]
+        ],
+        "freeze_codes": [
+          -1
+        ],
+        "charge": -1,
+        "multiplicity": 2
+      }
+    },
+    {
+      "id": "raw-bohr-unit-control",
+      "category": "numeric-profile-control",
+      "input": "%chk=original.chk\n# HF/STO-3G Units=Bohr\n\nOriginal geometry control\n\n-1 2\nC -1 1.25 2.5 3.75\n\n",
+      "expected": {
+        "elements": [
+          "C"
+        ],
+        "coords": [
+          [
+            1.25,
+            2.5,
+            3.75
+          ]
+        ],
+        "freeze_codes": [
+          -1
+        ],
+        "charge": -1,
+        "multiplicity": 2
+      }
+    },
+    {
+      "id": "signed-code-control",
+      "category": "numeric-profile-control",
+      "input": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nC 2147483647 1.25 2.5 3.75\n\n",
+      "expected": {
+        "elements": [
+          "C"
+        ],
+        "coords": [
+          [
+            1.25,
+            2.5,
+            3.75
+          ]
+        ],
+        "freeze_codes": [
+          2147483647
+        ],
+        "charge": -1,
+        "multiplicity": 2
+      }
+    },
+    {
+      "id": "malformed-0-first",
+      "category": "malformed",
+      "input": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nH\nC 0 0 0\n\n",
+      "expected": null
+    },
+    {
+      "id": "malformed-0-last",
+      "category": "malformed",
+      "input": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nC 0 0 0\nH\n\n",
+      "expected": null
+    },
+    {
+      "id": "malformed-1-first",
+      "category": "malformed",
+      "input": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nH 1\nC 0 0 0\n\n",
+      "expected": null
+    },
+    {
+      "id": "malformed-1-last",
+      "category": "malformed",
+      "input": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nC 0 0 0\nH 1\n\n",
+      "expected": null
+    },
+    {
+      "id": "malformed-2-first",
+      "category": "malformed",
+      "input": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nH 1 2\nC 0 0 0\n\n",
+      "expected": null
+    },
+    {
+      "id": "malformed-2-last",
+      "category": "malformed",
+      "input": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nC 0 0 0\nH 1 2\n\n",
+      "expected": null
+    },
+    {
+      "id": "malformed-3-first",
+      "category": "malformed",
+      "input": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nH -1 1 2 3 4\nC 0 0 0\n\n",
+      "expected": null
+    },
+    {
+      "id": "malformed-3-last",
+      "category": "malformed",
+      "input": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nC 0 0 0\nH -1 1 2 3 4\n\n",
+      "expected": null
+    },
+    {
+      "id": "malformed-4-first",
+      "category": "malformed",
+      "input": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nH 0.5 1 2 3\nC 0 0 0\n\n",
+      "expected": null
+    },
+    {
+      "id": "malformed-4-last",
+      "category": "malformed",
+      "input": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nC 0 0 0\nH 0.5 1 2 3\n\n",
+      "expected": null
+    },
+    {
+      "id": "malformed-5-first",
+      "category": "malformed",
+      "input": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nH x 1 2 3\nC 0 0 0\n\n",
+      "expected": null
+    },
+    {
+      "id": "malformed-5-last",
+      "category": "malformed",
+      "input": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nC 0 0 0\nH x 1 2 3\n\n",
+      "expected": null
+    },
+    {
+      "id": "malformed-6-first",
+      "category": "malformed",
+      "input": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nH 2147483648 1 2 3\nC 0 0 0\n\n",
+      "expected": null
+    },
+    {
+      "id": "malformed-6-last",
+      "category": "malformed",
+      "input": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nC 0 0 0\nH 2147483648 1 2 3\n\n",
+      "expected": null
+    },
+    {
+      "id": "malformed-7-first",
+      "category": "malformed",
+      "input": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nH -1 NaN 2 3\nC 0 0 0\n\n",
+      "expected": null
+    },
+    {
+      "id": "malformed-7-last",
+      "category": "malformed",
+      "input": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nC 0 0 0\nH -1 NaN 2 3\n\n",
+      "expected": null
+    },
+    {
+      "id": "malformed-8-first",
+      "category": "malformed",
+      "input": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nH -1 1 inf 3\nC 0 0 0\n\n",
+      "expected": null
+    },
+    {
+      "id": "malformed-8-last",
+      "category": "malformed",
+      "input": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nC 0 0 0\nH -1 1 inf 3\n\n",
+      "expected": null
+    },
+    {
+      "id": "malformed-9-first",
+      "category": "malformed",
+      "input": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nH -1 1 2 -inf\nC 0 0 0\n\n",
+      "expected": null
+    },
+    {
+      "id": "malformed-9-last",
+      "category": "malformed",
+      "input": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nC 0 0 0\nH -1 1 2 -inf\n\n",
+      "expected": null
+    },
+    {
+      "id": "malformed-10-first",
+      "category": "malformed",
+      "input": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nH -1 1 2 1e999\nC 0 0 0\n\n",
+      "expected": null
+    },
+    {
+      "id": "malformed-10-last",
+      "category": "malformed",
+      "input": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nC 0 0 0\nH -1 1 2 1e999\n\n",
+      "expected": null
+    },
+    {
+      "id": "malformed-11-first",
+      "category": "malformed",
+      "input": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nH 1 2 NaN\nC 0 0 0\n\n",
+      "expected": null
+    },
+    {
+      "id": "malformed-11-last",
+      "category": "malformed",
+      "input": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nC 0 0 0\nH 1 2 NaN\n\n",
+      "expected": null
+    },
+    {
+      "id": "malformed-12-first",
+      "category": "malformed",
+      "input": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nXx 1 2 3\nC 0 0 0\n\n",
+      "expected": null
+    },
+    {
+      "id": "malformed-12-last",
+      "category": "malformed",
+      "input": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nC 0 0 0\nXx 1 2 3\n\n",
+      "expected": null
+    },
+    {
+      "id": "variables",
+      "category": "outside-profile",
+      "input": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nC 0 0 0\nVariables:\nx=1\n\n",
+      "expected": null
+    },
+    {
+      "id": "constants",
+      "category": "outside-profile",
+      "input": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nC 0 0 0\nConstants:\nx=1\n\n",
+      "expected": null
+    },
+    {
+      "id": "zmat",
+      "category": "outside-profile",
+      "input": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nC\nH 1 1.1\n\n",
+      "expected": null
+    },
+    {
+      "id": "oniom",
+      "category": "outside-profile",
+      "input": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nC 0 1 2 3 H\n\n",
+      "expected": null
+    },
+    {
+      "id": "fragment-spin",
+      "category": "outside-profile",
+      "input": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n0 1 0 1\nC 1 2 3\n\n",
+      "expected": null
+    },
+    {
+      "id": "multiple-jobs",
+      "category": "outside-profile",
+      "input": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nC 1 2 3\n\n--Link1--\n%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n-1 2\nH 4 5 6\n\n",
+      "expected": null
+    },
+    {
+      "id": "zero-multiplicity",
+      "category": "malformed",
+      "input": "%chk=original.chk\n# HF/STO-3G\n\nOriginal geometry control\n\n0 0\nC 1 2 3\n\n",
+      "expected": null
+    }
+  ]
+}

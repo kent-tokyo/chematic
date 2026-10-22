@@ -83,8 +83,8 @@ not an acceptable completion condition.
 
 | Phase | Scope | Exit condition | Status |
 |---|---|---|---|
-| R17 | Converge the open format-I/O pull-request stacks | Parent-to-child CI is green, merged state is reproducible, baseline is frozen | In progress |
-| R18 | MOL2/CJSON checked-conversion orchestration | Candidate generation, loss accounting and verification are separate; two function allowances removed | Ready for review |
+| R17 | Converge the open format-I/O pull-request stacks | Parent-to-child CI is green, merged state is reproducible, baseline is frozen | Complete |
+| R18 | MOL2/CJSON checked-conversion orchestration | Candidate generation, loss accounting and verification are separate; two function allowances removed | Complete |
 | R19 | Standardization and chemistry transforms | Long orchestration functions split with unchanged typed outcomes | Ready for review |
 | R20 | Depiction and layout | Layout stages bounded; image and coordinate fixtures unchanged | Planned |
 | R21 | Search, SMARTS and reaction internals | Search state and reaction projection stages have explicit owners | Planned |
@@ -93,17 +93,16 @@ not an acceptable completion condition.
 | R24 | Validation scripts, CI and documentation | Shared harnesses replace duplication without weakening gates | Planned |
 | R25 | Final ratchet and release-grade verification | At most 8 file and 50 function allowances; full applicable gates pass | Planned |
 
-The R18 candidate reduces the checked function allowances from 76 to 74. The
-existing MOL2/CJSON contract suites show no change to their report schema,
-observation ordering, typed errors or expected candidate bytes; those fixtures
-remain the acceptance evidence until hosted CI completes.
+R18 reduced the checked function allowances from 76 to 74. Its hosted CI,
+Python/WASM bindings, security audit, CodeQL and format-contract suites passed
+before merge.
 
-The stacked R19 candidate moves the auditable standardization pipeline and its
-unit tests behind dedicated module boundaries. `standardize.rs` falls from
-3,446 to 1,329 lines, removing its file allowance and reducing the checked
-baseline to 13 files and 74 functions. The 1,033 Rust unit tests plus the
-standardization idempotency, metal-disconnection, stereo-preservation and
-shared-contract suites preserve stage order, warnings and typed outcomes.
+The R19 candidate moves the auditable standardization pipeline and its unit
+tests behind dedicated module boundaries. `standardize.rs` falls from 3,446 to
+1,329 lines, removing its file allowance and reducing the checked baseline to
+13 files and 74 functions. The Rust unit tests plus the standardization
+idempotency, metal-disconnection, stereo-preservation and shared-contract suites
+must preserve stage order, warnings and typed outcomes.
 
 Notable outcomes include a bounded reaction module tree, separated
 lexical/semantic format stages, API-domain binding modules, bounded descriptor

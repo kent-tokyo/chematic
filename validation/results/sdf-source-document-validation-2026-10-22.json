@@ -1,0 +1,465 @@
+{
+  "schema": "chematic.sdf-source-document-validation-index.v1",
+  "date": "2026-10-22",
+  "source_base": "b7817c64dc01c85abe4f1096b55ec4ecaabeed54",
+  "candidate_dirty": true,
+  "scope": "Immutable local-profile SDF source retention and single-record common conversion gates. Eight original synthetic development documents x LF/CRLF/no-final-newline = 24 inputs. Exact source, physical framing, record counts and ordered titles; no interpreted metadata/stereo/query equivalence, graph isomorphism, full CTfile conformance, speed, holdout, release or toolkit-wide superiority claim.",
+  "compatibility_change": "Python/WASM distinguish sdf from mol: sdf-to-sdf retains every validated record and Python refuses overrides. Other mol/sdf common source routes require one record, omit SD fields/delimiter and dispatch its V2000/V3000 version; additional records now fail instead of silently selecting the first. Other-format SDF output gains a terminal delimiter. Legacy low-level graph readers/iterators unchanged.",
+  "profile": {
+    "native_python": {
+      "input_bytes": 16777216,
+      "record_bytes": 16777216,
+      "line_bytes_including_ending": 1048576,
+      "records": 10000,
+      "atoms_per_record": 100000,
+      "total_atoms": 100000
+    },
+    "wasm": {
+      "input_bytes": 1000000,
+      "record_bytes": 1000000,
+      "line_bytes_including_ending": 1048576,
+      "records": 10000,
+      "atoms_per_record": 10000,
+      "total_atoms": 10000
+    },
+    "rules": "Exact physical $$$$ separators and an exact M  END after four header lines; nonempty document, whitespace-only records refused, zero-atom records counted, trailing whitespace and final unterminated record tolerated. Byte/line/record checks precede bounded native core projection; per-record and total atoms checked on the projection. Opaque SD syntax/extensions not fully validated. No output before all records pass."
+  },
+  "baseline_attestation": {
+    "commit": "c713b21af3125c4289c2829794e11ce8efc4f25f",
+    "path": "validation/results/cjson-source-conversion-validation-2026-10-22.json",
+    "artifact_sha256": "9e31ba1377fe40e3abae7f8abbb90f740d0b80617af8f0fa893067aa1c3c220a",
+    "assertions": [
+      "Python package SHA matches b9412a06 source",
+      "Python extension and Node/WASM module/binary SHA match c713b21a candidate attestation",
+      "Relevant MOL source, Python wrapper/format registration and WASM MOL/common paths unchanged b9412a06..candidate base",
+      "Native MOL and Python Rust sources unchanged b9412a06..c713b21a",
+      "c713b21a WASM common-route difference is unrelated CJSON self-route; relevant SDF code unchanged"
+    ],
+    "note": "Main candidate incorporates unrelated force-field/conformer updates. Earlier unmerged I/O PRs are not dependencies."
+  },
+  "toolchain": {
+    "rust": "rustc 1.97.0 (2d8144b78 2026-07-07)",
+    "node": "v24.5.0",
+    "python": "3.13.6 (v3.13.6:4e665351082, Aug  6 2025, 11:22:35) [Clang 16.0.0 (clang-1600.0.26.6)]",
+    "wasm_bindgen": "0.2.129, nodejs",
+    "openbabel": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27"
+  },
+  "checks": {
+    "native": "1476 passed in full chematic-mol lib/tests run, then newly added zero-atom boundary test 1 passed (1477 distinct tests)",
+    "python": "113 passed: SDF document, existing common conversion and forward-SDF suites",
+    "observer": "41 passed: 8 framing observer plus 33 existing bounded interchange runner tests",
+    "wasm": "Real Node/WASM: 24 documents exact through direct/common APIs; multiple-record refusals, later failure, framing, 1MB input cap, 10000/10001 total/per-record atoms, zero atoms and UTF-8 header boundaries passed. Existing common graph/alias native WASM unit test passed.",
+    "clippy": "cargo clippy --offline --locked -p chematic-mol -p chematic-py -p chematic-wasm --all-targets -- -D warnings passed",
+    "build": "Native Python extension and wasm32 module rebuilt with locked dependencies; offline cargo check for all three changed crates passed",
+    "static": "fmt, binding inventory, Python stubs, parent API docs, names, workflow pins, Open Babel file I/O contract, benchmark index, refactor budget and post-stage script layout passed",
+    "docs": "strict MkDocs build passed"
+  },
+  "commands": {
+    "env": "CARGO_TARGET_DIR=/private/tmp/chematic-cml-refs-target-20261022 CARGO_BUILD_JOBS=2 CARGO_PROFILE_DEV_DEBUG=0 CARGO_INCREMENTAL=0 PYO3_PYTHON=python3",
+    "python_build": "cargo rustc --offline --locked -p chematic-py --lib -- -C link-arg=-undefined -C link-arg=dynamic_lookup",
+    "wasm_build": "cargo build --offline --locked -p chematic-wasm --target wasm32-unknown-unknown; wasm-bindgen --target nodejs --out-dir /private/tmp/chematic-sdf-source-wasm-20261022 /private/tmp/chematic-cml-refs-target-20261022/wasm32-unknown-unknown/debug/chematic_wasm.wasm",
+    "native": "cargo test --offline --locked -p chematic-mol --lib --tests",
+    "added_native": "cargo test --offline --locked -p chematic-mol --test sdf_source_document zero_atom_records_are_not_empty_records",
+    "python": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=/private/tmp/chematic-sdf-source-python-20261022 python3 -m pytest crates/chematic-py/tests/test_sdf_source_document.py crates/chematic-py/tests/test_format_convert.py crates/chematic-py/tests/test_forward_sdf.py -q",
+    "observer": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest scripts/tests/test_sdf_source_document.py scripts/tests/test_interchange_preservation.py -q",
+    "node": "node crates/chematic-wasm/tests/sdf_source_document.test.mjs /private/tmp/chematic-sdf-source-wasm-20261022/chematic_wasm.js",
+    "candidate": "PYTHONPATH=/private/tmp/chematic-sdf-source-python-20261022 python3 scripts/validation/check_sdf_source_document.py --wasm-module /private/tmp/chematic-sdf-source-wasm-20261022/chematic_wasm.js --output /private/tmp/chematic-sdf-source-candidate.json",
+    "baseline": "PYTHONPATH=/private/tmp/chematic-cjson-unity-baseline-python-20261022 python3 scripts/validation/check_sdf_source_document.py --baseline --wasm-module /private/tmp/chematic-cjson-source-integrated-wasm-20261022/chematic_wasm.js --output /private/tmp/chematic-sdf-source-baseline.json"
+  },
+  "sources": {
+    ".github/workflows/ci.yml": {
+      "path": ".github/workflows/ci.yml",
+      "sha256": "d76b2dcad538c5d6b994ffc2aee142df4c656a823e93c243c9ebe622e878d677",
+      "size_bytes": 51560
+    },
+    "crates/chematic-mol/src/lib.rs": {
+      "path": "crates/chematic-mol/src/lib.rs",
+      "sha256": "c080bd743a23feee249c22ddaaa2d50ecb6b98d6242e66fd79191b48287db033",
+      "size_bytes": 14222
+    },
+    "crates/chematic-mol/src/sdf.rs": {
+      "path": "crates/chematic-mol/src/sdf.rs",
+      "sha256": "70e97611cffa3c23681f62744e867facc3b3f549d22bb6ff54bb00cfce9aa20d",
+      "size_bytes": 53041
+    },
+    "crates/chematic-mol/src/sdf/source.rs": {
+      "path": "crates/chematic-mol/src/sdf/source.rs",
+      "sha256": "e33cddfc9b66955a52c80c9a7b075ae6fb081eb3ba7bb9abffb2baa2d27ac1a2",
+      "size_bytes": 5313
+    },
+    "crates/chematic-mol/tests/sdf_source_document.rs": {
+      "path": "crates/chematic-mol/tests/sdf_source_document.rs",
+      "sha256": "028c98d86d613231674ab413bcbc28348aaa0a258a6df6c1bc0c18cf93328ab1",
+      "size_bytes": 4289
+    },
+    "crates/chematic-py/python/chematic/__init__.py": {
+      "path": "crates/chematic-py/python/chematic/__init__.py",
+      "sha256": "8994dc51d8ee39f58aa15b490e160542593c714b8da0e7ebcae48debdcbb99cd",
+      "size_bytes": 26490
+    },
+    "crates/chematic-py/python/chematic/__init__.pyi": {
+      "path": "crates/chematic-py/python/chematic/__init__.pyi",
+      "sha256": "8ec07a4679598764b2814726b81d4df9a29d2107c136bce25805dd8a5d3d6c1e",
+      "size_bytes": 212144
+    },
+    "crates/chematic-py/src/formats.rs": {
+      "path": "crates/chematic-py/src/formats.rs",
+      "sha256": "50aa109a23f4034737c5b5baa30a6df51bfef35ff6dbed5a37e25e13ab1162cc",
+      "size_bytes": 53550
+    },
+    "crates/chematic-py/src/formats/sdf_source.rs": {
+      "path": "crates/chematic-py/src/formats/sdf_source.rs",
+      "sha256": "090dc0378870e38bf307ab8a6e74e891789e1b970c3ae08a9a71eb17e0f65e95",
+      "size_bytes": 1083
+    },
+    "crates/chematic-py/tests/test_sdf_source_document.py": {
+      "path": "crates/chematic-py/tests/test_sdf_source_document.py",
+      "sha256": "2eba4ac8bb9f06d9bcb6dd0e0babe2b60c4da62e51742034ecbfbf62a3eb6716",
+      "size_bytes": 3105
+    },
+    "crates/chematic-wasm/src/mol_io.rs": {
+      "path": "crates/chematic-wasm/src/mol_io.rs",
+      "sha256": "0c0cc0ed0cfba064783da84ce317c4f2457eaf01cc10318e70cf889d1a9435ad",
+      "size_bytes": 54985
+    },
+    "crates/chematic-wasm/src/mol_io/common_formats.rs": {
+      "path": "crates/chematic-wasm/src/mol_io/common_formats.rs",
+      "sha256": "758719edee85140ddd7c1de601b34dbe18d5871c03a46e2c5809ad3bacc9d728",
+      "size_bytes": 12101
+    },
+    "crates/chematic-wasm/src/mol_io/sdf_source.rs": {
+      "path": "crates/chematic-wasm/src/mol_io/sdf_source.rs",
+      "sha256": "be15ffdf033f412cb6d721c1b85543cca758855165365f0c905ad10612b90276",
+      "size_bytes": 1064
+    },
+    "crates/chematic-wasm/tests/sdf_source_document.test.mjs": {
+      "path": "crates/chematic-wasm/tests/sdf_source_document.test.mjs",
+      "sha256": "08c2954df454787f2e302ac32f56bc0fe59cba427311c9ef0125321b321954a5",
+      "size_bytes": 2750
+    },
+    "docs/benchmarks/2026-10-22-sdf-source-document.md": {
+      "path": "docs/benchmarks/2026-10-22-sdf-source-document.md",
+      "sha256": "c6ca4706c3d32a97da2e63dce76737533ab53972f215fabf8c361a91c81ebfd4",
+      "size_bytes": 9064
+    },
+    "docs/format-capabilities.md": {
+      "path": "docs/format-capabilities.md",
+      "sha256": "99ae6fcb3697de255e3291845fee65390a7cfe7f8986ff6d3713b83ed8c87bf6",
+      "size_bytes": 53875
+    },
+    "scripts/tests/test_sdf_source_document.py": {
+      "path": "scripts/tests/test_sdf_source_document.py",
+      "sha256": "14fee5a449991125a719ab304e61cdeeacf1dcc29fe3acd67d28129da3ba88e9",
+      "size_bytes": 2523
+    },
+    "scripts/validation/check_sdf_source_document.py": {
+      "path": "scripts/validation/check_sdf_source_document.py",
+      "sha256": "4fadcc245b3d4254866feb66f32a269601daac10cd8b316165529f6c9d72c667",
+      "size_bytes": 6409
+    },
+    "validation/results/binding_surface_inventory-current.json": {
+      "path": "validation/results/binding_surface_inventory-current.json",
+      "sha256": "0e4edc6482ed34920bece4493869dab866aa13175ceb683592f36c9491276549",
+      "size_bytes": 562
+    },
+    "validation/sdf_source_document/cases.json": {
+      "path": "validation/sdf_source_document/cases.json",
+      "sha256": "e95e7b8bfe0ee8dec5d9d4fed2d034f1e8bcef420c16cef5546ebc10c41ab9a9",
+      "size_bytes": 6559
+    },
+    "Cargo.lock": {
+      "path": "Cargo.lock",
+      "sha256": "0231180e5d1c885bb6ccf6555a17064b57ff5e4d69b1aca573c209eb0433d502",
+      "size_bytes": 63558
+    },
+    "scripts/check_interchange_preservation.py": {
+      "path": "scripts/check_interchange_preservation.py",
+      "sha256": "df7aec9cf2bc8adfcd56fe005e84b23ad38ba3c5cef63cc8b8089ab980b58fac",
+      "size_bytes": 28676
+    }
+  },
+  "baseline_artifacts": {
+    "python_package": {
+      "path": "/private/tmp/chematic-cjson-unity-baseline-python-20261022/chematic/__init__.py",
+      "sha256": "fa171425f542041f4449489cfb87c2752e73b613840d7f5d26e1a4b09749f384",
+      "size_bytes": 25696
+    },
+    "python_extension": {
+      "path": "/private/tmp/chematic-cjson-unity-baseline-python-20261022/chematic/chematic.cpython-313-darwin.so",
+      "sha256": "4208d5677ac7bf4cb1c5961ddbc7236c3b7ad83f65b8f74fcbd1dadaeb51587d",
+      "size_bytes": 44623488
+    },
+    "wasm_module": {
+      "path": "/private/tmp/chematic-cjson-source-integrated-wasm-20261022/chematic_wasm.js",
+      "sha256": "0435d3d28f9f65c803bbefad9c6cc04ef5b8ada74b2d92d67b098cd4c9027cf0",
+      "size_bytes": 366818
+    },
+    "wasm_binary": {
+      "path": "/private/tmp/chematic-cjson-source-integrated-wasm-20261022/chematic_wasm_bg.wasm",
+      "sha256": "054bd13bd17e2ad95fe651fed08d1a021a443c0bd81b2402858c8cf1751b5f3a",
+      "size_bytes": 44853145
+    }
+  },
+  "candidate_artifacts": {
+    "python_package": {
+      "path": "/private/tmp/chematic-sdf-source-python-20261022/chematic/__init__.py",
+      "sha256": "8994dc51d8ee39f58aa15b490e160542593c714b8da0e7ebcae48debdcbb99cd",
+      "size_bytes": 26490
+    },
+    "python_extension": {
+      "path": "/private/tmp/chematic-sdf-source-python-20261022/chematic/chematic.cpython-313-darwin.so",
+      "sha256": "b2000780498cf0b75815957f7c644c6471895d9eebf4891fe3ce1c98676f1995",
+      "size_bytes": 44656736
+    },
+    "wasm_module": {
+      "path": "/private/tmp/chematic-sdf-source-wasm-20261022/chematic_wasm.js",
+      "sha256": "41c7928a5e1112e01edc22323a1a477290c8a9d743d97cc66ee7b4c714d33e5d",
+      "size_bytes": 367966
+    },
+    "wasm_binary": {
+      "path": "/private/tmp/chematic-sdf-source-wasm-20261022/chematic_wasm_bg.wasm",
+      "sha256": "0bc86f4bc69642aa753feb2c53b0c580854df4fb0d0eacec75c7e7c6f5245f13",
+      "size_bytes": 44889177
+    }
+  },
+  "openbabel_files": {
+    "/opt/homebrew/bin/obabel": {
+      "path": "/opt/homebrew/bin/obabel",
+      "sha256": "733b2c925d60b17a5c9d8ce9ec841e918cc20c7634301e23f9008a187d1d9bc5",
+      "size_bytes": 75728
+    },
+    "/opt/homebrew/lib/libopenbabel.8.dylib": {
+      "path": "/opt/homebrew/lib/libopenbabel.8.dylib",
+      "sha256": "9c0e023919fca6656f686b3903c10d438c0003a1d07e721a850cff9ff495c93a",
+      "size_bytes": 2794816
+    },
+    "/opt/homebrew/lib/openbabel/3.2.1/mdlformat.so": {
+      "path": "/opt/homebrew/lib/openbabel/3.2.1/mdlformat.so",
+      "sha256": "63afe091d19268a0c6d5514b81ce5b9018c0334d9a0108b0fbfbb920b587999b",
+      "size_bytes": 166528
+    },
+    "/opt/homebrew/lib/openbabel/3.2.1/copyformat.so": {
+      "path": "/opt/homebrew/lib/openbabel/3.2.1/copyformat.so",
+      "sha256": "99ec801181c30ff6f6f4d70a6941ccff64ab70b6cc01524e863a22969d718172",
+      "size_bytes": 57488
+    }
+  },
+  "outcomes": {
+    "baseline": {
+      "path": "validation/results/sdf-source-document-baseline-2026-10-22.json.gz",
+      "sha256": "3956f872fb4c89547c22f7197b1e89390e7bbd5f03f083b500519a53cd746c92",
+      "size_bytes": 5864,
+      "uncompressed_sha256": "d5d5e767c1756332761d9761753ec8be159ec97b5228b0ae7d4af6a0cc61f0da",
+      "encoding": "gzip, UTF-8 JSON"
+    },
+    "candidate": {
+      "path": "validation/results/sdf-source-document-candidate-2026-10-22.json.gz",
+      "sha256": "bee9d04c490d349ae8370bffcffa29485e6d459446a6cfa592a1606eb063b26c",
+      "size_bytes": 6338,
+      "uncompressed_sha256": "e990f5ee01fbb5c7141079747717dc33b61723aed70ca28bbe208cee39e746b9",
+      "encoding": "gzip, UTF-8 JSON"
+    }
+  },
+  "summary": {
+    "baseline": {
+      "python": {
+        "exact_source": 0,
+        "record_count": 0,
+        "ordered_titles": 0,
+        "clean_framing": 21
+      },
+      "wasm": {
+        "exact_source": 0,
+        "record_count": 0,
+        "ordered_titles": 0,
+        "clean_framing": 21
+      },
+      "openbabel": {
+        "exact_source": 0,
+        "record_count": 24,
+        "ordered_titles": 24,
+        "clean_framing": 24
+      },
+      "openbabel_v3000": {
+        "exact_source": 0,
+        "record_count": 24,
+        "ordered_titles": 24,
+        "clean_framing": 24
+      },
+      "openbabel_copy": {
+        "exact_source": 14,
+        "record_count": 15,
+        "ordered_titles": 15,
+        "clean_framing": 16
+      },
+      "openbabel_copy_full": {
+        "exact_source": 16,
+        "record_count": 17,
+        "ordered_titles": 17,
+        "clean_framing": 16
+      }
+    },
+    "candidate": {
+      "python": {
+        "exact_source": 24,
+        "record_count": 24,
+        "ordered_titles": 24,
+        "clean_framing": 24
+      },
+      "wasm": {
+        "exact_source": 24,
+        "record_count": 24,
+        "ordered_titles": 24,
+        "clean_framing": 24
+      },
+      "openbabel": {
+        "exact_source": 0,
+        "record_count": 24,
+        "ordered_titles": 24,
+        "clean_framing": 24
+      },
+      "openbabel_v3000": {
+        "exact_source": 0,
+        "record_count": 24,
+        "ordered_titles": 24,
+        "clean_framing": 24
+      },
+      "openbabel_copy": {
+        "exact_source": 14,
+        "record_count": 15,
+        "ordered_titles": 15,
+        "clean_framing": 16
+      },
+      "openbabel_copy_full": {
+        "exact_source": 16,
+        "record_count": 17,
+        "ordered_titles": 17,
+        "clean_framing": 16
+      }
+    }
+  },
+  "raw_copy_control": "Both normal read and -aT title-only controls use seekable files with terminal SDF framing, completed last line and blank separator for final SD value when needed. Exactness compared against that carrier, not original EOF-tolerant input. Normal read retains blank-title records omitted with -aT. CRLF controls yield normalized bytes/NULs; recognized counts and unexpected tails recorded separately. Ordinary SDF conversion retains all measured counts/titles: byte changes alone are not chemical loss.",
+  "development_carrier_v1": {
+    "path": "validation/results/sdf-source-document-development-carrier-v1-2026-10-22.json.gz",
+    "sha256": "f09f610e09fd96ac92af919b617cd7c59ea36864c15448ac81da065620ddf46f",
+    "size_bytes": 11891,
+    "note": "Earlier full reports and old carrier function archived. Old carrier omitted blank final SD-value separator on EOF-without-newline input; corrected controls rerun on unchanged product fixtures. Final table uses corrected carrier."
+  },
+  "logs": {
+    "python-build": {
+      "path": "validation/results/sdf-source-document-2026-10-22/python-build.log",
+      "sha256": "fcfa34834ac148e21a887d121962ed2719d23bb7dd136de2e79c7689edaddf80",
+      "size_bytes": 4570
+    },
+    "wasm-build": {
+      "path": "validation/results/sdf-source-document-2026-10-22/wasm-build.log",
+      "sha256": "ecb7274c45e35ac9d938c81c9675a8a04a6e28d8393ac65582939d582cdf8fee",
+      "size_bytes": 2298
+    },
+    "rust-tests": {
+      "path": "validation/results/sdf-source-document-2026-10-22/rust-tests.log",
+      "sha256": "54bac154fe4f5e2694de1ac0538ee3bf44757ce0add1813c1d66c7bba5618164",
+      "size_bytes": 125524
+    },
+    "zero-atom-test": {
+      "path": "validation/results/sdf-source-document-2026-10-22/zero-atom-test.log",
+      "sha256": "9a21add2d00fe80f8fc20101131df7a1867446c8878eaaa36970e3058bf26658",
+      "size_bytes": 473
+    },
+    "python-tests": {
+      "path": "validation/results/sdf-source-document-2026-10-22/python-tests.log",
+      "sha256": "b7e2bafa7545dfa3ee1ba0324cf9a06c8f0e5c626371273aed47b5fe957429db",
+      "size_bytes": 750
+    },
+    "node-tests": {
+      "path": "validation/results/sdf-source-document-2026-10-22/node-tests.log",
+      "sha256": "8549f3b766ed8fe45047c38e8fae2e3275f3a6781be79557e45a12bc3d3058cc",
+      "size_bytes": 166
+    },
+    "observer-tests": {
+      "path": "validation/results/sdf-source-document-2026-10-22/observer-tests.log",
+      "sha256": "26a67a151dc4f05375bb3251ec72380bdfa99cd63988e57396f78c30ec9f823e",
+      "size_bytes": 99
+    },
+    "baseline": {
+      "path": "validation/results/sdf-source-document-2026-10-22/baseline.log",
+      "sha256": "d9344ab85fbe3ce4cea0bd369dfdf8362685e5366c7961e4e4d120b25866c625",
+      "size_bytes": 594
+    },
+    "candidate": {
+      "path": "validation/results/sdf-source-document-2026-10-22/candidate.log",
+      "sha256": "812bd55e926fa27373826711151fd717e41e0a20921495fdb3d9986385ea5584",
+      "size_bytes": 600
+    },
+    "clippy": {
+      "path": "validation/results/sdf-source-document-2026-10-22/clippy.log",
+      "sha256": "2d26d467883a609d65f22b4e0e3ae59ad1decfe02eec7efe20d47ca5f2d6c220",
+      "size_bytes": 5655
+    },
+    "check": {
+      "path": "validation/results/sdf-source-document-2026-10-22/check.log",
+      "sha256": "110046438221222ff36250b677acd269c7239556a9e806f1f30d68dc79de114d",
+      "size_bytes": 1959
+    },
+    "wasm-native": {
+      "path": "validation/results/sdf-source-document-2026-10-22/wasm-native.log",
+      "sha256": "95162da765463c9d40cc3f10fc8bf8c36c953312bf3ff1597483fd2afb940b08",
+      "size_bytes": 1703
+    },
+    "fmt": {
+      "path": "validation/results/sdf-source-document-2026-10-22/fmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    "bindings": {
+      "path": "validation/results/sdf-source-document-2026-10-22/bindings.log",
+      "sha256": "850c0e33e33ca1f7d1fd6e6a9f3089253ef6ccb56c835c1d5c9d576837f70302",
+      "size_bytes": 20629
+    },
+    "stubs": {
+      "path": "validation/results/sdf-source-document-2026-10-22/stubs.log",
+      "sha256": "98945ec702355b897670c54011fed035f73047ad280da66e6125fea56162ec13",
+      "size_bytes": 50
+    },
+    "parent-api": {
+      "path": "validation/results/sdf-source-document-2026-10-22/parent-api.log",
+      "sha256": "026f6d2da0ef02b218c3b44546eda64d24b7042bd3f41c9d39d755942a8561f1",
+      "size_bytes": 63
+    },
+    "naming": {
+      "path": "validation/results/sdf-source-document-2026-10-22/naming.log",
+      "sha256": "d1f6921742a3cbe1b0c2309ebb06b159c1b9d3120a07fb4041c5db2c2a043e51",
+      "size_bytes": 66
+    },
+    "workflow-pins": {
+      "path": "validation/results/sdf-source-document-2026-10-22/workflow-pins.log",
+      "sha256": "487f9131fb571b886134dc20a91c114f58c6175d50b85cf6a258a251544d8d90",
+      "size_bytes": 71
+    },
+    "file-io-contract": {
+      "path": "validation/results/sdf-source-document-2026-10-22/file-io-contract.log",
+      "sha256": "6cd4b43f8407860055e672ed728806eb9abe736d9191ef0a68e8a7006187dfc7",
+      "size_bytes": 88
+    },
+    "benchmark-index": {
+      "path": "validation/results/sdf-source-document-2026-10-22/benchmark-index.log",
+      "sha256": "f218283730ced9616e6c8b76c37df58957f029fe738d1ff43fe4403cac13c574",
+      "size_bytes": 52
+    },
+    "docs": {
+      "path": "validation/results/sdf-source-document-2026-10-22/docs.log",
+      "sha256": "41196fd6175a28a43b24d4f70e3b353195aff9313b3a665ebefbd9b06b43e7d9",
+      "size_bytes": 2718
+    },
+    "refactor": {
+      "path": "validation/results/sdf-source-document-2026-10-22/refactor.log",
+      "sha256": "0f6e8c87f4a48e74b0858f09d1910423a3e6470dcccfb42ff27f8751fe3de4fe",
+      "size_bytes": 106
+    },
+    "script-layout": {
+      "path": "validation/results/sdf-source-document-2026-10-22/script-layout.log",
+      "sha256": "552028e216bc5bc00277707740021dc1f7100a720852583ed9279e4355f0c6bc",
+      "size_bytes": 61
+    }
+  }
+}
