@@ -36,6 +36,11 @@ not a statement about v1.1.8.
 
 ## Recent focused follow-ups
 
+- [Checked CML source retention](../docs/benchmarks/2026-10-22-cml-source-conversion.md):
+  six original documents, 6/6 declared source-field preservation versus 3/6
+  for Open Babel 3.2.1 defaults and 3/6 with property/metadata output enabled.
+  Exact source retention is opaque; interpreted chemistry is not verified.
+
 - [CML supplied 2D coordinate precision](../docs/benchmarks/2026-10-22-cml-coordinate-precision.md):
   eight original drawing layouts; source reader/writer preserves 8/8 within
   1e-10 Å absolute, versus 2/8 before and 3/8 with Open Babel 3.2.1 defaults.

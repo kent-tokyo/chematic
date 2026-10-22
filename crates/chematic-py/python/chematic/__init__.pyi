@@ -3467,11 +3467,11 @@ def parse_sdf_with_coords(text: str) -> list[tuple[Mol, str, list[list[float]]]]
     ...
 
 def convert_with_report_json(text: str, input_format: str, output_format: str, policy: str = "strict") -> str:
-    """Checked MOL2/CJSON conversion; refusal is a report with null output."""
+    """Checked MOL2/CJSON/CML conversion; refusal is a report with null output."""
     ...
 
 def convert_with_report(text: str, input_format: str, output_format: str, /, *, policy: str = "strict") -> dict[str, object]:
-    """Return the shared checked MOL2/CJSON conversion report as a dictionary."""
+    """Return the shared checked MOL2/CJSON/CML conversion report as a dictionary."""
     ...
 
 def parse_cjson_record_json(text: str) -> str:

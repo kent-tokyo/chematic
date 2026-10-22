@@ -52,7 +52,7 @@ pub(super) fn roundtrip_cjson_record(text: &str) -> PyResult<String> {
         .map_err(|error| PyValueError::new_err(error.to_string()))
 }
 
-/// Checked MOL2/CJSON conversion with a shared machine-readable report.
+/// Checked MOL2/CJSON/CML conversion with a shared machine-readable report.
 #[pyfunction]
 #[pyo3(signature = (text, input_format, output_format, policy="strict"))]
 pub(super) fn convert_with_report_json(

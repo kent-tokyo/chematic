@@ -145,13 +145,14 @@ def _materialize_smiles_batch(smiles):
 
 
 def convert_with_report(text, input_format, output_format, /, *, policy="strict"):
-    """Return a checked MOL2/CJSON conversion report as a dict.
+    """Return a checked MOL2/CJSON/CML conversion report as a dict.
 
     Strict refusals return ``status="refused"`` and ``output=None``. Use
     ``allow_loss`` to receive a candidate with explicit losses, or
     ``preserve_source`` for exact same-format source retention. Candidate
     graph verification does not verify source chemistry or stereo rules.
     CJSON input supports exact retention and checked SMILES/MOL2 projection.
+    CML supports exact XML source retention only, with opaque chemistry.
     Unsupported routes/policies, malformed input and limits raise ValueError.
     """
     import json
