@@ -16,6 +16,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- CML readers now decode decimal/hex XML character references and reject
+  malformed charge/isotope/2D-coordinate values, conflicting isotope aliases
+  and duplicate decoded atom IDs instead of silently changing the graph.
+  Shared XML attribute decoding also avoids double-decoding literal entity
+  spellings in CDXML/MRV attributes.
 - Checked CJSON conversion now preserves standard root molecule names as well
   as the legacy `properties.name` alias. Conflicting names remain in exact
   source records but refuse MOL2 conversion instead of selecting a title.
