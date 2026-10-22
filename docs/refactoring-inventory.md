@@ -1,6 +1,7 @@
 # Refactoring inventory
 
-This inventory records the R8 cleanup review and the R9-R16 structural pass.
+This inventory records the R8 cleanup review and the active R9-R25 structural
+program.
 It distinguishes removable debt from compatibility code that only looks
 obsolete. Public behavior and published binding contracts take precedence over
 reducing line count.
@@ -8,14 +9,14 @@ reducing line count.
 ## R9-R16 closeout
 
 The second pass removed two file allowances and eight function allowances.
-The R18 candidate contains 14 file allowances and 74 function
+The R19 candidate contains 13 file allowances and 74 function
 allowances; CI rejects new entries, growth beyond a recorded limit, and stale
 entries whose code has moved below the limit.
 
 The retained large files fall into four reviewed groups:
 
 - ordered chemistry rules and perception engines: `alerts.rs`, `cip.rs`,
-  `standardize.rs`, Avalon `fingerprint.rs`, reaction `query.rs`, and the
+  Avalon `fingerprint.rs`, reaction `query.rs`, and the
   SMARTS parser, matcher, and MCS engine;
 - geometry and crystallography algorithms: `layout.rs` and `poscar.rs`;
 - compatibility ports whose branch and accumulation order is observable:
@@ -29,10 +30,11 @@ correctness or performance gates. Further work should remove one bounded stage
 at a time with its domain corpus, rather than split tables or reorder chemistry
 mechanically.
 
-R9-R16 also established explicit boundaries for CLI dispatch, standardization,
-SMARTS parsing, reaction stereo, CJSON conversion, EPS emission, RDKit ring
-compatibility, and evidence-gate I/O. These changes preserve public APIs and
-chemistry outputs while making ownership and failure boundaries visible.
+R9-R19 established explicit boundaries for CLI dispatch, standardization,
+SMARTS parsing, reaction stereo, checked CJSON/MOL2 conversion, EPS emission,
+RDKit ring compatibility, and evidence-gate I/O. These changes preserve public
+APIs and chemistry outputs while making ownership and failure boundaries
+visible.
 
 ## Removed
 
