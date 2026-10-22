@@ -3,12 +3,14 @@ use std::collections::HashMap;
 
 use super::{AtomCompare, AtomIdx, Molecule, PartialMapping, rdkit_heavy_atom_class};
 
-fn atom_class(atom: &chematic_core::Atom, compare: &AtomCompare) -> Option<u8> {
+fn atom_class(atom: &chematic_core::Atom, compare: &AtomCompare, rdkit_heavy: bool) -> Option<u8> {
+    if rdkit_heavy {
+        return Some(rdkit_heavy_atom_class(atom));
+    }
     match compare {
         AtomCompare::Elements => Some(atom.element.atomic_number()),
         AtomCompare::Any => Some(0),
         AtomCompare::AnyHeavyAtom => (atom.element.atomic_number() > 1).then_some(0),
-        AtomCompare::RdkitAnyHeavyAtom => Some(rdkit_heavy_atom_class(atom)),
     }
 }
 
@@ -19,6 +21,7 @@ pub(super) fn upper_bound_for_seeds(
     a0: AtomIdx,
     seed: &[AtomIdx],
     compare: &AtomCompare,
+    rdkit_heavy: bool,
 ) -> usize {
     let mut counts: HashMap<u8, Vec<usize>> = HashMap::new();
     for (mi, mol) in mols.iter().enumerate() {
@@ -27,7 +30,7 @@ pub(super) fn upper_bound_for_seeds(
             if ai == exclude {
                 continue;
             }
-            if let Some(class) = atom_class(atom, compare) {
+            if let Some(class) = atom_class(atom, compare, rdkit_heavy) {
                 counts.entry(class).or_insert_with(|| vec![0; mols.len()])[mi] += 1;
             }
         }
@@ -44,6 +47,7 @@ pub(super) fn upper_bound_additional(
     mapping: &PartialMapping,
     excluded: &[bool],
     compare: &AtomCompare,
+    rdkit_heavy: bool,
 ) -> usize {
     let mut counts: HashMap<u8, Vec<usize>> = HashMap::new();
     for (mi, mol) in mols.iter().enumerate() {
@@ -51,7 +55,7 @@ pub(super) fn upper_bound_additional(
             if mapping.is_mapped(mi, ai) || (mi == 0 && excluded[ai.0 as usize]) {
                 continue;
             }
-            if let Some(class) = atom_class(atom, compare) {
+            if let Some(class) = atom_class(atom, compare, rdkit_heavy) {
                 counts.entry(class).or_insert_with(|| vec![0; mols.len()])[mi] += 1;
             }
         }

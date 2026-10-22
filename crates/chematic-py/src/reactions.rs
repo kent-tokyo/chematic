@@ -993,7 +993,7 @@ fn build_mcs_config(
     let atom_compare = match atom_compare {
         "elements" => AtomCompare::Elements,
         "any_heavy_atom" => AtomCompare::AnyHeavyAtom,
-        "rdkit_any_heavy_atom" => AtomCompare::RdkitAnyHeavyAtom,
+        "rdkit_any_heavy_atom" => AtomCompare::AnyHeavyAtom,
         "any" => AtomCompare::Any,
         other => {
             return Err(PyValueError::new_err(format!(
@@ -1154,7 +1154,11 @@ fn find_mcs(
         maximize_bonds,
     )?;
     let refs: Vec<&chematic_core::Molecule> = mols.iter().map(|m| m.inner.as_ref()).collect();
-    let qmol = chematic_smarts::find_mcs_with_config(&refs, &config);
+    let qmol = if atom_compare == "rdkit_any_heavy_atom" {
+        chematic_smarts::find_mcs_with_rdkit_any_heavy_checked(&refs, &config).into_query()
+    } else {
+        chematic_smarts::find_mcs_with_config(&refs, &config)
+    };
     Ok(qmol_to_mol(&qmol))
 }
 
@@ -1220,7 +1224,11 @@ fn find_mcs_checked(
         config.max_search_nodes = Some(limit);
     }
     let refs: Vec<&chematic_core::Molecule> = mols.iter().map(|m| m.inner.as_ref()).collect();
-    let outcome = chematic_smarts::find_mcs_with_config_checked(&refs, &config);
+    let outcome = if atom_compare == "rdkit_any_heavy_atom" {
+        chematic_smarts::find_mcs_with_rdkit_any_heavy_checked(&refs, &config)
+    } else {
+        chematic_smarts::find_mcs_with_config_checked(&refs, &config)
+    };
     match outcome {
         chematic_smarts::McsOutcome::Exhaustive(qmol) => Ok((qmol_to_mol(&qmol), false)),
         chematic_smarts::McsOutcome::TimedOut(qmol) => Ok((qmol_to_mol(&qmol), true)),

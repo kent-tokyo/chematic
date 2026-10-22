@@ -41,11 +41,6 @@ pub enum AtomCompare {
     /// Any heavy atom (atomic number > 1) matches any other heavy atom, regardless of
     /// element.  Useful for scaffold hopping across heterocycle series (C↔N, C↔O, etc.).
     AnyHeavyAtom,
-    /// RDKit's `CompareAnyHeavyAtom` semantics: heavy atoms match each other,
-    /// and explicit hydrogen atoms match each other (including isotopes unless
-    /// `match_isotope` is enabled). Hydrogen never matches a heavy atom;
-    /// wildcard atoms only match wildcard atoms.
-    RdkitAnyHeavyAtom,
     /// Any atom matches any other atom, including hydrogen.
     Any,
 }
@@ -204,6 +199,19 @@ impl McsOutcome {
 /// Like [`find_mcs_with_config`], but reports whether `config.timeout_ms`
 /// was reached before the search finished exhaustively -- see [`McsOutcome`].
 pub fn find_mcs_with_config_checked(mols: &[&Molecule], config: &McsConfig) -> McsOutcome {
+    find_mcs_impl(mols, config, false)
+}
+
+/// Find an MCS using RDKit's `CompareAnyHeavyAtom` atom policy while retaining
+/// every other option in `config`. Heavy atoms match each other, explicit
+/// hydrogen matches explicit hydrogen, and wildcard matches wildcard.
+/// The policy overrides `config.atom_compare`; [`find_mcs_with_config_checked`]
+/// retains the original heavy-only behavior.
+pub fn find_mcs_with_rdkit_any_heavy_checked(mols: &[&Molecule], config: &McsConfig) -> McsOutcome {
+    find_mcs_impl(mols, config, true)
+}
+
+fn find_mcs_impl(mols: &[&Molecule], config: &McsConfig, rdkit_heavy: bool) -> McsOutcome {
     if mols.iter().any(|mol| {
         mol.atom_count() > config.max_atoms_per_molecule
             || mol.bond_count() > config.max_bonds_per_molecule
@@ -236,6 +244,7 @@ pub fn find_mcs_with_config_checked(mols: &[&Molecule], config: &McsConfig) -> M
     let mut state = McsState {
         mols,
         config,
+        rdkit_heavy,
         best: PartialMapping::empty(mols.len()),
         deadline,
         timed_out: false,
@@ -257,8 +266,13 @@ pub fn find_mcs_with_config_checked(mols: &[&Molecule], config: &McsConfig) -> M
         }
 
         // Gather compatible atoms from each other molecule for this seed atom.
-        let seed_candidates =
-            collect_seed_candidates(mols, AtomIdx(a0 as u32), config, &state.ring_sets);
+        let seed_candidates = collect_seed_candidates(
+            mols,
+            AtomIdx(a0 as u32),
+            config,
+            &state.ring_sets,
+            rdkit_heavy,
+        );
 
         // Iterate the Cartesian product of candidate lists.
         for seed in CartesianProduct::new(&seed_candidates) {
@@ -273,7 +287,13 @@ pub fn find_mcs_with_config_checked(mols: &[&Molecule], config: &McsConfig) -> M
             }
 
             // Prune with a conservative bound under the selected atom comparator.
-            let ub = upper_bound_for_seeds(mols, AtomIdx(a0 as u32), &seed, &config.atom_compare);
+            let ub = upper_bound_for_seeds(
+                mols,
+                AtomIdx(a0 as u32),
+                &seed,
+                &config.atom_compare,
+                rdkit_heavy,
+            );
             if ub <= state.best.size {
                 continue;
             }
@@ -302,7 +322,6 @@ pub fn find_mcs_with_config_checked(mols: &[&Molecule], config: &McsConfig) -> M
             McsOutcome::Exhaustive(QueryMolecule::new())
         };
     }
-
     let result = build_query(mols, &state.best, config);
     if state.resource_limited {
         McsOutcome::ResourceLimited(result)
@@ -411,6 +430,7 @@ impl PartialMapping {
 struct McsState<'a> {
     mols: &'a [&'a Molecule],
     config: &'a McsConfig,
+    rdkit_heavy: bool,
     best: PartialMapping,
     deadline: Option<Instant>,
     timed_out: bool,
@@ -487,6 +507,7 @@ fn grow(state: &mut McsState<'_>, mapping: &mut PartialMapping) {
         mapping,
         &state.excluded,
         &state.config.atom_compare,
+        state.rdkit_heavy,
     );
     if mapping.size + additional_ub <= state.best.size {
         return;
@@ -545,6 +566,7 @@ fn collect_seed_candidates(
     a0: AtomIdx,
     config: &McsConfig,
     ring_sets: &[RingSet],
+    rdkit_heavy: bool,
 ) -> Vec<Vec<AtomIdx>> {
     let atom0 = mols[0].atom(a0);
     let a0_in_ring = !ring_sets.is_empty() && ring_sets[0].contains_atom(a0);
@@ -557,6 +579,7 @@ fn collect_seed_candidates(
                     atom0,
                     a,
                     &config.atom_compare,
+                    rdkit_heavy,
                     config.match_chiral_tag,
                     config.match_charge,
                     config.match_isotope,
@@ -595,15 +618,21 @@ fn atoms_compatible(
     a: &chematic_core::Atom,
     b: &chematic_core::Atom,
     compare: &AtomCompare,
+    rdkit_heavy: bool,
     match_chiral: bool,
     match_charge: bool,
     match_isotope: bool,
 ) -> bool {
-    let base = match compare {
-        AtomCompare::Elements => a.element.atomic_number() == b.element.atomic_number(),
-        AtomCompare::AnyHeavyAtom => a.element.atomic_number() > 1 && b.element.atomic_number() > 1,
-        AtomCompare::RdkitAnyHeavyAtom => rdkit_heavy_atom_class(a) == rdkit_heavy_atom_class(b),
-        AtomCompare::Any => true,
+    let base = if rdkit_heavy {
+        rdkit_heavy_atom_class(a) == rdkit_heavy_atom_class(b)
+    } else {
+        match compare {
+            AtomCompare::Elements => a.element.atomic_number() == b.element.atomic_number(),
+            AtomCompare::AnyHeavyAtom => {
+                a.element.atomic_number() > 1 && b.element.atomic_number() > 1
+            }
+            AtomCompare::Any => true,
+        }
     };
     if !base {
         return false;

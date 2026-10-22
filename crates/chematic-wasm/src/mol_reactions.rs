@@ -56,7 +56,7 @@ impl From<AtomCompareJson> for chematic_smarts::AtomCompare {
         match v {
             AtomCompareJson::Elements => chematic_smarts::AtomCompare::Elements,
             AtomCompareJson::AnyHeavyAtom => chematic_smarts::AtomCompare::AnyHeavyAtom,
-            AtomCompareJson::RdkitAnyHeavyAtom => chematic_smarts::AtomCompare::RdkitAnyHeavyAtom,
+            AtomCompareJson::RdkitAnyHeavyAtom => chematic_smarts::AtomCompare::AnyHeavyAtom,
             AtomCompareJson::Any => chematic_smarts::AtomCompare::Any,
         }
     }

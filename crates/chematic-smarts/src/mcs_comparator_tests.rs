@@ -55,6 +55,7 @@ fn comparator_heavy_mode_does_not_match_explicit_hydrogen() {
         ..Default::default()
     };
     assert_eq!(find_mcs_with_config(&[&a, &b], &config).atom_count(), 0);
+    assert_eq!(find_mcs_with_config(&[&a, &a], &config).atom_count(), 0);
     let config = McsConfig {
         atom_compare: AtomCompare::Any,
         ..Default::default()
@@ -65,7 +66,7 @@ fn comparator_heavy_mode_does_not_match_explicit_hydrogen() {
 #[test]
 fn rdkit_heavy_mode_matches_explicit_hydrogen_only_to_hydrogen() {
     let config = McsConfig {
-        atom_compare: AtomCompare::RdkitAnyHeavyAtom,
+        atom_compare: AtomCompare::AnyHeavyAtom,
         ..Default::default()
     };
     for (left_smiles, right_smiles, atoms, bonds) in [
@@ -77,7 +78,7 @@ fn rdkit_heavy_mode_matches_explicit_hydrogen_only_to_hydrogen() {
         let left = parse(left_smiles).unwrap();
         let right = parse(right_smiles).unwrap();
         for refs in [[&left, &right], [&right, &left]] {
-            let outcome = find_mcs_with_config_checked(&refs, &config);
+            let outcome = find_mcs_with_rdkit_any_heavy_checked(&refs, &config);
             assert!(matches!(outcome, McsOutcome::Exhaustive(_)));
             let query = outcome.into_query();
             assert_eq!(
@@ -99,11 +100,11 @@ fn rdkit_heavy_mode_respects_explicit_isotope_matching() {
     let left = parse("[2H]O").unwrap();
     let right = parse("[H]N").unwrap();
     let config = McsConfig {
-        atom_compare: AtomCompare::RdkitAnyHeavyAtom,
+        atom_compare: AtomCompare::AnyHeavyAtom,
         match_isotope: true,
         ..Default::default()
     };
-    let query = find_mcs_with_config(&[&left, &right], &config);
+    let query = find_mcs_with_rdkit_any_heavy_checked(&[&left, &right], &config).into_query();
     assert_eq!(query.atom_count(), 1);
     assert_eq!(query.bonds.len(), 0);
 }
@@ -126,7 +127,7 @@ fn rdkit_heavy_mode_matches_pinned_mcs_count_oracle() {
             .collect();
         let refs: Vec<_> = inputs.iter().collect();
         let config = McsConfig {
-            atom_compare: AtomCompare::RdkitAnyHeavyAtom,
+            atom_compare: AtomCompare::AnyHeavyAtom,
             bond_compare: if row["bond_mode"] == "any" {
                 BondCompare::Any
             } else {
@@ -134,7 +135,7 @@ fn rdkit_heavy_mode_matches_pinned_mcs_count_oracle() {
             },
             ..Default::default()
         };
-        let outcome = find_mcs_with_config_checked(&refs, &config);
+        let outcome = find_mcs_with_rdkit_any_heavy_checked(&refs, &config);
         assert!(matches!(outcome, McsOutcome::Exhaustive(_)), "{line}");
         let query = outcome.into_query();
         assert_eq!(
