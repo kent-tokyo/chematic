@@ -1,0 +1,273 @@
+{
+  "schema": "chematic.cml-character-reference-validation.v1",
+  "date": "2026-10-22",
+  "scope": "Unreleased source CML typed-field/XML lexical repair on macOS arm64; authored development data, no full XML/CML or toolkit superiority claim.",
+  "production_baseline": "00fc74579bcb5a2bb266a3331c3451e746319d06",
+  "baseline_cml_blob": "4075aafead3776fa5ab35be2f445777f34556410",
+  "main_cml_blob": "4075aafead3776fa5ab35be2f445777f34556410",
+  "source_files": [
+    {
+      "path": "crates/chematic-mol/src/cml.rs",
+      "sha256": "0842fce92769a467752ff17eb349aed17051c9665fc8f587a79f6b3458238ca6",
+      "size_bytes": 35986
+    },
+    {
+      "path": "crates/chematic-mol/src/cml/attributes.rs",
+      "sha256": "b8007f1ed7a3ddfaefd2964e2f6ba0141aac874343f58f6f2321bdc080c4f03e",
+      "size_bytes": 5466
+    },
+    {
+      "path": "crates/chematic-mol/tests/cml_character_references.rs",
+      "sha256": "0835f9fabe8419b01820ca4929316ab21fe6866845a6f7aa790ba3fc8d131424",
+      "size_bytes": 5495
+    },
+    {
+      "path": "crates/chematic-py/tests/test_cml_character_references.py",
+      "sha256": "b58e03af4ce44a51afecdd809cc79af2e7bf830c0327854671072dc326ff41f2",
+      "size_bytes": 1236
+    },
+    {
+      "path": "crates/chematic-wasm/tests/cml_character_references.test.mjs",
+      "sha256": "6ee4703089fc081f3534452f1f0a5c3f1956513f530dd88c8bf92efe9f7ce06d",
+      "size_bytes": 1005
+    },
+    {
+      "path": "scripts/validation/check_cml_character_references.py",
+      "sha256": "c82670c6eeb1e5b0a14be6022aeb570fcb287066dbaeb14284d47c53f43d95da",
+      "size_bytes": 8289
+    },
+    {
+      "path": "scripts/tests/test_cml_character_references.py",
+      "sha256": "7dee367acdb807e7d4d7e04ce84b00e91a18cdddb5215832c6539fec7383a586",
+      "size_bytes": 2426
+    },
+    {
+      "path": "validation/cml_character_references/cases.json",
+      "sha256": "7a9f7f05788241989c626160f7f5f2c5b1174d5ac6bd3fc00361318a94bf91e7",
+      "size_bytes": 9412
+    }
+  ],
+  "reports": [
+    {
+      "path": "validation/results/cml-character-refs-baseline-2026-10-22.json",
+      "sha256": "7d5355c81ac96365e7447703de521dec78852a4613699c546d97693fc9112307",
+      "size_bytes": 58331
+    },
+    {
+      "path": "validation/results/cml-character-refs-candidate-2026-10-22.json",
+      "sha256": "140c87ab9464b315d8c420fbe454c37a819b90a8c3aa355d1965112d94af4097",
+      "size_bytes": 53648
+    }
+  ],
+  "baseline_runner": {
+    "path": "validation/results/cml-character-refs-2026-10-22/baseline-runner.py.gz",
+    "sha256": "3535d27f9556b4dc1ac1b555b586507eb3fd1bd927d99123d97dac3ed6532afa",
+    "size_bytes": 2967
+  },
+  "runner_note": "After baseline capture, process classification was tightened to exclude signals/panics/runtime exits from semantic rejection. Captured baseline classifications were rechecked unchanged; typed XML oracle, inputs and expected fields are identical.",
+  "runtime": {
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "python": "3.13.6",
+    "node": "v24.5.0",
+    "rustc": "rustc 1.97.0 (2d8144b78 2026-07-07)"
+  },
+  "comparator_artifacts": [
+    {
+      "path": "/opt/homebrew/bin/obabel",
+      "sha256": "733b2c925d60b17a5c9d8ce9ec841e918cc20c7634301e23f9008a187d1d9bc5",
+      "size_bytes": 75728
+    },
+    {
+      "path": "/opt/homebrew/Cellar/open-babel/3.2.1/lib/libopenbabel.8.dylib",
+      "sha256": "9c0e023919fca6656f686b3903c10d438c0003a1d07e721a850cff9ff495c93a",
+      "size_bytes": 2794816
+    },
+    {
+      "path": "/opt/homebrew/Cellar/open-babel/3.2.1/lib/openbabel/3.2.1/cmlformat.so",
+      "sha256": "158c92d196dff88aee868a060d00bb1536d00aa27968d04c6747fc41e68b416a",
+      "size_bytes": 194832
+    }
+  ],
+  "source_artifacts": [
+    {
+      "path": "/private/tmp/chematic-cml-refs-target-20261022/debug/examples/file_io_semantic_probe",
+      "sha256": "dc952633c98e966648465828edb30c5bb84a52087134c33e14f0f79620b5a8ea",
+      "size_bytes": 14020200
+    },
+    {
+      "path": "/private/tmp/chematic-cml-refs-python-20261022/chematic/chematic.cpython-313-darwin.so",
+      "sha256": "ef2230aaef66622dd7b9e7a7a0c6109faa26fcc12b2af5acc6abb08a0d6af78c",
+      "size_bytes": 44590224
+    },
+    {
+      "path": "/private/tmp/chematic-cml-refs-wasm-20261022/chematic_wasm_bg.wasm",
+      "sha256": "4760853cdfe833b7d41e1b9ce1e3d8e2c59428dee83b3d28e370e9af5f396d6f",
+      "size_bytes": 44757967
+    },
+    {
+      "path": "/private/tmp/chematic-cml-refs-wasm-release-20261022/chematic_wasm_bg.wasm",
+      "sha256": "a9576a6947361bb06bf22ece4173a67d7db762e82c6c2167a58070037994e345",
+      "size_bytes": 8646464
+    }
+  ],
+  "results": {
+    "rust_mol_full": {
+      "passed": 1490,
+      "failed": 0,
+      "summaries": 80
+    },
+    "focused_final": {
+      "passed": 5
+    },
+    "python_cml_cdxml": {
+      "passed": 154
+    },
+    "scripts": {
+      "passed": 38
+    },
+    "wasm_passed_suites": [
+      "cml_character_references (28 public reader cases, debug/release)",
+      "format_parity",
+      "cdxml_document_edit",
+      "chemdraw_block"
+    ],
+    "clippy_all_targets": "passed with warnings denied",
+    "mkdocs_strict": "passed",
+    "format": "passed",
+    "product_names": "passed",
+    "refactor_budget": "passed",
+    "rust_mol_main_full": {
+      "passed": 1483,
+      "failed": 0,
+      "summaries": 79
+    }
+  },
+  "known_unrelated_wasm_failure": {
+    "suite": "cross_binding_contract.test.mjs",
+    "case": "o1cccccccc1 QED assertion at line 493",
+    "candidate_profiles": [
+      "debug",
+      "release"
+    ],
+    "baseline_artifact": {
+      "path": "/private/tmp/chematic-cjson-names-wasm/chematic_wasm_bg.wasm",
+      "sha256": "da6f287c396016a106807bf0ca6bdbb243eaf0ce0db13183a1896b0a1f435850",
+      "size_bytes": 44746784
+    },
+    "baseline_reproduced": true,
+    "isolated_qed_value": 0.4756358349589771,
+    "note": "Broad suite fails the QED assertion in both the unmodified pre-CML artifact and candidate. Isolated calls agree with the expected value. No QED source or expectation was changed; this pre-existing order/environment-sensitive diagnostic remains unresolved."
+  },
+  "reproduction": {
+    "cargo_env": {
+      "CARGO_TARGET_DIR": "/private/tmp/chematic-cml-refs-target-20261022",
+      "CARGO_BUILD_JOBS": "2",
+      "CARGO_PROFILE_DEV_DEBUG": "0",
+      "CARGO_INCREMENTAL": "0"
+    },
+    "native_python": "PYO3_PYTHON=python3 cargo rustc --locked -p chematic-py --lib -- -C link-arg=-undefined -C link-arg=dynamic_lookup; copy current Python sources and dylib using EXT_SUFFIX into an isolated package",
+    "wasm": "cargo build --locked -p chematic-wasm --target wasm32-unknown-unknown; wasm-bindgen 0.2.129 --target nodejs. Release build was additionally checked.",
+    "packet": "python3 -m scripts.validation.check_cml_character_references --probe PROBE --obabel OBABEL --output NEW.json"
+  },
+  "logs": [
+    {
+      "path": "validation/results/cml-character-refs-2026-10-22/rust-full.log.gz",
+      "sha256": "9b237deb433ab64bae04b6f40dba2827671aefb8cd2cae471e1cf51c47cd7e7b",
+      "size_bytes": 27449
+    },
+    {
+      "path": "validation/results/cml-character-refs-2026-10-22/unit.log.gz",
+      "sha256": "a62b49902f896252242f0cdce2621427281b5daea1b9352900767de32c566d06",
+      "size_bytes": 822
+    },
+    {
+      "path": "validation/results/cml-character-refs-2026-10-22/focused.log.gz",
+      "sha256": "b5ecdb7ba74c99c2b34d2a4a16f4eb711c5bb1198cdcfbf206d03224ceb7ea66",
+      "size_bytes": 876
+    },
+    {
+      "path": "validation/results/cml-character-refs-2026-10-22/final-focused.log.gz",
+      "sha256": "0fbdf4d409742331879dd583df91617b9ed58030e307b59c3af023a28ad425a4",
+      "size_bytes": 491
+    },
+    {
+      "path": "validation/results/cml-character-refs-2026-10-22/scripts.log.gz",
+      "sha256": "e181bdd998438b5efdda7e14b1606859a183e0c8cb47a5ce0f8708a58e688f40",
+      "size_bytes": 52
+    },
+    {
+      "path": "validation/results/cml-character-refs-2026-10-22/python-tests.log.gz",
+      "sha256": "df7719f02c06741e8bee216af71f33847e7934e043c48f7815a808b20064101e",
+      "size_bytes": 343
+    },
+    {
+      "path": "validation/results/cml-character-refs-2026-10-22/wasm-tests.log.gz",
+      "sha256": "604a0a25cd9b94022f622060a829bd05a1922d6b048c580834bfb239a5b97e25",
+      "size_bytes": 331
+    },
+    {
+      "path": "validation/results/cml-character-refs-2026-10-22/wasm-format.log.gz",
+      "sha256": "23cf376dc09a44bc8124927ffbd62e4a8987c1a6dcb5c2aa2614d87353a78890",
+      "size_bytes": 63
+    },
+    {
+      "path": "validation/results/cml-character-refs-2026-10-22/wasm-document.log.gz",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "size_bytes": 20
+    },
+    {
+      "path": "validation/results/cml-character-refs-2026-10-22/wasm-chemdraw.log.gz",
+      "sha256": "11119be9864e33b0d853484165743cee8710f56e101290d0473fb175e4bcdfc2",
+      "size_bytes": 117
+    },
+    {
+      "path": "validation/results/cml-character-refs-2026-10-22/wasm-baseline-cross.log.gz",
+      "sha256": "dd6f023cccf18b0689f9a90fcf2b505f6ccb53bd8ee90194b9a24e4d91b4f029",
+      "size_bytes": 280
+    },
+    {
+      "path": "validation/results/cml-character-refs-2026-10-22/wasm-release-tests.log.gz",
+      "sha256": "604a0a25cd9b94022f622060a829bd05a1922d6b048c580834bfb239a5b97e25",
+      "size_bytes": 331
+    },
+    {
+      "path": "validation/results/cml-character-refs-2026-10-22/clippy.log.gz",
+      "sha256": "a8db96db2182285f7cafed755bf6c2a72d9671ec0e9db71914d0dfa46089f9ad",
+      "size_bytes": 149
+    },
+    {
+      "path": "validation/results/cml-character-refs-2026-10-22/docs.log.gz",
+      "sha256": "894cea8f05a3e55634309b8ee289f2b980d22f5b094ae6b6912efa752ff1bbc7",
+      "size_bytes": 1255
+    },
+    {
+      "path": "validation/results/cml-character-refs-2026-10-22/main-focused.log.gz",
+      "sha256": "857fefd2a80a38dc696ad3bca2fecdb2c4c2f1de1ac2f9785e92c66b3e1c3da5",
+      "size_bytes": 940
+    },
+    {
+      "path": "validation/results/cml-character-refs-2026-10-22/main-full.log.gz",
+      "sha256": "4dfa9ce4376bc1d1dec023d65e11fd3652dc49f5aa96ddb2d244e7a0dac16bdd",
+      "size_bytes": 27275
+    },
+    {
+      "path": "validation/results/cml-character-refs-2026-10-22/main-clippy.log.gz",
+      "sha256": "7c59e7cf4527dc2d8fd9b2e76c613ed851d09a724aba978633a6bcce0e28897f",
+      "size_bytes": 181
+    },
+    {
+      "path": "validation/results/cml-character-refs-2026-10-22/main-docs.log.gz",
+      "sha256": "f33ac7e4600c6cc042b137e11786b06db5f22910daa1099f3239bdd1de1f521e",
+      "size_bytes": 1226
+    }
+  ],
+  "boundaries": [
+    "Seven valid outputs match comparator coverage; seven rejections are not successful conversions.",
+    "Only specified indexed chemistry/total H/bonds/2D fields are scored; metadata/stereo/3D are outside scoring.",
+    "Legacy four-decimal CML writer is unchanged; supplied dyadic coordinates avoid rounding.",
+    "Unknown/custom DTD entities remain outside the lightweight scanner profile.",
+    "Hosted CI and published-package acceptance remain separate."
+  ],
+  "integration_base_revision": "d288f6027d71f21130dd119f7cc7df8d58ab8daf",
+  "integration_note": "CML-only commit rebased independently onto main. Baseline and integration-base CML blobs are identical. Full Rust suite, focused CML tests, Clippy and strict docs rerun after rebase; earlier Python/WASM artifacts identify the pre-rebase source build with the same CML repair."
+}

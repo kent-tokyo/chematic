@@ -172,7 +172,8 @@ fn parse_common_format(text: &str, format: &str) -> Result<chematic_core::Molecu
 ///
 /// This is the WASM counterpart of Python's `convert_format`. It supports
 /// SMILES, MOL/SDF, MOL V3000, MOL2, CML, ChemicalJSON, MolJSON, and CDXML.
-/// MOL2-to-MOL2 validates and retains the exact source. GJF/COM supports only
+/// MOL2-to-MOL2 and CJSON-to-CJSON validate and retain the exact source.
+/// GJF/COM supports only
 /// same-format retention of a bounded single Cartesian job, including opaque
 /// job sections (not a Gaussian job validator). Other conversions use
 /// the topology-only bridge and do not carry format-specific metadata.
@@ -204,6 +205,9 @@ pub fn convert_common_format(
     }
     if input == "mol2" && output == "mol2" {
         return roundtrip_mol2_record(text);
+    }
+    if input == "cjson" && output == "cjson" {
+        return roundtrip_cjson_record(text);
     }
     let mol = parse_common_format(text, &input).map_err(|e| JsValue::from_str(&e))?;
     if mol.atom_count() > WASM_MAX_ATOMS {
